@@ -11,7 +11,8 @@ print MF <<EOF;
 #
 
 TESTFILES=	portrigh.keyrec		\\
-		dnssec-tools.conf
+		dnssec-tools.conf	\\
+		/tmp/test.rollrec
 
 all:
 	\@echo nothing to make
