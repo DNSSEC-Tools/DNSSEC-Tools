@@ -49,6 +49,17 @@ test:
         !exists($DONUTS::DNSSEC::NS{$_[2]}));
 
 #
+# RRSIG signs itself???
+#
+name: DNSSEC_RRSIG_NOT_SIGNING_RRSIG
+level: 7
+type: RRSIG
+desc: draft-ietf-dnsext-dnssec-protocol-09.txt: Section 2.2: An RRSIG RR itself MUST NOT be signed, since signing an RRSIG RR would add no value and would create an infinite loop in the signing process.
+test:
+  "$_[0]->{name} has an RRSIG that signs an RRSIG"
+    if ($_[0]->typecovered eq 'RRSIG');
+
+#
 # RRSIG is present but shouldn't be?
 #
 name: DNSSEC_RRSIG_FOR_NS_GLUE_RECORD
@@ -264,4 +275,3 @@ test:
 
 # XXX: protocol:2.2 double check that no RRSIGs are signed?
 # XXX: protocol:2.2 zone apex NS record MUST be signed
-# XXX: protocol:2.2 RRSIGs must be signed by a zone apex key
