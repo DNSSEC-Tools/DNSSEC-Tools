@@ -1,0 +1,11 @@
+name: test
+type: RRSIG
+test:
+  if (1 == 0) {
+     "ack!";
+  }
+
+level: 9
+name: debug
+test:
+  Dumper($_[0]);

@@ -1,0 +1,36 @@
+name: DNSSEC_RRSIG_TTL_MATCH_ORGTTL
+desc: quote RFC here.
+level: 3
+type:  RRSIG
+test:
+  $_[0]->ttl ne $_[0]->orgttl && "RRSIG ORGTTL must match TTL";
+
+name: DNSSEC_RRSIG_SIGEXP
+level: 1
+type:  RRSIG
+warntime:  604800
+init:
+  use Date::Parse;
+  $donuts::time = time();
+test:
+  my $date = $_[0]->sigexpiration;
+  $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
+  my $extime = str2time($date);
+  if ($extime < $donuts::time) {
+    return "RRSIG record has expired";
+  } elsif ($extime - $donuts::time < $_[1]->{'warntime'}) {
+    return "RRSIG is nearing its expiration time";
+  }
+
+# Note: this only works if the SOA has already been seen 
+# (should have been first anyway)
+#
+level: 5
+name: DNSSEC_NSEC_TTL
+desc: RFC3845: The NSEC RR SHOULD have the same TTL value as the SOA minimum TTL field.  This is in the spirit of negative caching [8].
+type: NSEC
+test:
+  $_[0]->ttl eq $nrecs{$current_domain}{'SOA'}[0]->minimum && 
+     "NSEC TTL for " . $_[0]->name . " (" . $_[0]->ttl . 
+     ") does not match SOA MIN TTL (" . 
+     $nrecs{$current_domain}{'SOA'}[0]->minimum . ")";
