@@ -145,7 +145,7 @@ test:
     $rrsigs{$rec->typecovered}{$rec->name} = $rec;
   }
   #
-  my $err;
+  my @err;
   my %gluerecs;
   # for each record type for a given name
   # reverse sort these so NS records are seen before the glue records
@@ -158,14 +158,11 @@ test:
       # NS glue records for children aren't signed.
       if (!exists($rrsigs{$type}{$rec->name}) &&
           !exists($DONUTS::gluerecs{$rec->name})) {
-         $err .= "$type:$rec->{name}, ";
+         push @err, "No RRSIG record found for the record: $type:$rec->{name}";
       }
     }
   }
-  if ($err) {
-    $err =~ s/, $//;
-    return "No RRSIG record found for the following records: $err";
-  }
+  return \@err;
 
 name: DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD
 level: 3
@@ -178,7 +175,7 @@ test:
     $rrsigs{$rec->typecovered}{$rec->name} = $rec;
   }
   #
-  my $err;
+  my @err;
   my %gluerecs;
   # for each record type for a given name
   # reverse sort these so NS records are seen before the glue records
@@ -188,14 +185,11 @@ test:
     foreach my $rec (@{$_[0]->{$type}}) {
       if (exists($rrsigs{$type}{$rec->name}) &&
           $rrsigs{$type}{$rec->name}->ttl ne $rec->ttl) {
-        $err .= "RRSIG's TTL ($rrsigs{$type}{$rec->name}{ttl}) for $rec->{name}:$type doesn't match original record's TTL ($rec->{ttl}); "
+        push @err,"RRSIG's TTL ($rrsigs{$type}{$rec->name}{ttl}) for $rec->{name}:$type doesn't match original record's TTL ($rec->{ttl})"
       }
     }
   }
-  if ($err) {
-    $err =~ s/; $//;
-    return $err;
-  }
+  return \@err;
 
 name: DNSSEC_MISSING_NSEC_RECORD
 level: 3
@@ -216,21 +210,21 @@ test:
   my $types = $_[0]->{'NSEC'}[0]->typelist;
   my @types = split(/ /,$types);
   my %types;
-  my $err;
+  my @err;
   # if it does exist, make sure it doesn't cover types that don't exist
   foreach my $t (@types) {
     if (!exists($_[0]->{$t})) {
-      $err .= "NSEC record for $_[0]->{name} has coverage for type $t but the domain doesn't have a correspending record for that type /";
+      push @err, "NSEC record for $_[0]->{name} has coverage for type $t but the domain doesn't have a correspending record for that type";
     }
     $types{$t} = 1;
   }
   # and that it covers all the types that do
   foreach my $k (keys(%{$_[0]})) {
     if (!exists($types{$k})) {
-      $err .= "NSEC record for $_[0]->{name} doesn't cover type $k but there are records for that name of that type";
+      push @err,"NSEC record for $_[0]->{name} doesn't cover type $k but there are records for that name of that type";
     }
   }
-  return $err;
+  return \@err;
 
 # XXX: check details of all the NSEC records?
 #   - every record type exists which was listed in an NSEC
