@@ -1,0 +1,140 @@
+Index: sendmail/readcf.c
+===================================================================
+--- sendmail/readcf.c	2005-02-25 10:54:42.597859624 -0500
++++ sendmail/readcf.c	2005-02-25 11:01:11.494442205 -0500
+@@ -2578,6 +2578,13 @@
+ 				WorkAroundBrokenAAAA = !clearmode;
+ 				continue;
+ 			}
++#ifdef HAVE_LIBVALIDAT
++			if (sm_strcasecmp(q, "dnssec") == 0)
++			{
++				DoDNSSECValidation = !clearmode;
++				continue;
++			}
++#endif
+ 			for (rfp = ResolverFlags; rfp->rf_name != NULL; rfp++)
+ 			{
+ 				if (sm_strcasecmp(q, rfp->rf_name) == 0)
+Index: sendmail/domain.c
+===================================================================
+--- sendmail/domain.c	2005-02-25 10:54:53.195403925 -0500
++++ sendmail/domain.c	2005-02-24 16:44:30.000000000 -0500
+@@ -23,6 +23,9 @@
+ 
+ # include <arpa/inet.h>
+ 
++#ifdef HAVE_LIBVALIDAT
++#include <validat.h>
++#endif
+ 
+ /*
+ **  The standard udp packet size PACKETSZ (512) is not sufficient for some
+@@ -318,6 +321,33 @@
+ 		return -1;
+ 	}
+ 
++#ifdef HAVE_LIBVALIDAT
++	/* perform DNSSEC Validation of the answer */
++	do {
++	    char dname[MAXDNAME];
++	    bzero(dname, MAXDNAME);
++	    strncpy(dname, host, MAXDNAME);
++	    getcanonname(dname, MAXDNAME, true, NULL);
++
++	    if (DoDNSSECValidation) {
++
++		if ((val_init() == 0) &&
++		    (val_check(dname, C_IN, T_MX, (unsigned char *) &answer) == VAL_SUCCESS)) {
++		    sm_dprintf("getmxrr: DNSSEC validation of %s succeeded.\n", dname);
++		}
++		else {
++		    sm_dprintf("getmxrr: DNSSEC validation of %s failed.\n", dname);
++		    syserr("Error: DNSSEC validation of %s failed.\n", dname);
++		    *rcode = EX_NOHOST;
++		    return -1;
++		}
++	    }
++	    else {
++		sm_dprintf("getmxrr: not performing dnssec validation.\n");
++	    }
++	} while (0);
++#endif
++
+ 	/* avoid problems after truncation in tcp packets */
+ 	if (n > sizeof(answer))
+ 		n = sizeof(answer);
+Index: sendmail/conf.h
+===================================================================
+--- sendmail/conf.h	2005-02-25 10:55:02.887072662 -0500
++++ sendmail/conf.h	2005-02-24 16:44:53.000000000 -0500
+@@ -213,6 +213,10 @@
+ # define PIPELINING	1	/* SMTP PIPELINING */
+ #endif /* PIPELINING */
+ 
++#ifndef HAVE_LIBVALIDAT
++#define HAVE_LIBVALIDAT		/* DNSSEC Validator Library */
++#endif
++
+ /**********************************************************************
+ **  End of site-specific configuration.
+ **********************************************************************/
+Index: sendmail/sm_resolve.c
+===================================================================
+--- sendmail/sm_resolve.c	2005-02-25 10:55:24.328127495 -0500
++++ sendmail/sm_resolve.c	2005-02-24 16:46:21.000000000 -0500
+@@ -46,6 +46,10 @@
+ # if NAMED_BIND
+ #  include "sm_resolve.h"
+ 
++#ifdef HAVE_LIBVALIDAT
++#include <validat.h>
++#endif
++
+ SM_RCSID("$Id$")
+ 
+ static struct stot
+@@ -417,7 +421,29 @@
+ 			   domain, rr_class, dns_type_to_string(rr_type), len);
+ 	}
+ 	if (len >= 0)
++	{
++#ifdef HAVE_LIBVALIDAT
++		sm_dprintf("dns_lookup(%s, %d, %s): ",
++			   domain, rr_class, dns_type_to_string(rr_type));
++		if (DoDNSSECValidation) {
++		    sm_dprintf("performing dnssec validation.\n");
++		    if ((val_init() == 0) &&
++			(val_check(domain, rr_class, rr_type, reply) == VAL_SUCCESS)) {
++			sm_dprintf("\t\tdnssec validation of %s succeeded.\n",
++				   domain);
++		    }
++		    else {
++			sm_dprintf("\t\tdnssec validation of %s failed.\n",
++				   domain);
++			return NULL;
++		    }
++		}
++		else {
++		    sm_dprintf("not performing dnssec validation.\n");
++		}
++#endif
+ 		r = parse_dns_reply(reply, len);
++	}
+ 	if (retrans > 0)
+ 		_res.retrans = save_retrans;
+ 	if (retry > 0)
+Index: sendmail/sendmail.h
+===================================================================
+--- sendmail/sendmail.h	2005-02-25 10:55:33.655846233 -0500
++++ sendmail/sendmail.h	2005-02-24 16:46:44.000000000 -0500
+@@ -2146,6 +2146,9 @@
+ #endif /* !defined(_USE_SUN_NSSWITCH_) && !defined(_USE_DEC_SVC_CONF_) */
+ EXTERN bool	volatile DataProgress;	/* have we sent anything since last check */
+ EXTERN bool	DisConnected;	/* running with OutChannel redirect to transcript file */
++#ifdef HAVE_LIBVALIDAT
++EXTERN bool     DoDNSSECValidation;    /* perform DNSSEC validation of DNS queries */
++#endif
+ EXTERN bool	DontExpandCnames;	/* do not $[...$] expand CNAMEs */
+ EXTERN bool	DontInitGroups;	/* avoid initgroups() because of NIS cost */
+ EXTERN bool	DontLockReadFiles;	/* don't read lock support files */
