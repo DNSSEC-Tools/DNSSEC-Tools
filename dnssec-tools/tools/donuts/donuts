@@ -96,8 +96,11 @@ if ($opts{'R'}) {
 # load zone files
 #
 my $exitcode = 0;
+my $parseerror;
+my $errcount;
+
 while ($#ARGV > -1) {
-    my $errcount = 0;
+    $errcount = 0;
     my $rulecount = 0;
     my ($rulesrun, $errorsfound);
     $current_zone_file = shift;
@@ -107,10 +110,12 @@ while ($#ARGV > -1) {
     #
     # Parse the file into an array
     #
+    $parseerror = 0;
     my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $current_zone_file,
 						origin => "$current_domain.",
 						soft_errors => 1,
-						on_error => \&my_err);
+						on_error => \&print_parse_error);
+    next if ($parseerror);
 
     #
     # call each rule on each record
@@ -362,6 +367,12 @@ sub compare_RR_arrays {
 	}
     }
     return;
+}
+
+sub print_parse_error {
+    my ($line, $err) = @_;
+    $errcount++;
+    print STDERR "$current_zone_file:$line $err\n";
 }
 
 sub usage {
