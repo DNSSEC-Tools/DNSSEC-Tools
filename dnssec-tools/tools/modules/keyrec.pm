@@ -1,5 +1,4 @@
 #
-#
 # Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
@@ -23,14 +22,14 @@
 #
 #	An example configuration file follows:
 #
-#		zone "isles.netsec.tislabs.com"
-#			zonefile	"db.isles.netsec.tislabs.com"
-#			kskpath		"Kisles.netsec.tislabs.com.+005+26000"
-#			zskpath		"Kisles.netsec.tislabs.com.+005+52000"
+#		zone "portrigh.com"
+#			zonefile	"db.portrigh.com"
+#			kskpath		"Kportrigh.com.+005+26000"
+#			zskpath		"Kportrigh.com.+005+52000"
 #			endtime		"+2592000"   # Zone expires in 30 days.
 #
-#		key "Kisles.netsec.tislabs.com.+005+26000"
-#			zonename	"isles.netsec.tislabs.com"
+#		key "Kportrigh.com.+005+26000"
+#			zonename	"portrigh.com"
 #			type		"ksk"
 #			algorithm	"rsasha1"
 #			length		"1024"
