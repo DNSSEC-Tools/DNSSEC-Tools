@@ -11,6 +11,71 @@ type:  RRSIG
 test:
   $_[0]->ttl ne $_[0]->orgttl && "RRSIG ORGTTL must match TTL";
 
+#
+# memorize things that are only glue records (IE, have NS records
+# pointing to them)
+#
+name: DNSSEC_MEMORIZE_NS_RECORDS
+level: 3
+type: NS
+test:
+  if ($_[0]->name eq $current_domain) {
+    $DONUTS::DNSSEC::NS{$_[0]->nsdname} = 2;
+  } elsif ($DONUTS::DNSSEC::NS{$_[0]->nsdname} != 2) {
+    $DONUTS::DNSSEC::NS{$_[0]->nsdname} = 1;
+  }
+  return;
+
+#
+# NSEC is present?
+#
+name: DNSSEC_MISSING_NSEC_RECORD
+level: 3
+ruletype: name
+test:
+  "name $_[2] does not have an NSEC record, which is required for secure domains."
+    if (!exists($_[0]->{'NSEC'}) &&
+        !exists($DONUTS::DNSSEC::NS{$_[2]}));
+
+#
+# RRSIG is present?
+#
+name: DNSSEC_MISSING_RRSIG_RECORD
+level: 3
+ruletype: name
+test:
+  "name $_[2] does not have a RRSIG record, which is required for secure domains."
+    if (!exists($_[0]->{'RRSIG'}) &&
+        !exists($DONUTS::DNSSEC::NS{$_[2]}));
+
+#
+# RRSIG is present but shouldn't be?
+#
+name: DNSSEC_RRSIG_FOR_NS_GLUE_RECORD
+level: 3
+ruletype: name
+test:
+  "name $_[2] is pointed to by an NS record and thus should be a glue record.  But it also has an RRSIG record which should not be present for glue records."
+    if (exists($_[0]->{'RRSIG'}) &&
+        $current_domain ne $_[2] &&
+        exists($DONUTS::DNSSEC::NS{$_[2]}) &&
+        $DONUTS::DNSSEC::NS{$_[2]} != 2);
+
+#
+# NSEC is present but shouldn't be?
+#
+name: DNSSEC_NSEC_FOR_NS_GLUE_RECORD
+level: 3
+ruletype: name
+test:
+  "name $_[2] is pointed to by an NS record and thus should be a glue record.  But it also has an NSEC record which should not be present for glue records."
+    if (exists($_[0]->{'NSEC'}) &&
+        exists($DONUTS::DNSSEC::NS{$_[2]}) &&
+        $DONUTS::DNSSEC::NS{$_[2]} != 2);
+
+#
+# check signature expiration
+#
 name: DNSSEC_RRSIG_SIGEXP
 level: 1
 type:  RRSIG
