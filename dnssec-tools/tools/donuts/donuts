@@ -20,7 +20,7 @@ my %opts = (l => 5,
 my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
     @ignorelist, $netdns, $netdns_error);
 
-getopts("hHRvLl:r:i:c:C", \%opts) || usage();
+getopts("hHRvqLl:r:i:c:C", \%opts) || usage();
 
 #
 # initialize ignore list
@@ -95,7 +95,11 @@ if ($opts{'R'}) {
 #
 # load zone files
 #
+my $exitcode = 0;
 while ($#ARGV > -1) {
+    my $errcount = 0;
+    my $rulecount = 0;
+    my ($rulesrun, $errorsfound);
     $current_zone_file = shift;
     $current_domain = shift;
     %nrecs = ();
@@ -112,12 +116,17 @@ while ($#ARGV > -1) {
     # call each rule on each record
     #
     print STDERR "--- Analyzing individual records in $current_zone_file\n" if ($opts{'v'});
+    my $firstrun = 1;
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
-	    $r->test_record($rec, $current_zone_file,
-			    $opts{'l'}, $opts{'L'}, $opts{'v'});
+	    ($rulesrun, $errorsfound) =
+	      $r->test_record($rec, $current_zone_file,
+			      $opts{'l'}, $opts{'L'}, $opts{'v'});
+	    $errcount += $errorsfound;
+	    $rulecount += $rulesrun if ($firstrun);
 	}
 	push @{$nrecs{$rec->name}{$rec->type}}, $rec;
+	$firstrun = 0;
     }
 
 
@@ -125,14 +134,36 @@ while ($#ARGV > -1) {
     # call each ruletype=name rule on each name set of records
     #
     print STDERR "--- Analyzing records for each name in $current_zone_file\n"  if ($opts{'v'});
+    $firstrun = 1;
     foreach my $namerec (keys(%nrecs)) {
 	foreach my $r (@rules) {
-	    $r->test_name($nrecs{$namerec}, $namerec, $current_zone_file,
-			  $opts{'l'}, $opts{'L'}, $opts{'v'})
+	    ($rulesrun, $errorsfound) =
+	      $r->test_name($nrecs{$namerec}, $namerec,
+			    $current_zone_file,
+			    $opts{'l'}, $opts{'L'}, $opts{'v'});
+	    $errcount += $errorsfound;
+	    $rulecount += $rulesrun if ($firstrun);
 	}
+	$firstrun = 0;
+    }
+
+    if ($opts{'v'}) {
+	print "results on testing $current_zone_file:\n";
+	print "  rules considered:\t" . (1+$#rules) . "\n";
+	print "  rules tested:\t\t$rulecount\n";
+	print "  records analyzed:\t" . (1+$#$rrset) . "\n";
+	my @a = keys(%nrecs);
+	print "  names analyzed:\t" . (1+$#a) . "\n";
+	print "  errors found:\t$errcount\n";
+    } else {
+	print "$errcount errors found in $current_zone_file\n"
+	  if (!$opts{'q'});
+    }
+    if ($errcount) {
+	$exitcode = 1;
     }
 }
-
+exit($exitcode);
 
 #######################################################################
 
@@ -369,7 +400,11 @@ Displays a help message.
 
 =item -v
 
-Turns on verbose output.
+Turns on more verbose output.
+
+=item -q
+
+Turns on more quiet output.
 
 =item -l LEVEL
 
