@@ -41,9 +41,9 @@ buildkrf($krf);
 ########################################################
 #
 
-checker($krf,"Ktriharpskel.com.+005+64000");
+checker($krf,"key","Ktriharpskel.com.+005+64000");
 print "\n-------------------------------------\n\n";
-checker($krf,"portrigh.com");
+checker($krf,"zone","portrigh.com");
 
 exit(0);
 
@@ -53,6 +53,7 @@ exit(0);
 sub checker
 {
 	my $krf = shift;		# Keyrec name to retrieve.
+	my $ktype = shift;		# Type of keyrec to retrieve.
 	my $kname = shift;		# Keyrec name to retrieve.
 
 	my $rkr;			# Reference to the keyrec.
@@ -65,7 +66,7 @@ sub checker
 	$rkr = opts_keykr($krf,$kname);
 	if($rkr == undef)
 	{
-		print "couldn't find keyrec for key \"$kname\"; check keyrec file and  try again\n"; 
+		print "couldn't find key keyrec for $ktype \"$kname\"; check keyrec file and try again\n"; 
 	}
 	else
 	{
@@ -87,7 +88,7 @@ sub checker
 	$rkr = opts_zonekr($krf,$kname);
 	if($rkr == undef)
 	{
-		print "couldn't find keyrec for zone \"$kname\"; check keyrec file and  try again\n"; 
+		print "couldn't find zone keyrec for $ktype \"$kname\"; check keyrec file and  try again\n"; 
 	}
 	else
 	{
@@ -119,47 +120,59 @@ sub buildkrf
 
 zone "portrigh.com"
 	zonefile	"db.portrigh.com"
-	kskpath		"keys.ksk/Kportrigh.com.+005+26000"
-	zskpath		"keys.zsk/Kportrigh.com.+005+52000"
+	kskkey		"Kportrigh.com.+005+26000.key"
+	kskpath		"./Kportrigh.com.+005+26000.key"
+	zskkey		"Kportrigh.com.+005+52000.key"
+	zskpath		"./Kportrigh.com.+005+52000.key"
 	endtime		"+8888888"		# good for 102 days
-	kskkey		"Kportrigh.com.+005+26000"
-	zskkey		"Kportrigh.com.+005+52000"
+	keyrec_signsecs	"1101183759"
+	keyrec_signdate	"Tue Nov 23 04:22:39 2004"
 
 key "Kportrigh.com.+005+26000"
 	zonename	"portrigh.com"
-	type		"ksk"
+	keyrec_type	"ksk"
 	algorithm	"rsasha2"
 	ksklength	"1024"
 	random		"-r /dev/urandom1"
+	keyrec_gensecs	"1101183759"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
 
 key "Kportrigh.com.+005+52000"
 	zonename	"portrigh.com"
-	type		"zsk"
+	keyrec_type	"zsk"
 	algorithm	"rsasha3"
 	zsklength	"768"
 	random		"-r /dev/urandom2"
+	keyrec_gensecs	"1101183759"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
 
 zone "triharpskel.com"
 	zonefile	"db.triharpskel.com"
-	kskpath		"keys.ksk/Ktriharpskel.com.+005+26000"
-	zskpath		"keys.zsk/Ktriharpskel.com.+005+52000"
+	kskpath		"keys.ksk/Ktriharpskel.com.+005+32000"
+	zskpath		"keys.zsk/Ktriharpskel.com.+005+64000"
 	endtime		"+7800000"		# good for 90 days
 	kskkey		"Ktriharpskel.com.+005+32000"
 	zskkey		"Ktriharpskel.com.+005+64000"
+	keyrec_signsecs	"1101183759"
+	keyrec_signdate	"Tue Nov 23 04:22:39 2004"
 
 key "Ktriharpskel.com.+005+32000"
 	zonename	"triharpskel.com"
-	type		"ksk"
+	keyrec_type	"ksk"
 	algorithm	"rsasha4"
 	ksklength	"2048"
 	random		"-r /dev/urandom3"
+	keyrec_gensecs	"1101183759"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
 
 key "Ktriharpskel.com.+005+64000"
 	zonename	"triharpskel.com"
-	type		"zsk"
+	keyrec_type	"zsk"
 	algorithm	"rsasha5"
 	zsklength	"2008"
 	random		"-r /dev/urandom4"
+	keyrec_gensecs	"1101183759"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
 
 EOF
 
