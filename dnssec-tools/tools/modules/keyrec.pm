@@ -417,18 +417,12 @@ sub keyrec_setval
 		#
 		# If the starting keyrec line is the last line in the file,
 		# we'll just push the new line at the end.  If it's somewhere
-		# in the middle, we'll do the magic to insert it where needed.
+		# in the middle, we'll do the magic to insert it at the start
+		# of the keyrec.
 		#
-		if($fldind == $keyreclen)
-		{
-			push(@keyreclines,$newline);
-		}
-		else
-		{
-			my @endarr = splice(@keyreclines,$fldind-1);
-			push(@keyreclines,$newline);
-			push(@keyreclines,@endarr);
-		}
+		my @endarr = splice(@keyreclines,$krind+1);
+		push(@keyreclines,$newline);
+		push(@keyreclines,@endarr);
 
 		#
 		# Bump the array length counter.
@@ -714,7 +708,7 @@ sub keyrec_dump_array
 
 =head1 NAME
 
-DNSSEC::keyrec - Squoodge around with a DNSSEC tools keyrec file.
+DNSSEC::keyrec - Squoodge around with a dnssec-tools keyrec file.
 
 =head1 SYNOPSIS
 
