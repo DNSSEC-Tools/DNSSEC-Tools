@@ -78,16 +78,8 @@ while ($#ARGV > -1) {
     print STDERR "--- Analyzing individual records in $current_zone_file\n" if ($opts{'v'});
     foreach my $rec (@$rrset) {
 	foreach my $r (@rules) {
-	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
-		(!exists($r->{'type'}) || $rec->type eq $r->{'type'}) &&
-		(!exists($r->{'live'}) || $opts{'L'}) &&
-		(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
-		my $res = $r->{'test'}->($rec, $r);
-		if ($res) {
-		    $r->print_error($res, "$current_zone_file:$rec->{Line}",
-				    $opts{'v'});
-		}
-	    }
+	    $r->test_record($rec, $current_zone_file,
+			    $opts{'l'}, $opts{'L'}, $opts{'v'});
 	}
 	push @{$nrecs{$rec->name}{$rec->type}}, $rec;
     }
@@ -99,15 +91,8 @@ while ($#ARGV > -1) {
     print STDERR "--- Analyzing records for each name in $current_zone_file\n"  if ($opts{'v'});
     foreach my $namerec (keys(%nrecs)) {
 	foreach my $r (@rules) {
-	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
-		(!exists($r->{'live'}) || $opts{'L'}) &&
-		(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
-		my $res = $r->{'test'}->($nrecs{$namerec}, $r, $namerec);
-		if ($res) {
-		    $r->print_error($res, "$current_zone_file::$namerec",
-				    $opts{'v'});
-		}
-	    }
+	    $r->test_name($nrecs{$namerec}, $namerec, $current_zone_file,
+			  $opts{'l'}, $opts{'L'}, $opts{'v'})
 	}
     }
 }
