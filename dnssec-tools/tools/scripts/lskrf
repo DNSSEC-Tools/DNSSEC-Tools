@@ -102,9 +102,14 @@ sub main()
 	doopts($argc);
 
 	#
-	# Read the keyrec file.
+	# Read the keyrec files.
 	#
-	getkeyrecs($ARGV[0]);
+	while($argc > 0)
+	{
+		getkeyrecs($ARGV[0]);
+		shift @ARGV;
+		$argc = @ARGV;
+	}
 
 	#
 	# Give the output.
@@ -653,8 +658,11 @@ lskrf - List the I<keyrec>s in a B<dnssec-tools> I<keyrec> file.
 
 =head1 DESCRIPTION
 
-This script lists the contents of the specified I<keyrec> file.
-The output given depends on the options selected.
+This script lists the contents of the specified I<keyrec> files.  All
+I<keyrec> files are loaded before the output is displayed.  If any I<keyrec>s
+have duplicated names, whether within one file or across multiple files, the
+later I<keyrec> will be the one whose data are displayed.  The output given
+depends on the options selected.
 
 =back
 
