@@ -589,11 +589,11 @@ Net::DNS::SEC::Tools::tooloptions - dnssec-tools option routines.
 
 The dnssec-tools support a set of options common to all the tools in the
 suite.  These options may have defaults set in the
-B</etc/dnssec/dnssec-tools.conf> configuration file, in a I<keyrec> file,
-from command-line options, or from any combination of the three.  In order
-to enforce a common sequence of option interpretation, all dnssec-tools should
-use the I<Net::DNS::SEC::Tools::tooloptions()> routine to initialize its
-options.
+B</usr/local/etc/dnssec/dnssec-tools.conf> configuration file, in a I<keyrec>
+file, from command-line options, or from any combination of the three.  In
+order to enforce a common sequence of option interpretation, all dnssec-tools
+should use the I<Net::DNS::SEC::Tools::tooloptions()> routine to initialize
+its options.
 
 The I<keyrec_file> argument specifies a I<keyrec> file that will be consulted.
 The I<keyrec> named by the I<keyrec_name> argument will be loaded.  If no
@@ -620,7 +620,7 @@ The options sources are combined in this manner:
 
 =over 4
 
-=item 1.  B</etc/dnssec/dnssec-tools.conf>
+=item 1.  B</usr/local/etc/dnssec/dnssec-tools.conf>
 
 The system-wide configuration file is read and these option values are used
 as the defaults.  These options are put into a hash table, with the option
@@ -649,7 +649,7 @@ caller.
 
 =head1 EXAMPLE
 
-B</etc/dnssec/dnssec-tools.conf> has these entries:
+B</usr/local/etc/dnssec/dnssec-tools.conf> has these entries:
 
 =over 4
 
