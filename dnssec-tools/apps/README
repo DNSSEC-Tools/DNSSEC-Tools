@@ -1,0 +1,30 @@
+This directory contains additions to certain applications for providing
+DNSSEC validation.
+
+[1]
+The libspf2-1.0.4_dnssec_patch.txt file contains a patch to libspf2-1.0.4
+that provides DNSSEC validation.
+
+libspf2 can be downloaded from http://www.libspf2.org/download.html
+
+To apply this patch, download libspf2-1.0.4.tar.gz from the above website.
+Unzip and untar it by:
+
+	tar -xvzf libspf2-1.0.4.tar.gz
+
+Go to the libspf2-1.0.4 directory:
+
+	cd libspf2-1.0.4
+
+Now apply the above patch by:
+
+	patch -p 0 -b -z .orig </path/to/patch/libspf2-1.0.4_dnssec_patch.txt
+
+This will apply the patch and store the original files with a .orig suffix.
+
+Configure, compile and install libspf2 as per the instructions given in the
+libspf2-1.0.4 distribution.
+
+[2]
+The 'sendmail' directory contains milters for sendmail that perform DNSSEC
+validation for the sendmail Mail Transfer Agent.
