@@ -298,29 +298,24 @@ sub genkeys
 {
 	print "\ngenerating key files:\n" if ($verbose);
 
+	genksk();
+	genzsk();
+
+	delete $opts{'keyrec_type'};
+}
+
+#######################################################################
+#
+# genksk()
+#
+#	Generate a new KSK key.
+#
+sub genksk
+{
 	#
 	# Generate a KSK file.
 	#
-	if($reuseksk == 0)
-	{
-		print "\t$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone\n" if ($verbose);
-		$ksk = `$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone`;
-		if($? != 0)
-		{
-			print STDERR "unable to generate KSK key file;\n";
-			print STDERR "dnssec-keygen returned $?\n";
-			exit(1);
-		}
-		chomp $ksk;
-		print "\t\tnew KSK - $ksk\n" if ($verbose);
-
-		#
-		# Add the KSK's keyrec to the keyrec file.
-		#
-		$opts{'keyrec_type'} = "ksk";
-		keyrec_add('key',$ksk,\%opts);
-	}
-	else
+	if($reuseksk == 1)
 	{
 		if($opts{'kskkey'} eq "")
 		{
@@ -330,8 +325,34 @@ sub genkeys
 
 		$ksk = $opts{'kskkey'};
 		print "\treusing existing KSK - $ksk\n" if ($verbose);
+
+		return;
 	}
 
+	print "\t$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone\n" if ($verbose);
+	$ksk = `$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone`;
+	if($? != 0)
+	{
+		print STDERR "unable to generate KSK key file;\n";
+		print STDERR "dnssec-keygen returned $?\n";
+		exit(1);
+	}
+	chomp $ksk;
+	print "\t\tnew KSK - $ksk\n" if ($verbose);
+
+	#
+	# Add the KSK's keyrec to the keyrec file.
+	#
+	$opts{'keyrec_type'} = "ksk";
+	keyrec_add('key',$ksk,\%opts);
+}
+
+#######################################################################
+#
+# genzsk()
+#
+sub genzsk
+{
 	#
 	# Generate a ZSK file.
 	#
@@ -365,8 +386,6 @@ sub genkeys
 		$zsk = $opts{'zskkey'};
 		print "\treusing existing ZSK - $zsk\n" if ($verbose);
 	}
-
-	delete $opts{'keyrec_type'};
 }
 
 #######################################################################
@@ -518,10 +537,11 @@ sub zonesign
 	# Get today's date.
 	#
 	$chron = `$DATE +"%m/%d/%y"`;
+	$chron =~ s/\n//;
 
 	print "zone signed successfully\n";
 	print "${zone}:\n";
-	print "	ZSK  $ztag  $zsize  $chron	KSK  $ktag  $ksize  $chron";
+	print "	ZSK  $ztag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
 	return(0);
 }
 
