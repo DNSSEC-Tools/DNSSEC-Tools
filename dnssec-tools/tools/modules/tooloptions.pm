@@ -122,11 +122,6 @@ sub tooloptions
 		%keyrec = %$fullkr;
 
 		#
-		# Delete a few internal-use-only entries from the keyrec.
-		#
-		delete @keyrec{'keyrec_name','keyrec_type','type'};
-
-		#
 		# Shmoosh the config file and the keyrec together,
 		# starting with the config file.
 		#
@@ -250,7 +245,7 @@ sub opts_krfile
 #		them from the command line arguments (names given as empty
 #		strings.)  
 #
-sub opts_getkeys()
+sub opts_getkeys
 {
 	my $arglen = @_;		# Number of arguments passed.
 
@@ -308,6 +303,124 @@ sub opts_getkeys()
 	# Return the KSK and ZSK records to our caller.
 	#
 	return(\%kskrec,\%zskrec);
+}
+
+##############################################################################
+#
+# Routine:	opts_keykr()
+#
+# Purpose:	This routine returns a reference to a key's keyrec.  It
+#		also ensures that the keyrec belongs to a key and not a zone.
+#
+#		The keyrec file and keyrec name may be specified either by
+#		the caller directly (names given as parameters) or by taking
+#		them from the command line arguments (names given as empty
+#		strings.)  
+#
+sub opts_keykr
+{
+	my $arglen = @_;		# Number of arguments passed.
+
+	my $krf;			# Keyrec file to parse.
+	my $krname;			# Keyrec name to find.
+	my @csopts;			# Command-specific options.
+
+	my $ropts;			# Reference to %keyrec.
+	my %keyrec;			# Keyrec hash.
+
+	#
+	# Get the keyrec for a specified krfile/krname pair.
+	#
+	if($arglen == 0)
+	{
+		($krf,$krname,$ropts) = opts_krfile("","");
+	}
+	else
+	{
+		($krf,$krname,$ropts) = opts_krfile(@_);
+	}
+
+	#
+	# If no hash file was returned (unknown zone or keyrec name, most
+	# likely) then we'll return an undefined value.
+	#
+	if($ropts == undef)
+	{
+		return(undef);
+	}
+	%keyrec = %$ropts;
+
+	#
+	# Ensure this keyrec is for a key.
+	#
+	if($keyrec{'keyrec_type'} ne "key")
+	{
+		return(undef);
+	}
+
+	#
+	# Return the key keyrec to our caller.
+	#
+	return(\%keyrec);
+}
+
+##############################################################################
+#
+# Routine:	opts_zonekr()
+#
+# Purpose:	This routine returns a reference to a zone's keyrec.  It
+#		also ensures that the keyrec belongs to a zone and not a key.
+#
+#		The keyrec file and keyrec name may be specified either by
+#		the caller directly (names given as parameters) or by taking
+#		them from the command line arguments (names given as empty
+#		strings.)  
+#
+sub opts_zonekr
+{
+	my $arglen = @_;		# Number of arguments passed.
+
+	my $krf;			# Keyrec file to parse.
+	my $krname;			# Keyrec name to find.
+	my @csopts;			# Command-specific options.
+
+	my $ropts;			# Reference to %keyrec.
+	my %keyrec;			# Keyrec hash.
+
+	#
+	# Get the keyrec for a specified krfile/krname pair.
+	#
+	if($arglen == 0)
+	{
+		($krf,$krname,$ropts) = opts_krfile("","");
+	}
+	else
+	{
+		($krf,$krname,$ropts) = opts_krfile(@_);
+	}
+
+	#
+	# If no hash file was returned (unknown zone or keyrec name, most
+	# likely) then we'll return an undefined value.
+	#
+	if($ropts == undef)
+	{
+		return(undef);
+	}
+	%keyrec = %$ropts;
+
+	#
+	# Ensure this keyrec is for a zone.
+	#
+	if($keyrec{'keyrec_type'} ne "zone")
+	{
+		return(undef);
+	}
+
+	#
+	# Return the zone keyrec to our caller.
+	#
+	return(\%keyrec);
 }
 
 ##############################################################################
@@ -377,14 +490,26 @@ DNSSEC::tooloptions - dnssec-tools option routines.
   $optsref = tooloptions("",@specopts);
   %options = %$optsref;
 
-  $optsref = opts_krfile($keyrec_file,"");
+  ($krfile,$krname,$optsref) = opts_krfile($keyrec_file,"");
   %options = %$optsref;
 
-  $optsref = opts_krfile("",$keyrec_name,@specopts);
+  ($krfile,$krname,$optsref) = opts_krfile("",$keyrec_name,@specopts);
   %options = %$optsref;
 
-  $optsref = opts_krfile("","");
+  ($krfile,$krname,$optsref) = opts_krfile("","");
   %options = %$optsref;
+
+  $key_ref = opts_keykr();
+  %key_kr  = %$key_ref;
+
+  $optsref = opts_keykr($keyrec_file,$keyrec_name);
+  %options = %$optsref;
+
+  $zoneref = opts_zonekr();
+  %zone_kr = %$zoneref;
+
+  $zoneref = opts_zonekr($keyrec_file,$keyrec_name);
+  %zone_kr = %$zoneref;
 
   opts_suspend();
 
@@ -392,14 +517,15 @@ DNSSEC::tooloptions - dnssec-tools option routines.
 
   opts_drop();
 
+
 =head1 DESCRIPTION
 
 The dnssec-tools support a set of options common to all the tools in the
-suite.  These options may have defaults set in the B</etc/dnssec/tools.conf>
-configuration file, in a I<keyrec> file, from command-line options, or from
-any combination of the three.  In order to enforce a common sequence of option
-interpretation, all dnssec-tools should use the I<DNSSEC::tooloptions()>
-routine to initialize its options.
+suite.  These options may have defaults set in the
+B</etc/dnssec/dnssec-tools.conf> configuration file, in a I<keyrec> file,
+from command-line options, or from any combination of the three.  In order
+to enforce a common sequence of option interpretation, all dnssec-tools should
+use the I<DNSSEC::tooloptions()> routine to initialize its options.
 
 The I<keyrec_file> argument specifies a I<keyrec> file that will be consulted.
 The I<keyrec> named by the I<keyrec_name> argument will be loaded.  If no
@@ -426,7 +552,7 @@ The options sources are combined in this manner:
 
 =over 4
 
-=item 1.  B</etc/dnssec/tools.conf>
+=item 1.  B</etc/dnssec/dnssec-tools.conf>
 
 The system-wide configuration file is read and these option values are used
 as the defaults.  These options are put into a hash table, with the option
@@ -452,9 +578,10 @@ I<Getoptions()>.
 A reference to the hash table created in these three steps is returned to the
 caller.
 
+
 =head1 EXAMPLE
 
-B</etc/dnssec/tools.conf> has these entries:
+B</etc/dnssec/dnssec-tools.conf> has these entries:
 
 =over 4
 
@@ -488,6 +615,41 @@ will read each option source in turn, ending up with:
     I<zsklength> 	 4096
     I<wait> 		 600
 
+
+=head1 TOOL OPTION ARGUMENTS
+
+Many of the dnssec-tools option interfaces take the same set of arguments:
+I<$keyrec_file>, I<$keyrec_name>, and I<@csopts>.  These arguments are used
+similarly by all the interfaces; differences are noted in the interface
+descriptions in the next section.
+
+=over 4
+
+=item I<$keyrec_file>
+
+Name of the I<keyrec> file to be searched.
+
+=item I<$keyrec_name>
+
+Name of the I<keyrec> that is being sought
+
+=item I<@csopts>
+
+Command-specific options.
+
+=back
+
+The I<keyrec> named in I<$keyrec_name> is selected from the I<keyrec> file
+given in I<$keyrec_file>.  If either I<$keyrec_file> or I<$keyrec_name> are
+given as empty strings, their values will be taken from the I<-krfile> and
+I<-keyrec> command line options.
+
+A set of command-specific options may be specified in I<@csopts>.  These
+options are in the format required by the I<Getopt::Long> Perl module.  If
+I<@csopts> is left off the call, then no command-specific options will be
+included in the final option hash.
+
+
 =head1 TOOL OPTION INTERFACES
 
 =over 4
@@ -498,15 +660,10 @@ This I<tooloptions()> call builds an option hash from the system configuration
 file, a I<keyrec>, and a set of command-specific options.  A reference to
 this option hash is returned to the caller.
 
-The I<keyrec> named in I<$keyrec_name> is selected from the I<keyrec> file
-given in I<$keyrec_file>.  If I<$keyrec_file> is given as an empty string,
-then no I<keyrec> file will be consulted.  In this case, it is assumed that
-I<$keyrec_name> will be left out altogether.
+If I<$keyrec_file> is given as an empty string, then no I<keyrec> file will
+be consulted.  In this case, it is assumed that I<$keyrec_name> will be left
+out altogether.
 
-A set of command-specific options may be specified in I<@csopts>.  These
-options are in the format required by the I<Getopt::Long> Perl module.  If
-I<@csopts> is left off the call, then no command-specific options will be
-included in the final option hash.
 
 =item I<opts_krfile($keyrec_file,$keyrec_name,@csopts)>
 
@@ -515,25 +672,13 @@ and uses those fields to help build an options hash.  References to the
 I<keyrec> file name, I<keyrec> name, and the option hash table are returned
 to the caller.
 
-The I<keyrec> named in I<$keyrec_name> is selected from the I<keyrec> file
-given in I<$keyrec_file>.  If I<$keyrec_file> is given as an empty string,
-then no I<keyrec> file will be consulted.  In this case, it is assumed that
-I<$keyrec_name> will be left out altogether.  The I<$keyrec_file> and
-I<$keyrec_name> arguments are required parameters.  They may be given as empty
-strings, but they must be given.
-
-If either I<$keyrec_file> or I<$keyrec_name> name are given as empty strings,
-their values will be taken from the I<-krfile> and I<-keyrec> command line
-options.
+The I<$keyrec_file> and I<$keyrec_name> arguments are required parameters.
+They may be given as empty strings, but they B<must> be given.
 
 If the I<$keyrec_file> file and I<$keyrec_name> name are both specified by
 the caller, then this routine will have the same effect as directly calling
 I<tooloptions()>.
 
-A set of command-specific options may be specified in I<@csopts>.  These
-options are in the format required by the I<Getopt::Long> Perl module.  If
-I<@csopts> is left off the call, then no command-specific options will be
-included in the final option hash.
 
 =item I<opts_getkeys($keyrec_file,$keyrec_name,@csopts)>
 
@@ -544,30 +689,51 @@ entries in a single step.
 This routine acts as a front-end to the I<opts_krfile()> routine.
 I<opts_getkeys()>' arguments conform to those of I<opts_krfile()>.
 
-The I<keyrec> named in I<$keyrec_name> is selected from the I<keyrec> file
-given in I<$keyrec_file>.  If I<$keyrec_file> is given as an empty string,
-then no I<keyrec> file will be consulted.  In this case, it is assumed that
-I<$keyrec_name> will be left out altogether.
-
-A set of command-specific options may be specified in I<@csopts>.  These
-options are in the format required by the I<Getopt::Long> Perl module.  If
-I<@csopts> is left off the call, then no command-specific options will be
-included in the final option hash.
-
 If I<opts_getkeys()> isn't passed any arguments, it will act as if both
 I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
 case, their values will be taken from the I<-krfile> and I<-keyrec> command
 line options.
+
+
+=item I<opts_keykr($keyrec_file,$keyrec_name,@csopts)>
+
+This routine returns a reference to a key I<keyrec>.  It ensures that the
+named I<keyrec> is a key I<keyrec>; if it isn't, I<undef> is returned.
+
+This routine acts as a front-end to the I<opts_krfile()> routine.
+I<opts_keykr()>'s arguments conform to those of I<opts_krfile()>.
+
+If I<opts_keykr()> isn't passed any arguments, it will act as if both
+I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
+case, their values will be taken from the I<-krfile> and I<-keyrec> command
+line options.
+
+
+=item I<opts_zonekr($keyrec_file,$keyrec_name,@csopts)>
+
+This routine returns a reference to a zone I<keyrec>.  It ensures that the
+named I<keyrec> is a zone I<keyrec>; if it isn't, I<undef> is returned.
+
+This routine acts as a front-end to the I<opts_krfile()> routine.
+I<opts_zonekr()>'s arguments conform to those of I<opts_krfile()>.
+
+If I<opts_zonekr()> isn't passed any arguments, it will act as if both
+I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
+case, their values will be taken from the I<-krfile> and I<-keyrec> command
+line options.
+
 
 =item I<opts_suspend()>
 
 Suspend inclusion of the command-line options in building the final hash
 table of responses.
 
+
 =item I<opts_restore()>
 
 Restore inclusion of the command-line options in building the final hash
 table of responses.
+
 
 =item I<opts_drop()>
 
@@ -577,9 +743,11 @@ of the command.
 
 =back
 
+
 =head1 AUTHOR
 
 Wayne Morrison, tewok@users.sourceforge.net
+
 
 =head1 SEE ALSO
 
@@ -587,14 +755,7 @@ zonesigner(1)
 
 DNSSEC::conf(3), DNSSEC::keyrec(3), Getopt::Long(3)
 
+
 =head1 TODO
-
-- need to document I<opts_krfile()>
-
-- need to document I<opts_getkeys()>
-
-- need to I<opts_getkeys()> is handling its arguments properly.  I think
-it might not be handling them right when @csopts is specified.
-
 
 =cut
