@@ -27,6 +27,33 @@ sub print_error {
     print STDERR "\n";
 }
 
+sub test_record {
+    my ($r, $rec, $file, $level, $dolive, $verbose) = @_;
+    if ((!exists($r->{'level'}) || $level >= $r->{'level'}) &&
+	(!exists($r->{'type'}) || $rec->type eq $r->{'type'}) &&
+	(!exists($r->{'live'}) || $dolive) &&
+	(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
+	my $res = $r->{'test'}->($rec, $r);
+	if ($res) {
+	    $r->print_error($res, "$file:$rec->{Line}",
+			    $verbose);
+	}
+    }
+}
+
+sub test_name {
+    my ($r, $namerecord, $name, $file, $level, $dolive, $verbose) = @_;
+    if ((!exists($r->{'level'}) || $level >= $r->{'level'}) &&
+	(!exists($r->{'live'}) || $dolive) &&
+	(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
+	my $res = $r->{'test'}->($namerecord, $r, $name);
+	if ($res) {
+	    $r->print_error($res, "$file::$name",
+			    $verbose);
+	}
+    }
+}
+
 1;
 
 =head1 NAME
