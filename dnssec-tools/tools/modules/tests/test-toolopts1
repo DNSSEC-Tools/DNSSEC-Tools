@@ -32,8 +32,8 @@ my %opts;
 my $krf;
 my $krname;
 
-$krf = "isles.keyrec";
-$krname = "Kisles.netsec.tislabs.com.+005+52000";
+$krf = "portrigh.keyrec";
+$krname = "Kportrigh.com.+005+52000";
 
 buildkrf($krf);
 
@@ -151,31 +151,26 @@ sub buildkrf
 # key management database
 #
 
-zone "isles.netsec.tislabs.com"
-	zonefile	"db.isles.netsec.tislabs.com"
-	kskpath		"keys.ksk/Kisles.netsec.tislabs.com.+005+26000"
-	zskpath		"keys.zsk/Kisles.netsec.tislabs.com.+005+52000"
+zone "portrigh.com"
+	zonefile	"db.portrigh.com"
+	kskpath		"keys.ksk/Kportrigh.com.+005+26000"
+	zskpath		"keys.zsk/Kportrigh.com.+005+52000"
 	endtime		"+8888888"		# good for 30 days
 
-key "Kisles.netsec.tislabs.com.+005+26000"
-	zonename	"isles.netsec.tislabs.com"
+key "Kportrigh.com.+005+26000"
+	zonename	"portrigh.com"
 	type		"ksk"
 	algorithm	"rsasha1"
 	ksklength	"1024"
 	random		"-r /dev/urandom"
 
-key "Kisles.netsec.tislabs.com.+005+52000"
-	zonename	"isles.netsec.tislabs.com"
+key "Kportrigh.com.+005+52000"
+	zonename	"portrigh.com"
 	type		"zsk"
 	algorithm	"rsasha2"
 	zsklength	"768"
 	random		"-r /dev/urandom"
 
-zone	"portrigh.com"
-	zonefile	"db.portrigh.com"
-	enddate		"+8888888"
-	kskpath		"keys.ksk/Kportrigh.com.+005+44000"
-	zskpath		"keys.zsk/Kportrigh.com.+005+88000"
 EOF
 
 	close(KRF);
