@@ -46,6 +46,7 @@ use strict;
 # Fields in a key keyrec.
 #
 my @KEYFIELDS = (
+			'type',
 			'algorithm',
 			'random',
 			'kskdirectory',
@@ -54,7 +55,7 @@ my @KEYFIELDS = (
 			'zsklength',
 			'keyrec_gensec',
 			'keyrec_gendate',
-		);
+		 );
 
 #
 # Fields in a zone keyrec.
@@ -68,7 +69,7 @@ my @ZONEFIELDS = (
 			'endtime',
 			'keyrec_signsec',
 			'keyrec_signdate',
-		);
+		  );
 
 my @keyreclines;			# Keyrec lines.
 my $keyreclen;				# Number of keyrec lines.
@@ -528,11 +529,23 @@ sub keyrec_add
 			}
 
 			#
+			# Special case for keys:  Only give the key length
+			# for the key's type.
+			#
+			if((($fields{'type'} eq 'zsk') &&
+			    ($fn eq 'ksklength'))		||
+			   (($fields{'type'} eq 'ksk') &&
+			    ($fn eq 'zsklength')))
+			{
+				next;
+			}
+
+			#
 			# Add the field to the hash table and to the keyrec
 			# file contents array.
 			#
 			$keyrecs{$krname}{$fn} = $fields{$fn};
-			$keyreclines[$keyreclen] = "\t$fn\t\"$fields{$fn}\"\n";
+			$keyreclines[$keyreclen] = "\t$fn\t\t\"$fields{$fn}\"\n";
 			$keyreclen++;
 		}
 	}
@@ -573,6 +586,28 @@ sub keyrec_newkeyrec
 
 	$keyrecs{$name}{"keyrec_name"} = $name;
 	$keyrecs{$name}{"keyrec_type"} = $type;
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_keyfields()
+#
+# Purpose:	Return the list of key fields.
+#
+sub keyrec_keyfields
+{
+	return(@KEYFIELDS);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_zonefields()
+#
+# Purpose:	Return the list of zone fields.
+#
+sub keyrec_zonefields
+{
+	return(@ZONEFIELDS);
 }
 
 #--------------------------------------------------------------------------
