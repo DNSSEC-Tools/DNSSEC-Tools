@@ -36,8 +36,7 @@
 #		- soon-to-expire zone keyrecs
 #		- odd zone-signing date
 #		- orphaned key keyrecs  (not referenced by any zone keyrecs)
-#		U non-existent key directories
-#		U orphaned keys
+#		- non-existent key directories
 #
 #	Inconsistencies include:
 #
@@ -169,7 +168,6 @@ sub main()
 	# Read the keyrec file.
 	#
 	getkeyrecs($ARGV[0]);
-#	dumpdata();
 
 	#
 	# Check our watch.
@@ -414,7 +412,9 @@ sub zonedata
 	my %keyrec   = %$kr;			# Zone table.
 
 	my $zonefile = $keyrec{'zonefile'};
+	my $kskdir   = $keyrec{'kskdirectory'};
 	my $kskfile  = $keyrec{'kskpath'};
+	my $zskdir   = $keyrec{'zskdirectory'};
 	my $zskfile  = $keyrec{'zskpath'};
 	my $endtime  = $keyrec{'endtime'};
 	my $signsecs = $keyrec{'keyrec_signsecs'};
@@ -425,7 +425,7 @@ sub zonedata
 	#
 	# Check the existence of the zone file.
 	#
-	if(! -e $zonefile)
+	if(defined($zonefile) && (! -e $zonefile))
 	{
 		qprint("missing file:  zone file $zonefile (zone $zonename)\n");
 		$zoneerrs++;
@@ -434,25 +434,43 @@ sub zonedata
 	#
 	# Check the existence of the KSK key file.
 	#
-	if(! -e $kskfile)
+	if(defined($kskfile) && (! -e $kskfile))
 	{
 		qprint("missing file:  KSK $kskfile (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
 	#
+	# Check the existence of the KSK key directory.
+	#
+	if(defined($kskdir) && (! -e $kskdir))
+	{
+		qprint("missing directory:  KSK $kskdir (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
 	# Check the existence of the ZSK key file.
 	#
-	if(! -e $zskfile)
+	if(defined($zskfile) && (! -e $zskfile))
 	{
 		qprint("missing file:  ZSK $zskfile (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
 	#
+	# Check the existence of the ZSK key directory.
+	#
+	if(defined($zskdir) && (! -e $zskdir))
+	{
+		qprint("missing directory:  ZSK $zskdir (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
 	# Make sure the zone's endtime is more than a day.
 	#
-	if($endtime =~ /^\+[0-9]+/)
+	if(defined($endtime) && ($endtime =~ /^\+[0-9]+/))
 	{
 		my $secs;			# Second-count in endtime.
 
@@ -470,7 +488,7 @@ sub zonedata
 	# stored in its date string.
 	#
 	$datestr = gmtime($signsecs);
-	if($datestr ne $signdate)
+	if(defined($signdate) && ($datestr ne $signdate))
 	{
 		qprint("mismatched timestamps:  $signsecs invalid for \"$signdate\" (zone $zonename)\n");
 		$zoneerrs++;
@@ -521,12 +539,15 @@ sub keydata
 	# Search the algorithm list for this key's algorithm.  If we find
 	# it, we'll mark that it's good.
 	#
-	foreach my $alg (@algorithms)
+	if(defined($algorithm))
 	{
-		if($alg eq $algorithm)
+		foreach my $alg (@algorithms)
 		{
-			$found = 1;
-			last;
+			if($alg eq $algorithm)
+			{
+				$found = 1;
+				last;
+			}
 		}
 	}
 
@@ -560,7 +581,7 @@ sub keydata
 	#
 	# Check the existence of the random number file.
 	#
-	if($random ne "")
+	if(defined($random))
 	{
 		if(! -e $random)
 		{
@@ -574,7 +595,7 @@ sub keydata
 	# stored in its date string.
 	#
 	$datestr = gmtime($gensecs);
-	if($datestr ne $gendate)
+	if(defined($gendate) && ($datestr ne $gendate))
 	{
 		qprint("mismatched timestamps:  $gensecs invalid for \"$gendate\" ($keytype key $keyname)\n");
 		$keyerrs++;
@@ -947,6 +968,11 @@ A zone's recorded signing date is later than the current system clock.
 =item * orphaned keys
 
 A key I<keyrec> is unreferenced by any zone I<keyrec>.
+
+=item * missing key directories
+
+A zone I<keyrec>'s key directories (I<kskdirectory> or I<zskdirectory>) does
+not exist.
 
 =back
 
