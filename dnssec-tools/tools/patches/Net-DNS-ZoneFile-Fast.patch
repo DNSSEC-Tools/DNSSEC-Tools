@@ -1,5 +1,5 @@
 --- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
-+++ Fast.pm	2004-12-27 14:52:21.799371264 -0800
++++ Fast.pm	2005-01-11 09:05:22.000352944 -0800
 @@ -15,6 +15,7 @@
  use vars qw($VERSION);
  use IO::File;
@@ -8,7 +8,7 @@
  
  $VERSION = '0.5';
  
-@@ -35,6 +36,9 @@
+@@ -35,9 +36,15 @@
  my $ttl;
  my @zone;
  my $soa;
@@ -18,7 +18,70 @@
  my $on_error;
  my $quiet;
  my $soft_errors;
-@@ -526,6 +530,101 @@
++my $fh;
++my @fhs;
++my @lns;
+ 
+ sub parse
+ {
+@@ -59,9 +66,10 @@
+ 		if (defined $param{text}) {
+ 			$text = $param{text};
+ 		} elsif (defined $param{fh}) {
++		    $fh = $param{fh};
+ 		} elsif (defined $param{file}) {
+-			$param{fh} = IO::File->new($param{file}, "r");
+-			error("cannot open $param{file}: $!") unless defined $param{fh};
++			$fh = IO::File->new($param{file}, "r");
++			error("cannot open $param{file}: $!") unless defined $fh;
+ 		} else {
+ 			error("want zone text, or file, or fh");
+ 		}
+@@ -79,12 +87,15 @@
+ 	$soft_errors = $param{soft_errors};
+ 
+ 	eval {
+-		if ($param{fh}) {
+-			my $fh = $param{fh};
++		if ($fh) {
++		    do {
+ 			while ($_ = readline($fh)) {
+-				$ln++;
+-				$parse->();
++			    $ln++;
++			    $parse->();
+ 			}
++			$fh = shift @fhs;
++			$ln = shift @lns;
++		    } while ($fh);
+ 		} else {
+ 			my @text = split "\n", $text;
+ 			for (@text) {
+@@ -149,9 +160,21 @@
+ 
+ sub parse_line
+ {
+-	if (/^\$include\b/ig) {
+-		error("include niy");
++	if (/^\$include[ \t]+/ig) {
++	    if (!/\G([a-zA-Z]+)/igc) {
++		error("no include file specified $_");
+ 		return;
++	    }
++	    if (! -f $1) {
++		error("could not find file $1");
++		return;
++	    }
++	    unshift @fhs, $fh;
++	    unshift @lns, $ln;
++	    $fh = IO::File->new($1, "r");
++	    $ln = 0;
++	    error("cannot open include file $1: $!") unless defined $fh;
++	    return;
+ 	} elsif (/^\$origin[ \t]+/ig) {
+ 		if (/\G($pat_maybefullname)$pat_skip$/gc) {
+ 			my $name = $1;
+@@ -526,6 +549,101 @@
  		} else {
  			error("bad SRV data");
  		}
@@ -120,7 +183,7 @@
  	} elsif (/\G(rp)[ \t]+/igc) {
  		my $mbox;
  		if (/\G($pat_maybefullname)[ \t]+/gc) {
-@@ -562,6 +661,8 @@
+@@ -562,6 +680,8 @@
  			mbox     => $mbox,
  			txtdname => $txtdname,
  		};
@@ -129,7 +192,7 @@
  	} else {
  		error("unrecognized type");
  	}
-@@ -634,6 +735,90 @@
+@@ -634,6 +754,90 @@
  	return $v;
  }
  
