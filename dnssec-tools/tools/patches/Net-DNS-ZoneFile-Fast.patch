@@ -1,5 +1,5 @@
 --- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
-+++ Fast.pm	2005-01-11 09:17:32.110359352 -0800
++++ Fast.pm	2005-01-11 10:02:04.768053624 -0800
 @@ -15,6 +15,7 @@
  use vars qw($VERSION);
  use IO::File;
@@ -64,7 +64,7 @@
 -	if (/^\$include\b/ig) {
 -		error("include niy");
 +	if (/^\$include[ \t]+/ig) {
-+	    if (!/\G(\S+)/igc) {
++	    if (!/\G[\"\']*([^\s\'\"]+)[\"\']*/igc) {
 +		error("no include file specified $_");
 +		return;
 +	    }
