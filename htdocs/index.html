@@ -10,13 +10,13 @@
       <div class="center" align="center">
       <table>
 	  <thead>
-	    <tr><th colspan="10">Links</th></tr>
+	    <tr><th colspan="10">Project Links</th></tr>
 	  </thead>
 	<tbody>
 	<tr>
 	    <td><a class="toplink"
 	    href="http://sourceforge.net/projects/dnssec-tools">SF
-	    Project</td>
+	    Project Page</td>
 
 	    <td><a class="toplink"
 	    href="http://sourceforge.net/mail/?group_id=121671">
@@ -28,7 +28,7 @@
 
 	    <td><a class="toplink"
 	    href="http://sourceforge.net/tracker/?group_id=121671&atid=691910">
-	    Bugs</td>
+	    Bug Database</td>
 
 	  </tr>
 	</tbody>
@@ -48,7 +48,42 @@
 
       <h2>Our Software</h2>
       <div class="indent">
-	<p>Will contain links to our software</p>
+	<p> Currently these are only available via CVS checkouts: </p>
+	<div class="major"><h3>Applications:</h3>
+	  <ul>
+	    <li><b>donuts:</b> a dnslint like application to analyze zone files.
+	      Specifically tailored to dnssec but also tests for more
+	      general (non-dnssec) problems.</li>
+	    <li><b>mapper:</b> Maps DNS realms color coding the results to
+	      allow for easy visual interpretation of the results.  Color
+	      codes are based on record types and/or errors and warnings.</li>
+	    <li><b>ifup-dyn-dns:</b> a linux ifup addition that propagates
+	      current IP addresses into a live zone(s) using dynamic
+	      DNS.  Allows for security to be used as well so
+	      transfers are properly authenticated.</li>
+	  </ul>
+	</div>
+	<div class="major"><h3>Perl modules:</h3>
+	  <ul>
+	    <li><b> Net::DNS::SEC::Tools::conf:</b> parses
+	      Net::DNS::SEC::Tools specific configuration files</li>
+	    <li><b> Net::DNS::SEC::Tools::keyrec:</b> manipulates key
+	      records for the dnssec-tools that deal with keys</li>
+	    <li><b> Net::DNS::SEC::Tools::tooloptions:</b> Implement option
+	      lists for perl based dnssec-tools for key manipulation.</li>
+	  </li>
+	  </ul>
+	</div>
+	<div class="major"><h3>Patches to other applications:</h3>
+	  <ul>
+	    <li><b>Perl module Net::DNS::ZoneFile::Fast</b> patch to support parsing
+	      DNSSEC records.</li>
+	    <li><b>libspf2 / sendmail</b> patch to validate SPF rules
+	      against DNSsec records to ensure lookups within sendmail
+	      are not spoofed DNS records.</li>
+	  </ul>
+	</div>
+      </ul>
       </div>
 
       <h2>Mailing Lists</h2>
@@ -74,7 +109,7 @@
     <address><a href="mailto:Wes Hardaker <hardaker@users.sourceforge.net>"></a></address>
 <!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
 <!-- hhmts start -->
-Last modified: Tue Oct 19 15:24:50 PDT 2004
+Last modified: Mon Dec 27 17:13:36 PST 2004
 <!-- hhmts end -->
   </body>
 </html>
