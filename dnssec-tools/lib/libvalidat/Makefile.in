@@ -20,6 +20,7 @@ validat.o: validat.c validat.h
 install:
 	$(INSTALL) libvalidat.so $(libdir)
 	$(INSTALL) libvalidat.a  $(libdir)
+	$(INSTALL) validat.h     $(includedir)
 
 clean:
 	\rm -rf *.o *.so *.a
