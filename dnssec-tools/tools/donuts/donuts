@@ -160,10 +160,12 @@ sub parse_rule_file {
     my ($rule, $err);
     open(RF, $file);
     my $nextline;
+    my $count;
 
     $err = 0;
     while (($_ = $nextline) || ($_ = <RF>)) {
 	$nextline = undef;
+	$count++;
 	next if (/^\s*#/);
 	if (/(test|init):/) {
 	    my $type = $1;
@@ -172,6 +174,7 @@ sub parse_rule_file {
 	    my $code;
 	    while (<RF>) {
 		# rule code must begin with white space
+		$count++;
 		last if (!/^\s/ || /^\s*$/);
 		$code .= $_;
 	    }
@@ -190,17 +193,20 @@ sub parse_rule_file {
 
 	    # if error, mention it
 	    if ($@) {
-		warn "broken code in rule '$rule->{name}': $@";
+		warn "broken code in $file:$count rule '$rule->{name}': $@";
 		print STDERR "IN CODE:\n  $code\n" if ($opts{'v'});
 		$err = 1;
 	    }
-	    $nextline = $_ if (!/^\s/);
+	    if (!/^\s/) {
+		$count--;
+		$nextline = $_;
+	    }
 	} elsif (/^\s*help:\s*(\w+):\s*(.*)/) {
 	    push @{$rule->{'help'}}, { token => $1, description => $2 };
 	} elsif (/^\s*(\w+):\s*(.*)/) {
 	    $rule->{$1} = $2;
 	} elsif (!/^\s*$/) {
-	    warn "illegal rule definition in $file for rule $rule->{name}";
+	    print STDERR "illegal rule in $file:$count for rule $rule->{name}";
 	}
 
 	# end of rule (can get here from inside a test end too, hence
