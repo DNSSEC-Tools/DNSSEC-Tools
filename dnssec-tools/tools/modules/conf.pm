@@ -21,7 +21,7 @@
 #		ksk_length	1024		; KSK key length.
 #
 
-package Net::DNS::SEC::DNSSECTools::conf;
+package Net::DNS::SEC::Tools::conf;
 
 require Exporter;
 use strict;
@@ -140,11 +140,11 @@ sub parseconfig
 
 =head1 NAME
 
-DNSSEC::conf - DNSSEC tools configuration file routines.
+Net::DNS::SEC::Tools::conf - DNSSEC tools configuration file routines.
 
 =head1 SYNOPSIS
 
-  use DNSSEC::conf;
+  use Net::DNS::SEC::Tools::conf;
 
   %dtconf = parseconfig();
 
@@ -152,20 +152,21 @@ DNSSEC::conf - DNSSEC tools configuration file routines.
 
 =head1 DESCRIPTION
 
-The DNSSEC tools have a configuration file for commonly used values.  These
-values are the defaults for a variety of things, such as encryption algorithm
-and encryption key length.  B</etc/dnssec/dnssec-tools.conf> is the path for the
-DNSSEC tools configuration file.  The I<DNSSEC::conf> module provides methods
-for accessing the configuration data in this file.
+The DNSSEC tools have a configuration file for commonly used values.
+These values are the defaults for a variety of things, such as
+encryption algorithm and encryption key length.
+B</etc/dnssec/dnssec-tools.conf> is the path for the DNSSEC tools
+configuration file.  The I<Net::DNS::SEC::Tools::conf> module provides
+methods for accessing the configuration data in this file.
 
-The DNSSEC tools configuration file consists of a set of configuration value
-entries, with only one entry per line.
-Each entry has the "keyword value" format.  During parsing, the line is
-broken into tokens, with tokens being separated by spaces and tabs.  The
-first token in a line is taken to be the keyword.  All other tokens in that
-line are concatenated into a single string, with a space separating each token.
-The untokenized string is added to a hash table, with the keyword as the
-value's key.
+The DNSSEC tools configuration file consists of a set of configuration
+value entries, with only one entry per line.  Each entry has the
+"keyword value" format.  During parsing, the line is broken into
+tokens, with tokens being separated by spaces and tabs.  The first
+token in a line is taken to be the keyword.  All other tokens in that
+line are concatenated into a single string, with a space separating
+each token.  The untokenized string is added to a hash table, with the
+keyword as the value's key.
 
 Comments may be included by prefacing them with the '#' or ';'
 comment characters.  These comments can encompass an entire line or may
@@ -208,6 +209,6 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 zonesigner(1)
 
-DNSSEC::keyrec(3)
+Net::DNS::SEC::Tools::keyrec(3)
 
 =cut
