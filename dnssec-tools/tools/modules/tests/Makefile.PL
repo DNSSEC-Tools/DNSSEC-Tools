@@ -11,7 +11,7 @@ print MF <<EOF;
 #
 
 TESTFILES=	portrigh.keyrec		\\
-		tools.conf
+		dnssec-tools.conf
 
 all:
 	\@echo nothing to make

@@ -24,7 +24,7 @@
 
 use strict;
 
-our $CONFFILE = "/etc/dnssec/tools.conf";	# Configuration file.
+our $CONFFILE = "/etc/dnssec/dnssec-tools.conf";	# Configuration file.
 
 
 #--------------------------------------------------------------------------
@@ -149,7 +149,7 @@ DNSSEC::conf - DNSSEC tools configuration file routines.
 
 The DNSSEC tools have a configuration file for commonly used values.  These
 values are the defaults for a variety of things, such as encryption algorithm
-and encryption key length.  B</etc/dnssec/tools.conf> is the path for the
+and encryption key length.  B</etc/dnssec/dnssec-tools.conf> is the path for the
 DNSSEC tools configuration file.  The I<DNSSEC::conf> module provides methods
 for accessing the configuration data in this file.
 
