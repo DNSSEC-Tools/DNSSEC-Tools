@@ -98,7 +98,7 @@ test:
 #
 level: 5
 name: DNSSEC_NSEC_TTL
-desc: RFC3845: The NSEC RR SHOULD have the same TTL value as the SOA minimum TTL field.  This is in the spirit of negative caching [8].
+desc: RFC3845: The NSEC RR SHOULD have the same TTL value as the SOA minimum TTL field.  This is in the spirit of negative caching [RFC2308].
 type: NSEC
 test:
   $_[0]->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum && 
