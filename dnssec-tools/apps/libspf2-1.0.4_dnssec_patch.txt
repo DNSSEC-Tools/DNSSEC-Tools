@@ -113,7 +113,7 @@ Index: src/include/spf.h
 Index: src/include/spf_dns.h
 ===================================================================
 --- src/include/spf_dns.h	2004-12-06 17:33:23.000000000 -0500
-+++ src/include/spf_dns.h	2004-12-03 16:13:29.000000000 -0500
++++ src/include/spf_dns.h	2005-02-28 18:35:52.000000000 -0500
 @@ -100,8 +100,11 @@
  #endif
  typedef int SPF_dns_stat_t;
@@ -224,8 +224,16 @@ Index: src/libspf2/Makefile.am
 Index: src/libspf2/spf_result.c
 ===================================================================
 --- src/libspf2/spf_result.c	2005-02-03 13:04:50.000000000 -0500
-+++ src/libspf2/spf_result.c	2005-02-09 13:54:45.000000000 -0500
-@@ -277,10 +277,34 @@
++++ src/libspf2/spf_result.c	2005-03-03 17:39:09.300531853 -0500
+@@ -222,6 +222,7 @@
+     size_t	buf_len = SPF_RECEIVED_SPF_SIZE;
+     
+     char	*p, *p_end;
++    int         dnssecerr;
+ 
+ 
+     buf = malloc( buf_len );
+@@ -277,16 +278,104 @@
      
  
      /* add in the optional compiler error keyword */
@@ -233,13 +241,12 @@ Index: src/libspf2/spf_result.c
 +    if ( ( output.err_msg != NULL ) || ( output.num_errs > 0 ) )
      {
 -	p += snprintf( p, p_end - p, " problem=%s;", output.err_msg );
--	if ( p_end - p <= 0 ) return buf;
 +	int i;
 +	int first=1;
 +
-+	if ( output.err_msg != NULL ) {
-+	    p += snprintf( p, p_end - p, " problem=%s;", output.err_msg );
-+	    first=0;;
++	if ( ( output.err_msg != NULL ) && ( strstr(output.err_msg, "DNSSEC") == NULL ) ) {
++	    p += snprintf( p, p_end - p, " problem=%s", output.err_msg );
++	    first=0;
 +
 +	    if ( p_end - p <= 0 ) return buf;
 +	}
@@ -247,23 +254,94 @@ Index: src/libspf2/spf_result.c
 +	/* Add other error messages */
 +	for ( i = 0; i < output.num_errs; i++ ) {
 +	    if ( ( output.err_msgs[i] != NULL ) &&
++                 ( strstr (output.err_msgs[i], "DNSSEC") == NULL ) &&
 +                 ( ( output.err_msg == NULL) || ( strcmp( output.err_msgs[i], output.err_msg ) != 0 ) )
 +	       ) {
 +		if (first == 1) {
-+		    p += snprintf( p, p_end - p, " problem=%s;", output.err_msgs[i] );
++		    p += snprintf( p, p_end - p, " problem=%s", output.err_msgs[i] );
 +		    first = 0;
 +		}
 +		else {
-+		    p += snprintf( p, p_end - p, "%s;", output.err_msgs[i] );
++		    p += snprintf( p, p_end - p, ", %s", output.err_msgs[i] );
 +		}
 +
 +		if ( p_end - p <= 0 ) return buf;
 +	    }
 +	}
++
++	if (!first) {
++	    p += snprintf( p, p_end - p, ";" );
++	}
++	
+ 	if ( p_end - p <= 0 ) return buf;
      }
-     else if ( c_results.err_msg != NULL )
+-    else if ( c_results.err_msg != NULL )
++    else if ( ( c_results.err_msg != NULL ) && ( strstr(c_results.err_msg, "DNSSEC") == NULL ) )
      {
-@@ -378,8 +402,10 @@
+ 	p += snprintf( p, p_end - p, " problem=%s;", c_results.err_msg );
+ 	if ( p_end - p <= 0 ) return buf;
+     }
++
++    /* add in the x-dnssec keyword */
++    dnssecerr = 0;
++    if ( ( output.err_msg != NULL ) || ( output.num_errs > 0 ) )
++    {
++	int i;
++	int first=1;
++
++	if ( ( output.err_msg != NULL ) && ( strstr(output.err_msg, "DNSSEC") != NULL ) ) {
++	    p += snprintf( p, p_end - p, " x-dnssec=%s", output.err_msg );
++	    first=0;
++	    dnssecerr = 1;
++	    if ( p_end - p <= 0 ) return buf;
++	}
++
++	/* Add other error messages */
++	for ( i = 0; i < output.num_errs; i++ ) {
++	    if ( ( output.err_msgs[i] != NULL ) &&
++                 ( strstr (output.err_msgs[i], "DNSSEC") != NULL ) &&
++                 ( ( output.err_msg == NULL) || ( strcmp( output.err_msgs[i], output.err_msg ) != 0 ) )
++	       ) {
++		dnssecerr = 1;
++		if (first == 1) {
++		    p += snprintf( p, p_end - p, " x-dnssec=%s", output.err_msgs[i] );
++		    first = 0;
++		}
++		else {
++		    p += snprintf( p, p_end - p, ", %s", output.err_msgs[i] );
++		}
++
++		if ( p_end - p <= 0 ) return buf;
++	    }
++	}
++
++	if (!first) {
++	    p += snprintf( p, p_end - p, ";" );
++	}
++	
++	if ( p_end - p <= 0 ) return buf;
++    }
++    else if ( ( c_results.err_msg != NULL ) && ( strstr(c_results.err_msg, "DNSSEC") != NULL ) )
++    {
++	p += snprintf( p, p_end - p, " x-dnssec=%s;", c_results.err_msg );
++	if ( p_end - p <= 0 ) return buf;
++    }
++
++    if (!dnssecerr) {
++	if (spfic->dodnssec) {
++	    p += snprintf( p, p_end - p, " x-dnssec=pass;");
++	}
++	else {
++	    p += snprintf( p, p_end - p, " x-dnssec=none;");
++	}
++
++	if ( p_end - p <= 0 ) return buf;
++    }
++
+     
+     /* FIXME  should the explanation string be included in the header? */
+ 
+@@ -378,8 +467,10 @@
  	    output.reason = SPF_REASON_NONE;
  	    output.err = err;
  	    if ( output.err_msg ) free( output.err_msg );
@@ -275,7 +353,7 @@ Index: src/libspf2/spf_result.c
  	    else
  		output.err_msg = NULL;
  	
-@@ -394,10 +420,25 @@
+@@ -394,10 +485,25 @@
  	    if ( spfic->debug > 0 )
  		SPF_print( c_results.spfid );
  
@@ -301,7 +379,7 @@ Index: src/libspf2/spf_result.c
  
      SPF_result_comments( spfcid, spfdcid, c_results, &output );
  
-@@ -449,8 +490,10 @@
+@@ -449,8 +555,10 @@
  	    output.reason = SPF_REASON_NONE;
  	    output.err = err;
  	    if ( output.err_msg ) free( output.err_msg );
@@ -313,7 +391,7 @@ Index: src/libspf2/spf_result.c
  	    else
  		output.err_msg = NULL;
  	
-@@ -465,10 +508,25 @@
+@@ -465,10 +573,25 @@
  	    if ( spfic->debug > 0 )
  		SPF_print( c_results.spfid );
  
