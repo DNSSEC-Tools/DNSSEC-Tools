@@ -167,6 +167,36 @@ test:
     return "No RRSIG record found for the following records: $err";
   }
 
+name: DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD
+level: 3
+ruletype: name
+desc: draft-ietf-dnsext-dnssec-records-11.txt section 3.0: The TTL value of an RRSIG RR MUST match the TTL value of the RRset it covers. 
+test:
+  my %rrsigs;
+  foreach my $rec (@{$_[0]->{'RRSIG'}}) {
+    # memorize RRSIG records
+    $rrsigs{$rec->typecovered}{$rec->name} = $rec;
+  }
+  #
+  my $err;
+  my %gluerecs;
+  # for each record type for a given name
+  # reverse sort these so NS records are seen before the glue records
+  foreach my $type (sort { $b cmp $a } keys(%{$_[0]})) {
+    # RRSIGs themselves (obviously) aren't signed
+    next if ($type eq 'RRSIG');
+    foreach my $rec (@{$_[0]->{$type}}) {
+      if (exists($rrsigs{$type}{$rec->name}) &&
+          $rrsigs{$type}{$rec->name}->ttl ne $rec->ttl) {
+        $err .= "RRSIG's TTL ($rrsigs{$type}{$rec->name}{ttl}) for $rec->{name}:$type doesn't match original record's TTL ($rec->{ttl}); "
+      }
+    }
+  }
+  if ($err) {
+    $err =~ s/; $//;
+    return $err;
+  }
+
 name: DNSSEC_MISSING_NSEC_RECORD
 level: 3
 ruletype: name
