@@ -172,7 +172,7 @@ test:
   my %rrsigs;
   foreach my $rec (@{$_[0]->{'RRSIG'}}) {
     # memorize RRSIG records
-    $rrsigs{$rec->typecovered}{$rec->name} = $rec;
+    push @{$rrsigs{$rec->typecovered}{$rec->name}}, $rec;
   }
   #
   my @err;
@@ -183,9 +183,10 @@ test:
     # RRSIGs themselves (obviously) aren't signed
     next if ($type eq 'RRSIG');
     foreach my $rec (@{$_[0]->{$type}}) {
-      if (exists($rrsigs{$type}{$rec->name}) &&
-          $rrsigs{$type}{$rec->name}->ttl ne $rec->ttl) {
-        push @err,"RRSIG's TTL ($rrsigs{$type}{$rec->name}{ttl}) for $rec->{name}:$type doesn't match original record's TTL ($rec->{ttl})"
+      foreach my $rrsig (@{$rrsigs{$type}{$rec->name}}) {
+        if ($rrsig->ttl ne $rec->ttl) {
+          push @err,"RRSIG's TTL ($rrsig->{ttl}) for $rec->{name}:$type doesn't match original record's TTL ($rec->{ttl})"
+        }
       }
     }
   }
