@@ -12,7 +12,7 @@
 #include <errno.h>
 
 #include <arpa/nameser.h>
-#include <validat.h>
+#include "validat.h"
 #include <resolv.h>
 #include "val_internal.h"
 
