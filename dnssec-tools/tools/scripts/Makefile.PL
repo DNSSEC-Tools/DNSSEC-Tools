@@ -1,5 +1,5 @@
 #!/usr/bin/perl
-# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# Copyright 2004 Sparta, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 
 use ExtUtils::MakeMaker;
@@ -11,7 +11,7 @@ use ExtUtils::MakeMaker;
 			     Net::DNS::Sec::DNSSecTools::tooloptions => '0.01',
 			   },
 #	 'VERSION_FROM'	=> 'zonesigner', # finds $VERSION
-	 'EXE_FILES' => [qw(zonesigner keyrec-check)]
+	 'EXE_FILES' => [qw(expchk keyrec-check lskrf zonesigner)]
 	);
 
 WriteMakefile(%opts);
