@@ -2,7 +2,7 @@
 
 use Net::DNS::ZoneFile::Fast;
 use GraphViz;
-use Getopt::Std;
+use Getopt::Long::GUI;
 use Data::Dumper;
 use strict;
 
@@ -21,7 +21,26 @@ my ($dorecords, %dorecords);
 
 my $time = time();
 
-getopts("qgro:l:s:i:t:hLT:",\%opts);
+LocalGetOptions(\%opts,
+		['h|help','Command line help'],
+		'',
+		['q|quiet-dnssec','Do not show expired or near-expired record warnings'],
+		['w|warn-time=i','Time in seconds ahead to warn about expiring records'],
+		'',
+		['l|layout-style=s','Layout style (neato|dot|twopi)'],
+		['L|legend','Add a legend to the map'],
+		'',
+		['r|resource-records','Show resource record types labels'],
+		['t|add-type-data=s','Show data for comma-sep types'],
+		['g|group-nodes','Group nodes around a domain name'],
+		'',
+		['s|skip-types=s','Do not look at records of comma-sep. types'],
+		['T|show-types=s','Show only records with comma-sep types'],
+		['i|ignore-records=s','Regex pattern of record names to ignore'],
+		'',
+		['o|output-file=s','Output File Name'],
+		
+) || usage();
 
 usage() if (exists($opts{'h'}));
 
@@ -343,6 +362,29 @@ $0 [-h] [-r] [-R] [-o MAP.PNG] [-l (neato|dot|twopi)] [-s SKIPRECORDS]
 
 ";
     exit;
+}
+
+sub LocalGetOptions {
+    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
+	import Getopt::Long::GUI;
+	return GetOptions(@_);
+    } else {
+	require Getopt::Long;
+	import Getopt::Long;
+    }
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
 }
 
 =pod
