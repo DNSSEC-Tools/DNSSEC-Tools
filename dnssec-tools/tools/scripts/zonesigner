@@ -66,8 +66,10 @@ my $szopts;				# Additional dnssec-signzone options.
 my $ksk;				# KSK we've generated.
 my $kskpath;				# Path to the KSK.
 my $reuseksk;				# Reuse the existing KSK.
-my $zsk;				# ZSK we've generated.
-my $zskpath;				# Path to the KSK.
+my $zskcur;				# Current ZSK.
+my $zskpub;				# Published ZSK.
+my $zskcurpath;				# Path to the published KSK.
+my $zskpubpath;				# Path to the current KSK.
 my $reusezsk;				# Reuse the existing ZSK.
 
 my $zone;				# Zone to play with.
@@ -159,7 +161,8 @@ sub main
 	# Set some short-hand variables.
 	#
 	$kskpath = "$kskdir/$ksk.key";
-	$zskpath = "$zskdir/$zsk.key";
+	$zskcurpath = "$zskdir/$zskcur.key";
+	$zskpubpath = "$zskdir/$zskpub.key";
 
 	#
 	# Create the unsigned zone file and add include lines for the key files.
@@ -299,9 +302,8 @@ sub genkeys
 	print "\ngenerating key files:\n" if ($verbose);
 
 	genksk();
-	genzsk();
-
-	delete $opts{'keyrec_type'};
+	$zskcur = genzsk("cur");
+	$zskpub = genzsk("pub");
 }
 
 #######################################################################
@@ -313,7 +315,8 @@ sub genkeys
 sub genksk
 {
 	#
-	# Generate a KSK file.
+	# If we're going to reuse the KSK, ensure it's been created and
+	# return.
 	#
 	if($reuseksk == 1)
 	{
@@ -329,6 +332,9 @@ sub genksk
 		return;
 	}
 
+	#
+	# Generate the new KSK.
+	#
 	print "\t$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone\n" if ($verbose);
 	$ksk = `$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone`;
 	if($? != 0)
@@ -345,6 +351,8 @@ sub genksk
 	#
 	$opts{'keyrec_type'} = "ksk";
 	keyrec_add('key',$ksk,\%opts);
+
+	delete $opts{'keyrec_type'};
 }
 
 #######################################################################
@@ -353,39 +361,55 @@ sub genksk
 #
 sub genzsk
 {
-	#
-	# Generate a ZSK file.
-	#
-	if($reusezsk == 0)
-	{
-		print "\t$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone\n" if ($verbose);
-		$zsk = `$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone`;
-		if($? != 0)
-		{
-			print STDERR "unable to generate ZSK key file;\n";
-			print STDERR "dnssec-keygen returned $?\n";
-			exit(1);
-		}
-		chomp $zsk;
-		print "\t\tnew ZSK - $zsk\n" if ($verbose);
+	my $keytype = shift;		# ZSK type:  cur, new, pub.
+	my $zskkey;			# Hash key for this ZSK.
+	my $zsk;			# Generated key.
 
-		#
-		# Add the ZSK's keyrec to the keyrec file.
-		#
-		$opts{'keyrec_type'} = "zsk";
-		keyrec_add('key',$zsk,\%opts);
-	}
-	else
+	#
+	# Get the hash key for the ZSK we're going to generate.
+	#
+	$zskkey = "zsk" . $keytype;
+
+	#
+	# If we're reusing the ZSK, ensure it's already defined and return.
+	#
+	if($reusezsk == 1)
 	{
-		if($opts{'zskkey'} eq "")
+		if(keyrec_fullrec($opts{$zskkey}) eq "")
 		{
-			print STDERR "unable to re-use a non-existent ZSK\n";
+			print STDERR "$keytype ZSK keyrec does not exist; unable to re-use non-existent $keytype ZSK\n";
 			exit(1);
 		}
 
-		$zsk = $opts{'zskkey'};
-		print "\treusing existing ZSK - $zsk\n" if ($verbose);
+		$zsk = $opts{$zskkey};
+		print "\treusing existing $keytype ZSK - $zsk\n" if ($verbose);
+
+		return($zsk);
 	}
+
+	#
+	# Generate a ZSK key.
+	#
+	print "\t$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone\n" if ($verbose);
+	$zsk = `$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone`;
+	if($? != 0)
+	{
+		print STDERR "unable to generate $keytype ZSK key file;\n";
+		print STDERR "dnssec-keygen returned $?\n";
+		exit(1);
+	}
+	chomp $zsk;
+	print "\t\tnew $keytype ZSK - $zsk\n" if ($verbose);
+
+	#
+	# Add the ZSK's keyrec to the keyrec file.
+	#
+	$opts{'keyrec_type'} = "$zskkey";
+	keyrec_add('key',$zsk,\%opts);
+
+	delete $opts{'keyrec_type'};
+
+	return($zsk);
 }
 
 #######################################################################
@@ -431,7 +455,8 @@ sub keydirs
 			exit(3);
 		}
 
-		system("$MV $zsk.* $zskdir");
+		system("$MV $zskcur.* $zskdir");
+		system("$MV $zskpub.* $zskdir");
 	}
 }
 
@@ -467,8 +492,11 @@ sub zoneincludes
 ;; ksk
 \$INCLUDE \"$kskpath\"
 
-;; zsk
-\$INCLUDE \"$zskpath\"
+;; current zsk
+\$INCLUDE \"$zskcurpath\"
+
+;; published zsk
+\$INCLUDE \"$zskpubpath\"
 
 EOF
 	close(ZD);
@@ -484,7 +512,8 @@ sub zonesign
 {
 	my $chron;			# Today's date.
 	my $ktag;			# Tag value from KSK.
-	my $ztag;			# Tag value from ZSK.
+	my $zcurtag;			# Tag value from current ZSK.
+	my $zpubtag;			# Tag value from published ZSK.
 	my $szone;			# Result from dnssec-signzone execution.
 	my $cmdopts;			# Options for dnssec-signzone.
 	my $status;			# Execution return code.
@@ -500,8 +529,8 @@ sub zonesign
 	# Sign the zone with the new keys.
 	#
 	print "signing zone\n" if ($verbose);
-	print "\t$SIGNZONE $cmdopts $zonefile $zskpath\n" if ($verbose);
-	$szone = `$SIGNZONE $cmdopts $zonefile $zskpath`;
+	print "\t$SIGNZONE $cmdopts $zonefile $zskcurpath\n" if ($verbose);
+	$szone = `$SIGNZONE $cmdopts $zonefile $zskcurpath`;
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
@@ -530,8 +559,10 @@ sub zonesign
 	#
 	$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 	$ktag = $1;
-	$zsk =~ /.*\+.*\+([0-9][0-9]*)/;
-	$ztag = $1;
+	$zskcur =~ /.*\+.*\+([0-9][0-9]*)/;
+	$zcurtag = $1;
+	$zskpub =~ /.*\+.*\+([0-9][0-9]*)/;
+	$zpubtag = $1;
 
 	#
 	# Get today's date.
@@ -541,7 +572,8 @@ sub zonesign
 
 	print "zone signed successfully\n";
 	print "${zone}:\n";
-	print "	ZSK  $ztag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
+	print "	ZSK  $zcurtag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
+	print "	ZSK  $zpubtag  $zsize  $chron\n";
 	return(0);
 }
 
@@ -570,8 +602,10 @@ sub updzonerec
 	$opts{'zonefile'} = $zonefile;
 	$opts{'kskkey'}	  = $ksk;
 	$opts{'kskpath'}  = $kskpath;
-	$opts{'zskkey'}	  = $zsk;
-	$opts{'zskpath'}  = $zskpath;
+	$opts{'zskcur'}	  = $zskcur;
+	$opts{'zskpub'}	  = $zskpub;
+	$opts{'zskcurpath'}  = $zskcurpath;
+	$opts{'zskpubpath'}  = $zskpubpath;
 
 	#
 	# Get the keyrec for the zone.  If there isn't one, it's a new
@@ -608,7 +642,8 @@ sub updzonerec
 	# Set the zone name in the keyrecs of our keys.
 	#
 	keyrec_setval('key',$ksk,'zonename',$zone);
-	keyrec_setval('key',$zsk,'zonename',$zone);
+	keyrec_setval('key',$zskcur,'zonename',$zone);
+	keyrec_setval('key',$zskpub,'zonename',$zone);
 
 	#
 	# Save the keyrec file.
