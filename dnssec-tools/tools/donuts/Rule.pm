@@ -55,6 +55,11 @@ sub test_name {
     }
 }
 
+sub config {
+    my ($self, $prop, $val) = @_;
+    $self->{$prop} = $val;
+}
+
 1;
 
 =head1 NAME
