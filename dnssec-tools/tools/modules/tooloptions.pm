@@ -27,14 +27,19 @@ use Getopt::Long;
 #
 my @stdopts =
 (
-	"algorithm=s",
-	"endtime=s",
-	"ksklength=i",
-	"kskpath=s",
-	"random=s",
-	"v+",
-	"zsklength=i",
-	"zskpath=s",
+	"algorithm=s",			# Encryption algorithm
+	"endtime=s",			# End-time for signed zone.
+	"keyrec=s",			# Keyrec name.
+	"krfile=s",			# Keyrec file.
+	"kskkey=s",			# KSK key.
+	"ksklength=i",			# Length of KSK.
+	"kskpath=s",			# Path to KSK.
+	"random=s",			# Random number generator.
+	"v+",				# Verbose flag.
+	"zone=s",			# Zone name.
+	"zskkey=s",			# ZSK key.
+	"zsklength=i",			# Length of ZSK.
+	"zskpath=s",			# Path to ZSK.
 );
 
 my $firstcall	= 1;			# First-call flag.
