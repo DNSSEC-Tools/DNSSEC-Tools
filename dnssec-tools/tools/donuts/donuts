@@ -8,9 +8,6 @@ use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::Donuts::Rule;
 use Data::Dumper;
 
-(eval {require Getopt::Long::GUI;} && {import Getopt::Long::GUI} ) ||
-  (eval {require Getopt::Long;} && {import Getopt::Long});
-
 use strict;
 
 use Config;
@@ -22,19 +19,23 @@ my %opts = (l => 5,
 my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
     @ignorelist, $netdns, $netdns_error);
 
-GetOptions(\%opts,
-	   "h|help",
-	   "H|help-config",
-	   "R|help-rules",
-	   "v|verbose",
-	   "q|quiet",
-	   "L|live",
-	   "l|level=i",
-	   "r|rules=s",
-	   "i|ignore=s",
-	   "c|config-file=s",
-	   "C|no-config"
-	  ) || usage();
+LocalGetOptions(\%opts,
+		["L|live", "Run live-query test rules"],
+		["l|level=i", "The maxmimum rule level to run (default = 5)"],
+		["r|rules=s", "glob pattern for rule files to load"],
+		["i|ignore=s", "Regular expression for rules to ignore"],
+		"",
+		["c|config-file=s", "Use an alternate configuration file"],
+		["C|no-config","Do not load any configuration files"],
+		"",
+		["v|verbose", "Verbose output showing extra information"],
+		["q|quiet", "Quiet output (Do not print summmary information)"],
+		"",
+		["h|help", "Show help for command line options"],
+		["R|help-rules", 'Show the rules that donuts checks'],
+		["H|help-config",
+		 'Show configuration tokens supported by the rules'],
+	       ) || usage();
 
 #
 # initialize ignore list
@@ -50,8 +51,6 @@ if ($opts{'L'}) {
     use Net::DNS;
     $netdns = Net::DNS::Resolver->new;
 }
-
-usage() if ($opts{'h'} || $#ARGV == -1);
 
 #
 # load rule files
@@ -105,6 +104,11 @@ if ($opts{'R'}) {
     }
     exit;
 }
+
+#
+# must specify at least one zone file
+#
+usage() if ($opts{'h'} || $#ARGV == -1);
 
 #
 # load zone files
@@ -397,6 +401,29 @@ $0 [-h] [-H] [-R] [-v] [-l LEVEL] [-r RULEFILE] [-i IGNORELIST]
 Run \"perldoc donuts\" for more information on the above options.
 ";
     exit;
+}
+
+sub LocalGetOptions {
+    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
+	import Getopt::Long::GUI;
+	return GetOptions(@_);
+    } else {
+	require Getopt::Long;
+	import Getopt::Long;
+    }
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
 }
 
 =pod
