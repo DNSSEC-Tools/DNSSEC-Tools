@@ -15,13 +15,13 @@
 #
 #
 
-package Net::DNS::Sec::DNSSecTools::tooloptions;
+package Net::DNS::SEC::DNSSECTools::tooloptions;
 
 require Exporter;
 use strict;
 
-use Net::DNS::Sec::DNSSecTools::conf;
-use Net::DNS::Sec::DNSSecTools::keyrec;
+use Net::DNS::SEC::DNSSECTools::conf;
+use Net::DNS::SEC::DNSSECTools::keyrec;
 
 use Getopt::Long;
 

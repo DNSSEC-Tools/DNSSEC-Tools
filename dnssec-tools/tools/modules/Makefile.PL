@@ -5,7 +5,7 @@
 use ExtUtils::MakeMaker;
 
 %opts = (
-	 'NAME'		=> 'Net::DNS::Sec::DNSSecTools::conf',
+	 'NAME'		=> 'Net::DNS::SEC::DNSSECTools::conf',
 	 'VERSION_FROM'	=> 'conf.pm', # finds $VERSION
 	 'DIR'          => [],        # avoids the testing dir
 #	 'PM' =>           { conf.pm => '$(INST_LIBDIR)/install_as.pm'}
