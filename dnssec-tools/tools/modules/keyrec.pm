@@ -125,10 +125,7 @@ sub keyrec_read
 	#
 	# Initialize some data.
 	#
-	%keyrecs     = ();
-	@keyreclines = ();
-	$keyreclen   = 0;
-	$modified    = 0;
+	keyrec_init();
 
 	#
 	# Grab the lines and pop 'em into the keyreclines array.  We'll also
@@ -185,11 +182,7 @@ sub keyrec_read
 			{
 				print STDERR "keyrec_read:  duplicate record name; aborting...\n";
 
-				@keyreclines = ();
-				$keyreclen = 0;
-				%keyrecs = ();
-
-				close(KEYREC);
+				keyrec_discard();
 				return(-3);
 			}
 			keyrec_newkeyrec($name,$keyword);
@@ -634,6 +627,33 @@ sub keyrec_zonefields
 
 #--------------------------------------------------------------------------
 #
+# Routine:	keyrec_init()
+#
+# Purpose:	Initialize the internal data.
+#
+sub keyrec_init
+{
+	%keyrecs     = ();
+	@keyreclines = ();
+	$keyreclen   = 0;
+	$modified    = 0;
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_discard()
+#
+# Purpose:	Discard the current keyrec file -- don't save the contents,
+#		don't delete the file, reset all internal fields.
+#
+sub keyrec_discard
+{
+	close(KEYREC);
+	keyrec_init();
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	keyrec_close()
 #
 # Purpose:	Save the key record file and close the descriptor.
@@ -754,6 +774,7 @@ DNSSEC::keyrec - Squoodge around with a dnssec-tools keyrec file.
 
   keyrec_write();
   keyrec_close();
+  keyrec_discard();
 
 =head1 DESCRIPTION
 
@@ -790,7 +811,9 @@ using I<keyrec_add()> and I<keyrec_setval()>.
 If the I<keyrec> file has been modified, it must be explicitly written or the
 changes are not saved.  I<keyrec_write()> saves the new contents to disk.
 I<keyrec_close()> saves the file and close the Perl file handle to the
-I<keyrec> file.
+I<keyrec> file.  If a I<keyrec> file is no longer wanted to be open, yet the
+contents should not be saved, I<keyrec_discard()> gets rid of the data closes
+the file handle B<without> saving any modified data.
 
 =head1 KEYREC INTERFACES
 
@@ -835,6 +858,13 @@ Return values are:
 This interface saves the internal version of the I<keyrec> file (opened with
 I<keyrec_read()>) and closes the file handle. 
 
+=head2 I<keyrec_discard()>
+
+This routine removes a I<keyrec> file from use by a program.  The internally
+stored data are deleted and the I<keyrec> file handle is closed.  However,
+modified data are not saved prior to closing the file handle.  Thus, modified
+and new data will be lost.
+
 =head2 I<keyrec_fullrec(keyrec_name)>
 
 I<keyrec_fullrec()> returns a reference to the I<keyrec> specified in
@@ -847,20 +877,6 @@ This routine returns a list of the recognized fields for a key I<keyrec>.
 =head2 I<keyrec_names()>
 
 This routine returns a list of the I<keyrec> names from the file.
-
-=head2 I<keyrec_newkeyrec(kr_name,kr_type)>
-
-This interface creates a new I<keyrec>.  The I<keyrec_name> and I<keyrec_hash>
-fields in the I<keyrec> are set to the values of the I<kr_name> and I<kr_type>
-parameters.  I<kr_type> must be either "key" or "zone".
-
-Return values are:
-
-    0 if the creation succeeded
-
-    -1 if an invalid I<keyrec> type was given
-
-This is intended to be an internal-use only routine.
 
 =head2 I<keyrec_read(keyrec_file)>
 
@@ -927,6 +943,32 @@ rewritten.
 =head2 I<keyrec_zonefields()>
 
 This routine returns a list of the recognized fields for a zone I<keyrec>.
+
+=head1 KEYREC INTERNAL INTERFACES
+
+The interfaces described in this section are intended for internal use by the
+I<DNSSEC::keyrec> module.  However, there are situations where external
+entities may have need of them.  Use with caution, as misuse may result in
+damaged or lost I<keyrec> files.
+
+=head2 I<keyrec_init()>
+
+This routine initializes the internal I<keyrec> data.  Pending changes will
+be lost.  An open I<keyrec> file handle will remain open, though the data are
+no longer held internally.  A new I<keyrec> file must be read in order to use
+the I<DNSSEC::keyrec> interfaces again.
+
+=head2 I<keyrec_newkeyrec(kr_name,kr_type)>
+
+This interface creates a new I<keyrec>.  The I<keyrec_name> and I<keyrec_hash>
+fields in the I<keyrec> are set to the values of the I<kr_name> and I<kr_type>
+parameters.  I<kr_type> must be either "key" or "zone".
+
+Return values are:
+
+    0 if the creation succeeded
+
+    -1 if an invalid I<keyrec> type was given
 
 =head1 KEYREC DEBUGGING INTERFACES
 
