@@ -1,0 +1,202 @@
+		DNSSEC extension to libspf2-1.2.5: Developer Guide
+		==================================================
+			         (Version 0.1)
+
+Introduction
+------------
+
+The DNSSEC extension to libspf2 provides DNSSEC validation to DNS
+queries in libspf2.
+
+This document describes the changes to libspf2-1.2.5 to provide the DNSSEC
+validation.  It is intended as a guide to developers who want to use this
+functionality offered by the libspf2-1.2.5_dnssec_patch.  This is still in
+its early stages of design and development, and may undergo some changes
+in the future.
+
+
+Additions to libspf2
+--------------------
+
+The layered DNS architecture in libspf2 is amenable to adding DNSSEC
+validation.
+
+A new DNS layer has been added to libspf2 called spf_dns_dnssec.  As
+per the DNS layer API, it defines the following lookup function:
+
+static SPF_dns_rr_t *
+SPF_dns_dnssec_lookup( SPF_dns_server_t *spf_dns_server,
+		       const char *domain, ns_type rr_type,
+		       int should_cache )
+
+This lookup function is called internally from other modules within
+libspf2.  Applications using libspf2 cannot call this lookup function
+directly.
+
+In addition to the lookup function, it defines the following function
+for creating the spf_dns_dnssec server layer.
+
+SPF_dns_server_t *
+SPF_dns_dnssec_new( SPF_dns_server_t *layer_below,
+		    const char *name, int debug );
+
+This function is called internally from other modules within libspf2.
+Applications using libspf2 need not call this lookup function
+directly.
+
+The following files have been added to libspf2-1.2.5:
+
+    src/include/spf_dns_dnssec.h:   The header file for the
+				    DNSSEC validation layer.
+    
+    src/libspf2/spf_dns_dnssec.c:   Implementation of the DNSSEC
+				    validation layer.
+
+The following files have been modified:
+
+ configure.ac
+	Added configuration checks for the DNSSEC validator library
+
+ config.h.in
+	New #defines for DNSSEC validator
+
+ src/include/spf_server.h
+	New constants for adding the DNSSEC validation layer
+
+ src/include/spf_request.h
+ src/include/spf_record.h
+ src/include/spf_response.h
+ src/include/spf_dns.h
+	Additional error codes for DNSSEC validation failure.
+
+ src/libspf2/spf_strerror.c
+	Map DNSSEC validation failure error-code to an
+	appropriate string.
+
+ src/include/Makefile.am
+ src/libspf2/Makefile.am
+	Added new source files for compilation
+
+ src/libspf2/spf_interpret.c
+ src/libspf2/spf_get_exp.c
+ src/libspf2/spf_server.c
+      Return appropriate errors for DNSSEC validation failure.
+
+Additional return values from functions:
+The SPF_dns_lookup function can now return an additional error value:
+
+    DNSSEC_FAILURE
+
+The error code SPF_E_DNSSEC_FAILURE is added to the list of error
+codes in the response struct, when a DNSSEC validation failure occurs
+during SPF processing.
+
+
+API for Applications
+--------------------
+
+The enum SPF_server_dnstype_t has been extended with two values:
+    SPF_DNS_DNSSEC_RESOLV and SPF_DNS_DNSSEC_CACHE.
+
+This allows applications to add a DNSSEC validation layer on top
+of either just the resolve layer, or the cache layer.
+
+Thus, if an application wants DNSSEC validation with caching, it
+must create the SPF server instance using:
+
+SPF_server_t *spf_server = SPF_server_new (SPF_DNS_DNSSEC_CACHE,
+					   debug)
+
+, where the 'debug' variable gives the desired debug-level.
+
+After this, the application can perform SPF processing with the
+SPF server instance as usual.
+
+After SPF processing, the SPF_response object/variable is available
+to the application.  The application can check the error codes within
+this variable to see if any of them matches SPF_E_DNSSEC_FAILURE, and
+determine if there was DNSSEC validation failure during SPF processing.
+
+For example, it can do the following:
+
+SPF_request_t *requestp;
+SPF_response_t *responsep;
+
+/* initialize and configure requestp ... */
+
+/* SPF-checks */
+SPF_request_query_mailfrom(requestp, &responsep);
+
+/* Check for DNSSEC validation failure */
+do {
+   int i, num_errs;
+   SPF_error_t *err;
+   SPF_errcode_t errcode;
+   char *errmsg;
+   
+   num_errs = SPF_response_warnings (responsep);
+
+   for (i=0; i<num_errs; i++) {
+       err = SPF_response_message (responsep, i);
+       if (err) {
+	  errcode = SPF_error_code (err);
+	  if (errcode == SPF_E_DNSSEC_FAILURE) {
+	     errmsg = (char *) SPF_error_message (err);
+	     /* Take appropriate action */
+	  }
+       }
+   }  
+} while (0);
+
+
+Example: Use of dnssec-extensions to libspf2-1.2.5 in spfmilter-1.0.8
+---------------------------------------------------------------------
+
+spfmilter-1.0.8_dnssec_patch to spfmilter-1.0.8 provides three modes
+of operation w.r.t. DNSSEC: ignore, warn, reject.  If the mode is
+'ignore, the SPF server is initialized with the SPF_DNS_CACHE flag,
+otherwise it is initialized with the SPF_DNS_DNSSEC_RESOLV flag:
+
+    if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
+	spf_server = SPF_server_new(SPF_DNS_CACHE, debug);
+    }
+    else {
+	spf_server = SPF_server_new(SPF_DNS_DNSSEC_RESOLV, debug);
+    }
+
+After SPF processing is done, the spfmilter-1.0.8_dnssec_patch
+looks for the SPF_E_DNSSEC_FAILURE error code in the response if
+it is operating in the 'reject' mode.  If it detects this error
+code, it will return SPFMILTER_RESULT_FAIL, which causes the mail
+to be rejected or marked according to the spfmilter configuration.
+
+        /* Check if there was a DNSSEC validation failure */
+        if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT) {
+	    int i;
+	    int num_errs;
+	    printf("spfmilter: DNSSEC reject policy is in effect\n");
+	    num_errs = lib_get_num_errors(ld);
+	    for (i=0; i<num_errs; i++) {
+		SPF_error_t *err;
+		err = SPF_response_message (ld->responsep, i);
+		if (err) {
+		    if (SPF_error_code(err) == SPF_E_DNSSEC_FAILURE) {
+			printf("spfmilter: DNSSEC validation failure occured.  Rejecting mail.\n");
+			retval = SPFMILTER_RESULT_FAIL;
+			break;
+		    }
+		}
+	    }
+	}
+
+In the above code, ld->responsep points to the response from SPF
+processing, and lib_get_num_errors(ld) returns the number of error
+codes in the response.
+
+If spfmilter is operating in the 'warn' mode, the SPF_E_DNSSEC_FAILURE
+error code will be present in the response, and will be added to the
+Received-SPF mail-header.
+
+If spfmilter is operating in the 'ignore' mode, DNSSEC validation
+is not performed.
+====================================================================
