@@ -36,7 +36,7 @@ type: DNSKEY
 test:
   my $keyrr = $_[0];
   $keyrr->setkeytag();
-  my $dsrr = create Net::DNS::RR::DS($keyrr);
+  return if ($keyrr->flags & 0x100);  # key is not a zone signing key
   my @DSs = live_query($keyrr->name, "DS");
   return "Parent zone has no DS records for $keyrr->{name} (keyid = $keyrr->{keytag})" if ($#DSs == -1);
   map { return if ($_->verify($keyrr)); } @DSs;
@@ -52,7 +52,7 @@ test:
   my $dsrr = $_[0];
   my @KEYs = live_query($dsrr->name, "DNSKEY");
   return "Child zone has no DNSKEY records for $dsrr->{name}" if ($#KEYs == -1);
-  map { return if ($dsrr->verify($_)); } @KEYs;
+  map { return if ($_->flags & 0x100 && $dsrr->verify($_)); } @KEYs;
   return "DS record for $dsrr->{name} does not have a matching DNSKEY record in the live child zone";
 
 # XXX: check parent has DS record for this zone
