@@ -11,7 +11,6 @@ print MF <<EOF;
 #
 
 TESTFILES=	isles.keyrec	\\
-		test.keyrec	\\
 		tools.conf
 
 all:
