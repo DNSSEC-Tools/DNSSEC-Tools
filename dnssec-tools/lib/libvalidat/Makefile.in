@@ -1,0 +1,16 @@
+CC	   = gcc
+INSTALL    = @INSTALL@
+
+all: libvalidat.so
+
+libvalidat.so: validat.o
+	$(CC) -shared -o validat.o
+
+validat.o: validat.c validat.h
+	$(CC) -c validat.c
+
+install:
+	$(INSTALL) libvalidat.so $(libdir)
+
+clean:
+	\rm -rf *.o *.so
