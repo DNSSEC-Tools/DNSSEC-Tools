@@ -198,7 +198,7 @@ sub parse_rule_file {
 
 	    # if error, mention it
 	    if ($@) {
-		warn "broken code in rule: $@";
+		warn "broken code in rule '$rule->{name}': $@";
 		print STDERR "IN CODE:\n  $code\n" if ($opts{'v'});
 		$err = 1;
 	    }
@@ -206,7 +206,7 @@ sub parse_rule_file {
 	} elsif (/^\s*(\w+):\s*(.*)/) {
 	    $rule->{$1} = $2;
 	} elsif (!/^\s*$/) {
-	    warn "illegal rule definition";
+	    warn "illegal rule definition in $file for rule $rule->{name}";
 	}
 
 	# end of rule (can get here from inside a test end too, hence
@@ -224,15 +224,53 @@ sub parse_rule_file {
     }
 }
 
-sub live_query {
+#
+# subroutines for doing live queries on running systems
+#
+
+sub get_query {
     my ($name, $type) = @_;
     my $query = $netdns->query($name, $type);
     if ($query) {
-	return $query->answer;
+	return $query;
     } else {
 	$netdns_error = $netdns->errorstring;
 	return;
     }
+}
+
+sub live_query {
+    my $query = get_query(@_);
+    if ($query) {
+	return $query->answer;
+    }
+}
+
+sub compare_arrays {
+    my ($a1, $b1) = @_;
+    return -1 if ($#$a1 != $#$b1);
+    my @a = sort @$a1;
+    my @b = sort @$b1;
+
+    for (my $i = 0; $i <= $#$a1; $i++) {
+	if ($a[$i] ne $b[$i]) {
+	    return $i;
+	}
+    }
+}
+sub compare_RR_arrays {
+    my ($a1, $b1, $hashval) = @_;
+    return -1 if ($#$a1 != $#$b1);
+    my @a = sort @$a1;
+    my @b = sort @$b1;
+
+    for (my $i = 0; $i <= $#$a1; $i++) {
+	print STDERR "$a[$i]{$hashval} ne $b[$i]{$hashval}\n";
+	if ($a[$i]{$hashval} ne $b[$i]{$hashval}) {
+	    return $i;
+	}
+    }
+    return;
 }
 
 sub usage {
