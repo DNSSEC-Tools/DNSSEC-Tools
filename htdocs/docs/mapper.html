@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>../dnssec-tools/tools/donuts/mapper</title>
+<title>mapper - Create PNG maps of DNS zone data</title>
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -9,8 +9,181 @@
 
 <p><a name="__index__"></a></p>
 <!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#example_invocations">EXAMPLE INVOCATIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
 <!-- INDEX END -->
 
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>mapper - Create PNG maps of DNS zone data</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>This application creates a graphical PNG map of one or more zone files.</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The output gives a graphical reperesation of a dns zone or zones.  The
+result can be useful for getting a more intuiative view of a zone or
+set of zones.  It is extremely useful for visualizing DNSsec
+deployment within a given zone as well as to help discover problematic
+spots.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dh">-h</a></strong><br />
+</dt>
+<dd>
+Help summary.
+</dd>
+<p></p>
+<dt><strong><a name="item__2do_outfile_2epng">-o OUTFILE.png</a></strong><br />
+</dt>
+<dd>
+Saves the results to a given filename (default = ``map.png'')
+</dd>
+<p></p>
+<dt><strong><a name="item__2dr">-r</a></strong><br />
+</dt>
+<dd>
+Lists resources records assigned to each node within the map.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-t TYPE,TYPE...</a></strong><br />
+</dt>
+<dd>
+Adds the data portion of a resource record to the displayed node
+information.  Data types passed will be automatically upper-cased for
+ease of use.  Example usage: <em>-t A</em> will add record IPv4 addresses to
+all displayed nodes that have A records.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dl">-L</a></strong><br />
+</dt>
+<dd>
+Adds a legend to the map.
+</dd>
+<p></p>
+<dt><strong><a name="item_l">-l (neato|dot|twopi)</a></strong><br />
+</dt>
+<dd>
+Selects a layout format.  The default is <em>neato</em> which is circular in
+pattern.  See the documentation on the <em>graphviz</em> package and the
+<em>GraphViz</em> perl module for further details.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dw_warntime">-w WARNTIME</a></strong><br />
+</dt>
+<dd>
+How far in advance (in seconds) that warnings are turned on for signed
+resource records that are about to expire.  The default is 7 days
+worth of seconds.
+</dd>
+<p></p>
+<dt><strong><a name="item__2di_regex">-i REGEX</a></strong><br />
+</dt>
+<dd>
+Ignore record types matching a <em>REGEX</em> regular expression.
+</dd>
+<p></p>
+<dt><strong><a name="item__2ds_type_2ctype_2e_2e_2e">-s TYPE,TYPE...</a></strong><br />
+</dt>
+<dd>
+Skips a list of types from being analyzed/displayed in the MAP.  By
+default, this is set to NSEC and CNAME in order to reduce clutter a
+bit.  Setting it to ``'' will display these results again.  Or it can be
+set to any comma seperated list of record types to ignore to leave
+out.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-T TYPE,TYPE...</a></strong><br />
+</dt>
+<dd>
+Only process record types of type <em>TYPE</em>.  This is sort of the converse
+option to -s.  You probably don't want to use both.  They will both
+work at once, however, so if -T specifies a type which -s excludes, it
+will not be shown.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dg">-g</a></strong><br />
+</dt>
+<dd>
+Attempts to cluster nodes around the domain name.  For 'dot' layouts,
+this actually means drawing a box around the cluster.  For the other
+types, it makes very little if any difference.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dq">-q</a></strong><br />
+</dt>
+<dd>
+Don't output warnings/errors about records that have DNSsec signatures
+that are near or beyond their signature lifetimes.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="example_invocations">EXAMPLE INVOCATIONS</a></h1>
+<dl>
+<dt><strong><a name="item_mapper__2ds_cname_2cnsec__2di_dhcp__2dl_zonefile_z"><em>mapper -s cname,nsec -i dhcp -L zonefile zone.com</em></a></strong><br />
+</dt>
+<dd>
+Writes to the default file named <em>map.png</em>. of a <em>zone.com</em> zone
+stored in <em>zonefile</em>.  It excludes any hosts with a name containing
+<em>dhcp</em> and ignores any record types of <em>cname</em> or <em>nsec</em>.  It also
+includes a legend in the output.
+</dd>
+<p></p>
+<dt><strong><a name="item_mapper__2ds_txt_2chinfo_2ccname_2cnsec_2ca_2caaaa_"><em>mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong><br />
+</dt>
+<dd>
+Removes a lot of records from the display in order to display mostly a
+map of a zone hierarchy.
+</dd>
+<p></p>
+<dt><strong><a name="item_mapper__2dl_dot__2ds_txt_2chinfo_2ccname_2cnsec_2c"><em>mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong><br />
+</dt>
+<dd>
+The same thing, but draws a more vertical tree-style graph of the
+zone.  This works well for fairly deep but narrow hierarchies.  Tree
+style diagrams rarely look as nice for full zones (they're very
+large).
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p>Net::DNS</p>
+<p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
 
 </body>
 
