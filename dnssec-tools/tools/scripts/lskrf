@@ -1,0 +1,426 @@
+#!/usr/bin/perl
+#
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# lskrf
+#
+#	This script lists fields in a keyrec file.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+#
+my $DAY	  = (24 * 60 * 60);		# Seconds in a day.
+my $WEEK  = (7 * $DAY);			# Seconds in a week.
+
+my $DAYSWARN = 7;			# Days before an expiration warning.
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"zones",			# Only list zone keyrecs.
+	"keys",				# Only list key keyrecs.
+	"ksk",				# Only list KSK keyrecs.
+	"zsk",				# Only list ZSK keyrecs.
+	"cur",				# Only list current key keyrecs.
+	"new",				# Only list new key keyrecs.
+	"pub",				# Only list published key keyrecs.
+	"ref",				# Only list referenced key keyrecs.
+	"unref",			# Only list unreferenced key keyrecs.
+	"cnt",				# Only give a count of matching keyrecs.
+	"terse",			# Give terse output.
+	"long",				# Give long output.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $zonesflag;
+my $keysflag;
+my $kskflag;
+my $zskflag;
+my $zcurflag;
+my $znewflag;
+my $zpubflag;
+my $refflag;
+my $unrefflag;
+my $cntflag;
+my $terse;
+my $long;
+
+my $count   = 0;			# Record-match count.
+
+#######################################################################
+
+
+my @krnames;				# List of keyrecs in the file.
+
+my %zones    = ();			# Names of zone keyrecs.
+my %allkeys  = ();			# Names of all keyrecs.
+my %kskkeys  = ();			# Names of KSK keyrecs.
+my %zskkeys  = ();			# Names of ZSK keyrecs.
+my %zcurkeys = ();			# Names of current ZSK keyrecs.
+my %znewkeys = ();			# Names of new ZSK keyrecs.
+my %zpubkeys = ();			# Names of published ZSK keyrecs.
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+
+	#
+	# Check our options.
+	#
+	doopts($argc);
+
+	#
+	# Read the keyrec file.
+	#
+	getkeyrecs($ARGV[0]);
+
+	#
+	# Give the output.
+	#
+	showzones()	if($zonesflag);
+	showkeys();
+
+	print "matching records - $count\n"  if($cntflag);
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	showzones()
+#
+sub showzones
+{
+	foreach my $zk (sort(keys(%zones)))
+	{
+		my $krr = $zones{$zk};
+		my %kr = %$krr;
+
+		if($terse)
+		{
+			print "zone $zk\n";
+		}
+		elsif($long)
+		{
+			print "zone $zk\t$kr{'zonefile'}\t$kr{'endtime'}\t\"$kr{'keyrec_signdate'}\"\n";
+		}
+		else
+		{
+			print "zone $zk\t$kr{'zonefile'}\t\t\"$kr{'keyrec_signdate'}\"\n";
+		}
+		$count++;
+	}
+}
+
+# zone    "portrigh.com"
+#         keyrec_type     "zone"
+#         zonefile        "db.portrigh.com"
+#         kskkey          "Kportrigh.com.+005+02640"
+#         kskpath         "./Kportrigh.com.+005+02640.key"
+#         zskpub          "Kportrigh.com.+005+42905"
+#         zskcur          "Kportrigh.com.+005+12956"
+#         endtime         "+259200"
+#         keyrec_signsecs "1108159770"
+#         keyrec_signdate "Fri Feb 11 22:09:30 2005"
+
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	showkeys()
+#
+sub showkeys
+{
+	if($kskflag)
+	{
+		foreach my $k (sort(keys(%kskkeys)))
+		{
+			print "ZSK-key $k\n";
+			$count++;
+		}
+	}
+
+	if($zcurflag)
+	{
+		foreach my $k (sort(keys(%zcurkeys)))
+		{
+			print "KSK-cur-key $k\n";
+			$count++;
+		}
+	}
+
+	if($znewflag)
+	{
+		foreach my $k (sort(keys(%znewkeys)))
+		{
+			print "ZSK-new-key $k\n";
+			$count++;
+		}
+	}
+
+	if($zpubflag)
+	{
+		foreach my $k (sort(keys(%zpubkeys)))
+		{
+			print "ZSK-pub-key $k\n";
+			$count++;
+		}
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	doopts()
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+
+	GetOptions(\%options,@opts);
+	$zonesflag	= $options{'zones'}	|| 0;
+	$keysflag	= $options{'keys'}	|| 0;
+	$kskflag	= $options{'ksk'}	|| 0;
+	$zskflag	= $options{'zsk'}	|| 0;
+	$zcurflag	= $options{'cur'}	|| 0;
+	$zpubflag	= $options{'pub'}	|| 0;
+	$cntflag	= $options{'cnt'}	|| 0;
+	$unrefflag	= $options{'unref'}	|| 0;
+	$refflag	= $options{'ref'}	|| 0;
+	$terse		= $options{'terse'}	|| 0;
+	$long		= $options{'long'}	|| 0;
+
+	#
+	# Give a usage flag if asked.
+	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a keyrec file to check.
+	#
+	if($argc == 0)
+	{
+		usage();
+		exit(1);
+	}
+
+	#
+	# Set the appropriate keys flags.
+	#
+	if($keysflag)
+	{
+		$kskflag = 1;
+		$zskflag = 1;
+	}
+
+	if($zskflag)
+	{
+		$zcurflag = 1;
+		$znewflag = 1;
+		$zpubflag = 1;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getkeyrecs()
+#
+sub getkeyrecs
+{
+	my $krfile = shift;			# Keyrec file.
+
+	keyrec_read($krfile);
+
+	@krnames = keyrec_names();
+
+	foreach my $krn (sort(@krnames))
+	{
+		my $kr;				# Reference to keyrec.
+		my %keyrec;			# Keyrec.
+		my $type;			# Keyrec's type.
+
+		$kr = keyrec_fullrec($krn);
+		%keyrec = %$kr;
+
+		$type = $keyrec{'keyrec_type'};
+
+		if($type eq 'zone')
+		{
+			$zones{$krn} = $kr;
+		}
+		elsif($type eq 'ksk')
+		{
+			$allkeys{$krn} = $kr;
+			$kskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zskcur')
+		{
+			$allkeys{$krn} = $kr;
+			$zcurkeys{$krn} = $kr;
+			$zskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zsknew')
+		{
+			$allkeys{$krn} = $kr;
+			$znewkeys{$krn} = $kr;
+			$zskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zskpub')
+		{
+			$allkeys{$krn} = $kr;
+			$zpubkeys{$krn} = $kr;
+			$zskkeys{$krn} = $kr;
+		}
+	}
+}
+
+##############################################################################
+#									     #
+# 				Utilities				     #
+#									     #
+##############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	dumpdata()
+#
+sub dumpdata
+{
+	my $keyname;				# Key name for looping.
+	my $zonename;				# Zone name for looping.
+
+	print "zones:\n";
+	foreach $zonename (sort(keys(%zones)))
+	{
+		print "\t$zonename\n";
+	}
+	print "\n";
+
+	print "ksks:\n";
+	foreach $keyname (sort(keys(%kskkeys)))
+	{
+		print "\t$keyname\n";
+	}
+	print "\n";
+
+	print "zsks:\n";
+	foreach $keyname (sort(keys(%zskkeys)))
+	{
+		print "\t$keyname\n";
+	}
+	print "\n";
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  lskrf [options] <keyrec-file>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-z		list all zones\n";
+	print STDERR "\t\t-k		list all keys\n";
+	print STDERR "\t\t-ksk		only list KSK keys\n";
+	print STDERR "\t\t-zsk		only list ZSK keys\n";
+	print STDERR "\t\t-cur		list current ZSK keys\n";
+	print STDERR "\t\t-pub		list published ZSK keys\n";
+	print STDERR "\t\t-cnt		give count of matching keyrecs\n";
+	print STDERR "\t\t-unref	show unreferenced key keyrecs\n";
+	print STDERR "\t\t-ref		show referenced key keyrecs\n";
+	print STDERR "\t\t-t		terse output\n";
+	print STDERR "\t\t-l		long output\n";
+	print STDERR "\t\t-h		help message \n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+lskrf - List the fields in a dnssec-tools keyrec file.
+
+=head1 SYNOPSIS
+
+  lskrf [-z] [-k] [-ksk] [-zsk] [-cur] [-pub] [-cnt] [-unref] [-ref] [-t] [-l] [-h] <keyrec-file>
+
+=head1 DESCRIPTION
+
+This script lists the contents of a keyrec file.
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item -k
+
+Only perform checks of key I<keyrec>s.  This option may not be combined with
+the B<-z> option.
+
+=item -z
+
+Only perform checks of zone I<keyrec>s.  This option may not be combined with
+the B<-k> option.
+
+=item -c
+
+Display a final count of errors.
+
+=item -q
+
+Do not display messages.  This option supersedes the setting of the I<-v>
+option.
+
+=item -v
+
+Display many messages.  This option is subordinate to the I<-q> option.
+
+=item -h
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::keyrec.pm(3)
+
+=cut
