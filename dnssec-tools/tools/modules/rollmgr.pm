@@ -174,8 +174,8 @@ my %port_archs =
 # Unix-related constants.
 # 
 
-my $UNIX_ROLLMGR_DIR	    = "/usr/local/etc/dnssec";
-my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/dnssec-tools.rollmgr.pid");
+my $UNIX_ROLLMGR_DIR	    = "/usr/local/etc/dnssec/";
+my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "rollmgr.pid");
 
 my $UNIX_CMD_QPROC	= "HUP";		# Signal for qproc command.
 my $UNIX_CMD_HALT	= "INT";		# Signal for halt command.
@@ -186,8 +186,7 @@ my $UNIX_CMD_HALT	= "INT";		# Signal for halt command.
 # 
 
 my $osclass   = "uninitialized";
-my $swtref    = $port_archs{$osclass};
-my %switchtab = %$swtref;
+my %switchtab = %{$port_archs{$osclass}};
 
 
 ##############################################################################
