@@ -15,12 +15,13 @@ sub new {
 sub print_error {
     my ($r, $err, $loc, $verb) = @_;
     my $class = $r->{class} || 'Error';
-    print STDERR "$loc: $class\n";
+    print STDERR "$loc:\n";
     if ($verb) {
 	print STDERR "  Rule Name:   $r->{name}\n";
 	print STDERR "  Level:       $r->{level}\n";
     }
-    print STDERR wrap("  Error:       ","               ",$err),"\n";
+    print STDERR wrap(sprintf("  %-13s", "$class:"),
+		      "               ",$err),"\n";
     if ($r->{desc} && $verb) {
 	print STDERR wrap("  Details:     ","               ",$r->{desc}),"\n";
     }
