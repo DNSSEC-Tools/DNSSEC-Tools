@@ -12,6 +12,13 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
-AC_CONFIG_FILES([Makefile:Makefile.top:Makefile.in])
+# useful for libvalidat
+AC_CHECK_LIB(resolv, __res_init, AC_DEFINE(HAVE_LIBRESOLV))
+
+AC_CONFIG_FILES([
+ Makefile:Makefile.top:Makefile.in
+ lib/libvalidat/Makefile:Makefile.top:lib/libvalidat/Makefile.in
+ lib/libvalidat/validat-config.h:lib/libvalidat/validat-config.h.in
+])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT
