@@ -268,6 +268,15 @@ test:
     return "signer name for $_[0]->{name} is $_[0]->{signame} but it should match the zone name ($current_domain)";
   }
 
+name: DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE
+ruletype: name
+level: 5
+desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST NOT be the only RRset at any particular owner name.
+test:
+  my @keys = sort keys(%{$_[0]});
+  return if ($#keys == 1);
+  "$_[0]->{name} only contains NSEC and RRSIG records"
+    if ($keys[0] eq 'NSEC' && $keys[1] eq 'RRSIG');
 
 # XXX: nsec next order is proper
 # XXX: check all sigs?
@@ -286,3 +295,9 @@ test:
 
 # XXX: protocol:2.2 double check that no RRSIGs are signed?
 # XXX: protocol:2.2 zone apex NS record MUST be signed
+# XXX: protocol 2.2: There MUST be an RRSIG for each RRset using at least one DNSKEY of each algorithm in the zone apex DNSKEY RRset. (currently we don't check each alg must be used)
+# XXX: prococol 2.2: The apex DNSKEY RRset itself MUST be signed by each algorithm appearing in the DS RRset located at the delegating parent (if any).
+
+# XXX: check NSEC types to make sure each type at a name is covered (exactly)
+
+# stopped in protocol: 2.3
