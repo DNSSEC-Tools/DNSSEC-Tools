@@ -1,13 +1,29 @@
+Index: doc/op/op.me
+===================================================================
+--- doc/op/op.me	2005-03-03 12:11:58.038664290 -0500
++++ doc/op/op.me	2005-03-03 12:27:45.845972250 -0500
+@@ -3487,6 +3487,11 @@
+ (a temporary failure)
+ on T_AAAA (IPv6) lookups
+ during hostname canonification.
++Use
++.q RequireDNSSEC
++to require DNSSEC validation of responses to DNS queries in
++sendmail.  If this option is set, a failure in DNSSEC validation
++is treated as a failure in the name lookup.
+ Notice: it might be necessary to apply the same (or similar) options to
+ .i submit.cf
+ too.
 Index: sendmail/readcf.c
 ===================================================================
---- sendmail/readcf.c	2005-02-25 10:54:42.597859624 -0500
-+++ sendmail/readcf.c	2005-02-25 11:01:11.494442205 -0500
+--- sendmail/readcf.c	2005-02-25 10:54:42.000000000 -0500
++++ sendmail/readcf.c	2005-03-03 10:41:20.530832913 -0500
 @@ -2578,6 +2578,13 @@
  				WorkAroundBrokenAAAA = !clearmode;
  				continue;
  			}
 +#ifdef HAVE_LIBVALIDAT
-+			if (sm_strcasecmp(q, "dnssec") == 0)
++			if (sm_strcasecmp(q, "RequireDNSSEC") == 0)
 +			{
 +				DoDNSSECValidation = !clearmode;
 +				continue;
@@ -18,7 +34,7 @@ Index: sendmail/readcf.c
  				if (sm_strcasecmp(q, rfp->rf_name) == 0)
 Index: sendmail/domain.c
 ===================================================================
---- sendmail/domain.c	2005-02-25 10:54:53.195403925 -0500
+--- sendmail/domain.c	2005-02-25 10:54:53.000000000 -0500
 +++ sendmail/domain.c	2005-02-24 16:44:30.000000000 -0500
 @@ -23,6 +23,9 @@
  
@@ -66,7 +82,7 @@ Index: sendmail/domain.c
  		n = sizeof(answer);
 Index: sendmail/conf.h
 ===================================================================
---- sendmail/conf.h	2005-02-25 10:55:02.887072662 -0500
+--- sendmail/conf.h	2005-02-25 10:55:02.000000000 -0500
 +++ sendmail/conf.h	2005-02-24 16:44:53.000000000 -0500
 @@ -213,6 +213,10 @@
  # define PIPELINING	1	/* SMTP PIPELINING */
@@ -81,7 +97,7 @@ Index: sendmail/conf.h
  **********************************************************************/
 Index: sendmail/sm_resolve.c
 ===================================================================
---- sendmail/sm_resolve.c	2005-02-25 10:55:24.328127495 -0500
+--- sendmail/sm_resolve.c	2005-02-25 10:55:24.000000000 -0500
 +++ sendmail/sm_resolve.c	2005-02-24 16:46:21.000000000 -0500
 @@ -46,6 +46,10 @@
  # if NAMED_BIND
@@ -126,7 +142,7 @@ Index: sendmail/sm_resolve.c
  	if (retry > 0)
 Index: sendmail/sendmail.h
 ===================================================================
---- sendmail/sendmail.h	2005-02-25 10:55:33.655846233 -0500
+--- sendmail/sendmail.h	2005-02-25 10:55:33.000000000 -0500
 +++ sendmail/sendmail.h	2005-02-24 16:46:44.000000000 -0500
 @@ -2146,6 +2146,9 @@
  #endif /* !defined(_USE_SUN_NSSWITCH_) && !defined(_USE_DEC_SVC_CONF_) */
