@@ -49,8 +49,8 @@ Index: src/include/spf_dns_dnssec.h
 + * fails.
 + */
 +#define DNSSEC_POLICY_IGNORE 0 /* Ignore dnssec validation failure */
-+#define DNSSEC_POLICY_WARN   1 /* Return a warning */
-+#define DNSSEC_POLICY_REJECT 2 /* Return an error for rejecting packet */
++#define DNSSEC_POLICY_WARN   1 /* Return a warning, but continue processing */
++#define DNSSEC_POLICY_ABORT  2 /* Return an error, and abort processing */
 +
 +/*
 + * These routines take care of creating/destroying/etc. the objects
@@ -411,7 +411,7 @@ Index: src/libspf2/spf_dns_dnssec.c
 +    }
 +    else {
 +
-+        if (spfhook->dnssec_policy == DNSSEC_POLICY_REJECT) {
++        if (spfhook->dnssec_policy == DNSSEC_POLICY_ABORT) {
 +	    fetched_rr->herrno = DNSSEC_VALIDATION_FAILURE;
 +	    if ( spfhook->debug > 0 )
 +	        SPF_debugf( "libspf2::spf_dns_dnssec: DNSSEC validation of %s failed.  Reject mail.", fetched_rr->domain );
