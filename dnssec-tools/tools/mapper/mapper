@@ -1,0 +1,171 @@
+#!/usr/bin/perl
+
+use Net::DNS::ZoneFile::Fast;
+use GraphViz;
+use Getopt::Std;
+use Data::Dumper;
+use strict;
+
+my %opts;
+my %nodes;
+my %rtypes;
+my %edges;
+my %opts = ( o => 'map.png', l => 'neato');
+my ($zfile, $dname);
+
+getopts("gro:l:s:i:t:h",\%opts);
+
+usage() if (exists($opts{'h'}));
+
+my %reccolors =
+  (
+   CNAME => '.2275,.5412,1',
+   NS => '.0510,.4196,1',
+   root => '.5765,.6902,1',
+   default => ".5137,.3804,1"
+  );
+
+#
+# figure out which record types to ignore
+#
+my %skiprecords = ('NSEC' => 1, 'RRSIG' => 1);
+
+if ($opts{'s'}) {
+    my @recs = split(/\s*,\s*/,$opts{'s'});
+    map { $skiprecords{uc($_)} = 1 } @recs;
+}
+
+#
+# optionall print specific type data
+#
+my @labtypes;
+if ($opts{'t'}) {
+    my @labtypes = split(/\s*,\s*/,$opts{'t'});
+    map { $_ = uc($_) } @labtypes;
+}
+
+
+my $g = GraphViz->new(layout => $opts{'l'},
+		      no_overlap => 1,
+		     );
+
+while ($#ARGV > -1) {
+
+    $zfile = shift;
+    $dname = shift;
+
+    my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $zfile,
+						origin => "$dname.",
+						soft_errors => 1,
+						on_error => \&my_err);
+
+    #
+    # collect record types for each node
+    #
+    foreach my $rr (@$rrset) {
+	# collect record types
+	$rtypes{$rr->name}{$rr->type} = $rr->string;
+    }
+
+    #
+    # add the root domain name
+    #
+    add_once($g, "$dname",
+	     style => 'filled', fillcolor => $reccolors{'root'});
+
+    #
+    # for each node, add it and any necessary lines
+    #
+    foreach my $rr (@$rrset) {
+	#    print $rr->string, "\n";
+	#    print join(" -> ", $rr->name, $rr->class, $rr->type),"\n";
+	next if ($opts{'i'} && $rr->name =~ /$opts{'i'}/);
+	next if ($skiprecords{$rr->type});
+	my $name = $rr->name;
+	my $label = get_label($name);
+	my $col = get_color($name);
+	add_once($g, $name,
+		 label => $label, style => 'filled', fillcolor => $col);
+	if ($rr->type eq 'CNAME') {
+	    my $cname = $rr->cname;
+	    my $cnamelb = get_label($cname);
+	    add_once($g, $cname,
+		     label => $cnamelb, style => 'filled',
+		     fillcolor => $reccolors{'CNAME'});
+	    add_edge_once($g, $name, $cname);
+	} else {
+	    add_edge_once($g, "$dname", $name);
+	}
+    }
+}
+
+open (O, ">" . $opts{'o'});
+print O $g->as_png;
+close(O);
+
+sub my_err {
+    print "error: ", join(",",@_), "\n";
+    #    die join(",",@_);
+}
+
+sub add_once {
+    my ($g, $node, @opts) = @_;
+    if ($opts{'g'}) {
+	push @opts, cluster => $dname;
+    }
+    if (!$nodes{$node}) {
+	$g->add_node($node, @opts);
+	$nodes{$node} = 1;
+    }
+}
+
+sub add_edge_once {
+    my ($g, $node1, $node2, @opts) = @_;
+
+    add_once($g, $node1);
+    add_once($g, $node2);
+
+    if (!$edges{$node1}{$node2}) {
+	$g->add_edge($node1, $node2, @opts);
+	$edges{$node1}{$node2} = 1;
+    }
+}
+
+sub get_label {
+    my $name = $_[0];
+    my $label = $_[0];
+    $label =~ s/\.$dname$//;
+    if ($opts{'r'}) {
+	$label .= "\n" . join(" ",sort keys(%{$rtypes{$name}}));
+    }
+    if ($#labtypes > -1) {
+	foreach my $l (@labtypes) {
+	    $label .= $rtypes{$name}{$l};
+	}
+    }
+    return $label;
+}
+
+sub get_color {
+    my ($name) = @_;
+    if ($rtypes{$name}{'CNAME'}) {
+	return $reccolors{'CNAME'};
+    } elsif ($rtypes{$name}{'NS'}) {
+	return $reccolors{'NS'};
+    } elsif ($rtypes{$name}{'DS'}) {
+	return $reccolors{'NS'};
+    } elsif ($rtypes{$name}{'SOA'}) {
+	return $reccolors{'root'};
+    } else {
+	return $reccolors{'default'};
+    }
+}
+
+sub usage {
+    print "
+$0 [-h] [-r] [-o MAP.PNG] [-l (neato|dot|twopi)] [-s SKIPRECORDS] 
+  [-i IGNOREREGXP] [-t TYPEINFO] ZONEFILE ZONENAME [ZONEFILE ZONENAME...]
+
+";
+    exit;
+}
