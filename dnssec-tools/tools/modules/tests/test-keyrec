@@ -1,0 +1,163 @@
+#!/usr/bin/perl
+#
+# This script performs several tests of the DNSSEC tools keyrec module.
+# A test keyrec file is created and parsed.  Various operations are run
+# on these data, and their results printed to the screen.  The following
+# interfaces are tested:  keyrec_setval(), keyrec_fullrec(), and
+# keyrec_recval().  The keyrec_setval() test saves the modified file
+# to disk.
+#
+# These are simple tests in that the results are displayed to the screen
+# and the tester is left the responsibility of ensuring that all worked
+# as expected.  Automatic testing would be great, and it may come RSN.
+#
+
+use strict;
+
+use DNSSEC::keyrec;
+
+create_keyrecfile();
+
+my $keyrecs;
+$keyrecs = keyrec_read("isles.keyrec");
+# print "keyrecs - $keyrecs\n";
+
+
+test_keyrec_fullrec();
+
+test_keyrec_recval();
+
+test_keyrec_setval();
+
+exit 0;
+
+############################################################################
+
+sub test_parseconfig
+{
+	my %dnssec_conf;
+
+	%dnssec_conf = parseconfig();
+
+	foreach my $k (sort(keys(%dnssec_conf)))
+	{
+		print "<$k>	<$dnssec_conf{$k}>\n";
+	}
+}
+
+############################################################################
+
+sub test_keyrec_fullrec
+{
+	my @krnames = keyrec_names();
+	my $nind = @krnames;
+	for(my $ind=0;$ind<$nind;$ind++)
+	{
+		print "$ind:  $krnames[$ind]\n";
+		my $val = keyrec_fullrec($krnames[$ind]);
+		my %sval = %$val;
+		foreach my $k (sort(keys(%sval)))
+		{
+			print "\t<$k>\t<$sval{$k}>\n";
+		}
+		print "\n";
+	}
+}
+
+############################################################################
+
+sub test_keyrec_setval
+{
+	# keyrec_dump_hash();	print "\n";
+	# keyrec_dump_array();		print "\n";
+
+	keyrec_setval("portrigh.com","keyrec_type","zone");
+	keyrec_setval("portrigh.com","zonefile","db.portrigh.com");
+	keyrec_setval("portrigh.com","enddate","+8888000");
+	keyrec_setval("portrigh.com","kskpath","keys.ksk/Kportrigh.com.+005+44000");
+	keyrec_setval("portrigh.com","zskpath","keys.zsk/Kportrigh.com.+005+88000");
+	keyrec_setval("portrigh.com","enddate","+8888888");
+
+	keyrec_setval("isles.netsec.tislabs.com","endtime","+8888888");
+	keyrec_setval("isles.netsec.tislabs.com","woofers","fido");
+
+	keyrec_setval("Kisles.netsec.tislabs.com.+005+52000","fido","woofers");
+
+	# keyrec_dump_array();		print "\n";
+	# keyrec_dump_hash();	print "\n";
+
+	keyrec_save();
+}
+
+############################################################################
+
+sub test_keyrec_recval
+{
+	getit("isles.netsec.tislabs.com","zonefile");
+	getit("isles.netsec.tislabs.com","kskpath");
+	getit("isles.netsec.tislabs.com","zonename");
+	getit("Kisles.netsec.tislabs.com.+005+26000","zonename");
+	getit("Kisles.netsec.tislabs.com.+005+26000","zonefile");
+	getit("Kisles.netsec.tislabs.com.+005+52000","zonename");
+	getit("Kisles.netsec.tislabs.com.+005+52000","zonefile");
+	getit("Kisles.netsec.tislabs.com.+005+88888","zonename");
+	print "\n";
+}
+
+############################################################################
+
+sub getit
+{
+	my $p1 = shift;
+	my $p2 = shift;
+	my $val = keyrec_recval($p1,$p2);
+
+	if($val eq "")
+	{
+		print "$p1/$p2 - empty\n";
+	}
+	elsif(!defined($val))
+	{
+		print "$p1/$p2 - not defined\n";
+	}
+	else
+	{
+		print "$p1/$p2 - <$val>\n";
+	}
+}
+
+############################################################################
+#
+# These data are in the test.keyrec file used in this test.
+
+sub create_keyrecfile
+{
+	open(KRF,"> test.keyrec");
+	print KRF <<EOF;
+#
+# key management database
+#
+
+zone "isles.netsec.tislabs.com"
+	zonefile	"db.isles.netsec.tislabs.com"
+	kskpath		"keys.ksk/Kisles.netsec.tislabs.com.+005+26000"
+	zskpath		"keys.zsk/Kisles.netsec.tislabs.com.+005+52000"
+	endtime		"+2592000"		# good for 30 days
+
+key "Kisles.netsec.tislabs.com.+005+26000"
+	zonename	"isles.netsec.tislabs.com"
+	type		"ksk"
+	algorithm	"rsasha1"
+	length		"1024"
+	random		"-r /dev/urandom"
+
+key "Kisles.netsec.tislabs.com.+005+52000"
+	zonename	"isles.netsec.tislabs.com"
+	type		"zsk"
+	algorithm	"rsasha1"
+	length		"512"
+	random		"-r /dev/urandom"
+EOF
+
+	close(KRF);
+}

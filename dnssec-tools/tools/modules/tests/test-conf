@@ -1,0 +1,63 @@
+#!/usr/bin/perl
+#
+# This script performs a very simple test of the DNSSEC tools config module.
+# It parses the config file, using parseconfig(), and prints the parsed
+# keyword/value pairs to the screen.  A simple config file will be created
+# in the current directory for testing.
+#
+
+use strict;
+
+use DNSSEC::conf;
+
+# my $conf = "/etc/dnssec/tools.conf";
+my $conf = "./tools.conf";
+
+create_conffile();
+
+test_parseconfig();
+
+exit 0;
+
+############################################################################
+
+sub test_parseconfig
+{
+	my %dnssec_conf;
+
+	%dnssec_conf = parseconfig($conf);
+
+	print "keywords\tvalues\n";
+	print "--------\t------\n";
+	foreach my $k (sort(keys(%dnssec_conf)))
+	{
+		print "<$k>	<$dnssec_conf{$k}>\n";
+	}
+}
+
+############################################################################
+
+sub create_conffile
+{
+	open(CNF,"> $conf");
+	print CNF <<EOF;
+#
+# key management tools configuration
+#
+
+#
+# Settings for dnssec-keygen.
+#
+algorithm	rsasha1
+ksk_length	1024
+zsk_length	512
+
+
+#
+# Settings for dnssec-signzone.
+#
+endtime		+259200		# RRSIGs good for three days.
+EOF
+
+	close(CNF);
+}
