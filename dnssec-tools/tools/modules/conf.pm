@@ -173,8 +173,8 @@ An example configuration file follows:
 
 # Sample configuration entries.
 
-algorithm	rsasha1		# Encryption algorithm.
-ksk_length	1024		; KSK key length.
+  algorithm       rsasha1	# Encryption algorithm.
+  ksk_length      1024		; KSK key length.
 
 =back
 
