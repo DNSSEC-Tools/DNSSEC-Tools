@@ -177,7 +177,7 @@ while ($#ARGV > -1) {
 	print "  records analyzed:\t" . (1+$#$rrset) . "\n";
 	my @a = keys(%nrecs);
 	print "  names analyzed:\t" . (1+$#a) . "\n";
-	print "  errors found:\t$errcount\n";
+	print "  errors found:\t\t$errcount\n";
     } else {
 	print "$errcount errors found in $current_zone_file\n"
 	  if (!$opts{'q'});
@@ -419,6 +419,7 @@ sub LocalOptionsMap {
 			    ? (1, 1, $_[0]) : (0, 2));
     for (my $i = $st; $i <= $#_; $i += $cb) {
 	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
 	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
 	    push @opts, $_[$i+1] if ($cb == 2);
 	}
