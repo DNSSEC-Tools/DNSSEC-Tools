@@ -165,7 +165,12 @@ test:
     next if ($type eq 'RRSIG');
     foreach my $rec (@{$_[0]->{$type}}) {
       # NS records for children aren't signed
-      next if ($type eq 'NS' && $current_domain ne $rec->{name});
+      if ($type eq 'NS' && $current_domain ne $rec->{name}) {
+        if (exists($rrsigs{$type}{$rec->name})) {
+          push @err, "$rec->{name} is signed but is a child NS record";
+        }
+        next;
+      }
       # NS glue records for children aren't signed.
       if (!exists($rrsigs{$type}{$rec->name}) &&
           !exists($DONUTS::gluerecs{$rec->name})) {
