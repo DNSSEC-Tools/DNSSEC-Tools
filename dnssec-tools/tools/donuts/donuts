@@ -11,16 +11,29 @@ use Text::Wrap;
 
 use strict;
 
+use Config;
+
 my %opts = (l => 5,
-	    r => '/usr/share/dnslint.rules.pl');
+	    r => $Config{'siteprefix'} . "/share/donuts/rules/*");
 
 my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
-    @ignorelist);
+    @ignorelist, $netdns, $netdns_error);
 
-getopts("hvl:r:i:", \%opts) || usage();
+getopts("hvLl:r:i:", \%opts) || usage();
 
+#
+# initialize ignore list
+#
 if ($opts{'i'}) {
     @ignorelist = split(/,\s*/, $opts{'i'});
+}
+
+#
+# initialize our resolver
+#
+if ($opts{'L'}) {
+    use Net::DNS;
+    $netdns = Net::DNS::Resolver->new;
 }
 
 usage() if ($opts{'h'});
@@ -67,6 +80,7 @@ while ($#ARGV > -1) {
 	foreach my $r (@rules) {
 	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
 		(!exists($r->{'type'}) || $rec->type eq $r->{'type'}) &&
+		(!exists($r->{'live'}) || $opts{'L'}) &&
 		(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
 		my $res = $r->{'test'}->($rec, $r);
 		if ($res) {
@@ -86,6 +100,7 @@ while ($#ARGV > -1) {
     foreach my $namerec (keys(%nrecs)) {
 	foreach my $r (@rules) {
 	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
+		(!exists($r->{'live'}) || $opts{'L'}) &&
 		(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
 		my $res = $r->{'test'}->($nrecs{$namerec}, $r, $namerec);
 		if ($res) {
@@ -206,6 +221,17 @@ sub parse_rule_file {
     }
     if ($rule && !$err) {
 	add_rule($rule);
+    }
+}
+
+sub live_query {
+    my ($name, $type) = @_;
+    my $query = $netdns->query($name, $type);
+    if ($query) {
+	return $query->answer;
+    } else {
+	$netdns_error = $netdns->errorstring;
+	return;
     }
 }
 
