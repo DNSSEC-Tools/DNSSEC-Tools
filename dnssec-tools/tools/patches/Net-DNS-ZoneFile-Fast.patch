@@ -1,5 +1,5 @@
 --- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
-+++ Fast.pm	2004-12-24 09:14:03.406886528 -0800
++++ Fast.pm	2004-12-27 14:52:21.799371264 -0800
 @@ -15,6 +15,7 @@
  use vars qw($VERSION);
  use IO::File;
@@ -138,7 +138,7 @@
 +    # got more data
 +    if ($rrsig->{'first'}) {
 +	delete $rrsig->{'first'};
-+	if (/\G\s*(\d+)\s+(\d+)\s+(\w+)/gc) {
++	if (/\G\s*(\d+)\s+(\d+)\s+($pat_maybefullname)/gc) {
 +	    $rrsig->{'siginceptation'} = $1;
 +	    $rrsig->{'keytag'} = $2;
 +	    $rrsig->{'signame'} = $3;
