@@ -78,6 +78,7 @@ my $reusezsk;				# Reuse the existing ZSK.
 my $zone;				# Zone to play with.
 my $zonedata;				# Zone data (input) file.
 my $zonefile;				# Zone file (output.)
+my $krfile;				# User-specified keyrec file.
 
 my $status;				# Zone-signing status.
 
@@ -103,11 +104,13 @@ exit($status);
 
 #######################################################################
 #
-# main()
+# Routine:	main()
 #
-# (Yeah, yeah, a main() isn't necessary.  However, it offends my sense
-# of aesthetics to have great gobs of code on the same level as a pile
-# of globals.  (But what about all those globals, you ask...))
+# Purpose:	Yeah, yeah, a main() isn't necessary.  However, it offends my
+#		sense of aesthetics to have great gobs of code on the same
+#		level as a pile of globals.
+#
+#		But what about all those globals, you ask...
 #
 sub main
 {
@@ -181,9 +184,9 @@ sub main
 
 #######################################################################
 #
-# optsandargs()
+# Routine:	optsandargs()
 #
-#	Parse the command line for options and arguments.
+# Purpose:	Parse the command line for options and arguments.
 #
 sub optsandargs()
 {
@@ -203,6 +206,7 @@ sub optsandargs()
 	#  3. Set options from the config file and command line.  No keyrec
 	#     will be used.
 	#
+	opts_createkrf();
 	$ropts = opts_zonekr();
 	if($ropts == undef)
 	{
@@ -221,22 +225,32 @@ sub optsandargs()
 	#
 	# Get the KSK- and ZSK-related arguments.
 	#
-	$ksize	  = $opts{'ksklength'};
-	$zsize	  = $opts{'zsklength'};
+	$ksize	  = $opts{'ksklength'}	  || "";
+	$zsize	  = $opts{'zsklength'}	  || "";
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
-	$reuseksk = $opts{'reuseksk'} || 0;
-	$reusezsk = $opts{'reusezsk'} || 0;
+	$reuseksk = $opts{'reuseksk'}	  || 0;
+	$reusezsk = $opts{'reusezsk'}	  || 0;
 
 	#
 	# Get the rest of the options.
 	#
-	$alg	 = "-a " . $opts{'algorithm'}	|| "";
-	$enddate = "-e " . $opts{'endtime'}	|| "";
-	$gends	 = $opts{'gends'};
-	$random  = "-r " . $opts{'random'}	|| "";
-	$kgopts  = $opts{'kgopts'}		|| "";
-	$szopts  = $opts{'szopts'}		|| "";
+	$alg	 = $opts{'algorithm'}	|| "";
+	$enddate = $opts{'endtime'}	|| "";
+	$gends	 = $opts{'gends'}	|| "";
+	$random  = $opts{'random'}	|| "";
+	$kgopts  = $opts{'kgopts'}	|| "";
+	$szopts  = $opts{'szopts'}	|| "";
+	$krfile  = $opts{'krfile'}	|| "";
+
+	#
+	# Set up options and values, if they've been given.
+	#
+	$ksize	 = "-b $ksize"	 if($ksize ne "");
+	$zsize	 = "-b $zsize"	 if($zsize ne "");
+	$alg	 = "-a $alg"	 if($alg ne "");
+	$enddate = "-e $enddate" if($enddate ne "");
+	$random	 = "-r $random"	 if($random ne "");
 
 	$help	 = $opts{'help'};
 	$verbose = $opts{'verbose'};
@@ -291,14 +305,20 @@ sub optsandargs()
 	$zone	  = $ARGV[0];
 	$zonedata = $ARGV[1];
 	$zonefile = $ARGV[2];
+
+	#
+	# If the keyrec file is empty, we'll create a keyrec for
+	# the zone.
+	#
+	chkkrf();
 }
 
 #######################################################################
 #
-# genkeys()
+# Routine:	genkeys()
 #
-#	Generate new KSK and ZSK keys.  New keyrecs for the new keys
-#	are added to the keyrec file.
+# Purpose:	Generate new KSK and ZSK keys.  New keyrecs for the new keys
+#		are added to the keyrec file.
 #
 sub genkeys
 {
@@ -311,9 +331,9 @@ sub genkeys
 
 #######################################################################
 #
-# genksk()
+# Routine:	genksk()
 #
-#	Generate a new KSK key.
+# Purpose:	Generate a new KSK key.
 #
 sub genksk
 {
@@ -338,12 +358,12 @@ sub genksk
 	#
 	# Generate the new KSK.
 	#
-	print "\t$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone\n" if ($verbose);
-	$ksk = `$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone`;
+	print "\t$KEYGEN $kgopts $random $alg $ksize -n zone -f KSK $zone\n" if ($verbose);
+	$ksk = `$KEYGEN $kgopts $random $alg $ksize -n zone -f KSK $zone`;
 	if($? != 0)
 	{
 		print STDERR "unable to generate KSK key file;\n";
-		print STDERR "dnssec-keygen returned $?\n";
+		print STDERR "dnssec-keygen returned $?\n" if($verbose);
 		exit(1);
 	}
 	chomp $ksk;
@@ -360,7 +380,7 @@ sub genksk
 
 #######################################################################
 #
-# genzsk()
+# Routine:	genzsk()
 #
 sub genzsk
 {
@@ -393,12 +413,12 @@ sub genzsk
 	#
 	# Generate a ZSK key.
 	#
-	print "\t$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone\n" if ($verbose);
-	$zsk = `$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone`;
+	print "\t$KEYGEN $kgopts $random $alg $zsize -n zone $zone\n" if ($verbose);
+	$zsk = `$KEYGEN $kgopts $random $alg $zsize -n zone $zone`;
 	if($? != 0)
 	{
 		print STDERR "unable to generate $keytype ZSK key file;\n";
-		print STDERR "dnssec-keygen returned $?\n";
+		print STDERR "dnssec-keygen returned $?\n" if($verbose);
 		exit(1);
 	}
 	chomp $zsk;
@@ -417,10 +437,10 @@ sub genzsk
 
 #######################################################################
 #
-# keydirs()
+# Routine:	keydirs()
 #
-#	Check the validity of the key directories and move the newly
-#	generated key in.  Don't do anything if the directory is '.' 
+# Purpose:	Check the validity of the key directories and move the newly
+#		generated key in.  Don't do anything if the directory is '.' 
 #
 sub keydirs
 {
@@ -465,9 +485,9 @@ sub keydirs
 
 #######################################################################
 #
-# zoneincludes()
+# Routine:	zoneincludes()
 #
-#	Add include statements to the zone file for the key files.
+# Purpose:	Add include statements to the zone file for the key files.
 #
 sub zoneincludes
 {
@@ -507,9 +527,10 @@ EOF
 
 #######################################################################
 #
-# zonesign()
+# Routine:	zonesign()
 #
-#	Sign the zone with the new keys and ensure the signing succeeded.
+# Purpose:	Sign the zone with the new keys and ensure that the signing
+#		succeeded.
 #
 sub zonesign
 {
@@ -582,10 +603,10 @@ sub zonesign
 
 #######################################################################
 #
-# updzonerec()
+# Routine:	updzonerec()
 #
-#	Add the zone's keyrec to the keyrec file.  Also, we'll add the
-#	zone's name to the keyrecs of its keys.
+# Purpose:	Add the zone's keyrec to the keyrec file.  Also, we'll add the
+#		zone's name to the keyrecs of its keys.
 #
 sub updzonerec
 {
@@ -656,9 +677,39 @@ sub updzonerec
 
 #######################################################################
 #
-# usage()
+# Routine:	chkkrf()
 #
-#	Give usage message and exit.
+# Purpose:	If we have a new keyrec file, we'll add a new keyrec
+#		for the specified zone.  We'll set a few basic keyrec
+#		files in the entry.
+#
+sub chkkrf
+{
+	my %zoneopts;				# Initial fields for zone.
+
+	#
+	# If a keyrec file wasn't specified or is of non-zero length,
+	# we'll return now.
+	#
+	if(!defined($krfile) || (-s $krfile))
+	{
+		return;
+	}
+
+	#
+	# Set the basic zone keyrec fields and add the keyrec.
+	#
+	$zoneopts{'keyrec_type'} = "zone";
+	$zoneopts{'zonefile'}	 = $zonefile;
+
+	keyrec_add('zone',$zone,\%zoneopts);
+}
+
+#######################################################################
+#
+# Routine:	usage()
+#
+# Purpose:	Give usage message and exit.
 #
 sub usage
 {
