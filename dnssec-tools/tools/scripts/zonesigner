@@ -8,14 +8,14 @@
 #	This script combines a lot of actions required to sign a zone into a
 #	single command.  The command is used in this way:
 #
-#		zonesigner [options] <zone> <zone-data> <zone-file>
+#		zonesigner [options] <zone> <zoneout>
 #
 #		where:
 #			zone	 - the zone to be signed.  This may also be
-#				   specified with the -zone option.
-#			zonedata - a zone file to which the $INCLUDE ksk and
+#				   specified with the -zone option.  This is
+#				   a zone file to which the $INCLUDE ksk and
 #				   $INCLUDE zsk lines are added
-#			zonefile - is the name of the output zone file
+#			zoneout	 - the name of the output zone file
 #
 #
 #	Options, their meanings, and default values are given below.
@@ -43,6 +43,7 @@
 #
 #		-help		display usage message
 #		-verbose	verbose output
+#
 
 use strict;
 
@@ -76,11 +77,11 @@ my $zskpubpath;				# Path to the current KSK.
 my $reusezsk;				# Reuse the existing ZSK.
 
 my $zone;				# Zone to play with.
-my $zonedata;				# Zone data (input) file.
-my $zonefile;				# Zone file (output.)
+my $zoneout;				# Zone file (output.)
 my $krfile;				# User-specified keyrec file.
 
 my $status;				# Zone-signing status.
+my @zonestat;				# stat() buffer for zone file.
 
 my %opts;				# Options.
 
@@ -114,6 +115,7 @@ exit($status);
 #
 sub main
 {
+	my $statlen;				# Length of stat() buffer.
 	my $status;				# Status of zone-signing.
 
 	#
@@ -130,9 +132,8 @@ sub main
 		}
 
 		print "\narguments:\n";
-		print "\tzone	  - $zone\n";
-		print "\tzonedata - $zonedata\n";
-		print "\tzonefile - $zonefile\n";
+		print "\tzone	 - $zone\n";
+		print "\tzoneout - $zoneout\n";
 	}
 
 	#
@@ -140,16 +141,36 @@ sub main
 	#
 	if($help == 1)
 	{
-		usage();
+		usage(1);
 	}
 
 	#
 	# Ensure that the required data were specified.
 	#
-	if(($zone eq "") || ($zonedata eq "") || ($zonefile eq ""))
+	if(($zone eq "") || ($zoneout eq ""))
 	{
 		print STDERR "no zone specified\n";
-		usage();
+		usage(2);
+	}
+
+	#
+	# Ensure that the zone file exists and open it.
+	#
+	$statlen = @zonestat = stat($zone);
+	if($statlen == 0)
+	{
+		print STDERR "zone file $zone does not exist\n";
+		exit(1);
+	}
+	open(ZF,"+< $zone") or die "unable to open zone file $zone";
+
+	#
+	# Ensure that the zone file has not been signed yet.
+	#
+	if(presigned())
+	{
+		print STDERR "zone file $zone already signed\n";
+		exit(1);
 	}
 
 	#
@@ -158,8 +179,8 @@ sub main
 	genkeys();
 
 	#
-	# Create the key directories and move the key files into the appropriate
-	# repositories.
+	# Create the key directories and move the key files into the
+	# appropriate repositories.
 	#
 	keydirs();
 
@@ -284,33 +305,79 @@ sub optsandargs()
 	# Check that we don't have too many arguments.
 	#
 	$argc = @ARGV;
-	usage() if($argc > 3);
+	usage(3) if($argc > 3);
 
 	#
 	# If we've got two arguments (after option removal) we'll look for
 	# the zone name in the arguments.  If we find it, we'll add the
-	# zone name to the argument list.
+	# zone name to the argument list.  If we don't, we'll duplicate
+	# the existing argument for use as both source and destination.
 	#
-	if($argc == 2)
+	if($argc == 1)
 	{
 		$zone = $opts{'zone'};
-		usage() if(!defined($zone));
 
-		unshift(@ARGV,$zone);
+		if(defined($zone))
+		{
+			unshift(@ARGV,$zone);
+		}
+		else
+		{
+			unshift(@ARGV,$ARGV[0]);
+		}
 	}
 
 	#
 	# Set variables for the arguments.
 	#
-	$zone	  = $ARGV[0];
-	$zonedata = $ARGV[1];
-	$zonefile = $ARGV[2];
+	$zone	 = $ARGV[0];
+	$zoneout = $ARGV[1];
 
 	#
 	# If the keyrec file is empty, we'll create a keyrec for
 	# the zone.
 	#
 	chkkrf();
+}
+
+#######################################################################
+#
+# Routine:	presigned()
+#
+# Purpose:	Ensure that the specified zone file is not a signed zone file.
+#		We'll check for the presence of a signed-specific record.
+#
+#		Returns:
+#			0 - Zone not previously signed.
+#			1 - Zone previously signed.
+#
+sub presigned
+{
+	my $zfile = shift;			# Name of zone file.
+
+	my $file = "";				# Contents of zone file.
+	my $flen = 0;				# Length of zone file.
+	my $hitcnt;				# Number of RRSIGs in file.
+	my @hits;				# RRSIG hits.
+
+	#
+	# Get the zone file's length and contents.
+	#
+	$flen = $zonestat[7];
+	seek(ZF,0,0);
+	read(ZF,$file,$flen);
+
+	$hitcnt = @hits = $file =~ /RRSIG/mg;
+
+	#
+	# If we found some RRSIG records, return a true value.  If not,
+	# return a false value.
+	#
+	if($hitcnt > 0)
+	{
+		return(1);
+	}
+	return(0);
 }
 
 #######################################################################
@@ -491,6 +558,8 @@ sub keydirs
 #
 sub zoneincludes
 {
+	my $file;				# Zone's contents.
+	my $flen;				# Zone file's length.
 	my $newserial;				# Zone's new serial number.
 
 	print "adding key includes to zone file\n" if ($verbose);
@@ -498,24 +567,90 @@ sub zoneincludes
 	#
 	# Update the zone data's serial number.
 	#
-	$newserial = serialincr($zonedata);
+	$newserial = serialincr($zone);
 	if($newserial == -1)
 	{
-		print STDERR "unable to update serial number in $zonedata\n";
+		print STDERR "unable to update serial number in $zone\n";
 		exit(3);
 	}
-	print "$zonedata's new serial number - $newserial\n" if ($verbose);
+	print "$zone's new serial number - $newserial\n" if ($verbose);
 
-	#
-	# Copy the zone data to a new file.
-	#
-	system("$CP $zonedata $zonefile");
+	if(hasincludes())
+	{
+		my $newfile = "";		# New zone contents.
+		my $tail;			# Tail end of zone searches.
 
-	#
-	# Add lines to include the KSK and ZSK files.
-	#
-	open(ZD,">> $zonefile");
-	print ZD <<EOF;
+		#
+		# Get the data from the zone file.
+		#
+		seek(ZF,0,0);
+		@zonestat = stat($zone);
+		$flen = $zonestat[7];
+		read(ZF,$file,$flen);
+
+		#
+		# Find our region of the file.
+		#
+		$file =~ /manipulated by dnssec-tools./s;
+		$newfile = $` . $&;
+		$tail = $';
+
+		#
+		# Adjust the KSK key.
+		#
+		$tail =~ /ksk\n/m;
+		$newfile .= $` . $&;
+		$tail = $';
+		$tail =~ s/\$INCLUDE ".*?"/\$INCLUDE "$kskpath"/;
+
+		#
+		# Adjust the current ZSK key.
+		#
+		$tail =~ /current zsk\n/m;
+		$newfile .= $` . $&;
+		$tail = $';
+		$tail =~ s/\$INCLUDE ".*?"/\$INCLUDE "$zskcurpath"/;
+
+		#
+		# Adjust the published ZSK key.
+		#
+		$tail =~ /published zsk\n/m;
+		$newfile .= $` . $&;
+		$tail = $';
+		$tail =~ s/\$INCLUDE ".*?"/\$INCLUDE "$zskpubpath"/;
+
+		#
+		# ... and add the modified end of the file to our saved end.
+		#
+		$newfile .= $tail;
+
+		#
+		# Re-write the zone file.
+		#
+		seek(ZF,0,0);
+		truncate(ZF,0);
+		print ZF $newfile;
+		close(ZF);
+
+		#
+		# Copy the zone data to a new file.
+		#
+		system("$CP $zone $zoneout") if($zone ne $zoneout);
+		open(ZF,"+< $zone");
+		@zonestat = stat($zone);
+	}
+	else
+	{
+		#
+		# Copy the zone data to a new file.
+		#
+		system("$CP $zone $zoneout") if($zone ne $zoneout);
+
+		#
+		# Add lines to include the KSK and ZSK files.
+		#
+		open(ZF,">> $zoneout");
+		print ZF <<EOF;
 
 
 ;;
@@ -535,7 +670,9 @@ sub zoneincludes
 \$INCLUDE \"$zskpubpath\"
 
 EOF
-	close(ZD);
+
+		close(ZF);
+	}
 }
 
 #######################################################################
@@ -566,8 +703,8 @@ sub zonesign
 	# Sign the zone with the new keys.
 	#
 	print "signing zone\n" if ($verbose);
-	print "\t$SIGNZONE $cmdopts $zonefile $zskcurpath\n" if ($verbose);
-	$szone = `$SIGNZONE $cmdopts $zonefile $zskcurpath`;
+	print "\t$SIGNZONE $cmdopts $zoneout $zskcurpath\n" if ($verbose);
+	$szone = `$SIGNZONE $cmdopts $zoneout $zskcurpath`;
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
@@ -636,7 +773,7 @@ sub updzonerec
 	# Set some fields we've got to have -- in case they aren't
 	# set in the options.
 	#
-	$opts{'zonefile'} = $zonefile;
+	$opts{'zonefile'} = $zoneout;
 	$opts{'kskkey'}	  = $ksk;
 	$opts{'kskpath'}  = $kskpath;
 	$opts{'zskcur'}	  = $zskcur;
@@ -653,17 +790,20 @@ sub updzonerec
 	{
 
 		keyrec_add('zone',$zone,\%opts);
-		return;
 	}
-
-	#
-	# If there is a keyrec for the zone, we'll add
-	#
-	foreach my $field (keyrec_zonefields())
+	else
 	{
-		if(defined($opts{$field}))
+
+		#
+		# If there is a keyrec for the zone, we'll make sure the
+		# defined zone keyrec fields are set.
+		#
+		foreach my $field (keyrec_zonefields())
 		{
-			keyrec_setval('zone',$zone,$field,$opts{$field});
+			if(defined($opts{$field}))
+			{
+				keyrec_setval('zone',$zone,$field,$opts{$field});
+			}
 		}
 	}
 
@@ -690,6 +830,45 @@ sub updzonerec
 
 #######################################################################
 #
+# Routine:	hasincludes
+#
+# Purpose:	This routine returns a flag indicating if the zone file
+#		includes any keys.
+#
+#		0 - zone file does not include keys
+#		1 - zone file includes keys
+#
+sub hasincludes
+{
+	my $file = "";				# Contents of zone file.
+	my $flen = 0;				# Length of zone file.
+	my $keyname;				# Name of key from include.
+
+	#
+	# Get the zone file's length and contents.
+	#
+	seek(ZF,0,0);
+	$flen = $zonestat[7];
+	read(ZF,$file,$flen);
+
+	#
+	# Look for the key inclusion.
+	#
+	$file =~ /^\$INCLUDE \"(.+?)\"$/m;
+	$keyname = $1;
+
+	#
+	# Give the appropriate response.
+	#
+	if($keyname eq "")
+	{
+		return(0);
+	}
+	return(1);
+}
+
+#######################################################################
+#
 # Routine:	serialincr
 #
 # Purpose:	This routine increments the serial number of an SOA record in
@@ -705,7 +884,6 @@ sub serialincr
 
 	my $file = "";				# Contents of zone file.
 	my $flen = 0;				# Length of zone file.
-	my @sbuf;				# Buffer for stat().
 
 	my $remnant;				# Contents after the SOA line.
 	my $soafields;				# SOA's fields.
@@ -713,16 +891,10 @@ sub serialincr
 	my $serialnew;				# New serial number.
 
 	#
-	# Ensure that the zone file exists and get its length.
+	# Get the zone file's length and contents.
 	#
-	@sbuf = stat($zfile);
-	return(-1) if(@sbuf == "");
-	$flen = $sbuf[7];
-
-	#
-	# Get the zone file's contents.
-	#
-	open(ZF,"+< $zfile");
+	$flen = $zonestat[7];
+	seek(ZF,0,0);
 	read(ZF,$file,$flen);
 
 	#
@@ -767,7 +939,6 @@ sub serialincr
 		#
 		if($serialnum eq "")
 		{
-			close(ZF);
 			return(-1);
 		}
 	}
@@ -782,8 +953,15 @@ sub serialincr
 	# Write the new file contents and close the file.
 	#
 	seek(ZF,0,0);
+	truncate(ZF,0);
 	print ZF $file;
 	close(ZF);
+
+	#
+	# Re-open the zone file with the latest info.
+	#
+	@zonestat = stat($zone);
+	open(ZF,"+< $zone");
 
 	return($serialnew);
 }
@@ -813,7 +991,7 @@ sub chkkrf
 	# Set the basic zone keyrec fields and add the keyrec.
 	#
 	$zoneopts{'keyrec_type'} = "zone";
-	$zoneopts{'zonefile'}	 = $zonefile;
+	$zoneopts{'zonefile'}	 = $zoneout;
 
 	keyrec_add('zone',$zone,\%zoneopts);
 }
@@ -826,7 +1004,9 @@ sub chkkrf
 #
 sub usage
 {
-	print STDERR "usage:  zonesigner [options] <zone> <zonedata> <zonefile>\n";
+	my $whence = shift;			# Location of call.
+
+	print STDERR "usage:  zonesigner [options] <zone-file> <zone-out>\n";
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-algorithm algorithm\n";
 	print STDERR "\t\t-random random-path\n";
@@ -844,6 +1024,8 @@ sub usage
 	print STDERR "\t\t-help\n";
 	print STDERR "\t\t-verbose\n";
 
+#	print "\ncalled from $whence\n" if($verbose && ($whence > 0));
+
 	exit(1);
 }
 
@@ -856,11 +1038,12 @@ sub usage
 
 =head1 NAME
 
-zonesigner - Check a dnssec-tools keyrec file for problems and consistency.
+zonesigner - Check a B<dnssec-tools> I<keyrec> file for problems and
+consistencies.
 
 =head1 SYNOPSIS
 
-  zonesigner [options] <zone> <zone-data> <zone-file>
+  zonesigner [options] <zone-file> <zone-out>
 
 =head1 DESCRIPTION
 
@@ -869,7 +1052,7 @@ sign a zone.  It generates the required KSK and ZSK keys, adds the key data
 to a zone file, signs the zone, and runs checks to ensure that everything
 worked properly.
 
-Using I<keyrec> files, defined and maintained by I<dnssec-tools>,
+Using I<keyrec> files, defined and maintained by B<dnssec-tools>,
 I<zonesigner> can automatically gather many of the options used to previously
 sign and generate a zone and its keys.  This allows the zone to be maintained
 using the same key lengths and expiration times, for example, without an
@@ -879,23 +1062,81 @@ I<zonesigner> is used in this way:
 
 =over 4
 
-zonesigner [options] <zone> <zone-data> <zone-file>
+zonesigner [options] <zone-file> <zone-out>
 
 =back
 
-I<zone>	is the name of the zone that will be signed.  This may also be
-specified with the I<-zone> option.
+I<zone-file> is the name of the zone that will be signed and the name of the
+zone file from which a signed zone file will be created..  This may also be
+specified with the I<-zone> option.  Several $INCLUDE lines will be added at
+the end and the SOA serial number will be incremented.  Generated keys are
+given this name as their base.
 
-I<zonedata> is a template zone file to which several lines are added to
-include required KSK and ZSK key files.  This file will look B<exactly> like
-the I<zonefile> zone file, except without the $INCLUDE lines added at the end.
-The SOA serial number is incremented prior to the file being copied to
-I<zonefile>.
+I<zone-out> is the name of the output zone file.  This file will look
+be a copy of the I<zone-file> zone file.  The signed zone file will be this
+name, appended with I<.signed>.
 
-I<zonefile> is the name of the output zone file.  This file will look
-B<exactly> like the I<zonedata> zone file, except with the $INCLUDE lines
-added at the end.
+The I<zone-out> argument may be left out, in which case the input zone file
+will be used as the base for all operations. 
 
+=head2 Examples
+
+Example 1.
+
+In the first example, an existing I<keyrec> file is used to assist in signing
+the portrigh.com domain.  Zone data are stored in B<portrigh.com>, and the
+keyrec is in B<portrigh.keyrec>.  The output zone file and final signed zone
+file will use B<db.portrigh.com> as a base.  Using this execution:
+
+    # zonesigner -krfile portrigh.keyrec portrigh.com db.portrigh.com
+
+the following files are created:
+
+    Kportrigh.com.+005+45842.private
+    Kportrigh.com.+005+45842.key
+    Kportrigh.com.+005+50186.private
+    Kportrigh.com.+005+50186.key
+    Kportrigh.com.+005+59143.key
+    Kportrigh.com.+005+59143.private
+
+    dsset-portrigh.com.
+    keyset-portrigh.com.
+
+    db.portrigh.com
+    db.portrigh.com.signed
+
+
+The first six files are the KSK and ZSK keys required for the zone.  The next
+two files are created by the zone-signing process.  The last two are the zone
+file used as input to the zone-signing process and the final signed zone.
+
+Example 2.
+
+In the second example, an existing I<keyrec> file is used to assist in signing
+the portrigh.com domain.  Zone data are stored in B<portrigh.com>, and the
+keyrec is in B<portrigh.keyrec>.  The generated keys, output zone file, and
+final signed zone file will use B<portrigh.com> as a base.  Using this
+execution:
+
+    # zonesigner -krfile portrigh.keyrec db.portrigh.com
+
+the following files are created:
+
+    Kdb.portrigh.com.+005+12354.key
+    Kdb.portrigh.com.+005+12354.private
+    Kdb.portrigh.com.+005+82197.key
+    Kdb.portrigh.com.+005+82197.private
+    Kdb.portrigh.com.+005+55888.key
+    Kdb.portrigh.com.+005+55888.private
+
+    dsset-db.portrigh.com.
+    keyset-db.portrigh.com.
+
+    db.portrigh.com.signed
+
+The first six files are the KSK and ZSK keys required for the zone.  The next
+two files are created by the zone-signing process.  The last file is file is
+the final signed zone.
 
 =head1 OPTIONS
 
