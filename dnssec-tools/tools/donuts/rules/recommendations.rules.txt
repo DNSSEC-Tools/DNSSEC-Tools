@@ -1,0 +1,35 @@
+# Copyright 2004 Sparta, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+#
+# This file checks for misc sanity checks
+#
+
+
+name: DNS_REASONABLE_TTLS
+level: 8
+class: Warning
+# 60 seconds min
+minttl: 60
+# 7 days max
+maxttl: 604800
+test:
+  return "Record has a TTL which is unreasonably small"
+     if ($_[0]->ttl < $_[1]->{'minttl'});
+  return "Record has a TTL which is unreasonably large"
+     if ($_[0]->ttl > $_[1]->{'maxttl'});
+
+# how they ever got this far, I'm not sure...
+name: DNS_SOA_REQUIRED
+level: 2
+ruletype: name
+test:
+   "A SOA record for $current_domain is required"
+      if ($_[2] eq $current_domain && $#{$_[0]->{'SOA'}} == -1);
+
+name: DNS_NO_DOMAIN_MX_RECORDS
+level: 8
+class: Warning
+ruletype: name
+test:
+   "At least one MX record for $current_domain is suggested"
+      if ($_[2] eq $current_domain && $#{$_[0]->{'MX'}} == -1);
