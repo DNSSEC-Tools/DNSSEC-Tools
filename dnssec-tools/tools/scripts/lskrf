@@ -127,7 +127,7 @@ sub showzones
 
 		if($terse)
 		{
-			print "zone $zk\n";
+			print "$zk\n";
 		}
 		elsif($long)
 		{
@@ -137,21 +137,10 @@ sub showzones
 		{
 			print "zone $zk\t$kr{'zonefile'}\t\t\"$kr{'keyrec_signdate'}\"\n";
 		}
+
 		$count++;
 	}
 }
-
-# zone    "portrigh.com"
-#         keyrec_type     "zone"
-#         zonefile        "db.portrigh.com"
-#         kskkey          "Kportrigh.com.+005+02640"
-#         kskpath         "./Kportrigh.com.+005+02640.key"
-#         zskpub          "Kportrigh.com.+005+42905"
-#         zskcur          "Kportrigh.com.+005+12956"
-#         endtime         "+259200"
-#         keyrec_signsecs "1108159770"
-#         keyrec_signdate "Fri Feb 11 22:09:30 2005"
-
 
 #-----------------------------------------------------------------------------
 #
@@ -159,38 +148,110 @@ sub showzones
 #
 sub showkeys
 {
+	#
+	# Print the information about the KSK keys.
+	#
 	if($kskflag)
 	{
 		foreach my $k (sort(keys(%kskkeys)))
 		{
-			print "ZSK-key $k\n";
+			my $krr = $kskkeys{$k};
+			my %kr = %$krr;
+
+			if($terse)
+			{
+				print "$k\n";
+			}
+			elsif($long)
+			{
+				print "KSK-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+			else
+			{
+				print "KSK-$k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+
 			$count++;
 		}
 	}
 
+	#
+	# Print the information about the current ZSK keys.
+	#
 	if($zcurflag)
 	{
 		foreach my $k (sort(keys(%zcurkeys)))
 		{
-			print "KSK-cur-key $k\n";
+			my $krr = $zcurkeys{$k};
+			my %kr = %$krr;
+
+			if($terse)
+			{
+				print "$k\n";
+			}
+			elsif($long)
+			{
+				print "ZSK-cur-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+			else
+			{
+				print "ZSK-cur $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+
 			$count++;
 		}
 	}
 
+	#
+	# Print the information about the new ZSK keys.
+	#
 	if($znewflag)
 	{
 		foreach my $k (sort(keys(%znewkeys)))
 		{
-			print "ZSK-new-key $k\n";
+			my $krr = $znewkeys{$k};
+			my %kr = %$krr;
+
+			if($terse)
+			{
+				print "$k\n";
+			}
+			elsif($long)
+			{
+				print "ZSK-new-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+			else
+			{
+				print "ZSK-new $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+
 			$count++;
 		}
 	}
 
+	#
+	# Print the information about the published ZSK keys.
+	#
 	if($zpubflag)
 	{
 		foreach my $k (sort(keys(%zpubkeys)))
 		{
-			print "ZSK-pub-key $k\n";
+			my $krr = $zpubkeys{$k};
+			my %kr = %$krr;
+
+			if($terse)
+			{
+				print "$k\n";
+			}
+			elsif($long)
+			{
+				print "ZSK-pub-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+			else
+			{
+				print "ZSK-pub $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
+			}
+
 			$count++;
 		}
 	}
