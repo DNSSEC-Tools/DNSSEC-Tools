@@ -1,5 +1,5 @@
 --- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
-+++ Fast.pm	2004-11-04 16:24:32.291144696 -0800
++++ Fast.pm	2004-12-24 09:14:03.406886528 -0800
 @@ -15,6 +15,7 @@
  use vars qw($VERSION);
  use IO::File;
@@ -18,7 +18,7 @@
  my $on_error;
  my $quiet;
  my $soft_errors;
-@@ -526,6 +530,99 @@
+@@ -526,6 +530,101 @@
  		} else {
  			error("bad SRV data");
  		}
@@ -71,6 +71,7 @@
 +		} elsif (/\G(.*\S)\s*$/) {
 +		    # single-line
 +		    $dnskey->{'key'} .= $1;
++		    $dnskey->{'key'} =~ s/\s//g;
 +		    $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
 +		    push @zone, $dnskey;
 +		    $dnskey = undef;
@@ -95,7 +96,8 @@
 +		} elsif (/\G(.*\S)\s*$/) {
 +		    # single line
 +		    $ds->{'digest'} .= $1;
-+		    $ds->{'digestbin'} = decode_base64($ds->{'digest'});
++		    $ds->{'digest'} = lc($ds->{'digest'});
++		    $ds->{'digestbin'} = pack("H*", $ds->{'digest'});
 +		    push @zone, $ds;
 +		    $ds = undef;
 +		} else {
@@ -118,7 +120,7 @@
  	} elsif (/\G(rp)[ \t]+/igc) {
  		my $mbox;
  		if (/\G($pat_maybefullname)[ \t]+/gc) {
-@@ -562,6 +659,8 @@
+@@ -562,6 +661,8 @@
  			mbox     => $mbox,
  			txtdname => $txtdname,
  		};
@@ -127,7 +129,7 @@
  	} else {
  		error("unrecognized type");
  	}
-@@ -634,6 +733,88 @@
+@@ -634,6 +735,90 @@
  	return $v;
  }
  
@@ -167,7 +169,7 @@
 +
 +sub parse_dnskey
 +{
-+    # got more data
++    # got more data?
 +    if (/\)\s*;.*$/) {
 +	if (/\G\s*(\S*)\s*\)\s*;.*$/gc) {
 +	    $dnskey->{'key'} .= $1;
@@ -195,10 +197,12 @@
 +    if (/\)\s*$/) {
 +	if (/\G\s*(\S*)\s*\)\s*$/gc) {
 +	    $ds->{'digest'} .= $1;
++	    $ds->{'digest'} = lc($ds->{'digest'});
++
 +	    # we're done
 +	    $parse = \&parse_line;
 +
-+	    $ds->{'digestbin'} = decode_base64($ds->{'digest'});
++	    $ds->{'digestbin'} = pack("H*",$ds->{'digest'});
 +	    push @zone, $ds;
 +	    $ds = undef;
 +	} else {
