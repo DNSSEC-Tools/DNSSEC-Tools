@@ -21,7 +21,7 @@
 #		ksk_length	1024		; KSK key length.
 #
 
-package Net::DNS::Sec::DNSSecTools::conf;
+package Net::DNS::SEC::DNSSECTools::conf;
 
 require Exporter;
 use strict;

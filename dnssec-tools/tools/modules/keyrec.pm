@@ -40,7 +40,7 @@
 #	this module will have to be rewritten to account for it.
 #
 
-package Net::DNS::Sec::DNSSecTools::keyrec;
+package Net::DNS::SEC::DNSSECTools::keyrec;
 
 require Exporter;
 use strict;
