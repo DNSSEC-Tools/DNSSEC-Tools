@@ -31,24 +31,38 @@ sub print_error {
 sub test_record {
     my ($r, $rec, $file, $level, $dolive, $verbose) = @_;
     if ((!exists($r->{'level'}) || $level >= $r->{'level'}) &&
-	(!exists($r->{'type'}) || $rec->type eq $r->{'type'}) &&
 	(!exists($r->{'live'}) || $dolive) &&
 	(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
-	my $res = $r->{'test'}->($rec, $r);
-	if (ref($res) ne 'ARRAY') {
-	    if ($res) {
-		$res = [$res];
-	    } else {
-		return;
+
+	# this is a legal rule for this run.
+
+	if (!exists($r->{'type'}) || $rec->type eq $r->{'type'}) {
+
+	    # and the type matches
+
+	    my $res = $r->{'test'}->($rec, $r);
+	    if (ref($res) ne 'ARRAY') {
+		if ($res) {
+		    $res = [$res];
+		} else {
+		    return (1,0);
+		}
+	    }
+	    if ($#$res > -1) {
+		foreach my $result (@$res) {
+		    $r->print_error($result, "$file:$rec->{Line}",
+				    $verbose);
+		}
+		return (1,$#$res+1);
 	    }
 	}
-	if ($#$res > -1) {
-	    foreach my $result (@$res) {
-		$r->print_error($result, "$file:$rec->{Line}",
-				$verbose);
-	    }
-	}
+	
+	# it was a legal rule, so we count it but no errors
+	return (1,0);
     }
+
+    # rule will never be run with current settings (and no errors).
+    return (0,0);
 }
 
 sub test_name {
@@ -61,7 +75,7 @@ sub test_name {
 	    if ($res) {
 		$res = [$res];
 	    } else {
-		return;
+		return (1,0);
 	    }
 	}
 	if ($#$res > -1) {
@@ -69,8 +83,11 @@ sub test_name {
 		$r->print_error($result, "$file::$name",
 				$verbose);
 	    }
+	    return (1,$#$res+1);
 	}
+	return (1,0);
     }
+    return (0,0);
 }
 
 sub config {
