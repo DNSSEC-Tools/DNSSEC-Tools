@@ -25,7 +25,7 @@ Index: config.h.in
 Index: src/include/spf_server.h
 ===================================================================
 --- src/include/spf_server.h	2005-03-01 09:43:49.000000000 -0500
-+++ src/include/spf_server.h	2005-03-02 11:25:58.151657743 -0500
++++ src/include/spf_server.h	2005-03-02 11:25:58.000000000 -0500
 @@ -20,7 +20,6 @@
  
  #include "spf_record.h"
@@ -46,7 +46,7 @@ Index: src/include/spf_server.h
 Index: src/include/spf_dns_dnssec.h
 ===================================================================
 --- src/include/spf_dns_dnssec.h	2005-02-28 15:27:14.000000000 -0500
-+++ src/include/spf_dns_dnssec.h	2005-03-02 13:21:28.611722651 -0500
++++ src/include/spf_dns_dnssec.h	2005-03-02 13:21:28.000000000 -0500
 @@ -0,0 +1,25 @@
 +/* 
 + * Copyright SPARTA, Inc. 2005.  All rights reserved.
@@ -75,7 +75,7 @@ Index: src/include/spf_dns_dnssec.h
 +#endif /* INC_SPF_DNS_DNSSEC */
 Index: src/include/spf_request.h
 ===================================================================
---- src/include/spf_request.h	2005-03-02 13:12:18.922956814 -0500
+--- src/include/spf_request.h	2005-03-02 13:12:18.000000000 -0500
 +++ src/include/spf_request.h	2005-03-01 10:39:31.000000000 -0500
 @@ -17,7 +17,8 @@
  #define INC_SPF_REQUEST
@@ -102,7 +102,7 @@ Index: src/include/Makefile.am
 Index: src/include/spf_response.h
 ===================================================================
 --- src/include/spf_response.h	2005-03-01 15:50:58.000000000 -0500
-+++ src/include/spf_response.h	2005-03-02 13:23:19.669511305 -0500
++++ src/include/spf_response.h	2005-03-02 13:23:19.000000000 -0500
 @@ -149,6 +149,8 @@
  								mechanism will be ignored */
  ,	SPF_E_INCLUDE_RETURNED_NONE	/* If an include recursive query returns none it's a perm error */
@@ -135,7 +135,7 @@ Index: src/include/spf_dns.h
  
 Index: src/include/spf_record.h
 ===================================================================
---- src/include/spf_record.h	2005-03-02 13:12:08.479385081 -0500
+--- src/include/spf_record.h	2005-03-02 13:12:08.000000000 -0500
 +++ src/include/spf_record.h	2005-03-01 10:38:26.000000000 -0500
 @@ -25,6 +25,7 @@
  #include "spf_response.h"
@@ -147,8 +147,8 @@ Index: src/include/spf_record.h
   * Compiled SPF record
 Index: src/libspf2/spf_strerror.c
 ===================================================================
---- src/libspf2/spf_strerror.c	2005-03-02 13:13:31.898975235 -0500
-+++ src/libspf2/spf_strerror.c	2005-03-02 12:50:30.693542346 -0500
+--- src/libspf2/spf_strerror.c	2005-03-02 13:13:31.000000000 -0500
++++ src/libspf2/spf_strerror.c	2005-03-02 12:50:30.000000000 -0500
 @@ -162,6 +162,10 @@
  	return "include: or redirect= caused unlimited recursion";
  	break;
@@ -162,9 +162,71 @@ Index: src/libspf2/spf_strerror.c
  	break;
 Index: src/libspf2/spf_interpret.c
 ===================================================================
---- src/libspf2/spf_interpret.c	2005-03-02 13:13:09.459044785 -0500
-+++ src/libspf2/spf_interpret.c	2005-03-02 12:17:17.372776239 -0500
-@@ -747,6 +747,12 @@
+--- src/libspf2/spf_interpret.c	2005-03-02 13:13:09.000000000 -0500
++++ src/libspf2/spf_interpret.c	2005-03-03 13:43:13.142646788 -0500
+@@ -254,6 +254,14 @@
+ 	
+ 	char			*p, *p_end;
+ 
++	int breakouter;
++	int firstdnssecerr;
++	int i;
++	int num_errs;
++	SPF_error_t *err;
++	SPF_errcode_t errcode;
++	const char *errmsg;
++
+ 	SPF_ASSERT_NOTNULL(spf_response);
+ 	spf_request = spf_response->spf_request;
+ 	SPF_ASSERT_NOTNULL(spf_request);
+@@ -328,6 +336,46 @@
+ 		}
+ 	#endif
+ 
++		/* add in the DNSSEC validation status */
++		breakouter = 0;
++		firstdnssecerr = 1;
++		num_errs = SPF_response_warnings (spf_response);
++		for (i=0; i<num_errs; i++) {
++		    err = SPF_response_message (spf_response, i);
++		    if (err) {
++			errcode = SPF_error_code (err);
++			if (errcode == SPF_E_DNSSEC_FAILURE) {
++			    errmsg = SPF_error_message (err);
++			    if (errmsg == NULL)	errmsg = "";
++
++			    if (firstdnssecerr) {
++				p += snprintf(p,p_end - p," x-dnssec=fail (%s",
++					   errmsg);
++				firstdnssecerr = 0;
++			    }
++			    else {
++				p += snprintf(p,p_end - p," %s",
++					   errmsg);
++			    }
++			}
++			if (p_end - p <= 0) {
++			    breakouter = 1;
++			    break;
++			}
++		    }
++		}
++
++		if (breakouter) break;
++
++		if (firstdnssecerr) {
++		    p += snprintf(p,p_end - p," x-dnssec=pass;");
++		}
++		else {
++		    p += snprintf(p,p_end - p,");");
++		}
++
++		if (p_end - p <= 0) break;
++
+ 		/* FIXME  should the explanation string be included in the header? */
+ 
+ 		/* FIXME  should the header be reformated to include line breaks? */
+@@ -747,6 +795,12 @@
  				return DONE_TEMPERR(SPF_E_DNS_ERROR); /* REASON_MECH */
  			}
  
@@ -177,7 +239,7 @@ Index: src/libspf2/spf_interpret.c
  			for (i = 0; i < rr_a->num_rr; i++) {
  				if ( rr_a->rr_type != fetch_ns_type )
  					continue;
-@@ -787,6 +793,12 @@
+@@ -787,6 +841,12 @@
  				return DONE_TEMPERR(SPF_E_DNS_ERROR);
  			}
  
@@ -190,7 +252,7 @@ Index: src/libspf2/spf_interpret.c
  			max_mx = rr_mx->num_rr;
  			if ( max_mx > spf_server->max_dns_mx )
  				max_mx = spf_server->max_dns_mx;
-@@ -815,6 +827,19 @@
+@@ -815,6 +875,19 @@
  					return DONE_TEMPERR( SPF_E_DNS_ERROR );
  				}
  
@@ -210,7 +272,7 @@ Index: src/libspf2/spf_interpret.c
  				for( i = 0; i < rr_a->num_rr; i++ ) {
  					if ( rr_a->rr_type != fetch_ns_type )
  						continue;
-@@ -869,7 +894,6 @@
+@@ -869,7 +942,6 @@
  					return DONE_TEMPERR(SPF_E_DNS_ERROR);
  				}
  
@@ -218,7 +280,7 @@ Index: src/libspf2/spf_interpret.c
  				max_ptr = rr_ptr->num_rr;
  				if ( max_ptr > spf_server->max_dns_ptr )
  					max_ptr = spf_server->max_dns_ptr;
-@@ -890,6 +914,12 @@
+@@ -890,6 +962,12 @@
  						return DONE_TEMPERR( SPF_E_DNS_ERROR );
  					}
  
@@ -231,7 +293,7 @@ Index: src/libspf2/spf_interpret.c
  					for( j = 0; j < rr_a->num_rr; j++ ) {
  						if ( spf_server->debug ) {
  							INET_NTOP( AF_INET, &rr_a->rr[j]->a.s_addr,
-@@ -951,6 +981,12 @@
+@@ -951,6 +1029,12 @@
  						return DONE_TEMPERR( SPF_E_DNS_ERROR );
  					}
  
@@ -244,7 +306,7 @@ Index: src/libspf2/spf_interpret.c
  					for( j = 0; j < rr_aaaa->num_rr; j++ ) {
  						if ( spf_server->debug ) {
  							INET_NTOP(AF_INET6, &rr_aaaa->rr[j]->aaaa.s6_addr,
-@@ -1069,6 +1105,31 @@
+@@ -1069,6 +1153,31 @@
  				spf_response = save_spf_response;
  				save_spf_response = NULL;
  
@@ -276,7 +338,7 @@ Index: src/libspf2/spf_interpret.c
  				/* Rewrite according to prefix of include */
  				switch (SPF_response_result(spf_response_subr)) {
  					case SPF_RESULT_PASS:
-@@ -1152,6 +1213,11 @@
+@@ -1152,6 +1261,11 @@
  				SPF_FREE_LOOKUP_DATA();
  				return DONE_TEMPERR(SPF_E_DNS_ERROR);
  			}
@@ -291,7 +353,7 @@ Index: src/libspf2/spf_interpret.c
 Index: src/libspf2/Makefile.am
 ===================================================================
 --- src/libspf2/Makefile.am	2005-02-28 18:33:12.000000000 -0500
-+++ src/libspf2/Makefile.am	2005-02-28 18:33:22.000000000 -0500
++++ src/libspf2/Makefile.am	2005-03-03 13:20:32.149128666 -0500
 @@ -11,6 +11,7 @@
  	spf_config.c \
  	spf_dns.c \
@@ -300,10 +362,18 @@ Index: src/libspf2/Makefile.am
  	spf_dns_null.c \
  	spf_dns_resolv.c \
  	spf_dns_rr.c \
+@@ -32,7 +33,6 @@
+ 	spf_record.c \
+ 	spf_request.c \
+ 	spf_response.c \
+-	spf_result.c \
+ 	spf_server.c \
+ 	spf_strerror.c \
+ 	spf_utils.c \
 Index: src/libspf2/spf_get_exp.c
 ===================================================================
---- src/libspf2/spf_get_exp.c	2005-03-02 13:12:45.089378063 -0500
-+++ src/libspf2/spf_get_exp.c	2005-03-02 11:32:48.950698552 -0500
+--- src/libspf2/spf_get_exp.c	2005-03-02 13:12:45.000000000 -0500
++++ src/libspf2/spf_get_exp.c	2005-03-02 11:32:48.000000000 -0500
 @@ -164,6 +164,12 @@
  		RETURN_DEFAULT_EXP();
  		break;
@@ -320,7 +390,7 @@ Index: src/libspf2/spf_get_exp.c
 Index: src/libspf2/spf_server.c
 ===================================================================
 --- src/libspf2/spf_server.c	2005-03-01 16:05:02.000000000 -0500
-+++ src/libspf2/spf_server.c	2005-03-02 11:35:28.349955652 -0500
++++ src/libspf2/spf_server.c	2005-03-02 11:35:28.000000000 -0500
 @@ -54,6 +54,7 @@
  #include "spf_dns.h"
  #include "spf_dns_resolv.h"
@@ -393,7 +463,7 @@ Index: src/libspf2/spf_server.c
 Index: src/libspf2/spf_dns_dnssec.c
 ===================================================================
 --- src/libspf2/spf_dns_dnssec.c	2005-02-28 17:38:57.000000000 -0500
-+++ src/libspf2/spf_dns_dnssec.c	2005-03-02 13:21:19.798929585 -0500
++++ src/libspf2/spf_dns_dnssec.c	2005-03-02 13:21:19.000000000 -0500
 @@ -0,0 +1,192 @@
 +/* 
 + * Copyright SPARTA, Inc. 2005.  All rights reserved.
