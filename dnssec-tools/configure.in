@@ -6,11 +6,13 @@ AC_INIT([dnssec-tools], [0.1], [dnssec-tools-users@lists.sourceforge.net])
 AC_PREREQ([2.59])
 
 AC_PATH_PROG([PERLPROG],perl)
+AC_PATH_PROG(AR, ar)
 
 # useful stuff for installation
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PROG_RANLIB
 
 # useful for libvalidat
 AC_CONFIG_HEADER(lib/libvalidat/validat-config.h)
