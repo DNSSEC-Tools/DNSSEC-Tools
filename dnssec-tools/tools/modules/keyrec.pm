@@ -79,6 +79,7 @@ my @ZONEFIELDS = (
 			'keyrec_type',		# Internal only, usually.
 			'kskkey',
 			'kskpath',
+			'signedfile',
 			'zskcur',
 			'zskcurpath',
 			'zskpub',
