@@ -12,27 +12,23 @@ my %nodesonce;
 my %rtypes;
 my %edges;
 my %edgesonce;
-my %opts = ( o => 'map.png', l => 'neato');
+my %edgelabels;
+my %extras;
+my %opts = ( o => 'map.png', l => 'neato', w => 7*24*60*60);
 my ($zfile, $dname, $from, $to, $color);
 my $seccolor = "green2";
 my %dnames;
 
-getopts("Rgro:l:s:i:t:h",\%opts);
+my $time = time();
+
+getopts("Rgro:l:s:i:t:hL",\%opts);
 
 usage() if (exists($opts{'h'}));
-
-my %reccolors =
-  (
-   CNAME => '.2275,.5412,1',
-   NS => '.0510,.4196,1',
-   root => '.5765,.6902,1',
-   default => ".5137,.3804,1"
-  );
 
 my %edgeparameters =
   (
 #   CNAME => '.2275,.5412,1',
-   CNAME => {color => 'green3'},
+   CNAME => {color => '.9875,.8412,1'},
    NSEC => {color => 'brown', style => 'dashed'},
    NS => {style => 'bold'},
    RRSIG => { color => 'green4' },
@@ -48,9 +44,13 @@ map { $edgetypes{$_} = $edgecount++; } @edgetypes;
 
 my %nodeparameters =
   (
-   CNAME => { fillcolor => '.2275,.5412,1' },
+   CNAME => { fillcolor => '.9875,.4,1' },
    NS => { fillcolor => '.0510,.4196,1' },
    RRSIG => { color => $seccolor },
+   RRSIGWARN => { color => 'yellow3', style => 'bold' },
+   RRSIGERR => { color => 'red', style => 'bold' },
+#   RRSIGWARN => { fontcolor => 'yellow3' },
+#   RRSIGERR => { fontcolor => 'red' },
    AAAA => { fillcolor => ".2,.4,1" },
    MX => { fillcolor => ".8,.4,1" },
    default => { fillcolor => ".5137,.3804,1" },
@@ -58,7 +58,7 @@ my %nodeparameters =
   );
 
 # must be ordered by priority of importance in the results
-my @nodetypes = qw(AAAA MX CNAME RRSIG root);
+my @nodetypes = qw(AAAA MX NS CNAME RRSIG RRSIGWARN RRSIGERR root);
 my $nodecount = 1;
 my %nodetypes;
 map { $nodetypes{$_} = $nodecount++; } @nodetypes;
@@ -88,6 +88,7 @@ if ($opts{'t'}) {
 
 my $g = GraphViz->new(layout => $opts{'l'},
 		      node => {'fontsize' => 10},
+		      edge => {'fontsize' => 10},
 		      no_overlap => 1,
 		     );
 
@@ -150,6 +151,23 @@ while ($#ARGV > -1) {
 	    do_node($to, $rr->type);
 	}
 
+	if ($rr->type eq 'RRSIG') {
+	    use Date::Parse;
+	    my $date = $rr->sigexpiration;
+	    $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
+	    my $extime = str2time($date);
+	    if ($extime < $time) {
+		print "error: $to\n";
+		do_node($to, 'RRSIGERR');
+	    } elsif ($extime - $time < $opts{'w'}) {
+		print "warn: $to\n";
+		my $days = int(($extime-$time)/60/60/24);
+		my $hours = int(($extime-$time-$days*60*60*24)/60/60);
+		do_node($to, 'RRSIGWARN',
+			$rr->typecovered . ": ${days}d ${hours}h");
+	    }
+	}
+
 	if ($rr->type eq 'NS') {
 	    do_node($to, $rr->type);
 	}
@@ -163,6 +181,19 @@ while ($#ARGV > -1) {
 }
 
 #
+# add legend
+#
+if ($opts{'L'}) {
+    do_node('Legend','');
+    my @etypes = @edgetypes;
+    foreach my $k (@nodetypes, 'default') {
+	do_node($k, $k,'','Legend');
+	my $etype = shift @etypes;
+	do_edge('Legend', $k, $etype, $etype);
+    }
+}
+
+#
 # add nodes and edges
 #
 my ($k, $v, $parms);
@@ -170,9 +201,9 @@ foreach my $e1 (keys(%edges)) {
     add_once($g, $e1);
     foreach my $e2 (keys(%{$edges{$e1}})) {
 	add_once($g, $e2);
-
 	$parms = get_parms($edges{$e1}{$e2}, \%edgeparameters);
-	$g->add_edge($e1, $e2, %$parms);
+	my $label = $edgelabels{$e1}{$e2};
+	$g->add_edge($e1, $e2, label => $label, %$parms);
     }
 }
 
@@ -215,16 +246,18 @@ sub add_once {
 }
 
 sub do_edge {
-    my ($to, $from, $type) = @_;
+    my ($to, $from, $type, $label) = @_;
     # remember that the edge has this type
     $edges{$to}{$from}[$edgetypes{$type}] = $type;
+    $edgelabels{$to}{$from} = $label if ($label);
 }
 
 sub do_node {
-    my ($name, $type) = @_;
+    my ($name, $type, $extra, $dn) = @_;
     # remember that the node has this type
     $nodes{$name}[$nodetypes{$type}] = $type;
-    $dnames{$name} = $dname;
+    $dnames{$name} = $dn || $dname;
+    push @{$extras{$name}}, $extra if ($extra);
 }
 
 sub add_edge_once {
@@ -247,27 +280,15 @@ sub get_label {
     if ($opts{'r'}) {
 	$label .= "\n" . join(" ",sort keys(%{$rtypes{$name}}));
     }
+    if ($extras{$name}) {
+	$label .= "\n" . join("\n", @{$extras{$name}});
+    }
     if ($#labtypes > -1) {
 	foreach my $l (@labtypes) {
 	    $label .= $rtypes{$name}{$l};
 	}
     }
     return $label;
-}
-
-sub get_color {
-    my ($name) = @_;
-    if ($rtypes{$name}{'CNAME'}) {
-	return $reccolors{'CNAME'};
-    } elsif ($rtypes{$name}{'NS'}) {
-	return $reccolors{'NS'};
-    } elsif ($rtypes{$name}{'DS'}) {
-	return $reccolors{'NS'};
-    } elsif ($rtypes{$name}{'SOA'}) {
-	return $reccolors{'root'};
-    } else {
-	return $reccolors{'default'};
-    }
 }
 
 sub usage {
