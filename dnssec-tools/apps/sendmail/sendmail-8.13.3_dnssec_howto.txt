@@ -1,0 +1,84 @@
+			sendmail-8.13.3 DNSSEC HOWTO
+			============================
+			       (Version 0.1)
+
+Introduction
+============
+
+This HOWTO describes the installation, configuration and execution steps for
+adding DNSSEC validation to outbound email for sendmail-8.13.3.
+
+
+Installation
+============
+
+Download sendmail-8.13.3.tar.gz from ftp://ftp.sendmail.org/pub/sendmail/.
+
+Unzip and untar it by:
+
+	tar -xvzf sendmail-8.13.3.tar.gz
+
+Go to the sendmail-8.13.3 directory:
+
+	cd sendmail-8.13.3
+
+Apply the sendmail-8.13.3_dnssec_patch.txt patch found in this directory by:
+
+	patch -p 0 -b -z .orig </path/to/patch/sendmail-8.13.3_dnssec_patch.txt
+
+This will apply the patch and store the original files with a .orig suffix.
+
+This patch requires the 'libvalidat' library for DNSSEC validation.  This
+library can be found at http://dnssec-tools.sourceforge.net/.  You must
+install this library before compiling the patched sendmail source.
+
+Add the following line to the sendmail-8.13.3/devtools/Site/site.config.m4
+file:
+
+APPENDDEF(`confLIBS', `-lvalidat')
+
+Build and install sendmail as per the instructions given in the README and
+INSTALL files with the sendmail distribution.
+
+
+Configuration
+=============
+
+To enable DNSSEC validation, the 'dnssec' option must be added to the
+'ResolverOptions' in the sendmail configuration.  This can be done by
+adding the following configuration line to the sendmail.mc file.
+
+define(`confBIND_OPTS', `+dnssec')
+
+You will need to generate the sendmail.cf file from sendmail.mc and then
+place it in /etc/mail or other sendmail system configuration directory.
+
+To disable DNSSEC validation, remove this option from BIND_OPTS.
+
+
+Execution
+=========
+
+Start sendmail as usual with the sendmail.cf file appropriately configured
+with the ResolverOptions.
+
+
+To Test
+=======
+
+(I) Basic Scenarios: DNSSEC validation of outbound email
+    ----------------------------------------------------
+
+1. Start sendmail with the above patch applied, and the 'dnssec' option
+   added to ResolverOptions.
+2. Send email to a user at a domain whose MX records can be DNSSEC
+   validated.  Verify that the mail goes through properly.
+3. Send email to a user at a domain whose MX records cannot be DNSSEC
+   validated.  Verify that an SMTP error message is returned back to
+   the sender.
+
+4. Remove the 'dnssec' option from ResolverOptions and restart sendmail.
+   Run steps 2 and 3 above, and verify that mail goes through in both
+   cases, since there is no DNSSEC validation.
+
+-----------------------------------------------------------------------
