@@ -1,7 +1,7 @@
 Index: config.h.in
 ===================================================================
---- config.h.in	2005-02-11 10:46:37.802333566 -0500
-+++ config.h.in	2005-02-11 13:18:53.973111805 -0500
+--- config.h.in	2005-02-11 10:46:37.000000000 -0500
++++ config.h.in	2005-02-11 13:18:53.000000000 -0500
 @@ -52,6 +52,9 @@
  /* Define to 1 if you have the `socket' library (-lsocket). */
  #undef HAVE_LIBSOCKET
@@ -70,7 +70,7 @@ Index: src/include/spf_dns_dnssec.h
 Index: src/include/Makefile.am
 ===================================================================
 --- src/include/Makefile.am	2004-12-06 17:32:38.000000000 -0500
-+++ src/include/Makefile.am	2005-02-11 10:55:53.679926030 -0500
++++ src/include/Makefile.am	2005-02-11 10:55:53.000000000 -0500
 @@ -5,7 +5,7 @@
  includedir = ${prefix}/include/spf2
  include_HEADERS	= spf.h spf_lib_version.h \
@@ -83,7 +83,7 @@ Index: src/include/Makefile.am
 Index: src/include/spf.h
 ===================================================================
 --- src/include/spf.h	2004-12-06 17:33:42.000000000 -0500
-+++ src/include/spf.h	2005-02-03 16:03:24.000000000 -0500
++++ src/include/spf.h	2005-02-14 11:21:33.000000000 -0500
 @@ -89,7 +89,8 @@
  #define SPF_E_BAD_HOST_IP	27	/* Invalid hostname (possibly an IP address?) */
  #define SPF_E_BAD_HOST_TLD	28	/* Hostname has a missing or invalid TLD */
@@ -94,14 +94,19 @@ Index: src/include/spf.h
  
  
  /* ********************************************************************* */
-@@ -752,6 +753,10 @@
+@@ -752,6 +753,15 @@
   */
  void SPF_get_lib_version( int *major, int *minor, int *patch );
  
 +/*
-+ * Add an error message to the list of error messages in the SPF_output_t struct.
++ * Add an error message to list of error messages in the SPF_output_t struct.
 + */
 +void SPF_add_output_err (SPF_output_t *output, const char *msg);
++
++/*
++ * Append the list of error messages from old_output to new_output.
++ */
++void SPF_copy_output_errs (SPF_output_t *old_output, SPF_output_t *new_output);
  
  /*
   * Error messages and warnings generated internally by the library call
@@ -205,7 +210,7 @@ Index: src/libspf2/spf_get_spf.c
 Index: src/libspf2/Makefile.am
 ===================================================================
 --- src/libspf2/Makefile.am	2004-12-06 17:34:33.000000000 -0500
-+++ src/libspf2/Makefile.am	2005-02-11 10:57:16.062603049 -0500
++++ src/libspf2/Makefile.am	2005-02-11 10:57:16.000000000 -0500
 @@ -12,7 +12,8 @@
  	spf_verify.c spf_result.c spf_get_spf.c spf_dns_cache.c \
  	spf_dns_resolv.c spf_get_exp.c spf_eval_id.c spf_dns_zone.c \
@@ -337,8 +342,8 @@ Index: src/libspf2/spf_result.c
 Index: src/libspf2/spf_eval_id.c
 ===================================================================
 --- src/libspf2/spf_eval_id.c	2005-02-03 13:24:58.000000000 -0500
-+++ src/libspf2/spf_eval_id.c	2005-02-10 09:27:14.875510355 -0500
-@@ -204,6 +204,39 @@
++++ src/libspf2/spf_eval_id.c	2005-02-14 12:59:10.000000000 -0500
+@@ -204,6 +204,88 @@
      return *output;
  }
  
@@ -375,10 +380,59 @@ Index: src/libspf2/spf_eval_id.c
 +	
 +    }
 +}
++
++/* Append the list of error messages from old_output to new_output */
++void SPF_copy_output_errs (SPF_output_t *old_output, SPF_output_t *new_output)
++{
++    if ((old_output != NULL) &&
++	(new_output != NULL) &&
++	(old_output->num_errs > 0)) {
++
++	char ** new_err_msgs;
++	int new_num_errs = old_output->num_errs;
++	int i;
++
++	if (new_output->num_errs > 0) {
++	    new_num_errs += new_output->num_errs;
++	}
++	else {
++	    new_output->num_errs = 0;
++	}
++
++	new_err_msgs = (char **) malloc (new_num_errs * sizeof (char *));
++	if (new_err_msgs == NULL) {
++	    /* return E_NO_MEM? */
++	}
++	
++	/* retain error messages in new_output */
++	for (i=0; i<new_output->num_errs; i++) {
++	    new_err_msgs[i] = new_output->err_msgs[i];
++	}
++
++	/* duplicate error messages in old_output */
++	for (i=new_output->num_errs; i<new_num_errs; i++) {
++	    if (old_output->err_msgs[i-new_output->num_errs]) {
++		new_err_msgs[i] = strdup (old_output->err_msgs[i-new_output->num_errs]);
++	    }
++	    else {
++		new_err_msgs[i] = strdup("");
++	    }
++	}
++
++	if (new_output->err_msgs) free (new_output->err_msgs);
++	new_output->err_msgs = new_err_msgs;
++	new_output->num_errs = new_num_errs;
++
++	if (old_output->err_msg != NULL) {
++	    if (new_output->err_msg) free (new_output->err_msg);
++	    new_output->err_msg = strdup (old_output->err_msg);
++	}
++    }
++}
  
  SPF_output_t SPF_eval_id( SPF_config_t spfcid, SPF_id_t spfid,
  			    SPF_dns_config_t spfdcid,
-@@ -401,6 +434,26 @@
+@@ -401,6 +483,26 @@
  	    if( rr_a->herrno == TRY_AGAIN )
  		return done( SPF_RESULT_ERROR, SPF_REASON_MECH,
  			     SPF_E_DNS_ERROR );
@@ -405,7 +459,7 @@ Index: src/libspf2/spf_eval_id.c
  	    
  	    for( i = 0; i < rr_a->num_rr; i++ )
  	    {
-@@ -457,6 +510,26 @@
+@@ -457,6 +559,26 @@
  		return done( SPF_RESULT_ERROR, SPF_REASON_MECH,
  			     SPF_E_DNS_ERROR );
  	    
@@ -432,7 +486,7 @@ Index: src/libspf2/spf_eval_id.c
  	    max_mx = rr_mx->num_rr;
  	    if ( max_mx > spfic->max_dns_mx )
  		max_mx = spfic->max_dns_mx;
-@@ -483,6 +556,26 @@
+@@ -483,6 +605,26 @@
  		    return done( SPF_RESULT_ERROR, SPF_REASON_MECH,
  				 SPF_E_DNS_ERROR );
  	    
@@ -459,7 +513,7 @@ Index: src/libspf2/spf_eval_id.c
  		for( i = 0; i < rr_a->num_rr; i++ )
  		{
  		    if ( rr_a->rr_type != fetch_ns_type )
-@@ -570,6 +663,26 @@
+@@ -570,6 +712,26 @@
  		    if( rr_a->herrno == TRY_AGAIN )
  			return done( SPF_RESULT_ERROR, SPF_REASON_MECH, SPF_E_DNS_ERROR );
  	    
@@ -486,7 +540,7 @@ Index: src/libspf2/spf_eval_id.c
  		    for( j = 0; j < rr_a->num_rr; j++ )
  		    {
  			if ( spfic->debug )
-@@ -654,6 +767,26 @@
+@@ -654,6 +816,26 @@
  		    if( rr_aaaa->herrno == TRY_AGAIN )
  			return done( SPF_RESULT_ERROR, SPF_REASON_MECH, SPF_E_DNS_ERROR );
  	    
@@ -513,7 +567,7 @@ Index: src/libspf2/spf_eval_id.c
  		    for( j = 0; j < rr_aaaa->num_rr; j++ )
  		    {
  			if ( spfic->debug )
-@@ -745,6 +878,10 @@
+@@ -745,8 +927,16 @@
  
  		SPF_set_cur_dom( spfcid, save_cur_dom );
  		free( save_cur_dom );
@@ -523,8 +577,14 @@ Index: src/libspf2/spf_eval_id.c
 +		}
  		SPF_reset_c_results( &c_results );
  
++		if (inc_out.num_errs > 0) {
++		    SPF_copy_output_errs (&inc_out, &output);
++		}
++
  		if ( spfic->debug > 0 )
-@@ -787,6 +924,17 @@
+ 		    SPF_debugf( "include:  executed SPF record:  %s  result: %s  reason: %s",
+ 			    SPF_strerror( inc_out.err ),
+@@ -787,6 +977,17 @@
  	    }
  	    else if ( err == SPF_E_DNS_ERROR )
  		return done( SPF_RESULT_ERROR, SPF_REASON_NONE, err );
@@ -542,7 +602,7 @@ Index: src/libspf2/spf_eval_id.c
  	    else
  		return done( SPF_RESULT_UNKNOWN, SPF_REASON_NONE, err );
  	    
-@@ -829,6 +977,26 @@
+@@ -829,6 +1030,26 @@
  		return done( SPF_RESULT_ERROR, SPF_REASON_MECH, SPF_E_DNS_ERROR );
  	    
  	    
@@ -569,7 +629,7 @@ Index: src/libspf2/spf_eval_id.c
  	    if ( rr_a->num_rr > 0 )
  		return done( mech->prefix_type, SPF_REASON_MECH, SPF_E_SUCCESS );
  	    
-@@ -876,6 +1044,10 @@
+@@ -876,8 +1097,16 @@
  		SPF_set_cur_dom( spfcid, lookup );
  		inc_out = SPF_eval_id( spfcid, c_results.spfid, spfdcid,
  				       TRUE, FALSE, num_dns_mech );
@@ -579,8 +639,14 @@ Index: src/libspf2/spf_eval_id.c
 +		}
  		SPF_reset_c_results( &c_results );
  
++		if (inc_out.num_errs > 0) {
++		    SPF_copy_output_errs (&inc_out, &output);
++		}
++
  		if ( spfic->debug > 0 )
-@@ -891,6 +1063,17 @@
+ 		    SPF_debugf( "redirect:  executed SPF record:  %s  result: %s  reason: %s",
+ 			    SPF_strerror( inc_out.err ),
+@@ -891,6 +1120,17 @@
  	    }
  	    else if ( err == SPF_E_DNS_ERROR )
  		return done( SPF_RESULT_ERROR, SPF_REASON_NONE, err );
@@ -601,7 +667,7 @@ Index: src/libspf2/spf_eval_id.c
 Index: src/libspf2/spf_dns_dnssec.c
 ===================================================================
 --- src/libspf2/spf_dns_dnssec.c	2004-12-06 17:35:00.000000000 -0500
-+++ src/libspf2/spf_dns_dnssec.c	2005-02-11 13:45:26.536568837 -0500
++++ src/libspf2/spf_dns_dnssec.c	2005-02-11 13:45:26.000000000 -0500
 @@ -0,0 +1,231 @@
 +/* 
 + * Copyright SPARTA, Inc. 2004.  All rights reserved.
@@ -836,8 +902,8 @@ Index: src/libspf2/spf_dns_dnssec.c
 +}
 Index: configure.ac
 ===================================================================
---- configure.ac	2005-02-11 10:47:53.157973783 -0500
-+++ configure.ac	2005-02-11 12:27:38.405537579 -0500
+--- configure.ac	2005-02-11 10:47:53.000000000 -0500
++++ configure.ac	2005-02-11 12:27:38.000000000 -0500
 @@ -83,6 +83,9 @@
  AC_CHECK_HEADERS([libintl.h ])
  AC_CHECK_HEADERS([getopt.h ])
