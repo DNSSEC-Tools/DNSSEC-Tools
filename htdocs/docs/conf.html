@@ -1,0 +1,101 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Net::DNS::SEC::Tools::conf - DNSSEC tools configuration file routines.</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#configuration_interfaces">CONFIGURATION INTERFACES</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>Net::DNS::SEC::Tools::conf - DNSSEC tools configuration file routines.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use Net::DNS::SEC::Tools::conf;</pre>
+<pre>
+  %dtconf = parseconfig();</pre>
+<pre>
+  %dtconf = parseconfig(&quot;localzone.keyrec&quot;);</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The DNSSEC tools have a configuration file for commonly used values.
+These values are the defaults for a variety of things, such as
+encryption algorithm and encryption key length.
+<strong>/etc/dnssec/dnssec-tools.conf</strong> is the path for the DNSSEC tools
+configuration file.  The <em>Net::DNS::SEC::Tools::conf</em> module provides
+methods for accessing the configuration data in this file.</p>
+<p>The DNSSEC tools configuration file consists of a set of configuration
+value entries, with only one entry per line.  Each entry has the
+``keyword value'' format.  During parsing, the line is broken into
+tokens, with tokens being separated by spaces and tabs.  The first
+token in a line is taken to be the keyword.  All other tokens in that
+line are concatenated into a single string, with a space separating
+each token.  The untokenized string is added to a hash table, with the
+keyword as the value's key.</p>
+<p>Comments may be included by prefacing them with the '#' or ';'
+comment characters.  These comments can encompass an entire line or may
+follow a configuration entry.  If a comment shares a line with an entry,
+value tokenization stops just prior to the comment character.</p>
+<p>An example configuration file follows:</p>
+<p># Sample configuration entries.</p>
+<pre>
+  algorithm       rsasha1       # Encryption algorithm.
+  ksk_length      1024          ; KSK key length.</pre>
+<p>
+</p>
+<hr />
+<h1><a name="configuration_interfaces">CONFIGURATION INTERFACES</a></h1>
+<dl>
+<dt><strong><a name="item_parseconfig"><em>parseconfig()</em></a></strong><br />
+</dt>
+<dd>
+This routine reads and parses the system's DNSSEC tools configuration file.
+The parsed contents are put into a hash table, which is returned to the caller.
+</dd>
+<p></p>
+<dt><strong><em>parseconfig(conffile)</em></strong><br />
+</dt>
+<dd>
+This routine reads and parses a caller-specified DNSSEC tools configuration
+file.  The parsed contents are put into a hash table, which is returned to
+the caller.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><code>zonesigner(1)</code></p>
+<p>Net::DNS::SEC::Tools::keyrec(3)</p>
+
+</body>
+
+</html>
