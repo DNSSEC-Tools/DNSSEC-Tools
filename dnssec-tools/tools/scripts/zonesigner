@@ -83,18 +83,22 @@ my $krfile;				# User-specified keyrec file.
 my $status;				# Zone-signing status.
 my @zonestat;				# stat() buffer for zone file.
 
+#
+# Some path variables to be set from the config file.
+#
+my $checkzone;
+my $keygen;
+my $signzone;
+
 my %opts;				# Options.
 
 
 #
 # Set some path variables.
 #
-my $CHECKZONE	= "/usr/local/sbin/named-checkzone";
 my $CP		= "/bin/cp";
 my $DATE	= "/bin/date";
-my $KEYGEN	= "/usr/local/sbin/dnssec-keygen";
 my $MV		= "/bin/mv";
-my $SIGNZONE	= "/usr/local/sbin/dnssec-signzone";
 
 
 #
@@ -276,6 +280,22 @@ sub optsandargs()
 	$help	 = $opts{'help'};
 	$verbose = $opts{'verbose'};
 
+
+	#
+	# Get the paths to the external commands.  Crash and burn if these
+	# fields aren't defined anywhere.
+	#
+	$checkzone = $opts{'checkzone'};
+	$keygen	   = $opts{'keygen'};
+	$signzone  = $opts{'signzone'};
+	if(($checkzone eq "")	||
+	   ($keygen    eq "")	||
+	   ($signzone  eq ""))
+	{
+		print STDERR "full paths must be specified in the config file for named-checkzone, dnssec-keygen, and dnssec-signzone.\n";
+		exit(-1);
+	}
+
 	#
 	# If the verbose flag was set, we'll print out the options we're
 	# using.
@@ -299,7 +319,13 @@ sub optsandargs()
 		print "\tgends		- <$gends>\n";
 		print "\tszopts		- <$szopts>\n";
 		print "\n";
+
+		print "external commands:\n";
+		print "\tcheckzone	- <$checkzone>\n";
+		print "\tkeygen		- <$keygen>\n";
+		print "\tsignzone	- <$signzone>\n";
 	}
+exit(0);
 
 	#
 	# Check that we don't have too many arguments.
@@ -425,8 +451,8 @@ sub genksk
 	#
 	# Generate the new KSK.
 	#
-	print "\t$KEYGEN $kgopts $random $alg $ksize -n zone -f KSK $zone\n" if ($verbose);
-	$ksk = `$KEYGEN $kgopts $random $alg $ksize -n zone -f KSK $zone`;
+	print "\t$keygen $kgopts $random $alg $ksize -n zone -f KSK $zone\n" if ($verbose);
+	$ksk = `$keygen $kgopts $random $alg $ksize -n zone -f KSK $zone`;
 	if($? != 0)
 	{
 		print STDERR "unable to generate KSK key file;\n";
@@ -480,8 +506,8 @@ sub genzsk
 	#
 	# Generate a ZSK key.
 	#
-	print "\t$KEYGEN $kgopts $random $alg $zsize -n zone $zone\n" if ($verbose);
-	$zsk = `$KEYGEN $kgopts $random $alg $zsize -n zone $zone`;
+	print "\t$keygen $kgopts $random $alg $zsize -n zone $zone\n" if ($verbose);
+	$zsk = `$keygen $kgopts $random $alg $zsize -n zone $zone`;
 	if($? != 0)
 	{
 		print STDERR "unable to generate $keytype ZSK key file;\n";
@@ -703,8 +729,8 @@ sub zonesign
 	# Sign the zone with the new keys.
 	#
 	print "signing zone\n" if ($verbose);
-	print "\t$SIGNZONE $cmdopts $zoneout $zskcurpath\n" if ($verbose);
-	$szone = `$SIGNZONE $cmdopts $zoneout $zskcurpath`;
+	print "\t$signzone $cmdopts $zoneout $zskcurpath\n" if ($verbose);
+	$szone = `$signzone $cmdopts $zoneout $zskcurpath`;
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
@@ -715,11 +741,11 @@ sub zonesign
 	# Ensure the signing succeeded.
 	#
 	print "checking zone\n" if ($verbose);
-	$status = system("$CHECKZONE -q $zone $szone");
+	$status = system("$checkzone -q $zone $szone");
 	if($status != 0)
 	{
 		print STDERR "problems with zone signing\n";
-		system("$CHECKZONE $zone $szone");
+		system("$checkzone $zone $szone");
 		return($status);
 	}
 
