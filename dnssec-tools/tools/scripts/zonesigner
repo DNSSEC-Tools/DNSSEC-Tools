@@ -358,6 +358,14 @@ sub zoneincludes
 	open(ZD,">> $zonefile");
 	print ZD <<EOF;
 
+
+;;
+;;
+;; DO NOT DIRECTLY MODIFY ANYTHING BELOW THIS LINE.
+;;
+;;	All subsequent lines are added and manipulated by dnssec-tools.
+;;
+
 ;; ksk
 \$INCLUDE \"$kskpath\"
 
