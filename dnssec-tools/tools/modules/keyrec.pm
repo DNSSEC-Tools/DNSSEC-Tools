@@ -25,7 +25,8 @@
 #		zone "portrigh.com"
 #			zonefile	"db.portrigh.com"
 #			kskpath		"Kportrigh.com.+005+26000"
-#			zskpath		"Kportrigh.com.+005+52000"
+#			zskcur		"Kportrigh.com.+005+52000"
+#			zskpub		"Kportrigh.com.+005+52001"
 #			endtime		"+2592000"   # Zone expires in 30 days.
 #
 #		key "Kportrigh.com.+005+26000"
@@ -78,11 +79,12 @@ my @ZONEFIELDS = (
 			'keyrec_type',		# Internal only, usually.
 			'kskkey',
 			'kskpath',
-			'zskkey',
-			'zskpath',
 			'zskcur',
-			'zsknew',
+			'zskcurpath',
 			'zskpub',
+			'zskpubpath',
+			'zsknew',
+			'zsknewpath',
 			'endtime',
 			'keyrec_signsecs',
 			'keyrec_signdate',
@@ -547,10 +549,10 @@ sub keyrec_add
 			# Special case for keys:  Only give the key length
 			# for the key's type.
 			#
-			if((($fields{'keyrec_type'} eq 'zsk') &&
-			    ($fn eq 'ksklength'))		||
-			   (($fields{'keyrec_type'} eq 'ksk') &&
-			    ($fn eq 'zsklength')))
+			if((($fn eq 'ksklength')	&&
+			    ($fields{'keyrec_type'} ne 'ksk'))	||
+			   (($fn eq 'zsklength')	&&
+			    ($fields{'keyrec_type'} !~ /^zsk/)))
 			{
 				next;
 			}
