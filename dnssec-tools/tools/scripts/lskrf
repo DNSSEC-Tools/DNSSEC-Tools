@@ -448,18 +448,22 @@ sub outkey
 sub usage
 {
 	print STDERR "usage:  lskrf [options] <keyrec-file>\n";
-	print STDERR "\toptions:\n";
-	print STDERR "\t\t-z		list all zones\n";
-	print STDERR "\t\t-k		list all keys\n";
-	print STDERR "\t\t-ksk		only list KSK keys\n";
-	print STDERR "\t\t-zsk		only list ZSK keys\n";
+	print STDERR "\trecord selection options:\n";
+	print STDERR "\t\t-all		list all records\n";
+	print STDERR "\t\t-zones\t	list all zones\n";
+	print STDERR "\t\t-keys		list all keys\n";
+	print STDERR "\t\t-ksk		list KSK keys\n";
+	print STDERR "\t\t-zsk		list ZSK keys\n";
 	print STDERR "\t\t-cur		list current ZSK keys\n";
 	print STDERR "\t\t-pub		list published ZSK keys\n";
-	print STDERR "\t\t-cnt		give count of matching keyrecs\n";
-	print STDERR "\t\t-unref	show unreferenced key keyrecs\n";
+	print STDERR "\t\t-valid\t	show keyrecs of unexpired zones\n";
+	print STDERR "\t\t-expired	show keyrecs of expired zones\n";
 	print STDERR "\t\t-ref		show referenced key keyrecs\n";
-	print STDERR "\t\t-t		terse output\n";
-	print STDERR "\t\t-l		long output\n";
+	print STDERR "\t\t-unref\t	show unreferenced key keyrecs\n";
+	print STDERR "\toutput format options:\n";
+	print STDERR "\t\t-cnt		only give count of matching keyrecs\n";
+	print STDERR "\t\t-terse\t	terse output\n";
+	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-h		help message \n";
 	exit(0);
 }
