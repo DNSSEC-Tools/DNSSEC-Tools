@@ -6,14 +6,29 @@
 #
 # This script performs several tests of the dnssec-tools keyrec module.
 # A test keyrec file is created and parsed.  Various operations are run
-# on these data, and their results printed to the screen.  The following
-# interfaces are tested:  keyrec_setval(), keyrec_fullrec(), and
-# keyrec_recval().  The keyrec_setval() test saves the modified file
-# to disk.
+# on these data, and their results printed to the screen.
+#
+# The following interfaces are tested:
+#	keyrec_setval()
+#	keyrec_fullrec()
+#	keyrec_recval()
+#	* keyrec_newkeyrec()
+#	keyrec_keyfields()
+#	keyrec_zonefields()
+#	* keyrec_add()
+#		keyrec_discard()
+#		keyrec_init()
+#		keyrec_read()
+#		keyrec_write()
+#
+# The keyrec_add() and keyrec_setval() tests save the modified file to disk.
+# The last four interfaces are tested by the keyrec_add() test.
 #
 # These are simple tests in that the results are displayed to the screen
 # and the tester is left the responsibility of ensuring that all worked
 # as expected.  Automatic testing would be great, and it may come RSN.
+# Interfaces marked with an asterisk above have tests that automatically
+# check for success or failure.
 #
 
 use strict;
@@ -22,20 +37,54 @@ use DNSSEC::keyrec;
 
 create_keyrecfile();
 
-my $keyrecs;
-$keyrecs = keyrec_read("portrigh.keyrec");
+my $keyrecs;					# Keyrec file data.
+my $krf = "portrigh.keyrec";			# Keyrec file to use.
+
+$keyrecs = keyrec_read($krf);
 # print "keyrecs - $keyrecs\n";
 
+test_fielders();
 
 test_keyrec_fullrec();
+
+test_keyrec_newkeyrec();
 
 test_keyrec_recval();
 
 test_keyrec_setval();
 
+test_keyrec_add();
+
 exit 0;
 
-############################################################################
+#############################################################
+
+sub test_fielders
+{
+	my @fields;
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing keyrec_keyfields()\n\n";
+
+	@fields = keyrec_keyfields();
+	print "\tvalid key fields:\n";
+	foreach my $kf (sort(@fields))
+	{
+		print "\t\t$kf\n";
+	}
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing keyrec_zonefields()\n\n";
+
+	@fields = keyrec_zonefields();
+	print "\tvalid zone fields:\n";
+	foreach my $kf (sort(@fields))
+	{
+		print "\t\t$kf\n";
+	}
+}
+
+#############################################################
 
 sub test_keyrec_fullrec
 {
@@ -58,7 +107,49 @@ sub test_keyrec_fullrec
 	}
 }
 
-############################################################################
+#############################################################
+
+sub test_keyrec_newkeyrec
+{
+	my $kn1	 = "nkr_1";		# Test keyrec name.
+	my $kn2	 = "nkr_2";		# Test keyrec name.
+	my $kn3	 = "nkr_3";		# Test keyrec name.
+	my $errs = 0;			# Error count.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing keyrec_newkeyrec()\n\n";
+
+	if(keyrec_newkeyrec($kn1,"zone") < 0)
+	{
+		print "\tunable to create new zone keyrec $kn1\n";
+		$errs++;
+	}
+
+	if(keyrec_newkeyrec($kn2,"key") < 0)
+	{
+		print "\tunable to create new key keyrec $kn2\n";
+		$errs++;
+	}
+
+	if(keyrec_newkeyrec($kn3,"badtype") == 0)
+	{
+		print "\table to create new bad-type keyrec $kn3\n";
+		$errs++;
+	}
+
+	if($errs == 0)
+	{
+		print "\n\tall keyrec_newkeyrec() tests passed\n";
+	}
+	else
+	{
+		print "\n\tonly " . (3 - $errs) . " keyrec_newkeyrec() tests passed\n";
+	}
+
+	print "\n";
+}
+
+#############################################################
 
 sub test_keyrec_recval
 {
@@ -76,7 +167,7 @@ sub test_keyrec_recval
 	print "\n";
 }
 
-############################################################################
+#############################################################
 
 sub test_keyrec_setval
 {
@@ -96,7 +187,108 @@ sub test_keyrec_setval
 	# keyrec_dump_array();		print "\n";
 	# keyrec_dump_hash();	print "\n";
 
-	keyrec_close();
+	keyrec_write();
+}
+
+#############################################################
+
+sub test_keyrec_add
+{
+	my %fields;				# Fields for new keyrecs.
+	my $kr;					# Keyrec reference.
+	my %names;				# New keyrec name hash.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing keyrec_add()\n\n";
+
+	keyrec_discard();
+	$keyrecs = keyrec_read($krf);
+
+	#
+	# Build a set of three keyrecs and add them to the keyrec table.
+	#
+	%fields = ();
+	$fields{'zonefile'} = "db.harp.portrigh.com";
+	$fields{'kskkey'} = "Kharp.portrigh.com.+005+12345";
+	$fields{'zskkey'} = "Kharp.portrigh.com.+005+23456";
+	$fields{'endtime'} = "+2598000";
+	$fields{'keyrec_signsecs'} = "1101183759";
+	$fields{'keyrec_signdate'} = "Tue Nov 23 04:22:39 2004";
+	keyrec_add("zone","harp.portrigh.com",\%fields);
+
+	%fields = ();
+	$fields{'zonename'} = "harp.portrigh.com";
+	$fields{'keyrec_type'} = "ksk";
+	$fields{'ksklength'} = "1024";
+	$fields{'algorithm'} = "rsasha1";
+	$fields{'random'} = "-r /dev/urandom";
+	$fields{'keyrec_gensecs'} = "1101183759";
+	$fields{'keyrec_gendate'} = "Tue Nov 23 04:22:39 2004";
+	keyrec_add("key","Kharp.portrigh.com.+005+12345",\%fields);
+
+	%fields = ();
+	$fields{'zonename'} = "harp.portrigh.com";
+	$fields{'keyrec_type'} = "zsk";
+	$fields{'zsklength'} = "512";
+	$fields{'algorithm'} = "rsasha1";
+	$fields{'random'} = "-r /dev/urandom";
+	$fields{'keyrec_gensecs'} = "1101183759";
+	$fields{'keyrec_gendate'} = "Tue Nov 23 04:22:39 2004";
+	keyrec_add("key","Kharp.portrigh.com.+005+23456",\%fields);
+
+
+	#
+	# Write the new keyrec file, dump all our data, and then re-read
+	# the file.
+	#
+	keyrec_write();
+	keyrec_init();
+	$keyrecs = keyrec_read($krf);
+
+	#
+	# Build a table of keyrec names (as created above.)  If the hash value
+	# is 1, then we're expecting a keyrec_fullrec() on the hash key to
+	# succeed.  If the value is 0, we're expecting it to fail.
+	#
+	%names = (
+		 	"harp.portrigh.com"		=> 1,
+		 	"Kharp.portrigh.com.+005+12345"	=> 1,
+		 	"Kharp.portrigh.com.+005+23456"	=> 1,
+		 	"dummy.keyname.value"		=> 0,
+		 );
+
+	#
+	# Go through the list of keyrec names and ensure that our newly
+	# created keyrecs exist, and that our dummy keyrec doesn't exist.
+	#
+	foreach my $kn (keys(%names))
+	{
+		my $expected = $names{$kn};
+		$kr = keyrec_fullrec($kn);
+
+		if(defined($kr))
+		{
+			if($expected)
+			{
+				print "\tsuccess:  keyrec_add($kn) worked\n";
+			}
+			else
+			{
+				print "\tfailure:  key $kn should not exist\n";
+			}
+		}
+		else
+		{
+			if($expected)
+			{
+				print "\tfailure:  key $kn should exist\n";
+			}
+			else
+			{
+				print "\tsuccess:  $kn invalid, as expected\n";
+			}
+		}
+	}
 }
 
 ############################################################################
