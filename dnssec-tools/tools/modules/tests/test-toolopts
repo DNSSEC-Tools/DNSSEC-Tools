@@ -1,0 +1,182 @@
+#!/usr/bin/perl
+#
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# This script performs simple tests of the dnssec-tools tooloptions module.
+# It calls tooloptions() to retrieve various configurations of options:
+# conf, keyrec, cmdopts; conf, cmdopts; conf, keyrec.  Command-line option
+# inclusion is turned off for some tests, on for other tests, and dropped
+# for the final test.  A keyrec file will be created in the current directory
+# for testing.
+#
+# These are simple tests in that the results are displayed to the screen
+# and the tester is left the responsibility of ensuring that all worked
+# as expected.  Automatic testing would be great, and it may come RSN.
+#
+
+use strict;
+
+use DNSSEC::tooloptions;
+
+my @locopts =
+(
+	"froofy=s",
+	"woofers=s",
+);
+
+my $ropts;
+my %opts;
+
+my $krf;
+my $krname;
+
+$krf = "isles.keyrec";
+$krname = "Kisles.netsec.tislabs.com.+005+52000";
+
+buildkrf($krf);
+
+#####################################################################
+#
+# Test a call with keyrec file, keyrec name, and local options.
+#
+$ropts = tooloptions($krf,$krname,@locopts);
+%opts = %$ropts;
+
+print "options (with keyrec):\n";
+foreach my $k (sort(keys(%opts)))
+{
+	print "\t<$k>	<$opts{$k}>\n";
+}
+print "\n";
+
+#####################################################################
+#
+# Test a call with keyrec file, keyrec name, and local options.
+#
+$ropts = tooloptions("",@locopts);
+%opts = %$ropts;
+
+print "options (no keyrec):\n";
+foreach my $k (sort(keys(%opts)))
+{
+	print "\t<$k>	<$opts{$k}>\n";
+}
+print "\n";
+
+#####################################################################
+#
+# Test a call with keyrec file, keyrec name, and local options.
+# Use of command line options is suspended.
+#
+optsuspend();
+$ropts = tooloptions($krf,$krname,@locopts);
+%opts = %$ropts;
+
+print "options (with suspended options):\n";
+foreach my $k (sort(keys(%opts)))
+{
+	print "\t<$k>	<$opts{$k}>\n";
+}
+print "\n";
+
+
+#####################################################################
+#
+# Test a call with keyrec file, keyrec name, and local options.
+# Use of command line options is restored.
+#
+optrestore();
+$ropts = tooloptions($krf,$krname,@locopts);
+%opts = %$ropts;
+
+print "options (with restored options):\n";
+foreach my $k (sort(keys(%opts)))
+{
+	print "\t<$k>	<$opts{$k}>\n";
+}
+print "\n";
+
+
+#####################################################################
+#
+# Test a call with keyrec file, keyrec name, and local options.
+# Use of command line options is dropped.
+#
+optdrop();
+$ropts = tooloptions($krf,$krname,@locopts);
+%opts = %$ropts;
+
+print "options (with dropped options):\n";
+foreach my $k (sort(keys(%opts)))
+{
+	print "\t<$k>	<$opts{$k}>\n";
+}
+print "\n";
+
+
+#####################################################################
+#
+# Test a call with keyrec file, keyrec name, and local options.
+# Use of command line options is restored, but inaccessible.
+#
+optrestore();
+$ropts = tooloptions($krf,$krname,@locopts);
+%opts = %$ropts;
+
+print "options (with restored options, but post-drop):\n";
+foreach my $k (sort(keys(%opts)))
+{
+	print "\t<$k>	<$opts{$k}>\n";
+}
+print "\n";
+
+
+exit(0);
+
+
+#####################################################################
+#
+# buildkrf()
+#
+sub buildkrf
+{
+	my $krf = shift;
+
+        open(KRF,"> $krf");
+	print KRF <<EOF;
+
+#
+# key management database
+#
+
+zone "isles.netsec.tislabs.com"
+	zonefile	"db.isles.netsec.tislabs.com"
+	kskpath		"keys.ksk/Kisles.netsec.tislabs.com.+005+26000"
+	zskpath		"keys.zsk/Kisles.netsec.tislabs.com.+005+52000"
+	endtime		"+8888888"		# good for 30 days
+
+key "Kisles.netsec.tislabs.com.+005+26000"
+	zonename	"isles.netsec.tislabs.com"
+	type		"ksk"
+	algorithm	"rsasha1"
+	ksklength	"1024"
+	random		"-r /dev/urandom"
+
+key "Kisles.netsec.tislabs.com.+005+52000"
+	zonename	"isles.netsec.tislabs.com"
+	type		"zsk"
+	algorithm	"rsasha2"
+	zsklength	"768"
+	random		"-r /dev/urandom"
+
+zone	"portrigh.com"
+	zonefile	"db.portrigh.com"
+	enddate		"+8888888"
+	kskpath		"keys.ksk/Kportrigh.com.+005+44000"
+	zskpath		"keys.zsk/Kportrigh.com.+005+88000"
+EOF
+
+	close(KRF);
+}
