@@ -1,7 +1,7 @@
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2004-12-24 14:18:48.374994981 -0500
++++ spfmilter.c	2005-02-04 16:42:20.784795180 -0500
 @@ -102,6 +102,12 @@
  #include "match.h"
  #include "iparray.h"
@@ -23,25 +23,18 @@ Index: spfmilter.c
      } connection_data_t;
  
  /* A word about buf1 and buf2, above.  These are scratch buffers for
-@@ -208,7 +215,7 @@
- static sfsistat handle_result( SMFICTX* ctx );
- static void escape_percents( const char* in, char* out, int out_size );
- static int receiver_is_me( const char* value );
--static void build_header( connection_data_t* cd, char* header, int header_size, const char* reason );
-+static void build_header( connection_data_t* cd, char* header, int header_size, const char* reason, const char* err_msg );
- static connection_data_t* init_connection_data( void );
- static int init_message_data( connection_data_t* cd );
- static void fini_message_data( connection_data_t* cd );
-@@ -234,6 +241,8 @@
+@@ -234,6 +241,10 @@
  static const char* lib_get_reason( lib_data_t* ld );
  static const char* lib_get_explanation( lib_data_t* ld );
  static const char* lib_get_error( lib_data_t* ld );
 +static const char* lib_get_error_msg( lib_data_t* ld );
-+static const char* lib_get_received_spf (lib_data_t *ld);
++static const size_t lib_get_num_errors( lib_data_t* ld );
++static const char** lib_get_error_msgs( lib_data_t* ld );
++static const char* lib_get_received_spf( lib_data_t *ld );
  static void lib_fini_message_data( lib_data_t* ld );
  static void lib_fini_connection_data( lib_data_t* ld );
  static void lib_fini_fallback( lib_fallback_t* lf );
-@@ -251,6 +260,7 @@
+@@ -251,6 +262,7 @@
  static char* explanation_str;
  static int markonly;
  static int debug;
@@ -49,7 +42,7 @@ Index: spfmilter.c
  static char* local_hostname;
  static int local_hostname_len;
  
-@@ -287,6 +297,7 @@
+@@ -287,6 +299,7 @@
      { "nodaemon",		no_argument,		NULL,	'X', },
      { "help",			no_argument,		NULL,	'h', },
      { "debug",			optional_argument,	NULL,	'd', },
@@ -57,7 +50,7 @@ Index: spfmilter.c
      { 0, 0, 0, 0 },
  };
  #define DOC_LONGOPT(l, v, t, p1) \
-@@ -296,7 +307,7 @@
+@@ -296,7 +309,7 @@
  #else
  #define DOC_LONGOPT(l, v, t, p1) do { } while( 0 )
  #endif
@@ -66,7 +59,7 @@ Index: spfmilter.c
  
  #define DOC_OPT(s, l, v, t, p0, p1) \
      do { \
-@@ -332,6 +343,7 @@
+@@ -332,6 +345,7 @@
      pidfile = (char*) 0;
      nodaemon = 0;
      debug = 0;
@@ -74,7 +67,7 @@ Index: spfmilter.c
  
      /* Figure out the program's name. */
      argv0 = strrchr( argv[0], '/' );
-@@ -396,6 +408,28 @@
+@@ -396,6 +410,28 @@
  		else
  		    debug = 1;
  		break;
@@ -103,7 +96,7 @@ Index: spfmilter.c
  	    default:
  		(void) fprintf( stderr, "Unrecognised option '%c'\n", c );
  		exit( 1 );
-@@ -465,6 +499,7 @@
+@@ -465,6 +501,7 @@
      DOC_OPT( 'X', "nodaemon", (char*) 0, "Do not fork into the background.", 20, 26 );
      DOC_OPT( 'h', "help", (char*) 0, "Show this help.", 20, 26 );
      DOC_OPT( 'd', "debug", "[<int>]", "Enable debugging to syslog.", 13, 18 );
@@ -111,32 +104,16 @@ Index: spfmilter.c
      }
  
  
-@@ -1223,8 +1258,23 @@
- 
+@@ -1224,7 +1261,7 @@
      if ( cd->action == SPFMILTER_ACTION_MARK )
  	{
-+	const char *err_msg = lib_get_error_msg(cd->lib_data);
-+	  
-+	if (debug > 1)
-+	    {
-+	    if (err_msg != NULL)
-+	        {
-+		fprintf(stderr, "spfmilter: err_msg = %s\n", err_msg);
-+		}
-+	    else
-+	        {
-+		fprintf(stderr, "spfmilter: err_msg = NULL\n");
-+		}
-+	    }
-+	      
  	/* Build and add the SPF header. */
 -	build_header( cd, cd->buf2, sizeof(cd->buf2), rptr );
-+	build_header( cd, cd->buf2, sizeof(cd->buf2), rptr, err_msg);
-+	
++	build_header( cd, cd->buf2, sizeof(cd->buf2), rptr);
  	smfi_addheader( ctx, HEADER_NAME, cd->buf2 );
  	}
  
-@@ -1286,7 +1336,10 @@
+@@ -1286,7 +1323,10 @@
      {
      connection_data_t* cd;
      const char* exp;
@@ -147,7 +124,7 @@ Index: spfmilter.c
  
      cd = (connection_data_t*) smfi_getpriv( ctx );
  
-@@ -1318,7 +1371,17 @@
+@@ -1318,7 +1358,17 @@
  		escape_percents( exp, exp_escaped, sizeof(exp_escaped) );
  	    else
  		(void) strncpy( exp_escaped, "rejected by spfmilter", sizeof(exp_escaped) - 1 );
@@ -166,29 +143,54 @@ Index: spfmilter.c
  	    fini_message_data( cd );
  	    return SMFIS_REJECT;
  
-@@ -1439,7 +1502,7 @@
- 
- 
- static void
--build_header( connection_data_t* cd, char* header, int header_size, const char* reason )
-+build_header( connection_data_t* cd, char* header, int header_size, const char* reason, const char* err_msg )
+@@ -1442,6 +1492,11 @@
+ build_header( connection_data_t* cd, char* header, int header_size, const char* reason )
      {
      int len;
++    int i;
++    char *err_msg;
++    char **err_msgs;
++    size_t num_errs;
++    int first_err;
  
-@@ -1471,6 +1534,12 @@
+     (void) snprintf( header, header_size, "%s", result_str( cd->result ) );
+     len = strlen( header );
+@@ -1471,6 +1526,34 @@
  	len = strlen( header );
  	}
      /*!!! Do something about the problem= field. */
++    err_msg = lib_get_error_msg( cd->lib_data );
++    err_msgs = lib_get_error_msgs( cd->lib_data );
++    num_errs = lib_get_num_errors( cd->lib_data );
++    first_err = 1;
 +    if ( err_msg != (char*) 0 )
 +        {
 +	(void) snprintf( &header[len], header_size - len, " problem=%s;", err_msg );
++	first_err = 0;
 +	len = strlen( header );
++	}
++
++    for( i = 0; i < num_errs; i++)
++	{
++	if( ( err_msgs[i] != NULL) && ( strcmp(err_msgs[i], err_msg) != 0 ) )
++	    {
++	    if (first_err == 1)
++		{
++		(void) snprintf( &header[len], header_size - len, " problem=%s;", err_msgs[i] );
++		first_err = 0;
++		}
++	    else
++		{
++	        (void) snprintf( &header[len], header_size - len, "%s;", err_msgs[i] );
++		}
++	    len = strlen( header );
++	    }
 +	}
 +
      (void) snprintf( &header[len], header_size - len, " x-software=%s %s %s;", SPFMILTER_PROGRAM, SPFMILTER_VERSION, SPFMILTER_URL );
      }
  
-@@ -1741,6 +1810,12 @@
+@@ -1741,6 +1824,12 @@
      return ld->peer_info->explain;
      }
  
@@ -201,7 +203,7 @@ Index: spfmilter.c
  
  static const char*
  lib_get_error( lib_data_t* ld )
-@@ -1749,6 +1824,13 @@
+@@ -1749,6 +1838,27 @@
      }
  
  
@@ -212,10 +214,24 @@ Index: spfmilter.c
 +    }
 +
 +
++static const size_t
++lib_get_num_errors( lib_data_t* ld )
++    {
++    return 0;
++    }
++
++
++static const char**
++lib_get_error_msgs( lib_data_t* ld )
++    {
++    return NULL;
++    }
++
++
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -1788,11 +1870,6 @@
+@@ -1788,11 +1898,6 @@
  /* Libspf2 data and routines. */
  
  
@@ -227,7 +243,20 @@ Index: spfmilter.c
  static SPF_config_t spfc_global;
  static SPF_c_results_t spfr_localpolicy;
  static SPF_c_results_t spfr_explanation;
-@@ -2092,11 +2169,22 @@
+@@ -2069,7 +2174,11 @@
+ 	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
+ 	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
+ 	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
+-	case SPF_RESULT_UNKNOWN: return SPFMILTER_RESULT_UNKNOWN;
++	case SPF_RESULT_UNKNOWN:
++	    if ((ld->output.err_msg != NULL) && (strstr(ld->output.err_msg, "DNSSEC") != NULL))
++		return SPFMILTER_RESULT_FAIL;
++	    else
++		return SPFMILTER_RESULT_UNKNOWN;
+ 	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
+ 	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
+ 	default: return -1;
+@@ -2092,12 +2201,40 @@
  
  
  static const char*
@@ -236,21 +265,39 @@ Index: spfmilter.c
 +    return ld->output.received_spf;
 +    }
 +
++
 +static const char*
  lib_get_error( lib_data_t* ld )
      {
      return SPF_strerror( ld->output.err );
      }
  
+ 
 +static const char*
 +lib_get_error_msg( lib_data_t* ld )
 +    {
 +    return  ld->output.err_msg ;
 +    }
- 
++
++
++static const size_t
++lib_get_num_errors( lib_data_t* ld )
++    {
++    return ld->output.num_errs;
++    }
++
++
++static const char**
++lib_get_error_msgs( lib_data_t* ld )
++    {
++    return ld->output.err_msgs;
++    }
++
++
  static void
  lib_fini_message_data( lib_data_t* ld )
-@@ -2157,8 +2245,9 @@
+     {
+@@ -2157,8 +2294,9 @@
  typedef struct {
      int initialized, inuse;
      int next_free_resolver;
@@ -261,7 +308,7 @@ Index: spfmilter.c
      } resolver_t;
  static resolver_t* resolvers;
  static int max_resolvers, first_free_resolver, num_resolvers_inuse;
-@@ -2202,7 +2291,8 @@
+@@ -2202,7 +2340,8 @@
      for ( r = 0; r < max_resolvers; ++r )
  	if ( resolvers[r].initialized )
  	    {
@@ -271,7 +318,7 @@ Index: spfmilter.c
  	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
  	    }
      pthread_mutex_destroy( &resolver_mutex );
-@@ -2266,13 +2356,20 @@
+@@ -2266,13 +2405,20 @@
  	    free_resolver( r );
  	    return -1;
  	    }
@@ -294,7 +341,7 @@ Index: spfmilter.c
  	resolvers[r].initialized = 1;
  	}
  
-@@ -2283,7 +2380,7 @@
+@@ -2283,7 +2429,7 @@
  static SPF_dns_config_t
  get_resolver( int r )
      {
