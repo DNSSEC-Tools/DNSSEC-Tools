@@ -1,12 +1,15 @@
 #!/usr/bin/perl
 #
-# DNSSEC Tools
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# dnssec-tools
 #
 #	Option routines.
 #
 #	The routine in this module manipulates option lists for the
-#	DNSSEC Tools.  After building an option list from three sources
-#	(system config file, keyrec file, command line options), a hash
+#	dnssec-tools.  After building an option list from three sources
+#	(system config file, keyrec file, command-line options), a hash
 #	table of options is passed back to the caller.  The caller must
 #	use the options as required.
 #
@@ -20,7 +23,7 @@ use DNSSEC::keyrec;
 use Getopt::Long;
 
 #
-# Standard options accepted by all tools in the DNSSEC Tools suite.
+# Standard options accepted by all tools in the dnssec-tools suite.
 #
 my @stdopts =
 (
@@ -33,6 +36,10 @@ my @stdopts =
 	"zsklength=i",
 	"zskpath=s",
 );
+
+my $firstcall	= 1;			# First-call flag.
+my %cmdopts	= ();			# Options from command line.
+my %saveopts	= ();			# Save-area for command-line options.
 
 ##############################################################################
 #
@@ -53,7 +60,8 @@ sub tooloptions
 
 	my @opts;				# Copy of standard options.
 	my %configopts;				# Combined options.
-	my %cmdopts = ();			# Options from command line.
+
+	my @curargv;				# Current @ARGV.
 
 	#
 	# Get the arguments.  If the keyrec file arg is an empty string, then
@@ -72,6 +80,27 @@ sub tooloptions
 	#
 	%dnssec_opts = parseconfig();
 	%configopts  = %dnssec_opts;
+
+	#
+	# If this is the first time we've been called, get the command
+	# line options and save them in a module-local variable for use
+	# in subsequent calls.
+	#
+	if($firstcall)
+	{
+		#
+		# Copy the standard options and append any command-specific
+		# options that have been given.
+		#
+		@opts = @stdopts;
+		if($cslen > 0)
+		{
+			push(@opts,@csopts);
+		}
+
+		GetOptions(\%cmdopts,@opts);
+		$firstcall = 0;
+	}
 
 	#
 	# Read the keyrec file and pull out the specified keyrec.  If the
@@ -99,21 +128,6 @@ sub tooloptions
 	}
 
 	#
-	# Copy the standard options and append any command-specific options
-	# that have been given.
-	#
-	@opts = @stdopts;
-	if($cslen > 0)
-	{
-		push(@opts,@csopts);
-	}
-
-	#
-	# Get the options specified on the command line.
-	#
-	GetOptions(\%cmdopts,@opts);
-
-	#
 	# Mix in the options with the config data and the keyrec.
 	#
 	foreach my $k (sort(keys(%cmdopts)))
@@ -127,6 +141,46 @@ sub tooloptions
 	return(\%configopts);
 }
 
+##############################################################################
+#
+# Routine:	optsuspend()
+#
+# Purpose:	Suspend use of the command-line options.  While suspended,
+#		tooloptions() will not add them to the final hash table.
+#
+sub optsuspend
+{
+	%saveopts = %cmdopts;
+	%cmdopts  = ();
+}
+
+##############################################################################
+#
+# Routine:	optrestore()
+#
+# Purpose:	Restore use of the command-line options.  This will allow
+#		tooloptions() to add them to the final hash table.
+#
+sub optrestore
+{
+	%cmdopts  = %saveopts;
+	%saveopts = ();
+}
+
+##############################################################################
+#
+# Routine:	optdrop()
+#
+# Purpose:	Irrevocably disable use of the command-line options.
+#		tooloptions() will no longer add them to the final hash table.
+#
+#
+sub optdrop
+{
+	%cmdopts  = ();
+	%saveopts = ();
+}
+
 1;
 
 #############################################################################
@@ -135,7 +189,7 @@ sub tooloptions
 
 =head1 NAME
 
-DNSSEC::tooloptions - DNSSEC Tools option routines.
+DNSSEC::tooloptions - dnssec-tools option routines.
 
 =head1 SYNOPSIS
 
@@ -154,13 +208,19 @@ DNSSEC::tooloptions - DNSSEC Tools option routines.
   $optsref = tooloptions("",@specopts);
   %options = %$optsref;
 
+  optsuspend();
+
+  optrestore();
+
+  optdrop();
+
 =head1 DESCRIPTION
 
-The DNSSEC Tools support a set of options common to all the tools in the
+The dnssec-tools support a set of options common to all the tools in the
 suite.  These options may have defaults set in the B</etc/dnssec/tools.conf>
 configuration file, in a I<keyrec> file, from command-line options, or from
 any combination of the three.  In order to enforce a common sequence of option
-interpretation, all DNSSEC Tools should use the I<DNSSEC::tooloptions()>
+interpretation, all dnssec-tools should use the I<DNSSEC::tooloptions()>
 routine to initialize its options.
 
 The I<keyrec_file> argument specifies a I<keyrec> file that will be consulted.
@@ -173,6 +233,16 @@ prescribed by the I<Getopt::Long> Perl module.
 I<tooloptions()> combines data from these three option sources into a hash
 table.  The hash table is returned to the caller, which will then use the
 options as needed.
+
+The command-line options are saved between calls, so a command may call
+I<tooloptions()> multiple times and still have the command-line options
+included in the final hash table.  This is useful for examining multiple
+I<keyrec>s in a single command.  Inclusion of command-line options may be
+suspended and restored using the I<optsuspend()> and I<optrestore()> calls.
+Options may be discarded entirely by calling I<optdrop()>; once dropped,
+command-line options may never be restored.  Suspension, restoration, and
+dropping of command-line options are only effective after the initial
+I<tooloptions()> call. 
 
 The options sources are combined in this manner:
 
@@ -193,7 +263,7 @@ value.
 
 =item 3. Command-line Options
 
-The command lines options, specified in I<@specopts>, are parsed using
+The command-line options, specified in I<@specopts>, are parsed using
 I<Getoptions()> from the I<Getopt::Long> Perl module.  These options are
 folded into the hash table; again possibly overriding existing hash values.
 The options given in I<@specopts> must be in the format required by
@@ -260,6 +330,22 @@ This I<tooloptions()> call builds an option hash from the system config file
 and the command-specific options given in I<cmd_opts>.  No I<keyrec> file is
 consulted.  Since no I<keyrec_file> is specified, the I<keyrec_name> argument
 must not be given.
+
+=head2 I<optsuspend()>
+
+Suspend inclusion of the command-line options in building the final hash
+table of responses.
+
+=head2 I<optrestore()>
+
+Restore inclusion of the command-line options in building the final hash
+table of responses.
+
+=head2 I<optdrop()>
+
+Discard the command-line options.  They will no longer be available for
+inclusion in building the final hash table of responses for this execution
+of the command.
 
 =head1 AUTHOR
 
