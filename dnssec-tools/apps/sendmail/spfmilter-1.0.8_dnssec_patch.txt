@@ -1,7 +1,7 @@
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-02-04 16:42:20.784795180 -0500
++++ spfmilter.c	2005-02-04 17:33:36.882116561 -0500
 @@ -102,6 +102,12 @@
  #include "match.h"
  #include "iparray.h"
@@ -249,7 +249,7 @@ Index: spfmilter.c
  	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
 -	case SPF_RESULT_UNKNOWN: return SPFMILTER_RESULT_UNKNOWN;
 +	case SPF_RESULT_UNKNOWN:
-+	    if ((ld->output.err_msg != NULL) && (strstr(ld->output.err_msg, "DNSSEC") != NULL))
++	    if ( ld->output.err == SPF_E_DNSSEC_FAIL )
 +		return SPFMILTER_RESULT_FAIL;
 +	    else
 +		return SPFMILTER_RESULT_UNKNOWN;
