@@ -7,27 +7,31 @@
 
 name: DNS_MULTIPLE_NS
 level: 2
+minnsrecords: 2
+help: minnsrecords: minimum number of NS records that must be present for a delegation
 ruletype: name
 class: Warning
 test:
-  return "Only one NS record for $_[2], but at least 2 are suggested/required"
-     if (exists($_[0]->{'NS'}) && $#{$_[0]->{'NS'}} == 0);
+  return "Only " . ($#{$_[0]->{'NS'}}+1) . 
+     " NS record(s) for $_[2] found, but at least " .
+     $_[1]->{'minnsrecords'} . " are suggested/required"
+        if (exists($_[0]->{'NS'}) && 
+           $#{$_[0]->{'NS'}}+1 < $_[1]->{'minnsrecords'});
 
-name: DNS_SUB_NOT_SECURE
-level: 5
+name: DNSSEC_SUB_NOT_SECURE
+level: 3
 ruletype: name
 test:
   "sub-domain $_[2] is not securely delegated.  It is missing a DS record."
   if ($current_domain ne $_[2]                         &&  # not the root
-      exists($_[0]->{'NS'}) && $#{$_[0]->{'NS'}} == 0  &&  # is a sub
-      exists($_[0]->{'RRSIG'})                         &&  # DS|NSEC signed
+      exists($_[0]->{'NS'}) && $#{$_[0]->{'NS'}} > -1  &&  # is a sub
+      exists($_[0]->{'RRSIG'})                         &&  # DS||NSEC signed
       !exists($_[0]->{'DS'})                               # No DS
      );
+
 
 # XXX: check parent has DS record for this zone
 
 # XXX: check that child has key matching DS records in this zone.
 
 # XXX: check that a parent has a DS record matching every DNSKEY
-
-# XXX: warn if we have a NS but not a DS record and we are signed
