@@ -20,7 +20,7 @@ my %opts = (l => 5,
 my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
     @ignorelist, $netdns, $netdns_error);
 
-getopts("hHvLl:r:i:c:C", \%opts) || usage();
+getopts("hHRvLl:r:i:c:C", \%opts) || usage();
 
 #
 # initialize ignore list
@@ -64,6 +64,9 @@ if ($opts{'c'} && !$opts{'C'} && -f $opts{'c'}) {
     parse_user_config($opts{'c'});
 }
 
+#
+# display config file help
+#
 if ($opts{'H'}) {
     print STDERR "$0 configuration tokens for loaded rules:\n\n";
     printf STDERR sprintf("%-20s %-15s%s\n",
@@ -72,6 +75,19 @@ if ($opts{'H'}) {
 			  "_" x (80-20-15-2));
     foreach my $rule (@rules) {
 	$rule->print_help();
+    }
+    exit;
+}
+
+#
+# display a list of rules
+#
+if ($opts{'R'}) {
+    print STDERR "$0 rules:\n\n";
+    printf STDERR sprintf("%-40s %-35s\n", "RULE NAME", "DESCRIPTION");
+    printf STDERR sprintf("%-40s %-35s\n", "_" x 39, "_" x 34);
+    foreach my $rule (@rules) {
+	$rule->print_description();
     }
     exit;
 }
@@ -319,7 +335,7 @@ sub compare_RR_arrays {
 
 sub usage {
     print "
-$0 [-h] [-H] [-v] [-l LEVEL] [-r RULEFILE] [-i IGNORELIST]
+$0 [-h] [-H] [-R] [-v] [-l LEVEL] [-r RULEFILE] [-i IGNORELIST]
    [-C] [-c configfile] ZONEFILE DOMAINNAME...
 
 Run \"perldoc donuts\" for more information on the above options.
@@ -400,6 +416,11 @@ that look like this:
   level: 5
 
 This allows you to override certain aspects of how rules are executed.
+
+=item -R
+
+Displays a list of all known rules along with their description (if
+available).
 
 =back
 
