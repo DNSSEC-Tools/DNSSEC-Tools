@@ -25,14 +25,14 @@
 #		keyrec		"/usr/etc/dnssec/keyrec/portrigh.keyrec"
 #		curphase	"2"
 #		maxttl		"86400"
-#		start		"Wed Mar 09 21:49:22 2005"
+#		phasestart	"Wed Mar 09 21:49:22 2005"
 #
 #	    roll "triharpskel.com"
 #		zonefile	"/usr/etc/dnssec/zone/db.triharpskel.com"
 #		keyrec		"/usr/etc/dnssec/keyrec/triharpskel.keyrec"
 #		curphase	"1"
 #		maxttl		"100000"
-#		start		"Sun Jan 01 16:00:00 2005"
+#		phasestart	"Sun Jan 01 16:00:00 2005"
 #
 #
 #
@@ -66,7 +66,9 @@ my @ROLLFIELDS = (
 			'keyrec',
 			'curphase',
 			'maxttl',
-			'start',
+			'phasestart',
+			'rollrec_signdate',
+			'rollrec_signsecs',
 		  );
 
 my @rollreclines;			# Rollrec lines.
@@ -825,7 +827,7 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 	keyrec			"/usr/etc/dnssec/keyrec/portrigh.keyrec"
 	curphase		"2"
 	maxttl			"86400"
-	start			"Wed Mar 09 21:49:22 2005"
+	phasestart		"Wed Mar 09 21:49:22 2005"
 	rollrec_rollsecs	"1115923362"
 	rollrec_rolldate	"Tue Mar 09 19:12:54 2005"
 
