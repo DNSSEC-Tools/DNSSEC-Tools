@@ -53,7 +53,6 @@ my @opts =
 # options to be completed:
 # 	expired
 # 	valid
-# 	cnt
 
 #
 # Flag values for the various options.  Variable/option connection should
@@ -119,7 +118,24 @@ sub main()
 	showzones()	if($zonesflag);
 	showkeys();
 
-	print "matching records - $count\n"  if($cntflag);
+	#
+	# If the matching-record count should be given, give the count in
+	# requested format.
+	#
+	if($cntflag)
+	{
+		if($terse)
+		{
+			print "$count\n";
+		}
+		else
+		{
+			my $plural = "s";
+			$plural = "" if($count == 1);
+
+			print "$count matching record$plural\n";
+		}
+	}
 	return(0);
 }
 
@@ -234,11 +250,31 @@ sub getkeyrecs
 #
 sub showzones
 {
+	#
+	# Loop through the zone list and give data on the desired zones.
+	#
 	foreach my $zk (sort(keys(%zones)))
 	{
 		my $krr = $zones{$zk};
 		my %kr = %$krr;
 
+		#
+		# Bump the matching-records count.
+		#
+		$count++;
+
+		#
+		# Stay cloaked if only the count of matching records
+		# should be given.
+		#
+		if($cntflag)
+		{
+			next;
+		}
+
+		#
+		# Give the appopriate style of output.
+		#
 		if($terse)
 		{
 			print "$zk\n";
@@ -251,8 +287,6 @@ sub showzones
 		{
 			print "zone $zk\t$kr{'zonefile'}\t\t\"$kr{'keyrec_signdate'}\"\n";
 		}
-
-		$count++;
 	}
 }
 
@@ -378,6 +412,19 @@ sub outkey
 	}
 
 	#
+	# Bump the matching-records count.
+	#
+	$count++;
+
+	#
+	# Run silent if only the count of matching records should be given.
+	#
+	if($cntflag)
+	{
+		return;
+	}
+
+	#
 	# Give the output line appropriate for output flags.
 	#
 	if($terse)
@@ -392,8 +439,6 @@ sub outkey
 	{
 		print "$reg $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
 	}
-
-	$count++;
 }
 
 #-----------------------------------------------------------------------------
