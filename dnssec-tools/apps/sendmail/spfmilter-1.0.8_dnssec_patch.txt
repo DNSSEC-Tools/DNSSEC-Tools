@@ -18,7 +18,7 @@ Index: config.h.in
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-03-04 11:16:31.244384334 -0500
++++ spfmilter.c	2005-03-04 11:38:13.604374124 -0500
 @@ -27,8 +27,13 @@
  ** For commentary on this license please see http://www.acme.com/license.html
  */
@@ -167,18 +167,16 @@ Index: spfmilter.c
      }
  
  
-@@ -1224,7 +1271,9 @@
+@@ -1224,7 +1271,7 @@
      if ( cd->action == SPFMILTER_ACTION_MARK )
  	{
  	/* Build and add the SPF header. */
 -	build_header( cd, cd->buf2, sizeof(cd->buf2), rptr );
-+	    printf("%s\n",
-+		   lib_get_received_spf(cd->lib_data));
 +	build_header( cd, cd->buf2, sizeof(cd->buf2), rptr);
  	smfi_addheader( ctx, HEADER_NAME, cd->buf2 );
  	}
  
-@@ -1286,7 +1335,10 @@
+@@ -1286,7 +1333,10 @@
      {
      connection_data_t* cd;
      const char* exp;
@@ -189,7 +187,7 @@ Index: spfmilter.c
  
      cd = (connection_data_t*) smfi_getpriv( ctx );
  
-@@ -1318,7 +1370,17 @@
+@@ -1318,7 +1368,17 @@
  		escape_percents( exp, exp_escaped, sizeof(exp_escaped) );
  	    else
  		(void) strncpy( exp_escaped, "rejected by spfmilter", sizeof(exp_escaped) - 1 );
@@ -208,7 +206,7 @@ Index: spfmilter.c
  	    fini_message_data( cd );
  	    return SMFIS_REJECT;
  
-@@ -1442,6 +1504,11 @@
+@@ -1442,6 +1502,11 @@
  build_header( connection_data_t* cd, char* header, int header_size, const char* reason )
      {
      int len;
@@ -220,7 +218,7 @@ Index: spfmilter.c
  
      (void) snprintf( header, header_size, "%s", result_str( cd->result ) );
      len = strlen( header );
-@@ -1471,6 +1538,70 @@
+@@ -1471,6 +1536,70 @@
  	len = strlen( header );
  	}
      /*!!! Do something about the problem= field. */
@@ -291,7 +289,7 @@ Index: spfmilter.c
      (void) snprintf( &header[len], header_size - len, " x-software=%s %s %s;", SPFMILTER_PROGRAM, SPFMILTER_VERSION, SPFMILTER_URL );
      }
  
-@@ -1741,6 +1872,12 @@
+@@ -1741,6 +1870,12 @@
      return ld->peer_info->explain;
      }
  
@@ -304,7 +302,7 @@ Index: spfmilter.c
  
  static const char*
  lib_get_error( lib_data_t* ld )
-@@ -1749,6 +1886,27 @@
+@@ -1749,6 +1884,27 @@
      }
  
  
@@ -332,7 +330,7 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -1782,15 +1940,9 @@
+@@ -1782,15 +1938,9 @@
  
  #endif /* USE_LIBSPF */
  
@@ -349,7 +347,7 @@ Index: spfmilter.c
  
  
  static SPF_config_t spfc_global;
-@@ -1824,6 +1976,8 @@
+@@ -1824,6 +1974,8 @@
  static int
  lib_init( void )
      {
@@ -358,7 +356,7 @@ Index: spfmilter.c
      spfc_global = SPF_create_config();
      if ( spfc_global == (SPF_config_t) 0 )
  	{
-@@ -1833,6 +1987,14 @@
+@@ -1833,6 +1985,14 @@
  
      SPF_set_debug( spfc_global, debug );
  
@@ -373,7 +371,7 @@ Index: spfmilter.c
      if ( localpolicy_str != (char*) 0 )
  	{
  	SPF_init_c_results( &spfr_localpolicy );
-@@ -2069,7 +2231,11 @@
+@@ -2069,7 +2229,11 @@
  	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
  	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
  	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
@@ -386,7 +384,7 @@ Index: spfmilter.c
  	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
  	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
  	default: return -1;
-@@ -2092,12 +2258,40 @@
+@@ -2092,12 +2256,40 @@
  
  
  static const char*
@@ -427,7 +425,7 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -2157,8 +2351,9 @@
+@@ -2157,8 +2349,9 @@
  typedef struct {
      int initialized, inuse;
      int next_free_resolver;
@@ -438,7 +436,7 @@ Index: spfmilter.c
      } resolver_t;
  static resolver_t* resolvers;
  static int max_resolvers, first_free_resolver, num_resolvers_inuse;
-@@ -2202,7 +2397,8 @@
+@@ -2202,7 +2395,8 @@
      for ( r = 0; r < max_resolvers; ++r )
  	if ( resolvers[r].initialized )
  	    {
@@ -448,7 +446,7 @@ Index: spfmilter.c
  	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
  	    }
      pthread_mutex_destroy( &resolver_mutex );
-@@ -2266,13 +2462,34 @@
+@@ -2266,13 +2460,34 @@
  	    free_resolver( r );
  	    return -1;
  	    }
@@ -485,7 +483,7 @@ Index: spfmilter.c
  	resolvers[r].initialized = 1;
  	}
  
-@@ -2283,7 +2500,7 @@
+@@ -2283,7 +2498,7 @@
  static SPF_dns_config_t
  get_resolver( int r )
      {
@@ -494,7 +492,7 @@ Index: spfmilter.c
      }
  
  
-@@ -2299,3 +2516,332 @@
+@@ -2299,3 +2514,332 @@
      }
  
  #endif /* USE_LIBSPF2 */
