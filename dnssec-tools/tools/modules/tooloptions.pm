@@ -368,8 +368,9 @@ sub opts_keykr
 #
 # Routine:	opts_zonekr()
 #
-# Purpose:	This routine returns a reference to a zone's keyrec.  It
-#		also ensures that the keyrec belongs to a zone and not a key.
+# Purpose:	This routine returns a reference to a zone's keyrec, with
+#		the config file and command line options mixed in.  It also
+#		ensures that the keyrec belongs to a zone and not a key.
 #
 #		The keyrec file and keyrec name may be specified either by
 #		the caller directly (names given as parameters) or by taking
@@ -386,6 +387,10 @@ sub opts_zonekr
 
 	my $ropts;			# Reference to %keyrec.
 	my %keyrec;			# Keyrec hash.
+
+	my $keyname;			# Name of zone's keys.
+	my $khref;			# Key hash reference.
+	my %keyhash;			# Hash for zone's keys' keyrecs.
 
 	#
 	# Get the keyrec for a specified krfile/krname pair.
@@ -415,6 +420,40 @@ sub opts_zonekr
 	if($keyrec{'keyrec_type'} ne "zone")
 	{
 		return(undef);
+	}
+
+	#
+	# Dig the KSK record out of the keyrec file and add it to the options.
+	#
+	$keyname = $keyrec{'kskkey'};
+	$khref = tooloptions($krf,$keyname,@csopts);
+	if(defined($khref))
+	{
+		%keyhash = %$khref;
+		foreach my $k (keys(%keyhash))
+		{
+			if($k !~ /^keyrec_/)
+			{
+				$keyrec{$k} = $keyhash{$k};
+			}
+		}
+	}
+
+	#
+	# Add the ZSK record to the options.
+	#
+	$keyname = $keyrec{'zskkey'};
+	$khref = tooloptions($krf,$keyname,@csopts);
+	if(defined($khref))
+	{
+		%keyhash = %$khref;
+		foreach my $k (keys(%keyhash))
+		{
+			if($k !~ /^keyrec_/)
+			{
+				$keyrec{$k} = $keyhash{$k};
+			}
+		}
 	}
 
 	#
@@ -711,8 +750,10 @@ line options.
 
 =item I<opts_zonekr($keyrec_file,$keyrec_name,@csopts)>
 
-This routine returns a reference to a zone I<keyrec>.  It ensures that the
-named I<keyrec> is a zone I<keyrec>; if it isn't, I<undef> is returned.
+This routine returns a reference to a zone I<keyrec>.  The I<keyrec> fields
+from the zone's KSK and ZSK are folded in as well, but the key's I<keyrec_>
+fields are excluded.  This call ensures that the named I<keyrec> is a zone
+I<keyrec>; if it isn't, I<undef> is returned.
 
 This routine acts as a front-end to the I<opts_krfile()> routine.
 I<opts_zonekr()>'s arguments conform to those of I<opts_krfile()>.
