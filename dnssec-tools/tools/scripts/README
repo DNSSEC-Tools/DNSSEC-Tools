@@ -1,0 +1,18 @@
+
+This directory contains tools for use in managing DNSSEC environments.
+Brief descriptions of these tools are given below.
+
+	clean-keyrec	Cleans unreferenced key keyrecs from keyrec files.
+
+	expchk		Checks a keyrec file for expired zones.
+
+	keyrec-check	Verifies the validity of a keyrec file.
+
+	lskrf		Lists the contents of a keyrec file.
+
+	zonesigner	Generates a set of keys for a zone and signs the zone
+			with those keys.  This combines the functionality of
+			dnssec-keygen and dnssec-signzone, recording relevant
+			information in a keyrec file.
+
+Keyrec files are documented in the source for dnssec-tools/keyrec.pm.
