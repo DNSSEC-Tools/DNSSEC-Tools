@@ -10,8 +10,10 @@ level: 8
 class: Warning
 # 60 seconds min
 minttl: 60
+help: minttl: minimum ttl value acceptable for a record
 # 7 days max
 maxttl: 604800
+help: maxttl: maximum ttl value acceptable for a record
 test:
   return "Record has a TTL which is unreasonably small ( " . $_[0]->ttl
     . " < min: "
