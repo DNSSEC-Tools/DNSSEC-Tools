@@ -278,6 +278,13 @@ test:
   "$_[0]->{name} only contains NSEC and RRSIG records"
     if ($keys[0] eq 'NSEC' && $keys[1] eq 'RRSIG');
 
+name: DNSSEC_RRSIGS_MUST_NOT_BE_SIGNED
+type: RRSIG
+desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.2: An RRSIG RR itself MUST NOT be signed, since signing an RRSIG RR would add no value and would create an infinite loop in the signing process.
+test:
+  "RRSIG records must not be signed but a signature for a RRSIG on $_[0]{name} is."
+    if ($_[0]->typecovered eq 'RRSIG');
+
 # XXX: nsec next order is proper
 # XXX: check all sigs?
 #
