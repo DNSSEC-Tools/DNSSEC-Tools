@@ -30,7 +30,8 @@ our $VERSION = "0.01";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
-	         opts_keykr opts_zonekr opts_suspend opts_restore opts_drop);
+	         opts_keykr opts_zonekr opts_createkrf
+	         opts_suspend opts_restore opts_drop);
 
 #
 # Standard options accepted by all tools in the dnssec-tools suite.
@@ -60,7 +61,9 @@ my @stdopts =
 	"zskpath=s",			# Path to ZSK.
 );
 
-my $firstcall	= 1;			# First-call flag.
+my $firstcall		= 1;		# First-call flag.
+my $create_krfile	= 0;		# Create non-existent keyrec file flag.
+
 my %cmdopts	= ();			# Options from command line.
 my %saveopts	= ();			# Save-area for command-line options.
 
@@ -131,6 +134,40 @@ sub tooloptions
 	#
 	if($krfile ne "")
 	{
+
+		#
+		# If the caller wants to create a non-existent keyrec
+		# file, we'll g'head and create it now.
+		#
+		if($create_krfile)
+		{
+			#
+			# If the specified keyrec file doesn't exist,
+			# create it.
+			#
+			if(! -e $krfile)
+			{
+				my $ret;		# open() return code.
+
+				$ret = open(NEWKRF,"> $krfile");
+				if(!defined($ret))
+				{
+					print STDERR "unable to create keyrec file \"$krfile\"\n";
+					return(undef);
+				}
+
+				close(NEWKRF);
+			}
+
+			#
+			# Turn off keyrec file creation.
+			#
+			$create_krfile = 0;
+		}
+
+		#
+		# Read the keyrec file.
+		#
 		keyrec_read($krfile);
 		$fullkr = keyrec_fullrec($krname);
 		if($fullkr == undef)
@@ -147,6 +184,11 @@ sub tooloptions
 		{
 			$configopts{$k} = $keyrec{$k};
 		}
+
+		#
+		# Save the name of the keyrec file.
+		#
+		$configopts{'krfile'} = $krfile;
 	}
 
 	#
@@ -488,6 +530,18 @@ sub opts_zonekr
 	# Return the zone keyrec to our caller.
 	#
 	return(\%keyrec);
+}
+
+##############################################################################
+#
+# Routine:	opts_createkrf()
+#
+# Purpose:	Turn on creation of non-existent keyrec files.
+#		This flag is only used by tooloptions().
+#
+sub opts_createkrf
+{
+	$create_krfile = 1;
 }
 
 ##############################################################################
