@@ -60,6 +60,16 @@ sub config {
     $self->{$prop} = $val;
 }
 
+sub print_help {
+    my ($self) = @_;
+    return if (!$self->{'help'});
+    foreach my $h (@{$self->{help}}) {
+	printf STDERR wrap(sprintf("%-20s %-15s",
+				   $self->{'name'}, $h->{'token'} . ":"),
+			   " " x (20+15+1), $h->{'description'}) . "\n";
+    }
+}
+
 1;
 
 =head1 NAME
