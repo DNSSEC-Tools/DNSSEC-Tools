@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>DoNutS - analyze DNS zone files for errors and warnings</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>DoNutS - analyze DNS zone files for errors and warnings</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>./donuts [-h] [-H] [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
+         [-C] [-c configfile] ZONEFILE DOMAINNAME...</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>DoNutS is a DNS Lint application that examines DNS zone files looking
+for particular problems.  This is especially important for zones
+making use of DNSsec security records, since many subtle problems can
+occur.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dh">-h</a></strong><br />
+</dt>
+<dd>
+Displays a help message.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dv">-v</a></strong><br />
+</dt>
+<dd>
+Turns on more verbose output.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dq">-q</a></strong><br />
+</dt>
+<dd>
+Turns on more quiet output.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dl_level">-l LEVEL</a></strong><br />
+</dt>
+<dd>
+Sets the level of errors you want to see.  The default is level 5.
+The maximum value is level 9, which displays many debuging results.
+You probably want to run no higher than level 8.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dr_rulefiles">-r RULEFILES</a></strong><br />
+</dt>
+<dd>
+A comma-seperated list of rule files to load.  The strings will be
+passed to <code>glob()</code> so * wildcards can be used to specify multiple files.
+</dd>
+<p></p>
+<dt><strong><a name="item__2di_ignorelist">-i IGNORELIST</a></strong><br />
+</dt>
+<dd>
+A common seperated list of regex paterns which are checked against
+rule names to determine if some should be ignored.  Run with -v to
+figure out rule names if you're not sure which rule is generating
+errors you don't wish to see.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dc_configfile">-c CONFIGFILE</a></strong><br />
+</dt>
+<dd>
+Parse a configuration file to change constraints specified by rules.
+This defaults to $HOME/.donuts.conf.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dc">-C</a></strong><br />
+</dt>
+<dd>
+Don't read user configuration files at all (like specified by -c or
+$rules{$the default).
+</dd>
+<p></p>
+<dt><strong><a name="item__2dh">-H</a></strong><br />
+</dt>
+<dd>
+Displays the personal configuration file rules and tokens that are
+acceptable to be found in a configuration file.  The output will
+consist of a rue name, a token and a description of what it means.
+</dd>
+<dd>
+<p>Your configuration file (EG, $HOME/.donuts.conf) may have lines in it
+that look like this:</p>
+</dd>
+<dd>
+<pre>
+  # change the default minimum number of legal NS records from 2 to 1
+  name: DNS_MULTIPLE_NS
+  minnsrecords: 1</pre>
+</dd>
+<dd>
+<pre>
+  # change the level of the following rule from 8 to 5
+  name: DNS_REASONABLE_TTLS
+  level: 5</pre>
+</dd>
+<dd>
+<p>This allows you to override certain aspects of how rules are executed.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item__2dr">-R</a></strong><br />
+</dt>
+<dd>
+Displays a list of all known rules along with their description (if
+available).
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p>Net::DNS::SEC::Tools::Donuts::Rule, Net::DNS</p>
+<p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
+
+</body>
+
+</html>
