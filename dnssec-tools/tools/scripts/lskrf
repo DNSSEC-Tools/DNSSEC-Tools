@@ -116,6 +116,110 @@ sub main()
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	doopts()
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+
+	GetOptions(\%options,@opts);
+	$zonesflag	= $options{'zones'}	|| 0;
+	$keysflag	= $options{'keys'}	|| 0;
+	$kskflag	= $options{'ksk'}	|| 0;
+	$zskflag	= $options{'zsk'}	|| 0;
+	$zcurflag	= $options{'cur'}	|| 0;
+	$zpubflag	= $options{'pub'}	|| 0;
+	$cntflag	= $options{'cnt'}	|| 0;
+	$unrefflag	= $options{'unref'}	|| 0;
+	$refflag	= $options{'ref'}	|| 0;
+	$terse		= $options{'terse'}	|| 0;
+	$long		= $options{'long'}	|| 0;
+
+	#
+	# Give a usage flag if asked.
+	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a keyrec file to check.
+	#
+	if($argc == 0)
+	{
+		usage();
+		exit(1);
+	}
+
+	#
+	# Set the appropriate keys flags.
+	#
+	if($keysflag)
+	{
+		$kskflag = 1;
+		$zskflag = 1;
+	}
+
+	if($zskflag)
+	{
+		$zcurflag = 1;
+		$znewflag = 1;
+		$zpubflag = 1;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getkeyrecs()
+#
+sub getkeyrecs
+{
+	my $krfile = shift;			# Keyrec file.
+
+	keyrec_read($krfile);
+
+	@krnames = keyrec_names();
+
+	foreach my $krn (sort(@krnames))
+	{
+		my $kr;				# Reference to keyrec.
+		my %keyrec;			# Keyrec.
+		my $type;			# Keyrec's type.
+
+		$kr = keyrec_fullrec($krn);
+		%keyrec = %$kr;
+
+		$type = $keyrec{'keyrec_type'};
+
+		if($type eq 'zone')
+		{
+			$zones{$krn} = $kr;
+		}
+		elsif($type eq 'ksk')
+		{
+			$allkeys{$krn} = $kr;
+			$kskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zskcur')
+		{
+			$allkeys{$krn} = $kr;
+			$zcurkeys{$krn} = $kr;
+			$zskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zsknew')
+		{
+			$allkeys{$krn} = $kr;
+			$znewkeys{$krn} = $kr;
+			$zskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zskpub')
+		{
+			$allkeys{$krn} = $kr;
+			$zpubkeys{$krn} = $kr;
+			$zskkeys{$krn} = $kr;
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	showzones()
 #
 sub showzones
@@ -256,147 +360,6 @@ sub showkeys
 		}
 	}
 
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	doopts()
-#
-sub doopts
-{
-	my $argc = shift;			# Command line argument count.
-
-	GetOptions(\%options,@opts);
-	$zonesflag	= $options{'zones'}	|| 0;
-	$keysflag	= $options{'keys'}	|| 0;
-	$kskflag	= $options{'ksk'}	|| 0;
-	$zskflag	= $options{'zsk'}	|| 0;
-	$zcurflag	= $options{'cur'}	|| 0;
-	$zpubflag	= $options{'pub'}	|| 0;
-	$cntflag	= $options{'cnt'}	|| 0;
-	$unrefflag	= $options{'unref'}	|| 0;
-	$refflag	= $options{'ref'}	|| 0;
-	$terse		= $options{'terse'}	|| 0;
-	$long		= $options{'long'}	|| 0;
-
-	#
-	# Give a usage flag if asked.
-	usage() if(defined($options{'help'}));
-
-	#
-	# Ensure we were given a keyrec file to check.
-	#
-	if($argc == 0)
-	{
-		usage();
-		exit(1);
-	}
-
-	#
-	# Set the appropriate keys flags.
-	#
-	if($keysflag)
-	{
-		$kskflag = 1;
-		$zskflag = 1;
-	}
-
-	if($zskflag)
-	{
-		$zcurflag = 1;
-		$znewflag = 1;
-		$zpubflag = 1;
-	}
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	getkeyrecs()
-#
-sub getkeyrecs
-{
-	my $krfile = shift;			# Keyrec file.
-
-	keyrec_read($krfile);
-
-	@krnames = keyrec_names();
-
-	foreach my $krn (sort(@krnames))
-	{
-		my $kr;				# Reference to keyrec.
-		my %keyrec;			# Keyrec.
-		my $type;			# Keyrec's type.
-
-		$kr = keyrec_fullrec($krn);
-		%keyrec = %$kr;
-
-		$type = $keyrec{'keyrec_type'};
-
-		if($type eq 'zone')
-		{
-			$zones{$krn} = $kr;
-		}
-		elsif($type eq 'ksk')
-		{
-			$allkeys{$krn} = $kr;
-			$kskkeys{$krn} = $kr;
-		}
-		elsif($type eq 'zskcur')
-		{
-			$allkeys{$krn} = $kr;
-			$zcurkeys{$krn} = $kr;
-			$zskkeys{$krn} = $kr;
-		}
-		elsif($type eq 'zsknew')
-		{
-			$allkeys{$krn} = $kr;
-			$znewkeys{$krn} = $kr;
-			$zskkeys{$krn} = $kr;
-		}
-		elsif($type eq 'zskpub')
-		{
-			$allkeys{$krn} = $kr;
-			$zpubkeys{$krn} = $kr;
-			$zskkeys{$krn} = $kr;
-		}
-	}
-}
-
-##############################################################################
-#									     #
-# 				Utilities				     #
-#									     #
-##############################################################################
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	dumpdata()
-#
-sub dumpdata
-{
-	my $keyname;				# Key name for looping.
-	my $zonename;				# Zone name for looping.
-
-	print "zones:\n";
-	foreach $zonename (sort(keys(%zones)))
-	{
-		print "\t$zonename\n";
-	}
-	print "\n";
-
-	print "ksks:\n";
-	foreach $keyname (sort(keys(%kskkeys)))
-	{
-		print "\t$keyname\n";
-	}
-	print "\n";
-
-	print "zsks:\n";
-	foreach $keyname (sort(keys(%zskkeys)))
-	{
-		print "\t$keyname\n";
-	}
-	print "\n";
 }
 
 #-----------------------------------------------------------------------------
