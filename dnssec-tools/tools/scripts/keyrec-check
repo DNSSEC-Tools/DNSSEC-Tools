@@ -24,13 +24,12 @@
 #			- existence of ZSK file
 #			- endtime > 1 day
 #			- seconds count and date string match
-#		U invalid key data values
-#			U bad encryption algorithm
-#			U out-of-range bit values
-#			U non-existent random device
-#			U end-time < 1 day
+#		- invalid key data values
+#			- bad encryption algorithm
+#			- out-of-range bit values
+#			- non-existent random device
+#			- seconds count and date string match
 #		- expired zone keyrecs
-#		U non-existent key files
 #
 #	Potential problems include:
 #
@@ -56,6 +55,8 @@ use Getopt::Long;
 use DNSSEC::keyrec;
 use DNSSEC::tooloptions;
 
+#######################################################################
+
 #
 # Time "constants".
 #
@@ -63,6 +64,32 @@ my $DAY	  = (24 * 60 * 60);		# Seconds in a day.
 my $WEEK  = (7 * $DAY);			# Seconds in a week.
 
 my $DAYSWARN = 7;			# Days before an expiration warning.
+
+
+#
+# List of valid encryption algorithms and length ranges.
+#
+my @algorithms = ("rsasha1", "rsamd5", "dsa", "dh", "hmac-md5");
+
+my %length_low =
+(
+	"rsasha1"  => 512,
+	"rsamd5"   => 512,
+	"dsa"	   => 512,
+	"dh"	   => 128,
+	"hmac-md5" => 1
+);
+
+my %length_high =
+(
+	"rsasha1"  => 2048,
+	"rsamd5"   => 2048,
+	"dsa"	   => 1024,
+	"dh"	   => 4096,
+	"hmac-md5" => 512
+);
+
+#######################################################################
 
 #
 # Data required for command line options.
@@ -188,6 +215,7 @@ sub zonechecks
 	if(length(%zones) == 0)
 	{
 		vprint("no zones defined\n");
+		$zoneerrs++;
 		return;
 	}
 
@@ -230,6 +258,8 @@ sub keychecks
 			$kr = $kskkeys{$keyname};
 			%keyrec = %$kr;
 
+			keydata("KSK",$keyname,$kr);
+
 			keyzones("KSK",$keyname,\%keyrec);
 
 			orphankeys("KSK",$keyname);
@@ -252,6 +282,8 @@ sub keychecks
 
 			$kr = $zskkeys{$keyname};
 			%keyrec = %$kr;
+
+			keydata("ZSK",$keyname,$kr);
 
 			keyzones("ZSK",$keyname,\%keyrec);
 
@@ -454,6 +486,104 @@ sub zonedata
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	keydata()
+#
+sub keydata
+{
+	my $keytype = shift;			# Keyrec's type.
+	my $keyname = shift;			# Keyrec's name.
+	my $kr	    = shift;			# Keyrec reference.
+	my %keyrec  = %$kr;			# Key table.
+
+	my $found = 0;				# Algorithm-found flag.
+	my $length;				# Key length.
+
+	my $algorithm	= lc($keyrec{'algorithm'});
+	my $random	= $keyrec{'random'};
+	my $gensecs	= $keyrec{'keyrec_gensecs'};
+	my $gendate	= $keyrec{'keyrec_gendate'};
+
+	my $datestr;				# Converted keyrec_gensecs.
+
+	#
+	# Get the key's length.
+	#
+	if($keytype eq "KSK")
+	{
+		$length = $keyrec{'ksklength'};
+	}
+	else
+	{
+		$length = $keyrec{'zsklength'};
+	}
+
+	#
+	# Search the algorithm list for this key's algorithm.  If we find
+	# it, we'll mark that it's good.
+	#
+	foreach my $alg (@algorithms)
+	{
+		if($alg eq $algorithm)
+		{
+			$found = 1;
+			last;
+		}
+	}
+
+	#
+	# If the key's encryption algorithm is bad, we'll give an error
+	# message.  If it's okay, we'll make sure the length is in the
+	# range of valid lengths for the key type.
+	#
+	if(!$found)
+	{
+		qprint("invalid algorithm:  \"$algorithm\" ($keytype key $keyname)\n");
+		$keyerrs++;
+	}
+	else
+	{
+		my $lowval  = $length_low{$algorithm};
+		my $highval = $length_high{$algorithm};
+
+		if($lowval > $length)
+		{
+			qprint("invalid key length:  length ($length) < minimum ($lowval) for $algorithm ($keytype key $keyname)\n");
+			$keyerrs++;
+		}
+		if($highval < $length)
+		{
+			qprint("invalid key length:  length ($length) > maximum ($lowval) for $algorithm ($keytype key $keyname)\n");
+			$keyerrs++;
+		}
+	}
+
+	#
+	# Check the existence of the random number file.
+	#
+	if($random ne "")
+	{
+		if(! -e $random)
+		{
+			qprint("missing file:  random generator $random ($keytype key $keyname)\n");
+			$keyerrs++;
+		}
+	}
+
+	#
+	# Ensure that the key's seconds count converts into the date
+	# stored in its date string.
+	#
+	$datestr = gmtime($gensecs);
+	if($datestr ne $gendate)
+	{
+		qprint("mismatched timestamps:  $gensecs invalid for \"$gendate\" ($keytype key $keyname)\n");
+		$keyerrs++;
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	keyzones()
 #
 sub keyzones
@@ -466,6 +596,14 @@ sub keyzones
 	my $zonename;				# Zone name to check.
 
 	$zonename = $keyrec{'zonename'};
+
+	if($zonename eq "")
+	{
+		qprint("no zone given:  $keytype key $keyname\n");
+		$keyerrs++;
+		return;
+	}
+
 	if(!defined($zones{$zonename}))
 	{
 		qprint("no such zone:  $zonename ($keytype key $keyname)\n");
@@ -780,10 +918,17 @@ opposite.
 
 =item * invalid zone data values
 
-A zone's I<keyrec> data are checked to ensure that they are not invalid.  They
+A zone's I<keyrec> data are checked to ensure that they are valid.  The
 following conditions are checked:  existence of the zone file, existence of
 the KSK file, existence of the ZSK file, the end-time is greater than one
 day, and the seconds-count and date string match.
+
+=item * invalid key data values
+
+A key's I<keyrec> data are checked to ensure that they are valid.  The
+following conditions are checked:  valid encryption algorithm, key length
+falls within algorithm's size range, random generator file exists, and the
+seconds-count and date string match.
 
 =back
 
