@@ -13,9 +13,13 @@ minttl: 60
 # 7 days max
 maxttl: 604800
 test:
-  return "Record has a TTL which is unreasonably small"
+  return "Record has a TTL which is unreasonably small ( " . $_[0]->ttl
+    . " < min: "
+    . $_[1]->{'minttl'} . ")"
      if ($_[0]->ttl < $_[1]->{'minttl'});
-  return "Record has a TTL which is unreasonably large"
+  return "Record has a TTL which is unreasonably large ( " . $_[0]->ttl
+    . " > max: "
+    . $_[1]->{'minttl'} . ")"
      if ($_[0]->ttl > $_[1]->{'maxttl'});
 
 # how they ever got this far, I'm not sure...
