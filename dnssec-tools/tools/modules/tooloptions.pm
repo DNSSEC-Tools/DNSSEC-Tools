@@ -632,6 +632,8 @@ Net::DNS::SEC::Tools::tooloptions - dnssec-tools option routines.
   $zoneref = opts_zonekr($keyrec_file,$keyrec_name);
   %zone_kr = %$zoneref;
 
+  opts_createkrf();
+
   opts_suspend();
 
   opts_restore();
@@ -786,6 +788,11 @@ If I<$keyrec_file> is given as an empty string, then no I<keyrec> file will
 be consulted.  In this case, it is assumed that I<$keyrec_name> will be left
 out altogether.
 
+If a non-existent I<$keyrec_file> is given and I<opts_createkrf()> has been
+called, then the named I<keyrec> file will be created.  I<opts_createkrf()>
+must be called for each I<keyrec> file that must be created, as the
+I<tooloptions> I<keyrec>-creation state is reset after I<tooloptions()> has
+completed.
 
 =item I<opts_krfile($keyrec_file,$keyrec_name,@csopts)>
 
@@ -846,6 +853,11 @@ I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
 case, their values will be taken from the I<-krfile> and I<-keyrec> command
 line options.
 
+=item I<opts_createkrf()>
+
+Force creation of an empty I<keyrec> file if the specified file does not
+exist.  This may happen on calls to I<tooloptions()>, I<opts_getkeys()>,
+I<opts_krfile()>, and I<opts_zonekr()>.
 
 =item I<opts_suspend()>
 
