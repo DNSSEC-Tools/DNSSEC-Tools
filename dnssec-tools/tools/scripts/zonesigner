@@ -1,0 +1,650 @@
+#!/usr/bin/perl
+#
+# zonesigner
+#
+#	This script combines a lot of actions required to sign a zone into a
+#	single command.  The command is used in this way:
+#
+#		zonesigner [options] <zone> <zone-data> <zone-file>
+#
+#		where:
+#			zone	 - the zone to be signed.  This may also be
+#				   specified with the -zone option.
+#			zonedata - a zone file to which the $INCLUDE ksk and
+#				   $INCLUDE zsk lines are added
+#			zonefile - is the name of the output zone file
+#
+#	 Options passed to dnssec-keygen:
+#		-algorithm	crypto algorithm	(RSASHA1)
+#		-random		source of randomness	(/dev/urandom)
+#		-ksklength	size of KSK key		(1024)
+#		-zsklength	size of ZSK key		(512)
+#
+#	 Options passed to dnssec-signzone:
+#		-endtime	end-time		(259200)
+#
+#	 Other options:
+#		-krfile		keyrec file to use
+#		-keyrec		keyrec to search for in specified keyrec file
+#		-verbose	verbose output
+#		-zone		zone name
+
+use strict;
+
+use DNSSEC::keyrec;
+use DNSSEC::tooloptions;
+
+
+#
+# Options fields.
+#
+my $alg;				# Encryption algorithm.
+my $enddate;				# End-time for zone signing.
+my $ksize;				# Size of KSK.
+my $kskdir;				# Directory to hold KSK.
+my $random;				# Random number generation method.
+my $verbose = 0;			# Turn off verbosity.
+my $zsize;				# Size of ZSK.
+my $zskdir;				# Directory to hold ZSK.
+
+my $ksk;				# KSK we've generated.
+my $kskpath;				# Path to the KSK.
+my $zsk;				# ZSK we've generated.
+my $zskpath;				# Path to the KSK.
+
+my $zone;				# Zone to play with.
+my $zonedata;				# Zone data (input) file.
+my $zonefile;				# Zone file (output.)
+
+my $status;				# Zone-signing status.
+
+my %opts;				# Options.
+
+
+#
+# Set some path variables.
+#
+my $CHECKZONE	= "/usr/local/sbin/named-checkzone";
+my $CP		= "/bin/cp";
+my $DATE	= "/bin/date";
+my $KEYGEN	= "/usr/local/sbin/dnssec-keygen";
+my $MV		= "/bin/mv";
+my $SIGNZONE	= "/usr/local/sbin/dnssec-signzone";
+
+
+#
+# Do our work.
+#
+$status = main();
+exit($status);
+
+#######################################################################
+#
+# main()
+#
+# (Yeah, yeah, a main() isn't necessary.  However, it offends my sense
+# of aesthetics to have great gobs of code on the same level as a pile
+# of globals.  (But what about all those globals, you ask...))
+#
+sub main
+{
+	my $status;				# Status of zone-signing.
+
+	#
+	# Munch on the options and arguments.
+	#
+	optsandargs();
+
+	if($verbose)
+	{
+		print "options\n";
+		foreach my $k (sort(keys(%opts)))
+		{
+			print "\t$k - $opts{$k}\n";
+		}
+
+		print "\narguments:\n";
+		print "\tzone	  - $zone\n";
+		print "\tzonedata - $zonedata\n";
+		print "\tzonefile - $zonefile\n";
+	}
+
+	#
+	# Generate the KSK and ZSK key files.
+	#
+	genkeys();
+
+	#
+	# Create the key directories and move the key files into the appropriate
+	# repositories.
+	#
+	keydirs();
+
+	#
+	# Set some short-hand variables.
+	#
+	$kskpath = "$kskdir/$ksk.key";
+	$zskpath = "$zskdir/$zsk.key";
+
+	#
+	# Create the unsigned zone file and add include lines for the key files.
+	#
+	zoneincludes();
+
+	#
+	# Sign the zone with the new keys and ensure the signing succeeded.
+	#
+	$status = zonesign();
+	return($status);
+}
+
+#######################################################################
+#
+# optsandargs()
+#
+#	Parse the command line for options and arguments.
+#
+sub optsandargs()
+{
+	my $argc;			# Number of arguments.
+	my $ropts;			# Reference to the option hash.
+
+	#
+	# Set the options, try to use the config file, the command line
+	# options and a keyrec file.  We'll take the following steps in
+	# trying to get a good set of options.
+	#
+	#  1. Set options from config file, command line, and a keyrec.
+	#     Look in the options for -krfile and -keyrec to find the keyrec.
+	#  2. Set options from config file, command line, and a keyrec.
+	#     Use our first argument is a zone name, and assume there's
+	#     a -krfile.  (Previous step showed there isn't a -keyrec.)
+	#  3. Set options from the config file and command line.  No keyrec
+	#     will be used.
+	#
+	$ropts = opts_zonekr();
+	if($ropts == undef)
+	{
+		$zone = $ARGV[0];
+		$ropts = opts_zonekr("",$zone);
+		if($ropts == undef)
+		{
+			$ropts = tooloptions("","");
+		}
+	}
+	if($ropts != undef)
+	{
+		%opts = %$ropts;
+	}
+
+	#
+	# Get the KSK- and ZSK-related arguments.
+	#
+	$ksize	 = $opts{'ksklength'};
+	$zsize	 = $opts{'zsklength'};
+	$kskdir	 = $opts{'kskdirectory'} || '.';
+	$zskdir	 = $opts{'zskdirectory'} || '.';
+
+	#
+	# Get the rest of the options.
+	#
+	$alg	 = "-a " . $opts{'algorithm'}	|| "";
+	$enddate = "-e " . $opts{'endtime'}	|| "";
+	$random  = "-r " . $opts{'random'}	|| "";
+	$verbose = $opts{'verbose'};
+
+	#
+	# If the verbose flag was set, we'll print out the options we're
+	# using.
+	#
+	if($verbose)
+	{
+		print "key-signing parameters:\n";
+		print "\talgorithm	- <$alg>\n";
+		print "\trandom		- <$random>\n";
+		print "\tksize		- <$ksize>\n";
+		print "\tkskdir		- <$kskdir>\n";
+		print "\tzsize		- <$zsize>\n";
+		print "\tzskdir		- <$zskdir>\n";
+		print "\n";
+
+		print "zone-signing parameters:\n";
+		print "\tenddate		- <$enddate>\n";
+	}
+
+	#
+	# Check that we don't have too many arguments.
+	#
+	$argc = @ARGV;
+	usage() if($argc > 3);
+
+	#
+	# If we've got two arguments (after option removal) we'll look for
+	# the zone name in the arguments.  If we find it, we'll add the
+	# zone name to the argument list.
+	#
+	if($argc == 2)
+	{
+		$zone = $opts{'zone'};
+		usage() if(!defined($zone));
+
+		unshift(@ARGV,$zone);
+	}
+
+	#
+	# Set variables for the arguments.
+	#
+	$zone	  = $ARGV[0];
+	$zonedata = $ARGV[1];
+	$zonefile = $ARGV[2];
+}
+
+#######################################################################
+#
+# genkeys()
+#
+#	Generate new KSK and ZSK keys.  New keyrecs for the new keys
+#	are added to the keyrec file.
+#
+sub genkeys
+{
+	#
+	# Generate a KSK file.
+	#
+	print "\t$KEYGEN $random $alg -b $ksize -n zone -f KSK $zone\n" if ($verbose);
+	$ksk = `$KEYGEN $random $alg -b $ksize -n zone -f KSK $zone`;
+	if($? != 0)
+	{
+		print STDERR "unable to generate KSK key file;\n";
+		print STDERR "dnssec-keygen returned $?\n";
+		exit(1);
+	}
+	chomp $ksk;
+
+	#
+	# Add the KSK's keyrec to the keyrec file.
+	#
+	$opts{'keyrec_type'} = "ksk";
+	keyrec_add('key',$ksk,\%opts);
+
+	#
+	# Generate a ZSK file.
+	#
+	print "generating key files:\n" if ($verbose);
+	print "\t$KEYGEN $random $alg -b $zsize -n zone $zone\n" if ($verbose);
+	$zsk = `$KEYGEN $random $alg -b $zsize -n zone $zone`;
+	if($? != 0)
+	{
+		print STDERR "unable to generate ZSK key file;\n";
+		print STDERR "dnssec-keygen returned $?\n";
+		exit(1);
+	}
+	chomp $zsk;
+
+	#
+	# Add the ZSK's keyrec to the keyrec file.
+	#
+	$opts{'keyrec_type'} = "zsk";
+	keyrec_add('key',$zsk,\%opts);
+
+	delete $opts{'keyrec_type'};
+}
+
+#######################################################################
+#
+# keydirs()
+#
+#	Check the validity of the key directories and move the newly
+#	generated key in.  Don't do anything if the directory is '.' 
+#
+sub keydirs
+{
+	#
+	# Ensure the KSK key directory exists and is actually a directory.
+	#
+	print "checking key directories\n" if ($verbose);
+
+	if($kskdir ne ".")
+	{
+		if(! -e $kskdir)
+		{
+			mkdir($kskdir);
+		}
+		elsif(! -d $kskdir)
+		{
+			print STDERR "KSK repository ($kskdir) is not a directory\n";
+			exit(3);
+		}
+		system("$MV $ksk.* $kskdir");
+	}
+
+	#
+	# Ensure the ZSK key directory exists and is a directory.
+	#
+	if($zskdir ne ".")
+	{
+		if(! -e $zskdir)
+		{
+			mkdir($zskdir);
+		}
+		elsif(! -d $zskdir)
+		{
+			print STDERR "ZSK repository ($zskdir) is not a directory\n";
+			exit(3);
+		}
+
+		system("$MV $zsk.* $zskdir");
+	}
+}
+
+#######################################################################
+#
+# zoneincludes()
+#
+#	Add include statements to the zone file for the key files.
+#
+sub zoneincludes
+{
+	print "adding key includes to zone file\n" if ($verbose);
+
+	#
+	# Copy the zone data to a new file.
+	#
+	system("$CP $zonedata $zonefile");
+
+	#
+	# Add lines to include the KSK and ZSK files.
+	#
+	open(ZD,">> $zonefile");
+	print ZD <<EOF;
+
+;; ksk
+\$INCLUDE \"$kskpath\"
+
+;; zsk
+\$INCLUDE \"$zskpath\"
+
+EOF
+	close(ZD);
+}
+
+#######################################################################
+#
+# zonesign()
+#
+#	Sign the zone with the new keys and ensure the signing succeeded.
+#
+sub zonesign
+{
+	my $chron;			# Today's date.
+	my $ktag;			# Tag value from KSK.
+	my $ztag;			# Tag value from ZSK.
+	my $szone;			# Result from dnssec-signzone execution.
+	my $status;			# Execution return code.
+
+	#
+	# Sign the zone with the new keys.
+	#
+	print "signing zone\n" if ($verbose);
+	$szone = `$SIGNZONE -k $kskpath -o $zone $enddate $zonefile $zskpath`;
+	if($szone eq "")
+	{
+		print STDERR "unable to sign zone\n";
+		exit(1);
+	}
+
+	#
+	# Ensure the signing succeeded.
+	#
+	print "checking zone\n" if ($verbose);
+	$status = system("$CHECKZONE -q $zone $szone");
+	if($status != 0)
+	{
+		print STDERR "problems with zone signing\n";
+		system("$CHECKZONE $zone $szone");
+		return($status);
+	}
+
+	#
+	# Add the ZSK's keyrec to the keyrec file.
+	#
+	updzonerec($szone);
+
+	#
+	# Get the tag values.
+	#
+	$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
+	$ktag = $1;
+	$zsk =~ /.*\+.*\+([0-9][0-9]*)/;
+	$ztag = $1;
+
+	#
+	# Get today's date.
+	#
+	$chron = `$DATE +"%m/%d/%y"`;
+
+	print "zone signed successfully\n";
+	print "${zone}:\n";
+	print "	ZSK  $ztag  $zsize  $chron	KSK  $ktag  $ksize  $chron";
+	return(0);
+}
+
+#######################################################################
+#
+# updzonerec()
+#
+#	Add the zone's keyrec to the keyrec file.  Also, we'll add the
+#	zone's name to the keyrecs of its keys.
+#
+sub updzonerec
+{
+	my $zfile = shift;			# New zone file.
+
+	my $chronosecs;				# Current time in seconds.
+	my $chronostr;				# Current time string.
+	my $kr;					# Zone's keyrec reference.
+	my %keyrec;				# Zone's keyrec.
+
+	print "updating the keyrec file for the zone\n" if ($verbose);
+
+	#
+	# Set some fields we've got to have -- in case they aren't
+	# set in the options.
+	#
+	$opts{'zonefile'} = $zonefile;
+	$opts{'kskkey'}	  = $ksk;
+	$opts{'kskpath'}  = $kskpath;
+	$opts{'zskkey'}	  = $zsk;
+	$opts{'zskpath'}  = $zskpath;
+
+	#
+	# Get the keyrec for the zone.  If there isn't one, it's a new
+	# zone and we'll create a new keyrec.
+	#
+	$kr = keyrec_fullrec($zone);
+	if(!defined($kr))
+	{
+
+		keyrec_add('zone',$zone,\%opts);
+		return;
+	}
+
+	#
+	# If there is a keyrec for the zone, we'll add
+	#
+	foreach my $field (keyrec_zonefields())
+	{
+		if(defined($opts{$field}))
+		{
+			keyrec_setval('zone',$zone,$field,$opts{$field});
+		}
+	}
+
+	#
+        # Set a timestamp for the zone entry.
+	#
+	$chronosecs = time();
+	$chronostr  = gmtime($chronosecs);
+	keyrec_setval('zone',$zone,'keyrec_signsecs',$chronosecs);
+	keyrec_setval('zone',$zone,'keyrec_signdate',$chronostr);
+
+	#
+	# Set the zone name in the keyrecs of our keys.
+	#
+	keyrec_setval('key',$ksk,'zonename',$zone);
+	keyrec_setval('key',$zsk,'zonename',$zone);
+
+	#
+	# Save the keyrec file.
+	#
+	keyrec_write();
+}
+
+#######################################################################
+#
+# usage()
+#
+#	Give usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  signer [options] <zone> <zonedata> <zonefile>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-algorithm algorithm\n";
+	print STDERR "\t\t-random random-path\n";
+	print STDERR "\t\t-ksklength KSK-size\n";
+	print STDERR "\t\t-zsklength ZSK-size\n";
+	print STDERR "\t\t-endtime end-time\n";
+	print STDERR "\t\t-krfile keyrec-file\n";
+	print STDERR "\t\t-keyrec keyrec-name\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-zone zone-name\n";
+
+	exit(1);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+zonesigner - Check a dnssec-tools keyrec file for problems and consistency.
+
+=head1 SYNOPSIS
+
+  zonesigner [options] <zone> <zone-data> <zone-file>
+
+=head1 DESCRIPTION
+
+This script combines into a single command many actions that are required to
+sign a zone.  It generates the required KSK and ZSK keys, adds the key data
+to a zone file, signs the zone, and runs checks to ensure that everything
+worked properly.
+
+Using I<keyrec> files, defined and maintained by I<dnssec-tools>,
+I<zonesigner> can automatically gather many of the options used to previously
+sign and generate a zone and its keys.  This allows the zone to be maintained
+using the same key lengths and expiration times, for example, without an
+administrator needing to manually track these fields.
+
+I<zonesigner> is used in this way:
+
+=over 4
+
+zonesigner [options] <zone> <zone-data> <zone-file>
+
+=back
+
+I<zone>	is the name of the zone that will be signed.  This may also be
+specified with the I<-zone> option.
+
+I<zonedata> is a template zone file to which several lines are added to
+include required KSK and ZSK key files.  This file will look B<exactly> like
+the I<zonefile> zone file, except without the $INCLUDE lines added at the end.
+
+I<zonefile> is the name of the output zone file.  This file will look
+B<exactly> like the I<zonedata> zone file, except with the $INCLUDE lines
+added at the end.
+
+
+=head1 OPTIONS
+
+Three types of options may be specified:  I<dnssec-keygen> options,
+I<dnssec-signzone> options, and options specific to I<zonesigner>.
+
+=head2 I<dnssec-keygen> Options
+
+=over 4
+
+=item -algorithm
+
+Cryptographic algorithm used to generate the zone's keys.
+The default value is RSASHA1.
+
+=item -ksklength
+
+Bit length of the zone's KSK key.
+The default is 1024.
+
+=item -random
+
+Source of randomness used to generate the zone's keys.	(/dev/urandom)
+
+=item -zsklength
+
+Bit length of the zone's ZSK key.
+The default is 512.
+
+=back
+
+=head2 I<dnssec-signzone> Options
+
+=over 4
+
+=item -endtime
+
+Time that the zone expires, measured in seconds.  See the man page for
+I<dnssec-signzone> for the valid format of this field.
+The default value is 259200 seconds (30 days.)
+
+=back
+
+=head2 I<zonesigner>-specific Options
+
+=over 4
+
+=item -krfile
+
+I<keyrec> file to use in processing options.  See the man page for
+I<DNSSEC::tooloptions> for more details about this file.
+
+=item -keyrec
+
+I<keyrec> to search for in the specified I<keyrec> file.  This option may be
+used when re-signing zones in order to use the same optioons as had been
+previously used to sign the zone.
+
+=item -verbose
+
+Verbose output will be given.
+
+=item -zone
+
+Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+DNSSEC::conf.pm(3), DNSSEC::keyrec.pm(3), DNSSEC::tooloptions.pm(3)
+
+=cut
