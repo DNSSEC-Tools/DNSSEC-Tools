@@ -137,12 +137,12 @@ test:
 name: DNSSEC_MISSING_RRSIG_RECORD
 level: 3
 ruletype: name
-desc: RRSIG records are required for all records in order for the domain to be secure, with the exception of NS and glue records for children.
+desc: RRSIG records signed by the zone's key are required for all records in order for the domain to be secure, with the exception of NS and glue records for children.
 test:
   my %rrsigs;
   foreach my $rec (@{$_[0]->{'RRSIG'}}) {
     # memorize RRSIG records
-    $rrsigs{$rec->typecovered}{$rec->name} = $rec;
+    push @{$rrsigs{$rec->typecovered}{$rec->name}},$rec;
   }
   #
   my @err;
@@ -159,6 +159,16 @@ test:
       if (!exists($rrsigs{$type}{$rec->name}) &&
           !exists($DONUTS::gluerecs{$rec->name})) {
          push @err, "No RRSIG record found for the record: $type:$rec->{name}";
+      }
+      if (exists($rrsigs{$type}{$rec->name})) {
+         my $gotone = 0;
+         for(my $i = 0; $i <= $#{$rrsigs{$type}{$rec->name}} && !$gotone; $i++){
+           $gotone = 1 if ($rrsigs{$type}{$rec->name}[$i]->signame eq 
+                           $current_domain . ".");
+         }
+         if (!$gotone) {
+           push @err, "$type:$rec->{name} is not signed by a key owned by the zone";
+         }
       }
     }
   }
@@ -251,3 +261,7 @@ test:
 # XXX: last sentence of 4.1.2...  hard to test.
 
 # XXX: section 6.3 Paragraph 2 says no identical RR sets should exist.  check for this?
+
+# XXX: protocol:2.2 double check that no RRSIGs are signed?
+# XXX: protocol:2.2 zone apex NS record MUST be signed
+# XXX: protocol:2.2 RRSIGs must be signed by a zone apex key
