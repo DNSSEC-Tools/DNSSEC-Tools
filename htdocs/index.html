@@ -2,31 +2,32 @@
 <html>
   <head>
     <title>The Dnssec-Tools Project</title>
-    <link rel="stylesheet" type="text/css" href="dnssec-tools.css" />
+    <link rel="stylesheet" type="text/css" href="dnssec-tools.blue.css" />
   </head>
 
   <body>
-    <h1>The dnssec-tools project</h1>
+    <h1>The DNSSec-Tools Project</h1>
       <div class="center" align="center">
-      <table>
+      <br>
+      <table class="links">
 	  <thead>
-	    <tr><th colspan="10">Project Links</th></tr>
+	    <tr><th class="thlinks" colspan="10">Project Links</th></tr>
 	  </thead>
 	<tbody>
 	<tr>
-	    <td><a class="toplink"
+	    <td class="tdlinks"><a class="toplink"
 	    href="http://sourceforge.net/projects/dnssec-tools">SF
 	    Project Page</td>
 
-	    <td><a class="toplink"
+	    <td class="tdlinks"><a class="toplink"
 	    href="http://sourceforge.net/mail/?group_id=121671">
 	    Mailing Lists</td>
 
-	    <td><a class="toplink"
+	    <td class="tdlinks"><a class="toplink"
 	    href="http://sourceforge.net/cvs/?group_id=121671">
 	    CVS</td>
 
-	    <td><a class="toplink"
+	    <td class="tdlinks"><a class="toplink"
 	    href="http://sourceforge.net/tracker/?group_id=121671&atid=691910">
 	    Bug Database</td>
 
@@ -34,6 +35,7 @@
 	</tbody>
       </table>
       </div>
+      <br>
       <h2>About This Project</h2>
       <div class="indent">
 	<p> The results of this project will enable end-users of DNS tools
@@ -54,38 +56,40 @@
       <div class="indent">
 	<p> Currently these are only available via CVS checkouts: </p>
 	<div class="major"><h3>Applications:</h3>
-	  <ul>
-	    <li><b><a href="docs/donuts.html">donuts</a>:</b> a dnslint like application to analyze zone files.
+	  <table class="soft">
+	    <tr><td class="tdtitle"><a href="docs/donuts.html">donuts</a>:</td><td class="description"> A dnslint like application to analyze zone files.
 	      Specifically tailored to dnssec but also tests for more
-	      general (non-dnssec) problems.</li>
-	    <li><b><a href="docs/mapper.html">mapper</a>:</b> Maps DNS realms color coding the results to
+	      general (non-dnssec) problems.</td></tr>
+	    <tr><td class="tdtitle"><a href="docs/mapper.html">mapper</a>:</td><td class="description"> Maps DNS realms color coding the results to
 	      allow for easy visual interpretation of the results.  Color
-	      codes are based on record types and/or errors and warnings.</li>
-	    <li><b>ifup-dyn-dns:</b> a linux ifup addition that propagates
+	      codes are based on record types and/or errors and warnings.</td></tr>
+	    <tr><td class="tdtitle">ifup-dyn-dns:</td><td class="description"> A linux ifup addition that propagates
 	      current IP addresses into a live zone(s) using dynamic
 	      DNS.  Allows for security to be used as well so
-	      transfers are properly authenticated.</li>
-	  </ul>
+	      transfers are properly authenticated.</td></tr>
+	  </table>
 	</div>
 	<div class="major"><h3>Perl modules:</h3>
-	  <ul>
-	    <li><b> <a href="docs/conf.html">Net::DNS::SEC::Tools::conf</a>:</b> parses
-	      Net::DNS::SEC::Tools specific configuration files</li>
-	    <li><b> <a href="docs/keyrec.html">Net::DNS::SEC::Tools::keyrec</a>:</b> manipulates key
-	      records for the dnssec-tools that deal with keys</li>
-	    <li><b> <a href="docs/tooloptions.html">Net::DNS::SEC::Tools::tooloptions</a>:</b> Implement option
-	      lists for perl based dnssec-tools for key manipulation.</li>
-	  </li>
-	  </ul>
+	  <table class="soft"><tbody>
+	    <tr><td class="tdtitle"> <a href="docs/conf.html">Net::DNS::SEC::Tools::conf</a>:</td><td class="description"> Parses
+	      Net::DNS::SEC::Tools specific configuration files</td></tr>
+	    <tr><td class="tdtitle"> <a href="docs/keyrec.html">Net::DNS::SEC::Tools::keyrec</a>:</td><td class="description"> Manipulates key
+	      records for the dnssec-tools that deal with keys</td></tr>
+	    <tr><td class="tdtitle"> <a href="docs/tooloptions.html">Net::DNS::SEC::Tools::tooloptions</a>:</td><td class="description"> Implement option
+	      lists for perl based dnssec-tools for key manipulation.</td></tr>
+	  </td></tr>
+	    </tbody></table>
 	</div>
 	<div class="major"><h3>Patches to other applications:</h3>
-	  <ul>
-	    <li><b>Perl module Net::DNS::ZoneFile::Fast</b> patch to support parsing
-	      DNSSEC records.</li>
-	    <li><b>libspf2 / sendmail</b> patch to validate SPF rules
+	  <table class="soft">
+	    <tr><td class="tdtitle">Perl module
+	    Net::DNS::ZoneFile::Fast</td><td class="description"> A patch to support parsing
+	      DNSSEC records.</td></tr>
+	    <tr><td class="tdtitle">libspf2 / sendmail</td><td
+	    class="description"> A patch to validate SPF rules
 	      against DNSsec records to ensure lookups within sendmail
-	      are not spoofed DNS records.</li>
-	  </ul>
+	      are not spoofed DNS records.</td></tr>
+	  </table>
 	</div>
       </ul>
       </div>
@@ -113,7 +117,7 @@
     <address><a href="mailto:Wes Hardaker <hardaker@users.sourceforge.net>"></a></address>
 <!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
 <!-- hhmts start -->
-Last modified: Tue Jan  4 10:10:35 PST 2005
+Last modified: Tue Jan  4 13:15:03 PST 2005
 <!-- hhmts end -->
   </body>
 </html>
