@@ -37,24 +37,14 @@ exit 0;
 
 ############################################################################
 
-sub test_parseconfig
-{
-	my %dnssec_conf;
-
-	%dnssec_conf = parseconfig();
-
-	foreach my $k (sort(keys(%dnssec_conf)))
-	{
-		print "<$k>	<$dnssec_conf{$k}>\n";
-	}
-}
-
-############################################################################
-
 sub test_keyrec_fullrec
 {
 	my @krnames = keyrec_names();
 	my $nind = @krnames;
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing keyrec_fullrec()\n\n";
+
 	for(my $ind=0;$ind<$nind;$ind++)
 	{
 		print "$ind:  $krnames[$ind]\n";
@@ -70,37 +60,43 @@ sub test_keyrec_fullrec
 
 ############################################################################
 
-sub test_keyrec_setval
+sub test_keyrec_recval
 {
-	# keyrec_dump_hash();	print "\n";
-	# keyrec_dump_array();		print "\n";
+	print "\n-----------------------------------------------------\n\n";
+	print "testing keyrec_recval()\n\n";
 
-	keyrec_setval("portrigh.com","keyrec_type","zone");
-	keyrec_setval("portrigh.com","zonefile","db.portrigh.com");
-	keyrec_setval("portrigh.com","enddate","+8888000");
-	keyrec_setval("portrigh.com","kskpath","keys.ksk/Kportrigh.com.+005+44000");
-	keyrec_setval("portrigh.com","zskpath","keys.zsk/Kportrigh.com.+005+88000");
-	keyrec_setval("portrigh.com","enddate","+8888888");
-
-	# keyrec_dump_array();		print "\n";
-	# keyrec_dump_hash();	print "\n";
-
-	keyrec_save();
+	getit("portrigh.com","zonefile");
+	getit("portrigh.com","kskpath");
+	getit("portrigh.com","endtime");
+	getit("Kportrigh.com.+005+26000","zonename");
+	getit("Kportrigh.com.+005+26000","algorithm");
+	getit("Kportrigh.com.+005+52000","zonename");
+	getit("Kportrigh.com.+005+52000","random");
+	getit("Kportrigh.com.+005+88888","zonename");
+	print "\n";
 }
 
 ############################################################################
 
-sub test_keyrec_recval
+sub test_keyrec_setval
 {
-	getit("portrigh.com","zonefile");
-	getit("portrigh.com","kskpath");
-	getit("portrigh.com","zonename");
-	getit("Kportrigh.com.+005+26000","zonename");
-	getit("Kportrigh.com.+005+26000","zonefile");
-	getit("Kportrigh.com.+005+52000","zonename");
-	getit("Kportrigh.com.+005+52000","zonefile");
-	getit("Kportrigh.com.+005+88888","zonename");
-	print "\n";
+	print "\n-----------------------------------------------------\n\n";
+	print "testing keyrec_setval()\n\n";
+
+	# keyrec_dump_hash();	print "\n";
+	# keyrec_dump_array();		print "\n";
+
+	keyrec_setval("key","Kportrigh.com.+005+12345","keyrec_type","ksk");
+	keyrec_setval("zone","portrigh.com","zonefile","db.portrigh.com");
+	keyrec_setval("zone","portrigh.com","endtime","+8888000");
+	keyrec_setval("zone","portrigh.com","kskpath","keys.ksk/Kportrigh.com.+005+44000");
+	keyrec_setval("zone","portrigh.com","zskpath","keys.zsk/Kportrigh.com.+005+88000");
+	keyrec_setval("zone","portrigh.com","endtime","+8888888");
+
+	# keyrec_dump_array();		print "\n";
+	# keyrec_dump_hash();	print "\n";
+
+	keyrec_close();
 }
 
 ############################################################################
@@ -139,23 +135,31 @@ sub create_keyrecfile
 
 zone "portrigh.com"
 	zonefile	"db.portrigh.com"
-	kskpath		"keys.ksk/Kportrigh.com.+005+26000"
-	zskpath		"keys.zsk/Kportrigh.com.+005+52000"
+	kskkey		"Kportrigh.com.+005+26000.key"
+	kskpath		"./Kportrigh.com.+005+26000.key"
+	zskkey		"Kportrigh.com.+005+52000.key"
+	zskpath		"./Kportrigh.com.+005+52000.key"
 	endtime		"+2592000"		# good for 30 days
+	keyrec_signsecs	"1101183759"
+	keyrec_signdate	"Tue Nov 23 04:22:39 2004"
 
 key "Kportrigh.com.+005+26000"
 	zonename	"portrigh.com"
-	type		"ksk"
+	keyrec_type	"ksk"
 	algorithm	"rsasha1"
-	length		"1024"
+	ksklength	"1024"
 	random		"-r /dev/urandom"
+	keyrec_gensecs	"1101183759"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
 
 key "Kportrigh.com.+005+52000"
 	zonename	"portrigh.com"
-	type		"zsk"
+	keyrec_type	"zsk"
 	algorithm	"rsasha1"
-	length		"512"
+	zsklength	"512"
 	random		"-r /dev/urandom"
+	keyrec_gensecs	"1101183759"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
 EOF
 
 	close(KRF);
