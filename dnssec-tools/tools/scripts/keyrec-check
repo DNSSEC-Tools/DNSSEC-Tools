@@ -1,0 +1,609 @@
+#!/usr/bin/perl
+#
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# keyrec-check
+#
+#	This script checks a keyrec file for problems, potential problems,
+#	and inconsistencies.
+#
+#	Problems include:
+#
+#		- no zones defined
+#		- no keys defined
+#		U obsolete key keyrecs  (not referenced by any zone keyrecs)
+#		- unknown zone keyrecs  (key keyrec points to a non-existent
+#					 zone keyrec)
+#		- missing key from zone keyrec
+#		U invalid data values
+#			U bad encryption algorithm
+#			U out-of-range bit values
+#			U non-existent random device
+#			U bad end-time
+#		- expired zone keyrecs
+#		U non-existent key files
+#
+#	Potential problems include:
+#
+#		- soon-to-expire zone keyrecs
+#		-  odd zone-signing date
+#		U non-existent key directories
+#		U orphaned keys
+#
+#	Inconsistencies include:
+#
+#		U zone fields in a key keyrec
+#		U key fields in a zone keyrec
+#		U unrecognized fields in a keyrec
+#
+#	('U' prefix indicates unimplemented functionality.)
+#
+
+use strict;
+
+use Getopt::Long;
+
+use DNSSEC::keyrec;
+use DNSSEC::tooloptions;
+
+#
+# Time "constants".
+#
+my $DAY	  = (24 * 60 * 60);		# Seconds in a day.
+my $WEEK  = (7 * $DAY);			# Seconds in a week.
+
+my $DAYSWARN = 7;			# Days before an expiration warning.
+
+#
+# Data required for command line options.
+#
+my $count   = 0;			# Error-count flag.
+my $quiet   = 0;			# Quiet flag.
+my $verbose = 0;			# Verbose flag.
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"count+",			# Give final error count.
+	"quiet+",			# Don't give any output.
+	"verbose+",			# Give lotsa output.
+	"help",				# Give a usage message and exit.
+);
+
+
+my $zoneerrs = 0;			# Count of errors in zones.
+my $keyerrs = 0;			# Count of errors in keys.
+
+my @krnames;				# List of keyrecs in the file.
+
+my %zones = ();				# Names of zone keyrecs.
+my %kskkeys = ();			# Names of KSK keyrecs.
+my %zskkeys = ();			# Names of ZSK keyrecs.
+
+my $curtime;				# Current time.
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+
+	#
+	# Check our options.
+	#
+	GetOptions(\%options,@opts);
+	$count	 = $options{'count'};
+	$quiet	 = $options{'quiet'};
+	$verbose = $options{'verbose'};
+	if(defined($options{'help'}))
+	{
+		usage();
+	}
+
+	#
+	# Ensure we were given a keyrec file to check.
+	#
+	if($argc == 0)
+	{
+		print STDERR "usage:  keyrec-check [-q] [-v] <keyrec_file>\n";
+		exit(1);
+	}
+
+	#
+	# Read the keyrec file.
+	#
+	getkeyrecs($ARGV[0]);
+#	dumpdata();
+
+	#
+	# Check our watch.
+	#
+	$curtime = time();
+
+	#
+	# Run the zone checks.
+	#
+	zonechecks();
+
+	#
+	# Run the key checks.
+	#
+	keychecks();
+
+	$errors = $zoneerrs + $keyerrs;
+	if($count)
+	{
+		print("$errors errors\n");
+	}
+	return($errors);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zonechecks()
+#
+sub zonechecks
+{
+	my $zkr;				# Zone keyrec reference.
+	my %zonerec;				# Zone keyrec.
+
+	my $zonename;				# Zone name for looping.
+	my $keyname;				# Key name.
+
+	if(length(%zones) == 0)
+	{
+		vprint("no zones defined\n");
+		return;
+	}
+
+	foreach my $zonename (sort(keys(%zones)))
+	{
+		vprint("checking zone $zonename\n");
+
+		$zkr = $zones{$zonename};
+
+#		zonekeys($zonename,$zkr);
+
+		expiredzones($zonename,$zkr);
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	keychecks()
+#
+sub keychecks
+{
+	my $kr;					# Keyrec reference.
+	my %keyrec;				# Keyrec.
+
+	if(length(%kskkeys) == 0)
+	{
+		vprint("no KSK keys defined\n");
+		$keyerrs++;
+	}
+	else
+	{
+		foreach my $keyname (sort(keys(%kskkeys)))
+		{
+			vprint("checking KSK key $keyname\n");
+
+			$kr = $kskkeys{$keyname};
+			%keyrec = %$kr;
+
+			keyzones("KSK",$keyname,\%keyrec);
+		}
+	}
+
+	if(length(%zskkeys) == 0)
+	{
+		vprint("no ZSK keys defined\n");
+		$keyerrs++;
+	}
+	else
+	{
+		foreach my $keyname (sort(keys(%zskkeys)))
+		{
+			vprint("checking ZSK key $keyname\n");
+
+			$kr = $zskkeys{$keyname};
+			%keyrec = %$kr;
+
+			keyzones("ZSK",$keyname,\%keyrec);
+		}
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getkeyrecs()
+#
+sub getkeyrecs
+{
+	my $krfile = shift;			# Keyrec file.
+
+	keyrec_read($krfile);
+
+	@krnames = keyrec_names();
+
+	foreach my $krn (sort(@krnames))
+	{
+		my $kr;				# Reference to keyrec.
+		my %keyrec;			# Keyrec.
+		my $type;			# Keyrec's type.
+
+		$kr = keyrec_fullrec($krn);
+		%keyrec = %$kr;
+
+		$type = $keyrec{'keyrec_type'};
+
+		if($type eq 'zone')
+		{
+			$zones{$krn} = $kr;
+		}
+		elsif($type eq 'ksk')
+		{
+			$kskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zsk')
+		{
+			$zskkeys{$krn} = $kr;
+		}
+	}
+}
+
+##############################################################################
+#									     #
+# 				Zone checks				     #
+#									     #
+##############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zonekeys()
+#
+sub zonekeys
+{
+	my $zonename = shift;			# Zone name for looping.
+	my $zkr	     = shift;			# Zone keyrec reference.
+	my %zonerec  = %$zkr;			# Zone keyrec.
+
+	my $keyname;				# Key name.
+
+	#
+	# Ensure that the zone's KSK key is present and exists.
+	#
+	$keyname = $zonerec{'kskkey'};
+	if(!defined($keyname))
+	{
+		qprint("missing key:  KSK (zone $zonename)\n");
+		$zoneerrs++;
+	}
+	elsif(!defined($kskkeys{$keyname}))
+	{
+		qprint("no such key:  KSK key $keyname (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
+	# Ensure that the zone's ZSK key is present and exists.
+	#
+	$keyname = $zonerec{'zskkey'};
+	if(!defined($keyname))
+	{
+		qprint("missing key:  ZSK (zone $zonename)\n");
+		$zoneerrs++;
+	}
+	elsif(!defined($zskkeys{$keyname}))
+	{
+		qprint("no such key:  ZSK key $keyname (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	vprint("\n");
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	expiredzones()
+#
+sub expiredzones
+{
+	my $zonename = shift;				# Zone name to check.
+	my $zkr	     = shift;				# Keyrec reference.
+	my %zonerec  = %$zkr;				# Zone keyrec.
+
+	my $endtime  = $zonerec{'endtime'};		# Zone's endtime.
+	my $signsecs = $zonerec{'keyrec_signsecs'};	# Zone's sign date.
+
+	$ret = checkexpire('zone',$zonename,$endtime,$signsecs);
+	$zoneerrs += $ret;
+}
+
+##############################################################################
+#									     #
+# 				Key checks				     #
+#									     #
+##############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	keyzones()
+#
+sub keyzones
+{
+	my $keytype = shift;			# Keyrec's type.
+	my $keyname = shift;			# Keyrec's name.
+	my $kr	    = shift;			# Keyrec reference.
+	my %keyrec  = %$kr;			# Key table.
+
+	my $zonename;				# Zone name to check.
+
+	$zonename = $keyrec{'zonename'};
+	if(!defined($zones{$zonename}))
+	{
+		qprint("no such zone:  $zonename ($keytype key $keyname)\n");
+		$keyerrs++;
+	}
+}
+
+##############################################################################
+#									     #
+# 				Utilities				     #
+#									     #
+##############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	checkexpire()
+#
+sub checkexpire
+{
+	my $type     = shift;			# Zone name for looping.
+	my $name     = shift;			# Zone name for looping.
+	my $endtime  = shift;			# Zone's endtime.
+	my $signsecs = shift;			# Zone's sign date.
+
+	my $errs = 0;				# Error count.
+
+	my $secs;				# Seconds in "+nnn" endtime.
+	my $days;				# Days until zone expiration.
+	my $daystr = "days";			# Days string.
+	my $finaltime;				# Time zone expires.
+
+	#
+	# Ensure that the keyrec's sign date is older than the current time.
+	#
+	if($signsecs > $curtime)
+	{
+		qprint("bizarre time:  sign date more recent than current date ($type $name)\n");
+		$errs++;
+	}
+
+	#
+	# Get the number of seconds until the keyrec's end time.
+	#
+	if($endtime =~ /^+/)
+	{
+		$endtime =~ /\+([0-9]+)/;
+		$secs = $1;
+	}
+
+	#
+	# Calculate the keyrec's expiration date.
+	#
+	$finaltime = $signsecs + $secs;
+
+	#
+	# Make sure the hasn't expired yet.  If it hasn't, we'll check
+	# to see if it's close to expiration.
+	#
+	if($finaltime <= $curtime)
+	{
+		$secs = $curtime - $finaltime;
+		$days = int($secs / $DAY);
+		$daystr = "day" if ($days == 1);
+		qprint("signtime:  $type expired $days $daystr ago ($type $name)\n");
+		$errs++;
+	}
+	else
+	{
+		#
+		# Figure out how many days are left until expiration.
+		#
+		$secs = $finaltime - $curtime;
+		$days = int($secs / $DAY);
+		$daystr = "day" if ($days == 1);
+
+		#
+		# Check if the keyrec will soon expire.
+		#
+		if($days <= $DAYSWARN)
+		{
+			qprint("signtime:  $type expires in $days $daystr ($type $name)\n");
+			$errs++;
+		}
+	}
+
+	return($errs);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	dumpdata()
+#
+sub dumpdata
+{
+	my $keyname;				# Key name for looping.
+	my $zonename;				# Zone name for looping.
+
+	if(!$verbose)
+	{
+		return;
+	}
+
+	print "zones:\n";
+	foreach $zonename (sort(keys(%zones)))
+	{
+		print "\t$zonename\n";
+	}
+	print "\n";
+
+	print "ksks:\n";
+	foreach $keyname (sort(keys(%kskkeys)))
+	{
+		print "\t$keyname\n";
+	}
+	print "\n";
+
+	print "zsks:\n";
+	foreach $keyname (sort(keys(%zskkeys)))
+	{
+		print "\t$keyname\n";
+	}
+	print "\n";
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	qprint()
+#
+sub qprint
+{
+	my $line = shift;
+
+	if(!$quiet)
+	{
+		print $line;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $line = shift;
+
+	if($verbose)
+	{
+		qprint($line);
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  keyrec-check [-c] [-q] [-v] [-h]\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+keyrec-check - Check a dnssec-tools keyrec file for problems and consistency.
+
+=head1 SYNOPSIS
+
+  keyrec-check [-c] [-q] [-v] [-h]
+
+=head1 DESCRIPTION
+
+This script checks a keyrec file for problems, potential problems,
+and inconsistencies.
+
+Recognized problems include:
+
+=over 4
+
+=item * no zones defined
+
+The I<keyrec> file does not contain any zone I<keyrec>s.
+
+=item * no keys defined
+
+The I<keyrec> file does not contain any key I<keyrec>s.
+
+=item * unknown zone I<keyrec>s
+
+A key I<keyrec> references a non-existent zone I<keyrec>.
+
+=item * missing key from zone I<keyrec>
+
+A zone I<keyrec> does not have both a KSK key and a ZSK key.
+
+=item * expired zone I<keyrec>s
+
+A zone has expired.
+
+=back
+
+Recognized potential problems include:
+
+=over 4
+
+=item * imminent zone expiration
+
+A zone will expire within one week. 
+
+=item * odd zone-signing date
+
+A zone's recorded signing date is later than the current system clock.
+
+=back
+
+No inconsistencies are currently recognized.
+
+The following options are available for I<keyrec-check>:
+
+=over 4
+
+=item -c
+
+Display a final count of errors.
+
+=item -q
+
+Do not display messages.  This option supercedes the setting of the I<-v>
+option.
+
+=item -v
+
+Display many messages.  This option is subordinate to the I<-q> option.
+
+=item -h
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+DNSSEC::keyrec.pm(3)
+
+=cut
