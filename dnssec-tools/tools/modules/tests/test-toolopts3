@@ -1,0 +1,167 @@
+#!/usr/bin/perl
+#
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# dnssec-tools
+#
+# Test script for the dnssec-tools tooloptions module.  This script tests
+# the opts_keykr() and opts_zonekr() interfaces.  The script attempts to
+# retrieve a key keyrec using both opts_keykr() and opts_zonekr(); the
+# first should succeed and the second should fail.  It does the opposite
+# and tries to retrieve a zone keyrec using opts_keykr() and opts_zonekr().
+# In this case, the first should fail and the second should succeed.
+#
+# This script needs no options for execution.
+#
+# Some of the data in the test keyrec file is nonsense.  However, it is
+# useful to distinguish between keyrecs, thus allowing one to determine
+# if the test passed or failed.
+#
+
+
+use strict;
+
+use DNSSEC::tooloptions;
+
+my $ropts;			# Reference to option table.
+my %opts;			# Option hash table.
+
+my $krf;			# Keyrec file.
+
+
+########################################################
+#
+# Build a keyrec file for use by these tests.
+#
+$krf = "portrigh.keyrec";
+buildkrf($krf);
+
+########################################################
+#
+
+checker($krf,"Ktriharpskel.com.+005+64000");
+print "\n-------------------------------------\n\n";
+checker($krf,"portrigh.com");
+
+exit(0);
+
+
+#####################################################################
+#
+sub checker
+{
+	my $krf = shift;		# Keyrec name to retrieve.
+	my $kname = shift;		# Keyrec name to retrieve.
+
+	my $rkr;			# Reference to the keyrec.
+	my %keyrec;			# The keyrec itself.
+
+	#
+	# Try to get the key keyrec from the keyrec file.  If we found it,
+	# print the key/val pairs.
+	#
+	$rkr = opts_keykr($krf,$kname);
+	if($rkr == undef)
+	{
+		print "couldn't find keyrec for key \"$kname\"; check keyrec file and  try again\n"; 
+	}
+	else
+	{
+		%keyrec = %$rkr;
+
+		print "key keyrec:\n";
+		foreach my $k (sort(keys(%keyrec)))
+		{
+			print "\t$k\t\t$keyrec{$k}\n";
+		}
+	}
+
+	print "\n----------------\n\n";
+
+	#
+	# Try to get the zone keyrec from the keyrec file.  If we found it,
+	# print the key/val pairs.
+	#
+	$rkr = opts_zonekr($krf,$kname);
+	if($rkr == undef)
+	{
+		print "couldn't find keyrec for zone \"$kname\"; check keyrec file and  try again\n"; 
+	}
+	else
+	{
+		%keyrec = %$rkr;
+
+		print "zone keyrec:\n";
+		foreach my $k (sort(keys(%keyrec)))
+		{
+			print "\t$k\t\t$keyrec{$k}\n";
+		}
+	}
+	print "\n";
+}
+
+#####################################################################
+#
+# buildkrf()
+#
+sub buildkrf
+{
+	my $krf = shift;
+
+        open(KRF,"> $krf");
+	print KRF <<EOF;
+
+#
+# key management database
+#
+
+zone "portrigh.com"
+	zonefile	"db.portrigh.com"
+	kskpath		"keys.ksk/Kportrigh.com.+005+26000"
+	zskpath		"keys.zsk/Kportrigh.com.+005+52000"
+	endtime		"+8888888"		# good for 102 days
+	kskkey		"Kportrigh.com.+005+26000"
+	zskkey		"Kportrigh.com.+005+52000"
+
+key "Kportrigh.com.+005+26000"
+	zonename	"portrigh.com"
+	type		"ksk"
+	algorithm	"rsasha2"
+	ksklength	"1024"
+	random		"-r /dev/urandom1"
+
+key "Kportrigh.com.+005+52000"
+	zonename	"portrigh.com"
+	type		"zsk"
+	algorithm	"rsasha3"
+	zsklength	"768"
+	random		"-r /dev/urandom2"
+
+zone "triharpskel.com"
+	zonefile	"db.triharpskel.com"
+	kskpath		"keys.ksk/Ktriharpskel.com.+005+26000"
+	zskpath		"keys.zsk/Ktriharpskel.com.+005+52000"
+	endtime		"+7800000"		# good for 90 days
+	kskkey		"Ktriharpskel.com.+005+32000"
+	zskkey		"Ktriharpskel.com.+005+64000"
+
+key "Ktriharpskel.com.+005+32000"
+	zonename	"triharpskel.com"
+	type		"ksk"
+	algorithm	"rsasha4"
+	ksklength	"2048"
+	random		"-r /dev/urandom3"
+
+key "Ktriharpskel.com.+005+64000"
+	zonename	"triharpskel.com"
+	type		"zsk"
+	algorithm	"rsasha5"
+	zsklength	"2008"
+	random		"-r /dev/urandom4"
+
+EOF
+
+	close(KRF);
+}
