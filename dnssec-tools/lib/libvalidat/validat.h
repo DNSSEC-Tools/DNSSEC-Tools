@@ -34,8 +34,8 @@ int val_init(void);
  * The Validator Function.
  *
  * Returns VAL_SUCCESS if DNSSEC validation succeeds,
- *         VAL_FAILURE if DNSSEC validation fails and
- *         VAL_UNKNOWN if it cannot find a resolver.
+ *         VAL_FAILURE if DNSSEC validation fails
+ *         and other values as given above.
  */
 val_result_t val_check ( const char *domain_name, int class, int type,
 			 const char *rdata );
@@ -44,7 +44,7 @@ val_result_t val_check ( const char *domain_name, int class, int type,
  * The Resolver-and-Validator Function.
  *
  * Returns the rdata in the 'answer' buffer, and the DNSSEC validation
- * status (VAL_SUCCESS or VAL_FAILURE) in the
+ * status (VAL_SUCCESS, VAL_FAILURE or other values as given above) in the
  * dnssec_status variable.
  *
  * Returns 0 on success and -1 if an error occurs in the DNS query.
