@@ -25,7 +25,7 @@ Index: config.h.in
 Index: src/include/spf_server.h
 ===================================================================
 --- src/include/spf_server.h	2005-03-01 09:43:49.000000000 -0500
-+++ src/include/spf_server.h	2005-03-02 11:25:58.000000000 -0500
++++ src/include/spf_server.h	2005-03-03 15:01:41.739472392 -0500
 @@ -20,7 +20,6 @@
  
  #include "spf_record.h"
@@ -34,7 +34,13 @@ Index: src/include/spf_server.h
  
  #ifndef SPF_MAX_DNS_MECH
  /* It is a bad idea to change this for two reasons.
-@@ -71,6 +70,8 @@
+@@ -66,11 +65,14 @@
+ 
+ 	int				 sanitize;		/* limit charset in messages */
+ 	int				 debug;			/* print debug info */
++        int                              dodnssec       /* perform DNSSEC validation */
+ };
+ 
  typedef
  enum SPF_server_dnstype_enum {
  	SPF_DNS_RESOLV, SPF_DNS_CACHE
@@ -163,12 +169,11 @@ Index: src/libspf2/spf_strerror.c
 Index: src/libspf2/spf_interpret.c
 ===================================================================
 --- src/libspf2/spf_interpret.c	2005-03-02 13:13:09.000000000 -0500
-+++ src/libspf2/spf_interpret.c	2005-03-03 13:43:13.142646788 -0500
-@@ -254,6 +254,14 @@
++++ src/libspf2/spf_interpret.c	2005-03-03 15:05:36.558706246 -0500
+@@ -254,6 +254,13 @@
  	
  	char			*p, *p_end;
  
-+	int breakouter;
 +	int firstdnssecerr;
 +	int i;
 +	int num_errs;
@@ -179,12 +184,11 @@ Index: src/libspf2/spf_interpret.c
  	SPF_ASSERT_NOTNULL(spf_response);
  	spf_request = spf_response->spf_request;
  	SPF_ASSERT_NOTNULL(spf_request);
-@@ -328,6 +336,46 @@
+@@ -328,6 +335,49 @@
  		}
  	#endif
  
 +		/* add in the DNSSEC validation status */
-+		breakouter = 0;
 +		firstdnssecerr = 1;
 +		num_errs = SPF_response_warnings (spf_response);
 +		for (i=0; i<num_errs; i++) {
@@ -205,17 +209,21 @@ Index: src/libspf2/spf_interpret.c
 +					   errmsg);
 +			    }
 +			}
-+			if (p_end - p <= 0) {
-+			    breakouter = 1;
-+			    break;
-+			}
++			if (p_end - p <= 0) break;
 +		    }
 +		}
 +
-+		if (breakouter) break;
++		if (p_end - p <= 0) break;
 +
 +		if (firstdnssecerr) {
-+		    p += snprintf(p,p_end - p," x-dnssec=pass;");
++		    if (spf_server->dodnssec) {
++			p += snprintf(p,p_end - p," x-dnssec=pass;",
++				      errmsg);
++		    }
++		    else {
++			p += snprintf(p,p_end - p," x-dnssec=none;",
++				      errmsg);
++		    }
 +		}
 +		else {
 +		    p += snprintf(p,p_end - p,");");
@@ -226,7 +234,7 @@ Index: src/libspf2/spf_interpret.c
  		/* FIXME  should the explanation string be included in the header? */
  
  		/* FIXME  should the header be reformated to include line breaks? */
-@@ -747,6 +795,12 @@
+@@ -747,6 +797,12 @@
  				return DONE_TEMPERR(SPF_E_DNS_ERROR); /* REASON_MECH */
  			}
  
@@ -239,7 +247,7 @@ Index: src/libspf2/spf_interpret.c
  			for (i = 0; i < rr_a->num_rr; i++) {
  				if ( rr_a->rr_type != fetch_ns_type )
  					continue;
-@@ -787,6 +841,12 @@
+@@ -787,6 +843,12 @@
  				return DONE_TEMPERR(SPF_E_DNS_ERROR);
  			}
  
@@ -252,7 +260,7 @@ Index: src/libspf2/spf_interpret.c
  			max_mx = rr_mx->num_rr;
  			if ( max_mx > spf_server->max_dns_mx )
  				max_mx = spf_server->max_dns_mx;
-@@ -815,6 +875,19 @@
+@@ -815,6 +877,19 @@
  					return DONE_TEMPERR( SPF_E_DNS_ERROR );
  				}
  
@@ -272,7 +280,7 @@ Index: src/libspf2/spf_interpret.c
  				for( i = 0; i < rr_a->num_rr; i++ ) {
  					if ( rr_a->rr_type != fetch_ns_type )
  						continue;
-@@ -869,7 +942,6 @@
+@@ -869,7 +944,6 @@
  					return DONE_TEMPERR(SPF_E_DNS_ERROR);
  				}
  
@@ -280,7 +288,7 @@ Index: src/libspf2/spf_interpret.c
  				max_ptr = rr_ptr->num_rr;
  				if ( max_ptr > spf_server->max_dns_ptr )
  					max_ptr = spf_server->max_dns_ptr;
-@@ -890,6 +962,12 @@
+@@ -890,6 +964,12 @@
  						return DONE_TEMPERR( SPF_E_DNS_ERROR );
  					}
  
@@ -293,7 +301,7 @@ Index: src/libspf2/spf_interpret.c
  					for( j = 0; j < rr_a->num_rr; j++ ) {
  						if ( spf_server->debug ) {
  							INET_NTOP( AF_INET, &rr_a->rr[j]->a.s_addr,
-@@ -951,6 +1029,12 @@
+@@ -951,6 +1031,12 @@
  						return DONE_TEMPERR( SPF_E_DNS_ERROR );
  					}
  
@@ -306,7 +314,7 @@ Index: src/libspf2/spf_interpret.c
  					for( j = 0; j < rr_aaaa->num_rr; j++ ) {
  						if ( spf_server->debug ) {
  							INET_NTOP(AF_INET6, &rr_aaaa->rr[j]->aaaa.s6_addr,
-@@ -1069,6 +1153,31 @@
+@@ -1069,6 +1155,31 @@
  				spf_response = save_spf_response;
  				save_spf_response = NULL;
  
@@ -338,7 +346,7 @@ Index: src/libspf2/spf_interpret.c
  				/* Rewrite according to prefix of include */
  				switch (SPF_response_result(spf_response_subr)) {
  					case SPF_RESULT_PASS:
-@@ -1152,6 +1261,11 @@
+@@ -1152,6 +1263,11 @@
  				SPF_FREE_LOOKUP_DATA();
  				return DONE_TEMPERR(SPF_E_DNS_ERROR);
  			}
@@ -390,7 +398,7 @@ Index: src/libspf2/spf_get_exp.c
 Index: src/libspf2/spf_server.c
 ===================================================================
 --- src/libspf2/spf_server.c	2005-03-01 16:05:02.000000000 -0500
-+++ src/libspf2/spf_server.c	2005-03-02 11:35:28.000000000 -0500
++++ src/libspf2/spf_server.c	2005-03-03 15:02:47.397306648 -0500
 @@ -54,6 +54,7 @@
  #include "spf_dns.h"
  #include "spf_dns_resolv.h"
@@ -407,7 +415,15 @@ Index: src/libspf2/spf_server.c
  	SPF_server_t		*sp;
  	SPF_errcode_t		 err;
  
-@@ -108,6 +110,29 @@
+@@ -88,6 +90,7 @@
+ 	sp->max_dns_ptr = SPF_MAX_DNS_PTR;
+ 	sp->max_dns_mx = SPF_MAX_DNS_MX;
+ 	sp->debug = debug;
++	sp->dodnssec = 0;
+ 
+ 	SPF_server_set_rec_dom_ghbn(sp);
+ 
+@@ -108,6 +111,31 @@
  				SPF_error("Failed to create DNS cache");
  			sp->resolver = dc_c;
  			break;
@@ -420,6 +436,7 @@ Index: src/libspf2/spf_server.c
 +			if (dc_s == 0)
 +				SPF_error("Failed to create DNSSEC validator");
 +			sp->resolver = dc_s;
++			sp->dodnssec = 1;
 +			break;
 +
 +	        case SPF_DNS_DNSSEC_CACHE:
@@ -433,11 +450,12 @@ Index: src/libspf2/spf_server.c
 +			if (dc_s == 0)
 +				SPF_error("Failed to create DNSSEC validator");
 +			sp->resolver = dc_s;
++			sp->dodnssec = 1;
 +			break;
  
  		default:
  			SPF_errorf("Unknown DNS type %d", dnstype);
-@@ -279,8 +304,7 @@
+@@ -279,8 +307,7 @@
  			SPF_dns_rr_free(rr_txt);
  			spf_response->result = SPF_RESULT_NONE;
  			spf_response->reason = SPF_REASON_FAILURE;
@@ -447,7 +465,7 @@ Index: src/libspf2/spf_server.c
  					"Host '%s' not found.", domain);
  			break;
  
-@@ -301,6 +325,12 @@
+@@ -301,6 +328,12 @@
  		case NETDB_SUCCESS:
  			break;
  
