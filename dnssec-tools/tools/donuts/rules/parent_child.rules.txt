@@ -1,0 +1,33 @@
+# Copyright 2004 Sparta, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+#
+# This file checks aspects of parent/child relationships
+#
+
+
+name: DNS_MULTIPLE_NS
+level: 2
+ruletype: name
+class: Warning
+test:
+  return "Only one NS record for $_[2], but at least 2 are suggested/required"
+     if (exists($_[0]->{'NS'}) && $#{$_[0]->{'NS'}} == 0);
+
+name: DNS_SUB_NOT_SECURE
+level: 5
+ruletype: name
+test:
+  "sub-domain $_[2] is not securely delegated.  It is missing a DS record."
+  if ($current_domain ne $_[2]                         &&  # not the root
+      exists($_[0]->{'NS'}) && $#{$_[0]->{'NS'}} == 0  &&  # is a sub
+      exists($_[0]->{'RRSIG'})                         &&  # DS|NSEC signed
+      !exists($_[0]->{'DS'})                               # No DS
+     );
+
+# XXX: check parent has DS record for this zone
+
+# XXX: check that child has key matching DS records in this zone.
+
+# XXX: check that a parent has a DS record matching every DNSKEY
+
+# XXX: warn if we have a NS but not a DS record and we are signed
