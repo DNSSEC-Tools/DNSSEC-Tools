@@ -1,5 +1,5 @@
 #
-# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# Copyright 2005 Sparta, inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -51,7 +51,7 @@ our $VERSION = "0.01";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(keyrec_read keyrec_names keyrec_fullrec keyrec_recval
-		 keyrec_setval keyrec_add keyrec_newkeyrec
+		 keyrec_setval keyrec_add keyrec_del keyrec_newkeyrec
 		 keyrec_keyfields keyrec_zonefields keyrec_init
 		 keyrec_discard keyrec_close keyrec_write
 		 keyrec_dump_hash keyrec_dump_array);
@@ -455,7 +455,6 @@ sub keyrec_setval
 	return(0);
 }
 
-
 #--------------------------------------------------------------------------
 #
 # Routine:	keyrec_add()
@@ -591,6 +590,109 @@ sub keyrec_add
 
 	#
 	# Sync the keyrec file.
+	#
+	$modified = 1;
+	keyrec_write();
+	return(0);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_del()
+#
+# Purpose:	Deletes a keyrec and fields from %keyrecs and $keyreclines.
+#
+sub keyrec_del
+{
+	my $krname = shift;		# Name of keyrec we're creating.
+
+	my %keyrec;			# Keyrec to be deleted.
+	my $krr;			# Keyrec reference.
+	my $krtype;			# Keyrec's type.
+
+	my $ind;			# Index into keyreclines.
+	my $krind;			# Index to keyrec's first line.
+	my $line;			# Keyrec line from @keyreclines.
+	my $lkey;			# Keyrec line's key.
+	my $lval;			# Keyrec line's value.
+	my $len;			# Length of array slice to delete.
+
+	#
+	# Don't allow empty keyrec names.
+	#
+	return(-1) if($krname eq "");
+
+	#
+	# Get a copy of the keyrec from the keyrec hash and then delete
+	# the original.
+	#
+	$krr = $keyrecs{$krname};
+	%keyrec = %$krr;
+	delete $keyrecs{$krname};
+
+	#
+	# Get the keyrec's type.
+	#
+	$krtype = "zone";
+	$krtype = "key" if($keyrec{'keyrec_type'} ne "zone");
+
+	#
+	# Find the index of the first line for this keyrec in the
+	# list of file lines.
+	#
+	for($ind = 0;$ind < $keyreclen; $ind++)
+	{
+		$line = $keyreclines[$ind];
+
+		$line =~ /\s*(\S+)\s+(\S+)/;
+		$lkey = $1;
+		$lval = $2;
+
+		$lval =~ s/"//g;
+
+		last if(($lkey eq $krtype) && ($lval eq $krname));
+	}
+	$krind = $ind;
+
+	#
+	# If we didn't find a keyrec with this name, return failure.
+	#
+	return(-1) if($ind == $keyreclen);
+
+	#
+	# Find the beginning of the next keyrec.
+	#
+	for($ind = $krind+1;$ind < $keyreclen; $ind++)
+	{
+		$line = $keyreclines[$ind];
+
+		$line =~ /\s*(\S+)\s+(\S+)/;
+		$lkey = $1;
+		$lval = $2;
+
+		last if(($lkey eq "zone") || ($lkey eq "key"));
+	}
+	$ind--;
+
+	#
+	# Find the end of the previous keyrec (the one to be deleted.)
+	#
+	while($ind > $krind)
+	{
+		last if($keyreclines[$ind] ne "\n");
+		$ind--;
+	}
+
+	#
+	# Delete the keyrec from @keyreclines.
+	#
+	$len = $ind - $krind + 1;
+	splice(@keyreclines,$krind,$len);
+	$keyreclen -= $len;
+
+	#
+	# Tell the world (or at least the module) that the file has
+	# been modified.
 	#
 	$modified = 1;
 	keyrec_write();
@@ -786,6 +888,9 @@ Net::DNS::SEC::Tools::keyrec - Squoodge around with a dnssec-tools keyrec file.
   keyrec_add("zone","portrigh.com",\%zone_krfields);
   keyrec_add("key","Kportrigh.com.+005+12345",\%keydata);
 
+  keyrec_del("portrigh.com");
+  keyrec_del("Kportrigh.com.+005+12345");
+
   keyrec_setval("zone","portrigh.com","zonefile","db.portrigh.com");
 
   @keyfields = keyrec_keyfields();
@@ -833,12 +938,11 @@ changes are not saved.  I<keyrec_write()> saves the new contents to disk.
 I<keyrec_close()> saves the file and close the Perl file handle to the
 I<keyrec> file.  If a I<keyrec> file is no longer wanted to be open, yet the
 contents should not be saved, I<keyrec_discard()> gets rid of the data closes
-the file handle B<without> saving any modified data.
+and the file handle B<without> saving any modified data.
 
 =head1 KEYREC INTERFACES
 
-The following are the user interfaces to the I<Net::DNS::SEC::Tools::keyrec>
-module.
+The interfaces to the I<Net::DNS::SEC::Tools::keyrec> module are given below.
 
 =head2 I<keyrec_add(keyrec_type,keyrec_name,fields)>
 
@@ -872,7 +976,22 @@ Return values are:
 
     0 success
 
-    -1 invalid krtype
+    -1 invalid I<krtype>
+
+=head2 I<keyrec_del(keyrec_name)>
+
+This routine deletes a I<keyrec> from the I<keyrec> file and the internal
+representation of the file contents.  The I<keyrec> is deleted from both
+the I<%keyrecs> hash table and the I<@keyreclines> array.
+
+Only the I<keyrec> itself is deleted from the file.  Any associated comments
+and blank lines surrounding it are left intact.
+
+Return values are:
+
+    0 successful I<keyrec> deletion
+
+    -1 invalid I<krtype> (empty string or unknown name)
 
 =head2 I<keyrec_close()>
 
