@@ -331,7 +331,8 @@ sub getkeyrecs
 		{
 			$kskkeys{$krn} = $kr;
 		}
-		elsif($type eq 'zsk')
+		elsif(($type eq 'zskcur') || ($type eq 'zsknew') ||
+		      ($type eq 'zskpub'))
 		{
 			$zskkeys{$krn} = $kr;
 		}
@@ -372,17 +373,37 @@ sub zonekeys
 	}
 
 	#
-	# Ensure that the zone's ZSK key is present and exists.
+	# Ensure that the zone's current ZSK is present and exists.
 	#
-	$keyname = $zonerec{'zskkey'};
+	$keyname = $zonerec{'zskcur'};
 	if(!defined($keyname))
 	{
-		qprint("missing key:  ZSK (zone $zonename)\n");
+		qprint("missing key:  current ZSK (zone $zonename)\n");
 		$zoneerrs++;
 	}
 	elsif(!defined($zskkeys{$keyname}))
 	{
-		qprint("no such key:  ZSK key $keyname (zone $zonename)\n");
+		qprint("no such key:  current ZSK key $keyname (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
+	# We aren't checking the zone for a new ZSK, as that's only present
+	# in a roll-over situation.
+	#
+
+	#
+	# Ensure that the zone's published ZSK is present and exists.
+	#
+	$keyname = $zonerec{'zskpub'};
+	if(!defined($keyname))
+	{
+		qprint("missing key:  published ZSK (zone $zonename)\n");
+		$zoneerrs++;
+	}
+	elsif(!defined($zskkeys{$keyname}))
+	{
+		qprint("no such key:  published ZSK key $keyname (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
@@ -422,7 +443,9 @@ sub zonedata
 	my $kskdir   = $keyrec{'kskdirectory'};
 	my $kskfile  = $keyrec{'kskpath'};
 	my $zskdir   = $keyrec{'zskdirectory'};
-	my $zskfile  = $keyrec{'zskpath'};
+	my $zskcfile = $keyrec{'zskcur'};
+	my $zsknfile = $keyrec{'zsknew'};
+	my $zskpfile = $keyrec{'zskpub'};
 	my $endtime  = $keyrec{'endtime'};
 	my $signsecs = $keyrec{'keyrec_signsecs'};
 	my $signdate = $keyrec{'keyrec_signdate'};
@@ -457,11 +480,29 @@ sub zonedata
 	}
 
 	#
-	# Check the existence of the ZSK key file.
+	# Check the existence of the current ZSK key file.
 	#
-	if(defined($zskfile) && (! -e $zskfile))
+	if(defined($zskcfile) && (! -e ($zskcfile . ".key")))
 	{
-		qprint("missing file:  ZSK $zskfile (zone $zonename)\n");
+		qprint("missing file:  current ZSK $zskcfile (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
+	# Check the existence of the new ZSK key file.
+	#
+	if(defined($zsknfile) && (! -e ($zsknfile . ".key")))
+	{
+		qprint("missing file:  new ZSK $zsknfile (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
+	# Check the existence of the published ZSK key file.
+	#
+	if(defined($zskpfile) && (! -e ($zskpfile . ".key")))
+	{
+		qprint("missing file:  published ZSK $zskpfile (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
@@ -666,7 +707,9 @@ sub orphankeys
 		# it.  Once we've found it, we'll drop out.
 		#
 		if(($keyrec{'kskkey'} eq $keyname)	||
-		   ($keyrec{'zskkey'} eq $keyname))
+		   ($keyrec{'zskcur'} eq $keyname)	||
+		   ($keyrec{'zsknew'} eq $keyname)	||
+		   ($keyrec{'zskpub'} eq $keyname))
 		{
 			$found = 1;
 			last;
@@ -718,7 +761,9 @@ sub keytypes
 				$foundtype = "ZSK";
 			}
 		}
-		elsif($keyrec{'zskkey'} eq $keyname)
+		elsif(($keyrec{'zskcur'} eq $keyname) ||
+		      ($keyrec{'zsknew'} eq $keyname) ||
+		      ($keyrec{'zskpub'} eq $keyname))
 		{
 			if($keytype eq "KSK")
 			{
@@ -788,8 +833,8 @@ sub checkexpire
 	$finaltime = $signsecs + $secs;
 
 	#
-	# Make sure the hasn't expired yet.  If it hasn't, we'll check
-	# to see if it's close to expiration.
+	# Make sure the keyrec hasn't expired yet.  If it hasn't, we'll
+	# check to see if it's close to expiration.
 	#
 	if($finaltime <= $curtime)
 	{
