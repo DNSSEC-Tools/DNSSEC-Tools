@@ -4,7 +4,9 @@ open(MF,"> Makefile");
 
 print MF <<EOF;
 
-MODULES=	conf.pm keyrec.pm
+MODULES=	conf.pm		\\
+		keyrec.pm	\\
+		tooloptions.pm
 
 DESTDIR=	/usr/local/lib/perl5/site_perl/5.8.2/DNSSEC
 
