@@ -105,6 +105,8 @@ src/include/spf_dns_dnssec.h:
       DNSSEC_POLICY_WARN   [1]: Return a warning, but continue processing
       DNSSEC_POLICY_ABORT  [2]: Abort processing and return an error to
 				the application
+
+This function returns a handle to the dnssec layer.
       
 (2) void SPF_dns_reset_config_dnssec  ( SPF_dns_config_t spfdc );
 This function resets the dnssec layer.
@@ -151,15 +153,21 @@ DNS layers.  The dnssec layer can be added as follows:
 	resolvers[r].initialized = 1;
     }
 
-The layers are destroyed as follows:
+spfmilter-1.0.8 calls the SPF_result() function in libspf2 to perform the SPF
+lookup.
+
+    ld->output = SPF_result (ld->spfcid, resolvers[r].spfdcid_d);
+
+i.e. the handle to the dnssec-layer is passed to the SPF_result function.
+
+In case of a DNSSEC validation failure, this function returns an
+appropriate error message field in its output.  This error message field is
+used by spfmilter to inform the user about the error.
+
+The DNS layers are freed as follows:
 
     if ( resolvers[r].initialized ) {
         SPF_dns_destroy_config_dnssec( resolvers[r].spfdcid_d );
 	SPF_dns_destroy_config_cache ( resolvers[r].spfdcid_c );
 	SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
     }
-
-spfmilter-1.0.8 calls the SPF_result() function in libspf2 to perform the SPF
-lookup.  In case of a DNSSEC validation failure, this function returns an
-appropriate error message field in its output.  This error message field is
-used by spfmilter to inform the user about the error.
