@@ -240,7 +240,10 @@ subroutine.
 If the test fails, it should return an error string which will be
 displayed for the user.  Note that the text will be line-wrapped
 before display (and thus the text should not be formatted and
-generally should be in english or other languages.
+generally should be in english or other languages.  If the test is
+testing for multiple things, you can return a reference to an array of
+error strings instead (an empty array reference being returned also
+indicates no error).
 
 There are two types of tests (currently), and how the code snippit is
 called depends on the ruletype clause above.
