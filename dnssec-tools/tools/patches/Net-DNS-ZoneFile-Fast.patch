@@ -1,5 +1,5 @@
 --- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
-+++ Fast.pm	2005-01-11 09:05:22.000352944 -0800
++++ Fast.pm	2005-01-11 09:09:47.316018832 -0800
 @@ -15,6 +15,7 @@
  use vars qw($VERSION);
  use IO::File;
@@ -66,11 +66,11 @@
 +	if (/^\$include[ \t]+/ig) {
 +	    if (!/\G([a-zA-Z]+)/igc) {
 +		error("no include file specified $_");
- 		return;
++		return;
 +	    }
 +	    if (! -f $1) {
 +		error("could not find file $1");
-+		return;
+ 		return;
 +	    }
 +	    unshift @fhs, $fh;
 +	    unshift @lns, $ln;
@@ -283,3 +283,29 @@
  sub parse_soa_number
  {
  	error("parse_soa_number: internal error, no \$soa") unless $soa;
+@@ -774,6 +978,8 @@
+ 
+ =item B<$TTL> directive
+ 
++=item B<$INCLUDE> directive (only while processing files or filehandles)
++
+ =item B<A> records
+ 
+ =item B<AAAA> records
+@@ -798,6 +1004,16 @@
+ 
+ =item B<TXT> records
+ 
++=item B<RRSIG> records
++
++=item B<DNSKEY> records
++
++=item B<DS> records
++
++=item B<NSEC> records
++
++=item B<RRSIG> records
++
+ =back
+ 
+ =head2 Non-standard third-party modules
