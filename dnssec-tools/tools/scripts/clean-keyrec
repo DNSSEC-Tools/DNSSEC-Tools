@@ -1,0 +1,396 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# clean-keyrec
+#
+#	This script cleans unused key keyrecs from a keyrec.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my $count   = 0;			# Error-count flag.
+my $list    = 0;			# List-only flag.
+my $quiet   = 0;			# Quiet flag.
+my $verbose = 0;			# Verbose flag.
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"count",			# Give final error count.
+	"quiet",			# Don't give any output.
+	"list",				# Only list orphaned keys, don't delete.
+	"verbose",			# Give lotsa output.
+	"help",				# Give a usage message and exit.
+);
+
+my $orphans = 0;			# Total count of orphaned keys.
+
+
+my @krnames;				# List of keyrecs in the file.
+
+my %zones = ();				# Names of zone keyrecs.
+my %keys = ();				# Names of ZSK keyrecs.
+
+main();
+exit($orphans);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# Purpose:	This is the top-level processing routine for the command.
+#
+sub main
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	#
+	# Check our options.
+	#
+	optsandargs();
+
+	#
+	# Search each specified keyrec file individually for orphaned
+	# key keyrecs.
+	#
+	while($argc > 0)
+	{
+		#
+		# Read the keyrec file.
+		#
+		getkeyrecs($ARGV[0]);
+
+		#
+		# Check for orphaned keys.
+		#
+		keychecks();
+
+		#
+		# Move on to the next keyrec file.
+		#
+		shift @ARGV;
+		$argc = @ARGV;
+	}
+
+	#
+	# If -count was given, give the count of orphans.
+	#
+	if($count)
+	{
+		if($orphans == 1)
+		{
+			print("1 orphan\n");
+		}
+		else
+		{
+			print("$orphans orphans\n");
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	optsandargs()
+#
+# Purpose:	This routine processes the command's options and arguments.
+#
+sub optsandargs
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	GetOptions(\%options,@opts);
+	$count	 = $options{'count'};
+	$list	 = $options{'list'};
+	$quiet	 = $options{'quiet'};
+	$verbose = $options{'verbose'};
+
+	usage() if(defined($options{'help'}));
+
+	#
+	# Can't have verbosity and quietude.
+	#
+	$verbose = 0 if($quiet);
+
+	#
+	# Ensure we were given a keyrec file to check.
+	#
+	usage() if($argc == 0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getkeyrecs()
+#
+# Purpose:	This routine reads a keyrec file and puts each keyrec into
+#		either a zone hash or a key hash.
+#
+sub getkeyrecs
+{
+	my $krfile = shift;			# Keyrec file.
+
+	#
+	# Read the keyrec file and get a list of the keyrec names.
+	#
+	keyrec_read($krfile);
+	@krnames = keyrec_names();
+
+	#
+	# Go through each keyrec and put it in the appropriate hash table.
+	#
+	foreach my $krn (sort(@krnames))
+	{
+		my $kr;				# Reference to keyrec.
+		my %keyrec;			# Keyrec.
+		my $type;			# Keyrec's type.
+
+		$kr = keyrec_fullrec($krn);
+		%keyrec = %$kr;
+
+		$type = $keyrec{'keyrec_type'};
+
+		if($type eq 'zone')
+		{
+			$zones{$krn} = $kr;
+		}
+		else
+		{
+			$keys{$krn} = $kr;
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	keychecks()
+#
+# Purpose:	This routine searches the list of keys in a keyrec file for
+#		orphaned keys.  If found, the orphans are deleted, unless
+#		the -list option was specified.
+#
+sub keychecks
+{
+	#
+	# If there are no keys, we have nothing here to do.
+	#
+	if(length(%keys) == 0)
+	{
+		vprint("no keys defined\n");
+		return;
+	}
+
+	#
+	# Check each key to see if it is an orphan.  If so, we'll delete it,
+	# unless the user just wants a list of orphans.
+	#
+	foreach my $keyname (sort(keys(%keys)))
+	{
+		if(orphankey($keyname))
+		{
+			next if($list);
+			keyrec_del($keyname);
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	orphankey()
+#
+# Purpose:	This routine checks if a given key is an orphan or if it's
+#		referenced by a zone.  A warning is printed if the specified
+#		key is referenced by a zone that is different from the zone 
+#		referenced by the key itself.  The orphan count is incremented
+#		when an orphan is found.
+#
+# Return Values:
+#		0 - referenced key
+#		1 - orphaned key
+#
+sub orphankey
+{
+	my $keyname = shift;			# Keyrec's name.
+	my $kr;					# Keyrec reference.
+	my %keyrec;				# Key's keyrec.
+	my $keyzone;				# Key's zone's name.
+
+	my $zonename;				# Zone name.
+	my $zkr;				# Zone reference.
+	my %zkeyrec;				# Zone's keyrec.
+
+	#
+	# Get the key's keyrec and save the its zone name.
+	#
+	$kr = $keys{$keyname};
+	%keyrec = %$kr;
+	$keyzone = $keyrec{'zonename'};
+
+	#
+	# Check the zones to see if one references this key.
+	#
+	foreach $zonename (sort(keys(%zones)))
+	{
+		$zkr = $zones{$zonename};
+		%zkeyrec = %$zkr;
+
+		#
+		# If the key is referenced by this zone, we'll report it as
+		# in use.  If it isn't in its claimed zone, but in another
+		# zone, we'll give a warning.
+		#
+		if(($keyname eq $zkeyrec{'kskkey'})	||
+		   ($keyname eq $zkeyrec{'zskcur'})	||
+		   ($keyname eq $zkeyrec{'zsknew'})	||
+		   ($keyname eq $zkeyrec{'zskpub'}))
+		{
+			if($zonename eq $keyzone)
+			{
+				vprint("referenced key:  $keyname $zonename\n");
+			}
+			else
+			{
+				qprint("warning:  $keyname references $keyzone, but is only referenced by $zonename\n");
+			}
+
+			return(0);
+		}
+
+	}
+
+	#
+	# This key isn't referenced by any of our zones, so it's an orphan.
+	# Bump our counter, give an error message, and return positive.
+	#
+	$orphans++;
+	qprint("orphaned key:  $keyname\n");
+	return(1);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	qprint()
+#
+# Purpose:	Print the given output iff -quiet wasn't specified.
+#
+sub qprint
+{
+	my $line = shift;
+
+	if(!$quiet)
+	{
+		print $line;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	vprint()
+#
+# Purpose:	Print the given output iff -verbose was specified.
+#
+sub vprint
+{
+	my $line = shift;
+
+	if($verbose)
+	{
+		print $line;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  keyrec-clean [options] <zone files>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-count    -  give count of orphan keys\n";
+	print STDERR "\t\t-list     -  only list orphaned keys\n";
+	print STDERR "\t\t-quiet    -  don't give any output\n";
+	print STDERR "\t\t-verbose  -  give lotsa output\n";
+	print STDERR "\t\t-help     -  give a usage message and exit\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+keyrec-clean - Clean a B<dnssec-tools> I<keyrec> file of orphaned keys.
+
+=head1 SYNOPSIS
+
+  keyrec-clean [options] <keyrec-files>
+
+    options:
+	-count    -  give count of orphan keys\n";
+	-list     -  only list orphaned keys\n";
+	-quiet    -  don't give any output\n";
+	-verbose  -  give lotsa output\n";
+	-help     -  give a usage message and exit\n";
+
+=head1 DESCRIPTION
+
+This script cleans the orphaned I<keyrec>s from a set of B<dnssec-tools>
+I<keyrec> files.  Orphaned keys are those keys which are not referenced
+by a zone.  A warning is given if a key is found that is referenced by a
+different zone I<keyrec> than the one referenced by the key's I<keyrec>.
+
+I<keyrec-clean>'s exit code is the count of orphaned keys found.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -count
+
+Display a final count of orphaned keys.  This option allows the count to be
+displayed even if the I<-quiet> option is given.
+
+=item -list
+
+The key I<keyrec>s are checked for orphans, but are not removed from the
+I<keyrec> file.  The names of the orphaned I<keyrec>s are displayed.
+
+=item -quiet
+
+Display no output.
+
+=item -verbose
+
+Display output about referenced keys as well as unreferenced keys.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::keyrec.pm(3)
+
+=cut
