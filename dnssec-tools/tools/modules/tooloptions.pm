@@ -291,12 +291,20 @@ sub opts_getkeys
 	# Dig the KSK record out of the keyrec file.
 	#
 	$kskhash = tooloptions($krf,$kskkey,@csopts);
+	if($kskhash == undef)
+	{
+		return(undef);
+	}
 	%kskrec = %$kskhash;
 
 	#
 	# Dig the ZSK record out of the keyrec file.
 	#
 	$zskhash = tooloptions($krf,$zskkey,@csopts);
+	if($zskhash == undef)
+	{
+		return(undef);
+	}
 	%zskrec = %$zskhash;
 
 	#
