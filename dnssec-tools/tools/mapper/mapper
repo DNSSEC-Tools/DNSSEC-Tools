@@ -10,10 +10,12 @@ my %opts;
 my %nodes;
 my %rtypes;
 my %edges;
+my %edgesonce;
 my %opts = ( o => 'map.png', l => 'neato');
-my ($zfile, $dname);
+my ($zfile, $dname, $from, $to, $color);
+my $seccolor = "green2";
 
-getopts("gro:l:s:i:t:h",\%opts);
+getopts("Rgro:l:s:i:t:h",\%opts);
 
 usage() if (exists($opts{'h'}));
 
@@ -25,14 +27,33 @@ my %reccolors =
    default => ".5137,.3804,1"
   );
 
+my %edgeparameters =
+  (
+#   CNAME => '.2275,.5412,1',
+   CNAME => {color => 'green3'},
+   NSEC => {color => 'brown', style => 'dashed'},
+   NS => {style => 'bold'},
+   DS => {color => $seccolor},
+   default => {color => "black"},
+  );
+
+# must be ordered by priority of importance in the results
+my @edgetypes = qw(CNAME NSEC NS DS);
+my $edgecount = 1;
+my %edgetypes;
+map { $edgetypes{$_} = $edgecount++; } @edgetypes;
+
+
 #
 # figure out which record types to ignore
 #
-my %skiprecords = ('NSEC' => 1, 'RRSIG' => 1);
+my %skiprecords;
 
 if ($opts{'s'}) {
     my @recs = split(/\s*,\s*/,$opts{'s'});
     map { $skiprecords{uc($_)} = 1 } @recs;
+} else {
+    %skiprecords = ('NSEC' => 1, 'RRSIG' => 1);
 }
 
 #
@@ -46,6 +67,7 @@ if ($opts{'t'}) {
 
 
 my $g = GraphViz->new(layout => $opts{'l'},
+		      node => {'fontsize' => 10},
 		      no_overlap => 1,
 		     );
 
@@ -77,25 +99,73 @@ while ($#ARGV > -1) {
     # for each node, add it and any necessary lines
     #
     foreach my $rr (@$rrset) {
-	#    print $rr->string, "\n";
-	#    print join(" -> ", $rr->name, $rr->class, $rr->type),"\n";
+#	    print $rr->string, "\n";
+#	    print "  ",join(" -> ", $rr->name, $rr->class, $rr->type),"\n";
 	next if ($opts{'i'} && $rr->name =~ /$opts{'i'}/);
 	next if ($skiprecords{$rr->type});
 	my $name = $rr->name;
-	my $label = get_label($name);
-	my $col = get_color($name);
-	add_once($g, $name,
-		 label => $label, style => 'filled', fillcolor => $col);
+
+	#
+	# add an edge from either:
+	#     - the record name to what it points to if CNAME or NSEC
+	#     - else the subdomain to the record name
+	#
 	if ($rr->type eq 'CNAME') {
-	    my $cname = $rr->cname;
-	    my $cnamelb = get_label($cname);
-	    add_once($g, $cname,
-		     label => $cnamelb, style => 'filled',
-		     fillcolor => $reccolors{'CNAME'});
-	    add_edge_once($g, $name, $cname);
+	    $from = $name;
+	    $to = $rr->cname;
+	} elsif ($rr->type eq 'NSEC' && $rr->nxtdname) {
+	    $from = $name;
+	    $to = $rr->nxtdname;
+	    $to =~ s/\.$//;
 	} else {
-	    add_edge_once($g, "$dname", $name);
+	    $from = $dname;
+	    $to = $name;
 	}
+
+	#
+	# add the FROM node
+	#
+	add_once($g, $from,
+		 label => get_label($from),
+		 style => 'filled', fillcolor => get_color($from));
+
+	#
+	# create the TO node
+	#
+	add_once($g, $to, label => get_label($to), style => 'filled',
+		 fillcolor => get_color($to));
+
+	#
+	# add the edge (line)
+	#
+	do_edge($from, $to, $rr->type);
+
+	#
+	# color edges of signed nodes different
+	#
+	if ($rr->type eq 'RRSIG') {
+	    $g->add_node($to, color => $seccolor);
+	}
+
+    }
+}
+
+#
+# add edges
+#
+my ($k, $v);
+foreach my $e1 (keys(%edges)) {
+    foreach my $e2 (keys(%{$edges{$e1}})) {
+	my %parms;
+	foreach my $et (@{$edges{$e1}{$e2}}) {
+	    next if (!$et);
+#	    print "$e1 $e2 -> $et\n";
+	    while (($k, $v) = each %{$edgeparameters{$et}}) {
+		$parms{$k} = $v;
+	    }
+	}
+#	print " ... ", join(",", %parms),"\n";
+	$g->add_edge($e1, $e2, %parms);
     }
 }
 
@@ -119,15 +189,21 @@ sub add_once {
     }
 }
 
+sub do_edge {
+    my ($to, $from, $type) = @_;
+    # pick the highest priority edge type
+    $edges{$to}{$from}[$edgetypes{$type}] = $type;
+}
+
 sub add_edge_once {
     my ($g, $node1, $node2, @opts) = @_;
 
     add_once($g, $node1);
     add_once($g, $node2);
 
-    if (!$edges{$node1}{$node2}) {
+    if (!$edgesonce{$node1}{$node2}) {
 	$g->add_edge($node1, $node2, @opts);
-	$edges{$node1}{$node2} = 1;
+	$edgesonce{$node1}{$node2} = 1;
     }
 }
 
@@ -163,7 +239,7 @@ sub get_color {
 
 sub usage {
     print "
-$0 [-h] [-r] [-o MAP.PNG] [-l (neato|dot|twopi)] [-s SKIPRECORDS] 
+$0 [-h] [-r] [-R] [-o MAP.PNG] [-l (neato|dot|twopi)] [-s SKIPRECORDS]
   [-i IGNOREREGXP] [-t TYPEINFO] ZONEFILE ZONENAME [ZONEFILE ZONENAME...]
 
 ";
