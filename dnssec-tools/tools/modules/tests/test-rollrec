@@ -1,0 +1,392 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# This script performs several tests of the dnssec-tools rollrec module.
+# A test rollrec file is created and parsed.  Various operations are run
+# on these data, and their results printed to the screen.
+#
+# The following interfaces are tested:
+#	rollrec_setval()
+#	rollrec_fullrec()
+#	rollrec_recval()
+#	rollrec_newrec()
+#	rollrec_fields()
+#	rollrec_add()
+#		rollrec_discard()
+#		rollrec_init()
+#		rollrec_read()
+#		rollrec_write()
+#	rollrec_del()
+#
+# The rollrec_add() and rollrec_setval() tests save the modified file to disk.
+# The last four interfaces are tested by the rollrec_add() test.
+#
+# These are simple tests in that the results are displayed to the screen
+# and the tester is left the responsibility of ensuring that all worked
+# as expected.  Automatic testing would be great, and it may come RSN.
+# Interfaces marked with an asterisk above have tests that automatically
+# check for success or failure.
+#
+
+use strict;
+
+use Net::DNS::SEC::Tools::rollrec;
+
+create_rollrecfile();
+
+my $rollrecs;					# Rollrec file data.
+my $rrf = "/tmp/test.rollrec";			# Rollrec file to use.
+
+$rollrecs = rollrec_read($rrf);
+# print "rollrecs - $rollrecs\n";
+
+test_fielders();
+
+test_rollrec_fullrec();
+
+test_rollrec_newrec();
+
+test_rollrec_recval();
+
+test_rollrec_setval();
+
+test_rollrec_add();
+
+test_rollrec_del();
+
+exit 0;
+
+#############################################################
+
+sub test_fielders
+{
+	my @fields;
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollrec_fields()\n\n";
+
+	@fields = rollrec_fields();
+	print "\tvalid fields:\n";
+	foreach my $kf (sort(@fields))
+	{
+		print "\t\t$kf\n";
+	}
+}
+
+#############################################################
+
+sub test_rollrec_fullrec
+{
+	my @rrnames = rollrec_names();
+	my $nind = @rrnames;
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollrec_fullrec()\n\n";
+
+	for(my $ind=0;$ind<$nind;$ind++)
+	{
+		print "$ind:  $rrnames[$ind]\n";
+		my $val = rollrec_fullrec($rrnames[$ind]);
+		my %sval = %$val;
+		foreach my $k (sort(keys(%sval)))
+		{
+			print "\t<$k>\t<$sval{$k}>\n";
+		}
+		print "\n";
+	}
+}
+
+#############################################################
+
+sub test_rollrec_newrec
+{
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollrec_newrec()\n";
+
+	if(rollrec_newrec("nrr") < 0)
+	{
+		print "\n\trollrec_newrec() tests failed\n";
+	}
+	else
+	{
+		print "\n\trollrec_newrec() tests passed\n";
+	}
+}
+
+#############################################################
+
+sub test_rollrec_recval
+{
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollrec_recval()\n\n";
+
+	getit("portrigh.com","zonefile");
+	getit("portrigh.com","curphase");
+	print "\n";
+}
+
+#############################################################
+
+sub test_rollrec_setval
+{
+	my $field;			# Field value from rollrec file.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollrec_setval()\n\n";
+
+	# rollrec_dump_hash();	print "\n";
+	# rollrec_dump_array();		print "\n";
+
+	rollrec_setval("portrigh.com","zonefile","db.portrigh.com");
+	rollrec_setval("portrigh.com","curphase","1");
+	rollrec_setval("portrigh.com","curphase","2");
+
+	# rollrec_dump_array();		print "\n";
+	# rollrec_dump_hash();	print "\n";
+
+	rollrec_write();
+	rollrec_discard();
+	$rollrecs = rollrec_read($rrf);
+
+	$field = rollrec_recval("portrigh.com","zonefile");
+	if($field eq "db.portrigh.com")
+	{
+		print "\trollrec_setval(zonefile) succeeded\n";
+	}
+	else
+	{
+		print "\trollrec_setval(zonefile) failed\n";
+		print "\t\treturned \"$field\" instead of \"db.portrigh.com\"\n";
+	}
+
+	$field = rollrec_recval("portrigh.com","curphase");
+	if($field == 2)
+	{
+		print "\trollrec_setval(curphase) succeeded\n";
+	}
+	else
+	{
+		print "\trollrec_setval(curphase) failed\n";
+		print "\t\treturned \"$field\" instead of \"2\"\n";
+	}
+
+}
+
+#############################################################
+
+sub test_rollrec_add
+{
+	my %fields;				# Fields for new rollrecs.
+	my $rr;					# Rollrec reference.
+	my %names;				# New rollrec name hash.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollrec_add()\n\n";
+
+	rollrec_discard();
+	$rollrecs = rollrec_read($rrf);
+
+	#
+	# Build a set of three rollrecs and add them to the rollrec table.
+	#
+	%fields = ();
+	$fields{'zonefile'}	= "db.harp.portrigh.com";
+	$fields{'curphase'}	= "0";
+	$fields{'maxttl'}	= "86400";
+	$fields{'rollrec_signsecs'} = "1101183759";
+	$fields{'rollrec_signdate'} = "Tue Nov 23 04:22:39 2004";
+	rollrec_add("harp.portrigh.com",\%fields);
+
+	%fields = ();
+	$fields{'zonefile'} = "db.pipes.portrigh.com";
+	$fields{'rollrec_gensecs'} = "1101183760";
+	$fields{'rollrec_gendate'} = "Tue Nov 23 04:22:40 2004";
+	rollrec_add("pipes.portrigh.com",\%fields);
+
+	%fields = ();
+	$fields{'zonename'} = "db.whistle.portrigh.com";
+	$fields{'rollrec_gensecs'} = "1101183762";
+	$fields{'rollrec_gendate'} = "Tue Nov 23 04:22:42 2004";
+	rollrec_add("whistle.portrigh.com",\%fields);
+
+	#
+	# Write the new rollrec file, dump all our data, and then re-read
+	# the file.
+	#
+	rollrec_write();
+	rollrec_init();
+	$rollrecs = rollrec_read($rrf);
+
+	#
+	# Build a table of rollrec names (as created above.)  If the hash
+	# value is 1, then we're expecting a rollrec_fullrec() on the hash
+	# key to succeed.  If the value is 0, we're expecting it to fail.
+	#
+	%names = (
+		 	"harp.portrigh.com"		=> 1,
+		 	"pipes.portrigh.com"		=> 1,
+		 	"whistle.portrigh.com"		=> 1,
+		 	"flute.portrigh.com"		=> 0,
+		 	"song.portrigh.com"		=> 0,
+		 );
+
+	#
+	# Go through the list of rollrec names and ensure that our newly
+	# created rollrecs exist, and that our dummy rollrec doesn't exist.
+	#
+	foreach my $rn (keys(%names))
+	{
+		my $expected = $names{$rn};
+		$rr = rollrec_fullrec($rn);
+
+		if(defined($rr))
+		{
+			if($expected)
+			{
+				print "\tsuccess:  rollrec_add($rn) worked\n";
+			}
+			else
+			{
+				print "\tfailure:  key $rn should not exist\n";
+			}
+		}
+		else
+		{
+			if($expected)
+			{
+				print "\tfailure:  key $rn should exist\n";
+			}
+			else
+			{
+				print "\tsuccess:  $rn invalid, as expected\n";
+			}
+		}
+	}
+}
+
+#############################################################
+
+sub test_rollrec_del
+{
+	my %fields;				# Fields for new rollrecs.
+	my $rr;					# Rollrec reference.
+	my %names;				# New rollrec name hash.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollrec_del()\n\n";
+
+	rollrec_del("whistle.portrigh.com");
+
+	#
+	# Write the new rollrec file, dump all our data, and then re-read
+	# the file.
+	#
+	rollrec_write();
+	rollrec_init();
+	$rollrecs = rollrec_read($rrf);
+
+	#
+	# Build a table of rollrec names (as created above.)  If the hash
+	# value is 1, then we're expecting a rollrec_fullrec() on the hash
+	# key to succeed.  If the value is 0, we're expecting it to fail.
+	#
+	%names = (
+		 	"harp.portrigh.com"		=> 1,
+		 	"pipes.portrigh.com"		=> 1,
+		 	"whistle.portrigh.com"		=> 0,
+		 	"flute.portrigh.com"		=> 0,
+		 	"song.portrigh.com"		=> 0,
+		 );
+
+	#
+	# Go through the list of rollrec names and ensure that our newly
+	# created rollrecs exist, and that our dummy rollrec doesn't exist.
+	#
+	foreach my $rn (keys(%names))
+	{
+		my $expected = $names{$rn};
+		$rr = rollrec_fullrec($rn);
+
+		if(defined($rr))
+		{
+			if($expected)
+			{
+				print "\tsuccess:  rollrec_add($rn) worked\n";
+			}
+			else
+			{
+				print "\tfailure:  key $rn should not exist\n";
+			}
+		}
+		else
+		{
+			if($expected)
+			{
+				print "\tfailure:  key $rn should exist\n";
+			}
+			else
+			{
+				print "\tsuccess:  $rn invalid, as expected\n";
+			}
+		}
+	}
+}
+
+############################################################################
+
+sub getit
+{
+	my $p1 = shift;
+	my $p2 = shift;
+	my $val = rollrec_recval($p1,$p2);
+
+	if($val eq "")
+	{
+		print "\t$p1/$p2 - empty\n";
+	}
+	elsif(!defined($val))
+	{
+		print "\t$p1/$p2 - not defined\n";
+	}
+	else
+	{
+		print "\t$p1/$p2 - <$val>\n";
+	}
+}
+
+############################################################################
+#
+# These data are in the portrigh.rollrec file used in this test.
+
+sub create_rollrecfile
+{
+	open(RRF,"> /tmp/test.rollrec");
+	print RRF <<EOF;
+
+roll "portrigh.com"
+	zonefile		"/usr/etc/dnssec/zones/db.portrigh.com"
+	keyrec			"/usr/etc/dnssec/keyrec/portrigh.keyrec"
+	curphase		"2"
+	maxttl			"86400"
+	phasestart		"Thu Mar 18 17:58:22 2005"
+	rollrec_signsecs	"1111100309"
+	rollrec_signdate	"Thu Mar 17 17:58:29 2005"
+
+
+roll "triharpskel.com"
+	zonefile		"/usr/etc/dnssec/zones/db.triharpskel.com"
+	keyrec			"/usr/etc/dnssec/keyrec/triharpskel.keyrec"
+	curphase		"1"
+	maxttl			"100000"
+	phasestart		"Thu Mar 18 20:00:00 2005"
+	rollrec_signsecs	"1111100390"
+	rollrec_signdate	"Thu Mar 17 17:59:50 2005"
+
+
+EOF
+
+	close(RRF);
+}
