@@ -1,0 +1,30 @@
+<?xml version="1.0"?> 
+
+<RDF:RDF xmlns:RDF="http://www.w3.org/1999/02/22-rdf-syntax-ns#" 
+         xmlns:chrome="http://www.mozilla.org/rdf/chrome#"> 
+
+    <!-- list all the packages being supplied by this jar -->
+    <RDF:Seq about="urn:mozilla:package:root"> 
+        <RDF:li resource="urn:mozilla:package:spfdnssec"/> 
+    </RDF:Seq> 
+
+    <!-- package information -->
+    <RDF:Description about="urn:mozilla:package:spfdnssec" 
+          chrome:displayName="SPF-DNSSEC Extension" 
+          chrome:author="Abhijit Hayatnagarkar; SPARTA, Inc." 
+          chrome:authorURL="http://dnssec-tools.sourceforge.net" 
+          chrome:name="spfdnssec"
+          chrome:extension="true"
+          chrome:description="This extension displays the Received-SPF mail-header and the result of the DNSSEC validation during SPF processing."> 
+    </RDF:Description>
+
+    <!-- overlay information -->
+    <RDF:Seq about="urn:mozilla:overlays">
+         <RDF:li resource="chrome://messenger/content/msgHdrViewOverlay.xul"/>
+    </RDF:Seq>
+
+    <RDF:Seq about="chrome://messenger/content/msgHdrViewOverlay.xul">
+         <RDF:li>chrome://spfdnssec/content/spfDnssecOverlay.xul</RDF:li>
+    </RDF:Seq>
+
+</RDF:RDF>
