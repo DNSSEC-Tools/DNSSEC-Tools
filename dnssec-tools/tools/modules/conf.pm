@@ -21,11 +21,16 @@
 #		ksk_length	1024		; KSK key length.
 #
 
+package Net::DNS::Sec::DNSSecTools::conf;
 
+require Exporter;
 use strict;
 
-our $CONFFILE = "/etc/dnssec/dnssec-tools.conf";	# Configuration file.
+our @ISA = qw(Exporter);
+our @EXPORT_OK = qw(parseconfig);
 
+our $CONFFILE = "/etc/dnssec/dnssec-tools.conf";	# Configuration file.
+our $VERSION = "0.01";
 
 #--------------------------------------------------------------------------
 #
