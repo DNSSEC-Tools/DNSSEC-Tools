@@ -202,3 +202,21 @@ The DNS layers are freed as follows:
 	SPF_dns_destroy_config_cache ( resolvers[r].spfdcid_c );
 	SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
     }
+
+If spfmilter is operating in the 'warn' mode, the SPF_E_DNSSEC_FAILURE
+error code will be present in the response, and will be added to the
+Received-SPF mail-header as a "x-dnssec" field:
+
+	     x-dnssec="fail (DNSSEC validation failed.)";
+
+If spfmilter is operating in the 'warn' or 'reject' modes, and
+DNSSEC validation succeeds, or if there was no SPF processing, the
+Received-SPF mail-header will contain the following:
+
+	     x-dnssec="pass";
+
+If spfmilter is operating in the 'ignore' mode, DNSSEC validation
+is not performed.  The Received-SPF mail-header will show:
+
+	     x-dnssec="none";
+=======================================================================
