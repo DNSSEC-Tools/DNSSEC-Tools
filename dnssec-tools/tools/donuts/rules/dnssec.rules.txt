@@ -238,7 +238,7 @@ test:
   return if (exists($DONUTS::gluerecs{$_[2]}));
   if ($#{$_[0]->{'NSEC'}} != 0) {
     return "odd error with NSEC record for $_[2].  number of records = " . 
-           $#{$_[0]->{'NSEC'}};
+           (1 + $#{$_[0]->{'NSEC'}});
   }
   my $types = $_[0]->{'NSEC'}[0]->typelist;
   my @types = split(/ /,$types);
