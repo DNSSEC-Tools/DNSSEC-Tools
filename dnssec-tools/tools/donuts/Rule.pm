@@ -35,9 +35,18 @@ sub test_record {
 	(!exists($r->{'live'}) || $dolive) &&
 	(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
 	my $res = $r->{'test'}->($rec, $r);
-	if ($res) {
-	    $r->print_error($res, "$file:$rec->{Line}",
-			    $verbose);
+	if (ref($res) ne 'ARRAY') {
+	    if ($res) {
+		$res = [$res];
+	    } else {
+		return;
+	    }
+	}
+	if ($#$res > -1) {
+	    foreach my $result (@$res) {
+		$r->print_error($result, "$file:$rec->{Line}",
+				$verbose);
+	    }
 	}
     }
 }
@@ -48,9 +57,18 @@ sub test_name {
 	(!exists($r->{'live'}) || $dolive) &&
 	(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
 	my $res = $r->{'test'}->($namerecord, $r, $name);
-	if ($res) {
-	    $r->print_error($res, "$file::$name",
-			    $verbose);
+	if (ref($res) ne 'ARRAY') {
+	    if ($res) {
+		$res = [$res];
+	    } else {
+		return;
+	    }
+	}
+	if ($#$res > -1) {
+	    foreach my $result (@$res) {
+		$r->print_error($result, "$file::$name",
+				$verbose);
+	    }
 	}
     }
 }
