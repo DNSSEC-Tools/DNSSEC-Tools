@@ -3,9 +3,10 @@ INSTALL    = @INSTALL@
 AR         = @AR@
 RANLIB     = @RANLIB@
 ARFLAGS	   = cruv
-OBJS	   = validat.o
+OBJS	   = validat.o val_parse.o val_print.o
+LIBS	   = -lresolv
 
-all: libvalidat.so libvalidat.a
+all: libvalidat.so libvalidat.a validate
 
 libvalidat.so: $(OBJS)
 	$(CC) -shared -o $@ $(OBJS)
@@ -14,8 +15,17 @@ libvalidat.a: $(OBJS)
 	$(AR) $(ARFLAGS) $@ $(OBJS)
 	$(RANLIB) $@
 
-validat.o: validat.c validat.h
+validat.o: validat.c validat.h val_internal.h
 	$(CC) -c validat.c
+
+val_parse.o: val_parse.c val_parse.h val_internal.h
+	$(CC) -c val_parse.c
+
+val_print.o: val_print.c val_print.h val_internal.h
+	$(CC) -c val_print.c
+
+validate: main.c $(OBJS)
+	$(CC) main.c $(OBJS) $(LIBS) -o validate
 
 install:
 	$(INSTALL) libvalidat.so $(libdir)
@@ -23,4 +33,4 @@ install:
 	$(INSTALL) validat.h     $(includedir)
 
 clean:
-	\rm -rf *.o *.so *.a
+	\rm -rf *.o *.so *.a validate
