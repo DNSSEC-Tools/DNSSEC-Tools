@@ -1,0 +1,31 @@
+This directory contains files that provide DNSSEC validation to the sendmail
+Mail Tranfer Agent.
+
+[1]
+The spfmilter-1.0.8_dnssec_patch.txt file contains a patch to spfmilter-1.0.8
+that provides DNSSEC validation.  It uses API from libspf2 with the
+dnssec_patch applied (see ../README).
+
+spfmilter-1.0.8 can be downloaded from http://www.libspf2.org/download.html
+
+To apply this patch, download spfmilter-1.0.8.tar.gz from the above website.
+Unzip and untar it by:
+
+	tar -xvzf spfmilter-1.0.8.tar.gz
+
+Go to the spfmilter-1.0.8 directory:
+
+	cd spfmilter-1.0.8
+
+Now apply the above patch by:
+
+	patch -p 0 -b -z .orig </path/to/patch/spfmilter-1.0.8_dnssec_patch.txt
+
+This will apply the patch and store the original files with a .orig suffix.
+
+Configure, compile and install libspf2 as per the instructions given in the
+spfmilter-1.0.8 distribution.
+
+[2]
+The other files in this directory provide a dnssec-milter that validates the
+sending MTA.  These files are obsolete and may be deleted in future.
