@@ -14,20 +14,32 @@
 #				   $INCLUDE zsk lines are added
 #			zonefile - is the name of the output zone file
 #
-#	 Options passed to dnssec-keygen:
+#
+#	Options, their meanings, and default values are given below.
+#
+#	Options passed to dnssec-keygen:
 #		-algorithm	crypto algorithm	(RSASHA1)
 #		-random		source of randomness	(/dev/urandom)
 #		-ksklength	size of KSK key		(1024)
 #		-zsklength	size of ZSK key		(512)
 #
-#	 Options passed to dnssec-signzone:
+#	Options passed to dnssec-signzone:
 #		-endtime	end-time		(259200)
+#		-gends		generate DS records	(not given)
 #
-#	 Other options:
+#	Other options:
 #		-krfile		keyrec file to use
 #		-keyrec		keyrec to search for in specified keyrec file
-#		-verbose	verbose output
 #		-zone		zone name
+#
+#		-reuseksk	re-use the zone's current KSK
+#		-reusezsk	re-use the zone's current ZSK
+#
+#		-kgopts		additional options to pass to dnssec-keygen
+#		-szopts		additional options to pass to dnssec-signzone
+#
+#		-help		display usage message
+#		-verbose	verbose output
 
 use strict;
 
@@ -40,17 +52,23 @@ use Net::DNS::SEC::Tools::tooloptions;
 #
 my $alg;				# Encryption algorithm.
 my $enddate;				# End-time for zone signing.
+my $gends;				# Generate DS records in zone signing.
+my $help = 0;				# Help flag.
 my $ksize;				# Size of KSK.
 my $kskdir;				# Directory to hold KSK.
 my $random;				# Random number generation method.
 my $verbose = 0;			# Turn off verbosity.
 my $zsize;				# Size of ZSK.
 my $zskdir;				# Directory to hold ZSK.
+my $kgopts;				# Additional dnssec-keygen options.
+my $szopts;				# Additional dnssec-signzone options.
 
 my $ksk;				# KSK we've generated.
 my $kskpath;				# Path to the KSK.
+my $reuseksk;				# Reuse the existing KSK.
 my $zsk;				# ZSK we've generated.
 my $zskpath;				# Path to the KSK.
+my $reusezsk;				# Reuse the existing ZSK.
 
 my $zone;				# Zone to play with.
 my $zonedata;				# Zone data (input) file.
@@ -107,6 +125,23 @@ sub main
 		print "\tzone	  - $zone\n";
 		print "\tzonedata - $zonedata\n";
 		print "\tzonefile - $zonefile\n";
+	}
+
+	#
+	# If help was specified, give the usage and exit.
+	#
+	if($help == 1)
+	{
+		usage();
+	}
+
+	#
+	# Ensure that the required data were specified.
+	#
+	if(($zone eq "") || ($zonedata eq "") || ($zonefile eq ""))
+	{
+		print STDERR "no zone specified\n";
+		usage();
 	}
 
 	#
@@ -180,17 +215,24 @@ sub optsandargs()
 	#
 	# Get the KSK- and ZSK-related arguments.
 	#
-	$ksize	 = $opts{'ksklength'};
-	$zsize	 = $opts{'zsklength'};
-	$kskdir	 = $opts{'kskdirectory'} || '.';
-	$zskdir	 = $opts{'zskdirectory'} || '.';
+	$ksize	  = $opts{'ksklength'};
+	$zsize	  = $opts{'zsklength'};
+	$kskdir	  = $opts{'kskdirectory'} || '.';
+	$zskdir	  = $opts{'zskdirectory'} || '.';
+	$reuseksk = $opts{'reuseksk'} || 0;
+	$reusezsk = $opts{'reusezsk'} || 0;
 
 	#
 	# Get the rest of the options.
 	#
 	$alg	 = "-a " . $opts{'algorithm'}	|| "";
 	$enddate = "-e " . $opts{'endtime'}	|| "";
+	$gends	 = $opts{'gends'};
 	$random  = "-r " . $opts{'random'}	|| "";
+	$kgopts  = $opts{'kgopts'}		|| "";
+	$szopts  = $opts{'szopts'}		|| "";
+
+	$help	 = $opts{'help'};
 	$verbose = $opts{'verbose'};
 
 	#
@@ -204,12 +246,18 @@ sub optsandargs()
 		print "\trandom		- <$random>\n";
 		print "\tksize		- <$ksize>\n";
 		print "\tkskdir		- <$kskdir>\n";
+		print "\treuseksk	- <$reuseksk>\n";
 		print "\tzsize		- <$zsize>\n";
 		print "\tzskdir		- <$zskdir>\n";
+		print "\treusezsk	- <$reusezsk>\n";
+		print "\tkgopts		- <$kgopts>\n";
 		print "\n";
 
 		print "zone-signing parameters:\n";
-		print "\tenddate		- <$enddate>\n";
+		print "\tenddate	- <$enddate>\n";
+		print "\tgends		- <$gends>\n";
+		print "\tszopts		- <$szopts>\n";
+		print "\n";
 	}
 
 	#
@@ -248,44 +296,75 @@ sub optsandargs()
 #
 sub genkeys
 {
+	print "\ngenerating key files:\n" if ($verbose);
+
 	#
 	# Generate a KSK file.
 	#
-	print "\t$KEYGEN $random $alg -b $ksize -n zone -f KSK $zone\n" if ($verbose);
-	$ksk = `$KEYGEN $random $alg -b $ksize -n zone -f KSK $zone`;
-	if($? != 0)
+	if($reuseksk == 0)
 	{
-		print STDERR "unable to generate KSK key file;\n";
-		print STDERR "dnssec-keygen returned $?\n";
-		exit(1);
-	}
-	chomp $ksk;
+		print "\t$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone\n" if ($verbose);
+		$ksk = `$KEYGEN $kgopts $random $alg -b $ksize -n zone -f KSK $zone`;
+		if($? != 0)
+		{
+			print STDERR "unable to generate KSK key file;\n";
+			print STDERR "dnssec-keygen returned $?\n";
+			exit(1);
+		}
+		chomp $ksk;
+		print "\t\tnew KSK - $ksk\n" if ($verbose);
 
-	#
-	# Add the KSK's keyrec to the keyrec file.
-	#
-	$opts{'keyrec_type'} = "ksk";
-	keyrec_add('key',$ksk,\%opts);
+		#
+		# Add the KSK's keyrec to the keyrec file.
+		#
+		$opts{'keyrec_type'} = "ksk";
+		keyrec_add('key',$ksk,\%opts);
+	}
+	else
+	{
+		if($opts{'kskkey'} eq "")
+		{
+			print STDERR "unable to re-use a non-existent KSK\n";
+			exit(1);
+		}
+
+		$ksk = $opts{'kskkey'};
+		print "\treusing existing KSK - $ksk\n" if ($verbose);
+	}
 
 	#
 	# Generate a ZSK file.
 	#
-	print "generating key files:\n" if ($verbose);
-	print "\t$KEYGEN $random $alg -b $zsize -n zone $zone\n" if ($verbose);
-	$zsk = `$KEYGEN $random $alg -b $zsize -n zone $zone`;
-	if($? != 0)
+	if($reusezsk == 0)
 	{
-		print STDERR "unable to generate ZSK key file;\n";
-		print STDERR "dnssec-keygen returned $?\n";
-		exit(1);
-	}
-	chomp $zsk;
+		print "\t$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone\n" if ($verbose);
+		$zsk = `$KEYGEN $kgopts $random $alg -b $zsize -n zone $zone`;
+		if($? != 0)
+		{
+			print STDERR "unable to generate ZSK key file;\n";
+			print STDERR "dnssec-keygen returned $?\n";
+			exit(1);
+		}
+		chomp $zsk;
+		print "\t\tnew ZSK - $zsk\n" if ($verbose);
 
-	#
-	# Add the ZSK's keyrec to the keyrec file.
-	#
-	$opts{'keyrec_type'} = "zsk";
-	keyrec_add('key',$zsk,\%opts);
+		#
+		# Add the ZSK's keyrec to the keyrec file.
+		#
+		$opts{'keyrec_type'} = "zsk";
+		keyrec_add('key',$zsk,\%opts);
+	}
+	else
+	{
+		if($opts{'zskkey'} eq "")
+		{
+			print STDERR "unable to re-use a non-existent ZSK\n";
+			exit(1);
+		}
+
+		$zsk = $opts{'zskkey'};
+		print "\treusing existing ZSK - $zsk\n" if ($verbose);
+	}
 
 	delete $opts{'keyrec_type'};
 }
@@ -388,13 +467,22 @@ sub zonesign
 	my $ktag;			# Tag value from KSK.
 	my $ztag;			# Tag value from ZSK.
 	my $szone;			# Result from dnssec-signzone execution.
+	my $cmdopts;			# Options for dnssec-signzone.
 	my $status;			# Execution return code.
+
+	#
+	# Build a set of options for dnssec-signzone.  This isn't strictly
+	# necessary, but it does keep the dnssec-signzone execution a bit
+	# cleaner than it would be otherwise.
+	#
+	$cmdopts = "$szopts $gends -k $kskpath -o $zone $enddate";
 
 	#
 	# Sign the zone with the new keys.
 	#
 	print "signing zone\n" if ($verbose);
-	$szone = `$SIGNZONE -k $kskpath -o $zone $enddate $zonefile $zskpath`;
+	print "\t$SIGNZONE $cmdopts $zonefile $zskpath\n" if ($verbose);
+	$szone = `$SIGNZONE $cmdopts $zonefile $zskpath`;
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
@@ -525,8 +613,14 @@ sub usage
 	print STDERR "\t\t-endtime end-time\n";
 	print STDERR "\t\t-krfile keyrec-file\n";
 	print STDERR "\t\t-keyrec keyrec-name\n";
-	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-kgopts dnssec-keygen-options\n";
+	print STDERR "\t\t-szopts dnssec-signszone-options\n";
 	print STDERR "\t\t-zone zone-name\n";
+	print STDERR "\t\t-gends\n";
+	print STDERR "\t\t-reuseksk\n";
+	print STDERR "\t\t-reusezsk\n";
+	print STDERR "\t\t-help\n";
+	print STDERR "\t\t-verbose\n";
 
 	exit(1);
 }
@@ -607,6 +701,12 @@ Source of randomness used to generate the zone's keys.	(/dev/urandom)
 Bit length of the zone's ZSK key.
 The default is 512.
 
+=item -kgopts
+
+Additional options for I<dnssec-keygen> may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the I<-kgopts> option.
+
 =back
 
 =head2 I<dnssec-signzone> Options
@@ -618,6 +718,17 @@ The default is 512.
 Time that the zone expires, measured in seconds.  See the man page for
 I<dnssec-signzone> for the valid format of this field.
 The default value is 259200 seconds (30 days.)
+
+=item -gends
+
+Force I<dnssec-signzone> to generate DS records for the zone.  This option is
+translated into I<-g> when passed to I<dnssec-signzone>.
+
+=item -szopts
+
+Additional options for I<dnssec-signzone> may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the I<-szopts> option.
 
 =back
 
@@ -633,17 +744,29 @@ I<Net::DNS::SEC::Tools::tooloptions> for more details about this file.
 =item -keyrec
 
 I<keyrec> to search for in the specified I<keyrec> file.  This option may be
-used when re-signing zones in order to use the same optioons as had been
+used when re-signing zones in order to use the same options as had been
 previously used to sign the zone.
 
-=item -verbose
+=item -reuseksk
 
-Verbose output will be given.
+Re-use the zone's current KSK.
+
+=item -reusezsk
+
+Re-use the zone's current ZSK.
 
 =item -zone
 
 Name of the zone that will be signed.  This zone name may be given with this
 option or as the first non-option command line argument.
+
+=item -help
+
+Display a usage message.
+
+=item -verbose
+
+Verbose output will be given.
 
 =back
 
