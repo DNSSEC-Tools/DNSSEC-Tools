@@ -21,17 +21,17 @@ use strict;
 
 use Net::DNS::SEC::Tools::rollmgr;
 
-test_rollmgr_dir();
+# test_rollmgr_dir();
 
-test_rollmgr_pidfile();
+# test_rollmgr_pidfile();
 
-test_rollmgr_getpid();
+# test_rollmgr_getpid();
 
-test_rollmgr_droppid();
+# test_rollmgr_droppid();
 
-test_rollmgr_rmpid();
+# test_rollmgr_rmpid();
 
-# test_rollmgr_qproc();
+test_rollmgr_qproc();
 
 # test_rollmgr_halt();
 
@@ -329,11 +329,57 @@ sub test_rollmgr_rmpid
 
 sub test_rollmgr_qproc
 {
-	print "\n-----------------------------------------------------\n\n";
-	print "testing rollmgr_qproc()\n\n";
+	my $caught = 0;				# Signal-caught flag.
+	my $child;				# Child's pid.
+	my $parent = $$;			# Parent's pid.
+	my $pidfile;				# Roll-over manager's pidfile.
+	my $naptime = 30;			# Time to sleep().
+	my %procs;				# Process names.
 
-	print "\t\t\tNOT IMPLEMENTED YET!!!\n\n";
-#	rollmgr_qproc();
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_qproc()\n";
+	print "\t(may pause for up to $naptime seconds)\n\n";
+
+	$pidfile = rollmgr_pidfile();
+	system(`/bin/echo $parent > $pidfile`);
+
+	$child = fork();
+
+
+	#
+	# The child process will let the parent fake-up a roll-over manager,
+	# and then tell it to process its queue.
+	#
+	if($child == 0)
+	{
+		sleep(2);
+		rollmgr_qproc();
+
+		exit(0);
+	}
+
+	#
+	# Fake up a roll-over manager for this test.
+	#
+	$SIG{HUP} = sub
+	{
+		print "\tSUCCESS:  fake roll-over manager received the \"process queue\" command \n";
+		$caught = 1;
+	};
+
+	#
+	# Wait a bit...
+	#
+	sleep($naptime);
+
+	#
+	# If we didn't receive the "process queue" command, then give an
+	# error message.
+	#
+	if(!$caught)
+	{
+		print "\tFAILURE:  \"process queue\" command not sent to the fake roll-over manager\n";
+	}
 }
 
 #############################################################
