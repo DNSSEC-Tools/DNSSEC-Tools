@@ -2,7 +2,6 @@
 
 use Net::DNS::ZoneFile::Fast;
 use GraphViz;
-use Getopt::Long::GUI;
 use Data::Dumper;
 use strict;
 
@@ -13,21 +12,25 @@ my %edges;
 my %edgesonce;
 my %edgelabels;
 my %extras;
-my %opts = ( o => 'map.png', l => 'neato', w => 7*24*60*60);
+my %opts = ( o => 'map.png', l => 'neato', w => 7*24*60*60,
+	     s => 'NSEC,RRSIG');
 my ($zfile, $dname, $from, $to, $color);
 my $seccolor = "green2";
 my %dnames;
 my ($dorecords, %dorecords);
+my $mapinwindow;
 
 my $time = time();
 
 LocalGetOptions(\%opts,
-		['h|help','Command line help'],
+		['h|help','Show command line help'],
 		'',
 		['q|quiet-dnssec','Do not show expired or near-expired record warnings'],
 		['w|warn-time=i','Time in seconds ahead to warn about expiring records'],
 		'',
-		['l|layout-style=s','Layout style (neato|dot|twopi)'],
+		['l|layout-style=s','Layout style',
+		 question => { type => 'menu',
+			       values => [qw(dot neato twopi)] }],
 		['L|legend','Add a legend to the map'],
 		'',
 		['r|resource-records','Show resource record types labels'],
@@ -39,6 +42,69 @@ LocalGetOptions(\%opts,
 		['i|ignore-records=s','Regex pattern of record names to ignore'],
 		'',
 		['o|output-file=s','Output File Name'],
+		['GUI:guionly',{type => 'checkbox',
+				values => [1,0],
+				default => 1,
+				text => 'Show map in a window',
+				name => 'mapinwindow'}],
+		['GUI:nootherargs',1],
+		['GUI:submodules','getzonefiles','getzonenames'],
+		['GUI:otherprimaries',
+
+		 # defining our own follow-on screens here
+		 'getzonefiles' =>
+		 {title => 'Which files',
+		  introduction => 'You can combine as many zone files as you wish in the resulting map.',
+		  questions => [{type => 'dynamic',
+				 values => sub {
+				     my @qs;
+				     for (my $i = 1; $i <=5; $i++) {
+					 push @qs,
+					   {type => 'fileupload',
+					    text => 'Zone File ' . $i,
+					    name => 'file' . $i},
+				     }
+				     return \@qs;
+				 }},
+				],
+		 },
+
+		 'getzonenames' =>
+		 {title => 'Zone Names',
+		  introduction => 'For each of the files you selected, please indicate what their zone names are.',
+		  post_answers => 
+		  [sub {
+		       require QWizard;
+		       import QWizard;
+		       my $rstr;
+		       for (my $i = 1; $i <=5; $i++) {
+			   if (qwparam('file'.$i) &&
+			       qwparam('zonename'.$i)) {
+			       $rstr .= qwparam('file'.$i) . " " . 
+				 qwparam('zonename'.$i) . " ";
+			   }
+		       }
+		       qwparam('__otherargs',$rstr);
+		       $mapinwindow = qwparam('mapinwindow');
+		   }],
+		  questions => [{type => 'dynamic',
+				 values => sub {
+				     my @qs;
+				     require QWizard;
+				     import QWizard;
+				     for (my $i = 1; $i <=5; $i++) {
+					 if (qwparam('file'.$i)) {
+					     push @qs,
+					       {type => 'text',
+						name => 'zonename' . $i,
+						default => qwparam('file'.$i),
+						text => qwparam('file'.$i)};
+					 }
+				     }
+				     return \@qs;
+				 }}]
+		 },
+		],
 		
 ) || usage();
 
@@ -91,8 +157,6 @@ my %skiprecords;
 if ($opts{'s'}) {
     my @recs = split(/\s*,\s*/,$opts{'s'});
     map { $skiprecords{uc($_)} = 1 } @recs;
-} else {
-    %skiprecords = ('NSEC' => 1, 'RRSIG' => 1);
 }
 
 #
@@ -253,7 +317,7 @@ if ($opts{'L'}) {
 	$g->add_edge('Legend',$k);
     }
 
-    my @tmpnodes = (@nodetypes, 'defaurt');
+    my @tmpnodes = (@nodetypes, 'default');
     foreach my $k (keys(%edgecombohash)) {
 	my @types = split(/,/, $k);
 	$parms = get_parms(\@types, \%edgeparameters);
@@ -265,9 +329,28 @@ if ($opts{'L'}) {
 #
 # write the final resulting file
 #
-open (O, ">" . $opts{'o'});
-print O $g->as_png;
-close(O);
+my $img;
+$g->as_png(\$img);
+
+if ($opts{'o'}) {
+    open (O, ">" . $opts{'o'});
+    print O $img;
+    close(O);
+}
+if ($mapinwindow && $Getopt::Long::GUI::GUI_qw) {
+    $Getopt::Long::GUI::GUI_qw->merge_primaries(
+						{
+						 mapout =>
+						 {
+						  title => 'Map',
+						  questions => 
+						  [{
+						    type => 'image',
+						    imgdata => [$img]
+						   }]
+						 }});
+    $Getopt::Long::GUI::GUI_qw->magic('mapout');
+}
 
 sub get_parms {
     my ($array, $hash, $combohash) = @_;
@@ -380,6 +463,7 @@ sub LocalOptionsMap {
 			    ? (1, 1, $_[0]) : (0, 2));
     for (my $i = $st; $i <= $#_; $i += $cb) {
 	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
 	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
 	    push @opts, $_[$i+1] if ($cb == 2);
 	}
