@@ -54,6 +54,9 @@ The following files have been added to libspf2-1.0.4:
     src/libspf2/dnssec_validator.c: A placeholder for the DNSSEC
 				    validator API.
 
+    src/libspf2/spf_dns_dnssec.c:   Implementation of the DNSSEC
+				    validation layer.
+
 The following header and source files have been modified:
     
     src/include/spf.h:		    Additional error codes for
@@ -68,9 +71,6 @@ The following header and source files have been modified:
     src/libspf2/spf_result.c:	    Return appropriate errors
 				    for DNSSEC validation failure.
 
-    src/libspf2/spf_dns_dnssec.c:   Implementation of the DNSSEC
-				    validation layer.
-
 Additional return values from functions:
 The SPF_get_spf function can now return two additional error values:
 
@@ -80,8 +80,7 @@ The SPF_get_spf function can now return two additional error values:
 The WARN error codes are returned when the dnssec layer has been configured
 to return a warning in the event of a DNSSEC validation failure.  The FAIL
 error codes are returned when the dnssec layer has been configured to
-abort further processing and reject mail in the event of a DNSSEC validation
-failure.
+abort further processing and in the event of a DNSSEC validation failure.
 
 
 API for Applications
@@ -164,9 +163,43 @@ lookup.
 
 i.e. the handle to the dnssec-layer is passed to the SPF_result function.
 
-In case of a DNSSEC validation failure, this function returns an
-appropriate error message field in its output.  This error message field is
-used by spfmilter to inform the user about the error.
+The SPF_result function returns a pointer to an SPF_output_t structure.
+The SPF_output_t structure contains five fields of interest:
+
+    SPF_result_t	   result
+    SPF_err_t		   err
+    char *		   err_msg
+    int			   num_errs
+    char **		   err_msgs
+
+In case of a DNSSEC validation failure, the values of these fields are
+as follows:
+
+(1) if dnssec-policy = DNSSEC_POLICY_ABORT then
+        result = SPF_RESULT_UNKOWN
+	err    = SPF_E_DNSSEC_FAIL
+	err_msg= "DNSSEC Validation of SPF record failed." (or similar)
+	num_errs > 0
+	err_msgs != NULL (It will contain the message
+		          "DNSSEC Validation of SPF record failed." (or
+		          similar) as one of its messages).
+
+(2) if dnssec-policy = DNSSEC_POLICY_WARN then
+        result = <result-value depending on other processing>
+	err    = <err-value depending on other processing>
+	err_msg= "DNSSEC Validation of SPF record failed." (or similar)
+	         or other value depending on other processing
+	num_errs > 0
+	err_msgs != NULL (It will contain the message
+		          "DNSSEC Validation of SPF record failed." (or
+			  similar) as one of its messages).
+
+(3) if dnssec-policy = DNSSEC_POLICY_IGNORE then the values of these
+    fields will be dependent on other SPF processing.
+
+These output fields can be used by the client of this library
+(say spfmilter) to inform the user about the error, or reject the
+email.
 
 The DNS layers are freed as follows:
 
