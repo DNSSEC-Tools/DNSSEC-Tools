@@ -18,7 +18,7 @@ Index: config.h.in
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-03-03 15:18:37.935727686 -0500
++++ spfmilter.c	2005-03-03 17:33:46.791271452 -0500
 @@ -27,8 +27,13 @@
  ** For commentary on this license please see http://www.acme.com/license.html
  */
@@ -349,7 +349,31 @@ Index: spfmilter.c
  
  
  static SPF_config_t spfc_global;
-@@ -2069,7 +2221,11 @@
+@@ -1824,6 +1976,8 @@
+ static int
+ lib_init( void )
+     {
++    int dodnssec;
++
+     spfc_global = SPF_create_config();
+     if ( spfc_global == (SPF_config_t) 0 )
+ 	{
+@@ -1833,6 +1987,14 @@
+ 
+     SPF_set_debug( spfc_global, debug );
+ 
++    if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
++	dodnssec = 0;
++    }
++    else {
++	dodnssec = 1;
++    }
++    SPF_set_dnssec (spfc_global, dodnssec);
++
+     if ( localpolicy_str != (char*) 0 )
+ 	{
+ 	SPF_init_c_results( &spfr_localpolicy );
+@@ -2069,7 +2231,11 @@
  	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
  	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
  	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
@@ -362,7 +386,7 @@ Index: spfmilter.c
  	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
  	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
  	default: return -1;
-@@ -2092,12 +2248,40 @@
+@@ -2092,12 +2258,40 @@
  
  
  static const char*
@@ -403,7 +427,7 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -2157,8 +2341,9 @@
+@@ -2157,8 +2351,9 @@
  typedef struct {
      int initialized, inuse;
      int next_free_resolver;
@@ -414,7 +438,7 @@ Index: spfmilter.c
      } resolver_t;
  static resolver_t* resolvers;
  static int max_resolvers, first_free_resolver, num_resolvers_inuse;
-@@ -2202,7 +2387,8 @@
+@@ -2202,7 +2397,8 @@
      for ( r = 0; r < max_resolvers; ++r )
  	if ( resolvers[r].initialized )
  	    {
@@ -424,7 +448,7 @@ Index: spfmilter.c
  	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
  	    }
      pthread_mutex_destroy( &resolver_mutex );
-@@ -2266,13 +2452,34 @@
+@@ -2266,13 +2462,34 @@
  	    free_resolver( r );
  	    return -1;
  	    }
@@ -461,7 +485,7 @@ Index: spfmilter.c
  	resolvers[r].initialized = 1;
  	}
  
-@@ -2283,7 +2490,7 @@
+@@ -2283,7 +2500,7 @@
  static SPF_dns_config_t
  get_resolver( int r )
      {
@@ -470,7 +494,7 @@ Index: spfmilter.c
      }
  
  
-@@ -2299,3 +2506,332 @@
+@@ -2299,3 +2516,332 @@
      }
  
  #endif /* USE_LIBSPF2 */
