@@ -491,7 +491,20 @@ sub keydirs
 #
 sub zoneincludes
 {
+	my $newserial;				# Zone's new serial number.
+
 	print "adding key includes to zone file\n" if ($verbose);
+
+	#
+	# Update the zone data's serial number.
+	#
+	$newserial = serialincr($zonedata);
+	if($newserial == -1)
+	{
+		print STDERR "unable to update serial number in $zonedata\n";
+		exit(3);
+	}
+	print "$zonedata's new serial number - $newserial\n" if ($verbose);
 
 	#
 	# Copy the zone data to a new file.
@@ -677,6 +690,106 @@ sub updzonerec
 
 #######################################################################
 #
+# Routine:	serialincr
+#
+# Purpose:	This routine increments the serial number of an SOA record in
+#		a zone file.  The serial number is found in both the multi-
+#		line parenthesize form and the single line unparenthesize form.
+#
+#		On success, the new serial number is returned.
+#		On failure, -1 is returned.
+#
+sub serialincr
+{
+	my $zfile = shift;			# Name of zone file.
+
+	my $file = "";				# Contents of zone file.
+	my $flen = 0;				# Length of zone file.
+	my @sbuf;				# Buffer for stat().
+
+	my $remnant;				# Contents after the SOA line.
+	my $soafields;				# SOA's fields.
+	my $serialnum;				# Current serial number.
+	my $serialnew;				# New serial number.
+
+	#
+	# Ensure that the zone file exists and get its length.
+	#
+	@sbuf = stat($zfile);
+	return(-1) if(@sbuf == "");
+	$flen = $sbuf[7];
+
+	#
+	# Get the zone file's contents.
+	#
+	open(ZF,"+< $zfile");
+	read(ZF,$file,$flen);
+
+	#
+	# Find the SOA line and save everything after it.
+	#
+	$file =~ /\s+IN\s+SOA\s+/si;
+	$remnant = $';
+
+	#
+	# Find the SOA's parenthesized fields.
+	#
+	$remnant =~ /\(.*?\)/s;
+	$soafields = $&;
+
+	#
+	# Get the SOA's serial number and increment it.
+	#
+	$soafields =~ /([0-9]+)/;
+	$serialnum = $1;
+
+	#
+	# We assumed the serial number was parenthesized.  If we didn't
+	# find it, we'll look for it in an unparenthesized line.
+	#
+	if($serialnum eq "")
+	{
+		#
+		# Pick up the SOA line.
+		#
+		$file =~ /\s+IN\s+SOA\s+/si;
+		$remnant = $';
+
+		#
+		# Snork out the serial number.
+		#
+		$remnant =~ /\S+\s+\S+\s+(\S+)\s+/;
+		$serialnum = $1;
+
+		#
+		# If we didn't find the serial number here either,
+		# return a failure.
+		#
+		if($serialnum eq "")
+		{
+			close(ZF);
+			return(-1);
+		}
+	}
+
+	#
+	# Increment the serial number and change it in the file contents.
+	#
+	$serialnew = $serialnum + 1;
+	$file =~ s/$serialnum/$serialnew/;
+
+	#
+	# Write the new file contents and close the file.
+	#
+	seek(ZF,0,0);
+	print ZF $file;
+	close(ZF);
+
+	return($serialnew);
+}
+
+#######################################################################
+#
 # Routine:	chkkrf()
 #
 # Purpose:	If we have a new keyrec file, we'll add a new keyrec
@@ -776,6 +889,8 @@ specified with the I<-zone> option.
 I<zonedata> is a template zone file to which several lines are added to
 include required KSK and ZSK key files.  This file will look B<exactly> like
 the I<zonefile> zone file, except without the $INCLUDE lines added at the end.
+The SOA serial number is incremented prior to the file being copied to
+I<zonefile>.
 
 I<zonefile> is the name of the output zone file.  This file will look
 B<exactly> like the I<zonedata> zone file, except with the $INCLUDE lines
