@@ -353,7 +353,9 @@ sub opts_keykr
 	#
 	# Ensure this keyrec is for a key.
 	#
-	if($keyrec{'keyrec_type'} ne "key")
+	if(($keyrec{'keyrec_type'} ne "key")	&&
+	   ($keyrec{'keyrec_type'} ne "ksk")	&&
+	   ($keyrec{'keyrec_type'} ne "zsk"))
 	{
 		return(undef);
 	}
@@ -795,6 +797,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 zonesigner(1)
 
 DNSSEC::conf(3), DNSSEC::keyrec(3), Getopt::Long(3)
+
+DNSSEC::keyrec(5)
 
 
 =head1 TODO
