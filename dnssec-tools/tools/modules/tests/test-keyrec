@@ -23,7 +23,7 @@ use DNSSEC::keyrec;
 create_keyrecfile();
 
 my $keyrecs;
-$keyrecs = keyrec_read("isles.keyrec");
+$keyrecs = keyrec_read("portrigh.keyrec");
 # print "keyrecs - $keyrecs\n";
 
 
@@ -82,11 +82,6 @@ sub test_keyrec_setval
 	keyrec_setval("portrigh.com","zskpath","keys.zsk/Kportrigh.com.+005+88000");
 	keyrec_setval("portrigh.com","enddate","+8888888");
 
-	keyrec_setval("isles.netsec.tislabs.com","endtime","+8888888");
-	keyrec_setval("isles.netsec.tislabs.com","woofers","fido");
-
-	keyrec_setval("Kisles.netsec.tislabs.com.+005+52000","fido","woofers");
-
 	# keyrec_dump_array();		print "\n";
 	# keyrec_dump_hash();	print "\n";
 
@@ -97,14 +92,14 @@ sub test_keyrec_setval
 
 sub test_keyrec_recval
 {
-	getit("isles.netsec.tislabs.com","zonefile");
-	getit("isles.netsec.tislabs.com","kskpath");
-	getit("isles.netsec.tislabs.com","zonename");
-	getit("Kisles.netsec.tislabs.com.+005+26000","zonename");
-	getit("Kisles.netsec.tislabs.com.+005+26000","zonefile");
-	getit("Kisles.netsec.tislabs.com.+005+52000","zonename");
-	getit("Kisles.netsec.tislabs.com.+005+52000","zonefile");
-	getit("Kisles.netsec.tislabs.com.+005+88888","zonename");
+	getit("portrigh.com","zonefile");
+	getit("portrigh.com","kskpath");
+	getit("portrigh.com","zonename");
+	getit("Kportrigh.com.+005+26000","zonename");
+	getit("Kportrigh.com.+005+26000","zonefile");
+	getit("Kportrigh.com.+005+52000","zonename");
+	getit("Kportrigh.com.+005+52000","zonefile");
+	getit("Kportrigh.com.+005+88888","zonename");
 	print "\n";
 }
 
@@ -132,31 +127,31 @@ sub getit
 
 ############################################################################
 #
-# These data are in the isles.keyrec file used in this test.
+# These data are in the portrigh.keyrec file used in this test.
 
 sub create_keyrecfile
 {
-	open(KRF,"> isles.keyrec");
+	open(KRF,"> portrigh.keyrec");
 	print KRF <<EOF;
 #
 # key management database
 #
 
-zone "isles.netsec.tislabs.com"
-	zonefile	"db.isles.netsec.tislabs.com"
-	kskpath		"keys.ksk/Kisles.netsec.tislabs.com.+005+26000"
-	zskpath		"keys.zsk/Kisles.netsec.tislabs.com.+005+52000"
+zone "portrigh.com"
+	zonefile	"db.portrigh.com"
+	kskpath		"keys.ksk/Kportrigh.com.+005+26000"
+	zskpath		"keys.zsk/Kportrigh.com.+005+52000"
 	endtime		"+2592000"		# good for 30 days
 
-key "Kisles.netsec.tislabs.com.+005+26000"
-	zonename	"isles.netsec.tislabs.com"
+key "Kportrigh.com.+005+26000"
+	zonename	"portrigh.com"
 	type		"ksk"
 	algorithm	"rsasha1"
 	length		"1024"
 	random		"-r /dev/urandom"
 
-key "Kisles.netsec.tislabs.com.+005+52000"
-	zonename	"isles.netsec.tislabs.com"
+key "Kportrigh.com.+005+52000"
+	zonename	"portrigh.com"
 	type		"zsk"
 	algorithm	"rsasha1"
 	length		"512"
