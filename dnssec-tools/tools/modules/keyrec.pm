@@ -42,6 +42,34 @@
 
 use strict;
 
+#
+# Fields in a key keyrec.
+#
+my @KEYFIELDS = (
+			'algorithm',
+			'random',
+			'kskdirectory',
+			'ksklength',
+			'zskdirectory',
+			'zsklength',
+			'keyrec_gensec',
+			'keyrec_gendate',
+		);
+
+#
+# Fields in a zone keyrec.
+#
+my @ZONEFIELDS = (
+			'zonefile',
+			'kskkey',
+			'kskpath',
+			'zskkey',
+			'zskpath',
+			'endtime',
+			'keyrec_signsec',
+			'keyrec_signdate',
+		);
+
 my @keyreclines;			# Keyrec lines.
 my $keyreclen;				# Number of keyrec lines.
 
@@ -236,9 +264,10 @@ sub keyrec_recval
 #
 sub keyrec_setval
 {
-	my $name  = shift;		# Name of keyrec we're modifying.
-	my $field = shift;		# Keyrec's subfield to be changed.
-	my $val	  = shift;		# New value for the keyrec's subfield.
+	my $krtype = shift;		# Type of keyrec (for new keyrecs.)
+	my $name   = shift;		# Name of keyrec we're modifying.
+	my $field  = shift;		# Keyrec's subfield to be changed.
+	my $val	   = shift;		# New value for the keyrec's subfield.
 
 	my $found = 0;			# Keyrec-found flag.
 	my $fldind;			# Loop index.
@@ -246,42 +275,24 @@ sub keyrec_setval
 	my $lastfld = 0;		# Last found field in @keyreclines.
 
 	#
-	# If a keyrec of the specified name doesn't exist, then we'll whine
-	# and return an empty string.
-	#
-	# Unless...  If the field is "keyrec_type", then we're creating a new
+	# If a keyrec of the specified name doesn't exist, we'll create a
+	# new one.  If the field is "keyrec_type", then we're creating a new
 	# keyrec.  We'll add it to @keyreclines and %keyrecs.
 	#
 	if(!exists($keyrecs{$name}))
 	{
 		#
-		# If we aren't creating a new keyrec, whine and return.
-		#
-		if($field ne "keyrec_type")
-		{
-			print STDERR "keyrec_setval:  non-existent keyrec \"$name\"\n";
-			return("");
-		}
-
-		#
 		# Add the keyrec to the %keyrecs hash.
 		#
-		keyrec_newkeyrec($name,$val);
+		keyrec_newkeyrec($name,$krtype);
 
 		#
 		# Start the new keyrec in @keyreclines.
 		#
 		$keyreclines[$keyreclen] = "\n";
 		$keyreclen++;
-		$keyreclines[$keyreclen] = "$val\t\"$name\"\n";
+		$keyreclines[$keyreclen] = "$krtype\t\"$name\"\n";
 		$keyreclen++;
-
-		#
-		# Set the file-modified flag.
-		#
-		$modified = 1;
-
-		return;
 	}
 
 	#
@@ -431,11 +442,130 @@ sub keyrec_setval
 	$modified = 1;
 }
 
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_add()
+#
+# Purpose:	Display the key record file contents.
+#
+sub keyrec_add
+{
+	my $krtype = shift;		# Type of keyrec we're creating.
+	my $krname = shift;		# Name of keyrec we're creating.
+	my $flds   = shift;		# Reference to keyrec fields.
+
+	my $chronosecs;			# Current time in seconds.
+	my $chronostr;			# Current time string.
+	my $secsstr;			# Hash key for time in seconds.
+	my $datestr;			# Hash key for time string.
+
+	my %fields;			# Keyrec fields.
+	my @getfields;			# Hash fields to retrieve.
+
+	#
+	# Get the timestamp.
+	#
+	$chronosecs = time();
+	$chronostr  = gmtime($chronosecs);
+
+	#
+	# Create the basic keyrec info.
+	#
+	keyrec_newkeyrec($krname,$krtype);
+
+	#
+	# Set the fields, by type, that we'll grab from the caller's hash.
+	#
+	if($krtype eq "key")
+	{
+		@getfields = @KEYFIELDS;
+
+		$secsstr = 'keyrec_gensecs';
+		$datestr = 'keyrec_gendate';
+	}
+	elsif($krtype eq "zone")
+	{
+		@getfields = @ZONEFIELDS;
+
+		$secsstr = 'keyrec_signsecs';
+		$datestr = 'keyrec_signdate';
+	}
+
+	#
+	# Add the new keyrec's first line to the end of the keyrec table.
+	#
+	$keyreclines[$keyreclen] = "\n";
+	$keyreclen++;
+	$keyreclines[$keyreclen] = "$krtype\t\"$krname\"\n";
+	$keyreclen++;
+
+	#
+	# Fill the new keyrec with the caller's hash fields and add it to
+	# the end of the keyrec table.
+	#
+	if(defined($flds))
+	{
+		%fields = %$flds;
+		foreach my $fn (@getfields)
+		{
+			#
+			# Only add the timestamp at the end, and only
+			# add the timestamp we're going to put in.
+			#
+			if(($fn eq $secsstr) || ($fn eq $datestr))
+			{
+				next;
+			}
+
+			#
+			# If this field isn't defined for the keyrec,
+			# don't add it in.
+			#
+			if(!defined($fields{$fn}))
+			{
+				next;
+			}
+
+			#
+			# Add the field to the hash table and to the keyrec
+			# file contents array.
+			#
+			$keyrecs{$krname}{$fn} = $fields{$fn};
+			$keyreclines[$keyreclen] = "\t$fn\t\"$fields{$fn}\"\n";
+			$keyreclen++;
+		}
+	}
+
+	#
+	# Set a timestamp for this entry.
+	#
+	$keyrecs{$krname}{$secsstr} = $chronosecs;
+	$keyrecs{$krname}{$datestr} = $chronostr;
+	$keyreclines[$keyreclen] = "\t$secsstr\t\"$chronosecs\"\n";
+	$keyreclen++;
+	$keyreclines[$keyreclen] = "\t$datestr\t\"$chronostr\"\n";
+	$keyreclen++;
+
+	#
+	# Put a blank line after the final line of the keyrec.
+	#
+	$keyreclines[$keyreclen] = "\n";
+	$keyreclen++;
+
+	#
+	# Sync the keyrec file.
+	#
+	$modified = 1;
+	keyrec_write();
+}
+
 #--------------------------------------------------------------------------
 #
 # Routine:	keyrec_newkeyrec()
 #
 # Purpose:	Display the key record file contents.
+#
 sub keyrec_newkeyrec
 {
 	my $name = shift;		# Name of keyrec we're creating.
@@ -557,7 +687,10 @@ DNSSEC::keyrec - Squoodge around with a DNSSEC tools keyrec file.
 
   $val = keyrec_recval("portrigh.com","zonefile");
 
-  keyrec_setval("portrigh.com","zonefile","db.portrigh.com");
+  keyrec_add("zone","portrigh.com",\%keyrec_options);
+  keyrec_add("key","Kportrigh.com.+005+12345",\%keyrec_options);
+
+  keyrec_setval("zone","portrigh.com","zonefile","db.portrigh.com");
 
   keyrec_save();
   keyrec_write();
@@ -574,6 +707,8 @@ TBD
 all keywords are translated to lowercase
 
 =head1 KEYREC INTERFACES
+
+=head2 I<keyrec_add()>
 
 =head2 I<keyrec_fullrec()>
 
