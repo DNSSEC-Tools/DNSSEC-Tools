@@ -8,12 +8,14 @@ use strict;
 
 my %opts;
 my %nodes;
+my %nodesonce;
 my %rtypes;
 my %edges;
 my %edgesonce;
 my %opts = ( o => 'map.png', l => 'neato');
 my ($zfile, $dname, $from, $to, $color);
 my $seccolor = "green2";
+my %dnames;
 
 getopts("Rgro:l:s:i:t:h",\%opts);
 
@@ -33,15 +35,33 @@ my %edgeparameters =
    CNAME => {color => 'green3'},
    NSEC => {color => 'brown', style => 'dashed'},
    NS => {style => 'bold'},
+   RRSIG => { color => 'green4' },
    DS => {color => $seccolor},
    default => {color => "black"},
   );
 
 # must be ordered by priority of importance in the results
-my @edgetypes = qw(CNAME NSEC NS DS);
+my @edgetypes = qw(CNAME RRSIG NSEC NS DS);
 my $edgecount = 1;
 my %edgetypes;
 map { $edgetypes{$_} = $edgecount++; } @edgetypes;
+
+my %nodeparameters =
+  (
+   CNAME => { fillcolor => '.2275,.5412,1' },
+   NS => { fillcolor => '.0510,.4196,1' },
+   RRSIG => { color => $seccolor },
+   AAAA => { fillcolor => ".2,.4,1" },
+   MX => { fillcolor => ".8,.4,1" },
+   default => { fillcolor => ".5137,.3804,1" },
+   root => { fillcolor => '.5765,.6902,1'},
+  );
+
+# must be ordered by priority of importance in the results
+my @nodetypes = qw(AAAA MX CNAME RRSIG root);
+my $nodecount = 1;
+my %nodetypes;
+map { $nodetypes{$_} = $nodecount++; } @nodetypes;
 
 
 #
@@ -76,10 +96,13 @@ while ($#ARGV > -1) {
     $zfile = shift;
     $dname = shift;
 
+    print "loading file $zfile\n";
+
     my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $zfile,
 						origin => "$dname.",
 						soft_errors => 1,
 						on_error => \&my_err);
+    print "loaded file $zfile\n";
 
     #
     # collect record types for each node
@@ -92,8 +115,7 @@ while ($#ARGV > -1) {
     #
     # add the root domain name
     #
-    add_once($g, "$dname",
-	     style => 'filled', fillcolor => $reccolors{'root'});
+    do_node($dname, 'root');
 
     #
     # for each node, add it and any necessary lines
@@ -113,6 +135,11 @@ while ($#ARGV > -1) {
 	if ($rr->type eq 'CNAME') {
 	    $from = $name;
 	    $to = $rr->cname;
+	    do_node($from, $rr->type);
+	} elsif ($rr->type eq 'MX') {
+	    $from = $dname;
+	    $to = $rr->exchange;
+	    do_node($to, $rr->type);
 	} elsif ($rr->type eq 'NSEC' && $rr->nxtdname) {
 	    $from = $name;
 	    $to = $rr->nxtdname;
@@ -120,58 +147,51 @@ while ($#ARGV > -1) {
 	} else {
 	    $from = $dname;
 	    $to = $name;
+	    do_node($to, $rr->type);
 	}
 
-	#
-	# add the FROM node
-	#
-	add_once($g, $from,
-		 label => get_label($from),
-		 style => 'filled', fillcolor => get_color($from));
-
-	#
-	# create the TO node
-	#
-	add_once($g, $to, label => get_label($to), style => 'filled',
-		 fillcolor => get_color($to));
+	if ($rr->type eq 'NS') {
+	    do_node($to, $rr->type);
+	}
 
 	#
 	# add the edge (line)
 	#
 	do_edge($from, $to, $rr->type);
 
-	#
-	# color edges of signed nodes different
-	#
-	if ($rr->type eq 'RRSIG') {
-	    $g->add_node($to, color => $seccolor);
-	}
-
     }
 }
 
 #
-# add edges
+# add nodes and edges
 #
-my ($k, $v);
+my ($k, $v, $parms);
 foreach my $e1 (keys(%edges)) {
+    add_once($g, $e1);
     foreach my $e2 (keys(%{$edges{$e1}})) {
-	my %parms;
-	foreach my $et (@{$edges{$e1}{$e2}}) {
-	    next if (!$et);
-#	    print "$e1 $e2 -> $et\n";
-	    while (($k, $v) = each %{$edgeparameters{$et}}) {
-		$parms{$k} = $v;
-	    }
-	}
-#	print " ... ", join(",", %parms),"\n";
-	$g->add_edge($e1, $e2, %parms);
+	add_once($g, $e2);
+
+	$parms = get_parms($edges{$e1}{$e2}, \%edgeparameters);
+	$g->add_edge($e1, $e2, %$parms);
     }
 }
 
 open (O, ">" . $opts{'o'});
 print O $g->as_png;
 close(O);
+
+sub get_parms {
+    my ($array, $hash) = @_;
+    my $parms;
+
+    foreach my $et ('default', @$array) {
+	next if (!$et);
+	while (($k, $v) = each %{$hash->{$et}}) {
+	    $parms->{$k} = $v;
+	}
+    }
+    return $parms;
+}
 
 sub my_err {
     print "error: ", join(",",@_), "\n";
@@ -180,19 +200,31 @@ sub my_err {
 
 sub add_once {
     my ($g, $node, @opts) = @_;
+    my $parms;
+
     if ($opts{'g'}) {
 	push @opts, cluster => $dname;
     }
-    if (!$nodes{$node}) {
-	$g->add_node($node, @opts);
-	$nodes{$node} = 1;
+
+    if (!$nodesonce{$node}) {
+	my $l = get_label($node);
+	$parms = get_parms($nodes{$node}, \%nodeparameters);
+	$g->add_node($node, label => $l, style => 'filled', %$parms, @opts);
+	$nodesonce{$node} = 1;
     }
 }
 
 sub do_edge {
     my ($to, $from, $type) = @_;
-    # pick the highest priority edge type
+    # remember that the edge has this type
     $edges{$to}{$from}[$edgetypes{$type}] = $type;
+}
+
+sub do_node {
+    my ($name, $type) = @_;
+    # remember that the node has this type
+    $nodes{$name}[$nodetypes{$type}] = $type;
+    $dnames{$name} = $dname;
 }
 
 sub add_edge_once {
@@ -210,6 +242,7 @@ sub add_edge_once {
 sub get_label {
     my $name = $_[0];
     my $label = $_[0];
+    my $dname = $dnames{$name};
     $label =~ s/\.$dname$//;
     if ($opts{'r'}) {
 	$label .= "\n" . join(" ",sort keys(%{$rtypes{$name}}));
