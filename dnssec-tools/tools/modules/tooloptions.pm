@@ -29,8 +29,8 @@ our $VERSION = "0.01";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT_OK = qw(tooloptions tooloptions opts_krfile opts_getkeys
-		    opts_keykr opts_zonekr opts_suspend opts_restore opts_drop);
+our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
+	         opts_keykr opts_zonekr opts_suspend opts_restore opts_drop);
 
 #
 # Standard options accepted by all tools in the dnssec-tools suite.

@@ -27,7 +27,7 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw(parseconfig);
+our @EXPORT = qw(parseconfig);
 
 our $CONFFILE = "/etc/dnssec/dnssec-tools.conf";	# Configuration file.
 our $VERSION = "0.01";
