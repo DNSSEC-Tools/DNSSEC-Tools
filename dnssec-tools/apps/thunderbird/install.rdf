@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+     xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+
+    <Description about="urn:mozilla:install-manifest">
+        <em:id>{a47212d6-57eb-4da0-ae69-e501210e43c0}</em:id>
+        <em:version>0.1</em:version>
+
+        <!-- Target Applications this extension can install into,
+             with minimum and maximum supported versions. -->
+        <em:targetApplication>
+           <Description>
+               <!-- Thunderbird -->
+               <em:id>{3550f703-e582-4d05-9a08-453d09bdfdc6}</em:id>
+               <em:minVersion>1.0</em:minVersion>
+               <em:maxVersion>1.0</em:maxVersion>
+           </Description>
+           <!-- <Description> -->
+               <!-- Mozilla Suite -->
+           <!--    <em:id>{86c18b42-e466-45a9-ae7a-9b95ba6f5640}</em:id>
+               <em:minVersion>1.7</em:minVersion>
+               <em:maxVersion>1.8</em:maxVersion>
+           </Description> -->
+        </em:targetApplication>
+
+	<!-- Front End Metadata -->
+        <em:name>SPF-DNSSEC Header Extension</em:name>
+        <em:description>Displays the Received-SPF header and results of its DNSSEC validation.</em:description>
+ 	<em:creator>Abhijit Hayatnagarkar; SPARTA, Inc.</em:creator>
+	<em:homepageURL>http://dnssec-tools.sourceforge.net/</em:homepageURL>
+        
+	<!-- Front End Integration Hooks (used by Extension Manager) -->
+	<em:iconURL>chrome://spfdnssec/skin/spfdnssec.png</em:iconURL>
+	<!--
+	<em:aboutURL>chrome://spfdnssec/content/spfDnssecAbout.xul</em:aboutURL>
+	-->
+
+	<!-- Packages, Skins and Locales that this extension registers -->
+	<em:file>
+	    <Description about="urn:mozilla:extension:file:spfdnssec.jar">
+		<em:package>content/spfdnssec/</em:package> 
+		<em:locale>locale/en-US/spfdnssec/</em:locale>
+		<em:skin>skin/classic/spfdnssec/</em:skin>
+	    </Description>
+        </em:file>
+    </Description>
+</RDF>
