@@ -18,11 +18,17 @@
 #		- mislabeled keys (key thinks it's KSK/ZSK, zone
 #				   thinks it's a ZSK/KSK)
 #		- missing key from zone keyrec
-#		U invalid data values
+#		- invalid zone data values
+#			- existence of zone file
+#			- existence of KSK file
+#			- existence of ZSK file
+#			- endtime > 1 day
+#			- seconds count and date string match
+#		U invalid key data values
 #			U bad encryption algorithm
 #			U out-of-range bit values
 #			U non-existent random device
-#			U bad end-time
+#			U end-time < 1 day
 #		- expired zone keyrecs
 #		U non-existent key files
 #
@@ -64,6 +70,8 @@ my $DAYSWARN = 7;			# Days before an expiration warning.
 my $count   = 0;			# Error-count flag.
 my $quiet   = 0;			# Quiet flag.
 my $verbose = 0;			# Verbose flag.
+my $keychk  = 0;			# Keys-only flag.
+my $zonechk = 0;			# Zones-only flag.
 my %options = ();			# Filled option array.
 my @opts =
 (
@@ -71,6 +79,8 @@ my @opts =
 	"quiet+",			# Don't give any output.
 	"verbose+",			# Give lotsa output.
 	"help",				# Give a usage message and exit.
+	"zone",				# Only check zone keyrecs.
+	"key",				# Only check key keyrecs.
 );
 
 
@@ -106,7 +116,15 @@ sub main()
 	$count	 = $options{'count'};
 	$quiet	 = $options{'quiet'};
 	$verbose = $options{'verbose'};
+	$keychk	 = $options{'key'};
+	$zonechk = $options{'zone'};
+
 	if(defined($options{'help'}))
+	{
+		usage();
+	}
+
+	if($keychk && $zonechk)
 	{
 		usage();
 	}
@@ -134,12 +152,18 @@ sub main()
 	#
 	# Run the zone checks.
 	#
-	zonechecks();
+	if(!$keychk)
+	{
+		zonechecks();
+	}
 
 	#
 	# Run the key checks.
 	#
-	keychecks();
+	if(!$zonechk)
+	{
+		keychecks();
+	}
 
 	$errors = $zoneerrs + $keyerrs;
 	if($count)
@@ -172,6 +196,8 @@ sub zonechecks
 		vprint("checking zone $zonename\n");
 
 		$zkr = $zones{$zonename};
+
+		zonedata($zonename,$zkr);
 
 		zonekeys($zonename,$zkr);
 
@@ -342,6 +368,82 @@ sub expiredzones
 
 	$ret = checkexpire('zone',$zonename,$endtime,$signsecs);
 	$zoneerrs += $ret;
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zonedata()
+#
+sub zonedata
+{
+
+	my $zonename = shift;			# Zone's name.
+	my $kr	     = shift;			# Keyrec reference.
+	my %keyrec   = %$kr;			# Zone table.
+
+	my $zonefile = $keyrec{'zonefile'};
+	my $kskfile  = $keyrec{'kskpath'};
+	my $zskfile  = $keyrec{'zskpath'};
+	my $endtime  = $keyrec{'endtime'};
+	my $signsecs = $keyrec{'keyrec_signsecs'};
+	my $signdate = $keyrec{'keyrec_signdate'};
+
+	my $datestr;				# Converted keyrec_signsecs.
+
+	#
+	# Check the existence of the zone file.
+	#
+	if(! -e $zonefile)
+	{
+		qprint("missing file:  zone file $zonefile (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
+	# Check the existence of the KSK key file.
+	#
+	if(! -e $kskfile)
+	{
+		qprint("missing file:  KSK $kskfile (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
+	# Check the existence of the ZSK key file.
+	#
+	if(! -e $zskfile)
+	{
+		qprint("missing file:  ZSK $zskfile (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
+	#
+	# Make sure the zone's endtime is more than a day.
+	#
+	if($endtime =~ /^\+[0-9]+/)
+	{
+		my $secs;			# Second-count in endtime.
+
+		$endtime =~ /^\+([0-9]+)/;
+		$secs = $1;
+		if($secs < $DAY)
+		{
+			qprint("strange endtime:  $secs < one day (zone $zonename)\n");
+			$zoneerrs++;
+		}
+	}
+
+	#
+	# Ensure that the zone's seconds count converts into the date
+	# stored in its date string.
+	#
+	$datestr = gmtime($signsecs);
+	if($datestr ne $signdate)
+	{
+		qprint("mismatched timestamps:  $signsecs invalid for \"$signdate\" (zone $zonename)\n");
+		$zoneerrs++;
+	}
+
 }
 
 ##############################################################################
@@ -640,7 +742,7 @@ keyrec-check - Check a dnssec-tools keyrec file for problems and consistency.
 
 =head1 SYNOPSIS
 
-  keyrec-check [-c] [-q] [-v] [-h]
+  keyrec-check [-z | -k] [-c] [-q] [-v] [-h]
 
 =head1 DESCRIPTION
 
@@ -676,6 +778,13 @@ A zone has expired.
 A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
 opposite.
 
+=item * invalid zone data values
+
+A zone's I<keyrec> data are checked to ensure that they are not invalid.  They
+following conditions are checked:  existence of the zone file, existence of
+the KSK file, existence of the ZSK file, the end-time is greater than one
+day, and the seconds-count and date string match.
+
 =back
 
 Recognized potential problems include:
@@ -701,6 +810,16 @@ No inconsistencies are currently recognized.
 =head1 OPTIONS
 
 =over 4
+
+=item -k
+
+Only perform checks of key I<keyrec>s.  This option may not be combined with
+the B<-z> option.
+
+=item -z
+
+Only perform checks of zone I<keyrec>s.  This option may not be combined with
+the B<-k> option.
 
 =item -c
 
