@@ -6,8 +6,10 @@
 use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::Donuts::Rule;
-use Getopt::Std;
 use Data::Dumper;
+
+(eval {require Getopt::Long::GUI;} && {import Getopt::Long::GUI} ) ||
+  (eval {require Getopt::Long;} && {import Getopt::Long});
 
 use strict;
 
@@ -20,7 +22,19 @@ my %opts = (l => 5,
 my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
     @ignorelist, $netdns, $netdns_error);
 
-getopts("hHRvqLl:r:i:c:C", \%opts) || usage();
+GetOptions(\%opts,
+	   "h|help",
+	   "H|help-config",
+	   "R|help-rules",
+	   "v|verbose",
+	   "q|quiet",
+	   "L|live",
+	   "l|level=i",
+	   "r|rules=s",
+	   "i|ignore=s",
+	   "c|config-file=s",
+	   "C|no-config"
+	  ) || usage();
 
 #
 # initialize ignore list
@@ -37,7 +51,7 @@ if ($opts{'L'}) {
     $netdns = Net::DNS::Resolver->new;
 }
 
-usage() if ($opts{'h'});
+usage() if ($opts{'h'} || $#ARGV == -1);
 
 #
 # load rule files
