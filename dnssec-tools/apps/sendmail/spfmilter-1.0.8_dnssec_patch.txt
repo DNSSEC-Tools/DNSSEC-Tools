@@ -88,7 +88,7 @@ Index: spfmilter.c
 +		    else if (strncasecmp (optarg, "reject", 6) == 0) {
 +		        if (debug)
 +	 		    printf("DNSSEC policy = reject\n");
-+		        dnssec_policy = DNSSEC_POLICY_REJECT;
++		        dnssec_policy = DNSSEC_POLICY_ABORT;
 +		    }
 +		    else {
 +		      fprintf(stderr, "Unrecognized option argument '%s'\n", optarg);
