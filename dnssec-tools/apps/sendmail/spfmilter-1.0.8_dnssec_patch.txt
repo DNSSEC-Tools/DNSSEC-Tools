@@ -1,7 +1,7 @@
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-02-04 17:33:36.882116561 -0500
++++ spfmilter.c	2005-02-10 12:10:57.000000000 -0500
 @@ -102,6 +102,12 @@
  #include "match.h"
  #include "iparray.h"
@@ -155,7 +155,7 @@ Index: spfmilter.c
  
      (void) snprintf( header, header_size, "%s", result_str( cd->result ) );
      len = strlen( header );
-@@ -1471,6 +1526,34 @@
+@@ -1471,6 +1526,36 @@
  	len = strlen( header );
  	}
      /*!!! Do something about the problem= field. */
@@ -163,16 +163,18 @@ Index: spfmilter.c
 +    err_msgs = lib_get_error_msgs( cd->lib_data );
 +    num_errs = lib_get_num_errors( cd->lib_data );
 +    first_err = 1;
-+    if ( err_msg != (char*) 0 )
++    if( err_msg != (char*) 0 )
 +        {
 +	(void) snprintf( &header[len], header_size - len, " problem=%s;", err_msg );
 +	first_err = 0;
 +	len = strlen( header );
 +	}
 +
-+    for( i = 0; i < num_errs; i++)
++    for( i = 0; i < num_errs; i++ )
 +	{
-+	if( ( err_msgs[i] != NULL) && ( strcmp(err_msgs[i], err_msg) != 0 ) )
++	if( ( err_msgs[i] != NULL ) &&
++	    ( ( err_msg == NULL ) || ( strcmp(err_msgs[i], err_msg) != 0 ) )
++	  )
 +	    {
 +	    if (first_err == 1)
 +		{
@@ -190,7 +192,7 @@ Index: spfmilter.c
      (void) snprintf( &header[len], header_size - len, " x-software=%s %s %s;", SPFMILTER_PROGRAM, SPFMILTER_VERSION, SPFMILTER_URL );
      }
  
-@@ -1741,6 +1824,12 @@
+@@ -1741,6 +1826,12 @@
      return ld->peer_info->explain;
      }
  
@@ -203,7 +205,7 @@ Index: spfmilter.c
  
  static const char*
  lib_get_error( lib_data_t* ld )
-@@ -1749,6 +1838,27 @@
+@@ -1749,6 +1840,27 @@
      }
  
  
@@ -231,7 +233,7 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -1788,11 +1898,6 @@
+@@ -1788,11 +1900,6 @@
  /* Libspf2 data and routines. */
  
  
@@ -243,7 +245,7 @@ Index: spfmilter.c
  static SPF_config_t spfc_global;
  static SPF_c_results_t spfr_localpolicy;
  static SPF_c_results_t spfr_explanation;
-@@ -2069,7 +2174,11 @@
+@@ -2069,7 +2176,11 @@
  	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
  	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
  	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
@@ -256,7 +258,7 @@ Index: spfmilter.c
  	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
  	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
  	default: return -1;
-@@ -2092,12 +2201,40 @@
+@@ -2092,12 +2203,40 @@
  
  
  static const char*
@@ -297,7 +299,7 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -2157,8 +2294,9 @@
+@@ -2157,8 +2296,9 @@
  typedef struct {
      int initialized, inuse;
      int next_free_resolver;
@@ -308,7 +310,7 @@ Index: spfmilter.c
      } resolver_t;
  static resolver_t* resolvers;
  static int max_resolvers, first_free_resolver, num_resolvers_inuse;
-@@ -2202,7 +2340,8 @@
+@@ -2202,7 +2342,8 @@
      for ( r = 0; r < max_resolvers; ++r )
  	if ( resolvers[r].initialized )
  	    {
@@ -318,7 +320,7 @@ Index: spfmilter.c
  	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
  	    }
      pthread_mutex_destroy( &resolver_mutex );
-@@ -2266,13 +2405,20 @@
+@@ -2266,13 +2407,21 @@
  	    free_resolver( r );
  	    return -1;
  	    }
@@ -331,7 +333,8 @@ Index: spfmilter.c
  	    free_resolver( r );
  	    return -1;
  	    }
-+	resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_c, debug, dnssec_policy );
++	/*	resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_c, debug, dnssec_policy );*/
++	resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_r, debug, dnssec_policy );
 +	if ( resolvers[r].spfdcid_d == (SPF_dns_config_t) 0 )
 +	    {
 +	    syslog( LOG_ERR, "SPF_dns_create_config_dnssec() failed"  );
@@ -341,7 +344,7 @@ Index: spfmilter.c
  	resolvers[r].initialized = 1;
  	}
  
-@@ -2283,7 +2429,7 @@
+@@ -2283,7 +2432,7 @@
  static SPF_dns_config_t
  get_resolver( int r )
      {
@@ -350,3 +353,36 @@ Index: spfmilter.c
      }
  
  
+Index: Makefile.am
+===================================================================
+--- Makefile.am	2005-02-11 11:20:44.474043638 -0500
++++ Makefile.am	2005-02-11 11:21:05.162200501 -0500
+@@ -4,7 +4,7 @@
+ sbin_PROGRAMS = spfmilter
+ 
+ spfmilter_SOURCES = spfmilter.c iparray.c match.c
+-spfmilter_LDADD = -lmilter -lspf2
++spfmilter_LDADD = -lmilter -lspf2 -lvalidat
+ 
+ man8_MANS = spfmilter.8
+ 
+Index: configure.ac
+===================================================================
+--- configure.ac	2005-02-11 11:03:53.379991863 -0500
++++ configure.ac	2005-02-11 11:07:22.637228300 -0500
+@@ -81,6 +81,15 @@
+ 	exit 1;
+ ])
+ 
++dnl
++dnl check the DNSSEC validator library
++dnl
++AC_CHECK_LIB(validat, val_init, , [
++	echo "the validator library is required to build this program."
++        echo "see http://dnssec-tools.sourceforge.net"
++	exit 1;
++])
++
+ AC_CHECK_FUNCS(getopt_long daemon setsid)
+ 
+ AM_CONFIG_HEADER(config.h)
