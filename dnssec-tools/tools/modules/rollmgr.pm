@@ -354,25 +354,59 @@ This routine returns the roll-over manager's pid file.
 
 =head2 I<rollmgr_getpid()>
 
-This routine returns the roll-over manager's process id.
+This routine returns the roll-over manager's process id.  If a non-zero value
+is passed as an argument, the pidfile will be left open and accessible through
+the PIDFILE file handle.  See the WARNINGS section below.
+
+Return Values:
+
+    On success, the first portion of the file contents (up to 80
+        characters) is returned.
+    -1 is returned if the pidfile does not exist.
 
 =head2 I<rollmgr_droppid()>
 
 This interface ensures that another instance of the roll-over manager is not
 running and then creates a pid file for future reference.
 
+Return Values:
+
+    1 - the pidfile was successfully created for this process
+    0 - another process is already acting as the roll-over manager
+
 =head2 I<rollmgr_rmpid()>
 
 This interface deletes the roll-over manager's pidfile.
+
+Return Values:
+
+     1 - the pidfile was successfully deleted
+     0 - no pidfile exists
+    -1 - the calling process is not the roll-over manager
+    -2 - unable to delete the pidfile
 
 =head2 I<rollmgr_qproc()>
 
 This routine informs the roll-over manager that it should re-read the
 I<rollrec> file and process its queue again.
 
+In the current implementation, the return code from the I<kill()> command is
+returned.
+
 =head2 I<rollmgr_halt()>
 
 This routine informs the roll-over manager to shut down.
+
+In the current implementation, the return code from the I<kill()> command is
+returned.
+
+=head1 WARNINGS
+
+1.  I<rollmgr_getpid()> attempts to exclusively lock the pidfile.
+Set a timer if this matters to you.
+
+2.  I<rollmgr_getpid()> has a nice little race condition.  We should lock
+the file prior to opening it, but we can't do so without it being open.
 
 =head1 AUTHOR
 
