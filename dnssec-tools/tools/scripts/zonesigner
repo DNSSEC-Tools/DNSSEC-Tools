@@ -773,11 +773,12 @@ sub updzonerec
 	# Set some fields we've got to have -- in case they aren't
 	# set in the options.
 	#
-	$opts{'zonefile'} = $zoneout;
-	$opts{'kskkey'}	  = $ksk;
-	$opts{'kskpath'}  = $kskpath;
-	$opts{'zskcur'}	  = $zskcur;
-	$opts{'zskpub'}	  = $zskpub;
+	$opts{'zonefile'}    = $zoneout;
+	$opts{'signedfile'}  = $zoneout . ".signed";
+	$opts{'kskkey'}	     = $ksk;
+	$opts{'kskpath'}     = $kskpath;
+	$opts{'zskcur'}	     = $zskcur;
+	$opts{'zskpub'}	     = $zskpub;
 	$opts{'zskcurpath'}  = $zskcurpath;
 	$opts{'zskpubpath'}  = $zskpubpath;
 
