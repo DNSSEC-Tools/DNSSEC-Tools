@@ -75,10 +75,14 @@ my @KEYFIELDS = (
 #
 my @ZONEFIELDS = (
 			'zonefile',
+			'keyrec_type',		# Internal only, usually.
 			'kskkey',
 			'kskpath',
 			'zskkey',
 			'zskpath',
+			'zskcur',
+			'zsknew',
+			'zskpub',
 			'endtime',
 			'keyrec_signsecs',
 			'keyrec_signdate',
@@ -816,7 +820,7 @@ The first step in using this module B<must> be to read the I<keyrec>
 file.  The I<keyrec_read()> interface reads the file and parses it
 into an internal format.  The file's records are copied into a hash
 table (for easy reference by the I<Net::DNS::SEC::Tools::keyrec>
-routines> and in an array (for preserving formatting and comments.)
+routines) and in an array (for preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
 I<keyrec_fullrec()> and I<keyrec_recval()>.  The contents are modified
@@ -831,8 +835,8 @@ the file handle B<without> saving any modified data.
 
 =head1 KEYREC INTERFACES
 
-The following are the user interfaces to the
-I<Net::DNS::SEC::Tools::keyrec> module.
+The following are the user interfaces to the I<Net::DNS::SEC::Tools::keyrec>
+module.
 
 =head2 I<keyrec_add(keyrec_type,keyrec_name,fields)>
 
