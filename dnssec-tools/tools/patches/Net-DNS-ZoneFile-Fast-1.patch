@@ -1,0 +1,218 @@
+--- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
++++ Fast.pm	2004-11-04 16:24:32.291144696 -0800
+@@ -15,6 +15,7 @@
+ use vars qw($VERSION);
+ use IO::File;
+ use Net::DNS;
++use MIME::Base64;
+ 
+ $VERSION = '0.5';
+ 
+@@ -35,6 +36,9 @@
+ my $ttl;
+ my @zone;
+ my $soa;
++my $rrsig;
++my $dnskey;
++my $ds;
+ my $on_error;
+ my $quiet;
+ my $soft_errors;
+@@ -526,6 +530,99 @@
+ 		} else {
+ 			error("bad SRV data");
+ 		}
++	} elsif (/\G(rrsig)[ \t]+/igc) {
++	    if (!/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
++		error("bad RRSIG data 1");
++	    }
++	    $rrsig = {
++		      first     => 1,
++		      Line      => $ln,
++		      name      => $domain,
++		      type      => "RRSIG",
++		      ttl       => $ttl,
++		      typecovered => $1,
++		      algorithm => $2,
++		      labels    => $3,
++		      orgttl    => $4,
++		      sigexpiration => $5
++		     };
++	    if (/\G\(\s*$/gc) {
++		# multi-line
++		$parse = \&parse_rrsig;
++	    } elsif (/\G(\d+)\s+(\d+)\s+($pat_maybefullname)\s+([^=]+=)\s*/gc) {
++		# single-line
++		$rrsig->{'siginceptation'} = $1;
++		$rrsig->{'keytag'} = $2;
++		$rrsig->{'signame'} = $3;
++		$rrsig->{'sig'} = $4;
++		push @zone, $rrsig;
++		$rrsig = undef;
++	    } else {
++		error("bad RRSIG data 2");
++	    }
++	} elsif (/\G(dnskey)[ \t]+/igc) {
++		if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
++		    error("bad DNSKEY data 1");
++		}
++		$dnskey = {
++			   first     => 1,
++			   Line      => $ln,
++			   name      => $domain,
++			   type      => "DNSKEY",
++			   flags     => $1,
++			   protocol  => $2,
++			   algorithm => $3
++			  };
++		if (/\G\(\s*$/gc) {
++		    # multi-line
++		    $parse = \&parse_dnskey;
++		} elsif (/\G(.*\S)\s*$/) {
++		    # single-line
++		    $dnskey->{'key'} .= $1;
++		    $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
++		    push @zone, $dnskey;
++		    $dnskey = undef;
++		} else {
++		    error("bad DNSKEY data 2");
++		}
++	} elsif (/\G(ds)[ \t]+/igc) {
++		if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
++		    error("bad DS data 1");
++		}
++		$ds = {
++		       Line      => $ln,
++		       name      => $domain,
++		       type      => "DS",
++		       keytag    => $1,
++		       algorithm => $2,
++		       digtype   => $3,
++		      };
++		if (/\G\(\s*$/gc) {
++		    # multi-line
++		    $parse = \&parse_ds;
++		} elsif (/\G(.*\S)\s*$/) {
++		    # single line
++		    $ds->{'digest'} .= $1;
++		    $ds->{'digestbin'} = decode_base64($ds->{'digest'});
++		    push @zone, $ds;
++		    $ds = undef;
++		} else {
++		    error("bad DS data");
++		}
++	} elsif (/\G(nsec)[ \t]+/igc) {
++		if (/\G\s*($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
++		    # XXX: set the typebm field ourselves?
++		    push @zone, 
++		      {
++		       Line      => $ln,
++		       name      => $domain,
++		       type      => "NSEC",
++		       nxtdname  => lc($1),
++		       typelist  => $2
++		      };
++		} else {
++			error("bad NSEC data");
++		}
+ 	} elsif (/\G(rp)[ \t]+/igc) {
+ 		my $mbox;
+ 		if (/\G($pat_maybefullname)[ \t]+/gc) {
+@@ -562,6 +659,8 @@
+ 			mbox     => $mbox,
+ 			txtdname => $txtdname,
+ 		};
++	} elsif (/\Gany\s+tsig.*$/igc) {
++	    # XXX ignore tsigs
+ 	} else {
+ 		error("unrecognized type");
+ 	}
+@@ -634,6 +733,88 @@
+ 	return $v;
+ }
+ 
++sub parse_rrsig
++{
++    # got more data
++    if ($rrsig->{'first'}) {
++	delete $rrsig->{'first'};
++	if (/\G\s*(\d+)\s+(\d+)\s+(\w+)/gc) {
++	    $rrsig->{'siginceptation'} = $1;
++	    $rrsig->{'keytag'} = $2;
++	    $rrsig->{'signame'} = $3;
++	} else {
++	    error("bad rrsig second line");
++	}
++    } else {
++	if (/\)\s*$/) {
++	    if (/\G\s*(\S+)\s*\)\s*$/gc) {
++		$rrsig->{'sig'} .= $1;
++		# we're done
++		$parse = \&parse_line;
++
++		push @zone, $rrsig;
++		$rrsig = undef;
++	    } else {
++		error("bad rrsig last line");
++	    }
++	} else {
++	    if (/\G\s*(\S+)\s*$/gc) {
++		$rrsig->{'sig'} .= $1;
++	    } else {
++		error("bad rrsig remaining lines");
++	    }
++	}
++    }
++}
++
++sub parse_dnskey
++{
++    # got more data
++    if (/\)\s*;.*$/) {
++	if (/\G\s*(\S*)\s*\)\s*;.*$/gc) {
++	    $dnskey->{'key'} .= $1;
++	    # we're done
++	    $parse = \&parse_line;
++
++	    $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
++	    push @zone, $dnskey;
++	    $dnskey = undef;
++	} else {
++	    error("bad dnskey last line");
++	}
++    } else {
++	if (/\G\s*(\S+)\s*$/gc) {
++	    $dnskey->{'key'} .= $1;
++	} else {
++	    error("bad dnskey remaining lines");
++	}
++    }
++}
++
++sub parse_ds
++{
++    # got more data
++    if (/\)\s*$/) {
++	if (/\G\s*(\S*)\s*\)\s*$/gc) {
++	    $ds->{'digest'} .= $1;
++	    # we're done
++	    $parse = \&parse_line;
++
++	    $ds->{'digestbin'} = decode_base64($ds->{'digest'});
++	    push @zone, $ds;
++	    $ds = undef;
++	} else {
++	    error("bad ds last line");
++	}
++    } else {
++	if (/\G\s*(\S+)\s*$/gc) {
++	    $ds->{'digest'} .= $1;
++	} else {
++	    error("bad ds remaining lines");
++	}
++    }
++}
++
+ sub parse_soa_number
+ {
+ 	error("parse_soa_number: internal error, no \$soa") unless $soa;
