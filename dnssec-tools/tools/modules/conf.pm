@@ -41,14 +41,24 @@ our $CONFFILE = "/etc/dnssec/tools.conf";	# Configuration file.
 #
 sub parseconfig
 {
+	my $conffile = $CONFFILE;
+	my $numargs  = @_;
 	my %dnssec_conf = ();
+
+	#
+	# Find the right configuration file to open.
+	#
+	if($numargs != 0)
+	{
+		$conffile = shift;
+	}
 
 	#
 	# Open up the config file.
 	#
-	if(open(CONF,"< $CONFFILE") == 0)
+	if(open(CONF,"< $conffile") == 0)
 	{
-		print STDERR "unable to open $CONFFILE\n";
+		print STDERR "unable to open $conffile\n";
 		return;
 	}
 
