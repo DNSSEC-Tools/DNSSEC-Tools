@@ -38,11 +38,22 @@ test:
   $keyrr->setkeytag();
   my $dsrr = create Net::DNS::RR::DS($keyrr);
   my @DSs = live_query($keyrr->name, "DS");
-  return "Parent zone has no DS records for $keyrr->{name}" if ($#DSs == -1);
-  map { print $_->verify($keyrr),"\n"; return if ($_->verify($keyrr)); } @DSs;
+  return "Parent zone has no DS records for $keyrr->{name} (keyid = $keyrr->{keytag})" if ($#DSs == -1);
+  map { return if ($_->verify($keyrr)); } @DSs;
   return "DNSKEY record for $keyrr->{name} (keytag = " .
          $keyrr->keytag . 
          ") does not have a matching DS record in the live parent zone";
+
+name: DNSSEC_DNSKEY_CHILD_HAS_VALID_DNSKEY
+level: 4
+live: true
+type: DS
+test:
+  my $dsrr = $_[0];
+  my @KEYs = live_query($dsrr->name, "DNSKEY");
+  return "Child zone has no DNSKEY records for $dsrr->{name}" if ($#KEYs == -1);
+  map { return if ($dsrr->verify($_)); } @KEYs;
+  return "DS record for $dsrr->{name} does not have a matching DNSKEY record in the live child zone";
 
 # XXX: check parent has DS record for this zone
 
