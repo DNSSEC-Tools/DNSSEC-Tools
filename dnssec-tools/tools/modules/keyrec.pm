@@ -67,7 +67,7 @@ my @ZONEFIELDS = (
 			'zskkey',
 			'zskpath',
 			'endtime',
-			'keyrec_signsec',
+			'keyrec_signsecs',
 			'keyrec_signdate',
 		  );
 
@@ -91,6 +91,7 @@ sub keyrec_read
 {
 	my $krf = shift;		# Key record file.
 	my $name;			# Name of the keyrec (zone or key.)
+	my $krcnt;			# Number of keyrecs we found.
 	my @sbuf;			# Buffer for stat().
 
 	#
@@ -109,7 +110,7 @@ sub keyrec_read
 	@sbuf = stat(KEYREC);
 	if(@sbuf != 0)
 	{
-		keyrec_save();
+		keyrec_close();
 	}
 
 	#
@@ -118,7 +119,7 @@ sub keyrec_read
 	if(open(KEYREC,"+< $krf") == 0)
 	{
 		print STDERR "unable to open $krf\n";
-		return(-1);
+		return(-2);
 	}
 
 	#
@@ -189,7 +190,7 @@ sub keyrec_read
 				%keyrecs = ();
 
 				close(KEYREC);
-				return(0);
+				return(-3);
 			}
 			keyrec_newkeyrec($name,$keyword);
 			next;
@@ -204,7 +205,8 @@ sub keyrec_read
 	#
 	# Return the number of keyrecs we found.
 	#
-	return($keyreclen);
+	$krcnt = keys(%keyrecs);
+	return($krcnt);
 }
 
 #--------------------------------------------------------------------------
@@ -285,7 +287,10 @@ sub keyrec_setval
 		#
 		# Add the keyrec to the %keyrecs hash.
 		#
-		keyrec_newkeyrec($name,$krtype);
+		if(keyrec_newkeyrec($name,$krtype) < 0)
+		{
+			return(-1);
+		}
 
 		#
 		# Start the new keyrec in @keyreclines.
@@ -435,6 +440,7 @@ sub keyrec_setval
 	# been modified.
 	#
 	$modified = 1;
+	return(0);
 }
 
 
@@ -442,7 +448,7 @@ sub keyrec_setval
 #
 # Routine:	keyrec_add()
 #
-# Purpose:	Display the key record file contents.
+# Purpose:	Adds a new keyrec and fields to %keyrecs and $keyreclines.
 #
 sub keyrec_add
 {
@@ -467,7 +473,10 @@ sub keyrec_add
 	#
 	# Create the basic keyrec info.
 	#
-	keyrec_newkeyrec($krname,$krtype);
+	if(keyrec_newkeyrec($krname,$krtype) < 0)
+	{
+		return(-1);
+	}
 
 	#
 	# Set the fields, by type, that we'll grab from the caller's hash.
@@ -573,21 +582,32 @@ sub keyrec_add
 	#
 	$modified = 1;
 	keyrec_write();
+	return(0);
 }
 
 #--------------------------------------------------------------------------
 #
 # Routine:	keyrec_newkeyrec()
 #
-# Purpose:	Display the key record file contents.
+# Purpose:	Creates a keyrec in %keyrecs.  The name and type fields of
+#		the keyrec are set.
 #
 sub keyrec_newkeyrec
 {
 	my $name = shift;		# Name of keyrec we're creating.
 	my $type  = shift;		# Type of keyrec we're creating.
 
+	#
+	# Ensure we're only getting a valid type.
+	#
+	if(($type ne "key") && ($type ne "zone"))
+	{
+		return(-1);
+	}
+
 	$keyrecs{$name}{"keyrec_name"} = $name;
 	$keyrecs{$name}{"keyrec_type"} = $type;
+	return(0);
 }
 
 #--------------------------------------------------------------------------
@@ -614,11 +634,11 @@ sub keyrec_zonefields
 
 #--------------------------------------------------------------------------
 #
-# Routine:	keyrec_save()
+# Routine:	keyrec_close()
 #
 # Purpose:	Save the key record file and close the descriptor.
 #
-sub keyrec_save
+sub keyrec_close
 {
 	keyrec_write();
 	close(KEYREC);
@@ -724,13 +744,13 @@ DNSSEC::keyrec - Squoodge around with a dnssec-tools keyrec file.
 
   $val = keyrec_recval("portrigh.com","zonefile");
 
-  keyrec_add("zone","portrigh.com",\%keyrec_options);
-  keyrec_add("key","Kportrigh.com.+005+12345",\%keyrec_options);
+  keyrec_add("zone","portrigh.com",\%zone_krfields);
+  keyrec_add("key","Kportrigh.com.+005+12345",\%keydata);
 
   keyrec_setval("zone","portrigh.com","zonefile","db.portrigh.com");
 
-  keyrec_save();
   keyrec_write();
+  keyrec_close();
 
   keyrec_dump_hash();
   keyrec_dump_array();
@@ -739,36 +759,175 @@ DNSSEC::keyrec - Squoodge around with a dnssec-tools keyrec file.
 
 TBD
 
-=head2 Keyrec Format
-
 all keywords are translated to lowercase
 
 =head1 KEYREC INTERFACES
 
-=head2 I<keyrec_add()>
+The following are the user interfaces to the I<DNSSEC::keyrec> module.
 
-=head2 I<keyrec_fullrec()>
+=head2 I<keyrec_add(keyrec_type,keyrec_name,fields)>
+
+This routine adds a new I<keyrec> to the I<keyrec> file and the internal
+representation of the file contents.  The I<keyrec> is added to both the
+I<%keyrecs> hash table and the I<@keyreclines> array.
+
+I<keyrec_type> specifies the type of the I<keyrec> -- "key" or "zone".
+I<keyrec_name> is the name of the I<keyrec>.  I<fields> is a reference to a
+hash table that contains the name/value I<keyrec> fields.  The keys of the
+hash table are always converted to lowercase.
+
+New I<keyrec>s are added to the file as in the following example.  (This
+example is an incomplete zone I<keyrec>, and only contains several fields for
+illustration purposes.)
+
+    zone	"portrigh.com"
+                zonefile        "db.portrigh.com"
+                endtime         "+2592000"
+		keyrec_signsecs "1101183759"
+		keyrec_signdate "Tue Nov 23 04:22:39 2004
+
+The I<ksklength> entry is only added if I<keyrec_type> is "ksk".
+
+The I<zsklength> entry is only added if I<keyrec_type> is "zsk".
+
+Timestamp fields are added at the end of the keyrec.  For key I<keyrec>s, the
+I<keyrec_gensecs> and I<keyrec_gendate> timestamp fields are added.  For zone
+I<keyrec>s, the I<keyrec_signsecs> and I<keyrec_signdate> timestamp fields
+are added.
+
+If a specified field isn't defined for the I<keyrec> type, the entry isn't
+added.  This prevents zone I<keyrec> data from getting mingled with key
+I<keyrec> data.
+
+A blank line is added after the final line of the new I<keyrec>.  After adding
+all new I<keyrec> entries, the I<keyrec> file is written but is not closed.
+
+Return values are:
+
+    0 success
+
+    -1 invalid krtype
+
+=head2 I<keyrec_close()>
+
+This interface saves the internal version of the I<keyrec> file (opened with
+I<keyrec_read()>) and closes the file handle. 
+
+=head2 I<keyrec_fullrec(keyrec_name)>
+
+I<keyrec_fullrec()> returns a reference to the I<keyrec> specified in
+I<keyrec_name>.
+
+=head2 I<keyrec_keyfields()>
+
+This routine returns a list of the recognized fields for a key I<keyrec>.
 
 =head2 I<keyrec_names()>
 
-=head2 I<keyrec_read()>
+This routine returns a list of the I<keyrec> names from the file.
 
-=head2 I<keyrec_recval()>
+=head2 I<keyrec_newkeyrec(kr_name,kr_type)>
 
-=head2 I<keyrec_save()>
+This interface creates a new I<keyrec>.  The I<keyrec_name> and I<keyrec_hash>
+fields in the I<keyrec> are set to the values of the I<kr_name> and I<kr_type>
+parameters.  I<kr_type> must be either "key" or "zone".
 
-=head2 I<keyrec_setval()>
+Return values are:
+
+    0 if the creation succeeded
+
+    -1 if an invalid I<keyrec> type was given
+
+This is intended to be an internal-use only routine.
+
+=head2 I<keyrec_read(keyrec_file)>
+
+This interface reads the specified I<keyrec> file and parses it into a
+I<keyrec> hash table and a file contents array.  I<keyrec_read()> B<must>
+be called prior to any of the other I<DNSSEC::keyrec> calls.  If another
+I<keyrec> is already open, then it is saved and closed prior to opening
+the new I<keyrec>.
+
+Upon success, I<keyrec_read()> returns the number of I<keyrec>s read from the
+file.
+
+Failure return values:
+
+    -1 specified I<keyrec> file doesn't exit
+
+    -2 unable to open I<keyrec> file
+
+    -3 duplicate I<keyrec> names in file
+
+=head2 I<keyrec_recval(keyrec_name,keyrec_field)>
+
+This routine returns the value of a specified field in a given I<keyrec>.
+I<keyrec_name> is the name of the particular I<keyrec> to consult.
+I<keyrec_field> is the field name within that I<keyrec>.
+
+For example, the current I<keyrec> file contains the following I<keyrec>.
+
+    zone	"portrigh.com"
+                zonefile        "db.portrigh.com"
+
+The call:
+
+    keyrec_recval("portrigh.com","zonefile")
+
+will return the value "db.portrigh.com".
+
+=head2 I<keyrec_setval(keyrec_type,keyrec_name,field,value)>
+
+Set the value of a name/field pair in a specified I<keyrec>.  The file is
+B<not> written after updating the value.  The value is saved in both
+I<%keyrecs> and in I<@keyreclines>, and the file-modified flag is set.
+
+I<keyrec_type> specifies the type of the I<keyrec>.  This is only used if a
+new I<keyrec> is being created by this call.
+I<keyrec_name> is the name of the I<keyrec> that will be modified.
+I<field> is the I<keyrec> field which will be modified.
+I<value> is the new value for the field.
+
+Return values are:
+
+    0 if the creation succeeded
+
+    -1 invalid type was given
 
 =head2 I<keyrec_write()>
 
+This interface saves the internal version of the I<keyrec> file (opened with
+I<keyrec_read()>).  It does not close the file handle.  As an efficiency
+measure, an internal modification flag is checked prior to writing the file.
+If the program has not modified the contents of the I<keyrec> file, it is not
+rewritten.
+
+=head2 I<keyrec_zonefields()>
+
+This routine returns a list of the recognized fields for a zone I<keyrec>.
+
+=head1 KEYREC DEBUGGING INTERFACES
+
+The following interfaces display information about the currently parsed
+I<keyrec> file.  They are intended to be used for debugging and testing, but
+may be useful at other times.
 
 =head2 I<keyrec_dump_hash()>
 
+This routine prints the I<keyrec> file as it is stored internally in a hash
+table.  The I<keyrec>s are printed in alphabetical order, with the fields
+alphabetized for each I<keyrec>.  New I<keyrec>s and I<keyrec> fields are
+alphabetized along with current I<keyrec>s and fields.  Comments from the
+I<keyrec> file are not included with the hash table.
+
 =head2 I<keyrec_dump_array()>
 
-=head1 EXAMPLES
-
-TBD
+This routine prints the I<keyrec> file as it is stored internally in an array.
+The I<keyrec>s are printed in the order given in the file, with the fields
+ordered in the same manner.  New I<keyrec>s are appended to the end of the
+array.  I<keyrec> fields added to existing I<keyrec>s are added at the
+beginning of the I<keyrec> entry.  Comments and vertical whitespace are
+preserved as given in the I<keyrec> file.
 
 =head1 AUTHOR
 
@@ -776,6 +935,6 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-appropriate other stuff
+DNSSEC::keyrec(5)
 
 =cut
