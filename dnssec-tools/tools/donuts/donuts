@@ -14,12 +14,13 @@ use strict;
 use Config;
 
 my %opts = (l => 5,
+	    c => $ENV{'HOME'} . "/.donuts.conf",
 	    r => $Config{'siteprefix'} . "/share/donuts/rules/*");
 
 my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
     @ignorelist, $netdns, $netdns_error);
 
-getopts("hvLl:r:i:", \%opts) || usage();
+getopts("hvLl:r:i:c:C", \%opts) || usage();
 
 #
 # initialize ignore list
@@ -54,6 +55,13 @@ foreach my $rfexp (split(/,\s*/, $opts{'r'})) {
 	}
 	print STDERR "\n" if ($opts{'v'});
     }
+}
+
+#
+# load optional user-config file
+#
+if ($opts{'c'} && !$opts{'C'} && -f $opts{'c'}) {
+    parse_user_config($opts{'c'});
 }
 
 #
@@ -129,7 +137,9 @@ sub add_rule {
     print STDERR " $rule->{'name'}" if ($opts{'v'});
 
     # remember the rule
-    push @rules, new Net::DNS::SEC::Tools::Donuts::Rule($rule);
+    $rule = new Net::DNS::SEC::Tools::Donuts::Rule($rule);
+    push @rules, $rule;
+    $rules{$rule->{name}} = $rule;
 }
 
 # parses a text based rule file
@@ -191,6 +201,49 @@ sub parse_rule_file {
     }
     if ($rule && !$err) {
 	add_rule($rule);
+    }
+}
+
+sub parse_user_config {
+    my ($file) = @_;
+    open(I,$file);
+    my $line;
+    my $name;
+    while (<I>) {
+	$line++;
+	next if (/^\s*#/);
+	if (/^\s*$/) {
+	    $name = undef;
+	    next;
+	}
+	if (/^name:\s*(.*)/) {
+	    $name = $1;
+	    if (!exists($rules{$name})) {
+		print STDERR "$file:$line warning: no such rule: $name\n";
+	    }
+	    next;
+	}
+	if (!$name) {
+	    close(I);
+	    print STDERR
+	      "Error in $file at line $line: no rule name found yet\n";
+	    exit;
+	}
+	if (/^(test|init):/) {
+	    close(I);
+	    print STDERR
+	      "Error in $file at line $line: Illegal token in config file.\n";
+	    exit;
+	}
+	if (!/^(\w+):\s*(.*)$/) {
+	    close(I);
+	    print STDERR
+	      "Error in $file at line $line: Illegal definition.\n";
+	    exit;
+	}
+	if (exists($rules{$name})) {
+	    $rules{$name}->config($1, $2);
+	}
     }
 }
 
@@ -256,7 +309,7 @@ DoNutS - analyze DNS zone files for errors and warnings
 =head1 SYNOPSIS
 
 ./donuts [-h] [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
-         ZONEFILE DOMAINNAME...
+         [-C] [-c configfile] ZONEFILE DOMAINNAME...
 
 =head1 DESCRIPTION
 
@@ -293,6 +346,16 @@ A common seperated list of regex paterns which are checked against
 rule names to determine if some should be ignored.  Run with -v to
 figure out rule names if you're not sure which rule is generating
 errors you don't wish to see.
+
+=item -c CONFIGFILE
+
+Parse a configuration file to change constraints specified by rules.
+$rules{$This defaults to $HOME/.donuts.conf.
+
+=item -C
+
+Don't read user configuration files at all (like specified by -c or
+$rules{$the default).
 
 =back
 
