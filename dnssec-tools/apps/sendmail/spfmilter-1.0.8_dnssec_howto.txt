@@ -1,6 +1,6 @@
 			spfmilter-1.0.8 DNSSEC HOWTO
 			============================
-			       (Version 0.1)
+			       (Version 0.2)
 
 Introduction
 ============
@@ -32,9 +32,9 @@ Before compiling, run 'autoconf' from the main spfmilter-1.0.8 directory to
 generate a new 'configure' file.  Then, configure, compile and install
 spfmilter as per the instructions given in the spfmilter-1.0.8 distribution.
 The only change is that instead of installing the original libspf2, you need
-to patch it with the libspf2-1.0.4_dnssec_patch given in
-../libspf2-1.0.4_dnssec_patch.txt, and then install libspf2.  For instructions
-on how to do this, see ../libspf2-1.0.4_dnssec_howto.txt
+to patch it with the libspf2-1.x.y_dnssec_patch (where x.y is either 0.4 or
+2.5) given in ../libspf2-1.x.y_dnssec_patch.txt, and then install libspf2.
+For instructions on how to do this, see ../libspf2-1.x.y_dnssec_howto.txt
 
 
 Configuration
@@ -69,8 +69,8 @@ If the option is
 
 then a DNSSEC validation failure will cause spfmilter to abort the processing
 of the current email message, and send an error message back to the sender.
-The receipent will not get an email.  The sendmail maillog file will show the
-following error:
+The receipent will not get an email.  The sendmail maillog file will show an
+error message similar to the following:
 
     "Error: DNSSEC validation of SPF record failed."
 
@@ -79,12 +79,13 @@ If the option is
       --dnssec_policy=warn
 
 then the mail will get delivered to the receipent, even in the event of a
-DNSSEC validation failure.  However, in this case the following warning     
-message will be added to the SPF mail header:
+DNSSEC validation failure.  However, in this case a warning message
+similar to the following will be added to the SPF mail header:
 
     "problem=DNSSEC validation of SPF record failed."
 
-The sendmail maillog file will also show the following warning:
+The sendmail maillog file will also show a warning message similar to the
+following:
 
     "problem=DNSSEC validation of SPF record failed."
 
