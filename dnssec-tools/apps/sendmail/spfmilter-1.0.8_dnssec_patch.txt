@@ -18,7 +18,7 @@ Index: config.h.in
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-03-03 17:33:46.791271452 -0500
++++ spfmilter.c	2005-03-04 11:16:31.244384334 -0500
 @@ -27,8 +27,13 @@
  ** For commentary on this license please see http://www.acme.com/license.html
  */
@@ -260,12 +260,12 @@ Index: spfmilter.c
 +	if ((err_msgs[i] != NULL) && (strstr(err_msgs[i], "DNSSEC") != NULL)) {
 +	    if (first_err == 1)	{
 +		(void) snprintf(&header[len], header_size - len,
-+				" x-dnssec=fail (%s ", err_msgs[i]);
++				" x-dnssec=\"fail (%s", err_msgs[i]);
 +		first_err = 0;
 +	    }
 +	    else {
 +		(void) snprintf(&header[len], header_size - len,
-+				"%s ", err_msgs[i]);
++				", %s", err_msgs[i]);
 +	    }
 +	    len = strlen(header);
 +	}
@@ -274,17 +274,17 @@ Index: spfmilter.c
 +    if (first_err == 1) {
 +	if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
 +	    (void) snprintf(&header[len], header_size - len,
-+			    " x-dnssec=none;");
++			    " x-dnssec=\"none\";");
 +	    len = strlen(header);
 +	}
 +	else {
 +	    (void) snprintf(&header[len], header_size - len,
-+			    " x-dnssec=pass;");
++			    " x-dnssec=\"pass\";");
 +	    len = strlen(header);
 +	}
 +    }
 +    else {
-+	(void) snprintf(&header[len], header_size - len, ");");
++	(void) snprintf(&header[len], header_size - len, ")\";");
 +	len = strlen(header);
 +    }
 +
@@ -420,7 +420,7 @@ Index: spfmilter.c
 +static const char**
 +lib_get_error_msgs( lib_data_t* ld )
 +    {
-+    return ld->output.err_msgs;
++    return (const char**) (ld->output.err_msgs);
 +    }
 +
 +

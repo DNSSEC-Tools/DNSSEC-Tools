@@ -24,8 +24,8 @@ Index: config.h.in
  
 Index: src/include/spf_internal.h
 ===================================================================
---- src/include/spf_internal.h	2005-03-03 17:52:59.557826789 -0500
-+++ src/include/spf_internal.h	2005-03-03 17:51:07.302337919 -0500
+--- src/include/spf_internal.h	2005-03-03 17:52:59.000000000 -0500
++++ src/include/spf_internal.h	2005-03-03 17:51:07.000000000 -0500
 @@ -78,6 +78,10 @@
  /*    char	*rec_dom;	*/
  
@@ -239,7 +239,7 @@ Index: src/libspf2/Makefile.am
 Index: src/libspf2/spf_result.c
 ===================================================================
 --- src/libspf2/spf_result.c	2005-02-03 13:04:50.000000000 -0500
-+++ src/libspf2/spf_result.c	2005-03-03 17:39:09.300531853 -0500
++++ src/libspf2/spf_result.c	2005-03-04 11:02:27.582335285 -0500
 @@ -222,6 +222,7 @@
      size_t	buf_len = SPF_RECEIVED_SPF_SIZE;
      
@@ -305,7 +305,7 @@ Index: src/libspf2/spf_result.c
 +	int first=1;
 +
 +	if ( ( output.err_msg != NULL ) && ( strstr(output.err_msg, "DNSSEC") != NULL ) ) {
-+	    p += snprintf( p, p_end - p, " x-dnssec=%s", output.err_msg );
++	    p += snprintf( p, p_end - p, " x-dnssec=\"fail (%s", output.err_msg );
 +	    first=0;
 +	    dnssecerr = 1;
 +	    if ( p_end - p <= 0 ) return buf;
@@ -319,7 +319,7 @@ Index: src/libspf2/spf_result.c
 +	       ) {
 +		dnssecerr = 1;
 +		if (first == 1) {
-+		    p += snprintf( p, p_end - p, " x-dnssec=%s", output.err_msgs[i] );
++		    p += snprintf( p, p_end - p, " x-dnssec=\"fail (%s", output.err_msgs[i] );
 +		    first = 0;
 +		}
 +		else {
@@ -331,23 +331,23 @@ Index: src/libspf2/spf_result.c
 +	}
 +
 +	if (!first) {
-+	    p += snprintf( p, p_end - p, ";" );
++	    p += snprintf( p, p_end - p, ")\";" );
 +	}
 +	
 +	if ( p_end - p <= 0 ) return buf;
 +    }
 +    else if ( ( c_results.err_msg != NULL ) && ( strstr(c_results.err_msg, "DNSSEC") != NULL ) )
 +    {
-+	p += snprintf( p, p_end - p, " x-dnssec=%s;", c_results.err_msg );
++	p += snprintf( p, p_end - p, " x-dnssec=\"fail (%s)\";", c_results.err_msg );
 +	if ( p_end - p <= 0 ) return buf;
 +    }
 +
 +    if (!dnssecerr) {
 +	if (spfic->dodnssec) {
-+	    p += snprintf( p, p_end - p, " x-dnssec=pass;");
++	    p += snprintf( p, p_end - p, " x-dnssec=\"pass\";");
 +	}
 +	else {
-+	    p += snprintf( p, p_end - p, " x-dnssec=none;");
++	    p += snprintf( p, p_end - p, " x-dnssec=\"none\";");
 +	}
 +
 +	if ( p_end - p <= 0 ) return buf;
