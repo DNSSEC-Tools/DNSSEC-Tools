@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+
+<!--
+ -
+ - Copyright 2004 Sparta, Inc.  All rights reserved.
+ - See the COPYING file distributed with this software for details.
+ -
+-->
+
+<!DOCTYPE overlay SYSTEM "chrome://spfdnssec/locale/spfDnssecOverlay.dtd">
+
+<?xml-stylesheet href="chrome://messenger/skin/messageHeader.css
+                 type="text/css"?> 
+<?xml-stylesheet href="chrome://messenger/skin/messageKeywords.css
+                 type="text/css"?> 
+<?xml-stylesheet href="chrome://messenger/content/mailWidgets.xml"?> 
+
+<overlay id="spfDnssecOverlay" 
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+    <script type="application/x-javascript"
+            src="chrome://spfdnssec/content/spfDnssecOverlay.js" />
+
+    <hbox id="expandedHeaderView" flex="1">
+        <vbox id="expandedHeaders" flex="1">
+          <hbox flex="1">
+           <vbox id="expandedreceived-spfBox" flex="1">
+
+            <!-- Collapsed View -->
+            <hbox id="spfCollapsedHeaderView" class="header-part1 headerContainer" keywordrelated="true"
+                  originalclass="header-part1 headerContainer" flex="1" collapsed="true">
+              <vbox flex="1">
+               <grid id="spfCollapsedHeaderGrid"  class="header-part1 headerContainer" keywordrelated="true"
+                  originalclass="header-part1 headerContainer" flex="1" collapsed="false">
+              
+                <rows>
+                    <row flex="1"/>
+                </rows>
+
+                <columns>
+                    <column class="collapsedToggleHdrBox">
+                        <hbox id="collapsedSpfHeaderIcon" align="start" flex="1">
+                            <image id="toggleSpfHeaderView" class="collapsedHeaderViewButton"
+                                   onclick="ToggleSpfHeaderView();"/>
+                        </hbox>
+                    </column>
+
+                    <column flex="1">
+                        <mail-headerfield keywordrelated="true" id="collapsedSpfResultBox" class="subjectvalue"
+                                          label="&receivedSpfField.label;" collapsed="false"/>
+                    </column>
+                </columns>
+               </grid>
+              </vbox>
+            </hbox>
+
+            <!-- Expanded View -->
+            <hbox id="spfExpandedHeaderView"
+                  class="header-part1 headerContainer"
+                  keywordrelated="true"
+                  originalclass="header-part1 headerContainer" flex="1"
+                  collapsed="false">
+
+                 <vbox flex="1">
+                    <mail-toggle-headerfield keywordrelated="true" id="expandedSpfResultBox" class="subjectvalue"
+                                 label="&receivedSpfField.label;" ontwistyclick="ToggleSpfHeaderView();" collapsed="false"/>
+                    <mail-headerfield id="spfReceiverBox"     label="&spfReceiverField.label;"     collapsed="true"/>
+                    <mail-headerfield id="spfClientIpBox"     label="&spfClientIpField.label;"     collapsed="true"/>
+                    <mail-headerfield id="spfHeloBox"         label="&spfHeloField.label;"         collapsed="true"/>
+                    <mail-headerfield id="spfEnvelopeFromBox" label="&spfEnvelopeFromField.label;" collapsed="true"/>
+                    <mail-headerfield id="spfProblemBox"      label="&spfProblemField.label;"      collapsed="true"/>
+                    <mail-headerfield id="spfXDnssecBox"      label="&spfXDnssecField.label;"      collapsed="true"/>
+                </vbox>
+            </hbox>
+           </vbox>
+          </hbox>
+        </vbox>
+    </hbox>
+
+</overlay>
