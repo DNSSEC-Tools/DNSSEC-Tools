@@ -34,6 +34,9 @@ our @EXPORT = qw(
 my $ROLLMGR_DIR	    = "/usr/local/etc/dnssec";
 my $ROLLMGR_PIDFILE = ($ROLLMGR_DIR . "/dnssec-tools.rollmgr.pid");
 
+my $CMD_QPROC	= "HUP";			# Signal for qproc command.
+my $CMD_HALT	= "INT";			# Signal for halt command.
+
 my $rollmgrpid;				# Roll-over manager's process id.
 
 #--------------------------------------------------------------------------
@@ -82,7 +85,6 @@ sub rollmgr_droppid
 	# Get the pid from the roll-over manager's pidfile.
 	#
 	$rdpid = rollmgr_getpid(0);
-# print "\t\t\t\t---> rollmgr_getpid() return - $rdpid\n";
 
 	#
 	# Create the file if it doesn't exist.
@@ -90,16 +92,13 @@ sub rollmgr_droppid
 	#
 	if($rdpid < 0)
 	{
-# print "\t\t\t\t---> pid file does not exist\n";
 # print "rollmgr_droppid:  opening $ROLLMGR_PIDFILE\n";
 		open(PIDFILE,"> $ROLLMGR_PIDFILE") || warn "DROPPID UNABLE TO OPEN <$ROLLMGR_PIDFILE>\n";
-# print "\t\t\t\t---> errno - < $! >\n";
 # print "rollmgr_droppid:  locking $ROLLMGR_PIDFILE\n";
 		flock(PIDFILE,LOCK_EX);
 	}
 	else
 	{
-# print "\t\t\t\t---> pid file exists\n";
 		my $kcnt;			# Count of processes signaled.
 
 		flock(PIDFILE,LOCK_EX);
@@ -113,7 +112,6 @@ sub rollmgr_droppid
 		$kcnt = kill(0,$rdpid);
 		if($kcnt > 0)
 		{
-# print "\t\t\t\t---> process $rdpid exists\n";
 			flock(PIDFILE,LOCK_UN);
 
 			return(1) if($rdpid == $ego);
@@ -131,7 +129,6 @@ sub rollmgr_droppid
 	#
 	# Save our pid as THE roll-over manager's pid.
 	#
-# print "\t\t\t\t---> writing our pid $ego into pidfile\n";
 	print PIDFILE "$ego\n";
 	flock(PIDFILE,LOCK_UN);
 	close(PIDFILE);
@@ -281,9 +278,9 @@ sub rollmgr_qproc
 # print "rollmgr_qproc:  down in\n";
 	$pid = rollmgr_getpid(1);
 
-	$ret = kill('HUP',$pid);
+	$ret = kill($CMD_QPROC,$pid);
 
-# print "rollmgr_qproc:  kill(HUP,$pid) returned - $ret";
+# print "rollmgr_qproc:  kill($CMD_QPROC,$pid) returned - $ret";
 
 	return($ret);
 }
@@ -296,7 +293,17 @@ sub rollmgr_qproc
 #
 sub rollmgr_halt
 {
-	print "rollmgr_halt:  down in\n";
+	my $pid;				# Roll-over manager's pid.
+	my $ret;				# Return code from kill().
+
+# print "rollmgr_halt:  down in\n";
+	$pid = rollmgr_getpid(1);
+
+	$ret = kill($CMD_HALT,$pid);
+
+# print "rollmgr_halt:  kill($CMD_HALT,$pid) returned - $ret";
+
+	return($ret);
 }
 
 1;
@@ -314,11 +321,15 @@ manager.
 
   use Net::DNS::SEC::Tools::rollmgr;
 
-  rollmgr_dir();
+  $dir = rollmgr_dir();
 
-  rollmgr_pidfile();
+  $pidfile = rollmgr_pidfile();
+
+  $pid = rollmgr_getpid();
 
   rollmgr_droppid();
+
+  rollmgr_rmpid();
 
   rollmgr_qproc();
 
@@ -341,10 +352,18 @@ This routine returns the roll-over manager's directory.
 
 This routine returns the roll-over manager's pid file.
 
+=head2 I<rollmgr_getpid()>
+
+This routine returns the roll-over manager's process id.
+
 =head2 I<rollmgr_droppid()>
 
-This interface ensures that another instance of the roll-over manager is
+This interface ensures that another instance of the roll-over manager is not
 running and then creates a pid file for future reference.
+
+=head2 I<rollmgr_rmpid()>
+
+This interface deletes the roll-over manager's pidfile.
 
 =head2 I<rollmgr_qproc()>
 
