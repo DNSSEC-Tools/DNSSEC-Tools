@@ -1,6 +1,6 @@
 			spfmilter-1.0.8 DNSSEC HOWTO
 			============================
-			       (Version 0.2)
+			       (Version 0.3)
 
 Introduction
 ============
@@ -79,26 +79,28 @@ If the option is
       --dnssec_policy=warn
 
 then the mail will get delivered to the receipent, even in the event of a
-DNSSEC validation failure.  However, in this case a warning message
-similar to the following will be added to the SPF mail header:
+DNSSEC validation failure.  However, in this case an error message
+similar to the following will be added to the Receivd-SPF mail header:
 
-    "problem=DNSSEC validation of SPF record failed."
+    x-dnssec="fail (DNSSEC validation of SPF record failed.)";
 
-The sendmail maillog file will also show a warning message similar to the
-following:
-
-    "problem=DNSSEC validation of SPF record failed."
+The sendmail maillog file will also show a similar warning message.
 
 In case of the 'reject' and 'warn' policies, if DNSSEC validation succeeds,
-there is no DNSSEC validation error message in the SPF mail header or the maillog.
-At present, the dnssec extension to spfmilter does not provide a 'success'
-message.  Such an explicit DNSSEC validation success message will be added will
-be added in a future release.  The absence of an error indication means success,
-for now.
+the Received-SPF mail header will contain the following status message:
 
-The policy is applied to all emails, irrespective of the sender or the
-recepient.  Future versions may allow a more granular policy based on sender's
-domain, sender's email address and/or the recepient's email address.
+    x-dnssec="pass";
+
+In case of the 'ignore' policy, the Received-SPF mail header will contain
+the following status message:
+
+    x-dnssec="none";
+
+which means that there was no DNSSEC validation.
+
+The dnssec-policy is applied to all emails, irrespective of the sender or the
+recepient.  Future versions may allow a more granular policy based on the
+sender's domain, sender's email address and/or the recepient's email address.
 
 Use other options to spfmilter as per the instructions given in the
 spfmilter distribution.
@@ -123,7 +125,7 @@ The following table gives a summary of the basic scenarios.
 |                             |      _/        |     _/       |      _/       |
 +-----------------------------+----------------+--------------+---------------+
 |                             |                |              |               |
-| SPF Records present, but    | No DNSSEC      | Warning      | Error message |
+| SPF Records present, but    | No DNSSEC      | Error        | Error message |
 | not a DNSSEC signed zone    | Validation     | message in   | in maillog.   |
 |                             |                | mail header  | Mail dropped. |
 |                             |                | and maillog  | Error message |
@@ -131,7 +133,7 @@ The following table gives a summary of the basic scenarios.
 |                             |      _/        |     _/       |      _/       |
 +-----------------------------+----------------+--------------+---------------+
 |                             |                |              |               |
-| SPF Records present and     | No DNSSEC      | No error     | No error      |
+| SPF Records present and     | No DNSSEC      | Success      | Success       |
 | a DNSSEC signed zone        | Validation     | message in   | message in    |
 |                             |                | mail header  | mail header   |
 |                             |                | and maillog  | and maillog   |
@@ -149,35 +151,48 @@ Mails sent from a domain that does not have SPF records.
 In this case, there is no SPF processing.  Hence, all mail will go through,
 irrespective of the dnssec-policy in spfmilter.
 
-The maillog file will not contain any indication of whether DNSSEC validation
-succeeded or not.
+The Received-SPF header will contain the following field:
+
+    x-dnssec="pass";
 
 Scenario 2:
 -----------
 Mails sent from a domain that has SPF records, but does not have DNSSEC signed
 zones.
 
-ignore policy:  DNSSEC validation will not be performed.  There will be no
-indication about DNSSEC in either the maillog or the SPF mail header.
+ignore policy:  DNSSEC validation will not be performed.  The Received-SPF
+header will contain
 
-warn policy: A warning message will be added to the SPF mail header and the
-sendmail maillog.
+    x-dnssec="none";
+
+warn policy: An error message will be added to the Received-SPF mail header
+and the sendmail maillog.
+
+    x-dnssec="fail (DNSSEC validation of SPF record failed.)";
 
 reject policy: An error message will be added to the sendmail maillog.  The
 mail will be dropped and an error message will be returned to the sender.
+
+    x-dnssec="fail (DNSSEC validation of SPF record failed.)";
 
 Scenario 3:
 -----------
 Mails sent from a domain that has SPF records as well as DNSSEC signed zones.
 
-ignore policy:  DNSSEC validation will not be performed.  There will be no
-indication about DNSSEC in either the maillog or the SPF mail header.
+ignore policy:  DNSSEC validation will not be performed.  The Received-SPF
+header will contain
 
-warn policy: No DNSSEC validation error message will be added to the SPF mail
-header or the sendmail maillog.
+    x-dnssec="none";
 
-reject policy: No DNSSEC validation error message will be added to the SPF
-mail header and the sendmail maillog.
+warn policy: A DNSSEC validation success message will be added to the
+Received-SPF mail header or the sendmail maillog:
+
+    x-dnssec="pass";
+
+reject policy: A DNSSEC validation success message will be added to the
+Received-SPF mail header and the sendmail maillog:
+
+    x-dnssec="pass";
 
 
 (II) Intermediate Scenarios: DNSSEC validation of the SPF Mechanisms
