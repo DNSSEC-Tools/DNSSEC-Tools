@@ -33,24 +33,36 @@ name: DNSSEC_DNSKEY_PARENT_HAS_VALID_DS
 level: 4
 live: true
 type: DNSKEY
+desc: tests for valid DS checksum and for draft-ietf-dnsext-dnssec-records-11: section 5.2: The DNSKEY RR referred to in the DS RR MUST be a DNSSEC zone key with the same keytag.
 test:
   my $keyrr = $_[0];
   $keyrr->setkeytag();
   return if ($keyrr->flags & 0x100);  # key is not a zone signing key
   my @DSs = live_query($keyrr->name, "DS");
   return "Parent zone has no DS records for $keyrr->{name} (keyid = $keyrr->{keytag})" if ($#DSs == -1);
-  map { return if ($_->verify($keyrr)); } @DSs;
+  map { if ($_->verify($keyrr)) {
+          if ($_->keytag !=  $keyrr->keytag) {  # tag ids match
+	    return "KEY with tag $keyrr->{keytag} verifies DS record with non matching tag $_->{keytag}";
+          }
+          return;
+        } } @DSs;
   return "DNSKEY record for $keyrr->{name} (keytag = " .
          $keyrr->keytag . 
          ") does not have a matching DS record in the live parent zone";
 
-name: DNSSEC_DNSKEY_CHILD_HAS_VALID_DNSKEY
+name: DNSSEC_DS_CHILD_HAS_MATCHING_DNSKEY
 level: 4
 live: true
+desc: tests for valid DS checksum and for draft-ietf-dnsext-dnssec-records-11: section 5.2: The DNSKEY RR referred to in the DS RR MUST be a DNSSEC zone key.
 type: DS
 test:
   my $dsrr = $_[0];
   my @KEYs = live_query($dsrr->name, "DNSKEY");
   return "Child zone has no DNSKEY records for $dsrr->{name}" if ($#KEYs == -1);
-  map { return if ($_->flags & 0x100 && $dsrr->verify($_)); } @KEYs;
+  map { if ($dsrr->verify($_)) {
+          return if ($_->flags & 0x100);  # zone bit set
+          return "Key tag $_->{keytag} in child for $_->{name} does not match key tag $dsrr->{keytag}" if ($_->keytag != $dsrr->keytag);
+          return "Key in child for $_->{keytag} referred to by DS for $dsrr->{name} does not have the zone flag set";
+          return;
+        } } @KEYs;
   return "DS record for $dsrr->{name} does not have a matching DNSKEY record in the live child zone";
