@@ -1,0 +1,348 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# This script performs several tests of the dnssec-tools rollmgr module.
+#
+# The following interfaces are tested:
+#
+#	 rollmgr_dir
+#	 rollmgr_pidfile
+#	 rollmgr_getpid
+#	 rollmgr_droppid
+#	 rollmgr_rmpid
+#	 rollmgr_qproc
+#	 rollmgr_halt
+#
+
+use strict;
+
+use Net::DNS::SEC::Tools::rollmgr;
+
+test_rollmgr_dir();
+
+test_rollmgr_pidfile();
+
+test_rollmgr_getpid();
+
+test_rollmgr_droppid();
+
+test_rollmgr_rmpid();
+
+# test_rollmgr_qproc();
+
+# test_rollmgr_halt();
+
+exit 0;
+
+#############################################################
+#
+sub test_rollmgr_dir
+{
+	my $dirname = rollmgr_dir();
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_dir()\t\t(requires manual verification)\n\n";
+
+	print "\trollmgr directory - $dirname\n";
+}
+
+#############################################################
+#
+sub test_rollmgr_pidfile
+{
+	my $pidfile = rollmgr_pidfile();
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_pidfile()\t\t(requires manual verification)\n\n";
+
+	print "\trollmgr pidfile - $pidfile\n";
+}
+
+#############################################################
+#
+sub test_rollmgr_getpid
+{
+	my $errs = 0;			# Failed tests.
+	my $newpid;			# Manufactured process id.
+	my $pid;			# Process id.
+	my $pidfile;			# Name of roll-over manager's pidfile.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_getpid()\n";
+
+	#####################
+	#
+	# Make sure we have a clean slate.
+	#
+	$pidfile = rollmgr_pidfile();
+	system("/bin/rm -f $pidfile");
+
+	#####################
+	#
+	# Check that rollmgr_getpid() actually does need a pidfile.
+	#
+	print "\ttesting for non-existent pidfile\n";
+	$pid = rollmgr_getpid();
+	if($pid == -1)
+	{
+		print "\t\tSUCCESS:  couldn't read from a non-existent pidfile\n\n";
+	}
+	else
+	{
+		print "\t\tFAILURE:  returned pid $pid when pidfile doesn't exist\n\n";
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check that rollmgr_getpid() will succeed if the pidfile exists.
+	#
+	print "\ttesting for valid pid in pidfile\n";
+
+	$newpid = 88 . $$ . 88;
+	system(`/bin/echo $newpid >> $pidfile`);
+	$pid = rollmgr_getpid();
+	if($pid == $newpid)
+	{
+		print "\t\tSUCCESS:  pidfile contains correct pid\n\n";
+	}
+	else
+	{
+		print "\t\tFAILURE:  pidfile does not contain correct pid\n";
+		print "\t\t          contains <$pid>, should have <$newpid>\n\n";
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check to see how many tests failed.
+	#
+	if($errs)
+	{
+		print "\t$errs test(s) of rollmgr_getpid() failed\n";
+	}
+	else
+	{
+		print "\tall rollmgr_getpid() tests succeeded\n";
+	}
+
+}
+
+#############################################################
+#
+sub test_rollmgr_droppid
+{
+	my $errs = 0;			# Failed tests.
+	my $pid;			# Process id.
+	my $pidfile;			# Name of roll-over manager's pidfile.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_droppid()\n";
+
+	#####################
+	#
+	# Make sure we have a clean slate.
+	#
+	$pidfile = rollmgr_pidfile();
+	system("/bin/rm -f $pidfile");
+
+	#####################
+	#
+	# Check that rollmgr_droppid() will create the proper pidfile if
+	# one doesn't exist.
+	#
+	print "\ttesting for non-existent file\n";
+	rollmgr_droppid();
+	$pid = `/bin/cat $pidfile`;
+	if($pid == $$)
+	{
+		print "\t\tSUCCESS:  successfully created a new pidfile\n\n";
+	}
+	else
+	{
+		print "\t\tFAILURE:  did not properly create a new pidfile\n\n";
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check that rollmgr_droppid() will appear to succeed if the
+	# pidfile contains the process' pid.
+	#
+	# This test assumes the previous test succeeded.
+	#
+	print "\ttesting for matching pid in pidfile\n";
+
+	rollmgr_droppid();
+	$pid = `/bin/cat $pidfile`;
+	if($pid == $$)
+	{
+		print "\t\tSUCCESS:  pidfile contains correct pid\n\n";
+	}
+	else
+	{
+		print "\t\tFAILURE:  pidfile does not contain correct pid\n\n";
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check that rollmgr_droppid() won't over-write a pidfile created
+	# by another process.
+	#
+	print "\ttesting for existent file\n";
+	$pid = $$ - 10;
+	system(`/bin/echo $pid >> $pidfile`);
+
+	rollmgr_droppid();
+	$pid = `/bin/cat $pidfile`;
+	if($pid != $$)
+	{
+		print "\t\tSUCCESS:  did not over-write another process' pidfile\n\n";
+	}
+	else
+	{
+		print "\t\tFAILURE:  overwrote another process' pidfile\n\n";
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check to see how many tests failed.
+	#
+	if($errs)
+	{
+		print "\t$errs test(s) of rollmgr_droppid() failed\n";
+	}
+	else
+	{
+		print "\tall rollmgr_droppid() tests succeeded\n";
+	}
+
+}
+
+#############################################################
+#
+sub test_rollmgr_rmpid
+{
+	my $errs = 0;			# Failed tests.
+	my $pid;			# Process id.
+	my $pidfile;			# Name of roll-over manager's pidfile.
+	my $ret;			# rollmgr-rmpid() return code.
+
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_rmpid()\n";
+
+	#####################
+	#
+	# Make sure we have a clean slate.
+	#
+	$pidfile = rollmgr_pidfile();
+	system("/bin/rm -f $pidfile");
+
+	#####################
+	#
+	# Check that rollmgr_rmpid() will give the proper errcode if the
+	# pidfile if doesn't exist.
+	#
+	print "\ttesting for non-existent file\n";
+	if(($ret=rollmgr_rmpid()) == 0)
+	{
+		print "\t\tSUCCESS:  couldn't delete non-existent pidfile\n\n";
+	}
+	else
+	{
+		if($ret == 1)
+		{
+			print "\t\tFAILURE:  improperly deleted pidfile\n\n";
+		}
+		else
+		{
+			print "\t\tFAILURE:  failed for reason $ret\n\n";
+		}
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check that rollmgr_rmpid() will delete our own pidfile.
+	#
+	print "\ttesting for existent file with our pid\n";
+	system(`/bin/echo $$ >> $pidfile`);
+
+	if(($ret=rollmgr_rmpid()) == 1)
+	{
+		print "\t\tSUCCESS:  deleted our own pidfile\n\n";
+	}
+	else
+	{
+		print "\t\tFAILURE:  failed for reason $ret\n\n";
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check that rollmgr_rmpid() won't delete a pidfile created
+	# by another process.
+	#
+	print "\ttesting for existent file with our pid\n";
+	$pid = $$ - 10;
+	system(`/bin/echo $pid >> $pidfile`);
+
+	if(($ret=rollmgr_rmpid()) == -1)
+	{
+		print "\t\tSUCCESS:  unable to delete someone else's pidfile\n\n";
+	}
+	else
+	{
+		if($ret == 1)
+		{
+			print "\t\tFAILURE:  deleted someone else's pidfile\n\n";
+		}
+		else
+		{
+			print "\t\tFAILURE:  failed for reason $ret\n\n";
+		}
+		$errs++;
+	}
+
+	#####################
+	#
+	# Check to see how many tests failed.
+	#
+	if($errs)
+	{
+		print "\t$errs test(s) of rollmgr_rmpid() failed\n";
+	}
+	else
+	{
+		print "\tall rollmgr_rmpid() tests succeeded\n";
+	}
+
+}
+
+#############################################################
+
+
+sub test_rollmgr_qproc
+{
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_qproc()\n\n";
+
+	print "\t\t\tNOT IMPLEMENTED YET!!!\n\n";
+#	rollmgr_qproc();
+}
+
+#############################################################
+
+sub test_rollmgr_halt
+{
+	print "\n-----------------------------------------------------\n\n";
+	print "testing rollmgr_halt()\n";
+
+	print "\t\t\tNOT IMPLEMENTED YET!!!\n\n";
+#	rollmgr_halt();
+}
