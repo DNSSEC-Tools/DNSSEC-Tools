@@ -1,8 +1,18 @@
 Index: config.h.in
 ===================================================================
 --- config.h.in	2005-02-11 10:46:37.802333566 -0500
-+++ config.h.in	2005-02-11 10:55:08.046198023 -0500
-@@ -177,6 +177,9 @@
++++ config.h.in	2005-02-11 13:18:53.973111805 -0500
+@@ -52,6 +52,9 @@
+ /* Define to 1 if you have the `socket' library (-lsocket). */
+ #undef HAVE_LIBSOCKET
+ 
++/* Define to 1 if you have the `validat' library (-lvalidat). */
++#undef HAVE_LIBVALIDAT
++
+ /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
+    to 0 otherwise. */
+ #undef HAVE_MALLOC
+@@ -177,6 +180,9 @@
  /* Define to 1 if the system has the type `u_int8_t'. */
  #undef HAVE_U_INT8_T
  
@@ -591,8 +601,8 @@ Index: src/libspf2/spf_eval_id.c
 Index: src/libspf2/spf_dns_dnssec.c
 ===================================================================
 --- src/libspf2/spf_dns_dnssec.c	2004-12-06 17:35:00.000000000 -0500
-+++ src/libspf2/spf_dns_dnssec.c	2005-02-11 10:31:31.447908105 -0500
-@@ -0,0 +1,220 @@
++++ src/libspf2/spf_dns_dnssec.c	2005-02-11 13:45:26.536568837 -0500
+@@ -0,0 +1,231 @@
 +/* 
 + * Copyright SPARTA, Inc. 2004.  All rights reserved.
 + * See the COPYING file distributed with this patch for details.
@@ -668,6 +678,7 @@ Index: src/libspf2/spf_dns_dnssec.c
 +static bool SPF_dns_dnssec_validate (SPF_dns_dnssec_config_t *spfdcid, SPF_dns_rr_t *rr)
 +{
 +    char *rdata;
++    val_result_t val_result;
 +
 +    if (rr == NULL) {
 +        if ( spfdcid->debug > 0 )
@@ -676,8 +687,18 @@ Index: src/libspf2/spf_dns_dnssec.c
 +        return FALSE;
 +    }
 +
++    if (val_init() < 0) {
++	SPF_debugf( "libspf2::SPF_dns_dnssec_validate: Error: could not initialize the DNSSEC Validator.\n");
++	return FALSE;
++    }
++
 +    rdata = (char *)((rr->rr == NULL) ? NULL : rr->rr[0]);
-+    if (val_check (rr->domain, C_IN, rr->rr_type, rdata)) {
++
++    val_result = val_check (rr->domain, C_IN, rr->rr_type, rdata);
++    SPF_debugf( "libspf2::SPF_dns_dnssec_validate: val_result returned %d\n",
++		val_result);
++    
++    if (val_result == VAL_SUCCESS) {
 +        return TRUE;
 +    }
 +    
@@ -816,7 +837,7 @@ Index: src/libspf2/spf_dns_dnssec.c
 Index: configure.ac
 ===================================================================
 --- configure.ac	2005-02-11 10:47:53.157973783 -0500
-+++ configure.ac	2005-02-11 10:49:24.002484479 -0500
++++ configure.ac	2005-02-11 12:27:38.405537579 -0500
 @@ -83,6 +83,9 @@
  AC_CHECK_HEADERS([libintl.h ])
  AC_CHECK_HEADERS([getopt.h ])
@@ -827,3 +848,12 @@ Index: configure.ac
  dnl Moved to after header checks by Shevek
  AC_ARG_WITH(bind,
          [  --with-bind=DIR  Find BIND resolver in DIR],
+@@ -103,6 +106,8 @@
+ AC_CHECK_LIB(socket, socket)
+ AC_CHECK_LIB(intl, gettext)
+ 
++dnl Check DNSSEC Validator library header
++AC_CHECK_LIB(validat, val_init)
+ 
+ 
+ 
