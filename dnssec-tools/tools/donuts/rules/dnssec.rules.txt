@@ -227,8 +227,21 @@ test:
   }
   return \@err;
 
-# XXX: check details of all the NSEC records?
-#   - every record type exists which was listed in an NSEC
-#   - nsec next order is proper
+name: DNSSEC_RRSIG_SIGNER_NAME_MATCHES
+type: RRSIG
+desc: draft-ietf-dnsext-dnssec-records-11: section 3.1.7: The Signer's Name field MUST contain the name of the zone of the covered RRset.
+test:
+  if ($_[0]->signame ne $current_domain . ".") {
+    print STDERR Dumper($_[0]);
+    return "signer name for $_[0]->{name} is $_[0]->{signame} but it should match the zone name ($current_domain)";
+  }
 
+
+# XXX: nsec next order is proper
 # XXX: check all sigs?
+#
+# XXX: records-11.txt section 3.1.3 talks about labels requirements.  testable?
+#
+# XXX: check if no RRSIGs exist for the *current* time period (eg,
+# start time is later than now)
+#
