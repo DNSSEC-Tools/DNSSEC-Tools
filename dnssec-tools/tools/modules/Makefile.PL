@@ -1,38 +1,14 @@
 #!/usr/bin/perl
-#
 # Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
-#
 
-open(MF,"> Makefile");
+use ExtUtils::MakeMaker;
 
-print MF <<EOF;
-#
-# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
-# file distributed with this software for details
-#
+%opts = (
+	 'NAME'		=> 'Net::DNS::Sec::DNSSecTools::conf',
+	 'VERSION_FROM'	=> 'conf.pm', # finds $VERSION
+	 'DIR'          => [],        # avoids the testing dir
+#	 'PM' =>           { conf.pm => '$(INST_LIBDIR)/install_as.pm'}
+	);
 
-MODULES=	conf.pm		\\
-		keyrec.pm	\\
-		tooloptions.pm
-
-DESTDIR=	/usr/local/lib/perl5/site_perl/5.8.2/DNSSEC
-
-all:
-	\@echo nothing to make
-
-install:	install-dir
-	\@echo "installing modules in \${DESTDIR}"
-	\@install -m 0444 \${MODULES} \${DESTDIR}
-
-install-dir:
-	\@if test ! -d \$(DESTDIR) ; then				\\
-		echo "creating DNSSEC module directory";	\\
-		mkdir -p \$(DESTDIR);				\\
-	fi
-
-clean:
-	\@echo nothing to clean
-EOF
-
-exit(0);
+WriteMakefile(%opts);

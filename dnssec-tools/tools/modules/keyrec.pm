@@ -40,7 +40,20 @@
 #	this module will have to be rewritten to account for it.
 #
 
+package Net::DNS::Sec::DNSSecTools::keyrec;
+
+require Exporter;
 use strict;
+
+our $VERSION = "0.01";
+
+our @ISA = qw(Exporter);
+
+our @EXPORT = qw(keyrec_read keyrec_names keyrec_fullrec keyrec_recval
+		 keyrec_setval keyrec_add keyrec_newkeyrec
+		 keyrec_keyfields keyrec_zonefields keyrec_init
+		 keyrec_discard keyrec_close keyrec_write
+		 keyrec_dump_hash keyrec_dump_array);
 
 #
 # Fields in a key keyrec.

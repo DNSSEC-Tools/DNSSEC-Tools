@@ -15,12 +15,23 @@
 #
 #
 
+package Net::DNS::Sec::DNSSecTools::tooloptions;
+
+require Exporter;
 use strict;
 
-use DNSSEC::conf;
-use DNSSEC::keyrec;
+use Net::DNS::Sec::DNSSecTools::conf;
+use Net::DNS::Sec::DNSSecTools::keyrec;
 
 use Getopt::Long;
+
+our $VERSION = "0.01";
+
+our @ISA = qw(Exporter);
+
+our @EXPORT_OK = qw(tooloptions tooloptions opts_krfile opts_getkeys
+		    opts_keykr opts_zonekr opts_suspend opts_restore
+		    opts_drop);
 
 #
 # Standard options accepted by all tools in the dnssec-tools suite.
