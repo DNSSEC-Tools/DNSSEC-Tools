@@ -1,0 +1,45 @@
+#
+# Minimum environment and virtual path setup
+#
+SHELL		= /bin/sh
+srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
+@SET_MAKE@
+
+PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts
+
+all: perlmakefiles perlmake
+
+install: perlinstall
+
+clean: perlclean
+
+distclean: clean configclean
+
+
+perlmake:
+	@for i in $(PERLDIRS) ; do \
+	  (cd $$i ; make ) ; \
+         done
+
+perlmakefiles:
+	@for i in $(PERLDIRS) ; do \
+	  if test ! -f $$i/Makefile ; then \
+	    (cd $$i ; perl Makefile.PL ) ; \
+          fi ; \
+         done
+
+perlinstall:
+	@for i in $(PERLDIRS) ; do \
+	  (cd $$i ; make install ) ; \
+         done
+
+perlclean:
+	@for i in $(PERLDIRS) ; do \
+	  (cd $$i ; make clean ) ; \
+         done
+
+
+configclean:
+	rm -f config.cache config.status config.log \
+		Makefile stamp-h *.core
