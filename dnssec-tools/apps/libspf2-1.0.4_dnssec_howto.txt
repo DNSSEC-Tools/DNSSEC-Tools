@@ -1,173 +1,36 @@
-		DNSSEC extension to libspf2-1.0.4
-		=================================
-			(Version 0.1)
+		DNSSEC extension to libspf2-1.0.4: HOWTO
+		========================================
+			     (Version 0.1)
 
 Introduction
 ------------
 
-The DNSSEC extension to libspf2 provides DNSSEC validation to DNS
-queries in libspf2.
+The DNSSEC extension to libspf2 provides DNSSEC validation to DNS queries in
+libspf2.
 
-This document describes the changes to libspf2 to provide the DNSSEC
-validation.  This functionality is still in its early stages of
-design and development, and may undergo some changes in the future.
+This document describes how to install libspf2 with DNSSEC validation
+functionality. A companion document, libspf2-1.0.4_dnssec_guide.txt, explains
+how to use this DNSSEC validation functionality in applications that use
+libspf2.
 
+libspf2 can be downloaded from http://www.libspf2.org/download.html
 
-Additions to libspf2
---------------------
-The layered DNS architecture in libspf2 is amenable to adding DNSSEC
-validation.
+To apply the libspf2-1.0.4_dnssec_patch, download libspf2-1.0.4.tar.gz from
+the above website.
 
-A new DNS layer has been added to libspf2 called spf_dns_dnssec.  As
-per the DNS layer API, it defines the following lookup function:
+Unzip and untar it by:
 
-static SPF_dns_rr_t *SPF_dns_lookup_dnssec( SPF_dns_config_t spfdcid,
-					    const char *domain,
-					    ns_type rr_type,
-					    int should_cache )
+	tar -xvzf libspf2-1.0.4.tar.gz
 
-This lookup function is called internally from other modules within
-libspf2.  Applications using libspf2 cannot call this lookup function
-directly.
+Go to the libspf2-1.0.4 directory:
 
-In addition to the lookup function, it defines the following functions for
-creating and destroying the spf_dns_dnssec layer:
+	cd libspf2-1.0.4
 
-SPF_dns_config_t SPF_dns_create_config_dnssec( SPF_dns_config_t layer_below,
-					       int debug,
-					       int dnssec_policy);
-void SPF_dns_reset_config_dnssec( SPF_dns_config_t spfdc );
-void SPF_dns_destroy_config_dnssec( SPF_dns_config_t spfdc );
+Now apply the patch by:
 
-These functions are described in detail in the next section.
+	patch -p 0 -b -z .orig </path/to/patch/libspf2-1.0.4_dnssec_patch.txt
 
-The following files have been added to libspf2-1.0.4:
+This will apply the patch and store the original files with a .orig suffix.
 
-    src/include/dnssec_validator.h: A placeholder for the DNSSEC
-				    validator API.
-
-    src/include/spf_dns_dnssec.h:   The header file for the
-				    DNSSEC validation layer.
-    
-    src/libspf2/dnssec_validator.c: A placeholder for the DNSSEC
-				    validator API.
-
-The following header and source files have been modified:
-    
-    src/include/spf.h:		    Additional error codes for
-				    DNSSEC validation failure.
-
-    src/include/spf_dns.h:	    Additional error codes for
-				    DNSSEC validation failure.
-
-    src/libspf2/spf_get_spf.c:	    Return appropriate errors
-				    for DNSSEC validation failure.
-
-    src/libspf2/spf_result.c:	    Return appropriate errors
-				    for DNSSEC validation failure.
-
-    src/libspf2/spf_dns_dnssec.c:   Implementation of the DNSSEC
-				    validation layer.
-
-Additional return values from functions:
-The SPF_get_spf function can now return two additional error values:
-
-    SPF_E_DNSSEC_FAIL
-    SPF_E_DNSSEC_WARN
-
-The WARN error codes are returned when the dnssec layer has been configured
-to return a warning in the event of a DNSSEC validation failure.  The FAIL
-error codes are returned when the dnssec layer has been configured to
-abort further processing and reject mail in the event of a DNSSEC validation
-failure.
-
-
-API for Applications
---------------------
-The following three functions are available for applications to add
-DNSSEC validation to their use of libspf2:
-
-(1) SPF_dns_config_t SPF_dns_create_config_dnssec(SPF_dns_config_t layer_below,
-					          int debug,
-					          int dnssec_policy);
-This function is used to create the dnssec layer.
-The 'layer_below' parameter specifies the DNS layer below the dnssec layer.
-The 'debug' parameter gives the debug level:
-    0: Don't output debug or error statements
-    1: Debug level 1.  Output error conditions.
-    2: Debug level 2.  Output error conditions and debug statements.
-The 'dnssec_policy' parameter specifies what action the dnssec layer and
-libspf2 should take in the event of a DNSSEC validation failure.  At present,
-the following three values are defined for this parameter in
-src/include/spf_dns_dnssec.h:
-
-      DNSSEC_POLICY_IGNORE [0]: Ignore dnssec validation failure
-      DNSSEC_POLICY_WARN   [1]: Return a warning, but continue processing
-      DNSSEC_POLICY_ABORT  [2]: Abort processing and return an error to
-				the application
-
-This function returns a handle to the dnssec layer.
-      
-(2) void SPF_dns_reset_config_dnssec  ( SPF_dns_config_t spfdc );
-This function resets the dnssec layer.
-
-(3) void SPF_dns_destroy_config_dnssec( SPF_dns_config_t spfdc );
-This function frees up the memory allocated by the dnssec layer.
-
-The dnssec layer should be added above the resolver and caching layers.
-Thus, if previously the layers were:
-
-      dns-caching
-      dns-resolver
-
-Then, the new layers will be:
-
-      dns-dnssec
-      dns-caching
-      dns-resolver
-
-in that order.
-
-The err_msg field in the output from the SPF_result() function in libspf2
-now contains additional information about DNSSEC validation failure.  The
-application can use this to inform the user of the application about dnssec
-validation failure.
-
-
-Example: Use of dnssec-extensions to libspf2 in spfmilter-1.0.8
----------------------------------------------------------------
-The resolvers[] array in spfmilter-1.0.8 is used to store the libspf2
-DNS layers.  The dnssec layer can be added as follows:
-(Error checking has not been shown for clarity.)
-
-    if (!resolvers[r].initialized) {
-        resolvers[r].spfdcid_r = SPF_dns_create_config_resolv(NULL, debug);
-	resolvers[r].spfdcid_c = SPF_dns_create_config_cache (
-				     resolvers[r].spfdcid_r,
-				     cache_size,
-				     debug);
-	resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec(
-				     resolvers[r].spfdcid_c,
-				     debug,
-				     dnssec_policy);
-	resolvers[r].initialized = 1;
-    }
-
-spfmilter-1.0.8 calls the SPF_result() function in libspf2 to perform the SPF
-lookup.
-
-    ld->output = SPF_result (ld->spfcid, resolvers[r].spfdcid_d);
-
-i.e. the handle to the dnssec-layer is passed to the SPF_result function.
-
-In case of a DNSSEC validation failure, this function returns an
-appropriate error message field in its output.  This error message field is
-used by spfmilter to inform the user about the error.
-
-The DNS layers are freed as follows:
-
-    if ( resolvers[r].initialized ) {
-        SPF_dns_destroy_config_dnssec( resolvers[r].spfdcid_d );
-	SPF_dns_destroy_config_cache ( resolvers[r].spfdcid_c );
-	SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
-    }
+Configure, compile and install libspf2 as per the instructions given in the
+libspf2-1.0.4 distribution.
