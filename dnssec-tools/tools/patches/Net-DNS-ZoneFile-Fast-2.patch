@@ -1,0 +1,40 @@
+--- Fast.pm.orig	Thu Apr 15 17:17:26 2004
++++ Fast.pm	Fri Dec  3 14:10:28 2004
+@@ -38,6 +38,7 @@
+ my $on_error;
+ my $quiet;
+ my $soft_errors;
++my $keep_alive;
+ 
+ sub parse
+ {
+@@ -77,6 +78,7 @@
+ 	$param{soft_errors} = 1 if $on_error && !exists $param{soft_errors};
+ 	$quiet = 1 if $on_error && !exists $param{quiet};
+ 	$soft_errors = $param{soft_errors};
++	$keep_alive = $param{keep_alive};
+ 
+ 	eval {
+ 		if ($param{fh}) {
+@@ -144,7 +146,7 @@
+ 	} else {
+ 		warn "@_, line $ln\n" if $soft_errors && !$quiet;
+ 	}
+-	die "@_, line $ln\n";
++	die "@_, line $ln\n" if(!$keep_alive);
+ }
+ 
+ sub parse_line
+@@ -857,6 +859,12 @@
+ is printed via warn().  Set B<quiet> to a true value if you don't want
+ this.  The default is false, unless B<on_error> is also specified, in
+ which case it is true.
++
++=item B<keep_alive>
++
++By default, I<parse> throws an exception on any error.  Set this
++optional parameter to a true value to prevent I<parse> from exiting
++on error.
+ 
+ =item B<debug>
+ 
