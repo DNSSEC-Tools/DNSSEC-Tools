@@ -1,4 +1,8 @@
 #
+#
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
 # DNSSEC Tools
 #
 #	Keyrec file routines.
@@ -42,7 +46,7 @@ use strict;
 my @keyreclines;			# Keyrec lines.
 my $keyreclen;				# Number of keyrec lines.
 
-my %keyrecs = ();			# Keyrec hash table (keywords/values.)
+my %keyrecs;				# Keyrec hash table (keywords/values.)
 
 my $modified;				# File-modified flag.
 
@@ -92,6 +96,7 @@ sub keyrec_read
 	#
 	# Initialize some data.
 	#
+	%keyrecs     = ();
 	@keyreclines = ();
 	$keyreclen   = 0;
 	$modified    = 0;
@@ -128,7 +133,7 @@ sub keyrec_read
 		# and a number of punctuation characters.  The value *must*
 		# be enclosed in double quotes.
 		#
-		$line =~ /^[ \t]*([a-zA-Z]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
 		$keyword = $1;
 		$value = $2;
 #		print "keyrec_read:  keyword <$keyword>\t\t<$value>\n";
@@ -299,7 +304,7 @@ sub keyrec_setval
 		#
 		# Dig out the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
 		$krtype = $1;
 		$krname = $2;
 
@@ -312,8 +317,8 @@ sub keyrec_setval
 		#		   ensures that there will be a keyrec with
 		#		   the name we want.
 		#
-		if(($krname eq $name) &&
-		   (($krtype eq "zone") || ($krtype eq "key")))
+		if((lc($krname) eq lc($name)) &&
+		   ((lc($krtype) eq "zone") || (lc($krtype) eq "key")))
 		{
 			last;
 		}
@@ -335,7 +340,7 @@ sub keyrec_setval
 		#
 		# Get the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
 		$lkw = $1;
 		$lval = $2;
 
@@ -352,7 +357,7 @@ sub keyrec_setval
 		# If we hit the beginning of the next keyrec without
 		# finding the field, drop out and insert it.
 		#
-		if(($lkw eq "zone") || ($lkw eq "key"))
+		if((lc($lkw) eq "zone") || (lc($lkw) eq "key"))
 		{
 			last;
 		}
@@ -367,7 +372,7 @@ sub keyrec_setval
 		# If we found the field, set the found flag, drop out and
 		# modify it.
 		#
-		if($lkw eq $field)
+		if(lc($lkw) eq lc($field))
 		{
 			$found = 1;
 			last;
@@ -567,26 +572,28 @@ TBD
 
 =head2 Keyrec Format
 
+all keywords are translated to lowercase
+
 =head1 KEYREC INTERFACES
 
-=head2 I<keyrec_fullrec>()
+=head2 I<keyrec_fullrec()>
 
-=head2 I<keyrec_names>()
+=head2 I<keyrec_names()>
 
-=head2 I<keyrec_read>()
+=head2 I<keyrec_read()>
 
-=head2 I<keyrec_recval>()
+=head2 I<keyrec_recval()>
 
-=head2 I<keyrec_save>()
+=head2 I<keyrec_save()>
 
-=head2 I<keyrec_setval>()
+=head2 I<keyrec_setval()>
 
-=head2 I<keyrec_write>()
+=head2 I<keyrec_write()>
 
 
-=head2 I<keyrec_dump_hash>()
+=head2 I<keyrec_dump_hash()>
 
-=head2 I<keyrec_dump_array>()
+=head2 I<keyrec_dump_array()>
 
 =head1 EXAMPLES
 
