@@ -33,20 +33,27 @@ my $DAYSWARN = 7;			# Days before an expiration warning.
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"zones",			# Only list zone keyrecs.
-	"keys",				# Only list key keyrecs.
-	"ksk",				# Only list KSK keyrecs.
-	"zsk",				# Only list ZSK keyrecs.
-	"cur",				# Only list current key keyrecs.
-	"new",				# Only list new key keyrecs.
-	"pub",				# Only list published key keyrecs.
-	"ref",				# Only list referenced key keyrecs.
-	"unref",			# Only list unreferenced key keyrecs.
+	"zones",			# List zone keyrecs.
+	"keys",				# List key keyrecs.
+	"ksk",				# List KSK keyrecs.
+	"zsk",				# List ZSK keyrecs.
+	"cur",				# List current key keyrecs.
+	"new",				# List new key keyrecs.
+	"pub",				# List published key keyrecs.
+	"ref",				# List referenced key keyrecs.
+	"unref",			# List unreferenced key keyrecs.
+	"expired",			# List expired zone keyrecs.
+	"valid",			# List unexpired zone keyrecs.
 	"cnt",				# Only give a count of matching keyrecs.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
 	"help",				# Give a usage message and exit.
 );
+
+# options to be completed:
+# 	expired
+# 	valid
+# 	cnt
 
 #
 # Flag values for the various options.  Variable/option connection should
@@ -61,6 +68,8 @@ my $znewflag;
 my $zpubflag;
 my $refflag;
 my $unrefflag;
+my $expiredflag;
+my $validflag;
 my $cntflag;
 my $terse;
 my $long;
@@ -128,6 +137,7 @@ sub doopts
 	$kskflag	= $options{'ksk'}	|| 0;
 	$zskflag	= $options{'zsk'}	|| 0;
 	$zcurflag	= $options{'cur'}	|| 0;
+	$znewflag	= $options{'new'}	|| 0;
 	$zpubflag	= $options{'pub'}	|| 0;
 	$cntflag	= $options{'cnt'}	|| 0;
 	$unrefflag	= $options{'unref'}	|| 0;
@@ -252,6 +262,8 @@ sub showzones
 #
 sub showkeys
 {
+	my $krr;			# Reference to a key's keyrec.
+
 	#
 	# Print the information about the KSK keys.
 	#
@@ -259,23 +271,8 @@ sub showkeys
 	{
 		foreach my $k (sort(keys(%kskkeys)))
 		{
-			my $krr = $kskkeys{$k};
-			my %kr = %$krr;
-
-			if($terse)
-			{
-				print "$k\n";
-			}
-			elsif($long)
-			{
-				print "KSK-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-			else
-			{
-				print "KSK-$k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-
-			$count++;
+			$krr = $kskkeys{$k};
+			outkey($k,$krr,"KSK-key","KSK");
 		}
 	}
 
@@ -286,23 +283,8 @@ sub showkeys
 	{
 		foreach my $k (sort(keys(%zcurkeys)))
 		{
-			my $krr = $zcurkeys{$k};
-			my %kr = %$krr;
-
-			if($terse)
-			{
-				print "$k\n";
-			}
-			elsif($long)
-			{
-				print "ZSK-cur-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-			else
-			{
-				print "ZSK-cur $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-
-			$count++;
+			$krr = $zcurkeys{$k};
+			outkey($k,$krr,"ZSK-cur-key","ZSK-cur");
 		}
 	}
 
@@ -313,23 +295,8 @@ sub showkeys
 	{
 		foreach my $k (sort(keys(%znewkeys)))
 		{
-			my $krr = $znewkeys{$k};
-			my %kr = %$krr;
-
-			if($terse)
-			{
-				print "$k\n";
-			}
-			elsif($long)
-			{
-				print "ZSK-new-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-			else
-			{
-				print "ZSK-new $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-
-			$count++;
+			$krr = $znewkeys{$k};
+			outkey($k,$krr,"ZSK-new-key","ZSK-new");
 		}
 	}
 
@@ -340,26 +307,93 @@ sub showkeys
 	{
 		foreach my $k (sort(keys(%zpubkeys)))
 		{
-			my $krr = $zpubkeys{$k};
-			my %kr = %$krr;
-
-			if($terse)
-			{
-				print "$k\n";
-			}
-			elsif($long)
-			{
-				print "ZSK-pub-key $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-			else
-			{
-				print "ZSK-pub $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
-			}
-
-			$count++;
+			$krr = $zpubkeys{$k};
+			outkey($k,$krr,"ZSK-pub-key","ZSK-pub");
 		}
 	}
 
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	refdkey()
+#
+# Purpose:	This routine determines if a named key is referenced by any
+#		zones.  This doesn't distinguish between KSKs and any of the
+#		ZSKs.  If found, 1 is returned; if not, 0 is returned.
+#
+sub refdkey
+{
+	my $kn = shift;			# Key name to be checked.
+	my %zkr;			# Zone keyrec.
+	my $zkrref;			# Reference to zone keyrec.
+	my $zn;				# Zone name.
+
+	#
+	# Check each zone to see if it's using this key.
+	#
+	foreach $zn (keys(%zones))
+	{
+		$zkrref = $zones{$zn};
+		%zkr = %$zkrref;
+
+		if(($zkr{'kskkey'} eq $kn) ||
+		   ($zkr{'zskcur'} eq $kn) ||
+		   ($zkr{'zsknew'} eq $kn) ||
+		   ($zkr{'zskpub'} eq $kn))
+		{
+			#
+			# Found it!  Return success.
+			#
+			return(1);
+		}
+	}
+
+	#
+	# Didn't find a reference to the key, so we'll return failure.
+	#
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	outkey()
+#
+sub outkey
+{
+	my $k	 = shift;		# Key name.
+	my $kkr	 = shift;		# Reference to key's keyrec.
+	my $long = shift;		# Long-output label.
+	my $reg	 = shift;		# Regular-output label.
+
+	my %kr = %$kkr;			# Key's keyrec.
+
+	#
+	# Check if this key is referenced or not.
+	#
+	if(($refflag   && !refdkey($k)) ||
+	   ($unrefflag &&  refdkey($k)))
+	{
+		return;
+	}
+
+	#
+	# Give the output line appropriate for output flags.
+	#
+	if($terse)
+	{
+		print "$k\n";
+	}
+	elsif($long)
+	{
+		print "$long $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
+	}
+	else
+	{
+		print "$reg $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
+	}
+
+	$count++;
 }
 
 #-----------------------------------------------------------------------------
@@ -448,3 +482,4 @@ Wayne Morrison, tewok@users.sourceforge.net
 Net::DNS::SEC::Tools::keyrec.pm(3)
 
 =cut
+
