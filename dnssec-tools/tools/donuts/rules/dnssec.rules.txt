@@ -141,7 +141,7 @@ type: NS
 test:
   if ($current_domain ne $_[0]->{name}) {
     # remember the name so we can also ignore glue records later
-    $DONUTS::gluerecs{$_[0]->{nsdname}} = 1;
+    $DONUTS::gluerecs{$_[0]->{nsdname}} = $_[0]->{name};
   }
   return;
 
@@ -157,7 +157,6 @@ test:
   }
   #
   my @err;
-  my %gluerecs;
   # for each record type for a given name
   # reverse sort these so NS records are seen before the glue records
   foreach my $type (sort { $b cmp $a } keys(%{$_[0]})) {
@@ -167,11 +166,18 @@ test:
       # NS records for children aren't signed
       if ($type eq 'NS' && $current_domain ne $rec->{name}) {
         if (exists($rrsigs{$type}{$rec->name})) {
-          push @err, "$rec->{name} is signed but is a child NS record";
+          push @err, "$rec->{name} is a child NS record but is signed and shouldn't be";
         }
         next;
       }
       # NS glue records for children aren't signed.
+      if (exists($rrsigs{$type}{$rec->name}) &&
+          exists($DONUTS::gluerecs{$rec->name}) &&
+          # make exception for stuff directly in our zone
+          $rec->{name} !~ /^\w+\.$current_domain$/) {
+        push @err, "$rec->{name} is a glue record for $DONUTS::gluerecs{$rec->{name}} and is signed and shouldn't be.";
+        next;
+      }
       if (!exists($rrsigs{$type}{$rec->name}) &&
           !exists($DONUTS::gluerecs{$rec->name})) {
          push @err, "No RRSIG record found for the record: $type:$rec->{name}";
