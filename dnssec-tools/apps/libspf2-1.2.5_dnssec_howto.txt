@@ -1,0 +1,46 @@
+		DNSSEC extension to libspf2-1.2.5: HOWTO
+		========================================
+			     (Version 0.1)
+
+Introduction
+------------
+
+The DNSSEC extension to libspf2 provides DNSSEC validation to DNS queries in
+libspf2.
+
+This document describes how to install libspf2-1.2.5 with DNSSEC validation
+functionality. A companion document, libspf2-1.2.5_dnssec_guide.txt, explains
+how to use this DNSSEC validation functionality in applications that use
+libspf2.
+
+libspf2-1.2.5 can be downloaded from http://www.libspf2.org/download.html
+
+To apply the libspf2-1.2.5_dnssec_patch, download libspf2-1.2.5.tar.gz from
+the above website.
+
+Unzip and untar it by:
+
+	tar -xvzf libspf2-1.2.5.tar.gz
+
+Go to the libspf2-1.2.5 directory:
+
+	cd libspf2-1.2.5
+
+Now apply the patch by:
+
+	patch -p 0 -b -z .orig </path/to/patch/libspf2-1.2.5_dnssec_patch.txt
+
+This will apply the patch and store the original files with a .orig suffix.
+
+To compile, first run the following sequence of commands from the main
+libspf2-1.2.5 directory to generate new 'configure' and other files needed
+for compilation:
+
+	aclocal
+	autoheader
+	libtoolize --automake --force
+	automake
+	autoconf
+
+Then, configure, compile and install libspf2 as per the instructions given
+in the libspf2-1.2.5 distribution.
