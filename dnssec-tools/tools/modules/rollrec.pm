@@ -52,7 +52,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(rollrec_read rollrec_names rollrec_fullrec rollrec_recval
 		 rollrec_setval rollrec_add rollrec_del rollrec_newrec
-		 rollrec_fields rollrec_init
+		 rollrec_fields rollrec_init rollrec_default
 		 rollrec_discard rollrec_close rollrec_write
 		 rollrec_dump_hash rollrec_dump_array);
 
@@ -661,6 +661,18 @@ sub rollrec_fields
 
 #--------------------------------------------------------------------------
 #
+# Routine:	rollrec_default()
+#
+# Purpose:	Return the default rollrec file.
+#
+sub rollrec_default
+{
+	return($DEFAULT_ROLLREC);
+}
+
+
+#--------------------------------------------------------------------------
+#
 # Routine:	rollrec_init()
 #
 # Purpose:	Initialize the internal data.
@@ -805,6 +817,8 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a dnssec-tools rollrec file.
   rollrec_setval("portrigh.com","zonefile","db.portrigh.com");
 
   @rollrecfields = rollrec_fields();
+
+  $default_file = rollrec_default();
 
   rollrec_write();
   rollrec_close();
@@ -979,6 +993,10 @@ the I<Net::DNS::SEC::Tools::rollrec> interfaces again.
 
 This interface creates a new I<rollrec>.  The I<rollrec_name> field in the
 I<rollrec> is set to the values of the I<name> parameter.
+
+=head2 I<rollrec_default()>
+
+This routine returns the name of the default I<rollrec> file.
 
 =head1 ROLLREC DEBUGGING INTERFACES
 
