@@ -3,6 +3,7 @@
 #
 # This file implements rules to check DNSSEC record validity
 #
+
 name: DNSSEC_RRSIG_TTL_MATCH_ORGTTL
 desc: quote RFC here.
 level: 3
@@ -35,7 +36,13 @@ name: DNSSEC_NSEC_TTL
 desc: RFC3845: The NSEC RR SHOULD have the same TTL value as the SOA minimum TTL field.  This is in the spirit of negative caching [8].
 type: NSEC
 test:
-  $_[0]->ttl eq $nrecs{$current_domain}{'SOA'}[0]->minimum && 
+  $_[0]->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum && 
      "NSEC TTL for " . $_[0]->name . " (" . $_[0]->ttl . 
      ") does not match SOA MIN TTL (" . 
      $nrecs{$current_domain}{'SOA'}[0]->minimum . ")";
+
+# XXX: check details of all the NSEC records?
+#   - every record type exists which was listed in an NSEC
+#   - nsec next order is proper
+
+# XXX: check all sigs?
