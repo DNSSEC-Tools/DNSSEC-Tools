@@ -45,15 +45,9 @@ These functions are described in detail in the next section.
 
 The following files have been added to libspf2-1.0.4:
 
-    src/include/dnssec_validator.h: A placeholder for the DNSSEC
-				    validator API.
-
     src/include/spf_dns_dnssec.h:   The header file for the
 				    DNSSEC validation layer.
     
-    src/libspf2/dnssec_validator.c: A placeholder for the DNSSEC
-				    validator API.
-
     src/libspf2/spf_dns_dnssec.c:   Implementation of the DNSSEC
 				    validation layer.
 
@@ -136,7 +130,7 @@ application can use this to inform the user of the application about dnssec
 validation failure.
 
 
-Example: Use of dnssec-extensions to libspf2 in spfmilter-1.0.8
+Example: Use of dnssec-extensions to libspf2-1.0.4 in spfmilter-1.0.8
 ---------------------------------------------------------------
 
 The resolvers[] array in spfmilter-1.0.8 is used to store the libspf2
