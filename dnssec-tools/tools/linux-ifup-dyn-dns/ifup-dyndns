@@ -5,7 +5,7 @@
 # [ a patch should be sent to the initscripts maintainers to add this ]
 #
 #
-# Calling arguments available in ifcfg-DEV:
+# Calling arguments available in /etc/sysconfig/network-scripts/ifcfg-DEV:
 #
 # UPDATEDNS=yes
 #    enables this script to do its thing
@@ -17,6 +17,10 @@
 # UPDATEDNSNAME="NAME1 NAME2"
 #    updates this dns HOSTNAME (or multiple names).  If not specified, the
 #    output of hostname will be used.
+#
+# UPDATEAAAA=yes
+#    enables updating AAAA (IPv6 old style records) if a global IPv6
+#    has been assigned to the device.
 #
 # If a secure (via a TSIG key) transaction is to be used, then one of
 # these should be used (in order of precedence.  For simplicity, you
@@ -77,7 +81,12 @@ if [ "$UPDATEDNS" ] ; then
   # get the device's ip address
   #
   IPADDR=`LANG= LC_ALL= ifconfig ${DEVICE} | grep 'inet addr' |
-        awk -F: '{ print $2 } ' | awk '{ print $1 }'`
+       awk -F: '{ print $2 } ' | awk '{ print $1 }'`
+
+  if [ "$UPDATEAAAA" = "yes" ] ; then
+    IP6ADDR=`LANG= LC_ALL= ifconfig ${DEVICE} | grep 'inet6 addr' |
+          grep 'Global' | sed 's/.*addr: *//;s/\/.*//;'`
+  fi
 
   #
   # see if a key or a key file has been specified or is found
@@ -93,6 +102,10 @@ if [ "$UPDATEDNS" ] ; then
   fi
 
   for name in $UPDATEDNSNAME ; do
+
+    if [ "$UPDATEAAAA" = "yes" ] ; then
+        IP6AAAALINE="update add ${name}. $UPDATEDNSTTL IN AAAA $IP6ADDR"
+    fi
 
     #
     # allow for host-specific keys
@@ -111,6 +124,7 @@ if [ "$UPDATEDNS" ] ; then
     $NSUPDATE $LOCALKEYARGS <<EOF
 update delete ${name}.
 update add ${name}. $UPDATEDNSTTL IN A $IPADDR
+$IP6AAAALINE
 send
 EOF
 
