@@ -239,7 +239,7 @@ Index: src/libspf2/Makefile.am
 Index: src/libspf2/spf_result.c
 ===================================================================
 --- src/libspf2/spf_result.c	2005-02-03 13:04:50.000000000 -0500
-+++ src/libspf2/spf_result.c	2005-03-04 11:02:27.582335285 -0500
++++ src/libspf2/spf_result.c	2005-03-10 13:53:08.585760360 -0500
 @@ -222,6 +222,7 @@
      size_t	buf_len = SPF_RECEIVED_SPF_SIZE;
      
@@ -342,7 +342,7 @@ Index: src/libspf2/spf_result.c
 +	if ( p_end - p <= 0 ) return buf;
 +    }
 +
-+    if (!dnssecerr) {
++    if ((!dnssecerr) && (output.result != SPF_RESULT_NONE)){
 +	if (spfic->dodnssec) {
 +	    p += snprintf( p, p_end - p, " x-dnssec=\"pass\";");
 +	}

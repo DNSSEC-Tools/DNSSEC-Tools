@@ -25,7 +25,7 @@ Index: config.h.in
 Index: src/include/spf_server.h
 ===================================================================
 --- src/include/spf_server.h	2005-03-01 09:43:49.000000000 -0500
-+++ src/include/spf_server.h	2005-03-03 15:01:41.000000000 -0500
++++ src/include/spf_server.h	2005-03-10 13:50:57.434942031 -0500
 @@ -20,7 +20,6 @@
  
  #include "spf_record.h"
@@ -38,7 +38,7 @@ Index: src/include/spf_server.h
  
  	int				 sanitize;		/* limit charset in messages */
  	int				 debug;			/* print debug info */
-+        int                              dodnssec       /* perform DNSSEC validation */
++        int                              dodnssec;      /* perform DNSSEC validation */
  };
  
  typedef
@@ -169,7 +169,7 @@ Index: src/libspf2/spf_strerror.c
 Index: src/libspf2/spf_interpret.c
 ===================================================================
 --- src/libspf2/spf_interpret.c	2005-03-02 13:13:09.000000000 -0500
-+++ src/libspf2/spf_interpret.c	2005-03-04 11:18:01.047040911 -0500
++++ src/libspf2/spf_interpret.c	2005-03-10 13:49:52.091002282 -0500
 @@ -254,6 +254,13 @@
  	
  	char			*p, *p_end;
@@ -216,7 +216,7 @@ Index: src/libspf2/spf_interpret.c
 +		if (p_end - p <= 0) break;
 +
 +		if (firstdnssecerr) {
-+		    if (spf_server->dodnssec) {
++		    if ((spf_server->dodnssec) && (spf_response->result != SPF_RESULT_NONE)) {
 +			p += snprintf(p,p_end - p," x-dnssec=\"pass\";");
 +		    }
 +		    else {
