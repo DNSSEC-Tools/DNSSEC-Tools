@@ -28,11 +28,13 @@ Apply the spfmilter-1.0.8_dnssec_patch.txt patch found in this directory by:
 
 This will apply the patch and store the original files with a .orig suffix.
 
-Configure, compile and install spfmilter as per the instructions given in the
-spfmilter-1.0.8 distribution.  The only change is that instead of installing
-the original libspf2, you need to patch it with the libspf2-1.0.4_dnssec_patch
-in ../libspf2-1.0.4_dnssec_patch.txt.  For instructions on how to do this, see
-../libspf2-1.0.4_dnssec_howto.txt
+Before compiling, run 'autoconf' from the main spfmilter-1.0.8 directory to
+generate a new 'configure' file.  Then, configure, compile and install
+spfmilter as per the instructions given in the spfmilter-1.0.8 distribution.
+The only change is that instead of installing the original libspf2, you need
+to patch it with the libspf2-1.0.4_dnssec_patch given in
+../libspf2-1.0.4_dnssec_patch.txt, and then install libspf2.  For instructions
+on how to do this, see ../libspf2-1.0.4_dnssec_howto.txt
 
 
 Configuration
@@ -107,7 +109,9 @@ To Test
 1. Start spfmilter with the above dnssec patch applied
 2. Start sendmail with the appropriate configuration for spfmilter
 
-The following table gives a summary of the various scenarios.
+(I) Basic Scenarios: DNSSEC validation of the SPF Records
+---------------------------------------------------------
+The following table gives a summary of the basic scenarios.
 
 +-----------------------------+----------------+--------------+---------------+
 | Domain Characteristics      | Ignore Policy  | Warn Policy  | Reject Policy |
@@ -176,5 +180,22 @@ header or the sendmail maillog.
 
 reject policy: No DNSSEC validation error message will be added to the SPF
 mail header and the sendmail maillog.
+
+(II) Intermediate Scenarios: DNSSEC validation of the SPF Mechanisms
+--------------------------------------------------------------------
+(A) A
+
+(B) MX
+
+(C) EXISTS
+
+(D) PTR
+
+(E) INCLUDE
+
+(F) REDIRECT
+
+(III) Advanced Scenario: Use of DNSSEC in SPAM filtering
+--------------------------------------------------------
 
 ===============================================================================
