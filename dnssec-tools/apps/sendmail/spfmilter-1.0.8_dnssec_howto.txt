@@ -139,6 +139,7 @@ The following table gives a summary of the basic scenarios.
 
 			 Table 1: Basic Scenario Matrix
                          ==============================
+	 (A _/ indicates that the scenario has been tested successfully.)
 
 Scenario 1:
 -----------
@@ -184,7 +185,8 @@ mail header and the sendmail maillog.
 These scenarios test various SPF mechanisms.  In this case, the primary
 SPF record is signed.  However, the further records that it points to may
 or may not be signed.  It is assumed that the mail is sent from an
-IP address that is ultimately referenced by the DNS records.  However,
+IP address that is ultimately referenced by the DNS records i.e. in the
+absence of DNSSEC validation, the SPF result will be a PASS.  However,
 one or more intermediate DNS records may or may not be signed using DNSSEC.
 This gives rise to many interesting scenarios, some of which are enumerated
 in the following table along with their expected results.
@@ -192,47 +194,47 @@ in the following table along with their expected results.
 +-----------+-----------------+----------------+--------------+---------------+
 | Mechanism |   Conditions    | Ignore Policy  | Warn Policy  | Reject Policy |
 +-----------+-----------------+----------------+--------------+---------------+
-|           |                 |                |              |               |
+|           |                 |       _/       |     _/       |      _/       |
 |           | Signed A record |      PASS      |    PASS      |     PASS      |
 |     A     +-----------------+----------------+--------------+---------------+
-|           |                 |                |              |               |
+|           |                 |       _/       |     _/       |      _/       |
 |           | Unsigned A rec. |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 +-----------+-----------------+----------------+--------------+---------------+
-|           |                 |                |              |               |
+|           |                 |       _/       |      _/      |      _/       |
 |           | Signed MX rec.  |      PASS      |     PASS     |     PASS      |
 |    MX     +-----------------+----------------+--------------+---------------+
-|           |                 |                |              |               |
+|           |                 |       _/       |      _/      |      _/       |
 |           | Unsigned MX rec.|      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 +-----------+-----------------+----------------+--------------+---------------+
-|           |                 |                |              |               |
+|           |                 |       _/       |      _/      |      _/       |
 |           |Signed EXISTS rec|      PASS      |     PASS     |     PASS      |
 |  EXISTS   +-----------------+----------------+--------------+---------------+
-|           |    Unsigned     |                |              |               |
+|           |    Unsigned     |       _/       |      _/      |      _/       |
 |           | EXISTS record   |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 +-----------+-----------------+----------------+--------------+---------------+
-|           |Signed INCLUDE re|                |              |               |
+|           |Signed INCLUDE re|       _/       |      _/      |      _/       |
 |           |Signed A record  |      PASS      |     PASS     |     PASS      |
 |           +-----------------+----------------+--------------+---------------+
-|           |Signed INCLUDE re|                |              |               |
-|           |Unsigned A rec.  |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
+|           |Signed INCLUDE re|       _/       |      _/      |      _/       |
+|           |Unsigned MX rec. |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 +  INCLUDE  +-----------------+----------------+--------------+---------------+
-|           |Unsigned INCLUDE |                |              |               |
+|           |Unsigned INCLUDE |       _/       |      _/      |      _/       |
 |           |Signed A rec.    |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 |           +-----------------+----------------+--------------+---------------+
-|           |Unsigned INCLUDE |                |              |               |
-|           |Unsigned A rec.  |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
+|           |Unsigned INCLUDE |       _/       |      _/      |      _/       |
+|           |Unsigned MX rec. |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 +-----------+-----------------+----------------+--------------+---------------+
-|           |Signed REDIRECT  |                |              |               |
+|           |Signed REDIRECT  |       _/       |      _/      |      _/       |
 |           |Signed A record  |      PASS      |     PASS     |     PASS      |
 |           +-----------------+----------------+--------------+---------------+
-|           |Signed REDIRECT  |                |              |               |
-|           |Unsigned A rec.  |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
+|           |Signed REDIRECT  |       _/       |      _/      |      _/       |
+|           |Unsigned MX rec. |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 |  REDIRECT +-----------------+----------------+--------------+---------------+
-|           |Unsigned REDIRECT|                |              |               |
+|           |Unsigned REDIRECT|       _/       |      _/      |      _/       |
 |           |Signed A record  |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 |           +-----------------+----------------+--------------+---------------+
-|           |Unsigned REDIRECT|                |              |               |
-|           |Unsigned A rec.  |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
+|           |Unsigned REDIRECT|       _/       |      _/      |      _/       |
+|           |Unsigned MX rec. |      PASS      | MAIL/WARNING | NO-MAIL/ABORT |
 +-----------+-----------------+----------------+--------------+---------------+
 |           |                 |                |              |               |
 |           |                 |                |              |               |
@@ -243,6 +245,7 @@ in the following table along with their expected results.
 
 			 Table 2: Intermediate Scenario Matrix
 			 =====================================
+	 (A _/ indicates that the scenario has been tested successfully.)
 
 
 (III) Advanced Scenario: Use of DNSSEC in SPAM filtering
