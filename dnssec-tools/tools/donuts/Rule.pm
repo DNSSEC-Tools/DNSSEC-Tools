@@ -70,6 +70,13 @@ sub print_help {
     }
 }
 
+sub print_description {
+    my ($self) = @_;
+    printf STDERR wrap(sprintf("%-40s ", $self->{'name'}),
+		       " " x 41, $self->{'desc'} || "[no description]");
+    print STDERR "\n\n";
+}
+
 1;
 
 =head1 NAME
