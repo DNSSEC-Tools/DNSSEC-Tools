@@ -92,6 +92,8 @@ sub parseconfig
 		#
 		# Concatenate the remaining tokens, separated by a single
 		# space.  If we hit a comment character, we'll stop there.
+		# We could use join() instead of an explicit loop, but this
+		# way we get to have mid-line comments.
 		#
 		for(my $ind=0;$ind<$arrlen;$ind++)
 		{
@@ -122,3 +124,81 @@ sub parseconfig
 }
 
 1;
+
+#############################################################################
+
+=pod
+
+=head1 NAME
+
+DNSSEC::conf - DNSSEC tools configuration file routines.
+
+=head1 SYNOPSIS
+
+  use DNSSEC::conf;
+
+  %dtconf = parseconfig();
+
+  %dtconf = parseconfig("localzone.keyrec");
+
+=head1 DESCRIPTION
+
+The DNSSEC tools have a configuration file for commonly used values.  These
+values are the defaults for a variety of things, such as encryption algorithm
+and encryption key length.  B</etc/dnssec/tools.conf> is the path for the
+DNSSEC tools configuration file.  The I<DNSSEC::conf> module provides methods
+for accessing the configuration data in this file.
+
+The DNSSEC tools configuration file consists of a set of configuration value
+entries, with only one entry per line.
+Each entry has the "keyword value" format.  During parsing, the line is
+broken into tokens, with tokens being separated by spaces and tabs.  The
+first token in a line is taken to be the keyword.  All other tokens in that
+line are concatenated into a single string, with a space separating each token.
+The untokenized string is added to a hash table, with the keyword as the
+value's key.
+
+Comments may be included by prefacing them with the '#' or ';'
+comment characters.  These comments can encompass an entire line or may
+follow a configuration entry.  If a comment shares a line with an entry,
+value tokenization stops just prior to the comment character.
+
+An example configuration file follows:
+
+=over 4
+
+# Sample configuration entries.
+
+algorithm	rsasha1		# Encryption algorithm.
+ksk_length	1024		; KSK key length.
+
+=back
+
+=head1 CONFIGURATION INTERFACES
+
+=over 4
+
+=item I<parseconfig()>
+
+This routine reads and parses the system's DNSSEC tools configuration file.
+The parsed contents are put into a hash table, which is returned to the caller.
+
+=item I<parseconfig(conffile)>
+
+This routine reads and parses a caller-specified DNSSEC tools configuration
+file.  The parsed contents are put into a hash table, which is returned to
+the caller.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+zonesigner(1)
+
+DNSSEC::keyrec(3)
+
+=cut
