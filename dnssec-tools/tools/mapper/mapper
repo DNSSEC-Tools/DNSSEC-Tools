@@ -6,7 +6,6 @@ use Getopt::Std;
 use Data::Dumper;
 use strict;
 
-my %opts;
 my %nodes;
 my %nodesonce;
 my %rtypes;
@@ -18,10 +17,11 @@ my %opts = ( o => 'map.png', l => 'neato', w => 7*24*60*60);
 my ($zfile, $dname, $from, $to, $color);
 my $seccolor = "green2";
 my %dnames;
+my ($dorecords, %dorecords);
 
 my $time = time();
 
-getopts("Rgro:l:s:i:t:hL",\%opts);
+getopts("qgro:l:s:i:t:hLT:",\%opts);
 
 usage() if (exists($opts{'h'}));
 
@@ -77,40 +77,60 @@ if ($opts{'s'}) {
 }
 
 #
+# Collect record types we want to see, if specified, into an array.
+#
+if ($opts{'T'}) {
+    $dorecords = 1;
+    my @recs = split(/\s*,\s*/,$opts{'s'});
+    map { $dorecords{uc($_)} = 1 } @recs;
+}
+
+#
 # optionall print specific type data
 #
 my @labtypes;
 if ($opts{'t'}) {
-    my @labtypes = split(/\s*,\s*/,$opts{'t'});
+    @labtypes = split(/\s*,\s*/,$opts{'t'});
+    print join(",",@labtypes) . "here: $opts{t}\n";
     map { $_ = uc($_) } @labtypes;
+    print join(",",@labtypes) . "here: $opts{t}\n";
 }
 
 
+#
+# Create the graphviz module that will eventually create the display
+#
 my $g = GraphViz->new(layout => $opts{'l'},
 		      node => {'fontsize' => 10},
 		      edge => {'fontsize' => 10},
 		      no_overlap => 1,
 		     );
 
+#
+# Loop through each file and zone name and collect information
+#
 while ($#ARGV > -1) {
 
     $zfile = shift;
     $dname = shift;
 
-    print "loading file $zfile\n";
+#    print "loading file $zfile\n";
 
+    #
+    # Parse the file into an array
+    #
     my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $zfile,
 						origin => "$dname.",
 						soft_errors => 1,
 						on_error => \&my_err);
-    print "loaded file $zfile\n";
+#    print "loaded file $zfile\n";
 
     #
     # collect record types for each node
     #
     foreach my $rr (@$rrset) {
 	# collect record types
-	$rtypes{$rr->name}{$rr->type} = $rr->string;
+	$rtypes{$rr->name}{$rr->type} = $rr->rdatastr;
     }
 
     #
@@ -124,8 +144,11 @@ while ($#ARGV > -1) {
     foreach my $rr (@$rrset) {
 #	    print $rr->string, "\n";
 #	    print "  ",join(" -> ", $rr->name, $rr->class, $rr->type),"\n";
+
+	# skip any records we've been asked to skip in some way
 	next if ($opts{'i'} && $rr->name =~ /$opts{'i'}/);
 	next if ($skiprecords{$rr->type});
+	next if ($dorecords && !$dorecords{$rr->type});
 	my $name = $rr->name;
 
 	#
@@ -151,18 +174,19 @@ while ($#ARGV > -1) {
 	    do_node($to, $rr->type);
 	}
 
+	# Process DNSsec keys specially to check for lifetime validity.
 	if ($rr->type eq 'RRSIG') {
 	    use Date::Parse;
 	    my $date = $rr->sigexpiration;
 	    $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
 	    my $extime = str2time($date);
 	    if ($extime < $time) {
-		print "error: $to\n";
+		print "error: $to\n" if (!$opts{'q'});
 		do_node($to, 'RRSIGERR');
 	    } elsif ($extime - $time < $opts{'w'}) {
-		print "warn: $to\n";
 		my $days = int(($extime-$time)/60/60/24);
 		my $hours = int(($extime-$time-$days*60*60*24)/60/60);
+		print "warn: $to in ${days}d ${hours}h\n" if (!$opts{'q'});
 		do_node($to, 'RRSIGWARN',
 			$rr->typecovered . ": ${days}d ${hours}h");
 	    }
@@ -181,45 +205,66 @@ while ($#ARGV > -1) {
 }
 
 #
-# add legend
-#
-if ($opts{'L'}) {
-    do_node('Legend','');
-    my @etypes = @edgetypes;
-    foreach my $k (@nodetypes, 'default') {
-	do_node($k, $k,'','Legend');
-	my $etype = shift @etypes;
-	do_edge('Legend', $k, $etype, $etype);
-    }
-}
-
-#
 # add nodes and edges
 #
-my ($k, $v, $parms);
+my ($k, $v, $parms, %edgecombohash, %nodetypesused);
 foreach my $e1 (keys(%edges)) {
     add_once($g, $e1);
     foreach my $e2 (keys(%{$edges{$e1}})) {
 	add_once($g, $e2);
-	$parms = get_parms($edges{$e1}{$e2}, \%edgeparameters);
+	$parms = get_parms($edges{$e1}{$e2}, \%edgeparameters, \%edgecombohash);
 	my $label = $edgelabels{$e1}{$e2};
 	$g->add_edge($e1, $e2, label => $label, %$parms);
     }
 }
 
+#
+# add legend
+#
+if ($opts{'L'}) {
+
+    add_once($g, 'Legend');
+    my @tmpntypes = keys(%nodetypesused);
+    foreach my $k (@tmpntypes) {
+	my @types = split(/,/, $k);
+	$parms = get_parms(\@types, \%nodeparameters);
+	my $l = $k;
+	$l =~ s/,/\n/g;
+	add_once($g, $k, label => $l, %{$parms});
+	$g->add_edge('Legend',$k);
+    }
+
+    my @tmpnodes = (@nodetypes, 'defaurt');
+    foreach my $k (keys(%edgecombohash)) {
+	my @types = split(/,/, $k);
+	$parms = get_parms(\@types, \%edgeparameters);
+	my $type = shift @tmpnodes;
+	$g->add_edge('Legend', $type, label => $k, %$parms);
+    }
+}
+
+#
+# write the final resulting file
+#
 open (O, ">" . $opts{'o'});
 print O $g->as_png;
 close(O);
 
 sub get_parms {
-    my ($array, $hash) = @_;
-    my $parms;
-
+    my ($array, $hash, $combohash) = @_;
+    my ($parms, %used);
+    my $lab;
     foreach my $et ('default', @$array) {
 	next if (!$et);
+	
 	while (($k, $v) = each %{$hash->{$et}}) {
 	    $parms->{$k} = $v;
+	    $used{$k} = $et if ($et ne 'default');
 	}
+    }
+    if ($combohash) {
+	$lab = join(",",sort values(%used));
+	$combohash->{$lab} = 1 if ($lab);
     }
     return $parms;
 }
@@ -239,7 +284,7 @@ sub add_once {
 
     if (!$nodesonce{$node}) {
 	my $l = get_label($node);
-	$parms = get_parms($nodes{$node}, \%nodeparameters);
+	$parms = get_parms($nodes{$node}, \%nodeparameters, \%nodetypesused);
 	$g->add_node($node, label => $l, style => 'filled', %$parms, @opts);
 	$nodesonce{$node} = 1;
     }
@@ -285,7 +330,7 @@ sub get_label {
     }
     if ($#labtypes > -1) {
 	foreach my $l (@labtypes) {
-	    $label .= $rtypes{$name}{$l};
+	    $label .= "\n$l: " . $rtypes{$name}{$l} if ($rtypes{$name}{$l});
 	}
     }
     return $label;
@@ -299,3 +344,134 @@ $0 [-h] [-r] [-R] [-o MAP.PNG] [-l (neato|dot|twopi)] [-s SKIPRECORDS]
 ";
     exit;
 }
+
+=pod
+
+=head1 NAME
+
+mapper - Create PNG maps of DNS zone data
+
+=head1 SYNOPSIS
+
+This application creates a graphical PNG map of one or more zone files.
+
+=head1 DESCRIPTION
+
+The output gives a graphical reperesation of a dns zone or zones.  The
+result can be useful for getting a more intuiative view of a zone or
+set of zones.  It is extremely useful for visualizing DNSsec
+deployment within a given zone as well as to help discover problematic
+spots.
+
+=head1 OPTIONS
+
+=over
+
+=item -h
+
+Help summary.
+
+=item -o OUTFILE.png
+
+Saves the results to a given filename (default = "map.png")
+
+=item -r
+
+Lists resources records assigned to each node within the map.
+
+=item -t TYPE,TYPE...
+
+Adds the data portion of a resource record to the displayed node
+information.  Data types passed will be automatically upper-cased for
+ease of use.  Example usage: I<-t A> will add record IPv4 addresses to
+all displayed nodes that have A records.
+
+=item -L
+
+Adds a legend to the map.
+
+=item -l (neato|dot|twopi)
+
+Selects a layout format.  The default is I<neato> which is circular in
+pattern.  See the documentation on the I<graphviz> package and the
+I<GraphViz> perl module for further details.
+
+=item -w WARNTIME
+
+How far in advance (in seconds) that warnings are turned on for signed
+resource records that are about to expire.  The default is 7 days
+worth of seconds.
+
+=item -i REGEX
+
+Ignore record types matching a I<REGEX> regular expression.
+
+=item -s TYPE,TYPE...
+
+Skips a list of types from being analyzed/displayed in the MAP.  By
+default, this is set to NSEC and CNAME in order to reduce clutter a
+bit.  Setting it to "" will display these results again.  Or it can be
+set to any comma seperated list of record types to ignore to leave
+out.
+
+=item -T TYPE,TYPE...
+
+Only process record types of type I<TYPE>.  This is sort of the converse
+option to -s.  You probably don't want to use both.  They will both
+work at once, however, so if -T specifies a type which -s excludes, it
+will not be shown.
+
+=item -g
+
+Attempts to cluster nodes around the domain name.  For 'dot' layouts,
+this actually means drawing a box around the cluster.  For the other
+types, it makes very little if any difference.
+
+=item -q
+
+Don't output warnings/errors about records that have DNSsec signatures
+that are near or beyond their signature lifetimes.
+
+=back
+
+=head1 EXAMPLE INVOCATIONS
+
+=over
+
+=item I<mapper -s cname,nsec -i dhcp -L zonefile zone.com>
+
+Writes to the default file named I<map.png>. of a I<zone.com> zone
+stored in I<zonefile>.  It excludes any hosts with a name containing
+I<dhcp> and ignores any record types of I<cname> or I<nsec>.  It also
+includes a legend in the output.
+
+=item I<mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...>
+
+Removes a lot of records from the display in order to display mostly a
+map of a zone hierarchy.
+
+=item I<mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...>
+
+The same thing, but draws a more vertical tree-style graph of the
+zone.  This works well for fairly deep but narrow hierarchies.  Tree
+style diagrams rarely look as nice for full zones (they're very
+large).
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2004 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker <hardaker@users.sourceforge.net>
+
+=head1 SEE ALSO
+
+Net::DNS
+
+http://dnssec-tools.sourceforge.net/
+
+=cut
