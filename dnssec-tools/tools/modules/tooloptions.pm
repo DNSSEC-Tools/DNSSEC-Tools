@@ -39,13 +39,18 @@ my @stdopts =
 (
 	"algorithm=s",			# Encryption algorithm
 	"endtime=s",			# End-time for signed zone.
+	"gends",			# Generate DS records.
 	"help",				# Give a usage message and exit.
 	"keyrec=s",			# Keyrec name.
+	"kgopts=s",			# Additional options for dnssec-keygen.
 	"krfile=s",			# Keyrec file.
 	"kskkey=s",			# KSK key.
 	"ksklength=i",			# Length of KSK.
 	"kskpath=s",			# Path to KSK.
 	"random=s",			# Random number generator.
+	"reuseksk",			# Reuse KSK.
+	"reusezsk",			# Reuse ZSK.
+	"szopts=s",			# Additional dnssec-signzone options.
 	"verbose+",			# Verbose flag.
 	"zone=s",			# Zone name.
 	"zdata=s",			# Zone data filename.
