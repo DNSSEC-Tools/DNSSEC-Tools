@@ -14,9 +14,14 @@ use strict;
 my %opts = (l => 5,
 	    r => '/usr/share/dnslint.rules.pl');
 
-my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs);
+my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
+    @ignorelist);
 
-getopts("hvl:r:", \%opts) || usage();
+getopts("hvl:r:i:", \%opts) || usage();
+
+if ($opts{'i'}) {
+    @ignorelist = split(/,\s*/, $opts{'i'});
+}
 
 usage() if ($opts{'h'});
 
@@ -62,7 +67,7 @@ while ($#ARGV > -1) {
 	foreach my $r (@rules) {
 	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
 		(!exists($r->{'type'}) || $rec->type eq $r->{'type'}) &&
-		(!exists($r->{'type'}) || $r->{'ruletype'} ne 'name')) {
+		(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
 		my $res = $r->{'test'}->($rec, $r);
 		if ($res) {
 		    print_error($r, $res,
@@ -81,7 +86,7 @@ while ($#ARGV > -1) {
     foreach my $namerec (keys(%nrecs)) {
 	foreach my $r (@rules) {
 	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
-		(exists($r->{'ruletype'}) && $r->{'ruletype'} ne 'name')) {
+		(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
 		my $res = $r->{'test'}->($nrecs{$namerec}, $r, $namerec);
 		if ($res) {
 		    print_error($r, $res, "$current_zone_file::$namerec");
@@ -112,6 +117,15 @@ sub print_error {
 
 sub add_rule {
     my $rule = shift;
+
+    # ignore certain rules
+    if ($opts{'i'}) {
+	foreach my $i (@ignorelist) {
+	    if ($rule->{'name'} =~ /$i/) {
+		return;
+	    }
+	}
+    }
 
     # merge in default values
     my %defaultrule = ( level => 5 );
@@ -170,7 +184,7 @@ sub parse_rule_file {
 	    # if error, mention it
 	    if ($@) {
 		warn "broken code in rule: $@";
-		print STDERR "IN CODE: $code\n" if ($opts{'v'});
+		print STDERR "IN CODE:\n  $code\n" if ($opts{'v'});
 		$err = 1;
 	    }
 	    $nextline = $_ if (!/^\s/);
@@ -207,7 +221,8 @@ DoNutS - analyze DNS zone files for errors and warnings
 
 =head1 SYNOPSIS
 
-./donuts [-h] [-v] [-l LEVEL] [-r RULEFILES] ZONEFILE DOMAINNAME...
+./donuts [-h] [-v] [-l LEVEL] [-r RULEFILES] [-i IGNORELIST]
+         ZONEFILE DOMAINNAME...
 
 =head1 DESCRIPTION
 
@@ -237,6 +252,13 @@ You probably want to run no higher than level 8.
 
 A comma-seperated list of rule files to load.  The strings will be
 passed to glob() so * wildcards can be used to specify multiple files.
+
+=item -i IGNORELIST
+
+A common seperated list of regex paterns which are checked against
+rule names to determine if some should be ignored.  Run with -v to
+figure out rule names if you're not sure which rule is generating
+errors you don't wish to see.
 
 =back
 
