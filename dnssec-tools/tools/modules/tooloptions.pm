@@ -35,7 +35,7 @@ my @stdopts =
 	"ksklength=i",			# Length of KSK.
 	"kskpath=s",			# Path to KSK.
 	"random=s",			# Random number generator.
-	"v+",				# Verbose flag.
+	"verbose+",			# Verbose flag.
 	"zone=s",			# Zone name.
 	"zskkey=s",			# ZSK key.
 	"zsklength=i",			# Length of ZSK.
