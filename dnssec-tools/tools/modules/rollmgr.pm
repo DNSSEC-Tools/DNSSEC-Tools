@@ -23,9 +23,9 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
 		 rollmgr_dir
-		 rollmgr_droppid
-		 rollmgr_getpid
 		 rollmgr_pidfile
+		 rollmgr_getpid
+		 rollmgr_droppid
 		 rollmgr_rmpid
 		 rollmgr_qproc
 		 rollmgr_halt
@@ -275,7 +275,17 @@ sub rollmgr_getpid
 #
 sub rollmgr_qproc
 {
-	print "rollmgr_qproc:  down in\n";
+	my $pid;				# Roll-over manager's pid.
+	my $ret;				# Return code from kill().
+
+# print "rollmgr_qproc:  down in\n";
+	$pid = rollmgr_getpid(1);
+
+	$ret = kill('HUP',$pid);
+
+# print "rollmgr_qproc:  kill(HUP,$pid) returned - $ret";
+
+	return($ret);
 }
 
 #--------------------------------------------------------------------------
