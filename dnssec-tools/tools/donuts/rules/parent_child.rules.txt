@@ -54,9 +54,3 @@ test:
   return "Child zone has no DNSKEY records for $dsrr->{name}" if ($#KEYs == -1);
   map { return if ($_->flags & 0x100 && $dsrr->verify($_)); } @KEYs;
   return "DS record for $dsrr->{name} does not have a matching DNSKEY record in the live child zone";
-
-# XXX: check parent has DS record for this zone
-
-# XXX: check that child has key matching DS records in this zone.
-
-# XXX: check that a parent has a DS record matching every DNSKEY
