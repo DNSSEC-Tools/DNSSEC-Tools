@@ -15,13 +15,13 @@
 #
 #
 
-package Net::DNS::SEC::DNSSECTools::tooloptions;
+package Net::DNS::SEC::Tools::tooloptions;
 
 require Exporter;
 use strict;
 
-use Net::DNS::SEC::DNSSECTools::conf;
-use Net::DNS::SEC::DNSSECTools::keyrec;
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::keyrec;
 
 use Getopt::Long;
 
@@ -531,11 +531,11 @@ sub opts_drop
 
 =head1 NAME
 
-DNSSEC::tooloptions - dnssec-tools option routines.
+Net::DNS::SEC::Tools::tooloptions - dnssec-tools option routines.
 
 =head1 SYNOPSIS
 
-  use DNSSEC::tooloptions;
+  use Net::DNS::SEC::Tools::tooloptions;
 
   $keyrec_file = "portrigh.keyrec";
   $keyrec_name = "Kportrigh.com.+005+10988";
@@ -585,7 +585,7 @@ suite.  These options may have defaults set in the
 B</etc/dnssec/dnssec-tools.conf> configuration file, in a I<keyrec> file,
 from command-line options, or from any combination of the three.  In order
 to enforce a common sequence of option interpretation, all dnssec-tools should
-use the I<DNSSEC::tooloptions()> routine to initialize its options.
+use the I<Net::DNS::SEC::Tools::tooloptions()> routine to initialize its options.
 
 The I<keyrec_file> argument specifies a I<keyrec> file that will be consulted.
 The I<keyrec> named by the I<keyrec_name> argument will be loaded.  If no
@@ -815,9 +815,9 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 zonesigner(1)
 
-DNSSEC::conf(3), DNSSEC::keyrec(3), Getopt::Long(3)
+Net::DNS::SEC::Tools::conf(3), Net::DNS::SEC::Tools::keyrec(3), Getopt::Long(3)
 
-DNSSEC::keyrec(5)
+Net::DNS::SEC::Tools::keyrec(5)
 
 
 =head1 TODO

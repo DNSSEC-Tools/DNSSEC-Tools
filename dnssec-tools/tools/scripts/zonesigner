@@ -31,8 +31,8 @@
 
 use strict;
 
-use Net::DNS::SEC::DNSSECTools::keyrec;
-use Net::DNS::SEC::DNSSECTools::tooloptions;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
 
 
 #
@@ -628,7 +628,7 @@ The default value is 259200 seconds (30 days.)
 =item -krfile
 
 I<keyrec> file to use in processing options.  See the man page for
-I<DNSSEC::tooloptions> for more details about this file.
+I<Net::DNS::SEC::Tools::tooloptions> for more details about this file.
 
 =item -keyrec
 
@@ -653,6 +653,6 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-DNSSEC::conf.pm(3), DNSSEC::keyrec.pm(3), DNSSEC::tooloptions.pm(3)
+Net::DNS::SEC::Tools::conf.pm(3), Net::DNS::SEC::Tools::keyrec.pm(3), Net::DNS::SEC::Tools::tooloptions.pm(3)
 
 =cut
