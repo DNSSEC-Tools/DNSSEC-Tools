@@ -1,3 +1,4 @@
+# -*- mmm-classes: donuts-perl -*-
 # Copyright 2004 Sparta, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 #
@@ -300,7 +301,6 @@ test:
 
 # XXX: section 6.3 Paragraph 2 says no identical RR sets should exist.  check for this?
 
-# XXX: protocol:2.2 double check that no RRSIGs are signed?
 # XXX: protocol:2.2 zone apex NS record MUST be signed
 # XXX: protocol 2.2: There MUST be an RRSIG for each RRset using at least one DNSKEY of each algorithm in the zone apex DNSKEY RRset. (currently we don't check each alg must be used)
 # XXX: prococol 2.2: The apex DNSKEY RRset itself MUST be signed by each algorithm appearing in the DS RRset located at the delegating parent (if any).
