@@ -10,7 +10,7 @@ print MF <<EOF;
 # This is a makefile for the test directory of the dnssec-tools perl modules.
 #
 
-TESTFILES=	isles.keyrec	\\
+TESTFILES=	portrigh.keyrec		\\
 		tools.conf
 
 all:
