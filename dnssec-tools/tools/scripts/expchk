@@ -1,0 +1,444 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# expchk
+#
+#	This script checks a keyrec file for expired zones.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+# Time-related "constants" and variables.
+#
+my $DAY	  = (24 * 60 * 60);		# Seconds in a day.
+
+my $curtime;				# Current time.
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"all",				# Report state of all zones.
+	"expired",			# Report expired zones.  (default)
+	"valid",			# Report unexpired zones.
+	"warn=i",			# Warn on expire in N days.
+	"zone=s",			# Only check specified zone keyrec.
+
+	"count",			# Give count of expired/valid keyrecs.
+	"help",				# Give a usage message and exit.
+);
+
+my $allflag	= 0;			# Report on all zones.
+my $cntflag	= 0;			# Only report count of matching zones.
+my $expiredflag	= 0;			# Report on expired zones.
+my $validflag	= 0;			# Report on valid zones.
+my $warndays	= 0;			# Warn on expire in N days.
+my $zone	= "";			# Only report on this zone
+
+my $count   = 0;			# Matching-zones count.
+
+
+my @krnames;				# List of keyrecs in the file.
+
+my %zones = ();				# Names of zone keyrecs.
+
+main();
+exit(0);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# Purpose:	Staging area.
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	#
+	# Get our options.
+	#
+	doopts();
+
+	#
+	# Check our watch.
+	#
+	$curtime = time();
+
+	#
+	# Read the keyrec files.
+	#
+	while($argc > 0)
+	{
+		getkeyrecs($ARGV[0]);
+		shift @ARGV;
+		$argc = @ARGV;
+	}
+
+	#
+	# Check the zones.
+	# 
+	zonechecks();
+
+	print("$count matching zones\n") if($cntflag);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	doopts()
+#
+# Purpose:	This routine deals with the command's options.  It checks
+#		several special conditions:
+#
+#			- A warning is given if -warn is given only with
+#			  -expired.
+#
+#			- If -all is given, set internal variables to
+#			  indicate the both valid and expired zones will
+#			  be checked.
+#
+sub doopts
+{
+	my $argc;			# Number of command line arguments.
+
+	#
+	# Check our options.
+	#
+	GetOptions(\%options,@opts);
+	$allflag	= $options{'all'};
+	$expiredflag	= $options{'expired'};
+	$validflag	= $options{'valid'};
+	$warndays	= $options{'warn'};
+	$zone		= $options{'zone'};
+	$cntflag	= $options{'count'};
+
+	usage() if(defined($options{'help'}));
+
+	#
+	# -warn is ignored when used only with -expire.
+	#
+	if(($warndays > 0) && $expiredflag && !$validflag)
+	{
+		print STDERR "warning:  -warn is ignored when used with -expired\n";
+		$warndays = 0;
+	}
+
+	#
+	# If -all was given, set flags to indicate all data should be shown.
+	#
+	if($allflag)
+	{
+		$expiredflag = 1;
+		$validflag   = 1;
+	}
+
+	#
+	# If a specific check wasn't requested, we'll default to
+	# an expired-zone check.
+	#
+	if(($expiredflag == 0) && ($validflag == 0))
+	{
+		$expiredflag = 1;
+	}
+
+	#
+	# Ensure we were given at least one keyrec file to peruse.
+	#
+	$argc = @ARGV;
+	usage() if($argc == 0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getkeyrecs()
+#
+# Purpose:	Load the zone information from the specified keyrec files.
+#
+sub getkeyrecs
+{
+	my $krfile = shift;			# Keyrec file.
+
+	keyrec_read($krfile);
+
+	@krnames = keyrec_names();
+
+	#
+	# Go through each keyrec name, save off the records for each
+	# zone keyrec.
+	#
+	foreach my $krn (sort(@krnames))
+	{
+		my $kr;				# Reference to keyrec.
+		my %keyrec;			# Keyrec.
+		my $type;			# Keyrec's type.
+
+		$kr = keyrec_fullrec($krn);
+		%keyrec = %$kr;
+
+		$type = $keyrec{'keyrec_type'};
+
+		$zones{$krn} = $kr if($type eq 'zone');
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zonechecks()
+#
+# Purpose:	This routine checks if a zone is expired or not.  The
+#		whole set of loaded zones are checked, unless the user
+#		specified a specific zone to check.
+#
+sub zonechecks
+{
+	my @fields = keyrec_keyfields();	# Valid key fields.
+
+	#
+	# Make sure the keyrec file had some zone keyrecs.
+	#
+	if(length(%zones) == 0)
+	{
+		print STDERR "no zones defined\n";
+		return;
+	}
+
+	#
+	# If a zone name wasn't given on the command line, we'll go through
+	# all the zones in the specified keyrec files.  If a zone name was
+	# given, we'll only look at that zone.
+	# 
+	if($zone eq "")
+	{
+		my $zonename;			# Zone name for looping.
+
+		#
+		# Go through the whole set of zones.
+		#
+		foreach $zonename (sort(keys(%zones)))
+		{
+			checkexpire($zonename);
+		}
+	}
+	else
+	{
+		#
+		# Look at the user-specified zone, but only if it's actually
+		# defined in the keyrec files we were given.
+		#
+		if(defined($zones{$zone}))
+		{
+			checkexpire($zone);
+		}
+		else
+		{
+			print STDERR "zone $zone not defined in specified keyrec files\n";
+		}
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	checkexpire()
+#
+# Purpose:	This routine performs the actual expiration check.  It
+#		compares the sign date and end-time from the zone's keyrec
+#		with the current timestamp.  If the -warn flag was given,
+#		then an additional check is made for valid zones to find
+#		if the expiration date is within a user-specified number
+#		of days.
+#
+sub checkexpire
+{
+	my $zonename = shift;			# Zone name for looping.
+
+	my $zkrref;				# Zone keyrec reference.
+	my %zkr;				# Zone keyrec.
+	my $endtime;				# Zone's endtime.
+	my $signsecs;				# Zone's sign date.
+
+	my $secs;				# Seconds in "+nnn" endtime.
+	my $days;				# Days until zone expiration.
+	my $daystr = "days";			# Days string.
+	my $finaltime;				# Time zone expires.
+
+	#
+	# Get the zone's times.
+	#
+	$zkrref = $zones{$zonename};
+	%zkr	= %$zkrref;
+	$endtime  = $zkr{'endtime'};
+	$signsecs = $zkr{'keyrec_signsecs'};
+
+	#
+	# Ensure that the keyrec's signing date is older than the
+	# current time.
+	#
+	if($signsecs > $curtime)
+	{
+		print STDERR "bizarre time:  $zonename sign date more recent than current date\n";
+		return;
+	}
+
+	#
+	# Get the number of seconds until the keyrec's end time and
+	# calculate the keyrec's expiration date.
+	#
+	if($endtime =~ /^+/)
+	{
+		$endtime =~ /\+([0-9]+)/;
+		$secs = $1;
+	}
+	$finaltime = $signsecs + $secs;
+
+	#
+	# Give an appropriate message if the zone is valid or expired.
+	# The message will be given depending on the appropriate command
+	# line option having been given.  We also might give a message
+	# if the zone is valid but close expiration.
+	#
+	if($finaltime <= $curtime)
+	{
+		if($expiredflag == 1)
+		{
+			$secs = $curtime - $finaltime;
+			$days = int($secs / $DAY);
+			$daystr = "day" if ($days == 1);
+			print "$zonename expired $days $daystr ago\n" if(!$cntflag);
+			$count++;
+		}
+	}
+	else
+	{
+		#
+		# If the zone has expired, we'll (maybe) give a message
+		# about it.
+		#
+		if($validflag == 1)
+		{
+			#
+			# Figure out how many days are left until expiration.
+			#
+			$secs = $finaltime - $curtime;
+			$days = int($secs / $DAY);
+			$daystr = "day" if ($days == 1);
+
+			#
+			# Check if the keyrec will soon expire.
+			#
+			if($days <= $warndays)
+			{
+				print "$zonename valid:  expires in $days $daystr\n" if(!$cntflag);
+			}
+			else
+			{
+				print "$zonename valid\n" if(!$cntflag);
+			}
+			$count++;
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  expchk [options] <keyrec files>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-all		show all zones\n";
+	print STDERR "\t\t-expired	show expired zones\n";
+	print STDERR "\t\t-valid		show valid zones\n";
+	print STDERR "\t\t-warn <num>	warn if expiration in <num> days\n";
+	print STDERR "\t\t-zone <name>	show the specified zone only\n";
+	print STDERR "\t\t-count		only show the count of matching zones\n";
+	print STDERR "\t\t-help		display this help message\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+expchk - Check a dnssec-tools I<keyrec> file for expired zoned.
+
+=head1 SYNOPSIS
+
+  expchk -all -expired -valid -warn numdays -zone zonename -count -help keyrec_files
+
+=head1 DESCRIPTION
+
+B<expchk> checks a set of I<keyrec> files to determine if the zone I<keyrec>s
+are valid or expired.  The type of zones displayed depends on the options
+chosen; if no options are given the expired zones will be listed.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -all
+
+Display expiration information on all zones, expired or valid, in the
+specified I<keyrec> files.
+
+=item -expired
+
+Display expiration information on the expired zones in the specified
+I<keyrec> files.  This is the default action.
+
+=item -valid
+
+Display expiration information on the valid zones in the specified
+I<keyrec> files.
+
+=item -warn numdays
+
+A warning will be given for each valid zone that will expire in I<numdays>
+days.  This option has no effect on expired zones.
+
+=item -zone zonename
+
+Display expiration information on the zone specified in I<zonename>.
+
+=item -count
+
+Only the count of matching zones (valid or expired) will be given.  If both
+types of zones are selected, then the count will be the number of zones in the
+specified I<keyrec> files.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::keyrec.pm(3)
+
+=cut
