@@ -30,7 +30,7 @@
 #
 #		key "Kportrigh.com.+005+26000"
 #			zonename	"portrigh.com"
-#			type		"ksk"
+#			keyrec_type	"ksk"
 #			algorithm	"rsasha1"
 #			length		"1024"
 #			random		"-r /dev/urandom"
@@ -46,7 +46,7 @@ use strict;
 # Fields in a key keyrec.
 #
 my @KEYFIELDS = (
-			'type',
+			'keyrec_type',
 			'algorithm',
 			'random',
 			'kskdirectory',
@@ -161,7 +161,7 @@ sub keyrec_read
 		# and a number of punctuation characters.  The value *must*
 		# be enclosed in double quotes.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
 		$keyword = $1;
 		$value = $2;
 #		print "keyrec_read:  keyword <$keyword>\t\t<$value>\n";
@@ -315,7 +315,7 @@ sub keyrec_setval
 		#
 		# Dig out the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
 		$krtype = $1;
 		$krname = $2;
 
@@ -351,7 +351,7 @@ sub keyrec_setval
 		#
 		# Get the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_., ]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
 		$lkw = $1;
 		$lval = $2;
 
@@ -397,7 +397,7 @@ sub keyrec_setval
 	#
 	if($found)
 	{
-		$keyreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_., ]+)"/"$val"/;
+		$keyreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]+)"/"$val"/;
 	}
 	else
 	{
@@ -510,6 +510,8 @@ sub keyrec_add
 		%fields = %$flds;
 		foreach my $fn (@getfields)
 		{
+			my $spacing = "\t\t";	# Spacing string.
+
 			#
 			# Only add the timestamp at the end, and only
 			# add the timestamp we're going to put in.
@@ -532,20 +534,26 @@ sub keyrec_add
 			# Special case for keys:  Only give the key length
 			# for the key's type.
 			#
-			if((($fields{'type'} eq 'zsk') &&
+			if((($fields{'keyrec_type'} eq 'zsk') &&
 			    ($fn eq 'ksklength'))		||
-			   (($fields{'type'} eq 'ksk') &&
+			   (($fields{'keyrec_type'} eq 'ksk') &&
 			    ($fn eq 'zsklength')))
 			{
 				next;
 			}
 
 			#
+			# Drop back to a single tab between key and value
+			# if the key name is long.
+			#
+			$spacing = "\t"    if(length($fn) > 7);
+
+			#
 			# Add the field to the hash table and to the keyrec
 			# file contents array.
 			#
 			$keyrecs{$krname}{$fn} = $fields{$fn};
-			$keyreclines[$keyreclen] = "\t$fn\t\t\"$fields{$fn}\"\n";
+			$keyreclines[$keyreclen] = "\t$fn$spacing\"$fields{$fn}\"\n";
 			$keyreclen++;
 		}
 	}
