@@ -1,6 +1,6 @@
 Index: src/include/dnssec_validator.h
 ===================================================================
---- src/include/dnssec_validator.h	2004-12-06 17:31:52.248454459 -0500
+--- src/include/dnssec_validator.h	2004-12-06 17:31:52.000000000 -0500
 +++ src/include/dnssec_validator.h	2004-11-26 16:42:28.000000000 -0500
 @@ -0,0 +1,18 @@
 +/*
@@ -23,8 +23,8 @@ Index: src/include/dnssec_validator.h
 +#endif
 Index: src/include/spf_dns_dnssec.h
 ===================================================================
---- src/include/spf_dns_dnssec.h	2004-12-06 17:32:57.054605374 -0500
-+++ src/include/spf_dns_dnssec.h	2004-12-03 10:11:28.000000000 -0500
+--- src/include/spf_dns_dnssec.h	2004-12-06 17:32:57.000000000 -0500
++++ src/include/spf_dns_dnssec.h	2004-12-24 20:53:20.078077648 -0500
 @@ -0,0 +1,40 @@
 +/* 
 + * Copyright SPARTA, Inc. 2004.  All rights reserved.
@@ -68,7 +68,7 @@ Index: src/include/spf_dns_dnssec.h
 +#endif /* INC_SPF_DNS_DNSSEC */
 Index: src/include/Makefile.am
 ===================================================================
---- src/include/Makefile.am	2004-12-06 17:32:38.561131131 -0500
+--- src/include/Makefile.am	2004-12-06 17:32:38.000000000 -0500
 +++ src/include/Makefile.am	2004-11-26 16:59:01.000000000 -0500
 @@ -5,7 +5,7 @@
  includedir = ${prefix}/include/spf2
@@ -82,7 +82,7 @@ Index: src/include/Makefile.am
 +		spf_win32_internal.h spf_win32.h spf_dns_windns.h dnssec_validator.h
 Index: src/include/spf.h
 ===================================================================
---- src/include/spf.h	2004-12-06 17:33:42.517394596 -0500
+--- src/include/spf.h	2004-12-06 17:33:42.000000000 -0500
 +++ src/include/spf.h	2004-12-03 16:04:23.000000000 -0500
 @@ -89,7 +89,8 @@
  #define SPF_E_BAD_HOST_IP	27	/* Invalid hostname (possibly an IP address?) */
@@ -96,7 +96,7 @@ Index: src/include/spf.h
  /* ********************************************************************* */
 Index: src/include/spf_dns.h
 ===================================================================
---- src/include/spf_dns.h	2004-12-06 17:33:23.531988517 -0500
+--- src/include/spf_dns.h	2004-12-06 17:33:23.000000000 -0500
 +++ src/include/spf_dns.h	2004-12-03 16:13:29.000000000 -0500
 @@ -100,8 +100,11 @@
  #endif
@@ -114,7 +114,7 @@ Index: src/include/spf_dns.h
   * bundle up the info needed to use a dns method
 Index: src/libspf2/spf_get_spf.c
 ===================================================================
---- src/libspf2/spf_get_spf.c	2004-12-06 17:35:35.935890982 -0500
+--- src/libspf2/spf_get_spf.c	2004-12-06 17:35:35.000000000 -0500
 +++ src/libspf2/spf_get_spf.c	2004-12-03 16:12:47.000000000 -0500
 @@ -49,6 +49,7 @@
      
@@ -178,7 +178,7 @@ Index: src/libspf2/spf_get_spf.c
  }
 Index: src/libspf2/Makefile.am
 ===================================================================
---- src/libspf2/Makefile.am	2004-12-06 17:34:33.130477627 -0500
+--- src/libspf2/Makefile.am	2004-12-06 17:34:33.000000000 -0500
 +++ src/libspf2/Makefile.am	2004-11-26 16:43:19.000000000 -0500
 @@ -12,7 +12,8 @@
  	spf_verify.c spf_result.c spf_get_spf.c spf_dns_cache.c \
@@ -192,7 +192,7 @@ Index: src/libspf2/Makefile.am
  
 Index: src/libspf2/spf_result.c
 ===================================================================
---- src/libspf2/spf_result.c	2004-12-06 17:36:01.287422380 -0500
+--- src/libspf2/spf_result.c	2004-12-06 17:36:01.000000000 -0500
 +++ src/libspf2/spf_result.c	2004-12-03 16:17:15.000000000 -0500
 @@ -373,12 +373,14 @@
  	{
@@ -242,7 +242,7 @@ Index: src/libspf2/spf_result.c
  
 Index: src/libspf2/dnssec_validator.c
 ===================================================================
---- src/libspf2/dnssec_validator.c	2004-12-06 17:34:08.948782712 -0500
+--- src/libspf2/dnssec_validator.c	2004-12-06 17:34:08.000000000 -0500
 +++ src/libspf2/dnssec_validator.c	2004-11-26 16:46:42.000000000 -0500
 @@ -0,0 +1,37 @@
 +/*
@@ -284,8 +284,8 @@ Index: src/libspf2/dnssec_validator.c
 +}
 Index: src/libspf2/spf_dns_dnssec.c
 ===================================================================
---- src/libspf2/spf_dns_dnssec.c	2004-12-06 17:35:00.528732229 -0500
-+++ src/libspf2/spf_dns_dnssec.c	2004-12-03 16:14:36.000000000 -0500
+--- src/libspf2/spf_dns_dnssec.c	2004-12-06 17:35:00.000000000 -0500
++++ src/libspf2/spf_dns_dnssec.c	2004-12-24 20:43:11.414265277 -0500
 @@ -0,0 +1,208 @@
 +/* 
 + * Copyright SPARTA, Inc. 2004.  All rights reserved.
@@ -414,10 +414,10 @@ Index: src/libspf2/spf_dns_dnssec.c
 +        if (spfhook->dnssec_policy == DNSSEC_POLICY_ABORT) {
 +	    fetched_rr->herrno = DNSSEC_VALIDATION_FAILURE;
 +	    if ( spfhook->debug > 0 )
-+	        SPF_debugf( "libspf2::spf_dns_dnssec: DNSSEC validation of %s failed.  Reject mail.", fetched_rr->domain );
++	        SPF_debugf( "libspf2::spf_dns_dnssec: DNSSEC validation of %s failed.  Abort processing.", fetched_rr->domain );
 +	}
 +	else { /* spfhook->dnssec_policy == DNSSEC_POLICY_WARN */
-+	    fetched_rr->herrno = DNSSEC_VALIDATION_FAILURE;
++	    fetched_rr->herrno = DNSSEC_VALIDATION_WARNING;
 +	    if ( spfhook->debug > 0 )
 +	        SPF_debugf( "libspf2::spf_dns_dnssec: WARNING: DNSSEC validation of %s failed.", fetched_rr->domain );
 +	}
