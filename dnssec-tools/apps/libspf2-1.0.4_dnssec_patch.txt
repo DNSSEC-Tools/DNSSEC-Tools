@@ -1,0 +1,497 @@
+Index: src/include/dnssec_validator.h
+===================================================================
+--- src/include/dnssec_validator.h	2004-12-06 17:31:52.248454459 -0500
++++ src/include/dnssec_validator.h	2004-11-26 16:42:28.000000000 -0500
+@@ -0,0 +1,18 @@
++/*
++ * Copyright 2004 Sparta, Inc.  All rights reserved.
++ * See the COPYING file distributed with this software for details.
++ */
++
++#ifndef DNSSEC_VALIDATOR_API
++#define DNSSEC_VALIDATOR_API
++
++#define DNSSEC_FAILURE 0
++#define DNSSEC_SUCCESS 1
++
++/*
++ * Returns DNSSEC_SUCCESS if validation succeeds, and
++ * DNSSEC_FAILURE if validation fails.
++ */
++int dnssec_validate(char *domain_name);
++
++#endif
+Index: src/include/spf_dns_dnssec.h
+===================================================================
+--- src/include/spf_dns_dnssec.h	2004-12-06 17:32:57.054605374 -0500
++++ src/include/spf_dns_dnssec.h	2004-12-03 10:11:28.000000000 -0500
+@@ -0,0 +1,40 @@
++/* 
++ * Copyright SPARTA, Inc. 2004.  All rights reserved.
++ *
++ */
++
++
++
++
++#ifndef INC_SPF_DNS_DNSSEC
++#define INC_SPF_DNS_DNSSEC
++
++/* For an overview of the DNS layer system, see spf_dns.h */
++
++
++/*
++ * The DNSSEC DNS layer provides DNSSEC validation of DNS queries.
++ */
++
++/*
++ * The dnssec policy specifies what to do when the dnssec-validation
++ * fails.
++ */
++#define DNSSEC_POLICY_IGNORE 0 /* Ignore dnssec validation failure */
++#define DNSSEC_POLICY_WARN   1 /* Return a warning */
++#define DNSSEC_POLICY_REJECT 2 /* Return an error for rejecting packet */
++
++/*
++ * These routines take care of creating/destroying/etc. the objects
++ * that hold the DNS layer configuration.  spfdcid objects contain
++ * malloc'ed data, so they must be destroyed when you are finished
++ * with them, or you will leak memory. 
++ */
++
++SPF_dns_config_t SPF_dns_create_config_dnssec( SPF_dns_config_t layer_below,
++					       int debug,
++					       int dnssec_policy);
++void SPF_dns_reset_config_dnssec( SPF_dns_config_t spfdc );
++void SPF_dns_destroy_config_dnssec( SPF_dns_config_t spfdc );
++
++#endif /* INC_SPF_DNS_DNSSEC */
+Index: src/include/Makefile.am
+===================================================================
+--- src/include/Makefile.am	2004-12-06 17:32:38.561131131 -0500
++++ src/include/Makefile.am	2004-11-26 16:59:01.000000000 -0500
+@@ -5,7 +5,7 @@
+ includedir = ${prefix}/include/spf2
+ include_HEADERS	= spf.h spf_lib_version.h \
+ 		  spf_dns.h spf_dns_cache.h spf_dns_null.h spf_dns_resolv.h \
+-		  spf_dns_test.h spf_dns_zone.h
++		  spf_dns_test.h spf_dns_zone.h spf_dns_dnssec.h
+ 
+ noinst_HEADERS = spf_internal.h spf_dns_internal.h spf_sys_config.h \
+-		spf_win32_internal.h spf_win32.h spf_dns_windns.h
++		spf_win32_internal.h spf_win32.h spf_dns_windns.h dnssec_validator.h
+Index: src/include/spf.h
+===================================================================
+--- src/include/spf.h	2004-12-06 17:33:42.517394596 -0500
++++ src/include/spf.h	2004-12-03 16:04:23.000000000 -0500
+@@ -89,7 +89,8 @@
+ #define SPF_E_BAD_HOST_IP	27	/* Invalid hostname (possibly an IP address?) */
+ #define SPF_E_BAD_HOST_TLD	28	/* Hostname has a missing or invalid TLD */
+ #define SPF_E_MECH_AFTER_ALL	29	/* Mechanisms found after the \"all:\" mechanism will be ignored */
+-
++#define SPF_E_DNSSEC_FAIL       30      /* DNSSEC validation failed  Reject the mail.  */
++#define SPF_E_DNSSEC_WARN       31      /* DNSSEC validation failed. Return a warning. */
+ 
+ 
+ /* ********************************************************************* */
+Index: src/include/spf_dns.h
+===================================================================
+--- src/include/spf_dns.h	2004-12-06 17:33:23.531988517 -0500
++++ src/include/spf_dns.h	2004-12-03 16:13:29.000000000 -0500
+@@ -100,8 +100,11 @@
+ #endif
+ typedef int SPF_dns_stat_t;
+ 
+-
+-
++/*
++ * Additional Error code(s) for DNSSEC validation
++ */
++#define DNSSEC_VALIDATION_FAILURE  5               /* DNSSEC validation failed. Reject mail. */
++#define DNSSEC_VALIDATION_WARNING  6               /* DNSSEC validation failed. Warn user.   */
+ 
+ /*
+  * bundle up the info needed to use a dns method
+Index: src/libspf2/spf_get_spf.c
+===================================================================
+--- src/libspf2/spf_get_spf.c	2004-12-06 17:35:35.935890982 -0500
++++ src/libspf2/spf_get_spf.c	2004-12-03 16:12:47.000000000 -0500
+@@ -49,6 +49,7 @@
+     
+     int		i;
+     SPF_err_t	err;
++    SPF_err_t   dnssec_err;
+     int		num_found;
+     
+ 
+@@ -75,6 +76,7 @@
+ 
+     rr_txt = SPF_dns_lookup( spfdcid, domain, ns_t_txt, TRUE );
+ 
++    dnssec_err = SPF_E_SUCCESS;
+     switch( rr_txt->herrno )
+     {
+     case HOST_NOT_FOUND:
+@@ -91,6 +93,20 @@
+     case NETDB_SUCCESS:
+ 	break;
+ 
++    case DNSSEC_VALIDATION_FAILURE:
++        if (spfic->debug > 1) {
++	  SPF_debugf("SPF_get_spf: spf_dns_lookup returned DNSSEC_VALIDATION_FAILURE");
++	}
++        dnssec_err = SPF_E_DNSSEC_FAIL;
++	break;
++	
++    case DNSSEC_VALIDATION_WARNING:
++        if (spfic->debug > 1) {
++	  SPF_debugf("SPF_get_spf: spf_dns_lookup returned DNSSEC_VALIDATION_WARNING");
++	}
++        dnssec_err = SPF_E_DNSSEC_WARN;
++	break;
++
+     default:
+ 	c_results->err = SPF_E_DNS_ERROR;
+ 	return SPF_E_DNS_ERROR;
+@@ -133,5 +149,22 @@
+ 	    break;
+     }
+ 
++    if ((dnssec_err == SPF_E_DNSSEC_FAIL) || (dnssec_err == SPF_E_DNSSEC_WARN)){
++        if (c_results->err_msg != NULL) {
++	    free(c_results->err_msg); /* Should we retain old err_msg? Is there one? */
++	}
++        c_results->err_msg = strdup("DNSSEC validation failure");
++
++        if ((spfic->debug > 1) && (c_results->err_msg != NULL)) {
++	    SPF_debugf("SPF_get_spf: setting c_results->err_msg to '%s'", c_results->err_msg);
++	}
++
++	c_results->err = dnssec_err;
++    }
++
++    if (dnssec_err == SPF_E_DNSSEC_FAIL) {
++        err = SPF_E_DNSSEC_FAIL;
++    }
++
+     return err;
+ }
+Index: src/libspf2/Makefile.am
+===================================================================
+--- src/libspf2/Makefile.am	2004-12-06 17:34:33.130477627 -0500
++++ src/libspf2/Makefile.am	2004-11-26 16:43:19.000000000 -0500
+@@ -12,7 +12,8 @@
+ 	spf_verify.c spf_result.c spf_get_spf.c spf_dns_cache.c \
+ 	spf_dns_resolv.c spf_get_exp.c spf_eval_id.c spf_dns_zone.c \
+ 	spf_error.c spf_error_default.c spf_error_syslog.c \
+-	spf_dns_windns.c spf_win32.c
++	spf_dns_windns.c spf_win32.c \
++	spf_dns_dnssec.c dnssec_validator.c
+ 
+ libspf2_la_LIBADD	= $(top_builddir)/src/libreplace/libreplace.la
+ 
+Index: src/libspf2/spf_result.c
+===================================================================
+--- src/libspf2/spf_result.c	2004-12-06 17:36:01.287422380 -0500
++++ src/libspf2/spf_result.c	2004-12-03 16:17:15.000000000 -0500
+@@ -373,12 +373,14 @@
+ 	{
+ 	    if ( err == SPF_E_NOT_SPF )
+ 		output.result = SPF_RESULT_NONE;
++	    else if ( err == SPF_E_DNSSEC_FAIL )
++	        output.result = SPF_RESULT_FAIL;
+ 	    else
+ 		output.result = SPF_RESULT_UNKNOWN;
+ 	    output.reason = SPF_REASON_NONE;
+ 	    output.err = err;
+ 	    if ( output.err_msg ) free( output.err_msg );
+-	    if ( c_results.err_msg )
++	    if ( c_results.err_msg)
+ 		output.err_msg = strdup( c_results.err_msg );
+ 	    else
+ 		output.err_msg = NULL;
+@@ -394,14 +396,29 @@
+ 	    if ( spfic->debug > 0 )
+ 		SPF_print( c_results.spfid );
+ 
++	    if ( output.err_msg ) free( output.err_msg );
++	    if ( c_results.err_msg != NULL)
++		output.err_msg = strdup( c_results.err_msg );
++	    else
++		output.err_msg = NULL;
++
+ 	}
+ 	
+     }
+     
++    if (spfic->debug > 1) {
++        if (output.err_msg != NULL) {
++	    SPF_debugf("SPF_result: err_msg = '%s'", output.err_msg);
++        }
++        else {
++	    SPF_debugf("SPF_result: err_msg = NULL");
++        }
++    }
+ 
+     SPF_result_comments( spfcid, spfdcid, c_results, &output );
+ 
+     SPF_free_c_results( &c_results );
++
+     return output;
+ }
+ 
+Index: src/libspf2/dnssec_validator.c
+===================================================================
+--- src/libspf2/dnssec_validator.c	2004-12-06 17:34:08.948782712 -0500
++++ src/libspf2/dnssec_validator.c	2004-11-26 16:46:42.000000000 -0500
+@@ -0,0 +1,37 @@
++/*
++ * Copyright 2004 Sparta, Inc.  All rights reserved.
++ * See the COPYING file distributed with this software for details.
++ */
++
++#include <netinet/in.h>
++#include <arpa/nameser.h>
++#include <resolv.h>
++#include <string.h>
++#include "dnssec_validator.h"
++
++#define BUFLEN  4096
++#define T_RRSIG 46 /* not defined in arpa/nameser.h yet */
++
++void errlog(const char *msg) {
++        fprintf(stderr, msg);
++}
++
++/*
++ * A very simple validator ... just checks for RRSIG records
++ */
++int dnssec_validate (char *domain_name) {
++        char buf[BUFLEN];
++
++	bzero(buf, BUFLEN);
++
++	if (res_init() < 0) {
++	        errlog("Validator: Error -- could not initialize resolver.\n");
++		return DNSSEC_FAILURE;
++	}
++
++	if (res_query(domain_name, C_IN, T_RRSIG, buf, BUFLEN) < 0) {
++	        return DNSSEC_FAILURE;
++	}
++	
++	return DNSSEC_SUCCESS;
++}
+Index: src/libspf2/spf_dns_dnssec.c
+===================================================================
+--- src/libspf2/spf_dns_dnssec.c	2004-12-06 17:35:00.528732229 -0500
++++ src/libspf2/spf_dns_dnssec.c	2004-12-03 16:14:36.000000000 -0500
+@@ -0,0 +1,208 @@
++/* 
++ * Copyright SPARTA, Inc. 2004.  All rights reserved.
++ * See the COPYING file distributed with this patch for details.
++ */
++
++#include "spf_sys_config.h"
++
++#ifdef STDC_HEADERS
++# include <stdio.h>        /* stdin / stdout */
++# include <stdlib.h>       /* malloc / free */
++#endif
++
++
++#ifdef HAVE_STRING_H
++# include <string.h>       /* strstr / strdup */
++#else
++# ifdef HAVE_STRINGS_H
++#  include <strings.h>       /* strstr / strdup */
++# endif
++#endif
++
++#ifdef HAVE_MEMORY_H
++#include <memory.h>
++#endif
++#if TIME_WITH_SYS_TIME
++# include <sys/time.h>
++# include <time.h>
++#else
++# if HAVE_SYS_TIME_H
++#  include <sys/time.h>
++# else
++#  include <time.h>
++# endif
++#endif
++
++#ifdef HAVE_NETDB_H
++# include <netdb.h>
++#endif
++
++
++#include "spf.h"
++#include "spf_dns.h"
++#include "spf_internal.h"
++#include "spf_dns_internal.h"
++#include "spf_dns_cache.h"
++#include "spf_dns_dnssec.h"
++#include "dnssec_validator.h"
++
++#ifndef bool
++#define bool	int
++#define TRUE	1
++#define FALSE	0
++#endif /* ! bool */
++
++typedef struct
++{
++    int	debug;
++    int dnssec_policy;
++} SPF_dns_dnssec_config_t; 
++
++
++SPF_dns_rr_t SPF_dns_servfail = 
++{(char *)"", 0, ns_t_any, 0, NULL, NULL,  0, 0, 0, TRY_AGAIN, NULL, NULL };
++
++static inline SPF_dns_dnssec_config_t *SPF_voidp2spfhook( void *hook ) 
++    { return (SPF_dns_dnssec_config_t *)hook; }
++static inline void *SPF_spfhook2voidp( SPF_dns_dnssec_config_t *spfhook ) 
++    { return (void *)spfhook; }
++
++
++static bool SPF_dns_dnssec_validate (SPF_dns_dnssec_config_t *spfdcid, SPF_dns_rr_t *rr)
++{
++    if (rr == NULL) {
++        if ( spfdcid->debug > 0 )
++	    SPF_debugf( "libspf2::SPF_dns_dnssec_validate: Cannot validate NULL RR");
++
++        return FALSE;
++    }
++
++    if (dnssec_validate (rr->domain)) {
++        return TRUE;
++    }
++    
++    return FALSE;
++}
++
++static SPF_dns_rr_t *SPF_dns_lookup_dnssec( SPF_dns_config_t spfdcid, const char *domain, ns_type rr_type, int should_cache )
++{
++    SPF_dns_iconfig_t		*spfdic = SPF_dcid2spfdic( spfdcid );
++    SPF_dns_dnssec_config_t	*spfhook = SPF_voidp2spfhook( spfdic->hook );
++
++    SPF_dns_rr_t *fetched_rr;
++
++    if ( spfdic->layer_below ) {
++	fetched_rr = SPF_dcid2spfdic( spfdic->layer_below )->lookup( spfdic->layer_below, domain, rr_type, should_cache );
++    }
++    else {
++        if ( spfhook->debug > 0 )
++	    SPF_debugf( "libspf2::spf_dns_dnssec: the dns layer below not specified.");
++
++	return &SPF_dns_servfail;
++    }
++
++    if (spfhook->dnssec_policy == DNSSEC_POLICY_IGNORE) {
++        if ( spfhook->debug > 0 )
++	    SPF_debugf( "libspf2::spf_dns_dnssec: dnssec_policy is IGNORE.  Not performing DNSSEC validation.");
++
++        return fetched_rr;
++    }
++
++    if ((fetched_rr == NULL) || (fetched_rr->herrno != NETDB_SUCCESS)) {
++        if ( spfhook->debug > 0 )
++	    SPF_debugf( "libspf2::spf_dns_dnssec: lookup of %s failed with error %d.", domain, fetched_rr->herrno );
++
++	return fetched_rr;
++    }
++
++    /* dnssec-validate the fetched rr */
++    if (SPF_dns_dnssec_validate (spfhook, fetched_rr)) {
++        if ( spfhook->debug > 0 )
++	    SPF_debugf( "libspf2::spf_dns_dnssec: DNSSEC validation of %s successful.", fetched_rr->domain );
++    }
++    else {
++
++        if (spfhook->dnssec_policy == DNSSEC_POLICY_REJECT) {
++	    fetched_rr->herrno = DNSSEC_VALIDATION_FAILURE;
++	    if ( spfhook->debug > 0 )
++	        SPF_debugf( "libspf2::spf_dns_dnssec: DNSSEC validation of %s failed.  Reject mail.", fetched_rr->domain );
++	}
++	else { /* spfhook->dnssec_policy == DNSSEC_POLICY_WARN */
++	    fetched_rr->herrno = DNSSEC_VALIDATION_FAILURE;
++	    if ( spfhook->debug > 0 )
++	        SPF_debugf( "libspf2::spf_dns_dnssec: WARNING: DNSSEC validation of %s failed.", fetched_rr->domain );
++	}
++    }
++
++    return fetched_rr;
++}
++
++SPF_dns_config_t SPF_dns_create_config_dnssec( SPF_dns_config_t layer_below, int debug, int dnssec_policy )
++{
++    SPF_dns_iconfig_t     *spfdic;
++    SPF_dns_dnssec_config_t *spfhook;
++    
++    if ( layer_below == NULL )
++	SPF_error( "layer_below is NULL." );
++
++    spfdic = malloc( sizeof( *spfdic ) );
++    if ( spfdic == NULL )
++	return NULL;
++
++    spfdic->hook = malloc( sizeof( SPF_dns_dnssec_config_t ) );
++    if ( spfdic->hook == NULL )
++    {
++	free( spfdic );
++	return NULL;
++    }
++    
++    spfdic->destroy     = SPF_dns_destroy_config_dnssec;
++    spfdic->lookup      = SPF_dns_lookup_dnssec;
++    spfdic->get_spf     = NULL;
++    spfdic->get_exp     = NULL;
++    spfdic->add_cache   = NULL;
++    spfdic->layer_below = layer_below;
++    spfdic->name        = "dnssec";
++
++    spfhook = SPF_voidp2spfhook( spfdic->hook );
++
++    spfhook->debug         = debug; /* not needed */
++    spfhook->dnssec_policy = dnssec_policy;
++    SPF_debugf( "libspf2::spf_dns_create_config_dnssec: debug is %d, dnssec_policy is %d.", debug, dnssec_policy );
++
++    SPF_dns_servfail.source = SPF_spfdic2dcid( spfdic );
++    
++    return SPF_spfdic2dcid( spfdic );
++}
++
++void SPF_dns_reset_config_dnssec( SPF_dns_config_t spfdcid )
++{
++    SPF_dns_iconfig_t		*spfdic = SPF_dcid2spfdic( spfdcid );
++    SPF_dns_dnssec_config_t	*spfhook;
++
++    if ( spfdcid == NULL )
++	SPF_error( "spfdcid is NULL" );
++
++    spfhook = SPF_voidp2spfhook( spfdic->hook );
++    if ( spfhook == NULL )
++	SPF_error( "spfdcid.hook is NULL" );
++
++    SPF_dns_servfail.source = spfdcid;
++}
++
++void SPF_dns_destroy_config_dnssec( SPF_dns_config_t spfdcid )
++{
++    SPF_dns_iconfig_t     *spfdic = SPF_dcid2spfdic( spfdcid );
++    SPF_dns_dnssec_config_t	*spfhook;
++
++    if ( spfdcid == NULL )
++	SPF_error( "spfdcid is NULL" );
++
++    spfhook = SPF_voidp2spfhook( spfdic->hook );
++    if ( spfhook )
++    {
++	free( spfhook );
++    }
++    
++    free( spfdic );
++}
