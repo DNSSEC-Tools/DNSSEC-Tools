@@ -30,8 +30,7 @@ our $VERSION = "0.01";
 our @ISA = qw(Exporter);
 
 our @EXPORT_OK = qw(tooloptions tooloptions opts_krfile opts_getkeys
-		    opts_keykr opts_zonekr opts_suspend opts_restore
-		    opts_drop);
+		    opts_keykr opts_zonekr opts_suspend opts_restore opts_drop);
 
 #
 # Standard options accepted by all tools in the dnssec-tools suite.
@@ -40,6 +39,7 @@ my @stdopts =
 (
 	"algorithm=s",			# Encryption algorithm
 	"endtime=s",			# End-time for signed zone.
+	"help",				# Give a usage message and exit.
 	"keyrec=s",			# Keyrec name.
 	"krfile=s",			# Keyrec file.
 	"kskkey=s",			# KSK key.
@@ -48,6 +48,8 @@ my @stdopts =
 	"random=s",			# Random number generator.
 	"verbose+",			# Verbose flag.
 	"zone=s",			# Zone name.
+	"zdata=s",			# Zone data filename.
+	"zfile=s",			# Zone filename.
 	"zskkey=s",			# ZSK key.
 	"zsklength=i",			# Length of ZSK.
 	"zskpath=s",			# Path to ZSK.
@@ -585,7 +587,8 @@ suite.  These options may have defaults set in the
 B</etc/dnssec/dnssec-tools.conf> configuration file, in a I<keyrec> file,
 from command-line options, or from any combination of the three.  In order
 to enforce a common sequence of option interpretation, all dnssec-tools should
-use the I<Net::DNS::SEC::Tools::tooloptions()> routine to initialize its options.
+use the I<Net::DNS::SEC::Tools::tooloptions()> routine to initialize its
+options.
 
 The I<keyrec_file> argument specifies a I<keyrec> file that will be consulted.
 The I<keyrec> named by the I<keyrec_name> argument will be loaded.  If no
