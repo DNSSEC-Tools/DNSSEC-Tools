@@ -5,9 +5,9 @@
 
 use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
+use Net::DNS::SEC::Tools::Donuts::Rule;
 use Getopt::Std;
 use Data::Dumper;
-use Text::Wrap;
 
 use strict;
 
@@ -84,8 +84,8 @@ while ($#ARGV > -1) {
 		(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
 		my $res = $r->{'test'}->($rec, $r);
 		if ($res) {
-		    print_error($r, $res,
-				"$current_zone_file:$rec->{Line}");
+		    $r->print_error($res, "$current_zone_file:$rec->{Line}",
+				    $opts{'v'});
 		}
 	    }
 	}
@@ -104,7 +104,8 @@ while ($#ARGV > -1) {
 		(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
 		my $res = $r->{'test'}->($nrecs{$namerec}, $r, $namerec);
 		if ($res) {
-		    print_error($r, $res, "$current_zone_file::$namerec");
+		    $r->print_error($res, "$current_zone_file::$namerec",
+				    $opts{'v'});
 		}
 	    }
 	}
@@ -113,22 +114,6 @@ while ($#ARGV > -1) {
 
 
 #######################################################################
-
-# Print the results of an error for a given rule
-sub print_error {
-    my ($r, $err, $loc) = @_;
-    my $class = $r->{class} || 'Error';
-    print STDERR "$loc: $class\n";
-    if ($opts{'v'}) {
-	print STDERR "  Rule Name:   $r->{name}\n";
-	print STDERR "  Level:       $r->{level}\n";
-    }
-    print STDERR wrap("  Error:       ","               ",$err),"\n";
-    if ($r->{desc} && $opts{'v'}) {
-	print STDERR wrap("  Details:     ","               ",$r->{desc}),"\n";
-    }
-    print STDERR "\n";
-}
 
 sub add_rule {
     my $rule = shift;
@@ -159,7 +144,7 @@ sub add_rule {
     print STDERR " $rule->{'name'}" if ($opts{'v'});
 
     # remember the rule
-    push @rules, $rule;
+    push @rules, new Net::DNS::SEC::Tools::Donuts::Rule($rule);
 }
 
 # parses a text based rule file
@@ -326,8 +311,6 @@ errors you don't wish to see.
 
 =back
 
-=cut
-
 =head1 COPYRIGHT
 
 Copyright 2004 Sparta, Inc.  All rights reserved.
@@ -339,7 +322,7 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 =head1 SEE ALSO
 
-Net::DNS
+Net::DNS::SEC::Tools::Donuts::Rule, Net::DNS
 
 http://dnssec-tools.sourceforge.net/
 
