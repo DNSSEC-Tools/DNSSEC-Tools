@@ -6,7 +6,7 @@
 #
 # lskrf
 #
-#	This script lists fields in a keyrec file.
+#	This script lists the keyrecs in a keyrec file.
 #
 
 use strict;
@@ -38,7 +38,7 @@ my @opts =
 	"valid",			# List unexpired zone keyrecs.
 	"expired",			# List expired zone keyrecs.
 
-	"cnt",				# Only give a count of matching keyrecs.
+	"count",			# Only give a count of matching keyrecs.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
 
@@ -141,7 +141,7 @@ sub main()
 #		A bunch of option variables are set according to the specified
 #		options.  Then a little massaging is done to make sure that
 #		the proper actions are taken.  A few options imply others, so
-#		the implied options are set if the implying optins are given.
+#		the implied options are set if the implying options are given.
 #
 sub doopts
 {
@@ -169,17 +169,19 @@ sub doopts
 	$validflag	= $options{'valid'}	|| 0;
 	$expiredflag	= $options{'expired'}	|| 0;
 
-	$cntflag	= $options{'cnt'}	|| 0;
+	$cntflag	= $options{'count'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
 
 	#
 	# Give a usage flag if asked.
+	#
 	usage() if(defined($options{'help'}));
 
 	#
 	# Ensure we were given a keyrec file to check.
 	#
+	$argc = @ARGV;
 	if($argc == 0)
 	{
 		usage();
@@ -357,7 +359,7 @@ sub showzones
 		}
 
 		#
-		# Give the appopriate style of output.
+		# Give the appropriate style of output.
 		#
 		if($terse)
 		{
@@ -613,7 +615,7 @@ sub outkey
 sub usage
 {
 	print STDERR "usage:  lskrf [options] <keyrec-file>\n";
-	print STDERR "\trecord selection options:\n";
+	print STDERR "\trecord-selection options:\n";
 	print STDERR "\t\t-all		list all records\n";
 	print STDERR "\t\t-zones\t	list all zones\n";
 	print STDERR "\t\t-keys		list all keys\n";
@@ -621,12 +623,13 @@ sub usage
 	print STDERR "\t\t-zsk		list ZSK keys\n";
 	print STDERR "\t\t-cur		list current ZSK keys\n";
 	print STDERR "\t\t-pub		list published ZSK keys\n";
+	print STDERR "\trecord-attribute options:\n";
 	print STDERR "\t\t-valid\t	show keyrecs of unexpired zones\n";
 	print STDERR "\t\t-expired	show keyrecs of expired zones\n";
 	print STDERR "\t\t-ref		show referenced key keyrecs\n";
 	print STDERR "\t\t-unref\t	show unreferenced key keyrecs\n";
-	print STDERR "\toutput format options:\n";
-	print STDERR "\t\t-cnt		only give count of matching keyrecs\n";
+	print STDERR "\toutput-format options:\n";
+	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-h		help message \n";
@@ -642,46 +645,118 @@ sub usage
 
 =head1 NAME
 
-lskrf - List the fields in a dnssec-tools keyrec file.
+lskrf - List the I<keyrec>s in a B<dnssec-tools> I<keyrec> file.
 
 =head1 SYNOPSIS
 
-  lskrf [-z] [-k] [-ksk] [-zsk] [-cur] [-pub] [-cnt] [-unref] [-ref] [-t] [-l] [-h] <keyrec-file>
+  lskrf [options] <keyrec-files>
 
 =head1 DESCRIPTION
 
-This script lists the contents of a keyrec file.
+This script lists the contents of the specified I<keyrec> file.
+The output given depends on the options selected.
 
 =back
 
 =head1 OPTIONS
 
+B<lskrf> has three types of options it can take:  record-selection options,
+record-attribute options, and output-style options.  These option sets are
+detailed below.
+
 =over 4
 
-=item -k
+=head2 Record-Selection Options
 
-Only perform checks of key I<keyrec>s.  This option may not be combined with
-the B<-z> option.
+These options select the types of I<keyrec> that will be displayed.
 
-=item -z
+=item -all
 
-Only perform checks of zone I<keyrec>s.  This option may not be combined with
-the B<-k> option.
+This option displays all the records in a I<keyrec> file.
 
-=item -c
+=item -zones
 
-Display a final count of errors.
+This option displays the zones in a I<keyrec> file.
 
-=item -q
+=item -keys
 
-Do not display messages.  This option supersedes the setting of the I<-v>
-option.
+This option displays the keys in a I<keyrec> file.
 
-=item -v
+=item -ksk
 
-Display many messages.  This option is subordinate to the I<-q> option.
+This option displays the KSK keys in a I<keyrec> file.
 
-=item -h
+=item -zsk
+
+This option displays the ZSK keys in a I<keyrec> file.
+
+=item -cur
+
+This option displays the current ZSK keys in a I<keyrec> file.
+
+=item -new
+
+This option displays the new ZSK keys in a I<keyrec> file.
+
+=item -pub
+
+This option displays the published ZSK keys in a I<keyrec> file.
+
+=head2 Record-Attribute Options
+
+These options select subsets of the I<keyrec>s chosen by the
+record-selection options. 
+
+=item -valid
+
+This option displays the valid zones in a I<keyrec> file.
+It implies the I<-zones> option.
+
+=item -expired
+
+This option displays the expired zones in a I<keyrec> file.
+It implies the I<-zones> option.
+
+=item -ref
+
+This option displays the referenced key I<keyrec>s in a I<keyrec> file.
+If no record-selection options were specified, then the I<-keys> option will
+be set.
+
+=item -unref
+
+This option displays the unreferenced key I<keyrec>s in a I<keyrec> file.
+If no record-selection options were specified, then the I<-keys> option will
+be set.
+
+=head2 Output-Format Options
+
+These options define how the I<keyrec> information will be displayed.
+
+Without any of these options, the zone name, zone file, zone-signing date,
+and a label will be displayed for zones.  For types, the key name, the key's
+zone, the key's generation date, and a label will be displayed if these
+options aren't given.
+
+=item -count
+
+The count of matching records will be displayed, but the matching records
+will not be.
+
+=item -long
+
+The long form of output will be given.  For zones, the zone name, the zone
+file, the zone's signing date, the zone's expiration date, and a label will
+be displayed.  For keys, the key name, the key's zone, the key's encryption
+algorithm, the key's length, the key's generation date, and a label are
+given.
+
+=item -terse
+
+This options displays only the name of the zones or keys selected by other
+options.
+
+=item -help
 
 Display a usage message.
 
