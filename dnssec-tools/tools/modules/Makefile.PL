@@ -1,8 +1,16 @@
 #!/usr/bin/perl
+#
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
 
 open(MF,"> Makefile");
 
 print MF <<EOF;
+#
+# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
 
 MODULES=	conf.pm		\\
 		keyrec.pm	\\
