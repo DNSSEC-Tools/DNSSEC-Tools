@@ -13,9 +13,10 @@
 #
 #		- no zones defined
 #		- no keys defined
-#		U obsolete key keyrecs  (not referenced by any zone keyrecs)
 #		- unknown zone keyrecs  (key keyrec points to a non-existent
 #					 zone keyrec)
+#		- mislabeled keys (key thinks it's KSK/ZSK, zone
+#				   thinks it's a ZSK/KSK)
 #		- missing key from zone keyrec
 #		U invalid data values
 #			U bad encryption algorithm
@@ -28,7 +29,8 @@
 #	Potential problems include:
 #
 #		- soon-to-expire zone keyrecs
-#		-  odd zone-signing date
+#		- odd zone-signing date
+#		- orphaned key keyrecs  (not referenced by any zone keyrecs)
 #		U non-existent key directories
 #		U orphaned keys
 #
@@ -175,6 +177,8 @@ sub zonechecks
 
 		expiredzones($zonename,$zkr);
 	}
+
+	vprint("\n");
 }
 
 #-----------------------------------------------------------------------------
@@ -201,8 +205,13 @@ sub keychecks
 			%keyrec = %$kr;
 
 			keyzones("KSK",$keyname,\%keyrec);
+
+			orphankeys("KSK",$keyname);
+
+			keytypes("KSK",$keyname);
 		}
 	}
+	vprint("\n");
 
 	if(length(%zskkeys) == 0)
 	{
@@ -219,6 +228,10 @@ sub keychecks
 			%keyrec = %$kr;
 
 			keyzones("ZSK",$keyname,\%keyrec);
+
+			orphankeys("ZSK",$keyname);
+
+			keytypes("ZSK",$keyname);
 		}
 	}
 
@@ -356,6 +369,107 @@ sub keyzones
 		qprint("no such zone:  $zonename ($keytype key $keyname)\n");
 		$keyerrs++;
 	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	orphankeys()
+#
+sub orphankeys
+{
+	my $keytype = shift;			# Keyrec's type.
+	my $keyname = shift;			# Keyrec's name.
+
+	my $zkr;				# Zone reference.
+	my %keyrec;				# Key table.
+
+	my $found = 0;				# Key-found flag.
+
+	#
+	# Look through the zone list to ensure the key is referenced somewhere.
+	#
+	foreach my $zonename (sort(keys(%zones)))
+	{
+		$zkr = $zones{$zonename};
+		%keyrec = %$zkr;
+
+		#
+		# If the key is in this zone, we'll mark that we've found
+		# it.  Once we've found it, we'll drop out.
+		#
+		if(($keyrec{'kskkey'} eq $keyname)	||
+		   ($keyrec{'zskkey'} eq $keyname))
+		{
+			$found = 1;
+			last;
+		}
+	}
+
+	#
+	# Give an error message if we didn't find it.
+	#
+	if(!$found)
+	{
+		qprint("orphaned key:  $keytype key $keyname\n");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	keytypes()
+#
+sub keytypes
+{
+	my $keytype = shift;			# Keyrec's type.
+	my $keyname = shift;			# Keyrec's name.
+
+	my $zkr;				# Zone reference.
+	my %keyrec;				# Key table.
+
+	my $badtype = 0;			# Bad-type flag.
+	my $foundtype;				# Bad type we found.
+
+	#
+	# Look through the zone list to ensure the key and the zone agree
+	# about the key's type.
+	#
+	foreach my $zonename (sort(keys(%zones)))
+	{
+		$zkr = $zones{$zonename};
+		%keyrec = %$zkr;
+
+		#
+		# If the key is in this zone, we'll check if this key's
+		# type matches the way the zone thinks about it.
+		#
+		if($keyrec{'kskkey'} eq $keyname)
+		{
+			if($keytype eq "ZSK")
+			{
+				$badtype = 1;
+				$foundtype = "ZSK";
+			}
+		}
+		elsif($keyrec{'zskkey'} eq $keyname)
+		{
+			if($keytype eq "KSK")
+			{
+				$badtype = 1;
+				$foundtype = "KSK";
+			}
+		}
+
+	}
+
+	#
+	# Give an error message if the key and zone have mismatched ideas
+	# about the key's type.
+	#
+	if($badtype)
+	{
+		qprint("mislabeled key type:  $keytype key $keyname\n");
+	}
+
 }
 
 ##############################################################################
@@ -557,6 +671,11 @@ A zone I<keyrec> does not have both a KSK key and a ZSK key.
 
 A zone has expired.
 
+=item * mislabeled key
+
+A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
+opposite.
+
 =back
 
 Recognized potential problems include:
@@ -571,11 +690,15 @@ A zone will expire within one week.
 
 A zone's recorded signing date is later than the current system clock.
 
+=item * orphaned keys
+
+A key I<keyrec> is unreferenced by any zone I<keyrec>.
+
 =back
 
 No inconsistencies are currently recognized.
 
-The following options are available for I<keyrec-check>:
+=head1 OPTIONS
 
 =over 4
 
