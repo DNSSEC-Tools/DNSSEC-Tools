@@ -22,6 +22,21 @@ Index: config.h.in
  /* Define to 1 if you have the `vfork' function. */
  #undef HAVE_VFORK
  
+Index: src/include/spf_internal.h
+===================================================================
+--- src/include/spf_internal.h	2005-03-03 17:52:59.557826789 -0500
++++ src/include/spf_internal.h	2005-03-03 17:51:07.302337919 -0500
+@@ -78,6 +78,10 @@
+ /*    char	*rec_dom;	*/
+ 
+     size_t	max_var_len;		/* max strlen of above vars	*/
++    int         dodnssec;               /* 0: add x-dnssec=none to Received-SPF
++					 * 1: add x-dnssec=pass to Received-SPF
++					 *    if DNSSEC validation succeeds.
++					 */
+ } SPF_iconfig_t;
+ 
+ #define SPF_EXP_MOD_NAME	"exp-text"
 Index: src/include/spf_dns_dnssec.h
 ===================================================================
 --- src/include/spf_dns_dnssec.h	2004-12-06 17:32:57.000000000 -0500
