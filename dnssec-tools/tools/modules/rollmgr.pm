@@ -4,10 +4,81 @@
 #
 # DNSSEC Tools
 #
-#	Roll-over manager functions.
+# rollmgr.pm -	Roll-over manager functions.
 #
 #	The routines in this module provide a means to communicate with
 #	the roll-over manager.
+#
+#
+#	Introduction
+#		This module provides interfaces for communicating with the
+#		dnssec-tools' roll-over manager.  The top-level interfaces
+#		are independent of the host Operating System, but the actual
+#		operations are dependent upon the host O/S.
+#
+#		To allow similar O/Ses to share switch functions, thus
+#		minimizing the size of the module, the rollmgr_prepdep()
+#		routine determines which operating system class an operating
+#		system falls into.  This determination is based upon the O/S
+#		name, as taken from $^O.
+#
+#		This module has been ported to:
+#
+#			O/S name	O/S class
+#			FreeBSD		Unix
+#
+#		When extending the interface or porting this module to another
+#		O/S, the following entities must be modified as described
+#		below.  The Unix switches may be used as a model.
+#		
+#
+#	Port architecture hash
+#		This hash table associates an operating-system class with
+#		a switch hash.  The class (determined in rollmgr_prepdep())
+#		is the hash key, with its associated switch hash as the
+#		hash value.
+#		The port architecture hash need not be updated when the
+#		interface is extended.
+#		The port architecture hash must be updated when the module
+#		is ported to a new operating system.
+#
+#	Switch hashes
+#		The switch hashes contain references to the different
+#		platforms supported by this module.
+#		Each switch hash must be updated when the interface
+#		is extended.
+#		The existing switch hashes need not be updated when
+#		the module is ported to a new operating system.
+#
+#	Uninitialized switch functions
+#		These interfaces are called when the switch table has not
+#		yet been initialized.
+#		These switch functions must be updated when the interface
+#		is extended.
+#		These switch functions need not be updated when the module
+#		is ported to a new operating system.
+#
+#	Unknown switch functions
+#		These interfaces are called when rollmgr.pm has not been
+#		ported to the host operating system.  Unrecognized operating
+#		systems will cause the module's calling process to exit.
+#		These switch functions must be updated when the interface
+#		is extended.
+#		These switch functions need not be updated when the module
+#		is ported to a new operating system.
+#
+#	Top-level interfaces
+#		The top-level interfaces are O/S-independent front-ends to
+#		the O/S-dependent routines.  These interfaces perform
+#		these functions:
+#			- look up their name in the switch table (%switchtab)
+#			- call their associated O/S-dependent routine
+#			- return the O/S-dependent routine's results
+#		These switch functions must be updated when the interface
+#		is extended.
+#		These switch functions need not be updated when the module
+#		is ported to a new operating system.
+#
 #
 
 package Net::DNS::SEC::Tools::rollmgr;
@@ -23,48 +94,522 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
 		 rollmgr_dir
-		 rollmgr_pidfile
-		 rollmgr_getpid
-		 rollmgr_droppid
-		 rollmgr_rmpid
-		 rollmgr_qproc
+		 rollmgr_getid
 		 rollmgr_halt
+		 rollmgr_pidfile
+		 rollmgr_qproc
+		 rollmgr_rmpid
+		 rollmgr_savepid
 		);
 
-my $ROLLMGR_DIR	    = "/usr/local/etc/dnssec";
-my $ROLLMGR_PIDFILE = ($ROLLMGR_DIR . "/dnssec-tools.rollmgr.pid");
+my $rollmgrid;				# Roll-over manager's process id.
 
-my $CMD_QPROC	= "HUP";			# Signal for qproc command.
-my $CMD_HALT	= "INT";			# Signal for halt command.
+##############################################################################
+#
+# These "constants" are the names of the roll-over manager's interfaces.
+# 
+my $GETDIR	= "getdir";
+my $GETID	= "getid";
+my $HALT	= "halt";
+my $IDFILE	= "idfile";
+my $QPROC	= "qproc";
+my $RMID	= "rmid";
+my $SAVEID	= "saveid";
 
-my $rollmgrpid;				# Roll-over manager's process id.
+##############################################################################
+#
+# These are the switch hashes that determine what routine will be called
+# for what O/S classes.
+# 
+my %switch_uninit =
+(
+	$GETDIR	=>	\&uninit_dir,
+	$GETID	=>	\&uninit_getid,
+	$HALT	=>	\&uninit_halt,
+	$IDFILE	=>	\&uninit_idfile,
+	$QPROC	=>	\&uninit_qproc,
+	$RMID	=>	\&uninit_rmid,
+	$SAVEID	=>	\&uninit_saveid,
+);
+
+my %switch_unknown =
+(
+	$GETDIR	=>	\&unknown_dir,
+	$GETID	=>	\&unknown_getid,
+	$HALT	=>	\&unknown_halt,
+	$IDFILE	=>	\&unknown_idfile,
+	$QPROC	=>	\&unknown_qproc,
+	$RMID	=>	\&unknown_rmid,
+	$SAVEID	=>	\&unknown_saveid,
+);
+
+my %switch_unix =
+(
+	$GETDIR	=>	\&unix_dir,
+	$GETID	=>	\&unix_getpid,
+	$HALT	=>	\&unix_halt,
+	$IDFILE	=>	\&unix_pidfile,
+	$QPROC	=>	\&unix_qproc,
+	$RMID	=>	\&unix_rmid,
+	$SAVEID	=>	\&unix_saveid,
+);
+
+
+##############################################################################
+#
+# This is the port architecture hash that associates O/S names with their
+# switch tables.
+# 
+
+my %port_archs =
+(
+	"uninitialized"	=>	\%switch_uninit,
+	"unknown"	=>	\%switch_unknown,
+	"unix"		=>	\%switch_unix,
+);
+
+
+##############################################################################
+#
+# Unix-related constants.
+# 
+
+my $UNIX_ROLLMGR_DIR	    = "/usr/local/etc/dnssec";
+my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/dnssec-tools.rollmgr.pid");
+
+my $UNIX_CMD_QPROC	= "HUP";		# Signal for qproc command.
+my $UNIX_CMD_HALT	= "INT";		# Signal for halt command.
+
+##############################################################################
+#
+# These fields are the O/S class and switch table used for interface calls.
+# 
+
+my $osclass   = "uninitialized";
+my $swtref    = $port_archs{$osclass};
+my %switchtab = %$swtref;
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+#
+# Top-level Interfaces
+#
+#	These interfaces are the module interfaces called by external
+#	routines. 
+#
 
 #--------------------------------------------------------------------------
 #
-# Routine:	rollmgr_dir()
+# Routine:      rollmgr_prepdep()
 #
-# Purpose:	Return the roll-over manager's directory.
+# Purpose:	This routine prepares for device-dependent calls.  A global
+#		switch table is set, based on the short-form of the operating
+#		system's name.
+#
+#		This *must* be updated whenever this module is ported to
+#		a new operating system.
+#
+sub rollmgr_prepdep
+{
+	my $swtab;				# Switch-table reference.
+	my $osname = $^O;			# Operating system name.
+
+	#
+	# Set up the default operating system class.
+	#
+	$osclass = "unknown";
+
+	#
+	# Figure out which operating system class we're running on.
+	#
+	if(($osname eq "freebsd")	||
+	   ($osname eq "linux"))
+	{
+		$osclass = "unix";
+	}
+
+	#
+	# Get the appropriate switch table for this O/S class and save
+	# it for later reference.
+	#
+	my $swtab = $port_archs{$osclass};
+	%switchtab = %$swtab;
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_dir()
+#
+# Purpose:	Front-end to the O/S-specific "get roll-over manager's
+#		directory" function.
 #
 sub rollmgr_dir
 {
-	return($ROLLMGR_DIR);
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_dir\n";
+
+	$func = $switchtab{$GETDIR};
+	return(&$func(@args));
 }
 
 #--------------------------------------------------------------------------
 #
-# Routine:	rollmgr_pidfile()
+# Routine:      rollmgr_getid()
+#
+# Purpose:	Front-end to the O/S-specific "get roll-over manager's
+#		identity" function.
+#
+sub rollmgr_getid
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_getid\n";
+
+	$func = $switchtab{$GETID};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_halt()
+#
+# Purpose:	Front-end to the O/S-specific "halt roll-over manager"
+#		function.
+#
+sub rollmgr_halt
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_halt\n";
+
+	$func = $switchtab{$HALT};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_idfile()
+#
+# Purpose:	Front-end to the O/S-specific "get roll-over manager's
+#		identity filename" function.
+#
+sub rollmgr_idfile
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_idfile\n";
+
+	$func = $switchtab{$IDFILE};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_qproc()
+#
+# Purpose:	Front-end to the O/S-specific "run roll-over manager's
+#		queue" function.
+#
+sub rollmgr_qproc
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_qproc\n";
+
+	$func = $switchtab{$QPROC};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_rmid()
+#
+# Purpose:	Front-end to the O/S-specific "remove roll-over manager's
+#		identity file" function.
+#
+sub rollmgr_rmid
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_rmid\n";
+
+	$func = $switchtab{$RMID};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_saveid()
+#
+# Purpose:	Front-end to the O/S-specific "save roll-over manager's
+#		identity" function.
+#
+sub rollmgr_saveid
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_saveid\n";
+
+	$func = $switchtab{$SAVEID};
+	return(&$func(@args));
+}
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+#
+# Uninitialized switch functions
+#
+#	These interfaces are called when the switch table has not yet been
+#	initialized.  Each interface calls rollmgr_prepdep() to set up the
+#	operating-system-dependent switch table, then calls that O/S's
+#	version of the interface.  The O/S-specific results are returned
+#	to the caller.  Any subsequent calls to rollmgr_ interfaces will
+#	call the proper O/S-dependent interface.
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_dir()
+#
+# Purpose:	Switch for uninitialized "get dir" command.
+#
+sub uninit_dir
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_dir\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_dir(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_getid()
+#
+# Purpose:	Switch for uninitialized "get id" command.
+#
+sub uninit_getid
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_getid\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_getid(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_halt()
+#
+# Purpose:	Switch for uninitialized "halt" command.
+#
+sub uninit_halt
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_halt\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_halt(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_idfile()
+#
+# Purpose:	Switch for uninitialized "get id file" command.
+#
+sub uninit_idfile
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_idfile\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_idfile(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_qproc()
+#
+# Purpose:	Switch for uninitialized "force queue" command.
+#
+sub uninit_qproc
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_qproc\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_qproc(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_rmid()
+#
+# Purpose:	Switch for uninitialized "remove id file" command.
+#
+sub uninit_rmid
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_rmid\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_rmid(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_saveid()
+#
+# Purpose:	Switch for uninitialized "save id file" command.
+#
+sub uninit_saveid
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_saveid\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_saveid(@args));
+}
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+#
+# Unknown switch functions
+#
+#	These interfaces are called when the operating system was not
+#	recognized by rollmgr_prepdep().  In all cases, the routine
+#	prints an error message and exits.
+#
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_action()
+#
+sub unknown_action
+{
+	print STDERR "rollmgr.pm has not been ported to your system yet; cannot continue until this has been done.\n";
+	exit(42);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_dir()
+#
+sub unknown_dir
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_getid()
+#
+sub unknown_getid
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_halt()
+#
+sub unknown_halt
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_idfile()
+#
+sub unknown_idfile
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_qproc()
+#
+sub unknown_qproc
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_rmid()
+#
+sub unknown_rmid
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unknown_saveid()
+#
+sub unknown_saveid
+{
+	unknown_action();
+}
+
+
+##############################################################################
+##############################################################################
+##############################################################################
+#
+# Unix switch functions
+#
+#	These interfaces are called when the O/S has been determined to
+#	be a Unix-class O/S.
+#
+
+#--------------------------------------------------------------------------
+#
+# Routine:      unix_dir()
+#
+sub unix_dir
+{
+	return($UNIX_ROLLMGR_DIR);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	unix_pidfile()
 #
 # Purpose:	Return the roll-over manager's pid file.
 #
-sub rollmgr_pidfile
+sub unix_pidfile
 {
-	return($ROLLMGR_PIDFILE);
+	return($UNIX_ROLLMGR_PIDFILE);
 }
 
 
 #--------------------------------------------------------------------------
 #
-# Routine:	rollmgr_droppid()
+# Routine:	unix_droppid()
 #
 # Purpose:	Ensures that another instance of the roll-over manager is
 #		running and then creates a pid file for future reference.
@@ -74,17 +619,18 @@ sub rollmgr_pidfile
 #		 0 - Another process (not this one) is already acting as
 #		     the roll-over manager.
 #
-sub rollmgr_droppid
+sub unix_droppid
 {
 	my $ego = $$;				# My identity.
 	my $rdpid;				# Pid read from the pidfile.
 
-# print "rollmgr_droppid:  down in\n";
+# print "unix_droppid:  down in\n";
 
 	#
 	# Get the pid from the roll-over manager's pidfile.
 	#
-	$rdpid = rollmgr_getpid(0);
+	$rdpid = unix_getpid(0);
+print "rdpid - <$rdpid>\n";
 
 	#
 	# Create the file if it doesn't exist.
@@ -92,14 +638,17 @@ sub rollmgr_droppid
 	#
 	if($rdpid < 0)
 	{
-# print "rollmgr_droppid:  opening $ROLLMGR_PIDFILE\n";
-		open(PIDFILE,"> $ROLLMGR_PIDFILE") || warn "DROPPID UNABLE TO OPEN <$ROLLMGR_PIDFILE>\n";
-# print "rollmgr_droppid:  locking $ROLLMGR_PIDFILE\n";
+# print "unix_droppid:  opening $UNIX_ROLLMGR_PIDFILE\n";
+		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPPID UNABLE TO OPEN <$UNIX_ROLLMGR_PIDFILE>\n";
+# print "unix_droppid:  locking $UNIX_ROLLMGR_PIDFILE\n";
 		flock(PIDFILE,LOCK_EX);
 	}
 	else
 	{
-		my $kcnt;			# Count of processes signaled.
+		my $pid;			# Pid from ps output.
+		my $pscmd;			# ps command to execute.
+		my $psline;			# Output line from ps.
+		my $openrc;			# Return code from open().
 
 		flock(PIDFILE,LOCK_EX);
 
@@ -109,21 +658,33 @@ sub rollmgr_droppid
 		# return success.  If it isn't, we'll whine and then return
 		# an error.
 		#
-		$kcnt = kill(0,$rdpid);
-		if($kcnt > 0)
+print "rdpid - <$rdpid>\n";
+		$pscmd = "/bin/ps -p $rdpid";
+		print "\t\t\topening <$pscmd>\n";
+		$openrc = open(PSOUT,"$pscmd |");
+print "openrc - $openrc\n";
+		$psline = <PSOUT>;
+		print "ps line 1:  <$psline>\n";
+		$psline = <PSOUT>;
+		print "ps line 2:  <$psline>\n";
+		close(PSOUT);
+
+		if($psline =~ /rollover-manager/)
 		{
+print "\tpid is a rollover-manager process <$psline>\n";
 			flock(PIDFILE,LOCK_UN);
 
+print "rdpid - <$rdpid>  ego - <$ego>\n";
 			return(1) if($rdpid == $ego);
 
-# print "rollmgr_droppid:  another roll-over manager (pid $rdpid) is already running\n";
 			return(0);
 		}
+print "\tpid is not a rollover-manager process <$psline>\n";
 
 		#
 		# Zap the file contents.
 		#
-		truncate($ROLLMGR_PIDFILE,0);
+		truncate($UNIX_ROLLMGR_PIDFILE,0);
 	}
 
 	#
@@ -137,13 +698,13 @@ sub rollmgr_droppid
 	# Save our pid as the internal version of the manager's pid and
 	# return success.
 	#
-	$rollmgrpid = $ego;
+	$rollmgrid = $ego;
 	return(1);
 }
 
 #--------------------------------------------------------------------------
 #
-# Routine:	rollmgr_rmpid()
+# Routine:	unix_rmpid()
 #
 # Purpose:	Delete the roll-over manager's pidfile.  This is done when
 #		as part of the manager's clean-up process.
@@ -154,18 +715,18 @@ sub rollmgr_droppid
 #		-1 - The calling process is not the roll-over manager.
 #		-2 - Unable to delete the pidfile.
 #
-sub rollmgr_rmpid
+sub unix_rmpid
 {
 	my $ego = $$;				# My identity.
 	my $flret;				# flock() return code.
 	my $rdpid;				# Pid read from the pidfile.
 
-# print "rollmgr_rmpid:  down in\n";
+# print "unix_rmpid:  down in\n";
 
 	#
 	# Get the pid from the roll-over manager's pidfile.
 	#
-	$rdpid = rollmgr_getpid(0);
+	$rdpid = unix_getpid(0);
 	flock(PIDFILE,LOCK_EX);
 
 	#
@@ -173,7 +734,7 @@ sub rollmgr_rmpid
 	#
 	if($rdpid == -1)
 	{
-# print "rollmgr_rmpid:  roll-over manager's pidfile does not exist\n";
+# print "unix_rmpid:  roll-over manager's pidfile does not exist\n";
 		return(0);
 	}
 
@@ -182,16 +743,16 @@ sub rollmgr_rmpid
 	#
 	if($rdpid != $ego)
 	{
-# print "rollmgr_rmpid:  we are not the roll-over manager\n";
+# print "unix_rmpid:  we are not the roll-over manager\n";
 		return(-1);
 	}
 
 	#
 	# Get rid of the pidfile.
 	#
-	if(unlink($ROLLMGR_PIDFILE) != 1)
+	if(unlink($UNIX_ROLLMGR_PIDFILE) != 1)
 	{
-# print "rollmgr_rmpid:  unable to delete pidfile\n";
+# print "unix_rmpid:  unable to delete pidfile\n";
 		return(-2);
 	}
 
@@ -205,7 +766,7 @@ sub rollmgr_rmpid
 
 #--------------------------------------------------------------------------
 #
-# Routine:	rollmgr_getpid()
+# Routine:	unix_getpid()
 #
 # Purpose:	Return the roll-over manager, as recorded in its pidfile.
 #		If the caller wants the file closed upon return, a non-zero
@@ -223,7 +784,7 @@ sub rollmgr_rmpid
 #		  the file and we can't do so without it being open.  So,
 #		  we've got that little window we hope nothing sneaks through.
 #
-sub rollmgr_getpid
+sub unix_getpid
 {
 	my $closeflag = shift;			# Close-flag for pidfile.
 	my $pid;				# Pid from pidfile.
@@ -231,20 +792,23 @@ sub rollmgr_getpid
 	#
 	# Return an error if the file doesn't exist.
 	#
-	return(-1) if(stat($ROLLMGR_PIDFILE) == 0);
+	return(-1) if(stat($UNIX_ROLLMGR_PIDFILE) == 0);
 
 	#
 	# Open and lock the pidfile.
 	#
-# print "rollmgr_getpid:  opening and locking $ROLLMGR_PIDFILE\n";
-	open(PIDFILE,"+< $ROLLMGR_PIDFILE") || warn "UNABLE TO OPEN <$ROLLMGR_PIDFILE>\n";
+	close(PIDFILE);
+	if(open(PIDFILE,"+< $UNIX_ROLLMGR_PIDFILE") == 0)
+	{
+		print STDERR "unix_getpid:  unable to open \"$UNIX_ROLLMGR_PIDFILE\"\n";
+		return(-1);
+	}
 	flock(PIDFILE,LOCK_EX);
 
 	#
 	# Get the pid from the pidfile.
 	#
-# print "rollmgr_getpid:  reading $ROLLMGR_PIDFILE\n";
-	read(PIDFILE,$pid,80);
+	$pid = <PIDFILE>;
 	flock(PIDFILE,LOCK_UN);
 
 	#
@@ -259,49 +823,49 @@ sub rollmgr_getpid
 	# Lop off any trailing newlines and return.
 	#
 	$pid =~ s/\n//g;
-# print "rollmgr_getpid:  returning pid <$pid>>\n";
 	return($pid);
 }
 
 #--------------------------------------------------------------------------
 #
-# Routine:	rollmgr_qproc()
+# Routine:	unix_qproc()
 #
 # Purpose:	Kick the roll-over manager to let it know it should
 #		re-read the rollrec file and process its queue again.
 #
-sub rollmgr_qproc
+sub unix_qproc
 {
 	my $pid;				# Roll-over manager's pid.
 	my $ret;				# Return code from kill().
 
-# print "rollmgr_qproc:  down in\n";
-	$pid = rollmgr_getpid(1);
+print "unix_qproc:  down in\n";
+	$pid = unix_getpid(1);
 
-	$ret = kill($CMD_QPROC,$pid);
+print "unix_qproc:  sending - kill($UNIX_CMD_QPROC,$pid)\n";
+	$ret = kill($UNIX_CMD_QPROC,$pid);
 
-# print "rollmgr_qproc:  kill($CMD_QPROC,$pid) returned - $ret";
+print "unix_qproc:  kill($UNIX_CMD_QPROC,$pid) returned - $ret";
 
 	return($ret);
 }
 
 #--------------------------------------------------------------------------
 #
-# Routine:	rollmgr_halt()
+# Routine:	unix_halt()
 #
 # Purpose:	Tell the roll-over manager to shut down.
 #
-sub rollmgr_halt
+sub unix_halt
 {
 	my $pid;				# Roll-over manager's pid.
 	my $ret;				# Return code from kill().
 
-# print "rollmgr_halt:  down in\n";
-	$pid = rollmgr_getpid(1);
+# print "unix_halt:  down in\n";
+	$pid = unix_getpid(1);
 
-	$ret = kill($CMD_HALT,$pid);
+	$ret = kill($UNIX_CMD_HALT,$pid);
 
-# print "rollmgr_halt:  kill($CMD_HALT,$pid) returned - $ret";
+# print "unix_halt:  kill($UNIX_CMD_HALT,$pid) returned - $ret";
 
 	return($ret);
 }
@@ -337,8 +901,9 @@ manager.
 
 =head1 DESCRIPTION
 
-The I<Net::DNS::SEC::Tools::rollmgr> module provides standard methods for a
-program to communicate with the roll-over manager.
+The I<Net::DNS::SEC::Tools::rollmgr> module provides standard,
+platform-independent  methods for a program to communicate with
+the roll-over manager.
 
 =head1 ROLLMGR INTERFACES
 
