@@ -106,6 +106,102 @@ test:
      ") does not match SOA MIN TTL (" . 
      $nrecs{$current_domain}{'SOA'}[0]->minimum . ")";
 
+name: DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME
+level: 4
+type: DNSKEY
+desc: draft-ietf-dnsext-dnssec-records-11.txt section 2.1.1: If bit 7 has value 1, then the DNSKEY record holds a DNS zone key and the DNSKEY RR's owner name MUST be the name of a zone.
+test:
+  if ($_[0]->flags & 0x100 && $current_domain ne $_[0]->name) {
+    return "DNSKEY record found for '$_[0]' in wrong domain: '$current_domain'."
+  }
+
+name: DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3
+level: 4
+type: DNSKEY
+desc: draft-ietf-dnsext-dnssec-records-11.txt section 2.1.2: The Protocol Field MUST have value 3 and the DNSKEY RR MUST be treated as invalid during signature verification if found to be some value other than 3.
+test:
+  if ($_[0]->protocol != 3) {
+    return "DNSKEY record found for '$_[0]->{name}' with protocol other than '3'."
+  }
+
+name: DNSSEC_BOGUS_NS_MEMORIZE
+level: 1
+type: NS
+test:
+  if ($current_domain ne $_[0]->{name}) {
+    # remember the name so we can also ignore glue records later
+    $DONUTS::gluerecs{$_[0]->{nsdname}} = 1;
+  }
+  return;
+
+name: DNSSEC_MISSING_RRSIG_RECORD
+level: 3
+ruletype: name
+desc: RRSIG records are required for all records in order for the domain to be secure, with the exception of NS and glue records for children.
+test:
+  my %rrsigs;
+  foreach my $rec (@{$_[0]->{'RRSIG'}}) {
+    # memorize RRSIG records
+    $rrsigs{$rec->typecovered}{$rec->name} = $rec;
+  }
+  #
+  my $err;
+  my %gluerecs;
+  # for each record type for a given name
+  # reverse sort these so NS records are seen before the glue records
+  foreach my $type (sort { $b cmp $a } keys(%{$_[0]})) {
+    # RRSIGs themselves (obviously) aren't signed
+    next if ($type eq 'RRSIG');
+    foreach my $rec (@{$_[0]->{$type}}) {
+      # NS records for children aren't signed
+      next if ($type eq 'NS' && $current_domain ne $rec->{name});
+      # NS glue records for children aren't signed.
+      if (!exists($rrsigs{$type}{$rec->name}) &&
+          !exists($DONUTS::gluerecs{$rec->name})) {
+         $err .= "$type:$rec->{name}, ";
+      }
+    }
+  }
+  if ($err) {
+    $err =~ s/, $//;
+    return "No RRSIG record found for the following records: $err";
+  }
+
+name: DNSSEC_MISSING_NSEC_RECORD
+level: 3
+ruletype: name
+desc: NSEC records are required for all names except child glue records in order for the domain to be secure from denial-of-existence attacks.
+test:
+  # make sure an nsec record exists
+  if (!(exists($_[0]->{'NSEC'}) || $#{$_[0]->{'NSEC'}} == -1) &&
+      # ignore glue records
+      !exists($DONUTS::gluerecs{$_[2]})) {
+    return "NSEC record missing for $_[2]";
+  }
+  return if (exists($DONUTS::gluerecs{$_[2]}));
+  if ($#{$_[0]->{'NSEC'}} != 0) {
+    return "odd error with NSEC record for $_[2].  number of records = " . 
+           $#{$_[0]->{'NSEC'}};
+  }
+  my $types = $_[0]->{'NSEC'}[0]->typelist;
+  my @types = split(/ /,$types);
+  my %types;
+  my $err;
+  # if it does exist, make sure it doesn't cover types that don't exist
+  foreach my $t (@types) {
+    if (!exists($_[0]->{$t})) {
+      $err .= "NSEC record for $_[0]->{name} has coverage for type $t but the domain doesn't have a correspending record for that type /";
+    }
+    $types{$t} = 1;
+  }
+  # and that it covers all the types that do
+  foreach my $k (keys(%{$_[0]})) {
+    if (!exists($types{$k})) {
+      $err .= "NSEC record for $_[0]->{name} doesn't cover type $k but there are records for that name of that type";
+    }
+  }
+  return $err;
+
 # XXX: check details of all the NSEC records?
 #   - every record type exists which was listed in an NSEC
 #   - nsec next order is proper
