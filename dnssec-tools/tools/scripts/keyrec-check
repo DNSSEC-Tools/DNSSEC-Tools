@@ -40,11 +40,8 @@
 #
 #	Inconsistencies include:
 #
-#		U zone fields in a key keyrec
-#		U key fields in a zone keyrec
-#		U unrecognized fields in a keyrec
-#
-#	('U' prefix indicates unimplemented functionality.)
+#		- zone fields in a key keyrec
+#		- key fields in a zone keyrec
 #
 
 use strict;
@@ -210,6 +207,8 @@ sub zonechecks
 	my $zonename;				# Zone name for looping.
 	my $keyname;				# Key name.
 
+	my @fields = keyrec_keyfields();	# Valid key fields.
+
 	if(length(%zones) == 0)
 	{
 		vprint("no zones defined\n");
@@ -228,6 +227,8 @@ sub zonechecks
 		zonekeys($zonename,$zkr);
 
 		expiredzones($zonename,$zkr);
+
+		crosshkeys("zone","key",$zonename,$zkr,@fields);
 	}
 
 	vprint("\n");
@@ -241,6 +242,8 @@ sub keychecks
 {
 	my $kr;					# Keyrec reference.
 	my %keyrec;				# Keyrec.
+
+	my @fields = keyrec_zonefields();	# Valid zone fields.
 
 	if(length(%kskkeys) == 0)
 	{
@@ -263,6 +266,8 @@ sub keychecks
 			orphankeys("KSK",$keyname);
 
 			keytypes("KSK",$keyname);
+
+			crosshkeys("KSK","zone",$keyname,$kr,@fields);
 		}
 	}
 	vprint("\n");
@@ -288,6 +293,8 @@ sub keychecks
 			orphankeys("ZSK",$keyname);
 
 			keytypes("ZSK",$keyname);
+
+			crosshkeys("ZSK","zone",$keyname,$kr,@fields);
 		}
 	}
 
@@ -816,6 +823,49 @@ sub checkexpire
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	crosshkeys()
+#
+sub crosshkeys
+{
+	my $krtype   = shift;			# Type of keyrec.
+	my $fldtype   = shift;			# Type of @fields' keys.
+	my $krname   = shift;			# Keyrec's name.
+	my $kr	   = shift;			# Reference to keyrec.
+	my @fields = shift;			# Hash keys to check for.
+
+	my %keyrec = %$kr;			# Caller's keyrec.
+	my $errs   = 0;				# Error count.
+
+	#
+	# None of the entries in @fields should be hash keys in the
+	# keyrec.  We'll check to ensure all's well.
+	#
+	foreach my $key (@fields)
+	{
+		#
+		# Skip internal-use fields.
+		#
+		if($key eq "keyrec_type")
+		{
+			next;
+		}
+
+		if(exists($keyrec{$key}))
+		{
+			qprint("bad entry:  $fldtype hash-key $key in a $krtype record  ($krtype $krname)\n");
+			$errs++;
+		}
+	}
+
+	if($errs == 0)
+	{
+		qprint("hash entry:  all hash-keys valid  ($krtype $krname)\n");
+	}
+	return($errs);
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	dumpdata()
 #
 sub dumpdata
@@ -976,7 +1026,21 @@ not exist.
 
 =back
 
-No inconsistencies are currently recognized.
+Recognized inconsistencies include:
+
+=over 4
+
+=item * key-specific fields in a zone I<keyrec>
+
+A zone I<keyrec> contains key-specific entries.  To allow for site-specific
+extensibility, I<keyrec-check> does not check for undefined I<keyrec> fields.
+
+=item * zone-specific fields in a key I<keyrec>
+
+A key I<keyrec> contains zone-specific entries.  To allow for site-specific
+extensibility, I<keyrec-check> does not check for undefined I<keyrec> fields.
+
+=back
 
 =head1 OPTIONS
 
@@ -998,7 +1062,7 @@ Display a final count of errors.
 
 =item -q
 
-Do not display messages.  This option supercedes the setting of the I<-v>
+Do not display messages.  This option supersedes the setting of the I<-v>
 option.
 
 =item -v
