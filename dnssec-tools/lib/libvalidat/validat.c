@@ -89,7 +89,12 @@ int val_check ( const char *domain_name, int class, int type,
 	return VAL_FAILURE;
     }
 
-    /* XXX parse buf, and verify signature */
+    /* XXX TODO
+     * 1. Parse buf
+     * 2. Multiple RRSIG records may be returned.
+     *    Select the one corresponding to 'type'
+     * 3. Verify signature in the RDATA portion of the selected RRSIG record
+     */
     
     errlog (2, "val_check(): succeeded\n");
     return VAL_SUCCESS;
