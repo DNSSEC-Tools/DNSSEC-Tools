@@ -1,13 +1,39 @@
 PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts
 
-all: perlmakefiles perlmake
+SUBDIRS=lib/libvalidat
 
-install: perlinstall
+all: makeit
 
-clean: perlclean
+makeit: perlmakefiles perlmake subdirmake
+
+install: perlinstall subdirinstall
+
+clean: perlclean subdirclean
 
 distclean: clean configclean
 
+#
+# Subdir build rules
+#
+
+subdirmake:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make ) ; \
+         done
+
+subdirinstall:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make install ) ; \
+         done
+
+subdirclean:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make clean ) ; \
+         done
+
+#
+# Perl system build rules
+#
 
 perlmake:
 	@for i in $(PERLDIRS) ; do \
@@ -31,6 +57,9 @@ perlclean:
 	  (cd $$i ; make clean ) ; \
          done
 
+#
+# Config system rules
+#
 
 configclean:
 	rm -f config.cache config.status config.log \
