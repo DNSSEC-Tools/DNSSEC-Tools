@@ -1,16 +1,25 @@
 CC	   = gcc
 INSTALL    = @INSTALL@
+AR         = @AR@
+RANLIB     = @RANLIB@
+ARFLAGS	   = cruv
+OBJS	   = validat.o
 
-all: libvalidat.so
+all: libvalidat.so libvalidat.a
 
-libvalidat.so: validat.o
-	$(CC) -shared -o validat.o
+libvalidat.so: $(OBJS)
+	$(CC) -shared -o $@ $(OBJS)
+
+libvalidat.a: $(OBJS)
+	$(AR) $(ARFLAGS) $@ $(OBJS)
+	$(RANLIB) $@
 
 validat.o: validat.c validat.h
 	$(CC) -c validat.c
 
 install:
 	$(INSTALL) libvalidat.so $(libdir)
+	$(INSTALL) libvalidat.a  $(libdir)
 
 clean:
-	\rm -rf *.o *.so
+	\rm -rf *.o *.so *.a
