@@ -18,7 +18,7 @@ Index: config.h.in
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-03-03 13:50:03.651957738 -0500
++++ spfmilter.c	2005-03-03 15:18:37.935727686 -0500
 @@ -27,8 +27,13 @@
  ** For commentary on this license please see http://www.acme.com/license.html
  */
@@ -220,7 +220,7 @@ Index: spfmilter.c
  
      (void) snprintf( header, header_size, "%s", result_str( cd->result ) );
      len = strlen( header );
-@@ -1471,6 +1538,63 @@
+@@ -1471,6 +1538,70 @@
  	len = strlen( header );
  	}
      /*!!! Do something about the problem= field. */
@@ -272,9 +272,16 @@ Index: spfmilter.c
 +    }
 +
 +    if (first_err == 1) {
-+	(void) snprintf(&header[len], header_size - len,
-+			" x-dnssec=pass;");
-+	len = strlen(header);
++	if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
++	    (void) snprintf(&header[len], header_size - len,
++			    " x-dnssec=none;");
++	    len = strlen(header);
++	}
++	else {
++	    (void) snprintf(&header[len], header_size - len,
++			    " x-dnssec=pass;");
++	    len = strlen(header);
++	}
 +    }
 +    else {
 +	(void) snprintf(&header[len], header_size - len, ");");
@@ -284,7 +291,7 @@ Index: spfmilter.c
      (void) snprintf( &header[len], header_size - len, " x-software=%s %s %s;", SPFMILTER_PROGRAM, SPFMILTER_VERSION, SPFMILTER_URL );
      }
  
-@@ -1741,6 +1865,12 @@
+@@ -1741,6 +1872,12 @@
      return ld->peer_info->explain;
      }
  
@@ -297,7 +304,7 @@ Index: spfmilter.c
  
  static const char*
  lib_get_error( lib_data_t* ld )
-@@ -1749,6 +1879,27 @@
+@@ -1749,6 +1886,27 @@
      }
  
  
@@ -325,7 +332,7 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -1782,15 +1933,9 @@
+@@ -1782,15 +1940,9 @@
  
  #endif /* USE_LIBSPF */
  
@@ -342,7 +349,7 @@ Index: spfmilter.c
  
  
  static SPF_config_t spfc_global;
-@@ -2069,7 +2214,11 @@
+@@ -2069,7 +2221,11 @@
  	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
  	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
  	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
@@ -355,7 +362,7 @@ Index: spfmilter.c
  	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
  	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
  	default: return -1;
-@@ -2092,12 +2241,40 @@
+@@ -2092,12 +2248,40 @@
  
  
  static const char*
@@ -396,7 +403,7 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -2157,8 +2334,9 @@
+@@ -2157,8 +2341,9 @@
  typedef struct {
      int initialized, inuse;
      int next_free_resolver;
@@ -407,7 +414,7 @@ Index: spfmilter.c
      } resolver_t;
  static resolver_t* resolvers;
  static int max_resolvers, first_free_resolver, num_resolvers_inuse;
-@@ -2202,7 +2380,8 @@
+@@ -2202,7 +2387,8 @@
      for ( r = 0; r < max_resolvers; ++r )
  	if ( resolvers[r].initialized )
  	    {
@@ -417,7 +424,7 @@ Index: spfmilter.c
  	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
  	    }
      pthread_mutex_destroy( &resolver_mutex );
-@@ -2266,13 +2445,34 @@
+@@ -2266,13 +2452,34 @@
  	    free_resolver( r );
  	    return -1;
  	    }
@@ -454,7 +461,7 @@ Index: spfmilter.c
  	resolvers[r].initialized = 1;
  	}
  
-@@ -2283,7 +2483,7 @@
+@@ -2283,7 +2490,7 @@
  static SPF_dns_config_t
  get_resolver( int r )
      {
@@ -463,7 +470,7 @@ Index: spfmilter.c
      }
  
  
-@@ -2299,3 +2499,332 @@
+@@ -2299,3 +2506,332 @@
      }
  
  #endif /* USE_LIBSPF2 */
