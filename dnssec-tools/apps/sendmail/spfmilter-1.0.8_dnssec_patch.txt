@@ -1,0 +1,300 @@
+Index: spfmilter.c
+===================================================================
+--- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
++++ spfmilter.c	2004-12-03 16:43:59.000000000 -0500
+@@ -102,6 +102,12 @@
+ #include "match.h"
+ #include "iparray.h"
+ 
++#ifdef USE_LIBSPF2
++#include <spf2/spf.h>
++#include <spf2/spf_dns_resolv.h>
++#include <spf2/spf_dns_cache.h>
++#include <spf2/spf_dns_dnssec.h>
++#endif
+ 
+ /* Defines. */
+ 
+@@ -155,6 +161,7 @@
+     int del_header_list[DEL_HEADER_MAX];
+     char buf1[1000];
+     char buf2[2000];
++    int validated;
+     } connection_data_t;
+ 
+ /* A word about buf1 and buf2, above.  These are scratch buffers for
+@@ -208,7 +215,7 @@
+ static sfsistat handle_result( SMFICTX* ctx );
+ static void escape_percents( const char* in, char* out, int out_size );
+ static int receiver_is_me( const char* value );
+-static void build_header( connection_data_t* cd, char* header, int header_size, const char* reason );
++static void build_header( connection_data_t* cd, char* header, int header_size, const char* reason, const char* err_msg );
+ static connection_data_t* init_connection_data( void );
+ static int init_message_data( connection_data_t* cd );
+ static void fini_message_data( connection_data_t* cd );
+@@ -234,6 +241,8 @@
+ static const char* lib_get_reason( lib_data_t* ld );
+ static const char* lib_get_explanation( lib_data_t* ld );
+ static const char* lib_get_error( lib_data_t* ld );
++static const char* lib_get_error_msg( lib_data_t* ld );
++static const char* lib_get_received_spf (lib_data_t *ld);
+ static void lib_fini_message_data( lib_data_t* ld );
+ static void lib_fini_connection_data( lib_data_t* ld );
+ static void lib_fini_fallback( lib_fallback_t* lf );
+@@ -251,6 +260,7 @@
+ static char* explanation_str;
+ static int markonly;
+ static int debug;
++static int dnssec_policy;
+ static char* local_hostname;
+ static int local_hostname_len;
+ 
+@@ -287,6 +297,7 @@
+     { "nodaemon",		no_argument,		NULL,	'X', },
+     { "help",			no_argument,		NULL,	'h', },
+     { "debug",			optional_argument,	NULL,	'd', },
++    { "dnssec_policy",          required_argument,      NULL,   's', },
+     { 0, 0, 0, 0 },
+ };
+ #define DOC_LONGOPT(l, v, t, p1) \
+@@ -296,7 +307,7 @@
+ #else
+ #define DOC_LONGOPT(l, v, t, p1) do { } while( 0 )
+ #endif
+-static const char* shortopts = "l:tg:f:w:re:mu:p:Xhd::";
++static const char* shortopts = "l:tg:f:w:re:mu:p:Xhd:s:";
+ 
+ #define DOC_OPT(s, l, v, t, p0, p1) \
+     do { \
+@@ -332,6 +343,7 @@
+     pidfile = (char*) 0;
+     nodaemon = 0;
+     debug = 0;
++    dnssec_policy = DNSSEC_POLICY_IGNORE;
+ 
+     /* Figure out the program's name. */
+     argv0 = strrchr( argv[0], '/' );
+@@ -396,6 +408,23 @@
+ 		else
+ 		    debug = 1;
+ 		break;
++	    case 's':
++	        if (optarg) {
++		    if (strncasecmp (optarg, "warn", 4) == 0) {
++		        if (debug)
++	 		    printf("DNSSEC policy = warn\n");
++		        dnssec_policy = DNSSEC_POLICY_WARN;
++		    }
++		    else if (strncasecmp (optarg, "reject", 6) == 0) {
++		        if (debug)
++	 		    printf("DNSSEC policy = reject\n");
++		        dnssec_policy = DNSSEC_POLICY_REJECT;
++		    }
++		    else {
++		      fprintf(stderr, "Unrecognized option argument '%s'\n", optarg);
++		    }
++		}
++		break;
+ 	    default:
+ 		(void) fprintf( stderr, "Unrecognised option '%c'\n", c );
+ 		exit( 1 );
+@@ -465,6 +494,7 @@
+     DOC_OPT( 'X', "nodaemon", (char*) 0, "Do not fork into the background.", 20, 26 );
+     DOC_OPT( 'h', "help", (char*) 0, "Show this help.", 20, 26 );
+     DOC_OPT( 'd', "debug", "[<int>]", "Enable debugging to syslog.", 13, 18 );
++    DOC_OPT( 's', "dnssec_policy", "<ignore|warn|reject>", "Action in the event of DNSSEC validation failure", 16, 3);
+     }
+ 
+ 
+@@ -1223,8 +1253,23 @@
+ 
+     if ( cd->action == SPFMILTER_ACTION_MARK )
+ 	{
++	const char *err_msg = lib_get_error_msg(cd->lib_data);
++	  
++	if (debug > 1)
++	    {
++	    if (err_msg != NULL)
++	        {
++		fprintf(stderr, "spfmilter: err_msg = %s\n", err_msg);
++		}
++	    else
++	        {
++		fprintf(stderr, "spfmilter: err_msg = NULL\n");
++		}
++	    }
++	      
+ 	/* Build and add the SPF header. */
+-	build_header( cd, cd->buf2, sizeof(cd->buf2), rptr );
++	build_header( cd, cd->buf2, sizeof(cd->buf2), rptr, err_msg);
++	
+ 	smfi_addheader( ctx, HEADER_NAME, cd->buf2 );
+ 	}
+ 
+@@ -1286,7 +1331,10 @@
+     {
+     connection_data_t* cd;
+     const char* exp;
++    const char* errmsg;
+     char exp_escaped[1000];
++    char exp_errmsg[1000];
++    char err_reply[2048];
+ 
+     cd = (connection_data_t*) smfi_getpriv( ctx );
+ 
+@@ -1318,7 +1366,17 @@
+ 		escape_percents( exp, exp_escaped, sizeof(exp_escaped) );
+ 	    else
+ 		(void) strncpy( exp_escaped, "rejected by spfmilter", sizeof(exp_escaped) - 1 );
+-	    smfi_setreply( ctx, "550", "5.7.1", exp_escaped );
++	    strncpy(err_reply, exp_escaped, sizeof(err_reply) - 1);
++
++	    errmsg = lib_get_error_msg( cd->lib_data );
++	    if (errmsg != (char*) 0) {
++	        escape_percents( errmsg, exp_errmsg, sizeof(exp_errmsg));
++		strncpy(err_reply + strlen(exp_escaped), ".  Error: ", sizeof(err_reply) - strlen(exp_escaped) - 1);
++		strncpy(err_reply + strlen(err_reply), exp_errmsg, sizeof(err_reply) - strlen(err_reply) - 1);
++	    }
++
++	    /* smfi_setreply( ctx, "550", "5.7.1", exp_escaped ); */
++	    smfi_setreply( ctx, "550", "5.7.1", err_reply );
+ 	    fini_message_data( cd );
+ 	    return SMFIS_REJECT;
+ 
+@@ -1439,7 +1497,7 @@
+ 
+ 
+ static void
+-build_header( connection_data_t* cd, char* header, int header_size, const char* reason )
++build_header( connection_data_t* cd, char* header, int header_size, const char* reason, const char* err_msg )
+     {
+     int len;
+ 
+@@ -1471,6 +1529,12 @@
+ 	len = strlen( header );
+ 	}
+     /*!!! Do something about the problem= field. */
++    if ( err_msg != (char*) 0 )
++        {
++	(void) snprintf( &header[len], header_size - len, " problem=%s;", err_msg );
++	len = strlen( header );
++	}
++
+     (void) snprintf( &header[len], header_size - len, " x-software=%s %s %s;", SPFMILTER_PROGRAM, SPFMILTER_VERSION, SPFMILTER_URL );
+     }
+ 
+@@ -1741,6 +1805,12 @@
+     return ld->peer_info->explain;
+     }
+ 
++/* FIXME: incomplete */
++static const char*
++lib_get_received_spf ( lib_data_t* ld )
++    {
++      return "";
++    }
+ 
+ static const char*
+ lib_get_error( lib_data_t* ld )
+@@ -1749,6 +1819,13 @@
+     }
+ 
+ 
++static const char*
++lib_get_error_msg( lib_data_t* ld )
++    {
++    return lib_get_error(ld);
++    }
++
++
+ static void
+ lib_fini_message_data( lib_data_t* ld )
+     {
+@@ -1788,11 +1865,6 @@
+ /* Libspf2 data and routines. */
+ 
+ 
+-#include <spf2/spf.h>
+-#include <spf2/spf_dns_resolv.h>
+-#include <spf2/spf_dns_cache.h>
+-
+-
+ static SPF_config_t spfc_global;
+ static SPF_c_results_t spfr_localpolicy;
+ static SPF_c_results_t spfr_explanation;
+@@ -2092,11 +2164,22 @@
+ 
+ 
+ static const char*
++lib_get_received_spf (lib_data_t* ld)
++    {
++    return ld->output.received_spf;
++    }
++
++static const char*
+ lib_get_error( lib_data_t* ld )
+     {
+     return SPF_strerror( ld->output.err );
+     }
+ 
++static const char*
++lib_get_error_msg( lib_data_t* ld )
++    {
++    return  ld->output.err_msg ;
++    }
+ 
+ static void
+ lib_fini_message_data( lib_data_t* ld )
+@@ -2157,8 +2240,9 @@
+ typedef struct {
+     int initialized, inuse;
+     int next_free_resolver;
++    SPF_dns_config_t spfdcid_d;
+     SPF_dns_config_t spfdcid_r;
+-    SPF_dns_config_t spfdcid;
++    SPF_dns_config_t spfdcid_c;
+     } resolver_t;
+ static resolver_t* resolvers;
+ static int max_resolvers, first_free_resolver, num_resolvers_inuse;
+@@ -2202,7 +2286,8 @@
+     for ( r = 0; r < max_resolvers; ++r )
+ 	if ( resolvers[r].initialized )
+ 	    {
+-	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid );
++	    SPF_dns_destroy_config_dnssec( resolvers[r].spfdcid_d );
++	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid_c );
+ 	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
+ 	    }
+     pthread_mutex_destroy( &resolver_mutex );
+@@ -2266,13 +2351,20 @@
+ 	    free_resolver( r );
+ 	    return -1;
+ 	    }
+-	resolvers[r].spfdcid = SPF_dns_create_config_cache( resolvers[r].spfdcid_r, 8, debug );
+-	if ( resolvers[r].spfdcid == (SPF_dns_config_t) 0 )
++	resolvers[r].spfdcid_c = SPF_dns_create_config_cache( resolvers[r].spfdcid_r, 8, debug );
++	if ( resolvers[r].spfdcid_c == (SPF_dns_config_t) 0 )
+ 	    {
+ 	    syslog( LOG_ERR, "SPF_dns_create_config_cache() failed"  );
+ 	    free_resolver( r );
+ 	    return -1;
+ 	    }
++	resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_c, debug, dnssec_policy );
++	if ( resolvers[r].spfdcid_d == (SPF_dns_config_t) 0 )
++	    {
++	    syslog( LOG_ERR, "SPF_dns_create_config_dnssec() failed"  );
++	    free_resolver( r );
++	    return -1;
++	    }
+ 	resolvers[r].initialized = 1;
+ 	}
+ 
+@@ -2283,7 +2375,7 @@
+ static SPF_dns_config_t
+ get_resolver( int r )
+     {
+-    return resolvers[r].spfdcid;
++    return resolvers[r].spfdcid_d;
+     }
+ 
+ 
