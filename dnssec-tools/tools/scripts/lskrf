@@ -19,15 +19,6 @@ use Net::DNS::SEC::Tools::tooloptions;
 #######################################################################
 
 #
-#
-my $DAY	  = (24 * 60 * 60);		# Seconds in a day.
-my $WEEK  = (7 * $DAY);			# Seconds in a week.
-
-my $DAYSWARN = 7;			# Days before an expiration warning.
-
-#######################################################################
-
-#
 # Data required for command line options.
 #
 my %options = ();			# Filled option array.
@@ -53,10 +44,6 @@ my @opts =
 
 	"help",				# Give a usage message and exit.
 );
-
-# options to be completed:
-# 	expired
-# 	valid
 
 #
 # Flag values for the various options.  Variable/option connection should
@@ -150,11 +137,24 @@ sub main()
 #
 # Routine:	doopts()
 #
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying optins are given.
+#
 sub doopts
 {
 	my $argc = shift;			# Command line argument count.
 
+	#
+	# Parse the options.
+	#
 	GetOptions(\%options,@opts);
+
+	#
+	# Set our option variables based on the parsed options.
+	#
 	$allflag	= $options{'all'}	|| 0;
 	$zonesflag	= $options{'zones'}	|| 0;
 	$keysflag	= $options{'keys'}	|| 0;
@@ -250,6 +250,11 @@ sub doopts
 #
 # Routine:	getkeyrecs()
 #
+# Purpose:	This routine reads the specified keyrec file and puts each
+#		keyrec into the appropriate keyrec hash table.  There are
+#		hashes for zones, KSK keys, ZSK keys, current ZSKs, new ZSKs,
+#		published ZSKs, and all keys.
+#
 sub getkeyrecs
 {
 	my $krfile = shift;			# Keyrec file.
@@ -303,6 +308,20 @@ sub getkeyrecs
 #
 # Routine:	showzones()
 #
+# Purpose:	This routine displays zone data.  It has three output formats:
+#
+#			normal	A zone label, the zone name, the zone file,
+#				and the zone's signing date are displayed.
+#
+#			terse	The zone name is displayed.
+#
+#			long	A zone label, the zone name, the zone file,
+#				the zone's signing date, and the zone's date
+#				of expiry are displayed.
+#
+#		If one of the zone expiration flags was given then there is
+#		also a check made to see if the zone is expired.
+#
 sub showzones
 {
 	#
@@ -312,6 +331,16 @@ sub showzones
 	{
 		my $krr = $zones{$zk};
 		my %kr = %$krr;
+
+		#
+		# Check the zone-validity flags against the zone to see if
+		# the record should be displayed.
+		#
+		if(($validflag	 &&  expiredzone($zk))	||
+		   ($expiredflag && !expiredzone($zk)))
+		{
+			next;
+		}
 
 		#
 		# Bump the matching-records count.
@@ -336,7 +365,13 @@ sub showzones
 		}
 		elsif($long)
 		{
-			print "zone $zk\t$kr{'zonefile'}\t$kr{'endtime'}\t\"$kr{'keyrec_signdate'}\"\n";
+			my $endtime  = $kr{'endtime'};
+			my $signsecs = $kr{'keyrec_signsecs'};
+
+			my $exptime  = $signsecs + $endtime;
+			my $expstr   = gmtime($exptime);
+
+			print "zone $zk\t$kr{'zonefile'}\t\"$kr{'keyrec_signdate'}\"\t\"$expstr\"\n";
 		}
 		else
 		{
@@ -348,6 +383,10 @@ sub showzones
 #-----------------------------------------------------------------------------
 #
 # Routine:	showkeys()
+#
+# Purpose:	This routine goes through the key-related hashes and prints
+#		output for them.  It's only done if the appropriate option
+#		has been given, blah blah blah.
 #
 sub showkeys
 {
@@ -405,11 +444,77 @@ sub showkeys
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	expiredzone()
+#
+# Purpose:	This routine determines if a specified zone has expired or
+#		if it's still valid.
+#
+# Return Values:
+#		 1 - the zone has expired
+#		 0 - the zone has not expired
+#
+sub expiredzone
+{
+	my $zn = shift;				# Zone name to be checked.
+	my %zkr;				# Zone keyrec.
+	my $zkrref;				# Reference to zone keyrec.
+
+	my $endtime;				# Zone's end-time.
+	my $signsecs;				# Zone's signing date.
+
+	my $curtime = time();			# Current time.
+	my $secs;				# Seconds in "+nnn" endtime.
+	my $finaltime;				# Time zone expires.
+
+	#
+	# Get the zone's keyrec.
+	#
+	$zkrref = $zones{$zn};
+	%zkr = %$zkrref;
+
+	#
+	# Pull some data from the keyrec.
+	#
+	$endtime  = $zkr{'endtime'};
+	$signsecs = $zkr{'keyrec_signsecs'};
+
+	#
+	# Get the number of seconds until the zone's end time.
+	#
+	if($endtime =~ /^+/)
+	{
+		$endtime =~ /\+([0-9]+)/;
+		$secs = $1;
+	}
+
+	#
+	# Calculate the zone's expiration date.
+	#
+	$finaltime = $signsecs + $secs;
+
+	#
+	# If the zone has expired, we'll return success.  If not, we'll
+	# return failure.
+	#
+	if($finaltime <= $curtime)
+	{
+		return(1);
+	}
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	refdkey()
 #
 # Purpose:	This routine determines if a named key is referenced by any
 #		zones.  This doesn't distinguish between KSKs and any of the
-#		ZSKs.  If found, 1 is returned; if not, 0 is returned.
+#		ZSKs.
+#
+# Return Values:
+#		 1 - the key is referenced in a zone
+#		 0 - the key is not referenced in a zone
 #
 sub refdkey
 {
@@ -447,6 +552,11 @@ sub refdkey
 #-----------------------------------------------------------------------------
 #
 # Routine:	outkey()
+#
+# Purpose:	This routine performs the actual output operations for key
+#		data.  It is called for KSKs and three flavors of ZSK.
+#		It handles the referenced-key options, depending on whether
+#		or not the specified key is actually referenced.
 #
 sub outkey
 {
