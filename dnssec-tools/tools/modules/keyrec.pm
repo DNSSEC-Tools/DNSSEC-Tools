@@ -168,8 +168,6 @@ sub keyrec_read
 		$keyrecs{$name}{$keyword} = $value;
 	}
 
-#	print "\n";
-
 	#
 	# Return the number of keyrecs we found.
 	#
@@ -228,24 +226,27 @@ sub keyrec_recval
 #
 # Routine:	keyrec_setval()
 #
-# Purpose:	Set the value of a name/subfield pair.
+# Purpose:	Set the value of a name/subfield pair.  The value is saved
+#		in both %keyrecs and in @keyreclines.  The $modified file-
+#		modified flag is updated, along with the length $keyreclen.
 #
 sub keyrec_setval
 {
-	my $found = 0;					# Keyrec-found flag.
-	my $fldind;				# Loop index.
-	my $krind;			# Loop index for finding keyrec.
 	my $name  = shift;		# Name of keyrec we're modifying.
 	my $field = shift;		# Keyrec's subfield to be changed.
 	my $val	  = shift;		# New value for the keyrec's subfield.
+
+	my $found = 0;			# Keyrec-found flag.
+	my $fldind;			# Loop index.
+	my $krind;			# Loop index for finding keyrec.
+	my $lastfld = 0;		# Last found field in @keyreclines.
 
 	#
 	# If a keyrec of the specified name doesn't exist, then we'll whine
 	# and return an empty string.
 	#
-	# Unless...  If the field is "keyrec_type", then we're creating
-	# a new keyrec.  We'll add it to the @keyreclines array and the
-	# %keyrecs hash.
+	# Unless...  If the field is "keyrec_type", then we're creating a new
+	# keyrec.  We'll add it to @keyreclines and %keyrecs.
 	#
 	if(!exists($keyrecs{$name}))
 	{
@@ -275,7 +276,7 @@ sub keyrec_setval
 		# Set the file-modified flag.
 		#
 		$modified = 1;
-		
+
 		return;
 	}
 
@@ -318,8 +319,13 @@ sub keyrec_setval
 		}
 	}
 
-
-	my $lastfld = 0;
+	#
+	# Find the specified field's entry in the keyrec's lines in
+	# @keyreclines.  We'll skip over lines that don't have a keyword
+	# and dquotes-enclosed value.  If we hit the next keyrec (marked
+	# by a zone or key line) then we'll stop looking and add a new
+	# entry at the end of the keyrec's fields.
+	#
 	for($fldind=$krind+1;$fldind<$keyreclen;$fldind++)
 	{
 		my $line = $keyreclines[$fldind];	# Line in keyrec file.
@@ -351,6 +357,10 @@ sub keyrec_setval
 			last;
 		}
 
+		#
+		# Save the index of the last field we've looked at that
+		# belongs to the keyrec.
+		#
 		$lastfld = $fldind;
 
 		#
@@ -376,11 +386,44 @@ sub keyrec_setval
 	else
 	{
 		my $newline = "\t$field\t\t\"$val\"\n";
-		my @endarr = splice @keyreclines,$fldind-1;
-		push @keyreclines,$newline;
-		push @keyreclines,@endarr;
+
+		#
+		# If the keyword is longer than 7 characters, we'll lop out one
+		# of the tabs between the keyword and the value.  This is to do
+		# some rough, simple formatting to keep the keyrec file somewhat
+		# orderly.  This assumes eight-character tabstops.
+		#
+		if(length($field) > 7)
+		{
+			$newline =~ s/\t\t/\t/;
+		}
+
+		#
+		# If the starting keyrec line is the last line in the file,
+		# we'll just push the new line at the end.  If it's somewhere
+		# in the middle, we'll do the magic to insert it where needed.
+		#
+		if($fldind == $keyreclen)
+		{
+			push(@keyreclines,$newline);
+		}
+		else
+		{
+			my @endarr = splice(@keyreclines,$fldind-1);
+			push(@keyreclines,$newline);
+			push(@keyreclines,@endarr);
+		}
+
+		#
+		# Bump the array length counter.
+		#
+		$keyreclen++;
 	}
 
+	#
+	# Tell the world (or at least the module) that the file has
+	# been modified.
+	#
 	$modified = 1;
 }
 
@@ -446,11 +489,11 @@ sub keyrec_write
 
 #--------------------------------------------------------------------------
 #
-# Routine:	keyrec_dump()
+# Routine:	keyrec_dump_hash()
 #
 # Purpose:	Dump the parsed keyrec entries.
 #
-sub keyrec_dump
+sub keyrec_dump_hash
 {
 	#
 	# Loop through the hash of keyrecs and print the keyrec names,
@@ -471,11 +514,11 @@ sub keyrec_dump
 
 #--------------------------------------------------------------------------
 #
-# Routine:	keyrec_list()
+# Routine:	keyrec_dump_array()
 #
-# Purpose:	Display the key record file contents.
+# Purpose:	Display the contents of @keyreclines.
 #
-sub keyrec_list
+sub keyrec_dump_array
 {
 	#
 	# Loop through the array of keyrec lines and print them all.
@@ -515,8 +558,8 @@ DNSSEC::keyrec - Squoodge around with a DNSSEC tools keyrec file.
   keyrec_save();
   keyrec_write();
 
-  keyrec_dump();
-  keyrec_list();
+  keyrec_dump_hash();
+  keyrec_dump_array();
 
 =head1 DESCRIPTION
 
@@ -541,9 +584,9 @@ TBD
 =head2 I<keyrec_write>()
 
 
-=head2 I<keyrec_dump>()
+=head2 I<keyrec_dump_hash>()
 
-=head2 I<keyrec_list>()
+=head2 I<keyrec_dump_array>()
 
 =head1 EXAMPLES
 
