@@ -1,0 +1,257 @@
+#!/usr/bin/perl
+
+use Net::DNS;
+use Net::DNS::ZoneFile::Fast;
+use Getopt::Std;
+use Data::Dumper;
+use Text::Wrap;
+
+use strict;
+
+my %opts = (l => 5,
+	    r => '/usr/share/dnslint.rules.pl');
+
+my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs);
+
+getopts("hvl:r:", \%opts) || usage();
+
+usage() if ($opts{'h'});
+
+#
+# load rule files
+#   (comma separated list)
+#
+foreach my $rfexp (split(/,\s*/, $opts{'r'})) {
+    my @rfs = glob($rfexp);
+    foreach $rf (@rfs) {
+	next if (! -f $rf || $rf =~ /.bak$/ || $rf =~ /~$/);
+	print STDERR "--- loading rule file $rf\n    rules:" if ($opts{'v'});
+	if ($rf =~ /\.pl$/) {
+	    do $rf;
+	} else {
+	    parse_rule_file($rf);
+	}
+	print STDERR "\n" if ($opts{'v'});
+    }
+}
+
+#
+# load zone files
+#
+while ($#ARGV > -1) {
+    $current_zone_file = shift;
+    $current_domain = shift;
+    %nrecs = ();
+
+    #
+    # Parse the file into an array
+    #
+    my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $current_zone_file,
+						origin => "$current_domain.",
+						soft_errors => 1,
+						on_error => \&my_err);
+
+    #
+    # call each rule on each record
+    #
+    print STDERR "--- Analyzing individual records in $current_zone_file\n" if ($opts{'v'});
+    foreach my $rec (@$rrset) {
+	foreach my $r (@rules) {
+	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
+		(!exists($r->{'type'}) || $rec->type eq $r->{'type'}) &&
+		(!exists($r->{'type'}) || $r->{'ruletype'} ne 'name')) {
+		my $res = $r->{'test'}->($rec, $r);
+		if ($res) {
+		    print_error($r, $res,
+				"$current_zone_file:$rec->{Line}");
+		}
+	    }
+	}
+	push @{$nrecs{$rec->name}{$rec->type}}, $rec;
+    }
+
+
+    #
+    # call each ruletype=name rule on each name set of records
+    #
+    print STDERR "--- Analyzing records for each name in $current_zone_file\n"  if ($opts{'v'});
+    foreach my $namerec (keys(%nrecs)) {
+	foreach my $r (@rules) {
+	    if ((!exists($r->{'level'}) || $opts{'l'} >= $r->{'level'}) &&
+		(exists($r->{'ruletype'}) && $r->{'ruletype'} ne 'name')) {
+		my $res = $r->{'test'}->($nrecs{$namerec}, $r, $namerec);
+		if ($res) {
+		    print_error($r, $res, "$current_zone_file::$namerec");
+		}
+	    }
+	}
+    }
+}
+
+
+#######################################################################
+
+# Print the results of an error for a given rule
+sub print_error {
+    my ($r, $err, $loc) = @_;
+    my $class = $r->{class} || 'Error';
+    print STDERR "$loc: $class\n";
+    if ($opts{'v'}) {
+	print STDERR "  Rule Name:   $r->{name}\n";
+	print STDERR "  Level:       $r->{level}\n";
+    }
+    print STDERR wrap("  Error:       ","               ",$err),"\n";
+    if ($r->{desc} && $opts{'v'}) {
+	print STDERR wrap("  Details:     ","               ",$r->{desc}),"\n";
+    }
+    print STDERR "\n";
+}
+
+sub add_rule {
+    my $rule = shift;
+
+    # merge in default values
+    my %defaultrule = ( level => 5 );
+    foreach my $key (keys(%defaultrule)) {
+	$rule->{$key} = $defaultrule{$key} if (!exists($rule->{$key}));
+    }
+
+    # check rule validity for required fields
+    if (!$rule->{'name'}) {
+	warn "no name for a rule in file $rf\n";
+    }
+    if (!$rule->{'test'}) {
+	warn "no test defined for a rule in file $rf\n";
+    }
+
+    print STDERR " $rule->{'name'}" if ($opts{'v'});
+
+    # remember the rule
+    push @rules, $rule;
+}
+
+# parses a text based rule file
+sub parse_rule_file {
+    my $file = $_[0];
+    my ($rule, $err);
+    open(RF, $file);
+    my $nextline;
+
+    $err = 0;
+    while (($_ = $nextline) || ($_ = <RF>)) {
+	$nextline = undef;
+	next if (/^\s*#/);
+	if (/(test|init):/) {
+	    my $type = $1;
+
+	    # collect code
+	    my $code;
+	    while (<RF>) {
+		# rule code must begin with white space
+		last if (!/^\s/ || /^\s*$/);
+		$code .= $_;
+	    }
+
+	    # add sub wrapper (if not init type)
+	    if ($type ne 'init' && $code !~ /^\s*sub\s*{/) {
+		$code = "sub { $code }";
+	    }
+
+	    # evaluate it
+	    if ($type eq 'init') {
+		eval("$code");
+	    } else {
+		$rule->{'test'} = eval("$code");
+	    }
+
+	    # if error, mention it
+	    if ($@) {
+		warn "broken code in rule: $@";
+		print STDERR "IN CODE: $code\n" if ($opts{'v'});
+		$err = 1;
+	    }
+	    $nextline = $_ if (!/^\s/);
+	} elsif (/^\s*(\w+):\s*(.*)/) {
+	    $rule->{$1} = $2;
+	} elsif (!/^\s*$/) {
+	    warn "illegal rule definition";
+	}
+
+	# end of rule (can get here from inside a test end too, hence
+	# not an else clause above)
+	if (/^\s*$/) {
+	    if ($rule && !$err) {
+		add_rule($rule);
+	    }
+	    $rule = undef;
+	    $err = 0;
+	}
+    }
+    if ($rule && !$err) {
+	add_rule($rule);
+    }
+}
+
+sub usage {
+    print "
+$0 [-h] [-v] [-l LEVEL] [-r RULEFILE] ZONEFILE DOMAINNAME...
+";
+}
+
+=head1 NAME
+
+DoNutS - analyze DNS zone files for errors and warnings
+
+=head1 SYNOPSIS
+
+./donuts [-h] [-v] [-l LEVEL] [-r RULEFILES] ZONEFILE DOMAINNAME...
+
+=head1 DESCRIPTION
+
+DoNutS analyzes DNS zone files for particular problems.  This is
+especially important for zones making use of DNSsec security records,
+since many subtle problems can occur.
+
+=head1 OPTIONS
+
+=over
+
+=item -h
+
+Displays a help message.
+
+=item -v
+
+Turns on verbose output.
+
+=item -l LEVEL
+
+Sets the level of errors you want to see.  The default is level 5.
+The maximum value is level 9, which displays many debuging results.
+You probably want to run no higher than level 8.
+
+=item -r RULEFILES
+
+A comma-seperated list of rule files to load.  The strings will be
+passed to glob() so * wildcards can be used to specify multiple files.
+
+=back
+
+=cut
+
+=head1 COPYRIGHT
+
+Copyright 2004 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker <hardaker@users.sourceforge.net>
+
+=head1 SEE ALSO
+
+Net::DNS
+
+http://dnssec-tools.sourceforge.net/
+
+=cut
