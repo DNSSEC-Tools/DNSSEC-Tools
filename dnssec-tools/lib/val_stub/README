@@ -1,0 +1,18 @@
+To compile:
+
+	make clean; make
+
+To run the resolver-driver:
+
+	./driver
+
+To run the verifier:
+
+	./verify [[CLASS] TYPE] DOMAIN_NAME
+
+     If CLASS is not provided, it is assumed to be IN.
+     If TYPE is not provided, it is assumed to be A.
+
+The verify program will not do chain-validation.  It will just check
+that the DNSKEY can correctly verify the signature on a given resource
+record.
