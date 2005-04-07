@@ -16,20 +16,26 @@ SRC=  	res_squery.c \
 
 OBJ=$(SRC:.c=.o)
 
+LIBVAL= libval.a
+
 DRIVER= driver 
 #VALIDATOR=validate (for future)
 VALIDATOR= verify
 
-all: ${OBJ} ${DRIVER} ${VALIDATOR}
+all: ${OBJ} ${LIBVAL} ${DRIVER} ${VALIDATOR}
 
 clean:
-	rm -f ${OBJ} ${DRIVER} ${VALIDATOR} resolver_driver.o main.o
+	rm -f ${OBJ} ${LIBVAL} ${DRIVER} ${VALIDATOR} resolver_driver.o main.o
 
 .c.o:
 	${GCC} -c $< -o $@
+
+${LIBVAL}: ${OBJ}
+	ar cruv $@ ${OBJ}
+	ranlib $@
 
 ${DRIVER}: ${OBJ} resolver_driver.o
 	${GCC} -L${LIB} -o $@ $? ${SRES}
 
 ${VALIDATOR}: ${OBJ} main.o
-	${GCC} -L${LIB} -o $@ $? ${SRES}
+	${GCC} -L. -L${LIB} -o $@ main.o -lval ${SRES}
