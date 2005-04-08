@@ -130,6 +130,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     u_int8_t sig_data[BUFLEN*2];
     val_result_t status = INDETERMINATE;
     char requested_name[MAXDNAME];
+    int found_dnskey = 0;
 
     if (!response) {
 	printf("val_verify(): no response to verify\n");
@@ -245,6 +246,8 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 		    continue;
 		}
 
+		found_dnskey = 1;
+
 		/* verify signature */
 		printf("val_verify(): verifying signature\n");
 		if ((status = val_sigverify(sig_data, sig_data_len,
@@ -263,6 +266,14 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	
 	rrset = rrset->rrs_next;
     }
+
+    if (!found_dnskey) {
+	status = DNSKEY_MISSING;
+    }
+    else {	
+	status = INDETERMINATE;
+    }
+
 
  cleanup:
     // Free dnskey rdata structs
