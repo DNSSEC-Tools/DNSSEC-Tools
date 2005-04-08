@@ -50,9 +50,4 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
 			   val_rrsig_rdata_t *rdata);
 
-/* Get rrset in canonical form */
-int val_get_canon_rrset (struct rrset_rec *rrset,
-			 const unsigned int orig_ttl,
-			 unsigned char *rrBuf,
-			 int BUFLEN);
 #endif

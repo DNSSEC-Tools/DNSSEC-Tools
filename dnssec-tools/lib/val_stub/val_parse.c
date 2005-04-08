@@ -164,39 +164,3 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
     return index;
 }
 
-/* returns the number of bytes that were put into rrBuf */
-int val_get_canon_rrset (struct rrset_rec *rrset,
-			 const unsigned int orig_ttl,
-			 unsigned char *rrBuf,
-			 int BUFLEN) {
-
-    int rrBuf_len = 0;
-    struct rr_rec *rr = rrset->rrs_data;
-    unsigned char *cp;
-    
-    /* Assume rrs_data list is in canonical order */
-    while (rr) {
-	memcpy(rrBuf + rrBuf_len, rrset->rrs_name_n, strlen(rrset->rrs_name_n) + 1);
-	rrBuf_len += strlen(rrset->rrs_name_n) + 1;
-
-	cp = rrBuf + rrBuf_len;
-	NS_PUT16(rrset->rrs_type_h, cp);
-	rrBuf_len += 2;
-
-	NS_PUT16(rrset->rrs_class_h, cp);
-	rrBuf_len += 2;
-
-	/* Put the original ttl */
-	NS_PUT32(orig_ttl, cp);
-	rrBuf_len += 4;
-
-	NS_PUT16(rr->rr_rdata_length_h, cp);
-	rrBuf_len += 2;
-
-	memcpy(rrBuf +rrBuf_len, rr->rr_rdata, rr->rr_rdata_length_h);
-	rrBuf_len += rr->rr_rdata_length_h;
-
-	rr = rr->rr_next;
-    }
-    return rrBuf_len;
-}
