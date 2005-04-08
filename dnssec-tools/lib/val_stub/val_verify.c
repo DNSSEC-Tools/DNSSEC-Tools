@@ -83,6 +83,45 @@ static int val_sigverify (const char *data,
 
 }
 
+/* returns the number of bytes that were put into rrBuf */
+/* Concatenate the rrset into a buffer */
+/* Assume canonical ordering of RRs in the rrset */
+static int val_concat_rrset ( struct rrset_rec *rrset,
+			      const unsigned int orig_ttl,
+			      unsigned char *rrBuf,
+			      int orig_rrBuf_len) {
+
+    int rrBuf_len = 0;
+    struct rr_rec *rr = rrset->rrs_data;
+    unsigned char *cp;
+    
+    /* Assume rrs_data list is in canonical order */
+    while (rr) {
+	memcpy(rrBuf + rrBuf_len, rrset->rrs_name_n, strlen(rrset->rrs_name_n) + 1);
+	rrBuf_len += strlen(rrset->rrs_name_n) + 1;
+
+	cp = rrBuf + rrBuf_len;
+	NS_PUT16(rrset->rrs_type_h, cp);
+	rrBuf_len += 2;
+
+	NS_PUT16(rrset->rrs_class_h, cp);
+	rrBuf_len += 2;
+
+	/* Put the original ttl */
+	NS_PUT32(orig_ttl, cp);
+	rrBuf_len += 4;
+
+	NS_PUT16(rr->rr_rdata_length_h, cp);
+	rrBuf_len += 2;
+
+	memcpy(rrBuf +rrBuf_len, rr->rr_rdata, rr->rr_rdata_length_h);
+	rrBuf_len += rr->rr_rdata_length_h;
+
+	rr = rr->rr_next;
+    }
+    return rrBuf_len;
+}
+
 
 val_result_t val_verify (struct val_context *context, struct domain_info *response) {
     val_dnskey_rdata_t *dnskey_rdata, *dp;
@@ -90,6 +129,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     struct rrset_rec *rrset;
     u_int8_t sig_data[BUFLEN*2];
     val_result_t status = INDETERMINATE;
+    char requested_name[MAXDNAME];
 
     if (!response) {
 	printf("val_verify(): no response to verify\n");
@@ -132,10 +172,27 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	goto cleanup;
     }
 
+    bzero(requested_name, MAXDNAME);
+    ns_name_pton(response->di_requested_name_h, requested_name, MAXDNAME);
+
     // Check for each rrset
     rrset = response->di_rrset;
     while(rrset) {
 	struct rr_rec *rrs_sig = rrset->rrs_sig;
+
+	// Check if the rrset matches the query
+	if (! ( (response->di_requested_type_h == rrset->rrs_type_h) &&
+		(response->di_requested_class_h == rrset->rrs_class_h) &&
+		(strcasecmp(requested_name, rrset->rrs_name_n) == 0)
+		)) {
+	    printf("rrset does not match query\n");
+	    printf("\t requested_name = %s, requested_type = %d, requested_class = %d\n",
+		   requested_name, response->di_requested_type_h, response->di_requested_class_h);
+	    printf("\t rrset_name = %s, rrset_type = %d, rrset_class = %d\n",
+		   rrset->rrs_name_n, rrset->rrs_type_h, rrset->rrs_class_h);
+	    rrset = rrset->rrs_next;
+	    continue;
+	}
 
 	// Check for each signature
 	while (rrs_sig) {
@@ -167,13 +224,13 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    
 	    /* Copy RRs in the rrset in canonical order */
 	    // Compose the canonical form of the rrset data
-	    printf("val_verify(): canonicalizing rrset\n");
+	    printf("val_verify(): concatenating rrset\n");
 	    {
 		unsigned char canon_rrset[BUFLEN];
 		int canon_rrset_length = 0;
 		bzero(canon_rrset, BUFLEN);
 
-		canon_rrset_length = val_get_canon_rrset(rrset, rrsig_rdata.orig_ttl, canon_rrset, BUFLEN);
+		canon_rrset_length = val_concat_rrset(rrset, rrsig_rdata.orig_ttl, canon_rrset, BUFLEN);
 		memcpy(sig_data + sig_data_len, canon_rrset, canon_rrset_length);
 		sig_data_len += canon_rrset_length;
 	    }
