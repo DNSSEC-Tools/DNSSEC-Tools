@@ -50,6 +50,12 @@ use strict;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Verbose values.
+#
+my $VERBOSE_LOW	   = 1;			# Lowest verbosity level.
+my $VERBOSE_MEDIUM = 2;			# Middlin' verbosity level.
+my $VERBOSE_HIGH   = 3;			# High verbosity level.
 
 #
 # Options fields.
@@ -129,14 +135,8 @@ sub main
 	#
 	optsandargs();
 
-	if($verbose)
+	if($verbose > $VERBOSE_LOW)
 	{
-		print "options\n";
-		foreach my $k (sort(keys(%opts)))
-		{
-			print "\t$k - $opts{$k}\n";
-		}
-
 		print "\narguments:\n";
 		print "\tzone	 - $zone\n";
 		print "\tzoneout - $zoneout\n";
@@ -303,7 +303,7 @@ sub optsandargs()
 	# If the verbose flag was set, we'll print out the options we're
 	# using.
 	#
-	if($verbose > 1)
+	if($verbose > $VERBOSE_MEDIUM)
 	{
 		print "zonesigner arguments:\n";
 		print "\tkrfile		- <$krfile>\n";
@@ -458,7 +458,7 @@ sub genksk
 		}
 
 		$ksk = $opts{'kskkey'};
-		print "\treusing existing KSK - $ksk\n" if ($verbose);
+		print "\treusing existing KSK - $ksk\n\n" if ($verbose);
 
 		return;
 	}
@@ -475,7 +475,7 @@ sub genksk
 		exit(1);
 	}
 	chomp $ksk;
-	print "\t\tnew KSK - $ksk\n" if ($verbose);
+	print "\t\tnew KSK - $ksk\n\n" if ($verbose);
 
 	#
 	# Add the KSK's keyrec to the keyrec file.
@@ -513,7 +513,7 @@ sub genzsk
 		}
 
 		$zsk = $opts{$zskkey};
-		print "\treusing existing $keytype ZSK - $zsk\n" if ($verbose);
+		print "\treusing existing $keytype ZSK - $zsk\n\n" if ($verbose);
 
 		return($zsk);
 	}
@@ -530,7 +530,7 @@ sub genzsk
 		exit(1);
 	}
 	chomp $zsk;
-	print "\t\tnew $keytype ZSK - $zsk\n" if ($verbose);
+	print "\t\tnew $keytype ZSK - $zsk\n\n" if ($verbose);
 
 	#
 	# Add the ZSK's keyrec to the keyrec file.
@@ -555,7 +555,7 @@ sub keydirs
 	#
 	# Ensure the KSK key directory exists and is actually a directory.
 	#
-	print "checking key directories\n" if ($verbose);
+	print "checking key directories\n" if ($verbose > $VERBOSE_LOW);
 
 	if($kskdir ne ".")
 	{
@@ -603,7 +603,7 @@ sub zoneincludes
 	my $flen;				# Zone file's length.
 	my $newserial;				# Zone's new serial number.
 
-	print "adding key includes to zone file\n" if ($verbose);
+	print "adding key includes to zone file\n" if ($verbose > $VERBOSE_LOW);
 
 	#
 	# Update the zone data's serial number.
@@ -614,7 +614,7 @@ sub zoneincludes
 		print STDERR "unable to update serial number in $zone\n";
 		exit(3);
 	}
-	print "$zone's new serial number - $newserial\n" if ($verbose);
+	print "$zone's new serial number - $newserial\n" if ($verbose > $VERBOSE_LOW);
 
 	if(hasincludes())
 	{
@@ -785,7 +785,7 @@ sub zonesign
 	$chron = `$DATE +"%m/%d/%y"`;
 	$chron =~ s/\n//;
 
-	print "zone signed successfully\n";
+	print "zone signed successfully\n\n";
 	print "${zone}:\n";
 	print "	ZSK  $zcurtag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
 	print "	ZSK  $zpubtag  $zsize  $chron\n";
@@ -1028,6 +1028,7 @@ sub chkkrf
 	#
 	if($nokrfile)
 	{
+		print "not using a keyrec file\n" if(verbose);
 		return;
 	}
 
@@ -1053,7 +1054,11 @@ sub chkkrf
 		@ARGV = @saveargs;
 		unshift(@ARGV,$defkrf);
 		unshift(@ARGV,"-krfile");
+		print "using default keyrec file $defkrf\n" if(verbose);
 
+		#
+		# Rescan our arguments.
+		#
 		opts_reset();
 		optsandargs();
 		return;
@@ -1074,6 +1079,8 @@ sub chkkrf
 	$zoneopts{'zonefile'}	 = $zoneout;
 
 	keyrec_add('zone',$zone,\%zoneopts);
+
+	print "using keyrec file $krfile\n" if(verbose);
 }
 
 #######################################################################
@@ -1323,7 +1330,8 @@ Display a usage message.
 
 =item -verbose
 
-Verbose output will be given.
+Verbose output will be given.  As more instances of I<-verbose> are given on
+the command line, additional levels of verbosity are achieved.
 
 =back
 
