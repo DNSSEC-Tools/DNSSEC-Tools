@@ -63,6 +63,12 @@ sub parseconfig
 	}
 
 	#
+	# Make sure the config file actually exists.  If not,
+	# we'll quietly return.
+	#
+	return if(! -e $conffile);
+
+	#
 	# Open up the config file.
 	#
 	if(open(CONF,"< $conffile") == 0)
@@ -197,7 +203,8 @@ The parsed contents are put into a hash table, which is returned to the caller.
 
 This routine reads and parses a caller-specified DNSSEC tools configuration
 file.  The parsed contents are put into a hash table, which is returned to
-the caller.
+the caller.  The routine quietly returns if the configuration file does not
+exist. 
 
 =back
 
