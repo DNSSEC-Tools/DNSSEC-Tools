@@ -30,7 +30,7 @@ our $VERSION = "0.01";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
-	         opts_keykr opts_zonekr opts_createkrf
+	         opts_keykr opts_zonekr opts_createkrf opts_reset
 	         opts_suspend opts_restore opts_drop);
 
 #
@@ -48,6 +48,7 @@ my @stdopts =
 	"kskkey=s",			# KSK key.
 	"ksklength=i",			# Length of KSK.
 	"kskpath=s",			# Path to KSK.
+	"nokrfile",			# Don't use a keyrec file.
 	"random=s",			# Random number generator.
 	"reuseksk",			# Reuse KSK.
 	"reusezsk",			# Reuse ZSK.
@@ -86,8 +87,6 @@ sub tooloptions
 
 	my @opts;				# Copy of standard options.
 	my %configopts;				# Combined options.
-
-	my @curargv;				# Current @ARGV.
 
 	#
 	# Get the arguments.  If the keyrec file arg is an empty string, then
@@ -584,6 +583,19 @@ sub opts_drop
 	%saveopts = ();
 }
 
+##############################################################################
+#
+# Routine:	opts_reset()
+#
+# Purpose:	Reset the first-call flag so we can look at our command-
+#		line arguments once more.
+#
+sub opts_reset
+{
+	$firstcall = 1;
+	opts_drop();
+}
+
 1;
 
 #############################################################################
@@ -639,6 +651,8 @@ Net::DNS::SEC::Tools::tooloptions - dnssec-tools option routines.
   opts_restore();
 
   opts_drop();
+
+  opts_reset();
 
 
 =head1 DESCRIPTION
@@ -864,18 +878,22 @@ I<opts_krfile()>, and I<opts_zonekr()>.
 Suspend inclusion of the command-line options in building the final hash
 table of responses.
 
-
 =item I<opts_restore()>
 
 Restore inclusion of the command-line options in building the final hash
 table of responses.
-
 
 =item I<opts_drop()>
 
 Discard the command-line options.  They will no longer be available for
 inclusion in building the final hash table of responses for this execution
 of the command.
+
+=item I<opts_reset()>
+
+Reset an internal flag so that the command-line arguments may be
+re-examined.  This is usually only useful if the arguments have been
+modified by the calling program itself.
 
 =back
 
