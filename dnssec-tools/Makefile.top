@@ -22,3 +22,12 @@ man3dir		= $(mandir)/man3
 man5dir		= $(mandir)/man5
 man8dir		= $(mandir)/man8
 
+#
+# compilation parameters
+#
+CC=@CC@
+CFLAGS_EX=
+CFLAGS=@CFLAGS@ $(CFLAGS_EX)
+AR=@AR@
+RANLIB=@RANLIB@
+INSTALL=@INSTALL@
