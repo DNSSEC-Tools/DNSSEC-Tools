@@ -7,6 +7,7 @@ AC_PREREQ([2.59])
 
 AC_PATH_PROG([PERLPROG],perl)
 AC_PATH_PROG(AR, ar)
+AC_PATH_PROG(RM, rm)
 
 # useful stuff for installation
 AC_PROG_INSTALL
@@ -22,6 +23,7 @@ AC_CONFIG_FILES([
  Makefile:Makefile.top:Makefile.in
  lib/libvalidat/Makefile:Makefile.top:lib/libvalidat/Makefile.in
  lib/libsres/Makefile:Makefile.top:lib/libsres/Makefile.in
+ lib/val_stub/Makefile:Makefile.top:lib/val_stub/Makefile.in
 ])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT
