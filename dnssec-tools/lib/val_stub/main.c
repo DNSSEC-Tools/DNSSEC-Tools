@@ -254,13 +254,7 @@ int main(int argc, char *argv[])
 	}
     } while ((dnssec_status == DNSKEY_MISSING) && (domain_name != NULL));
 
-    printf("dnssec status = ");
-    switch (dnssec_status) {
-    case VALIDATE_SUCCESS : printf("VALIDATE_SUCCESS\n"); break;
-    case INDETERMINATE    : printf("INDETERMINATE\n");    break;
-    case DNSKEY_MISSING   : printf("DNSKEY_MISSING\n");   break;
-    default: printf("Unknown [%d]\n", dnssec_status);
-    }
+    printf("dnssec status = %s\n", p_val_error(dnssec_status));
 
     /* Cleanup */
     free_domain_info_ptrs(&response);
