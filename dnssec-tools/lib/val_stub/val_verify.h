@@ -24,7 +24,7 @@ typedef int val_result_t;
  * The Verifier Function.
  *
  * Returns VALIDATE_SUCCESS if DNSSEC validation succeeds,
- *         INDETERMINATE if DNSSEC validation fails
+ *         other error codes DNSSEC validation fails
  *         and other values as given above.
  * It takes in a domain_info struct, and does not make any resolver queries itself.
  * It's just a passive verifier.
