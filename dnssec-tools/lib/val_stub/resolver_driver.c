@@ -13,20 +13,11 @@
 #include "val_support.h"
 #include "res_squery.h"
 
-/*
-#define NAME_SERVER_STRING "158.69.82.20"
-#define AUTH_ZONE_INFO "fruits.netsec.tislabs.com"
-#define QUERY_NAME "apple.fruits.netsec.tislabs.com"
-*/
-
-/*
-#define AUTH_ZONE_INFO "fruits.netsec.tislabs.com."
-#define NAME_SERVER_STRING	"158.69.82.20"
-#define QUERY_NAME "dn.wesh.fruits.netsec.tislabs.com."
-*/
 #define AUTH_ZONE_INFO "fruits.netsec.tislabs.com."
 #define NAME_SERVER_STRING	"158.69.82.20"
 #define QUERY_NAME "dns.wesh.fruits.netsec.tislabs.com."
+#define QUERY_TYPE ns_t_a
+#define QUERY_CLASS ns_c_in
 
 int init_respol(struct res_policy *respol)
 {
@@ -80,8 +71,8 @@ int main()
 	struct domain_info response;
 	int ret_val;
 
-	const u_int16_t type = ns_t_a;
-	const u_int16_t class = ns_c_in;
+	const u_int16_t type = QUERY_TYPE;
+	const u_int16_t class = QUERY_CLASS;
 
 	char *name = QUERY_NAME;
 
