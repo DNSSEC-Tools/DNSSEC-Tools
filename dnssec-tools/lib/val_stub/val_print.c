@@ -39,6 +39,7 @@ void dump_rrset(struct rrset_rec *rrset)
 	printf("    rrs_class   = %s\n", p_class(rrset->rrs_class_h));
 	printf("    rrs_ttl     = %d\n", rrset->rrs_ttl_h);
 	printf("    rrs_section = %s\n", p_section(rrset->rrs_section - 1, !ns_o_update));
+	printf("    rrs_status  = %s [%d]\n", p_val_error(rrset->rrs_status), rrset->rrs_status);
 
 	printf("    rrs_data    =\n");
 	rr = rrset->rrs_data;
