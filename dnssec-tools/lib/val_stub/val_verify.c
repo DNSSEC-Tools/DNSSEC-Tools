@@ -251,7 +251,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 		/* verify signature */
 		printf("val_verify(): verifying signature\n");
 		if ((status = val_sigverify(sig_data, sig_data_len,
-				  *dp, rrsig_rdata)) == VALIDATE_SUCCESS) {
+				  *dp, rrsig_rdata)) == RRSIG_VERIFIED) {
 		    goto cleanup;
 		}
 		else {
