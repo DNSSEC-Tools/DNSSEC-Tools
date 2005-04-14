@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "val_errors.h"
 #include "val_support.h"
 #include "res_squery.h"
 #include "val_parse.h"
@@ -96,6 +97,39 @@ void fetch_dnskeys(val_context_t *context, char *domain_name,
     free_domain_info_ptrs(&dnskey_response);
 }
 
+/* a naive algorithm to figure out if it is a tld 
+ * Return values:
+ *   0 = no
+ *  -1 = error
+ *   1 = yes
+ */
+static int is_tld (const char *dname)
+{
+    int len = 0;
+    int numdots = 0;
+    int i;
+
+    if (!dname) {
+	return -1;
+    }
+
+    len = strlen(dname);
+    // assume dname is fully qualified.  ignore the last dot/character
+    for (i=0; i<len-1; i++) {
+	if (dname[i] == '.') {
+	    numdots++;
+	}
+    }
+
+    if (numdots == 0) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+
+}
+
 /*
  * A command-line validator
  */
@@ -146,7 +180,6 @@ int main(int argc, char *argv[])
 	    // printf("class = ns_c_in\n");
 	}
     }
-
 
     if (typestr) {
 	if (strncasecmp(typestr, "DNSKEY", 6) == 0) {
@@ -222,24 +255,15 @@ int main(int argc, char *argv[])
     context.learned_ds    = NULL;
 
     ret_val = res_squery ( &context, domain_name, type, class, &respol, &response); 
-
     printf("\nres_squery returned %d\n", ret_val);
-    printf("response = ");
-    dump_dinfo(&response);
-    printf("context = ");
-    dump_val_context(&context);
 
-    if (!context.learned_keys) {
-	fetch_dnskeys(&context, domain_name, class, &respol);
-    }
-    
     /* A brute-force algorithm for finding the DNSKEYs if they
      * were not found
      */
     do {
 	dnssec_status = val_verify (&context, &response);
 	if (dnssec_status == DNSKEY_MISSING) {
-	    if (domain_name && (domain_name[0] != '\0')) {
+	    if (domain_name && (domain_name[0] != '\0') && !is_tld(domain_name)) {
 		printf("\nQuerying the domain %s for DNSKEY records.\n",
 		       domain_name);
 		
@@ -254,7 +278,11 @@ int main(int argc, char *argv[])
 	}
     } while ((dnssec_status == DNSKEY_MISSING) && (domain_name != NULL));
 
-    printf("dnssec status = %s\n", p_val_error(dnssec_status));
+    printf("response = ");
+    dump_dinfo(&response);
+    printf("context = ");
+    dump_val_context(&context);
+    printf("dnssec status = %s [%d]\n", p_val_error(dnssec_status), dnssec_status);
 
     /* Cleanup */
     free_domain_info_ptrs(&response);
