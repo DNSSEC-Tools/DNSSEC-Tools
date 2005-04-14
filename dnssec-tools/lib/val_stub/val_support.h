@@ -58,4 +58,6 @@ int extract_from_rr (   u_int8_t *response,
                         int *rdata_index);
 void stow_info (struct rrset_rec **unchecked_zone_info, struct rrset_rec *new_zone_info);
 
+char *p_val_error(int errno);
+
 #endif /* VAL_SUPPORT_H */
