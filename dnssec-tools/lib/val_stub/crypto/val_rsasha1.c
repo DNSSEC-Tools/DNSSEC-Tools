@@ -22,7 +22,7 @@
 #include <val_errors.h>
 #include "val_rsasha1.h"
 
-/* Returns VALIDATE_SUCCESS on success, other values on failure */
+/* Returns NO_ERROR on success, other values on failure */
 static int rsasha1_parse_public_key (const unsigned char *buf,
 				      int buflen,
 				      RSA *rsa)
@@ -33,7 +33,7 @@ static int rsasha1_parse_public_key (const unsigned char *buf,
     BIGNUM *bn_exp;
     BIGNUM *bn_mod;
 
-    if (!rsa) return INDETERMINATE;
+    if (!rsa) return INTERNAL_ERROR;
 
     cp = (u_char *) buf;
 
@@ -60,7 +60,7 @@ static int rsasha1_parse_public_key (const unsigned char *buf,
     rsa->e = bn_exp;
     rsa->n = bn_mod;
 
-    return VALIDATE_SUCCESS; /* success */
+    return NO_ERROR; /* success */
 }
 
 int rsasha1_sigverify (const unsigned char *data,
@@ -70,20 +70,19 @@ int rsasha1_sigverify (const unsigned char *data,
 {
     RSA *rsa = NULL;
     unsigned char sha1_hash[SHA_DIGEST_LENGTH];
-    unsigned char *sig_data;
     int i;
 
     printf("rsasha1_sigverify(): parsing the public key...\n");
     if ((rsa = RSA_new()) == NULL) {
 	printf("rsasha1_sigverify could not allocate rsa structure.\n");
-	return INDETERMINATE;
+	return OUT_OF_MEMORY;
     };
 
     if (rsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
-				 rsa) != VALIDATE_SUCCESS) {
+				 rsa) != NO_ERROR) {
 	printf("rsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
 	RSA_free(rsa);
-	return INDETERMINATE;
+	return INTERNAL_ERROR;
     }
 
     printf("rsasha1_sigverify(): computing SHA-1 hash...\n");
@@ -101,13 +100,11 @@ int rsasha1_sigverify (const unsigned char *data,
 		   rrsig.signature, rrsig.signature_len, rsa)) {
 	printf("RSA_verify returned SUCCESS\n");
 	RSA_free(rsa);
-	free(sig_data);
-	return VALIDATE_SUCCESS;
+	return RRSIG_VERIFIED;
     }
     else {
 	printf("RSA_verify returned FAILURE\n");
 	RSA_free(rsa);
-	free(sig_data);
-	return INDETERMINATE;
-    }   
+	return RRSIG_VERIFY_FAILED;
+    }
 }

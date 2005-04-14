@@ -31,7 +31,7 @@ static int dsasha1_parse_public_key (const unsigned char *buf,
     int index = 0;
     BIGNUM *bn_p, *bn_q, *bn_g, *bn_y;
 
-    if (!dsa) return INDETERMINATE;
+    if (!dsa) return INTERNAL_ERROR;
 
     T = (u_int8_t)(buf[index]);
     index++;
@@ -53,7 +53,7 @@ static int dsasha1_parse_public_key (const unsigned char *buf,
     dsa->g       = bn_g;
     dsa->pub_key = bn_y;
 
-    return VALIDATE_SUCCESS; /* success */
+    return NO_ERROR; /* success */
 }
 
 int dsasha1_sigverify (const unsigned char *data,
@@ -68,14 +68,14 @@ int dsasha1_sigverify (const unsigned char *data,
     printf("dsasha1_sigverify(): parsing the public key...\n");
     if ((dsa = DSA_new()) == NULL) {
 	printf("dsasha1_sigverify could not allocate dsa structure.\n");
-	return INDETERMINATE;
+	return OUT_OF_MEMORY;
     };
 
     if (dsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
 				 dsa) != VALIDATE_SUCCESS) {
 	printf("dsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
 	DSA_free(dsa);
-	return INDETERMINATE;
+	return INTERNAL_ERROR;
     }
 
     printf("dsasha1_sigverify(): computing SHA-1 hash...\n");
@@ -93,11 +93,11 @@ int dsasha1_sigverify (const unsigned char *data,
 		   rrsig.signature, rrsig.signature_len, dsa)) {
 	printf("DSA_verify returned SUCCESS\n");
 	DSA_free(dsa);
-	return VALIDATE_SUCCESS;
+	return RRSIG_VERIFIED;
     }
     else {
 	printf("DSA_verify returned FAILURE\n");
 	DSA_free(dsa);
-	return INDETERMINATE;
+	return RRSIG_VERIFY_FAILED;
     }   
 }
