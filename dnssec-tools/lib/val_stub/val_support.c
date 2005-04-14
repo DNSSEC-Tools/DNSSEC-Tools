@@ -9,6 +9,8 @@
 #include <support.h>
 #include <res_query.h>
 
+#include "val_errors.h"
+
 #define SIGNBY              18
 
 void free_name_server (struct name_server **ns)
@@ -745,5 +747,77 @@ void stow_info (struct rrset_rec **unchecked_zone_info, struct rrset_rec *new_zo
             }
         }
         old = old->rrs_next;
+    }
+}
+
+char *p_val_error(int errno)
+{
+    switch (errno) {
+
+    case NO_ERROR: return "NO_ERROR"; break;
+    case NOT_IMPLEMENTED: return "NOT_IMPLEMENTED"; break;
+    case OUT_OF_MEMORY: return "OUT_OF_MEMORY"; break;
+    case BAD_ARGUMENT: return "BAD_ARGUMENT"; break;
+    case INTERNAL_ERROR: return "INTERNAL_ERROR"; break;
+    case NO_PERMISSION: return "NO_PERMISSION"; break;
+    case RESOURCE_UNAVAILABLE: return "RESOURCE_UNAVAILABLE"; break;
+    case CONF_PARSE_ERROR: return "CONF_PARSE_ERROR"; break;
+    case NO_POLICY: return "NO_POLICY"; break;
+    case MALFORMED_LOCALE: return "MALFORMED_LOCALE"; break;
+    case UNKNOWN_LOCALE: return "UNKNOWN_LOCALE"; break;
+    case FILE_ERROR: return "FILE_ERROR"; break;
+    case VALIDATE_SUCCESS: return "VALIDATE_SUCCESS"; break;
+    case BOGUS: return "BOGUS"; break;
+    case INDETERMINATE: return "INDETERMINATE"; break;
+    case PROVABLY_UNSECURE: return "PROVABLY_UNSECURE"; break;
+    case SECURITY_LAME: return "SECURITY_LAME"; break;
+    case NAME_EXPANSION_FAILURE: return "NAME_EXPANSION_FAILURE"; break;
+    case NO_PREFERRED_SEP: return "NO_PREFERRED_SEP"; break;
+    case NO_TRUST_ANCHOR: return "NO_TRUST_ANCHOR"; break;
+    case TOO_MANY_LINKS: return "TOO_MANY_LINKS"; break;
+    case TRUST_ANCHOR_TIMEOUT: return "TRUST_ANCHOR_TIMEOUT"; break;
+    case OVERREACHING_NSEC: return "OVERREACHING_NSEC"; break;
+    case NSEC_POINTING_UPWARDS: return "NSEC_POINTING_UPWARDS"; break;
+    case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
+    case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
+    case PROVED_OWNERNAME_MISSING: return "PROVED_OWNERNAME_MISSING"; break;
+    case PROVED_TYPE_MISSING: return "PROVED_TYPE_MISSING"; break;
+    case RRSIG_VERIFIED: return "RRSIG_VERIFIED"; break;
+    case RRSIG_VERIFY_FAILED: return "RRSIG_VERIFY_FAILED"; break;
+    case BARE_RRSIG: return "BARE_RRSIG"; break;
+    case RRSIG_EXPIRED: return "RRSIG_EXPIRED"; break;
+    case RRSIG_NOTYETACTIVE: return "RRSIG_NOTYETACTIVE"; break;
+    case KEY_TOO_LARGE: return "KEY_TOO_LARGE"; break;
+    case KEY_TOO_SMALL: return "KEY_TOO_SMALL"; break;
+    case KEY_NOT_AUTHORIZED: return "KEY_NOT_AUTHORIZED"; break;
+    case NOT_A_ZONE_KEY: return "NOT_A_ZONE_KEY"; break;
+    case CLOCK_SKEW: return "CLOCK_SKEW"; break;
+    case ALGO_REFUSED: return "ALGO_REFUSED"; break;
+    case UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
+    case RRSIG_MISSING: return "RRSIG_MISSING"; break;
+    case DNSKEY_MISSING: return "DNSKEY_MISSING"; break;
+    case DS_MISSING: return "DS_MISSING"; break;
+    case NSEC_MISSING: return "NSEC_MISSING"; break;
+    case DUPLICATE_KEYTAG: return "DUPLICATE_KEYTAG"; break;
+    case CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
+    case UNKNOWN_ALGO: return "UNKNOWN_ALGO"; break;
+    case ALGO_NOT_SUPPORTED: return "ALGO_NOT_SUPPORTED"; break;
+    case WRONG_RRSIG_OWNER: return "WRONG_RRSIG_OWNER"; break;
+    case KEYTAG_MISMATCH: return "KEYTAG_MISMATCH"; break;
+    case UNKNOWN_DNSKEY_PROTO: return "UNKNOWN_DNSKEY_PROTO"; break;
+    case DNS_FAILURE: return "DNS_FAILURE"; break;
+    case WAITING: return "WAITING"; break;
+    case WAKEUP: return "WAKEUP"; break;
+	/*
+    case INSUFFICIENT_DATA: return "INSUFFICIENT_DATA"; break;
+    case HEADER_ERROR: return "HEADER_ERROR"; break;
+    case WRONG_LABEL_COUNT: return "WRONG_LABEL_COUNT"; break;
+    case EDNS_VERSION_ERROR: return "EDNS_VERSION_ERROR"; break;
+    case UNSUPP_ENDS0_LABEL: return "UNSUPP_ENDS0_LABEL"; break;
+    case FLOOD_ATTACK_DETECTED: return "FLOOD_ATTACK_DETECTED"; break;
+    case DNSSEC_VERSION_ERROR: return "DNSSEC_VERSION_ERROR"; break;
+    case SUSPICIOUS_BIT: return "SUSPICIOUS_BIT"; break;
+	*/
+    default: return "Unknown Error Value";
     }
 }
