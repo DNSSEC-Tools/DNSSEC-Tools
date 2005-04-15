@@ -569,6 +569,7 @@ sub keydirs
 	{
 		if(! -e $kskdir)
 		{
+			print "creating KSK directory - $kskdir\n" if ($verbose);
 			mkdir($kskdir);
 		}
 		elsif(! -d $kskdir)
@@ -586,6 +587,7 @@ sub keydirs
 	{
 		if(! -e $zskdir)
 		{
+			print "creating ZSK directory - $zskdir\n" if ($verbose);
 			mkdir($zskdir);
 		}
 		elsif(! -d $zskdir)
