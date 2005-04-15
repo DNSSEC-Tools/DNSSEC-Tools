@@ -45,7 +45,7 @@ $(LIBVAL): $(OBJ)
 	$(RANLIB) $@
 
 $(DRIVER): $(OBJ) resolver_driver.o
-	$(CC) -o $@ $? $(LDFLAGS)
+	$(CC) -o $@ resolver_driver.o -lval $(LDFLAGS)
 
 $(VALIDATOR): $(OBJ) main.o
 	$(CC) -o $@ main.o -lval $(LDFLAGS)
