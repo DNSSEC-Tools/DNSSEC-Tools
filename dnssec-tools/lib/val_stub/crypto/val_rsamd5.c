@@ -47,8 +47,6 @@ static int rsamd5_parse_public_key (const unsigned char *buf,
 	index += 1;
     }
     
-    printf("\texponent length [2] = %d\n", exp_len);
-
     /* Extract the exponent */
     bn_exp = BN_bin2bn(buf + index, exp_len, NULL);
 
@@ -97,12 +95,6 @@ u_int16_t rsamd5_keytag (const unsigned char *pubkey,
     modulus_bin = (unsigned char *) malloc (modulus_len * sizeof(unsigned char));
     
     BN_bn2bin(modulus, modulus_bin);
-
-    printf("modulus = 0x");
-    for (i=0; i<modulus_len; i++) {
-	printf("%02x", modulus_bin[i]);
-    }
-    printf("\n");
 
     keytag = ((0x00ff & modulus_bin[modulus_len - 3]) << 8) |
 	     (0x00ff & modulus_bin[modulus_len - 2]);

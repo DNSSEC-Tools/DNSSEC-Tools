@@ -48,8 +48,6 @@ static int rsasha1_parse_public_key (const unsigned char *buf,
 	index += 1;
     }
     
-    printf("\texponent length [2] = %d\n", exp_len);
-
     /* Extract the exponent */
     bn_exp = BN_bin2bn(buf + index, exp_len, NULL);
     index += exp_len;
