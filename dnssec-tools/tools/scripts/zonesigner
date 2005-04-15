@@ -64,6 +64,7 @@ my $alg;				# Encryption algorithm.
 my $enddate;				# End-time for zone signing.
 my $gends;				# Generate DS records in zone signing.
 my $help = 0;				# Help flag.
+my $kgopts;				# Additional dnssec-keygen options.
 my $ksize;				# Size of KSK.
 my $kskdir;				# Directory to hold KSK.
 my $nokrfile;				# Flag for not using a keyrec file.
@@ -72,7 +73,6 @@ my $szopts;				# Additional dnssec-signzone options.
 my $verbose = 0;			# Turn off verbosity.
 my $zsize;				# Size of ZSK.
 my $zskdir;				# Directory to hold ZSK.
-my $kgopts;				# Additional dnssec-keygen options.
 
 my $ksk;				# KSK we've generated.
 my $kskpath;				# Path to the KSK.
@@ -446,6 +446,8 @@ sub genkeys
 #
 sub genksk
 {
+	my $cmdopts;			# Options for dnssec-signzone.
+
 	#
 	# If we're going to reuse the KSK, ensure it's been created and
 	# return.
@@ -467,8 +469,9 @@ sub genksk
 	#
 	# Generate the new KSK.
 	#
-	print "\t$keygen $kgopts $random $alg $ksize -n zone -f KSK $zone\n" if ($verbose);
-	$ksk = `$keygen $kgopts $random $alg $ksize -n zone -f KSK $zone`;
+	$cmdopts = "$kgopts $random $alg $ksize";
+	print "\t$keygen $cmdopts -n zone -f KSK $zone\n" if ($verbose);
+	$ksk = `$keygen $cmdopts -n zone -f KSK $zone`;
 	if($? != 0)
 	{
 		print STDERR "unable to generate KSK key file;\n";
@@ -482,6 +485,7 @@ sub genksk
 	# Add the KSK's keyrec to the keyrec file.
 	#
 	$opts{'keyrec_type'} = "ksk";
+	$opts{'kgopts'}      = $kgopts if($kgopts ne "");
 	keyrec_add('key',$ksk,\%opts);
 
 	delete $opts{'keyrec_type'};
@@ -493,6 +497,7 @@ sub genksk
 #
 sub genzsk
 {
+	my $cmdopts;			# Options for dnssec-signzone.
 	my $keytype = shift;		# ZSK type:  cur, new, pub.
 	my $zskkey;			# Hash key for this ZSK.
 	my $zsk;			# Generated key.
@@ -522,8 +527,9 @@ sub genzsk
 	#
 	# Generate a ZSK key.
 	#
-	print "\t$keygen $kgopts $random $alg $zsize -n zone $zone\n" if ($verbose);
-	$zsk = `$keygen $kgopts $random $alg $zsize -n zone $zone`;
+	$cmdopts = "$kgopts $random $alg $zsize";
+	print "\t$keygen $cmdopts -n zone $zone\n" if ($verbose);
+	$zsk = `$keygen $cmdopts -n zone $zone`;
 	if($? != 0)
 	{
 		print STDERR "unable to generate $keytype ZSK key file;\n";
@@ -537,6 +543,7 @@ sub genzsk
 	# Add the ZSK's keyrec to the keyrec file.
 	#
 	$opts{'keyrec_type'} = "$zskkey";
+	$opts{'kgopts'}	     = $kgopts if($kgopts ne "");
 	keyrec_add('key',$zsk,\%opts);
 
 	delete $opts{'keyrec_type'};
@@ -823,6 +830,7 @@ sub updzonerec
 	$opts{'zskpub'}	     = $zskpub;
 	$opts{'zskcurpath'}  = $zskcurpath;
 	$opts{'zskpubpath'}  = $zskpubpath;
+	$opts{'szopts'}      = $szopts if($szopts ne "");
 
 	#
 	# Get the keyrec for the zone.  If there isn't one, it's a new
@@ -831,7 +839,6 @@ sub updzonerec
 	$kr = keyrec_fullrec($zone);
 	if(!defined($kr))
 	{
-
 		keyrec_add('zone',$zone,\%opts);
 	}
 	else
@@ -1029,7 +1036,7 @@ sub chkkrf
 	#
 	if($nokrfile)
 	{
-		print "not using a keyrec file\n" if(verbose);
+		print "not using a keyrec file\n" if($verbose);
 		return;
 	}
 
@@ -1055,7 +1062,7 @@ sub chkkrf
 		@ARGV = @saveargs;
 		unshift(@ARGV,$defkrf);
 		unshift(@ARGV,"-krfile");
-		print "using default keyrec file $defkrf\n" if(verbose);
+		print "using default keyrec file $defkrf\n" if($verbose);
 
 		#
 		# Rescan our arguments.
@@ -1081,7 +1088,7 @@ sub chkkrf
 
 	keyrec_add('zone',$zone,\%zoneopts);
 
-	print "using keyrec file $krfile\n" if(verbose);
+	print "using keyrec file $krfile\n" if($verbose);
 }
 
 #######################################################################
