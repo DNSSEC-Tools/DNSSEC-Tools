@@ -68,6 +68,7 @@ my @KEYFIELDS = (
 			'ksklength',
 			'zskdirectory',
 			'zsklength',
+			'kgopts',
 			'keyrec_gensec',
 			'keyrec_gendate',
 		 );
@@ -88,6 +89,7 @@ my @ZONEFIELDS = (
 			'zskpubpath',
 			'zsknew',
 			'zsknewpath',
+			'szopts',
 			'rollphase',
 			'rollstart',
 			'kskroll',
