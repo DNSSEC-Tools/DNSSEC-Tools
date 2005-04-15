@@ -431,7 +431,7 @@ sub presigned
 #
 sub genkeys
 {
-	print "\ngenerating key files:\n" if ($verbose);
+	print "\ngenerating key files:\n" if($verbose);
 
 	genksk();
 	$zskcur = genzsk("cur");
@@ -447,6 +447,7 @@ sub genkeys
 sub genksk
 {
 	my $cmdopts;			# Options for dnssec-signzone.
+	my $zskdir;			# ZSK directory for saving.
 
 	#
 	# If we're going to reuse the KSK, ensure it's been created and
@@ -461,7 +462,7 @@ sub genksk
 		}
 
 		$ksk = $opts{'kskkey'};
-		print "\treusing existing KSK - $ksk\n\n" if ($verbose);
+		print "\treusing existing KSK - $ksk\n\n" if($verbose);
 
 		return;
 	}
@@ -470,7 +471,7 @@ sub genksk
 	# Generate the new KSK.
 	#
 	$cmdopts = "$kgopts $random $alg $ksize";
-	print "\t$keygen $cmdopts -n zone -f KSK $zone\n" if ($verbose);
+	print "\t$keygen $cmdopts -n zone -f KSK $zone\n" if($verbose);
 	$ksk = `$keygen $cmdopts -n zone -f KSK $zone`;
 	if($? != 0)
 	{
@@ -479,7 +480,13 @@ sub genksk
 		exit(1);
 	}
 	chomp $ksk;
-	print "\t\tnew KSK - $ksk\n\n" if ($verbose);
+	print "\t\tnew KSK - $ksk\n\n" if($verbose);
+
+	#
+	# Save the ZSK directory.
+	#
+	$zskdir = $opts{'zskdirectory'};
+	delete $opts{'zskdirectory'};
 
 	#
 	# Add the KSK's keyrec to the keyrec file.
@@ -488,6 +495,10 @@ sub genksk
 	$opts{'kgopts'}      = $kgopts if($kgopts ne "");
 	keyrec_add('key',$ksk,\%opts);
 
+	#
+	# Restore the ZSK directory and dump the keyrec type.
+	#
+	$opts{'zskdirectory'} = $zskdir;
 	delete $opts{'keyrec_type'};
 }
 
@@ -499,6 +510,7 @@ sub genzsk
 {
 	my $cmdopts;			# Options for dnssec-signzone.
 	my $keytype = shift;		# ZSK type:  cur, new, pub.
+	my $kskdir;			# KSK directory for saving.
 	my $zskkey;			# Hash key for this ZSK.
 	my $zsk;			# Generated key.
 
@@ -519,7 +531,7 @@ sub genzsk
 		}
 
 		$zsk = $opts{$zskkey};
-		print "\treusing existing $keytype ZSK - $zsk\n\n" if ($verbose);
+		print "\treusing existing $keytype ZSK - $zsk\n\n" if($verbose);
 
 		return($zsk);
 	}
@@ -528,7 +540,7 @@ sub genzsk
 	# Generate a ZSK key.
 	#
 	$cmdopts = "$kgopts $random $alg $zsize";
-	print "\t$keygen $cmdopts -n zone $zone\n" if ($verbose);
+	print "\t$keygen $cmdopts -n zone $zone\n" if($verbose);
 	$zsk = `$keygen $cmdopts -n zone $zone`;
 	if($? != 0)
 	{
@@ -537,7 +549,13 @@ sub genzsk
 		exit(1);
 	}
 	chomp $zsk;
-	print "\t\tnew $keytype ZSK - $zsk\n\n" if ($verbose);
+	print "\t\tnew $keytype ZSK - $zsk\n\n" if($verbose);
+
+	#
+	# Save the KSK directory.
+	#
+	$kskdir = $opts{'kskdirectory'};
+	delete $opts{'kskdirectory'};
 
 	#
 	# Add the ZSK's keyrec to the keyrec file.
@@ -546,6 +564,10 @@ sub genzsk
 	$opts{'kgopts'}	     = $kgopts if($kgopts ne "");
 	keyrec_add('key',$zsk,\%opts);
 
+	#
+	# Restore the KSK directory and dump the keyrec type.
+	#
+	$opts{'kskdirectory'} = $kskdir;
 	delete $opts{'keyrec_type'};
 
 	return($zsk);
@@ -563,13 +585,13 @@ sub keydirs
 	#
 	# Ensure the KSK key directory exists and is actually a directory.
 	#
-	print "checking key directories\n" if ($verbose > $VERBOSE_LOW);
+	print "checking key directories\n" if($verbose > $VERBOSE_LOW);
 
 	if($kskdir ne ".")
 	{
 		if(! -e $kskdir)
 		{
-			print "creating KSK directory - $kskdir\n" if ($verbose);
+			print "creating KSK directory - $kskdir\n" if($verbose);
 			mkdir($kskdir);
 		}
 		elsif(! -d $kskdir)
@@ -587,7 +609,7 @@ sub keydirs
 	{
 		if(! -e $zskdir)
 		{
-			print "creating ZSK directory - $zskdir\n" if ($verbose);
+			print "creating ZSK directory - $zskdir\n" if($verbose);
 			mkdir($zskdir);
 		}
 		elsif(! -d $zskdir)
@@ -613,7 +635,7 @@ sub zoneincludes
 	my $flen;				# Zone file's length.
 	my $newserial;				# Zone's new serial number.
 
-	print "adding key includes to zone file\n" if ($verbose > $VERBOSE_LOW);
+	print "adding key includes to zone file\n" if($verbose > $VERBOSE_LOW);
 
 	#
 	# Update the zone data's serial number.
@@ -624,7 +646,7 @@ sub zoneincludes
 		print STDERR "unable to update serial number in $zone\n";
 		exit(3);
 	}
-	print "$zone's new serial number - $newserial\n" if ($verbose > $VERBOSE_LOW);
+	print "$zone's new serial number - $newserial\n" if($verbose > $VERBOSE_LOW);
 
 	if(hasincludes())
 	{
@@ -753,8 +775,8 @@ sub zonesign
 	#
 	# Sign the zone with the new keys.
 	#
-	print "signing zone\n" if ($verbose);
-	print "\t$signzone $cmdopts $zoneout $zskcurpath\n" if ($verbose);
+	print "signing zone\n" if($verbose);
+	print "\t$signzone $cmdopts $zoneout $zskcurpath\n" if($verbose);
 	$szone = `$signzone $cmdopts $zoneout $zskcurpath`;
 	if($szone eq "")
 	{
@@ -765,7 +787,7 @@ sub zonesign
 	#
 	# Ensure the signing succeeded.
 	#
-	print "checking zone\n" if ($verbose);
+	print "checking zone\n" if($verbose);
 	$status = system("$checkzone -q $zone $szone");
 	if($status != 0)
 	{
@@ -818,7 +840,7 @@ sub updzonerec
 	my $kr;					# Zone's keyrec reference.
 	my %keyrec;				# Zone's keyrec.
 
-	print "updating the keyrec file for the zone\n" if ($verbose);
+	print "updating the keyrec file for the zone\n" if($verbose);
 
 	#
 	# Set some fields we've got to have -- in case they aren't
