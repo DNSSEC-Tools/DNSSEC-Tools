@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sparta, Inc.  All rights reserved.
+ * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  *
  * Author: Abhijit Hayatnagarkar
@@ -109,10 +109,51 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
 			      int orig_rrBuf_len) {
 
     int rrBuf_len = 0;
-    struct rr_rec *rr = rrset->rrs_data;
+    struct rr_rec *rr = NULL;
     unsigned char *cp;
     
-    /* Assume rrs_data list is in canonical order */
+    /* Assume that elements of the rrs_data list are in canonical form */
+    /* sort the rrs_rdata by bubble-sort */
+    int sorted = 0;
+    while (!sorted) {
+	struct rr_rec *first_rr = NULL, *prev_rr = NULL, *curr_rr1 = NULL, *curr_rr2 = NULL, *next_rr = NULL;
+	sorted = 1;
+	curr_rr1 = rrset->rrs_data;
+	first_rr = curr_rr1;
+
+	if (curr_rr1) curr_rr2 = curr_rr1->rr_next;
+	while (curr_rr2 != NULL) {
+
+	    int cmp_len = (curr_rr1->rr_rdata_length_h < curr_rr2->rr_rdata_length_h) ?
+		curr_rr1->rr_rdata_length_h : curr_rr2->rr_rdata_length_h;
+	    
+	    next_rr = curr_rr2->rr_next;
+	    int cmp_res = memcmp (curr_rr1->rr_rdata, curr_rr2->rr_rdata, cmp_len);
+	    if ((cmp_res > 0) || ((cmp_res == 0) && (curr_rr2->rr_rdata_length_h > curr_rr1->rr_rdata_length_h))) {
+		/* switch rrs */
+		struct rr_rec *tmp_rr = NULL;
+		sorted = 0;
+		curr_rr1->rr_next = next_rr;
+		curr_rr2->rr_next = curr_rr1;
+		if (prev_rr) {
+		    prev_rr->rr_next = curr_rr2;
+		}
+		else {
+		    first_rr = curr_rr2;
+		}
+		tmp_rr = curr_rr2;
+		curr_rr2 = curr_rr1;
+		curr_rr1 = tmp_rr;
+	    }
+
+	    prev_rr = curr_rr1;
+	    curr_rr1 = curr_rr2;
+	    curr_rr2 = curr_rr2->rr_next;
+	}
+	rrset->rrs_data = first_rr;
+    }
+    
+    rr = rrset->rrs_data;
     while (rr) {
 	memcpy(rrBuf + rrBuf_len, rrset->rrs_name_n, strlen(rrset->rrs_name_n) + 1);
 	rrBuf_len += strlen(rrset->rrs_name_n) + 1;
