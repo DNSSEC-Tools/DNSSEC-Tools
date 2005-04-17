@@ -15,8 +15,7 @@
 #include <errno.h>
 #include <resolver.h> /* for ns_t_dnskey */
 
-#include "val_query.h"
-#include "val_errors.h"
+#include "val_api.h"
 
 #define BUFLEN 8096
 
