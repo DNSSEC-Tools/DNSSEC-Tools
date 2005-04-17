@@ -32,20 +32,24 @@ OBJ=  	res_squery.o \
 
 
 LIBVAL= libval.a
+LIBVALSO=libval.so
 
 DRIVER= driver 
 #VALIDATOR=validate (for future)
 VALIDATOR= verify
 GETHOST= gethost
 
-all: $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST)
+all: $(OBJ) $(LIBVAL) $(LIBVALSO) $(DRIVER) $(VALIDATOR) $(GETHOST)
 
 clean:
-	$(RM) -f $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) resolver_driver.o main.o
+	$(RM) -f $(OBJ) $(LIBVAL) $(LIBVALSO) $(DRIVER) $(VALIDATOR) $(GETHOST) resolver_driver.o main.o
 
 $(LIBVAL): $(OBJ)
 	$(AR) cruv $@ $(OBJ)
 	$(RANLIB) $@
+
+$(LIBVALSO): $(OBJ)
+	$(CC) -shared -o $@ $(OBJ)
 
 $(DRIVER): $(OBJ) resolver_driver.o
 	$(CC) -o $@ resolver_driver.o -lval $(LDFLAGS)
@@ -55,3 +59,9 @@ $(VALIDATOR): $(OBJ) main.o
 
 $(GETHOST): $(OBJ) gethost.o
 	$(CC) -o $@ gethost.o -lval $(LDFLAGS)
+
+install:
+	$(INSTALL) $(LIBVAL)    $(libdir)
+	$(INSTALL) $(LIBVALSO)  $(libdir)
+	$(INSTALL) val_api.h    $(includedir)
+	$(INSTALL) val_errors.h $(includedir)
