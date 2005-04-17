@@ -12,6 +12,7 @@ SRC=  	res_squery.c \
 	val_parse.c \
 	val_print.c \
 	val_query.c \
+	val_gethostbyname.c \
 	crypto/val_rsamd5.c \
 	crypto/val_rsasha1.c \
 	crypto/val_dsasha1.c
@@ -24,6 +25,7 @@ OBJ=  	res_squery.o \
 	val_parse.o \
 	val_print.o \
 	val_query.o \
+	val_gethostbyname.o \
 	crypto/val_rsamd5.o \
 	crypto/val_rsasha1.o \
 	crypto/val_dsasha1.o
@@ -34,8 +36,9 @@ LIBVAL= libval.a
 DRIVER= driver 
 #VALIDATOR=validate (for future)
 VALIDATOR= verify
+GETHOST= gethost
 
-all: $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR)
+all: $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST)
 
 clean:
 	$(RM) -f $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) resolver_driver.o main.o
@@ -49,3 +52,6 @@ $(DRIVER): $(OBJ) resolver_driver.o
 
 $(VALIDATOR): $(OBJ) main.o
 	$(CC) -o $@ main.o -lval $(LDFLAGS)
+
+$(GETHOST): $(OBJ) gethost.o
+	$(CC) -o $@ gethost.o -lval $(LDFLAGS)
