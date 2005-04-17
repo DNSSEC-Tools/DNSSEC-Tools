@@ -333,21 +333,16 @@ static int is_tld (const char *dname)
 
 }
 
-/*
- * At present this only returns rrsets whose RRSIGs have been
- * successfully verified.
- */
-int val_query ( const char *dname, int class, int type,
-		unsigned char *ans, int anslen,
-		int *dnssec_status )
+/* Returns 0 on success, -1 on failure */
+int _val_query ( const char *dname, int class, int type,
+		 struct domain_info *response,
+		 int *dnssec_status )
 {
-    int len = -1;
     char dot = '.';
-    struct domain_info response;
-    int ret_val;
     val_context_t ctx;
+    int ret_val;
 
-    if (!dnssec_status) {
+    if (!dnssec_status || !response) {
 	return -1;
     }
 
@@ -362,11 +357,11 @@ int val_query ( const char *dname, int class, int type,
     ctx.learned_keys  = NULL;
     ctx.learned_ds    = NULL;
 
-    ret_val = res_squery ( &ctx, dname, type, class, &respol, &response); 
+    ret_val = res_squery ( &ctx, dname, type, class, &respol, response); 
 
     printf("\nres_squery returned %d\n", ret_val);
     printf("response = \n");
-    dump_dinfo(&response);
+    dump_dinfo(response);
     printf("context = \n");
     dump_val_context(&ctx);
 
@@ -376,7 +371,7 @@ int val_query ( const char *dname, int class, int type,
      *           zone.
      */
     do {
-	(*dnssec_status) = val_verify (&ctx, &response);
+	(*dnssec_status) = val_verify (&ctx, response);
 
 	if ((*dnssec_status) == DNSKEY_MISSING) {
 	    if (dname && (dname[0] != '\0') && !is_tld(dname)) {
@@ -394,7 +389,25 @@ int val_query ( const char *dname, int class, int type,
 	}
     } while (((*dnssec_status) == DNSKEY_MISSING) && (dname != NULL));
 
-    len = compose_answer(&response, ans, anslen, *dnssec_status);
+    return 0;
+}
+
+/*
+ * At present this only returns rrsets whose RRSIGs have been
+ * successfully verified.
+ */
+int val_query ( const char *dname, int class, int type,
+		unsigned char *ans, int anslen,
+		int *dnssec_status )
+{
+    int len = -1;
+    struct domain_info response;
+
+    bzero(&response, sizeof(struct domain_info));
+
+    if ( _val_query (dname, class, type, &response, dnssec_status) != -1 ) {
+	len = compose_answer(&response, ans, anslen, *dnssec_status);
+    }
 
     /* Cleanup */
     free_domain_info_ptrs(&response);
