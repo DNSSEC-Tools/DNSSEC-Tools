@@ -308,6 +308,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     while (dp) {
 	val_dnskey_rdata_t *sdp;
 	sdp = dp->next;
+	if (dp->public_key) free (dp->public_key);
 	free(dp);
 	dp = sdp;
     }
