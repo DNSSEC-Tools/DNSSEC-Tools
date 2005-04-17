@@ -41,7 +41,7 @@ GETHOST= gethost
 all: $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST)
 
 clean:
-	$(RM) -f $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) resolver_driver.o main.o
+	$(RM) -f $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) resolver_driver.o main.o
 
 $(LIBVAL): $(OBJ)
 	$(AR) cruv $@ $(OBJ)
