@@ -49,7 +49,7 @@ $(LIBVAL): $(OBJ)
 	$(RANLIB) $@
 
 $(LIBVALSO): $(OBJ)
-	$(CC) -shared -o $@ $(OBJ)
+	$(CC) -shared $(LDFLAGS) -o $@ $(OBJ)
 
 $(DRIVER): $(OBJ) resolver_driver.o
 	$(CC) -o $@ resolver_driver.o -lval $(LDFLAGS)
