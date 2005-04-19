@@ -21,36 +21,10 @@ Additions to libspf2
 The layered DNS architecture in libspf2 is amenable to adding DNSSEC
 validation.
 
-A new DNS layer has been added to libspf2 called spf_dns_dnssec.  As
-per the DNS layer API, it defines the following lookup function:
-
-static SPF_dns_rr_t *
-SPF_dns_dnssec_lookup( SPF_dns_server_t *spf_dns_server,
-		       const char *domain, ns_type rr_type,
-		       int should_cache )
-
-This lookup function is called internally from other modules within
-libspf2.  Applications using libspf2 cannot call this lookup function
-directly.
-
-In addition to the lookup function, it defines the following function
-for creating the spf_dns_dnssec server layer.
-
-SPF_dns_server_t *
-SPF_dns_dnssec_new( SPF_dns_server_t *layer_below,
-		    const char *name, int debug );
-
-This function is called internally from other modules within libspf2.
-Applications using libspf2 need not call this lookup function
-directly.
-
-The following files have been added to libspf2-1.2.5:
-
-    src/include/spf_dns_dnssec.h:   The header file for the
-				    DNSSEC validation layer.
-    
-    src/libspf2/spf_dns_dnssec.c:   Implementation of the DNSSEC
-				    validation layer.
+The spf_dns_resolv layer has been modified to use the val_query()
+function from the libval library for making DNS queries.  This
+function returns a validator status along with the answer to the
+DNS query.
 
 The following files have been modified:
 
@@ -63,6 +37,7 @@ The following files have been modified:
  src/include/spf_server.h
 	New constants for adding the DNSSEC validation layer
 
+ src/include/spf_dns_resolv.h
  src/include/spf_request.h
  src/include/spf_record.h
  src/include/spf_response.h
@@ -78,6 +53,7 @@ The following files have been modified:
 	Added new source files for compilation
 
  src/libspf2/spf_interpret.c
+ src/libspf2/spf_dns_resolv.c
  src/libspf2/spf_get_exp.c
  src/libspf2/spf_server.c
       Return appropriate errors for DNSSEC validation failure.
