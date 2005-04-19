@@ -10,6 +10,7 @@
  */
 
 #include <stdio.h>
+#include <resolv.h>
 #include <resolver.h>
 #include <string.h>
 #include <res_errors.h>
@@ -152,8 +153,11 @@ static int compose_answer (struct domain_info *response,
     int anbufindex = 0, nsbufindex = 0, arbufindex = 0;
     char *anbuf = NULL, *nsbuf = NULL, *arbuf = NULL;
     char *cp;
+    int rrset_found = 0;
 
-    if (!ans || (anslen <= 0) || (dnssec_status != VALIDATE_SUCCESS)) {
+    //    if (!ans || (anslen <= 0) || (dnssec_status != VALIDATE_SUCCESS)) {
+    if (!ans || (anslen <= 0)) {
+	h_errno = NO_DATA;
 	return -1;
     }
 
@@ -163,29 +167,31 @@ static int compose_answer (struct domain_info *response,
 
     index = sizeof(HEADER);
     if (index > anslen) {
+	h_errno = NETDB_INTERNAL;
 	return -1;
     }
 
     /*** Question section ***/
     bzero(dname, MAXDNAME);
     if (ns_name_pton(response->di_requested_name_h, dname, MAXDNAME) < 0) {
+	h_errno = NETDB_INTERNAL;
 	return -1;
     }
     
     PUT_FIELD(dname, (strlen(dname) + 1), ans, &index, anslen);
     cp = ans + index;
     
-    if ((index + 2) > anslen) return -1;
+    if ((index + 2) > anslen) {h_errno = NETDB_INTERNAL; return -1;}
     NS_PUT16(response->di_requested_type_h, cp);
     index += 2;
     
-    if ((index + 2) > anslen) return -1;
+    if ((index + 2) > anslen) {h_errno = NETDB_INTERNAL; return -1;}
     NS_PUT16(response->di_requested_class_h, cp);
     index += 2;
     hp->qdcount = htons(1);
 
-    /*** Compose the answer, authority and additional sections.  Add only those rrsets
-     *** which have a validate-status of RRSIG_VERIFIED
+    /*** Compose the answer, authority and additional sections.  -- Add only those rrsets
+     *** -- which have a validate-status of RRSIG_VERIFIED
      ***/
 
     rrset = response->di_rrset;
@@ -194,9 +200,17 @@ static int compose_answer (struct domain_info *response,
 	int * bufindexptr;
 	struct rr_rec *rr = rrset->rrs_data;
 
+	/*
 	if (rrset->rrs_status != RRSIG_VERIFIED) {
 	    rrset = rrset->rrs_next;
 	    continue;
+	}
+	*/
+
+	if (((response->di_requested_type_h == ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h)) &&
+	    (response->di_requested_class_h == rrset->rrs_class_h) &&
+	    (strcasecmp(dname, rrset->rrs_name_n) == 0)) {
+	    rrset_found = 1;
 	}
 
 	switch(rrset->rrs_section) {
@@ -237,19 +251,19 @@ static int compose_answer (struct domain_info *response,
 
 	    cp = buf + (*bufindexptr);
 	    
-	    if (((*bufindexptr) + 2) > anslen) {index = -1; goto cleanup;}
+	    if (((*bufindexptr) + 2) > anslen) {h_errno = NETDB_INTERNAL; index = -1; goto cleanup;}
 	    NS_PUT16(rrset->rrs_type_h, cp);
 	    (*bufindexptr) += 2;
 	    
-	    if (((*bufindexptr) + 2) > anslen) {index = -1; goto cleanup;}
+	    if (((*bufindexptr) + 2) > anslen) {h_errno = NETDB_INTERNAL; index = -1; goto cleanup;}
 	    NS_PUT16(rrset->rrs_class_h, cp);
 	    (*bufindexptr) += 2;
 	    
-	    if (((*bufindexptr) + 4) > anslen) {index = -1; goto cleanup;}
+	    if (((*bufindexptr) + 4) > anslen) {h_errno = NETDB_INTERNAL; index = -1; goto cleanup;}
 	    NS_PUT32(rrset->rrs_ttl_h, cp);
 	    (*bufindexptr) += 4;
 	    
-	    if (((*bufindexptr) + 2) > anslen) {index = -1; goto cleanup;}
+	    if (((*bufindexptr) + 2) > anslen) {h_errno = NETDB_INTERNAL; index = -1; goto cleanup;}
 	    NS_PUT16(rr->rr_rdata_length_h, cp);
 	    (*bufindexptr) += 2;
 		    
@@ -289,6 +303,12 @@ static int compose_answer (struct domain_info *response,
     hp->arcount = htons(hp->arcount);
 
     hp->qr = 1;
+    if (rrset_found) {
+	h_errno = NETDB_SUCCESS;
+    }
+    else {
+	h_errno = HOST_NOT_FOUND;
+    }
 
  cleanup:
     
@@ -343,14 +363,19 @@ int _val_query ( const char *dname, int class, int type,
     int ret_val;
 
     if (!dnssec_status || !response) {
+	printf("_val_query(): no dnssec_status or response objects\n");
+	h_errno = NETDB_INTERNAL;
 	return -1;
     }
 
     *dnssec_status = INTERNAL_ERROR;
 
     if (!res_policy_set) {
-	if ((ret_val = init_respol(&respol)) != SR_UNSET)
+	if ((ret_val = init_respol(&respol)) != SR_UNSET) {
+	    printf("_val_query(): error initializing resolver policy\n");
+	    h_errno = NETDB_INTERNAL;
 	    return -1;
+	}
     }
     
     ctx.learned_zones = NULL;
@@ -389,6 +414,7 @@ int _val_query ( const char *dname, int class, int type,
 	}
     } while (((*dnssec_status) == DNSKEY_MISSING) && (dname != NULL));
 
+    h_errno = NETDB_SUCCESS;
     return 0;
 }
 
@@ -405,6 +431,8 @@ int val_query ( const char *dname, int class, int type,
 
     bzero(&response, sizeof(struct domain_info));
 
+    printf("val_query called with dname=%s, class=%s, type=%s\n",
+	   dname, p_class(class), p_type(type));
     if ( _val_query (dname, class, type, &response, dnssec_status) != -1 ) {
 	len = compose_answer(&response, ans, anslen, *dnssec_status);
     }
