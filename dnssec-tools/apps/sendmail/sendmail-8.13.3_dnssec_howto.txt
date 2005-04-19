@@ -28,14 +28,14 @@ Apply the sendmail-8.13.3_dnssec_patch.txt patch found in this directory by:
 
 This will apply the patch and store the original files with a .orig suffix.
 
-This patch requires the 'libvalidat' library for DNSSEC validation.  This
+This patch requires the 'libval' library for DNSSEC validation.  This
 library can be found at http://dnssec-tools.sourceforge.net/.  You must
 install this library before compiling the patched sendmail source.
 
 Add the following line to the sendmail-8.13.3/devtools/Site/site.config.m4
 file:
 
-APPENDDEF(`confLIBS', `-lvalidat')
+APPENDDEF(`confLIBS', `-lsres -lval -lcrypto')
 
 Build and install sendmail as per the instructions given in the README and
 INSTALL files with the sendmail distribution.
