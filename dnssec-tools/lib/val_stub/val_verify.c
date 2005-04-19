@@ -180,6 +180,35 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
     return rrBuf_len;
 }
 
+/* tells whether the response contain any rrsigs */
+static int have_rrsigs (struct domain_info *response)
+{
+    struct rrset_rec *rrset;
+
+    if (!response) {
+	return 0;
+    }
+
+    rrset = response->di_rrset;
+    while (rrset) {
+	struct rr_rec *rrs_sig = rrset->rrs_sig;
+	while (rrs_sig) {
+	    val_rrsig_rdata_t rrsig_rdata;
+	    bzero(&rrsig_rdata, sizeof(rrsig_rdata));
+	    val_parse_rrsig_rdata(rrs_sig->rr_rdata, rrs_sig->rr_rdata_length_h,
+				  &rrsig_rdata);
+	    if ((rrsig_rdata.type_covered == rrset->rrs_type_h) ||
+	        (rrsig_rdata.type_covered == ns_t_nsec)) {
+		return 1;
+	    }
+	    rrs_sig = rrs_sig->rr_next;
+	}
+	rrset = rrset->rrs_next;
+    }
+
+    return 0;
+}
+
 
 val_result_t val_verify (struct val_context *context, struct domain_info *response)
 {
@@ -197,8 +226,14 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 
     dnskeys = context->learned_keys;
     if (!dnskeys) {
-	printf("val_verify(): no dnskeys found\n");
-	return DNSKEY_MISSING;
+	if (have_rrsigs(response)) {
+	    printf("val_verify(): no dnskeys found.\n");
+	    return DNSKEY_MISSING;
+	}
+	else {
+	    printf("val_verify(): no dnskeys or rrsigs found.  probably not a signed zone.\n");
+	    return INDETERMINATE;
+	}
     }
 
     // Parse the dnskeys
@@ -227,7 +262,12 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 
     if (dnskey_rdata == NULL) {
 	// No DNSKEYs were found
-	status = DNSKEY_MISSING;
+	if (have_rrsigs(response)) {
+	    status = DNSKEY_MISSING;
+	}
+	else {
+	    status = INDETERMINATE;
+	}
 	goto cleanup;
     }
 
@@ -321,11 +361,11 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    rrset->rrs_status = RRSIG_MISSING;
 	}
 	else if (!found_dnskey) {
-	    rrset->rrs_status = DNSKEY_MISSING;
+		rrset->rrs_status = DNSKEY_MISSING;
 	}
 	else {
 	    // Check if the rrset matches the query
-	    if (((response->di_requested_type_h != ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h)) &&
+	    if (((response->di_requested_type_h == ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h)) &&
 		(response->di_requested_class_h == rrset->rrs_class_h) &&
 		(strcasecmp(requested_name, rrset->rrs_name_n) == 0)
 		) {
