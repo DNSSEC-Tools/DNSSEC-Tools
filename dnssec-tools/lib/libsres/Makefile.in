@@ -33,15 +33,24 @@ OBJ=	ns_name.o	\
 	res_query.o	
 
 LIBRES= libsres.a
+LIBSRESSO=libsres.so
 
 INCLUDE= include
 CFLAGS_EX=-I$(INCLUDE)
 
-all: $(LIBRES) 
+all: $(LIBRES) $(LIBSRESSO)
 
 clean:
-	rm -f $(OBJ) $(LIBRES) 
+	rm -f $(OBJ) $(LIBRES) $(LIBSRESSO)
 
 $(LIBRES): $(OBJ)
 	$(AR) cruv $@ $(OBJ)
 	$(RANLIB) $@ 
+
+$(LIBSRESSO): $(OBJ)
+	$(CC) -shared -o $@ $(OBJ)
+
+install:
+	$(INSTALL) $(LIBRES)     $(libdir)
+	$(INSTALL) $(LIBSRESSO)  $(libdir)
+	$(INSTALL) resolver.h    $(includedir)
