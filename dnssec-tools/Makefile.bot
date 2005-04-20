@@ -1,0 +1,5 @@
+
+# libtool build definitions
+.SUFFIXES: .c .o .lo .rc
+.c.lo:
+	$(LIBTOOLCC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<

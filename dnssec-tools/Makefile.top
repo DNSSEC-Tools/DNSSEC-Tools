@@ -4,6 +4,7 @@
 SHELL           = /bin/sh
 srcdir          = @srcdir@
 top_srcdir      = @top_srcdir@
+top_builddir    = @top_builddir@
 @SET_MAKE@
 
 #
@@ -34,3 +35,9 @@ AR=@AR@
 RANLIB=@RANLIB@
 RM=@RM@
 INSTALL=@INSTALL@
+
+LIBTOOL=@LIBTOOL@
+LIBTOOLCC=$(LIBTOOL) --mode=compile $(CC) $(CFLAGS)
+LIBTOOLLD=$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -rpath $(libdir)
+LIBTOOLIN=$(LIBTOOL) --mode=install $(INSTALL)
+LIBTOOLFN=$(LIBTOOL) --mode=finish $(libdir)

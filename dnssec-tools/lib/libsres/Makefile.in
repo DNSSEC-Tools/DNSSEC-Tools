@@ -1,3 +1,4 @@
+# the resulting Makefile is built from  TOPSRCDIR/Makefile.top and Makefile.in
 
 SRC=	ns_name.c	\
 	support.c	\
@@ -32,25 +33,36 @@ OBJ=	ns_name.o	\
 	res_tsig.o	\
 	res_query.o	
 
-LIBRES= libsres.a
-LIBSRESSO=libsres.so
+LOBJ=	ns_name.lo	\
+	support.lo	\
+	res_debug.lo	\
+	ns_netint.lo	\
+	ns_print.lo	\
+	base64.lo	\
+	ns_samedomain.lo \
+	ns_parse.lo	\
+	ns_ttl.lo	\
+	res_comp.lo	\
+	res_mkquery.lo 	\
+	res_io_manager.lo \
+	res_transaction.lo \
+	res_tsig.lo	\
+	res_query.lo	
+
+LIBRES= libsres.la
 
 INCLUDE= include
 CFLAGS_EX=-I$(INCLUDE)
 
-all: $(LIBRES) $(LIBSRESSO)
+all: $(LIBRES)
 
 clean:
-	rm -f $(OBJ) $(LIBRES) $(LIBSRESSO)
+	rm -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
 
-$(LIBRES): $(OBJ)
-	$(AR) cruv $@ $(OBJ)
-	$(RANLIB) $@ 
-
-$(LIBSRESSO): $(OBJ)
-	$(CC) -shared -o $@ $(OBJ)
+$(LIBRES): $(LOBJ)
+	$(LIBTOOLLD) -o $@ $(LOBJ)
 
 install:
-	$(INSTALL) $(LIBRES)     $(libdir)
-	$(INSTALL) $(LIBSRESSO)  $(libdir)
+	$(LIBTOOLIN) $(LIBRES) $(libdir)
+	$(LIBTOOLFN)
 	$(INSTALL) resolver.h    $(includedir)

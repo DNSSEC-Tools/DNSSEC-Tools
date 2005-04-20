@@ -9,11 +9,13 @@ AC_PATH_PROG([PERLPROG],perl)
 AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(RM, rm)
 
+# libtool info
+AC_PROG_LIBTOOL
+
 # useful stuff for installation
 AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
-AC_PROG_RANLIB
 
 # useful for libvalidat
 AC_CONFIG_HEADER(lib/libvalidat/validat-config.h)
@@ -21,9 +23,9 @@ AC_CHECK_LIB(resolv, __res_init, AC_DEFINE(HAVE_LIBRESOLV))
 
 AC_CONFIG_FILES([
  Makefile:Makefile.top:Makefile.in
- lib/libvalidat/Makefile:Makefile.top:lib/libvalidat/Makefile.in
- lib/libsres/Makefile:Makefile.top:lib/libsres/Makefile.in
- lib/val_stub/Makefile:Makefile.top:lib/val_stub/Makefile.in
+ lib/libvalidat/Makefile:Makefile.top:lib/libvalidat/Makefile.in:Makefile.bot
+ lib/libsres/Makefile:Makefile.top:lib/libsres/Makefile.in:Makefile.bot
+ lib/val_stub/Makefile:Makefile.top:lib/val_stub/Makefile.in:Makefile.bot
 ])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT
