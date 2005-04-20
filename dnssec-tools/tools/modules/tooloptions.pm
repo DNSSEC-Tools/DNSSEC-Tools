@@ -36,69 +36,32 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 #
 # Standard options accepted by all tools in the dnssec-tools suite.
 #
-# These are in Getopt::Long::GUI format.
-#
 my @stdopts =
 (
-        # Encryption algorithm
-        ["algorithm=s", "Cryptographic HASH algorithm",
-	 question => {type => 'menu',
-		      values => [qw(RSA RSAMD5 DH DSA RSASHA1 HMAC-MD5)],
-		      default => 'RSAMD5'}],
-        # Random number generator.
-        ["random=s", "Random number generator device"],
-        # End-time for signed zone.
-        ["endtime=s", "End-time for signed zone"],
-        # Generate DS records.
-        ["gends", "Generate DS records"],
-        # Keyrec name.
-        ["keyrec=s", "Keyrec name"],
-        # Keyrec file.
-        ["krfile=s", "Keyrec file"],
-        # Don't use a keyrec file.
-        ["nokrfile", "Do not use a Keyrec file"],
-        '',
-        # Reuse KSK.
-        ["reuseksk", "Reuse KSK"],
-        # KSK key.
-        ["kskkey=s", "KSK key"],
-        # Length of KSK.
-        ["ksklength=i", "Length of KSK"],
-        # Path to KSK.
-        ["kskpath=s", "Path to KSK"],
-        # Directory for KSK keys.
-        ["kskdirectory=s", "Directory for KSK keys"],
-
-
-        '',
-        # Reuse ZSK.
-        ["reusezsk", "Reuse ZSK"],
-        # ZSK key.
-        ["zskkey=s", "ZSK key"],
-        # Length of ZSK.
-        ["zsklength=i", "Length of ZSK"],
-        # Path to ZSK.
-        ["zskpath=s", "Path to ZSK"],
-        # Directory for ZSK keys.
-        ["kskdirectory=s", "Directory for ZSK keys"],
-
-        '',
-        # Zone name.
-        ["zone=s", "Zone name"],
-        # Zone data filename.
-        ["zdata=s", "Zone data filename"],
-        # Zone filename.
-        ["zfile=s", "Zone filename"],
-        '',
-        # Additional options for dnssec-keygen.
-        ["kgopts=s", "Additional options for dnssec-keygen"],
-        # Additional dnssec-signzone options.
-        ["szopts=s", "Additional dnssec-signzone options"],
-        '',
-        # Verbose flag.
-        ["verbose+", "Verbose mode"],
-        # Give a usage message and exit.
-	["help", 'Show command line help'],
+	"algorithm=s",			# Encryption algorithm
+	"endtime=s",			# End-time for signed zone.
+	"gends",			# Generate DS records.
+	"help",				# Give a usage message and exit.
+	"keyrec=s",			# Keyrec name.
+	"kgopts=s",			# Additional options for dnssec-keygen.
+	"krfile=s",			# Keyrec file.
+	"kskdirectory=s",		# Directory for KSK keys.
+	"kskkey=s",			# KSK key.
+	"ksklength=i",			# Length of KSK.
+	"kskpath=s",			# Path to KSK.
+	"nokrfile",			# Don't use a keyrec file.
+	"random=s",			# Random number generator.
+	"reuseksk",			# Reuse KSK.
+	"reusezsk",			# Reuse ZSK.
+	"szopts=s",			# Additional dnssec-signzone options.
+	"verbose+",			# Verbose flag.
+	"zone=s",			# Zone name.
+	"zdata=s",			# Zone data filename.
+	"zfile=s",			# Zone filename.
+	"zskdirectory=s",		# Directory for ZSK keys.
+	"zskkey=s",			# ZSK key.
+	"zsklength=i",			# Length of ZSK.
+	"zskpath=s",			# Path to ZSK.
 );
 
 my $firstcall		= 1;		# First-call flag.
@@ -162,7 +125,7 @@ sub tooloptions
 			push(@opts,@csopts);
 		}
 
-		LocalGetOptions(\%cmdopts,@opts);
+		GetOptions(\%cmdopts,@opts);
 		$firstcall = 0;
 	}
 
@@ -633,53 +596,6 @@ sub opts_reset
 {
 	$firstcall = 1;
 	opts_drop();
-}
-
-##############################################################################
-#
-# Routine:	LocalGetOptions()
-#
-# Purpose: A local wrapper around the Getopt::Long::GUI routine to
-# determine it's availabality and call Getopt::Long instead if need
-# be.  This function and the next is only needed to support
-# "not-requiring" Getopt::Long::GUI
-#
-# Note: Code pulled from the Getopt::Long::GUI documentation and can
-# be updated to newer versions in the future if need be.
-#
-
-sub LocalGetOptions {
-    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
-	import Getopt::Long::GUI;
-	return GetOptions(@_);
-    } else {
-	require Getopt::Long;
-	import Getopt::Long;
-    }
-    GetOptions(LocalOptionsMap(@_));
-}
-
-##############################################################################
-#
-# Routine:	LocalOptionsMap()
-#
-# Purpose: Maps Getopt::Long::GUI arguments to Getopt::Long arguments.
-#
-# Note: Code pulled from the Getopt::Long::GUI documentation and can
-# be updated to newer versions in the future if need be.
-#
-
-sub LocalOptionsMap {
-    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
-			    ? (1, 1, $_[0]) : (0, 2));
-    for (my $i = $st; $i <= $#_; $i += $cb) {
-	if ($_[$i]) {
-	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
-	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
-	    push @opts, $_[$i+1] if ($cb == 2);
-	}
-    }
-    return @opts;
 }
 
 1;
