@@ -10,7 +10,7 @@
 #include <res_query.h>
 
 #include "val_support.h"
-#include "res_zone.h"
+#include "val_zone.h"
 #include "res_squery.h"
 
 #define DNS_PORT    53
