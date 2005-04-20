@@ -38,6 +38,17 @@ typedef struct val_rrsig_rdata {
     struct val_rrsig_rdata* next;
 } val_rrsig_rdata_t;
 
+
+#ifndef SHA_DIGEST_LENGTH
+#define SHA_DIGEST_LENGTH 20
+#endif
+typedef struct val_ds_rdata {
+	u_int16_t d_keytag;
+	u_int8_t d_algo;
+	u_int8_t d_type;
+	u_int8_t d_hash[SHA_DIGEST_LENGTH];
+} val_ds_rdata_t;
+
 /* Parse a domain name */
 int val_parse_dname(const unsigned char *buf, int buflen, int offset,
 		    char *dname);
@@ -50,4 +61,7 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
 			   val_rrsig_rdata_t *rdata);
 
+/* Parse the rdata portion of an DS resource record */
+int val_parse_ds_rdata (const unsigned char *buf, int buflen,
+			    val_ds_rdata_t *rdata);
 #endif
