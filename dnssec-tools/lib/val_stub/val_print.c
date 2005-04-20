@@ -7,6 +7,8 @@
 #include <openssl/evp.h>
 
 #include "val_print.h"
+#include "val_cache.h"
+#include "val_errors.h"
 
 #define PRINTS(msg,var) if (var) { \
                             printf("%s%s\n", msg, var); \
@@ -108,31 +110,33 @@ void dump_dinfo(struct domain_info *dinfo)
 }
 
 void dump_val_context (struct val_context *context) {
+	struct rrset_rec *cached_info;
+
     if (!context) {
 	printf("domain_info: NULL\n");
 	return;
     }
 
     printf ("domain_info:\n");
-    if (context->learned_zones) {
+    if (NULL != (cached_info = get_cached_zones())) {
 	printf("  learned_zones =\n");
-	dump_rrset(context->learned_zones);
+	dump_rrset(cached_info);
     }
     else {
 	printf("  learned_zones = NULL\n");
     }
 
-    if (context->learned_keys) {
+    if (NULL != (cached_info = get_cached_keys())) {
 	printf("  learned_keys =\n");
-	dump_rrset(context->learned_keys);
+	dump_rrset(cached_info);
     }
     else {
 	printf("  learned_keys = NULL\n");
     }
 
-    if (context->learned_ds) {
+    if (NULL != (cached_info = get_cached_ds())) {
 	printf("  learned_ds =\n");
-	dump_rrset(context->learned_ds);
+	dump_rrset(cached_info);
     }
     else {
 	printf("  learned_ds = NULL\n");
