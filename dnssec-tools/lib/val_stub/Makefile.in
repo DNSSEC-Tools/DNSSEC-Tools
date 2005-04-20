@@ -7,10 +7,12 @@ LDFLAGS_EX=-L. -L$(LIB) $(SRES)
 
 SRC=  	res_squery.c \
 	val_support.c \
-	res_zone.c \
+	val_zone.c \
 	val_verify.c \
 	val_parse.c \
 	val_print.c \
+	val_query.c \
+	val_gethostbyname.c \
 	crypto/val_rsamd5.c \
 	crypto/val_rsasha1.c \
 	crypto/val_dsasha1.c
@@ -18,32 +20,48 @@ SRC=  	res_squery.c \
 # can't use gmake conventions to translate SRC -> OBJ for portability
 OBJ=  	res_squery.o \
 	val_support.o \
-	res_zone.o \
+	val_zone.o \
 	val_verify.o \
 	val_parse.o \
 	val_print.o \
+	val_query.o \
+	val_gethostbyname.o \
 	crypto/val_rsamd5.o \
 	crypto/val_rsasha1.o \
 	crypto/val_dsasha1.o
 
 
 LIBVAL= libval.a
+LIBVALSO=libval.so
 
 DRIVER= driver 
 #VALIDATOR=validate (for future)
 VALIDATOR= verify
+GETHOST= gethost
 
-all: $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR)
+all: $(OBJ) $(LIBVAL) $(LIBVALSO) $(DRIVER) $(VALIDATOR) $(GETHOST)
 
 clean:
-	$(RM) -f $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) resolver_driver.o main.o
+	$(RM) -f $(OBJ) $(LIBVAL) $(LIBVALSO) $(DRIVER) $(VALIDATOR) $(GETHOST) resolver_driver.o main.o
 
 $(LIBVAL): $(OBJ)
 	$(AR) cruv $@ $(OBJ)
 	$(RANLIB) $@
 
+$(LIBVALSO): $(OBJ)
+	$(CC) -shared $(LDFLAGS) -o $@ $(OBJ)
+
 $(DRIVER): $(OBJ) resolver_driver.o
-	$(CC) -o $@ $? $(LDFLAGS)
+	$(CC) -o $@ resolver_driver.o -lval $(LDFLAGS)
 
 $(VALIDATOR): $(OBJ) main.o
 	$(CC) -o $@ main.o -lval $(LDFLAGS)
+
+$(GETHOST): $(OBJ) gethost.o
+	$(CC) -o $@ gethost.o -lval $(LDFLAGS)
+
+install:
+	$(INSTALL) $(LIBVAL)    $(libdir)
+	$(INSTALL) $(LIBVALSO)  $(libdir)
+	$(INSTALL) val_api.h    $(includedir)
+	$(INSTALL) val_errors.h $(includedir)

@@ -164,3 +164,35 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
     return index;
 }
 
+/*
+ * Parse rdata portion of a DS Resource Record.
+ * Returns the number of bytes in the DS rdata portion that were parsed.
+ */
+#define DIGEST_SHA_1	1
+int val_parse_ds_rdata (const unsigned char *buf, int buflen,
+			    val_ds_rdata_t *rdata)
+{
+    int index = 0;
+    u_char *cp;
+
+    if (!rdata) return -1;
+
+    cp = (u_char *) buf;
+    NS_GET16(rdata->d_keytag, cp);
+    index += 2;
+
+    rdata->d_algo = (u_int8_t)(buf[index]);
+    index += 1;
+
+    rdata->d_type = (u_int8_t)(buf[index]);
+    index += 1;
+
+	/* Only SHA-1 is understood */
+	if(rdata->d_type != htons(DIGEST_SHA_1))
+		return -1;
+
+    memcpy (rdata->d_hash, buf + index, sizeof(rdata->d_hash));
+    index += sizeof(rdata->d_hash);
+
+    return index;
+}

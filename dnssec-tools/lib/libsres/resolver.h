@@ -68,7 +68,7 @@
 
 
  
-#define EDNS_UDP_SIZE 512 
+#define EDNS_UDP_SIZE 4096 
 #define DNAME_MAX	1024
 
 #ifndef ns_t_dnskey

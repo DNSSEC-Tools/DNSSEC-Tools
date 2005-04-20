@@ -133,4 +133,6 @@
 #define DNSSEC_VERSION_ERROR	XX 
 #define SUSPICIOUS_BIT	XX  // Information hiding?
 
+char *p_val_error(int errno);
+
 #endif /* VAL_ERRORS_H */

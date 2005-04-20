@@ -10,8 +10,9 @@
 #include <res_query.h>
 
 #include "val_support.h"
-#include "res_zone.h"
+#include "val_zone.h"
 #include "res_squery.h"
+#include "val_cache.h"
 
 #define NO_DOMAIN_NAME  "res_squery: domain_name omitted from query request"
 
@@ -111,7 +112,7 @@ int do_referral(		val_context_t		*context,
                         struct rrset_rec    **answers,
                         struct rrset_rec    **learned_zones,
                         struct qname_chain  **qnames,
-						struct res_policy *respol,
+						struct res_policy 	*respol,
 						char                **error_msg)
 {
 	struct name_server *ns_list;
@@ -155,7 +156,10 @@ int do_referral(		val_context_t		*context,
    memset (&ref_resp, 0, sizeof (struct domain_info));
                                                                                                                           
 	if(ns_name_ntop(referral_name_n,referral_name, MAXDNAME-1) == -1)
+	{
+		free_name_servers (&ns_list);
 		return -1;
+	}
 
 {
 char    debug_name2[1024];
@@ -164,10 +168,13 @@ ns_name_ntop(referral_zone_n,debug_name2,1024);
 printf ("QUERYING: '%s.' (referral to %s)\n",
 referral_name, debug_name2);
 }
+	// XXX Other fields from respol must be copied into respolnew
 	respolnew.ns = ns_list;
     ret_val = res_squery (context, referral_name, query_type_h,
                                query_class_h, &respolnew, &ref_resp);
-                                                                                                                          
+   
+	free_name_servers (&ns_list);
+                                                                                                                  
     if (ret_val == SR_MEMORY_ERROR) return SR_MEMORY_ERROR;
                                                                                                                           
     if (ret_val==SR_NULLPTR_ERROR || ret_val==SR_CALL_ERROR
@@ -350,7 +357,9 @@ int digest_response (   val_context_t 		*context,
                                                                                                                           
         if ( from_section == SR_FROM_ANSWER
                 || (from_section == SR_FROM_AUTHORITY
-                        && nothing_other_than_cname && set_type_h != ns_t_ns))
+                        && nothing_other_than_cname && 
+							set_type_h != ns_t_ns 
+								&& set_type_h != ns_t_ds))
         {
             if (type_h == ns_t_cname &&
                     query_type_h != ns_t_cname &&
@@ -423,16 +432,9 @@ int digest_response (   val_context_t 		*context,
 	else
 		ret_val = SR_UNSET;
 
-	if(context) {
-		stow_info (&context->learned_zones, learned_zones);
-		stow_info (&context->learned_keys, learned_keys);
-		stow_info (&context->learned_ds, learned_ds);
-	}
-	else {
-		if(learned_zones) res_sq_free_rrset_recs(&learned_zones);
-		if(learned_keys) res_sq_free_rrset_recs(&learned_keys);
-		if(learned_ds) res_sq_free_rrset_recs(&learned_ds);
-	}
+	stow_zone_info (learned_zones);
+	stow_key_info (learned_keys);
+	stow_ds_info (learned_ds);
 
     return ret_val;
 }
@@ -466,11 +468,11 @@ int res_squery ( 	val_context_t			*context,
     response->di_error_message = NULL;
     response->di_requested_type_h = type;
     response->di_requested_class_h = class;
-                                                                                                                          
+
     if (domain_name==NULL)
         return res_sq_set_message (&response->di_error_message,
                                         NO_DOMAIN_NAME, SR_CALL_ERROR);
-                                                                                                                          
+                                                                                     
     if ((response->di_requested_name_h = STRDUP (domain_name))==NULL)
         return SR_MEMORY_ERROR;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 Sparta, Inc.  All rights reserved.
+ * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  *
  * Author: Abhijit Hayatnagarkar
@@ -109,10 +109,51 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
 			      int orig_rrBuf_len) {
 
     int rrBuf_len = 0;
-    struct rr_rec *rr = rrset->rrs_data;
+    struct rr_rec *rr = NULL;
     unsigned char *cp;
     
-    /* Assume rrs_data list is in canonical order */
+    /* Assume that elements of the rrs_data list are in canonical form */
+    /* sort the rrs_rdata by bubble-sort */
+    int sorted = 0;
+    while (!sorted) {
+	struct rr_rec *first_rr = NULL, *prev_rr = NULL, *curr_rr1 = NULL, *curr_rr2 = NULL, *next_rr = NULL;
+	sorted = 1;
+	curr_rr1 = rrset->rrs_data;
+	first_rr = curr_rr1;
+
+	if (curr_rr1) curr_rr2 = curr_rr1->rr_next;
+	while (curr_rr2 != NULL) {
+
+	    int cmp_len = (curr_rr1->rr_rdata_length_h < curr_rr2->rr_rdata_length_h) ?
+		curr_rr1->rr_rdata_length_h : curr_rr2->rr_rdata_length_h;
+	    
+	    next_rr = curr_rr2->rr_next;
+	    int cmp_res = memcmp (curr_rr1->rr_rdata, curr_rr2->rr_rdata, cmp_len);
+	    if ((cmp_res > 0) || ((cmp_res == 0) && (curr_rr2->rr_rdata_length_h > curr_rr1->rr_rdata_length_h))) {
+		/* switch rrs */
+		struct rr_rec *tmp_rr = NULL;
+		sorted = 0;
+		curr_rr1->rr_next = next_rr;
+		curr_rr2->rr_next = curr_rr1;
+		if (prev_rr) {
+		    prev_rr->rr_next = curr_rr2;
+		}
+		else {
+		    first_rr = curr_rr2;
+		}
+		tmp_rr = curr_rr2;
+		curr_rr2 = curr_rr1;
+		curr_rr1 = tmp_rr;
+	    }
+
+	    prev_rr = curr_rr1;
+	    curr_rr1 = curr_rr2;
+	    curr_rr2 = curr_rr2->rr_next;
+	}
+	rrset->rrs_data = first_rr;
+    }
+    
+    rr = rrset->rrs_data;
     while (rr) {
 	memcpy(rrBuf + rrBuf_len, rrset->rrs_name_n, strlen(rrset->rrs_name_n) + 1);
 	rrBuf_len += strlen(rrset->rrs_name_n) + 1;
@@ -139,6 +180,35 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
     return rrBuf_len;
 }
 
+/* tells whether the response contain any rrsigs */
+static int have_rrsigs (struct domain_info *response)
+{
+    struct rrset_rec *rrset;
+
+    if (!response) {
+	return 0;
+    }
+
+    rrset = response->di_rrset;
+    while (rrset) {
+	struct rr_rec *rrs_sig = rrset->rrs_sig;
+	while (rrs_sig) {
+	    val_rrsig_rdata_t rrsig_rdata;
+	    bzero(&rrsig_rdata, sizeof(rrsig_rdata));
+	    val_parse_rrsig_rdata(rrs_sig->rr_rdata, rrs_sig->rr_rdata_length_h,
+				  &rrsig_rdata);
+	    if ((rrsig_rdata.type_covered == rrset->rrs_type_h) ||
+	        (rrsig_rdata.type_covered == ns_t_nsec)) {
+		return 1;
+	    }
+	    rrs_sig = rrs_sig->rr_next;
+	}
+	rrset = rrset->rrs_next;
+    }
+
+    return 0;
+}
+
 
 val_result_t val_verify (struct val_context *context, struct domain_info *response)
 {
@@ -156,8 +226,14 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 
     dnskeys = context->learned_keys;
     if (!dnskeys) {
-	printf("val_verify(): no dnskeys found\n");
-	return DNSKEY_MISSING;
+	if (have_rrsigs(response)) {
+	    printf("val_verify(): no dnskeys found.\n");
+	    return DNSKEY_MISSING;
+	}
+	else {
+	    printf("val_verify(): no dnskeys or rrsigs found.  probably not a signed zone.\n");
+	    return INDETERMINATE;
+	}
     }
 
     // Parse the dnskeys
@@ -186,7 +262,12 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 
     if (dnskey_rdata == NULL) {
 	// No DNSKEYs were found
-	status = DNSKEY_MISSING;
+	if (have_rrsigs(response)) {
+	    status = DNSKEY_MISSING;
+	}
+	else {
+	    status = INDETERMINATE;
+	}
 	goto cleanup;
     }
 
@@ -280,11 +361,11 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    rrset->rrs_status = RRSIG_MISSING;
 	}
 	else if (!found_dnskey) {
-	    rrset->rrs_status = DNSKEY_MISSING;
+		rrset->rrs_status = DNSKEY_MISSING;
 	}
 	else {
 	    // Check if the rrset matches the query
-	    if (((response->di_requested_type_h != ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h)) &&
+	    if (((response->di_requested_type_h == ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h)) &&
 		(response->di_requested_class_h == rrset->rrs_class_h) &&
 		(strcasecmp(requested_name, rrset->rrs_name_n) == 0)
 		) {
@@ -308,6 +389,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     while (dp) {
 	val_dnskey_rdata_t *sdp;
 	sdp = dp->next;
+	if (dp->public_key) free (dp->public_key);
 	free(dp);
 	dp = sdp;
     }

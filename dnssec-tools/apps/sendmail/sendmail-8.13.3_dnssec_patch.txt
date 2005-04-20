@@ -1,7 +1,7 @@
 Index: doc/op/op.me
 ===================================================================
---- doc/op/op.me	2005-03-03 12:11:58.038664290 -0500
-+++ doc/op/op.me	2005-03-03 12:27:45.845972250 -0500
+--- doc/op/op.me	2005-03-03 12:11:58.000000000 -0500
++++ doc/op/op.me	2005-03-03 12:27:45.000000000 -0500
 @@ -3487,6 +3487,11 @@
  (a temporary failure)
  on T_AAAA (IPv6) lookups
@@ -17,12 +17,12 @@ Index: doc/op/op.me
 Index: sendmail/readcf.c
 ===================================================================
 --- sendmail/readcf.c	2005-02-25 10:54:42.000000000 -0500
-+++ sendmail/readcf.c	2005-03-03 10:41:20.530832913 -0500
++++ sendmail/readcf.c	2005-04-19 16:48:05.763372416 -0400
 @@ -2578,6 +2578,13 @@
  				WorkAroundBrokenAAAA = !clearmode;
  				continue;
  			}
-+#ifdef HAVE_LIBVALIDAT
++#ifdef HAVE_LIBVAL
 +			if (sm_strcasecmp(q, "RequireDNSSEC") == 0)
 +			{
 +				DoDNSSECValidation = !clearmode;
@@ -35,61 +35,60 @@ Index: sendmail/readcf.c
 Index: sendmail/domain.c
 ===================================================================
 --- sendmail/domain.c	2005-02-25 10:54:53.000000000 -0500
-+++ sendmail/domain.c	2005-02-24 16:44:30.000000000 -0500
++++ sendmail/domain.c	2005-04-19 17:06:24.379357400 -0400
 @@ -23,6 +23,9 @@
  
  # include <arpa/inet.h>
  
-+#ifdef HAVE_LIBVALIDAT
-+#include <validat.h>
++#ifdef HAVE_LIBVAL
++#include <val_api.h>
 +#endif
  
  /*
  **  The standard udp packet size PACKETSZ (512) is not sufficient for some
-@@ -318,6 +321,33 @@
- 		return -1;
- 	}
+@@ -269,6 +272,32 @@
+ 		resfunc = res_search;
  
-+#ifdef HAVE_LIBVALIDAT
+ 	errno = 0;
++
++#ifdef HAVE_LIBVAL
 +	/* perform DNSSEC Validation of the answer */
-+	do {
++	if (DoDNSSECValidation) {
 +	    char dname[MAXDNAME];
 +	    bzero(dname, MAXDNAME);
 +	    strncpy(dname, host, MAXDNAME);
 +	    getcanonname(dname, MAXDNAME, true, NULL);
-+
-+	    if (DoDNSSECValidation) {
-+
-+		if ((val_init() == 0) &&
-+		    (val_check(dname, C_IN, T_MX, (unsigned char *) &answer) == VAL_SUCCESS)) {
-+		    sm_dprintf("getmxrr: DNSSEC validation of %s succeeded.\n", dname);
-+		}
-+		else {
-+		    sm_dprintf("getmxrr: DNSSEC validation of %s failed.\n", dname);
-+		    syserr("Error: DNSSEC validation of %s failed.\n", dname);
-+		    *rcode = EX_NOHOST;
-+		    return -1;
-+		}
++	    int dnssec_status = INTERNAL_ERROR;
++	    
++	    sm_dprintf("performing dnssec validation query.\n");
++	    
++	    n = val_query (dname, C_IN, T_MX, (unsigned char *) &answer, sizeof (answer),
++			   &dnssec_status);
++	    if (dnssec_status == VALIDATE_SUCCESS) {
++		sm_dprintf("getmxrr: DNSSEC validation of %s succeeded.\n", dname);
 +	    }
 +	    else {
-+		sm_dprintf("getmxrr: not performing dnssec validation.\n");
++		sm_dprintf("getmxrr: DNSSEC validation of %s failed.\n", dname);
++		syserr("Error: DNSSEC validation of %s failed.\n", dname);
++		*rcode = EX_NOHOST;
++		return -1;
 +	    }
-+	} while (0);
++	}
++	else 
 +#endif
-+
- 	/* avoid problems after truncation in tcp packets */
- 	if (n > sizeof(answer))
- 		n = sizeof(answer);
+ 	n = (*resfunc)(host, C_IN, T_MX, (unsigned char *) &answer,
+ 		       sizeof(answer));
+ 	if (n < 0)
 Index: sendmail/conf.h
 ===================================================================
 --- sendmail/conf.h	2005-02-25 10:55:02.000000000 -0500
-+++ sendmail/conf.h	2005-02-24 16:44:53.000000000 -0500
++++ sendmail/conf.h	2005-04-19 16:49:07.297017880 -0400
 @@ -213,6 +213,10 @@
  # define PIPELINING	1	/* SMTP PIPELINING */
  #endif /* PIPELINING */
  
-+#ifndef HAVE_LIBVALIDAT
-+#define HAVE_LIBVALIDAT		/* DNSSEC Validator Library */
++#ifndef HAVE_LIBVAL
++#define HAVE_LIBVAL		/* DNSSEC Validator Library */
 +#endif
 +
  /**********************************************************************
@@ -98,43 +97,56 @@ Index: sendmail/conf.h
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2005-02-25 10:55:24.000000000 -0500
-+++ sendmail/sm_resolve.c	2005-02-24 16:46:21.000000000 -0500
++++ sendmail/sm_resolve.c	2005-04-19 17:08:59.568765024 -0400
 @@ -46,6 +46,10 @@
  # if NAMED_BIND
  #  include "sm_resolve.h"
  
-+#ifdef HAVE_LIBVALIDAT
-+#include <validat.h>
++#ifdef HAVE_LIBVAL
++#include <val_api.h>
 +#endif
 +
  SM_RCSID("$Id$")
  
  static struct stot
-@@ -417,7 +421,29 @@
+@@ -409,7 +413,32 @@
+ 	}
+ 	errno = 0;
+ 	SM_SET_H_ERRNO(0);
++
++#ifdef HAVE_LIBVAL
++	sm_dprintf("dns_lookup(%s, %d, %s): ",
++		   domain, rr_class, dns_type_to_string(rr_type));
++	if (DoDNSSECValidation) {
++	    char dname[MAXDNAME];
++	    int dnssec_status = INTERNAL_ERROR;
++	    bzero(dname, MAXDNAME);
++	    strncpy(dname, domain, MAXDNAME);
++	    getcanonname(dname, MAXDNAME, true, NULL);
++	    sm_dprintf("performing dnssec validation query.\n");
++	    len = val_query(dname, rr_class, rr_type, reply, sizeof reply,
++			    &dnssec_status);
++	    if (dnssec_status == VALIDATE_SUCCESS) {
++		sm_dprintf("\t\tdnssec validation of %s succeeded.\n", domain);
++	    }
++	    else {
++		sm_dprintf("\t\tdnssec validation of %s failed.\n",
++			   domain);
++		return NULL;
++	    }
++	}
++	else
++#endif
+ 	len = res_search(domain, rr_class, rr_type, reply, sizeof reply);
++
+ 	if (tTd(8, 16))
+ 	{
+ 		_res.options = old_options;
+@@ -417,7 +446,9 @@
  			   domain, rr_class, dns_type_to_string(rr_type), len);
  	}
  	if (len >= 0)
 +	{
-+#ifdef HAVE_LIBVALIDAT
-+		sm_dprintf("dns_lookup(%s, %d, %s): ",
-+			   domain, rr_class, dns_type_to_string(rr_type));
-+		if (DoDNSSECValidation) {
-+		    sm_dprintf("performing dnssec validation.\n");
-+		    if ((val_init() == 0) &&
-+			(val_check(domain, rr_class, rr_type, reply) == VAL_SUCCESS)) {
-+			sm_dprintf("\t\tdnssec validation of %s succeeded.\n",
-+				   domain);
-+		    }
-+		    else {
-+			sm_dprintf("\t\tdnssec validation of %s failed.\n",
-+				   domain);
-+			return NULL;
-+		    }
-+		}
-+		else {
-+		    sm_dprintf("not performing dnssec validation.\n");
-+		}
-+#endif
  		r = parse_dns_reply(reply, len);
 +	}
  	if (retrans > 0)
@@ -143,12 +155,12 @@ Index: sendmail/sm_resolve.c
 Index: sendmail/sendmail.h
 ===================================================================
 --- sendmail/sendmail.h	2005-02-25 10:55:33.000000000 -0500
-+++ sendmail/sendmail.h	2005-02-24 16:46:44.000000000 -0500
++++ sendmail/sendmail.h	2005-04-19 16:48:20.190179208 -0400
 @@ -2146,6 +2146,9 @@
  #endif /* !defined(_USE_SUN_NSSWITCH_) && !defined(_USE_DEC_SVC_CONF_) */
  EXTERN bool	volatile DataProgress;	/* have we sent anything since last check */
  EXTERN bool	DisConnected;	/* running with OutChannel redirect to transcript file */
-+#ifdef HAVE_LIBVALIDAT
++#ifdef HAVE_LIBVAL
 +EXTERN bool     DoDNSSECValidation;    /* perform DNSSEC validation of DNS queries */
 +#endif
  EXTERN bool	DontExpandCnames;	/* do not $[...$] expand CNAMEs */
