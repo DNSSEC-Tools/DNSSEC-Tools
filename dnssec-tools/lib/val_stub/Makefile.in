@@ -2,8 +2,8 @@
 INCL= ../libsres
 LIB= ../libsres
 CFLAGS_EX=-I$(INCL) -I.
-SRES=-lsres -lcrypto
-LDFLAGS_EX=-L. -L$(LIB) $(SRES)
+EXTRALIBS=-lval -lsres -lcrypto
+LDFLAGS_EX=-L. -L$(LIB) $(EXTRALIBS)
 
 SRC=  	res_squery.c \
 	val_support.c \
@@ -14,6 +14,7 @@ SRC=  	res_squery.c \
 	val_print.c \
 	val_query.c \
 	val_gethostbyname.c \
+	val_cache.c \
 	crypto/val_rsamd5.c \
 	crypto/val_rsasha1.c \
 	crypto/val_dsasha1.c
@@ -32,38 +33,46 @@ OBJ=  	res_squery.o \
 	crypto/val_rsasha1.o \
 	crypto/val_dsasha1.o
 
+LOBJ=  	res_squery.lo \
+	val_support.lo \
+	val_zone.lo \
+	val_cache.lo \
+	val_verify.lo \
+	val_parse.lo \
+	val_print.lo \
+	val_query.lo \
+	val_gethostbyname.lo \
+	crypto/val_rsamd5.lo \
+	crypto/val_rsasha1.lo \
+	crypto/val_dsasha1.lo
 
-LIBVAL= libval.a
-LIBVALSO=libval.so
+
+LIBVAL=libval.la
 
 DRIVER= driver 
 #VALIDATOR=validate (for future)
 VALIDATOR= verify
 GETHOST= gethost
 
-all: $(OBJ) $(LIBVAL) $(LIBVALSO) $(DRIVER) $(VALIDATOR) $(GETHOST)
+all: $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST)
 
 clean:
-	$(RM) -f $(OBJ) $(LIBVAL) $(LIBVALSO) $(DRIVER) $(VALIDATOR) $(GETHOST) resolver_driver.o main.o
+	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) resolver_driver.lo main.lo gethost.lo
 
-$(LIBVAL): $(OBJ)
-	$(AR) cruv $@ $(OBJ)
-	$(RANLIB) $@
+$(LIBVAL): $(LOBJ)
+	$(LIBTOOLLD) -o $@ $(LOBJ)
 
-$(LIBVALSO): $(OBJ)
-	$(CC) -shared $(LDFLAGS) -o $@ $(OBJ)
+$(DRIVER): $(LIBVAL) resolver_driver.lo
+	$(LIBTOOLLD) -o $@ resolver_driver.lo $(LDFLAGS)
 
-$(DRIVER): $(OBJ) resolver_driver.o
-	$(CC) -o $@ resolver_driver.o -lval $(LDFLAGS)
+$(VALIDATOR): $(LIBVAL) main.lo
+	$(LIBTOOLLD) -o $@ main.lo $(LDFLAGS)
 
-$(VALIDATOR): $(OBJ) main.o
-	$(CC) -o $@ main.o -lval $(LDFLAGS)
-
-$(GETHOST): $(OBJ) gethost.o
-	$(CC) -o $@ gethost.o -lval $(LDFLAGS)
+$(GETHOST): $(LIBVAL) gethost.lo
+	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS)
 
 install:
-	$(INSTALL) $(LIBVAL)    $(libdir)
-	$(INSTALL) $(LIBVALSO)  $(libdir)
+	$(LIBTOOLIN) $(LIBVAL) $(libdir)
+	$(LIBTOOLFN)
 	$(INSTALL) val_api.h    $(includedir)
 	$(INSTALL) val_errors.h $(includedir)
