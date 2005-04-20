@@ -56,6 +56,5 @@ int extract_from_rr (   u_int8_t *response,
                         u_int32_t *ttl_h,
                         u_int16_t *rdata_length_h,
                         int *rdata_index);
-void stow_info (struct rrset_rec **unchecked_zone_info, struct rrset_rec *new_zone_info);
 
 #endif /* VAL_SUPPORT_H */
