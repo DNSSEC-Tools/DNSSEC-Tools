@@ -282,13 +282,17 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	int found_dnskey = 0;
 	int verified = 0;
 	struct rr_rec *rrs_sig = rrset->rrs_sig;
+	char rrs_name[MAXDNAME];
+	bzero(rrs_name, MAXDNAME);
+	ns_name_ntop(rrset->rrs_name_n, rrs_name, MAXDNAME);
 
 	// Check for each signature
 	while (rrs_sig && (!verified)) {
 	    val_rrsig_rdata_t rrsig_rdata;
 	    int sig_data_len;
 
-	    printf("val_verify(): parsing rrsig\n");
+	    printf("val_verify(): parsing rrsig for %s\n", rrs_name);
+
 	    bzero(&rrsig_rdata, sizeof(rrsig_rdata));
 	    val_parse_rrsig_rdata(rrs_sig->rr_rdata, rrs_sig->rr_rdata_length_h,
 				  &rrsig_rdata);
@@ -358,17 +362,22 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	}
 	
 	if (!found_rrsig) {
+	    printf("val_verify(): RRSIG not found for %s\n", rrs_name);
 	    rrset->rrs_status = RRSIG_MISSING;
 	}
 	else if (!found_dnskey) {
+	        printf("val_verify(): DNSKEY not found.\n");
 		rrset->rrs_status = DNSKEY_MISSING;
 	}
 	else {
 	    // Check if the rrset matches the query
-	    if (((response->di_requested_type_h == ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h)) &&
+	    if (((response->di_requested_type_h == ns_t_any) ||
+	         ((response->di_requested_type_h == ns_t_a) && (rrset->rrs_type_h == ns_t_cname)) ||
+                 (response->di_requested_type_h == rrset->rrs_type_h)) &&
 		(response->di_requested_class_h == rrset->rrs_class_h) &&
 		(strcasecmp(requested_name, rrset->rrs_name_n) == 0)
 		) {
+	        printf("val_verify(): RRSET matches query.\n");
 		if (sigresult == RRSIG_VERIFIED) {
 		    status = VALIDATE_SUCCESS;
 		}
@@ -376,6 +385,10 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 		    status = sigresult;
 		}
 	    }
+	    else {
+	        printf("val_verify(): RRSET does not match query.\n");
+	    }
+	    printf("val_verify(): status = %s.\n", p_val_error(status));
 	    
 	    rrset->rrs_status = sigresult;
 	}
