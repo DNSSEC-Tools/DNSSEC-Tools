@@ -12,12 +12,24 @@
 
 #include "val_support.h"
 #include "res_squery.h"
+#include "validator.h"
+#include "val_x_query.h"
 
-#define AUTH_ZONE_INFO "fruits.netsec.tislabs.com."
+#define AUTH_ZONE_INFO "fruits.netsec.tislabs.com"
+
+// NOT AUTHORITATIVE FOR DS IN PARENT
 #define NAME_SERVER_STRING	"158.69.82.20"
 #define QUERY_NAME "dns.wesh.fruits.netsec.tislabs.com."
 #define QUERY_TYPE ns_t_a
 #define QUERY_CLASS ns_c_in
+
+// QUERYING A RECURSIVE SERVER
+/*
+#define NAME_SERVER_STRING	"168.150.236.43"
+#define QUERY_NAME "dns.wesh.fruits.netsec.tislabs.com."
+#define QUERY_TYPE ns_t_a
+#define QUERY_CLASS ns_c_in
+*/
 
 int init_respol(struct res_policy *respol)
 {
@@ -38,9 +50,7 @@ int init_respol(struct res_policy *respol)
 	respol->ns->ns_name_n = (u_int8_t *) MALLOC (strlen(auth_zone_info) + 1);
 	if(respol->ns->ns_name_n == NULL) 
 		return SR_MEMORY_ERROR;
-	respol->ns->ns_name_n = (u_int8_t *) MALLOC (strlen(auth_zone_info) + 1);
-	if(respol->ns->ns_name_n == NULL) 
-		return SR_MEMORY_ERROR;
+	memset(respol->ns->ns_name_n, 0, strlen(auth_zone_info) + 1);
 	/* Initialize the rest of the fields */
 	respol->ns->ns_tsig_key = NULL;
 	respol->ns->ns_security_options = ZONE_USE_NOTHING;
@@ -67,23 +77,13 @@ void destroy_respol(struct res_policy *respol)
 
 int main()
 {
-	struct res_policy respol;
-	struct domain_info response;
-	int ret_val;
 
+	char *name = QUERY_NAME;
 	const u_int16_t type = QUERY_TYPE;
 	const u_int16_t class = QUERY_CLASS;
 
-	char *name = QUERY_NAME;
-
-
-	if ((ret_val = init_respol(&respol)) != SR_UNSET)
-		return ret_val;
-
-	ret_val = res_squery ( NULL, name, type, class, &respol, &response); 
-	free_domain_info_ptrs(&response);
-
-	destroy_respol(&respol);
+	int ret_val;
+	ret_val = val_x_query( NULL, name, type, class, 0, NULL, 0);
 
 	return ret_val;
 }
