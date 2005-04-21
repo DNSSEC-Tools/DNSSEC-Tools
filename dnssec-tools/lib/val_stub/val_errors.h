@@ -1,22 +1,6 @@
 #ifndef VAL_ERRORS_H
 #define VAL_ERRORS_H
 
-/* Types of keys in the key store */
-#define TRUSTED_KEY XX
-#define LEARNED_KEY XX
-
-/* Policies associated with Keys */
-#define	CANNOT_BE_USED			0x00				
-#define CAN_SIGN_KEY			0x01
-#define CAN_SIGN_ZONE			0x02
-#define CAN_SIGN_ZONE_AND_KEY 	CAN_SIGN_KEY|CAN_SIGN_ZONE 
-
-/* Different validation result types */
-#define ANSWER	XX
-#define CNAME	XX
-#define DNAME	XX
-#define NSEC_PROOF	XX
-#define SOA_PROOF	XX
 
 /* 
  ***********************************
@@ -85,7 +69,6 @@
 
 
 
-
 /* Verification of signatures */
 #define RRSIG_VERIFIED	17
 #define RRSIG_VERIFY_FAILED	18
@@ -115,6 +98,7 @@
 #define DNS_FAILURE	40
 #define WAITING 41
 #define WAKEUP 42
+#define FLOOD_ATTACK_DETECTED	43	
 
 
 #define INSUFFICIENT_DATA	XX
@@ -129,7 +113,6 @@
 #define WRONG_LABEL_COUNT	XX
 #define EDNS_VERSION_ERROR	XX
 #define UNSUPP_ENDS0_LABEL	XX
-#define FLOOD_ATTACK_DETECTED	XX
 #define DNSSEC_VERSION_ERROR	XX 
 #define SUSPICIOUS_BIT	XX  // Information hiding?
 
