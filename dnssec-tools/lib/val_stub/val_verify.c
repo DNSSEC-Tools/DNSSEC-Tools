@@ -13,6 +13,21 @@
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
+#include <ctype.h>
+#include <arpa/nameser.h>
+
+#include <resolver.h>
+#include <res_errors.h>
+#include <support.h>
+#include <res_query.h>
+
+#include "val_support.h"
+#include "val_zone.h"
+#include "res_squery.h"
+#include "val_cache.h"
+#include "val_errors.h"
+#include "val_x_query.h"
+#include "validator.h"
 
 #include "val_print.h"
 #include "val_parse.h"
@@ -21,6 +36,8 @@
 #include "crypto/val_dsasha1.h"
 
 #include "val_verify.h"
+#include "val_cache.h"
+
 
 #define ZONE_KEY_FLAG 0x0100 /* Zone Key Flag, RFC 4034 */
 #define BUFLEN 8192
@@ -224,7 +241,9 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	return INTERNAL_ERROR;
     }
 
-    dnskeys = context->learned_keys;
+    //dnskeys = context->learned_keys;
+	get_cached_keys();
+
     if (!dnskeys) {
 	if (have_rrsigs(response)) {
 	    printf("val_verify(): no dnskeys found.\n");
@@ -410,3 +429,328 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     return status;
 }
 
+
+int predict_sigbuflength (  struct rrset_rec *rr_set,
+                            size_t *field_length,
+                            int *signer_length)
+{
+    /*
+        Calculate the size of the field over which the verification
+        is done.  This is the sum of
+            the number of bytes through the signer name in the SIG RDATA
+            the length of the signer name (uncompressed)
+            the sum of the fully uncompressed lengths of the RRs in the set
+        *field_length is the field length
+        *signer_length is the length of the signer's name (used externally)
+    */
+    struct rr_rec   *rr;
+    int             owner_length;
+                                                                                                                          
+    owner_length = wire_name_length (rr_set->rrs_name_n);
+                                                                                                                          
+    *signer_length = wire_name_length (&rr_set->rrs_sig->rr_rdata[SIGNBY]);
+                                                                                                                          
+    if (*signer_length == 0) return SR_INTERNAL_ERROR;
+                                                                                                                          
+    *field_length = SIGNBY + (*signer_length);
+                                                                                                                          
+    for (rr = rr_set->rrs_data; rr; rr = rr->rr_next)
+        *field_length += owner_length + ENVELOPE + rr->rr_rdata_length_h;
+                                                                                                                          
+    return SR_UNSET;
+}
+
+int make_sigfield (  u_int8_t            **field,
+                        int                 *field_length,
+                        struct rrset_rec    *rr_set,
+                        struct rr_rec       *rr_sig,
+                        int                 is_a_wildcard)
+{
+    struct rr_rec       *curr_rr;
+    int                 index;
+    int                 signer_length;
+    int                 owner_length;
+    u_int16_t           type_n;
+    u_int16_t           class_n;
+    u_int32_t           ttl_n;
+    u_int16_t           rdata_length_n;
+    u_int8_t            lowered_owner_n[MAXDNAME];
+    size_t              l_index;
+                                                                                                                          
+    if (predict_sigbuflength (rr_set, field_length, &signer_length)!=SR_UNSET)
+        return SR_INTERNAL_ERROR;
+                                                                                                                          
+    *field = (u_int8_t*) MALLOC (*field_length);
+                                                                                                                          
+    if (*field == NULL) return SR_MEMORY_ERROR;
+                                                                                                                          
+    /* Make sure we are using the correct TTL */
+                                                                                                                          
+    memcpy (&ttl_n, &rr_sig->rr_rdata[TTL],sizeof(u_int32_t));
+    rr_set->rrs_ttl_h = ntohl (ttl_n);
+                                                                                                                          
+    /*
+        While we're at it, we'll gather other common info, specifically
+        network ordered numbers (type, class) and name length.
+    */
+                                                                                                                          
+    owner_length = wire_name_length (rr_set->rrs_name_n);
+                                                                                                                          
+    if (owner_length == 0) return SR_INTERNAL_ERROR;
+                                                                                                                          
+    memcpy (lowered_owner_n, rr_set->rrs_name_n, owner_length);
+    l_index = 0;
+    lower_name (lowered_owner_n, &l_index);
+                                                                                                                          
+    type_n = htons(rr_set->rrs_type_h);
+    class_n = htons(rr_set->rrs_class_h);
+                                                                                                                          
+    /* Copy in the SIG RDATA (up to the signature */
+                                                                                                                          
+    index = 0;
+    memcpy (&(*field)[index], rr_sig->rr_rdata, SIGNBY+signer_length);
+    index += SIGNBY+signer_length;
+                                                                                                                          
+    /* For each record of data, copy in the envelope & the lower cased rdata */
+                                                                                                                          
+    for (curr_rr = rr_set->rrs_data; curr_rr; curr_rr = curr_rr->rr_next)
+    {
+        /* Copy in the envelope information */
+                                                                                                                          
+        if (is_a_wildcard)
+        {
+            u_int8_t    wildcard_label[2];
+            size_t      wildcard_label_length = 2;
+            wildcard_label[0] = (u_int8_t) 1;
+            wildcard_label[1] = (u_int8_t) '*';
+                                                                                                                          
+            memcpy (&(*field)[index],wildcard_label,wildcard_label_length);
+            index += wildcard_label_length;
+        }
+        else
+        {
+            memcpy (&(*field)[index], lowered_owner_n, owner_length);
+            index += owner_length;
+        }
+        memcpy (&(*field)[index], &type_n, sizeof(u_int16_t));
+        index += sizeof(u_int16_t);
+        memcpy (&(*field)[index], &class_n, sizeof(u_int16_t));
+        index += sizeof(u_int16_t);
+        memcpy (&(*field)[index], &ttl_n, sizeof(u_int32_t));
+        index += sizeof(u_int32_t);
+                                                                                                                          
+        /* Now the RR-specific info, the length and the data */
+                                                                                                                          
+        rdata_length_n = htons (curr_rr->rr_rdata_length_h);
+        memcpy (&(*field)[index], &rdata_length_n, sizeof(u_int16_t));
+        index += sizeof(u_int16_t);
+        memcpy (&(*field)[index],curr_rr->rr_rdata,curr_rr->rr_rdata_length_h);
+        index += curr_rr->rr_rdata_length_h;
+    }
+                                                                                                                          
+    return SR_UNSET;
+}
+
+int find_signature (u_int8_t **field, struct rr_rec *rr_sig)
+{
+    int     sig_index;
+                                                                                                                          
+    sig_index = SIGNBY + wire_name_length (&rr_sig->rr_rdata[SIGNBY]);
+                                                                                                                          
+    *field = &rr_sig->rr_rdata[sig_index];
+                                                                                                                          
+    return rr_sig->rr_rdata_length_h - sig_index;
+}
+
+void identify_key_from_sig (struct rr_rec *sig,u_int8_t **name_n,u_int16_t *footprint_n)
+{
+    *name_n = &sig->rr_rdata[SIGNBY];
+    memcpy (footprint_n, &sig->rr_rdata[SIGNBY-sizeof(u_int16_t)],
+                sizeof(u_int16_t));
+}
+
+int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag, val_dnskey_rdata_t *new_dnskey_rdata)
+{
+	struct rr_rec *nextrr;
+	u_int16_t fp;
+
+	for (nextrr = keyrr; nextrr; nextrr=nextrr->rr_next)
+	{
+		if (new_dnskey_rdata == NULL) 
+			return OUT_OF_MEMORY;
+
+		val_parse_dnskey_rdata (nextrr->rr_rdata,
+                    nextrr->rr_rdata_length_h,
+                    new_dnskey_rdata);
+		new_dnskey_rdata->next = NULL;        
+                                                                                                           
+    	memcpy (&fp, &new_dnskey_rdata->key_tag, sizeof(u_int16_t));
+		if (*tag == htons(fp))
+			return NO_ERROR;
+
+		free(new_dnskey_rdata->public_key);
+	}
+	
+	return DNSKEY_MISSING;
+}
+
+
+#define WHERE_LABELS_IS 3
+int check_label_count (
+                            struct rrset_rec    *the_set,
+                            struct rr_rec       *the_sig,
+                            int                 *is_a_wildcard)
+{
+    u_int8_t owner_labels = wire_name_labels (the_set->rrs_name_n);
+    u_int8_t sig_labels = the_sig->rr_rdata[WHERE_LABELS_IS] + 1;
+                                                                                                                          
+    if (sig_labels > owner_labels) return SR_PROCESS_ERROR;
+                                                                                                                          
+    *is_a_wildcard = (sig_labels < owner_labels);
+                                                                                                                          
+    return SR_UNSET;
+}
+
+int do_verify (   int                 *sig_status,
+                  struct rrset_rec    *the_set,
+                  struct rr_rec       *the_sig,
+                  val_dnskey_rdata_t  *the_key,
+                  int                 is_a_wildcard)
+{
+    /*
+        Use the crypto routines to verify the signature
+        Put the result into rrs_status
+    */
+                                                                                                                          
+    u_int8_t            *ver_field;
+    size_t              ver_length;
+ //   u_int8_t            *sig_field;
+ //   size_t              sig_length;
+    int                 ret_val;
+	val_rrsig_rdata_t rrsig_rdata;
+
+    if (the_set==NULL||the_key==NULL) return SR_INTERNAL_ERROR;
+                                                                                                                          
+    if ((ret_val=make_sigfield (&ver_field, &ver_length, the_set, the_sig,
+                                        is_a_wildcard)) != SR_UNSET)
+        return ret_val;
+                                                                                                                          
+    /* Find the signature - no memory is malloc'ed for this operation  */
+                                                                                                                          
+//  sig_length = find_signature (&sig_field, the_sig);
+//	val_parse_rrsig_rdata(sig_field, sig_length, &rrsig_rdata);
+	val_parse_rrsig_rdata(the_sig->rr_rdata, the_sig->rr_rdata_length_h,
+                  &rrsig_rdata);    
+	rrsig_rdata.next = NULL;
+                                                                                                                      
+    /* Perform the verification */
+	*sig_status = val_sigverify(ver_field, ver_length, *the_key, rrsig_rdata);
+  
+/*
+printf ("\nVerifying this field:\n");
+print_hex_field (ver_field,ver_length,21,"VER: ");
+printf ("\nThis is the supposed signature:\n");
+print_hex_field (sig_field,sig_length,21,"SIG: ");
+printf ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
+*/
+    FREE (ver_field);
+    return SR_UNSET;
+}
+
+
+#ifndef DIGEST_SHA_1
+#define DIGEST_SHA_1 1
+#endif
+int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *public_key, u_int32_t public_key_len)
+{
+	/* Only SHA-1 is understood */
+    if(ds_hashtype != htons(DIGEST_SHA_1))
+        return 0;
+
+	// XXX check hashes
+	return 1;	
+}
+
+
+void verify_next_assertion(struct assertion_chain *as)
+{
+	struct rrset_rec *the_set;
+	struct rr_rec   *the_sig;
+	u_int8_t        *signby_name_n;
+	u_int16_t       signby_footprint_n;
+	val_dnskey_rdata_t dnskey;
+	int             is_a_wildcard;
+	struct assertion_chain *the_trust;
+	int verified = 0;
+
+	the_set = as->ac_data;
+	the_trust = as->ac_trust;
+	for (the_sig = the_set->rrs_sig;the_sig;the_sig = the_sig->rr_next) {
+
+		/* for each sig, identify key, */ 
+		identify_key_from_sig (the_sig, &signby_name_n, &signby_footprint_n);
+
+		if(the_set->rrs_type_h != ns_t_dnskey) {
+			/* trust path contains the key */
+			if(NO_ERROR != 
+				find_key_for_tag (the_trust->ac_data->rrs_data, 
+					&signby_footprint_n, &dnskey)) {
+				the_sig->status = SIG_KEY_NOT_AVAILABLE;
+				free(dnskey.public_key);
+				continue;
+			}
+		}
+		else {
+			/* data itself contains the key */
+			if(NO_ERROR != find_key_for_tag (the_set->rrs_data, &signby_footprint_n, &dnskey)) {
+				the_sig->status = SIG_KEY_NOT_AVAILABLE;
+				free(dnskey.public_key);
+				continue;
+			}
+		}	
+
+		/* do wildcard processing */
+		if(check_label_count (the_set, the_sig, &is_a_wildcard) != SR_UNSET) {
+			the_sig->status = SIG_BAD_LABEL_COUNT;
+			free(dnskey.public_key);
+			continue;
+		}
+
+		/* and check the signature */
+		if(SR_UNSET != do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard)) {
+			the_sig->status = SIG_PROCESS_ERR;
+			free(dnskey.public_key);
+			continue;
+		}
+
+		/* If this record contains a DNSKEY, check if the DS record contains this key */
+		if(the_sig->status == RRSIG_VERIFIED) {
+			if (the_set->rrs_type_h == ns_t_dnskey) {
+				/* follow the trust path */
+				struct rr_rec *dsrec = the_trust->ac_data->rrs_data;		
+				uint16_t keytag = htons(dnskey.key_tag);
+				while(dsrec)	
+				{	
+					val_ds_rdata_t ds;
+					val_parse_ds_rdata(dsrec->rr_rdata, dsrec->rr_rdata_length_h, &ds);
+					if((ds.d_keytag == keytag) 
+						&& (ds.d_algo == dnskey.algorithm)) 
+						if (hash_is_equal(ds.d_type, 
+								ds.d_hash, dnskey.public_key,
+								dnskey.public_key_len))
+							break;
+					dsrec = dsrec->rr_next;
+				}
+				if(!dsrec)
+					the_sig->status = SIG_DS_NOMATCH;
+				else
+					verified = 1;
+			}
+			else
+				verified = 1;
+		}
+		free(dnskey.public_key);
+	}
+
+	as->ac_state = (verified == 1)? A_VERIFIED : A_VERIFY_FAILED;
+}

@@ -13,7 +13,6 @@
 #include <resolver.h>
 #include "validator.h"
 #include "val_errors.h"
-
 /*
  * Result status codes returned by the validator functions.
  */
@@ -30,5 +29,6 @@ typedef int val_result_t;
  * It's just a passive verifier.
  */
 val_result_t val_verify (struct val_context *context, struct domain_info *response);
+void verify_next_assertion(struct assertion_chain *as);
 
 #endif
