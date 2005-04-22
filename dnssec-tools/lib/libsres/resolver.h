@@ -66,6 +66,7 @@
 #define SR_TSIG_PROTECTED_NXT       SR_TSIG_PROTECTED + SR_ANS_NACK_NXT
 #define SR_TSIG_PROTECTED_SOA       SR_TSIG_PROTECTED + SR_ANS_NACK_SOA
 
+#define SR_WRONG 35
 
  
 #define EDNS_UDP_SIZE 4096 
@@ -101,6 +102,7 @@ struct rr_rec
 {
     u_int16_t       rr_rdata_length_h;  /* RDATA length */
     u_int8_t        *rr_rdata;      /* Raw RDATA */
+	int				status;
     struct rr_rec       *rr_next;
 };
                                                                                                                           
@@ -127,7 +129,7 @@ struct qname_chain
 
 struct domain_info
 {
-    char            *di_requested_name_h;
+    char          *di_requested_name_h;
     u_int16_t       di_requested_type_h;
     u_int16_t       di_requested_class_h;
     struct  rrset_rec   *di_rrset;
