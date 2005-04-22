@@ -242,7 +242,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     }
 
     //dnskeys = context->learned_keys;
-	get_cached_keys();
+	dnskeys = get_cached_keys();
 
     if (!dnskeys) {
 	if (have_rrsigs(response)) {
