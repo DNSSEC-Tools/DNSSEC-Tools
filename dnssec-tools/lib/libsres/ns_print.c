@@ -464,6 +464,41 @@ ns_sprintrrf(const u_char *msg, size_t msglen,
 		break;
 	    }
 
+#define SHA1SIZE	20
+	case ns_t_ds: {
+		u_int key_id;
+		u_int algo;
+		u_int digest_type;
+		char DS_hash[SHA1SIZE];
+		const char *leader;
+		int n;
+
+		key_id = ns_get16(rdata); rdata += NS_INT16SZ;
+		algo = *rdata++ & 0xF; 
+		digest_type = *rdata++ & 0xF;
+
+		len = b64_ntop(rdata, edata - rdata,
+			       DS_hash, sizeof(DS_hash));
+		if (len > 15) {
+			T(addstr(" (", 2, &buf, &buflen));
+			leader = "\n\t\t";
+			spaced = 0;
+		} else
+			leader = " ";
+		if (len < 0)
+			goto formerr;
+		for (n = 0; n < len; n += 48) {
+			T(addstr(leader, strlen(leader), &buf, &buflen));
+			T(addstr(DS_hash + n, MIN(len - n, 48),
+				 &buf, &buflen));
+		}
+		if (len > 15)
+			T(addstr(" )", 2, &buf, &buflen));
+		break;
+
+		};
+
+
 	case ns_t_dnskey: {
 		char base64_key[NS_MD5RSA_MAX_BASE64];
 		u_int keyflags, protocol, algorithm, key_id;
