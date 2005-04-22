@@ -45,6 +45,7 @@ my @stdopts =
 	"keyrec=s",			# Keyrec name.
 	"kgopts=s",			# Additional options for dnssec-keygen.
 	"krfile=s",			# Keyrec file.
+	"ksdir=s",			# Directory for keyset files.
 	"kskdirectory=s",		# Directory for KSK keys.
 	"kskkey=s",			# KSK key.
 	"ksklength=i",			# Length of KSK.
