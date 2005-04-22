@@ -175,8 +175,11 @@ int get (	const char*			name,
 
 	struct name_server *ns_list = NULL; 
 
-	if (respol != NULL) 
-		ns_list = respol->ns;
+	if (respol == NULL) 
+		return res_sq_set_message(error_msg,
+					"No reolver policy specified", SR_INTERNAL_ERROR);
+
+	ns_list = respol->ns;
 
 	/* Form the query with res_nmkquery_n */
 	
