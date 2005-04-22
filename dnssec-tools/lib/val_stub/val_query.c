@@ -135,10 +135,6 @@ static void fetch_dnskeys(val_context_t *ctx, const char *dname,
     struct domain_info dnskey_response;
     bzero(&dnskey_response, sizeof(dnskey_response));
     res_squery (NULL, dname, ns_t_dnskey, class, respol, &dnskey_response);
-    oldkeys = ctx->learned_keys;
-    ctx->learned_keys = dnskey_response.di_rrset;
-    dnskey_response.di_rrset = oldkeys;
-    free_domain_info_ptrs(&dnskey_response);
 }
 
 
@@ -378,10 +374,6 @@ int _val_query ( const char *dname, int class, int type,
 	}
     }
     
-    ctx.learned_zones = NULL;
-    ctx.learned_keys  = NULL;
-    ctx.learned_ds    = NULL;
-
     ret_val = res_squery ( &ctx, dname, type, class, &respol, response); 
 
     printf("\nres_squery returned %d\n", ret_val);
