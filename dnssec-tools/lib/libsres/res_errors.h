@@ -30,5 +30,7 @@
 #define SR_EMPTY_NXDOMAIN       60
 /* Unstable states (i.e., used internally only) */
 #define SR_DATA_UNCHECKED       66
+#define SR_PROCESS_ERROR	-9
+
 
 #endif /* RES_ERRORS_H */
