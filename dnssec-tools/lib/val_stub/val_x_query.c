@@ -16,6 +16,7 @@
 #include "val_errors.h"
 #include "val_x_query.h"
 #include "val_verify.h"
+#include "val_context.h"
 #include "validator.h"
 
 #ifndef TRUE
@@ -25,10 +26,6 @@
 #define FALSE 0
 #endif
 
-//////////////////////////////////
-void destroy_respol(struct res_policy *respol);
-int init_respol(struct res_policy *respol);
-//////////////////////////////////
 
 #define DONE	0
 #define NOT_DONE	1
@@ -36,41 +33,6 @@ int init_respol(struct res_policy *respol);
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
 
 /////////////////////////////////////////////////////////////////
-
-val_context_t *get_default_context()
-{
-	int ret_val;
-	struct res_policy *newpol;
-	val_context_t *newcontext;
-
-	newcontext = (val_context_t *) MALLOC (sizeof(val_context_t));
-	if (newcontext == NULL)
-		return NULL;
-
-	newpol = (struct res_policy *) MALLOC (sizeof(struct res_policy));
-	if(newpol == NULL) {
-		FREE (newcontext);
-		return NULL;
-	}
-
-	if ((ret_val = init_respol(newpol)) != SR_UNSET) {
-		FREE (newpol);
-		FREE (newcontext);	
-		return NULL;
-	}
-	newcontext->resolver_policy = newpol;
-	return newcontext;
-}
-
-void destroy_context(val_context_t *context)
-{
-	if(context == NULL)
-		return;
-
-	destroy_respol(context->resolver_policy);
-	FREE(context->resolver_policy);
-	FREE(context);
-}
 
 u_int16_t is_trusted_key(val_context_t *ctx, struct rr_rec *key)
 {
