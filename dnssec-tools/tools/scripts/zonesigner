@@ -32,6 +32,7 @@
 #
 #	Other options:
 #		-krfile		keyrec file to use
+#		-ksdir		directory for keysets
 #		-keyrec		keyrec to search for in specified keyrec file
 #		-zone		zone name
 #
@@ -65,6 +66,7 @@ my $enddate;				# End-time for zone signing.
 my $gends;				# Generate DS records in zone signing.
 my $help = 0;				# Help flag.
 my $kgopts;				# Additional dnssec-keygen options.
+my $ksdir;				# Directory to hold keysets.
 my $ksize;				# Size of KSK.
 my $kskdir;				# Directory to hold KSK.
 my $nokrfile;				# Flag for not using a keyrec file.
@@ -267,6 +269,7 @@ sub optsandargs()
 	$gends	  = $opts{'gends'}	|| "";
 	$random   = $opts{'random'}	|| "";
 	$kgopts   = $opts{'kgopts'}	|| "";
+	$ksdir	  = $opts{'ksdir'}	|| "";
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
 	$nokrfile = $opts{'nokrfile'}	|| "";
@@ -279,6 +282,7 @@ sub optsandargs()
 	$alg	 = "-a $alg"	 if($alg ne "");
 	$enddate = "-e $enddate" if($enddate ne "");
 	$gends	 = "-g"		 if($gends ne "");
+	$ksdir	 = "-d $ksdir"	 if($ksdir ne "");
 	$random	 = "-r $random"	 if($random ne "");
 
 	$help	 = $opts{'help'};
@@ -326,6 +330,7 @@ sub optsandargs()
 		print "zone-signing parameters:\n";
 		print "\tenddate	- <$enddate>\n";
 		print "\tgends		- <$gends>\n";
+		print "\tksdir		- <$ksdir>\n";
 		print "\tszopts		- <$szopts>\n";
 		print "\n";
 
@@ -810,7 +815,7 @@ sub zonesign
 	# necessary, but it does keep the dnssec-signzone execution a bit
 	# cleaner than it would be otherwise.
 	#
-	$cmdopts = "$szopts $gends -k $kskpath -o $zone $enddate";
+	$cmdopts = "$szopts $gends $ksdir -k $kskpath -o $zone $enddate";
 
 	#
 	# Sign the zone with the new keys.
@@ -1206,6 +1211,7 @@ sub usage
 	print STDERR "\t\t-zsklength ZSK-size\n";
 	print STDERR "\t\t-endtime end-time\n";
 	print STDERR "\t\t-krfile keyrec-file\n";
+	print STDERR "\t\t-ksdir keyset-directory\n";
 	print STDERR "\t\t-nokrfile\n";
 	print STDERR "\t\t-keyrec keyrec-name\n";
 	print STDERR "\t\t-kgopts dnssec-keygen-options\n";
@@ -1416,6 +1422,11 @@ No I<keyrec> file will be consulted or created.
 
 I<keyrec> file to use in processing options.  See the man page for
 I<Net::DNS::SEC::Tools::tooloptions> for more details about this file.
+
+=item -ksdir
+
+Specify a directory for storing keysets.  This is passed to I<dnssec-signzone>
+as the I<-d> option.
 
 =item -keyrec
 
