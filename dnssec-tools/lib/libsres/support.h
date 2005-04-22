@@ -21,6 +21,7 @@ void print_hex_field (u_int8_t field[], int length, int width, char *pref);
 void print_hex (u_int8_t field[], int length);
 int complete_read (int sock, void* field, int length);
 u_int16_t wire_name_length (const u_int8_t *field);
+u_int16_t wire_name_labels (const u_int8_t *field);
 void my_free (void *p, char *filename, int lineno);
 void *my_malloc (size_t t, char *filename, int lineno);
 char *my_strdup (const char *str, char *filename, int lineno);

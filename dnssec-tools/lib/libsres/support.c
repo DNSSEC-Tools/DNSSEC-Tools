@@ -111,6 +111,25 @@ u_int16_t wire_name_length (const u_int8_t *field)
         return j;
 }
 
+u_int16_t wire_name_labels (const u_int8_t *field)
+{
+    /* Calculates the number of bytes in a DNS wire format name */
+    u_short j;
+    u_short l=0;
+    if (field==NULL) return 0;
+                                                                                                                          
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<MAXDNAME ; j += field[j]+1)
+        l++;
+    if (field[j]) j++;
+    j++;
+    l++;
+                                                                                                                          
+    if (j > MAXDNAME)
+        return 0;
+    else
+        return l;
+}
+
 static int seq_number = 0;
 FILE        *logfile = NULL;
                                                                                                                           
