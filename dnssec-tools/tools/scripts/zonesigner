@@ -648,6 +648,10 @@ sub zoneincludes
 	}
 	print "$zone's new serial number - $newserial\n" if($verbose > $VERBOSE_LOW);
 
+	#
+	# If there are already include lines in the zone file, we'll
+	# adjust the lines to get the current files.
+	#
 	if(hasincludes())
 	{
 		my $newfile = "";		# New zone contents.
@@ -662,11 +666,49 @@ sub zoneincludes
 		read(ZF,$file,$flen);
 
 		#
-		# Find our region of the file.
+		# Find our region of the file.  If we've messed with this
+		# file once before, we'll adjust the existing lines.  If we
+		# haven't, we'll get rid of any existing key inclusions and
+		# then add our own.
 		#
-		$file =~ /manipulated by dnssec-tools./s;
-		$newfile = $` . $&;
-		$tail = $';
+		#
+		if($file =~ /manipulated by dnssec-tools./s)
+		{
+			$newfile = $` . $&;
+			$tail = $';
+		}
+		else
+		{
+			my $incpat;			# Pattern for includes.
+
+			#
+			# Delete any existing key inclusions already in
+			# the zone file.  This is just the inclusions
+			# themselves; no related comments are removed.
+			#
+			$incpat = '\$INCLUDE.*?\.key.*?\n';
+			while($file =~ /$incpat/si)
+			{
+				my $matchline = $&;	# Matching line.
+				my $matchkey;		# Key from matchline.
+
+				$file =~ s/$incpat//;
+
+				if($verbose > $VERBOSE_LOW)
+				{
+					$matchline =~ /(".*")/;
+					$matchkey = $1;
+					print "deleting include line for $matchkey\n";
+				}
+			}
+
+			#
+			# Append our include lines to the very end of the
+			# zone file.
+			#
+			$newfile = $file;
+			$tail = getincl();
+		}
 
 		#
 		# Adjust the KSK key.
@@ -698,6 +740,16 @@ sub zoneincludes
 		$newfile .= $tail;
 
 		#
+		# If the new file has a length of zero, we've got a problem,
+		# Houston.
+		#
+		if(length($newfile) == 0)
+		{
+			print STDERR "strange error -- the massaged zone file has a length of zero; stopping\n";
+			exit(1);
+		}
+
+		#
 		# Re-write the zone file.
 		#
 		seek(ZF,0,0);
@@ -714,35 +766,23 @@ sub zoneincludes
 	}
 	else
 	{
+		my $incstr;			# Include section.
+
 		#
 		# Copy the zone data to a new file.
 		#
 		system("$CP $zone $zoneout") if($zone ne $zoneout);
 
 		#
+		# Get the include-keys section.
+		#
+		$incstr = getincl();
+
+		#
 		# Add lines to include the KSK and ZSK files.
 		#
 		open(ZF,">> $zoneout");
-		print ZF <<EOF;
-
-
-;;
-;;
-;; DO NOT DIRECTLY MODIFY ANYTHING BELOW THIS LINE.
-;;
-;;	All subsequent lines are added and manipulated by dnssec-tools.
-;;
-
-;; ksk
-\$INCLUDE \"$kskpath\"
-
-;; current zsk
-\$INCLUDE \"$zskcurpath\"
-
-;; published zsk
-\$INCLUDE \"$zskpubpath\"
-
-EOF
+		print ZF $incstr;
 
 		close(ZF);
 	}
@@ -1117,6 +1157,39 @@ sub chkkrf
 
 #######################################################################
 #
+# Routine:	getincl()
+#
+# Purpose:	Return the text used in the include lines.
+#
+sub getincl
+{
+	my $incstr;				# Include section.
+
+	$incstr = <<EOF;
+
+;;
+;;
+;; DO NOT DIRECTLY MODIFY ANYTHING BELOW THIS LINE.
+;;
+;;	All subsequent lines are added and manipulated by dnssec-tools.
+;;
+
+;; ksk
+\$INCLUDE \"$kskpath\"
+
+;; current zsk
+\$INCLUDE \"$zskcurpath\"
+
+;; published zsk
+\$INCLUDE \"$zskpubpath\"
+
+EOF
+
+	return($incstr);
+}
+
+#######################################################################
+#
 # Routine:	usage()
 #
 # Purpose:	Give usage message and exit.
@@ -1187,7 +1260,7 @@ zonesigner [options] <zone-name> <zone-out>
 =back
 
 I<zone-name> is the name of the zone that will be signed and the name of the
-zone file from which a signed zone file will be created..  This may also be
+zone file from which a signed zone file will be created.  This may also be
 specified with the I<-zone> option.  Several $INCLUDE lines will be added at
 the end and the SOA serial number will be incremented.  Generated keys are
 given this name as their base.
@@ -1206,7 +1279,14 @@ in not specified in the system's B<dnssec-tools> configuration file, the name
 B<default.krf> will be used.  If the I<-nokrfile> option is given, then no
 I<keyrec> file will be consulted or saved.
 
-=head2 Examples
+The zone file is modified to have include commands, which will include the
+KSK and ZSK keys.  These lines are placed at the end of the file and should
+not be modified by the user.  If the zone file already includes any key files,
+those inclusions will be deleted.  These lines are distinguished by starting
+with "$INCLUDE" and end with ".key".  Only the actual include lines are
+deleted; any related comment lines are left untouched.
+
+=head1 Examples
 
 Example 1.
 
