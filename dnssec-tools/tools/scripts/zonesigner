@@ -258,6 +258,7 @@ sub optsandargs()
 	$zsize	  = $opts{'zsklength'}	  || "";
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
+	$kskpath  = $opts{'kskpath'}	  || "";
 	$reuseksk = $opts{'reuseksk'}	  || 0;
 	$reusezsk = $opts{'reusezsk'}	  || 0;
 
@@ -587,44 +588,50 @@ sub genzsk
 #
 sub keydirs
 {
+	print "checking key directories\n" if($verbose > $VERBOSE_LOW);
+
 	#
 	# Ensure the KSK key directory exists and is actually a directory.
 	#
-	print "checking key directories\n" if($verbose > $VERBOSE_LOW);
-
-	if($kskdir ne ".")
+	if($reuseksk != 1)
 	{
-		if(! -e $kskdir)
+		if($kskdir ne ".")
 		{
-			print "creating KSK directory - $kskdir\n" if($verbose);
-			mkdir($kskdir);
+			if(! -e $kskdir)
+			{
+				print "creating KSK directory - $kskdir\n" if($verbose);
+				mkdir($kskdir);
+			}
+			elsif(! -d $kskdir)
+			{
+				print STDERR "KSK repository ($kskdir) is not a directory\n";
+				exit(3);
+			}
+			system("$MV $ksk.* $kskdir");
 		}
-		elsif(! -d $kskdir)
-		{
-			print STDERR "KSK repository ($kskdir) is not a directory\n";
-			exit(3);
-		}
-		system("$MV $ksk.* $kskdir");
 	}
 
 	#
 	# Ensure the ZSK key directory exists and is a directory.
 	#
-	if($zskdir ne ".")
+	if($reusezsk != 1)
 	{
-		if(! -e $zskdir)
+		if($zskdir ne ".")
 		{
-			print "creating ZSK directory - $zskdir\n" if($verbose);
-			mkdir($zskdir);
-		}
-		elsif(! -d $zskdir)
-		{
-			print STDERR "ZSK repository ($zskdir) is not a directory\n";
-			exit(3);
-		}
+			if(! -e $zskdir)
+			{
+				print "creating ZSK directory - $zskdir\n" if($verbose);
+				mkdir($zskdir);
+			}
+			elsif(! -d $zskdir)
+			{
+				print STDERR "ZSK repository ($zskdir) is not a directory\n";
+				exit(3);
+			}
 
-		system("$MV $zskcur.* $zskdir");
-		system("$MV $zskpub.* $zskdir");
+			system("$MV $zskcur.* $zskdir");
+			system("$MV $zskpub.* $zskdir");
+		}
 	}
 }
 
@@ -893,10 +900,12 @@ sub updzonerec
 	#
 	$opts{'zonefile'}    = $zoneout;
 	$opts{'signedfile'}  = $zoneout . ".signed";
+	$opts{'kskdirectory'}  = $kskdir;
 	$opts{'kskkey'}	     = $ksk;
 	$opts{'kskpath'}     = $kskpath;
 	$opts{'zskcur'}	     = $zskcur;
 	$opts{'zskpub'}	     = $zskpub;
+	$opts{'zskdirectory'}  = $zskdir;
 	$opts{'zskcurpath'}  = $zskcurpath;
 	$opts{'zskpubpath'}  = $zskpubpath;
 	$opts{'szopts'}      = $szopts if($szopts ne "");
