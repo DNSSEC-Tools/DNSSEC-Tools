@@ -1213,24 +1213,32 @@ sub usage
 	my $whence = shift;			# Location of call.
 
 	print STDERR "usage:  zonesigner [options] <zone-file> <zone-out>\n";
-	print STDERR "\toptions:\n";
-	print STDERR "\t\t-algorithm algorithm\n";
-	print STDERR "\t\t-random random-path\n";
-	print STDERR "\t\t-ksklength KSK-size\n";
-	print STDERR "\t\t-zsklength ZSK-size\n";
-	print STDERR "\t\t-endtime end-time\n";
-	print STDERR "\t\t-krfile keyrec-file\n";
-	print STDERR "\t\t-ksdir keyset-directory\n";
-	print STDERR "\t\t-nokrfile\n";
-	print STDERR "\t\t-keyrec keyrec-name\n";
-	print STDERR "\t\t-kgopts dnssec-keygen-options\n";
-	print STDERR "\t\t-szopts dnssec-signszone-options\n";
-	print STDERR "\t\t-zone zone-name\n";
-	print STDERR "\t\t-gends\n";
-	print STDERR "\t\t-reuseksk\n";
-	print STDERR "\t\t-reusezsk\n";
-	print STDERR "\t\t-help\n";
-	print STDERR "\t\t-verbose\n";
+	print STDERR "\n";
+
+	print STDERR "\t\tzonesigner options:\n";
+	print STDERR "\t\t\t-nokrfile\n";
+	print STDERR "\t\t\t-krfile keyrec-file\n";
+	print STDERR "\t\t\t-reuseksk\n";
+	print STDERR "\t\t\t-reusezsk\n";
+	print STDERR "\t\t\t-zone zone-name\n";
+	print STDERR "\t\t\t-help\n";
+	print STDERR "\t\t\t-verbose\n";
+	print STDERR "\n";
+
+	print STDERR "\t\tdnssec-keygen options:\n";
+	print STDERR "\t\t\t-algorithm algorithm\n";
+	print STDERR "\t\t\t-ksklength KSK-size\n";
+	print STDERR "\t\t\t-zsklength ZSK-size\n";
+	print STDERR "\t\t\t-random random-path\n";
+	print STDERR "\t\t\t-kgopts dnssec-keygen-options\n";
+	print STDERR "\n";
+
+	print STDERR "\t\tdnssec-signzone options:\n";
+	print STDERR "\t\t\t-endtime end-time\n";
+	print STDERR "\t\t\t-gends\n";
+	print STDERR "\t\t\t-ksdir keyset-directory\n";
+	print STDERR "\t\t\t-szopts dnssec-signszone-options\n";
+	print STDERR "\n";
 
 #	print "\ncalled from $whence\n" if($verbose && ($whence > 0));
 
@@ -1301,6 +1309,108 @@ those inclusions will be deleted.  These lines are distinguished by starting
 with "$INCLUDE" and end with ".key".  Only the actual include lines are
 deleted; any related comment lines are left untouched.
 
+=head1 OPTIONS
+
+Three types of options may be given, based on the command for which they are
+intended.  These commands are  I<dnssec-keygen>,
+I<dnssec-signzone>, and I<zonesigner>.
+
+=head2 I<zonesigner>-specific Options
+
+=over 4
+
+=item -nokrfile
+
+No I<keyrec> file will be consulted or created.
+
+=item -krfile
+
+I<keyrec> file to use in processing options.  See the man page for
+I<Net::DNS::SEC::Tools::tooloptions> for more details about this file.
+
+=item -reuseksk
+
+Re-use the zone's current KSK.
+
+=item -reusezsk
+
+Re-use the zone's current ZSK.
+
+=item -zone
+
+Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.
+
+=item -help
+
+Display a usage message.
+
+=item -verbose
+
+Verbose output will be given.  As more instances of I<-verbose> are given on
+the command line, additional levels of verbosity are achieved.
+
+=back
+
+=head2 I<dnssec-keygen>-specific Options
+
+=over 4
+
+=item -algorithm
+
+Cryptographic algorithm used to generate the zone's keys.
+The default value is RSASHA1.
+
+=item -ksklength
+
+Bit length of the zone's KSK key.
+The default is 1024.
+
+=item -random
+
+Source of randomness used to generate the zone's keys.	(/dev/urandom)
+
+=item -zsklength
+
+Bit length of the zone's ZSK key.
+The default is 512.
+
+=item -kgopts
+
+Additional options for I<dnssec-keygen> may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the I<-kgopts> option.
+
+=back
+
+=head2 I<dnssec-signzone>-specific Options
+
+=over 4
+
+=item -endtime
+
+Time that the zone expires, measured in seconds.  See the man page for
+I<dnssec-signzone> for the valid format of this field.
+The default value is 259200 seconds (30 days.)
+
+=item -gends
+
+Force I<dnssec-signzone> to generate DS records for the zone.  This option is
+translated into I<-g> when passed to I<dnssec-signzone>.
+
+=item -ksdir
+
+Specify a directory for storing keysets.  This is passed to I<dnssec-signzone>
+as the I<-d> option.
+
+=item -szopts
+
+Additional options for I<dnssec-signzone> may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the I<-szopts> option.
+
+=back
+
 =head1 Examples
 
 Example 1.
@@ -1359,113 +1469,6 @@ the following files are created:
 The first six files are the KSK and ZSK keys required for the zone.  The next
 two files are created by the zone-signing process.  The last file is file is
 the final signed zone.
-
-=head1 OPTIONS
-
-Three types of options may be specified:  I<dnssec-keygen> options,
-I<dnssec-signzone> options, and options specific to I<zonesigner>.
-
-=head2 I<dnssec-keygen> Options
-
-=over 4
-
-=item -algorithm
-
-Cryptographic algorithm used to generate the zone's keys.
-The default value is RSASHA1.
-
-=item -ksklength
-
-Bit length of the zone's KSK key.
-The default is 1024.
-
-=item -random
-
-Source of randomness used to generate the zone's keys.	(/dev/urandom)
-
-=item -zsklength
-
-Bit length of the zone's ZSK key.
-The default is 512.
-
-=item -kgopts
-
-Additional options for I<dnssec-keygen> may be specified using this option.
-The additional options are passed as a single string value as an argument to
-the I<-kgopts> option.
-
-=back
-
-=head2 I<dnssec-signzone> Options
-
-=over 4
-
-=item -endtime
-
-Time that the zone expires, measured in seconds.  See the man page for
-I<dnssec-signzone> for the valid format of this field.
-The default value is 259200 seconds (30 days.)
-
-=item -gends
-
-Force I<dnssec-signzone> to generate DS records for the zone.  This option is
-translated into I<-g> when passed to I<dnssec-signzone>.
-
-=item -szopts
-
-Additional options for I<dnssec-signzone> may be specified using this option.
-The additional options are passed as a single string value as an argument to
-the I<-szopts> option.
-
-=back
-
-=head2 I<zonesigner>-specific Options
-
-=over 4
-
-=item -nokrfile
-
-No I<keyrec> file will be consulted or created.
-
-=item -krfile
-
-I<keyrec> file to use in processing options.  See the man page for
-I<Net::DNS::SEC::Tools::tooloptions> for more details about this file.
-
-=item -ksdir
-
-Specify a directory for storing keysets.  This is passed to I<dnssec-signzone>
-as the I<-d> option.
-
-=item -keyrec
-
-I<keyrec> to search for in the specified I<keyrec> file.  This option may be
-used when re-signing zones in order to use the same options as had been
-previously used to sign the zone.
-
-=item -reuseksk
-
-Re-use the zone's current KSK.
-
-=item -reusezsk
-
-Re-use the zone's current ZSK.
-
-=item -zone
-
-Name of the zone that will be signed.  This zone name may be given with this
-option or as the first non-option command line argument.
-
-=item -help
-
-Display a usage message.
-
-=item -verbose
-
-Verbose output will be given.  As more instances of I<-verbose> are given on
-the command line, additional levels of verbosity are achieved.
-
-=back
 
 =head1 AUTHOR
 
