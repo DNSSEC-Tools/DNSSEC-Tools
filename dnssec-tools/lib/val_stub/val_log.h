@@ -9,7 +9,7 @@
 #define VAL_LOG_H
 #include <stdio.h>
 #include <stdarg.h>
-
+extern int log_level;
 /* void val_log (FILE *fp, int level, const char *template, ...) */
 void val_log (const char *template, ...);
 #endif
