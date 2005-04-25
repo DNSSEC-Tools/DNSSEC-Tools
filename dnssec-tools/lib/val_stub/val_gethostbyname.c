@@ -20,6 +20,7 @@
 #include "val_errors.h"
 #include "val_gethostbyname.h"
 #include "val_query.h"
+#include "val_log.h"
 
 /* Converts data in the domain_info structure into a hostent structure */
 static struct hostent *get_hostent_from_response (struct domain_info *response)
@@ -56,7 +57,7 @@ static struct hostent *get_hostent_from_response (struct domain_info *response)
 	while (rr) {
 
 	    if (rrset->rrs_type_h == ns_t_cname) {
-		printf("val_gethostbyname: type of record = CNAME\n");
+		val_log("val_gethostbyname: type of record = CNAME\n");
 		cname_found = 1;
 		bzero(dname, MAXDNAME);
 		if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
@@ -83,7 +84,7 @@ static struct hostent *get_hostent_from_response (struct domain_info *response)
 		}
 	    }
 	    else if (rrset->rrs_type_h == ns_t_a) {
-		printf("val_gethostbyname: type of record = A\n");
+		val_log("val_gethostbyname: type of record = A\n");
 
 		bzero(dname, MAXDNAME);
 		if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
@@ -127,7 +128,7 @@ static struct hostent *get_hostent_from_response (struct domain_info *response)
 		}
 	    }
 	    else if (rrset->rrs_type_h == ns_t_aaaa) {
-		printf("val_gethostbyname: type of record = AAAA\n");
+		val_log("val_gethostbyname: type of record = AAAA\n");
 		/* XXX TODO: Fill in the AF_INET6 address in hentry */
 		hentry->h_addrtype = AF_INET6;
 		address_found = 1;

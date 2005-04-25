@@ -12,6 +12,7 @@
 #include "val_support.h"
 #include "val_zone.h"
 #include "res_squery.h"
+#include "val_log.h"
 
 #define DNS_PORT    53
 
@@ -222,7 +223,7 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
 			if(ns_name_ntop(ns->ns_name_n, ns_name, MAXDNAME-1) == -1)
 				return -1;
 {
-printf ("QUERYING: '%s.' (getting unchecked address hints)\n",
+val_log ("QUERYING: '%s.' (getting unchecked address hints)\n",
 ns_name);
 
 }

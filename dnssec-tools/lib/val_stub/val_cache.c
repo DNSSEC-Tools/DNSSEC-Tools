@@ -11,6 +11,7 @@
 #include <res_query.h>
 
 #include "val_support.h"
+#include "val_log.h"
 
 static struct rrset_rec *unchecked_zone_info = NULL;
 static struct rrset_rec *unchecked_key_info = NULL;

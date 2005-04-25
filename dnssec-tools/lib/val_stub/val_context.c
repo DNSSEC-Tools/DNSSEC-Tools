@@ -14,6 +14,7 @@
 #include "res_squery.h"
 #include "validator.h"
 #include "val_x_query.h"
+#include "val_log.h"
 
 #define AUTH_ZONE_INFO "fruits.netsec.tislabs.com"
 // NOT AUTHORITATIVE FOR DS IN PARENT

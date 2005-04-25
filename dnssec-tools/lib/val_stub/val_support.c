@@ -10,6 +10,7 @@
 #include <res_query.h>
 
 #include "val_errors.h"
+#include "val_log.h"
 
 #define SIGNBY              18
 

@@ -24,6 +24,7 @@
 #include "val_verify.h"
 #include "val_print.h"
 #include "val_query.h"
+#include "val_log.h"
 
 #define AUTH_ZONE_INFO          "*"                      /* any zone */
 #define RESOLV_CONF             "/etc/resolv.conf"
@@ -236,7 +237,7 @@ static int compose_answer (struct domain_info *response,
 	    break;
 
 	default:
-	    printf("Unknown section for rrset ... skipping\n");
+	    val_log("Unknown section for rrset ... skipping\n");
 	    rrset = rrset->rrs_next;
 	    continue;
 	}
@@ -359,7 +360,7 @@ int _val_query ( const char *dname, int class, int type,
     int ret_val;
 
     if (!dnssec_status || !response) {
-	printf("_val_query(): no dnssec_status or response objects\n");
+	val_log("_val_query(): no dnssec_status or response objects\n");
 	h_errno = NETDB_INTERNAL;
 	return -1;
     }
@@ -368,7 +369,7 @@ int _val_query ( const char *dname, int class, int type,
 
     if (!res_policy_set) {
 	if ((ret_val = init_respol(&respol)) != SR_UNSET) {
-	    printf("_val_query(): error initializing resolver policy\n");
+	    val_log("_val_query(): error initializing resolver policy\n");
 	    h_errno = NETDB_INTERNAL;
 	    return -1;
 	}
@@ -376,10 +377,10 @@ int _val_query ( const char *dname, int class, int type,
     
     ret_val = res_squery ( &ctx, dname, type, class, &respol, response); 
 
-    printf("\nres_squery returned %d\n", ret_val);
-    printf("response = \n");
+    val_log("\nres_squery returned %d\n", ret_val);
+    val_log("response = \n");
     dump_dinfo(response);
-    printf("context = \n");
+    val_log("context = \n");
     dump_val_context(&ctx);
 
     /* A brute-force algorithm for finding the DNSKEYs if they
@@ -392,7 +393,7 @@ int _val_query ( const char *dname, int class, int type,
 
 	if ((*dnssec_status) == DNSKEY_MISSING) {
 	    if (dname && (dname[0] != '\0') && !is_tld(dname)) {
-		printf("\nQuerying the domain %s for DNSKEY records.\n",
+		val_log("\nQuerying the domain %s for DNSKEY records.\n",
 		       dname);
 		
 		fetch_dnskeys(&ctx, dname, class, &respol);
@@ -423,7 +424,7 @@ int val_query ( const char *dname, int class, int type,
 
     bzero(&response, sizeof(struct domain_info));
 
-    printf("val_query called with dname=%s, class=%s, type=%s\n",
+    val_log("val_query called with dname=%s, class=%s, type=%s\n",
 	   dname, p_class(class), p_type(type));
     if ( _val_query (dname, class, type, &response, dnssec_status) != -1 ) {
 	len = compose_answer(&response, ans, anslen, *dnssec_status);
