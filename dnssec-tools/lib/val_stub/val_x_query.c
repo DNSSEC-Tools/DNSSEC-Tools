@@ -18,6 +18,7 @@
 #include "val_verify.h"
 #include "val_context.h"
 #include "validator.h"
+#include "val_log.h"
 
 #ifndef TRUE
 #define TRUE 1

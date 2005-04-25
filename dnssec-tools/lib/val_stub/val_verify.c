@@ -28,6 +28,7 @@
 #include "val_errors.h"
 #include "val_x_query.h"
 #include "validator.h"
+#include "val_log.h"
 
 #include "val_print.h"
 #include "val_parse.h"
@@ -51,20 +52,20 @@ static int val_sigverify (const char *data,
 {
     /* Check if the dnskey is a zone key */
     if ((dnskey.flags & ZONE_KEY_FLAG) == 0) {
-	printf("DNSKEY not a zone signing key\n");
+	val_log("DNSKEY not a zone signing key\n");
 	return NOT_A_ZONE_KEY;
     }
     
     /* Check dnskey protocol value */
     if (dnskey.protocol != 3) {
-	printf("Invalid protocol field in DNSKEY record: %d\n",
+	val_log("Invalid protocol field in DNSKEY record: %d\n",
 	       dnskey.protocol);
 	return UNKNOWN_DNSKEY_PROTO;
     }
 
     /* Match dnskey and rrsig algorithms */
     if (dnskey.algorithm != rrsig.algorithm) {
-	printf("Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.\n",
+	val_log("Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.\n",
 	       dnskey.algorithm, rrsig.algorithm);
 	return INTERNAL_ERROR;
     }
@@ -80,7 +81,7 @@ static int val_sigverify (const char *data,
 	bzero(incpTime, 1028);
 	ctime_r((const time_t *)(&(tv.tv_sec)), currTime);
 	ctime_r((const time_t *)(&(rrsig.sig_incp)), incpTime);
-	printf("Signature not yet valid. Current time (%s) is less than signature inception time (%s).\n",
+	val_log("Signature not yet valid. Current time (%s) is less than signature inception time (%s).\n",
 	       currTime, incpTime);
 	return RRSIG_NOTYETACTIVE;
     }
@@ -92,7 +93,7 @@ static int val_sigverify (const char *data,
 	bzero(exprTime, 1028);
 	ctime_r((const time_t *)(&(tv.tv_sec)), currTime);
 	ctime_r((const time_t *)(&(rrsig.sig_expr)), exprTime);
-	printf("Signature expired. Current time (%s) is greater than signature expiration time (%s).\n",
+	val_log("Signature expired. Current time (%s) is greater than signature expiration time (%s).\n",
 	       currTime, exprTime);
 	return RRSIG_EXPIRED;
     }
@@ -104,13 +105,13 @@ static int val_sigverify (const char *data,
     case 5: return rsasha1_sigverify(data, data_len, dnskey, rrsig); break;
     case 2:
     case 4:
-	printf("Unsupported algorithm %d.\n", dnskey.algorithm);
+	val_log("Unsupported algorithm %d.\n", dnskey.algorithm);
 	return ALGO_NOT_SUPPORTED;
 	break;
 
     default:
 	do {
-	    printf("Unknown algorithm %d.\n", dnskey.algorithm);
+	    val_log("Unknown algorithm %d.\n", dnskey.algorithm);
 	    return UNKNOWN_ALGO;
 	} while (0);
     }
@@ -237,7 +238,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     char requested_name[MAXDNAME];
 
     if (!response) {
-	printf("val_verify(): no response to verify\n");
+	val_log("val_verify(): no response to verify\n");
 	return INTERNAL_ERROR;
     }
 
@@ -246,18 +247,18 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 
     if (!dnskeys) {
 	if (have_rrsigs(response)) {
-	    printf("val_verify(): no dnskeys found.\n");
+	    val_log("val_verify(): no dnskeys found.\n");
 	    return DNSKEY_MISSING;
 	}
 	else {
-	    printf("val_verify(): no dnskeys or rrsigs found.  probably not a signed zone.\n");
+	    val_log("val_verify(): no dnskeys or rrsigs found.  probably not a signed zone.\n");
 	    return INDETERMINATE;
 	}
     }
 
     // Parse the dnskeys
     dnskey_rdata = NULL;
-    printf("val_verify(): parsing DNSKEYs\n");
+    val_log("val_verify(): parsing DNSKEYs\n");
 
     while (dnskeys) {
 	if (dnskeys->rrs_type_h == ns_t_dnskey) {
@@ -271,7 +272,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 		new_dnskey_rdata->next = dnskey_rdata;
 		dnskey_rdata = new_dnskey_rdata;
 		val_print_dnskey_rdata("", dnskey_rdata);
-		printf("\n");
+		val_log("\n");
 		
 		rrs_data = rrs_data->rr_next;
 	    }
@@ -310,16 +311,16 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    val_rrsig_rdata_t rrsig_rdata;
 	    int sig_data_len;
 
-	    printf("val_verify(): parsing rrsig for %s\n", rrs_name);
+	    val_log("val_verify(): parsing rrsig for %s\n", rrs_name);
 
 	    bzero(&rrsig_rdata, sizeof(rrsig_rdata));
 	    val_parse_rrsig_rdata(rrs_sig->rr_rdata, rrs_sig->rr_rdata_length_h,
 				  &rrsig_rdata);
 	    val_print_rrsig_rdata (" ", &rrsig_rdata);
-	    printf("\n");
+	    val_log("\n");
 
 	    if (rrsig_rdata.type_covered != rrset->rrs_type_h) {
-		printf("Different type covered by rrsig");
+		val_log("Different type covered by rrsig");
 		rrs_sig = rrs_sig->rr_next;
 		continue;
 	    }
@@ -327,7 +328,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    found_rrsig = 1;
 
 	    // Compose the signature data
-	    printf("val_verify(): composing signature data\n");
+	    val_log("val_verify(): composing signature data\n");
 	    bzero(sig_data, BUFLEN*2);
 
 	    /* Copy rrsig rdata, except signature */
@@ -338,7 +339,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    
 	    /* Copy RRs in the rrset in canonical order */
 	    // Compose the canonical form of the rrset data
-	    printf("val_verify(): concatenating rrset\n");
+	    val_log("val_verify(): concatenating rrset\n");
 	    {
 		unsigned char canon_rrset[BUFLEN];
 		int canon_rrset_length = 0;
@@ -352,17 +353,17 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    // For each dnskey verify if the signature matches
 	    dp = dnskey_rdata;
 	    while (dp && (!verified)) {
-		printf("val_verify(): Trying DNSKEY with keytag = %d\n", dp->key_tag);
+		val_log("val_verify(): Trying DNSKEY with keytag = %d\n", dp->key_tag);
 		if (dp->key_tag != rrsig_rdata.key_tag) {
 		    dp = dp->next;
-		    printf("val_verify(): keytag does not match. Trying next DNSKEY\n");
+		    val_log("val_verify(): keytag does not match. Trying next DNSKEY\n");
 		    continue;
 		}
 
 		found_dnskey = 1;
 
 		/* verify signature */
-		printf("val_verify(): verifying signature\n");
+		val_log("val_verify(): verifying signature\n");
 		if ((sigresult = val_sigverify(sig_data, sig_data_len,
 					       *dp, rrsig_rdata)) == RRSIG_VERIFIED) {
 		    verified = 1;
@@ -370,7 +371,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 		    continue;
 		}
 		else {
-		    printf("val_verify(): verification failed. Trying next DNSKEY\n");
+		    val_log("val_verify(): verification failed. Trying next DNSKEY\n");
 		}
 
 		dp = dp->next;
@@ -381,11 +382,11 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	}
 	
 	if (!found_rrsig) {
-	    printf("val_verify(): RRSIG not found for %s\n", rrs_name);
+	    val_log("val_verify(): RRSIG not found for %s\n", rrs_name);
 	    rrset->rrs_status = RRSIG_MISSING;
 	}
 	else if (!found_dnskey) {
-	        printf("val_verify(): DNSKEY not found.\n");
+	        val_log("val_verify(): DNSKEY not found.\n");
 		rrset->rrs_status = DNSKEY_MISSING;
 	}
 	else {
@@ -396,7 +397,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 		(response->di_requested_class_h == rrset->rrs_class_h) &&
 		(strcasecmp(requested_name, rrset->rrs_name_n) == 0)
 		) {
-	        printf("val_verify(): RRSET matches query.\n");
+	        val_log("val_verify(): RRSET matches query.\n");
 		if (sigresult == RRSIG_VERIFIED) {
 		    status = VALIDATE_SUCCESS;
 		}
@@ -405,9 +406,9 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 		}
 	    }
 	    else {
-	        printf("val_verify(): RRSET does not match query.\n");
+	        val_log("val_verify(): RRSET does not match query.\n");
 	    }
-	    printf("val_verify(): status = %s.\n", p_val_error(status));
+	    val_log("val_verify(): status = %s.\n", p_val_error(status));
 	    
 	    rrset->rrs_status = sigresult;
 	}
@@ -647,11 +648,11 @@ int do_verify (   int                 *sig_status,
 	*sig_status = val_sigverify(ver_field, ver_length, *the_key, rrsig_rdata);
   
 /*
-printf ("\nVerifying this field:\n");
+val_log ("\nVerifying this field:\n");
 print_hex_field (ver_field,ver_length,21,"VER: ");
-printf ("\nThis is the supposed signature:\n");
+val_log ("\nThis is the supposed signature:\n");
 print_hex_field (sig_field,sig_length,21,"SIG: ");
-printf ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
+val_log ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
 */
     FREE (ver_field);
     return SR_UNSET;

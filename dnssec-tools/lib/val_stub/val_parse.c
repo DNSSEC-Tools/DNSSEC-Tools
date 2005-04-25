@@ -4,6 +4,7 @@
 
 #include "val_parse.h"
 #include "crypto/val_rsamd5.h"
+#include "val_log.h"
 
 /*
  * From RFC 4034

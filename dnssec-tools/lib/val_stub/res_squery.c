@@ -13,6 +13,7 @@
 #include "val_zone.h"
 #include "res_squery.h"
 #include "val_cache.h"
+#include "val_log.h"
 
 #define NO_DOMAIN_NAME  "res_squery: domain_name omitted from query request"
 
@@ -165,7 +166,7 @@ int do_referral(		val_context_t		*context,
 char    debug_name2[1024];
 memset (debug_name2,0,1024);
 ns_name_ntop(referral_zone_n,debug_name2,1024);
-printf ("QUERYING: '%s.' (referral to %s)\n",
+val_log ("QUERYING: '%s.' (referral to %s)\n",
 referral_name, debug_name2);
 }
 	// XXX Other fields from respol must be copied into respolnew

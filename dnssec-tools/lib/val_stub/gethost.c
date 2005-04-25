@@ -11,6 +11,7 @@
 #include <netdb.h>
 
 #include "val_api.h"
+#include "val_log.h"
 
 int main(int argc, char *argv[])
 {

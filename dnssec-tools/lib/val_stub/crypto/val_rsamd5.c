@@ -19,6 +19,7 @@
 #include <string.h>
 
 #include <val_errors.h>
+#include <val_log.h>
 #include "val_rsamd5.h"
 
 /* Returns NO_ERROR on success, other values on failure */
@@ -79,13 +80,13 @@ u_int16_t rsamd5_keytag (const unsigned char *pubkey,
     int modulus_len;
     
     if ((rsa = RSA_new()) == NULL) {
-	printf("rsamd5_keytag could not allocate rsa structure.\n");
+	val_log("rsamd5_keytag could not allocate rsa structure.\n");
 	return OUT_OF_MEMORY;
     };
 
     if (rsamd5_parse_public_key(pubkey, pubkey_len,
 				rsa) != NO_ERROR) {
-	printf("rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
+	val_log("rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
 	RSA_free(rsa);
 	return INTERNAL_ERROR;
     }
@@ -111,38 +112,38 @@ int rsamd5_sigverify (const unsigned char *data,
     unsigned char md5_hash[MD5_DIGEST_LENGTH];
     int i;
 
-    printf("rsamd5_sigverify(): parsing the public key...\n");
+    val_log("rsamd5_sigverify(): parsing the public key...\n");
     if ((rsa = RSA_new()) == NULL) {
-	printf("rsamd5_sigverify could not allocate rsa structure.\n");
+	val_log("rsamd5_sigverify could not allocate rsa structure.\n");
 	return OUT_OF_MEMORY;
     };
 
     if (rsamd5_parse_public_key(dnskey.public_key, dnskey.public_key_len,
 				rsa) != NO_ERROR) {
-	printf("rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
+	val_log("rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
 	RSA_free(rsa);
 	return INTERNAL_ERROR;
     }
 
-    printf("rsamd5_sigverify(): computing MD5 hash...\n");
+    val_log("rsamd5_sigverify(): computing MD5 hash...\n");
     bzero(md5_hash, MD5_DIGEST_LENGTH);
     MD5(data, data_len, (unsigned char *) md5_hash);
-    printf("hash = 0x");
+    val_log("hash = 0x");
     for (i=0; i<MD5_DIGEST_LENGTH; i++) {
-	printf("%02x", md5_hash[i]);
+	val_log("%02x", md5_hash[i]);
     }
-    printf("\n");
+    val_log("\n");
 
-    printf("rsamd5_sigverify(): verifying RSA signature...\n");
+    val_log("rsamd5_sigverify(): verifying RSA signature...\n");
 
     if (RSA_verify(NID_md5, (unsigned char *) md5_hash, MD5_DIGEST_LENGTH,
 		   rrsig.signature, rrsig.signature_len, rsa)) {
-	printf("RSA_verify returned SUCCESS\n");
+	val_log("RSA_verify returned SUCCESS\n");
 	RSA_free(rsa);
 	return RRSIG_VERIFIED;
     }
     else {
-	printf("RSA_verify returned FAILURE\n");
+	val_log("RSA_verify returned FAILURE\n");
 	RSA_free(rsa);
 	return RRSIG_VERIFY_FAILED;
     }   

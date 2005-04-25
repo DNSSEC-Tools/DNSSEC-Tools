@@ -14,6 +14,7 @@
 #include "res_squery.h"
 #include "validator.h"
 #include "val_x_query.h"
+#include "val_log.h"
 
 
 #define QUERY_NAME "dns.wesh.fruits.netsec.tislabs.com."
