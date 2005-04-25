@@ -1,7 +1,7 @@
 Index: config.h.in
 ===================================================================
 --- config.h.in	2005-03-01 11:02:52.000000000 -0500
-+++ config.h.in	2005-04-19 17:44:49.000000000 -0400
++++ config.h.in	2005-04-25 14:51:21.000000000 -0400
 @@ -42,6 +42,12 @@
  /* Define to 1 if you have the `spf2' library (-lspf2). */
  #undef HAVE_LIBSPF2
@@ -84,7 +84,7 @@ Index: configure.ac
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-04-25 14:41:44.000000000 -0400
++++ spfmilter.c	2005-04-25 14:53:07.000000000 -0400
 @@ -27,8 +27,13 @@
  ** For commentary on this license please see http://www.acme.com/license.html
  */
@@ -567,7 +567,7 @@ Index: spfmilter.c
      }
  
  
-@@ -2299,3 +2515,332 @@
+@@ -2299,3 +2515,342 @@
      }
  
  #endif /* USE_LIBSPF2 */
@@ -597,12 +597,16 @@ Index: spfmilter.c
 +};
 +
 +static int lib_init( void ) {
++#ifdef HAVE_LIBVAL
 +    if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
++#endif
 +	spf_server = SPF_server_new(SPF_DNS_CACHE, debug);
++#ifdef HAVE_LIBVAL
 +    }
 +    else {
 +	spf_server = SPF_server_new(SPF_DNS_DNSSEC_RESOLV, debug);
 +    }
++#endif
 +    if (spf_server == NULL) {
 +	fprintf( stderr, "%s: SPF_server_new() failed\n", argv0 );
 +	return 0;
@@ -673,12 +677,16 @@ Index: spfmilter.c
 +	return (lib_data_t*) 0;
 +
 +    /* Create the per-connection server object creating a new one */
++#ifdef HAVE_LIBVAL
 +    if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
++#endif
 +	ld->spf_server = SPF_server_new (SPF_DNS_CACHE, debug);
++#ifdef HAVE_LIBVAL
 +    }
 +    else {
 +	ld->spf_server = SPF_server_new (SPF_DNS_DNSSEC_RESOLV, debug);
 +    }
++#endif
 +    ld->from = NULL;
 +    ld->got_response = 0;
 +    ld->requestp = SPF_request_new(ld->spf_server);
@@ -800,6 +808,7 @@ Index: spfmilter.c
 +	    int num_errs;
 +	    printf("spfmilter: DNSSEC reject policy is in effect\n");
 +	    num_errs = lib_get_num_errors(ld);
++#ifdef HAVE_LIBVAL
 +	    for (i=0; i<num_errs; i++) {
 +		SPF_error_t *err;
 +		err = SPF_response_message (ld->responsep, i);
@@ -811,6 +820,7 @@ Index: spfmilter.c
 +		    }
 +		}
 +	    }
++#endif
 +	}
 +
 +        return retval;
