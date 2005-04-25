@@ -265,18 +265,18 @@ Index: sendmail/conf.h
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2005-02-25 10:55:24.000000000 -0500
-+++ sendmail/sm_resolve.c	2005-04-25 11:43:26.000000000 -0400
-@@ -46,6 +46,10 @@
- # if NAMED_BIND
- #  include "sm_resolve.h"
++++ sendmail/sm_resolve.c	2005-04-25 13:27:36.000000000 -0400
+@@ -70,6 +70,10 @@
+ 	{	NULL,		0		}
+ };
  
 +#ifdef HAVE_LIBVAL
 +#include <val_api.h>
 +#endif
 +
- SM_RCSID("$Id$")
+ static DNS_REPLY_T *parse_dns_reply __P((unsigned char *, int));
  
- static struct stot
+ /*
 @@ -409,7 +413,36 @@
  	}
  	errno = 0;
