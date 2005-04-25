@@ -188,7 +188,9 @@ void val_print_rrsig_rdata (const char *prefix, val_rrsig_rdata_t *rdata)
 	val_log("[0x %04x]\n", rdata->key_tag);
 	val_log("%sSigner's Name        = %s\n", prefix, rdata->signer_name);
 	val_log("%sSignature            = ", prefix);
-	val_print_base64(rdata->signature, rdata->signature_len);
+	if (log_level > 0) {
+	    val_print_base64(rdata->signature, rdata->signature_len);
+	}
     }
 }
 
@@ -203,6 +205,8 @@ void val_print_dnskey_rdata (const char *prefix, val_dnskey_rdata_t *rdata)
 	val_log("%sKey Tag              = %d", prefix, rdata->key_tag);
 	val_log("[0x %04x]\n", rdata->key_tag);
 	val_log("%sPublic Key           = ", prefix);
-	val_print_base64(rdata->public_key, rdata->public_key_len);
+	if (log_level > 0) {
+	    val_print_base64(rdata->public_key, rdata->public_key_len);
+	}
     }
 }
