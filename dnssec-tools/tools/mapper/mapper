@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 use Net::DNS::ZoneFile::Fast;
+use Net::DNS::SEC::Tools::QWPrimitives;
 use GraphViz;
 use Data::Dumper;
 use strict;
@@ -21,6 +22,8 @@ my ($dorecords, %dorecords);
 my $mapinwindow;
 
 my $time = time();
+
+my %primes = dnssec_tools_get_qwprimitives();
 
 LocalGetOptions(\%opts,
 		['h|help','Show command line help'],
@@ -49,66 +52,10 @@ LocalGetOptions(\%opts,
 				name => 'mapinwindow'}],
 		['GUI:nootherargs',1],
 		['GUI:submodules','getzonefiles','getzonenames'],
-		['GUI:otherprimaries',
-
-		 # defining our own follow-on screens here
-		 'getzonefiles' =>
-		 {title => 'Which files',
-		  introduction => 'You can combine as many zone files as you wish in the resulting map.',
-		  questions => [{type => 'dynamic',
-				 values => sub {
-				     my @qs;
-				     for (my $i = 1; $i <=5; $i++) {
-					 push @qs,
-					   {type => 'fileupload',
-					    text => 'Zone File ' . $i,
-					    name => 'file' . $i},
-				     }
-				     return \@qs;
-				 }},
-				],
-		 },
-
-		 'getzonenames' =>
-		 {title => 'Zone Names',
-		  introduction => 'For each of the files you selected, please indicate what their zone names are.',
-		  post_answers => 
-		  [sub {
-		       require QWizard;
-		       import QWizard;
-		       my $rstr;
-		       for (my $i = 1; $i <=5; $i++) {
-			   if (qwparam('file'.$i) &&
-			       qwparam('zonename'.$i)) {
-			       $rstr .= qwparam('file'.$i) . " " . 
-				 qwparam('zonename'.$i) . " ";
-			   }
-		       }
-		       qwparam('__otherargs',$rstr);
-		       $mapinwindow = qwparam('mapinwindow');
-		   }],
-		  questions => [{type => 'dynamic',
-				 values => sub {
-				     my @qs;
-				     require QWizard;
-				     import QWizard;
-				     for (my $i = 1; $i <=5; $i++) {
-					 if (qwparam('file'.$i)) {
-					     my $def = qwparam('file'.$i);
-					     $def =~ s/^db\.//;
-					     $def =~ s/\.signed$//;
-					     push @qs,
-					       {type => 'text',
-						name => 'zonename' . $i,
-						default => qwparam('file'.$i),
-						text => qwparam('file'.$i)};
-					 }
-				     }
-				     return \@qs;
-				 }}]
-		 },
-		],
-		
+		['GUI:actions', sub { require QWizard;
+				      import QWizard;
+				      $mapinwindow = qwparam('mapinwindow')}],
+		['GUI:otherprimaries',%primes],
 ) || usage();
 
 usage() if (exists($opts{'h'}));
