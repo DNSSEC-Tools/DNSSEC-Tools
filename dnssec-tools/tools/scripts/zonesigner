@@ -102,6 +102,11 @@ my $signzone;
 my %opts;				# Options.
 my @saveargs = @ARGV;			# Copy of argument vector.
 
+#
+# Zonesigner-specific command line arguments.
+#
+my @zsopts = ( "rollforce" );
+my $forceroll = 0;			# Force-a-roll-over flag.
 
 #
 # Set some path variables.
@@ -195,7 +200,7 @@ sub main
 	#
 	# Set some short-hand variables.
 	#
-	$kskpath = "$kskdir/$ksk.key";
+	$kskpath    = "$kskdir/$ksk.key";
 	$zskcurpath = "$zskdir/$zskcur.key";
 	$zskpubpath = "$zskdir/$zskpub.key";
 
@@ -235,6 +240,7 @@ sub optsandargs()
 	#  3. Set options from the config file and command line.  No keyrec
 	#     will be used.
 	#
+	opts_setcsopts(@zsopts);
 	opts_createkrf();
 	$ropts = opts_zonekr();
 	if($ropts == undef)
@@ -274,6 +280,11 @@ sub optsandargs()
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
 	$nokrfile = $opts{'nokrfile'}	|| "";
+
+	#
+	# Get our undocumented options.
+	#
+	$forceroll = $opts{'rollforce'}	|| 0;
 
 	#
 	# Set up options and values, if they've been given.
@@ -439,9 +450,23 @@ sub genkeys
 {
 	print "\ngenerating key files:\n" if($verbose);
 
+	#
+	# Generate the KSK key.
+	#
 	genksk();
-	$zskcur = genzsk("cur");
-	$zskpub = genzsk("pub");
+
+	#
+	# Generate the ZSK keys.
+	#
+	if($forceroll)
+	{
+		forceroll();
+	}
+	else
+	{
+		$zskcur = genzsk("cur");
+		$zskpub = genzsk("pub");
+	}
 }
 
 #######################################################################
@@ -569,12 +594,14 @@ sub genzsk
 	$opts{'keyrec_type'} = "$zskkey";
 	$opts{'kgopts'}	     = $kgopts if($kgopts ne "");
 	keyrec_add('key',$zsk,\%opts);
+	$opts{"$zskkey"} = $zsk;
 
 	#
 	# Restore the KSK directory and dump the keyrec type.
 	#
 	$opts{'kskdirectory'} = $kskdir;
 	delete $opts{'keyrec_type'};
+	delete $opts{'kgopts'} if($kgopts ne "");
 
 	return($zsk);
 }
@@ -871,8 +898,8 @@ sub zonesign
 
 	print "zone signed successfully\n\n";
 	print "${zone}:\n";
-	print "	ZSK  $zcurtag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
-	print "	ZSK  $zpubtag  $zsize  $chron\n";
+	print "	ZSK (cur) $zcurtag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
+	print "	ZSK (pub) $zpubtag  $zsize  $chron\n";
 	return(0);
 }
 
@@ -898,17 +925,17 @@ sub updzonerec
 	# Set some fields we've got to have -- in case they aren't
 	# set in the options.
 	#
-	$opts{'zonefile'}    = $zoneout;
-	$opts{'signedfile'}  = $zoneout . ".signed";
-	$opts{'kskdirectory'}  = $kskdir;
-	$opts{'kskkey'}	     = $ksk;
-	$opts{'kskpath'}     = $kskpath;
-	$opts{'zskcur'}	     = $zskcur;
-	$opts{'zskpub'}	     = $zskpub;
-	$opts{'zskdirectory'}  = $zskdir;
-	$opts{'zskcurpath'}  = $zskcurpath;
-	$opts{'zskpubpath'}  = $zskpubpath;
-	$opts{'szopts'}      = $szopts if($szopts ne "");
+	$opts{'zonefile'}     = $zoneout;
+	$opts{'signedfile'}   = $zoneout . ".signed";
+	$opts{'kskdirectory'} = $kskdir;
+	$opts{'kskkey'}	      = $ksk;
+	$opts{'kskpath'}      = $kskpath;
+	$opts{'zskcur'}	      = $zskcur;
+	$opts{'zskpub'}	      = $zskpub;
+	$opts{'zskdirectory'} = $zskdir;
+	$opts{'zskcurpath'}   = $zskcurpath;
+	$opts{'zskpubpath'}   = $zskpubpath;
+	$opts{'szopts'}       = $szopts if($szopts ne "");
 
 	#
 	# Get the keyrec for the zone.  If there isn't one, it's a new
@@ -1200,6 +1227,94 @@ sub getincl
 EOF
 
 	return($incstr);
+}
+
+#######################################################################
+#
+# Routine:	forceroll()
+#
+# Purpose:	Force a roll-over of the ZSK keys.  The current ZSK is
+#		marked as obsolete.  The published ZSK is moved to being
+#		the current ZSK.  If the zone has a new ZSK, it is
+#		moved to being the published ZSK; if not, a new published
+#		ZSK is generated.  Finally, a new ZSK is generated.
+#
+#		This functionality is not documented in the zonesigner pod.
+#		This should only be used if you know what you're doing.
+#
+sub forceroll
+{
+	my $zsknew;				# Name of new ZSK key.
+	my $zskkey;				# ZSK key.
+	my $krref;				# Reference to Key's keyrec.
+
+	print "\tforcing a key roll-over\n" if($verbose);
+
+	#
+	# Get rid of any reusable ZSKs.  We're rolling them over, so
+	# by definition some ZSKs are reused and some are not.
+	#
+	$reusezsk = 0;
+
+	#
+	# Ensure that a roll-over makes sense.
+	#
+	if($opts{'zskpub'} eq "")
+	{
+		print STDERR "zone $zone has no published ZSK to roll-over to a current ZSK\n";
+		exit(1);
+	}
+
+	#
+	# Render the current ZSK obsolete.
+	#
+	$krref = keyrec_fullrec($opts{'zskcur'});
+	$krref->{'keyrec_type'} = "zsk-obsolete";
+	keyrec_setval("key",$krref->{'keyrec_name'},"keyrec_type","zsk-obsolete");
+	print "\tcurrent ZSK ($krref->{'keyrec_name'}) now obsolete\n" if($verbose > $VERBOSE_LOW);
+
+	#
+	# Convert the published ZSK into the current ZSK.
+	#
+	$krref = keyrec_fullrec($opts{'zskpub'});
+	$krref->{'keyrec_type'} = 'zskcur';
+	$opts{'zskcur'} = $krref->{'keyrec_name'};
+	$zskcur = $krref;
+	$zskcur = $opts{'zskcur'};
+	keyrec_setval("key",$zskcur,"keyrec_type","zskcur");
+	print "\tpublished ZSK ($krref->{'keyrec_name'}) now current\n" if($verbose > $VERBOSE_LOW);
+
+	#
+	# If we have a new ZSK, we'll make that the current published ZSK.
+	# If not, we'll generate a published ZSK.
+	#
+	if(defined($opts{'zsknew'}))
+	{
+		$krref = keyrec_fullrec($opts{'zsknew'});
+		$krref->{'keyrec_type'} = "zskpub";
+		$opts{'zskpub'} = $krref->{'keyrec_name'};
+		$zskpub = $krref;
+		$zskpub = $opts{'zskpub'};
+
+		print "\tnew ZSK ($krref->{'keyrec_name'}) now published\n" if($verbose > $VERBOSE_LOW);
+	}
+	else
+	{
+		$zskpub = genzsk("pub");
+		$krref = keyrec_fullrec($opts{'zskpub'});
+		$opts{'zskpub'} = $krref->{'keyrec_name'};
+
+		print "\tpublished ZSK ($krref->{'keyrec_name'}) created\n" if($verbose > $VERBOSE_LOW);
+	}
+
+	keyrec_setval("key",$zskpub,"keyrec_type","zskpub");
+
+	#
+	# Generate a new ZSK.
+	#
+	$zsknew = genzsk("new");
+	print "\tnew ZSK ($zsknew) created\n" if($verbose > $VERBOSE_LOW);
+	keyrec_setval("key",$zsknew,"keyrec_type","zsknew");
 }
 
 #######################################################################
