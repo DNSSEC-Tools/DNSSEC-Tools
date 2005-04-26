@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
-# Copyright 2004 Sparta, inc.  All rights reserved.  See the COPYING
-# file distributed with this software for details
+# Copyright 2005 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details.
 #
 # dnssec-tools
 #
@@ -30,8 +30,8 @@ our $VERSION = "0.01";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
-	         opts_keykr opts_zonekr opts_createkrf opts_reset
-	         opts_suspend opts_restore opts_drop);
+	         opts_keykr opts_zonekr opts_createkrf opts_setcsopts
+	         opts_reset opts_suspend opts_restore opts_drop);
 
 #
 # Standard options accepted by all tools in the dnssec-tools suite.
@@ -71,6 +71,8 @@ my $create_krfile	= 0;		# Create non-existent keyrec file flag.
 my %cmdopts	= ();			# Options from command line.
 my %saveopts	= ();			# Save-area for command-line options.
 
+my @cspecopts	= ();			# Caller-saved command-specific options.
+
 ##############################################################################
 #
 # Routine:	tooloptions()
@@ -100,7 +102,18 @@ sub tooloptions
 	{
 		$krname = shift;
 	}
+
+	#
+	# Set up the command-specific options array.  We'll start with
+	# whatever's left in the argument list.  If the caller has saved
+	# a set of options already, we'll plop those onto the end of
+	# this list.
+	#
 	@csopts = @_;
+	if(scalar(@cspecopts) >= 0)
+	{
+		push @csopts,@cspecopts;
+	}
 	$cslen = @csopts;
 
 	#
@@ -536,6 +549,19 @@ sub opts_zonekr
 
 ##############################################################################
 #
+# Routine:	opts_setcsopts()
+#
+# Purpose:	Save a copy of the caller-specified, caller-specific options.
+#
+#
+sub opts_setcsopts
+{
+	my @csopts = @_;			# Command-specific options.
+	@cspecopts = @csopts;
+}
+
+##############################################################################
+#
 # Routine:	opts_createkrf()
 #
 # Purpose:	Turn on creation of non-existent keyrec files.
@@ -646,6 +672,8 @@ Net::DNS::SEC::Tools::tooloptions - dnssec-tools option routines.
 
   $zoneref = opts_zonekr($keyrec_file,$keyrec_name);
   %zone_kr = %$zoneref;
+
+  opts_setcsopts(@specopts);
 
   opts_createkrf();
 
@@ -788,7 +816,9 @@ I<-keyrec> command line options.
 A set of command-specific options may be specified in I<@csopts>.  These
 options are in the format required by the I<Getopt::Long> Perl module.  If
 I<@csopts> is left off the call, then no command-specific options will be
-included in the final option hash.
+included in the final option hash.  The I<@csopts> array may be passed
+directly to several interfaces or it may be saved in a call to
+I<opts_setcsopts()>.
 
 
 =head1 TOOL OPTION INTERFACES
@@ -869,6 +899,12 @@ If I<opts_zonekr()> isn't passed any arguments, it will act as if both
 I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
 case, their values will be taken from the I<-krfile> and I<-keyrec> command
 line options.
+
+=item I<opts_setcsopts(@csopts)>
+
+This routine saves a copy of the command-specific options given in I<@csopts>.
+This collection of options is added to the I<@csopts> array that may be passed
+to I<tooloptions()>.
 
 =item I<opts_createkrf()>
 
