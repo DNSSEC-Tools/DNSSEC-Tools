@@ -42,6 +42,7 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 my @stdopts =
 (
         # Encryption algorithm
+        ['GUI:separator', 'Cryptography options:'],
         ["algorithm=s", "Cryptographic HASH algorithm",
 	 question => {type => 'menu',
 		      values => [qw(RSA RSAMD5 DH DSA RSASHA1 HMAC-MD5)],
@@ -52,13 +53,19 @@ my @stdopts =
         ["endtime=s", "End-time for signed zone"],
         # Generate DS records.
         ["gends", "Generate DS records"],
+
+        '',
+        ['GUI:separator', 'Configuration options:'],
         # Keyrec name.
-        ["keyrec=s", "Keyrec name"],
+        ["keyrec=s", "Keyrec name",
+	helpdesc => 'test'],
         # Keyrec file.
         ["krfile=s", "Keyrec file"],
         # Don't use a keyrec file.
         ["nokrfile", "Do not use a Keyrec file"],
+
         '',
+        ['GUI:separator', 'Key-signing key options:'],
         # Reuse KSK.
         ["reuseksk", "Reuse KSK"],
         # KSK key.
@@ -73,6 +80,7 @@ my @stdopts =
         ["ksdir=s","Directory to store Keyset files in"],
 
         '',
+        ['GUI:separator', 'Zone-signing key options:'],
         # Reuse ZSK.
         ["reusezsk", "Reuse ZSK"],
         # ZSK key.
@@ -85,6 +93,7 @@ my @stdopts =
         ["kskdirectory=s", "Directory for ZSK keys"],
 
         '',
+        ['GUI:separator', 'Zone options:'],
         # Zone name.
         ["zone=s", "Zone name", required => 1],
         # Zone data filename.
@@ -96,11 +105,14 @@ my @stdopts =
         ["kgopts=s", "Additional options for dnssec-keygen"],
         # Additional dnssec-signzone options.
         ["szopts=s", "Additional dnssec-signzone options"],
+
         '',
+        ['GUI:separator', 'Control options:'],
         # Verbose flag.
         ["verbose+", "Verbose mode"],
         # Give a usage message and exit.
-        ["help", 'Show command line help'],
+        ["help", 'Show command line help',
+	 question => {values => 'Display Help', type  => 'button'}],
 
         # Getopt::Long::GUI specific argument specifications.  Ignored if !GUI
 
