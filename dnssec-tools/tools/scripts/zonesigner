@@ -105,7 +105,10 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 # Zonesigner-specific command line arguments.
 #
-my @zsopts = ( "rollforce" );
+my @zsopts = ( '',
+	       ['GUI:seperator', 'Tool specific options:'],
+	       ["rollforce",'Force the roll-over of zone keys'] );
+
 my $forceroll = 0;			# Force-a-roll-over flag.
 
 #
