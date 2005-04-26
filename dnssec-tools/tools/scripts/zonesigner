@@ -100,7 +100,7 @@ my $keygen;
 my $signzone;
 
 my %opts;				# Options.
-my @saveargs = @ARGV;			# Copy of argument vector.
+our @saveargs = @ARGV;			# Copy of argument vector.
 
 #
 # Zonesigner-specific command line arguments.
@@ -141,7 +141,6 @@ sub main
 	# Munch on the options and arguments.
 	#
 	optsandargs();
-
 	if($verbose > $VERBOSE_LOW)
 	{
 		print "\narguments:\n";
@@ -305,9 +304,9 @@ sub optsandargs()
 	# Get the paths to the external commands.  Crash and burn if these
 	# fields aren't defined anywhere.
 	#
-	$checkzone = $opts{'checkzone'};
-	$keygen	   = $opts{'keygen'};
-	$signzone  = $opts{'signzone'};
+	$checkzone = $opts{'checkzone'} || 'named-checkzone';
+	$keygen	   = $opts{'keygen'} || 'dnssec-keygen';
+	$signzone  = $opts{'signzone'} || 'dnssec-signzone';
 	if(($checkzone eq "")	||
 	   ($keygen    eq "")	||
 	   ($signzone  eq ""))
