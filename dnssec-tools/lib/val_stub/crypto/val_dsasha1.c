@@ -23,7 +23,7 @@
 #include <val_log.h>
 #include "val_dsasha1.h"
 
-/* Returns VALIDATE_SUCCESS on success, other values on failure */
+/* Returns NO_ERROR on success, other values on failure */
 static int dsasha1_parse_public_key (const unsigned char *buf,
 				     int buflen,
 				     DSA *dsa)
@@ -32,7 +32,10 @@ static int dsasha1_parse_public_key (const unsigned char *buf,
     int index = 0;
     BIGNUM *bn_p, *bn_q, *bn_g, *bn_y;
 
-    if (!dsa) return INTERNAL_ERROR;
+    if (!dsa) {
+	val_log("dsasha1_parse_public_key(): dsa is NULL\n");
+	return INTERNAL_ERROR;
+    }
 
     T = (u_int8_t)(buf[index]);
     index++;
@@ -73,7 +76,7 @@ int dsasha1_sigverify (const unsigned char *data,
     };
 
     if (dsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
-				 dsa) != VALIDATE_SUCCESS) {
+				 dsa) != NO_ERROR) {
 	val_log("dsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
 	DSA_free(dsa);
 	return INTERNAL_ERROR;
