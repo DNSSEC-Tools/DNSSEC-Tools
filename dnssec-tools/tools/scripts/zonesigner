@@ -1269,8 +1269,8 @@ sub forceroll
 	# Render the current ZSK obsolete.
 	#
 	$krref = keyrec_fullrec($opts{'zskcur'});
-	$krref->{'keyrec_type'} = "zsk-obsolete";
-	keyrec_setval("key",$krref->{'keyrec_name'},"keyrec_type","zsk-obsolete");
+	$krref->{'keyrec_type'} = "zskobs";
+	keyrec_setval("key",$krref->{'keyrec_name'},"keyrec_type","zskobs");
 	print "\tcurrent ZSK ($krref->{'keyrec_name'}) now obsolete\n" if($verbose > $VERBOSE_LOW);
 
 	#
