@@ -956,7 +956,7 @@ following is an example of a key I<keyrec>:
 
     key     "Kportrigh.com.+005+30485"
           zonename        "portrigh.com"
-          keyrec_type     "zsk"
+          keyrec_type     "ksk"
           algorithm       "rsasha1"
           random          "/dev/urandom"
           zsklength       "512"
