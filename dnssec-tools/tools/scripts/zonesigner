@@ -855,6 +855,7 @@ sub zonesign
 	# Sign the zone with the new keys.
 	#
 	print "signing zone\n" if($verbose);
+	print "to build entropy in the random number generator, please randomly strike keys\n\n";
 	print "\t$signzone $cmdopts $zoneout $zskcurpath\n" if($verbose);
 	$szone = `$signzone $cmdopts $zoneout $zskcurpath`;
 	if($szone eq "")
