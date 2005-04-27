@@ -32,6 +32,7 @@ my @opts =
 	"cur",				# List current key keyrecs.
 	"new",				# List new key keyrecs.
 	"pub",				# List published key keyrecs.
+	"obs",				# List obsolete key keyrecs.
 
 	"ref",				# List referenced key keyrecs.
 	"unref",			# List unreferenced key keyrecs.
@@ -57,6 +58,7 @@ my $zskflag;
 my $zcurflag;
 my $znewflag;
 my $zpubflag;
+my $zobsflag;
 
 my $refflag;
 my $unrefflag;
@@ -81,6 +83,7 @@ my %zskkeys  = ();			# Names of ZSK keyrecs.
 my %zcurkeys = ();			# Names of current ZSK keyrecs.
 my %znewkeys = ();			# Names of new ZSK keyrecs.
 my %zpubkeys = ();			# Names of published ZSK keyrecs.
+my %zobskeys = ();			# Names of obsolete ZSK keyrecs.
 
 my $ret;				# Return code from main().
 
@@ -168,6 +171,7 @@ sub doopts
 	$zcurflag	= $options{'cur'}	|| 0;
 	$znewflag	= $options{'new'}	|| 0;
 	$zpubflag	= $options{'pub'}	|| 0;
+	$zobsflag	= $options{'obs'}	|| 0;
 
 	$refflag	= $options{'ref'}	|| 0;
 	$unrefflag	= $options{'unref'}	|| 0;
@@ -209,7 +213,7 @@ sub doopts
 	#
 	if(($refflag || $unrefflag)				&&
 	   (!$keysflag && !$kskflag  && !$zskflag &&
-	    !$zcurflag && !$znewflag && !$zpubflag))
+	    !$zcurflag && !$znewflag && !$zpubflag && !$zobsflag))
 	{
 		$keysflag = 1;
 	}
@@ -237,7 +241,8 @@ sub doopts
 	}
 
 	#
-	# Set the appropriate keys flags.
+	# Set the appropriate keys flags.  The obsolete keys must be
+	# explicitly requested.  The all-keys flag won't pick it up.
 	#
 	if($keysflag)
 	{
@@ -260,7 +265,7 @@ sub doopts
 # Purpose:	This routine reads the specified keyrec file and puts each
 #		keyrec into the appropriate keyrec hash table.  There are
 #		hashes for zones, KSK keys, ZSK keys, current ZSKs, new ZSKs,
-#		published ZSKs, and all keys.
+#		published ZSKs, obsolete ZSKs, and all keys.
 #
 sub getkeyrecs
 {
@@ -306,6 +311,11 @@ sub getkeyrecs
 		{
 			$allkeys{$krn} = $kr;
 			$zpubkeys{$krn} = $kr;
+			$zskkeys{$krn} = $kr;
+		}
+		elsif($type eq 'zskobs')
+		{
+			$zobskeys{$krn} = $kr;
 			$zskkeys{$krn} = $kr;
 		}
 	}
@@ -447,6 +457,18 @@ sub showkeys
 		}
 	}
 
+	#
+	# Print the information about the obsolete ZSK keys.
+	#
+	if($zobsflag)
+	{
+		foreach my $k (sort(keys(%zobskeys)))
+		{
+			$krr = $zobskeys{$k};
+			outkey($k,$krr,"ZSK-obs-key","ZSK-obs");
+		}
+	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -541,7 +563,8 @@ sub refdkey
 		if(($zkr{'kskkey'} eq $kn) ||
 		   ($zkr{'zskcur'} eq $kn) ||
 		   ($zkr{'zsknew'} eq $kn) ||
-		   ($zkr{'zskpub'} eq $kn))
+		   ($zkr{'zskpub'} eq $kn) ||
+		   ($zkr{'zskobs'} eq $kn))
 		{
 			#
 			# Found it!  Return success.
@@ -628,6 +651,7 @@ sub usage
 	print STDERR "\t\t-zsk		list ZSK keys\n";
 	print STDERR "\t\t-cur		list current ZSK keys\n";
 	print STDERR "\t\t-pub		list published ZSK keys\n";
+	print STDERR "\t\t-obs		list obsolete ZSK keys\n";
 	print STDERR "\trecord-attribute options:\n";
 	print STDERR "\t\t-valid\t	show keyrecs of unexpired zones\n";
 	print STDERR "\t\t-expired	show keyrecs of expired zones\n";
@@ -664,8 +688,6 @@ have duplicated names, whether within one file or across multiple files, the
 later I<keyrec> will be the one whose data are displayed.  The output given
 depends on the options selected.
 
-=back
-
 =head1 OPTIONS
 
 B<lskrf> has three types of options it can take:  record-selection options,
@@ -696,7 +718,9 @@ This option displays the KSK keys in a I<keyrec> file.
 
 =item -zsk
 
-This option displays the ZSK keys in a I<keyrec> file.
+This option displays the ZSK keys in a I<keyrec> file.  It does not include
+obsolete ZSK keys; the I<-obs> option must be specified to display obsolete
+keys.
 
 =item -cur
 
@@ -709,6 +733,11 @@ This option displays the new ZSK keys in a I<keyrec> file.
 =item -pub
 
 This option displays the published ZSK keys in a I<keyrec> file.
+
+=item -obs
+
+This option displays the obsolete ZSK keys in a I<keyrec> file.  This option
+must be give if obsolete ZSK keys are to be displayed.
 
 =head2 Record-Attribute Options
 
