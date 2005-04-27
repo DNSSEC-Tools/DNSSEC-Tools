@@ -150,7 +150,8 @@ static int compose_answer (struct domain_info *response,
     int anbufindex = 0, nsbufindex = 0, arbufindex = 0;
     char *anbuf = NULL, *nsbuf = NULL, *arbuf = NULL;
     char *cp;
-    int rrset_found = 0;
+    int matching_rrset_found = 0;
+    int rrset_found_at_name = 0;
 
     //    if (!ans || (anslen <= 0) || (dnssec_status != VALIDATE_SUCCESS)) {
     if (!ans || (anslen <= 0)) {
@@ -204,10 +205,13 @@ static int compose_answer (struct domain_info *response,
 	}
 	*/
 
-	if (((response->di_requested_type_h == ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h)) &&
-	    (response->di_requested_class_h == rrset->rrs_class_h) &&
+	if ((response->di_requested_class_h == rrset->rrs_class_h) &&
 	    (strcasecmp(dname, rrset->rrs_name_n) == 0)) {
-	    rrset_found = 1;
+
+	    rrset_found_at_name = 1;
+
+	    if ((response->di_requested_type_h == ns_t_any) || (response->di_requested_type_h == rrset->rrs_type_h))
+		matching_rrset_found = 1;
 	}
 
 	switch(rrset->rrs_section) {
@@ -300,8 +304,11 @@ static int compose_answer (struct domain_info *response,
     hp->arcount = htons(hp->arcount);
 
     hp->qr = 1;
-    if (rrset_found) {
+    if (matching_rrset_found) {
 	h_errno = NETDB_SUCCESS;
+    }
+    else if (rrset_found_at_name){
+	h_errno = NO_DATA;
     }
     else {
 	h_errno = HOST_NOT_FOUND;
@@ -376,7 +383,6 @@ int _val_query ( const char *dname, int class, int type,
     }
     
     ret_val = res_squery ( &ctx, dname, type, class, &respol, response); 
-
     val_log("\nres_squery returned %d\n", ret_val);
     val_log("response = \n");
     dump_dinfo(response);
