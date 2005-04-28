@@ -6,6 +6,63 @@ Index: devtools/Site/site.config.m4
 +APPENDDEF(`confENVDEF', `-DMILTER -g')
 +APPENDDEF(`confLIBS', `-lsres -lval -lcrypto -lresolv')
 +APPENDDEF(`confENVDEF', `-DSM_CONF_SHM=0')
+Index: libmilter/sm_gethost.c
+===================================================================
+--- libmilter/sm_gethost.c	2005-04-28 13:32:29.000000000 -0400
++++ libmilter/sm_gethost.c	2005-04-28 13:30:16.000000000 -0400
+@@ -17,6 +17,10 @@
+ #endif /* NETINET || NETINET6 */
+ #include "libmilter.h"
+ 
++#ifdef HAVE_LIBVAL
++#include <val_api.h>
++#endif
++
+ /*
+ **  MI_GETHOSTBY{NAME,ADDR} -- compatibility routines for gethostbyXXX
+ **
+@@ -59,6 +63,13 @@
+ 		_res.options |= RES_USE_INET6;
+ 	}
+ 	SM_SET_H_ERRNO(0);
++#ifdef HAVE_LIBVAL
++	if (RequireDNSSEC) {
++	    int dnssec_status = INTERNAL_ERROR;
++	    h = val_gethostbyname(name, &dnssec_status);
++	}
++	else
++#endif
+ 	h = gethostbyname(name);
+ 	if (family == AF_INET6 && !resv6)
+ 		_res.options &= ~RES_USE_INET6;
+@@ -110,6 +121,13 @@
+ 	h = getipnodebyname(name, family, flags, &err);
+ 	SM_SET_H_ERRNO(err);
+ # else /* NETINET6 */
++#ifdef HAVE_LIBVAL
++	if (RequireDNSSEC) {
++	    int dnssec_status = INTERNAL_ERROR;
++	    h = val_gethostbyname(name, &dnssec_status);
++	}
++	else
++#endif
+ 	h = gethostbyname(name);
+ # endif /* NETINET6 */
+ 
+Index: libmilter/libmilter.h
+===================================================================
+--- libmilter/libmilter.h	2005-04-28 13:32:19.000000000 -0400
++++ libmilter/libmilter.h	2005-04-28 13:28:51.000000000 -0400
+@@ -25,6 +25,9 @@
+ # define INIT(x)
+ #endif /* _DEFINE */
+ 
++#ifndef HAVE_LIBVAL
++#define HAVE_LIBVAL		/* DNSSEC Validator Library */
++#endif
+ 
+ #define NOT_SENDMAIL	1
+ #define _SOCK_ADDR	union bigsockaddr
 Index: doc/op/op.me
 ===================================================================
 --- doc/op/op.me	2005-03-03 12:11:58.000000000 -0500
