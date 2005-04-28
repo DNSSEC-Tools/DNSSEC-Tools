@@ -1,0 +1,44 @@
+#!/usr/bin/perl
+
+use strict;
+
+my $detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
+my $daterange = $ENV{'LOGWATCH_DATE_RANGE'};
+my $tempdir = $ENV{'LOGWATCH_TEMP_DIR'};
+my $debuglevel = $ENV{'LOGWATCH_DEBUG'};
+
+#print "\nDetail level = " . $detail . "\n";
+#print "\nDate range = " . $daterange . "\n";
+#print "\nTemp dir = " . $tempdir . "\n";
+#print "\nDebug level = " . $debuglevel . "\n";
+my $valComplete;
+my $valOK;
+my $nonextValOK;
+my $firstline = 0;
+
+while (defined(my $ThisLine = <STDIN>)) {
+   if ($ThisLine =~ /validation completion event/) {
+      $valComplete++;
+   } elsif ($ThisLine =~ /nonexistence validation OK/) {
+      $nonextValOK++;
+   } elsif ($ThisLine =~ /validation OK/) {
+      $valOK++;
+   } 
+}
+
+if ($detail >= 5) {
+   print "\n";
+   if ($valComplete > 0) {
+      print "Received validation completion event " . $valComplete . " times\n";
+   }
+   if ($nonextValOK > 0) {
+      print "Nonexistence validation OK received " . $nonextValOK . " times\n"; 
+   }
+   if ($valOK > 0) {
+      print "Validation OK " . $valOK . " times\n";
+   }
+}
+exit (0);
+
+# vi: shiftwidth=3 tabstop=3 et
+
