@@ -11,7 +11,8 @@ Assumptions:
 
 -- log files for BIND are located in /var/log and are called dnssec 
    and resolver. The location and name of these files are configured
-   in your BIND config file, often called named.conf.
+   in your BIND config file, often called named.conf. See below for
+   a few tips on configuring BIND to log security messages.
 
 -- logwatch is installed in $LOGWATCH_DIR (by default this would be
    /etc/log.d).
@@ -29,3 +30,31 @@ cp ./scripts/services/* /etc/log.d/scripts/services/.
 This all that is necessary to get logwatch to monitor your BIND security
 logfiles. Now run logwatch, and see the DNSSEC and RESOLVER sections for
 output.
+
+Configuring BIND for security logging
+-------------------------------------
+
+In your named.conf (or whatever you have named your BIND config file), 
+you need to have a logging section. It will look something like this:
+
+logging {
+        channel resolver {
+                file "/var/log/resolver" versions 10 size 300k;
+                print-time yes;
+                print-category no;
+                print-severity yes;
+                severity debug 3;
+        };
+        channel dnssec {
+                file "/var/log/dnssec" versions 10 size 300k;
+                print-time yes;
+                print-category no;
+                print-severity yes;
+                severity debug 9;
+        };
+        category dnssec { dnssec; };
+        category resolver { resolver; };
+};
+
+This allows you to send log messages to separate log files.
+This configuration fits the logwatch config files provided here.
