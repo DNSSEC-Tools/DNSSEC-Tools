@@ -58,3 +58,18 @@ logging {
 
 This allows you to send log messages to separate log files.
 This configuration fits the logwatch config files provided here.
+The "channel" is a name of your own choosing. The file
+name can be whatever you want, but if you use something other
+than /var/log/{dnssec,resolver} you will need to modify
+dnssec.conf and/or resolver.conf in the conf/logfiles directory
+to match the file name.
+
+"Categories" as used in named.conf are defined as follows for
+BIND 9.x: 
+
+-- dnssec: processing of DNSSEC-signed responses
+-- resolver: Name resolution, including the processing of recursive queries
+   from resolvers
+
+For more detail on this topic, a good reference is the O'Reilly book
+"DNS and BIND" by Albitz & Liu.
