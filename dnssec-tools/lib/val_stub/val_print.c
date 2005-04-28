@@ -1,3 +1,8 @@
+
+/*
+ * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * See the COPYING file distributed with this software for details.
+ */ 
 #include <stdio.h>
 #include <resolv.h>
 #include <resolver.h>

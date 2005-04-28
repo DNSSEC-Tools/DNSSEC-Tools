@@ -1,3 +1,8 @@
+
+/*
+ * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * See the COPYING file distributed with this software for details.
+ */ 
 #ifndef VAL_QUERY_EX_H
 #define VAL_QUERY_EX_H
 
