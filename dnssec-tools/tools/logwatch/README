@@ -1,0 +1,31 @@
+This directory contains configuration files and scripts for logwatch
+to manage log files for BIND security function.
+
+First, you need to obtain and install logwatch. Logwatch is available from
+http://www2.logwatch.org:81/tabs/download
+
+The current version as of this writing is 6.0.2 (Apr 25, 2005).
+
+When logwatch is installed, you need to install the files in this tree.
+Assumptions:
+
+-- log files for BIND are located in /var/log and are called dnssec 
+   and resolver. The location and name of these files are configured
+   in your BIND config file, often called named.conf.
+
+-- logwatch is installed in $LOGWATCH_DIR (by default this would be
+   /etc/log.d).
+
+You may edit the logwatch config files and scripts to change these names
+if you have used something else.
+
+Copy the files in ./conf/logfiles, ./conf/services, and ./scripts/services
+into the same directory structure in $LOGWATCH_DIR. For example, 
+
+cp ./conf/logfiles/* /etc/log.d/conf/logfiles/.
+cp ./conf/services/* /etc/log.d/conf/services/.
+cp ./scripts/services/* /etc/log.d/scripts/services/.
+
+This all that is necessary to get logwatch to monitor your BIND security
+logfiles. Now run logwatch, and see the DNSSEC and RESOLVER sections for
+output.
