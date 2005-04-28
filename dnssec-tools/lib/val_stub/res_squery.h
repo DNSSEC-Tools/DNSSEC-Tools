@@ -1,3 +1,7 @@
+/*
+ * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * See the COPYING file distributed with this software for details.
+ */ 
 #ifndef RES_SQUERY_H
 #define RES_SQUERY_H
 
