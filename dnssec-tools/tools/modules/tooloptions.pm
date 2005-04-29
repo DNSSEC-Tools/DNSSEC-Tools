@@ -106,13 +106,13 @@ my @stdopts =
         # prompt for zone input and output file names
         ['GUI:guionly',
 		{
-			type => 'text',
+			type => 'fileupload',
 			name => 'zonein',
 			check_values => \&qw_required_field,
 			text => 'Input Zone File:'
 		},
 	 	{
-			type => 'text',
+			type => 'fileupload',
 			name => 'zoneout',
 			check_values => \&qw_required_field,
 			text => 'Output Zone File'
