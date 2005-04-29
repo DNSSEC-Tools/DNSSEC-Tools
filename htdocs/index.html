@@ -41,16 +41,24 @@
 	<p> The results of this project will enable end-users of DNS tools
 	  to employ dnsssec based security with as little additional
 	  overhead as possible.</p>
+
       </div>
 
-      <h2>Documentation</h2>
+      <h2>Development Schedule</h2>
+      <div class="indent">
+	<p>Most of the tools below are under very active development.
+	We expect our first software tar-ball to be published in early
+	may.</p>
+      </div>
+
+      <h2>DNSSEC Related Documentation</h2>
       <div class="indent">
       <ul>
       <li><a
       href="docs/step-by-step-guide-draft-v0.4.doc">Step-by-Step DNS
       Security Operator Guidance Document</a> [<a href="docs/step-by-step/step-by-step-guide-draft-v0.4.html">[HTML]</a>]</li>
 <br>
-	<p><b> <a href="docs">Other hosted documents</a></b></p>
+	<li> <a href="docs">Other hosted documents</a></li>
 	<ul>
 [Such as IETF working documents, etc]
 	    </ul>
@@ -63,13 +71,30 @@
 	<p> Currently these are only available via CVS checkouts: </p>
 	<div class="major"><h3>Applications:</h3>
 	  <table class="soft">
+
+	    <tr><th class="thtitle">Tool</th><th
+	    class="thtitle">Description</th><th class="thtitle">Screen-Shots</th>
+	      </tr>
+
+
+	    <tr><td class="tdtitle"><a
+	    href="docs/zonesigner.html">zonesigner</a>:</td><td
+	    class="description"> A zone database signing utility that
+	    takes care of all necessary steps to sign and maintain a
+	    zone with as little hassle as possible.</td><td><a
+	    href="images/zonesigner.png"><img
+	    src="images/zonesigner.sm.png"></a><br><a
+	    href="txt/zonesigner-example.txt">Example Output</a></td></tr>
+
 	    <tr><td class="tdtitle"><a href="docs/donuts.html">donuts</a>:</td><td class="description"> A dnslint like application to analyze zone files.
 	      Specifically tailored to dnssec but also tests for more
 	      general (non-dnssec) problems.</td><td><a href="images/donuts.png"><img src="images/donuts.sm.png"></a></td></tr>
+
 	    <tr><td class="tdtitle"><a href="docs/mapper.html">mapper</a>:</td><td class="description"> Maps DNS realms color coding the results to
 	      allow for easy visual interpretation of the results.  Color
 	      codes are based on record types and/or errors and
 	      warnings.</td><td><a href="images/mapper.png"><img src="images/mapper.sm.png"></a><a href="images/exampmap.png"><img src="images/exampmap.sm.png"></tr>
+
 	    <tr><td class="tdtitle">ifup-dyn-dns:</td><td class="description"> A linux ifup addition that propagates
 	      current IP addresses into a live zone(s) using dynamic
 	      DNS.  Allows for security to be used as well so
@@ -87,7 +112,7 @@
 	  </td></tr>
 	    </tbody></table>
 	</div>
-	<div class="major"><h3>Patches to other applications:</h3>
+	<div class="major"><h3>Patches or plugins to other applications:</h3>
 	  <table class="soft">
 	    <tr><td class="tdtitle">Perl module
 	    Net::DNS::ZoneFile::Fast</td><td class="description"> A patch to support parsing
@@ -96,6 +121,16 @@
 	    class="description"> A patch to validate SPF rules
 	      against DNSsec records to ensure lookups within sendmail
 	      are not spoofed DNS records.</td></tr>
+	      <tr><td class="tdtitle">thunderbird</td>
+		<td class="description">A plugin which automatically
+		displays the DNSSEC validation headers in the
+		Thunderbird E-Mail reader</td>
+	      </tr>
+	      <tr><td class="tdtitle">Mozilla</td>
+		<td class="description">A patch which enables DNSSEC
+		validation of DNS lookups in the Mozilla application
+		suite (browser, etc).</td>
+	      </tr>
 	  </table>
 	</div>
       </ul>
@@ -124,7 +159,7 @@
     <address><a href="mailto:Wes Hardaker <hardaker@users.sourceforge.net>"></a></address>
 <!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
 <!-- hhmts start -->
-Last modified: Tue Mar  8 19:14:28 PST 2005
+Last modified: Fri Apr 29 14:42:42 PDT 2005
 <!-- hhmts end -->
   </body>
 </html>

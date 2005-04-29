@@ -5,6 +5,7 @@ all: tools modules stepbystep
 tools:
 	pod2html $(TOOLSDIR)/tools/donuts/donuts > docs/donuts.html
 	pod2html $(TOOLSDIR)/tools/mapper/mapper > docs/mapper.html
+	pod2html $(TOOLSDIR)/tools/scripts/zonesigner > docs/zonesigner.html
 
 modules:
 	pod2html $(TOOLSDIR)/tools/modules/conf.pm > docs/conf.html
