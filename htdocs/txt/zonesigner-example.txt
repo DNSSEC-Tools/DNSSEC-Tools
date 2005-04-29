@@ -1,0 +1,23 @@
+# zonesigner --algorithm RSAMD5 --ksklength 512 --zsklength 512 --zone example.com --verbose example.com example.com.signed
+
+using default keyrec file output.krf
+
+generating key files:
+        dnssec-keygen   -a RSAMD5 -b 512 -n zone -f KSK example.com
+                new KSK - Kexample.com.+001+37480
+
+        dnssec-keygen   -a RSAMD5 -b 512 -n zone example.com
+                new cur ZSK - Kexample.com.+001+55691
+
+        dnssec-keygen   -a RSAMD5 -b 512 -n zone example.com
+                new pub ZSK - Kexample.com.+001+08450
+
+signing zone
+        dnssec-signzone    -k ./Kexample.com.+001+37480.key -o example.com  example.com.signed ./Kexample.com.+001+55691.key
+checking zone
+updating the keyrec file for the zone
+zone signed successfully
+
+example.com:
+        ZSK  55691  -b 512  04/29/05    KSK  37480  -b 512  04/29/05
+        ZSK  08450  -b 512  04/29/05
