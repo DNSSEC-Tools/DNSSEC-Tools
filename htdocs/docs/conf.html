@@ -44,7 +44,7 @@
 <p>The DNSSEC tools have a configuration file for commonly used values.
 These values are the defaults for a variety of things, such as
 encryption algorithm and encryption key length.
-<strong>/etc/dnssec/dnssec-tools.conf</strong> is the path for the DNSSEC tools
+<strong>/usr/local/etc/dnssec/dnssec-tools.conf</strong> is the path for the DNSSEC tools
 configuration file.  The <em>Net::DNS::SEC::Tools::conf</em> module provides
 methods for accessing the configuration data in this file.</p>
 <p>The DNSSEC tools configuration file consists of a set of configuration
@@ -81,7 +81,8 @@ The parsed contents are put into a hash table, which is returned to the caller.
 <dd>
 This routine reads and parses a caller-specified DNSSEC tools configuration
 file.  The parsed contents are put into a hash table, which is returned to
-the caller.
+the caller.  The routine quietly returns if the configuration file does not
+exist.
 </dd>
 <p></p></dl>
 <p>
