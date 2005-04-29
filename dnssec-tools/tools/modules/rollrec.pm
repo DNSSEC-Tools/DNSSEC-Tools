@@ -1,6 +1,7 @@
+#!/usr/bin/perl
 #
 # Copyright 2005 Sparta, inc.  All rights reserved.  See the COPYING
-# file distributed with this software for details
+# file distributed with this software for details.
 #
 # DNSSEC Tools
 #
