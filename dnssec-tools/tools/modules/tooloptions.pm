@@ -41,78 +41,62 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 #
 my @stdopts =
 (
-        # Encryption algorithm
-        ['GUI:separator', 'Cryptography options:'],
-        ["algorithm=s", "Cryptographic HASH algorithm",
-	 question => {type => 'menu',
-		      values => [qw(RSA RSAMD5 DH DSA RSASHA1 HMAC-MD5)],
-		      default => 'RSAMD5'}],
-        # Random number generator.
-        ["random=s", "Random number generator device"],
-        # End-time for signed zone.
-        ["endtime=s", "End-time for signed zone"],
-        # Generate DS records.
-        ["gends", "Generate DS records"],
+        ['GUI:separator',	'Cryptography options:'],
+        ["algorithm=s",		"Cryptographic HASH algorithm",
+	 question => {
+			type	=> 'menu',
+			values	=> [qw(RSA RSAMD5 DH DSA RSASHA1 HMAC-MD5)],
+			default	=> 'RSAMD5'
+		     }
+	],
+        ["random=s",		"Random number generator device"],
+        ["endtime=s",		"End-time for signed zone"],
+        ["gends",		"Generate DS records"],
 
         '',
-        ['GUI:separator', 'Configuration options:'],
-        # Keyrec name.
-        ["keyrec=s", "Keyrec name",
-	helpdesc => 'test'],
-        # Keyrec file.
-        ["krfile=s", "Keyrec file"],
-        # Don't use a keyrec file.
-        ["nokrfile", "Do not use a Keyrec file"],
+        ['GUI:separator',	'Configuration options:'],
+        ["keyrec=s",		"Keyrec name",
+	  helpdesc => 'test'
+	],
+        ["krfile=s",		"Keyrec file"],
+        ["nokrfile",		"Do not use a Keyrec file"],
 
         '',
-        ['GUI:separator', 'Key-signing key options:'],
-        # Reuse KSK.
-        ["reuseksk", "Reuse KSK"],
-        # KSK key.
-        ["kskkey=s", "KSK key"],
-        # Length of KSK.
-        ["ksklength=i", "Length of KSK"],
-        # Path to KSK.
-        ["kskpath=s", "Path to KSK"],
-        # Directory for KSK keys.
-        ["kskdirectory=s", "Directory for KSK keys"],
-        # Directory for keyset files.
-        ["ksdir=s","Directory to store Keyset files in"],
+        ['GUI:separator',	'Key-signing key options:'],
+        ["reuseksk",		"Reuse KSK"],
+        ["kskkey=s",		"KSK key"],
+        ["ksklength=i",		"Length of KSK"],
+        ["kskpath=s",		"Path to KSK"],
+        ["kskdirectory=s",	"Directory for KSK keys"],
+        ["ksdir=s",		"Directory to store Keyset files in"],
 
         '',
-        ['GUI:separator', 'Zone-signing key options:'],
-        # Reuse ZSK.
-        ["reusezsk", "Reuse ZSK"],
-        # ZSK key.
-        ["zskkey=s", "ZSK key"],
-        # Length of ZSK.
-        ["zsklength=i", "Length of ZSK"],
-        # Path to ZSK.
-        ["zskpath=s", "Path to ZSK"],
-        # Directory for ZSK keys.
-        ["kskdirectory=s", "Directory for ZSK keys"],
+        ['GUI:separator',	'Zone-signing key options:'],
+        ["reusezsk",		"Reuse ZSK"],
+        ["zskkey=s",		"ZSK key"],
+        ["zsklength=i",		"Length of ZSK"],
+        ["zskpath=s",		"Path to ZSK"],
+        ["zskdirectory=s",	"Directory for ZSK keys"],
 
         '',
-        ['GUI:separator', 'Zone options:'],
-        # Zone name.
-        ["zone=s", "Zone name", required => 1],
-        # Zone data filename.
-        ["zdata=s", "Zone data filename"],
-        # Zone filename.
-        ["zfile=s", "Zone filename"],
-        '',
-        # Additional options for dnssec-keygen.
-        ["kgopts=s", "Additional options for dnssec-keygen"],
-        # Additional dnssec-signzone options.
-        ["szopts=s", "Additional dnssec-signzone options"],
+        ['GUI:separator',	'Zone options:'],
+        ["zone=s",		"Zone name",	required => 1],
+        ["zdata=s",		"Zone data filename"],
+        ["zfile=s",		"Zone filename"],
 
         '',
-        ['GUI:separator', 'Control options:'],
-        # Verbose flag.
-        ["verbose+", "Verbose mode"],
-        # Give a usage message and exit.
-        ["help", 'Show command line help',
-	 question => {values => 'Display Help', type  => 'button'}],
+        ["kgopts=s",		"Additional options for dnssec-keygen"],
+        ["szopts=s",		"Additional dnssec-signzone options"],
+
+        '',
+        ['GUI:separator',	'Control options:'],
+        ["verbose+",	"Verbose mode"],
+        ["help",	'Show command line help',
+	 question => {
+			values => 'Display Help',
+			type  => 'button'
+		     }
+	],
 
         # Getopt::Long::GUI specific argument specifications.  Ignored if !GUI
 
@@ -121,27 +105,39 @@ my @stdopts =
 
         # prompt for zone input and output file names
         ['GUI:guionly',
-	 {type => 'text',
-	  name => 'zonein',
-	  check_values => \&qw_required_field,
-	  text => 'Input Zone File:'},
-	 {type => 'text',
-	  name => 'zoneout',
-	  check_values => \&qw_required_field,
-	  text => 'Output Zone File'}],
+		{
+			type => 'text',
+			name => 'zonein',
+			check_values => \&qw_required_field,
+			text => 'Input Zone File:'
+		},
+	 	{
+			type => 'text',
+			name => 'zoneout',
+			check_values => \&qw_required_field,
+			text => 'Output Zone File'
+		}
+	],
 
         # map to other args variable
- ['GUI:hook_finished', sub{
-      print STDERR "saving: $#ARGV $#main::saveargs\n";
-      @main::saveargs = @ARGV;
-  }],
-        ['GUI:actions', sub { require QWizard;
-			      import QWizard;
-			      qwparam('__otherargs', qwparam('zonein') . " " . 
-				      qwparam('zoneout'));
-			      $Getopt::Long::GUI::verbose = 1;
-			      return 'OK';
-			  }],
+	['GUI:hook_finished',
+		sub
+		{
+			print STDERR "saving: $#ARGV $#main::saveargs\n";
+			@main::saveargs = @ARGV;
+		}
+	],
+        ['GUI:actions',
+		sub
+		{
+			require QWizard;
+			import QWizard;
+			qwparam('__otherargs', qwparam('zonein') . " " . 
+			      qwparam('zoneout'));
+			$Getopt::Long::GUI::verbose = 1;
+			return('OK');
+		}
+	],
 );
 
 my $firstcall		= 1;		# First-call flag.
@@ -708,48 +704,61 @@ sub opts_reset
 #
 # Routine:	LocalGetOptions()
 #
-# Purpose: A local wrapper around the Getopt::Long::GUI routine to
-# determine it's availabality and call Getopt::Long instead if need
-# be.  This function and the next is only needed to support
-# "not-requiring" Getopt::Long::GUI
+# Purpose:	A local wrapper around the Getopt::Long::GUI routine to
+#		determine its availabality and call Getopt::Long instead if
+#		need be.  This function and the next is only needed to support
+#		"not-requiring" Getopt::Long::GUI
 #
-# Note: Code pulled from the Getopt::Long::GUI documentation and can
-# be updated to newer versions in the future if need be.
+#		Note:  Code pulled from the Getopt::Long::GUI documentation
+#		       and can be updated to newer versions in the future if
+#		       need be.
 #
 
-sub LocalGetOptions {
-    my @args = @_;  # force copy since we're called multiple times
-    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
-	import Getopt::Long::GUI;
-	return GetOptions(@args);
-    } else {
-	require Getopt::Long;
-	import Getopt::Long;
-    }
-    GetOptions(LocalOptionsMap(@args));
+sub LocalGetOptions
+{
+	my @args = @_;		# Force copy since we're called multiple times.
+
+	if(($#ARGV == -1) && (eval {require Getopt::Long::GUI;}))
+	{
+		import Getopt::Long::GUI;
+		return(GetOptions(@args));
+	}
+	else
+	{
+		require Getopt::Long;
+		import Getopt::Long;
+	}
+
+	GetOptions(LocalOptionsMap(@args));
 }
 
 ##############################################################################
 #
 # Routine:	LocalOptionsMap()
 #
-# Purpose: Maps Getopt::Long::GUI arguments to Getopt::Long arguments.
+# Purpose:	Maps Getopt::Long::GUI arguments to Getopt::Long arguments.
 #
-# Note: Code pulled from the Getopt::Long::GUI documentation and can
-# be updated to newer versions in the future if need be.
+#		Note:  Code pulled from the Getopt::Long::GUI documentation
+#		       and can be updated to newer versions in the future if
+#		       need be.
 #
 
-sub LocalOptionsMap {
-    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
-			    ? (1, 1, $_[0]) : (0, 2));
-    for (my $i = $st; $i <= $#_; $i += $cb) {
-	if ($_[$i]) {
-	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
-	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
-	    push @opts, $_[$i+1] if ($cb == 2);
+sub LocalOptionsMap
+{
+	my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') ? (1, 1, $_[0]) : (0,2));
+
+	for(my $i = $st; $i <= $#_; $i += $cb)
+	{
+		if($_[$i])
+		{
+			next if(ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+
+			push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+			push @opts, $_[$i+1] if($cb == 2);
+		}
 	}
-    }
-    return @opts;
+
+	return(@opts);
 }
 
 1;
