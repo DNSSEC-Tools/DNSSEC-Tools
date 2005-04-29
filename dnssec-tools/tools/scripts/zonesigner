@@ -107,7 +107,8 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:seperator', 'Tool specific options:'],
-	       ["rollforce",'Force the roll-over of zone keys'] );
+	       ["rollforce",'Force the roll-over of zone keys']
+	     );
 
 my $forceroll = 0;			# Force-a-roll-over flag.
 
@@ -308,8 +309,8 @@ sub optsandargs()
 	# fields aren't defined anywhere.
 	#
 	$checkzone = $opts{'checkzone'} || 'named-checkzone';
-	$keygen	   = $opts{'keygen'} || 'dnssec-keygen';
-	$signzone  = $opts{'signzone'} || 'dnssec-signzone';
+	$keygen	   = $opts{'keygen'}	|| 'dnssec-keygen';
+	$signzone  = $opts{'signzone'}	|| 'dnssec-signzone';
 	if(($checkzone eq "")	||
 	   ($keygen    eq "")	||
 	   ($signzone  eq ""))
@@ -525,6 +526,7 @@ sub genksk
 	# Add the KSK's keyrec to the keyrec file.
 	#
 	$opts{'keyrec_type'} = "ksk";
+	$opts{'keypath'}     = "$kskdir/$ksk.key";
 	$opts{'kgopts'}      = $kgopts if($kgopts ne "");
 	keyrec_add('key',$ksk,\%opts);
 
@@ -594,6 +596,7 @@ sub genzsk
 	# Add the ZSK's keyrec to the keyrec file.
 	#
 	$opts{'keyrec_type'} = "$zskkey";
+	$opts{'keypath'}     = "$zskdir/$zsk.key";
 	$opts{'kgopts'}	     = $kgopts if($kgopts ne "");
 	keyrec_add('key',$zsk,\%opts);
 	$opts{"$zskkey"} = $zsk;
@@ -1249,7 +1252,8 @@ sub forceroll
 {
 	my $zsknew;				# Name of new ZSK key.
 	my $zskkey;				# ZSK key.
-	my $krref;				# Reference to Key's keyrec.
+	my $krref;				# Reference to key's keyrec.
+	my $zoneref;				# Reference to zone's keyrec.
 
 	print "\tforcing a key roll-over\n" if($verbose);
 
@@ -1269,11 +1273,17 @@ sub forceroll
 	}
 
 	#
+	# Get the zone's keyrec.
+	#
+	$zoneref = keyrec_fullrec($zone);
+
+	#
 	# Render the current ZSK obsolete.
 	#
 	$krref = keyrec_fullrec($opts{'zskcur'});
-	$krref->{'keyrec_type'} = "zskobs";
+	$krref->{'keyrec_type'}	= "zskobs";
 	keyrec_setval("key",$krref->{'keyrec_name'},"keyrec_type","zskobs");
+	keyrec_setval("key",$krref->{'keyrec_name'},"keypath",$zoneref->{'zskcurpath'});
 	print "\tcurrent ZSK ($krref->{'keyrec_name'}) now obsolete\n" if($verbose > $VERBOSE_LOW);
 
 	#
@@ -1318,6 +1328,7 @@ sub forceroll
 	$zsknew = genzsk("new");
 	print "\tnew ZSK ($zsknew) created\n" if($verbose > $VERBOSE_LOW);
 	keyrec_setval("key",$zsknew,"keyrec_type","zsknew");
+	keyrec_setval("key",$zsknew,"zonename",$zone);
 }
 
 #######################################################################
