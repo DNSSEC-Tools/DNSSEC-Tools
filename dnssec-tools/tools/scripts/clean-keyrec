@@ -422,11 +422,12 @@ keyrec-clean - Clean a B<dnssec-tools> I<keyrec> file of orphaned keys.
   keyrec-clean [options] <keyrec-files>
 
     options:
-	-count    -  give count of orphan keys\n";
-	-list     -  only list orphaned keys\n";
-	-quiet    -  don't give any output\n";
-	-verbose  -  give lotsa output\n";
-	-help     -  give a usage message and exit\n";
+	-count    -  give count of orphan keys
+	-list     -  only list orphaned keys
+	-rm	  -  remove key files
+	-quiet    -  don't give any output
+	-verbose  -  give lotsa output
+	-help     -  give a usage message and exit
 
 =head1 DESCRIPTION
 
@@ -450,6 +451,11 @@ displayed even if the I<-quiet> option is given.
 
 The key I<keyrec>s are checked for orphans, but are not removed from the
 I<keyrec> file.  The names of the orphaned I<keyrec>s are displayed.
+
+=item -rm
+
+Delete each the key files, both I<.key> and I<.private>, from orphaned and
+expired I<keyrec>s.
 
 =item -quiet
 
