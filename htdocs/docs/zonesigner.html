@@ -1,0 +1,277 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>zonesigner - Check a B&lt;dnssec-tools&gt; I&lt;keyrec&gt; file for problems and
+consistencies.</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<ul>
+
+		<li><a href="#zonesignerspecific_options"><em>zonesigner</em>-specific Options</a></li>
+		<li><a href="#dnsseckeygenspecific_options"><em>dnssec-keygen</em>-specific Options</a></li>
+		<li><a href="#dnssecsignzonespecific_options"><em>dnssec-signzone</em>-specific Options</a></li>
+	</ul>
+
+	<li><a href="#examples">Examples</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>zonesigner - Check a <strong>dnssec-tools</strong> <em>keyrec</em> file for problems and
+consistencies.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  zonesigner [options] &lt;zone-file&gt; &lt;zone-out&gt;</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This script combines into a single command many actions that are required to
+sign a zone.  It generates the required KSK and ZSK keys, adds the key data
+to a zone file, signs the zone, and runs checks to ensure that everything
+worked properly.</p>
+<p>Using <em>keyrec</em> files, defined and maintained by <strong>dnssec-tools</strong>,
+<em>zonesigner</em> can automatically gather many of the options used to previously
+sign and generate a zone and its keys.  This allows the zone to be maintained
+using the same key lengths and expiration times, for example, without an
+administrator needing to manually track these fields.</p>
+<p><em>zonesigner</em> is used in this way:</p>
+<p>zonesigner [options] &lt;zone-name&gt; &lt;zone-out&gt;</p>
+<p><em>zone-name</em> is the name of the zone that will be signed and the name of the
+zone file from which a signed zone file will be created.  This may also be
+specified with the <em>-zone</em> option.  Several $INCLUDE lines will be added at
+the end and the SOA serial number will be incremented.  Generated keys are
+given this name as their base.</p>
+<p><em>zone-out</em> is the name of the output zone file.  This file will be a copy
+of the <em>zone-file</em> zone file.  The signed zone file will be this name,
+appended with <em>.signed</em>.</p>
+<p>The <em>zone-out</em> argument may be left out, in which case the input zone file
+will be used as the base for all operations.</p>
+<p><em>keyrec</em> files retain information about previous key-generation and
+zone-signing operations.  If a <em>keyrec</em> file is not specified (by way of the
+<em>-krfile</em> option), then a default <em>keyrec</em> file is used.  If this default
+in not specified in the system's <strong>dnssec-tools</strong> configuration file, the name
+<strong>default.krf</strong> will be used.  If the <em>-nokrfile</em> option is given, then no
+<em>keyrec</em> file will be consulted or saved.</p>
+<p>The zone file is modified to have include commands, which will include the
+KSK and ZSK keys.  These lines are placed at the end of the file and should
+not be modified by the user.  If the zone file already includes any key files,
+those inclusions will be deleted.  These lines are distinguished by starting
+with ``$INCLUDE'' and end with ``.key''.  Only the actual include lines are
+deleted; any related comment lines are left untouched.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<p>Three types of options may be given, based on the command for which they are
+intended.  These commands are  <em>dnssec-keygen</em>,
+<em>dnssec-signzone</em>, and <em>zonesigner</em>.</p>
+<p>
+</p>
+<h2><a name="zonesignerspecific_options"><em>zonesigner</em>-specific Options</a></h2>
+<dl>
+<dt><strong><a name="item__2dnokrfile">-nokrfile</a></strong><br />
+</dt>
+<dd>
+No <em>keyrec</em> file will be consulted or created.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dkrfile">-krfile</a></strong><br />
+</dt>
+<dd>
+<em>keyrec</em> file to use in processing options.  See the man page for
+<em>Net::DNS::SEC::Tools::tooloptions</em> for more details about this file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dreuseksk">-reuseksk</a></strong><br />
+</dt>
+<dd>
+Re-use the zone's current KSK.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dreusezsk">-reusezsk</a></strong><br />
+</dt>
+<dd>
+Re-use the zone's current ZSK.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dzone">-zone</a></strong><br />
+</dt>
+<dd>
+Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dhelp">-help</a></strong><br />
+</dt>
+<dd>
+Display a usage message.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dverbose">-verbose</a></strong><br />
+</dt>
+<dd>
+Verbose output will be given.  As more instances of <em>-verbose</em> are given on
+the command line, additional levels of verbosity are achieved.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="dnsseckeygenspecific_options"><em>dnssec-keygen</em>-specific Options</a></h2>
+<dl>
+<dt><strong><a name="item__2dalgorithm">-algorithm</a></strong><br />
+</dt>
+<dd>
+Cryptographic algorithm used to generate the zone's keys.
+The default value is RSASHA1.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dksklength">-ksklength</a></strong><br />
+</dt>
+<dd>
+Bit length of the zone's KSK key.
+The default is 1024.
+</dd>
+<p></p>
+<dt><strong><a name="item__2drandom">-random</a></strong><br />
+</dt>
+<dd>
+Source of randomness used to generate the zone's keys.	(/dev/urandom)
+</dd>
+<p></p>
+<dt><strong><a name="item__2dzsklength">-zsklength</a></strong><br />
+</dt>
+<dd>
+Bit length of the zone's ZSK key.
+The default is 512.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dkgopts">-kgopts</a></strong><br />
+</dt>
+<dd>
+Additional options for <em>dnssec-keygen</em> may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the <em>-kgopts</em> option.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="dnssecsignzonespecific_options"><em>dnssec-signzone</em>-specific Options</a></h2>
+<dl>
+<dt><strong><a name="item__2dendtime">-endtime</a></strong><br />
+</dt>
+<dd>
+Time that the zone expires, measured in seconds.  See the man page for
+<em>dnssec-signzone</em> for the valid format of this field.
+The default value is 259200 seconds (30 days.)
+</dd>
+<p></p>
+<dt><strong><a name="item__2dgends">-gends</a></strong><br />
+</dt>
+<dd>
+Force <em>dnssec-signzone</em> to generate DS records for the zone.  This option is
+translated into <em>-g</em> when passed to <em>dnssec-signzone</em>.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dksdir">-ksdir</a></strong><br />
+</dt>
+<dd>
+Specify a directory for storing keysets.  This is passed to <em>dnssec-signzone</em>
+as the <em>-d</em> option.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dszopts">-szopts</a></strong><br />
+</dt>
+<dd>
+Additional options for <em>dnssec-signzone</em> may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the <em>-szopts</em> option.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="examples">Examples</a></h1>
+<p>Example 1.</p>
+<p>In the first example, an existing <em>keyrec</em> file is used to assist in signing
+the portrigh.com domain.  Zone data are stored in <strong>portrigh.com</strong>, and the
+keyrec is in <strong>portrigh.keyrec</strong>.  The output zone file and final signed zone
+file will use <strong>db.portrigh.com</strong> as a base.  Using this execution:</p>
+<pre>
+    # zonesigner -krfile portrigh.keyrec portrigh.com db.portrigh.com</pre>
+<p>the following files are created:</p>
+<pre>
+    Kportrigh.com.+005+45842.private
+    Kportrigh.com.+005+45842.key
+    Kportrigh.com.+005+50186.private
+    Kportrigh.com.+005+50186.key
+    Kportrigh.com.+005+59143.key
+    Kportrigh.com.+005+59143.private</pre>
+<pre>
+    dsset-portrigh.com.
+    keyset-portrigh.com.</pre>
+<pre>
+    db.portrigh.com
+    db.portrigh.com.signed</pre>
+<p>The first six files are the KSK and ZSK keys required for the zone.  The next
+two files are created by the zone-signing process.  The last two are the zone
+file used as input to the zone-signing process and the final signed zone.</p>
+<p>Example 2.</p>
+<p>In the second example, an existing <em>keyrec</em> file is used to assist in signing
+the portrigh.com domain.  Zone data are stored in <strong>portrigh.com</strong>, and the
+keyrec is in <strong>portrigh.keyrec</strong>.  The generated keys, output zone file, and
+final signed zone file will use <strong>portrigh.com</strong> as a base.  Using this
+execution:</p>
+<pre>
+    # zonesigner -krfile portrigh.keyrec db.portrigh.com</pre>
+<p>the following files are created:</p>
+<pre>
+    Kdb.portrigh.com.+005+12354.key
+    Kdb.portrigh.com.+005+12354.private
+    Kdb.portrigh.com.+005+82197.key
+    Kdb.portrigh.com.+005+82197.private
+    Kdb.portrigh.com.+005+55888.key
+    Kdb.portrigh.com.+005+55888.private</pre>
+<pre>
+    dsset-db.portrigh.com.
+    keyset-db.portrigh.com.</pre>
+<pre>
+    db.portrigh.com.signed</pre>
+<p>The first six files are the KSK and ZSK keys required for the zone.  The next
+two files are created by the zone-signing process.  The last file is file is
+the final signed zone.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p>Net::DNS::SEC::Tools::conf.pm(3), Net::DNS::SEC::Tools::keyrec.pm(3), Net::DNS::SEC::Tools::tooloptions.pm(3)</p>
+
+</body>
+
+</html>
