@@ -64,6 +64,7 @@ my @KEYFIELDS = (
 			'keyrec_type',
 			'algorithm',
 			'random',
+			'keypath',		# Only set for obsolete ZSKs.
 			'ksklength',
 			'zsklength',
 			'kgopts',
