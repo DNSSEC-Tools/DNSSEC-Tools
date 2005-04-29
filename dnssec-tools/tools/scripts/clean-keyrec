@@ -24,13 +24,15 @@ use Net::DNS::SEC::Tools::tooloptions;
 my $count   = 0;			# Error-count flag.
 my $list    = 0;			# List-only flag.
 my $quiet   = 0;			# Quiet flag.
+my $remove  = 0;			# Remove key file flag.
 my $verbose = 0;			# Verbose flag.
 my %options = ();			# Filled option array.
 my @opts =
 (
 	"count",			# Give final error count.
-	"quiet",			# Don't give any output.
 	"list",				# Only list orphaned keys, don't delete.
+	"quiet",			# Don't give any output.
+	"rm",				# Remove key file.
 	"verbose",			# Give lotsa output.
 	"help",				# Give a usage message and exit.
 );
@@ -136,6 +138,7 @@ sub optsandargs
 	$count	 = $options{'count'};
 	$list	 = $options{'list'};
 	$quiet	 = $options{'quiet'};
+	$remove	 = $options{'rm'};
 	$verbose = $options{'verbose'};
 
 	usage() if(defined($options{'help'}));
@@ -221,6 +224,7 @@ sub keychecks
 		if(orphankey($keyname))
 		{
 			next if($list);
+			rmkey($keyname) if($remove);
 			keyrec_del($keyname);
 			delete $keys{$keyname};
 		}
@@ -237,7 +241,6 @@ sub keychecks
 	{
 		my $kr;				# Keyrec reference.
 		my %keyrec;			# Keyrec hash.
-		my $zskref;			# ZSK reference.
 
 		$kr = $keys{$keyname};
 		%keyrec = %$kr;
@@ -245,6 +248,7 @@ sub keychecks
 		if($keyrec{'keyrec_type'} eq "zskobs")
 		{
 			next if($list);
+			rmkey($keyname) if($remove);
 			keyrec_del($keyname);
 			$obsoletes++;
 		}
@@ -323,6 +327,34 @@ sub orphankey
 	$orphans++;
 	qprint("orphaned key:  $keyname\n");
 	return(1);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rmkey()
+#
+# Purpose:	This routine deletes the .key and .private file associated
+#		with key specified by the caller.
+#
+sub rmkey
+{
+	my $keyname = shift;			# Keyrec's name.
+	my $keyrec;				# Key's keyrec.
+	my $fname;				# Name of key to be deleted.
+
+	#
+	# Get the key's keyrec and save the its zone name.
+	#
+	$keyrec = $keys{$keyname};
+	$fname	= $keyrec->{'keypath'};
+
+	return if($fname eq "");
+
+	print "\tunlinking $fname\n" if($verbose);
+	unlink($fname);
+	$fname =~ s/key$/private/;
+	print "\tunlinking $fname\n" if($verbose);
+	unlink($fname);
 }
 
 #-----------------------------------------------------------------------------
