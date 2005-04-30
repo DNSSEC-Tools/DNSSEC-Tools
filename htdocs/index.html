@@ -114,23 +114,37 @@
 	</div>
 	<div class="major"><h3>Patches or plugins to other applications:</h3>
 	  <table class="soft">
-	    <tr><td class="tdtitle">Perl module
-	    Net::DNS::ZoneFile::Fast</td><td class="description"> A patch to support parsing
-	      DNSSEC records.</td></tr>
-	    <tr><td class="tdtitle">libspf2 / sendmail</td><td
-	    class="description"> A patch to validate SPF rules
-	      against DNSsec records to ensure lookups within sendmail
-	      are not spoofed DNS records.</td></tr>
-	      <tr><td class="tdtitle">thunderbird</td>
+
+	    <tr><td class="tdtitle">Sendmail / Postfix / libspf</td>
+
+		<td class="description"> A patch to validate SPF
+		rules, incoming connections, etc against DNSsec
+		records to ensure lookups within MTAs are not using
+		spoofed DNS records.</td></tr>
+
+	      <tr><td class="tdtitle">Thunderbird</td>
 		<td class="description">A plugin which automatically
 		displays the DNSSEC validation headers in the
 		Thunderbird E-Mail reader</td>
 	      </tr>
+
 	      <tr><td class="tdtitle">Mozilla</td>
 		<td class="description">A patch which enables DNSSEC
 		validation of DNS lookups in the Mozilla application
 		suite (browser, etc).</td>
 	      </tr>
+
+	      <tr><td class="tdtitle">LogWatch</td>
+		<td class="description">A configuration plugin to
+		logwatch to have logwatch perform DNSSEC parsing of
+		system logging messages from running bind
+		servers.</td>
+	      </tr>
+
+	    <tr><td class="tdtitle">Perl Module:
+	    Net::DNS::ZoneFile::Fast</td><td class="description"> A patch to support parsing
+	      DNSSEC records.</td></tr>
+
 	  </table>
 	</div>
       </ul>
@@ -159,7 +173,7 @@
     <address><a href="mailto:Wes Hardaker <hardaker@users.sourceforge.net>"></a></address>
 <!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
 <!-- hhmts start -->
-Last modified: Fri Apr 29 14:42:42 PDT 2005
+Last modified: Fri Apr 29 21:25:38 PDT 2005
 <!-- hhmts end -->
   </body>
 </html>
