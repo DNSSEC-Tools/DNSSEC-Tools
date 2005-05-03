@@ -1,0 +1,103 @@
+				DNSSEC TOOLS
+
+Introduction
+------------
+
+The zonesigner command provides a simple interface for generating keys and
+signing zones in support of DNSSEC environments.  Zonesigner was designed
+around the procedures given in the Step-by-Step Guide.  As the Guide evolves,
+Zonesigner will evolve to match.
+
+A set of data files accompany zonesigner, as well as a collection of
+additional tools for maintaining these data files.
+
+Files
+-----
+
+In addition to generating keys and signing zones, it maintains information
+on the key-generation and zone-signing processes.  The key table that is
+updated at the end of each section is implemented as a keyrec file.
+
+The keyrec file contains key/value pairs, organized into two main groups.
+Key keyrecs list the parameters by which the keys were generated; zone keyrecs
+list the parameters by which the zone was signed.  Zone keyrecs contain
+references to the keys used to sign the zone, and key keyrecs reference the
+zones to which the keys belong.
+
+(The current implementation assumes that each key is only used by a single
+zone.  This may not be a valid assumption, and things can be fixed if need
+be.)
+
+Keyrec files are text files that can be read and written using normal text
+editors.  However, it is assumed that they will be maintained using the
+dnssec-tools commands.
+
+A keyrec file may contain information on a single zone (and its keys) or on
+multiple zones (and their keys.)
+
+Keyrec files are documented in the source for dnssec-tools/keyrec.pm.
+
+Configuration Files
+-------------------
+
+/usr/local/etc/dnssec/dnssec-tools.conf is a system-wide configuration file
+for the zonesigner family of tools.  An example configuration file follows:
+
+	#
+	# key management tools configuration
+	#
+
+	#
+	# Settings for dnssec-keygen.
+	#
+	algorithm	rsasha1
+	ksklength	1024
+	zsklength	512
+	random		/dev/urandom
+
+	#
+	# Settings for dnssec-signzone.
+	#
+	endtime		+259200		# RRSIGs good for three days.
+
+If zonesigner-related parameters are not specified on the command line or in
+a keyrec file, default values are taken from the configuration file.
+
+(The CVS tree does not currently contain a default config file.  Copy the
+above into /usr/local/etc/dnssec/dnssec-tools.conf by hand until this
+deficiency is rectified.)
+
+Commands
+--------
+
+This following dnssec-tools commands are for use in managing DNSSEC
+environments.  Brief descriptions of these tools are given below.
+
+	zonesigner	Generates a set of keys for a zone and signs the zone
+			with those keys.  This combines the functionality of
+			dnssec-keygen and dnssec-signzone, recording relevant
+			information in a keyrec file.
+
+	keyrec-check	Verifies the validity of a keyrec file.
+
+	lskrf		Lists the contents of a keyrec file.
+
+	fixkrf		Adjusts a keyrec file's data to account for moved
+			encryption key files.
+
+	expchk		Checks a keyrec file for expired zones.
+
+	clean-keyrec	Cleans unreferenced key keyrecs from keyrec files.
+
+Modules
+-------
+
+This following are dnssec-tools Perl modules for use in managing DNSSEC
+environments.  Brief descriptions of these modules are given below.
+
+	conf.pm		Parses configuration files.
+
+	tooloptions.pm	Sets command options, based on the config file,
+			keyrec files, and command line options.
+
+	keyrec.pm	Reads and manipulates keyrec files.
