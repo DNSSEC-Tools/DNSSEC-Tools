@@ -1546,10 +1546,10 @@ Example 1.
 
 In the first example, an existing I<keyrec> file is used to assist in signing
 the example.com domain.  Zone data are stored in B<example.com>, and the
-keyrec is in B<portrigh.keyrec>.  The output zone file and final signed zone
+keyrec is in B<example.keyrec>.  The output zone file and final signed zone
 file will use B<db.example.com> as a base.  Using this execution:
 
-    # zonesigner -krfile portrigh.keyrec example.com db.example.com
+    # zonesigner -krfile example.keyrec example.com db.example.com
 
 the following files are created:
 
@@ -1575,11 +1575,11 @@ Example 2.
 
 In the second example, an existing I<keyrec> file is used to assist in signing
 the example.com domain.  Zone data are stored in B<example.com>, and the
-keyrec is in B<portrigh.keyrec>.  The generated keys, output zone file, and
+keyrec is in B<example.keyrec>.  The generated keys, output zone file, and
 final signed zone file will use B<example.com> as a base.  Using this
 execution:
 
-    # zonesigner -krfile portrigh.keyrec db.example.com
+    # zonesigner -krfile example.keyrec db.example.com
 
 the following files are created:
 
