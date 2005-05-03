@@ -6,6 +6,7 @@
 use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::Donuts::Rule;
+use Net::DNS::SEC::Tools::QWPrimitives;
 use Data::Dumper;
 
 use strict;
@@ -123,6 +124,7 @@ while ($#ARGV > -1) {
     my ($rulesrun, $errorsfound);
     $current_zone_file = shift;
     $current_domain = shift;
+    $current_domain =~ s/\.$//;  # remove potential trailing dot
     %nrecs = ();
 
     #
