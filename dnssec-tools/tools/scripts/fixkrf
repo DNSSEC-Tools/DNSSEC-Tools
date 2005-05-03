@@ -1,0 +1,321 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# fixkrf
+#
+#	This script fixes keyrec files whose encryption key files have
+#	been moved.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my $list    = 0;			# List-only flag.
+my $verbose = 0;			# Verbose flag.
+my %options = ();			# Filled option array.
+my @OPTS =
+(
+	"list",				# List, but don't do anything.
+	"verbose",			# Give lotsa output.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Keys in a zone that we'll check.
+#
+my @ZONEKEYS =
+(
+	"kskpath",
+	"zskcurpath",
+	"zskpubpath",
+	"zsknewpath"
+);
+
+my $krfile = "";			# Keyrec file to check.
+my @dirs = ();				# Directories that may hold key files.
+
+my %missing = ();			# Names of keyrecs with missing keys.
+
+my @krnames;				# List of keyrecs in the file.
+
+my $errors = 0;				# Count of missing key files.
+
+my %zones = ();				# Names of zone keyrecs.
+my %keys = ();				# Names of ZSK keyrecs.
+
+my $USELOC = 1;				# Show location is usage().
+
+main();
+exit(0);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# Purpose:	This is the top-level processing routine for the command.
+#
+sub main
+{
+	my $kr;					# Reference to a keyrec.
+	my $krn;				# Name of a keyrec.
+
+	#
+	# Check our options.
+	#
+	optsandargs();
+
+	#
+	# Read the keyrec file and get a list of the keyrec names.
+	#
+	keyrec_read($krfile);
+	@krnames = keyrec_names();
+
+	#
+	# Go through the keyrecs in the keyrec file and check each one for
+	# valid keys.  We'll go through the file according to the list of
+	# keyrec names.
+	#
+	foreach $krn (@krnames)
+	{
+		#
+		# Get a reference to this name's keyrec.
+		#
+		$kr = keyrec_fullrec($krn);
+
+		#
+		# If this keyrec is a zone, we'll have to check a bunch
+		# of keyrecs.  If it's a key keyrec, we only have to
+		# check a single keyrec.
+		#
+		if($kr->{'keyrec_type'} eq "zone")
+		{
+			print "zone $krn\n" if($verbose);
+
+			#
+			# Go through each type of key in the zone and
+			# check its existence.
+			#
+			foreach my $key (@ZONEKEYS)
+			{
+				my $keyfile;		# Key's path.
+
+				$keyfile = $kr->{$key};
+				next if($keyfile eq "");
+
+				checkkey('zone',$krn,$key,$keyfile);
+			}
+		}
+		else
+		{
+			print "key $krn\n" if($verbose);
+			checkkey('key',$krn,'keypath',$kr->{'keypath'});
+		}
+
+		print "\n" if($verbose);
+	}
+
+	#
+	# Save the keyrec file.
+	#
+	keyrec_write();
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	optsandargs()
+#
+# Purpose:	This routine processes the command's options and arguments.
+#
+sub optsandargs
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@OPTS);
+	$list	 = $options{'list'};
+	$verbose = $options{'verbose'};
+
+	usage(1) if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a keyrec file to check and directories in
+	# which to check.
+	#
+	usage(2) if($argc < 2);
+
+	#
+	# Save the arguments.
+	#
+	$krfile = shift(@ARGV);
+	@dirs = @ARGV;
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	checkkey()
+#
+# Purpose:	
+#
+sub checkkey
+{
+	my $rectype = shift;			# Record type:  key or zone.
+	my $krname  = shift;			# Keyrec name.
+	my $kfield  = shift;			# Keyrec field name.
+	my $keyfile = shift;			# Key file to look for.
+
+	my $cnt;				# Found nodes.
+	my $dir;				# Directory to search.
+	my $node;				# Final node in path.
+	my $path;				# Path = dir + keyname.
+	my @found = ();				# Found directories.
+
+	#
+	# Ensure we were given a real file name.
+	#
+	return if($keyfile eq "");
+
+	#
+	# If the specified file exists, don't look further.
+	#
+	if(-e $keyfile)
+	{
+		print "$keyfile found\n" if($verbose);
+		return;
+	}
+
+	#
+	# Get the node in the given keyfile.
+	#
+	$keyfile =~ /^.*\/(.*)$/;
+	$node = $1;
+
+	#
+	# Look for the key file in each of the user's named directories.
+	#
+	foreach $dir (@dirs)
+	{
+		$path = "$dir/$node";	
+		push(@found,$dir) if(-e $path);
+	}
+
+	#
+	# If we didn't find the key, give an error and return.
+	#
+	$cnt = @found;
+	if($cnt == 0)
+	{
+		print STDERR "$keyfile does not exist\n";
+		$errors++;
+		return;
+	}
+
+	#
+	# If we found a single instance, we'll adjust the keyrec to
+	# reference the found file.
+	#
+	if($cnt == 1)
+	{
+		$path = "$found[0]/$node";
+		keyrec_setval($rectype,$krname,$kfield,$path) if(!$list);
+		print STDERR "$keyfile found, moving to $path\n" if($verbose);
+		return;
+	}
+
+	#
+	# We've found a file with this name in several places.  Give
+	# an error and don't do anything about it.
+	#
+	print STDERR "\"$keyfile\" exists in multiple directories (@found);\nnot doing anything...\n";
+	$errors++;
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	my $loc = shift;				# Call location.
+
+	print STDERR "usage:  fixkrf [options] <keyrec file> <dir 1> ... <dir N>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-list	    -  give output, but don't fix the keyrec\n";
+	print STDERR "\t\t-verbose  -  give lots of output\n";
+	print STDERR "\t\t-help     -  give a usage message and exit\n";
+
+	print "\ncalled from $loc\n" if($USELOC);
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+fixkrf - Clean a B<dnssec-tools> I<keyrec> file of orphaned keys.
+
+=head1 SYNOPSIS
+
+  fixkrf [options] <keyrec-file> <dir 1> ... <dir N>
+
+    options:
+	-list	  -  only give output, don't fix the keyrec file
+	-verbose  -  give lots of output
+	-help     -  give a usage message and exit
+
+=head1 DESCRIPTION
+
+This script checks a specified I<keyrec> file to ensure that the referenced
+encryption key files exist where listed.  If a key is not where the I<keyrec>
+specifies it should be, then I<fixkrf> will search the given directories for
+those keys and adjust the I<keyrec> to match reality.  If a key of a
+particular filename is found in multiple places, a warning will be printed
+and the I<keyrec> file will not be changed for that key.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -list
+
+Display output about missing keys, but don't fix the I<keyrec> file.
+
+=item -verbose
+
+Display output about found keys as well as missing keys.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::keyrec.pm(3)
+
+=cut
