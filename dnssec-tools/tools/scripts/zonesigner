@@ -166,6 +166,16 @@ sub main
 	}
 
 	#
+	# Ensure the zone file is okay before proceeding.
+	#
+	print "checking zone before doing anything\n" if($verbose);
+	$status = system("$checkzone $zone $zone");
+	if($status != 0)
+	{
+		exit(3);
+	}
+
+	#
 	# Ensure that the required data were specified.
 	#
 	if(($zone eq "") || ($zoneout eq ""))
@@ -485,7 +495,7 @@ sub genkeys
 #
 sub genksk
 {
-	my $cmdopts;			# Options for dnssec-signzone.
+	my $cmdopts;			# Options for dnssec-keygen.
 	my $zskdir;			# ZSK directory for saving.
 
 	#
@@ -548,7 +558,7 @@ sub genksk
 #
 sub genzsk
 {
-	my $cmdopts;			# Options for dnssec-signzone.
+	my $cmdopts;			# Options for dnssec-keygen.
 	my $keytype = shift;		# ZSK type:  cur, new, pub.
 	my $kskdir;			# KSK directory for saving.
 	my $zskkey;			# Hash key for this ZSK.
@@ -1349,12 +1359,12 @@ sub helpchk
 
 	for($ind=0; $ind<$argc; $ind++)
 	{
-		$arg = $ARGV[$ind];
+		my $arg = $ARGV[$ind];
 
-		if(($arg eq "-h)	|| ($arg eq "--h)	||
-		   ($arg eq "-he)	|| ($arg eq "--he)	||
-		   ($arg eq "-hel)	|| ($arg eq "--hel)	||
-		   ($arg eq "-help)	|| ($arg eq "--help))
+		if(($arg eq "-h")	|| ($arg eq "--h")	||
+		   ($arg eq "-he")	|| ($arg eq "--he")	||
+		   ($arg eq "-hel")	|| ($arg eq "--hel")	||
+		   ($arg eq "-help")	|| ($arg eq "--help"))
 		{
 			usage(1);
 		}
