@@ -18,9 +18,9 @@ Index: configure
 ===================================================================
 RCS file: /cvsroot/mozilla/configure,v
 retrieving revision 1.1304.2.6
-diff -u -r1.1304.2.6 configure
+diff -u -u -r1.1304.2.6 configure
 --- configure	5 Jun 2004 18:44:52 -0000	1.1304.2.6
-+++ configure	20 Apr 2005 04:07:07 -0000
++++ configure	4 May 2005 23:02:48 -0000
 @@ -41,6 +41,15 @@
    --with-nspr-exec-prefix=PFX
                            Exec prefix where NSPR is installed"
@@ -5440,9 +5440,9 @@ Index: configure.in
 ===================================================================
 RCS file: /cvsroot/mozilla/configure.in,v
 retrieving revision 1.1335.2.7
-diff -u -r1.1335.2.7 configure.in
+diff -u -u -r1.1335.2.7 configure.in
 --- configure.in	26 May 2004 02:25:16 -0000	1.1335.2.7
-+++ configure.in	20 Apr 2005 04:07:13 -0000
++++ configure.in	4 May 2005 23:02:53 -0000
 @@ -2983,6 +2983,58 @@
  fi
  
@@ -5527,9 +5527,9 @@ Index: config/autoconf.mk.in
 ===================================================================
 RCS file: /cvsroot/mozilla/config/autoconf.mk.in,v
 retrieving revision 3.310
-diff -u -r3.310 autoconf.mk.in
+diff -u -u -r3.310 autoconf.mk.in
 --- config/autoconf.mk.in	21 Mar 2004 02:31:17 -0000	3.310
-+++ config/autoconf.mk.in	20 Apr 2005 04:07:13 -0000
++++ config/autoconf.mk.in	4 May 2005 23:02:53 -0000
 @@ -341,12 +341,14 @@
  GTK_CONFIG	= @GTK_CONFIG@
  TK_CFLAGS	= @TK_CFLAGS@
@@ -5549,9 +5549,9 @@ Index: docshell/base/nsDocShell.cpp
 ===================================================================
 RCS file: /cvsroot/mozilla/docshell/base/nsDocShell.cpp,v
 retrieving revision 1.584.2.1
-diff -u -r1.584.2.1 nsDocShell.cpp
+diff -u -u -r1.584.2.1 nsDocShell.cpp
 --- docshell/base/nsDocShell.cpp	15 Jun 2004 08:18:32 -0000	1.584.2.1
-+++ docshell/base/nsDocShell.cpp	20 Apr 2005 04:07:17 -0000
++++ docshell/base/nsDocShell.cpp	4 May 2005 23:02:55 -0000
 @@ -2544,6 +2544,15 @@
          formatStrCount = 1;
          error.Assign(NS_LITERAL_STRING("dnsNotFound"));
@@ -5572,9 +5572,9 @@ Index: docshell/base/nsWebShell.cpp
 ===================================================================
 RCS file: /cvsroot/mozilla/docshell/base/nsWebShell.cpp,v
 retrieving revision 1.632.2.1
-diff -u -r1.632.2.1 nsWebShell.cpp
+diff -u -u -r1.632.2.1 nsWebShell.cpp
 --- docshell/base/nsWebShell.cpp	15 Jun 2004 08:18:32 -0000	1.632.2.1
-+++ docshell/base/nsWebShell.cpp	20 Apr 2005 04:07:17 -0000
++++ docshell/base/nsWebShell.cpp	4 May 2005 23:02:56 -0000
 @@ -951,6 +951,7 @@
  
      // Errors to be shown only on top-level frames
@@ -5587,9 +5587,9 @@ Index: docshell/resources/locale/en-US/appstrings.properties
 ===================================================================
 RCS file: /cvsroot/mozilla/docshell/resources/locale/en-US/Attic/appstrings.properties,v
 retrieving revision 1.8
-diff -u -r1.8 appstrings.properties
+diff -u -u -r1.8 appstrings.properties
 --- docshell/resources/locale/en-US/appstrings.properties	7 Nov 2003 22:35:49 -0000	1.8
-+++ docshell/resources/locale/en-US/appstrings.properties	20 Apr 2005 04:07:17 -0000
++++ docshell/resources/locale/en-US/appstrings.properties	4 May 2005 23:02:56 -0000
 @@ -20,6 +20,7 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=The file %S cannot be found. Please check the location and try again.
@@ -5602,9 +5602,9 @@ Index: docshell/resources/locale/en-US/netError.dtd
 ===================================================================
 RCS file: /cvsroot/mozilla/docshell/resources/locale/en-US/Attic/netError.dtd,v
 retrieving revision 1.3
-diff -u -r1.3 netError.dtd
+diff -u -u -r1.3 netError.dtd
 --- docshell/resources/locale/en-US/netError.dtd	9 Jan 2003 18:17:04 -0000	1.3
-+++ docshell/resources/locale/en-US/netError.dtd	20 Apr 2005 04:07:17 -0000
++++ docshell/resources/locale/en-US/netError.dtd	4 May 2005 23:02:56 -0000
 @@ -14,6 +14,9 @@
  <!ENTITY dnsNotFound.title "Address Not Found Error">
  <!ENTITY dnsNotFound.longDesc "The address (URL) does not correspond to a known site and could not be loaded. This could be due to a misspelling in the address or because the site does not exist. If the address is known to be valid, or if the problem occurs for many sites, it may be an issue with your proxy service (if you use one) or the directory name service lookup. In such cases you should consult your system documentation, administrator or Internet Service Provider (ISP) as appropriate for further assistance.">
@@ -5619,9 +5619,9 @@ Index: embedding/browser/gtk/src/Makefile.in
 ===================================================================
 RCS file: /cvsroot/mozilla/embedding/browser/gtk/src/Makefile.in,v
 retrieving revision 1.46
-diff -u -r1.46 Makefile.in
+diff -u -u -r1.46 Makefile.in
 --- embedding/browser/gtk/src/Makefile.in	8 Apr 2004 19:18:25 -0000	1.46
-+++ embedding/browser/gtk/src/Makefile.in	20 Apr 2005 04:07:24 -0000
++++ embedding/browser/gtk/src/Makefile.in	4 May 2005 23:03:01 -0000
 @@ -86,6 +86,7 @@
  
  XP_LIBS		+= \
@@ -5634,9 +5634,9 @@ Index: embedding/browser/photon/src/Makefile.in
 ===================================================================
 RCS file: /cvsroot/mozilla/embedding/browser/photon/src/Makefile.in,v
 retrieving revision 1.23.2.1
-diff -u -r1.23.2.1 Makefile.in
+diff -u -u -r1.23.2.1 Makefile.in
 --- embedding/browser/photon/src/Makefile.in	12 May 2004 16:54:19 -0000	1.23.2.1
-+++ embedding/browser/photon/src/Makefile.in	20 Apr 2005 04:07:24 -0000
++++ embedding/browser/photon/src/Makefile.in	4 May 2005 23:03:01 -0000
 @@ -81,6 +81,7 @@
  XP_LIBS		+= \
  		$(PNG_LIBS) \
@@ -5649,9 +5649,9 @@ Index: modules/libpr0n/build/Makefile.in
 ===================================================================
 RCS file: /cvsroot/mozilla/modules/libpr0n/build/Makefile.in,v
 retrieving revision 1.7
-diff -u -r1.7 Makefile.in
+diff -u -u -r1.7 Makefile.in
 --- modules/libpr0n/build/Makefile.in	7 Jan 2004 13:36:42 -0000	1.7
-+++ modules/libpr0n/build/Makefile.in	20 Apr 2005 04:07:37 -0000
++++ modules/libpr0n/build/Makefile.in	4 May 2005 23:03:23 -0000
 @@ -72,6 +72,7 @@
  EXTRA_DSO_LDOPTS = \
  		$(LIBS_DIR) \
@@ -5664,9 +5664,9 @@ Index: netwerk/base/public/nsNetError.h
 ===================================================================
 RCS file: /cvsroot/mozilla/netwerk/base/public/nsNetError.h,v
 retrieving revision 1.4
-diff -u -r1.4 nsNetError.h
+diff -u -u -r1.4 nsNetError.h
 --- netwerk/base/public/nsNetError.h	11 Sep 2003 20:32:14 -0000	1.4
-+++ netwerk/base/public/nsNetError.h	20 Apr 2005 04:07:37 -0000
++++ netwerk/base/public/nsNetError.h	4 May 2005 23:03:23 -0000
 @@ -244,6 +244,9 @@
  #define NS_ERROR_UNKNOWN_HOST \
      NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 30)
@@ -5681,9 +5681,9 @@ Index: netwerk/base/src/nsSocketTransport2.cpp
 ===================================================================
 RCS file: /cvsroot/mozilla/netwerk/base/src/nsSocketTransport2.cpp,v
 retrieving revision 1.18.14.1
-diff -u -r1.18.14.1 nsSocketTransport2.cpp
+diff -u -u -r1.18.14.1 nsSocketTransport2.cpp
 --- netwerk/base/src/nsSocketTransport2.cpp	30 Apr 2004 19:29:45 -0000	1.18.14.1
-+++ netwerk/base/src/nsSocketTransport2.cpp	20 Apr 2005 04:07:37 -0000
++++ netwerk/base/src/nsSocketTransport2.cpp	4 May 2005 23:03:23 -0000
 @@ -1135,6 +1135,7 @@
          mCondition != NS_ERROR_PROXY_CONNECTION_REFUSED &&
          mCondition != NS_ERROR_NET_TIMEOUT &&
@@ -5707,9 +5707,9 @@ Index: netwerk/dns/src/nsDNSService2.cpp
 ===================================================================
 RCS file: /cvsroot/mozilla/netwerk/dns/src/nsDNSService2.cpp,v
 retrieving revision 1.6.2.1
-diff -u -r1.6.2.1 nsDNSService2.cpp
+diff -u -u -r1.6.2.1 nsDNSService2.cpp
 --- netwerk/dns/src/nsDNSService2.cpp	20 Apr 2004 18:28:53 -0000	1.6.2.1
-+++ netwerk/dns/src/nsDNSService2.cpp	20 Apr 2005 04:07:37 -0000
++++ netwerk/dns/src/nsDNSService2.cpp	4 May 2005 23:03:23 -0000
 @@ -111,6 +111,10 @@
      }
      else {
@@ -5725,9 +5725,9 @@ Index: netwerk/dns/src/nsHostResolver.cpp
 ===================================================================
 RCS file: /cvsroot/mozilla/netwerk/dns/src/nsHostResolver.cpp,v
 retrieving revision 1.7.2.2
-diff -u -r1.7.2.2 nsHostResolver.cpp
+diff -u -u -r1.7.2.2 nsHostResolver.cpp
 --- netwerk/dns/src/nsHostResolver.cpp	21 Apr 2004 04:56:25 -0000	1.7.2.2
-+++ netwerk/dns/src/nsHostResolver.cpp	20 Apr 2005 04:07:37 -0000
++++ netwerk/dns/src/nsHostResolver.cpp	4 May 2005 23:03:24 -0000
 @@ -53,6 +53,7 @@
  #include "pratom.h"
  #include "prthread.h"
@@ -5768,9 +5768,9 @@ Index: nsprpub/configure
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/configure,v
 retrieving revision 1.78.2.82.2.1
-diff -u -r1.78.2.82.2.1 configure
+diff -u -u -r1.78.2.82.2.1 configure
 --- nsprpub/configure	16 Apr 2004 22:28:02 -0000	1.78.2.82.2.1
-+++ nsprpub/configure	20 Apr 2005 04:07:38 -0000
++++ nsprpub/configure	4 May 2005 23:03:24 -0000
 @@ -42,6 +42,15 @@
    --enable-macos-target=VER (default=10.1)
                            Set the minimum MacOS version needed at runtime"
@@ -6973,9 +6973,9 @@ Index: nsprpub/configure.in
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/configure.in,v
 retrieving revision 1.83.2.82.2.1
-diff -u -r1.83.2.82.2.1 configure.in
+diff -u -u -r1.83.2.82.2.1 configure.in
 --- nsprpub/configure.in	16 Apr 2004 22:28:02 -0000	1.83.2.82.2.1
-+++ nsprpub/configure.in	20 Apr 2005 04:07:39 -0000
++++ nsprpub/configure.in	4 May 2005 23:03:25 -0000
 @@ -1897,6 +1897,56 @@
  dnl AC_CHECK_LIB(thread, main)
  dnl AC_CHECK_LIB(vms_jackets, main)
@@ -7045,9 +7045,9 @@ Index: nsprpub/config/autoconf.mk.in
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/config/autoconf.mk.in,v
 retrieving revision 1.25.2.6
-diff -u -r1.25.2.6 autoconf.mk.in
+diff -u -u -r1.25.2.6 autoconf.mk.in
 --- nsprpub/config/autoconf.mk.in	22 Mar 2003 15:28:52 -0000	1.25.2.6
-+++ nsprpub/config/autoconf.mk.in	20 Apr 2005 04:07:41 -0000
++++ nsprpub/config/autoconf.mk.in	4 May 2005 23:03:26 -0000
 @@ -34,6 +34,7 @@
  
  LIBNSPR		= @LIBNSPR@
@@ -7060,9 +7060,9 @@ Index: nsprpub/pr/include/prerr.h
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/pr/include/prerr.h,v
 retrieving revision 3.7.4.1
-diff -u -r3.7.4.1 prerr.h
+diff -u -u -r3.7.4.1 prerr.h
 --- nsprpub/pr/include/prerr.h	20 Jan 2003 20:10:28 -0000	3.7.4.1
-+++ nsprpub/pr/include/prerr.h	20 Apr 2005 04:07:41 -0000
++++ nsprpub/pr/include/prerr.h	4 May 2005 23:03:26 -0000
 @@ -1,40 +1,3 @@
 -/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 -/* 
@@ -7123,9 +7123,9 @@ Index: nsprpub/pr/src/misc/prerr.c
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/pr/src/misc/prerr.c,v
 retrieving revision 3.7.4.2
-diff -u -r3.7.4.2 prerr.c
+diff -u -u -r3.7.4.2 prerr.c
 --- nsprpub/pr/src/misc/prerr.c	20 Jan 2003 20:10:35 -0000	3.7.4.2
-+++ nsprpub/pr/src/misc/prerr.c	20 Apr 2005 04:07:41 -0000
++++ nsprpub/pr/src/misc/prerr.c	4 May 2005 23:03:26 -0000
 @@ -1,37 +1,3 @@
 -/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 2 -*- */
 -/* 
@@ -7182,9 +7182,9 @@ Index: nsprpub/pr/src/misc/prerr.et
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/pr/src/misc/prerr.et,v
 retrieving revision 3.4.132.2
-diff -u -r3.4.132.2 prerr.et
+diff -u -u -r3.4.132.2 prerr.et
 --- nsprpub/pr/src/misc/prerr.et	20 Jan 2003 20:10:36 -0000	3.4.132.2
-+++ nsprpub/pr/src/misc/prerr.et	20 Apr 2005 04:07:41 -0000
++++ nsprpub/pr/src/misc/prerr.et	4 May 2005 23:03:26 -0000
 @@ -129,6 +129,7 @@
  ec PR_CONNECT_ABORTED_ERROR,    "Connection aborted"
  ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
@@ -7197,9 +7197,9 @@ Index: nsprpub/pr/src/misc/prerr.properties
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/pr/src/misc/prerr.properties,v
 retrieving revision 3.5.4.1
-diff -u -r3.5.4.1 prerr.properties
+diff -u -u -r3.5.4.1 prerr.properties
 --- nsprpub/pr/src/misc/prerr.properties	20 Jan 2003 20:10:37 -0000	3.5.4.1
-+++ nsprpub/pr/src/misc/prerr.properties	20 Apr 2005 04:07:41 -0000
++++ nsprpub/pr/src/misc/prerr.properties	4 May 2005 23:03:26 -0000
 @@ -1,36 +1,3 @@
 -# 
 -# The contents of this file are subject to the Mozilla Public
@@ -7247,21 +7247,51 @@ Index: nsprpub/pr/src/misc/prnetdb.c
 ===================================================================
 RCS file: /cvsroot/mozilla/nsprpub/pr/src/misc/prnetdb.c,v
 retrieving revision 3.21.2.20
-diff -u -r3.21.2.20 prnetdb.c
+diff -u -u -r3.21.2.20 prnetdb.c
 --- nsprpub/pr/src/misc/prnetdb.c	22 Jan 2004 22:22:37 -0000	3.21.2.20
-+++ nsprpub/pr/src/misc/prnetdb.c	20 Apr 2005 04:07:41 -0000
-@@ -36,6 +36,10 @@
++++ nsprpub/pr/src/misc/prnetdb.c	4 May 2005 23:03:27 -0000
+@@ -36,6 +36,11 @@
  
  #include <string.h>
  
 +#ifdef MOZ_DNSSEC
 +#include <val_api.h>
++#include <val_errors.h>
 +#endif
 +
  /*
   * On Unix, the error code for gethostbyname() and gethostbyaddr()
   * is returned in the global variable h_errno, instead of the usual
-@@ -626,6 +630,38 @@
+@@ -63,8 +68,8 @@
+  * - _PR_HAVE_GETHOST_R_POINTER: the gethostbyXXX_r functions return
+  *   a struct hostent* pointer.  For example, Solaris and IRIX.
+  */
+-#if defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
+-    || defined(_PR_HAVE_THREADSAFE_GETHOST)
++#if (defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
++     || defined(_PR_HAVE_THREADSAFE_GETHOST)) && !defined(MOZ_DNSSEC)
+ #define _PR_NO_DNS_LOCK
+ #endif
+ 
+@@ -418,7 +423,7 @@
+ 	 (void)setnetconfig();
+ #endif
+ #endif
+-#if !defined(_PR_NO_DNS_LOCK)
++#if !defined(_PR_NO_LOCK_DNS)
+ 	_pr_dnsLock = PR_NewLock();
+ #endif
+ #if !defined(_PR_HAVE_GETPROTO_R)
+@@ -431,7 +436,7 @@
+ 
+ void _PR_CleanupNet(void)
+ {
+-#if !defined(_PR_NO_DNS_LOCK)
++#if !defined(_PR_NO_LOCK_DNS)
+     if (_pr_dnsLock) {
+         PR_DestroyLock(_pr_dnsLock);
+         _pr_dnsLock = NULL;
+@@ -626,6 +631,47 @@
  }
  #endif /* !defined(_PR_HAVE_GETPROTO_R) */
  
@@ -7278,12 +7308,21 @@ diff -u -r3.21.2.20 prnetdb.c
 +    struct hostent *hentry = NULL;
 +    
 +    fprintf(stderr, "validating: %s\n", domain_name);
++    if (strcmp(domain_name, "localhost") == 0)
++        return DNSSEC_SUCCESS;
++    
 +    hentry = val_gethostbyname(domain_name, &dnssec_status);
++    fprintf(stderr,
++            "dnssec_validate: hentry=%x line=%d host=%s h_errno=%d status=%d\n",
++            hentry, __LINE__, domain_name, h_errno, dnssec_status);
 +
 +    if (hentry != NULL) {
 +      return DNSSEC_SUCCESS;
 +    }
 +    
++    fprintf(stderr, "**********************************************************************\n");
++    fprintf(stderr, "**********************************************************************\n");
++    fprintf(stderr, "**********************************************************************\n");
 +    fprintf(stderr, "  error '%d:%s' on: %s\n", dnssec_status,
 +            p_val_error(dnssec_status), domain_name);
 +    return DNSSEC_FAILURE;
@@ -7300,15 +7339,61 @@ diff -u -r3.21.2.20 prnetdb.c
  /*
   * #################################################################
   * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -674,6 +710,7 @@
+@@ -636,8 +682,12 @@
+  */
+ #if defined(_PR_HAVE_GETHOST_R_INT)
+ 
++#ifdef MOZ_DNSSEC
++#define GETHOSTBYNAME(name) val_gethostbyname(name, &dnssec_status)
++#else
+ #define GETHOSTBYNAME(name) \
+     (gethostbyname_r(name, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
++#endif
+ #define GETHOSTBYNAME2(name, af) \
+     (gethostbyname2_r(name, af, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
+ #define GETHOSTBYADDR(addr, addrlen, af) \
+@@ -646,8 +696,12 @@
+ 
+ #elif defined(_PR_HAVE_GETHOST_R_POINTER)
+ 
++#ifdef MOZ_DNSSEC
++#define GETHOSTBYNAME(name) val_gethostbyname(name, &dnssec_status)
++#else
+ #define GETHOSTBYNAME(name) \
+     gethostbyname_r(name, &tmphe, tmpbuf, bufsize, &h_err)
++#endif
+ #define GETHOSTBYNAME2(name, af) \
+     gethostbyname2_r(name, af, &tmphe, tmpbuf, bufsize, &h_err)
+ #define GETHOSTBYADDR(addr, addrlen, af) \
+@@ -655,7 +709,11 @@
+ 
+ #else
+ 
++#ifdef MOZ_DNSSEC
++#define GETHOSTBYNAME(name) val_gethostbyname(name, &dnssec_status)
++#else
+ #define GETHOSTBYNAME(name) gethostbyname(name)
++#endif
+ #define GETHOSTBYNAME2(name, af) gethostbyname2(name, af)
+ #define GETHOSTBYADDR(addr, addrlen, af) gethostbyaddr(addr, addrlen, af)
+ 
+@@ -669,11 +727,14 @@
+ #if defined(_PR_HAVE_GETHOST_R)
+     char localbuf[PR_NETDB_BUF_SIZE];
+     char *tmpbuf;
+-    struct hostent tmphe;
+     int h_err;
  #endif
++#ifdef MOZ_DNSSEC
++    int dnssec_status = 0;
++#endif
  
      if (!_pr_initialized) _PR_ImplicitInitialization();
 +    fprintf(stderr, "pr_gethostbyname: %d %s\n", __LINE__, name);
  
  #if defined(_PR_HAVE_GETHOST_R)
      tmpbuf = localbuf;
-@@ -695,8 +732,15 @@
+@@ -695,10 +756,24 @@
  #else
      h = GETHOSTBYNAME(name);
  #endif
@@ -7316,17 +7401,26 @@ diff -u -r3.21.2.20 prnetdb.c
 -	if (NULL == h)
 +
 +    /* XXX */
-+    fprintf(stderr, "gethostbyname: %d %s\n", __LINE__, name);
-+    if (!dnssec_validate(name))
-+    {
-+        /* DNSsec validation failed */
-+        PR_SetError(PR_DNSSEC_VALIDATION_ERROR, _MD_ERRNO());
-+        PR_SetErrorText(0, "Host DNSsec validation failed");
-+    } else if (NULL == h)
++    fprintf(stderr, "gethostbyname: line=%d host=%s h_errno=%d status=%d\n",
++            __LINE__, name, h_errno, dnssec_status);
++    if (NULL == h)
  	{
++#ifdef MOZ_DNSSEC
++      if (dnssec_status != VALIDATE_SUCCESS) {
++        fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
++        fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
++        fprintf(stderr, "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
++        PR_SetError(PR_DNSSEC_VALIDATION_ERROR, dnssec_status);
++        PR_SetErrorText(0, p_val_error(dnssec_status));
++      } else
++#endif
++      {
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_GETHOST_ERRNO());
++      }
  	}
-@@ -823,6 +867,7 @@
+ 	else
+ 	{
+@@ -823,6 +898,7 @@
      PRBool did_af_inet = PR_FALSE;
  #endif
  
@@ -7334,7 +7428,7 @@ diff -u -r3.21.2.20 prnetdb.c
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
      if (af != PR_AF_INET && af != PR_AF_INET6) {
-@@ -1012,6 +1057,7 @@
+@@ -1012,6 +1088,7 @@
  	int error_num;
  #endif
  
@@ -7342,7 +7436,7 @@ diff -u -r3.21.2.20 prnetdb.c
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1780,16 +1826,27 @@
+@@ -1780,17 +1857,30 @@
          PR_ASSERT(0 == rv);
          /* clean up after the failed inet_pton() call */
          memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
@@ -7357,6 +7451,7 @@ diff -u -r3.21.2.20 prnetdb.c
 -            PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
 +        /* XXX */
 +        fprintf(stderr, "inet_pton: %d %s\n", __LINE__, string);
++        LOCK_DNS();
 +        if (!dnssec_validate(string)) {
 +            /* DNSsec validation failed */
 +            fprintf(stderr, "inet_pton: returning failure %d %s\n",
@@ -7377,42 +7472,86 @@ diff -u -r3.21.2.20 prnetdb.c
 +                status = PR_FAILURE;
 +            }
          }
++        UNLOCK_DNS();
      }
  #else /* _PR_HAVE_INET_NTOP */
-@@ -2043,6 +2100,7 @@
+     rv = StringToV6Addr(string, &addr->ipv6.ip);
+@@ -1937,6 +2027,7 @@
+ #if defined(_PR_INET6)
+ 
+ typedef struct addrinfo PRADDRINFO;
++
+ #define GETADDRINFO getaddrinfo
+ #define FREEADDRINFO freeaddrinfo
+ 
+@@ -2043,8 +2134,12 @@
          PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
          return NULL;
      }
 +    fprintf(stderr, "gethostbyname: %d %s\n", __LINE__, hostname);
      rv = PR_GetHostByName(hostname, ai->buf, sizeof ai->buf, &ai->hostent);
      if (rv == PR_FAILURE) {
++      fprintf(stderr, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
++      fprintf(stderr, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
++      fprintf(stderr, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@*\n");
          PR_Free(ai);
-@@ -2081,6 +2139,18 @@
+         return NULL;
+     }
+@@ -2081,6 +2176,21 @@
           * RFC 3493.
           */
  
 +        /* XXX */
 +        fprintf(stderr, "getaddrinfo: %d %s\n", __LINE__, hostname);
 +
++        LOCK_DNS();
 +        if (!dnssec_validate(hostname)) {
 +            /* DNSsec validation failed */
 +            PR_SetErrorText(0, "Host DNSsec validation failed");
 +            PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
 +            fprintf(stderr, "inet_pton: returning failure %d %s\n",
 +                    __LINE__, hostname);
++            UNLOCK_DNS();
 +            return NULL;
 +        }
++        UNLOCK_DNS();
 +
          memset(&hints, 0, sizeof(hints));
          hints.ai_flags = AI_CANONNAME;
          hints.ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
+@@ -2095,9 +2205,22 @@
+         hints.ai_socktype = SOCK_STREAM;
+ 
+         rv = GETADDRINFO(hostname, NULL, &hints, &res);
+-        if (rv == 0)
+-            return (PRAddrInfo *) res;
+-
++        if (rv == EAI_AGAIN) {
++          /* temporary failure...  odd...  try again? */
++          PR_Sleep(1000);
++          fprintf(stderr, "getaddrinfo reted/trying again: %d %d %d\n",
++                  __LINE__, rv, res);
++          rv = GETADDRINFO(hostname, NULL, &hints, &res);
++        }
++        fprintf(stderr, "getaddrinfo reted: %d %d %d\n", __LINE__, rv, res);
++        if (rv == 0) {
++          return (PRAddrInfo *) res;
++        }
++
++        fprintf(stderr, "getaddrinfo failed: %d %d\n", __LINE__, rv);
++        fprintf(stderr, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*\n");
++        fprintf(stderr, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*\n");
++        fprintf(stderr, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&*\n");
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
+     }
+     return NULL;
 Index: xpfe/bootstrap/Makefile.in
 ===================================================================
 RCS file: /cvsroot/mozilla/xpfe/bootstrap/Makefile.in,v
 retrieving revision 1.259
-diff -u -r1.259 Makefile.in
+diff -u -u -r1.259 Makefile.in
 --- xpfe/bootstrap/Makefile.in	10 Apr 2004 22:54:43 -0000	1.259
-+++ xpfe/bootstrap/Makefile.in	20 Apr 2005 04:07:56 -0000
++++ xpfe/bootstrap/Makefile.in	4 May 2005 23:04:04 -0000
 @@ -178,6 +178,10 @@
  LIBS += -lboehm
  endif
