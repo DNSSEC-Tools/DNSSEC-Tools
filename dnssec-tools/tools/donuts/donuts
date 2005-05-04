@@ -275,7 +275,7 @@ sub parse_rule_file {
 	    }
 	} elsif (/^\s*help:\s*(\w+):\s*(.*)/) {
 	    push @{$rule->{'help'}}, { token => $1, description => $2 };
-	} elsif (/^\s*(\w+):\s*(.*)/) {
+	} elsif (/^\s*(\w+):\s*(.*\S)\s*$/) {
 	    $rule->{$1} = $2;
 	} elsif (!/^\s*$/) {
 	    print STDERR "illegal rule in $file:$count for rule $rule->{name}";
