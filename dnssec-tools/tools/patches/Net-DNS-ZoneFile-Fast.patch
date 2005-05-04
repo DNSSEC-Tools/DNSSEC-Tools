@@ -1,5 +1,5 @@
 --- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
-+++ Fast.pm	2005-04-19 20:38:58.000000000 -0700
++++ Fast.pm	2005-05-04 10:28:34.946877608 -0700
 @@ -15,6 +15,7 @@
  use vars qw($VERSION);
  use IO::File;
@@ -81,7 +81,7 @@
  	} elsif (/^\$origin[ \t]+/ig) {
  		if (/\G($pat_maybefullname)$pat_skip$/gc) {
  			my $name = $1;
-@@ -526,6 +549,108 @@
+@@ -526,6 +549,111 @@
  		} else {
  			error("bad SRV data");
  		}
@@ -111,6 +111,7 @@
 +		$rrsig->{'keytag'} = $2;
 +		$rrsig->{'signame'} = $3;
 +		$rrsig->{'sig'} = $4;
++		$rrsig->{'sigbin'} = decode_base64($rrsig->{'sig'});
 +		push @zone, $rrsig;
 +		$rrsig = undef;
 +	    } else {
@@ -182,7 +183,9 @@
 +		       ttl       => $ttl,
 +		       type      => "NSEC",
 +		       nxtdname  => lc($1),
-+		       typelist  => $2
++		       typelist  => $2,
++		       typebm    =>
++		       Net::DNS::RR::NSEC::_typestr2typebm(split(/\s+/,$2)),
 +		      };
 +		} else {
 +			error("bad NSEC data");
@@ -190,7 +193,7 @@
  	} elsif (/\G(rp)[ \t]+/igc) {
  		my $mbox;
  		if (/\G($pat_maybefullname)[ \t]+/gc) {
-@@ -562,6 +687,8 @@
+@@ -562,6 +690,8 @@
  			mbox     => $mbox,
  			txtdname => $txtdname,
  		};
@@ -199,7 +202,7 @@
  	} else {
  		error("unrecognized type");
  	}
-@@ -634,6 +761,90 @@
+@@ -634,6 +764,91 @@
  	return $v;
  }
  
@@ -219,6 +222,7 @@
 +	if (/\)\s*$/) {
 +	    if (/\G\s*(\S+)\s*\)\s*$/gc) {
 +		$rrsig->{'sig'} .= $1;
++		$rrsig->{'sigbin'} = decode_base64($rrsig->{'sig'});
 +		# we're done
 +		$parse = \&parse_line;
 +
@@ -290,7 +294,7 @@
  sub parse_soa_number
  {
  	error("parse_soa_number: internal error, no \$soa") unless $soa;
-@@ -774,6 +985,8 @@
+@@ -774,6 +989,8 @@
  
  =item B<$TTL> directive
  
@@ -299,7 +303,7 @@
  =item B<A> records
  
  =item B<AAAA> records
-@@ -798,6 +1011,16 @@
+@@ -798,6 +1015,16 @@
  
  =item B<TXT> records
  
