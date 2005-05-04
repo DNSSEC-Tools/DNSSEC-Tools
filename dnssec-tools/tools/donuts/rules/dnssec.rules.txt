@@ -17,6 +17,7 @@ test:
 # pointing to them)
 #
 name: DNSSEC_MEMORIZE_NS_RECORDS
+internal: yes
 level: 3
 type: NS
 test:
@@ -138,6 +139,7 @@ test:
 
 name: DNSSEC_BOGUS_NS_MEMORIZE
 level: 1
+internal: yes
 type: NS
 test:
   if ($current_domain ne $_[0]->{name}) {
@@ -286,6 +288,27 @@ desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.2: An RRSIG RR itself MUST
 test:
   "RRSIG records must not be signed but a signature for a RRSIG on $_[0]{name} is."
     if ($_[0]->typecovered eq 'RRSIG');
+
+name: DNSSEC_MEMORIZE_KEYS
+type: DNSKEY
+internal: yes
+test:
+  push @{$donuts::dnskeys}, $_[0];
+  return;
+
+name: DNSSEC_RRSIGS_VERIFY
+type: RRSIG
+desc: RRSIGs must cryptographically verify the records they are signing.
+ruletype: name
+test:
+  my @err;
+  foreach my $sig (@{$_[0]->{'RRSIG'}}) {
+    if (! $sig->verify($_[0]->{$sig->typecovered}, $donuts::dnskeys->[0])) {
+       push @err, "RRSIG on name: $_[2] type: " . $sig->typecovered . 
+                  " failed to verify: $sig->{vrfyerrstr}";
+    }
+  }
+  return \@err;
 
 # XXX: nsec next order is proper
 # XXX: check all sigs?
