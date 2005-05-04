@@ -1,5 +1,5 @@
 --- Fast.pm.~1~	2004-04-15 14:17:26.000000000 -0700
-+++ Fast.pm	2005-05-04 10:28:34.946877608 -0700
++++ Fast.pm	2005-05-04 14:45:01.000000000 -0700
 @@ -15,6 +15,7 @@
  use vars qw($VERSION);
  use IO::File;
@@ -81,7 +81,7 @@
  	} elsif (/^\$origin[ \t]+/ig) {
  		if (/\G($pat_maybefullname)$pat_skip$/gc) {
  			my $name = $1;
-@@ -526,6 +549,111 @@
+@@ -526,6 +549,112 @@
  		} else {
  			error("bad SRV data");
  		}
@@ -140,6 +140,7 @@
 +		    $dnskey->{'key'} .= $1;
 +		    $dnskey->{'key'} =~ s/\s//g;
 +		    $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
++		    $dnskey->setkeytag;
 +		    push @zone, $dnskey;
 +		    $dnskey = undef;
 +		} else {
@@ -193,7 +194,7 @@
  	} elsif (/\G(rp)[ \t]+/igc) {
  		my $mbox;
  		if (/\G($pat_maybefullname)[ \t]+/gc) {
-@@ -562,6 +690,8 @@
+@@ -562,6 +691,8 @@
  			mbox     => $mbox,
  			txtdname => $txtdname,
  		};
@@ -202,7 +203,7 @@
  	} else {
  		error("unrecognized type");
  	}
-@@ -634,6 +764,91 @@
+@@ -634,6 +765,92 @@
  	return $v;
  }
  
@@ -251,6 +252,7 @@
 +	    $parse = \&parse_line;
 +
 +	    $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
++	    $dnskey->setkeytag;
 +	    push @zone, $dnskey;
 +	    $dnskey = undef;
 +	} else {
@@ -294,7 +296,7 @@
  sub parse_soa_number
  {
  	error("parse_soa_number: internal error, no \$soa") unless $soa;
-@@ -774,6 +989,8 @@
+@@ -774,6 +991,8 @@
  
  =item B<$TTL> directive
  
@@ -303,7 +305,7 @@
  =item B<A> records
  
  =item B<AAAA> records
-@@ -798,6 +1015,16 @@
+@@ -798,6 +1017,16 @@
  
  =item B<TXT> records
  
