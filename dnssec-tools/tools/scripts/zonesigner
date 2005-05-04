@@ -1443,26 +1443,7 @@ sign and generate a zone and its keys.  This allows the zone to be maintained
 using the same key lengths and expiration times, for example, without an
 administrator needing to manually track these fields.
 
-I<zonesigner> is used in this way:
-
-=over 4
-
-zonesigner [options] <zone-name> <zone-out>
-
-=back
-
-I<zone-name> is the name of the zone that will be signed and the name of the
-zone file from which a signed zone file will be created.  This may also be
-specified with the I<-zone> option.  Several $INCLUDE lines will be added at
-the end and the SOA serial number will be incremented.  Generated keys are
-given this name as their base.
-
-I<zone-out> is the name of the output zone file.  This file will be a copy
-of the I<zone-file> zone file.  The signed zone file will be this name,
-appended with I<.signed>.
-
-The I<zone-out> argument may be left out, in which case the input zone file
-will be used as the base for all operations. 
+=head1 KEYREC FILES
 
 I<keyrec> files retain information about previous key-generation and
 zone-signing operations.  If a I<keyrec> file is not specified (by way of the
@@ -1471,12 +1452,41 @@ in not specified in the system's B<dnssec-tools> configuration file, the
 filename will be the zone name appended with B<.krf>.  If the I<-nokrfile>
 option is given, then no I<keyrec> file will be consulted or saved.
 
+I<keyrec> files contain two types of entries:  zone I<keyrec>s and key
+I<keyrec>s.  Each I<keyrec> contains a set of "key/value" entries, one per
+line.  Example 4 below contains the contents of a sample I<keyrec> file.
+
+=head1 USING ZONESIGNER
+
+I<zonesigner> is used in this way:
+
+=over 4
+
+zonesigner [options] <zone-file> <zone-out>
+
+=back
+
+I<zone-file> is the name of the zone file from which a signed zone file will
+be created.  If the I<-zone> option is not given, then it is also the name
+of the zone that will be signed.  Generated keys are given this name as their
+base.
+
 The zone file is modified to have B<include> commands, which will include the
 KSK and ZSK keys.  These lines are placed at the end of the file and should
 not be modified by the user.  If the zone file already includes any key files,
 those inclusions will be deleted.  These lines are distinguished by starting
 with "$INCLUDE" and end with ".key".  Only the actual include lines are
 deleted; any related comment lines are left untouched.
+
+I<zone-out> is the name of the output zone file.  This file will be a copy
+of the I<zone-file> zone file, with some modifications.  Several $INCLUDE
+lines will be added at the end of the file and the SOA serial number will be
+incremented.
+
+The I<zone-out> argument may be left out, in which case the input zone file
+will be used as the base for all operations.
+
+The signed zone file will be this name, appended with I<.signed>.
 
 =head1 OPTIONS
 
