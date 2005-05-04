@@ -142,6 +142,11 @@ sub main
 	my $status;				# Status of zone-signing.
 
 	#
+	# If help was specified, give the usage and exit.
+	#
+	helpchk();
+
+	#
 	# Munch on the options and arguments.
 	#
 	optsandargs();
@@ -1329,6 +1334,31 @@ sub forceroll
 	print "\tnew ZSK ($zsknew) created\n" if($verbose > $VERBOSE_LOW);
 	keyrec_setval("key",$zsknew,"keyrec_type","zsknew");
 	keyrec_setval("key",$zsknew,"zonename",$zone);
+}
+
+#######################################################################
+#
+# Routine:	helpchk()
+#
+# Purpose:	Explicit argument checks for the help option.
+#
+sub helpchk
+{
+	my $argc = @ARGV;			# Length of @ARGV.
+	my $ind;				# Index for @ARGV.
+
+	for($ind=0; $ind<$argc; $ind++)
+	{
+		$arg = $ARGV[$ind];
+
+		if(($arg eq "-h)	|| ($arg eq "--h)	||
+		   ($arg eq "-he)	|| ($arg eq "--he)	||
+		   ($arg eq "-hel)	|| ($arg eq "--hel)	||
+		   ($arg eq "-help)	|| ($arg eq "--help))
+		{
+			usage(1);
+		}
+	}
 }
 
 #######################################################################
