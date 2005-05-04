@@ -694,11 +694,11 @@ B<lskrf> has three types of options it can take:  record-selection options,
 record-attribute options, and output-style options.  These option sets are
 detailed below.
 
-=over 4
-
 =head2 Record-Selection Options
 
 These options select the types of I<keyrec> that will be displayed.
+
+=over 4
 
 =item -all
 
@@ -739,10 +739,14 @@ This option displays the published ZSK keys in a I<keyrec> file.
 This option displays the obsolete ZSK keys in a I<keyrec> file.  This option
 must be give if obsolete ZSK keys are to be displayed.
 
+=back
+
 =head2 Record-Attribute Options
 
 These options select subsets of the I<keyrec>s chosen by the
 record-selection options. 
+
+=over 4
 
 =item -valid
 
@@ -766,6 +770,8 @@ This option displays the unreferenced key I<keyrec>s in a I<keyrec> file.
 If no record-selection options were specified, then the I<-keys> option will
 be set.
 
+=back
+
 =head2 Output-Format Options
 
 These options define how the I<keyrec> information will be displayed.
@@ -774,6 +780,8 @@ Without any of these options, the zone name, zone file, zone-signing date,
 and a label will be displayed for zones.  For types, the key name, the key's
 zone, the key's generation date, and a label will be displayed if these
 options aren't given.
+
+=over 4
 
 =item -count
 
