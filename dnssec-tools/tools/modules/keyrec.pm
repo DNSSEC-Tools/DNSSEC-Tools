@@ -101,8 +101,6 @@ my @ZONEFIELDS = (
 		  );
 
 
-my $DEFAULT_KEYREC = "output.krf";	# Default keyrec file.
-
 my @keyreclines;			# Keyrec lines.
 my $keyreclen;				# Number of keyrec lines.
 
@@ -777,9 +775,8 @@ sub keyrec_init
 #
 # Routine:	keyrec_defkrf()
 #
-# Purpose:	Get the default keyrec file.  If there isn't one specified
-#		in the dnssec-tools configuration file, we'll use a name
-#		defined in this module.
+# Purpose:	Get the default keyrec file defined in the dnssec-tools
+#		configuration file.
 #
 sub keyrec_defkrf
 {
@@ -792,11 +789,9 @@ sub keyrec_defkrf
 	%dtconf = parseconfig();
 
 	#
-	# Check the config file for a default keyrec filename.  If it
-	# isn't there, we'll use the one defined here.
+	# Check the config file for a default keyrec filename.
 	#
 	$krf = $dtconf{'default_keyrec'};
-	$krf = $DEFAULT_KEYREC   if($krf eq "");
 
 	return($krf);
 }
