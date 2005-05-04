@@ -302,8 +302,26 @@ desc: RRSIGs must cryptographically verify the records they are signing.
 ruletype: name
 test:
   my @err;
+  my $count = 0;
   foreach my $sig (@{$_[0]->{'RRSIG'}}) {
-    if (! $sig->verify($_[0]->{$sig->typecovered}, $donuts::dnskeys->[0])) {
+    $count++;
+    # find the right matching key
+    my $dhkey;
+    if ($sig->keytag eq '') {
+      push @err, "keytag not found on RRSIG #$count for $_[2]";
+      next;
+    }
+    foreach my $key (@{$donuts::dnskeys}) {
+       if ($key->keytag eq $sig->keytag) {
+         $dhkey = $key;
+         last;
+       }
+    }
+    if (!$dhkey) {
+      push @err, "Can not find a matching DNSKEY for RRSIG #$count for $_[2]";
+      next;
+    }
+    if (! $sig->verify($_[0]->{$sig->typecovered}, $dhkey)) {
        push @err, "RRSIG on name: $_[2] type: " . $sig->typecovered . 
                   " failed to verify: $sig->{vrfyerrstr}";
     }
