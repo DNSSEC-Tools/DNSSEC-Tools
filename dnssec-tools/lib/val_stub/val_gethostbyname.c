@@ -22,6 +22,99 @@
 #include "val_query.h"
 #include "val_log.h"
 
+#define ETC_HOSTS_CONF "/etc/host.conf"
+#define ETC_HOSTS      "/etc/hosts"
+#define MAXLINE 4096
+#define MAX_ALIAS_COUNT 2048
+
+/* Read the ETC_HOSTS file and check if it contains the given
+ * name
+ */
+static struct hostent *get_hostent_from_etc_hosts (const char *name)
+{
+    FILE *fp;
+    char *line = NULL;
+    size_t len = 0;
+    int read;
+    char white[] = " \t\n";
+    char fileentry[MAXLINE];
+
+    fp = fopen (ETC_HOSTS, "r");
+    if (fp == NULL) {
+	return NULL;
+    }
+
+    while ((read = getline (&line, &len, fp)) != -1) {
+	char *buf = NULL;
+	char *cp = NULL;
+	char *domain_name = NULL;
+	int matchfound = 0;
+	char *alias_list[MAX_ALIAS_COUNT];
+	int alias_index = 0;
+	struct in_addr ip4_addr;
+
+	if ((read > 0) && (line[0] == '#')) continue;
+
+	/* ignore characters after # */
+	cp = (char *) strtok_r (line, "#", &buf);
+	
+	if (!cp) continue;
+
+	memset(fileentry, 0, MAXLINE);
+	memcpy(fileentry, cp, strlen(cp));
+
+	/* read the ip address */
+	cp = (char *) strtok_r (fileentry, white, &buf);
+	if (!cp) continue;
+
+	bzero(&ip4_addr, sizeof(struct in_addr));
+	inet_pton(AF_INET, cp, &ip4_addr);
+
+	/* read the full domain name */
+	cp = (char *) strtok_r (NULL, white, &buf);
+	if (!cp) continue;
+
+	domain_name = cp;
+
+	if (strcasecmp(cp, name) == 0) {
+	    matchfound = 1;
+	}
+
+	/* read the aliases */
+	memset(alias_list, 0, MAX_ALIAS_COUNT);
+	alias_index = 0;
+	while ((cp = (char *) strtok_r (NULL, white, &buf)) != NULL) {
+	    alias_list[alias_index++] = cp;
+	    if ((!matchfound) && (strcasecmp(cp, name) == 0)) {
+		matchfound = 1;
+	    }
+	}
+
+	/* match input name with the full domain name and aliases */
+	if (matchfound) {
+	    int i;
+	    struct hostent *hentry = (struct hostent*) malloc (sizeof(struct hostent));
+	    bzero(hentry, sizeof(struct hostent));
+	    hentry->h_name = (char *) strdup(domain_name);
+	    hentry->h_aliases = (char **) malloc ((alias_index + 1) * sizeof(char *));
+	    for (i=0; i<alias_index; i++) {
+		hentry->h_aliases[i] = (char *) strdup(alias_list[i]);
+	    }
+	    hentry->h_aliases[alias_index] = 0;
+	    hentry->h_addrtype = AF_INET;
+	    hentry->h_length = sizeof(struct in_addr);
+	    hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
+	    hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
+	    memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+	    hentry->h_addr_list[1] = 0;
+
+	    return hentry;
+	}
+    }
+
+    return NULL;
+}
+
 /* Converts data in the domain_info structure into a hostent structure */
 static struct hostent *get_hostent_from_response (struct domain_info *response)
 {
@@ -214,6 +307,21 @@ struct hostent *val_gethostbyname ( const char *name, int *dnssec_status )
     }
     else {
 	struct domain_info response;
+
+	/* First check the ETC_HOSTS file
+	 * XXX: TODO check the order in the ETC_HOST_CONF file
+	 */
+	hentry = get_hostent_from_etc_hosts (name);
+
+	if (hentry != NULL) {
+	    *dnssec_status = VALIDATE_SUCCESS; /* ??? */
+	    val_h_errno = VALIDATE_SUCCESS;
+	    return hentry;
+	}
+	
+	/*
+	 * Try DNS
+	 */
 	bzero(&response, sizeof(struct domain_info));
 
 	if (_val_query (name, ns_c_in, ns_t_a, &response, dnssec_status) < 0) {
