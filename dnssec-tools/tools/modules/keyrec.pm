@@ -21,15 +21,15 @@
 #
 #	An example configuration file follows:
 #
-#		zone "portrigh.com"
-#			zonefile	"db.portrigh.com"
-#			kskpath		"Kportrigh.com.+005+26000"
-#			zskcur		"Kportrigh.com.+005+52000"
-#			zskpub		"Kportrigh.com.+005+52001"
+#		zone "example.com"
+#			zonefile	"db.example.com"
+#			kskpath		"Kexample.com.+005+26000"
+#			zskcur		"Kexample.com.+005+52000"
+#			zskpub		"Kexample.com.+005+52001"
 #			endtime		"+2592000"   # Zone expires in 30 days.
 #
-#		key "Kportrigh.com.+005+26000"
-#			zonename	"portrigh.com"
+#		key "Kexample.com.+005+26000"
+#			zonename	"example.com"
 #			keyrec_type	"ksk"
 #			algorithm	"rsasha1"
 #			length		"1024"
@@ -920,19 +920,19 @@ Net::DNS::SEC::Tools::keyrec - Squoodge around with a B<dnssec-tools> keyrec fil
 
   @krnames = keyrec_names();
 
-  $krec = keyrec_fullrec("portrigh.com");
+  $krec = keyrec_fullrec("example.com");
   %keyhash = %$krec;
   $zname = $keyhash{"algorithm"};
 
-  $val = keyrec_recval("portrigh.com","zonefile");
+  $val = keyrec_recval("example.com","zonefile");
 
-  keyrec_add("zone","portrigh.com",\%zone_krfields);
-  keyrec_add("key","Kportrigh.com.+005+12345",\%keydata);
+  keyrec_add("zone","example.com",\%zone_krfields);
+  keyrec_add("key","Kexample.com.+005+12345",\%keydata);
 
-  keyrec_del("portrigh.com");
-  keyrec_del("Kportrigh.com.+005+12345");
+  keyrec_del("example.com");
+  keyrec_del("Kexample.com.+005+12345");
 
-  keyrec_setval("zone","portrigh.com","zonefile","db.portrigh.com");
+  keyrec_setval("zone","example.com","zonefile","db.example.com");
 
   @keyfields = keyrec_keyfields();
   @zonefields = keyrec_zonefields();
@@ -955,8 +955,8 @@ encryption keys were generated, zone I<keyrec>s describe how zones were
 signed.  A I<keyrec> consists of a set of keyword/value entries.  The
 following is an example of a key I<keyrec>:
 
-    key     "Kportrigh.com.+005+30485"
-          zonename        "portrigh.com"
+    key     "Kexample.com.+005+30485"
+          zonename        "example.com"
           keyrec_type     "ksk"
           algorithm       "rsasha1"
           random          "/dev/urandom"
@@ -1087,14 +1087,14 @@ I<keyrec_field> is the field name within that I<keyrec>.
 
 For example, the current I<keyrec> file contains the following I<keyrec>.
 
-    zone	"portrigh.com"
-                zonefile        "db.portrigh.com"
+    zone	"example.com"
+                zonefile        "db.example.com"
 
 The call:
 
-    keyrec_recval("portrigh.com","zonefile")
+    keyrec_recval("example.com","zonefile")
 
-will return the value "db.portrigh.com".
+will return the value "db.example.com".
 
 =head2 I<keyrec_setval(keyrec_type,keyrec_name,field,value)>
 
