@@ -101,7 +101,7 @@ if ($opts{'R'}) {
     printf STDERR sprintf("%-40s %-35s\n", "RULE NAME", "DESCRIPTION");
     printf STDERR sprintf("%-40s %-35s\n", "_" x 39, "_" x 34);
     foreach my $rule (@rules) {
-	$rule->print_description();
+	$rule->print_description() if (!$rule->{'internal'});
     }
     exit;
 }
