@@ -611,7 +611,7 @@ Index: src/include/spf_dns_resolv.h
 Index: config.h.in
 ===================================================================
 --- config.h.in	2005-02-28 15:16:25.000000000 -0500
-+++ config.h.in	2005-04-26 16:34:00.000000000 -0400
++++ config.h.in	2005-05-04 12:43:56.000000000 -0400
 @@ -46,6 +46,9 @@
  /* Define to 1 if you have the <inttypes.h> header file. */
  #undef HAVE_INTTYPES_H
@@ -648,8 +648,8 @@ Index: config.h.in
 Index: configure.ac
 ===================================================================
 --- configure.ac	2005-02-28 15:11:51.000000000 -0500
-+++ configure.ac	2005-04-25 14:29:19.000000000 -0400
-@@ -92,9 +92,12 @@
++++ configure.ac	2005-05-04 12:40:26.000000000 -0400
+@@ -92,45 +92,81 @@
  	exit 1;
  ])
  
@@ -657,13 +657,64 @@ Index: configure.ac
 +AC_CHECK_HEADERS([val_api.h])
 +
  dnl Moved to after header checks by Shevek
- AC_ARG_WITH(bind,
+-AC_ARG_WITH(bind,
 -        [  --with-bind=DIR  Find BIND resolver in DIR],
-+        [  --with-bind=DIR         Find BIND resolver in DIR],
-         [AC_CHECK_FILE([$withval/include/bind/resolv.h],
-                 [CFLAGS="$CFLAGS -I$withval/include/bind"],
-                 [CFLAGS="$CFLAGS -I$withval/include"])
-@@ -125,12 +128,44 @@
+-        [AC_CHECK_FILE([$withval/include/bind/resolv.h],
+-                [CFLAGS="$CFLAGS -I$withval/include/bind"],
+-                [CFLAGS="$CFLAGS -I$withval/include"])
+-         LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
+-         AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
+-                [AC_CHECK_LIB([resolv],
+-                        [res_query],
+-                        [LIBS="$LIBS -lresolv"],
+-                        [echo "cannot find resolver library"; exit 1;])
+-                ])
+-        ],
+-		[dnl Have to include resolv.h as res_query is sometimes defined as a macro
+-				AC_MSG_CHECKING([for res_query in -lresolv (with resolv.h if present)])
+-				saved_libs="$LIBS"
+-				LIBS="-lresolv $LIBS"
+-				AC_TRY_LINK([
+-						#ifdef HAVE_RESOLV_H
+-						#include <resolv.h>
+-						#endif],
+-						[res_query(0,0,0,0,0)],
+-						[AC_MSG_RESULT(yes)
+-								have_res_query=yes],
+-						[AC_MSG_RESULT(no)
+-								LIBS="$saved_libs"])
+-        ])
+-		
++dnl
++dnl AC_ARG_WITH(bind,
++dnl         [  --with-bind=DIR         Find BIND resolver in DIR],
++dnl         [AC_CHECK_FILE([$withval/include/bind/resolv.h],
++dnl                 [CFLAGS="$CFLAGS -I$withval/include/bind"],
++dnl                 [CFLAGS="$CFLAGS -I$withval/include"])
++dnl          LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
++dnl          AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
++dnl                 [AC_CHECK_LIB([resolv],
++dnl                         [res_query],
++dnl                         [LIBS="$LIBS -lresolv"],
++dnl                         [echo "cannot find resolver library"; exit 1;])
++dnl                 ])
++dnl         ],
++dnl 		[dnl Have to include resolv.h as res_query is sometimes defined as a macro
++dnl 				AC_MSG_CHECKING([for res_query in -lresolv (with resolv.h if present)])
++dnl 				saved_libs="$LIBS"
++dnl 				LIBS="-lresolv $LIBS"
++dnl 				AC_TRY_LINK([
++dnl 						#ifdef HAVE_RESOLV_H
++dnl 						#include <resolv.h>
++dnl 						#endif],
++dnl 						[res_query(0,0,0,0,0)],
++dnl 						[AC_MSG_RESULT(yes)
++dnl 								have_res_query=yes],
++dnl 						[AC_MSG_RESULT(no)
++dnl 								LIBS="$saved_libs"])
++dnl         ])
++dnl 		
+ 		
  		
  dnl [AC_CHECK_LIB(resolv, res_query)])
  
