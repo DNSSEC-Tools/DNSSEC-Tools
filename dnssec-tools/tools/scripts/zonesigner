@@ -73,6 +73,13 @@ my $DEF_KEYGEN		= "dnssec-keygen";
 my $DEF_SIGNZONE	= "dnssec-signzone";
 
 #
+# Default arguments to dnssec- commands.
+#
+my $DEF_ALGORITHM	= "rsamd5";
+my $DEF_KSKLENGTH	= 4096;
+my $DEF_ZSKLENGTH	= 4096;
+
+#
 # Options fields.
 #
 my $alg;				# Encryption algorithm.
@@ -286,8 +293,8 @@ sub optsandargs()
 	#
 	# Get the KSK- and ZSK-related arguments.
 	#
-	$ksize	  = $opts{'ksklength'}	  || "";
-	$zsize	  = $opts{'zsklength'}	  || "";
+	$ksize	  = $opts{'ksklength'}	  || $DEF_KSKLENGTH;
+	$zsize	  = $opts{'zsklength'}	  || $DEF_ZSKLENGTH;
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
 	$kskpath  = $opts{'kskpath'}	  || "";
@@ -297,7 +304,7 @@ sub optsandargs()
 	#
 	# Get the rest of the options.
 	#
-	$alg	  = $opts{'algorithm'}	|| "";
+	$alg	  = $opts{'algorithm'}	|| $DEF_ALGORITHM;
 	$enddate  = $opts{'endtime'}	|| "";
 	$gends	  = $opts{'gends'}	|| "";
 	$random   = $opts{'random'}	|| "";
