@@ -1,25 +1,70 @@
 Index: config.h.in
 ===================================================================
 --- config.h.in	2005-03-01 11:02:52.000000000 -0500
-+++ config.h.in	2005-04-25 14:51:21.000000000 -0400
-@@ -42,6 +42,12 @@
++++ config.h.in	2005-05-04 12:56:31.000000000 -0400
+@@ -24,6 +24,9 @@
+ /* Define to 1 if you have the <inttypes.h> header file. */
+ #undef HAVE_INTTYPES_H
+ 
++/* Define to 1 if you have the `crypto' library (-lcrypto). */
++#undef HAVE_LIBCRYPTO
++
+ /* Define to 1 if you have the `milter' library (-lmilter). */
+ #undef HAVE_LIBMILTER
+ 
+@@ -33,15 +36,18 @@
+ /* Define to 1 if you have the `pthread' library (-lpthread). */
+ #undef HAVE_LIBPTHREAD
+ 
+-/* Define to 1 if you have the `resolv' library (-lresolv). */
+-#undef HAVE_LIBRESOLV
+-
+ /* Define to 1 if you have the `socket' library (-lsocket). */
+ #undef HAVE_LIBSOCKET
+ 
  /* Define to 1 if you have the `spf2' library (-lspf2). */
  #undef HAVE_LIBSPF2
  
++/* Define to 1 if you have the `sres' library (-lsres). */
++#undef HAVE_LIBSRES
++
 +/* Define to 1 if you have the `val' library (-lval). */
 +#undef HAVE_LIBVAL
-+
-+/* Define to 1 if you have libspf2-1.2.x */
-+#undef USE_LIBSPF2_1_2_X
 +
  /* Define to 1 if you have the <memory.h> header file. */
  #undef HAVE_MEMORY_H
  
+@@ -126,6 +132,9 @@
+ /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+ #undef TIME_WITH_SYS_TIME
+ 
++/* libspf2 version 1.2.x */
++#undef USE_LIBSPF2_1_2_X
++
+ /* Version number of package */
+ #undef VERSION
+ 
 Index: configure.ac
 ===================================================================
 --- configure.ac	2005-02-11 11:03:53.000000000 -0500
-+++ configure.ac	2005-04-25 14:31:04.000000000 -0400
-@@ -67,10 +67,15 @@
++++ configure.ac	2005-05-04 12:56:01.000000000 -0400
+@@ -57,20 +57,26 @@
+ AC_CHECK_FUNCS(inet_ntop, ,
+ 	AC_CHECK_LIB(nsl, inet_ntop, ,
+ 		AC_CHECK_LIB(socket, inet_ntop, ,
+-			AC_CHECK_LIB(resolv, inet_ntop))))
+-AC_CHECK_FUNC(gethostbyname, ,
+-	AC_CHECK_LIB(nsl, gethostbyname, ,
+-		AC_CHECK_LIB(socket, gethostbyname, ,
+-			AC_CHECK_LIB(resolv, gethostbyname))))
++			)))
++dnl			AC_CHECK_LIB(resolv, inet_ntop))))
++dnl AC_CHECK_FUNC(gethostbyname, ,
++dnl	AC_CHECK_LIB(nsl, gethostbyname, ,
++dnl		AC_CHECK_LIB(socket, gethostbyname, ,
++dnl			AC_CHECK_LIB(resolv, gethostbyname))))
+ 
+ AC_CHECK_HEADER(spf2/spf.h, , [
  	echo "libspf2 is required to build this program."
  	exit 1;
  ])
@@ -29,7 +74,7 @@ Index: configure.ac
 -])
 +
 +dnl Check for newer version (1.2.x) of libspf2 header files
-+AC_CHECK_HEADER(spf2/spf_server.h, [AC_DEFINE(USE_LIBSPF2_1_2_X)], )
++AC_CHECK_HEADER(spf2/spf_server.h, [AC_DEFINE([USE_LIBSPF2_1_2_X], [], [libspf2 version 1.2.x])], )
 +
 +AC_CHECK_LIB(spf2, SPF_destroy_config, ,
 +        AC_CHECK_LIB(spf2, SPF_server_new, , [
@@ -39,7 +84,7 @@ Index: configure.ac
  
  AC_CHECK_HEADER(libmilter/mfapi.h, , [
  	echo "sendmail's libmilter is required to build this program."
-@@ -81,6 +86,41 @@
+@@ -81,6 +87,41 @@
  	exit 1;
  ])
  
