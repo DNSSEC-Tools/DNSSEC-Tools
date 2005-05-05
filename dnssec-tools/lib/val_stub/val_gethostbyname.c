@@ -142,11 +142,6 @@ static struct hostent *get_hostent_from_response (struct domain_info *response)
     while (rrset) {
 	struct rr_rec *rr = rrset->rrs_data;
 
-	if (rrset->rrs_status != RRSIG_VERIFIED) {
-	    rrset = rrset->rrs_next;
-	    continue;
-	}
-
 	while (rr) {
 
 	    if (rrset->rrs_type_h == ns_t_cname) {
