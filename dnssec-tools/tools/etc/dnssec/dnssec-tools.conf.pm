@@ -25,11 +25,12 @@ dnssec-tools.conf - Configuration file for the B<dnssec-tools> programs.
 
 This file contains configuration information for the B<dnssec-tools> programs.
 These configuration data are used if nothing else has been specified for a
-particular program.
+particular program.  The B<dnssec-tools> I<conf.pm> module is used to parse
+this configuration file.
 
 A line in the configuration file contains either a comment or a configuration
-entry.  Comment lines start with a '#' character.  Comment lines and blank
-lines are ignored by the B<dnssec-tools> programs.
+entry.  Comment lines start with either a '#' character or a ';' character.
+Comment lines and blank lines are ignored by the B<dnssec-tools> programs.
 
 Configuration entries are in a I<keyword/value> format.  The keyword is a
 character string that contains no whitespace.  The value is a tokenized list
@@ -51,6 +52,11 @@ B<dnssec-keygen>.
 
 This entry contains the path to the B<named-checkzone> command.
 
+=item default_keyrec
+
+This entry contains the default I<keyrec> filename to be used by the
+B<dnssec-tools> I<keyrec.pm> module.
+
 =item endtime
 
 This entry contains the zone default expiration date to be passed to
@@ -63,6 +69,11 @@ This entry contains the path to the B<dnssec-keygen> command.
 =item ksklength
 
 This entry contains the default KSK key length to be passed to
+B<dnssec-keygen>.
+
+=item random
+
+This entry contains the random device generator to be passed to
 B<dnssec-keygen>.
 
 =item signzone
@@ -95,12 +106,19 @@ The following is an example B<dnssec-tools.conf> configuration file.
     algorithm	rsasha1
     ksklength	1024
     zsklength	512
+    random	/dev/urandom
     
     
     #
     # Settings for dnssec-signzone.
     #
     endtime		+259200		# RRSIGs good for three days.
+    
+    
+    #
+    # Settings that will be noticed by zonesigner.
+    #
+    default_keyrec	default.krf
 
 =head1 AUTHOR
 
@@ -109,5 +127,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 =head1 SEE ALSO
 
 Net::DNS::SEC::Tools::conf.pm(3)
+
+Net::DNS::SEC::Tools::keyrec.pm(3)
 
 =cut
