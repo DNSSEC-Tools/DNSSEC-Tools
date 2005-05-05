@@ -59,6 +59,20 @@ my $VERBOSE_MEDIUM = 2;			# Middlin' verbosity level.
 my $VERBOSE_HIGH   = 3;			# High verbosity level.
 
 #
+# Set some path variables.
+#
+my $CP		= "/bin/cp";
+my $DATE	= "/bin/date";
+my $MV		= "/bin/mv";
+
+#
+# Default names for the dnssec- commands.
+#
+my $DEF_CHECKZONE	= "named-checkzone";
+my $DEF_KEYGEN		= "dnssec-keygen";
+my $DEF_SIGNZONE	= "dnssec-signzone";
+
+#
 # Options fields.
 #
 my $alg;				# Encryption algorithm.
@@ -111,13 +125,6 @@ my @zsopts = ( '',
 	     );
 
 my $forceroll = 0;			# Force-a-roll-over flag.
-
-#
-# Set some path variables.
-#
-my $CP		= "/bin/cp";
-my $DATE	= "/bin/date";
-my $MV		= "/bin/mv";
 
 
 #
@@ -321,19 +328,12 @@ sub optsandargs()
 
 
 	#
-	# Get the paths to the external commands.  Crash and burn if these
-	# fields aren't defined anywhere.
+	# Get the paths to the external commands.  If they aren't defined,
+	# use the default command names.
 	#
-	$checkzone = $opts{'checkzone'} || 'named-checkzone';
-	$keygen	   = $opts{'keygen'}	|| 'dnssec-keygen';
-	$signzone  = $opts{'signzone'}	|| 'dnssec-signzone';
-	if(($checkzone eq "")	||
-	   ($keygen    eq "")	||
-	   ($signzone  eq ""))
-	{
-		print STDERR "full paths must be specified in the config file for named-checkzone, dnssec-keygen, and dnssec-signzone.\n";
-		exit(-1);
-	}
+	$checkzone = $opts{'checkzone'} || $DEF_CHECKZONE;
+	$keygen	   = $opts{'keygen'}	|| $DEF_KEYGEN;
+	$signzone  = $opts{'signzone'}	|| $DEF_SIGNZONE;
 
 	#
 	# If the verbose flag was set, we'll print out the options we're
