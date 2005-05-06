@@ -68,6 +68,7 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 	if (!cp) continue;
 
 	bzero(&ip4_addr, sizeof(struct in_addr));
+	/* XXX TODO: Handle IPv6 addresses */
 	inet_pton(AF_INET, cp, &ip4_addr);
 
 	/* read the full domain name */
