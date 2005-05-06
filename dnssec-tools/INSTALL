@@ -1,0 +1,134 @@
+TABLE OF CONTENTS
+=================
+
+  Table Of Contents
+  Instructions
+  Patching Other Applications (mozilla, sendmail, libspf, ...)
+  Gnu CONFIGURE Instructions
+
+INSTRUCTIONS
+==================
+
+  1) Get and install the following perl modules:
+
+      Net::DNS
+      Net::DNS::SEC
+
+     These can be easily done via the perl CPAN shell.  For example:
+
+     # perl -MCPAN -e shell
+       [...]
+
+     cpan>  install Net::DNS
+       [ CPAN will install it here ]
+
+     cpan>  install Net::DNS::SEC
+       [...]
+       [... continue with other modules ...]
+
+  2) Install the optional software and perl modules
+
+      Perl modules needed for the zone file checker and the zone mapper:
+         Net::DNS::ZoneFile::Fast
+
+         *** Requires a patch for the currently available 0.5.  See
+         *** the patch in tools/patches/Net-DNS-ZoneFile-Fast.patch
+
+      Perl modules needed for the zone file checker (donuts):
+         Text::Wrap
+
+      Software for displaying zone maps:
+         graphviz                  [ http://www.graphviz.org/ ]
+
+      Perl modules needed for displaying zone maps:
+         GraphViz
+
+      Perl modules (optional) that provides a GUI interface to some tools:
+         Gtk2 or Tk                [ pick one ]
+         QWizard
+         Getopt::Long::GUI
+
+
+  3) Run ./configure
+     (type "./configure --help" for a quick usage summary.)
+     (--prefix=PATH will change the default /usr/local installation path.)
+     (see "" on changing the complier to use)
+
+  4) make
+
+  5) make install                 [as root]
+
+PATCHING OTHER APPLICATIONS
+=============================================
+
+Patches for the other applications can be found in the apps
+directory.  See the apps/README file for details on those applications
+and patches.
+
+
+GNU CONFIGURE INSTRUCTIONS
+=============================================
+
+   The `configure' shell script attempts to guess correct values for
+various system-dependent variables used during compilation.  It uses
+those values to create a `Makefile' in each directory of the package.
+It may also create one or more `.h' files containing system-dependent
+definitions.  Finally, it creates a shell script `config.status' that
+you can run in the future to recreate the current configuration, a file
+`config.cache' that saves the results of its tests to speed up
+reconfiguring, a file `config.log' containing compiler output
+(useful mainly for debugging `configure') and a file `configure-summary'
+containing the summary displayed at the end of the `configure' run.
+
+   The file `include/net-snmp/net-snmp-config.h' is also generated
+at this time.  It contains IMPORTANT information such as the location
+of log and configuration files.  In some special cases you may need to
+modify this file but it is prefererable to work out a way of getting
+`configure' to set things up for your particular environment.
+
+As the `configure' invocation often gets lengthy and difficult to
+type or if you have several different ways you want to configure a
+system, you may want to create a shell script containing your invocation.
+
+   If you need to do unusual things to compile the package, please try
+to figure out how `configure' could check whether to do them, and mail
+diffs or instructions to the address given in the `README' so they can
+be considered for the next release.  If at some point `config.cache'
+contains results you don't want to keep, you may remove or edit it.
+
+   The file `configure.in' is used to create `configure' by a program
+called `autoconf'.  You only need `configure.in' if you want to change
+it or regenerate `configure' using a newer version of `autoconf'.
+
+The simplest way to compile this package is:
+
+  1. `cd' to the directory containing the package's source code and type
+     `./configure' to configure the package for your system.  If you're
+     using `csh' on an old version of System V, you might need to type
+     `sh ./configure' instead to prevent `csh' from trying to execute
+     `configure' itself.
+
+     Running `configure' takes awhile.  While running, it prints some
+     messages telling which features it is checking for.  When it
+     completes it prints a short message (also available in configure-summary)
+     indicating what functionality will be available when compiled.
+
+  2. If necessary, edit include/net-snmp/net-snmp-config.h (see above).  
+
+  3. Type `make' to compile the package.
+
+  4. Type `make test' which runs a variety of tests to see what functionality
+     has been incorporated and if it works.
+
+  5. Type `make install' to install the programs and any data files and
+     documentation.
+
+  6. You can remove the program binaries and object files from the
+     source code directory by typing `make clean'.  To also remove the
+     files that `configure' created (so you can compile the package for
+     a different kind of computer), type `make distclean'.
+
+  7. You can remove the application by typing `make uninstall'.
+
+There may be additional installation issues discussed in the 
+README's for various platforms such as README.solaris.
