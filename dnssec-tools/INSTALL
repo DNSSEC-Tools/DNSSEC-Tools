@@ -92,12 +92,6 @@ reconfiguring, a file `config.log' containing compiler output
 (useful mainly for debugging `configure') and a file `configure-summary'
 containing the summary displayed at the end of the `configure' run.
 
-The file `include/net-snmp/net-snmp-config.h' is also generated
-at this time.  It contains IMPORTANT information such as the location
-of log and configuration files.  In some special cases you may need to
-modify this file but it is prefererable to work out a way of getting
-`configure' to set things up for your particular environment.
-
 As the `configure' invocation often gets lengthy and difficult to
 type or if you have several different ways you want to configure a
 system, you may want to create a shell script containing your invocation.
@@ -125,22 +119,15 @@ The simplest way to compile this package is:
      completes it prints a short message (also available in configure-summary)
      indicating what functionality will be available when compiled.
 
-  2. If necessary, edit include/net-snmp/net-snmp-config.h (see above).  
+  2. Type `make' to compile the package.
 
-  3. Type `make' to compile the package.
-
-  4. Type `make test', which runs a variety of tests to see what functionality
-     has been incorporated and if it works.
-
-  5. Type `make install' to install the programs and any data files and
+  3. Type `make install' to install the programs and any data files and
      documentation.
 
-  6. You can remove the program binaries and object files from the
+  4. You can remove the program binaries and object files from the
      source code directory by typing `make clean'.  To also remove the
      files that `configure' created (so you can compile the package for
      a different kind of computer), type `make distclean'.
-
-  7. You can remove the application by typing `make uninstall'.
 
 There may be additional installation issues discussed in the 
 README's for various platforms such as README.solaris.
