@@ -92,7 +92,7 @@ sub dnssec_tools_get_qwprimitives {
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::QWPrimitives - QWizard primatives for DNSSEC-Tools
+Net::DNS::SEC::Tools::QWPrimitives - QWizard primitives for DNSSEC-Tools
 
 =head1 SYNOPSIS
 

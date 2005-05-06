@@ -705,7 +705,7 @@ sub opts_reset
 # Routine:	LocalGetOptions()
 #
 # Purpose:	A local wrapper around the Getopt::Long::GUI routine to
-#		determine its availabality and call Getopt::Long instead if
+#		determine its availability and call Getopt::Long instead if
 #		need be.  This function and the next is only needed to support
 #		"not-requiring" Getopt::Long::GUI
 #
