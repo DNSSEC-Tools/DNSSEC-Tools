@@ -249,8 +249,7 @@ static struct hostent *get_hostent_from_response (struct domain_info *response)
 
 
 /*
- * Returns the entry from the host database for host with name if
- * the DNSSEC validation was successful.
+ * Returns the entry from the host database for host.
  * If successful, *dnssec_status will contain VALIDATE_SUCCESS
  * If there is a failure, *dnssec_status will contain the validator
  * error code.
