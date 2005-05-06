@@ -63,9 +63,8 @@ for the zonesigner family of tools.  An example configuration file follows:
 If zonesigner-related parameters are not specified on the command line or in
 a keyrec file, default values are taken from the configuration file.
 
-(The CVS tree does not currently contain a default config file.  Copy the
-above into /usr/local/etc/dnssec/dnssec-tools.conf by hand until this
-deficiency is rectified.)
+An example configuration file is located in .../dnssec-tools/etc/dnssec/.
+Copy that file /usr/local/etc/dnssec/dnssec-tools.conf.
 
 Commands
 --------
@@ -77,6 +76,8 @@ environments.  Brief descriptions of these tools are given below.
 			with those keys.  This combines the functionality of
 			dnssec-keygen and dnssec-signzone, recording relevant
 			information in a keyrec file.
+
+	confchk		Verfifies the validity of a dnssec-tools config file.
 
 	keyrec-check	Verifies the validity of a keyrec file.
 
