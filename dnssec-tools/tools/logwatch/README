@@ -20,12 +20,14 @@ Assumptions:
 You may edit the logwatch config files and scripts to change these names
 if you have used something else.
 
-Copy the files in ./conf/logfiles, ./conf/services, and ./scripts/services
+Copy the files in ./conf/logfiles, ./conf/services,
+./scripts/shared, and ./scripts/services
 into the same directory structure in $LOGWATCH_DIR. For example, 
 
 cp ./conf/logfiles/* /etc/log.d/conf/logfiles/.
 cp ./conf/services/* /etc/log.d/conf/services/.
 cp ./scripts/services/* /etc/log.d/scripts/services/.
+cp ./scripts/shared/* /etc/log.d/scripts/shared/.
 
 This all that is necessary to get logwatch to monitor your BIND security
 logfiles. Now run logwatch, and see the DNSSEC and RESOLVER sections for
