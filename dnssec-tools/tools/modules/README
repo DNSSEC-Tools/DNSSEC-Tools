@@ -1,0 +1,39 @@
+# Copyright 2004-2005 Sparta, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+This directory contains DNSSEC-Tools-specific Perl modules.  Each file has a
+pod man page which may be consulted for details.
+
+	QWPrimitives.pm
+
+	conf.pm
+		Parses the DNSSEC-Tools configuration file.
+
+	keyrec.pm
+		Manages a DNSSEC-Tools keyrec file.  Keyrec files maintain
+		meta-information about DNSSEC-signed DNS zones.
+
+	rollmgr.pm
+		Provides communications interfaces with a DNSSEC-signed DNS
+		zone roll-over manager daemon.
+
+		DO NOT USE.  This isn't even in a pre-alpha state.  This is
+		in a primordial state.
+
+	rollrec.pm
+		Manages a DNSSEC-Tools rollrec file.  Rollrec files maintain
+		meta-information about roll-over status of DNSSEC-signed DNS
+		zones.
+
+		DO NOT USE.  This isn't even in a pre-alpha state.  This is
+		in a primordial state.
+
+	tooloptions.pm
+		Parses command line options, and combines them with the
+		DNSSEC-Tools configuration file data and keyrec files to
+		determine the final set of options values to be used by
+		DNSSEC-Tools programs.
