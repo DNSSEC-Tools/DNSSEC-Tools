@@ -79,8 +79,8 @@
 #include "resolver.h"
 #include "res_mkquery.h"
 
-/* Options.  Leave them on. */
-#define DEBUG
+/* Uncomment the following line to turn on debugging for this file */
+/*#define DEBUG*/
 
 
 extern const char *_res_opcodes[];

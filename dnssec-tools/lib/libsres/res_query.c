@@ -210,9 +210,9 @@ int get (	const char*			name,
 	//((HEADER *)query)->rd = 0;
 
 
+/*
 printf ("-----------------------------------------------------------------------------\n");
 
-/*
 printf ("The Query:\n");
 print_response (query, query_length);
 */
@@ -240,11 +240,11 @@ print_response (query, query_length);
                 return res_sq_set_message(error_msg,
                     "Internal error in res_transaction", SR_INTERNAL_ERROR);
         }
-                                                                                                                          
+/*                                                                                                                          
 printf ("The Response: ");
 printf (":\n");
 print_response (*response, *response_length);
-
+*/
     /* Check the header fields */
                                                                                                                           
     if ((ret_val = theres_something_wrong_with_header (*response,
