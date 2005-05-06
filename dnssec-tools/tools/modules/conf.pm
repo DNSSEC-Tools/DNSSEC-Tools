@@ -112,11 +112,14 @@ sub parseconfig
 		#
 		for(my $ind=0;$ind<$arrlen;$ind++)
 		{
-			if($arr[$ind] =~ /^[#;]/)
-			{
-				last;
-			}
-			$val .= $arr[$ind] . " ";
+			my $newval = $arr[$ind];	# New value chunk.
+
+			last if($newval =~ /^[#;]/);
+			next if(($newval eq "") || ($newval =~ /[ \t]+/));
+
+			$newval =~ s/^[ \t]+//;
+			$newval =~ s/[ \t]+$//;
+			$val .= $newval . " ";
 		}
 
 		#
