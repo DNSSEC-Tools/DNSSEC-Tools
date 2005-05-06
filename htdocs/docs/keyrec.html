@@ -68,19 +68,19 @@
 <pre>
   @krnames = keyrec_names();</pre>
 <pre>
-  $krec = keyrec_fullrec(&quot;portrigh.com&quot;);
+  $krec = keyrec_fullrec(&quot;example.com&quot;);
   %keyhash = %$krec;
   $zname = $keyhash{&quot;algorithm&quot;};</pre>
 <pre>
-  $val = keyrec_recval(&quot;portrigh.com&quot;,&quot;zonefile&quot;);</pre>
+  $val = keyrec_recval(&quot;example.com&quot;,&quot;zonefile&quot;);</pre>
 <pre>
-  keyrec_add(&quot;zone&quot;,&quot;portrigh.com&quot;,\%zone_krfields);
-  keyrec_add(&quot;key&quot;,&quot;Kportrigh.com.+005+12345&quot;,\%keydata);</pre>
+  keyrec_add(&quot;zone&quot;,&quot;example.com&quot;,\%zone_krfields);
+  keyrec_add(&quot;key&quot;,&quot;Kexample.com.+005+12345&quot;,\%keydata);</pre>
 <pre>
-  keyrec_del(&quot;portrigh.com&quot;);
-  keyrec_del(&quot;Kportrigh.com.+005+12345&quot;);</pre>
+  keyrec_del(&quot;example.com&quot;);
+  keyrec_del(&quot;Kexample.com.+005+12345&quot;);</pre>
 <pre>
-  keyrec_setval(&quot;zone&quot;,&quot;portrigh.com&quot;,&quot;zonefile&quot;,&quot;db.portrigh.com&quot;);</pre>
+  keyrec_setval(&quot;zone&quot;,&quot;example.com&quot;,&quot;zonefile&quot;,&quot;db.example.com&quot;);</pre>
 <pre>
   @keyfields = keyrec_keyfields();
   @zonefields = keyrec_zonefields();</pre>
@@ -103,8 +103,8 @@ encryption keys were generated, zone <em>keyrec</em>s describe how zones were
 signed.  A <em>keyrec</em> consists of a set of keyword/value entries.  The
 following is an example of a key <em>keyrec</em>:</p>
 <pre>
-    key     &quot;Kportrigh.com.+005+30485&quot;
-          zonename        &quot;portrigh.com&quot;
+    key     &quot;Kexample.com.+005+30485&quot;
+          zonename        &quot;example.com&quot;
           keyrec_type     &quot;ksk&quot;
           algorithm       &quot;rsasha1&quot;
           random          &quot;/dev/urandom&quot;
@@ -221,12 +221,12 @@ file.</p>
 <em>keyrec_field</em> is the field name within that <em>keyrec</em>.</p>
 <p>For example, the current <em>keyrec</em> file contains the following <em>keyrec</em>.</p>
 <pre>
-    zone        &quot;portrigh.com&quot;
-                zonefile        &quot;db.portrigh.com&quot;</pre>
+    zone        &quot;example.com&quot;
+                zonefile        &quot;db.example.com&quot;</pre>
 <p>The call:</p>
 <pre>
-    keyrec_recval(&quot;portrigh.com&quot;,&quot;zonefile&quot;)</pre>
-<p>will return the value ``db.portrigh.com''.</p>
+    keyrec_recval(&quot;example.com&quot;,&quot;zonefile&quot;)</pre>
+<p>will return the value ``db.example.com''.</p>
 <p>
 </p>
 <h2><a name="keyrec_setval_keyrec_type_keyrec_name_field_value_"><em>keyrec_setval(keyrec_type,keyrec_name,field,value)</em></a></h2>
