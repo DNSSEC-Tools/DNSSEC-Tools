@@ -7,13 +7,11 @@ my $daterange = $ENV{'LOGWATCH_DATE_RANGE'};
 my $tempdir = $ENV{'LOGWATCH_TEMP_DIR'};
 my $debuglevel = $ENV{'LOGWATCH_DEBUG'};
 
-#print "\nDetail level = " . $detail . "\n";
-#print "\nDate range = " . $daterange . "\n";
-#print "\nTemp dir = " . $tempdir . "\n";
-#print "\nDebug level = " . $debuglevel . "\n";
-my $valComplete = 0;
-my $resValOK = 0;
-my $nonextValOK = 0;
+print "\nDetail level = " . $detail . "\n";
+print "\nDate range = " . $daterange . "\n";
+print "\nTemp dir = " . $tempdir . "\n";
+print "\nDebug level = " . $debuglevel . "\n";
+
 my $valFail;
 my $valOK;
 my $attPosRespVal;
@@ -27,13 +25,7 @@ my $nonExtProof;
 my $noValidSig;
 
 while (defined(my $ThisLine = <STDIN>)) {
-   if ($ThisLine =~ /validation completion event/) {
-      $valComplete++;
-   } elsif ($ThisLine =~ /validation OK/) {
-      $resValOK++;
-   } elsif ($ThisLine =~ /nonexistence validation OK/) {
-      $nonextValOK++;
-   } elsif ($ThisLine =~ /validation failed/) {
+   if ($ThisLine =~ /validation failed/) {
       $valFail++;
    } elsif ($ThisLine =~ /validation OK/) {
       $valOK++;
@@ -53,9 +45,12 @@ while (defined(my $ThisLine = <STDIN>)) {
       $markingAsSecure++;
    } elsif ($ThisLine =~ /nonexistence proof found/) {
       $nonExtProof++;
-   } elsif ($ThisLine =~ /validating (\S+)\s+(\S+): no valid signature found/) {
+# the below is not keeping with the methods of logwatch, 
+# but I'm keeping it around for now....
+#   } elsif ($ThisLine =~ /validating (\S+)\s+(\S+): no valid signature found/) {
 # $1 is the host, $2 is the type of query
-      print "No valid signature found for host $1, query type $2\n";
+#      print "No valid signature found for host $1, query type $2\n";
+   } elsif ($ThisLine =~ /no valid signature found/) {
       $noValidSig++;
    }
 }
