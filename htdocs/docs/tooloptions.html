@@ -37,8 +37,8 @@
 <pre>
   use Net::DNS::SEC::Tools::tooloptions;</pre>
 <pre>
-  $keyrec_file = &quot;portrigh.keyrec&quot;;
-  $keyrec_name = &quot;Kportrigh.com.+005+10988&quot;;
+  $keyrec_file = &quot;example.keyrec&quot;;
+  $keyrec_name = &quot;Kexample.com.+005+10988&quot;;
   @specopts = (&quot;propagate+&quot;, &quot;waittime=i&quot;);</pre>
 <pre>
   $optsref = tooloptions($keyrec_file,$keyrec_name);
@@ -143,12 +143,12 @@ caller.</p>
 <p><strong>/usr/local/etc/dnssec/dnssec-tools.conf</strong> has these entries:</p>
 <p>ksklength      1024</p>
 <p>zsklength      512</p>
-<p>portrigh.keyrec has this entry:</p>
-<p>key	``Kportrigh.com.+005+10988''</p>
+<p>example.keyrec has this entry:</p>
+<p>key	``Kexample.com.+005+10988''</p>
 <p>zsklength	``1024''</p>
 <p><strong>zonesigner</strong> is executed with this command line:</p>
-<p>zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  portrigh.com</p>
-<p><em>tooloptions(``portrigh.keyrec'',``Kportrigh.com.+005+10988'',(``wait=i''))</em>
+<p>zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com</p>
+<p><em>tooloptions(``example.keyrec'',``Kexample.com.+005+10988'',(``wait=i''))</em>
 will read each option source in turn, ending up with:
     <em>ksklength</em> 	 512
     <em>zsklength</em> 	 4096
