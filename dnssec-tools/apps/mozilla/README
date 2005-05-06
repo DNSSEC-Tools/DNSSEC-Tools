@@ -1,0 +1,19 @@
+# Copyright 2004-2005 Sparta, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+This directory contains a patch to apply to the mozilla code for
+enabling DNSSEC checking of URL DNS names.  It is in pre-alpha form
+with a lot of debugging and probably shouldn't be used yet, although
+it does work.
+
+1) install the dnssec-tools package first (we need a library)
+2) apply the patch found in this directory to the mozilla source tree
+   (1.7.3ish).  the configure portion of the patch will probably fail,
+   so run 'autoconf' (version 2.13 or so, not 2.5x) after you apply
+   the patch.
+3) build mozilla adding in the --with-system-val flag to their
+   configure script.  If you're using a ~/.mozconfig file then add
+   this line to it:
+
+     ac_add_options --with-system-val
+
