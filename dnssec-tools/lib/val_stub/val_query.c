@@ -188,8 +188,7 @@ static int compose_answer (struct domain_info *response,
     index += 2;
     hp->qdcount = htons(1);
 
-    /*** Compose the answer, authority and additional sections.  -- Add only those rrsets
-     *** -- which have a validate-status of RRSIG_VERIFIED
+    /*** Compose the answer, authority and additional sections.  -- Add all rrsets
      ***/
 
     rrset = response->di_rrset;
@@ -197,13 +196,6 @@ static int compose_answer (struct domain_info *response,
 	char *buf;
 	int * bufindexptr;
 	struct rr_rec *rr = rrset->rrs_data;
-
-	/*
-	if (rrset->rrs_status != RRSIG_VERIFIED) {
-	    rrset = rrset->rrs_next;
-	    continue;
-	}
-	*/
 
 	if ((response->di_requested_class_h == rrset->rrs_class_h) &&
 	    (strcasecmp(dname, rrset->rrs_name_n) == 0)) {
