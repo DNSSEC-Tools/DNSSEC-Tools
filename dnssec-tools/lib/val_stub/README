@@ -1,6 +1,28 @@
+DNSSEC Validation library
+-------------------------
+
+A library that provides DNSSEC resource-record validation functionality.
+
+Description and Current Status
+------------------------------
+
+This library provides basic functionality for resource-record validation. It relies on the resolver component (see ../libsres/README for more details) to fetch answers from a DNSSEC-aware name server. 
+
+As of now there is no functionality to traverse the chain-of-trust while performing record validation and also no support for validation policies. As such, the interfaces defined herein are in a state of flux and are almost certainly expected to change.
+
+Using the library
+-----------------
+
+First run the configure script from the dnssec-tools directory:
+	./configure
+
 To compile:
 
 	make clean; make
+
+To install:
+
+	make install;
 
 To run the resolver-driver:
 

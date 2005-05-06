@@ -1,0 +1,27 @@
+DNSSEC-aware Resolver library
+-----------------------------
+
+A library that is capable of sending queries to, and receiving answers from a DNSSEC-aware name server.
+
+Description and Current Status
+------------------------------
+
+This library provides the resolver component of the "validating resolver" (see ../val_stub/README for details on the
+validator component). It is capable of recursively obtaining answers for an application (validator) from a DNSSEC-aware name
+server. Resolver policy will eventually be used to control the flags (CD, RD etc) that are sent in the query to the name servers, as well as other parameters, such as the name server to which the query is to be sent.
+
+This library provides very basic functionality for name resolution. The data structures and interfaces exported to applications are still in a state of flux and are almost certainly expected to change. Many corner cases are still not supported.
+
+Building the library
+---------------------
+
+First run the configure script from the dnssec-tools directory:
+	./configure
+
+To compile:
+
+	make clean; make
+
+To install:
+
+	make install
