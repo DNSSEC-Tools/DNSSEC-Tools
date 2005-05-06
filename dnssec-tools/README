@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Sparta, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 
+
 			     DNSSEC-Tools
 			Is your domain secure?
 
@@ -26,3 +27,50 @@ INSTALLATION
   those projects where possible.  In the meantime, there are patches
   included within this source tree that can be applied to those other
   projects.
+
+CONTENTS DESCRIPTION
+
+  The various pieces of the DNSSEC-Tools project are spread across several
+  directories.  These pieces are briefly described here.
+
+
+	apps/libspf2-1.0.4_dnssec
+
+	apps/mozilla
+
+	apps/sendmail
+
+	apps/thunderbird
+
+	lib/libsres
+
+	lib/libvalidat
+
+	lib/val_stub
+
+	tools/donuts
+
+	tools/etc	
+		Data required by DNSSEC-Tools programs.
+
+	tools/linux
+		Linux-specific doohickies.
+
+	tools/linux-ifup-dyn-dns
+		Empty directory.
+
+	tools/logwatch
+
+	tools/mapper
+
+	tools/modules
+		DNSSEC-Tools Perl modules.  These modules provide interfaces
+		for such things as reading configuration files and manipulating
+		DNSSEC-Tools-specific data.
+
+	tools/patches
+		Patch files to be applied to existing programs.
+
+	tools/scripts
+		Perl scripts for signing DNSSEC zones and maintaining those
+		signed zones.
