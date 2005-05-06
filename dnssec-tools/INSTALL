@@ -69,7 +69,7 @@ and patches.
 GNU CONFIGURE INSTRUCTIONS
 =============================================
 
-   The `configure' shell script attempts to guess correct values for
+The `configure' shell script attempts to guess correct values for
 various system-dependent variables used during compilation.  It uses
 those values to create a `Makefile' in each directory of the package.
 It may also create one or more `.h' files containing system-dependent
@@ -80,7 +80,7 @@ reconfiguring, a file `config.log' containing compiler output
 (useful mainly for debugging `configure') and a file `configure-summary'
 containing the summary displayed at the end of the `configure' run.
 
-   The file `include/net-snmp/net-snmp-config.h' is also generated
+The file `include/net-snmp/net-snmp-config.h' is also generated
 at this time.  It contains IMPORTANT information such as the location
 of log and configuration files.  In some special cases you may need to
 modify this file but it is prefererable to work out a way of getting
@@ -90,13 +90,13 @@ As the `configure' invocation often gets lengthy and difficult to
 type or if you have several different ways you want to configure a
 system, you may want to create a shell script containing your invocation.
 
-   If you need to do unusual things to compile the package, please try
+If you need to do unusual things to compile the package, please try
 to figure out how `configure' could check whether to do them, and mail
 diffs or instructions to the address given in the `README' so they can
 be considered for the next release.  If at some point `config.cache'
 contains results you don't want to keep, you may remove or edit it.
 
-   The file `configure.in' is used to create `configure' by a program
+The file `configure.in' is used to create `configure' by a program
 called `autoconf'.  You only need `configure.in' if you want to change
 it or regenerate `configure' using a newer version of `autoconf'.
 
@@ -117,7 +117,7 @@ The simplest way to compile this package is:
 
   3. Type `make' to compile the package.
 
-  4. Type `make test' which runs a variety of tests to see what functionality
+  4. Type `make test', which runs a variety of tests to see what functionality
      has been incorporated and if it works.
 
   5. Type `make install' to install the programs and any data files and
