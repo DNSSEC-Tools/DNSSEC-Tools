@@ -1,0 +1,585 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# confchk
+#
+#	This script performs sanity checks on a dnssec-tools
+#	configuration file.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::conf;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"quiet",			# Give no output.
+	"verbose",			# Give verbose output.
+	"help",				# Give a usage message and exit.
+);
+
+#######################################################################
+
+#
+# List of valid encryption algorithms and length ranges.
+# (These values are taken from the dnssec-keygen man page.)
+#
+my @algorithms = ("rsasha1", "rsamd5", "dsa", "dh", "hmac-md5");
+
+my %length_low =
+(
+	"rsasha1"  => 512,
+	"rsamd5"   => 512,
+	"dsa"	   => 512,
+	"dh"	   => 128,
+	"hmac-md5" => 1
+);
+
+my %length_high =
+(
+	"rsasha1"  => 2048,
+	"rsamd5"   => 2048,
+	"dsa"	   => 1024,
+	"dh"	   => 4096,
+	"hmac-md5" => 512
+);
+
+my $MINEND = ((60*60) * 2);		# Minimum endtime (two hours.)
+
+#######################################################################
+
+my $quiet	= 0;			# Give no output.
+my $verbose	= 0;			# Give lotsa output.
+
+my $errs	= 0;			# Error count.
+
+my %dtconf;				# Config file contents.
+
+main();
+exit($errs);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# Purpose:	Staging area.
+#
+sub main()
+{
+	my $conffile;			# The config file to check.
+
+	#
+	# Get our options.
+	#
+	doopts();
+
+	#
+	# Get the config filename to check.
+	#
+	if($ARGV[0] ne "")
+	{
+		$conffile = $ARGV[0];
+	}
+	else
+	{
+		$conffile = "/usr/local/etc/dnssec/dnssec-tools.conf";
+	}
+	vprint("checking config file \"$conffile\"\n");
+
+	#
+	# Read the config file.
+	#
+	%dtconf = parseconfig($conffile);
+	if(!defined(%dtconf))
+	{
+		qprint("config file \"$conffile\" not parsed\n");
+		exit(1);
+	}
+
+	#
+	# Check the key-related records.
+	#
+	keygen_checks();
+
+	#
+	# Check the signzone-related records.
+	#
+	signzone_checks();
+
+	#
+	# Check the file-specific records.
+	#
+	file_check("random","c");
+	file_check("checkzone","x");
+	file_check("keygen","x");
+	file_check("signzone","x");
+
+	#
+	# Give an exit message that depends on the error count.
+	#
+	if($errs == 0)
+	{
+		qprint("$conffile is valid\n");
+	}
+	else
+	{
+		qprint("$conffile is invalid:  $errs errors\n");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	doopts()
+#
+# Purpose:	This routine deals with the command's options.
+#
+sub doopts
+{
+	#
+	# Check our options.
+	#
+	GetOptions(\%options,@opts);
+	$verbose = $options{'verbose'};
+	$quiet	 = $options{'quiet'};
+
+	usage() if(defined($options{'help'}));
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	keygen_checks()
+#
+# Purpose:	Check the algorithm and key length fields.
+#
+sub keygen_checks
+{
+	my $algorithm;				# Encryption algorithm.
+	my $ksklen;				# KSK length.
+	my $zsklen;				# ZSK length.
+	my $found = 0;				# Algorithm-found flag.
+
+	my $lowval;				# Low key length.
+	my $highval;				# High key length.
+
+	#
+	# Get the key-related config entries.
+	#
+	$algorithm = lc($dtconf{'algorithm'});
+	$ksklen	   = $dtconf{'ksklength'};
+	$zsklen	   = $dtconf{'zsklength'};
+
+	#
+	# If the key's encryption algorithm isn't defined here, then we
+	# can't check it or any of the encryption lengths.
+	#
+	if(!defined($algorithm))
+	{
+		qprint("algorithm not defined; can't check length values\n");
+		return;
+	}
+	vprint("algorithm is $algorithm\n");
+
+	#
+	# Search the algorithm list for this key's algorithm.  If we find
+	# it, we'll mark that it's good.
+	#
+	if(defined($algorithm))
+	{
+		foreach my $alg (@algorithms)
+		{
+			if($alg eq $algorithm)
+			{
+				$found = 1;
+				last;
+			}
+		}
+	}
+
+	#
+	# If the key's encryption algorithm is bad, we'll give an error
+	# message.  If it's okay, we'll make sure the length is in the
+	# range of valid lengths for the key type.
+	#
+	if(!$found)
+	{
+		qprint("invalid algorithm:  \"$algorithm\"; can't check length values\n");
+		$errs++;
+		return;
+	}
+
+	#
+	# Get the key length range for this algorithm.
+	#
+	$lowval  = $length_low{$algorithm};
+	$highval = $length_high{$algorithm};
+
+
+	#
+	# Ensure the ZSK length is in the algorithm's value range.
+	#
+	if(!defined($ksklen))
+	{
+		vprint("ksklength not defined\n");
+	}
+	else
+	{
+		vprint("ksklength is $ksklen\n");
+
+		#
+		# Ensure the KSK length is greater than the algorithm's
+		# low value.
+		#
+		if($ksklen < $lowval)
+		{
+			qprint("invalid ksklength:  length ($ksklen) < minimum ($lowval) for $algorithm\n");
+			$errs++;
+		}
+
+		#
+		# Ensure the KSK length is greater than the algorithm's
+		# high value.
+		#
+		if($ksklen > $highval)
+		{
+			qprint("invalid ksklength:  length ($ksklen) > maximum ($highval) for $algorithm\n");
+			$errs++;
+		}
+	}
+
+	#
+	# Ensure the ZSK length is in the algorithm's value range.
+	#
+	if(!defined($zsklen))
+	{
+		vprint("zsklength not defined\n");
+	}
+	else
+	{
+		vprint("zsklength is $zsklen\n");
+
+		#
+		# Ensure the ZSK length is greater than the algorithm's
+		# low value.
+		#
+		if($zsklen < $lowval)
+		{
+			qprint("invalid zsklength:  length ($zsklen) < minimum ($lowval) for $algorithm\n");
+			$errs++;
+		}
+
+		#
+		# Ensure the ZSK length is greater than the algorithm's
+		# high value.
+		#
+		if($zsklen > $highval)
+		{
+			qprint("invalid zsklength:  length ($zsklen) > maximum ($highval) for $algorithm\n");
+			$errs++;
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	signzone_checks()
+#
+# Purpose:	Check the signzone-related fields.
+#
+sub signzone_checks
+{
+	my $endtime;				# Zone end-time.
+	my $etcnt;				# Count of seconds in endtime.
+
+	#
+	# Get the zone-related configuration entries.
+	#
+	$endtime = $dtconf{'endtime'};
+
+	#
+	# Check i the endtime isn't defined here.
+	#
+	if(!defined($endtime))
+	{
+		qprint("endtime not defined\n");
+		return;
+	}
+
+	#
+	# Get the endtime seconds from the endtime.
+	#
+	$endtime =~ /\+([0-9]+)/;
+	$etcnt = $1;
+
+	#
+	# Give the appropriate message, depending on if the encryption
+	# time is acceptable or not.
+	#
+	if($etcnt < $MINEND)
+	{
+		qprint("endtime ($endtime) < minimum realistic endtime ($MINEND)\n");
+		$errs++;
+	}
+	else
+	{
+		vprint("endtime ($endtime) acceptable\n");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	file_check()
+#
+# Purpose:	Check the file fields:  ensure that the file exists and check
+#		some basic file-specific data.
+#
+sub file_check
+{
+	my $field = shift;			# Field to check.
+	my $ftype = shift;			# Type of file.
+	my $fname;				# Name of file to check.
+
+	$fname	= $dtconf{"$field"};
+
+	#
+	# If the field isn't defined, we'll return.
+	#
+	if(!defined($fname))
+	{
+		vprint("$field not defined\n");
+		return;
+	}
+
+	#
+	# If the filename isn't an absolute path, then we'll stop
+	# checking here.
+	#
+	if($fname !~ /^\//)
+	{
+		qprint("no further checks for $field file $fname\n");
+		return;
+	}
+
+	#
+	# Ensure the file exists.
+	#
+	if(! -e $fname)
+	{
+		qprint("$field file $fname does not exist\n");
+		$errs++;
+		return;
+	}
+
+	#
+	# Check some data about this file:
+	#
+	#	f - regular file
+	#	x - regular file that must be executable
+	#	c - character device file that must be readable
+	#
+	if($ftype eq "f")
+	{
+		if(-f $fname)
+		{
+			vprint("$field file $fname is a regular file\n");
+		}
+		else
+		{
+			qprint("$field file $fname is not a regular file\n");
+			$errs++;
+		}
+	}
+	elsif($ftype eq "x")
+	{
+		if(-f $fname)
+		{
+			vprint("$field file $fname is a regular file\n");
+		}
+		else
+		{
+			qprint("$field file $fname is not a regular file\n");
+			$errs++;
+		}
+		if(-x $fname)
+		{
+			vprint("$field file $fname is an executable file\n");
+		}
+		else
+		{
+			qprint("$field file $fname is not an executable file\n");
+			$errs++;
+		}
+	}
+	elsif($ftype eq "c")
+	{
+		if(-c $fname)
+		{
+			vprint("$field file $fname is a character device file\n");
+		}
+		else
+		{
+			qprint("$field file $fname is not a character device file\n");
+			$errs++;
+		}
+		if(-r $fname)
+		{
+			vprint("$field file $fname is a readable file\n");
+		}
+		else
+		{
+			qprint("$field file $fname is not a readable file\n");
+			$errs++;
+		}
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	qprint()
+#
+sub qprint
+{
+	my $line = shift;
+
+	if(!$quiet)
+	{
+		print $line;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $line = shift;
+
+	if($verbose)
+	{
+		qprint($line);
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  confchk [options] <config file>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-quiet	give no output\n";
+	print STDERR "\t\t-verbose	give voluminous output\n";
+	print STDERR "\t\t-help		display this help message\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+confchk - Check a B<dnssec-tools> configuration file for sanity.
+
+=head1 SYNOPSIS
+
+  confchk [options] config_file
+
+=head1 DESCRIPTION
+
+B<confchk> checks a B<dnssec-tools> configuration file to determine if the
+entries are valid.
+
+The I<default_keyrec> configuration entry is not checked.  This entry
+specifies the default I<keyrec> file name and isn't necessarily expected
+to exist in any particular place.
+
+The following checks are performed:
+
+=over 4
+
+=item I<algorithm>
+
+Ensure the I<algorithm> field is valid.  The acceptable values may be found
+in the B<dnssec-keygen> man page.
+
+=item I<ksklength>
+
+Ensure the I<ksklength> field is valid.  The acceptable values may be found
+in the B<dnssec-keygen> man page.
+
+=item I<zsklength>
+
+Ensure the I<zsklength> field is valid.  The acceptable values may be found
+in the B<dnssec-keygen> man page.
+
+=item I<endtime>
+
+Ensure the I<endtime> field is valid.  This value is assumed to be in the
+"+NNNNNN" format.  There is a lower limit of two hours.  (This is an
+artificial limit under which it may not make sense to have an endtime.)
+
+=item I<random>
+
+Ensure the I<random> field is valid.  This file must be a character
+device file.
+
+=item I<checkzone>
+
+Ensure the I<checkzone> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=item I<keygen>
+
+Ensure the I<keygen> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=item I<signzone>
+
+Ensure the I<signzone> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -quiet
+
+No output will be given, but the number of errors will be used as the
+exit code.
+
+=item -verbose
+
+Verbose output will be given.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::conf.pm(3)
+
+=cut
