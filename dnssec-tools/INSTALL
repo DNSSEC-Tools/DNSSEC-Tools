@@ -52,11 +52,18 @@ INSTRUCTIONS
   3) Run ./configure
      (type "./configure --help" for a quick usage summary.)
      (--prefix=PATH will change the default /usr/local installation path.)
-     (see "" on changing the complier to use)
 
   4) make
 
   5) make install                 [as root]
+
+  6) install the logwatch extensions for parsing DNSSEC related
+     reports from syslog messages
+ 
+        See tools/logwatch/README
+
+  7) If you want to use automatic dynamic DNS securely on linux
+     systems, see the tools/linux/ifup-dyn-dns/README file.
 
 PATCHING OTHER APPLICATIONS
 =============================================
