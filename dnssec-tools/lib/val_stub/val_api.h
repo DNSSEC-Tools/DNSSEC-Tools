@@ -55,8 +55,7 @@ int val_query ( const char *domain_name, int class, int type,
 		int *dnssec_status );
 
 /*
- * Returns the entry from the DNS for host with name if
- * the DNSSEC validation was successful.
+ * Returns the entry from the hosts file and DNS for host with name.
  * If successful, *dnssec_status will contain VALIDATE_SUCCESS
  * If there is a failure, *dnssec_status will contain the validator
  * error code.  Applications can use the FREE_HOSTENT() macro given above
