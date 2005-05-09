@@ -47,11 +47,14 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
     while ((read = getline (&line, &len, fp)) != -1) {
 	char *buf = NULL;
 	char *cp = NULL;
+	char addr_buf[INET6_ADDRSTRLEN];
 	char *domain_name = NULL;
 	int matchfound = 0;
+	int is_ipv6_addr = 0;
 	char *alias_list[MAX_ALIAS_COUNT];
 	int alias_index = 0;
 	struct in_addr ip4_addr;
+	struct in6_addr ip6_addr;
 
 	if ((read > 0) && (line[0] == '#')) continue;
 
@@ -68,8 +71,27 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 	if (!cp) continue;
 
 	bzero(&ip4_addr, sizeof(struct in_addr));
-	/* XXX TODO: Handle IPv6 addresses */
-	inet_pton(AF_INET, cp, &ip4_addr);
+	bzero(&ip6_addr, sizeof(struct in6_addr));
+
+	val_log("parsing address `%s'", cp);
+	memset(addr_buf, 0, INET6_ADDRSTRLEN);
+	if (inet_pton(AF_INET, cp, &ip4_addr) <= 0) {
+
+	    /* not an ipv4 address... try ipv6 */
+	    if (inet_pton (AF_INET6, cp, &ip6_addr) <= 0) {
+		/* not a valid address ... skip this line */
+		val_log("\t...error in address format\n");
+		continue;
+	    }
+
+	    val_log("\t...type of address is IPv6\n");
+	    val_log("Address is: %s\n", inet_ntop(AF_INET6, &ip6_addr, addr_buf, INET6_ADDRSTRLEN));
+	    is_ipv6_addr = 1;
+	}
+	else {
+	    val_log("\t...type of address is IPv4\n");
+	    val_log("Address is: %s\n", inet_ntop(AF_INET, &ip4_addr, addr_buf, INET_ADDRSTRLEN));
+	}
 
 	/* read the full domain name */
 	cp = (char *) strtok_r (NULL, white, &buf);
@@ -95,19 +117,35 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 	if (matchfound) {
 	    int i;
 	    struct hostent *hentry = (struct hostent*) malloc (sizeof(struct hostent));
+
 	    bzero(hentry, sizeof(struct hostent));
+
 	    hentry->h_name = (char *) strdup(domain_name);
 	    hentry->h_aliases = (char **) malloc ((alias_index + 1) * sizeof(char *));
+
 	    for (i=0; i<alias_index; i++) {
 		hentry->h_aliases[i] = (char *) strdup(alias_list[i]);
 	    }
+
 	    hentry->h_aliases[alias_index] = 0;
-	    hentry->h_addrtype = AF_INET;
-	    hentry->h_length = sizeof(struct in_addr);
-	    hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
-	    hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
-	    memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
-	    hentry->h_addr_list[1] = 0;
+
+	    /* check if the address is an IPv6 address */
+	    if (is_ipv6_addr) {
+		hentry->h_addrtype = AF_INET6;
+		hentry->h_length = sizeof(struct in6_addr);
+		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
+		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in6_addr));
+		memcpy(hentry->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
+		hentry->h_addr_list[1] = 0;
+	    }
+	    else {
+		hentry->h_addrtype = AF_INET;
+		hentry->h_length = sizeof(struct in_addr);
+		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
+		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
+		memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+		hentry->h_addr_list[1] = 0;
+	    }
 
 	    return hentry;
 	}
