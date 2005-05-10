@@ -23,18 +23,36 @@ LocalGetOptions(\%opts,
 		['v|verbose','Turn on verbose output'],
 	       );
 
+my %zoneinfo;
+
 if ($opts{'i'}) {
     if (! -f $opts{'i'}) {
 	print STDERR "Can't find or read the file: $opts{i}\n";
 	exit 1;
     }
-    open(I, $opts{'i'});
-    while (<I>) {
-	next if (/^\s*$/);
-	next if (/^\s*#/);
-	push @ARGV, split();
+
+    if ($opts{i} =~ /.xml$/i) {
+	# xml configuration
+	require XML::Smart;
+	my $doc = XML::Smart->new($opts{i});
+	my $nodes = $doc->{'donutsd'}[0]{'zones'}[0]{'zone'};
+	foreach my $zone (@$nodes) {
+	    push @ARGV, $zone->{'file'}, $zone->{'name'}, $zone->{'contact'};
+	    if ($zone->{'donutsargs'}) {
+		$zoneinfo{$zone->{'name'}}{'donutsargs'} =
+		  $zone->{'donutsargs'};
+	    }
+	}
+    } else {
+	# simple text file
+	open(I, $opts{'i'});
+	while (<I>) {
+	    next if (/^\s*$/);
+	    next if (/^\s*#/);
+	    push @ARGV, split();
+	}
+	close(I);
     }
-    close(I);
 }
 
 if ($#ARGV == -1) {
@@ -64,7 +82,7 @@ while (1) {
 	my $mailit;
 	
 	verbose("running donuts on $file/$zonename");
-	system("donuts $opts{a} $file $zonename > $opts{t}/$zonename.new 2>&1");
+	System("donuts $opts{a} $zoneinfo{$zonename}{'donutsargs'} $file $zonename > $opts{t}/$zonename.new 2>&1");
 	if (-f "$opts{t}/$zonename") {
 	    verbose("  comparing results from last run");
 	    system("diff -u $opts{t}/$zonename $opts{t}/$zonename.new > $opts{t}/$zonename.diff 2>&1");
@@ -148,6 +166,14 @@ sub verbose {
 	    print STDERR "\n";
 	}
     }
+}
+
+######################################################################
+# System()
+#  - calls system but first calls verbose() on the args
+sub System {
+    verbose("  running: ", @_);
+    system(@_);
 }
 
 ######################################################################
@@ -266,6 +292,24 @@ should contain one triple with white space separating the arguments.  Example:
 
    db.zonefile1.com   zone1.com   admin@zone1.com
    db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com
+
+Or, for even more control you can specify an XML file (it must end in
+.xml and you must have the XML::Smart perl module installed) that
+describes the same information but also allows for per-zone
+customization of the donuts arguments:
+
+ <donutsd>
+   <zones>
+    <zone>
+      <file>db.example.com</file>
+      <name>example.com</name>
+      <contact>admin@example.com</contact>
+      <!-- this is not a signed zone
+           therefore don't display DNSSEC errors -->
+      <donutsargs>-i DNSSEC</donutsargs>
+    </zone>
+   </zones>
+ </donutsd>
 
 =head1 EXAMPLE
 
