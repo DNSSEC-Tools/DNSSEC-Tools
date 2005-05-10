@@ -8,7 +8,7 @@ use ExtUtils::MakeMaker;
 	 'NAME'		=> 'Net::DNS::SEC::Tools::Donuts::donuts',
 	 'PREREQ_PM'    => { Text::Wrap => '2001'
 			   },
-	 'EXE_FILES' => [qw(donuts)],
+	 'EXE_FILES' => [qw(donuts donutsd)],
 
 #	 'depend' => {'pure__install' => 'installrulefiles'},
 
