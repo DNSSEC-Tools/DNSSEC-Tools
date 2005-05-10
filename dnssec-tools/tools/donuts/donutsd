@@ -1,0 +1,98 @@
+#!/usr/bin/perl
+# Copyright 2004-2005 Sparta, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+my %opts = ('z' => 60*60*24,
+	    't' => '/tmp/donutsd');
+
+LocalGetOptions(\%opts,
+		['d|donuts-arguments=s', 'Arguments to pass to donuts'],
+		['z|time-between-checks=s','Time between checks'],
+		['t|temporary-directory=s','Temporary directory'],
+		['v|verbose','Turn on verbose output'],
+	       );
+
+if ($#ARGV == -1) {
+    print STDERR
+      "You must specify at least one ZONEFILE ZONENAME ZONECONTACT set\n";
+    exit 1;
+}
+
+if (($#ARGV+1)%3 != 0) {
+    print STDERR
+      "Arguments must be passed in triples of: ZONEFILE ZONENAME ZONECONTACT\n";
+    exit 1;
+}
+
+# creat temporary directory
+if (! -d $opts{'t'}) {
+    mkdir($opts{'t'});
+}
+
+while (1) {
+    my @args = @ARGV;
+    while ($#args > -1) {
+	my $file = shift @args;
+	my $zonename = shift @args;
+	my $contactaddr = shift @args;
+
+	my $mailit;
+	
+	verbose("running donuts on $file/$zonename");
+	system("donuts $opts{d} $file $zonename > $opts{t}/$zonename.new 2>&1");
+	if (-f "$opts{t}/$zonename") {
+	    verbose("  comparing results from last run");
+	    system("diff $opts{t}/$zonename $opts{t}/$zonename.new > /dev/null 2>&1");
+	    $mailit = $?;
+	} else {
+	    verbose("  there was no data from a previous run");
+	    $mailit = 1;
+	}
+	if ($mailit) {
+	    verbose("  output changed; mailing $contactaddr about $file");
+	}
+	if (-f "$opts{t}/$zonename") {
+	    unlink("$opts{t}/$zonename");
+	}
+	verbose("  $opts{t}/$zonename.new => $opts{t}/$zonename");
+	rename("$opts{t}/$zonename.new", "$opts{t}/$zonename");
+    }
+    verbose("sleeping for $opts{z}\n");
+    sleep($opts{z});
+}
+
+sub verbose {
+    if ($opts{'v'}) {
+	print @_;
+	if ($_[$#_] !~ /\n$/) {
+	    print "\n";
+	}
+    }
+}
+
+######################################################################
+# argument parsing
+#
+sub LocalGetOptions {
+    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
+	import Getopt::Long::GUI;
+	return GetOptions(@_);
+    } else {
+	require Getopt::Long;
+	import Getopt::Long;
+    }
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
+}
