@@ -18,6 +18,7 @@ LocalGetOptions(\%opts,
                 ['GUI:separator',   'E-Mail options:'],
 		['s|smtp-server=s', 'SMTP server to mail mail through (localhost)'],
                 ['f|from-address=s','From address to use when seindng mail'],
+                ['x|include-diff-output','Include diff output in mail'],
                 '',
 		['v|verbose','Turn on verbose output'],
 	       );
@@ -66,7 +67,7 @@ while (1) {
 	system("donuts $opts{a} $file $zonename > $opts{t}/$zonename.new 2>&1");
 	if (-f "$opts{t}/$zonename") {
 	    verbose("  comparing results from last run");
-	    system("diff $opts{t}/$zonename $opts{t}/$zonename.new > /dev/null 2>&1");
+	    system("diff -u $opts{t}/$zonename $opts{t}/$zonename.new > $opts{t}/$zonename.diff 2>&1");
 	    $mailit = $?;
 	} else {
 	    verbose("  there was no data from a previous run");
@@ -111,11 +112,24 @@ sub mailcontact {
 
     # create the body of the message: the donuts results
     # Include the file
+    $message->datasend(("-" x 70) . "\n");
     open(IF,"$file");
     while (<IF>) {
         $message->datasend($_);
     }
     close(IF);
+
+    # create the body of the message: the donuts results
+    # Include the file
+    if ($opts{'x'}) {
+        $message->datasend(("-" x 70) . "\n");
+        $file =~ s/.new$/.diff/;
+        open(IF,"$file");
+        while (<IF>) {
+            $message->datasend($_);
+        }
+        close(IF);
+    }
 
     # finish and send the message
     $message->dataend();
