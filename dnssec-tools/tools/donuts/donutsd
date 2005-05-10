@@ -10,15 +10,31 @@ my %opts = (z => 60*60*24,
 	    s => 'localhost');
 
 LocalGetOptions(\%opts,
-		['d|donuts-arguments=s', 'Arguments to pass to donuts'],
+		['a|donuts-arguments=s', 'Arguments to pass to donuts'],
 		['z|time-between-checks=s', 'Time between checks'],
-		['t|temporary-directory=s', 'Temporary directory'],
+		['t|temporary-directory=s', 'Temporary directory to store results in'],
+                ['i|input-list=s',           'File containing file/zonename/zonecontact pairings'],
                 '',
+                ['GUI:separator',   'E-Mail options:'],
 		['s|smtp-server=s', 'SMTP server to mail mail through (localhost)'],
                 ['f|from-address=s','From address to use when seindng mail'],
                 '',
 		['v|verbose','Turn on verbose output'],
 	       );
+
+if ($opts{'i'}) {
+    if (! -f $opts{'i'}) {
+	print STDERR "Can't find or read the file: $opts{i}\n";
+	exit 1;
+    }
+    open(I, $opts{'i'});
+    while (<I>) {
+	next if (/^\s*$/);
+	next if (/^\s*#/);
+	push @ARGV, split();
+    }
+    close(I);
+}
 
 if ($#ARGV == -1) {
     print STDERR
@@ -47,7 +63,7 @@ while (1) {
 	my $mailit;
 	
 	verbose("running donuts on $file/$zonename");
-	system("donuts $opts{d} $file $zonename > $opts{t}/$zonename.new 2>&1");
+	system("donuts $opts{a} $file $zonename > $opts{t}/$zonename.new 2>&1");
 	if (-f "$opts{t}/$zonename") {
 	    verbose("  comparing results from last run");
 	    system("diff $opts{t}/$zonename $opts{t}/$zonename.new > /dev/null 2>&1");
