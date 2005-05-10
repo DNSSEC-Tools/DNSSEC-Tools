@@ -2,13 +2,21 @@
 # Copyright 2004-2005 Sparta, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 
-my %opts = ('z' => 60*60*24,
-	    't' => '/tmp/donutsd');
+use Net::SMTP;
+
+my %opts = (z => 60*60*24,
+	    t => '/tmp/donutsd',
+	    f => $ENV{'USER'} || $ENV{'LOGNAME'},
+	    s => 'localhost');
 
 LocalGetOptions(\%opts,
 		['d|donuts-arguments=s', 'Arguments to pass to donuts'],
-		['z|time-between-checks=s','Time between checks'],
-		['t|temporary-directory=s','Temporary directory'],
+		['z|time-between-checks=s', 'Time between checks'],
+		['t|temporary-directory=s', 'Temporary directory'],
+                '',
+		['s|smtp-server=s', 'SMTP server to mail mail through (localhost)'],
+                ['f|from-address=s','From address to use when seindng mail'],
+                '',
 		['v|verbose','Turn on verbose output'],
 	       );
 
@@ -50,6 +58,7 @@ while (1) {
 	}
 	if ($mailit) {
 	    verbose("  output changed; mailing $contactaddr about $file");
+	    mailcontact($contactaddr, "$opts{t}/$zonename.new", $zonename);
 	}
 	if (-f "$opts{t}/$zonename") {
 	    unlink("$opts{t}/$zonename");
@@ -61,11 +70,52 @@ while (1) {
     sleep($opts{z});
 }
 
+######################################################################
+# mailcontact()
+#  - emails a contact address with the donuts error output
+sub mailcontact {
+    my ($contact, $file, $zonename) = @_;
+
+    # set up the SMTP object and required data
+    $message = Net::SMTP->new($opts{s});
+    $message->mail($opts{f});
+    $message->to(split(/,\s*/,$contact));
+    $message->data();
+
+    # create headers
+    $message->datasend("To: " . $contact . "\n");
+    $message->datasend("From: " . $opts{'f'} . "\n");
+    $message->datasend("Subject: donuts output for zone: $zonename\n\n");
+
+    # create the body of the message: the warning
+    $message->datasend("The donuts dns zone-file syntax checker was run on the \"$zonename\"\n");
+    $message->datasend("and there were resulting errors or errors that have changed since the last run.\n");
+    $message->datasend("The results of this run of donuts can be found below:\n\n");
+    $message->datasend("You will not receive another message until the output from donuts has changed.\n\n");
+
+    # create the body of the message: the donuts results
+    # Include the file
+    open(IF,"$file");
+    while (<IF>) {
+        $message->datasend($_);
+    }
+    close(IF);
+
+    # finish and send the message
+    $message->dataend();
+    $message->quit;
+}
+
+
+######################################################################
+# verbose() routine
+#  - passes arguments to print iff $opts{v} is defined (ie, -v was specified)
+#
 sub verbose {
     if ($opts{'v'}) {
-	print @_;
+	print STDERR @_;
 	if ($_[$#_] !~ /\n$/) {
-	    print "\n";
+	    print STDERR "\n";
 	}
     }
 }
