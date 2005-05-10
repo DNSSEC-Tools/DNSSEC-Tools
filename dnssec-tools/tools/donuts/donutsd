@@ -176,3 +176,115 @@ sub LocalOptionsMap {
     }
     return @opts;
 }
+
+=pod
+
+=head1 NAME
+
+DoNutSD - Run the donuts syntax checker every so often and email the results
+
+=head1 SYNOPSIS
+
+donutsd [-z FREQ] [-t TMPDIR] [-f FROM] [-s SMTPSERVER] [-a DONUTSARGS]
+        [-x] [-v] [-i zonelistfile] [ZONEFILE ZONENAME ZONECONTACT]
+
+=head1 DESCRIPTION
+
+Donutsd runs donuts on a set of zone files every so often (the
+frequency is specified by the -z flag which defaults to 24 hours) and
+watches for changes in the results.  These changes may be due to the
+time-sensitive nature of DNSSEC related records (EG, RRSIG validity
+periods) or because parent/child relationships have changed.  If any
+changes have occurred in the output since the last run of donuts on a
+particular zone file, the results are emailed to the specified zone
+administor's email address.
+
+=head1 OPTIONS
+
+=over
+
+=item -v
+
+Turns on more verbose output.
+
+=item -a ARGUMENTS
+
+Passes arguments to command line arguments of donuts runs.
+
+=item -z TIME
+
+Sleeps TIME seconds beetween calls to donuts.
+
+=item -s SMTPSERVER
+
+When sending mail, send it to the SMTPSERVER specified (default = localhost).
+
+=item -f FROMADDR
+
+When sending mail, use FROMADDR for the From: address.
+
+=item -x
+
+Send the diff output in the email message as well as the donuts output.
+
+=item -t TMPDIR
+
+Store temporary files in TMPDIR.
+
+=item -i INPUTZONES
+
+[see the next section details]
+
+=back
+
+=head1 ZONE ARGUMENTS
+
+The rest of the arguments to donutsd should be triplets of the
+following information:
+
+=over
+
+=item ZONEFILE
+
+The zone file to examine
+
+=item ZONENAME
+
+The zonename that file is supposed to be defining
+
+=item ZONECONTACT
+
+An email address of the zone administrator (or a comma separated
+list of addresses).  The results will be sent to this email address.
+
+=back
+
+Additionally, instead of listing all the zones you wish to monitor on
+the command line, you can instead use the -i flag which specifies a
+file to be read listing the TRIPLES instead.  Each line in this file
+should contain one triple with white space separating the arguments.  Example:
+
+   db.zonefile1.com   zone1.com   admin@zone1.com
+   db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com
+
+=head1 EXAMPLE
+
+  donutsd -a "--live --level 8" -f root@somewhere.com \
+     db.example.com example.com admin@example.com
+
+=head1 COPYRIGHT
+
+Copyright 2005 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker <hardaker@users.sourceforge.net>
+
+=head1 SEE ALSO
+
+donuts(1)
+
+http://dnssec-tools.sourceforge.net/
+
+=cut
