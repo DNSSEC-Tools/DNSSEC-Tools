@@ -14,11 +14,13 @@ LocalGetOptions(\%opts,
 		['z|time-between-checks=s', 'Time between checks'],
 		['t|temporary-directory=s', 'Temporary directory to store results in'],
                 ['i|input-list=s',           'File containing file/zonename/zonecontact pairings'],
+                ['o|run-once',               'Run once and exit'],
                 '',
                 ['GUI:separator',   'E-Mail options:'],
 		['s|smtp-server=s', 'SMTP server to mail mail through (localhost)'],
                 ['f|from-address=s','From address to use when seindng mail'],
                 ['x|include-diff-output','Include diff output in mail'],
+                ['e|email-summary-to=s', 'Email a result summary to ADDRESS'],
                 '',
 		['v|verbose','Turn on verbose output'],
 	       );
@@ -72,7 +74,7 @@ if (! -d $opts{'t'}) {
     mkdir($opts{'t'});
 }
 
-while (1) {
+while (!$opts{o}) {
     my @args = @ARGV;
     while ($#args > -1) {
 	my $file = shift @args;
@@ -98,9 +100,30 @@ while (1) {
 	if (-f "$opts{t}/$zonename") {
 	    unlink("$opts{t}/$zonename");
 	}
+
+	# extract last error line
+	if ($opts{a} =~ /(-v|--verbose)/ || 
+	    $zoneinfo{$zonename}{'donutsargs'} =~ /(-v|--verbose)/) {
+	    System("tail -6 $opts{t}/$zonename.new >> $opts{t}/donuts.summary.new");
+	} else {
+	    System("tail -1 $opts{t}/$zonename.new >> $opts{t}/donuts.summary.new");
+	}
+
 	verbose("  $opts{t}/$zonename.new => $opts{t}/$zonename");
 	rename("$opts{t}/$zonename.new", "$opts{t}/$zonename");
     }
+
+    # mail the global administrator a summary
+    if ($opts{'e'}) {
+	system("diff -u $opts{t}/donuts.summary $opts{t}/donuts.summary.new > $opts{t}/donuts.summary.diff 2>&1");
+	if ($?) {
+	    mailcontact($opts{e}, "$opts{t}/donuts.summary.new", "all-zones");
+	}
+    }
+    verbose("  $opts{t}/donuts.summary.new => $opts{t}/donuts.summary");
+    rename("$opts{t}/donuts.summary.new", "$opts{t}/donuts.summary");
+
+    # sleep and start again in a while
     verbose("sleeping for $opts{z}\n");
     sleep($opts{z});
 }
@@ -130,7 +153,7 @@ sub mailcontact {
 
     # create the body of the message: the donuts results
     # Include the file
-    $message->datasend(("-" x 70) . "\n");
+    $message->datasend(("-" x 70) . "\n\n");
     open(IF,"$file");
     while (<IF>) {
         $message->datasend($_);
@@ -140,7 +163,7 @@ sub mailcontact {
     # create the body of the message: the donuts results
     # Include the file
     if ($opts{'x'}) {
-        $message->datasend(("-" x 70) . "\n");
+        $message->datasend("\n" . ("-" x 70) . "\n\n");
         $file =~ s/.new$/.diff/;
         open(IF,"$file");
         while (<IF>) {
@@ -233,6 +256,10 @@ administor's email address.
 
 Turns on more verbose output.
 
+=item -o
+
+Run once and quit (as opposed to sleeping/re-running forever).
+
 =item -a ARGUMENTS
 
 Passes arguments to command line arguments of donuts runs.
@@ -240,6 +267,12 @@ Passes arguments to command line arguments of donuts runs.
 =item -z TIME
 
 Sleeps TIME seconds beetween calls to donuts.
+
+=item -e ADDRESS
+
+Mail ADDRESS with a summary of the results from all the files.  EG,
+these are the last few lines of the donuts output for each zone that
+details the number of errors found.
 
 =item -s SMTPSERVER
 
