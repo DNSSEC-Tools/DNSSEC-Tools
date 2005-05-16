@@ -3,6 +3,7 @@
 # See the COPYING file included with the dnssec-tools package for details.
 
 use Net::SMTP;
+use strict;
 
 my %opts = (z => 60*60*24,
 	    t => '/tmp/donutsd',
@@ -43,6 +44,14 @@ if ($opts{'i'}) {
 	    if ($zone->{'donutsargs'}) {
 		$zoneinfo{$zone->{'name'}}{'donutsargs'} =
 		  $zone->{'donutsargs'};
+	    }
+	}
+
+	# parse command line arguments as well:
+	my $configs = $doc->{'donutsd'}[0]{'configs'}[0]{'config'};
+	foreach my $config (@$configs) {
+	    if (!$opts{$config->{'flag'}}) {
+		$opts{$config->{'flag'}} = $config->{'value'};
 	    }
 	}
     } else {
@@ -135,7 +144,7 @@ sub mailcontact {
     my ($contact, $file, $zonename) = @_;
 
     # set up the SMTP object and required data
-    $message = Net::SMTP->new($opts{s});
+    my $message = Net::SMTP->new($opts{s});
     $message->mail($opts{f});
     $message->to(split(/,\s*/,$contact));
     $message->data();
@@ -337,12 +346,28 @@ customization of the donuts arguments:
       <file>db.example.com</file>
       <name>example.com</name>
       <contact>admin@example.com</contact>
-      <!-- this is not a signed zone
-           therefore don't display DNSSEC errors -->
+      <!-- this is not a signed zone therefore we'll
+           add these args so we don't display DNSSEC errors -->
       <donutsargs>-i DNSSEC</donutsargs>
     </zone>
    </zones>
  </donutsd>
+
+The <donutsd> tree can also contain a <conifgs> section where command
+line flags can be specified as well:
+
+ <donutsd>
+  <configs>
+   <config><flag>a</flag><value>--live --level 8</value></config>
+   <config><flag>e</flag><value>wes@hardakers.net</value></config>
+  </configs>
+  <zones>
+   ...
+  </zones>
+ </donutsd>
+
+Real command line flags will be used in preference to those specified
+in the .xml file, however.
 
 =head1 EXAMPLE
 
