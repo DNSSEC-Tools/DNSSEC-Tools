@@ -50,11 +50,15 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 	char addr_buf[INET6_ADDRSTRLEN];
 	char *domain_name = NULL;
 	int matchfound = 0;
+#if 0
 	int is_ipv6_addr = 0;
+#endif
 	char *alias_list[MAX_ALIAS_COUNT];
 	int alias_index = 0;
 	struct in_addr ip4_addr;
+#if 0
 	struct in6_addr ip6_addr;
+#endif
 
 	if ((read > 0) && (line[0] == '#')) continue;
 
@@ -71,22 +75,27 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 	if (!cp) continue;
 
 	bzero(&ip4_addr, sizeof(struct in_addr));
+#if 0
 	bzero(&ip6_addr, sizeof(struct in6_addr));
-
+#endif
 	val_log("parsing address `%s'", cp);
 	memset(addr_buf, 0, INET6_ADDRSTRLEN);
 	if (inet_pton(AF_INET, cp, &ip4_addr) <= 0) {
 
+#if 0
 	    /* not an ipv4 address... try ipv6 */
 	    if (inet_pton (AF_INET6, cp, &ip6_addr) <= 0) {
+#endif
 		/* not a valid address ... skip this line */
 		val_log("\t...error in address format\n");
 		continue;
+#if 0
 	    }
 
 	    val_log("\t...type of address is IPv6\n");
 	    val_log("Address is: %s\n", inet_ntop(AF_INET6, &ip6_addr, addr_buf, INET6_ADDRSTRLEN));
 	    is_ipv6_addr = 1;
+#endif
 	}
 	else {
 	    val_log("\t...type of address is IPv4\n");
@@ -129,6 +138,7 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 
 	    hentry->h_aliases[alias_index] = 0;
 
+#if 0
 	    /* check if the address is an IPv6 address */
 	    if (is_ipv6_addr) {
 		hentry->h_addrtype = AF_INET6;
@@ -139,14 +149,16 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 		hentry->h_addr_list[1] = 0;
 	    }
 	    else {
+#endif
 		hentry->h_addrtype = AF_INET;
 		hentry->h_length = sizeof(struct in_addr);
 		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
 		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
 		memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
 		hentry->h_addr_list[1] = 0;
+#if 0
 	    }
-
+#endif
 	    return hentry;
 	}
     }
@@ -254,22 +266,25 @@ static struct hostent *get_hostent_from_response (struct domain_info *response)
 		    address_found = 1;
 		}
 	    }
+#if 0
 	    else if (rrset->rrs_type_h == ns_t_aaaa) {
 		val_log("val_gethostbyname: type of record = AAAA\n");
 		/* XXX TODO: Fill in the AF_INET6 address in hentry */
 		hentry->h_addrtype = AF_INET6;
 		address_found = 1;
 	    }
-
+#endif
 	    rr = rr->rr_next;
 	}
 	// else ignore the rrset and move on to the next
 	rrset = rrset->rrs_next;
     }
 
+#if 0
     /* XXX TODO: If some address were AF_INET and some were AF_INET6,
      * convert the AF_INET addresses to AF_INET6
      */
+#endif
     
     if (address_found) {
 	val_h_errno = NETDB_SUCCESS;
@@ -297,14 +312,18 @@ struct hostent *val_gethostbyname ( const char *name, int *dnssec_status )
 {
     struct hostent* hentry = NULL;
     struct in_addr ip4_addr;
+#if 0
     struct in6_addr ip6_addr;
+#endif
 
     if (!name || !dnssec_status) {
 	return NULL;
     }
 
     bzero(&ip4_addr, sizeof(struct in_addr));
+#if 0
     bzero(&ip6_addr, sizeof(struct in6_addr));
+#endif
 
     if (inet_pton(AF_INET, name, &ip4_addr) > 0) {
 	hentry = (struct hostent*) malloc (sizeof(struct hostent));
@@ -322,6 +341,7 @@ struct hostent *val_gethostbyname ( const char *name, int *dnssec_status )
 	val_h_errno = NETDB_SUCCESS;
 	return hentry;
     }
+#if 0
     else if (inet_pton(AF_INET6, name, &ip6_addr) > 0) {
 	hentry = (struct hostent*) malloc (sizeof(struct hostent));
 	bzero(hentry, sizeof(struct hostent));
@@ -338,6 +358,7 @@ struct hostent *val_gethostbyname ( const char *name, int *dnssec_status )
 	*dnssec_status = VALIDATE_SUCCESS;
 	return hentry;
     }
+#endif
     else {
 	struct domain_info response;
 
