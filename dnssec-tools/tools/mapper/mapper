@@ -43,6 +43,8 @@ LocalGetOptions(\%opts,
 		 'Weight of lines.  >1 means shorter, <1 means longer'],
 		['f|font-size=i',
 		 'Font Size.  (default is 10)'],
+		['x|map-width=i', 'Maximum width of the map in pixels'],
+		['y|map-height=i', 'Maximum height of the map in pixels'],
 		'',
 		['r|resource-records','Show resource record types labels'],
 		['t|add-type-data=s','Show data for comma-sep types'],
@@ -142,10 +144,14 @@ if ($opts{'t'}) {
 #
 # Create the graphviz module that will eventually create the display
 #
+my @graphopts;
+push @graphopts, 'width', ($opts{'x'}/96) if ($opts{'x'});
+push @graphopts, 'height', ($opts{'y'}/96) if ($opts{'y'});
 my $g = GraphViz->new(layout => $opts{'l'},
 		      node => {'fontsize' => $opts{'f'}},
 		      edge => {'fontsize' => $opts{'f'}},
 		      overlap => ($opts{'a'})?'true':'false',
+		      @graphopts
 		     );
 
 #
@@ -475,7 +481,7 @@ all displayed nodes that have A records.
 
 Adds a legend to the map.
 
-=item -l (neato|dot|twopi)
+=item -l (neato|dot|twopi|circo|fdp)
 
 Selects a layout format.  The default is I<neato> which is circular in
 pattern.  See the documentation on the I<graphviz> package and the
