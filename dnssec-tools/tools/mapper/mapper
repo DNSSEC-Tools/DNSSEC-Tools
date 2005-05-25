@@ -16,7 +16,7 @@ my %edgesonce;
 my %edgelabels;
 my %extras;
 my %opts = ( o => 'map.png', l => 'neato', w => 7*24*60*60,
-	     s => 'NSEC,RRSIG');
+	     s => 'NSEC,RRSIG', a => 0, e => 1, f => 10);
 my ($zfile, $dname, $from, $to, $color);
 my $seccolor = "green2";
 my %dnames;
@@ -35,8 +35,14 @@ LocalGetOptions(\%opts,
 		'',
 		['l|layout-style=s','Layout style',
 		 question => { type => 'menu',
-			       values => [qw(dot neato twopi)] }],
+			       values => [qw(dot neato twopi circo fdp)] }],
 		['L|legend','Add a legend to the map'],
+		['a|allow-overlap', 
+		 'Allow overlap of map nodes (makes tighter maps)'],
+		['e|edge-weight=i', 
+		 'Weight of lines.  >1 means shorter, <1 means longer'],
+		['f|font-size=i',
+		 'Font Size.  (default is 10)'],
 		'',
 		['r|resource-records','Show resource record types labels'],
 		['t|add-type-data=s','Show data for comma-sep types'],
@@ -137,9 +143,9 @@ if ($opts{'t'}) {
 # Create the graphviz module that will eventually create the display
 #
 my $g = GraphViz->new(layout => $opts{'l'},
-		      node => {'fontsize' => 10},
-		      edge => {'fontsize' => 10},
-		      no_overlap => 1,
+		      node => {'fontsize' => $opts{'f'}},
+		      edge => {'fontsize' => $opts{'f'}},
+		      overlap => ($opts{'a'})?'true':'false',
 		     );
 
 #
@@ -250,7 +256,7 @@ foreach my $e1 (keys(%edges)) {
 	add_once($g, $e2);
 	$parms = get_parms($edges{$e1}{$e2}, \%edgeparameters, \%edgecombohash);
 	my $label = $edgelabels{$e1}{$e2};
-	$g->add_edge($e1, $e2, label => $label, %$parms);
+	$g->add_edge($e1, $e2, label => $label, %$parms, weight => $opts{e});
     }
 }
 
@@ -474,6 +480,23 @@ Adds a legend to the map.
 Selects a layout format.  The default is I<neato> which is circular in
 pattern.  See the documentation on the I<graphviz> package and the
 I<GraphViz> perl module for further details.
+
+=item -a
+
+Allows overlapping of nodes.  This makes much tighter maps with the
+downside being they're more cluttered.  This is pretty much required
+to map extremel large zones though.
+
+=item -e WEIGHT
+
+Assigns an edge weight to edges.  In theory >1 means shorter, <1 means
+longer although I don't believe as implemented it will have any
+effect.  Should work better in the future.
+
+=item -f INTEGER
+
+Uses the INTEGER value for the font size to print node names with.
+Defaults to 10.
 
 =item -w WARNTIME
 
