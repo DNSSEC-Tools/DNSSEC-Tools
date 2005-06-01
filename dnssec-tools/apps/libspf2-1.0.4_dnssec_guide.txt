@@ -10,8 +10,7 @@ queries in libspf2.
 
 This document describes the changes to libspf2 to provide the DNSSEC
 validation.  It is intended as a guide to developers who want to use this
-functionality offered by libspf2.  This is still in its early stages of
-design and development, and may undergo some changes in the future.
+functionality offered by libspf2.
 
 
 Additions to libspf2
@@ -20,36 +19,19 @@ Additions to libspf2
 The layered DNS architecture in libspf2 is amenable to adding DNSSEC
 validation.
 
-A new DNS layer has been added to libspf2 called spf_dns_dnssec.  As
-per the DNS layer API, it defines the following lookup function:
+The 'resolv' DNS layer in libspf2-1.0.4 has been extended to allow
+for a flag to indicate whether DNSSEC validation should be performed.
 
-static SPF_dns_rr_t *SPF_dns_lookup_dnssec( SPF_dns_config_t spfdcid,
-					    const char *domain,
-					    ns_type rr_type,
-					    int should_cache )
+The following functions have been added for creating and destroying the
+(secure) resolv layer to allow for DNSSEC validation:
 
-This lookup function is called internally from other modules within
-libspf2.  Applications using libspf2 cannot call this lookup function
-directly.
+SPF_dns_config_t SPF_dns_create_config_sresolv( SPF_dns_config_t layer_below,
+	 				        int debug, int dodnssec);
 
-In addition to the lookup function, it defines the following functions for
-creating and destroying the spf_dns_dnssec layer:
-
-SPF_dns_config_t SPF_dns_create_config_dnssec( SPF_dns_config_t layer_below,
-					       int debug,
-					       int dnssec_policy);
-void SPF_dns_reset_config_dnssec( SPF_dns_config_t spfdc );
-void SPF_dns_destroy_config_dnssec( SPF_dns_config_t spfdc );
+void SPF_dns_reset_config_sresolv( SPF_dns_config_t spfdc );
+void SPF_dns_destroy_config_sresolv( SPF_dns_config_t spfdc );
 
 These functions are described in detail in the next section.
-
-The following files have been added to libspf2-1.0.4:
-
-    src/include/spf_dns_dnssec.h:   The header file for the
-				    DNSSEC validation layer.
-    
-    src/libspf2/spf_dns_dnssec.c:   Implementation of the DNSSEC
-				    validation layer.
 
 The following header and source files have been modified:
     
@@ -65,62 +47,65 @@ The following header and source files have been modified:
     src/libspf2/spf_result.c:	    Return appropriate errors
 				    for DNSSEC validation failure.
 
+    src/include/spf_dns_resolv.h
+    src/libspf2/spf_dns_resolv.c:   Additional functions for creation
+				    of the secure resolv layer to
+				    perform DNSSEC validation.
+
+    src/libspf2/spf_eval_id.c:	    Return appropriate errors
+				    for DNSSEC validation failure.
+
+    src/libspf2/spf_strerror.c:	    Compose error string for
+				    DNSSEC validation failure.
+
 Additional return values from functions:
-The SPF_get_spf function can now return two additional error values:
+The SPF_get_spf function can now return an additional error value, if
+DNSSEC validation fails:
 
-    SPF_E_DNSSEC_FAIL
-    SPF_E_DNSSEC_WARN
-
-The WARN error codes are returned when the dnssec layer has been configured
-to return a warning in the event of a DNSSEC validation failure.  The FAIL
-error codes are returned when the dnssec layer has been configured to
-abort further processing and in the event of a DNSSEC validation failure.
-
+    SPF_E_DNSSEC_FAILURE
 
 API for Applications
 --------------------
 
-The following three functions are available for applications to add
+The following function is available for applications to add
 DNSSEC validation to their use of libspf2:
 
-(1) SPF_dns_config_t SPF_dns_create_config_dnssec(SPF_dns_config_t layer_below,
-					          int debug,
-					          int dnssec_policy);
-This function is used to create the dnssec layer.
+(1)SPF_dns_config_t SPF_dns_create_config_sresolv(SPF_dns_config_t layer_below,
+					          int debug, int dodnssec);
+
+This function is used to create the dnssec-aware resolv layer.
+
+If the value of the 'dodnssec' parameter is 1, DNSSEC validation will be
+performed.  If the value is 0, DNSSEC validation will not be performed.
+
 The 'layer_below' parameter specifies the DNS layer below the dnssec layer.
+If dodnssec is '1', the layer_below will not be consulted.
+
 The 'debug' parameter gives the debug level:
     0: Don't output debug or error statements
     1: Debug level 1.  Output error conditions.
     2: Debug level 2.  Output error conditions and debug statements.
-The 'dnssec_policy' parameter specifies what action the dnssec layer and
-libspf2 should take in the event of a DNSSEC validation failure.  At present,
-the following three values are defined for this parameter in
-src/include/spf_dns_dnssec.h:
-
-      DNSSEC_POLICY_IGNORE [0]: Ignore dnssec validation failure
-      DNSSEC_POLICY_WARN   [1]: Return a warning, but continue processing
-      DNSSEC_POLICY_ABORT  [2]: Abort processing and return an error to
-				the application
 
 This function returns a handle to the dnssec layer.
       
-(2) void SPF_dns_reset_config_dnssec  ( SPF_dns_config_t spfdc );
-This function resets the dnssec layer.
+(2) void SPF_dns_reset_config_sresolv ( SPF_dns_config_t spfdc );
+This function resets the resolv layer.
 
-(3) void SPF_dns_destroy_config_dnssec( SPF_dns_config_t spfdc );
-This function frees up the memory allocated by the dnssec layer.
+(3) void SPF_dns_destroy_config_sresolv ( SPF_dns_config_t spfdc );
+This function frees up the memory allocated by the resolv layer.
 
-The dnssec layer should be added above the resolver and caching layers.
-Thus, if previously the layers were:
+The dnssec-aware secure resolver layers must be the bottom-most layer if
+DNSSEC validation is to be performed.
 
-      dns-caching
-      dns-resolver
+If previously the layers were:
+
+      dns-caching layer
+      dns-resolver layer
 
 Then, the new layers will be:
 
-      dns-dnssec
-      dns-caching
-      dns-resolver
+      dns-caching layer
+      dnssec-aware dns-resolver layer
 
 in that order.
 
@@ -131,31 +116,25 @@ validation failure.
 
 
 Example: Use of dnssec-extensions to libspf2-1.0.4 in spfmilter-1.0.8
----------------------------------------------------------------
+---------------------------------------------------------------------
 
 The resolvers[] array in spfmilter-1.0.8 is used to store the libspf2
-DNS layers.  The dnssec layer can be added as follows:
+DNS layers.  The dnssec-aware resolv layer can be added as follows:
 (Error checking has not been shown for clarity.)
 
     if (!resolvers[r].initialized) {
-        resolvers[r].spfdcid_r = SPF_dns_create_config_resolv(NULL, debug);
+        resolvers[r].spfdcid_r = SPF_dns_create_config_sresolv(NULL, debug, 1);
 	resolvers[r].spfdcid_c = SPF_dns_create_config_cache (
 				     resolvers[r].spfdcid_r,
 				     cache_size,
 				     debug);
-	resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec(
-				     resolvers[r].spfdcid_c,
-				     debug,
-				     dnssec_policy);
 	resolvers[r].initialized = 1;
     }
 
 spfmilter-1.0.8 calls the SPF_result() function in libspf2 to perform the SPF
 lookup.
 
-    ld->output = SPF_result (ld->spfcid, resolvers[r].spfdcid_d);
-
-i.e. the handle to the dnssec-layer is passed to the SPF_result function.
+    ld->output = SPF_result (ld->spfcid, resolvers[r].spfdcid_c);
 
 The SPF_result function returns a pointer to an SPF_output_t structure.
 The SPF_output_t structure contains five fields of interest:
@@ -166,57 +145,43 @@ The SPF_output_t structure contains five fields of interest:
     int			   num_errs
     char **		   err_msgs
 
-In case of a DNSSEC validation failure, the values of these fields are
-as follows:
+If dodnssec flag is set (to a value of 1) and a DNSSEC validation failure
+occurs, the values of these fields are as follows:
 
-(1) if dnssec-policy = DNSSEC_POLICY_ABORT then
-        result = SPF_RESULT_UNKOWN
-	err    = SPF_E_DNSSEC_FAIL
-	err_msg= "DNSSEC Validation of SPF record failed." (or similar)
-	num_errs > 0
-	err_msgs != NULL (It will contain the message
-		          "DNSSEC Validation of SPF record failed." (or
-		          similar) as one of its messages).
-
-(2) if dnssec-policy = DNSSEC_POLICY_WARN then
-        result = <result-value depending on other processing>
-	err    = <err-value depending on other processing>
-	err_msg= "DNSSEC Validation of SPF record failed." (or similar)
-	         or other value depending on other processing
+        result   = <result-value depending on other processing>
+	err      = <err-value depending on other processing>
+	err_msg  = "DNSSEC Validation of SPF record failed." (or similar)
+	           or other value depending on other processing
 	num_errs > 0
 	err_msgs != NULL (It will contain the message
 		          "DNSSEC Validation of SPF record failed." (or
 			  similar) as one of its messages).
 
-(3) if dnssec-policy = DNSSEC_POLICY_IGNORE then the values of these
-    fields will be dependent on other SPF processing.
-
 These output fields can be used by the client of this library
 (say spfmilter) to inform the user about the error, or reject the
 email.
 
-The DNS layers are freed as follows:
+The DNS layers are destroyed as follows:
 
     if ( resolvers[r].initialized ) {
-        SPF_dns_destroy_config_dnssec( resolvers[r].spfdcid_d );
-	SPF_dns_destroy_config_cache ( resolvers[r].spfdcid_c );
-	SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
+	SPF_dns_destroy_config_cache   ( resolvers[r].spfdcid_c );
+	SPF_dns_destroy_config_sresolv ( resolvers[r].spfdcid_r );
     }
 
-If spfmilter is operating in the 'warn' mode, the SPF_E_DNSSEC_FAILURE
-error code will be present in the response, and will be added to the
-Received-SPF mail-header as a "x-dnssec" field:
+If spfmilter is operating in the 'warn' mode, a message similar to the
+following will be added to the Received-SPF mail-header as a "x-dnssec" field:
 
 	     x-dnssec="fail (DNSSEC validation failed.)";
 
 If spfmilter is operating in the 'warn' or 'reject' modes, and
-DNSSEC validation succeeds, or if there was no SPF processing, the
-Received-SPF mail-header will contain the following:
+DNSSEC validation succeeds, the Received-SPF mail-header will contain
+the following:
 
 	     x-dnssec="pass";
 
-If spfmilter is operating in the 'ignore' mode, DNSSEC validation
-is not performed.  The Received-SPF mail-header will show:
+If spfmilter is operating in the 'ignore' mode, or if the SPF (TXT) record is
+not present, DNSSEC validation is not performed.  The Received-SPF mail-header
+will show:
 
 	     x-dnssec="none";
-=======================================================================
+==============================================================================
