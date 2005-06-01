@@ -96,7 +96,8 @@ the following status message:
 
     x-dnssec="none";
 
-which means that there was no DNSSEC validation.
+which means that there was no DNSSEC validation.  This error code is also
+added if there is no SPF record for the domain.
 
 The dnssec-policy is applied to all emails, irrespective of the sender or the
 recepient.  Future versions may allow a more granular policy based on the

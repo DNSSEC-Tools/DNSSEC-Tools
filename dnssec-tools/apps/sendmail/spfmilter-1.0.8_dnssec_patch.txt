@@ -129,7 +129,7 @@ Index: configure.ac
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2004-11-26 16:51:50.000000000 -0500
-+++ spfmilter.c	2005-04-25 14:53:07.000000000 -0400
++++ spfmilter.c	2005-06-01 09:16:38.000000000 -0400
 @@ -27,8 +27,13 @@
  ** For commentary on this license please see http://www.acme.com/license.html
  */
@@ -286,6 +286,24 @@ Index: spfmilter.c
      }
  
  
+@@ -1110,7 +1157,7 @@
+ spf_header( SMFICTX* ctx, char* name, char* value )
+     {
+     connection_data_t* cd;
+-    
++
+     cd = (connection_data_t*) smfi_getpriv( ctx );
+ 
+     /* We look for any instances of our own header in the incoming
+@@ -1144,7 +1191,7 @@
+ spf_eoh( SMFICTX* ctx )
+     {
+     connection_data_t* cd;
+-    
++
+     cd = (connection_data_t*) smfi_getpriv( ctx );
+ 
+     if ( cd->whitelisted || cd->authenticated )
 @@ -1224,7 +1271,7 @@
      if ( cd->action == SPFMILTER_ACTION_MARK )
  	{
@@ -295,6 +313,15 @@ Index: spfmilter.c
  	smfi_addheader( ctx, HEADER_NAME, cd->buf2 );
  	}
  
+@@ -1245,7 +1292,7 @@
+ spf_abort( SMFICTX* ctx )
+     {
+     connection_data_t* cd;
+-    
++
+     cd = (connection_data_t*) smfi_getpriv( ctx );
+ 
+     if ( cd != (connection_data_t*) 0 )
 @@ -1286,7 +1333,10 @@
      {
      connection_data_t* cd;
@@ -476,35 +503,58 @@ Index: spfmilter.c
      spfc_global = SPF_create_config();
      if ( spfc_global == (SPF_config_t) 0 )
  	{
-@@ -1833,6 +1986,14 @@
- 
-     SPF_set_debug( spfc_global, debug );
- 
-+    if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
-+	dodnssec = 0;
-+    }
-+    else {
-+	dodnssec = 1;
-+    }
-+    SPF_set_dnssec (spfc_global, dodnssec);
-+
-     if ( localpolicy_str != (char*) 0 )
+@@ -2062,18 +2215,42 @@
+ static int
+ lib_get_result( lib_data_t* ld )
+     {
++    int retval;
+     /* Convert libspf2 result to spfmilter result. */
+     switch ( ld->output.result )
  	{
- 	SPF_init_c_results( &spfr_localpolicy );
-@@ -2069,7 +2230,11 @@
- 	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
- 	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
- 	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
+-	case SPF_RESULT_PASS: return SPFMILTER_RESULT_PASS;
+-	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
+-	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
+-	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
 -	case SPF_RESULT_UNKNOWN: return SPFMILTER_RESULT_UNKNOWN;
-+	case SPF_RESULT_UNKNOWN:
-+	    if ( ld->output.err == SPF_E_DNSSEC_FAIL )
-+		return SPFMILTER_RESULT_FAIL;
-+	    else
-+		return SPFMILTER_RESULT_UNKNOWN;
- 	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
- 	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
- 	default: return -1;
-@@ -2092,12 +2257,40 @@
+-	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
+-	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
+-	default: return -1;
++	case SPF_RESULT_PASS:    retval = SPFMILTER_RESULT_PASS;     break;
++	case SPF_RESULT_FAIL:    retval = SPFMILTER_RESULT_FAIL;     break;
++	case SPF_RESULT_SOFTFAIL:retval = SPFMILTER_RESULT_SOFTFAIL; break;
++	case SPF_RESULT_NEUTRAL: retval = SPFMILTER_RESULT_NEUTRAL;  break;
++	case SPF_RESULT_UNKNOWN: retval = SPFMILTER_RESULT_UNKNOWN;  break;
++	case SPF_RESULT_ERROR:   retval = SPFMILTER_RESULT_ERROR;    break;
++	case SPF_RESULT_NONE:    retval = SPFMILTER_RESULT_NONE;     break;
++	default:                 retval = -1;                        break;
++	}
++        /* Check if there was a DNSSEC validation failure */
++        if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT) {
++	    int i;
++	    int num_errs;
++	    const char **err_msgs;
++	    printf("spfmilter: DNSSEC reject policy is in effect\n");
++	    num_errs = lib_get_num_errors(ld);
++	    err_msgs = lib_get_error_msgs(ld);
++
++#ifdef HAVE_LIBVAL
++	    for (i=0; i<num_errs; i++) {
++		if (err_msgs[i]) {
++		    if (strstr(err_msgs[i], "DNSSEC") != NULL) {
++			printf("spfmilter: DNSSEC validation failure occured.  Rejecting mail.\n");
++			retval = SPFMILTER_RESULT_FAIL;
++			break;
++		    }
++		}
++	    }
++#endif
+ 	}
++
++	return retval;
+     }
+ 
+ 
+@@ -2092,12 +2269,40 @@
  
  
  static const char*
@@ -545,28 +595,47 @@ Index: spfmilter.c
  static void
  lib_fini_message_data( lib_data_t* ld )
      {
-@@ -2157,8 +2350,9 @@
- typedef struct {
+@@ -2158,7 +2363,7 @@
      int initialized, inuse;
      int next_free_resolver;
-+    SPF_dns_config_t spfdcid_d;
      SPF_dns_config_t spfdcid_r;
 -    SPF_dns_config_t spfdcid;
 +    SPF_dns_config_t spfdcid_c;
      } resolver_t;
  static resolver_t* resolvers;
  static int max_resolvers, first_free_resolver, num_resolvers_inuse;
-@@ -2202,7 +2396,8 @@
+@@ -2202,8 +2407,14 @@
      for ( r = 0; r < max_resolvers; ++r )
  	if ( resolvers[r].initialized )
  	    {
 -	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid );
-+	    SPF_dns_destroy_config_dnssec( resolvers[r].spfdcid_d );
+-	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
 +	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid_c );
- 	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
++	    if ((dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT) ||
++		(dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN)) {
++		SPF_dns_destroy_config_sresolv( resolvers[r].spfdcid_r );
++	    }
++	    else {
++		SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
++	    }
  	    }
      pthread_mutex_destroy( &resolver_mutex );
-@@ -2266,13 +2461,34 @@
+     }
+@@ -2259,20 +2470,27 @@
+     if ( ! resolvers[r].initialized )
+ 	{
+ 	/* Create the DNS objects. */
+-	resolvers[r].spfdcid_r = SPF_dns_create_config_resolv( (SPF_dns_config_t) 0, debug );
++	if ((dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT) ||
++	    (dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN)) {
++	    resolvers[r].spfdcid_r = SPF_dns_create_config_sresolv( (SPF_dns_config_t) 0, debug, 1 );
++	}
++	else {
++	    resolvers[r].spfdcid_r = SPF_dns_create_config_resolv( (SPF_dns_config_t) 0, debug );
++	}
+ 	if ( resolvers[r].spfdcid_r == (SPF_dns_config_t) 0 )
+ 	    {
+ 	    syslog( LOG_ERR, "SPF_dns_create_config_resolv() failed" );
  	    free_resolver( r );
  	    return -1;
  	    }
@@ -579,40 +648,20 @@ Index: spfmilter.c
  	    free_resolver( r );
  	    return -1;
  	    }
-+	/*	resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_c, debug, dnssec_policy );*/
-+	switch (dnssec_policy) {
-+	case SPFMILTER_DNSSEC_POLICY_REJECT:
-+	    resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_r, debug, DNSSEC_POLICY_ABORT );
-+	    break;
 +
-+	case SPFMILTER_DNSSEC_POLICY_WARN:
-+	    resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_r, debug, DNSSEC_POLICY_WARN );
-+	    break;
-+
-+	case SPFMILTER_DNSSEC_POLICY_IGNORE:
-+	default:
-+	    resolvers[r].spfdcid_d = SPF_dns_create_config_dnssec( resolvers[r].spfdcid_r, debug, DNSSEC_POLICY_IGNORE );
-+	}
-+
-+	if ( resolvers[r].spfdcid_d == (SPF_dns_config_t) 0 )
-+	    {
-+	    syslog( LOG_ERR, "SPF_dns_create_config_dnssec() failed"  );
-+	    free_resolver( r );
-+	    return -1;
-+	    }
  	resolvers[r].initialized = 1;
  	}
  
-@@ -2283,7 +2499,7 @@
+@@ -2283,7 +2501,7 @@
  static SPF_dns_config_t
  get_resolver( int r )
      {
 -    return resolvers[r].spfdcid;
-+    return resolvers[r].spfdcid_d;
++    return resolvers[r].spfdcid_c;
      }
  
  
-@@ -2299,3 +2515,342 @@
+@@ -2299,3 +2517,342 @@
      }
  
  #endif /* USE_LIBSPF2 */
