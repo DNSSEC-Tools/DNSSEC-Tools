@@ -26,7 +26,7 @@
 #include "res_squery.h"
 #include "val_cache.h"
 #include "val_errors.h"
-#include "val_x_query.h"
+#include "val_assertion.h"
 #include "validator.h"
 #include "val_log.h"
 
@@ -387,7 +387,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	}
 	else if (!found_dnskey) {
 	        val_log("val_verify(): DNSKEY not found.\n");
-		rrset->rrs_status = DNSKEY_MISSING;
+		rrset->rrs_status = DNSKEY_NOMATCH;
 	}
 	else {
 	    // Check if the rrset matches the query
@@ -592,7 +592,7 @@ int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag, val_dnskey_rdata_t 
 		free(new_dnskey_rdata->public_key);
 	}
 	
-	return DNSKEY_MISSING;
+	return DNSKEY_NOMATCH;
 }
 
 
@@ -665,14 +665,33 @@ val_log ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
 int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *public_key, u_int32_t public_key_len)
 {
 	/* Only SHA-1 is understood */
-    if(ds_hashtype != htons(DIGEST_SHA_1))
+    if(ds_hashtype != DIGEST_SHA_1)
         return 0;
 
 	// XXX check hashes
 	return 1;	
 }
 
+/*
+ * State returned in as->ac_state is one of:
+ * VERIFIED : at least one sig passed
+ * A_NOT_VERIFIED : multiple errors
+ * the exact error
+ */
 
+#define SET_STATUS(savedstatus, sig, newstatus) \
+	do { \
+		sig->status = newstatus; \
+		if ((savedstatus != VERIFIED) && (savedstatus != newstatus))  \
+			savedstatus = NOT_VERIFIED; \
+		else	\
+			savedstatus = newstatus; \
+	} while (0)
+
+// XXX Still have to check for the following error conditions
+// XXX WRONG_RRSIG_OWNER
+// XXX RRSIG_ALGO_MISMATCH
+// XXX KEYTAG_MISMATCH
 void verify_next_assertion(struct assertion_chain *as)
 {
 	struct rrset_rec *the_set;
@@ -682,7 +701,9 @@ void verify_next_assertion(struct assertion_chain *as)
 	val_dnskey_rdata_t dnskey;
 	int             is_a_wildcard;
 	struct assertion_chain *the_trust;
-	int verified = 0;
+	int retval;
+
+	as->ac_state = VERIFIED;
 
 	the_set = as->ac_data;
 	the_trust = as->ac_trust;
@@ -693,18 +714,18 @@ void verify_next_assertion(struct assertion_chain *as)
 
 		if(the_set->rrs_type_h != ns_t_dnskey) {
 			/* trust path contains the key */
-			if(NO_ERROR != 
+			if(NO_ERROR != (retval = 
 				find_key_for_tag (the_trust->ac_data->rrs_data, 
-					&signby_footprint_n, &dnskey)) {
-				the_sig->status = SIG_KEY_NOT_AVAILABLE;
+					&signby_footprint_n, &dnskey))) {
+				SET_STATUS(as->ac_state, the_sig, retval);
 				free(dnskey.public_key);
 				continue;
 			}
 		}
 		else {
 			/* data itself contains the key */
-			if(NO_ERROR != find_key_for_tag (the_set->rrs_data, &signby_footprint_n, &dnskey)) {
-				the_sig->status = SIG_KEY_NOT_AVAILABLE;
+			if(NO_ERROR != (retval = find_key_for_tag (the_set->rrs_data, &signby_footprint_n, &dnskey))) {
+				SET_STATUS(as->ac_state, the_sig, retval);
 				free(dnskey.public_key);
 				continue;
 			}
@@ -712,14 +733,14 @@ void verify_next_assertion(struct assertion_chain *as)
 
 		/* do wildcard processing */
 		if(check_label_count (the_set, the_sig, &is_a_wildcard) != SR_UNSET) {
-			the_sig->status = SIG_BAD_LABEL_COUNT;
+			SET_STATUS(as->ac_state, the_sig, WRONG_LABEL_COUNT);
 			free(dnskey.public_key);
 			continue;
 		}
 
 		/* and check the signature */
 		if(SR_UNSET != do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard)) {
-			the_sig->status = SIG_PROCESS_ERR;
+			SET_STATUS(as->ac_state, the_sig, VERIFY_PROC_ERROR);
 			free(dnskey.public_key);
 			continue;
 		}
@@ -729,7 +750,8 @@ void verify_next_assertion(struct assertion_chain *as)
 			if (the_set->rrs_type_h == ns_t_dnskey) {
 				/* follow the trust path */
 				struct rr_rec *dsrec = the_trust->ac_data->rrs_data;		
-				uint16_t keytag = htons(dnskey.key_tag);
+				//uint16_t keytag = htons(dnskey.key_tag);
+				uint16_t keytag = dnskey.key_tag;
 				while(dsrec)	
 				{	
 					val_ds_rdata_t ds;
@@ -743,15 +765,12 @@ void verify_next_assertion(struct assertion_chain *as)
 					dsrec = dsrec->rr_next;
 				}
 				if(!dsrec)
-					the_sig->status = SIG_DS_NOMATCH;
-				else
-					verified = 1;
+					SET_STATUS(as->ac_state, the_sig, SECURITY_LAME);
 			}
-			else
-				verified = 1;
 		}
+		else
+			SET_STATUS(as->ac_state, the_sig, the_sig->status);
+
 		free(dnskey.public_key);
 	}
-
-	as->ac_state = (verified == 1)? A_VERIFIED : A_VERIFY_FAILED;
 }
