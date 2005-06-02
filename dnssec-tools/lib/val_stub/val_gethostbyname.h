@@ -14,4 +14,7 @@
 #include <netdb.h>
 #include "val_api.h"
 
+struct hostent *val_gethostbyname ( const char *name, int *dnssec_status );
+struct hostent *val_x_gethostbyname ( const char *name, int *dnssec_status );
+
 #endif
