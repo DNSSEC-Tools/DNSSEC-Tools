@@ -9,6 +9,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <resolver.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -21,6 +22,10 @@
 #include "val_gethostbyname.h"
 #include "val_query.h"
 #include "val_log.h"
+#include "validator.h"
+#include "val_assertion.h"
+#include "val_support.h"
+#include "val_context.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"
@@ -167,15 +172,14 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 }
 
 /* Converts data in the domain_info structure into a hostent structure */
-static struct hostent *get_hostent_from_response (struct domain_info *response)
+static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
 {
     struct hostent *hentry = NULL;
-    struct rrset_rec *rrset = NULL;
     int address_found = 0;
     int cname_found = 0;
     char dname[MAXDNAME];
 
-    if (!response) {
+    if (!rrset) {
 	val_h_errno = NETDB_INTERNAL;
 	return NULL;
     }
@@ -188,8 +192,6 @@ static struct hostent *get_hostent_from_response (struct domain_info *response)
     hentry->h_addr_list = (char **) malloc (sizeof(char*));
     hentry->h_addr_list[0] = 0;
     
-    rrset = response->di_rrset;
-
     while (rrset) {
 	struct rr_rec *rr = rrset->rrs_data;
 
@@ -385,9 +387,120 @@ struct hostent *val_gethostbyname ( const char *name, int *dnssec_status )
 	}
 	else {
 	    /* Extract validated answers from response */
-	    hentry = get_hostent_from_response (&response);
+	    hentry = get_hostent_from_response (response.di_rrset);
 	    free_domain_info_ptrs(&response);
 	    return hentry;
 	}
     }
 }
+
+/*
+ * Returns the entry from the host database for host.
+ * If successful, *dnssec_status will contain VALIDATE_SUCCESS
+ * If there is a failure, *dnssec_status will contain the validator
+ * error code.
+ */
+struct hostent *val_x_gethostbyname ( const char *name, int *dnssec_status )
+{
+    struct hostent* hentry = NULL;
+    struct in_addr ip4_addr;
+#if 0
+    struct in6_addr ip6_addr;
+#endif
+
+    if (!name || !dnssec_status) {
+	return NULL;
+    }
+
+    bzero(&ip4_addr, sizeof(struct in_addr));
+#if 0
+    bzero(&ip6_addr, sizeof(struct in6_addr));
+#endif
+
+    if (inet_pton(AF_INET, name, &ip4_addr) > 0) {
+	hentry = (struct hostent*) malloc (sizeof(struct hostent));
+	bzero(hentry, sizeof(struct hostent));
+	hentry->h_name = strdup(name);
+	hentry->h_aliases = (char **) malloc (sizeof(char *));
+	hentry->h_aliases[0] = 0;
+	hentry->h_addrtype = AF_INET;
+	hentry->h_length = sizeof(struct in_addr);
+	hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
+	hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
+	memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+	hentry->h_addr_list[1] = 0;
+	*dnssec_status = VALIDATE_SUCCESS;
+	val_h_errno = NETDB_SUCCESS;
+	return hentry;
+    }
+#if 0
+    else if (inet_pton(AF_INET6, name, &ip6_addr) > 0) {
+	hentry = (struct hostent*) malloc (sizeof(struct hostent));
+	bzero(hentry, sizeof(struct hostent));
+	hentry->h_name = strdup(name);
+	hentry->h_aliases = (char **) malloc (sizeof(char *));
+	hentry->h_aliases[0] = 0;
+	hentry->h_addrtype = AF_INET6;
+	hentry->h_length = sizeof(struct in6_addr);
+	hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
+	hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in6_addr));
+	memcpy(hentry->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
+	hentry->h_addr_list[1] = 0;
+	val_h_errno = NETDB_SUCCESS;
+	*dnssec_status = VALIDATE_SUCCESS;
+	return hentry;
+    }
+#endif
+    else {
+
+	/* First check the ETC_HOSTS file
+	 * XXX: TODO check the order in the ETC_HOST_CONF file
+	 */
+	hentry = get_hostent_from_etc_hosts (name);
+
+	if (hentry != NULL) {
+	    *dnssec_status = VALIDATE_SUCCESS; /* ??? */
+	    val_h_errno = VALIDATE_SUCCESS;
+	    return hentry;
+	}
+
+
+    int retval;
+    struct query_chain *queries = NULL;
+    struct assertion_chain *assertions = NULL;
+    struct val_result *results = NULL;
+	u_char name_n[MAXCDNAME];
+    val_context_t   *context = get_default_context();
+                                                                                                                             
+    hentry = NULL;
+    
+	if (((retval = ns_name_pton(name, name_n, MAXCDNAME-1)) != -1)
+		&& (NO_ERROR == (retval = add_to_query_chain(&queries, name_n, ns_t_a, ns_c_in)))
+        && (NO_ERROR == (retval = resolve_n_check(context, name_n, ns_t_a, ns_c_in, 0,
+                                            &queries, &assertions, &results)))) {
+                                                                                                                             
+        if(results->status == VALIDATE_SUCCESS) 
+            hentry = get_hostent_from_response(results->as->ac_data);
+
+        *dnssec_status = results->status;
+    }
+    else
+        *dnssec_status = retval;
+                                                                                                                             
+    if(hentry == NULL)
+        val_h_errno = HOST_NOT_FOUND;
+    else
+        val_h_errno = NETDB_SUCCESS;
+                                                                                                                             
+    free_query_chain(&queries);
+    free_assertion_chain(&assertions);
+    free_result_chain(&results);
+                                                                                                                             
+    if(context == NULL)
+        destroy_context(context);
+                                                                                                                             
+    return hentry;
+
+	}	
+}
+
