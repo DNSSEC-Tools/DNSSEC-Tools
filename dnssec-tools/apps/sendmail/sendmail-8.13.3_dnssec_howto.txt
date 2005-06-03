@@ -33,7 +33,7 @@ library can be found at http://dnssec-tools.sourceforge.net/.  You must
 install this library before compiling the patched sendmail source.
 
 Add the following line to the sendmail-8.13.3/devtools/Site/site.config.m4
-file:
+file, if it is not already present:
 
 APPENDDEF(`confLIBS', `-lsres -lval -lcrypto')
 
