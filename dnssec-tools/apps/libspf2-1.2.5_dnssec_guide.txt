@@ -38,8 +38,8 @@ The following files have been modified:
 	New constants for adding the DNSSEC validation layer
 
  src/include/spf_dns_resolv.h
- src/include/spf_request.h
- src/include/spf_record.h
+	New function declarion to support DNSSEC validation
+
  src/include/spf_response.h
  src/include/spf_dns.h
 	Additional error codes for DNSSEC validation failure.
@@ -48,7 +48,6 @@ The following files have been modified:
 	Map DNSSEC validation failure error-code to an
 	appropriate string.
 
- src/include/Makefile.am
  src/libspf2/Makefile.am
 	Added new source files for compilation
 
