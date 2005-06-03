@@ -29,12 +29,17 @@ Apply the spfmilter-1.0.8_dnssec_patch.txt patch found in this directory by:
 This will apply the patch and store the original files with a .orig suffix.
 
 Before compiling, run 'autoconf' from the main spfmilter-1.0.8 directory to
-generate a new 'configure' file.  Then, configure, compile and install
-spfmilter as per the instructions given in the spfmilter-1.0.8 distribution.
-The only change is that instead of installing the original libspf2, you need
-to patch it with the libspf2-1.x.y_dnssec_patch (where x.y is either 0.4 or
-2.5) given in ../libspf2-1.x.y_dnssec_patch.txt, and then install libspf2.
-For instructions on how to do this, see ../libspf2-1.x.y_dnssec_howto.txt
+generate a new 'configure' file.  Then, run configure with the
+--enable-dnssec-support option:
+
+	./configure --enable-dnssec-support
+
+Finally, compile and install spfmilter as per the instructions given in the
+spfmilter-1.0.8 distribution.  The only change is that instead of installing
+the original libspf2, you need to patch it with the libspf2-1.x.y_dnssec_patch
+(where x.y is either 0.4 or 2.5) given in ../libspf2-1.x.y_dnssec_patch.txt,
+and then install libspf2.  For instructions on how to install libspf2 with
+the dnssec-patches, see ../libspf2-1.x.y_dnssec_howto.txt
 
 
 Configuration
