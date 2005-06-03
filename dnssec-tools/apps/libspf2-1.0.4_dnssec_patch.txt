@@ -1,11 +1,12 @@
 Index: src/libspf2/spf_eval_id.c
 ===================================================================
 --- src/libspf2/spf_eval_id.c	2004-07-08 13:24:55.000000000 -0400
-+++ src/libspf2/spf_eval_id.c	2005-05-30 10:37:27.000000000 -0400
-@@ -204,6 +204,88 @@
++++ src/libspf2/spf_eval_id.c	2005-06-03 11:27:34.000000000 -0400
+@@ -204,6 +204,90 @@
      return *output;
  }
  
++#ifdef SUPPORT_DNSSEC
 +/* Add a new error message to the end of the output->err_msgs list */
 +void SPF_add_output_err (SPF_output_t *output,
 +			    const char *msg)
@@ -88,14 +89,16 @@ Index: src/libspf2/spf_eval_id.c
 +	}
 +    }
 +}
++#endif
  
  SPF_output_t SPF_eval_id( SPF_config_t spfcid, SPF_id_t spfid,
  			    SPF_dns_config_t spfdcid,
-@@ -401,6 +483,17 @@
+@@ -401,6 +485,19 @@
  	    if( rr_a->herrno == TRY_AGAIN )
  		return done( SPF_RESULT_ERROR, SPF_REASON_MECH,
  			     SPF_E_DNS_ERROR );
 +
++#ifdef SUPPORT_DNSSEC
 +	    if (rr_a->herrno == DNSSEC_FAILURE) {
 +		char errstr[1024];
 +
@@ -106,13 +109,15 @@ Index: src/libspf2/spf_eval_id.c
 +		snprintf(errstr, sizeof(errstr), "DNSSEC Validation failed for A record of %s.", lookup);
 +	        SPF_add_output_err (&output, errstr);
 +	    }
++#endif
  	    
  	    for( i = 0; i < rr_a->num_rr; i++ )
  	    {
-@@ -457,6 +550,17 @@
+@@ -457,6 +554,19 @@
  		return done( SPF_RESULT_ERROR, SPF_REASON_MECH,
  			     SPF_E_DNS_ERROR );
  	    
++#ifdef SUPPORT_DNSSEC
 +	    if (rr_mx->herrno == DNSSEC_FAILURE) {
 +		char errstr[1024];
 +
@@ -123,14 +128,16 @@ Index: src/libspf2/spf_eval_id.c
 +		snprintf(errstr, sizeof(errstr), "DNSSEC Validation failed for MX record of %s.", lookup);
 +	        SPF_add_output_err (&output, errstr);
 +	    }
++#endif
 +	    
  	    max_mx = rr_mx->num_rr;
  	    if ( max_mx > spfic->max_dns_mx )
  		max_mx = spfic->max_dns_mx;
-@@ -483,6 +587,17 @@
+@@ -483,6 +593,19 @@
  		    return done( SPF_RESULT_ERROR, SPF_REASON_MECH,
  				 SPF_E_DNS_ERROR );
  	    
++#ifdef SUPPORT_DNSSEC
 +		if (rr_a->herrno == DNSSEC_FAILURE) {
 +		    char errstr[1024];
 +		    
@@ -141,14 +148,16 @@ Index: src/libspf2/spf_eval_id.c
 +		    snprintf(errstr, sizeof(errstr), "DNSSEC Validation failed for A record of %s.", rr_mx->rr[j]->mx);
 +		    SPF_add_output_err (&output, errstr);
 +		}
++#endif
 +	    
  		for( i = 0; i < rr_a->num_rr; i++ )
  		{
  		    if ( rr_a->rr_type != fetch_ns_type )
-@@ -570,6 +685,17 @@
+@@ -570,6 +693,19 @@
  		    if( rr_a->herrno == TRY_AGAIN )
  			return done( SPF_RESULT_ERROR, SPF_REASON_MECH, SPF_E_DNS_ERROR );
  	    
++#ifdef SUPPORT_DNSSEC
 +		    if (rr_a->herrno == DNSSEC_FAILURE) {
 +			char errstr[1024];
 +			
@@ -159,14 +168,16 @@ Index: src/libspf2/spf_eval_id.c
 +			snprintf(errstr, sizeof(errstr), "DNSSEC Validation failed for A record of %s.", rr_ptr->rr[i]->ptr);
 +			SPF_add_output_err (&output, errstr);
 +		    }
++#endif
 +	    
  		    for( j = 0; j < rr_a->num_rr; j++ )
  		    {
  			if ( spfic->debug )
-@@ -654,6 +780,17 @@
+@@ -654,6 +790,19 @@
  		    if( rr_aaaa->herrno == TRY_AGAIN )
  			return done( SPF_RESULT_ERROR, SPF_REASON_MECH, SPF_E_DNS_ERROR );
  	    
++#ifdef SUPPORT_DNSSEC
 +		    if (rr_aaaa->herrno == DNSSEC_FAILURE) {
 +			char errstr[1024];
 +			
@@ -177,31 +188,39 @@ Index: src/libspf2/spf_eval_id.c
 +			snprintf(errstr, sizeof(errstr), "DNSSEC Validation failed for A record of %s.", rr_ptr->rr[i]->ptr);
 +			SPF_add_output_err (&output, errstr);
 +		    }
++#endif
 +	    
  		    for( j = 0; j < rr_aaaa->num_rr; j++ )
  		    {
  			if ( spfic->debug )
-@@ -745,8 +882,16 @@
+@@ -745,8 +894,21 @@
  
  		SPF_set_cur_dom( spfcid, save_cur_dom );
  		free( save_cur_dom );
 +
++#ifdef SUPPORT_DNSSEC
 +		if ( c_results.err == SPF_E_DNSSEC_FAILURE ) {
 +		    SPF_add_output_err( &output, SPF_strerror( c_results.err ) );
 +		}
++#endif
++
  		SPF_reset_c_results( &c_results );
  
++#ifdef SUPPORT_DNSSEC
 +		if (inc_out.num_errs > 0) {
 +		    SPF_copy_output_errs (&inc_out, &output);
 +		}
++#endif
 +
  		if ( spfic->debug > 0 )
  		    SPF_debugf( "include:  executed SPF record:  %s  result: %s  reason: %s",
  			    SPF_strerror( inc_out.err ),
-@@ -787,6 +932,17 @@
+@@ -787,6 +949,21 @@
  	    }
  	    else if ( err == SPF_E_DNS_ERROR )
  		return done( SPF_RESULT_ERROR, SPF_REASON_NONE, err );
++
++#ifdef SUPPORT_DNSSEC
 +	    else if ( err == SPF_E_DNSSEC_FAILURE ) {
 +		if ( c_results.err_msg ) {
 +		    output.err_msg = strdup( c_results.err_msg );
@@ -213,13 +232,16 @@ Index: src/libspf2/spf_eval_id.c
 +		return done( SPF_RESULT_UNKNOWN, SPF_REASON_NONE,
 +			     SPF_E_DNSSEC_FAILURE );
 +	    }
++#endif
++
  	    else
  		return done( SPF_RESULT_UNKNOWN, SPF_REASON_NONE, err );
  	    
-@@ -829,6 +985,17 @@
+@@ -829,6 +1006,19 @@
  		return done( SPF_RESULT_ERROR, SPF_REASON_MECH, SPF_E_DNS_ERROR );
  	    
  	    
++#ifdef SUPPORT_DNSSEC
 +	    if (rr_a->herrno == DNSSEC_FAILURE) {
 +		char errstr[1024];
 +
@@ -230,31 +252,39 @@ Index: src/libspf2/spf_eval_id.c
 +		snprintf(errstr, sizeof(errstr), "DNSSEC Validation failed for A record of %s.", lookup);
 +	        SPF_add_output_err (&output, errstr);
 +	    }
++#endif
 +	    
  	    if ( rr_a->num_rr > 0 )
  		return done( mech->prefix_type, SPF_REASON_MECH, SPF_E_SUCCESS );
  	    
-@@ -876,8 +1043,16 @@
+@@ -876,8 +1066,21 @@
  		SPF_set_cur_dom( spfcid, lookup );
  		inc_out = SPF_eval_id( spfcid, c_results.spfid, spfdcid,
  				       TRUE, FALSE, num_dns_mech );
 +
++#ifdef SUPPORT_DNSSEC
 +		if ( c_results.err == SPF_E_DNSSEC_FAILURE ) {
 +		    SPF_add_output_err( &output, SPF_strerror( c_results.err ) );
 +		}
++#endif
++
  		SPF_reset_c_results( &c_results );
  
++#ifdef SUPPORT_DNSSEC
 +		if (inc_out.num_errs > 0) {
 +		    SPF_copy_output_errs (&inc_out, &output);
 +		}
++#endif
 +
  		if ( spfic->debug > 0 )
  		    SPF_debugf( "redirect:  executed SPF record:  %s  result: %s  reason: %s",
  			    SPF_strerror( inc_out.err ),
-@@ -891,6 +1066,17 @@
+@@ -891,6 +1094,21 @@
  	    }
  	    else if ( err == SPF_E_DNS_ERROR )
  		return done( SPF_RESULT_ERROR, SPF_REASON_NONE, err );
++
++#ifdef SUPPORT_DNSSEC
 +	    else if ( err == SPF_E_DNSSEC_FAILURE ) {
 +		if ( c_results.err_msg ) {
 +		    output.err_msg = strdup( c_results.err_msg );
@@ -266,33 +296,43 @@ Index: src/libspf2/spf_eval_id.c
 +		return done( SPF_RESULT_UNKNOWN, SPF_REASON_NONE,
 +			     SPF_E_DNSSEC_FAILURE );
 +	    }
++#endif
++
  	    else
  		return done( mech->prefix_type, SPF_REASON_MECH, err );
  	    
 Index: src/libspf2/spf_get_spf.c
 ===================================================================
 --- src/libspf2/spf_get_spf.c	2004-06-22 18:38:55.000000000 -0400
-+++ src/libspf2/spf_get_spf.c	2005-05-30 10:30:50.000000000 -0400
-@@ -49,6 +49,7 @@
-     
++++ src/libspf2/spf_get_spf.c	2005-06-03 11:30:57.000000000 -0400
+@@ -50,7 +50,10 @@
      int		i;
      SPF_err_t	err;
-+    SPF_err_t   dnssec_err;
      int		num_found;
-     
+-    
++
++#ifdef SUPPORT_DNSSEC
++    SPF_err_t   dnssec_err;
++#endif
  
-@@ -75,6 +76,7 @@
+     if ( spfcid == NULL )
+ 	SPF_error( "spfcid is null" );
+@@ -75,6 +78,10 @@
  
      rr_txt = SPF_dns_lookup( spfdcid, domain, ns_t_txt, TRUE );
  
++#ifdef SUPPORT_DNSSEC
 +    dnssec_err = SPF_E_SUCCESS;
++#endif
++
      switch( rr_txt->herrno )
      {
      case HOST_NOT_FOUND:
-@@ -91,6 +93,22 @@
+@@ -91,6 +98,24 @@
      case NETDB_SUCCESS:
  	break;
  
++#ifdef SUPPORT_DNSSEC
 +    case DNSSEC_FAILURE:
 +        if (spfic->debug > 1) {
 +	  SPF_debugf("SPF_get_spf: spf_dns_lookup returned DNSSEC_FAILURE");
@@ -308,14 +348,16 @@ Index: src/libspf2/spf_get_spf.c
 +	    c_results->err_msg = strdup(errmsgbuf);
 +	}
 +	break;
++#endif
 +
      default:
  	c_results->err = SPF_E_DNS_ERROR;
  	return SPF_E_DNS_ERROR;
-@@ -133,5 +151,26 @@
+@@ -133,5 +158,28 @@
  	    break;
      }
  
++#ifdef SUPPORT_DNSSEC
 +    if (dnssec_err == SPF_E_DNSSEC_FAILURE){
 +        if (c_results->err_msg != NULL) {
 +	    free(c_results->err_msg); /* Should we retain old err_msg? Is there one? */
@@ -336,29 +378,36 @@ Index: src/libspf2/spf_get_spf.c
 +
 +	c_results->err = dnssec_err;
 +    }
++#endif
 +
      return err;
  }
 Index: src/libspf2/spf_result.c
 ===================================================================
---- src/libspf2/spf_result.c	2004-06-22 18:39:13.000000000 -0400
-+++ src/libspf2/spf_result.c	2005-05-30 10:27:40.000000000 -0400
-@@ -222,6 +222,7 @@
-     size_t	buf_len = SPF_RECEIVED_SPF_SIZE;
+--- src/libspf2/spf_result.c	2005-06-03 11:35:13.000000000 -0400
++++ src/libspf2/spf_result.c	2005-06-03 11:39:39.000000000 -0400
+@@ -223,6 +223,10 @@
      
      char	*p, *p_end;
-+    int         dnssecerr;
  
++#ifdef SUPPORT_DNSSEC
++    int         dnssecerr;
++#endif
++
  
      buf = malloc( buf_len );
-@@ -277,16 +278,99 @@
+     if ( buf == NULL )
+@@ -277,16 +281,112 @@
      
  
      /* add in the optional compiler error keyword */
--    if ( output.err_msg != NULL )
++#ifdef SUPPORT_DNSSEC
 +    if ( ( output.err_msg != NULL ) || ( output.num_errs > 0 ) )
++#else
+     if ( output.err_msg != NULL )
++#endif
      {
--	p += snprintf( p, p_end - p, " problem=%s;", output.err_msg );
++#ifdef SUPPORT_DNSSEC
 +	int i;
 +	int first=1;
 +
@@ -390,16 +439,23 @@ Index: src/libspf2/spf_result.c
 +	if (!first) {
 +	    p += snprintf( p, p_end - p, ";" );
 +	}
++#else
+ 	p += snprintf( p, p_end - p, " problem=%s;", output.err_msg );
++#endif
 +	
  	if ( p_end - p <= 0 ) return buf;
      }
--    else if ( c_results.err_msg != NULL )
++#ifdef SUPPORT_DNSSEC
 +    else if ( ( c_results.err_msg != NULL ) && ( strstr(c_results.err_msg, "DNSSEC") == NULL ) )
++#else
+     else if ( c_results.err_msg != NULL )
++#endif
      {
  	p += snprintf( p, p_end - p, " problem=%s;", c_results.err_msg );
  	if ( p_end - p <= 0 ) return buf;
      }
 +
++#ifdef SUPPORT_DNSSEC
 +    /* add in the x-dnssec keyword */
 +    dnssecerr = 0;
 +    if ( ( output.err_msg != NULL ) || ( output.num_errs > 0 ) )
@@ -450,33 +506,37 @@ Index: src/libspf2/spf_result.c
 +
 +	if ( p_end - p <= 0 ) return buf;
 +    }
-+
++#endif
      
      /* FIXME  should the explanation string be included in the header? */
  
-@@ -378,8 +462,10 @@
- 	    output.reason = SPF_REASON_NONE;
+@@ -379,7 +479,12 @@
  	    output.err = err;
  	    if ( output.err_msg ) free( output.err_msg );
--	    if ( c_results.err_msg )
-+	    if ( c_results.err_msg ) {
+ 	    if ( c_results.err_msg )
++            {
  		output.err_msg = strdup( c_results.err_msg );
++#ifdef SUPPORT_DNSSEC
 +		SPF_add_output_err( &output, c_results.err_msg );
++#endif
 +	    }
  	    else
  		output.err_msg = NULL;
  	
-@@ -394,10 +480,25 @@
+@@ -394,10 +499,29 @@
  	    if ( spfic->debug > 0 )
  		SPF_print( c_results.spfid );
  
++#ifdef SUPPORT_DNSSEC
 +	    if ( c_results.err == SPF_E_DNSSEC_FAILURE ) {
 +		SPF_add_output_err( &output, SPF_strerror( c_results.err ) );
 +	    }
++#endif
  	}
  	
      }
      
++#ifdef SUPPORT_DNSSEC
 +    if (spfic->debug > 1) {
 +        if (output.num_errs > 0) {
 +	    int i;
@@ -489,32 +549,38 @@ Index: src/libspf2/spf_result.c
 +	    SPF_debugf("SPF_result: err_msgs = None");
 +        }
 +    }
++#endif
  
      SPF_result_comments( spfcid, spfdcid, c_results, &output );
  
-@@ -449,8 +550,10 @@
- 	    output.reason = SPF_REASON_NONE;
+@@ -450,7 +574,13 @@
  	    output.err = err;
  	    if ( output.err_msg ) free( output.err_msg );
--	    if ( c_results.err_msg )
-+	    if ( c_results.err_msg ) {
+ 	    if ( c_results.err_msg )
++	    {
  		output.err_msg = strdup( c_results.err_msg );
++
++#ifdef SUPPORT_DNSSEC
 +		SPF_add_output_err( &output, c_results.err_msg );
++#endif
 +	    }
  	    else
  		output.err_msg = NULL;
  	
-@@ -465,10 +568,25 @@
+@@ -465,10 +595,29 @@
  	    if ( spfic->debug > 0 )
  		SPF_print( c_results.spfid );
  
++#ifdef SUPPORT_DNSSEC
 +	    if ( c_results.err == SPF_E_DNSSEC_FAILURE ) {
 +		SPF_add_output_err( &output, SPF_strerror( c_results.err ) );
 +	    }
++#endif
  	}
  	
      }
      
++#ifdef SUPPORT_DNSSEC
 +    if (spfic->debug > 1) {
 +        if (output.num_errs > 0) {
 +	    int i;
@@ -527,33 +593,37 @@ Index: src/libspf2/spf_result.c
 +	    SPF_debugf("SPF_result_helo: err_msgs = None");
 +        }
 +    }
++#endif
  
      SPF_result_comments( spfcid, spfdcid, c_results, &output );
  
 Index: src/libspf2/spf_strerror.c
 ===================================================================
 --- src/libspf2/spf_strerror.c	2004-06-22 18:39:16.000000000 -0400
-+++ src/libspf2/spf_strerror.c	2005-05-29 17:19:55.000000000 -0400
-@@ -152,6 +152,10 @@
++++ src/libspf2/spf_strerror.c	2005-06-02 17:28:44.000000000 -0400
+@@ -152,7 +152,12 @@
      case SPF_E_MECH_AFTER_ALL:
  	return "Mechanisms found after the \"all:\" mechanism will be ignored";
  	break;
+-	    
 +
++#ifdef SUPPORT_DNSSEC
 +    case SPF_E_DNSSEC_FAILURE:
 +	return "DNSSEC Validation of SPF record failed.";
 +	break;
- 	    
++#endif	    
      default:
  	return "Unknown SPF error code";
+ 	break;
 Index: src/libspf2/spf_dns_resolv.c
 ===================================================================
 --- src/libspf2/spf_dns_resolv.c	2005-05-06 12:56:10.000000000 -0400
-+++ src/libspf2/spf_dns_resolv.c	2005-05-31 17:47:24.000000000 -0400
++++ src/libspf2/spf_dns_resolv.c	2005-06-03 11:15:28.000000000 -0400
 @@ -41,6 +41,10 @@
  # include <netdb.h>
  #endif
  
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +#include <val_api.h>
 +#endif
 +
@@ -564,7 +634,7 @@ Index: src/libspf2/spf_dns_resolv.c
  {
      int		debug;
      SPF_dns_rr_t spfrr;
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +    int         dodnssec;               /* 0: add x-dnssec=none to Received-SPF
 +					 * 1: add x-dnssec=pass to Received-SPF
 +					 *    if DNSSEC validation succeeds.
@@ -579,23 +649,26 @@ Index: src/libspf2/spf_dns_resolv.c
  } SPF_dns_resolv_config_t; 
  
 -#if HAVE_DECL_RES_NINIT
-+#if HAVE_DECL_RES_NINIT && (! defined(HAVE_LIBVAL))
++#if HAVE_DECL_RES_NINIT && (! defined(SUPPORT_DNSSEC))
  #define SPF_h_errno spfhook->res_state.res_h_errno
  #else
  #define SPF_h_errno h_errno
-@@ -100,6 +113,7 @@
-     int		prio;
+@@ -101,7 +114,9 @@
      
      int		rdlen;
-+    int dnssec_status = INTERNAL_ERROR;
      const u_char	*rdata, *rdata_end;
-  
+- 
++#ifdef SUPPORT_DNSSEC
++    int dnssec_status = INTERNAL_ERROR;
++#endif 
  
-@@ -147,6 +161,15 @@
+     /*
+      * initialize stuff
+@@ -147,6 +162,15 @@
      /*
       * try resolving the name
       */
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +    do {
 +	dns_len = val_query ( domain, ns_c_in, rr_type, response,
 +			      sizeof( response ), &dnssec_status );
@@ -607,7 +680,7 @@ Index: src/libspf2/spf_dns_resolv.c
  #if HAVE_DECL_RES_NINIT
      dns_len = res_nquery( &spfhook->res_state, domain, ns_c_in, rr_type,
  			 response, sizeof( response ) );
-@@ -154,6 +177,7 @@
+@@ -154,6 +178,7 @@
      dns_len = res_query( domain, ns_c_in, rr_type,
  			 response, sizeof( response ) );
  #endif
@@ -615,11 +688,11 @@ Index: src/libspf2/spf_dns_resolv.c
  
      if ( dns_len < 0 )
      {
-@@ -161,16 +185,34 @@
+@@ -161,16 +186,34 @@
  	    SPF_debugf( "query failed: err = %d  %s (%d)",
  		    dns_len, hstrerror( SPF_h_errno ), SPF_h_errno );
  
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +	if ( spfhook->dodnssec && (SPF_h_errno == NETDB_SUCCESS) && (dnssec_status != VALIDATE_SUCCESS) ) {
 +	    SPF_h_errno = DNSSEC_FAILURE;
 +	}
@@ -642,7 +715,7 @@ Index: src/libspf2/spf_dns_resolv.c
  	spfrr->herrno = NETDB_SUCCESS;
 -	
      
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +	if ( spfhook->dodnssec && (dnssec_status != VALIDATE_SUCCESS) ) {
 +	    spfrr->herrno = DNSSEC_FAILURE;
 +	}
@@ -652,11 +725,11 @@ Index: src/libspf2/spf_dns_resolv.c
      err = ns_initparse( response, dns_len, &ns_handle );
  
      if ( err < 0 )			/* 0 or -1 */
-@@ -437,16 +479,38 @@
+@@ -437,16 +480,38 @@
      if ( spfrr->num_rr == 0 )
  	spfhook->spfrr.herrno = NO_DATA;
  
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +    if (spfhook->dodnssec && (dnssec_status != VALIDATE_SUCCESS)) {
 +	if (spfrr->herrno == NETDB_SUCCESS) {
 +	    spfrr->herrno = DNSSEC_FAILURE;
@@ -668,7 +741,7 @@ Index: src/libspf2/spf_dns_resolv.c
  }
  
  
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +SPF_dns_config_t SPF_dns_create_config_resolv( SPF_dns_config_t layer_below, int debug )
 +{
 +    return SPF_dns_create_config_sresolv (layer_below, debug, 0);
@@ -692,21 +765,21 @@ Index: src/libspf2/spf_dns_resolv.c
      spfdic = malloc( sizeof( *spfdic ) );
      if ( spfdic == NULL )
  	return NULL;
-@@ -469,9 +533,13 @@
+@@ -469,9 +534,13 @@
      spfhook = SPF_voidp2spfhook( spfdic->hook );
  
      spfhook->debug = debug;
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +    spfhook->dodnssec = dodnssec;
 +#endif
      SPF_dns_reset_rr( &spfhook->spfrr );
      spfhook->spfrr.source = SPF_spfdic2dcid( spfdic );
  
-+#ifndef HAVE_LIBVAL
++#ifndef SUPPORT_DNSSEC
  #if HAVE_DECL_RES_NINIT
      if ( res_ninit( &spfhook->res_state ) != 0 )
      {
-@@ -485,6 +553,7 @@
+@@ -485,6 +554,7 @@
  	return NULL;
      }
  #endif
@@ -714,11 +787,11 @@ Index: src/libspf2/spf_dns_resolv.c
  
      return SPF_spfdic2dcid( spfdic );
  }
-@@ -501,6 +570,13 @@
+@@ -501,6 +571,13 @@
      SPF_dns_reset_rr( &(SPF_voidp2spfhook( spfdic->hook )->spfrr) );
  }
  
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +void SPF_dns_reset_config_sresolv( SPF_dns_config_t spfdcid )
 +{
 +    return SPF_dns_reset_config_resolv( spfdcid );
@@ -728,11 +801,11 @@ Index: src/libspf2/spf_dns_resolv.c
  void SPF_dns_destroy_config_resolv( SPF_dns_config_t spfdcid )
  {
      SPF_dns_iconfig_t     *spfdic = SPF_dcid2spfdic( spfdcid );
-@@ -514,12 +590,13 @@
+@@ -514,12 +591,13 @@
  
  	SPF_dns_destroy_rr_var( &spfhook->spfrr );
  
-+#ifndef HAVE_LIBVAL
++#ifndef SUPPORT_DNSSEC
  #if HAVE_DECL_RES_NINIT
  	res_nclose( &spfhook->res_state );
  #else
@@ -743,11 +816,11 @@ Index: src/libspf2/spf_dns_resolv.c
  	free( spfdic->hook );
      }
      
-@@ -528,4 +605,11 @@
+@@ -528,4 +606,11 @@
  	free( spfdic );
  }
  
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +void SPF_dns_destroy_config_sresolv( SPF_dns_config_t spfdcid )
 +{
 +    return SPF_dns_destroy_config_resolv( spfdcid );
@@ -758,17 +831,17 @@ Index: src/libspf2/spf_dns_resolv.c
 Index: src/include/spf_dns.h
 ===================================================================
 --- src/include/spf_dns.h	2004-06-27 07:44:50.000000000 -0400
-+++ src/include/spf_dns.h	2005-05-06 13:37:46.000000000 -0400
++++ src/include/spf_dns.h	2005-06-02 17:27:54.000000000 -0400
 @@ -100,8 +100,12 @@
  #endif
  typedef int SPF_dns_stat_t;
  
 -
 -
++#ifdef SUPPORT_DNSSEC
 +/*
 + * Additional Error code(s) for DNSSEC validation
 + */
-+#ifdef HAVE_LIBVAL
 +#define DNSSEC_FAILURE  5               /* DNSSEC validation failed. */
 +#endif
  
@@ -777,63 +850,67 @@ Index: src/include/spf_dns.h
 Index: src/include/spf_dns_resolv.h
 ===================================================================
 --- src/include/spf_dns_resolv.h	2005-05-06 12:50:18.000000000 -0400
-+++ src/include/spf_dns_resolv.h	2005-06-01 09:26:51.000000000 -0400
-@@ -40,7 +40,20 @@
++++ src/include/spf_dns_resolv.h	2005-06-02 17:27:16.000000000 -0400
+@@ -40,6 +40,19 @@
   * libresolv will be displayed.  This information is often not passed
   * on to (and not needed by) the higher level DNS layers.
   */
-+#ifdef HAVE_LIBVAL
++
++#ifdef SUPPORT_DNSSEC
 +/*
 + * The additional parameter is 'dodnssec' of type integer.  If 'dodnssec' is 0,
 + * DNSSEC validation will not be performed.  If 'dodnssec' is 1, DNSSEC validation
 + * will be performed.
 + */
 +SPF_dns_config_t SPF_dns_create_config_sresolv( SPF_dns_config_t layer_below, int debug,
-+					       int dodnssec );
++						int dodnssec );
 +void SPF_dns_reset_config_sresolv( SPF_dns_config_t spfdcid );
 +void SPF_dns_destroy_config_sresolv( SPF_dns_config_t spfdcid );
 +#endif
 +
  SPF_dns_config_t SPF_dns_create_config_resolv( SPF_dns_config_t layer_below, int debug  );
-+
  void SPF_dns_reset_config_resolv( SPF_dns_config_t spfdcid );
  void SPF_dns_destroy_config_resolv( SPF_dns_config_t spfdcid );
- 
 Index: src/include/spf.h
 ===================================================================
 --- src/include/spf.h	2004-04-09 14:56:18.000000000 -0400
-+++ src/include/spf.h	2005-05-06 15:32:44.000000000 -0400
++++ src/include/spf.h	2005-06-02 17:28:35.000000000 -0400
 @@ -89,7 +89,9 @@
  #define SPF_E_BAD_HOST_IP	27	/* Invalid hostname (possibly an IP address?) */
  #define SPF_E_BAD_HOST_TLD	28	/* Hostname has a missing or invalid TLD */
  #define SPF_E_MECH_AFTER_ALL	29	/* Mechanisms found after the \"all:\" mechanism will be ignored */
 -
-+#ifdef HAVE_LIBVAL
++#ifdef SUPPORT_DNSSEC
 +#define SPF_E_DNSSEC_FAILURE    30      /* DNSSEC validation failed.    */
 +#endif
  
  
  /* ********************************************************************* */
-@@ -752,6 +754,15 @@
-  */
+@@ -753,6 +755,20 @@
  void SPF_get_lib_version( int *major, int *minor, int *patch );
  
+ 
++#ifdef SUPPORT_DNSSEC
 +/*
 + * Add an error message to list of error messages in the SPF_output_t struct.
 + */
 +void SPF_add_output_err (SPF_output_t *output, const char *msg);
 +
++
 +/*
 + * Append the list of error messages from old_output to new_output.
 + */
 +void SPF_copy_output_errs (SPF_output_t *old_output, SPF_output_t *new_output);
- 
++#endif
++
++
  /*
   * Error messages and warnings generated internally by the library call
+  * these routines.  By default, the messages go to stderr, but you can
 Index: config.h.in
 ===================================================================
 --- config.h.in	2004-07-08 13:18:43.000000000 -0400
-+++ config.h.in	2005-05-29 17:26:29.000000000 -0400
++++ config.h.in	2005-06-02 17:48:52.000000000 -0400
 @@ -37,6 +37,9 @@
  /* Define to 1 if you have the <inttypes.h> header file. */
  #undef HAVE_INTTYPES_H
@@ -844,13 +921,7 @@ Index: config.h.in
  /* Define to 1 if you have the `intl' library (-lintl). */
  #undef HAVE_LIBINTL
  
-@@ -46,12 +49,15 @@
- /* Define to 1 if you have the `nsl' library (-lnsl). */
- #undef HAVE_LIBNSL
- 
--/* Define to 1 if you have the `resolv' library (-lresolv). */
--#undef HAVE_LIBRESOLV
--
+@@ -52,6 +55,12 @@
  /* Define to 1 if you have the `socket' library (-lsocket). */
  #undef HAVE_LIBSOCKET
  
@@ -863,7 +934,7 @@ Index: config.h.in
  /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
     to 0 otherwise. */
  #undef HAVE_MALLOC
-@@ -177,6 +183,9 @@
+@@ -177,6 +186,9 @@
  /* Define to 1 if the system has the type `u_int8_t'. */
  #undef HAVE_U_INT8_T
  
@@ -873,30 +944,36 @@ Index: config.h.in
  /* Define to 1 if you have the `vfork' function. */
  #undef HAVE_VFORK
  
+@@ -228,6 +240,9 @@
+ /* Define to 1 if you have the ANSI C header files. */
+ #undef STDC_HEADERS
+ 
++/* Support DNSSEC validation */
++#undef SUPPORT_DNSSEC
++
+ /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
+ #undef TIME_WITH_SYS_TIME
+ 
 Index: configure.ac
 ===================================================================
 --- configure.ac	2004-07-07 07:55:34.000000000 -0400
-+++ configure.ac	2005-05-29 17:25:22.000000000 -0400
-@@ -3,10 +3,10 @@
++++ configure.ac	2005-06-02 17:48:18.000000000 -0400
+@@ -3,9 +3,9 @@
  
  AC_PREREQ(2.59)
  AC_INIT(libspf2, 1.0.4, wayne@midwestcs.com)
 -AM_INIT_AUTOMAKE(libspf2, $PACKAGE_VERSION)
  AC_CONFIG_SRCDIR([src/libspf2/spf.c])
  AC_CONFIG_AUX_DIR(config)
- AM_CONFIG_HEADER(config.h)
 +AM_INIT_AUTOMAKE(libspf2, $PACKAGE_VERSION)
+ AM_CONFIG_HEADER(config.h)
  
  # remember the version info for later
- 
-@@ -83,28 +83,60 @@
+@@ -83,29 +83,89 @@
  AC_CHECK_HEADERS([libintl.h ])
  AC_CHECK_HEADERS([getopt.h ])
  
-+dnl Check DNSSEC Validator library header
-+AC_CHECK_HEADERS([val_api.h])
-+
- dnl Moved to after header checks by Shevek
+-dnl Moved to after header checks by Shevek
 -AC_ARG_WITH(bind,
 -        [  --with-bind=DIR  Find BIND resolver in DIR],
 -        [AC_CHECK_FILE([$withval/include/bind/resolv.h],
@@ -910,29 +987,26 @@ Index: configure.ac
 -                        [echo "cannot find resolver library"; exit 1;])
 -                ])
 -        ], [AC_CHECK_LIB(resolv, res_query)])
-+dnl AC_ARG_WITH(bind,
-+dnl         [  --with-bind=DIR  Find BIND resolver in DIR],
-+dnl         [AC_CHECK_FILE([$withval/include/bind/resolv.h],
-+dnl                 [CFLAGS="$CFLAGS -I$withval/include/bind"],
-+dnl                 [CFLAGS="$CFLAGS -I$withval/include"])
-+dnl          LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
-+dnl          AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
-+dnl                 [AC_CHECK_LIB([resolv],
-+dnl                         [res_query],
-+dnl                         [LIBS="$LIBS -lresolv"],
-+dnl                         [echo "cannot find resolver library"; exit 1;])
-+dnl                 ])
-+dnl         ], [AC_CHECK_LIB(resolv, res_query)])
- 
- # Checks for libraries.
- AC_CHECK_LIB(nsl, inet_pton)
- AC_CHECK_LIB(socket, socket)
- AC_CHECK_LIB(intl, gettext)
- 
--
--
-+dnl Check libsres
-+AC_ARG_WITH(libsres,
++AC_MSG_CHECKING(whether we need to support DNSSEC validation)
++AC_ARG_ENABLE(dnssec-support,
++[  --enable-dnssec-support Support DNSSEC validation.],
++    support_dnssec=yes)
++
++if test "x$support_dnssec" = "xyes"; then
++
++   AC_MSG_RESULT(yes)
++
++   dnl Check DNSSEC Validator library header
++   AC_CHECK_HEADERS([val_api.h])
++
++   dnl Check the openssl crypto library
++   AC_CHECK_LIB(crypto, RSA_verify, , [
++	echo "the openssl crypto library is required to build this program."
++	exit 1;
++   ])
++
++   dnl Check libsres
++   AC_ARG_WITH(libsres,
 +	[  --with-libsres=PATH     Look for the libsres library in PATH],
 +	if test "x$withval" != "xyes"; then
 +	  if test "x$withval" != x -a -d $withval; then
@@ -941,27 +1015,64 @@ Index: configure.ac
 +	      AC_MSG_RESULT("$withval")
 +	  fi
 +	fi
-+)
++   )
 +
-+dnl Check the openssl crypto library
-+AC_CHECK_LIB(crypto, RSA_verify, , [
-+	echo "the openssl crypto library is required to build this program."
-+	exit 1;
-+])
-+
-+dnl Check Secure Resolver Library libsres
-+AC_CHECK_LIB(sres, __ns_initparse, , [
++   dnl Check Secure Resolver Library libsres
++   AC_CHECK_LIB(sres, __ns_initparse, , [
 +	echo "the secure resolver library is required to build this program."
 +	echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
-+])
++   ])
 +
-+dnl Check DNSSEC Validator library
-+AC_CHECK_LIB(val, val_query, , [
++   dnl Check libval
++   AC_ARG_WITH(libval,
++	[  --with-libval=PATH      Look for the libval library in PATH],
++	if test "x$withval" != "xyes"; then
++	  if test "x$withval" != x -a -d $withval; then
++	      LDFLAGS="-L$withval $LDFLAGS"
++	      AC_MSG_CHECKING(libval)
++	      AC_MSG_RESULT("$withval")
++	  fi
++	fi
++   )
++
++   dnl Check DNSSEC Validator library
++   AC_CHECK_LIB(val, val_query, , [
 +	echo "the validator library is required to build this program."
 +        echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
-+])
++   ])
++
++   AC_DEFINE([SUPPORT_DNSSEC], [], [Support DNSSEC validation])
++
++else
++   AC_MSG_RESULT(no)
++
++   dnl Moved to after header checks by Shevek
++   AC_ARG_WITH(bind,
++           [  --with-bind=DIR         Find BIND resolver in DIR],
++           [AC_CHECK_FILE([$withval/include/bind/resolv.h],
++                   [CFLAGS="$CFLAGS -I$withval/include/bind"],
++                   [CFLAGS="$CFLAGS -I$withval/include"])
++            LDFLAGS="$LDFLAGS -L$withval/lib -Wl,$rpath$withval/lib"
++            AC_CHECK_LIB([bind], [res_query], [LIBS="$LIBS -lbind"],
++                   [AC_CHECK_LIB([resolv],
++                           [res_query],
++                           [LIBS="$LIBS -lresolv"],
++                           [echo "cannot find resolver library"; exit 1;])
++                   ])
++           ], [AC_CHECK_LIB(resolv, res_query)])
++
++fi
  
+ # Checks for libraries.
+ AC_CHECK_LIB(nsl, inet_pton)
+ AC_CHECK_LIB(socket, socket)
+ AC_CHECK_LIB(intl, gettext)
+ 
+-
+-
+-
  # Checks for typedefs, structures, and compiler characteristics.
  AC_C_CONST
+ AC_C_INLINE
