@@ -292,7 +292,7 @@ Index: sendmail/domain.c
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2005-02-25 10:55:24.000000000 -0500
-+++ sendmail/sm_resolve.c	2005-06-03 15:13:31.000000000 -0400
++++ sendmail/sm_resolve.c	2005-06-05 14:15:25.000000000 -0400
 @@ -70,6 +70,10 @@
  	{	NULL,		0		}
  };
@@ -304,7 +304,7 @@ Index: sendmail/sm_resolve.c
  static DNS_REPLY_T *parse_dns_reply __P((unsigned char *, int));
  
  /*
-@@ -409,7 +413,39 @@
+@@ -409,7 +413,41 @@
  	}
  	errno = 0;
  	SM_SET_H_ERRNO(0);
@@ -316,11 +316,14 @@ Index: sendmail/sm_resolve.c
 +	{
 +	    char dname[MAXDNAME];
 +	    int dnssec_status = INTERNAL_ERROR;
++
 +	    bzero(dname, MAXDNAME);
 +	    strncpy(dname, domain, MAXDNAME);
 +	    getcanonname(dname, MAXDNAME, true, NULL);
++
 +	    if (tTd(8, 16))
 +		sm_dprintf("dns_lookup_int(): performing dnssec validation query.\n");
++
 +	    len = val_query(dname, rr_class, rr_type, reply, sizeof reply,
 +			    &dnssec_status);
 +
@@ -331,8 +334,7 @@ Index: sendmail/sm_resolve.c
 +		}
 +		else {
 +		    if (tTd(8, 1))
-+			sm_dprintf("\t\tdnssec validation of %s failed.\n",
-+				   domain);
++			sm_dprintf("\t\tdnssec validation of %s failed.\n", domain);
 +		    return NULL;
 +		}
 +	    }
