@@ -81,12 +81,35 @@ all displayed nodes that have A records.
 Adds a legend to the map.
 </dd>
 <p></p>
-<dt><strong><a name="item_l">-l (neato|dot|twopi)</a></strong><br />
+<dt><strong><a name="item_l">-l (neato|dot|twopi|circo|fdp)</a></strong><br />
 </dt>
 <dd>
 Selects a layout format.  The default is <em>neato</em> which is circular in
 pattern.  See the documentation on the <em>graphviz</em> package and the
 <em>GraphViz</em> perl module for further details.
+</dd>
+<p></p>
+<dt><strong><a name="item__2da">-a</a></strong><br />
+</dt>
+<dd>
+Allows overlapping of nodes.  This makes much tighter maps with the
+downside being they're more cluttered.  This is pretty much required
+to map extremel large zones though.
+</dd>
+<p></p>
+<dt><strong><a name="item__2de_weight">-e WEIGHT</a></strong><br />
+</dt>
+<dd>
+Assigns an edge weight to edges.  In theory &gt;1 means shorter, &lt;1 means
+longer although I don't believe as implemented it will have any
+effect.  Should work better in the future.
+</dd>
+<p></p>
+<dt><strong><a name="item__2df_integer">-f INTEGER</a></strong><br />
+</dt>
+<dd>
+Uses the INTEGER value for the font size to print node names with.
+Defaults to 10.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dw_warntime">-w WARNTIME</a></strong><br />
@@ -185,6 +208,7 @@ See the COPYING file included with the dnssec-tools package for details.</p>
 <p>Net::DNS</p>
 <p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
 
+<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>
