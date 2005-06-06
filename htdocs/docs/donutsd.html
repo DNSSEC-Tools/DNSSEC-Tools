@@ -1,0 +1,210 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>DoNutSD - Run the donuts syntax checker every so often and email the results</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#zone_arguments">ZONE ARGUMENTS</a></li>
+	<li><a href="#example">EXAMPLE</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>DoNutSD - Run the donuts syntax checker every so often and email the results</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>donutsd [-z FREQ] [-t TMPDIR] [-f FROM] [-s SMTPSERVER] [-a DONUTSARGS]
+        [-x] [-v] [-i zonelistfile] [ZONEFILE ZONENAME ZONECONTACT]</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>Donutsd runs donuts on a set of zone files every so often (the
+frequency is specified by the -z flag which defaults to 24 hours) and
+watches for changes in the results.  These changes may be due to the
+time-sensitive nature of DNSSEC related records (EG, RRSIG validity
+periods) or because parent/child relationships have changed.  If any
+changes have occurred in the output since the last run of donuts on a
+particular zone file, the results are emailed to the specified zone
+administor's email address.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dv">-v</a></strong><br />
+</dt>
+<dd>
+Turns on more verbose output.
+</dd>
+<p></p>
+<dt><strong><a name="item__2do">-o</a></strong><br />
+</dt>
+<dd>
+Run once and quit (as opposed to sleeping/re-running forever).
+</dd>
+<p></p>
+<dt><strong><a name="item__2da_arguments">-a ARGUMENTS</a></strong><br />
+</dt>
+<dd>
+Passes arguments to command line arguments of donuts runs.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dz_time">-z TIME</a></strong><br />
+</dt>
+<dd>
+Sleeps TIME seconds beetween calls to donuts.
+</dd>
+<p></p>
+<dt><strong><a name="item__2de_address">-e ADDRESS</a></strong><br />
+</dt>
+<dd>
+Mail ADDRESS with a summary of the results from all the files.  EG,
+these are the last few lines of the donuts output for each zone that
+details the number of errors found.
+</dd>
+<p></p>
+<dt><strong><a name="item__2ds_smtpserver">-s SMTPSERVER</a></strong><br />
+</dt>
+<dd>
+When sending mail, send it to the SMTPSERVER specified (default = localhost).
+</dd>
+<p></p>
+<dt><strong><a name="item__2df_fromaddr">-f FROMADDR</a></strong><br />
+</dt>
+<dd>
+When sending mail, use FROMADDR for the From: address.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dx">-x</a></strong><br />
+</dt>
+<dd>
+Send the diff output in the email message as well as the donuts output.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dt_tmpdir">-t TMPDIR</a></strong><br />
+</dt>
+<dd>
+Store temporary files in TMPDIR.
+</dd>
+<p></p>
+<dt><strong><a name="item__2di_inputzones">-i INPUTZONES</a></strong><br />
+</dt>
+<dd>
+[see the next section details]
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="zone_arguments">ZONE ARGUMENTS</a></h1>
+<p>The rest of the arguments to donutsd should be triplets of the
+following information:</p>
+<dl>
+<dt><strong><a name="item_zonefile">ZONEFILE</a></strong><br />
+</dt>
+<dd>
+The zone file to examine
+</dd>
+<p></p>
+<dt><strong><a name="item_zonename">ZONENAME</a></strong><br />
+</dt>
+<dd>
+The zonename that file is supposed to be defining
+</dd>
+<p></p>
+<dt><strong><a name="item_zonecontact">ZONECONTACT</a></strong><br />
+</dt>
+<dd>
+An email address of the zone administrator (or a comma separated
+list of addresses).  The results will be sent to this email address.
+</dd>
+<p></p></dl>
+<p>Additionally, instead of listing all the zones you wish to monitor on
+the command line, you can instead use the -i flag which specifies a
+file to be read listing the TRIPLES instead.  Each line in this file
+should contain one triple with white space separating the arguments.  Example:</p>
+<pre>
+   db.zonefile1.com   zone1.com   admin@zone1.com
+   db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com</pre>
+<p>Or, for even more control you can specify an XML file (it must end in
+.xml and you must have the XML::Smart perl module installed) that
+describes the same information but also allows for per-zone
+customization of the donuts arguments:</p>
+<pre>
+ &lt;donutsd&gt;
+   &lt;zones&gt;
+    &lt;zone&gt;
+      &lt;file&gt;db.example.com&lt;/file&gt;
+      &lt;name&gt;example.com&lt;/name&gt;
+      &lt;contact&gt;admin@example.com&lt;/contact&gt;
+      &lt;!-- this is not a signed zone therefore we'll
+           add these args so we don't display DNSSEC errors --&gt;
+      &lt;donutsargs&gt;-i DNSSEC&lt;/donutsargs&gt;
+    &lt;/zone&gt;
+   &lt;/zones&gt;
+ &lt;/donutsd&gt;</pre>
+<p>The &lt;donutsd&gt; tree can also contain a &lt;conifgs&gt; section where command
+line flags can be specified as well:</p>
+<pre>
+ &lt;donutsd&gt;
+  &lt;configs&gt;
+   &lt;config&gt;&lt;flag&gt;a&lt;/flag&gt;&lt;value&gt;--live --level 8&lt;/value&gt;&lt;/config&gt;
+   &lt;config&gt;&lt;flag&gt;e&lt;/flag&gt;&lt;value&gt;wes@hardakers.net&lt;/value&gt;&lt;/config&gt;
+  &lt;/configs&gt;
+  &lt;zones&gt;
+   ...
+  &lt;/zones&gt;
+ &lt;/donutsd&gt;</pre>
+<p>Real command line flags will be used in preference to those specified
+in the .xml file, however.</p>
+<p>
+</p>
+<hr />
+<h1><a name="example">EXAMPLE</a></h1>
+<pre>
+  donutsd -a &quot;--live --level 8&quot; -f root@somewhere.com \
+     db.example.com example.com admin@example.com</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2005 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><code>donuts(1)</code></p>
+<p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>
