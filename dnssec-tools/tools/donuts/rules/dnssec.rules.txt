@@ -68,9 +68,12 @@ name: DNSSEC_RRSIG_FOR_NS_GLUE_RECORD
 level: 3
 ruletype: name
 test:
+  my $suffix = $_[2];
+  $suffix =~ s/^[^\.]+\.//;
   "name $_[2] is pointed to by an NS record and thus should be a glue record.  But it also has an RRSIG record which should not be present for glue records."
     if (exists($_[0]->{'RRSIG'}) &&
         $current_domain ne $_[2] &&
+	$current_domain ne $suffix &&
         exists($DONUTS::DNSSEC::NS{$_[2]}) &&
         $DONUTS::DNSSEC::NS{$_[2]} != 2);
 
@@ -81,9 +84,12 @@ name: DNSSEC_NSEC_FOR_NS_GLUE_RECORD
 level: 3
 ruletype: name
 test:
+  my $suffix = $_[2];
+  $suffix =~ s/^[^\.]+\.//;
   "name $_[2] is pointed to by an NS record and thus should be a glue record.  But it also has an NSEC record which should not be present for glue records."
     if (exists($_[0]->{'NSEC'}) &&
         exists($DONUTS::DNSSEC::NS{$_[2]}) &&
+	$current_domain ne $suffix &&
         $DONUTS::DNSSEC::NS{$_[2]} != 2);
 
 #
