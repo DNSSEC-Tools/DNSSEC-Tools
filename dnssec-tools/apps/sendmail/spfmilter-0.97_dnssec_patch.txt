@@ -1,0 +1,504 @@
+Index: configure.ac
+===================================================================
+--- configure.ac	2005-06-24 15:27:27.000000000 -0400
++++ configure.ac	2005-06-22 16:01:15.000000000 -0400
+@@ -27,6 +27,69 @@
+ # a regular -lpthread library.
+ AC_CHECK_LIB([c_r],[pthread_create],[LIBS="-pthread $LIBS"],[AC_CHECK_LIB([pthread],[pthread_create])])
+ 
++# Check whether we require support for DNSSEC validation
++AC_MSG_CHECKING(whether we need to support DNSSEC validation)
++AC_ARG_ENABLE(dnssec-support,
++[  --enable-dnssec-support Support DNSSEC validation.],
++    support_dnssec=yes)
++
++if test "x$support_dnssec" = "xyes"; then
++
++   AC_MSG_RESULT(yes)
++
++   dnl Check DNSSEC Validator library header
++   AC_CHECK_HEADERS([val_api.h])
++
++   dnl Check the openssl crypto library
++   AC_CHECK_LIB(crypto, RSA_verify, , [
++	echo "the openssl crypto library is required to build this program."
++	exit 1;
++   ])
++
++   dnl Check libsres
++   AC_ARG_WITH(libsres,
++	[  --with-libsres=PATH     Look for the libsres library in PATH],
++	if test "x$withval" != "xyes"; then
++	  if test "x$withval" != x -a -d $withval; then
++	      LDFLAGS="-L$withval $LDFLAGS"
++	      AC_MSG_CHECKING(libsres)
++	      AC_MSG_RESULT("$withval")
++	  fi
++	fi
++   )
++
++   dnl Check Secure Resolver Library libsres
++   AC_CHECK_LIB(sres, __ns_initparse, , [
++	echo "the secure resolver library is required to build this program."
++	echo "see http://dnssec-tools.sourceforge.net"
++	exit 1;
++   ])
++
++   dnl Check libval
++   AC_ARG_WITH(libval,
++	[  --with-libval=PATH      Look for the libval library in PATH],
++	if test "x$withval" != "xyes"; then
++	  if test "x$withval" != x -a -d $withval; then
++	      LDFLAGS="-L$withval $LDFLAGS"
++	      AC_MSG_CHECKING(libval)
++	      AC_MSG_RESULT("$withval")
++	  fi
++	fi
++   )
++
++   dnl Check DNSSEC Validator library
++   AC_CHECK_LIB(val, val_query, , [
++	echo "the validator library is required to build this program."
++        echo "see http://dnssec-tools.sourceforge.net"
++	exit 1;
++   ])
++
++   AC_DEFINE([SUPPORT_DNSSEC], [1], [Support DNSSEC validation])
++
++else
++   AC_MSG_RESULT(no)
++fi
++
+ # Check for the milter library.  Libmilter uses pthreads, so we have to do this
+ # check after the pthread one and use the library list it gave us.
+ AC_CHECK_LIB([milter],[smfi_main],,,$LIBS)
+Index: spfmilter.c
+===================================================================
+--- spfmilter.c	2005-06-24 15:27:36.000000000 -0400
++++ spfmilter.c	2005-06-24 15:53:15.000000000 -0400
+@@ -97,6 +97,11 @@
+ #define SPFMILTER_ACTION_MARK 2
+ #define SPFMILTER_ACTION_TEMPFAIL 3
+ 
++#if SUPPORT_DNSSEC
++#define SPFMILTER_DNSSEC_POLICY_IGNORE 0
++#define SPFMILTER_DNSSEC_POLICY_WARN 1
++#define SPFMILTER_DNSSEC_POLICY_REJECT 2
++#endif /* SUPPORT_DNSSEC */
+ 
+ /* Structs. */
+ 
+@@ -213,6 +218,11 @@
+ static int lib_get_result( lib_data_t* ld );
+ static const char* lib_get_explanation( lib_data_t* ld );
+ static const char* lib_get_error( lib_data_t* ld );
++#ifdef SUPPORT_DNSSEC
++static const char* lib_get_error_msg( lib_data_t* ld );
++static const size_t lib_get_num_errors( lib_data_t* ld );
++static const char** lib_get_error_msgs( lib_data_t* ld );
++#endif /* SUPPORT_DNSSEC */
+ static void lib_fini_message_data( lib_data_t* ld );
+ static void lib_fini_connection_data( lib_data_t* ld );
+ static void lib_fini_fallback( lib_fallback_t* lf );
+@@ -235,6 +245,10 @@
+ 
+ static int header_name_len;
+ 
++#ifdef SUPPORT_DNSSEC
++static int dnssec_policy;
++#endif /* SUPPORT_DNSSEC */
++
+ static struct smfiDesc smfilter = {
+     "SPF",				/* filter name */
+     SMFI_VERSION,			/* version code -- do not change */
+@@ -266,6 +280,9 @@
+     { "nodaemon",		no_argument,		NULL,	'X', },
+     { "help",			no_argument,		NULL,	'h', },
+     { "debug",			optional_argument,	NULL,	'd', },
++#ifdef SUPPORT_DNSSEC
++    { "dnssec_policy",          required_argument,      NULL,   's', },
++#endif /* SUPPORT_DNSSEC */
+     { 0, 0, 0, 0 },
+ };
+ #define DOC_LONGOPT(l, v, t, p1) \
+@@ -275,7 +292,11 @@
+ #else /* HAVE_GETOPT_LONG */
+ #define DOC_LONGOPT(l, v, t, p1) do { } while( 0 )
+ #endif /* HAVE_GETOPT_LONG */
++#ifdef SUPPORT_DNSSEC
++static const char* shortopts = "l:tg:f:w:re:mu:p:Xhd:s:";
++#else /* SUPPORT_DNSSEC */
+ static const char* shortopts = "l:tg:f:w:re:mu:p:Xhd::";
++#endif /* SUPPORT_DNSSEC */
+ 
+ #define DOC_OPT(s, l, v, t, p0, p1) \
+     do { \
+@@ -311,6 +332,9 @@
+     pidfile = (char*) 0;
+     nodaemon = 0;
+     debug = 0;
++#ifdef SUPPORT_DNSSEC
++    dnssec_policy = SPFMILTER_DNSSEC_POLICY_IGNORE;
++#endif /* SUPPORT_DNSSEC */
+ 
+     /* Figure out the program's name. */
+     argv0 = strrchr( argv[0], '/' );
+@@ -375,6 +399,24 @@
+ 		else
+ 		    debug = 1;
+ 		break;
++#ifdef SUPPORT_DNSSEC
++	    case 's':
++	        if ( optarg )
++		    {
++		    if ( strncasecmp( optarg, "ignore", 6 ) == 0 )
++		        dnssec_policy = SPFMILTER_DNSSEC_POLICY_IGNORE;
++		    else if ( strncasecmp( optarg, "warn", 4 ) == 0 )
++		        dnssec_policy = SPFMILTER_DNSSEC_POLICY_WARN;
++		    else if ( strncasecmp( optarg, "reject", 6 ) == 0 )
++		        dnssec_policy = SPFMILTER_DNSSEC_POLICY_REJECT;
++		    else
++			{
++		        (void) fprintf( stderr, "Unrecognized option argument '%s'\n", optarg );
++			exit( 1 );
++			}
++		    }
++		break;
++#endif /* SUPPORT_DNSSEC */
+ 	    default:
+ 		(void) fprintf( stderr, "Unrecognised option '%c'\n", c );
+ 		exit( 1 );
+@@ -444,6 +486,9 @@
+     DOC_OPT( 'X', "nodaemon", (char*) 0, "Do not fork into the background.", 20, 26 );
+     DOC_OPT( 'h', "help", (char*) 0, "Show this help.", 20, 26 );
+     DOC_OPT( 'd', "debug", "[<int>]", "Enable debugging to syslog.", 13, 18 );
++#ifdef SUPPORT_DNSSEC
++    DOC_OPT( 's', "dnssec_policy", "<ignore|warn|reject>", "Action in the event of DNSSEC validation failure", 16, 3 );
++#endif /* SUPPORT_DNSSEC */
+     }
+ 
+ 
+@@ -1320,6 +1365,12 @@
+     const char* exp;
+     char exp_escaped[1000];
+ 
++#ifdef SUPPORT_DNSSEC
++    const char* errmsg;
++    char exp_errmsg[1000];
++    char err_reply[2048];
++#endif /* SUPPORT_DNSSEC */
++
+     cd = (connection_data_t*) smfi_getpriv( ctx );
+ 
+     switch ( cd->result )
+@@ -1350,7 +1401,21 @@
+ 		escape_percents( exp, exp_escaped, sizeof(exp_escaped) );
+ 	    else
+ 		(void) strncpy( exp_escaped, "rejected by spfmilter", sizeof(exp_escaped) - 1 );
++#ifdef SUPPORT_DNSSEC
++	    strncpy( err_reply, exp_escaped, sizeof(err_reply) - 1 );
++
++	    errmsg = lib_get_error_msg( cd->lib_data );
++	    if ( errmsg != (char*) 0 )
++		{
++	        escape_percents( errmsg, exp_errmsg, sizeof(exp_errmsg) );
++		strncpy( err_reply + strlen( exp_escaped ), ".  Error: ", sizeof(err_reply) - strlen( exp_escaped ) - 1 );
++		strncpy( err_reply + strlen( err_reply ), exp_errmsg, sizeof(err_reply) - strlen( err_reply ) - 1 );
++		}
++
++	    smfi_setreply( ctx, "550", "5.7.1", err_reply );
++#else /* SUPPORT_DNSSEC */
+ 	    smfi_setreply( ctx, "550", "5.7.1", exp_escaped );
++#endif /* SUPPORT_DNSSEC */
+ 	    fini_message_data( cd );
+ 	    return SMFIS_REJECT;
+ 
+@@ -1474,6 +1539,14 @@
+     {
+     int len;
+ 
++#ifdef SUPPORT_DNSSEC
++    int i;
++    char *err_msg;
++    char **err_msgs;
++    size_t num_errs;
++    int first_err;
++#endif /* SUPPORT_DNSSEC */
++
+     (void) snprintf( header, header_size, "%s", result_str( cd->result ) );
+     len = strlen( header );
+     if ( reason != (char*) 0 )
+@@ -1501,7 +1574,84 @@
+ 	(void) snprintf( &header[len], header_size - len, " envelope-from=%s;", cd->mail_from );
+ 	len = strlen( header );
+ 	}
++
++#ifdef SUPPORT_DNSSEC
++    err_msg = (char *) ( lib_get_error_msg( cd->lib_data ) );
++    err_msgs = (char **) ( lib_get_error_msgs( cd->lib_data ) );
++    num_errs = lib_get_num_errors( cd->lib_data );
++    first_err = 1;
++    if ( ( err_msg != (char*) 0 ) && ( strstr( err_msg, "DNSSEC" ) == NULL ) )
++        {
++	(void) snprintf( &header[len], header_size - len, " problem=%s;", err_msg );
++	first_err = 0;
++	len = strlen( header );
++	}
++
++    for( i = 0; i < num_errs; i++ )
++	{
++	if( ( err_msgs[i] != NULL ) &&
++	    ( strstr( err_msgs[i], "DNSSEC" ) == NULL ) &&
++	    ( ( err_msg == NULL ) || ( strcmp( err_msgs[i], err_msg ) != 0 ) )
++	  )
++	    {
++	    if ( first_err == 1 )
++		{
++		(void) snprintf( &header[len], header_size - len, " problem=%s;", err_msgs[i] );
++		first_err = 0;
++		}
++	    else
++		{
++	        (void) snprintf( &header[len], header_size - len, "%s;", err_msgs[i] );
++		}
++	    len = strlen( header );
++	    }
++	}
++    
++    first_err = 1;
++    for( i = 0; i < num_errs; i++ )
++	{
++	if ( ( err_msgs[i] != NULL ) && ( strstr( err_msgs[i], "DNSSEC") != NULL ) )
++	    {
++	    if ( first_err == 1 )
++		{
++		(void) snprintf( &header[len], header_size - len,
++				 " x-dnssec=\"fail (%s", err_msgs[i] );
++		first_err = 0;
++		}
++	    else
++		{
++		(void) snprintf( &header[len], header_size - len,
++				 ", %s", err_msgs[i] );
++		}
++	    len = strlen(header);
++	    }
++	}
++
++    if ( first_err == 1 )
++	{
++	if ( ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE ) 
++	     || ( cd->result == SPFMILTER_RESULT_NONE ) )
++	    {
++	    (void) snprintf( &header[len], header_size - len,
++			     " x-dnssec=\"none\";" );
++	    len = strlen( header );
++	    }
++	else
++	    {
++	    (void) snprintf( &header[len], header_size - len,
++			     " x-dnssec=\"pass\";" );
++	    len = strlen( header );
++	    }
++	}
++    else
++	{
++	(void) snprintf( &header[len], header_size - len, ")\";" );
++	len = strlen( header );
++	}
++#else /* SUPPORT_DNSSEC */
+     /*!!! Do something about the problem= field. */
++#endif /* SUPPORT_DNSSEC */
++
+     (void) snprintf( &header[len], header_size - len, " x-software=%s %s %s with %s;", SPFMILTER_PROGRAM, SPFMILTER_VERSION, SPFMILTER_URL, lib_version() );
+     }
+ 
+@@ -1843,6 +1993,29 @@
+     }
+ 
+ 
++#ifdef SUPPORT_DNSSEC
++static const char*
++lib_get_error_msg( lib_data_t* ld )
++    {
++    return lib_get_error( ld );
++    }
++
++
++static const size_t
++lib_get_num_errors( lib_data_t* ld )
++    {
++    return 0;
++    }
++
++
++static const char**
++lib_get_error_msgs( lib_data_t* ld )
++    {
++    return NULL;
++    }
++
++#endif /* SUPPORT_DNSSEC */
++
+ static void
+ lib_fini_message_data( lib_data_t* ld )
+     {
+@@ -2178,18 +2351,45 @@
+ static int
+ lib_get_result( lib_data_t* ld )
+     {
++    int retval;
+     /* Convert libspf2 result to spfmilter result. */
+     switch ( ld->output.result )
+ 	{
+-	case SPF_RESULT_PASS: return SPFMILTER_RESULT_PASS;
+-	case SPF_RESULT_FAIL: return SPFMILTER_RESULT_FAIL;
+-	case SPF_RESULT_SOFTFAIL: return SPFMILTER_RESULT_SOFTFAIL;
+-	case SPF_RESULT_NEUTRAL: return SPFMILTER_RESULT_NEUTRAL;
+-	case SPF_RESULT_UNKNOWN: return SPFMILTER_RESULT_UNKNOWN;
+-	case SPF_RESULT_ERROR: return SPFMILTER_RESULT_ERROR;
+-	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
+-	default: return -1;
+-	}
++	case SPF_RESULT_PASS: retval = SPFMILTER_RESULT_PASS;
++	case SPF_RESULT_FAIL: retval = SPFMILTER_RESULT_FAIL;
++	case SPF_RESULT_SOFTFAIL: retval = SPFMILTER_RESULT_SOFTFAIL;
++	case SPF_RESULT_NEUTRAL: retval = SPFMILTER_RESULT_NEUTRAL;
++	case SPF_RESULT_UNKNOWN: retval = SPFMILTER_RESULT_UNKNOWN;
++	case SPF_RESULT_ERROR: retval = SPFMILTER_RESULT_ERROR;
++	case SPF_RESULT_NONE: retval = SPFMILTER_RESULT_NONE;
++	default: retval = -1;
++	}
++
++#ifdef SUPPORT_DNSSEC
++        /* Check if there was a DNSSEC validation failure */
++        if ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT )
++	    {
++	    int i;
++	    int num_errs;
++	    const char **err_msgs;
++
++	    num_errs = lib_get_num_errors( ld );
++	    err_msgs = lib_get_error_msgs( ld );
++
++	    for ( i = 0; i < num_errs; i++ )
++		{
++		if ( err_msgs[i] )
++		    {
++		    if ( strstr( err_msgs[i], "DNSSEC" ) != NULL )
++			{
++			retval = SPFMILTER_RESULT_FAIL;
++			break;
++			}
++		    }
++		}
++	    }
++#endif /* SUPPORT_DNSSEC */
++    return retval;
+     }
+ 
+ 
+@@ -2206,6 +2406,28 @@
+     return SPF_strerror( ld->output.err );
+     }
+ 
++#ifdef SUPPORT_DNSSEC
++static const char*
++lib_get_error_msg( lib_data_t* ld )
++    {
++    return  ld->output.err_msg ;
++    }
++
++
++static const size_t
++lib_get_num_errors( lib_data_t* ld )
++    {
++    return ld->output.num_errs;
++    }
++
++
++static const char**
++lib_get_error_msgs( lib_data_t* ld )
++    {
++    return (const char**) (ld->output.err_msgs);
++    }
++
++#endif /* SUPPORT_DNSSEC */
+ 
+ static void
+ lib_fini_message_data( lib_data_t* ld )
+@@ -2316,6 +2538,14 @@
+ #ifdef USE_DNS_CACHE
+ 	    SPF_dns_destroy_config_cache( resolvers[r].spfdcid_c );
+ #endif /* USE_DNS_CACHE */
++#ifdef SUPPORT_DNSSEC
++	    if ( ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT ) ||
++		 ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN ) )
++		{
++		SPF_dns_destroy_config_sresolv( resolvers[r].spfdcid_r );
++		}
++	    else
++#endif /* SUPPORT_DNSSEC */
+ 	    SPF_dns_destroy_config_resolv( resolvers[r].spfdcid_r );
+ 	    }
+     pthread_mutex_destroy( &resolver_mutex );
+@@ -2373,6 +2603,14 @@
+     if ( ! resolvers[r].initialized )
+ 	{
+ 	/* Create the DNS objects. */
++#ifdef SUPPORT_DNSSEC
++	if ( ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT ) ||
++	     ( dnssec_policy == SPFMILTER_DNSSEC_POLICY_WARN ) )
++	    {
++	    resolvers[r].spfdcid_r = SPF_dns_create_config_sresolv( (SPF_dns_config_t) 0, debug, 1 );
++	    }
++	else
++#endif /* SUPPORT_DNSSEC */
+ 	resolvers[r].spfdcid_r = SPF_dns_create_config_resolv( (SPF_dns_config_t) 0, debug );
+ 	if ( resolvers[r].spfdcid_r == (SPF_dns_config_t) 0 )
+ 	    {
+@@ -2439,6 +2677,11 @@
+ static int
+ lib_init( void )
+     {
++#ifdef SUPPORT_DNSSEC
++    if ( dnssec_policy != SPFMILTER_DNSSEC_POLICY_IGNORE )
++	spf_server = SPF_server_new( SPF_DNS_DNSSEC_CACHE, debug );
++    else
++#endif /* SUPPORT_DNSSEC */
+     spf_server = SPF_server_new( SPF_DNS_CACHE, debug );
+     if ( spf_server == (SPF_server_t*) 0 )
+ 	{
+@@ -2640,6 +2883,32 @@
+     }
+ 
+ 
++#ifdef SUPPORT_DNSSEC
++static const char*
++lib_get_error_msg( lib_data_t* ld )
++    {
++    /*!!!*/
++    return (char*) 0;
++    }
++
++
++static const size_t
++lib_get_num_errors( lib_data_t* ld )
++    {
++    /*!!!*/
++    return 0;
++    }
++
++
++static const char**
++lib_get_error_msgs( lib_data_t* ld )
++    {
++    /*!!!*/
++    return (char**) 0;
++    }
++#endif /* SUPPORT_DNSSEC */
++
++
+ static void
+ lib_fini_message_data( lib_data_t* ld )
+     {
