@@ -406,13 +406,15 @@ Run \"perldoc donuts\" for more information on the above options.
 }
 
 sub LocalGetOptions {
-    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
-	import Getopt::Long::GUI;
+    if ($#ARGV == -1 && eval {require Getopt::GUI::Long;}) {
+	import Getopt::GUI::Long;
+	Getopt::Long::Configure(qw(auto_help no_ignore_case));
 	return GetOptions(@_);
     } else {
 	require Getopt::Long;
 	import Getopt::Long;
     }
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
     GetOptions(LocalOptionsMap(@_));
 }
 
