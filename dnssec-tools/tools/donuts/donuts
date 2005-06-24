@@ -36,7 +36,7 @@ LocalGetOptions(\%opts,
 		["R|help-rules", 'Show the rules that donuts checks'],
 		["H|help-config",
 		 'Show configuration tokens supported by the rules'],
-	       ) || usage();
+	       );
 
 #
 # initialize ignore list
@@ -109,7 +109,7 @@ if ($opts{'R'}) {
 #
 # must specify at least one zone file
 #
-usage() if ($opts{'h'} || $#ARGV == -1);
+exit() if ($opts{'h'} || $#ARGV == -1);
 
 #
 # load zone files
@@ -395,25 +395,15 @@ sub print_parse_error {
     print STDERR "$current_zone_file:$line $err\n";
 }
 
-sub usage {
-    print "
-$0 [-h] [-H] [-R] [-v] [-l LEVEL] [-r RULEFILE] [-i IGNORELIST]
-   [-C] [-c configfile] ZONEFILE DOMAINNAME...
-
-Run \"perldoc donuts\" for more information on the above options.
-";
-    exit;
-}
-
 sub LocalGetOptions {
-    if ($#ARGV == -1 && eval {require Getopt::GUI::Long;}) {
+    if (eval {require Getopt::GUI::Long;}) {
+	require Getopt::Long;
 	import Getopt::GUI::Long;
 	Getopt::Long::Configure(qw(auto_help no_ignore_case));
 	return GetOptions(@_);
-    } else {
-	require Getopt::Long;
-	import Getopt::Long;
     }
+    require Getopt::Long;
+    import Getopt::Long;
     Getopt::Long::Configure(qw(auto_help no_ignore_case));
     GetOptions(LocalOptionsMap(@_));
 }
