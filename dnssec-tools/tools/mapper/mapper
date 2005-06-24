@@ -56,6 +56,7 @@ LocalGetOptions(\%opts,
 		'',
 		['o|output-file=s','Output File Name',
 		 question => { type => 'fileupload'}],
+		'',
 		['GUI:guionly',{type => 'checkbox',
 				values => [1,0],
 				default => 1,
@@ -67,9 +68,9 @@ LocalGetOptions(\%opts,
 				      import QWizard;
 				      $mapinwindow = qwparam('mapinwindow')}],
 		['GUI:otherprimaries',%primes],
-) || usage();
+) || exit();
 
-usage() if (exists($opts{'h'}));
+exit() if (exists($opts{'h'}));
 
 my %edgeparameters =
   (
@@ -295,6 +296,8 @@ if ($opts{'L'}) {
 # write the final resulting file
 #
 my $img;
+if ($opts{'t'}) {
+}
 $g->as_png(\$img);
 
 if ($opts{'o'}) {
@@ -403,23 +406,16 @@ sub get_label {
     return $label;
 }
 
-sub usage {
-    print "
-$0 [-h] [-r] [-R] [-o MAP.PNG] [-l (neato|dot|twopi)] [-s SKIPRECORDS]
-  [-i IGNOREREGXP] [-t TYPEINFO] ZONEFILE ZONENAME [ZONEFILE ZONENAME...]
-
-";
-    exit;
-}
-
 sub LocalGetOptions {
-    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
-	import Getopt::Long::GUI;
+    if (eval {require Getopt::GUI::Long;}) {
+	import Getopt::GUI::Long;
+        Getopt::Long::Configure(qw(auto_help no_ignore_case));
 	return GetOptions(@_);
     } else {
 	require Getopt::Long;
 	import Getopt::Long;
     }
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
     GetOptions(LocalOptionsMap(@_));
 }
 
