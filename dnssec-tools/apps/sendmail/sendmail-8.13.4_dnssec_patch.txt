@@ -1,13 +1,12 @@
 Index: devtools/Site/site.config.m4
 ===================================================================
---- devtools/Site/site.config.m4	2005-06-24 14:34:51.000000000 -0400
-+++ devtools/Site/site.config.m4	2005-06-24 14:35:38.000000000 -0400
-@@ -0,0 +1,5 @@
+--- devtools/Site/site.config.m4	2005-06-24 14:55:14.000000000 -0400
++++ devtools/Site/site.config.m4	2005-06-24 14:55:32.000000000 -0400
+@@ -0,0 +1,4 @@
 +APPENDDEF(`confENVDEF', `-DSUPPORT_DNSSEC=1')
 +undefine(`confLIBSEARCH')
 +define(`confLIBSEARCH', `db 44bsd')
 +APPENDDEF(`confLIBS', `-lsres -lval -lcrypto')
-+APPENDDEF(`confENVDEF', `-DMILTER -DSM_CONF_SHM=0 -g')
 Index: libmilter/sm_gethost.c
 ===================================================================
 --- libmilter/sm_gethost.c	2004-08-20 17:12:37.000000000 -0400
@@ -73,7 +72,6 @@ Index: libmilter/sm_gethost.c
  # endif /* NETINET6 */
  
  #endif /* (SOLARIS > 10000 && SOLARIS < 20400) || (defined(SOLARIS) && SOLARIS < 204) || (defined(sony_news) && defined(__svr4)) */
-ERROR: File site.config.m4 does not exist
 Index: doc/op/op.me
 ===================================================================
 --- doc/op/op.me	2005-01-31 19:40:57.000000000 -0500
