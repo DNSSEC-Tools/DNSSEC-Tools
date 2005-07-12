@@ -17,6 +17,7 @@ SRC=  	res_squery.c \
 	val_log.c \
 	val_x_query.c \
 	val_assertion.c\
+	val_getaddrinfo.c \
 	val_gethostbyname.c \
 	crypto/val_rsamd5.c \
 	crypto/val_rsasha1.c \
@@ -35,6 +36,7 @@ OBJ=  	res_squery.o \
 	val_query.o \
 	val_x_query.o \
 	val_assertion.o\
+	val_getaddrinfo.o \
 	val_gethostbyname.o \
 	crypto/val_rsamd5.o \
 	crypto/val_rsasha1.o \
@@ -52,6 +54,7 @@ LOBJ=  	res_squery.lo \
 	val_query.lo \
 	val_x_query.lo \
 	val_assertion.lo\
+	val_getaddrinfo.lo \
 	val_gethostbyname.lo \
 	crypto/val_rsamd5.lo \
 	crypto/val_rsasha1.lo \
@@ -64,11 +67,12 @@ DRIVER= driver
 #VALIDATOR=validate (for future)
 VALIDATOR= verify
 GETHOST= gethost
+GETADDR= getaddr
 
-all: $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST)
+all: $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR)
 
 clean:
-	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) resolver_driver.lo main.lo gethost.lo
+	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR) resolver_driver.lo resolver_driver.o main.lo main.o gethost.lo gethost.o getaddr.lo getaddr.o
 
 $(LIBVAL): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ)
@@ -82,8 +86,14 @@ $(VALIDATOR): $(LIBVAL) main.lo
 $(GETHOST): $(LIBVAL) gethost.lo
 	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS)
 
+$(GETADDR): $(LIBVAL) getaddr.lo
+	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
+
 install:
 	$(LIBTOOLIN) $(LIBVAL) $(libdir)
 	$(LIBTOOLFN)
-	$(INSTALL) val_api.h    $(includedir)
+	$(INSTALL) val_api.h $(includedir)
+	$(INSTALL) validator.h $(includedir)
 	$(INSTALL) val_errors.h $(includedir)
+	$(INSTALL) val_gethostbyname.h $(includedir)
+	$(INSTALL) val_getaddrinfo.h $(includedir)
