@@ -17,6 +17,28 @@
 #include <netdb.h>
 
 /**
+ * addrinfo_dnssec_wrapper: A wrapper struct around addrinfo to
+ *                          store the result of DNSSEC validation.
+ *     ainfo: Contains the addrinfo structure
+ *     dnssec_status: Contains the result of DNSSEC validation.
+ *                If DNSSEC validation is successful, it will
+ *                contain VALIDATE_SUCCESS.  If there is a
+ *                failure, it will contain the validator error code.
+ */
+struct addrinfo_dnssec_wrapper {
+	struct addrinfo ainfo;
+	int dnssec_status;
+};
+
+/**
+ * A macro to extract DNSSEC-validation status information from a
+ * (struct addrinfo *) variable.  Note: This variable must be returned
+ * from the val_getaddrinfo() function.
+ */
+#define ADDRINFO_DNSSEC_STATUS(ainfo) \
+    ((ainfo == NULL)? INDETERMINATE: ((struct addrinfo_dnssec_wrapper *) ainfo)->dnssec_status)
+
+/**
  * val_getaddrinfo: A validating getaddrinfo function.
  *                  Based on getaddrinfo() as defined in RFC3493.
  *
@@ -37,17 +59,12 @@
  *                protocol is acceptable.
  *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
  *                structures, linked by the ai_next member.
- *     [OUT] dnssec_status: Points to a pre-allocated (by the caller) int
- *                value where the result of DNSSEC validation will be stored.
- *                If DNSSEC validation is successful, it will
- *                contain VALIDATE_SUCCESS.  If there is a
- *                failure, it will contain the validator error code.
  *
  * Return value: This function returns 0 if it succeeds, or one of the
  *               non-zero error codes if it fails.  See man getaddrinfo
  *               for more details.
  */
-struct int val_getaddrinfo ( const char *nodename, const char *servname,
-			     const struct addrinfo *hints,
-			     struct addrinfo **res, int *dnssec_status );
+int val_getaddrinfo ( const char *nodename, const char *servname,
+		      const struct addrinfo *hints,
+		      struct addrinfo **res );
 #endif
