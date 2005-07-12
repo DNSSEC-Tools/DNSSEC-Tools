@@ -171,7 +171,7 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
     return NULL;
 }
 
-/* Converts data in the domain_info structure into a hostent structure */
+/* Converts data in the rrset_rec structure into a hostent structure */
 static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
 {
     struct hostent *hentry = NULL;
@@ -496,7 +496,7 @@ struct hostent *val_x_gethostbyname ( const char *name, int *dnssec_status )
     free_assertion_chain(&assertions);
     free_result_chain(&results);
                                                                                                                              
-    if(context == NULL)
+    if(context != NULL)
         destroy_context(context);
                                                                                                                              
     return hentry;

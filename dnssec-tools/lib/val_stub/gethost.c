@@ -56,7 +56,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 	else {
-	    printf("gethostbyname(%s) returned NULL\n", argv[1]);
+	    printf("val_gethostbyname(%s) returned NULL\n", argv[1]);
         }
 	printf("DNSSEC status = %s\n", p_val_error(dnssec_status));
 	printf("val_h_errno = %s\n", hstrerror(val_h_errno));
