@@ -4,7 +4,8 @@
  *
  * Author: Abhijit Hayatnagarkar
  *
- * A command-line tool for testing the val_gethostbyname() function.
+ * A command-line tool for testing the val_gethostbyname() and
+ * val_x_gethostbyname() functions.
  */
 
 #include <stdio.h>
@@ -20,17 +21,35 @@ int main(int argc, char *argv[])
 	char *alias;
 	int dnssec_status;
 	char buf[INET6_ADDRSTRLEN];
+	int index;
+	int extended = 0;
 
 	if (argc < 2) {
-	    printf ("Usage: %s <hostname>\n", argv[0]);
+	    printf ("Usage: %s [-x] <hostname>\n", argv[0]);
 	    exit(1);
 	}
 
-	hentry = val_gethostbyname(argv[1], &dnssec_status);
+	index = 1;
+
+	if (strcasecmp(argv[index], "-x") == 0) {
+		extended = 1;
+		index++;
+	}
+
+	if (extended) {
+		hentry = val_x_gethostbyname(argv[index], &dnssec_status);
+	}
+	else {
+		hentry = val_gethostbyname(argv[index], &dnssec_status);
+	}
+
+	if (extended)
+	    printf("val_x_gethostbyname(%s) returned:", argv[index]);
+	else
+	    printf("val_gethostbyname(%s) returned:", argv[index]);
 
 	if (hentry != NULL) {
-	    printf("val_gethostbyname(%s) returned:\n", argv[1]);
-	    printf("\th_name = %s\n", hentry->h_name);
+	    printf("\n\th_name = %s\n", hentry->h_name);
 	    printf("\th_aliases = %d\n", hentry->h_aliases);
 	    if (hentry->h_aliases) {
 		for (i=0; hentry->h_aliases[i] != 0; i++) {
@@ -56,7 +75,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 	else {
-	    printf("val_gethostbyname(%s) returned NULL\n", argv[1]);
+	    printf(" NULL\n", argv[index]);
         }
 	printf("DNSSEC status = %s\n", p_val_error(dnssec_status));
 	printf("val_h_errno = %s\n", hstrerror(val_h_errno));
