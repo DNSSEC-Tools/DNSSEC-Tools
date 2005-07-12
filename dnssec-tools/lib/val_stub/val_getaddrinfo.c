@@ -45,6 +45,10 @@ static struct addrinfo *append_addrinfo (struct addrinfo *a1,
 	return a1;
 }
 
+/* duplicates just the current addrinfo struct
+ * does not duplicate the entire chain
+ * sets the ai_next pointer of the new addrinfo to NULL
+ */
 static struct addrinfo *duplicate_addrinfo (const struct addrinfo *a)
 {
 	struct addrinfo_dnssec_wrapper *new_aw;
@@ -75,56 +79,72 @@ static struct addrinfo *duplicate_addrinfo (const struct addrinfo *a)
 	return &(new_aw->ainfo);
 }
 
+/*
+ * 
+ */
 static struct addrinfo *process_service_and_hints(struct addrinfo_dnssec_wrapper *ainfo_wrapper,
 						  const char *servname,
 						  const struct addrinfo *hints)
 {
 	struct addrinfo *a1 = NULL;
+	struct addrinfo *retval = NULL;
+	struct addrinfo *a2 = NULL;
+	int dup_needed = 0;
 
 	if (ainfo_wrapper == NULL) {
 		return NULL;
 	}
 
 	a1 = &(ainfo_wrapper->ainfo);
+	retval = a1;
 
 	/* Flags */
 	a1->ai_flags = (hints == NULL) ? (AI_V4MAPPED | AI_ADDRCONFIG) : hints->ai_flags; /* ??? */
+
+	if ((hints == NULL || hints->ai_socktype == 0 || hints->ai_socktype == SOCK_STREAM) &&
+	    (servname == NULL || getservbyname(servname, "tcp") != NULL)) {
+		
+		a1->ai_socktype = SOCK_STREAM;
+		a1->ai_protocol = IPPROTO_TCP;
+		a1->ai_next = NULL;
+		dup_needed = 1;
+	}
 	
-	if ((hints == NULL) || (hints->ai_socktype == 0)) {
-		struct addrinfo *a2 = duplicate_addrinfo (a1);
-		struct addrinfo *a3 = duplicate_addrinfo (a1);
-		a3->ai_socktype = SOCK_STREAM;
-		a3->ai_protocol = IPPROTO_TCP;
-		a3->ai_next = a2;
-
-		a2->ai_socktype = SOCK_DGRAM;
-		a2->ai_protocol = IPPROTO_UDP;
-		a2->ai_next = a1;
-
+	if ((hints == NULL || hints->ai_socktype == 0 || hints->ai_socktype == SOCK_DGRAM) &&
+	    (servname == NULL || getservbyname(servname, "udp") != NULL)) {
+		
+		if (dup_needed) {
+			a2 = duplicate_addrinfo (a1);
+			a1->ai_next = a2;
+			a1 = a2;
+		}
+		a1->ai_socktype = SOCK_DGRAM;
+		a1->ai_protocol = IPPROTO_UDP;
+		dup_needed = 1;
+	}
+	
+	if ((hints == NULL || hints->ai_socktype == 0 || hints->ai_socktype == SOCK_RAW) &&
+	    (servname == NULL || getservbyname(servname, "ip") != NULL)) {
+		
+		if (dup_needed) {
+			a2 = duplicate_addrinfo (a1);
+			a1->ai_next = a2;
+			a1 = a2;
+		}
 		a1->ai_socktype = SOCK_RAW;
 		a1->ai_protocol = IPPROTO_IP;
-
-		return a3;
+		dup_needed = 1;
 	}
-	else {
-		a1->ai_socktype = hints->ai_socktype;
-		switch (a1->ai_socktype) {
-		case SOCK_RAW:
-			a1->ai_protocol = IPPROTO_IP;
-			break;
-		case SOCK_STREAM:
-			a1->ai_protocol = IPPROTO_TCP;
-			break;
-		case SOCK_DGRAM:
-			a1->ai_protocol = IPPROTO_UDP;
-			break;
-		default:
-			a1->ai_protocol = 0;
-		}
-
-		return a1;
+	
+	if (!dup_needed) {
+		/* no valid protocol found */
+		freeaddrinfo (retval);
+		retval = NULL;
 	}
+
+	return retval;
 }
+
 
 /* Read the ETC_HOSTS file and check if it contains the given name
  */
@@ -203,7 +223,9 @@ static struct addrinfo *get_addrinfo_from_rrset (struct rrset_rec *rrset,
 			else {
 				ainfo_tail->ai_next = ainfo;
 			}
-			ainfo_tail = ainfo;
+
+			if (ainfo)
+				ainfo_tail = ainfo;
 
 			rr = rr->rr_next;
 		}
@@ -311,6 +333,10 @@ int val_getaddrinfo (const char *nodename, const char *servname,
 {
 	struct in_addr ip4_addr;
 	struct in6_addr ip6_addr;
+	struct addrinfo *ainfo4 = NULL;
+	struct addrinfo *ainfo6 = NULL;
+	int is_ip4 = 0;
+	int is_ip6 = 0;
 
 	val_log("val_getaddrinfo called with nodename = %s, servname = %s\n",
 		nodename == NULL? "(null)":nodename,
@@ -323,11 +349,19 @@ int val_getaddrinfo (const char *nodename, const char *servname,
 	bzero(&ip4_addr, sizeof(struct in_addr));
 	bzero(&ip6_addr, sizeof(struct in6_addr));
 
-	if (inet_pton(AF_INET, nodename, &ip4_addr) > 0) {
+	if (nodename == NULL || inet_pton(AF_INET, nodename, &ip4_addr) > 0) {
 		struct addrinfo_dnssec_wrapper *ainfo_wrapper = 
 			(struct addrinfo_dnssec_wrapper *) malloc (sizeof (struct addrinfo_dnssec_wrapper));
 		struct addrinfo *ainfo = (struct addrinfo *) (&(ainfo_wrapper->ainfo));
 		struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
+
+		is_ip4 = 1;
+		if (nodename == NULL) {
+			if (inet_pton(AF_INET, "127.0.0.1", &ip4_addr) < 0) {
+				/* ??? */
+				;
+			}				
+		}
 
 		bzero(ainfo_wrapper, sizeof(struct addrinfo_dnssec_wrapper));
 		bzero(saddr4, sizeof(struct sockaddr_in));
@@ -342,15 +376,35 @@ int val_getaddrinfo (const char *nodename, const char *servname,
 		ainfo->ai_canonname = NULL;
 
 		ainfo_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		*res = process_service_and_hints(ainfo_wrapper, servname, hints);
-		return 0;
+		ainfo4 = process_service_and_hints(ainfo_wrapper, servname, hints);
+
+		if (nodename != NULL) {
+			*res = ainfo4;
+			if (*res != NULL) {
+				return 0;
+			}
+			else {
+				return EAI_NONAME;
+			}
+		}
 	}
-	else if (inet_pton(AF_INET6, nodename, &ip6_addr) > 0) {
+	
+	if (nodename == NULL || inet_pton(AF_INET6, nodename, &ip6_addr) > 0) {
+		
 		struct addrinfo_dnssec_wrapper *ainfo_wrapper = 
 			(struct addrinfo_dnssec_wrapper *) malloc (sizeof (struct addrinfo_dnssec_wrapper));
 		struct addrinfo *ainfo = (struct addrinfo *) (&(ainfo_wrapper->ainfo));
 		struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
 		
+		is_ip6 = 1;
+
+		if (nodename == NULL) {
+			if (inet_pton(AF_INET6, "::1", &ip6_addr) < 0) {
+				/* ??? */
+				;
+			}
+		}
+
 		bzero(ainfo_wrapper, sizeof(struct addrinfo_dnssec_wrapper));
 		bzero(saddr6, sizeof(struct sockaddr_in6));
 
@@ -364,10 +418,23 @@ int val_getaddrinfo (const char *nodename, const char *servname,
 		ainfo->ai_canonname = NULL;
 
 		ainfo_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		*res = process_service_and_hints(ainfo_wrapper, servname, hints);
-		return 0;
+		ainfo6 = process_service_and_hints(ainfo_wrapper, servname, hints);
+		if (nodename == NULL) {
+			*res = append_addrinfo(ainfo4, ainfo6);
+		}
+		else {
+			*res = ainfo6;
+		}
+
+		if (*res != NULL) {
+			return 0;
+		}
+		else {
+			return EAI_NONAME;
+		}
 	}
-	else {
+
+	if (nodename && !is_ip4 && !is_ip6) {
 		/* First check ETC_HOSTS file
 		 * XXX: TODO check the order in the ETC_HOST_CONF file
 		 */
