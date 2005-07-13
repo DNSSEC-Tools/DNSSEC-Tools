@@ -56,6 +56,12 @@ int val_parse_dname(const unsigned char *buf, int buflen, int offset,
 /* Parse the rdata portion of a DNSKEY resource record */
 int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 			    val_dnskey_rdata_t *rdata);
+/*
+ * Parse the dnskey from the string. The string contains the flags, 
+ * protocol, algorithm and the base64 key delimited by spaces.
+ */
+int val_parse_dnskey_string (char *keystr, int keystrlen, 
+				val_dnskey_rdata_t *dnskey_rdata);
 
 /* Parse the rdata portion of an RRSIG resource record */
 int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
@@ -64,4 +70,9 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
 /* Parse the rdata portion of an DS resource record */
 int val_parse_ds_rdata (const unsigned char *buf, int buflen,
 			    val_ds_rdata_t *rdata);
+
+
+/*Compare if two public keys are identical */
+int dnskey_compare(val_dnskey_rdata_t *key1, val_dnskey_rdata_t *key2);
+
 #endif
