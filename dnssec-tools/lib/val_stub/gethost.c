@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 	}
 
 	if (extended) {
-		hentry = val_x_gethostbyname(argv[index], &dnssec_status);
+		hentry = val_x_gethostbyname(NULL, argv[index], &dnssec_status);
 	}
 	else {
 		hentry = val_gethostbyname(argv[index], &dnssec_status);
@@ -56,6 +56,8 @@ int main(int argc, char *argv[])
 	            printf("\th_aliases[%d] = %s\n", i, hentry->h_aliases[i]);
 		} 
 	    }
+		else
+			printf ("\th_aliases is NULL\n");
 	    if (hentry->h_addrtype == AF_INET) {
 	        printf("\th_addrtype = AF_INET\n");
 	    }
@@ -75,7 +77,7 @@ int main(int argc, char *argv[])
 	    }
 	}
 	else {
-	    printf(" NULL\n", argv[index]);
+	   	printf(" hentry is NULL\n"); 
         }
 	printf("DNSSEC status = %s\n", p_val_error(dnssec_status));
 	printf("val_h_errno = %s\n", hstrerror(val_h_errno));
