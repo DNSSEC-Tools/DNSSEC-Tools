@@ -26,6 +26,7 @@ char *p_val_error(int valerrno);
 #define CONF_PARSE_ERROR -7 
 #define NO_POLICY -8	
 #define NO_SPACE -9
+#define CONTEXT_ERROR -10
 
 #define MALFORMED_LOCALE -20
 #define UNKNOWN_LOCALE	-21
@@ -63,7 +64,7 @@ char *p_val_error(int valerrno);
 #define UNKNOWN_DNSKEY_PROTO  	ERROR_BASE+20
 #define FLOOD_ATTACK_DETECTED	ERROR_BASE+21	
 #define DNS_FAILURE				ERROR_BASE+22	
-#define LAST_ERROR				TOO_MANY_LINKS
+#define LAST_ERROR				DNS_FAILURE
 
 #define FAIL_BASE				LAST_ERROR
 /* "Error, but can prove the chain-of-trust above this" states */
@@ -89,19 +90,20 @@ char *p_val_error(int valerrno);
 #define WRONG_RRSIG_OWNER		FAIL_BASE+20
 #define RRSIG_ALGO_MISMATCH 	FAIL_BASE+21
 #define KEYTAG_MISMATCH			FAIL_BASE+22
-#define LAST_FAILURE			NOT_VERIFIED
+#define LAST_FAILURE			KEYTAG_MISMATCH
 
-/* Verification success */
+/* success results conditions */
 #define VERIFIED				LAST_FAILURE+1 
+#define VALIDATE_SUCCESS  		LAST_FAILURE+2	/* TRUSTED AND no error */
+#define A_LOCAL 				LAST_FAILURE+3	/* Answer obtained locally */
+#define LAST_SUCCESS			A_LOCAL
 
-/* Validation result states */
-#define VALIDATION_RESULT_BASE	VERIFIED
-#define BOGUS  					VALIDATION_RESULT_BASE+1	/* NOT_VERIFIED but not trusted */
-#define PROVABLY_UNSECURE  		VALIDATION_RESULT_BASE+2	/* TRUSTED AND NEGATIVE_PROOF */
-#define NONEXISTENT  			VALIDATION_RESULT_BASE+3	/* TRUSTED AND proof present */
-#define VALIDATE_SUCCESS  		VALIDATION_RESULT_BASE+4	/* TRUSTED AND no error */
-#define INDETERMINATE  			VALIDATION_RESULT_BASE+5	/* Can't say */
-#define A_LOCAL 				VALIDATION_RESULT_BASE+6	/* Answer obtained locally */
+/* failure result conditions */
+#define BOGUS  					LAST_SUCCESS+1	/* NOT_VERIFIED but not trusted */
+#define PROVABLY_UNSECURE  		LAST_SUCCESS+2	/* TRUSTED AND NEGATIVE_PROOF */
+#define NONEXISTENT  			LAST_SUCCESS+3	/* TRUSTED AND proof present */
+#define INDETERMINATE  			LAST_SUCCESS+4	/* Can't say */
+
 
 
 /*
