@@ -33,6 +33,9 @@
 #define QUERY_TYPE ns_t_a
 #define QUERY_CLASS ns_c_in
 
+#define ANS_COUNT 2
+#define BUFSIZE 2048 
+
 int main()
 {
 
@@ -41,26 +44,31 @@ int main()
 	const u_int16_t class = QUERY_CLASS;
 	int ret_val;
 
-	struct response_t resp;
-	int respcount = 1;
-	int buflen = 256;
+	struct response_t resp[ANS_COUNT];
+	int respcount = ANS_COUNT;
 	int i;
 
-	resp.response = (u_int8_t *) malloc (buflen * sizeof(u_int8_t));
-	resp.response_length = &buflen;
+	for (i = 0; i< ANS_COUNT; i++) {
+		resp[i].response = (u_int8_t *) MALLOC (BUFSIZE * sizeof (u_int8_t *));
+		if (resp[i].response == NULL)
+			return OUT_OF_MEMORY;
+		resp[i].response_length = BUFSIZE;
+	}
 
-	ret_val = val_x_query( NULL, name, type, class, 0, &resp, &respcount);
+	ret_val = val_x_query( NULL, name, type, class, 0, resp, &respcount);
 
 	if (ret_val == NO_ERROR) {
 		printf ("Total number of RRsets available = %d\n", respcount);
 		for (i=0; i<respcount; i++) {
-			printf("Validation Result = %d \n", resp.validation_result);
-			print_response (resp.response, *resp.response_length);
+			printf("Validation Result = %d \n", resp[i].validation_result);
+			print_response (resp[i].response, resp[i].response_length);
 		}
 	}
 	else 
-		printf ("No answers returned\n");
+		printf ("Error encountered:  %d \n", ret_val);
 
-	free(resp.response);
+	for (i = 0; i< ANS_COUNT; i++) 
+		FREE(resp[i].response);
+
 	return ret_val;
 }
