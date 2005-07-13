@@ -17,15 +17,27 @@
 
 #include "val_support.h"
 #include "res_squery.h"
-#include "validator.h"
+#include "val_policy.h"
 #include "val_x_query.h"
 #include "val_log.h"
+#include "val_errors.h"
+
+#include "validator.h"
 
 #define AUTH_ZONE_INFO "fruits.netsec.tislabs.com"
 // NOT AUTHORITATIVE FOR DS IN PARENT
 #define NAME_SERVER_STRING	"158.69.82.20"
 // QUERYING A RECURSIVE SERVER
 //#define NAME_SERVER_STRING	"168.150.236.43"
+
+#define OVERRIDE_POLICY(ctx, override)   do {		\
+	struct policy_list *c;							\
+	if (ctx && override) {							\
+		ctx->cur_override = override;				\
+		for (c = override->plist; c; c = c->next)	\
+			ctx->e_pol[c->index] = c->pol;			\
+	}												\
+} while (0)
 
 static int init_respol(struct res_policy *respol)
 {
@@ -66,12 +78,15 @@ static int init_respol(struct res_policy *respol)
 	return SR_UNSET;
 }
 
+
 static void destroy_respol(struct res_policy *respol)
 {
 	if (respol) free_name_servers(&respol->ns);
+	FREE(respol);
 }
 
-val_context_t *get_default_context()
+
+val_context_t *get_context(const char *label)
 {
 	int ret_val;
 	struct res_policy *newpol;
@@ -92,8 +107,38 @@ val_context_t *get_default_context()
 		FREE (newcontext);	
 		return NULL;
 	}
+
 	newcontext->resolver_policy = newpol;
+
+	memset(newcontext->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
+	newcontext->pol_overrides = NULL;
+	newcontext->cur_override = NULL;
+	if (read_config_file(newcontext, label) != SR_UNSET) {
+		FREE (newpol);
+		FREE (newcontext);	
+		return NULL;
+	}
+	/* Over-ride with the first policy that we find in our list*/
+	OVERRIDE_POLICY(newcontext, newcontext->pol_overrides); 
+
 	return newcontext;
+}
+
+
+int switch_effective_policy(val_context_t *ctx, const char *label)
+{
+	struct policy_overrides *cur, *t;
+	if (ctx) {
+		for(cur = ctx->pol_overrides; 
+			 cur && !strcmp(cur->label, label); 
+			  cur = cur->next); 
+		if (cur) {
+			for (t = ctx->pol_overrides; t != cur->next; t = t->next)
+				OVERRIDE_POLICY(ctx, t);
+			return NO_ERROR;
+		}
+	}
+	return UNKNOWN_LOCALE;
 }
 
 void destroy_context(val_context_t *context)
@@ -102,7 +147,8 @@ void destroy_context(val_context_t *context)
 		return;
 
 	destroy_respol(context->resolver_policy);
-	FREE(context->resolver_policy);
+	destroy_policy(context);
+
 	FREE(context);
 }
 
