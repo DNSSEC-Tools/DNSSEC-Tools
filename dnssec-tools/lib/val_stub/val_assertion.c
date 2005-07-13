@@ -22,10 +22,12 @@
 #include "val_assertion.h"
 #include "val_verify.h"
 #include "val_context.h"
-#include "validator.h"
 #include "val_log.h"
 #include "val_api.h"
+#include "val_policy.h"
+#include "val_parse.h"
 
+#include "validator.h"
 
 #ifndef TRUE
 #define TRUE 1
@@ -35,6 +37,7 @@
 #endif
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
+#define NONSENSE_RESULT_SEQUENCE(status) ((status <= FAIL_BASE) || (status > LAST_SUCCESS))
 
 /*
  * Create a "result" list whose elements point to assertions and also have their
@@ -47,20 +50,59 @@ void free_result_chain(struct val_result **results)
 
 	while(NULL != (prev = *results)) {
 		*results = (*results)->next;
-		free(prev);
+		FREE(prev);
 	}
 
 }
 
-/////////////////////////////////////////////////////////////////
 
-u_int16_t is_trusted_key(val_context_t *ctx, struct rr_rec *key)
+u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
 {
-//	return EXACT;
-	return NOT_YET;
+	struct trust_anchor_policy *ta_pol, *ta_cur;
+	int name_len;
+	u_int8_t *zp = zone_n;
+	val_dnskey_rdata_t dnskey;
+	struct rr_rec *curkey;
+
+	ta_pol = RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);	
+	if (ta_pol == NULL)
+		return NO_MORE;
+	
+
+	name_len = wire_name_length(zp);
+
+	/* skip longer names */
+	for (ta_cur = ta_pol; 
+		  ta_cur && (wire_name_length(ta_cur->zone_n) > name_len); 
+		   ta_cur=ta_cur->next);	
+
+	/* for the remaining nodes */
+	for (; ta_cur; ta_cur=ta_cur->next) {
+		if (wire_name_length(ta_cur->zone_n) == name_len) {
+			if (!namecmp(ta_cur->zone_n, zp)) {
+				for (curkey = key; curkey; curkey=curkey->rr_next) {
+					val_parse_dnskey_rdata (curkey->rr_rdata, curkey->rr_rdata_length_h, &dnskey);	
+					if(!dnskey_compare(&dnskey, ta_cur->publickey))
+						return EXACT;
+				}
+			}
+		}
+		else {
+			/* XXX trim the top label from our candidate zone */
+			if (!zp[0])
+				return NO_MORE;
+			zp += (int)zp[0] + 1;
+
+			if (namecmp(ta_cur->zone_n, zp) == 0) {
+				/* We have hope */
+				return NOT_YET;
+			}
+		} 
+	}
+
+	return NO_MORE;	
 }
 
-/////////////////////////////////////////////////////////////////
 
 // XXX What about CNAMES ???
 
@@ -907,7 +949,8 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 		/* Then look for  {signby_name_n, DNSKEY/DS, type} */
 
 		if(type_h == ns_t_dnskey) {
-			u_int16_t tkeystatus = is_trusted_key(context, as->ac_data->rrs_data);
+
+			u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->ac_data->rrs_data);
 			switch (tkeystatus) {
 				case EXACT: 	
 					as->ac_state = A_TRUSTED; 
@@ -1085,7 +1128,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 	/* No point going ahead if our original query had error conditions */
 	if (top_q->qc_state != Q_ANSWERED) {
 		/* the original query had some error */
-		res= (struct val_result *) malloc (sizeof (struct val_result));
+		res= (struct val_result *) MALLOC (sizeof (struct val_result));
 		if(res== NULL)
 			return OUT_OF_MEMORY;
 		res->as = top_q->qc_as;
@@ -1115,7 +1158,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 		}
 		else {
 			/* Add this result to the list */
-			res= (struct val_result *) malloc (sizeof (struct val_result));
+			res= (struct val_result *) MALLOC (sizeof (struct val_result));
 			if(res== NULL)
 				return OUT_OF_MEMORY;
 			res->as = as_more;
@@ -1155,7 +1198,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 				break;
 			}
 			else if (next_as->ac_state == A_NEGATIVE_PROOF) {
-				if (res->status != A_DONT_KNOW)  {
+				if (NONSENSE_RESULT_SEQUENCE(res->status)) {
 					/* 
 					 * Some obfuscated attempt to confuse us 
 					 * give up early.
@@ -1178,7 +1221,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 			}
 			/* Check error conditions */
 			else if (next_as->ac_state <= LAST_ERROR) {
-				if (res->status != A_DONT_KNOW)  {
+				if (NONSENSE_RESULT_SEQUENCE(res->status)) {
 					/* 
 					 * Some obfuscated attempt to confuse us 
 					 * give up early.
