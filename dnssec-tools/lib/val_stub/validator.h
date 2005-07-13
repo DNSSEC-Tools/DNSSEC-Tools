@@ -7,6 +7,20 @@
 #define VALIDATOR_H
 
 #include <arpa/nameser.h>
+#include <stdlib.h>
+
+//#define VAL_CONFIGURATION_FILE	"/etc/security/dnsval.conf"
+#define VAL_CONFIGURATION_FILE	"dnsval.conf"
+
+#ifdef MEMORY_DEBUGGING
+#define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
+#define FREE(p) my_free(p,__FILE__,__LINE__)
+#define STRDUP(p) my_strdup(p,__FILE__,__LINE__)
+#else
+#define MALLOC(s) malloc(s)
+#define FREE(p) free(p)
+#define STRDUP(p) strdup(p)
+#endif
 
 /* Types of keys in the key store */
 #define TRUSTED_KEY XX
@@ -51,10 +65,79 @@
 #define ENVELOPE            10
 #define TTL					4
 
+/*
+ * policies are defined for the following
+ */
+
+#define P_TRUST_ANCHOR				0
+#define P_PREFERRED_SEP				1
+#define P_NOT_PREFERRED_SEP			2
+#define P_MUST_VERIFY_COUNT			3
+#define P_PREFERRED_ALGO_DATA		4
+#define P_NOT_PREFERRED_ALGO_DATA	5
+#define P_PREFERRED_ALGO_KEYS		6
+#define P_NOT_PREFERRED_ALGO_KEYS	7
+#define P_PREFERRED_ALGO_DS			8
+#define P_NOT_PREFERRED_ALGO_DS		9
+#define P_CLOCK_SKEW				10
+#define	P_EXPIRED_SIGS				11
+#define P_USE_TCP					12
+#ifndef DLV
+#define MAX_POL_TOKEN	 			13	
+#else
+#define P_DLV_TRUST_POINTS			13
+#define P_DLV_MAX_VALIDATION_LINKS	14
+#define MAX_POL_TOKEN	 			15
+#endif
+
+
+#define policy_entry_t void* 
+/* 
+ * The above is a generic data type for a policy entry
+ * typecasted to one of the types defined in val_policy.h: 
+ */
+
+
+/*
+ * fragment of the configuration file containing 
+ * one policy chunk
+ */
+struct policy_fragment {
+	char *label;
+	int label_count;
+	int index;
+	policy_entry_t pol;
+};
+
+struct policy_list {
+	int index; 
+	policy_entry_t pol;
+	struct policy_list *next;
+};
+
+/* 
+ * This list is ordered from general to more specific --
+ * so "mozilla" < "sendmail" < "browser:mozilla"
+ */
+struct policy_overrides{
+	char *label;
+	int label_count;
+	struct policy_list *plist;
+	struct policy_overrides *next;
+};
 
 typedef struct val_context {
+	/* resolver policy */
 	struct res_policy *resolver_policy;
+
+	/* validator policy */
+	policy_entry_t e_pol[MAX_POL_TOKEN];
+	struct policy_overrides *pol_overrides;
+	struct policy_overrides *cur_override;
 } val_context_t;
+
+#define RETRIEVE_POLICY(ctx, index, type)	\
+			(!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
 
 struct query_chain; /* forward declaration */
 
@@ -80,7 +163,7 @@ struct query_chain {
 
 struct response_t {
 	u_int8_t *response;
-	int	*response_length;
+	int	response_length;
 	int validation_result;
 };
 
