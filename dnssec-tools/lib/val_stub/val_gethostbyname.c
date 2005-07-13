@@ -400,7 +400,7 @@ struct hostent *val_gethostbyname ( const char *name, int *dnssec_status )
  * If there is a failure, *dnssec_status will contain the validator
  * error code.
  */
-struct hostent *val_x_gethostbyname ( const char *name, int *dnssec_status )
+struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int *dnssec_status)
 {
     struct hostent* hentry = NULL;
     struct in_addr ip4_addr;
@@ -470,8 +470,13 @@ struct hostent *val_x_gethostbyname ( const char *name, int *dnssec_status )
     struct assertion_chain *assertions = NULL;
     struct val_result *results = NULL;
 	u_char name_n[MAXCDNAME];
-    val_context_t   *context = get_default_context();
-                                                                                                                             
+	val_context_t *context;
+
+	if (ctx == NULL)
+		context = get_context(NULL);
+	else
+		context = ctx;   
+                                                                                                                          
     hentry = NULL;
     
 	if (((retval = ns_name_pton(name, name_n, MAXCDNAME-1)) != -1)
@@ -496,7 +501,7 @@ struct hostent *val_x_gethostbyname ( const char *name, int *dnssec_status )
     free_assertion_chain(&assertions);
     free_result_chain(&results);
                                                                                                                              
-    if(context != NULL)
+    if((ctx == NULL) && context)
         destroy_context(context);
                                                                                                                              
     return hentry;

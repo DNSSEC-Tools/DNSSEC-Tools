@@ -51,6 +51,6 @@ int val_h_errno;
  * to free the returned hostent structure.
  */
 struct hostent *val_gethostbyname ( const char *name, int *dnssec_status );
-struct hostent *val_x_gethostbyname ( const char *name, int *dnssec_status );
+struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int *dnssec_status);
 
 #endif
