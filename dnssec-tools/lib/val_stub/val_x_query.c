@@ -75,8 +75,11 @@ int val_x_query(val_context_t	*ctx,
 	struct query_chain *top_q;
 	u_char name_n[MAXCDNAME];
 
-	if(ctx == NULL)
-		context = get_default_context();
+	if(ctx == NULL) {
+		context = get_context(NULL);
+		if (context == NULL)
+			return CONTEXT_ERROR;
+	}
 	else	
 		context = ctx;
 
@@ -128,13 +131,13 @@ int compose_answer(struct query_chain *top_q,
 	struct val_result *res = results;
 	int res_count = *resp_count;
 
-	if ((resp == NULL) || (*resp_count == 0)) 
+	if ((resp == NULL) || res_count == 0) 
 		return BAD_ARGUMENT;
 
 	*resp_count = 0; /* value-result parameter */
 	for (res = results; res; res=res->next) {
 		unsigned char *cp, *ep;
-		int *resplen;
+		int resplen;
 
 		if ((*resp_count) >= res_count)
 			return NO_SPACE;
@@ -143,9 +146,9 @@ int compose_answer(struct query_chain *top_q,
 		cp = resp[*resp_count].response;
 		resplen = resp[*resp_count].response_length;
 
-		if ((cp == NULL) || ((*resplen) == 0))
+		if ((cp == NULL) || ((resplen) == 0))
 			return BAD_ARGUMENT;
-		ep = cp + (*resplen);
+		ep = cp + resplen;
 
 
 		if ((res->as) && (res->as->ac_data->rrs_section == SR_FROM_ANSWER)) {
@@ -200,7 +203,7 @@ int compose_answer(struct query_chain *top_q,
 				hp->ancount = htons(anscount);
 			}
 		}
-		*resplen = cp - resp[*resp_count].response;
+		resp[*resp_count].response_length = cp - resp[*resp_count].response;
 		(*resp_count)++;
 	}
 
