@@ -250,7 +250,7 @@ static struct addrinfo *get_addrinfo_from_dns (const char *nodename,
 	int retval;
 	
 	val_log("get_addrinfo_from_dns() called\n");
-	context = get_default_context();
+	context = get_context(NULL);
 
 	if (hints == NULL || hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
 
