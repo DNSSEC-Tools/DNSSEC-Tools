@@ -98,15 +98,21 @@ int main(int argc, char *argv[])
 	struct addrinfo *ainfo = NULL;
 	int retval;
 	int index = 0;
+	int getcanonname = 0;
 
 	if (argc < 2) {
-		printf ("Usage: %s [-v] <hostname|IPv4 address|IPv6 address> [Port]\n", argv[0]);
+		printf ("Usage: %s [-v] [-c] <hostname|IPv4 address|IPv6 address> [Port]\n", argv[0]);
 		exit(1);
 	}
 
 	index = 1;
 	if (strcasecmp(argv[index], "-v") == 0) {
 		validate = 1;
+		index++;
+	}
+
+	if (strcasecmp(argv[index], "-c") == 0) {
+		getcanonname = 1;
 		index++;
 	}
 
@@ -121,13 +127,15 @@ int main(int argc, char *argv[])
 	}
 
 	bzero(&hints, sizeof(struct addrinfo));
-	hints.ai_flags |= AI_CANONNAME;
+	if (getcanonname) {
+		hints.ai_flags |= AI_CANONNAME;
+	}
 	if (validate) {
-		// retval = val_getaddrinfo(node, service, &hints, &ainfo);
-		retval = val_getaddrinfo(node, service, NULL, &ainfo);
+		retval = val_getaddrinfo(node, service, &hints, &ainfo);
+		// retval = val_getaddrinfo(node, service, NULL, &ainfo);
 	}
 	else {
-		retval = getaddrinfo(node, service, NULL, &ainfo);
+		retval = getaddrinfo(node, service, &hints, &ainfo);
 	}
 	
 	if (retval != 0) {
