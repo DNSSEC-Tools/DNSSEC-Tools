@@ -75,4 +75,35 @@ int val_parse_ds_rdata (const unsigned char *buf, int buflen,
 /*Compare if two public keys are identical */
 int dnskey_compare(val_dnskey_rdata_t *key1, val_dnskey_rdata_t *key2);
 
+/* Parse the ETC_HOSTS file */
+#define ETC_HOSTS      "/etc/hosts"
+#define MAXLINE 4096
+#define MAX_ALIAS_COUNT 2048
+struct hosts {
+	char *address;
+	char *canonical_hostname;
+	char **aliases; /* An array.  The last element is NULL */
+	struct hosts *next;
+};
+
+/* A macro to free memory allocated for hosts */
+#define FREE_HOSTS(hentry) do { \
+	if (hentry) { \
+	    int i = 0; \
+	    if (hentry->address) free (hentry->address); \
+	    if (hentry->canonical_hostname) free (hentry->canonical_hostname); \
+	    if (hentry->aliases) { \
+                i = 0; \
+		for (i=0; hentry->aliases[i] != 0; i++) { \
+		    if (hentry->aliases[i]) free (hentry->aliases[i]); \
+		} \
+		if (hentry->aliases[i]) free (hentry->aliases[i]); \
+		free (hentry->aliases); \
+	    } \
+	    free (hentry); \
+	} \
+} while (0);
+
+struct hosts * parse_etc_hosts (const char *name);
+
 #endif
