@@ -26,150 +26,81 @@
 #include "val_assertion.h"
 #include "val_support.h"
 #include "val_context.h"
+#include "val_parse.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"
 #define MAXLINE 4096
 #define MAX_ALIAS_COUNT 2048
 
-/* Read the ETC_HOSTS file and check if it contains the given
- * name
+/* Read the ETC_HOSTS file and check if it contains the given name.
  */
 static struct hostent *get_hostent_from_etc_hosts (const char *name)
 {
-    FILE *fp;
-    char *line = NULL;
-    size_t len = 0;
-    int read;
-    char white[] = " \t\n";
-    char fileentry[MAXLINE];
+	struct hosts *hs = parse_etc_hosts (name);
+	struct hostent *hentry = NULL;
 
-    fp = fopen (ETC_HOSTS, "r");
-    if (fp == NULL) {
-	return NULL;
-    }
+	/* XXX: todo what if hs has more than one element ? */
+	while (hs) {
+		struct hosts *h_prev = NULL;
+		struct in_addr ip4_addr;
+		char addr_buf[INET_ADDRSTRLEN];
+		int i, alias_count;
+		char *alias;
 
-    while ((read = getline (&line, &len, fp)) != -1) {
-	char *buf = NULL;
-	char *cp = NULL;
-	char addr_buf[INET6_ADDRSTRLEN];
-	char *domain_name = NULL;
-	int matchfound = 0;
-#if 0
-	int is_ipv6_addr = 0;
-#endif
-	char *alias_list[MAX_ALIAS_COUNT];
-	int alias_index = 0;
-	struct in_addr ip4_addr;
-#if 0
-	struct in6_addr ip6_addr;
-#endif
+		bzero(&ip4_addr, sizeof(struct in_addr));
 
-	if ((read > 0) && (line[0] == '#')) continue;
+		if (inet_pton(AF_INET, hs->address, &ip4_addr) <= 0) {
+			
+			/* not a valid address ... skip this line */
+			val_log("\t...error in address format: %s\n", hs->address);
+			h_prev = hs;
+			hs = hs->next;
+			FREE_HOSTS(h_prev);
+			continue;
+		}
+		else {
+			val_log("\t...type of address is IPv4\n");
+			val_log("Address is: %s\n",
+				inet_ntop(AF_INET, &ip4_addr, addr_buf, INET_ADDRSTRLEN));
+		}
 
-	/* ignore characters after # */
-	cp = (char *) strtok_r (line, "#", &buf);
-	
-	if (!cp) continue;
-
-	memset(fileentry, 0, MAXLINE);
-	memcpy(fileentry, cp, strlen(cp));
-
-	/* read the ip address */
-	cp = (char *) strtok_r (fileentry, white, &buf);
-	if (!cp) continue;
-
-	bzero(&ip4_addr, sizeof(struct in_addr));
-#if 0
-	bzero(&ip6_addr, sizeof(struct in6_addr));
-#endif
-	val_log("parsing address `%s'", cp);
-	memset(addr_buf, 0, INET6_ADDRSTRLEN);
-	if (inet_pton(AF_INET, cp, &ip4_addr) <= 0) {
-
-#if 0
-	    /* not an ipv4 address... try ipv6 */
-	    if (inet_pton (AF_INET6, cp, &ip6_addr) <= 0) {
-#endif
-		/* not a valid address ... skip this line */
-		val_log("\t...error in address format\n");
-		continue;
-#if 0
-	    }
-
-	    val_log("\t...type of address is IPv6\n");
-	    val_log("Address is: %s\n", inet_ntop(AF_INET6, &ip6_addr, addr_buf, INET6_ADDRSTRLEN));
-	    is_ipv6_addr = 1;
-#endif
-	}
-	else {
-	    val_log("\t...type of address is IPv4\n");
-	    val_log("Address is: %s\n", inet_ntop(AF_INET, &ip4_addr, addr_buf, INET_ADDRSTRLEN));
-	}
-
-	/* read the full domain name */
-	cp = (char *) strtok_r (NULL, white, &buf);
-	if (!cp) continue;
-
-	domain_name = cp;
-
-	if (strcasecmp(cp, name) == 0) {
-	    matchfound = 1;
-	}
-
-	/* read the aliases */
-	memset(alias_list, 0, MAX_ALIAS_COUNT);
-	alias_index = 0;
-	while ((cp = (char *) strtok_r (NULL, white, &buf)) != NULL) {
-	    alias_list[alias_index++] = cp;
-	    if ((!matchfound) && (strcasecmp(cp, name) == 0)) {
-		matchfound = 1;
-	    }
-	}
-
-	/* match input name with the full domain name and aliases */
-	if (matchfound) {
-	    int i;
-	    struct hostent *hentry = (struct hostent*) malloc (sizeof(struct hostent));
-
-	    bzero(hentry, sizeof(struct hostent));
-
-	    hentry->h_name = (char *) strdup(domain_name);
-	    hentry->h_aliases = (char **) malloc ((alias_index + 1) * sizeof(char *));
-
-	    for (i=0; i<alias_index; i++) {
-		hentry->h_aliases[i] = (char *) strdup(alias_list[i]);
-	    }
-
-	    hentry->h_aliases[alias_index] = 0;
-
-#if 0
-	    /* check if the address is an IPv6 address */
-	    if (is_ipv6_addr) {
-		hentry->h_addrtype = AF_INET6;
-		hentry->h_length = sizeof(struct in6_addr);
-		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
-		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in6_addr));
-		memcpy(hentry->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
-		hentry->h_addr_list[1] = 0;
-	    }
-	    else {
-#endif
+		hentry = (struct hostent*) malloc (sizeof(struct hostent));
+		bzero(hentry, sizeof(struct hostent));
+		
+		hentry->h_name = (char *) strdup(hs->canonical_hostname);
+		alias_count = 0;
+		while (hs->aliases[alias_count]) {
+			alias_count++;
+		}
+		alias_count++;
+		hentry->h_aliases = (char **) malloc ((alias_count) * sizeof(char *));
+		
+		for (i=0; i<alias_count; i++) {
+			hentry->h_aliases[i] = (char *) (hs->aliases[i]);
+		}
+		free(hs->aliases);
+		hs->aliases = (char **) malloc (sizeof(char *));
+		hs->aliases[0] = NULL;
+		
+		
 		hentry->h_addrtype = AF_INET;
 		hentry->h_length = sizeof(struct in_addr);
 		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
 		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
 		memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
 		hentry->h_addr_list[1] = 0;
-#if 0
-	    }
-#endif
-	    return hentry;
-	}
-    }
 
-    return NULL;
+		hs = hs->next;
+		h_prev = hs;
+		FREE_HOSTS(h_prev);
+		return hentry;
+	}
+
+	return NULL;
+	
 }
+
 
 /* Converts data in the rrset_rec structure into a hostent structure */
 static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
