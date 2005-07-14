@@ -27,35 +27,7 @@
 #include "val_support.h"
 #include "val_context.h"
 #include "val_getaddrinfo.h"
-
-#define ETC_HOSTS      "/etc/hosts"
-#define MAXLINE 4096
-#define MAX_ALIAS_COUNT 2048
-
-struct hosts {
-	char *address;
-	char *canonical_hostname;
-	char **aliases; /* An array.  The last element is NULL */
-	struct hosts *next;
-};
-
-/* A macro to free memory allocated for hosts */
-#define FREE_HOSTS(hentry) do { \
-	if (hentry) { \
-	    int i = 0; \
-	    if (hentry->address) free (hentry->address); \
-	    if (hentry->canonical_hostname) free (hentry->canonical_hostname); \
-	    if (hentry->aliases) { \
-                i = 0; \
-		for (i=0; hentry->aliases[i] != 0; i++) { \
-		    if (hentry->aliases[i]) free (hentry->aliases[i]); \
-		} \
-		if (hentry->aliases[i]) free (hentry->aliases[i]); \
-		free (hentry->aliases); \
-	    } \
-	    free (hentry); \
-	} \
-} while (0);
+#include "val_parse.h"
 
 static struct addrinfo *append_addrinfo (struct addrinfo *a1,
 					 struct addrinfo *a2)
@@ -175,103 +147,6 @@ static int process_service_and_hints(struct addrinfo_dnssec_wrapper *ainfo_wrapp
 		return EAI_SERVICE;
 	}
 }
-
-/*
- * Read ETC_HOSTS and return matching records
- */
-static struct hosts * parse_etc_hosts (const char *name)
-{
-	FILE *fp;
-	char *line = NULL;
-	size_t len = 0;
-	int read;
-	char white[] = " \t\n";
-	char fileentry[MAXLINE];
-	struct hosts *retval = NULL;
-	struct hosts *retval_tail = NULL;
-	
-	fp = fopen (ETC_HOSTS, "r");
-	if (fp == NULL) {
-		return NULL;
-	}
-	
-	while ((read = getline (&line, &len, fp)) != -1) {
-		char *buf = NULL;
-		char *cp = NULL;
-		char addr_buf[INET6_ADDRSTRLEN];
-		char *domain_name = NULL;
-		int matchfound = 0;
-		char *alias_list[MAX_ALIAS_COUNT];
-		int alias_index = 0;
-		
-		if ((read > 0) && (line[0] == '#')) continue;
-		
-		/* ignore characters after # */
-		cp = (char *) strtok_r (line, "#", &buf);
-		
-		if (!cp) continue;
-		
-		memset(fileentry, 0, MAXLINE);
-		memcpy(fileentry, cp, strlen(cp));
-		
-		/* read the ip address */
-		cp = (char *) strtok_r (fileentry, white, &buf);
-		if (!cp) continue;
-		
-		memset(addr_buf, 0, INET6_ADDRSTRLEN);
-		memcpy(addr_buf, cp, strlen(cp));
-		
-		/* read the full domain name */
-		cp = (char *) strtok_r (NULL, white, &buf);
-		if (!cp) continue;
-		
-		domain_name = cp;
-		
-		if (strcasecmp(cp, name) == 0) {
-			matchfound = 1;
-		}
-		
-		/* read the aliases */
-		memset(alias_list, 0, MAX_ALIAS_COUNT);
-		alias_index = 0;
-		while ((cp = (char *) strtok_r (NULL, white, &buf)) != NULL) {
-			alias_list[alias_index++] = cp;
-			if ((!matchfound) && (strcasecmp(cp, name) == 0)) {
-				matchfound = 1;
-			}
-		}
-		
-		/* match input name with the full domain name and aliases */
-		if (matchfound) {
-			int i;
-			struct hosts *hentry = (struct hosts*) malloc (sizeof(struct hosts));
-			
-			bzero(hentry, sizeof(struct hosts));
-			hentry->address = (char *) strdup (addr_buf);
-			hentry->canonical_hostname = (char *) strdup(domain_name);
-			hentry->aliases = (char **) malloc ((alias_index + 1) * sizeof(char *));
-			
-			for (i=0; i<alias_index; i++) {
-				hentry->aliases[i] = (char *) strdup(alias_list[i]);
-			}
-			
-			hentry->aliases[alias_index] = NULL;
-			hentry->next = NULL;
-			
-			if (retval) {
-				retval_tail->next = hentry;
-				retval_tail = hentry;
-			}
-			else {
-				retval = hentry;
-				retval_tail = hentry;
-			}
-		}
-	}
-	
-	return retval;
-}
-
 
 /* Read the ETC_HOSTS file and check if it contains the given name
  * Assumes that nodename is not NULL
