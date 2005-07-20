@@ -130,6 +130,7 @@ int compose_answer(struct query_chain *top_q,
 
 	struct val_result *res = results;
 	int res_count = *resp_count;
+	int proof = 0;
 
 	if ((resp == NULL) || res_count == 0) 
 		return BAD_ARGUMENT;
@@ -139,8 +140,16 @@ int compose_answer(struct query_chain *top_q,
 		unsigned char *cp, *ep;
 		int resplen;
 
-		if ((*resp_count) >= res_count)
+		if ((*resp_count) >= res_count) {
+
+			if (proof)
+				return NO_ERROR;
+
+			/* Return the total count in resp_count */ 
+			for (;res; res=res->next)
+				(*resp_count)++;
 			return NO_SPACE;
+		}
 
 		resp[*resp_count].validation_result = res->status;
 		cp = resp[*resp_count].response;
@@ -150,8 +159,7 @@ int compose_answer(struct query_chain *top_q,
 			return BAD_ARGUMENT;
 		ep = cp + resplen;
 
-
-		if ((res->as) && (res->as->ac_data->rrs_section == SR_FROM_ANSWER)) {
+		if (res->as) {
 			/* Construct the message */	
 
 			struct rrset_rec *rrset = res->as->ac_data;
@@ -159,6 +167,7 @@ int compose_answer(struct query_chain *top_q,
 			if (cp + sizeof(HEADER) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
 			bzero(hp, sizeof(HEADER));
 			cp += sizeof(HEADER);
+
 
 			/*  Question section */
 			int len = wire_name_length(top_q->qc_name_n);
@@ -200,7 +209,13 @@ int compose_answer(struct query_chain *top_q,
 				cp += rr->rr_rdata_length_h;
 
 				anscount++;
+			}
+
+			if (res->as->ac_data->rrs_section == SR_FROM_ANSWER)
 				hp->ancount = htons(anscount);
+			else if (res->as->ac_data->rrs_section == SR_FROM_AUTHORITY) {
+				proof = 1;
+				hp->nscount = htons(anscount);
 			}
 		}
 		resp[*resp_count].response_length = cp - resp[*resp_count].response;
