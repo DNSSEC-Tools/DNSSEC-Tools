@@ -234,7 +234,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
     struct rrset_rec *dnskeys;
     struct rrset_rec *rrset;
     u_int8_t sig_data[BUFLEN*2];
-    val_result_t status = INDETERMINATE;
+    val_result_t status = INDETERMINATE_ZONE;
     char requested_name[MAXDNAME];
 
     if (!response) {
@@ -252,7 +252,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	}
 	else {
 	    val_log("val_verify(): no dnskeys or rrsigs found.  probably not a signed zone.\n");
-	    return INDETERMINATE;
+	    return INDETERMINATE_ZONE;
 	}
     }
 
@@ -286,7 +286,7 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    status = DNSKEY_MISSING;
 	}
 	else {
-	    status = INDETERMINATE;
+	    status = INDETERMINATE_ZONE;
 	}
 	goto cleanup;
     }
@@ -596,21 +596,6 @@ int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag, val_dnskey_rdata_t 
 }
 
 
-#define WHERE_LABELS_IS 3
-int check_label_count (
-                            struct rrset_rec    *the_set,
-                            struct rr_rec       *the_sig,
-                            int                 *is_a_wildcard)
-{
-    u_int8_t owner_labels = wire_name_labels (the_set->rrs_name_n);
-    u_int8_t sig_labels = the_sig->rr_rdata[WHERE_LABELS_IS] + 1;
-                                                                                                                          
-    if (sig_labels > owner_labels) return SR_PROCESS_ERROR;
-                                                                                                                          
-    *is_a_wildcard = (sig_labels < owner_labels);
-                                                                                                                          
-    return SR_UNSET;
-}
 
 int do_verify (   int                 *sig_status,
                   struct rrset_rec    *the_set,
