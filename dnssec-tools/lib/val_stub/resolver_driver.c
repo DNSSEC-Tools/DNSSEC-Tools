@@ -33,7 +33,7 @@
 #define QUERY_TYPE ns_t_a
 #define QUERY_CLASS ns_c_in
 
-#define ANS_COUNT 2
+#define ANS_COUNT 3
 #define BUFSIZE 2048 
 
 int main()
@@ -60,12 +60,21 @@ int main()
 	if (ret_val == NO_ERROR) {
 		printf ("Total number of RRsets available = %d\n", respcount);
 		for (i=0; i<respcount; i++) {
-			printf("Validation Result = %d \n", resp[i].validation_result);
+			printf("Validation Result = %s \n", p_val_error(resp[i].validation_result));
 			print_response (resp[i].response, resp[i].response_length);
 		}
 	}
-	else 
+	else { 
 		printf ("Error encountered:  %d \n", ret_val);
+		if (ret_val == NO_SPACE) { 
+			printf("Total number of answers available = %d\n", respcount);
+			printf("Printing first %d\n", ANS_COUNT);
+			for (i=0; i<ANS_COUNT; i++) {
+				printf("Validation Result = %s \n", p_val_error(resp[i].validation_result));
+				print_response (resp[i].response, resp[i].response_length);
+			}
+		}
+	}
 
 	for (i = 0; i< ANS_COUNT; i++) 
 		FREE(resp[i].response);
