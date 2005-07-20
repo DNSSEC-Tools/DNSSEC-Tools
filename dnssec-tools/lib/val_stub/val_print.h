@@ -8,6 +8,7 @@
 #include "val_parse.h"
 #include "validator.h"
 
+void dump_rrset(struct rrset_rec *rrset);
 void dump_dinfo(struct domain_info *dinfo);
 void dump_val_context(struct val_context *context);
 void val_print_base64(unsigned char * message, int message_len);
