@@ -88,7 +88,7 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 			}
 		}
 		else {
-			/* XXX trim the top label from our candidate zone */
+			/* trim the top label from our candidate zone */
 			if (!zp[0])
 				return NO_MORE;
 			zp += (int)zp[0] + 1;
@@ -550,7 +550,6 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 
 int ask_resolver(val_context_t *context, struct query_chain **queries, int block, struct assertion_chain **assertions)
 {
-
 	// XXX Send multiple queries in parallel 
 
 	struct query_chain *matched_q;
@@ -734,6 +733,7 @@ int fails_to_answer_query(
     return FALSE;
 }
 
+
 int NSEC_is_wrong_answer (
                       u_int8_t    *qc_name_n,
                       const u_int16_t     q_type_h,
@@ -766,9 +766,11 @@ int NSEC_is_wrong_answer (
     }
     else
     {
-        /*  query name is between NXT owner and next name or
-            query name is after NXT owner and next name is the zone */
-
+		/* query name comes after the NXT owner */
+		/* It can be less than the owner if this is a wildcard proof, 
+		 * or if it is the SOA but that logic is handled in 
+		 * prove_nonexistence()
+		 */
         if (namecmp(the_set->rrs_name_n, qc_name_n) > 0)
         {
             the_set->rrs_status = SR_WRONG;
@@ -779,8 +781,6 @@ int NSEC_is_wrong_answer (
         return FALSE;
     }
 }
-
-
 
 /*
  * Add a new assertion for the response data 
@@ -843,6 +843,84 @@ void free_assertion_chain(struct assertion_chain **assertions)
 }
 
 /*
+ * For a given assertion identify its pending queries
+ */
+int build_pending_query(val_context_t *context, 
+		struct query_chain **queries, struct assertion_chain *as)
+{
+	u_int8_t *signby_name_n;
+	int retval;
+
+	if(as->ac_data->rrs_data == NULL) {
+		as->ac_state = A_NO_DATA;
+		return NO_ERROR;
+	}
+
+	if(as->ac_data->rrs_type_h == ns_t_rrsig) { 
+		as->ac_state = BARE_RRSIG;
+		return NO_ERROR;
+	}
+
+	if(as->ac_data->rrs_sig == NULL) {
+		as->ac_state = A_WAIT_FOR_RRSIG;
+		/* create a query and link it as the pending query for this assertion */
+		if(NO_ERROR != (retval = add_to_query_chain(queries, 
+						as->ac_data->rrs_name_n, ns_t_rrsig, as->ac_data->rrs_class_h)))
+			return retval;
+		as->ac_pending_query = *queries;/* The first value in the list is the most recent element */
+		return NO_ERROR;
+	}
+
+	/* 
+	 * Identify the DNSKEY that created the RRSIG:
+	 */
+
+	/* First identify the signer name from the RRSIG */
+	signby_name_n = &as->ac_data->rrs_sig->rr_rdata[SIGNBY];
+
+	//XXX The signer name has to be within the zone
+
+	/* Then look for  {signby_name_n, DNSKEY/DS, type} */
+
+	if(as->ac_data->rrs_type_h == ns_t_dnskey) {
+
+		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->ac_data->rrs_data);
+		switch (tkeystatus) {
+			case EXACT: 	
+				as->ac_state = A_TRUSTED; 
+				return NO_ERROR;
+
+			case NO_MORE: 	
+				as->ac_state = NO_TRUST_ANCHOR; 
+				return NO_ERROR;
+
+			default:
+				as->ac_state = A_WAIT_FOR_TRUST;
+				break;
+		}
+
+		/* State has to be A_WAIT_FOR_TRUST here */
+
+		/* Create a query for missing data */
+		if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
+					ns_t_ds, as->ac_data->rrs_class_h)))
+			return retval;
+
+	}
+	else { 
+		/* look for DNSKEY records */
+		if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
+						ns_t_dnskey, as->ac_data->rrs_class_h)))
+			return retval;
+	}
+
+	as->ac_pending_query = *queries; /* The first value in the list is the most recent element */
+	as->ac_state = A_WAIT_FOR_TRUST;
+	return NO_ERROR;
+}
+
+
+/*
  * Read the response that came in and create assertions from it. Set the state
  * of the assertion based on what data is available and whether validation
  * can proceed.
@@ -856,7 +934,6 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 							struct domain_info *response, struct query_chain *matched_q, 
 								struct assertion_chain **assertions)
 {
-	u_int8_t *signby_name_n;
 	int retval;
 	struct assertion_chain *as = NULL;
 	u_int16_t type_h = response->di_requested_type_h;
@@ -916,87 +993,137 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 			}
 		}
 
-		if(as->ac_data->rrs_data == NULL) {
-			as->ac_state = A_NO_DATA;
-			continue;
-		}
-
-		if(type_h == ns_t_rrsig) { 
-			as->ac_state = BARE_RRSIG;
-			continue;
-		}
-
-		if(as->ac_data->rrs_sig == NULL) {
-			as->ac_state = A_WAIT_FOR_RRSIG;
-			/* create a query and link it as the pending query for this assertion */
-			if(NO_ERROR != (retval = add_to_query_chain(queries, 
-							as->ac_data->rrs_name_n, ns_t_rrsig, as->ac_data->rrs_class_h)))
-				return retval;
-			as->ac_pending_query = *queries;/* The first value in the list is the most recent element */
-			continue;
-		}
-	
-
-		/* 
-		 * Identify the DNSKEY that created the RRSIG:
-		 */
-
-		/* First identify the signer name from the RRSIG */
-	    signby_name_n = &as->ac_data->rrs_sig->rr_rdata[SIGNBY];
-
-		//XXX The signer name has to be within the zone
-
-		/* Then look for  {signby_name_n, DNSKEY/DS, type} */
-
-		if(type_h == ns_t_dnskey) {
-
-			u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->ac_data->rrs_data);
-			switch (tkeystatus) {
-				case EXACT: 	
-					as->ac_state = A_TRUSTED; 
-					continue;
-
-				case NO_MORE: 	
-					as->ac_state = NO_TRUST_ANCHOR; 
-					continue;
-
-				default:
-					as->ac_state = A_WAIT_FOR_TRUST;
-					break;
-			}
-
-			/* State has to be A_WAIT_FOR_TRUST here */
-
-			/* Create a query for missing data */
-			if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
-						ns_t_ds, class_h)))
-				return retval;
-
-		}
-		else { 
-			/* look for DNSKEY records */
-			if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
-							ns_t_dnskey, class_h)))
-				return retval;
-
-		}
-
-		as->ac_pending_query = *queries; /* The first value in the list is the most recent element */
-		as->ac_state = A_WAIT_FOR_TRUST;
+		if (NO_ERROR != (retval = build_pending_query(context, queries, as)))
+			return retval;
 	}
-
 	return NO_ERROR;
 }
 
-void  prove_nonexistence (struct assertion_chain *as, struct query_chain *q, struct val_result *res) 
+void  prove_nonexistence (struct query_chain *top_q, struct val_result *results) 
 {
-	// if proof fails, PROVABLY_UNSECURE changes to INDETERMINATE, and assertion state changes to
-	// reflect the error
-	// Other errors: NSEC_POINTING_UPWARDS, INCOMPLETE_PROOF
+	struct val_result *res;
+	int wcard_chk = 0;
+	int span_chk = 0;
+	int status = NONEXISTENT; 
+	u_int8_t *soa_name_n = NULL;	
+	u_int8_t *closest_encounter = NULL;	
+	struct rrset_rec *wcard_proof = NULL;
 
-	// XXX Assume proof succeeds
-	if (res->status == VALIDATE_SUCCESS)
-		res->status = NONEXISTENT;
+	/* 
+	 * Check if this is the whole proof and nothing but the proof
+	 * At this point these records should already be in the TRUSTED state.
+	 */
+
+	/* inspect the SOA record first */
+	// XXX Can we assume that the SOA record is always present?
+	for(res = results; res; res = res->next) {
+		struct rrset_rec *the_set = res->as->ac_data;
+		if (the_set->rrs_ans_kind == SR_ANS_NACK_SOA) {
+			soa_name_n = the_set->rrs_name_n;
+			break;
+		}
+	}
+
+	if (soa_name_n == NULL)
+		status = INCOMPLETE_PROOF;
+	else {
+		/* for every NSEC */
+		for(res = results; res; res = res->next) {
+			struct rrset_rec *the_set = res->as->ac_data;
+			if (the_set->rrs_ans_kind == SR_ANS_NACK_NXT) { 
+				if (!namecmp(the_set->rrs_name_n, top_q->qc_name_n)) {
+					/* we already made sure that the type was missing in
+					 * NSEC_is_wrong_answer()
+					 */
+					span_chk = 1;
+					/* if the label count in the RRSIG equals the labels
+					 * in the nsec owner name, wildcard absence is also proved
+					 * Be sure to check the label count in an RRSIG that was 
+					 * verified
+					 */
+					struct rr_rec *sig;
+					int wcard;
+					for (sig = the_set->rrs_sig; sig; sig = sig->rr_next) {
+						if ((sig->status == RRSIG_VERIFIED) && 
+							(SR_UNSET == check_label_count(the_set, sig, &wcard))) {
+							if (wcard == 0)
+								wcard_chk = 1;
+							break;
+						}
+					}
+				}
+				else {
+					/* Find the next name */
+					u_int8_t *nxtname =	the_set->rrs_data->rr_rdata;
+
+					/* 
+					 * We've already checked within NSEC_is_wrong_answer() 
+					 * that the NSEC owner name is less than the query name. 
+					 * Now check if the next name in the NSEC record comes 
+					 * after the query name
+					 */
+					if (namecmp(top_q->qc_name_n, nxtname) > 0) {
+						/* if no, check if the next name wraps around */
+						if (namecmp(nxtname, soa_name_n) != 0) {
+							/* if no, check if this is the proof for no wild-card present */
+							/* i.e the proof must tell us that "*" does not exist */
+							wcard_proof = the_set;
+							break;
+						}
+					}
+					span_chk = 1;
+					/* The same NSEC may prove wildcard absence also */
+					if (wcard_proof == NULL)
+						wcard_proof = the_set;
+
+					/* The closest encounter is the longest label match between 
+					 * this NSEC's owner name and the query name
+					 */
+					int maxoffset = wire_name_length(top_q->qc_name_n);
+					int offset = top_q->qc_name_n[0] + 1;
+					while (offset < maxoffset) {
+						u_int8_t *cur_name_n = &top_q->qc_name_n[offset];
+						int cmp;
+						if ((cmp = namecmp(cur_name_n, the_set->rrs_name_n)) == 0) {
+							closest_encounter = cur_name_n;
+							break;
+						}
+						else if (cmp < 0) {
+							/* strip off one label from the NSEC owner name */
+							closest_encounter = &the_set->rrs_name_n[the_set->rrs_name_n[0] + 1];
+							break; 
+						}
+						offset += cur_name_n[0] + 1;
+					}
+				}
+			}
+		}
+		if (!span_chk)
+			status = INCOMPLETE_PROOF;
+		else if (!wcard_chk) {
+			if (!closest_encounter)
+				status = INCOMPLETE_PROOF;	
+			else {
+				/* Check the wild card proof */
+				/* prefix "*" to the closest encounter, and check if that 
+				 * name falls within the range given in wcard_proof
+				 */	
+				u_int8_t *nxtname =	wcard_proof->rrs_data->rr_rdata;
+				u_char domain_name_n[MAXCDNAME];
+				domain_name_n[0] = 0x01;
+				domain_name_n[1] = 0x2a; /* for the '*' character */
+				memcpy(&domain_name_n[2], closest_encounter, wire_name_length(closest_encounter));
+				if ((namecmp(domain_name_n, wcard_proof->rrs_name_n) <= 0) ||  
+					(namecmp(nxtname, domain_name_n) <= 0))
+					status = INCOMPLETE_PROOF;	
+			}
+		}
+	}	
+
+	/* set the error condition in all elements of the proof */
+	for(res = results; res; res = res->next) 
+		res->status = status;
+
 }
 
 /*
@@ -1013,8 +1140,8 @@ int try_verify_assertion(val_context_t *context, struct query_chain **queries,
 	struct assertion_chain *pending_as;
 	int retval;
 	u_int16_t type_h, class_h;
-	u_int8_t *signby_name_n;
 	struct rrset_rec *pending_rrset; 
+	u_int8_t *signby_name_n;
 
 	/* Sanity check */
 	if(next_as == NULL)
@@ -1085,16 +1212,19 @@ int try_verify_assertion(val_context_t *context, struct query_chain **queries,
 						next_as->ac_pending_query = NULL;
 
 						if((pending_as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT)
-		                   || (pending_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) 
-							/* proof of non-existence should follow */ 
+		                   || (pending_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
+
+							/* proof of non-existence should follow */
 							next_as->ac_state = A_NEGATIVE_PROOF;
-						else 
+						}
+						else { 
 							/* XXX what if this is an SR_ANS_CNAME? Can DS or DNSKEY return a CNAME? */
 							/* 
 							 * if the pending assertion contains a straight answer, 
 						   	 * trust is useful for verification 
 							 */
 							next_as->ac_state = A_CAN_VERIFY;
+						}
 					}
 					break;
 
@@ -1114,35 +1244,18 @@ int try_verify_assertion(val_context_t *context, struct query_chain **queries,
  * Do not try and validate assertions that have already been validated.
  */
 int  verify_n_validate(val_context_t *context, struct query_chain **queries, 
-								struct query_chain *top_q, u_int8_t flags, 
+								struct assertion_chain *top_as, u_int8_t flags, 
 								struct val_result **results, int *done)
 {
 	struct assertion_chain *next_as;
-	int incomplete_seen = 0;
 	int retval;
 	struct assertion_chain *as_more;
 	struct val_result *res;
 	
-	*done = 0;
-
-	/* No point going ahead if our original query had error conditions */
-	if (top_q->qc_state != Q_ANSWERED) {
-		/* the original query had some error */
-		res= (struct val_result *) MALLOC (sizeof (struct val_result));
-		if(res== NULL)
-			return OUT_OF_MEMORY;
-		res->as = top_q->qc_as;
-		res->status = A_ERROR;
-		res->trusted = 0;
-		res->next = NULL;
-		*results = res;
-		
-		*done = 1; /* No more validation is needed */
-		return NO_ERROR;
-	}
+	*done = 1;
 
 	/* Look at every answer that was returned */
-	for(as_more= top_q->qc_as; as_more; as_more=as_more->ac_more_data) {
+	for(as_more= top_as; as_more; as_more=as_more->ac_more_data) {
 
 		/* 
 		 * If this assertion is already in the results list with a completed status
@@ -1170,7 +1283,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 
 		/* 
 		 * as_more is the next answer that we obtained; next_as is the 
-		 * next as in the chain of trust
+		 * next assertion in the chain of trust
 		 */
 		for (next_as=as_more; next_as; next_as=next_as->ac_trust) {
 
@@ -1184,40 +1297,34 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 			 * chain of trust (not-validated)
 			 */
 			if((next_as->ac_data->rrs_type_h == ns_t_dnskey) &&
-				(next_as->ac_trust) && (next_as == next_as->ac_trust->ac_trust)) {
-					res->status = INDETERMINATE; 
-					break;
+					(next_as->ac_trust) && 
+					(next_as == next_as->ac_trust->ac_trust)) {
+				res->status = INDETERMINATE_DS; 
+				break;
 			}
 			/* Check initial states */
 			if(next_as->ac_state <= A_INIT) {
 				/* still need more data to validate this assertion */
-				incomplete_seen = 1;
+				*done = 0;
 			}
 			else if (next_as->ac_state == A_TRUSTED) {
 				res->trusted = 1; 
 				break;
 			}
 			else if (next_as->ac_state == A_NEGATIVE_PROOF) {
-				if (NONSENSE_RESULT_SEQUENCE(res->status)) {
-					/* 
-					 * Some obfuscated attempt to confuse us 
-					 * give up early.
-					 */
-					res->status = INDETERMINATE; 
-					break;
-				}
-				else {
-					/*
-					 * if we are able to prove non existence, we have 
-					 * shown that a component of the chain-of-trust is provably 
-					 * absent (provably unsecure).
-					 * If we cannot prove this later on (!trusted) we cannot believe 
-					 * the original answer either, since we still haven't reached 
-					 * a trust anchor. The status will then change to INDETERMINATE 
-					 */
-					res->status = PROVABLY_UNSECURE; 
-					continue;
-				}
+
+				/*
+				 * if we are able to prove non existence, we have 
+				 * shown that a component of the chain-of-trust is provably 
+				 * absent (provably unsecure).
+				 * If we cannot prove this later on (!trusted) we cannot believe 
+				 * the original answer either, since we still haven't reached 
+				 * a trust anchor. 
+				 * Dont see any use for separating these conditions, so treat them
+				 * as INDETERMINATE always
+				 */
+				res->status = INDETERMINATE_PROOF;
+				break;
 			}
 			/* Check error conditions */
 			else if (next_as->ac_state <= LAST_ERROR) {
@@ -1226,7 +1333,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 					 * Some obfuscated attempt to confuse us 
 					 * give up early.
 					 */
-					res->status = INDETERMINATE; 
+					res->status = INDETERMINATE_ERROR; 
 					break;
 				}
 				else {
@@ -1239,17 +1346,17 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 		}
 	}
 	
-	*done = (incomplete_seen == 0);
 	return NO_ERROR;
 }
 
-void fix_validation_results(struct query_chain *top_q, struct val_result *res, 
-			int *negative_resp_error)
-{
-	struct assertion_chain *as;
-	struct assertion_chain *proof;
-	struct query_chain *q;
 
+void fix_validation_results(struct query_chain *top_q, struct val_result *res, int *success)
+{
+	*success = 0;
+
+	/* Some error most likely, reflected in the query_chain */
+	if (res->as == NULL) 
+		res->status = top_q->qc_state;
 	/* 
 	 * If there was no missing data, and the result status is
 	 * not known, this is indeterminate if we did not see a trust
@@ -1259,54 +1366,19 @@ void fix_validation_results(struct query_chain *top_q, struct val_result *res,
 		if (res->trusted == 1)
 			res->status = VALIDATE_SUCCESS;
 		else
-			res->status = INDETERMINATE;
+			res->status = INDETERMINATE_TRUST;
 	}
-	/* could not prove that we are provably unsecure */
-	if ((res->status == PROVABLY_UNSECURE) && (res->trusted != 1)) 
-		res->status = INDETERMINATE;	
 
 	/* Could not build a chain of trust for the signature that failed */
 	if ((res->status > FAIL_BASE) && (res->status <= LAST_FAILURE) && (res->trusted != 1)) 
 		res->status = BOGUS;	
 
-	// XXX Post-process to see if this was a negative answer, do CNAME sanity etc
-	if ((res->status == VALIDATE_SUCCESS) || (res->status == PROVABLY_UNSECURE)) {
-		as = res->as; 	
-		proof = NULL;
-		q = NULL;
 
-		if (as == NULL) {
-			/* Some error most likely, reflected in the query_chain */
-			res->status = top_q->qc_state;
-			return;	
-		}
+	// XXX Do CNAME sanity etc
 
-		if((as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT)
-				|| (as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) {
-			proof = as;
-			q = top_q;
-		}
 
-		if (res->status == PROVABLY_UNSECURE) {
-			if (proof != NULL) {
-				/* some convoluted attempt to confuse us */
-				*negative_resp_error = 1;
-				return;
-			}
-			for (proof=as; proof; proof = proof->ac_trust) {
-				if (proof->ac_state == A_NEGATIVE_PROOF) {
-					q = proof->ac_pending_query;
-					proof = proof->ac_trust;
-					break;
-				}
-			}
-		}
-
-		// XXX Check if this is the whole proof and nothing but the proof
-		// XXX Set the result status to A_NONEXISTENT
-		if ((proof != NULL) && (q != NULL))
-			prove_nonexistence(proof, q, res);
-	}
+	if (res->status == VALIDATE_SUCCESS)
+		*success = 1;
 }
 
 /*
@@ -1332,7 +1404,6 @@ int resolve_n_check(	val_context_t	*context,
 
 	top_q = *queries;
 	int done = 0;
-	int negative_resp_error = 0;
 
 	while(!done) {
 
@@ -1362,29 +1433,53 @@ int resolve_n_check(	val_context_t	*context,
 		/* Henceforth we will need some data before we can continue */
 		block = 1;
 
+		/* No point going ahead if our original query had error conditions */
+		if (top_q->qc_state != Q_ANSWERED) {
+			/* the original query had some error */
+			res= (struct val_result *) MALLOC (sizeof (struct val_result));
+			if(res== NULL)
+				return OUT_OF_MEMORY;
+			res->as = top_q->qc_as;
+			res->status = A_ERROR;
+			res->trusted = 0;
+			res->next = NULL;
+		
+			return NO_ERROR;
+		}
 		/* 
 		 * We have sufficient data to at least perform some validation --
 		 * validate what ever is possible. 
 		 */
 		if(NO_ERROR != (retval = verify_n_validate(context, queries, 
-							top_q, flags, results, &done))) 
+							top_q->qc_as, flags, results, &done))) 
 			return retval;
 	}
 
 	/* Results are available */
-
-	negative_resp_error = 0;
-	for (res=*results; res; res=res->next) { 
-		fix_validation_results(top_q, res, &negative_resp_error);
-		// XXX negative answer checks
-		if (negative_resp_error) { 
-			/* none of the the answers are reliable */
-			for (res=*results; res; res=res->next) 
-				res->status = INDETERMINATE;
-
-			break;
-		}
+	int partially_correct = 0;
+	int negative_proof = 0;
+	for (res=*results; res; res=res->next) {
+		int success = 0;
+		fix_validation_results(top_q, res, &success);
+		if (!success) 
+			partially_correct = 1;
+		if((res->as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT) || 
+			(res->as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA))
+			negative_proof = 1;
 	}
+			
+	if (negative_proof) {
+		if (partially_correct) { 
+			/* mark all answers as bogus - 
+			 * all answers are related in the proof 
+			 */
+			for (res=*results; res; res=res->next) 
+				res->status = BOGUS_PROOF;
+		}
+		else 
+			prove_nonexistence (top_q, *results);
+	}
+
 	return NO_ERROR;
 }
 
