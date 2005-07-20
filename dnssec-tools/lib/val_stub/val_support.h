@@ -56,6 +56,10 @@ struct rrset_rec *find_rr_set (
                                 int                 from_section,
                                 int                 authoritive_answer,
                                 int                 tsig_ed);
+int check_label_count (
+                            struct rrset_rec    *the_set,
+                            struct rr_rec       *the_sig,
+                            int                 *is_a_wildcard);
 int prepare_empty_nxdomain (struct rrset_rec    **answers,
                             const u_int8_t      *query_name_n,
                             u_int16_t           query_type_h,
