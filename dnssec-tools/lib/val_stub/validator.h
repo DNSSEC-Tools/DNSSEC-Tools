@@ -63,6 +63,7 @@
 
 #define SIGNBY              18
 #define ENVELOPE            10
+#define RRSIGLABEL			3
 #define TTL					4
 
 /*
