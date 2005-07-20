@@ -30,10 +30,11 @@
 #include <support.h>
 #include <res_query.h>
 
+#include "val_support.h"
 #include "val_errors.h"
 #include "val_log.h"
+#include "validator.h"
 
-#define SIGNBY              18
 
 void free_name_server (struct name_server **ns)
 {
@@ -414,6 +415,20 @@ struct rrset_rec *find_rr_set (
 }
 
 
+int check_label_count (
+                            struct rrset_rec    *the_set,
+                            struct rr_rec       *the_sig,
+                            int                 *is_a_wildcard)
+{
+    u_int8_t owner_labels = wire_name_labels (the_set->rrs_name_n);
+    u_int8_t sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
+                                                                                                                          
+    if (sig_labels > owner_labels) return SR_PROCESS_ERROR;
+                                                                                                                          
+    *is_a_wildcard = (sig_labels < owner_labels);
+                                                                                                                          
+    return SR_UNSET;
+}
 
 
 int prepare_empty_nxdomain (struct rrset_rec    **answers,
@@ -717,12 +732,14 @@ char *p_val_error(int errno)
     case FILE_ERROR: return "FILE_ERROR"; break;
     case VALIDATE_SUCCESS: return "VALIDATE_SUCCESS"; break;
     case BOGUS: return "BOGUS"; break;
-    case INDETERMINATE: return "INDETERMINATE"; break;
-    case PROVABLY_UNSECURE: return "PROVABLY_UNSECURE"; break;
+    case INDETERMINATE_DS: return "INDETERMINATE_DS"; break;
+    case INDETERMINATE_PROOF: return "INDETERMINATE_PROOF"; break;
+    case INDETERMINATE_ERROR: return "INDETERMINATE_ERROR"; break;
+    case INDETERMINATE_TRUST: return "INDETERMINATE_TRUST"; break;
+    case INDETERMINATE_ZONE: return "INDETERMINATE_ZONE"; break;
     case SECURITY_LAME: return "SECURITY_LAME"; break;
     case NO_TRUST_ANCHOR: return "NO_TRUST_ANCHOR"; break;
     case TOO_MANY_LINKS: return "TOO_MANY_LINKS"; break;
-    case NSEC_POINTING_UPWARDS: return "NSEC_POINTING_UPWARDS"; break;
     case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
     case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
     case NONEXISTENT: return "NONEXISTENT"; break;
