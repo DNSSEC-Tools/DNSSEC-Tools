@@ -51,19 +51,17 @@ char *p_val_error(int valerrno);
 #define NO_TRUST_ANCHOR 		ERROR_BASE+7
 #define IRRELEVANT_DATA			ERROR_BASE+8
 #define IRRELEVANT_PROOF		ERROR_BASE+9
-#define NSEC_POINTING_UPWARDS	ERROR_BASE+10
-#define INCOMPLETE_PROOF		ERROR_BASE+11
-#define A_ERROR  				ERROR_BASE+12
-#define HEADER_ERROR			ERROR_BASE+13		
-#define EDNS_VERSION_ERROR		ERROR_BASE+14	
-#define UNSUPP_ENDS0_LABEL		ERROR_BASE+15
-#define DNSSEC_VERSION_ERROR	ERROR_BASE+16
-#define SUSPICIOUS_BIT			ERROR_BASE+17
-#define NAME_EXPANSION_FAILURE	ERROR_BASE+18
-#define TOO_MANY_LINKS	 		ERROR_BASE+19
-#define UNKNOWN_DNSKEY_PROTO  	ERROR_BASE+20
-#define FLOOD_ATTACK_DETECTED	ERROR_BASE+21	
-#define DNS_FAILURE				ERROR_BASE+22	
+#define A_ERROR  				ERROR_BASE+10
+#define HEADER_ERROR			ERROR_BASE+11		
+#define EDNS_VERSION_ERROR		ERROR_BASE+12	
+#define UNSUPP_ENDS0_LABEL		ERROR_BASE+13
+#define DNSSEC_VERSION_ERROR	ERROR_BASE+14
+#define SUSPICIOUS_BIT			ERROR_BASE+15
+#define NAME_EXPANSION_FAILURE	ERROR_BASE+16
+#define TOO_MANY_LINKS	 		ERROR_BASE+17
+#define UNKNOWN_DNSKEY_PROTO  	ERROR_BASE+18
+#define FLOOD_ATTACK_DETECTED	ERROR_BASE+19	
+#define DNS_FAILURE				ERROR_BASE+20	
 #define LAST_ERROR				DNS_FAILURE
 
 #define FAIL_BASE				LAST_ERROR
@@ -100,9 +98,16 @@ char *p_val_error(int valerrno);
 
 /* failure result conditions */
 #define BOGUS  					LAST_SUCCESS+1	/* NOT_VERIFIED but not trusted */
-#define PROVABLY_UNSECURE  		LAST_SUCCESS+2	/* TRUSTED AND NEGATIVE_PROOF */
+#define INCOMPLETE_PROOF 		LAST_SUCCESS+2	/* Proof does not have all required components */
 #define NONEXISTENT  			LAST_SUCCESS+3	/* TRUSTED AND proof present */
-#define INDETERMINATE  			LAST_SUCCESS+4	/* Can't say */
+#define BOGUS_PROOF 			LAST_SUCCESS+4	/* proof cannot be validated */
+#define INDETERMINATE_DS 		LAST_SUCCESS+5	/* Can't prove that the DS is trusted */
+#define INDETERMINATE_PROOF		LAST_SUCCESS+6	/* Some intermediate Proof of non-existence obtained 
+													- dont know if answer exists and proof is bogus
+													  or answer is bogus.  */
+#define INDETERMINATE_ERROR		LAST_SUCCESS+7	/* Error sequence */
+#define INDETERMINATE_TRUST		LAST_SUCCESS+8	/* Dont know if trust is absent or answer is bogus */
+#define INDETERMINATE_ZONE		LAST_SUCCESS+9	/* Dont know if zone is unsigned or sigs have been stripped */
 
 
 
