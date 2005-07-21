@@ -36,7 +36,7 @@ struct addrinfo_dnssec_wrapper {
  * from the val_getaddrinfo() function.
  */
 #define ADDRINFO_DNSSEC_STATUS(ainfo) \
-    ((ainfo == NULL)? INDETERMINATE: ((struct addrinfo_dnssec_wrapper *) ainfo)->dnssec_status)
+    (((struct addrinfo_dnssec_wrapper *) ainfo)->dnssec_status)
 
 /**
  * val_getaddrinfo: A validating getaddrinfo function.
