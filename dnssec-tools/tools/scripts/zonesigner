@@ -1421,7 +1421,7 @@ sub usage
 	print STDERR "\t\t\t-endtime end-time\n";
 	print STDERR "\t\t\t-gends\n";
 	print STDERR "\t\t\t-ksdir keyset-directory\n";
-	print STDERR "\t\t\t-szopts dnssec-signszone-options\n";
+	print STDERR "\t\t\t-szopts dnssec-signzone-options\n";
 	print STDERR "\n";
 
 #	print "\ncalled from $whence\n" if($verbose && ($whence > 0));
@@ -1501,6 +1501,51 @@ The I<zone-out> argument may be left out, in which case the input zone file
 will be used as the base for all operations.
 
 The signed zone file will be this name, appended with I<.signed>.
+
+=head1 DETERMINING OPTION VALUES
+
+I<zonesigner> checks four places in order to determine option values.  
+In descending order of precedence, these places are:
+
+    -ksklength command line options
+
+    keyrec file
+
+    dnssec-tools configuration file
+
+    zonesigner defaults
+
+Each is checked until a value is found.  That value is then used for that
+I<zonesigner> execution and the value is stored in the I<keyrec> file.
+
+=head2 Example
+
+For example, the KSK length has the following values:
+
+    -ksklength command line option:    	8192
+
+    keyrec file:               		1024
+
+    dnssec-tools configuration file:	2048
+
+    zonesigner defaults:    		512
+
+If all are present, then the KSK length will be 8192.
+
+If the I<-ksklength> command line option wasn't given, the KSK length
+will be 1024.
+
+If the KSK length wasn't given in the configuration file, it will be 8192.
+
+If the KSK length wasn't in the I<keyrec> file or the configuration file,
+the KSK length will be 8192.
+
+If the I<-ksklength> command line option wasn't given and the KSK length
+wasn't in the configuration file, it'll be 1024.
+
+If the command line option wasn't given, the KSK length wasn't in the
+I<keyrec> file, and it wasn't in the configuration file, then the KSK
+length will be 512.
 
 =head1 OPTIONS
 
