@@ -261,6 +261,12 @@ sub optsandargs()
 	my $ropts;			# Reference to the option hash.
 
 	#
+	# Make sure we have arguments.
+	#
+	$argc = @ARGV;
+	usage(3) if($argc == 0);
+
+	#
 	# Set the options, try to use the config file, the command line
 	# options and a keyrec file.  We'll take the following steps in
 	# trying to get a good set of options.
@@ -382,7 +388,8 @@ sub optsandargs()
 	# Check that we don't have too many arguments.
 	#
 	$argc = @ARGV;
-	usage(3) if($argc > 3);
+	usage(4) if($argc > 3);
+
 	#
 	# If we've got two arguments (after option removal) we'll look for
 	# the zone name in the arguments.  If we find it, we'll add the
@@ -421,7 +428,7 @@ sub optsandargs()
 	if(defined($opts{'krfile'}) && defined($opts{'nokrfile'}))
 	{
 		print STDERR "-krfile and -nokrfile are mutually exclusive\n";
-		usage(4);
+		usage(5);
 	}
 }
 
