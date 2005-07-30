@@ -1,0 +1,40 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# timetrans
+#
+#       This script tests the timetrans() interface.
+#
+
+use strict;
+
+use Net::DNS::SEC::Tools::timetrans;
+
+my $argc = @ARGV;
+
+if($argc == 0)
+{
+	@ARGV = (50, 3456, 3600, 3601, 3610, 3630, 3700, 3750, 4200,
+		 5000, 6000, 7000, 7100, 7200, 7300, 7400,
+		 8000, 9000,
+		 10000, 20000, 30000, 40000, 50000, 60000, 70000, 80000,
+		 88888, 88900,
+		 188888, 288888, 388888, 488888, 588888,
+		 688888, 788888, 888888, 988888,
+		 1888888, 2888888, 3888888, 4888888, 5888888, 6888888,
+		 7888888, 8888888, 9888888
+		 );
+
+	$argc = @ARGV;
+}
+
+foreach my $seconds (@ARGV)
+{
+	my $timestr = timetrans($seconds);
+	print "$seconds:\t$timestr\n";
+}
+
+exit(0);
