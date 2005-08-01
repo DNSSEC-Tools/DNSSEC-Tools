@@ -90,6 +90,11 @@ environments.  Brief descriptions of these tools are given below.
 
 	clean-keyrec	Cleans unreferenced key keyrecs from keyrec files.
 
+	timetrans	Converts time units (weeks, days, etc.) into the
+			appropriate number of seconds.  Intended for use in
+			calculating the end-time argument used by zonesigner
+			and dnssec-signzone.
+
 Modules
 -------
 
@@ -102,3 +107,11 @@ environments.  Brief descriptions of these modules are given below.
 			keyrec files, and command line options.
 
 	keyrec.pm	Reads and manipulates keyrec files.
+
+	timetrans.pm	Translates a seconds count into the appropriate
+			time units (weeks, days, hours, minutes, seconds.)
+			The module has one interface, which returns the
+			translated value it was passed.  So, passing it
+			the value 86800 will result in the string
+			"1 day, 6 minutes, 40 seconds" being returned.
+
