@@ -49,6 +49,7 @@
 use strict;
 
 use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
@@ -932,10 +933,27 @@ sub zonesign
 	$chron = `$DATE +"%m/%d/%y"`;
 	$chron =~ s/\n//;
 
+	#
+	# Give success message and zone info.
+	#
 	print "zone signed successfully\n\n";
 	print "${zone}:\n";
 	print "	ZSK (cur) $zcurtag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
 	print "	ZSK (pub) $zpubtag  $zsize  $chron\n";
+
+	#
+	# Inform user when the zone will expire.
+	#
+	if($enddate)
+	{
+		my $edcopy = $enddate;		# Copy of the zone end date.
+		my $datestr;			# Translated end date.
+
+		$edcopy =~ s/^\-e \+//;
+		$datestr = timetrans($edcopy);
+
+		print "\nzone will expire in $datestr\n";
+	}
 	return(0);
 }
 
