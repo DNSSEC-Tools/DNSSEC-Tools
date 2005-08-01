@@ -1,0 +1,356 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# timetrans
+#
+#	This script converts time into time.  If given any of the set of
+#	units options, then it will print the number of seconds to which
+#	those units add up.  If given the count option, that number of
+#	seconds will be converted into the appropriate number of weeks,
+#	days, hours, minutes, and seconds.
+#
+#	timetrans is intended for use with the DNSSEC tools, for calculating
+#	a zone's expiration time.
+#
+#	Usage:
+#
+#		timetrans [units options] [count option]
+#
+#		units options:
+#			-seconds	Count of seconds.
+#			-minutes	Count of minutes.
+#			-hours		Count of hours.
+#			-days		Count of days.
+#			-weeks		Count of weeks.
+#
+#		count option:
+#			-count		Seconds count.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::timetrans;
+
+#######################################################################
+#
+# Time-related constants.
+
+our $MINUTE = 60;
+our $HOUR   = (60 * $MINUTE);
+our $DAY    = (24 * $HOUR);
+our $WEEK   = (7  * $DAY);
+
+#
+# Options fields.
+#
+my $seconds = 0;				# Number of seconds.
+my $minutes = 0;				# Number of minutes.
+my $hours   = 0;				# Number of hours.
+my $days    = 0;				# Number of days.
+my $weeks   = 0;				# Number of weeks.
+my $count   = 0;				# Count of seconds.
+
+
+#
+# Command line arguments.
+#
+my %options = ();				# Filled option array.
+my @opts =
+(
+        "seconds=i",				# Number of seconds.
+        "minutes=i",				# Number of minutes.
+        "hours=i",				# Number of hours.
+        "days=i",				# Number of days.
+        "weeks=i",				# Number of weeks.
+        "count=i",				# Seconds count.
+);
+
+#
+# Behavior flags.
+#
+my $countflag = 0;			# Translate seconds count to units.
+my $unitsflag = 0;			# Translate units to seconds count.
+
+#
+# Do our work.
+#
+main();
+exit(0);
+
+#######################################################################
+#
+# Routine:	main()
+#
+# Purpose:	Yeah, yeah, a main() isn't necessary.  However, it offends my
+#		sense of aesthetics to have great gobs of code on the same
+#		level as a pile of globals.
+#
+#		But what about all those globals, you ask...
+#
+sub main
+{
+	#
+	# Munch on the options and arguments.
+	#
+	optsandargs();
+
+	#
+	# If the -count option was given, print the translated string.
+	#
+	if($countflag)
+	{
+		print timetrans($count) . "\n";
+	}
+	else
+	{
+		my $total = 0;			# Accumulated count of seconds.
+
+		$total  = $seconds;
+		$total += $minutes * $MINUTE;
+		$total += $hours * $HOUR;
+		$total += $days * $DAY;
+		$total += $weeks * $WEEK;
+		print "$total\n";
+	}
+}
+
+#######################################################################
+#
+# Routine:	optsandargs()
+#
+# Purpose:	Parse the command line for options.
+#
+sub optsandargs()
+{
+	my $argc = @ARGV;			# Number of arguments.
+
+	#
+	# Make sure we have arguments.
+	#
+	usage(0) if($argc == 0);
+
+	#
+	# Check our options and ensure there weren't any problems.
+	#
+	Getopt::Long::Configure("pass_through");
+	GetOptions(\%options,@opts);
+
+	#
+	# Check for command line errors.
+	#
+	if(keys(%options) == 0)
+	{
+		print STDERR "no options specified\n";
+		usage(1);
+	}
+	if(@ARGV > 0)
+	{
+		print STDERR "invalid options or arguments\n";
+		usage(2);
+	}
+
+	#
+	# Grab the options values.
+	#
+	$seconds = $options{'seconds'};
+	$minutes = $options{'minutes'};
+	$hours	 = $options{'hours'};
+	$days	 = $options{'days'};
+	$weeks	 = $options{'weeks'};
+	$count	 = $options{'count'};
+
+	#
+	# Check for negative numbers.
+	#
+	if(($seconds < 0) || ($minutes < 0) || ($hours < 0) ||
+	   ($days < 0)	  || ($weeks < 0)   || ($count < 0))
+	{
+		print STDERR "invalid option value:  option values must be positive\n";
+		usage(3);
+	}
+
+	#
+	# Check if -count was given.
+	#
+	$countflag = 1 if(defined($options{'count'}));
+
+	#
+	# Check if at least one of the units flags were given.
+	#
+	if(defined($options{'seconds'}) || defined($options{'minutes'}) ||
+	   defined($options{'hours'})   || defined($options{'days'})    ||
+	   defined($options{'minutes'}))
+	{
+		$unitsflag = 1;
+	}
+
+	#
+	# Ensure that options weren't mixed.
+	#
+	if($countflag && $unitsflag)
+	{
+		print STDERR "-count may not be given with the units flags\n";
+		exit(1);
+	}
+}
+
+#######################################################################
+#
+# Routine:	usage()
+#
+# Purpose:	Give usage message and exit.
+#
+sub usage
+{
+	my $whence = shift;			# Location of call.
+
+	print STDERR "usage:  timetrans [units-options] [count-options] [-help]\n";
+	print STDERR "\n";
+
+	print STDERR "\t\tunits-options:\n";
+	print STDERR "\t\t\t-seconds seconds-count\n";
+	print STDERR "\t\t\t-minutes minutes-count\n";
+	print STDERR "\t\t\t-hours hours-count\n";
+	print STDERR "\t\t\t-days days-count\n";
+	print STDERR "\t\t\t-weeks weeks-count\n";
+	print STDERR "\n";
+
+	print STDERR "\t\tcount option:\n";
+	print STDERR "\t\t\t-count seconds-count\n";
+	print STDERR "\n";
+
+#	print "\ncalled from $whence\n" if($verbose && ($whence > 0));
+
+	exit(1);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+timetrans - Converts time into time.
+
+=head1 SYNOPSIS
+
+  timetrans [units-options] [-count]
+
+=head1 DESCRIPTION
+
+I<timetrans> converts time from one type of unit to another.  If any of the
+units options are specified, then I<timetrans> will convert those time units
+into the number of seconds to which they add up.  If given the count option,
+I<timetrans> will convert that number of seconds into the appropriate number
+of weeks, days, hours, minutes, and seconds.  The converted result is printed
+out.  Units options cannot be specified in the same execution as the count
+option, and vice versa.
+
+I<timetrans> is intended for use with the DNSSEC tools, for calculating
+a zone's expiration time.
+
+=head1 OPTIONS
+
+=head2 Units Options
+
+The converted value of each unit is totaled and a single result printed.
+These options may be shortened to their first letter.
+
+=over 4
+
+=item -seconds I<seconds>
+
+Count of seconds to convert to seconds.
+
+=item -minutes I<minutes>
+
+Count of minutes to convert to seconds.
+
+=item -hours I<hours>
+
+Count of hours to convert to seconds.
+
+=item -days I<days>
+
+Count of days to convert to seconds.
+
+=item -weeks I<weeks>
+
+Count of weeks to convert to seconds.
+
+=back
+
+=head2 Count Option
+
+The specified seconds count is converted to the appropriate number of weeks,
+days, hours, minutes, and seconds.  This option may be shortened to its first
+letter.
+
+=over 4
+
+=item -count I<seconds>
+
+Count of seconds to convert to the appropriate set of units.
+
+=back
+
+=head1 EXAMPLES
+
+Example 1:  Converting 5 days into seconds
+
+    $(42)> timetrans -days 5
+    432000
+
+Example 2:  Converting 2 weeks into seconds
+
+    $(43)> timetrans -w 2
+    1209600
+
+Example 3:  Converting 8 days and 8 hours into seconds
+
+    $(44)> timetrans -d 8 -hours 8
+    720000
+
+Example 4:  Converting 1 week, 1 day, and 8 hours into seconds
+
+    $(46)> timetrans -w 1 -days 1 -h 8
+    720000
+
+Example 5:  Converting 14 weeks, 4 days, 21 hours, 8 minutes, and 8 seconds into seconds
+
+    $(47)> timetrans -w 14 -d 4 -h 21 -m 8 -s 8
+    8888888
+
+Example 6:  Converting 720000 seconds into time units
+
+    $(48)> timetrans -c 720000
+    1 week, 1 day, 8 hours
+
+Example 7:  Converting 1814421 seconds into time units
+
+    $(49)> timetrans -c 1814421
+    3 weeks, 21 seconds
+
+Example 8:  Converting 8888888 seconds into time units
+
+    $(50)> timetrans -c 8888888
+    14 weeks, 4 days, 21 hours, 8 minutes, 8 seconds
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::timetrans.pm(3)
+
+Net::DNS::SEC::Tools::zonesigner(8)
+
+=cut
