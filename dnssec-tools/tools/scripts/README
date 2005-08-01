@@ -21,10 +21,17 @@ Brief descriptions of these tools are given below.
 
 	lskrf		Lists the contents of a keyrec file.
 
+	timetrans	Converts time units (weeks, days, etc.) into the
+			appropriate number of seconds.  Intended for use in
+			calculating the end-time argument used by zonesigner
+			and dnssec-signzone.
+
 	zonesigner	Generates a set of keys for a zone and signs the zone
 			with those keys.  This combines the functionality of
 			dnssec-keygen and dnssec-signzone, recording relevant
 			information in a keyrec file.
+
+
 
 Keyrec files are documented in the source for dnssec-tools/modules/keyrec.pm.
 
