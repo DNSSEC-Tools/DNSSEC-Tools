@@ -24,7 +24,7 @@ LocalGetOptions(\%opts,
                 ['e|email-summary-to=s', 'Email a result summary to ADDRESS'],
                 '',
 		['v|verbose','Turn on verbose output'],
-	       );
+	       ) || exit();
 
 my %zoneinfo;
 
@@ -212,13 +212,14 @@ sub System {
 # argument parsing
 #
 sub LocalGetOptions {
-    if ($#ARGV == -1 && eval {require Getopt::Long::GUI;}) {
-	import Getopt::Long::GUI;
+    if (eval {require Getopt::GUI::Long;}) {
+	import Getopt::GUI::Long;
+	Getopt::Long::Configure(qw(display_help no_ignore_case));
 	return GetOptions(@_);
-    } else {
-	require Getopt::Long;
-	import Getopt::Long;
     }
+    require Getopt::Long;
+    import Getopt::Long;
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
     GetOptions(LocalOptionsMap(@_));
 }
 

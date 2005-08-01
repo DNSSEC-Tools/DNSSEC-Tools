@@ -305,8 +305,8 @@ if ($opts{'o'}) {
     print O $img;
     close(O);
 }
-if ($mapinwindow && $Getopt::Long::GUI::GUI_qw) {
-    $Getopt::Long::GUI::GUI_qw->merge_primaries(
+if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
+    $Getopt::GUI::Long::GUI_qw->merge_primaries(
 						{
 						 mapout =>
 						 {
@@ -317,7 +317,7 @@ if ($mapinwindow && $Getopt::Long::GUI::GUI_qw) {
 						    imgdata => [$img]
 						   }]
 						 }});
-    $Getopt::Long::GUI::GUI_qw->magic('mapout');
+    $Getopt::GUI::Long::GUI_qw->magic('mapout');
 }
 
 sub get_parms {
@@ -409,7 +409,7 @@ sub get_label {
 sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	import Getopt::GUI::Long;
-        Getopt::Long::Configure(qw(auto_help no_ignore_case));
+        Getopt::Long::Configure(qw(display_help no_ignore_case display_image));
 	return GetOptions(@_);
     } else {
 	require Getopt::Long;
