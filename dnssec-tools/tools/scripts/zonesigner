@@ -77,8 +77,10 @@ my $DEF_SIGNZONE	= "dnssec-signzone";
 # Default arguments to dnssec- commands.
 #
 my $DEF_ALGORITHM	= "rsasha1";
-my $DEF_KSKLENGTH	= 4096;
-my $DEF_ZSKLENGTH	= 4096;
+my $DEF_ENDDATE		= "+604800";
+my $DEF_RANDOM		= "/dev/urandom";
+my $DEF_KSKLENGTH	= 1024;
+my $DEF_ZSKLENGTH	= 1024;
 
 #
 # Options fields.
@@ -312,9 +314,9 @@ sub optsandargs()
 	# Get the rest of the options.
 	#
 	$alg	  = $opts{'algorithm'}	|| $DEF_ALGORITHM;
-	$enddate  = $opts{'endtime'}	|| "";
+	$enddate  = $opts{'endtime'}	|| $DEF_ENDDATE;
 	$gends	  = $opts{'gends'}	|| "";
-	$random   = $opts{'random'}	|| "";
+	$random   = $opts{'random'}	|| $DEF_RANDOM;
 	$kgopts   = $opts{'kgopts'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
 	$szopts   = $opts{'szopts'}	|| "";
@@ -327,15 +329,46 @@ sub optsandargs()
 	$forceroll = $opts{'rollforce'}	|| 0;
 
 	#
-	# Set up options and values, if they've been given.
+	# Set up options and values, saving to global scalars and also
+	# saving to %opts for use when saving the new keyrec.
 	#
-	$ksize	 = "-b $ksize"	 if($ksize ne "");
-	$zsize	 = "-b $zsize"	 if($zsize ne "");
-	$alg	 = "-a $alg"	 if($alg ne "");
-	$enddate = "-e $enddate" if($enddate ne "");
+	if($ksize ne "")
+	{
+		$opts{'ksklength'} = $ksize;
+		$ksize = "-b $ksize";
+	}
+
+	if($zsize ne "")
+	{
+		$opts{'zsklength'} = $zsize;
+		$zsize = "-b $zsize";
+	}
+
+	if($alg ne "")
+	{
+		$opts{'algorithm'} = $alg;
+		$alg = "-a $alg";
+	}
+
+	if($enddate ne "")
+	{
+		$opts{'enddate'} = $enddate;
+		$enddate = "-e $enddate";
+	}
+
+	if($ksdir ne "")
+	{
+		$opts{'ksdir'} = $ksdir;
+		$ksdir = "-d $ksdir";
+	}
+
+	if($random ne "")
+	{
+		$opts{'random'} = $random;
+		$random = "-r $random";
+	}
+
 	$gends	 = "-g"		 if($gends ne "");
-	$ksdir	 = "-d $ksdir"	 if($ksdir ne "");
-	$random	 = "-r $random"	 if($random ne "");
 
 	$help	 = $opts{'help'};
 	$verbose = $opts{'verbose'};
@@ -373,7 +406,7 @@ sub optsandargs()
 		print "\n";
 
 		print "zone-signing parameters:\n";
-		print "\tenddate	- <$enddate>\n";
+		print "\tenddate		- <$enddate>\n";
 		print "\tgends		- <$gends>\n";
 		print "\tksdir		- <$ksdir>\n";
 		print "\tszopts		- <$szopts>\n";
