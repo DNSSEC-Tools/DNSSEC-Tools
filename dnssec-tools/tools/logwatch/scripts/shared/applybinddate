@@ -30,6 +30,15 @@
 #OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #############################################################################
+
+#############################################################################
+# These scripts were created as part of the dnssec-tools project.
+# For more information, see http://sourceforge.net/dnssec-tools.
+# Detailed instructions for setting up BIND 9.3.* to use these logwatch
+# configuration files and scripts are containted in the README file
+# on sourceforge.
+#############################################################################
+
 use POSIX qw(strftime);
 
 # This will pick out only the wanted date from a logfile
@@ -37,32 +46,28 @@ use POSIX qw(strftime);
 
 my $time = time;
 
-#if ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'yesterday') {
-#   $SearchDate = strftime("%d-%b-%Y", localtime($time-86400));
-#}
-#elsif ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'today') {
-#   $SearchDate = strftime("%d-%b-%Y", localtime($time));
-#}
-#elsif ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'all') {
+if ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'yesterday') {
+   $SearchDate = strftime("%d-%b-%Y", localtime($time-86400));
+}
+elsif ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'today') {
+   $SearchDate = strftime("%d-%b-%Y", localtime($time));
+}
+elsif ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'all') {
    $SearchDate = "..-...-....";
-#}
+}
 
 # The date might be "Dec 09", but it needs to be "Dec  9"...
 #$SearchDate =~ s/ 0/  /;
 
-#if ( $ENV{'LOGWATCH_DEBUG'} > 5 ) {
-#   print STDERR "DEBUG: Inside ApplyBindDate...\n";
-#   print STDERR "DEBUG: Range: " . $ENV{'LOGWATCH_DATE_RANGE'} . "\n";
-#   print STDERR "DEBUG: Looking For: " . $SearchDate . "\n";
-#}
+if ( $ENV{'LOGWATCH_DEBUG'} > 5 ) {
+   print STDERR "DEBUG: Inside ApplyBindDate...\n";
+   print STDERR "DEBUG: Range: " . $ENV{'LOGWATCH_DATE_RANGE'} . "\n";
+   print STDERR "DEBUG: Looking For: " . $SearchDate . "\n";
+}
 
 while (defined($ThisLine = <STDIN>)) {
    if ($ThisLine =~ m/^$SearchDate ..:..:../o) {
       print $ThisLine;
-#   } elsif ($ThisLine =~ m/^$SearchDate ..:..:../o) {
-#      print $ThisLine;
-#   } elsif ($ThisLine =~ m/(Mon|Tue|Wed|Thu|Fri|Sat|Sun) $SearchDate ..:..:.. \d{4}/o) {
-#      print $ThisLine;
    }
 }
 
