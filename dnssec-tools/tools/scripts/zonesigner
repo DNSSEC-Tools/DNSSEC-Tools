@@ -24,10 +24,10 @@
 #		-algorithm	crypto algorithm	(RSASHA1)
 #		-random		source of randomness	(/dev/urandom)
 #		-ksklength	size of KSK key		(1024)
-#		-zsklength	size of ZSK key		(512)
+#		-zsklength	size of ZSK key		(1024)
 #
 #	Options passed to dnssec-signzone:
-#		-endtime	end-time		(259200)
+#		-endtime	end-time		(604800)
 #		-gends		generate DS records	(not given)
 #
 #	Other options:
@@ -36,8 +36,9 @@
 #		-keyrec		keyrec to search for in specified keyrec file
 #		-zone		zone name
 #
-#		-reuseksk	re-use the zone's current KSK
-#		-reusezsk	re-use the zone's current ZSK
+#		-genkeys	generate a new KSK and ZSK
+#		-genksk		generate a KSK
+#		-genzsk		generate a ZSK
 #
 #		-kgopts		additional options to pass to dnssec-keygen
 #		-szopts		additional options to pass to dnssec-signzone
@@ -78,15 +79,26 @@ my $DEF_SIGNZONE	= "dnssec-signzone";
 #
 my $DEF_ALGORITHM	= "rsasha1";
 my $DEF_ENDDATE		= "+604800";
-my $DEF_RANDOM		= "/dev/urandom";
+my $DEF_ENTROPYMSG	= 1;
 my $DEF_KSKLENGTH	= 1024;
+my $DEF_RANDOM		= "/dev/urandom";
+my $DEF_REUSEKSK	= 0;
+my $DEF_REUSEZSK	= 0;
 my $DEF_ZSKLENGTH	= 1024;
+
+#
+# Arguments for updzonerec().
+#
+my $UPD_ALLKEYS	= 1;				# Update all keyrecs.
+my $UPD_KSK	= 2;				# Only update KSK keyrec.
+my $UPD_ZSK	= 3;				# Only update ZSK keyrec.
 
 #
 # Options fields.
 #
 my $alg;				# Encryption algorithm.
 my $enddate;				# End-time for zone signing.
+my $entropymsg = $DEF_ENTROPYMSG;	# Display flag for entropy message.
 my $gends;				# Generate DS records in zone signing.
 my $help = 0;				# Help flag.
 my $kgopts;				# Additional dnssec-keygen options.
@@ -102,12 +114,13 @@ my $zskdir;				# Directory to hold ZSK.
 
 my $ksk;				# KSK we've generated.
 my $kskpath;				# Path to the KSK.
-my $reuseksk;				# Reuse the existing KSK.
+my $genksk;				# Generate a new KSK.
+
 my $zskcur;				# Current ZSK.
 my $zskpub;				# Published ZSK.
 my $zskcurpath;				# Path to the published KSK.
 my $zskpubpath;				# Path to the current KSK.
-my $reusezsk;				# Reuse the existing ZSK.
+my $genzsk;				# Generate a new ZSK.
 
 my $zone;				# Zone to play with.
 my $zoneout;				# Zone file (output.)
@@ -307,8 +320,8 @@ sub optsandargs()
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
 	$kskpath  = $opts{'kskpath'}	  || "";
-	$reuseksk = $opts{'reuseksk'}	  || 0;
-	$reusezsk = $opts{'reusezsk'}	  || 0;
+	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
+	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
 
 	#
 	# Get the rest of the options.
@@ -322,6 +335,15 @@ sub optsandargs()
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
 	$nokrfile = $opts{'nokrfile'}	|| "";
+
+	#
+	# If -genkeys was given, then we'll set -genksk and -genzsk.
+	#
+	if(defined($opts{'genkeys'}))
+	{
+		$genksk = 1;
+		$genzsk = 1;
+	}
 
 	#
 	# Get our undocumented options.
@@ -370,6 +392,13 @@ sub optsandargs()
 
 	$gends	 = "-g"		 if($gends ne "");
 
+	#
+	# Set up flags for various helpful messages.
+	#
+	if(defined($opts{'entropy_msg'}))
+	{
+		$entropymsg = $opts{'entropy_msg'};
+	}
 	$help	 = $opts{'help'};
 	$verbose = $opts{'verbose'};
 
@@ -378,9 +407,9 @@ sub optsandargs()
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$checkzone = $opts{'checkzone'} || $DEF_CHECKZONE;
-	$keygen	   = $opts{'keygen'}	|| $DEF_KEYGEN;
-	$signzone  = $opts{'signzone'}	|| $DEF_SIGNZONE;
+	$checkzone  = $opts{'checkzone'}   || $DEF_CHECKZONE;
+	$keygen	    = $opts{'keygen'}	   || $DEF_KEYGEN;
+	$signzone   = $opts{'signzone'}	   || $DEF_SIGNZONE;
 
 	#
 	# If the verbose flag was set, we'll print out the options we're
@@ -391,6 +420,7 @@ sub optsandargs()
 		print "zonesigner arguments:\n";
 		print "\tkrfile		- <$krfile>\n";
 		print "\tnokrfile	- <$nokrfile>\n";
+		print "\tentropymsg	- <$entropymsg>\n";
 		print "\n";
 
 		print "key-signing parameters:\n";
@@ -398,10 +428,10 @@ sub optsandargs()
 		print "\trandom		- <$random>\n";
 		print "\tksize		- <$ksize>\n";
 		print "\tkskdir		- <$kskdir>\n";
-		print "\treuseksk	- <$reuseksk>\n";
+		print "\tgenksk		- <$genksk>\n";
 		print "\tzsize		- <$zsize>\n";
 		print "\tzskdir		- <$zskdir>\n";
-		print "\treusezsk	- <$reusezsk>\n";
+		print "\tgenzsk		- <$genzsk>\n";
 		print "\tkgopts		- <$kgopts>\n";
 		print "\n";
 
@@ -479,8 +509,6 @@ sub optsandargs()
 #
 sub presigned
 {
-	my $zfile = shift;			# Name of zone file.
-
 	my $file = "";				# Contents of zone file.
 	my $flen = 0;				# Length of zone file.
 	my $hitcnt;				# Number of RRSIGs in file.
@@ -533,7 +561,15 @@ sub genkeys
 	{
 		$zskcur = genzsk("cur");
 		$zskpub = genzsk("pub");
+
+		#
+		# Save the keyrec file.
+		#
+		updzonerec($UPD_ZSK);
+
 	}
+
+	print "\n";
 }
 
 #######################################################################
@@ -548,10 +584,9 @@ sub genksk
 	my $zskdir;			# ZSK directory for saving.
 
 	#
-	# If we're going to reuse the KSK, ensure it's been created and
-	# return.
+	# If we're reusing the KSK, ensure it's been created and return.
 	#
-	if($reuseksk == 1)
+	if($genksk == 0)
 	{
 		if($opts{'kskkey'} eq "")
 		{
@@ -564,6 +599,8 @@ sub genksk
 
 		return;
 	}
+
+	print "\tgenerating new KSK\n";
 
 	#
 	# Generate the new KSK.
@@ -599,6 +636,11 @@ sub genksk
 	#
 	$opts{'zskdirectory'} = $zskdir;
 	delete $opts{'keyrec_type'};
+
+	#
+	# Save the keyrec file.
+	#
+	updzonerec($UPD_KSK);
 }
 
 #######################################################################
@@ -621,7 +663,7 @@ sub genzsk
 	#
 	# If we're reusing the ZSK, ensure it's already defined and return.
 	#
-	if($reusezsk == 1)
+	if($genzsk == 0)
 	{
 		if(keyrec_fullrec($opts{$zskkey}) eq "")
 		{
@@ -634,6 +676,8 @@ sub genzsk
 
 		return($zsk);
 	}
+	
+	print "\tgenerating new $keytype ZSK\n";
 
 	#
 	# Generate a ZSK key.
@@ -689,7 +733,7 @@ sub keydirs
 	#
 	# Ensure the KSK key directory exists and is actually a directory.
 	#
-	if($reuseksk != 1)
+	if($genksk)
 	{
 		if($kskdir ne ".")
 		{
@@ -710,7 +754,7 @@ sub keydirs
 	#
 	# Ensure the ZSK key directory exists and is a directory.
 	#
-	if($reusezsk != 1)
+	if($genzsk)
 	{
 		if($zskdir ne ".")
 		{
@@ -748,7 +792,7 @@ sub zoneincludes
 	#
 	# Update the zone data's serial number.
 	#
-	$newserial = serialincr($zone);
+	$newserial = serialincr();
 	if($newserial == -1)
 	{
 		print STDERR "unable to update serial number in $zone\n";
@@ -924,7 +968,16 @@ sub zonesign
 	# Sign the zone with the new keys.
 	#
 	print "signing zone\n" if($verbose);
-	print "to build entropy in the random number generator, please randomly strike keys\n\n";
+
+	#
+	# Maybe display the warning about potential entropy hangs.
+	#
+	if($entropymsg)
+	{
+		print "if zonesigner appears hung, strike keys until the program completes\n";
+		print "(see the \"Entropy\" section in the man page for details)\n\n";
+	}
+
 	print "\t$signzone $cmdopts $zoneout $zskcurpath\n" if($verbose);
 	$szone = `$signzone $cmdopts $zoneout $zskcurpath`;
 	if($szone eq "")
@@ -948,7 +1001,7 @@ sub zonesign
 	#
 	# Add the ZSK's keyrec to the keyrec file.
 	#
-	updzonerec($szone);
+	updzonerec($UPD_ALLKEYS);
 
 	#
 	# Get the tag values.
@@ -985,7 +1038,9 @@ sub zonesign
 		$edcopy =~ s/^\-e \+//;
 		$datestr = timetrans($edcopy);
 
-		print "\nzone will expire in $datestr\n";
+		print "\n";
+		print "zone will expire in $datestr\n";
+		print "DO NOT delete the keys until this time has passed.\n";
 	}
 	return(0);
 }
@@ -999,8 +1054,7 @@ sub zonesign
 #
 sub updzonerec
 {
-	my $zfile = shift;			# New zone file.
-
+	my $updflag = shift;			# Update flag.
 	my $chronosecs;				# Current time in seconds.
 	my $chronostr;				# Current time string.
 	my $kr;					# Zone's keyrec reference.
@@ -1060,9 +1114,9 @@ sub updzonerec
 	#
 	# Set the zone name in the keyrecs of our keys.
 	#
-	keyrec_setval('key',$ksk,'zonename',$zone);
-	keyrec_setval('key',$zskcur,'zonename',$zone);
-	keyrec_setval('key',$zskpub,'zonename',$zone);
+	keyrec_setval('key',$ksk,'zonename',$zone)    if($updflag != $UPD_ZSK);
+	keyrec_setval('key',$zskcur,'zonename',$zone) if($updflag != $UPD_KSK);
+	keyrec_setval('key',$zskpub,'zonename',$zone) if($updflag != $UPD_KSK);
 
 	#
 	# Save the keyrec file.
@@ -1122,8 +1176,6 @@ sub hasincludes
 #
 sub serialincr
 {
-	my $zfile = shift;			# Name of zone file.
-
 	my $file = "";				# Contents of zone file.
 	my $flen = 0;				# Length of zone file.
 
@@ -1339,10 +1391,9 @@ sub forceroll
 	print "\tforcing a key roll-over\n" if($verbose);
 
 	#
-	# Get rid of any reusable ZSKs.  We're rolling them over, so
-	# by definition some ZSKs are reused and some are not.
+	# We're rolling KSKs, so make sure they'll be generated.
 	#
-	$reusezsk = 0;
+	$genzsk = 1;
 
 	#
 	# Ensure that a roll-over makes sense.
@@ -1451,10 +1502,11 @@ sub usage
 	print STDERR "\n";
 
 	print STDERR "\t\tzonesigner options:\n";
-	print STDERR "\t\t\t-nokrfile\n";
 	print STDERR "\t\t\t-krfile keyrec-file\n";
-	print STDERR "\t\t\t-reuseksk\n";
-	print STDERR "\t\t\t-reusezsk\n";
+	print STDERR "\t\t\t-nokrfile\n";
+	print STDERR "\t\t\t-genkeys\n";
+	print STDERR "\t\t\t-genksk\n";
+	print STDERR "\t\t\t-genzsk\n";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-help\n";
 	print STDERR "\t\t\t-verbose\n";
@@ -1553,6 +1605,19 @@ will be used as the base for all operations.
 
 The signed zone file will be this name, appended with I<.signed>.
 
+Unless other specified by the I<-genksk> or I<-genzsk> options, the last keys
+generated for a particular zone will be used in subsequent I<zonesigner>
+executions.
+
+=head1 ENTROPY
+
+On some systems, the implementation of the pseudo-random number generator
+requires keyboard activity.  This keyboard activity is used to fill a buffer
+in the system's random number generator.  If zonesigner appears hung, you may
+have to add entropy to the random number generator by randomly striking keys
+until the program completes.  Display of this message is controlled by the
+B<entropy_msg> configuration file parameter.
+
 =head1 DETERMINING OPTION VALUES
 
 I<zonesigner> checks four places in order to determine option values.  
@@ -1617,13 +1682,19 @@ No I<keyrec> file will be consulted or created.
 I<keyrec> file to use in processing options.  See the man page for
 I<Net::DNS::SEC::Tools::tooloptions> for more details about this file.
 
-=item -reuseksk
+=item -genkeys
 
-Re-use the zone's current KSK.
+Generate a new KSK and ZSK for the zone.
 
-=item -reusezsk
+=item -genksk
 
-Re-use the zone's current ZSK.
+Generate a new KSK for the zone.  By default, the last KSK generated for this
+zone will be used.
+
+=item -genzsk
+
+Generate a new ZSK for the zone.  By default, the last ZSK generated for this
+zone will be used.
 
 =item -zone
 
