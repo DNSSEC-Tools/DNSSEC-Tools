@@ -30,6 +30,15 @@
 #OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
 #ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #############################################################################
+
+#############################################################################
+# These scripts were created as part of the dnssec-tools project.
+# For more information, see http://sourceforge.net/dnssec-tools.
+# Detailed instructions for setting up BIND 9.3.* to use these logwatch
+# configuration files and scripts are containted in the README file
+# on sourceforge.
+#############################################################################
+
 use strict;
 
 my $detail = $ENV{'LOGWATCH_DETAIL_LEVEL'};
@@ -68,7 +77,7 @@ if ($detail >= 5) {
 # of number of occurrences
    my $key;
    foreach $key (sort { $msgHash{$b} <=> $msgHash{$a} } keys %msgHash) {
-      print "   " . $key . " " . $msgHash{$key} . " times\n";
+      print "   " . $key . " " . $msgHash{$key} . " time(s)\n";
    }
 }
 
