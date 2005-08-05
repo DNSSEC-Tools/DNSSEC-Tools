@@ -81,7 +81,6 @@
 #define SR_TSIG_PROTECTED_SOA       SR_TSIG_PROTECTED + SR_ANS_NACK_SOA
 
 #define SR_WRONG 35
-
  
 #define EDNS_UDP_SIZE 4096 
 #define DNAME_MAX	1024
@@ -98,6 +97,33 @@
 #ifndef ns_t_ds
 #define ns_t_ds	43	
 #endif
+
+/* Resolver errors */
+#define NO_DATA_IN_ANSWER   XX // no data for type
+#define LAME_DELEGATION XX
+#define ANSWER_REFUSED  XX // Generic header error
+#define NO_GLUE XX
+#define GLUE_MISMATCH   XX
+#define DUPLICATE_RR    XX
+
+#define SR_UNSET    0
+#define SR_NULLPTR_ERROR    2
+#define SR_CALL_ERROR   3
+#define SR_INITIALIZATION_ERROR      4
+#define SR_HEADER_ERROR 5
+#define SR_TSIG_ERROR   6
+#define SR_MEMORY_ERROR     7
+#define SR_INTERNAL_ERROR   8
+#define SR_MESSAGE_ERROR         9
+#define SR_DATA_MISSING_ERROR       10
+#define SR_REFERRAL_ERROR       11
+#define SR_NO_ANSWER    12
+#define SR_EMPTY_NXDOMAIN       60
+/* Unstable states (i.e., used internally only) */
+#define SR_DATA_UNCHECKED       66
+#define SR_PROCESS_ERROR    -9
+
+
 
 struct name_server
 {
@@ -154,6 +180,18 @@ struct domain_info
 struct res_policy {
 	struct name_server *ns;
 };
+
+
+/* Interfaces to the resolver */
+int get (   const char      *name_n,
+            const u_int16_t     type_h,
+            const u_int16_t     class_h,
+            struct res_policy   *respol,
+            struct name_server  **server,
+            u_int8_t            **response,
+            u_int32_t           *response_length,
+            char                **error_msg);
+void print_response (u_int8_t *ans, int resplen);
 
 
 #endif /* RESOLVER_H */
