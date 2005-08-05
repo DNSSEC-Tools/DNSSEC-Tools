@@ -26,9 +26,6 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include <res_errors.h>
-#include <support.h>
-#include <res_query.h>
 
 #include "val_support.h"
 #include "val_log.h"
