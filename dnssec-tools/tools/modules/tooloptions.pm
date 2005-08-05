@@ -42,61 +42,68 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 my @stdopts =
 (
         ['GUI:separator',	'Cryptography options:'],
-        ["algorithm=s",		"Cryptographic HASH algorithm",
-	 question => {
-			type	=> 'menu',
-			values	=> [qw(RSA RSAMD5 DH DSA RSASHA1 HMAC-MD5)],
-			default	=> 'RSAMD5'
-		     }
-	],
-        ["random=s",		"Random number generator device"],
-        ["endtime=s",		"End-time for signed zone"],
-        ["gends",		"Generate DS records"],
+		["algorithm=s",		"Cryptographic HASH algorithm",
+		 question => {
+				type	=> 'menu',
+				values	=> [qw(RSA RSAMD5 DH DSA RSASHA1 HMAC-MD5)],
+				default	=> 'RSAMD5'
+			     }
+		],
+		["random=s",		"Random number generator device"],
+		["endtime=s",		"End-time for signed zone"],
+		["gends",		"Generate DS records"],
 
         '',
+
         ['GUI:separator',	'Configuration options:'],
-        ["keyrec=s",		"Keyrec name",
-	  helpdesc => 'test'
-	],
-        ["krfile=s",		"Keyrec file"],
-        ["nokrfile",		"Do not use a Keyrec file"],
+		["keyrec=s",		"Keyrec name",
+		  helpdesc => 'test'
+		],
+		["krfile=s",		"Keyrec file"],
+		["nokrfile",		"Do not use a Keyrec file"],
+		["genkeys",		"Generate KSK and ZSK"],
 
         '',
+
         ['GUI:separator',	'Key-signing key options:'],
-        ["reuseksk",		"Reuse KSK"],
-        ["kskkey=s",		"KSK key"],
-        ["ksklength=i",		"Length of KSK"],
-        ["kskpath=s",		"Path to KSK"],
-        ["kskdirectory=s",	"Directory for KSK keys"],
-        ["ksdir=s",		"Directory to store Keyset files in"],
+		["genksk",		"Generate KSK"],
+		["kskkey=s",		"KSK key"],
+		["ksklength=i",		"Length of KSK"],
+		["kskpath=s",		"Path to KSK"],
+		["kskdirectory=s",	"Directory for KSK keys"],
+		["ksdir=s",		"Directory for keyset files"],
 
         '',
+
         ['GUI:separator',	'Zone-signing key options:'],
-        ["reusezsk",		"Reuse ZSK"],
-        ["zskkey=s",		"ZSK key"],
-        ["zsklength=i",		"Length of ZSK"],
-        ["zskpath=s",		"Path to ZSK"],
-        ["zskdirectory=s",	"Directory for ZSK keys"],
+		["genzsk",		"Generate ZSK"],
+		["zskkey=s",		"ZSK key"],
+		["zsklength=i",		"Length of ZSK"],
+		["zskpath=s",		"Path to ZSK"],
+		["zskdirectory=s",	"Directory for ZSK keys"],
 
         '',
+
         ['GUI:separator',	'Zone options:'],
-        ["zone=s",		"Zone name",	required => 1],
-        ["zdata=s",		"Zone data filename"],
-        ["zfile=s",		"Zone filename"],
+		["zone=s",		"Zone name",	required => 1],
+		["zdata=s",		"Zone data filename"],
+		["zfile=s",		"Zone filename"],
+
+		'',
+
+		["kgopts=s",		"Additional options for dnssec-keygen"],
+		["szopts=s",		"Additional dnssec-signzone options"],
 
         '',
-        ["kgopts=s",		"Additional options for dnssec-keygen"],
-        ["szopts=s",		"Additional dnssec-signzone options"],
 
-        '',
-        ['GUI:separator',	'Control options:'],
-        ["verbose+",	"Verbose mode"],
-        ["help",	'Show command line help',
-	 question => {
-			values => 'Display Help',
-			type  => 'button'
-		     }
-	],
+        ['GUI:separator',		'Control options:'],
+		["verbose+",		"Verbose mode"],
+		["help",		'Show command line help',
+		 question => {
+				values	=> 'Display Help',
+				type	=> 'button'
+			     }
+		],
 
         # Getopt::Long::GUI specific argument specifications.  Ignored if !GUI
 
@@ -127,6 +134,7 @@ my @stdopts =
 			@main::saveargs = @ARGV;
 		}
 	],
+
         ['GUI:actions',
 		sub
 		{
@@ -161,7 +169,7 @@ sub tooloptions
 
 	my $cslen;				# Length of @csopts.
 
-	my %dnssec_opts;			# Options from config file.
+	my %dnssec_opts;			# Options from the config file.
 	my $fullkr;				# Reference to krname's keyrec.
 	my %keyrec;				# krname's keyrec.
 
