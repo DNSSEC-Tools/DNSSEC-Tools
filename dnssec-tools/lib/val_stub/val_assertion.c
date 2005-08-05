@@ -10,13 +10,10 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include <res_errors.h>
-#include <support.h>
-#include <res_query.h>
 
+#include "val_resquery.h"
 #include "val_support.h"
 #include "val_zone.h"
-#include "res_squery.h"
 #include "val_cache.h"
 #include "val_errors.h"
 #include "val_assertion.h"
@@ -126,7 +123,7 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 
 // XXX DS problem: 
 //		-- if DS is proved to not exist in the child zone, try the parent zone working down from the root
-// 		-- in res_squery ask the learned zones first before sending to other name servers
+// 		-- in val_resquery ask the learned zones first before sending to other name servers
 
 // XXX hints have to be saved in a separate list (root.hints)
 // XXX should not be overwritten by responses
@@ -578,7 +575,7 @@ int ask_resolver(val_context_t *context, struct query_chain **queries, int block
 			if (response == NULL) 
 				return OUT_OF_MEMORY;
  
-		    retval = res_squery ( NULL, name, 
+		    retval = val_resquery ( NULL, name, 
 						matched_q->qc_type_h, 
 						matched_q->qc_class_h, 
 						context->resolver_policy, 
