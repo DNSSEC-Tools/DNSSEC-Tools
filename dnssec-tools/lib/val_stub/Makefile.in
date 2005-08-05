@@ -5,7 +5,7 @@ CFLAGS_EX=-I$(INCL) -I.
 EXTRALIBS=-lval -lsres -lcrypto
 LDFLAGS_EX=-L. -L$(LIB) $(EXTRALIBS)
 
-SRC=  	res_squery.c \
+SRC=  	val_resquery.c \
 	val_support.c \
 	val_zone.c \
 	val_cache.c \
@@ -25,7 +25,7 @@ SRC=  	res_squery.c \
 	crypto/val_dsasha1.c
 
 # can't use gmake conventions to translate SRC -> OBJ for portability
-OBJ=  	res_squery.o \
+OBJ=  	val_resquery.o \
 	val_support.o \
 	val_zone.o \
 	val_cache.o \
@@ -44,7 +44,7 @@ OBJ=  	res_squery.o \
 	crypto/val_rsasha1.o \
 	crypto/val_dsasha1.o
 
-LOBJ=  	res_squery.lo \
+LOBJ=  	val_resquery.lo \
 	val_support.lo \
 	val_zone.lo \
 	val_cache.lo \
@@ -75,13 +75,13 @@ GETADDR= getaddr
 all: $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR)
 
 clean:
-	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR) resolver_driver.lo resolver_driver.o main.lo main.o gethost.lo gethost.o getaddr.lo getaddr.o
+	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR) validator_driver.lo validator_driver.o main.lo main.o gethost.lo gethost.o getaddr.lo getaddr.o
 
 $(LIBVAL): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ)
 
-$(DRIVER): $(LIBVAL) resolver_driver.lo
-	$(LIBTOOLLD) -o $@ resolver_driver.lo $(LDFLAGS)
+$(DRIVER): $(LIBVAL) validator_driver.lo
+	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS)
 
 $(VALIDATOR): $(LIBVAL) main.lo
 	$(LIBTOOLLD) -o $@ main.lo $(LDFLAGS)
