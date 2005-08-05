@@ -151,7 +151,7 @@ associated data.  However, there are a few exceptions where special
 tokens imply special meanings (like I<test>, I<init>, and others).
 See below for details.
 
-Each rule definition within a file should be seperated from each other
+Each rule definition within a file should be separated from each other
 using a blank line.
 
 Lines beginning with the '#' character will be discarded as a comment.
@@ -227,7 +227,7 @@ The rule will then not be executed except for records of that type
 
 =item init
 
-A block of code to be excetuted immediately. This is useful for
+A block of code to be executed immediately. This is useful for
 boot-strapping where you want to perform something only once at
 startup rather than per-every-rule-test-invocation.  EG, "use MODULE;"
 type statements should go here.  I<init> sections contain special
@@ -251,7 +251,7 @@ begin with whitespace!
 The end result must be a subroutine reference which will be called by
 the donuts program.  If when the code is evaluated it does not begin
 with "sub {" then a "sub {" prefix and "}" suffix will be
-automatically added to the code to turn the code-snippit into a
+automatically added to the code to turn the code-snippet into a
 subroutine.
 
 If the test fails, it should return an error string which will be
@@ -262,14 +262,14 @@ testing for multiple things, you can return a reference to an array of
 error strings instead (an empty array reference being returned also
 indicates no error).
 
-There are two types of tests (currently), and how the code snippit is
+There are two types of tests (currently), and how the code snippet is
 called depends on the ruletype clause above.
 
 =over
 
 =item I<record> tests
 
-These code snippits are expected to test a single Net::DNS::RR record.
+These code snippets are expected to test a single Net::DNS::RR record.
 
 It is called with the two arguments:
 
@@ -279,7 +279,7 @@ It is called with the two arguments:
 
 =item I<name> tests
 
-These code snippits are expected to test all the records, in some way,
+These code snippets are expected to test all the records, in some way,
 associated with a given name record.
 
 It is called with the three arguments:
