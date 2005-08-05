@@ -108,7 +108,7 @@ char *p_val_error(int valerrno);
 #define INDETERMINATE_ERROR		LAST_SUCCESS+7	/* Error sequence */
 #define INDETERMINATE_TRUST		LAST_SUCCESS+8	/* Dont know if trust is absent or answer is bogus */
 #define INDETERMINATE_ZONE		LAST_SUCCESS+9	/* Dont know if zone is unsigned or sigs have been stripped */
-
+#define INDETERMINATE	INDETERMINATE_TRUST
 
 
 /*
