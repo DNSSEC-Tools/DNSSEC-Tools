@@ -1066,17 +1066,23 @@ sub updzonerec
 	# Set some fields we've got to have -- in case they aren't
 	# set in the options.
 	#
-	$opts{'zonefile'}     = $zoneout;
-	$opts{'signedfile'}   = $zoneout . ".signed";
-	$opts{'kskdirectory'} = $kskdir;
-	$opts{'kskkey'}	      = $ksk;
-	$opts{'kskpath'}      = $kskpath;
-	$opts{'zskcur'}	      = $zskcur;
-	$opts{'zskpub'}	      = $zskpub;
-	$opts{'zskdirectory'} = $zskdir;
-	$opts{'zskcurpath'}   = $zskcurpath;
-	$opts{'zskpubpath'}   = $zskpubpath;
-	$opts{'szopts'}       = $szopts if($szopts ne "");
+	$opts{'zonefile'}	= $zoneout;
+	$opts{'signedfile'}	= $zoneout . ".signed";
+	$opts{'kskdirectory'}	= $kskdir;
+	$opts{'kskkey'}		= $ksk;
+	$opts{'kskpath'}	= $kskpath;
+	$opts{'zskcur'}		= $zskcur;
+	$opts{'zskpub'}		= $zskpub;
+	$opts{'zskdirectory'}	= $zskdir;
+	$opts{'zskcurpath'}	= $zskcurpath;
+	$opts{'zskpubpath'}	= $zskpubpath;
+	$opts{'szopts'}		= $szopts if($szopts ne "");
+
+	#
+	# Save the zone end time and delete the option prefix.
+	#
+	$opts{'endtime'} = $enddate;
+	$opts{'endtime'} =~ s/^-e //;
 
 	#
 	# Get the keyrec for the zone.  If there isn't one, it's a new
