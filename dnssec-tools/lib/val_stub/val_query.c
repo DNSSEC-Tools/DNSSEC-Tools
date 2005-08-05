@@ -10,16 +10,16 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <resolv.h>
 #include <resolver.h>
 #include <string.h>
-#include <res_errors.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
 #include "val_support.h"
-#include "res_squery.h"
+#include "val_resquery.h"
 #include "val_parse.h"
 #include "val_verify.h"
 #include "val_print.h"
@@ -45,7 +45,7 @@ static int init_respol(struct res_policy *respol)
     struct sockaddr_in my_addr;
     struct in_addr  address;
     struct name_server *ns, *head_ns, *tail_ns;
-    char *name_server_string = NULL;
+//    char *name_server_string = NULL;
     char auth_zone_info[] = AUTH_ZONE_INFO;
     
     FILE * fp;
@@ -132,10 +132,10 @@ static void destroy_respol(struct res_policy *respol)
 static void fetch_dnskeys(val_context_t *ctx, const char *dname,
 			  u_int16_t class, struct res_policy *respol)
 {
-    struct rrset_rec *oldkeys;
+//    struct rrset_rec *oldkeys;
     struct domain_info dnskey_response;
     bzero(&dnskey_response, sizeof(dnskey_response));
-    res_squery (NULL, dname, ns_t_dnskey, class, respol, &dnskey_response);
+    val_resquery (NULL, dname, ns_t_dnskey, class, respol, &dnskey_response);
 }
 
 
@@ -374,8 +374,8 @@ int _val_query ( const char *dname, int class, int type,
 	}
     }
     
-    ret_val = res_squery ( &ctx, dname, type, class, &respol, response); 
-    val_log("\nres_squery returned %d\n", ret_val);
+    ret_val = val_resquery ( &ctx, dname, type, class, &respol, response); 
+    val_log("\nval_resquery returned %d\n", ret_val);
     val_log("response = \n");
     dump_dinfo(response);
     val_log("context = \n");
