@@ -10,13 +10,10 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include <res_errors.h>
-#include <support.h>
-#include <res_query.h>
 
 #include "val_support.h"
 #include "val_zone.h"
-#include "res_squery.h"
+#include "val_resquery.h"
 #include "val_cache.h"
 #include "val_errors.h"
 #include "val_x_query.h"
