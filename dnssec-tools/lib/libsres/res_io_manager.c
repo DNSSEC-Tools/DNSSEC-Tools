@@ -29,7 +29,7 @@
 #include <sys/ioctl.h>
 #include <errno.h>
 #include "resolver.h"
-#include "support.h"
+#include "res_support.h"
 #include "res_io_manager.h"
 
 
@@ -578,18 +578,6 @@ int res_io_read_udp (struct expected_arrival *arrival)
 	return SR_IO_UNSET;
 }
 
-int res_quecmp (u_int8_t *query, u_int8_t *response)
-{
-	int	length;
-
-	if (query==NULL || response==NULL) return 1;
-
-	length = wire_name_length (&query[12]);
-
-	if (length != wire_name_length(&response[12]) ) return 1;
-
-	return (memcmp (&query[12], &response[12], length));
-}
 
 void res_switch_to_tcp(struct expected_arrival *ea)
 {
