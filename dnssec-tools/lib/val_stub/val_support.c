@@ -26,15 +26,120 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include <res_errors.h>
-#include <support.h>
-#include <res_query.h>
 
 #include "val_support.h"
 #include "val_errors.h"
 #include "val_log.h"
 #include "validator.h"
 
+int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
+{
+    /* Compare two names, assuming same number of labels in each */
+    int             index1 = 0;
+    int             index2 = 0;
+    int             length1 = (int) name1[index1];
+    int             length2 = (int) name2[index2];
+    int             min_len = length1 < length2 ? length1 : length2;
+    int             ret_val;
+                                                                                                                          
+    u_int8_t        buffer1[MAXDNAME];
+    u_int8_t        buffer2[MAXDNAME];
+    int             i;
+                                                                                                                          
+    /* Degenerate case - root versus root */
+    if (length1==0 && length2==0) return 0;
+                                                                                                                          
+    /* Recurse to try more significant label(s) first */
+    ret_val=labelcmp(&name1[length1+1],&name2[length2+1]);
+                                                                                                                          
+    /* If there is a difference, propogate that back up the calling tree */
+    if (ret_val!=0) return ret_val;
+                                                                                                                          
+    /* Compare this label's first min_len bytes */
+    /* Convert to lower case first */
+    memcpy (buffer1, &name1[index1+1], min_len);
+    for (i =0; i < min_len; i++)
+        if (isupper(buffer1[i])) buffer1[i]=tolower(buffer1[i]);
+                                                                                                                          
+    memcpy (buffer2, &name2[index2+1], min_len);
+    for (i =0; i < min_len; i++)
+        if (isupper(buffer2[i])) buffer2[i]=tolower(buffer2[i]);
+                                                                                                                          
+    ret_val=memcmp(buffer1, buffer2, min_len);
+                                                                                                                          
+    /* If they differ, propgate that */
+    if (ret_val!=0) return ret_val;
+    /* If the first n bytes are the same, then the length determines
+        the difference - if any */
+    return length1-length2;
+}
+                                                                                                                          
+int namecmp (const u_int8_t *name1, const u_int8_t *name2)
+{
+    /* compare the DNS wire format names in name1 and name2 */
+    /* return -1 if name1 is before name2, 0 if equal, +1 otherwise */
+    int labels1 = 1;
+    int labels2 = 1;
+    int index1 = 0;
+    int index2 = 0;
+    int ret_val;
+    int i;
+                                                                                                                          
+    /* count labels */
+    for (;name1[index1];index1 += (int) name1[index1]+1) labels1++;
+    for (;name2[index2];index2 += (int) name2[index2]+1) labels2++;
+                                                                                                                          
+    index1 = 0;
+    index2 = 0;
+                                                                                                                          
+    if (labels1 > labels2)
+        for (i = 0; i < labels1-labels2; i++) index1 += (int) name1[index1]+1;
+    else
+        for (i = 0; i < labels2-labels1; i++) index2 += (int) name2[index2]+1;
+                                                                                                                          
+    ret_val = labelcmp(&name1[index1], &name2[index2]);
+                                                                                                                          
+    if (ret_val != 0) return ret_val;
+                                                                                                                          
+    /* If one dname is a "proper suffix" of the other,
+        the shorter comes first */
+    return labels1-labels2;
+}
+
+u_int16_t wire_name_labels (const u_int8_t *field)
+{
+    /* Calculates the number of bytes in a DNS wire format name */
+    u_short j;
+    u_short l=0;
+    if (field==NULL) return 0;
+                                                                                                                          
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<MAXDNAME ; j += field[j]+1)
+        l++;
+    if (field[j]) j++;
+    j++;
+    l++;
+                                                                                                                          
+    if (j > MAXDNAME)
+        return 0;
+    else
+        return l;
+}
+
+u_int16_t wire_name_length (const u_int8_t *field)
+{
+    /* Calculates the number of bytes in a DNS wire format name */
+    u_short j;
+    if (field==NULL) return 0;
+                                                                                                                          
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<MAXDNAME ; j += field[j]+1);
+    if (field[j]) j++;
+    j++;
+                                                                                                                          
+    if (j > MAXDNAME)
+        return 0;
+    else
+        return j;
+}
 
 void free_name_server (struct name_server **ns)
 {
