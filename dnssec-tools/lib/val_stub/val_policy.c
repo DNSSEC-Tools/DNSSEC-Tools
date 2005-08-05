@@ -16,12 +16,11 @@
 #include <string.h>
 #include <ctype.h>
 
-#include <support.h>
-
 #include "val_parse.h"
 #include "val_errors.h"
 #include "val_context.h"
 #include "val_policy.h"
+#include "val_support.h"
 
 #include "validator.h"
 
