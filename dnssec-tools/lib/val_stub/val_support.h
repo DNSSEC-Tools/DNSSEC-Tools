@@ -22,6 +22,19 @@
 #ifndef VAL_SUPPORT_H
 #define VAL_SUPPORT_H
 
+#ifndef TRUE
+#define TRUE    1
+#endif
+                                                                                                                          
+#ifndef FALSE
+#define FALSE   0
+#endif
+
+int labelcmp (const u_int8_t *name1, const u_int8_t *name2);
+int namecmp (const u_int8_t *name1, const u_int8_t *name2);
+u_int16_t wire_name_labels (const u_int8_t *field);
+u_int16_t wire_name_length (const u_int8_t *field);
+
 void free_name_server (struct name_server **ns);
 void free_name_servers (struct name_server **ns);
 void res_sq_free_rr_recs (struct rr_rec **rr);
