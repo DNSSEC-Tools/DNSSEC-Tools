@@ -25,17 +25,14 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include <res_errors.h>
-#include <support.h>
-#include <res_query.h>
 
+#include "val_resquery.h"
 #include "val_support.h"
 #include "val_zone.h"
-#include "res_squery.h"
 #include "val_cache.h"
 #include "val_log.h"
 
-#define NO_DOMAIN_NAME  "res_squery: domain_name omitted from query request"
+#define NO_DOMAIN_NAME  "val_resquery: domain_name omitted from query request"
 
 
 #define ITS_BEEN_DONE   TRUE
@@ -51,6 +48,19 @@ struct query_list
 
 static struct query_list    *queries = NULL;
                                                                                                                           
+static int res_sq_set_message(char **error_msg, char *msg, int error_code)
+{
+    *error_msg = (char *) MALLOC (strlen(msg)+1);
+    if (*error_msg==NULL) return SR_MEMORY_ERROR;
+    sprintf (*error_msg, "%s", msg);
+    return error_code;
+}
+
+static int skip_questions(const u_int8_t *buf)
+{
+    return 12 + wire_name_length (&buf[12]) + 4;
+}
+
 int register_query (u_int8_t *name_n, u_int32_t type_h, u_int8_t *zone_n)
 {
     struct query_list   *q = queries;
@@ -172,7 +182,7 @@ int do_referral(		val_context_t		*context,
         return res_sq_set_message (error_msg, "Referral failed",
                 SR_REFERRAL_ERROR);
    }
-   /* Call res_squery for the (maybe new name and) ns_list */
+   /* Call val_resquery for the (maybe new name and) ns_list */
                                                                                                                           
    memset (&ref_resp, 0, sizeof (struct domain_info));
                                                                                                                           
@@ -191,7 +201,7 @@ referral_name, debug_name2);
 }
 	// XXX Other fields from respol must be copied into respolnew
 	respolnew.ns = ns_list;
-    ret_val = res_squery (context, referral_name, query_type_h,
+    ret_val = val_resquery (context, referral_name, query_type_h,
                                query_class_h, &respolnew, &ref_resp);
    
 	free_name_servers (&ns_list);
@@ -462,7 +472,7 @@ int digest_response (   val_context_t 		*context,
 
 
 
-int res_squery ( 	val_context_t			*context,
+int val_resquery ( 	val_context_t			*context,
 					const char              *domain_name,
                     const u_int16_t         type,
                     const u_int16_t         class,

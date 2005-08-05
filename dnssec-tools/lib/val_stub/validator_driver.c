@@ -12,15 +12,12 @@
 #include <arpa/inet.h>
 
 #include <resolver.h>
-#include <res_errors.h>
-#include <support.h>
 
 #include "val_support.h"
-#include "res_squery.h"
+#include "val_resquery.h"
 #include "validator.h"
 #include "val_x_query.h"
 #include "val_log.h"
-
 #include "val_errors.h"
 #include "val_print.h"
 
