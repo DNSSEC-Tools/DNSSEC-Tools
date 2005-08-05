@@ -26,15 +26,21 @@
 
 #include "resolver.h"
 #include "res_transaction.h"
-#include "res_errors.h"
 #include "res_mkquery.h"
-#include "support.h"
+#include "res_support.h"
 
 #define ENVELOPE	10
 #define EMSG_MAX   2048
 
+static int res_sq_set_message(char **error_msg, char *msg, int error_code)
+{
+    *error_msg = (char *) MALLOC (strlen(msg)+1);
+    if (*error_msg==NULL) return SR_MEMORY_ERROR;
+    sprintf (*error_msg, "%s", msg);
+    return error_code;
+}
 
-int res_sq_set_tsig_msg (char **error_msg, char *msg,
+static int res_sq_set_tsig_msg (char **error_msg, char *msg,
                             struct name_server *server, int error_code)
 {
     char    name_h[DNAME_MAX];
@@ -48,6 +54,76 @@ int res_sq_set_tsig_msg (char **error_msg, char *msg,
     return error_code;
 }
 
+static u_int16_t wire_name_length (const u_int8_t *field)
+{
+    /* Calculates the number of bytes in a DNS wire format name */
+    u_short j;
+    if (field==NULL) return 0;
+                                                                                                                          
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<MAXDNAME ; j += field[j]+1);
+    if (field[j]) j++;
+    j++;
+                                                                                                                          
+    if (j > MAXDNAME)
+        return 0;
+    else
+        return j;
+}
+
+
+static int skip_questions(const u_int8_t *buf)
+{
+    return 12 + wire_name_length (&buf[12]) + 4;
+}
+
+void dump_response (const u_int8_t *ans, int resplen)
+{
+    /* Prints the "raw" response from DNS */
+    int i,j, k;
+                                                                                                                          
+    printf ("Message length is %d\n", resplen);
+                                                                                                                          
+    for (i = 0; i < 12; i++) printf ("%02x ", (u_char) ans[i]);
+    printf ("\n");
+    k = 12;
+    while (ans[k]) k += ans[k] + 1;
+    for (i = 12; i < k+1; i++) printf ("%02x ", (u_char) ans[i]);
+    printf (": ");
+    for (i = k+1; i < k+5; i++) printf ("%02x ", (u_char) ans[i]);
+    printf ("\n");
+    k += 5;
+    if (k < resplen)
+    do
+    {
+        j = wire_name_length(&ans[k]) + 10; /* j = envelope length */
+        j += ntohs(*(u_short*)(&ans[k+j-2])); /* adds rdata length to j */
+        for (i = k; i < k+j; i++) printf ("%02x ", (u_char) ans[i]);
+        printf ("\n");
+        k += j;
+    } while (k < resplen);
+}
+
+u_int16_t retrieve_type (const u_int8_t *rr)
+{
+    u_int16_t   type_n;
+    int         name_length = wire_name_length (rr);
+                                                                                                                          
+    memcpy (&type_n, &rr[name_length], sizeof(u_int16_t));
+    return ntohs(type_n);
+}
+
+int res_quecmp (u_int8_t *query, u_int8_t *response)
+{
+	int	length;
+
+	if (query==NULL || response==NULL) return 1;
+
+	length = wire_name_length (&query[12]);
+
+	if (length != wire_name_length(&response[12]) ) return 1;
+
+	return (memcmp (&query[12], &response[12], length));
+}
 
 int right_sized (   u_int8_t    *response,
                     u_int32_t   response_length)
@@ -240,7 +316,7 @@ print_response (query, query_length);
                 return res_sq_set_message(error_msg,
                     "Internal error in res_transaction", SR_INTERNAL_ERROR);
         }
-/*                                                                                                                          
+/*
 printf ("The Response: ");
 printf (":\n");
 print_response (*response, *response_length);
