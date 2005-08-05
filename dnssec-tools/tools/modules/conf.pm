@@ -164,6 +164,7 @@ Net::DNS::SEC::Tools::conf - DNSSEC tools configuration file routines.
 The DNSSEC tools have a configuration file for commonly used values.
 These values are the defaults for a variety of things, such as
 encryption algorithm and encryption key length.
+
 B</usr/local/etc/dnssec/dnssec-tools.conf> is the path for the DNSSEC tools
 configuration file.  The I<Net::DNS::SEC::Tools::conf> module provides
 methods for accessing the configuration data in this file.
