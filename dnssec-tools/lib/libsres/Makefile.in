@@ -1,7 +1,7 @@
 # the resulting Makefile is built from  TOPSRCDIR/Makefile.top and Makefile.in
 
 SRC=	ns_name.c	\
-	support.c	\
+	res_support.c	\
 	res_debug.c	\
 	ns_netint.c	\
 	ns_print.c	\
@@ -18,7 +18,7 @@ SRC=	ns_name.c	\
 
 # can't use gmake conventions to translate SRC -> OBJ for portability
 OBJ=	ns_name.o	\
-	support.o	\
+	res_support.o	\
 	res_debug.o	\
 	ns_netint.o	\
 	ns_print.o	\
@@ -34,7 +34,7 @@ OBJ=	ns_name.o	\
 	res_query.o	
 
 LOBJ=	ns_name.lo	\
-	support.lo	\
+	res_support.lo	\
 	res_debug.lo	\
 	ns_netint.lo	\
 	ns_print.lo	\
@@ -60,7 +60,7 @@ clean:
 	rm -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
 
 $(LIBRES): $(LOBJ)
-	$(LIBTOOLLD) -o $@ $(LOBJ)
+	$(LIBTOOLLD) -o $@ $(LOBJ) -export-symbols EXPORT.sym
 
 install:
 	$(LIBTOOLIN) $(LIBRES) $(libdir)
