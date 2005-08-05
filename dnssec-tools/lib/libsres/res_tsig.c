@@ -17,7 +17,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "res_tsig.h"
-#include "support.h"
+#include "res_support.h"
 
 #ifndef TRUE
 #define TRUE 1
