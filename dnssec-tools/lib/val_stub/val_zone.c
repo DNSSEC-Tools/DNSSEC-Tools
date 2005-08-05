@@ -26,13 +26,10 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include <res_errors.h>
-#include <support.h>
-#include <res_query.h>
 
 #include "val_support.h"
 #include "val_zone.h"
-#include "res_squery.h"
+#include "val_resquery.h"
 #include "val_log.h"
 
 #define DNS_PORT    53
@@ -248,7 +245,7 @@ val_log ("QUERYING: '%s.' (getting unchecked address hints)\n",
 ns_name);
 
 }
-            ret_val = res_squery (context, ns_name, ns_t_a, ns_c_in,
+            ret_val = val_resquery (context, ns_name, ns_t_a, ns_c_in,
                         respol, &di);
                                                                                                                           
             /* If answer is good, then use the A records to build the
