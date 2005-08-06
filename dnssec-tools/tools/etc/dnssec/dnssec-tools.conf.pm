@@ -62,6 +62,12 @@ B<dnssec-tools> I<keyrec.pm> module.
 This entry contains the zone default expiration date to be passed to
 B<dnssec-signzone>.
 
+=item entropy_msg
+
+This entry contains a flag indicating if the B<dnssec-tools> I<zonesigner>
+command should display a message about entropy generation.  This is primarily
+dependent on the implementation of a system's random number generation.
+
 =item keygen
 
 This entry contains the path to the B<dnssec-keygen> command.
@@ -119,6 +125,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     # Settings that will be noticed by zonesigner.
     #
     default_keyrec	default.krf
+    entropy_msg		0
 
 =head1 AUTHOR
 
