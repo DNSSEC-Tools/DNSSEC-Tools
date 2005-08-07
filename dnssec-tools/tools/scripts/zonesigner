@@ -50,16 +50,17 @@ my $DEF_KEYGEN		= "dnssec-keygen";
 my $DEF_SIGNZONE	= "dnssec-signzone";
 
 #
-# Default arguments to dnssec- commands.
+# Default arguments to zonesigner and dnssec-* commands.
 #
-my $DEF_ALGORITHM	= "rsasha1";
-my $DEF_ENDDATE		= "+604800";
-my $DEF_ENTROPYMSG	= 1;
-my $DEF_KSKLENGTH	= 1024;
-my $DEF_RANDOM		= "/dev/urandom";
-my $DEF_REUSEKSK	= 0;
-my $DEF_REUSEZSK	= 0;
-my $DEF_ZSKLENGTH	= 1024;
+my $DEF_ALGORITHM	= "rsasha1";		# Encryption algorithm.
+my $DEF_ENDDATE		= "+604800";		# Zone life, in seconds.
+my $DEF_ENTROPYMSG	= 1;			# Display of entropy message.
+my $DEF_KSKLENGTH	= 1024;			# Length of KSK key.
+my $DEF_RANDOM		= "/dev/urandom";	# Random no. generator device.
+my $DEF_REUSEKSK	= 0;			# Re-use KSK.
+my $DEF_REUSEZSK	= 0;			# Re-use ZSK.
+my $DEF_SAVEKEYS	= 0;			# Archive keys.
+my $DEF_ZSKLENGTH	= 1024;			# Length of ZSK key.
 
 #
 # Arguments for updzonerec().
@@ -86,6 +87,9 @@ my $szopts;				# Additional dnssec-signzone options.
 my $verbose = 0;			# Turn off verbosity.
 my $zsize;				# Size of ZSK.
 my $zskdir;				# Directory to hold ZSK.
+
+my $archdir;				# Archive directory for old keys.
+my $savekeys = 0;			# Flag for saving old keys.
 
 my $ksk;				# KSK we've generated.
 my $kskpath;				# Path to the KSK.
@@ -152,15 +156,12 @@ sub main
 	helpchk();
 
 	#
-	# Munch on the options and arguments.
+	# Munch on the options and arguments.  Print out our options,
+	# according to our verbosity level.
 	#
 	optsandargs();
-	if($verbose > $VERBOSE_LOW)
-	{
-		print "\narguments:\n";
-		print "\tzone	 - $zone\n";
-		print "\tzoneout - $zoneout\n";
-	}
+	printopts();
+exit(0);
 
 	#
 	# If help was specified, give the usage and exit.
@@ -302,11 +303,13 @@ sub optsandargs()
 	# Get the rest of the options.
 	#
 	$alg	  = $opts{'algorithm'}	|| $DEF_ALGORITHM;
+	$archdir  = $opts{'archivedir'}	|| "";
 	$enddate  = $opts{'endtime'}	|| $DEF_ENDDATE;
 	$gends	  = $opts{'gends'}	|| "";
 	$random   = $opts{'random'}	|| $DEF_RANDOM;
 	$kgopts   = $opts{'kgopts'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
+	$savekeys = $opts{'savekeys'}	|| $DEF_SAVEKEYS;
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
 	$nokrfile = $opts{'nokrfile'}	|| "";
@@ -385,43 +388,6 @@ sub optsandargs()
 	$checkzone  = $opts{'checkzone'}   || $DEF_CHECKZONE;
 	$keygen	    = $opts{'keygen'}	   || $DEF_KEYGEN;
 	$signzone   = $opts{'signzone'}	   || $DEF_SIGNZONE;
-
-	#
-	# If the verbose flag was set, we'll print out the options we're
-	# using.
-	#
-	if($verbose > $VERBOSE_MEDIUM)
-	{
-		print "zonesigner arguments:\n";
-		print "\tkrfile		- <$krfile>\n";
-		print "\tnokrfile	- <$nokrfile>\n";
-		print "\tentropymsg	- <$entropymsg>\n";
-		print "\n";
-
-		print "key-signing parameters:\n";
-		print "\talgorithm	- <$alg>\n";
-		print "\trandom		- <$random>\n";
-		print "\tksize		- <$ksize>\n";
-		print "\tkskdir		- <$kskdir>\n";
-		print "\tgenksk		- <$genksk>\n";
-		print "\tzsize		- <$zsize>\n";
-		print "\tzskdir		- <$zskdir>\n";
-		print "\tgenzsk		- <$genzsk>\n";
-		print "\tkgopts		- <$kgopts>\n";
-		print "\n";
-
-		print "zone-signing parameters:\n";
-		print "\tenddate		- <$enddate>\n";
-		print "\tgends		- <$gends>\n";
-		print "\tksdir		- <$ksdir>\n";
-		print "\tszopts		- <$szopts>\n";
-		print "\n";
-
-		print "external commands:\n";
-		print "\tcheckzone	- <$checkzone>\n";
-		print "\tkeygen		- <$keygen>\n";
-		print "\tsignzone	- <$signzone>\n";
-	}
 
 	#
 	# Check that we don't have too many arguments.
@@ -1442,6 +1408,55 @@ sub forceroll
 	print "\tnew ZSK ($zsknew) created\n" if($verbose > $VERBOSE_LOW);
 	keyrec_setval("key",$zsknew,"keyrec_type","zsknew");
 	keyrec_setval("key",$zsknew,"zonename",$zone);
+}
+
+#######################################################################
+#
+# Routine:	printopts()
+#
+# Purpose:	Display the value of our options.
+#
+sub printopts
+{
+	return if($verbose < $VERBOSE_MEDIUM);
+
+	print "\narguments:\n";
+	print "\tzone    - $zone\n";
+	print "\tzoneout - $zoneout\n\n";
+
+	return if($verbose < $VERBOSE_HIGH);
+
+	print "zonesigner arguments:\n";
+	print "\tkrfile		- <$krfile>\n";
+	print "\tnokrfile	- <$nokrfile>\n";
+	print "\tentropymsg	- <$entropymsg>\n";
+	print "\tsavekeys	- <$savekeys>\n";
+	print "\tarchdir         - <$archdir>\n";
+	print "\n";
+
+	print "key-signing parameters:\n";
+	print "\talgorithm	- <$alg>\n";
+	print "\trandom		- <$random>\n";
+	print "\tksize		- <$ksize>\n";
+	print "\tkskdir		- <$kskdir>\n";
+	print "\tgenksk		- <$genksk>\n";
+	print "\tzsize		- <$zsize>\n";
+	print "\tzskdir		- <$zskdir>\n";
+	print "\tgenzsk		- <$genzsk>\n";
+	print "\tkgopts		- <$kgopts>\n";
+	print "\n";
+
+	print "zone-signing parameters:\n";
+	print "\tenddate		- <$enddate>\n";
+	print "\tgends		- <$gends>\n";
+	print "\tksdir		- <$ksdir>\n";
+	print "\tszopts		- <$szopts>\n";
+	print "\n";
+
+	print "external commands:\n";
+	print "\tcheckzone	- <$checkzone>\n";
+	print "\tkeygen		- <$keygen>\n";
+	print "\tsignzone	- <$signzone>\n";
 }
 
 #######################################################################
