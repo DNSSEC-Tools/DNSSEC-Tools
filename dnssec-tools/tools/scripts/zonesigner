@@ -18,33 +18,8 @@
 #			zoneout	 - the name of the output zone file
 #
 #
-#	Options, their meanings, and default values are given below.
-#
-#	Options passed to dnssec-keygen:
-#		-algorithm	crypto algorithm	(RSASHA1)
-#		-random		source of randomness	(/dev/urandom)
-#		-ksklength	size of KSK key		(1024)
-#		-zsklength	size of ZSK key		(1024)
-#
-#	Options passed to dnssec-signzone:
-#		-endtime	end-time		(604800)
-#		-gends		generate DS records	(not given)
-#
-#	Other options:
-#		-krfile		keyrec file to use
-#		-ksdir		directory for keysets
-#		-keyrec		keyrec to search for in specified keyrec file
-#		-zone		zone name
-#
-#		-genkeys	generate a new KSK and ZSK
-#		-genksk		generate a KSK
-#		-genzsk		generate a ZSK
-#
-#		-kgopts		additional options to pass to dnssec-keygen
-#		-szopts		additional options to pass to dnssec-signzone
-#
-#		-help		display usage message
-#		-verbose	verbose output
+#	Options, their meanings, and default values are given on the POD at
+#	the end of this file.
 #
 
 use strict;
