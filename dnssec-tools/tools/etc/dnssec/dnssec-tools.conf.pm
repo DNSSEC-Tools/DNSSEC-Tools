@@ -36,6 +36,8 @@ Configuration entries are in a I<keyword/value> format.  The keyword is a
 character string that contains no whitespace.  The value is a tokenized list
 of the remaining character groups, with each token separated by a single space.
 
+True/false flags must be given a B<1> (true) or B<0> (false) value.
+
 =head1 Configuration Records
 
 The following records are recognized by the B<dnssec-tools> programs.
@@ -47,6 +49,10 @@ Not every B<dnssec-tools> program requires each of these records.
 
 This entry contains the default encryption algorithm to be passed to
 B<dnssec-keygen>.
+
+=item archivedir
+
+This entry contains the pathname to the archived-key directory.
 
 =item checkzone
 
@@ -64,9 +70,10 @@ B<dnssec-signzone>.
 
 =item entropy_msg
 
-This entry contains a flag indicating if the B<dnssec-tools> I<zonesigner>
-command should display a message about entropy generation.  This is primarily
-dependent on the implementation of a system's random number generation.
+This entry contains a true/false flag indicating if the B<dnssec-tools>
+I<zonesigner> command should display a message about entropy generation.  This
+is primarily dependent on the implementation of a system's random number
+generation.
 
 =item keygen
 
@@ -74,13 +81,17 @@ This entry contains the path to the B<dnssec-keygen> command.
 
 =item ksklength
 
-This entry contains the default KSK key length to be passed to
-B<dnssec-keygen>.
+This entry contains the default KSK key length to be passed to B<dnssec-keygen>.
 
 =item random
 
 This entry contains the random device generator to be passed to
 B<dnssec-keygen>.
+
+=item savekeys
+
+This entry is a true/false flag indicating if old keys should be moved to the
+archive directory.
 
 =item signzone
 
@@ -126,6 +137,10 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     default_keyrec	default.krf
     entropy_msg		0
+
+    savekeys            1
+    archivedir          /usr/local/etc/dnssec/KEY-SAFE
+
 
 =head1 AUTHOR
 
