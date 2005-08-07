@@ -62,6 +62,8 @@ my @stdopts =
 		["krfile=s",		"Keyrec file"],
 		["nokrfile",		"Do not use a Keyrec file"],
 		["genkeys",		"Generate KSK and ZSK"],
+		["savekeys",		"Save old keys in archive directory"],
+		["archivedir=s",	"Key archive directory"],
 
         '',
 
