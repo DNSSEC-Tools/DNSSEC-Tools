@@ -11,15 +11,13 @@
 #		zonesigner [options] <zone> <zoneout>
 #
 #		where:
-#			zone	 - the zone to be signed.  This may also be
-#				   specified with the -zone option.  This is
+#			zone	 - the input zone file to be signed.  This is
 #				   a zone file to which the $INCLUDE ksk and
 #				   $INCLUDE zsk lines are added
 #			zoneout	 - the name of the output zone file
 #
 #
-#	Options, their meanings, and default values are given on the POD at
-#	the end of this file.
+#	Options are described in the POD at the end of this file.
 #
 
 use strict;
@@ -102,7 +100,8 @@ my $zskpubpath;				# Path to the current KSK.
 my $genzsk;				# Generate a new ZSK.
 
 my $zone;				# Zone to play with.
-my $zoneout;				# Zone file (output.)
+my $zonefile;				# Input zone file.
+my $zoneout;				# Output zone file.
 my $krfile;				# User-specified keyrec file.
 
 my $status;				# Zone-signing status.
@@ -161,7 +160,6 @@ sub main
 	#
 	optsandargs();
 	printopts();
-exit(0);
 
 	#
 	# If help was specified, give the usage and exit.
@@ -172,42 +170,42 @@ exit(0);
 	}
 
 	#
-	# Ensure the zone file is okay before proceeding.
-	#
-	print "checking zone before doing anything\n" if($verbose);
-	$status = system("$checkzone -q $zone $zone");
-	if($status != 0)
-	{
-		$status = system("$checkzone $zone $zone");
-		exit($status);
-	}
-
-	#
 	# Ensure that the required data were specified.
 	#
-	if(($zone eq "") || ($zoneout eq ""))
+	if(($zone eq "") || ($zonefile eq "") || ($zoneout eq ""))
 	{
 		print STDERR "no zone specified\n";
 		usage(2);
 	}
 
 	#
+	# Ensure the zone file is okay before proceeding.
+	#
+	print "checking zone before doing anything\n" if($verbose);
+	$status = system("$checkzone -q $zone $zonefile");
+	if($status != 0)
+	{
+		$status = system("$checkzone $zone $zonefile");
+		exit($status);
+	}
+
+	#
 	# Ensure that the zone file exists and open it.
 	#
-	$statlen = @zonestat = stat($zone);
+	$statlen = @zonestat = stat($zonefile);
 	if($statlen == 0)
 	{
-		print STDERR "zone file $zone does not exist\n";
+		print STDERR "zone file $zonefile does not exist\n";
 		exit(1);
 	}
-	open(ZF,"+< $zone") or die "unable to open zone file $zone";
+	open(ZF,"+< $zonefile") or die "unable to open zone file $zonefile";
 
 	#
 	# Ensure that the zone file has not been signed yet.
 	#
 	if(presigned())
 	{
-		print STDERR "zone file $zone already signed\n";
+		print STDERR "zone file $zonefile already signed\n";
 		exit(1);
 	}
 
@@ -276,8 +274,8 @@ sub optsandargs()
 	$ropts = opts_zonekr();
 	if($ropts == undef)
 	{
-		$zone = $ARGV[0];
-		$ropts = opts_zonekr("",$zone);
+		$zonefile = $ARGV[0];
+		$ropts = opts_zonekr("",$zonefile);
 		if($ropts == undef)
 		{
 			$ropts = tooloptions("","");
@@ -313,6 +311,7 @@ sub optsandargs()
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
 	$nokrfile = $opts{'nokrfile'}	|| "";
+	$zone	  = $opts{'zone'};
 
 	#
 	# If -genkeys was given, then we'll set -genksk and -genzsk.
@@ -390,36 +389,26 @@ sub optsandargs()
 	$signzone   = $opts{'signzone'}	   || $DEF_SIGNZONE;
 
 	#
-	# Check that we don't have too many arguments.
+	# Ensure that we were given the zone file and the zone output file.
 	#
 	$argc = @ARGV;
-	usage(4) if($argc > 3);
-
-	#
-	# If we've got two arguments (after option removal) we'll look for
-	# the zone name in the arguments.  If we find it, we'll add the
-	# zone name to the argument list.  If we don't, we'll duplicate
-	# the existing argument for use as both source and destination.
-	#
-	if($argc == 1)
-	{
-		$zone = $opts{'zone'};
-
-		if(defined($zone))
-		{
-			unshift(@ARGV,$zone);
-		}
-		else
-		{
-			unshift(@ARGV,$ARGV[0]);
-		}
-	}
+	usage(4) if($argc != 2);
 
 	#
 	# Set variables for the arguments.
 	#
-	$zone	 = $ARGV[0];
-	$zoneout = $ARGV[1];
+	$zonefile = $ARGV[0];
+	$zoneout  = $ARGV[1];
+
+	#
+	# If the -zone option wasn't specified, we'll use the zone filename
+	# as the zone name.
+	#
+	if(!defined($opts{'zone'}))
+	{
+		$zone = $zonefile;
+		$opts{'zone'} = $zonefile;
+	}
 
 	#
 	# If the keyrec file is empty, we'll create a keyrec for
@@ -736,7 +725,7 @@ sub zoneincludes
 	$newserial = serialincr();
 	if($newserial == -1)
 	{
-		print STDERR "unable to update serial number in $zone\n";
+		print STDERR "unable to update serial number in $zonefile\n";
 		exit(3);
 	}
 	print "$zone's new serial number - $newserial\n" if($verbose > $VERBOSE_LOW);
@@ -754,7 +743,7 @@ sub zoneincludes
 		# Get the data from the zone file.
 		#
 		seek(ZF,0,0);
-		@zonestat = stat($zone);
+		@zonestat = stat($zonefile);
 		$flen = $zonestat[7];
 		read(ZF,$file,$flen);
 
@@ -853,9 +842,9 @@ sub zoneincludes
 		#
 		# Copy the zone data to a new file.
 		#
-		system("$CP $zone $zoneout") if($zone ne $zoneout);
-		open(ZF,"+< $zone");
-		@zonestat = stat($zone);
+		system("$CP $zonefile $zoneout") if($zonefile ne $zoneout);
+		open(ZF,"+< $zonefile");
+		@zonestat = stat($zonefile);
 	}
 	else
 	{
@@ -864,7 +853,7 @@ sub zoneincludes
 		#
 		# Copy the zone data to a new file.
 		#
-		system("$CP $zone $zoneout") if($zone ne $zoneout);
+		system("$CP $zonefile $zoneout") if($zonefile ne $zoneout);
 
 		#
 		# Get the include-keys section.
@@ -1201,8 +1190,8 @@ sub serialincr
 	#
 	# Re-open the zone file with the latest info.
 	#
-	@zonestat = stat($zone);
-	open(ZF,"+< $zone");
+	@zonestat = stat($zonefile);
+	open(ZF,"+< $zonefile");
 
 	return($serialnew);
 }
@@ -1421,8 +1410,9 @@ sub printopts
 	return if($verbose < $VERBOSE_MEDIUM);
 
 	print "\narguments:\n";
-	print "\tzone    - $zone\n";
-	print "\tzoneout - $zoneout\n\n";
+	print "\tzone     - $zone\n";
+	print "\tzonefile - $zonefile\n";
+	print "\tzoneout  - $zoneout\n\n";
 
 	return if($verbose < $VERBOSE_HIGH);
 
@@ -1579,10 +1569,12 @@ zonesigner [options] <zone-file> <zone-out>
 
 =back
 
+The I<zone-file> and I<zone-out> arguments are required.
+
 I<zone-file> is the name of the zone file from which a signed zone file will
-be created.  If the I<-zone> option is not given, then it is also the name
-of the zone that will be signed.  Generated keys are given this name as their
-base.
+be created.  If the I<-zone> option is not given, then I<zone-file> will be
+used as the name of the zone that will be signed.  Generated keys are given
+this name as their base.
 
 The zone file is modified to have B<include> commands, which will include the
 KSK and ZSK keys.  These lines are placed at the end of the file and should
@@ -1596,14 +1588,11 @@ of the I<zone-file> zone file, with some modifications.  Several $INCLUDE
 lines will be added at the end of the file and the SOA serial number will be
 incremented.
 
-The I<zone-out> argument may be left out, in which case the input zone file
-will be used as the base for all operations.
-
 The signed zone file will be this name, appended with I<.signed>.
 
-Unless other specified by the I<-genksk> or I<-genzsk> options, the last keys
-generated for a particular zone will be used in subsequent I<zonesigner>
-executions.
+Unless the I<-genkeys>, I<-genksk>, or I<-genzsk> options are specified, the
+last keys generated for a particular zone will be used in subsequent
+I<zonesigner> executions.
 
 =head1 ENTROPY
 
@@ -1805,7 +1794,7 @@ the example.com domain.  Zone data are stored in B<example.com>, and the
 keyrec is in B<example.krf>.  The generated keys, output zone file, and final
 signed zone file will use B<example.com> as a base.  Using this execution:
 
-    # zonesigner -krfile example.krf db.example.com
+    # zonesigner -krfile example.krf example.com db.example.com
 
 the following files are created:
 
