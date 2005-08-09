@@ -40,6 +40,7 @@ my @opts =
 	"expired",			# List expired zone keyrecs.
 
 	"count",			# Only give a count of matching keyrecs.
+	"nodate",			# Don't show the date.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
 
@@ -66,6 +67,7 @@ my $validflag;
 my $expiredflag;
 
 my $cntflag;
+my $nodateflag;
 my $terse;
 my $long;
 
@@ -179,6 +181,7 @@ sub doopts
 	$expiredflag	= $options{'expired'}	|| 0;
 
 	$cntflag	= $options{'count'}	|| 0;
+	$nodateflag	= $options{'nodate'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
 
@@ -595,6 +598,8 @@ sub outkey
 	my $long = shift;		# Long-output label.
 	my $reg	 = shift;		# Regular-output label.
 
+	my $datestr = "";		# Key's date.  Or nothing.
+
 	my %kr = %$kkr;			# Key's keyrec.
 
 	#
@@ -620,6 +625,11 @@ sub outkey
 	}
 
 	#
+	# If -nodate wasn't given, we'll get the key's generation date.
+	#
+	$datestr = "\"$kr{'keyrec_gendate'}\"" if(!$nodateflag);
+
+	#
 	# Give the output line appropriate for output flags.
 	#
 	if($terse)
@@ -628,11 +638,14 @@ sub outkey
 	}
 	elsif($long)
 	{
-		print "$long $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$kr{'ksklength'}\t\"$kr{'keyrec_gendate'}\"\n";
+		my $len = $kr{'ksklength'};		# Key's length.
+		$len = $kr{'zsklength'} if(!defined($kr{'ksklength'}));
+
+		print "$long $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$len\t$datestr\n";
 	}
 	else
 	{
-		print "$reg $k\t$kr{'zonename'}\t\t\"$kr{'keyrec_gendate'}\"\n";
+		print "$reg $k\t$kr{'zonename'}\t\t$datestr\n";
 	}
 }
 
@@ -787,6 +800,10 @@ options aren't given.
 
 The count of matching records will be displayed, but the matching records
 will not be.
+
+=item -nodate
+
+The key's generation date will not be printed if this flag is given.
 
 =item -long
 
