@@ -121,8 +121,8 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 # Zonesigner-specific command line arguments.
 #
 my @zsopts = ( '',
-	       ['GUI:separator', 'Tool specific options:'],
-	       ["rollforce",	 'Force the roll-over of zone keys']
+	       ['GUI:separator',	'Tool specific options:'],
+	       ["forceroll",		'Force the roll-over of zone keys']
 	     );
 
 my $forceroll = 0;			# Force-a-roll-over flag.
@@ -323,9 +323,13 @@ sub optsandargs()
 	}
 
 	#
-	# Get our undocumented options.
+	# Check for the key roll-over flag.
 	#
-	$forceroll = $opts{'rollforce'}	|| 0;
+	$forceroll = 0;
+	if(defined($opts{'forceroll'}))
+	{
+		$forceroll = 1;
+	}
 
 	#
 	# Set up options and values, saving to global scalars and also
@@ -1314,7 +1318,6 @@ EOF
 #		moved to being the published ZSK; if not, a new published
 #		ZSK is generated.  Finally, a new ZSK is generated.
 #
-#		This functionality is not documented in the zonesigner pod.
 #		This should only be used if you know what you're doing.
 #
 sub forceroll
@@ -1680,6 +1683,18 @@ zone will be used.
 
 Generate a new ZSK for the zone.  By default, the last ZSK generated for this
 zone will be used.
+
+=item -forceroll
+
+Force a roll-over of the ZSK keys.  The I<keyrec>s of the ZSK keys are
+adjusted as follows:
+
+    The current ZSK key is marked as obsolete.
+    The published ZSK key is marked as current.
+    The new ZSK key, if it exists, is marked as published.
+    A new ZSK key is generated.
+
+This should only be used if you know what you're doing.
 
 =item -zone
 
