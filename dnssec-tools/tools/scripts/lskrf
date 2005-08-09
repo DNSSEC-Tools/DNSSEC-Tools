@@ -420,7 +420,7 @@ sub showkeys
 		foreach my $k (sort(keys(%kskkeys)))
 		{
 			$krr = $kskkeys{$k};
-			outkey($k,$krr,"KSK-key","KSK");
+			outkey($k,$krr,"KSK-key\t","KSK");
 		}
 	}
 
@@ -641,7 +641,7 @@ sub outkey
 		my $len = $kr{'ksklength'};		# Key's length.
 		$len = $kr{'zsklength'} if(!defined($kr{'ksklength'}));
 
-		print "$long $k\t$kr{'zonename'}\t$kr{'algorithm'}\t$len\t$datestr\n";
+		print "$long\t$k\t$kr{'zonename'}\t$kr{'algorithm'}\t$len\t$datestr\n";
 	}
 	else
 	{
