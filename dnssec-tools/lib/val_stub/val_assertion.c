@@ -509,8 +509,8 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 			    response->di_qnames = (struct qname_chain *) MALLOC (sizeof(struct qname_chain));
 				if (response->di_qnames == NULL) 
 					return OUT_OF_MEMORY;
-				memcpy (response->di_qnames->qc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
-				response->di_qnames->qc_next = NULL;
+				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
+				response->di_qnames->qnc_next = NULL;
 			    response->di_error_message = NULL;
 
 				if(ns_name_ntop(next_q->qc_name_n, name, MAXDNAME-1) == -1) {
@@ -578,7 +578,7 @@ int ask_resolver(val_context_t *context, struct query_chain **queries, int block
 		    retval = val_resquery ( NULL, name, 
 						matched_q->qc_type_h, 
 						matched_q->qc_class_h, 
-						context->resolver_policy, 
+						context->nslist, 
 						response);
 
 			break;
@@ -679,16 +679,16 @@ int name_in_q_names (
                                                                                                                           
     if (q_names_n==NULL) return NOT_IN_QNAMES;
                                                                                                                           
-    if (namecmp(the_set->rrs_name_n, q_names_n->qc_name_n)==0)
+    if (namecmp(the_set->rrs_name_n, q_names_n->qnc_name_n)==0)
         return TOP_OF_QNAMES;
                                                                                                                           
-    temp_qc = q_names_n->qc_next;
+    temp_qc = q_names_n->qnc_next;
                                                                                                                           
     while (temp_qc)
     {
-        if (namecmp(the_set->rrs_name_n, temp_qc->qc_name_n)==0)
+        if (namecmp(the_set->rrs_name_n, temp_qc->qnc_name_n)==0)
             return MID_OF_QNAMES;
-        temp_qc = temp_qc->qc_next;
+        temp_qc = temp_qc->qnc_next;
     }
                                                                                                                           
     return NOT_IN_QNAMES;
@@ -965,10 +965,10 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 	
 		/* Cover error conditions first */
 		/* SOA checks will appear during sanity checks later on */
-		if((	set_ans_kind(response->di_qnames->qc_name_n, type_h, class_h, 
+		if((	set_ans_kind(response->di_qnames->qnc_name_n, type_h, class_h, 
 					as->ac_data, &as->ac_state) == SR_PROCESS_ERROR)
 				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->ac_data, &as->ac_state)
-				|| NSEC_is_wrong_answer (response->di_qnames->qc_name_n, type_h, class_h, 
+				|| NSEC_is_wrong_answer (response->di_qnames->qnc_name_n, type_h, class_h, 
 					as->ac_data, &as->ac_state)) {
 			continue;
 		}
