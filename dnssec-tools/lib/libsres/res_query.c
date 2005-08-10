@@ -25,9 +25,14 @@
 #include <arpa/nameser.h>
 
 #include "resolver.h"
-#include "res_transaction.h"
 #include "res_mkquery.h"
 #include "res_support.h"
+#include "res_tsig.h"
+#include "res_io_manager.h"
+                                                                                                                             
+#ifndef NULL
+#define NULL (void*)0
+#endif
 
 #define ENVELOPE	10
 #define EMSG_MAX   2048
@@ -45,7 +50,8 @@ static int res_sq_set_tsig_msg (char **error_msg, char *msg,
 {
     char    name_h[DNAME_MAX];
                                                                                                                           
-    if (wire_to_ascii_name (name_h, server->ns_name_n, DNAME_MAX)==-1)
+    if ((server->ns_name_n == NULL) ||
+		(wire_to_ascii_name (name_h, server->ns_name_n, DNAME_MAX)==-1))
         strcpy (name_h, "<unprintable>");
                                                                                                                           
     *error_msg = (char *) MALLOC (strlen(msg)+ 2 + strlen(name_h));
@@ -249,14 +255,11 @@ int theres_something_wrong_with_header (    u_int8_t    *response,
 }
 
 
-
-int get (	const char*			name,
-			const u_int16_t		type_h,
-			const u_int16_t		class_h,
-			struct res_policy	*respol,
-            struct name_server  **server,
-			u_int8_t			**response,
-			u_int32_t			*response_length,
+int query_send( const char*     name,
+            const u_int16_t     type_h,
+            const u_int16_t     class_h,
+            struct name_server  *ns,
+			int                 *trans_id,
             char                **error_msg)
 {
 	u_int8_t			query[12+MAXDNAME+4];
@@ -264,16 +267,19 @@ int get (	const char*			name,
 	int					query_length;
 	int					ret_val;
 
+	u_int8_t			*signed_query;
+	int					signed_length;
+
 	struct name_server *ns_list = NULL; 
 
-	if (respol == NULL) 
-		return res_sq_set_message(error_msg,
-					"No reolver policy specified", SR_INTERNAL_ERROR);
+	*trans_id = -1;
 
-	ns_list = respol->ns;
+	if (ns == NULL) 
+		return res_sq_set_message(error_msg,
+					"No name servers specified", SR_INTERNAL_ERROR);
+
 
 	/* Form the query with res_nmkquery_n */
-	
 	query_length = res_nmkquery (&_res, ns_o_query, name, class_h, type_h,
 									NULL, 0, NULL, query, query_limit);
 	_res.options |= RES_USE_DNSSEC;
@@ -285,48 +291,116 @@ int get (	const char*			name,
 	((HEADER *)query)->cd = 1;
 	//((HEADER *)query)->rd = 0;
 
+	/*res_io_stall();*/
 
-/*
-printf ("-----------------------------------------------------------------------------\n");
+	/* XXX clone those and store to ns_list */
+	ns_list = ns;
 
-printf ("The Query:\n");
-print_response (query, query_length);
-*/
-    /* Grab a response from the name server */
-                                                                                                                          
-    if ((ret_val = res_transaction (query, query_length, ns_list, response,
-                                response_length, server)) != SR_TR_RESPONSE)
-        switch (ret_val)
-        {
-            case SR_TR_MEMORY_ERROR:
-                return SR_MEMORY_ERROR;
-                                                                                                                          
-            case SR_TR_NO_ANSWER:
-            case SR_TR_IO_ERROR:
-                return res_sq_set_message(error_msg, "Nothing received",
-                                                    SR_NO_ANSWER);
-            case SR_TR_TSIG_FAILURE:
-                /* *server points to the failed server */
-                return res_sq_set_tsig_msg (error_msg, "TSIG failed for",
-                                                *server, SR_TSIG_ERROR);
-            case SR_TR_CALL_ERROR:
-            case SR_TR_TOO_BUSY:
-            case SR_TR_INTERNAL_ERROR:
-            default:
-                return res_sq_set_message(error_msg,
-                    "Internal error in res_transaction", SR_INTERNAL_ERROR);
-        }
+	/* Loop through the list of destinations */
+	for (ns = ns_list; ns; ns = ns->ns_next)
+	{
+		if ((ret_val = res_tsig_sign(query,query_length,ns,
+					&signed_query,&signed_length)) != SR_TS_OK)
+		{
+			if (ret_val == SR_TS_FAIL)
+				continue;
+			else /* SR_TS_CALL_ERROR */
+			{
+				res_io_cancel (trans_id);
+	               return res_sq_set_message(error_msg,
+    	               "Internal error in query_send", SR_INTERNAL_ERROR);
+			}
+		}
+
+		if ((ret_val = res_io_deliver(trans_id, signed_query,
+						signed_length, ns)) <= 0)
+		{
+
+			if (ret_val == 0) continue;
+
+			res_io_cancel(trans_id);
+
+			if (ret_val == SR_IO_MEMORY_ERROR)
+				return SR_MEMORY_ERROR;
+
+	        return res_sq_set_message(error_msg,
+        	       "Internal error in query_send", SR_INTERNAL_ERROR);
+		}
+
+	}
+
+	return SR_UNSET;
+}
+
+
+int response_recv(int           *trans_id,
+            struct name_server  **respondent,
+			u_int8_t		    **answer,
+			u_int32_t			*answer_length,
+            char                **error_msg)
+{
+	int ret_val;
+
+	/* Prepare the default response */
+	*answer=NULL;
+	*answer_length=0;
+	*respondent=NULL;
+
+	if ((ret_val=res_io_accept(*trans_id,answer,answer_length,respondent))
+			== SR_NO_ANSWER_YET)
+		return ret_val;
+		
+	res_io_cancel (trans_id);
+
+	if (ret_val == SR_IO_INTERNAL_ERROR) 
+    	return res_sq_set_message(error_msg,
+    		"Internal error in response_recv", SR_INTERNAL_ERROR);
+
+	if ((ret_val == SR_IO_SOCKET_ERROR) ||
+	   (ret_val == SR_IO_NO_ANSWER))
+    	return res_sq_set_message(error_msg, "Nothing received", SR_NO_ANSWER);
+
+	/* ret_val is SR_IO_GOT_ANSWER */
+	if ((ret_val = res_tsig_verifies (*respondent, *answer, *answer_length))==SR_TS_OK) {
+    	/* Check the header fields */
+    	if ((ret_val = theres_something_wrong_with_header (*answer,
+                                    *answer_length, error_msg))!=SR_UNSET)
+        	return ret_val;
 /*
 printf ("The Response: ");
 printf (":\n");
-print_response (*response, *response_length);
+print_response (*answer, *answer_length);
 */
-    /* Check the header fields */
-                                                                                                                          
-    if ((ret_val = theres_something_wrong_with_header (*response,
-                                    *response_length, error_msg))!=SR_UNSET)
-        return ret_val;
+		return SR_UNSET;
+	}
+	else if (ret_val == SR_TS_FAIL)
+    	/* *server points to the failed server */
+    		return res_sq_set_tsig_msg (error_msg, "TSIG failed for",
+    			*respondent, SR_TSIG_ERROR);
+	else
+            return res_sq_set_message(error_msg,
+                   "Internal error in response_recv", SR_INTERNAL_ERROR);
+}
 
+
+int get (   const char*         name,
+            const u_int16_t     type_h,
+            const u_int16_t     class_h,
+            struct name_server  *nslist,
+            struct name_server  **server,
+            u_int8_t            **response,
+            u_int32_t           *response_length,
+            char                **error_msg)
+{
+    int ret_val;
+    int trans_id;
+                                                                                                                             
+    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id, error_msg))) {
+        do {
+            ret_val = response_recv(&trans_id, server, response, response_length, error_msg);
+        } while (ret_val == SR_NO_ANSWER_YET);
+    }
+                                                                                                                             
     return ret_val;
-}                                                                                                                          
+}
 
