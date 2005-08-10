@@ -89,26 +89,26 @@ void dump_dinfo(struct domain_info *dinfo)
     while (qc) {
 	val_log("    0x");
 	for (i=0; i<MAXDNAME; i++) {
-	    val_log("%02x", qc->qc_name_n[i]);
-	    if (qc->qc_name_n[i] == 0x00) {
+	    val_log("%02x", qc->qnc_name_n[i]);
+	    if (qc->qnc_name_n[i] == 0x00) {
 		break;
 	    }
 	}
 	val_log("\n");
 	val_log("      ");
 	for (i=0; i<MAXDNAME; i++) {
-	    if (isprint(qc->qc_name_n[i])) {
-		val_log(" %c", qc->qc_name_n[i]);
+	    if (isprint(qc->qnc_name_n[i])) {
+		val_log(" %c", qc->qnc_name_n[i]);
 	    }
 	    else {
 		val_log("  ");
 	    }
-	    if (qc->qc_name_n[i] == 0x00) {
+	    if (qc->qnc_name_n[i] == 0x00) {
 		break;
 	    }
 	}
 	val_log("\n");
-	qc = qc->qc_next;
+	qc = qc->qnc_next;
     }
 
     val_log("  rrset =\n");
