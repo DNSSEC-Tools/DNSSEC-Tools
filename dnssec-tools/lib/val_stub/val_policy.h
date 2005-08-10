@@ -8,9 +8,23 @@
 #define END_STMT ';'
 #define MAX_LEVEL_IN_POLICY	5
 #define TOKEN_MAX 2048
+#define DEFAULT_ZONE	"."
+#define NS_PORT	53
 
-int read_config_file(val_context_t *ctx, const char *scope);
-void destroy_policy(val_context_t *ctx);
+#define OVERRIDE_POLICY(ctx, override)   do {		\
+	struct policy_list *c;							\
+	if (ctx && override) {							\
+		ctx->cur_override = override;				\
+		for (c = override->plist; c; c = c->next)	\
+			ctx->e_pol[c->index] = c->pol;			\
+	}												\
+} while (0)
+
+int read_res_config_file(val_context_t *ctx);
+int read_val_config_file(val_context_t *ctx, const char *scope);
+void destroy_valpol(val_context_t *ctx);
+void destroy_respol(val_context_t *ctx);
+int switch_effective_policy(val_context_t *ctx, const char *label);
 
 int parse_trust_anchor(FILE*, policy_entry_t*, int*);
 int free_trust_anchor(policy_entry_t*);
@@ -45,6 +59,16 @@ int parse_dlv_max_links(FILE*, policy_entry_t*, int*);
 int free_dlv_max_links(policy_entry_t*);
 #endif
 
+/*
+ * fragment of the configuration file containing 
+ * one policy chunk
+ */
+struct policy_fragment {
+	char *label;
+	int label_count;
+	int index;
+	policy_entry_t pol;
+};
 
 struct policy_conf_element {
 	char *keyword;
