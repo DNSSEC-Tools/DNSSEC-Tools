@@ -50,8 +50,6 @@ int res_tsig_sign(
 }
 
 int res_tsig_verifies(
-			u_int8_t *signed_query,
-			int signed_length,
 			struct name_server *respondent,
 			u_int8_t *answer,
 			int answer_length)
