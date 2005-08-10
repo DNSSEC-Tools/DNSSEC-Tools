@@ -11,7 +11,7 @@ int val_resquery ( 	val_context_t			*context,
 					const char              *domain_name,
                     const u_int16_t         type,
                     const u_int16_t         class,
-					struct res_policy 		*respol, 
+					struct name_server      *nslist,
 					struct domain_info      *response);
 
 #endif /* VAL_RESQUERY_H */
