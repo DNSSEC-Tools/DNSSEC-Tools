@@ -26,7 +26,7 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-
+#include "validator.h"
 #include "val_support.h"
 #include "val_log.h"
 
