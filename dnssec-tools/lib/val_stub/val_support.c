@@ -27,10 +27,10 @@
 
 #include <resolver.h>
 
+#include "validator.h"
 #include "val_support.h"
 #include "val_errors.h"
 #include "val_log.h"
-#include "validator.h"
 
 int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
 {
@@ -202,9 +202,9 @@ int add_to_qname_chain (  struct qname_chain  **qnames,
                                                                                                                           
     if (temp==NULL) return SR_MEMORY_ERROR;
                                                                                                                           
-    memcpy (temp->qc_name_n, name_n, wire_name_length(name_n));
+    memcpy (temp->qnc_name_n, name_n, wire_name_length(name_n));
                                                                                                                           
-    temp->qc_next = *qnames;
+    temp->qnc_next = *qnames;
     *qnames = temp;
                                                                                                                           
     return SR_UNSET;
@@ -218,18 +218,18 @@ int qname_chain_first_name (struct qname_chain *qnames, const u_int8_t *name_n)
     if (qnames == NULL || name_n==NULL) return FALSE;
                                                                                                                           
     qc = qnames;
-    while (qc != NULL && namecmp(qc->qc_name_n,name_n)!=0)
-        qc = qc->qc_next;
+    while (qc != NULL && namecmp(qc->qnc_name_n,name_n)!=0)
+        qc = qc->qnc_next;
                                                                                                                           
-    return (qc!=NULL && qc->qc_next==NULL);
+    return (qc!=NULL && qc->qnc_next==NULL);
 }
 
 void free_qname_chain (struct qname_chain **qnames)
 {
     if (qnames==NULL || (*qnames)==NULL) return;
                                                                                                                           
-    if ((*qnames)->qc_next)
-        free_qname_chain (&((*qnames)->qc_next));
+    if ((*qnames)->qnc_next)
+        free_qname_chain (&((*qnames)->qnc_next));
                                                                                                                           
     FREE (*qnames);
     (*qnames) = NULL;
