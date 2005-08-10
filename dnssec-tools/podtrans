@@ -159,10 +159,13 @@ sub sortpod
 		#
 		next if(($pf =~ /^Makefile/)	||
 			($pf =~ /\/blib\//)	||
+			($pf =~ /\.bz2$/)	||
+			($pf =~ /\.gz$/)	||
 			($pf =~ /\.key$/)	||
+			($pf =~ /\.o$/)		||
 			($pf =~ /\.private$/)	||
 			($pf =~ /\.tar$/)	||
-			($pf =~ /\.o\$/)
+			($pf =~ /\.zip$/)
 		       );
 
 		#
