@@ -9,8 +9,8 @@
 #include <arpa/nameser.h>
 #include <stdlib.h>
 
-//#define VAL_CONFIGURATION_FILE	"/etc/security/dnsval.conf"
-#define VAL_CONFIGURATION_FILE	"dnsval.conf"
+#define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
+#define RESOLV_CONF             "/etc/resolv.conf"
 
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
@@ -99,16 +99,6 @@
  */
 
 
-/*
- * fragment of the configuration file containing 
- * one policy chunk
- */
-struct policy_fragment {
-	char *label;
-	int label_count;
-	int index;
-	policy_entry_t pol;
-};
 
 struct policy_list {
 	int index; 
@@ -127,9 +117,10 @@ struct policy_overrides{
 	struct policy_overrides *next;
 };
 
+
 typedef struct val_context {
 	/* resolver policy */
-	struct res_policy *resolver_policy;
+	struct name_server *nslist;
 
 	/* validator policy */
 	policy_entry_t e_pol[MAX_POL_TOKEN];
@@ -168,5 +159,20 @@ struct response_t {
 	int validation_result;
 };
 
+struct qname_chain
+{
+    u_int8_t        qnc_name_n[MAXDNAME];
+    struct qname_chain  *qnc_next;
+};
+
+struct domain_info
+{
+    char          *di_requested_name_h;
+    u_int16_t       di_requested_type_h;
+    u_int16_t       di_requested_class_h;
+    struct  rrset_rec   *di_rrset;
+    struct qname_chain  *di_qnames;
+    char            *di_error_message;
+};
 
 #endif /* VALIDATOR_H */
