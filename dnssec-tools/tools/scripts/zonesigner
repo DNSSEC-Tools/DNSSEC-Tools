@@ -38,6 +38,7 @@ my $VERBOSE_HIGH   = 3;			# High verbosity level.
 #
 my $CP		= "/bin/cp";
 my $DATE	= "/bin/date";
+my $MKDIR	= "/bin/mkdir";
 my $MV		= "/bin/mv";
 
 #
@@ -372,6 +373,19 @@ sub optsandargs()
 	}
 
 	$gends	 = "-g"		 if($gends ne "");
+
+	#
+	# Ensure that the ZSK archive directory is a real directory,
+	# if it already exists.
+	#
+	if($archdir ne "")
+	{
+		if((-e $archdir) && (! -d $archdir))
+		{
+			print STDERR "ZSK archive directory $archdir is not a directory\n";
+			exit(1);
+		}
+	}
 
 	#
 	# Set up flags for various helpful messages.
@@ -1356,6 +1370,31 @@ sub forceroll
 	keyrec_setval("key",$krref->{'keyrec_name'},"keyrec_type","zskobs");
 	keyrec_setval("key",$krref->{'keyrec_name'},"keypath",$zoneref->{'zskcurpath'});
 	print "\tcurrent ZSK ($krref->{'keyrec_name'}) now obsolete\n" if($verbose > $VERBOSE_LOW);
+
+	#
+	# If we're supposed to archive the keys, we'll move the obsolete
+	# key off to the archive directory.
+	#
+	if($savekeys)
+	{
+		my $kn = $krref->{'keyrec_name'};	# Base name of keys.
+
+		if(! -e $archdir)
+		{
+			print "creating ZSK archive directory $archdir\n\n" if($verbose);
+			system("$MKDIR -p -m 0700 $archdir");
+		}
+		else
+		{
+			if(! -d $archdir)
+			{
+				print STDERR "ZSK archive directory $archdir is not a directory; not archiving old ZSK key\n";
+			}
+		}
+
+		print "\tmoving $kn to $archdir\n\n" if($verbose > $VERBOSE_LOW);
+		system("$MV $kn.* $archdir");
+	}
 
 	#
 	# Convert the published ZSK into the current ZSK.
