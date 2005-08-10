@@ -18,6 +18,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "validator.h"
 #include "val_support.h"
 #include "val_resquery.h"
 #include "val_parse.h"
@@ -27,7 +28,6 @@
 #include "val_log.h"
 
 #define AUTH_ZONE_INFO          "*"                      /* any zone */
-#define RESOLV_CONF             "/etc/resolv.conf"
 
 #define PUT_FIELD(field,fieldlen,buf,indexptr,buflen) do { \
             if ((*indexptr) > (buflen)) {index = -1; goto cleanup;} \
@@ -36,11 +36,10 @@
 	    (*indexptr) += (fieldlen); \
 } while(0);
 
-static struct res_policy respol;
 static int res_policy_set = 0;
 
 /* Initialize the Resolver Policy */
-static int init_respol(struct res_policy *respol)
+static int init_respol(struct name_server **nslist)
 {
     struct sockaddr_in my_addr;
     struct in_addr  address;
@@ -54,12 +53,10 @@ static int init_respol(struct res_policy *respol)
     int read;
     char white[] = " \t\n";
     
-    if(respol == NULL) 
-	return SR_CALL_ERROR;
-    
     head_ns = NULL;
     tail_ns = NULL;
-    
+	*nslist = NULL;   
+ 
     fp = fopen(RESOLV_CONF, "r");
     
     if (fp == NULL)
@@ -117,7 +114,7 @@ static int init_respol(struct res_policy *respol)
     if (line) free(line);
     if (fp) fclose(fp);
     
-    respol->ns = head_ns;
+    *nslist = head_ns;
     res_policy_set = 1;
     return SR_UNSET;
 }
@@ -130,12 +127,12 @@ static void destroy_respol(struct res_policy *respol)
 */
 
 static void fetch_dnskeys(val_context_t *ctx, const char *dname,
-			  u_int16_t class, struct res_policy *respol)
+			  u_int16_t class, struct name_server *nslist)
 {
 //    struct rrset_rec *oldkeys;
     struct domain_info dnskey_response;
     bzero(&dnskey_response, sizeof(dnskey_response));
-    val_resquery (NULL, dname, ns_t_dnskey, class, respol, &dnskey_response);
+    val_resquery (NULL, dname, ns_t_dnskey, class, nslist, &dnskey_response);
 }
 
 
@@ -367,14 +364,14 @@ int _val_query ( const char *dname, int class, int type,
     *dnssec_status = INTERNAL_ERROR;
 
     if (!res_policy_set) {
-	if ((ret_val = init_respol(&respol)) != SR_UNSET) {
+	if ((ret_val = init_respol(&ctx.nslist)) != SR_UNSET) {
 	    val_log("_val_query(): error initializing resolver policy\n");
 	    h_errno = NETDB_INTERNAL;
 	    return -1;
 	}
     }
     
-    ret_val = val_resquery ( &ctx, dname, type, class, &respol, response); 
+    ret_val = val_resquery ( &ctx, dname, type, class, ctx.nslist, response); 
     val_log("\nval_resquery returned %d\n", ret_val);
     val_log("response = \n");
     dump_dinfo(response);
@@ -394,7 +391,7 @@ int _val_query ( const char *dname, int class, int type,
 		val_log("\nQuerying the domain %s for DNSKEY records.\n",
 		       dname);
 		
-		fetch_dnskeys(&ctx, dname, class, &respol);
+		fetch_dnskeys(&ctx, dname, class, ctx.nslist);
 	    }
 	    if (strchr(dname, dot)) {
 		dname = strchr(dname, dot) + 1;
