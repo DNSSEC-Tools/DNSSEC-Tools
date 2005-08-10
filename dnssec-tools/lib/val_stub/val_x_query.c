@@ -10,6 +10,7 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
+#include "validator.h"
 
 #include "val_support.h"
 #include "val_zone.h"
@@ -19,7 +20,6 @@
 #include "val_x_query.h"
 #include "val_verify.h"
 #include "val_context.h"
-#include "validator.h"
 #include "val_log.h"
 #include "val_api.h"
 #include "val_assertion.h"
