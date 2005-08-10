@@ -26,6 +26,7 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
+#include "validator.h"
 
 #include "val_support.h"
 #include "val_zone.h"
@@ -52,8 +53,7 @@ void *weird_al_realloc (void *old, size_t new_size)
 }
 
 int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_list,
-			u_int8_t *zone_name, struct res_policy *respol, 
-			struct rrset_rec *unchecked_zone_info)
+			u_int8_t *zone_name, struct rrset_rec *unchecked_zone_info)
 {
     /* Look through the unchecked_zone stuff for answers */
     struct rrset_rec    *unchecked_set;
@@ -246,7 +246,7 @@ ns_name);
 
 }
             ret_val = val_resquery (context, ns_name, ns_t_a, ns_c_in,
-                        respol, &di);
+                        NULL, &di);
                                                                                                                           
             /* If answer is good, then use the A records to build the
                 address(es) */
