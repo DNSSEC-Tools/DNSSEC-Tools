@@ -1,0 +1,346 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# podtrans
+#
+#	This script searches a file hierarchy for files containing pod
+#	and converts them into a readable form.  The readable form is
+#	saved into an output directory.
+#
+
+use strict;
+
+
+use File::Basename;
+
+#
+# Set a few "constants."
+#
+my $ME	   = "$0";
+
+my $FIND   = "/usr/bin/find";
+my $MV	   = "/bin/mv";
+my $RM	   = "/bin/rm";
+
+#
+# Translation commands.
+#
+my $PERLDOC	= "perldoc";
+my $POD2HTML	= "pod2html";
+my $POD2LATEX	= "pod2latex";
+my $POD2MAN	= "pod2man";
+
+#
+# Variables needed here and there.
+#
+my @podfiles;					# Files which contain pod.
+my %nodes;					# Pod-file/output-file hash.
+
+main();
+exit(0);
+
+#######################################################################
+#
+# Routine:      checkdir()
+#
+sub main
+{
+	my $argc = @ARGV;			# Argument count.
+
+	my $startdir;				# Hierarchy to search.
+	my $outdir;				# Output directory.
+	my $method;				# Translation method.
+
+	#
+	# Add a default translation method, if needed.
+	#
+	if($argc == 2)
+	{
+		push(@ARGV,"text");
+		$argc = @ARGV;
+	}
+
+	#
+	# Ensure we have arguments.
+	#
+	usage() if($argc != 3);
+
+	#
+	# Get the arguments.
+	#
+	$startdir = checkdir($ARGV[0]);
+	$outdir	  = checkdir($ARGV[1]);
+	$method	  = checkmethod($ARGV[2]);
+
+	#
+	# Find all the files that seem to contain pod.
+	#
+	print "searching for pod files\t(this may take a few moments)\n";
+	@podfiles = `$FIND $startdir -type f -exec egrep -l =pod \\{\\} \\\;`;
+
+	#
+	# Save off the valid names.  Skip several specific file types.
+	#
+	sortpod($outdir);
+
+	#
+	# Translate the pod into something else.
+	#
+	podtrans($method);
+
+}
+
+#######################################################################
+#
+# Routine:      checkdir()
+#
+sub checkdir
+{
+	my $dir = shift;			# Directory to check.
+
+	#
+	# Make sure the name exists.  If not, we'll create it.
+	# If it exists and isn't a directory, we'll whine and exit.
+	#
+	if(! -e $dir)
+	{
+		print "directory \"$dir\" does not exist; creating...\n";
+		mkdir($dir);
+	}
+	elsif(! -d $dir)
+	{
+		print STDERR "\"$dir\" is not a directory\n";
+		exit(1);
+	}
+
+	return($dir);
+}
+
+#######################################################################
+#
+# Routine:      checkmethod()
+#
+sub checkmethod
+{
+	my $method = shift;			# Method to check.
+
+	if(($method ne "latex")	&&
+	   ($method ne "text")	&&
+	   ($method ne "html")	&&
+	   ($method ne "man"))
+	{
+		print STDERR "invalid translation method \"$method\"\n";
+		exit(1);
+	}
+
+	return($method);
+}
+
+#######################################################################
+#
+# Routine:      sortpod()
+#
+sub sortpod
+{
+	my $outdir = shift;			# Output directory.
+
+	print "sorting the pod-enabled files\n";
+	foreach my $pf (@podfiles)
+	{
+		my $node;			# Basename of found file.
+		my $outfile;			# Output filename.
+
+		$pf =~ s/\n//;			# Delete trailing newlines.
+
+		#
+		# Skip several known files and types.
+		#
+		next if(($pf =~ /^Makefile/)	||
+			($pf =~ /\/blib\//)	||
+			($pf =~ /\.key$/)	||
+			($pf =~ /\.private$/)	||
+			($pf =~ /\.tar$/)	||
+			($pf =~ /\.o\$/)
+		       );
+
+		#
+		# Don't do anything with our own self.
+		#
+		$node = basename($pf);
+		next if($node eq $ME);
+
+		#
+		# Build and save the output filename.
+		#
+		$outfile = $pf;
+		$outfile =~ s/\//::/g;
+		$nodes{$pf} = "$outdir/$outfile";
+	}
+}
+
+#######################################################################
+#
+# Routine:      podtrans()
+#
+sub podtrans
+{
+	my $method = shift;			# Translation method.
+
+	print "converting pod files\n";
+	foreach my $node (sort(keys(%nodes)))
+	{
+		my $out = $nodes{$node};
+
+		print "\t$node\n";
+
+		trans_latex($node,$out) if($method eq "latex");
+		trans_text($node,$out)  if($method eq "text");
+		trans_html($node,$out)  if($method eq "html");
+		trans_man($node,$out)   if($method eq "man");
+
+	}
+}
+
+#######################################################################
+#
+# Routine:      trans_html()
+#
+sub trans_html
+{
+	my $node = shift;			# File to translate.
+	my $out = shift;			# Translated file's name.
+
+	system("$POD2HTML --outfile $out.html $node");
+	system("$RM -f pod2htm?.tmp");
+}
+
+#######################################################################
+#
+# Routine:      trans_latex()
+#
+sub trans_latex
+{
+	my $node = shift;			# File to translate.
+	my $out = shift;			# Translated file's name.
+
+	system("$POD2LATEX -out $out.tex $node");
+}
+
+#######################################################################
+#
+# Routine:      trans_man()
+#
+sub trans_man
+{
+	my $node = shift;			# File to translate.
+	my $out = shift;			# Translated file's name.
+
+	system("$POD2MAN $node $out.man");
+}
+
+#######################################################################
+#
+# Routine:      trans_text()
+#
+sub trans_text
+{
+	my $node = shift;			# File to translate.
+	my $out = shift;			# Translated file's name.
+
+	system("$PERLDOC -t $node > $out.txt");
+}
+
+#######################################################################
+#
+# Routine:      usage()
+#
+sub usage
+{
+	print STDERR "usage:  podtrans <startdir> <outdir> [translator]\n";
+	exit(1);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+podtrans - Converts all pod files in a file hierarchy and saves the converted text.
+
+=head1 SYNOPSIS
+
+  podtrans <start-directory> <results-directory> [translator]
+
+=head1 DESCRIPTION
+
+I<podtrans> searches a file hierarchy for files containing POD and
+translates the POD into a readable form.  The readable form is saved
+into an output directory.  The conversion is performed by I<perldoc -t>.
+
+Files are ignored if the fit any of these characteristics:
+
+    - start with "Makefile"
+    - contain "/blib/"
+    - end with ".key"
+    - end with ".private"
+    - end with ".tar"
+    - end with ".o\"
+    - the final filename is "podtrans"
+
+The I<start-directory> argument is the path from which I<podtrans> starts
+searching for POD files.
+
+The I<results-directory> argument is the path in which I<podtrans> stores
+its translated POD files.  The output directory will be created if it does
+not exist.  Any path separators in the found files are converted into a pair
+of colons for the output filename.
+
+The I<translator> method must be one of the following:
+
+=over 4
+
+=item B<html>
+
+The file is translated into HTML using B<pod2html>.
+The output file is given a file extension of B<.html>.
+
+=item B<latex>
+
+The file is translated into LaTeX using B<pod2latex>.
+The output file is given a file extension of B<.tex>.
+
+=item B<man>
+
+The file is translated into a man page using B<pod2man>.
+The output file is given a file extension of B<.man>.
+
+=item B<text>
+
+The file is translated into LaTeX using B<pod2latex>.
+The output file is given a file extension of B<.txt>.
+This is the default method.
+
+=back
+
+For example, B<src/utils/testprog> contains POD.  Executing this command:
+
+    podtrans src outdir
+
+will convert the pod in B<src/utils/testprog> and place it in the file
+B<outdir/src::src::utils::testprog>.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+perldoc(1)
+
+=cut
