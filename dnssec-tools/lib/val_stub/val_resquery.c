@@ -143,20 +143,18 @@ int do_referral(		val_context_t		*context,
                         struct rrset_rec    **answers,
                         struct rrset_rec    **learned_zones,
                         struct qname_chain  **qnames,
-						struct res_policy 	*respol,
 						char                **error_msg)
 {
-	struct name_server *ns_list;
+	struct name_server *ref_ns_list;
 	struct domain_info  ref_resp;
     struct rrset_rec    *ref_rrset;
     struct rrset_rec    *ans_tail;
     int                 ret_val;
-	struct res_policy respolnew;
    
 	char referral_name[MAXDNAME];
 	u_int8_t    referral_name_n[MAXDNAME];
-    memcpy (referral_name_n, (*qnames)->qc_name_n,
-                        wire_name_length ((*qnames)->qc_name_n));
+    memcpy (referral_name_n, (*qnames)->qnc_name_n,
+                        wire_name_length ((*qnames)->qnc_name_n));
                                                                                                                        
     /* Register the request name and zone with our referral monitor */
     /* If this request has already been made then Referral Error */
@@ -170,25 +168,24 @@ int do_referral(		val_context_t		*context,
    }
 		
    /* Get an NS list for the referral zone */
-   if ((ret_val=res_zi_unverified_ns_list (context, &ns_list, referral_zone_n, respol, *learned_zones))
+   if ((ret_val=res_zi_unverified_ns_list (context, &ref_ns_list, referral_zone_n, *learned_zones))
                 != SR_UNSET)
    {
        if (ret_val == SR_MEMORY_ERROR) return SR_MEMORY_ERROR;
    }
 
-   if (ns_list == NULL)
+   if (ref_ns_list == NULL)
    {
 		free_qname_chain (qnames);
         return res_sq_set_message (error_msg, "Referral failed",
                 SR_REFERRAL_ERROR);
    }
-   /* Call val_resquery for the (maybe new name and) ns_list */
-                                                                                                                          
+   /* Call val_resquery for the (maybe new name and) ref_ns_list */
    memset (&ref_resp, 0, sizeof (struct domain_info));
                                                                                                                           
 	if(ns_name_ntop(referral_name_n,referral_name, MAXDNAME-1) == -1)
 	{
-		free_name_servers (&ns_list);
+		free_name_servers (&ref_ns_list);
 		return -1;
 	}
 
@@ -199,12 +196,10 @@ ns_name_ntop(referral_zone_n,debug_name2,1024);
 val_log ("QUERYING: '%s.' (referral to %s)\n",
 referral_name, debug_name2);
 }
-	// XXX Other fields from respol must be copied into respolnew
-	respolnew.ns = ns_list;
     ret_val = val_resquery (context, referral_name, query_type_h,
-                               query_class_h, &respolnew, &ref_resp);
-   
-	free_name_servers (&ns_list);
+                               query_class_h, ref_ns_list, &ref_resp);
+	//XXX Merge other settings from context->nslist to ref_ns_list
+	free_name_servers (&ref_ns_list);
                                                                                                                   
     if (ret_val == SR_MEMORY_ERROR) return SR_MEMORY_ERROR;
                                                                                                                           
@@ -283,7 +278,6 @@ int digest_response (   val_context_t 		*context,
                         u_int16_t           query_class_h,
                         struct rrset_rec    **answers,
                         struct qname_chain  **qnames,
-						struct res_policy 	*respol, 
                         u_int8_t            *response,
                         u_int32_t           response_length,
                         int                 tsig_trusted,
@@ -395,7 +389,7 @@ int digest_response (   val_context_t 		*context,
             if (type_h == ns_t_cname &&
                     query_type_h != ns_t_cname &&
                     query_type_h != ns_t_any &&
-                    namecmp((*qnames)->qc_name_n,name_n)==0)
+                    namecmp((*qnames)->qnc_name_n,name_n)==0)
                 if((ret_val=add_to_qname_chain(qnames,rdata))!=SR_UNSET)
                     return SR_MEMORY_ERROR;
                                                                                                                           
@@ -459,7 +453,7 @@ int digest_response (   val_context_t 		*context,
 
 	if (referral_seen)
 		ret_val = do_referral(context, referral_zone_n, query_type_h, query_class_h,
-					answers, &learned_zones, qnames, respol, error_msg);
+					answers, &learned_zones, qnames, error_msg);
 	else
 		ret_val = SR_UNSET;
 
@@ -471,12 +465,11 @@ int digest_response (   val_context_t 		*context,
 }
 
 
-
 int val_resquery ( 	val_context_t			*context,
 					const char              *domain_name,
                     const u_int16_t         type,
                     const u_int16_t         class,
-					struct res_policy 		*respol, 
+					struct name_server 		*pref_nslist, 
 					struct domain_info      *response)
 {
     struct name_server  *server = NULL;
@@ -509,8 +502,22 @@ int val_resquery ( 	val_context_t			*context,
 
                                                                                                                           
     /* Get a (set of) answer(s) from the default NS's */
+
+	/* If nslist is NULL, read the cached zones and name servers
+	 * in context to create the nslist
+	 */
+	struct name_server *nslist;
+	if (pref_nslist == NULL) {
+		// XXX Identify which are relevant and create the ns_list
+		// XXX look into the cache also
+		nslist = context->nslist;
+	}
+	else {
+		nslist = pref_nslist;
+	}
+
     if ((ret_val = get (domain_name, type, class,  
-								respol, &server, 
+								nslist, &server, 
 								&response_data, &response_length,
                                 &response->di_error_message)) != SR_UNSET)
 		return ret_val;
@@ -521,7 +528,7 @@ int val_resquery ( 	val_context_t			*context,
         return (SR_CALL_ERROR);
 
     if ((ret_val = digest_response (context, domain_name_n, type, class, 
-                    &answers, &qnames, respol, response_data, response_length,
+                    &answers, &qnames, response_data, response_length,
                     tsig_trusted, &response->di_error_message)) != SR_UNSET)
     {
         FREE (response_data);
