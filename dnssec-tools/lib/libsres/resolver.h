@@ -45,6 +45,11 @@
 #define ZONE_USE_NOTHING        0x00000000
 #define ZONE_USE_TSIG           0x00000001
 
+
+#define SR_ZI_STATUS_UNSET      0
+#define SR_ZI_STATUS_PERMANENT      1
+#define SR_ZI_STATUS_LEARNED        2
+
 /* Credibility values of an RRset - from DNSIND-Clarify */
 #define SR_CRED_UNSET            0
 #define SR_CRED_FILE             1 /* From locally trusted file */
@@ -80,7 +85,6 @@
 #define SR_TSIG_PROTECTED_NXT       SR_TSIG_PROTECTED + SR_ANS_NACK_NXT
 #define SR_TSIG_PROTECTED_SOA       SR_TSIG_PROTECTED + SR_ANS_NACK_SOA
 
-#define SR_WRONG 35
  
 #define EDNS_UDP_SIZE 4096 
 #define DNAME_MAX	1024
@@ -118,12 +122,12 @@
 #define SR_DATA_MISSING_ERROR       10
 #define SR_REFERRAL_ERROR       11
 #define SR_NO_ANSWER    12
+#define SR_NO_ANSWER_YET    13
 #define SR_EMPTY_NXDOMAIN       60
+#define SR_WRONG 35
 /* Unstable states (i.e., used internally only) */
 #define SR_DATA_UNCHECKED       66
 #define SR_PROCESS_ERROR    -9
-
-
 
 struct name_server
 {
@@ -161,32 +165,22 @@ struct rrset_rec
     struct rrset_rec    *rrs_next;
 };
 
-struct qname_chain
-{
-    u_int8_t        qc_name_n[MAXDNAME];
-    struct qname_chain  *qc_next;
-};
-
-struct domain_info
-{
-    char          *di_requested_name_h;
-    u_int16_t       di_requested_type_h;
-    u_int16_t       di_requested_class_h;
-    struct  rrset_rec   *di_rrset;
-    struct qname_chain  *di_qnames;
-    char            *di_error_message;
-};
-
-struct res_policy {
-	struct name_server *ns;
-};
-
-
 /* Interfaces to the resolver */
+int query_send( const char*     name,
+            const u_int16_t     type_h,
+            const u_int16_t     class_h,
+            struct name_server  *nslist,
+			int                 *trans_id,
+            char                **error_msg);
+int response_recv(int           *trans_id,
+            struct name_server  **respondent,
+			u_int8_t		    **answer,
+			u_int32_t			*answer_length,
+            char                **error_msg);
 int get (   const char      *name_n,
             const u_int16_t     type_h,
             const u_int16_t     class_h,
-            struct res_policy   *respol,
+            struct name_server  *nslist,
             struct name_server  **server,
             u_int8_t            **response,
             u_int32_t           *response_length,
