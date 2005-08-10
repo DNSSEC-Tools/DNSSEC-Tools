@@ -15,6 +15,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "val_parse.h"
 #include "val_errors.h"
@@ -69,6 +72,7 @@ static struct policy_conf_element conf_elem_array[] = {
 #endif
 };
 
+
 int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 {
 	char token[TOKEN_MAX];
@@ -90,7 +94,7 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 		if (endst) {
 			if (!strcmp(token, ""))
 				break;
-			/* missing a public key */
+			/* missing the zone name */
 			return CONF_PARSE_ERROR;
 		}
 
@@ -575,7 +579,7 @@ static int store_policy_overrides(val_context_t *ctx, struct policy_fragment **p
 	return NO_ERROR;
 }
 
-void destroy_policy(val_context_t *ctx)
+void destroy_valpol(val_context_t *ctx)
 {
     int i;
     struct policy_overrides *cur;
@@ -595,7 +599,7 @@ void destroy_policy(val_context_t *ctx)
 /*
  * Make sense of the validator configuration file
  */
-int read_config_file(val_context_t *ctx, const char *scope)
+int read_val_config_file(val_context_t *ctx, const char *scope)
 {
 	FILE *fp;
 	struct policy_fragment *pol_frag = NULL;
@@ -603,7 +607,7 @@ int read_config_file(val_context_t *ctx, const char *scope)
 	int line_number = 1;
 
 	/* free up existing policies */
-	destroy_policy(ctx);
+	destroy_valpol(ctx);
 
 	fp = fopen(VAL_CONFIGURATION_FILE, "r");
 	if (fp == NULL) {
@@ -621,3 +625,145 @@ int read_config_file(val_context_t *ctx, const char *scope)
 	printf ("Error in line %d of file %s\n", line_number, VAL_CONFIGURATION_FILE);
 	return retval;
 }	
+
+int switch_effective_policy(val_context_t *ctx, const char *label)
+{
+	struct policy_overrides *cur, *t;
+	if (ctx) {
+		for(cur = ctx->pol_overrides; 
+			 cur && !strcmp(cur->label, label); 
+			  cur = cur->next); 
+		if (cur) {
+			for (t = ctx->pol_overrides; t != cur->next; t = t->next)
+				OVERRIDE_POLICY(ctx, t);
+			return NO_ERROR;
+		}
+	}
+	return UNKNOWN_LOCALE;
+}
+
+
+/*
+ ****************************************************
+ * Following routines handle parsing of the resolver 
+ * configuration file
+ ****************************************************
+ */
+
+void destroy_respol(val_context_t *ctx)
+{
+	free_name_servers(&ctx->nslist);
+}
+
+
+static int init_respol(struct name_server **nslist)
+{
+	struct sockaddr_in my_addr;
+	struct in_addr  address;
+	char auth_zone_info[MAXDNAME];
+    FILE * fp;
+    char * line = NULL;
+    size_t len = 0;
+    int read;
+	struct name_server *ns_head = NULL;
+	struct name_server *ns = NULL;
+
+	*nslist = NULL;
+
+	strcpy(auth_zone_info, DEFAULT_ZONE);
+
+	fp = fopen(RESOLV_CONF, "r");
+	if (fp == NULL){
+		perror(RESOLV_CONF);
+		return NO_POLICY;
+	}
+	while ((read = getline(&line, &len, fp)) != -1) {
+                                                                                                                             
+		char *buf = NULL;
+		char *cp = NULL;
+    	char white[] = " \t\n";
+
+		if (strstr(line, "nameserver") == line) {
+
+			strtok_r(line, white, &buf);
+			cp = strtok_r(NULL, white, &buf);
+			if (cp == NULL) {
+				perror(RESOLV_CONF);
+				goto err;
+			}
+
+			ns = (struct name_server *) MALLOC (sizeof(struct name_server));
+			if (ns == NULL)
+				goto err;
+
+			/* Convert auth_zone_info to its on-the-wire format */
+
+			ns->ns_name_n = (u_int8_t *) MALLOC (MAXCDNAME);
+			if(ns->ns_name_n == NULL) 
+				return SR_MEMORY_ERROR;
+   			if (ns_name_pton(auth_zone_info, ns->ns_name_n, MAXCDNAME-1) == -1) {
+				FREE (ns->ns_name_n); 
+				FREE (ns);
+				goto err;
+			}
+
+			/* Initialize the rest of the fields */
+			ns->ns_tsig_key = NULL;
+			ns->ns_security_options = ZONE_USE_NOTHING;
+			ns->ns_status = 0;
+			ns->ns_next = NULL;
+			ns->ns_number_of_addresses = 0;
+			if (inet_aton (cp, &address)==0)
+				goto err;
+   	    	bzero(&my_addr, sizeof(struct sockaddr));
+			my_addr.sin_family = AF_INET;         // host byte order
+			my_addr.sin_port = htons(NS_PORT);     // short, network byte order
+			my_addr.sin_addr = address;
+			memcpy(ns->ns_address, &my_addr, sizeof(struct sockaddr));
+
+			if (ns_head == NULL) 
+				ns_head = ns;
+			else {
+				ns->ns_next = ns_head;
+				ns_head = ns;
+			}
+		}
+		else if (strstr(line, "zone") == line) {
+			if (ns == NULL)	
+				goto err;
+			strtok_r(line, white, &buf);
+			cp = strtok_r(NULL, white, &buf);
+			if (cp == NULL) {
+				perror(RESOLV_CONF);
+				goto err;
+			}
+   			if (ns_name_pton(cp, ns->ns_name_n, MAXCDNAME-1) == -1) 
+				goto err;
+		}
+    	if (line) free(line);
+	}
+
+	*nslist = ns_head;
+
+	fclose(fp);
+	return SR_UNSET;
+
+err:
+	free_name_servers(&ns_head);
+	free(line);
+	fclose(fp);
+	return CONF_PARSE_ERROR;
+}
+
+
+int read_res_config_file(val_context_t *ctx)
+{
+	int ret_val;
+
+	if ((ret_val = init_respol(&ctx->nslist)) != SR_UNSET) 
+		return ret_val;
+
+	return SR_UNSET;
+}
+
+
