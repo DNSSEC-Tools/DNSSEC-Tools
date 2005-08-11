@@ -1798,6 +1798,19 @@ Display a usage message.
 Verbose output will be given.  As more instances of I<-verbose> are given on
 the command line, additional levels of verbosity are achieved.
 
+    level	output
+    -----	------
+      1		operations being performed
+		  (e.g., generating key files, signing zone) 
+      2		details on operations and some operation results
+		  (e.g., new key names, zone serial number)
+      3		operations' parameters and additional details
+		  (e.g., key lengths, encryption algorithm,
+		  executed commands)
+
+Higher levels of verbosity are cumulative.  Specifying two instances of
+I<-verbose> will get the output from the first and second levels of output.
+
 =back
 
 =head2 I<dnssec-keygen>-specific Options
