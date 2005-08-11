@@ -182,13 +182,14 @@ sub main
 	#
 	# Ensure the zone file is okay before proceeding.
 	#
-	print "checking zone before doing anything\n" if($verbose);
+	vprint("initial zone verification\n");
 	$status = system("$checkzone -q $zone $zonefile");
 	if($status != 0)
 	{
 		$status = system("$checkzone $zone $zonefile");
 		exit($status);
 	}
+	vmed_print("zone verified\n\n");
 
 	#
 	# Ensure that the zone file exists and open it.
@@ -250,6 +251,8 @@ sub optsandargs()
 {
 	my $argc;			# Number of arguments.
 	my $ropts;			# Reference to the option hash.
+
+	vprint("checking options and arguments\n");
 
 	#
 	# Make sure we have arguments.
@@ -491,7 +494,7 @@ sub presigned
 #
 sub genkeys
 {
-	print "\ngenerating key files:\n" if($verbose);
+	vprint("generating key files\n");
 
 	#
 	# Generate the KSK key.
@@ -517,7 +520,7 @@ sub genkeys
 
 	}
 
-	print "\n";
+	vmed_print("\n");
 }
 
 #######################################################################
@@ -538,23 +541,23 @@ sub genksk
 	{
 		if($opts{'kskkey'} eq "")
 		{
-			print STDERR "unable to re-use a non-existent KSK\n";
+			print STDERR "\nunable to re-use a non-existent KSK\n";
 			exit(1);
 		}
 
 		$ksk = $opts{'kskkey'};
-		print "\treusing existing KSK - $ksk\n\n" if($verbose);
+		vprint("reusing existing KSK - $ksk\n");
 
 		return;
 	}
 
-	print "\tgenerating new KSK\n";
+	vmed_print("generating new KSK\n");
 
 	#
 	# Generate the new KSK.
 	#
 	$cmdopts = "$kgopts $random $alg $ksize";
-	print "\t$keygen $cmdopts -n zone -f KSK $zone\n" if($verbose);
+	vhigh_print("$keygen $cmdopts -n zone -f KSK $zone\n");
 	$ksk = `$keygen $cmdopts -n zone -f KSK $zone`;
 	if($? != 0)
 	{
@@ -563,7 +566,7 @@ sub genksk
 		exit(1);
 	}
 	chomp $ksk;
-	print "\t\tnew KSK - $ksk\n\n" if($verbose);
+	vmed_print("new KSK - $ksk\n\n");
 
 	#
 	# Save the ZSK directory.
@@ -615,32 +618,32 @@ sub genzsk
 	{
 		if(keyrec_fullrec($opts{$zskkey}) eq "")
 		{
-			print STDERR "$keytype ZSK keyrec does not exist; unable to re-use non-existent $keytype ZSK\n";
+			print STDERR "\n$keytype ZSK keyrec does not exist; unable to re-use non-existent $keytype ZSK\n";
 			exit(1);
 		}
 
 		$zsk = $opts{$zskkey};
-		print "\treusing existing $keytype ZSK - $zsk\n\n" if($verbose);
+		vprint("reusing existing $keytype ZSK - $zsk\n");
 
 		return($zsk);
 	}
 	
-	print "\tgenerating new $keytype ZSK\n";
+	vmed_print("generating new \"$keytype\" ZSK\n");
 
 	#
 	# Generate a ZSK key.
 	#
 	$cmdopts = "$kgopts $random $alg $zsize";
-	print "\t$keygen $cmdopts -n zone $zone\n" if($verbose);
+	vhigh_print("$keygen $cmdopts -n zone $zone\n");
 	$zsk = `$keygen $cmdopts -n zone $zone`;
 	if($? != 0)
 	{
 		print STDERR "unable to generate $keytype ZSK key file;\n";
-		print STDERR "dnssec-keygen returned $?\n" if($verbose);
+		print STDERR "dnssec-keygen returned $?\n" if($verbose > $VERBOSE_LOW);
 		exit(1);
 	}
 	chomp $zsk;
-	print "\t\tnew $keytype ZSK - $zsk\n\n" if($verbose);
+	vmed_print("new \"$keytype\" ZSK - $zsk\n");
 
 	#
 	# Save the KSK directory.
@@ -676,7 +679,7 @@ sub genzsk
 #
 sub keydirs
 {
-	print "checking key directories\n" if($verbose > $VERBOSE_LOW);
+	vmed_print("checking key directories\n");
 
 	#
 	# Ensure the KSK key directory exists and is actually a directory.
@@ -687,7 +690,7 @@ sub keydirs
 		{
 			if(! -e $kskdir)
 			{
-				print "creating KSK directory - $kskdir\n" if($verbose);
+				vprint("creating KSK directory - $kskdir\n");
 				mkdir($kskdir);
 			}
 			elsif(! -d $kskdir)
@@ -708,7 +711,7 @@ sub keydirs
 		{
 			if(! -e $zskdir)
 			{
-				print "creating ZSK directory - $zskdir\n" if($verbose);
+				vprint("creating ZSK directory - $zskdir\n");
 				mkdir($zskdir);
 			}
 			elsif(! -d $zskdir)
@@ -721,6 +724,8 @@ sub keydirs
 			system("$MV $zskpub.* $zskdir");
 		}
 	}
+
+	vmed_print("\n");
 }
 
 #######################################################################
@@ -735,7 +740,8 @@ sub zoneincludes
 	my $flen;				# Zone file's length.
 	my $newserial;				# Zone's new serial number.
 
-	print "adding key includes to zone file\n" if($verbose > $VERBOSE_LOW);
+	vhigh_print("\n");
+	vprint("adding key includes to zone file\n");
 
 	#
 	# Update the zone data's serial number.
@@ -746,7 +752,7 @@ sub zoneincludes
 		print STDERR "unable to update serial number in $zonefile\n";
 		exit(3);
 	}
-	print "$zone's new serial number - $newserial\n" if($verbose > $VERBOSE_LOW);
+	vmed_print("$zone\'s new serial number - $newserial\n\n");
 
 	#
 	# If there are already include lines in the zone file, we'll
@@ -915,7 +921,7 @@ sub zonesign
 	#
 	# Sign the zone with the new keys.
 	#
-	print "signing zone\n" if($verbose);
+	vprint("signing zone\n");
 
 	#
 	# Maybe display the warning about potential entropy hangs.
@@ -926,7 +932,7 @@ sub zonesign
 		print "(see the \"Entropy\" section in the man page for details)\n\n";
 	}
 
-	print "\t$signzone $cmdopts $zoneout $zskcurpath\n" if($verbose);
+	vhigh_print("$signzone $cmdopts $zoneout $zskcurpath\n");
 	$szone = `$signzone $cmdopts $zoneout $zskcurpath`;
 	if($szone eq "")
 	{
@@ -937,7 +943,7 @@ sub zonesign
 	#
 	# Ensure the signing succeeded.
 	#
-	print "checking zone\n" if($verbose);
+	vprint("checking zone\n");
 	$status = system("$checkzone -q $zone $szone");
 	if($status != 0)
 	{
@@ -970,7 +976,7 @@ sub zonesign
 	#
 	# Give success message and zone info.
 	#
-	print "zone signed successfully\n\n";
+	print "\nzone signed successfully\n\n";
 	print "${zone}:\n";
 	print "	ZSK (cur) $zcurtag  $zsize  $chron	KSK  $ktag  $ksize  $chron\n";
 	print "	ZSK (pub) $zpubtag  $zsize  $chron\n";
@@ -1008,7 +1014,14 @@ sub updzonerec
 	my $kr;					# Zone's keyrec reference.
 	my %keyrec;				# Zone's keyrec.
 
-	print "updating the keyrec file for the zone\n" if($verbose);
+	if($verbose > $VERBOSE_LOW)
+	{
+		if(($verbose == $VERBOSE_HIGH)	||
+		   ($updflag == $UPD_ALLKEYS))
+		{
+			print "\tupdating the keyrec file for the zone\n";
+		}
+	}
 
 	#
 	# Set some fields we've got to have -- in case they aren't
@@ -1234,7 +1247,7 @@ sub chkkrf
 	#
 	if($nokrfile)
 	{
-		print "not using a keyrec file\n" if($verbose);
+		vprint("not using a keyrec file\n");
 		return;
 	}
 
@@ -1260,7 +1273,7 @@ sub chkkrf
 		@ARGV = @saveargs;
 		unshift(@ARGV,$defkrf);
 		unshift(@ARGV,"-krfile");
-		print "using default keyrec file $defkrf\n" if($verbose);
+		vprint("using default keyrec file $defkrf\n");
 
 		#
 		# Rescan our arguments.
@@ -1286,7 +1299,7 @@ sub chkkrf
 
 	keyrec_add('zone',$zone,\%zoneopts);
 
-	print "using keyrec file $krfile\n" if($verbose);
+	vprint("using keyrec file $krfile\n");
 }
 
 #######################################################################
@@ -1341,7 +1354,7 @@ sub forceroll
 	my $krref;				# Reference to key's keyrec.
 	my $zoneref;				# Reference to zone's keyrec.
 
-	print "\tforcing a key roll-over\n" if($verbose);
+	vprint("forcing a key roll-over\n");
 
 	#
 	# We're rolling KSKs, so make sure they'll be generated.
@@ -1369,7 +1382,7 @@ sub forceroll
 	$krref->{'keyrec_type'}	= "zskobs";
 	keyrec_setval("key",$krref->{'keyrec_name'},"keyrec_type","zskobs");
 	keyrec_setval("key",$krref->{'keyrec_name'},"keypath",$zoneref->{'zskcurpath'});
-	print "\tcurrent ZSK ($krref->{'keyrec_name'}) now obsolete\n" if($verbose > $VERBOSE_LOW);
+	vmed_print("current ZSK ($krref->{'keyrec_name'}) now obsolete\n");
 
 	#
 	# If we're supposed to archive the keys, we'll move the obsolete
@@ -1381,7 +1394,7 @@ sub forceroll
 
 		if(! -e $archdir)
 		{
-			print "creating ZSK archive directory $archdir\n\n" if($verbose);
+			vmed_print("creating ZSK archive directory $archdir\n\n");
 			system("$MKDIR -p -m 0700 $archdir");
 		}
 		else
@@ -1392,7 +1405,7 @@ sub forceroll
 			}
 		}
 
-		print "\tmoving $kn to $archdir\n\n" if($verbose > $VERBOSE_LOW);
+		vhigh_print("moving $kn to $archdir\n\n");
 		system("$MV $kn.* $archdir");
 	}
 
@@ -1405,7 +1418,7 @@ sub forceroll
 	$zskcur = $krref;
 	$zskcur = $opts{'zskcur'};
 	keyrec_setval("key",$zskcur,"keyrec_type","zskcur");
-	print "\tpublished ZSK ($krref->{'keyrec_name'}) now current\n" if($verbose > $VERBOSE_LOW);
+	vmed_print("published ZSK ($krref->{'keyrec_name'}) now current\n");
 
 	#
 	# If we have a new ZSK, we'll make that the current published ZSK.
@@ -1419,7 +1432,7 @@ sub forceroll
 		$zskpub = $krref;
 		$zskpub = $opts{'zskpub'};
 
-		print "\tnew ZSK ($krref->{'keyrec_name'}) now published\n" if($verbose > $VERBOSE_LOW);
+		vmed_print("new ZSK ($krref->{'keyrec_name'}) now published\n");
 	}
 	else
 	{
@@ -1427,7 +1440,7 @@ sub forceroll
 		$krref = keyrec_fullrec($opts{'zskpub'});
 		$opts{'zskpub'} = $krref->{'keyrec_name'};
 
-		print "\tpublished ZSK ($krref->{'keyrec_name'}) created\n" if($verbose > $VERBOSE_LOW);
+		vmed_print("published ZSK ($krref->{'keyrec_name'}) created\n");
 	}
 
 	keyrec_setval("key",$zskpub,"keyrec_type","zskpub");
@@ -1436,7 +1449,7 @@ sub forceroll
 	# Generate a new ZSK.
 	#
 	$zsknew = genzsk("new");
-	print "\tnew ZSK ($zsknew) created\n" if($verbose > $VERBOSE_LOW);
+	vmed_print("new ZSK ($zsknew) created\n");
 	keyrec_setval("key",$zsknew,"keyrec_type","zsknew");
 	keyrec_setval("key",$zsknew,"zonename",$zone);
 }
@@ -1451,45 +1464,81 @@ sub printopts
 {
 	return if($verbose < $VERBOSE_MEDIUM);
 
-	print "\narguments:\n";
-	print "\tzone     - $zone\n";
-	print "\tzonefile - $zonefile\n";
-	print "\tzoneout  - $zoneout\n\n";
+	print "\n";
+	print "\targuments:\n";
+	print "\t\tzone     - $zone\n";
+	print "\t\tzonefile - $zonefile\n";
+	print "\t\tzoneout  - $zoneout\n\n";
 
 	return if($verbose < $VERBOSE_HIGH);
 
-	print "zonesigner arguments:\n";
-	print "\tkrfile		- <$krfile>\n";
-	print "\tnokrfile	- <$nokrfile>\n";
-	print "\tentropymsg	- <$entropymsg>\n";
-	print "\tsavekeys	- <$savekeys>\n";
-	print "\tarchdir         - <$archdir>\n";
+	print "\tzonesigner arguments:\n";
+	print "\t\tkrfile		- <$krfile>\n";
+	print "\t\tnokrfile	- <$nokrfile>\n";
+	print "\t\tentropymsg	- <$entropymsg>\n";
+	print "\t\tsavekeys	- <$savekeys>\n";
+	print "\t\tarchdir         - <$archdir>\n";
 	print "\n";
 
-	print "key-signing parameters:\n";
-	print "\talgorithm	- <$alg>\n";
-	print "\trandom		- <$random>\n";
-	print "\tksize		- <$ksize>\n";
-	print "\tkskdir		- <$kskdir>\n";
-	print "\tgenksk		- <$genksk>\n";
-	print "\tzsize		- <$zsize>\n";
-	print "\tzskdir		- <$zskdir>\n";
-	print "\tgenzsk		- <$genzsk>\n";
-	print "\tkgopts		- <$kgopts>\n";
+	print "\tkey-signing parameters:\n";
+	print "\t\talgorithm	- <$alg>\n";
+	print "\t\trandom		- <$random>\n";
+	print "\t\tksize		- <$ksize>\n";
+	print "\t\tkskdir		- <$kskdir>\n";
+	print "\t\tgenksk		- <$genksk>\n";
+	print "\t\tzsize		- <$zsize>\n";
+	print "\t\tzskdir		- <$zskdir>\n";
+	print "\t\tgenzsk		- <$genzsk>\n";
+	print "\t\tkgopts		- <$kgopts>\n";
 	print "\n";
 
-	print "zone-signing parameters:\n";
-	print "\tenddate		- <$enddate>\n";
-	print "\tgends		- <$gends>\n";
-	print "\tksdir		- <$ksdir>\n";
-	print "\tszopts		- <$szopts>\n";
+	print "\tzone-signing parameters:\n";
+	print "\t\tenddate		- <$enddate>\n";
+	print "\t\tgends		- <$gends>\n";
+	print "\t\tksdir		- <$ksdir>\n";
+	print "\t\tszopts		- <$szopts>\n";
 	print "\n";
 
-	print "external commands:\n";
-	print "\tcheckzone	- <$checkzone>\n";
-	print "\tkeygen		- <$keygen>\n";
-	print "\tsignzone	- <$signzone>\n";
+	print "\texternal commands:\n";
+	print "\t\tcheckzone	- <$checkzone>\n";
+	print "\t\tkeygen		- <$keygen>\n";
+	print "\t\tsignzone	- <$signzone>\n";
+	print "\n";
 }
+
+#######################################################################
+#
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $out = shift;			# Output string.
+
+	print "    $out" if($verbose);
+}
+
+#######################################################################
+#
+# Routine:	vmed_print()
+#
+sub vmed_print
+{
+	my $out = shift;			# Output string.
+
+	print "\t$out" if($verbose > $VERBOSE_LOW);
+}
+
+#######################################################################
+#
+# Routine:	vhigh_print()
+#
+sub vhigh_print
+{
+	my $out = shift;			# Output string.
+
+	print "\t\t$out" if($verbose == $VERBOSE_HIGH);
+}
+
 
 #######################################################################
 #
