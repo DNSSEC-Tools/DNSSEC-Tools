@@ -82,7 +82,7 @@ static void print_addrinfo(struct addrinfo* ainfo)
 			printf("\tCanonName: (null)\n");
 
 		if (validate) {
-			printf("\tDNSSEC status: %s\n", p_val_error(ADDRINFO_DNSSEC_STATUS(a)));
+			printf("\tDNSSEC status: %s\n", p_val_error(val_get_addrinfo_dnssec_status(a)));
 		}
 		printf("}\n");
 
