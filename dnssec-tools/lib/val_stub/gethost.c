@@ -37,10 +37,12 @@ int main(int argc, char *argv[])
 	}
 
 	if (extended) {
-		hentry = val_x_gethostbyname(NULL, argv[index], &dnssec_status);
+		hentry = val_x_gethostbyname(NULL, argv[index]);
+		dnssec_status = val_get_hostent_dnssec_status(hentry);
 	}
 	else {
-		hentry = val_gethostbyname(argv[index], &dnssec_status);
+		hentry = val_gethostbyname(argv[index]);
+		dnssec_status = val_get_hostent_dnssec_status(hentry);
 	}
 
 	if (extended)
@@ -81,5 +83,5 @@ int main(int argc, char *argv[])
         }
 	printf("DNSSEC status = %s\n", p_val_error(dnssec_status));
 	printf("val_h_errno = %s\n", hstrerror(val_h_errno));
-	FREE_HOSTENT(hentry);
+	val_freehostent(hentry);
 }
