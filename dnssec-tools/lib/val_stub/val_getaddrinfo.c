@@ -29,6 +29,31 @@
 #include "val_getaddrinfo.h"
 #include "val_parse.h"
 
+/**
+ * addrinfo_dnssec_wrapper: A wrapper struct around addrinfo to
+ *                          store the result of DNSSEC validation.
+ *     ainfo: Contains the addrinfo structure
+ *     dnssec_status: Contains the result of DNSSEC validation.
+ *                If DNSSEC validation is successful, it will
+ *                contain VALIDATE_SUCCESS.  If there is a
+ *                failure, it will contain the validator error code.
+ */
+struct addrinfo_dnssec_wrapper {
+	struct addrinfo ainfo;
+	int dnssec_status;
+};
+
+
+int val_get_addrinfo_dnssec_status (const struct addrinfo *ainfo)
+{
+	if (ainfo) {
+		return (((struct addrinfo_dnssec_wrapper *) ainfo)->dnssec_status);
+	}
+	else {
+		return INTERNAL_ERROR;
+	}
+}
+
 static struct addrinfo *append_addrinfo (struct addrinfo *a1,
 					 struct addrinfo *a2)
 {
@@ -76,8 +101,29 @@ static struct addrinfo *duplicate_addrinfo (const struct addrinfo *a)
 	}
 	new_aw->ainfo.ai_next = NULL;
 	
-	new_aw->dnssec_status = ADDRINFO_DNSSEC_STATUS(a);
+	new_aw->dnssec_status = val_get_addrinfo_dnssec_status(a);
 	return &(new_aw->ainfo);
+}
+
+/* performs a deep copy */
+struct addrinfo* val_dupaddrinfo (const struct addrinfo *ainfo)
+{
+	struct addrinfo *head = NULL, *tail = NULL;
+	struct addrinfo *a = (struct addrinfo *)ainfo;
+
+	while (a) {
+		struct addrinfo *newaddr = duplicate_addrinfo (a);
+		if (tail) {
+			tail->ai_next = newaddr;
+			tail = newaddr;
+		}
+		else {
+			head = tail = newaddr;
+		}
+		a = a->ai_next;
+	}
+
+	return head;
 }
 
 /*
