@@ -16,27 +16,21 @@
 #include <sys/socket.h>
 #include <netdb.h>
 
-/**
- * addrinfo_dnssec_wrapper: A wrapper struct around addrinfo to
- *                          store the result of DNSSEC validation.
- *     ainfo: Contains the addrinfo structure
- *     dnssec_status: Contains the result of DNSSEC validation.
- *                If DNSSEC validation is successful, it will
- *                contain VALIDATE_SUCCESS.  If there is a
- *                failure, it will contain the validator error code.
- */
-struct addrinfo_dnssec_wrapper {
-	struct addrinfo ainfo;
-	int dnssec_status;
-};
-
-/**
- * A macro to extract DNSSEC-validation status information from a
+/* val_get_addrinfo_dnssec_status()
+ * A function to extract DNSSEC-validation status information from a
  * (struct addrinfo *) variable.  Note: This variable must be returned
- * from the val_getaddrinfo() function.
+ * from the val_getaddrinfo() or the val_dupaddrinfo() function.
  */
-#define ADDRINFO_DNSSEC_STATUS(ainfo) \
-    (((struct addrinfo_dnssec_wrapper *) ainfo)->dnssec_status)
+int val_get_addrinfo_dnssec_status (const struct addrinfo *ainfo);
+
+/* val_dupaddrinfo();
+ * A function to duplicate an addrinfo structure.  Performs a
+ * deep-copy of the entire addrinfo list.  The returned value
+ * must be freed using the freeaddrinfo() function.    Note: The
+ * input parameter must be one previously returned by a call to
+ * the val_getaddrinfo() or the val_dupaddrinfo() function.
+ */
+struct addrinfo* val_dupaddrinfo (const struct addrinfo *ainfo);
 
 /**
  * val_getaddrinfo: A validating getaddrinfo function.
@@ -58,7 +52,9 @@ struct addrinfo_dnssec_wrapper {
  *                A NULL hints specifies that any network address or
  *                protocol is acceptable.
  *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
- *                structures, linked by the ai_next member.
+ *                structures, linked by the ai_next member.  This output
+ *                value can be used in the val_get_addrinfo_dnssec_status()
+ *                and the val_dupaddrinfo() functions.
  *
  * Return value: This function returns 0 if it succeeds, or one of the
  *               non-zero error codes if it fails.  See man getaddrinfo
