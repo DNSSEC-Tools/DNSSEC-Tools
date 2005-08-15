@@ -9,7 +9,6 @@
 #define MAX_LEVEL_IN_POLICY	5
 #define TOKEN_MAX 2048
 #define DEFAULT_ZONE	"."
-#define NS_PORT	53
 
 #define OVERRIDE_POLICY(ctx, override)   do {		\
 	struct policy_list *c;							\
