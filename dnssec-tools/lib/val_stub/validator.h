@@ -12,6 +12,7 @@
 #define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
 #define RESOLV_CONF             "/etc/resolv.conf"
 
+#define DNS_PORT	53
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
 #define FREE(p) my_free(p,__FILE__,__LINE__)
@@ -47,14 +48,13 @@
 #define A_INIT 4
 #define A_TRUSTED 5 
 #define A_NEGATIVE_PROOF 6 
-#define A_LAST_STATE  A_NEGATIVE_PROOF
+#define A_LAST_STATE  10 /* Closest round number above A_NEGATIVE_PROOF */
 
 /* Query states */
 #define Q_INIT	1
 #define Q_SENT	2
 #define Q_ANSWERED 3
-#define Q_ERROR 4
-#define Q_CONFLICTING_ANSWERS	5
+#define Q_ERROR_BASE 4
 
 /* Trust anchor matching */
 #define EXACT 1
@@ -143,12 +143,35 @@ struct assertion_chain {
 	struct assertion_chain *ac_next;
 };
 
+struct query_list
+{
+    u_int8_t            ql_name_n[MAXDNAME];
+    u_int8_t            ql_zone_n[MAXDNAME];
+    u_int16_t           ql_type_h;
+    struct query_list   *ql_next;
+};
+
+struct qname_chain
+{
+    u_int8_t        qnc_name_n[MAXDNAME];
+    struct qname_chain  *qnc_next;
+};
+
+struct delegation_info {
+	struct query_list   *queries;
+	struct qname_chain  *qnames;
+	struct rrset_rec    *answers;
+	struct rrset_rec    *learned_zones;
+};
 
 struct query_chain {
 	u_char qc_name_n[MAXCDNAME];
 	u_int16_t qc_type_h;
 	u_int16_t qc_class_h;
 	u_int16_t qc_state; /* DOS, TIMED_OUT, etc */
+	struct name_server *qc_ns_list;
+	struct delegation_info *qc_referral;
+	int qc_trans_id;
 	struct assertion_chain *qc_as;
 	struct query_chain *qc_next;
 };
@@ -159,11 +182,6 @@ struct response_t {
 	int validation_result;
 };
 
-struct qname_chain
-{
-    u_int8_t        qnc_name_n[MAXDNAME];
-    struct qname_chain  *qnc_next;
-};
 
 struct domain_info
 {
@@ -172,7 +190,7 @@ struct domain_info
     u_int16_t       di_requested_class_h;
     struct  rrset_rec   *di_rrset;
     struct qname_chain  *di_qnames;
-    char            *di_error_message;
+	int				di_res_error;
 };
 
 #endif /* VALIDATOR_H */
