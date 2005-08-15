@@ -14,7 +14,6 @@
 
 #include "val_support.h"
 #include "val_zone.h"
-#include "val_resquery.h"
 #include "val_cache.h"
 #include "val_errors.h"
 #include "val_x_query.h"
@@ -44,7 +43,7 @@
  *
  * Return values:
  * NO_ERROR			Operation succeeded
- * SR_CALL_ERROR	The domain name is invalid
+ * BAD_ARGUMENT	The domain name is invalid
  * OUT_OF_MEMORY	Could not allocate enough memory for operation
  * NO_SPACE		Returned when the user allocated memory is not large enough 
  *					to hold all the answers.
@@ -81,7 +80,7 @@ int val_x_query(val_context_t	*ctx,
 		context = ctx;
 
 	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1)
-		return (SR_CALL_ERROR);                                                                                                                         
+		return (BAD_ARGUMENT);                                                                                                                         
 	/* Add the main query to the qname_chain list */
 	if(NO_ERROR != (retval = add_to_query_chain(&queries, name_n, type, class)))
 		return retval;
