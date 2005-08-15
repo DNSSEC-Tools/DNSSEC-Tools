@@ -21,7 +21,6 @@
 
 #include "val_support.h"
 #include "val_zone.h"
-#include "val_resquery.h"
 #include "val_cache.h"
 #include "val_errors.h"
 #include "val_assertion.h"
@@ -380,11 +379,9 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	
 	if (!found_rrsig) {
 	    val_log("val_verify(): RRSIG not found for %s\n", rrs_name);
-	    rrset->rrs_status = RRSIG_MISSING;
 	}
 	else if (!found_dnskey) {
 	        val_log("val_verify(): DNSKEY not found.\n");
-		rrset->rrs_status = DNSKEY_NOMATCH;
 	}
 	else {
 	    // Check if the rrset matches the query
@@ -407,7 +404,6 @@ val_result_t val_verify (struct val_context *context, struct domain_info *respon
 	    }
 	    val_log("val_verify(): status = %s.\n", p_val_error(status));
 	    
-	    rrset->rrs_status = sigresult;
 	}
 	
 	rrset = rrset->rrs_next;
@@ -448,14 +444,14 @@ int predict_sigbuflength (  struct rrset_rec *rr_set,
                                                                                                                           
     *signer_length = wire_name_length (&rr_set->rrs_sig->rr_rdata[SIGNBY]);
                                                                                                                           
-    if (*signer_length == 0) return SR_INTERNAL_ERROR;
+    if (*signer_length == 0) return INTERNAL_ERROR;
                                                                                                                           
     *field_length = SIGNBY + (*signer_length);
                                                                                                                           
     for (rr = rr_set->rrs_data; rr; rr = rr->rr_next)
         *field_length += owner_length + ENVELOPE + rr->rr_rdata_length_h;
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 int make_sigfield (  u_int8_t            **field,
@@ -475,12 +471,12 @@ int make_sigfield (  u_int8_t            **field,
     u_int8_t            lowered_owner_n[MAXDNAME];
     size_t              l_index;
                                                                                                                           
-    if (predict_sigbuflength (rr_set, field_length, &signer_length)!=SR_UNSET)
-        return SR_INTERNAL_ERROR;
+    if (predict_sigbuflength (rr_set, field_length, &signer_length)!=NO_ERROR)
+        return INTERNAL_ERROR;
                                                                                                                           
     *field = (u_int8_t*) MALLOC (*field_length);
                                                                                                                           
-    if (*field == NULL) return SR_MEMORY_ERROR;
+    if (*field == NULL) return OUT_OF_MEMORY;
                                                                                                                           
     /* Make sure we are using the correct TTL */
                                                                                                                           
@@ -494,7 +490,7 @@ int make_sigfield (  u_int8_t            **field,
                                                                                                                           
     owner_length = wire_name_length (rr_set->rrs_name_n);
                                                                                                                           
-    if (owner_length == 0) return SR_INTERNAL_ERROR;
+    if (owner_length == 0) return INTERNAL_ERROR;
                                                                                                                           
     memcpy (lowered_owner_n, rr_set->rrs_name_n, owner_length);
     l_index = 0;
@@ -546,7 +542,7 @@ int make_sigfield (  u_int8_t            **field,
         index += curr_rr->rr_rdata_length_h;
     }
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 int find_signature (u_int8_t **field, struct rr_rec *rr_sig)
@@ -602,7 +598,6 @@ int do_verify (   int                 *sig_status,
 {
     /*
         Use the crypto routines to verify the signature
-        Put the result into rrs_status
     */
                                                                                                                           
     u_int8_t            *ver_field;
@@ -612,10 +607,10 @@ int do_verify (   int                 *sig_status,
     int                 ret_val;
 	val_rrsig_rdata_t rrsig_rdata;
 
-    if (the_set==NULL||the_key==NULL) return SR_INTERNAL_ERROR;
+    if (the_set==NULL||the_key==NULL) return INTERNAL_ERROR;
                                                                                                                           
     if ((ret_val=make_sigfield (&ver_field, &ver_length, the_set, the_sig,
-                                        is_a_wildcard)) != SR_UNSET)
+                                        is_a_wildcard)) != NO_ERROR)
         return ret_val;
                                                                                                                           
     /* Find the signature - no memory is malloc'ed for this operation  */
@@ -637,7 +632,7 @@ print_hex_field (sig_field,sig_length,21,"SIG: ");
 val_log ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
 */
     FREE (ver_field);
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 
@@ -714,14 +709,14 @@ void verify_next_assertion(struct assertion_chain *as)
 		}	
 
 		/* do wildcard processing */
-		if(check_label_count (the_set, the_sig, &is_a_wildcard) != SR_UNSET) {
+		if(check_label_count (the_set, the_sig, &is_a_wildcard) != NO_ERROR) {
 			SET_STATUS(as->ac_state, the_sig, WRONG_LABEL_COUNT);
 			free(dnskey.public_key);
 			continue;
 		}
 
 		/* and check the signature */
-		if(SR_UNSET != do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard)) {
+		if(NO_ERROR != do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard)) {
 			SET_STATUS(as->ac_state, the_sig, VERIFY_PROC_ERROR);
 			free(dnskey.public_key);
 			continue;
