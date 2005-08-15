@@ -10,6 +10,7 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
+#include "validator.h"
 
 #include "val_resquery.h"
 #include "val_support.h"
@@ -24,14 +25,6 @@
 #include "val_policy.h"
 #include "val_parse.h"
 
-#include "validator.h"
-
-#ifndef TRUE
-#define TRUE 1
-#endif
-#ifndef FALSE
-#define FALSE 0
-#endif
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
 #define NONSENSE_RESULT_SEQUENCE(status) ((status <= FAIL_BASE) || (status > LAST_SUCCESS))
@@ -138,327 +131,6 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 
 /////////////////////////////////////////////////////////////////
 
-void lower_name (u_int8_t rdata[], int *index)
-{
-                                                                                                                          
-    /* Convert the upper case characters in a domain name to lower case */
-                                                                                                                          
-    int length = wire_name_length(&rdata[(*index)]);
-                                                                                                                          
-    while ((*index) < length)
-    {
-        rdata[(*index)] = tolower(rdata[(*index)]);
-        (*index)++;
-    }
-}
-
-
-void lower (u_int16_t type_h, u_int8_t *rdata, int len)
-{
-    /* Convert the case of any domain name to lower in the RDATA section */
-                                                                                                                          
-    int index = 0;
-                                                                                                                          
-    switch (type_h)
-    {
-        /* These RR's have no domain name in them */
-                                                                                                                          
-        case ns_t_nsap: case ns_t_eid:      case ns_t_nimloc:   case ns_t_dnskey:
-        case ns_t_aaaa: case ns_t_loc:      case ns_t_atma:     case ns_t_a:
-        case ns_t_wks:  case ns_t_hinfo:    case ns_t_txt:      case ns_t_x25:
-        case ns_t_isdn: case ns_t_ds:       default:
-                                                                                                                          
-            return;
-                                                                                                                          
-        /* These RR's have two domain names at the start */
-                                                                                                                          
-        case ns_t_soa:  case ns_t_minfo:    case ns_t_rp:
-                                                                                                                          
-            lower_name (rdata, &index);
-            /* fall through */
-                                                                                                                          
-                                                                                                                          
-        /* These have one name (and are joined by the code above) */
-                                                                                                                          
-        case ns_t_ns:   case ns_t_cname:    case ns_t_mb:       case ns_t_mg:
-        case ns_t_mr:   case ns_t_ptr:      case ns_t_nsec:
-                                                                                                                          
-            lower_name (rdata, &index);
-                                                                                                                          
-            return;
-                                                                                                                          
-        /* These RR's end in one or two domain names */
-                                                                                                                          
-        case ns_t_srv:
-                                                                                                                          
-            index = 4; /* SRV has three preceeding 16 bit quantities */
-                                                                                                                          
-        case ns_t_rt: case ns_t_mx: case ns_t_afsdb: case ns_t_px:
-                                                                                                                          
-            index += 2; /* Pass the 16 bit quatity prior to the name */
-                                                                                                                          
-            lower_name (rdata, &index);
-                                                                                                                          
-            /* Get the second tail name (only in PX records) */
-            if (type_h == ns_t_px) lower_name (rdata, &index);
-                                                                                                                          
-            return;
-                                                                                                                          
-        /* The last case is RR's with names in the middle. */
-        /*
-            Note: this code is never used as SIG's are the only record in
-            this case.  SIG's are not signed, so they never are run through
-            this code.  This is left here in case other RR's are defined in
-            this unfortunate (for them) manner.
-        */
-        case ns_t_rrsig:
-                                                                                                                          
-            index = SIGNBY;
-                                                                                                                          
-            lower_name (rdata, &index);
-                                                                                                                          
-            return;
-    }
-}
-
-
-struct rr_rec *copy_rr_rec (u_int16_t type_h, struct rr_rec *r, int dolower)
-{
-    /*
-        Make a copy of an RR, lowering the case of any contained
-        domain name in the RR section.
-    */
-    struct rr_rec *the_copy;
-                                                                                                                          
-    the_copy = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
-                                                                                                                          
-    if (the_copy==NULL) return NULL;
-                                                                                                                          
-    the_copy->rr_rdata_length_h = r->rr_rdata_length_h;
-    the_copy->rr_rdata = (u_int8_t *) MALLOC (the_copy->rr_rdata_length_h);
-                                                                                                                          
-    if (the_copy->rr_rdata==NULL) return NULL;
-                                                                                                                          
-    memcpy (the_copy->rr_rdata, r->rr_rdata, r->rr_rdata_length_h);
-                                                                                                                          
-	if(dolower)
-	    lower (type_h, the_copy->rr_rdata, the_copy->rr_rdata_length_h);
-                                                                                                                          
-    the_copy->rr_next = NULL;
-    return the_copy;
-}
-
-#define INSERTED    1
-#define DUPLICATE   -1
-int link_rr (struct rr_rec **cs, struct rr_rec *cr)
-{
-    /*
-        Insert a copied RR into the set being prepared for signing.  This
-        is an implementation of an insertoin sort.
-    */
-    int             ret_val;
-    int             length;
-    struct rr_rec   *temp_rr;
-                                                                                                                          
-    if (*cs == NULL)
-    {
-        *cs = cr;
-        return INSERTED;
-    }
-    else
-    {
-        length =(*cs)->rr_rdata_length_h<cr->rr_rdata_length_h?
-                (*cs)->rr_rdata_length_h:cr->rr_rdata_length_h;
-                                                                                                                          
-        ret_val = memcmp ((*cs)->rr_rdata, cr->rr_rdata, length);
-                                                                                                                          
-        if (ret_val==0&&(*cs)->rr_rdata_length_h==cr->rr_rdata_length_h)
-        {
-            /* cr is a copy of an existing record, forget it... */
-            FREE (cr->rr_rdata);
-            FREE (cr);
-            return DUPLICATE;
-        }
-        else if (ret_val > 0 || (ret_val==0 && length==cr->rr_rdata_length_h))
-        {
-            cr->rr_next = *cs;
-            *cs = cr;
-            return INSERTED;
-        }
-        else
-        {
-            temp_rr = *cs;
-                                                                                                                          
-            if (temp_rr->rr_next == NULL)
-            {
-                temp_rr->rr_next = cr;
-                cr->rr_next = NULL;
-                return INSERTED;
-            }
-                                                                                                                          
-            while (temp_rr->rr_next)
-            {
-                length = temp_rr->rr_next->rr_rdata_length_h <
-                                                cr->rr_rdata_length_h ?
-                         temp_rr->rr_next->rr_rdata_length_h :
-                                                cr->rr_rdata_length_h;
-                                                                                                                          
-                ret_val = memcmp (temp_rr->rr_next->rr_rdata, cr->rr_rdata,
-                                    length);
-                if (ret_val==0 &&
-                    temp_rr->rr_next->rr_rdata_length_h==cr->rr_rdata_length_h)
-                {
-                    /* cr is a copy of an existing record, forget it... */
-                    FREE (cr->rr_rdata);
-                    FREE (cr);
-                    return DUPLICATE;
-                }
-                else if (ret_val>0||(ret_val==0&&length==cr->rr_rdata_length_h))
-                {
-                    /* We've found a home for the record */
-                    cr->rr_next = temp_rr->rr_next;
-                    temp_rr->rr_next = cr;
-                    return INSERTED;
-                }
-                temp_rr = temp_rr->rr_next;
-            }
-                                                                                                                          
-            /* If we've gone this far, add the record to the end of the list */
-                                                                                                                          
-            temp_rr->rr_next = cr;
-            cr->rr_next = NULL;
-            return INSERTED;
-        }
-    }
-}
-
-struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
-{
-    struct rrset_rec    *copy_set;
-    struct rr_rec       *orig_rr;
-    struct rr_rec       *copy_rr;
-    size_t              o_length;
-                                                                              
-    copy_set = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
-                                                                                                                          
-    if (copy_set == NULL) return NULL;
-                                                                                                                          
-    o_length = wire_name_length (rr_set->rrs_name_n);
-
-    memcpy (copy_set, rr_set, sizeof(struct rrset_rec));
-    copy_set->rrs_data = NULL;
-    copy_set->rrs_next = NULL;
-    copy_set->rrs_sig = NULL;
-    copy_set->rrs_name_n = NULL;
-	copy_set->rrs_name_n = (u_int8_t *) MALLOC (o_length);
-	if (copy_set->rrs_name_n == NULL) {
-		FREE(copy_set);
-		return NULL;
-	}
-	memcpy(copy_set->rrs_name_n, rr_set->rrs_name_n, o_length); 
-                                                                                                                     
-    /*
-        Do an insertion sort of the records in rr_set.  As records are
-        copied, convert the domain names to lower case.
-    */
-                                                                                                                          
-    for (orig_rr = rr_set->rrs_data; orig_rr; orig_rr = orig_rr->rr_next)
-    {
-        /* Copy it into the right form for verification */
-        copy_rr = copy_rr_rec (rr_set->rrs_type_h, orig_rr, 1);
-                                                                                                                          
-        if (copy_rr==NULL) return NULL;
-                                                                                                                          
-        /* Now, find a place for it */
-                                                                                                                          
-        link_rr (&copy_set->rrs_data, copy_rr);
-    }
-
-	/* Copy the rrsigs also */
-
-    for (orig_rr = rr_set->rrs_sig; orig_rr; orig_rr = orig_rr->rr_next)
-    {
-        /* Copy it into the right form for verification */
-        copy_rr = copy_rr_rec (rr_set->rrs_type_h, orig_rr, 0);
-                                                                                                                          
-        if (copy_rr==NULL) return NULL;
-                                                                                                                          
-        /* Now, find a place for it */
-                                                                                                                          
-        link_rr (&copy_set->rrs_sig, copy_rr);
-    }
-
-    return copy_set;
-}
-
-
-
-
-/*
- * Add {domain_name, type, class} to the list of queries currently active
- * for validating a response. 
- *
- * Returns:
- * NO_ERROR			Operation succeeded
- * SR_CALL_ERROR	The domain name is invalid
- * OUT_OF_MEMORY	Could not allocate enough memory for operation
- */
-int add_to_query_chain(struct query_chain **queries, u_char *name_n, 
-						const u_int16_t type_h, const u_int16_t class_h)
-{
-	struct query_chain *temp, *prev;
-
-	/* Check if query already exists */
-	temp = *queries;
-	prev = temp;
-	while(temp) {
-		if ((namecmp(temp->qc_name_n, name_n)==0)
-				&& (temp->qc_type_h == type_h)
-				&& (temp->qc_class_h == class_h))
-			break;
-		prev = temp;
-		temp = temp->qc_next;
-	}
-
-	/* If query already exists, bring it to the front of the list */
-	if(temp != NULL) {
-		if(prev != temp) {
-			prev->qc_next = temp->qc_next;
-			temp->qc_next = *queries;
-			*queries = temp;
-		}
-		return NO_ERROR;
-	}
-
-
-	temp = (struct query_chain *) MALLOC (sizeof (struct query_chain));
-	if (temp==NULL) return OUT_OF_MEMORY;
-                                                                                                                          
-	memcpy (temp->qc_name_n, name_n, wire_name_length(name_n));
-	temp->qc_type_h = type_h; 
-	temp->qc_class_h = class_h; 
-	temp->qc_state = Q_INIT;    
-	temp->qc_as = NULL;   
-	temp->qc_next = *queries;
-	*queries = temp;
-                                                                                                                          
-	return NO_ERROR;
-}
-
-
-/*
- * Free up the query chain.
- */
-void free_query_chain(struct query_chain **queries)
-{
-	if (queries==NULL || (*queries)==NULL) return;
-                                                                                                                          
-	if ((*queries)->qc_next)
-		free_query_chain (&((*queries)->qc_next));
-                                                                                                                          
-	FREE (*queries);
-	(*queries) = NULL;
-}
 
 
 int ask_cache(val_context_t *context, struct query_chain *end_q, 
@@ -500,6 +172,7 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 				struct domain_info *response;
 				char name[MAXDNAME];
 
+				next_q->qc_state = Q_ANSWERED;
 				/* Construct a dummy response */
 				response = (struct domain_info *) MALLOC (sizeof(struct domain_info));
 				if(response == NULL)
@@ -511,10 +184,9 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 					return OUT_OF_MEMORY;
 				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
 				response->di_qnames->qnc_next = NULL;
-			    response->di_error_message = NULL;
 
 				if(ns_name_ntop(next_q->qc_name_n, name, MAXDNAME-1) == -1) {
-					next_q->qc_state = Q_ERROR;
+					next_q->qc_state = Q_ERROR_BASE+SR_CALL_ERROR;
 					FREE(response->di_qnames);
 					FREE (response);
 					continue;
@@ -522,8 +194,11 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 			    response->di_requested_name_h = name; 
 			    response->di_requested_type_h = next_q->qc_type_h;
 			    response->di_requested_class_h = next_q->qc_class_h;
+				response->di_res_error = SR_UNSET;
 
-				if(NO_ERROR != (retval = assimilate_answers(context, queries, response, next_q, assertions))) {
+				if(NO_ERROR != (retval = 
+						assimilate_answers(context, queries, 
+							response, next_q, assertions))) {
 					FREE(response->di_qnames);
 					FREE (response);
 					return retval;
@@ -545,60 +220,62 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 	return NO_ERROR;
 }
 
-int ask_resolver(val_context_t *context, struct query_chain **queries, int block, struct assertion_chain **assertions)
+int ask_resolver(val_context_t *context, struct query_chain **queries, int block, 
+					struct assertion_chain **assertions)
 {
-	// XXX Send multiple queries in parallel 
-
-	struct query_chain *matched_q;
 	struct query_chain *next_q;
 	struct domain_info *response;
 	int retval;
 
-	matched_q = NULL;
 	response = NULL;
 
-	for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
+	int answered = 0;
+	while (!answered) {
 
-		if(next_q->qc_state == Q_INIT) {
-			char name[MAXDNAME];
-		
-			matched_q = next_q;
+		for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
+			if(next_q->qc_state == Q_INIT) {
+				next_q = next_q;
+				next_q->qc_state = Q_SENT;
 
-			if(ns_name_ntop(matched_q->qc_name_n, name, MAXDNAME-1) == -1) {
-				matched_q->qc_state = Q_ERROR;
-				continue;
+				if ((retval = val_resquery_send (context, next_q)) != NO_ERROR)
+					return retval;
 			}
-
-			matched_q->qc_state = Q_SENT;
-
-			response = (struct domain_info *) MALLOC (sizeof(struct domain_info));
-			if (response == NULL) 
-				return OUT_OF_MEMORY;
- 
-		    retval = val_resquery ( NULL, name, 
-						matched_q->qc_type_h, 
-						matched_q->qc_class_h, 
-						context->nslist, 
-						response);
-
-			break;
-		}
-	}
-
-	if(response != NULL) {
-		if(NO_ERROR != (retval = assimilate_answers(context, queries, response, matched_q, assertions))) {
-			free_domain_info_ptrs(response);
-			return retval;
 		}
 
-		/* Save new responses in the cache */
-		stow_answer(response->di_rrset);
-		response->di_rrset = NULL;
-		free_domain_info_ptrs(response);
+		/* wait until we get at least one complete answer */
+		if (block) {
+
+			for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
+				if(next_q->qc_state < Q_ANSWERED) {
+					if( (retval = val_resquery_rcv (context, next_q, &response)) != NO_ERROR)	
+						return retval;
+
+					if ((next_q->qc_state == Q_ANSWERED) && (response != NULL)) {
+						if(NO_ERROR != (retval = 
+								assimilate_answers(context, queries, 
+									response, next_q, assertions))) {
+							free_domain_info_ptrs(response);
+							return retval;
+						}
+	
+						/* Save new responses in the cache */
+						stow_answer(response->di_rrset);
+						response->di_rrset = NULL;
+						free_domain_info_ptrs(response);
+						answered = 1;
+						break;
+					}
+					if (response != NULL)
+						free_domain_info_ptrs(response);
+				}
+			}
+		}
+		else
+			break;	
 	}
+
 	return NO_ERROR;
 }
-
 
 int set_ans_kind (    u_int8_t    *qc_name_n,
                       const u_int16_t     q_type_h,
@@ -621,7 +298,7 @@ int set_ans_kind (    u_int8_t    *qc_name_n,
         else
             the_set->rrs_ans_kind = SR_ANS_NACK_NXT;
 
-        return SR_UNSET;
+        return NO_ERROR;
     }
                                                                                                                           
     /* Answer is a NACK_SOA if... */
@@ -635,7 +312,7 @@ int set_ans_kind (    u_int8_t    *qc_name_n,
         else
             the_set->rrs_ans_kind = SR_ANS_NACK_SOA;
                                                                                                                           
-        return SR_UNSET;
+        return NO_ERROR;
     }
                                                                                                                           
     /* Answer is a CNAME if... */
@@ -649,7 +326,7 @@ int set_ans_kind (    u_int8_t    *qc_name_n,
         else
             the_set->rrs_ans_kind = SR_ANS_CNAME;
                                                                                                                           
-        return SR_UNSET;
+        return NO_ERROR;
     }
                                                                                                                           
     /* Answer is an ANSWER if... */
@@ -658,13 +335,13 @@ int set_ans_kind (    u_int8_t    *qc_name_n,
     {
         /* We asked for it */
         the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
-        return SR_UNSET;
+        return NO_ERROR;
     }
                                                                                                                           
     the_set->rrs_ans_kind = SR_ANS_UNSET;
-	*status = IRRELEVANT_DATA;
+	*status = DNS_ERROR_BASE + SR_WRONG_ANSWER; 
                                                                                                                           
-    return SR_PROCESS_ERROR;
+    return ERROR;
 }
 
 #define TOP_OF_QNAMES   0
@@ -706,7 +383,6 @@ int fails_to_answer_query(
     int class_match = the_set->rrs_class_h==q_class_h || q_class_h==ns_c_any;
     int data_present = the_set->rrs_data != NULL;
                                                                                                                           
-    if (the_set->rrs_status != SR_DATA_UNCHECKED) return FALSE;
     if (!data_present) return FALSE;
                                                                                                                           
     if (
@@ -722,8 +398,7 @@ int fails_to_answer_query(
                 the_set->rrs_ans_kind == SR_ANS_NACK_SOA))
         )
         {
-            the_set->rrs_status = SR_WRONG;
-			*status = IRRELEVANT_DATA;
+            *status = DNS_ERROR_BASE + SR_WRONG_ANSWER;
             return TRUE;
         }
                                                                                                                           
@@ -754,8 +429,7 @@ int NSEC_is_wrong_answer (
                                                                                                                           
         if (ISSET((&(the_set->rrs_data->rr_rdata[nsec_bit_field])), q_type_h))
         {
-            the_set->rrs_status = SR_WRONG;
-			*status = IRRELEVANT_PROOF;	
+			*status = IRRELEVANT_PROOF; 
             return TRUE;
         }
         else
@@ -770,7 +444,6 @@ int NSEC_is_wrong_answer (
 		 */
         if (namecmp(the_set->rrs_name_n, qc_name_n) > 0)
         {
-            the_set->rrs_status = SR_WRONG;
 			*status = IRRELEVANT_PROOF;	
             return TRUE;
         }
@@ -948,7 +621,7 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 
 	/* Create an assertion for the response data */
 	if (response->di_rrset == NULL) {
-		matched_q->qc_state = Q_ERROR;
+		matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
 		return NO_ERROR;
 	}
 
@@ -958,7 +631,6 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 	as = *assertions; /* The first value in the list is the most recent element */
 	/* Link the original query to the above assertion */
 	matched_q->qc_as = as;
-	matched_q->qc_state = Q_ANSWERED;
 
 	/* Identify the state for each of the assertions obtained */
 	for (; as; as = as->ac_more_data) {
@@ -966,7 +638,7 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 		/* Cover error conditions first */
 		/* SOA checks will appear during sanity checks later on */
 		if((	set_ans_kind(response->di_qnames->qnc_name_n, type_h, class_h, 
-					as->ac_data, &as->ac_state) == SR_PROCESS_ERROR)
+					as->ac_data, &as->ac_state) == ERROR)
 				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->ac_data, &as->ac_state)
 				|| NSEC_is_wrong_answer (response->di_qnames->qnc_name_n, type_h, class_h, 
 					as->ac_data, &as->ac_state)) {
@@ -980,13 +652,13 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 			if ((kind == SR_ANS_STRAIGHT) || (kind == SR_ANS_CNAME)) {
 				if ((as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
 					(as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
-					matched_q->qc_state = Q_CONFLICTING_ANSWERS;
+					matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 				}
 			}
 			/* NACK_NXT and NACK_SOA */
 			else if ((as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
 				(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
-				matched_q->qc_state = Q_CONFLICTING_ANSWERS;
+				matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 			}
 		}
 
@@ -1042,7 +714,7 @@ void  prove_nonexistence (struct query_chain *top_q, struct val_result *results)
 					int wcard;
 					for (sig = the_set->rrs_sig; sig; sig = sig->rr_next) {
 						if ((sig->status == RRSIG_VERIFIED) && 
-							(SR_UNSET == check_label_count(the_set, sig, &wcard))) {
+							(NO_ERROR == check_label_count(the_set, sig, &wcard))) {
 							if (wcard == 0)
 								wcard_chk = 1;
 							break;
@@ -1152,82 +824,75 @@ int try_verify_assertion(val_context_t *context, struct query_chain **queries,
 		 */
 		return NO_ERROR;
 
-	switch (pc->qc_state) {
+	if (pc->qc_state > Q_ERROR_BASE) {
+		next_as->ac_state = DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
+	}
+	else if (pc->qc_state == Q_ANSWERED) {
+		pending_as = pc->qc_as;
+		if(next_as->ac_state == A_WAIT_FOR_RRSIG) {
+			/* We were waiting for the RRSIG */
+			pending_rrset = pending_as->ac_data;
+		
+			/* 
+			 * Check if what we got was an RRSIG 
+			 */
+			if (pending_rrset->rrs_type_h != ns_t_rrsig) {
+				/* Could not find any RRSIG */
+				next_as->ac_state = RRSIG_MISSING; 
+			}
+			else {
+				/* Find the RRSIG that matches the type */
+				for(;pending_rrset;pending_rrset=pending_rrset->rrs_next) { 
+					/* Check if type is in the RRSIG */
+					u_int16_t rrsig_type_h;
+					memcpy(&rrsig_type_h, pending_rrset->rrs_sig, sizeof(u_int16_t));
+					if (rrsig_type_h == next_as->ac_data->rrs_type_h)				
+						break;
+				}
+				if(pending_rrset == NULL) {
+					/* Could not find any RRSIG matching query type*/
+					next_as->ac_state = RRSIG_MISSING; 
+				}
+				else {
 
-		case Q_ERROR: /* fall-through */
-		case Q_CONFLICTING_ANSWERS:
-					next_as->ac_state = A_ERROR;
-					break;
+					/* store the RRSIG in the assertion */
+					next_as->ac_data->rrs_sig = 
+					copy_rr_rec(pending_rrset->rrs_type_h, pending_rrset->rrs_sig, 0);
+					next_as->ac_state = A_WAIT_FOR_TRUST; 
+					/* create a pending query for the trust portion */
+   					signby_name_n = &next_as->ac_data->rrs_sig->rr_rdata[SIGNBY];
+					class_h = next_as->ac_data->rrs_class_h;			
+					if(next_as->ac_data->rrs_type_h == ns_t_dnskey)
+						type_h = ns_t_ds;
+					else 
+						type_h = ns_t_dnskey;
+	
+					if(NO_ERROR != (retval = 
+							add_to_query_chain(queries, signby_name_n, type_h, class_h)))
+						return retval;
+					next_as->ac_pending_query = *queries;
+				}
+			}
+		}
+		else if (next_as->ac_state == A_WAIT_FOR_TRUST) {
+			next_as->ac_trust = pending_as;
+			next_as->ac_pending_query = NULL;
 
-		case Q_ANSWERED:
-					pending_as = pc->qc_as;
-					if(next_as->ac_state == A_WAIT_FOR_RRSIG) {
-						/* We were waiting for the RRSIG */
-						pending_rrset = pending_as->ac_data;
-			
-						/* 
-						 * Check if what we got was an RRSIG 
-						 */
-						if (pending_rrset->rrs_type_h != ns_t_rrsig) {
-							/* Could not find any RRSIG */
-							next_as->ac_state = RRSIG_MISSING; 
-							break;
-						}
-						/* Find the RRSIG that matches the type */
-						for(;pending_rrset;pending_rrset=pending_rrset->rrs_next) { 
-							/* Check if type is in the RRSIG */
-							u_int16_t rrsig_type_h;
-							memcpy(&rrsig_type_h, pending_rrset->rrs_sig, sizeof(u_int16_t));
-							if (rrsig_type_h == next_as->ac_data->rrs_type_h)				
-								break;
-						}
-						if(pending_rrset == NULL) {
-							/* Could not find any RRSIG matching query type*/
-							next_as->ac_state = RRSIG_MISSING; 
-							break;
-						}
+			if((pending_as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT)
+                  || (pending_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
 
-						/* store the RRSIG in the assertion */
-						next_as->ac_data->rrs_sig = 
-						copy_rr_rec(pending_rrset->rrs_type_h, pending_rrset->rrs_sig, 0);
-						next_as->ac_state = A_WAIT_FOR_TRUST; 
-						/* create a pending query for the trust portion */
-   						signby_name_n = &next_as->ac_data->rrs_sig->rr_rdata[SIGNBY];
-						class_h = next_as->ac_data->rrs_class_h;			
-						if(next_as->ac_data->rrs_type_h == ns_t_dnskey)
-							type_h = ns_t_ds;
-						else 
-							type_h = ns_t_dnskey;
-
-						if(NO_ERROR != (retval = 
-								add_to_query_chain(queries, signby_name_n, type_h, class_h)))
-							return retval;
-						next_as->ac_pending_query = *queries;
-					}
-					else if (next_as->ac_state == A_WAIT_FOR_TRUST) {
-						next_as->ac_trust = pending_as;
-						next_as->ac_pending_query = NULL;
-
-						if((pending_as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT)
-		                   || (pending_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
-
-							/* proof of non-existence should follow */
-							next_as->ac_state = A_NEGATIVE_PROOF;
-						}
-						else { 
-							/* XXX what if this is an SR_ANS_CNAME? Can DS or DNSKEY return a CNAME? */
-							/* 
-							 * if the pending assertion contains a straight answer, 
-						   	 * trust is useful for verification 
-							 */
-							next_as->ac_state = A_CAN_VERIFY;
-						}
-					}
-					break;
-
-		default:
-					break;
-						
+				/* proof of non-existence should follow */
+				next_as->ac_state = A_NEGATIVE_PROOF;
+			}
+			else { 
+				/* XXX what if this is an SR_ANS_CNAME? Can DS or DNSKEY return a CNAME? */
+				/* 
+				 * if the pending assertion contains a straight answer, 
+			   	 * trust is useful for verification 
+				 */
+				next_as->ac_state = A_CAN_VERIFY;
+			}
+		}
 	}
 
 	if(next_as->ac_state == A_CAN_VERIFY) 
@@ -1282,7 +947,11 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 		 * as_more is the next answer that we obtained; next_as is the 
 		 * next assertion in the chain of trust
 		 */
+		int thisdone = 1;
+		int last_status = 0;
 		for (next_as=as_more; next_as; next_as=next_as->ac_trust) {
+
+			last_status = next_as->ac_state;
 
 			/* Go up the chain of trust */
 			if(NO_ERROR != (retval = try_verify_assertion(context, queries, next_as))) 
@@ -1303,6 +972,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 			if(next_as->ac_state <= A_INIT) {
 				/* still need more data to validate this assertion */
 				*done = 0;
+				thisdone = 0;
 			}
 			else if (next_as->ac_state == A_TRUSTED) {
 				res->trusted = 1; 
@@ -1338,9 +1008,9 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 					continue;
 				}
 			}
-			else
-				res->status = next_as->ac_state;
 		}
+		if (thisdone && res->status != A_DONT_KNOW)
+			res->status = last_status;
 	}
 	
 	return NO_ERROR;
@@ -1401,6 +1071,7 @@ int resolve_n_check(	val_context_t	*context,
 
 	top_q = *queries;
 	int done = 0;
+	unsigned char data_received = 0;
 
 	while(!done) {
 
@@ -1417,6 +1088,7 @@ int resolve_n_check(	val_context_t	*context,
 		/* Send un-sent queries */
 		if(NO_ERROR != (retval = ask_resolver(context, queries, block, assertions)))
 			return retval;
+		if(block) data_received = 1;
 
 		/* check if more queries have been added */
 		if(last_q != *queries) {
@@ -1429,6 +1101,8 @@ int resolve_n_check(	val_context_t	*context,
 
 		/* Henceforth we will need some data before we can continue */
 		block = 1;
+		if (!data_received)
+			continue;
 
 		/* No point going ahead if our original query had error conditions */
 		if (top_q->qc_state != Q_ANSWERED) {
