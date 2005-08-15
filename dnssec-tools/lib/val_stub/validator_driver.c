@@ -15,7 +15,6 @@
 #include "validator.h"
 
 #include "val_support.h"
-#include "val_resquery.h"
 #include "val_x_query.h"
 #include "val_log.h"
 #include "val_errors.h"
