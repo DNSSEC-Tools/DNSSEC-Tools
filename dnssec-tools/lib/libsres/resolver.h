@@ -59,9 +59,8 @@
 /* Data is from a cache somewhere, or was at best an after thought */
 #define SR_CRED_NONAUTH_ANS      6
 #define SR_CRED_AUTH_ADD         7
-#define SR_CRED_NONAUTH_AUTH         7
+#define SR_CRED_NONAUTH_AUTH     7
 #define SR_CRED_NONAUTH_ADD      7
-
                                                                                                                           
 /* Section values of an RRset */
 #define SR_FROM_UNSET            0
@@ -77,15 +76,6 @@
 #define SR_ANS_NACK_NXT          3
 #define SR_ANS_NACK_SOA          4
 
-
-/* The data arrived covered by a transaction sig */
-#define SR_TSIG_PROTECTED       20
-#define SR_TSIG_PROTECTED_ANSWER    SR_TSIG_PROTECTED + SR_ANS_STRAIGHT
-#define SR_TSIG_PROTECTED_CNAME     SR_TSIG_PROTECTED + SR_ANS_CNAME
-#define SR_TSIG_PROTECTED_NXT       SR_TSIG_PROTECTED + SR_ANS_NACK_NXT
-#define SR_TSIG_PROTECTED_SOA       SR_TSIG_PROTECTED + SR_ANS_NACK_SOA
-
- 
 #define EDNS_UDP_SIZE 4096 
 #define DNAME_MAX	1024
 
@@ -103,31 +93,30 @@
 #endif
 
 /* Resolver errors */
-#define NO_DATA_IN_ANSWER   XX // no data for type
-#define LAME_DELEGATION XX
-#define ANSWER_REFUSED  XX // Generic header error
-#define NO_GLUE XX
-#define GLUE_MISMATCH   XX
-#define DUPLICATE_RR    XX
-
 #define SR_UNSET    0
-#define SR_NULLPTR_ERROR    2
-#define SR_CALL_ERROR   3
-#define SR_INITIALIZATION_ERROR      4
-#define SR_HEADER_ERROR 5
-#define SR_TSIG_ERROR   6
-#define SR_MEMORY_ERROR     7
-#define SR_INTERNAL_ERROR   8
-#define SR_MESSAGE_ERROR         9
-#define SR_DATA_MISSING_ERROR       10
-#define SR_REFERRAL_ERROR       11
-#define SR_NO_ANSWER    12
-#define SR_NO_ANSWER_YET    13
-#define SR_EMPTY_NXDOMAIN       60
-#define SR_WRONG 35
-/* Unstable states (i.e., used internally only) */
-#define SR_DATA_UNCHECKED       66
-#define SR_PROCESS_ERROR    -9
+
+#define SR_CALL_ERROR             1
+#define SR_TSIG_ERROR             2
+#define SR_MEMORY_ERROR           3
+#define SR_NO_ANSWER              4  /* No answer received */
+#define SR_NO_ANSWER_YET          5 
+#define SR_CONFLICTING_ANSWERS    6
+#define SR_NO_NAMESERVER          7  /*No name servers specified */
+#define SR_MKQUERY_INTERNAL_ERROR 8
+#define SR_TSIG_INTERNAL_ERROR    9
+#define SR_SEND_INTERNAL_ERROR    10
+#define SR_RCV_INTERNAL_ERROR     11
+#define SR_WRONG_ANSWER           12 /*Message is not a response to a query*/
+#define SR_HEADER_BADSIZE         13 /*Message size not consistent with record counts*/
+#define SR_NXDOMAIN               14 /*RCODE set to NXDOMAIN w/o appropriate records*/
+#define SR_FORMERR                15 /*RCODE set to FORMERR*/
+#define SR_SERVFAIL               16 /*RCODE set to SERVFAIL*/
+#define SR_NOTIMPL                17 /*RCODE set to NOTIMPL*/
+#define SR_REFUSED                18 /*RCODE set to REFUSED*/
+#define SR_REFERRAL_ERROR         19
+#define SR_GENERIC_FAILURE        20 /*Look at RCODE*/
+
+#define SR_LAST_ERROR 20 
 
 struct name_server
 {
@@ -157,7 +146,6 @@ struct rrset_rec
     u_int16_t       rrs_class_h;    /* ns_c_... */
     u_int32_t       rrs_ttl_h;  /* Received ttl */
     u_int8_t        rrs_cred;   /* SR_CRED_... */
-    u_int8_t        rrs_status; /* SR_anything else */
     u_int8_t        rrs_section;    /* SR_FROM_... */
     u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
     struct rr_rec       *rrs_data;  /* All data RR's */
@@ -170,22 +158,21 @@ int query_send( const char*     name,
             const u_int16_t     type_h,
             const u_int16_t     class_h,
             struct name_server  *nslist,
-			int                 *trans_id,
-            char                **error_msg);
+			int                 *trans_id);
 int response_recv(int           *trans_id,
             struct name_server  **respondent,
 			u_int8_t		    **answer,
-			u_int32_t			*answer_length,
-            char                **error_msg);
+			u_int32_t			*answer_length);
 int get (   const char      *name_n,
             const u_int16_t     type_h,
             const u_int16_t     class_h,
             struct name_server  *nslist,
             struct name_server  **server,
             u_int8_t            **response,
-            u_int32_t           *response_length,
-            char                **error_msg);
+            u_int32_t           *response_length);
 void print_response (u_int8_t *ans, int resplen);
+void free_name_server (struct name_server **ns);
+void free_name_servers (struct name_server **ns);
 
 
 #endif /* RESOLVER_H */
