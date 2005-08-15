@@ -32,8 +32,7 @@
 #include "val_zone.h"
 #include "val_resquery.h"
 #include "val_log.h"
-
-#define DNS_PORT    53
+#include "val_errors.h"
 
 
 void *weird_al_realloc (void *old, size_t new_size)
@@ -58,7 +57,6 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
     /* Look through the unchecked_zone stuff for answers */
     struct rrset_rec    *unchecked_set;
     struct rrset_rec    *trailer;
-    struct rrset_rec    *addr_rrs;
     struct rr_rec       *addr_rr;
     struct rr_rec       *ns_rr;
     struct name_server  *temp_ns;
@@ -103,7 +101,7 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
                     {
                         /* Since we're in trouble, free up just in case */
                         free_name_servers (ns_list);
-                        return SR_MEMORY_ERROR;
+                        return OUT_OF_MEMORY;
                     }
                                                                                                                           
                     /* Make room for the name and insert the name */
@@ -112,7 +110,7 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
                     if (temp_ns->ns_name_n==NULL)
                     {
                         free_name_servers (ns_list);
-                        return SR_MEMORY_ERROR;
+                        return OUT_OF_MEMORY;
                     }
                     memcpy (temp_ns->ns_name_n, ns_rr->rr_rdata, name_len);
                                                                                                                           
@@ -181,7 +179,7 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
                             ns = (struct name_server *)
                                 weird_al_realloc(ns, new_ns_size);
                                                                                                                           
-                            if (ns==NULL) return SR_MEMORY_ERROR;
+                            if (ns==NULL) return OUT_OF_MEMORY;
                                                                                                                           
                             /* Inform the others who know about the old ns */
                                                                                                                           
@@ -214,11 +212,22 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
         unchecked_set = unchecked_set->rrs_next;
     }
 
+#ifdef NEVER
+
+/* For now, simply fail if glue was not automatically returned
+ * In future, we will have to return if the NS list lacked glue
+ * and the outer routine would have to query for A records
+ * learned_zones would have to be saved someplace so that it 
+ * can be passed on every call to this function
+ */
+
     /* One more loop to look for NS's w/o addresses */
+
+    struct rrset_rec    *addr_rrs;
                                                                                                                           
     ns = *ns_list;
     outer_trailer = NULL;
-                                                                                                                          
+
     while (ns)
     {
         if (ns->ns_number_of_addresses==0)
@@ -233,7 +242,6 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
                                                                                                                           
             di.di_requested_name_h = NULL;
             di.di_rrset = NULL;
-            di.di_error_message = NULL;
 			di.di_qnames = NULL;
                                                                                                                           
             /* Probably should select another NS list for this */
@@ -245,13 +253,12 @@ val_log ("QUERYING: '%s.' (getting unchecked address hints)\n",
 ns_name);
 
 }
-            ret_val = val_resquery (context, ns_name, ns_t_a, ns_c_in,
-                        NULL, &di);
+            ret_val = val_resquery (context, ns_name, ns_t_a, ns_c_in, &di);
                                                                                                                           
             /* If answer is good, then use the A records to build the
                 address(es) */
                                                                                                                           
-            if (ret_val == SR_UNSET)
+            if (ret_val == NO_ERROR)
             {
                 addr_rrs = di.di_rrset;
                 while (addr_rrs && addr_rrs->rrs_type_h != ns_t_a)
@@ -278,7 +285,7 @@ ns_name);
                             ns = (struct name_server *)
                                 weird_al_realloc(ns, new_ns_size);
                                                                                                                           
-                            if (ns==NULL) return SR_MEMORY_ERROR;
+                            if (ns==NULL) return OUT_OF_MEMORY;
                                                                                                                           
                             /* Inform the others who know about the old ns */
                                                                                                                           
@@ -327,6 +334,41 @@ ns_name);
         }
     }
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
+}
+
+#endif /* NEVER */
+
+/*
+ * For now simply return only those referrals that
+ * have glue
+ */
+    ns = *ns_list;
+    outer_trailer = NULL;
+    while (ns)
+    {
+        if (ns->ns_number_of_addresses==0)
+        {
+            if (outer_trailer)
+            {
+                outer_trailer->ns_next = ns->ns_next;
+                free_name_server (&ns);
+                ns = outer_trailer->ns_next;
+            }
+            else
+            {
+                *ns_list = ns->ns_next;
+                free_name_server (&ns);
+                if (*ns_list) ns = (*ns_list)->ns_next;
+            }
+        }
+        else /* There is at least one address */
+        {
+            outer_trailer = ns;
+            ns = ns->ns_next;
+        }
+	}
+
+	return NO_ERROR;
 }
 
