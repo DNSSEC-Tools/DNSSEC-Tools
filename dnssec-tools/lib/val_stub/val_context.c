@@ -15,7 +15,6 @@
 #include "validator.h"
 
 #include "val_support.h"
-#include "val_resquery.h"
 #include "val_policy.h"
 #include "val_x_query.h"
 #include "val_log.h"
@@ -30,7 +29,7 @@ val_context_t *get_context(const char *label)
 		return NULL;
 
 	/* Read the Resolver configuration file */	
-	if (read_res_config_file(newcontext) != SR_UNSET) {
+	if (read_res_config_file(newcontext) != NO_ERROR) {
 		FREE (newcontext);
 		return NULL;
 	}
@@ -39,7 +38,7 @@ val_context_t *get_context(const char *label)
 	memset(newcontext->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
 	newcontext->pol_overrides = NULL;
 	newcontext->cur_override = NULL;
-	if (read_val_config_file(newcontext, label) != SR_UNSET) {
+	if (read_val_config_file(newcontext, label) != NO_ERROR) {
 		destroy_respol(newcontext);
 		FREE (newcontext);	
 		return NULL;
