@@ -141,27 +141,6 @@ u_int16_t wire_name_length (const u_int8_t *field)
         return j;
 }
 
-void free_name_server (struct name_server **ns)
-{
-    if (ns && *ns)
-    {
-        if ((*ns)->ns_name_n) FREE ((*ns)->ns_name_n);
-        if ((*ns)->ns_tsig_key) FREE ((*ns)->ns_tsig_key);
-        FREE (*ns);
-        *ns=NULL;
-    }
-}
-                                                                                                                          
-void free_name_servers (struct name_server **ns)
-{
-    if (ns && *ns)
-    {
-        if ((*ns)->ns_next) free_name_servers (&((*ns)->ns_next));
-        free_name_server (ns);
-    }
-}
-
-
 
 void res_sq_free_rr_recs (struct rr_rec **rr)
 {
@@ -200,14 +179,14 @@ int add_to_qname_chain (  struct qname_chain  **qnames,
                                                                                                                           
     temp = (struct qname_chain *) MALLOC (sizeof (struct qname_chain));
                                                                                                                           
-    if (temp==NULL) return SR_MEMORY_ERROR;
+    if (temp==NULL) return OUT_OF_MEMORY;
                                                                                                                           
     memcpy (temp->qnc_name_n, name_n, wire_name_length(name_n));
                                                                                                                           
     temp->qnc_next = *qnames;
     *qnames = temp;
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 
@@ -251,13 +230,6 @@ void free_domain_info_ptrs (struct domain_info *di)
 	{
 		free_qname_chain(&di->di_qnames);
 	}
-
-    if (di->di_error_message)
-    {
-        FREE (di->di_error_message);
-        di->di_error_message = NULL;
-    }
-
 }
 
 int is_tail (u_int8_t *full, u_int8_t *tail)
@@ -317,7 +289,7 @@ int add_to_set (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
     }
                                                                                                                           
     /* Make sure we got the memory for it */
-    if (rr == NULL) return SR_MEMORY_ERROR;
+    if (rr == NULL) return OUT_OF_MEMORY;
                                                                                                                           
     /* Insert the data, copying the rdata pointer */
     rr->rr_rdata_length_h = rdata_len_h;
@@ -325,7 +297,7 @@ int add_to_set (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
     memcpy (rr->rr_rdata ,rdata, rdata_len_h);
     rr->rr_next = NULL;
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 int add_as_sig (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
@@ -351,7 +323,7 @@ int add_as_sig (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
     }
                                                                                                                           
     /* Make sure we got the memory for it */
-    if (rr == NULL) return SR_MEMORY_ERROR;
+    if (rr == NULL) return OUT_OF_MEMORY;
                                                                                                                           
     /* Insert the data, copying the rdata pointer */
     rr->rr_rdata_length_h = rdata_len_h;
@@ -362,7 +334,7 @@ int add_as_sig (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
     memcpy (rr->rr_rdata ,rdata, rdata_len_h);
     rr->rr_next = NULL;
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 int init_rr_set (   struct rrset_rec    *new_set,
@@ -373,21 +345,20 @@ int init_rr_set (   struct rrset_rec    *new_set,
                     u_int32_t           ttl_h,
                     u_int8_t            *rdata_n,
                     int                 from_section,
-                    int                 authoritive_answer,
-                    int                 tsig_ed)
+                    int                 authoritive_answer)
 {
     int                 name_len = wire_name_length(name_n);
                                                                                                                           
     if (new_set->rrs_name_n != NULL)
         /* This has already been initialized */
-        return SR_UNSET;
+        return NO_ERROR;
                                                                                                                           
     /* Initialize it */
     new_set->rrs_name_n = (u_int8_t *)MALLOC (name_len);
     if (new_set->rrs_name_n==NULL)
     {
         FREE (new_set);
-        return SR_MEMORY_ERROR;
+        return OUT_OF_MEMORY;
     }
                                                                                                                           
     memcpy (new_set->rrs_name_n, name_n, name_len);
@@ -411,10 +382,6 @@ int init_rr_set (   struct rrset_rec    *new_set,
     else
         new_set->rrs_cred = SR_CRED_UNSET;
                                                                                                                           
-    /* Set the status */
-                                                                                                                          
-    new_set->rrs_status = tsig_ed ? SR_TSIG_PROTECTED : SR_DATA_UNCHECKED;
-                                                                                                                          
     /* Set the source section */
                                                                                                                           
     new_set->rrs_section = from_section;
@@ -423,7 +390,7 @@ int init_rr_set (   struct rrset_rec    *new_set,
                                                                                                                           
     new_set->rrs_ans_kind = SR_ANS_UNSET;
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 #define IS_THE_ONE(a,n,l,t,s,c,r) \
@@ -465,8 +432,7 @@ struct rrset_rec *find_rr_set (
                                 u_int32_t           ttl_h,
                                 u_int8_t            *rdata_n,
                                 int                 from_section,
-                                int                 authoritive_answer,
-                                int                 tsig_ed)
+                                int                 authoritive_answer)
 {
     struct rrset_rec    *try;
     struct rrset_rec    *last;
@@ -501,8 +467,8 @@ struct rrset_rec *find_rr_set (
                                                                                                                           
         memset (new_one, 0, sizeof (struct rrset_rec));
         if ((init_rr_set (new_one, name_n, type_h, set_type_h,
-                class_h,ttl_h,rdata_n,from_section, authoritive_answer,tsig_ed))
-                    !=SR_UNSET)
+                class_h,ttl_h,rdata_n,from_section, authoritive_answer))
+                    !=NO_ERROR)
         {
             res_sq_free_rrset_recs (the_list);
             return NULL;
@@ -528,11 +494,11 @@ int check_label_count (
     u_int8_t owner_labels = wire_name_labels (the_set->rrs_name_n);
     u_int8_t sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
                                                                                                                           
-    if (sig_labels > owner_labels) return SR_PROCESS_ERROR;
+    if (sig_labels > owner_labels) return ERROR;
                                                                                                                           
     *is_a_wildcard = (sig_labels < owner_labels);
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 
@@ -543,11 +509,11 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
 {
     size_t length = wire_name_length (query_name_n);
                                                                                                                           
-    if (length ==0) return SR_INTERNAL_ERROR;
+    if (length ==0) return INTERNAL_ERROR;
                                                                                                                           
     *answers = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
                                                                                                                           
-    if (*answers==NULL) return SR_MEMORY_ERROR;
+    if (*answers==NULL) return OUT_OF_MEMORY;
                                                                                                                           
     (*answers)->rrs_name_n = (u_int8_t *) MALLOC (length);
                                                                                                                           
@@ -555,7 +521,7 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
     {
         FREE (*answers);
         *answers = NULL;
-        return SR_MEMORY_ERROR;
+        return OUT_OF_MEMORY;
     }
                                                                                                                           
     memcpy ((*answers)->rrs_name_n, query_name_n, length);
@@ -563,13 +529,12 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
     (*answers)->rrs_class_h = query_class_h;
     (*answers)->rrs_ttl_h = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
-    (*answers)->rrs_status = SR_EMPTY_NXDOMAIN;
     (*answers)->rrs_section = SR_FROM_UNSET;
     (*answers)->rrs_data = NULL;
     (*answers)->rrs_sig = NULL;
     (*answers)->rrs_next = NULL;
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 int decompress( u_int8_t    **rdata,
@@ -601,7 +566,7 @@ int decompress( u_int8_t    **rdata,
         case ns_t_isdn: case ns_t_ds:	default:
             new_size = (size_t)*rdata_len_h;
             *rdata = (u_int8_t*) MALLOC (new_size);
-            if (*rdata==NULL) return SR_MEMORY_ERROR;
+            if (*rdata==NULL) return OUT_OF_MEMORY;
                                                                                                                           
             memcpy (&(*rdata)[insert_index], &response[rdata_index], new_size);
             *rdata_len_h = *rdata_len_h; /* No change */
@@ -615,7 +580,7 @@ int decompress( u_int8_t    **rdata,
                                     &response[working_index],
                                     other_expanded_name,MAXDNAME);
                                                                                                                           
-            if (working_increment < 0) return SR_INTERNAL_ERROR;
+            if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
             working_index += working_increment;
             other_name_length = wire_name_length (other_expanded_name);
@@ -628,7 +593,7 @@ int decompress( u_int8_t    **rdata,
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
                                     expanded_name,MAXDNAME);
-            if (working_increment < 0) return SR_INTERNAL_ERROR;
+            if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
             working_index += working_increment;
             name_length = wire_name_length (expanded_name);
@@ -639,7 +604,7 @@ int decompress( u_int8_t    **rdata,
             new_size = (size_t) (*rdata_len_h + expansion);
                                                                                                                           
             *rdata = (u_int8_t*) MALLOC (new_size);
-            if (*rdata==NULL) return SR_MEMORY_ERROR;
+            if (*rdata==NULL) return OUT_OF_MEMORY;
                                                                                                                           
             /* Copy in the names */
                                                                                                                           
@@ -676,7 +641,7 @@ int decompress( u_int8_t    **rdata,
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
                                     expanded_name,MAXDNAME);
-            if (working_increment < 0) return SR_INTERNAL_ERROR;
+            if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
             working_index += working_increment;
             name_length = wire_name_length (expanded_name);
@@ -687,7 +652,7 @@ int decompress( u_int8_t    **rdata,
                 working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
                                     other_expanded_name,MAXDNAME);
-                if (working_increment < 0) return SR_INTERNAL_ERROR;
+                if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
                 working_index += working_increment;
                 other_name_length = wire_name_length (other_expanded_name);
@@ -699,7 +664,7 @@ int decompress( u_int8_t    **rdata,
             new_size = (size_t) (*rdata_len_h + expansion);
                                                                                                                           
             *rdata = (u_int8_t*) MALLOC (new_size);
-            if (*rdata==NULL) return SR_MEMORY_ERROR;
+            if (*rdata==NULL) return OUT_OF_MEMORY;
                                                                                                                           
             /* Copy in the prefix */
             memcpy(&*rdata[insert_index],prefix,p_index);
@@ -723,7 +688,7 @@ int decompress( u_int8_t    **rdata,
 
             working_increment = ns_name_unpack (response,end,
                     &response[working_index+SIGNBY], expanded_name,MAXDNAME);
-            if (working_increment < 0) return SR_INTERNAL_ERROR;
+            if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
             name_length = wire_name_length (expanded_name);
             expansion += name_length - working_increment;
@@ -733,7 +698,7 @@ int decompress( u_int8_t    **rdata,
             new_size = (size_t) (*rdata_len_h + expansion);
                                                                                                                           
             *rdata = (u_int8_t*) MALLOC (new_size);
-            if (*rdata==NULL) return SR_MEMORY_ERROR;
+            if (*rdata==NULL) return OUT_OF_MEMORY;
                                                                                                                           
             memcpy(&(*rdata)[insert_index], &response[working_index],SIGNBY);
             insert_index += SIGNBY;
@@ -749,7 +714,7 @@ int decompress( u_int8_t    **rdata,
             *rdata_len_h += expansion;
     }
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
 
 int extract_from_rr (   u_int8_t *response,
@@ -770,7 +735,7 @@ int extract_from_rr (   u_int8_t *response,
     /* Extract the uncompressed (unpacked) domain name in protocol format */
     if ((ret_val = ns_name_unpack (response, end, &response[*response_index],
                                     name_n, MAXDNAME))==-1)
-        return SR_INTERNAL_ERROR;
+        return INTERNAL_ERROR;
                                                                                                                           
     *response_index += ret_val;
                                                                                                                           
@@ -816,8 +781,333 @@ int extract_from_rr (   u_int8_t *response,
                                                                                                                           
     *response_index += *rdata_length_h;
                                                                                                                           
-    return SR_UNSET;
+    return NO_ERROR;
 }
+
+void lower_name (u_int8_t rdata[], int *index)
+{
+                                                                                                                          
+    /* Convert the upper case characters in a domain name to lower case */
+                                                                                                                          
+    int length = wire_name_length(&rdata[(*index)]);
+                                                                                                                          
+    while ((*index) < length)
+    {
+        rdata[(*index)] = tolower(rdata[(*index)]);
+        (*index)++;
+    }
+}
+
+void lower (u_int16_t type_h, u_int8_t *rdata, int len)
+{
+    /* Convert the case of any domain name to lower in the RDATA section */
+                                                                                                                          
+    int index = 0;
+                                                                                                                          
+    switch (type_h)
+    {
+        /* These RR's have no domain name in them */
+                                                                                                                          
+        case ns_t_nsap: case ns_t_eid:      case ns_t_nimloc:   case ns_t_dnskey:
+        case ns_t_aaaa: case ns_t_loc:      case ns_t_atma:     case ns_t_a:
+        case ns_t_wks:  case ns_t_hinfo:    case ns_t_txt:      case ns_t_x25:
+        case ns_t_isdn: case ns_t_ds:       default:
+                                                                                                                          
+            return;
+                                                                                                                          
+        /* These RR's have two domain names at the start */
+                                                                                                                          
+        case ns_t_soa:  case ns_t_minfo:    case ns_t_rp:
+                                                                                                                          
+            lower_name (rdata, &index);
+            /* fall through */
+                                                                                                                          
+                                                                                                                          
+        /* These have one name (and are joined by the code above) */
+                                                                                                                          
+        case ns_t_ns:   case ns_t_cname:    case ns_t_mb:       case ns_t_mg:
+        case ns_t_mr:   case ns_t_ptr:      case ns_t_nsec:
+                                                                                                                          
+            lower_name (rdata, &index);
+                                                                                                                          
+            return;
+                                                                                                                          
+        /* These RR's end in one or two domain names */
+                                                                                                                          
+        case ns_t_srv:
+                                                                                                                          
+            index = 4; /* SRV has three preceeding 16 bit quantities */
+                                                                                                                          
+        case ns_t_rt: case ns_t_mx: case ns_t_afsdb: case ns_t_px:
+                                                                                                                          
+            index += 2; /* Pass the 16 bit quatity prior to the name */
+                                                                                                                          
+            lower_name (rdata, &index);
+                                                                                                                          
+            /* Get the second tail name (only in PX records) */
+            if (type_h == ns_t_px) lower_name (rdata, &index);
+                                                                                                                          
+            return;
+                                                                                                                          
+        /* The last case is RR's with names in the middle. */
+        /*
+            Note: this code is never used as SIG's are the only record in
+            this case.  SIG's are not signed, so they never are run through
+            this code.  This is left here in case other RR's are defined in
+            this unfortunate (for them) manner.
+        */
+        case ns_t_rrsig:
+                                                                                                                          
+            index = SIGNBY;
+                                                                                                                          
+            lower_name (rdata, &index);
+                                                                                                                          
+            return;
+    }
+}
+
+
+
+struct rr_rec *copy_rr_rec (u_int16_t type_h, struct rr_rec *r, int dolower)
+{
+    /*
+        Make a copy of an RR, lowering the case of any contained
+        domain name in the RR section.
+    */
+    struct rr_rec *the_copy;
+                                                                                                                          
+    the_copy = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
+                                                                                                                          
+    if (the_copy==NULL) return NULL;
+                                                                                                                          
+    the_copy->rr_rdata_length_h = r->rr_rdata_length_h;
+    the_copy->rr_rdata = (u_int8_t *) MALLOC (the_copy->rr_rdata_length_h);
+                                                                                                                          
+    if (the_copy->rr_rdata==NULL) return NULL;
+                                                                                                                          
+    memcpy (the_copy->rr_rdata, r->rr_rdata, r->rr_rdata_length_h);
+                                                                                                                          
+	if(dolower)
+	    lower (type_h, the_copy->rr_rdata, the_copy->rr_rdata_length_h);
+                                                                                                                          
+    the_copy->rr_next = NULL;
+    return the_copy;
+}
+
+#define INSERTED    1
+#define DUPLICATE   -1
+int link_rr (struct rr_rec **cs, struct rr_rec *cr)
+{
+    /*
+        Insert a copied RR into the set being prepared for signing.  This
+        is an implementation of an insertoin sort.
+    */
+    int             ret_val;
+    int             length;
+    struct rr_rec   *temp_rr;
+                                                                                                                          
+    if (*cs == NULL)
+    {
+        *cs = cr;
+        return INSERTED;
+    }
+    else
+    {
+        length =(*cs)->rr_rdata_length_h<cr->rr_rdata_length_h?
+                (*cs)->rr_rdata_length_h:cr->rr_rdata_length_h;
+                                                                                                                          
+        ret_val = memcmp ((*cs)->rr_rdata, cr->rr_rdata, length);
+                                                                                                                          
+        if (ret_val==0&&(*cs)->rr_rdata_length_h==cr->rr_rdata_length_h)
+        {
+            /* cr is a copy of an existing record, forget it... */
+            FREE (cr->rr_rdata);
+            FREE (cr);
+            return DUPLICATE;
+        }
+        else if (ret_val > 0 || (ret_val==0 && length==cr->rr_rdata_length_h))
+        {
+            cr->rr_next = *cs;
+            *cs = cr;
+            return INSERTED;
+        }
+        else
+        {
+            temp_rr = *cs;
+                                                                                                                          
+            if (temp_rr->rr_next == NULL)
+            {
+                temp_rr->rr_next = cr;
+                cr->rr_next = NULL;
+                return INSERTED;
+            }
+            while (temp_rr->rr_next)
+            {
+                length = temp_rr->rr_next->rr_rdata_length_h <
+                                                cr->rr_rdata_length_h ?
+                         temp_rr->rr_next->rr_rdata_length_h :
+                                                cr->rr_rdata_length_h;
+                                                                                                                          
+                ret_val = memcmp (temp_rr->rr_next->rr_rdata, cr->rr_rdata,
+                                    length);
+                if (ret_val==0 &&
+                    temp_rr->rr_next->rr_rdata_length_h==cr->rr_rdata_length_h)
+                {
+                    /* cr is a copy of an existing record, forget it... */
+                    FREE (cr->rr_rdata);
+                    FREE (cr);
+                    return DUPLICATE;
+                }
+                else if (ret_val>0||(ret_val==0&&length==cr->rr_rdata_length_h))
+                {
+                    /* We've found a home for the record */
+                    cr->rr_next = temp_rr->rr_next;
+                    temp_rr->rr_next = cr;
+                    return INSERTED;
+                }
+                temp_rr = temp_rr->rr_next;
+            }
+                                                                                                                          
+            /* If we've gone this far, add the record to the end of the list */
+                                                                                                                          
+            temp_rr->rr_next = cr;
+            cr->rr_next = NULL;
+            return INSERTED;
+        }
+    }
+}
+
+struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
+{
+    struct rrset_rec    *copy_set;
+    struct rr_rec       *orig_rr;
+    struct rr_rec       *copy_rr;
+    size_t              o_length;
+                                                                              
+    copy_set = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
+                                                                                                                          
+    if (copy_set == NULL) return NULL;
+                                                                                                                          
+    o_length = wire_name_length (rr_set->rrs_name_n);
+
+    memcpy (copy_set, rr_set, sizeof(struct rrset_rec));
+    copy_set->rrs_data = NULL;
+    copy_set->rrs_next = NULL;
+    copy_set->rrs_sig = NULL;
+    copy_set->rrs_name_n = NULL;
+	copy_set->rrs_name_n = (u_int8_t *) MALLOC (o_length);
+	if (copy_set->rrs_name_n == NULL) {
+		FREE(copy_set);
+		return NULL;
+	}
+	memcpy(copy_set->rrs_name_n, rr_set->rrs_name_n, o_length); 
+                                                                                                                     
+    /*
+        Do an insertion sort of the records in rr_set.  As records are
+        copied, convert the domain names to lower case.
+    */
+                                                                                                                          
+    for (orig_rr = rr_set->rrs_data; orig_rr; orig_rr = orig_rr->rr_next)
+    {
+        /* Copy it into the right form for verification */
+        copy_rr = copy_rr_rec (rr_set->rrs_type_h, orig_rr, 1);
+                                                                                                                          
+        if (copy_rr==NULL) return NULL;
+                                                                                                                          
+        /* Now, find a place for it */
+                                                                                                                          
+        link_rr (&copy_set->rrs_data, copy_rr);
+    }
+	/* Copy the rrsigs also */
+
+    for (orig_rr = rr_set->rrs_sig; orig_rr; orig_rr = orig_rr->rr_next)
+    {
+        /* Copy it into the right form for verification */
+        copy_rr = copy_rr_rec (rr_set->rrs_type_h, orig_rr, 0);
+                                                                                                                          
+        if (copy_rr==NULL) return NULL;
+                                                                                                                          
+        /* Now, find a place for it */
+                                                                                                                          
+        link_rr (&copy_set->rrs_sig, copy_rr);
+    }
+
+    return copy_set;
+}
+
+/*
+ * Add {domain_name, type, class} to the list of queries currently active
+ * for validating a response. 
+ *
+ * Returns:
+ * NO_ERROR			Operation succeeded
+ * OUT_OF_MEMORY	Could not allocate enough memory for operation
+ */
+int add_to_query_chain(struct query_chain **queries, u_char *name_n, 
+						const u_int16_t type_h, const u_int16_t class_h)
+{
+	struct query_chain *temp, *prev;
+
+	/* Check if query already exists */
+	temp = *queries;
+	prev = temp;
+	while(temp) {
+		if ((namecmp(temp->qc_name_n, name_n)==0)
+				&& (temp->qc_type_h == type_h)
+				&& (temp->qc_class_h == class_h))
+			break;
+		prev = temp;
+		temp = temp->qc_next;
+	}
+
+	/* If query already exists, bring it to the front of the list */
+	if(temp != NULL) {
+		if(prev != temp) {
+			prev->qc_next = temp->qc_next;
+			temp->qc_next = *queries;
+			*queries = temp;
+		}
+		return NO_ERROR;
+	}
+
+	temp = (struct query_chain *) MALLOC (sizeof (struct query_chain));
+	if (temp==NULL) return OUT_OF_MEMORY;
+                                                                                                                          
+	memcpy (temp->qc_name_n, name_n, wire_name_length(name_n));
+	temp->qc_type_h = type_h; 
+	temp->qc_class_h = class_h; 
+	temp->qc_state = Q_INIT;    
+	temp->qc_as = NULL;   
+	temp->qc_ns_list = NULL;
+	temp->qc_trans_id = -1;
+	temp->qc_referral = NULL;
+	temp->qc_next = *queries;
+	*queries = temp;
+                                                                                                                          
+	return NO_ERROR;
+}
+
+
+/*
+ * Free up the query chain.
+ */
+void free_query_chain(struct query_chain **queries)
+{
+	if (queries==NULL || (*queries)==NULL) return;
+                                                                                                                          
+	if ((*queries)->qc_next)
+		free_query_chain (&((*queries)->qc_next));
+
+	// delegation information should already be free-d up
+	if((*queries)->qc_ns_list != NULL)
+		free_name_servers(&(*queries)->qc_ns_list);
+
+	FREE (*queries);
+	(*queries) = NULL;
+
+}
+
+
 
 char *p_val_error(int errno)
 {
@@ -873,7 +1163,6 @@ char *p_val_error(int errno)
     case CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
     case WRONG_RRSIG_OWNER: return "WRONG_RRSIG_OWNER"; break;
     case KEYTAG_MISMATCH: return "KEYTAG_MISMATCH"; break;
-    case DNS_FAILURE: return "DNS_FAILURE"; break;
     case WAITING: return "WAITING"; break;
     case WAKEUP: return "WAKEUP"; break;
     case OVERREACHING_NSEC: return "OVERREACHING_NSEC"; break;
