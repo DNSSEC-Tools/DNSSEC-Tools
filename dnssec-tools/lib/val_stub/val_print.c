@@ -47,7 +47,6 @@ void dump_rrset(struct rrset_rec *rrset)
 	val_log("    rrs_class   = %s\n", p_class(rrset->rrs_class_h));
 	val_log("    rrs_ttl     = %d\n", rrset->rrs_ttl_h);
 	val_log("    rrs_section = %s\n", p_section(rrset->rrs_section - 1, !ns_o_update));
-	val_log("    rrs_status  = %s [%d]\n", p_val_error(rrset->rrs_status), rrset->rrs_status);
 
 	val_log("    rrs_data    =\n");
 	rr = rrset->rrs_data;
@@ -82,7 +81,7 @@ void dump_dinfo(struct domain_info *dinfo)
     PRINTS("  requested name  = ", dinfo->di_requested_name_h);
     val_log("  requested type  = %s\n", p_type(dinfo->di_requested_type_h));
     val_log("  requested class = %s\n", p_class(dinfo->di_requested_class_h));
-    PRINTS("  error_message   = ", dinfo->di_error_message);
+    val_log("  resolver error code = %s\n", dinfo->di_res_error);
 
     val_log("  qnames =\n");
     qc = dinfo->di_qnames;
