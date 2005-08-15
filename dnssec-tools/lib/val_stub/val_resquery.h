@@ -7,11 +7,11 @@
 
 #include "validator.h"
 
-int val_resquery ( 	val_context_t			*context,
-					const char              *domain_name,
-                    const u_int16_t         type,
-                    const u_int16_t         class,
-					struct name_server      *nslist,
-					struct domain_info      *response);
+int val_resquery_send (	val_context_t           *context,
+                        struct query_chain      *matched_q);
+int val_resquery_rcv ( 	
+					val_context_t *context,
+					struct query_chain *matched_q,
+					struct domain_info **response);
 
 #endif /* VAL_RESQUERY_H */
