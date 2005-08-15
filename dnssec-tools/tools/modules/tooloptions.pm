@@ -898,31 +898,19 @@ caller.
 
 B</usr/local/etc/dnssec/dnssec-tools.conf> has these entries:
 
-=over 4
+    ksklength      1024
 
-ksklength      1024
-
-zsklength      512
-
-=back
+    zsklength      512
 
 example.keyrec has this entry:
 
-=over 4
+    key         "Kexample.com.+005+10988"
 
-key	"Kexample.com.+005+10988"
-
-zsklength	"1024"
-
-=back
+    zsklength	"1024"
 
 B<zonesigner> is executed with this command line:
 
-=over 4
-
-zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com
-
-=back
+    zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com
 
 I<tooloptions("example.keyrec","Kexample.com.+005+10988",("wait=i"))>
 will read each option source in turn, ending up with:
@@ -1095,8 +1083,5 @@ zonesigner(1)
 Net::DNS::SEC::Tools::conf(3), Net::DNS::SEC::Tools::keyrec(3), Getopt::Long(3)
 
 Net::DNS::SEC::Tools::keyrec(5)
-
-
-=head1 TODO
 
 =cut
