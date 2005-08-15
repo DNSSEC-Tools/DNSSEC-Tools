@@ -35,8 +35,6 @@ int namecmp (const u_int8_t *name1, const u_int8_t *name2);
 u_int16_t wire_name_labels (const u_int8_t *field);
 u_int16_t wire_name_length (const u_int8_t *field);
 
-void free_name_server (struct name_server **ns);
-void free_name_servers (struct name_server **ns);
 void res_sq_free_rr_recs (struct rr_rec **rr);
 void res_sq_free_rrset_recs (struct rrset_rec **set);
 int add_to_qname_chain (  struct qname_chain  **qnames,
@@ -56,8 +54,8 @@ int init_rr_set (   struct rrset_rec    *new_set,
                     u_int32_t           ttl_h,
                     u_int8_t            *rdata_n,
                     int                 from_section,
-                    int                 authoritive_answer,
-                    int                 tsig_ed);
+                    int                 authoritive_answer);
+
 struct rrset_rec *find_rr_set (
                                 struct rrset_rec    **the_list,
                                 u_int8_t            *name_n,
@@ -67,8 +65,7 @@ struct rrset_rec *find_rr_set (
                                 u_int32_t           ttl_h,
                                 u_int8_t            *rdata_n,
                                 int                 from_section,
-                                int                 authoritive_answer,
-                                int                 tsig_ed);
+                                int                 authoritive_answer);
 int check_label_count (
                             struct rrset_rec    *the_set,
                             struct rr_rec       *the_sig,
@@ -94,5 +91,13 @@ int extract_from_rr (   u_int8_t *response,
                         u_int32_t *ttl_h,
                         u_int16_t *rdata_length_h,
                         int *rdata_index);
+void lower_name (u_int8_t rdata[], int *index);
+void lower (u_int16_t type_h, u_int8_t *rdata, int len);
+struct rr_rec *copy_rr_rec (u_int16_t type_h, struct rr_rec *r, int dolower);
+int link_rr (struct rr_rec **cs, struct rr_rec *cr);
+struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set);
+int add_to_query_chain(struct query_chain **queries, u_char *name_n, 
+						const u_int16_t type_h, const u_int16_t class_h);
+void free_query_chain(struct query_chain **queries);
 
 #endif /* VAL_SUPPORT_H */
