@@ -81,7 +81,6 @@ static void stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_
                                 data, sig
                     */
                     old->rrs_cred = new->rrs_cred;
-                    old->rrs_status = new->rrs_status;
                     old->rrs_section = new->rrs_section;
                     old->rrs_ans_kind = new->rrs_ans_kind;
                     rr_exchange = old->rrs_data;
