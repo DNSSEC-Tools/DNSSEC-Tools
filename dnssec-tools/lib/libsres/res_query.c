@@ -37,29 +37,6 @@
 #define ENVELOPE	10
 #define EMSG_MAX   2048
 
-static int res_sq_set_message(char **error_msg, char *msg, int error_code)
-{
-    *error_msg = (char *) MALLOC (strlen(msg)+1);
-    if (*error_msg==NULL) return SR_MEMORY_ERROR;
-    sprintf (*error_msg, "%s", msg);
-    return error_code;
-}
-
-static int res_sq_set_tsig_msg (char **error_msg, char *msg,
-                            struct name_server *server, int error_code)
-{
-    char    name_h[DNAME_MAX];
-                                                                                                                          
-    if ((server->ns_name_n == NULL) ||
-		(wire_to_ascii_name (name_h, server->ns_name_n, DNAME_MAX)==-1))
-        strcpy (name_h, "<unprintable>");
-                                                                                                                          
-    *error_msg = (char *) MALLOC (strlen(msg)+ 2 + strlen(name_h));
-    if (*error_msg==NULL) return SR_MEMORY_ERROR;
-    sprintf (*error_msg, "%s %s", msg, name_h);
-    return error_code;
-}
-
 static u_int16_t wire_name_length (const u_int8_t *field)
 {
     /* Calculates the number of bytes in a DNS wire format name */
@@ -159,25 +136,21 @@ int right_sized (   u_int8_t    *response,
 }
 
 int theres_something_wrong_with_header (    u_int8_t    *response,
-                                            u_int32_t   response_length,
-                                            char        **error_msg)
+                                            u_int32_t   response_length)
 {
     HEADER  *header = (HEADER *) response;
                                                                                                                           
     /* Check to see if this is supposed to be a real response */
                                                                                                                           
     if (header->qr == 1 && header->opcode != ns_o_query)
-        return res_sq_set_message (error_msg,
-                "Message is not a response to a query", SR_HEADER_ERROR);
+		return SR_WRONG_ANSWER;
                                                                                                                           
     /* Check the length and count of the records */
                                                                                                                           
     if (right_sized (response, response_length)==FALSE)
-        return res_sq_set_message (error_msg,
-            "Message size not consistent with record counts", SR_HEADER_ERROR);
-                                                                                                                          
+		return SR_HEADER_BADSIZE;
+
     /* Check the RCODE value */
-                                                                                                                          
     /* RCODE of no error is always welcome */
                                                                                                                           
     if (header->rcode == ns_r_noerror)
@@ -221,46 +194,90 @@ int theres_something_wrong_with_header (    u_int8_t    *response,
             }
         }
                                                                                                                           
-        return res_sq_set_message (error_msg,
-            "RCODE set to NXDOMAIN w/o appropriate records", SR_HEADER_ERROR);
+        return SR_NXDOMAIN;
     }
 
     switch (header->rcode)
     {
         case ns_r_formerr:
-            return res_sq_set_message (error_msg,
-                "RCODE set to FORMERR", SR_HEADER_ERROR);
+			return SR_FORMERR;
                                                                                                                           
         case ns_r_servfail:
-            return res_sq_set_message (error_msg,
-                "RCODE set to SERVFAIL", SR_HEADER_ERROR);
+			return SR_SERVFAIL;
                                                                                                                           
         case ns_r_notimpl:
-            return res_sq_set_message (error_msg,
-                "RCODE set to NOTIMPL", SR_HEADER_ERROR);
+            return SR_NOTIMPL; 
                                                                                                                           
         case ns_r_refused:
-            return res_sq_set_message (error_msg,
-                "RCODE set to REFUSED", SR_HEADER_ERROR);
+			return SR_REFUSED;
                                                                                                                           
         default:
-        {
-            char    message[EMSG_MAX];
-            sprintf (message, "RCODE set to 0x%x", header->rcode);
-            return res_sq_set_message (error_msg,message,SR_HEADER_ERROR);
-        }
+			return SR_GENERIC_FAILURE;
     }
                                                                                                                           
     return SR_UNSET;
+}
+
+int clone_ns(struct name_server **cloned_ns, struct name_server *ns)
+{
+	/* Create the structure for the name server */
+    *cloned_ns = (struct name_server *)
+						MALLOC(sizeof(struct name_server));
+	if (*cloned_ns == NULL)
+		return SR_MEMORY_ERROR;
+
+	/* Make room for the name and insert the name */
+	int name_len = wire_name_length (ns->ns_name_n);
+	(*cloned_ns)->ns_name_n = 
+		(u_int8_t *)MALLOC(name_len);
+	if ((*cloned_ns)->ns_name_n==NULL)
+		return SR_MEMORY_ERROR;
+	memcpy ((*cloned_ns)->ns_name_n, ns->ns_name_n, name_len);
+
+	/* Initialize the rest of the fields */
+	(*cloned_ns)->ns_tsig_key = NULL; //XXX Still not doing anything with TSIG
+	(*cloned_ns)->ns_security_options = ns->ns_security_options;
+	(*cloned_ns)->ns_status = ns->ns_status;
+	(*cloned_ns)->ns_number_of_addresses = ns->ns_number_of_addresses;
+	memcpy((*cloned_ns)->ns_address, ns->ns_address, sizeof(struct sockaddr));
+	(*cloned_ns)->ns_next = NULL;
+
+	return SR_UNSET;
+}
+
+int clone_ns_list(struct name_server **ns_list, struct name_server *orig_ns_list)
+{
+	struct name_server *ns, *tail_ns;
+	int ret_val;
+
+	*ns_list = NULL;
+	for(ns = orig_ns_list; ns != NULL; ns = ns->ns_next) {
+
+		struct name_server *temp_ns;
+		if((ret_val = clone_ns(&temp_ns, ns)) != SR_UNSET)
+			return ret_val;
+
+		/* Add the name server record to the list */
+		if (*ns_list == NULL)
+			*ns_list = temp_ns;
+		else
+		{
+			/* Preserving order in case of round robin */
+			tail_ns = *ns_list;
+			while (tail_ns->ns_next != NULL)
+				tail_ns = tail_ns->ns_next;
+			tail_ns->ns_next = temp_ns;
+		}
+	}
+	return SR_UNSET;
 }
 
 
 int query_send( const char*     name,
             const u_int16_t     type_h,
             const u_int16_t     class_h,
-            struct name_server  *ns,
-			int                 *trans_id,
-            char                **error_msg)
+            struct name_server  *pref_ns,
+			int                 *trans_id)
 {
 	u_int8_t			query[12+MAXDNAME+4];
 	int					query_limit = 12+MAXDNAME+4;
@@ -271,13 +288,12 @@ int query_send( const char*     name,
 	int					signed_length;
 
 	struct name_server *ns_list = NULL; 
+	struct name_server *ns; 
 
 	*trans_id = -1;
 
-	if (ns == NULL) 
-		return res_sq_set_message(error_msg,
-					"No name servers specified", SR_INTERNAL_ERROR);
-
+	if (pref_ns == NULL) 
+		return SR_NO_NAMESERVER;
 
 	/* Form the query with res_nmkquery_n */
 	query_length = res_nmkquery (&_res, ns_o_query, name, class_h, type_h,
@@ -285,16 +301,16 @@ int query_send( const char*     name,
 	_res.options |= RES_USE_DNSSEC;
     query_length = res_nopt(&_res, query_length, query, query_limit, EDNS_UDP_SIZE);	
 	if (query_length == -1)
-		return res_sq_set_message(error_msg,
-					"Internal error in res_nmkquery_n", SR_INTERNAL_ERROR);
+		return SR_MKQUERY_INTERNAL_ERROR;
 	/* Set the CD flag */
 	((HEADER *)query)->cd = 1;
 	//((HEADER *)query)->rd = 0;
 
 	/*res_io_stall();*/
 
-	/* XXX clone those and store to ns_list */
-	ns_list = ns;
+	/* clone these and store to ns_list */
+	if ((ret_val = clone_ns_list(&ns_list, pref_ns)) != SR_UNSET)
+		return ret_val;
 
 	/* Loop through the list of destinations */
 	for (ns = ns_list; ns; ns = ns->ns_next)
@@ -307,8 +323,7 @@ int query_send( const char*     name,
 			else /* SR_TS_CALL_ERROR */
 			{
 				res_io_cancel (trans_id);
-	               return res_sq_set_message(error_msg,
-    	               "Internal error in query_send", SR_INTERNAL_ERROR);
+    	        return SR_TSIG_INTERNAL_ERROR;
 			}
 		}
 
@@ -323,8 +338,7 @@ int query_send( const char*     name,
 			if (ret_val == SR_IO_MEMORY_ERROR)
 				return SR_MEMORY_ERROR;
 
-	        return res_sq_set_message(error_msg,
-        	       "Internal error in query_send", SR_INTERNAL_ERROR);
+    	    return SR_SEND_INTERNAL_ERROR;
 		}
 
 	}
@@ -336,8 +350,7 @@ int query_send( const char*     name,
 int response_recv(int           *trans_id,
             struct name_server  **respondent,
 			u_int8_t		    **answer,
-			u_int32_t			*answer_length,
-            char                **error_msg)
+			u_int32_t			*answer_length)
 {
 	int ret_val;
 
@@ -346,25 +359,27 @@ int response_recv(int           *trans_id,
 	*answer_length=0;
 	*respondent=NULL;
 
-	if ((ret_val=res_io_accept(*trans_id,answer,answer_length,respondent))
+	struct name_server *temp_ns;
+	if ((ret_val=res_io_accept(*trans_id,answer,answer_length, &temp_ns))
 			== SR_NO_ANSWER_YET)
+		return ret_val;
+	if (clone_ns(respondent, temp_ns) != SR_UNSET)	
 		return ret_val;
 		
 	res_io_cancel (trans_id);
 
 	if (ret_val == SR_IO_INTERNAL_ERROR) 
-    	return res_sq_set_message(error_msg,
-    		"Internal error in response_recv", SR_INTERNAL_ERROR);
+        return SR_RCV_INTERNAL_ERROR;
 
 	if ((ret_val == SR_IO_SOCKET_ERROR) ||
 	   (ret_val == SR_IO_NO_ANSWER))
-    	return res_sq_set_message(error_msg, "Nothing received", SR_NO_ANSWER);
+    	return SR_NO_ANSWER;
 
 	/* ret_val is SR_IO_GOT_ANSWER */
 	if ((ret_val = res_tsig_verifies (*respondent, *answer, *answer_length))==SR_TS_OK) {
     	/* Check the header fields */
     	if ((ret_val = theres_something_wrong_with_header (*answer,
-                                    *answer_length, error_msg))!=SR_UNSET)
+                                    *answer_length))!=SR_UNSET)
         	return ret_val;
 /*
 printf ("The Response: ");
@@ -375,11 +390,9 @@ print_response (*answer, *answer_length);
 	}
 	else if (ret_val == SR_TS_FAIL)
     	/* *server points to the failed server */
-    		return res_sq_set_tsig_msg (error_msg, "TSIG failed for",
-    			*respondent, SR_TSIG_ERROR);
+    		return SR_TSIG_ERROR;
 	else
-            return res_sq_set_message(error_msg,
-                   "Internal error in response_recv", SR_INTERNAL_ERROR);
+            return SR_RCV_INTERNAL_ERROR;
 }
 
 
@@ -389,15 +402,14 @@ int get (   const char*         name,
             struct name_server  *nslist,
             struct name_server  **server,
             u_int8_t            **response,
-            u_int32_t           *response_length,
-            char                **error_msg)
+            u_int32_t           *response_length)
 {
     int ret_val;
     int trans_id;
                                                                                                                              
-    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id, error_msg))) {
+    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
         do {
-            ret_val = response_recv(&trans_id, server, response, response_length, error_msg);
+            ret_val = response_recv(&trans_id, server, response, response_length);
         } while (ret_val == SR_NO_ANSWER_YET);
     }
                                                                                                                              
