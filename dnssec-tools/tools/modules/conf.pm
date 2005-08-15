@@ -185,14 +185,10 @@ value tokenization stops just prior to the comment character.
 
 An example configuration file follows:
 
-=over 4
+    # Sample configuration entries.
 
-# Sample configuration entries.
-
-  algorithm       rsasha1	# Encryption algorithm.
-  ksk_length      1024		; KSK key length.
-
-=back
+    algorithm       rsasha1     # Encryption algorithm.
+    ksk_length      1024        ; KSK key length.
 
 =head1 CONFIGURATION INTERFACES
 
