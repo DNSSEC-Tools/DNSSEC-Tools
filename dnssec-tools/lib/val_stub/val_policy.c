@@ -700,7 +700,7 @@ static int init_respol(struct name_server **nslist)
 
 			ns->ns_name_n = (u_int8_t *) MALLOC (MAXCDNAME);
 			if(ns->ns_name_n == NULL) 
-				return SR_MEMORY_ERROR;
+				return OUT_OF_MEMORY;
    			if (ns_name_pton(auth_zone_info, ns->ns_name_n, MAXCDNAME-1) == -1) {
 				FREE (ns->ns_name_n); 
 				FREE (ns);
@@ -717,7 +717,7 @@ static int init_respol(struct name_server **nslist)
 				goto err;
    	    	bzero(&my_addr, sizeof(struct sockaddr));
 			my_addr.sin_family = AF_INET;         // host byte order
-			my_addr.sin_port = htons(NS_PORT);     // short, network byte order
+			my_addr.sin_port = htons(DNS_PORT);     // short, network byte order
 			my_addr.sin_addr = address;
 			memcpy(ns->ns_address, &my_addr, sizeof(struct sockaddr));
 
@@ -740,13 +740,16 @@ static int init_respol(struct name_server **nslist)
    			if (ns_name_pton(cp, ns->ns_name_n, MAXCDNAME-1) == -1) 
 				goto err;
 		}
-    	if (line) free(line);
+    	if (line) {
+			free(line);
+			line = NULL;
+		}
 	}
 
 	*nslist = ns_head;
 
 	fclose(fp);
-	return SR_UNSET;
+	return NO_ERROR;
 
 err:
 	free_name_servers(&ns_head);
@@ -760,10 +763,10 @@ int read_res_config_file(val_context_t *ctx)
 {
 	int ret_val;
 
-	if ((ret_val = init_respol(&ctx->nslist)) != SR_UNSET) 
+	if ((ret_val = init_respol(&ctx->nslist)) != NO_ERROR) 
 		return ret_val;
 
-	return SR_UNSET;
+	return NO_ERROR;
 }
 
 
