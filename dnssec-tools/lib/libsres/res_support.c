@@ -164,3 +164,24 @@ int wire_to_ascii_name (char *name, u_int8_t *wire, int name_length)
 }
 
 
+void free_name_server (struct name_server **ns)
+{
+    if (ns && *ns)
+    {
+        if ((*ns)->ns_name_n) FREE ((*ns)->ns_name_n);
+        if ((*ns)->ns_tsig_key) FREE ((*ns)->ns_tsig_key);
+        FREE (*ns);
+        *ns=NULL;
+    }
+}
+                                                                                                                          
+void free_name_servers (struct name_server **ns)
+{
+    if (ns && *ns)
+    {
+        if ((*ns)->ns_next) free_name_servers (&((*ns)->ns_next));
+        free_name_server (ns);
+    }
+}
+
+
