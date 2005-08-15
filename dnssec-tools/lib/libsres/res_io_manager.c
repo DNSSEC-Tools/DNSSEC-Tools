@@ -113,11 +113,14 @@ long res_timeout()
 }
 
 void res_print_ea (struct expected_arrival *ea);
+int res_quecmp (u_int8_t *query, u_int8_t *response);
 
 void res_sq_free_expected_arrival (struct expected_arrival **ea)
 {
 	if (ea==NULL) return;
 	if (*ea==NULL) return;
+	if ((*ea)->ea_ns != NULL) 
+		free_name_server(&((*ea)->ea_ns));	
 	if ((*ea)->ea_socket != -1) close ((*ea)->ea_socket);
 	if ((*ea)->ea_signed) FREE ((*ea)->ea_signed);
 	if ((*ea)->ea_response) FREE ((*ea)->ea_response);
