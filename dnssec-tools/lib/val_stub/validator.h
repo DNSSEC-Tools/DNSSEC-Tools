@@ -23,10 +23,6 @@
 #define STRDUP(p) strdup(p)
 #endif
 
-/* Types of keys in the key store */
-#define TRUSTED_KEY XX
-#define LEARNED_KEY XX
-
 /* Policies associated with Keys */
 #define	CANNOT_BE_USED			0x00				
 #define CAN_SIGN_KEY			0x01
@@ -46,8 +42,7 @@
 #define A_WAIT_FOR_TRUST 2 
 #define A_WAIT_FOR_RRSIG  3
 #define A_INIT 4
-#define A_TRUSTED 5 
-#define A_NEGATIVE_PROOF 6 
+#define A_NEGATIVE_PROOF 5 
 #define A_LAST_STATE  10 /* Closest round number above A_NEGATIVE_PROOF */
 
 /* Query states */
@@ -55,11 +50,6 @@
 #define Q_SENT	2
 #define Q_ANSWERED 3
 #define Q_ERROR_BASE 4
-
-/* Trust anchor matching */
-#define EXACT 1
-#define NO_MORE	2 /* we don't have this key configured and no point checking further*/
-#define NOT_YET 3
 
 #define SIGNBY              18
 #define ENVELOPE            10
@@ -72,23 +62,20 @@
 
 #define P_TRUST_ANCHOR				0
 #define P_PREFERRED_SEP				1
-#define P_NOT_PREFERRED_SEP			2
-#define P_MUST_VERIFY_COUNT			3
-#define P_PREFERRED_ALGO_DATA		4
-#define P_NOT_PREFERRED_ALGO_DATA	5
-#define P_PREFERRED_ALGO_KEYS		6
-#define P_NOT_PREFERRED_ALGO_KEYS	7
-#define P_PREFERRED_ALGO_DS			8
-#define P_NOT_PREFERRED_ALGO_DS		9
-#define P_CLOCK_SKEW				10
-#define	P_EXPIRED_SIGS				11
-#define P_USE_TCP					12
+#define P_MUST_VERIFY_COUNT			2
+#define P_PREFERRED_ALGO_DATA		3
+#define P_PREFERRED_ALGO_KEYS		4
+#define P_PREFERRED_ALGO_DS			5
+#define P_CLOCK_SKEW				6 
+#define	P_EXPIRED_SIGS				7 
+#define P_USE_TCP					8 
+#define P_ZONE_SECURITY_EXPECTATION 9 
 #ifndef DLV
-#define MAX_POL_TOKEN	 			13	
+#define MAX_POL_TOKEN	 			10	
 #else
-#define P_DLV_TRUST_POINTS			13
-#define P_DLV_MAX_VALIDATION_LINKS	14
-#define MAX_POL_TOKEN	 			15
+#define P_DLV_TRUST_POINTS			10
+#define P_DLV_MAX_VALIDATION_LINKS	11
+#define MAX_POL_TOKEN	 			12
 #endif
 
 
