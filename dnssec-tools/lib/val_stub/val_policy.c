@@ -53,22 +53,19 @@ static int get_token ( FILE *conf_ptr,
  **************************************************************
  */
 static struct policy_conf_element conf_elem_array[] = {
-	{"trust-anchor", parse_trust_anchor, free_trust_anchor},
-	{"preferred-sep", parse_preferred_sep, free_preferred_sep},	
-	{"not-preferred-sep", parse_not_preferred_sep, free_not_preferred_sep},
-	{"must-verify-count", parse_must_verify_count, free_must_verify_count},
-	{"preferred-algo-data", parse_preferred_algo_data, free_preferred_algo_data},	
-	{"not-preferred-algo-data", parse_not_preferred_algo_data, free_not_preferred_algo_data},
-	{"preferred-algo-keys", parse_preferred_algo_keys, free_preferred_algo_keys},
-	{"not-preferred-algo-keys",	parse_not_preferred_algo_keys, free_not_preferred_algo_keys},
-	{"preferred-algo-ds", parse_preferred_algo_ds, free_preferred_algo_ds},	
-	{"not-preferred-algo-ds", parse_not_preferred_algo_ds, free_not_preferred_algo_ds},	
-	{"clock-skew", parse_clock_skew, free_clock_skew},	
-	{"expired-sigs", parse_expired_sigs, free_expired_sigs},
-	{"use-tcp",	parse_use_tcp, free_use_tcp},			
+	{POL_TRUST_ANCHOR_STR, parse_trust_anchor, free_trust_anchor},
+	{POL_PREFERRED_SEP_STR, parse_preferred_sep, free_preferred_sep},	
+	{POL_MUST_VERIFY_COUNT_STR, parse_must_verify_count, free_must_verify_count},
+	{POL_PREFERRED_ALGO_DATA_STR, parse_preferred_algo_data, free_preferred_algo_data},	
+	{POL_PREFERRED_ALGO_KEYS_STR, parse_preferred_algo_keys, free_preferred_algo_keys},
+	{POL_PREFERRED_ALGO_DS_STR, parse_preferred_algo_ds, free_preferred_algo_ds},	
+	{POL_CLOCK_SKEW_STR, parse_clock_skew, free_clock_skew},	
+	{POL_EXPIRED_SIGS_STR, parse_expired_sigs, free_expired_sigs},
+	{POL_USE_TCP_STR, parse_use_tcp, free_use_tcp},			
+	{POL_ZONE_SE_STR, parse_zone_security_expectation, free_zone_security_expectation},			
 #ifdef DLV
-	{"dlv-trust-points", parse_dlv_trust_points, free_dlv_trust_points},
-	{"dlv-max-links", parse_dlv_max_links, free_dlv_max_links},
+	{POL_DLV_TRUST_POINTS_STR, parse_dlv_trust_points, free_dlv_trust_points},
+	{POL_DLV_MAX_LINKS_STR, parse_dlv_max_links, free_dlv_max_links},
 #endif
 };
 
@@ -162,18 +159,22 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 
 int free_trust_anchor(policy_entry_t *pol_entry)
 {
-	struct trust_anchor_policy *ta_head, *ta_cur;
+	struct trust_anchor_policy *ta_head, *ta_cur, *ta_next;
 
 	if (pol_entry == NULL)
 		return NO_ERROR;
 
 	ta_head = (struct trust_anchor_policy *)(*pol_entry);
-	for(ta_cur = ta_head; ta_cur; ta_cur=ta_cur->next) {
+	ta_cur = ta_head;
+	while (ta_cur) {
+		ta_next = ta_cur->next;
 		/* Free the val_dnskey_rdata_t structure */
 		FREE (ta_cur->publickey->public_key);
 		FREE (ta_cur->publickey);
 		FREE (ta_cur);
-	}
+		ta_cur = ta_next;
+	}		
+
 	*pol_entry = NULL;
 
 	return NO_ERROR;
@@ -186,14 +187,6 @@ int parse_preferred_sep(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 	return NOT_IMPLEMENTED;
 }
 int free_preferred_sep(policy_entry_t *pol_entry)
-{
-	return NOT_IMPLEMENTED;
-}
-int parse_not_preferred_sep(FILE *fp, policy_entry_t *pol_entry, int *line_number)
-{
-	return NOT_IMPLEMENTED;
-}
-int free_not_preferred_sep(policy_entry_t *pol_entry)
 {
 	return NOT_IMPLEMENTED;
 }
@@ -213,14 +206,6 @@ int free_preferred_algo_data(policy_entry_t *pol_entry)
 {
 	return NOT_IMPLEMENTED;
 }
-int parse_not_preferred_algo_data(FILE *fp, policy_entry_t *pol_entry, int *line_number)
-{
-	return NOT_IMPLEMENTED;
-}
-int free_not_preferred_algo_data(policy_entry_t *pol_entry)
-{
-	return NOT_IMPLEMENTED;
-}
 int parse_preferred_algo_keys(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 {
 	return NOT_IMPLEMENTED;
@@ -229,27 +214,11 @@ int free_preferred_algo_keys(policy_entry_t *pol_entry)
 {
 	return NOT_IMPLEMENTED;
 }
-int parse_not_preferred_algo_keys(FILE *fp, policy_entry_t *pol_entry, int *line_number)
-{
-	return NOT_IMPLEMENTED;
-}
-int free_not_preferred_algo_keys(policy_entry_t *pol_entry)
-{
-	return NOT_IMPLEMENTED;
-}
 int parse_preferred_algo_ds(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 {
 	return NOT_IMPLEMENTED;
 }
 int free_preferred_algo_ds(policy_entry_t *pol_entry)
-{
-	return NOT_IMPLEMENTED;
-}
-int parse_not_preferred_algo_ds(FILE *fp, policy_entry_t *pol_entry, int *line_number)
-{
-	return NOT_IMPLEMENTED;
-}
-int free_not_preferred_algo_ds(policy_entry_t *pol_entry)
 {
 	return NOT_IMPLEMENTED;
 }
@@ -277,6 +246,102 @@ int free_use_tcp(policy_entry_t *pol_entry)
 {
 	return NOT_IMPLEMENTED;
 }
+
+int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *line_number)
+{
+	char token[TOKEN_MAX];
+	u_char zone_n[MAXCDNAME];
+	struct zone_se_policy *zse_pol, *zse_head, *zse_cur, *zse_prev;
+	int retval;
+	int name_len;
+	int endst = 0;
+	int zone_status;
+
+	zse_head = NULL;
+
+	while (!endst) {	
+
+		/* Read the zone for which this trust anchor applies */
+		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
+			return retval;
+		if (feof(fp))
+			break;
+		if (endst) {
+			if (!strcmp(token, ""))
+				break;
+			/* missing the zone name */
+			return CONF_PARSE_ERROR;
+		}
+
+   		if (ns_name_pton(token, zone_n, MAXCDNAME-1) == -1)
+       		return CONF_PARSE_ERROR; 
+
+		/* Read the zone status */
+		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
+			return retval;
+		if (feof(fp))
+			return CONF_PARSE_ERROR;
+		if (endst) {
+			if (!strcmp(token, ""))
+				/* missing the zone status */
+				return CONF_PARSE_ERROR;
+		}
+		if (!strcmp(token, ZONE_SE_YES))
+			zone_status = 1;
+		else if (!strcmp(token, ZONE_SE_NO))
+			zone_status = 0;
+		else
+			return CONF_PARSE_ERROR;
+
+		zse_pol = (struct zone_se_policy *) MALLOC (sizeof(struct trust_anchor_policy));
+		if (zse_pol == NULL)
+			return OUT_OF_MEMORY;
+		name_len = wire_name_length (zone_n);
+		memcpy (zse_pol->zone_n, zone_n, name_len);
+		zse_pol->trusted = zone_status;	
+
+		/* Store trust anchors in decreasing zone name length */
+		zse_prev = NULL;
+		for(zse_cur = zse_head; zse_cur; zse_prev=zse_cur, zse_cur=zse_cur->next) 
+			if (wire_name_length(zse_cur->zone_n) <= name_len)
+				break;
+		if (zse_prev) {
+			/* store after zse_prev */
+			zse_pol->next = zse_prev->next;
+			zse_prev->next = zse_pol;
+		}
+		else {
+			zse_pol->next = zse_head;
+			zse_head = zse_pol;
+		}
+	} 
+
+	*pol_entry = (policy_entry_t)(zse_head);
+	
+	return NO_ERROR;
+}
+
+int free_zone_security_expectation(policy_entry_t *pol_entry)
+{
+	struct zone_se_policy *zse_head, *zse_cur, *zse_next;
+
+	if (pol_entry == NULL)
+		return NO_ERROR;
+
+	zse_head = (struct zone_se_policy *)(*pol_entry);
+	zse_cur = zse_head;
+	while (zse_cur) {
+		zse_next = zse_cur->next;
+		FREE (zse_cur);
+		zse_cur = zse_next;
+	}		
+
+	*pol_entry = NULL;
+
+	return NO_ERROR;
+}
+
+
 #ifdef DLV
 int parse_dlv_trust_points(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 {
@@ -634,6 +699,7 @@ int switch_effective_policy(val_context_t *ctx, const char *label)
 			 cur && !strcmp(cur->label, label); 
 			  cur = cur->next); 
 		if (cur) {
+			memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
 			for (t = ctx->pol_overrides; t != cur->next; t = t->next)
 				OVERRIDE_POLICY(ctx, t);
 			return NO_ERROR;
