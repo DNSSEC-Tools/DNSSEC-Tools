@@ -1137,7 +1137,8 @@ char *p_val_error(int errno)
     case TOO_MANY_LINKS: return "TOO_MANY_LINKS"; break;
     case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
     case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
-    case NONEXISTENT: return "NONEXISTENT"; break;
+    case NONEXISTENT_NAME: return "NONEXISTENT_NAME"; break;
+    case NONEXISTENT_TYPE: return "NONEXISTENT_TYPE"; break;
     case RRSIG_VERIFIED: return "RRSIG_VERIFIED"; break;
     case RRSIG_VERIFY_FAILED: return "RRSIG_VERIFY_FAILED"; break;
     case BARE_RRSIG: return "BARE_RRSIG"; break;
