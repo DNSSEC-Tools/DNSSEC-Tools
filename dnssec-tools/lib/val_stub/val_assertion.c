@@ -45,7 +45,6 @@ void free_result_chain(struct val_result **results)
 
 }
 
-
 u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
 {
 	struct trust_anchor_policy *ta_pol, *ta_cur;
@@ -53,44 +52,70 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 	u_int8_t *zp = zone_n;
 	val_dnskey_rdata_t dnskey;
 	struct rr_rec *curkey;
+	struct zone_se_policy *zse_pol, *zse_cur;
+	
+	name_len = wire_name_length(zp);
+
+	/* Check if the zone is trusted */
+	zse_pol = RETRIEVE_POLICY(ctx, P_ZONE_SECURITY_EXPECTATION, struct zone_se_policy *);
+	if (zse_pol != NULL) {
+		for (zse_cur = zse_pol; 
+		  zse_cur && (wire_name_length(zse_cur->zone_n) > name_len); 
+		  zse_cur=zse_cur->next);	
+
+		for (; zse_cur && 
+			(wire_name_length(zse_cur->zone_n) == name_len);  
+			zse_cur=zse_cur->next) {
+
+			if (!namecmp(zse_cur->zone_n, zone_n)) {
+				if (zse_cur->trusted)
+					return TRUST_ZONE;
+				else
+					return UNTRUSTED_ZONE;
+			}
+		}
+	}
 
 	ta_pol = RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);	
 	if (ta_pol == NULL)
-		return NO_MORE;
-	
-
-	name_len = wire_name_length(zp);
+		return NO_TRUST_ANCHOR;
 
 	/* skip longer names */
 	for (ta_cur = ta_pol; 
 		  ta_cur && (wire_name_length(ta_cur->zone_n) > name_len); 
 		   ta_cur=ta_cur->next);	
 
-	/* for the remaining nodes */
-	for (; ta_cur; ta_cur=ta_cur->next) {
-		if (wire_name_length(ta_cur->zone_n) == name_len) {
-			if (!namecmp(ta_cur->zone_n, zp)) {
-				for (curkey = key; curkey; curkey=curkey->rr_next) {
-					val_parse_dnskey_rdata (curkey->rr_rdata, curkey->rr_rdata_length_h, &dnskey);	
-					if(!dnskey_compare(&dnskey, ta_cur->publickey))
-						return EXACT;
-				}
+	/* 
+	 * for the remaining nodes, if the length of the zones are 
+	 * the same, look for an exact match 
+	 */
+	for (; ta_cur && 
+		(wire_name_length(ta_cur->zone_n) == name_len);  
+		ta_cur=ta_cur->next) {
+
+		if (!namecmp(ta_cur->zone_n, zp)) { 
+
+			for (curkey = key; curkey; curkey=curkey->rr_next) {
+				val_parse_dnskey_rdata (curkey->rr_rdata, curkey->rr_rdata_length_h, &dnskey);	
+				if(!dnskey_compare(&dnskey, ta_cur->publickey))
+					return TRUST_KEY;
 			}
 		}
-		else {
-			/* trim the top label from our candidate zone */
-			if (!zp[0])
-				return NO_MORE;
-			zp += (int)zp[0] + 1;
-
-			if (namecmp(ta_cur->zone_n, zp) == 0) {
-				/* We have hope */
-				return NOT_YET;
-			}
-		} 
 	}
 
-	return NO_MORE;	
+	/* for the remaining nodes, see if there is any hope */
+	for (; ta_cur; ta_cur=ta_cur->next) {
+		/* trim the top label from our candidate zone */
+		while (zp[0] && (namecmp(ta_cur->zone_n, zp+(int)zp[0]+1) < 0))
+			zp += (int)zp[0] + 1;
+
+		if (namecmp(ta_cur->zone_n, zp+(int)zp[0]+1) == 0) {
+			/* We have hope */
+			return A_WAIT_FOR_TRUST;
+		}
+	}
+
+	return NO_TRUST_ANCHOR;	
 }
 
 
@@ -522,7 +547,7 @@ int build_pending_query(val_context_t *context,
 	int retval;
 
 	if(as->ac_data->rrs_data == NULL) {
-		as->ac_state = A_NO_DATA;
+		as->ac_state = DATA_MISSING;
 		return NO_ERROR;
 	}
 
@@ -555,21 +580,9 @@ int build_pending_query(val_context_t *context,
 	if(as->ac_data->rrs_type_h == ns_t_dnskey) {
 
 		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->ac_data->rrs_data);
-		switch (tkeystatus) {
-			case EXACT: 	
-				as->ac_state = A_TRUSTED; 
-				return NO_ERROR;
-
-			case NO_MORE: 	
-				as->ac_state = NO_TRUST_ANCHOR; 
-				return NO_ERROR;
-
-			default:
-				as->ac_state = A_WAIT_FOR_TRUST;
-				break;
-		}
-
-		/* State has to be A_WAIT_FOR_TRUST here */
+		as->ac_state = tkeystatus;
+		if (as->ac_state != A_WAIT_FOR_TRUST)
+			return NO_ERROR;
 
 		/* Create a query for missing data */
 		if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
@@ -582,10 +595,10 @@ int build_pending_query(val_context_t *context,
 		if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
 						ns_t_dnskey, as->ac_data->rrs_class_h)))
 			return retval;
+		as->ac_state = A_WAIT_FOR_TRUST;
 	}
 
 	as->ac_pending_query = *queries; /* The first value in the list is the most recent element */
-	as->ac_state = A_WAIT_FOR_TRUST;
 	return NO_ERROR;
 }
 
@@ -673,7 +686,7 @@ void  prove_nonexistence (struct query_chain *top_q, struct val_result *results)
 	struct val_result *res;
 	int wcard_chk = 0;
 	int span_chk = 0;
-	int status = NONEXISTENT; 
+	int status = NONEXISTENT_NAME; 
 	u_int8_t *soa_name_n = NULL;	
 	u_int8_t *closest_encounter = NULL;	
 	struct rrset_rec *wcard_proof = NULL;
@@ -705,6 +718,7 @@ void  prove_nonexistence (struct query_chain *top_q, struct val_result *results)
 					 * NSEC_is_wrong_answer()
 					 */
 					span_chk = 1;
+					status = NONEXISTENT_TYPE;
 					/* if the label count in the RRSIG equals the labels
 					 * in the nsec owner name, wildcard absence is also proved
 					 * Be sure to check the label count in an RRSIG that was 
@@ -974,7 +988,8 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 				*done = 0;
 				thisdone = 0;
 			}
-			else if (next_as->ac_state == A_TRUSTED) {
+			else if ((next_as->ac_state == TRUST_KEY) || 
+						(next_as->ac_state == TRUST_ZONE)) {
 				res->trusted = 1; 
 				break;
 			}
@@ -1111,7 +1126,7 @@ int resolve_n_check(	val_context_t	*context,
 			if(res== NULL)
 				return OUT_OF_MEMORY;
 			res->as = top_q->qc_as;
-			res->status = A_ERROR;
+			res->status = DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
 			res->trusted = 0;
 			res->next = NULL;
 		
