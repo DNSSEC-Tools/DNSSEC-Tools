@@ -52,7 +52,7 @@ int main()
 		resp[i].response_length = BUFSIZE;
 	}
 
-	ret_val = val_x_query( NULL, name, type, class, 0, resp, &respcount);
+	ret_val = val_x_query( NULL, name, class, type, 0, resp, &respcount);
 
 	if (ret_val == NO_ERROR) {
 		printf ("Total number of RRsets available = %d\n", respcount);

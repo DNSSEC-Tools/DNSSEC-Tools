@@ -8,8 +8,8 @@
 
 int val_x_query(val_context_t *ctx,
             const char *domain_name,
-            const u_int16_t type,
             const u_int16_t class,
+            const u_int16_t type,
 			const u_int8_t flags,
             struct response_t *resp,
             int *resp_count);
