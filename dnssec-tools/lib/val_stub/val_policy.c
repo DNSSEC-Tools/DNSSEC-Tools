@@ -691,17 +691,39 @@ int read_val_config_file(val_context_t *ctx, const char *scope)
 	return retval;
 }	
 
+/*
+ * At this point, the override list should have a sorted list 
+ * of labels. When doing the override, we must use all policy
+ * fragments that are "relevant"
+ */
 int switch_effective_policy(val_context_t *ctx, const char *label)
 {
 	struct policy_overrides *cur, *t;
+	int retval;
+
 	if (ctx) {
+
+		if(label == NULL) {
+			/* switch to first override */
+			memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
+			OVERRIDE_POLICY(ctx, ctx->pol_overrides);
+			return NO_ERROR;
+		}
+
 		for(cur = ctx->pol_overrides; 
-			 cur && !strcmp(cur->label, label); 
+			 cur && strcmp(cur->label, label); 
 			  cur = cur->next); 
 		if (cur) {
+			/* cur is the exact match */
 			memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
-			for (t = ctx->pol_overrides; t != cur->next; t = t->next)
-				OVERRIDE_POLICY(ctx, t);
+			for (t = ctx->pol_overrides; t != cur->next; t = t->next) {
+				/* Override only if this is relevant */
+				int relevant, label_count;
+				if (NO_ERROR != (retval = (check_relevance(t->label, label, &label_count, &relevant)))) 
+						return retval;
+				if(relevant)	
+					OVERRIDE_POLICY(ctx, t);
+			}
 			return NO_ERROR;
 		}
 	}
