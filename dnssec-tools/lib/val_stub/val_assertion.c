@@ -155,10 +155,18 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 			}
 
 			while(next_answer)	{ 
-				if ((next_answer->rrs_type_h == next_q->qc_type_h) 
-					&& (next_answer->rrs_class_h == next_q->qc_class_h) 
-					&& (namecmp(next_answer->rrs_name_n, next_q->qc_name_n) == 0)) 
-					break;
+
+				if ((next_answer->rrs_type_h == next_q->qc_type_h) &&
+					(next_answer->rrs_class_h == next_q->qc_class_h) && 
+					(namecmp(next_answer->rrs_name_n, next_q->qc_name_n) == 0)) {
+
+					if(next_q->qc_type_h == ns_t_rrsig) { 
+						if (next_answer->rrs_sig != NULL)
+							break;
+					}
+					else if (next_answer->rrs_data != NULL)
+                           break;
+				}
 				next_answer = next_answer->rrs_next;
 			}
 
