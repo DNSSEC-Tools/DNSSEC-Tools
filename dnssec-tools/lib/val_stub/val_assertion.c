@@ -44,14 +44,11 @@ void free_result_chain(struct val_result **results)
 
 }
 
-u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
+u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *zone_n)
 {
-	struct trust_anchor_policy *ta_pol, *ta_cur;
+	struct zone_se_policy *zse_pol, *zse_cur;
 	int name_len;
 	u_int8_t *zp = zone_n;
-	val_dnskey_rdata_t dnskey;
-	struct rr_rec *curkey;
-	struct zone_se_policy *zse_pol, *zse_cur;
 	
 	name_len = wire_name_length(zp);
 
@@ -74,7 +71,19 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 			}
 		}
 	}
+	return A_WAIT_FOR_TRUST;
+}
 
+
+u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
+{
+	struct trust_anchor_policy *ta_pol, *ta_cur;
+	int name_len;
+	u_int8_t *zp = zone_n;
+	val_dnskey_rdata_t dnskey;
+	struct rr_rec *curkey;
+
+	name_len = wire_name_length(zp);
 	ta_pol = RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);	
 	if (ta_pol == NULL)
 		return NO_TRUST_ANCHOR;
@@ -535,6 +544,10 @@ int build_pending_query(val_context_t *context,
 	//XXX The signer name has to be within the zone
 
 	/* Then look for  {signby_name_n, DNSKEY/DS, type} */
+	u_int16_t tzonestatus = is_trusted_zone(context, signby_name_n);
+	as->ac_state = tzonestatus;
+	if (as->ac_state != A_WAIT_FOR_TRUST)
+		return NO_ERROR;
 
 	if(as->ac_data->rrs_type_h == ns_t_dnskey) {
 
@@ -921,14 +934,13 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 		 * next assertion in the chain of trust
 		 */
 		int thisdone = 1;
-		int last_status = 0;
 		for (next_as=as_more; next_as; next_as=next_as->ac_trust) {
 
-			last_status = next_as->ac_state;
-
-			/* Go up the chain of trust */
-			if(NO_ERROR != (retval = try_verify_assertion(context, queries, next_as))) 
-				return retval;
+			if (next_as->ac_state <= A_INIT) {
+				/* Go up the chain of trust */
+				if(NO_ERROR != (retval = try_verify_assertion(context, queries, next_as))) 
+					return retval;
+			}
 
 			/*  
 			 * break out of infinite loop -- trying to verify the proof of non-existence
@@ -977,14 +989,22 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 					res->status = INDETERMINATE_ERROR; 
 					break;
 				}
-				else {
+				else { 
 					res->status = next_as->ac_state; 
 					continue;
 				}
 			}
+			else if (next_as->ac_state <= LAST_FAILURE){
+				res->status = next_as->ac_state;
+				break;
+			}
+			else
+				/* Success condition */
+				res->status = next_as->ac_state;
 		}
-		if (thisdone && res->status != A_DONT_KNOW)
-			res->status = last_status;
+		if (!thisdone)
+			/* more work required */
+			res->status = A_DONT_KNOW;
 	}
 	
 	return NO_ERROR;
