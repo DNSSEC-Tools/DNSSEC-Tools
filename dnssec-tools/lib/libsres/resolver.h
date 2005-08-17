@@ -75,6 +75,7 @@
 #define SR_ANS_CNAME             2
 #define SR_ANS_NACK_NXT          3
 #define SR_ANS_NACK_SOA          4
+#define SR_ANS_BARE_RRSIG        5
 
 #define EDNS_UDP_SIZE 4096 
 #define DNAME_MAX	1024
