@@ -26,7 +26,9 @@
 #include "val_parse.h"
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
-#define NONSENSE_RESULT_SEQUENCE(status) ((status <= FAIL_BASE) || (status > LAST_SUCCESS))
+#define NONSENSE_RESULT_SEQUENCE(status) \
+			(((status > ERROR_BASE) && (status <= LAST_ERROR)) \
+					|| (status > LAST_SUCCESS))
 
 /*
  * Create a "result" list whose elements point to assertions and also have their
@@ -44,13 +46,12 @@ void free_result_chain(struct val_result **results)
 
 }
 
-u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *zone_n)
+u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 {
 	struct zone_se_policy *zse_pol, *zse_cur;
 	int name_len;
-	u_int8_t *zp = zone_n;
 	
-	name_len = wire_name_length(zp);
+	name_len = wire_name_length(name_n);
 
 	/* Check if the zone is trusted */
 	zse_pol = RETRIEVE_POLICY(ctx, P_ZONE_SECURITY_EXPECTATION, struct zone_se_policy *);
@@ -59,11 +60,11 @@ u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *zone_n)
 		  zse_cur && (wire_name_length(zse_cur->zone_n) > name_len); 
 		  zse_cur=zse_cur->next);	
 
-		for (; zse_cur && 
-			(wire_name_length(zse_cur->zone_n) == name_len);  
-			zse_cur=zse_cur->next) {
+		/* for all zones which are shorter or as long, do a strstr */ 
+		/* Because of the ordering, the longest match is found first */
+		for (; zse_cur; zse_cur=zse_cur->next) {
 
-			if (!namecmp(zse_cur->zone_n, zone_n)) {
+			if (strstr(name_n, zse_cur->zone_n) != NULL) {
 				if (zse_cur->trusted)
 					return TRUST_ZONE;
 				else
@@ -528,6 +529,13 @@ int build_pending_query(val_context_t *context,
 		return NO_ERROR;
 	}
 
+	/* Check if this zone is locally trusted/untrusted */
+	u_int16_t tzonestatus = is_trusted_zone(context, as->ac_data->rrs_name_n);
+	if (tzonestatus != A_WAIT_FOR_TRUST) {
+		as->ac_state = tzonestatus;
+		return NO_ERROR;
+	}
+
 	if(as->ac_data->rrs_sig == NULL) {
 		as->ac_state = A_WAIT_FOR_RRSIG;
 		/* create a query and link it as the pending query for this assertion */
@@ -544,15 +552,9 @@ int build_pending_query(val_context_t *context,
 
 	/* First identify the signer name from the RRSIG */
 	signby_name_n = &as->ac_data->rrs_sig->rr_rdata[SIGNBY];
-
 	//XXX The signer name has to be within the zone
 
 	/* Then look for  {signby_name_n, DNSKEY/DS, type} */
-	u_int16_t tzonestatus = is_trusted_zone(context, signby_name_n);
-	as->ac_state = tzonestatus;
-	if (as->ac_state != A_WAIT_FOR_TRUST)
-		return NO_ERROR;
-
 	if(as->ac_data->rrs_type_h == ns_t_dnskey) {
 
 		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->ac_data->rrs_data);
@@ -1040,9 +1042,10 @@ void fix_validation_results(struct query_chain *top_q, struct val_result *res, i
 	if ((res->status > FAIL_BASE) && (res->status <= LAST_FAILURE) && (res->trusted != 1)) 
 		res->status = BOGUS;	
 
+	if ((res->status > ERROR_BASE) && (res->status <= LAST_ERROR))
+		res->status = VALIDATION_ERROR;
 
 	// XXX Do CNAME sanity etc
-
 
 	if (res->status == VALIDATE_SUCCESS)
 		*success = 1;
