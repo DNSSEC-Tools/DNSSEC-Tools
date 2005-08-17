@@ -25,7 +25,6 @@
 #include "val_policy.h"
 #include "val_parse.h"
 
-
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
 #define NONSENSE_RESULT_SEQUENCE(status) ((status <= FAIL_BASE) || (status > LAST_SUCCESS))
 
@@ -117,46 +116,6 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 
 	return NO_TRUST_ANCHOR;	
 }
-
-
-// XXX What about CNAMES ???
-
-// XXX What about DNAMES ???
-
-// XXX What about stealth mode ???
-
-// XXX Call-back interfaces ???
-
-// XXX Maintaining status of every signature (as opposed to signature status of the complete RRSet)
-
-// XXX All kinds of sanitization -- wildcards, CNAMEs, cache poisoning etc
-
-// XXX Cached data has to be replaced by authentic data (what about credibility values?)
-
-// XXX cache timeout
-
-// XXX Preventing cache poisoning attacks (can end up with a scenario where rolled over keys are never used)
-
-// XXX non-existence proofs, states etc
-
-// XXX DS problem: 
-//		-- if DS is proved to not exist in the child zone, try the parent zone working down from the root
-// 		-- in val_resquery ask the learned zones first before sending to other name servers
-
-// XXX hints have to be saved in a separate list (root.hints)
-// XXX should not be overwritten by responses
-
-// XXX Sharing cache, assertions, queries
-
-// XXX policies
-
-// XXX validation flags
-
-// XXX Composing results
-
-/////////////////////////////////////////////////////////////////
-
-
 
 int ask_cache(val_context_t *context, struct query_chain *end_q, 
 				struct query_chain **queries, struct assertion_chain **assertions)
