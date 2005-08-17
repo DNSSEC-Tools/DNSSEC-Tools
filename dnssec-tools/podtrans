@@ -12,8 +12,17 @@
 
 use strict;
 
-
 use File::Basename;
+use Getopt::Long;
+
+#
+# Data required for command line options.
+#
+my %options = ();                       # Filled option hash.
+my @opts =
+(
+	"translator=s",			# Specific translation command.
+);
 
 #
 # Set a few "constants."
@@ -32,6 +41,8 @@ my $POD2HTML	= "pod2html";
 my $POD2LATEX	= "pod2latex";
 my $POD2MAN	= "pod2man";
 
+my $translator	= "";
+
 #
 # Variables needed here and there.
 #
@@ -47,25 +58,14 @@ exit(0);
 #
 sub main
 {
-	my $argc = @ARGV;			# Argument count.
-
 	my $startdir;				# Hierarchy to search.
 	my $outdir;				# Output directory.
 	my $method;				# Translation method.
 
 	#
-	# Add a default translation method, if needed.
+	# Parse the options.
 	#
-	if($argc == 2)
-	{
-		push(@ARGV,"text");
-		$argc = @ARGV;
-	}
-
-	#
-	# Ensure we have arguments.
-	#
-	usage() if($argc != 3);
+	opts();
 
 	#
 	# Get the arguments.
@@ -90,6 +90,48 @@ sub main
 	#
 	podtrans($method);
 
+}
+
+#######################################################################
+#
+# Routine:      opts()
+#
+sub opts
+{
+	my $argc;				# Argument count.
+
+	GetOptions(\%options,@opts);
+	$argc = @ARGV;
+
+	#
+	# Save any user-specified translator program.
+	#
+	if(defined($options{'translator'}))
+	{
+		$translator = $options{'translator'}
+	}
+
+	#
+	# Ensure we've got the right number of arguments, even if we
+	# have to fake a few of them.
+	if($argc == 1)
+	{
+		push(@ARGV,"/dev/stdout");
+		push(@ARGV,"text");
+	}
+	elsif($argc == 2)
+	{
+		#
+		# Add a default translation method, if needed.
+		#
+		push(@ARGV,"text");
+	}
+	$argc = @ARGV;
+
+	#
+	# Ensure we have arguments.
+	#
+	usage() if($argc != 3);
 }
 
 #######################################################################
@@ -125,6 +167,8 @@ sub checkdir
 sub checkmethod
 {
 	my $method = shift;			# Method to check.
+
+	return("ucmd") if($translator ne "");
 
 	if(($method ne "latex")	&&
 	   ($method ne "text")	&&
@@ -202,6 +246,7 @@ sub podtrans
 		trans_text($node,$out)  if($method eq "text");
 		trans_html($node,$out)  if($method eq "html");
 		trans_man($node,$out)   if($method eq "man");
+		trans_ucmd($node,$out)	if($method eq "ucmd");
 
 	}
 }
@@ -257,11 +302,23 @@ sub trans_text
 
 #######################################################################
 #
+# Routine:      trans_ucmd()
+#
+sub trans_ucmd
+{
+	my $node = shift;			# File to translate.
+	my $out = shift;			# Translated file's name.
+
+	system("$translator $node > $out");
+}
+
+#######################################################################
+#
 # Routine:      usage()
 #
 sub usage
 {
-	print STDERR "usage:  podtrans <startdir> <outdir> [translator]\n";
+	print STDERR "usage:  podtrans [-translator transcmd] <startdir> <outdir> [translation-method]\n";
 	exit(1);
 }
 
@@ -278,7 +335,7 @@ podtrans - Converts all pod files in a file hierarchy and saves the converted te
 
 =head1 SYNOPSIS
 
-  podtrans <start-directory> <results-directory> [translator]
+  podtrans [-translator transcmd] <start-directory> <results-directory> [translation-method]
 
 =head1 DESCRIPTION
 
@@ -301,7 +358,8 @@ its translated POD files.  The output directory will be created if it does
 not exist.  Any path separators in the found files are converted into a pair
 of colons for the output filename.
 
-The I<translator> method must be one of the following:
+If the I<-translator> option is not given, the I<translator> method must
+be one of the following:
 
 =over 4
 
@@ -328,12 +386,40 @@ This is the default method.
 
 =back
 
-For example, B<src/utils/testprog> contains POD.  Executing this command:
+If the I<translator> option is given, then the specified translation command
+will be used.
+
+=head1 EXAMPLES
+
+For these examples, B<src/utils/testprog> contains pod.
+
+=head2 Default Translator
+
+If no translation method or translator is specified:
 
     podtrans src outdir
 
-will convert the pod in B<src/utils/testprog> and place it in the file
-B<outdir/src::src::utils::testprog>.
+then I<podtrans> will convert the pod in B<src/utils/testprog> into text
+and place it in the file B<outdir/src::src::utils::testprog.txt>.
+
+=head2 HTML Translator
+
+If the HTML translation method is specified:
+
+    podtrans src outdir html
+
+then I<podtrans> will convert the pod in B<src/utils/testprog> into html
+and place it in the file B<outdir/src::src::utils::testprog.html>.
+
+=head2 Special-purpose Translator
+
+If a non-standard translator is specified:
+
+    podtrans -translator footrans src outdir
+
+then I<podtrans> will execute the I<footrans> translator, passing
+B<src/utils/testprog> as the only argument.  The output will be
+redirected into B<outdir/src::src::utils::testprog>.
 
 =head1 AUTHOR
 
