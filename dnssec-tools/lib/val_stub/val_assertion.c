@@ -281,6 +281,10 @@ int set_ans_kind (    u_int8_t    *qc_name_n,
         /* Referals won't make it this far, therr handled in digest_response */
                                                                                                                           
     /* Answer is a NACK_NXT if... */
+	if((the_set->rrs_data == NULL) && (the_set->rrs_sig != NULL)) {
+		the_set->rrs_ans_kind = SR_ANS_BARE_RRSIG;
+		return NO_ERROR;
+	}
                                                                                                                           
     if (the_set->rrs_type_h == ns_t_nsec)
     {
@@ -290,7 +294,7 @@ int set_ans_kind (    u_int8_t    *qc_name_n,
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
             the_set->rrs_ans_kind = SR_ANS_NACK_NXT;
-
+                                                                                                                          
         return NO_ERROR;
     }
                                                                                                                           
@@ -514,13 +518,13 @@ int build_pending_query(val_context_t *context,
 	u_int8_t *signby_name_n;
 	int retval;
 
-	if(as->ac_data->rrs_data == NULL) {
-		as->ac_state = DATA_MISSING;
+	if(as->ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) { 
+		as->ac_state = BARE_RRSIG;
 		return NO_ERROR;
 	}
 
-	if(as->ac_data->rrs_type_h == ns_t_rrsig) { 
-		as->ac_state = BARE_RRSIG;
+	if(as->ac_data->rrs_data == NULL) {
+		as->ac_state = DATA_MISSING;
 		return NO_ERROR;
 	}
 
@@ -633,17 +637,34 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 		if (kind == SR_ANS_UNSET)
 			kind = as->ac_data->rrs_ans_kind;
 		else {
-			/* STRAIGHT and CNAME are OK */
-			if ((kind == SR_ANS_STRAIGHT) || (kind == SR_ANS_CNAME)) {
-				if ((as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
-					(as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+			switch(kind) {
+				/* STRAIGHT and CNAME are OK */
+				case SR_ANS_STRAIGHT:
+				case SR_ANS_CNAME:
+					if ((as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
+						(as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+					}
+					break;
+
+				/* Only bare RRSIGs together */
+				case SR_ANS_BARE_RRSIG:
+					if (as->ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG)
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+					break;
+
+				/* NACK_NXT and NACK_SOA are OK */
+				case SR_ANS_NACK_NXT:
+				case SR_ANS_NACK_SOA:
+					if ((as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
+						(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+					}
+					break;
+
+				/* Never Reached */
+				default:
 					matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
-				}
-			}
-			/* NACK_NXT and NACK_SOA */
-			else if ((as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
-				(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
-				matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 			}
 		}
 
@@ -794,9 +815,7 @@ int try_verify_assertion(val_context_t *context, struct query_chain **queries,
 	struct query_chain *pc;
 	struct assertion_chain *pending_as;
 	int retval;
-	u_int16_t type_h, class_h;
 	struct rrset_rec *pending_rrset; 
-	u_int8_t *signby_name_n;
 
 	/* Sanity check */
 	if(next_as == NULL)
@@ -814,53 +833,40 @@ int try_verify_assertion(val_context_t *context, struct query_chain **queries,
 		next_as->ac_state = DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
 	}
 	else if (pc->qc_state == Q_ANSWERED) {
-		pending_as = pc->qc_as;
-		if(next_as->ac_state == A_WAIT_FOR_RRSIG) {
-			/* We were waiting for the RRSIG */
-			pending_rrset = pending_as->ac_data;
-		
-			/* 
-			 * Check if what we got was an RRSIG 
-			 */
-			if (pending_rrset->rrs_type_h != ns_t_rrsig) {
-				/* Could not find any RRSIG */
-				next_as->ac_state = RRSIG_MISSING; 
-			}
-			else {
-				/* Find the RRSIG that matches the type */
-				for(;pending_rrset;pending_rrset=pending_rrset->rrs_next) { 
-					/* Check if type is in the RRSIG */
-					u_int16_t rrsig_type_h;
-					memcpy(&rrsig_type_h, pending_rrset->rrs_sig, sizeof(u_int16_t));
-					if (rrsig_type_h == next_as->ac_data->rrs_type_h)				
-						break;
-				}
-				if(pending_rrset == NULL) {
-					/* Could not find any RRSIG matching query type*/
-					next_as->ac_state = RRSIG_MISSING; 
-				}
-				else {
 
-					/* store the RRSIG in the assertion */
-					next_as->ac_data->rrs_sig = 
-					copy_rr_rec(pending_rrset->rrs_type_h, pending_rrset->rrs_sig, 0);
-					next_as->ac_state = A_WAIT_FOR_TRUST; 
-					/* create a pending query for the trust portion */
-   					signby_name_n = &next_as->ac_data->rrs_sig->rr_rdata[SIGNBY];
-					class_h = next_as->ac_data->rrs_class_h;			
-					if(next_as->ac_data->rrs_type_h == ns_t_dnskey)
-						type_h = ns_t_ds;
-					else 
-						type_h = ns_t_dnskey;
-	
-					if(NO_ERROR != (retval = 
-							add_to_query_chain(queries, signby_name_n, type_h, class_h)))
-						return retval;
-					next_as->ac_pending_query = *queries;
+		if(next_as->ac_state == A_WAIT_FOR_RRSIG) {
+		
+			for(pending_as = pc->qc_as; pending_as; pending_as = pending_as->ac_more_data) {
+				/* We were waiting for the RRSIG */
+				pending_rrset = pending_as->ac_data;
+
+				/* 
+				 * Check if what we got was an RRSIG 
+				 */
+				if (pending_as->ac_state == BARE_RRSIG) {
+					/* Find the RRSIG that matches the type */
+					/* Check if type is in the RRSIG */
+					u_int16_t rrsig_type_n;
+					memcpy(&rrsig_type_n, pending_rrset->rrs_sig->rr_rdata, sizeof(u_int16_t));
+					if (next_as->ac_data->rrs_type_h == ntohs(rrsig_type_n)) {
+						/* store the RRSIG in the assertion */
+						next_as->ac_data->rrs_sig = 
+							copy_rr_rec(pending_rrset->rrs_type_h, pending_rrset->rrs_sig, 0);
+						next_as->ac_state = A_WAIT_FOR_TRUST; 
+						/* create a pending query for the trust portion */
+						if (NO_ERROR != (retval = build_pending_query(context, queries, next_as)))
+							return retval;
+						break;
+					}
 				}
+			}
+			if(pending_as == NULL) {
+				/* Could not find any RRSIG matching query type*/
+				next_as->ac_state = RRSIG_MISSING; 
 			}
 		}
 		else if (next_as->ac_state == A_WAIT_FOR_TRUST) {
+			pending_as = pc->qc_as;
 			next_as->ac_trust = pending_as;
 			next_as->ac_pending_query = NULL;
 
