@@ -41,7 +41,6 @@ char *p_val_error(int valerrno);
 
 #define ERROR_BASE    			A_LAST_STATE /* 10 */
 /* "Cannot do anything further" states */
-#define BARE_RRSIG 				ERROR_BASE+1
 #define DATA_MISSING			ERROR_BASE+2
 #define DNSKEY_MISSING			ERROR_BASE+3 
 #define	DS_MISSING				ERROR_BASE+4	
@@ -100,21 +99,23 @@ char *p_val_error(int valerrno);
 #define LOCAL_ANSWER			LAST_FAILURE+3	/* Answer obtained locally */
 #define TRUST_KEY	 			LAST_FAILURE+4 
 #define TRUST_ZONE				LAST_FAILURE+5 
+#define BARE_RRSIG 				LAST_FAILURE+6
 #define LAST_SUCCESS			LAST_FAILURE+10 /* ERROR_BASE + 80 */
 
 /* failure result conditions */
 #define BOGUS  					LAST_SUCCESS+1	/* NOT_VERIFIED but not trusted */
-#define INCOMPLETE_PROOF 		LAST_SUCCESS+2	/* Proof does not have all required components */
-#define NONEXISTENT_NAME 		LAST_SUCCESS+3	/* TRUSTED AND proof present */
-#define NONEXISTENT_TYPE 		LAST_SUCCESS+4	/* TRUSTED AND proof present */
-#define BOGUS_PROOF 			LAST_SUCCESS+5	/* proof cannot be validated */
-#define INDETERMINATE_DS 		LAST_SUCCESS+6	/* Can't prove that the DS is trusted */
-#define INDETERMINATE_PROOF		LAST_SUCCESS+7	/* Some intermediate Proof of non-existence obtained 
+#define VALIDATION_ERROR  		LAST_SUCCESS+2	
+#define INCOMPLETE_PROOF 		LAST_SUCCESS+3	/* Proof does not have all required components */
+#define NONEXISTENT_NAME 		LAST_SUCCESS+4	/* TRUSTED AND proof present */
+#define NONEXISTENT_TYPE 		LAST_SUCCESS+5	/* TRUSTED AND proof present */
+#define BOGUS_PROOF 			LAST_SUCCESS+6	/* proof cannot be validated */
+#define INDETERMINATE_DS 		LAST_SUCCESS+7	/* Can't prove that the DS is trusted */
+#define INDETERMINATE_PROOF		LAST_SUCCESS+8	/* Some intermediate Proof of non-existence obtained 
 													- dont know if answer exists and proof is bogus
 													  or answer is bogus.  */
-#define INDETERMINATE_ERROR		LAST_SUCCESS+8	/* Error sequence */
-#define INDETERMINATE_TRUST		LAST_SUCCESS+9	/* Dont know if trust is absent or answer is bogus */
-#define INDETERMINATE_ZONE		LAST_SUCCESS+10 /* Dont know if zone is unsigned or sigs have been stripped */
+#define INDETERMINATE_ERROR		LAST_SUCCESS+9	/* Error sequence */
+#define INDETERMINATE_TRUST		LAST_SUCCESS+10 /* Dont know if trust is absent or answer is bogus */
+#define INDETERMINATE_ZONE		LAST_SUCCESS+11 /* Dont know if zone is unsigned or sigs have been stripped */
 #define INDETERMINATE	INDETERMINATE_TRUST
 
 
