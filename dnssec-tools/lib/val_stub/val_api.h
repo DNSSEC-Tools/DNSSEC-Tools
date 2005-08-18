@@ -14,18 +14,9 @@
 #include <netdb.h>       /* for struct hostent */
 
 #include "val_errors.h"
+#include "val_query.h"
+#include "val_x_query.h"
 #include "val_gethostbyname.h"
 #include "val_getaddrinfo.h"
-
-/*
- * Returns the length (in bytes) of the answer on success, and -1 on
- * failure.  If DNSSEC validation is successful, *dnssec_status will
- * contain VALIDATE_SUCCESS
- * If there is a failure, *dnssec_status will contain the validator
- * error code.
- */
-int val_query ( const char *domain_name, int class, int type,
-		unsigned char *answer, int anslen,
-		int *dnssec_status );
 
 #endif
