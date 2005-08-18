@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+
 #include "val_api.h"
 #include "val_getaddrinfo.h"
 #include "val_log.h"
@@ -35,7 +36,7 @@ static void print_addrinfo(struct addrinfo* ainfo)
 		if (a->ai_flags & AI_V4MAPPED) printf("AI_V4MAPPED ");
 		if (a->ai_flags & AI_ALL) printf("AI_ALL ");
 		if (a->ai_flags & AI_ADDRCONFIG) printf("AI_ADDRCONFIG ");
-		if (a->ai_flags & AI_NUMERICSERV) printf("AI_NUMERICSERV ");
+//		if (a->ai_flags & AI_NUMERICSERV) printf("AI_NUMERICSERV ");
 		printf("]\n");
 		printf("\tFamily:    %d [%s]\n", a->ai_family,
 		       (a->ai_family == AF_UNSPEC)? "AF_UNSPEC":
