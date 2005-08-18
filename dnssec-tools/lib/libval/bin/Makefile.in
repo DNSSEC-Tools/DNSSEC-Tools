@@ -1,0 +1,45 @@
+
+INCL= ../../libsres
+LIB= ../../libsres
+CFLAGS_EX=-I$(INCL) -I..
+EXTRALIBS=-lval -lsres -lcrypto
+LDFLAGS_EX=-L.. -L$(LIB) $(EXTRALIBS)
+
+SRC=  	val_resquery.c \
+	crypto/val_dsasha1.c
+
+# can't use gmake conventions to translate SRC -> OBJ for portability
+OBJ=  	validator_driver.o \
+	validat.o \
+	getaddr.o \
+	gethost.o
+
+LOBJ=   validator_driver.lo \
+	validat.lo \
+	getaddr.lo \
+	gethost.lo
+
+DRIVER= driver 
+VALIDATOR=validate
+GETHOST= gethost
+GETADDR= getaddr
+
+all: $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR)
+
+clean:
+	$(RM) -f $(LOBJ) $(OBJ) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR)
+
+$(DRIVER): validator_driver.lo
+	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS)
+
+$(VALIDATOR): validate.lo
+	$(LIBTOOLLD) -o $@ validate.lo $(LDFLAGS)
+
+$(GETHOST): gethost.lo
+	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS)
+
+$(GETADDR): getaddr.lo
+	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
+
+install:
+	
