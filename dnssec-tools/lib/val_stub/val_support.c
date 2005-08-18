@@ -496,7 +496,7 @@ int check_label_count (
                                                                                                                           
     if (sig_labels > owner_labels) return ERROR;
                                                                                                                           
-    *is_a_wildcard = (sig_labels < owner_labels);
+    *is_a_wildcard = (owner_labels - sig_labels);
                                                                                                                           
     return NO_ERROR;
 }
