@@ -513,19 +513,27 @@ int make_sigfield (  u_int8_t            **field,
                                                                                                                           
         if (is_a_wildcard)
         {
-            u_int8_t    wildcard_label[2];
-            size_t      wildcard_label_length = 2;
-            wildcard_label[0] = (u_int8_t) 1;
-            wildcard_label[1] = (u_int8_t) '*';
-                                                                                                                          
-            memcpy (&(*field)[index],wildcard_label,wildcard_label_length);
-            index += wildcard_label_length;
+			/* Construct the original name */
+			u_char wcard_n[MAXCDNAME];
+			u_int8_t *np = lowered_owner_n;
+			int i;
+
+			for (i = 0; i < is_a_wildcard; i++) 
+				np += np[0] + 1;
+			int outer_len =  wire_name_length(np);
+
+			wcard_n[0] = (u_int8_t) 1;
+			wcard_n[1] = '*';
+			memcpy(&wcard_n[2], np, outer_len);
+			memcpy (&(*field)[index], wcard_n, outer_len+2);
+			index += outer_len+2;
         }
         else
         {
             memcpy (&(*field)[index], lowered_owner_n, owner_length);
             index += owner_length;
         }
+
         memcpy (&(*field)[index], &type_n, sizeof(u_int16_t));
         index += sizeof(u_int16_t);
         memcpy (&(*field)[index], &class_n, sizeof(u_int16_t));
@@ -541,7 +549,8 @@ int make_sigfield (  u_int8_t            **field,
         memcpy (&(*field)[index],curr_rr->rr_rdata,curr_rr->rr_rdata_length_h);
         index += curr_rr->rr_rdata_length_h;
     }
-                                                                                                                          
+            
+	*field_length = index;                                                                                                              
     return NO_ERROR;
 }
 
