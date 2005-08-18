@@ -20,7 +20,6 @@
 	<li><a href="#tool_option_interfaces">TOOL OPTION INTERFACES</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
-	<li><a href="#todo">TODO</a></li>
 </ul>
 <!-- INDEX END -->
 
@@ -141,13 +140,18 @@ caller.</p>
 <hr />
 <h1><a name="example">EXAMPLE</a></h1>
 <p><strong>/usr/local/etc/dnssec/dnssec-tools.conf</strong> has these entries:</p>
-<p>ksklength      1024</p>
-<p>zsklength      512</p>
+<pre>
+    ksklength      1024</pre>
+<pre>
+    zsklength      512</pre>
 <p>example.keyrec has this entry:</p>
-<p>key	``Kexample.com.+005+10988''</p>
-<p>zsklength	``1024''</p>
+<pre>
+    key         &quot;Kexample.com.+005+10988&quot;</pre>
+<pre>
+    zsklength   &quot;1024&quot;</pre>
 <p><strong>zonesigner</strong> is executed with this command line:</p>
-<p>zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com</p>
+<pre>
+    zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com</pre>
 <p><em>tooloptions(``example.keyrec'',``Kexample.com.+005+10988'',(``wait=i''))</em>
 will read each option source in turn, ending up with:
     <em>ksklength</em> 	 512
@@ -345,10 +349,6 @@ modified by the calling program itself.
 <p><code>zonesigner(1)</code></p>
 <p>Net::DNS::SEC::Tools::conf(3), Net::DNS::SEC::Tools::keyrec(3), Getopt::Long(3)</p>
 <p>Net::DNS::SEC::Tools::keyrec(5)</p>
-<p>
-</p>
-<hr />
-<h1><a name="todo">TODO</a></h1>
 
 <!--#include virtual="/page-bottom.html" -->
 </body>

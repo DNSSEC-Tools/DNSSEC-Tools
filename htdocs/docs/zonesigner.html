@@ -17,6 +17,13 @@
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#keyrec_files">KEYREC FILES</a></li>
 	<li><a href="#using_zonesigner">USING ZONESIGNER</a></li>
+	<li><a href="#entropy">ENTROPY</a></li>
+	<li><a href="#determining_option_values">DETERMINING OPTION VALUES</a></li>
+	<ul>
+
+		<li><a href="#example">Example</a></li>
+	</ul>
+
 	<li><a href="#options">OPTIONS</a></li>
 	<ul>
 
@@ -76,10 +83,11 @@ line.  Example 4 below contains the contents of a sample <em>keyrec</em> file.</
 <h1><a name="using_zonesigner">USING ZONESIGNER</a></h1>
 <p><em>zonesigner</em> is used in this way:</p>
 <p>zonesigner [options] &lt;zone-file&gt; &lt;zone-out&gt;</p>
+<p>The <em>zone-file</em> and <em>zone-out</em> arguments are required.</p>
 <p><em>zone-file</em> is the name of the zone file from which a signed zone file will
-be created.  If the <em>-zone</em> option is not given, then it is also the name
-of the zone that will be signed.  Generated keys are given this name as their
-base.</p>
+be created.  If the <em>-zone</em> option is not given, then <em>zone-file</em> will be
+used as the name of the zone that will be signed.  Generated keys are given
+this name as their base.</p>
 <p>The zone file is modified to have <strong>include</strong> commands, which will include the
 KSK and ZSK keys.  These lines are placed at the end of the file and should
 not be modified by the user.  If the zone file already includes any key files,
@@ -90,9 +98,59 @@ deleted; any related comment lines are left untouched.</p>
 of the <em>zone-file</em> zone file, with some modifications.  Several $INCLUDE
 lines will be added at the end of the file and the SOA serial number will be
 incremented.</p>
-<p>The <em>zone-out</em> argument may be left out, in which case the input zone file
-will be used as the base for all operations.</p>
 <p>The signed zone file will be this name, appended with <em>.signed</em>.</p>
+<p>Unless the <em>-genkeys</em>, <em>-genksk</em>, or <em>-genzsk</em> options are specified, the
+last keys generated for a particular zone will be used in subsequent
+<em>zonesigner</em> executions.</p>
+<p>
+</p>
+<hr />
+<h1><a name="entropy">ENTROPY</a></h1>
+<p>On some systems, the implementation of the pseudo-random number generator
+requires keyboard activity.  This keyboard activity is used to fill a buffer
+in the system's random number generator.  If zonesigner appears hung, you may
+have to add entropy to the random number generator by randomly striking keys
+until the program completes.  Display of this message is controlled by the
+<strong>entropy_msg</strong> configuration file parameter.</p>
+<p>
+</p>
+<hr />
+<h1><a name="determining_option_values">DETERMINING OPTION VALUES</a></h1>
+<p><em>zonesigner</em> checks four places in order to determine option values.  
+In descending order of precedence, these places are:</p>
+<pre>
+    -ksklength command line options</pre>
+<pre>
+    keyrec file</pre>
+<pre>
+    dnssec-tools configuration file</pre>
+<pre>
+    zonesigner defaults</pre>
+<p>Each is checked until a value is found.  That value is then used for that
+<em>zonesigner</em> execution and the value is stored in the <em>keyrec</em> file.</p>
+<p>
+</p>
+<h2><a name="example">Example</a></h2>
+<p>For example, the KSK length has the following values:</p>
+<pre>
+    -ksklength command line option:     8192</pre>
+<pre>
+    keyrec file:                        1024</pre>
+<pre>
+    dnssec-tools configuration file:    2048</pre>
+<pre>
+    zonesigner defaults:                512</pre>
+<p>If all are present, then the KSK length will be 8192.</p>
+<p>If the <em>-ksklength</em> command line option wasn't given, the KSK length
+will be 1024.</p>
+<p>If the KSK length wasn't given in the configuration file, it will be 8192.</p>
+<p>If the KSK length wasn't in the <em>keyrec</em> file or the configuration file,
+the KSK length will be 8192.</p>
+<p>If the <em>-ksklength</em> command line option wasn't given and the KSK length
+wasn't in the configuration file, it'll be 1024.</p>
+<p>If the command line option wasn't given, the KSK length wasn't in the
+<em>keyrec</em> file, and it wasn't in the configuration file, then the KSK
+length will be 512.</p>
 <p>
 </p>
 <hr />
@@ -117,16 +175,41 @@ No <em>keyrec</em> file will be consulted or created.
 <em>Net::DNS::SEC::Tools::tooloptions</em> for more details about this file.
 </dd>
 <p></p>
-<dt><strong><a name="item__2dreuseksk">-reuseksk</a></strong><br />
+<dt><strong><a name="item__2dgenkeys">-genkeys</a></strong><br />
 </dt>
 <dd>
-Re-use the zone's current KSK.
+Generate a new KSK and ZSK for the zone.
 </dd>
 <p></p>
-<dt><strong><a name="item__2dreusezsk">-reusezsk</a></strong><br />
+<dt><strong><a name="item__2dgenksk">-genksk</a></strong><br />
 </dt>
 <dd>
-Re-use the zone's current ZSK.
+Generate a new KSK for the zone.  By default, the last KSK generated for this
+zone will be used.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dgenzsk">-genzsk</a></strong><br />
+</dt>
+<dd>
+Generate a new ZSK for the zone.  By default, the last ZSK generated for this
+zone will be used.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dforceroll">-forceroll</a></strong><br />
+</dt>
+<dd>
+Force a roll-over of the ZSK keys.  The <em>keyrec</em>s of the ZSK keys are
+adjusted as follows:
+</dd>
+<dd>
+<pre>
+    The current ZSK key is marked as obsolete.
+    The published ZSK key is marked as current.
+    The new ZSK key, if it exists, is marked as published.
+    A new ZSK key is generated.</pre>
+</dd>
+<dd>
+<p>This should only be used if you know what you're doing.</p>
 </dd>
 <p></p>
 <dt><strong><a name="item__2dzone">-zone</a></strong><br />
@@ -147,6 +230,22 @@ Display a usage message.
 <dd>
 Verbose output will be given.  As more instances of <em>-verbose</em> are given on
 the command line, additional levels of verbosity are achieved.
+</dd>
+<dd>
+<pre>
+    level       output
+    -----       ------
+      1         operations being performed
+                  (e.g., generating key files, signing zone) 
+      2         details on operations and some operation results
+                  (e.g., new key names, zone serial number)
+      3         operations' parameters and additional details
+                  (e.g., key lengths, encryption algorithm,
+                  executed commands)</pre>
+</dd>
+<dd>
+<p>Higher levels of verbosity are cumulative.  Specifying two instances of
+<em>-verbose</em> will get the output from the first and second levels of output.</p>
 </dd>
 <p></p></dl>
 <p>
@@ -256,7 +355,7 @@ the example.com domain.  Zone data are stored in <strong>example.com</strong>, a
 keyrec is in <strong>example.krf</strong>.  The generated keys, output zone file, and final
 signed zone file will use <strong>example.com</strong> as a base.  Using this execution:</p>
 <pre>
-    # zonesigner -krfile example.krf db.example.com</pre>
+    # zonesigner -krfile example.krf example.com db.example.com</pre>
 <p>the following files are created:</p>
 <pre>
     Kdb.example.com.+005+12354.key
@@ -357,6 +456,7 @@ plans are to allow for more flexible serial number manipulation.
 <h1><a name="see_also">SEE ALSO</a></h1>
 <p>Net::DNS::SEC::Tools::conf.pm(3), Net::DNS::SEC::Tools::keyrec.pm(3), Net::DNS::SEC::Tools::tooloptions.pm(3)</p>
 
+<!--#include virtual="/page-bottom.html" -->
 <!--#include virtual="/page-bottom.html" -->
 </body>
 

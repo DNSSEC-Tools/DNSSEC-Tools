@@ -1,0 +1,114 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>dnspktflow - Analyize and draw DNS flow diagrams from a tcpdump file</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#requirements">REQUIREMENTS</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>dnspktflow - Analyize and draw DNS flow diagrams from a tcpdump file</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>dnspktflow -o output.png file.tcpdump</p>
+<p>dnspktflow -o output.png -x -a -t -q file.tcpdump</p>
+<p>
+</p>
+<hr />
+<h1><a name="requirements">REQUIREMENTS</a></h1>
+<p>This application requires the following perl modules and software
+components to work:</p>
+<pre>
+  graphviz                  (<a href="http://www.graphviz.org/">http://www.graphviz.org/</a>)
+  GraphViz                  (perl module)
+  tethereal                 (<a href="http://www.ethereal.org/">http://www.ethereal.org/</a>)</pre>
+<p>Required for outputing screen presentations:</p>
+<pre>
+  MagicPoint                (<a href="http://member.wide.ad.jp/wg/mgp/">http://member.wide.ad.jp/wg/mgp/</a>)</pre>
+<p>If the following modules are installed, it will enable a GUI interface:</p>
+<pre>
+  QWizard                   (perl module)
+  Getopt::GUI::Long         (perl module)</pre>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<pre>
+  --i=STRING
+  --ignore-hosts=STRING  A regular expression of host names to ignore
+  --r=STRING
+  --only-hosts=STRING    A regular expression of host names to analyze</pre>
+<pre>
+  --o=STRING
+  --output-file=STRING   Output png image file name (default: out.png)
+  --O=STRING
+  --tethereal-out=STRING Save tethereal output to this file
+  --T
+  --input-is-tethereal-out The input file is already processed by tethereal</pre>
+<pre>
+  --t
+  --show-type            Shows message type in result image
+  --q
+  --show-queries         Shows query questions in result image
+  --a
+  --show-answers         Shows query answers in result image
+  --A
+  --show-authoratative   Shows authoratative information in result image
+  --x
+  --show-additional      Shows additional information in result image
+  --l
+  --show-label-lines     Shows lines attaching labels to lines</pre>
+<pre>
+  --f
+  --show-frame-num       Shows the packet frame numbers
+  --b=INTEGER
+  --begin-frame=INTEGER  Begin at frame NUMBER</pre>
+<pre>
+  --fontsize             Font Size
+  --d
+  --dump-pkts            Dump data collected from the packets
+  --h
+  --help                 Show help for command line options</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2005 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p>Net::DNS</p>
+<p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
+
+</body>
+
+</html>

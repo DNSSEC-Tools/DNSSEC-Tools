@@ -12,6 +12,8 @@ tools:
 	$(FIXBOT) docs/mapper.html
 	pod2html $(TOOLSDIR)/tools/scripts/zonesigner > docs/zonesigner.html
 	$(FIXBOT) docs/zonesigner.html
+	pod2html $(TOOLSDIR)/tools/dnspktflow/dnspktflow > docs/dnspktflow.html
+	$(FIXBOT) docs/zonesigner.html
 
 modules:
 	pod2html $(TOOLSDIR)/tools/modules/conf.pm > docs/conf.html

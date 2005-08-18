@@ -43,8 +43,8 @@
 <h1><a name="description">DESCRIPTION</a></h1>
 <p>The DNSSEC tools have a configuration file for commonly used values.
 These values are the defaults for a variety of things, such as
-encryption algorithm and encryption key length.
-<strong>/usr/local/etc/dnssec/dnssec-tools.conf</strong> is the path for the DNSSEC tools
+encryption algorithm and encryption key length.</p>
+<p><strong>/usr/local/etc/dnssec/dnssec-tools.conf</strong> is the path for the DNSSEC tools
 configuration file.  The <em>Net::DNS::SEC::Tools::conf</em> module provides
 methods for accessing the configuration data in this file.</p>
 <p>The DNSSEC tools configuration file consists of a set of configuration
@@ -60,10 +60,11 @@ comment characters.  These comments can encompass an entire line or may
 follow a configuration entry.  If a comment shares a line with an entry,
 value tokenization stops just prior to the comment character.</p>
 <p>An example configuration file follows:</p>
-<p># Sample configuration entries.</p>
 <pre>
-  algorithm       rsasha1       # Encryption algorithm.
-  ksk_length      1024          ; KSK key length.</pre>
+    # Sample configuration entries.</pre>
+<pre>
+    algorithm       rsasha1     # Encryption algorithm.
+    ksk_length      1024        ; KSK key length.</pre>
 <p>
 </p>
 <hr />
