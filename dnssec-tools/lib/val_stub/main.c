@@ -63,10 +63,13 @@ int main(int argc, char *argv[])
     }
 
     if (classstr) {
-	if (strncasecmp(classstr, "IN", 2) != 0) {
-	    printf("Class %s not supported.\n", classstr);
-	    exit(1);
-	}
+	    if (atoi(classstr)) {
+		    class = atoi(classstr);
+	    }
+	    else if (strncasecmp(classstr, "IN", 2) != 0) {
+		    printf("Class %s not supported.\n", classstr);
+		    exit(1);
+	    }
     }
 
     if (typestr) {
@@ -118,11 +121,10 @@ int main(int argc, char *argv[])
     /* Perform query and validation */
     bzero(buf, BUFLEN);
 
-    anslen = val_query(domain_name, class, type, buf, BUFLEN, &dnssec_status);
+    anslen = val_query(domain_name, class, type, buf, BUFLEN, 0, &dnssec_status);
 
     printf("val_query() returned %d\n", anslen);
-    printf("DNSSEC status: %s\n", p_val_error(dnssec_status));
-    printf("h_errno = %d\n", h_errno);
+    printf("DNSSEC status: %d [%s]\n", dnssec_status, p_val_error(dnssec_status));
 
     if (anslen > 0) {
 	if (dnssec_status == VALIDATE_SUCCESS) {
