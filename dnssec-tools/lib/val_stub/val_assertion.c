@@ -61,6 +61,8 @@ u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 		  zse_cur=zse_cur->next);	
 
 		/* for all zones which are shorter or as long, do a strstr */ 
+		// XXX We will probably need to use namecmp() instead so that
+		// XXX casing can be ignored
 		/* Because of the ordering, the longest match is found first */
 		for (; zse_cur; zse_cur=zse_cur->next) {
 
