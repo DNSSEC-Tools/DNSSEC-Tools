@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 Sparta, inc.  All rights reserved.  See the COPYING
+# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # DNSSEC Tools
@@ -21,9 +21,9 @@
 #
 #	An example rollrec file follows:
 #
-#	    roll "portrigh.com"
-#		zonefile	"/usr/etc/dnssec/zones/db.portrigh.com"
-#		keyrec		"/usr/etc/dnssec/keyrec/portrigh.keyrec"
+#	    roll "example.com"
+#		zonefile	"/usr/etc/dnssec/zones/db.example.com"
+#		keyrec		"/usr/etc/dnssec/keyrec/example.keyrec"
 #		curphase	"2"
 #		maxttl		"86400"
 #		phasestart	"Wed Mar 09 21:49:22 2005"
@@ -805,17 +805,17 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a dnssec-tools rollrec file.
 
   @rrnames = rollrec_names();
 
-  $rrec = rollrec_fullrec("portrigh.com");
+  $rrec = rollrec_fullrec("example.com");
   %rrhash = %$rrec;
   $zname = $rrhash{"maxttl"};
 
-  $val = rollrec_recval("portrigh.com","zonefile");
+  $val = rollrec_recval("example.com","zonefile");
 
-  rollrec_add("portrigh.com",\%rollfields);
+  rollrec_add("example.com",\%rollfields);
 
-  rollrec_del("portrigh.com");
+  rollrec_del("example.com");
 
-  rollrec_setval("portrigh.com","zonefile","db.portrigh.com");
+  rollrec_setval("example.com","zonefile","db.example.com");
 
   @rollrecfields = rollrec_fields();
 
@@ -837,9 +837,9 @@ A I<rollrec> file is organized in sets of I<rollrec> records.  I<rollrec>s
 describe the state of a roll-over operation.  A I<rollrec> consists of a set
 of keyword/value entries.  The following is an example of a I<rollrec>:
 
-    roll "portrigh.com"
-	zonefile		"/usr/etc/dnssec/zones/db.portrigh.com"
-	keyrec			"/usr/etc/dnssec/keyrec/portrigh.keyrec"
+    roll "example.com"
+	zonefile		"/usr/etc/dnssec/zones/db.example.com"
+	keyrec			"/usr/etc/dnssec/keyrec/example.keyrec"
 	curphase		"2"
 	maxttl			"86400"
 	phasestart		"Wed Mar 09 21:49:22 2005"
@@ -949,14 +949,14 @@ I<rollrec_field> is the field name within that I<rollrec>.
 
 For example, the current I<rollrec> file contains the following I<rollrec>.
 
-    roll	"portrigh.com"
-                zonefile        "db.portrigh.com"
+    roll	"example.com"
+                zonefile        "db.example.com"
 
 The call:
 
-    rollrec_recval("portrigh.com","zonefile")
+    rollrec_recval("example.com","zonefile")
 
-will return the value "db.portrigh.com".
+will return the value "db.example.com".
 
 =head2 I<rollrec_setval(rollrec_name,field,value)>
 
@@ -1021,6 +1021,11 @@ fields ordered in the same manner.  New I<rollrec>s are appended to the end
 of the array.  I<rollrec> fields added to existing I<rollrec>s are added at
 the beginning of the I<rollrec> entry.  Comments and vertical whitespace are
 preserved as given in the I<rollrec> file.
+
+=head1 COPYRIGHT
+
+Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
 
 =head1 AUTHOR
 

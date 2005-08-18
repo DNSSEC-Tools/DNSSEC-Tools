@@ -219,6 +219,11 @@ Return Values:
     An empty string is returned if the no seconds count was given or if
 	the seconds count is less than one.
 
+=head1 COPYRIGHT
+
+Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
 =head1 AUTHOR
 
 Wayne Morrison, tewok@users.sourceforge.net

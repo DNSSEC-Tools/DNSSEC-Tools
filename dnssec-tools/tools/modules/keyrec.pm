@@ -1171,6 +1171,11 @@ I<keyrec>s are added at the beginning of the I<keyrec> entry.
 Comments and vertical whitespace are preserved as given in the
 I<keyrec> file.
 
+=head1 COPYRIGHT
+
+Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
 =head1 AUTHOR
 
 Wayne Morrison, tewok@users.sourceforge.net
