@@ -1,0 +1,416 @@
+#!/usr/bin/perl
+
+use Data::Dumper;
+use GraphViz;
+use strict;
+use File::Temp qw(tempfile);
+use IO::File;
+
+my %opts;
+my $mapinwindow;
+
+%opts = ( o => "out%03d.png",
+	  b => 1,
+	  l => 0,
+	  fontsize => 9,
+	);
+
+LocalGetOptions(\%opts,
+		['i|ignore-hosts=s',"A regular expression of host names to ignore"],
+		['r|only-hosts=s',"A regular expression of host names to analyze"],
+		"",
+		['o|output-file=s',"Output ping image file name (default: $opts{o})",
+#		 question => { 'type' => 'fileupload' }
+		],
+		['m|multiple-outputs', "Creates one picture per request (use %03d in the filename)"],
+		['M|magic-point=s', "Saves a Magic Point presentation file for showing the output"],
+		['L|last-line-labels-only', "Only show data on the last line drawn."],
+		['z|most-lines=i', "Only show at most INTEGER lines."],
+		"",
+		['O|tethereal-out=s','Save tethereal output to this file',
+#		 question => { 'type' => 'fileupload' }
+		],
+		['T|input-is-tethereal-out','The input file is already processed by tethereal'],
+		"",
+		['t|show-type',"Shows message type in result image"],
+		['q|show-queries',"Shows query questions in result image"],
+		['a|show-answers',"Shows query answers in result image"],
+		['A|show-authoratative',"Shows authoratative information in result image"],
+		['x|show-additional',"Shows additional information in result image"],
+		['l|show-label-lines','Shows lines attaching labels to lines'],
+		"",
+		['f|show-frame-num',"Shows the packet frame numbers"],
+		['b|begin-frame=i',"Begin at frame NUMBER"],
+		"",
+		["fontsize=i","Font Size"],
+		["d|dump-pkts", "Dump data collected from the packets"],
+		["h|help", "Show help for command line options"],
+
+#
+# GUI only options
+#
+		['GUI:guionly',{type => 'checkbox',
+				values => [1,0],
+				default => 1,
+				text => 'Show map in a window',
+				name => 'mapinwindow'}],
+		['GUI:actions', sub { require QWizard;
+				      import QWizard;
+				      $mapinwindow = qwparam('mapinwindow')}],
+	       );
+
+my $data;
+my @dnspkts;
+my $state;
+my $qdata;
+my $shorttype;
+my %authdata;
+my %ipdata;
+my $nameexp = '[-\w\.<>]+';
+my $addrexp = '[\da-f\.:]+';
+my $eitherexp = '[\w\.:]+';
+
+foreach my $file (@ARGV) {
+    my ($fh, $filename);
+    if (!$opts{'T'}) {
+	if ($opts{'O'}) {
+	    $fh = new IO::File;
+	    $fh->open(">$opts{t}");
+	    $filename = $opts{'t'};
+	} else {
+	    ($fh, $filename) = tempfile("dnspktXXXXXX", SUFFIX => 'txt',
+					DIR => "/tmp");
+	}
+	open(T,"tethereal -V -o ip.defragment:TRUE -n -r $file|");
+	while (<T>) {
+	    print $fh $_;
+	}
+	close(T);
+	$fh->close();
+	$file = $filename;
+    }
+
+    open(I, $file);
+    while (<I>) {
+	if (/^Frame (\d+)/) {
+	    # brand new packet
+	    $data = { Frame => $1 };
+	}
+
+	# mark if we're a TCP packet
+	$data->{'tcp'} = 1 if (/Transmission Control Protocol/);
+
+	# collect to/from addresses
+	$data->{'src'} = $1 if (/^Internet.*Src Addr: ($eitherexp)/);
+	$data->{'dst'} = $1 if (/^Internet.*Dst Addr: ($eitherexp)/);
+
+	# If DNS, mark the type of message and push to packet list
+	if (/Domain Name System \((\w+)\)/) {
+	    $data->{'type'} = $1;
+	    push @dnspkts, $data;
+	}
+
+	# misc things to watch for
+	$data->{'dnssecok'} = 1 if (/Accepts DNSSEC/);
+	$shorttype = $1 if (/type (\w+)/);
+	$data->{'err'} = "/$1" if (/Reply code:\s*(.*)/);
+	$data->{'truncated'} = 1 if (/1.*Truncated/);
+	$data->{'udpsize'} = $1 if (/UDP payload size: (\d+)/);
+
+	# mark if ...
+	if (/(0|1).*(Truncaded)/) {
+	    $data->{'flags'}{$2} = $1;
+	}
+
+	# collect queries and answers and ...
+	$state = $1 if (/^\s*(Queries|Additional|Authoritative)/);
+
+	# start  a new record on a Name: field
+	if (/^\s*Name: ($nameexp)/) {
+	    $qdata = { Name => $1, type => $shorttype };
+	    push @{$data->{'dns'}{$state}}, $qdata;
+	    if (($opts{'i'} && $qdata->{'Name'} =~ /$opts{'i'}/) ||
+		($opts{'r'} && $qdata->{'Name'} !~ /$opts{'r'}/)) {
+		# drop packets we don't care about
+		if ($#dnspkts > -1 &&
+		    $dnspkts[$#dnspkts]{'Frame'} == $data->{'Frame'}) {
+		    print "droping $data->{'Frame'}\n";
+		    pop @dnspkts;
+		}
+	    }
+	}
+
+	# remeber other things that may be in it
+	$qdata->{$1} = $2 if (/^\s*(Type|Name Server|Algorithm):\s*(.*)/);
+
+	# remember authoritative name servers
+	$authdata{$1}{$qdata->{'Name'}} = 1 if ($state eq 'Authoritative' &&
+						/Name server:\s($nameexp)/);
+	$ipdata{$1} = $qdata->{'Name'} if (/^\s*Addr: ($addrexp)/);
+    }
+    close(I);
+
+    unlink($filename) if (! $opts{'O'});
+}
+
+if ($opts{'d'}) {
+    print "-" x 70, "\npackets:";
+    print Dumper(\@dnspkts);
+    print "-" x 70, "\nauthdata:";
+    print Dumper(\%authdata);
+    print "-" x 70, "\nip data:";
+    print Dumper(\%ipdata);
+}
+
+#
+# actuall draw the results
+#
+if ($opts{'m'}) {
+    $| = 1;
+    print "Generating $#dnspkts images: ";
+    if ($opts{'M'}) {
+	open(M,">$opts{'M'}");
+	print M "%default 1 leftfill, size 2, fore \"dark blue\", back \"white\"\n";
+	print M "%default 2 size 6, vgap 10, prefix \" \", fore \"dark blue\"\n";
+	print M "%default 3 size 2, bar \"dark blue\", vgap 75, fore \"black\"\n";
+    }
+}
+
+my $gv;
+for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
+    $gv = GraphViz->new(rankdir => 1,
+			edge => { fontsize => $opts{'fontsize'}});
+    for (my $i = ($opts{'z'} ? ($m > $opts{'z'} ? ($m - $opts{'z'}) : 0) : 0);
+		  $i <= (($opts{'m'}) ? $m : $#dnspkts); $i++) {
+	my $pkt = $dnspkts[$i];
+	next if ($pkt->{'Frame'} < $opts{'b'});
+	$gv->add_node($pkt->{'src'},
+		      label => get_host_label($pkt->{'src'}),
+		      fontsize => $opts{'fontsize'});
+	$gv->add_node($pkt->{'dst'},
+		      label => get_host_label($pkt->{'dst'}),
+		      fontsize => $opts{'fontsize'});
+	my $edge =
+	  $gv->add_edge($pkt->{'src'} => $pkt->{'dst'},
+			get_edge_properties($pkt, $i, $m),
+			decorateP => $opts{'l'});
+    }
+    if ($opts{'m'}) {
+	print " $m";
+	my $file = sprintf($opts{'o'}, $m);
+	print O $gv->as_png($file);
+	if ($opts{'M'}) {
+	    print M "%page\n\nMessage " . ($m+1) . " / " . ($#dnspkts+1) . 
+	      "\n" . get_host_label($dnspkts[$m]{'src'}) . " -> " .
+		get_host_label($dnspkts[$m]{'dst'}) . 
+		  "\n%center\n%image \"$file\"\n";
+	}
+    }
+}
+
+if ($opts{'m'}) {
+    print "\n";
+} else {
+    $opts{'o'} =~ s/\%\d*d//;
+    print O $gv->as_png($opts{'o'});
+}
+
+if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
+    $Getopt::GUI::Long::GUI_qw->merge_primaries(
+						{
+						 mapout =>
+						 {
+						  title => 'Map',
+						  questions => 
+						  [{
+						    type => 'image',
+						    image => $opts{'o'},
+						   }]
+						 }});
+    $Getopt::GUI::Long::GUI_qw->magic('mapout');
+}
+
+sub get_host_label {
+    my $addr = shift;
+    my $lab;
+    $lab = exists($ipdata{$addr}) ? $ipdata{$addr} : $addr;
+    if (exists($authdata{$lab})) {
+	$lab .= "\nauth:" . join("\nauth:",keys(%{$authdata{$lab}}));
+    }
+    return $lab;
+}
+
+sub get_edge_properties {
+    my ($pkt, $num, $mnum) = @_;
+    my $lab = '';
+    my ($txt, $cnt, $type, $count);
+
+#    $lab .= "$num / " . $pkt->{'Frame'};
+    $num++;
+
+    $lab .= $num;
+    $lab .= "/frame=" . $pkt->{'Frame'} if ($opts{'f'});
+    $lab .= "/trunc" if ($pkt->{'truncated'});
+    $lab .= "/udp=$pkt->{udpsize}" if ($pkt->{'udpsize'});
+    $lab .= "/dnssecok" if ($pkt->{'dnssecok'});
+    $lab .= "\n$pkt->{'err'}" if ($pkt->{'err'} && $pkt->{'err'} !~ /No err/);
+#    $lab .= "\n$pkt->{'type'}";
+
+    if ($opts{'q'} && $pkt->{'type'} eq 'query') {
+	$lab .= add_breakdown($pkt, 'Queries', '?');
+    }
+
+    if ($opts{'a'} && $pkt->{'type'} eq 'response') {
+	$lab .= add_breakdown($pkt, 'Queries', '=');
+    }
+
+    if ($opts{'A'} && $pkt->{'type'} eq 'response') {
+	$lab .= add_breakdown($pkt, 'Authoritative', 'NS');
+    }
+
+    if ($opts{'x'} && $pkt->{'type'} eq 'response') {
+	$lab .= add_breakdown($pkt, 'Additional', '+');
+    }
+
+    return (label => ((!$opts{'L'} || $num == $mnum+1) ? $lab : "$num"),
+	    style => (($pkt->{'tcp'}) ? 'bold' : 'solid'),
+	    color => ($pkt->{'type'} eq 'response' ? 
+		      ($pkt->{'truncated'} ? 'red' : 'blue') : 'green')
+	   );
+}
+
+sub add_breakdown {
+    my ($pkt, $name, $tag) = @_;
+#	print "doing answers $num\n";
+    my ($lab, $txt, $type, $count);
+    foreach my $q (@{$pkt->{'dns'}{$name}}) {
+	#	    print "$q->{Name} ne $txt\n";
+	if ($txt && $type &&
+	    (($q->{Name} ne $txt) || "/$q->{type}" ne $type)) {
+	    #		print "$q->{Name} ne $txt-$type $txt$type\n";
+	    $lab .= "\n$tag/$txt$type($count)";
+	    $count = 0;
+	}
+	$txt = $q->{'Name'};	# remember name
+	#	    print "$q->{Name} ne $txt\n";
+	$count++;		# remember number
+	$type = "/$q->{type}" if ($opts{'t'}); # remember type
+    }
+    if ($txt) {
+	$lab .= "\n$tag/$txt$type($count)";
+    }
+    return $lab;
+}
+
+#
+# Getopt::GUI::Long niceness wrapper
+#
+
+sub LocalGetOptions {
+    if (eval {require Getopt::GUI::Long;}) {
+	import Getopt::GUI::Long;
+	# optional configure call
+	Getopt::Long::Configure(qw(auto_help no_ignore_case));
+	return GetOptions(@_);
+    }
+    require Getopt::Long;
+    import Getopt::Long;
+    # optional configure call
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH')
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
+}
+
+=pod
+
+=head1 NAME
+
+dnspktflow - Analyize and draw DNS flow diagrams from a tcpdump file
+
+=head1 SYNOPSIS
+
+dnspktflow -o output.png file.tcpdump
+
+dnspktflow -o output.png -x -a -t -q file.tcpdump
+
+=head1 REQUIREMENTS
+
+This application requires the following perl modules and software
+components to work:
+
+  graphviz                  (http://www.graphviz.org/)
+  GraphViz                  (perl module)
+  tethereal                 (http://www.ethereal.org/)
+
+If the following modules are installed, it will enable a GUI interface:
+
+  QWizard                   (perl module)
+  Getopt::GUI::Long         (perl module)
+
+=head1 OPTIONS
+
+  --i=STRING
+  --ignore-hosts=STRING  A regular expression of host names to ignore
+  --r=STRING
+  --only-hosts=STRING    A regular expression of host names to analyze
+
+  --o=STRING
+  --output-file=STRING   Output png image file name (default: out.png)
+  --O=STRING
+  --tethereal-out=STRING Save tethereal output to this file
+  --T
+  --input-is-tethereal-out The input file is already processed by tethereal     
+
+  --t
+  --show-type            Shows message type in result image
+  --q
+  --show-queries         Shows query questions in result image
+  --a
+  --show-answers         Shows query answers in result image
+  --A
+  --show-authoratative   Shows authoratative information in result image
+  --x
+  --show-additional      Shows additional information in result image
+  --l
+  --show-label-lines     Shows lines attaching labels to lines
+
+  --f
+  --show-frame-num       Shows the packet frame numbers
+  --b=INTEGER
+  --begin-frame=INTEGER  Begin at frame NUMBER
+
+  --fontsize             Font Size
+  --d
+  --dump-pkts            Dump data collected from the packets
+  --h
+  --help                 Show help for command line options
+
+=head1 COPYRIGHT
+
+Copyright 2004-2005 Sparta, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker <hardaker@users.sourceforge.net>
+
+=head1 SEE ALSO
+
+Net::DNS
+
+http://dnssec-tools.sourceforge.net/
+
+=cut
+
