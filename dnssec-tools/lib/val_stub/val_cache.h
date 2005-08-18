@@ -13,5 +13,6 @@ struct rrset_rec* get_cached_zones();
 struct rrset_rec* get_cached_keys();
 struct rrset_rec* get_cached_ds();
 struct rrset_rec* get_cached_answers();
+void free_validator_cache();
 
 #endif
