@@ -353,108 +353,10 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
 
 /*
  * Returns the entry from the host database for host.
- * If successful, *dnssec_status will contain VALIDATE_SUCCESS
- * If there is a failure, *dnssec_status will contain the validator
- * error code.
- */
-struct hostent *val_gethostbyname ( const char *name )
-{
-	struct hostent* hentry = NULL;
-	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
-	
-	struct in_addr ip4_addr;
-#if 0
-	struct in6_addr ip6_addr;
-#endif
-	
-	if (!name) {
-		return NULL;
-	}
-	
-	bzero(&ip4_addr, sizeof(struct in_addr));
-#if 0
-	bzero(&ip6_addr, sizeof(struct in6_addr));
-#endif
-	
-	if (inet_pton(AF_INET, name, &ip4_addr) > 0) {
-		hentry_wrapper = (struct hostent_dnssec_wrapper*) malloc (sizeof(struct hostent_dnssec_wrapper));
-		bzero(hentry_wrapper, sizeof(struct hostent_dnssec_wrapper));
-		hentry = (struct hostent *) & (hentry_wrapper->hentry);
-		hentry->h_name = strdup(name);
-		hentry->h_aliases = (char **) malloc (sizeof(char *));
-		hentry->h_aliases[0] = 0;
-		hentry->h_addrtype = AF_INET;
-		hentry->h_length = sizeof(struct in_addr);
-		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
-		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
-		memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
-		hentry->h_addr_list[1] = 0;
-		hentry_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		val_h_errno = NETDB_SUCCESS;
-		return hentry;
-	}
-#if 0
-	else if (inet_pton(AF_INET6, name, &ip6_addr) > 0) {
-		hentry_wrapper = (struct hostent_dnssec_wrapper*) malloc (sizeof(struct hostent_dnssec_wrapper));
-		bzero(hentry_wrapper, sizeof(struct hostent_dnssec_wrapper));
-		hentry = (struct hostent *) & (hentry_wrapper->hentry);
-		bzero(hentry, sizeof(struct hostent));
-		hentry->h_name = strdup(name);
-		hentry->h_aliases = (char **) malloc (sizeof(char *));
-		hentry->h_aliases[0] = 0;
-		hentry->h_addrtype = AF_INET6;
-		hentry->h_length = sizeof(struct in6_addr);
-		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
-		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in6_addr));
-		memcpy(hentry->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
-		hentry->h_addr_list[1] = 0;
-		hentry_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		val_h_errno = NETDB_SUCCESS;
-		return hentry;
-	}
-#endif
-	else {
-		struct domain_info response;
-		int dnssec_status = INTERNAL_ERROR;
-		
-		/* First check the ETC_HOSTS file
-		 * XXX: TODO check the order in the ETC_HOST_CONF file
-		 */
-		hentry = get_hostent_from_etc_hosts (name);
-		
-		if (hentry != NULL) {
-			hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
-			hentry_wrapper->dnssec_status = VALIDATE_SUCCESS; /* ??? or locally trusted ??? */
-			val_h_errno = VALIDATE_SUCCESS;
-			return hentry;
-		}
-		
-		/*
-		 * Try DNS
-		 */
-		bzero(&response, sizeof(struct domain_info));
-		
-		if (_val_query (name, ns_c_in, ns_t_a, &response, &dnssec_status) < 0) {
-			free_domain_info_ptrs(&response);
-			val_h_errno = HOST_NOT_FOUND;
-			return NULL;
-		}
-		else {
-			/* Extract validated answers from response */
-			hentry = get_hostent_from_response (response.di_rrset);
-			hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
-			hentry_wrapper->dnssec_status = dnssec_status;
-			free_domain_info_ptrs(&response);
-			return hentry;
-		}
-	}
-}
-
-/*
- * Returns the entry from the host database for host.
- * If successful, *dnssec_status will contain VALIDATE_SUCCESS
- * If there is a failure, *dnssec_status will contain the validator
- * error code.
+ * If successful, dnssec_status will contain VALIDATE_SUCCESS
+ * If there is a failure, dnssec_status will contain the validator
+ * error code.  The dnssec_status can be accessed by the
+ * function get_hostent_dnssec_status()
  */
 struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 {
@@ -569,4 +471,16 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 		return hentry;
 		
 	}	
+}
+
+/*
+ * Returns the entry from the host database for host.
+ * If successful, dnssec_status will contain VALIDATE_SUCCESS
+ * If there is a failure, dnssec_status will contain the validator
+ * error code.  The dnssec_status can be accessed by the
+ * function get_hostent_dnssec_status()
+ */
+struct hostent *val_gethostbyname ( const char *name )
+{
+	return val_x_gethostbyname( NULL, name );
 }
