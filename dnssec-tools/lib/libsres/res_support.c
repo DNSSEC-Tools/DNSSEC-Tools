@@ -32,6 +32,49 @@
 
 extern void res_pquery(const res_state statp, const u_char *msg, int len, FILE *file);
 
+
+static int seq_number = 0;
+FILE        *logfile = NULL;
+#define MEM_LOGFILE "memory_logfile"        
+                                                                                                                  
+void my_free (void *p, char *filename, int lineno)
+{
+    if (logfile==NULL)
+        logfile = fopen (MEM_LOGFILE, "w");
+                                                                                                                          
+    fprintf (logfile, "0x%08lx %5d bFREE %-20s %5d\n", (u_long) p, seq_number++,
+                                filename, lineno);
+    fflush (logfile);
+    free (p);
+}
+                                                                                                                          
+void *my_malloc (size_t t, char *filename, int lineno)
+{
+    void *p = malloc (t);
+                                                                                                                          
+    if (logfile==NULL)
+        logfile = fopen (MEM_LOGFILE, "w");
+                                                                                                                          
+    fprintf (logfile, "0x%08lx %5d aMALL %-20s %5d size=%6d\n", (u_long) p, seq_number++,
+                                filename, lineno, (u_int)t);
+    fflush (logfile);
+                                                                                                                          
+    return p;
+}
+                                                                                                                          
+char *my_strdup (const char *str, char *filename, int lineno)
+{
+    char *p = strdup (str);
+    if (logfile==NULL)
+        logfile = fopen (MEM_LOGFILE, "w");
+                                                                                                                          
+    fprintf (logfile, "0x%08lx %5d aSTRD %-20s %5d\n", (u_long) p, seq_number++,
+                                filename, lineno);
+    fflush (logfile);
+                                                                                                                          
+    return p;
+}
+
 void print_response (u_int8_t *ans, int resplen)
 {
     /* fp_nquery is a resolver debug routine (I think), the rest
@@ -106,48 +149,6 @@ int complete_read (int sock, void* field, int length)
         bytes_read += bytes;
     } while (bytes_read < length);
     return length;
-}
-
-
-static int seq_number = 0;
-FILE        *logfile = NULL;
-                                                                                                                          
-void my_free (void *p, char *filename, int lineno)
-{
-    if (logfile==NULL)
-        logfile = fopen ("memory_logfile", "w");
-                                                                                                                          
-    fprintf (logfile, "0x%08lx %5d bFREE %-20s %5d\n", (u_long) p, seq_number++,
-                                filename, lineno);
-    fflush (logfile);
-    free (p);
-}
-                                                                                                                          
-void *my_malloc (size_t t, char *filename, int lineno)
-{
-    void *p = malloc (t);
-                                                                                                                          
-    if (logfile==NULL)
-        logfile = fopen ("memory_logfile", "w");
-                                                                                                                          
-    fprintf (logfile, "0x%08lx %5d aMALL %-20s %5d size=%6d\n", (u_long) p, seq_number++,
-                                filename, lineno, (u_int)t);
-    fflush (logfile);
-                                                                                                                          
-    return p;
-}
-                                                                                                                          
-char *my_strdup (const char *str, char *filename, int lineno)
-{
-    char *p = strdup (str);
-    if (logfile==NULL)
-        logfile = fopen ("memory_logfile", "w");
-                                                                                                                          
-    fprintf (logfile, "0x%08lx %5d aSTRD %-20s %5d\n", (u_long) p, seq_number++,
-                                filename, lineno);
-    fflush (logfile);
-                                                                                                                          
-    return p;
 }
 
 
