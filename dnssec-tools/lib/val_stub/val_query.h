@@ -12,11 +12,15 @@
 #ifndef VAL_QUERY_H
 #define VAL_QUERY_H
 
-#include "val_api.h"
-
-/* Returns 0 on success, -1 on failure */
-int _val_query ( const char *domain_name, int class, int type,
-		struct domain_info *response,
+/*
+ * Returns the length (in bytes) of the answer on success, and -1 on
+ * failure.  If DNSSEC validation is successful, *dnssec_status will
+ * contain VALIDATE_SUCCESS
+ * If there is a failure, *dnssec_status will contain the validator
+ * error code.
+ */
+int val_query ( const char *domain_name, int class, int type,
+		unsigned char *answer, int anslen, int flags,
 		int *dnssec_status );
 
 #endif
