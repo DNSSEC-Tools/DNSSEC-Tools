@@ -11,6 +11,7 @@
 #include "crypto/val_rsamd5.h"
 #include "val_log.h"
 #include "val_errors.h"
+#include "val_support.h"
 
 #include <openssl/bio.h>
 #include <openssl/evp.h>
@@ -229,6 +230,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
     	dnskey_rdata->key_tag = keytag(buf, buflen);
     }
 	dnskey_rdata->next = NULL;
+	FREE(buf);
 
 	return NO_ERROR;
 }

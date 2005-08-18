@@ -415,8 +415,10 @@ static int get_token ( FILE *conf_ptr,
 				else
 					return retval;
 			}
-			if (linebuf != NULL)
+			if (linebuf != NULL) {
 				FREE (linebuf);
+				linebuf = NULL;
+			}
 			(*line_number)++;
 		}
 	} while (comment);

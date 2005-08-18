@@ -259,6 +259,7 @@ int ask_resolver(val_context_t *context, struct query_chain **queries, int block
 								assimilate_answers(context, queries, 
 									response, next_q, assertions))) {
 							free_domain_info_ptrs(response);
+							FREE(response);
 							return retval;
 						}
 	
@@ -266,11 +267,14 @@ int ask_resolver(val_context_t *context, struct query_chain **queries, int block
 						stow_answer(response->di_rrset);
 						response->di_rrset = NULL;
 						free_domain_info_ptrs(response);
+						FREE(response);
 						answered = 1;
 						break;
 					}
-					if (response != NULL)
+					if (response != NULL) {
 						free_domain_info_ptrs(response);
+						FREE(response);
+					}
 				}
 			}
 		}
