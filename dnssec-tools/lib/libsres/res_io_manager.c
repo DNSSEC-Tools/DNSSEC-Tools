@@ -788,13 +788,15 @@ void res_print_ea (struct expected_arrival *ea)
 	int					i = ea->ea_which_address;
 	struct sockaddr_in	*s=(struct sockaddr_in*)(&(ea->ea_ns->ns_address[i]));
 
-	printf("Socket: %d ", ea->ea_socket);
-	printf("Stream: %d ", ea->ea_using_stream);
-	printf("Nameserver: %s/(%d)\n",inet_ntoa(s->sin_addr), ntohs(s->sin_port));
+	if (res_io_debug) {
+		printf("Socket: %d ", ea->ea_socket);
+		printf("Stream: %d ", ea->ea_using_stream);
+		printf("Nameserver: %s/(%d)\n",inet_ntoa(s->sin_addr), ntohs(s->sin_port));
 
-	printf("Remaining retries: %d ", ea->ea_remaining_attempts);
-	printf("Next try %ld, Cancel at %ld\n", ea->ea_next_try.tv_sec,
-					ea->ea_cancel_time.tv_sec);
+		printf("Remaining retries: %d ", ea->ea_remaining_attempts);
+		printf("Next try %ld, Cancel at %ld\n", ea->ea_next_try.tv_sec,
+						ea->ea_cancel_time.tv_sec);
+	}
 }
 
 void res_io_view()
