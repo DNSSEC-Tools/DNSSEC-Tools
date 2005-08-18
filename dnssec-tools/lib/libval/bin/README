@@ -1,0 +1,20 @@
+This directory contains some utility programs for
+the validator.
+
+To run the resolver-driver:
+
+        ./driver
+
+To run the validator:
+
+        ./validate [[CLASS] TYPE] DOMAIN_NAME
+
+     If CLASS is not provided, it is assumed to be IN.
+     If TYPE is not provided, it is assumed to be A.
+
+To run gethost:
+
+        ./gethost [-x] <hostname>
+
+To run getaddr:
+	./getaddr [-v] [-c] <hostname>
