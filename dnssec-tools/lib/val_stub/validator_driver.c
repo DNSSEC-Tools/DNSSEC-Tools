@@ -40,6 +40,9 @@
 //#define QUERY_NAME "jackfruit.fruits.netsec.tislabs.com."
 //#define QUERY_TYPE ns_t_a
 
+/* Wild-card, non-existent type */
+//#define QUERY_NAME "jackfruit.fruits.netsec.tislabs.com."
+//#define QUERY_TYPE ns_t_cname
 
 #define QUERY_CLASS ns_c_in
 
