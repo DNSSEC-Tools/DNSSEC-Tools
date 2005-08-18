@@ -143,3 +143,12 @@ struct rrset_rec* get_cached_answers()
 {
 	return unchecked_answers;	
 }
+
+
+void free_validator_cache()
+{
+	res_sq_free_rrset_recs(&unchecked_zone_info);
+	res_sq_free_rrset_recs(&unchecked_key_info);
+	res_sq_free_rrset_recs(&unchecked_ds_info);
+	res_sq_free_rrset_recs(&unchecked_answers);
+}
