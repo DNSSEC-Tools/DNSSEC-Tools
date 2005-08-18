@@ -30,6 +30,10 @@
 #define FALSE   0
 #endif
 
+void my_free (void *p, char *filename, int lineno);
+void *my_malloc (size_t t, char *filename, int lineno);
+char *my_strdup (const char *str, char *filename, int lineno);
+
 int labelcmp (const u_int8_t *name1, const u_int8_t *name2);
 int namecmp (const u_int8_t *name1, const u_int8_t *name2);
 u_int16_t wire_name_labels (const u_int8_t *field);
