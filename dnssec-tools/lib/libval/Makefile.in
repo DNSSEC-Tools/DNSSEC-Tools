@@ -2,8 +2,6 @@
 INCL= ../libsres
 LIB= ../libsres
 CFLAGS_EX=-I$(INCL) -I.
-EXTRALIBS=-lval -lsres -lcrypto
-LDFLAGS_EX=-L. -L$(LIB) $(EXTRALIBS)
 
 SRC=  	val_resquery.c \
 	val_support.c \
@@ -63,36 +61,30 @@ LOBJ=  	val_resquery.lo \
 	crypto/val_rsasha1.lo \
 	crypto/val_dsasha1.lo
 
+SUBDIRS=bin
 
 LIBVAL=libval.la
 
-DRIVER= driver 
-#VALIDATOR=validate (for future)
-VALIDATOR= validate
-GETHOST= gethost
-GETADDR= getaddr
-
-all: $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR)
+all: $(LIBVAL) subdirmake
 
 clean:
-	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR) validator_driver.lo validator_driver.o main.lo main.o gethost.lo gethost.o getaddr.lo getaddr.o
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make clean) ; \
+	done
+	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL)
 
 $(LIBVAL): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ)
 
-$(DRIVER): $(LIBVAL) validator_driver.lo
-	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS)
-
-$(VALIDATOR): $(LIBVAL) main.lo
-	$(LIBTOOLLD) -o $@ main.lo $(LDFLAGS)
-
-$(GETHOST): $(LIBVAL) gethost.lo
-	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS)
-
-$(GETADDR): $(LIBVAL) getaddr.lo
-	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
+subdirmake:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make) ; \
+	done
 
 install:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make install) ; \
+	done
 	$(LIBTOOLIN) $(LIBVAL) $(libdir)
 	$(LIBTOOLFN)
 	$(INSTALL) val_api.h $(includedir)

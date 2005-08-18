@@ -26,7 +26,7 @@ static void print_addrinfo(struct addrinfo* ainfo)
 	struct sockaddr_in6 *s_in6addr = NULL;
 	struct addrinfo *a = ainfo;
 	char buf[INET6_ADDRSTRLEN];
-
+	
 	while (a != NULL) {
 		printf("{\n");
 		printf("\tFlags:     %d [", a->ai_flags);
@@ -36,7 +36,7 @@ static void print_addrinfo(struct addrinfo* ainfo)
 		if (a->ai_flags & AI_V4MAPPED) printf("AI_V4MAPPED ");
 		if (a->ai_flags & AI_ALL) printf("AI_ALL ");
 		if (a->ai_flags & AI_ADDRCONFIG) printf("AI_ADDRCONFIG ");
-//		if (a->ai_flags & AI_NUMERICSERV) printf("AI_NUMERICSERV ");
+		//		if (a->ai_flags & AI_NUMERICSERV) printf("AI_NUMERICSERV ");
 		printf("]\n");
 		printf("\tFamily:    %d [%s]\n", a->ai_family,
 		       (a->ai_family == AF_UNSPEC)? "AF_UNSPEC":
@@ -54,7 +54,7 @@ static void print_addrinfo(struct addrinfo* ainfo)
 		       (a->ai_protocol == IPPROTO_UDP)? "IPPROTO_UDP":
 		       "Unknown");
 		printf("\tAddrLen:   %d\n", a->ai_addrlen);
-
+		
 		if (a->ai_addr != NULL) {
 			printf("\tAddrPtr:   %d\n", a->ai_addr);
 			if (a->ai_family == AF_INET) {
@@ -76,17 +76,17 @@ static void print_addrinfo(struct addrinfo* ainfo)
 		}
 		else
 			printf("\tAddr:      (null)\n");
-
+		
 		if (a->ai_canonname)
 			printf("\tCanonName: %s\n", a->ai_canonname);
 		else
 			printf("\tCanonName: (null)\n");
-
+		
 		if (validate) {
 			printf("\tDNSSEC status: %s\n", p_val_error(val_get_addrinfo_dnssec_status(a)));
 		}
 		printf("}\n");
-
+		
 		a = a->ai_next;
 	}
 }
@@ -100,33 +100,33 @@ int main(int argc, char *argv[])
 	int retval;
 	int index = 0;
 	int getcanonname = 0;
-
+	
 	if (argc < 2) {
 		printf ("Usage: %s [-v] [-c] <hostname|IPv4 address|IPv6 address> [Port]\n", argv[0]);
 		exit(1);
 	}
-
+	
 	index = 1;
 	if (strcasecmp(argv[index], "-v") == 0) {
 		validate = 1;
 		index++;
 	}
-
+	
 	if (strcasecmp(argv[index], "-c") == 0) {
 		getcanonname = 1;
 		index++;
 	}
-
+	
 	if (strcasecmp(argv[index], "NULL")) {
 		node = argv[index];
 	}
-
+	
 	index++;
-
+	
 	if (argc > index) {
 		service = argv[index];
 	}
-
+	
 	bzero(&hints, sizeof(struct addrinfo));
 	if (getcanonname) {
 		hints.ai_flags |= AI_CANONNAME;
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
 	else {
 		print_addrinfo(ainfo);
 	}
-
+	
 	/* cleanup */
 	freeaddrinfo(ainfo);
 }

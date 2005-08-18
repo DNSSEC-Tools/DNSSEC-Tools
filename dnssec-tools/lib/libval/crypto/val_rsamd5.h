@@ -13,9 +13,9 @@
 #include <val_parse.h>
 
 int rsamd5_sigverify (const unsigned char *data,
-		       int data_len,
-		       const val_dnskey_rdata_t dnskey,
-		       const val_rrsig_rdata_t rrsig);
+		      int data_len,
+		      const val_dnskey_rdata_t dnskey,
+		      const val_rrsig_rdata_t rrsig);
 u_int16_t rsamd5_keytag (const unsigned char *pubkey,
 			 int pubkey_len);
 #endif

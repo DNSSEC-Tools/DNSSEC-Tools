@@ -51,25 +51,25 @@
 
 int main()
 {
-
+	
 	char *name = QUERY_NAME;
 	const u_int16_t type = QUERY_TYPE;
 	const u_int16_t class = QUERY_CLASS;
 	int ret_val;
-
+	
 	struct response_t resp[ANS_COUNT];
 	int respcount = ANS_COUNT;
 	int i;
-
+	
 	for (i = 0; i< ANS_COUNT; i++) {
 		resp[i].response = (u_int8_t *) MALLOC (BUFSIZE * sizeof (u_int8_t *));
 		if (resp[i].response == NULL)
 			return OUT_OF_MEMORY;
 		resp[i].response_length = BUFSIZE;
 	}
-
+	
 	ret_val = val_x_query( NULL, name, class, type, 0, resp, &respcount);
-
+	
 	if (ret_val == NO_ERROR) {
 		printf ("Total number of RRsets available = %d\n", respcount);
 		for (i=0; i<respcount; i++) {
@@ -90,9 +90,9 @@ int main()
 			}
 		}
 	}
-
+	
 	for (i = 0; i< ANS_COUNT; i++) 
 		FREE(resp[i].response);
-
+	
 	return ret_val;
 }
