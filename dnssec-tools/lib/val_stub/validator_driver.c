@@ -20,17 +20,30 @@
 #include "val_errors.h"
 #include "val_print.h"
 
+/* Test for validation with recursion */
 #define QUERY_NAME "dns.wesh.fruits.netsec.tislabs.com."
-//#define QUERY_NAME "apple.fruits.netsec.tislabs.com."
-
-//#define QUERY_NAME "nutshell.tislabs.com."
-//#define QUERY_TYPE ns_t_a
-//#define QUERY_CLASS ns_c_in
-
 #define QUERY_TYPE ns_t_a
+
+/* Test for non-existence */
+//#define QUERY_NAME "dns1.wesh.fruits.netsec.tislabs.com."
+//#define QUERY_TYPE ns_t_a
+
+/* Test for validation without recursion + CNAME */
+//#define QUERY_NAME "apple.fruits.netsec.tislabs.com."
+//#define QUERY_TYPE ns_t_a
+
+/* Test for multiple answers */
+//#define QUERY_NAME "fruits.netsec.tislabs.com."
+//#define QUERY_TYPE ns_t_any
+
+/* Wild-card test */
+//#define QUERY_NAME "jackfruit.fruits.netsec.tislabs.com."
+//#define QUERY_TYPE ns_t_a
+
+
 #define QUERY_CLASS ns_c_in
 
-#define ANS_COUNT 3
+#define ANS_COUNT 3 
 #define BUFSIZE 2048 
 
 int main()
