@@ -114,6 +114,8 @@ int val_x_query(val_context_t	*ctx,
 	if(ctx == NULL)	
 		destroy_context(context);
 
+	free_validator_cache();
+
 	return retval;
 }
 
