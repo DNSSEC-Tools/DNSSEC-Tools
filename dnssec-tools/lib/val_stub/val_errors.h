@@ -95,19 +95,19 @@ char *p_val_error(int valerrno);
 
 /* success results conditions */
 #define VERIFIED				LAST_FAILURE+1 
-#define VALIDATE_SUCCESS  		LAST_FAILURE+2	/* TRUSTED AND no error */
-#define LOCAL_ANSWER			LAST_FAILURE+3	/* Answer obtained locally */
-#define TRUST_KEY	 			LAST_FAILURE+4 
-#define TRUST_ZONE				LAST_FAILURE+5 
-#define BARE_RRSIG 				LAST_FAILURE+6
+#define LOCAL_ANSWER			LAST_FAILURE+2	/* Answer obtained locally */
+#define TRUST_KEY	 			LAST_FAILURE+3 
+#define TRUST_ZONE				LAST_FAILURE+4 
+#define BARE_RRSIG 				LAST_FAILURE+5
+#define VALIDATE_SUCCESS  		LAST_FAILURE+6	/* TRUSTED AND no error */
 #define LAST_SUCCESS			LAST_FAILURE+10 /* ERROR_BASE + 80 */
 
 /* failure result conditions */
 #define BOGUS  					LAST_SUCCESS+1	/* NOT_VERIFIED but not trusted */
 #define VALIDATION_ERROR  		LAST_SUCCESS+2	
-#define INCOMPLETE_PROOF 		LAST_SUCCESS+3	/* Proof does not have all required components */
-#define NONEXISTENT_NAME 		LAST_SUCCESS+4	/* TRUSTED AND proof present */
-#define NONEXISTENT_TYPE 		LAST_SUCCESS+5	/* TRUSTED AND proof present */
+#define NONEXISTENT_NAME 		LAST_SUCCESS+3	/* TRUSTED AND proof present */
+#define NONEXISTENT_TYPE 		LAST_SUCCESS+4	/* TRUSTED AND proof present */
+#define INCOMPLETE_PROOF 		LAST_SUCCESS+5	/* Proof does not have all required components */
 #define BOGUS_PROOF 			LAST_SUCCESS+6	/* proof cannot be validated */
 #define INDETERMINATE_DS 		LAST_SUCCESS+7	/* Can't prove that the DS is trusted */
 #define INDETERMINATE_PROOF		LAST_SUCCESS+8	/* Some intermediate Proof of non-existence obtained 
