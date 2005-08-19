@@ -108,8 +108,13 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 
 			for (curkey = key; curkey; curkey=curkey->rr_next) {
 				val_parse_dnskey_rdata (curkey->rr_rdata, curkey->rr_rdata_length_h, &dnskey);	
-				if(!dnskey_compare(&dnskey, ta_cur->publickey))
+				if(!dnskey_compare(&dnskey, ta_cur->publickey)) {
+					if (dnskey.public_key != NULL)
+						FREE (dnskey.public_key);
 					return TRUST_KEY;
+				}
+				if (dnskey.public_key != NULL)
+					FREE (dnskey.public_key);
 			}
 		}
 	}
