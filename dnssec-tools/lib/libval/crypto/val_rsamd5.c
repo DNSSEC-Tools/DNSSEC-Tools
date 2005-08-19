@@ -93,13 +93,15 @@ u_int16_t rsamd5_keytag (const unsigned char *pubkey,
 	
 	modulus = rsa->n;
 	modulus_len = BN_num_bytes(modulus);
-	modulus_bin = (unsigned char *) malloc (modulus_len * sizeof(unsigned char));
+	modulus_bin = (unsigned char *) MALLOC (modulus_len * sizeof(unsigned char));
 	
 	BN_bn2bin(modulus, modulus_bin);
 	
 	keytag = ((0x00ff & modulus_bin[modulus_len - 3]) << 8) |
 		(0x00ff & modulus_bin[modulus_len - 2]);
-	
+
+	FREE(modulus_bin);
+	RSA_free(rsa);
 	return keytag;
 }
 
