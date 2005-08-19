@@ -112,6 +112,7 @@
 #include <string.h>
 #include <time.h>
 #include "resolver.h"
+#include "res_support.h"
 
 const char *_res_opcodes[] = {
     "QUERY",
