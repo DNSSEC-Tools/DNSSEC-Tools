@@ -20,46 +20,48 @@
 #include "val_errors.h"
 #include "val_print.h"
 
-/* Test for validation with recursion */
-#define QUERY_NAME "dns.wesh.fruits.netsec.tislabs.com."
-#define QUERY_TYPE ns_t_a
+struct testcase_st {
+	const char *desc;
+	const char *qn;
+	const u_int16_t qc;	
+	const u_int16_t qt;	
+};
 
-/* Test for non-existence */
-//#define QUERY_NAME "dns1.wesh.fruits.netsec.tislabs.com."
-//#define QUERY_TYPE ns_t_a
+struct testcase_st testcases[] = {
 
-/* Test for validation without recursion + CNAME */
-//#define QUERY_NAME "apple.fruits.netsec.tislabs.com."
-//#define QUERY_TYPE ns_t_a
+	/* Test for validation with recursion */
+	{"RECUSION", "dns.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a},
 
-/* Test for multiple answers */
-//#define QUERY_NAME "fruits.netsec.tislabs.com."
-//#define QUERY_TYPE ns_t_any
+	/* Test for non-existence */
+	{"NON-EXISTENCE", "dns1.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a}, 
 
-/* Wild-card test */
-//#define QUERY_NAME "jackfruit.fruits.netsec.tislabs.com."
-//#define QUERY_TYPE ns_t_a
+	/* Test for validation without recursion + CNAME */
+	{"NO RECURSION", "apple.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a},
 
-/* Wild-card, non-existent type */
-//#define QUERY_NAME "jackfruit.fruits.netsec.tislabs.com."
-//#define QUERY_TYPE ns_t_cname
+	/* Test for multiple answers */
+	{"MULTIPLE ANSWERS", "fruits.netsec.tislabs.com.", ns_c_in, ns_t_any},
 
-#define QUERY_CLASS ns_c_in
+	/* Wild-card test */
+	{"WILDCARDS", "jackfruit.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a},
+
+	/* Wild-card, non-existent type */
+	{"WILDCARDS NO MATCH", "jackfruit.fruits.netsec.tislabs.com.", ns_c_in, ns_t_cname},
+
+	{NULL, NULL, 0, 0},
+};
 
 #define ANS_COUNT 3 
 #define BUFSIZE 2048 
 
-int main()
+int sendquery(const char *desc, const char *name, const u_int16_t class, const u_int16_t type)
 {
-	
-	char *name = QUERY_NAME;
-	const u_int16_t type = QUERY_TYPE;
-	const u_int16_t class = QUERY_CLASS;
 	int ret_val;
 	
 	struct response_t resp[ANS_COUNT];
 	int respcount = ANS_COUNT;
 	int i;
+
+	printf("*********** Test case: %s ***************** \n", desc);
 	
 	for (i = 0; i< ANS_COUNT; i++) {
 		resp[i].response = (u_int8_t *) MALLOC (BUFSIZE * sizeof (u_int8_t *));
@@ -94,5 +96,15 @@ int main()
 	for (i = 0; i< ANS_COUNT; i++) 
 		FREE(resp[i].response);
 	
+	printf("*********** End Test case: %s ***************** \n\n\n", desc);
+
 	return ret_val;
+}
+
+int main()
+{
+	int i;
+	for (i= 0 ; testcases[i].desc != NULL; i++) {
+		sendquery(testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt);
+	}
 }
