@@ -458,29 +458,29 @@ Turns on more quiet output.
 =item -l LEVEL
 
 Sets the level of errors you want to see.  The default is level 5.
-The maximum value is level 9, which displays many debuging results.
+The maximum value is level 9, which displays many debugging results.
 You probably want to run no higher than level 8.
 
 =item -r RULEFILES
 
 A comma-separated list of rule files to load.  The strings will be
-passed to glob() so * wildcards can be used to specify multiple files.
+passed to I<glob()> so * wildcards can be used to specify multiple files.
 
 =item -i IGNORELIST
 
 A common separated list of regex patterns which are checked against
-rule names to determine if some should be ignored.  Run with -v to
+rule names to determine if some should be ignored.  Run with I<-v> to
 figure out rule names if you're not sure which rule is generating
 errors you don't wish to see.
 
 =item -c CONFIGFILE
 
 Parse a configuration file to change constraints specified by rules.
-This defaults to $HOME/.donuts.conf.
+This defaults to B<$HOME/.donuts.conf>.
 
 =item -C
 
-Don't read user configuration files at all (like specified by -c or
+Don't read user configuration files at all (like specified by I<-c> or
 $rules{$the default).
 
 =item -H
@@ -489,7 +489,7 @@ Displays the personal configuration file rules and tokens that are
 acceptable to be found in a configuration file.  The output will
 consist of a rue name, a token and a description of what it means.
 
-Your configuration file (EG, $HOME/.donuts.conf) may have lines in it
+Your configuration file (e.g., B<$HOME/.donuts.conf>) may have lines in it
 that look like this:
 
   # change the default minimum number of legal NS records from 2 to 1
