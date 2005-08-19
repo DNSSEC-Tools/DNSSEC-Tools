@@ -1,3 +1,8 @@
+#
+# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+#
+
 package Net::DNS::SEC::Tools::Donuts::Rule;
 
 use strict;
@@ -114,20 +119,21 @@ sub print_description {
 
 1;
 
+=pod
+
 =head1 NAME
 
-Net::DNS::SEC::Tools::Donuts::Rule - Check a DNS record for a problem.
+  Net::DNS::SEC::Tools::Donuts::Rule - Check a DNS record for a problem.
 
 =head1 SYNOPSIS
 
-This class wraps around a rule definition which is used by the donuts
-dns zone file checker.  It stores the data that implements a given
-rule.
+This class wraps around a rule definition which is used by the I<donuts>
+DNS zone file checker.  It stores the data that implements a given rule.
 
 =head1 DESCRIPTION
 
-Rules are defined in donuts rule configuration files using the
-following syntax.  See the donuts manual page for details on where to
+Rules are defined in I<donuts> rule configuration files using the
+following syntax.  See the I<donuts> manual page for details on where to
 place those files and how to get them loaded.
 
 =head1 RULE FILE FORMAT
@@ -135,7 +141,7 @@ place those files and how to get them loaded.
 Each rule file can contain multiple rules.  Each rule is composed of a
 number of parts.  Minimally, it must contain a B<name> and a B<test>
 portion.  Everything else is optional and/or has defaults associated
-with it.  The format of a rule file is like the following example:
+with it.  The rule file format follows this example:
 
   name: rulename
   class: Warning
@@ -145,133 +151,144 @@ with it.  The format of a rule file is like the following example:
       if ($record{xxx} != yyy);
 
 Further details about each section can be found below.  Besides the
-tokens below, other rule-specific data can be stored in tokens as well
-and each rule is merely a hash of the above tokens as keys and the
+tokens below, other rule-specific data can be stored in also tokens
+and each rule is a hash of the above tokens as keys and their
 associated data.  However, there are a few exceptions where special
-tokens imply special meanings (like I<test>, I<init>, and others).
-See below for details.
+tokens imply special meanings.  These special tokens include I<test>,
+I<init>.  See below for details.
 
-Each rule definition within a file should be separated from each other
-using a blank line.
+Each rule definition within a file should be separated using a blank line.
 
 Lines beginning with the '#' character will be discarded as a comment.
 
 =over
 
-=item name
+=item I<name>
 
 The name of the rule.  This is mandatory, as the user may need to be
-able to refer to names in the future for use with the -i flag,
-specifying behaviour in configuration files, and for other uses.
+able to refer to names in the future for use with the I<-i> flag,
+specifying behavior in configuration files, and for other uses.
 
 By convention, all names should be specified using capital letters and
-'_' characters between the words.  The left most word should give an
-indication of a global category of test such as "DNSSEC", etc.  The
-better named the rules are, the more power the user will have for
-selecting certain types of rules via donuts' -i and other flags.
+'_' characters between the words.  The leftmost word should give an
+indication of a global category of test, such as "DNSSEC".  The
+better-named the rules, the more power the user will have for
+selecting certain types of rules via I<donuts -i> and other flags.
 
-EG:
+Example:
 
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
 
-=item level
+=item I<level>
 
-The default level of every rule is 5.  The default level of rules
-executed by donuts without a -l flag specified is also 5 (meaning no
-rules above this level are run without the -l flag being specified).
-Generally, more serious problems should receive lower numbers and less
-serious problems should be placed at a higher number.  The maximum
-value to be used should be 9 and should really be for debugging rules
-only.  8 should be the maximum user-usable rule level.
+The rule's execution level, as recognized by I<donuts>.  Only those
+rules at or above I<donuts>' current execution level will be run by
+I<donuts>.  The execution level is specified by the I<-l> option to
+I<donuts>; if not given, then the default execution level is 5.
+
+The default I<level> of every rule is 5.
+
+Generally, more serious problems should receive lower numbers and
+less serious problems should be placed at a higher number.  The
+maximum value is 9, which is reserved for debugging rules only.
+8 is the maximum rule level that user-defined rules should use.
+
+Example:
 
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   level: 2
 
-=item class
+=item I<class>
 
-The class code merely indicates the type of problem.  It defaults to
-"Error" and the only other value that should probably be specified
-using it is "Warning".  It is displayed to the user so technically any
-value could go here, but sticking to the Error/Warning convention is
-probably wise as this requirement is be subject to change.
+The I<class> code indicates the type of problem associated with the
+rule.  It defaults to "I<Error>", and the only other value that should
+be used is "I<Warning>".
 
+This value is displayed to the user.  Technically, any value could be
+specified, but using anything other than I<Error>/I<Warning> convention
+could break portability in future versions.
+
+Example:
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   class: Warning
 
-=item ruletype
+=item I<ruletype>
 
-Rules either fall into one of 2 types (currently): I<record> or
-I<name>.  I<record> rules have their test evaluated for each record
-being read from a zone file.  I<name> rules, on the other hand, get
-called once per name stored in the database.  See the I<test>
-description below for further details on what arguments are passed to
-each rule type.
+Rules fall into one of two types (currently): I<record> or I<name>.
+I<record> rules have their test evaluated for each record being in
+a zone file.  I<name> rules, on the other hand, get called once per
+name stored in the database.  See the I<test> description below for
+further details on the arguments passed to each rule type.
 
 The default value for this clause is I<record>.
+
+Example:
 
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   ruletype: record
 
-=item type
+=item I<type>
 
-Rules that test a particular type of record should specified the
-I<type> field with the type of record it wants to test.  EG, if a rule
-is testing a particular aspect of an MX record, it should specify MX
-in this field.
+Rules that test a particular type of record should specify the
+I<type> field with the type of record it wants to test.  The rule
+will only be executed for records of that type.  This will result
+in less error checking for the user in the I<test> section.
+
+For example, if a rule is testing a particular aspect of an MX record,
+it should specify MX in this field.
+
+Example:
 
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   type: MX
 
-The rule will then not be executed except for records of that type
-(this means less error checking for you in the I<test> section then).
-
-=item init
+=item I<init>
 
 A block of code to be executed immediately. This is useful for
-boot-strapping where you want to perform something only once at
-startup rather than per-every-rule-test-invocation.  EG, "use MODULE;"
-type statements should go here.  I<init> sections contain special
-formatting such as the following and the code statements appears on
-the next few lines following the I<init:> line.  They B<MUST> begin
-with whitespace!
+boot-strap code to be performed only at start-up, rather than
+at every rule-test invocation.  For example, "use MODULE;"
+type statements should be used in I<init> sections.
+
+I<init> sections contain special formatting such as the following.
+The code lines B<MUST> begin with whitespace.
+
+Example:
 
   init:
     use My::Module;
     $value = calculate();
 
-=item test
+=item I<test>
 
-A block of code that defines the code used to test each record or name.
-
+A block of code that defining the test for each record or name.
 The test statement follows the same multi-line code specification
 described in the I<init> clause above.  Specifically, the first line
-follows the line with the test: token and each line of code B<MUST>
-begin with whitespace!
+follows the line with the I<test:> token and each line of code B<MUST>
+begin with whitespace.
 
 The end result must be a subroutine reference which will be called by
-the donuts program.  If when the code is evaluated it does not begin
-with "sub {" then a "sub {" prefix and "}" suffix will be
+the I<donuts> program.  When the code is evaluated, if it does not
+begin with "sub {" then a "sub {" prefix and "}" suffix will be
 automatically added to the code to turn the code-snippet into a
 subroutine.
 
-If the test fails, it should return an error string which will be
-displayed for the user.  Note that the text will be line-wrapped
-before display (and thus the text should not be formatted and
-generally should be in english or other languages.  If the test is
-testing for multiple things, you can return a reference to an array of
-error strings instead (an empty array reference being returned also
-indicates no error).
+If the test fails, it should return an error string which will be displayed
+for the user.  The text will be line-wrapped before display (and thus the
+text should not be formatted and generally should be in English or other
+languages.  If the test is testing for multiple problems, a reference to an
+array of error strings may be returned.  An empty array reference being
+returned also indicates no error).
 
-There are two types of tests (currently), and how the code snippet is
-called depends on the ruletype clause above.
+There are two types of tests (currently), and the code snippet is
+called depending on the I<ruletype> clause above.
 
 =over
 
 =item I<record> tests
 
-These code snippets are expected to test a single Net::DNS::RR record.
+These code snippets are expected to test a single I<Net::DNS::RR> record.
 
-It is called with the two arguments:
+It is called with two arguments:
 
   1) the record which is to be tested
 
@@ -279,16 +296,15 @@ It is called with the two arguments:
 
 =item I<name> tests
 
-These code snippets are expected to test all the records, in some way,
+These code snippets are expected to test all the records
 associated with a given name record.
 
-It is called with the three arguments:
-
+It is called with three arguments:
 
   1) a hash reference to all the record types associated
-     with that name (EG: 'A', 'MX', ...) and each value of
+     with that name (e.g., 'A', 'MX', ...) and each value of
      the hash will contain an array of all the records for
-     that type (IE, for names containing multiple 'A'
+     that type (i.e., for names containing multiple 'A'
      records then more than one entry in the array reference
      will exist).
 
@@ -299,7 +315,7 @@ It is called with the three arguments:
 
 =back
 
-EG:
+Examples:
 
   # local rule to mandate that each record must have a
   # TTL > 60 seconds
@@ -309,7 +325,7 @@ EG:
   test:
     return "TTL too small" if ($_[0]->ttl < 60);
 
-  # EG local policy to mandate that anything with an A record
+  # local policy to mandate that anything with an A record
   # must have a HINFO record too
   name: DNS_MX_MUST_HAVE_A
   level: 8
@@ -331,9 +347,9 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 =head1 SEE ALSO
 
-donuts, Net::DNS, Net::DNS::RR
+I<donuts>, I<Net::DNS>, I<Net::DNS::RR>
 
-http://dnssec-tools.sourceforge.net/
+http://dnssec-tools.sourceforge.net
 
 =cut
 
