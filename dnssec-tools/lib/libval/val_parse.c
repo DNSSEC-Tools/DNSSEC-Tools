@@ -111,10 +111,12 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
     rdata->public_key_len = (buflen > index) ? (buflen - index): 0;
 
     if (rdata->public_key_len > 0) {
-        rdata->public_key = (u_char *) malloc (rdata->public_key_len * sizeof(u_char));
+        rdata->public_key = (u_char *) MALLOC (rdata->public_key_len * sizeof(u_char));
         memcpy (rdata->public_key, buf + index, rdata->public_key_len);
         index += rdata->public_key_len;
     }
+	else
+		rdata->public_key = NULL;
 
     if (rdata->algorithm == 1) {
 	rdata->key_tag = rsamd5_keytag(buf, buflen);
@@ -276,10 +278,12 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
     rdata->signature_len = (buflen > index) ? (buflen - index): 0;
 
     if (rdata->signature_len > 0) {
-        rdata->signature = (u_char *) malloc (rdata->signature_len * sizeof(u_char));
+        rdata->signature = (u_char *) MALLOC (rdata->signature_len * sizeof(u_char));
         memcpy (rdata->signature, buf + index, rdata->signature_len);
         index += rdata->signature_len;
     }
+	else
+		rdata->signature = NULL;
 
     return index;
 }
@@ -405,12 +409,12 @@ struct hosts * parse_etc_hosts (const char *name)
 		/* match input name with the full domain name and aliases */
 		if (matchfound) {
 			int i;
-			struct hosts *hentry = (struct hosts*) malloc (sizeof(struct hosts));
+			struct hosts *hentry = (struct hosts*) MALLOC (sizeof(struct hosts));
 			
 			bzero(hentry, sizeof(struct hosts));
 			hentry->address = (char *) strdup (addr_buf);
 			hentry->canonical_hostname = (char *) strdup(domain_name);
-			hentry->aliases = (char **) malloc ((alias_index + 1) * sizeof(char *));
+			hentry->aliases = (char **) MALLOC ((alias_index + 1) * sizeof(char *));
 			
 			for (i=0; i<alias_index; i++) {
 				hentry->aliases[i] = (char *) strdup(alias_list[i]);
