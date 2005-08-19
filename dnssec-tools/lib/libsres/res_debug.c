@@ -214,7 +214,7 @@ do_section(const res_state statp,
 	if (statp->pfcode && !sflag)
 		return;
 
-	buf = malloc(buflen);
+	buf = MALLOC(buflen);
 	if (buf == NULL) {
 		fprintf(file, ";; memory allocation failure\n");
 		return;
@@ -250,10 +250,10 @@ do_section(const res_state statp,
 					buf, buflen);
 			if (n < 0) {
 				if (errno == ENOSPC) {
-					free(buf);
+					FREE(buf);
 					buf = NULL;
 					if (buflen < 131072)
-						buf = malloc(buflen += 1024);
+						buf = MALLOC(buflen += 1024);
 					if (buf == NULL) {
 						fprintf(file,
 				              ";; memory allocation failure\n");
@@ -272,7 +272,7 @@ do_section(const res_state statp,
 	}
  cleanup:
 	if (buf != NULL)
-		free(buf);
+		FREE(buf);
 }
 
 /*
@@ -1115,11 +1115,11 @@ loc_ntoa(binary, ascii)
 		(vpstr != NULL) ? vpstr : error);
 
 	if (sizestr != NULL)
-		free(sizestr);
+		FREE(sizestr);
 	if (hpstr != NULL)
-		free(hpstr);
+		FREE(hpstr);
 	if (vpstr != NULL)
-		free(vpstr);
+		FREE(vpstr);
 
 	return (ascii);
 }
