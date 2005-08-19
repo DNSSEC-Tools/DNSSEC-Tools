@@ -1,67 +1,82 @@
 Index: devtools/Site/site.config.m4
 ===================================================================
 --- devtools/Site/site.config.m4	2005-04-25 11:33:21.000000000 -0400
-+++ devtools/Site/site.config.m4	2005-06-03 15:24:42.000000000 -0400
-@@ -0,0 +1,2 @@
-+APPENDDEF(`confENVDEF', `-DMILTER -DSUPPORT_DNSSEC -DSM_CONF_SHM=0 -g')
++++ devtools/Site/site.config.m4	2005-08-19 11:43:27.000000000 -0400
+@@ -0,0 +1,3 @@
++APPENDDEF(`confENVDEF', `-DSUPPORT_DNSSEC=1')
++define(`confLibSEARCH', `db 44bsd')
 +APPENDDEF(`confLIBS', `-lsres -lval -lcrypto')
-Index: devtools/M4/header.m4
-===================================================================
---- devtools/M4/header.m4	2005-05-04 12:11:31.000000000 -0400
-+++ devtools/M4/header.m4	2005-06-03 15:27:35.000000000 -0400
-@@ -25,7 +25,8 @@
- define(`confBEFORE', `')
- define(`confLIBDIRS', `')
- define(`confINCDIRS', `')
--define(`confLIBSEARCH', `db bind resolv 44bsd')
-+dnl define(`confLIBSEARCH', `db bind resolv 44bsd')
-+define(`confLIBSEARCH', `db 44bsd')
- define(`confLIBSEARCHPATH', `/lib /usr/lib /usr/shlib')
- define(`confSITECONFIG', `site.config')
- define(`confBUILDBIN', `${SRCDIR}/devtools/bin')
 Index: libmilter/sm_gethost.c
 ===================================================================
 --- libmilter/sm_gethost.c	2005-04-28 13:32:29.000000000 -0400
-+++ libmilter/sm_gethost.c	2005-06-03 15:02:37.000000000 -0400
++++ libmilter/sm_gethost.c	2005-08-19 11:35:42.000000000 -0400
 @@ -17,6 +17,10 @@
  #endif /* NETINET || NETINET6 */
  #include "libmilter.h"
  
-+#ifdef SUPPORT_DNSSEC
-+#include <val_api.h>
-+#endif
++#if SUPPORT_DNSSEC
++# include <val_api.h>
++#endif /* SUPPORT_DNSSEC */
 +
  /*
  **  MI_GETHOSTBY{NAME,ADDR} -- compatibility routines for gethostbyXXX
  **
-@@ -59,7 +63,15 @@
+@@ -59,13 +63,26 @@
  		_res.options |= RES_USE_INET6;
  	}
  	SM_SET_H_ERRNO(0);
 +
-+#ifdef SUPPORT_DNSSEC
++# if SUPPORT_DNSSEC
 +	do {
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name, &dnssec_status);
++	    h = val_gethostbyname(name);
++	    if (h) {
++		dnssec_status = val_get_hostent_dnssec_status(h);
++	    }
 +	} while (0);
-+#else
++# else /* SUPPORT_DNSSEC */
  	h = gethostbyname(name);
-+#endif
++# endif /* SUPPORT_DNSSEC */
  	if (family == AF_INET6 && !resv6)
  		_res.options &= ~RES_USE_INET6;
  	*err = h_errno;
-@@ -110,7 +122,14 @@
+ 	return h;
+ }
++#endif /* NEEDSGETIPNODE && NETINET6 */
+ 
++#if (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC
+ void
+ freehostent(h)
+ 	struct hostent *h;
+@@ -75,9 +92,12 @@
+ 	**  they probably don't have the free routine either.
+ 	*/
+ 
++# if SUPPORT_DNSSEC
++	val_freehostent(h);
++# endif /* SUPPORT_DNSSEC */
+ 	return;
+ }
+-#endif /* NEEDSGETIPNODE && NETINET6 */
++#endif /* (NEEDSGETIPNODE && NETINET6) || SUPPORT_DNSSEC */
+ 
+ struct hostent *
+ mi_gethostbyname(name, family)
+@@ -110,7 +130,17 @@
  	h = getipnodebyname(name, family, flags, &err);
  	SM_SET_H_ERRNO(err);
  # else /* NETINET6 */
-+#ifdef SUPPORT_DNSSEC
++#  if SUPPORT_DNSSEC
 +	do {
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name, &dnssec_status);
++	    h = val_gethostbyname(name);
++	    if (h) {
++		dnssec_status = val_get_hostent_dnssec_status(h);
++	    }
 +	} while (0);
-+#else
++#  else /* SUPPORT_DNSSEC */
  	h = gethostbyname(name);
-+#endif
++#  endif /* SUPPORT_DNSSEC */
  # endif /* NETINET6 */
  
  #endif /* (SOLARIS > 10000 && SOLARIS < 20400) || (defined(SOLARIS) && SOLARIS < 204) || (defined(sony_news) && defined(__svr4)) */
@@ -84,87 +99,129 @@ Index: doc/op/op.me
 Index: sendmail/conf.c
 ===================================================================
 --- sendmail/conf.c	2005-04-25 11:32:20.000000000 -0400
-+++ sendmail/conf.c	2005-06-03 15:05:54.000000000 -0400
++++ sendmail/conf.c	2005-08-19 11:37:29.000000000 -0400
 @@ -31,6 +31,10 @@
  # include <ulimit.h>
  #endif /* HASULIMIT && defined(HPUX11) */
  
-+#ifdef SUPPORT_DNSSEC
-+#include <val_api.h>
++#if SUPPORT_DNSSEC
++# include <val_api.h>
 +#endif
 +
  static void	setupmaps __P((void));
  static void	setupmailers __P((void));
  static void	setupqueues __P((void));
-@@ -4212,7 +4216,17 @@
+@@ -4212,7 +4216,20 @@
  		_res.options |= RES_USE_INET6;
  	}
  	SM_SET_H_ERRNO(0);
-+#ifdef SUPPORT_DNSSEC
++# if SUPPORT_DNSSEC
 +	{
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name, &dnssec_status);
++	    h = val_gethostbyname(name);
++	    if (h) {
++		dnssec_status = val_get_hostent_dnssec_status(h);
++	    }
 +	    if (RequireDNSSEC) {
 +		/* XXX ??? */
 +	    }
 +	}
-+#else
++# else
  	h = gethostbyname(name);
-+#endif
++# endif
  	if (!resv6)
  		_res.options &= ~RES_USE_INET6;
  	*err = h_errno;
-@@ -4292,7 +4306,17 @@
+@@ -4233,7 +4250,9 @@
+ 	*err = h_errno;
+ 	return h;
+ }
++#endif /* NETINET6 && NEEDSGETIPNODE */
+ 
++#if (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC
+ void
+ freehostent(h)
+ 	struct hostent *h;
+@@ -4243,9 +4262,12 @@
+ 	**  they probably don't have the free routine either.
+ 	*/
+ 
++# if SUPPORT_DNSSEC
++	val_freehostent(h);
++# endif
+ 	return;
+ }
+-#endif /* NETINET6 && NEEDSGETIPNODE */
++#endif /* (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC*/
+ 
+ struct hostent *
+ sm_gethostbyname(name, family)
+@@ -4292,7 +4314,20 @@
  	h = getipnodebyname(name, family, flags, &err);
  	SM_SET_H_ERRNO(err);
  # else /* NETINET6 */
-+#ifdef SUPPORT_DNSSEC
++#  if SUPPORT_DNSSEC
 +	{
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name, &dnssec_status);
++	    h = val_gethostbyname(name);
++	    if (h) {
++		dnssec_status = val_get_hostent_dnssec_status(h);
++	    }
 +	    if (RequireDNSSEC) {
 +		/* XXX ??? */
 +	    }
 +	}
-+#else
++#  else /* SUPPORT_DNSSEC */
  	h = gethostbyname(name);
-+#endif
++#  endif /* SUPPORT_DNSSEC */
  # endif /* NETINET6 */
  
  	save_errno = errno;
-@@ -4332,7 +4356,17 @@
+@@ -4332,7 +4367,20 @@
  				SM_SET_H_ERRNO(err);
  				save_errno = errno;
  # else /* NETINET6 */
-+#ifdef SUPPORT_DNSSEC
++#  if SUPPORT_DNSSEC
 +				{
 +				    int dnssec_status = INTERNAL_ERROR;
-+				    h = val_gethostbyname(hbuf, &dnssec_status);
++				    h = val_gethostbyname(hbuf);
++				    if (h) {
++					dnssec_status = val_get_hostent_dnssec_status(h);
++				    }
 +				    if (RequireDNSSEC) {
 +					/* XXX ??? */
 +				    }
 +				}
-+#else
++#  else /* SUPPORT_DNSSEC */
  				h = gethostbyname(hbuf);
-+#endif
++#  endif /* SUPPORT_DNSSEC */
  				save_errno = errno;
  # endif /* NETINET6 */
  			}
+@@ -4638,7 +4686,7 @@
+ 					*ha);
+ 		}
+ 	}
+-#if NETINET6
++#if NETINET6 || SUPPORT_DNSSEC
+ 	freehostent(hp);
+ #endif /* NETINET6 */
+ 	return 0;
 Index: sendmail/readcf.c
 ===================================================================
 --- sendmail/readcf.c	2005-02-25 10:54:42.000000000 -0500
-+++ sendmail/readcf.c	2005-06-03 15:06:02.000000000 -0400
++++ sendmail/readcf.c	2005-08-19 11:37:03.000000000 -0400
 @@ -2578,6 +2578,13 @@
  				WorkAroundBrokenAAAA = !clearmode;
  				continue;
  			}
-+#ifdef SUPPORT_DNSSEC
++# if SUPPORT_DNSSEC
 +			if (sm_strcasecmp(q, "RequireDNSSEC") == 0)
 +			{
 +				RequireDNSSEC = !clearmode;
 +				continue;
 +			}
-+#endif
++# endif /* SUPPORT_DNSSEC */
  			for (rfp = ResolverFlags; rfp->rf_name != NULL; rfp++)
  			{
  				if (sm_strcasecmp(q, rfp->rf_name) == 0)
@@ -172,27 +229,27 @@ Index: sendmail/readcf.c
  				_res.options |= rfp->rf_bits;
  		}
  		if (tTd(8, 2))
-+#ifdef SUPPORT_DNSSEC
++# if SUPPORT_DNSSEC
 +			sm_dprintf("_res.options = %x, RequireDNSSEC = %d, HasWildcardMX = %d\n",
 +				   (unsigned int) _res.options, RequireDNSSEC, HasWildcardMX);
-+#else
++# else /* SUPPORT_DNSSEC */
  			sm_dprintf("_res.options = %x, HasWildcardMX = %d\n",
  				   (unsigned int) _res.options, HasWildcardMX);
-+#endif
++# endif /* SUPPORT_DNSSEC */
  #else /* NAMED_BIND */
  		usrerr("name server (I option) specified but BIND not compiled in");
  #endif /* NAMED_BIND */
 Index: sendmail/domain.c
 ===================================================================
 --- sendmail/domain.c	2005-06-03 15:09:51.000000000 -0400
-+++ sendmail/domain.c	2005-06-03 15:11:03.000000000 -0400
++++ sendmail/domain.c	2005-08-19 11:36:42.000000000 -0400
 @@ -23,6 +23,9 @@
  
  # include <arpa/inet.h>
  
-+#ifdef SUPPORT_DNSSEC
-+#include <val_api.h>
-+#endif
++# if SUPPORT_DNSSEC
++#  include <val_api.h>
++# endif /* SUPPORT_DNSSEC */
  
  /*
  **  The standard udp packet size PACKETSZ (512) is not sufficient for some
@@ -201,7 +258,7 @@ Index: sendmail/domain.c
  
  	errno = 0;
 +
-+#ifdef SUPPORT_DNSSEC
++# if SUPPORT_DNSSEC
 +	/* perform DNSSEC Validation of the answer */
 +	{
 +	    char dname[MAXDNAME];
@@ -214,7 +271,7 @@ Index: sendmail/domain.c
 +		sm_dprintf("getmxrr(24): performing dnssec validation query.\n");
 +	    
 +	    n = val_query (dname, C_IN, T_MX, (unsigned char *) &answer, sizeof (answer),
-+			   &dnssec_status);
++			   0, &dnssec_status);
 +
 +	    if (RequireDNSSEC) {
 +		if (dnssec_status == VALIDATE_SUCCESS) {
@@ -230,18 +287,31 @@ Index: sendmail/domain.c
 +		}
 +	    }
 +	}
-+#else 
++# else /* SUPPORT_DNSSEC */
  	n = (*resfunc)(host, C_IN, T_MX, (unsigned char *) &answer,
  		       sizeof(answer));
-+#endif
++# endif /* SUPPORT_DNSSEC */
  	if (n < 0)
  	{
  		if (tTd(8, 1))
+@@ -517,10 +552,10 @@
+ 				       host, MyHostName);
+ 				return -1;
+ 			}
+-# if NETINET6
++# if NETINET6 || SUPPORT_DNSSEC
+ 			freehostent(h);
+ 			hp = NULL;
+-# endif /* NETINET6 */
++# endif /* NETINET6 || SUPPORT_DNSSEC */
+ 		}
+ 		if (strlen(host) >= sizeof MXHostBuf)
+ 		{
 @@ -895,8 +930,51 @@
  				qtype == T_MX ? "MX" :
  				"???");
  		errno = 0;
-+#ifdef SUPPORT_DNSSEC
++# if SUPPORT_DNSSEC
 +		{
 +		    char dname[MAXDNAME];
 +		    int dnssec_status = INTERNAL_ERROR;
@@ -255,7 +325,7 @@ Index: sendmail/domain.c
 +			sm_dprintf("dns_getcanonname(938): performing dnssec validation query.\n");
 +	    
 +		    ret = val_query (dname, C_IN, qtype,
-+				     answer.qb2, sizeof(answer.qb2),
++				     answer.qb2, sizeof(answer.qb2), 0,
 +				     &dnssec_status);
 +
 +		    if (RequireDNSSEC) {
@@ -272,9 +342,9 @@ Index: sendmail/domain.c
 +			    if (tTd(8, 5))
 +				sm_dprintf("DNSSEC validation of %s (%s) failed.\n",
 +					   dname,
-+# if NETINET6
++#  if NETINET6
 +					   qtype == T_AAAA ? "AAAA" :
-+# endif /* NETINET6 */
++#  endif /* NETINET6 */
 +					   qtype == T_A ? "A" :
 +					   qtype == T_MX ? "MX" :
 +					   "???");
@@ -282,24 +352,24 @@ Index: sendmail/domain.c
 +			}
 +		    }
 +		}
-+#else
++# else /* SUPPORT_DNSSEC */
  		ret = res_querydomain(host, *dp, C_IN, qtype,
  				      answer.qb2, sizeof(answer.qb2));
-+#endif
++# endif /* SUPPORT_DNSSEC */
  		if (ret <= 0)
  		{
  			int save_errno = errno;
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2005-02-25 10:55:24.000000000 -0500
-+++ sendmail/sm_resolve.c	2005-06-05 14:15:25.000000000 -0400
++++ sendmail/sm_resolve.c	2005-08-19 11:35:58.000000000 -0400
 @@ -70,6 +70,10 @@
  	{	NULL,		0		}
  };
  
-+#ifdef SUPPORT_DNSSEC
-+#include <val_api.h>
-+#endif
++#  if SUPPORT_DNSSEC
++#   include <val_api.h>
++#  endif /* SUPPORT_DNSSEC */
 +
  static DNS_REPLY_T *parse_dns_reply __P((unsigned char *, int));
  
@@ -309,7 +379,7 @@ Index: sendmail/sm_resolve.c
  	errno = 0;
  	SM_SET_H_ERRNO(0);
 +
-+#ifdef SUPPORT_DNSSEC
++#  if SUPPORT_DNSSEC
 +	if (tTd(8, 16))
 +	    sm_dprintf("dns_lookup_int(%s, %d, %s): ",
 +		       domain, rr_class, dns_type_to_string(rr_type));
@@ -324,7 +394,7 @@ Index: sendmail/sm_resolve.c
 +	    if (tTd(8, 16))
 +		sm_dprintf("dns_lookup_int(): performing dnssec validation query.\n");
 +
-+	    len = val_query(dname, rr_class, rr_type, reply, sizeof reply,
++	    len = val_query(dname, rr_class, rr_type, reply, sizeof reply, 0,
 +			    &dnssec_status);
 +
 +	    if (RequireDNSSEC) {
@@ -339,24 +409,36 @@ Index: sendmail/sm_resolve.c
 +		}
 +	    }
 +	}
-+#else
++#  else /* SUPPORT_DNSSEC */
  	len = res_search(domain, rr_class, rr_type, reply, sizeof reply);
-+#endif
++#  endif /* SUPPORT_DNSSEC */
 +
  	if (tTd(8, 16))
  	{
  		_res.options = old_options;
 Index: sendmail/sendmail.h
 ===================================================================
---- sendmail/sendmail.h	2005-02-25 10:55:33.000000000 -0500
-+++ sendmail/sendmail.h	2005-06-03 15:06:06.000000000 -0400
+--- sendmail/sendmail.h	2005-08-19 11:12:07.000000000 -0400
++++ sendmail/sendmail.h	2005-08-19 11:36:51.000000000 -0400
 @@ -2146,6 +2146,9 @@
  #endif /* !defined(_USE_SUN_NSSWITCH_) && !defined(_USE_DEC_SVC_CONF_) */
  EXTERN bool	volatile DataProgress;	/* have we sent anything since last check */
  EXTERN bool	DisConnected;	/* running with OutChannel redirect to transcript file */
-+#ifdef SUPPORT_DNSSEC
++#if SUPPORT_DNSSEC
 +EXTERN bool     RequireDNSSEC;  /* perform DNSSEC validation of DNS queries */
-+#endif
++#endif /* SUPPORT_DNSSEC */
  EXTERN bool	DontExpandCnames;	/* do not $[...$] expand CNAMEs */
  EXTERN bool	DontInitGroups;	/* avoid initgroups() because of NIS cost */
  EXTERN bool	DontLockReadFiles;	/* don't read lock support files */
+@@ -2472,9 +2475,9 @@
+ extern void	finis __P((bool, bool, volatile int));
+ extern void	fixcrlf __P((char *, bool));
+ extern long	freediskspace __P((char *, long *));
+-#if NETINET6 && NEEDSGETIPNODE
++#if (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC
+ extern void	freehostent __P((struct hostent *));
+-#endif /* NETINET6 && NEEDSGETIPNODE */
++#endif /* (NETINET6 && NEEDSGETIPNODE) || SUPPORT_DNSSEC */
+ extern char	*get_column __P((char *, int, int, char *, int));
+ extern char	*getauthinfo __P((int, bool *));
+ extern int	getdtsize __P((void));
