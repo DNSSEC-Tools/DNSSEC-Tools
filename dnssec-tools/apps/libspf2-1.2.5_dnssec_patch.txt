@@ -308,7 +308,7 @@ Index: src/libspf2/spf_strerror.c
 Index: src/libspf2/spf_dns_resolv.c
 ===================================================================
 --- src/libspf2/spf_dns_resolv.c	2005-06-03 12:46:00.000000000 -0400
-+++ src/libspf2/spf_dns_resolv.c	2005-06-05 12:25:26.000000000 -0400
++++ src/libspf2/spf_dns_resolv.c	2005-08-19 09:54:30.000000000 -0400
 @@ -45,6 +45,10 @@
  # include <pthread.h>
  #endif
@@ -375,7 +375,7 @@ Index: src/libspf2/spf_dns_resolv.c
 +	if ( spfhook->dodnssec ) {
 +		SPF_debugf( "dodnssec flag is set.  Performing val_query" );
 +		dns_len = val_query( domain, ns_c_in, rr_type, response, sizeof( response ),
-+				     &dnssec_status );
++				     0, &dnssec_status );
 +		SPF_debugf( "val_query() returned %d, dnssec_status = %s\n", dns_len,
 +			    p_val_error( dnssec_status ) );
 +	}
@@ -627,7 +627,7 @@ Index: src/include/spf_dns_resolv.h
 Index: config.h.in
 ===================================================================
 --- config.h.in	2005-02-28 15:16:25.000000000 -0500
-+++ config.h.in	2005-06-05 12:46:11.000000000 -0400
++++ config.h.in	2005-08-19 09:54:42.000000000 -0400
 @@ -46,6 +46,9 @@
  /* Define to 1 if you have the <inttypes.h> header file. */
  #undef HAVE_INTTYPES_H
@@ -674,7 +674,7 @@ Index: config.h.in
 Index: configure.ac
 ===================================================================
 --- configure.ac	2005-02-28 15:11:51.000000000 -0500
-+++ configure.ac	2005-06-03 13:05:14.000000000 -0400
++++ configure.ac	2005-08-19 09:52:34.000000000 -0400
 @@ -92,35 +92,97 @@
  	exit 1;
  ])
@@ -739,7 +739,7 @@ Index: configure.ac
 +   )
 +
 +   dnl Check Secure Resolver Library libsres
-+   AC_CHECK_LIB(sres, __ns_initparse, , [
++   AC_CHECK_LIB(sres, query_send, , [
 +	echo "the secure resolver library is required to build this program."
 +	echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
