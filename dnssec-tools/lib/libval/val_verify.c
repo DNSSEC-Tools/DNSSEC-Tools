@@ -213,8 +213,12 @@ static int have_rrsigs (struct domain_info *response)
 				  &rrsig_rdata);
 	    if ((rrsig_rdata.type_covered == rrset->rrs_type_h) ||
 	        (rrsig_rdata.type_covered == ns_t_nsec)) {
+			if(rrsig_rdata.signature != NULL)
+				FREE(rrsig_rdata.signature);
 		return 1;
 	    }
+		if(rrsig_rdata.signature != NULL)
+			FREE(rrsig_rdata.signature);
 	    rrs_sig = rrs_sig->rr_next;
 	}
 	rrset = rrset->rrs_next;
@@ -390,8 +394,6 @@ int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag, val_dnskey_rdata_t 
     	memcpy (&fp, &new_dnskey_rdata->key_tag, sizeof(u_int16_t));
 		if (*tag == htons(fp))
 			return NO_ERROR;
-
-		free(new_dnskey_rdata->public_key);
 	}
 	
 	return DNSKEY_NOMATCH;
@@ -440,6 +442,10 @@ val_log ("\nThis is the supposed signature:\n");
 print_hex_field (sig_field,sig_length,21,"SIG: ");
 val_log ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
 */
+
+	if(rrsig_rdata.signature != NULL)
+		FREE(rrsig_rdata.signature);
+
     FREE (ver_field);
     return NO_ERROR;
 }
@@ -504,7 +510,8 @@ void verify_next_assertion(struct assertion_chain *as)
 				find_key_for_tag (the_trust->ac_data->rrs_data, 
 					&signby_footprint_n, &dnskey))) {
 				SET_STATUS(as->ac_state, the_sig, retval);
-				free(dnskey.public_key);
+				if (dnskey.public_key != NULL)
+					FREE(dnskey.public_key);
 				continue;
 			}
 		}
@@ -512,7 +519,8 @@ void verify_next_assertion(struct assertion_chain *as)
 			/* data itself contains the key */
 			if(NO_ERROR != (retval = find_key_for_tag (the_set->rrs_data, &signby_footprint_n, &dnskey))) {
 				SET_STATUS(as->ac_state, the_sig, retval);
-				free(dnskey.public_key);
+				if (dnskey.public_key != NULL)
+					FREE(dnskey.public_key);
 				continue;
 			}
 		}	
@@ -520,14 +528,14 @@ void verify_next_assertion(struct assertion_chain *as)
 		/* do wildcard processing */
 		if(check_label_count (the_set, the_sig, &is_a_wildcard) != NO_ERROR) {
 			SET_STATUS(as->ac_state, the_sig, WRONG_LABEL_COUNT);
-			free(dnskey.public_key);
+			FREE(dnskey.public_key);
 			continue;
 		}
 
 		/* and check the signature */
 		if(NO_ERROR != do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard)) {
 			SET_STATUS(as->ac_state, the_sig, VERIFY_PROC_ERROR);
-			free(dnskey.public_key);
+			FREE(dnskey.public_key);
 			continue;
 		}
 
@@ -557,6 +565,6 @@ void verify_next_assertion(struct assertion_chain *as)
 		else
 			SET_STATUS(as->ac_state, the_sig, the_sig->status);
 
-		free(dnskey.public_key);
+		FREE(dnskey.public_key);
 	}
 }
