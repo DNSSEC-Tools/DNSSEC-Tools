@@ -1,7 +1,7 @@
 Index: configure.ac
 ===================================================================
 --- configure.ac	2005-06-24 15:27:27.000000000 -0400
-+++ configure.ac	2005-06-22 16:01:15.000000000 -0400
++++ configure.ac	2005-08-19 09:59:23.000000000 -0400
 @@ -27,6 +27,69 @@
  # a regular -lpthread library.
  AC_CHECK_LIB([c_r],[pthread_create],[LIBS="-pthread $LIBS"],[AC_CHECK_LIB([pthread],[pthread_create])])
@@ -38,7 +38,7 @@ Index: configure.ac
 +   )
 +
 +   dnl Check Secure Resolver Library libsres
-+   AC_CHECK_LIB(sres, __ns_initparse, , [
++   AC_CHECK_LIB(sres, query_send, , [
 +	echo "the secure resolver library is required to build this program."
 +	echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
