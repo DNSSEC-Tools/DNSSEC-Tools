@@ -649,16 +649,20 @@ static int store_policy_overrides(val_context_t *ctx, struct policy_fragment **p
 void destroy_valpol(val_context_t *ctx)
 {
     int i;
-    struct policy_overrides *cur;
+    struct policy_overrides *cur, *prev;
     for (i = 0; i< MAX_POL_TOKEN; i++)
             ctx->e_pol[i] = NULL;
 
-    for (cur = ctx->pol_overrides; cur; cur = cur->next) {
+	prev = NULL;
+    for (cur = ctx->pol_overrides; cur; prev = cur, cur = cur->next) {
             FREE (cur->label);
             conf_elem_array[cur->plist->index].free(&cur->plist->pol);
             FREE (cur->plist);
-            FREE (cur);
+			if (prev != NULL)
+            	FREE (prev);
     }
+	if (prev != NULL)
+		FREE (prev);
 	ctx->pol_overrides = NULL;
 	ctx->cur_override = NULL;
 
@@ -752,7 +756,8 @@ static int init_respol(struct name_server **nslist)
 	struct in_addr  address;
 	char auth_zone_info[MAXDNAME];
     FILE * fp;
-    char * line = NULL;
+    char *line = NULL;
+    char *lp = NULL;
     size_t len = 0;
     int read;
 	struct name_server *ns_head = NULL;
@@ -772,6 +777,8 @@ static int init_respol(struct name_server **nslist)
 		char *buf = NULL;
 		char *cp = NULL;
     	char white[] = " \t\n";
+	
+		lp = line;
 
 		if (strstr(line, "nameserver") == line) {
 
@@ -830,20 +837,26 @@ static int init_respol(struct name_server **nslist)
    			if (ns_name_pton(cp, ns->ns_name_n, MAXCDNAME-1) == -1) 
 				goto err;
 		}
-    	if (line) {
-			free(line);
-			line = NULL;
-		}
+
+    	if (lp != NULL) 
+			FREE(lp);
+		line = NULL;
 	}
 
 	*nslist = ns_head;
 
+    if (lp != NULL) 
+		FREE(lp);
+	line = NULL;
 	fclose(fp);
 	return NO_ERROR;
 
 err:
 	free_name_servers(&ns_head);
-	free(line);
+
+	if (lp)
+		FREE(lp);
+	line = NULL;
 	fclose(fp);
 	return CONF_PARSE_ERROR;
 }
