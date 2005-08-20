@@ -84,6 +84,7 @@ sub dnssec_tools_get_qwprimitives {
       );
     return %qwp;
 }
+
 1;
 
 #############################################################################
@@ -99,12 +100,13 @@ Net::DNS::SEC::Tools::QWPrimitives - QWizard primitives for DNSSEC-Tools
   use Net::DNS::SEC::Tools::QWPrimitives;
   use Getopt::Long::GUI;
 
-  GetOptions(...,
-             ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()]);
+  GetOptions(...,['GUI:otherprimaries',dnssec_tools_get_qwprimitives()]);
 
 =head1 DESCRIPTION
 
-  TBD
+B<QWizard> is a dynamic GUI-construction kit.  It displays a series of
+questions, and then retrieves and acts upon the answers.  This module
+provides access to QWizard for DNSSEC-Tools software.
 
 =head1 COPYRIGHT
 
@@ -117,7 +119,9 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 =head1 SEE ALSO
 
-Net::DNS
+B<Net::DNS>
+
+B<QWizard>
 
 http://www.dnssec-tools.org/
 
