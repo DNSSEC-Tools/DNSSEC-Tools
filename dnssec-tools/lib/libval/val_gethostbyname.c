@@ -60,6 +60,9 @@ int val_get_hostent_dnssec_status (const struct hostent *hentry)
 	}
 }
 
+
+/* Duplicate a hostent structure.  Performs a deep copy.
+ */
 struct hostent* val_duphostent (const struct hostent *hentry)
 {
 	struct hostent_dnssec_wrapper *oldhw = NULL;
@@ -217,7 +220,7 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 
 
 /* Converts data in the rrset_rec structure into a hostent structure */
-static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
+static struct hostent *get_hostent_from_response (struct rrset_rec *rrset, int *h_errnop)
 {
 	struct hostent *hentry = NULL;
 	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
@@ -226,7 +229,6 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
 	char dname[MAXDNAME];
 	
 	if (!rrset) {
-		val_h_errno = NETDB_INTERNAL;
 		return NULL;
 	}
 	
@@ -336,15 +338,15 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
 #endif
 	
 	if (address_found) {
-		val_h_errno = NETDB_SUCCESS;
+		*h_errnop = NETDB_SUCCESS;
 	}
 	else if (cname_found) {
-		val_h_errno = NO_DATA;
+		*h_errnop = NO_DATA;
 	}
 	else {
 		if (hentry) val_freehostent(hentry);
 		hentry = NULL;
-		val_h_errno = HOST_NOT_FOUND;
+		*h_errnop = HOST_NOT_FOUND;
 	}
 	
 	return hentry;
@@ -358,7 +360,7 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset)
  * error code.  The dnssec_status can be accessed by the
  * function get_hostent_dnssec_status()
  */
-struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
+struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int *h_errnop )
 {
 	struct hostent* hentry = NULL;
 	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
@@ -367,7 +369,7 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 	struct in6_addr ip6_addr;
 #endif
 	
-	if (!name) {
+	if (!name || !h_errnop) {
 		return NULL;
 	}
 	
@@ -390,7 +392,7 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 		memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
 		hentry->h_addr_list[1] = 0;
 		hentry_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		val_h_errno = NETDB_SUCCESS;
+		*h_errnop = NETDB_SUCCESS;
 		return hentry;
 	}
 #if 0
@@ -408,7 +410,7 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 		memcpy(hentry->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
 		hentry->h_addr_list[1] = 0;
 		hentry_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		val_h_errno = NETDB_SUCCESS;
+		*h_errnop = NETDB_SUCCESS;
 		return hentry;
 	}
 #endif
@@ -430,7 +432,7 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 		if (hentry != NULL) {
 			hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
 			hentry_wrapper->dnssec_status = VALIDATE_SUCCESS; /* ??? or locally trusted ??? */
-			val_h_errno = VALIDATE_SUCCESS;
+			*h_errnop = VALIDATE_SUCCESS;
 			return hentry;
 		}
 		
@@ -448,7 +450,7 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 							      &queries, &assertions, &results)))) {
 			
 			if(results->status == VALIDATE_SUCCESS) 
-				hentry = get_hostent_from_response(results->as->ac_data);
+				hentry = get_hostent_from_response(results->as->ac_data, h_errnop);
 			
 			if (hentry) {
 				hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
@@ -457,9 +459,9 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
 		}
 		
 		if(hentry == NULL)
-			val_h_errno = HOST_NOT_FOUND;
+			*h_errnop = HOST_NOT_FOUND;
 		else
-			val_h_errno = NETDB_SUCCESS;
+			*h_errnop = NETDB_SUCCESS;
 		
 		free_query_chain(&queries);
 		free_assertion_chain(&assertions);
@@ -480,7 +482,7 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name )
  * error code.  The dnssec_status can be accessed by the
  * function get_hostent_dnssec_status()
  */
-struct hostent *val_gethostbyname ( const char *name )
+struct hostent *val_gethostbyname ( const char *name, int *h_errnop )
 {
-	return val_x_gethostbyname( NULL, name );
+	return val_x_gethostbyname( NULL, name, h_errnop );
 }
