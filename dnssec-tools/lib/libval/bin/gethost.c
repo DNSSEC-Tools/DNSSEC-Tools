@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 	char buf[INET6_ADDRSTRLEN];
 	int index;
 	int extended = 0;
+ 	int val_h_errno = 0;
 	
 	if (argc < 2) {
 		printf ("Usage: %s [-x] <hostname>\n", argv[0]);
@@ -37,11 +38,11 @@ int main(int argc, char *argv[])
 	}
 	
 	if (extended) {
-		hentry = val_x_gethostbyname(NULL, argv[index]);
+		hentry = val_x_gethostbyname(NULL, argv[index], &val_h_errno);
 		dnssec_status = val_get_hostent_dnssec_status(hentry);
 	}
 	else {
-		hentry = val_gethostbyname(argv[index]);
+		hentry = val_gethostbyname(argv[index], &val_h_errno);
 		dnssec_status = val_get_hostent_dnssec_status(hentry);
 	}
 	
