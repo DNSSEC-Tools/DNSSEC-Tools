@@ -19,7 +19,7 @@ LocalGetOptions(\%opts,
                 '',
                 ['GUI:separator',   'E-Mail options:'],
 		['s|smtp-server=s', 'SMTP server to mail mail through (localhost)'],
-                ['f|from-address=s','From address to use when seindng mail'],
+                ['f|from-address=s','From address to use when sending mail'],
                 ['x|include-diff-output','Include diff output in mail'],
                 ['e|email-summary-to=s', 'Email a result summary to ADDRESS'],
                 '',
@@ -240,21 +240,21 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
-DoNutSD - Run the donuts syntax checker every so often and email the results
+  DoNutSD - Run the donuts syntax checker periodically and email the results
 
 =head1 SYNOPSIS
 
-donutsd [-z FREQ] [-t TMPDIR] [-f FROM] [-s SMTPSERVER] [-a DONUTSARGS]
-        [-x] [-v] [-i zonelistfile] [ZONEFILE ZONENAME ZONECONTACT]
+  donutsd [-z FREQ] [-t TMPDIR] [-f FROM] [-s SMTPSERVER] [-a DONUTSARGS]
+          [-x] [-v] [-i zonelistfile] [ZONEFILE ZONENAME ZONECONTACT]
 
 =head1 DESCRIPTION
 
-Donutsd runs donuts on a set of zone files every so often (the
-frequency is specified by the -z flag which defaults to 24 hours) and
+I<donutsd> runs I<donuts> on a set of zone files every so often (the
+frequency is specified by the I<-z> flag which defaults to 24 hours) and
 watches for changes in the results.  These changes may be due to the
-time-sensitive nature of DNSSEC related records (EG, RRSIG validity
+time-sensitive nature of DNSSEC-related records (e.g., RRSIG validity
 periods) or because parent/child relationships have changed.  If any
-changes have occurred in the output since the last run of donuts on a
+changes have occurred in the output since the last run of I<donuts> on a
 particular zone file, the results are emailed to the specified zone
 administrator's email address.
 
@@ -268,25 +268,26 @@ Turns on more verbose output.
 
 =item -o
 
-Run once and quit (as opposed to sleeping/re-running forever).
+Run once and quit, as opposed to sleeping or re-running forever.
 
 =item -a ARGUMENTS
 
-Passes arguments to command line arguments of donuts runs.
+Passes arguments to command line arguments of I<donuts> runs.
 
 =item -z TIME
 
-Sleeps TIME seconds between calls to donuts.
+Sleeps TIME seconds between calls to I<donuts>.
 
 =item -e ADDRESS
 
-Mail ADDRESS with a summary of the results from all the files.  EG,
-these are the last few lines of the donuts output for each zone that
+Mail ADDRESS with a summary of the results from all the files.
+These are the last few lines of the I<donuts> output for each zone that
 details the number of errors found.
 
 =item -s SMTPSERVER
 
-When sending mail, send it to the SMTPSERVER specified (default = localhost).
+When sending mail, send it to the SMTPSERVER specified.  The default
+is I<localhost>.
 
 =item -f FROMADDR
 
@@ -294,7 +295,7 @@ When sending mail, use FROMADDR for the From: address.
 
 =item -x
 
-Send the diff output in the email message as well as the donuts output.
+Send the I<diff> output in the email message as well as the I<donuts> output.
 
 =item -t TMPDIR
 
@@ -308,7 +309,7 @@ Store temporary files in TMPDIR.
 
 =head1 ZONE ARGUMENTS
 
-The rest of the arguments to donutsd should be triplets of the
+The rest of the arguments to I<donutsd> should be triplets of the
 following information:
 
 =over
@@ -323,23 +324,25 @@ The zonename that file is supposed to be defining
 
 =item ZONECONTACT
 
-An email address of the zone administrator (or a comma separated
+An email address of the zone administrator (or a comma-separated
 list of addresses).  The results will be sent to this email address.
 
 =back
 
 Additionally, instead of listing all the zones you wish to monitor on
-the command line, you can instead use the -i flag which specifies a
+the command line, you can instead use the I<-i> flag which specifies a
 file to be read listing the TRIPLES instead.  Each line in this file
-should contain one triple with white space separating the arguments.  Example:
+should contain one triple with white-space separating the arguments.
+
+Example:
 
    db.zonefile1.com   zone1.com   admin@zone1.com
    db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com
 
-Or, for even more control you can specify an XML file (it must end in
-.xml and you must have the XML::Smart perl module installed) that
+For even more control you can specify an XML file (which must end in
+B<.xml> and you must have the B<XML::Smart> Perl module installed) that
 describes the same information but also allows for per-zone
-customization of the donuts arguments:
+customization of the I<donuts> arguments:
 
  <donutsd>
    <zones>
@@ -354,7 +357,7 @@ customization of the donuts arguments:
    </zones>
  </donutsd>
 
-The <donutsd> tree can also contain a <configs> section where command
+The I<donutsd> tree can also contain a I<configs> section where command
 line flags can be specified as well:
 
  <donutsd>
@@ -368,7 +371,7 @@ line flags can be specified as well:
  </donutsd>
 
 Real command line flags will be used in preference to those specified
-in the .xml file, however.
+in the B<.xml> file, however.
 
 =head1 EXAMPLE
 
@@ -388,6 +391,6 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 donuts(1)
 
-http://dnssec-tools.sourceforge.net/
+http://dnssec-tools.sourceforge.net
 
 =cut
