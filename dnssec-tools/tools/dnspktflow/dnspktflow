@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+#
+# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+#
 
 use Data::Dumper;
 use GraphViz;
@@ -35,7 +39,7 @@ LocalGetOptions(\%opts,
 		['t|show-type',"Shows message type in result image"],
 		['q|show-queries',"Shows query questions in result image"],
 		['a|show-answers',"Shows query answers in result image"],
-		['A|show-authoratative',"Shows authoratative information in result image"],
+		['A|show-authoritative',"Shows authoritative information in result image"],
 		['x|show-additional',"Shows additional information in result image"],
 		['l|show-label-lines','Shows lines attaching labels to lines'],
 		"",
@@ -134,13 +138,13 @@ foreach my $file (@ARGV) {
 		# drop packets we don't care about
 		if ($#dnspkts > -1 &&
 		    $dnspkts[$#dnspkts]{'Frame'} == $data->{'Frame'}) {
-		    print "droping $data->{'Frame'}\n";
+		    print "dropping $data->{'Frame'}\n";
 		    pop @dnspkts;
 		}
 	    }
 	}
 
-	# remeber other things that may be in it
+	# remember other things that may be in it
 	$qdata->{$1} = $2 if (/^\s*(Type|Name Server|Algorithm):\s*(.*)/);
 
 	# remember authoritative name servers
@@ -163,7 +167,7 @@ if ($opts{'d'}) {
 }
 
 #
-# actuall draw the results
+# actually draw the results
 #
 if ($opts{'m'}) {
     $| = 1;
@@ -337,27 +341,32 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
-dnspktflow - Analyize and draw DNS flow diagrams from a tcpdump file
+dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file
 
 =head1 SYNOPSIS
 
-dnspktflow -o output.png file.tcpdump
+  dnspktflow -o output.png file.tcpdump
 
-dnspktflow -o output.png -x -a -t -q file.tcpdump
+  dnspktflow -o output.png -x -a -t -q file.tcpdump
+
+=head1 DESCRIPTION
+
+Analyze and draw DNS flow diagrams from a I<tcpdump> file.
+The flow diagram will be made in the PNG format.
 
 =head1 REQUIREMENTS
 
-This application requires the following perl modules and software
+This application requires the following Perl modules and software
 components to work:
 
-  graphviz                  (http://www.graphviz.org/)
-  GraphViz                  (perl module)
-  tethereal                 (http://www.ethereal.org/)
+  I<graphviz>                  (http://www.graphviz.org/)
+  B<GraphViz>                  (Perl module)
+  B<tethereal>                 (http://www.ethereal.org/)
 
 If the following modules are installed, it will enable a GUI interface:
 
-  QWizard                   (perl module)
-  Getopt::GUI::Long         (perl module)
+  B<QWizard>                   (Perl module)
+  B<Getopt::GUI::Long>         (Perl module)
 
 =head1 OPTIONS
 
@@ -367,7 +376,7 @@ If the following modules are installed, it will enable a GUI interface:
   --only-hosts=STRING    A regular expression of host names to analyze
 
   --o=STRING
-  --output-file=STRING   Output png image file name (default: out.png)
+  --output-file=STRING   Output PNG image file name (default: out.png)
   --O=STRING
   --tethereal-out=STRING Save tethereal output to this file
   --T
@@ -380,7 +389,7 @@ If the following modules are installed, it will enable a GUI interface:
   --a
   --show-answers         Shows query answers in result image
   --A
-  --show-authoratative   Shows authoratative information in result image
+  --show-authoritative   Shows authoritative information in result image
   --x
   --show-additional      Shows additional information in result image
   --l
@@ -399,7 +408,7 @@ If the following modules are installed, it will enable a GUI interface:
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 Sparta, Inc.  All rights reserved.
+Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 AUTHOR
