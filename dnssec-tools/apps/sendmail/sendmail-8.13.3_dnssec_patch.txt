@@ -9,7 +9,7 @@ Index: devtools/Site/site.config.m4
 Index: libmilter/sm_gethost.c
 ===================================================================
 --- libmilter/sm_gethost.c	2005-04-28 13:32:29.000000000 -0400
-+++ libmilter/sm_gethost.c	2005-08-19 11:35:42.000000000 -0400
++++ libmilter/sm_gethost.c	2005-08-20 11:38:15.000000000 -0400
 @@ -17,6 +17,10 @@
  #endif /* NETINET || NETINET6 */
  #include "libmilter.h"
@@ -21,7 +21,7 @@ Index: libmilter/sm_gethost.c
  /*
  **  MI_GETHOSTBY{NAME,ADDR} -- compatibility routines for gethostbyXXX
  **
-@@ -59,13 +63,26 @@
+@@ -59,13 +63,27 @@
  		_res.options |= RES_USE_INET6;
  	}
  	SM_SET_H_ERRNO(0);
@@ -29,7 +29,8 @@ Index: libmilter/sm_gethost.c
 +# if SUPPORT_DNSSEC
 +	do {
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name);
++	    int val_h_errno = 0;
++	    h = val_gethostbyname(name, &val_h_errno);
 +	    if (h) {
 +		dnssec_status = val_get_hostent_dnssec_status(h);
 +	    }
@@ -48,7 +49,7 @@ Index: libmilter/sm_gethost.c
  void
  freehostent(h)
  	struct hostent *h;
-@@ -75,9 +92,12 @@
+@@ -75,9 +93,12 @@
  	**  they probably don't have the free routine either.
  	*/
  
@@ -62,14 +63,15 @@ Index: libmilter/sm_gethost.c
  
  struct hostent *
  mi_gethostbyname(name, family)
-@@ -110,7 +130,17 @@
+@@ -110,7 +131,18 @@
  	h = getipnodebyname(name, family, flags, &err);
  	SM_SET_H_ERRNO(err);
  # else /* NETINET6 */
 +#  if SUPPORT_DNSSEC
 +	do {
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name);
++	    int val_h_errno = 0;
++	    h = val_gethostbyname(name, &val_h_errno);
 +	    if (h) {
 +		dnssec_status = val_get_hostent_dnssec_status(h);
 +	    }
@@ -99,7 +101,7 @@ Index: doc/op/op.me
 Index: sendmail/conf.c
 ===================================================================
 --- sendmail/conf.c	2005-04-25 11:32:20.000000000 -0400
-+++ sendmail/conf.c	2005-08-19 11:37:29.000000000 -0400
++++ sendmail/conf.c	2005-08-20 11:42:12.000000000 -0400
 @@ -31,6 +31,10 @@
  # include <ulimit.h>
  #endif /* HASULIMIT && defined(HPUX11) */
@@ -111,19 +113,22 @@ Index: sendmail/conf.c
  static void	setupmaps __P((void));
  static void	setupmailers __P((void));
  static void	setupqueues __P((void));
-@@ -4212,7 +4216,20 @@
+@@ -4212,7 +4216,23 @@
  		_res.options |= RES_USE_INET6;
  	}
  	SM_SET_H_ERRNO(0);
 +# if SUPPORT_DNSSEC
 +	{
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name);
++	    int val_h_errno = 0;
++	    h = val_gethostbyname(name, &val_h_errno);
 +	    if (h) {
 +		dnssec_status = val_get_hostent_dnssec_status(h);
 +	    }
-+	    if (RequireDNSSEC) {
-+		/* XXX ??? */
++	    if (RequireDNSSEC && dnssec_status != VALIDATE_SUCCESS) {
++		    if (h)
++			    val_freehostent(h);
++		    h = NULL;
 +	    }
 +	}
 +# else
@@ -132,7 +137,7 @@ Index: sendmail/conf.c
  	if (!resv6)
  		_res.options &= ~RES_USE_INET6;
  	*err = h_errno;
-@@ -4233,7 +4250,9 @@
+@@ -4233,7 +4253,9 @@
  	*err = h_errno;
  	return h;
  }
@@ -142,7 +147,7 @@ Index: sendmail/conf.c
  void
  freehostent(h)
  	struct hostent *h;
-@@ -4243,9 +4262,12 @@
+@@ -4243,9 +4265,12 @@
  	**  they probably don't have the free routine either.
  	*/
  
@@ -156,19 +161,22 @@ Index: sendmail/conf.c
  
  struct hostent *
  sm_gethostbyname(name, family)
-@@ -4292,7 +4314,20 @@
+@@ -4292,7 +4317,23 @@
  	h = getipnodebyname(name, family, flags, &err);
  	SM_SET_H_ERRNO(err);
  # else /* NETINET6 */
 +#  if SUPPORT_DNSSEC
 +	{
 +	    int dnssec_status = INTERNAL_ERROR;
-+	    h = val_gethostbyname(name);
++	    int val_h_errno = 0;
++	    h = val_gethostbyname(name, &val_h_errno);
 +	    if (h) {
 +		dnssec_status = val_get_hostent_dnssec_status(h);
 +	    }
-+	    if (RequireDNSSEC) {
-+		/* XXX ??? */
++	    if (RequireDNSSEC && dnssec_status != VALIDATE_SUCCESS) {
++		    if (h)
++			    val_freehostent(h);
++		    h = NULL;
 +	    }
 +	}
 +#  else /* SUPPORT_DNSSEC */
@@ -177,19 +185,22 @@ Index: sendmail/conf.c
  # endif /* NETINET6 */
  
  	save_errno = errno;
-@@ -4332,7 +4367,20 @@
+@@ -4332,7 +4373,23 @@
  				SM_SET_H_ERRNO(err);
  				save_errno = errno;
  # else /* NETINET6 */
 +#  if SUPPORT_DNSSEC
 +				{
 +				    int dnssec_status = INTERNAL_ERROR;
-+				    h = val_gethostbyname(hbuf);
++				    int val_h_errno = 0;
++				    h = val_gethostbyname(hbuf, &val_h_errno);
 +				    if (h) {
 +					dnssec_status = val_get_hostent_dnssec_status(h);
 +				    }
-+				    if (RequireDNSSEC) {
-+					/* XXX ??? */
++				    if (RequireDNSSEC && dnssec_status != VALIDATE_SUCCESS) {
++					    if (h)
++						    val_freehostent(h);
++					    h = NULL;
 +				    }
 +				}
 +#  else /* SUPPORT_DNSSEC */
@@ -198,7 +209,7 @@ Index: sendmail/conf.c
  				save_errno = errno;
  # endif /* NETINET6 */
  			}
-@@ -4638,7 +4686,7 @@
+@@ -4638,7 +4695,7 @@
  					*ha);
  		}
  	}
