@@ -436,19 +436,20 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
-mapper - Create PNG maps of DNS zone data
+mapper - Create graphical maps of DNS zone data
 
 =head1 SYNOPSIS
 
-This application creates a graphical PNG map of one or more zone files.
+  mapper [options] zonefile1 ... zonefileN
 
 =head1 DESCRIPTION
 
-The output gives a graphical representation of a dns zone or zones.  The
-result can be useful for getting a more intuitive view of a zone or
-set of zones.  It is extremely useful for visualizing DNSsec
-deployment within a given zone as well as to help discover problematic
-spots.
+This application creates a graphical map of one or more zone files.  The
+output gives a graphical representation of a DNS zone or zones.  The output
+is written in the PNG format.  The result can be useful for getting a more
+intuitive view of a zone or set of zones.  It is extremely useful for
+visualizing DNSSEC deployment within a given zone as well as to help discover
+problem spots.
 
 =head1 OPTIONS
 
@@ -460,7 +461,8 @@ Help summary.
 
 =item -o OUTFILE.png
 
-Saves the results to a given filename (default = "map.png")
+Saves the results to a given filename.  If this option is not given, the map
+will be saved to B<map.png>.
 
 =item -r
 
@@ -470,7 +472,7 @@ Lists resources records assigned to each node within the map.
 
 Adds the data portion of a resource record to the displayed node
 information.  Data types passed will be automatically upper-cased for
-ease of use.  Example usage: I<-t A> will add record IPv4 addresses to
+ease of use.  Example usage: I<-t A> will add IPv4 addresses to
 all displayed nodes that have A records.
 
 =item -L
@@ -481,13 +483,13 @@ Adds a legend to the map.
 
 Selects a layout format.  The default is I<neato> which is circular in
 pattern.  See the documentation on the I<graphviz> package and the
-I<GraphViz> perl module for further details.
+I<GraphViz> Perl module for further details.
 
 =item -a
 
 Allows overlapping of nodes.  This makes much tighter maps with the
-downside being they're more cluttered.  This is pretty much required
-to map extremely large zones though.
+downside being that they are somewhat cluttered.  Maps of extremely
+large zones will be difficult to decipher if this option is not used.
 
 =item -e WEIGHT
 
@@ -502,9 +504,9 @@ Defaults to 10.
 
 =item -w WARNTIME
 
-How far in advance (in seconds) that warnings are turned on for signed
-resource records that are about to expire.  The default is 7 days
-worth of seconds.
+How far in advance that warnings are turned on for signed
+resource records that are about to expire.  The default is 7 days.
+The warning time is measured in seconds.
 
 =item -i REGEX
 
@@ -512,28 +514,26 @@ Ignore record types matching a I<REGEX> regular expression.
 
 =item -s TYPE,TYPE...
 
-Skips a list of types from being analyzed/displayed in the MAP.  By
-default, this is set to NSEC and CNAME in order to reduce clutter a
-bit.  Setting it to "" will display these results again.  Or it can be
-set to any comma separated list of record types to ignore to leave
-out.
+Skips a list of record types from being analyzed or displayed in the map.
+By default, this is set to NSEC and CNAME in order to reduce clutter.
+Setting it to "" will display these results again.
 
 =item -T TYPE,TYPE...
 
-Only process record types of type I<TYPE>.  This is sort of the converse
-option to -s.  You probably don't want to use both.  They will both
-work at once, however, so if -T specifies a type which -s excludes, it
-will not be shown.
+Only process record types of type I<TYPE>.  This is the converse of the
+I<-s> option.  It is not meaningful to use both I<-s> and I<-t> in the same
+invocation.  They will both work at once, however, so if I<-T> specifies a
+type which I<-s> excludes, it will not be shown.
 
 =item -g
 
 Attempts to cluster nodes around the domain name.  For 'dot' layouts,
 this actually means drawing a box around the cluster.  For the other
-types, it makes very little if any difference.
+types, it makes very little, if any, difference.
 
 =item -q
 
-Don't output warnings/errors about records that have DNSsec signatures
+Don't output warnings or errors about records that have DNSSEC signatures
 that are near or beyond their signature lifetimes.
 
 =back
@@ -544,9 +544,9 @@ that are near or beyond their signature lifetimes.
 
 =item I<mapper -s cname,nsec -i dhcp -L zonefile zone.com>
 
-Writes to the default file named I<map.png>. of a I<zone.com> zone
+Writes to the default file (I<map.png>) of a I<zone.com> zone
 stored in I<zonefile>.  It excludes any hosts with a name containing
-I<dhcp> and ignores any record types of I<cname> or I<nsec>.  It also
+I<dhcp> and ignores any record of type I<CNAME> or I<NSEC>.  It also
 includes a legend in the output.
 
 =item I<mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...>
@@ -557,9 +557,8 @@ map of a zone hierarchy.
 =item I<mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...>
 
 The same thing, but draws a more vertical tree-style graph of the
-zone.  This works well for fairly deep but narrow hierarchies.  Tree
-style diagrams rarely look as nice for full zones (they're very
-large).
+zone.  This works well for fairly deep but narrow hierarchies.  Tree-style
+diagrams rarely look as nice for full zones.
 
 =back
 
@@ -576,6 +575,6 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 Net::DNS
 
-http://dnssec-tools.sourceforge.net/
+http://dnssec-tools.sourceforge.net
 
 =cut
