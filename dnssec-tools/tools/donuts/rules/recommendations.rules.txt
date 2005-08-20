@@ -14,6 +14,7 @@ minttl: 60
 help: minttl: minimum ttl value acceptable for a record
 # 7 days max
 maxttl: 604800
+desc: Checks to see if reasonable TTL values (configurable) were chosen for all the records in a zone.
 help: maxttl: maximum ttl value acceptable for a record
 test:
   return "Record has a TTL which is unreasonably small ( " . $_[0]->ttl
@@ -29,6 +30,7 @@ test:
 name: DNS_SOA_REQUIRED
 level: 2
 ruletype: name
+desc: Checks for the existence of an SOA record in a zone.
 test:
    "A SOA record for $current_domain is required"
       if ($_[2] eq $current_domain && $#{$_[0]->{'SOA'}} == -1);
@@ -37,6 +39,7 @@ name: DNS_NO_DOMAIN_MX_RECORDS
 level: 8
 class: Warning
 ruletype: name
+desc: Checks to ensure that the zone contains at least 1 MX record.
 test:
    "At least one MX record for $current_domain is suggested"
       if ($_[2] eq $current_domain && $#{$_[0]->{'MX'}} == -1);

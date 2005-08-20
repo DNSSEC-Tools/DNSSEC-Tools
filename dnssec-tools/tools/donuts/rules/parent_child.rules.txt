@@ -7,9 +7,10 @@
 
 
 name: DNS_MULTIPLE_NS
-level: 2
+level: 6
 minnsrecords: 2
 help: minnsrecords: minimum number of NS records that must be present for a delegation
+desc: Tests to see if at least two NS records exist for a delegated zone.
 ruletype: name
 class: Warning
 test:
@@ -22,6 +23,7 @@ test:
 name: DNSSEC_SUB_NOT_SECURE
 level: 3
 ruletype: name
+desc: Tests for the existence of a DS record in a zone for sub-domains.  If not present then the sub-domain is not being securely delegated to.
 test:
   "sub-domain $_[2] is not securely delegated.  It is missing a DS record."
   if ($current_domain ne $_[2]                         &&  # not the root

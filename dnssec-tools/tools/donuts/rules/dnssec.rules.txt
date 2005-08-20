@@ -6,7 +6,7 @@
 #
 
 name: DNSSEC_RRSIG_TTL_MATCH_ORGTTL
-desc: quote RFC here.
+desc: Checks to see if the TTL of an RRSIG record matches the original record. [XXX: quote RFC here]
 level: 3
 type:  RRSIG
 test:
@@ -32,6 +32,7 @@ test:
 # NSEC is present?
 #
 name: DNSSEC_MISSING_NSEC_RECORD
+desc: checks to see if a given name is missing an NSEC record, which is require for dnssec to prove non-existence.
 level: 3
 ruletype: name
 test:
@@ -43,6 +44,7 @@ test:
 # RRSIG is present?
 #
 name: DNSSEC_MISSING_RRSIG_RECORD
+desc: Checks to see if a name contains a RRSIG record.
 level: 3
 ruletype: name
 test:
@@ -67,6 +69,7 @@ test:
 name: DNSSEC_RRSIG_FOR_NS_GLUE_RECORD
 level: 3
 ruletype: name
+desc: Checks to see if an NS record exists with glue data but also a RRSIG covers the glue data, which should not happen since the zone is not authoritative over the glue data.
 test:
   my $suffix = $_[2];
   $suffix =~ s/^[^\.]+\.//;
@@ -82,6 +85,7 @@ test:
 #
 name: DNSSEC_NSEC_FOR_NS_GLUE_RECORD
 level: 3
+desc: Checks to see if an NS record exists with glue data but also a NSEC covers the glue data, which should not happen since the zone is not authoritative over the glue data.
 ruletype: name
 test:
   my $suffix = $_[2];
@@ -99,6 +103,7 @@ name: DNSSEC_RRSIG_SIGEXP
 level: 1
 type:  RRSIG
 warntime:  604800
+desc: Checks signature expiration time and warns or signals an error if the time is near or past.
 init:
   use Date::Parse;
   $donuts::time = time();
