@@ -177,7 +177,7 @@ Net::DNS::SEC::Tools::timetrans - Convert an integer seconds count into text uni
 
 =head1 DESCRIPTION
 
-The I<timetrans>() interface in the I<Net::DNS::SEC::Tools::timetrans>
+The I<timetrans>() interface in the B<Net::DNS::SEC::Tools::timetrans>
 converts an integer seconds count into the equivalent number of weeks,
 days, hours, and minutes.  The time converted is a relative time, B<not>
 an absolute time.  The returned time is given in terms of weeks, days, hours,
@@ -201,7 +201,7 @@ I<timetrans(720000)> returns I<1 week, 1 day, 8 hours>
 
 =head1 INTERFACES
 
-The interfaces to the I<Net::DNS::SEC::Tools::timetrans> module are given
+The interfaces to the B<Net::DNS::SEC::Tools::timetrans> module are given
 below.
 
 =head2 I<timetrans()>
@@ -228,34 +228,9 @@ See the COPYING file included with the dnssec-tools package for details.
 
 Wayne Morrison, tewok@users.sourceforge.net
 
+=head1 SEE ALSO
+
+I<timetrans(1)>
+
 =cut
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
