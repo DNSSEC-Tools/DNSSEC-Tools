@@ -106,7 +106,7 @@ Net::DNS::SEC::Tools::QWPrimitives - QWizard primitives for DNSSEC-Tools
 
 B<QWizard> is a dynamic GUI-construction kit.  It displays a series of
 questions, and then retrieves and acts upon the answers.  This module
-provides access to QWizard for DNSSEC-Tools software.
+provides access to B<QWizard> for DNSSEC-Tools software.
 
 =head1 COPYRIGHT
 
@@ -123,7 +123,7 @@ B<Net::DNS>
 
 B<QWizard>
 
-http://www.dnssec-tools.org/
+http://www.dnssec-tools.org
 
 =cut
 
