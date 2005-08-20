@@ -166,7 +166,7 @@ These values are the defaults for a variety of things, such as
 encryption algorithm and encryption key length.
 
 B</usr/local/etc/dnssec/dnssec-tools.conf> is the path for the DNSSEC tools
-configuration file.  The I<Net::DNS::SEC::Tools::conf> module provides
+configuration file.  The B<Net::DNS::SEC::Tools::conf> module provides
 methods for accessing the configuration data in this file.
 
 The DNSSEC tools configuration file consists of a set of configuration
@@ -219,8 +219,10 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-zonesigner(1)
+I<zonesigner(1)>
 
-Net::DNS::SEC::Tools::keyrec(3)
+B<Net::DNS::SEC::Tools::keyrec(3)>
+
+B<dnssec-tools.conf(5)>
 
 =cut
