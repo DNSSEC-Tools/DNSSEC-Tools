@@ -436,7 +436,7 @@ DoNutS - analyze DNS zone files for errors and warnings
 
 DoNutS is a DNS Lint application that examines DNS zone files looking
 for particular problems.  This is especially important for zones
-making use of DNSsec security records, since many subtle problems can
+making use of DNSSEC security records, since many subtle problems can
 occur.
 
 =head1 OPTIONS
@@ -457,7 +457,7 @@ Turns on more quiet output.
 
 =item -l LEVEL
 
-Sets the level of errors you want to see.  The default is level 5.
+Sets the level of errors to be displayed.  The default is level 5.
 The maximum value is level 9, which displays many debugging results.
 You probably want to run no higher than level 8.
 
@@ -468,7 +468,7 @@ passed to I<glob()> so * wildcards can be used to specify multiple files.
 
 =item -i IGNORELIST
 
-A common separated list of regex patterns which are checked against
+A comma-separated list of regex patterns which are checked against
 rule names to determine if some should be ignored.  Run with I<-v> to
 figure out rule names if you're not sure which rule is generating
 errors you don't wish to see.
@@ -487,7 +487,7 @@ the B<$HOME/.donuts.conf> file)
 
 Displays the personal configuration file rules and tokens that are
 acceptable to be found in a configuration file.  The output will
-consist of a rue name, a token and a description of what it means.
+consist of a rule name, a token, and a description of what it means.
 
 Your configuration file (e.g., B<$HOME/.donuts.conf>) may have lines in it
 that look like this:
