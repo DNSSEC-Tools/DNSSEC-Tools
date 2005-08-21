@@ -1,0 +1,604 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# podmantex
+#
+#	This script converts a pod man page into latex.
+#	Read the pod for more details.
+#
+#		podmantex <input-file> [output-file]
+#
+
+use strict;
+
+my $ME = "podmantex";			# ID card.
+
+my $inpod	= 0;			# Pod-processing flag.
+my $nopod	= 1;			# No-pod-found flag.
+my $intrans	= 0;			# In =begin translator section flag.
+my $linecnt	= 0;			# Input line counter.
+my $translator	= "";			# Translator name for directives.
+my $verbatim;				# Verbatim flag.
+
+main();
+exit(0);
+
+#---------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main
+{
+	my $argc = @ARGV;				# Argument count.
+	my $infile = $ARGV[0];				# Input filename.
+	my $outfile;					# Output filename.
+
+	#
+	# Set up our output file.  If it wasn't given on the command line,
+	# we'll write to stdout.
+	#
+	if($argc == 1)
+	{
+		$outfile = "/dev/stdout";
+	}
+	elsif($argc == 2)
+	{
+		$outfile = $ARGV[1];
+	}
+	else
+	{
+		usage();
+	}
+
+	#
+	# Open our input and output files.
+	#
+	open(IN,"< $infile") || die("unable to open \"$infile\"\n");
+	open(OUT,"> $outfile") || die("unable to open \"$outfile\"\n");
+
+	#
+	# Create a header.
+	#
+	header($infile);
+
+	#
+	# Read our input file and translate the pod.  We'll start with
+	# pod directives, then move to the pod markups.
+	#
+	while(<IN>)
+	{
+		my $line = $_;
+		chomp $line;
+
+		$linecnt++;
+		$verbatim = 0;
+
+		#
+		# If the line isn't empty, we'll handle the directives and
+		# markups.  If the line becomes empty as a result directive
+		# handling, there's nothing more to do with the line.
+		#
+		if($line ne "")
+		{
+			$line = directives($line);
+			next if($line eq "");
+
+			$line = markups($line) if(!$verbatim);
+		}
+
+		print OUT "$line\n" if($inpod);
+	}
+
+	#
+	# Make sure we found some pod.
+	#
+	if($nopod)
+	{
+		print STDERR "warning:  no pod was found\n";
+	}
+
+	#
+	# Make sure the pod is nice 'n tidy.
+	#
+	if($inpod)
+	{
+		print STDERR "warning:  EOF reached without an =cut to close the pod\n";
+	}
+
+
+	#
+	# Release our files.
+	#
+	close(IN);
+	close(OUT);
+}
+
+#---------------------------------------------------------------------------
+#
+# Routine:	header()
+#
+sub header
+{
+	my $fn = shift;					# Input filename.
+
+	print OUT "\\clearpage\n\n";
+	print OUT "\\subsection{$fn}\n\n";
+}
+
+#---------------------------------------------------------------------------
+#
+# Routine:	directives()
+#
+# Purpose:	This routine translates the pod directives into LaTeX.
+#
+#			=back			closes a description environment
+#			=begin translator	process if we're the translator
+#			=cut			turn off pod processing
+#			=end translator		stop translator processing
+#			=for translator		process paragraph if trans is us
+#			=head1 heading		wraps heading in a bold context
+#			=head2 heading		wraps heading in a bold context
+#			=item text		adds description item
+#			=over N			starts a description environment
+#			=pod			turn on pod processing
+#
+#		Literal text, strictly speaking, isn't a pod directive.
+#		However, we will recognize it here and arrange for it to
+#		remain unprocessed.  Pod literal text is any whose line
+#		starts with whitespace.
+#
+sub directives
+{
+	my $line = shift;				# Line to fix.
+
+	#
+	# If this is the pod initialization marker, mark us as being
+	# in the pod-handling state.
+	#
+	if($line =~ /^=pod/)
+	{
+		$inpod = 1;
+		$nopod = 0;
+		return("");
+	}
+
+	#
+	# If we aren't in a pod-blob, don't do anything further.
+	#
+	if(!$inpod)
+	{
+		return("");
+	}
+
+	if($line =~ /^[ \t]/)			# Look for literal text.
+	{
+		$line =~ s/(.*)/\\begin{verbatim}$1\\end{verbatim}/;
+		$line =~ s/\t/        /g;
+		$verbatim = 1;
+	}
+	elsif($line =~ /^=back/)
+	{
+		$line = "\\end{description}";
+	}
+	elsif($line =~ /^=begin/)
+	{
+		do_begin($line);
+		return("");
+	}
+	elsif($line =~ /^=cut/)
+	{
+		$inpod = 0;
+		return("");
+	}
+	elsif($line =~ /^=end/)
+	{
+		do_end($line);
+		return("");
+	}
+	elsif($line =~ /^=for/)
+	{
+		do_for($line);
+		return("");
+	}
+	elsif($line =~ /^=head1/)
+	{
+		$line =~ s/=head1\W(.*)/{\\bf $1}/;
+	}
+	elsif($line =~ /^=head2/)
+	{
+		$line =~ s/=head2\W(.*)/{\\bf $1}/;
+	}
+	elsif($line =~ /^=item/)
+	{
+		$line =~ s/=item\W(.*)/\\item \[$1\]\\verb" "/;
+	}
+	elsif($line =~ /^=over/)
+	{
+		$line = "\\begin{description}";
+	}
+
+	return($line);
+}
+
+#---------------------------------------------------------------------------
+#
+# Routine:	markups()
+#
+# Purpose:	Translate pod markups into LaTeX equivalents.
+#
+#
+#		pod		meaning			LaTeX translation
+#		---		-------			-----------------
+#		B<text>		bold			bold context
+#		C<code>		literal			verbatim environment
+#		E<escape>	escape			converts a few sequences
+#		F<file>		filename		bold context
+#		I<text>		italics			italics context
+#		L<[text|]ref>	cross-reference		converts to plaintext
+#		S<text>		non-breaking space	changes spaces to tildes
+#		X<index>	index			ignored
+#		Z<>		zero-width character	ignored
+#
+sub markups
+{
+	my $line = shift;				# Line to fix.
+
+	#
+	# Handle the bold and code-quote commands.
+	#
+	$line =~ s/B<(.*?)>/{\\bf $1}/g;
+	$line =~ s/C<(.*?)>/\\begin{verbatim}$1\\end{verbatim}/g;
+
+	if($line =~ /E<.*?>/)
+	{
+		$line =~ s/E<lt>/\</g;
+		$line =~ s/E<gt>/\>/g;
+		$line =~ s/E<sol>/\//g;
+		$line =~ s/E<verbar>/\|/g;
+	}
+
+	#
+	# Handle the file, italics, and cross-reference commands.
+	#
+	$line =~ s/F<(.*?)>/{\\bf $1}/g;
+	$line =~ s/I<(.*?)>/{\\it $1}/g;
+	$line =~ s/L<(.*?)>/$1/g;
+
+	while($line =~ /S<(.*?)>/)
+	{
+		my $pre;
+		my $match;
+		my $pst;
+
+		$line =~ /S<(.*?)>/;
+
+		$pre	= $`;
+		$match	= $1;
+		$pst	= $';
+
+		$match =~ s/ /~/g;
+
+		$line = $pre . $match . $pst;
+	}
+
+	#
+	# Ignore the commands for which we don't have an action.
+	#
+	$line =~ s/X<(.*?)>//g;
+	$line =~ s/Z<(.*?)>//g;
+
+	return($line);
+}
+
+#---------------------------------------------------------------------------
+#
+# Routine:	do_begin()
+#
+# Purpose:	Handle the =begin directive.
+#
+#		If we find that we're the translator for this block, we'll
+#		set the $intrans flag and return.  This will allow us to
+#		deal with the pod in this section.
+#
+#		If we aren't the block's translator, we'll read until the
+#		end of the block.  Or EOF.
+#
+sub do_begin
+{
+	my $line = shift;		# =begin line to parse.
+	my $translator;			# Name of section's translator.
+
+	#
+	# Get the section's translator.
+	#
+	$line =~ /=begin\W(.*)/;
+	$translator = $1;
+
+	#
+	# If I'm the translator, we'll continue onwards.
+	#
+	if($translator eq $ME)
+	{
+		$intrans = 1;
+		return;
+	}
+
+	#
+	# Since I'm not the translator, we'll ignore everything until
+	# we reach the end of the section.
+	#
+	while(<IN>)
+	{
+		my $line = $_;
+		$linecnt++;
+		return if($line =~ /^=end\W$translator/);
+	}
+
+	return;
+}
+
+#---------------------------------------------------------------------------
+#
+# Routine:	do_end()
+#
+# Purpose:	Handle the =end directive.  We'll make sure we're in a
+#		=begin section and that we've hit the =end we're expecting.
+#
+sub do_end
+{
+	my $line = shift;		# =end line to parse.
+	my $translator;			# Name of section's translator.
+
+	#
+	# Get the section's translator.
+	#
+	$line =~ /=end\W(.*)/;
+	$translator = $1;
+
+	#
+	# Whine if we aren't in a =begin section.
+	#
+	if(!$intrans)
+	{
+		print STDERR "line $linecnt:  unexpected =end found\n";
+		return;
+	}
+
+	#
+	# Whine if I'm not the translator.
+	#
+	if($translator ne $ME)
+	{
+		print STDERR "line $linecnt:  unexpected =end translator \"$translator\" found\n";
+		return;
+	}
+
+	$intrans = 0;
+}
+
+#---------------------------------------------------------------------------
+#
+# Routine:	do_for()
+#
+# Purpose:	Handle the =for directive.  If we're the translator, we'll
+#		keep going as if nothing happened.  If not, we'll read and
+#		discard everything until the next empty line.
+#
+sub do_for
+{
+	my $line = shift;		# =for line to parse.
+	my $translator;			# Name of section's translator.
+
+	#
+	# Get the section's translator.
+	#
+	$line =~ /=for\W(.*)/;
+	$translator = $1;
+
+	#
+	# If I'm the translator, we'll continue onwards.
+	#
+	return if($translator eq $ME);
+
+	#
+	# If I'm not the translator, we'll ignore everything until
+	# we reach the next blank line.
+	#
+	while(<IN>)
+	{
+		my $line = $_;
+		$linecnt++;
+		last if($line =~ /^(\W*)$/);
+	}
+}
+
+#---------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  $ME <input-file> [output-file]\n";
+	exit(1);
+}
+
+1;
+
+
+#---------------------------------------------------------------------------
+
+=pod
+
+=head1 NAME
+
+podmantex - Translate a Perl pod manpage into LaTeX.
+
+=head1 SYNOPSIS
+
+  podmantex <input-file> [output-file]
+
+=head1 DESCRIPTION
+
+I<podmantex> translates a "man page" written in Perl pod into simple LaTeX.
+The translated pod is put in a single LaTeX subsection, with everything being
+kept at the same LaTeX division level.  I<podmantex> was written to use in
+collecting a large set of man pages into a single LaTeX document, but it will
+translate any Perl pod into LaTeX.
+
+The excellent I<pod2latex> command also may be used to translate pod into
+LaTeX.  However, it divides the translated pod into appropriate LaTeX
+divisions,respecting the B<=head1> and B<=head2> directives.
+Given I<podmantex>'s purpose of collecting many man pages, having numerous
+sections and subsections overly complicates the document's structure.
+
+I<input-file> is the Perl file to be translated.
+
+I<output-file> is the output file.  If this is not given, the translated pod
+will be written to standard output.
+
+=head1 DIRECTIVE HANDLING
+
+The pod directives (commands that start with '=') are handled in various ways.
+None of them start a new LaTeX division (section, subsection, paragraph, etc.)
+All text is assumed to be in the same division.
+
+=over 4
+
+=item B<=back>
+
+Closes a LaTeX I<description> environment.
+
+=item B<=begin> I<translator>
+
+Performs translator-specific processing.  If I<translator> is I<podmantex>,
+then translation will continue as normal.  If it isn't, everything will be
+ignored until the next B<=end> (with matching I<translator>) is reached.
+
+=item B<=cut>
+
+Turns off pod processing.  An error is given if the end of the input file
+is reached without this directive being found.  No LaTeX output is given
+specifically for this directive.
+
+=item B<=end> I<translator>
+
+Stops translator-specific processing.
+
+=item B<=for> I<translator>
+
+Performs translator-specific processing on the following paragraph only.
+If I<translator> is I<podmantex>, then translation will continue as normal.
+If not, everything will be ignored until the next empty line is reached.
+
+=item B<=head1> I<heading>
+
+Wraps I<heading> in a bold context.
+Since the resultant LaTeX will all be at the same division level, and may
+be inserted at any division level, no attempt is made to distinguish this
+heading from a B<=head2> heading.
+
+=item B<=head2> I<heading>
+
+Wraps I<heading> in a bold context.
+Since the resultant LaTeX will all be at the same division level, and may
+be inserted at any division level, no attempt is made to distinguish this
+heading from a B<=head1> heading.
+
+=item B<=item> I<text>
+
+Adds an item to a LaTeX I<description> environment.
+
+The I<text> parameter is used as the LaTeX list item's label.
+
+=item B<=over> I<number>
+
+Starts a LaTeX I<description> environment.  The items in this section may
+be intended to be bulleted or enumerated.  This is a simple single-pass
+translator, though, and all B<=over> lists are translated into lists in
+the LaTeX I<description> environment.
+
+The I<number> parameter is ignored.
+
+=item B<=pod>
+
+Starts pod processing.  No LaTeX output is given specifically for this
+directive.
+
+=back
+
+=head1 MARKUP HANDLING
+
+The pod directives (commands that start with '=') are handled in various ways.
+None of them start a new LaTeX division (section, subsection, paragraph, etc.)
+All text is assumed to be in the same division.
+
+=over 4
+
+=item B<B> I<text>
+
+I<text> will be enclosed in a bold context.
+
+=item B<C> I<text>
+
+I<text> will be enclosed in a verbatim environment.  This will cause I<text>
+to be offset and the paragraph split up.
+
+=item B<E> I<escape>
+
+Several I<escape> sequences are translated as shown below.
+
+    E<lt>           <
+    E<gt>           >
+    E<sol>          /
+    E<verbar>       |
+
+=item B<F> I<pathname>
+
+I<pathname> will be enclosed in a bold context.
+
+=item B<I> I<text>
+
+I<text> will be enclosed in an italics context.
+
+=item B<L> I<name>
+
+I<name> will be converted to plaintext.
+
+=item B<S> I<text>
+
+Any spaces within the I<text> are replaced by tildes.
+
+=item B<X> I<entry>
+
+I<entry> will be ignored.
+
+=item B<Z>
+
+Anything enclosed within the markup is ignored.
+
+=back
+
+=head1 CAVEATS
+
+This is a simple translator.  Users would be well-advised to examine the
+resulting LaTeX to ensure the translation was performed as desired.
+
+Multiple angle brackets as markup delimiters may not be handled properly
+by I<podmantex>.
+
+A tab in pod verbatim text are converted into eight spaces.  No attempt is
+made to calculate the proper number of spaces to insert in order to simulate
+tabstops.  Consequently, space-formatting must be done by hand.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+pod2latex(1)
+
+=cut
+
