@@ -271,11 +271,10 @@ automatically added to the code to turn the code-snippet into a
 subroutine.
 
 If the test fails, it should return an error string which will be displayed
-for the user.  The text will be line-wrapped before display (and thus the
-text should not be formatted and generally should be in English or other
-languages.  If the test is testing for multiple problems, a reference to an
-array of error strings may be returned.  An empty array reference being
-returned also indicates no error).
+for the user.  The text will be line-wrapped before display (and thus should
+be unformatted text.)  If the test is testing for multiple problems, a
+reference to an array of error strings may be returned.  A reference to an
+empty array being returned also indicates no error.
 
 There are two types of tests (currently), and the code snippet is
 called depending on the I<ruletype> clause above.
