@@ -1631,7 +1631,7 @@ sign a DNS zone.  It generates the required KSK and ZSK keys, adds the key
 data to a zone record file, signs the zone file, and runs checks to ensure
 that everything worked properly.
 
-Using I<keyrec> files, defined and maintained by B<dnssec-tools>,
+Using I<keyrec> files, defined and maintained by DNSSEC-Tools,
 I<zonesigner> can automatically gather many of the options used to previously
 sign and generate a zone and its keys.  This allows the zone to be maintained
 using the same key lengths and expiration times, for example, without an
@@ -1642,7 +1642,7 @@ administrator needing to manually track these fields.
 I<keyrec> files retain information about previous key-generation and
 zone-signing operations.  If a I<keyrec> file is not specified (by way of the
 I<-krfile> option), then a default I<keyrec> file is used.  If this default
-in not specified in the system's B<dnssec-tools> configuration file, the
+in not specified in the system's DNSSEC-Tools configuration file, the
 filename will be the zone name appended with B<.krf>.  If the I<-nokrfile>
 option is given, then no I<keyrec> file will be consulted or saved.
 
@@ -1699,7 +1699,7 @@ In descending order of precedence, these places are:
 
     keyrec file
 
-    dnssec-tools configuration file
+    DNSSEC-Tools configuration file
 
     zonesigner defaults
 
@@ -1714,7 +1714,7 @@ For example, the KSK length has the following values:
 
     keyrec file:               		1024
 
-    dnssec-tools configuration file:	2048
+    DNSSEC-Tools configuration file:	2048
 
     zonesigner defaults:    		512
 
@@ -2019,6 +2019,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-Net::DNS::SEC::Tools::conf.pm(3), Net::DNS::SEC::Tools::keyrec.pm(3), Net::DNS::SEC::Tools::tooloptions.pm(3)
+B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
+B<Net::DNS::SEC::Tools::tooloptions.pm(3)>
 
 =cut
