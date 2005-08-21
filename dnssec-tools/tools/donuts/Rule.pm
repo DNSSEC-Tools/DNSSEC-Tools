@@ -123,14 +123,12 @@ sub print_description {
 
 =head1 NAME
 
-  Net::DNS::SEC::Tools::Donuts::Rule - Check a DNS record for a problem.
+  Net::DNS::SEC::Tools::Donuts::Rule - Define donuts DNS record-checking rules
 
-=head1 SYNOPSIS
+=head1 DESCRIPTION
 
 This class wraps around a rule definition which is used by the I<donuts>
 DNS zone file checker.  It stores the data that implements a given rule.
-
-=head1 DESCRIPTION
 
 Rules are defined in I<donuts> rule configuration files using the
 following syntax.  See the I<donuts> manual page for details on where to
@@ -286,7 +284,7 @@ called depending on the I<ruletype> clause above.
 
 =item I<record> tests
 
-These code snippets are expected to test a single I<Net::DNS::RR> record.
+These code snippets are expected to test a single B<Net::DNS::RR> record.
 
 It is called with two arguments:
 
@@ -347,7 +345,9 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 =head1 SEE ALSO
 
-I<donuts>, I<Net::DNS>, I<Net::DNS::RR>
+B<donuts(8)>
+
+B<Net::DNS>, B<Net::DNS::RR>
 
 http://dnssec-tools.sourceforge.net
 
