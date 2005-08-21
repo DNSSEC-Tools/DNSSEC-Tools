@@ -834,20 +834,19 @@ Net::DNS::SEC::Tools::tooloptions - dnssec-tools option routines.
 
 =head1 DESCRIPTION
 
-The dnssec-tools support a set of options common to all the tools in the
-suite.  These options may have defaults set in the
-B</usr/local/etc/dnssec/dnssec-tools.conf> configuration file, in a I<keyrec>
-file, from command-line options, or from any combination of the three.  In
-order to enforce a common sequence of option interpretation, all dnssec-tools
-should use the I<Net::DNS::SEC::Tools::tooloptions()> routine to initialize
-its options.
+DNSSEC-Tools supports a set of options common to all the tools in the suite.
+These options may have defaults set in the B<dnssec-tools.conf> configuration
+file, in a I<keyrec> file, from command-line options, or from any combination
+of the three.  In order to enforce a common sequence of option interpretation,
+all DNSSEC-Tools should use the I<tooloptions()> routine to initialize its
+options.
 
 The I<keyrec_file> argument specifies a I<keyrec> file that will be consulted.
 The I<keyrec> named by the I<keyrec_name> argument will be loaded.  If no
 I<keyrec> file should be used, then I<keyrec_file> should be an empty string
 and the I<keyrec_name> parameter not included.  The I<@specopts> array
 contains command-specific arguments; the arguments must be in the format
-prescribed by the I<Getopt::Long> Perl module.
+prescribed by the B<Getopt::Long> Perl module.
 
 I<tooloptions()> combines data from these three option sources into a hash
 table.  The hash table is returned to the caller, which will then use the
@@ -867,13 +866,13 @@ The options sources are combined in this manner:
 
 =over 4
 
-=item 1.  B</usr/local/etc/dnssec/dnssec-tools.conf>
+=item 1.  B<dnssec-tools.conf>
 
 The system-wide configuration file is read and these option values are used
 as the defaults.  These options are put into a hash table, with the option
 names as the hash key.
 
-=item 2. I<Keyrec> File
+=item 2. I<keyrec> File
 
 If a I<keyrec> file was specified, then the I<keyrec> named by I<keyrec_name>
 will be retrieved.  The I<keyrec>'s fields are added to the hash table.  Any
@@ -883,7 +882,7 @@ value.
 =item 3. Command-line Options
 
 The command-line options, specified in I<@specopts>, are parsed using
-I<Getoptions()> from the I<Getopt::Long> Perl module.  These options are
+I<Getoptions()> from the B<Getopt::Long> Perl module.  These options are
 folded into the hash table; again possibly overriding existing hash values.
 The options given in I<@specopts> must be in the format required by
 I<Getoptions()>.
@@ -896,34 +895,32 @@ caller.
 
 =head1 EXAMPLE
 
-B</usr/local/etc/dnssec/dnssec-tools.conf> has these entries:
+B<dnssec-tools.conf> has these entries:
 
     ksklength      1024
-
     zsklength      512
 
-example.keyrec has this entry:
+B<example.keyrec> has this entry:
 
     key         "Kexample.com.+005+10988"
+            zsklength        "1024"
 
-    zsklength	"1024"
-
-B<zonesigner> is executed with this command line:
+I<zonesigner> is executed with this command line:
 
     zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com
 
 I<tooloptions("example.keyrec","Kexample.com.+005+10988",("wait=i"))>
 will read each option source in turn, ending up with:
-    I<ksklength> 	 512
-    I<zsklength> 	 4096
-    I<wait> 		 600
+    I<ksklength>           512
+    I<zsklength>          4096
+    I<wait>                600
 
 
 =head1 TOOL OPTION ARGUMENTS
 
-Many of the dnssec-tools option interfaces take the same set of arguments:
+Many of the DNSSEC-Tools option interfaces take the same set of arguments:
 I<$keyrec_file>, I<$keyrec_name>, and I<@csopts>.  These arguments are used
-similarly by all the interfaces; differences are noted in the interface
+similarly by most of the interfaces; differences are noted in the interface
 descriptions in the next section.
 
 =over 4
@@ -948,7 +945,7 @@ given as empty strings, their values will be taken from the I<-krfile> and
 I<-keyrec> command line options.
 
 A set of command-specific options may be specified in I<@csopts>.  These
-options are in the format required by the I<Getopt::Long> Perl module.  If
+options are in the format required by the B<Getopt::Long> Perl module.  If
 I<@csopts> is left off the call, then no command-specific options will be
 included in the final option hash.  The I<@csopts> array may be passed
 directly to several interfaces or it may be saved in a call to
@@ -972,7 +969,7 @@ out altogether.
 If a non-existent I<$keyrec_file> is given and I<opts_createkrf()> has been
 called, then the named I<keyrec> file will be created.  I<opts_createkrf()>
 must be called for each I<keyrec> file that must be created, as the
-I<tooloptions> I<keyrec>-creation state is reset after I<tooloptions()> has
+B<tooloptions> I<keyrec>-creation state is reset after I<tooloptions()> has
 completed.
 
 =item I<opts_krfile($keyrec_file,$keyrec_name,@csopts)>
@@ -997,7 +994,7 @@ a specified I<keyrec> entry.  This gives an easy way to get a zone's I<keyrec>
 entries in a single step.
 
 This routine acts as a front-end to the I<opts_krfile()> routine.
-I<opts_getkeys()>' arguments conform to those of I<opts_krfile()>.
+Arguments to I<opts_getkeys()> conform to those of I<opts_krfile()>.
 
 If I<opts_getkeys()> isn't passed any arguments, it will act as if both
 I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
@@ -1007,8 +1004,9 @@ line options.
 
 =item I<opts_keykr($keyrec_file,$keyrec_name,@csopts)>
 
-This routine returns a reference to a key I<keyrec>.  It ensures that the
-named I<keyrec> is a key I<keyrec>; if it isn't, I<undef> is returned.
+This routine returns a reference to the key I<keyrec> named by
+I<$keyrec_name>.  It ensures that the named I<keyrec> is a key I<keyrec>;
+if it isn't, I<undef> is returned.
 
 This routine acts as a front-end to the I<opts_krfile()> routine.
 I<opts_keykr()>'s arguments conform to those of I<opts_krfile()>.
@@ -1021,10 +1019,11 @@ line options.
 
 =item I<opts_zonekr($keyrec_file,$keyrec_name,@csopts)>
 
-This routine returns a reference to a zone I<keyrec>.  The I<keyrec> fields
-from the zone's KSK and ZSK are folded in as well, but the key's I<keyrec_>
-fields are excluded.  This call ensures that the named I<keyrec> is a zone
-I<keyrec>; if it isn't, I<undef> is returned.
+This routine returns a reference to the zone I<keyrec> named by
+I<$keyrec_name>.  The I<keyrec> fields from the zone's KSK and ZSK are
+folded in as well, but the key's I<keyrec_> fields are excluded.  This
+call ensures that the named I<keyrec> is a zone I<keyrec>; if it isn't,
+I<undef> is returned.
 
 This routine acts as a front-end to the I<opts_krfile()> routine.
 I<opts_zonekr()>'s arguments conform to those of I<opts_krfile()>.
@@ -1082,10 +1081,12 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-zonesigner(1)
+B<zonesigner(8)>
 
-Net::DNS::SEC::Tools::conf(3), Net::DNS::SEC::Tools::keyrec(3), Getopt::Long(3)
+B<Getopt::Long(3)>
 
-Net::DNS::SEC::Tools::keyrec(5)
+B<Net::DNS::SEC::Tools::conf(3)>, B<Net::DNS::SEC::Tools::keyrec(3)>,
+
+B<Net::DNS::SEC::Tools::keyrec(5)>
 
 =cut
