@@ -3,12 +3,12 @@
 # Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
-# dnssec-tools
+# DNSSEC-Tools
 #
 #	Option routines.
 #
 #	The routine in this module manipulates option lists for the
-#	dnssec-tools.  After building an option list from three sources
+#	DNSSEC-Tools.  After building an option list from three sources
 #	(system config file, keyrec file, command-line options), a hash
 #	table of options is passed back to the caller.  The caller must
 #	use the options as required.
@@ -35,7 +35,7 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 	         opts_reset opts_suspend opts_restore opts_drop);
 
 #
-# Standard options accepted by all tools in the dnssec-tools suite.
+# Standard options accepted by all tools in the DNSSEC-Tools suite.
 #
 # These are in Getopt::Long::GUI format.
 #
@@ -779,7 +779,7 @@ sub LocalOptionsMap
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::tooloptions - dnssec-tools option routines.
+Net::DNS::SEC::Tools::tooloptions - DNSSEC-Tools option routines.
 
 =head1 SYNOPSIS
 
