@@ -219,7 +219,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-I<zonesigner(1)>
+I<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::keyrec(3)>
 
