@@ -30,12 +30,13 @@ be.)
 
 Keyrec files are text files that can be read and written using normal text
 editors.  However, it is assumed that they will be maintained using the
-dnssec-tools commands.
+DNSSEC-Tools commands.
 
 A keyrec file may contain information on a single zone (and its keys) or on
 multiple zones (and their keys.)
 
-Keyrec files are documented in the source for dnssec-tools/keyrec.pm.
+Keyrec files are documented in the .../modules/file-keyrec and in
+.../modules/keyrec.pm.
 
 Configuration Files
 -------------------
@@ -69,7 +70,7 @@ Copy that file /usr/local/etc/dnssec/dnssec-tools.conf.
 Commands
 --------
 
-This following dnssec-tools commands are for use in managing DNSSEC
+This following DNSSEC-Tools commands are for use in managing DNSSEC
 environments.  Brief descriptions of these tools are given below.
 
 	zonesigner	Generates a set of keys for a zone and signs the zone
@@ -77,7 +78,7 @@ environments.  Brief descriptions of these tools are given below.
 			dnssec-keygen and dnssec-signzone, recording relevant
 			information in a keyrec file.
 
-	confchk		Verifies the validity of a dnssec-tools config file.
+	confchk		Verifies the validity of a DNSSEC-Tools config file.
 
 	keyrec-check	Verifies the validity of a keyrec file.
 
@@ -98,7 +99,7 @@ environments.  Brief descriptions of these tools are given below.
 Modules
 -------
 
-This following are dnssec-tools Perl modules for use in managing DNSSEC
+This following are DNSSEC-Tools Perl modules for use in managing DNSSEC
 environments.  Brief descriptions of these modules are given below.
 
 	conf.pm		Parses configuration files.

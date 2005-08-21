@@ -6,7 +6,7 @@
 #
 # confchk
 #
-#	This script performs sanity checks on a dnssec-tools
+#	This script performs sanity checks on a DNSSEC-Tools
 #	configuration file.
 #
 
@@ -495,7 +495,7 @@ sub usage
 
 =head1 NAME
 
-confchk - Check a B<dnssec-tools> configuration file for sanity.
+confchk - Check a DNSSEC-Tools configuration file for sanity.
 
 =head1 SYNOPSIS
 
@@ -503,7 +503,7 @@ confchk - Check a B<dnssec-tools> configuration file for sanity.
 
 =head1 DESCRIPTION
 
-B<confchk> checks a B<dnssec-tools> configuration file to determine if the
+I<confchk> checks a DNSSEC-Tools configuration file to determine if the
 entries are valid.
 
 The I<default_keyrec> configuration entry is not checked.  This entry
@@ -517,17 +517,17 @@ The following checks are performed:
 =item I<algorithm>
 
 Ensure the I<algorithm> field is valid.  The acceptable values may be found
-in the B<dnssec-keygen> man page.
+in the I<dnssec-keygen> man page.
 
 =item I<ksklength>
 
 Ensure the I<ksklength> field is valid.  The acceptable values may be found
-in the B<dnssec-keygen> man page.
+in the I<dnssec-keygen> man page.
 
 =item I<zsklength>
 
 Ensure the I<zsklength> field is valid.  The acceptable values may be found
-in the B<dnssec-keygen> man page.
+in the I<dnssec-keygen> man page.
 
 =item I<endtime>
 
@@ -587,6 +587,6 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-Net::DNS::SEC::Tools::conf.pm(3)
+B<Net::DNS::SEC::Tools::conf.pm(3)>
 
 =cut

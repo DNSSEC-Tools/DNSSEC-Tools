@@ -416,7 +416,7 @@ sub usage
 
 =head1 NAME
 
-keyrec-clean - Clean a B<dnssec-tools> I<keyrec> file of orphaned keys.
+keyrec-clean - Clean a DNSSEC-Tools I<keyrec> file of orphaned keys.
 
 =head1 SYNOPSIS
 
@@ -432,7 +432,7 @@ keyrec-clean - Clean a B<dnssec-tools> I<keyrec> file of orphaned keys.
 
 =head1 DESCRIPTION
 
-This script cleans the orphaned I<keyrec>s from a set of B<dnssec-tools>
+This script cleans the orphaned I<keyrec>s from a set of DNSSEC-Tools
 I<keyrec> files.  Orphaned keys are those keys which are not referenced
 by a zone.  A warning is given if a key is found that is referenced by a
 different zone I<keyrec> than the one referenced by the key's I<keyrec>.
@@ -483,6 +483,6 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-Net::DNS::SEC::Tools::keyrec.pm(3)
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>
 
 =cut
