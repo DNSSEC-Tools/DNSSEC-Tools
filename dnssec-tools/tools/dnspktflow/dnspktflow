@@ -26,6 +26,7 @@ LocalGetOptions(\%opts,
 		['o|output-file=s',"Output ping image file name (default: $opts{o})",
 #		 question => { 'type' => 'fileupload' }
 		],
+		['fig','Output format should be fig'],
 		['m|multiple-outputs', "Creates one picture per request (use %03d in the filename)"],
 		['M|magic-point=s', "Saves a Magic Point presentation file for showing the output"],
 		['L|last-line-labels-only', "Only show data on the last line drawn."],
@@ -202,7 +203,7 @@ for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
     if ($opts{'m'}) {
 	print " $m";
 	my $file = sprintf($opts{'o'}, $m);
-	print O $gv->as_png($file);
+	save_now($gv, $file);
 	if ($opts{'M'}) {
 	    print M "%page\n\nMessage " . ($m+1) . " / " . ($#dnspkts+1) . 
 	      "\n" . get_host_label($dnspkts[$m]{'src'}) . " -> " .
@@ -216,7 +217,7 @@ if ($opts{'m'}) {
     print "\n";
 } else {
     $opts{'o'} =~ s/\%\d*d//;
-    print O $gv->as_png($opts{'o'});
+    save_now($gv, $opts{'o'});
 }
 
 if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
@@ -232,6 +233,15 @@ if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
 						   }]
 						 }});
     $Getopt::GUI::Long::GUI_qw->magic('mapout');
+}
+
+sub save_now {
+    my ($gv,$file) = @_;
+    if ($opts{'fig'}) {
+	$gv->as_fig($file);
+    } else {
+	$gv->as_png($file);
+    }
 }
 
 sub get_host_label {
@@ -362,6 +372,10 @@ components to work:
   I<graphviz>                  (http://www.graphviz.org/)
   B<GraphViz>                  (Perl module)
   B<tethereal>                 (http://www.ethereal.org/)
+
+Required for outputing screen presentations:
+
+  MagicPoint                (http://member.wide.ad.jp/wg/mgp/)
 
 If the following modules are installed, it will enable a GUI interface:
 
