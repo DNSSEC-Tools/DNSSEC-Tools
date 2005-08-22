@@ -258,7 +258,7 @@ sub optsandargs()
 	# Make sure we have arguments.
 	#
 	$argc = @ARGV;
-	usage(3) if($argc == 0);
+	usage(3) if($argc == 0 && !(eval {require Getopt::GUI::Long;}));
 
 	#
 	# Set the options, try to use the config file, the command line
