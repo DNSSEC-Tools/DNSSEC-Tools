@@ -2,65 +2,70 @@
 
 =head1 NAME
 
-val_gethostbyname, val_x_gethostbyname, val_get_hostent_dnssec_status, val_duphostent, val_freehostent 
-- get DNSSEC-validated network host entry.
+val_gethostbyname, val_x_gethostbyname, val_get_hostent_dnssec_status, val_duphostent, val_freehostent - get DNSSEC-validated network host entry
 
 =head1 SYNOPSIS
 
-B<#include <val_gethostbyname.h>>
+  #include <val_gethostbyname.h>
 
-B<struct hostent *val_gethostbyname(const char *>I<name>B<, int *>I<h_errnop>B<);>
+  struct hostent *val_gethostbyname(const char *name, int *h_errnop);
 
-B<struct hostent *val_x_gethostbyname(val_context_t *>I<ctx>B<, const char *>I<name>B<,
-int *>I<h_errnop>B<);>
+  struct hostent *val_x_gethostbyname(val_context_t *ctx,
+                                      const char *name, int *h_errnop);
 
-B<int val_get_hostent_dnssec_status(const struct hostent *>I<hentry>B<);>
+  int val_get_hostent_dnssec_status(const struct hostent *hentry);
 
-B<struct hostent* val_duphostent(const struct hostent *>I<hentry>B<);>
+  struct hostent* val_duphostent(const struct hostent *hentry);
 
-B<void val_freehostent(struct hostent *>I<hentry>B<);>
+  void val_freehostent(struct hostent *hentry);
 
 =head1 DESCRIPTION
 
-The B<val_gethostbyname()> function is a DNSSEC-aware, thread-safe version of
-B<gethostbyname(3)>.  It performs DNSSEC validation of DNS queries.  It returns a
-network host entry value of type hostent.  See B<gethostbyname(3)> for more
-information on type hostent.  The B<val_x_gethostbyname()> function takes in an
-additional parameter I<ctx> of type val_context, that can be used to pass the
-validation context.  This provides optimization over multiple calls to
-B<val_x_gethostbyname()>. If a NULL value is passed for the I<ctx> parameter, the
-default validation context is used.  B<val_gethostbyname()> is equivalent to
-calling B<val_x_gethostbyname()> with a NULL I<ctx> parameter.
+I<val_gethostbyname()> is a DNSSEC-aware, thread-safe version of
+I<gethostbyname(3)>.  It performs DNSSEC validation of DNS queries.
+It returns a network host entry value of type I<hostent>.  (See
+I<gethostbyname(3)> for more information on type I<hostent>).
 
-The I<h_errnop> value is used to return the h_errno value from these functions.
-This ensures thread safety, by avoiding the global h_errno variable.  See
-the man page for B<gethostbyname(3)> for possible values of h_errno.  I<h_errnop>
-must not be NULL.
+I<val_x_gethostbyname()> performs the same function as I<val_gethostbyname()>,
+but it optimized for multiple calls.  The two routines take the same
+parameters, but I<val_x_gethostbyname()> takes an additional parameter I<ctx>,
+of type I<val_context>, which passes the validation context for use in call
+optimization.  If a B<NULL> value is passed for the I<ctx> parameter, the
+default validation context is used.  I<val_gethostbyname()> is equivalent to
+calling I<val_x_gethostbyname()> with a B<NULL> I<ctx> parameter.
 
-The B<val_duphostent()> function provides a way to duplicate the struct hostent
-value, and its auxiliary data.  It performs a deep copy, i.e. the internal strings
-and arrays are also copied.  The B<val_freehostent()> function is used to
-free the hostent structure returned by the B<val_gethostbyname()>,
-B<val_x_gethostbyname()> and B<val_duphostent()> functions.
+I<h_errnop> returns the I<h_errno> value from these functions.  This ensures
+thread safety, by avoiding the global I<h_errno> variable.  I<h_errnop> must
+not be B<NULL>.  (See the man page for I<gethostbyname(3)> for possible values
+of I<h_errno>.)
 
-The B<val_get_hostent_dnssec_status()> function is used to extract the DNSSEC
-validation status from the returned struct hostent value.  Note: This function
-must be called only for the values returned from B<val_gethostbyname()>,
-B<val_x_gethostbyname()> or B<val_duphostent()> functions.
+I<val_duphostent()> provides a way to duplicate the I<hostent> structure and
+its auxiliary data.  It performs a deep copy; i.e., the internal strings and
+arrays are also copied.
+
+I<val_freehostent()> is used to free the hostent structure returned by the
+I<val_gethostbyname()>, I<val_x_gethostbyname()> and I<val_duphostent()>
+functions.
+
+I<val_get_hostent_dnssec_status()> is used to extract the DNSSEC
+validation status from the returned I<hostent> structure.  This function
+must be called only for the values returned from I<val_gethostbyname()>,
+I<val_x_gethostbyname()>, and I<val_duphostent()> functions.
 
 =head1 RETURN VALUE
 
-The B<val_gethostbyname()> and B<val_x_gethostbyname()> functions return a value of type
-hostent, if successful, or NULL if there was an error.  The memory for the returned
-value is dynamically allocated by these two functions.  Hence, the caller must make
-sure to call the B<val_freehostent()> function on the returned value, to avoid memory
-leaks.
+The I<val_gethostbyname()> and I<val_x_gethostbyname()> functions return a
+value of type I<hostent> on success, and B<NULL> on error.  The memory for
+the returned value is dynamically allocated by these two functions.  Hence,
+the caller must only call the I<val_freehostent()> function on the returned
+value in order to avoid memory leaks.
 
-The B<val_get_hostent_dnssec_status()> function returns the result of the DNSSEC
-validation.  The possible values for the DNSSEC status are given in val_errors.h.
+The I<val_get_hostent_dnssec_status()> function returns the result of the
+DNSSEC validation.  The possible values for the DNSSEC status are given in
+B<val_errors.h>.
 
-The B<val_duphostent()> function returns a copy of the hostent structure that was
-passed to it.  The returned value must be freed using B<val_freehostent()> to
+The I<val_duphostent()> function returns a copy of specified the I<hostent>
+structure.  The returned value must be freed using I<val_freehostent()> to
 avoid memory leaks.
 
 =head1 EXAMPLE
@@ -70,36 +75,38 @@ avoid memory leaks.
  
  int main(int argc, char *argv[])
  {
-	int dnssec_status = ERROR;
-	int val_h_errno = NETDB_INTERNAL;
-	struct hostent *h = NULL;
- 	
-	if (argc < 2) {
-		printf("Usage: %s <hostname>\n", argv[0]);
-		exit(1);
-	}
+          int dnssec_status = ERROR;
+          int val_h_errno = NETDB_INTERNAL;
+          struct hostent *h = NULL;
+
+          if (argc < 2) {
+                  printf("Usage: %s <hostname>\n", argv[0]);
+                  exit(1);
+          }
  
-	h = val_gethostbyname(argv[1], &val_h_errno);
-	printf("h_errno = %d [%s]\n", val_h_errno, hstrerror(val_h_errno));
-	if (h) {
-		dnssec_status = val_get_hostent_dnssec_status(h);
+          h = val_gethostbyname(argv[1], &val_h_errno);
+          printf("h_errno = %d [%s]\n", val_h_errno,
+                 hstrerror(val_h_errno));
+          if (h) {
+                  dnssec_status = val_get_hostent_dnssec_status(h);
 
-		printf("DNSSEC Status = %d [%s]\n", dnssec_status,
-		       p_val_error(dnssec_status));
-		val_freehostent(h);
-	}
+                  printf("DNSSEC Status = %d [%s]\n", dnssec_status,
+                         p_val_error(dnssec_status));
+                  val_freehostent(h);
+          }
 
-	return 0;
+          return 0;
  }
 
 =head1 NOTES
 
-The current version of B<val_x_gethostbyname()> (and hence B<val_gethostbyname()>) does
-not read the order of lookup method from /etc/hosts.conf.  This functionality will be
-provided in future versions.  At present, the default order is set to lookup the
-/etc/hosts file first, and then query DNS.
+This version of I<val_x_gethostbyname()> hence I<val_gethostbyname()> does
+not read the order-of-look-up method from B</etc/hosts.conf>.  This
+functionality will be provided in future versions.  At present, the default
+order is set to consult the B</etc/hosts> file first, and then query DNS.
 
-This version of B<val_x_gethostbyname()> (and B<val_gethostbyname()>) also does not support NIS lookups.
+This version of I<val_x_gethostbyname()> and I<val_gethostbyname()> does not
+support NIS lookups.
 
 =head1 COPYRIGHT
 
@@ -112,13 +119,11 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 
 =head1 SEE ALSO
 
-B<getaddrinfo>(3), B<p_val_error>, B<val_getaddrinfo>, B<val_x_getaddrinfo>,
-B<val_dupaddrinfo>, B<val_freeaddrinfo>, B<val_query>, B<val_x_query>
+I<getaddrinfo>(3)
 
-http://dnssec-tools.sourceforge.net/
+I<p_val_error>, I<val_getaddrinfo>, I<val_x_getaddrinfo>,
+I<val_dupaddrinfo>, I<val_freeaddrinfo>, I<val_query>, I<val_x_query>
 
-=head1 LAST UPDATED
-
-August 22, 2005
+http://dnssec-tools.sourceforge.net
 
 =cut
