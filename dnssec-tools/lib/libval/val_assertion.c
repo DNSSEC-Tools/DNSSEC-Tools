@@ -134,6 +134,8 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 	return NO_TRUST_ANCHOR;	
 }
 
+// XXX Needs blocking/non-blocking logic so that the validator can operate in
+// XXX the stealth mode
 int ask_cache(val_context_t *context, struct query_chain *end_q, 
 				struct query_chain **queries, struct assertion_chain **assertions)
 {
@@ -664,14 +666,14 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 				case SR_ANS_CNAME:
 					if ((as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
 						(as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
-						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+						matched_q->qc_state = CONFLICTING_ANSWERS;
 					}
 					break;
 
 				/* Only bare RRSIGs together */
 				case SR_ANS_BARE_RRSIG:
 					if (as->ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG)
-						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+						matched_q->qc_state = CONFLICTING_ANSWERS;
 					break;
 
 				/* NACK_NXT and NACK_SOA are OK */
@@ -679,13 +681,13 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 				case SR_ANS_NACK_SOA:
 					if ((as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
 						(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
-						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+						matched_q->qc_state = CONFLICTING_ANSWERS;
 					}
 					break;
 
 				/* Never Reached */
 				default:
-					matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+					matched_q->qc_state = CONFLICTING_ANSWERS;
 			}
 		}
 
