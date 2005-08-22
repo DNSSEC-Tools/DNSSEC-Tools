@@ -32,6 +32,11 @@ int val_get_addrinfo_dnssec_status (const struct addrinfo *ainfo);
  */
 struct addrinfo* val_dupaddrinfo (const struct addrinfo *ainfo);
 
+/* A function to free memory allocated by val_getaddrinfo() and
+ * val_dupaddrinfo()
+ */
+void val_freeaddrinfo (struct addrinfo *ainfo);
+
 /**
  * val_getaddrinfo: A validating getaddrinfo function.
  *                  Based on getaddrinfo() as defined in RFC3493.
