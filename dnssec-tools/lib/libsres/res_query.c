@@ -293,7 +293,7 @@ int query_send( const char*     name,
 	*trans_id = -1;
 
 	if (pref_ns == NULL) 
-		return SR_NO_NAMESERVER;
+		return SR_CALL_ERROR;
 
 	/* Form the query with res_nmkquery_n */
 	query_length = res_nmkquery (&_res, ns_o_query, name, class_h, type_h,
