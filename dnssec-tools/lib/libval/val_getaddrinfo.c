@@ -126,6 +126,18 @@ struct addrinfo* val_dupaddrinfo (const struct addrinfo *ainfo)
 	return head;
 }
 
+/* A function to free memory allocated by val_getaddrinfo() and
+ * val_dupaddrinfo()
+ */
+void val_freeaddrinfo (struct addrinfo *ainfo)
+{
+	struct addrinfo_dnssec_wrapper *ainfo_wrapper = NULL;
+	if (ainfo) {
+		ainfo_wrapper = (struct addrinfo_dnssec_wrapper *) ainfo;
+		free (ainfo_wrapper);
+	}
+}
+
 /*
  * Add additional addrinfo structures to the list depending on the service name and hints.
  */
@@ -258,7 +270,7 @@ static int get_addrinfo_from_etc_hosts (const char *nodename,
 		
 		if (process_service_and_hints(ainfo_wrapper, servname, hints, &ainfo) != 0) {
 			free(ainfo_wrapper);
-			if (retval) freeaddrinfo(retval);
+			if (retval) val_freeaddrinfo(retval);
 			return EAI_SERVICE;
 		}
 		
@@ -353,7 +365,7 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 			ainfo_wrapper->dnssec_status = dnssec_status;
 			
 			if (process_service_and_hints (ainfo_wrapper, servname, hints, &ainfo) == EAI_SERVICE) {
-				freeaddrinfo(ainfo_head);
+				val_freeaddrinfo(ainfo_head);
 				return EAI_SERVICE;
 			}
 			
@@ -434,7 +446,7 @@ static int get_addrinfo_from_dns (const char *nodename,
 		free_assertion_chain(&assertions); assertions = NULL;
 		free_result_chain(&results); results = NULL;
 		if (ret == EAI_SERVICE) {
-			if (ainfo) freeaddrinfo(ainfo);
+			if (ainfo) val_freeaddrinfo(ainfo);
 			return EAI_SERVICE;
 		}
 	}
@@ -471,7 +483,7 @@ static int get_addrinfo_from_dns (const char *nodename,
 		free_assertion_chain(&assertions); assertions = NULL;
 		free_result_chain(&results); results = NULL;
 		if (ret == EAI_SERVICE) {
-			if (ainfo) freeaddrinfo(ainfo);
+			if (ainfo) val_freeaddrinfo(ainfo);
 			return EAI_SERVICE;
 		}
 	}
