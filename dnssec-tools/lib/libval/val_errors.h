@@ -60,8 +60,9 @@ char *p_val_error(int valerrno);
 #define TOO_MANY_LINKS	 		ERROR_BASE+17 
 #define UNKNOWN_DNSKEY_PROTO  	ERROR_BASE+18
 #define FLOOD_ATTACK_DETECTED	ERROR_BASE+19	
-
-#define DNS_ERROR_BASE			ERROR_BASE+20
+#define CONFLICTING_ANSWERS     ERROR_BASE+20
+#define REFERRAL_ERROR          ERROR_BASE+21
+#define DNS_ERROR_BASE			ERROR_BASE+22
 /* 
  * DNS errors lie within this range, 
  * there are SR_LAST_ERROR of them in total

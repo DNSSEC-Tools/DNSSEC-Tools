@@ -29,13 +29,6 @@
 #define CAN_SIGN_ZONE			0x02
 #define CAN_SIGN_ZONE_AND_KEY 	CAN_SIGN_KEY|CAN_SIGN_ZONE 
 
-/* Different validation result types */
-#define ANSWER	XX
-#define CNAME	XX
-#define DNAME	XX
-#define NSEC_PROOF	XX
-#define SOA_PROOF	XX
-
 /* Assertion Initial states */
 #define A_DONT_KNOW 0 
 #define A_CAN_VERIFY 1 
@@ -55,6 +48,56 @@
 #define ENVELOPE            10
 #define RRSIGLABEL			3
 #define TTL					4
+
+/* Response structures  */
+struct rr_rec
+{
+    u_int16_t       rr_rdata_length_h;  /* RDATA length */
+    u_int8_t        *rr_rdata;      /* Raw RDATA */
+	int				status;
+    struct rr_rec       *rr_next;
+};
+                                                                                                                          
+struct rrset_rec
+{
+    u_int8_t        *rrs_name_n;    /* Owner */
+    u_int16_t       rrs_type_h; /* ns_t_... */
+    u_int16_t       rrs_class_h;    /* ns_c_... */
+    u_int32_t       rrs_ttl_h;  /* Received ttl */
+    u_int8_t        rrs_cred;   /* SR_CRED_... */
+    u_int8_t        rrs_section;    /* SR_FROM_... */
+    u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
+    struct rr_rec       *rrs_data;  /* All data RR's */
+    struct rr_rec       *rrs_sig;   /* All signatures */
+    struct rrset_rec    *rrs_next;
+};
+
+/* Credibility values of an RRset - from DNSIND-Clarify */
+#define SR_CRED_UNSET            0
+#define SR_CRED_FILE             1 /* From locally trusted file */
+/* Data is from an authoritative server */
+#define SR_CRED_AUTH_ANS         3
+#define SR_CRED_AUTH_AUTH        4
+/* Data is from a cache somewhere, or was at best an after thought */
+#define SR_CRED_NONAUTH_ANS      6
+#define SR_CRED_AUTH_ADD         7
+#define SR_CRED_NONAUTH_AUTH     7
+#define SR_CRED_NONAUTH_ADD      7
+                                                                                                                          
+/* Section values of an RRset */
+#define SR_FROM_UNSET            0
+#define SR_FROM_QUERY            1
+#define SR_FROM_ANSWER           2
+#define SR_FROM_AUTHORITY        3
+#define SR_FROM_ADDITIONAL       4 
+
+/* Kinds of answers */
+#define SR_ANS_UNSET             0
+#define SR_ANS_STRAIGHT          1
+#define SR_ANS_CNAME             2
+#define SR_ANS_NACK_NXT          3
+#define SR_ANS_NACK_SOA          4
+#define SR_ANS_BARE_RRSIG        5
 
 /*
  * policies are defined for the following
