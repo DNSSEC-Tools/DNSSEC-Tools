@@ -203,7 +203,7 @@ err:
 	res_sq_free_rrset_recs(&matched_q->qc_referral->learned_zones);	
 	FREE(matched_q->qc_referral);
 	matched_q->qc_referral = NULL;
-	matched_q->qc_state =  DNS_ERROR_BASE + SR_REFERRAL_ERROR;
+	matched_q->qc_state =  REFERRAL_ERROR;
 	return NO_ERROR;
 }
 
@@ -373,7 +373,7 @@ int digest_response (   val_context_t 		*context,
                 if (namecmp(referral_zone_n, name_n) != 0)
                 {
                     /* Malformed referral notice */
-					matched_q->qc_state =  DNS_ERROR_BASE + SR_REFERRAL_ERROR;
+					matched_q->qc_state =  REFERRAL_ERROR;
 			        return NO_ERROR; 
                 }
                                                                                                                           
