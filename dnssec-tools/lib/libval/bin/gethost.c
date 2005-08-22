@@ -9,10 +9,7 @@
  */
 
 #include <stdio.h>
-#include <netdb.h>
-
-#include "val_api.h"
-#include "val_log.h"
+#include "val_gethostbyname.h"
 
 int main(int argc, char *argv[])
 {
