@@ -12,6 +12,7 @@
 #define VAL_GETHOSTBYNAME_H
 
 #include <netdb.h>
+#include <validator.h>
 
 /**
  * A function to extract DNSSEC-validation status information from a
