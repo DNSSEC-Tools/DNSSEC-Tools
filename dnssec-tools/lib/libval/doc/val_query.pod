@@ -1,0 +1,98 @@
+=pod
+
+=head1 NAME
+
+val_query, val_x_query - DNSSEC-validated resolution of DNS queries.
+
+=head1 SYNOPSIS
+
+B<#include <val_api.h>>
+
+B<int val_query(const char *>I<domain_name>B<, int >I<class>B<, int >I<type>B<,
+              unsigned char *>I<answer>B<, int >I<anslen>B<, int >I<flags>B<,
+              int *>I<dnssec_status>B<);>
+
+B<int val_x_query(val_context_t *>I<ctx>B<,
+                const char *>I<domain_name>B<, int >I<class>B<, int >I<type>B<,
+                unsigned char *>I<answer>B<, int >I<anslen>B<, int >I<flags>B<,
+                int *>I<dnssec_status>B<);>
+
+B<char *p_val_error(int >I<valerrno>B<);>
+
+=head1 DESCRIPTION
+
+The B<val_query()> function is a DNSSEC-aware version of B<res_query(3)>.
+It performs DNSSEC validation of DNS queries.  The results of the DNSSEC
+validation are returned in the I<dnssec_status> parameter.  The caller must
+not pass a NULL value for this parameter.
+
+The I<flags> parameter is reserved for future use, and must be set to 0 at
+present.
+
+If DNSSEC validation succeeds, a value of VALIDATE_SUCCESS is returned in
+I<dnssec_status>.  Other values are returned in case of errors.  See I<val_errors.h>
+for a listing of possible error codes.  The B<p_val_error()> function can be used to
+return a brief string description of the error code.
+
+=head1 RETURN VALUE
+
+The B<val_query()> function returns the length of the answer if successful, or -1
+if there was an error.
+
+=head1 EXAMPLES
+ 
+ #include <stdio.h>
+ #include <strings.h>
+ #include <arpa/nameser.h>
+ #include <val_api.h>
+ 
+ #define BUFLEN 8096
+
+ int main(int argc, char *argv[])
+ {
+	int dnssec_status = ERROR;
+	int anslen = NETDB_INTERNAL;
+	int class = ns_c_in;
+	int type = ns_t_a;
+	char buf[BUFLEN];
+
+	bzero(buf, BUFLEN);
+
+	if (argc < 2) {
+		printf("Usage: %s <domain-name>\n", argv[0]);
+		exit(1);
+	}
+ 
+	anslen = val_query(argv[1], class, type, buf, BUFLEN, 0, &dnssec_status);
+ 	
+	if (anslen > 0) {
+		printf("DNSSEC Status = %d [%s]\n", dnssec_status,
+		       p_val_error(dnssec_status));
+	}
+
+	return 0;
+ }
+
+=head1 NOTES
+
+
+=head1 COPYRIGHT
+
+Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the dnssec-tools package for details.
+
+=head1 AUTHORS
+
+Abhijit Hayatnagarkar, Suresh Krishnaswamy.
+
+=head1 SEE ALSO
+
+B<res_query>(3), B<p_val_error>, B<val_getaddrinfo>, B<val_gethostbyname>
+
+http://dnssec-tools.sourceforge.net/
+
+=head1 LAST UPDATED
+
+August 22, 2005
+
+=cut
