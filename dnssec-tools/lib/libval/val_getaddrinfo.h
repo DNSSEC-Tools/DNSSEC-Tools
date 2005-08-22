@@ -68,4 +68,19 @@ void val_freeaddrinfo (struct addrinfo *ainfo);
 int val_getaddrinfo ( const char *nodename, const char *servname,
 		      const struct addrinfo *hints,
 		      struct addrinfo **res );
+
+/*
+ * val_x_getaddrinfo: Extended version of val_getaddrinfo that provides
+ *                    optimization.
+ *
+ * Parameters:
+ *     [IN] ctx: The validation context.
+ *
+ * Other parameters and return values are similar to the val_getaddrinfo
+ * function.
+ */
+int val_x_getaddrinfo ( val_context_t *ctx,
+		        const char *nodename, const char *servname,
+			const struct addrinfo *hints,
+			struct addrinfo **res );
 #endif

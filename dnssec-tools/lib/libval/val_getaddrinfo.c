@@ -396,7 +396,8 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 }
 
 /* Converts data in the rrset_rec structure into a addrinfo structure */
-static int get_addrinfo_from_dns (const char *nodename,
+static int get_addrinfo_from_dns (val_context_t *ctx,
+				  const char *nodename,
 				  const char *servname,
 				  const struct addrinfo *hints,
 				  struct addrinfo **res)
@@ -412,7 +413,12 @@ static int get_addrinfo_from_dns (const char *nodename,
 	
 	val_log("get_addrinfo_from_dns() called\n");
 
-	context = get_context(NULL);
+	if (context == NULL) {
+		context = get_context(NULL);
+	}
+	else {
+		context = ctx;
+	}
 
 	if (hints == NULL || hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
 		
@@ -447,6 +453,9 @@ static int get_addrinfo_from_dns (const char *nodename,
 		free_result_chain(&results); results = NULL;
 		if (ret == EAI_SERVICE) {
 			if (ainfo) val_freeaddrinfo(ainfo);
+			if ((ctx == NULL) && context)
+				destroy_context(context);
+
 			return EAI_SERVICE;
 		}
 	}
@@ -484,13 +493,15 @@ static int get_addrinfo_from_dns (const char *nodename,
 		free_result_chain(&results); results = NULL;
 		if (ret == EAI_SERVICE) {
 			if (ainfo) val_freeaddrinfo(ainfo);
+			if ((ctx == NULL) && context)
+				destroy_context(context);
+	
 			return EAI_SERVICE;
 		}
 	}
 	
-	if (context != NULL) {
+	if ((ctx == NULL) && context)
 		destroy_context(context);
-	}
 	
 	if (ainfo) {
 		*res = ainfo;
@@ -503,9 +514,12 @@ static int get_addrinfo_from_dns (const char *nodename,
 } /* get_addrinfo_from_dns() */
 
 
-int val_getaddrinfo (const char *nodename, const char *servname,
-		     const struct addrinfo *hints,
-		     struct addrinfo **res)
+/* Extended version of the validating getaddrinfo function
+ */
+int val_x_getaddrinfo (val_context_t *ctx,
+		       const char *nodename, const char *servname,
+		       const struct addrinfo *hints,
+		       struct addrinfo **res)
 {
 	struct in_addr ip4_addr;
 	struct in6_addr ip6_addr;
@@ -629,7 +643,7 @@ int val_getaddrinfo (const char *nodename, const char *servname,
 		 * Try DNS
 		 */
 		
-		if (get_addrinfo_from_dns (nodename, servname, hints, res) == EAI_SERVICE) {
+		if (get_addrinfo_from_dns (ctx, nodename, servname, hints, res) == EAI_SERVICE) {
 			return EAI_SERVICE;
 		}
 		
@@ -640,6 +654,16 @@ int val_getaddrinfo (const char *nodename, const char *servname,
 			return EAI_NONAME;
 		}
 	}
-} /* val_getaddrinfo() */
+
+} /* val_x_getaddrinfo() */
 
 
+/*
+ * val_getaddrinfo: A validating getaddrinfo function.
+ */
+int val_getaddrinfo (const char *nodename, const char *servname,
+		     const struct addrinfo *hints,
+		     struct addrinfo **res)
+{
+	return val_x_getaddrinfo (NULL, nodename, servname, hints, res);
+}
