@@ -14,7 +14,6 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "val_api.h"
 #include "val_getaddrinfo.h"
 #include "val_log.h"
 
@@ -148,5 +147,5 @@ int main(int argc, char *argv[])
 	}
 	
 	/* cleanup */
-	freeaddrinfo(ainfo);
+	val_freeaddrinfo(ainfo);
 }
