@@ -726,7 +726,6 @@ sub LocalGetOptions
 {
 	my @args = @_;		# Force copy since we're called multiple times.
 
-	print STDERR "here: $#ARGV\n";
 	if(($#ARGV == -1) && (eval {require Getopt::GUI::Long;}))
 	{
 		import Getopt::GUI::Long;
