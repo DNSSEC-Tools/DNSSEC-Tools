@@ -24,8 +24,6 @@ use strict;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 
-use Getopt::Long;
-
 our $VERSION = "0.01";
 
 our @ISA = qw(Exporter);
@@ -37,7 +35,7 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 #
 # Standard options accepted by all tools in the DNSSEC-Tools suite.
 #
-# These are in Getopt::Long::GUI format.
+# These are in Getopt::GUI::Long format.
 #
 my @stdopts =
 (
@@ -728,9 +726,10 @@ sub LocalGetOptions
 {
 	my @args = @_;		# Force copy since we're called multiple times.
 
-	if(($#ARGV == -1) && (eval {require Getopt::Long::GUI;}))
+	print STDERR "here: $#ARGV\n";
+	if(($#ARGV == -1) && (eval {require Getopt::GUI::Long;}))
 	{
-		import Getopt::Long::GUI;
+		import Getopt::GUI::Long;
 		return(GetOptions(@args));
 	}
 	else
