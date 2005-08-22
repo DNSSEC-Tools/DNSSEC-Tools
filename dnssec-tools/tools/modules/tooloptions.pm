@@ -130,7 +130,6 @@ my @stdopts =
 	['GUI:hook_finished',
 		sub
 		{
-			print STDERR "saving: $#ARGV $#main::saveargs\n";
 			@main::saveargs = @ARGV;
 		}
 	],
