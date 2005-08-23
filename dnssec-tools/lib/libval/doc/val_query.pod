@@ -6,7 +6,7 @@ val_query, val_x_query - DNSSEC-validated resolution of DNS queries
 
 =head1 SYNOPSIS
 
-  #include <val_api.h>
+  #include <validator.h>
 
   int val_query(const char *domain_name, int class, int type,
               unsigned char *answer, int anslen, int flags,
@@ -44,7 +44,7 @@ or -1 if there was an error.
  #include <stdio.h>
  #include <strings.h>
  #include <arpa/nameser.h>
- #include <val_api.h>
+ #include <validator.h>
  
  #define BUFLEN 8096
 
