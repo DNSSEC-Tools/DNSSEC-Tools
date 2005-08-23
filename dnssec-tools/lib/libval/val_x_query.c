@@ -11,6 +11,7 @@
 
 #include <resolver.h>
 #include "validator.h"
+#include "val_cache.h"
 
 
 // XXX This routine is provided for compatibility with some programs that 
