@@ -390,7 +390,7 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 }
 
 /* Converts data in the rrset_rec structure into a addrinfo structure */
-static int get_addrinfo_from_dns (val_context_t *ctx,
+static int get_addrinfo_from_dns (const val_context_t *ctx,
 				  const char *nodename,
 				  const char *servname,
 				  const struct addrinfo *hints,
@@ -500,7 +500,7 @@ static int get_addrinfo_from_dns (val_context_t *ctx,
 
 /* Extended version of the validating getaddrinfo function
  */
-int val_x_getaddrinfo (val_context_t *ctx,
+int val_x_getaddrinfo (const val_context_t *ctx,
 		       const char *nodename, const char *servname,
 		       const struct addrinfo *hints,
 		       struct addrinfo **res)

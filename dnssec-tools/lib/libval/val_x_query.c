@@ -48,7 +48,7 @@ int compose_answer( const char *name_n,
 			int *resp_count,
 			u_int8_t flags);
 
-int val_x_query(val_context_t	*ctx,
+int val_x_query(const val_context_t	*ctx,
 			const char *domain_name,
 			const u_int16_t class,
 			const u_int16_t type,
