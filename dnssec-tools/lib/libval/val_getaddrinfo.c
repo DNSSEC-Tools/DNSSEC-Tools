@@ -460,14 +460,9 @@ static int get_addrinfo_from_dns (val_context_t *ctx,
 		val_log("checking for AAAA records\n");
 		
 		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
-			if ((retval = add_to_query_chain(&queries, name_n, ns_t_aaaa, ns_c_in)) == NO_ERROR) {
-				if ((retval = resolve_n_check(context, name_n, ns_t_aaaa, ns_c_in, 0,
-							      &queries, &assertions, &results)) != NO_ERROR) {
-					val_log("resolve_n_check failed");
-				}
-			}
-			else {
-				val_log("add_to_query_chain failed");
+			if ((retval = resolve_n_check(context, name_n, ns_t_aaaa, ns_c_in, 0,
+						      &queries, &assertions, &results)) != NO_ERROR) {
+				val_log("resolve_n_check failed");
 			}
 		}
 		else {
