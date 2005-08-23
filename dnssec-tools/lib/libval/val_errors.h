@@ -9,8 +9,6 @@
 #include <resolver.h>
 #include <validator.h>
 
-char *p_val_error(int valerrno);
-
 
 /*
  *************************************************** 
