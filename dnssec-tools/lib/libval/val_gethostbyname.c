@@ -18,15 +18,9 @@
 #include <strings.h>
 #include <arpa/nameser.h>
 
-#include "val_errors.h"
-#include "val_gethostbyname.h"
-#include "val_query.h"
-#include "val_log.h"
 #include "validator.h"
-#include "val_assertion.h"
-#include "val_support.h"
-#include "val_context.h"
 #include "val_parse.h"
+#include "val_gethostbyname.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"

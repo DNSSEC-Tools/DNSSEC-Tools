@@ -9,7 +9,7 @@
  */
 
 #include <stdio.h>
-#include "val_api.h"
+#include <validator.h>
 
 int main(int argc, char *argv[])
 {

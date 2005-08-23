@@ -14,8 +14,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "val_api.h"
-#include "val_log.h"
+#include <validator.h>
 
 static int validate = 0;
 

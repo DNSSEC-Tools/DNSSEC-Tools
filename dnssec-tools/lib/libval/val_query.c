@@ -19,11 +19,6 @@
 #include <arpa/inet.h>
 
 #include "validator.h"
-#include "val_errors.h"
-#include "val_context.h"
-#include "val_x_query.h"
-#include "val_query.h"
-#include "val_log.h"
 
 /*
  * A validating DNS query interface.  Returns the length of the
