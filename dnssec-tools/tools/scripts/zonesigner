@@ -1624,6 +1624,16 @@ zonesigner - Generates encryption keys and signs a DNS zone.
 
   zonesigner [options] <zone-file> <zone-out>
 
+  # get started immediately examples:
+
+  # first run on a zone for example.com:
+  zonesigner -genzsk -genksk -endtime +2678400 --zone example.com \
+     db-in.example.com db-out.example.com
+
+  # future runs before expiration time (reuses the same keys):
+  zonesigner -endtime +2678400 --zone example.com \
+     db-in.example.com db-out.example.com
+
 =head1 DESCRIPTION
 
 This script combines into a single command many actions that are required to
