@@ -19,18 +19,18 @@
 
 =head1 NAME
 
-dnssec-tools.conf - Configuration file for the B<dnssec-tools> programs.
+dnssec-tools.conf - Configuration file for the DNSSEC-Tools programs.
 
 =head1 DESCRIPTION
 
-This file contains configuration information for the B<dnssec-tools> programs.
+This file contains configuration information for the DNSSEC-Tools programs.
 These configuration data are used if nothing else has been specified for a
-particular program.  The B<dnssec-tools> I<conf.pm> module is used to parse
-this configuration file.
+particular program.  The I<conf.pm> module is used to parse this configuration
+file.
 
 A line in the configuration file contains either a comment or a configuration
 entry.  Comment lines start with either a '#' character or a ';' character.
-Comment lines and blank lines are ignored by the B<dnssec-tools> programs.
+Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
 
 Configuration entries are in a I<keyword/value> format.  The keyword is a
 character string that contains no whitespace.  The value is a tokenized list
@@ -40,67 +40,61 @@ True/false flags must be given a B<1> (true) or B<0> (false) value.
 
 =head1 Configuration Records
 
-The following records are recognized by the B<dnssec-tools> programs.
-Not every B<dnssec-tools> program requires each of these records.
+The following records are recognized by the DNSSEC-Tools programs.
+Not every DNSSEC-Tools program requires each of these records.
 
 =over 4
 
 =item algorithm
 
-This entry contains the default encryption algorithm to be passed to
-B<dnssec-keygen>.
+The default encryption algorithm to be passed to I<dnssec-keygen>.
 
 =item archivedir
 
-This entry contains the pathname to the archived-key directory.
+The pathname to the archived-key directory.
 
 =item checkzone
 
-This entry contains the path to the B<named-checkzone> command.
+The path to the I<named-checkzone> command.
 
 =item default_keyrec
 
-This entry contains the default I<keyrec> filename to be used by the
-B<dnssec-tools> I<keyrec.pm> module.
+The default I<keyrec> filename to be used by the I<keyrec.pm> module.
 
 =item endtime
 
-This entry contains the zone default expiration date to be passed to
-B<dnssec-signzone>.
+The zone default expiration time to be passed to I<dnssec-signzone>.
 
 =item entropy_msg
 
-This entry contains a true/false flag indicating if the B<dnssec-tools>
-I<zonesigner> command should display a message about entropy generation.  This
-is primarily dependent on the implementation of a system's random number
-generation.
+A true/false flag indicating if the I<zonesigner> command should display
+a message about entropy generation.  This is primarily dependent on the
+implementation of a system's random number generation.
 
 =item keygen
 
-This entry contains the path to the B<dnssec-keygen> command.
+The path to the I<dnssec-keygen> command.
 
 =item ksklength
 
-This entry contains the default KSK key length to be passed to B<dnssec-keygen>.
+The default KSK key length to be passed to I<dnssec-keygen>.
 
 =item random
 
-This entry contains the random device generator to be passed to
-B<dnssec-keygen>.
+The random device generator to be passed to I<dnssec-keygen>.
 
 =item savekeys
 
-This entry is a true/false flag indicating if old keys should be moved to the
+A true/false flag indicating if old keys should be moved to the
 archive directory.
 
 =item signzone
 
-This entry contains the path to the B<dnssec-signzone> command.
+The path to the I<dnssec-signzone> command.
 
 =item zsklength
 
-This entry contains the default ZSK key length to be passed to
-B<dnssec-keygen>.
+The default ZSK key length to be passed to I<dnssec-keygen>.
 
 =back
 
@@ -141,6 +135,10 @@ The following is an example B<dnssec-tools.conf> configuration file.
     savekeys            1
     archivedir          /usr/local/etc/dnssec/KEY-SAFE
 
+=head1 COPYRIGHT
+
+Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
@@ -148,8 +146,9 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-Net::DNS::SEC::Tools::conf.pm(3)
+B<zonesigner(8)>
 
-Net::DNS::SEC::Tools::keyrec.pm(3)
+B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>
 
 =cut
