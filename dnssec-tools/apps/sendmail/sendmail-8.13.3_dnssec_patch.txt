@@ -9,13 +9,13 @@ Index: devtools/Site/site.config.m4
 Index: libmilter/sm_gethost.c
 ===================================================================
 --- libmilter/sm_gethost.c	2005-04-28 13:32:29.000000000 -0400
-+++ libmilter/sm_gethost.c	2005-08-20 11:55:33.000000000 -0400
++++ libmilter/sm_gethost.c	2005-08-23 13:16:52.000000000 -0400
 @@ -17,6 +17,10 @@
  #endif /* NETINET || NETINET6 */
  #include "libmilter.h"
  
 +#if SUPPORT_DNSSEC
-+# include <val_api.h>
++# include <validator.h>
 +#endif /* SUPPORT_DNSSEC */
 +
  /*
@@ -103,13 +103,13 @@ Index: doc/op/op.me
 Index: sendmail/conf.c
 ===================================================================
 --- sendmail/conf.c	2005-04-25 11:32:20.000000000 -0400
-+++ sendmail/conf.c	2005-08-20 12:02:00.000000000 -0400
++++ sendmail/conf.c	2005-08-23 13:17:07.000000000 -0400
 @@ -4180,6 +4180,10 @@
  **	Support IPv6 as well as IPv4.
  */
  
 +#if SUPPORT_DNSSEC
-+# include <val_api.h>
++# include <validator.h>
 +#endif
 +
  #if NETINET6 && NEEDSGETIPNODE
@@ -258,13 +258,13 @@ Index: sendmail/readcf.c
 Index: sendmail/domain.c
 ===================================================================
 --- sendmail/domain.c	2005-06-03 15:09:51.000000000 -0400
-+++ sendmail/domain.c	2005-08-19 11:36:42.000000000 -0400
++++ sendmail/domain.c	2005-08-23 13:16:58.000000000 -0400
 @@ -23,6 +23,9 @@
  
  # include <arpa/inet.h>
  
 +# if SUPPORT_DNSSEC
-+#  include <val_api.h>
++#  include <validator.h>
 +# endif /* SUPPORT_DNSSEC */
  
  /*
@@ -378,13 +378,13 @@ Index: sendmail/domain.c
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2005-02-25 10:55:24.000000000 -0500
-+++ sendmail/sm_resolve.c	2005-08-19 11:35:58.000000000 -0400
++++ sendmail/sm_resolve.c	2005-08-23 13:17:38.000000000 -0400
 @@ -70,6 +70,10 @@
  	{	NULL,		0		}
  };
  
 +#  if SUPPORT_DNSSEC
-+#   include <val_api.h>
++#   include <validator.h>
 +#  endif /* SUPPORT_DNSSEC */
 +
  static DNS_REPLY_T *parse_dns_reply __P((unsigned char *, int));
