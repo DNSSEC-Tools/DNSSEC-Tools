@@ -722,13 +722,13 @@ Index: src/libspf2/spf_strerror.c
 Index: src/libspf2/spf_dns_resolv.c
 ===================================================================
 --- src/libspf2/spf_dns_resolv.c	2005-05-06 12:56:10.000000000 -0400
-+++ src/libspf2/spf_dns_resolv.c	2005-08-18 17:56:24.000000000 -0400
++++ src/libspf2/spf_dns_resolv.c	2005-08-23 13:12:38.000000000 -0400
 @@ -41,6 +41,10 @@
  # include <netdb.h>
  #endif
  
 +#ifdef SUPPORT_DNSSEC
-+#include <val_api.h>
++#include <validator.h>
 +#endif
 +
  #include "spf.h"
@@ -1023,7 +1023,7 @@ Index: src/include/spf.h
 Index: config.h.in
 ===================================================================
 --- config.h.in	2004-07-08 13:18:43.000000000 -0400
-+++ config.h.in	2005-08-18 17:55:09.000000000 -0400
++++ config.h.in	2005-08-23 13:13:43.000000000 -0400
 @@ -37,6 +37,9 @@
  /* Define to 1 if you have the <inttypes.h> header file. */
  #undef HAVE_INTTYPES_H
@@ -1051,8 +1051,8 @@ Index: config.h.in
  /* Define to 1 if the system has the type `u_int8_t'. */
  #undef HAVE_U_INT8_T
  
-+/* Define to 1 if you have the <val_api.h> header file. */
-+#undef HAVE_VAL_API_H
++/* Define to 1 if you have the <validator.h> header file. */
++#undef HAVE_VALIDATOR_H
 +
  /* Define to 1 if you have the `vfork' function. */
  #undef HAVE_VFORK
@@ -1070,7 +1070,7 @@ Index: config.h.in
 Index: configure.ac
 ===================================================================
 --- configure.ac	2004-07-07 07:55:34.000000000 -0400
-+++ configure.ac	2005-08-18 17:53:45.000000000 -0400
++++ configure.ac	2005-08-23 13:12:12.000000000 -0400
 @@ -3,9 +3,9 @@
  
  AC_PREREQ(2.59)
@@ -1110,7 +1110,7 @@ Index: configure.ac
 +   AC_MSG_RESULT(yes)
 +
 +   dnl Check DNSSEC Validator library header
-+   AC_CHECK_HEADERS([val_api.h])
++   AC_CHECK_HEADERS([validator.h])
 +
 +   dnl Check the openssl crypto library
 +   AC_CHECK_LIB(crypto, RSA_verify, , [
