@@ -432,7 +432,7 @@ struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name
 		
 		
 		if (ctx == NULL)
-			context = get_context(NULL);
+			get_context(NULL, &context);
 		else
 			context = ctx;   
 		

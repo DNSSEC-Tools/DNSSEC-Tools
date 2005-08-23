@@ -64,9 +64,8 @@ int val_x_query(const val_context_t	*ctx,
 	u_char name_n[MAXCDNAME];
 
 	if(ctx == NULL) {
-		context = get_context(NULL);
-		if (context == NULL)
-			return CONTEXT_ERROR;
+		if(NO_ERROR !=(retval = get_context(NULL, &context)))
+			return retval;
 	}
 	else	
 		context = ctx;
@@ -98,7 +97,7 @@ int val_x_query(const val_context_t	*ctx,
 	free_assertion_chain(&assertions);
 	free_result_chain(&results);
 
-	if(ctx == NULL)	
+	if((ctx == NULL)&& context)
 		destroy_context(context);
 
 	free_validator_cache();
