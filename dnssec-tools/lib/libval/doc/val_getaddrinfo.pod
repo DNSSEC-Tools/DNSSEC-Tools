@@ -14,7 +14,7 @@ and service translation
                     const struct addrinfo *hints,
                     struct addrinfo **res);
 
-  int val_x_getaddrinfo(struct val_context *ctx,
+  int val_x_getaddrinfo(const struct val_context *ctx,
                     const char *nodename, const char *servname,
                     const struct addrinfo *hints,
                     struct addrinfo **res);
@@ -36,9 +36,12 @@ I<val_x_getaddrinfo()> performs the same function as I<val_getaddrinfo(), but
 is optimized for multiple calls.  The two routines take the same parameters,
 but I<val_x_getaddrinfo()> takes an additional parameter I<ctx>, of type
 I<val_context>, which passes the validation context for use in call
-optimization.  If a B<NULL> value is passed for the I<ctx> parameter, the
-default validation context is used.  I<val_getaddrinfo()> is equivalent to
-calling I<val_x_getaddrinfo()> with a B<NULL> I<ctx> parameter.
+optimization.  The I<ctx> parameter also gives the caller more control over
+the resolver and validator policies.  If a B<NULL> value is passed for the
+I<ctx> parameter, the default validation context is used.  See the man page for
+B<get_context()> for more information on how to create a validation context.
+I<val_getaddrinfo()> is equivalent to calling I<val_x_getaddrinfo()> with a
+B<NULL> I<ctx> parameter.
 
 I<val_dupaddrinfo()> duplicates the I<addrinfo> structure and its auxiliary
 data.  It performs a deep copy; i.e., the internal strings, arrays, and other
@@ -110,7 +113,7 @@ Abhijit Hayatnagarkar
 
 I<gethostbyname>(3)
 
-I<p_val_error>, I<val_gethostbyname>, I<val_x_gethostbyname>,
+I<get_context>, I<p_val_error>, I<val_gethostbyname>, I<val_x_gethostbyname>,
 I<val_duphostent>, I<val_freehostent>, I<val_query>, I<val_x_query>
 
 http://dnssec-tools.sourceforge.net
