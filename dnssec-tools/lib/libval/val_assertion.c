@@ -1131,8 +1131,12 @@ void fix_validation_results(struct query_chain *top_q, struct val_result *res, i
 	}
 
 	/* Could not build a chain of trust for the signature that failed */
-	if ((res->status > FAIL_BASE) && (res->status <= LAST_FAILURE) && (res->trusted != 1)) 
-		res->status = BOGUS;	
+	if ((res->status > FAIL_BASE) && (res->status <= LAST_FAILURE)) {
+		if (res->trusted == 1)
+			res->status = BOGUS_PROVABLE;
+		else
+			res->status = BOGUS_UNPROVABLE;
+	}
 
 	if ((res->status > ERROR_BASE) && (res->status <= LAST_ERROR))
 		res->status = VALIDATION_ERROR;
