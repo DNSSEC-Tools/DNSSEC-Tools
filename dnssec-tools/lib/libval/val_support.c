@@ -1049,11 +1049,11 @@ char *p_val_error(int errno)
     case RESOURCE_UNAVAILABLE: return "RESOURCE_UNAVAILABLE"; break;
     case CONF_PARSE_ERROR: return "CONF_PARSE_ERROR"; break;
     case NO_POLICY: return "NO_POLICY"; break;
-    case MALFORMED_LOCALE: return "MALFORMED_LOCALE"; break;
+    case NO_SPACE: return "NO_SPACE"; break;
     case UNKNOWN_LOCALE: return "UNKNOWN_LOCALE"; break;
-    case FILE_ERROR: return "FILE_ERROR"; break;
     case VALIDATE_SUCCESS: return "VALIDATE_SUCCESS"; break;
-    case BOGUS: return "BOGUS"; break;
+    case BOGUS_PROVABLE: return "BOGUS_PROVABLE"; break;
+    case BOGUS_UNPROVABLE: return "BOGUS_UNPROVABLE"; break;
     case INDETERMINATE_DS: return "INDETERMINATE_DS"; break;
     case INDETERMINATE_PROOF: return "INDETERMINATE_PROOF"; break;
     case INDETERMINATE_ERROR: return "INDETERMINATE_ERROR"; break;
@@ -1064,6 +1064,7 @@ char *p_val_error(int errno)
     case TOO_MANY_LINKS: return "TOO_MANY_LINKS"; break;
     case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
     case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
+    case BOGUS_PROOF: return "BOGUS_PROOF"; break;
     case NONEXISTENT_NAME: return "NONEXISTENT_NAME"; break;
     case NONEXISTENT_TYPE: return "NONEXISTENT_TYPE"; break;
     case RRSIG_VERIFIED: return "RRSIG_VERIFIED"; break;
@@ -1077,27 +1078,32 @@ char *p_val_error(int errno)
     case UNKNOWN_ALGO: return "UNKNOWN_ALGO"; break;
     case ALGO_NOT_SUPPORTED: return "ALGO_NOT_SUPPORTED"; break;
     case UNKNOWN_DNSKEY_PROTO: return "UNKNOWN_DNSKEY_PROTO"; break;
-	/*
-    case NO_PREFERRED_SEP: return "NO_PREFERRED_SEP"; break;
+    case DNSKEY_NOMATCH: return "DNSKEY_NOMATCH"; break;
+    case WRONG_LABEL_COUNT: return "WRONG_LABEL_COUNT"; break;
+    case NOT_VERIFIED: return "NOT_VERIFIED"; break;
     case KEY_TOO_LARGE: return "KEY_TOO_LARGE"; break;
     case KEY_TOO_SMALL: return "KEY_TOO_SMALL"; break;
     case KEY_NOT_AUTHORIZED: return "KEY_NOT_AUTHORIZED"; break;
-    case CLOCK_SKEW: return "CLOCK_SKEW"; break;
     case ALGO_REFUSED: return "ALGO_REFUSED"; break;
+    case CLOCK_SKEW: return "CLOCK_SKEW"; break;
+    case DUPLICATE_KEYTAG: return "DUPLICATE_KEYTAG"; break;
+    case NO_PREFERRED_SEP: return "NO_PREFERRED_SEP"; break;
+    case WRONG_RRSIG_OWNER: return "WRONG_RRSIG_OWNER"; break;
+    case RRSIG_ALGO_MISMATCH: return "RRSIG_ALGO_MISMATCH"; break;
+    case KEYTAG_MISMATCH: return "KEYTAG_MISMATCH"; break;
+    case VALIDATION_ERROR: return "VALIDATION_ERROR"; break;
+
+	/*
     case UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
     case DS_MISSING: return "DS_MISSING"; break;
     case NSEC_MISSING: return "NSEC_MISSING"; break;
-    case DUPLICATE_KEYTAG: return "DUPLICATE_KEYTAG"; break;
     case CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
-    case WRONG_RRSIG_OWNER: return "WRONG_RRSIG_OWNER"; break;
-    case KEYTAG_MISMATCH: return "KEYTAG_MISMATCH"; break;
     case WAITING: return "WAITING"; break;
     case WAKEUP: return "WAKEUP"; break;
     case OVERREACHING_NSEC: return "OVERREACHING_NSEC"; break;
     case TRUST_ANCHOR_TIMEOUT: return "TRUST_ANCHOR_TIMEOUT"; break;
     case INSUFFICIENT_DATA: return "INSUFFICIENT_DATA"; break;
     case HEADER_ERROR: return "HEADER_ERROR"; break;
-    case WRONG_LABEL_COUNT: return "WRONG_LABEL_COUNT"; break;
     case EDNS_VERSION_ERROR: return "EDNS_VERSION_ERROR"; break;
     case UNSUPP_ENDS0_LABEL: return "UNSUPP_ENDS0_LABEL"; break;
     case FLOOD_ATTACK_DETECTED: return "FLOOD_ATTACK_DETECTED"; break;
@@ -1105,6 +1111,10 @@ char *p_val_error(int errno)
     case SUSPICIOUS_BIT: return "SUSPICIOUS_BIT"; break;
     case NAME_EXPANSION_FAILURE: return "NAME_EXPANSION_FAILURE"; break;
 	*/
-    default: return "Unknown Error Value";
+    default: 
+			if((errno > DNS_ERROR_BASE) &&
+				(errno <= DNS_ERROR_BASE+SR_LAST_ERROR))
+				return "DNS_ERROR";
+			return "Unknown Error Value";
     }
 }
