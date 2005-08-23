@@ -4,7 +4,7 @@
 # file distributed with this software for details
 #
 #
-# This script performs a very simple test of the dnssec-tools config module.
+# This script performs a very simple test of the DNSSEC-Tools config module.
 # It parses the config file, using parseconfig(), and prints the parsed
 # keyword/value pairs to the screen.  A simple config file will be created
 # in the current directory for testing.
@@ -18,7 +18,7 @@ use strict;
 
 use Net::DNS::SEC::Tools::conf;
 
-# my $conf = "/etc/dnssec/dnssec-tools.conf";
+# my $conf = "/usr/local/etc/dnssec/dnssec-tools.conf";
 my $conf = "./dnssec-tools.conf";
 
 create_conffile();

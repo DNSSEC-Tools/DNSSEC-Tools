@@ -111,7 +111,7 @@ provides access to B<QWizard> for DNSSEC-Tools software.
 =head1 COPYRIGHT
 
 Copyright 2005 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the dnssec-tools package for details.
+See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
