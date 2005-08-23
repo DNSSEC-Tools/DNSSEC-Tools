@@ -32,10 +32,10 @@ parameters, but I<val_x_gethostbyname()> takes an additional parameter I<ctx>,
 of type I<val_context>, which passes the validation context for use in call
 optimization.  The I<ctx> parameter also gives the caller more control over
 the resolver and validator policies.  If a B<NULL> value is passed for the
-I<ctx> parameter, the default validation context is used.  See the man page for
-B<get_context()> for more information on how to create a validation context.
-I<val_gethostbyname()> is equivalent to calling I<val_x_gethostbyname()> with
-a B<NULL> I<ctx> parameter.
+I<ctx> parameter, the default validation context is used.  (See
+I<get_context()> for information on creating a validation context.)
+I<val_gethostbyname()> is equivalent to calling I<val_x_gethostbyname()>
+with a B<NULL> I<ctx> parameter.
 
 I<h_errnop> returns the I<h_errno> value from these functions.  This ensures
 thread safety, by avoiding the global I<h_errno> variable.  I<h_errnop> must
@@ -124,8 +124,11 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 
 I<getaddrinfo>(3)
 
-I<get_context>, I<p_val_error>, I<val_getaddrinfo>, I<val_x_getaddrinfo>,
-I<val_dupaddrinfo>, I<val_freeaddrinfo>, I<val_query>, I<val_x_query>
+I<get_context(3)>, I<val_dupaddrinfo(3)>, I<val_freeaddrinfo(3)>,
+I<val_getaddrinfo(3)>, I<val_query(3)>, I<val_x_getaddrinfo(3)>,
+I<val_x_query(3)>
+
+I<p_val_error>
 
 http://dnssec-tools.sourceforge.net
 
