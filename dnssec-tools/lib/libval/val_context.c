@@ -20,33 +20,33 @@
 #include "val_log.h"
 #include "val_errors.h"
 
-val_context_t *get_context(const char *label)
+int get_context(const char *label, val_context_t **newcontext)
 {
-	val_context_t *newcontext;
+	int retval;
 
-	newcontext = (val_context_t *) MALLOC (sizeof(val_context_t));
-	if (newcontext == NULL)
-		return NULL;
+	*newcontext = (val_context_t *) MALLOC (sizeof(val_context_t));
+	if (*newcontext == NULL)
+		return OUT_OF_MEMORY;
 
 	/* Read the Resolver configuration file */	
-	if (read_res_config_file(newcontext) != NO_ERROR) {
-		FREE (newcontext);
-		return NULL;
+	if ((retval = read_res_config_file(*newcontext)) != NO_ERROR) {
+		FREE (*newcontext);
+		return retval;
 	}
 
 	/* Read the validator configuration file */ 
-	memset(newcontext->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
-	newcontext->pol_overrides = NULL;
-	newcontext->cur_override = NULL;
-	if (read_val_config_file(newcontext, label) != NO_ERROR) {
-		destroy_respol(newcontext);
-		FREE (newcontext);	
-		return NULL;
+	memset((*newcontext)->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
+	(*newcontext)->pol_overrides = NULL;
+	(*newcontext)->cur_override = NULL;
+	if ((retval = read_val_config_file(*newcontext, label)) != NO_ERROR) {
+		destroy_respol(*newcontext);
+		FREE (*newcontext);	
+		return retval;
 	}
 	/* Over-ride with the first policy that we find in our list*/
-	OVERRIDE_POLICY(newcontext, newcontext->pol_overrides); 
+	OVERRIDE_POLICY(*newcontext, (*newcontext)->pol_overrides); 
 
-	return newcontext;
+	return NO_ERROR;
 
 }
 

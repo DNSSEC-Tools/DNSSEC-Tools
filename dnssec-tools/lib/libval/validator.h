@@ -251,8 +251,11 @@ int resolve_n_check(	val_context_t	*context,
 			struct val_result **results);
 
 /* from val_context.h */
-val_context_t *get_context(const char *label);
+int get_context(const char *label, val_context_t **newcontext);
 void destroy_context(val_context_t *context);
+
+/* from val_policy.h */
+int switch_effective_policy(val_context_t *ctx, const char *label);
 
 /* from val_support.h */
 char *p_val_error(int valerrno);

@@ -407,8 +407,8 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 	
 	val_log("get_addrinfo_from_dns() called\n");
 
-	if (context == NULL) {
-		context = get_context(NULL);
+	if (ctx == NULL) {
+		get_context(NULL, &context);
 	}
 	else {
 		context = ctx;
