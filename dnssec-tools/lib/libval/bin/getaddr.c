@@ -14,7 +14,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 
-#include "val_getaddrinfo.h"
+#include "val_api.h"
 #include "val_log.h"
 
 static int validate = 0;
