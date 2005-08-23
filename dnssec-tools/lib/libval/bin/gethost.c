@@ -9,7 +9,7 @@
  */
 
 #include <stdio.h>
-#include "val_gethostbyname.h"
+#include "val_api.h"
 
 int main(int argc, char *argv[])
 {

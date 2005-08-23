@@ -6,7 +6,7 @@ val_gethostbyname, val_x_gethostbyname, val_get_hostent_dnssec_status, val_dupho
 
 =head1 SYNOPSIS
 
-  #include <val_gethostbyname.h>
+  #include <val_api.h>
 
   struct hostent *val_gethostbyname(const char *name, int *h_errnop);
 
@@ -71,7 +71,7 @@ avoid memory leaks.
 =head1 EXAMPLE
  
  #include <stdio.h>
- #include <val_gethostbyname.h>
+ #include <val_api.h>
  
  int main(int argc, char *argv[])
  {
