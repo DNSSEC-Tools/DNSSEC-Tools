@@ -1,7 +1,7 @@
 Index: config.h.in
 ===================================================================
 --- config.h.in	2005-03-01 11:02:52.000000000 -0500
-+++ config.h.in	2005-08-19 09:58:30.000000000 -0400
++++ config.h.in	2005-08-23 13:09:57.000000000 -0400
 @@ -24,6 +24,9 @@
  /* Define to 1 if you have the <inttypes.h> header file. */
  #undef HAVE_INTTYPES_H
@@ -29,8 +29,8 @@ Index: config.h.in
  /* Define to 1 if you have the <unistd.h> header file. */
  #undef HAVE_UNISTD_H
  
-+/* Define to 1 if you have the <val_api.h> header file. */
-+#undef HAVE_VAL_API_H
++/* Define to 1 if you have the <validator.h> header file. */
++#undef HAVE_VALIDATOR_H
 +
  /* Name of package */
  #undef PACKAGE
@@ -54,7 +54,7 @@ Index: config.h.in
 Index: configure.ac
 ===================================================================
 --- configure.ac	2005-02-11 11:03:53.000000000 -0500
-+++ configure.ac	2005-08-19 09:58:00.000000000 -0400
++++ configure.ac	2005-08-23 13:09:07.000000000 -0400
 @@ -54,24 +54,100 @@
  AC_CHECK_FUNC(socket, ,
  	AC_CHECK_LIB(socket, socket, ,
@@ -75,7 +75,7 @@ Index: configure.ac
 +		AC_CHECK_LIB(socket, inet_ntop)))
 +
 +   dnl Check DNSSEC Validator library header
-+   AC_CHECK_HEADERS([val_api.h])
++   AC_CHECK_HEADERS([validator.h])
 +
 +   dnl Check the openssl crypto library
 +   AC_CHECK_LIB(crypto, RSA_verify, , [
