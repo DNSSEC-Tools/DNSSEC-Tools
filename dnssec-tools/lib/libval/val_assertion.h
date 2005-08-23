@@ -21,7 +21,7 @@ void free_assertion_chain(struct assertion_chain **assertions);
 void free_result_chain(struct val_result **results);
 
 int resolve_n_check(	val_context_t	*context,
-			const char *domain_name,
+			u_char *domain_name_n,
 			const u_int16_t type,
 			const u_int16_t class,
 			const u_int8_t flags, 
