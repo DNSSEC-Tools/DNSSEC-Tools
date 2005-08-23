@@ -445,7 +445,6 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int 
 		hentry = NULL;
 		
 		if (((retval = ns_name_pton(name, name_n, MAXCDNAME-1)) != -1)
-		    && (NO_ERROR == (retval = add_to_query_chain(&queries, name_n, ns_t_a, ns_c_in)))
 		    && (NO_ERROR == (retval = resolve_n_check(context, name_n, ns_t_a, ns_c_in, 0,
 							      &queries, &assertions, &results)))) {
 			

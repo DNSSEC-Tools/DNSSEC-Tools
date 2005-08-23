@@ -1079,7 +1079,7 @@ void fix_validation_results(struct query_chain *top_q, struct val_result *res, i
  * a useful answer)
  */
 int resolve_n_check(	val_context_t	*context,
-			const char *domain_name,
+			u_char *domain_name_n,
 			const u_int16_t type,
 			const u_int16_t class,
 			const u_int8_t flags, 
@@ -1093,9 +1093,13 @@ int resolve_n_check(	val_context_t	*context,
 	struct val_result *res;
 	char block = 1; /* block until at least some data is returned */
 
-	top_q = *queries;
 	int done = 0;
 	unsigned char data_received = 0;
+
+	if (NO_ERROR != (retval = add_to_query_chain(queries, domain_name_n, type, class)))
+		return retval;
+
+	top_q = *queries;
 
 	while(!done) {
 

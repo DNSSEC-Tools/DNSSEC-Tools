@@ -49,7 +49,9 @@
  *					to hold all the answers.
  *
  */
-int compose_answer(struct query_chain *top_q,
+int compose_answer( const char *name_n,
+			const u_int16_t type_h,
+			const u_int16_t class_h,
 			struct val_result *results,
 			struct response_t *resp,
 			int *resp_count,
@@ -68,7 +70,6 @@ int val_x_query(val_context_t	*ctx,
 	struct val_result *results = NULL;
 	int retval;
 	val_context_t *context;
-	struct query_chain *top_q;
 	u_char name_n[MAXCDNAME];
 
 	if(ctx == NULL) {
@@ -81,15 +82,10 @@ int val_x_query(val_context_t	*ctx,
 
 	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1)
 		return (BAD_ARGUMENT);                                                                                                                         
-	/* Add the main query to the qname_chain list */
-	if(NO_ERROR != (retval = add_to_query_chain(&queries, name_n, type, class)))
-		return retval;
-	top_q = queries;
-
-	if(NO_ERROR == (retval = resolve_n_check(context, domain_name, type, class, flags, 
+	if(NO_ERROR == (retval = resolve_n_check(context, name_n, type, class, flags, 
 											&queries, &assertions, &results))) {
 		/* XXX Construct the answer response in response_t */
-		retval = compose_answer(top_q, results, resp, resp_count, flags);
+		retval = compose_answer(name_n, type, class, results, resp, resp_count, flags);
 
 /*
 		struct val_result *res = results;
@@ -119,7 +115,9 @@ int val_x_query(val_context_t	*ctx,
 	return retval;
 }
 
-int compose_answer(struct query_chain *top_q,
+int compose_answer( const char *name_n,
+			const u_int16_t type_h,
+			const u_int16_t class_h,
 			struct val_result *results,
 			struct response_t *resp,
 			int *resp_count,
@@ -168,16 +166,16 @@ int compose_answer(struct query_chain *top_q,
 
 
 			/*  Question section */
-			int len = wire_name_length(top_q->qc_name_n);
+			int len = wire_name_length(name_n);
 			if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
-			memcpy (cp, top_q->qc_name_n, len);
+			memcpy (cp, name_n, len);
 			cp += len;
 			
 			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
-			NS_PUT16(top_q->qc_type_h, cp);
+			NS_PUT16(type_h, cp);
 
 			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
-			NS_PUT16(top_q->qc_class_h, cp);
+			NS_PUT16(class_h, cp);
 	
 			hp->qdcount = htons(1);
 
