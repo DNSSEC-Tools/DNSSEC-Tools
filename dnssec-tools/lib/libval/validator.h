@@ -7,7 +7,9 @@
 #define VALIDATOR_H
 
 #include <arpa/nameser.h>
+#include <netdb.h>
 #include <stdlib.h>
+#include <val_errors.h>
 
 #define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
 #define RESOLV_CONF             "/etc/resolv.conf"
@@ -222,5 +224,58 @@ struct domain_info
     struct qname_chain  *di_qnames;
 	int				di_res_error;
 };
+
+struct val_result {
+	struct assertion_chain *as;
+	int status;
+	int trusted;
+	struct val_result *next;
+};
+
+/*
+ **********************************
+ * APIs exported by the validator
+ **********************************
+ */
+/* from val_assertion.h */
+void free_query_chain(struct query_chain **queries);
+void free_assertion_chain(struct assertion_chain **assertions);
+void free_result_chain(struct val_result **results);
+int resolve_n_check(	val_context_t	*context,
+			u_char *domain_name_n,
+			const u_int16_t type,
+			const u_int16_t class,
+			const u_int8_t flags, 
+			struct query_chain **queries,
+			struct assertion_chain **assertions,
+			struct val_result **results);
+
+/* from val_context.h */
+val_context_t *get_context(const char *label);
+void destroy_context(val_context_t *context);
+
+/* from val_cache.h */
+void free_validator_cache();
+
+int val_query ( const char *domain_name, int class, int type,
+		unsigned char *answer, int anslen, int flags,
+		int *dnssec_status );
+int val_x_query(val_context_t *ctx,
+            const char *domain_name,
+            const u_int16_t class,
+            const u_int16_t type,
+            const u_int8_t flags,
+            struct response_t *resp,
+            int *resp_count);
+struct hostent *val_gethostbyname ( const char *name, int *h_errnop );
+struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name,
+				      int *h_errnop );
+int val_getaddrinfo ( const char *nodename, const char *servname,
+		      const struct addrinfo *hints,
+		      struct addrinfo **res );
+int val_x_getaddrinfo ( val_context_t *ctx,
+		        const char *nodename, const char *servname,
+			const struct addrinfo *hints,
+			struct addrinfo **res );
 
 #endif /* VALIDATOR_H */
