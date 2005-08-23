@@ -263,7 +263,7 @@ int val_query ( const char *domain_name, int class, int type,
 		int *dnssec_status );
 
 /* from val_x_query.h */
-int val_x_query(val_context_t *ctx,
+int val_x_query(const val_context_t *ctx,
             const char *domain_name,
             const u_int16_t class,
             const u_int16_t type,
@@ -273,14 +273,14 @@ int val_x_query(val_context_t *ctx,
 
 /* from val_gethostbyname.h */
 struct hostent *val_gethostbyname ( const char *name, int *h_errnop );
-struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name,
+struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name,
 				      int *h_errnop );
 
 /* from val_getaddrinfo.h */
 int val_getaddrinfo ( const char *nodename, const char *servname,
 		      const struct addrinfo *hints,
 		      struct addrinfo **res );
-int val_x_getaddrinfo ( val_context_t *ctx,
+int val_x_getaddrinfo ( const val_context_t *ctx,
 		        const char *nodename, const char *servname,
 			const struct addrinfo *hints,
 			struct addrinfo **res );
