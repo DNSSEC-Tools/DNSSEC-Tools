@@ -12,10 +12,10 @@
 
 #define OVERRIDE_POLICY(ctx, override)   do {		\
 	struct policy_list *c;							\
-	if (ctx && override) {							\
-		ctx->cur_override = override;				\
+	if ((ctx) && override) {							\
+		(ctx)->cur_override = override;				\
 		for (c = override->plist; c; c = c->next)	\
-			ctx->e_pol[c->index] = c->pol;			\
+			(ctx)->e_pol[c->index] = c->pol;			\
 	}												\
 } while (0)
 
