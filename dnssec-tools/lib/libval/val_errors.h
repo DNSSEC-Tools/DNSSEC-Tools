@@ -6,8 +6,8 @@
 #ifndef VAL_ERRORS_H
 #define VAL_ERRORS_H
 
-#include "resolver.h"
-#include "validator.h"
+#include <resolver.h>
+#include <validator.h>
 
 char *p_val_error(int valerrno);
 
