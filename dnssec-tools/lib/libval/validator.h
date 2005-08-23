@@ -254,9 +254,6 @@ int resolve_n_check(	val_context_t	*context,
 val_context_t *get_context(const char *label);
 void destroy_context(val_context_t *context);
 
-/* from val_cache.h */
-void free_validator_cache();
-
 /* from val_support.h */
 char *p_val_error(int valerrno);
 
