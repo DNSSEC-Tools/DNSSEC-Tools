@@ -354,7 +354,7 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset, int *
  * error code.  The dnssec_status can be accessed by the
  * function get_hostent_dnssec_status()
  */
-struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int *h_errnop )
+struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name, int *h_errnop )
 {
 	struct hostent* hentry = NULL;
 	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;

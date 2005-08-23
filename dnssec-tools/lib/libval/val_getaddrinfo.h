@@ -79,7 +79,7 @@ int val_getaddrinfo ( const char *nodename, const char *servname,
  * Other parameters and return values are similar to the val_getaddrinfo
  * function.
  */
-int val_x_getaddrinfo ( val_context_t *ctx,
+int val_x_getaddrinfo ( const val_context_t *ctx,
 		        const char *nodename, const char *servname,
 			const struct addrinfo *hints,
 			struct addrinfo **res );
