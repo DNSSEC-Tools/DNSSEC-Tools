@@ -533,8 +533,8 @@ void verify_next_assertion(struct assertion_chain *as)
 		}
 
 		/* and check the signature */
-		if(NO_ERROR != do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard)) {
-			SET_STATUS(as->ac_state, the_sig, VERIFY_PROC_ERROR);
+		if(NO_ERROR != (retval = do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard))) {
+			SET_STATUS(as->ac_state, the_sig, retval);
 			FREE(dnskey.public_key);
 			continue;
 		}
