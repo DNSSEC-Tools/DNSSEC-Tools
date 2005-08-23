@@ -19,15 +19,9 @@
 #include <strings.h>
 #include <arpa/nameser.h>
 
-#include "val_errors.h"
-#include "val_query.h"
-#include "val_log.h"
 #include "validator.h"
-#include "val_assertion.h"
-#include "val_support.h"
-#include "val_context.h"
-#include "val_getaddrinfo.h"
 #include "val_parse.h"
+#include "val_getaddrinfo.h"
 
 /**
  * addrinfo_dnssec_wrapper: A wrapper struct around addrinfo to

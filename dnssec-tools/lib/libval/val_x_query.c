@@ -12,16 +12,6 @@
 #include <resolver.h>
 #include "validator.h"
 
-#include "val_support.h"
-#include "val_zone.h"
-#include "val_cache.h"
-#include "val_errors.h"
-#include "val_x_query.h"
-#include "val_verify.h"
-#include "val_context.h"
-#include "val_log.h"
-#include "val_api.h"
-#include "val_assertion.h"
 
 // XXX This routine is provided for compatibility with some programs that 
 // XXX depend on this interface. 

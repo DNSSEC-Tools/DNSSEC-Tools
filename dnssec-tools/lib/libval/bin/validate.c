@@ -14,9 +14,7 @@
 #include <arpa/nameser.h>
 #include <errno.h>
 #include <resolver.h> /* for ns_t_dnskey */
-
-#include "val_log.h"
-#include "val_api.h"
+#include <validator.h>
 
 #define BUFLEN 8096
 
