@@ -1,5 +1,9 @@
 
 # libtool build definitions
-.SUFFIXES: .c .o .lo .rc
+.SUFFIXES: .c .o .lo .rc .3 .pod
 .c.lo:
 	$(LIBTOOLCC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
+
+# pod to man build definitions
+.pod.3:
+	pod2man $< > $@
