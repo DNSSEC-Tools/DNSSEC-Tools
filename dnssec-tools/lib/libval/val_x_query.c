@@ -10,8 +10,9 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include "validator.h"
+#include <validator.h>
 #include "val_cache.h"
+#include "val_support.h"
 
 
 // XXX This routine is provided for compatibility with some programs that 
