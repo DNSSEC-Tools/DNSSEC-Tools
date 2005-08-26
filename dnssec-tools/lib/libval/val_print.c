@@ -5,15 +5,16 @@
  */ 
 #include <stdio.h>
 #include <resolv.h>
-#include <resolver.h>
 #include <ctype.h>
 #include <strings.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
+#include <resolver.h>
+#include <validator.h>
+#include "val_parse.h"
 #include "val_print.h"
 #include "val_cache.h"
-#include "val_errors.h"
 #include "val_log.h"
 
 #define PRINTS(msg,var) if (var) { \
