@@ -12,13 +12,12 @@
 #include <arpa/inet.h>
 
 #include <resolver.h>
-#include "validator.h"
+#include <validator.h>
 
 #include "val_support.h"
 #include "val_policy.h"
 #include "val_x_query.h"
 #include "val_log.h"
-#include "val_errors.h"
 
 int get_context(const char *label, val_context_t **newcontext)
 {

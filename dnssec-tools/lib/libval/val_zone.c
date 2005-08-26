@@ -26,13 +26,12 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include "validator.h"
+#include <validator.h>
 
 #include "val_support.h"
 #include "val_zone.h"
 #include "val_resquery.h"
 #include "val_log.h"
-#include "val_errors.h"
 
 
 void *weird_al_realloc (void *old, size_t new_size)
