@@ -55,16 +55,17 @@
 #define UNKNOWN_DNSKEY_PROTO  	ERROR_BASE+18
 #define FLOOD_ATTACK_DETECTED	ERROR_BASE+19	
 #define CONFLICTING_ANSWERS     ERROR_BASE+20
-#define REFERRAL_ERROR          ERROR_BASE+21
-#define DNS_ERROR_BASE			ERROR_BASE+22
+#define DNS_ERROR_BASE			CONFLICTING_ANSWERS	
 /* 
  * DNS errors lie within this range, 
- * there are SR_LAST_ERROR of them in total
+ * there are SR_LAST_ERROR (18) of them in total
  */
-#define LAST_ERROR				DNS_ERROR_BASE+SR_LAST_ERROR 
+#define SR_REFERRAL_ERROR       SR_LAST_ERROR+1 /* one more DNS error for referral failures */ 
+#define DNS_ERROR_LAST			DNS_ERROR_BASE + SR_REFERRAL_ERROR
+#define LAST_ERROR				DNS_ERROR_LAST /* ERROR_BASE+30 */ 
 
 /* "Error, but can prove the chain-of-trust above this" states */
-#define FAIL_BASE				LAST_ERROR /* ERROR_BASE+40 */ 
+#define FAIL_BASE				LAST_ERROR+1 /* ERROR_BASE+40 */ 
 #define DNSKEY_NOMATCH			FAIL_BASE+1 /*RRSIG was created by a DNSKEY that does not exist in the apex keyset.*/
 #define WRONG_LABEL_COUNT  		FAIL_BASE+2 /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA.*/
 #define SECURITY_LAME	  		FAIL_BASE+3 /*RRSIG created by a key that does not exist in the parent DS record set.*/
