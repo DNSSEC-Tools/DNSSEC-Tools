@@ -17,17 +17,16 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include "validator.h"
+#include <validator.h>
 
 #include "val_support.h"
 #include "val_zone.h"
 #include "val_cache.h"
-#include "val_errors.h"
 #include "val_assertion.h"
 #include "val_log.h"
 
-#include "val_print.h"
 #include "val_parse.h"
+#include "val_print.h"
 #include "crypto/val_rsamd5.h"
 #include "crypto/val_rsasha1.h"
 #include "crypto/val_dsasha1.h"

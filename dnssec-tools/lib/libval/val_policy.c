@@ -19,13 +19,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <validator.h>
 #include "val_parse.h"
-#include "val_errors.h"
 #include "val_context.h"
 #include "val_policy.h"
 #include "val_support.h"
 
-#include "validator.h"
 
 /* forward declaration */
 static int get_token ( FILE *conf_ptr,
