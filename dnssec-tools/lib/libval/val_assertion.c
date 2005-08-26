@@ -10,13 +10,12 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include "validator.h"
+#include <validator.h>
 
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_zone.h"
 #include "val_cache.h"
-#include "val_errors.h"
 #include "val_assertion.h"
 #include "val_verify.h"
 #include "val_context.h"
@@ -352,6 +351,10 @@ int ask_resolver(val_context_t *context, struct query_chain **queries, int block
 					if (response != NULL) {
 						free_domain_info_ptrs(response);
 						FREE(response);
+					}
+					if(next_q->qc_state > Q_ERROR_BASE) {
+						answered = 1;
+						break;
 					}
 				}
 			}
@@ -1210,13 +1213,13 @@ int resolve_n_check(	val_context_t	*context,
 		/* No point going ahead if our original query had error conditions */
 		if (top_q->qc_state != Q_ANSWERED) {
 			/* the original query had some error */
-			res= (struct val_result *) MALLOC (sizeof (struct val_result));
-			if(res== NULL)
+			*results= (struct val_result *) MALLOC (sizeof (struct val_result));
+			if(*results == NULL)
 				return OUT_OF_MEMORY;
-			res->as = top_q->qc_as;
-			res->status = DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
-			res->trusted = 0;
-			res->next = NULL;
+			(*results)->as = top_q->qc_as;
+			(*results)->status = DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+			(*results)->trusted = 0;
+			(*results)->next = NULL;
 		
 			return NO_ERROR;
 		}
