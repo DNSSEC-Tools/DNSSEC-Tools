@@ -22,6 +22,8 @@ struct testcase_st {
 };
 
 struct testcase_st testcases[] = {
+	/* Test for resolution error (ensure no "search" in resolv.conf) */
+	{"DNS_FAIL", "dns", ns_c_in, ns_t_a},
 
 	/* Test for validation with recursion */
 	{"RECUSION", "dns.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a},
