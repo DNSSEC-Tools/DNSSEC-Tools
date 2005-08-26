@@ -5,8 +5,6 @@
 #ifndef VAL_RESQUERY_H
 #define VAL_RESQUERY_H
 
-#include "validator.h"
-
 int val_resquery_send (	val_context_t           *context,
                         struct query_chain      *matched_q);
 int val_resquery_rcv ( 	
