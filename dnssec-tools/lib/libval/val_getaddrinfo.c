@@ -11,7 +11,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <resolver.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -19,9 +18,11 @@
 #include <strings.h>
 #include <arpa/nameser.h>
 
-#include "validator.h"
+#include <validator.h>
+#include <resolver.h>
 #include "val_parse.h"
 #include "val_getaddrinfo.h"
+#include "val_log.h"
 
 /**
  * addrinfo_dnssec_wrapper: A wrapper struct around addrinfo to

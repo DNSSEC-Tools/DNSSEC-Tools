@@ -10,7 +10,6 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <resolver.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -18,9 +17,11 @@
 #include <strings.h>
 #include <arpa/nameser.h>
 
-#include "validator.h"
+#include <validator.h>
+#include <resolver.h>
 #include "val_parse.h"
 #include "val_gethostbyname.h"
+#include "val_log.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"
@@ -156,7 +157,6 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 		struct in_addr ip4_addr;
 		char addr_buf[INET_ADDRSTRLEN];
 		int i, alias_count;
-		char *alias;
 		
 		bzero(&ip4_addr, sizeof(struct in_addr));
 		

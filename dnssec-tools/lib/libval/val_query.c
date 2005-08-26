@@ -12,13 +12,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <resolv.h>
-#include <resolver.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include "validator.h"
+#include <resolver.h>
+#include <validator.h>
+
+#include "val_log.h"
 
 /*
  * A validating DNS query interface.  Returns the length of the
