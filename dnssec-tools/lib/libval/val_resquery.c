@@ -25,9 +25,8 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
-#include "validator.h"
+#include <validator.h>
 
-#include "val_errors.h"
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_zone.h"
@@ -145,8 +144,10 @@ int do_referral(		val_context_t		*context,
                    && namecmp(matched_q->qc_name_n,ref_rrset->rrs_name_n)==0)
          {
    	            if((ret_val=add_to_qname_chain(qnames,
-       	                ref_rrset->rrs_data->rr_rdata)) != NO_ERROR)
+       	                ref_rrset->rrs_data->rr_rdata)) != NO_ERROR) {
+					free_qname_chain (qnames);
            	        return ret_val;
+				}
          }
    	     ref_rrset = ref_rrset->rrs_next;
     }
@@ -194,6 +195,7 @@ debug_name1, debug_name2);
 		free_name_servers(&matched_q->qc_ns_list);
 	matched_q->qc_ns_list = ref_ns_list;
 
+	matched_q->qc_state =  Q_INIT;
     return NO_ERROR;
 
 err:
@@ -203,7 +205,7 @@ err:
 	res_sq_free_rrset_recs(&matched_q->qc_referral->learned_zones);	
 	FREE(matched_q->qc_referral);
 	matched_q->qc_referral = NULL;
-	matched_q->qc_state =  REFERRAL_ERROR;
+	matched_q->qc_state =  Q_ERROR_BASE + SR_REFERRAL_ERROR;
 	return NO_ERROR;
 }
 
@@ -373,7 +375,7 @@ int digest_response (   val_context_t 		*context,
                 if (namecmp(referral_zone_n, name_n) != 0)
                 {
                     /* Malformed referral notice */
-					matched_q->qc_state =  REFERRAL_ERROR;
+					matched_q->qc_state =  Q_ERROR_BASE + SR_REFERRAL_ERROR;
 			        return NO_ERROR; 
                 }
                                                                                                                           
@@ -402,15 +404,13 @@ int digest_response (   val_context_t 		*context,
     }
 
 	if (referral_seen) {
-
+		
 		ret_val = do_referral(context, referral_zone_n, matched_q,
 					answers, &learned_zones, qnames);
 		/* all of these are consumed inside do_referral */
 		*answers = NULL;
 		*qnames = NULL;
 		learned_zones = NULL;
-		matched_q->qc_state = Q_INIT;
-
 	}
 	/* Check if this is the response to a referral request */
 	else {
