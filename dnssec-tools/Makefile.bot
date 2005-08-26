@@ -4,6 +4,6 @@
 .c.lo:
 	$(LIBTOOLCC) $(CPPFLAGS) $(CFLAGS) -c -o $@ $<
 
-# pod to man build definitions
+# pod to man build definitions for section 3 man pages.
 .pod.3:
-	pod2man $< > $@
+	pod2man -s 3 -c "Programmer's Manual" $< > $@
