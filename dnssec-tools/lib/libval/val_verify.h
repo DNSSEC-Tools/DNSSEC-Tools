@@ -10,9 +10,6 @@
 #ifndef VAL_VERIFY_H
 #define VAL_VERIFY_H
 
-#include <resolver.h>
-#include "validator.h"
-#include "val_errors.h"
 /*
  * Result status codes returned by the validator functions.
  */

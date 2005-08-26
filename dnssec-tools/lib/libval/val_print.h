@@ -5,8 +5,6 @@
  */ 
 #ifndef VAL_PRINT_H
 #define VAL_PRINT_H
-#include "val_parse.h"
-#include "validator.h"
 
 void dump_rrset(struct rrset_rec *rrset);
 void dump_dinfo(struct domain_info *dinfo);
