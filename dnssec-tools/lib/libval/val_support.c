@@ -26,10 +26,9 @@
 #include <arpa/nameser.h>
 
 #include <resolver.h>
+#include <validator.h>
 
-#include "validator.h"
 #include "val_support.h"
-#include "val_errors.h"
 #include "val_log.h"
 
 int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
@@ -1112,8 +1111,8 @@ char *p_val_error(int errno)
     case NAME_EXPANSION_FAILURE: return "NAME_EXPANSION_FAILURE"; break;
 	*/
     default: 
-			if((errno > DNS_ERROR_BASE) &&
-				(errno <= DNS_ERROR_BASE+SR_LAST_ERROR))
+			if((errno >= DNS_ERROR_BASE) &&
+				(errno < DNS_ERROR_LAST))
 				return "DNS_ERROR";
 			return "Unknown Error Value";
     }
