@@ -15,6 +15,8 @@ use Config;
 
 my %opts = (l => 5,
 	    c => $ENV{'HOME'} . "/.donuts.conf",
+	    T => 'port 53 || ip[6:2] & 0x1fff != 0',
+	    o => '%d.%t.pcap',
 	    r => $Config{'siteprefix'} . "/share/donuts/rules/*");
 
 my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
@@ -25,6 +27,9 @@ LocalGetOptions(\%opts,
 		["l|level=i", "The maxmimum rule level to run (default = 5)"],
 		["r|rules=s", "glob pattern for rule files to load"],
 		["i|ignore=s", "Regular expression for rules to ignore"],
+		["t|tcpdump-capture=s", "Start tcpdump on interface STRING during run"],
+		["T|tcpdump-filter=s", "Use tcpdump filter (default port 53 or fragments)"],
+		["o|tcpdump-output-file=s", "Save tcpdump results to file STRING."],
 		"",
 		["c|config-file=s", "Use an alternate configuration file"],
 		["C|no-config","Do not load any configuration files"],
@@ -138,6 +143,30 @@ while ($#ARGV > -1) {
     next if ($parseerror);
 
     #
+    # Start collecting TCPDUMP data if requested
+    #
+    my $tcpdumpproc;
+    if ($opts{'t'}) {
+	my $file = $opts{'o'};
+	$file =~ s/\%t/time()/eg; # replace %t with epoch
+	$file =~ s/\%d/$current_domain/g; # replace %d with domain
+	my @args = ("-i", $opts{t},
+		    "-f", $opts{T},
+		    "-s", 4096,
+		    "-w", $file);
+	if ($tcpdumpproc = fork()) {
+	    # parent
+	    sleep(1);  # wait for child to get going
+# 	    print STDERR "--- Starting tcpdump to file $file\n" if ($opts{v});
+# 	    print STDERR "    args: ",join("/",@args), "\n";
+	    print STDERR "--- Starting tcpdump\n" if ($opts{v});
+	} else {
+	    # child
+	    exec("tcpdump", @args);
+	}
+    }
+
+    #
     # call each rule on each record
     #
     print STDERR "--- Analyzing individual records in $current_zone_file\n" if ($opts{'v'});
@@ -172,6 +201,16 @@ while ($#ARGV > -1) {
 	$firstrun = 0;
     }
 
+    #
+    # stop tcpdump if we had started it
+    #
+
+    if ($tcpdumpproc) {
+	print STDERR "--- Stopping tcpdump.\n" if ($opts{v});
+	kill(15, $tcpdumpproc);
+	sleep(1);
+	kill(9, $tcpdumpproc);
+    }
     if ($opts{'v'}) {
 	print "results on testing $current_zone_file:\n";
 	print "  rules considered:\t" . (1+$#rules) . "\n";
@@ -399,7 +438,7 @@ sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	require Getopt::Long;
 	import Getopt::GUI::Long;
-	Getopt::Long::Configure(qw(auto_help no_ignore_case));
+	Getopt::Long::Configure(qw(display_help no_ignore_case));
 	return GetOptions(@_);
     }
     require Getopt::Long;
