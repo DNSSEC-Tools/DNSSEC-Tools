@@ -1,0 +1,14 @@
+MAN3PAGES= libsres.3
+
+all: $(MAN3PAGES)
+
+install:
+	for i in $(MAN3PAGES) ; do		\
+	  $(INSTALL) $$i $(man3dir) ;		\
+	done
+
+# we don't clean up the man pages as they're normally distributed with
+# the package and the generation rules are for the developers.
+clean:
+
+
