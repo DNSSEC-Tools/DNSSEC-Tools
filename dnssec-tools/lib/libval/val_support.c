@@ -1073,7 +1073,6 @@ char *p_val_error(int errno)
     case RRSIG_NOTYETACTIVE: return "RRSIG_NOTYETACTIVE"; break;
     case NOT_A_ZONE_KEY: return "NOT_A_ZONE_KEY"; break;
     case RRSIG_MISSING: return "RRSIG_MISSING"; break;
-    case DNSKEY_MISSING: return "DNSKEY_MISSING"; break;
     case UNKNOWN_ALGO: return "UNKNOWN_ALGO"; break;
     case ALGO_NOT_SUPPORTED: return "ALGO_NOT_SUPPORTED"; break;
     case UNKNOWN_DNSKEY_PROTO: return "UNKNOWN_DNSKEY_PROTO"; break;
@@ -1094,21 +1093,14 @@ char *p_val_error(int errno)
 
 	/*
     case UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
-    case DS_MISSING: return "DS_MISSING"; break;
-    case NSEC_MISSING: return "NSEC_MISSING"; break;
     case CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
     case WAITING: return "WAITING"; break;
     case WAKEUP: return "WAKEUP"; break;
     case OVERREACHING_NSEC: return "OVERREACHING_NSEC"; break;
     case TRUST_ANCHOR_TIMEOUT: return "TRUST_ANCHOR_TIMEOUT"; break;
     case INSUFFICIENT_DATA: return "INSUFFICIENT_DATA"; break;
-    case HEADER_ERROR: return "HEADER_ERROR"; break;
-    case EDNS_VERSION_ERROR: return "EDNS_VERSION_ERROR"; break;
-    case UNSUPP_ENDS0_LABEL: return "UNSUPP_ENDS0_LABEL"; break;
     case FLOOD_ATTACK_DETECTED: return "FLOOD_ATTACK_DETECTED"; break;
     case DNSSEC_VERSION_ERROR: return "DNSSEC_VERSION_ERROR"; break;
-    case SUSPICIOUS_BIT: return "SUSPICIOUS_BIT"; break;
-    case NAME_EXPANSION_FAILURE: return "NAME_EXPANSION_FAILURE"; break;
 	*/
     default: 
 			if((errno >= DNS_ERROR_BASE) &&
