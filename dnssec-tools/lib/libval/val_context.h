@@ -5,7 +5,7 @@
 #ifndef VAL_CONTEXT_H
 #define VAL_CONTEXT_H
 
-int get_context(const char *label, val_context_t **newcontext);
+int get_context(char *label, val_context_t **newcontext);
 void destroy_context(val_context_t *context);
 
 #endif
