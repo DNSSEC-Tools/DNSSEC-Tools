@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_query 3"
-.TH val_query 3 "2005-08-26" "perl v5.8.5" "Programmer's Manual"
+.TH val_query 3 "2005-08-28" "perl v5.8.3" "Programmer's Manual"
 .SH "NAME"
 val_query, val_x_query \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
@@ -146,13 +146,9 @@ val_query, val_x_query \- DNSSEC\-validated resolution of DNS queries
 .PP
 .Vb 4
 \&  int val_x_query(const val_context_t *ctx,
-\&                const char *domain_name, int class, int type,
-\&                unsigned char *answer, int anslen, int flags,
-\&                int *dnssec_status);
-.Ve
-.PP
-.Vb 1
-\&  char *p_val_error(int valerrno);
+\&            const char *domain_name, const u_int16_t class,
+\&            const u_int16_t type, const u_int8_t flags,
+\&            struct response_t *resp, int *resp_count)
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
@@ -168,10 +164,46 @@ If \s-1DNSSEC\s0 validation succeeds, a value of \fB\s-1VALIDATE_SUCCESS\s0\fR i
 \&\fIdnssec_status\fR.  Other values are returned in case of errors.  See
 \&\fIval_errors.h\fR for a listing of possible error codes.  The \fI\fIp_val_error()\fI\fR
 function can be used to return a brief string description of the error code.
+.PP
+\&\fI\fIval_query()\fI\fR gives applications that already use the \fI\fIres_query\fI\|(3)\fR interface
+a simple way to transition towards being DNSSEC\-aware. It does not, however, 
+handle cases where multiple resource record sets may be returned for a query, each
+with a potentially different dnssec status. If such functionality is desired, 
+applications must make use of the \fI\fIval_x_query()\fI\fR interface. The only difference
+between this and \fI\fIval_query()\fI\fR is that the latter returns results in \fIresp\fR which
+encapsultes the results into the following structure:
+.PP
+\&\fIstruct response_t\fR {
+    u_int8_t *response;
+    int response_length;
+    int validation_result;
+}; 
+.PP
+\&\fIresponse\fR, \fIresponse_length\fR and \fIvalidation_result\fR are functionally similar to
+\&\fIanswer\fR, \fIanslen\fR and \fIdnssec_status\fR respectively. \fIresp\fR is an array and must 
+be allocated by the user to be of sufficient size to hold all the answers returned
+by the \s-1DNS\s0 name server. 
+.PP
+The number of answers actually available is also returned in the \fIresp_count\fR 
+parameter. In case \fIresp\fR is not large enough to hold all answers returned from
+\&\fI\fIval_x_query()\fI\fR, it returns an error code of \fB\s-1NO_SPACE\s0\fR. and \fIresp_count\fR is 
+set to the number of answers that are totally available. Applications may re-query
+after re-allocating \fIresp\fR to hold that many answers. For queries that are not of 
+type \f(CW\*(C`ns_t_any\*(C'\fR it is generally sufficient to allocate an array of three 
+elements for *\fIresults\fR.
+.PP
+The \fIctx\fR parametr is the validator context and can be set to \s-1NULL\s0 for default 
+settings. More information about this field can be found in \fI\fIlibval\fI\|(3)\fR.  
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
 The \fI\fIval_query()\fI\fR function returns the length of the answer if successful,
 or \-1 if there was an error.
+.PP
+The \fI\fIval_x_query()\fI\fR function returns \fB\s-1NO_ERROR\s0\fR on success. It returns \fB\s-1NO_SPACE\s0\fR
+if the application has not allocated enough memory to hold all results returned 
+by the validator. This function internally invokes \fI\fIresolve_n_check()\fI\fR, and
+errors from this function may also be returned. See \fI\fIlibval\fI\|(3)\fR for
+more details.
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
 .Vb 4
@@ -236,5 +268,7 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 \&\fI\fIget_context\fI\|(3)\fR, \fI\fIval_getaddrinfo\fI\|(3)\fR, \fI\fIval_gethostbyname\fI\|(3)\fR
 .PP
 \&\fIp_val_error\fR
+.PP
+\&\fI\fIlibval\fI\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net
