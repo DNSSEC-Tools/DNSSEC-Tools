@@ -20,7 +20,6 @@
 #include <validator.h>
 
 #include "val_support.h"
-#include "val_zone.h"
 #include "val_cache.h"
 #include "val_assertion.h"
 #include "val_log.h"
@@ -62,7 +61,7 @@ static int val_sigverify (const char *data,
     if (dnskey.algorithm != rrsig.algorithm) {
 	val_log("Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.\n",
 	       dnskey.algorithm, rrsig.algorithm);
-	return INTERNAL_ERROR;
+	return RRSIG_ALGO_MISMATCH;
     }
 
     /* Check signature inception and expiration times */
@@ -508,7 +507,7 @@ void verify_next_assertion(struct assertion_chain *as)
 			if(NO_ERROR != (retval = 
 				find_key_for_tag (the_trust->ac_data->rrs_data, 
 					&signby_footprint_n, &dnskey))) {
-				SET_STATUS(as->ac_state, the_sig, retval);
+				SET_STATUS(as->ac_state, the_sig, DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
 				continue;
@@ -517,7 +516,7 @@ void verify_next_assertion(struct assertion_chain *as)
 		else {
 			/* data itself contains the key */
 			if(NO_ERROR != (retval = find_key_for_tag (the_set->rrs_data, &signby_footprint_n, &dnskey))) {
-				SET_STATUS(as->ac_state, the_sig, retval);
+				SET_STATUS(as->ac_state, the_sig, DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
 				continue;
