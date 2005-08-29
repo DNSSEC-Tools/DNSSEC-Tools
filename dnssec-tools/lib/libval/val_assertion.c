@@ -14,7 +14,6 @@
 
 #include "val_resquery.h"
 #include "val_support.h"
-#include "val_zone.h"
 #include "val_cache.h"
 #include "val_assertion.h"
 #include "val_verify.h"
@@ -740,14 +739,14 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 				case SR_ANS_CNAME:
 					if ((as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
 						(as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
-						matched_q->qc_state = CONFLICTING_ANSWERS;
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
 
 				/* Only bare RRSIGs together */
 				case SR_ANS_BARE_RRSIG:
 					if (as->ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG)
-						matched_q->qc_state = CONFLICTING_ANSWERS;
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					break;
 
 				/* NACK_NXT and NACK_SOA are OK */
@@ -755,13 +754,13 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 				case SR_ANS_NACK_SOA:
 					if ((as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
 						(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
-						matched_q->qc_state = CONFLICTING_ANSWERS;
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
 
 				/* Never Reached */
 				default:
-					matched_q->qc_state = CONFLICTING_ANSWERS;
+					matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 			}
 		}
 
