@@ -46,18 +46,25 @@ LOBJ=	ns_name.lo	\
 	res_tsig.lo	\
 	res_query.lo	
 
+SUBDIRS=doc
+
 LIBRES= libsres.la
 
 INCLUDE= include
 CFLAGS_EX=-I$(INCLUDE)
 
-all: $(LIBRES)
+all: $(LIBRES) subdirmake 
 
 clean:
 	rm -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
 
 $(LIBRES): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ) -export-symbols EXPORT.sym
+
+subdirmake:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make) ; \
+	done
 
 install:
 	$(LIBTOOLIN) $(LIBRES) $(libdir)
