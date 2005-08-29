@@ -76,7 +76,6 @@ u_int16_t rsamd5_keytag (const unsigned char *pubkey,
 	BIGNUM *modulus;
 	u_int16_t keytag = 0x0000;
 	unsigned char *modulus_bin;
-	int i;
 	int modulus_len;
 	
 	if ((rsa = RSA_new()) == NULL) {
