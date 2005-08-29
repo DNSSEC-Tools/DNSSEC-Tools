@@ -1,0 +1,154 @@
+# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the dnssec-tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+
+DNSSEC-aware Resolver library
+-----------------------------
+
+A library that is capable of sending queries to, and receiving answers
+from a DNSSEC-aware name server.
+
+
+Overview 
+--------
+
+This library provides the resolver component of the "validating resolver"
+(see ../libval/README for details on the validator component). It provides
+the interfaces necessary for the validator to fetch answers from
+a DNSSEC-aware name server. 
+
+The resolver library does not itself perform any recursion. This design 
+choice was made reduce the complexity within the resolver and keep it
+as DNSSEC-agnostic as possible (DNSSEC-relevant information is present in
+the additional section of the referrals). The library still needs to be 
+'DNSSEC-aware' in that queries that it sends must have the DO bit set. 
+The resolver must also set the CD bit to permit all DNSSEC-relevant 
+resource records to be returned in different sections of the DNS response. 
+EDNS0 must also be supported so that larger DNSSEC answers can fit into 
+UDP responses without the resolver having to switch over to TCP.
+
+The resolver library is built to support both synchronous as well as 
+asynchronous queries to the DNS. Asynchronous queries are a useful 
+optimization feature in some instances, where it is possible to 
+parallize other time-consuming operations while the query is in transit.
+
+The following interfaces are exported by the libsres library (more 
+details may be found in the libsres manual page):
+
+int query_send( const char      *name,
+            const u_int16_t     type,
+            const u_int16_t     class,
+            struct name_server  *nslist,
+            int                 *trans_id);
+                                                                                                                             
+int response_recv(int           *trans_id,
+            struct name_server  **respondent,
+            u_int8_t            **response,
+            u_int32_t           *response_length);
+                                                                                                                             
+int get ( const char            *name_n,
+            const u_int16_t     type_h,
+            const u_int16_t     class_h,
+            struct name_server  *nslist,
+            struct name_server  **respondent,
+            u_int8_t            **response,
+            u_int32_t           *response_length);
+
+void free_name_server (struct name_server **ns);
+void free_name_servers (struct name_server **ns);
+
+query_send() and response_recv() provide the asynchronous query/response 
+interface to the libsres library. A synchronous interface to the 
+query/response mechanism can be implemented using the above interfaces 
+as shown below:
+
+if (SR_UNSET == (ret_val = query_send(name, type, class, 
+										nslist, &trans_id))) {
+	do {
+		ret_val = response_recv(&trans_id, server, 
+						response, response_length);
+	} while (ret_val == SR_NO_ANSWER_YET);
+}
+
+The above code segment forms the essence of the get() interface.
+
+The free_name_server(s) methods can be used to free up memory
+allocated within the name_server structure.
+
+Other symbols exported by the libsres library include the following: 
+__ns_name_unpack
+__ns_name_ntop
+__ns_name_pton
+__p_type
+__p_class
+__p_section
+The above are helper functions that have been directly included from 
+the BIND library.
+
+The libsres libarary perfoms some basic header checking on the 
+data that it receives from the name server before sending it on to
+the application that initiated the query. Some sanity 
+checking of the DNS header and the data size is done before the 
+answers are returned. Error codes normally returned by the name 
+server are passed back as return values to the get() and 
+response_recv() methods. Only two non-error codes exist -- 
+the no error RCODE itself and some NXDOMAIN response. The NXDOMAIN 
+response is considered a "no error" where there are only SOA or NSEC 
+records in the authority section, since these would then comprise the 
+the proof of non-existence.
+
+The query transmission framework
+--------------------------------
+
+libsres uses the _res.retry and _res.delay parameters to control the
+generation of queries.  
+
+The brief algorithm is as given below. This logic is invoked each time a 
+call is made to the res_io_accept method().
+
+1. while there are more name servers to query
+	1.1. Send the query to the first name server and wait for _res.delay seconds
+	1.2. If there is no response, send the query to the next name server and 
+	     increment the delay for the first name server by its current _res.delay
+	1.3. Keep adding name servers in a staggered fashion while re-trying queries
+	     to others.
+2. wait for a response or for all requests to time out
+
+If res_io_method() is called within a loop (such as the case in get()), the 
+pattern of (re)transmissions is roughly ( for _res.retries = 4, 
+_res.delay = 5, three servers, one address each):
+                                                                                                                             
+         0  5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 (seconds)
+Svr 1 :  1  2     3           4                Give up
+Svr 2 :     1  2     3           4                Give up
+Svr 3 :        1  2     3           4                Give up
+
+All pending queries are destroyed once an answer is obtained. From
+the application's standpoint the answer may still not be complete, in which
+case it may wish to retry a different set of name servers or query 
+separately for missing data. 
+
+Resolver policy will eventually be used to control other flags (CD, RD etc) 
+that are sent in the query to the name servers. Currently, these flags are
+always set by default.
+
+Resolver Current Status
+-----------------------
+
+This library provides very basic functionality for name resolution. 
+The data structures and interfaces exported to applications are still 
+in a state of flux and are almost certainly expected to change. 
+The library is neither thread-safe nor re-entrant in various places. 
+There is still some reliance on BIND code (although these are mostly 
+helper routines) and some other libbind artifacts.
+
+Acknowledgements
+----------------
+
+Most of the code in the libsres library was derived from an earlier 
+implementation of the secure resolver library authored by 
+Ed Lewis at Tislabs. 
