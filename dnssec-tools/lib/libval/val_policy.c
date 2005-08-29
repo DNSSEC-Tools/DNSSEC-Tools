@@ -469,7 +469,7 @@ static int get_token ( FILE *conf_ptr,
  * delimited by ':') are present before the exact match is
  * obtained.
  */
-static int check_relevance(char *label, const char *scope, int *label_count, int *relevant)
+static int check_relevance(char *label, char *scope, int *label_count, int *relevant)
 {
 	char *c, *tmpstr;
 
@@ -479,7 +479,7 @@ static int check_relevance(char *label, const char *scope, int *label_count, int
 	/* Check if this level is relevant */
 	if (scope != NULL) {
 
-		tmpstr= (char *) MALLOC ((strlen(scope) +1 ) * sizeof(char));
+		tmpstr= STRDUP(label); 
 		if(tmpstr == NULL)
 			return OUT_OF_MEMORY;
 		c = tmpstr;
@@ -516,7 +516,7 @@ static int check_relevance(char *label, const char *scope, int *label_count, int
  * Get the next relevant {label, keyword, data} fragment 
  * from the configuration file file
  */
-static int get_next_policy_fragment(FILE *fp, const char *scope, 
+static int get_next_policy_fragment(FILE *fp, char *scope, 
 				struct policy_fragment **pol_frag, int *line_number)
 {
 	char token[TOKEN_MAX];
@@ -669,7 +669,7 @@ void destroy_valpol(val_context_t *ctx)
 /*
  * Make sense of the validator configuration file
  */
-int read_val_config_file(val_context_t *ctx, const char *scope)
+int read_val_config_file(val_context_t *ctx, char *scope)
 {
 	FILE *fp;
 	struct policy_fragment *pol_frag = NULL;
@@ -701,7 +701,7 @@ int read_val_config_file(val_context_t *ctx, const char *scope)
  * of labels. When doing the override, we must use all policy
  * fragments that are "relevant"
  */
-int switch_effective_policy(val_context_t *ctx, const char *label)
+int switch_effective_policy(val_context_t *ctx, char *label)
 {
 	struct policy_overrides *cur, *t;
 	int retval;
@@ -724,7 +724,7 @@ int switch_effective_policy(val_context_t *ctx, const char *label)
 			for (t = ctx->pol_overrides; t != cur->next; t = t->next) {
 				/* Override only if this is relevant */
 				int relevant, label_count;
-				if (NO_ERROR != (retval = (check_relevance(t->label, label, &label_count, &relevant)))) 
+				if (NO_ERROR != (retval = (check_relevance(label, t->label, &label_count, &relevant)))) 
 						return retval;
 				if(relevant)	
 					OVERRIDE_POLICY(ctx, t);
