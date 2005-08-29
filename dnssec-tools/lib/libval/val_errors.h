@@ -36,36 +36,29 @@
 
 /* "Cannot do anything further" states */
 #define ERROR_BASE    			A_LAST_STATE /* 10 */
-#define DATA_MISSING			ERROR_BASE+2
-#define DNSKEY_MISSING			ERROR_BASE+3 
-#define	DS_MISSING				ERROR_BASE+4	
-#define NSEC_MISSING 			ERROR_BASE+5
-#define RRSIG_MISSING 			ERROR_BASE+6
-#define NO_TRUST_ANCHOR 		ERROR_BASE+7
-#define UNTRUSTED_ZONE	 		ERROR_BASE+8
-#define IRRELEVANT_PROOF		ERROR_BASE+9
-#define GENERIC_ERROR 			ERROR_BASE+10
-#define HEADER_ERROR			ERROR_BASE+11		
-#define EDNS_VERSION_ERROR		ERROR_BASE+12	
-#define UNSUPP_ENDS0_LABEL		ERROR_BASE+13
-#define DNSSEC_VERSION_ERROR	ERROR_BASE+14
-#define SUSPICIOUS_BIT			ERROR_BASE+15
-#define NAME_EXPANSION_FAILURE	ERROR_BASE+16
-#define TOO_MANY_LINKS	 		ERROR_BASE+17 
-#define UNKNOWN_DNSKEY_PROTO  	ERROR_BASE+18
-#define FLOOD_ATTACK_DETECTED	ERROR_BASE+19	
-#define CONFLICTING_ANSWERS     ERROR_BASE+20
-#define DNS_ERROR_BASE			CONFLICTING_ANSWERS	
+#define DATA_MISSING			ERROR_BASE+1
+#define RRSIG_MISSING 			ERROR_BASE+2
+#define NO_TRUST_ANCHOR 		ERROR_BASE+3
+#define UNTRUSTED_ZONE	 		ERROR_BASE+4
+#define IRRELEVANT_PROOF		ERROR_BASE+5
+#define DNSSEC_VERSION_ERROR	ERROR_BASE+6 
+#define TOO_MANY_LINKS	 		ERROR_BASE+7  
+#define UNKNOWN_DNSKEY_PROTO  	ERROR_BASE+8 
+#define FLOOD_ATTACK_DETECTED	ERROR_BASE+9 	
+
+#define DNS_ERROR_BASE			ERROR_BASE+15
 /* 
  * DNS errors lie within this range, 
- * there are SR_LAST_ERROR (18) of them in total
+ * there are SR_LAST_ERROR (22) of them in total
  */
 #define SR_REFERRAL_ERROR       SR_LAST_ERROR+1 /* one more DNS error for referral failures */ 
-#define DNS_ERROR_LAST			DNS_ERROR_BASE + SR_REFERRAL_ERROR
-#define LAST_ERROR				DNS_ERROR_LAST /* ERROR_BASE+30 */ 
+#define SR_MISSING_GLUE         SR_LAST_ERROR+2 /* one more DNS error for referral failures */ 
+#define SR_CONFLICTING_ANSWERS  SR_LAST_ERROR+3
+#define DNS_ERROR_LAST			DNS_ERROR_BASE + SR_CONFLICTING_ANSWERS
+#define LAST_ERROR				DNS_ERROR_LAST /* ERROR_BASE+40 */ 
 
 /* "Error, but can prove the chain-of-trust above this" states */
-#define FAIL_BASE				LAST_ERROR+1 /* ERROR_BASE+40 */ 
+#define FAIL_BASE				LAST_ERROR+1 /* ERROR_BASE+50 */ 
 #define DNSKEY_NOMATCH			FAIL_BASE+1 /*RRSIG was created by a DNSKEY that does not exist in the apex keyset.*/
 #define WRONG_LABEL_COUNT  		FAIL_BASE+2 /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA.*/
 #define SECURITY_LAME	  		FAIL_BASE+3 /*RRSIG created by a key that does not exist in the parent DS record set.*/
@@ -87,7 +80,7 @@
 #define WRONG_RRSIG_OWNER		FAIL_BASE+19 /* The RRSIG and the data that it purportedly covers have differing notions of owner name*/
 #define RRSIG_ALGO_MISMATCH 	FAIL_BASE+20 /* The DNSKEY and RRSIG pair have a mismatch in their algorithm.*/
 #define KEYTAG_MISMATCH			FAIL_BASE+21 /* The DNSKEY and RRSIG pair have a mismatch in their key tags*/
-#define LAST_FAILURE			FAIL_BASE+30 /* ERROR_BASE + 70 */
+#define LAST_FAILURE			FAIL_BASE+30 /* ERROR_BASE + 80 */
 
 /* success results conditions */
 #define VERIFIED				LAST_FAILURE+1 /* This is a transient state, it will settle at VALIDATED_SUCCESS if the
@@ -97,7 +90,7 @@ chain of trust can be completed */
 #define TRUST_ZONE				LAST_FAILURE+4 /* zone is trusted */
 #define BARE_RRSIG 				LAST_FAILURE+5 /* No DNSSEC validation possible, query was for a RRSIG.*/
 #define VALIDATE_SUCCESS  		LAST_FAILURE+6	/* TRUSTED AND no error */
-#define LAST_SUCCESS			LAST_FAILURE+10 /* ERROR_BASE + 80 */
+#define LAST_SUCCESS			LAST_FAILURE+10 /* ERROR_BASE + 90 */
 
 /* failure result conditions */
 #define BOGUS_PROVABLE			LAST_SUCCESS+1	/* NOT_VERIFIED but not trusted */
