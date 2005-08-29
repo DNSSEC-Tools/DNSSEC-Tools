@@ -5,7 +5,6 @@ CFLAGS_EX=-I$(INCL) -I.
 
 SRC=  	val_resquery.c \
 	val_support.c \
-	val_zone.c \
 	val_cache.c \
 	val_context.c \
 	val_verify.c \
@@ -25,7 +24,6 @@ SRC=  	val_resquery.c \
 # can't use gmake conventions to translate SRC -> OBJ for portability
 OBJ=  	val_resquery.o \
 	val_support.o \
-	val_zone.o \
 	val_cache.o \
 	val_context.o \
 	val_verify.o \
@@ -44,7 +42,6 @@ OBJ=  	val_resquery.o \
 
 LOBJ=  	val_resquery.lo \
 	val_support.lo \
-	val_zone.lo \
 	val_cache.lo \
 	val_context.lo \
 	val_verify.lo \
