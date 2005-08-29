@@ -40,10 +40,10 @@
 
 
 int read_res_config_file(val_context_t *ctx);
-int read_val_config_file(val_context_t *ctx, const char *scope);
+int read_val_config_file(val_context_t *ctx, char *scope);
 void destroy_valpol(val_context_t *ctx);
 void destroy_respol(val_context_t *ctx);
-int switch_effective_policy(val_context_t *ctx, const char *label);
+int switch_effective_policy(val_context_t *ctx, char *label);
 
 int parse_trust_anchor(FILE*, policy_entry_t*, int*);
 int free_trust_anchor(policy_entry_t*);

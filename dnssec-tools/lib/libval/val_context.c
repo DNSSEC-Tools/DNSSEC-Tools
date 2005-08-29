@@ -19,7 +19,7 @@
 #include "val_x_query.h"
 #include "val_log.h"
 
-int get_context(const char *label, val_context_t **newcontext)
+int get_context(char *label, val_context_t **newcontext)
 {
 	int retval;
 
