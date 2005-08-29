@@ -220,6 +220,11 @@ int theres_something_wrong_with_header (    u_int8_t    *response,
 
 int clone_ns(struct name_server **cloned_ns, struct name_server *ns)
 {
+	if(ns == NULL) {
+		*cloned_ns = NULL;
+		return SR_UNSET;
+	}
+
 	/* Create the structure for the name server */
     *cloned_ns = (struct name_server *)
 						MALLOC(sizeof(struct name_server));
@@ -359,10 +364,12 @@ int response_recv(int           *trans_id,
 	*answer_length=0;
 	*respondent=NULL;
 
-	struct name_server *temp_ns;
+	struct name_server *temp_ns = NULL;
+
 	if ((ret_val=res_io_accept(*trans_id,answer,answer_length, &temp_ns))
 			== SR_NO_ANSWER_YET)
 		return ret_val;
+
 	if (clone_ns(respondent, temp_ns) != SR_UNSET)	
 		return ret_val;
 		
