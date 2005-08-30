@@ -775,11 +775,11 @@ static int init_respol(struct name_server **nslist)
                                                                                                                              
 		char *buf = NULL;
 		char *cp = NULL;
-    	char white[] = " \t\n";
+		char white[] = " \t\n";
 	
 		lp = line;
 
-		if (strstr(line, "nameserver") == line) {
+		if (strncmp(line, "nameserver", strlen("nameserver")) == 0) {
 
 			strtok_r(line, white, &buf);
 			cp = strtok_r(NULL, white, &buf);
@@ -811,7 +811,7 @@ static int init_respol(struct name_server **nslist)
 			ns->ns_number_of_addresses = 0;
 			if (inet_aton (cp, &address)==0)
 				goto err;
-   	    	bzero(&my_addr, sizeof(struct sockaddr));
+   	    		bzero(&my_addr, sizeof(struct sockaddr));
 			my_addr.sin_family = AF_INET;         // host byte order
 			my_addr.sin_port = htons(DNS_PORT);     // short, network byte order
 			my_addr.sin_addr = address;
@@ -824,7 +824,7 @@ static int init_respol(struct name_server **nslist)
 				ns_head = ns;
 			}
 		}
-		else if (strstr(line, "zone") == line) {
+		else if (strncmp(line, "zone", strlen("zone")) == 0) {
 			if (ns == NULL)	
 				goto err;
 			strtok_r(line, white, &buf);
@@ -837,7 +837,7 @@ static int init_respol(struct name_server **nslist)
 				goto err;
 		}
 
-    	if (lp != NULL) 
+		if (lp != NULL) 
 			FREE(lp);
 		line = NULL;
 	}
