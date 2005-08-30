@@ -426,7 +426,7 @@ struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name
 		if (hentry != NULL) {
 			hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
 			hentry_wrapper->dnssec_status = VALIDATE_SUCCESS; /* ??? or locally trusted ??? */
-			*h_errnop = VALIDATE_SUCCESS;
+			*h_errnop = NETDB_SUCCESS;
 			return hentry;
 		}
 		
