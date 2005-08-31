@@ -25,7 +25,7 @@ dnssec-tools.conf - Configuration file for the DNSSEC-Tools programs.
 
 This file contains configuration information for the DNSSEC-Tools programs.
 These configuration data are used if nothing else has been specified for a
-particular program.  The I<conf.pm> module is used to parse this configuration
+particular program.  The B<conf.pm> module is used to parse this configuration
 file.
 
 A line in the configuration file contains either a comment or a configuration
@@ -59,7 +59,7 @@ The path to the I<named-checkzone> command.
 
 =item default_keyrec
 
-The default I<keyrec> filename to be used by the I<keyrec.pm> module.
+The default I<keyrec> filename to be used by the B<keyrec.pm> module.
 
 =item endtime
 
