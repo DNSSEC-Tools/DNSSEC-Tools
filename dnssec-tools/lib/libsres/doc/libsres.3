@@ -128,112 +128,127 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "libsres 3"
-.TH libsres 3 "2005-08-31" "perl v5.8.3" "Programmer's Manual"
+.IX Title "LIBSRES 1"
+.TH LIBSRES 1 "2005-08-31" "perl v5.8.6" "User Contributed Perl Documentation"
 .SH "NAME"
-query_send, response_rcv, get, free_name_server, free_name_servers \- send queries and receive responses from a
-DNS name server.
+query_send, response_rcv, get, free_name_server, free_name_servers \-
+send queries and receive responses from a DNS name server.
 .PP
 print_response \- Display answers returned from the name server
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
-#include <resolver.h>
+.Vb 1
+\&  #include <resolver.h>
+.Ve
 .PP
-int query_send( const char      *name,
-            const u_int16_t     type,
-            const u_int16_t     class,
-            struct name_server  *nslist,
-            int                 *trans_id);
+.Vb 5
+\&  int query_send(const char    *name,
+\&            const u_int16_t     type,
+\&            const u_int16_t     class,
+\&            struct name_server  *nslist,
+\&            int                 *trans_id);
+.Ve
 .PP
-int response_recv(int           *trans_id,
-            struct name_server  **respondent,
-            u_int8_t            **response,
-            u_int32_t           *response_length);
+.Vb 4
+\&  int response_recv(int         *trans_id,
+\&            struct name_server  **respondent,
+\&            u_int8_t            **response,
+\&            u_int32_t           *response_length);
+.Ve
 .PP
-int get ( const char            *name_n,
-            const u_int16_t     type_h,
-            const u_int16_t     class_h,
-            struct name_server  *nslist,
-            struct name_server  **respondent,
-            u_int8_t            **response,
-            u_int32_t           *response_length);
+.Vb 7
+\&  int get(const char          *name_n,
+\&          const u_int16_t     type_h,
+\&          const u_int16_t     class_h,
+\&          struct name_server  *nslist,
+\&          struct name_server  **respondent,
+\&          u_int8_t            **response,
+\&          u_int32_t           *response_length);
+.Ve
 .PP
-void free_name_server (struct name_server **ns);
+.Vb 1
+\&  void free_name_server(struct name_server **ns);
+.Ve
 .PP
-void free_name_servers (struct name_server **ns);
+.Vb 1
+\&  void free_name_servers(struct name_server **ns);
+.Ve
 .PP
-void print_response (u_int8_t *response, int response_length);
+.Vb 1
+\&  void print_response(u_int8_t *response, int response_length);
+.Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIquery_send()\fB\fR function can be used to send a query comprising of the
-<\fIname, class, type\fR> tuple to the name servers specified in \fInslist\fR. 
-\&\fItrans_id\fR provides a handle to this transaction within the libsres library.
+The \fB\f(BIquery_send()\fB\fR function can be used to send a query comprised of the
+<\fIname, class, type\fR> tuple to the name servers specified in \fInslist\fR.
+\&\fItrans_id\fR provides a handle to this transaction within the \fIlibsres\fR library.
 .PP
 The \fB\f(BIresponse_recv()\fB\fR function returns the answers, if available, from the
-name server that responds within the transaction identified by \fItrans_id\fR. 
-The response is available in \fIresponse\fR and the responding name server is 
-returned in \fIrespondent\fR. The length of the response in bytes is returned 
-in  \fIresponse_length\fR. 
+name server that responds within the transaction identified by \fItrans_id\fR.
+The response is available in \fIresponse\fR and the responding name server is
+returned in \fIrespondent\fR.  The length of the response in bytes is returned
+in \fIresponse_length\fR.
 .PP
 The \fB\f(BIget()\fB\fR function provides a wrapper around the \fB\f(BIquery_send()\fB\fR and
-\&\fB\f(BIresponse_recv()\fB\fR functions. It blocks until some response is received 
-from some name server or the request times out. The libsres library does
+\&\fB\f(BIresponse_recv()\fB\fR functions.  It blocks until a response is received
+from some name server or the request times out.  The \fIlibsres\fR library does
 not automatically send out recursive queries; referral requests are also
 treated as valid responses.
 .PP
-The memory pointed to by \fI*respondent\fR is allocated 
-by the libsres library and this must be free-d by the invoker using the 
-\&\fB\f(BIfree_name_server()\fB\fR method. An entire list of name servers can be free-d 
-using the \fB\f(BIfree_name_servers()\fB\fR method.
+The memory pointed to by \fI*respondent\fR is allocated by the \fIlibsres\fR library
+and this must be freed by the invoker using \fB\f(BIfree_name_server()\fB\fR.
+An entire list of name servers can be freed using \fB\f(BIfree_name_servers()\fB\fR.
 .PP
 \&\fB\f(BIprint_response()\fB\fR provides a convenient way to display answers returned
 in \fIresponse\fR by the name server.
 .PP
-\&\fIstruct name_server\fR is defined in resolver.h as follows.
+\&\fIstruct name_server\fR is defined in \fBresolver.h\fR as follows.
 .PP
-struct name_server 
-{
-    u_int8_t *ns_name_n;
-    void *ns_tsig_key;
-    u_int32_t ns_security_options;
-    u_int32_t ns_status;
-    struct name_server *ns_next; 
-    int ns_number_of_addresses;
-    struct sockaddr ns_address[1];
-.PP
-};
+.Vb 10
+\&  struct name_server
+\&  {
+\&        u_int8_t *ns_name_n;
+\&        void *ns_tsig_key;
+\&        u_int32_t ns_security_options;
+\&        u_int32_t ns_status;
+\&        struct name_server *ns_next;
+\&        int ns_number_of_addresses;
+\&        struct sockaddr ns_address[1];
+\&  };
+.Ve
 .IP "\fIns_name_n\fR" 4
 .IX Item "ns_name_n"
-The name of the zone for which this name server is authoritative. This field
+The name of the zone for which this name server is authoritative.  This field
 provides a convenient way for the invoker to index a list of name servers
 while sending queries to different name servers, especially during a referral.
-It is not made use of directly by the resolver and can be set to an empty string.
+It is not used directly by the resolver and can be set to an empty string.
 .IP "\fIns_tsig_key\fR" 4
 .IX Item "ns_tsig_key"
-The tsig key that should be used to protect messsages sent to this name server.
-This field is currently un\-used.
+The \fItsig\fR key that should be used to protect messages sent to this name
+server.  This field is currently unused.
 .IP "\fIns_security_options\fR" 4
 .IX Item "ns_security_options"
-The security options for the zone. This can be set to either \s-1ZONE_USE_NOTHING\s0 or
-\&\s-1ZONE_USE_TSIG\s0.
+The security options for the zone.  This can be set to either \s-1ZONE_USE_NOTHING\s0
+or \s-1ZONE_USE_TSIG\s0.
 .IP "\fIns_status\fR" 4
 .IX Item "ns_status"
-The status of the zone. This field is used internally by the invoker to maintain 
-properties of the zone. Currently defined values for this field are 
+The status of the zone.  This field is used internally by the invoker to
+maintain properties of the zone.  Currently defined values for this field are
 \&\s-1SR_ZI_STATUS_UNSET\s0, \s-1SR_ZI_STATUS_PERMANENT\s0 and \s-1SR_ZI_STATUS_LEARNED\s0.
 .IP "\fIns_next\fR" 4
 .IX Item "ns_next"
 The address of the next name server in the list.
 .IP "\fIns_number_of_addresses\fR" 4
 .IX Item "ns_number_of_addresses"
-The number of elements in the array \fIns_addresses\fR. This field is
+The number of elements in the array \fIns_addresses\fR.  This field is
 currently unused.
 .IP "\fIns_addresses\fR" 4
 .IX Item "ns_addresses"
-The \s-1IP\s0 address of the name server. Currently, only IPv4 addresses can be stored. 
+The \s-1IP\s0 address of the name server.  Currently, only IPv4 addresses can be
+stored.
 .SH "OTHER SYMBOLS EXPORTED"
 .IX Header "OTHER SYMBOLS EXPORTED"
-The libsres library also exports the following \s-1BIND\s0 symbols: 
+The \fIlibsres\fR library also exports the following \s-1BIND\s0 symbols:
     _\|_ns_name_unpack
     _\|_ns_name_ntop
     _\|_ns_name_pton
@@ -241,8 +256,8 @@ The libsres library also exports the following \s-1BIND\s0 symbols:
     _\|_p_class
     _\|_p_section
 .PP
-Documentation for these symbols can be found in the \s-1BIND\s0 
-sources/documentation manuals.
+Documentation for these symbols can be found in the \s-1BIND\s0 sources and
+documentation manuals.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
 .IP "\s-1SR_UNSET\s0" 4
@@ -250,22 +265,22 @@ sources/documentation manuals.
 No error.
 .IP "\s-1SR_CALL_ERROR\s0" 4
 .IX Item "SR_CALL_ERROR"
-An invalid parameter was passed to the \fB\f(BIquery_send()\fB\fR, 
-\&\fB\f(BIresponse_recv()\fB\fR or \fB\f(BIget()\fB\fR method.
+An invalid parameter was passed to \fB\f(BIget()\fB\fR, \fB\f(BIquery_send()\fB\fR, or
+\&\fB\f(BIresponse_recv()\fB\fR.
 .IP "\s-1SR_MEMORY_ERROR\s0" 4
 .IX Item "SR_MEMORY_ERROR"
 Memory allocation failed.
 .IP "\s-1SR_MKQUERY_INTERNAL_ERROR\s0" 4
 .IX Item "SR_MKQUERY_INTERNAL_ERROR"
-Some internal error was encountered while trying to construct a 
+An internal error was encountered while trying to construct a
 query message.
 .IP "\s-1SR_TSIG_INTERNAL_ERROR\s0" 4
 .IX Item "SR_TSIG_INTERNAL_ERROR"
-Some internal error was encountered while trying to construct a 
+An internal error was encountered while trying to construct a
 signed \s-1TSIG\s0 message.
 .IP "\s-1SR_SEND_INTERNAL_ERROR\s0" 4
 .IX Item "SR_SEND_INTERNAL_ERROR"
-Some internal error was encountered while trying to send the 
+An internal error was encountered while trying to send the
 message to the name server(s).
 .IP "\s-1SR_NO_ANSWER_YET\s0" 4
 .IX Item "SR_NO_ANSWER_YET"
@@ -275,15 +290,14 @@ No answer currently available; the query is still active.
 No answers were received from any name server.
 .IP "\s-1SR_RCV_INTERNAL_ERROR\s0" 4
 .IX Item "SR_RCV_INTERNAL_ERROR"
-Some internal error was encountered while trying to receive 
-responses from some name server.
+An internal error was encountered while trying to receive
+responses from a name server.
 .IP "\s-1SR_WRONG_ANSWER\s0" 4
 .IX Item "SR_WRONG_ANSWER"
-The header bits did not correctly identify the message as a
-response.
+The header bits did not correctly identify the message as a response.
 .IP "\s-1SR_HEADER_BADSIZE\s0" 4
 .IX Item "SR_HEADER_BADSIZE"
-The length and count of records in the header was incorrect.
+The length and count of records in the header were incorrect.
 .IP "\s-1SR_TSIG_ERROR\s0" 4
 .IX Item "SR_TSIG_ERROR"
 \&\s-1TSIG\s0 validation on the response message failed.
@@ -295,7 +309,7 @@ The queried name did not exist.
 The name server was not able to parse the query message.
 .IP "\s-1SR_SERVFAIL\s0" 4
 .IX Item "SR_SERVFAIL"
-The name server was not reachable. 
+The name server was not reachable.
 .IP "\s-1SR_NOTIMPL\s0" 4
 .IX Item "SR_NOTIMPL"
 A particular functionality is not yet implemented.
@@ -308,28 +322,30 @@ Other failure returned by the name server and reflected in the
 returned message \s-1RCODE\s0.
 .IP "\s-1SR_EDNS_VERSION_ERROR\s0" 4
 .IX Item "SR_EDNS_VERSION_ERROR"
-Wrong \s-1EDNS\s0 version used. Not implemented.
-.IP "\s-1SR_UNSUPP_ENDS0_LABEL\s0" 4
-.IX Item "SR_UNSUPP_ENDS0_LABEL"
-Unsupported \s-1EDNS\s0 version used. Not implemented.
+Wrong \s-1EDNS\s0 version used.  Not implemented.
+.IP "\s-1SR_UNSUPP_EDNS0_LABEL\s0" 4
+.IX Item "SR_UNSUPP_EDNS0_LABEL"
+Unsupported \s-1EDNS\s0 version used.  Not implemented.
 .IP "\s-1SR_SUSPICIOUS_BIT\s0" 4
 .IX Item "SR_SUSPICIOUS_BIT"
-Some bit in the header was set funny. Not implemented.
+A bit in the header was set to an unexpected value.  Not implemented.
 .IP "\s-1SR_NAME_EXPANSION_FAILURE\s0" 4
 .IX Item "SR_NAME_EXPANSION_FAILURE"
-Could not expand name from wire format. Not used.
+Could not expand name from wire format.  Not used.
 .SH "CURRENT STATUS"
 .IX Header "CURRENT STATUS"
-There is currently no support for IPv6. There is limited support for 
-specifying resolver policy; members of the \fIstruct name_server\fR are 
-still subject to change. 
-The library is not thread\-safe. 
+There is currently no support for IPv6.
+.PP
+There is limited support for specifying resolver policy; members of the
+\&\fIstruct name_server\fR are still subject to change.
+.PP
+The library is not thread\-safe.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
 Copyright 2004\-2005 \s-1SPARTA\s0, Inc.  All rights reserved.
 See the \s-1COPYING\s0 file included with the dnssec-tools package for details.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fIlibval\fR\|(3)
+\&\fB\f(BIlibval\fB\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net
