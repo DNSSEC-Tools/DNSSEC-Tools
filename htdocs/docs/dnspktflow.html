@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>dnspktflow - Analyize and draw DNS flow diagrams from a tcpdump file</title>
+<title>dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file</title>
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -14,6 +14,7 @@
 
 	<li><a href="#name">NAME</a></li>
 	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#requirements">REQUIREMENTS</a></li>
 	<li><a href="#options">OPTIONS</a></li>
 	<li><a href="#copyright">COPYRIGHT</a></li>
@@ -27,30 +28,38 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>dnspktflow - Analyize and draw DNS flow diagrams from a tcpdump file</p>
+<p>dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file</p>
 <p>
 </p>
 <hr />
 <h1><a name="synopsis">SYNOPSIS</a></h1>
-<p>dnspktflow -o output.png file.tcpdump</p>
-<p>dnspktflow -o output.png -x -a -t -q file.tcpdump</p>
+<pre>
+  dnspktflow -o output.png file.tcpdump</pre>
+<pre>
+  dnspktflow -o output.png -x -a -t -q file.tcpdump</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>Analyze and draw DNS flow diagrams from a <em>tcpdump</em> file.
+The flow diagram will be made in the PNG format.</p>
 <p>
 </p>
 <hr />
 <h1><a name="requirements">REQUIREMENTS</a></h1>
-<p>This application requires the following perl modules and software
+<p>This application requires the following Perl modules and software
 components to work:</p>
 <pre>
-  graphviz                  (<a href="http://www.graphviz.org/">http://www.graphviz.org/</a>)
-  GraphViz                  (perl module)
-  tethereal                 (<a href="http://www.ethereal.org/">http://www.ethereal.org/</a>)</pre>
-<p>Required for outputing screen presentations:</p>
+  I&lt;graphviz&gt;                  (<a href="http://www.graphviz.org/">http://www.graphviz.org/</a>)
+  B&lt;GraphViz&gt;                  (Perl module)
+  B&lt;tethereal&gt;                 (<a href="http://www.ethereal.org/">http://www.ethereal.org/</a>)</pre>
+<p>The following is required for outputting screen presentations:</p>
 <pre>
-  MagicPoint                (<a href="http://member.wide.ad.jp/wg/mgp/">http://member.wide.ad.jp/wg/mgp/</a>)</pre>
+  MagicPoint                   (<a href="http://member.wide.ad.jp/wg/mgp/">http://member.wide.ad.jp/wg/mgp/</a>)</pre>
 <p>If the following modules are installed, it will enable a GUI interface:</p>
 <pre>
-  QWizard                   (perl module)
-  Getopt::GUI::Long         (perl module)</pre>
+  B&lt;QWizard&gt;                   (Perl module)
+  B&lt;Getopt::GUI::Long&gt;         (Perl module)</pre>
 <p>
 </p>
 <hr />
@@ -62,7 +71,7 @@ components to work:</p>
   --only-hosts=STRING    A regular expression of host names to analyze</pre>
 <pre>
   --o=STRING
-  --output-file=STRING   Output png image file name (default: out.png)
+  --output-file=STRING   Output PNG image file name (default: out.png)
   --O=STRING
   --tethereal-out=STRING Save tethereal output to this file
   --T
@@ -75,7 +84,7 @@ components to work:</p>
   --a
   --show-answers         Shows query answers in result image
   --A
-  --show-authoratative   Shows authoratative information in result image
+  --show-authoritative   Shows authoritative information in result image
   --x
   --show-additional      Shows additional information in result image
   --l
@@ -95,8 +104,8 @@ components to work:</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2005 Sparta, Inc.  All rights reserved.
-See the COPYING file included with the dnssec-tools package for details.</p>
+<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
 <hr />
@@ -106,7 +115,7 @@ See the COPYING file included with the dnssec-tools package for details.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p>Net::DNS</p>
+<p><strong>Net::DNS</strong></p>
 <p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
 
 </body>
