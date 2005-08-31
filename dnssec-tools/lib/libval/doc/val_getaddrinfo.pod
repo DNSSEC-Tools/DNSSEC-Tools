@@ -27,49 +27,49 @@ and service translation
 
 =head1 DESCRIPTION
 
-I<val_getaddrinfo()> is a DNSSEC-aware version of I<getaddrinfo(3)>.  It
+B<val_getaddrinfo()> is a DNSSEC-aware version of B<getaddrinfo(3)>.  It
 performs DNSSEC validation of DNS queries.  It returns a network address value
-of type I<addrinfo>.  (See I<getaddrinfo(3)> for more information on
+of type I<addrinfo>.  (See B<getaddrinfo(3)> for more information on
 I<addrinfo>.)
 
-I<val_x_getaddrinfo()> performs the same function as I<val_getaddrinfo()>,
+B<val_x_getaddrinfo()> performs the same function as B<val_getaddrinfo()>,
 but is optimized for multiple calls.  The two routines take the same
-parameters, but I<val_x_getaddrinfo()> takes an additional parameter I<ctx>,
+parameters, but B<val_x_getaddrinfo()> takes an additional parameter I<ctx>,
 of type I<val_context>, which passes the validation context for use in call
 optimization.  The I<ctx> parameter also gives the caller more control over
 the resolver and validator policies.  If a B<NULL> value is passed for the
 I<ctx> parameter, the default validation context is used.  (See
-I<get_context(3)> for information on creating a validation context.)
-I<val_getaddrinfo()> is equivalent to calling I<val_x_getaddrinfo()> with a
+B<get_context(3)> for information on creating a validation context.)
+B<val_getaddrinfo()> is equivalent to calling B<val_x_getaddrinfo()> with a
 B<NULL> I<ctx> parameter.
 
-I<val_dupaddrinfo()> duplicates the I<addrinfo> structure and its auxiliary
+B<val_dupaddrinfo()> duplicates the I<addrinfo> structure and its auxiliary
 data.  It performs a deep copy; i.e., the internal strings, arrays, and other
 structures are also copied.
 
-I<val_freeaddrinfo()> frees a I<addrinfo> structure, such as those returned
-by the I<val_getaddrinfo()>, I<val_x_getaddrinfo()> and I<val_dupaddrinfo()>
+B<val_freeaddrinfo()> frees a I<addrinfo> structure, such as those returned
+by the B<val_getaddrinfo()>, B<val_x_getaddrinfo()> and B<val_dupaddrinfo()>
 functions.
 
-I<val_get_addrinfo_dnssec_status()> extracts the DNSSEC validation status
+B<val_get_addrinfo_dnssec_status()> extracts the DNSSEC validation status
 from the returned I<addrinfo> structure.  This function must be called only
-for the values returned from I<val_getaddrinfo()>, I<val_x_getaddrinfo()>,
-and I<val_dupaddrinfo()> functions.
+for the values returned from B<val_getaddrinfo()>, B<val_x_getaddrinfo()>,
+and B<val_dupaddrinfo()> functions.
 
 =head1 RETURN VALUES
 
-The I<val_getaddrinfo()> and I<val_x_getaddrinfo()> functions return a value
+The B<val_getaddrinfo()> and B<val_x_getaddrinfo()> functions return a value
 of type I<addrinfo> on success, and B<NULL> on error.  The memory for the
 returned value is dynamically allocated by these functions.  Hence, the caller
-must only call the I<val_freeaddrinfo()> function on the returned value in
+must only call the B<val_freeaddrinfo()> function on the returned value in
 order to avoid memory leaks.
 
-The I<val_get_addrinfo_dnssec_status()> function returns the result of the
+The B<val_get_addrinfo_dnssec_status()> function returns the result of the
 DNSSEC validation.  The possible values for the DNSSEC status are given in
 B<val_errors.h>.
 
-The I<val_dupaddrinfo()> function returns a copy of the specified I<addrinfo>
-structure.  The returned value must be freed using I<val_freeaddrinfo()> to
+The B<val_dupaddrinfo()> function returns a copy of the specified I<addrinfo>
+structure.  The returned value must be freed using B<val_freeaddrinfo()> to
 avoid memory leaks.
 
 =head1 EXAMPLE
@@ -111,11 +111,11 @@ Abhijit Hayatnagarkar
 
 =head1 SEE ALSO
 
-I<gethostbyname>(3)
+B<gethostbyname>(3)
 
-I<get_context(3)>, I<val_duphostent(3)>, I<val_freehostent(3)>,
-I<val_gethostbyname(3)>, I<val_query(3)>, I<val_x_gethostbyname(3)>,
-I<val_x_query(3)>
+B<get_context(3)>, B<val_duphostent(3)>, B<val_freehostent(3)>,
+B<val_gethostbyname(3)>, B<val_query(3)>, B<val_x_gethostbyname(3)>,
+B<val_x_query(3)>
 
 I<p_val_error>,
 

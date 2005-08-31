@@ -21,54 +21,54 @@ val_gethostbyname, val_x_gethostbyname, val_get_hostent_dnssec_status, val_dupho
 
 =head1 DESCRIPTION
 
-I<val_gethostbyname()> is a DNSSEC-aware, thread-safe version of
-I<gethostbyname(3)>.  It performs DNSSEC validation of DNS queries.
+B<val_gethostbyname()> is a DNSSEC-aware, thread-safe version of
+B<gethostbyname(3)>.  It performs DNSSEC validation of DNS queries.
 It returns a network host entry value of type I<hostent>.  (See
-I<gethostbyname(3)> for more information on type I<hostent>).
+B<gethostbyname(3)> for more information on type I<hostent>).
 
-I<val_x_gethostbyname()> performs the same function as I<val_gethostbyname()>,
+B<val_x_gethostbyname()> performs the same function as B<val_gethostbyname()>,
 but it optimized for multiple calls.  The two routines take the same
-parameters, but I<val_x_gethostbyname()> takes an additional parameter I<ctx>,
+parameters, but B<val_x_gethostbyname()> takes an additional parameter I<ctx>,
 of type I<val_context>, which passes the validation context for use in call
 optimization.  The I<ctx> parameter also gives the caller more control over
 the resolver and validator policies.  If a B<NULL> value is passed for the
 I<ctx> parameter, the default validation context is used.  (See
-I<get_context()> for information on creating a validation context.)
-I<val_gethostbyname()> is equivalent to calling I<val_x_gethostbyname()>
+B<get_context()> for information on creating a validation context.)
+B<val_gethostbyname()> is equivalent to calling B<val_x_gethostbyname()>
 with a B<NULL> I<ctx> parameter.
 
 I<h_errnop> returns the I<h_errno> value from these functions.  This ensures
 thread safety, by avoiding the global I<h_errno> variable.  I<h_errnop> must
-not be B<NULL>.  (See the man page for I<gethostbyname(3)> for possible values
+not be B<NULL>.  (See the man page for B<gethostbyname(3)> for possible values
 of I<h_errno>.)
 
-I<val_duphostent()> provides a way to duplicate the I<hostent> structure and
+B<val_duphostent()> provides a way to duplicate the I<hostent> structure and
 its auxiliary data.  It performs a deep copy; i.e., the internal strings and
 arrays are also copied.
 
-I<val_freehostent()> is used to free the hostent structure returned by the
-I<val_gethostbyname()>, I<val_x_gethostbyname()> and I<val_duphostent()>
+B<val_freehostent()> is used to free the hostent structure returned by the
+B<val_gethostbyname()>, B<val_x_gethostbyname()> and B<val_duphostent()>
 functions.
 
-I<val_get_hostent_dnssec_status()> is used to extract the DNSSEC
+B<val_get_hostent_dnssec_status()> is used to extract the DNSSEC
 validation status from the returned I<hostent> structure.  This function
-must be called only for the values returned from I<val_gethostbyname()>,
-I<val_x_gethostbyname()>, and I<val_duphostent()> functions.
+must be called only for the values returned from B<val_gethostbyname()>,
+B<val_x_gethostbyname()>, and B<val_duphostent()> functions.
 
 =head1 RETURN VALUE
 
-The I<val_gethostbyname()> and I<val_x_gethostbyname()> functions return a
+The B<val_gethostbyname()> and B<val_x_gethostbyname()> functions return a
 value of type I<hostent> on success, and B<NULL> on error.  The memory for
 the returned value is dynamically allocated by these two functions.  Hence,
-the caller must only call the I<val_freehostent()> function on the returned
+the caller must only call the B<val_freehostent()> function on the returned
 value in order to avoid memory leaks.
 
-The I<val_get_hostent_dnssec_status()> function returns the result of the
+The B<val_get_hostent_dnssec_status()> function returns the result of the
 DNSSEC validation.  The possible values for the DNSSEC status are given in
 B<val_errors.h>.
 
-The I<val_duphostent()> function returns a copy of specified the I<hostent>
-structure.  The returned value must be freed using I<val_freehostent()> to
+The B<val_duphostent()> function returns a copy of specified the I<hostent>
+structure.  The returned value must be freed using B<val_freehostent()> to
 avoid memory leaks.
 
 =head1 EXAMPLE
@@ -103,12 +103,12 @@ avoid memory leaks.
 
 =head1 NOTES
 
-This version of I<val_x_gethostbyname()> hence I<val_gethostbyname()> does
+This version of B<val_x_gethostbyname()> hence B<val_gethostbyname()> does
 not read the order-of-look-up method from B</etc/hosts.conf>.  This
 functionality will be provided in future versions.  At present, the default
 order is set to consult the B</etc/hosts> file first, and then query DNS.
 
-This version of I<val_x_gethostbyname()> and I<val_gethostbyname()> does not
+This version of B<val_x_gethostbyname()> and B<val_gethostbyname()> does not
 support NIS lookups.
 
 =head1 COPYRIGHT
@@ -122,11 +122,11 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 
 =head1 SEE ALSO
 
-I<getaddrinfo>(3)
+B<getaddrinfo>(3)
 
-I<get_context(3)>, I<val_dupaddrinfo(3)>, I<val_freeaddrinfo(3)>,
-I<val_getaddrinfo(3)>, I<val_query(3)>, I<val_x_getaddrinfo(3)>,
-I<val_x_query(3)>
+B<get_context(3)>, B<val_dupaddrinfo(3)>, B<val_freeaddrinfo(3)>,
+B<val_getaddrinfo(3)>, B<val_query(3)>, B<val_x_getaddrinfo(3)>,
+B<val_x_query(3)>
 
 I<p_val_error>
 

@@ -19,7 +19,7 @@ val_query, val_x_query - DNSSEC-validated resolution of DNS queries
 
 =head1 DESCRIPTION
 
-The I<val_query()> function is a DNSSEC-aware version of I<res_query(3)>.
+The B<val_query()> function is a DNSSEC-aware version of B<res_query(3)>.
 It performs DNSSEC validation of DNS queries.  The results of the DNSSEC
 validation are returned in the I<dnssec_status> parameter.  The caller must
 not pass a NULL value for this parameter.
@@ -29,49 +29,51 @@ present.
 
 If DNSSEC validation succeeds, a value of B<VALIDATE_SUCCESS> is returned in
 I<dnssec_status>.  Other values are returned in case of errors.  See
-I<val_errors.h> for a listing of possible error codes.  The I<p_val_error()>
+B<val_errors.h> for a listing of possible error codes.  The B<p_val_error()>
 function can be used to return a brief string description of the error code.
 
-I<val_query()> gives applications that already use the I<res_query(3)> interface
-a simple way to transition towards being DNSSEC-aware. It does not, however, 
-handle cases where multiple resource record sets may be returned for a query, each
-with a potentially different dnssec status. If such functionality is desired, 
-applications must make use of the I<val_x_query()> interface. The only difference
-between this and I<val_query()> is that the latter returns results in I<resp> which
-encapsultes the results into the following structure:
+B<val_query()> gives applications that already use the B<res_query(3)>
+interface a simple way to transition towards being DNSSEC-aware.  It does
+not, however, handle cases where multiple resource record sets may be returned
+for a query, each with a potentially different DNSSEC status.  If such
+functionality is desired, applications must make use of the B<val_x_query()>
+interface.  The only difference between this and B<val_query()> is that the
+latter returns results in I<resp> which encapsultes the results into the
+following structure:
 
-I<struct response_t> {
-    u_int8_t *response;
-    int response_length;
-    int validation_result;
-}; 
+  struct response_t {
+        u_int8_t *response;
+        int response_length;
+        int validation_result;
+  }; 
 
-I<response>, I<response_length> and I<validation_result> are functionally similar to
-I<answer>, I<anslen> and I<dnssec_status> respectively. I<resp> is an array and must 
-be allocated by the user to be of sufficient size to hold all the answers returned
-by the DNS name server. 
+I<response>, I<response_length> and I<validation_result> are functionally
+similar to I<answer>, I<anslen> and I<dnssec_status> respectively.  I<resp>
+is an array and must be allocated by the user to be of sufficient size to
+hold all the answers returned by the DNS name server.
 
-The number of answers actually available is also returned in the I<resp_count> 
-parameter. In case I<resp> is not large enough to hold all answers returned from
-I<val_x_query()>, it returns an error code of B<NO_SPACE>. and I<resp_count> is 
-set to the number of answers that are totally available. Applications may re-query
-after re-allocating I<resp> to hold that many answers. For queries that are not of 
-type C<ns_t_any> it is generally sufficient to allocate an array of three 
-elements for *I<results>.
+The number of answers actually available is returned in the I<resp_count>
+parameter.  In case I<resp> is not large enough to hold all answers returned
+from B<val_x_query()>, it returns an error code of B<NO_SPACE> and
+I<resp_count> is set to the total number of answers available.  Applications
+may re-query after reallocating I<resp> to hold that many answers.  For
+queries that are not of type C<ns_t_any> it is generally sufficient to
+allocate an array of three elements for *I<results>.
 
-The I<ctx> parametr is the validator context and can be set to NULL for default 
-settings. More information about this field can be found in I<libval(3)>.  
+The I<ctx> parametr is the validator context and can be set to NULL for
+default settings.  More information about this field can be found in
+B<libval(3)>.
 
 =head1 RETURN VALUES
 
-The I<val_query()> function returns the length of the answer if successful,
+The B<val_query()> function returns the length of the answer if successful,
 or -1 if there was an error.
 
-The I<val_x_query()> function returns B<NO_ERROR> on success. It returns B<NO_SPACE>
-if the application has not allocated enough memory to hold all results returned 
-by the validator. This function internally invokes I<resolve_n_check()>, and
-errors from this function may also be returned. See I<libval(3)> for
-more details.
+The B<val_x_query()> function returns B<NO_ERROR> on success.  It returns
+B<NO_SPACE> if the application has not allocated enough memory to hold all
+results returned by the validator.  This function internally invokes
+B<resolve_n_check()>, and errors from this function may also be returned.
+See B<libval(3)> for more details.
 
 =head1 EXAMPLES
  
@@ -119,13 +121,13 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 
 =head1 SEE ALSO
 
-I<res_query(3)>,
+B<res_query(3)>
 
-I<get_context(3)>, I<val_getaddrinfo(3)>, I<val_gethostbyname(3)>
+B<get_context(3)>, B<val_getaddrinfo(3)>, B<val_gethostbyname(3)>
 
 I<p_val_error>
 
-I<libval(3)>
+B<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 
