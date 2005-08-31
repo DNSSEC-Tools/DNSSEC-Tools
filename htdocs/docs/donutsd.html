@@ -1,7 +1,7 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>DoNutSD - Run the donuts syntax checker every so often and email the results</title>
+<title>DoNutSD - Run the donuts syntax checker periodically and email the results</title>
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -29,23 +29,25 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>DoNutSD - Run the donuts syntax checker every so often and email the results</p>
+<pre>
+  DoNutSD - Run the donuts syntax checker periodically and email the results</pre>
 <p>
 </p>
 <hr />
 <h1><a name="synopsis">SYNOPSIS</a></h1>
-<p>donutsd [-z FREQ] [-t TMPDIR] [-f FROM] [-s SMTPSERVER] [-a DONUTSARGS]
-        [-x] [-v] [-i zonelistfile] [ZONEFILE ZONENAME ZONECONTACT]</p>
+<pre>
+  donutsd [-z FREQ] [-t TMPDIR] [-f FROM] [-s SMTPSERVER] [-a DONUTSARGS]
+          [-x] [-v] [-i zonelistfile] [ZONEFILE ZONENAME ZONECONTACT]</pre>
 <p>
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>Donutsd runs donuts on a set of zone files every so often (the
-frequency is specified by the -z flag which defaults to 24 hours) and
+<p><em>donutsd</em> runs <em>donuts</em> on a set of zone files every so often (the
+frequency is specified by the <em>-z</em> flag which defaults to 24 hours) and
 watches for changes in the results.  These changes may be due to the
-time-sensitive nature of DNSSEC related records (EG, RRSIG validity
+time-sensitive nature of DNSSEC-related records (e.g., RRSIG validity
 periods) or because parent/child relationships have changed.  If any
-changes have occurred in the output since the last run of donuts on a
+changes have occurred in the output since the last run of <em>donuts</em> on a
 particular zone file, the results are emailed to the specified zone
 administrator's email address.</p>
 <p>
@@ -62,33 +64,34 @@ Turns on more verbose output.
 <dt><strong><a name="item__2do">-o</a></strong><br />
 </dt>
 <dd>
-Run once and quit (as opposed to sleeping/re-running forever).
+Run once and quit, as opposed to sleeping or re-running forever.
 </dd>
 <p></p>
 <dt><strong><a name="item__2da_arguments">-a ARGUMENTS</a></strong><br />
 </dt>
 <dd>
-Passes arguments to command line arguments of donuts runs.
+Passes arguments to command line arguments of <em>donuts</em> runs.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dz_time">-z TIME</a></strong><br />
 </dt>
 <dd>
-Sleeps TIME seconds between calls to donuts.
+Sleeps TIME seconds between calls to <em>donuts</em>.
 </dd>
 <p></p>
 <dt><strong><a name="item__2de_address">-e ADDRESS</a></strong><br />
 </dt>
 <dd>
-Mail ADDRESS with a summary of the results from all the files.  EG,
-these are the last few lines of the donuts output for each zone that
+Mail ADDRESS with a summary of the results from all the files.
+These are the last few lines of the <em>donuts</em> output for each zone that
 details the number of errors found.
 </dd>
 <p></p>
 <dt><strong><a name="item__2ds_smtpserver">-s SMTPSERVER</a></strong><br />
 </dt>
 <dd>
-When sending mail, send it to the SMTPSERVER specified (default = localhost).
+When sending mail, send it to the SMTPSERVER specified.  The default
+is <em>localhost</em>.
 </dd>
 <p></p>
 <dt><strong><a name="item__2df_fromaddr">-f FROMADDR</a></strong><br />
@@ -100,7 +103,7 @@ When sending mail, use FROMADDR for the From: address.
 <dt><strong><a name="item__2dx">-x</a></strong><br />
 </dt>
 <dd>
-Send the diff output in the email message as well as the donuts output.
+Send the <em>diff</em> output in the email message as well as the <em>donuts</em> output.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dt_tmpdir">-t TMPDIR</a></strong><br />
@@ -119,7 +122,7 @@ Store temporary files in TMPDIR.
 </p>
 <hr />
 <h1><a name="zone_arguments">ZONE ARGUMENTS</a></h1>
-<p>The rest of the arguments to donutsd should be triplets of the
+<p>The rest of the arguments to <em>donutsd</em> should be triplets of the
 following information:</p>
 <dl>
 <dt><strong><a name="item_zonefile">ZONEFILE</a></strong><br />
@@ -137,21 +140,22 @@ The zonename that file is supposed to be defining
 <dt><strong><a name="item_zonecontact">ZONECONTACT</a></strong><br />
 </dt>
 <dd>
-An email address of the zone administrator (or a comma separated
+An email address of the zone administrator (or a comma-separated
 list of addresses).  The results will be sent to this email address.
 </dd>
 <p></p></dl>
 <p>Additionally, instead of listing all the zones you wish to monitor on
-the command line, you can instead use the -i flag which specifies a
+the command line, you can instead use the <em>-i</em> flag which specifies a
 file to be read listing the TRIPLES instead.  Each line in this file
-should contain one triple with white space separating the arguments.  Example:</p>
+should contain one triple with white-space separating the arguments.</p>
+<p>Example:</p>
 <pre>
    db.zonefile1.com   zone1.com   admin@zone1.com
    db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com</pre>
-<p>Or, for even more control you can specify an XML file (it must end in
-.xml and you must have the XML::Smart perl module installed) that
+<p>For even more control you can specify an XML file (which must end in
+<strong>.xml</strong> and you must have the <strong>XML::Smart</strong> Perl module installed) that
 describes the same information but also allows for per-zone
-customization of the donuts arguments:</p>
+customization of the <em>donuts</em> arguments:</p>
 <pre>
  &lt;donutsd&gt;
    &lt;zones&gt;
@@ -165,20 +169,20 @@ customization of the donuts arguments:</p>
     &lt;/zone&gt;
    &lt;/zones&gt;
  &lt;/donutsd&gt;</pre>
-<p>The &lt;donutsd&gt; tree can also contain a &lt;configs&gt; section where command
+<p>The <em>donutsd</em> tree can also contain a <em>configs</em> section where command
 line flags can be specified as well:</p>
 <pre>
  &lt;donutsd&gt;
   &lt;configs&gt;
    &lt;config&gt;&lt;flag&gt;a&lt;/flag&gt;&lt;value&gt;--live --level 8&lt;/value&gt;&lt;/config&gt;
-   &lt;config&gt;&lt;flag&gt;e&lt;/flag&gt;&lt;value&gt;wes@hardakers.net&lt;/value&gt;&lt;/config&gt;
+   &lt;config&gt;&lt;flag&gt;e&lt;/flag&gt;&lt;value&gt;wes@example.com&lt;/value&gt;&lt;/config&gt;
   &lt;/configs&gt;
   &lt;zones&gt;
    ...
   &lt;/zones&gt;
  &lt;/donutsd&gt;</pre>
 <p>Real command line flags will be used in preference to those specified
-in the .xml file, however.</p>
+in the <strong>.xml</strong> file, however.</p>
 <p>
 </p>
 <hr />
@@ -190,8 +194,8 @@ in the .xml file, however.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005 Sparta, Inc.  All rights reserved.
-See the COPYING file included with the dnssec-tools package for details.</p>
+<p>Copyright 2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
 <hr />
@@ -201,8 +205,8 @@ See the COPYING file included with the dnssec-tools package for details.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p><code>donuts(1)</code></p>
-<p><a href="http://dnssec-tools.sourceforge.net/">http://dnssec-tools.sourceforge.net/</a></p>
+<p><strong>donuts(8)</strong></p>
+<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
 
 <!--#include virtual="/page-bottom.html" -->
 </body>

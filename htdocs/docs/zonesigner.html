@@ -34,6 +34,7 @@
 
 	<li><a href="#examples">Examples</a></li>
 	<li><a href="#notes">NOTES</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
 </ul>
@@ -51,6 +52,16 @@
 <h1><a name="synopsis">SYNOPSIS</a></h1>
 <pre>
   zonesigner [options] &lt;zone-file&gt; &lt;zone-out&gt;</pre>
+<pre>
+  # get started immediately examples:</pre>
+<pre>
+  # first run on a zone for example.com:
+  zonesigner -genzsk -genksk -endtime +2678400 --zone example.com \
+     db-in.example.com db-out.example.com</pre>
+<pre>
+  # future runs before expiration time (reuses the same keys):
+  zonesigner -endtime +2678400 --zone example.com \
+     db-in.example.com db-out.example.com</pre>
 <p>
 </p>
 <hr />
@@ -59,7 +70,7 @@
 sign a DNS zone.  It generates the required KSK and ZSK keys, adds the key
 data to a zone record file, signs the zone file, and runs checks to ensure
 that everything worked properly.</p>
-<p>Using <em>keyrec</em> files, defined and maintained by <strong>dnssec-tools</strong>,
+<p>Using <em>keyrec</em> files, defined and maintained by DNSSEC-Tools,
 <em>zonesigner</em> can automatically gather many of the options used to previously
 sign and generate a zone and its keys.  This allows the zone to be maintained
 using the same key lengths and expiration times, for example, without an
@@ -71,7 +82,7 @@ administrator needing to manually track these fields.</p>
 <p><em>keyrec</em> files retain information about previous key-generation and
 zone-signing operations.  If a <em>keyrec</em> file is not specified (by way of the
 <em>-krfile</em> option), then a default <em>keyrec</em> file is used.  If this default
-in not specified in the system's <strong>dnssec-tools</strong> configuration file, the
+in not specified in the system's DNSSEC-Tools configuration file, the
 filename will be the zone name appended with <strong>.krf</strong>.  If the <em>-nokrfile</em>
 option is given, then no <em>keyrec</em> file will be consulted or saved.</p>
 <p><em>keyrec</em> files contain two types of entries:  zone <em>keyrec</em>s and key
@@ -82,7 +93,8 @@ line.  Example 4 below contains the contents of a sample <em>keyrec</em> file.</
 <hr />
 <h1><a name="using_zonesigner">USING ZONESIGNER</a></h1>
 <p><em>zonesigner</em> is used in this way:</p>
-<p>zonesigner [options] &lt;zone-file&gt; &lt;zone-out&gt;</p>
+<pre>
+    zonesigner [options] &lt;zone-file&gt; &lt;zone-out&gt;</pre>
 <p>The <em>zone-file</em> and <em>zone-out</em> arguments are required.</p>
 <p><em>zone-file</em> is the name of the zone file from which a signed zone file will
 be created.  If the <em>-zone</em> option is not given, then <em>zone-file</em> will be
@@ -119,11 +131,11 @@ until the program completes.  Display of this message is controlled by the
 <p><em>zonesigner</em> checks four places in order to determine option values.  
 In descending order of precedence, these places are:</p>
 <pre>
-    -ksklength command line options</pre>
+    command line options</pre>
 <pre>
     keyrec file</pre>
 <pre>
-    dnssec-tools configuration file</pre>
+    DNSSEC-Tools configuration file</pre>
 <pre>
     zonesigner defaults</pre>
 <p>Each is checked until a value is found.  That value is then used for that
@@ -137,7 +149,7 @@ In descending order of precedence, these places are:</p>
 <pre>
     keyrec file:                        1024</pre>
 <pre>
-    dnssec-tools configuration file:    2048</pre>
+    DNSSEC-Tools configuration file:    2048</pre>
 <pre>
     zonesigner defaults:                512</pre>
 <p>If all are present, then the KSK length will be 8192.</p>
@@ -172,7 +184,7 @@ No <em>keyrec</em> file will be consulted or created.
 </dt>
 <dd>
 <em>keyrec</em> file to use in processing options.  See the man page for
-<em>Net::DNS::SEC::Tools::tooloptions</em> for more details about this file.
+<strong>Net::DNS::SEC::Tools::tooloptions</strong> for more details about this file.
 </dd>
 <p></p>
 <dt><strong><a name="item__2dgenkeys">-genkeys</a></strong><br />
@@ -448,13 +460,21 @@ plans are to allow for more flexible serial number manipulation.
 <p>
 </p>
 <hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
 <h1><a name="author">AUTHOR</a></h1>
 <p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
 <p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p>Net::DNS::SEC::Tools::conf.pm(3), Net::DNS::SEC::Tools::keyrec.pm(3), Net::DNS::SEC::Tools::tooloptions.pm(3)</p>
+<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::tooloptions.pm(3)</strong></p>
 
 <!--#include virtual="/page-bottom.html" -->
 <!--#include virtual="/page-bottom.html" -->
