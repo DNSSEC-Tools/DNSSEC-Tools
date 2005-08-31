@@ -1,12 +1,12 @@
 =pod
-                                                                                
+
 =head1 NAME
 
 query_send, response_rcv, get, free_name_server, free_name_servers - send queries and receive responses from a
 DNS name server.
 
 print_response - Display answers returned from the name server
- 
+
 =head1 SYNOPSIS
 
 #include <resolver.h>
@@ -29,7 +29,7 @@ int get ( const char            *name_n,
             struct name_server  **respondent,
             u_int8_t            **response,
             u_int32_t           *response_length);
-			
+
 void free_name_server (struct name_server **ns);
 
 void free_name_servers (struct name_server **ns);
@@ -38,68 +38,66 @@ void print_response (u_int8_t *response, int response_length);
 
 =head1 DESCRIPTION
 
-The B<query_send()> function can be used to send a query comprising of the
-<I<name, class, type>> tuple to the name servers specified in I<nslist>. 
-I<trans_id> provides a handle to this transaction within the libsres library.
+The B<query_send()> function can be used to send a query comprised of the
+<I<name, class, type>> tuple to the name servers specified in I<nslist>.
+I<trans_id> provides a handle to this transaction within the I<libsres> library.
 
 The B<response_recv()> function returns the answers, if available, from the
-name server that responds within the transaction identified by I<trans_id>. 
-The response is available in I<response> and the responding name server is 
-returned in I<respondent>. The length of the response in bytes is returned 
-in  I<response_length>. 
+name server that responds within the transaction identified by I<trans_id>.
+The response is available in I<response> and the responding name server is
+returned in I<respondent>.  The length of the response in bytes is returned
+in I<response_length>.
 
 The B<get()> function provides a wrapper around the B<query_send()> and
-B<response_recv()> functions. It blocks until some response is received 
-from some name server or the request times out. The libsres library does
+B<response_recv()> functions.  It blocks until a response is received
+from some name server or the request times out.  The I<libsres> library does
 not automatically send out recursive queries; referral requests are also
 treated as valid responses.
 
-The memory pointed to by I<*respondent> is allocated 
-by the libsres library and this must be free-d by the invoker using the 
-B<free_name_server()> method. An entire list of name servers can be free-d 
-using the B<free_name_servers()> method.
+The memory pointed to by I<*respondent> is allocated by the I<libsres> library
+and this must be freed by the invoker using B<free_name_server()>.
+An entire list of name servers can be freed using B<free_name_servers()>.
 
 B<print_response()> provides a convenient way to display answers returned
 in I<response> by the name server.
 
-I<struct name_server> is defined in resolver.h as follows.
+I<struct name_server> is defined in B<resolver.h> as follows.
 
-struct name_server 
-{
-    u_int8_t *ns_name_n;
-    void *ns_tsig_key;
-    u_int32_t ns_security_options;
-    u_int32_t ns_status;
-    struct name_server *ns_next; 
-    int ns_number_of_addresses;
-    struct sockaddr ns_address[1];
-
-};
+  struct name_server
+  {
+        u_int8_t *ns_name_n;
+        void *ns_tsig_key;
+        u_int32_t ns_security_options;
+        u_int32_t ns_status;
+        struct name_server *ns_next;
+        int ns_number_of_addresses;
+        struct sockaddr ns_address[1];
+  };
 
 
 =over 4
 
 =item I<ns_name_n>
 
-The name of the zone for which this name server is authoritative. This field
+The name of the zone for which this name server is authoritative.  This field
 provides a convenient way for the invoker to index a list of name servers
 while sending queries to different name servers, especially during a referral.
-It is not made use of directly by the resolver and can be set to an empty string.
+It is not used directly by the resolver and can be set to an empty string.
 
 =item I<ns_tsig_key>
 
-The tsig key that should be used to protect messsages sent to this name server.
-This field is currently un-used.
+The I<tsig> key that should be used to protect messages sent to this name
+server.  This field is currently unused.
 
 =item I<ns_security_options>
 
-The security options for the zone. This can be set to either ZONE_USE_NOTHING or
-ZONE_USE_TSIG.
+The security options for the zone.  This can be set to either ZONE_USE_NOTHING
+or ZONE_USE_TSIG.
 
 =item I<ns_status>
 
-The status of the zone. This field is used internally by the invoker to maintain 
-properties of the zone. Currently defined values for this field are 
+The status of the zone.  This field is used internally by the invoker to
+maintain properties of the zone.  Currently defined values for this field are
 SR_ZI_STATUS_UNSET, SR_ZI_STATUS_PERMANENT and SR_ZI_STATUS_LEARNED.
 
 =item I<ns_next>
@@ -108,18 +106,19 @@ The address of the next name server in the list.
 
 =item I<ns_number_of_addresses>
 
-The number of elements in the array I<ns_addresses>. This field is
+The number of elements in the array I<ns_addresses>.  This field is
 currently unused.
 
 =item I<ns_addresses>
 
-The IP address of the name server. Currently, only IPv4 addresses can be stored. 
+The IP address of the name server.  Currently, only IPv4 addresses can be
+stored.
 
 =back
 
 =head1 OTHER SYMBOLS EXPORTED
 
-The libsres library also exports the following BIND symbols: 
+The I<libsres> library also exports the following BIND symbols:
     __ns_name_unpack
     __ns_name_ntop
     __ns_name_pton
@@ -127,8 +126,8 @@ The libsres library also exports the following BIND symbols:
     __p_class
     __p_section
 
-Documentation for these symbols can be found in the BIND 
-sources/documentation manuals.
+Documentation for these symbols can be found in the BIND sources and
+documentation manuals.
 
 =head1 RETURN VALUES
 
@@ -138,73 +137,72 @@ sources/documentation manuals.
 
 No error.
 
-=item SR_CALL_ERROR 
+=item SR_CALL_ERROR
 
-An invalid parameter was passed to the B<query_send()>, 
-B<response_recv()> or B<get()> method.
+An invalid parameter was passed to B<get()>, B<query_send()>, or
+B<response_recv()>.
 
 =item SR_MEMORY_ERROR
 
 Memory allocation failed.
 
-=item SR_MKQUERY_INTERNAL_ERROR 
+=item SR_MKQUERY_INTERNAL_ERROR
 
-Some internal error was encountered while trying to construct a 
+An internal error was encountered while trying to construct a
 query message.
 
-=item SR_TSIG_INTERNAL_ERROR   
+=item SR_TSIG_INTERNAL_ERROR
 
-Some internal error was encountered while trying to construct a 
+An internal error was encountered while trying to construct a
 signed TSIG message.
 
-=item SR_SEND_INTERNAL_ERROR  
+=item SR_SEND_INTERNAL_ERROR
 
-Some internal error was encountered while trying to send the 
+An internal error was encountered while trying to send the
 message to the name server(s).
 
 =item SR_NO_ANSWER_YET
 
 No answer currently available; the query is still active.
 
-=item SR_NO_ANSWER  
+=item SR_NO_ANSWER
 
 No answers were received from any name server.
 
-=item SR_RCV_INTERNAL_ERROR  
+=item SR_RCV_INTERNAL_ERROR
 
-Some internal error was encountered while trying to receive 
-responses from some name server.
+An internal error was encountered while trying to receive
+responses from An name server.
 
-=item SR_WRONG_ANSWER       
+=item SR_WRONG_ANSWER
 
-The header bits did not correctly identify the message as a
-response.
+The header bits did not correctly identify the message as a response.
 
-=item SR_HEADER_BADSIZE    
+=item SR_HEADER_BADSIZE
 
-The length and count of records in the header was incorrect.
+The length and count of records in the header were incorrect.
 
 =item SR_TSIG_ERROR
 
 TSIG validation on the response message failed.
 
-=item SR_NXDOMAIN         
+=item SR_NXDOMAIN
 
 The queried name did not exist.
 
-=item SR_FORMERR         
+=item SR_FORMERR
 
 The name server was not able to parse the query message.
 
-=item SR_SERVFAIL       
+=item SR_SERVFAIL
 
-The name server was not reachable. 
+The name server was not reachable.
 
-=item SR_NOTIMPL       
+=item SR_NOTIMPL
 
 A particular functionality is not yet implemented.
 
-=item SR_REFUSED      
+=item SR_REFUSED
 
 The name server refused to answer this query.
 
@@ -215,38 +213,40 @@ returned message RCODE.
 
 =item SR_EDNS_VERSION_ERROR
 
-Wrong EDNS version used. Not implemented.
+Wrong EDNS version used.  Not implemented.
 
 =item SR_UNSUPP_ENDS0_LABEL
 
-Unsupported EDNS version used. Not implemented.
+Unsupported EDNS version used.  Not implemented.
 
 =item SR_SUSPICIOUS_BIT
 
-Some bit in the header was set funny. Not implemented.
+A bit in the header was set to an unexpected value.  Not implemented.
 
 =item SR_NAME_EXPANSION_FAILURE
 
-Could not expand name from wire format. Not used.
+Could not expand name from wire format.  Not used.
 
 =back
 
 =head1 CURRENT STATUS
 
-There is currently no support for IPv6. There is limited support for 
-specifying resolver policy; members of the I<struct name_server> are 
-still subject to change. 
-The library is not thread-safe. 
+There is currently no support for IPv6.
+
+There is limited support for specifying resolver policy; members of the
+I<struct name_server> are still subject to change.
+
+The library is not thread-safe.
 
 =head1 COPYRIGHT
-                                                                                
+
 Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO
 
-libval(3)
+B<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 
-=cut	
+=cut
