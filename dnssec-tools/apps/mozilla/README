@@ -17,25 +17,17 @@ with a lot of debugging but should be usable in testing environments.
    will probably fail, so run 'autoconf' (version 2.13 or so, not
    2.5x) after you apply the patch.
 
-2b) If compiling on a recent fedora core/freetype position the
-    compilation may fail.  See the following web site for a patch (the
-    one labeled "Freetype 2.1.8 patch for mozilla 1.7.7 worked for
-    me):
-
-    https://bugzilla.mozilla.org/attachment.cgi?id=181857
+   [Note: if building on a Fedora Core or other system, you might
+   consider starting with something like a source RPM which is known
+   to compile and adding the DNSSEC patch to that if you can not get a
+   normal mozilla tar ball to build by itself.  EG, This is what the
+   author of the DNSSEC patch had to resort to after mozilla no longer
+   compiled cleanly on a FC4 system even without the DNSSEC patch.]
 
 3) Build mozilla adding in the --with-system-val flag to their
    configure script.  If you're using a ~/.mozconfig file then add
    this line to it:
 
-     ac_add_options --with-system-val
-
-   My complete .mozconfig script looks like the following
-
-     # build firefox with dnssec enabled
-     mk_add_options MOZ_OBJDIR=/PATH/TO/object_dir
-     . $topsrcdir/browser/config/mozconfig
-     ac_add_options --disable-tests
      ac_add_options --with-system-val
 
    After which the following builds firefox with the dnssec patch applied:
