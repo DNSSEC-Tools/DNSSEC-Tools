@@ -46,7 +46,7 @@ verification up the chain of trust all the way to a trust
 anchor. The I<domain_name_n> parameter is the queried name in 
 DNS wire format. The conversion from host format to DNS wire format 
 can be done using the  B<ns_name_pton()> function exported by 
-the libsres library.
+the B<libsres(3)> library.
 
 Answers returned by B<resolve_n_check()> are made available 
 in the *I<results> array.  Each answer is a 
@@ -87,7 +87,7 @@ the validation policy and resolver policy. Validator policy is
 applied hierarchically based on the name used to identify a particular 
 policy fragment. 
 
-C<browser> and C<mozilla.browser> are examples of a 
+As an example, C<browser> and C<mozilla.browser> form a 
 hierarchical ordering of policy, where the configuration 
 under the identifier of C<mozilla.browser> may be used to override 
 generic browser policy with mozilla-specific options. Applications may
@@ -95,7 +95,7 @@ switch their default policy to a policy that lies below (C<mozilla:browser>
 lies below C<browser>) the originally defined label using the 
 B<switch_effective_policy()> method. In both of the B<resolve_n_check()> 
 and B<switch_effective_policy()>, the I<label> parameter is a simple string that
-must match with another string that appears as the policy definition
+must match another string that appears as the policy definition
 identifier in the validator configuration file. It is a simple text string
 with the C<:> character used as the delimiter between two levels in the
 hierarchy. The C<:> label by itself refers to the default policy in the 
