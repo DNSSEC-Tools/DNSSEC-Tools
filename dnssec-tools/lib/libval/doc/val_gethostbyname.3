@@ -128,8 +128,8 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "val_gethostbyname 3"
-.TH val_gethostbyname 3 "2005-08-26" "perl v5.8.5" "Programmer's Manual"
+.IX Title "VAL_GETHOSTBYNAME 1"
+.TH VAL_GETHOSTBYNAME 1 "2005-08-31" "perl v5.8.6" "User Contributed Perl Documentation"
 .SH "NAME"
 val_gethostbyname, val_x_gethostbyname, val_get_hostent_dnssec_status, val_duphostent, val_freehostent \- get DNSSEC\-validated network host entry
 .SH "SYNOPSIS"
@@ -160,53 +160,53 @@ val_gethostbyname, val_x_gethostbyname, val_get_hostent_dnssec_status, val_dupho
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\fI\fIval_gethostbyname()\fI\fR is a DNSSEC\-aware, thread-safe version of
-\&\fI\fIgethostbyname\fI\|(3)\fR.  It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.
+\&\fB\f(BIval_gethostbyname()\fB\fR is a DNSSEC\-aware, thread-safe version of
+\&\fB\f(BIgethostbyname\fB\|(3)\fR.  It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.
 It returns a network host entry value of type \fIhostent\fR.  (See
-\&\fI\fIgethostbyname\fI\|(3)\fR for more information on type \fIhostent\fR).
+\&\fB\f(BIgethostbyname\fB\|(3)\fR for more information on type \fIhostent\fR).
 .PP
-\&\fI\fIval_x_gethostbyname()\fI\fR performs the same function as \fI\fIval_gethostbyname()\fI\fR,
+\&\fB\f(BIval_x_gethostbyname()\fB\fR performs the same function as \fB\f(BIval_gethostbyname()\fB\fR,
 but it optimized for multiple calls.  The two routines take the same
-parameters, but \fI\fIval_x_gethostbyname()\fI\fR takes an additional parameter \fIctx\fR,
+parameters, but \fB\f(BIval_x_gethostbyname()\fB\fR takes an additional parameter \fIctx\fR,
 of type \fIval_context\fR, which passes the validation context for use in call
 optimization.  The \fIctx\fR parameter also gives the caller more control over
 the resolver and validator policies.  If a \fB\s-1NULL\s0\fR value is passed for the
 \&\fIctx\fR parameter, the default validation context is used.  (See
-\&\fI\fIget_context()\fI\fR for information on creating a validation context.)
-\&\fI\fIval_gethostbyname()\fI\fR is equivalent to calling \fI\fIval_x_gethostbyname()\fI\fR
+\&\fB\f(BIget_context()\fB\fR for information on creating a validation context.)
+\&\fB\f(BIval_gethostbyname()\fB\fR is equivalent to calling \fB\f(BIval_x_gethostbyname()\fB\fR
 with a \fB\s-1NULL\s0\fR \fIctx\fR parameter.
 .PP
 \&\fIh_errnop\fR returns the \fIh_errno\fR value from these functions.  This ensures
 thread safety, by avoiding the global \fIh_errno\fR variable.  \fIh_errnop\fR must
-not be \fB\s-1NULL\s0\fR.  (See the man page for \fI\fIgethostbyname\fI\|(3)\fR for possible values
+not be \fB\s-1NULL\s0\fR.  (See the man page for \fB\f(BIgethostbyname\fB\|(3)\fR for possible values
 of \fIh_errno\fR.)
 .PP
-\&\fI\fIval_duphostent()\fI\fR provides a way to duplicate the \fIhostent\fR structure and
+\&\fB\f(BIval_duphostent()\fB\fR provides a way to duplicate the \fIhostent\fR structure and
 its auxiliary data.  It performs a deep copy; i.e., the internal strings and
 arrays are also copied.
 .PP
-\&\fI\fIval_freehostent()\fI\fR is used to free the hostent structure returned by the
-\&\fI\fIval_gethostbyname()\fI\fR, \fI\fIval_x_gethostbyname()\fI\fR and \fI\fIval_duphostent()\fI\fR
+\&\fB\f(BIval_freehostent()\fB\fR is used to free the hostent structure returned by the
+\&\fB\f(BIval_gethostbyname()\fB\fR, \fB\f(BIval_x_gethostbyname()\fB\fR and \fB\f(BIval_duphostent()\fB\fR
 functions.
 .PP
-\&\fI\fIval_get_hostent_dnssec_status()\fI\fR is used to extract the \s-1DNSSEC\s0
+\&\fB\f(BIval_get_hostent_dnssec_status()\fB\fR is used to extract the \s-1DNSSEC\s0
 validation status from the returned \fIhostent\fR structure.  This function
-must be called only for the values returned from \fI\fIval_gethostbyname()\fI\fR,
-\&\fI\fIval_x_gethostbyname()\fI\fR, and \fI\fIval_duphostent()\fI\fR functions.
+must be called only for the values returned from \fB\f(BIval_gethostbyname()\fB\fR,
+\&\fB\f(BIval_x_gethostbyname()\fB\fR, and \fB\f(BIval_duphostent()\fB\fR functions.
 .SH "RETURN VALUE"
 .IX Header "RETURN VALUE"
-The \fI\fIval_gethostbyname()\fI\fR and \fI\fIval_x_gethostbyname()\fI\fR functions return a
+The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_x_gethostbyname()\fB\fR functions return a
 value of type \fIhostent\fR on success, and \fB\s-1NULL\s0\fR on error.  The memory for
 the returned value is dynamically allocated by these two functions.  Hence,
-the caller must only call the \fI\fIval_freehostent()\fI\fR function on the returned
+the caller must only call the \fB\f(BIval_freehostent()\fB\fR function on the returned
 value in order to avoid memory leaks.
 .PP
-The \fI\fIval_get_hostent_dnssec_status()\fI\fR function returns the result of the
+The \fB\f(BIval_get_hostent_dnssec_status()\fB\fR function returns the result of the
 \&\s-1DNSSEC\s0 validation.  The possible values for the \s-1DNSSEC\s0 status are given in
 \&\fBval_errors.h\fR.
 .PP
-The \fI\fIval_duphostent()\fI\fR function returns a copy of specified the \fIhostent\fR
-structure.  The returned value must be freed using \fI\fIval_freehostent()\fI\fR to
+The \fB\f(BIval_duphostent()\fB\fR function returns a copy of specified the \fIhostent\fR
+structure.  The returned value must be freed using \fB\f(BIval_freehostent()\fB\fR to
 avoid memory leaks.
 .SH "EXAMPLE"
 .IX Header "EXAMPLE"
@@ -251,12 +251,12 @@ avoid memory leaks.
 .Ve
 .SH "NOTES"
 .IX Header "NOTES"
-This version of \fI\fIval_x_gethostbyname()\fI\fR hence \fI\fIval_gethostbyname()\fI\fR does
+This version of \fB\f(BIval_x_gethostbyname()\fB\fR hence \fB\f(BIval_gethostbyname()\fB\fR does
 not read the order-of-look-up method from \fB/etc/hosts.conf\fR.  This
 functionality will be provided in future versions.  At present, the default
 order is set to consult the \fB/etc/hosts\fR file first, and then query \s-1DNS\s0.
 .PP
-This version of \fI\fIval_x_gethostbyname()\fI\fR and \fI\fIval_gethostbyname()\fI\fR does not
+This version of \fB\f(BIval_x_gethostbyname()\fB\fR and \fB\f(BIval_gethostbyname()\fB\fR does not
 support \s-1NIS\s0 lookups.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
@@ -267,11 +267,11 @@ See the \s-1COPYING\s0 file included with the DNSSEC-Tools package for details.
 Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fIgetaddrinfo\fR(3)
+\&\fBgetaddrinfo\fR(3)
 .PP
-\&\fI\fIget_context\fI\|(3)\fR, \fI\fIval_dupaddrinfo\fI\|(3)\fR, \fI\fIval_freeaddrinfo\fI\|(3)\fR,
-\&\fI\fIval_getaddrinfo\fI\|(3)\fR, \fI\fIval_query\fI\|(3)\fR, \fI\fIval_x_getaddrinfo\fI\|(3)\fR,
-\&\fI\fIval_x_query\fI\|(3)\fR
+\&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_dupaddrinfo\fB\|(3)\fR, \fB\f(BIval_freeaddrinfo\fB\|(3)\fR,
+\&\fB\f(BIval_getaddrinfo\fB\|(3)\fR, \fB\f(BIval_query\fB\|(3)\fR, \fB\f(BIval_x_getaddrinfo\fB\|(3)\fR,
+\&\fB\f(BIval_x_query\fB\|(3)\fR
 .PP
 \&\fIp_val_error\fR
 .PP
