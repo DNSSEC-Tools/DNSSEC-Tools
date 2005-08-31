@@ -754,11 +754,11 @@ static int init_respol(struct name_server **nslist)
 	struct sockaddr_in my_addr;
 	struct in_addr  address;
 	char auth_zone_info[MAXDNAME];
-    FILE * fp;
-    char *line = NULL;
-    char *lp = NULL;
-    size_t len = 0;
-    int read;
+	FILE * fp;
+	char *line = NULL;
+	char *lp = NULL;
+	size_t len = 0;
+	int read;
 	struct name_server *ns_head = NULL;
 	struct name_server *ns = NULL;
 
@@ -799,7 +799,9 @@ static int init_respol(struct name_server **nslist)
 				return OUT_OF_MEMORY;
    			if (ns_name_pton(auth_zone_info, ns->ns_name_n, MAXCDNAME-1) == -1) {
 				FREE (ns->ns_name_n); 
+				ns->ns_name_n = NULL;
 				FREE (ns);
+				ns = NULL;
 				goto err;
 			}
 
@@ -839,13 +841,15 @@ static int init_respol(struct name_server **nslist)
 
 		if (lp != NULL) 
 			FREE(lp);
+		lp = NULL;
 		line = NULL;
 	}
 
 	*nslist = ns_head;
 
-    if (lp != NULL) 
+	if (lp != NULL) 
 		FREE(lp);
+	lp = NULL;
 	line = NULL;
 	fclose(fp);
 	return NO_ERROR;
@@ -855,6 +859,7 @@ err:
 
 	if (lp)
 		FREE(lp);
+	lp = NULL;
 	line = NULL;
 	fclose(fp);
 	return CONF_PARSE_ERROR;
