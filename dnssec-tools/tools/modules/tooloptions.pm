@@ -835,7 +835,7 @@ DNSSEC-Tools supports a set of options common to all the tools in the suite.
 These options may have defaults set in the B<dnssec-tools.conf> configuration
 file, in a I<keyrec> file, from command-line options, or from any combination
 of the three.  In order to enforce a common sequence of option interpretation,
-all DNSSEC-Tools should use the I<tooloptions()> routine to initialize its
+all DNSSEC-Tools should use the B<tooloptions()> routine to initialize its
 options.
 
 The I<keyrec_file> argument specifies a I<keyrec> file that will be consulted.
@@ -845,19 +845,19 @@ and the I<keyrec_name> parameter not included.  The I<@specopts> array
 contains command-specific arguments; the arguments must be in the format
 prescribed by the B<Getopt::Long> Perl module.
 
-I<tooloptions()> combines data from these three option sources into a hash
+B<tooloptions()> combines data from these three option sources into a hash
 table.  The hash table is returned to the caller, which will then use the
 options as needed.
 
 The command-line options are saved between calls, so a command may call
-I<tooloptions()> multiple times and still have the command-line options
+B<tooloptions()> multiple times and still have the command-line options
 included in the final hash table.  This is useful for examining multiple
 I<keyrec>s in a single command.  Inclusion of command-line options may be
-suspended and restored using the I<opts_suspend()> and I<opts_restore()> calls.
-Options may be discarded entirely by calling I<opts_drop()>; once dropped,
+suspended and restored using the B<opts_suspend()> and B<opts_restore()> calls.
+Options may be discarded entirely by calling B<opts_drop()>; once dropped,
 command-line options may never be restored.  Suspension, restoration, and
 dropping of command-line options are only effective after the initial
-I<tooloptions()> call. 
+B<tooloptions()> call. 
 
 The options sources are combined in this manner:
 
@@ -879,10 +879,10 @@ value.
 =item 3. Command-line Options
 
 The command-line options, specified in I<@specopts>, are parsed using
-I<Getoptions()> from the B<Getopt::Long> Perl module.  These options are
+B<Getoptions()> from the B<Getopt::Long> Perl module.  These options are
 folded into the hash table; again possibly overriding existing hash values.
 The options given in I<@specopts> must be in the format required by
-I<Getoptions()>.
+B<Getoptions()>.
 
 =back
 
@@ -906,7 +906,7 @@ I<zonesigner> is executed with this command line:
 
     zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com
 
-I<tooloptions("example.keyrec","Kexample.com.+005+10988",("wait=i"))>
+B<tooloptions("example.keyrec","Kexample.com.+005+10988",("wait=i"))>
 will read each option source in turn, ending up with:
     I<ksklength>           512
     I<zsklength>          4096
@@ -946,16 +946,15 @@ options are in the format required by the B<Getopt::Long> Perl module.  If
 I<@csopts> is left off the call, then no command-specific options will be
 included in the final option hash.  The I<@csopts> array may be passed
 directly to several interfaces or it may be saved in a call to
-I<opts_setcsopts()>.
-
+B<opts_setcsopts()>.
 
 =head1 TOOL OPTION INTERFACES
 
 =over 4
 
-=item I<tooloptions($keyrec_file,$keyrec_name,@csopts)>
+=item B<tooloptions($keyrec_file,$keyrec_name,@csopts)>
 
-This I<tooloptions()> call builds an option hash from the system configuration
+This B<tooloptions()> call builds an option hash from the system configuration
 file, a I<keyrec>, and a set of command-specific options.  A reference to
 this option hash is returned to the caller.
 
@@ -963,15 +962,15 @@ If I<$keyrec_file> is given as an empty string, then no I<keyrec> file will
 be consulted.  In this case, it is assumed that I<$keyrec_name> will be left
 out altogether.
 
-If a non-existent I<$keyrec_file> is given and I<opts_createkrf()> has been
-called, then the named I<keyrec> file will be created.  I<opts_createkrf()>
+If a non-existent I<$keyrec_file> is given and B<opts_createkrf()> has been
+called, then the named I<keyrec> file will be created.  B<opts_createkrf()>
 must be called for each I<keyrec> file that must be created, as the
-B<tooloptions> I<keyrec>-creation state is reset after I<tooloptions()> has
+B<tooloptions> I<keyrec>-creation state is reset after B<tooloptions()> has
 completed.
 
-=item I<opts_krfile($keyrec_file,$keyrec_name,@csopts)>
+=item B<opts_krfile($keyrec_file,$keyrec_name,@csopts)>
 
-The I<opts_krfile()> routine looks up the I<keyrec> file and I<keyrec> name
+The B<opts_krfile()> routine looks up the I<keyrec> file and I<keyrec> name
 and uses those fields to help build an options hash.  References to the
 I<keyrec> file name, I<keyrec> name, and the option hash table are returned
 to the caller.
@@ -981,40 +980,37 @@ They may be given as empty strings, but they B<must> be given.
 
 If the I<$keyrec_file> file and I<$keyrec_name> name are both specified by
 the caller, then this routine will have the same effect as directly calling
-I<tooloptions()>.
+B<tooloptions()>.
 
-
-=item I<opts_getkeys($keyrec_file,$keyrec_name,@csopts)>
+=item B<opts_getkeys($keyrec_file,$keyrec_name,@csopts)>
 
 This routine returns references to the KSK and ZSK I<keyrec>s associated with
 a specified I<keyrec> entry.  This gives an easy way to get a zone's I<keyrec>
 entries in a single step.
 
-This routine acts as a front-end to the I<opts_krfile()> routine.
-Arguments to I<opts_getkeys()> conform to those of I<opts_krfile()>.
+This routine acts as a front-end to the B<opts_krfile()> routine.
+Arguments to B<opts_getkeys()> conform to those of B<opts_krfile()>.
 
-If I<opts_getkeys()> isn't passed any arguments, it will act as if both
+If B<opts_getkeys()> isn't passed any arguments, it will act as if both
 I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
 case, their values will be taken from the I<-krfile> and I<-keyrec> command
 line options.
 
-
-=item I<opts_keykr($keyrec_file,$keyrec_name,@csopts)>
+=item B<opts_keykr($keyrec_file,$keyrec_name,@csopts)>
 
 This routine returns a reference to the key I<keyrec> named by
 I<$keyrec_name>.  It ensures that the named I<keyrec> is a key I<keyrec>;
 if it isn't, I<undef> is returned.
 
-This routine acts as a front-end to the I<opts_krfile()> routine.
-I<opts_keykr()>'s arguments conform to those of I<opts_krfile()>.
+This routine acts as a front-end to the B<opts_krfile()> routine.
+B<opts_keykr()>'s arguments conform to those of B<opts_krfile()>.
 
-If I<opts_keykr()> isn't passed any arguments, it will act as if both
+If B<opts_keykr()> isn't passed any arguments, it will act as if both
 I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
 case, their values will be taken from the I<-krfile> and I<-keyrec> command
 line options.
 
-
-=item I<opts_zonekr($keyrec_file,$keyrec_name,@csopts)>
+=item B<opts_zonekr($keyrec_file,$keyrec_name,@csopts)>
 
 This routine returns a reference to the zone I<keyrec> named by
 I<$keyrec_name>.  The I<keyrec> fields from the zone's KSK and ZSK are
@@ -1022,43 +1018,43 @@ folded in as well, but the key's I<keyrec_> fields are excluded.  This
 call ensures that the named I<keyrec> is a zone I<keyrec>; if it isn't,
 I<undef> is returned.
 
-This routine acts as a front-end to the I<opts_krfile()> routine.
-I<opts_zonekr()>'s arguments conform to those of I<opts_krfile()>.
+This routine acts as a front-end to the B<opts_krfile()> routine.
+B<opts_zonekr()>'s arguments conform to those of B<opts_krfile()>.
 
-If I<opts_zonekr()> isn't passed any arguments, it will act as if both
+If B<opts_zonekr()> isn't passed any arguments, it will act as if both
 I<$keyrec_file> and I<$keyrec_name> were given as empty strings.  In this
 case, their values will be taken from the I<-krfile> and I<-keyrec> command
 line options.
 
-=item I<opts_setcsopts(@csopts)>
+=item B<opts_setcsopts(@csopts)>
 
 This routine saves a copy of the command-specific options given in I<@csopts>.
 This collection of options is added to the I<@csopts> array that may be passed
-to I<tooloptions()>.
+to B<tooloptions()>.
 
-=item I<opts_createkrf()>
+=item B<opts_createkrf()>
 
 Force creation of an empty I<keyrec> file if the specified file does not
-exist.  This may happen on calls to I<tooloptions()>, I<opts_getkeys()>,
-I<opts_krfile()>, and I<opts_zonekr()>.
+exist.  This may happen on calls to B<tooloptions()>, B<opts_getkeys()>,
+B<opts_krfile()>, and B<opts_zonekr()>.
 
-=item I<opts_suspend()>
+=item B<opts_suspend()>
 
 Suspend inclusion of the command-line options in building the final hash
 table of responses.
 
-=item I<opts_restore()>
+=item B<opts_restore()>
 
 Restore inclusion of the command-line options in building the final hash
 table of responses.
 
-=item I<opts_drop()>
+=item B<opts_drop()>
 
 Discard the command-line options.  They will no longer be available for
 inclusion in building the final hash table of responses for this execution
 of the command.
 
-=item I<opts_reset()>
+=item B<opts_reset()>
 
 Reset an internal flag so that the command-line arguments may be
 re-examined.  This is usually only useful if the arguments have been

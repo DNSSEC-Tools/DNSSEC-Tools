@@ -194,12 +194,12 @@ An example configuration file follows:
 
 =over 4
 
-=item I<parseconfig()>
+=item B<parseconfig()>
 
 This routine reads and parses the system's DNSSEC tools configuration file.
 The parsed contents are put into a hash table, which is returned to the caller.
 
-=item I<parseconfig(conffile)>
+=item B<parseconfig(conffile)>
 
 This routine reads and parses a caller-specified DNSSEC tools configuration
 file.  The parsed contents are put into a hash table, which is returned to
@@ -219,7 +219,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-I<zonesigner(8)>
+B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::keyrec(3)>
 

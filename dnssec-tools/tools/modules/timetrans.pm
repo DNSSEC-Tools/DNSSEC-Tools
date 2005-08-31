@@ -177,7 +177,7 @@ Net::DNS::SEC::Tools::timetrans - Convert an integer seconds count into text uni
 
 =head1 DESCRIPTION
 
-The I<timetrans>() interface in the B<Net::DNS::SEC::Tools::timetrans>
+The B<timetrans>() interface in the B<Net::DNS::SEC::Tools::timetrans>
 converts an integer seconds count into the equivalent number of weeks,
 days, hours, and minutes.  The time converted is a relative time, B<not>
 an absolute time.  The returned time is given in terms of weeks, days, hours,
@@ -185,26 +185,26 @@ minutes, and seconds, as required to express the seconds count appropriately.
 
 =head1 EXAMPLES
 
-I<timetrans(400)> returns I<6 minutes, 40 seconds>
+B<timetrans(400)> returns I<6 minutes, 40 seconds>
 
-I<timetrans(420)> returns I<7 minutes>
+B<timetrans(420)> returns I<7 minutes>
 
-I<timetrans(888)> returns I<14 minutes, 48 seconds>
+B<timetrans(888)> returns I<14 minutes, 48 seconds>
 
-I<timetrans(86400)> returns I<1 day>
+B<timetrans(86400)> returns I<1 day>
 
-I<timetrans(86488)> returns I<1 day, 28 seconds>
+B<timetrans(86488)> returns I<1 day, 28 seconds>
 
-I<timetrans(715000)> returns I<1 week, 1 day, 6 hours, 36 minutes, 40 second>
+B<timetrans(715000)> returns I<1 week, 1 day, 6 hours, 36 minutes, 40 second>
 
-I<timetrans(720000)> returns I<1 week, 1 day, 8 hours>
+B<timetrans(720000)> returns I<1 week, 1 day, 8 hours>
 
 =head1 INTERFACES
 
 The interfaces to the B<Net::DNS::SEC::Tools::timetrans> module are given
 below.
 
-=head2 I<timetrans()>
+=head2 B<timetrans()>
 
 This routine converts an integer seconds count into the equivalent number of
 weeks, days, hours, and minutes.  This converted seconds count is returned
@@ -230,7 +230,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-I<timetrans(1)>
+B<timetrans(1)>
 
 =cut
 

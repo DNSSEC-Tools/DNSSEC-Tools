@@ -12,7 +12,7 @@
 #
 #	Introduction
 #		This module provides interfaces for communicating with the
-#		dnssec-tools' roll-over manager.  The top-level interfaces
+#		DNSSEC-Tools' roll-over manager.  The top-level interfaces
 #		are independent of the host Operating System, but the actual
 #		operations are dependent upon the host O/S.
 #
@@ -877,7 +877,7 @@ sub unix_halt
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::rollmgr - Communicate with the dnssec-tools roll-over
+Net::DNS::SEC::Tools::rollmgr - Communicate with the DNSSEC-Tools roll-over
 manager.
 
 =head1 SYNOPSIS
@@ -900,23 +900,23 @@ manager.
 
 =head1 DESCRIPTION
 
-The I<Net::DNS::SEC::Tools::rollmgr> module provides standard,
+The B<Net::DNS::SEC::Tools::rollmgr> module provides standard,
 platform-independent  methods for a program to communicate with
 the roll-over manager.
 
 =head1 ROLLMGR INTERFACES
 
-The interfaces to the I<Net::DNS::SEC::Tools::rollmgr> module are given below.
+The interfaces to the B<Net::DNS::SEC::Tools::rollmgr> module are given below.
 
-=head2 I<rollmgr_dir()>
+=head2 B<rollmgr_dir()>
 
 This routine returns the roll-over manager's directory.
 
-=head2 I<rollmgr_pidfile()>
+=head2 B<rollmgr_pidfile()>
 
 This routine returns the roll-over manager's pid file.
 
-=head2 I<rollmgr_getpid()>
+=head2 B<rollmgr_getpid()>
 
 This routine returns the roll-over manager's process id.  If a non-zero value
 is passed as an argument, the pidfile will be left open and accessible through
@@ -928,7 +928,7 @@ Return Values:
         characters) is returned.
     -1 is returned if the pidfile does not exist.
 
-=head2 I<rollmgr_droppid()>
+=head2 B<rollmgr_droppid()>
 
 This interface ensures that another instance of the roll-over manager is not
 running and then creates a pid file for future reference.
@@ -938,7 +938,7 @@ Return Values:
     1 - the pidfile was successfully created for this process
     0 - another process is already acting as the roll-over manager
 
-=head2 I<rollmgr_rmpid()>
+=head2 B<rollmgr_rmpid()>
 
 This interface deletes the roll-over manager's pidfile.
 
@@ -949,33 +949,33 @@ Return Values:
     -1 - the calling process is not the roll-over manager
     -2 - unable to delete the pidfile
 
-=head2 I<rollmgr_qproc()>
+=head2 B<rollmgr_qproc()>
 
 This routine informs the roll-over manager that it should re-read the
 I<rollrec> file and process its queue again.
 
-In the current implementation, the return code from the I<kill()> command is
+In the current implementation, the return code from the B<kill()> command is
 returned.
 
-=head2 I<rollmgr_halt()>
+=head2 B<rollmgr_halt()>
 
 This routine informs the roll-over manager to shut down.
 
-In the current implementation, the return code from the I<kill()> command is
+In the current implementation, the return code from the B<kill()> command is
 returned.
 
 =head1 WARNINGS
 
-1.  I<rollmgr_getpid()> attempts to exclusively lock the pidfile.
+1.  B<rollmgr_getpid()> attempts to exclusively lock the pidfile.
 Set a timer if this matters to you.
 
-2.  I<rollmgr_getpid()> has a nice little race condition.  We should lock
+2.  B<rollmgr_getpid()> has a nice little race condition.  We should lock
 the file prior to opening it, but we can't do so without it being open.
 
 =head1 COPYRIGHT
 
 Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the dnssec-tools package for details.
+See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
@@ -983,10 +983,10 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-Net::DNS::SEC::Tools::rollctl(1)
+B<Net::DNS::SEC::Tools::rollctl(1)>
 
-Net::DNS::SEC::Tools::rollrec(3)
+B<Net::DNS::SEC::Tools::rollrec(3)>
 
-Net::DNS::SEC::Tools::rollmgr(8)
+B<Net::DNS::SEC::Tools::rollmgr(8)>
 
 =cut
