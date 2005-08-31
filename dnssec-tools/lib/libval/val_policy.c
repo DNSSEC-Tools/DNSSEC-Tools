@@ -760,6 +760,7 @@ static int init_respol(struct name_server **nslist)
 	size_t len = 0;
 	int read;
 	struct name_server *ns_head = NULL;
+	struct name_server *ns_tail = NULL;
 	struct name_server *ns = NULL;
 
 	*nslist = NULL;
@@ -819,11 +820,13 @@ static int init_respol(struct name_server **nslist)
 			my_addr.sin_addr = address;
 			memcpy(ns->ns_address, &my_addr, sizeof(struct sockaddr));
 
-			if (ns_head == NULL) 
+			if (ns_tail == NULL) {
 				ns_head = ns;
+				ns_tail = ns;
+			}
 			else {
-				ns->ns_next = ns_head;
-				ns_head = ns;
+				ns_tail->ns_next = ns;
+				ns_tail = ns;
 			}
 		}
 		else if (strncmp(line, "zone", strlen("zone")) == 0) {
