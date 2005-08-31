@@ -128,8 +128,8 @@
 .rm #[ #] #H #V #F C
 .\" ========================================================================
 .\"
-.IX Title "VAL_QUERY 1"
-.TH VAL_QUERY 1 "2005-08-31" "perl v5.8.6" "User Contributed Perl Documentation"
+.IX Title "val_query 3"
+.TH val_query 3 "2005-08-31" "perl v5.8.5" "Programmer's Manual"
 .SH "NAME"
 val_query, val_x_query \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
@@ -258,6 +258,12 @@ See \fB\f(BIlibval\fB\|(3)\fR for more details.
 \&          return 0;
 \& }
 .Ve
+.SH "NOTES"
+.IX Header "NOTES"
+The \fB\f(BIval_query()\fB\fR function does not handle the case when the response to
+a query contains an answer section having records of different types.  For
+example, it returns \-1 if the response contains both \s-1CNAME\s0 and A records
+in the answer section.  This will be fixed in future versions of the library.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
 Copyright 2004\-2005 \s-1SPARTA\s0, Inc.  All rights reserved.

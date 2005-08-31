@@ -110,6 +110,13 @@ See B<libval(3)> for more details.
           return 0;
  }
 
+=head1 NOTES
+
+The B<val_query()> function does not handle the case when the response to
+a query contains an answer section having records of different types.  For
+example, it returns -1 if the response contains both CNAME and A records
+in the answer section.  This will be fixed in future versions of the library.
+
 =head1 COPYRIGHT
 
 Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
