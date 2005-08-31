@@ -31,6 +31,7 @@ int get ( const char            *name_n,
             u_int32_t           *response_length);
 			
 void free_name_server (struct name_server **ns);
+
 void free_name_servers (struct name_server **ns);
 
 void print_response (u_int8_t *response, int response_length);
@@ -50,11 +51,10 @@ in  I<response_length>.
 The B<get()> function provides a wrapper around the B<query_send()> and
 B<response_recv()> functions. It blocks until some response is received 
 from some name server or the request times out. The libsres library does
-not automatically send out recursive queries and referral requests are also
-acceptable as valid responses.
+not automatically send out recursive queries; referral requests are also
+treated as valid responses.
 
-I<response> must be large enough to hold the number of bytes returned in 
-I<response_length>. The memory pointed to by I<*respondent> is allocated 
+The memory pointed to by I<*respondent> is allocated 
 by the libsres library and this must be free-d by the invoker using the 
 B<free_name_server()> method. An entire list of name servers can be free-d 
 using the B<free_name_servers()> method.
@@ -76,8 +76,6 @@ struct name_server
 
 };
 
-
-The currently defined members of I<struct name_server> are:
 
 =over 4
 
