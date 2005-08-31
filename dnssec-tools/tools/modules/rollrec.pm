@@ -795,7 +795,7 @@ sub rollrec_dump_array
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::rollrec - Manipulate a dnssec-tools rollrec file.
+Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
 
 =head1 SYNOPSIS
 
@@ -827,9 +827,9 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a dnssec-tools rollrec file.
 
 =head1 DESCRIPTION
 
-The I<Net::DNS::SEC::Tools::rollrec> module manipulates the contents of a
-dnssec-tools I<rollrec> file.  I<rollrec> files describe the status of a
-zone roll-over process, as performed by the dnssec-tools programs.  Module
+The B<Net::DNS::SEC::Tools::rollrec> module manipulates the contents of a
+DNSSEC-Tools I<rollrec> file.  I<rollrec> files describe the status of a
+zone roll-over process, as performed by the DNSSEC-Tools programs.  Module
 interfaces exist for looking up I<rollrec> records, creating new records,
 and modifying existing records.
 
@@ -847,27 +847,27 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 	rollrec_rolldate	"Tue Mar 09 19:12:54 2005"
 
 The first step in using this module must be to read the I<rollrec> file.  The
-I<rollrec_read()> interface reads the file and parses it into an internal
+B<rollrec_read()> interface reads the file and parses it into an internal
 format.  The file's records are copied into a hash table (for easy reference
-by the I<Net::DNS::SEC::Tools::rollrec> routines) and in an array (for
+by the B<Net::DNS::SEC::Tools::rollrec> routines) and in an array (for
 preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
-I<rollrec_fullrec()> and I<rollrec_recval()>.  The contents are
-modified using I<rollrec_add()> and I<rollrec_setval()>.
+B<rollrec_fullrec()> and B<rollrec_recval()>.  The contents are
+modified using B<rollrec_add()> and B<rollrec_setval()>.
 
 If the I<rollrec> file has been modified, it must be explicitly written or
-the changes are not saved.  I<rollrec_write()> saves the new contents to disk.
-I<rollrec_close()> saves the file and close the Perl file handle to the
+the changes are not saved.  B<rollrec_write()> saves the new contents to disk.
+B<rollrec_close()> saves the file and close the Perl file handle to the
 I<rollrec> file.  If a I<rollrec> file is no longer wanted to be open, yet
-the contents should not be saved, I<rollrec_discard()> gets rid of the data
+the contents should not be saved, B<rollrec_discard()> gets rid of the data
 closes and the file handle B<without> saving any modified data.
 
 =head1 ROLLREC INTERFACES
 
-The interfaces to the I<Net::DNS::SEC::Tools::rollrec> module are given below.
+The interfaces to the B<Net::DNS::SEC::Tools::rollrec> module are given below.
 
-=head2 I<rollrec_add(rollrec_name,fields)>
+=head2 B<rollrec_add(rollrec_name,fields)>
 
 This routine adds a new I<rollrec> to the I<rollrec> file and the internal
 representation of the file contents.  The I<rollrec> is added to both the
@@ -885,7 +885,7 @@ the key values I<rollrec_gensecs> and I<rollrec_gendate>.
 A blank line is added after the final line of the new I<rollrec>.  After adding
 all new I<rollrec> entries, the I<rollrec> file is written but is not closed.
 
-=head2 I<rollrec_del(rollrec_name)>
+=head2 B<rollrec_del(rollrec_name)>
 
 This routine deletes a I<rollrec> from the I<rollrec> file and the internal
 representation of the file contents.  The I<rollrec> is deleted from both
@@ -900,37 +900,37 @@ Return values are:
 
     -1 unknown name
 
-=head2 I<rollrec_close()>
+=head2 B<rollrec_close()>
 
 This interface saves the internal version of the I<rollrec> file (opened with
-I<rollrec_read()>) and closes the file handle. 
+B<rollrec_read()>) and closes the file handle. 
 
-=head2 I<rollrec_discard()>
+=head2 B<rollrec_discard()>
 
 This routine removes a I<rollrec> file from use by a program.  The internally
 stored data are deleted and the I<rollrec> file handle is closed.  However,
 modified data are not saved prior to closing the file handle.  Thus, modified
 and new data will be lost.
 
-=head2 I<rollrec_fullrec(rollrec_name)>
+=head2 B<rollrec_fullrec(rollrec_name)>
 
-I<rollrec_fullrec()> returns a reference to the I<rollrec> specified in
+B<rollrec_fullrec()> returns a reference to the I<rollrec> specified in
 I<rollrec_name>.
 
-=head2 I<rollrec_names()>
+=head2 B<rollrec_names()>
 
 This routine returns a list of the I<rollrec> names from the file.
 
-=head2 I<rollrec_read(rollrec_file)>
+=head2 B<rollrec_read(rollrec_file)>
 
 This interface reads the specified I<rollrec> file and parses it into a
-I<rollrec> hash table and a file contents array.  I<rollrec_read()>
+I<rollrec> hash table and a file contents array.  B<rollrec_read()>
 B<must> be called prior to any of the other
-I<Net::DNS::SEC::Tools::rollrec> calls.  If another I<rollrec> is
+B<Net::DNS::SEC::Tools::rollrec> calls.  If another I<rollrec> is
 already open, then it is saved and closed prior to opening the new
 I<rollrec>.
 
-Upon success, I<rollrec_read()> returns the number of I<rollrec>s read from the
+Upon success, B<rollrec_read()> returns the number of I<rollrec>s read from the
 file.
 
 Failure return values:
@@ -941,7 +941,7 @@ Failure return values:
 
     -3 duplicate I<rollrec> names in file
 
-=head2 I<rollrec_recval(rollrec_name,rollrec_field)>
+=head2 B<rollrec_recval(rollrec_name,rollrec_field)>
 
 This routine returns the value of a specified field in a given I<rollrec>.
 I<rollrec_name> is the name of the particular I<rollrec> to consult.
@@ -958,7 +958,7 @@ The call:
 
 will return the value "db.example.com".
 
-=head2 I<rollrec_setval(rollrec_name,field,value)>
+=head2 B<rollrec_setval(rollrec_name,field,value)>
 
 Set the value of a name/field pair in a specified I<rollrec>.  The file is
 B<not> written after updating the value, but the internal file-modified flag
@@ -968,10 +968,10 @@ I<rollrec_name> is the name of the I<rollrec> that will be modified.
 I<field> is the I<rollrec> field which will be modified.
 I<value> is the new value for the field.
 
-=head2 I<rollrec_write()>
+=head2 B<rollrec_write()>
 
 This interface saves the internal version of the I<rollrec> file (opened with
-I<rollrec_read()>).  It does not close the file handle.  As an efficiency
+B<rollrec_read()>).  It does not close the file handle.  As an efficiency
 measure, an internal modification flag is checked prior to writing the file.
 If the program has not modified the contents of the I<rollrec> file, it is not
 rewritten.
@@ -979,23 +979,23 @@ rewritten.
 =head1 ROLLREC INTERNAL INTERFACES
 
 The interfaces described in this section are intended for internal use by the
-I<Net::DNS::SEC::Tools::rollrec> module.  However, there are situations where
+B<Net::DNS::SEC::Tools::rollrec> module.  However, there are situations where
 external entities may have need of them.  Use with caution, as misuse may
 result in damaged or lost I<rollrec> files.
 
-=head2 I<rollrec_init()>
+=head2 B<rollrec_init()>
 
 This routine initializes the internal I<rollrec> data.  Pending changes will
 be lost.  An open I<rollrec> file handle will remain open, though the data are
 no longer held internally.  A new I<rollrec> file must be read in order to use
-the I<Net::DNS::SEC::Tools::rollrec> interfaces again.
+the B<Net::DNS::SEC::Tools::rollrec> interfaces again.
 
-=head2 I<rollrec_newrec(name)>
+=head2 B<rollrec_newrec(name)>
 
 This interface creates a new I<rollrec>.  The I<rollrec_name> field in the
 I<rollrec> is set to the values of the I<name> parameter.
 
-=head2 I<rollrec_default()>
+=head2 B<rollrec_default()>
 
 This routine returns the name of the default I<rollrec> file.
 
@@ -1005,7 +1005,7 @@ The following interfaces display information about the currently parsed
 I<rollrec> file.  They are intended to be used for debugging and testing, but
 may be useful at other times.
 
-=head2 I<rollrec_dump_hash()>
+=head2 B<rollrec_dump_hash()>
 
 This routine prints the I<rollrec> file as it is stored internally in a hash
 table.  The I<rollrec>s are printed in alphabetical order, with the fields
@@ -1013,7 +1013,7 @@ alphabetized for each I<rollrec>.  New I<rollrec>s and I<rollrec> fields are
 alphabetized along with current I<rollrec>s and fields.  Comments from the
 I<rollrec> file are not included with the hash table.
 
-=head2 I<rollrec_dump_array()>
+=head2 B<rollrec_dump_array()>
 
 This routine prints the I<rollrec> file as it is stored internally in an
 array.  The I<rollrec>s are printed in the order given in the file, with the
@@ -1025,7 +1025,7 @@ preserved as given in the I<rollrec> file.
 =head1 COPYRIGHT
 
 Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
-See the COPYING file included with the dnssec-tools package for details.
+See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
@@ -1033,8 +1033,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-Net::DNS::SEC::Tools::keyrec(3)
+B<Net::DNS::SEC::Tools::keyrec(3)>
 
-Net::DNS::SEC::Tools::keyrec(5)
+B<Net::DNS::SEC::Tools::keyrec(5)>
 
 =cut
