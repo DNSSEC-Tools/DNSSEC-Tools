@@ -88,7 +88,7 @@
 #define SR_REFUSED                16 /*RCODE set to REFUSED*/
 #define SR_GENERIC_FAILURE        17 /*Look at RCODE*/
 #define SR_EDNS_VERSION_ERROR     18
-#define SR_UNSUPP_ENDS0_LABEL     19
+#define SR_UNSUPP_EDNS0_LABEL     19
 #define SR_SUSPICIOUS_BIT         20
 #define SR_NAME_EXPANSION_FAILURE 21
 #define SR_LAST_ERROR             22 
