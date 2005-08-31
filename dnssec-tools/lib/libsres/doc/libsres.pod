@@ -2,39 +2,39 @@
 
 =head1 NAME
 
-query_send, response_rcv, get, free_name_server, free_name_servers - send queries and receive responses from a
-DNS name server.
+query_send, response_rcv, get, free_name_server, free_name_servers -
+send queries and receive responses from a DNS name server.
 
 print_response - Display answers returned from the name server
 
 =head1 SYNOPSIS
 
-#include <resolver.h>
+  #include <resolver.h>
 
-int query_send( const char      *name,
+  int query_send(const char    *name,
             const u_int16_t     type,
             const u_int16_t     class,
             struct name_server  *nslist,
             int                 *trans_id);
 
-int response_recv(int           *trans_id,
+  int response_recv(int         *trans_id,
             struct name_server  **respondent,
             u_int8_t            **response,
             u_int32_t           *response_length);
 
-int get ( const char            *name_n,
-            const u_int16_t     type_h,
-            const u_int16_t     class_h,
-            struct name_server  *nslist,
-            struct name_server  **respondent,
-            u_int8_t            **response,
-            u_int32_t           *response_length);
+  int get(const char          *name_n,
+          const u_int16_t     type_h,
+          const u_int16_t     class_h,
+          struct name_server  *nslist,
+          struct name_server  **respondent,
+          u_int8_t            **response,
+          u_int32_t           *response_length);
 
-void free_name_server (struct name_server **ns);
+  void free_name_server(struct name_server **ns);
 
-void free_name_servers (struct name_server **ns);
+  void free_name_servers(struct name_server **ns);
 
-void print_response (u_int8_t *response, int response_length);
+  void print_response(u_int8_t *response, int response_length);
 
 =head1 DESCRIPTION
 
