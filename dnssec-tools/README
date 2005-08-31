@@ -39,6 +39,8 @@ CONTENTS DESCRIPTION
 		queries.
 
 	apps/mozilla
+		Patches to mozilla 1.7.10 to enable DNSSEC name
+		checking validation on visited URLs.
 
 	apps/sendmail
 		Patches to sendmail and spfmilter to provide DNSSEC
@@ -49,25 +51,35 @@ CONTENTS DESCRIPTION
 		in the Received-SPF header.
 
 	lib/libsres
+		A library that is capable of sending queries to, and
+		receiving answers from a DNSSEC-aware name server.
 
-	lib/libvalidat
+	lib/libval
+                A library that provides DNSSEC resource-record
+                validation functionality.
 
-	lib/val_stub
+        tools/dnspktflow
+                A tool which can produce visual diagrams of DNS
+                traffic flows which have been captured using tcpdump.
 
 	tools/donuts
+                A dnssec aware zone file checker / lint-like application.
 
 	tools/etc	
 		Data required by DNSSEC-Tools programs.
 
-	tools/linux
-		Linux-specific doohickies.
-
-	tools/linux-ifup-dyn-dns
-		Empty directory.
+	tools/linux/ifup-dyn-dns
+		This is a script which can be used to securely
+		auto-update a DNS entry when an IP address is assigned
+		to an interface.
 
 	tools/logwatch
+		Patches to logwatch configuration files and scripts to
+		manage log files for BIND security function.
 
 	tools/mapper
+		A tool that can generate graphical maps of DNS zones,
+		including color coding of DNSSEC related data.
 
 	tools/modules
 		DNSSEC-Tools Perl modules.  These modules provide interfaces
