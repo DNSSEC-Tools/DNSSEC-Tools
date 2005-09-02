@@ -847,8 +847,15 @@ int val_resquery_rcv (
 					&response_data, &response_length);
 	if (ret_val == SR_NO_ANSWER_YET)
 		return NO_ERROR;
-	else if (ret_val != SR_UNSET)
-		return ret_val;
+	else if (ret_val != SR_UNSET) { 
+		matched_q->qc_state = Q_ERROR_BASE + ret_val;
+		return NO_ERROR;
+	}
+
+	if(ns_name_ntop(matched_q->qc_name_n, name, MAXDNAME-1) == -1) {
+		matched_q->qc_state = Q_ERROR_BASE + SR_RCV_INTERNAL_ERROR;
+		return NO_ERROR;	
+	}
 
     *response = (struct domain_info *) MALLOC (sizeof(struct domain_info));
     if (*response == NULL)
@@ -860,11 +867,6 @@ int val_resquery_rcv (
     (*response)->di_requested_type_h = matched_q->qc_type_h;
     (*response)->di_requested_class_h = matched_q->qc_class_h;
 
-	if(ns_name_ntop(matched_q->qc_name_n, name, MAXDNAME-1) == -1) {
-		matched_q->qc_state = Q_ERROR_BASE + SR_RCV_INTERNAL_ERROR;
-		(*response)->di_res_error = matched_q->qc_state;  
-		return NO_ERROR;	
-	}
     if (((*response)->di_requested_name_h = STRDUP (name))==NULL)
         return OUT_OF_MEMORY;
 
