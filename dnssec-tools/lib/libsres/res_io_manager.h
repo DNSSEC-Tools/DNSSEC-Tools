@@ -18,12 +18,12 @@
 #define __RES_IO_MANAGER_H__
 
 #define SR_IO_GOT_ANSWER	1
-#define SR_IO_NO_ANSWER_YET	0
 #define SR_IO_UNSET		0
-#define SR_IO_MEMORY_ERROR	-1
-#define SR_IO_TOO_MANY_TRANS	-2
-#define SR_IO_SOCKET_ERROR	-3
-#define SR_IO_NO_ANSWER		-4
+#define SR_IO_NO_ANSWER_YET -1 
+#define SR_IO_MEMORY_ERROR	-2
+#define SR_IO_TOO_MANY_TRANS	-3
+#define SR_IO_SOCKET_ERROR	-4
+#define SR_IO_NO_ANSWER		-5
 #define SR_IO_INTERNAL_ERROR	-10
 
 /*
