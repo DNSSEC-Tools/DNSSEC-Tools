@@ -362,8 +362,8 @@ int response_recv(int           *trans_id,
 	struct name_server *temp_ns = NULL;
 
 	if ((ret_val=res_io_accept(*trans_id,answer,answer_length, &temp_ns))
-			== SR_NO_ANSWER_YET)
-		return ret_val;
+			== SR_IO_NO_ANSWER_YET)
+		return SR_NO_ANSWER_YET;
 
 	if(temp_ns == NULL) {
 		*respondent = NULL;
