@@ -58,7 +58,7 @@
 #define LAST_ERROR				DNS_ERROR_LAST /* ERROR_BASE+40 */ 
 
 /* "Error, but can prove the chain-of-trust above this" states */
-#define FAIL_BASE				LAST_ERROR+1 /* ERROR_BASE+50 */ 
+#define FAIL_BASE				LAST_ERROR /* ERROR_BASE+40 */ 
 #define DNSKEY_NOMATCH			FAIL_BASE+1 /*RRSIG was created by a DNSKEY that does not exist in the apex keyset.*/
 #define WRONG_LABEL_COUNT  		FAIL_BASE+2 /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA.*/
 #define SECURITY_LAME	  		FAIL_BASE+3 /*RRSIG created by a key that does not exist in the parent DS record set.*/
@@ -80,7 +80,7 @@
 #define WRONG_RRSIG_OWNER		FAIL_BASE+19 /* The RRSIG and the data that it purportedly covers have differing notions of owner name*/
 #define RRSIG_ALGO_MISMATCH 	FAIL_BASE+20 /* The DNSKEY and RRSIG pair have a mismatch in their algorithm.*/
 #define KEYTAG_MISMATCH			FAIL_BASE+21 /* The DNSKEY and RRSIG pair have a mismatch in their key tags*/
-#define LAST_FAILURE			FAIL_BASE+30 /* ERROR_BASE + 80 */
+#define LAST_FAILURE			FAIL_BASE+30 /* ERROR_BASE + 70 */
 
 /* success results conditions */
 #define VERIFIED				LAST_FAILURE+1 /* This is a transient state, it will settle at VALIDATED_SUCCESS if the
@@ -90,7 +90,7 @@ chain of trust can be completed */
 #define TRUST_ZONE				LAST_FAILURE+4 /* zone is trusted */
 #define BARE_RRSIG 				LAST_FAILURE+5 /* No DNSSEC validation possible, query was for a RRSIG.*/
 #define VALIDATE_SUCCESS  		LAST_FAILURE+6	/* TRUSTED AND no error */
-#define LAST_SUCCESS			LAST_FAILURE+10 /* ERROR_BASE + 90 */
+#define LAST_SUCCESS			LAST_FAILURE+10 /* ERROR_BASE + 80 */
 
 /* failure result conditions */
 #define BOGUS_PROVABLE			LAST_SUCCESS+1	/* NOT_VERIFIED but not trusted */
