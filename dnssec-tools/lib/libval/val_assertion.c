@@ -736,9 +736,16 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 			switch(kind) {
 				/* STRAIGHT and CNAME are OK */
 				case SR_ANS_STRAIGHT:
-				case SR_ANS_CNAME:
 					if ((as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
 						(as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+					}
+					break;
+
+				case SR_ANS_CNAME:
+					if ((as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
+						(as->ac_data->rrs_ans_kind != SR_ANS_CNAME) && 
+						(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
@@ -751,9 +758,16 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 
 				/* NACK_NXT and NACK_SOA are OK */
 				case SR_ANS_NACK_NXT:
-				case SR_ANS_NACK_SOA:
 					if ((as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
 						(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
+						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+					}
+					break;
+
+				case SR_ANS_NACK_SOA:
+					if ((as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
+						(as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
+						(as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
