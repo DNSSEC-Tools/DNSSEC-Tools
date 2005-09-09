@@ -1,0 +1,213 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Normal Operations for All Zones}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Zone-Signing Key (ZSK) Generation}
+
+\begin{description}
+\item [$\Box$] Generate the Key
+\item [$\Box$] Update the Key-Tags Table
+\item [$\Box$] Store Separately the Private Keys for ZSKs and KSKs
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Key-Signing Key (KSK) Generation}
+
+\begin{description}
+\item [$\Box$] Generate the Key
+\item [$\Box$] Update the Key-Tags Table
+\item [$\Box$] Store Separately the Private Keys for ZSKs and KSKs
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Configuring and Serving a Signed Zone}
+
+\begin{description}
+\item [$\Box$] Add the Signed Zone to the Name Server Configuration File
+\item [$\Box$] Enable DNSSEC
+\item [$\Box$] Check the Name Server Configuration File for Errors
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Check that the Zone Loaded Properly
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\subsubsection{Current ZSK Roll-Over}
+
+\begin{description}
+\item [$\Box$] Ensure that Sufficient Time has Elapsed Since the Last Roll-Over
+\item [$\Box$] Sign Zone with the KSK and Published ZSK
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Wait for Old Zone Data to Expire from Caches
+\item [$\Box$] Generate a New ZSK
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Update the Key-Tags Table
+\item [$\Box$] Sign the Zone with the KSK and Current ZSK
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Dispose of the Old Zone Key
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{KSK Roll-Over}
+
+\begin{description}
+\item [$\Box$] Ensure that Sufficient Time has Elapsed Since the Last Roll-Over
+\item [$\Box$] Generate a New KSK
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Re-Sign the Zone DNSKEY RRset with the Current and Published KSK
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Wait for Old DNSKEY RRset to Expire from Caches
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Re-Sign the Zone DNSKEY RRset with the Current and Published KSK
+\item [$\Box$] Update the Key-Tags Table with the Latest KSK
+\item [$\Box$] Perform Steps in Section~\ref{delegation-child} if this Zone is a Secure Delegation from Another Zone
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Dispose of the Old KSK
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\subsection{Normal Operations for Child Zones}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Signing a Zone with No Delegations}
+
+\begin{description}
+\item [$\Box$] Generate Two ZSKs and One KSK
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Check the Unsigned Zone File for Errors
+\item [$\Box$] Check Permissions and Ownership on ZSK and KSK Files
+\item [$\Box$] Sign the Zone
+\item [$\Box$] Check the Signed Zone File for Errors
+\item [$\Box$] Record the Signature Expiry Time
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Creating a Signed Delegation in a Child Zone}
+
+\begin{description}
+\item [$\Box$] Check the Keyset File
+\item [$\Box$] Securely Transfer the Keyset to the Parent
+\item [$\Box$] Wait for the Parent to Publish the DS Record
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\subsection{Normal Operations for Parent Zones}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Signing a Zone that Has Delegations}
+
+\begin{description}
+\item [$\Box$] Generate Two ZSKs and One KSK
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Check the Unsigned Zone File for Errors
+\item [$\Box$] Check Permissions and Ownership on ZSK and KSK Files
+\item [$\Box$] Sign the Zone
+\item [$\Box$] Check the Signed Zone File for Errors
+\item [$\Box$] Record the Signature Expiry Time
+\item [$\Box$] Confirm DS Record Creation in Signed Zone File
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Creating a Signed Delegation for a Child Zone}
+
+\begin{description}
+\item [$\Box$] Ensure that the Child Keysets were Received Over a Secure Channel
+\item [$\Box$] Ensure that Each Received Keyset is for a Delegated Zone
+\item [$\Box$] Store All Child Keysets in a Separate Directory
+\item [$\Box$] Sign the Zone
+\item [$\Box$] Reload the Zone
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\subsection{Emergency Operations for Child Zones}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{KSK Roll-Over -- KSK Compromise}
+
+\begin{description}
+\item [$\Box$] Inform Parent about the KSK Compromise
+\item [$\Box$] Wait for the Parent to Remove the Zone's DS Record
+\item [$\Box$] Generate a New KSK
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Regenerate the ZSKs
+\item [$\Box$] Sign the Zone with the Current ZSK and the Current KSK
+\item [$\Box$] Perform Steps in Section~\ref{delegation-child} if this Zone is a Secure Delegation from Another Zone
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Dispose of the Old KSK
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{ZSK Roll-Over -- Current ZSK Compromise}
+
+\begin{description}
+\item [$\Box$] Generate a New ZSK
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Sign Zone with the Published ZSK Only
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Update the Key-Tags Table
+\item [$\Box$] Dispose of the Old Zone Key
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{ZSK Roll-Over -- Published ZSK Compromise}
+
+\begin{description}
+\item [$\Box$] Generate a New ZSK
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Sign the Zone with the KSK and Current ZSK
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Update the Key-Tags Table
+\item [$\Box$] Dispose of the Old Zone Key
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{ZSK Roll-Over -- Current and Published ZSK Compromise}
+
+\begin{description}
+\item [$\Box$] Generate New Current and Published ZSKs
+\item [$\Box$] Modify the Zone File
+\item [$\Box$] Sign the Zone with the KSK and Current ZSK
+\item [$\Box$] Reload the Zone
+\item [$\Box$] Dispose of the Old Zone Key
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\subsection{Emergency Operations for Parent Zones}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{KSK Roll-Over -- Parent Action During KSK Compromise}
+
+\begin{description}
+\item [$\Box$] Ensure that the KSK Compromise Notification Came Over a Secure Channel
+\item [$\Box$] Delete the Child's Keyset File at the Parent
+\item [$\Box$] Increase the Zone SOA Number
+\item [$\Box$] Reload the Zone
+\end{description}
+

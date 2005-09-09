@@ -1,0 +1,40 @@
+
+\subsubsection{Record the Signature Expiry Time}
+
+Update the key-tag file to hold the expiration date of the zone signature.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name}	&
+\underline{zsktag-cur}	&
+512			&
+\underline{date}	&
+C			&
+\underline{ksktag}	&
+1024			&
+\underline{date}	&
+C			&
+\underline{date}	\\
+
+\cline{2-10}
+
+			&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+& & & & \\
+
+\hline
+\end{tabular}
+\end{center}

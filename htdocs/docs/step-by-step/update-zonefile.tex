@@ -1,0 +1,26 @@
+
+\subsubsection{Modify the Zone File}
+
+The zone file must be modified to account for the new keys.  Add lines to
+include the KSK and the ZSKs in the zone file.  Also, the SOA serial number
+must be changed so that the zone file's new contents will be recognized.
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf vi \underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in}\underline{zone.name}        IN     SOA        servername contact ( \\
+\hspace{3.5in}{\bf 2005092105} ; Increase current value by 1. \\
+\hspace{4.4in};  This value may be different \\
+\hspace{4.4in}; in your zone file. \\
+\hspace{0.5in}\>           \>         ... \\
+\hspace{0.5in}\>              ) \\
+\hspace{0.5in}... \\
+\hspace{0.5in}{\bf ;; ksk} \\
+\hspace{0.5in}{\bf \$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag}.key''} \\
+\hspace{0.5in}{\bf ;; cur zsk} \\
+\hspace{0.5in}{\bf \$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-cur}.key''} \\
+\hspace{0.5in}{\bf ;; pub zsk} \\
+\hspace{0.5in}{\bf \$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-pub}.key''} \\
+\hspace{0.5in}... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}

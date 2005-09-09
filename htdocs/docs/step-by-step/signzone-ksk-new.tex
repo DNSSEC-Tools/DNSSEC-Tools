@@ -1,0 +1,18 @@
+
+\subsubsection{Re-Sign the Zone DNSKEY RRset with the Current and Published KSK}
+
+ZSKs sign the zone data, whereas KSKs sign the RRset for all DNSKEYs 
+recognized by the zone. There is no direct way to create the signed DNSKEY
+RRset for the zone; it is only formed as a by-product of the 
+\cmd{dnssec-signzone} operation.
+
+Follow steps
+\ref{check-zonefile-unsigned-nodeleg}~--~\ref{signzone-nodel-last}
+if the zone does no delegation.  Follow steps
+\ref{check-zonefile-unsigned-deleg}~--~\ref{signzone-deleg-last}
+if the zone does delegation.  The ZSK used in the signing process in
+Section~\ref{signzone-no-deleg} or~\ref{signzone-has-deleg} must be the key
+that is marked as the Current key (C) in the key-tag table. Both Current KSK
+and the Published KSK must be simultaneously included in the
+\cmd{dnssec-signzone} operation (by using two \option{-k} options).
+

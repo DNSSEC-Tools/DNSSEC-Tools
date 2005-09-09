@@ -1,0 +1,659 @@
+\documentclass[12pt]{article}
+
+\pagestyle{headings}
+
+\newenvironment{packed}{\begin{list}{$\bullet$}{\parsep0in\itemsep0in}}{\end{list}}
+
+\usepackage{epsf}
+
+\usepackage{latexsym}
+
+\usepackage{ulem}
+\normalem
+
+%
+% Macros for specific types of entities.
+%
+\newcommand{\cmd}[1]{{\em #1}}
+\newcommand{\option}[1]{{\em #1}}
+\newcommand{\path}[1]{{\bf #1}}
+\newcommand{\url}[1]{{\bf #1}}
+\newcommand{\xqt}[1]{{\bf #1}}
+
+\textheight=8.50in
+\voffset=-.55in
+\voffset=-.75in
+
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{2}
+
+\parindent0em
+\parskip0.65em
+
+\hyphenation{dns-sec DNS-SEC}
+\hyphenation{dns-sec--tools}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+
+\begin{titlepage}
+
+\vspace{.5in}
+
+\begin{center}
+\LARGE{\bf
+SOFTWARE USER MANUAL (SUM):
+TRAINING, PROCEDURAL, AND
+DEVELOPMENT DOCUMENTATION
+}
+\vspace{.5in}
+
+\Large{
+Step-by-Step DNS Security\\
+Operator Guidance Document\\
+(Version 0.5)}\\
+$[${\it Using the BIND-9.3.0 (or later) distribution}$]$
+\vspace{0.5in}
+
+% \Large{
+% {\bf Contract: FA8750-04-C-0229
+% \vspace{0.125in}
+% 
+% CDRL A006}\\}
+\vspace{2in}
+31 August 2005
+\end{center}
+
+\vspace{.5in}
+
+SUBMITTED BY
+
+Sparta, Inc\\
+7075 Samuel Morse Dr.\\
+Columbia, MD 21046-3401
+\vspace{0.25in}
+
+% \begin{tabular}{lll}
+% 	& Principal Investigator	& Contract/Financial Contact\\
+% Name	& George R. Mundy		& Kim Morrill\\
+% Phone	& (410) 872-1515		& (410) 872-1515\\
+% Fax	& (410) 872-8079		& (410) 872-8079\\
+% Email	& Russ.Mundy@sparta.com		& Kim.Morrill@sparta.com\\
+% \end{tabular}
+
+\end{titlepage}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{center}
+{\Large
+{\bf DNSSEC-Tools\\
+Is your domain secure?}}
+\end{center}
+\tableofcontents
+\clearpage
+\listoffigures
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Introduction}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{intro}
+
+\input{intro}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Essential Preliminaries}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{preliminaries}
+
+The following sections must be read before proceeding with the rest of this
+guide.
+
+The steps in Sections~\ref{check-random} and~\ref{check-bind} {\bf MUST} be
+taken prior to following any other steps.  Section~\ref{zone-serials}'s
+discussion of this guides use of zone file serial numbers {\bf MUST} be
+understood prior to following any other steps.  Failure to do any of these
+three could affect the security of your zone.
+
+Section~\ref{key-tags-tables} describes {\it key-tags} tables, which are used
+to manage DNSSEC information about encryption keys and signed zones.  This
+section should be understood prior to reading the remainder of the document.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Check for Randomness}
+\label{check-random}
+
+Key generation and zone signing require random data to create strong
+cryptographic material.  The \cmd{dnssec-keygen} and \cmd{dnssec-signzone}
+commands default to using random data from \path{/dev/random}.  Use this test
+to verify that \path{/dev/random} will provide data when requested:
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf dd if=/dev/random bs=2 count=10 $|$ od -x} $[$ENTER$]$ \\
+\hspace{0.5in}...\\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+The above command checks if \path{/dev/random} is able to provide random data
+when queried; it does not check to see that the data provided is truly random.
+
+If this command provides data immediately, then \path{/dev/random} will
+provide the data you need.  If it hangs, then \cmd{dnssec-keygen} and
+\cmd{dnssec-signzone} won't be able to retrieve random data from
+\path{/dev/random}.
+
+% If this check for randomness fails, pseudorandom numbers can be used instead
+% [6].  However, using pseudorandom numbers significantly affects the quality
+% of the crypto material.  A more appropriate measure would be to run the
+% key-generation and zone-signing operations on a different system that has
+% \path{/dev/random} and the ability to generate good random data [2].
+
+If this check for randomness fails, pseudorandom numbers can be used instead.
+However, using pseudorandom numbers significantly affects the quality
+of the crypto material.  A more appropriate measure would be to run the
+key-generation and zone-signing operations on a different system that has
+\path{/dev/random} and the ability to generate good random data.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\subsection{Check for Correct Version of BIND}
+\label{check-bind}
+
+BIND version 9.3.0 (or later) is {\bf required} for use with this document.
+Before following any of these instructions, you {\bf must} ensure that you
+have the correct version of BIND.
+
+The BIND version may be verified by checking the version of
+\cmd{dnssec-keygen}:
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in} \$ {\bf dnssec-keygen -h} $[$ENTER$]$ \\
+\hspace{0.5in} Usage: \\
+\hspace{0.5in} \>dnssec-keygen -a alg -b bits -n type [options] name \\
+\hspace{0.5in} Version: 9.3.0 \\
+\hspace{0.5in} ...... \\
+\hspace{0.5in} \$
+\end{tabbing}
+
+If the version is incorrect, you must install the correct version of BIND
+before proceeding.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Zone File Serial Numbers}
+\label{zone-serials}
+
+This guide contains a number of instructions to update a zone file.  In each,
+it is indicated that the zone file's serial number must be updated.  The
+actual serial numbers used will depend on each installation's preferred method
+of using serial numbers.  The method used in this document is YYYYMMDDNN,
+where:
+\begin{packed}
+\item {\bf YYYY} - year
+\item {\bf MM} - month
+\item {\bf DD} - day
+\item {\bf NN} - incrementing number
+\end{packed}
+
+For example, the third zone file change on January 9, 2005, would be given
+as 2005090103.
+
+The serial numbers used in this guide are {\it generally} increasing
+throughout the document.  More importantly, however, the numbers used within
+each section are {\it always} increasing.
+
+Some sections of this guide direct you to perform steps in other sections.
+Regardless of the serial numbers given in these steps, your zone file's serial
+numbers {\bf must} increase with each modification or your changes will not
+be seen.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\subsection{Key-Tags Tables}
+\label{key-tags-tables}
+
+Data about results of the different steps described in this document must be
+retained for use in other steps.  These data include such things as the names
+of generated keys, key status, and the date a zone was signed.  While these
+data may be kept in whatever form an administrator finds most convenient,
+this guide stores them in a {\it key-tags table}.
+
+A key-tags table stores a zone name, the zone's ZSK keys, the zone's KSK keys,
+and the zone's expiration date.  The following is a template of how the
+key-tags table is used in this document.  Data about the zone's KSK, Current
+ZSK, Published ZSK, and New ZSK are stored here:
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+			&
+\underline{zsktag-cur}	&
+512			&
+\underline{date}	&
+C			&
+\underline{ksktag}	&
+1024			&
+\underline{date}	&
+C			& \\
+
+\cline{2-9}
+
+\underline{zone.name}	&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+& & & & \\
+
+			&
+\underline{zsktag-new}	&
+512			&
+\underline{date}	&
+N			&
+& & & & \\
+
+\hline
+\end{tabular}
+\end{center}
+
+The {\it -cur}, {\it -pub}, and {\it -new} suffixes used in this key-tags
+table and in the rest of this guide are used for illustration purposes only.
+They are not intended to be used in the key-tags table for an operational
+zone.  Similarly, for convenience and identification purposes the tags are
+retained with particular keys even when the status changes.
+
+The following is an example key-tags table containing non-template data.
+There are entries for two zones:  {\it example.com} and {\it example.net}.
+There are entries for a example.com's Current KSK, New KSK, Current ZSK,
+Published ZSK, and New ZSK.  example.net's entries are for its Current KSK,
+Current ZSK, and Published ZSK.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+			&
+32267	&
+512			&
+8/15/05	&
+C			&
+65037	&
+1024			&
+9/21/04	&
+C			& \\
+
+\cline{2-9}
+
+example.com		&
+40379	&
+512			&
+8/20/05	&
+P			&
+14895	&
+1024			&
+9/21/05	&
+N			&
+9/21/05			\\
+
+\cline{2-9}
+
+			&
+58406	&
+512			&
+8/25/05	&
+N			&
+& & & & \\
+
+\hline
+
+example.net		&
+30449	&
+512			&
+7/24/05	&
+C			&
+25384	&
+1024			&
+1/09/05	&
+C			&
+9/27/05			\\
+
+\cline{2-9}
+
+			&
+38715	&
+512			&
+8/27/05	&
+P			&
+& & & & \\
+
+\hline
+
+\end{tabular}
+\end{center}
+
+As stated above, this information may be kept in whatever form each
+administrator finds convenient.  Some administrators may want to have separate
+key-tags tables for each zone for which they are responsible; others may wish
+to maintain all their zones in a single table.
+
+A blank template key-tags table may be found in Appendix~\ref{app-keytags}.
+Additional versions (PostScript, Excel spreadsheet) may be found on
+\url{http://www.dnssec-tools.org}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Normal Operations for All Zones}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{normal-all}
+
+This section describes those normal DNSSEC operations which are relevant for
+all zones.  These operations are:
+
+\begin{itemize}
+\item Zone-Signing Key (ZSK) Generation
+\item Key-Signing Key (KSK) Generation
+\item Configuring and Serving a Signed Zone
+\item Current ZSK Roll-Over
+\item KSK Roll-Over
+\end{itemize}
+
+\input{step-zskgen}
+\input{step-kskgen}
+\input{step-zone-serving}
+\input{step-rollover-zsk}
+\input{step-rollover-ksk}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Normal Operations for Child Zones}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{normal-child}
+
+This section describes those normal DNSSEC operations which are relevant
+for child zones.  These operations are:
+
+\begin{itemize}
+\item Signing a Zone that Has No Delegations
+\item Creating a Signed Delegation in a Child Zone
+\end{itemize}
+
+\input{step-sign-no-deleg}
+\input{step-delegation-child}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Normal Operations for Parent Zones}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{normal-parent}
+
+This section describes those normal DNSSEC operations which are relevant
+for parent zones.  These operations are:
+
+\begin{itemize}
+\item Signing a Zone that Has Delegations
+\item Creating a Signed Delegation in a Parent Zone
+\end{itemize}
+
+\input{step-sign-has-deleg}
+\input{step-delegation-parent}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Emergency Operations for Child Zones}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{emergency-child}
+
+This section describes those emergency DNSSEC operations which are relevant
+for child zones.  These operations are:
+
+\begin{itemize}
+\item KSK Roll-Over Due to KSK Compromise
+\item Current ZSK Roll-Over Due to ZSK Compromise
+\item Published ZSK Roll-Over Due to ZSK Compromise
+\item Current and Published ZSK Roll-Over Due to ZSK Compromise
+\end{itemize}
+
+\input{step-emergency-ksk}
+\input{step-emergency-curzsk}
+\input{step-emergency-pubzsk}
+\input{step-emergency-zsks}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Emergency Operations for Parent Zones}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{emergency-parent}
+
+This section describes those emergency DNSSEC operations which are relevant
+for parent zones.  These operations are:
+
+\begin{itemize}
+\item KSK Roll-Over Due to Child KSK Compromise
+\end{itemize}
+
+\input{step-emergency-parent-ksk}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\appendix
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Operation Checklists}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{app-checklists}
+
+\input{checklists}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Key-Tag Table Template}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{app-keytags}
+
+\input{keytag-template}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{Illustrations}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{illustrations}
+
+The following illustrations may clarify actions taken for some of the
+operations described in this guide.
+
+\begin{figure}[htb]
+\begin{center}
+\epsfxsize 6.0in
+\epsffile{figure-keygen.ps}
+% \includegraphics{figure-keygen.ps}
+\end{center}
+\caption{Key Generation}
+\label{fig:keygen}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-zskroll.ps}
+\end{center}
+\caption{ZSK Roll-Over}
+\label{fig:zskroll}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-kskroll.ps}
+\end{center}
+\caption{KSK Roll-Over}
+\label{fig:kskroll}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-securingdeleg-child.ps}
+\end{center}
+\caption{Securing Delegations -- Child-Zone Activity}
+\label{fig:securingdeleg-child}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-zonesign-unsecure.ps}
+\end{center}
+\caption{Zone-Signing with Unsecured Child Delegations}
+\label{fig:zonesign-unsecure}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-zonesign-secure.ps}
+\end{center}
+\caption{Zone-Signing with Secured Child Delegations}
+\label{fig:zonesign-secure}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-securingdeleg-parent.ps}
+\end{center}
+\caption{Securing Delegations -- Parent-Zone Activity}
+\label{fig:securingdeleg-parent}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-kskroll-emerg.ps}
+\end{center}
+\caption{Emergency KSK Roll-Over}
+\label{fig:kskroll-emerg}
+\end{figure}
+
+\clearpage
+
+\begin{figure}[htb]
+\begin{center}
+% \leavevmode 
+\epsfxsize 6.0in
+\epsffile{figure-zskroll-emerg.ps}
+\end{center}
+\caption{Emergency ZSK Roll-Over}
+\label{fig:zskroll-emerg}
+\end{figure}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\section{References}
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+\label{app-refs}
+
+\begin{description}
+\item $[$1$]$ O. Kolkman, R. Gieben, ``DNSSEC Operational Practices'',
+{\it draft-\-ietf-\-dnsop-\-dnssec-\-operational-\-practices-\-03}
+(work in progress), Dec. 23, 2004.
+
+% \item $[$2$]$ {\it TBD (2.1 about randomness)}
+% \item $[$3$]$ {\bf there is no reference 3}
+% \item $[$4$]$ {\it TBD (intro, discussion of DNSSEC and BIND)}
+% \item $[$5$]$ {\it TBD (intro, good intro to DNSSEC)}
+% \item $[$6$]$ {\it TBD (2.1 about pseudorandom numbers)}
+% \item $[$7$]$ {\it TBD (intro, basic understanding of public key crypto needed)}
+
+\end{description}
+
+\markboth{Step-by-Step DNS Security Operator Guidance Document - version 0.5}{Step-by-Step DNS Security Operator Guidance Document - version 0.5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
