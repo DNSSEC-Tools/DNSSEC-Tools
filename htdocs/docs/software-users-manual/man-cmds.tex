@@ -1,0 +1,51 @@
+
+A number of commands have been developed to assist in maintaining
+DNSSEC-secured domains.  These commands check zone files for errors,
+assist in key generation and zone signing, and provide graphic
+information about zones.
+
+These DNSSEC-Tools utilities are:
+
+\begin{description}
+
+\item{\cmd{dnspktflow}} - analyzes and draw DNS flow diagrams
+
+\item{\cmd{donuts}} - analyzes DNS zone files for errors
+
+\item{\cmd{donutsd}} - daemon to periodically run \cmd{donuts}
+
+\item{\cmd{mapper}} - creates maps of DNS zone data
+
+\item{\cmd{clean-keyrec}} - cleans a {\it keyrec} file of orphaned keys
+
+\item{\cmd{confchk}} - checks a {\bf dnssec-tools} configuration file for errors
+
+\item{\cmd{expchk}} -  checks a {\bf dnssec-tools} configuration file for expired
+zones
+
+\item{\cmd{fixkrf}} - fixes a {\it keyrec} file for missing keys
+
+\item{\cmd{keyrec-check}} - checks a {\it keyrec} file for errors
+
+\item{\cmd{lskrf}} - lists the {\it keyrec}s in a {\it keyrec} file
+
+\item{\cmd{timetrans}} - converts time units
+
+\item{\cmd{zonesigner}} - generates encryption keys and signs a DNS zone
+
+\end{description}
+
+This section contains man pages describing these commands.
+
+\input{manpages/tools::dnspktflow::dnspktflow}
+\input{manpages/tools::donuts::donuts}
+\input{manpages/tools::donuts::donutsd}
+\input{manpages/tools::mapper::mapper}
+\input{manpages/tools::scripts::clean-keyrec}
+\input{manpages/tools::scripts::confchk}
+\input{manpages/tools::scripts::expchk}
+\input{manpages/tools::scripts::fixkrf}
+\input{manpages/tools::scripts::keyrec-check}
+\input{manpages/tools::scripts::lskrf}
+\input{manpages/tools::scripts::timetrans}
+\input{manpages/tools::scripts::zonesigner}

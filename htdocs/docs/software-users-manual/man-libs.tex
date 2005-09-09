@@ -1,0 +1,38 @@
+
+Several libraries have been developed to provide DNSSEC-validated resolution,
+translation, and querying services.  These DNSSEC-Tools libraries are:
+
+\begin{description}
+
+\item{\lib{libsres}} - Secure Resolver Library
+
+\lib{libsres} provides the resolver component of the "validating resolver".
+It is capable of recursively obtaining answers for an application (validator)
+from a DNSSEC-aware name server.  Resolver policy will eventually be used to
+control the flags (CD, RD etc) that are sent in the query to the name servers,
+as well as other parameters, such as the name server to which the query is
+to be sent.
+
+This library provides very basic functionality for name resolution.  The data
+structures and interfaces exported to applications are still in a state of
+flux and are expected to change. Many corner cases are still not supported.
+
+\item{\lib{libval}} - DNSSEC validation library
+
+\lib{libval} provides DNSSEC resource-record validation functionality.  It
+relies on the resolver component to fetch answers from a DNSSEC-aware name
+server.
+
+As of now there is no functionality to traverse the chain-of-trust while
+performing record validation and also no support for validation policies.
+As such, the interfaces defined herein are in a state of flux and are
+expected to change.
+
+\end{description}
+
+This section contains man pages describing these libraries.
+
+\input{manpages/lib::libsres::libsres.tex}
+\input{manpages/lib::libval::val_getaddrinfo.tex}
+\input{manpages/lib::libval::val_gethostbyname.tex}
+\input{manpages/lib::libval::val_query.tex}
