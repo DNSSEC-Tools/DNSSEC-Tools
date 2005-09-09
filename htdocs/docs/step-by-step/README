@@ -1,0 +1,44 @@
+
+		DNSSEC-Tools Step-By-Step Operations Guide
+
+This directory contains the LaTeX source and PostScript images for the
+DNSSEC-Tools Step-By-Step Operations Guide.
+
+To build the guide, execute the following command:
+
+	$ make
+
+This should process the source sufficiently such that all references
+will be resolved.  This will create a PostScript file (sbs.ps) and a
+device-independent DVI file (sbs.dvi).
+
+
+Guide Organization
+------------------
+
+The LaTeX files are named in this manner:
+
+	sbs.tex		main input file
+	intro.tex	introductory section
+	step-*.tex	each operational "step" (KSK roll-over, Signing a zone
+			with no delegations, etc.) are kept in these files
+	checklists.tex	the operation checklists, in an appendix
+
+All other .tex files are included by multiple operational steps.  Changing
+this for one step will change it for ALL other steps which include this file.
+Be sure you really want this to happen before making the change.
+
+
+Figure Modification
+-------------------
+
+The figures (figure-*.ps) are originally PowerPoint images that have been
+saved as JPGs.  The JPGs are manually rotated 90 degrees so they fit on the 
+page without becoming illegible through shrinking.
+
+Follow these steps if you must modify an image:
+
+	- modify the PPT file as needed
+	- save the PPT file as a JPG
+	- rotate the JPG file (using a program such as xv or pnmrotate)
+
