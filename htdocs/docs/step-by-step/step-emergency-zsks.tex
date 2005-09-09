@@ -1,0 +1,123 @@
+
+\clearpage
+\subsection{ZSK Roll-Over --- Current and Published ZSK Compromise}
+\label{roll-emergency-zsks}
+
+{\bf If the KSK is also compromised, perform the emergency KSK roll-over first.}
+
+The emergency procedures described for key roll-over use the rationale that
+injection of valid but false data (which can be generated using the
+compromised key) is more serious than discontinuity in our ability to validate
+true data. Thus, during emergency ZSK roll-over, there will be a period (up
+to twice the maximum zone TTL) where the cached zone data may not validate
+against the new ZSK.
+
+See Figure~\ref{fig:zskroll-emerg}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Generate New Current and Published ZSKs}
+\label{regen-zsks}
+
+Follow the steps in Section~\ref{genzsk} in order to generate two ZSKs.
+Update the key-tag table with the new ZSKs; replace the existing
+set of ZSKs with the new values.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+					&
+{\bf \sout{\underline{zsktag-cur}}}	&
+{\bf \sout{512}}			&
+{\bf \sout{\underline{date}}}		&
+{\bf \sout{C}}				&
+\underline{ksktag}			&
+1024					&
+\underline{date}			&
+C					&
+					\\
+
+\cline{2-9}
+
+\underline{zone.name}			&
+{\bf \sout{\underline{zsktag-pub}}}	&
+{\bf \sout{512}}			&
+{\bf \sout{\underline{date}}}		&
+{\bf \sout{P}}				&
+					& & & &
+\underline{date}			\\
+
+\cline{2-9}
+				&
+{\bf \underline{zsktag-cur}}	&
+{\bf 512}			&
+{\bf \underline{date}}		&
+{\bf C}				&
+& & & & \\
+
+\cline{2-9}
+
+				&
+{\bf \underline{zsktag-pub}}	&
+{\bf 512}			&
+{\bf \underline{date}}		&
+{\bf P}				&
+& & & & \\
+
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Modify the Zone File}
+\label{update-zonefile-newzsks}
+
+The zone file must be modified to account for the key changes.  The Current
+ZSK must be deleted and the New ZSK must be added.  Also, the SOA serial
+number must be changed so that the zone file's new contents will be recognized.
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678\= 12345678 \= 12345678 \kill
+\hspace{0.5in}\$ {\bf vi \underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in}\underline{zone.name} \> \> \> IN \> SOA \> servername contact (\\
+\hspace{3.5in}{\bf 2005092108} ; Increase current value by 1. \\
+\hspace{4.4in};  This value may be different \\
+\hspace{4.4in}; in your zone file. \\
+\hspace{0.5in}\>           \>         ... \\
+\hspace{0.5in}\>              ) \\
+\hspace{0.5in}... \\
+\hspace{0.5in};; ksk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag}.key'' \\
+\hspace{0.5in}{\bf \sout{;; cur zsk}} \\
+\hspace{0.5in}{\bf \sout{\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-cur}.key''}} \\
+\hspace{0.5in}{\bf \sout{;; pub zsk}} \\
+\hspace{0.5in}{\bf \sout{\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-pub}.key''}} \\
+\hspace{0.5in};; cur zsk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-cur}.key'' \\
+\hspace{0.5in};; pub zsk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-pub}.key'' \\
+\hspace{0.5in}... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign the Zone with the KSK and Current ZSK}
+
+\input{signzone-curzsk-msg}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+\input{delete-old-zsk}
+

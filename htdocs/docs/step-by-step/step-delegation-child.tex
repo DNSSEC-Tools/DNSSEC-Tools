@@ -1,0 +1,69 @@
+
+\clearpage
+\subsection{Creating a Signed Delegation in a Child Zone}
+\label{delegation-child}
+
+This section describes the steps required to create a signed delegation in a
+child zone.
+
+See Figure~\ref{fig:securingdeleg-child}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Check the Keyset File}
+
+Ensure that the keyset file (generated in~\ref{signzone-no-deleg}
+or~\ref{signzone-has-deleg}) contains the correct KSK.  A visual comparison
+of the key material in the keyset file with the actual key contents will
+determine this.  Also, ensure that the key-tags in the keyset file correspond
+to the tags that were recorded for the KSK in in~\ref{signzone-nodel}
+or~\ref{signzone-hasdel}.
+
+\begin{tabbing}
+\hspace{0.5in} 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf cat keyset-\underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in} \underline{zone.name} \> \> \> 3600 IN \> DNSKEY 257 3 5 ( \\
+\hspace{0.5in} \> \> \> \> \> ... \\
+\hspace{0.5in} \> \> \> \> ); key id = key-tag \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Securely Transfer the Keyset to the Parent}
+
+If any of the zone's KSKs have changed since the last time this file was sent
+to the parent, then the keyset must also be transferred to the parent.
+If none of the zone's KSKs have changed, this step may be skipped.
+
+This is not required during a ZSK roll-over.  See Sections \ref{roll-curzsk},
+\ref{roll-emergency-curzsk}, \ref{roll-emergency-pubzsk}, and
+\ref{roll-emergency-zsks}.
+
+Secure communication between the parent and child zone is done out-of-band.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Wait for the Parent to Publish the DS Record}
+
+Before proceeding, wait for the parent zone to publish the DS record.  This
+may be found by using the \cmd{dig} command to retrieve the zone's DS record.
+The \option{aa} flag in the result must be set and the ANSWER section must
+not be empty.
+
+You may continue if the DS record is the same as the value in the file
+generated in~\ref{signzone-no-deleg} or~\ref{signzone-has-deleg}.
+
+\begin{tabbing}
+\hspace{0.5in}\$ {\bf dig @\underline{parent-IP-address} DS \underline{zone.name}} $[$ENTER$]$ \\
+\hspace{0.5in} ; $<$$<$$>$$>$ DiG 9.3.0 $<$$<$$>$$>$ ... \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} ;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 0 \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} ;;ANSWER SECTION \\
+\hspace{0.5in} 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in} \underline{zone.name} \> \> 3600 \> IN \> DS \> ... \\
+\hspace{0.5in} ... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+

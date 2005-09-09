@@ -1,0 +1,59 @@
+
+\clearpage
+\subsection{Creating a Signed Delegation for a Child Zone}
+\label{delegation-parent}
+
+This section describes the steps a parent zone must take in order to create
+a signed delegation for a child zone.
+
+See Figures ~\ref{fig:zonesign-secure} and ~\ref{fig:securingdeleg-parent}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Ensure that the Child Keysets were Received Over a Secure Channel}
+
+Secure communication between the parent and child zone is done out-of-band.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Ensure that Each Received Keyset is for a Delegated Zone}
+
+The owner name for the DNSKEY record in the received keyset must correspond
+to a valid delegation.
+\begin{tabbing}
+\hspace{0.5in} 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill
+\hspace{0.5in}\$ {\bf cat keyset-\underline{childzonefile}} $[$ENTER$]$ \\
+\hspace{0.5in} \underline{child.zone.name} \> \> 3600 IN \> \> DNSKEY 56 3 5 (\\
+\hspace{0.5in} \> \> \> \> ... \\
+\hspace{0.5in} \> \> \> \> ); key id = \underline{key-tag} \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+\underline{child.zone.name} must exist in the parent \underline{zonefile}
+as a valid delegation.
+\begin{tabbing}
+\hspace{0.5in} 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill
+\hspace{0.5in}\$ {\bf cat \underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} \underline{child.zone.name} \> \> NS \> server \\
+\hspace{0.5in} \> \> A \> ... \\
+\hspace{0.5in} ... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Store All Child Keysets in a Separate Directory}
+
+This is simply to keep things clean.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign the Zone}
+
+Sign the zone using steps described in Section~\ref{signzone-hasdel}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+

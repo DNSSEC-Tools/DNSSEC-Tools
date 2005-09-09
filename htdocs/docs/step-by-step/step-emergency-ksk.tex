@@ -1,0 +1,154 @@
+
+\clearpage
+\subsection{KSK Roll-Over --- KSK Compromise}
+\label{roll-emergency-ksk}
+
+The emergency procedures described for key roll-over use the rationale that
+injection of valid but false data (which can be generated using the
+compromised key) is more serious than discontinuity in our ability to validate
+true data. Thus, during emergency KSK roll-over, there will be a period (up
+to twice the maximum zone TTL) where it may not be possible to build an
+``authentication chain'' from the zone data to the new KSK.
+
+See Figure~\ref{fig:kskroll-emerg}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Inform Parent about the KSK Compromise}
+
+This communication between parent and child must be done securely using
+out-of-band mechanisms.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Wait for the Parent to Remove the Zone's DS Record}
+
+Before proceeding, wait for the parent zone to remove the DS record.  This
+may be found by using the \cmd{dig} command to retrieve the parent's DS record.
+
+The \option{aa} flag in the result must be set and no answer should be
+returned for the DS query.
+
+\begin{tabbing}
+\hspace{0.5in}\$ {\bf dig @\underline{parent-IP-address} DS \underline{zone.name}} $[$ENTER$]$ \\
+\hspace{0.5in} ; $<$$<$$>$$>$ DiG 9.3.0 $<$$<$$>$$>$ ... \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} ;; flags: qr aa rd; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 0 \\
+\hspace{0.5in} ... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Generate a New KSK}
+
+Follow the steps in Section~\ref{genksk} for generation of a new KSK.  Update
+the key-tag table with the New KSK.  Delete the Current KSK.  Mark the status
+of the New KSK as Current (C).
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name}				&
+\underline{zsktag-cur}				&
+512						&
+\underline{date}				&
+C						&
+{\bf \sout{\underline{ksktag-cur}}}		&
+{\bf \sout{1024}}				&
+{\bf \sout{\underline{date}}}			&
+{\bf \sout{C}}					&
+\underline{date}				\\
+
+\cline{2-9}
+
+			&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+{\bf \underline{ksktag-new}}		&
+{\bf 1024}			&
+{\bf \underline{date}}			&
+{\bf C}			&
+			\\
+
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Modify the Zone File}
+
+The zone file must be modified to account for the key changes.  The Current
+ZSK must be deleted and the New ZSK must be added.  Also, the SOA serial
+number must be changed so that the zone file's new contents will be recognized.
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf vi \underline{zonefile}} $[$ENTER$]$ \\
+\hspace{0.5in}\underline{zone.name}        IN     SOA        servername contact ( \\
+\hspace{3.5in}{\bf 2005092106} ; Increase current value by 1. \\
+\hspace{4.4in};  This value may be different \\
+\hspace{4.4in}; in your zone file. \\
+\hspace{0.5in}\>           \>         ... \\
+\hspace{0.5in}\>              ) \\
+\hspace{0.5in}... \\
+\hspace{0.5in}{\bf \sout{;; cur ksk}} \\
+\hspace{0.5in}{\bf \sout{\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag-cur}.key''}} \\
+\hspace{0.5in}{\bf ;; new ksk} \\
+\hspace{0.5in}{\bf \$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{ksktag-pub}.key''} \\
+\hspace{0.5in};; pub zsk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-pub}.key'' \\
+\hspace{0.5in};; new zsk \\
+\hspace{0.5in}\$INCLUDE ``/path/to/K\underline{zone.name}.+005+\underline{zsktag-new}.key'' \\
+\hspace{0.5in}... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Regenerate the ZSKs}
+\label{emerg-regen-zsks}
+
+The ZSKs can no longer be trusted.  Follow the steps in~\ref{regen-zsks}
+and~\ref{update-zonefile-newzsks} to create a new Current ZSK and Published
+ZSK.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign the Zone with the Current ZSK and the Current KSK}
+
+Follow steps 
+\ref{check-zonefile-unsigned-nodeleg}~--~\ref{signzone-nodel-last}   
+if the zone does no delegation.  Follow steps
+\ref{check-zonefile-unsigned-deleg}~--~\ref{signzone-deleg-last} 
+if the zone does delegation.  The ZSK used in the signing process in
+Section~\ref{signzone-no-deleg} or~\ref{signzone-has-deleg} must be the key
+that is marked as the Current key (C) in the key-tag table.
+The KSK is the new key, which has been marked with the
+status Current.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Perform Steps in Section~\ref{delegation-child} if this Zone is a Secure Delegation from Another Zone}
+
+Send the keyset generated from the zone-signing process
+in~\ref{emerg-regen-zsks} to the parent in order to complete the secure
+delegation.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+\input{delete-old-ksk}
+

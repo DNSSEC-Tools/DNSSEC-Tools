@@ -1,0 +1,10 @@
+Follow the steps
+\ref{check-zonefile-unsigned-nodeleg}~--~\ref{signzone-nodel-last}
+if the zone does no delegation.  Follow the steps
+\ref{check-zonefile-unsigned-deleg}~--~\ref{signzone-deleg-last}
+if the zone does delegation.  The ZSK used in the signing process in
+Section~\ref{signzone-no-deleg} or~\ref{signzone-has-deleg} must be the key
+that is marked as the Current key (C) in the key-tag table (this was the older
+Published key.) The KSK used as input to \cmd{dnssec-signzone} does not
+change, so the keyset does not change and does not have to be re-sent to the
+parent.

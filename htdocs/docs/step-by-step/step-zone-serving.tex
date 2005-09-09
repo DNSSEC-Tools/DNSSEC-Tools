@@ -1,0 +1,92 @@
+
+\clearpage
+\subsection{Configuring and Serving a Signed Zone}
+\label{config-n-serve}
+
+Several configuration files must be modified in order to serve a signed zone.
+Follow the steps below to configure your name server and have it start
+serving your signed zone.
+
+\path{named.conf} is the name of the configuration file used in these examples.
+The configuration file may vary according to the needs of the administrator.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Add the Signed Zone to the Name Server Configuration File}
+
+The name of the signed zone file must be added to the name server's
+configuration file.  For the zone whose name is \underline{zone.name},
+do the following:
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in}\$ {\bf vi named.conf} $[$ENTER$]$ \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} zone "\underline{zone.name}." \{ \\
+\hspace{0.5in} \> \> type master; \\
+\hspace{0.5in} \> \> file "\underline{zonefile}.signed"; \\
+\hspace{0.5in} \}; \\
+\hspace{0.5in} ... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Enable DNSSEC}
+
+Add the \option{dnssec-enable yes;} option to the \path{named.conf} file.
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= \kill \\
+\hspace{0.5in}\$ {\bf vi named.conf} $[$ENTER$]$ \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} options \{ \\
+\hspace{0.5in} \> \> ... \\
+\hspace{0.5in} \> \> dnssec-enable yes; \\
+\hspace{0.5in} \}; \\
+\hspace{0.5in} ... \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Check the Name Server Configuration File for Errors}
+
+You must ensure that the configuration file modifications were performed
+correctly.  The \cmd{named-checkconf} command will perform this verification.
+No output indicates that all is well with the zone.
+
+\begin{tabbing}
+\hspace{0.5in}\$ {\bf named-checkconf \underline{named.conf}} $[$ENTER$]$ \\
+\hspace{0.5in}\$ \\
+\end{tabbing}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Check that the Zone Loaded Properly}
+
+Confirm that the SOA serial number of the zone corresponds to the most
+recent value.
+
+\begin{tabbing}
+\hspace{0.5in}\$ {\bf dig @\underline{server-IP-address} SOA \underline{zone.name}} $[$ENTER$]$ \\
+\hspace{0.5in} ; $<$$<$$>$$>$ DiG 9.3.0 $<$$<$$>$$>$ ... \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} ;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 0 \\
+\hspace{0.5in} ... \\
+\hspace{0.5in} ;;ANSWER SECTION \\
+\hspace{0.5in} 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill
+\hspace{0.5in} \underline{zone.name} \> \> 3600 \> IN \> SOA \> servername contact ( \\
+\hspace{0.5in}	\> \> \> \> 2005092101 ; This should be the most  \\
+\hspace{0.5in}	\> \> \> \> \> ; recent value. \\
+\hspace{0.5in}	\> \> \> \> \> ; This value will most \\
+\hspace{0.5in}	\> \> \> \> \> ; likely be different in \\
+\hspace{0.5in}	\> \> \> \> \> ; your zone file. \\
+\hspace{0.5in}				... \\
+\hspace{0.5in} \> ) \\
+\hspace{0.5in}... \\
+\hspace{0.5in}\$ \\
+
+\end{tabbing}

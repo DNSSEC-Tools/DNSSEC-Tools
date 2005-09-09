@@ -1,0 +1,81 @@
+
+\clearpage
+\subsection{Key-Signing Key (KSK) Generation}
+\label{genksk}
+
+This section provides the steps required to generate a new Key-Signing Key
+(KSK).  See Figure~\ref{fig:keygen}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Generate the Key}
+
+Use the \cmd{dnssec-keygen} command to generate a key 1024 bits long.  Key
+size is a rough measure of strength; KSKs are generally made stronger than
+ZSKs.
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in} \$ {\bf dnssec-keygen -a RSASHA1 -b 1024 -n ZONE -f KSK} {\bf \underline{zone.name}} \\
+\hspace{0.5in} [ENTER] \\
+\hspace{0.5in} K\underline{zone.name}.+005+\underline{ksktag} \\
+\hspace{0.5in} \$ \\
+\end{tabbing}
+
+The process may take a few minutes to return its results. If the process
+appears to have stalled, run the command using a pseudo-random number
+generator as follows:
+
+\begin{tabbing}
+\hspace{0.5in} \= 12345678 \= 12345678 \= 12345678 \= 12345678 \kill \\
+\hspace{0.5in} \$ {\bf dnssec-keygen -r /dev/urandom -a RSASHA1 -b 1024 -n ZONE -f KSK} \\
+\hspace{0.5in} {\bf \underline{zone.name}} [ENTER] \\
+\hspace{0.5in} K\underline{zone.name}.+005+\underline{ksktag} \\
+\hspace{0.5in} \$ \\
+\end{tabbing}
+
+Two files are output by \cmd{dnssec-keygen}: \\
+    - Private key contained in \path{K\underline{zone.name}.+005+\underline{ksktag}.private}\\
+    - Public key contained in \path{K\underline{zone.name}.+005+\underline{ksktag}.key}
+
+{\bf \underline{zone.name}} - the name of the zone (e.g., example.com)\\
+{\bf \underline{ksktag}} - the key identifier (e.g., 24818) 
+
+You must note this number in the key-tag table as you walk through this
+document.  This number is automatically generated and should not be changed.
+The key id will be the only field in the filename that changes as you rotate
+keys, so it must be tracked.
+
+This document uses RSASHA1 as the cryptographic algorithm, which is
+represented by the ``005'' in the key name's algorithm field.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Update the Key-Tags Table}
+
+Keep a record of the key-tags that currently refer to KSKs.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name} & & & & & \underline{ksktag} & 1024 & \underline{date} & & \\
+
+\hline
+\end{tabular}
+\end{center}
+
+Leave the status field (S) empty for now.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{keys-separation}
+

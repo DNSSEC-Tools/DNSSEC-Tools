@@ -1,0 +1,11 @@
+
+\subsubsection{Store Separately the Private Keys for ZSKs and KSKs}
+
+Storing the private keys for ZSKs and KSKs off-line is considered a good
+security practice.  ZSK and KSK separation lessens the operational burden
+during zone-key compromise, but only if the KSK is still considered safe for
+use.  In cases where a signed zone is also updated via dynamic updates, the
+ZSK will need to be on-line and available to the name server process.  To
+avoid a common vulnerability point (such as compromise of the system on which
+these keys reside), store the KSKs in a place that is considered safer.
+

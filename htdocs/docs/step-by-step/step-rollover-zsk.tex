@@ -1,0 +1,138 @@
+
+\clearpage
+\subsection{Current ZSK Roll-Over}
+\label{roll-curzsk}
+
+This section gives the steps necessary for the pre-publish scheme for ZSK
+roll-over.  The alternative, the double-signature method, is used for rolling
+over KSKs.  Double signatures for records signed by the ZSK can increase the
+size of the zone many times.  The pre-publish scheme, although requiring more
+steps for the roll-over, does not suffer from this problem. The size argument
+does not apply during KSK roll-over since the DNSKEY RRset is the only record
+doubly signed by the KSK.
+
+See Figure~\ref{fig:zskroll}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Ensure that Sufficient Time has Elapsed Since the Last Roll-Over}
+
+The time between roll-overs has to be at least twice the maximum zone TTL
+period.  This is the largest TTL in the entire zone file multiplied by two.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign Zone with the KSK and Published ZSK}
+
+Follow steps \ref{check-zonefile-unsigned-nodeleg}~--~\ref{signzone-nodel-last}
+if the zone does no delegation.  Follow steps
+\ref{check-zonefile-unsigned-deleg}~--~\ref{signzone-deleg-last} if the
+zone does delegation.  The ZSK used in the signing process in
+Section~\ref{signzone-no-deleg} or~\ref{signzone-has-deleg} must be the key
+that is marked as the Published key (P) in the key-tag table. The KSK used
+as input to \cmd{dnssec-signzone} does not change, so the keyset does not
+change and does not have to be re-sent to the parent.
+
+Record the signature expiry date in the key-tag table.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name}	&
+\underline{zsktag-cur}	&
+512			&
+\underline{date}	&
+C			&
+\underline{ksktag}	&
+1024			&
+\underline{date}	&
+C			&
+\underline{date}	\\
+
+\cline{2-9}
+
+			&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+& & & & \\
+
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{zone-reload}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Wait for Old Zone Data to Expire from Caches}
+
+Wait at least twice the maximum zone TTL period for the old zone data to
+expire from name server caches.  This is the largest TTL in the entire zone
+file multiplied by two.  This will also allow the new data to propagate.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\input{keygen-zsk-keytag}
+\input{update-zonefile-newzsk}
+\input{keytag-delcurzsk}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Sign the Zone with the KSK and Current ZSK}
+
+\input{signzone-curzsk-msg}
+
+Record the signature expiry date in the key-tag table.
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+\underline{zone.name}	&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+C			&
+\underline{ksktag}	&
+1024			&
+\underline{date}	&
+C			&
+\underline{date}	\\
+
+\cline{2-9}
+
+			&
+\underline{zsktag-new}	&
+512			&
+\underline{date}	&
+P			&
+& & & & \\
+
+\hline
+\end{tabular}
+\end{center}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\input{zone-reload}
+\input{delete-old-zsk}

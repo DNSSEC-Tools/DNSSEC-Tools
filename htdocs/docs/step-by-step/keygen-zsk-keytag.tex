@@ -1,0 +1,52 @@
+
+\subsubsection{Generate a New ZSK}
+
+Generate a new ZSK, as described in section~\ref{genzsk}.
+Update the key-tag table with the new ZSK, and set its status to New (N).
+
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|c|c|c|c|c|}
+\hline
+{\bf Zone} &
+\multicolumn{4}{c|}{{\bf ZSK}} &
+\multicolumn{4}{c|}{{\bf KSK}} &
+{\bf Exp} \\
+\cline{2-9}
+
+ & Tag & Size & Creat & S & Tag & Size & Creat & S & \\
+\hline
+
+			&
+\underline{zsktag-cur}	&
+512			&
+\underline{date}	&
+C			&
+\underline{ksktag}	&
+1024			&
+\underline{date}	&
+C			&
+			\\
+
+\cline{2-9}
+
+\underline{zone.name}	&
+\underline{zsktag-pub}	&
+512			&
+\underline{date}	&
+P			&
+& & & & 
+\underline{date}	\\
+
+\cline{2-9}
+
+				&
+{\bf \underline{zsktag-new}}	&
+{\bf 512}			&
+{\bf \underline{date}}		&
+{\bf N}				&
+& & & &	\\
+
+\hline
+\end{tabular}
+\end{center}
+
