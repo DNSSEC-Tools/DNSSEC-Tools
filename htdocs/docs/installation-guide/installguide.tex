@@ -1,0 +1,1300 @@
+\documentclass[12pt]{article}
+
+\pagestyle{headings}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+
+\newenvironment{packed}{\begin{list}{$\bullet$}{\parsep0in\itemsep0in}}{\end{list}}
+
+
+%
+% Macros for specific types of entities.
+%
+\newcommand{\cmd}[1]{{\em #1}}
+\newcommand{\const}[1]{{\bf #1}}
+\newcommand{\func}[1]{{\bf #1}}
+\newcommand{\lib}[1]{{\em #1}}
+\newcommand{\perlmod}[1]{{\bf #1}}
+\newcommand{\path}[1]{{\bf #1}}
+\newcommand{\sys}[1]{{\bf #1}}
+\newcommand{\url}[1]{{\bf #1}}
+\newcommand{\var}[1]{{\em #1}}
+\newcommand{\xqt}[1]{{\bf #1}}
+
+\textheight=8.50in
+\voffset=-.55in
+\voffset=-.75in
+
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{2}
+
+\parindent0em
+\parskip0.65em
+
+\hyphenation{dns-sec DNS-SEC}
+\hyphenation{dns-sec--tools}
+\hyphenation{key-rec}
+\hyphenation{log-watch}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+
+\begin{titlepage}
+
+\vspace{.5in}
+
+\begin{center}
+\LARGE{\bf
+SOFTWARE USER MANUAL (SUM):
+TRAINING, PROCEDURAL, AND
+DEVELOPMENT DOCUMENTATION
+}
+\vspace{1in}
+
+\Large{
+DNSSEC-Tools Operations Manual
+
+Installation Guide
+\vspace{0.5in}
+
+{\bf Contract: FA8750-04-C-0229
+\vspace{0.125in}
+
+CDRL A006}\\
+}
+31 August 2005
+\end{center}
+
+\vspace{.5in}
+% \vspace{1.5in}
+% \vspace{2.5in}
+
+SUBMITTED BY
+
+Sparta, Inc\\
+7075 Samuel Morse Dr.\\
+Columbia, MD 21046-3401
+\vspace{0.25in}
+
+\begin{table}[hb]
+\begin{tabular}{lll}
+	& Principal Investigator	& Contract/Financial Contact\\
+Name	& George R. Mundy		& Kim Morrill\\
+Phone	& (410) 872-1515		& (410) 872-1515\\
+Fax	& (410) 872-8079		& (410) 872-8079\\
+Email	& Russ.Mundy@sparta.com		& Kim.Morrill@sparta.com\\
+\end{tabular}
+\end{table}
+
+\end{titlepage}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\begin{center}
+{\Large
+{\bf DNSSEC-Tools\\
+Is your domain secure?}}
+\end{center}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\tableofcontents
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\section{About This Document}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\label{about}
+
+The goal of the DNSSEC-Tools project is to create a set of tools, patches,
+applications, wrappers, extensions, and plugins that will help ease the
+deployment of DNSSEC-related technologies. This document provides information
+about the installation and configuration of the DNSSEC-enhanced tools by the
+DNSSEC-Tools project.
+
+For more information about this project and the tools that are being developed
+and provided, please see the project web page at:
+
+\url{http://www.dnssec-tools.org}
+
+\subsection{Comments}
+
+Please send any comments and corrections to developers@dnssec-tools.org.
+
+\vspace{1in}
+
+\subsection{Conventions}
+
+The following typographical conventions are used in this document.
+
+\begin{table}[hb]
+\begin{tabular}{lll}
+\cmd{command}		& & Command names\\
+\const{constant}	& & Code constants\\
+\func{call()}		& & System and function calls\\
+\lib{library}		& & Library names\\
+\perlmod{module}	& & Perl Modules\\
+\path{path}		& & File and path names\\
+\url{URL}		& & Web URLs\\
+\var{variable}		& & Variables\\
+\xqt{execution}		& & Simple command executions\\
+\end{tabular}
+\end{table}
+
+Longer sets of command sequences are given in this format:
+\begin{verbatim}
+        # cd /tmp
+        # ls
+        # rm -fr *
+\end{verbatim}
+In most cases, output will not be displayed for given command sequences.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\section{DNSSEC-Tools Distribution Directory Structure}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\label{directorystructure}
+
+The various components of the DNSSEC-Tools project are spread across several
+directories.  These include patches to existing software, new libraries, and
+new programs.  These components are briefly described here.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Pre-existing Applications}
+
+\begin{itemize}
+
+\item{\path{apps/libspf2-1.{\it x.y}\_dnssec}}
+
+The DNSSEC extension to \lib{libspf2} provides DNSSEC validation to DNS
+queries in \lib{libspf2}.
+Two versions are supported \lib{libspf2 1.0.4} and \lib{libspf2 1.2.5}.
+
+\begin{itemize}
+\item \path{libspf2-1.0.4\_dnssec\_patch.txt} contains a patch to
+\lib{libspf2-1.0.4} that provides DNSSEC validation to DNS queries in
+\lib{libspf2-1.0.4}.
+
+\item \path{libspf2-1.0.4\_dnssec\_guide.txt} contains documentation
+of the DNSSEC validation patch to \lib{libspf2-1.0.4} to aid developers in
+using the new DNSSEC validation functionality in their applications.
+
+\item \path{libspf2\_1.0.4\_dnssec\_howto.txt} contains instructions for
+installing \lib{libspf2-1.0.4} with the DNSSEC validation patch.
+
+\item \path{libspf2-1.2.5\_dnssec\_patch.txt} contains a patch to
+\lib{libspf2-1.2.5} that provides DNSSEC validation to DNS queries in
+\lib{libspf2-1.2.5}.
+
+\item \path{libspf2-1.2.5\_dnssec\_guide.txt} contains documentation
+of the DNSSEC validation patch to \lib{libspf2-1.2.5} to aid developers in
+using the new DNSSEC validation functionality in their applications.
+
+\item \path{libspf2-1.2.5\_dnssec\_howto.txt} contains instructions for
+installing \lib{libspf2-1.2.5} with the DNSSEC validation patch.
+
+\end{itemize}
+
+\item{\path{apps/mozilla}}
+
+This directory contains a software patch for the \cmd{mozilla} code, which
+enables DNSSEC checking of URL DNS names.  It is in pre-alpha form, with a a
+great deal of debugging enabled.  Although it does work, it probably shouldn't
+be used yet.
+
+\item{\path{apps/sendmail}}
+
+This directory contains files that provide DNSSEC validation to
+the \cmd{sendmail} Mail Transfer Agent.  There are patches for the
+\cmd{sendmail} (version 8.13.3) and \cmd{spfmilter} (version 1.0.8) commands.
+
+\begin{itemize}
+\item \path{spfmilter-1.0.8\_dnssec\_patch.txt} contains a patch to
+\cmd{spfmilter-1.0.8} that provides DNSSEC validation.  It uses the API from
+\lib{libspf2} with the dnssec\_patch applied (see \path{../README}).
+
+\item \path{spfmilter-1.0.8\_dnssec\_howto.txt} contains instructions
+for adding DNSSEC validation to \cmd{spfmilter}.
+
+\item \path{sendmail-8.13.3\_dnssec\_patch.txt} contains a patch to
+\cmd{sendmail-8.13.3} that provides DNSSEC validation for DNS queries within
+the \cmd{sendmail} Mail Transfer Agent (MTA).
+
+\item \path{sendmail-8.13.3\_dnssec\_howto.txt} contains instructions
+for adding DNSSEC validation to the \cmd{sendmail} MTA.
+
+\item The \path{obsolete} directory contains files that provide a
+\cmd{dnssec-milter} which validates the sending MTA.  These files
+are obsolete and may be deleted in the future.
+
+\end{itemize}
+
+\item{\path{apps/thunderbird}}
+
+The \path{thunderbird} directory contains an extension for displaying
+the Received-SPF header and the result of DNSSEC validation in the
+\cmd{thunderbird} mail client.
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Libraries}
+
+\begin{itemize}
+\item{\path{lib/libsres}}
+
+Provides basic functionality for name resolution, including the resolver
+component of the ``validating resolver''.
+
+\item{\path{lib/libvalida}}
+
+Provides basic functionality for resource-record validation.
+
+\item{\path{lib/val\_stub}}
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{New Tools and Modules}
+
+\begin{itemize}
+\item{\path{tools/donuts}}
+
+Tools to analyze DNS zone files for errors.
+
+\item{\path{tools/etc}}
+
+Data required by DNSSEC-Tools programs.
+
+\item{\path{tools/linux}}
+
+Linux-specific software.
+
+\item{\path{tools/logwatch}}
+
+\cmd{logwatch} is a customizable log analyzer.  It has been customized to
+analyze DNSSEC logs, and this directory contains \cmd{logwatch} configuration
+files and scripts.
+
+\item{\path{tools/mapper}}
+
+Tool to create graphical maps of DNS zone data.
+
+\item{\path{tools/modules}}
+
+DNSSEC-Tools Perl modules.  These modules provide interfaces for such
+things as reading configuration files and manipulating DNSSEC-Tools-specific
+data.
+
+\item{\path{tools/patches}}
+
+\path{Net-DNS-ZoneFile-Fast.patch} updates the
+\perlmod{Net::DNS::ZoneFile::Fast} Perl module to allow parsing
+DNSSEC-enhanced DNS zone files.
+
+\item{\path{tools/scripts}}
+
+Perl scripts for signing DNSSEC zones and maintaining those signed zones.
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\section{General Build Instructions}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\label{buildinstructions}
+
+Most of the tools, Perl modules, and libraries described on
+\url{http://www.dnssec-tools.org} are easily installed by following the
+instructions in the \path{INSTALL} file.  However, some of the results of
+this package are patches to external programs.  It is hoped that the
+DNSSEC-Tools modifications will be incorporated into those projects in the
+future.  In the meantime, there are patches included in this source tree that
+can be applied to those other projects.  Instructions for installing the
+DNSSEC-Tools software follow.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Install Perl Modules}
+
+Install the \perlmod{Net::DNS} and \perlmod{Net::DNS::SEC} Perl modules.
+They can be installed using the Perl CPAN shell.  For example:
+
+\begin{verbatim}
+        # perl -MCPAN -e shell
+        [...]
+
+        cpan>  install Net::DNS
+        [ CPAN will install it here ]
+
+        cpan>  install Net::DNS::SEC
+        [...]
+        [... continue with other modules ...]
+\end{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Install Optional Software and Perl Modules}
+
+A number of Perl modules and other software packages should be installed, but
+aren't required.
+
+\begin{table}[hb]
+\begin{tabular}{lll}
+Package	& Purpose & Comments\\
+\hline
+
+	& & Requires version 0.5 and the \\
+\perlmod{Net::DNS::ZoneFile::Fast}		&
+Zone file parsing		& patch in the DNSSEC-Tools \\
+	& & the DNSSEC-Tools patch directory	\\
+
+%	\path{tools/patches/Net-DNS-ZoneFile-Fast.patch}
+
+\hline
+
+\perlmod{Text::Wrap}				&
+Simple formatter				&
+						\\
+
+\hline
+
+\cmd{graphviz}					&
+Displays zone maps				&
+Available from					\\
+	& & http://www.graphviz.org.		\\
+
+\hline
+
+\perlmod{Gtk2} {\bf}  \perlmod{Tk}	& Provides a GUI 	 & \\
+\perlmod{Getopt::Long::GUI}		& interface for tools	 & \\
+\perlmod{QWizard}			&		 & \\
+
+\hline
+\end{tabular}
+\end{table}
+
+\eject
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Run the Configure Script}
+
+The \cmd{configure} shell script attempts to guess correct values for various
+system-dependent variables used during compilation.  It uses those values to
+create a \path{Makefile} in each directory of the package. It may also create
+one or more \path{.h} files containing system-dependent definitions.  Finally,
+it creates the \path{config.status} shell script, which can be run in the future
+to recreate the current configuration; the \path{config.cache} file, which
+saves the results of its tests to speed up reconfiguring; the \path{config.log}
+file, which contains compiler output (useful mainly for debugging
+\cmd{configure}; and the \path{configure-summary} file, which contains the
+summary displayed at the end of the \cmd{configure} run.
+
+The \cmd{configure} invocation often gets lengthy and difficult to type, and
+it is possible that you may have several different ways you want to configure
+a system.  Consequently, you may want to create a shell script containing
+your invocation.
+
+If you need to do unusual things to compile the package, please try to figure
+out how \cmd{configure} could check whether to do them, and mail diffs or
+instructions to the address given in the \path{README} so they can be
+considered for the next release.  If at some point \path{config.cache}
+contains results you don't want to keep, you may remove or edit it.
+
+The file \path{configure.in} is used to create \cmd{configure} by the
+\cmd{autoconf} program.  You only need \path{configure.in} if you want to
+change it or regenerate \cmd{configure} using a newer version of \cmd{autoconf}.
+
+The simplest way to compile this package is to \cmd{cd} to the directory
+containing the package's source code and type \xqt{./configure} to configure
+the package for your system.  If you're  using \cmd{csh} on an old version
+of System V, you might need to type \xqt{sh ./configure} instead to prevent
+\cmd{csh} from trying to execute a different version of \cmd{configure}.
+
+Running \cmd{configure} may take awhile.  While running, it prints some
+messages telling which features it is checking for.  When it completes it
+prints a short message (also available in \path{configure-summary})
+indicating what functionality will be available when compiled.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Building, Installing, and Cleaning}
+
+To build the package, type \cmd{make}.
+
+To install the package, type \xqt{make install}.  This will install the
+programs, data files, and documentation.
+This must be done as {\it root}.
+
+To uninstall the package, type \xqt{make clean}.  This will remove the program
+binaries and object files from the source code directory.
+
+To remove the files that \cmd{configure} created type \xqt{make distclean}.
+This will allow you to compile the package for a different computer.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\section{DNSSEC Libraries}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\label{libraries}
+
+The DNSSEC-Tools distribution includes two libraries:  one that is capable of
+sending queries to and receiving answers from a DNSSEC-aware name server,
+and the other that provides DNSSEC resource-record validation functionality.
+
+The \lib{libsres} library provides the resolver component of the ``validating
+resolver''.  It is capable of recursively obtaining answers for an application
+(validator) from a DNSSEC-aware name server.  Resolver policy will eventually
+be used to control the query flags (CD, RD, etc.) and other parameters
+sent to the name servers.
+
+The \lib{libsres} library provides very basic functionality for name
+resolution.  The data structures and interfaces exported to applications
+have not been finalized and are expected to change. Many corner cases are
+still not supported.
+
+The \lib{libval} library provides basic functionality for resource-record
+validation.  It relies on the \cmd{resolver} component to fetch answers
+from a DNSSEC-aware name server.
+
+Currently, there is no functionality to traverse the chain-of-trust while
+performing record validation.  There is also no support for validation
+policies. As such, the interfaces defined herein are in a state of flux
+and are expected to change.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Installation}
+
+Configure, build, and install the \lib{libsres} and \lib{val\_stub} libraries
+using the following commands:
+
+\begin{verbatim}
+        # ./configure
+        # make clean; make
+        # make install
+\end{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Testing}
+
+The validator library (\lib{val\_stub}) can be tested using its command-line
+utilities.
+
+To run the \cmd{resolver-driver}, execute \xqt{./driver}.
+
+To run the \cmd{verifier}, execute \xqt{./verify $[[$CLASS$]$ TYPE$]$ DOMAIN\_NAME}.
+
+If not provided, CLASS is assumed to be IN and TYPE is assumed to be A.
+
+The \cmd{verify} program will not do chain-validation.  It will only check
+that the DNSKEY can correctly verify the signature on a given resource record.
+
+To run \cmd{gethost}, execute \xqt{./gethost $<$hostname$>$}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\section{Modifications to Support DNSSEC in Existing Applications}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\label{modifications}
+
+A number of software packages have been modified to support DNSSEC.  These
+packages include user programs and system programs:
+
+\begin{table}[hb]
+\begin{center}
+\begin{tabular}{lll}
+\lib{libspf2-1.2.5}	& \hspace{1in} & \cmd{sendmail}		\\
+\cmd{logwatch}		& \hspace{1in} & \cmd{spfmilter-1.0.8}	\\
+\cmd{mozilla}		& \hspace{1in} & \cmd{thunderbird}	\\
+\end{tabular}
+\end{center}
+\end{table}
+
+This section describes installation instructions, testing methods, and other
+information for these packages.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\lib{libspf2-1.2.5}}
+
+The DNSSEC extension to \lib{libspf2} provides DNSSEC validation to DNS
+queries in \lib{libspf2}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Installation}
+
+To install the DNSSEC-enhanced \lib{libspf2-1.2.5}, \path{libspf2-1.2.5.tar.gz}
+and \path{libspf2-1.2.5\-\_\-dns\-sec\_\-patch} must be downloaded from
+\url{http://www.libspf2.org/download.html}.
+
+Before compiling the patched \lib{libspf2}, you will need to install the
+\lib{libsres} and the \lib{libval} libraries from
+\url{http://dnssec-tools.sourceforge.net}.
+
+Unpack and patch the \lib{libspf} distribution with the following commands:
+
+\begin{verbatim}
+    # tar -xvzf libspf2-1.2.5.tar.gz
+    # cd libspf2-1.2.5
+    # patch -p 0 -b -z .orig </path/libspf2-1.2.5_dnssec_patch.txt
+\end{verbatim}
+
+This will apply the patch and store the original files with a \path{.orig}
+suffix.
+
+To compile \lib{libspf2}, the following sequence of commands must be executed
+in the main \path{libspf2-1.2.5} directory.  It will generate the new
+\cmd{configure} command, as well as other files needed for compilation:
+
+\begin{verbatim}
+        # aclocal
+        # autoheader
+        # libtoolize --automake --force
+        # automake
+        # autoconf
+        # ./configure --enable-dnssec-support
+\end{verbatim}
+
+Finally, compile and install \lib{libspf2} as per the instructions given
+in the \lib{libspf2-1.2.5} distribution.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Usage}
+
+The layered DNS architecture in \lib{libspf2} is amenable to adding DNSSEC
+validation.  The {\it spf\_\-dns\_\-resolv} layer has been modified to use
+the {\it val\_query()} function from the \lib{libval} library for making
+DNS queries.  This function returns a validator status along with the answer
+to the DNS query.
+
+The following files have been modified:
+\begin{description}
+\item{\path{configure.ac}}:
+Added configuration checks for the DNSSEC validator library.
+
+\item{\path{config.h.in}}:
+New {\it \#defines} for DNSSEC validator.
+
+\item{\path{src/include/spf\_server.h}}:
+New constants for adding the DNSSEC validation layer.
+
+\item{\path{src/include/spf\_dns\_resolv.h}}:
+New function declaration to support DNSSEC validation.
+
+\item{\path{src/include/spf\_response.h}}:
+Additional error codes for DNSSEC validation failure.
+
+\item{\path{src/include/spf\_dns.h}}:
+Additional error codes for DNSSEC validation failure.
+
+\item{\path{src/libspf2/spf\_strerror.c}}:
+Map DNSSEC validation failure error code to an appropriate string.
+
+\item{\path{src/libspf2/Makefile.am}}:
+Added new source files for compilation.
+
+\item{\path{src/libspf2/spf\_interpret.c}}:
+Return appropriate error codes for DNSSEC validation failure.
+
+\item{\path{src/libspf2/spf\_dns\_resolv.c}}:
+Return appropriate error codes for DNSSEC validation failure.
+
+\item{\path{src/libspf2/spf\_get\_exp.c}}:
+Return appropriate error codes for DNSSEC validation failure.
+
+\item{\path{src/libspf2/spf\_server.c}}:
+Return appropriate error codes for DNSSEC validation failure.
+
+\end{description}
+
+In addition, the \func{SPF\_dns\_lookup()} function can now return
+the DNS\-SEC\_\-FAILURE error value.
+
+The error code SPF\_E\_DNSSEC\_FAILURE is added to the list of error codes
+in the response structure.  It is returned when a DNSSEC validation failure
+occurs during SPF processing.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{API for Applications}
+
+The enumerated type {\it SPF\_server\_dnstype\_t} has been extended with two
+values:  SPF\_\-DNS\_\-DNS\-SEC\_\-RESOLV and SPF\_\-DNS\_\-DNS\-SEC\_\-CACHE.
+This allows applications to add a DNSSEC validation layer on top of either
+the resolve layer or the cache layer.
+
+Thus, if an application wants DNSSEC validation with caching, it must create
+the SPF server instance using:
+
+\begin{verbatim}
+    SPF_server_t *spf_server = SPF_server_new (SPF_DNS_DNSSEC_CACHE, debug)
+\end{verbatim}
+
+The \var{debug} variable specifies the desired debug level.  After this, the
+application can perform SPF processing with the SPF server instance as usual.
+
+After SPF processing, the \var{SPF\_response} object/variable is available
+to the application.  The application can check the error codes within this
+variable to see if any of them matches SPF\_\-E\_\-DNS\-SEC\_\-FAILURE, and
+determine if there was DNSSEC validation failure during SPF processing.
+
+For example, it can do the following:
+
+\begin{verbatim}
+        SPF_request_t *requestp;
+        SPF_response_t *responsep;
+
+        /* initialize and configure requestp ... */
+
+        /* SPF-checks */
+        SPF_request_query_mailfrom(requestp, &responsep);
+
+        /* Check for DNSSEC validation failure */
+        do {
+            int i, num_errs;
+            SPF_error_t *err;
+            SPF_errcode_t errcode;
+            char *errmsg;
+
+            num_errs = SPF_response_warnings (responsep);
+
+            for (i=0; i<num_errs; i++) {
+                err = SPF_response_message (responsep, i);
+                if (err) {
+        	    errcode = SPF_error_code (err);
+        	    if (errcode == SPF_E_DNSSEC_FAILURE) {
+        	        errmsg = (char *) SPF_error_message (err);
+        	        /* Take appropriate action */
+        	    }
+                }
+            }
+        } while (0);
+\end{verbatim}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Example}
+
+The \path{spfmilter-1.0.8\_dnssec\_patch} patch for \cmd{spfmilter-1.0.8}
+provides three modes of operation for DNSSEC:  {\it ignore}, {\it warn},
+{\it reject}.  If the mode is {\it ignore}, the SPF server is initialized
+with the \const{SPF\_\-DNS\_\-CACHE} flag; otherwise, it is initialized
+with the \const{SPF\_\-DNS\_\-DNS\-SEC\_\-RESOLV} flag:
+
+\begin{verbatim}
+        if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_IGNORE) {
+            spf_server = SPF_server_new(SPF_DNS_CACHE, debug);
+        }
+        else {
+            spf_server = SPF_server_new(SPF_DNS_DNSSEC_RESOLV, debug);
+        }
+\end{verbatim}
+
+After SPF processing is done, the \path{spfmilter-1.0.8\_dnssec\_patch} looks
+for the \const{SPF\_\-E\_\-DNS\-SEC\_\-FAILURE} error code in the response if
+it is operating in the {\it reject} mode.  If it detects this error code, it
+will return \const{SPF\-MIL\-TER\_\-RESULT\_\-FAIL}, which causes the mail to
+be rejected or marked according to the \cmd{spfmilter} configuration.
+
+\begin{verbatim}
+        /* Check if there was a DNSSEC validation failure */
+        if (dnssec_policy == SPFMILTER_DNSSEC_POLICY_REJECT) {
+            int i;
+            int num_errs;
+
+            printf("spfmilter: DNSSEC reject policy is in effect\n");
+            num_errs = lib_get_num_errors(ld);
+
+            for (i=0; i<num_errs; i++) {
+                SPF_error_t *err;
+
+                err = SPF_response_message (ld->responsep, i);
+                if (err) {
+                    if (SPF_error_code(err) == SPF_E_DNSSEC_FAILURE) {
+                        printf("spfmilter: DNSSEC validation failure.
+Rejecting mail.\n");
+                        retval = SPFMILTER_RESULT_FAIL;
+                        break;
+                    }
+                }
+            }
+        }
+\end{verbatim}
+
+In the above code, \var{ld->responsep} points to the response from SPF
+processing.  The number of error codes in the response is returned by the
+\func{lib\_get\_num\_errors(ld)} function.
+
+If \cmd{spfmilter} is operating in the {\it warn} mode, the
+\const{SPF\_\-E\_\-DNS\-SEC\_\-FAILURE} error code will be present in the
+response and will be added to the Received-SPF mail-header as an {\it x-dnssec}
+field:
+\begin{verbatim}
+        x-dnssec="fail (DNSSEC validation failed.)";
+\end{verbatim}
+
+If \cmd{spfmilter} is operating in the {\it warn} or {\it reject} mode and
+DNSSEC validation succeeds, the Received-SPF mail-header will contain the
+following:
+\begin{verbatim}
+        x-dnssec="pass";
+\end{verbatim}
+
+The same result will be given if there was no SPF processing.
+
+If \cmd{spfmilter} is operating in the {\it ignore} mode, DNSSEC validation
+is not performed.  The Received- SPF mail-header will show:
+\begin{verbatim}
+        x-dnssec="none";
+\end{verbatim}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\cmd{sendmail}}
+
+This section describes the installation, configuration and execution steps
+for adding DNSSEC validation to \cmd{sendmail-8.13.3}.  This DNSSEC
+validation is for outbound email.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Installation}
+
+Download \path{sendmail-8.13.3.tar.gz} from
+\url{ftp://ftp.sendmail.org/pub/sendmail/}.
+
+This distribution must be unpacked and patched with the DNSSEC validation
+patch.  These commands will apply the patch and store the original files with
+a \path{.orig} suffix:
+
+\begin{verbatim}
+        # tar -xvzf sendmail-8.13.3.tar.gz
+        # cd sendmail-8.13.3
+        # patch -p 0 -b -z .orig < /path/sendmail-8.13.3_dnssec_patch.txt
+\end{verbatim}
+
+This patch requires the \lib{libval} library for DNSSEC validation.  This
+library can be found at \url{http://dnssec-tools.sourceforge.net}.  You must
+install this library before compiling the patched \cmd{sendmail} source.
+
+Add the following line to the
+\path{sendmail-8.13.3/devtools/Site/site.config.m4} file,
+if it is not already present:
+
+\begin{verbatim}
+        APPENDDEF(`confLIBS', `-lsres -lval -lcrypto')
+\end{verbatim}
+
+Build and install \cmd{sendmail} as per the instructions given in the
+\path{README} and \path{INSTALL} files with the \cmd{sendmail} distribution.
+
+To enable DNSSEC validation, the \var{RequireDNSSEC} option must be added to
+the \var{ResolverOptions} in the \cmd{sendmail} configuration.  This can be
+done by adding the following configuration line to the \path{sendmail.mc}
+file:
+
+\begin{verbatim}
+        define(`confBIND_OPTS', `+RequireDNSSEC')
+\end{verbatim}
+
+You will need to generate the \path{sendmail.cf} file from \path{sendmail.mc}
+and then place it in your system's \cmd{sendmail} system configuration
+directory.
+
+To disable DNSSEC validation, remove this option from \const{BIND\_OPTS}.
+
+Start \cmd{sendmail} as usual with the \path{sendmail.cf} file appropriately
+configured with the \var{ResolverOptions}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Testing}
+
+Take the following steps to ensure that DNSSEC validation is working properly
+for your \cmd{sendmail}. 
+
+\begin{enumerate}
+
+\item Start \cmd{sendmail} with the above patch applied,
+and the \var{RequireDNSSEC} option added to ResolverOptions.
+
+\item Send email to a user at a domain whose MX records can be DNSSEC
+validated.  Verify that the mail goes through properly.
+
+\item Send email to a user at a domain whose MX records cannot be DNSSEC
+validated.  Verify that an SMTP error message is returned back to the sender.
+
+\item Remove the \var{RequireDNSSEC} option from \var{ResolverOptions} and
+restart \cmd{sendmail}.   Run steps 2 and 3 above, and verify that mail goes
+through in both cases, since there is no DNSSEC validation.
+
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\cmd{spfmilter-1.0.8}}
+
+This section describes the installation, configuration and execution steps
+for adding DNSSEC validation to \cmd{sendmail} using \cmd{spfmilter-1.0.8}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Installation}
+
+Download \path{spfmilter-1.0.8.tar.gz} from
+\url{http://www.libspf2.org/download.html}.
+
+Unpack and patch the \cmd{spfmilter} distribution with the following commands:
+
+\begin{verbatim}
+
+        # tar -xvzf spfmilter-1.0.8.tar.gz
+        # cd spfmilter-1.0.8
+        # patch -p 0 -b -z .orig </path/spfmilter-1.0.8_dnssec_patch.txt
+\end{verbatim}
+
+This will apply the patch and store the original files with a \path{.orig}
+suffix.
+
+Before compiling, run \cmd{autoconf} from the main \path{spfmilter-1.0.8}
+directory to generate a new \path{configure} file.  Then, run \cmd{configure}
+with the {\it --enable-dnssec-support} option:
+
+\begin{verbatim}
+        # ./configure --enable-dnssec-support
+\end{verbatim}
+
+Finally, compile and install \cmd{spfmilter} as per the instructions given
+in the \cmd{spfmilter-1.0.8} distribution.  The only change is that instead
+of installing the original \lib{libspf2}, you need to patch it with the
+\path{libspf2-1.x.y\_dnssec\_patch} (where {\it x.y} is either 0.4 or 2.5)
+given in \path{../libspf2-1.x.y\_dnssec\_patch.txt}, and then install
+\lib{libspf2}.  For instructions on how to install \lib{libspf2} with the
+DNSSEC patches, see \path{../libspf2-1.x.y\_dnssec\_howto.txt}.
+
+Configure \cmd{sendmail} as per the instructions given in the \cmd{spfmilter}
+distribution.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Usage}
+
+The DNSSEC patch adds a new command line option to \cmd{spfmilter}:
+{\it -s $<$ignore$|$warn$|$reject$>$} or
+{\it --dnssec\_policy=$<$ignore$|$warn$|$reject$>$}.
+This option specifies the action \cmd{spfmilter} should take in the
+event of DNSSEC validation failure.
+
+If the option is {\it --dnssec\_policy=ignore} then DNSSEC validation will not
+take place.  This is the default if the {\it --dnssec\_policy} option (or the
+{\it -s} option) is not specified on the command line.
+
+If the option is {\it --dnssec\_policy=reject} then a DNSSEC validation
+failure will cause \cmd{spfmilter} to abort the processing of the current
+message, and send an error message back to the sender.  The recipient will
+not get the message.  The \cmd{sendmail} \path{maillog} file will show an
+error message similar to the following:
+\begin{verbatim}
+        "Error: DNSSEC validation of SPF record failed."
+\end{verbatim}
+
+If the option is {\it --dnssec\_policy=warn} then the mail will be delivered
+to the recipient, even in the event of a DNSSEC validation failure.  However,
+in this case an error message will be added to the Received-SPF mail header.
+This message will be similar to the following:
+\begin{verbatim}
+        x-dnssec="fail (DNSSEC validation of SPF record failed.)";
+\end{verbatim}
+
+The \cmd{sendmail} \path{maillog} file will also show a similar warning message.
+
+In case of the {\it reject} and {\it warn} policies, if DNSSEC validation
+succeeds, the Received-SPF mail header will contain the following status
+message:
+\begin{verbatim}
+        x-dnssec="pass";
+\end{verbatim}
+
+In case of the {\it ignore} policy, the Received-SPF mail header will contain
+the following status message:
+
+\begin{verbatim}
+        x-dnssec="none";
+\end{verbatim}
+
+which means that there was no DNSSEC validation.  This error code is also
+added if there is no SPF record for the domain.
+
+The DNSSEC policy is applied to all messages, irrespective of the sender or the
+recipient.  Future versions may allow a more granular policy based on the
+sender's domain, sender's email address, and recipient's email address.
+
+Use other options to \cmd{spfmilter} as per the instructions given in the
+\cmd{spfmilter} distribution.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Testing}
+
+Start \cmd{spfmilter} with the above DNSSEC patch applied and start
+\cmd{sendmail} with the appropriate configuration for \cmd{spfmilter}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\paragraph{Basic Scenarios: DNSSEC validation of the SPF Records \\}\verb" "
+
+The following table gives a summary of the basic scenarios.  The policy columns show the successful completion result.
+
+\begin{table}[hb]
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+Domain		& \multicolumn{3}{c|}{Policy}	\\
+\cline{2-4}
+Characteristics	& Ignore & Warn & Reject \\
+\hline
+
+No SPF Records & No DNSSEC  & No DNSSEC		& No DNSSEC	\\
+	       & Validation & Validation	& Validation	\\
+\hline
+
+SPF Records present & No DNSSEC	 & Error message in mail & Error message in mail log. \\
+but not a DNSSEC    & Validation & header and mail log   & Mail dropped.  Error \\
+signed zone	    &	         & mail log.	         & message sent to sender. \\
+\hline
+
+SPF Records present & No DNSSEC  & Success message & Success message \\
+and a DNSSEC-	    & Validation & in mail header  & in mail header \\
+signed zone	    &		 & and mail log.   & and mail log. \\
+\hline
+
+\end{tabular}
+\caption{Basic Scenario Matrix}
+\label{basicmatrix}
+\end{center}
+\end{table}
+
+\subparagraph{Messages sent from a domain that does not have SPF records}
+
+In this case, there is no SPF processing.  Hence, all mail will go through,
+irrespective of the DNSSEC policy in \cmd{spfmilter}.  The Received-SPF header
+will contain the following field:
+\begin{verbatim}
+    x-dnssec="pass";
+\end{verbatim}
+
+\subparagraph{Messages sent from a domain that has SPF records, but does not have DNSSEC-signed zones.}
+
+\begin{itemize}
+\item {\it ignore policy}:  DNSSEC validation will not be performed.
+The Received-SPF header will contain {\it x-dnssec=``none'';}
+
+\item {\it warn policy}:  An error message will be added to the Received-SPF
+mail header and the \cmd{sendmail} \path{maillog}.
+This message will be:
+\begin{verbatim}
+        x-dnssec="fail (DNSSEC validation of SPF record failed.)";
+\end{verbatim}
+
+\item {\it reject policy}:  An error message will be added to the
+\cmd{sendmail} \path{maillog}.  The mail will be dropped and an error
+message will be returned to the sender.  This message will be:
+\begin{verbatim}
+        x-dnssec="fail (DNSSEC validation of SPF record failed.)";
+\end{verbatim}
+\end{itemize}
+
+\subparagraph{Messages sent from a domain that has SPF records as well as DNSSEC-signed zones.}
+
+\begin{itemize}
+\item {\it ignore policy}:  DNSSEC validation will not be performed.  The
+Received-SPF header will contain {\it x-dnssec=``none'';}.
+
+\item {\it warn policy}:  A DNSSEC validation success message will be added
+to the Received-SPF mail header and the \cmd{sendmail} \path{maillog}:
+{\it x-dnssec=``pass'';}.
+
+\item {\it reject policy}:  A DNSSEC validation success message will be added
+to the Received-SPF mail header and the \cmd{sendmail} \path{maillog}:
+{\it x-dnssec=``pass'';}
+
+\end{itemize}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\paragraph{Intermediate Scenarios:  DNSSEC validation of the SPF Mechanisms \\}\verb" "
+
+These scenarios test various SPF mechanisms.  In this case, the primary SPF
+record is signed.  However, the further records that it points to may or may
+not be signed.  It is assumed that the mail is sent from an IP address that
+is ultimately referenced by the DNS records; i.e., in the absence of DNSSEC
+validation, the SPF result will be a PASS.  However, one or more intermediate
+DNS records may or may not be signed using DNSSEC.  This gives rise to many
+interesting scenarios, some of which are enumerated in the following table
+along with their expected results.
+
+The policy columns show the successful completion result,
+except for the PTR records.
+
+\eject
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+Mechanism & Record Conditions	& \multicolumn{3}{c|}{Policy}	\\
+\cline{3-5}
+	  & 			& Ignore & Warn & Reject \\
+\hline
+
+A & Signed A		& pass	& pass		& pass \\
+\cline{2-5}
+  & Unsigned A		& pass	& mail/warning	& no mail/abort \\
+\hline
+
+MX & Signed MX		& pass	& pass		& pass \\
+\cline{2-5}
+   & Unsigned MX	& pass	& mail/warning	& no mail/abort \\
+\hline
+
+EXISTS & Signed EXISTS		& pass	& pass		& pass \\
+\cline{2-5}
+       & Unsigned EXISTS	& pass	& mail/warning	& no mail/abort \\
+\hline
+
+	& Signed INCLUDE	& pass	& pass		& pass		\\
+	& Signed A		&	&		&		\\
+\cline{2-5}
+	& Signed INCLUDE	& pass	& mail/warning	& no mail/abort \\
+INCLUDE	& Unsigned MX		&	&		&		\\
+\cline{2-5}
+	& Unsigned INCLUDE & pass & mail/warning	& no mail/abort \\
+	& Signed A	   &	  &			&		\\
+\cline{2-5}
+	& Unsigned INCLUDE & pass & mail/warning	& no mail/abort \\
+	& Unsigned MX	   &	  &			&		\\
+\hline
+
+	 & Signed REDIRECT & pass & pass		& pass		\\
+	 & Signed A	   &	  & 			&		\\
+\cline{2-5}
+	 & Signed REDIRECT & pass & mail/warning	& no mail/abort \\
+REDIRECT & Unsigned MX	   &	  &			&		\\
+\cline{2-5}
+	 & Unsigned REDIRECT & pass & mail/warning & no mail/abort \\
+	 & Signed A	     &	    & 		  	&		  \\
+\cline{2-5}
+	 & Unsigned REDIRECT & pass & mail/warning & no mail/abort \\
+	 & Unsigned MX	     &	    &		  	&		  \\
+\hline
+
+PTR	&	&	&	&	\\
+\cline{2-5}
+	&	&	&	&	\\
+\hline
+\end{tabular}
+\caption{Intermediate Scenario Matrix}
+\label{intermediatematrix}
+\end{center}
+\end{table}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\cmd{thunderbird}}
+
+The DNSSEC-Tools distribution contains files for a \cmd{thunderbird}
+extension, called {\it spfdnssec}, that displays the Received-SPF mail header
+and its various fields.  In particular, it displays the {\it x-dnssec} field
+that shows the result of DNSSEC validation during the SPF processing.
+
+To compile, just run \cmd{make}.  This will create a file named
+\path{spfdnssec.xpi}.  This can be used to install the extension in
+\cmd{thunderbird} from the {\it Tools-$>$Extensions} menu.
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\cmd{mozilla}}
+
+This DNSSEC-Tools distribution contains a patch to apply to the \cmd{mozilla}
+code for enabling DNSSEC checking of URL DNS names.  It is in pre-alpha form
+with a lot of debugging and probably shouldn't be used yet, although it does
+work.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Installation}
+
+To install the DNSSEC-Tools patch, perform the following steps:
+
+\begin{enumerate}
+
+\item Install the \path{dnssec-tools} package
+
+{\it (We need a library.)}
+
+\item Apply the patch found in this directory to the \cmd{mozilla} source tree.
+This should use \cmd{mozilla} version 1.7.3 or higher.
+
+\item If the configure portion of the patch fails, run \cmd{autoconf}
+after you apply the patch.  Version 2.13 of \cmd{autoconf} should be use,
+not 2.5x.
+
+\item Add the {\it --with-system-val} flag to the \cmd{configure} script in the
+\cmd{mozilla} hierarchy.
+
+\item Build \cmd{mozilla}.  If you're using a \path{~/.mozconfig} file,
+then add this line to it:
+\begin{verbatim}
+        ac_add_options --with-system-val
+\end{verbatim}
+
+\end{enumerate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{\cmd{logwatch}}
+
+\cmd{logwatch} is a customizable log analyzer.  It has been customized to
+analyze DNSSEC logs.  This section describes how to install and configure
+\cmd{logwatch} for DNSSEC logging.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Installation}
+
+Install \cmd{logwatch}, the current version of which is 6.0.2.
+\cmd{logwatch} is available from\\
+\url{http://www2.logwatch.org:81/tabs/download}.
+
+When \cmd{logwatch} is installed, the files in the \path{tools/logwatch}
+directory must be installed.
+
+The following assumptions are made about the current installation set-up:
+\begin{itemize}
+\item Log files for BIND are located in \path{/var/log} and are called
+\path{dnssec} and \path{resolver}.  The location and name of these files are
+configured in the BIND config file, often called \path{named.conf}.  See
+below for a few tips on configuring BIND to log security messages.
+
+\item \cmd{logwatch} is installed in \$LOGWATCH\_DIR (by default this would be
+\path{/etc/log.d}).
+\end{itemize}
+
+You may edit the \cmd{logwatch} config files and scripts to change these names
+if you have used something else.
+
+Copy the files in \path{conf/logfiles}, \path{conf/services},
+\path{scripts/shared}, and \path{scripts/services} into the same
+directory structure in \path{\$LOGWATCH\_DIR}.  For example:
+
+\begin{verbatim}
+        # cp ./conf/logfiles/* /etc/log.d/conf/logfiles/.
+        # cp ./conf/services/* /etc/log.d/conf/services/.
+        # cp ./scripts/services/* /etc/log.d/scripts/services/.
+        # cp ./scripts/shared/* /etc/log.d/scripts/shared/.
+\end{verbatim}
+
+This is all that is necessary to get \cmd{logwatch} to monitor BIND's
+security log files.  Run \cmd{logwatch} to see the DNSSEC and RESOLVER
+sections for output.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsubsection{Configuring BIND for Security Logging}
+
+In your BIND configuration file (e.g., \path{named.conf})
+you need to have a logging section.  It will look something like this:
+
+\begin{verbatim}
+        logging {
+                channel resolver {
+                        file "/var/log/resolver" versions 10 size 300k;
+                        print-time yes;
+                        print-category no;
+                        print-severity yes;
+                        severity debug 3;
+                };
+                channel dnssec {
+                        file "/var/log/dnssec" versions 10 size 300k;
+                        print-time yes;
+                        print-category no;
+                        print-severity yes;
+                        severity debug 9;
+                };
+                category dnssec { dnssec; };
+                category resolver { resolver; };
+        };
+\end{verbatim}
+
+This allows you to send log messages to separate log files. This configuration
+fits the \cmd{logwatch} configuration files provided here.  The ``channel'' is
+a name of your own choosing.  The file name can be whatever you want, but if
+you use something other than \path{/var/log/dnssec} or
+\path{/var/log/resolver}, you will need to modify \path{dnssec.conf} and/or
+\path{resolver.conf} in the \path{conf/logfiles} directory to match the file
+name.
+
+``Categories'' as used in \path{named.conf} are defined as follows for
+\cmd{BIND 9.x}:
+
+\begin{itemize}
+\item dnssec: processing of DNSSEC-signed responses
+
+\item resolver: Name resolution, including the processing of recursive
+queries from resolvers
+\end{itemize}
+
+For more detail on configuring BIND, a good reference is $[$DNS and BIND$]$.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+\appendix
+
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\section{References}
+\markboth{DNSSEC-Tools Operations Manual -- Installation Guide}{DNSSEC-Tools Operations Manual -- Installation Guide}
+\label{app-refs}
+
+\begin{description}
+\item $[$DNS and BIND$]$ Albitz, Liu, Loukides; O'Reilly, 1998. 
+\end{description}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\end{document}
+
