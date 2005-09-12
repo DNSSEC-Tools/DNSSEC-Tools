@@ -10,7 +10,6 @@ SRC=	sum.tex							\
 	man-cmds.tex						\
 	man-files.tex						\
 	man-modules.tex						\
-	examples.tex						\
 	manpages/lib::libsres::libsres.tex			\
 	manpages/lib::libval::val_getaddrinfo.tex		\
 	manpages/lib::libval::val_gethostbyname.tex		\
