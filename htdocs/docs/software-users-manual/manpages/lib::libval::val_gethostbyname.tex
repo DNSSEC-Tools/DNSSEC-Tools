@@ -1,0 +1,132 @@
+\clearpage
+
+\subsection{{\bf val\_gethostbyname()} DNSSEC-Validated Network Host Entry}
+
+
+{\bf NAME}
+
+val\_gethostbyname, val\_x\_gethostbyname, val\_get\_hostent\_dnssec\_status, val\_duphostent, val\_freehostent - get DNSSEC-validated network host entry
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+  #include <validator.h>
+
+  struct hostent *val_gethostbyname(const char *name, int *h_errnop);
+
+  struct hostent *val_x_gethostbyname(const val_context_t *ctx,
+                                      const char *name, int *h_errnop);
+
+  int val_get_hostent_dnssec_status(const struct hostent *hentry);
+
+  struct hostent* val_duphostent(const struct hostent *hentry);
+
+  void val_freehostent(struct hostent *hentry);
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+{\bf val\_gethostbyname()} is a DNSSEC-aware, thread-safe version of {\bf
+gethostbyname(3)}.  It performs DNSSEC validation of DNS queries.  It returns
+a network host entry value of type {\it hostent}.  (See {\bf gethostbyname(3)}
+for more information on type {\it hostent}).
+
+{\bf val\_x\_gethostbyname()} performs the same function as {\bf
+val\_gethostbyname()}, but it optimized for multiple calls.  The two routines
+take the same parameters, but {\bf val\_x\_gethostbyname()} takes an
+additional parameter {\it ctx}, of type {\it val\_context}, which passes the
+validation context for use in call optimization.  The {\it ctx} parameter
+also gives the caller more control over the resolver and validator policies.
+If a {\bf NULL} value is passed for the {\it ctx} parameter, the default
+validation context is used.  (See {\bf get\_context()} for information on
+creating a validation context.) {\bf val\_gethostbyname()} is equivalent to
+calling {\bf val\_x\_gethostbyname()} with a {\bf NULL} {\it ctx} parameter.
+
+{\it h\_errnop} returns the {\it h\_errno} value from these functions.  This
+ensures thread safety, by avoiding the global {\it h\_errno} variable.  {\it
+h\_errnop} must not be {\bf NULL}.  (See the man page for {\bf
+gethostbyname(3)} for possible values of {\it h\_errno}.)
+
+{\bf val\_duphostent()} provides a way to duplicate the {\it hostent}
+structure and its auxiliary data.  It performs a deep copy; i.e., the internal
+strings and arrays are also copied.
+
+{\bf val\_freehostent()} is used to free the hostent structure returned by
+the {\bf val\_gethostbyname()}, {\bf val\_x\_gethostbyname()} and {\bf
+val\_duphostent()} functions.
+
+{\bf val\_get\_hostent\_dnssec\_status()} is used to extract the DNSSEC
+validation status from the returned {\it hostent} structure.  This function
+must be called only for the values returned from {\bf val\_gethostbyname()},
+{\bf val\_x\_gethostbyname()}, and {\bf val\_duphostent()} functions.
+
+{\bf RETURN VALUE}
+
+The {\bf val\_gethostbyname()} and {\bf val\_x\_gethostbyname()} functions
+return a value of type {\it hostent} on success, and {\bf NULL} on error.
+The memory for the returned value is dynamically allocated by these two
+functions.  Hence, the caller must only call the {\bf val\_freehostent()}
+function on the returned value in order to avoid memory leaks.
+
+The {\bf val\_get\_hostent\_dnssec\_status()} function returns the result of
+the DNSSEC validation.  The possible values for the DNSSEC status are given
+in {\bf val\_errors.h}.
+
+The {\bf val\_duphostent()} function returns a copy of specified the {\it
+hostent} structure.  The returned value must be freed using {\bf
+val\_freehostent()} to avoid memory leaks.
+
+{\bf EXAMPLE}
+
+\begin{verbatim}
+ #include <stdio.h>
+ #include <validator.h>
+
+ int main(int argc, char *argv[])
+ {
+          int dnssec_status = ERROR;
+          int val_h_errno = NETDB_INTERNAL;
+          struct hostent *h = NULL;
+
+          if (argc < 2) {
+                  printf("Usage: %s <hostname>\n", argv[0]);
+                  exit(1);
+          }
+
+          h = val_gethostbyname(argv[1], &val_h_errno);
+          printf("h_errno = %d [%s]\n", val_h_errno,
+                 hstrerror(val_h_errno));
+          if (h) {
+                  dnssec_status = val_get_hostent_dnssec_status(h);
+
+                  printf("DNSSEC Status = %d [%s]\n", dnssec_status,
+                         p_val_error(dnssec_status));
+                  val_freehostent(h);
+          }
+
+          return 0;
+ }
+\end{verbatim}
+
+{\bf NOTES}
+
+This version of {\bf val\_x\_gethostbyname()} hence {\bf val\_gethostbyname()}
+does not read the order-of-look-up method from {\bf /etc/hosts.conf}.  This
+functionality will be provided in future versions.  At present, the default
+order is set to consult the {\bf /etc/hosts} file first, and then query DNS.
+
+This version of {\bf val\_x\_gethostbyname()} and {\bf val\_gethostbyname()}
+does not support NIS lookups.
+
+{\bf SEE ALSO}
+
+{\bf getaddrinfo}(3)
+
+{\bf get\_context(3)}, {\bf val\_dupaddrinfo(3)}, {\bf val\_freeaddrinfo(3)},\\
+{\bf val\_getaddrinfo(3)}, {\bf val\_query(3)}, {\bf val\_x\_getaddrinfo(3)},\\
+{\bf val\_x\_query(3)}
+
+{\it p\_val\_error}
+
+http://dnssec-tools.sourceforge.net
+

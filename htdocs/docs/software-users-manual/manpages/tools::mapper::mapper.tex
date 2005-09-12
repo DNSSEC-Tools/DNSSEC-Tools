@@ -1,0 +1,139 @@
+\clearpage
+
+\subsection{\it mapper}
+
+
+{\bf NAME}
+
+mapper - Create graphical maps of DNS zone data
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}  mapper [options] zonefile1 ... zonefileN\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This application creates a graphical map of one or more zone files.  The
+output gives a graphical representation of a DNS zone or zones.  The output
+is written in the PNG format.  The result can be useful for getting a more
+intuitive view of a zone or set of zones.  It is extremely useful for
+visualizing DNSSEC deployment within a given zone as well as to help discover
+problem spots.
+
+{\bf OPTIONS}
+
+\begin{description}
+
+\item [-h]
+
+Help summary.
+
+\item [-o OUTFILE.png]\verb" "
+
+Saves the results to a given filename.  If this option is not given, the map
+will be saved to {\bf map.png}.
+
+\item [-r]
+
+Lists resources records assigned to each node within the map.
+
+\item [-t TYPE,TYPE...]\verb" "
+
+Adds the data portion of a resource record to the displayed node
+information.  Data types passed will be automatically upper-cased for
+ease of use.  Example usage: {\it -t A} will add IPv4 addresses to
+all displayed nodes that have A records.
+
+\item [-L]
+
+Adds a legend to the map.
+
+\item [-l (neato|dot|twopi|circo|fdp)]\verb" "
+
+Selects a layout format.  The default is {\it neato} which is circular in
+pattern.  See the documentation on the {\it graphviz} package and the
+{\bf GraphViz} Perl module for further details.
+
+\item [-a]
+
+Allows overlapping of nodes.  This makes much tighter maps with the
+downside being that they are somewhat cluttered.  Maps of extremely
+large zones will be difficult to decipher if this option is not used.
+
+\item [-e WEIGHT]\verb" "
+
+Assigns an edge weight to edges.  In theory $>$1 means shorter, $<$1 means
+longer although I don't believe as implemented it will have any
+effect.  Should work better in the future.
+
+\item [-f INTEGER]\verb" "
+
+Uses the INTEGER value for the font size to print node names with.
+Defaults to 10.
+
+\item [-w WARNTIME]\verb" "
+
+How far in advance that warnings are turned on for signed
+resource records that are about to expire.  The default is 7 days.
+The warning time is measured in seconds.
+
+\item [-i REGEX]\verb" "
+
+Ignore record types matching a {\it REGEX} regular expression.
+
+\item [-s TYPE,TYPE...]\verb" "
+
+Skips a list of record types from being analyzed or displayed in the map.
+By default, this is set to NSEC and CNAME in order to reduce clutter.
+Setting it to ``'' will display these results again.
+
+\item [-T TYPE,TYPE...]\verb" "
+
+Only process record types of type {\it TYPE}.  This is the converse of the
+{\it -s} option.  It is not meaningful to use both {\it -s} and {\it -t}
+in the same invocation.  They will both work at once, however, so if
+{\it -T} specifies a type which {\it -s} excludes, it will not be shown.
+
+\item [-g]
+
+Attempts to cluster nodes around the domain name.  For `dot' layouts,
+this actually means drawing a box around the cluster.  For the other
+types, it makes very little, if any, difference.
+
+\item [-q]
+
+Don't output warnings or errors about records that have DNSSEC signatures
+that are near or beyond their signature lifetimes.
+
+\end{description}
+
+{\bf EXAMPLE INVOCATIONS}
+
+\begin{description}
+
+\item [{\it mapper -s cname,nsec -i dhcp -L zonefile zone.com}]\verb" "
+
+Writes to the default file ({\bf map.png}) of a {\it zone.com} zone
+stored in {\it zonefile}.  It excludes any hosts with a name containing
+{\it dhcp} and ignores any record of type {\it CNAME} or {\it NSEC}.  It also
+includes a legend in the output.
+
+\item [{\it mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...}]\verb" "
+
+Removes a lot of records from the display in order to display mostly a
+map of a zone hierarchy.
+
+\item [{\it mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...}]\verb" "
+
+The same thing, but draws a more vertical tree-style graph of the
+zone.  This works well for fairly deep but narrow hierarchies.  Tree-style
+diagrams rarely look as nice for full zones.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS}
+
+\url{http://dnssec-tools.sourceforge.net}
+

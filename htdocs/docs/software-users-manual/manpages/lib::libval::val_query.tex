@@ -1,0 +1,134 @@
+\clearpage
+
+\subsection{{\bf val\_query()} DNSSEC-Validated DNS Resolution}
+
+
+{\bf NAME}
+
+val\_query, val\_x\_query - DNSSEC-validated resolution of DNS queries
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+  #include <validator.h>
+
+  int val_query(const char *domain_name, int class, int type,
+              unsigned char *answer, int anslen, int flags,
+              int *dnssec_status);
+
+  int val_x_query(const val_context_t *ctx,
+            const char *domain_name, const u_int16_t class,
+            const u_int16_t type, const u_int8_t flags,
+            struct response_t *resp, int *resp_count)
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+The {\bf val\_query()} function is a DNSSEC-aware version of {\bf
+res\_query(3)}.  It performs DNSSEC validation of DNS queries.  The results
+of the DNSSEC validation are returned in the {\it dnssec\_status} parameter.
+The caller must not pass a NULL value for this parameter.
+
+The {\it flags} parameter is reserved for future use, and must be set to 0
+at present.
+
+If DNSSEC validation succeeds, a value of {\bf VALIDATE\_SUCCESS} is returned
+in {\it dnssec\_status}.  Other values are returned in case of errors.  See
+{\bf val\_errors.h} for a listing of possible error codes.  The {\bf
+p\_val\_error()} function can be used to return a brief string description
+of the error code.
+
+{\bf val\_query()} gives applications that already use the {\bf res\_query(3)}
+interface a simple way to transition towards being DNSSEC-aware.  It does
+not, however, handle cases where multiple resource record sets may be returned
+for a query, each with a potentially different DNSSEC status.  If such
+functionality is desired, applications must make use of the {\bf
+val\_x\_query()} interface.  The only difference between this and {\bf
+val\_query()} is that the latter returns results in {\it resp} which
+encapsultes the results into the following structure:
+
+\begin{verbatim}
+  struct response_t {
+        u_int8_t *response;
+        int response_length;
+        int validation_result;
+  };
+\end{verbatim}
+
+{\it response}, {\it response\_length} and {\it validation\_result} are
+functionally similar to {\it answer}, {\it anslen} and {\it dnssec\_status}
+respectively.  {\it resp} is an array and must be allocated by the user to
+be of sufficient size to hold all the answers returned by the DNS name server.
+
+The number of answers actually available is returned in the {\it resp\_count}
+parameter.  In case {\it resp} is not large enough to hold all answers
+returned from {\bf val\_x\_query()}, it returns an error code of {\bf
+NO\_SPACE} and {\it resp\_count} is set to the total number of answers
+available.  Applications may re-query after reallocating {\it resp} to hold
+that many answers.  For queries that are not of type {\it ns\_t\_any} it is
+generally sufficient to allocate an array of three elements for *{\it
+results}.
+
+The {\it ctx} parametr is the validator context and can be set to NULL for
+default settings.  More information about this field can be found in
+{\bf libval(3)}.
+
+{\bf RETURN VALUES}
+
+The {\bf val\_query()} function returns the length of the answer if
+successful, or -1 if there was an error.
+
+The {\bf val\_x\_query()} function returns {\bf NO\_ERROR} on success.  It
+returns {\bf NO\_SPACE} if the application has not allocated enough memory
+to hold all results returned by the validator.  This function internally
+invokes {\bf resolve\_n\_check()}, and errors from this function may also be
+returned.  See {\bf libval(3)} for more details.
+
+{\bf EXAMPLES}
+\begin{verbatim}
+ #include <stdio.h>
+ #include <strings.h>
+ #include <arpa/nameser.h>
+ #include <validator.h>
+ 
+ #define BUFLEN 8096
+
+ int main(int argc, char *argv[])
+ {
+          int dnssec_status = ERROR;
+          int anslen = NETDB_INTERNAL;
+          int class = ns_c_in;
+          int type = ns_t_a;
+          char buf[BUFLEN];
+
+          bzero(buf, BUFLEN);
+
+          if (argc < 2) {
+                  printf("Usage: %s <domain-name>\n", argv[0]);
+                  exit(1);
+          }
+ 
+          anslen = val_query(argv[1], class, type, buf, BUFLEN,
+                             0, &dnssec_status);
+
+          if (anslen > 0) {
+                  printf("DNSSEC Status = %d [%s]\n", dnssec_status,
+                         p_val_error(dnssec_status));
+          }
+
+          return 0;
+ }
+\end{verbatim}
+
+{\bf SEE ALSO}
+
+{\bf res\_query(3)}
+
+{\bf get\_context(3)}, {\bf val\_getaddrinfo(3)}, {\bf val\_gethostbyname(3)}
+
+{\it p\_val\_error}
+
+{\bf libval(3)}
+
+\url{http://dnssec-tools.sourceforge.net}
+

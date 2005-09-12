@@ -1,0 +1,65 @@
+\clearpage
+
+\subsection{{\it expchk}}
+
+
+{\bf NAME}
+
+expchk - Check a DNSSEC-Tools {\it keyrec} file for expired zones.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+  expchk [options] keyrec_files
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+{\it expchk} checks a set of {\it keyrec} files to determine if the zone {\it
+keyrec}s are valid or expired.  The type of zones displayed depends on the
+options chosen; if no options are given the expired zones will be listed.
+
+{\bf OPTIONS}
+
+\begin{description}
+
+\item [-all]\verb" "
+
+Display expiration information on all zones, expired or valid, in the
+specified {\it keyrec} files.
+
+\item [-expired]\verb" "
+
+Display expiration information on the expired zones in the specified
+{\it keyrec} files.  This is the default action.
+
+\item [-valid]\verb" "
+
+Display expiration information on the valid zones in the specified
+{\it keyrec} files.
+
+\item [-warn numdays]\verb" "
+
+A warning will be given for each valid zone that will expire in {\it numdays}
+days.  This option has no effect on expired zones.
+
+\item [-zone zonename]\verb" "
+
+Display expiration information on the zone specified in {\it zonename}.
+
+\item [-count]\verb" "
+
+Only the count of matching zones (valid or expired) will be given.  If both
+types of zones are selected, then the count will be the number of zones in the
+specified {\it keyrec} files.
+
+\item [-help]\verb" "
+
+Display a usage message.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+

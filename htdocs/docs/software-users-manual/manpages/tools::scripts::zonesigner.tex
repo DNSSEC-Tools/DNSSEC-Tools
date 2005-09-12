@@ -1,0 +1,421 @@
+\clearpage
+
+\subsection{{\it zonesigner}}
+
+
+{\bf NAME}
+
+zonesigner - Generates encryption keys and signs a DNS zone.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}  zonesigner [options] <zone-file> <zone-out>\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This script combines into a single command many actions that are required to
+sign a DNS zone.  It generates the required KSK and ZSK keys, adds the key
+data to a zone record file, signs the zone file, and runs checks to ensure
+that everything worked properly.
+
+Using {\it keyrec} files, defined and maintained by DNSSEC-Tools,
+{\it zonesigner} can automatically gather many of the options used to previously
+sign and generate a zone and its keys.  This allows the zone to be maintained
+using the same key lengths and expiration times, for example, without an
+administrator needing to manually track these fields.
+
+{\bf KEYREC FILES}
+
+{\it keyrec} files retain information about previous key-generation and
+zone-signing operations.  If a {\it keyrec} file is not specified (by way of
+the {\it -krfile} option), then a default {\it keyrec} file is used.  If this
+default in not specified in the system's DNSSEC-Tools configuration
+file, the filename will be the zone name appended with {\bf .krf}.  If the
+{\it -nokrfile} option is given, then no {\it keyrec} file will be consulted
+or saved.
+
+{\it keyrec} files contain two types of entries:  zone {\it keyrec}s and key
+{\it keyrec}s.  Each {\it keyrec} contains a set of ``key/value'' entries,
+one per line.  Example 4 below contains the contents of a sample {\it keyrec}
+file.
+
+{\bf USING ZONESIGNER}
+
+{\it zonesigner} is used in this way:
+
+\begin{verbatim}    zonesigner [options] <zone-file> <zone-out>\end{verbatim}
+
+The {\it zone-file} and {\it zone-out} arguments are required.
+
+{\it zone-file} is the name of the zone file from which a signed zone file
+will be created.  If the {\it -zone} option is not given, then {\it zone-file}
+will be used as the name of the zone that will be signed.  Generated keys are
+given this name as their base.
+
+The zone file is modified to have {\bf include} commands, which will include
+the KSK and ZSK keys.  These lines are placed at the end of the file and
+should not be modified by the user.  If the zone file already includes any
+key files, those inclusions will be deleted.  These lines are distinguished
+by starting with ``\$INCLUDE'' and end with ``.key''.  Only the actual include
+lines are deleted; any related comment lines are left untouched.
+
+{\it zone-out} is the name of the output zone file.  This file will be a copy
+of the {\it zone-file} zone file, with some modifications.  Several \$INCLUDE
+lines will be added at the end of the file and the SOA serial number will be
+incremented.
+
+The signed zone file will be this name, appended with {\it .signed}.
+
+Unless the {\it -genkeys}, {\it -genksk}, or {\it -genzsk} options are
+specified, the last keys generated for a particular zone will be used in
+subsequent {\it zonesigner} executions.
+
+{\bf ENTROPY}
+
+On some systems, the implementation of the pseudo-random number generator
+requires keyboard activity.  This keyboard activity is used to fill a buffer
+in the system's random number generator.  If zonesigner appears hung, you may
+have to add entropy to the random number generator by randomly striking keys
+until the program completes.  Display of this message is controlled by the
+{\bf entropy\_msg} configuration file parameter.
+
+{\bf DETERMINING OPTION VALUES}
+
+{\it zonesigner} checks four places in order to determine option values.  
+In descending order of precedence, these places are:
+
+\begin{verbatim}
+    command line options
+
+    keyrec file
+
+    dnssec-tools configuration file
+
+    zonesigner defaults
+\end{verbatim}
+
+Each is checked until a value is found.  That value is then used for that
+{\it zonesigner} execution and the value is stored in the {\it keyrec} file.
+
+{\bf Example}
+
+For example, the KSK length has the following values:
+
+\begin{verbatim}
+    -ksklength command line option:         8192
+
+    keyrec file:                            1024
+
+    dnssec-tools configuration file:        2048
+
+    zonesigner defaults:                    512
+\end{verbatim}
+
+If all are present, then the KSK length will be 8192.
+
+If the {\it -ksklength} command line option wasn't given, the KSK length
+will be 1024.
+
+If the KSK length wasn't given in the configuration file, it will be 8192.
+
+If the KSK length wasn't in the {\it keyrec} file or the configuration file,
+the KSK length will be 8192.
+
+If the {\it -ksklength} command line option wasn't given and the KSK length
+wasn't in the configuration file, it'll be 1024.
+
+If the command line option wasn't given, the KSK length wasn't in the
+{\it keyrec} file, and it wasn't in the configuration file, then the KSK
+length will be 512.
+
+{\bf OPTIONS}
+
+Three types of options may be given, based on the command for which they are
+intended.  These commands are  {\it dnssec-keygen}, {\it dnssec-signzone}, and
+{\it zonesigner}.
+
+{\bf {\it zonesigner}-specific Options}
+
+\begin{description}
+
+\item [-nokrfile]\verb" "
+
+No {\it keyrec} file will be consulted or created.
+
+\item [-krfile]\verb" "
+
+{\it keyrec} file to use in processing options.  See the man page for
+{\bf Net::\-DNS::\-SEC::\-Tools::\-tooloptions} for more details about
+this file.
+
+\item [-genkeys]\verb" "
+
+Generate a new KSK and ZSK for the zone.
+
+\item [-genksk]\verb" "
+
+Generate a new KSK for the zone.  By default, the last KSK generated for this
+zone will be used.
+
+\item [-genzsk]\verb" "
+
+Generate a new ZSK for the zone.  By default, the last ZSK generated for this
+zone will be used.
+
+\item [-forceroll]\verb" "
+
+Force a roll-over of the ZSK keys.  The {\it keyrec}s of the ZSK keys are
+adjusted as follows:
+
+\begin{verbatim}
+    The current ZSK key is marked as obsolete.
+    The published ZSK key is marked as current.
+    The new ZSK key, if it exists, is marked as published.
+    A new ZSK key is generated.
+\end{verbatim}
+
+This should only be used if you know what you're doing.
+
+\item [-zone]\verb" "
+
+Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.
+
+\item [-help]\verb" "
+
+Display a usage message.
+
+\item [-verbose]\verb" "
+
+Verbose output will be given.  As more instances of {\it -verbose} are given on
+the command line, additional levels of verbosity are achieved.
+
+\begin{verbatim}
+    level        output
+    -----        ------
+      1          operations being performed
+                    (e.g., generating key files, signing zone) 
+      2          details on operations and some operation results
+                    (e.g., new key names, zone serial number)
+      3          operations' parameters and additional details
+                    (e.g., key lengths, encryption algorithm,
+		     executed commands)
+\end{verbatim}
+
+Higher levels of verbosity are cumulative.  Specifying two instances of
+{\it -verbose} will get the output from the first and second levels of output.
+
+\end{description}
+
+{\bf {\it dnssec-keygen}-specific Options}
+
+\begin{description}
+
+\item [-algorithm]\verb" "
+
+Cryptographic algorithm used to generate the zone's keys.
+The default value is RSA\-SHA1.
+
+\item [-ksklength]\verb" "
+
+Bit length of the zone's KSK key.
+The default is 1024.
+
+\item [-random]\verb" "
+
+Source of randomness used to generate the zone's keys.	(/dev/urandom)
+
+\item [-zsklength]\verb" "
+
+Bit length of the zone's ZSK key.
+The default is 512.
+
+\item [-kgopts]\verb" "
+
+Additional options for {\it dnssec-keygen} may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the {\it -kgopts} option.
+
+\end{description}
+
+{\bf {\it dnssec-signzone}-specific Options}
+
+\begin{description}
+
+\item [-endtime]\verb" "
+
+Time that the zone expires, measured in seconds.  See the man page for
+{\it dnssec-signzone} for the valid format of this field.
+The default value is 259200 seconds (30 days.)
+
+\item [-gends]\verb" "
+
+Force {\it dnssec-signzone} to generate DS records for the zone.  This option is
+translated into {\it -g} when passed to {\it dnssec-signzone}.
+
+\item [-ksdir]\verb" "
+
+Specify a directory for storing keysets.  This is passed to {\it
+dnssec-signzone} as the {\it -d} option.
+
+\item [-szopts]\verb" "
+
+Additional options for {\it dnssec-signzone} may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the {\it -szopts} option.
+
+\end{description}
+
+{\bf Examples}
+
+Example 1.
+
+In the first example, an existing {\it keyrec} file is used to assist in
+signing the example.com domain.  Zone data are stored in {\bf example.com},
+and the keyrec is in {\bf example.krf}.  The output zone file and final signed
+zone file will use {\bf db.example.com} as a base.  Using this execution:
+
+\begin{verbatim}    # zonesigner -krfile example.krf example.com db.example.com\end{verbatim}
+
+the following files are created:
+
+\begin{verbatim}
+    Kexample.com.+005+45842.private
+    Kexample.com.+005+45842.key
+    Kexample.com.+005+50186.private
+    Kexample.com.+005+50186.key
+    Kexample.com.+005+59143.key
+    Kexample.com.+005+59143.private
+
+    dsset-example.com.
+    keyset-example.com.
+
+    db.example.com
+    db.example.com.signed
+\end{verbatim}
+
+
+The first six files are the KSK and ZSK keys required for the zone.  The next
+two files are created by the zone-signing process.  The last two are the zone
+file used as input to the zone-signing process and the final signed zone.
+
+Example 2.
+
+In the second example, an existing {\it keyrec} file is used to assist in
+signing the example.com domain.  Zone data are stored in {\bf example.com},
+and the keyrec is in {\bf example.krf}.  The generated keys, output zone file,
+and final signed zone file will use {\bf example.com} as a base.  Using this
+execution:
+
+\begin{verbatim}    # zonesigner -krfile example.krf example.com db.example.com\end{verbatim}
+
+the following files are created:
+
+\begin{verbatim}
+    Kdb.example.com.+005+12354.key
+    Kdb.example.com.+005+12354.private
+    Kdb.example.com.+005+82197.key
+    Kdb.example.com.+005+82197.private
+    Kdb.example.com.+005+55888.key
+    Kdb.example.com.+005+55888.private
+
+    dsset-db.example.com.
+    keyset-db.example.com.
+
+    db.example.com.signed
+\end{verbatim}
+
+The first six files are the KSK and ZSK keys required for the zone.  The next
+two files are created by the zone-signing process.  The last file is file is
+the final signed zone.
+
+Example 3.
+
+In the third example, no {\it keyrec} file is specified for the signing of
+the example.com domain.  In addition to files created as shown in previous
+examples, a new {\it keyrec} file is created.  The new {\it keyrec} file uses
+the domain name as its base.  Using this execution:
+
+\begin{verbatim}    # zonesigner example.com db.example.com\end{verbatim}
+
+the following {\it keyrec} file is created:
+
+\begin{verbatim}    example.com.krf\end{verbatim}
+
+Example 4.
+
+This example shows a {\it keyrec} file generated by {\it zonesigner}.
+
+The command executed is:
+
+\begin{verbatim}    # zonesigner example.com db.example.com\end{verbatim}
+
+The generated {\it keyrec} file contains three {\it keyrec}s:  a zone {\it
+keyrec}, one KSK {\it keyrec}, and two ZSK {\it keyrec}s.
+
+\begin{verbatim}
+    zone        "example.com"
+        zskpubpath        "./Kexample.com.+005+13531.key"
+        zskpub            "Kexample.com.+005+13531"
+        zskdirectory      "."
+        zskcurpath        "./Kexample.com.+005+53135.key"
+        zskcur            "Kexample.com.+005+53135"
+        signedfile        "db.example.com.signed"
+        kskpath           "./Kexample.com.+005+24082.key"
+        kskkey            "Kexample.com.+005+24082"
+        kskdirectory      "."
+        endtime           "+259200"
+        zonefile          "db.example.com"
+        keyrec_type       "zone"
+        keyrec_signsecs   "1115166642"
+        keyrec_signdate   "Wed May  4 00:30:42 2005"
+
+    key                "Kexample.com.+005+24082"
+        zonename          "example.com"
+        keyrec_type       "ksk"
+        algorithm         "rsasha1"
+        random            "/dev/urandom"
+        keypath           "./Kexample.com.+005+24082.key"
+        ksklength         "1024"
+        keyrec_gensecs    "1115166638"
+        keyrec_gendate    "Wed May  4 00:30:38 2005"
+
+    key                "Kexample.com.+005+53135"
+        zonename         "example.com"
+        keyrec_type       "zskcur"
+        algorithm         "rsasha1"
+        random            "/dev/urandom"
+        keypath           "./Kexample.com.+005+53135.key"
+        zsklength         "512"
+        keyrec_gensecs    "1115166638"
+        keyrec_gendate    "Wed May  4 00:30:38 2005"
+
+    key                "Kexample.com.+005+13531"
+        zonename          "example.com"
+        keyrec_type       "zskpub"
+        algorithm         "rsasha1"
+        random            "/dev/urandom"
+        keypath           "./Kexample.com.+005+13531.key"
+        zsklength         "512"
+        keyrec_gensecs    "1115166638"
+        keyrec_gendate    "Wed May  4 00:30:38 2005"
+\end{verbatim}
+
+
+{\bf NOTES}
+
+\begin{description}
+
+\item [1.  SOA Serial Numbers]\verb" "
+
+Serial numbers in SOA records are merely incremented in this version.  Future
+plans are to allow for more flexible serial number manipulation.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS::SEC::Tools::conf.pm(3)},\\
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)},\\
+\perlmod{Net::DNS::SEC::Tools::tooloptions.pm(3)}
+

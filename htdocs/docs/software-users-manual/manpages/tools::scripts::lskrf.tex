@@ -1,0 +1,148 @@
+\clearpage
+
+\subsection{{\it lskrf}}
+
+
+{\bf NAME}
+
+lskrf - List the {\it keyrec}s in a DNSSEC-Tools {\it keyrec} file.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}  lskrf [options] <keyrec-files>\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This script lists the contents of the specified {\it keyrec} files.  All {\it
+keyrec} files are loaded before the output is displayed.  If any {\it keyrec}s
+have duplicated names, whether within one file or across multiple files, the
+later {\it keyrec} will be the one whose data are displayed.  The output given
+depends on the options selected.
+
+{\bf OPTIONS}
+
+{\bf lskrf} has three types of options it can take:  record-selection options,
+record-attribute options, and output-style options.  These option sets are
+detailed below.
+
+{\bf Record-Selection Options}
+
+These options select the types of {\it keyrec} that will be displayed.
+
+\begin{description}
+
+\item [-all]\verb" "
+
+This option displays all the records in a {\it keyrec} file.
+
+\item [-zones]\verb" "
+
+This option displays the zones in a {\it keyrec} file.
+
+\item [-keys]\verb" "
+
+This option displays the keys in a {\it keyrec} file.
+
+\item [-ksk]\verb" "
+
+This option displays the KSK keys in a {\it keyrec} file.
+
+\item [-zsk]\verb" "
+
+This option displays the ZSK keys in a {\it keyrec} file.  It does not include
+obsolete ZSK keys; the {\it -obs} option must be specified to display obsolete
+keys.
+
+\item [-cur]\verb" "
+
+This option displays the current ZSK keys in a {\it keyrec} file.
+
+\item [-new]\verb" "
+
+This option displays the new ZSK keys in a {\it keyrec} file.
+
+\item [-pub]\verb" "
+
+This option displays the published ZSK keys in a {\it keyrec} file.
+
+\item [-obs]\verb" "
+
+This option displays the obsolete ZSK keys in a {\it keyrec} file.  This option
+must be give if obsolete ZSK keys are to be displayed.
+
+\end{description}
+
+{\bf Record-Attribute Options}
+
+These options select subsets of the {\it keyrec}s chosen by the
+record-selection options. 
+
+\begin{description}
+
+\item [-valid]\verb" "
+
+This option displays the valid zones in a {\it keyrec} file.
+It implies the {\it -zones} option.
+
+\item [-expired]\verb" "
+
+This option displays the expired zones in a {\it keyrec} file.
+It implies the {\it -zones} option.
+
+\item [-ref]\verb" "
+
+This option displays the referenced key {\it keyrec}s in a {\it keyrec} file.
+If no record-selection options were specified, then the {\it -keys} option will
+be set.
+
+\item [-unref]\verb" "
+
+This option displays the unreferenced key {\it keyrec}s in a {\it keyrec} file.
+If no record-selection options were specified, then the {\it -keys} option will
+be set.
+
+\end{description}
+
+{\bf Output-Format Options}
+
+These options define how the {\it keyrec} information will be displayed.
+
+Without any of these options, the zone name, zone file, zone-signing date,
+and a label will be displayed for zones.  For types, the key name, the key's
+zone, the key's generation date, and a label will be displayed if these
+options aren't given.
+
+\begin{description}
+
+\item [-count]\verb" "
+
+The count of matching records will be displayed, but the matching records
+will not be.
+
+\item [-nodate]\verb" "
+
+The key's generation date will not be printed if this flag is given.
+
+\item [-long]\verb" "
+
+The long form of output will be given.  For zones, the zone name, the zone
+file, the zone's signing date, the zone's expiration date, and a label will
+be displayed.  For keys, the key name, the key's zone, the key's encryption
+algorithm, the key's length, the key's generation date, and a label are
+given.
+
+\item [-terse]\verb" "
+
+This options displays only the name of the zones or keys selected by other
+options.
+
+\item [-help]\verb" "
+
+Display a usage message.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+

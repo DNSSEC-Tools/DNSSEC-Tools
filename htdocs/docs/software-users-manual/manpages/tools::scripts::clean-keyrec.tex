@@ -1,0 +1,61 @@
+\clearpage
+
+\subsection{{\it clean-keyrec}}
+
+
+{\bf NAME}
+
+keyrec-clean - Clean a DNSSEC-Tools {\it keyrec} file of orphaned keys.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+  keyrec-clean [options] <keyrec-files>
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This script cleans the orphaned {\it keyrec}s from a set of DNSSEC-Tools
+{\it keyrec} files.  Orphaned keys are those keys which are not referenced
+by a zone.  A warning is given if a key is found that is referenced by a
+different zone {\it keyrec} than the one referenced by the key's {\it keyrec}.
+
+{\it keyrec-clean}'s exit code is the count of orphaned keys found.
+
+{\bf OPTIONS}
+
+\begin{description}
+
+\item [-count]\verb" "
+
+Display a final count of orphaned keys.  This option allows the count to be
+displayed even if the {\it -quiet} option is given.
+
+\item [-list]\verb" "
+
+The key {\it keyrec}s are checked for orphans, but are not removed from the
+{\it keyrec} file.  The names of the orphaned {\it keyrec}s are displayed.
+
+\item [-rm]\verb" "
+
+Delete each the key files, both {\it .key} and {\it .private}, from orphaned and
+expired {\it keyrec}s.
+
+\item [-quiet]\verb" "
+
+Display no output.
+
+\item [-verbose]\verb" "
+
+Display output about referenced keys as well as unreferenced keys.
+
+\item [-help]\verb" "
+
+Display a usage message.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+

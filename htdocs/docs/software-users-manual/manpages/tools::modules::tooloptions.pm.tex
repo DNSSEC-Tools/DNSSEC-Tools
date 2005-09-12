@@ -1,0 +1,311 @@
+\clearpage
+
+\subsection{\perlmod{tooloptions.pm}}
+
+
+{\bf NAME}
+
+Net::DNS::SEC::Tools::tooloptions - DNSSEC-Tools option routines.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+  use Net::DNS::SEC::Tools::tooloptions;
+
+  $keyrec_file = "example.keyrec";
+  $keyrec_name = "Kexample.com.+005+10988";
+  @specopts = ("propagate+", "waittime=i");
+
+  $optsref = tooloptions($keyrec_file,$keyrec_name);
+  %options = %$optsref;
+
+  $optsref = tooloptions($keyrec_file,$keyrec_name,@specopts);
+  %options = %$optsref;
+
+  $optsref = tooloptions("",@specopts);
+  %options = %$optsref;
+
+  ($krfile,$krname,$optsref) = opts_krfile($keyrec_file,"");
+  %options = %$optsref;
+
+  ($krfile,$krname,$optsref) = opts_krfile("",$keyrec_name,@specopts);
+  %options = %$optsref;
+
+  ($krfile,$krname,$optsref) = opts_krfile("","");
+  %options = %$optsref;
+
+  $key_ref = opts_keykr();
+  %key_kr  = %$key_ref;
+
+  $optsref = opts_keykr($keyrec_file,$keyrec_name);
+  %options = %$optsref;
+
+  $zoneref = opts_zonekr();
+  %zone_kr = %$zoneref;
+
+  $zoneref = opts_zonekr($keyrec_file,$keyrec_name);
+  %zone_kr = %$zoneref;
+
+  opts_setcsopts(@specopts);
+
+  opts_createkrf();
+
+  opts_suspend();
+
+  opts_restore();
+
+  opts_drop();
+
+  opts_reset();
+\end{verbatim}
+
+
+{\bf DESCRIPTION}
+
+DNSSEC-Tools supports a set of options common to all the tools in the suite.
+These options may have defaults set in the {\bf dnssec-tools.conf}
+configuration file, in a {\it keyrec} file, from command-line options, or
+from any combination of the three.  In order to enforce a common sequence of
+option interpretation, all DNSSEC-Tools should use the {\bf tooloptions()}
+routine to initialize its options.
+
+The {\it keyrec\_file} argument specifies a {\it keyrec} file that will be
+consulted.  The {\it keyrec} named by the {\it keyrec\_name} argument will
+be loaded.  If no {\it keyrec} file should be used, then {\it keyrec\_file}
+should be an empty string and the {\it keyrec\_name} parameter not included.
+The {\it @specopts} array contains command-specific arguments; the arguments
+must be in the format prescribed by the {\bf Getopt::Long} Perl module.
+
+{\bf tooloptions()} combines data from these three option sources into a hash
+table.  The hash table is returned to the caller, which will then use the
+options as needed.
+
+The command-line options are saved between calls, so a command may call {\bf
+tooloptions()} multiple times and still have the command-line options included
+in the final hash table.  This is useful for examining multiple {\it keyrec}s
+in a single command.  Inclusion of command-line options may be suspended and
+restored using the {\bf opts\_suspend()} and {\bf opts\_restore()} calls.
+Options may be discarded entirely by calling {\bf opts\_drop()}; once dropped,
+command-line options may never be restored.  Suspension, restoration, and
+dropping of command-line options are only effective after the initial {\bf
+tooloptions()} call.
+
+The options sources are combined in this manner:
+
+\begin{description}
+
+\item [1.  {\bf dnssec-tools.conf}]\verb" "
+
+The system-wide configuration file is read and these option values are used
+as the defaults.  These options are put into a hash table, with the option
+names as the hash key.
+
+\item [2. {\it keyrec} File]\verb" "
+
+If a {\it keyrec} file was specified, then the {\it keyrec} named by {\it
+keyrec\_name} will be retrieved.  The {\it keyrec}'s fields are added to the
+hash table.  Any field whose keyword matches an existing hash key will
+override the existing value.
+
+\item [3. Command-line Options]\verb" "
+
+The command-line options, specified in {\it @specopts}, are parsed using {\bf
+Getoptions()} from the {\bf Getopt::Long} Perl module.  These options are
+folded into the hash table; again possibly overriding existing hash values.
+The options given in {\it @specopts} must be in the format required by {\bf
+Getoptions()}.
+
+\end{description}
+
+A reference to the hash table created in these three steps is returned to the
+caller.
+
+
+{\bf EXAMPLE}
+
+{\bf dnssec-tools.conf} has these entries:
+
+\begin{verbatim}
+    ksklength      1024
+    zsklength      512
+\end{verbatim}
+
+{\bf example.keyrec} has this entry:
+
+\begin{verbatim}
+    key         "Kexample.com.+005+10988"
+        zsklength        "1024"
+\end{verbatim}
+
+{\it zonesigner} is executed with this command line:
+
+\begin{verbatim}
+    zonesigner -ksklength 512 -zsklength 4096 -wait 600 ...  example.com
+\end{verbatim}
+
+{\bf tooloptions("example.keyrec","Kexample.com.+005+10988",("wait=i"))}
+will read each option source in turn, ending up with:
+\begin{verbatim}
+    I<ksklength>           512
+    I<zsklength>          4096
+    I<wait>                600
+\end{verbatim}
+
+
+{\bf TOOL OPTION ARGUMENTS}
+
+Many of the DNSSEC-Tools option interfaces take the same set of arguments:
+{\it \$keyrec\_file}, {\it \$keyrec\_name}, and {\it @csopts}.  These arguments
+are used similarly by most of the interfaces; differences are noted in the
+interface descriptions in the next section.
+
+\begin{description}
+
+\item [{\it \$keyrec\_file}] Name of the {\it keyrec} file to be searched.
+
+\item [{\it \$keyrec\_name}] Name of the {\it keyrec} that is being sought
+
+\item [{\it @csopts}] Command-specific options.
+
+\end{description}
+
+The {\it keyrec} named in {\it \$keyrec\_name} is selected from the {\it
+keyrec} file given in {\it \$keyrec\_file}.  If either {\it \$keyrec\_file}
+or {\it \$keyrec\_name} are given as empty strings, their values will be taken
+from the {\it -krfile} and {\it -keyrec} command line options.
+
+A set of command-specific options may be specified in {\it @csopts}.  These
+options are in the format required by the {\bf Getopt::Long} Perl module.  If
+{\it @csopts} is left off the call, then no command-specific options will be
+included in the final option hash.  The {\it @csopts} array may be passed
+directly to several interfaces or it may be saved in a call to {\it
+opts\_setcsopts()}.
+
+
+{\bf TOOL OPTION INTERFACES}
+
+\begin{description}
+
+\item [{\bf tooloptions(\$keyrec\_file,\$keyrec\_name,@csopts)}]\verb" "
+
+This {\bf tooloptions()} call builds an option hash from the system
+configuration file, a {\it keyrec}, and a set of command-specific options.
+A reference to this option hash is returned to the caller.
+
+If {\it \$keyrec\_file} is given as an empty string, then no {\it keyrec}
+file will be consulted.  In this case, it is assumed that {\it \$keyrec\_name}
+will be left out altogether.
+
+If a non-existent {\it \$keyrec\_file} is given and {\bf opts\_createkrf()}
+has been called, then the named {\it keyrec} file will be created.  {\it
+opts\_createkrf()} must be called for each {\it keyrec} file that must be
+created, as the {\bf tooloptions} {\it keyrec}-creation state is reset after
+{\bf tooloptions()} has completed.
+
+\item [{\bf opts\_krfile(\$keyrec\_file,\$keyrec\_name,@csopts)}]\verb" "
+
+The {\bf opts\_krfile()} routine looks up the {\it keyrec} file and {\it
+keyrec} name and uses those fields to help build an options hash.  References
+to the {\it keyrec} file name, {\it keyrec} name, and the option hash table
+are returned to the caller.
+
+The {\it \$keyrec\_file} and {\it \$keyrec\_name} arguments are required
+parameters.  They may be given as empty strings, but they {\bf must} be given.
+
+If the {\it \$keyrec\_file} file and {\it \$keyrec\_name} name are both
+specified by the caller, then this routine will have the same effect as
+directly calling {\bf tooloptions()}.
+
+
+\item [{\bf opts\_getkeys(\$keyrec\_file,\$keyrec\_name,@csopts)}]\verb" "
+
+This routine returns references to the KSK and ZSK {\it keyrec}s associated
+with a specified {\it keyrec} entry.  This gives an easy way to get a zone's
+{\it keyrec} entries in a single step.
+
+This routine acts as a front-end to the {\bf opts\_krfile()} routine.
+Arguments to {\bf opts\_getkeys()} conform to those of {\bf opts\_krfile()}.
+
+If {\bf opts\_getkeys()} isn't passed any arguments, it will act as if both
+{\it \$keyrec\_file} and {\it \$keyrec\_name} were given as empty strings.  In
+this case, their values will be taken from the {\it -krfile} and {\it -keyrec}
+command line options.
+
+
+\item [{\bf opts\_keykr(\$keyrec\_file,\$keyrec\_name,@csopts)}]\verb" "
+
+This routine returns a reference to the key {\it keyrec} named by
+{\it \$keyrec\_name}.  It ensures that the named {\it keyrec} is a
+key {\it keyrec}; if it isn't, {\it undef} is returned.
+
+This routine acts as a front-end to the {\bf opts\_krfile()} routine.
+{\bf opts\_keykr()}'s arguments conform to those of {\bf opts\_krfile()}.
+
+If {\bf opts\_keykr()} isn't passed any arguments, it will act as if both
+{\it \$keyrec\_file} and {\it \$keyrec\_name} were given as empty strings.
+In this case, their values will be taken from the {\it -krfile} and {\it
+-keyrec} command line options.
+
+
+\item [{\bf opts\_zonekr(\$keyrec\_file,\$keyrec\_name,@csopts)}]\verb" "
+
+This routine returns a reference to the zone {\it keyrec} named by
+{\it \$keyrec\_name}.  The {\it keyrec} fields from the zone's KSK and ZSK
+are folded in as well, but the key's {\it keyrec\_} fields are excluded.
+This call ensures that the named {\it keyrec} is a zone {\it keyrec};
+if it isn't, {\it undef} is returned.
+
+This routine acts as a front-end to the {\bf opts\_krfile()} routine.
+{\bf opts\_zonekr()}'s arguments conform to those of {\bf opts\_krfile()}.
+
+If {\bf opts\_zonekr()} isn't passed any arguments, it will act as if both
+{\it \$keyrec\_file} and {\it \$keyrec\_name} were given as empty strings.
+In this case, their values will be taken from the {\it -krfile} and {\it
+-keyrec} command line options.
+
+\item [{\bf opts\_setcsopts(@csopts)}]\verb" "
+
+This routine saves a copy of the command-specific options given in {\it
+@csopts}.  This collection of options is added to the {\it @csopts} array
+that may be passed to {\bf tooloptions()}.
+
+\item [{\bf opts\_createkrf()}]\verb" "
+
+Force creation of an empty {\it keyrec} file if the specified file does not
+exist.  This may happen on calls to {\bf tooloptions()}, {\bf opts\_getkeys()},
+{\bf opts\_krfile()}, and {\bf opts\_zonekr()}.
+
+\item [{\bf opts\_suspend()}]\verb" "
+
+Suspend inclusion of the command-line options in building the final hash
+table of responses.
+
+\item [{\bf opts\_restore()}]\verb" "
+
+Restore inclusion of the command-line options in building the final hash
+table of responses.
+
+\item [{\bf opts\_drop()}]\verb" "
+
+Discard the command-line options.  They will no longer be available for
+inclusion in building the final hash table of responses for this execution
+of the command.
+
+\item [{\bf opts\_reset()}]\verb" "
+
+Reset an internal flag so that the command-line arguments may be
+re-examined.  This is usually only useful if the arguments have been
+modified by the calling program itself.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+{\bf zonesigner(8)}
+
+{\bf Getopt::Long(3)}
+
+{\bf Net::DNS::SEC::Tools::conf(3)}, {\bf Net::DNS::SEC::Tools::keyrec(3)},
+
+{\bf Net::DNS::SEC::Tools::keyrec(5)}
+

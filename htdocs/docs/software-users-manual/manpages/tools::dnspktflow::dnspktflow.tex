@@ -1,0 +1,91 @@
+\clearpage
+
+\subsection{\cmd{dnspktflow}}
+
+{\bf NAME}
+
+\cmd{dnspktflow} - Analyze and draw DNS flow diagrams from a \cmd{tcpdump} file
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+  dnspktflow -o output.png file.tcpdump
+
+  dnspktflow -o output.png -x -a -t -q file.tcpdump
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+Analyze and draw DNS flow diagrams from a {\it tcpdump} file.
+The flow diagram will be made in the PNG format.
+
+{\bf REQUIREMENTS}
+
+This application requires the following Perl modules and software
+components to work:
+
+\begin{verbatim}
+  I<graphviz>                  (http://www.graphviz.org/)
+  B<GraphViz>                  (Perl module)
+  B<tethereal>                 (http://www.ethereal.org/)
+\end{verbatim}
+
+The following is required for outputting screen presentations:
+
+\begin{verbatim}
+  MagicPoint                   (http://member.wide.ad.jp/wg/mgp/)
+\end{verbatim}
+
+If the following modules are installed, it will enable a GUI interface:
+
+\begin{verbatim}
+  B<QWizard>                   (Perl module)
+  B<Getopt::GUI::Long>         (Perl module)
+\end{verbatim}
+
+{\bf OPTIONS}
+
+\begin{verbatim}
+  --i=STRING
+  --ignore-hosts=STRING  A regular expression of host names to ignore
+  --r=STRING
+  --only-hosts=STRING    A regular expression of host names to analyze
+
+  --o=STRING
+  --output-file=STRING   Output PNG image file name (default: out.png)
+  --O=STRING
+  --tethereal-out=STRING Save tethereal output to this file
+  --T
+  --input-is-tethereal-out The input file is already processed by tethereal
+
+  --t
+  --show-type            Shows message type in result image
+  --q
+  --show-queries         Shows query questions in result image
+  --a
+  --show-answers         Shows query answers in result image
+  --A
+  --show-authoritative   Shows authoritative information in result image
+  --x
+  --show-additional      Shows additional information in result image
+  --l
+  --show-label-lines     Shows lines attaching labels to lines
+
+  --f
+  --show-frame-num       Shows the packet frame numbers
+  --b=INTEGER
+  --begin-frame=INTEGER  Begin at frame NUMBER
+
+  --fontsize             Font Size
+  --d
+  --dump-pkts            Dump data collected from the packets
+  --h
+  --help                 Show help for command line options
+\end{verbatim}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS}
+
+\url{http://dnssec-tools.sourceforge.net}
+
