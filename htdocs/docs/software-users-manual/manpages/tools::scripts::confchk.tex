@@ -1,0 +1,92 @@
+\clearpage
+
+\subsection{{\it confchk}}
+
+
+{\bf NAME}
+
+confchk - Check a DNSSEC-Tools configuration file for sanity.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}  confchk [options] config_file\end{verbatim}
+
+{\bf DESCRIPTION}
+
+{\it confchk} checks a DNSSEC-Tools configuration file to determine if the
+entries are valid.
+
+The {\it default\_keyrec} configuration entry is not checked.  This entry
+specifies the default {\it keyrec} file name and isn't necessarily expected
+to exist in any particular place.
+
+The following checks are performed:
+
+\begin{description}
+
+\item [{\it algorithm}]\verb" "
+
+Ensure the {\it algorithm} field is valid.  The acceptable values may be found
+in the {\it dnssec-keygen} man page.
+
+\item [{\it ksklength}]\verb" "
+
+Ensure the {\it ksklength} field is valid.  The acceptable values may be found
+in the {\it dnssec-keygen} man page.
+
+\item [{\it zsklength}]\verb" "
+
+Ensure the {\it zsklength} field is valid.  The acceptable values may be found
+in the {\it dnssec-keygen} man page.
+
+\item [{\it endtime}]\verb" "
+
+Ensure the {\it endtime} field is valid.  This value is assumed to be in the
+``+NNNNNN'' format.  There is a lower limit of two hours.  (This is an
+artificial limit under which it may not make sense to have an endtime.)
+
+\item [{\it random}]\verb" "
+
+Ensure the {\it random} field is valid.  This file must be a character
+device file.
+
+\item [{\it checkzone}]\verb" "
+
+Ensure the {\it checkzone} field is valid.  If the filename starts with a `/',
+the file must be a regular executable file.
+
+\item [{\it keygen}]\verb" "
+
+Ensure the {\it keygen} field is valid.  If the filename starts with a `/',
+the file must be a regular executable file.
+
+\item [{\it signzone}]\verb" "
+
+Ensure the {\it signzone} field is valid.  If the filename starts with a `/',
+the file must be a regular executable file.
+
+\end{description}
+
+{\bf OPTIONS}
+
+\begin{description}
+
+\item [-quiet]\verb" "
+
+No output will be given, but the number of errors will be used as the
+exit code.
+
+\item [-verbose]\verb" "
+
+Verbose output will be given.
+
+\item [-help]\verb" "
+
+Display a usage message.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS::SEC::Tools::conf.pm(3)}
+

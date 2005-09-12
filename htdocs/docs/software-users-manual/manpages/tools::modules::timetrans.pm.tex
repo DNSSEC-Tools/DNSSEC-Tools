@@ -1,0 +1,67 @@
+\clearpage
+
+\subsection{\perlmod{timetrans.pm}}
+
+{\bf NAME}
+
+Net::DNS::SEC::Tools::timetrans - Convert an integer seconds count into text units.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+  use Net::DNS::SEC::Tools::timetrans;
+
+  $timestring = timetrans(86488);
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+The {\bf timetrans}() interface in the {\bf
+Net::\-DNS::\-SEC::\-Tools::\-timetrans} converts an integer seconds count
+into the equivalent number of weeks, days, hours, and minutes.  The time
+converted is a relative time, {\bf not} an absolute time.  The returned time
+is given in terms of weeks, days, hours, minutes, and seconds, as required
+to express the seconds count appropriately.
+
+{\bf EXAMPLES}
+
+{\bf timetrans(400)} returns {\it 6 minutes, 40 seconds}
+
+{\bf timetrans(420)} returns {\it 7 minutes}
+
+{\bf timetrans(888)} returns {\it 14 minutes, 48 seconds}
+
+{\bf timetrans(86400)} returns {\it 1 day}
+
+{\bf timetrans(86488)} returns {\it 1 day, 28 seconds}
+
+{\bf timetrans(715000)} returns {\it 1 week, 1 day, 6 hours, 36 minutes, 40 second}
+
+{\bf timetrans(720000)} returns {\it 1 week, 1 day, 8 hours}
+
+{\bf INTERFACES}
+
+The interfaces to the {\bf Net::\-DNS::\-SEC::\-Tools::\-timetrans} module
+are given below.
+
+{\bf {\bf timetrans()}}
+
+This routine converts an integer seconds count into the equivalent number of
+weeks, days, hours, and minutes.  This converted seconds count is returned
+as a text string.  The seconds count must be greater than zero or an error
+will be returned.
+
+Return Values:
+
+\begin{description}
+\item If a valid seconds count was given, the count converted into the
+appropriate text string will be returned.
+
+\item An empty string is returned if the no seconds count was given or if
+the seconds count is less than one.
+\end{description}
+
+{\bf SEE ALSO}
+
+{\it timetrans(1)}
+

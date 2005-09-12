@@ -1,0 +1,129 @@
+\clearpage
+
+\subsection{{\it keyrec-check}}
+
+
+{\bf NAME}
+
+keyrec-check - Check a DNSSEC-Tools {\it keyrec} file for problems and
+inconsistencies.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}  keyrec-check [-z | -k] [-c] [-q] [-v] [-h] keyre-file\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This script checks a {\it keyrec} file for problems, potential problems,
+and inconsistencies.
+
+Recognized problems include:
+
+\begin{description}
+
+\item [no zones defined]\verb" "
+
+The {\it keyrec} file does not contain any zone {\it keyrec}s.
+
+\item [no keys defined]\verb" "
+
+The {\it keyrec} file does not contain any key {\it keyrec}s.
+
+\item [unknown zone {\it keyrec}s]\verb" "
+
+A key {\it keyrec} references a non-existent zone {\it keyrec}.
+
+\item [missing key from zone {\it keyrec}]\verb" "
+
+A zone {\it keyrec} does not have both a KSK key and a ZSK key.
+
+\item [expired zone {\it keyrec}s]\verb" "
+
+A zone has expired.
+
+\item [mislabeled key]\verb" "
+
+A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
+opposite.
+
+\item [invalid zone data values]\verb" "
+
+A zone's {\it keyrec} data are checked to ensure that they are valid.  The
+following conditions are checked:  existence of the zone file, existence of
+the KSK file, existence of the ZSK file, the end-time is greater than one
+day, and the seconds-count and date string match.
+
+\item [invalid key data values]\verb" "
+
+A key's {\it keyrec} data are checked to ensure that they are valid.  The
+following conditions are checked:  valid encryption algorithm, key length
+falls within algorithm's size range, random generator file exists, and the
+seconds-count and date string match.
+
+\end{description}
+
+Recognized potential problems include:
+
+\begin{description}
+
+\item [imminent zone expiration]\verb" "
+
+A zone will expire within one week. 
+
+\item [odd zone-signing date]\verb" "
+
+A zone's recorded signing date is later than the current system clock.
+
+\item [orphaned keys]\verb" "
+
+A key {\it keyrec} is unreferenced by any zone {\it keyrec}.
+
+\item [missing key directories]\verb" "
+
+A zone {\it keyrec}'s key directories ({\it kskdirectory} or {\it zskdirectory}) does
+not exist.
+
+\end{description}
+
+Recognized inconsistencies include:
+
+\begin{description}
+
+\item [key-specific fields in a zone {\it keyrec}]\verb" "
+
+A zone {\it keyrec} contains key-specific entries.  To allow for site-specific
+extensibility, {\it keyrec-check} does not check for undefined {\it keyrec} fields.
+
+\item [zone-specific fields in a key {\it keyrec}]\verb" "
+
+A key {\it keyrec} contains zone-specific entries.  To allow for site-specific
+extensibility, {\it keyrec-check} does not check for undefined {\it keyrec} fields.
+
+\end{description}
+
+{\bf OPTIONS}
+
+\begin{description}
+
+\item [-k] Only perform checks of key {\it keyrec}s.  This option may
+not be combined with the {\bf -z} option.
+
+\item [-z] Only perform checks of zone {\it keyrec}s.  This option may
+not be combined with the {\bf -k} option.
+
+\item [-c] Display a final count of errors.
+
+\item [-q] Do not display messages.  This option supersedes the setting
+of the {\it -v} option.
+
+\item [-v] Display many messages.  This option is subordinate to the
+{\it -q} option.
+
+\item [-h] Display a usage message.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+

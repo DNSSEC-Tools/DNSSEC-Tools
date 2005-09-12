@@ -1,0 +1,129 @@
+\clearpage
+
+\subsection{\path{dnssec-tools.conf} Configuration File}
+
+
+{\bf NAME}
+
+dnssec-tools.conf - Configuration file for the DNSSEC-Tools programs.
+
+{\bf DESCRIPTION}
+
+This file contains configuration information for the DNSSEC-Tools programs.
+These configuration data are used if nothing else has been specified for a
+particular program.  The {\bf conf.pm} module is used to parse this
+configuration file.
+
+A line in the configuration file contains either a comment or a configuration
+entry.  Comment lines start with either a `\#' character or a `;' character.
+Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
+
+Configuration entries are in a {\it keyword/value} format.  The keyword is a
+character string that contains no whitespace.  The value is a tokenized list
+of the remaining character groups, with each token separated by a single space.
+
+True/false flags must be given a {\bf 1} (true) or {\bf 0} (false) value.
+
+{\bf Configuration Records}
+
+The following records are recognized by the DNSSEC-Tools programs.
+Not every DNSSEC-Tools program requires each of these records.
+
+\begin{description}
+
+\item [algorithm]\verb" "
+
+The default encryption algorithm to be passed to {\it dnssec-keygen}.
+
+\item [archivedir]\verb" "
+
+The pathname to the archived-key directory.
+
+\item [checkzone]\verb" "
+
+The path to the {\it named-checkzone} command.
+
+\item [default\_keyrec]\verb" "
+
+The default {\it keyrec} filename to be used by the {\bf keyrec.pm} module.
+
+\item [endtime]\verb" "
+
+The zone default expiration time to be passed to {\it dnssec-signzone}.
+
+\item [entropy\_msg]\verb" "
+
+A true/false flag indicating if the {\it zonesigner} command should display
+a message about entropy generation.  This is primarily dependent on the
+implementation of a system's random number generation.
+
+\item [keygen]\verb" "
+
+The path to the {\it dnssec-keygen} command.
+
+\item [ksklength]\verb" "
+
+The default KSK key length to be passed to {\it dnssec-keygen}.
+
+\item [random]\verb" "
+
+The random device generator to be passed to {\it dnssec-keygen}.
+
+\item [savekeys]\verb" "
+
+A true/false flag indicating if old keys should be moved to the
+archive directory.
+
+\item [signzone]\verb" "
+
+The path to the {\it dnssec-signzone} command.
+
+\item [zsklength]\verb" "
+
+The default ZSK key length to be passed to {\it dnssec-keygen}.
+
+\end{description}
+
+{\bf Example File}
+
+The following is an example {\bf dnssec-tools.conf} configuration file.
+
+\begin{verbatim}
+    #
+    # Paths to required programs.  These may need adjusting for
+    # individual hosts.
+    #
+    checkzone       /usr/local/sbin/named-checkzone
+    keygen          /usr/local/sbin/dnssec-keygen
+    signzone        /usr/local/sbin/dnssec-signzone
+
+    #
+    # Settings for dnssec-keygen.
+    #
+    algorithm        rsasha1
+    ksklength        1024
+    zsklength        512
+    random           /dev/urandom
+
+    #
+    # Settings for dnssec-signzone.
+    #
+    endtime          +259200                # RRSIGs good for three days.
+
+    #
+    # Settings that will be noticed by zonesigner.
+    #
+    default_keyrec   default.krf
+    entropy_msg      0
+
+    savekeys         1
+    archivedir       /usr/local/etc/dnssec/KEY-SAFE
+\end{verbatim}
+
+{\bf SEE ALSO}
+
+{\bf zonesigner(8)}
+
+{\bf Net::DNS::SEC::Tools::conf.pm(3)},
+{\bf Net::DNS::SEC::Tools::keyrec.pm(3)}
+
