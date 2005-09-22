@@ -162,6 +162,12 @@ while ($#ARGV > -1) {
 	    print STDERR "--- Starting tcpdump\n" if ($opts{v});
 	} else {
 	    # child
+
+	    # close stderr/out since we don't want the ouptut
+	    close(STDOUT);
+	    close(STDERR);
+
+	    # exec tcpdump
 	    exec("tcpdump", @args);
 	}
     }
@@ -438,7 +444,7 @@ sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	require Getopt::Long;
 	import Getopt::GUI::Long;
-	Getopt::Long::Configure(qw(display_help no_ignore_case));
+	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
 	return GetOptions(@_);
     }
     require Getopt::Long;
