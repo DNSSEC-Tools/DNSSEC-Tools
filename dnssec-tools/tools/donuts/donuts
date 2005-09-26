@@ -156,7 +156,7 @@ while ($#ARGV > -1) {
 		    "-w", $file);
 	if ($tcpdumpproc = fork()) {
 	    # parent
-	    sleep(1);  # wait for child to get going
+	    sleep(2);  # wait for child to get going
 # 	    print STDERR "--- Starting tcpdump to file $file\n" if ($opts{v});
 # 	    print STDERR "    args: ",join("/",@args), "\n";
 	    print STDERR "--- Starting tcpdump\n" if ($opts{v});
@@ -166,6 +166,9 @@ while ($#ARGV > -1) {
 	    # close stderr/out since we don't want the ouptut
 	    close(STDOUT);
 	    close(STDERR);
+
+	    open(STDOUT,">/dev/null");
+	    open(STDERR,">/dev/null");
 
 	    # exec tcpdump
 	    exec("tcpdump", @args);
