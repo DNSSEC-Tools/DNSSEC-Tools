@@ -45,7 +45,7 @@
 #define FALSE 0
 #endif
 
-static int	res_io_debug = FALSE;
+static const int	res_io_debug = FALSE;
 /*
 	Less than or equal comparison for timeval structures, ignoring
 	microseconds, just like res_send().
