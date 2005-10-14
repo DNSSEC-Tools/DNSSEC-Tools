@@ -220,6 +220,11 @@ int theres_something_wrong_with_header (    u_int8_t    *response,
 
 int clone_ns(struct name_server **cloned_ns, struct name_server *ns)
 {
+	if (ns == NULL) {
+		*cloned_ns = NULL;
+		return SR_UNSET;
+	}
+
 	/* Create the structure for the name server */
     *cloned_ns = (struct name_server *)
 						MALLOC(sizeof(struct name_server));
