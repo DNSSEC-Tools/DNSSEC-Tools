@@ -61,6 +61,7 @@ int init_rr_set (   struct rrset_rec    *new_set,
                     int                 authoritive_answer);
 
 struct rrset_rec *find_rr_set (
+								struct name_server *respondent_server,
                                 struct rrset_rec    **the_list,
                                 u_int8_t            *name_n,
                                 u_int16_t           type_h,
