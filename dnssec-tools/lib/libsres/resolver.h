@@ -123,6 +123,7 @@ int get (   const char      *name_n,
             u_int8_t            **response,
             u_int32_t           *response_length);
 void print_response (u_int8_t *ans, int resplen);
+int clone_ns(struct name_server **cloned_ns, struct name_server *ns);
 void free_name_server (struct name_server **ns);
 void free_name_servers (struct name_server **ns);
 
