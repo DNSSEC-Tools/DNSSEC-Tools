@@ -7,7 +7,7 @@
 
 #include "val_log.h"
 
-int log_level = 0;
+const int log_level = 0;
 
 /* void val_log (FILE *fp, int level, const char *template, ...) */
 void val_log (const char *template, ...)
@@ -16,7 +16,7 @@ void val_log (const char *template, ...)
      
        va_start (ap, template);
        if (log_level) {
-	       vfprintf (stderr, template, ap);
+	       vfprintf (stdout, template, ap);
        }
        va_end (ap);
 }
