@@ -534,6 +534,10 @@ debug_name1, debug_name2);
 }
 	if(matched_q->qc_ns_list)
 		free_name_servers(&matched_q->qc_ns_list);
+	if (matched_q->qc_respondent_server) {
+		free_name_server(&matched_q->qc_respondent_server);
+		matched_q->qc_respondent_server = NULL;
+	}
 	matched_q->qc_ns_list = ref_ns_list;
 
 	matched_q->qc_state =  Q_INIT;
@@ -549,10 +553,10 @@ err:
 	return NO_ERROR;
 }
 
-#define SAVE_RR_TO_LIST(listtype, name_n, type_h, set_type_h,\
+#define SAVE_RR_TO_LIST(respondent_server, listtype, name_n, type_h, set_type_h,\
 				class_h, ttl_h, rdata, from_section,authoritive) \
 	do { \
-            rr_set = find_rr_set (&listtype, name_n, type_h, set_type_h,\
+            rr_set = find_rr_set (respondent_server, &listtype, name_n, type_h, set_type_h,\
                              class_h, ttl_h, rdata, from_section,authoritive);\
             if (rr_set==NULL) return OUT_OF_MEMORY;\
             rr_set->rrs_ans_kind = SR_ANS_STRAIGHT;\
@@ -573,6 +577,7 @@ err:
 
 int digest_response (   val_context_t 		*context,
 						struct query_chain *matched_q,
+						struct name_server *respondent_server,
                         struct rrset_rec    **answers,
                         struct qname_chain  **qnames,
                         u_int8_t            *response,
@@ -688,7 +693,7 @@ int digest_response (   val_context_t 		*context,
                                                                                                                           
             /* Find the rrset_rec for this record, create it if need be */
                                                                                                                           
-            rr_set = find_rr_set (answers, name_n, type_h, set_type_h,
+            rr_set = find_rr_set (respondent_server, answers, name_n, type_h, set_type_h,
                                         class_h, ttl_h, rdata, from_section,authoritive);
             if (rr_set==NULL) return OUT_OF_MEMORY;
 
@@ -705,8 +710,9 @@ int digest_response (   val_context_t 		*context,
                     return ret_val;
             }
         }
-        else if (from_section != SR_FROM_ADDITIONAL
-                    && nothing_other_than_cname && set_type_h == ns_t_ns)
+        else if (from_section != SR_FROM_ADDITIONAL && 
+					set_type_h == ns_t_ns &&
+						(nothing_other_than_cname || answer == 0))
         {
             /* This is a referral */
             if (referral_seen==FALSE)
@@ -724,19 +730,19 @@ int digest_response (   val_context_t 		*context,
 	
 		if (set_type_h==ns_t_dnskey)
 		{
-			SAVE_RR_TO_LIST(learned_keys, name_n, type_h, set_type_h,
+			SAVE_RR_TO_LIST(respondent_server, learned_keys, name_n, type_h, set_type_h,
                              class_h, ttl_h, rdata, from_section,authoritive); 
 		}
 		if (set_type_h==ns_t_ds)
 		{
-			SAVE_RR_TO_LIST(learned_ds, name_n, type_h, set_type_h,
+			SAVE_RR_TO_LIST(respondent_server, learned_ds, name_n, type_h, set_type_h,
                              class_h, ttl_h, rdata, from_section,authoritive); 
 		}
         else if (set_type_h==ns_t_ns || /*set_type_h==ns_t_soa ||*/
                 (set_type_h==ns_t_a && from_section == SR_FROM_ADDITIONAL))
         {
             /* This record belongs in the zone_info chain */
-			SAVE_RR_TO_LIST(learned_zones, name_n, type_h, set_type_h,
+			SAVE_RR_TO_LIST(respondent_server, learned_zones, name_n, type_h, set_type_h,
                              class_h, ttl_h, rdata, from_section,authoritive); 
         }
 
@@ -847,7 +853,11 @@ int val_resquery_rcv (
 					&response_data, &response_length);
 	if (ret_val == SR_NO_ANSWER_YET)
 		return NO_ERROR;
-	else if (ret_val != SR_UNSET) { 
+
+	matched_q->qc_respondent_server = server;
+	server = NULL;
+
+	if (ret_val != SR_UNSET) { 
 		matched_q->qc_state = Q_ERROR_BASE + ret_val;
 		return NO_ERROR;
 	}
@@ -870,16 +880,15 @@ int val_resquery_rcv (
     if (((*response)->di_requested_name_h = STRDUP (name))==NULL)
         return OUT_OF_MEMORY;
 
-	free_name_server(&server);
-
-    if ((ret_val = digest_response (context, matched_q,
+    if ((ret_val = digest_response (context, matched_q, 
+					matched_q->qc_respondent_server,
                     &answers, &qnames, response_data, 
 					response_length)) != NO_ERROR)
     {
         FREE (response_data);
         return ret_val;
     }
-	    
+
     if(matched_q->qc_state > Q_ERROR_BASE)
 		(*response)->di_res_error = matched_q->qc_state; 
 
