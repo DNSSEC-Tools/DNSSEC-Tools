@@ -62,6 +62,7 @@ struct rr_rec
                                                                                                                           
 struct rrset_rec
 {
+	struct name_server *rrs_respondent_server;
     u_int8_t        *rrs_name_n;    /* Owner */
     u_int16_t       rrs_type_h; /* ns_t_... */
     u_int16_t       rrs_class_h;    /* ns_c_... */
@@ -202,6 +203,7 @@ struct query_chain {
 	u_int16_t qc_class_h;
 	u_int16_t qc_state; /* DOS, TIMED_OUT, etc */
 	struct name_server *qc_ns_list;
+	struct name_server *qc_respondent_server;
 	struct delegation_info *qc_referral;
 	int qc_trans_id;
 	struct assertion_chain *qc_as;
