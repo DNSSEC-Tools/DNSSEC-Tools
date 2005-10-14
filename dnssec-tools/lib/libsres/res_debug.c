@@ -748,7 +748,7 @@ p_sockun(union res_sockaddr_union u, char *buf, size_t size) {
  * by 60*60*1000 for that.
  */
 
-static unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
+static const unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
 				      1000000,10000000,100000000,1000000000};
 
 /* takes an XeY precision/size value, returns a string representation. */
@@ -1162,13 +1162,9 @@ p_secstodate (u_long secs) {
 	static char output[15];		/* YYYYMMDDHHMMSS and null */
 	time_t clock = secs;
 	struct tm *time;
-#ifdef HAVE_TIME_R
 	struct tm res;
 	
 	time = gmtime_r(&clock, &res);
-#else
-	time = gmtime(&clock);
-#endif
 	time->tm_year += 1900;
 	time->tm_mon += 1;
 	sprintf(output, "%04d%02d%02d%02d%02d%02d",
