@@ -9,6 +9,9 @@
 #include <strings.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include <resolver.h>
 #include <validator.h>
@@ -180,6 +183,7 @@ void val_print_base64(unsigned char * message, int message_len)
 
 void val_print_rrsig_rdata (const char *prefix, val_rrsig_rdata_t *rdata)
 {
+	char ctime_buf[1028];
     if (rdata) {
 	if (!prefix) prefix = "";
 	val_log("%sType Covered         = %d\n", prefix, rdata->type_covered);
@@ -187,8 +191,8 @@ void val_print_rrsig_rdata (const char *prefix, val_rrsig_rdata_t *rdata)
 	val_print_algorithm(rdata->algorithm);
 	val_log("%sLabels               = %d\n", prefix, rdata->labels);
 	val_log("%sOriginal TTL         = %d\n", prefix, rdata->orig_ttl);
-	val_log("%sSignature Expiration = %s",   prefix, ctime((const time_t *)(&(rdata->sig_expr))));
-	val_log("%sSignature Inception  = %s",   prefix, ctime((const time_t *)(&(rdata->sig_incp))));
+	val_log("%sSignature Expiration = %s",   prefix, ctime_r((const time_t *)(&(rdata->sig_expr)), ctime_buf));
+	val_log("%sSignature Inception  = %s",   prefix, ctime_r((const time_t *)(&(rdata->sig_incp)), ctime_buf));
 	val_log("%sKey Tag              = %d ", prefix, rdata->key_tag);
 	val_log("[0x %04x]\n", rdata->key_tag);
 	val_log("%sSigner's Name        = %s\n", prefix, rdata->signer_name);
@@ -214,4 +218,59 @@ void val_print_dnskey_rdata (const char *prefix, val_dnskey_rdata_t *rdata)
 	    val_print_base64(rdata->public_key, rdata->public_key_len);
 	}
     }
+}
+
+char *print_ns_string(struct name_server **server)
+{
+	if((server == NULL) || (*server == NULL))
+		return "VAL_CACHE";
+
+	struct sockaddr_in  *s=(struct sockaddr_in*)(&((*server)->ns_address[0]));
+	return inet_ntoa(s->sin_addr);
+}
+
+void val_print_assertion_chain(struct val_result *results, struct query_chain *queries)
+{
+	char name[MAXDNAME];
+	struct val_result *next_result;
+	for (next_result = results; next_result; next_result = next_result->next) {
+		struct assertion_chain *next_as;
+		next_as = next_result->as;
+
+		if (next_as && next_as->ac_data) {
+			if(ns_name_ntop(next_as->ac_data->rrs_name_n, name, MAXDNAME-1) != -1) 
+				val_log("\tname=%s", name);	
+			else
+				val_log("\tname=ERR_NAME");
+			val_log("\tclass=%s", p_class(next_as->ac_data->rrs_class_h));	
+			val_log("\ttype=%s ", p_type(next_as->ac_data->rrs_type_h));	
+			val_log("\tfrom-server=%s", print_ns_string(&(next_as->ac_data->rrs_respondent_server)));
+			val_log("Result=%s : %d\n", p_val_error(next_result->status), next_result->status);
+
+			next_as = next_as->ac_trust;
+		}
+		else if(queries != NULL) {
+			if(ns_name_ntop(queries->qc_name_n, name, MAXDNAME-1) != -1) 
+				val_log("\tname=%s", name);	
+			else
+				val_log("\tname=ERR_NAME");
+			val_log("\tclass=%s", p_class(queries->qc_class_h));	
+			val_log("\ttype=%s ", p_type(queries->qc_type_h));	
+			if (queries->qc_respondent_server)
+				val_log("\tfrom-server=%s", print_ns_string(&(queries->qc_respondent_server)));
+			val_log("Result=%s : %d\n", p_val_error(next_result->status), next_result->status);
+		}
+
+		for (next_as = next_result->as; next_as; next_as = next_as->ac_trust) {
+			if(ns_name_ntop(next_as->ac_data->rrs_name_n, name, MAXDNAME-1) != -1) 
+				val_log("\tname=%s", name);	
+			else
+				val_log("\tname=ERR_NAME");
+			val_log("\tclass=%s", p_class(next_as->ac_data->rrs_class_h));	
+			val_log("\ttype=%s ", p_type(next_as->ac_data->rrs_type_h));	
+			val_log("\tfrom-server=%s", print_ns_string(&(next_as->ac_data->rrs_respondent_server)));
+			val_log("\tstatus=%s : %d\n", p_val_error(next_as->ac_state), next_as->ac_state);	
+		}
+		val_log("\n");
+	}
 }
