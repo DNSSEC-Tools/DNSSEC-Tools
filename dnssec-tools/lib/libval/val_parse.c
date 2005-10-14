@@ -160,7 +160,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 		return BAD_ARGUMENT;
 
 	TOK_IN_STR();
-	dnskey_rdata->flags = htons(atoi(token));
+	dnskey_rdata->flags = atoi(token);
 
 	TOK_IN_STR();
 	dnskey_rdata->protocol = atoi(token);
@@ -215,7 +215,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 		return OUT_OF_MEMORY;
 
 	u_char *bp = buf;
-	u_int16_t flags = htons(dnskey_rdata->flags);
+	u_int16_t flags = dnskey_rdata->flags;
 
 	memcpy(bp, &flags, sizeof(u_int16_t));
 	bp += sizeof(u_int16_t);
@@ -313,7 +313,7 @@ int val_parse_ds_rdata (const unsigned char *buf, int buflen,
     index += 1;
 
 	/* Only SHA-1 is understood */
-	if(rdata->d_type != htons(DIGEST_SHA_1))
+	if(rdata->d_type != DIGEST_SHA_1)
 		return -1;
 
     memcpy (rdata->d_hash, buf + index, sizeof(rdata->d_hash));
