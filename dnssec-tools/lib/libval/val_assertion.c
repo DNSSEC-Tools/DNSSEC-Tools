@@ -21,6 +21,7 @@
 #include "val_log.h"
 #include "val_policy.h"
 #include "val_parse.h"
+#include "val_print.h"
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
 #define NONSENSE_RESULT_SEQUENCE(status) \
@@ -88,6 +89,7 @@ int add_to_query_chain(struct query_chain **queries, u_char *name_n,
 	temp->qc_state = Q_INIT;    
 	temp->qc_as = NULL;   
 	temp->qc_ns_list = NULL;
+	temp->qc_respondent_server = NULL;
 	temp->qc_trans_id = -1;
 	temp->qc_referral = NULL;
 	temp->qc_next = *queries;
@@ -110,6 +112,10 @@ void free_query_chain(struct query_chain **queries)
 	if((*queries)->qc_ns_list != NULL)
 		free_name_servers(&(*queries)->qc_ns_list);
 
+	if((*queries)->qc_respondent_server != NULL)
+		free_name_server(&(*queries)->qc_respondent_server);
+	
+
 	FREE (*queries);
 	(*queries) = NULL;
 
@@ -131,7 +137,7 @@ u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 
 		/* for all zones which are shorter or as long, do a strstr */ 
 		// XXX We will probably need to use namecmp() instead so that
-		// XXX casing can be ignored
+		// XXX casing and endien order are accounted for 
 		/* Because of the ordering, the longest match is found first */
 		for (; zse_cur; zse_cur=zse_cur->next) {
 
@@ -338,7 +344,7 @@ int ask_resolver(val_context_t *context, struct query_chain **queries, int block
 							FREE(response);
 							return retval;
 						}
-	
+
 						/* Save new responses in the cache */
 						stow_answer(response->di_rrset);
 						response->di_rrset = NULL;
@@ -563,7 +569,7 @@ int add_to_assertion_chain(struct assertion_chain **assertions, struct rrset_rec
 
 		new_as = (struct assertion_chain *) MALLOC (sizeof (struct assertion_chain)); 
 		if (new_as==NULL) return OUT_OF_MEMORY;
-                      
+
 		new_as->ac_data = copy_rrset_rec(next_rr);
 		new_as->ac_trust = NULL;        
 		new_as->ac_more_data = NULL;        
@@ -598,7 +604,7 @@ void free_assertion_chain(struct assertion_chain **assertions)
                                                                                                                           
 	if ((*assertions)->ac_next)
 		free_assertion_chain (&((*assertions)->ac_next));
-                                                                                                                         
+
 	res_sq_free_rrset_recs(&((*assertions)->ac_data));
 	FREE (*assertions);
 	(*assertions) = NULL;
@@ -1234,7 +1240,7 @@ int resolve_n_check(	val_context_t	*context,
 			(*results)->trusted = 0;
 			(*results)->next = NULL;
 		
-			return NO_ERROR;
+			break;
 		}
 		/* 
 		 * We have sufficient data to at least perform some validation --
@@ -1248,7 +1254,8 @@ int resolve_n_check(	val_context_t	*context,
 	/* Results are available */
 	int partially_correct = 0;
 	int negative_proof = 0;
-	for (res=*results; res; res=res->next) {
+
+	for (res=*results; res && res->as && res->as->ac_data; res=res->next) {
 		int success = 0;
 		fix_validation_results(top_q, res, &success);
 		if (!success) 
@@ -1269,6 +1276,8 @@ int resolve_n_check(	val_context_t	*context,
 		else 
 			prove_nonexistence (top_q, *results);
 	}
+
+	val_print_assertion_chain(*results, top_q);
 
 	return NO_ERROR;
 }
