@@ -51,7 +51,7 @@ static int get_token ( FILE *conf_ptr,
  * file
  **************************************************************
  */
-static struct policy_conf_element conf_elem_array[] = {
+static const struct policy_conf_element conf_elem_array[] = {
 	{POL_TRUST_ANCHOR_STR, parse_trust_anchor, free_trust_anchor},
 	{POL_PREFERRED_SEP_STR, parse_preferred_sep, free_preferred_sep},	
 	{POL_MUST_VERIFY_COUNT_STR, parse_must_verify_count, free_must_verify_count},
