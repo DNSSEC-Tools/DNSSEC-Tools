@@ -161,6 +161,7 @@ void res_sq_free_rrset_recs (struct rrset_rec **set)
                                                                                                                           
     if (*set)
     {
+		if ((*set)->rrs_respondent_server) free_name_server(&((*set)->rrs_respondent_server));
         if ((*set)->rrs_name_n) FREE ((*set)->rrs_name_n);
         if ((*set)->rrs_data) res_sq_free_rr_recs (&((*set)->rrs_data));
         if ((*set)->rrs_sig) res_sq_free_rr_recs (&((*set)->rrs_sig));
@@ -222,7 +223,7 @@ void free_domain_info_ptrs (struct domain_info *di)
         FREE (di->di_requested_name_h);
         di->di_requested_name_h = NULL;
     }
-                                                                                                                          
+
     if (di->di_rrset) res_sq_free_rrset_recs (&di->di_rrset);
                                                                                                                           
 	if (di->di_qnames)
@@ -423,6 +424,7 @@ int init_rr_set (   struct rrset_rec    *new_set,
 )
 
 struct rrset_rec *find_rr_set (
+								struct name_server *respondent_server,
                                 struct rrset_rec    **the_list,
                                 u_int8_t            *name_n,
                                 u_int16_t           type_h,
@@ -463,8 +465,13 @@ struct rrset_rec *find_rr_set (
         else
             last->rrs_next = new_one;
         /*  we need to at least set the predecesor, while we have it */
-                                                                                                                          
+        
         memset (new_one, 0, sizeof (struct rrset_rec));
+		if( SR_UNSET != clone_ns(&new_one->rrs_respondent_server, respondent_server)) {
+            res_sq_free_rrset_recs (the_list);
+            return NULL;
+		}
+ 
         if ((init_rr_set (new_one, name_n, type_h, set_type_h,
                 class_h,ttl_h,rdata_n,from_section, authoritive_answer))
                     !=NO_ERROR)
@@ -513,7 +520,8 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
     *answers = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
                                                                                                                           
     if (*answers==NULL) return OUT_OF_MEMORY;
-                                                                                                                          
+                
+	(*answers)->rrs_respondent_server = NULL;                                                                                                          
     (*answers)->rrs_name_n = (u_int8_t *) MALLOC (length);
                                                                                                                           
     if ((*answers)->rrs_name_n == NULL)
@@ -984,12 +992,15 @@ struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
     size_t              o_length;
                                                                               
     copy_set = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
-                                                                                                                          
     if (copy_set == NULL) return NULL;
-                                                                                                                          
+
     o_length = wire_name_length (rr_set->rrs_name_n);
 
     memcpy (copy_set, rr_set, sizeof(struct rrset_rec));
+	if (SR_UNSET != clone_ns(&copy_set->rrs_respondent_server, rr_set->rrs_respondent_server)) {
+		FREE(copy_set);
+		return NULL;
+	}
     copy_set->rrs_data = NULL;
     copy_set->rrs_next = NULL;
     copy_set->rrs_sig = NULL;
@@ -1040,6 +1051,7 @@ char *p_val_error(int errno)
     switch (errno) {
 
     case NO_ERROR: return "NO_ERROR"; break;
+
     case NOT_IMPLEMENTED: return "NOT_IMPLEMENTED"; break;
     case OUT_OF_MEMORY: return "OUT_OF_MEMORY"; break;
     case BAD_ARGUMENT: return "BAD_ARGUMENT"; break;
@@ -1050,34 +1062,27 @@ char *p_val_error(int errno)
     case NO_POLICY: return "NO_POLICY"; break;
     case NO_SPACE: return "NO_SPACE"; break;
     case UNKNOWN_LOCALE: return "UNKNOWN_LOCALE"; break;
-    case VALIDATE_SUCCESS: return "VALIDATE_SUCCESS"; break;
-    case BOGUS_PROVABLE: return "BOGUS_PROVABLE"; break;
-    case BOGUS_UNPROVABLE: return "BOGUS_UNPROVABLE"; break;
-    case INDETERMINATE_DS: return "INDETERMINATE_DS"; break;
-    case INDETERMINATE_PROOF: return "INDETERMINATE_PROOF"; break;
-    case INDETERMINATE_ERROR: return "INDETERMINATE_ERROR"; break;
-    case INDETERMINATE_TRUST: return "INDETERMINATE_TRUST"; break;
-    case INDETERMINATE_ZONE: return "INDETERMINATE_ZONE"; break;
-    case SECURITY_LAME: return "SECURITY_LAME"; break;
-    case NO_TRUST_ANCHOR: return "NO_TRUST_ANCHOR"; break;
-    case TOO_MANY_LINKS: return "TOO_MANY_LINKS"; break;
-    case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
-    case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
-    case BOGUS_PROOF: return "BOGUS_PROOF"; break;
-    case NONEXISTENT_NAME: return "NONEXISTENT_NAME"; break;
-    case NONEXISTENT_TYPE: return "NONEXISTENT_TYPE"; break;
-    case RRSIG_VERIFIED: return "RRSIG_VERIFIED"; break;
-    case RRSIG_VERIFY_FAILED: return "RRSIG_VERIFY_FAILED"; break;
-    case BARE_RRSIG: return "BARE_RRSIG"; break;
-    case RRSIG_EXPIRED: return "RRSIG_EXPIRED"; break;
-    case RRSIG_NOTYETACTIVE: return "RRSIG_NOTYETACTIVE"; break;
-    case NOT_A_ZONE_KEY: return "NOT_A_ZONE_KEY"; break;
+
+    case DATA_MISSING: return "DATA_MISSING"; break;
     case RRSIG_MISSING: return "RRSIG_MISSING"; break;
-    case UNKNOWN_ALGO: return "UNKNOWN_ALGO"; break;
-    case ALGO_NOT_SUPPORTED: return "ALGO_NOT_SUPPORTED"; break;
+    case NO_TRUST_ANCHOR: return "NO_TRUST_ANCHOR"; break;
+    case UNTRUSTED_ZONE: return "UNTRUSTED_ZONE"; break;
+    case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
+    case DNSSEC_VERSION_ERROR: return "DNSSEC_VERSION_ERROR"; break;
+    case TOO_MANY_LINKS: return "TOO_MANY_LINKS"; break;
     case UNKNOWN_DNSKEY_PROTO: return "UNKNOWN_DNSKEY_PROTO"; break;
+	case FLOOD_ATTACK_DETECTED: return "FLOOD_ATTACK_DETECTED"; break;
+
     case DNSKEY_NOMATCH: return "DNSKEY_NOMATCH"; break;
     case WRONG_LABEL_COUNT: return "WRONG_LABEL_COUNT"; break;
+    case SECURITY_LAME: return "SECURITY_LAME"; break;
+    case NOT_A_ZONE_KEY: return "NOT_A_ZONE_KEY"; break;
+    case RRSIG_NOTYETACTIVE: return "RRSIG_NOTYETACTIVE"; break;
+    case RRSIG_EXPIRED: return "RRSIG_EXPIRED"; break;
+    case ALGO_NOT_SUPPORTED: return "ALGO_NOT_SUPPORTED"; break;
+    case UNKNOWN_ALGO: return "UNKNOWN_ALGO"; break;
+    case RRSIG_VERIFIED: return "RRSIG_VERIFIED"; break;
+    case RRSIG_VERIFY_FAILED: return "RRSIG_VERIFY_FAILED"; break;
     case NOT_VERIFIED: return "NOT_VERIFIED"; break;
     case KEY_TOO_LARGE: return "KEY_TOO_LARGE"; break;
     case KEY_TOO_SMALL: return "KEY_TOO_SMALL"; break;
@@ -1089,8 +1094,26 @@ char *p_val_error(int errno)
     case WRONG_RRSIG_OWNER: return "WRONG_RRSIG_OWNER"; break;
     case RRSIG_ALGO_MISMATCH: return "RRSIG_ALGO_MISMATCH"; break;
     case KEYTAG_MISMATCH: return "KEYTAG_MISMATCH"; break;
-    case VALIDATION_ERROR: return "VALIDATION_ERROR"; break;
 
+	case VERIFIED: return "VERIFIED"; break;
+	case LOCAL_ANSWER: return "LOCAL_ANSWER"; break;
+	case TRUST_KEY: return "TRUST_KEY"; break;
+	case TRUST_ZONE: return "TRUST_ZONE"; break;
+	case BARE_RRSIG: return "BARE_RRSIG"; break;
+    case VALIDATE_SUCCESS: return "VALIDATE_SUCCESS"; break;
+
+    case BOGUS_PROVABLE: return "BOGUS_PROVABLE"; break;
+    case BOGUS_UNPROVABLE: return "BOGUS_UNPROVABLE"; break;
+    case VALIDATION_ERROR: return "VALIDATION_ERROR"; break;
+    case NONEXISTENT_NAME: return "NONEXISTENT_NAME"; break;
+    case NONEXISTENT_TYPE: return "NONEXISTENT_TYPE"; break;
+    case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
+    case BOGUS_PROOF: return "BOGUS_PROOF"; break;
+    case INDETERMINATE_DS: return "INDETERMINATE_DS"; break;
+    case INDETERMINATE_PROOF: return "INDETERMINATE_PROOF"; break;
+    case INDETERMINATE_ERROR: return "INDETERMINATE_ERROR"; break;
+    case INDETERMINATE_TRUST: return "INDETERMINATE_TRUST"; break;
+    case INDETERMINATE_ZONE: return "INDETERMINATE_ZONE"; break;
 	/*
     case UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
     case CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
