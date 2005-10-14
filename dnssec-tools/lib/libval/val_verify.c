@@ -374,10 +374,10 @@ void identify_key_from_sig (struct rr_rec *sig,u_int8_t **name_n,u_int16_t *foot
                 sizeof(u_int16_t));
 }
 
-int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag, val_dnskey_rdata_t *new_dnskey_rdata)
+int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey_rdata_t *new_dnskey_rdata)
 {
 	struct rr_rec *nextrr;
-	u_int16_t fp;
+	u_int16_t tag_h = ntohs(*tag_n);
 
 	for (nextrr = keyrr; nextrr; nextrr=nextrr->rr_next)
 	{
@@ -389,8 +389,7 @@ int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag, val_dnskey_rdata_t 
                     new_dnskey_rdata);
 		new_dnskey_rdata->next = NULL;        
                                                                                                            
-    	memcpy (&fp, &new_dnskey_rdata->key_tag, sizeof(u_int16_t));
-		if (*tag == htons(fp))
+		if (new_dnskey_rdata->key_tag == tag_h)
 			return NO_ERROR;
 	}
 	
@@ -537,25 +536,35 @@ void verify_next_assertion(struct assertion_chain *as)
 			continue;
 		}
 
+		FREE(dnskey.public_key);
+
 		/* If this record contains a DNSKEY, check if the DS record contains this key */
 		if(the_sig->status == RRSIG_VERIFIED) {
 			if (the_set->rrs_type_h == ns_t_dnskey) {
 				/* follow the trust path */
 				struct rr_rec *dsrec = the_trust->ac_data->rrs_data;		
-				//uint16_t keytag = htons(dnskey.key_tag);
-				uint16_t keytag = dnskey.key_tag;
 				while(dsrec)	
 				{	
 					val_ds_rdata_t ds;
 					val_parse_ds_rdata(dsrec->rr_rdata, dsrec->rr_rdata_length_h, &ds);
-					if((ds.d_keytag == keytag) 
-						&& (ds.d_algo == dnskey.algorithm)) 
-						if (hash_is_equal(ds.d_type, 
+					u_int16_t ds_keytag_n = htons(ds.d_keytag);
+					if(NO_ERROR != (retval = find_key_for_tag (the_set->rrs_data, &ds_keytag_n, &dnskey))) {
+						dsrec = dsrec->rr_next;
+						continue;
+					}
+
+					if((ds.d_keytag == dnskey.key_tag) 
+						&& (ds.d_algo == dnskey.algorithm) 
+						 && (hash_is_equal(ds.d_type, 
 								ds.d_hash, dnskey.public_key,
-								dnskey.public_key_len))
+								dnskey.public_key_len))) {
+							FREE(dnskey.public_key);
 							break;
+					}
+
 					dsrec = dsrec->rr_next;
 				}
+
 				if(!dsrec)
 					SET_STATUS(as->ac_state, the_sig, SECURITY_LAME);
 			}
@@ -563,6 +572,5 @@ void verify_next_assertion(struct assertion_chain *as)
 		else
 			SET_STATUS(as->ac_state, the_sig, the_sig->status);
 
-		FREE(dnskey.public_key);
 	}
 }
