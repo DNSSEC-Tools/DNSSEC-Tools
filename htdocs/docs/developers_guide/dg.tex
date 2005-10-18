@@ -1,0 +1,91 @@
+\documentclass[12pt]{article}
+\pagestyle{headings}
+\newenvironment{packed}{\begin{list}{$\bullet$}{\parsep0in\itemsep0in}}{\end{list}}
+\usepackage{epsf}
+                                                                                                                             
+\usepackage{latexsym}
+                                                                                                                             
+\usepackage{ulem}
+\normalem
+
+%
+% Macros for specific types of entities.
+%
+\newcommand{\funct}[1]{{\bf #1}}
+\newcommand{\param}[1]{{\em #1}}
+\newcommand{\keyword}[1]{{\em #1}}
+\newcommand{\lib}[1]{{\em #1}}
+\newcommand{\filecontent}[1]{{\tt #1}}
+\newcommand{\const}[1]{{\tt #1}}
+\newcommand{\file}[1]{{\bf{\tt #1}}}
+
+
+\textheight=8.50in
+\voffset=-.55in
+\voffset=-.75in
+                                                                                                                             
+\setlength{\textwidth}{6.5in}
+\setlength{\oddsidemargin}{0in}
+                                                                                                                             
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3}
+                                                                                                                             
+\parindent0em
+\parskip0.65em
+                                                                                                                             
+\hyphenation{dns-sec DNS-SEC}
+\hyphenation{dns-sec--tools}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+\markboth{DNSSEC-Tools Developer's Guide}{DNSSEC-Tools Developer's Guide}
+
+\begin{titlepage}
+\vspace{.5in}
+                                                                                                                             
+\begin{center}
+\LARGE{\bf
+DNSSEC-Tools Developers Guide
+}
+\end{center}
+
+\end{titlepage}
+\markboth{DNSSEC-Tools Developer's Guide}{DNSSEC-Tools Developer's Guide}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                                                                                             
+\begin{center}
+{\Large
+{\bf DNSSEC-Tools\\
+Is your domain secure?}}
+\end{center}
+\tableofcontents
+\clearpage
+                                                                                                                             
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+                                                                                                                             
+\markboth{DNSSEC-Tools Developer's Guide}{DNSSEC-Tools Developer's Guide}
+\section{Introduction}
+\markboth{DNSSEC-Tools Developer's Guide}{DNSSEC-Tools Developer's Guide}
+\label{intro}
+
+TODO                                                                                                                             
+%\input{intro}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{DNSSEC-Tools Developer's Guide}{DNSSEC-Tools Developer's Guide}
+\section{Validator Library Developer's Guide}
+\markboth{DNSSEC-Tools Developer's Guide}{DNSSEC-Tools Developer's Guide}
+\label{validator}
+
+\input{validator}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+                                                                                                                             
+\end{document}
