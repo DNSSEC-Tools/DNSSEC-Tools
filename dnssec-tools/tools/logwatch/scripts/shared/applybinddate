@@ -1,5 +1,3 @@
-#!/usr/bin/perl -w
-
 #############################################################################
 #Copyright (c) 2004, SPARTA, Inc
 #All rights reserved.
@@ -39,25 +37,12 @@
 # on sourceforge.
 #############################################################################
 
-use POSIX qw(strftime);
+use Logwatch':dates';
 
 # This will pick out only the wanted date from a logfile
 # in the format used by BIND 9.*.
 
-my $time = time;
-
-if ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'yesterday') {
-   $SearchDate = strftime("%d-%b-%Y", localtime($time-86400));
-}
-elsif ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'today') {
-   $SearchDate = strftime("%d-%b-%Y", localtime($time));
-}
-elsif ( $ENV{'LOGWATCH_DATE_RANGE'} eq 'all') {
-   $SearchDate = "..-...-....";
-}
-
-# The date might be "Dec 09", but it needs to be "Dec  9"...
-#$SearchDate =~ s/ 0/  /;
+$SearchDate = TimeFilter('%d-%b-%Y %H:%M:%S');
 
 if ( $ENV{'LOGWATCH_DEBUG'} > 5 ) {
    print STDERR "DEBUG: Inside ApplyBindDate...\n";
@@ -66,8 +51,7 @@ if ( $ENV{'LOGWATCH_DEBUG'} > 5 ) {
 }
 
 while (defined($ThisLine = <STDIN>)) {
-   if ($ThisLine =~ m/^$SearchDate ..:..:../o) {
+   if ($ThisLine =~ m/^$SearchDate\.\d{3} /o) {
       print $ThisLine;
    }
 }
-
