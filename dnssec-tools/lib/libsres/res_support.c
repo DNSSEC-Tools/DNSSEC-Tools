@@ -30,7 +30,7 @@
 
 #include "resolver.h"
 
-extern void res_pquery(const res_state statp, const u_char *msg, int len, FILE *file);
+extern void res_pquery(const u_char *msg, int len, FILE *file);
 
 
 static int seq_number = 0;
@@ -81,9 +81,7 @@ void print_response (u_int8_t *ans, int resplen)
         would dump the response in byte form, formatted to match
         the query's structure */
     //fp_nquery(ans, resplen, stdout);
-    if ((_res.options & RES_INIT) == 0U && res_init() == -1)
-        return;
-    res_pquery(&_res, ans, resplen, stdout);
+    res_pquery(ans, resplen, stdout);
 }
 
 void print_hex_field (u_int8_t field[], int length, int width, char *pref)
