@@ -24,6 +24,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <arpa/nameser.h>
+#include <pthread.h>
 
 #include <resolver.h>
 #include <validator.h>
@@ -34,121 +35,187 @@ static struct rrset_rec *unchecked_zone_info = NULL;
 static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
+static pthread_rwlock_t rwlock=PTHREAD_RWLOCK_INITIALIZER;
 
-static void stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
+#define LOCK_SH() do{				\
+	if(0 != pthread_rwlock_rdlock(&rwlock))\
+		return INTERNAL_ERROR; \
+} while(0);
+
+#define LOCK_EX() do{				\
+	if(0 != pthread_rwlock_wrlock(&rwlock))\
+		return INTERNAL_ERROR;	\
+} while(0);
+
+#define UNLOCK() do{				\
+	if (0 != pthread_rwlock_unlock(&rwlock)) \
+		return INTERNAL_ERROR;	\
+} while(0);
+
+static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
 {
-    struct rrset_rec *new;
+    struct rrset_rec *new, *prev;
     struct rrset_rec *old;
     struct rrset_rec *trail_new;
     struct rr_rec *rr_exchange;
                                                                                                                           
-    if (new_info == NULL) return;
+    if (new_info == NULL) return NO_ERROR;
                                                                                                                           
     /* Tie the two together */
-                                                                                                                          
-    if (*unchecked_info == NULL)
-        *unchecked_info = new_info;
-    else
-    {
-        old = *unchecked_info;
-        while (old->rrs_next) old = old->rrs_next;
-        old->rrs_next = new_info;
+                        
+	LOCK_SH();
+	prev = NULL; 
+    old = *unchecked_info; 
+    while (old) {
+
+		/* Look for duplicates */
+		new = new_info;
+		trail_new = NULL;
+       	while (new) {
+    	    if (old->rrs_type_h == new->rrs_type_h &&
+                old->rrs_class_h == new->rrs_class_h &&
+                namecmp (old->rrs_name_n, new->rrs_name_n)==0) {
+
+				UNLOCK();	
+				LOCK_EX();
+
+    	        /* old and new are competitors */
+	            if (!(old->rrs_cred < new->rrs_cred ||
+   	                     (old->rrs_cred == new->rrs_cred &&
+   	                         old->rrs_section <= new->rrs_section))) {
+   	            	/*
+   	                     exchange the two -
+   	                         copy from new to old:
+   	                             cred, status, section, ans_kind
+   		                         exchange:
+   	                             data, sig
+   	            	*/
+   	            	old->rrs_cred = new->rrs_cred;
+   	                old->rrs_section = new->rrs_section;
+   	                old->rrs_ans_kind = new->rrs_ans_kind;
+   	                rr_exchange = old->rrs_data;
+   	                old->rrs_data = new->rrs_data;
+   	                new->rrs_data = rr_exchange;
+   		            rr_exchange = old->rrs_sig;
+       	            old->rrs_sig = new->rrs_sig;
+       	            new->rrs_sig = rr_exchange;
+       	        }
+
+       		    /* delete new */
+				if (trail_new == NULL) {
+					new_info = new->rrs_next;
+					if (new_info == NULL) {
+						UNLOCK();
+						return NO_ERROR;
+					}
+				}
+				else
+	           	    trail_new->rrs_next = new->rrs_next;
+           	    new->rrs_next = NULL;
+           	    res_sq_free_rrset_recs (&new);
+
+				UNLOCK();
+				LOCK_SH();
+
+				break;
+           	}
+			else {
+				trail_new = new; 
+				new = new->rrs_next;
+			}
+		}	
+
+		prev = old;
+		old = old->rrs_next;
     }
-                                                                                                                          
-    /* Remove duplicated data */
-                                                                                                                          
-    old = *unchecked_info;
-    while (old)
-    {
-        trail_new = old;
-        new = old->rrs_next;
-        while (new)
-        {
-            if (old->rrs_type_h == new->rrs_type_h &&
-                    old->rrs_class_h == new->rrs_class_h &&
-                    namecmp (old->rrs_name_n, new->rrs_name_n)==0)
-            {
-                /* old and new are competitors */
-                if (!(old->rrs_cred < new->rrs_cred ||
-                        (old->rrs_cred == new->rrs_cred &&
-                            old->rrs_section <= new->rrs_section)))
-                {
-                    /*
-                        exchange the two -
-                            copy from new to old:
-                                cred, status, section, ans_kind
-                            exchange:
-                                data, sig
-                    */
-                    old->rrs_cred = new->rrs_cred;
-                    old->rrs_section = new->rrs_section;
-                    old->rrs_ans_kind = new->rrs_ans_kind;
-                    rr_exchange = old->rrs_data;
-                    old->rrs_data = new->rrs_data;
-                    new->rrs_data = rr_exchange;
-                    rr_exchange = old->rrs_sig;
-                    old->rrs_sig = new->rrs_sig;
-                    new->rrs_sig = rr_exchange;
-                }
-                /* delete new */
-                trail_new->rrs_next = new->rrs_next;
-                new->rrs_next = NULL;
-                res_sq_free_rrset_recs (&new);
-                new = trail_new->rrs_next;
-            }
-            else
-            {
-                trail_new = new;
-                new = new->rrs_next;
-            }
+	if(prev == NULL)
+		*unchecked_info = new_info;
+	else
+		prev->rrs_next = new_info;
+
+	UNLOCK();                    
+	return NO_ERROR;
+}
+
+int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h, 
+		u_int16_t type_h, struct rrset_rec **cloned_answer)
+{
+	struct rrset_rec *next_answer, *prev;
+
+	*cloned_answer = NULL;
+    switch(type_h) {
+                                                                                                                             
+    	case ns_t_ds:
+        	next_answer = unchecked_ds_info; 
+            break;
+                                                                                                                             
+        case ns_t_dnskey:
+            next_answer = unchecked_key_info; 
+            break;
+
+		case ns_t_ns:
+			next_answer = unchecked_zone_info;
+			break;
+                                                                                                                         
+        default:
+            next_answer = unchecked_answers; 
+            break;
+    }
+
+	prev = NULL; 
+	LOCK_SH();
+    while(next_answer)  {
+        
+        if ((next_answer->rrs_type_h == type_h) &&
+        	(next_answer->rrs_class_h == class_h) &&
+            (namecmp(next_answer->rrs_name_n, name_n) == 0)) {
+            	if (next_answer->rrs_data != NULL) {
+					*cloned_answer = copy_rrset_rec(next_answer);
+                	break;
+				}
         }
-        old = old->rrs_next;
+
+		prev = next_answer;
+        next_answer = next_answer->rrs_next;
     }
+	UNLOCK();
+	return NO_ERROR;
+}
+
+int stow_zone_info(struct rrset_rec *new_info)
+{
+	return stow_info(&unchecked_zone_info, new_info);
 }
 
 
-void stow_zone_info(struct rrset_rec *new_info)
+int stow_key_info(struct rrset_rec *new_info)
 {
-	stow_info(&unchecked_zone_info, new_info);
+	return stow_info(&unchecked_key_info, new_info);
 }
-struct rrset_rec* get_cached_zones()
+
+int stow_ds_info(struct rrset_rec *new_info)
 {
-	return unchecked_zone_info;	
+	return stow_info(&unchecked_ds_info, new_info);
+}
+
+int stow_answer(struct rrset_rec *new_info)
+{
+	return stow_info(&unchecked_answers, new_info);
 }
 
 
-void stow_key_info(struct rrset_rec *new_info)
+int free_validator_cache()
 {
-	stow_info(&unchecked_key_info, new_info);
-}
-struct rrset_rec* get_cached_keys()
-{
-	return unchecked_key_info;	
-}
-
-void stow_ds_info(struct rrset_rec *new_info)
-{
-	stow_info(&unchecked_ds_info, new_info);
-}
-struct rrset_rec* get_cached_ds()
-{
-	return unchecked_ds_info;	
-}
-
-void stow_answer(struct rrset_rec *new_info)
-{
-	stow_info(&unchecked_answers, new_info);
-}
-struct rrset_rec* get_cached_answers()
-{
-	return unchecked_answers;	
-}
-
-
-void free_validator_cache()
-{
+	LOCK_EX();
 	res_sq_free_rrset_recs(&unchecked_zone_info);
+	unchecked_zone_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_key_info);
+	unchecked_key_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_ds_info);
+	unchecked_ds_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_answers);
+	unchecked_answers = NULL;
+	UNLOCK();
+
+	return NO_ERROR;
 }
