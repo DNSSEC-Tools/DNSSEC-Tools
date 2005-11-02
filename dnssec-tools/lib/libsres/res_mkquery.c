@@ -90,7 +90,7 @@ extern const char *_res_opcodes[];
  * Returns the size of the result or -1.
  */
 int
-res_nmkquery(res_state statp,
+res_val_nmkquery(struct name_server  *pref_ns,
 	     int op,			/* opcode of query */
 	     const char *dname,		/* domain name */
 	     int class, int type,	/* class and type of query */
@@ -107,14 +107,9 @@ res_nmkquery(res_state statp,
 
 //	UNUSED(newrr_in);
 
-	if ((_res.options & RES_INIT) == 0 && res_init() == -1) {
-        h_errno = NETDB_INTERNAL;
-        return (-1);
-    }
-
 #ifdef DEBUG
-	if (statp->options & RES_DEBUG)
-		printf(";; res_nmkquery(%s, %s, %s, %s)\n",
+	if (pref_ns->ns_options & RES_DEBUG)
+		printf(";; res_val_nmkquery(%s, %s, %s, %s)\n",
 		       _res_opcodes[op], dname, p_class(class), p_type(type));
 #endif
 	/*
@@ -124,9 +119,9 @@ res_nmkquery(res_state statp,
 		return (-1);
 	memset(buf, 0, HFIXEDSZ);
 	hp = (HEADER *) buf;
-	hp->id = htons(++statp->id);
+	hp->id = htons(++pref_ns->ns_id);
 	hp->opcode = op;
-	hp->rd = (statp->options & RES_RECURSE) != 0U;
+	hp->rd = (pref_ns->ns_options & RES_RECURSE) != 0U;
 	hp->rcode = NOERROR;
 	cp = buf + HFIXEDSZ;
 	ep = buf + buflen;
@@ -206,7 +201,7 @@ res_nmkquery(res_state statp,
 /* attach OPT pseudo-RR, as documented in RFC2671 (EDNS0). */
 
 int
-res_nopt(res_state statp,
+res_val_nopt(struct name_server  *pref_ns,
 	 int n0,		/* current offset in buffer */
 	 u_char *buf,		/* buffer to put query */
 	 int buflen,		/* size of buffer */
@@ -217,7 +212,7 @@ res_nopt(res_state statp,
 	u_int16_t flags = 0;
 
 #ifdef DEBUG
-	if ((statp->options & RES_DEBUG) != 0U)
+	if ((pref_ns->ns_options & RES_DEBUG) != 0U)
 		printf(";; res_nopt()\n");
 #endif
 
@@ -237,13 +232,13 @@ res_nopt(res_state statp,
 	cp += INT16SZ;
 	*cp++ = NOERROR;	/* extended RCODE */
 	*cp++ = 0;		/* EDNS version */
-	if (statp->options & RES_USE_DNSSEC) {
+//	if (pref_ns->ns_options & RES_USE_DNSSEC) {
 #ifdef DEBUG
-		if (statp->options & RES_DEBUG)
+		if (pref_ns->ns_options & RES_DEBUG)
 			printf(";; res_opt()... ENDS0 DNSSEC\n");
 #endif
 		flags |= NS_OPT_DNSSEC_OK;
-	}
+//	}
 	ns_put16(flags, cp);
 	cp += INT16SZ;
 	ns_put16(0, cp);	/* RDLEN */
