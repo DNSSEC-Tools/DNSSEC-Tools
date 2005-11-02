@@ -23,6 +23,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <arpa/nameser.h>
+#include <netdb.h>
 
 #include "resolver.h"
 #include "res_mkquery.h"
@@ -85,6 +86,7 @@ void dump_response (const u_int8_t *ans, int resplen)
         k += j;
     } while (k < resplen);
 }
+
 
 u_int16_t retrieve_type (const u_int8_t *rr)
 {
@@ -243,6 +245,12 @@ int clone_ns(struct name_server **cloned_ns, struct name_server *ns)
 	(*cloned_ns)->ns_tsig_key = NULL; //XXX Still not doing anything with TSIG
 	(*cloned_ns)->ns_security_options = ns->ns_security_options;
 	(*cloned_ns)->ns_status = ns->ns_status;
+
+	(*cloned_ns)->ns_options = ns->ns_options;
+	(*cloned_ns)->ns_id = ns->ns_id;
+	(*cloned_ns)->ns_retrans = ns->ns_retrans;
+	(*cloned_ns)->ns_retry = ns->ns_retry;
+
 	(*cloned_ns)->ns_number_of_addresses = ns->ns_number_of_addresses;
 	memcpy((*cloned_ns)->ns_address, ns->ns_address, sizeof(struct sockaddr));
 	(*cloned_ns)->ns_next = NULL;
@@ -300,11 +308,10 @@ int query_send( const char*     name,
 	if (pref_ns == NULL) 
 		return SR_CALL_ERROR;
 
-	/* Form the query with res_nmkquery_n */
-	query_length = res_nmkquery (&_res, ns_o_query, name, class_h, type_h,
+	/* Form the query with res_val_nmkquery_n */
+	query_length = res_val_nmkquery (pref_ns, ns_o_query, name, class_h, type_h,
 									NULL, 0, NULL, query, query_limit);
-	_res.options |= RES_USE_DNSSEC;
-    query_length = res_nopt(&_res, query_length, query, query_limit, EDNS_UDP_SIZE);	
+    query_length = res_val_nopt(pref_ns, query_length, query, query_limit, EDNS_UDP_SIZE);	
 	if (query_length == -1)
 		return SR_MKQUERY_INTERNAL_ERROR;
 	/* Set the CD flag */
@@ -350,7 +357,6 @@ int query_send( const char*     name,
 
 	return SR_UNSET;
 }
-
 
 int response_recv(int           *trans_id,
             struct name_server  **respondent,
