@@ -23,6 +23,7 @@
 #define RESOLVER_H
 
 #include <netinet/in.h>
+#include <resolv.h>
 
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
@@ -33,6 +34,8 @@
 #define FREE(p) free(p)
 #define STRDUP(p) strdup(p)
 #endif
+
+#define RES_RETRY 1
 
 #ifndef RES_USE_DNSSEC
 #define RES_USE_DNSSEC  0x00200000
@@ -101,6 +104,10 @@ struct name_server
     u_int32_t       ns_status;
     struct name_server  *ns_next;
     int         ns_number_of_addresses;
+	u_long  ns_options;
+	u_short ns_id;
+	int ns_retrans;
+	int ns_retry;
     struct sockaddr     ns_address[1];
 };
 
