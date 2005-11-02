@@ -28,6 +28,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+#include <pthread.h>
 #include "resolver.h"
 #include "res_support.h"
 #include "res_io_manager.h"
@@ -60,9 +61,9 @@ static const int	res_io_debug = FALSE;
 	if (t->ea_socket != -1) close (t->ea_socket); \
 	t->ea_socket = -1; \
 	t->ea_which_address++; \
-	t->ea_remaining_attempts = _res.retry; \
+	t->ea_remaining_attempts = t->ea_ns->ns_retry; \
 	set_alarm(&(t->ea_next_try), 0); \
-	set_alarm(&(t->ea_cancel_time),res_timeout());
+	set_alarm(&(t->ea_cancel_time),res_timeout(t->ea_ns));
 
 #define MORE_ADDRESSES(ea) \
 	ea->ea_which_address < (ea->ea_ns->ns_number_of_addresses-1)
@@ -101,13 +102,14 @@ static struct expected_arrival	*transactions[MAX_TRANSACTIONS] =
 };
 
 static int next_transaction = 0;
+static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-long res_timeout()
+static long res_timeout(struct name_server *ns)
 {
 	int		i;
 	long	cancel_delay = 0;
 
-	for (i = 0; i < _res.retry; i++) cancel_delay += _res.retrans << i;
+	for (i = 0; i < ns->ns_retry; i++) cancel_delay += ns->ns_retrans << i;
 
 	return cancel_delay;
 }
@@ -155,9 +157,9 @@ struct expected_arrival *res_ea_init (u_int8_t *signed_query,int signed_length,
 	temp->ea_signed_length = signed_length;
 	temp->ea_response = NULL;
 	temp->ea_response_length = 0;
-	temp->ea_remaining_attempts = _res.retry;
+	temp->ea_remaining_attempts = ns->ns_retry;
 	set_alarm (&temp->ea_next_try, 0);
-	set_alarm (&temp->ea_cancel_time, res_timeout());
+	set_alarm (&temp->ea_cancel_time, res_timeout(ns));
 	temp->ea_next = NULL;
 
 	return temp;
@@ -242,7 +244,7 @@ int res_io_send (struct expected_arrival *shipit)
 	return SR_IO_UNSET;
 }
 
-int res_io_check(int transaction_id, struct timeval *next_evt)
+static int res_io_check(int transaction_id, struct timeval *next_evt)
 {
 	int						i;
 	int						total=0;
@@ -258,6 +260,8 @@ int res_io_check(int transaction_id, struct timeval *next_evt)
 
 	/* Start "next event" at 0.0 seconds */
 	memset (next_evt, 0, sizeof(struct timeval));
+
+	pthread_mutex_lock( &mutex );	
 
 	for (i = 0; i < MAX_TRANSACTIONS; i++)
 	{
@@ -327,8 +331,8 @@ int res_io_check(int transaction_id, struct timeval *next_evt)
 					else
 					{
 						if (i == transaction_id) total++;
-						delay= _res.retrans
-							<<( _res.retry - temp1->ea_remaining_attempts-- );
+						delay= temp1->ea_ns->ns_retrans 
+							<<( temp1->ea_ns->ns_retry - temp1->ea_remaining_attempts-- );
 						set_alarm(&temp1->ea_next_try, delay);
 						if (res_io_debug) res_print_ea (temp1);
 					}
@@ -374,6 +378,9 @@ int res_io_check(int transaction_id, struct timeval *next_evt)
 			} while (temp1);
 		}
 	}
+
+	pthread_mutex_unlock( &mutex );	
+
 	if (res_io_debug) printf ("Next event is at %ld\n", next_evt->tv_sec);
 	return total;
 }
@@ -387,9 +394,11 @@ int res_io_deliver (int *transaction_id, u_int8_t *signed_query,
 
 	/* Determine (new) transaction location */
 
+	pthread_mutex_lock( &mutex );	
 	if (*transaction_id==-1)
 	{
 		/* Find a place to hold this transaction */
+	
 		try_index = next_transaction;
 		do
 		{
@@ -397,9 +406,11 @@ int res_io_deliver (int *transaction_id, u_int8_t *signed_query,
 			try_index = (try_index+1)%MAX_TRANSACTIONS;
 		} while (try_index!=next_transaction);
 
-		if (try_index==next_transaction&&transactions[try_index]!=NULL)
+		if (try_index==next_transaction&&transactions[try_index]!=NULL) {
 			/* We've run out of places to hold transactions */
+			pthread_mutex_unlock( &mutex );	
 			return SR_IO_TOO_MANY_TRANS;
+		}
 
 		*transaction_id = try_index;
 		next_transaction = (try_index+1)%MAX_TRANSACTIONS;
@@ -411,19 +422,24 @@ int res_io_deliver (int *transaction_id, u_int8_t *signed_query,
 	{
 		/* Add this as the first request */
 		if ((transactions[*transaction_id] =
-			res_ea_init(signed_query, signed_length, ns))==NULL)
+			res_ea_init(signed_query, signed_length, ns))==NULL) {
 			/* We can't add this */
+			pthread_mutex_unlock( &mutex );	
 			return SR_IO_MEMORY_ERROR;
+		}
 	}
 	else
 	{
 		/* Retaining order is important */
 		temp = transactions[*transaction_id];
 		while (temp->ea_next) temp = temp->ea_next;
-		if ((temp->ea_next = res_ea_init(signed_query,signed_length,ns))==NULL)
+		if ((temp->ea_next = res_ea_init(signed_query,signed_length,ns))==NULL) {
+			pthread_mutex_unlock( &mutex );	
 			return SR_IO_MEMORY_ERROR;
+		}
 	}
 
+	pthread_mutex_unlock( &mutex );	
 	/* Call the res_io_check routine */
 
 	if (res_io_debug) printf ("\nCalling io_deliver\n");
@@ -593,10 +609,10 @@ void res_switch_to_tcp(struct expected_arrival *ea)
 	/* Use the same "ea_which_address," since it already got a rise. */
 	ea->ea_using_stream = TRUE;
 	ea->ea_socket = -1;
-	ea->ea_remaining_attempts = _res.retry;
+	ea->ea_remaining_attempts = ea->ea_ns->ns_retry;
 	set_alarm (&ea->ea_next_try, 0);
 
-	set_alarm (&ea->ea_cancel_time, res_timeout());
+	set_alarm (&ea->ea_cancel_time, res_timeout(ea->ea_ns));
 }
 
 void res_io_read (fd_set *read_descriptors, struct expected_arrival *ea_list)
@@ -698,9 +714,14 @@ int res_io_accept (int transaction_id, u_int8_t **answer, int *answer_length,
 		See if there is a response waiting that we simply need to pluck.
 	*/
 
+	pthread_mutex_lock( &mutex );	
 	if (res_io_get_a_response(transactions[transaction_id],
-					answer, answer_length, respondent)==SR_IO_GOT_ANSWER)
+					answer, answer_length, respondent)==SR_IO_GOT_ANSWER) {
+
+		pthread_mutex_unlock( &mutex );	
 		return SR_IO_GOT_ANSWER;
+	}
+	pthread_mutex_unlock( &mutex );	
 
 	/*
 		Set the timeout in case nothing arrives.  The timeout will expire
@@ -722,7 +743,9 @@ int res_io_accept (int transaction_id, u_int8_t **answer, int *answer_length,
 		Answer for now -> just the sockets we are interested in.
 	*/
 
+	pthread_mutex_lock( &mutex );	
 	res_io_collect_sockets (&read_descriptors, transactions[transaction_id]);
+	pthread_mutex_unlock( &mutex );	
 
 	ret_val = res_io_select_sockets (&read_descriptors, &timeout);
 
@@ -742,14 +765,18 @@ int res_io_accept (int transaction_id, u_int8_t **answer, int *answer_length,
 		React to the active desciptors.
 	*/
 
+	pthread_mutex_lock( &mutex );	
 	res_io_read (&read_descriptors, transactions[transaction_id]);
+	pthread_mutex_unlock( &mutex );	
 
 	/*
 		Pluck the answer and return it to the caller.
 	*/
 
+	pthread_mutex_lock( &mutex );	
 	ret_val = res_io_get_a_response(transactions[transaction_id],
 					answer, answer_length, respondent);
+	pthread_mutex_unlock( &mutex );	
 
 	if (ret_val == SR_IO_UNSET)
 		return SR_IO_NO_ANSWER_YET;
@@ -763,12 +790,14 @@ void res_io_cancel (int *transaction_id)
 
 	if (*transaction_id==-1) return;
 
+	pthread_mutex_lock( &mutex );	
 	while (transactions[*transaction_id])
 	{
 		ea = transactions[*transaction_id];
 		transactions[*transaction_id]=transactions[*transaction_id]->ea_next;
 		res_sq_free_expected_arrival(&ea);
 	}
+	pthread_mutex_unlock( &mutex );	
 
 	*transaction_id = -1;
 }
@@ -810,6 +839,7 @@ void res_io_view()
 	tv.tv_usec=0;
 	if (res_io_debug) printf ("Current time is %ld\n", tv.tv_sec);
 
+	pthread_mutex_lock( &mutex );	
 	for (i = 0; i < MAX_TRANSACTIONS; i++)
 		if (transactions[i])
 		{
@@ -820,6 +850,7 @@ void res_io_view()
 				res_print_ea (ea);
 			}
 		}
+	pthread_mutex_unlock( &mutex );	
 }
 
 void res_io_stall()
