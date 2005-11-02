@@ -118,39 +118,6 @@ void dump_dinfo(struct domain_info *dinfo)
     dump_rrset(dinfo->di_rrset);
 }
 
-void dump_val_context (struct val_context *context) {
-	struct rrset_rec *cached_info;
-
-    if (!context) {
-	val_log("domain_info: NULL\n");
-	return;
-    }
-
-    val_log ("domain_info:\n");
-    if (NULL != (cached_info = get_cached_zones())) {
-	val_log("  learned_zones =\n");
-	dump_rrset(cached_info);
-    }
-    else {
-	val_log("  learned_zones = NULL\n");
-    }
-
-    if (NULL != (cached_info = get_cached_keys())) {
-	val_log("  learned_keys =\n");
-	dump_rrset(cached_info);
-    }
-    else {
-	val_log("  learned_keys = NULL\n");
-    }
-
-    if (NULL != (cached_info = get_cached_ds())) {
-	val_log("  learned_ds =\n");
-	dump_rrset(cached_info);
-    }
-    else {
-	val_log("  learned_ds = NULL\n");
-    }
-}
 
 static void val_print_algorithm (u_int8_t algo)
 {
@@ -245,7 +212,7 @@ void val_print_assertion_chain(struct val_result *results, struct query_chain *q
 			val_log("\tclass=%s", p_class(next_as->ac_data->rrs_class_h));	
 			val_log("\ttype=%s ", p_type(next_as->ac_data->rrs_type_h));	
 			val_log("\tfrom-server=%s", print_ns_string(&(next_as->ac_data->rrs_respondent_server)));
-			val_log("Result=%s : %d\n", p_val_error(next_result->status), next_result->status);
+			val_log("\tResult=%s : %d\n", p_val_error(next_result->status), next_result->status);
 
 			next_as = next_as->ac_trust;
 		}
@@ -258,7 +225,7 @@ void val_print_assertion_chain(struct val_result *results, struct query_chain *q
 			val_log("\ttype=%s ", p_type(queries->qc_type_h));	
 			if (queries->qc_respondent_server)
 				val_log("\tfrom-server=%s", print_ns_string(&(queries->qc_respondent_server)));
-			val_log("Result=%s : %d\n", p_val_error(next_result->status), next_result->status);
+			val_log("\tResult=%s : %d\n", p_val_error(next_result->status), next_result->status);
 		}
 
 		for (next_as = next_result->as; next_as; next_as = next_as->ac_trust) {
