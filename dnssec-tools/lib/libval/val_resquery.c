@@ -71,11 +71,11 @@ int register_query (struct query_list **q, u_int8_t *name_n, u_int32_t type_h, u
     {
         while ((*q)->ql_next != NULL)
         {
-            if(namecmp((*q)->ql_zone_n,zone_n)==0&&namecmp((*q)->ql_name_n,zone_n)==0)
+            if(namecmp((*q)->ql_zone_n,zone_n)==0&&namecmp((*q)->ql_name_n,name_n)==0)
                 return ITS_BEEN_DONE;
             (*q) = (*q)->ql_next;
         }
-        if(namecmp((*q)->ql_zone_n,zone_n)==0&&namecmp((*q)->ql_name_n,zone_n)==0)
+        if(namecmp((*q)->ql_zone_n,zone_n)==0&&namecmp((*q)->ql_name_n,name_n)==0)
                 return ITS_BEEN_DONE;
         (*q)->ql_next = (struct query_list *)MALLOC(sizeof(struct query_list));
         (*q) = (*q)->ql_next;
@@ -191,6 +191,12 @@ int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_li
                     temp_ns->ns_tsig_key = NULL;
                     temp_ns->ns_security_options = ZONE_USE_NOTHING;
                     temp_ns->ns_status = SR_ZI_STATUS_LEARNED;
+
+					temp_ns->ns_retrans = RES_TIMEOUT;
+					temp_ns->ns_retry = RES_RETRY;
+					temp_ns->ns_options = RES_DEFAULT; 
+					temp_ns->ns_id = res_randomid();
+
                     temp_ns->ns_next = NULL;
                     temp_ns->ns_number_of_addresses = 0;
                     /* Add the name server record to the list */
@@ -774,7 +780,10 @@ int digest_response (   val_context_t 		*context,
 				t_q->qnc_next = matched_q->qc_referral->qnames;
 			}
 			/* stow the learned zone information */
-			stow_zone_info (matched_q->qc_referral->learned_zones);
+			if(NO_ERROR != (ret_val = stow_zone_info (matched_q->qc_referral->learned_zones))){
+				res_sq_free_rrset_recs(&matched_q->qc_referral->learned_zones);
+				return ret_val;
+			}
 
 			matched_q->qc_referral->queries = NULL;
 			matched_q->qc_referral->answers = NULL;
@@ -788,9 +797,20 @@ int digest_response (   val_context_t 		*context,
 		ret_val = NO_ERROR;
 	}
 
-	stow_zone_info (learned_zones);
-	stow_key_info (learned_keys);
-	stow_ds_info (learned_ds);
+	if( NO_ERROR != (ret_val = stow_zone_info (learned_zones))) {
+		res_sq_free_rrset_recs(&learned_zones);
+		return ret_val;
+	}
+
+	if (NO_ERROR != (ret_val = stow_key_info (learned_keys))) {
+		res_sq_free_rrset_recs(&learned_keys);
+		return ret_val;
+	}
+
+	if (NO_ERROR != (ret_val = stow_ds_info (learned_ds))) {
+		res_sq_free_rrset_recs(&learned_ds);
+		return ret_val;
+	}
 
     return ret_val;
 }
