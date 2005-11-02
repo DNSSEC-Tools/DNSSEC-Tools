@@ -183,37 +183,16 @@ res_init(void) {
 
 extern const char *_res_sectioncodes[];
 
-/*
- * Print the current options.
- */
-void
-fp_resstat(const res_state statp, FILE *file) {
-	u_long mask;
-
-	fprintf(file, ";; res options:");
-	for (mask = 1;  mask != 0U;  mask <<= 1)
-		if (statp->options & mask)
-			fprintf(file, " %s", p_option(mask));
-	putc('\n', file);
-}
-
 static void
-do_section(const res_state statp,
+do_section(
 	   ns_msg *handle, ns_sect section,
 	   int pflag, FILE *file)
 {
-	int n, sflag, rrnum;
-	static int buflen = 2048;
+	int n, rrnum;
+	const static int buflen = 2048;
 	char *buf;
 	ns_opcode opcode;
 	ns_rr rr;
-
-	/*
-	 * Print answer records.
-	 */
-	sflag = (statp->pfcode & pflag);
-	if (statp->pfcode && !sflag)
-		return;
 
 	buf = MALLOC(buflen);
 	if (buf == NULL) {
@@ -228,14 +207,8 @@ do_section(const res_state statp,
 			if (errno != ENODEV)
 				fprintf(file, ";; ns_parserr: %s\n",
 					strerror(errno));
-			else if (rrnum > 0 && sflag != 0 &&
-				 (statp->pfcode & RES_PRF_HEAD1))
-				putc('\n', file);
 			goto cleanup;
 		}
-		if (rrnum == 0 && sflag != 0 && (statp->pfcode & RES_PRF_HEAD1))
-			fprintf(file, ";; %s SECTION:\n",
-				p_section(section, opcode));
 		if (section == ns_s_qd)
 			fprintf(file, ";;\t%s, type = %s, class = %s\n",
 				ns_rr_name(rr),
@@ -253,8 +226,10 @@ do_section(const res_state statp,
 				if (errno == ENOSPC) {
 					FREE(buf);
 					buf = NULL;
+#if 0
 					if (buflen < 131072)
 						buf = MALLOC(buflen += 1024);
+#endif
 					if (buf == NULL) {
 						fprintf(file,
 				              ";; memory allocation failure\n");
@@ -281,7 +256,7 @@ do_section(const res_state statp,
  * This is intended to be primarily a debugging routine.
  */
 void
-res_pquery(const res_state statp, const u_char *msg, int len, FILE *file) {
+res_pquery(const u_char *msg, int len, FILE *file) {
 	ns_msg handle;
 	int qdcount, ancount, nscount, arcount;
 	u_int opcode, rcode, id;
@@ -301,13 +276,10 @@ res_pquery(const res_state statp, const u_char *msg, int len, FILE *file) {
 	/*
 	 * Print header fields.
 	 */
-	if ((!statp->pfcode) || (statp->pfcode & RES_PRF_HEADX) || rcode)
 		fprintf(file,
 			";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n",
 			_res_opcodes[opcode], p_rcode(rcode), id);
-	if ((!statp->pfcode) || (statp->pfcode & RES_PRF_HEADX))
 		putc(';', file);
-	if ((!statp->pfcode) || (statp->pfcode & RES_PRF_HEAD2)) {
 		fprintf(file, "; flags:");
 		if (ns_msg_getflag(handle, ns_f_qr))
 			fprintf(file, " qr");
@@ -325,8 +297,7 @@ res_pquery(const res_state statp, const u_char *msg, int len, FILE *file) {
 			fprintf(file, " ad");
 		if (ns_msg_getflag(handle, ns_f_cd))
 			fprintf(file, " cd");
-	}
-	if ((!statp->pfcode) || (statp->pfcode & RES_PRF_HEAD1)) {
+
 		fprintf(file, "; %s: %d",
 			p_section(ns_s_qd, opcode), qdcount);
 		fprintf(file, ", %s: %d",
@@ -335,22 +306,21 @@ res_pquery(const res_state statp, const u_char *msg, int len, FILE *file) {
 			p_section(ns_s_ns, opcode), nscount);
 		fprintf(file, ", %s: %d",
 			p_section(ns_s_ar, opcode), arcount);
-	}
-	if ((!statp->pfcode) || (statp->pfcode & 
-		(RES_PRF_HEADX | RES_PRF_HEAD2 | RES_PRF_HEAD1))) {
+
 		putc('\n',file);
-	}
+
 	/*
 	 * Print the various sections.
 	 */
-	do_section(statp, &handle, ns_s_qd, RES_PRF_QUES, file);
-	do_section(statp, &handle, ns_s_an, RES_PRF_ANS, file);
-	do_section(statp, &handle, ns_s_ns, RES_PRF_AUTH, file);
-	do_section(statp, &handle, ns_s_ar, RES_PRF_ADD, file);
+	do_section(&handle, ns_s_qd, RES_PRF_QUES, file);
+	do_section(&handle, ns_s_an, RES_PRF_ANS, file);
+	do_section(&handle, ns_s_ns, RES_PRF_AUTH, file);
+	do_section(&handle, ns_s_ar, RES_PRF_ADD, file);
 	if (qdcount == 0 && ancount == 0 &&
 	    nscount == 0 && arcount == 0)
 		putc('\n', file);
 }
+
 
 const u_char *
 p_cdnname(const u_char *cp, const u_char *msg, int len, FILE *file) {
