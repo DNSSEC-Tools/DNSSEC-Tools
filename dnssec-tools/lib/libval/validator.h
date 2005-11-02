@@ -281,6 +281,7 @@ struct hostent *val_gethostbyname ( const char *name, int *h_errnop );
 struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name,
 				      int *h_errnop );
 
+
 /* from val_getaddrinfo.h */
 int val_getaddrinfo ( const char *nodename, const char *servname,
 		      const struct addrinfo *hints,
@@ -289,6 +290,8 @@ int val_x_getaddrinfo ( const val_context_t *ctx,
 		        const char *nodename, const char *servname,
 			const struct addrinfo *hints,
 			struct addrinfo **res );
-
+int val_get_hostent_dnssec_status(const struct hostent *hentry);
+struct hostent* val_duphostent(const struct hostent *hentry);
+void val_freehostent(struct hostent *hentry);
 
 #endif /* VALIDATOR_H */
