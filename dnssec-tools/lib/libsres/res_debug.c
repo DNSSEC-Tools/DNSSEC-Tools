@@ -183,6 +183,8 @@ res_init(void) {
 
 extern const char *_res_sectioncodes[];
 
+#define ERRBUFLEN 80
+
 static void
 do_section(
 	   ns_msg *handle, ns_sect section,
@@ -193,6 +195,7 @@ do_section(
 	char *buf;
 	ns_opcode opcode;
 	ns_rr rr;
+	char err_buf[ERRBUFLEN+1];
 
 	buf = MALLOC(buflen);
 	if (buf == NULL) {
@@ -204,9 +207,13 @@ do_section(
 	rrnum = 0;
 	for (;;) {
 		if (ns_parserr(handle, section, rrnum, &rr)) {
-			if (errno != ENODEV)
-				fprintf(file, ";; ns_parserr: %s\n",
-					strerror(errno));
+			if (errno != ENODEV) { 
+				if(!strerror_r(errno, err_buf, ERRBUFLEN))
+					fprintf(file, ";; ns_parserr: %s\n",
+						err_buf);
+				else
+					fprintf(file, ";; ns_parserr: Error\n");
+			}
 			goto cleanup;
 		}
 		if (section == ns_s_qd)
@@ -237,8 +244,11 @@ do_section(
 					}
 					continue;
 				}
-				fprintf(file, ";; ns_sprintrr: %s\n",
-					strerror(errno));
+				if(!strerror_r(errno, err_buf, ERRBUFLEN))
+					fprintf(file, ";; ns_sprintrr: %s\n",
+						err_buf);
+				else
+					fprintf(file, ";; ns_sprintrr: Error\n");
 				goto cleanup;
 			}
 			fputs(buf, file);
@@ -260,9 +270,13 @@ res_pquery(const u_char *msg, int len, FILE *file) {
 	ns_msg handle;
 	int qdcount, ancount, nscount, arcount;
 	u_int opcode, rcode, id;
+	char err_buf[ERRBUFLEN+1];
 
 	if (ns_initparse(msg, len, &handle) < 0) {
-		fprintf(file, ";; ns_initparse: %s\n", strerror(errno));
+		if(!strerror_r(errno, err_buf, ERRBUFLEN))
+			fprintf(file, ";; ns_initparse: %s\n", err_buf);
+		else
+			fprintf(file, ";; ns_initparse: Error\n");
 		return;
 	}
 	opcode = ns_msg_getflag(handle, ns_f_opcode);
