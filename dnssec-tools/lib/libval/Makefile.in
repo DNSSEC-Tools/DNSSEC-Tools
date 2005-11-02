@@ -1,7 +1,7 @@
 
 INCL= ../libsres
 LIB= ../libsres
-CFLAGS_EX=-I$(INCL) -I.
+CFLAGS_EX=-I$(INCL) -I. -D_GNU_SOURCE
 
 SRC=  	val_resquery.c \
 	val_support.c \
