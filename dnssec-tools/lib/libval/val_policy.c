@@ -18,6 +18,8 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
+#include <sys/file.h>
 
 #include <validator.h>
 #include "val_parse.h"
@@ -672,6 +674,7 @@ void destroy_valpol(val_context_t *ctx)
 int read_val_config_file(val_context_t *ctx, char *scope)
 {
 	FILE *fp;
+	int fd;
 	struct policy_fragment *pol_frag = NULL;
 	int retval;
 	int line_number = 1;
@@ -679,20 +682,33 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 	/* free up existing policies */
 	destroy_valpol(ctx);
 
-	fp = fopen(VAL_CONFIGURATION_FILE, "r");
-	if (fp == NULL) {
+	fd = open(VAL_CONFIGURATION_FILE, O_RDONLY);
+	if (fd == -1) {
 		perror(VAL_CONFIGURATION_FILE);
 		return NO_POLICY;
 	}
+	flock(fd, LOCK_SH);
+
+	fp = fdopen(fd, "r");
+	if(fp == NULL) {
+		flock(fd, LOCK_UN);
+		close(fd);
+		return INTERNAL_ERROR;
+	}
 
 	while (NO_ERROR == (retval = get_next_policy_fragment(fp, scope, &pol_frag, &line_number))) {
-		if (feof(fp))
+		if (feof(fp)) {
+			flock(fd, LOCK_UN);
+			close(fd);
 			return NO_ERROR;
+		}
 		/* Store this fragment as an override, consume pol_frag */ 
 		store_policy_overrides(ctx, &pol_frag);
 	}
 
 	printf ("Error in line %d of file %s\n", line_number, VAL_CONFIGURATION_FILE);
+	flock(fd, LOCK_UN);
+	close(fd);
 	return retval;
 }	
 
@@ -755,6 +771,7 @@ static int init_respol(struct name_server **nslist)
 	struct in_addr  address;
 	char auth_zone_info[MAXDNAME];
 	FILE * fp;
+	int fd;
 	char *line = NULL;
 	char *lp = NULL;
 	size_t len = 0;
@@ -767,11 +784,15 @@ static int init_respol(struct name_server **nslist)
 
 	strcpy(auth_zone_info, DEFAULT_ZONE);
 
-	fp = fopen(RESOLV_CONF, "r");
-	if (fp == NULL){
+	fd = open(RESOLV_CONF, O_RDONLY);
+	if (fd == -1) {
 		perror(RESOLV_CONF);
 		return NO_POLICY;
 	}
+	flock(fd, LOCK_SH);
+
+	fp = fdopen(fd, "r");
+
 	while ((read = getline(&line, &len, fp)) != -1) {
                                                                                                                              
 		char *buf = NULL;
@@ -810,6 +831,12 @@ static int init_respol(struct name_server **nslist)
 			ns->ns_tsig_key = NULL;
 			ns->ns_security_options = ZONE_USE_NOTHING;
 			ns->ns_status = 0;
+
+			ns->ns_retrans = RES_TIMEOUT;
+			ns->ns_retry = RES_RETRY;
+			ns->ns_options = RES_DEFAULT | RES_RECURSE | RES_DEBUG;
+			ns->ns_id = res_randomid();
+
 			ns->ns_next = NULL;
 			ns->ns_number_of_addresses = 0;
 			if (inet_aton (cp, &address)==0)
@@ -854,7 +881,8 @@ static int init_respol(struct name_server **nslist)
 		FREE(lp);
 	lp = NULL;
 	line = NULL;
-	fclose(fp);
+	flock(fd, LOCK_UN);
+	close(fd);
 	return NO_ERROR;
 
 err:
@@ -864,7 +892,8 @@ err:
 		FREE(lp);
 	lp = NULL;
 	line = NULL;
-	fclose(fp);
+	flock(fd, LOCK_UN);
+	close(fd);
 	return CONF_PARSE_ERROR;
 }
 
