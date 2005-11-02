@@ -212,7 +212,9 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 // XXX Needs blocking/non-blocking logic so that the validator can operate in
 // XXX the stealth mode
 int ask_cache(val_context_t *context, struct query_chain *end_q, 
-				struct query_chain **queries, struct assertion_chain **assertions)
+				struct query_chain **queries, 
+				struct assertion_chain **assertions,
+				int *data_received)
 {
 	struct query_chain *next_q, *top_q;
 	struct rrset_rec *next_answer;
@@ -223,40 +225,15 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 	for(next_q = *queries; next_q && next_q != end_q; next_q=next_q->qc_next) {
 		if(next_q->qc_state == Q_INIT) {
 
-			switch(next_q->qc_type_h) {
+			if(NO_ERROR != (retval = get_cached_rrset(next_q->qc_name_n, 
+								next_q->qc_class_h, next_q->qc_type_h, &next_answer)))
+				return retval; 
 
-				case ns_t_ds:
-					next_answer = get_cached_ds(); 
-					break;	
-				
-				case ns_t_dnskey:
-					next_answer = get_cached_keys(); 
-					break;	
-
-				default:
-					next_answer = get_cached_answers(); 
-					break;	
-			}
-
-			while(next_answer)	{ 
-
-				if ((next_answer->rrs_type_h == next_q->qc_type_h) &&
-					(next_answer->rrs_class_h == next_q->qc_class_h) && 
-					(namecmp(next_answer->rrs_name_n, next_q->qc_name_n) == 0)) {
-
-					if(next_q->qc_type_h == ns_t_rrsig) { 
-						if (next_answer->rrs_sig != NULL)
-							break;
-					}
-					else if (next_answer->rrs_data != NULL)
-                           break;
-				}
-				next_answer = next_answer->rrs_next;
-			}
-
-			if(next_answer != NULL) {
+			if(next_answer) {
 				struct domain_info *response;
 				char name[MAXDNAME];
+
+				*data_received = 1;
 
 				next_q->qc_state = Q_ANSWERED;
 				/* Construct a dummy response */
@@ -285,11 +262,13 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 				if(NO_ERROR != (retval = 
 						assimilate_answers(context, queries, 
 							response, next_q, assertions))) {
+					FREE(response->di_rrset);
 					FREE(response->di_qnames);
 					FREE (response);
 					return retval;
 				}
 
+				FREE(response->di_rrset);
 				FREE(response->di_qnames);
 				FREE (response);
 
@@ -300,7 +279,7 @@ int ask_cache(val_context_t *context, struct query_chain *end_q,
 
 	if(top_q != *queries) 
 		/* more qureies have been added, do this again */
-		return ask_cache(context, top_q, queries, assertions);
+		return ask_cache(context, top_q, queries, assertions, data_received);
 
 
 	return NO_ERROR;
@@ -346,7 +325,12 @@ int ask_resolver(val_context_t *context, struct query_chain **queries, int block
 						}
 
 						/* Save new responses in the cache */
-						stow_answer(response->di_rrset);
+						if(NO_ERROR != (retval = stow_answer(response->di_rrset))) {
+							free_domain_info_ptrs(response);
+							FREE(response);
+							return retval;
+						}
+
 						response->di_rrset = NULL;
 						free_domain_info_ptrs(response);
 						FREE(response);
@@ -1191,7 +1175,7 @@ int resolve_n_check(	val_context_t	*context,
 	char block = 1; /* block until at least some data is returned */
 
 	int done = 0;
-	unsigned char data_received = 0;
+	int data_received = 0;
 
 	if (NO_ERROR != (retval = add_to_query_chain(queries, domain_name_n, type, class)))
 		return retval;
@@ -1207,8 +1191,10 @@ int resolve_n_check(	val_context_t	*context,
 
 		/* Data might already be present in the cache */
 		/* XXX by-pass this functionality through flags if needed */
-		if(NO_ERROR != (retval = ask_cache(context, NULL, queries, assertions)))
+		if(NO_ERROR != (retval = ask_cache(context, NULL, queries, assertions, &data_received)))
 			return retval;
+		if(data_received)
+			block = 0;
 
 		/* Send un-sent queries */
 		if(NO_ERROR != (retval = ask_resolver(context, queries, block, assertions)))
@@ -1226,8 +1212,11 @@ int resolve_n_check(	val_context_t	*context,
 
 		/* Henceforth we will need some data before we can continue */
 		block = 1;
-		if (!data_received)
+		if ((!data_received) || (top_q->qc_state < Q_ANSWERED))
 			continue;
+
+		/* Answer will be digested */
+		data_received = 0;
 
 		/* No point going ahead if our original query had error conditions */
 		if (top_q->qc_state != Q_ANSWERED) {
