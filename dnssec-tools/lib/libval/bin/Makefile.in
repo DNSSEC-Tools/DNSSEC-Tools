@@ -2,7 +2,7 @@
 INCL= ../../libsres
 LIB= ../../libsres
 CFLAGS_EX=-I$(INCL) -I..
-EXTRALIBS=-lval -lsres -lcrypto
+EXTRALIBS=-lval -lsres -lcrypto -lpthread
 LDFLAGS_EX=-L.. -L$(LIB) $(EXTRALIBS)
 
 SRC=  	val_resquery.c \
