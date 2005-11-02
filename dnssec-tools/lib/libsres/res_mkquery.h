@@ -18,7 +18,7 @@
 #endif
 
 int
-res_nmkquery(res_state statp,
+res_val_nmkquery(struct name_server  *pref_ns,
 	     int op,			/* opcode of query */
 	     const char *dname,		/* domain name */
 	     int class, int type,	/* class and type of query */
@@ -29,7 +29,7 @@ res_nmkquery(res_state statp,
 	     int buflen);		/* size of buffer */
 
 int
-res_nopt(res_state statp,
+res_val_nopt(struct name_server  *pref_ns,
 	 int n0,		/* current offset in buffer */
 	 u_char *buf,		/* buffer to put query */
 	 int buflen,		/* size of buffer */
