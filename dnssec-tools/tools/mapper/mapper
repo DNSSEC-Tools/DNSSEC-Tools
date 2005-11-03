@@ -409,7 +409,7 @@ sub get_label {
 sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	import Getopt::GUI::Long;
-        Getopt::GUI::Long::Configure(qw(display_help no_ignore_case display_image));
+        Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
 	return GetOptions(@_);
     } else {
 	require Getopt::Long;
