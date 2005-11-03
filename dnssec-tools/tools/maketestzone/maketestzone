@@ -1,0 +1,312 @@
+#!/usr/bin/perl
+# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+use Carp;
+use strict;
+
+my %opts =
+  ( 'd' => 'test.dnssec-tools.org',
+    'ns' => 'dns1=168.150.236.36,dns2=63.195.146.66',
+    'S' => ";\n; %s\n;\n",
+    'a' =>  "--verbose --genksk --genzsk",
+# XXX:
+# nsec skips the good record
+# nsec says type shouldn't be used
+# sig doesn't cover type
+    'p' => 'good,badsign,nosig');
+
+LocalGetOptions(\%opts,
+		['o|output-file=s',
+		 'Output base DNS zone file to use (default = db.ZONENAME)'],
+		['O|output-signed-file=s',
+		 'Output base DNS zone file to use (default = OPT-o.zs.signed)'],
+		['M|output-modified-file=s',
+		 'Output for signed but modified zone file to use (default = OPT-O.modified)'],
+		'',
+		['d|domain=s', 'domain name to generate records for'],
+		['ns|name-servers|n=s',
+		 'Comma separated name=addr name-server records'],
+		'',
+		['p|prefixes','Comma separated list of record prefixes to use'],
+		'',
+		['g|dont-generate-zone',
+		 'Do not generate the zone; use the existing and sign/modify it'],
+		['z|dont-run-zonesigner',
+		 'Do not run zonesigner to sign the records'],
+		['a|zonesigner-arguments',
+		 'Arguments to pass to zonesigner'],
+		['Z|dont-destroy',
+		 'Do not destroy the records and leave them properly signed'],
+		'',
+		['v|verbose','Verbose output'],
+		['h|help','Display help message'],
+		['noop','Do nothing; bogus argument'],
+	       );
+
+$opts{'o'} = "db.$opts{d}" if (!$opts{'o'});
+$opts{'O'} = "$opts{o}.zs.signed" if (!$opts{'O'});
+croak "-O flag must end in .signed" if ($opts{'O'} !~ /\.signed$/);
+$opts{'M'} = "$opts{O}.modified" if (!$opts{'M'});
+
+#
+# address definitions
+#
+my %addrs =
+   (A    => '168.150.236.43',
+    AAAA => '2001:470:1f00:ffff::af');
+
+#
+# data modification functions
+#
+#   regexp -> function
+#
+my %destroyFunctions =
+  ('^(badsign\w+).*IN\s+(A+)\s+' => \&destroy_signature,
+   '^(nosig\w+).*IN\s+(A+)\s+' => \&delete_signature);
+
+#
+# globals
+#
+my $name;
+my @prefixes = split(/,\s*/,$opts{p});
+
+
+######################################################################
+# do it
+
+generate_records() if (!$opts{g});
+run_zonesigner() if (!$opts{'z'});
+modify_records() if (!$opts{'Z'});
+
+######################################################################
+# Generate records based on inputs
+#
+sub generate_records {
+    Verbose("generating $opts{'O'}");
+    #
+    # open the output file
+    #
+    open(O, ">" . $opts{'o'});
+
+    generate_top();
+
+    #
+    # for each address, generate records
+    #
+    print_comment("Main records");
+    foreach my $addr (keys(%addrs)) {
+	print_comment("$addr records");
+	# generate address records
+	foreach my $prefix (@prefixes) {
+	    print_record($prefix . $addr, "1D IN", $addr, $addrs{$addr});
+	}
+
+	# generate address records
+	print_comment("CNAMEs to $addr records");
+	foreach my $cnameprefix (@prefixes) {
+	    foreach my $addrprefix (@prefixes) {
+		print_record("${cnameprefix}CNAMEto${addrprefix}${addr}", "CNAME",
+			     "", "${addrprefix}${addr}");
+	    }
+	}
+    }
+
+    close(O);
+}
+
+
+######################################################################
+# Run zonesigner on the resulting file.
+#
+sub run_zonesigner {
+    #
+    # Run zonesigner to sign the thing
+    #
+    my $file = $opts{'O'};
+    $file =~ s/\.signed$//;
+    Verbose("running zonesigner to produce $opts{'O'} from $opts{'o'}");
+    System("zonesigner $opts{'a'} --zone $opts{'d'} $opts{'o'} $file");
+}
+
+######################################################################
+# Modifies the records based on the registered functions
+#
+sub modify_records {
+    Verbose("modifying records in $opts{'O'} to produce $opts{'M'}");
+    open(I,"$opts{'O'}");
+    open(O,">$opts{'M'}");
+    $_ = <I>;
+    my @matches;
+    while ($_) {
+	my $found;
+	foreach my $type (keys(%destroyFunctions)) {
+	    if (@matches = /$type/) {
+		$destroyFunctions{$type}->(@matches);
+		$found = 1;
+		last;
+	    }
+	}
+	if (!$found) {
+	    print O;
+	    $_ = <I>;
+	}
+    }
+    close(I);
+    close(O);
+}
+
+######################################################################
+# Functions to mess with results
+#
+sub destroy_signature {
+    my ($name, $type) = @_;
+    Verbose("  modifying signatures of $name");
+    print O;
+    my $inrec = 0;
+    while (<I>) {
+	last if /^\w/;
+	$inrec = 1 if (/RRSIG\s+$type/);
+	s/^(\s*)(.*)= \)/$1 . "x" x length($2) . "= )"/e if ($inrec);
+	$inrec = 0 if (/\)/);
+	print O;
+    }
+}
+
+sub delete_signature {
+    my ($name, $type) = @_;
+    Verbose("  deleting signatures of $_[0]");
+    print O;
+    my $inrec = 0;
+    while (<I>) {
+	last if /^\w/;
+	$inrec = 1 if (/RRSIG\s+$type/);
+	print O if (!$inrec);
+	$inrec = 0 if (/\)/);
+    }
+}
+
+######################################################################
+# printing-subs
+#
+sub print_record {
+    my @txt = @_;
+    $txt[0] = lc($txt[0]);
+    printf(O "%-30s %-6s %-6s %s\n", @txt);
+}
+
+sub print_comment {
+    Verbose($_[0]);
+    printf(O $opts{'S'}, $_[0]);
+}
+
+sub generate_top {
+    print O "; -*- dns -*-\n";
+    print_comment "This file was generated by $0";
+print O "\$TTL 1D
+$opts{'d'}.	600	IN SOA dns.$opts{'d'}. hardaker.$opts{'d'}. (
+					" . time() . "
+					2H       ; refresh (2 hours)
+					1H       ; retry (1 hour)
+					1W       ; expire (1 week)
+					600        ; minimum (10 minutes)
+					)
+                        TXT     \"DNSSEC-TOOLS test zone for $opts{'d'}\"
+";
+    foreach my $ns (split(",",$opts{'ns'})) {
+        my ($rec,$addr) = split(/=/,$ns);
+        print_record("","NS","",$rec . "." . $opts{'d'} . ".");
+    }
+    foreach my $ns (split(",",$opts{'ns'})) {
+        my ($rec,$addr) = split(/=/,$ns);
+        print_record("$rec","1D IN","A",$addr);
+    }
+}
+
+sub Verbose {
+    print @_,"\n" if ($opts{'v'});
+}
+
+sub System {
+    Verbose("running: ",@_);
+    system(@_);
+}
+
+######################################################################
+# Getopts related functions
+#
+sub LocalGetOptions {
+    if (eval {require Getopt::GUI::Long;}) {
+	import Getopt::GUI::Long;
+        Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
+	return GetOptions(@_);
+    } else {
+	require Getopt::Long;
+	import Getopt::Long;
+    }
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
+}
+
+=head1 NAME
+
+generaterecords - generates a test dnssec zone that can be used to DNSSEC
+
+=head1 SYNOPSIS
+
+generaterecords -v -d mytestzone.example.com
+
+=head1 DESCRIPTION
+
+The generaterecords script generates a zone file, given a domain name,
+which is then signed and modified to invalidate portions of the data
+in particular ways.  Each generated record is named appropriately to
+how the security data is modified (the gooda record will contain a A
+record with valid DNSSEC data, but the badseca record will contain an
+A record where the signature has been modified to invalidate it).
+
+The results of this process can then be served and test secure
+validators, applications, and other software can be thrown at it to
+see if they properly fail or succeed under the dns security policies
+being deployed.
+
+After the files are generated, consider running B<donuts> on them to
+see how the data in them has been tampered with to be invalid.
+
+=head1 PRE-REQUISITES
+
+zonesigner from the dnssec-tools project
+bind software 9.3.1 or greater
+
+=head1 COPYRIGHT
+
+Copyright 2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wes Hardaker <hardaker@users.sourceforge.net>
+
+=head1 SEE ALSO
+
+B<Net::DNS>
+
+http://dnssec-tools.sourceforge.net
+
+zonesigner(1), donuts(1)
+
+=cut
+
