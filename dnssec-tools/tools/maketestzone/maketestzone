@@ -12,7 +12,8 @@ my %opts =
   ( 'd' => 'test.dnssec-tools.org',
     'ns' => 'dns1=168.150.236.36,dns2=63.195.146.66',
     'S' => ";\n; %s\n;\n",
-    'a' =>  "--verbose --genksk --genzsk",
+    #  Add --genksk --genzsk for new zones
+    'a' =>  "--verbose",
 # XXX:
 # nsec skips the good record
 # nsec says type shouldn't be used
@@ -32,6 +33,8 @@ LocalGetOptions(\%opts,
 		 'Comma separated name=addr name-server records'],
 		'',
 		['p|prefixes','Comma separated list of record prefixes to use'],
+		['c|no-cname-records','Don\'t create CNAME records'],
+		['s|no-ns-records','Don\'t create sub-zone records'],
 		'',
 		['g|dont-generate-zone',
 		 'Do not generate the zone; use the existing and sign/modify it'],
@@ -67,20 +70,21 @@ my %addrs =
 my %destroyFunctions =
   (
    # changes the rrsig signature to insert bogus x's
-   '^(badsign\w+).*IN\s+(CNAME|A+)\s+' => \&destroy_signature,
+   '^(badsign[-\w]+).*IN\s+(CNAME|A+)\s+' => \&destroy_signature,
+   '^(badsign[-\w]+).*IN\s+NS\s+' => [\&destroy_signature, 'DS'],
 
    # changes the address/cname record in the data
-   '^(baddata\w+).*IN\s+(A+)\s+(.*)' => \&destroy_data,
+   '^(baddata[-\w]+).*IN\s+(A+)\s+(.*)' => \&destroy_data,
 
    # removes the rrsig record
-   '^(nosig\w+).*IN\s+(CNAME|A+)\s+' => \&delete_signature,
+   '^(nosig[-\w]+).*IN\s+(CNAME|A+)\s+' => \&delete_signature,
 
    # future expiration date = 1 year (365 days) -> 1 year + 30 days
-   '^(futuredate\w+).*IN\s+(A+|CNAME)\s+' =>
+   '^(futuredate[-\w]+).*IN\s+(A+|CNAME)\s+' =>
    [\&make_new_date, 365*24*60*60, 395*24*60*60],
 
    # past date: 30 days ago to 5 minutes ago
-   '^(pastdate\w+).*IN\s+(A+|CNAME)\s+' =>
+   '^(pastdate[-\w]+).*IN\s+(A+|CNAME)\s+' =>
    [\&make_new_date, -(30*24*60*60), -300],
   );
 
@@ -119,18 +123,32 @@ sub generate_records {
 	print_comment("$addr records");
 	# generate address records
 	foreach my $prefix (@prefixes) {
-	    print_record($prefix . $addr, "1D IN", $addr, $addrs{$addr});
+	    print_record("$prefix-$addr", "1D IN", $addr, $addrs{$addr});
 	}
 
 	# generate address records
-	print_comment("CNAMEs to $addr records");
-	foreach my $cnameprefix (@prefixes) {
-	    foreach my $addrprefix (@prefixes) {
-		print_record("${cnameprefix}CNAMEto${addrprefix}${addr}", "CNAME",
-			     "", lc("${addrprefix}${addr}"));
+	if (!$opts{'c'}) {
+	    print_comment("CNAMEs to $addr records");
+	    foreach my $cnameprefix (@prefixes) {
+		foreach my $addrprefix (@prefixes) {
+		    print_record("${cnameprefix}-cname-to-${addrprefix}-${addr}",
+				 "CNAME",
+				 "", lc("${addrprefix}${addr}"));
+		}
 	    }
 	}
     }
+
+    # generate address records
+    if (!$opts{'s'}) {
+	print_comment("NS records to sub zones");
+	foreach my $nsprefix (@prefixes) {
+	    print_record("${nsprefix}-ns",
+			 "1D IN", "NS",
+			 lc("ns1.${nsprefix}.$opts{'d'}."));
+	}
+    }
+
 
     $fh->close();
 }
