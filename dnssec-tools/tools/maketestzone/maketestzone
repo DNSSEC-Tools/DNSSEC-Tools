@@ -14,7 +14,7 @@ my %opts =
 # nsec skips the good record
 # nsec says type shouldn't be used
 # sig doesn't cover type
-    'p' => 'good,badsign,nosig');
+    'p' => 'good,badsign,nosig,baddata');
 
 LocalGetOptions(\%opts,
 		['o|output-file=s',
@@ -62,8 +62,11 @@ my %addrs =
 #   regexp -> function
 #
 my %destroyFunctions =
-  ('^(badsign\w+).*IN\s+(A+)\s+' => \&destroy_signature,
-   '^(nosig\w+).*IN\s+(A+)\s+' => \&delete_signature);
+  (
+   '^(badsign\w+).*IN\s+(CNAME|A+)\s+' => \&destroy_signature,
+   '^(baddata\w+).*IN\s+(A+)\s+(.*)' => \&destroy_data,
+   '^(nosig\w+).*IN\s+(CNAME|A+)\s+' => \&delete_signature
+  );
 
 #
 # globals
@@ -107,7 +110,7 @@ sub generate_records {
 	foreach my $cnameprefix (@prefixes) {
 	    foreach my $addrprefix (@prefixes) {
 		print_record("${cnameprefix}CNAMEto${addrprefix}${addr}", "CNAME",
-			     "", "${addrprefix}${addr}");
+			     "", lc("${addrprefix}${addr}"));
 	    }
 	}
     }
@@ -171,6 +174,14 @@ sub destroy_signature {
 	$inrec = 0 if (/\)/);
 	print O;
     }
+}
+
+sub destroy_data {
+    my ($name, $type, $data) = @_;
+    Verbose("  modifying data of $name:$type");
+    $_ =~ s/(.)$/($1 eq '0') ? "1" : "0"/e;
+    print O;
+    $_ = <I>;
 }
 
 sub delete_signature {
