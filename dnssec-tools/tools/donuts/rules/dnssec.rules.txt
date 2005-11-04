@@ -112,7 +112,7 @@ test:
   $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
   my $extime = str2time($date);
   if ($extime < $donuts::time) {
-    return "RRSIG record has expired";
+    return "RRSIG record for " . $_[0]->name . " has expired";
   } elsif ($extime - $donuts::time < $_[1]->{'warntime'}) {
     return "RRSIG is nearing its expiration time";
   }
@@ -279,7 +279,6 @@ desc: draft-ietf-dnsext-dnssec-records-11: section 3.1.7: The Signer's Name fiel
 test:
   if ($_[0]->signame ne $current_domain . "." &&
       $_[0]->signame ne $current_domain) {
-    print STDERR Dumper($_[0]);
     return "signer name for $_[0]->{name} is $_[0]->{signame} but it should match the zone name ($current_domain)";
   }
 
