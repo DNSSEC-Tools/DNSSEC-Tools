@@ -13,26 +13,31 @@ my %opts =
     'ns' => 'dns1=168.150.236.36,dns2=63.195.146.66',
     'S' => ";\n; %s\n;\n",
     #  Add --genksk --genzsk for new zones
-    'a' =>  "--verbose",
+    'a' =>  "--verbose -gends",
 # XXX:
 # nsec skips the good record
 # nsec says type shouldn't be used
 # sig doesn't cover type
-    'p' => 'good,badsign,nosig,baddata,futuredate,pastdate');
+    'p' => 'good,badsign,nosig,baddata,futuredate,pastdate',
+    'P' => 'good,badsign,nosig,nods,futuredate,pastdate',
+  );
 
 LocalGetOptions(\%opts,
-		['o|output-file=s',
-		 'Output base DNS zone file to use (default = db.ZONENAME)'],
-		['O|output-signed-file=s',
-		 'Output base DNS zone file to use (default = OPT-o.zs.signed)'],
+		['o|output-file-prefix=s',
+		 'Output prefix to use for zone files (default = db.)'],
+		['O|output-suffix-signed-file=s',
+		 'Output suffix to be given to zonesigner (default = .zs)'],
 		['M|output-modified-file=s',
-		 'Output for signed but modified zone file to use (default = OPT-O.modified)'],
+		 'Output suffix for the modified zone file (default = .modified)'],
 		'',
 		['d|domain=s', 'domain name to generate records for'],
 		['ns|name-servers|n=s',
 		 'Comma separated name=addr name-server records'],
 		'',
-		['p|prefixes','Comma separated list of record prefixes to use'],
+		['p|record-prefixes',
+		 'Comma separated list of record prefixes to use'],
+		['P|ns-prefixes',
+		 'Comma separated list of NS record prefixes to use'],
 		['c|no-cname-records','Don\'t create CNAME records'],
 		['s|no-ns-records','Don\'t create sub-zone records'],
 		'',
@@ -42,6 +47,7 @@ LocalGetOptions(\%opts,
 		 'Do not run zonesigner to sign the records'],
 		['a|zonesigner-arguments=s',
 		 'Arguments to pass to zonesigner'],
+		['k|generate-keys','Have zonesigner generate needed keys'],
 		['Z|dont-destroy',
 		 'Do not destroy the records and leave them properly signed'],
 		'',
@@ -50,11 +56,10 @@ LocalGetOptions(\%opts,
 		['noop','Do nothing; bogus argument'],
 	       );
 
-$opts{'o'} = "db.$opts{d}" if (!$opts{'o'});
-$opts{'O'} = "$opts{o}.zs.signed" if (!$opts{'O'});
-croak "-O flag must end in .signed" if ($opts{'O'} !~ /\.signed$/);
-$opts{'M'} = "$opts{O}.modified" if (!$opts{'M'});
-
+$opts{'o'} = "db." if (!$opts{'o'});
+$opts{'O'} = ".zs" if (!$opts{'O'});
+$opts{'M'} = ".modified" if (!$opts{'M'});
+$opts{'a'} .= " --genzsk --genksk" if ($opts{'k'});
 #
 # address definitions
 #
@@ -77,15 +82,23 @@ my %destroyFunctions =
    '^(baddata[-\w]+).*IN\s+(A+)\s+(.*)' => \&destroy_data,
 
    # removes the rrsig record
-   '^(nosig[-\w]+).*IN\s+(CNAME|A+)\s+' => \&delete_signature,
+   '^(nosig[-\w]+).*IN\s+(CNAME|A+)\s+' => [\&delete_signature, 'RRSIG'],
+   '^(nosig[-\w]+).*IN\s+NS\s+' => [\&delete_signature, 'DS', 'RRSIG'],
+
+   # removes the DS record
+   '^(nods[-\w]+).*IN\s+NS\s+' => [\&delete_signature, '', 'DS'],
 
    # future expiration date = 1 year (365 days) -> 1 year + 30 days
    '^(futuredate[-\w]+).*IN\s+(A+|CNAME)\s+' =>
    [\&make_new_date, 365*24*60*60, 395*24*60*60],
+   '^(futuredate[-\w]+).*IN\s+NS\s+' =>
+   [\&make_new_date, 'DS', 365*24*60*60, 395*24*60*60],
 
    # past date: 30 days ago to 5 minutes ago
    '^(pastdate[-\w]+).*IN\s+(A+|CNAME)\s+' =>
    [\&make_new_date, -(30*24*60*60), -300],
+   '^(pastdate[-\w]+).*IN\s+NS\s+' =>
+   [\&make_new_date, 'DS', -(30*24*60*60), -300],
   );
 
 #
@@ -93,27 +106,39 @@ my %destroyFunctions =
 #
 my $name;
 my @prefixes = split(/,\s*/,$opts{p});
+my @nsprefixes = split(/,\s*/,$opts{P});
 my $fh;
+my @resultfiles;
 
 ######################################################################
 # do it
+generate_zone($opts{'d'}, $opts{'c'}, $opts{'s'});
 
-generate_records($opts{'o'})           if (!$opts{g});
-run_zonesigner($opts{'o'}, $opts{'O'}) if (!$opts{'z'});
-modify_records($opts{'O'}, $opts{'M'}) if (!$opts{'Z'});
+Verbose("\nDONE:\n");
+Verbose("I created the following modified zone files:\n","  ",
+	join("\n  ",@resultfiles));
 
 ######################################################################
 # Generate records based on inputs
 #
+
+sub generate_zone {
+    my ($domain, $nocnames, $nosubdomains) = @_;
+    generate_records($domain, $nocnames, $nosubdomains)   if (!$opts{g});
+    run_zonesigner($domain)                		  if (!$opts{'z'});
+    modify_records($domain)                		  if (!$opts{'Z'});
+}
+
 sub generate_records {
-    my ($file) = @_;
-    Verbose("generating $opts{'O'}");
+    my ($domain, $nocnames, $nosubdomains) = @_;
+    my $file = $opts{'o'} . $domain;
+    Verbose("generating $file");
     #
     # open the output file
     #
     $fh = new IO::File (">$file");
 
-    generate_top();
+    generate_top($domain);
 
     #
     # for each address, generate records
@@ -127,7 +152,7 @@ sub generate_records {
 	}
 
 	# generate address records
-	if (!$opts{'c'}) {
+	if (!$nocnames) {
 	    print_comment("CNAMEs to $addr records");
 	    foreach my $cnameprefix (@prefixes) {
 		foreach my $addrprefix (@prefixes) {
@@ -140,12 +165,15 @@ sub generate_records {
     }
 
     # generate address records
-    if (!$opts{'s'}) {
+    if (!$nosubdomains) {
 	print_comment("NS records to sub zones");
-	foreach my $nsprefix (@prefixes) {
+	foreach my $nsprefix (@nsprefixes) {
+	    my $savefh = $fh;
+	    generate_zone("${nsprefix}-ns.$domain", 1, 1);
+	    $fh = $savefh;
 	    print_record("${nsprefix}-ns",
 			 "1D IN", "NS",
-			 lc("ns1.${nsprefix}.$opts{'d'}."));
+			 lc("ns1.${nsprefix}.$domain."));
 	}
     }
 
@@ -158,22 +186,26 @@ sub generate_records {
 # Run zonesigner on the resulting file.
 #
 sub run_zonesigner {
-    my ($infile, $outfile) = @_;
+    my ($domain) = @_;
+
+    my $infile = $opts{'o'} . $domain;
+    my $outfile = $opts{'o'} . $domain . $opts{'O'};
+
     #
     # Run zonesigner to sign the thing
     #
-    my $file = $outfile;
-    $file =~ s/\.signed$//;
-    Verbose("running zonesigner on $infile to produce $outfile");
-    System("zonesigner $opts{'a'} --zone $opts{'d'} $infile $file");
+    Verbose("running zonesigner on $infile to produce $outfile.signed");
+    System("zonesigner $opts{'a'} --zone $domain $infile $outfile");
 }
 
 ######################################################################
 # Modifies the records based on the registered functions
 #
 sub modify_records {
-    my ($infile, $outfile) = @_;
-    Verbose("modifying records in $opts{'O'} to produce $opts{'M'}");
+    my ($domain) = @_;
+    my $infile = $opts{'o'} . $domain . $opts{'O'} . '.signed';
+    my $outfile = $opts{'o'} . $domain . $opts{'O'} . '.signed' . $opts{'M'};
+    Verbose("modifying records in $infile to produce $outfile");
     open(I,"$infile");
     $fh = new IO::File (">$outfile");
     $_ = <I>;
@@ -200,6 +232,7 @@ sub modify_records {
     }
     close(I);
     $fh->close();
+    push @resultfiles, $outfile;
 }
 
 ######################################################################
@@ -228,13 +261,13 @@ sub destroy_data {
 }
 
 sub delete_signature {
-    my ($name, $type) = @_;
+    my ($name, $type, $expr) = @_;
     Verbose("  deleting signatures of $_[0]");
     print $fh $_;
     my $inrec = 0;
     while (<I>) {
 	last if /^\w/;
-	$inrec = 1 if (/RRSIG\s+$type/);
+	$inrec = 1 if (/$expr\s+$type/);
 	print $fh $_ if (!$inrec);
 	$inrec = 0 if (/\)/);
     }
@@ -280,7 +313,7 @@ sub make_new_date {
     croak "can't read one of keyid ($keyid) or keyname ($keyname) from input RRSIG\n" if (!$keyid || !$keyname);
 
     # XXX: assumes 005 alg.
-    my $keypath = "K${keyname}+005+${keyid}.private";
+    my $keypath = sprintf("K${keyname}+005+%05d.private",$keyid);
     croak "can't find needed private key file: $keypath\n" if (!-f $keypath);
 
     # create the new record
@@ -318,21 +351,23 @@ sub print_comment {
 }
 
 sub generate_top {
+    my $domain = shift;
+    
     print $fh "; -*- dns -*-\n";
     print_comment "This file was generated by $0";
     print $fh "\$TTL 1D
-$opts{'d'}.	600	IN SOA dns.$opts{'d'}. hardaker.$opts{'d'}. (
+$domain.	600	IN SOA dns.$domain. hardaker.$domain. (
 					" . time() . "
 					2H       ; refresh (2 hours)
 					1H       ; retry (1 hour)
 					1W       ; expire (1 week)
 					600        ; minimum (10 minutes)
 					)
-                        TXT     \"DNSSEC-TOOLS test zone for $opts{'d'}\"
+                        TXT     \"DNSSEC-TOOLS test zone for $domain\"
 ";
     foreach my $ns (split(",",$opts{'ns'})) {
         my ($rec,$addr) = split(/=/,$ns);
-        print_record("","NS","",$rec . "." . $opts{'d'} . ".");
+        print_record("","NS","",$rec . "." . $domain . ".");
     }
     foreach my $ns (split(",",$opts{'ns'})) {
         my ($rec,$addr) = split(/=/,$ns);
