@@ -12,6 +12,7 @@ my %opts =
   ( 'd' => 'test.dnssec-tools.org',
     'ns' => 'dns1=168.150.236.36,dns2=63.195.146.66',
     'S' => ";\n; %s\n;\n",
+    'bind-db-dir' => '/etc/named',
     #  Add --genksk --genzsk for new zones
     'a' =>  "--verbose -gends",
 # XXX:
@@ -50,6 +51,11 @@ LocalGetOptions(\%opts,
 		['k|generate-keys','Have zonesigner generate needed keys'],
 		['Z|dont-destroy',
 		 'Do not destroy the records and leave them properly signed'],
+		'',
+		['bind-config=s',
+		 'Generate a bind configuration file snippit to load the DB sets'],
+		['bind-db-dir=s',
+		 'The base directory where the bind DB files will be placed'],
 		'',
 		['v|verbose','Verbose output'],
 		['h|help','Display help message'],
@@ -109,10 +115,23 @@ my @prefixes = split(/,\s*/,$opts{p});
 my @nsprefixes = split(/,\s*/,$opts{P});
 my $fh;
 my @resultfiles;
+my $bcfh;
 
 ######################################################################
 # do it
+if ($opts{'bind-config'}) {
+    $bcfh = new IO::File(">$opts{'bind-config'}");
+    print $bcfh "// " . "*" x 70 . "\n";
+    print $bcfh "// DNSSEC Test Zone Files\n";
+    print $bcfh "// " . "*" x 70 . "\n\n";
+}
+
+# generate the zone we wanted
 generate_zone($opts{'d'}, $opts{'c'}, $opts{'s'});
+
+if ($bcfh) {
+    $bcfh->close();
+}
 
 Verbose("\nDONE:\n");
 Verbose("I created the following modified zone files:\n","  ",
@@ -124,6 +143,15 @@ Verbose("I created the following modified zone files:\n","  ",
 
 sub generate_zone {
     my ($domain, $nocnames, $nosubdomains) = @_;
+
+    # add the named.conf snippit for this file
+    if ($bcfh) {
+	print $bcfh "zone \"$domain\" {\n";
+	print $bcfh "\ttype master;\n";
+	print $bcfh "\tfile master \"$opts{'bind-db-dir'}/$opts{'o'}$domain$opts{'O'}.signed$opts{'M'}\";\n";
+	print $bcfh "}\n\n";
+    }
+
     generate_records($domain, $nocnames, $nosubdomains)   if (!$opts{g});
     run_zonesigner($domain)                		  if (!$opts{'z'});
     modify_records($domain)                		  if (!$opts{'Z'});
