@@ -343,7 +343,7 @@ sub destroy_signature {
     while (<I>) {
 	last if /^\w/;
 	$inrec = 1 if (/RRSIG\s+$type/);
-	s/^(\s*)(.*)= \)/$1 . "x" x length($2) . "= )"/e if ($inrec);
+	s/^(\s*)(.)(.*)= \)/$1 . ($2 eq "x" ? "y" : "x") . $3 . "= )"/e if ($inrec);
 	$inrec = 0 if (/\)/);
 	print $fh $_;
     }
