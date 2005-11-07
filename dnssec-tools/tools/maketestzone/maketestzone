@@ -11,8 +11,18 @@ use Net::DNS::RR;
 my %opts =
   ( 'd' => 'test.dnssec-tools.org',
     'ns' => 'dns1=168.150.236.36,dns2=63.195.146.66',
+    a => '168.150.236.43',
+    aaaa => '2001:470:1f00:ffff::af',
     'S' => ";\n; %s\n;\n",
+
+    o => "db.",
+    O => ".zs",
+    M => ".modified",
+
     'bind-db-dir' => '/etc/named',
+    'html-doc-root' => '/var/www/dnssec-test-zone',
+    'html-log' => 'logs/dnssec-test-zone',
+
     #  Add --genksk --genzsk for new zones
     'a' =>  "--verbose -gends",
 # XXX:
@@ -34,6 +44,10 @@ LocalGetOptions(\%opts,
 		['d|domain=s', 'domain name to generate records for'],
 		['ns|name-servers|n=s',
 		 'Comma separated name=addr name-server records'],
+		['a-addr|a-record-address=s',
+		 'A record (IPv4) address to use in data'],
+		['aaaa-addr|a-record-address=s',
+		 'AAAA record (IPv6) address to use in data'],
 		'',
 		['p|record-prefixes',
 		 'Comma separated list of record prefixes to use'],
@@ -57,21 +71,23 @@ LocalGetOptions(\%opts,
 		['bind-db-dir=s',
 		 'The base directory where the bind DB files will be placed'],
 		'',
+		['html-out=s',
+		 'Generate a HTML page containing a list of links to each record'],
+		['apache-out=s',
+		 'Generate a Apache config snippit for configuring apache for each zone record'],
+		'',
 		['v|verbose','Verbose output'],
 		['h|help','Display help message'],
 		['noop','Do nothing; bogus argument'],
 	       );
 
-$opts{'o'} = "db." if (!$opts{'o'});
-$opts{'O'} = ".zs" if (!$opts{'O'});
-$opts{'M'} = ".modified" if (!$opts{'M'});
 $opts{'a'} .= " --genzsk --genksk" if ($opts{'k'});
 #
 # address definitions
 #
 my %addrs =
-   (A    => '168.150.236.43',
-    AAAA => '2001:470:1f00:ffff::af');
+   (A    => $opts{'a-addr'},
+    AAAA => $opts{'aaaa-addr'});
 
 #
 # data modification functions
@@ -113,25 +129,18 @@ my %destroyFunctions =
 my $name;
 my @prefixes = split(/,\s*/,$opts{p});
 my @nsprefixes = split(/,\s*/,$opts{P});
-my $fh;
 my @resultfiles;
-my $bcfh;
+my ($fh, $bcfh, $apachefh, $htmlfh);
 
 ######################################################################
 # do it
-if ($opts{'bind-config'}) {
-    $bcfh = new IO::File(">$opts{'bind-config'}");
-    print $bcfh "// " . "*" x 70 . "\n";
-    print $bcfh "// DNSSEC Test Zone Files\n";
-    print $bcfh "// " . "*" x 70 . "\n\n";
-}
+
+setup_global_files();
 
 # generate the zone we wanted
 generate_zone($opts{'d'}, $opts{'c'}, $opts{'s'});
 
-if ($bcfh) {
-    $bcfh->close();
-}
+shutdown_global_files();
 
 Verbose("\nDONE:\n");
 Verbose("I created the following modified zone files:\n","  ",
@@ -148,8 +157,8 @@ sub generate_zone {
     if ($bcfh) {
 	print $bcfh "zone \"$domain\" {\n";
 	print $bcfh "\ttype master;\n";
-	print $bcfh "\tfile master \"$opts{'bind-db-dir'}/$opts{'o'}$domain$opts{'O'}.signed$opts{'M'}\";\n";
-	print $bcfh "}\n\n";
+	print $bcfh "\tfile \"$opts{'bind-db-dir'}/$opts{'o'}$domain$opts{'O'}.signed$opts{'M'}\";\n";
+	print $bcfh "};\n\n";
     }
 
     generate_records($domain, $nocnames, $nosubdomains)   if (!$opts{g});
@@ -177,6 +186,7 @@ sub generate_records {
 	# generate address records
 	foreach my $prefix (@prefixes) {
 	    print_record("$prefix-$addr", "1D IN", $addr, $addrs{$addr});
+	    add_web_stuff_for_domain($domain, "$prefix-$addr");
 	}
 
 	# generate address records
@@ -187,6 +197,7 @@ sub generate_records {
 		    print_record("${cnameprefix}-cname-to-${addrprefix}-${addr}",
 				 "CNAME",
 				 "", lc("${addrprefix}${addr}"));
+		    add_web_stuff_for_domain($domain, "${cnameprefix}-cname-to-${addrprefix}-${addr}");
 		}
 	    }
 	}
@@ -207,6 +218,64 @@ sub generate_records {
 
 
     $fh->close();
+}
+
+sub setup_global_files {
+
+    #
+    # bind configuration file
+    #
+    if ($opts{'bind-config'}) {
+	$bcfh = new IO::File(">$opts{'bind-config'}");
+	print $bcfh "// " . "*" x 70 . "\n";
+	print $bcfh "// DNSSEC Test Zone Files\n";
+	print $bcfh "// " . "*" x 70 . "\n\n";
+    }
+
+    #
+    # HTML output file o' links
+    #
+    if ($opts{'html-out'}) {
+	$htmlfh = new IO::File(">$opts{'html-out'}");
+	print $htmlfh "<head>
+    <title>Test Zone HTML Links</title>
+</head>
+<body>
+    <h1 style=\"bgcolor=#ddddff\">Test Zone HTML Links</h1>
+    <p>The below is a lits of HTML links to DNS zone names that may have various DNSSEC problems.</p>
+    <ul>\n";
+    }
+
+    #
+    # Apache configuration file
+    #
+    if ($opts{'apache-out'}) {
+	$apachefh = new IO::File(">$opts{'apache-out'}");
+	print $apachefh "#\n# Apache Configuration for DNSSEC Test zone\n#\n";
+    }
+
+}
+
+sub shutdown_global_files {
+    $bcfh->close() if ($bcfh);
+    $apachefh->close() if ($apachefh);
+    if ($htmlfh) {
+	print $htmlfh "    </ul>\n</body>\n";
+    }
+}
+
+sub add_web_stuff_for_domain {
+    my ($domain, $addr) = @_;
+    if ($htmlfh) {
+	print $htmlfh "        <li><a href=\"http://$addr.$domain/\">$addr.$domain</a></li>\n";
+    }
+    if ($apachefh) {
+	print $apachefh "<VirtualHost $addr.$domain:80>\n";
+	print $apachefh "  DocumentRoot $opts{'html-doc-root'}\n";
+	print $apachefh "  ServerName $addr.$domain\n";
+	print $apachefh "  CustomLog $opts{'html-log'} combined\n";
+	print $apachefh "</VirtualHost>\n\n";
+    }
 }
 
 
