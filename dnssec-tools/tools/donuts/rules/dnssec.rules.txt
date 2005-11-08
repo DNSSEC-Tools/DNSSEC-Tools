@@ -194,7 +194,7 @@ test:
       }
       if (!exists($rrsigs{$type}{$rec->name}) &&
           !exists($DONUTS::gluerecs{$rec->name})) {
-         push @err, "No RRSIG record found for the record: $type:$rec->{name}";
+	  next; # this error caught by DNSSEC_MISSING_RRSIG_RECORD
       }
       if (exists($rrsigs{$type}{$rec->name})) {
          my $gotone = 0;
@@ -244,10 +244,10 @@ ruletype: name
 desc: NSEC records are required for all names except child glue records in order for the domain to be secure from denial-of-existence attacks.
 test:
   # make sure an nsec record exists
-  if (!(exists($_[0]->{'NSEC'}) || $#{$_[0]->{'NSEC'}} == -1) &&
+  if ((!exists($_[0]->{'NSEC'}) || $#{$_[0]->{'NSEC'}} == -1) &&
       # ignore glue records
       !exists($DONUTS::gluerecs{$_[2]})) {
-    return "NSEC record missing for $_[2]";
+      return; # this error is caught by DNSSEC_MISSING_NSEC_RECORD
   }
   return if (exists($DONUTS::gluerecs{$_[2]}));
   if ($#{$_[0]->{'NSEC'}} != 0) {
