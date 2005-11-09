@@ -87,14 +87,10 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 		/* Read the zone for which this trust anchor applies */
 		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
 			return retval;
-		if (feof(fp))
+		if (endst && (strlen(token) == 1))
 			break;
-		if (endst) {
-			if (!strcmp(token, ""))
-				break;
-			/* missing the zone name */
+		if (feof(fp)) 
 			return CONF_PARSE_ERROR;
-		}
 
    		if (ns_name_pton(token, zone_n, MAXCDNAME-1) == -1)
        		return CONF_PARSE_ERROR; 
@@ -106,13 +102,8 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 		/* Read the public key */
 		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
 			return retval;
-		if (feof(fp))
+		if (feof(fp) && !endst)
 			return CONF_PARSE_ERROR;
-		if (endst) {
-			if (!strcmp(token, ""))
-				/* missing a public key */
-				return CONF_PARSE_ERROR;
-		}
 		/* Remove leading and trailing quotation marks */
 		if ((token[0] != '\"') || 
 				(strlen(token) <= 1) || 
@@ -124,10 +115,7 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 
 		// Parse the public key
 		val_dnskey_rdata_t *dnskey_rdata;
-		if (NULL == (dnskey_rdata = 
-			(val_dnskey_rdata_t *) MALLOC (sizeof(val_dnskey_rdata_t))))
-				return OUT_OF_MEMORY;
-        if (NO_ERROR != (retval = val_parse_dnskey_string (pkstr, strlen(pkstr), dnskey_rdata)))
+        if (NO_ERROR != (retval = val_parse_dnskey_string (pkstr, strlen(pkstr), &dnskey_rdata)))
 			return retval;
 
 		ta_pol = (struct trust_anchor_policy *) MALLOC (sizeof(struct trust_anchor_policy));
@@ -265,14 +253,10 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 		/* Read the zone for which this trust anchor applies */
 		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
 			return retval;
-		if (feof(fp))
+		if (endst && (strlen(token) == 1))
 			break;
-		if (endst) {
-			if (!strcmp(token, ""))
-				break;
-			/* missing the zone name */
+		if (feof(fp)) 
 			return CONF_PARSE_ERROR;
-		}
 
    		if (ns_name_pton(token, zone_n, MAXCDNAME-1) == -1)
        		return CONF_PARSE_ERROR; 
@@ -280,13 +264,8 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 		/* Read the zone status */
 		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
 			return retval;
-		if (feof(fp))
+		if (feof(fp) && !endst)
 			return CONF_PARSE_ERROR;
-		if (endst) {
-			if (!strcmp(token, ""))
-				/* missing the zone status */
-				return CONF_PARSE_ERROR;
-		}
 		if (!strcmp(token, ZONE_SE_YES))
 			zone_status = 1;
 		else if (!strcmp(token, ZONE_SE_NO))
@@ -374,6 +353,31 @@ int free_dlv_max_links(policy_entry_t *pol_entry)
  * Ignore tokens that begin on a new line and have a 
  * leading '#' comment character
  */ 
+
+#define READ_COMMENT_LINE(conf_ptr) do {\
+	char *linebuf = NULL;\
+	int linelen;\
+	comment = 1;\
+	conf_token[i] = '\0';\
+	i = 0;\
+	/* read off the remainder of the line */ \
+	if(-1 == (retval = getline(&linebuf, &linelen, conf_ptr))) {\
+		if (feof(conf_ptr)) { \
+			if (escaped || quoted) \
+				return CONF_PARSE_ERROR;\
+			else \
+				return NO_ERROR;\
+		}\
+		else\
+			return retval;\
+	}\
+	if (linebuf != NULL) {\
+		FREE (linebuf);\
+		linebuf = NULL;\
+	}\
+	(*line_number)++;\
+} while(0)
+
 static int get_token ( FILE *conf_ptr,
 				int *line_number,
 				char *conf_token,
@@ -385,51 +389,45 @@ static int get_token ( FILE *conf_ptr,
 	int         escaped = 0;
 	int         quoted = 0;
 	int         comment = 0;
-	int         newline = 0;
 	int         retval;
     
 	*endst = 0;            
 	strcpy (conf_token, "");
 
-	if (*line_number == 1)
-		newline = 1;
-
 	do { 
 		while (isspace (c=fgetc(conf_ptr))) {
-			if (feof(conf_ptr)) return NO_ERROR;
+			if (c == EOF) return NO_ERROR;
 			if (c == '\n') {
 				(*line_number)++;
-				newline = 1;
 			}
 		}
 
 		conf_token[i++] = c;
 		/* Ignore lines that begin with comments */
-		if(newline && conf_token[0] == COMMENT) {
-			char *linebuf = NULL;
-			int linelen;
-			comment = 1;
-			/* read off the remainder of the line */ 
-			if(-1 == (retval = getline(&linebuf, &linelen, conf_ptr))) {
-				if (feof(conf_ptr))
-					return NO_ERROR;
-				else
-					return retval;
-			}
-			if (linebuf != NULL) {
-				FREE (linebuf);
-				linebuf = NULL;
-			}
-			(*line_number)++;
-		}
+		if (conf_token[0] == COMMENT)
+			READ_COMMENT_LINE(conf_ptr);
+		else
+			comment = 0;
 	} while (comment);
+
+	if (c == END_STMT) {
+		*endst = 1;
+		conf_token[i]= '\0';
+		return NO_ERROR;
+	}
 
 	if (c=='\\') escaped = 1 ;
 	else if (c=='"') quoted = 1;
-                                                       
+
 	/* Collect non-blanks and escaped blanks */
 	while ((!isspace (c=fgetc(conf_ptr)) && (c != END_STMT)) || escaped || quoted)
 	{
+		if (c == COMMENT) {
+			conf_token[i]= '\0';
+			READ_COMMENT_LINE(conf_ptr);
+			return NO_ERROR;
+		}
+
 		if (escaped)
 		{
 			if (feof(conf_ptr)) return CONF_PARSE_ERROR;
@@ -455,12 +453,10 @@ static int get_token ( FILE *conf_ptr,
 		if (i > conf_limit-1) return CONF_PARSE_ERROR;
 		conf_token[i++] = c;
 	}
-	if (c == '\n') (*line_number)++;
+	if (c == END_STMT) *endst = 1;
+	else if (c == '\n') (*line_number)++;
+
 	conf_token[i]= '\0';
-
-	if (c == END_STMT)
-		*endst = 1;
-
 	return NO_ERROR;
 }
 
@@ -649,19 +645,19 @@ static int store_policy_overrides(val_context_t *ctx, struct policy_fragment **p
 
 void destroy_valpol(val_context_t *ctx)
 {
-    int i;
-    struct policy_overrides *cur, *prev;
-    for (i = 0; i< MAX_POL_TOKEN; i++)
-            ctx->e_pol[i] = NULL;
+	int i;
+	struct policy_overrides *cur, *prev;
+	for (i = 0; i< MAX_POL_TOKEN; i++)
+			ctx->e_pol[i] = NULL;
 
 	prev = NULL;
-    for (cur = ctx->pol_overrides; cur; prev = cur, cur = cur->next) {
-            FREE (cur->label);
-            conf_elem_array[cur->plist->index].free(&cur->plist->pol);
-            FREE (cur->plist);
+	for (cur = ctx->pol_overrides; cur; prev = cur, cur = cur->next) {
+			FREE (cur->label);
+			conf_elem_array[cur->plist->index].free(&cur->plist->pol);
+			FREE (cur->plist);
 			if (prev != NULL)
-            	FREE (prev);
-    }
+				FREE (prev);
+	}
 	if (prev != NULL)
 		FREE (prev);
 	ctx->pol_overrides = NULL;
@@ -794,7 +790,7 @@ static int init_respol(struct name_server **nslist)
 	fp = fdopen(fd, "r");
 
 	while ((read = getline(&line, &len, fp)) != -1) {
-                                                                                                                             
+																															 
 		char *buf = NULL;
 		char *cp = NULL;
 		char white[] = " \t\n";
@@ -819,7 +815,7 @@ static int init_respol(struct name_server **nslist)
 			ns->ns_name_n = (u_int8_t *) MALLOC (MAXCDNAME);
 			if(ns->ns_name_n == NULL) 
 				return OUT_OF_MEMORY;
-   			if (ns_name_pton(auth_zone_info, ns->ns_name_n, MAXCDNAME-1) == -1) {
+			if (ns_name_pton(auth_zone_info, ns->ns_name_n, MAXCDNAME-1) == -1) {
 				FREE (ns->ns_name_n); 
 				ns->ns_name_n = NULL;
 				FREE (ns);
@@ -841,7 +837,7 @@ static int init_respol(struct name_server **nslist)
 			ns->ns_number_of_addresses = 0;
 			if (inet_aton (cp, &address)==0)
 				goto err;
-   	    		bzero(&my_addr, sizeof(struct sockaddr));
+				bzero(&my_addr, sizeof(struct sockaddr));
 			my_addr.sin_family = AF_INET;         // host byte order
 			my_addr.sin_port = htons(DNS_PORT);     // short, network byte order
 			my_addr.sin_addr = address;
@@ -865,7 +861,7 @@ static int init_respol(struct name_server **nslist)
 				perror(RESOLV_CONF);
 				goto err;
 			}
-   			if (ns_name_pton(cp, ns->ns_name_n, MAXCDNAME-1) == -1) 
+			if (ns_name_pton(cp, ns->ns_name_n, MAXCDNAME-1) == -1) 
 				goto err;
 		}
 
