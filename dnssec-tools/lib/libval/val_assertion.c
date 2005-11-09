@@ -141,7 +141,7 @@ u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 		/* Because of the ordering, the longest match is found first */
 		for (; zse_cur; zse_cur=zse_cur->next) {
 
-			if (strstr(name_n, zse_cur->zone_n) != NULL) {
+			if (strstr(zse_cur->zone_n, name_n) != NULL) {
 				if (zse_cur->trusted)
 					return TRUST_ZONE;
 				else
