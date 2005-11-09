@@ -18,6 +18,7 @@ my %opts =
     o => "db.",
     O => ".zs",
     M => ".modified",
+    'donuts-output-suffix' => '.donuts',
 
     'bind-db-dir' => '/etc/named',
     'html-doc-root' => '/var/www/dnssec-test-zone',
@@ -38,8 +39,10 @@ LocalGetOptions(\%opts,
 		 'Output prefix to use for zone files (default = db.)'],
 		['O|output-suffix-signed-file=s',
 		 'Output suffix to be given to zonesigner (default = .zs)'],
-		['M|output-modified-file=s',
-		 'Output suffix for the modified zone file (default = .modified)'],
+		['M|output-modified-file=s', 'Output suffix for the modified zone file (default = .modified)'],
+		'',
+		['D|run-donuts','Run donuts on the results'],
+		['donuts-output-suffix=s', 'The file suffix to use for donuts output (default = .donuts)'],
 		'',
 		['d|domain=s', 'domain name to generate records for'],
 		['ns|name-servers|n=s',
@@ -134,11 +137,15 @@ my %destroyFunctions =
 my $name;
 my @prefixes = split(/,\s*/,$opts{p});
 my @nsprefixes = split(/,\s*/,$opts{P});
-my @resultfiles;
-my @outdomains;
+
+# output information
+my (@resultfiles, @outdomains);
+
+# file handles
 my ($fh, $bcfh, $apachefh, $htmlfh, $shfh);
-my %linkinfo;
-my $topdomain;
+
+# domain info to store
+my (%linkinfo, %keypaths, $topdomain, $currentdomain);
 
 ######################################################################
 # do it
@@ -162,6 +169,10 @@ Verbose("I created the following modified zone files:\n","  ",
 sub generate_zone {
     my ($domain, $nocnames, $nosubdomains) = @_;
 
+    # save current zone and make our new one the current
+    my $olddomain = $currentdomain;
+    $currentdomain = $domain;
+
     # add the named.conf snippit for this file
     if ($bcfh) {
 	print $bcfh "zone \"$domain\" {\n";
@@ -170,11 +181,15 @@ sub generate_zone {
 	print $bcfh "};\n\n";
     }
 
-    generate_records($domain, $nocnames, $nosubdomains)   if (!$opts{g});
+    generate_records($domain, $nocnames, $nosubdomains)   if (!$opts{'g'});
     run_zonesigner($domain)                		  if (!$opts{'z'});
     modify_records($domain)                		  if (!$opts{'Z'});
+    run_donuts($domain)                		          if ($opts{'D'});
 
     unshift @outdomains, $domain;
+
+    # restore the current domain
+    $currentdomain = $olddomain;
 }
 
 sub generate_records {
@@ -334,6 +349,22 @@ sub run_zonesigner {
 }
 
 ######################################################################
+# Run donuts on the final results.
+#
+sub run_donuts {
+    my ($domain) = @_;
+
+    my $infile = $opts{'o'} . $domain . $opts{'O'} . '.signed' . $opts{'M'};
+    my $outfile = $infile . $opts{'donuts-output-suffix'};
+
+    #
+    # Run donuts to check the badness of the zone
+    #
+    Verbose("running donuts on $infile to produce $outfile");
+    System("donuts $infile $domain > $outfile 2>&1");
+}
+
+######################################################################
 # Modifies the records based on the registered functions
 #
 sub modify_records {
@@ -368,8 +399,27 @@ sub modify_records {
 
     print $fh "; records added later after signing took place\n";
     foreach my $addr (keys(%addrs)) {
-	print $fh "addedlater-$addr.$domain. 86400 IN $addr $addrs{$addr}\n";
-	add_web_stuff_for_domain($domain, "addedlater-$addr", $addr);
+	print $fh "addedlater-nosig-$addr.$domain. 86400 IN $addr $addrs{$addr}\n";
+	add_web_stuff_for_domain($domain, "addedlater-nosig-$addr", $addr);
+
+	# zone has no sub-key
+
+	next if (!exists($keypaths{$domain}));
+
+	# the current RRset
+	my $rec =
+	  "addedlater-withsig-$addr.$domain. 86400 IN $addr $addrs{$addr}";
+	print $fh $rec,"\n";
+	
+	# turn into an object
+	$rec = Net::DNS::RR->new($rec);
+
+	# create the sig record
+	my $sigrr = Net::DNS::RR::RRSIG->create([$rec], $keypaths{$domain},
+						ttl => $rec->ttl);
+	# print it
+	print $fh $sigrr->string,"\n";
+
     }
 
     close(I);
@@ -466,6 +516,7 @@ sub make_new_date {
 
     # XXX: assumes 005 alg.
     my $keypath = sprintf("K${keyname}+005+%05d.private",$keyid);
+    $keypaths{$currentdomain} = $keypath;
     croak "can't find needed private key file: $keypath\n" if (!-f $keypath);
 
     # create the new record
