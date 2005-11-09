@@ -91,6 +91,11 @@ environments.  Brief descriptions of these tools are given below.
 
 	clean-keyrec	Cleans unreferenced key keyrecs from keyrec files.
 
+	tachk		Reads a trusted-keys block from a named.conf file and
+			performs queries to see if the configured trust
+			anchors are still published by the zones.
+			NOTE: This script additionally requires Net::DNS::SEC
+
 	timetrans	Converts time units (weeks, days, etc.) into the
 			appropriate number of seconds.  Intended for use in
 			calculating the end-time argument used by zonesigner
