@@ -1,0 +1,430 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# tachk
+#
+#	This script checks the validity of configured trust anchors
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS;
+use Net::DNS::SEC;
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"valid",			# List valid trust anchors
+	"invalid",		# List invalid trust anchors
+
+	"count",			# Only give a count of trust anchors
+	"terse",			# Give terse output.
+	"long",				# Give long output.
+
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Configuration options.
+#
+my %config = ();
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $validflag;
+my $invalidflag;
+
+my $cntflag;
+my $terse;
+my $long;
+
+my $count   = 0;			# Record-match count.
+
+my %anchors = ();
+
+#######################################################################
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+
+	#
+	# Check our options.
+	#
+	doopts($argc);
+
+	#
+	# Parse the conf file.
+	#
+	%config = parseconfig();
+
+	#
+	# Read the named.conf file.
+	#
+	getanchors($ARGV[0]);
+
+	#
+	# Give the output.
+	#
+	showanchors();
+
+	#
+	# If the matching-record count should be given, give the count in
+	# requested format.
+	#
+	if($cntflag)
+	{
+		if($terse)
+		{
+			print "$count\n";
+		}
+		else
+		{
+			my $plural = "s";
+			$plural = "" if($count == 1);
+
+			print "$count matching record$plural\n";
+		}
+	}
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying options are given.
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts);
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$validflag	= $options{'valid'}	|| 0;
+	$invalidflag	= $options{'invalid'}	|| 0;
+
+	$cntflag	= $options{'count'}	|| 0;
+	$terse		= $options{'terse'}	|| 0;
+	$long		= $options{'long'}	|| 0;
+
+	#
+	# Give a usage flag if asked.
+	#
+	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a named.conf file to check.
+	#
+	$argc = @ARGV;
+	if($argc == 0)
+	{
+		usage();
+		exit(1);
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:  getanchors()
+#
+sub getanchors
+{
+	my $conffile = shift;		# named.conf file
+	my $inblock = 0;
+
+	#
+	# Make sure the config file actually exists. If not, we'll quietly return.
+	#
+	return if(! -e $conffile);
+
+	#
+	# Open up the config file.
+	#
+	if (open (CONF,"< $conffile") == 0)
+	{
+		print STDERR "unable to open $conffile\n";
+		return;
+	}
+
+	#
+	# Read each line from the file, build a DNSKEY RR, and add it
+	# to the anchors hash table.
+	#
+	while (<CONF>)
+	{
+		#
+		# Do the in-block stuff first.
+		#
+		if ($inblock)
+		{
+			#
+			# If this is the end of the block, we're done.
+			#
+			if (/\}/)
+			{
+				$inblock = 0;
+			}
+			#
+			# Read the next line and build a DNSKEY RR.
+			#
+			else
+			{
+				my ($name, $flags, $protocol, $algorithm, $keydata) = split(/ /, $_, 5);
+				my $rrstring = substr($name,2,-2) . " IN DNSKEY " . $flags . " " . $protocol . " " . $algorithm . " " . substr($keydata,2,-3);
+
+				my $dnskeyrr = Net::DNS::RR->new($rrstring);
+
+				#
+				# Add this variable/value pair to the anchors hash table.
+				#
+				$anchors{$dnskeyrr->keytag} = {
+					name		=> $dnskeyrr->name,
+					keytag	=> $dnskeyrr->keytag,
+					valid		=> 0,
+					dnskey	=> $dnskeyrr
+				};
+			}
+		}
+		#
+		# If we're not in a block yet, see if this line indicates the start of one.
+		#
+		if (/trusted-keys/)
+		{
+			# I need to check on the open brace as well, this will suffice for now.
+			$inblock = 1;
+		}
+	}
+
+	#
+	# Close the configuration file
+	#
+	close(CONF);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:  showanchors()
+#
+sub showanchors
+{
+	#
+	# Get a Net::DNS resolver to make queries through.
+	#
+	my $res = Net::DNS::Resolver->new;
+	my %anchor = ();
+
+	#
+	# Iterate over each of the trust anchors.
+	#
+	foreach my $k (sort(keys(%anchors)))
+	{
+		%anchor = %{$anchors{$k}};
+
+		#
+		# Start by querying for the name and any DNSKEY RRs.
+		#
+		my $packet = $res->send($anchor{'name'},'DNSKEY');
+
+		#
+		# If there are no DNSKEY RRs for the name.
+		#
+		if ($packet->header->ancount == 0)
+		{
+			#
+			# Mark the trust anchor as invalid.
+			#
+			$anchor{'valid'} = 0;
+
+			#
+			# If the user is interested in invalid trust anchors.
+			#
+			if ($invalidflag) {
+				#
+				# Bump the matching-records count.
+				#
+				$count++;
+
+				#
+				# If the user is not just interested in the count of matching records.
+				#
+				if (!$cntflag)
+				{
+					#
+					# Give the output line appropriate
+					#
+					print "$anchor{'name'}/$anchor{'keytag'} is invalid.\n";
+				}
+			}
+		}
+		#
+		# There are DNSKEY RRs for the name.
+		#
+		else
+		{
+			#
+			# Iterate over the RRs returned in the answer.
+			#
+			foreach my $rr ($packet->answer)
+			{
+				#
+				# If one of the RRs has a keytag that matches our anchor.
+				#
+				if ($anchor{'keytag'} == $rr->keytag) {
+					#
+					# Mark the anchor as valid.
+					#
+					$anchor{'valid'} = 1;
+				}
+			}
+
+			#
+			# If the user is interested in valid trust anchors.
+			#
+			if ($validflag) {
+				#
+				# Bump the matching-records count.
+				#
+				$count++;
+
+				#
+				# If the user is not just interested in the count of matching records.
+				#
+				if (!$cntflag)
+				{
+					#
+					# Give the output line appropriate.
+					#
+					print "$anchor{'name'}/$anchor{'keytag'} is valid.\n";
+				}
+			}
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  tachk [options] <keyrec-file>\n";
+	print STDERR "\trecord-attribute options:\n";
+	print STDERR "\t\t-valid\t	show valid trust anchors\n";
+	print STDERR "\t\t-invalid	show invalid trust anchors\n";
+	print STDERR "\toutput-format options:\n";
+	print STDERR "\t\t-count		only give count of matching trust anchors\n";
+	print STDERR "\t\t-terse\t	terse output\n";
+	print STDERR "\t\t-long		long output\n";
+	print STDERR "\t\t-h		help message \n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+tachk - Check the validity of the trust anchors in a B<named.conf> file.
+
+=head1 SYNOPSIS
+
+  tachk [options] named.conf
+
+=head1 DESCRIPTION
+
+This script checks the validity of the trust anchors in the specified
+B<named.conf> file. The output given depends on the options selected.
+
+=back
+
+=head1 OPTIONS
+
+B<tachk> has two types of options it can take: record-attribute options,
+and output-style options. These option sets are detailed below.
+
+=over 4
+
+=head2 Record-Attribute Options
+
+=item -valid
+
+This option displays the valid trust anchors in a B<named.conf> file.
+
+=item -invalid
+
+This option displays the invalid trust anchors in a B<named.conf> file.
+
+=head2 Output-Format Options
+
+These options define how the trust anchor information will be displayed.
+
+Without any of these options, the zone name and key tag will be displayed
+for each trust anchor.
+
+=item -count
+
+The count of matching records will be displayed, but the matching records
+will not be.
+
+=item -long
+
+The long form of output will be given: the zone name and key tag will be
+displayed for each trust anchor.
+
+=item -terse
+
+This options displays only the name of the zones selected by other options.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wesley Griffin, wgriffin@users.sourceforge.net
+
+=head1 SEE ALSO
+
+=cut
+
