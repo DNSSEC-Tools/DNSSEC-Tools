@@ -1129,6 +1129,8 @@ char *p_val_error(int errno)
 			if((errno >= DNS_ERROR_BASE) &&
 				(errno < DNS_ERROR_LAST))
 				return "DNS_ERROR";
+			else if (errno < A_LAST_STATE)
+				return "UNEVALUATED";
 			return "Unknown Error Value";
     }
 }
