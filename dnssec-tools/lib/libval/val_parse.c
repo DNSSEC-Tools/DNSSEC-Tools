@@ -150,7 +150,7 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
  * protocol, algorithm and the base64 key delimited by spaces.
  */
 int val_parse_dnskey_string (char *keystr, int keystrlen, 
-		val_dnskey_rdata_t *dnskey_rdata)
+		val_dnskey_rdata_t **dnskey_rdata)
 {
 	char *sp = keystr;
 	char *ep = sp + keystrlen + 1;
@@ -159,14 +159,18 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	if (ep - sp > MAXDNAME)
 		return BAD_ARGUMENT;
 
-	TOK_IN_STR();
-	dnskey_rdata->flags = atoi(token);
+	(*dnskey_rdata) = (val_dnskey_rdata_t *) MALLOC (sizeof(val_dnskey_rdata_t));
+	if((*dnskey_rdata) == NULL)
+		return OUT_OF_MEMORY;
 
 	TOK_IN_STR();
-	dnskey_rdata->protocol = atoi(token);
+	(*dnskey_rdata)->flags = atoi(token);
 
 	TOK_IN_STR();
-	dnskey_rdata->algorithm = atoi(token);
+	(*dnskey_rdata)->protocol = atoi(token);
+
+	TOK_IN_STR();
+	(*dnskey_rdata)->algorithm = atoi(token);
 
 	/* 
 	 * What follows is the public key in base64.
@@ -187,8 +191,8 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	*cp = '\0';
 
 	int bufsize = ep - keyptr;
-	dnskey_rdata->public_key = (u_char *) MALLOC (bufsize * sizeof(char));
-	if (dnskey_rdata->public_key == NULL)
+	(*dnskey_rdata)->public_key = (u_char *) MALLOC (bufsize * sizeof(char));
+	if ((*dnskey_rdata)->public_key == NULL)
 		return OUT_OF_MEMORY;
 
 	/* decode the base64 public key */
@@ -196,17 +200,20 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	BIO *mem = BIO_new_mem_buf(keyptr, -1);
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
 	mem = BIO_push(b64, mem);
-	dnskey_rdata->public_key_len = 
-		BIO_read(mem, dnskey_rdata->public_key, bufsize);
+	(*dnskey_rdata)->public_key_len = 
+		BIO_read(mem, (*dnskey_rdata)->public_key, bufsize);
 	BIO_free_all(b64);
-	if (dnskey_rdata->public_key_len <= 0)
+	if ((*dnskey_rdata)->public_key_len <= 0) {
+		FREE((*dnskey_rdata)->public_key);
+		FREE(*dnskey_rdata);	
 		return BAD_ARGUMENT;
+	}
 
 	/* 
 	 * For calculating the keytag, we need the 
 	 * complete DNSKEY RDATA in wire format
 	 */
-	int buflen = dnskey_rdata->public_key_len +
+	int buflen = (*dnskey_rdata)->public_key_len +
 					sizeof(u_int16_t) + /* flags */
 						sizeof(u_int8_t) + /* proto */
 							sizeof (u_int8_t); /*algo */
@@ -215,24 +222,24 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 		return OUT_OF_MEMORY;
 
 	u_char *bp = buf;
-	u_int16_t flags = dnskey_rdata->flags;
+	u_int16_t flags = (*dnskey_rdata)->flags;
 
 	memcpy(bp, &flags, sizeof(u_int16_t));
 	bp += sizeof(u_int16_t);
-	*bp = dnskey_rdata->protocol;
+	*bp = (*dnskey_rdata)->protocol;
 	bp++;
-	*bp = dnskey_rdata->algorithm;
+	*bp = (*dnskey_rdata)->algorithm;
 	bp++;
-	memcpy(bp, dnskey_rdata->public_key, dnskey_rdata->public_key_len);
+	memcpy(bp, (*dnskey_rdata)->public_key, (*dnskey_rdata)->public_key_len);
 
 	/* Calculate the keytag */
-    if (dnskey_rdata->algorithm == 1) {
-    	dnskey_rdata->key_tag = rsamd5_keytag(buf, buflen);
+    if ((*dnskey_rdata)->algorithm == 1) {
+    	(*dnskey_rdata)->key_tag = rsamd5_keytag(buf, buflen);
     }
     else {
-    	dnskey_rdata->key_tag = keytag(buf, buflen);
+    	(*dnskey_rdata)->key_tag = keytag(buf, buflen);
     }
-	dnskey_rdata->next = NULL;
+	(*dnskey_rdata)->next = NULL;
 	FREE(buf);
 
 	return NO_ERROR;
