@@ -61,7 +61,7 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
  * protocol, algorithm and the base64 key delimited by spaces.
  */
 int val_parse_dnskey_string (char *keystr, int keystrlen, 
-				val_dnskey_rdata_t *dnskey_rdata);
+				val_dnskey_rdata_t **dnskey_rdata);
 
 /* Parse the rdata portion of an RRSIG resource record */
 int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
