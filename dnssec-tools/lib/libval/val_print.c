@@ -15,7 +15,6 @@
 
 #include <resolver.h>
 #include <validator.h>
-#include "val_parse.h"
 #include "val_print.h"
 #include "val_cache.h"
 #include "val_log.h"
@@ -188,10 +187,10 @@ void val_print_dnskey_rdata (const char *prefix, val_dnskey_rdata_t *rdata)
     }
 }
 
-char *print_ns_string(struct name_server **server)
+static char *ns_string(struct name_server **server)
 {
 	if((server == NULL) || (*server == NULL))
-		return "VAL_CACHE";
+		return NULL;
 
 	struct sockaddr_in  *s=(struct sockaddr_in*)(&((*server)->ns_address[0]));
 	return inet_ntoa(s->sin_addr);
@@ -203,6 +202,7 @@ void val_print_assertion_chain(u_char *name_n, u_int16_t class_h, u_int16_t type
 	char name[MAXDNAME];
 	struct val_result *next_result;
 	struct query_chain *top_q = NULL;
+	char *serv;
 
 	/* Search for the "main" query */
 	for (top_q = queries; top_q; top_q=top_q->qc_next) {
@@ -223,7 +223,8 @@ void val_print_assertion_chain(u_char *name_n, u_int16_t class_h, u_int16_t type
 				val_log("\tname=ERR_NAME");
 			val_log("\tclass=%s", p_class(next_as->ac_data->rrs_class_h));	
 			val_log("\ttype=%s ", p_type(next_as->ac_data->rrs_type_h));	
-			val_log("\tfrom-server=%s", print_ns_string(&(next_as->ac_data->rrs_respondent_server)));
+			val_log("\tfrom-server=%s", 
+				((serv = ns_string(&(next_as->ac_data->rrs_respondent_server))) == NULL)?"VAL_CACHE":serv);
 			val_log("\tResult=%s : %d\n", p_val_error(next_result->status), next_result->status);
 
 			next_as = next_as->ac_trust;
@@ -236,10 +237,10 @@ void val_print_assertion_chain(u_char *name_n, u_int16_t class_h, u_int16_t type
 			val_log("\tclass=%s", p_class(top_q->qc_class_h));	
 			val_log("\ttype=%s ", p_type(top_q->qc_type_h));	
 			if (top_q->qc_respondent_server)
-				val_log("\tfrom-server=%s", print_ns_string(&(top_q->qc_respondent_server)));
+				val_log("\tfrom-server=%s", 
+					((serv = ns_string(&(top_q->qc_respondent_server))) == NULL)?"VAL_CACHE":serv);
 			val_log("\tResult=%s : %d\n", p_val_error(next_result->status), next_result->status);
 		}
-
 		for (next_as = next_result->as; next_as; next_as = next_as->ac_trust) {
 			if(ns_name_ntop(next_as->ac_data->rrs_name_n, name, MAXDNAME-1) != -1) 
 				val_log("\tname=%s", name);	
@@ -247,9 +248,99 @@ void val_print_assertion_chain(u_char *name_n, u_int16_t class_h, u_int16_t type
 				val_log("\tname=ERR_NAME");
 			val_log("\tclass=%s", p_class(next_as->ac_data->rrs_class_h));	
 			val_log("\ttype=%s ", p_type(next_as->ac_data->rrs_type_h));	
-			val_log("\tfrom-server=%s", print_ns_string(&(next_as->ac_data->rrs_respondent_server)));
+			val_log("\tfrom-server=%s", 
+				((serv = ns_string(&(next_as->ac_data->rrs_respondent_server))) == NULL)?"VAL_CACHE":serv);
 			val_log("\tstatus=%s : %d\n", p_val_error(next_as->ac_state), next_as->ac_state);	
 		}
 		val_log("\n");
 	}
+}
+
+char *p_val_error(int errno)
+{
+    switch (errno) {
+                                                                                                                             
+    case NO_ERROR: return "NO_ERROR"; break;
+                                                                                                                             
+    case NOT_IMPLEMENTED: return "NOT_IMPLEMENTED"; break;
+    case OUT_OF_MEMORY: return "OUT_OF_MEMORY"; break;
+    case BAD_ARGUMENT: return "BAD_ARGUMENT"; break;
+    case INTERNAL_ERROR: return "INTERNAL_ERROR"; break;
+    case NO_PERMISSION: return "NO_PERMISSION"; break;
+    case RESOURCE_UNAVAILABLE: return "RESOURCE_UNAVAILABLE"; break;
+    case CONF_PARSE_ERROR: return "CONF_PARSE_ERROR"; break;
+    case NO_POLICY: return "NO_POLICY"; break;
+    case NO_SPACE: return "NO_SPACE"; break;
+    case UNKNOWN_LOCALE: return "UNKNOWN_LOCALE"; break;
+                                                                                                                             
+    case DATA_MISSING: return "DATA_MISSING"; break;
+    case RRSIG_MISSING: return "RRSIG_MISSING"; break;
+    case NO_TRUST_ANCHOR: return "NO_TRUST_ANCHOR"; break;
+    case UNTRUSTED_ZONE: return "UNTRUSTED_ZONE"; break;
+    case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
+    case DNSSEC_VERSION_ERROR: return "DNSSEC_VERSION_ERROR"; break;
+    case TOO_MANY_LINKS: return "TOO_MANY_LINKS"; break;
+    case UNKNOWN_DNSKEY_PROTO: return "UNKNOWN_DNSKEY_PROTO"; break;
+    case FLOOD_ATTACK_DETECTED: return "FLOOD_ATTACK_DETECTED"; break;
+                                                                                                                             
+    case DNSKEY_NOMATCH: return "DNSKEY_NOMATCH"; break;
+    case WRONG_LABEL_COUNT: return "WRONG_LABEL_COUNT"; break;
+    case SECURITY_LAME: return "SECURITY_LAME"; break;
+    case NOT_A_ZONE_KEY: return "NOT_A_ZONE_KEY"; break;
+    case RRSIG_NOTYETACTIVE: return "RRSIG_NOTYETACTIVE"; break;
+    case RRSIG_EXPIRED: return "RRSIG_EXPIRED"; break;
+    case ALGO_NOT_SUPPORTED: return "ALGO_NOT_SUPPORTED"; break;
+    case UNKNOWN_ALGO: return "UNKNOWN_ALGO"; break;
+    case RRSIG_VERIFIED: return "RRSIG_VERIFIED"; break;
+    case RRSIG_VERIFY_FAILED: return "RRSIG_VERIFY_FAILED"; break;
+    case NOT_VERIFIED: return "NOT_VERIFIED"; break;
+    case KEY_TOO_LARGE: return "KEY_TOO_LARGE"; break;
+    case KEY_TOO_SMALL: return "KEY_TOO_SMALL"; break;
+    case KEY_NOT_AUTHORIZED: return "KEY_NOT_AUTHORIZED"; break;
+    case ALGO_REFUSED: return "ALGO_REFUSED"; break;
+    case CLOCK_SKEW: return "CLOCK_SKEW"; break;
+    case DUPLICATE_KEYTAG: return "DUPLICATE_KEYTAG"; break;
+    case NO_PREFERRED_SEP: return "NO_PREFERRED_SEP"; break;
+    case WRONG_RRSIG_OWNER: return "WRONG_RRSIG_OWNER"; break;
+    case RRSIG_ALGO_MISMATCH: return "RRSIG_ALGO_MISMATCH"; break;
+    case KEYTAG_MISMATCH: return "KEYTAG_MISMATCH"; break;
+                                                                                                                             
+    case VERIFIED: return "VERIFIED"; break;
+    case LOCAL_ANSWER: return "LOCAL_ANSWER"; break;
+    case TRUST_KEY: return "TRUST_KEY"; break;
+    case TRUST_ZONE: return "TRUST_ZONE"; break;
+    case BARE_RRSIG: return "BARE_RRSIG"; break;
+    case VALIDATE_SUCCESS: return "VALIDATE_SUCCESS"; break;
+                                                                                                                             
+    case BOGUS_PROVABLE: return "BOGUS_PROVABLE"; break;
+    case BOGUS_UNPROVABLE: return "BOGUS_UNPROVABLE"; break;
+    case VALIDATION_ERROR: return "VALIDATION_ERROR"; break;
+    case NONEXISTENT_NAME: return "NONEXISTENT_NAME"; break;
+    case NONEXISTENT_TYPE: return "NONEXISTENT_TYPE"; break;
+    case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
+    case BOGUS_PROOF: return "BOGUS_PROOF"; break;
+    case INDETERMINATE_DS: return "INDETERMINATE_DS"; break;
+    case INDETERMINATE_PROOF: return "INDETERMINATE_PROOF"; break;
+    case INDETERMINATE_ERROR: return "INDETERMINATE_ERROR"; break;
+    case INDETERMINATE_TRUST: return "INDETERMINATE_TRUST"; break;
+    case INDETERMINATE_ZONE: return "INDETERMINATE_ZONE"; break;
+    /*
+    case UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
+    case CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
+    case WAITING: return "WAITING"; break;
+    case WAKEUP: return "WAKEUP"; break;
+    case OVERREACHING_NSEC: return "OVERREACHING_NSEC"; break;
+    case TRUST_ANCHOR_TIMEOUT: return "TRUST_ANCHOR_TIMEOUT"; break;
+    case INSUFFICIENT_DATA: return "INSUFFICIENT_DATA"; break;
+    case FLOOD_ATTACK_DETECTED: return "FLOOD_ATTACK_DETECTED"; break;
+    case DNSSEC_VERSION_ERROR: return "DNSSEC_VERSION_ERROR"; break;
+    */
+    default:
+            if((errno >= DNS_ERROR_BASE) &&
+                (errno < DNS_ERROR_LAST))
+                return "DNS_ERROR";
+            else if (errno < A_LAST_STATE)
+                return "UNEVALUATED";
+            return "Unknown Error Value";
+    }
 }
