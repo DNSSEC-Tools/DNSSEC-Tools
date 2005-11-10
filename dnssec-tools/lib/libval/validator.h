@@ -131,8 +131,6 @@ struct rrset_rec
  * typecasted to one of the types defined in val_policy.h: 
  */
 
-
-
 struct policy_list {
 	int index; 
 	policy_entry_t pol;
@@ -240,58 +238,27 @@ struct val_result {
  **********************************
  */
 /* from val_assertion.h */
-void free_query_chain(struct query_chain **queries);
-void free_assertion_chain(struct assertion_chain **assertions);
-void free_result_chain(struct val_result **results);
-int resolve_n_check(	val_context_t	*context,
-			u_char *domain_name_n,
-			const u_int16_t type,
-			const u_int16_t class,
-			const u_int8_t flags, 
-			struct query_chain **queries,
-			struct assertion_chain **assertions,
-			struct val_result **results);
+#include "val_assertion.h"
 
 /* from val_context.h */
-int get_context(char *label, val_context_t **newcontext);
-void destroy_context(val_context_t *context);
+#include "val_context.h"
 
 /* from val_policy.h */
-int switch_effective_policy(val_context_t *ctx, char *label);
+#include "val_policy.h"
 
-/* from val_support.h */
-char *p_val_error(int valerrno);
+/* from val_print.h */
+#include "val_print.h"
 
 /* from val_query.h */
-int val_query ( const char *domain_name, int class, int type,
-		unsigned char *answer, int anslen, int flags,
-		int *dnssec_status );
+#include "val_query.h"
 
 /* from val_x_query.h */
-int val_x_query(const val_context_t *ctx,
-            const char *domain_name,
-            const u_int16_t class,
-            const u_int16_t type,
-            const u_int8_t flags,
-            struct response_t *resp,
-            int *resp_count);
+#include "val_x_query.h"
 
 /* from val_gethostbyname.h */
-struct hostent *val_gethostbyname ( const char *name, int *h_errnop );
-struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name,
-				      int *h_errnop );
-
+#include "val_gethostbyname.h"
 
 /* from val_getaddrinfo.h */
-int val_getaddrinfo ( const char *nodename, const char *servname,
-		      const struct addrinfo *hints,
-		      struct addrinfo **res );
-int val_x_getaddrinfo ( const val_context_t *ctx,
-		        const char *nodename, const char *servname,
-			const struct addrinfo *hints,
-			struct addrinfo **res );
-int val_get_hostent_dnssec_status(const struct hostent *hentry);
-struct hostent* val_duphostent(const struct hostent *hentry);
-void val_freehostent(struct hostent *hentry);
+#include "val_getaddrinfo.h"
 
 #endif /* VALIDATOR_H */
