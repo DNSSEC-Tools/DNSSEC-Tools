@@ -20,7 +20,6 @@
 #include "val_context.h"
 #include "val_log.h"
 #include "val_policy.h"
-#include "val_parse.h"
 #include "val_print.h"
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
@@ -53,7 +52,7 @@ void free_result_chain(struct val_result **results)
  * NO_ERROR			Operation succeeded
  * OUT_OF_MEMORY	Could not allocate enough memory for operation
  */
-int add_to_query_chain(struct query_chain **queries, u_char *name_n, 
+static int add_to_query_chain(struct query_chain **queries, u_char *name_n, 
 						const u_int16_t type_h, const u_int16_t class_h)
 {
 	struct query_chain *temp, *prev;
@@ -121,7 +120,7 @@ void free_query_chain(struct query_chain **queries)
 
 }
 
-u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
+static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 {
 	struct zone_se_policy *zse_pol, *zse_cur;
 	int name_len;
@@ -153,7 +152,7 @@ u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 }
 
 
-u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
+static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
 {
 	struct trust_anchor_policy *ta_pol, *ta_cur;
 	int name_len;
@@ -209,153 +208,8 @@ u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *ke
 	return NO_TRUST_ANCHOR;	
 }
 
-// XXX Needs blocking/non-blocking logic so that the validator can operate in
-// XXX the stealth mode
-int ask_cache(val_context_t *context, struct query_chain *end_q, 
-				struct query_chain **queries, 
-				struct assertion_chain **assertions,
-				int *data_received)
-{
-	struct query_chain *next_q, *top_q;
-	struct rrset_rec *next_answer;
-	int retval;
 
-	top_q = *queries;
-
-	for(next_q = *queries; next_q && next_q != end_q; next_q=next_q->qc_next) {
-		if(next_q->qc_state == Q_INIT) {
-
-			if(NO_ERROR != (retval = get_cached_rrset(next_q->qc_name_n, 
-								next_q->qc_class_h, next_q->qc_type_h, &next_answer)))
-				return retval; 
-
-			if(next_answer) {
-				struct domain_info *response;
-				char name[MAXDNAME];
-
-				*data_received = 1;
-
-				next_q->qc_state = Q_ANSWERED;
-				/* Construct a dummy response */
-				response = (struct domain_info *) MALLOC (sizeof(struct domain_info));
-				if(response == NULL)
-					return OUT_OF_MEMORY;
-
-				response->di_rrset = next_answer;
-			    response->di_qnames = (struct qname_chain *) MALLOC (sizeof(struct qname_chain));
-				if (response->di_qnames == NULL) 
-					return OUT_OF_MEMORY;
-				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
-				response->di_qnames->qnc_next = NULL;
-
-				if(ns_name_ntop(next_q->qc_name_n, name, MAXDNAME-1) == -1) {
-					next_q->qc_state = Q_ERROR_BASE+SR_CALL_ERROR;
-					FREE(response->di_qnames);
-					FREE (response);
-					continue;
-				}
-			    response->di_requested_name_h = name; 
-			    response->di_requested_type_h = next_q->qc_type_h;
-			    response->di_requested_class_h = next_q->qc_class_h;
-				response->di_res_error = SR_UNSET;
-
-				if(NO_ERROR != (retval = 
-						assimilate_answers(context, queries, 
-							response, next_q, assertions))) {
-					FREE(response->di_rrset);
-					FREE(response->di_qnames);
-					FREE (response);
-					return retval;
-				}
-
-				FREE(response->di_rrset);
-				FREE(response->di_qnames);
-				FREE (response);
-
-				break;
-			}
-		}
-	}
-
-	if(top_q != *queries) 
-		/* more qureies have been added, do this again */
-		return ask_cache(context, top_q, queries, assertions, data_received);
-
-
-	return NO_ERROR;
-}
-
-int ask_resolver(val_context_t *context, struct query_chain **queries, int block, 
-					struct assertion_chain **assertions)
-{
-	struct query_chain *next_q;
-	struct domain_info *response;
-	int retval;
-
-	response = NULL;
-
-	int answered = 0;
-	while (!answered) {
-
-		for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
-			if(next_q->qc_state == Q_INIT) {
-				next_q = next_q;
-				next_q->qc_state = Q_SENT;
-
-				if ((retval = val_resquery_send (context, next_q)) != NO_ERROR)
-					return retval;
-			}
-		}
-
-		/* wait until we get at least one complete answer */
-		if (block) {
-
-			for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
-				if(next_q->qc_state < Q_ANSWERED) {
-					if( (retval = val_resquery_rcv (context, next_q, &response)) != NO_ERROR)	
-						return retval;
-
-					if ((next_q->qc_state == Q_ANSWERED) && (response != NULL)) {
-						if(NO_ERROR != (retval = 
-								assimilate_answers(context, queries, 
-									response, next_q, assertions))) {
-							free_domain_info_ptrs(response);
-							FREE(response);
-							return retval;
-						}
-
-						/* Save new responses in the cache */
-						if(NO_ERROR != (retval = stow_answer(response->di_rrset))) {
-							free_domain_info_ptrs(response);
-							FREE(response);
-							return retval;
-						}
-
-						response->di_rrset = NULL;
-						free_domain_info_ptrs(response);
-						FREE(response);
-						answered = 1;
-						break;
-					}
-					if (response != NULL) {
-						free_domain_info_ptrs(response);
-						FREE(response);
-					}
-					if(next_q->qc_state > Q_ERROR_BASE) {
-						answered = 1;
-						break;
-					}
-				}
-			}
-		}
-		else
-			break;	
-	}
-
-	return NO_ERROR;
-}
-
-int set_ans_kind (    u_int8_t    *qc_name_n,
+static int set_ans_kind (    u_int8_t    *qc_name_n,
                       const u_int16_t     q_type_h,
                       const u_int16_t     q_class_h,
                       struct rrset_rec    *the_set,
@@ -430,7 +284,7 @@ int set_ans_kind (    u_int8_t    *qc_name_n,
 #define MID_OF_QNAMES   1
 #define NOT_IN_QNAMES   2
                                                                                                                           
-int name_in_q_names (
+static int name_in_q_names (
                       struct qname_chain  *q_names_n,
                       struct rrset_rec    *the_set)
 {
@@ -488,7 +342,7 @@ int fails_to_answer_query(
 }
 
 
-int NSEC_is_wrong_answer (
+static int NSEC_is_wrong_answer (
                       u_int8_t    *qc_name_n,
                       const u_int16_t     q_type_h,
                       const u_int16_t     q_class_h,
@@ -541,7 +395,7 @@ int NSEC_is_wrong_answer (
  * NO_ERROR			Operation succeeded
  * OUT_OF_MEMORY	Could not allocate enough memory for operation
  */
-int add_to_assertion_chain(struct assertion_chain **assertions, struct rrset_rec *response_data)
+static int add_to_assertion_chain(struct assertion_chain **assertions, struct rrset_rec *response_data)
 {
 	struct assertion_chain *new_as, *first_as, *prev_as;
 	struct rrset_rec *next_rr;
@@ -597,7 +451,7 @@ void free_assertion_chain(struct assertion_chain **assertions)
 /*
  * For a given assertion identify its pending queries
  */
-int build_pending_query(val_context_t *context, 
+static int build_pending_query(val_context_t *context, 
 		struct query_chain **queries, struct assertion_chain *as)
 {
 	u_int8_t *signby_name_n;
@@ -675,7 +529,7 @@ int build_pending_query(val_context_t *context,
  * SR_CALL_ERROR	If the name could not be converted from host to network format
  *
  */ 
-int assimilate_answers(val_context_t *context, struct query_chain **queries, 
+static int assimilate_answers(val_context_t *context, struct query_chain **queries, 
 							struct domain_info *response, struct query_chain *matched_q, 
 								struct assertion_chain **assertions)
 {
@@ -774,7 +628,7 @@ int assimilate_answers(val_context_t *context, struct query_chain **queries,
 	return NO_ERROR;
 }
 
-void  prove_nonexistence (struct query_chain *top_q, struct val_result *results) 
+static void  prove_nonexistence (struct query_chain *top_q, struct val_result *results) 
 {
 	struct val_result *res;
 	int wcard_chk = 0;
@@ -909,7 +763,7 @@ void  prove_nonexistence (struct query_chain *top_q, struct val_result *results)
  * NO_ERROR			Operation completed successfully
  * Other return values from add_to_query_chain()
  */
-int try_verify_assertion(val_context_t *context, struct query_chain **queries, 
+static int try_verify_assertion(val_context_t *context, struct query_chain **queries, 
 				struct assertion_chain *next_as)
 {
 	struct query_chain *pc;
@@ -997,7 +851,7 @@ int try_verify_assertion(val_context_t *context, struct query_chain **queries,
  * Try and verify each assertion. Update results as and when they are available.
  * Do not try and validate assertions that have already been validated.
  */
-int  verify_n_validate(val_context_t *context, struct query_chain **queries, 
+static int  verify_n_validate(val_context_t *context, struct query_chain **queries, 
 								struct assertion_chain *top_as, u_int8_t flags, 
 								struct val_result **results, int *done)
 {
@@ -1116,7 +970,7 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 }
 
 
-void fix_validation_results(struct query_chain *top_q, struct val_result *res, int *success)
+static void fix_validation_results(struct query_chain *top_q, struct val_result *res, int *success)
 {
 	*success = 0;
 
@@ -1150,6 +1004,152 @@ void fix_validation_results(struct query_chain *top_q, struct val_result *res, i
 
 	if (res->status == VALIDATE_SUCCESS)
 		*success = 1;
+}
+
+// XXX Needs blocking/non-blocking logic so that the validator can operate in
+// XXX the stealth mode
+static int ask_cache(val_context_t *context, struct query_chain *end_q, 
+				struct query_chain **queries, 
+				struct assertion_chain **assertions,
+				int *data_received)
+{
+	struct query_chain *next_q, *top_q;
+	struct rrset_rec *next_answer;
+	int retval;
+
+	top_q = *queries;
+
+	for(next_q = *queries; next_q && next_q != end_q; next_q=next_q->qc_next) {
+		if(next_q->qc_state == Q_INIT) {
+
+			if(NO_ERROR != (retval = get_cached_rrset(next_q->qc_name_n, 
+								next_q->qc_class_h, next_q->qc_type_h, &next_answer)))
+				return retval; 
+
+			if(next_answer) {
+				struct domain_info *response;
+				char name[MAXDNAME];
+
+				*data_received = 1;
+
+				next_q->qc_state = Q_ANSWERED;
+				/* Construct a dummy response */
+				response = (struct domain_info *) MALLOC (sizeof(struct domain_info));
+				if(response == NULL)
+					return OUT_OF_MEMORY;
+
+				response->di_rrset = next_answer;
+			    response->di_qnames = (struct qname_chain *) MALLOC (sizeof(struct qname_chain));
+				if (response->di_qnames == NULL) 
+					return OUT_OF_MEMORY;
+				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
+				response->di_qnames->qnc_next = NULL;
+
+				if(ns_name_ntop(next_q->qc_name_n, name, MAXDNAME-1) == -1) {
+					next_q->qc_state = Q_ERROR_BASE+SR_CALL_ERROR;
+					FREE(response->di_qnames);
+					FREE (response);
+					continue;
+				}
+			    response->di_requested_name_h = name; 
+			    response->di_requested_type_h = next_q->qc_type_h;
+			    response->di_requested_class_h = next_q->qc_class_h;
+				response->di_res_error = SR_UNSET;
+
+				if(NO_ERROR != (retval = 
+						assimilate_answers(context, queries, 
+							response, next_q, assertions))) {
+					FREE(response->di_rrset);
+					FREE(response->di_qnames);
+					FREE (response);
+					return retval;
+				}
+
+				FREE(response->di_rrset);
+				FREE(response->di_qnames);
+				FREE (response);
+
+				break;
+			}
+		}
+	}
+
+	if(top_q != *queries) 
+		/* more qureies have been added, do this again */
+		return ask_cache(context, top_q, queries, assertions, data_received);
+
+
+	return NO_ERROR;
+}
+
+static int ask_resolver(val_context_t *context, struct query_chain **queries, int block, 
+					struct assertion_chain **assertions)
+{
+	struct query_chain *next_q;
+	struct domain_info *response;
+	int retval;
+
+	response = NULL;
+
+	int answered = 0;
+	while (!answered) {
+
+		for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
+			if(next_q->qc_state == Q_INIT) {
+				next_q = next_q;
+				next_q->qc_state = Q_SENT;
+
+				if ((retval = val_resquery_send (context, next_q)) != NO_ERROR)
+					return retval;
+			}
+		}
+
+		/* wait until we get at least one complete answer */
+		if (block) {
+
+			for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
+				if(next_q->qc_state < Q_ANSWERED) {
+					if( (retval = val_resquery_rcv (context, next_q, &response)) != NO_ERROR)	
+						return retval;
+
+					if ((next_q->qc_state == Q_ANSWERED) && (response != NULL)) {
+						if(NO_ERROR != (retval = 
+								assimilate_answers(context, queries, 
+									response, next_q, assertions))) {
+							free_domain_info_ptrs(response);
+							FREE(response);
+							return retval;
+						}
+
+						/* Save new responses in the cache */
+						if(NO_ERROR != (retval = stow_answer(response->di_rrset))) {
+							free_domain_info_ptrs(response);
+							FREE(response);
+							return retval;
+						}
+
+						response->di_rrset = NULL;
+						free_domain_info_ptrs(response);
+						FREE(response);
+						answered = 1;
+						break;
+					}
+					if (response != NULL) {
+						free_domain_info_ptrs(response);
+						FREE(response);
+					}
+					if(next_q->qc_state > Q_ERROR_BASE) {
+						answered = 1;
+						break;
+					}
+				}
+			}
+		}
+		else
+			break;	
+	}
+
+	return NO_ERROR;
 }
 
 /*

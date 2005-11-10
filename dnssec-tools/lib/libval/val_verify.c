@@ -24,7 +24,6 @@
 #include "val_assertion.h"
 #include "val_log.h"
 
-#include "val_parse.h"
 #include "val_print.h"
 #include "crypto/val_rsamd5.h"
 #include "crypto/val_rsasha1.h"
@@ -226,7 +225,7 @@ static int have_rrsigs (struct domain_info *response)
 }
 
 
-int predict_sigbuflength (  struct rrset_rec *rr_set,
+static int predict_sigbuflength (  struct rrset_rec *rr_set,
                             size_t *field_length,
                             int *signer_length)
 {
@@ -256,7 +255,7 @@ int predict_sigbuflength (  struct rrset_rec *rr_set,
     return NO_ERROR;
 }
 
-int make_sigfield (  u_int8_t            **field,
+static int make_sigfield (  u_int8_t            **field,
                         int                 *field_length,
                         struct rrset_rec    *rr_set,
                         struct rr_rec       *rr_sig,
@@ -356,7 +355,7 @@ int make_sigfield (  u_int8_t            **field,
     return NO_ERROR;
 }
 
-int find_signature (u_int8_t **field, struct rr_rec *rr_sig)
+static int find_signature (u_int8_t **field, struct rr_rec *rr_sig)
 {
     int     sig_index;
                                                                                                                           
@@ -367,14 +366,14 @@ int find_signature (u_int8_t **field, struct rr_rec *rr_sig)
     return rr_sig->rr_rdata_length_h - sig_index;
 }
 
-void identify_key_from_sig (struct rr_rec *sig,u_int8_t **name_n,u_int16_t *footprint_n)
+static void identify_key_from_sig (struct rr_rec *sig,u_int8_t **name_n,u_int16_t *footprint_n)
 {
     *name_n = &sig->rr_rdata[SIGNBY];
     memcpy (footprint_n, &sig->rr_rdata[SIGNBY-sizeof(u_int16_t)],
                 sizeof(u_int16_t));
 }
 
-int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey_rdata_t *new_dnskey_rdata)
+static int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey_rdata_t *new_dnskey_rdata)
 {
 	struct rr_rec *nextrr;
 	u_int16_t tag_h = ntohs(*tag_n);
@@ -398,7 +397,7 @@ int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey_rdata_
 
 
 
-int do_verify (   int                 *sig_status,
+static int do_verify (   int                 *sig_status,
                   struct rrset_rec    *the_set,
                   struct rr_rec       *the_sig,
                   val_dnskey_rdata_t  *the_key,
@@ -451,7 +450,7 @@ val_log ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
 #ifndef DIGEST_SHA_1
 #define DIGEST_SHA_1 1
 #endif
-int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *public_key, u_int32_t public_key_len)
+static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *public_key, u_int32_t public_key_len)
 {
 	/* Only SHA-1 is understood */
     if(ds_hashtype != DIGEST_SHA_1)

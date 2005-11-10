@@ -53,7 +53,7 @@ static int skip_questions(const u_int8_t *buf)
     return 12 + wire_name_length (&buf[12]) + 4;
 }
 
-int register_query (struct query_list **q, u_int8_t *name_n, u_int32_t type_h, u_int8_t *zone_n)
+static int register_query (struct query_list **q, u_int8_t *name_n, u_int32_t type_h, u_int8_t *zone_n)
 {
     if (*q==NULL)
     {
@@ -94,7 +94,7 @@ int register_query (struct query_list **q, u_int8_t *name_n, u_int32_t type_h, u
     return IT_HASNT;
 }
                                                                                                                           
-void deregister_queries (struct query_list **q)
+static void deregister_queries (struct query_list **q)
 {
     struct query_list   *p;
                                                                                                                           
@@ -108,7 +108,7 @@ void deregister_queries (struct query_list **q)
 }
 
 
-void *weird_al_realloc (void *old, size_t new_size)
+static void *weird_al_realloc (void *old, size_t new_size)
 {
     void    *new;
                                                                                                                           
@@ -124,7 +124,7 @@ void *weird_al_realloc (void *old, size_t new_size)
     return new;
 }
 
-int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_list,
+static int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_list,
 			u_int8_t *zone_name, struct rrset_rec *unchecked_zone_info)
 {
     /* Look through the unchecked_zone stuff for answers */
@@ -453,7 +453,7 @@ ns_name);
 
 
 
-int do_referral(		val_context_t		*context,
+static int do_referral(		val_context_t		*context,
 						u_int8_t			*referral_zone_n, 
 						struct query_chain  *matched_q,
                         struct rrset_rec    **answers,
@@ -581,7 +581,7 @@ err:
 	} while (0);
 
 
-int digest_response (   val_context_t 		*context,
+static int digest_response (   val_context_t 		*context,
 						struct query_chain *matched_q,
 						struct name_server *respondent_server,
                         struct rrset_rec    **answers,
