@@ -243,9 +243,6 @@ struct val_result {
 /* from val_context.h */
 #include "val_context.h"
 
-/* from val_policy.h */
-#include "val_policy.h"
-
 /* from val_print.h */
 #include "val_print.h"
 
