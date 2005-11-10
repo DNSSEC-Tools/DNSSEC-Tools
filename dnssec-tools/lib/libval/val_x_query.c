@@ -14,99 +14,7 @@
 #include "val_cache.h"
 #include "val_support.h"
 
-
-// XXX This routine is provided for compatibility with some programs that 
-// XXX depend on this interface. 
-// XXX One should normally use getfoobybar() instead
-/*
- * This routine makes a query for {domain_name, type, class} and returns the 
- * result in response_t. Memory for the response bytes within 
- * response_t must be sufficient to hold all the answers returned. If not, those 
- * answers are omitted from the result and NO_SPACE is returned. The result of
- * validation for a particular resource record is available in validation_result. 
- * The response_t array passed to val_query, resp, must be large enough to 
- * hold all answers. The size allocated by the user must be passed in the 
- * resp_count parameter. If space is insufficient to hold all answers, those 
- * answers are omitted and NO_SPACE is returned. 
- * 
- * XXX We may need flags later on to specify preferences such as the following:
- * TRY_TCP_ON_DOS		Try connecting to the server using TCP when a DOS 
- *						on the resolver is detected 
- *
- * Return values:
- * NO_ERROR			Operation succeeded
- * BAD_ARGUMENT	The domain name is invalid
- * OUT_OF_MEMORY	Could not allocate enough memory for operation
- * NO_SPACE		Returned when the user allocated memory is not large enough 
- *					to hold all the answers.
- *
- */
-int compose_answer( const char *name_n,
-			const u_int16_t type_h,
-			const u_int16_t class_h,
-			struct val_result *results,
-			struct response_t *resp,
-			int *resp_count,
-			u_int8_t flags);
-
-int val_x_query(const val_context_t	*ctx,
-			const char *domain_name,
-			const u_int16_t class,
-			const u_int16_t type,
-			const u_int8_t flags,
-			struct response_t *resp,
-			int *resp_count)
-{
-	struct query_chain *queries = NULL;	
-	struct assertion_chain *assertions = NULL;
-	struct val_result *results = NULL;
-	int retval;
-	val_context_t *context;
-	u_char name_n[MAXCDNAME];
-
-	if(ctx == NULL) {
-		if(NO_ERROR !=(retval = get_context(NULL, &context)))
-			return retval;
-	}
-	else	
-		context = ctx;
-
-	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1)
-		return (BAD_ARGUMENT);                                                                                                                         
-	if(NO_ERROR == (retval = resolve_n_check(context, name_n, type, class, flags, 
-											&queries, &assertions, &results))) {
-		/* XXX Construct the answer response in response_t */
-		retval = compose_answer(name_n, type, class, results, resp, resp_count, flags);
-
-/*
-		struct val_result *res = results;
-
-		printf("\nRESULT OF VALIDATION :\n");
-		
-		for (res = results; res; res=res->next) {
-			if(res->as) {
-				dump_rrset(res->as->ac_data);
-			}
-			
-			printf ("Validation status = %d\n\n\n", res->status);
-		}
-*/
-	}
-
-	/* XXX De-register pending queries */
-	free_query_chain(&queries);
-	free_assertion_chain(&assertions);
-	free_result_chain(&results);
-
-	if((ctx == NULL)&& context)
-		destroy_context(context);
-
-//	free_validator_cache();
-
-	return retval;
-}
-
-int compose_answer( const char *name_n,
+static int compose_answer( const char *name_n,
 			const u_int16_t type_h,
 			const u_int16_t class_h,
 			struct val_result *results,
@@ -210,5 +118,90 @@ int compose_answer( const char *name_n,
 	}
 
 	return NO_ERROR;
+}
+
+
+// XXX This routine is provided for compatibility with some programs that 
+// XXX depend on this interface. 
+// XXX One should normally use getfoobybar() instead
+/*
+ * This routine makes a query for {domain_name, type, class} and returns the 
+ * result in response_t. Memory for the response bytes within 
+ * response_t must be sufficient to hold all the answers returned. If not, those 
+ * answers are omitted from the result and NO_SPACE is returned. The result of
+ * validation for a particular resource record is available in validation_result. 
+ * The response_t array passed to val_query, resp, must be large enough to 
+ * hold all answers. The size allocated by the user must be passed in the 
+ * resp_count parameter. If space is insufficient to hold all answers, those 
+ * answers are omitted and NO_SPACE is returned. 
+ * 
+ * XXX We may need flags later on to specify preferences such as the following:
+ * TRY_TCP_ON_DOS		Try connecting to the server using TCP when a DOS 
+ *						on the resolver is detected 
+ *
+ * Return values:
+ * NO_ERROR			Operation succeeded
+ * BAD_ARGUMENT	The domain name is invalid
+ * OUT_OF_MEMORY	Could not allocate enough memory for operation
+ * NO_SPACE		Returned when the user allocated memory is not large enough 
+ *					to hold all the answers.
+ *
+ */
+
+int val_x_query(const val_context_t	*ctx,
+			const char *domain_name,
+			const u_int16_t class,
+			const u_int16_t type,
+			const u_int8_t flags,
+			struct response_t *resp,
+			int *resp_count)
+{
+	struct query_chain *queries = NULL;	
+	struct assertion_chain *assertions = NULL;
+	struct val_result *results = NULL;
+	int retval;
+	val_context_t *context;
+	u_char name_n[MAXCDNAME];
+
+	if(ctx == NULL) {
+		if(NO_ERROR !=(retval = get_context(NULL, &context)))
+			return retval;
+	}
+	else	
+		context = ctx;
+
+	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1)
+		return (BAD_ARGUMENT);                                                                                                                         
+	if(NO_ERROR == (retval = resolve_n_check(context, name_n, type, class, flags, 
+											&queries, &assertions, &results))) {
+		/* XXX Construct the answer response in response_t */
+		retval = compose_answer(name_n, type, class, results, resp, resp_count, flags);
+
+/*
+		struct val_result *res = results;
+
+		printf("\nRESULT OF VALIDATION :\n");
+		
+		for (res = results; res; res=res->next) {
+			if(res->as) {
+				dump_rrset(res->as->ac_data);
+			}
+			
+			printf ("Validation status = %d\n\n\n", res->status);
+		}
+*/
+	}
+
+	/* XXX De-register pending queries */
+	free_query_chain(&queries);
+	free_assertion_chain(&assertions);
+	free_result_chain(&results);
+
+	if((ctx == NULL)&& context)
+		destroy_context(context);
+
+//	free_validator_cache();
+
+	return retval;
 }
 
