@@ -2,8 +2,8 @@
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */ 
-#ifndef RES_CACHE_H
-#define RES_CACHE_H
+#ifndef VAL_CACHE_H
+#define VAL_CACHE_H
 
 int stow_zone_info(struct rrset_rec *new_info);
 int stow_key_info(struct rrset_rec *new_info);
