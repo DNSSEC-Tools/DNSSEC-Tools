@@ -7,5 +7,6 @@
 
 int get_context(char *label, val_context_t **newcontext);
 void destroy_context(val_context_t *context);
+int switch_effective_policy(val_context_t *ctx, char *label);
 
 #endif
