@@ -19,6 +19,7 @@
 #include "val_print.h"
 #include "val_cache.h"
 #include "val_log.h"
+#include "val_support.h"
 
 #define PRINTS(msg,var) if (var) { \
                             val_log("%s%s\n", msg, var); \
@@ -196,10 +197,21 @@ char *print_ns_string(struct name_server **server)
 	return inet_ntoa(s->sin_addr);
 }
 
-void val_print_assertion_chain(struct val_result *results, struct query_chain *queries)
+void val_print_assertion_chain(u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
+				struct query_chain *queries, struct val_result *results)
 {
 	char name[MAXDNAME];
 	struct val_result *next_result;
+	struct query_chain *top_q = NULL;
+
+	/* Search for the "main" query */
+	for (top_q = queries; top_q; top_q=top_q->qc_next) {
+		if(!namecmp(top_q->qc_name_n, name_n) &&
+			(top_q->qc_class_h == class_h) &&
+			(top_q->qc_type_h == type_h))
+				break;
+	}
+
 	for (next_result = results; next_result; next_result = next_result->next) {
 		struct assertion_chain *next_as;
 		next_as = next_result->as;
@@ -216,15 +228,15 @@ void val_print_assertion_chain(struct val_result *results, struct query_chain *q
 
 			next_as = next_as->ac_trust;
 		}
-		else if(queries != NULL) {
-			if(ns_name_ntop(queries->qc_name_n, name, MAXDNAME-1) != -1) 
+		else if(top_q != NULL) {
+			if(ns_name_ntop(top_q->qc_name_n, name, MAXDNAME-1) != -1) 
 				val_log("\tname=%s", name);	
 			else
 				val_log("\tname=ERR_NAME");
-			val_log("\tclass=%s", p_class(queries->qc_class_h));	
-			val_log("\ttype=%s ", p_type(queries->qc_type_h));	
-			if (queries->qc_respondent_server)
-				val_log("\tfrom-server=%s", print_ns_string(&(queries->qc_respondent_server)));
+			val_log("\tclass=%s", p_class(top_q->qc_class_h));	
+			val_log("\ttype=%s ", p_type(top_q->qc_type_h));	
+			if (top_q->qc_respondent_server)
+				val_log("\tfrom-server=%s", print_ns_string(&(top_q->qc_respondent_server)));
 			val_log("\tResult=%s : %d\n", p_val_error(next_result->status), next_result->status);
 		}
 
