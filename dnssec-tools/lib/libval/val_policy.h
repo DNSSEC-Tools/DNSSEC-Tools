@@ -43,7 +43,6 @@ int read_res_config_file(val_context_t *ctx);
 int read_val_config_file(val_context_t *ctx, char *scope);
 void destroy_valpol(val_context_t *ctx);
 void destroy_respol(val_context_t *ctx);
-int switch_effective_policy(val_context_t *ctx, char *label);
 
 int parse_trust_anchor(FILE*, policy_entry_t*, int*);
 int free_trust_anchor(policy_entry_t*);
@@ -71,6 +70,7 @@ int free_dlv_trust_points(policy_entry_t*);
 int parse_dlv_max_links(FILE*, policy_entry_t*, int*);
 int free_dlv_max_links(policy_entry_t*);
 #endif
+int check_relevance(char *label, char *scope, int *label_count, int *relevant);
 
 /*
  * fragment of the configuration file containing 
