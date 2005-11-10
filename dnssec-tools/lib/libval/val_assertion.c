@@ -1093,16 +1093,15 @@ int  verify_n_validate(val_context_t *context, struct query_chain **queries,
 					 * give up early.
 					 */
 					res->status = INDETERMINATE_ERROR; 
-					break;
 				}
 				else { 
 					res->status = next_as->ac_state; 
-					continue;
 				}
+				break;
 			}
 			else if (next_as->ac_state <= LAST_FAILURE){
 				res->status = next_as->ac_state;
-				break;
+				continue;
 			}
 			else
 				/* Success condition */
@@ -1266,7 +1265,6 @@ int resolve_n_check(	val_context_t	*context,
 			prove_nonexistence (top_q, *results);
 	}
 
-	val_print_assertion_chain(*results, top_q);
 
 	return NO_ERROR;
 }
