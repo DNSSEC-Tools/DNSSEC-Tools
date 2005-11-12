@@ -18,9 +18,10 @@ sub new {
 
 # Print the results of an error for a given rule
 sub print_error {
-    my ($r, $err, $loc, $verb) = @_;
+    my ($r, $err, $loc, $verb, $rrname) = @_;
     my $class = $r->{class} || 'Error';
     print STDERR "$loc:\n";
+    print STDERR "  Location:    $rrname\n" if ($rrname);
     if ($verb) {
 	print STDERR "  Rule Name:   $r->{name}\n";
 	print STDERR "  Level:       $r->{level}\n";
@@ -55,8 +56,8 @@ sub test_record {
 	    }
 	    if ($#$res > -1) {
 		foreach my $result (@$res) {
-		    $r->print_error($result, "$file:$rec->{Line}",
-				    $verbose);
+		    $r->print_error($result, $rec->name,
+				    $verbose, "$file:$rec->{Line}");
 		}
 		return (1,$#$res+1);
 	    }
