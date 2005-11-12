@@ -23,25 +23,32 @@ my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
     @ignorelist, $netdns, $netdns_error);
 
 LocalGetOptions(\%opts,
-		["L|live", "Run live-query test rules"],
+		['GUI:separator',"Rule Set Configuration:"],
 		["l|level=i", "The maximum rule level to run (default = 5)"],
 		["r|rules=s", "glob pattern for rule files to load"],
 		["i|ignore=s", "Regular expression for rules to ignore"],
+
+		['GUI:separator',"Live Query Support:"],
+		["L|live", "Run live-query test rules"],
 		["t|tcpdump-capture=s", "Start tcpdump on interface STRING during run"],
 		["T|tcpdump-filter=s", "Use tcpdump filter (default port 53 or fragments)"],
 		["o|tcpdump-output-file=s", "Save tcpdump results to file STRING."],
-		"",
+
+		['GUI:separator',"Configuration Files:"],
 		["c|config-file=s", "Use an alternate configuration file"],
 		["C|no-config","Do not load any configuration files"],
-		"",
-		["v|verbose", "Verbose output showing extra information"],
-		["q|quiet", "Quiet output (Do not print summary information)"],
-		"",
+
+		['GUI:separator',"Help Information:"],
 		["h|help", "Show help for command line options"],
 		["R|help-rules", 'Show the rules that donuts checks'],
 		["H|help-config",
 		 'Show configuration tokens supported by the rules'],
-	       );
+		["v|verbose", "Verbose output showing extra information"],
+		["q|quiet", "Quiet output (Do not print summary information)"],
+
+		['GUI:otherargs_text',"FILE DOMAIN [FILE DOMAIN...]"],
+		
+	       ) || exit;
 
 #
 # initialize ignore list
