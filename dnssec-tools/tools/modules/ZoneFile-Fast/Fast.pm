@@ -75,680 +75,678 @@ my @fhs;
 my @lns;
 
 sub parse
-{
-	my %param;
-	my $text;
+  {
+      my %param;
+      my $text;
 
-	$on_error = undef;
-	$parse = \&parse_line;
-	$ln = 0;
-	$domain = ".";
-	$default_ttl = -1;
-	$minimum = -1;
-	@zone = ();
+      $on_error = undef;
+      $parse = \&parse_line;
+      $ln = 0;
+      $domain = ".";
+      $default_ttl = -1;
+      $minimum = -1;
+      @zone = ();
 
-	if (@_ == 1) {
-		$text = shift;
-	} else {
-		%param = @_;
-		if (defined $param{text}) {
-			$text = $param{text};
-		} elsif (defined $param{fh}) {
-		    $fh = $param{fh};
-		} elsif (defined $param{file}) {
-			$fh = IO::File->new($param{file}, "r");
-			error("cannot open $param{file}: $!") unless defined $fh;
-		} else {
-			error("want zone text, or file, or fh");
-		}
-	}
+      if (@_ == 1) {
+	  $text = shift;
+      } else {
+	  %param = @_;
+	  if (defined $param{text}) {
+	      $text = $param{text};
+	  } elsif (defined $param{fh}) {
+	      $fh = $param{fh};
+	  } elsif (defined $param{file}) {
+	      $fh = IO::File->new($param{file}, "r");
+	      error("cannot open $param{file}: $!") unless defined $fh;
+	  } else {
+	      error("want zone text, or file, or fh");
+	  }
+      }
 
-	$debug = $param{debug};
-	$quiet = $param{quiet};
-	$origin = $param{origin};
-	$origin = "." unless defined $origin;
-	$origin = ".$origin" unless $origin =~ /^\./;
-	$origin = "$origin." unless $origin =~ /\.$/;
-	$on_error = $param{on_error} || undef;
-	$param{soft_errors} = 1 if $on_error && !exists $param{soft_errors};
-	$quiet = 1 if $on_error && !exists $param{quiet};
-	$soft_errors = $param{soft_errors};
+      $debug = $param{debug};
+      $quiet = $param{quiet};
+      $origin = $param{origin};
+      $origin = "." unless defined $origin;
+      $origin = ".$origin" unless $origin =~ /^\./;
+      $origin = "$origin." unless $origin =~ /\.$/;
+      $on_error = $param{on_error} || undef;
+      $param{soft_errors} = 1 if $on_error && !exists $param{soft_errors};
+      $quiet = 1 if $on_error && !exists $param{quiet};
+      $soft_errors = $param{soft_errors};
 
-	eval {
-		if ($fh) {
-		    do {
-			while ($_ = readline($fh)) {
-			    $ln++;
-			    $parse->();
-			}
-			$fh = shift @fhs;
-			$ln = shift @lns;
-		    } while ($fh);
-		} else {
-			my @text = split "\n", $text;
-			for (@text) {
-				$ln++;
-				$parse->();
-			}
-		}
-	};
-	if ($@) {
-		return undef if $param{soft_errors};
-		die;
-	}
+      eval {
+	  if ($fh) {
+	      do {
+		  while ($_ = readline($fh)) {
+		      $ln++;
+		      $parse->();
+		  }
+		  $fh = shift @fhs;
+		  $ln = shift @lns;
+	      } while ($fh);
+	  } else {
+	      my @text = split "\n", $text;
+	      for (@text) {
+		  $ln++;
+		  $parse->();
+	      }
+	  }
+      };
+      if ($@) {
+	  return undef if $param{soft_errors};
+	  die;
+      }
 
-	my @r;
-	$minimum = 0 if $minimum < 0;
-	for my $z (@zone) {
-		$z->{ttl} = $minimum if $z->{ttl} <= 0;
-		chop $z->{name};
-		my $line = $z->{Line};
-		my $lines = $z->{Lines} || 1;
-		delete $z->{Line};
-		delete $z->{Lines};
-		if ($param{tolower}) {
-			$z->{name} = lc $z->{name};
-			$z->{cname} = lc $z->{cname} if defined $z->{cname};
-			$z->{exchange} = lc $z->{exchange} if defined $z->{exchange};
-			$z->{mname} = lc $z->{mname} if defined $z->{mname};
-			$z->{rname} = lc $z->{rname} if defined $z->{rname};
-			$z->{nsdname} = lc $z->{nsdname} if defined $z->{nsdname};
-			$z->{ptrdname} = lc $z->{ptrdname} if defined $z->{ptrdname};
-			$z->{target} = lc $z->{target} if defined $z->{target};
-			$z->{mbox} = lc $z->{mbox} if defined $z->{mbox};
-			$z->{txtdname} = lc $z->{txtdname} if defined $z->{txtdname};
-		} elsif ($param{toupper}) {
-			$z->{name} = uc $z->{name};
-			$z->{cname} = uc $z->{cname} if defined $z->{cname};
-			$z->{exchange} = uc $z->{exchange} if defined $z->{exchange};
-			$z->{mname} = uc $z->{mname} if defined $z->{mname};
-			$z->{rname} = uc $z->{rname} if defined $z->{rname};
-			$z->{nsdname} = uc $z->{nsdname} if defined $z->{nsdname};
-			$z->{ptrdname} = uc $z->{ptrdname} if defined $z->{ptrdname};
-			$z->{target} = uc $z->{target} if defined $z->{target};
-			$z->{mbox} = uc $z->{mbox} if defined $z->{mbox};
-			$z->{txtdname} = uc $z->{txtdname} if defined $z->{txtdname};
-		}
-		my $newrec = Net::DNS::RR->new_from_hash(%$z);
-		if ($newrec->{'type'} eq 'DNSKEY') {
-		    $newrec->setkeytag;
-		}
-		push @r, $newrec;
-		$r[-1]->{Line} = $line;
-		$r[-1]->{Lines} = $lines;
-	}
-	return \@r;
-}
+      my @r;
+      $minimum = 0 if $minimum < 0;
+      for my $z (@zone) {
+	  $z->{ttl} = $minimum if $z->{ttl} <= 0;
+	  chop $z->{name};
+	  my $line = $z->{Line};
+	  my $lines = $z->{Lines} || 1;
+	  delete $z->{Line};
+	  delete $z->{Lines};
+	  if ($param{tolower}) {
+	      $z->{name} = lc $z->{name};
+	      $z->{cname} = lc $z->{cname} if defined $z->{cname};
+	      $z->{exchange} = lc $z->{exchange} if defined $z->{exchange};
+	      $z->{mname} = lc $z->{mname} if defined $z->{mname};
+	      $z->{rname} = lc $z->{rname} if defined $z->{rname};
+	      $z->{nsdname} = lc $z->{nsdname} if defined $z->{nsdname};
+	      $z->{ptrdname} = lc $z->{ptrdname} if defined $z->{ptrdname};
+	      $z->{target} = lc $z->{target} if defined $z->{target};
+	      $z->{mbox} = lc $z->{mbox} if defined $z->{mbox};
+	      $z->{txtdname} = lc $z->{txtdname} if defined $z->{txtdname};
+	  } elsif ($param{toupper}) {
+	      $z->{name} = uc $z->{name};
+	      $z->{cname} = uc $z->{cname} if defined $z->{cname};
+	      $z->{exchange} = uc $z->{exchange} if defined $z->{exchange};
+	      $z->{mname} = uc $z->{mname} if defined $z->{mname};
+	      $z->{rname} = uc $z->{rname} if defined $z->{rname};
+	      $z->{nsdname} = uc $z->{nsdname} if defined $z->{nsdname};
+	      $z->{ptrdname} = uc $z->{ptrdname} if defined $z->{ptrdname};
+	      $z->{target} = uc $z->{target} if defined $z->{target};
+	      $z->{mbox} = uc $z->{mbox} if defined $z->{mbox};
+	      $z->{txtdname} = uc $z->{txtdname} if defined $z->{txtdname};
+	  }
+	  my $newrec = Net::DNS::RR->new_from_hash(%$z);
+	  if ($newrec->{'type'} eq 'DNSKEY') {
+	      $newrec->setkeytag;
+	  }
+	  push @r, $newrec;
+	  $r[-1]->{Line} = $line;
+	  $r[-1]->{Lines} = $lines;
+      }
+      return \@r;
+  }
 
 sub error
-{
-	if ($on_error) {
-		$on_error->($ln, @_);
-	} else {
-		warn "@_, line $ln\n" if $soft_errors && !$quiet;
-	}
-	die "@_, line $ln\n";
-}
+  {
+      if ($on_error) {
+	  $on_error->($ln, @_);
+      } else {
+	  warn "@_, line $ln\n" if $soft_errors && !$quiet;
+      }
+      die "@_, line $ln\n";
+  }
 
 sub parse_line
-{
-	if (/^\$include[ \t]+/ig) {
-	    if (!/\G[\"\']*([^\s\'\"]+)[\"\']*/igc) {
-		error("no include file specified $_");
-		return;
-	    }
-	    if (! -f $1) {
-		error("could not find file $1");
-		return;
-	    }
-	    unshift @fhs, $fh;
-	    unshift @lns, $ln;
-	    $fh = IO::File->new($1, "r");
-	    $ln = 0;
-	    error("cannot open include file $1: $!") unless defined $fh;
-	    return;
-	} elsif (/^\$origin[ \t]+/ig) {
-		if (/\G($pat_maybefullname)$pat_skip$/gc) {
-			my $name = $1;
-			$name = "$name$origin" unless $name =~ /\.$/;
-			$origin = $name;
-			$origin = ".$origin" unless $origin =~ /^\./;
-			return;
-		} elsif (/\G\.$pat_skip$/gc) {
-			$origin = ".";
-			return;
-		} else {
-			error("bad \$ORIGIN");
-		}
-	} elsif (/^\$generate[ \t]+/ig) {
-		if (/\G(\d+)\s*-\s*(\d+)\s+(.*)$/) {
-			my $from = $1;
-			my $to = $2;
-			my $pat = $3;
-			error("bad range in \$GENERATE") if $from > $to;
-			error("\$GENERATE pattern without a wildcard") if $pat !~ /\$/;
-			while ($from <= $to) {
-				$_ = $pat;
-				s/\$/$from/g;
-				$parse->();
-				$from++;
-			}
-			return;
-		} else {
-			error("bad \$GENERATE");
-		}
-	} elsif (/^\$ttl\b/ig) {
-		if (/\G\s+($pat_ttl)$pat_skip$/) {
-			my $v = $1;
-			$ttl = $default_ttl = ttl_fromtext($v);
-			if ($default_ttl <= 0 || $default_ttl > $MAXIMUM_TTL) {
-				error("bad TTL value `$v'");
-			} else {
-				debug("\$TTL <= $default_ttl\n") if $debug;
-			}
-		} else {
-			error("wrong \$TTL");
-		}
-		return;
-	} elsif (/^$pat_skip$/g) {
-		# skip
-		return;
-	} elsif (/^[ \t]+/g) {
-		# fall through
-	} elsif (/^\.[ \t]+/g) {
-		$domain = ".";
-	} elsif (/^\@[ \t]+/g) {
-		$domain = $origin;
-		$domain =~ s/^.// unless $domain eq ".";
-	} elsif (/^$/g) {
-		# skip
-		return;
-	} elsif (/^($pat_name\.)[ \t]+/g) {
-		$domain = $1;
-	} elsif (/^($pat_name)[ \t]+/g) {
-		$domain = "$1$origin";
-	} else {
-		error("syntax error");
-	}
-	if (/\G($pat_ttl)[ \t]+/gc) {
-		my $v = $1;
-		$ttl = ttl_fromtext($v);
-		if ($ttl == 0) {
-			$ttl = $default_ttl;
-		} else {
-			if ($ttl <= 0 || $ttl > $MAXIMUM_TTL) {
-				error("bad TTL value `$v'");
-			}
-		}
-	} else {
-		$ttl = $default_ttl;
-	}
-	if (/\G(in)[ \t]+/igc) {
-		# skip; we only support IN class
-	}
-	if (/\G(a)[ \t]+/igc) {
-		if (/\G(\d+)\.(\d+)\.(\d+)\.(\d+)$pat_skip$/ &&
-			$1 < 256 && $2 < 256  && $3 < 256 && $4 < 256)
-		{
-			push @zone, {
-				Line    => $ln,
-				name    => $domain,
-				type    => "A",
-				ttl     => $ttl,
-				class   => "IN",
-				address => "$1.$2.$3.$4",
-			};
-		} else {
-			error("bad IP address");
-		}
-	} elsif (/\G(ptr)[ \t]+/igc) {
-		if (/\G($pat_maybefullname)$pat_skip$/gc) {
-			my $name = $1;
-			$name = "$name$origin" unless $name =~ /\.$/;
-			chop $name;
-			push @zone, {
-				Line     => $ln,
-				name     => $domain,
-				type     => "PTR",
-				ttl      => $ttl,
-				class    => "IN",
-				ptrdname => $name,
-			};
-		} elsif (/\G\@$pat_skip$/gc) {
-			my $name = $origin;
-			$name =~ s/^.// unless $name eq ".";
-			chop $name;
-			push @zone, {
-				Line     => $ln,
-				name     => $domain,
-				type     => "PTR",
-				ttl      => $ttl,
-				class    => "IN",
-				ptrdname => $name,
-			};
-		} else {
-			error("bad name in PTR");
-		}
-	} elsif (/\G(afsdb)[ \t]+/igc) {
-	        my $subtype;
-		if (/\G(\d+)[ \t]+/gc) {
-		        $subtype = $1;
-		} else {
-			error("bad subtype in AFSDB");
-		}
-		if (/\G($pat_maybefullname)$pat_skip$/gc) {
-		    my $name = $1;
-		    $name = "$name$origin" unless $name =~ /\.$/;
-		    chop $name;
-		    push @zone, {
-				 Line       => $ln,
-				 name       => $domain,
-				 type       => "AFSDB",
-				 ttl        => $ttl,
-				 class      => "IN",
-				 subtype    => $subtype,
-				 hostname   => $name,
-				};
-		}
-	} elsif (/\G(cname)[ \t]+/igc) {
-		if (/\G($pat_maybefullname)$pat_skip$/gc) {
-			my $name = $1;
-			$name = "$name$origin" unless $name =~ /\.$/;
-			chop $name;
-			push @zone, {
-				Line  => $ln,
-				name  => $domain,
-				type  => "CNAME",
-				ttl   => $ttl,
-				class => "IN",
-				cname => $name,
-			};
-		} elsif (/\G\@$pat_skip$/gc) {
-			my $name = $origin;
-			$name =~ s/^.// unless $name eq ".";
-			chop $name;
-			push @zone, {
-				Line     => $ln,
-				name     => $domain,
-				type     => "CNAME",
-				ttl      => $ttl,
-				class    => "IN",
-				cname    => $name,
-			};
-		} else {
-			error("bad cname in CNAME");
-		}
-	} elsif (/\G(mx)[ \t]+/igc) {
-		my $prio;
-		if (/\G(\d+)[ \t]+/gc) {
-			$prio = $1;
-		} else {
-			error("bad priority in MX");
-		}
-		if (/\G($pat_maybefullname)$pat_skip$/gc) {
-			my $name = $1;
-			$name = "$name$origin" unless $name =~ /\.$/;
-			chop $name;
-			push @zone, {
-				Line       => $ln,
-				name       => $domain,
-				type       => "MX",
-				ttl        => $ttl,
-				class      => "IN",
-				preference => $prio,
-				exchange   => $name,
-			};
-		} elsif (/\G\@$pat_skip$/gc) {
-			my $name = $origin;
-			$name =~ s/^.// unless $name eq ".";
-			chop $name;
-			push @zone, {
-				Line       => $ln,
-				name       => $domain,
-				type       => "MX",
-				ttl        => $ttl,
-				class      => "IN",
-				preference => $prio,
-				exchange   => $name,
-			};
-		} else {
-			error("bad exchange in CNAME");
-		}
-	} elsif (/\G(aaaa)[ \t]+/igc) {
-		if (/\G([\da-fA-F:.]+)$pat_skip$/) {
-			# parsing stolen from Net::DNS::RR::AAAA
-			my $string = $1;
-			if ($string =~ /^(.*):(\d+)\.(\d+)\.(\d+)\.(\d+)$/) {
-				my ($front, $a, $b, $c, $d) = ($1, $2, $3, $4, $5);
-				$string = $front . sprintf(":%x:%x",
-										   ($a << 8 | $b),
-										   ($c << 8 | $d));
-			}
+  {
+      if (/^\$include[ \t]+/ig) {
+	  if (!/\G[\"\']*([^\s\'\"]+)[\"\']*/igc) {
+	      error("no include file specified $_");
+	      return;
+	  }
+	  if (! -f $1) {
+	      error("could not find file $1");
+	      return;
+	  }
+	  unshift @fhs, $fh;
+	  unshift @lns, $ln;
+	  $fh = IO::File->new($1, "r");
+	  $ln = 0;
+	  error("cannot open include file $1: $!") unless defined $fh;
+	  return;
+      } elsif (/^\$origin[ \t]+/ig) {
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      my $name = $1;
+	      $name = "$name$origin" unless $name =~ /\.$/;
+	      $origin = $name;
+	      $origin = ".$origin" unless $origin =~ /^\./;
+	      return;
+	  } elsif (/\G\.$pat_skip$/gc) {
+	      $origin = ".";
+	      return;
+	  } else {
+	      error("bad \$ORIGIN");
+	  }
+      } elsif (/^\$generate[ \t]+/ig) {
+	  if (/\G(\d+)\s*-\s*(\d+)\s+(.*)$/) {
+	      my $from = $1;
+	      my $to = $2;
+	      my $pat = $3;
+	      error("bad range in \$GENERATE") if $from > $to;
+	      error("\$GENERATE pattern without a wildcard") if $pat !~ /\$/;
+	      while ($from <= $to) {
+		  $_ = $pat;
+		  s/\$/$from/g;
+		  $parse->();
+		  $from++;
+	      }
+	      return;
+	  } else {
+	      error("bad \$GENERATE");
+	  }
+      } elsif (/^\$ttl\b/ig) {
+	  if (/\G\s+($pat_ttl)$pat_skip$/) {
+	      my $v = $1;
+	      $ttl = $default_ttl = ttl_fromtext($v);
+	      if ($default_ttl <= 0 || $default_ttl > $MAXIMUM_TTL) {
+		  error("bad TTL value `$v'");
+	      } else {
+		  debug("\$TTL <= $default_ttl\n") if $debug;
+	      }
+	  } else {
+	      error("wrong \$TTL");
+	  }
+	  return;
+      } elsif (/^$pat_skip$/g) {
+	  # skip
+	  return;
+      } elsif (/^[ \t]+/g) {
+	  # fall through
+      } elsif (/^\.[ \t]+/g) {
+	  $domain = ".";
+      } elsif (/^\@[ \t]+/g) {
+	  $domain = $origin;
+	  $domain =~ s/^.// unless $domain eq ".";
+      } elsif (/^$/g) {
+	  # skip
+	  return;
+      } elsif (/^($pat_name\.)[ \t]+/g) {
+	  $domain = $1;
+      } elsif (/^($pat_name)[ \t]+/g) {
+	  $domain = "$1$origin";
+      } else {
+	  error("syntax error");
+      }
+      if (/\G($pat_ttl)[ \t]+/gc) {
+	  my $v = $1;
+	  $ttl = ttl_fromtext($v);
+	  if ($ttl == 0) {
+	      $ttl = $default_ttl;
+	  } else {
+	      if ($ttl <= 0 || $ttl > $MAXIMUM_TTL) {
+		  error("bad TTL value `$v'");
+	      }
+	  }
+      } else {
+	  $ttl = $default_ttl;
+      }
+      if (/\G(in)[ \t]+/igc) {
+	  # skip; we only support IN class
+      }
+      if (/\G(a)[ \t]+/igc) {
+	  if (/\G(\d+)\.(\d+)\.(\d+)\.(\d+)$pat_skip$/ &&
+	      $1 < 256 && $2 < 256  && $3 < 256 && $4 < 256) {
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "A",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   address => "$1.$2.$3.$4",
+			  };
+	  } else {
+	      error("bad IP address");
+	  }
+      } elsif (/\G(ptr)[ \t]+/igc) {
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      my $name = $1;
+	      $name = "$name$origin" unless $name =~ /\.$/;
+	      chop $name;
+	      push @zone, {
+			   Line     => $ln,
+			   name     => $domain,
+			   type     => "PTR",
+			   ttl      => $ttl,
+			   class    => "IN",
+			   ptrdname => $name,
+			  };
+	  } elsif (/\G\@$pat_skip$/gc) {
+	      my $name = $origin;
+	      $name =~ s/^.// unless $name eq ".";
+	      chop $name;
+	      push @zone, {
+			   Line     => $ln,
+			   name     => $domain,
+			   type     => "PTR",
+			   ttl      => $ttl,
+			   class    => "IN",
+			   ptrdname => $name,
+			  };
+	  } else {
+	      error("bad name in PTR");
+	  }
+      } elsif (/\G(afsdb)[ \t]+/igc) {
+	  my $subtype;
+	  if (/\G(\d+)[ \t]+/gc) {
+	      $subtype = $1;
+	  } else {
+	      error("bad subtype in AFSDB");
+	  }
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      my $name = $1;
+	      $name = "$name$origin" unless $name =~ /\.$/;
+	      chop $name;
+	      push @zone, {
+			   Line       => $ln,
+			   name       => $domain,
+			   type       => "AFSDB",
+			   ttl        => $ttl,
+			   class      => "IN",
+			   subtype    => $subtype,
+			   hostname   => $name,
+			  };
+	  }
+      } elsif (/\G(cname)[ \t]+/igc) {
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      my $name = $1;
+	      $name = "$name$origin" unless $name =~ /\.$/;
+	      chop $name;
+	      push @zone, {
+			   Line  => $ln,
+			   name  => $domain,
+			   type  => "CNAME",
+			   ttl   => $ttl,
+			   class => "IN",
+			   cname => $name,
+			  };
+	  } elsif (/\G\@$pat_skip$/gc) {
+	      my $name = $origin;
+	      $name =~ s/^.// unless $name eq ".";
+	      chop $name;
+	      push @zone, {
+			   Line     => $ln,
+			   name     => $domain,
+			   type     => "CNAME",
+			   ttl      => $ttl,
+			   class    => "IN",
+			   cname    => $name,
+			  };
+	  } else {
+	      error("bad cname in CNAME");
+	  }
+      } elsif (/\G(mx)[ \t]+/igc) {
+	  my $prio;
+	  if (/\G(\d+)[ \t]+/gc) {
+	      $prio = $1;
+	  } else {
+	      error("bad priority in MX");
+	  }
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      my $name = $1;
+	      $name = "$name$origin" unless $name =~ /\.$/;
+	      chop $name;
+	      push @zone, {
+			   Line       => $ln,
+			   name       => $domain,
+			   type       => "MX",
+			   ttl        => $ttl,
+			   class      => "IN",
+			   preference => $prio,
+			   exchange   => $name,
+			  };
+	  } elsif (/\G\@$pat_skip$/gc) {
+	      my $name = $origin;
+	      $name =~ s/^.// unless $name eq ".";
+	      chop $name;
+	      push @zone, {
+			   Line       => $ln,
+			   name       => $domain,
+			   type       => "MX",
+			   ttl        => $ttl,
+			   class      => "IN",
+			   preference => $prio,
+			   exchange   => $name,
+			  };
+	  } else {
+	      error("bad exchange in CNAME");
+	  }
+      } elsif (/\G(aaaa)[ \t]+/igc) {
+	  if (/\G([\da-fA-F:.]+)$pat_skip$/) {
+	      # parsing stolen from Net::DNS::RR::AAAA
+	      my $string = $1;
+	      if ($string =~ /^(.*):(\d+)\.(\d+)\.(\d+)\.(\d+)$/) {
+		  my ($front, $a, $b, $c, $d) = ($1, $2, $3, $4, $5);
+		  $string = $front . sprintf(":%x:%x",
+					     ($a << 8 | $b),
+					     ($c << 8 | $d));
+	      }
 
-			my @addr;
-			if ($string =~ /^(.*)::(.*)$/) {
-				my ($front, $back) = ($1, $2);
-				my @front = split(/:/, $front);
-				my @back  = split(/:/, $back);
-				my $fill = 8 - (@front ? $#front + 1 : 0)
-					- (@back  ? $#back  + 1 : 0);
-				my @middle = (0) x $fill;
-				@addr = (@front, @middle, @back);
-			} else {
-				@addr = split(/:/, $string);
-				if (@addr < 8) {
-					@addr = ((0) x (8 - @addr), @addr);
-				}
-			}
+	      my @addr;
+	      if ($string =~ /^(.*)::(.*)$/) {
+		  my ($front, $back) = ($1, $2);
+		  my @front = split(/:/, $front);
+		  my @back  = split(/:/, $back);
+		  my $fill = 8 - (@front ? $#front + 1 : 0)
+		    - (@back  ? $#back  + 1 : 0);
+		  my @middle = (0) x $fill;
+		  @addr = (@front, @middle, @back);
+	      } else {
+		  @addr = split(/:/, $string);
+		  if (@addr < 8) {
+		      @addr = ((0) x (8 - @addr), @addr);
+		  }
+	      }
 
-			push @zone, {
-				Line    => $ln,
-				name    => $domain,
-				type    => "AAAA",
-				ttl     => $ttl,
-				class   => "IN",
-				address => sprintf("%x:%x:%x:%x:%x:%x:%x:%x",
-								   map { hex $_ } @addr),
-			};
-		} else {
-			error("bad IPv6 address");
-		}
-	} elsif (/\G(ns)[ \t]+/igc) {
-		if (/\G($pat_maybefullname)$pat_skip$/gc) {
-			my $name = $1;
-			$name = "$name$origin" unless $name =~ /\.$/;
-			chop $name;
-			push @zone, {
-				Line    => $ln,
-				name    => $domain,
-				type    => "NS",
-				ttl     => $ttl,
-				class   => "IN",
-				nsdname => $name,
-			};
-		} elsif (/\G\@$pat_skip$/gc) {
-			my $name = $origin;
-			$name =~ s/^.// unless $name eq ".";
-			chop $name;
-			push @zone, {
-				Line    => $ln,
-				name    => $domain,
-				type    => "NS",
-				ttl     => $ttl,
-				class   => "IN",
-				nsdname => $name,
-			};
-		} else {
-			error("bad name in NS");
-		}
-	} elsif (/\G(soa)\b/igc) {
-		$parse = \&parse_soa_name;
-		$soa = {
-			Line      => $ln,
-			name      => $domain,
-			type      => "SOA",
-			ttl       => $ttl,
-			class     => "IN",
-			breakable => 0,
-			nextkey   => "mname",
-		};
-		$parse->();
-		return;
-	} elsif (/\G(txt)[ \t]+/igc) {
-		if (/\G(["']?.*?["']?)$pat_skip$/gc) {
-			push @zone, {
-				Line    => $ln,
-				name    => $domain,
-				type    => "TXT",
-				ttl     => $ttl,
-				class   => "IN",
-				txtdata => $1,
-			};
-		} else {
-			error("bad txtdata in TXT");
-		}
-	} elsif (/\G(loc)[ \t]+/igc) {
-		# parsing stolen from Net::DNS::RR::LOC
-		if (/\G (\d+) \s+		# deg lat
-			((\d+) \s+)?		# min lat
-			(([\d.]+) \s+)?		# sec lat
-			(N|S) \s+			# hem lat
-			(\d+) \s+			# deg lon
-			((\d+) \s+)?		# min lon
-			(([\d.]+) \s+)?		# sec lon
-			(E|W) \s+			# hem lon
-			(-?[\d.]+) m? 		# altitude
-			(\s+ ([\d.]+) m?)?	# size
-			(\s+ ([\d.]+) m?)?	# horiz precision
-			(\s+ ([\d.]+) m?)? 	# vert precision
-			$pat_skip
-			$/ixgc)
-		{
-			# Defaults (from RFC 1876, Section 3).
-			my $default_min       = 0;
-			my $default_sec       = 0;
-			my $default_size      = 1;
-			my $default_horiz_pre = 10_000;
-			my $default_vert_pre  = 10;
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "AAAA",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   address => sprintf("%x:%x:%x:%x:%x:%x:%x:%x",
+					      map { hex $_ } @addr),
+			  };
+	  } else {
+	      error("bad IPv6 address");
+	  }
+      } elsif (/\G(ns)[ \t]+/igc) {
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      my $name = $1;
+	      $name = "$name$origin" unless $name =~ /\.$/;
+	      chop $name;
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "NS",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   nsdname => $name,
+			  };
+	  } elsif (/\G\@$pat_skip$/gc) {
+	      my $name = $origin;
+	      $name =~ s/^.// unless $name eq ".";
+	      chop $name;
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "NS",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   nsdname => $name,
+			  };
+	  } else {
+	      error("bad name in NS");
+	  }
+      } elsif (/\G(soa)\b/igc) {
+	  $parse = \&parse_soa_name;
+	  $soa = {
+		  Line      => $ln,
+		  name      => $domain,
+		  type      => "SOA",
+		  ttl       => $ttl,
+		  class     => "IN",
+		  breakable => 0,
+		  nextkey   => "mname",
+		 };
+	  $parse->();
+	  return;
+      } elsif (/\G(txt)[ \t]+/igc) {
+	  if (/\G(["']?.*?["']?)$pat_skip$/gc) {
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "TXT",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   txtdata => $1,
+			  };
+	  } else {
+	      error("bad txtdata in TXT");
+	  }
+      } elsif (/\G(loc)[ \t]+/igc) {
+	  # parsing stolen from Net::DNS::RR::LOC
+	  if (/\G (\d+) \s+		# deg lat
+	       ((\d+) \s+)?		# min lat
+	       (([\d.]+) \s+)?		# sec lat
+	       (N|S) \s+			# hem lat
+	       (\d+) \s+			# deg lon
+	       ((\d+) \s+)?		# min lon
+	       (([\d.]+) \s+)?		# sec lon
+	       (E|W) \s+			# hem lon
+	       (-?[\d.]+) m? 		# altitude
+	       (\s+ ([\d.]+) m?)?	# size
+	       (\s+ ([\d.]+) m?)?	# horiz precision
+	       (\s+ ([\d.]+) m?)? 	# vert precision
+	       $pat_skip
+	       $/ixgc) {
+	      # Defaults (from RFC 1876, Section 3).
+	      my $default_min       = 0;
+	      my $default_sec       = 0;
+	      my $default_size      = 1;
+	      my $default_horiz_pre = 10_000;
+	      my $default_vert_pre  = 10;
 
-			# Reference altitude in centimeters (see RFC 1876).
-			my $reference_alt = 100_000 * 100;
+	      # Reference altitude in centimeters (see RFC 1876).
+	      my $reference_alt = 100_000 * 100;
 
-			my $version = 0;
+	      my $version = 0;
 
-			my ($latdeg, $latmin, $latsec, $lathem) = ($1, $3, $5, $6);
-			my ($londeg, $lonmin, $lonsec, $lonhem) = ($7, $9, $11, $12);
-			my ($alt, $size, $horiz_pre, $vert_pre) = ($13, $15, $17, $19);
+	      my ($latdeg, $latmin, $latsec, $lathem) = ($1, $3, $5, $6);
+	      my ($londeg, $lonmin, $lonsec, $lonhem) = ($7, $9, $11, $12);
+	      my ($alt, $size, $horiz_pre, $vert_pre) = ($13, $15, $17, $19);
 
-			$latmin    = $default_min       unless $latmin;
-			$latsec    = $default_sec       unless $latsec;
-			$lathem    = uc($lathem);
+	      $latmin    = $default_min       unless $latmin;
+	      $latsec    = $default_sec       unless $latsec;
+	      $lathem    = uc($lathem);
 
-			$lonmin    = $default_min       unless $lonmin;
-			$lonsec    = $default_sec       unless $lonsec;
-			$lonhem    = uc($lonhem);
+	      $lonmin    = $default_min       unless $lonmin;
+	      $lonsec    = $default_sec       unless $lonsec;
+	      $lonhem    = uc($lonhem);
 
-			$size      = $default_size      unless $size;
-			$horiz_pre = $default_horiz_pre unless $horiz_pre;
-			$vert_pre  = $default_vert_pre  unless $vert_pre;
+	      $size      = $default_size      unless $size;
+	      $horiz_pre = $default_horiz_pre unless $horiz_pre;
+	      $vert_pre  = $default_vert_pre  unless $vert_pre;
 
-			push @zone, {
-				Line      => $ln,
-				name      => $domain,
-				type      => "LOC",
-				ttl       => $ttl,
-				class     => "IN",
-				version   => $version,
-				size      => $size * 100,
-				horiz_pre => $horiz_pre * 100,
-				vert_pre  => $vert_pre * 100,
-				latitude  => dms2latlon($latdeg, $latmin, $latsec, $lathem),
-				longitude => dms2latlon($londeg, $lonmin, $lonsec, $lonhem),
-				altitude  => $alt * 100 + $reference_alt,
-			};
-		} else {
-			error("bad LOC data");
-		}
-	} elsif (/\G(hinfo)[ \t]+/igc) {
-		# parsing stolen from Net::DNS::RR::HINFO
-		if (/\G["'](.*?)["']\s+["'](.*?)["']$pat_skip$/gc) {
-			push @zone, {
-				Line      => $ln,
-				name      => $domain,
-				type      => "HINFO",
-				ttl       => $ttl,
-				class     => "IN",
-				cpu       => $1,
-				os        => $2,
-			};
-		} else {
-			error("bad HINFO data");
-		}
-	} elsif (/\G(srv)[ \t]+/igc) {
-		# parsing stolen from Net::DNS::RR::SRV
-		if (/\G(\d+)\s+(\d+)\s+(\d+)\s+(\S+)$pat_skip$/gc) {
-			push @zone, {
-				Line      => $ln,
-				name      => $domain,
-				type      => "SRV",
-				ttl       => $ttl,
-				class     => "IN",
-				priority  => $1,
-				weight    => $2,
-				port      => $3,
-				target    => $4,
-			};
-			$zone[-1]->{target} =~ s/\.+$//;
-		} else {
-			error("bad SRV data");
-		}
-	} elsif (/\G(rrsig)[ \t]+/igc) {
-	    if (!/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
-		error("bad RRSIG data 1");
-	    }
-	    $rrsig = {
-		      first     => 1,
-		      Line      => $ln,
-		      name      => $domain,
-		      type      => "RRSIG",
-		      class     => "IN",
-		      ttl       => $ttl,
-		      typecovered => $1,
-		      algorithm => $2,
-		      labels    => $3,
-		      orgttl    => $4,
-		      sigexpiration => $5
-		     };
-	    if (/\G\(\s*$/gc) {
-		# multi-line
-		$parse = \&parse_rrsig;
-	    } elsif (/\G(\d+)\s+(\d+)\s+($pat_maybefullname)\s+([^=]+=)\s*/gc) {
-		# single-line
-		$rrsig->{'siginceptation'} = $1;
-		$rrsig->{'keytag'} = $2;
-		$rrsig->{'signame'} = $3;
-		$rrsig->{'sig'} = $4;
-		$rrsig->{'sigbin'} = decode_base64($rrsig->{'sig'});
-		push @zone, $rrsig;
-		$rrsig = undef;
-	    } else {
-		error("bad RRSIG data 2");
-	    }
-	} elsif (/\G(dnskey)[ \t]+/igc) {
-		if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
-		    error("bad DNSKEY data 1");
-		}
-		$dnskey = {
-			   first     => 1,
+	      push @zone, {
 			   Line      => $ln,
 			   name      => $domain,
+			   type      => "LOC",
 			   ttl       => $ttl,
 			   class     => "IN",
-			   type      => "DNSKEY",
-			   flags     => $1,
-			   protocol  => $2,
-			   algorithm => $3
+			   version   => $version,
+			   size      => $size * 100,
+			   horiz_pre => $horiz_pre * 100,
+			   vert_pre  => $vert_pre * 100,
+			   latitude  => dms2latlon($latdeg, $latmin, $latsec, $lathem),
+			   longitude => dms2latlon($londeg, $lonmin, $lonsec, $lonhem),
+			   altitude  => $alt * 100 + $reference_alt,
 			  };
-		if (/\G\(\s*$/gc) {
-		    # multi-line
-		    $parse = \&parse_dnskey;
-		} elsif (/\G(.*\S)\s*$/) {
-		    # single-line
-		    $dnskey->{'key'} .= $1;
-		    $dnskey->{'key'} =~ s/\s//g;
-		    $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
-		    push @zone, $dnskey;
-		    $dnskey = undef;
-		} else {
-		    error("bad DNSKEY data 2");
-		}
-	} elsif (/\G(ds)[ \t]+/igc) {
-		if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
-		    error("bad DS data 1");
-		}
-		$ds = {
-		       Line      => $ln,
-		       name      => $domain,
-		       class     => "IN",
-		       ttl       => $ttl,
-		       type      => "DS",
-		       keytag    => $1,
-		       algorithm => $2,
-		       digtype   => $3,
-		      };
-		if (/\G\(\s*$/gc) {
-		    # multi-line
-		    $parse = \&parse_ds;
-		} elsif (/\G(.*\S)\s*$/) {
-		    # single line
-		    $ds->{'digest'} .= $1;
-		    $ds->{'digest'} = lc($ds->{'digest'});
-		    $ds->{'digestbin'} = pack("H*", $ds->{'digest'});
-		    push @zone, $ds;
-		    $ds = undef;
-		} else {
-		    error("bad DS data");
-		}
-	} elsif (/\G(nsec)[ \t]+/igc) {
-		if (/\G\s*($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
-		    # XXX: set the typebm field ourselves?
-		    push @zone, 
-		      {
-		       Line      => $ln,
-		       name      => $domain,
-		       class     => "IN",
-		       ttl       => $ttl,
-		       type      => "NSEC",
-		       nxtdname  => lc($1),
-		       typelist  => $2,
-		       typebm    =>
-		       Net::DNS::RR::NSEC::_typestr2typebm(split(/\s+/,$2)),
-		      };
-		} else {
-			error("bad NSEC data");
-		}
-	} elsif (/\G(rp)[ \t]+/igc) {
-		my $mbox;
-		if (/\G($pat_maybefullname)[ \t]+/gc) {
-			$mbox = $1;
-			$mbox = "$mbox$origin" unless $mbox =~ /\.$/;
-			chop $mbox;
-		} elsif (/\G\@[ \t]+/gc) {
-			$mbox = $origin;
-			$mbox =~ s/^.// unless $mbox eq ".";
-			chop $mbox;
-		} else {
-			error("bad mbox in PTR");
-		}
-
-		my $txtdname;
-		if (/\G($pat_maybefullname)$pat_skip$/gc) {
-			$txtdname = $1;
-			$txtdname = "$txtdname$origin" unless $txtdname =~ /\.$/;
-			chop $txtdname;
-		} elsif (/\G\@$pat_skip$/gc) {
-			$txtdname = $origin;
-			$txtdname =~ s/^.// unless $txtdname eq ".";
-			chop $txtdname;
-		} else {
-			error("bad txtdname in PTR");
-		}
-
-		push @zone, {
-			Line     => $ln,
-			name     => $domain,
-			type     => "RP",
-			ttl      => $ttl,
-			class    => "IN",
-			mbox     => $mbox,
-			txtdname => $txtdname,
+	  } else {
+	      error("bad LOC data");
+	  }
+      } elsif (/\G(hinfo)[ \t]+/igc) {
+	  # parsing stolen from Net::DNS::RR::HINFO
+	  if (/\G["'](.*?)["']\s+["'](.*?)["']$pat_skip$/gc) {
+	      push @zone, {
+			   Line      => $ln,
+			   name      => $domain,
+			   type      => "HINFO",
+			   ttl       => $ttl,
+			   class     => "IN",
+			   cpu       => $1,
+			   os        => $2,
+			  };
+	  } else {
+	      error("bad HINFO data");
+	  }
+      } elsif (/\G(srv)[ \t]+/igc) {
+	  # parsing stolen from Net::DNS::RR::SRV
+	  if (/\G(\d+)\s+(\d+)\s+(\d+)\s+(\S+)$pat_skip$/gc) {
+	      push @zone, {
+			   Line      => $ln,
+			   name      => $domain,
+			   type      => "SRV",
+			   ttl       => $ttl,
+			   class     => "IN",
+			   priority  => $1,
+			   weight    => $2,
+			   port      => $3,
+			   target    => $4,
+			  };
+	      $zone[-1]->{target} =~ s/\.+$//;
+	  } else {
+	      error("bad SRV data");
+	  }
+      } elsif (/\G(rrsig)[ \t]+/igc) {
+	  if (!/\G(\w+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	      error("bad RRSIG data 1");
+	  }
+	  $rrsig = {
+		    first     => 1,
+		    Line      => $ln,
+		    name      => $domain,
+		    type      => "RRSIG",
+		    class     => "IN",
+		    ttl       => $ttl,
+		    typecovered => $1,
+		    algorithm => $2,
+		    labels    => $3,
+		    orgttl    => $4,
+		    sigexpiration => $5
+		   };
+	  if (/\G\(\s*$/gc) {
+	      # multi-line
+	      $parse = \&parse_rrsig;
+	  } elsif (/\G(\d+)\s+(\d+)\s+($pat_maybefullname)\s+([^=]+=)\s*/gc) {
+	      # single-line
+	      $rrsig->{'siginceptation'} = $1;
+	      $rrsig->{'keytag'} = $2;
+	      $rrsig->{'signame'} = $3;
+	      $rrsig->{'sig'} = $4;
+	      $rrsig->{'sigbin'} = decode_base64($rrsig->{'sig'});
+	      push @zone, $rrsig;
+	      $rrsig = undef;
+	  } else {
+	      error("bad RRSIG data 2");
+	  }
+      } elsif (/\G(dnskey)[ \t]+/igc) {
+	  if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	      error("bad DNSKEY data 1");
+	  }
+	  $dnskey = {
+		     first     => 1,
+		     Line      => $ln,
+		     name      => $domain,
+		     ttl       => $ttl,
+		     class     => "IN",
+		     type      => "DNSKEY",
+		     flags     => $1,
+		     protocol  => $2,
+		     algorithm => $3
+		    };
+	  if (/\G\(\s*$/gc) {
+	      # multi-line
+	      $parse = \&parse_dnskey;
+	  } elsif (/\G(.*\S)\s*$/) {
+	      # single-line
+	      $dnskey->{'key'} .= $1;
+	      $dnskey->{'key'} =~ s/\s//g;
+	      $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
+	      push @zone, $dnskey;
+	      $dnskey = undef;
+	  } else {
+	      error("bad DNSKEY data 2");
+	  }
+      } elsif (/\G(ds)[ \t]+/igc) {
+	  if (!/\G(\d+)\s+(\d+)\s+(\d+)\s+/gc) {
+	      error("bad DS data 1");
+	  }
+	  $ds = {
+		 Line      => $ln,
+		 name      => $domain,
+		 class     => "IN",
+		 ttl       => $ttl,
+		 type      => "DS",
+		 keytag    => $1,
+		 algorithm => $2,
+		 digtype   => $3,
 		};
-	} elsif (/\Gany\s+tsig.*$/igc) {
-	    # XXX ignore tsigs
-	} else {
-		error("unrecognized type");
-	}
-}
+	  if (/\G\(\s*$/gc) {
+	      # multi-line
+	      $parse = \&parse_ds;
+	  } elsif (/\G(.*\S)\s*$/) {
+	      # single line
+	      $ds->{'digest'} .= $1;
+	      $ds->{'digest'} = lc($ds->{'digest'});
+	      $ds->{'digestbin'} = pack("H*", $ds->{'digest'});
+	      push @zone, $ds;
+	      $ds = undef;
+	  } else {
+	      error("bad DS data");
+	  }
+      } elsif (/\G(nsec)[ \t]+/igc) {
+	  if (/\G\s*($pat_maybefullname)\s+(.*)$pat_skip$/gc) {
+	      # XXX: set the typebm field ourselves?
+	      push @zone, 
+		{
+		 Line      => $ln,
+		 name      => $domain,
+		 class     => "IN",
+		 ttl       => $ttl,
+		 type      => "NSEC",
+		 nxtdname  => lc($1),
+		 typelist  => $2,
+		 typebm    =>
+		 Net::DNS::RR::NSEC::_typestr2typebm(split(/\s+/,$2)),
+		};
+	  } else {
+	      error("bad NSEC data");
+	  }
+      } elsif (/\G(rp)[ \t]+/igc) {
+	  my $mbox;
+	  if (/\G($pat_maybefullname)[ \t]+/gc) {
+	      $mbox = $1;
+	      $mbox = "$mbox$origin" unless $mbox =~ /\.$/;
+	      chop $mbox;
+	  } elsif (/\G\@[ \t]+/gc) {
+	      $mbox = $origin;
+	      $mbox =~ s/^.// unless $mbox eq ".";
+	      chop $mbox;
+	  } else {
+	      error("bad mbox in PTR");
+	  }
+
+	  my $txtdname;
+	  if (/\G($pat_maybefullname)$pat_skip$/gc) {
+	      $txtdname = $1;
+	      $txtdname = "$txtdname$origin" unless $txtdname =~ /\.$/;
+	      chop $txtdname;
+	  } elsif (/\G\@$pat_skip$/gc) {
+	      $txtdname = $origin;
+	      $txtdname =~ s/^.// unless $txtdname eq ".";
+	      chop $txtdname;
+	  } else {
+	      error("bad txtdname in PTR");
+	  }
+
+	  push @zone, {
+		       Line     => $ln,
+		       name     => $domain,
+		       type     => "RP",
+		       ttl      => $ttl,
+		       class    => "IN",
+		       mbox     => $mbox,
+		       txtdname => $txtdname,
+		      };
+      } elsif (/\Gany\s+tsig.*$/igc) {
+	  # XXX ignore tsigs
+      } else {
+	  error("unrecognized type");
+      }
+  }
 
 # Reference lat/lon (see RFC 1876).
 my $reference_latlon = 2**31;
@@ -758,245 +756,245 @@ my $conv_min = 60 * $conv_sec;
 my $conv_deg = 60 * $conv_min;
 
 sub dms2latlon {
-	my ($deg, $min, $sec, $hem) = @_;
-	my ($retval);
+    my ($deg, $min, $sec, $hem) = @_;
+    my ($retval);
 
-	$retval = ($deg * $conv_deg) + ($min * $conv_min) + ($sec * $conv_sec);
-	$retval = -$retval if ($hem eq "S") || ($hem eq "W");
-	$retval += $reference_latlon;
-	return $retval;
+    $retval = ($deg * $conv_deg) + ($min * $conv_min) + ($sec * $conv_sec);
+    $retval = -$retval if ($hem eq "S") || ($hem eq "W");
+    $retval += $reference_latlon;
+    return $retval;
 }
 
 sub parse_soa_name
-{
-	error("parse_soa_name: internal error, no \$soa") unless $soa;
-	if ($soa->{breakable}) {
-		if (/\G[ \t]*($pat_maybefullname)$pat_skip$/igc) {
-			$soa->{$soa->{nextkey}} = $1;
-		} elsif (/\G$pat_skip$/gc) {
-			return;
-		} elsif (/\G[ \t]*($pat_name\.)[ \t]/igc) {
-			$soa->{$soa->{nextkey}} = $1;
-		} else {
-			error("expected valid $soa->{nextkey}");
-		}
-	} else {
-		if (/\G[ \t]+($pat_maybefullname)/igc) {
-			$soa->{$soa->{nextkey}} = $1;
-		} elsif (/\G[ \t]*\($pat_skip$/igc) {
-			$soa->{breakable} = 1;
-			return;
-		} elsif (/\G[ \t]*\(/igc) {
-			$soa->{breakable} = 1;
-			$parse->();
-			return;
-		} else {
-			error("expected valid $soa->{nextkey}");
-		}
-	}
-	if ($soa->{nextkey} eq "mname") {
-		$soa->{nextkey} = "rname";
-	} elsif ($soa->{nextkey} eq "rname") {
-		$soa->{nextkey} = "serial";
-		$parse = \&parse_soa_number;
-	} else {
-		error("parse_soa_name: internal error, bad {nextkey}") unless $soa;
-	}
-	$parse->();
-}
+  {
+      error("parse_soa_name: internal error, no \$soa") unless $soa;
+      if ($soa->{breakable}) {
+	  if (/\G[ \t]*($pat_maybefullname)$pat_skip$/igc) {
+	      $soa->{$soa->{nextkey}} = $1;
+	  } elsif (/\G$pat_skip$/gc) {
+	      return;
+	  } elsif (/\G[ \t]*($pat_name\.)[ \t]/igc) {
+	      $soa->{$soa->{nextkey}} = $1;
+	  } else {
+	      error("expected valid $soa->{nextkey}");
+	  }
+      } else {
+	  if (/\G[ \t]+($pat_maybefullname)/igc) {
+	      $soa->{$soa->{nextkey}} = $1;
+	  } elsif (/\G[ \t]*\($pat_skip$/igc) {
+	      $soa->{breakable} = 1;
+	      return;
+	  } elsif (/\G[ \t]*\(/igc) {
+	      $soa->{breakable} = 1;
+	      $parse->();
+	      return;
+	  } else {
+	      error("expected valid $soa->{nextkey}");
+	  }
+      }
+      if ($soa->{nextkey} eq "mname") {
+	  $soa->{nextkey} = "rname";
+      } elsif ($soa->{nextkey} eq "rname") {
+	  $soa->{nextkey} = "serial";
+	  $parse = \&parse_soa_number;
+      } else {
+	  error("parse_soa_name: internal error, bad {nextkey}") unless $soa;
+      }
+      $parse->();
+  }
 
 sub ttl_or_serial
-{
-	my ($v) = @_;
-	if ($soa->{nextkey} eq "serial") {
-		error("bad serial number") unless $v =~ /^\d+$/;
-	} else {
-		$v = ttl_fromtext($v);
-		error("bad $soa->{nextkey}") unless $v;
-	}
-	return $v;
-}
+  {
+      my ($v) = @_;
+      if ($soa->{nextkey} eq "serial") {
+	  error("bad serial number") unless $v =~ /^\d+$/;
+      } else {
+	  $v = ttl_fromtext($v);
+	  error("bad $soa->{nextkey}") unless $v;
+      }
+      return $v;
+  }
 
 sub parse_rrsig
-{
-    # got more data
-    if ($rrsig->{'first'}) {
-	delete $rrsig->{'first'};
-	if (/\G\s*(\d+)\s+(\d+)\s+($pat_maybefullname)/gc) {
-	    $rrsig->{'siginceptation'} = $1;
-	    $rrsig->{'keytag'} = $2;
-	    $rrsig->{'signame'} = $3;
-	} else {
-	    error("bad rrsig second line");
-	}
-    } else {
-	if (/\)\s*$/) {
-	    if (/\G\s*(\S+)\s*\)\s*$/gc) {
-		$rrsig->{'sig'} .= $1;
-		$rrsig->{'sigbin'} = decode_base64($rrsig->{'sig'});
-		# we're done
-		$parse = \&parse_line;
+  {
+      # got more data
+      if ($rrsig->{'first'}) {
+	  delete $rrsig->{'first'};
+	  if (/\G\s*(\d+)\s+(\d+)\s+($pat_maybefullname)/gc) {
+	      $rrsig->{'siginceptation'} = $1;
+	      $rrsig->{'keytag'} = $2;
+	      $rrsig->{'signame'} = $3;
+	  } else {
+	      error("bad rrsig second line");
+	  }
+      } else {
+	  if (/\)\s*$/) {
+	      if (/\G\s*(\S+)\s*\)\s*$/gc) {
+		  $rrsig->{'sig'} .= $1;
+		  $rrsig->{'sigbin'} = decode_base64($rrsig->{'sig'});
+		  # we're done
+		  $parse = \&parse_line;
 
-		push @zone, $rrsig;
-		$rrsig = undef;
-	    } else {
-		error("bad rrsig last line");
-	    }
-	} else {
-	    if (/\G\s*(\S+)\s*$/gc) {
-		$rrsig->{'sig'} .= $1;
-	    } else {
-		error("bad rrsig remaining lines");
-	    }
-	}
-    }
-}
+		  push @zone, $rrsig;
+		  $rrsig = undef;
+	      } else {
+		  error("bad rrsig last line");
+	      }
+	  } else {
+	      if (/\G\s*(\S+)\s*$/gc) {
+		  $rrsig->{'sig'} .= $1;
+	      } else {
+		  error("bad rrsig remaining lines");
+	      }
+	  }
+      }
+  }
 
 sub parse_dnskey
-{
-    # got more data?
-    if (/\)\s*;.*$/) {
-	if (/\G\s*(\S*)\s*\)\s*;.*$/gc) {
-	    $dnskey->{'key'} .= $1;
-	    # we're done
-	    $parse = \&parse_line;
+  {
+      # got more data?
+      if (/\)\s*;.*$/) {
+	  if (/\G\s*(\S*)\s*\)\s*;.*$/gc) {
+	      $dnskey->{'key'} .= $1;
+	      # we're done
+	      $parse = \&parse_line;
 
-	    $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
-	    push @zone, $dnskey;
-	    $dnskey = undef;
-	} else {
-	    error("bad dnskey last line");
-	}
-    } else {
-	if (/\G\s*(\S+)\s*$/gc) {
-	    $dnskey->{'key'} .= $1;
-	} else {
-	    error("bad dnskey remaining lines");
-	}
-    }
-}
+	      $dnskey->{'keybin'} = decode_base64($dnskey->{'key'});
+	      push @zone, $dnskey;
+	      $dnskey = undef;
+	  } else {
+	      error("bad dnskey last line");
+	  }
+      } else {
+	  if (/\G\s*(\S+)\s*$/gc) {
+	      $dnskey->{'key'} .= $1;
+	  } else {
+	      error("bad dnskey remaining lines");
+	  }
+      }
+  }
 
 sub parse_ds
-{
-    # got more data
-    if (/\)\s*$/) {
-	if (/\G\s*(\S*)\s*\)\s*$/gc) {
-	    $ds->{'digest'} .= $1;
-	    $ds->{'digest'} = lc($ds->{'digest'});
+  {
+      # got more data
+      if (/\)\s*$/) {
+	  if (/\G\s*(\S*)\s*\)\s*$/gc) {
+	      $ds->{'digest'} .= $1;
+	      $ds->{'digest'} = lc($ds->{'digest'});
 
-	    # we're done
-	    $parse = \&parse_line;
+	      # we're done
+	      $parse = \&parse_line;
 
-	    $ds->{'digestbin'} = pack("H*",$ds->{'digest'});
-	    push @zone, $ds;
-	    $ds = undef;
-	} else {
-	    error("bad ds last line");
-	}
-    } else {
-	if (/\G\s*(\S+)\s*$/gc) {
-	    $ds->{'digest'} .= $1;
-	} else {
-	    error("bad ds remaining lines");
-	}
-    }
-}
+	      $ds->{'digestbin'} = pack("H*",$ds->{'digest'});
+	      push @zone, $ds;
+	      $ds = undef;
+	  } else {
+	      error("bad ds last line");
+	  }
+      } else {
+	  if (/\G\s*(\S+)\s*$/gc) {
+	      $ds->{'digest'} .= $1;
+	  } else {
+	      error("bad ds remaining lines");
+	  }
+      }
+  }
 
 sub parse_soa_number
-{
-	error("parse_soa_number: internal error, no \$soa") unless $soa;
-	if ($soa->{breakable}) {
-		if (/\G[ \t]*($pat_ttl)$pat_skip$/igc) {
-			$soa->{$soa->{nextkey}} = ttl_or_serial($1);
-		} elsif (/\G$pat_skip$/gc) {
-			return;
-		} elsif (/\G[ \t]*($pat_ttl)\b/igc) {
-			$soa->{$soa->{nextkey}} = ttl_or_serial($1);
-		} else {
-			error("expected valid $soa->{nextkey}");
-		}
-	} else {
-		if (/\G[ \t]+($pat_ttl)/igc) {
-			$soa->{$soa->{nextkey}} = ttl_or_serial($1);
-		} elsif (/\G[ \t]*\($pat_skip$/igc) {
-			$soa->{breakable} = 1;
-			return;
-		} elsif (/\G[ \t]*\(/igc) {
-			$soa->{breakable} = 1;
-			$parse->();
-			return;
-		} else {
-			error("expected valid $soa->{nextkey}");
-		}
-	}
-	if ($soa->{nextkey} eq "serial") {
-		$soa->{nextkey} = "refresh";
-	} elsif ($soa->{nextkey} eq "refresh") {
-		$soa->{nextkey} = "retry";
-	} elsif ($soa->{nextkey} eq "retry") {
-		$soa->{nextkey} = "expire";
-	} elsif ($soa->{nextkey} eq "expire") {
-		$soa->{nextkey} = "minimum";
-	} elsif ($soa->{nextkey} eq "minimum") {
-		$minimum = $soa->{minimum};
-		$default_ttl = $minimum if $default_ttl <= 0;
-		$parse = $soa->{breakable} ? \&parse_close : \&parse_line;
-		if (!$soa->{breakable} && !/\G$pat_skip$/gc) {
-			error("unexpected trailing garbage after Minimum");
-		}
-		delete $soa->{nextkey};
-		delete $soa->{breakable};
-		chop $soa->{mname};
-		chop $soa->{rname};
-		$soa->{Lines} = $ln - $soa->{Line} + 1;
-		push @zone, $soa;
-		$soa = undef;
-		return if $parse == \&parse_line;
-	} else {
-		error("parse_soa_number: internal error, bad {nextkey}") unless $soa;
-	}
-	$parse->();
-}
+  {
+      error("parse_soa_number: internal error, no \$soa") unless $soa;
+      if ($soa->{breakable}) {
+	  if (/\G[ \t]*($pat_ttl)$pat_skip$/igc) {
+	      $soa->{$soa->{nextkey}} = ttl_or_serial($1);
+	  } elsif (/\G$pat_skip$/gc) {
+	      return;
+	  } elsif (/\G[ \t]*($pat_ttl)\b/igc) {
+	      $soa->{$soa->{nextkey}} = ttl_or_serial($1);
+	  } else {
+	      error("expected valid $soa->{nextkey}");
+	  }
+      } else {
+	  if (/\G[ \t]+($pat_ttl)/igc) {
+	      $soa->{$soa->{nextkey}} = ttl_or_serial($1);
+	  } elsif (/\G[ \t]*\($pat_skip$/igc) {
+	      $soa->{breakable} = 1;
+	      return;
+	  } elsif (/\G[ \t]*\(/igc) {
+	      $soa->{breakable} = 1;
+	      $parse->();
+	      return;
+	  } else {
+	      error("expected valid $soa->{nextkey}");
+	  }
+      }
+      if ($soa->{nextkey} eq "serial") {
+	  $soa->{nextkey} = "refresh";
+      } elsif ($soa->{nextkey} eq "refresh") {
+	  $soa->{nextkey} = "retry";
+      } elsif ($soa->{nextkey} eq "retry") {
+	  $soa->{nextkey} = "expire";
+      } elsif ($soa->{nextkey} eq "expire") {
+	  $soa->{nextkey} = "minimum";
+      } elsif ($soa->{nextkey} eq "minimum") {
+	  $minimum = $soa->{minimum};
+	  $default_ttl = $minimum if $default_ttl <= 0;
+	  $parse = $soa->{breakable} ? \&parse_close : \&parse_line;
+	  if (!$soa->{breakable} && !/\G$pat_skip$/gc) {
+	      error("unexpected trailing garbage after Minimum");
+	  }
+	  delete $soa->{nextkey};
+	  delete $soa->{breakable};
+	  chop $soa->{mname};
+	  chop $soa->{rname};
+	  $soa->{Lines} = $ln - $soa->{Line} + 1;
+	  push @zone, $soa;
+	  $soa = undef;
+	  return if $parse == \&parse_line;
+      } else {
+	  error("parse_soa_number: internal error, bad {nextkey}") unless $soa;
+      }
+      $parse->();
+  }
 
 sub parse_close
-{
-	if (/\G[ \t]*\)$pat_skip$/igc) {
-		$zone[-1]->{Lines} = $ln - $zone[-1]->{Line} + 1;
-		$parse = \&parse_line;
-		return;
-	} elsif (/\G$pat_skip$/gc) {
-		return;
-	} else {
-		error("expected closing block \")\"");
-	}
-}
+  {
+      if (/\G[ \t]*\)$pat_skip$/igc) {
+	  $zone[-1]->{Lines} = $ln - $zone[-1]->{Line} + 1;
+	  $parse = \&parse_line;
+	  return;
+      } elsif (/\G$pat_skip$/gc) {
+	  return;
+      } else {
+	  error("expected closing block \")\"");
+      }
+  }
 
 sub debug
-{
-	print STDERR @_;
-}
+  {
+      print STDERR @_;
+  }
 
 sub ttl_fromtext
-# zero == invalid value
-{
-	my ($t) = @_;
-	my $ttl = 0;
-	if ($t =~ /^\d+$/) {
-		$ttl = $t;
-	} elsif ($t =~ /^(?:\d+[WDHMS])+$/i) {
-		my %ttl;
-		$ttl{W} ||= 0;
-		$ttl{D} ||= 0;
-		$ttl{H} ||= 0;
-		$ttl{M} ||= 0;
-		$ttl{S} ||= 0;
-		while ($t =~ /(\d+)([WDHMS])/gi) {
-			$ttl{uc($2)} += $1;
-		}
-		$ttl = $ttl{S} + 60*($ttl{M} + 60*($ttl{H} + 24*($ttl{D} + 7*$ttl{W})));
-	}
-	return $ttl;
-}
+  # zero == invalid value
+  {
+      my ($t) = @_;
+      my $ttl = 0;
+      if ($t =~ /^\d+$/) {
+	  $ttl = $t;
+      } elsif ($t =~ /^(?:\d+[WDHMS])+$/i) {
+	  my %ttl;
+	  $ttl{W} ||= 0;
+	  $ttl{D} ||= 0;
+	  $ttl{H} ||= 0;
+	  $ttl{M} ||= 0;
+	  $ttl{S} ||= 0;
+	  while ($t =~ /(\d+)([WDHMS])/gi) {
+	      $ttl{uc($2)} += $1;
+	  }
+	  $ttl = $ttl{S} + 60*($ttl{M} + 60*($ttl{H} + 24*($ttl{D} + 7*$ttl{W})));
+      }
+      return $ttl;
+  }
 
 1;
 
