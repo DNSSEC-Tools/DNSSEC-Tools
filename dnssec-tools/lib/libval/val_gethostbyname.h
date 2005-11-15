@@ -41,7 +41,7 @@ struct hostent* val_duphostent ( const struct hostent *hentry );
  * above to free the returned hostent structure.
  */
 struct hostent *val_gethostbyname ( const char *name, int *h_errnop );
-struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name,
+struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name,
 				      int *h_errnop );
 
 #endif
