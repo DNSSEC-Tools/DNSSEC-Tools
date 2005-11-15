@@ -17,7 +17,6 @@
 #include "val_support.h"
 #include "val_policy.h"
 #include "val_x_query.h"
-#include "val_log.h"
 
 int get_context(char *label, val_context_t **newcontext)
 {
@@ -26,6 +25,9 @@ int get_context(char *label, val_context_t **newcontext)
 	*newcontext = (val_context_t *) MALLOC (sizeof(val_context_t));
 	if (*newcontext == NULL)
 		return OUT_OF_MEMORY;
+
+	if(snprintf((*newcontext)->id, VAL_CTX_IDLEN-1, "%u", (unsigned)(*newcontext)) < 0)
+		strcpy((*newcontext)->id, "libval");
 
 	/* Read the Resolver configuration file */	
 	if ((retval = read_res_config_file(*newcontext)) != NO_ERROR) {
