@@ -278,13 +278,13 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
 				printf("FAILED: expected=%s(%d), received=%s(%d)\n", 
 					p_val_error(result), result,
 					p_val_error(res->status), res->status);
-				val_print_assertion_chain(name_n, class, type, queries, results);
+				val_log_assertion_chain(context, LOG_INFO, name_n, class, type, queries, results);
 				goto end_test;
 			}
 		}
 
 		printf("OK\n");
-		val_print_assertion_chain(name_n, class, type, queries, results);
+		val_log_assertion_chain(context, LOG_INFO, name_n, class, type, queries, results);
 	}
 
 end_test:	
