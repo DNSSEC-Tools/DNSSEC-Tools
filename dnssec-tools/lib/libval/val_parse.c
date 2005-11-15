@@ -11,7 +11,6 @@
 #include <validator.h>
 #include "val_parse.h"
 #include "crypto/val_rsamd5.h"
-#include "val_log.h"
 #include "val_support.h"
 
 #include <openssl/bio.h>
