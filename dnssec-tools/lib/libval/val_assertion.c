@@ -1196,6 +1196,9 @@ int resolve_n_check(	val_context_t	*context,
 	int done = 0;
 	int data_received = 0;
 
+	val_log(context, LOG_DEBUG, "resolve_n_check(): looking for {%s %d %d}", 
+						domain_name_n, class, type);
+
 	if (NO_ERROR != (retval = add_to_query_chain(queries, domain_name_n, type, class)))
 		return retval;
 
