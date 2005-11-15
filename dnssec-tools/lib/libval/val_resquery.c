@@ -328,7 +328,7 @@ static int res_zi_unverified_ns_list(val_context_t *context, struct name_server 
 			if(ns_name_ntop(ns->ns_name_n, ns_name, MAXDNAME-1) == -1)
 				return -1;
 {
-val_log ("QUERYING: '%s.' (getting unchecked address hints)\n",
+val_log (context, LOG_DEBUG, "QUERYING: '%s.' (getting unchecked address hints)\n",
 ns_name);
 
 }
@@ -535,7 +535,7 @@ memset (debug_name1,0,1024);
 memset (debug_name2,0,1024);
 ns_name_ntop(matched_q->qc_name_n,debug_name1,1024);
 ns_name_ntop(referral_zone_n,debug_name2,1024);
-val_log ("QUERYING: '%s.' (referral to %s)\n",
+val_log (context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)\n",
 debug_name1, debug_name2);
 }
 	if(matched_q->qc_ns_list)
