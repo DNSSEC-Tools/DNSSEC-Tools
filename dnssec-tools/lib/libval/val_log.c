@@ -19,19 +19,31 @@
 #include "val_log.h"
 #include "val_support.h"
 
-static char *get_rr_string(struct rr_rec *rr, char *buf, int buflen)
+char *get_hex_string(char *data, int datalen, char *buf, int buflen)
 {
 	int i;
 	char *ptr = buf;
 	char *endptr = ptr+buflen;
-	while (rr) {
-		snprintf(ptr, endptr-ptr, "0x");
-		ptr += strlen(ptr);
+	strcpy(ptr, "");
 
-        for (i=0; i<rr->rr_rdata_length_h; i++) { 
-			snprintf(ptr, endptr-ptr, "%02x", rr->rr_rdata[i]);
-			ptr += strlen(ptr);
-        } 
+	snprintf(ptr, endptr-ptr, "0x");
+	ptr += strlen(ptr);
+
+	for (i=0; i<datalen; i++) { 
+		snprintf(ptr, endptr-ptr, "%02x", data[i]);
+		ptr += strlen(ptr);
+	} 
+
+	return buf;
+}
+
+static char *get_rr_string(struct rr_rec *rr, char *buf, int buflen)
+{
+	char *ptr = buf; 
+	char *endptr = ptr+buflen;
+	while (rr) {
+		get_hex_string(rr->rr_rdata, rr->rr_rdata_length_h, ptr, endptr-ptr);
+		ptr += strlen(ptr);
 	    rr = rr->rr_next;
 	}
 
