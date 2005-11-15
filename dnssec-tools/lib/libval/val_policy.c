@@ -677,6 +677,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 	/* free up existing policies */
 	destroy_valpol(ctx);
 
+	val_log(ctx, LOG_DEBUG, "Reading validator policy from %s", VAL_CONFIGURATION_FILE);
 	fd = open(VAL_CONFIGURATION_FILE, O_RDONLY);
 	if (fd == -1) {
 		perror(VAL_CONFIGURATION_FILE);
@@ -691,6 +692,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 		return INTERNAL_ERROR;
 	}
 
+	val_log(ctx, LOG_DEBUG, "Reading next policy fragment");
 	while (NO_ERROR == (retval = get_next_policy_fragment(fp, scope, &pol_frag, &line_number))) {
 		if (feof(fp)) {
 			flock(fd, LOCK_UN);
@@ -701,7 +703,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 		store_policy_overrides(ctx, &pol_frag);
 	}
 
-	printf ("Error in line %d of file %s\n", line_number, VAL_CONFIGURATION_FILE);
+	val_log(ctx, LOG_ERR, "Error in line %d of file %s\n", line_number, VAL_CONFIGURATION_FILE);
 	flock(fd, LOCK_UN);
 	close(fd);
 	return retval;
@@ -721,7 +723,7 @@ void destroy_respol(val_context_t *ctx)
 }
 
 
-static int init_respol(struct name_server **nslist)
+int read_res_config_file(val_context_t *ctx)
 {
 	struct sockaddr_in my_addr;
 	struct in_addr  address;
@@ -736,10 +738,11 @@ static int init_respol(struct name_server **nslist)
 	struct name_server *ns_tail = NULL;
 	struct name_server *ns = NULL;
 
-	*nslist = NULL;
+	ctx->nslist = NULL;
 
 	strcpy(auth_zone_info, DEFAULT_ZONE);
 
+	val_log(ctx, LOG_DEBUG, "Reading resolver policy from %s", RESOLV_CONF);
 	fd = open(RESOLV_CONF, O_RDONLY);
 	if (fd == -1) {
 		perror(RESOLV_CONF);
@@ -831,7 +834,7 @@ static int init_respol(struct name_server **nslist)
 		line = NULL;
 	}
 
-	*nslist = ns_head;
+	ctx->nslist = ns_head;
 
 	if (lp != NULL) 
 		FREE(lp);
@@ -842,6 +845,7 @@ static int init_respol(struct name_server **nslist)
 	return NO_ERROR;
 
 err:
+	val_log (ctx, LOG_ERR, "Parse error in file %s\n", RESOLV_CONF);
 	free_name_servers(&ns_head);
 
 	if (lp)
@@ -854,14 +858,5 @@ err:
 }
 
 
-int read_res_config_file(val_context_t *ctx)
-{
-	int ret_val;
-
-	if ((ret_val = init_respol(&ctx->nslist)) != NO_ERROR) 
-		return ret_val;
-
-	return NO_ERROR;
-}
 
 
