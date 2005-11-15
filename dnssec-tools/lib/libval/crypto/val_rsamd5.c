@@ -107,9 +107,10 @@ int rsamd5_sigverify (val_context_t *ctx,
 		      const val_dnskey_rdata_t dnskey,
 		      const val_rrsig_rdata_t rrsig)
 {
+	char buf[1028];
+	int buflen = 1024;
 	RSA *rsa = NULL;
 	unsigned char md5_hash[MD5_DIGEST_LENGTH];
-	int i;
 	
 	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): parsing the public key...\n");
 	if ((rsa = RSA_new()) == NULL) {
@@ -124,14 +125,10 @@ int rsamd5_sigverify (val_context_t *ctx,
 		return INTERNAL_ERROR;
 	}
 	
-	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): computing MD5 hash...\n");
 	bzero(md5_hash, MD5_DIGEST_LENGTH);
 	MD5(data, data_len, (unsigned char *) md5_hash);
-	val_log(ctx, LOG_DEBUG, "hash = 0x");
-	for (i=0; i<MD5_DIGEST_LENGTH; i++) {
-		val_log(ctx, LOG_DEBUG, "%02x", md5_hash[i]);
-	}
-	val_log(ctx, LOG_DEBUG, "\n");
+	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): MD5 hash = %s", 
+				get_hex_string(md5_hash, MD5_DIGEST_LENGTH, buf, buflen));
 	
 	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): verifying RSA signature...\n");
 	
