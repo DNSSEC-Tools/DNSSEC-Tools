@@ -12,7 +12,8 @@
 
 #include <val_parse.h>
 
-int rsasha1_sigverify (const unsigned char *data,
+int rsasha1_sigverify (val_context_t *ctx,
+				const unsigned char *data,
 		       int data_len,
 		       const val_dnskey_rdata_t dnskey,
 		       const val_rrsig_rdata_t rrsig);
