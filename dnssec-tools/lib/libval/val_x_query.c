@@ -148,7 +148,7 @@ static int compose_answer( const char *name_n,
  *
  */
 
-int val_x_query(const val_context_t	*ctx,
+int val_x_query(val_context_t	*ctx,
 			const char *domain_name,
 			const u_int16_t class,
 			const u_int16_t type,
@@ -170,8 +170,15 @@ int val_x_query(const val_context_t	*ctx,
 	else	
 		context = ctx;
 
-	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1)
-		return (BAD_ARGUMENT);                                                                                                                         
+    val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
+	   domain_name, p_class(class), p_type(type));
+
+	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1) {
+		if((ctx == NULL)&& context)
+			destroy_context(context);
+		return (BAD_ARGUMENT);
+	}
+                                                                                        
 	if(NO_ERROR == (retval = resolve_n_check(context, name_n, type, class, flags, 
 											&queries, &assertions, &results))) {
 		/* XXX Construct the answer response in response_t */
@@ -180,17 +187,19 @@ int val_x_query(const val_context_t	*ctx,
 /*
 		struct val_result *res = results;
 
-		printf("\nRESULT OF VALIDATION :\n");
+		val_log(context, LOG_DEBUG, "\nRESULT OF VALIDATION :\n");
 		
 		for (res = results; res; res=res->next) {
 			if(res->as) {
-				dump_rrset(res->as->ac_data);
+				val_log_rrset(context, LOG_DEBUG, res->as->ac_data);
 			}
 			
-			printf ("Validation status = %d\n\n\n", res->status);
+			val_log (context, LOG_DEBUG, "Validation status = %d\n\n\n", res->status);
 		}
 */
 	}
+
+	val_log_assertion_chain(context, LOG_DEBUG, name_n, class, type, queries, results);
 
 	/* XXX De-register pending queries */
 	free_query_chain(&queries);
@@ -205,3 +214,38 @@ int val_x_query(const val_context_t	*ctx,
 	return retval;
 }
 
+
+/*
+ * A validating DNS query interface.  Returns the length of the
+ * answer if successful, or -1 on error.  If successful, the
+ * dnssec_status return value will contain the DNSSEC validation status.
+ * For an ANY query, this function cannot return multiple RRSETs. It
+ * returns -1 instead.
+ * For now, the flags parameter is reserved for future use, and should
+ * be set to 0.
+ */
+int val_query ( const char *dname, int class, int type,
+		unsigned char *ans, int anslen, int flags,
+		int *dnssec_status )
+{
+    struct response_t resp[1];
+    int respcount = 1;
+    int ret_val = INTERNAL_ERROR;
+
+    resp[0].response = (u_int8_t *) ans;
+    resp[0].response_length = anslen;
+
+    if (dnssec_status == NULL)
+	    return BAD_ARGUMENT;
+
+    ret_val = val_x_query (NULL, dname, class, type, flags, resp, &respcount);
+
+    if ((ret_val == NO_ERROR) && (respcount > 0)) {
+	    *dnssec_status = resp[0].validation_result;
+	    return resp[0].response_length;
+    }
+    else {
+	    *dnssec_status = ERROR;
+	    return -1; /* or ret_val since it is < 0 */
+    }
+}
