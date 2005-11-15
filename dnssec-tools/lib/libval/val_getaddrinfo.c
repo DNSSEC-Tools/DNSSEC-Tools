@@ -204,7 +204,9 @@ static int process_service_and_hints(struct addrinfo_dnssec_wrapper *ainfo_wrapp
 /* Read the ETC_HOSTS file and check if it contains the given name
  * Assumes that nodename is not NULL
  */
-static int get_addrinfo_from_etc_hosts (const char *nodename,
+static int get_addrinfo_from_etc_hosts (
+					val_context_t *ctx,
+					const char *nodename,
 					const char *servname,
 					const struct addrinfo *hints,
 					struct addrinfo **res)
@@ -212,7 +214,7 @@ static int get_addrinfo_from_etc_hosts (const char *nodename,
 	struct hosts *hs = NULL;
 	struct addrinfo *retval = NULL;
 	
-	val_log("\n****Parsing /etc/hosts****\n");
+	val_log(ctx, LOG_DEBUG, "Parsing /etc/hosts");
 	hs = parse_etc_hosts(nodename);
 	while (hs) {
 		int alias_index = 0;
@@ -223,16 +225,15 @@ static int get_addrinfo_from_etc_hosts (const char *nodename,
 			(struct addrinfo_dnssec_wrapper *) malloc (sizeof (struct addrinfo_dnssec_wrapper));
 		struct addrinfo *ainfo = &(ainfo_wrapper->ainfo);
 		
-		printf("{");
-		printf("\tAddress: %s\n", hs->address);
-		printf("\tCanonical Hostname: %s\n", hs->canonical_hostname);
-		printf("\tAliases:");
+		val_log(ctx, LOG_DEBUG, "{");
+		val_log(ctx, LOG_DEBUG, "  Address: %s", hs->address);
+		val_log(ctx, LOG_DEBUG, "  Canonical Hostname: %s", hs->canonical_hostname);
+		val_log(ctx, LOG_DEBUG, "  Aliases:");
 		while (hs->aliases[alias_index] != NULL) {
-			printf(" %s", hs->aliases[alias_index]);
+			val_log(ctx, LOG_DEBUG, "   %s", hs->aliases[alias_index]);
 			alias_index++;
 		}
-		printf("\n");
-		printf("}\n");
+		val_log(ctx, LOG_DEBUG, "}");
 		
 		bzero(ainfo_wrapper, sizeof(struct addrinfo_dnssec_wrapper));
 		bzero(&ip4_addr, sizeof(struct in_addr));
@@ -279,7 +280,7 @@ static int get_addrinfo_from_etc_hosts (const char *nodename,
 		hs = hs->next;
 		FREE_HOSTS(h_prev);
 	}
-	val_log("****Parsing /etc/hosts done****\n");
+	val_log(ctx, LOG_DEBUG, "Parsing /etc/hosts OK");
 	
 	*res = retval;
 	if (retval) {
@@ -291,7 +292,9 @@ static int get_addrinfo_from_etc_hosts (const char *nodename,
 } /* get_addrinfo_from_etc_hosts() */
 
 
-static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
+static int get_addrinfo_from_rrset (
+					val_context_t *ctx,
+					struct rrset_rec *rrset,
 				    int dnssec_status,
 				    const char *servname,
 				    const struct addrinfo *hints,
@@ -301,11 +304,11 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 	struct addrinfo *ainfo_tail = NULL;
 	char *canonname = NULL;
 	
-	val_log("get_addrinfo_from_rrset called with dnssec_status = %d [%s]\n", 
+	val_log(ctx, LOG_DEBUG, "get_addrinfo_from_rrset called with dnssec_status = %d [%s]", 
 		dnssec_status, p_val_error(dnssec_status));
 
 	if (!rrset) {
-		val_log("rrset is null\n");
+		val_log(ctx, LOG_DEBUG, "rrset is null");
 	}
 	
 	while (rrset != NULL) {
@@ -316,10 +319,10 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 			bzero(dname, MAXDNAME);
 			if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
 				/* error */
-				val_log("error in ns_name_ntop");
+				val_log(ctx, LOG_DEBUG, "error in ns_name_ntop");
 			}
 			else {
-				val_log("duplicating the canonname\n");
+				val_log(ctx, LOG_DEBUG, "duplicating the canonname");
 				canonname = (char *) malloc ((strlen(dname) + 1) * sizeof(char));
 				memcpy(canonname, dname, strlen(dname) + 1);
 			}
@@ -335,7 +338,7 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 
 			if (rrset->rrs_type_h == ns_t_a) {
 				struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
-				val_log("rrset of type A found\n");
+				val_log(ctx, LOG_DEBUG, "rrset of type A found");
 				ainfo->ai_family = AF_INET;
 				ainfo->ai_addrlen = sizeof (struct sockaddr_in);
 				memcpy(&(saddr4->sin_addr.s_addr), rr->rr_rdata, rr->rr_rdata_length_h);
@@ -343,7 +346,7 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 			}
 			else if (rrset->rrs_type_h == ns_t_aaaa) {
 				struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
-				val_log("rrset of type AAAA found\n");
+				val_log(ctx, LOG_DEBUG, "rrset of type AAAA found");
 				ainfo->ai_family = AF_INET6;
 				ainfo->ai_addrlen = sizeof (struct sockaddr_in6);
 				memcpy(&(saddr6->sin6_addr.s6_addr), rr->rr_rdata, rr->rr_rdata_length_h);
@@ -391,7 +394,7 @@ static int get_addrinfo_from_rrset (struct rrset_rec *rrset,
 }
 
 /* Converts data in the rrset_rec structure into a addrinfo structure */
-static int get_addrinfo_from_dns (const val_context_t *ctx,
+static int get_addrinfo_from_dns (val_context_t *ctx,
 				  const char *nodename,
 				  const char *servname,
 				  const struct addrinfo *hints,
@@ -400,41 +403,32 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 	struct query_chain *queries = NULL;
 	struct assertion_chain *assertions = NULL;
 	struct val_result *results = NULL;
-	val_context_t *context = NULL;
 	struct addrinfo *ainfo = NULL;
 	u_char name_n[MAXCDNAME];
 	int retval = 0;
 	int ret = 0;
-	
-	val_log("get_addrinfo_from_dns() called\n");
 
-	if (ctx == NULL) {
-		get_context(NULL, &context);
-	}
-	else {
-		context = ctx;
-	}
-
+	val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns() called");
 	if (hints == NULL || hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET) {
 		
-		val_log("checking for A records\n");
+		val_log(ctx, LOG_DEBUG, "checking for A records");
 		
 		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
-			if ((retval = resolve_n_check(context, name_n, ns_t_a, ns_c_in, 0,
+			if ((retval = resolve_n_check(ctx, name_n, ns_t_a, ns_c_in, 0,
 						      &queries, &assertions, &results)) != NO_ERROR) {
-				val_log("resolve_n_check failed");
+				val_log(ctx, LOG_DEBUG, "resolve_n_check failed");
 			}
 		}
 		else {
-			val_log("ns_name_pton failed");
+			val_log(ctx, LOG_DEBUG, "ns_name_pton failed");
 		}
 		
 		if (results && results->as) {
 			struct addrinfo *ainfo_new = NULL;
-			ret = get_addrinfo_from_rrset (results->as->ac_data, results->status,
+			ret = get_addrinfo_from_rrset (ctx, results->as->ac_data, results->status,
 						       servname, hints, &ainfo_new);
 			if (ainfo_new) {
-				val_log("A records found\n");
+				val_log(ctx, LOG_DEBUG, "A records found");
 				ainfo = append_addrinfo(ainfo, ainfo_new);
 			}
 		}
@@ -443,8 +437,6 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		free_result_chain(&results); results = NULL;
 		if (ret == EAI_SERVICE) {
 			if (ainfo) val_freeaddrinfo(ainfo);
-			if ((ctx == NULL) && context)
-				destroy_context(context);
 
 			return EAI_SERVICE;
 		}
@@ -452,24 +444,24 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 	
 	if (hints == NULL || hints->ai_family == AF_UNSPEC || hints->ai_family == AF_INET6) {
 		
-		val_log("checking for AAAA records\n");
+		val_log(ctx, LOG_DEBUG, "checking for AAAA records");
 		
 		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
-			if ((retval = resolve_n_check(context, name_n, ns_t_aaaa, ns_c_in, 0,
+			if ((retval = resolve_n_check(ctx, name_n, ns_t_aaaa, ns_c_in, 0,
 						      &queries, &assertions, &results)) != NO_ERROR) {
-				val_log("resolve_n_check failed");
+				val_log(ctx, LOG_DEBUG, "resolve_n_check failed");
 			}
 		}
 		else {
-			val_log("ns_name_pton failed");
+			val_log(ctx, LOG_DEBUG, "ns_name_pton failed");
 		}
 		
 		if (results && results->as && retval == NO_ERROR) {
 			struct addrinfo *ainfo_new = NULL;
-			ret = get_addrinfo_from_rrset (results->as->ac_data, results->status,
+			ret = get_addrinfo_from_rrset (ctx, results->as->ac_data, results->status,
 						       servname, hints, &ainfo_new);
 			if (ainfo_new) {
-				val_log("AAAA records found\n");
+				val_log(ctx, LOG_DEBUG, "AAAA records found");
 				ainfo = append_addrinfo(ainfo, ainfo_new);
 			}
 		}
@@ -478,15 +470,11 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		free_result_chain(&results); results = NULL;
 		if (ret == EAI_SERVICE) {
 			if (ainfo) val_freeaddrinfo(ainfo);
-			if ((ctx == NULL) && context)
-				destroy_context(context);
 	
 			return EAI_SERVICE;
 		}
 	}
 	
-	if ((ctx == NULL) && context)
-		destroy_context(context);
 	
 	if (ainfo) {
 		*res = ainfo;
@@ -501,7 +489,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 
 /* Extended version of the validating getaddrinfo function
  */
-int val_x_getaddrinfo (const val_context_t *ctx,
+int val_x_getaddrinfo (val_context_t *ctx,
 		       const char *nodename, const char *servname,
 		       const struct addrinfo *hints,
 		       struct addrinfo **res)
@@ -512,13 +500,22 @@ int val_x_getaddrinfo (const val_context_t *ctx,
 	struct addrinfo *ainfo6 = NULL;
 	int is_ip4 = 0;
 	int is_ip6 = 0;
+	int retval = 0;
+
+	val_context_t *context = NULL;
+
+	if (ctx == NULL)
+		get_context(NULL, &context);
+	else
+		context = ctx;
 	
-	val_log("val_getaddrinfo called with nodename = %s, servname = %s\n",
+	val_log(context, LOG_DEBUG, "val_getaddrinfo called with nodename = %s, servname = %s",
 		nodename == NULL? "(null)":nodename,
 		servname == NULL? "(null)": servname);
 	
 	if ((nodename == NULL) && (servname == NULL)) {
-		return EAI_NONAME;
+		retval = EAI_NONAME;
+		goto done;
 	}
 	
 	bzero(&ip4_addr, sizeof(struct in_addr));
@@ -551,17 +548,19 @@ int val_x_getaddrinfo (const val_context_t *ctx,
 		if (process_service_and_hints(ainfo_wrapper, servname, hints, &ainfo4) == EAI_SERVICE) {
 			free(ainfo_wrapper);
 			free(saddr4);
-			return EAI_SERVICE;
+			retval = EAI_SERVICE;
+			goto done;
 		}	 
 		
 		if (nodename != NULL) {
 			*res = ainfo4;
 			if (*res != NULL) {
-				return 0;
+				retval = 0;
 			}
 			else {
-				return EAI_NONAME;
+				retval = EAI_NONAME;
 			}
+			goto done;
 		}
 	}
 	
@@ -594,7 +593,8 @@ int val_x_getaddrinfo (const val_context_t *ctx,
 		if (process_service_and_hints(ainfo_wrapper, servname, hints, &ainfo6) == EAI_SERVICE) {
 			free(ainfo_wrapper);
 			free(saddr6);
-			return EAI_SERVICE;
+			retval = EAI_SERVICE;
+			goto done;
 		}
 		
 		if (nodename == NULL) {
@@ -605,40 +605,44 @@ int val_x_getaddrinfo (const val_context_t *ctx,
 		}
 		
 		if (*res != NULL) {
-			return 0;
+			retval = 0;
 		}
 		else {
-			return EAI_NONAME;
+			retval = EAI_NONAME;
 		}
+		goto done;
 	}
 	
 	if (nodename && !is_ip4 && !is_ip6) {
 		/* First check ETC_HOSTS file
 		 * XXX: TODO check the order in the ETC_HOST_CONF file
 		 */
-		if (get_addrinfo_from_etc_hosts (nodename, servname, hints, res) == EAI_SERVICE) {
-			return EAI_SERVICE;
+		if (get_addrinfo_from_etc_hosts (context, nodename, servname, hints, res) == EAI_SERVICE) {
+			retval = EAI_SERVICE;
 		}
-		
-		if (*res != NULL) {
-			return 0;
+		else if (*res != NULL) {
+			retval = 0;
 		}
 		
 		/*
 		 * Try DNS
 		 */
 		
-		if (get_addrinfo_from_dns (ctx, nodename, servname, hints, res) == EAI_SERVICE) {
-			return EAI_SERVICE;
+		else if (get_addrinfo_from_dns (context, nodename, servname, hints, res) == EAI_SERVICE) {
+			retval = EAI_SERVICE;
 		}
-		
-		if (*res != NULL) {
-			return 0;
+		else if (*res != NULL) {
+			retval = 0;
 		}
 		else {
-			return EAI_NONAME;
+			retval = EAI_NONAME;
 		}
 	}
+
+done:
+	if((ctx == NULL) && context)
+		destroy_context(context);
+	return retval;
 
 } /* val_x_getaddrinfo() */
 
