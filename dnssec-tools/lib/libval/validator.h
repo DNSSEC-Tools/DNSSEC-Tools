@@ -11,8 +11,6 @@
 #include <stdlib.h>
 #include <val_errors.h>
 
-#define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
-#define RESOLV_CONF             "/etc/resolv.conf"
 
 #define DNS_PORT	53
 #ifdef MEMORY_DEBUGGING
@@ -50,6 +48,8 @@
 #define ENVELOPE            10
 #define RRSIGLABEL			3
 #define TTL					4
+
+#define VAL_CTX_IDLEN 20
 
 /* Response structures  */
 struct rr_rec
@@ -148,8 +148,10 @@ struct policy_overrides{
 	struct policy_overrides *next;
 };
 
-
 typedef struct val_context {
+
+	char id[VAL_CTX_IDLEN];
+
 	/* resolver policy */
 	struct name_server *nslist;
 
@@ -243,11 +245,8 @@ struct val_result {
 /* from val_context.h */
 #include "val_context.h"
 
-/* from val_print.h */
-#include "val_print.h"
-
-/* from val_query.h */
-#include "val_query.h"
+/* from val_log.h */
+#include "val_log.h"
 
 /* from val_x_query.h */
 #include "val_x_query.h"
@@ -257,5 +256,10 @@ struct val_result {
 
 /* from val_getaddrinfo.h */
 #include "val_getaddrinfo.h"
+
+
+#define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
+#define RESOLV_CONF             "/etc/resolv.conf"
+#define VAL_LOG_MASK	LOG_INFO
 
 #endif /* VALIDATOR_H */
