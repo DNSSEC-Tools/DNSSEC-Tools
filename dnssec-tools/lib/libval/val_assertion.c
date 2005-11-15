@@ -18,9 +18,8 @@
 #include "val_assertion.h"
 #include "val_verify.h"
 #include "val_context.h"
-#include "val_log.h"
 #include "val_policy.h"
-#include "val_print.h"
+#include "val_log.h"
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
 #define NONSENSE_RESULT_SEQUENCE(status) \
@@ -141,10 +140,14 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 		for (; zse_cur; zse_cur=zse_cur->next) {
 
 			if (strstr(zse_cur->zone_n, name_n) != NULL) {
-				if (zse_cur->trusted)
+				if (zse_cur->trusted) {
+					val_log(ctx, LOG_DEBUG, "zone %s is trusted", name_n);
 					return TRUST_ZONE;
-				else
+				}
+				else {
+					val_log(ctx, LOG_DEBUG, "zone %s is not trusted", name_n);
 					return UNTRUSTED_ZONE;
+				}
 			}
 		}
 	}
@@ -185,6 +188,7 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 				if(!dnskey_compare(&dnskey, ta_cur->publickey)) {
 					if (dnskey.public_key != NULL)
 						FREE (dnskey.public_key);
+					val_log(ctx, LOG_DEBUG, "key %s is trusted", zp);
 					return TRUST_KEY;
 				}
 				if (dnskey.public_key != NULL)
@@ -205,6 +209,7 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 		}
 	}
 
+	val_log(ctx, LOG_DEBUG, "Cannot find a good trust anchor for the chain of trust above %s", zp);
 	return NO_TRUST_ANCHOR;	
 }
 
@@ -628,7 +633,7 @@ static int assimilate_answers(val_context_t *context, struct query_chain **queri
 	return NO_ERROR;
 }
 
-static void  prove_nonexistence (struct query_chain *top_q, struct val_result *results) 
+static void  prove_nonexistence (val_context_t *ctx, struct query_chain *top_q, struct val_result *results) 
 {
 	struct val_result *res;
 	int wcard_chk = 0;
@@ -638,6 +643,9 @@ static void  prove_nonexistence (struct query_chain *top_q, struct val_result *r
 	u_int8_t *closest_encounter = NULL;	
 	struct rrset_rec *wcard_proof = NULL;
 
+	val_log(ctx, LOG_DEBUG, "proving non-existence for {%s, %d, %d}", 
+		top_q->qc_name_n, top_q->qc_class_h, top_q->qc_type_h);
+		 
 	/* 
 	 * Check if this is the whole proof and nothing but the proof
 	 * At this point these records should already be in the TRUSTED state.
@@ -841,8 +849,10 @@ static int try_verify_assertion(val_context_t *context, struct query_chain **que
 		}
 	}
 
-	if(next_as->ac_state == A_CAN_VERIFY) 
-		verify_next_assertion(next_as);
+	if(next_as->ac_state == A_CAN_VERIFY) {
+		val_log(context, LOG_DEBUG, "verifying next assertion"); 
+		verify_next_assertion(context, next_as);
+	}
 
 	return NO_ERROR;
 }
@@ -970,7 +980,7 @@ static int  verify_n_validate(val_context_t *context, struct query_chain **queri
 }
 
 
-static void fix_validation_results(struct query_chain *top_q, struct val_result *res, int *success)
+static void fix_validation_results(val_context_t *ctx, struct query_chain *top_q, struct val_result *res, int *success)
 {
 	*success = 0;
 
@@ -1004,6 +1014,8 @@ static void fix_validation_results(struct query_chain *top_q, struct val_result 
 
 	if (res->status == VALIDATE_SUCCESS)
 		*success = 1;
+
+	val_log(ctx, LOG_DEBUG, "validate result set to %s[%d]", p_val_error(res->status), res->status);
 }
 
 // XXX Needs blocking/non-blocking logic so that the validator can operate in
@@ -1022,6 +1034,8 @@ static int ask_cache(val_context_t *context, struct query_chain *end_q,
 	for(next_q = *queries; next_q && next_q != end_q; next_q=next_q->qc_next) {
 		if(next_q->qc_state == Q_INIT) {
 
+			val_log(context, LOG_DEBUG, "ask_cache(): looking for {%s %d %d}", 
+						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
 			if(NO_ERROR != (retval = get_cached_rrset(next_q->qc_name_n, 
 								next_q->qc_class_h, next_q->qc_type_h, &next_answer)))
 				return retval; 
@@ -1030,6 +1044,8 @@ static int ask_cache(val_context_t *context, struct query_chain *end_q,
 				struct domain_info *response;
 				char name[MAXDNAME];
 
+				val_log(context, LOG_DEBUG, "ask_cache(): found data for {%s %d %d}", 
+						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
 				*data_received = 1;
 
 				next_q->qc_state = Q_ANSWERED;
@@ -1098,6 +1114,8 @@ static int ask_resolver(val_context_t *context, struct query_chain **queries, in
 			if(next_q->qc_state == Q_INIT) {
 				next_q = next_q;
 				next_q->qc_state = Q_SENT;
+				val_log(context, LOG_DEBUG, "ask_resolver(): sending query for {%s %d %d}", 
+						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
 
 				if ((retval = val_resquery_send (context, next_q)) != NO_ERROR)
 					return retval;
@@ -1113,6 +1131,8 @@ static int ask_resolver(val_context_t *context, struct query_chain **queries, in
 						return retval;
 
 					if ((next_q->qc_state == Q_ANSWERED) && (response != NULL)) {
+						val_log(context, LOG_DEBUG, "ask_resolver(): found data for {%s %d %d}", 
+							next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
 						if(NO_ERROR != (retval = 
 								assimilate_answers(context, queries, 
 									response, next_q, assertions))) {
@@ -1245,7 +1265,7 @@ int resolve_n_check(	val_context_t	*context,
 
 	for (res=*results; res && res->as && res->as->ac_data; res=res->next) {
 		int success = 0;
-		fix_validation_results(top_q, res, &success);
+		fix_validation_results(context, top_q, res, &success);
 		if (!success) 
 			partially_correct = 1;
 		if((res->as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT) || 
@@ -1262,7 +1282,7 @@ int resolve_n_check(	val_context_t	*context,
 				res->status = BOGUS_PROOF;
 		}
 		else 
-			prove_nonexistence (top_q, *results);
+			prove_nonexistence (context, top_q, *results);
 	}
 
 

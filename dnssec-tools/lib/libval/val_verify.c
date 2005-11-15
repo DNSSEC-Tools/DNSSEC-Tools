@@ -24,7 +24,6 @@
 #include "val_assertion.h"
 #include "val_log.h"
 
-#include "val_print.h"
 #include "crypto/val_rsamd5.h"
 #include "crypto/val_rsasha1.h"
 #include "crypto/val_dsasha1.h"
@@ -38,27 +37,29 @@
 
 /* Verify a signature, given the data and the dnskey */
 /* Pass in a context, to give acceptable time skew */
-static int val_sigverify (const char *data,
+static int val_sigverify (
+				val_context_t *ctx,
+				const char *data,
 			  int data_len,
 			  const val_dnskey_rdata_t dnskey,
 			  const val_rrsig_rdata_t rrsig)
 {
     /* Check if the dnskey is a zone key */
     if ((dnskey.flags & ZONE_KEY_FLAG) == 0) {
-	val_log("DNSKEY not a zone signing key\n");
+	val_log(ctx, LOG_DEBUG, "DNSKEY not a zone signing key");
 	return NOT_A_ZONE_KEY;
     }
     
     /* Check dnskey protocol value */
     if (dnskey.protocol != 3) {
-	val_log("Invalid protocol field in DNSKEY record: %d\n",
+	val_log(ctx, LOG_DEBUG, "Invalid protocol field in DNSKEY record: %d",
 	       dnskey.protocol);
 	return UNKNOWN_DNSKEY_PROTO;
     }
 
     /* Match dnskey and rrsig algorithms */
     if (dnskey.algorithm != rrsig.algorithm) {
-	val_log("Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.\n",
+	val_log(ctx, LOG_DEBUG, "Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.",
 	       dnskey.algorithm, rrsig.algorithm);
 	return RRSIG_ALGO_MISMATCH;
     }
@@ -74,7 +75,7 @@ static int val_sigverify (const char *data,
 	bzero(incpTime, 1028);
 	ctime_r((const time_t *)(&(tv.tv_sec)), currTime);
 	ctime_r((const time_t *)(&(rrsig.sig_incp)), incpTime);
-	val_log("Signature not yet valid. Current time (%s) is less than signature inception time (%s).\n",
+	val_log(ctx, LOG_DEBUG, "Signature not yet valid. Current time (%s) is less than signature inception time (%s).",
 	       currTime, incpTime);
 	return RRSIG_NOTYETACTIVE;
     }
@@ -86,25 +87,25 @@ static int val_sigverify (const char *data,
 	bzero(exprTime, 1028);
 	ctime_r((const time_t *)(&(tv.tv_sec)), currTime);
 	ctime_r((const time_t *)(&(rrsig.sig_expr)), exprTime);
-	val_log("Signature expired. Current time (%s) is greater than signature expiration time (%s).\n",
+	val_log(ctx, LOG_DEBUG, "Signature expired. Current time (%s) is greater than signature expiration time (%s).",
 	       currTime, exprTime);
 	return RRSIG_EXPIRED;
     }
 
     switch(rrsig.algorithm) {
 	
-    case 1: return  rsamd5_sigverify(data, data_len, dnskey, rrsig); break;
-    case 3: return dsasha1_sigverify(data, data_len, dnskey, rrsig); break;
-    case 5: return rsasha1_sigverify(data, data_len, dnskey, rrsig); break;
+    case 1: return  rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig); break;
+    case 3: return dsasha1_sigverify(ctx, data, data_len, dnskey, rrsig); break;
+    case 5: return rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig); break;
     case 2:
     case 4:
-	val_log("Unsupported algorithm %d.\n", dnskey.algorithm);
+	val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.\n", dnskey.algorithm);
 	return ALGO_NOT_SUPPORTED;
 	break;
 
     default:
 	do {
-	    val_log("Unknown algorithm %d.\n", dnskey.algorithm);
+	    val_log(ctx, LOG_DEBUG, "Unknown algorithm %d.", dnskey.algorithm);
 	    return UNKNOWN_ALGO;
 	} while (0);
     }
@@ -397,7 +398,9 @@ static int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey
 
 
 
-static int do_verify (   int                 *sig_status,
+static int do_verify (   
+					val_context_t *ctx,
+					int                 *sig_status,
                   struct rrset_rec    *the_set,
                   struct rr_rec       *the_sig,
                   val_dnskey_rdata_t  *the_key,
@@ -429,16 +432,8 @@ static int do_verify (   int                 *sig_status,
 	rrsig_rdata.next = NULL;
                                                                                                                       
     /* Perform the verification */
-	*sig_status = val_sigverify(ver_field, ver_length, *the_key, rrsig_rdata);
+	*sig_status = val_sigverify(ctx, ver_field, ver_length, *the_key, rrsig_rdata);
   
-/*
-val_log ("\nVerifying this field:\n");
-print_hex_field (ver_field,ver_length,21,"VER: ");
-val_log ("\nThis is the supposed signature:\n");
-print_hex_field (sig_field,sig_length,21,"SIG: ");
-val_log ("Result of verification is %s\n", ret_val==0?"GOOD":"BAD");
-*/
-
 	if(rrsig_rdata.signature != NULL)
 		FREE(rrsig_rdata.signature);
 
@@ -480,7 +475,7 @@ static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *pub
 // XXX WRONG_RRSIG_OWNER
 // XXX RRSIG_ALGO_MISMATCH
 // XXX KEYTAG_MISMATCH
-void verify_next_assertion(struct assertion_chain *as)
+void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
 {
 	struct rrset_rec *the_set;
 	struct rr_rec   *the_sig;
@@ -529,7 +524,7 @@ void verify_next_assertion(struct assertion_chain *as)
 		}
 
 		/* and check the signature */
-		if(NO_ERROR != (retval = do_verify(&the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard))) {
+		if(NO_ERROR != (retval = do_verify(ctx, &the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard))) {
 			SET_STATUS(as->ac_state, the_sig, retval);
 			FREE(dnskey.public_key);
 			continue;
