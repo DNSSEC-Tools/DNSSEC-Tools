@@ -145,7 +145,7 @@ void val_freehostent (struct hostent *hentry)
 
 /* Read the ETC_HOSTS file and check if it contains the given name.
  */
-static struct hostent *get_hostent_from_etc_hosts (const char *name)
+static struct hostent *get_hostent_from_etc_hosts (val_context_t *ctx, const char *name)
 {
 	struct hosts *hs = parse_etc_hosts (name);
 	struct hostent *hentry = NULL;
@@ -163,15 +163,15 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 		if (inet_pton(AF_INET, hs->address, &ip4_addr) <= 0) {
 			
 			/* not a valid address ... skip this line */
-			val_log("\t...error in address format: %s\n", hs->address);
+			val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts() error in address format: %s", hs->address);
 			h_prev = hs;
 			hs = hs->next;
 			FREE_HOSTS(h_prev);
 			continue;
 		}
 		else {
-			val_log("\t...type of address is IPv4\n");
-			val_log("Address is: %s\n",
+			val_log(ctx, LOG_DEBUG, "...type of address is IPv4");
+			val_log(ctx, LOG_DEBUG, "Address is: %s",
 				inet_ntop(AF_INET, &ip4_addr, addr_buf, INET_ADDRSTRLEN));
 		}
 		
@@ -214,7 +214,7 @@ static struct hostent *get_hostent_from_etc_hosts (const char *name)
 
 
 /* Converts data in the rrset_rec structure into a hostent structure */
-static struct hostent *get_hostent_from_response (struct rrset_rec *rrset, int *h_errnop)
+static struct hostent *get_hostent_from_response (val_context_t *ctx, struct rrset_rec *rrset, int *h_errnop)
 {
 	struct hostent *hentry = NULL;
 	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
@@ -241,7 +241,7 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset, int *
 		while (rr) {
 			
 			if (rrset->rrs_type_h == ns_t_cname) {
-				val_log("val_gethostbyname: type of record = CNAME\n");
+				val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = CNAME");
 				cname_found = 1;
 				bzero(dname, MAXDNAME);
 				if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
@@ -268,7 +268,7 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset, int *
 				}
 			}
 			else if (rrset->rrs_type_h == ns_t_a) {
-				val_log("val_gethostbyname: type of record = A\n");
+				val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = A");
 				
 				bzero(dname, MAXDNAME);
 				if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
@@ -313,7 +313,7 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset, int *
 			}
 #if 0
 			else if (rrset->rrs_type_h == ns_t_aaaa) {
-				val_log("val_gethostbyname: type of record = AAAA\n");
+				val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = AAAA");
 				/* XXX TODO: Fill in the AF_INET6 address in hentry */
 				hentry->h_addrtype = AF_INET6;
 				address_found = 1;
@@ -354,7 +354,7 @@ static struct hostent *get_hostent_from_response (struct rrset_rec *rrset, int *
  * error code.  The dnssec_status can be accessed by the
  * function get_hostent_dnssec_status()
  */
-struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name, int *h_errnop )
+struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int *h_errnop )
 {
 	struct hostent* hentry = NULL;
 	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
@@ -415,26 +415,26 @@ struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name
 		struct assertion_chain *assertions = NULL;
 		struct val_result *results = NULL;
 		u_char name_n[MAXCDNAME];
-		val_context_t *context;
-		int dnssec_status = INTERNAL_ERROR;
-		
-		/* First check the ETC_HOSTS file
-		 * XXX: TODO check the order in the ETC_HOST_CONF file
-		 */
-		hentry = get_hostent_from_etc_hosts (name);
-		
-		if (hentry != NULL) {
-			hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
-			hentry_wrapper->dnssec_status = VALIDATE_SUCCESS; /* ??? or locally trusted ??? */
-			*h_errnop = NETDB_SUCCESS;
-			return hentry;
-		}
-		
+		val_context_t *context = NULL;
 		
 		if (ctx == NULL)
 			get_context(NULL, &context);
 		else
 			context = ctx;   
+
+		/* First check the ETC_HOSTS file
+		 * XXX: TODO check the order in the ETC_HOST_CONF file
+		 */
+		hentry = get_hostent_from_etc_hosts (context, name);
+		
+		if (hentry != NULL) {
+			hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
+			hentry_wrapper->dnssec_status = VALIDATE_SUCCESS; /* ??? or locally trusted ??? */
+			*h_errnop = NETDB_SUCCESS;
+			if((ctx == NULL) && context)
+				destroy_context(context);
+			return hentry;
+		}
 		
 		hentry = NULL;
 		
@@ -443,7 +443,7 @@ struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name
 							      &queries, &assertions, &results)))) {
 			
 			if(results->status == VALIDATE_SUCCESS) 
-				hentry = get_hostent_from_response(results->as->ac_data, h_errnop);
+				hentry = get_hostent_from_response(context, results->as->ac_data, h_errnop);
 			
 			if (hentry) {
 				hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
