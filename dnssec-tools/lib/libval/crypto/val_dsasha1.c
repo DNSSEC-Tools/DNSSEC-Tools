@@ -64,9 +64,10 @@ int dsasha1_sigverify (val_context_t *ctx,
 		       const val_dnskey_rdata_t dnskey,
 		       const val_rrsig_rdata_t rrsig)
 {
+	char buf[1028];
+	int buflen = 1024;
 	DSA *dsa = NULL;
 	unsigned char sha1_hash[SHA_DIGEST_LENGTH];
-	int i;
 	
 	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): parsing the public key...\n");
 	if ((dsa = DSA_new()) == NULL) {
@@ -81,15 +82,11 @@ int dsasha1_sigverify (val_context_t *ctx,
 		return INTERNAL_ERROR;
 	}
 	
-	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): computing SHA-1 hash...\n");
 	bzero(sha1_hash, SHA_DIGEST_LENGTH);
 	SHA1(data, data_len, (unsigned char *) sha1_hash);
-	val_log(ctx, LOG_DEBUG, "hash = 0x");
-	for (i=0; i<SHA_DIGEST_LENGTH; i++) {
-		val_log(ctx, LOG_DEBUG, "%02x", sha1_hash[i]);
-	}
-	val_log(ctx, LOG_DEBUG, "\n");
-	
+	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): SHA-1 hash = %s", 
+				get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
+
 	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): verifying DSA signature...\n");
 	
 	if (DSA_verify(NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
