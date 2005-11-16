@@ -1,0 +1,33 @@
+dnssec postfix use:
+
+NOTE:  The current spf2 patch for postfix will only work with
+       libspf2-1.0.x (i.e. it does not currently work with
+       libspf2-1.2.x).  When installing dnsec-tools, use
+       libspf2-1.0.4 and its associated patch.
+
+
+I.     Install dnssec-tools.
+       http://dnssec-tools.sourceforge.net/
+
+II.    Follow directions in 
+       dnssec-tools/apps/libspf2-1.0.4_dnssec_howto.txt to install a
+       patched version of libspf2-1.0.4 from:
+       http://www.libspf2.org/
+
+III.   Download postfix postfix-2.2.3.tar.gz from
+       http://www.postfix.org.
+       Download the spf2 patch, postfix-libspf2-2.2.0-5.patch, from Dean
+       Strik at http://www.ipnet6.org/postfix/spf/.  
+
+IV.    
+       Following the instructions that came with the patch file,
+       postfix-libspf2.README, make and install postfix.
+
+
+
+
+FIXES: (not-done)
+
+lib/val_stub/Makefile.in  requires 
+    '$(INSTALL) validator.h $(includedir)'
+    in the install: section.
