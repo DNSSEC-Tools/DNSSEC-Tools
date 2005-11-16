@@ -262,4 +262,9 @@ struct val_result {
 #define RESOLV_CONF             "/etc/resolv.conf"
 #define VAL_LOG_MASK	LOG_INFO
 
+#ifdef LOG_TO_NETWORK
+#define VALIDATOR_LOG_PORT 1053
+#define VALIDATOR_LOG_SERVER "127.0.0.1"
+#endif /*LOG_TO_NETWORK*/
+
 #endif /* VALIDATOR_H */
