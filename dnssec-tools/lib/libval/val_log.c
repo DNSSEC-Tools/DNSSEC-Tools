@@ -13,6 +13,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
 #include <resolver.h>
 #include <validator.h>
 #include "val_cache.h"
@@ -147,7 +150,7 @@ static char *get_ns_string(struct name_server **server)
 		serv_pr = ((serv_pr = get_ns_string(&(serv))) == NULL)?"VAL_CACHE":serv_pr;\
 	else\
 		serv_pr = "NULL";\
-	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s Result=%s : %d",\
+	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s : %d",\
 		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_val_error(status), status);\
 } while (0)		
 
@@ -277,17 +280,52 @@ char *p_val_error(int errno)
     }
 }
 
-/* void val_log (FILE *fp, int level, const char *template, ...) */
+#ifdef LOG_TO_NETWORK
+int send_log_message(char *buffer)
+{
+	int sock;
+	struct sockaddr_in server;
+	int length;
+
+	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	if (sock < 0)
+		return INTERNAL_ERROR;
+
+	server.sin_family = AF_INET;
+	server.sin_port = htons(VALIDATOR_LOG_PORT);
+	inet_aton(VALIDATOR_LOG_SERVER, &server.sin_addr);
+	length=sizeof(struct sockaddr_in);
+
+	if(sendto(sock, buffer, strlen(buffer),0,&server,length) < 0)
+		return INTERNAL_ERROR; 
+
+	return NO_ERROR;
+}
+#endif /* LOG_TO_NETWORK */
+
 void val_log (val_context_t *ctx, int level, const char *template, ...)
 {
 	va_list ap;
 	char *id_buf;
 
-	setlogmask(LOG_MASK(VAL_LOG_MASK));
+	/* Needs to be at least two characters larger than message size */
+	char buf[1028]; 
+	int log_mask = LOG_UPTO(VAL_LOG_MASK);
+
+	setlogmask(log_mask);
 	id_buf = (ctx == NULL)? "libval": ctx->id;
 	openlog(id_buf, LOG_PERROR, LOG_USER);
 	va_start (ap, template);
-
 	vsyslog(LOG_USER|level, template, ap);
+	vsnprintf(buf, 1024, template, ap);
 	va_end (ap);
+
+#ifdef LOG_TO_NETWORK
+	if(LOG_MASK(level) & log_mask) {
+		/* We allocated extra space  */
+		strcat(buf, "\n");
+		send_log_message(buf);
+	}
+#endif /* LOG_TO_NETWORK */
+
 }
