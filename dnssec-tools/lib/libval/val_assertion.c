@@ -967,7 +967,7 @@ static int  verify_n_validate(val_context_t *context, struct query_chain **queri
 				res->status = next_as->ac_state;
 				continue;
 			}
-			else
+			else if (res->status == A_DONT_KNOW)
 				/* Success condition */
 				res->status = next_as->ac_state;
 		}
