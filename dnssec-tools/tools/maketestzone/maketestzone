@@ -88,7 +88,8 @@ LocalGetOptions(\%opts,
 		['noop','Do nothing; bogus argument'],
 	       );
 
-$opts{'a'} .= " --genzsk --genksk" if ($opts{'k'});
+$opts{'a'} .= " --genzsk --genksk  --ksklength 4096 --zsklength 2048"
+  if ($opts{'k'});
 #
 # address definitions
 #
