@@ -11,7 +11,7 @@ use Net::DNS::RR;
 my %opts =
   ( 'd' => 'test.dnssec-tools.org',
     'ns' => 'dns1=127.0.0.1',
-    a => '127.0.0.1',
+    'a-addr' => '127.0.0.1',
     aaaa => '::1',
     'S' => ";\n; %s\n;\n",
 
