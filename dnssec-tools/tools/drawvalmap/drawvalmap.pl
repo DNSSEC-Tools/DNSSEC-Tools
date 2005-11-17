@@ -156,21 +156,28 @@ sub getlineattr {
 	} 
 	elsif (($val_status eq "VALIDATION_ERROR") || 
 			($val_status eq "BOGUS_PROOF") || 
-			($val_status eq "BOGUS_UNPROVABLE") ||
+			($val_status eq "BOGUS_PROVABLE") ||
 			($val_status eq "SECURITY_LAME")) {
 		$prop{'color'} = "red";
 		$prop{'style'} = 'bold';
 	} 
-	elsif ($val_status eq "RRSIG_EXPIRED") {
+	elsif (($val_status eq "RRSIG_EXPIRED") ||
+			($val_status eq "RRSIG_NOTYETACTIVE") ||
+			($val_status eq "RRSIG_VERIFY_FAILED")) {
 		$prop{'color'} =  "red";
 	} 
-	elsif ($val_status eq "DNS_ERROR") { 
+	elsif (($val_status eq "DNS_ERROR") ||
+			($val_status eq "RRSIG_MISSING")) { 
 		$prop{'color'} =  "red";
 		$prop{'style'} = 'dashed';
 	} 
 	elsif ($val_status eq "NO_TRUST_ANCHOR") { 
 		$prop{'color'} =  "brown";
 		$prop{'style'} = 'bold';
+	} 
+	elsif ($val_status eq "UNEVALUATED") {
+		$prop{'color'} =  "yellow";
+		$prop{'style'} = 'dashed';
 	} 
 	else {
 		# unknown error is shown in yellow
