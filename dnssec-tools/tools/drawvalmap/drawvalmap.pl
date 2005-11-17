@@ -23,6 +23,7 @@ my $edge_str;
 my $giffile;
 my $htmlfile;
 my $htmlfh;
+my $giftmp;
 
 ########################################################
 # Defaults
@@ -46,6 +47,20 @@ $gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
 $gv->add_node('Validator');
 $count = 0;
 $changed = 1;
+
+$giffile = $opts{'g'};
+$htmlfile = $opts{'f'};
+$refresh = $opts{'r'};
+# create an HTML file with the image and 
+# with auto refresh set to 5 seconds
+$htmlfh = new IO::File(">$htmlfile");
+print $htmlfh "<html>\n<head>\n".
+	"<title>Validator Results</title>\n".
+	"<meta http-equiv=\"refresh\" content=\"$refresh\">\n".
+	"</head>\n".
+	"<body> <img src=\"$giffile\" alt=\"Validator Status\"> </body>\n".
+	"</html>";
+$htmlfh->close;
 
 # check if socket operation is desired
 if($opts{'s'} == 1) {
@@ -79,23 +94,11 @@ sub update_image {
 
 	# update the image only when something has changed
 	if($changed) {
-		$giffile = $opts{'g'};
-		$htmlfile = $opts{'f'};
-		$refresh = $opts{'r'};
+		$giftmp = $giffile . "tmp"; 
 
 		# generate the gif file
-		$gv->as_gif($giffile);
-
-		# create an HTML file with the image and 
-		# with auto refresh set to 5 seconds
-		$htmlfh = new IO::File("> $htmlfile");
-		print $htmlfh "<html>\n<head>\n".
-			"<title>Validator Results</title>\n".
-			"<meta http-equiv=\"refresh\" content=\"$refresh\">\n".
-			"</head>\n".
-			"<body> <img src=\"$giffile\" alt=\"Validator Status\"> </body>\n".
-			"</html>";
-		$htmlfh->close;
+		$gv->as_gif($giftmp);
+		rename($giftmp, $giffile);
 	}
 	
 	$changed = 0;
