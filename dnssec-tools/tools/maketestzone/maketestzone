@@ -25,7 +25,7 @@ my %opts =
     'html-log' => 'logs/dnssec-test-zone',
 
     #  Add --genksk --genzsk for new zones
-    'a' =>  "--verbose -gends",
+    'a' =>  "--verbose -gends --endtime +2592000",
 # XXX:
 # nsec skips the good record
 # nsec says type shouldn't be used
