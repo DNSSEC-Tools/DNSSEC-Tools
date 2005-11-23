@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="step-zone-initial-sign">
+  <title>Initially Signing a Zone</title>
+
+  <para>A zone needs to be re-signed when <emphasis>any</emphasis> change is
+  made to it. Follow <xref linkend="step-zone-resign" /> when resigning a
+  zone.</para>
+
+  <section id="initial-sign-zonesigner">
+    <title>Sign the Zone with <command>zonesigner</command></title>
+
+    <para><prompt>$</prompt> <command>zonesigner <option>-genkeys</option>
+    <option>-gends</option> <option>zone-name</option>
+    <filename>zone-file</filename></command>
+    <userinput>[ENTER]</userinput></para>
+
+    <para>Key generation and signing may take a few minutes to complete
+    depending on the size of the zone file and size of the keys. If the above
+    operation appears to be unresponsive for an unreasonable time frame, use
+    pseudorandom numbers (see <xref linkend="step-toolset-configure" /> for
+    more information).</para>
+
+    <para>The output is a set of files outlined below.</para>
+
+    <table colsep="0" frame="none" rowsep="0">
+      <title><command>zonesigner</command> Output Files</title>
+
+      <tgroup cols="2">
+        <thead>
+          <row>
+            <entry>File</entry>
+
+            <entry>Description</entry>
+          </row>
+        </thead>
+
+        <tbody>
+          <row>
+            <entry><filename>zone-file.signed</filename></entry>
+
+            <entry>The signed zone file. The .signed is added by
+            <command>zonesigner</command>.</entry>
+          </row>
+
+          <row>
+            <entry><filename>keyset-zone-name</filename></entry>
+
+            <entry>The keyset for the zone. This is stored in the directory
+            specified by the configuration file and may have to be sent to the
+            parent zone - see <xref
+            linkend="step-delegation-child" />.</entry>
+          </row>
+
+          <row>
+            <entry><filename>dsset-zone-name</filename></entry>
+
+            <entry>The dsset for the zone. This is stored in the directory
+            specified by the configuration file and may have to be sent to the
+            parent zone - see <xref
+            linkend="step-delegation-child" />.</entry>
+          </row>
+
+          <row>
+            <entry>zone-name.krf</entry>
+
+            <entry>The keyrec file. This is used by
+            <command>zonesigner</command> to maintain information about the
+            keys used for the zone.</entry>
+          </row>
+
+          <row>
+            <entry><filename>Kzone-name.+005+keytag.private</filename></entry>
+
+            <entry>The private key file. This is stored in the directory
+            specified by the configuration file. The
+            <filename>keytag</filename> is a unique identifier for this key.
+            This document uses <literal>RSASHA1</literal> as the cryptographic
+            algorithm, which is represented by the <filename>005</filename> in
+            the key name's algorithm field.</entry>
+          </row>
+
+          <row>
+            <entry><filename>Kzone-name.+005+keytag.key</filename></entry>
+
+            <entry>The public key file. This is stored in the directory
+            specified by the configuration file. The
+            <filename>keytag</filename> is a unique identifier for this key.
+            This document uses <literal>RSASHA1</literal> as the cryptographic
+            algorithm, which is represented by the <filename>005</filename> in
+            the key name's algorithm field.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+  </section>
+</chapter>

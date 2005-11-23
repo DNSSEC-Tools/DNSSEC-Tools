@@ -1,0 +1,44 @@
+
+		Step-By-Step DNSSEC-Tools Operator Guidance Document
+
+This directory contains the XML source for the Step-By-Step DNSSEC-Tools
+Operator Guidance Document.
+
+Build Requirements
+------------------
+DocBook XSL Stylesheets: <http://docbook.sourceforge.net/projects/xsl/>
+libxslt: <http://xmlsoft.org/XSLT/>
+Apache FOP 0.20.5: <http://xmlgraphics.apache.org/fop/>
+
+1. Edit the Makefile and ensure that DOCBOOK_XSL points to
+the location where the DocBook XSL Stylesheets are installed,
+and that the paths to xsltproc and fop.sh are correct.
+
+2. Edit the xsl/fo/sbs-dt.xsl file and ensure that the
+<xsl:import href="" /> href location points to the location
+where the DocBook XSL Stylesheets are installed.
+
+3. Edit the xsl/html/sbs-dt.xsl file and ensure that the
+<xsl:import href="" /> href location points to the location
+where the DocBook XSL Stylesheets are installed.
+
+To build the guide, execute the following command:
+
+	$ make
+
+This should process the source sufficiently such that all references
+will be resolved.  
+
+Guide Organization
+------------------
+
+The XML files are named in this manner:
+
+	sbs-dt.xml	main input file
+	intro.tex	introductory section
+	step-*.tex	each operational "step" (KSK roll-over, Signing a zone
+			with no delegations, etc.) are kept in these files
+
+All other .xml files are included by multiple operational steps.  Changing
+this for one step will change it for ALL other steps which include this file.
+Be sure you really want this to happen before making the change.

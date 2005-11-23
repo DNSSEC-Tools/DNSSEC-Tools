@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="step-zone-check-signature-expiration">
+  <title>Checking Signature Expiration</title>
+
+  <para>It is important to regularly check your zone for signatures that are
+  nearing expiration. If the signatures are close to expiring, or already have
+  expiried, see <xref linkend="step-zone-resign" /> for how to resign the
+  zone.</para>
+
+  <section id="expiration-check-signatures">
+    <title>Check the Zone for Expiring Signatures</title>
+
+    <para><prompt>$</prompt> <command>expchk <option>-all</option>
+    <option>-warn 10</option> <filename>keyrec-file</filename></command>
+    <userinput>[ENTER]</userinput></para>
+
+    <para>This checks the keyrec file to see if the zone has signatures
+    expiring in the next 10 days.</para>
+  </section>
+</chapter>

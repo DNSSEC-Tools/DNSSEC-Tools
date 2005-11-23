@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="step-delegation-child">
+  <title>Creating a Signed Delegation - Child Zone Activity</title>
+
+  <para>This section describes the steps required by a child for creating a
+  signed delegation.</para>
+
+  <section id="delegation-child-transfer-keyset">
+    <title>Securely Transfer the Keyset to the Parent</title>
+
+    <para>If any of the zone's KSKs have changed since the last time this file
+    was sent to the parent, then they keyset must also be transferred to the
+    parent. If none of the zone's KSKs have changed, this step may be
+    skipped.</para>
+
+    <para>Secure communication between the parent and child zone is done
+    out-of-band.</para>
+  </section>
+
+  <section id="delegation-child-wait-parent-publish-ds">
+    <title>Wait for the Parent to Publish the DS Record</title>
+
+    <para>Before proceeding, wait for the parent zone the publish the DS
+    record. This may be found by using the <command>dig</command> command to
+    retrieve the zone's DS record. The <computeroutput>aa</computeroutput>
+    flag in the result must be set and the
+    <computeroutput>ANSWER</computeroutput> section must not be empty.</para>
+
+    <para>You may continue if the DS record is the same as the value in the
+    file generated in <xref linkend="step-zone-initial-sign" /> or <xref
+    linkend="step-zone-resign" />.</para>
+
+    <para><prompt>$</prompt> <command>dig <option>@server-IP-address</option>
+    <option>SOA</option> <option>zone-name</option></command>
+    <userinput>[ENTER]</userinput></para>
+
+    <para><computeroutput>; &lt;&lt;&gt;&gt; DiG 9.3.0 &lt;&lt;&gt;&gt;
+    <literal>...</literal></computeroutput></para>
+
+    <para><computeroutput><literal>...</literal></computeroutput></para>
+
+    <para><computeroutput>;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY:
+    1, ADDITIONAL: 0</computeroutput></para>
+
+    <para><computeroutput><literal>...</literal></computeroutput></para>
+
+    <para><computeroutput>;;ANSWER SECTION</computeroutput></para>
+
+    <para><computeroutput>zone-name 3600 IN SOA servername contact
+    (</computeroutput></para>
+
+    <para><computeroutput>2005092101 ; This should be the most recent
+    value.</computeroutput></para>
+
+    <para><computeroutput>; This value will most likely be different in your
+    zone file.</computeroutput></para>
+
+    <para><computeroutput><literal>...</literal></computeroutput></para>
+
+    <para><computeroutput>)</computeroutput></para>
+
+    <para><computeroutput><literal>...</literal></computeroutput></para>
+  </section>
+</chapter>
