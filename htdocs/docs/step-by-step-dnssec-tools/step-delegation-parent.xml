@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="step-delegation-parent">
+  <title>Creating a Signed Delegation - Parent Zone Activity</title>
+
+  <para>This section describes the steps required by a parent for creating a
+  signed delegation.</para>
+
+  <section id="delegation-parent-ensure-secure-transfer">
+    <title>Ensure that the Child Keysets were Received Over a Secure
+    Channel</title>
+
+    <para>Secure communication between the parent and child zone is done
+    out-of-band.</para>
+  </section>
+
+  <section id="delegation-parent-ensure-keyset-delegated">
+    <title>Ensure that Each Received Keyset is for a Delegated Zone</title>
+
+    <para>The owner name for the DNSKEY record in the received keyset must
+    correspond to a valid delegation.</para>
+
+    <para><prompt>$</prompt> <command>cat
+    <filename>keyset-child-zone-file</filename></command>
+    <userinput>[ENTER]</userinput></para>
+
+    <para><computeroutput>child-zone-name. 3600 IN DNSKEY 256 3 5
+    (</computeroutput></para>
+
+    <para><computeroutput><literal>...</literal></computeroutput></para>
+
+    <para><computeroutput>); key id = keytag</computeroutput></para>
+
+    <para><computeroutput>child-zone-name</computeroutput> must exist in the
+    parent zone-file as a valid delegation.</para>
+
+    <para><prompt>$</prompt> <command>cat
+    <filename>zone-file</filename></command>
+    <userinput>[ENTER]</userinput></para>
+
+    <para><computeroutput><literal>...</literal></computeroutput></para>
+
+    <para><computeroutput>child-zone-name NS server</computeroutput></para>
+
+    <para><computeroutput>A <literal>...</literal></computeroutput></para>
+
+    <para><literal>...</literal></para>
+  </section>
+
+  <xi:include href="resign-zone.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="reload-zone.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+</chapter>

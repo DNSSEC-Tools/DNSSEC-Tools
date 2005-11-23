@@ -1,0 +1,17 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Check for Randomness</title><meta name="generator" content="DocBook XSL Stylesheets V1.68.1"><link rel="start" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="up" href="step-toolset-configure.html" title="Chapter 2. Configuring the Toolset"><link rel="prev" href="step-toolset-configure.html" title="Chapter 2. Configuring the Toolset"><link rel="next" href="configure-edit-configuration-file.html" title="Edit the Configuration File"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Check for Randomness</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="step-toolset-configure.html">Prev</a> </td><th width="60%" align="center">Chapter 2. Configuring the Toolset</th><td width="20%" align="right"> <a accesskey="n" href="configure-edit-configuration-file.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="configure-check-randomness"></a>Check for Randomness</h2></div></div></div><p>Key generation and zone signing require random data to create strong
+    cryptographic material. The <span><strong class="command">zonesigner</strong></span> command defaults
+    to using random data from <code class="filename">/dev/random</code>. Use this test
+    to verify that <code class="filename">/dev/random</code> will provide data when
+    requested:</p><p><code class="prompt">$</code> <span><strong class="command">dd <code class="option">if=/dev/random</code>
+    <code class="option">bs=2</code> <code class="option">count=10</code></strong></span> | <span><strong class="command">od
+    <code class="option">-x</code></strong></span> <strong class="userinput"><code>[ENTER]</code></strong></p><p>The above command checks if /dev/random is able to provide random
+    data when queried; it does not check to see that the data provided is
+    truly random.</p><p>If this command provides data immediately, the
+    <code class="filename">/dev/random</code> will provide the data you need. If it
+    hangs, then <span><strong class="command">zonesigner</strong></span> won't be able to retrieve random
+    data from <code class="filename">/dev/random</code>.</p><p>If this check for randomness fails, pseudorandom numbers can be used
+    instead. However, using pseudorandom numbers significantly affects the
+    quality of the crypto material. A more appropriate measure would be to run
+    <span><strong class="command">zonesigner</strong></span> on a different system that has
+    <code class="filename">/dev/random</code> and the ability to generate good random
+    data.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="step-toolset-configure.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="step-toolset-configure.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="configure-edit-configuration-file.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 2. Configuring the Toolset </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Edit the Configuration File</td></tr></table></div></body></html>

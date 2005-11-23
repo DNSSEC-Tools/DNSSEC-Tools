@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="intro">
+  <title>Introduction</title>
+
+  <para>DNS Security (DNSSEC) helps protect against DNS-spoofing attacks by
+  providing origin authentication and integrity protection of DNS information.
+  Proper maintenance of a DNSSEC-enhanced DNS zone is essential to protecting
+  the domain's zone data.</para>
+
+  <para>This Step-by-Step DNSSEC-Tools Operator Guidance Document is intended
+  for operations using the DNSSEC-Tools v0.2 distribution. It will assist
+  operators in gaining operational experience with DNSSEC. Some basic
+  understanding of DNSSEC terms and concepts is required. It follows the
+  format laid out by <xref linkend="dnssec-operators-guide" />.</para>
+
+  <para>This document is meant to be a learning aid and is not intended to
+  define policy in any form. Any implicit recommendations for key sizes,
+  signature validity periods, and command line parameters are for illustration
+  purposes ONLY and MUST NOT be used in production environments unless
+  due-diligence has been taken to ensure that these values are acceptable
+  within such environments. See <xref
+  linkend="dnssec-operational-practices" /> for suggestions on determining
+  appropriate security characteristics.</para>
+
+  <para>This document was written as part of the DNSSEC-Tools project. The
+  goal of this project is to create a set of documentation, tools, patches,
+  applications, wrappers, extensions, and plug-ins that will help ease the
+  deployment of DNSSEC-related technologies. For more information about this
+  project and the tools that are being developed and provided, please see the
+  DNSSEC-Tools project web page at:
+  <uri>http://www.dnssec-tools.org</uri>.</para>
+
+  <section id="intro-organization">
+    <title>Organization of this Document</title>
+
+    <para>The following operations are described in this document:</para>
+  </section>
+
+  <section id="intro-conventions">
+    <title>Conventions Used in this Document</title>
+
+    <para>One of the goals of this document is to self-contain DNS Security
+    operations within sections and prevent constant cross-referencing between
+    sections. Consequently, certain parts of the text are repeated throughout
+    the document.</para>
+
+    <para>Text marked in bold represents text or commands entered by users
+    within a given procedural step.</para>
+
+    <para>Underlined text, which can also be bold, is a place-holder for
+    actual run-time values. These values are either automatically generated or
+    are values that are known to the user from some other step.</para>
+
+    <para>Additionally, the following typographical conventions are used in
+    this document.</para>
+
+    <table colsep="0" frame="none" rowsep="0">
+      <title>Typographical Conventions</title>
+
+      <tgroup cols="2">
+        <tbody>
+          <row>
+            <entry><application>command</application></entry>
+
+            <entry>Command names</entry>
+          </row>
+
+          <row>
+            <entry><filename>filename</filename></entry>
+
+            <entry>File and path names</entry>
+          </row>
+
+          <row>
+            <entry><uri>URL</uri></entry>
+
+            <entry>Web URLs</entry>
+          </row>
+
+          <row>
+            <entry><command>execution</command></entry>
+
+            <entry>Simple command executions</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+
+    <para>Longer sets of command sequences are given in this format:</para>
+
+    <simplelist>
+      <member><prompt>$</prompt> <command>cd /tmp</command>
+      <userinput>[ENTER]</userinput></member>
+
+      <member><prompt>$</prompt> <command>ls</command>
+      <userinput>[ENTER]</userinput></member>
+
+      <member><prompt>$</prompt> <command>rm -fr *</command>
+      <userinput>[ENTER]</userinput></member>
+
+      <member><prompt>$</prompt></member>
+    </simplelist>
+
+    <para>In most cases, output will not be displayed for given command
+    sequences.</para>
+  </section>
+
+  <section id="intro-acknowledgements">
+    <title>Acknowledgements</title>
+
+    <para>This document builds upon the procedures laid out in <xref
+    linkend="dnssec-operators-guide" />.</para>
+  </section>
+
+  <section id="intro-comments">
+    <title>Comments</title>
+
+    <para>Please send any comments and corrections to
+    developers@dnssec-tools.org.</para>
+  </section>
+</chapter>

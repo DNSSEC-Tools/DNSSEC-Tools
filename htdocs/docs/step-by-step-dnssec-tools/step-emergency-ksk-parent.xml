@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter id="step-emergency-ksk-parent">
+  <title>Parent Action During Child KSK Compromise</title>
+
+  <para>During a KSK compromise the secure status of the child zone is
+  dropped. This is done by deleting the DS record in the parent zone.</para>
+
+  <section id="parent-ensure-secure-notification">
+    <title>Ensure that the KSK Compromise Notification Came Over a Secure
+    Channel</title>
+
+    <para>Authentication and communication between parent and child occurs
+    out-of-band.</para>
+  </section>
+
+  <section id="parent-delete-child-keyset">
+    <title>Delete the Child's Keyset File at the Parent</title>
+
+    <para>The DS record for the child should not be created. This can simply
+    be achieved by removing the keyset file from the system.</para>
+  </section>
+
+  <xi:include href="resign-zone.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+
+  <xi:include href="reload-zone.xml"
+              xmlns:xi="http://www.w3.org/2001/XInclude" />
+</chapter>
