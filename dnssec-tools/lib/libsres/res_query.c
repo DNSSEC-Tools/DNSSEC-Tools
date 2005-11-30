@@ -22,8 +22,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/nameser.h>
-#include <netdb.h>
 
 #include "resolver.h"
 #include "res_mkquery.h"
@@ -247,7 +245,6 @@ int clone_ns(struct name_server **cloned_ns, struct name_server *ns)
 	(*cloned_ns)->ns_status = ns->ns_status;
 
 	(*cloned_ns)->ns_options = ns->ns_options;
-	(*cloned_ns)->ns_id = ns->ns_id;
 	(*cloned_ns)->ns_retrans = ns->ns_retrans;
 	(*cloned_ns)->ns_retry = ns->ns_retry;
 
@@ -308,15 +305,6 @@ int query_send( const char*     name,
 	if (pref_ns == NULL) 
 		return SR_CALL_ERROR;
 
-	/* Form the query with res_val_nmkquery_n */
-	query_length = res_val_nmkquery (pref_ns, ns_o_query, name, class_h, type_h,
-									NULL, 0, NULL, query, query_limit);
-    query_length = res_val_nopt(pref_ns, query_length, query, query_limit, EDNS_UDP_SIZE);	
-	if (query_length == -1)
-		return SR_MKQUERY_INTERNAL_ERROR;
-	/* Set the CD flag */
-	((HEADER *)query)->cd = 1;
-	//((HEADER *)query)->rd = 0;
 
 	/*res_io_stall();*/
 
@@ -327,6 +315,16 @@ int query_send( const char*     name,
 	/* Loop through the list of destinations */
 	for (ns = ns_list; ns; ns = ns->ns_next)
 	{
+		/* Form the query with res_val_nmkquery_n */
+		query_length = res_val_nmkquery (ns, ns_o_query, name, class_h, type_h,
+										NULL, 0, NULL, query, query_limit);
+   	 	query_length = res_val_nopt(ns, query_length, query, query_limit, EDNS_UDP_SIZE);	
+		if (query_length == -1)
+			return SR_MKQUERY_INTERNAL_ERROR;
+		/* Set the CD flag */
+		((HEADER *)query)->cd = 1;
+		//((HEADER *)query)->rd = 0;
+
 		if ((ret_val = res_tsig_sign(query,query_length,ns,
 					&signed_query,&signed_length)) != SR_TS_OK)
 		{
