@@ -14,7 +14,7 @@
 #include <resolver.h>
 #include <validator.h>
 
-#define MAX_RESULTS 5 
+#define MAX_RESULTS 10 
 
 struct testcase_st {
 	const char *desc;
@@ -201,42 +201,42 @@ static const struct testcase_st testcases[] = {
 #if 0
 	#if 1
 	/* Test for resolution error (ensure no "search" in resolv.conf) */
-	{"Checking name failure", "dns", ns_c_in, ns_t_a, DNS_ERROR_BASE+SR_SERVFAIL},
+	{"Checking name failure", "dns", ns_c_in, ns_t_a, {DNS_ERROR_BASE+SR_SERVFAIL, 0}},
 	#endif
 
 	#if 1
 	/* Test for non-existence */
-	{"Checking non-existence proofs", "dns1.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, NONEXISTENT_NAME}, 
+	{"Checking non-existence proofs", "dns1.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, {NONEXISTENT_NAME, NONEXISTENT_NAME, NONEXISTENT_NAME, 0}}, 
 	#endif
 
 	#if 1
 	/* Test for validation without recursion + CNAME */
-	{"Testing CNAME and same-level validation", "apple.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, VALIDATE_SUCCESS},
+	{"Testing CNAME and same-level validation", "apple.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, {VALIDATE_SUCCESS, VALIDATE_SUCCESS, 0}},
 	#endif
 
 	#if 1
 	/* Test for validation with recursion */
-	{"Testing validation up the chain", "dns.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, VALIDATE_SUCCESS},
+	{"Testing validation up the chain", "dns.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, {VALIDATE_SUCCESS, 0}},
 	#endif
 
 	#if 1
 	/* Test for multiple answers */
-	{"Checking validation of multiple answers returned with ANY", "fruits.netsec.tislabs.com.", ns_c_in, ns_t_any, VALIDATE_SUCCESS},
+	{"Checking validation of multiple answers returned with ANY", "fruits.netsec.tislabs.com.", ns_c_in, ns_t_any, {VALIDATE_SUCCESS, VALIDATE_SUCCESS, VALIDATE_SUCCESS, VALIDATE_SUCCESS, VALIDATE_SUCCESS, VALIDATE_SUCCESS, 0}},
 	#endif
 
 	#if 1
 	/* Wild-card test */
-	{"Checking validation with a wildcard match", "jackfruit.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, VALIDATE_SUCCESS},
+	{"Checking validation with a wildcard match", "jackfruit.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a, {VALIDATE_SUCCESS, 0}},
 	#endif
 
 	#if 1
 	/* Wild-card, non-existent type */
-	{"Checking if wildcard with a different type matches", "jackfruit.fruits.netsec.tislabs.com.", ns_c_in, ns_t_cname, DNS_ERROR_BASE+SR_NO_ANSWER}, 
+	{"Checking if wildcard with a different type matches", "jackfruit.fruits.netsec.tislabs.com.", ns_c_in, ns_t_cname, {DNS_ERROR_BASE+SR_NO_ANSWER, 0}}, 
 	#endif
 
 	#if 0
 	/* Test for bad class */
-	{"Testing bad class", "dns.wesh.fruits.netsec.tislabs.com.", 15, ns_t_a, VALIDATE_SUCCESS},
+	{"Testing bad class", "dns.wesh.fruits.netsec.tislabs.com.", 15, ns_t_a, {DNS_ERROR_BASE+SR_NO_ANSWER, 0}},
 	#endif
 #endif
 
