@@ -18,12 +18,12 @@
 
 #include <sys/types.h>
 #include <errno.h>
-#include <resolv.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
 #include <limits.h>
 
+#include "resolver.h"
 
 #ifdef SPRINTF_CHAR
 # define SPRINTF(x) strlen(sprintf/**/x)

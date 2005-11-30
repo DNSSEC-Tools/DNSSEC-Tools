@@ -71,12 +71,11 @@
 #include <sys/types.h>
 #include <sys/param.h>
 #include <netinet/in.h>
-#include <arpa/nameser.h>
 #include <ctype.h>
-#include <resolv.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include "resolver.h"
 
 /*
  * Expand compressed domain name 'src' to full domain name.

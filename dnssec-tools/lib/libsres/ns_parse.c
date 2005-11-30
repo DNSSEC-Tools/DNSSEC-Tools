@@ -18,11 +18,11 @@
 #include <sys/types.h>
 
 #include <netinet/in.h>
-#include <arpa/nameser.h>
 
 #include <errno.h>
-#include <resolv.h>
 #include <string.h>
+
+#include "resolver.h"
 
 /* Forward. */
 

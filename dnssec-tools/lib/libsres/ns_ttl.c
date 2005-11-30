@@ -15,13 +15,13 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <arpa/nameser.h>
 
 #include <ctype.h>
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "resolver.h"
 
 #ifdef SPRINTF_CHAR
 # define SPRINTF(x) strlen(sprintf/**/x)
