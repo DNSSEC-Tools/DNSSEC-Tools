@@ -16,13 +16,10 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <strings.h>
-#include <arpa/nameser.h>
 
 #include <validator.h>
 #include <resolver.h>
-#include "val_parse.h"
-#include "val_getaddrinfo.h"
-#include "val_log.h"
+#include "val_policy.h"
 
 /**
  * addrinfo_dnssec_wrapper: A wrapper struct around addrinfo to

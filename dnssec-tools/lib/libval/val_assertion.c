@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <arpa/nameser.h>
 
 #include <resolver.h>
 #include <validator.h>
@@ -15,11 +14,8 @@
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"
-#include "val_assertion.h"
 #include "val_verify.h"
-#include "val_context.h"
 #include "val_policy.h"
-#include "val_log.h"
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
 #define NONSENSE_RESULT_SEQUENCE(status) \
