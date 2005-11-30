@@ -11,43 +11,8 @@
 #ifndef VAL_PARSE_H
 #define VAL_PARSE_H
 
-#include <arpa/nameser.h>
 #include <resolver.h>
 
-typedef struct val_dnskey_rdata {
-    u_int16_t        flags;
-    u_int8_t         protocol;
-    u_int8_t         algorithm;
-    u_int32_t        public_key_len;    /* in bytes */
-    u_char *         public_key;
-    u_int16_t        key_tag;
-    struct val_dnskey_rdata* next;
-} val_dnskey_rdata_t;
-
-typedef struct val_rrsig_rdata {
-    u_int16_t        type_covered;
-    u_int8_t         algorithm;
-    u_int8_t         labels;
-    u_int32_t        orig_ttl;
-    u_int32_t        sig_expr;
-    u_int32_t        sig_incp;
-    u_int16_t        key_tag;
-    u_char           signer_name[256]; /* null terminated */
-    u_int32_t        signature_len;    /* in bytes */
-    u_char *         signature;
-    struct val_rrsig_rdata* next;
-} val_rrsig_rdata_t;
-
-
-#ifndef SHA_DIGEST_LENGTH
-#define SHA_DIGEST_LENGTH 20
-#endif
-typedef struct val_ds_rdata {
-	u_int16_t d_keytag;
-	u_int8_t d_algo;
-	u_int8_t d_type;
-	u_int8_t d_hash[SHA_DIGEST_LENGTH];
-} val_ds_rdata_t;
 
 /* Parse a domain name */
 int val_parse_dname(const unsigned char *buf, int buflen, int offset,
@@ -104,6 +69,5 @@ struct hosts {
 	} \
 } while (0);
 
-struct hosts * parse_etc_hosts (const char *name);
 
 #endif
