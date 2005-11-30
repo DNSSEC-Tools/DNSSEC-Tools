@@ -221,7 +221,7 @@ do_section(
  * This is intended to be primarily a debugging routine.
  */
 void
-res_pquery(const u_char *msg, int len, FILE *file) {
+libsres_pquery(const u_char *msg, int len, FILE *file) {
 	ns_msg handle;
 	int qdcount, ancount, nscount, arcount;
 	u_int opcode, rcode, id;
