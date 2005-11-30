@@ -15,13 +15,10 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <strings.h>
-#include <arpa/nameser.h>
 
 #include <validator.h>
 #include <resolver.h>
-#include "val_parse.h"
-#include "val_gethostbyname.h"
-#include "val_log.h"
+#include "val_policy.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"

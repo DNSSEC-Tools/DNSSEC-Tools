@@ -14,22 +14,18 @@
 #include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
-#include <arpa/nameser.h>
 
 #include <resolver.h>
 #include <validator.h>
 
 #include "val_support.h"
 #include "val_cache.h"
-#include "val_assertion.h"
-#include "val_log.h"
+#include "val_verify.h"
 
 #include "crypto/val_rsamd5.h"
 #include "crypto/val_rsasha1.h"
 #include "crypto/val_dsasha1.h"
 
-#include "val_verify.h"
-#include "val_cache.h"
 
 
 #define ZONE_KEY_FLAG 0x0100 /* Zone Key Flag, RFC 4034 */
