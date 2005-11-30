@@ -100,13 +100,10 @@
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <arpa/nameser.h>
 
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>
-#include <netdb.h>
-#include <resolv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -132,48 +129,6 @@ const char *_res_opcodes[] = {
     "ZONEINIT",
     "ZONEREF",
 };
-
-int
-res_init(void) {
-//    extern int __res_vinit(res_state, int);
-                                                                                                                             
-    /*
-     * These three fields used to be statically initialized.  This made
-     * it hard to use this code in a shared library.  It is necessary,
-     * now that we're doing dynamic initialization here, that we preserve
-     * the old semantics: if an application modifies one of these three
-     * fields of _res before res_init() is called, res_init() will not
-     * alter them.  Of course, if an application is setting them to
-     * _zero_ before calling res_init(), hoping to override what used
-     * to be the static default, we can't detect it and unexpected results
-     * will follow.  Zero for any of these fields would make no sense,
-     * so one can safely assume that the applications were already getting
-     * unexpected results.
-     *
-     * _res.options is tricky since some apps were known to diddle the bits
-     * before res_init() was first called. We can't replicate that semantic
-     * with dynamic initialization (they may have turned bits off that are
-     * set in RES_DEFAULT).  Our solution is to declare such applications
-     * "broken".  They could fool us by setting RES_INIT but none do (yet).
-     */
-    if (!_res.retrans)
-        _res.retrans = RES_TIMEOUT;
-    if (!_res.retry)
-        _res.retry = 4;
-    if (!(_res.options & RES_INIT))
-        _res.options = RES_DEFAULT;
-    /*
-     * This one used to initialize implicitly to zero, so unless the app
-     * has set it to something in particular, we can randomize it now.
-     */
-    if (!_res.id)
-        _res.id = res_randomid();
-     
-//    return (__res_vinit(&_res, 1));
-	_res.options |= RES_INIT;
-	return 0;                                                                                                                 
-}
-
 
 #ifdef SPRINTF_CHAR
 # define SPRINTF(x) strlen(sprintf/**/x)
