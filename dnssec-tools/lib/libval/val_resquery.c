@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <arpa/nameser.h>
 
 #include <resolver.h>
 #include <validator.h>
@@ -30,7 +29,6 @@
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"
-#include "val_log.h"
 
 
 #define ITS_BEEN_DONE   TRUE
@@ -195,7 +193,6 @@ static int res_zi_unverified_ns_list(val_context_t *context, struct name_server 
 					temp_ns->ns_retrans = RES_TIMEOUT;
 					temp_ns->ns_retry = RES_RETRY;
 					temp_ns->ns_options = RES_DEFAULT; 
-					temp_ns->ns_id = res_randomid();
 
                     temp_ns->ns_next = NULL;
                     temp_ns->ns_number_of_addresses = 0;
