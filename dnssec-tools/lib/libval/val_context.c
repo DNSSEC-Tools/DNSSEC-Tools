@@ -16,7 +16,6 @@
 
 #include "val_support.h"
 #include "val_policy.h"
-#include "val_x_query.h"
 
 int get_context(char *label, val_context_t **newcontext)
 {
