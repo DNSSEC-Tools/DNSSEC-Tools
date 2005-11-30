@@ -22,7 +22,9 @@
 #ifndef RESOLVER_H
 #define RESOLVER_H
 
-#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
+#include <netdb.h>
 #include <resolv.h>
 
 #ifdef MEMORY_DEBUGGING
@@ -105,7 +107,6 @@ struct name_server
     struct name_server  *ns_next;
     int         ns_number_of_addresses;
 	u_long  ns_options;
-	u_short ns_id;
 	int ns_retrans;
 	int ns_retry;
     struct sockaddr     ns_address[1];
