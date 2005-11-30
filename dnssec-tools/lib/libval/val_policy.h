@@ -8,6 +8,7 @@
 #define END_STMT ';'
 #define MAX_LEVEL_IN_POLICY	5
 #define TOKEN_MAX 2048
+#define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
 
 #define OVERRIDE_POLICY(ctx, override)   do {		\
@@ -43,6 +44,7 @@ int read_res_config_file(val_context_t *ctx);
 int read_val_config_file(val_context_t *ctx, char *scope);
 void destroy_valpol(val_context_t *ctx);
 void destroy_respol(val_context_t *ctx);
+struct hosts * parse_etc_hosts (const char *name);
 
 int parse_trust_anchor(FILE*, policy_entry_t*, int*);
 int free_trust_anchor(policy_entry_t*);
