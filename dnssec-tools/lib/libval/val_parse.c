@@ -10,9 +10,8 @@
 
 #include <validator.h>
 #include "val_parse.h"
-#include "crypto/val_rsamd5.h"
 #include "val_support.h"
-
+#include "crypto/val_rsamd5.h"
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
@@ -348,98 +347,4 @@ int dnskey_compare(val_dnskey_rdata_t *key1, val_dnskey_rdata_t *key2)
 	return 1;
 }
 
-/*
- * Read ETC_HOSTS and return matching records
- */
-struct hosts * parse_etc_hosts (const char *name)
-{
-	FILE *fp;
-	char *line = NULL;
-	size_t len = 0;
-	int read;
-	char white[] = " \t\n";
-	char fileentry[MAXLINE];
-	struct hosts *retval = NULL;
-	struct hosts *retval_tail = NULL;
-	
-	fp = fopen (ETC_HOSTS, "r");
-	if (fp == NULL) {
-		return NULL;
-	}
-	
-	while ((read = getline (&line, &len, fp)) != -1) {
-		char *buf = NULL;
-		char *cp = NULL;
-		char addr_buf[INET6_ADDRSTRLEN];
-		char *domain_name = NULL;
-		int matchfound = 0;
-		char *alias_list[MAX_ALIAS_COUNT];
-		int alias_index = 0;
-		
-		if ((read > 0) && (line[0] == '#')) continue;
-		
-		/* ignore characters after # */
-		cp = (char *) strtok_r (line, "#", &buf);
-		
-		if (!cp) continue;
-		
-		memset(fileentry, 0, MAXLINE);
-		memcpy(fileentry, cp, strlen(cp));
-		
-		/* read the ip address */
-		cp = (char *) strtok_r (fileentry, white, &buf);
-		if (!cp) continue;
-		
-		memset(addr_buf, 0, INET6_ADDRSTRLEN);
-		memcpy(addr_buf, cp, strlen(cp));
-		
-		/* read the full domain name */
-		cp = (char *) strtok_r (NULL, white, &buf);
-		if (!cp) continue;
-		
-		domain_name = cp;
-		
-		if (strcasecmp(cp, name) == 0) {
-			matchfound = 1;
-		}
-		
-		/* read the aliases */
-		memset(alias_list, 0, MAX_ALIAS_COUNT);
-		alias_index = 0;
-		while ((cp = (char *) strtok_r (NULL, white, &buf)) != NULL) {
-			alias_list[alias_index++] = cp;
-			if ((!matchfound) && (strcasecmp(cp, name) == 0)) {
-				matchfound = 1;
-			}
-		}
-		
-		/* match input name with the full domain name and aliases */
-		if (matchfound) {
-			int i;
-			struct hosts *hentry = (struct hosts*) MALLOC (sizeof(struct hosts));
-			
-			bzero(hentry, sizeof(struct hosts));
-			hentry->address = (char *) strdup (addr_buf);
-			hentry->canonical_hostname = (char *) strdup(domain_name);
-			hentry->aliases = (char **) MALLOC ((alias_index + 1) * sizeof(char *));
-			
-			for (i=0; i<alias_index; i++) {
-				hentry->aliases[i] = (char *) strdup(alias_list[i]);
-			}
-			
-			hentry->aliases[alias_index] = NULL;
-			hentry->next = NULL;
-			
-			if (retval) {
-				retval_tail->next = hentry;
-				retval_tail = hentry;
-			}
-			else {
-				retval = hentry;
-				retval_tail = hentry;
-			}
-		}
-	}
-	
-	return retval;
-}
+
