@@ -23,7 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <arpa/nameser.h>
 #include <pthread.h>
 
 #include <resolver.h>

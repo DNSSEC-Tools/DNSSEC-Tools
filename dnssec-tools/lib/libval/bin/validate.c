@@ -11,7 +11,6 @@
 #include <strings.h>
 #include <stdlib.h>
 #include <string.h>
-#include <arpa/nameser.h>
 #include <errno.h>
 #include <resolver.h> /* for ns_t_dnskey */
 #include <validator.h>
