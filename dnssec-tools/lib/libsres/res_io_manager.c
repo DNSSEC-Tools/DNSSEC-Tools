@@ -22,7 +22,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#include <resolv.h>
 #include <unistd.h>
 #include <sys/time.h>
 #include <string.h>

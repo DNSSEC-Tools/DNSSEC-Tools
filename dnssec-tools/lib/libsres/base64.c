@@ -44,12 +44,10 @@
 #include <sys/param.h>
 #include <sys/socket.h>
 
-#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <arpa/nameser.h>
+#include <netinet/in.h>
 
 #include <ctype.h>
-#include <resolv.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

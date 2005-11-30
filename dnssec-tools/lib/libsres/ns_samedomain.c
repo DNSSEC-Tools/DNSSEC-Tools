@@ -16,9 +16,10 @@
  */
 
 #include <sys/types.h>
-#include <arpa/nameser.h>
 #include <errno.h>
 #include <string.h>
+
+#include "resolver.h"
 
 /*
  * int

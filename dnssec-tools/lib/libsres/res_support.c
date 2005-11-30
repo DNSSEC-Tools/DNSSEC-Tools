@@ -25,8 +25,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include <arpa/nameser.h>
-#include <resolv.h>
+#include <netinet/in.h>
 
 #include "resolver.h"
 

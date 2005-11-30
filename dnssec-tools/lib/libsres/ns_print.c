@@ -19,11 +19,9 @@
 #include <sys/socket.h>
 
 #include <netinet/in.h>
-#include <arpa/nameser.h>
 #include <arpa/inet.h>
 
 #include <errno.h>
-#include <resolv.h>
 #include <string.h>
 #include <ctype.h>
 
