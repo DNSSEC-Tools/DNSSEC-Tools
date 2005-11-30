@@ -6,11 +6,8 @@
 #ifndef VALIDATOR_H
 #define VALIDATOR_H
 
-#include <arpa/nameser.h>
-#include <netdb.h>
-#include <stdlib.h>
+#include <syslog.h>
 #include <val_errors.h>
-
 
 #define DNS_PORT	53
 #ifdef MEMORY_DEBUGGING
@@ -228,11 +225,47 @@ struct domain_info
 };
 
 struct val_result {
-	struct assertion_chain *as;
 	int status;
 	int trusted;
+	struct assertion_chain *as;
 	struct val_result *next;
 };
+
+
+typedef struct val_dnskey_rdata {
+    u_int16_t        flags;
+    u_int8_t         protocol;
+    u_int8_t         algorithm;
+    u_int32_t        public_key_len;    /* in bytes */
+    u_char *         public_key;
+    u_int16_t        key_tag;
+    struct val_dnskey_rdata* next;
+} val_dnskey_rdata_t;
+                                                                                                                             
+typedef struct val_rrsig_rdata {
+    u_int16_t        type_covered;
+    u_int8_t         algorithm;
+    u_int8_t         labels;
+    u_int32_t        orig_ttl;
+    u_int32_t        sig_expr;
+    u_int32_t        sig_incp;
+    u_int16_t        key_tag;
+    u_char           signer_name[256]; /* null terminated */
+    u_int32_t        signature_len;    /* in bytes */
+    u_char *         signature;
+    struct val_rrsig_rdata* next;
+} val_rrsig_rdata_t;
+                                                                                                                             
+                                                                                                                             
+#ifndef SHA_DIGEST_LENGTH
+#define SHA_DIGEST_LENGTH 20
+#endif
+typedef struct val_ds_rdata {
+    u_int16_t d_keytag;
+    u_int8_t d_algo;
+    u_int8_t d_type;
+    u_int8_t d_hash[SHA_DIGEST_LENGTH];
+} val_ds_rdata_t;
 
 /*
  **********************************
@@ -240,23 +273,148 @@ struct val_result {
  **********************************
  */
 /* from val_assertion.h */
-#include "val_assertion.h"
+void free_query_chain(struct query_chain **queries);
+void free_assertion_chain(struct assertion_chain **assertions);
+void free_result_chain(struct val_result **results);
+int resolve_n_check(    val_context_t   *context,
+            u_char *domain_name_n,
+            const u_int16_t type,
+            const u_int16_t class,
+            const u_int8_t flags,
+            struct query_chain **queries,
+            struct assertion_chain **assertions,
+            struct val_result **results);
 
 /* from val_context.h */
-#include "val_context.h"
+int get_context(char *label, val_context_t **newcontext);
+void destroy_context(val_context_t *context);
+int switch_effective_policy(val_context_t *ctx, char *label);
 
 /* from val_log.h */
-#include "val_log.h"
+char *get_hex_string(char *data, int datalen, char *buf, int buflen);
+void val_log_rrset(val_context_t *ctx, int level, struct rrset_rec *rrset);
+void val_log_base64(val_context_t *ctx, int level, unsigned char * message, int message_len);
+void val_log_rrsig_rdata (val_context_t *ctx, int level, const char *prefix, val_rrsig_rdata_t *rdata);
+void val_log_dnskey_rdata (val_context_t *ctx, int level, const char *prefix, val_dnskey_rdata_t *rdata);
+void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
+                struct query_chain *queries, struct val_result *results);
+void val_log (val_context_t *ctx, int level, const char *template, ...);
+char *p_query_error(int errno);
+char *p_val_error(int valerrno);
 
 /* from val_x_query.h */
-#include "val_x_query.h"
+int val_x_query(val_context_t *ctx,
+            const char *domain_name,
+            const u_int16_t class,
+            const u_int16_t type,
+            const u_int8_t flags,
+            struct response_t *resp,
+            int *resp_count);
+                                                                                                                             
+int val_query ( const char *domain_name, int class, int type,
+        unsigned char *answer, int anslen, int flags,
+        int *dnssec_status );
 
 /* from val_gethostbyname.h */
-#include "val_gethostbyname.h"
+/**
+ * A function to extract DNSSEC-validation status information from a
+ * (struct hostent *) variable.  Note: This variable must be returned
+ * from the val_gethostbyname() function.
+ */
+int val_get_hostent_dnssec_status ( const struct hostent *hentry );
+
+/* A function to free memory allocated by val_gethostbyname() and
+ * val_duphostent()
+ */
+void val_freehostent ( struct hostent *hentry );
+
+/* A function to duplicate a hostent structure.  Performs a
+ * deep-copy of the hostent structure.  The returned value
+ * must be freed using the val_freehostent() function.
+ */
+struct hostent* val_duphostent ( const struct hostent *hentry );
+
+/*
+ * Returns the entry from the hosts file and DNS for host with name.
+ * If DNSSEC validation is successful, *dnssec_status will contain
+ * VALIDATE_SUCCESS
+ * If there is a failure, *dnssec_status will contain the validator
+ * error code.  Applications can use the FREE_HOSTENT() macro given
+ * above to free the returned hostent structure.
+ */
+struct hostent *val_gethostbyname ( const char *name, int *h_errnop );
+struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name,
+				      int *h_errnop );
 
 /* from val_getaddrinfo.h */
-#include "val_getaddrinfo.h"
 
+/* val_get_addrinfo_dnssec_status()
+ * A function to extract DNSSEC-validation status information from a
+ * (struct addrinfo *) variable.  Note: This variable must be returned
+ * from the val_getaddrinfo() or the val_dupaddrinfo() function.
+ */
+int val_get_addrinfo_dnssec_status (const struct addrinfo *ainfo);
+
+/* val_dupaddrinfo();
+ * A function to duplicate an addrinfo structure.  Performs a
+ * deep-copy of the entire addrinfo list.  The returned value
+ * must be freed using the freeaddrinfo() function.    Note: The
+ * input parameter must be one previously returned by a call to
+ * the val_getaddrinfo() or the val_dupaddrinfo() function.
+ */
+struct addrinfo* val_dupaddrinfo (const struct addrinfo *ainfo);
+
+/* A function to free memory allocated by val_getaddrinfo() and
+ * val_dupaddrinfo()
+ */
+void val_freeaddrinfo (struct addrinfo *ainfo);
+
+/**
+ * val_getaddrinfo: A validating getaddrinfo function.
+ *                  Based on getaddrinfo() as defined in RFC3493.
+ *
+ * Parameters:
+ *     Note: All the parameters, except the dnssec_status parameter,
+ *     ----  are similar to the getaddrinfo function.
+ *
+ *     [IN]  node: Specifies either a numerical network address (dotted-
+ *                decimal format for IPv4, hexadecimal format for IPv6)
+ *                or a network hostname, whose network addresses are
+ *                looked up and resolved.
+ *                node or service parameter, but not both, may be NULL.
+ *     [IN]  service: Used to set the port number in the network address
+ *                of each socket structure returned.  If service is NULL
+ *                the  port  number will be left uninitialized.
+ *     [IN]  hints: Specifies  the  preferred socket type, or protocol.
+ *                A NULL hints specifies that any network address or
+ *                protocol is acceptable.
+ *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
+ *                structures, linked by the ai_next member.  This output
+ *                value can be used in the val_get_addrinfo_dnssec_status()
+ *                and the val_dupaddrinfo() functions.
+ *
+ * Return value: This function returns 0 if it succeeds, or one of the
+ *               non-zero error codes if it fails.  See man getaddrinfo
+ *               for more details.
+ */
+int val_getaddrinfo ( const char *nodename, const char *servname,
+		      const struct addrinfo *hints,
+		      struct addrinfo **res );
+
+/*
+ * val_x_getaddrinfo: Extended version of val_getaddrinfo that provides
+ *                    optimization.
+ *
+ * Parameters:
+ *     [IN] ctx: The validation context.
+ *
+ * Other parameters and return values are similar to the val_getaddrinfo
+ * function.
+ */
+int val_x_getaddrinfo ( val_context_t *ctx,
+		        const char *nodename, const char *servname,
+			const struct addrinfo *hints,
+			struct addrinfo **res );
 
 #define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
 #define RESOLV_CONF             "/etc/resolv.conf"
