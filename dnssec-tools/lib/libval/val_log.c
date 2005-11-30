@@ -4,7 +4,6 @@
  * See the COPYING file distributed with this software for details.
  */ 
 #include <stdio.h>
-#include <resolv.h>
 #include <ctype.h>
 #include <string.h>
 #include <openssl/bio.h>
@@ -19,7 +18,6 @@
 #include <resolver.h>
 #include <validator.h>
 #include "val_cache.h"
-#include "val_log.h"
 #include "val_support.h"
 
 char *get_hex_string(char *data, int datalen, char *buf, int buflen)
@@ -150,7 +148,7 @@ static char *get_ns_string(struct name_server **server)
 		serv_pr = ((serv_pr = get_ns_string(&(serv))) == NULL)?"VAL_CACHE":serv_pr;\
 	else\
 		serv_pr = "NULL";\
-	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s : %d",\
+	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s:%d",\
 		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_val_error(status), status);\
 } while (0)		
 
@@ -176,6 +174,8 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 
 			VAL_LOG_ASSERTION(top_q->qc_name_n, top_q->qc_class_h, top_q->qc_type_h, 
 					top_q->qc_respondent_server, next_result->status);
+			val_log(ctx, level, "Query Status = %s[%d]", 
+					p_query_error(top_q->qc_state), top_q->qc_state);
 		}
 
 		for (next_as = next_result->as; next_as; next_as = next_as->ac_trust) {
@@ -184,6 +184,7 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 				t_name_n = "NULL_DATA";
 			else
 				t_name_n = next_as->ac_data->rrs_name_n;
+
 			VAL_LOG_ASSERTION(t_name_n, next_as->ac_data->rrs_class_h,
 					next_as->ac_data->rrs_type_h, next_as->ac_data->rrs_respondent_server, 
 					next_as->ac_state);
@@ -191,9 +192,53 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 	}
 }
 
-char *p_val_error(int errno)
+char *p_query_error(int err)
 {
-    switch (errno) {
+	if (err < Q_ERROR_BASE) {
+		switch(err) {
+			case Q_INIT: return "Q_INIT";
+			case Q_SENT: return "Q_SENT"; 
+			case Q_ANSWERED: return "Q_ANSWERED"; 
+			default: break;
+		}
+	}
+	else {
+		int dnserr = err - Q_ERROR_BASE;
+		switch(dnserr) {
+			case SR_CALL_ERROR: return "SR_CALL_ERROR";
+			case SR_TSIG_ERROR: return "SR_TSIG_ERROR";
+			case SR_MEMORY_ERROR: return "SR_MEMORY_ERROR";
+			case SR_NO_ANSWER: return "SR_NO_ANSWER";
+			case SR_NO_ANSWER_YET: return "SR_NO_ANSWER_YET";
+			case SR_MKQUERY_INTERNAL_ERROR: return "SR_MKQUERY_INTERNAL_ERROR";
+			case SR_TSIG_INTERNAL_ERROR: return "SR_TSIG_INTERNAL_ERROR";
+			case SR_SEND_INTERNAL_ERROR: return "SR_SEND_INTERNAL_ERROR";
+			case SR_RCV_INTERNAL_ERROR: return "SR_RCV_INTERNAL_ERROR";
+			case SR_WRONG_ANSWER: return "SR_WRONG_ANSWER";
+			case SR_HEADER_BADSIZE: return "SR_HEADER_BADSIZE";
+			case SR_NXDOMAIN : return "SR_NXDOMAIN";
+			case SR_FORMERR  : return "SR_FORMERR";
+			case SR_SERVFAIL : return "SR_SERVFAIL";
+			case SR_NOTIMPL  : return "SR_NOTIMPL";
+			case SR_REFUSED  : return "SR_REFUSED";
+			case SR_GENERIC_FAILURE : return "SR_GENERIC_FAILURE";
+			case SR_EDNS_VERSION_ERROR : return "SR_EDNS_VERSION_ERROR";
+			case SR_UNSUPP_EDNS0_LABEL : return "SR_UNSUPP_EDNS0_LABEL";
+			case SR_SUSPICIOUS_BIT : return "SR_SUSPICIOUS_BIT";
+			case SR_NAME_EXPANSION_FAILURE : return "SR_NAME_EXPANSION_FAILURE";
+			case SR_REFERRAL_ERROR: return "SR_REFERRAL_ERROR";
+			case SR_MISSING_GLUE: return "SR_MISSING_GLUE";
+			case SR_CONFLICTING_ANSWERS: return "SR_CONFLICTING_ANSWERS";
+			default: break;
+		}
+	}
+
+	return "UNKNOWN";
+}
+
+char *p_val_error(int err)
+{
+    switch (err) {
                                                                                                                              
     case NO_ERROR: return "NO_ERROR"; break;
                                                                                                                              
@@ -271,14 +316,18 @@ char *p_val_error(int errno)
     case DNSSEC_VERSION_ERROR: return "DNSSEC_VERSION_ERROR"; break;
     */
     default:
-            if((errno >= DNS_ERROR_BASE) &&
-                (errno < DNS_ERROR_LAST))
-                return "DNS_ERROR";
-            else if (errno < A_LAST_STATE)
+            if((err >= DNS_ERROR_BASE) && (err < DNS_ERROR_LAST)) {
+				int errbase = DNS_ERROR_BASE;
+				int dnserr = err - errbase + Q_ERROR_BASE;
+                return p_query_error(dnserr);
+			} 
+            else if (err < A_LAST_STATE)
                 return "UNEVALUATED";
             return "Unknown Error Value";
     }
 }
+
+
 
 #ifdef LOG_TO_NETWORK
 int send_log_message(char *buffer)
