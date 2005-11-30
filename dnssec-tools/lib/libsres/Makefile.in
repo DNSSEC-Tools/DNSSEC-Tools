@@ -59,7 +59,7 @@ clean:
 	rm -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
 
 $(LIBRES): $(LOBJ)
-	$(LIBTOOLLD) -o $@ $(LOBJ) -export-symbols EXPORT.sym
+	$(LIBTOOLLD) -o $@ $(LOBJ) 
 
 subdirmake:
 	@for i in $(SUBDIRS) ; do \
