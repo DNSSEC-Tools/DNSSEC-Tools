@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <netinet/in.h>
+#include <resolv.h>
 
 #include <resolver.h>
 #include <validator.h>
