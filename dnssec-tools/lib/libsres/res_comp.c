@@ -76,6 +76,7 @@
 #include <unistd.h>
 #include <arpa/nameser.h>
 #include <arpa/nameser_compat.h>
+#include <netinet/in.h>
 #include <resolv.h>
 #include "resolver.h"
 
@@ -227,19 +228,3 @@ res_dnok(const char *dn) {
 	return (1);
 }
 
-#ifdef BIND_4_COMPAT
-/*
- * This module must export the following externally-visible symbols:
- *	___putlong
- *	___putshort
- *	__getlong
- *	__getshort
- * Note that one _ comes from C and the others come from us.
- */
-void __putlong(u_int32_t src, u_char *dst) { ns_put32(src, dst); }
-void __putshort(u_int16_t src, u_char *dst) { ns_put16(src, dst); }
-#ifndef __ultrix__
-u_int32_t _getlong(const u_char *src) { return (ns_get32(src)); }
-u_int16_t _getshort(const u_char *src) { return (ns_get16(src)); }
-#endif /*__ultrix__*/
-#endif /*BIND_4_COMPAT*/
