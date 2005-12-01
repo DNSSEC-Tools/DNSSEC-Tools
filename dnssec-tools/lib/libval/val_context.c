@@ -4,7 +4,6 @@
  */ 
 
 #include <stdio.h>
-#include <arpa/nameser.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -13,7 +12,6 @@
 
 #include <resolver.h>
 #include <validator.h>
-
 #include "val_support.h"
 #include "val_policy.h"
 
