@@ -7,6 +7,9 @@
 #define VALIDATOR_H
 
 #include <syslog.h>
+#include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
+#include <netdb.h>
 #include <val_errors.h>
 
 #define DNS_PORT	53

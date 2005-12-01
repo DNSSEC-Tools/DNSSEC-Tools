@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <resolv.h>
 
 #include <resolver.h>
 #include <validator.h>

@@ -21,6 +21,7 @@
 #include <arpa/inet.h>
 #include <fcntl.h>
 #include <sys/file.h>
+#include <resolv.h>
 
 #include <validator.h>
 #include "val_policy.h"
