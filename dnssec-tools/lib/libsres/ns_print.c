@@ -16,7 +16,9 @@
  */
 
 #include <sys/types.h>
-#include <sys/socket.h>
+#include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
+#include <resolv.h>
 
 #include <errno.h>
 #include <string.h>

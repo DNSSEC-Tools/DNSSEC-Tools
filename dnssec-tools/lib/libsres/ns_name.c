@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include <limits.h>
 
+#include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
+
 #include "resolver.h"
 
 #ifdef SPRINTF_CHAR

@@ -22,12 +22,9 @@
 #ifndef RESOLVER_H
 #define RESOLVER_H
 
-#include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
-#include <netdb.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <resolv.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
@@ -71,7 +68,7 @@
 #define ns_t_nsec	47
 #endif
 #ifndef ns_t_ds
-#define ns_t_ds	43	
+#define ns_t_ds		43	
 #endif
 
 /* Resolver errors */
