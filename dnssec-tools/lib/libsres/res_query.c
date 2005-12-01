@@ -28,6 +28,9 @@
 #include "res_support.h"
 #include "res_tsig.h"
 #include "res_io_manager.h"
+
+#include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
                                                                                                                              
 #ifndef NULL
 #define NULL (void*)0

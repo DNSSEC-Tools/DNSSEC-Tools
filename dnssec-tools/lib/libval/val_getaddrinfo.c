@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <strings.h>
+#include <resolv.h>
 
 #include <validator.h>
 #include <resolver.h>
