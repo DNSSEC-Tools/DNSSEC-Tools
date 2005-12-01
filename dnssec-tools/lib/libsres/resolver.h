@@ -25,6 +25,8 @@
 #include <arpa/nameser.h>
 #include <arpa/nameser_compat.h>
 #include <netdb.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <resolv.h>
 
 #ifdef MEMORY_DEBUGGING

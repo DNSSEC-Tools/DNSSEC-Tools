@@ -25,8 +25,6 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include <netinet/in.h>
-
 #include "resolver.h"
 
 extern void libsres_pquery(const u_char *msg, int len, FILE *file);

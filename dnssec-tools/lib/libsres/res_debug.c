@@ -98,9 +98,6 @@
 #include <sys/param.h>
 #include <sys/socket.h>
 
-#include <netinet/in.h>
-#include <arpa/inet.h>
-
 #include <ctype.h>
 #include <errno.h>
 #include <math.h>

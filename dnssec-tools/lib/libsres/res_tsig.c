@@ -16,6 +16,7 @@
  */
 #include <stdlib.h>
 #include <string.h>
+#include "resolver.h"
 #include "res_tsig.h"
 #include "res_support.h"
 
