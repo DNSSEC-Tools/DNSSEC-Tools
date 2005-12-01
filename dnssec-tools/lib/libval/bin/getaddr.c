@@ -13,7 +13,10 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <resolv.h>
 
+#include <resolver.h>
 #include <validator.h>
 
 static int validate = 0;
