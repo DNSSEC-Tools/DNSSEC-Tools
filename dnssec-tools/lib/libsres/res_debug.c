@@ -96,7 +96,6 @@
 
 #include <sys/types.h>
 #include <sys/param.h>
-#include <sys/socket.h>
 
 #include <ctype.h>
 #include <errno.h>
@@ -105,6 +104,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
+#include <resolv.h>
 #include "resolver.h"
 #include "res_support.h"
 

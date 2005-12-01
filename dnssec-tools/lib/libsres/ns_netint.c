@@ -15,6 +15,8 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <arpa/nameser.h>
+#include <arpa/nameser_compat.h>
 #include "resolver.h"
 
 /* Public. */
