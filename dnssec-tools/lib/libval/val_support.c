@@ -26,7 +26,6 @@
 
 #include <resolver.h>
 #include <validator.h>
-
 #include "val_support.h"
 
 int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
