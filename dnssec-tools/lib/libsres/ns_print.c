@@ -18,6 +18,7 @@
 #include <sys/types.h>
 #include <arpa/nameser.h>
 #include <arpa/nameser_compat.h>
+#include <netinet/in.h>
 #include <resolv.h>
 
 #include <errno.h>
