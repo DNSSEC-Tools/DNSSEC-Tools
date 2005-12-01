@@ -106,11 +106,12 @@
 #include <time.h>
 #include <arpa/nameser.h>
 #include <arpa/nameser_compat.h>
+#include <netinet/in.h>
 #include <resolv.h>
 #include "resolver.h"
 #include "res_support.h"
 
-const char *_res_opcodes[] = {
+const char *_libsres_opcodes[] = {
     "QUERY",
     "IQUERY",
     "CQUERYM",
@@ -246,7 +247,7 @@ libsres_pquery(const u_char *msg, int len, FILE *file) {
 	 */
 		fprintf(file,
 			";; ->>HEADER<<- opcode: %s, status: %s, id: %d\n",
-			_res_opcodes[opcode], p_rcode(rcode), id);
+			_libsres_opcodes[opcode], p_rcode(rcode), id);
 		putc(';', file);
 		fprintf(file, "; flags:");
 		if (ns_msg_getflag(handle, ns_f_qr))

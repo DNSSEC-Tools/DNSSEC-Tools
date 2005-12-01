@@ -84,7 +84,7 @@
 /*#define DEBUG*/
 
 
-extern const char *_res_opcodes[];
+extern const char *_libsres_opcodes[];
 
 u_int
 libsres_randomid(void) {
@@ -119,7 +119,7 @@ res_val_nmkquery(struct name_server  *pref_ns,
 #ifdef DEBUG
 	if (pref_ns->ns_options & RES_DEBUG)
 		printf(";; res_val_nmkquery(%s, %s, %s, %s)\n",
-		       _res_opcodes[op], dname, p_class(class), p_type(type));
+		       _libsres_opcodes[op], dname, p_class(class), p_type(type));
 #endif
 	/*
 	 * Initialize header fields.
