@@ -10,7 +10,6 @@
 
 #include <resolver.h>
 #include <validator.h>
-
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"

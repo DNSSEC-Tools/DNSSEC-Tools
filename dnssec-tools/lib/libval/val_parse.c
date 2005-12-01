@@ -7,13 +7,13 @@
 #include <strings.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <openssl/bio.h>
+#include <openssl/evp.h>
 
 #include <validator.h>
 #include "val_parse.h"
 #include "val_support.h"
 #include "crypto/val_rsamd5.h"
-#include <openssl/bio.h>
-#include <openssl/evp.h>
 
 /*
  * From RFC 4034
