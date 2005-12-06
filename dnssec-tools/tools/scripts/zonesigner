@@ -52,9 +52,9 @@ my $DEF_SIGNZONE	= "dnssec-signzone";
 # Default arguments to zonesigner and dnssec-* commands.
 #
 my $DEF_ALGORITHM	= "rsasha1";		# Encryption algorithm.
-my $DEF_ENDDATE		= "+604800";		# Zone life, in seconds.
+my $DEF_ENDDATE		= "+2592000";		# Zone life, in seconds.
 my $DEF_ENTROPYMSG	= 1;			# Display of entropy message.
-my $DEF_KSKLENGTH	= 1024;			# Length of KSK key.
+my $DEF_KSKLENGTH	= 2048;			# Length of KSK key.
 my $DEF_RANDOM		= "/dev/urandom";	# Random no. generator device.
 my $DEF_REUSEKSK	= 0;			# Re-use KSK.
 my $DEF_REUSEZSK	= 0;			# Re-use ZSK.
