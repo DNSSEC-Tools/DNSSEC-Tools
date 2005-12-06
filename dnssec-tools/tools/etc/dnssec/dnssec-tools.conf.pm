@@ -115,15 +115,15 @@ The following is an example B<dnssec-tools.conf> configuration file.
     # Settings for dnssec-keygen.
     #
     algorithm	rsasha1
-    ksklength	1024
-    zsklength	512
+    ksklength	2048
+    zsklength	1024
     random	/dev/urandom
     
     
     #
     # Settings for dnssec-signzone.
     #
-    endtime		+259200		# RRSIGs good for three days.
+    endtime		+2592000	# RRSIGs good for 30 days.
     
     
     #
