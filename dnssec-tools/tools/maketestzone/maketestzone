@@ -75,7 +75,8 @@ LocalGetOptions(\%opts,
 		 'The base directory where the bind DB files will be placed'],
 		'',
 		['html-out=s',
-		 'Generate a HTML page containing a list of links to each record'],
+		 'Generate a HTML page containing a list of record names'],
+		['html-out-addlinks','Make each html record name a http link to that address'],
 		['apache-out=s',
 		 'Generate a Apache config snippit for configuring apache for each zone record'],
 		['sh-test-out=s',
@@ -301,8 +302,13 @@ sub shutdown_global_files {
 	foreach my $domain (@outdomains) {
 	    print $htmlfh "    <h2>$domain</h2>\n    <ul>";
 	    foreach my $addr (sort @{$linkinfo{$domain}}) {
-		print $htmlfh
-		  "        <li><a href=\"http://$addr/\">$addr</a></li>\n";
+		print $htmlfh "        <li>";
+		print $htmlfh "<a href=\"http://$addr/\">"
+		  if ($opts{'html-out-addlinks'});
+		print $htmlfh $addr;
+		print $htmlfh "</a>"
+		  if ($opts{'html-out-addlinks'});
+		print $htmlfh "</li>\n";
 	    }
 	    print $htmlfh "    </ul>\n";
 	}
@@ -569,12 +575,13 @@ $domain.	600	IN SOA dns.$domain. hardaker.$domain. (
 					)
                         TXT     \"DNSSEC-TOOLS test zone for $domain\"
 ";
-    foreach my $ns (split(",",$opts{'ns'})) {
-        my ($rec,$addr) = split(/=/,$ns);
+    my ($ns, $rec, $addr);
+    foreach $ns (split(",",$opts{'ns'})) {
+        ($rec,$addr) = split(/=/,$ns);
         print_record("","NS","",$rec . "." . $domain . ".");
     }
-    foreach my $ns (split(",",$opts{'ns'})) {
-        my ($rec,$addr) = split(/=/,$ns);
+    foreach $ns (split(",",$opts{'ns'})) {
+	($rec,$addr) = split(/=/,$ns);
         print_record("$rec","1D IN","A",$addr);
     }
 }
