@@ -654,6 +654,56 @@ see how the data in them has been tampered with to be invalid.
 zonesigner from the dnssec-tools project
 bind software 9.3.1 or greater
 
+=head1 ADDING NEW RECORD MODIFICATIONS
+
+Maketestzone is in early development stages but already has the
+beginnings of an extnesible system allowing you to modify records at
+will based on regexp => subroutine hooks.
+
+To add a new modification, add a new keyword to the 'p' and optionally
+'P' default flags (or add it at run time), and then add a new function
+to the list of callbacks defined in the %destroyFunctions hash that is
+based on your new keyword.  When the file is getting parsed and hits a
+record matching your expression, your functional will be called.
+Arguments can be added to the function by passing an array reference
+where the first argument is the subroutine to be called, and the
+remainder are additional arguments.  Output lines should be printed to
+the $fh file handle.
+
+Here's an example function that deletes the RRSIG signature of the
+next record:
+
+  sub delete_signature {
+      # the first 2 arguments are always passed; the other was in the
+      # array refeence the subroutine was registered with.
+      my ($name, $type, $expr) = @_;
+
+      Verbose("  deleting signatures of $_[0]");
+
+      # print the current line
+      print $fh $_;
+
+      my $inrec = 0;
+      while (<I>) {
+	# new name record means we're done.
+  	last if /^\w/;
+
+        # we're in a multi-line rrsig record
+  	$inrec = 1 if (/$expr\s+$type/);
+
+	# print the line if we're not in the rrsig record
+  	print $fh $_ if (!$inrec);
+
+	# when done with the last line of the rrsig record, mark this spot
+  	$inrec = 0 if (/\)/);
+      }
+  }
+
+This is then registered within %destroyFunctions.  Here's an example
+of registering the function to delete the signature on a DS record:
+
+   '^(nosig[-\w]+).*IN\s+NS\s+' => [\&delete_signature, 'DS', 'RRSIG'],
+
 =head1 COPYRIGHT
 
 Copyright 2005 SPARTA, Inc.  All rights reserved.
