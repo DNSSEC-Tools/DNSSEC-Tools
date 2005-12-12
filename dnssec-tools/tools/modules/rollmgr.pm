@@ -94,6 +94,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
 		 rollmgr_dir
+		 rollmgr_droppid
 		 rollmgr_getid
 		 rollmgr_halt
 		 rollmgr_pidfile
@@ -108,6 +109,7 @@ my $rollmgrid;				# Roll-over manager's process id.
 #
 # These "constants" are the names of the roll-over manager's interfaces.
 # 
+my $DROPID	= "droppid";
 my $GETDIR	= "getdir";
 my $GETID	= "getid";
 my $HALT	= "halt";
@@ -123,6 +125,7 @@ my $SAVEID	= "saveid";
 # 
 my %switch_uninit =
 (
+	$DROPID	=>	\&uninit_droppid,
 	$GETDIR	=>	\&uninit_dir,
 	$GETID	=>	\&uninit_getid,
 	$HALT	=>	\&uninit_halt,
@@ -134,6 +137,7 @@ my %switch_uninit =
 
 my %switch_unknown =
 (
+	$DROPID	=>	\&unknown_droppid,
 	$GETDIR	=>	\&unknown_dir,
 	$GETID	=>	\&unknown_getid,
 	$HALT	=>	\&unknown_halt,
@@ -145,6 +149,7 @@ my %switch_unknown =
 
 my %switch_unix =
 (
+	$DROPID	=>	\&unix_droppid,
 	$GETDIR	=>	\&unix_dir,
 	$GETID	=>	\&unix_getpid,
 	$HALT	=>	\&unix_halt,
@@ -224,7 +229,8 @@ sub rollmgr_prepdep
 	# Figure out which operating system class we're running on.
 	#
 	if(($osname eq "freebsd")	||
-	   ($osname eq "linux"))
+	   ($osname eq "linux")		||
+	   ($osname eq "darwin"))
 	{
 		$osclass = "unix";
 	}
@@ -252,6 +258,24 @@ sub rollmgr_dir
 # print "rollmgr_dir\n";
 
 	$func = $switchtab{$GETDIR};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      rollmgr_droppid()
+#
+# Purpose:	Front-end to the O/S-specific "save roll-over manager's
+#		process id" function.
+#
+sub rollmgr_droppid
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_droppid\n";
+
+	$func = $switchtab{$DROPID};
 	return(&$func(@args));
 }
 
@@ -391,6 +415,22 @@ sub uninit_dir
 
 	rollmgr_prepdep();
 	return(rollmgr_dir(@args));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      uninit_droppid()
+#
+# Purpose:	Switch for uninitialized "drop pid" command.
+#
+sub uninit_droppid
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_droppid\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_droppid(@args));
 }
 
 #--------------------------------------------------------------------------
@@ -629,7 +669,6 @@ sub unix_droppid
 	# Get the pid from the roll-over manager's pidfile.
 	#
 	$rdpid = unix_getpid(0);
-print "rdpid - <$rdpid>\n";
 
 	#
 	# Create the file if it doesn't exist.
@@ -639,7 +678,6 @@ print "rdpid - <$rdpid>\n";
 	{
 # print "unix_droppid:  opening $UNIX_ROLLMGR_PIDFILE\n";
 		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPPID UNABLE TO OPEN <$UNIX_ROLLMGR_PIDFILE>\n";
-# print "unix_droppid:  locking $UNIX_ROLLMGR_PIDFILE\n";
 		flock(PIDFILE,LOCK_EX);
 	}
 	else
@@ -652,33 +690,57 @@ print "rdpid - <$rdpid>\n";
 		flock(PIDFILE,LOCK_EX);
 
 		#
-		# If the pidfile's process is still running, we'll return to
-		# our caller.  If the current manager is us, we'll quietly
-		# return success.  If it isn't, we'll whine and then return
-		# an error.
+		# Get the process status of the process having the pid
+		# we found in the pidfile.
 		#
-print "rdpid - <$rdpid>\n";
-		$pscmd = "/bin/ps -p $rdpid";
-		print "\t\t\topening <$pscmd>\n";
+		#	We shouldn't have to do this this way.
+		#	We should be able to do "ps -p $rdpid" and
+		#	skip the search loop.
+		#	However, the $rdpid seems to be dropped
+		#	when using that method.
+		#
+		$pscmd = "/bin/ps -ax";
 		$openrc = open(PSOUT,"$pscmd |");
-print "openrc - $openrc\n";
 		$psline = <PSOUT>;
-		print "ps line 1:  <$psline>\n";
-		$psline = <PSOUT>;
-		print "ps line 2:  <$psline>\n";
+		while(<PSOUT>)
+		{
+			my $lpid;		# Pid from ps output.
+			my $lcmd;		# Command from ps output.
+
+			#
+			# Get the pid and command from the ps line.
+			#
+			$psline = $_;
+			$psline =~ /\s*(\S*)\s*(\S*)\s*(\S*)\s*(\S*)\s*(.*$)/;
+			$lpid = $1;
+			$psline = "$5";
+
+			
+			#
+			# Drop out if the pid matches the file's pid.
+			#
+			last if($lpid == $rdpid);
+
+			#
+			# Reset the saved command and go to the next line.
+			#
+			$psline = "";
+			next;
+		}
 		close(PSOUT);
 
+		#
+		# Check if the pidfile's process is still running.
+		# Return success if the current manager is us.
+		# Return failure if the current manager  isn't us.
+		#
 		if($psline =~ /rollover-manager/)
 		{
-print "\tpid is a rollover-manager process <$psline>\n";
 			flock(PIDFILE,LOCK_UN);
 
-print "rdpid - <$rdpid>  ego - <$ego>\n";
 			return(1) if($rdpid == $ego);
-
 			return(0);
 		}
-print "\tpid is not a rollover-manager process <$psline>\n";
 
 		#
 		# Zap the file contents.
