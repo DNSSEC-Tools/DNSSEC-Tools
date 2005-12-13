@@ -89,8 +89,10 @@ LocalGetOptions(\%opts,
 		['noop','Do nothing; bogus argument'],
 	       );
 
+# default zonesigner opts: add key generation stuff if -k specified.
 $opts{'a'} .= " --genzsk --genksk  --ksklength 4096 --zsklength 2048"
   if ($opts{'k'});
+
 #
 # address definitions
 #
@@ -132,6 +134,31 @@ my %destroyFunctions =
    '^(pastdate[-\w]+).*IN\s+NS\s+' =>
    [\&make_new_date, 'DS', -(30*24*60*60), -300],
   );
+
+#
+# Legend information
+#
+my %LegendInformation =
+(
+
+ # modification types
+ addedlater => 'The record was added after signing took place and contain no RRSIG records properly signing them.',
+ baddata => 'The data in the record was modified after signing and thus the signature should not validate the record data.',
+ badsign => 'The RRSIG signature data was modified after signing so the signature should no longer be a valid signature.',
+ futuredate => 'The record and signature are valid but the inception date of the RRSIG is in the future and should not be valid yet.',
+ pastdate => 'The expiration date of the RRSIG covering the record has expired.',
+ good => 'An unmodified record that should be completely valid.',
+ nosig => 'The RRSIG record has been completely removed from the data set and is not available to verify the original record.',
+ nods => 'A valid NS record where the parent zone did not have the DNSKEY for the child and thus does not provide a valid DS record to securely delegate to the child zone.',
+
+ # record types
+ A => 'An A (IPv4) address record',
+ AAAA => 'An AAAA (IPv6) address record',
+ CNAME => 'A CNAME record pointing to an address record',
+ NS => 'An NS record pointing to a child zone.',
+);
+
+
 
 #
 # globals
@@ -270,10 +297,63 @@ sub setup_global_files {
 	$htmlfh = new IO::File(">$opts{'html-out'}");
 	print $htmlfh "<head>
     <title>Test Zone HTML Links</title>
+    <style type=\"text/css\">
+<!--
+table {
+  border-style: solid;
+  border-color: #66f;
+  border-width: 2px;
+  margin-left: 50px;
+  margin-right: 50px;
+}
+th {
+  border-style: outset;
+  border-width: 2px;
+  border-color: #66f;
+  background-color: #ddf;
+}
+td {
+  border-style: solid;
+  border-width: 1px 0px 0px 0px;
+  border-color: #99f;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+h1,h2 {
+  background-color: #ddf;
+}
+-->
+    </style>
 </head>
 <body>
-    <h1 style=\"bgcolor=#ddddff\">Test Zone HTML Links</h1>
-    <p>The below is a lits of HTML links to DNS zone names that may have various DNSSEC problems.</p>\n";
+    <h1>Test Zone HTML Links</h1>
+    <p>The below is a lits of HTML links to DNS zone names that may have various DNSSEC problems.</p>
+<h2>Legend:</h2>
+<p>The following table describes the components of a record name that indicate how the data in the record has potentally been affected</p>
+<table>
+<tr><th>Type</th><th>Name Component</th><th>Description</th></tr>\n";
+
+	foreach my $addr (keys(%addrs)) {
+	    print $htmlfh "<tr><td>Record</td><td>$addr</td><td>$LegendInformation{$addr}</td></tr>\n";
+	}
+	if (!$opts{'c'}) {
+	    print $htmlfh "<tr><td>Record</td><td>CNAME</td><td>$LegendInformation{CNAME}</td></tr>\n";
+	}
+	if (!$opts{'s'}) {
+	    print $htmlfh "<tr><td>Record</td><td>NS</td><td>$LegendInformation{NS}</td></tr>\n";
+	}
+	
+	my %done;
+	foreach my $prefix (@prefixes, @nsprefixes) {
+	    next if ($done{$prefix});
+	    $done{$prefix} = 1;
+	    print $htmlfh "<tr><td>Manipulation</td><td>$prefix</td><td>$LegendInformation{$prefix}</td></tr>\n";
+	}
+	print $htmlfh "
+</table>
+";
     }
 
     #
@@ -300,7 +380,7 @@ sub shutdown_global_files {
     $shfh->close() if ($shfh);
     if ($htmlfh) {
 	foreach my $domain (@outdomains) {
-	    print $htmlfh "    <h2>$domain</h2>\n    <ul>";
+	    print $htmlfh "    <h2>$domain Records</h2>\n    <ul>";
 	    foreach my $addr (sort @{$linkinfo{$domain}}) {
 		print $htmlfh "        <li>";
 		print $htmlfh "<a href=\"http://$addr/\">"
