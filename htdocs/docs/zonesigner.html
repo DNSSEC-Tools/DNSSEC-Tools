@@ -56,11 +56,11 @@
   # get started immediately examples:</pre>
 <pre>
   # first run on a zone for example.com:
-  zonesigner -genzsk -genksk -endtime +2678400 --zone example.com \
+  zonesigner -genzsk -genksk -endtime +2678400 -zone example.com \
      db-in.example.com db-out.example.com</pre>
 <pre>
   # future runs before expiration time (reuses the same keys):
-  zonesigner -endtime +2678400 --zone example.com \
+  zonesigner -endtime +2678400 -zone example.com \
      db-in.example.com db-out.example.com</pre>
 <p>
 </p>
