@@ -46,7 +46,7 @@ void free_result_chain(struct val_result **results)
  * NO_ERROR			Operation succeeded
  * OUT_OF_MEMORY	Could not allocate enough memory for operation
  */
-static int add_to_query_chain(struct query_chain **queries, u_char *name_n, 
+int add_to_query_chain(struct query_chain **queries, u_char *name_n, 
 						const u_int16_t type_h, const u_int16_t class_h)
 {
 	struct query_chain *temp, *prev;
@@ -81,6 +81,7 @@ static int add_to_query_chain(struct query_chain **queries, u_char *name_n,
 	temp->qc_class_h = class_h; 
 	temp->qc_state = Q_INIT;    
 	temp->qc_as = NULL;   
+	temp->qc_glue_request = 0;
 	temp->qc_ns_list = NULL;
 	temp->qc_respondent_server = NULL;
 	temp->qc_trans_id = -1;
@@ -101,13 +102,19 @@ void free_query_chain(struct query_chain **queries)
 	if ((*queries)->qc_next)
 		free_query_chain (&((*queries)->qc_next));
 
-	// delegation information should already be free-d up
+	if ((*queries)->qc_referral != NULL) {
+		free_referral_members((*queries)->qc_referral);
+		FREE((*queries)->qc_referral);
+	}
+	(*queries)->qc_referral = NULL;	
+
 	if((*queries)->qc_ns_list != NULL)
-		free_name_servers(&(*queries)->qc_ns_list);
+		free_name_servers(&((*queries)->qc_ns_list));
+	(*queries)->qc_ns_list = NULL;
 
 	if((*queries)->qc_respondent_server != NULL)
-		free_name_server(&(*queries)->qc_respondent_server);
-	
+		free_name_server(&((*queries)->qc_respondent_server));
+	(*queries)->qc_respondent_server = NULL;
 
 	FREE (*queries);
 	(*queries) = NULL;
@@ -443,7 +450,9 @@ void free_assertion_chain(struct assertion_chain **assertions)
 	if ((*assertions)->ac_next)
 		free_assertion_chain (&((*assertions)->ac_next));
 
-	res_sq_free_rrset_recs(&((*assertions)->ac_data));
+	if ((*assertions)->ac_data)
+		res_sq_free_rrset_recs(&((*assertions)->ac_data));
+
 	FREE (*assertions);
 	(*assertions) = NULL;
 }
@@ -548,6 +557,7 @@ static int assimilate_answers(val_context_t *context, struct query_chain **queri
 		return NO_ERROR; 
 	}
 
+
 	/* Create an assertion for the response data */
 	if (response->di_rrset == NULL) {
 		matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
@@ -622,8 +632,10 @@ static int assimilate_answers(val_context_t *context, struct query_chain **queri
 			}
 		}
 
-		if (NO_ERROR != (retval = build_pending_query(context, queries, as)))
-			return retval;
+		if (!matched_q->qc_glue_request) { 
+			if (NO_ERROR != (retval = build_pending_query(context, queries, as)))
+				return retval;
+		}
 	}
 	return NO_ERROR;
 }
@@ -759,6 +771,7 @@ static void  prove_nonexistence (val_context_t *ctx, struct query_chain *top_q, 
 
 }
 
+
 /*
  * Verify an assertion if possible. Complete assertions are those for which 
  * you have data, rrsigs and key information. 
@@ -786,10 +799,15 @@ static int try_verify_assertion(val_context_t *context, struct query_chain **que
 		 */
 		return NO_ERROR;
 
+	if (pc->qc_state == Q_WAIT_FOR_GLUE) {
+		merge_glue_in_referral(pc, queries);
+	}
+
 	if (pc->qc_state > Q_ERROR_BASE) {
 		next_as->ac_state = DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
 	}
-	else if (pc->qc_state == Q_ANSWERED) {
+
+	if (pc->qc_state == Q_ANSWERED) {
 
 		if(next_as->ac_state == A_WAIT_FOR_RRSIG) {
 		
@@ -930,19 +948,48 @@ static int  verify_n_validate(val_context_t *context, struct query_chain **queri
 				break;
 			}
 			else if (next_as->ac_state == A_NEGATIVE_PROOF) {
+				if((next_as->ac_pending_query != NULL) &&
+					(next_as->ac_pending_query->qc_referral == NULL) && 
+					(next_as->ac_pending_query->qc_type_h == ns_t_ds)) {
 
-				/*
-				 * if we are able to prove non existence, we have 
-				 * shown that a component of the chain-of-trust is provably 
-				 * absent (provably unsecure).
-				 * If we cannot prove this later on (!trusted) we cannot believe 
-				 * the original answer either, since we still haven't reached 
-				 * a trust anchor. 
-				 * Dont see any use for separating these conditions, so treat them
-				 * as INDETERMINATE always
-				 */
-				res->status = INDETERMINATE_PROOF;
-				break;
+					/* 
+					 * If this is a query for DS, we may have asked the child,
+					 * Try again starting from root; state will be WAIT_FOR_TRUST 
+					 * Note that we don't wait to verify that the negative proof 
+					 * is trusted
+					 */
+
+					struct name_server *root_ns = NULL;
+					get_root_ns(&root_ns);
+					if(root_ns == NULL) {
+						/* No root hints configured */
+						res->status = INDETERMINATE_PROOF;
+						break;
+					}
+					else {
+						/* send query to root */
+						next_as->ac_state = A_WAIT_FOR_TRUST;
+						if (NO_ERROR != (retval = build_pending_query(context, queries, next_as)))
+							return retval;
+						(*queries)->qc_ns_list = root_ns;
+						*done = 0;
+						thisdone = 0;
+					}
+				}
+				else {
+					/*
+					 * if we are able to prove non existence, we have 
+					 * shown that a component of the chain-of-trust is provably 
+					 * absent (provably unsecure).
+					 * If we cannot prove this later on (!trusted) we cannot believe 
+					 * the original answer either, since we still haven't reached 
+					 * a trust anchor. 
+					 * Dont see any use for separating these conditions, so treat them
+					 * as INDETERMINATE always
+					 */
+					res->status = INDETERMINATE_PROOF;
+					break;
+				}
 			}
 			/* Check error conditions */
 			else if (next_as->ac_state <= LAST_ERROR) {
@@ -1122,7 +1169,7 @@ static int ask_resolver(val_context_t *context, struct query_chain **queries, in
 
 			for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
 				if(next_q->qc_state < Q_ANSWERED) {
-					if( (retval = val_resquery_rcv (context, next_q, &response)) != NO_ERROR)	
+					if( (retval = val_resquery_rcv (context, next_q, &response, queries)) != NO_ERROR)	
 						return retval;
 
 					if ((next_q->qc_state == Q_ANSWERED) && (response != NULL)) {
@@ -1153,7 +1200,9 @@ static int ask_resolver(val_context_t *context, struct query_chain **queries, in
 						free_domain_info_ptrs(response);
 						FREE(response);
 					}
-					if(next_q->qc_state > Q_ERROR_BASE) {
+					if((next_q->qc_state == Q_WAIT_FOR_GLUE)
+						||(next_q->qc_state > Q_ERROR_BASE)) {
+
 						answered = 1;
 						break;
 					}
@@ -1229,18 +1278,20 @@ int resolve_n_check(	val_context_t	*context,
 
 		/* Henceforth we will need some data before we can continue */
 		block = 1;
-		if ((!data_received) || (top_q->qc_state < Q_ANSWERED))
+
+		if((!data_received) && (top_q->qc_state < Q_ANSWERED))
 			continue;
 
-		/* Answer will be digested */
-		data_received = 0;
+		if(top_q->qc_state == Q_WAIT_FOR_GLUE) 
+			merge_glue_in_referral(top_q, queries);
 
 		/* No point going ahead if our original query had error conditions */
-		if (top_q->qc_state != Q_ANSWERED) {
+		if (top_q->qc_state > Q_ERROR_BASE) {
 			/* the original query had some error */
 			*results= (struct val_result *) MALLOC (sizeof (struct val_result));
-			if(*results == NULL)
+			if((*results) == NULL) {
 				return OUT_OF_MEMORY;
+			}
 			(*results)->as = top_q->qc_as;
 			(*results)->status = DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
 			(*results)->trusted = 0;
@@ -1248,13 +1299,19 @@ int resolve_n_check(	val_context_t	*context,
 		
 			break;
 		}
-		/* 
-		 * We have sufficient data to at least perform some validation --
-		 * validate what ever is possible. 
-		 */
-		if(NO_ERROR != (retval = verify_n_validate(context, queries, 
-							top_q->qc_as, flags, results, &done))) 
-			return retval;
+
+		/* Answer will be digested */
+		data_received = 0;
+
+		if(top_q->qc_as != NULL) {
+			/* 
+			 * We have sufficient data to at least perform some validation --
+			 * validate what ever is possible. 
+			 */
+			if(NO_ERROR != (retval = verify_n_validate(context, queries, 
+								top_q->qc_as, flags, results, &done))) 
+				return retval;
+		}
 	}
 
 	/* Results are available */
