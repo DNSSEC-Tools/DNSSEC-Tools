@@ -26,6 +26,8 @@
 #include <validator.h>
 #include "val_policy.h"
 #include "val_support.h"
+#include "val_cache.h"
+#include "val_resquery.h"
 
 
 /* forward declaration */
@@ -33,7 +35,9 @@ static int get_token ( FILE *conf_ptr,
 				int *line_number,
 				char *conf_token,
 				int conf_limit,
-				int *endst);
+				int *endst, 
+				char comment_c, 
+				char endstmt_c);
 
 
 /*
@@ -85,7 +89,7 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 	while (!endst) {	
 
 		/* Read the zone for which this trust anchor applies */
-		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
+		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
 			return retval;
 		if (endst && (strlen(token) == 1))
 			break;
@@ -100,7 +104,7 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 		 * XXX Assume public key for now
 		 */
 		/* Read the public key */
-		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
+		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
 			return retval;
 		if (feof(fp) && !endst)
 			return CONF_PARSE_ERROR;
@@ -251,7 +255,7 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 	while (!endst) {	
 
 		/* Read the zone for which this trust anchor applies */
-		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
+		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
 			return retval;
 		if (endst && (strlen(token) == 1))
 			break;
@@ -262,7 +266,7 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
        		return CONF_PARSE_ERROR; 
 
 		/* Read the zone status */
-		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst)))
+		if(NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
 			return retval;
 		if (feof(fp) && !endst)
 			return CONF_PARSE_ERROR;
@@ -374,7 +378,9 @@ static int get_token ( FILE *conf_ptr,
 				int *line_number,
 				char *conf_token,
 				int conf_limit, 
-				int *endst)
+				int *endst,
+				char comment_c,
+				char endstmt_c)
 {
 	char        c;
 	int         i = 0;
@@ -395,13 +401,13 @@ static int get_token ( FILE *conf_ptr,
 
 		conf_token[i++] = c;
 		/* Ignore lines that begin with comments */
-		if (conf_token[0] == COMMENT)
+		if (conf_token[0] == comment_c)
 			READ_COMMENT_LINE(conf_ptr);
 		else
 			comment = 0;
 	} while (comment);
 
-	if (c == END_STMT) {
+	if (c == endstmt_c) {
 		*endst = 1;
 		conf_token[i]= '\0';
 		return NO_ERROR;
@@ -411,9 +417,9 @@ static int get_token ( FILE *conf_ptr,
 	else if (c=='"') quoted = 1;
 
 	/* Collect non-blanks and escaped blanks */
-	while ((!isspace (c=fgetc(conf_ptr)) && (c != END_STMT)) || escaped || quoted)
+	while ((!isspace (c=fgetc(conf_ptr)) && (c != endstmt_c)) || escaped || quoted)
 	{
-		if (c == COMMENT) {
+		if (c == comment_c) {
 			conf_token[i]= '\0';
 			READ_COMMENT_LINE(conf_ptr);
 			return NO_ERROR;
@@ -444,7 +450,7 @@ static int get_token ( FILE *conf_ptr,
 		if (i > conf_limit-1) return CONF_PARSE_ERROR;
 		conf_token[i++] = c;
 	}
-	if (c == END_STMT) *endst = 1;
+	if (c == endstmt_c) *endst = 1;
 	else if (c == '\n') (*line_number)++;
 
 	conf_token[i]= '\0';
@@ -524,7 +530,7 @@ static int get_next_policy_fragment(FILE *fp, char *scope,
 			pol = NULL;
 		}
 
-		if (NO_ERROR != (retval = get_token(fp, line_number, token, TOKEN_MAX, &endst)))
+		if (NO_ERROR != (retval = get_token(fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
 			return retval;
 		if (feof(fp))
 			return NO_ERROR;
@@ -536,7 +542,7 @@ static int get_next_policy_fragment(FILE *fp, char *scope,
 		strcpy(label, token);
 
 		/* read the keyword */
-		if (NO_ERROR != (retval = get_token(fp, line_number, token, TOKEN_MAX, &endst)))
+		if (NO_ERROR != (retval = get_token(fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
 			return retval;
 		if (feof(fp) || endst) {
 			FREE (label);
@@ -830,6 +836,90 @@ err:
 	return CONF_PARSE_ERROR;
 }
 
+/* parse the contents of the root.hints file into resource records */
+int read_root_hints_file(val_context_t *ctx) 
+{
+	struct rrset_rec *root_info = NULL;
+	FILE *fp;
+	char token[TOKEN_MAX];
+	u_char zone_n[MAXCDNAME];
+	u_char rdata_n[MAXCDNAME];
+	int endst = 0;
+	int line_number = 0;
+	u_int16_t type_h, class_h;	
+	int success;
+	u_long ttl_h;
+	int retval;
+    struct rrset_rec    *rr_set;
+    int                 ret_val;
+    u_int16_t           rdata_len_h;
+
+	fp = fopen (ROOT_HINTS, "r");
+	if (fp == NULL) {
+		return NO_ERROR;
+	}
+
+	/* name */
+	if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+		return retval;
+
+	while (!feof(fp)) {
+   		if (ns_name_pton(token, zone_n, MAXCDNAME-1) == -1)
+       		return CONF_PARSE_ERROR; 
+		
+		/* ttl */
+		if (feof(fp))
+			return CONF_PARSE_ERROR;
+		if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			return retval;
+		if (-1 == ns_parse_ttl(token, &ttl_h))
+			return CONF_PARSE_ERROR;
+
+		/* class */
+		if (feof(fp))
+			return CONF_PARSE_ERROR;
+		if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			return retval;
+		class_h = res_nametoclass(token, &success);
+		if (!success)
+			return CONF_PARSE_ERROR;
+
+		/* type */
+		if (feof(fp))
+			return CONF_PARSE_ERROR;
+		if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			return retval;
+		type_h = res_nametotype(token, &success);
+		if (!success)
+			return CONF_PARSE_ERROR;
+
+		if (feof(fp))
+			return CONF_PARSE_ERROR;
+		if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			return retval;
+		if(type_h == ns_t_a) {
+			struct sockaddr_in server;
+			inet_aton(token, &server.sin_addr);
+        		memcpy (rdata_n, &(server.sin_addr), sizeof(u_int32_t));
+			rdata_len_h = sizeof(u_int32_t);
+		}
+		else if (type_h == ns_t_ns) {
+   			if (ns_name_pton(token, rdata_n, MAXCDNAME-1) == -1)
+       			return CONF_PARSE_ERROR; 
+			rdata_len_h = wire_name_length(rdata_n);
+		}
+		else 
+			continue;
+
+		SAVE_RR_TO_LIST(NULL, root_info, zone_n, type_h, type_h, ns_c_in, ttl_h, rdata_n, rdata_len_h, SR_FROM_UNSET, 0); 
+
+		/* name */
+		if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			return retval;
+	}
+
+	return stow_root_info(root_info);
+}
 
 /*
  * Read ETC_HOSTS and return matching records
