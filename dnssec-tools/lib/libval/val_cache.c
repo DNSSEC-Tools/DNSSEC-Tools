@@ -28,12 +28,15 @@
 #include <resolver.h>
 #include <validator.h>
 #include "val_support.h"
+#include "val_resquery.h"
+#include "val_cache.h"
 
-static struct rrset_rec *unchecked_zone_info = NULL;
 static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 static pthread_rwlock_t rwlock=PTHREAD_RWLOCK_INITIALIZER;
+
+static struct name_server *root_ns = NULL;
 
 #define LOCK_SH() do{				\
 	if(0 != pthread_rwlock_rdlock(&rwlock))\
@@ -152,7 +155,7 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
             break;
 
 		case ns_t_ns:
-			next_answer = unchecked_zone_info;
+			next_answer = unchecked_answers;
 			break;
                                                                                                                          
         default:
@@ -182,7 +185,7 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
 
 int stow_zone_info(struct rrset_rec *new_info)
 {
-	return stow_info(&unchecked_zone_info, new_info);
+	return stow_info(&unchecked_answers, new_info);
 }
 
 
@@ -201,18 +204,52 @@ int stow_answer(struct rrset_rec *new_info)
 	return stow_info(&unchecked_answers, new_info);
 }
 
+int stow_root_info(struct rrset_rec *root_info)
+{
+	struct name_server *ns_list = NULL;
+	struct name_server *pending_glue = NULL;
+	int retval;
+	u_char root_zone_n[MAXCDNAME];
+	char *root_zone = "root-servers.net.";
+
+   	if (ns_name_pton(root_zone, root_zone_n, MAXCDNAME-1) == -1)
+    	return CONF_PARSE_ERROR; 
+
+	if (NO_ERROR != (retval = res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info, &pending_glue)))
+		return retval;
+	/* We are not interested in fetching glue for the root */
+	free_name_servers(&pending_glue);
+
+	LOCK_EX();
+	root_ns = ns_list;
+	UNLOCK();
+
+	/* store the records in the cache */
+	return stow_info(&unchecked_answers, root_info);
+}
 
 int free_validator_cache()
 {
 	LOCK_EX();
-	res_sq_free_rrset_recs(&unchecked_zone_info);
-	unchecked_zone_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_key_info);
 	unchecked_key_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_ds_info);
 	unchecked_ds_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_answers);
 	unchecked_answers = NULL;
+	UNLOCK();
+
+	return NO_ERROR;
+}
+
+int get_root_ns(struct name_server **ns)
+{
+	LOCK_SH();
+
+	*ns = NULL;
+	/* return a cloned copy */
+	clone_ns_list(ns, root_ns);
+
 	UNLOCK();
 
 	return NO_ERROR;
