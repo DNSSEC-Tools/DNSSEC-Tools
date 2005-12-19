@@ -7,10 +7,11 @@
 #define VALIDATOR_H
 
 #include <syslog.h>
+#include <val_errors.h>
+
 #include <arpa/nameser.h>
 #include <arpa/nameser_compat.h>
 #include <netdb.h>
-#include <val_errors.h>
 
 #define DNS_PORT	53
 #ifdef MEMORY_DEBUGGING
@@ -41,8 +42,9 @@
 /* Query states */
 #define Q_INIT	1
 #define Q_SENT	2
-#define Q_ANSWERED 3
-#define Q_ERROR_BASE 4
+#define Q_WAIT_FOR_GLUE 3
+#define Q_ANSWERED 4
+#define Q_ERROR_BASE 5
 
 #define SIGNBY              18
 #define ENVELOPE            10
@@ -195,6 +197,8 @@ struct delegation_info {
 	struct qname_chain  *qnames;
 	struct rrset_rec    *answers;
 	struct rrset_rec    *learned_zones;
+	struct name_server  *pending_glue_ns;
+	struct query_chain  *glueptr;
 };
 
 struct query_chain {
@@ -207,6 +211,7 @@ struct query_chain {
 	struct delegation_info *qc_referral;
 	int qc_trans_id;
 	struct assertion_chain *qc_as;
+	int qc_glue_request;
 	struct query_chain *qc_next;
 };
 
@@ -421,6 +426,7 @@ int val_x_getaddrinfo ( val_context_t *ctx,
 
 #define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
 #define RESOLV_CONF             "/etc/resolv.conf"
+#define ROOT_HINTS              "/etc/root.hints"
 #define VAL_LOG_MASK	LOG_INFO
 
 #ifdef LOG_TO_NETWORK
