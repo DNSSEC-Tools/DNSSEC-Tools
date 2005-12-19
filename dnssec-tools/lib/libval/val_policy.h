@@ -3,9 +3,11 @@
 
 #include "val_parse.h"
 
-#define COMMENT '#'
+#define CONF_COMMENT '#'
+#define CONF_END_STMT ';'
+#define ZONE_COMMENT ';'
+#define ZONE_END_STMT '\0'
 #define LVL_DELIM ":"
-#define END_STMT ';'
 #define MAX_LEVEL_IN_POLICY	5
 #define TOKEN_MAX 2048
 #define MAX_LINE_SIZE 2048
@@ -40,6 +42,7 @@
 
 
 
+int read_root_hints_file(val_context_t *ctx); 
 int read_res_config_file(val_context_t *ctx);
 int read_val_config_file(val_context_t *ctx, char *scope);
 void destroy_valpol(val_context_t *ctx);
