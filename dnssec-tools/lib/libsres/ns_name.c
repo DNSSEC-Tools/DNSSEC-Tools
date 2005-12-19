@@ -22,6 +22,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include <arpa/nameser.h>
 #include <arpa/nameser_compat.h>
