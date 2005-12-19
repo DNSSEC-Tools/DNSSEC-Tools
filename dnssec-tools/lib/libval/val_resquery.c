@@ -23,6 +23,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <netinet/in.h>
+
 #include <resolv.h>
 
 #include <resolver.h>
@@ -30,7 +31,7 @@
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"
-
+#include "val_assertion.h"
 
 #define ITS_BEEN_DONE   TRUE
 #define IT_HASNT        FALSE
@@ -123,13 +124,107 @@ static void *weird_al_realloc (void *old, size_t new_size)
     return new;
 }
 
-static int res_zi_unverified_ns_list(val_context_t *context, struct name_server **ns_list,
-			u_int8_t *zone_name, struct rrset_rec *unchecked_zone_info)
+int extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
+{
+    struct sockaddr_in  *sock_in;
+    size_t              new_ns_size;
+    while (addr_rr)
+    {
+        if ((*ns)->ns_number_of_addresses > 0)
+        {
+            /* Have to grow the ns structure */
+            /* Determine the new size */
+            new_ns_size = sizeof (struct name_server)
+                           + (*ns)->ns_number_of_addresses
+                               * sizeof (struct sockaddr);
+                                                                                                                          
+            /*
+             * Realloc the ns's structure to be able to
+             * add a struct sockaddr
+             */
+            (*ns) = (struct name_server *) weird_al_realloc(*ns, new_ns_size);
+                                                                                                                          
+            if (*ns==NULL) return OUT_OF_MEMORY;
+		}    
+                                                                                                                      
+        sock_in = (struct sockaddr_in *)
+                            &(*ns)->ns_address[(*ns)->ns_number_of_addresses];
+                                                                                                                          
+        sock_in->sin_family = AF_INET;
+        sock_in->sin_port = htons (DNS_PORT);
+        memset (sock_in->sin_zero,0,sizeof(sock_in->sin_zero));
+        memcpy (&(sock_in->sin_addr), addr_rr->rr_rdata, sizeof(u_int32_t));
+                                                                                                                          
+        (*ns)->ns_number_of_addresses++;
+        addr_rr = addr_rr->rr_next;
+
+	}
+	return NO_ERROR;
+}
+
+void  merge_glue_in_referral(struct query_chain *pc, struct query_chain **queries)
+{
+	int retval;
+	struct query_chain *glueptr = pc->qc_referral->glueptr;
+	struct name_server *pending_ns;
+
+	/* Check if glue was obtained */
+	if((glueptr->qc_state == Q_ANSWERED) && 
+		(glueptr->qc_as != NULL) && 
+		(glueptr->qc_as->ac_data != NULL)) {
+
+		if(glueptr->qc_as->ac_data->rrs_type_h != ns_t_a) {
+			pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+		}
+		else if(NO_ERROR != (retval = extract_glue_from_rdata(glueptr->qc_as->ac_data->rrs_data,
+					&pc->qc_referral->pending_glue_ns))) {
+			glueptr->qc_state = Q_ERROR_BASE+SR_RCV_INTERNAL_ERROR;
+		}
+		else {
+	    	if(pc->qc_ns_list) {
+		        free_name_servers(&pc->qc_ns_list);
+				pc->qc_ns_list = NULL;
+			}
+		    if (pc->qc_respondent_server) {
+		        free_name_server(&pc->qc_respondent_server);
+		        pc->qc_respondent_server = NULL;
+   	 		}
+			pending_ns = pc->qc_referral->pending_glue_ns;
+			if(pending_ns->ns_next)
+				free_name_servers(&pending_ns->ns_next);
+			pending_ns->ns_next = NULL;
+	    	pc->qc_ns_list = pending_ns;
+			pc->qc_referral->pending_glue_ns = NULL;
+   			pc->qc_state =  Q_INIT;
+			pc->qc_referral->glueptr = NULL;
+		}
+	}
+
+	if (glueptr->qc_state > Q_ERROR_BASE) {
+
+		/* look for next ns to send our glue request to */
+		pending_ns = pc->qc_referral->pending_glue_ns->ns_next;
+		free_name_server(&pc->qc_referral->pending_glue_ns);
+		pc->qc_referral->pending_glue_ns = pending_ns;
+
+		if(pending_ns == NULL) {
+			pc->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
+		}
+		else {
+			add_to_query_chain(queries, pending_ns->ns_name_n, ns_t_a, ns_c_in);
+			pc->qc_referral->glueptr = *queries; 
+			pc->qc_referral->glueptr->qc_glue_request = 1;
+		}
+	}
+}
+
+int res_zi_unverified_ns_list(struct name_server **ns_list,
+			u_int8_t *zone_name, struct rrset_rec *unchecked_zone_info, 
+			struct name_server **pending_glue)
 {
     /* Look through the unchecked_zone stuff for answers */
     struct rrset_rec    *unchecked_set;
     struct rrset_rec    *trailer;
-    struct rr_rec       *addr_rr;
     struct rr_rec       *ns_rr;
     struct name_server  *temp_ns;
     struct name_server  *ns;
@@ -137,9 +232,8 @@ static int res_zi_unverified_ns_list(val_context_t *context, struct name_server 
     struct name_server  *outer_trailer;
     struct name_server  *tail_ns;
     size_t              name_len;
-    size_t              new_ns_size;
-    struct sockaddr_in  *sock_in;
-                                                                                                                          
+	int retval;        
+                                                                                                                  
     *ns_list = NULL;
                                                                                                                           
     unchecked_set = unchecked_zone_info;
@@ -226,7 +320,7 @@ static int res_zi_unverified_ns_list(val_context_t *context, struct name_server 
     */
                                                                                                                           
     unchecked_set = unchecked_zone_info;
-     while (unchecked_set != NULL)
+    while (unchecked_set != NULL)
     {
         if (unchecked_set->rrs_type_h == ns_t_a)
         {
@@ -237,46 +331,17 @@ static int res_zi_unverified_ns_list(val_context_t *context, struct name_server 
             {
                 if (namecmp(unchecked_set->rrs_name_n,ns->ns_name_n)==0)
                 {
+					struct name_server *old_ns = ns;
                     /* Found that address set is for an NS */
-                    addr_rr = unchecked_set->rrs_data;
-                    while (addr_rr)
-                    {
-                        if (ns->ns_number_of_addresses > 0)
-                        {
-                            /* Have to grow the ns structure */
-                            /* Determine the new size */
-                            new_ns_size = sizeof (struct name_server)
-                                            + ns->ns_number_of_addresses
-                                                * sizeof (struct sockaddr);
-                                                                                                                          
-                            /*
-                                Realloc the ns's structure to be able to
-                                add a struct sockaddr
-                            */
-                            ns = (struct name_server *)
-                                weird_al_realloc(ns, new_ns_size);
-                                                                                                                          
-                            if (ns==NULL) return OUT_OF_MEMORY;
-                                                                                                                          
-                            /* Inform the others who know about the old ns */
-                                                                                                                          
-                            if (trail_ns)
-                                trail_ns->ns_next = ns;
-                            else
-                                *ns_list = ns;
-                        }
-                        sock_in = (struct sockaddr_in *)
-                            &ns->ns_address[ns->ns_number_of_addresses];
-                                                                                                                          
-                        sock_in->sin_family = AF_INET;
-                        sock_in->sin_port = htons (DNS_PORT);
-                        memset (sock_in->sin_zero,0,sizeof(sock_in->sin_zero));
-                        memcpy (&(sock_in->sin_addr), addr_rr->rr_rdata,
-                                                        sizeof(u_int32_t));
-                                                                                                                          
-                        ns->ns_number_of_addresses++;
-                        addr_rr = addr_rr->rr_next;
-                    }
+					if(NO_ERROR != (retval = extract_glue_from_rdata(unchecked_set->rrs_data, &ns)))
+						return retval;
+					if(old_ns != ns) {
+						/* ns was realloc'd */
+						if (trail_ns)
+    	                    trail_ns->ns_next = ns;
+        	            else
+            	            *ns_list = ns;
+					}
                     ns = NULL; /* Force dropping out from the loop */
                 }
                 else
@@ -285,143 +350,13 @@ static int res_zi_unverified_ns_list(val_context_t *context, struct name_server 
                     ns = ns->ns_next;
                 }
             }
-        }
-        unchecked_set = unchecked_set->rrs_next;
-    }
+		}
+		unchecked_set = unchecked_set->rrs_next;
+	}
 
-#ifdef NEVER
-
-/* For now, simply fail if glue was not automatically returned
- * In future, we will have to return if the NS list lacked glue
- * and the outer routine would have to query for A records
- * learned_zones would have to be saved someplace so that it 
- * can be passed on every call to this function
- */
-
-    /* One more loop to look for NS's w/o addresses */
-
-    struct rrset_rec    *addr_rrs;
-                                                                                                                          
     ns = *ns_list;
     outer_trailer = NULL;
-
-    while (ns)
-    {
-        if (ns->ns_number_of_addresses==0)
-        {
-            int                 ret_val;
-            struct domain_info  di;
-			char ns_name[MAXDNAME];
-                                                                                                                          
-            /* Would be good to look locally in the verified stuff first */
-                                                                                                                          
-            /* Do a unverified lookup of the desired name */
-                                                                                                                          
-            di.di_requested_name_h = NULL;
-            di.di_rrset = NULL;
-			di.di_qnames = NULL;
-                                                                                                                          
-            /* Probably should select another NS list for this */
-                                                                                                                          
-			if(ns_name_ntop(ns->ns_name_n, ns_name, MAXDNAME-1) == -1)
-				return -1;
-{
-val_log (context, LOG_DEBUG, "QUERYING: '%s.' (getting unchecked address hints)\n",
-ns_name);
-
-}
-            ret_val = val_resquery (context, ns_name, ns_t_a, ns_c_in, &di);
-                                                                                                                          
-            /* If answer is good, then use the A records to build the
-                address(es) */
-                                                                                                                          
-            if (ret_val == NO_ERROR)
-            {
-                addr_rrs = di.di_rrset;
-                while (addr_rrs && addr_rrs->rrs_type_h != ns_t_a)
-                    addr_rrs = addr_rrs->rrs_next;
-                                                                                                                          
-                if (addr_rrs)
-                {
-                    addr_rr = addr_rrs->rrs_data;
-                    while (addr_rr)
-                    {
-                        /* Convert the rdata into a sockaddr_in */
-                        if (ns->ns_number_of_addresses > 0)
-                        {
-                            /* Have to grow the ns structure */
-                            /* Determine the new size */
-                            new_ns_size = sizeof (struct name_server)
-                                            + ns->ns_number_of_addresses
-                                                * sizeof (struct sockaddr);
-                                                                                                                          
-                            /*
-                                Realloc the ns's structure to be able to
-                                add a struct sockaddr
-                            */
-                            ns = (struct name_server *)
-                                weird_al_realloc(ns, new_ns_size);
-                                                                                                                          
-                            if (ns==NULL) return OUT_OF_MEMORY;
-                                                                                                                          
-                            /* Inform the others who know about the old ns */
-                                                                                                                          
-                            if (trail_ns)
-                                trail_ns->ns_next = ns;
-                            else
-                                *ns_list = ns;
-                        } /* Added more space */
-                                                                                                                          
-                        sock_in = (struct sockaddr_in *)
-                            &ns->ns_address[ns->ns_number_of_addresses];
-                                                                                                                          
-                        sock_in->sin_family = AF_INET;
-                        sock_in->sin_port = htons (DNS_PORT);
-                        memset (sock_in->sin_zero,0,sizeof(sock_in->sin_zero));
-                        memcpy (&(sock_in->sin_addr), addr_rr->rr_rdata,
-                                                        sizeof(u_int32_t));
-                                                                                                                          
-                        ns->ns_number_of_addresses++;
-                        addr_rr = addr_rr->rr_next;
-                    } /* For each RR */
-                } /* If there was a set */
-            } /* The answer was useable */
-            free_domain_info_ptrs (&di);
-        }
-        /* If we still don't have an address, forget it */
-        if (ns->ns_number_of_addresses==0)
-        {
-            if (outer_trailer)
-            {
-                outer_trailer->ns_next = ns->ns_next;
-                free_name_server (&ns);
-                ns = outer_trailer->ns_next;
-            }
-            else
-            {
-                *ns_list = ns->ns_next;
-                free_name_server (&ns);
-                if (*ns_list) ns = (*ns_list)->ns_next;
-            }
-        }
-        else /* There is at least one address */
-        {
-            outer_trailer = ns;
-            ns = ns->ns_next;
-        }
-    }
-                                                                                                                          
-    return NO_ERROR;
-}
-
-#endif /* NEVER */
-
-/*
- * For now simply return only those referrals that
- * have glue
- */
-    ns = *ns_list;
-    outer_trailer = NULL;
+	*pending_glue = NULL;
     while (ns)
     {
         if (ns->ns_number_of_addresses==0)
@@ -429,14 +364,16 @@ ns_name);
             if (outer_trailer)
             {
                 outer_trailer->ns_next = ns->ns_next;
-                free_name_server (&ns);
+				ns->ns_next = *pending_glue;
+				*pending_glue = ns;
                 ns = outer_trailer->ns_next;
             }
             else
             {
                 *ns_list = ns->ns_next;
-                free_name_server (&ns);
-                if (*ns_list) ns = (*ns_list)->ns_next;
+				ns->ns_next = *pending_glue;
+				*pending_glue = ns;
+                ns = *ns_list;
             }
         }
         else /* There is at least one address */
@@ -446,21 +383,51 @@ ns_name);
         }
 	}
 
+
 	return NO_ERROR;
 }
 
+void free_referral_members(struct delegation_info *del)
+{
+	if(del == NULL)
+		return;
 
+	if(del->queries != NULL) {
+		deregister_queries(&del->queries);
+		del->queries = NULL;
+	}
+	if (del->qnames) {
+		free_qname_chain (&del->qnames);
+		del->qnames = NULL;
+	}
+	if(del->answers) {
+		res_sq_free_rrset_recs(&del->answers);	
+		del->answers = NULL;
+	}
+	if(del->learned_zones) {
+		res_sq_free_rrset_recs(&del->learned_zones);	
+		del->learned_zones = NULL;
+	}
+	if(del->pending_glue_ns) {
+		free_name_servers(&del->pending_glue_ns);
+		del->pending_glue_ns = NULL;
+	}
+
+	del->glueptr = NULL;
+}
 
 static int do_referral(		val_context_t		*context,
 						u_int8_t			*referral_zone_n, 
 						struct query_chain  *matched_q,
                         struct rrset_rec    **answers,
                         struct rrset_rec    **learned_zones,
-                        struct qname_chain  **qnames)
+                        struct qname_chain  **qnames,
+						struct query_chain **queries)
 {
-	struct name_server *ref_ns_list;
+	struct name_server *ref_ns_list = NULL;
+	struct name_server *pending_glue;
     int                 ret_val;
-   
+
     /* Register the request name and zone with our referral monitor */
     /* If this request has already been made then Referral Error */
 
@@ -473,6 +440,8 @@ static int do_referral(		val_context_t		*context,
 		matched_q->qc_referral->qnames = NULL;
 		matched_q->qc_referral->answers = NULL;
 		matched_q->qc_referral->learned_zones = NULL;
+		matched_q->qc_referral->pending_glue_ns = NULL;
+		matched_q->qc_referral->glueptr = NULL;
 	}
 
     /* Update the qname chain */
@@ -511,19 +480,42 @@ static int do_referral(		val_context_t		*context,
 	if (register_query (&matched_q->qc_referral->queries, matched_q->qc_name_n, 
 				matched_q->qc_type_h, referral_zone_n)==ITS_BEEN_DONE) {
 		matched_q->qc_state =  Q_ERROR_BASE + SR_REFERRAL_ERROR;
-		goto err;
 	}
-		
-   /* Get an NS list for the referral zone */
-   if ((ret_val=res_zi_unverified_ns_list (context, &ref_ns_list, referral_zone_n, *learned_zones))
-                != NO_ERROR)
-   {
-       if (ret_val == OUT_OF_MEMORY) return ret_val;
-   }
+   	else {
 
-   	if (ref_ns_list == NULL) {
-		matched_q->qc_state =  Q_ERROR_BASE + SR_MISSING_GLUE;
-		goto err;
+		if ((ret_val=res_zi_unverified_ns_list (&ref_ns_list, referral_zone_n, *learned_zones, &pending_glue))
+                != NO_ERROR) {
+   			/* Get an NS list for the referral zone */
+	       if (ret_val == OUT_OF_MEMORY) return ret_val;
+	    }
+
+		if(ref_ns_list == NULL) {
+
+			/* Don't fetch glue if we're already fetching glue */
+			if (matched_q->qc_glue_request) {
+				free_name_servers(&pending_glue);
+				matched_q->qc_state =  Q_ERROR_BASE + SR_REFERRAL_ERROR;
+			}
+			/* didn't find any referral with glue, look for one now */
+			else if(pending_glue) {
+	
+				/* Create a query for glue for pending_ns */
+				matched_q->qc_referral->pending_glue_ns = pending_glue;
+				add_to_query_chain(queries, pending_glue->ns_name_n, ns_t_a, ns_c_in);		
+				matched_q->qc_referral->glueptr = *queries;
+				matched_q->qc_referral->glueptr->qc_glue_request = 1;
+				matched_q->qc_state = Q_WAIT_FOR_GLUE;
+				return NO_ERROR;
+			}
+			else {
+				/* nowhere to look */
+				matched_q->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE; 
+			}
+		}
+		else {
+			free_name_servers(&pending_glue);
+			matched_q->qc_state =  Q_INIT;
+		}
 	}
 
 {
@@ -536,47 +528,26 @@ ns_name_ntop(referral_zone_n,debug_name2,1024);
 val_log (context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)\n",
 debug_name1, debug_name2);
 }
-	if(matched_q->qc_ns_list)
-		free_name_servers(&matched_q->qc_ns_list);
+
 	if (matched_q->qc_respondent_server) {
 		free_name_server(&matched_q->qc_respondent_server);
 		matched_q->qc_respondent_server = NULL;
 	}
+	if(matched_q->qc_ns_list) {
+		free_name_servers(&matched_q->qc_ns_list);
+		matched_q->qc_ns_list = NULL;
+	}
+
+	if(matched_q->qc_state > Q_ERROR_BASE) {
+		free_referral_members(matched_q->qc_referral);	
+		/* don't free qc_referral itself */
+	}
+
 	matched_q->qc_ns_list = ref_ns_list;
 
-	matched_q->qc_state =  Q_INIT;
-    return NO_ERROR;
-
-err:
-	deregister_queries(&matched_q->qc_referral->queries);
-	free_qname_chain (&matched_q->qc_referral->qnames);
-	res_sq_free_rrset_recs(&matched_q->qc_referral->answers);	
-	res_sq_free_rrset_recs(&matched_q->qc_referral->learned_zones);	
-	FREE(matched_q->qc_referral);
-	matched_q->qc_referral = NULL;
 	return NO_ERROR;
 }
 
-#define SAVE_RR_TO_LIST(respondent_server, listtype, name_n, type_h, set_type_h,\
-				class_h, ttl_h, rdata, from_section,authoritive) \
-	do { \
-            rr_set = find_rr_set (respondent_server, &listtype, name_n, type_h, set_type_h,\
-                             class_h, ttl_h, rdata, from_section,authoritive);\
-            if (rr_set==NULL) return OUT_OF_MEMORY;\
-            rr_set->rrs_ans_kind = SR_ANS_STRAIGHT;\
-            if (type_h != ns_t_rrsig)\
-            {\
-                /* Add this record to its chain of rr_rec's. */\
-                if ((ret_val = add_to_set(rr_set,rdata_len_h,rdata))!=NO_ERROR) \
-                    return ret_val;\
-            }\
-            else\
-            {\
-                /* Add this record to the sig of rrset_rec. */\
-                if ((ret_val = add_as_sig(rr_set,rdata_len_h,rdata))!=NO_ERROR)\
-                    return ret_val;\
-            }\
-	} while (0);
 
 
 static int digest_response (   val_context_t 		*context,
@@ -584,6 +555,7 @@ static int digest_response (   val_context_t 		*context,
 						struct name_server *respondent_server,
                         struct rrset_rec    **answers,
                         struct qname_chain  **qnames,
+						struct query_chain **queries,
                         u_int8_t            *response,
                         u_int32_t           response_length)
 {
@@ -638,7 +610,7 @@ static int digest_response (   val_context_t 		*context,
             Create a dummy answer record to handle this.  
         */
         return prepare_empty_nxdomain (answers, query_name_n, query_type_h,
-                                            query_class_h);
+                                            query_class_h) ;
     }
                                                                                                                           
     nothing_other_than_cname = query_type_h != ns_t_cname &&
@@ -735,28 +707,27 @@ static int digest_response (   val_context_t 		*context,
 		if (set_type_h==ns_t_dnskey)
 		{
 			SAVE_RR_TO_LIST(respondent_server, learned_keys, name_n, type_h, set_type_h,
-                             class_h, ttl_h, rdata, from_section,authoritive); 
+                             class_h, ttl_h, rdata, rdata_len_h, from_section, authoritive); 
 		}
 		if (set_type_h==ns_t_ds)
 		{
 			SAVE_RR_TO_LIST(respondent_server, learned_ds, name_n, type_h, set_type_h,
-                             class_h, ttl_h, rdata, from_section,authoritive); 
+                             class_h, ttl_h, rdata, rdata_len_h, from_section, authoritive); 
 		}
         else if (set_type_h==ns_t_ns || /*set_type_h==ns_t_soa ||*/
                 (set_type_h==ns_t_a && from_section == SR_FROM_ADDITIONAL))
         {
             /* This record belongs in the zone_info chain */
 			SAVE_RR_TO_LIST(respondent_server, learned_zones, name_n, type_h, set_type_h,
-                             class_h, ttl_h, rdata, from_section,authoritive); 
+                             class_h, ttl_h, rdata, rdata_len_h, from_section, authoritive); 
         }
 
         FREE (rdata);
     }
 
 	if (referral_seen) {
-		
 		ret_val = do_referral(context, referral_zone_n, matched_q,
-					answers, &learned_zones, qnames);
+					answers, &learned_zones, qnames, queries);
 		/* all of these are consumed inside do_referral */
 		*answers = NULL;
 		*qnames = NULL;
@@ -765,11 +736,15 @@ static int digest_response (   val_context_t 		*context,
 	/* Check if this is the response to a referral request */
 	else {
 		if (matched_q->qc_referral != NULL) {
-    		/* We can de-register all requests now. */
-		    deregister_queries (&matched_q->qc_referral->queries);
-		
-			/* Merge answer and qnames */
+
+			if(matched_q->qc_ns_list != NULL) {
+				free_name_servers(&matched_q->qc_ns_list);
+				matched_q->qc_ns_list = NULL;
+			}
+
+			/* Consume answer, qnames and learned_zones */
 			MERGE_RR((*answers), matched_q->qc_referral->answers);	
+			matched_q->qc_referral->answers = NULL;
 			if(*qnames==NULL)
 				*qnames = matched_q->qc_referral->qnames;
 			else if(matched_q->qc_referral->qnames) {
@@ -777,19 +752,17 @@ static int digest_response (   val_context_t 		*context,
 				for (t_q = *qnames; t_q->qnc_next; t_q=t_q->qnc_next);
 				t_q->qnc_next = matched_q->qc_referral->qnames;
 			}
+			matched_q->qc_referral->qnames = NULL;
 			/* stow the learned zone information */
 			if(NO_ERROR != (ret_val = stow_zone_info (matched_q->qc_referral->learned_zones))){
 				res_sq_free_rrset_recs(&matched_q->qc_referral->learned_zones);
+				matched_q->qc_referral->learned_zones = NULL;
 				return ret_val;
 			}
-
-			matched_q->qc_referral->queries = NULL;
-			matched_q->qc_referral->answers = NULL;
-			matched_q->qc_referral->qnames = NULL;
 			matched_q->qc_referral->learned_zones = NULL;
 
-			FREE(matched_q->qc_referral);
-			matched_q->qc_referral = NULL;	
+			/* Note that we don't free qc_referral here */
+			free_referral_members(matched_q->qc_referral);
 		}
 		matched_q->qc_state = Q_ANSWERED;
 		ret_val = NO_ERROR;
@@ -812,7 +785,6 @@ static int digest_response (   val_context_t 		*context,
 
     return ret_val;
 }
-
 
 int val_resquery_send (	val_context_t           *context,
                         struct query_chain      *matched_q)
@@ -854,7 +826,8 @@ int val_resquery_send (	val_context_t           *context,
 int val_resquery_rcv ( 	
 					val_context_t *context,
 					struct query_chain *matched_q,
-					struct domain_info **response)
+					struct domain_info **response,
+					struct query_chain **queries)
 {
     struct name_server  *server = NULL;
 	u_int8_t			*response_data = NULL;
@@ -900,7 +873,7 @@ int val_resquery_rcv (
 
     if ((ret_val = digest_response (context, matched_q, 
 					matched_q->qc_respondent_server,
-                    &answers, &qnames, response_data, 
+                    &answers, &qnames, queries, response_data, 
 					response_length)) != NO_ERROR)
     {
         FREE (response_data);
