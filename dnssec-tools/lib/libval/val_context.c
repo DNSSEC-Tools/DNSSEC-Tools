@@ -32,6 +32,11 @@ int get_context(char *label, val_context_t **newcontext)
 		return retval;
 	}
 
+	if ((retval = read_root_hints_file(*newcontext)) != NO_ERROR) {
+		FREE (*newcontext);
+		return retval;
+	}
+
 	/* Read the validator configuration file */ 
 	memset((*newcontext)->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
 	(*newcontext)->pol_overrides = NULL;
