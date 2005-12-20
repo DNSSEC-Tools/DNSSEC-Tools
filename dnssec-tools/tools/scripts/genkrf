@@ -1,0 +1,317 @@
+#!/usr/bin/perl
+#
+# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# genkrf
+#
+#	This script generates a keyrec file.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
+use Net::DNS::SEC::Tools::conf;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my $zone; 				# Name of the zone
+my $ksk;  				# Name of KSK.
+my $zskcur;				# Name of current ZSK.
+my $zskpub;				# Name of published ZSK.
+my $zonefile;                           # Name of the zone file
+my $signedfile;                         # Name of the signed zone file
+my $helpflag;
+
+my @opts = ("zone=s"       => \$zone,
+	    "ksk=s"        => \$ksk,
+	    "zskcur=s"     => \$zskcur,
+	    "zskpub=s"     => \$zskpub,
+	    "help"         => \$helpflag	# Give a usage message and exit.
+	    );
+
+# A hash mapping algorithm numbers to algorithm names
+my %algos = (
+    "001" => "rsa",
+    "002" => "dh",
+    "003" => "dsa",
+    "005" => "rsasha1",
+    "157" => "hmac_md5"
+);
+
+#######################################################################
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+
+	#
+	# Parse the command line options.
+	#
+	GetOptions(@opts);
+
+	if ($#ARGV < 0) {
+	    usage();
+	}
+
+	$zonefile = $ARGV[0];
+
+	if ($#ARGV > 0) {
+	    $signedfile = $ARGV[1];
+	}
+
+	if ($helpflag) {
+	    usage();
+	}
+
+	if (!$zonefile) {
+	    usage();
+	}
+
+	if (!$ksk && !$zskcur && !$zskpub) {
+	    usage();
+	}
+
+	if (!$zone) {
+	    $zone = $zonefile;
+	}
+
+	if (!$ksk) {
+	    # XXX Generate new KSK
+	    $ksk = "K$zone.+005+11111";
+	}
+
+	if (!$zskcur) {
+	    # XXX Generate new ZSK
+	    $zskcur = "K$zone.+005+22222";
+	}
+
+	if (!$zskpub) {
+	    # XXX Generate new ZSK
+	    $zskpub = "K$zone.+005+33333";
+	}
+
+	if (!$signedfile) {
+	    $signedfile = $zonefile . ".signed";
+	}
+
+	$zone =~ s/^(.*)\.$/$1/;
+
+	# Parse the dnssec-tools.conf file
+	my %dtconf = parseconfig();
+
+	#
+	# Generate the keyrec file
+	#
+	# Initialize a keyrecc data structure and add key records to it
+	my $retval = keyrec_creat("$zone.krf");
+
+	keyrec_read("$zone.krf");
+
+	# zone keyrec
+	keyrec_add('zone', $zone, {
+				   'keyrec_signdate' => "",	# XXX to be done
+				   'keyrec_signsecs' => "",
+				   'endtime' => "",
+				   'signedfile' => "$signedfile",
+				   'zonefile' => "$zonefile",
+				   'zskdirectory' => ".",	# hardcoded
+				   'zskpubpath' => "./$zskpub.key",
+				   'zskcurpath' => "./$zskcur.key",
+				   'zskpub' => "$zskpub",
+				   'zskcur' => "$zskcur",
+				   'kskdirectory' => ".",	# hardcoded
+				   'kskpath' => "./$ksk.key",
+				   'kskkey' => "$ksk",
+				   'keyrec_type' => "zone"
+				   });
+
+	# ksk keyrec
+	keyrec_add('key', $ksk, {
+				 'keyrec_gendate' => "",	# XXX to be done
+				 'keyrec_gensecs' => "",
+				 'ksklength' => "",
+				 'keypath' => "./$ksk.key",	# hardcoded
+				 'random' => $dtconf{'random'},
+				 'algorithm' => getkeyalgo($ksk),
+#				 'zonename' => "$zone",
+				 'keyrec_type' => "ksk"
+				 });
+
+	# zskcur keyrec
+	keyrec_add('key', $zskcur, {
+				    'keyrec_gendate' => "",	# XXX to be done
+				    'keyrec_gensecs' => "",
+				    'zsklength' => "",
+				    'keypath' => "./$zskcur.key",	# hardcoded
+				    'random' => $dtconf{'random'},
+				    'algorithm' => getkeyalgo($zskcur),
+#				    'zonename' => "$zone",
+				    'keyrec_type' => "zskcur"
+				    });
+
+	# zskpub keyrec
+	keyrec_add('key', $zskpub, {
+				    'keyrec_gendate' => "",	# XXX to be done
+				    'keyrec_gensecs' => "",
+				    'zsklength' => "",
+				    'keypath' => "./$zskpub.key",	# hardcoded
+				    'random' => $dtconf{'random'},
+				    'algorithm' => getkeyalgo($zskpub),
+#				    'zonename' => "$zone",
+				    'keyrec_type' => "zskpub"
+				    });
+
+	keyrec_write();
+	keyrec_close();
+
+	print STDERR "genkrf: file $zone.krf created successfully.\n";
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  genkrf [options]\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t--zone=<ZONE>         specifies the zone\n";
+	print STDERR "\t\t--ksk=<KSK>           specifies the KSK\n";
+	print STDERR "\t\t--zskcur=<ZSKCUR>     specifies the current ZSK\n";
+	print STDERR "\t\t--zskpub=<ZSKPUB>     specifies the published ZSK\n";
+	print STDERR "\t\t--zonefile=<ZONEFILE> specifies the zone file\n";
+	print STDERR "\t\t--signedfile=<FILE>   specifies the signed zone file\n";
+	print STDERR "\t\t--help\t              help message\n";
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:      getkeyalgo()
+#
+# Purpose:      This routine takes the identification string of the key
+#               generated by dnssec-keygen as a parameter and returns the name
+#               of the algorithm for that key.
+#
+#               The identification string of the key has the following format:
+#
+#                     Knnnn.+aaa+iiiii
+#
+#               where
+#
+#                     nnnn is the key name
+#                     aaa  is the numeric representation of the algorithm
+#                 and iiiii is the key identifier (or footprint)
+#
+sub getkeyalgo
+{
+    my $key = shift;
+
+    my $algonum = $key;
+    $algonum =~ s/^[^\+]*\+([^+]*)\+.*$/$1/g;
+    return $algos{$algonum};
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+genkrf - Generate a I<keyrec> file from existing Key Signing Key (KSK)
+         and/or Zone Signing Key (ZSK) files.
+
+=head1 SYNOPSIS
+
+  genkrf [options] <zone-file> [<signed-zone-file>]
+
+  genkrf -help
+
+=head1 DESCRIPTION
+
+This script generates a I<keyrec> file (see zonesigner(1) for details) from
+existing KSK and/or ZSK files.  If the I<keyrec> file already exists, the
+I<keyrec> definitions corresponding to the new keys will be added to it.
+
+The I<zone-file> argument is required.  It specifies the name of the zone
+file from which the signed zone file was created.  The optional
+I<signed-zone-file> argument specifies the name of the signed zone file.
+If it is not given, then it defaults to "I<<zone-file>>.signed".
+
+=head1 OPTIONS
+
+B<genkrf> has the following options:
+
+=over 4
+
+=item -zone
+
+This option specifies the name of the zone.  If it is not given then
+I<zone-file> will be used as the name of the zone.
+
+=item -ksk
+
+This option specifies the KSK being used to sign the zone.  If this
+option is not given, a new KSK will be created.
+
+=item -zskcur
+
+This option specifies the current ZSK being used to sign the zone.
+If this option is not given, a new ZSK will be created.
+
+=item -zskpub
+
+This option specifies the published ZSK for the zone.  If this option
+is not given, a new ZSK will be created.
+
+=back
+
+Note that at least one of I<-ksk>, I<-zskcur> or I<-zskpub> options
+B<must> be present.
+
+=over 4
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Abhijit Hayatnagarkar
+
+=head1 SEE ALSO
+
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>
+
+B<zonesigner(1)>
+
+=cut
