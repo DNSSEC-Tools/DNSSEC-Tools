@@ -51,11 +51,11 @@ our $VERSION = "0.01";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(keyrec_read keyrec_names keyrec_fullrec keyrec_recval
-		 keyrec_setval keyrec_add keyrec_del keyrec_newkeyrec
-		 keyrec_keyfields keyrec_zonefields keyrec_init
-		 keyrec_discard keyrec_close keyrec_write keyrec_defkrf
-		 keyrec_dump_hash keyrec_dump_array);
+our @EXPORT = qw(keyrec_creat keyrec_read keyrec_names keyrec_fullrec
+		 keyrec_recval keyrec_setval keyrec_add keyrec_del
+		 keyrec_newkeyrec keyrec_keyfields keyrec_zonefields
+		 keyrec_init keyrec_discard keyrec_close keyrec_write
+		 keyrec_defkrf keyrec_dump_hash keyrec_dump_array);
 
 #
 # Fields in a key keyrec.
@@ -108,6 +108,39 @@ my %keyrecs;				# Keyrec hash table (keywords/values.)
 
 my $modified;				# File-modified flag.
 
+
+#--------------------------------------------------------------------------
+#
+# Routine:      keyrec_creat()
+#
+# Purpose:      Create a DNSSEC keyrec file, if it does not exist,
+#               If the file already exists, this function just returns.
+#
+#		Returns 0 if the file already exists, 1 if the file
+#		was created successfully and -1 if there was an error
+#		in file creation.
+#
+sub keyrec_creat
+{
+	my $krf = shift;		# Key record file.
+
+	if (! -e $krf)
+	{
+		#
+		# Create a new keyrec file.
+		#
+		if(open(KEYREC,"> $krf") == 0)
+		{
+			print STDERR "unable to create $krf\n";
+			return(-1);
+		}
+		close(KEYREC);
+		return 1;
+	}
+	else {
+		return 0;
+	}
+}
 
 #--------------------------------------------------------------------------
 #
@@ -732,6 +765,7 @@ sub keyrec_newkeyrec
 
 	$keyrecs{$name}{"keyrec_name"} = $name;
 	$keyrecs{$name}{"keyrec_type"} = $type;
+
 	return(0);
 }
 
@@ -911,6 +945,7 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   use Net::DNS::SEC::Tools::keyrec;
 
+  keyrec_creat("localzone.keyrec");
   keyrec_read("localzone.keyrec");
 
   @krnames = keyrec_names();
@@ -959,11 +994,13 @@ following is an example of a key I<keyrec>:
           keyrec_gensecs  "1101183727"
           keyrec_gendate  "Tue Nov 23 04:22:07 2004"
 
-The first step in using this module B<must> be to read the I<keyrec>
-file.  The I<keyrec_read()> interface reads the file and parses it
-into an internal format.  The file's records are copied into a hash
-table (for easy reference by the B<Net::DNS::SEC::Tools::keyrec>
-routines) and in an array (for preserving formatting and comments.)
+The first step in using this module B<must> be to create a new I<keyrec>
+file or read an existing one.  The B<keyrec_creat()> interface creates
+a I<keyrec> file if it does not exist.  The B<keyrec_read()> interface
+reads the file and parses it into an internal format. The file's
+records are copied into a hash table (for easy reference by the
+B<Net::DNS::SEC::Tools::keyrec> routines) and in an array (for
+preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
 B<keyrec_fullrec()> and B<keyrec_recval()>.  The contents are modified
@@ -993,9 +1030,11 @@ hash table that contains the name/value I<keyrec> fields.  The keys of the
 hash table are always converted to lowercase, but the entry values are left
 as given.
 
-The I<ksklength> entry is only added if I<keyrec_type> is "ksk".
+The I<ksklength> entry is only added if the value of the I<keyrec_type>
+field is "ksk".
 
-The I<zsklength> entry is only added if I<keyrec_type> is "zsk".
+The I<zsklength> entry is only added if the value of the I<keyrec_type>
+field is "zsk", "zskcur", "zskpub", or "zsknew".
 
 Timestamp fields are added at the end of the I<keyrec>.  For key I<keyrec>s,
 the I<keyrec_gensecs> and I<keyrec_gendate> timestamp fields are added.  For
@@ -1053,7 +1092,19 @@ This routine returns a list of the recognized fields for a key I<keyrec>.
 
 This routine returns a list of the I<keyrec> names from the file.
 
+=head2 B<keyrec_creat(keyrec_file)>
+
+This interface creates a I<keyrec> file, if it does not exist.  If the
+file already exists, this function just returns.
+
+Upon success, B<keyrec_creat()> returns 0 if the file already exists
+and 1 if the file was created successfully.
+
+Failure return values:
+
 =head2 B<keyrec_read(keyrec_file)>
+
+    -1 unable to create I<keyrec> file
 
 This interface reads the specified I<keyrec> file and parses it into a
 I<keyrec> hash table and a file contents array.  B<keyrec_read()> B<must> be
