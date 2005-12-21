@@ -51,9 +51,9 @@ our $VERSION = "0.01";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(keyrec_creat keyrec_read keyrec_names keyrec_fullrec
-		 keyrec_recval keyrec_setval keyrec_add keyrec_del
-		 keyrec_newkeyrec keyrec_keyfields keyrec_zonefields
+our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_names
+		 keyrec_fullrec keyrec_recval keyrec_setval keyrec_add
+		 keyrec_del keyrec_newkeyrec keyrec_keyfields keyrec_zonefields
 		 keyrec_init keyrec_discard keyrec_close keyrec_write
 		 keyrec_defkrf keyrec_dump_hash keyrec_dump_array);
 
@@ -115,32 +115,46 @@ my $modified;				# File-modified flag.
 # Routine:      keyrec_creat()
 #
 # Purpose:      Create a DNSSEC keyrec file, if it does not exist,
-#               If the file already exists, this function just returns.
+#               If the file already exists, this function truncates the
+#               file.
 #
-#		Returns 0 if the file already exists, 1 if the file
-#		was created successfully and -1 if there was an error
-#		in file creation.
+#		Returns 1 if the file was created successfully and 0 if
+#               there was an error in file creation.  Upon successful return,
+#               this function leaves the file in an 'open' read-write state.
 #
 sub keyrec_creat
 {
 	my $krf = shift;		# Key record file.
 
-	if (! -e $krf)
-	{
-		#
-		# Create a new keyrec file.
-		#
-		if(open(KEYREC,"> $krf") == 0)
-		{
-			print STDERR "unable to create $krf\n";
-			return(-1);
-		}
-		close(KEYREC);
-		return 1;
-	}
-	else {
-		return 0;
-	}
+	#
+	# Create a new keyrec file, or truncate existing one
+	#
+	open(KEYREC,"+> $krf") || return 0;
+
+	return 1;
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:      keyrec_open()
+#
+# Purpose:      Opens an existing DNSSEC keyrec file.
+#
+#		Returns 1 if the file was opened successfully and 0 if
+#               there was an error in opening file (for example, if the
+#               file did not exist).  Upon successful return, this function
+#               leaves the file in an 'open' read-write state.
+#
+sub keyrec_open
+{
+	my $krf = shift;		# Key record file.
+
+	#
+	# Open an existing keyrec file
+	#
+	open(KEYREC,"+< $krf") || return 0;
+
+	return 1;
 }
 
 #--------------------------------------------------------------------------
@@ -180,7 +194,7 @@ sub keyrec_read
 	#
 	# Open up the keyrec file.
 	#
-	if(open(KEYREC,"+< $krf") == 0)
+	if(keyrec_open($krf) == 0)
 	{
 		print STDERR "unable to open $krf\n";
 		return(-2);
@@ -947,6 +961,7 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   use Net::DNS::SEC::Tools::keyrec;
 
   keyrec_creat("localzone.keyrec");
+  keyrec_open("localzone.keyrec");
   keyrec_read("localzone.keyrec");
 
   @krnames = keyrec_names();
@@ -996,8 +1011,9 @@ following is an example of a key I<keyrec>:
           keyrec_gendate  "Tue Nov 23 04:22:07 2004"
 
 The first step in using this module B<must> be to create a new I<keyrec>
-file or read an existing one.  The B<keyrec_creat()> interface creates
-a I<keyrec> file if it does not exist.  The B<keyrec_read()> interface
+file or open and read an existing one.  The B<keyrec_creat()> interface creates
+a I<keyrec> file if it does not exist and opens it.  The B<keyrec_open()>
+interface opens an existing I<keyrec> file.  The B<keyrec_read()> interface
 reads the file and parses it into an internal format. The file's
 records are copied into a hash table (for easy reference by the
 B<Net::DNS::SEC::Tools::keyrec> routines) and in an array (for
@@ -1071,7 +1087,15 @@ Return values are:
 =head2 B<keyrec_close()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-B<keyrec_read()>) and closes the file handle. 
+B<keyrec_creat>, B<keyrec_open> or B<keyrec_read()>) and closes the file handle.
+
+=head2 B<keyrec_creat(keyrec_file)>
+
+This interface creates a I<keyrec> file if it does not exist, and truncates
+the file if it already exists.  It leaves the file in the open state.
+
+B<keyrec_creat()> returns 1 if the file was created successfully.
+It returns 0 if there was an error in creating the file.
 
 =head2 B<keyrec_discard()>
 
@@ -1093,15 +1117,12 @@ This routine returns a list of the recognized fields for a key I<keyrec>.
 
 This routine returns a list of the I<keyrec> names from the file.
 
-=head2 B<keyrec_creat(keyrec_file)>
+=head2 B<keyrec_open(keyrec_file)>
 
-This interface creates a I<keyrec> file, if it does not exist.  If the
-file already exists, this function just returns.
+This interface opens an existing I<keyrec> file.
 
-Upon success, B<keyrec_creat()> returns 0 if the file already exists
-and 1 if the file was created successfully.
-
-Failure return values:
+B<keyrec_open()> returns 1 if the file was opened successfully.  It returns 0
+if the file does not exists or if there was an error in opening the file.
 
 =head2 B<keyrec_read(keyrec_file)>
 
@@ -1159,10 +1180,10 @@ Return values are:
 =head2 B<keyrec_write()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-B<keyrec_read()>).  It does not close the file handle.  As an efficiency
-measure, an internal modification flag is checked prior to writing the file.
-If the program has not modified the contents of the I<keyrec> file, it is not
-rewritten.
+B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>).  It does not close
+the file handle.  As an efficiency measure, an internal modification flag is
+checked prior to writing the file.  If the program has not modified the
+contents of the I<keyrec> file, it is not rewritten.
 
 =head2 B<keyrec_zonefields()>
 
