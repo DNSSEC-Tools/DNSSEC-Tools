@@ -70,6 +70,7 @@ my @KEYFIELDS = (
 			'kgopts',
 			'keyrec_gensec',
 			'keyrec_gendate',
+		        'zonename',
 		 );
 
 #
