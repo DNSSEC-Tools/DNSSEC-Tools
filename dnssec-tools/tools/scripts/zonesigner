@@ -1858,7 +1858,7 @@ the I<-kgopts> option.
 
 Time that the zone expires, measured in seconds.  See the man page for
 I<dnssec-signzone> for the valid format of this field.
-The default value is 259200 seconds (30 days.)
+The default value is 2592000 seconds (30 days.)
 
 =item -gends
 
@@ -1970,7 +1970,7 @@ one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	kskpath		"./Kexample.com.+005+24082.key"
 	kskkey		"Kexample.com.+005+24082"
 	kskdirectory	"."
-	endtime		"+259200"
+	endtime		"+2592000"
 	zonefile	"db.example.com"
 	keyrec_type	"zone"
 	keyrec_signsecs	"1115166642"
