@@ -60,6 +60,7 @@ my $kskdir;                             # Directory where the KSK resides
 my $zskdir;                             # Directory where the ZSKs reside
 my $endtime;                            # Endtime of signature validity
 my $random;                             # The source of randomness
+my $krfile;                             # Name of the keyrec file to generate
 my $helpflag;
 
 #
@@ -73,6 +74,7 @@ my @opts = ("zone=s"      => \$zone,
 	    "zskdir=s"    => \$zskdir,
 	    "endtime=s"   => \$endtime,
 	    "random=s"    => \$random,
+	    "krfile=s"    => \$krfile,
 	    "help"        => \$helpflag # Give a usage message and exit.
 	    );
 
@@ -129,9 +131,9 @@ sub main()
 	#
 
 	# Initialize a keyrecc data structure
-	my $retval = keyrec_creat("$zone.krf");
+	my $retval = keyrec_creat($krfile);
 
-	keyrec_read("$zone.krf");
+	keyrec_read($krfile);
 
 	# Add zone keyrec
 	keyrec_add('zone', $zone, {
@@ -191,7 +193,7 @@ sub main()
 	keyrec_write();
 	keyrec_close();
 
-	print STDERR "genkrf: file $zone.krf created successfully.\n";
+	print STDERR "genkrf: file $krfile created successfully.\n";
 	return(0);
 }
 
@@ -228,6 +230,8 @@ sub optsandargs
 
 	$zone = $zonefile if (!$zone);
 	$zone =~ s/^(.*)\.$/$1/;
+
+	$krfile = $zone . ".krf" if (!$krfile);
 
 	$kskdir = "." if (!$kskdir);
 	$zskdir = "." if (!$zskdir);
@@ -417,8 +421,13 @@ genkrf - Generate a I<keyrec> file from existing Key Signing Key (KSK)
 =head1 DESCRIPTION
 
 This script generates a I<keyrec> file (see zonesigner(1) for details) from
-existing KSK and/or ZSK files.  If the I<keyrec> file already exists, the
-I<keyrec> definitions corresponding to the new keys will be added to it.
+existing KSK and/or ZSK files.  It generates new KSK and/or ZSK keys if
+needed.
+
+The name of the I<keyrec> file to be generated is given by the I<-krfile>
+option.  If this option is not specified, <zone-name>.krf is used as the
+name of the I<keyrec> file.  If the I<keyrec> file already exists, it will
+be overwritten with new I<keyrec> definitions.
 
 The I<zone-file> argument is required.  It specifies the name of the zone
 file from which the signed zone file was created.  The optional
@@ -435,6 +444,12 @@ B<genkrf> has the following options:
 
 This option specifies the name of the zone.  If it is not given then
 I<zone-file> will be used as the name of the zone.
+
+=item -krfile
+
+This option specifies the name of the keyrec file.  If it is not given
+then I<zone-name>.krf will be used as the name of the keyrec file to
+be generated.
 
 =item -ksk
 
