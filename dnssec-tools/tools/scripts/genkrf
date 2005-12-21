@@ -12,33 +12,18 @@
 use strict;
 
 use Getopt::Long;
-
 use Net::DNS::SEC::Tools::keyrec;
-use Net::DNS::SEC::Tools::tooloptions;
 use Net::DNS::SEC::Tools::conf;
 
 #######################################################################
-
 #
-# Data required for command line options.
+# Constants
 #
-my $zone; 				# Name of the zone
-my $ksk;  				# Name of KSK.
-my $zskcur;				# Name of current ZSK.
-my $zskpub;				# Name of published ZSK.
-my $zonefile;                           # Name of the zone file
-my $signedfile;                         # Name of the signed zone file
-my $helpflag;
-
-my @opts = ("zone=s"       => \$zone,
-	    "ksk=s"        => \$ksk,
-	    "zskcur=s"     => \$zskcur,
-	    "zskpub=s"     => \$zskpub,
-	    "help"         => \$helpflag	# Give a usage message and exit.
-	    );
+our $DEF_ENDTIME = "+2592000";          # Thirty days
+our $DEF_RANDOM  = "/dev/urandom";      # Default source of randomness
 
 # A hash mapping algorithm numbers to algorithm names
-my %algos = (
+our %algos = (
     "001" => "rsa",
     "002" => "dh",
     "003" => "dsa",
@@ -49,7 +34,7 @@ my %algos = (
 # Names of fields from bind-9.3.1/lib/dns/dst_parse.c
 # Private-key-format: v1.2
 # These help in finding the size of the key from the .private key file
-my %algofields = (
+our %algofields = (
     "001" => "Modulus:",
     "002" => "Prime(p):",
     "003" => "Prime(p):",
@@ -57,6 +42,35 @@ my %algofields = (
     "157" => "Key:"
 );
 		  
+#
+# Data required for command line options.
+#
+my $zone; 				# Name of the zone
+my $ksk;  				# Name of KSK.
+my $zskcur;				# Name of current ZSK.
+my $zskpub;				# Name of published ZSK.
+my $zonefile;                           # Name of the zone file
+my $signedfile;                         # Name of the signed zone file
+my $kskdir;                             # Directory where the KSK resides
+my $zskdir;                             # Directory where the ZSKs reside
+my $endtime;                            # Endtime of signature validity
+my $random;                             # The source of randomness
+my $helpflag;
+
+#
+# Command line options for this program
+#
+my @opts = ("zone=s"      => \$zone,
+	    "ksk=s"       => \$ksk,
+	    "kskdir=s"    => \$kskdir,
+	    "zskcur=s"    => \$zskcur,
+	    "zskpub=s"    => \$zskpub,
+	    "zskdir=s"    => \$zskdir,
+	    "endtime=s"   => \$endtime,
+	    "random=s"    => \$random,
+	    "help"        => \$helpflag # Give a usage message and exit.
+	    );
+
 #######################################################################
 
 my $ret;				# Return code from main().
@@ -76,34 +90,11 @@ sub main()
 	#
 	# Parse the command line options.
 	#
-	GetOptions(@opts);
+	optsandargs();
 
-	if ($#ARGV < 0) {
-	    usage();
-	}
-
-	$zonefile = $ARGV[0];
-
-	if ($#ARGV > 0) {
-	    $signedfile = $ARGV[1];
-	}
-
-	if ($helpflag) {
-	    usage();
-	}
-
-	if (!$zonefile) {
-	    usage();
-	}
-
-	if (!$ksk && !$zskcur && !$zskpub) {
-	    usage();
-	}
-
-	if (!$zone) {
-	    $zone = $zonefile;
-	}
-
+	#
+	# Generate new keys if not present
+	#
 	if (!$ksk) {
 	    # XXX Generate new KSK
 	    $ksk = "K$zone.+005+11111";
@@ -119,77 +110,70 @@ sub main()
 	    $zskpub = "K$zone.+005+33333";
 	}
 
-	if (!$signedfile) {
-	    $signedfile = $zonefile . ".signed";
-	}
-
-	$zone =~ s/^(.*)\.$/$1/;
-
-	# Parse the dnssec-tools.conf file
-	my %dtconf = parseconfig();
-
 	#
 	# Generate the keyrec file
 	#
-	# Initialize a keyrecc data structure and add key records to it
+
+	# Initialize a keyrecc data structure
 	my $retval = keyrec_creat("$zone.krf");
 
 	keyrec_read("$zone.krf");
 
-	# zone keyrec
+	# Add zone keyrec
 	keyrec_add('zone', $zone, {
-				   'keyrec_signdate' => "",	# XXX to be done
+				   'keyrec_signdate' => "",
 				   'keyrec_signsecs' => "",
-				   'endtime' => "",
-				   'signedfile' => "$signedfile",
-				   'zonefile' => "$zonefile",
-				   'zskdirectory' => ".",	# hardcoded
-				   'zskpubpath' => "./$zskpub.key",
-				   'zskcurpath' => "./$zskcur.key",
-				   'zskpub' => "$zskpub",
-				   'zskcur' => "$zskcur",
-				   'kskdirectory' => ".",	# hardcoded
-				   'kskpath' => "./$ksk.key",
-				   'kskkey' => "$ksk",
-				   'keyrec_type' => "zone"
+				   'endtime'         => $endtime,
+				   'signedfile'      => $signedfile,
+				   'zonefile'        => $zonefile,
+				   'zskdirectory'    => $zskdir,
+				   'zskpubpath'      => "$zskdir/$zskpub.key",
+				   'zskcurpath'      => "$zskdir/$zskcur.key",
+				   'zskpub'          => $zskpub,
+				   'zskcur'          => $zskcur,
+				   'kskdirectory'    => $kskdir,
+				   'kskpath'         => "$kskdir/$ksk.key",
+				   'kskkey'          => $ksk,
+				   'keyrec_type'     => "zone"
 				   });
 
-	# ksk keyrec
+	# Add ksk keyrec
 	keyrec_add('key', $ksk, {
-				 'keyrec_gendate' => "",	# XXX to be done
+				 'keyrec_gendate' => "",
 				 'keyrec_gensecs' => "",
-				 'ksklength' => getkeysize($ksk),
-				 'keypath' => "./$ksk.key",	# hardcoded
-				 'random' => $dtconf{'random'},
-				 'algorithm' => getkeyalgo($ksk),
-#				 'zonename' => "$zone",
-				 'keyrec_type' => "ksk"
+				 'ksklength'      => getkeysize($ksk, $kskdir),
+				 'keypath'        => "$kskdir/$ksk.key",
+				 'random'         => $random,
+				 'algorithm'      => getkeyalgo($ksk),
+				 'zonename'       => $zone,
+				 'keyrec_type'    => "ksk"
 				 });
 
-	# zskcur keyrec
+	# Add zskcur keyrec
 	keyrec_add('key', $zskcur, {
-				    'keyrec_gendate' => "",	# XXX to be done
+				    'keyrec_gendate' => "",
 				    'keyrec_gensecs' => "",
-				    'zsklength' => getkeysize($zskcur),
-				    'keypath' => "./$zskcur.key",	# hardcoded
-				    'random' => $dtconf{'random'},
-				    'algorithm' => getkeyalgo($zskcur),
-#				    'zonename' => "$zone",
-				    'keyrec_type' => "zskcur"
+				    'zsklength'      => getkeysize($zskcur, $zskdir),
+				    'keypath'        => "$zskdir/$zskcur.key",
+				    'random'         => $random,
+				    'algorithm'      => getkeyalgo($zskcur),
+				    'zonename'       => $zone,
+				    'keyrec_type'    => "zskcur"
 				    });
 
-	# zskpub keyrec
+	# Add zskpub keyrec
 	keyrec_add('key', $zskpub, {
-				    'keyrec_gendate' => "",	# XXX to be done
+				    'keyrec_gendate' => "",
 				    'keyrec_gensecs' => "",
-				    'zsklength' => getkeysize($zskcur),
-				    'keypath' => "./$zskpub.key",	# hardcoded
-				    'random' => $dtconf{'random'},
-				    'algorithm' => getkeyalgo($zskpub),
-#				    'zonename' => "$zone",
-				    'keyrec_type' => "zskpub"
+				    'zsklength'      => getkeysize($zskpub, $zskdir),
+				    'keypath'        => "$zskdir/$zskpub.key",
+				    'random'         => $random,
+				    'algorithm'      => getkeyalgo($zskpub),
+				    'zonename'       => $zone,
+				    'keyrec_type'    => "zskpub"
 				    });
 
+	# Write the keyrec file
 	keyrec_write();
 	keyrec_close();
 
@@ -199,19 +183,71 @@ sub main()
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	optsandargs()
+#
+# Purpose:	Parse the command line for options and arguments.
+#
+sub optsandargs
+{
+	# Parse the command-line options
+	GetOptions(@opts);
+
+	usage() if $helpflag;
+
+	usage() if ($#ARGV < 0);
+
+	$zonefile = $ARGV[0];
+
+	if ($#ARGV > 0) {
+	    $signedfile = $ARGV[1];
+	}
+	else {
+	    $signedfile = $zonefile . ".signed";
+	}
+
+#	usage() if (!$ksk && !$zskcur && !$zskpub);
+
+	# Parse the dnssec-tools.conf file
+	my %dtconf = parseconfig();
+
+	$zone = $zonefile if (!$zone);
+	$zone =~ s/^(.*)\.$/$1/;
+
+	$kskdir = "." if (!$kskdir);
+	$zskdir = "." if (!$zskdir);
+
+	$endtime = $dtconf{'endtime'} if (!$endtime);
+	$endtime = $DEF_ENDTIME if (!$endtime);
+
+	$random = $dtconf{'random'} if (!$random);
+	$random = $DEF_RANDOM if (!$random);
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	usage()
+#
+# Purpose:      This routine prints the usage and exits
 #
 sub usage
 {
-	print STDERR "usage:  genkrf [options]\n";
-	print STDERR "\toptions:\n";
-	print STDERR "\t\t--zone=<ZONE>         specifies the zone\n";
-	print STDERR "\t\t--ksk=<KSK>           specifies the KSK\n";
-	print STDERR "\t\t--zskcur=<ZSKCUR>     specifies the current ZSK\n";
-	print STDERR "\t\t--zskpub=<ZSKPUB>     specifies the published ZSK\n";
-	print STDERR "\t\t--zonefile=<ZONEFILE> specifies the zone file\n";
-	print STDERR "\t\t--signedfile=<FILE>   specifies the signed zone file\n";
-	print STDERR "\t\t--help\t              help message\n";
+	print STDERR "usage: genkrf [options] <zone-file> [<signed-zone-file>]\n";
+
+	print STDERR "\n\t<zone-file>                  name of the zone file\n";
+	print STDERR "\t<signed-zone-file>           name of the signed zone file\n";
+
+	print STDERR "\n\toptions:\n";
+	print STDERR "\t\t-zone=<ZONE>         name of the zone\n";
+	print STDERR "\t\t-ksk=<KSK>           name of the Key Signing Key (KSK)\n";
+	print STDERR "\t\t-kskdir=<PATH>       KSK directory\n";
+	print STDERR "\t\t-zskcur=<ZSKCUR>     name of the current Zone Signing Key (ZSK)\n";
+	print STDERR "\t\t-zskpub=<ZSKPUB>     name of the published ZSK\n";
+	print STDERR "\t\t-zskdir=<PATH>       ZSK directory\n";
+	print STDERR "\t\t-endtime=<ENDTIME>   end time of signature\n";
+	print STDERR "\t\t-random=<RANDOMDEV>  source of randomness\n";
+
+	print STDERR "\t\t-help\t              help message\n";
+
 	exit(0);
 }
 
@@ -342,6 +378,12 @@ I<zone-file> will be used as the name of the zone.
 This option specifies the KSK being used to sign the zone.  If this
 option is not given, a new KSK will be created.
 
+=item -kskdir
+
+This option specifies the absolute or relative path of the directory
+where the KSK resides.  If this option is not given, it defaults to
+the current directory ".".
+
 =item -zskcur
 
 This option specifies the current ZSK being used to sign the zone.
@@ -351,6 +393,30 @@ If this option is not given, a new ZSK will be created.
 
 This option specifies the published ZSK for the zone.  If this option
 is not given, a new ZSK will be created.
+
+=item -zskdir
+
+This option specifies the absolute or relative path of the directory
+where the ZSKs reside.  If this option is not given, it defaults to
+the current directory ".".
+
+=item -endtime
+
+This option specifes the time that the signature on the zone expires,
+measured in seconds.  See the man page for I<dnssec-signzone> for the
+valid format of this field.  If this option is not specified, its
+value is read from the /usr/local/etc/dnssec/dnssec-tools.conf file.
+If this file does not specify an endtime field, the value of this
+option defaults to 2592000 seconds (30 days).
+
+=item -random
+
+Source of randomness used to generate the zone's keys. See the man
+page for I<dnssec-signzone> for the valid format of this field.  If
+this option is not specified, its value is read from the
+/usr/local/etc/dnssec/dnssec-tools.conf file.  If this file does not
+specify a random field, the value of this option defaults to 
+"/dev/urandom".
 
 =back
 
