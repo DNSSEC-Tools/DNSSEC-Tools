@@ -19,8 +19,13 @@ use Net::DNS::SEC::Tools::conf;
 #
 # Constants
 #
-our $DEF_ENDTIME = "+2592000";          # Thirty days
-our $DEF_RANDOM  = "/dev/urandom";      # Default source of randomness
+our $DEF_ENDTIME   = "+2592000";        # Thirty days
+our $DEF_RANDOM    = "/dev/urandom";    # Default source of randomness
+our $DEF_KEYGEN    = "dnssec-keygen";   # Default command for key generation
+our $DEF_ALGORITHM = "rsasha1";         # Default algorithm
+our $DEF_KSKSIZE   = 2048;              # Default KSK size
+our $DEF_ZSKSIZE   = 1024;              # Default ZSK size
+our $DEF_TOOLSCONF = "/usr/local/etc/dnssec/dnssec-tools.conf";
 
 # A hash mapping algorithm numbers to algorithm names
 our %algos = (
@@ -71,6 +76,14 @@ my @opts = ("zone=s"      => \$zone,
 	    "help"        => \$helpflag # Give a usage message and exit.
 	    );
 
+#
+# Data from the dnssec-tools.conf file
+#
+my $keygen;                             # The key-generation program
+my $algo;                               # The algorithm
+my $ksksize;                            # The KSK size
+my $zsksize;                            # The ZSK size
+
 #######################################################################
 
 my $ret;				# Return code from main().
@@ -81,6 +94,8 @@ exit($ret);
 #-----------------------------------------------------------------------------
 #
 # Routine:	main()
+#
+# Uses global variables in this file
 #
 sub main()
 {
@@ -95,19 +110,18 @@ sub main()
 	#
 	# Generate new keys if not present
 	#
+	$ksk    = genksk($kskdir) if (!$ksk);
+	$zskcur = genzsk($zskdir) if (!$zskcur);
+	$zskpub = genzsk($zskdir) if (!$zskpub);
+
 	if (!$ksk) {
-	    # XXX Generate new KSK
-	    $ksk = "K$zone.+005+11111";
+	    print STDERR "Error: could not generate KSK.  Please check the $DEF_TOOLSCONF file for correctness\n";
+	    exit(1);
 	}
 
-	if (!$zskcur) {
-	    # XXX Generate new ZSK
-	    $zskcur = "K$zone.+005+22222";
-	}
-
-	if (!$zskpub) {
-	    # XXX Generate new ZSK
-	    $zskpub = "K$zone.+005+33333";
+	if (!$zskcur || !$zskpub) {
+	    print STDERR "Error: could not generate ZSK.  Please check the $DEF_TOOLSCONF file for correctness\n";
+	    exit(1);
 	}
 
 	#
@@ -187,6 +201,8 @@ sub main()
 #
 # Purpose:	Parse the command line for options and arguments.
 #
+# Uses global variables in this file
+#
 sub optsandargs
 {
 	# Parse the command-line options
@@ -221,6 +237,11 @@ sub optsandargs
 
 	$random = $dtconf{'random'} if (!$random);
 	$random = $DEF_RANDOM if (!$random);
+
+	$keygen  = $dtconf{'keygen'}    || $DEF_KEYGEN;
+	$ksksize = $dtconf{'ksklength'} || $DEF_KSKSIZE;
+	$zsksize = $dtconf{'zsklength'} || $DEF_ZSKSIZE;
+	$algo    = $dtconf{'algorithm'} || $DEF_ALGORITHM;
 }
 
 #-----------------------------------------------------------------------------
@@ -333,6 +354,48 @@ sub getkeysize
     return $keysize;
 }
 
+#-----------------------------------------------------------------------------
+#
+# Routine:      genksk()
+#
+# Purpose:      This routine generates a new Key Signing Key (KSK)
+#
+# Uses global variables in this file
+#
+sub genksk
+{
+    my $cmdopts = "-r $random -a $algo -b $ksksize";
+    my $ksk = `$keygen $cmdopts -n zone -f KSK $zone`;
+
+    chomp $ksk;
+    if ($kskdir ne ".") {
+	`mkdir -p $kskdir && mv $ksk* $kskdir`;
+    }
+    return $ksk || "";
+}
+
+
+#-----------------------------------------------------------------------------
+#
+# Routine:      genzsk()
+#
+# Purpose:      This routine generates a new Zone Signing Key (ZSK)
+#
+# Uses global variables in this file
+#
+sub genzsk
+{
+    my $cmdopts = "-r $random -a $algo -b $zsksize";
+
+    my $zsk = `$keygen $cmdopts -n zone $zone`;
+    chomp $zsk;
+    if ($zskdir ne ".") {
+	`mkdir -p $zskdir && mv $zsk* $zskdir`;
+    }
+    return $zsk || "";
+}
+
+
 1;
 
 ##############################################################################
@@ -419,9 +482,6 @@ specify a random field, the value of this option defaults to
 "/dev/urandom".
 
 =back
-
-Note that at least one of I<-ksk>, I<-zskcur> or I<-zskpub> options
-B<must> be present.
 
 =over 4
 
