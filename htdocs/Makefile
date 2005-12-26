@@ -14,6 +14,8 @@ tools:
 	$(FIXBOT) docs/zonesigner.html
 	pod2html $(TOOLSDIR)/tools/dnspktflow/dnspktflow > docs/dnspktflow.html
 	$(FIXBOT) docs/zonesigner.html
+	pod2html $(TOOLSDIR)/tools/maketestzone/maketestzone > docs/maketestzone.html
+	$(FIXBOT) docs/maketestzone.html
 
 modules:
 	pod2html $(TOOLSDIR)/tools/modules/conf.pm > docs/conf.html
