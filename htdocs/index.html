@@ -37,7 +37,9 @@
 	    href="http://sourceforge.net/tracker/?group_id=121671&atid=691910">
 	    Bug Database</a></td>
 
-
+	    <td class="tdlinks"><a class="toplink"
+	    href="/testzone/">
+	    Test Zone</a></td>
 	  </tr>
 	</tbody>
       </table>
@@ -104,6 +106,8 @@ Community Meeting, Cape Town, Nov 2004)</li>
 	</ul>
 	<ul>
   		<ul>
+	        <li><a href="testzone">Our testzone full of bad DNSSEC
+	        data for testing DNSSEC software</a></li>
     		<li><a href="docs/demos_experiments/20040826%20Demo.ppt">DNS spoofing demo</a></li>
 		    <li><a href="docs/demos_experiments/split-DNSSEC-experiment-0107.ppt">Split-view DNSSEC</a></li>
 			<br>
@@ -176,6 +180,21 @@ Community Meeting, Cape Town, Nov 2004)</li>
 		<td><a href="images/dnspktflow.png"><img border=0 src="images/dnspktflow.sm.png"></a><a href="images/dnssec-tools.png"><img border=0 src="images/dnssec-tools.sm.png"></a></td>
 	</tr>
 
+	<tr><td class="tdtitle"><a
+	    href="docs/maketestzone.html">maketestzone</a>:</td><td
+	    class="description"> (available in 0.3)<br>
+		  This tool generates a zone file(s)
+	    full of DNS records, then signs them, and then modifies
+	    them in various ways such that the final resulting file is
+	    a zone which contains DNSSEC "errors".  This is useful for
+	    generating test data which DNSSEC aware software can be
+	    tested against.  Our own <a
+	    href="testzone">test.dnssec-tools.org</a> testzone is
+	    created using this package.
+		</td>
+		<td><a href="images/maketestzone.png"><img border=0 src="images/maketestzone.sm.png"></a></td>
+	</tr>
+
 	    <tr><td class="tdtitle">ifup-dyn-dns:</td><td class="description"> A linux ifup addition that propagates
 	      current IP addresses into a live zone(s) using dynamic
 	      DNS.  Allows for security to be used as well so
@@ -228,13 +247,15 @@ Community Meeting, Cape Town, Nov 2004)</li>
 		<td class="description">A configuration plugin to
 		logwatch to have logwatch perform DNSSEC parsing of
 		system logging messages from running bind
-		servers.</td>
+		servers.  (this patch has been sent to the logwatch
+		team and will be included in the next release of logwatch)</td>
 		<td><a href="txt/logwatch.txt">Example Output</a></td>
 	      </tr>
 
 	    <tr><td class="tdtitle">Perl Module:
-	    Net::DNS::ZoneFile::Fast</td><td class="description"> A patch to support parsing
-	      DNSSEC records.</td></tr>
+		  Net::DNS::ZoneFile::Fast</td><td class="description">
+		  We've taken over development of this module and have
+		  made it dnssec compliant.</td></tr>
 
 	  </table>
 	</div>
@@ -264,7 +285,7 @@ Community Meeting, Cape Town, Nov 2004)</li>
     <hr>
 <!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
 <!-- hhmts start -->
-Last modified: Thu Dec 15 16:10:00 EDT 2005
+Last modified: Mon Dec 26 11:06:44 PST 2005
 <!-- hhmts end -->
   </body>
 </html>
