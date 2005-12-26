@@ -1,0 +1,128 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>generaterecords - generates a test dnssec zone that can be used to DNSSEC</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#prerequisites">PRE-REQUISITES</a></li>
+	<li><a href="#adding_new_record_modifications">ADDING NEW RECORD MODIFICATIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>generaterecords - generates a test dnssec zone that can be used to DNSSEC</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p>generaterecords -v -d mytestzone.example.com</p>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The generaterecords script generates a zone file, given a domain name,
+which is then signed and modified to invalidate portions of the data
+in particular ways.  Each generated record is named appropriately to
+how the security data is modified (the gooda record will contain a A
+record with valid DNSSEC data, but the badseca record will contain an
+A record where the signature has been modified to invalidate it).</p>
+<p>The results of this process can then be served and test secure
+validators, applications, and other software can be thrown at it to
+see if they properly fail or succeed under the dns security policies
+being deployed.</p>
+<p>After the files are generated, consider running <strong>donuts</strong> on them to
+see how the data in them has been tampered with to be invalid.</p>
+<p>
+</p>
+<hr />
+<h1><a name="prerequisites">PRE-REQUISITES</a></h1>
+<p>zonesigner from the dnssec-tools project
+bind software 9.3.1 or greater</p>
+<p>
+</p>
+<hr />
+<h1><a name="adding_new_record_modifications">ADDING NEW RECORD MODIFICATIONS</a></h1>
+<p>Maketestzone is in early development stages but already has the
+beginnings of an extnesible system allowing you to modify records at
+will based on regexp =&gt; subroutine hooks.</p>
+<p>To add a new modification, add a new keyword to the 'p' and optionally
+'P' default flags (or add it at run time), and then add a new function
+to the list of callbacks defined in the %destroyFunctions hash that is
+based on your new keyword.  When the file is getting parsed and hits a
+record matching your expression, your functional will be called.
+Arguments can be added to the function by passing an array reference
+where the first argument is the subroutine to be called, and the
+remainder are additional arguments.  Output lines should be printed to
+the $fh file handle.</p>
+<p>Here's an example function that deletes the RRSIG signature of the
+next record:</p>
+<pre>
+  sub delete_signature {
+      # the first 2 arguments are always passed; the other was in the
+      # array refeence the subroutine was registered with.
+      my ($name, $type, $expr) = @_;</pre>
+<pre>
+      Verbose(&quot;  deleting signatures of $_[0]&quot;);</pre>
+<pre>
+      # print the current line
+      print $fh $_;</pre>
+<pre>
+      my $inrec = 0;
+      while (&lt;I&gt;) {
+        # new name record means we're done.
+        last if /^\w/;</pre>
+<pre>
+        # we're in a multi-line rrsig record
+        $inrec = 1 if (/$expr\s+$type/);</pre>
+<pre>
+        # print the line if we're not in the rrsig record
+        print $fh $_ if (!$inrec);</pre>
+<pre>
+        # when done with the last line of the rrsig record, mark this spot
+        $inrec = 0 if (/\)/);
+      }
+  }</pre>
+<p>This is then registered within %destroyFunctions.  Here's an example
+of registering the function to delete the signature on a DS record:</p>
+<pre>
+   '^(nosig[-\w]+).*IN\s+NS\s+' =&gt; [\&amp;delete_signature, 'DS', 'RRSIG'],</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>Net::DNS</strong></p>
+<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
+<p>zonesigner(1), <code>donuts(1)</code></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>
