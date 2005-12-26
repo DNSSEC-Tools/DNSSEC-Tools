@@ -38,7 +38,14 @@ div.title {
   padding-bottom: 20px;
   border-color: 66e;
   border-style: outset;
-  border-width: 2px;
+  border-width: 4px;
+}
+
+div.slogan { 
+  font-style: italic;
+  text-align: center;
+  font-size: .8em;
+  padding-top: .5em;
 }
 
 h2 { 
@@ -52,7 +59,6 @@ h2 {
 h3 { 
   background: #bbe;
   padding-left: 5px;
-  width: 80%;
   border-color: #fff #fff #66e #fff;
   border-style: solid;
   border-width: 2px;
@@ -72,44 +78,7 @@ div.major {
   border: solid;
   padding-left: 5px;
   top-padding: 5px;
-  border-color: #aad #fff #fff #fff;
-}
-
-table.links { 
-  border: 5px;
-  background: #66e;
-  color: #fff;
-  text-align: center;
-  padding-left: 5px;
-  padding-right: 5px;
-  padding-top: 1px;
-  padding-bottom: 5px;
-  border-color: #66e;
-  border-style: solid;
-  border-top-width: 1px;
-  width: 80%;
-  border-bottom-width: 5px;
-}
-
-td.tdlinks { 
-  color: #fff;
-  padding-left: 7px;
-  padding-right: 7px;
-  background: #7777ee;
-  text-align: center;
-  font-weight: bold;
-  font-size: 1.3em;
-  width: 16%;
-}
-
-th.thlinks { 
-  text-align: center;
-  font-weight: bold;
-  font-style: underline;
-  font-size: 125%;
-  color: #fff;
-  border: solid;
-  border-color: #66e #66e #fff #66e;
+  border-color: #66e #fff #fff #fff;
 }
 
 table.soft { 
@@ -143,6 +112,7 @@ td {
   font-weight: bold;
 }
 
+/* application tables */
 th.thtitle { 
   color: #000000;
   font-size: 1.2em;
@@ -163,6 +133,54 @@ td.description {
   wideth: 25%;
 }
 
-a.toplink:link { color: #fff }
-a.toplink:visited { color: #fff }
-a.toplink:hover { background: #6666dd }
+
+/*
+ *  table of links at the top
+ */
+table.links { 
+  text-align: center;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 1px;
+  padding-bottom: 5px;
+  width: 80%;
+}
+
+td.tdlinks { 
+  color: #000;
+  padding-left: 7px;
+  padding-right: 7px;
+  background: #99f;
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.3em;
+  width: 17%;
+  border-color: #99f;
+  border-width: 2px;
+  border-style: outset;
+}
+
+th.thlinks { 
+  text-align: center;
+  font-weight: bold;
+  font-style: underline;
+  font-size: 1.4em;
+  color: #000;
+  background: #99f;
+  border: outset;
+  border-color: #66e #66e #fff #66e;
+}
+
+a.toplink:link { 
+  color: #000;
+  text-decoration:none;
+}
+a.toplink:visited { 
+  color: #000;
+  text-decoration:none;
+}
+a.toplink:hover { 
+  width: 100%;
+  background: #66e;
+  text-decoration:none;
+}
