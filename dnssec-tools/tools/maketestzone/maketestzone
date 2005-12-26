@@ -76,7 +76,9 @@ LocalGetOptions(\%opts,
 		'',
 		['html-out=s',
 		 'Generate a HTML page containing a list of record names'],
-		['html-out-addlinks','Make each html record name a http link to that address'],
+		['html-out-add-links','Make each html record name a http link to that address'],
+		['html-out-add-db-links','Add a link to each of the generated DB files.'],
+		['html-out-add-donuts-links','Add a link to each of the generated donuts error list files.'],
 		['apache-out=s',
 		 'Generate a Apache config snippit for configuring apache for each zone record'],
 		['sh-test-out=s',
@@ -353,6 +355,7 @@ h1,h2 {
 	}
 	print $htmlfh "
 </table>
+<p>Records may contain any number of the above components.  For example, a record name of \"nosig-cname-to-futuredate-a\" would be a CNAME record with no signature which was pointing at an A record with an RRSIG which is not yet valid at the time the signature was created.<p>
 ";
     }
 
@@ -380,14 +383,20 @@ sub shutdown_global_files {
     $shfh->close() if ($shfh);
     if ($htmlfh) {
 	foreach my $domain (@outdomains) {
-	    print $htmlfh "    <h2>$domain Records</h2>\n    <ul>";
+	    print $htmlfh "    <h2>Records in $domain</h2>\n    <ul>";
+	    if ($opts{'html-out-add-db-links'}) {
+		print $htmlfh "<p>The zone file for this domain: <a href=\"$opts{'o'}$domain$opts{'O'}.signed$opts{'M'}\">$domain</a></p>\n";
+	    }
+	    if ($opts{'html-out-add-donuts-links'}) {
+		print $htmlfh "<p>The errors for the records contained within this zone as caught by the <i>donuts</i> application: <a href=\"$opts{'o'}$domain$opts{'O'}.signed$opts{'M'}$opts{'donuts-output-suffix'}\">$domain</a></p>\n";
+	    }
 	    foreach my $addr (sort @{$linkinfo{$domain}}) {
 		print $htmlfh "        <li>";
 		print $htmlfh "<a href=\"http://$addr/\">"
-		  if ($opts{'html-out-addlinks'});
+		  if ($opts{'html-out-add-links'});
 		print $htmlfh $addr;
 		print $htmlfh "</a>"
-		  if ($opts{'html-out-addlinks'});
+		  if ($opts{'html-out-add-links'});
 		print $htmlfh "</li>\n";
 	    }
 	    print $htmlfh "    </ul>\n";
