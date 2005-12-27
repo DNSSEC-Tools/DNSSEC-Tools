@@ -10,30 +10,24 @@ SRC=  	val_resquery.c \
 
 # can't use gmake conventions to translate SRC -> OBJ for portability
 OBJ=  	validator_driver.o \
-	validate.o \
 	getaddr.o \
 	gethost.o
 
 LOBJ=   validator_driver.lo \
-	validate.lo \
 	getaddr.lo \
 	gethost.lo
 
-DRIVER= driver 
 VALIDATOR=validate
 GETHOST= gethost
 GETADDR= getaddr
 
-all: $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR)
+all: $(VALIDATOR) $(GETHOST) $(GETADDR)
 
 clean:
-	$(RM) -f $(LOBJ) $(OBJ) $(DRIVER) $(VALIDATOR) $(GETHOST) $(GETADDR)
+	$(RM) -f $(LOBJ) $(OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR)
 
-$(DRIVER): validator_driver.lo
+$(VALIDATOR): validator_driver.lo
 	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS)
-
-$(VALIDATOR): validate.lo
-	$(LIBTOOLLD) -o $@ validate.lo $(LDFLAGS)
 
 $(GETHOST): gethost.lo
 	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS)
