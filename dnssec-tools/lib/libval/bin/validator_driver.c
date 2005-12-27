@@ -434,7 +434,7 @@ int main(int argc, char *argv[])
 		// optind is a global variable.  See man page for getopt_long(3)
 		if (optind < argc) {
 			domain_name = argv[optind++];
-			sendquery("Runtime Query", domain_name, class_h, type_h,
+			sendquery("Result", domain_name, class_h, type_h,
 				  retvals);
 			fprintf(stderr, "\n");
 
