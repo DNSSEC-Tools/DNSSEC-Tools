@@ -4,9 +4,14 @@
  */ 
 
 /*
- * This program runs a set of test cases, if no other command line
- * paraneters are given, or validates the domain name specified on
- * the command line.
+ * A command-line validator
+ *
+ * This program validates the <class, type, domain name> query given
+ * on the command line, or runs a set of pre-defined test cases if
+ * no command line parameters are given
+ *
+ * It generates an output suitable for consumption by the
+ * drawvalmap.pl script.  This output is written to stderr.
  */
 
 #include <stdio.h>
@@ -25,6 +30,7 @@
 #define MAX_RESULTS 10 
 #define BUFLEN 16000
 
+// Program options
 static struct option prog_options[] = {
                    {"print", 0, 0, 'p'},
                    {"class", 1, 0, 'c'},
@@ -40,6 +46,7 @@ struct testcase_st {
 	const int qr[MAX_RESULTS];
 };
 
+// A set of pre-defined test cases
 static const struct testcase_st testcases[] = {
 #if 1
 	{"Test Case 1", "good-A.test.dnssec-tools.org", ns_c_in, ns_t_a, {VALIDATE_SUCCESS, 0}},
@@ -260,6 +267,8 @@ static const struct testcase_st testcases[] = {
 };
 
 
+// A wrapper function to send a query and print the output onto stderr
+//
 void sendquery(const char *desc, const char *name, const u_int16_t class, const u_int16_t type, const int result_ar[])
 {
 	int ret_val;
@@ -348,6 +357,7 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
     destroy_context(context);
 }
 
+// Usage
 void usage(char *progname)
 {
 	printf("Usage: %s\n", progname);
@@ -359,9 +369,11 @@ void usage(char *progname)
 	printf("               -t --type=TYPE   Specifies the type (default A)\n");
 }
 
+// Main
 int main(int argc, char *argv[])
 {
 	if (argc == 1) {
+		// Run the set of pre-defined test cases
 		int i;
 		for (i= 0 ; testcases[i].desc != NULL; i++) {
 			sendquery(testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr);
@@ -369,6 +381,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	else {
+		// Parse the command line for a query and resolve+validate it
 		int c;
 		char *classstr    = NULL;
 		char *typestr     = NULL;
