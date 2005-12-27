@@ -104,7 +104,7 @@ sub update_image {
 	$changed = 0;
 	
 	# Look for only messages of the following type
-	if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*(status)=(\S+)/) {
+	if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*(status)=(\S+):/) {
 		$log[$count] =  "$1 $2 $3 $4 $6" ;
 	}
 	else {
