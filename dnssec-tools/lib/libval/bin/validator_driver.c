@@ -3,6 +3,12 @@
  * See the COPYING file distributed with this software for details.
  */ 
 
+/*
+ * This program runs a set of test cases, if no other command line
+ * paraneters are given, or validates the domain name specified on
+ * the command line.
+ */
+
 #include <stdio.h>
 #include <arpa/nameser.h>
 #include <string.h>
@@ -12,9 +18,19 @@
 #include <arpa/inet.h>
 
 #include <resolver.h>
+#include <resolv.h>
 #include <validator.h>
+#include <getopt.h>
 
 #define MAX_RESULTS 10 
+#define BUFLEN 16000
+
+static struct option prog_options[] = {
+                   {"print", 0, 0, 'p'},
+                   {"class", 1, 0, 'c'},
+                   {"type",  1, 0, 't'},
+		   {0, 0, 0, 0}
+               };
 
 struct testcase_st {
 	const char *desc;
@@ -332,11 +348,111 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
     destroy_context(context);
 }
 
-void main()
+void usage(char *progname)
 {
-	int i;
-	for (i= 0 ; testcases[i].desc != NULL; i++) {
-		sendquery(testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr);
-		fprintf(stderr, "\n");
+	printf("Usage: %s\n", progname);
+	printf("\n       OR\n\n");
+	printf("       %s [options] DOMAIN_NAME\n", progname);
+	printf("       Options:\n");
+	printf("               -p --print       Print the answer to the query and its validation result\n");
+	printf("               -c --class=CLASS Specifies the class (default IN)\n");
+	printf("               -t --type=TYPE   Specifies the type (default A)\n");
+}
+
+int main(int argc, char *argv[])
+{
+	if (argc == 1) {
+		int i;
+		for (i= 0 ; testcases[i].desc != NULL; i++) {
+			sendquery(testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr);
+			fprintf(stderr, "\n");
+		}
 	}
+	else {
+		int c;
+		char *classstr    = NULL;
+		char *typestr     = NULL;
+		char *domain_name = NULL;
+		u_int16_t class_h = ns_c_in;
+		u_int16_t type_h  = ns_t_a;
+		int success       = 0;
+		int doprint       = 0;
+		int retvals[]     = {VALIDATE_SUCCESS, 0};
+
+		while (1) {
+			int opt_index     = 0;
+			c = getopt_long (argc, argv, "pc:t:",
+					 prog_options, &opt_index);
+
+			if (c == -1) {
+				break;
+			}
+
+			switch(c) {
+			case 'p':
+				doprint = 1;
+				break;
+
+			case 'c':
+				// optarg is a global variable.  See man page for getopt_long(3).
+				class_h = res_nametoclass(optarg, &success);
+				if (!success) {
+					fprintf(stderr, "Cannot parse class %s\n", optarg);
+					usage(argv[0]);
+					return 1;
+				}
+				break;
+			case 't':
+				type_h = res_nametotype(optarg, &success);
+				if (!success) {
+					fprintf(stderr, "Cannot parse type %s\n", optarg);
+					usage(argv[0]);
+					return 1;
+				}
+				break;
+			default:
+				fprintf(stderr, "Unknown option %s (c = %d [%c])\n", argv[optind - 1], c, (char) c);
+				usage(argv[0]);
+				return 1;
+
+			} // end switch
+		}
+
+		// optind is a global variable.  See man page for getopt_long(3)
+		if (optind < argc) {
+			domain_name = argv[optind++];
+			sendquery("Runtime Query", domain_name, class_h, type_h,
+				  retvals);
+			fprintf(stderr, "\n");
+
+			// If the print option is present, perform query and validation again for printing the result
+			if (doprint) {
+				int anslen = 0;
+				int dnssec_status = -1;
+				unsigned char buf[BUFLEN];
+
+				bzero(buf, BUFLEN);
+
+				anslen = val_query(domain_name, class_h, type_h, buf, BUFLEN, 0, &dnssec_status);
+				printf("DNSSEC status: %s [%d]\n", p_val_error(dnssec_status), dnssec_status);
+
+				if (anslen > 0) {
+					if (dnssec_status == VALIDATE_SUCCESS) {
+						printf("Validated response:\n");
+					}
+					else {
+						printf("Non-validated response:\n");
+					}
+					print_response(buf, anslen);
+				}
+			}
+		}
+		else {
+			fprintf(stderr, "Please specify domain name\n");
+			usage(argv[0]);
+			return 1;
+		}
+	}
+
+	return 0;
 }
