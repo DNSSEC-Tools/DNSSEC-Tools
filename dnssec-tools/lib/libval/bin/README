@@ -12,16 +12,16 @@ the validator.
 To compile:
 	make
 
-To run the resolver-driver:
+To run the test cases for the validator:
 
-        ./driver
+        ./validate
 
-To run the validator:
+To run the validator for a specific query:
 
-        ./validate [[CLASS] TYPE] DOMAIN_NAME
+        ./validate [-p] [-c CLASS] [-t TYPE] DOMAIN_NAME
 
-     If CLASS is not provided, it is assumed to be IN.
-     If TYPE is not provided, it is assumed to be A.
+     If the -c option is not given, the class is assumed to be IN.
+     If the -t option is not given, the type is assumed to be A.
 
 To run gethost:
 
