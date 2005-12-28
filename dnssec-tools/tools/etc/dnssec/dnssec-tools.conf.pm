@@ -109,7 +109,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     checkzone       /usr/local/sbin/named-checkzone
     keygen          /usr/local/sbin/dnssec-keygen
     signzone        /usr/local/sbin/dnssec-signzone
-    
+    viewimage       /usr/X11R6/bin/xview
     
     #
     # Settings for dnssec-keygen.
