@@ -2,17 +2,25 @@ PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts \
          tools/dnspktflow tools/maketestzone tools/etc
 
 SUBDIRS=lib/libsres lib/libval lib/libval/doc
+INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
 
 all: makeit
 
 makeit: perlmakefiles perlmake subdirmake
 
-install: perlinstall subdirinstall
+install: makedircetiories perlinstall subdirinstall
 
 clean: perlclean subdirclean
 
 distclean: clean configclean
 
+makedirectories:
+	@for i in $(INSTALLDIRS) ; do \
+		if test ! -d $$i ; then \
+			echo "creating directory $$i/" \
+			$(MKPATH) $$I ; \
+		fi \
+	done
 #
 # Subdir build rules
 #
