@@ -17,6 +17,33 @@ AC_PROG_INSTALL
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
+dnl ----------------------------------------------------------------------
+dnl openssl
+dnl
+AC_ARG_WITH(openssl,
+[--with-openssl=PATH             Look for openssl in PATH/{lib,include}.],
+    if test "x$withval" != "xyes"; then
+      opensslpathset=1
+      AC_ADD_SEARCH_PATH($withval)
+    fi
+)
+dnl openssl defaults to /usr/local/ssl, so add it to the search path.
+if test "x$opensslpathset" != "x1"; then
+    AC_ADD_SEARCH_PATH(/usr/local/ssl)
+fi
+
+AC_CHECK_LIB(crypto, EVP_md5,,
+        AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
+)
+
+AC_CHECK_HEADERS(openssl/bio.h openssl/evp.h)
+
+# error and die if we couldn't find it.
+if test "x$ac_cv_lib_crypto_EVP_md5" != "xyes" -o "x$ac_cv_header_openssl_bio_h" != "xyes" -o "x$ac_cv_header_openssl_evp_h" != "xyes"; then
+	AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
+fi
+dnl ----------------------------------------------------------------------
+
 AC_CONFIG_FILES([
  Makefile:Makefile.top:Makefile.in
  lib/libsres/Makefile:Makefile.top:lib/libsres/Makefile.in:Makefile.bot
