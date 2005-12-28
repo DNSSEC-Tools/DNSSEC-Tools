@@ -32,6 +32,7 @@
 
 // Program options
 static struct option prog_options[] = {
+		   {"help",  0, 0, 'h'},
                    {"print", 0, 0, 'p'},
                    {"class", 1, 0, 'c'},
                    {"type",  1, 0, 't'},
@@ -360,13 +361,16 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
 // Usage
 void usage(char *progname)
 {
-	printf("Usage: %s\n", progname);
-	printf("\n       OR\n\n");
-	printf("       %s [options] DOMAIN_NAME\n", progname);
-	printf("       Options:\n");
-	printf("               -p --print       Print the answer to the query and its validation result\n");
-	printf("               -c --class=CLASS Specifies the class (default IN)\n");
-	printf("               -t --type=TYPE   Specifies the type (default A)\n");
+	printf("Usage: validate [options] [DOMAIN_NAME]\n");
+	printf("Resolve and validate a DNS query.\n");
+	printf("Options:\n");
+	printf("        -h, --help             Display this help and exit\n");
+	printf("        -p, --print            Print the answer and validation result\n");
+	printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
+	printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
+	printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
+	printf("The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.\n");
+	printf("If no arguments are given, this program runs a set of predefined test queries.\n");
 }
 
 // Main
@@ -394,14 +398,18 @@ int main(int argc, char *argv[])
 
 		while (1) {
 			int opt_index     = 0;
-			c = getopt_long (argc, argv, "pc:t:",
-					 prog_options, &opt_index);
+			c = getopt_long_only (argc, argv, "pc:t:",
+					      prog_options, &opt_index);
 
 			if (c == -1) {
 				break;
 			}
 
 			switch(c) {
+			case 'h':
+			        usage(argv[0]);
+			        return(0);
+
 			case 'p':
 				doprint = 1;
 				break;
