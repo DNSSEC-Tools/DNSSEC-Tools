@@ -95,6 +95,8 @@ sub rollrec_read
 	my $rrcnt;			# Number of rollrecs we found.
 	my @sbuf;			# Buffer for stat().
 
+# print "rollrec_read:  down in\n";
+
 	#
 	# Use the default rollrec file, unless the caller specified
 	# a different file.
@@ -223,6 +225,8 @@ sub rollrec_names
 	my $rrn;				# Rollrec name index.
 	my @names = ();				# Array for rollrec names.
 
+# print "rollrec_names:  down in\n";
+
 	foreach $rrn (sort(keys(%rollrecs)))
 	{
 		push @names, $rrn;
@@ -242,6 +246,8 @@ sub rollrec_fullrec
 	my $name = shift;
 	my $nrec = $rollrecs{$name};
 
+# print "rollrec_fullrec:  down in ($name)\n";
+
 	return($nrec);
 }
 
@@ -256,6 +262,8 @@ sub rollrec_recval
 	my $name = shift;
 	my $field = shift;
 	my $val = $rollrecs{$name}{$field};
+
+# print "rollrec_recval:  down in ($name) ($field) ($val)\n";
 
 	return($val);
 }
@@ -278,6 +286,8 @@ sub rollrec_setval
 	my $fldind;			# Loop index.
 	my $rrind;			# Loop index for finding rollrec.
 	my $lastfld = 0;		# Last found field in @rollreclines.
+
+# print "rollrec_setval:  down in\n";
 
 	#
 	# If a rollrec of the specified name doesn't exist, we'll create a
@@ -452,6 +462,8 @@ sub rollrec_add
 
 	my %fields;			# Rollrec fields.
 
+# print "rollrec_add:  down in\n";
+
 	#
 	# Get the timestamp.
 	#
@@ -560,6 +572,8 @@ sub rollrec_del
 	my $lval;			# Rollrec line's value.
 	my $len;			# Length of array slice to delete.
 
+# print "rollrec_del:  down in\n";
+
 	#
 	# Don't allow empty rollrec names.
 	#
@@ -646,6 +660,8 @@ sub rollrec_newrec
 {
 	my $name = shift;		# Name of rollrec we're creating.
 
+# print "rollrec_newrec:  down in\n";
+
 	$rollrecs{$name}{"rollrec_name"} = $name;
 }
 
@@ -657,6 +673,8 @@ sub rollrec_newrec
 #
 sub rollrec_fields
 {
+# print "rollrec_fields:  down in\n";
+
 	return(@ROLLFIELDS);
 }
 
@@ -668,6 +686,8 @@ sub rollrec_fields
 #
 sub rollrec_default
 {
+# print "rollrec_default:  down in\n";
+
 	return($DEFAULT_ROLLREC);
 }
 
@@ -680,6 +700,8 @@ sub rollrec_default
 #
 sub rollrec_init
 {
+# print "rollrec_init:  down in\n";
+
 	%rollrecs     = ();
 	@rollreclines = ();
 	$rollreclen   = 0;
@@ -695,6 +717,8 @@ sub rollrec_init
 #
 sub rollrec_discard
 {
+# print "rollrec_discard:  down in\n";
+
 	close(ROLLREC);
 	rollrec_init();
 }
@@ -707,6 +731,8 @@ sub rollrec_discard
 #
 sub rollrec_close
 {
+# print "rollrec_close:  down in\n";
+
 	rollrec_write();
 	close(ROLLREC);
 }
@@ -720,6 +746,9 @@ sub rollrec_close
 sub rollrec_write
 {
 	my $rrc = "";		# Concatenated rollrec file contents.
+	my $ofh;		# Old file handle.
+
+# print "rollrec_write:  down in\n";
 
 	#
 	# If the file hasn't changed, we'll skip writing.
@@ -743,6 +772,13 @@ sub rollrec_write
 	seek(ROLLREC,0,0);
 	truncate(ROLLREC,0);
 	print ROLLREC $rrc;
+
+	#
+	# Flush the ROLLREC buffer.
+	#
+	$ofh = select ROLLREC;
+	$| = 1;
+	select $ofh;
 }
 
 #--------------------------------------------------------------------------
@@ -753,6 +789,8 @@ sub rollrec_write
 #
 sub rollrec_dump_hash
 {
+# print "rollrec_dump_hash:  down in\n";
+
 	#
 	# Loop through the hash of rollrecs and print the rollrec names,
 	# subfields, and values.
@@ -778,6 +816,8 @@ sub rollrec_dump_hash
 #
 sub rollrec_dump_array
 {
+# print "rollrec_dump_array:  down in\n";
+
 	#
 	# Loop through the array of rollrec lines and print them all.
 	#
