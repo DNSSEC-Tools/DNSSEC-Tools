@@ -541,7 +541,7 @@ sub genksk
 	{
 		if($opts{'kskkey'} eq "")
 		{
-			print STDERR "\nunable to re-use a non-existent KSK\n";
+			print STDERR "\nunable to re-use a non-existent KSK for zone \"$opts{'zone'}\"\n";
 			exit(1);
 		}
 
