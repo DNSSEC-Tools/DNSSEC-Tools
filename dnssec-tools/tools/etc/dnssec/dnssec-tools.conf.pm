@@ -92,6 +92,10 @@ archive directory.
 
 The path to the I<dnssec-signzone> command.
 
+=item usegui
+
+Flag to allow/disallow usage of the GUI for specifying command options.
+
 =item zsklength
 
 The default ZSK key length to be passed to I<dnssec-keygen>.
@@ -134,6 +138,11 @@ The following is an example B<dnssec-tools.conf> configuration file.
 
     savekeys            1
     archivedir          /usr/local/etc/dnssec/KEY-SAFE
+
+    #
+    # GUI-usage flag.
+    #
+    usegui		0
 
 =head1 COPYRIGHT
 
