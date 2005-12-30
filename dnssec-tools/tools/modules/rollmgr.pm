@@ -94,13 +94,13 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
 		 rollmgr_dir
-		 rollmgr_droppid
+		 rollmgr_dropid
 		 rollmgr_getid
 		 rollmgr_halt
-		 rollmgr_pidfile
+		 rollmgr_idfile
 		 rollmgr_qproc
-		 rollmgr_rmpid
-		 rollmgr_savepid
+		 rollmgr_rmid
+		 rollmgr_saveid
 		);
 
 my $rollmgrid;				# Roll-over manager's process id.
@@ -109,7 +109,7 @@ my $rollmgrid;				# Roll-over manager's process id.
 #
 # These "constants" are the names of the roll-over manager's interfaces.
 # 
-my $DROPID	= "droppid";
+my $DROPID	= "dropid";
 my $GETDIR	= "getdir";
 my $GETID	= "getid";
 my $HALT	= "halt";
@@ -125,7 +125,7 @@ my $SAVEID	= "saveid";
 # 
 my %switch_uninit =
 (
-	$DROPID	=>	\&uninit_droppid,
+	$DROPID	=>	\&uninit_dropid,
 	$GETDIR	=>	\&uninit_dir,
 	$GETID	=>	\&uninit_getid,
 	$HALT	=>	\&uninit_halt,
@@ -137,7 +137,7 @@ my %switch_uninit =
 
 my %switch_unknown =
 (
-	$DROPID	=>	\&unknown_droppid,
+	$DROPID	=>	\&unknown_dropid,
 	$GETDIR	=>	\&unknown_dir,
 	$GETID	=>	\&unknown_getid,
 	$HALT	=>	\&unknown_halt,
@@ -149,11 +149,11 @@ my %switch_unknown =
 
 my %switch_unix =
 (
-	$DROPID	=>	\&unix_droppid,
+	$DROPID	=>	\&unix_dropid,
 	$GETDIR	=>	\&unix_dir,
-	$GETID	=>	\&unix_getpid,
+	$GETID	=>	\&unix_getid,
 	$HALT	=>	\&unix_halt,
-	$IDFILE	=>	\&unix_pidfile,
+	$IDFILE	=>	\&unix_idfile,
 	$QPROC	=>	\&unix_qproc,
 	$RMID	=>	\&unix_rmid,
 	$SAVEID	=>	\&unix_saveid,
@@ -263,17 +263,17 @@ sub rollmgr_dir
 
 #--------------------------------------------------------------------------
 #
-# Routine:      rollmgr_droppid()
+# Routine:      rollmgr_dropid()
 #
 # Purpose:	Front-end to the O/S-specific "save roll-over manager's
 #		process id" function.
 #
-sub rollmgr_droppid
+sub rollmgr_dropid
 {
 	my @args = shift;			# Routine arguments.
 	my $func;				# Actual function.
 
-# print "rollmgr_droppid\n";
+# print "rollmgr_dropid\n";
 
 	$func = $switchtab{$DROPID};
 	return(&$func(@args));
@@ -419,18 +419,18 @@ sub uninit_dir
 
 #--------------------------------------------------------------------------
 #
-# Routine:      uninit_droppid()
+# Routine:      uninit_dropid()
 #
-# Purpose:	Switch for uninitialized "drop pid" command.
+# Purpose:	Switch for uninitialized "drop id" command.
 #
-sub uninit_droppid
+sub uninit_dropid
 {
 	my @args = shift;			# Routine arguments.
 
-# print "uninit_droppid\n";
+# print "uninit_dropid\n";
 
 	rollmgr_prepdep();
-	return(rollmgr_droppid(@args));
+	return(rollmgr_dropid(@args));
 }
 
 #--------------------------------------------------------------------------
@@ -636,11 +636,11 @@ sub unix_dir
 
 #--------------------------------------------------------------------------
 #
-# Routine:	unix_pidfile()
+# Routine:	unix_idfile()
 #
-# Purpose:	Return the roll-over manager's pid file.
+# Purpose:	Return the roll-over manager's id file.
 #
-sub unix_pidfile
+sub unix_idfile
 {
 	return($UNIX_ROLLMGR_PIDFILE);
 }
@@ -648,7 +648,7 @@ sub unix_pidfile
 
 #--------------------------------------------------------------------------
 #
-# Routine:	unix_droppid()
+# Routine:	unix_dropid()
 #
 # Purpose:	Ensures that another instance of the roll-over manager is
 #		running and then creates a pid file for future reference.
@@ -658,7 +658,7 @@ sub unix_pidfile
 #		 0 - Another process (not this one) is already acting as
 #		     the roll-over manager.
 #
-sub unix_droppid
+sub unix_dropid
 {
 	my $ego = $$;				# My identity.
 	my $rdpid;				# Pid read from the pidfile.
@@ -676,7 +676,7 @@ sub unix_droppid
 	#
 	if($rdpid < 0)
 	{
-# print "unix_droppid:  opening $UNIX_ROLLMGR_PIDFILE\n";
+# print "unix_dropid:  opening $UNIX_ROLLMGR_PIDFILE\n";
 		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPPID UNABLE TO OPEN <$UNIX_ROLLMGR_PIDFILE>\n";
 		flock(PIDFILE,LOCK_EX);
 	}
@@ -765,7 +765,7 @@ sub unix_droppid
 
 #--------------------------------------------------------------------------
 #
-# Routine:	unix_rmpid()
+# Routine:	unix_rmid()
 #
 # Purpose:	Delete the roll-over manager's pidfile.  This is done when
 #		as part of the manager's clean-up process.
@@ -776,13 +776,13 @@ sub unix_droppid
 #		-1 - The calling process is not the roll-over manager.
 #		-2 - Unable to delete the pidfile.
 #
-sub unix_rmpid
+sub unix_rmid
 {
 	my $ego = $$;				# My identity.
 	my $flret;				# flock() return code.
 	my $rdpid;				# Pid read from the pidfile.
 
-# print "unix_rmpid:  down in\n";
+# print "unix_rmid:  down in\n";
 
 	#
 	# Get the pid from the roll-over manager's pidfile.
@@ -795,7 +795,7 @@ sub unix_rmpid
 	#
 	if($rdpid == -1)
 	{
-# print "unix_rmpid:  roll-over manager's pidfile does not exist\n";
+# print "unix_rmid:  roll-over manager's pidfile does not exist\n";
 		return(0);
 	}
 
@@ -804,7 +804,7 @@ sub unix_rmpid
 	#
 	if($rdpid != $ego)
 	{
-# print "unix_rmpid:  we are not the roll-over manager\n";
+# print "unix_rmid:  we are not the roll-over manager\n";
 		return(-1);
 	}
 
@@ -813,7 +813,7 @@ sub unix_rmpid
 	#
 	if(unlink($UNIX_ROLLMGR_PIDFILE) != 1)
 	{
-# print "unix_rmpid:  unable to delete pidfile\n";
+# print "unix_rmid:  unable to delete pidfile\n";
 		return(-2);
 	}
 
@@ -948,13 +948,13 @@ manager.
 
   $dir = rollmgr_dir();
 
-  $pidfile = rollmgr_pidfile();
+  $idfile = rollmgr_idfile();
 
-  $pid = rollmgr_getpid();
+  $id = rollmgr_getid();
 
-  rollmgr_droppid();
+  rollmgr_dropid();
 
-  rollmgr_rmpid();
+  rollmgr_rmid();
 
   rollmgr_qproc();
 
@@ -974,42 +974,42 @@ The interfaces to the B<Net::DNS::SEC::Tools::rollmgr> module are given below.
 
 This routine returns the roll-over manager's directory.
 
-=head2 B<rollmgr_pidfile()>
+=head2 B<rollmgr_idfile()>
 
-This routine returns the roll-over manager's pid file.
+This routine returns the roll-over manager's id file.
 
-=head2 B<rollmgr_getpid()>
+=head2 B<rollmgr_getid()>
 
 This routine returns the roll-over manager's process id.  If a non-zero value
-is passed as an argument, the pidfile will be left open and accessible through
+is passed as an argument, the id file will be left open and accessible through
 the PIDFILE file handle.  See the WARNINGS section below.
 
 Return Values:
 
     On success, the first portion of the file contents (up to 80
         characters) is returned.
-    -1 is returned if the pidfile does not exist.
+    -1 is returned if the id file does not exist.
 
-=head2 B<rollmgr_droppid()>
+=head2 B<rollmgr_dropid()>
 
 This interface ensures that another instance of the roll-over manager is not
-running and then creates a pid file for future reference.
+running and then creates a id file for future reference.
 
 Return Values:
 
-    1 - the pidfile was successfully created for this process
+    1 - the id file was successfully created for this process
     0 - another process is already acting as the roll-over manager
 
-=head2 B<rollmgr_rmpid()>
+=head2 B<rollmgr_rmid()>
 
-This interface deletes the roll-over manager's pidfile.
+This interface deletes the roll-over manager's id file.
 
 Return Values:
 
-     1 - the pidfile was successfully deleted
-     0 - no pidfile exists
+     1 - the id file was successfully deleted
+     0 - no id file exists
     -1 - the calling process is not the roll-over manager
-    -2 - unable to delete the pidfile
+    -2 - unable to delete the id file
 
 =head2 B<rollmgr_qproc()>
 
@@ -1028,10 +1028,10 @@ returned.
 
 =head1 WARNINGS
 
-1.  B<rollmgr_getpid()> attempts to exclusively lock the pidfile.
+1.  B<rollmgr_getid()> attempts to exclusively lock the id file.
 Set a timer if this matters to you.
 
-2.  B<rollmgr_getpid()> has a nice little race condition.  We should lock
+2.  B<rollmgr_getid()> has a nice little race condition.  We should lock
 the file prior to opening it, but we can't do so without it being open.
 
 =head1 COPYRIGHT
