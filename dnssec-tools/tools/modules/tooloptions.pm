@@ -32,6 +32,7 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 	         opts_keykr opts_zonekr opts_createkrf opts_setcsopts
 	         opts_reset opts_suspend opts_restore opts_drop);
 
+############################################################################
 #
 # Standard options accepted by all tools in the DNSSEC-Tools suite.
 #
@@ -39,7 +40,7 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 #
 my @stdopts =
 (
-        ['GUI:separator',	'Cryptography options:'],
+	['GUI:separator',	'Cryptography options:'],
 		["algorithm=s",		"Cryptographic HASH algorithm",
 		 question => {
 				type	=> 'menu',
@@ -51,9 +52,9 @@ my @stdopts =
 		["endtime=s",		"End-time for signed zone"],
 		["gends",		"Generate DS records"],
 
-        '',
+	'',
 
-        ['GUI:separator',	'Configuration options:'],
+	['GUI:separator',	'Configuration options:'],
 		["keyrec=s",		"Keyrec name",
 		  helpdesc => 'test'
 		],
@@ -63,9 +64,9 @@ my @stdopts =
 		["savekeys",		"Save old keys in archive directory"],
 		["archivedir=s",	"Key archive directory"],
 
-        '',
+	'',
 
-        ['GUI:separator',	'Key-signing key options:'],
+	['GUI:separator',	'Key-signing key options:'],
 		["genksk",		"Generate KSK"],
 		["kskkey=s",		"KSK key"],
 		["ksklength=i",		"Length of KSK"],
@@ -73,18 +74,18 @@ my @stdopts =
 		["kskdirectory=s",	"Directory for KSK keys"],
 		["ksdir=s",		"Directory for keyset files"],
 
-        '',
+	'',
 
-        ['GUI:separator',	'Zone-signing key options:'],
+	['GUI:separator',	'Zone-signing key options:'],
 		["genzsk",		"Generate ZSK"],
 		["zskkey=s",		"ZSK key"],
 		["zsklength=i",		"Length of ZSK"],
 		["zskpath=s",		"Path to ZSK"],
 		["zskdirectory=s",	"Directory for ZSK keys"],
 
-        '',
+	'',
 
-        ['GUI:separator',	'Zone options:'],
+	['GUI:separator',	'Zone options:'],
 		["zone=s",		"Zone name",	required => 1],
 		["zdata=s",		"Zone data filename"],
 		["zfile=s",		"Zone filename"],
@@ -94,9 +95,9 @@ my @stdopts =
 		["kgopts=s",		"Additional options for dnssec-keygen"],
 		["szopts=s",		"Additional dnssec-signzone options"],
 
-        '',
+	'',
 
-        ['GUI:separator',		'Control options:'],
+	['GUI:separator',		'Control options:'],
 		["verbose+",		"Verbose mode"],
 		["help",		'Show command line help',
 		 question => {
@@ -105,28 +106,36 @@ my @stdopts =
 			     }
 		],
 
-        # Getopt::Long::GUI specific argument specifications.  Ignored if !GUI
+	#
+	# Getopt::Long::GUI-specific argument specifications.  Ignored if !GUI.
+	#
 
-        # don't show the "other arguments" dialog box.
- 	['GUI:nootherargs',1],
+	#
+	# Don't show the "other arguments" dialog box.
+	#
+	['GUI:nootherargs',1],
 
-        # prompt for zone input and output file names
-        ['GUI:guionly',
+	#
+	# Prompt for zone input and output file names.
+	#
+	['GUI:guionly',
 		{
-			type => 'fileupload',
-			name => 'zonein',
-			check_values => \&qw_required_field,
-			text => 'Input Zone File:'
+			type		=> 'fileupload',
+			name		=> 'zonein',
+			check_values	=> \&qw_required_field,
+			text		=> 'Input Zone File:'
 		},
 	 	{
-			type => 'fileupload',
-			name => 'zoneout',
-			check_values => \&qw_required_field,
-			text => 'Output Zone File'
+			type		=> 'fileupload',
+			name		=> 'zoneout',
+			check_values	=> \&qw_required_field,
+			text		=> 'Output Zone File'
 		}
 	],
 
-        # map to other args variable
+	#
+	# Map to other args variable.
+	#
 	['GUI:hook_finished',
 		sub
 		{
@@ -134,7 +143,7 @@ my @stdopts =
 		}
 	],
 
-        ['GUI:actions',
+	['GUI:actions',
 		sub
 		{
 			require QWizard;
@@ -147,8 +156,13 @@ my @stdopts =
 	],
 );
 
+############################################################################
+#
+
 my $firstcall		= 1;		# First-call flag.
 my $create_krfile	= 0;		# Create non-existent keyrec file flag.
+
+my $gui			= 0;		# GUI-usage flag.
 
 my %cmdopts	= ();			# Options from command line.
 my %saveopts	= ();			# Save-area for command-line options.
@@ -205,6 +219,11 @@ sub tooloptions
 	%configopts  = %dnssec_opts;
 
 	#
+	# Set the GUI-usage flag according to the config file.
+	#
+	$gui = $configopts{'usegui'};
+
+	#
 	# If this is the first time we've been called, get the command
 	# line options and save them in a module-local variable for use
 	# in subsequent calls.
@@ -221,7 +240,7 @@ sub tooloptions
 			push(@opts,@csopts);
 		}
 
-		LocalGetOptions(\%cmdopts,@opts);
+		localgetoptions(\%cmdopts,@opts);
 		$firstcall = 0;
 	}
 
@@ -709,48 +728,71 @@ sub opts_reset
 
 ##############################################################################
 #
-# Routine:	LocalGetOptions()
+# Routine:	opts_gui()
 #
-# Purpose:	A local wrapper around the Getopt::Long::GUI routine to
-#		determine its availability and call Getopt::Long instead if
-#		need be.  This function and the next is only needed to support
-#		"not-requiring" Getopt::Long::GUI
+# Purpose:	Set the GUI flag to allow GUI usage.
 #
-#		Note:  Code pulled from the Getopt::Long::GUI documentation
-#		       and can be updated to newer versions in the future if
-#		       need be.
-#
-
-sub LocalGetOptions
+sub opts_gui
 {
-	my @args = @_;		# Force copy since we're called multiple times.
-
-	if(($#ARGV == -1) && (eval {require Getopt::GUI::Long;}))
-	{
-		import Getopt::GUI::Long;
-		return(GetOptions(@args));
-	}
-	else
-	{
-		require Getopt::Long;
-		import Getopt::Long;
-	}
-
-	GetOptions(LocalOptionsMap(@args));
+	$gui = 1;
 }
 
 ##############################################################################
 #
-# Routine:	LocalOptionsMap()
+# Routine:	opts_nogui()
+#
+# Purpose:	Set the GUI flag to disallow GUI usage.
+#
+sub opts_nogui
+{
+	$gui = 0;
+}
+
+##############################################################################
+#
+# Routine:	localgetoptions()
+#
+# Purpose:	A wrapper to determine if options should be specified through
+#		a GUI or not.  If the $gui flag isn't set, then the GUI won't
+#		be used.  If $gui is set and the Getopt::Long::GUI routine is
+#		available, then we'll use the GUI.  Otherwise, we'll just
+#		call Getopt::Long.
+#
+#		localgetoptions() and localoptionsmap() are only needed to
+#		support "not-requiring" Getopt::Long::GUI.
+#
+#		Code pulled from the Getopt::Long::GUI documentation and can
+#		be updated to newer versions in the future, if need be.
+#
+sub localgetoptions
+{
+	my @args = @_;		# Force copy since we're called multiple times.
+
+	if($gui)
+	{
+		if(($#ARGV == -1) && (eval {require Getopt::GUI::Long;}))
+		{
+			import Getopt::GUI::Long;
+			return(GetOptions(@args));
+		}
+	}
+
+	require Getopt::Long;
+	import Getopt::Long;
+
+	GetOptions(localoptionsmap(@args));
+}
+
+##############################################################################
+#
+# Routine:	localoptionsmap()
 #
 # Purpose:	Maps Getopt::Long::GUI arguments to Getopt::Long arguments.
 #
-#		Note:  Code pulled from the Getopt::Long::GUI documentation
-#		       and can be updated to newer versions in the future if
-#		       need be.
+#		Code pulled from the Getopt::Long::GUI documentation and can
+#		be updated to newer versions in the future, if need be.
 #
-
-sub LocalOptionsMap
+sub localoptionsmap
 {
 	my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') ? (1, 1, $_[0]) : (0,2));
 
@@ -758,7 +800,7 @@ sub LocalOptionsMap
 	{
 		if($_[$i])
 		{
-			next if(ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+			next if((ref($_[$i]) eq 'ARRAY') && ($_[$i][0] =~ /^GUI:/));
 
 			push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
 			push @opts, $_[$i+1] if($cb == 2);
@@ -828,6 +870,9 @@ Net::DNS::SEC::Tools::tooloptions - DNSSEC-Tools option routines.
 
   opts_reset();
 
+  opts_gui();
+
+  opts_nogui();
 
 =head1 DESCRIPTION
 
@@ -1060,6 +1105,17 @@ Reset an internal flag so that the command-line arguments may be
 re-examined.  This is usually only useful if the arguments have been
 modified by the calling program itself.
 
+=item B<opts_gui()>
+
+Set an internal flag so that command arguments may be specified with a GUI.
+GUI usage requires that Getopt::Long::GUI is available.  If it isn't, then 
+Getopt::Long will be used.
+
+=item B<opts_nogui()>
+
+Set an internal flag so that the GUI will not be used for specifying
+command arguments.
+
 =back
 
 =head1 COPYRIGHT
@@ -1070,7 +1126,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 =head1 AUTHOR
 
 Wayne Morrison, tewok@users.sourceforge.net
-
 
 =head1 SEE ALSO
 
