@@ -53,9 +53,10 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_names
 		 keyrec_fullrec keyrec_recval keyrec_setval keyrec_add
-		 keyrec_del keyrec_newkeyrec keyrec_keyfields keyrec_zonefields
-		 keyrec_init keyrec_discard keyrec_close keyrec_write
-		 keyrec_defkrf keyrec_dump_hash keyrec_dump_array);
+		 keyrec_del keyrec_newkeyrec keyrec_settime keyrec_keyfields
+		 keyrec_zonefields keyrec_init keyrec_discard keyrec_close
+		 keyrec_write keyrec_defkrf
+		 keyrec_dump_hash keyrec_dump_array);
 
 #
 # Fields in a key keyrec.
@@ -786,6 +787,31 @@ sub keyrec_newkeyrec
 
 #--------------------------------------------------------------------------
 #
+# Routine:	keyrec_settime()
+#
+# Purpose:	Set the time value of a keyrec to the current time.  If
+#		the keyrec (identified by name and type) doesn't exist,
+#		a new one will be created.
+#
+sub keyrec_settime
+{
+	my $krtype = shift;		# Type of keyrec (for new keyrecs.)
+	my $name   = shift;		# Name of keyrec we're modifying.
+
+	my $chronosecs;			# Seconds since epoch.
+	my $chronostr;			# String version of now.
+
+	#
+	# Set a timestamp for the zone entry.
+	#
+	$chronosecs = time();
+	$chronostr  = gmtime($chronosecs);
+	keyrec_setval($krtype,$name,'keyrec_signsecs',$chronosecs);
+	keyrec_setval($krtype,$name,'keyrec_signdate',$chronostr);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	keyrec_keyfields()
 #
 # Purpose:	Return the list of key fields.
@@ -980,6 +1006,9 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   keyrec_setval("zone","example.com","zonefile","db.example.com");
 
+  keyrec_settime("zone","example.com");
+  keyrec_settime("key","Kexample.com.+005+23456");
+
   @keyfields = keyrec_keyfields();
   @zonefields = keyrec_zonefields();
 
@@ -1021,8 +1050,9 @@ preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
 B<keyrec_fullrec()> and B<keyrec_recval()>.  The contents are modified
-using B<keyrec_add()> and B<keyrec_setval()>.  I<keyrec>s may be deleted
-with the B<keyrec_del()> interface.
+using B<keyrec_add()> and B<keyrec_setval()>.  B<keyrec_settime()> will
+update a I<keyrec>'s timestamp to the current time.  I<keyrec>s may be
+deleted with the B<keyrec_del()> interface.
 
 If the I<keyrec> file has been modified, it must be explicitly written or the
 changes are not saved.  B<keyrec_write()> saves the new contents to disk.
@@ -1176,6 +1206,13 @@ Return values are:
 
     0 if the creation succeeded
     -1 invalid type was given
+
+=head2 B<keyrec_settime(keyrec_type,keyrec_name)>
+
+Set the timestamp of a specified I<keyrec>.  The file is B<not> written
+after updating the value.  The value is saved in both I<%keyrecs> and in
+I<@keyreclines>, and the file-modified flag is set.  The I<keyrec>'s
+I<keyrec_signdate> and I<keyrec_signsecs> fields are modified.
 
 =head2 B<keyrec_write()>
 
