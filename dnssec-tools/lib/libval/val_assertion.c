@@ -159,7 +159,7 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 
 static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
 {
-	struct trust_anchor_policy *ta_pol, *ta_cur;
+	struct trust_anchor_policy *ta_pol, *ta_cur, *ta_tmphead;
 	int name_len;
 	u_int8_t *zp = zone_n;
 	val_dnskey_rdata_t dnskey;
@@ -173,7 +173,7 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 	/* skip longer names */
 	for (ta_cur = ta_pol; 
 		  ta_cur && (wire_name_length(ta_cur->zone_n) > name_len); 
-		   ta_cur=ta_cur->next);	
+		   ta_cur=ta_cur->next); 
 
 	/* 
 	 * for the remaining nodes, if the length of the zones are 
@@ -199,15 +199,21 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 		}
 	}
 
-	/* for the remaining nodes, see if there is any hope */
-	for (; ta_cur; ta_cur=ta_cur->next) {
-		/* trim the top label from our candidate zone */
-		while (zp[0] && (namecmp(ta_cur->zone_n, zp+(int)zp[0]+1) < 0))
-			zp += (int)zp[0] + 1;
 
-		if (namecmp(ta_cur->zone_n, zp+(int)zp[0]+1) == 0) {
-			/* We have hope */
-			return A_WAIT_FOR_TRUST;
+	/* for the remaining nodes, see if there is any hope */
+	ta_tmphead = ta_cur;
+	while (zp[0]) {
+		/* trim the top label from our candidate zone */
+		zp += (int)zp[0] + 1;
+		for (ta_cur=ta_tmphead; ta_cur; ta_cur=ta_cur->next) {
+			if(wire_name_length(zp) < wire_name_length(ta_cur->zone_n))
+				/* next time look from this point */
+				ta_tmphead = ta_cur->next;
+
+			if (namecmp(ta_cur->zone_n, zp) == 0) {
+				/* We have hope */
+				return A_WAIT_FOR_TRUST;
+			}
 		}
 	}
 
