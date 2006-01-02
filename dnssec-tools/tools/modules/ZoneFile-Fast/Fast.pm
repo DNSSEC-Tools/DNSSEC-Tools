@@ -773,17 +773,21 @@ sub parse_soa_name
 	      $soa->{$soa->{nextkey}} = $1;
 	  } elsif (/\G$pat_skip$/gc) {
 	      return;
-	  } elsif (/\G[ \t]*($pat_name\.)[ \t]/igc) {
+	  } elsif (/\G[ \t]*(\@)[ \t]/igc) {
+	      $soa->{$soa->{nextkey}} = $origin;
+	  }  elsif (/\G[ \t]*($pat_name\.)[ \t]/igc) {
 	      $soa->{$soa->{nextkey}} = $1;
 	  } else {
 	      error("expected valid $soa->{nextkey}");
 	  }
       } else {
-	  if (/\G[ \t]+($pat_maybefullname)/igc) {
+	  if (/\G[ \t]*($pat_maybefullname)/igc) {
 	      $soa->{$soa->{nextkey}} = $1;
 	  } elsif (/\G[ \t]*\($pat_skip$/igc) {
 	      $soa->{breakable} = 1;
 	      return;
+	  } elsif (/\G[ \t]*(\@)[ \t]/igc) {
+	      $soa->{$soa->{nextkey}} = $origin;
 	  } elsif (/\G[ \t]*\(/igc) {
 	      $soa->{breakable} = 1;
 	      $parse->();
