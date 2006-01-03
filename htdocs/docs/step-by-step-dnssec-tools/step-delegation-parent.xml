@@ -23,12 +23,8 @@
     <filename>keyset-child-zone-file</filename></command>
     <userinput>[ENTER]</userinput></para>
 
-    <para><computeroutput>child-zone-name. 3600 IN DNSKEY 256 3 5
-    (</computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>); key id = keytag</computeroutput></para>
+    <para><computeroutput>child-zone-name. 3600 IN DNSKEY 256 3 5 ( ... ); key
+    id = keytag</computeroutput></para>
 
     <para><computeroutput>child-zone-name</computeroutput> must exist in the
     parent zone-file as a valid delegation.</para>
@@ -37,13 +33,8 @@
     <filename>zone-file</filename></command>
     <userinput>[ENTER]</userinput></para>
 
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>child-zone-name NS server</computeroutput></para>
-
-    <para><computeroutput>A <literal>...</literal></computeroutput></para>
-
-    <para><literal>...</literal></para>
+    <para><computeroutput>... child-zone-name NS server A ...
+    ...</computeroutput></para>
   </section>
 
   <xi:include href="resign-zone.xml"

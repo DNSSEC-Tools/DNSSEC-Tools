@@ -25,9 +25,11 @@ SRC = \
 	step-emergency-zsk-current.xml \
 	step-emergency-zsk-published.xml \
 	step-emergency-zsk.xml \
+	step-resolver-configure.xml \
 	step-rollover-ksk.xml \
 	step-rollover-zsk.xml \
 	step-toolset-configure.xml \
+	step-toolset-migrate.xml \
 	step-zone-check-signature-expiration.xml \
 	step-zone-initial-sign.xml \
 	step-zone-resign.xml \

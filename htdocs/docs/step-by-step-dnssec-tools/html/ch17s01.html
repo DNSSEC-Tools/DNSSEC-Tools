@@ -1,0 +1,71 @@
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Introduction</title><meta name="generator" content="DocBook XSL Stylesheets V1.68.1"><link rel="start" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="up" href="ch17.html" title="Chapter 17. Configure a Secure Resolver"><link rel="prev" href="ch17.html" title="Chapter 17. Configure a Secure Resolver"><link rel="next" href="references.html" title="References"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Introduction</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="ch17.html">Prev</a> </td><th width="60%" align="center">Chapter 17. Configure a Secure Resolver</th><td width="20%" align="right"> <a accesskey="n" href="references.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id859056"></a>Introduction</h2></div></div></div><p>This document has described how to configure and maintain a secure
+    nameserver which supplies signed zones and delegations. All the signed
+    zones and delegations within the scope of the server form an island of
+    security from which nameserver data can be retrieved in a authenticated
+    and verifiable way by a security aware resolver.</p><p>But there are times operationally when a recursing secure name
+    server may need to refer to, and retrieve, data from servers outside this
+    island of security. If the referral is to a non-secure name server there
+    is no secure recourse and the chain of authentication is broken and this
+    data can not then be trusted.</p><p>To extend the scope of security, a secure nameserver may be
+    configured with public key data from other remote secure zones so that the
+    chain of trust is expanded. The <code class="option">trusted-keys</code> directive in
+    the <code class="filename">named.conf</code> configuration file provides this
+    capability.</p><p>The mechanism described below for extending the chain of trust
+    should be used judiciously and comes with the added operational burden of
+    verifying and maintaining key validity and timeliness.</p><p>The following is an example of a <code class="option">trusted-keys</code>
+    directive in a <code class="filename">named.conf</code> which provides verification
+    of data retrieved from the <code class="literal">se.</code> and
+    <code class="literal">dnssec-tools.org.</code> zones. Note: key data may be
+    different from that shown and should be obtained as described
+    below.</p><p><code class="computeroutput">trusted-keys {</code></p><p><code class="computeroutput">se. 257 3 5
+    "AwEAAaxPMcR2x0HbQV4WeZB6oEDX+r0QM65KbhTjrW1ZaARmPhEZZe3Y
+    9ifgEuq7vZ/zGZUdEGNWy+JZzus0lUptwgjGwhUS1558Hb4JKUbbOTcM
+    8pwXlj0EiX3oDFVmjHO444gLkBOUKUf/mC7HvfwYH/Be22GnClrinKJp
+    1Og4ywzO9WglMk7jbfW33gUKvirTHr25GL7STQUzBb5Usxt8lgnyTUHs
+    1t3JwCY5hKZ6CqFxmAVZP20igTixin/1LcrgX/KMEGd/buvF4qJCydui
+    eHukuY3H4XMAcR+xia2nIUPvm/oyWR8BW/hWdzOvnSCThlHf3xiYleDb
+    t/o1OTQ09A0=";</code></p><p><code class="computeroutput">dnssec-tools.org. 257 3 5
+    "AQOoEFn3VnV1qDwnNX9GlukAsbL7buCk6Wmt3VG9BOVae84VVc/yWghg
+    tFM/WKw/5243XoBEeNyaahRIrlAJEnErLUWlKO/YuWkasRN4jkS2dDjS
+    MWgjdGxzux+e0UV2UZfpjyygYvaD9U8xTwwzLYLDkamr1SCaHWCWUOO+
+    QMa/WY//r3ObbOFOYCvyqvsLRwofSFnQnsbihKbcP9HQSDQ4iRqbCTMV
+    B+yq5NXiFoZT05Sqm/ijOrjLznZkUqIal9EXqyhNT0dTa9Gdn8+tfn+l
+    YApwK91NA2YG/3t8ZKTYjDLe1YlwKg8OBTTN4ARap+265EtE87BhE6ZK
+    fp+DUx4N";</code></p><p><code class="computeroutput">};</code></p><p>The format of the directive is:</p><p><code class="option">trusted-keys { <em class="parameter"><code>&lt;zone&gt;</code></em>
+    <em class="parameter"><code>&lt;flags&gt;</code></em>
+    <em class="parameter"><code>&lt;protocol&gt;</code></em>
+    <em class="parameter"><code>&lt;algorithm&gt;</code></em>
+    <em class="parameter"><code>&lt;quoted-key-string&gt;</code></em>; };</code></p><p>The <em class="parameter"><code>flags</code></em>, <em class="parameter"><code>protocol</code></em>,
+    <em class="parameter"><code>algorithm</code></em> and
+    <em class="parameter"><code>quoted-key-string</code></em> data may be obtained using the
+    following <span><strong class="command">dig</strong></span> command, but the content of the string
+    should be verified in a secure out-of-band way to ensure its
+    validity.</p><p><code class="prompt">$</code> <span><strong class="command">dig <code class="option">se.</code>
+    <code class="option">DNSKEY</code></strong></span></p><p><code class="computeroutput">;; Truncated, retrying in TCP mode. ;
+    &lt;&lt;&gt;&gt; DiG 9.3.1 &lt;&lt;&gt;&gt; se. DNSKEY ;; global options:
+    printcmd ;; Got answer: ;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status:
+    NOERROR, id: 31166 ;; flags: qr rd ra; QUERY: 1, ANSWER: 4, AUTHORITY: 8,
+    ADDITIONAL: 0 ;; QUESTION SECTION: ;se. IN DNSKEY ;; ANSWER SECTION: se.
+    3600 IN DNSKEY 257 3 5
+    AwEAAaxPMcR2x0HbQV4WeZB6oEDX+r0QM65KbhTjrW1ZaARmPhEZZe3Y
+    9ifgEuq7vZ/zGZUdEGNWy+JZzus0lUptwgjGwhUS1558Hb4JKUbbOTcM
+    8pwXlj0EiX3oDFVmjHO444gLkBOUKUf/mC7HvfwYH/Be22GnClrinKJp
+    1Og4ywzO9WglMk7jbfW33gUKvirTHr25GL7STQUzBb5Usxt8lgnyTUHs
+    1t3JwCY5hKZ6CqFxmAVZP20igTixin/1LcrgX/KMEGd/buvF4qJCydui
+    eHukuY3H4XMAcR+xia2nIUPvm/oyWR8BW/hWdzOvnSCThlHf3xiYleDb t/o1OTQ09A0=
+    ...</code></p><p>Note: from the output select the DNSKEY whose flags have the zone
+    signing key bit set (257).</p><p>Once the 'named.conf' is edited as above, the configuration can be
+    reloaded with:</p><p><code class="prompt">$</code> <span><strong class="command">rndc
+    <code class="option">reload</code></strong></span></p><p>It may also be necessary to flush the cache data before retrieving
+    authenticated results:</p><p><code class="prompt">$</code> <span><strong class="command">rndc
+    <code class="option">flush</code></strong></span></p><p>To verify that the <code class="option">trusted-keys</code> directive is
+    working properly perform a secure <span><strong class="command">dig</strong></span> at the configured
+    server for the remote signed zone data and observe that the
+    <code class="option">ad</code> flag is set in the response. For example:</p><p><code class="prompt">$</code> <span><strong class="command">dig <code class="option">@localhost</code>
+    <code class="option">se.</code> <code class="option">ANY</code>
+    <code class="option">+dnssec</code></strong></span></p><p><code class="computeroutput">;; Truncated, retrying in TCP mode. ;; Connection to
+    ::1#53(::1) for se. failed: connection refused. ; &lt;&lt;&gt;&gt; DiG
+    9.3.1 &lt;&lt;&gt;&gt; @localhost ANY se. +dnssec ; (2 servers found) ;;
+    global options: printcmd ;; Got answer: ;; -&gt;&gt;HEADER&lt;&lt;-
+    opcode: QUERY, status: NOERROR, id: 56473 ;; flags: qr rd ra ad; QUERY: 1,
+    ANSWER: 23, AUTHORITY: 9, ADDITIONAL: 1 ...</code></p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="ch17.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="ch17.html">Up</a></td><td width="40%" align="right"> <a accesskey="n" href="references.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 17. Configure a Secure Resolver </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> References</td></tr></table></div></body></html>
