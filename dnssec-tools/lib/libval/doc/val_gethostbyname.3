@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_gethostbyname 3"
-.TH val_gethostbyname 3 "2005-08-31" "perl v5.8.6" "Programmer's Manual"
+.TH val_gethostbyname 3 "2006-01-03" "perl v5.8.5" "Programmer's Manual"
 .SH "NAME"
 val_gethostbyname, val_x_gethostbyname, val_get_hostent_dnssec_status, val_duphostent, val_freehostent \- get DNSSEC\-validated network host entry
 .SH "SYNOPSIS"
@@ -196,7 +196,8 @@ must be called only for the values returned from \fB\f(BIval_gethostbyname()\fB\
 .SH "RETURN VALUE"
 .IX Header "RETURN VALUE"
 The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_x_gethostbyname()\fB\fR functions return a
-value of type \fIhostent\fR on success, and \fB\s-1NULL\s0\fR on error.  The memory for
+value of type \fIhostent\fR on when they can resolve the given host name (with
+or without \s-1DNSSEC\s0 validation), and \fB\s-1NULL\s0\fR on error.  The memory for
 the returned value is dynamically allocated by these two functions.  Hence,
 the caller must only call the \fB\f(BIval_freehostent()\fB\fR function on the returned
 value in order to avoid memory leaks.
