@@ -11,7 +11,8 @@ use ExtUtils::MakeMaker;
 			     Net::DNS::SEC::Tools::tooloptions => '0.01',
 			   },
 #	 'VERSION_FROM'	=> 'zonesigner', # finds $VERSION
-	 'EXE_FILES' => [qw(expchk keyrec-check lskrf genkrf zonesigner)]
+	 'EXE_FILES' => [qw(expchk keyrec-check lskrf getdnskeys
+			    genkrf zonesigner)]
 	);
 
 WriteMakefile(%opts);
