@@ -439,8 +439,7 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int 
 		    && (NO_ERROR == (retval = resolve_n_check(context, name_n, ns_t_a, ns_c_in, 0,
 							      &queries, &assertions, &results)))) {
 			
-			if(results->status == VALIDATE_SUCCESS) 
-				hentry = get_hostent_from_response(context, results->as->ac_data, h_errnop);
+			hentry = get_hostent_from_response(context, results->as->ac_data, h_errnop);
 			
 			if (hentry) {
 				hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
