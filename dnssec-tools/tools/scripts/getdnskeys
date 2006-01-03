@@ -223,9 +223,22 @@ getdnskeys - Fetch, compare and remember a list of DNSKEYs from DNS zones.
 # ... and restart named
 
 # Finally, check the file against live keys occasionally.
-# (this automatically updates the file with any new keys it found)
+
+  getdnskeys -i /etc/named.trustkeys.conf -T -k -v -t
+
+# And automatically update it if you wish:
 
   getdnskeys -i /etc/named.trustkeys.conf -T -o /etc/named.trustkeys.conf -k -v -t
+
+=head1 SECURITY ISSUES
+
+Currently this does not validate new keys placed in the file in any
+way, nor does it validate change over keys which have been added.
+
+It also does not handle revokation of keys.
+
+It should prompt you before adding a new key so that you can always
+run the auto-update feature.
 
 =cut
 
