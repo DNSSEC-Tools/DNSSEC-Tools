@@ -81,8 +81,8 @@ static int compose_answer( const char *name_n,
 
 			/* Answer section */
 			struct rr_rec *rr;
-			int anscount = 0;
-			for (rr=res->as->ac_data->rrs_data; rr; rr=rr->rr_next) {
+			int anscount  = 0;
+			for (rr=rrset->rrs_data; rr; rr=rr->rr_next) {
 				int len = wire_name_length(rrset->rrs_name_n);
 
 				if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
@@ -107,11 +107,20 @@ static int compose_answer( const char *name_n,
 				anscount++;
 			}
 
-			if (res->as->ac_data->rrs_section == SR_FROM_ANSWER)
+			if (rrset->rrs_section == SR_FROM_ANSWER) {
 				hp->ancount = htons(anscount);
-			else if (res->as->ac_data->rrs_section == SR_FROM_AUTHORITY) {
+			}
+			else if (rrset->rrs_section == SR_FROM_AUTHORITY) {
 				proof = 1;
 				hp->nscount = htons(anscount);
+			}
+
+			/* Set the AD bit if all RRSets in the Answer and Authority sections are authentic */
+			if (val_isauthentic(res->status)) {
+				hp->ad = 1;
+			}
+			else {
+				hp->ad = 0;
 			}
 		}
 		resp[*resp_count].response_length = cp - resp[*resp_count].response;
