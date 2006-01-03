@@ -20,17 +20,8 @@
     <para><prompt>$</prompt> <command>vi <filename>named.conf</filename>
     </command> <userinput>[ENTER]</userinput></para>
 
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>zone "zone-name." {</computeroutput></para>
-
-    <para><computeroutput>type master;</computeroutput></para>
-
-    <para><computeroutput>file "zone-file.signed";</computeroutput></para>
-
-    <para><computeroutput>};</computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
+    <para><computeroutput>... zone "zone-name." { type master; file
+    "zone-file.signed"; }; ...</computeroutput></para>
   </section>
 
   <section id="serve-enable-dnssec">
@@ -42,17 +33,8 @@
     <para><prompt>$</prompt> <command>vi <filename>named.conf</filename>
     </command><userinput>[ENTER]</userinput></para>
 
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>options {</computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>dnssec-enable yes;</computeroutput></para>
-
-    <para><computeroutput>};</computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
+    <para><computeroutput>... options { ... dnssec-enable yes; };
+    ...</computeroutput></para>
   </section>
 
   <section id="serve-check-configuration-file">
@@ -81,31 +63,10 @@
     <option>SOA</option> <option>zone-name</option></command>
     <userinput>[ENTER]</userinput></para>
 
-    <para><computeroutput>; &lt;&lt;&gt;&gt; DiG 9.3.0 &lt;&lt;&gt;&gt;
-    <literal>...</literal></computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY:
-    1, ADDITIONAL: 0</computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>;;ANSWER SECTION</computeroutput></para>
-
-    <para><computeroutput>zone-name 3600 IN SOA servername contact
-    (</computeroutput></para>
-
-    <para><computeroutput>2005092101 ; This should be the most recent
-    value.</computeroutput></para>
-
-    <para><computeroutput>; This value will most likely be different in your
-    zone file.</computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
-
-    <para><computeroutput>)</computeroutput></para>
-
-    <para><computeroutput><literal>...</literal></computeroutput></para>
+    <para><computeroutput>; &lt;&lt;&gt;&gt; DiG 9.3.0 &lt;&lt;&gt;&gt; ...
+    ... ;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 0
+    ... ;; ANSWER SECTION zone-name 3600 IN SOA servername contact (
+    2005092101 ; This should be the most recent value. ; This value will most
+    likely be different in your zone file. ... ) ...</computeroutput></para>
   </section>
 </chapter>
