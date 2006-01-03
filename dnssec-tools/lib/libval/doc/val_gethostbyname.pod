@@ -58,7 +58,8 @@ B<val_x_gethostbyname()>, and B<val_duphostent()> functions.
 =head1 RETURN VALUE
 
 The B<val_gethostbyname()> and B<val_x_gethostbyname()> functions return a
-value of type I<hostent> on success, and B<NULL> on error.  The memory for
+value of type I<hostent> on when they can resolve the given host name (with
+or without DNSSEC validation), and B<NULL> on error.  The memory for
 the returned value is dynamically allocated by these two functions.  Hence,
 the caller must only call the B<val_freehostent()> function on the returned
 value in order to avoid memory leaks.
