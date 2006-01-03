@@ -1350,3 +1350,26 @@ int resolve_n_check(	val_context_t	*context,
 	return NO_ERROR;
 }
 
+/*
+ * Function: isauthentic
+ *
+ * Purpose:   Tells whether the given validation status code represents an
+ *            authentic response from the validator
+ *
+ * Parameter: val_status -- a validation status code returned by the validator
+ *
+ * Returns:   1 if the validation status represents an authentic response
+ *            0 if the validation status does not represent an authentic response
+ */
+int val_isauthentic( int val_status )
+{
+	switch (val_status) {
+	case VALIDATE_SUCCESS:
+	case NONEXISTENT_NAME:
+	case NONEXISTENT_TYPE:
+		return 1;
+
+	default:
+		return 0;
+	}
+}

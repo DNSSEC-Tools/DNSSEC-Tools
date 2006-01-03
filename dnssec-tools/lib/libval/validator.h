@@ -281,6 +281,7 @@ typedef struct val_ds_rdata {
  **********************************
  */
 /* from val_assertion.h */
+int val_isauthentic (int val_status);
 void free_query_chain(struct query_chain **queries);
 void free_assertion_chain(struct assertion_chain **assertions);
 void free_result_chain(struct val_result **results);
