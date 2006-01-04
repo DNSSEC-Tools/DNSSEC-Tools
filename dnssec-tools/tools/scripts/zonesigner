@@ -1264,7 +1264,18 @@ sub chkkrf
 		# we'll use the zone name.
 		#
 		$defkrf = keyrec_defkrf();
-		$defkrf = $zone . ".krf"  if($defkrf eq "");
+		if($defkrf eq "")
+		{
+			$defkrf = $zone . ".krf";
+
+			#
+			# Eliminate any double-dotting where the suffix starts.
+			#
+			if($defkrf =~ /\.\.krf$/)
+			{
+				$defkrf =~ s/\.\.krf$/.krf/;
+			}
+		}
 
 		#
 		# Put the default keyrec file onto the argument vector
