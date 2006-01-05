@@ -8,14 +8,15 @@
 #	This script combines a lot of actions required to sign a zone into a
 #	single command.  The command is used in this way:
 #
-#		zonesigner [options] <zone> <zoneout>
+#		zonesigner [options] <zonefile> [signed-zonefile]
 #
 #		where:
-#			zone	 - the input zone file to be signed.  This is
-#				   a zone file to which the $INCLUDE ksk and
-#				   $INCLUDE zsk lines are added
-#			zoneout	 - the name of the output zone file
-#
+#			zonefile	 - The input zone file to be signed.
+#					   This is a zone file to which the
+#					   $INCLUDE ksk and $INCLUDE zsk lines
+#					   are added.
+#			signed-zonefile	 - The name of the signed zone file,
+#					   with keys included.
 #
 #	Options are described in the POD at the end of this file.
 #
@@ -40,6 +41,7 @@ my $CP		= "/bin/cp";
 my $DATE	= "/bin/date";
 my $MKDIR	= "/bin/mkdir";
 my $MV		= "/bin/mv";
+my $RM		= "/bin/rm";
 
 #
 # Default names for the dnssec- commands.
@@ -102,7 +104,9 @@ my $genzsk;				# Generate a new ZSK.
 
 my $zone;				# Zone to play with.
 my $zonefile;				# Input zone file.
+my $zoneftmp;				# Intermediate zone file.
 my $zoneout;				# Output zone file.
+my $zftmp = 0;				# Intermediate file-specified flag.
 my $krfile;				# User-specified keyrec file.
 
 my $status;				# Zone-signing status.
@@ -123,7 +127,8 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool specific options:'],
-	       ["forceroll",		'Force the roll-over of zone keys']
+	       ["forceroll",		'Force the roll-over of zone keys.'],
+	       ["intermediate=s",	'Intermediate zone file.'],
 	     );
 
 my $forceroll = 0;			# Force-a-roll-over flag.
@@ -413,13 +418,41 @@ sub optsandargs()
 	# Ensure that we were given the zone file and the zone output file.
 	#
 	$argc = @ARGV;
-	usage(4) if($argc != 2);
+	usage(4) if(($argc != 1) && ($argc != 2));
 
 	#
-	# Set variables for the arguments.
+	# Get the zone file name.
 	#
 	$zonefile = $ARGV[0];
-	$zoneout  = $ARGV[1];
+
+	#
+	# Get the intermediate file name.  If -intermediate was specified,
+	# we'll use it.  If not, we'll append ".zs" to the zone file name.
+	#
+	if(exists($opts{'intermediate'}))
+	{
+		$zoneftmp = $opts{'intermediate'};
+		$zftmp = 1;
+	}
+	else
+	{
+		$zoneftmp = $zonefile . ".zs";
+		$zoneftmp =~ s/\.\.zs"/.zs/;
+		$zftmp = 0;
+	}
+
+	#
+	# Get the file name for the signed zone.
+	#
+	if(exists($ARGV[1]))
+	{
+		$zoneout = $ARGV[1];
+	}
+	else
+	{
+		$zoneout = $zonefile . ".signed";
+		$zoneout =~ s/\.\.zs"/.zs/;
+	}
 
 	#
 	# If the -zone option wasn't specified, we'll use the zone filename
@@ -445,6 +478,7 @@ sub optsandargs()
 		print STDERR "-krfile and -nokrfile are mutually exclusive\n";
 		usage(5);
 	}
+
 }
 
 #######################################################################
@@ -866,7 +900,7 @@ sub zoneincludes
 		#
 		# Copy the zone data to a new file.
 		#
-		system("$CP $zonefile $zoneout") if($zonefile ne $zoneout);
+		system("$CP $zonefile $zoneftmp") if($zonefile ne $zoneftmp);
 		open(ZF,"+< $zonefile");
 		@zonestat = stat($zonefile);
 	}
@@ -877,7 +911,7 @@ sub zoneincludes
 		#
 		# Copy the zone data to a new file.
 		#
-		system("$CP $zonefile $zoneout") if($zonefile ne $zoneout);
+		system("$CP $zonefile $zoneftmp") if($zonefile ne $zoneftmp);
 
 		#
 		# Get the include-keys section.
@@ -887,7 +921,7 @@ sub zoneincludes
 		#
 		# Add lines to include the KSK and ZSK files.
 		#
-		open(ZF,">> $zoneout");
+		open(ZF,">> $zoneftmp");
 		print ZF $incstr;
 
 		close(ZF);
@@ -916,7 +950,7 @@ sub zonesign
 	# necessary, but it does keep the dnssec-signzone execution a bit
 	# cleaner than it would be otherwise.
 	#
-	$cmdopts = "$szopts $gends $ksdir -k $kskpath -o $zone $enddate";
+	$cmdopts = "$szopts $gends $ksdir -k $kskpath -o $zone $enddate -f $zoneout";
 
 	#
 	# Sign the zone with the new keys.
@@ -932,8 +966,8 @@ sub zonesign
 		print "(see the \"Entropy\" section in the man page for details)\n\n";
 	}
 
-	vhigh_print("$signzone $cmdopts $zoneout $zskcurpath\n");
-	$szone = `$signzone $cmdopts $zoneout $zskcurpath`;
+	vhigh_print("$signzone $cmdopts $zoneftmp $zskcurpath\n");
+	$szone = `$signzone $cmdopts $zoneftmp $zskcurpath`;
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
@@ -996,6 +1030,16 @@ sub zonesign
 		print "zone will expire in $datestr\n";
 		print "DO NOT delete the keys until this time has passed.\n";
 	}
+
+	#
+	# If the intermediate zone file wasn't specified, we'll delete
+	# the temporary zone file.
+	#
+	if(!$zftmp)
+	{
+		system("$RM $zoneftmp");
+	}
+
 	return(0);
 }
 
@@ -1027,8 +1071,9 @@ sub updzonerec
 	# Set some fields we've got to have -- in case they aren't
 	# set in the options.
 	#
-	$opts{'zonefile'}	= $zoneout;
-	$opts{'signedfile'}	= $zoneout . ".signed";
+	if($zftmp) { $opts{'zonefile'} = $zonefile; }
+	   else	   { $opts{'zonefile'} = $zoneftmp; }
+	$opts{'signedfile'}	= $zoneout;
 	$opts{'kskdirectory'}	= $kskdir;
 	$opts{'kskkey'}		= $ksk;
 	$opts{'kskpath'}	= $kskpath;
@@ -1177,6 +1222,17 @@ sub serialincr
 	$serialnum = $1;
 
 	#
+	# We'll use the larger serial number of the one in the zone file
+	# and in the keyrec file.
+	#
+	if(defined($opts{'serial'}))
+	{
+		my $serial = $opts{'serial'};
+
+		$serialnum = $serial if($serial > $serialnum);
+	}
+
+	#
 	# We assumed the serial number was parenthesized.  If we didn't
 	# find it, we'll look for it in an unparenthesized line.
 	#
@@ -1206,9 +1262,12 @@ sub serialincr
 
 	#
 	# Increment the serial number and change it in the file contents.
+	# We'll also save the new serial number in the keyrec.
 	#
 	$serialnew = $serialnum + 1;
 	$file =~ s/$serialnum/$serialnew/;
+	keyrec_setval('zone',$zone,'serial',$serialnew);
+	$opts{'serial'} = $serialnew;
 
 	#
 	# Write the new file contents and close the file.
@@ -1306,7 +1365,7 @@ sub chkkrf
 	# Set the basic zone keyrec fields and add the keyrec.
 	#
 	$zoneopts{'keyrec_type'} = "zone";
-	$zoneopts{'zonefile'}	 = $zoneout;
+	$zoneopts{'zonefile'}	 = $zonefile;
 
 	keyrec_add('zone',$zone,\%zoneopts);
 
@@ -1368,7 +1427,7 @@ sub forceroll
 	vprint("forcing a key roll-over\n");
 
 	#
-	# We're rolling KSKs, so make sure they'll be generated.
+	# We're rolling ZSKs, so make sure they'll be generated.
 	#
 	$genzsk = 1;
 
@@ -1479,6 +1538,7 @@ sub printopts
 	print "\targuments:\n";
 	print "\t\tzone     - $zone\n";
 	print "\t\tzonefile - $zonefile\n";
+	print "\t\tzoneftmp - $zoneftmp\n";
 	print "\t\tzoneout  - $zoneout\n\n";
 
 	return if($verbose < $VERBOSE_HIGH);
@@ -1586,7 +1646,7 @@ sub usage
 {
 	my $whence = shift;			# Location of call.
 
-	print STDERR "usage:  zonesigner [options] <zone-file> <zone-out>\n";
+	print STDERR "usage:  zonesigner [options] <zone-file> [signed-zone]\n";
 	print STDERR "\n";
 
 	print STDERR "\t\tzonesigner options:\n";
@@ -1595,6 +1655,7 @@ sub usage
 	print STDERR "\t\t\t-genkeys\n";
 	print STDERR "\t\t\t-genksk\n";
 	print STDERR "\t\t\t-genzsk\n";
+	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-help\n";
 	print STDERR "\t\t\t-verbose\n";
@@ -1633,17 +1694,16 @@ zonesigner - Generates encryption keys and signs a DNS zone.
 
 =head1 SYNOPSIS
 
-  zonesigner [options] <zone-file> <zone-out>
+  zonesigner [options] <zone-file> <signed-zone>
 
   # get started immediately examples:
 
   # first run on a zone for example.com:
   zonesigner -genzsk -genksk -endtime +2678400 -zone example.com \
-     db-in.example.com db-out.example.com
+     db-example.com.signed
 
   # future runs before expiration time (reuses the same keys):
-  zonesigner -endtime +2678400 -zone example.com \
-     db-in.example.com db-out.example.com
+  zonesigner -endtime +2678400 -zone example.com out.example.signed
 
 =head1 DESCRIPTION
 
@@ -1675,9 +1735,9 @@ line.  Example 4 below contains the contents of a sample I<keyrec> file.
 
 I<zonesigner> is used in this way:
 
-    zonesigner [options] <zone-file> <zone-out>
+    zonesigner [options] <zone-file> <signed-zone>
 
-The I<zone-file> and I<zone-out> arguments are required.
+The I<zone-file> and I<signed-zone> arguments are required.
 
 I<zone-file> is the name of the zone file from which a signed zone file will
 be created.  If the I<-zone> option is not given, then I<zone-file> will be
@@ -1691,12 +1751,15 @@ those inclusions will be deleted.  These lines are distinguished by starting
 with "$INCLUDE" and end with ".key".  Only the actual include lines are
 deleted; any related comment lines are left untouched.
 
-I<zone-out> is the name of the output zone file.  This file will be a copy
-of the I<zone-file> zone file, with some modifications.  Several $INCLUDE
-lines will be added at the end of the file and the SOA serial number will be
-incremented.
+An intermediate file is used in signing the zone.  I<zone-file> is copied to
+the intermediate file and is modified in preparation of signing the zone file.
+Several $INCLUDE lines will be added at the end of the file and the SOA serial
+number will be incremented.
 
-The signed zone file will be this name, appended with I<.signed>.
+I<signed-zone> is the name of the signed zone file.  If it is not given on
+the command line, the default signed zone filename is the <zone-file>
+appended with ".signed".  Thus, exeucting I<zonesigner example.com> will
+result in the signed zone being stored in I<example.com.signed>.
 
 Unless the I<-genkeys>, I<-genksk>, or I<-genzsk> options are specified, the
 last keys generated for a particular zone will be used in subsequent
@@ -1800,6 +1863,11 @@ adjusted as follows:
     A new ZSK key is generated.
 
 This should only be used if you know what you're doing.
+
+=item -intermediate
+
+Filename to use for the temporary zone file.  The zone file will be copied to
+this file and then the key names appended.
 
 =item -zone
 
