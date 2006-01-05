@@ -452,7 +452,7 @@ sub run_zonesigner {
     # Run zonesigner to sign the thing
     #
     Verbose("running zonesigner on $infile to produce $outfile.signed");
-    System("zonesigner $opts{'a'} --zone $domain $infile $outfile");
+    System("zonesigner $opts{'a'} --intermediate $infile$opts{'O'} --zone $domain $infile $outfile.signed");
 }
 
 ######################################################################
