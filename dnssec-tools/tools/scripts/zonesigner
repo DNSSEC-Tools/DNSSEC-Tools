@@ -455,6 +455,21 @@ sub optsandargs()
 	}
 
 	#
+	# Ensure that the zone file, signed zone file, and intermediate
+	# zone file are all distinct.
+	#
+	if(($zonefile eq $zoneftmp)	||
+	   ($zonefile eq $zoneout)	||
+	   ($zoneftmp eq $zoneout))
+	{
+		print STDERR "the zone file, output file, and intermediate file must have distinct names\n";
+		print STDERR "\tzone file	  -	$zonefile\n";
+		print STDERR "\toutput file	  -	$zoneout\n";
+		print STDERR "\tintermediate file -	$zoneftmp\n";
+		exit(8);
+	}
+
+	#
 	# If the -zone option wasn't specified, we'll use the zone filename
 	# as the zone name.
 	#
@@ -1071,9 +1086,9 @@ sub updzonerec
 	# Set some fields we've got to have -- in case they aren't
 	# set in the options.
 	#
-	if($zftmp) { $opts{'zonefile'} = $zonefile; }
+	if(!$zftmp) { $opts{'zonefile'} = $zonefile; }
 	   else	   { $opts{'zonefile'} = $zoneftmp; }
-	$opts{'signedfile'}	= $zoneout;
+	$opts{'signedzone'}	= $zoneout;
 	$opts{'kskdirectory'}	= $kskdir;
 	$opts{'kskkey'}		= $ksk;
 	$opts{'kskpath'}	= $kskpath;
