@@ -96,6 +96,10 @@ The path to the I<dnssec-signzone> command.
 
 Flag to allow/disallow usage of the GUI for specifying command options.
 
+=item zonesigner
+
+The path to the I<zonesigner> command.
+
 =item zsklength
 
 The default ZSK key length to be passed to I<dnssec-keygen>.
@@ -114,6 +118,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     keygen          /usr/local/sbin/dnssec-keygen
     signzone        /usr/local/sbin/dnssec-signzone
     viewimage       /usr/X11R6/bin/xview
+    zonesigner      /usr/bin/zonesigner
     
     #
     # Settings for dnssec-keygen.
