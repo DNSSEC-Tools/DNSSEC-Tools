@@ -27,27 +27,43 @@ LocalGetOptions(\%opts,
 		["l|level=i", "The maximum rule level to run (default = 5)"],
 		["r|rules=s", "glob pattern for rule files to load"],
 		["i|ignore=s", "Regular expression for rules to ignore"],
-
-		['GUI:separator',"Live Query Support:"],
 		["L|live", "Run live-query test rules"],
-		["t|tcpdump-capture=s", "Start tcpdump on interface STRING during run"],
-		["T|tcpdump-filter=s", "Use tcpdump filter (default port 53 or fragments)"],
-		["o|tcpdump-output-file=s", "Save tcpdump results to file STRING."],
 
 		['GUI:separator',"Configuration Files:"],
 		["c|config-file=s", "Use an alternate configuration file"],
 		["C|no-config","Do not load any configuration files"],
 
-		['GUI:separator',"Help Information:"],
-		["h|help", "Show help for command line options"],
-		["R|help-rules", 'Show the rules that donuts checks'],
-		["H|help-config",
-		 'Show configuration tokens supported by the rules'],
+		'',
 		["v|verbose", "Verbose output showing extra information"],
 		["q|quiet", "Quiet output (Do not print summary information)"],
 
 		['GUI:otherargs_text',"FILE DOMAIN [FILE DOMAIN...]"],
+		['GUI:otherargs_required',1],
 		
+		['GUI:guionly',{type => 'button',
+				values => 'Help',
+				default => 1,
+				text => 'Display Help Options',
+				name => 'displayhelp'}],
+
+		['GUI:screen',"Extra Live Query Options:",
+		 doif => sub { 
+		     use Data::Dumper;;
+		     print Dumper($_[1]->{'generator'}{'datastore'});
+		     print STDERR "here: ",$_[1]->qwparam('live'),"\n";
+		     $_[1]->qwparam('live') && !$_[1]->qwparam('displayhelp');
+		 } ],
+		["t|tcpdump-capture=s", "Start tcpdump on interface STRING during run"],
+		["T|tcpdump-filter=s", "Use tcpdump filter (default port 53 or fragments)"],
+		["o|tcpdump-output-file=s", "Save tcpdump results to file STRING."],
+
+		['GUI:screen',"Help Options:",
+		 doif => 'displayhelp'],
+		["h|help", "Show help for command line options"],
+		["R|help-rules", 'Show the rules that donuts checks'],
+		["H|help-config",
+		 'Show configuration tokens supported by the rules'],
+
 	       ) || exit;
 
 #
@@ -603,6 +619,16 @@ This allows you to override certain aspects of how rules are executed.
 
 Displays a list of all known rules along with their description (if
 available).
+
+=item --live
+
+The --live option allows rules that need to perform live DNS queries
+to run.  Most of these rules query parent and children of the current
+zone, when appropriate, to see that the parent/child relationships
+have been built properly.  As an example, if you have a DS record
+which authenticates the key used in a child zone the --live switch
+will let a rule run which checks to see if the child is actually
+publishing the DNSKEY that corresponds to your DS record.
 
 =back
 
