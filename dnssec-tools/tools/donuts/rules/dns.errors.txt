@@ -1,0 +1,46 @@
+# -*- mmm-classes: donuts-perl -*-
+# Copyright 2006 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# This file checks for basic DNS errors that are easy to overlook
+#
+
+# how they ever got this far, I'm not sure...
+name: DNS_SOA_REQUIRED
+level: 2
+ruletype: name
+desc: Checks for the existence of an SOA record in a zone.
+<test>
+   "A SOA record for $current_domain is required"
+      if ($_[2] eq $current_domain && $#{$_[0]->{'SOA'}} == -1);
+</test>
+
+#
+# memorize NS records for a zone
+#
+name: MEMORIZE_NS_CNAME_RECORDS
+internal: yes
+level: 4
+type: NS
+<test>
+  if ($_[0]->name eq $current_domain) {
+    $DONUTS::DNSSEC::NSCNAMECHECK{$_[0]->nsdname} = $_[0]->name;
+  }
+  return;
+</test>
+
+#
+# memorize NS records for a zone
+#
+name: DNS_NS_NO_CNAME
+level: 4
+type: CNAME
+desc: Checks to make sure that NS records don't point to CNAMEs
+<test>
+  if (exists($DONUTS::DNSSEC::NSCNAMECHECK{$_[0]->name})) {
+    return "A NS record for " . $DONUTS::DNSSEC::NSCNAMECHECK{$_[0]->name}
+      . " points to " .
+      $_[0]->name . " which is a CNAME instead of an address record";
+  }
+  return;
+</test>
