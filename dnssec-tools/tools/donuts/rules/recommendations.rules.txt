@@ -1,5 +1,5 @@
 # -*- mmm-classes: donuts-perl -*-
-# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # This file checks for misc sanity checks
@@ -16,7 +16,7 @@ help: minttl: minimum ttl value acceptable for a record
 maxttl: 604800
 desc: Checks to see if reasonable TTL values (configurable) were chosen for all the records in a zone.
 help: maxttl: maximum ttl value acceptable for a record
-test:
+<test>
   return "Record has a TTL which is unreasonably small ( " . $_[0]->ttl
     . " < min: "
     . $_[1]->{'minttl'} . ")"
@@ -25,21 +25,14 @@ test:
     . " > max: "
     . $_[1]->{'maxttl'} . ")"
      if ($_[0]->ttl > $_[1]->{'maxttl'});
-
-# how they ever got this far, I'm not sure...
-name: DNS_SOA_REQUIRED
-level: 2
-ruletype: name
-desc: Checks for the existence of an SOA record in a zone.
-test:
-   "A SOA record for $current_domain is required"
-      if ($_[2] eq $current_domain && $#{$_[0]->{'SOA'}} == -1);
+</test>
 
 name: DNS_NO_DOMAIN_MX_RECORDS
 level: 8
 class: Warning
 ruletype: name
 desc: Checks to ensure that the zone contains at least 1 MX record.
-test:
+<test>
    "At least one MX record for $current_domain is suggested"
       if ($_[2] eq $current_domain && $#{$_[0]->{'MX'}} == -1);
+</test>
