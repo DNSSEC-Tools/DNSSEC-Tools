@@ -1,5 +1,5 @@
 # -*- mmm-classes: donuts-perl -*-
-# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # This file checks aspects of parent/child relationships
@@ -34,7 +34,7 @@ test:
 
 name: DNSSEC_DNSKEY_PARENT_HAS_VALID_DS
 level: 4
-live: true
+feature: live
 type: DNSKEY
 desc: tests for valid DS checksum and for draft-ietf-dnsext-dnssec-records-11: section 5.2: The DNSKEY RR referred to in the DS RR MUST be a DNSSEC zone key with the same keytag.
 test:
@@ -55,7 +55,7 @@ test:
 
 name: DNSSEC_DS_CHILD_HAS_MATCHING_DNSKEY
 level: 4
-live: true
+feature: live
 desc: tests for valid DS checksum and for draft-ietf-dnsext-dnssec-records-11: section 5.2: The DNSKEY RR referred to in the DS RR MUST be a DNSSEC zone key.
 type: DS
 test:
