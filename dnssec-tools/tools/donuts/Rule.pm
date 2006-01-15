@@ -1,5 +1,5 @@
 #
-# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 
@@ -367,7 +367,7 @@ wrapping or indenting and just print the error as is.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
