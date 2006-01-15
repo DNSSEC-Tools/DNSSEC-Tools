@@ -1,0 +1,57 @@
+# -*- mmm-classes: donuts-perl -*-
+# Copyright 2006 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# This file implements rules to check live nameservers for served data
+#
+
+#
+# memorize NS records for a zone
+#
+name: MEMORIZE_NS_ADDRS
+internal: yes
+level: 4
+feature: check_data
+type: NS
+<test>
+  if ($_[0]->name eq $current_domain) {
+    $DONUTS::DNSSEC::NSADDRS{$_[0]->nsdname} = $_[0]->name;
+  }
+  return;
+</test>
+
+name: DNS_SERVERS_MATCH_DATA
+ruletype: name
+level: 5
+noindent: 1
+feature: check_data
+desc: Checks to see if each of the zone's name servers are properly serving the zone's data.
+<test>
+  my ($records, $rule, $name) = @_;
+  my @results;
+
+  # check each resolver from our memorized NS records for data
+  foreach my $ns (keys(%DONUTS::DNSSEC::NSADDRS)) {
+      # create a resolver directly to this NS server
+      my $resolver = Net::DNS::Resolver->new(nameservers => [$ns],
+					     recurse => 0);
+
+      # query the NS server for each record type and compare the results
+      foreach my $recordtype (keys(%$records)) {
+	  my @answers = live_query($name, $recordtype, $resolver);
+	  if (compare_arrays($records->{$recordtype}, \@answers,
+			     sub { $a->string eq $b->string }) != 0) {
+	      my $err = 
+		"query to $ns for $recordtype doesn't match:\n";
+	      $err .= "    live records:\n";
+	      map { $err .= "      ".$_->string()."\n"; } @answers;
+ 	      $err .= "    loaded records: \n";
+	      map { $err .= "      ".$_->string()."\n"; } @{$records->{$recordtype}};
+	      push @results, $err;
+	  } else {
+#	      print STDERR "matched ($#answers = $#{$records->{$recordtype}}): $recordtype:$name from server $ns\n";
+	  }
+      }
+  }
+  return \@results;
+</test>
