@@ -20,24 +20,34 @@ sub new {
 sub print_error {
     my ($r, $err, $loc, $verb, $rrname) = @_;
     my $class = $r->{class} || 'Error';
+    my $output_width=13;
+    my $indent = " " x ($output_width+2);  # to account for 2 space indent
     print STDERR "$loc:\n";
     print STDERR "  Location:    $rrname\n" if ($rrname);
     if ($verb) {
 	print STDERR "  Rule Name:   $r->{name}\n";
 	print STDERR "  Level:       $r->{level}\n";
     }
-    print STDERR wrap(sprintf("  %-13s", "$class:"),
-		      "               ",$err),"\n";
+    # print the output error, with one of 3 formatting styles
+    if ($r->{'noindent'}) {
+	print STDERR sprintf("  %-${output_width}s", "$class:"), $err,"\n";
+    } elsif ($r->{'nowrap'}) {
+	$err =~ s/\n/\n$indent/g;
+	print STDERR sprintf("  %-${output_width}s", "$class:"), $err,"\n";
+    } else {
+	print STDERR wrap(sprintf("  %-${output_width}s", "$class:"),
+			  $indent, $err),"\n";
+    }
     if ($r->{desc} && $verb) {
-	print STDERR wrap("  Details:     ","               ",$r->{desc}),"\n";
+	print STDERR wrap("  Details:     ",$indent,$r->{desc}),"\n";
     }
     print STDERR "\n";
 }
 
 sub test_record {
-    my ($r, $rec, $file, $level, $dolive, $verbose) = @_;
+    my ($r, $rec, $file, $level, $features, $verbose) = @_;
     if ((!exists($r->{'level'}) || $level >= $r->{'level'}) &&
-	(!exists($r->{'live'}) || $dolive) &&
+	(!exists($r->{'feature'}) || exists($features->{$r->{'feature'}})) &&
 	(!exists($r->{'ruletype'}) || $r->{'ruletype'} ne 'name')) {
 
 	# this is a legal rule for this run.
@@ -72,9 +82,9 @@ sub test_record {
 }
 
 sub test_name {
-    my ($r, $namerecord, $name, $file, $level, $dolive, $verbose) = @_;
+    my ($r, $namerecord, $name, $file, $level, $features, $verbose) = @_;
     if ((!exists($r->{'level'}) || $level >= $r->{'level'}) &&
-	(!exists($r->{'live'}) || $dolive) &&
+	(!exists($r->{'feature'}) || exists($features->{$r->{'feature'}})) &&
 	(exists($r->{'ruletype'}) && $r->{'ruletype'} eq 'name')) {
 	my $res = $r->{'test'}->($namerecord, $r, $name);
 	if (ref($res) ne 'ARRAY') {
@@ -248,28 +258,29 @@ boot-strap code to be performed only at start-up, rather than
 at every rule-test invocation.  For example, "use MODULE;"
 type statements should be used in I<init> sections.
 
-I<init> sections contain special formatting such as the following.
-The code lines B<MUST> begin with whitespace.
+I<init> sections contain are wrapped in an xml-like syntax which
+specifies the start and end of the init section of code:
 
 Example:
 
-  init:
+  <init>
     use My::Module;
     $value = calculate();
+  </init>
 
 =item I<test>
 
-A block of code that defining the test for each record or name.
-The test statement follows the same multi-line code specification
-described in the I<init> clause above.  Specifically, the first line
-follows the line with the I<test:> token and each line of code B<MUST>
-begin with whitespace.
+A block of code that defining the test for each record or name.  The
+test statement follows the same multi-line code specification
+described in the I<init> clause above.  Specifically, all the lines
+between the <test> and </test> braces are considered part of the test
+code.
 
 The end result must be a subroutine reference which will be called by
 the I<donuts> program.  When the code is evaluated, if it does not
 begin with "sub {" then a "sub {" prefix and "}" suffix will be
 automatically added to the code to turn the code-snippet into a
-subroutine.
+perl subroutine.
 
 If the test fails, it should return an error string which will be displayed
 for the user.  The text will be line-wrapped before display (and thus should
@@ -278,7 +289,8 @@ reference to an array of error strings may be returned.  A reference to an
 empty array being returned also indicates no error.
 
 There are two types of tests (currently), and the code snippet is
-called depending on the I<ruletype> clause above.
+called with arguments which depend on the I<ruletype> clause above.
+These arguments and calling conventions are as follows:
 
 =over
 
@@ -320,17 +332,36 @@ Examples:
   name: DNS_TTL_AT_LEAST_60
   level: 8
   type: record
-  test:
+  <test>
     return "TTL too small" if ($_[0]->ttl < 60);
+  </test>
 
   # local policy to mandate that anything with an A record
   # must have a HINFO record too
   name: DNS_MX_MUST_HAVE_A
   level: 8
   type: name
-  test:
+  <test>
     return "A records must have a HINFO record too"
       if (exists($_[0]{'A'}) && !exists($_[0]{'HINFO'}));
+  </test>
+
+=item I<feature:> B<NAME>
+
+The feature tag prevents this rule from running unless the B<NAME>
+keyword was specified using the I<--features> flag.
+
+=item I<noindent: 1>
+
+=item I<nowrap: 1>
+
+Normally I<donuts> will line-wrap the error summary produced by a rule
+to enable automatic pretty printing of error results.  Sometimes,
+however, rules may not want this.  The I<nowrap> option indicates to
+donuts that the output is pre-formatted but should still be indented
+to align with the output of the rest of the error text (current about
+15 spaces).  The I<noindent> tag, however, says don't do either
+wrapping or indenting and just print the error as is.
 
 =back
 
