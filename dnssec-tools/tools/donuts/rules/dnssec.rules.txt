@@ -1,5 +1,5 @@
 # -*- mmm-classes: donuts-perl -*-
-# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # This file implements rules to check DNSSEC record validity
@@ -9,8 +9,9 @@ name: DNSSEC_RRSIG_TTL_MATCH_ORGTTL
 desc: Checks to see if the TTL of an RRSIG record matches the original record. [XXX: quote RFC here]
 level: 3
 type:  RRSIG
-test:
+<test>
   $_[0]->ttl ne $_[0]->orgttl && "RRSIG ORGTTL must match TTL";
+</test>
 
 #
 # memorize things that are only glue records (IE, have NS records
@@ -20,13 +21,14 @@ name: DNSSEC_MEMORIZE_NS_RECORDS
 internal: yes
 level: 3
 type: NS
-test:
+<test>
   if ($_[0]->name eq $current_domain) {
     $DONUTS::DNSSEC::NS{$_[0]->nsdname} = 2;
   } elsif ($DONUTS::DNSSEC::NS{$_[0]->nsdname} != 2) {
     $DONUTS::DNSSEC::NS{$_[0]->nsdname} = 1;
   }
   return;
+</test>
 
 #
 # NSEC is present?
@@ -35,10 +37,11 @@ name: DNSSEC_MISSING_NSEC_RECORD
 desc: checks to see if a given name is missing an NSEC record, which is require for dnssec to prove non-existence.
 level: 3
 ruletype: name
-test:
+<test>
   "name $_[2] does not have an NSEC record, which is required for secure domains."
     if (!exists($_[0]->{'NSEC'}) &&
         !exists($DONUTS::DNSSEC::NS{$_[2]}));
+</test>
 
 #
 # RRSIG is present?
@@ -47,10 +50,11 @@ name: DNSSEC_MISSING_RRSIG_RECORD
 desc: Checks to see if a name contains a RRSIG record.
 level: 3
 ruletype: name
-test:
+<test>
   "name $_[2] does not have a RRSIG record, which is required for secure domains."
     if (!exists($_[0]->{'RRSIG'}) &&
         !exists($DONUTS::DNSSEC::NS{$_[2]}));
+</test>
 
 #
 # RRSIG signs itself???
@@ -59,9 +63,10 @@ name: DNSSEC_RRSIG_NOT_SIGNING_RRSIG
 level: 7
 type: RRSIG
 desc: draft-ietf-dnsext-dnssec-protocol-09.txt: Section 2.2: An RRSIG RR itself MUST NOT be signed, since signing an RRSIG RR would add no value and would create an infinite loop in the signing process.
-test:
+<test>
   "$_[0]->{name} has an RRSIG that signs an RRSIG"
     if ($_[0]->typecovered eq 'RRSIG');
+</test>
 
 #
 # RRSIG is present but shouldn't be?
@@ -70,7 +75,7 @@ name: DNSSEC_RRSIG_FOR_NS_GLUE_RECORD
 level: 3
 ruletype: name
 desc: Checks to see if an NS record exists with glue data but also a RRSIG covers the glue data, which should not happen since the zone is not authoritative over the glue data.
-test:
+<test>
   my $suffix = $_[2];
   $suffix =~ s/^[^\.]+\.//;
   "name $_[2] is pointed to by an NS record and thus should be a glue record.  But it also has an RRSIG record which should not be present for glue records."
@@ -79,6 +84,7 @@ test:
 	$current_domain ne $suffix &&
         exists($DONUTS::DNSSEC::NS{$_[2]}) &&
         $DONUTS::DNSSEC::NS{$_[2]} != 2);
+</test>
 
 #
 # NSEC is present but shouldn't be?
@@ -87,7 +93,7 @@ name: DNSSEC_NSEC_FOR_NS_GLUE_RECORD
 level: 3
 desc: Checks to see if an NS record exists with glue data but also a NSEC covers the glue data, which should not happen since the zone is not authoritative over the glue data.
 ruletype: name
-test:
+<test>
   my $suffix = $_[2];
   $suffix =~ s/^[^\.]+\.//;
   "name $_[2] is pointed to by an NS record and thus should be a glue record.  But it also has an NSEC record which should not be present for glue records."
@@ -95,6 +101,7 @@ test:
         exists($DONUTS::DNSSEC::NS{$_[2]}) &&
 	$current_domain ne $suffix &&
         $DONUTS::DNSSEC::NS{$_[2]} != 2);
+</test>
 
 #
 # check signature expiration
@@ -104,10 +111,11 @@ level: 1
 type:  RRSIG
 warntime:  604800
 desc: Checks signature expiration time and warns or signals an error if the time is near or past.
-init:
+<init>
   use Date::Parse;
   $donuts::time = time();
-test:
+</init>
+<test>
   my $date = $_[0]->sigexpiration;
   $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
   my $extime = str2time($date);
@@ -116,6 +124,7 @@ test:
   } elsif ($extime - $donuts::time < $_[1]->{'warntime'}) {
     return "RRSIG is nearing its expiration time";
   }
+</test>
 
 # Note: this only works if the SOA has already been seen 
 # (should have been first anyway)
@@ -124,46 +133,50 @@ level: 5
 name: DNSSEC_NSEC_TTL
 desc: RFC3845: The NSEC RR SHOULD have the same TTL value as the SOA minimum TTL field.  This is in the spirit of negative caching [RFC2308].
 type: NSEC
-test:
+<test>
   $_[0]->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum && 
      "NSEC TTL for " . $_[0]->name . " (" . $_[0]->ttl . 
      ") does not match SOA MIN TTL (" . 
      $nrecs{$current_domain}{'SOA'}[0]->minimum . ")";
+</test>
 
 name: DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME
 level: 4
 type: DNSKEY
 desc: draft-ietf-dnsext-dnssec-records-11.txt section 2.1.1: If bit 7 has value 1, then the DNSKEY record holds a DNS zone key and the DNSKEY RR's owner name MUST be the name of a zone.
-test:
+<test>
   if ($_[0]->flags & 0x100 && $current_domain ne $_[0]->name) {
     return "DNSKEY record found for '$_[0]' in wrong domain: '$current_domain'."
   }
+</test>
 
 name: DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3
 level: 4
 type: DNSKEY
 desc: draft-ietf-dnsext-dnssec-records-11.txt section 2.1.2: The Protocol Field MUST have value 3 and the DNSKEY RR MUST be treated as invalid during signature verification if found to be some value other than 3.
-test:
+<test>
   if ($_[0]->protocol != 3) {
     return "DNSKEY record found for '$_[0]->{name}' with protocol other than '3'."
   }
+</test>
 
 name: DNSSEC_BOGUS_NS_MEMORIZE
 level: 1
 internal: yes
 type: NS
-test:
+<test>
   if ($current_domain ne $_[0]->{name}) {
     # remember the name so we can also ignore glue records later
     $DONUTS::gluerecs{$_[0]->{nsdname}} = $_[0]->{name};
   }
   return;
+</test>
 
 name: DNSSEC_MISSING_RRSIG_RECORD
 level: 3
 ruletype: name
 desc: RRSIG records signed by the zone's key are required for all records in order for the domain to be secure, with the exception of NS and glue records for children.
-test:
+<test>
   my %rrsigs;
   foreach my $rec (@{$_[0]->{'RRSIG'}}) {
     # memorize RRSIG records
@@ -209,12 +222,13 @@ test:
     }
   }
   return \@err;
+</test>
 
 name: DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD
 level: 3
 ruletype: name
 desc: draft-ietf-dnsext-dnssec-records-11.txt section 3.0: The TTL value of an RRSIG RR MUST match the TTL value of the RRset it covers. 
-test:
+<test>
   my %rrsigs;
   foreach my $rec (@{$_[0]->{'RRSIG'}}) {
     # memorize RRSIG records
@@ -237,12 +251,13 @@ test:
     }
   }
   return \@err;
+</test>
 
 name: DNSSEC_MISSING_NSEC_RECORD
 level: 3
 ruletype: name
 desc: NSEC records are required for all names except child glue records in order for the domain to be secure from denial-of-existence attacks.
-test:
+<test>
   # make sure an nsec record exists
   if ((!exists($_[0]->{'NSEC'}) || $#{$_[0]->{'NSEC'}} == -1) &&
       # ignore glue records
@@ -272,46 +287,51 @@ test:
     }
   }
   return \@err;
+</test>
 
 name: DNSSEC_RRSIG_SIGNER_NAME_MATCHES
 type: RRSIG
 desc: draft-ietf-dnsext-dnssec-records-11: section 3.1.7: The Signer's Name field MUST contain the name of the zone of the covered RRset.
-test:
+<test>
   if ($_[0]->signame ne $current_domain . "." &&
       $_[0]->signame ne $current_domain) {
     return "signer name for $_[0]->{name} is $_[0]->{signame} but it should match the zone name ($current_domain)";
   }
+</test>
 
 name: DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE
 ruletype: name
 level: 5
 desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST NOT be the only RRset at any particular owner name.
-test:
+<test>
   my @keys = sort keys(%{$_[0]});
   return if ($#keys == 1);
   "$_[0]->{name} only contains NSEC and RRSIG records"
     if ($keys[0] eq 'NSEC' && $keys[1] eq 'RRSIG');
+</test>
 
 name: DNSSEC_RRSIGS_MUST_NOT_BE_SIGNED
 type: RRSIG
 desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.2: An RRSIG RR itself MUST NOT be signed, since signing an RRSIG RR would add no value and would create an infinite loop in the signing process.
-test:
+<test>
   "RRSIG records must not be signed but a signature for a RRSIG on $_[0]{name} is."
     if ($_[0]->typecovered eq 'RRSIG');
+</test>
 
 name: DNSSEC_MEMORIZE_KEYS
 type: DNSKEY
 internal: yes
-test:
+<test>
   push @{$donuts::dnskeys}, $_[0];
   return;
+</test>
 
 name: DNSSEC_RRSIGS_VERIFY
 type: RRSIG
 level: 1
 desc: RRSIGs must cryptographically verify the records they are signing.
 ruletype: name
-test:
+<test>
   my @err;
   my $count = 0;
   foreach my $sig (@{$_[0]->{'RRSIG'}}) {
@@ -338,6 +358,7 @@ test:
     }
   }
   return \@err;
+</test>
 
 # XXX: nsec next order is proper
 # XXX: check all sigs?
