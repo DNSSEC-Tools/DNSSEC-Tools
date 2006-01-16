@@ -129,110 +129,105 @@
 .\" ========================================================================
 .\"
 .IX Title "val_query 3"
-.TH val_query 3 "2005-08-31" "perl v5.8.6" "Programmer's Manual"
+.TH val_query 3 "2006-01-16" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
-val_query, val_x_query \- DNSSEC\-validated resolution of DNS queries
+val_query \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .Vb 1
 \&  #include <validator.h>
 .Ve
 .PP
-.Vb 3
-\&  int val_query(const char *domain_name, int class, int type,
-\&              unsigned char *answer, int anslen, int flags,
-\&              int *dnssec_status);
-.Ve
-.PP
-.Vb 4
-\&  int val_x_query(const val_context_t *ctx,
-\&            const char *domain_name, const u_int16_t class,
-\&            const u_int16_t type, const u_int8_t flags,
-\&            struct response_t *resp, int *resp_count)
+.Vb 7
+\&  int val_query(const val_context_t *ctx,
+\&                const char *dname,
+\&                const u_int16_t class,
+\&                const u_int16_t type,
+\&                const u_int8_t flags,
+\&                struct val_response *resp,
+\&                int *resp_count)
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIval_query()\fB\fR function is a DNSSEC-aware version of \fB\f(BIres_query\fB\|(3)\fR.
-It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.  The results of the \s-1DNSSEC\s0
-validation are returned in the \fIdnssec_status\fR parameter.  The caller must
-not pass a \s-1NULL\s0 value for this parameter.
+The \fB\f(BIval_query()\fB\fR function is a DNSSEC-aware replacement for \fB\f(BIres_query\fB\|(3)\fR.
+It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.
 .PP
-The \fIflags\fR parameter is reserved for future use, and must be set to 0 at
-present.
+The \fIctx\fR parameter is the validator context and can be set to \s-1NULL\s0 for
+default settings.  More information about this field can be found in
+\&\fB\f(BIlibval\fB\|(3)\fR.
 .PP
-If \s-1DNSSEC\s0 validation succeeds, a value of \fB\s-1VALIDATE_SUCCESS\s0\fR is returned in
-\&\fIdnssec_status\fR.  Other values are returned in case of errors.  See
-\&\fBval_errors.h\fR for a listing of possible error codes.  The \fB\f(BIp_val_error()\fB\fR
-function can be used to return a brief string description of the error code.
+The \fIdname\fR parameter specifies the domain name, \fIclass\fR specifies the
+\&\s-1DNS\s0 class and \fItype\fR specifies the \s-1DNS\s0 type.  The \fIflags\fR parameter is
+reserved for future use, and must be set to 0 at present.
 .PP
-\&\fB\f(BIval_query()\fB\fR gives applications that already use the \fB\f(BIres_query\fB\|(3)\fR
-interface a simple way to transition towards being DNSSEC\-aware.  It does
-not, however, handle cases where multiple resource record sets may be returned
-for a query, each with a potentially different \s-1DNSSEC\s0 status.  If such
-functionality is desired, applications must make use of the \fB\f(BIval_x_query()\fB\fR
-interface.  The only difference between this and \fB\f(BIval_query()\fB\fR is that the
-latter returns results in \fIresp\fR which encapsultes the results into the
-following structure:
+The \fI\fIval_query()\fI\fR function returns results in \fIresp\fR which encapsultes the
+results into the following structure:
 .PP
 .Vb 5
-\&  struct response_t {
-\&        u_int8_t *response;
+\&  struct val_response {
+\&        unsigned char *response;
 \&        int response_length;
-\&        int validation_result;
+\&        val_status_t val_status;
 \&  };
 .Ve
 .PP
-\&\fIresponse\fR, \fIresponse_length\fR and \fIvalidation_result\fR are functionally
-similar to \fIanswer\fR, \fIanslen\fR and \fIdnssec_status\fR respectively.  \fIresp\fR
-is an array and must be allocated by the user to be of sufficient size to
-hold all the answers returned by the \s-1DNS\s0 name server.
+\&\fIresponse\fR and \fIresponse_length\fR fields are functionally similar to the
+\&\fIanswer\fR and \fIanslen\fR parameters in \fB\f(BIres_query\fB\|(3)\fR.  \fIresp\fR is an array
+and must be allocated by the user to be of sufficient size to hold all the
+answers returned by the \s-1DNS\s0 name server.  Each element in the \fIresp\fR array
+will contain an answer corresponding to a single RRSet in the \s-1DNS\s0 reply.
+.PP
+If \s-1DNSSEC\s0 validation succeeds for a given RRSet, a value of
+\&\fB\s-1VALIDATE_SUCCESS\s0\fR is returned in the \fIval_status\fR field of the
+\&\fIval_response\fR structure for that RRSet. Other values are returned in case
+of errors.  See \fBval_errors.h\fR for a listing of possible error codes.  The
+\&\fB\f(BIp_val_error()\fB\fR function can be used to return a brief string description
+of the error code.  The \fB\f(BIval_istrusted()\fB\fR function can be used to determine
+if the error code represents a value which indicates that the response can
+be trusted.
 .PP
 The number of answers actually available is returned in the \fIresp_count\fR
 parameter.  In case \fIresp\fR is not large enough to hold all answers returned
-from \fB\f(BIval_x_query()\fB\fR, it returns an error code of \fB\s-1NO_SPACE\s0\fR and
+from \fB\f(BIval_query()\fB\fR, it returns an error code of \fB\s-1NO_SPACE\s0\fR and
 \&\fIresp_count\fR is set to the total number of answers available.  Applications
 may re-query after reallocating \fIresp\fR to hold that many answers.  For
 queries that are not of type \f(CW\*(C`ns_t_any\*(C'\fR it is generally sufficient to
-allocate an array of three elements for *\fIresults\fR.
-.PP
-The \fIctx\fR parametr is the validator context and can be set to \s-1NULL\s0 for
-default settings.  More information about this field can be found in
-\&\fB\f(BIlibval\fB\|(3)\fR.
+allocate an array of three elements for *\fIresp\fR.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-The \fB\f(BIval_query()\fB\fR function returns the length of the answer if successful,
-or \-1 if there was an error.
-.PP
-The \fB\f(BIval_x_query()\fB\fR function returns \fB\s-1NO_ERROR\s0\fR on success.  It returns
+The \fB\f(BIval_query()\fB\fR function returns \fB\s-1NO_ERROR\s0\fR on success.  It returns
 \&\fB\s-1NO_SPACE\s0\fR if the application has not allocated enough memory to hold all
 results returned by the validator.  This function internally invokes
 \&\fB\f(BIresolve_n_check()\fB\fR, and errors from this function may also be returned.
 See \fB\f(BIlibval\fB\|(3)\fR for more details.
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
-.Vb 4
+.Vb 5
 \& #include <stdio.h>
+\& #include <stdlib.h>
 \& #include <strings.h>
 \& #include <arpa/nameser.h>
 \& #include <validator.h>
 .Ve
 .PP
-.Vb 1
+.Vb 2
 \& #define BUFLEN 8096
+\& #define RESPCOUNT 3
 .Ve
 .PP
-.Vb 7
+.Vb 12
 \& int main(int argc, char *argv[])
 \& {
 \&          int dnssec_status = ERROR;
-\&          int anslen = NETDB_INTERNAL;
+\&          int retval;
+\&          int i;
 \&          int class = ns_c_in;
 \&          int type = ns_t_a;
-\&          char buf[BUFLEN];
-.Ve
-.PP
-.Vb 1
-\&          bzero(buf, BUFLEN);
+\&          struct val_response resp[RESPCOUNT];
+\&          int resp_count = RESPCOUNT;
+\&          char buf0[BUFLEN];
+\&          char buf1[BUFLEN];
+\&          char buf2[BUFLEN];
 .Ve
 .PP
 .Vb 4
@@ -242,15 +237,35 @@ See \fB\f(BIlibval\fB\|(3)\fR for more details.
 \&          }
 .Ve
 .PP
-.Vb 2
-\&          anslen = val_query(argv[1], class, type, buf, BUFLEN,
-\&                             0, &dnssec_status);
+.Vb 3
+\&          bzero(buf0, BUFLEN);
+\&          bzero(buf1, BUFLEN);
+\&          bzero(buf2, BUFLEN);
 .Ve
 .PP
-.Vb 4
-\&          if (anslen > 0) {
-\&                  printf("DNSSEC Status = %d [%s]\en", dnssec_status,
-\&                         p_val_error(dnssec_status));
+.Vb 3
+\&          resp[0].response = buf0;
+\&          resp[1].response = buf1;
+\&          resp[2].response = buf2;
+.Ve
+.PP
+.Vb 3
+\&          resp[0].response_length = BUFLEN;
+\&          resp[1].response_length = BUFLEN;
+\&          resp[2].response_length = BUFLEN;
+.Ve
+.PP
+.Vb 2
+\&          retval = val_query(NULL, argv[1], class, type, 0, resp,
+\&                             &resp_count);
+.Ve
+.PP
+.Vb 6
+\&          if (retval == NO_ERROR) {
+\&                  for (i=0; i<resp_count; i++) {
+\&                          printf("Validation Status = %d [%s]\en", resp[i].val_status,
+\&                                 p_val_error(resp[i].val_status));
+\&                  }
 \&          }
 .Ve
 .PP
@@ -258,15 +273,9 @@ See \fB\f(BIlibval\fB\|(3)\fR for more details.
 \&          return 0;
 \& }
 .Ve
-.SH "NOTES"
-.IX Header "NOTES"
-The \fB\f(BIval_query()\fB\fR function does not handle the case when the response to
-a query contains an answer section having records of different types.  For
-example, it returns \-1 if the response contains both \s-1CNAME\s0 and A records
-in the answer section.  This will be fixed in future versions of the library.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
-Copyright 2004\-2005 \s-1SPARTA\s0, Inc.  All rights reserved.
+Copyright 2004\-2006 \s-1SPARTA\s0, Inc.  All rights reserved.
 See the \s-1COPYING\s0 file included with the DNSSEC-Tools package for details.
 .SH "AUTHORS"
 .IX Header "AUTHORS"
@@ -277,7 +286,7 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 .PP
 \&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_getaddrinfo\fB\|(3)\fR, \fB\f(BIval_gethostbyname\fB\|(3)\fR
 .PP
-\&\fIp_val_error\fR
+\&\fIp_val_error\fR, \fIval_istrusted\fR
 .PP
 \&\fB\f(BIlibval\fB\|(3)\fR
 .PP
