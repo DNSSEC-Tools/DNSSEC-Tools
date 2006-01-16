@@ -30,6 +30,9 @@
 #define MAX_RESULTS 10 
 #define BUFLEN 16000
 
+int MAX_RESPCOUNT = 10;
+int MAX_RESPSIZE = 8192;
+
 // Program options
 static struct option prog_options[] = {
 		   {"help",  0, 0, 'h'},
@@ -448,23 +451,41 @@ int main(int argc, char *argv[])
 
 			// If the print option is present, perform query and validation again for printing the result
 			if (doprint) {
-				int anslen = 0;
+				int retval = 0;
 				int dnssec_status = -1;
-				unsigned char buf[BUFLEN];
+				struct val_response resp[MAX_RESPCOUNT];
+				int resp_count = MAX_RESPCOUNT;
+				int i;
+				for (i=0; i<resp_count; i++) {
+				    bzero(&resp[i], sizeof (struct val_response));
+				    resp[i].response = (u_int8_t *) malloc (MAX_RESPSIZE * sizeof(u_int8_t));
+				    if (resp[i].response == NULL) {
+					    printf("Memory allocation error. Please try again later.\n");
+					    exit(1);
+				    }
+				    bzero(resp[i].response, MAX_RESPSIZE * sizeof(u_int8_t));
+				    resp[i].response_length = MAX_RESPSIZE;
+				}
 
-				bzero(buf, BUFLEN);
-
-				anslen = val_query(domain_name, class_h, type_h, buf, BUFLEN, 0, &dnssec_status);
-				printf("DNSSEC status: %s [%d]\n", p_val_error(dnssec_status), dnssec_status);
-
-				if (anslen > 0) {
-					if (dnssec_status == VALIDATE_SUCCESS) {
-						printf("Validated response:\n");
+				retval = val_query(NULL, domain_name, class_h, type_h, 0, resp, &resp_count);
+				
+				if (resp_count > 0) {
+					for (i=0; i<resp_count; i++) {
+						
+						printf("DNSSEC status: %s [%d]\n", p_val_error(resp[i].validation_result),
+						       resp[i].validation_result);
+						if (resp[i].validation_result == VALIDATE_SUCCESS) {
+							printf("Validated response:\n");
+						}
+						else {
+							printf("Non-validated response:\n");
+						}
+						print_response(resp[i].response, resp[i].response_length);
+						printf("\n");
 					}
-					else {
-						printf("Non-validated response:\n");
-					}
-					print_response(buf, anslen);
+				}
+				else {
+					printf("No answers returned. [resp_count = %d, retval = %d]\n", resp_count, retval);
 				}
 			}
 		}
