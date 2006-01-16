@@ -220,7 +220,7 @@ struct query_chain {
 struct val_response {
 	u_int8_t *response;
 	int	response_length;
-	val_status_t validation_result;
+	val_status_t val_status;
 };
 
 

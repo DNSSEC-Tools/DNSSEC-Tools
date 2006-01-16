@@ -472,9 +472,9 @@ int main(int argc, char *argv[])
 				if (resp_count > 0) {
 					for (i=0; i<resp_count; i++) {
 						
-						printf("DNSSEC status: %s [%d]\n", p_val_error(resp[i].validation_result),
-						       resp[i].validation_result);
-						if (resp[i].validation_result == VALIDATE_SUCCESS) {
+						printf("DNSSEC status: %s [%d]\n", p_val_error(resp[i].val_status),
+						       resp[i].val_status);
+						if (resp[i].val_status == VALIDATE_SUCCESS) {
 							printf("Validated response:\n");
 						}
 						else {
