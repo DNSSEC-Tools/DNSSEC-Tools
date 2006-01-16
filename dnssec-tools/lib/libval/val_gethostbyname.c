@@ -15,6 +15,7 @@
 #include <arpa/inet.h>
 #include <string.h>
 #include <strings.h>
+#include <errno.h>
 
 #include <validator.h>
 #include <resolver.h>
@@ -24,141 +25,115 @@
 #define ETC_HOSTS      "/etc/hosts"
 #define MAXLINE 4096
 #define MAX_ALIAS_COUNT 2048
+#define AUX_BUFLEN 16384
 
-/**
- * hostent_dnssec_wrapper: A wrapper struct around struct hostent to
- *                         store the result of DNSSEC validation.
- *     hentry: Contains the hostent structure
- *     dnssec_status: Contains the result of DNSSEC validation.
- *                If DNSSEC validation is successful, it will
- *                contain VALIDATE_SUCCESS.  If there is a
- *                failure, it will contain the validator error code.
+extern int h_errno;
+static struct hostent g_hentry;
+static char g_auxbuf[AUX_BUFLEN];
+
+/*
+ * Function: bufalloc
+ *
+ * Purpose: Allocate memory of specified size from the given buffer
+ *
+ * Parameters:
+ *              buf -- The buffer from which to allocate memory.
+ *                     This parameter must not be NULL.
+ *           buflen -- Length of the buffer
+ *           offset -- Pointer to an integer variable that holds
+ *                     the position in the buffer from where memory
+ *                     is to be allocated.  The offset is advanced
+ *                     by 'alloc_size' if memory is allocated successfully.
+ *                     This parameter must not be NULL.
+ *       alloc_size -- Size of the memory to be allocated.
+ *
+ * Return value: Returns pointer to the allocated memory if successful.
+ *               Returns NULL on failure.
  */
-struct hostent_dnssec_wrapper {
-	struct hostent hentry;
-	int dnssec_status;
-};
-
-int val_get_hostent_dnssec_status (const struct hostent *hentry)
+static void *bufalloc (char *buf, size_t buflen, int *offset, size_t alloc_size)
 {
-	struct hostent_dnssec_wrapper *hw = NULL;
+	if ((buf == NULL) || (offset == NULL)) {
+		return NULL;
+	}
 
-	if (hentry) {
-		hw = (struct hostent_dnssec_wrapper *) hentry;
-		return hw->dnssec_status;
+	if (((*offset) + alloc_size) >= buflen) {
+		return NULL;
 	}
 	else {
-		return INTERNAL_ERROR;
+		void *retval = (void *) (buf + (*offset));
+		(*offset) += alloc_size;
+		return retval;
 	}
 }
 
 
-/* Duplicate a hostent structure.  Performs a deep copy.
+/*
+ * Function: get_hostent_from_etc_hosts
+ *
+ * Purpose: Read the ETC_HOSTS file and check if it contains the given name.
+ *          Return the result in a hostent structure.
+ *
+ * Parameters:
+ *              ctx -- The validation context.
+ *             name -- The domain name or IP address in string form.
+ *               af -- The address family: AF_INET or AF_INET6.
+ *              ret -- Pointer to a hostent structure to return the result.
+ *                     This parameter must not be NULL.
+ *              buf -- A buffer to store auxiliary data.  This parameter must not be NULL.
+ *           buflen -- Length of the buffer 'buf'.
+ *           offset -- Pointer to an integer variable that contains the offset in the buffer
+ *                     'buf', where data can be written.  When this function writes any data
+ *                     in the auxiliary data, the offset is incremented accordingly.  This
+ *                     parameter must not be NULL.
+ *
+ * Return value: Returns NULL on failure and 'ret' on success.
+ *
+ * See also: get_hostent_from_response()
  */
-struct hostent* val_duphostent (const struct hostent *hentry)
+static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
+						   const char *name,
+						   int af,
+						   struct hostent *ret,
+						   char *buf,
+						   int buflen,
+						   int *offset)
 {
-	struct hostent_dnssec_wrapper *oldhw = NULL;
-	struct hostent_dnssec_wrapper *newhw = NULL;
-	int i = 0;
-	int aliascount=0;
-	int addrcount=0;
+	int orig_offset = 0;
+	struct hosts *hs = NULL;
 
-	
-	if (!hentry)
+	if ((ret == NULL) || (buf == NULL) || (offset == NULL) || (*offset < 0)) {
 		return NULL;
-
-	oldhw = (struct hostent_dnssec_wrapper *) hentry;
-	newhw = (struct hostent_dnssec_wrapper *) malloc (sizeof (struct hostent_dnssec_wrapper));
-	bzero(newhw, sizeof (struct hostent_dnssec_wrapper));
-
-	newhw->hentry.h_addrtype = hentry->h_addrtype;
-	newhw->hentry.h_length = hentry->h_length;
-	newhw->dnssec_status = oldhw->dnssec_status;
-
-	if (hentry->h_name)
-		newhw->hentry.h_name = strdup(hentry->h_name);
-
-	if (hentry->h_aliases) {
-
-		for (i=0; hentry->h_aliases[i] != 0; i++) {
-			aliascount++;
-		}
-		aliascount++;
-
-		newhw->hentry.h_aliases = (char **) malloc (aliascount * sizeof (char*));
-		bzero(newhw->hentry.h_aliases, aliascount * sizeof(char*));
-
-		for (i=0; hentry->h_aliases[i] != 0; i++) {
-			if (hentry->h_aliases[i])
-				newhw->hentry.h_aliases[i] = strdup(hentry->h_aliases[i]);
-		}
 	}
+
+	/* Parse the /etc/hosts file */
+	hs = parse_etc_hosts (name);
+
+	orig_offset = *offset;
+	bzero(ret, sizeof(struct hostent));
 	
-	if (hentry->h_addr_list) {
-
-		for (i=0; hentry->h_addr_list[i] != 0; i++) {
-			addrcount++;
-		}
-		addrcount++;
-		
-		newhw->hentry.h_addr_list = (char **) malloc (addrcount * sizeof (char *));
-		bzero(newhw->hentry.h_addr_list, addrcount * sizeof (char *));
-		
-		for (i=0; hentry->h_addr_list[i] != 0; i++) {
-			if (hentry->h_addr_list[i])
-				newhw->hentry.h_addr_list[i] = strdup(hentry->h_addr_list[i]);
-		}
-	}
-
-	return (struct hostent *) newhw;
-}
-
-/* A function to free memory allocated by val_gethostbyname */
-void val_freehostent (struct hostent *hentry)
-{
-	if (hentry) {
-		int i = 0;
-		if (hentry->h_name) free (hentry->h_name);
-		if (hentry->h_aliases) {
-			i = 0;
-			for (i=0; hentry->h_aliases[i] != 0; i++) {
-				if (hentry->h_aliases[i]) free (hentry->h_aliases[i]);
-			}
-			if (hentry->h_aliases[i]) free (hentry->h_aliases[i]);
-			free (hentry->h_aliases);
-		}
-		if (hentry->h_addr_list) {
-			i = 0;
-			for (i=0; hentry->h_addr_list[i] != 0; i++) {
-				if (hentry->h_addr_list[i]) free (hentry->h_addr_list[i]);
-			}
-			if (hentry->h_addr_list[i]) free (hentry->h_addr_list[i]);
-			free (hentry->h_addr_list);
-		}
-		free (hentry);
-	}
-}
-
-
-/* Read the ETC_HOSTS file and check if it contains the given name.
- */
-static struct hostent *get_hostent_from_etc_hosts (val_context_t *ctx, const char *name)
-{
-	struct hosts *hs = parse_etc_hosts (name);
-	struct hostent *hentry = NULL;
-	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
-	
-	/* XXX: todo what if hs has more than one element ? */
+	/* XXX: todo -- can hs have more than one element ? */
 	while (hs) {
 		struct hosts *h_prev = NULL;
 		struct in_addr ip4_addr;
-		char addr_buf[INET_ADDRSTRLEN];
+		struct in6_addr ip6_addr;
+		char addr_buf[INET6_ADDRSTRLEN];
 		int i, alias_count;
+		int len = 0;
 		
 		bzero(&ip4_addr, sizeof(struct in_addr));
+		bzero(&ip6_addr, sizeof(struct in6_addr));
 		
-		if (inet_pton(AF_INET, hs->address, &ip4_addr) <= 0) {
-			
+		if ((af == AF_INET) && (inet_pton(AF_INET, hs->address, &ip4_addr) > 0)) {
+			val_log(ctx, LOG_DEBUG, "...type of address is IPv4");
+			val_log(ctx, LOG_DEBUG, "Address is: %s",
+				inet_ntop(AF_INET, &ip4_addr, addr_buf, INET_ADDRSTRLEN));
+		}
+		else if ((af == AF_INET6) && (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0)) {
+			val_log(ctx, LOG_DEBUG, "...type of address is IPv6");
+			val_log(ctx, LOG_DEBUG, "Address is: %s",
+				inet_ntop(AF_INET, &ip6_addr, addr_buf, INET6_ADDRSTRLEN));
+		}
+		else {
 			/* not a valid address ... skip this line */
 			val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts() error in address format: %s", hs->address);
 			h_prev = hs;
@@ -166,247 +141,417 @@ static struct hostent *get_hostent_from_etc_hosts (val_context_t *ctx, const cha
 			FREE_HOSTS(h_prev);
 			continue;
 		}
-		else {
-			val_log(ctx, LOG_DEBUG, "...type of address is IPv4");
-			val_log(ctx, LOG_DEBUG, "Address is: %s",
-				inet_ntop(AF_INET, &ip4_addr, addr_buf, INET_ADDRSTRLEN));
+
+		// Name
+		len = (hs->canonical_hostname == NULL) ? 0 : strlen(hs->canonical_hostname);
+
+		if (hs->canonical_hostname) {
+			ret->h_name = (char *) bufalloc(buf, buflen, offset, len + 1);
+			if (ret->h_name == NULL) {
+				*offset = orig_offset;
+				return NULL;
+			}
+
+			memcpy(ret->h_name, hs->canonical_hostname, len + 1);
 		}
-		
-		hentry_wrapper = (struct hostent_dnssec_wrapper*) malloc (sizeof(struct hostent_dnssec_wrapper));
-		bzero(hentry_wrapper, sizeof(struct hostent_dnssec_wrapper));
-		hentry = (struct hostent *) & (hentry_wrapper->hentry);
-		
-		hentry->h_name = (char *) strdup(hs->canonical_hostname);
+		else {
+			ret->h_name = NULL;
+		}
+
+		// Aliases
 		alias_count = 0;
 		while (hs->aliases[alias_count]) {
 			alias_count++;
 		}
 		alias_count++;
-		hentry->h_aliases = (char **) malloc ((alias_count) * sizeof(char *));
+		
+		ret->h_aliases = (char **) bufalloc(buf, buflen, offset, alias_count * sizeof(char *));
+
+		if (ret->h_aliases == NULL) {
+			*offset = orig_offset;
+			return NULL;
+		}
 		
 		for (i=0; i<alias_count; i++) {
-			hentry->h_aliases[i] = (char *) (hs->aliases[i]);
+			len = (hs->aliases[i] == NULL) ? 0 : strlen(hs->aliases[i]);
+			if (hs->aliases[i]) {
+				ret->h_aliases[i] = (char *) bufalloc(buf, buflen, offset, len + 1);
+				if (ret->h_aliases[i] == NULL) {
+					*offset = orig_offset;
+					return NULL;
+				}
+				memcpy(ret->h_aliases[i], hs->aliases[i], len + 1);
+			}
+			else {
+				ret->h_aliases[i] = NULL;
+			}
 		}
-		free(hs->aliases);
-		hs->aliases = (char **) malloc (sizeof(char *));
-		hs->aliases[0] = NULL;
 		
-		
-		hentry->h_addrtype = AF_INET;
-		hentry->h_length = sizeof(struct in_addr);
-		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
-		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
-		memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
-		hentry->h_addr_list[1] = 0;
+		// Addresses
+		ret->h_addr_list = (char **) bufalloc(buf, buflen, offset, 2 * sizeof(char *));
+		if (af == AF_INET) {
+		    ret->h_addrtype = AF_INET;
+		    ret->h_length = sizeof(struct in_addr);
+		    ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, offset, sizeof(struct in_addr));
+		    if (ret->h_addr_list[0] == NULL) {
+			    *offset = orig_offset;
+			    return NULL;
+		    }
+		    memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+		    ret->h_addr_list[1] = 0;
+		}
+		else if (af == AF_INET6) {
+		    ret->h_addrtype = AF_INET6;
+		    ret->h_length = sizeof(struct in6_addr);
+		    ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, offset, sizeof(struct in6_addr));
+		    if (ret->h_addr_list[0] == NULL) {
+			    *offset = orig_offset;
+			    return NULL;
+		    }
+		    memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
+		    ret->h_addr_list[1] = 0;
+		}
+		else {
+			*offset = orig_offset;
+			return NULL;
+		}
 		
 		hs = hs->next;
 		h_prev = hs;
 		FREE_HOSTS(h_prev);
-		return hentry;
+		return ret;
 	}
 	
 	return NULL;
 	
-}
-
-
-/* Converts data in the rrset_rec structure into a hostent structure */
-static struct hostent *get_hostent_from_response (val_context_t *ctx, struct rrset_rec *rrset, int *h_errnop)
-{
-	struct hostent *hentry = NULL;
-	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
-	int address_found = 0;
-	int cname_found = 0;
-	char dname[MAXDNAME];
-	
-	if (!rrset) {
-		return NULL;
-	}
-	
-	hentry_wrapper = (struct hostent_dnssec_wrapper*) malloc (sizeof(struct hostent_dnssec_wrapper));
-	bzero(hentry_wrapper, sizeof(struct hostent_dnssec_wrapper));
-	hentry = (struct hostent *) & (hentry_wrapper->hentry);
-	hentry->h_aliases = (char **) malloc (sizeof(char*));
-	hentry->h_aliases[0] = 0;
-	
-	hentry->h_addr_list = (char **) malloc (sizeof(char*));
-	hentry->h_addr_list[0] = 0;
-	
-	while (rrset) {
-		struct rr_rec *rr = rrset->rrs_data;
-		
-		while (rr) {
-			
-			if (rrset->rrs_type_h == ns_t_cname) {
-				val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = CNAME");
-				cname_found = 1;
-				bzero(dname, MAXDNAME);
-				if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
-					val_freehostent(hentry);
-					return NULL;
-				}
-				if (hentry->h_aliases) {
-					if (hentry->h_aliases[0]) free (hentry->h_aliases[0]);
-					free (hentry->h_aliases);
-				}
-				hentry->h_aliases = (char **) malloc (2 * sizeof(char *)); /* CNAME is a singleton RR */
-				hentry->h_aliases[0] = (char *) malloc ((strlen(dname) + 1) * sizeof (char));
-				memcpy(hentry->h_aliases[0], dname, strlen(dname) + 1);
-				hentry->h_aliases[1] = 0;
-				
-				if (!hentry->h_name) {
-					bzero(dname, MAXDNAME);
-					if (ns_name_ntop(rr->rr_rdata, dname, MAXDNAME) < 0) {
-						val_freehostent(hentry);
-						return NULL;
-					}
-					hentry->h_name = (char *) malloc ((strlen(dname) + 1)* sizeof(char));
-					memcpy(hentry->h_name, dname, strlen(dname) + 1);
-				}
-			}
-			else if (rrset->rrs_type_h == ns_t_a) {
-				val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = A");
-				
-				bzero(dname, MAXDNAME);
-				if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
-					val_freehostent(hentry);
-					return NULL;
-				}
-				
-				if (!hentry->h_name) {
-					hentry->h_name = (char *) malloc ((strlen(dname) + 1) * sizeof(char));
-					memcpy(hentry->h_name, dname, strlen(dname) + 1);
-				}
-				
-				if (strcasecmp (hentry->h_name, dname) == 0) {
-					int l = 0;
-					int i;
-					char ** new_addr_list;
-					
-					hentry->h_length = rr->rr_rdata_length_h; /* What if previous address was of type AAAA? */
-					hentry->h_addrtype = AF_INET;
-					
-					if ((hentry->h_addr_list != NULL) && (hentry->h_addr_list[0] != 0)) {
-						while(hentry->h_addr_list[l] != 0) {
-							l++;
-						}
-					}
-					
-					new_addr_list = (char **) malloc ((l+2) * sizeof(char *));
-					for (i=0; i<l; i++) {
-						new_addr_list[i] = hentry->h_addr_list[i];
-					}
-					
-					new_addr_list[l] = (char *) malloc (rr->rr_rdata_length_h * sizeof(char));
-					memcpy(new_addr_list[l], rr->rr_rdata, rr->rr_rdata_length_h);
-					new_addr_list[l+1] = 0;
-					
-					if (hentry->h_addr_list) free (hentry->h_addr_list);
-					
-					hentry->h_addr_list = new_addr_list;
-					
-					address_found = 1;
-				}
-			}
-#if 0
-			else if (rrset->rrs_type_h == ns_t_aaaa) {
-				val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = AAAA");
-				/* XXX TODO: Fill in the AF_INET6 address in hentry */
-				hentry->h_addrtype = AF_INET6;
-				address_found = 1;
-			}
-#endif
-			rr = rr->rr_next;
-		}
-		// else ignore the rrset and move on to the next
-		rrset = rrset->rrs_next;
-	}
-	
-#if 0
-	/* XXX TODO: If some address were AF_INET and some were AF_INET6,
-	 * convert the AF_INET addresses to AF_INET6
-	 */
-#endif
-	
-	if (address_found) {
-		*h_errnop = NETDB_SUCCESS;
-	}
-	else if (cname_found) {
-		*h_errnop = NO_DATA;
-	}
-	else {
-		if (hentry) val_freehostent(hentry);
-		hentry = NULL;
-		*h_errnop = HOST_NOT_FOUND;
-	}
-	
-	return hentry;
-}
+} /* get_hostent_from_etc_hosts() */
 
 
 /*
- * Returns the entry from the host database for host.
- * If successful, dnssec_status will contain VALIDATE_SUCCESS
- * If there is a failure, dnssec_status will contain the validator
- * error code.  The dnssec_status can be accessed by the
- * function get_hostent_dnssec_status()
+ * Function: get_hostent_from_response
+ *
+ * Purpose: Converts the linked list of val_result structures obtained
+ *          as a result from the validator into a hostent structure.
+ *
+ * Parameters:
+ *              ctx -- The validation context.
+ *               af -- The address family: AF_INET or AF_INET6.
+ *              ret -- Pointer to a hostent structure to return the result.
+ *                     This parameter must not be NULL.
+ *          results -- Pointer to a linked list of val_result structures.
+ *         h_errnop -- Pointer to an integer variable to store the h_errno value.
+ *              buf -- A buffer to store auxiliary data.  This parameter must not be NULL.
+ *           buflen -- Length of the buffer 'buf'.
+ *           offset -- Pointer to an integer variable that contains the offset in the buffer
+ *                     'buf', where data can be written.  When this function writes any data
+ *                     in the auxiliary data, the offset is incremented accordingly.  This
+ *                     parameter must not be NULL.
+ *
+ * Return value: Returns NULL on failure and 'ret' on success.
+ *
+ * See also: get_hostent_from_etc_hosts()
  */
-struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int *h_errnop )
+static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, struct hostent *ret,
+						  struct val_result *results, int *h_errnop,
+						  char *buf, int buflen, int *offset)
 {
-	struct hostent* hentry = NULL;
-	struct hostent_dnssec_wrapper *hentry_wrapper = NULL;
-	struct in_addr ip4_addr;
-#if 0
-	struct in6_addr ip6_addr;
-#endif
-	
-	if (!name || !h_errnop) {
+	int alias_count = 0;
+	int alias_index = 0;
+	int addr_count  = 0;
+	int addr_index  = 0;
+	int orig_offset = 0;
+	char dname [MAXDNAME];
+
+	/* Check parameter sanity */
+	if (!results || !h_errnop || !buf || !offset || !ret) {
 		return NULL;
 	}
 	
-	bzero(&ip4_addr, sizeof(struct in_addr));
-#if 0
-	bzero(&ip6_addr, sizeof(struct in6_addr));
-#endif
-	
-	if (inet_pton(AF_INET, name, &ip4_addr) > 0) {
-		hentry_wrapper = (struct hostent_dnssec_wrapper*) malloc (sizeof(struct hostent_dnssec_wrapper));
-		bzero(hentry_wrapper, sizeof(struct hostent_dnssec_wrapper));
-		hentry = (struct hostent *) & (hentry_wrapper->hentry);
-		hentry->h_name = strdup(name);
-		hentry->h_aliases = (char **) malloc (sizeof(char *));
-		hentry->h_aliases[0] = 0;
-		hentry->h_addrtype = AF_INET;
-		hentry->h_length = sizeof(struct in_addr);
-		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
-		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in_addr));
-		memcpy(hentry->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
-		hentry->h_addr_list[1] = 0;
-		hentry_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		*h_errnop = NETDB_SUCCESS;
-		return hentry;
-	}
-#if 0
-	else if (inet_pton(AF_INET6, name, &ip6_addr) > 0) {
-		hentry_wrapper = (struct hostent_dnssec_wrapper*) malloc (sizeof(struct hostent_dnssec_wrapper));
-		bzero(hentry_wrapper, sizeof(struct hostent_dnssec_wrapper));
-		hentry = (struct hostent *) & (hentry_wrapper->hentry);
-		hentry->h_name = strdup(name);
-		hentry->h_aliases = (char **) malloc (sizeof(char *));
-		hentry->h_aliases[0] = 0;
-		hentry->h_addrtype = AF_INET6;
-		hentry->h_length = sizeof(struct in6_addr);
-		hentry->h_addr_list = (char **) malloc (2 * sizeof(char *));
-		hentry->h_addr_list[0] = (char *) malloc(sizeof(struct in6_addr));
-		memcpy(hentry->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
-		hentry->h_addr_list[1] = 0;
-		hentry_wrapper->dnssec_status = VALIDATE_SUCCESS;
-		*h_errnop = NETDB_SUCCESS;
-		return hentry;
-	}
-#endif
-	else {
+	orig_offset = *offset;
+	bzero(ret, sizeof(struct hostent));
+
+	struct val_result *res;
+
+	/* Count the number of aliases and addresses in the result */
+	for (res = results; res != NULL; res = res->next) {
+		struct rrset_rec *rrset = res->as->ac_data;
 		
+		// Get a count of aliases and addresses
+		while (rrset) {
+			struct rr_rec *rr = rrset->rrs_data;
+			
+			while (rr) {
+				
+				if (rrset->rrs_type_h == ns_t_cname) {
+					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = CNAME");
+					alias_count++;
+				}
+				else if ((af == AF_INET) && (rrset->rrs_type_h == ns_t_a)) {
+					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = A");
+					addr_count++;
+				}
+				else if ((af == AF_INET6) && (rrset->rrs_type_h == ns_t_aaaa)) {
+					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = AAAA");
+					addr_count++;
+				}
+				
+				rr = rr->rr_next;
+			}
+			// else ignore the rrset and move on to the next
+			rrset = rrset->rrs_next;
+		}
+	} // end for
+	
+	ret->h_aliases = (char **) bufalloc (buf, buflen, offset, (alias_count + 1) * sizeof(char*));
+	if (ret->h_aliases == NULL) {
+		*offset = orig_offset;
+		return NULL;
+	}
+	ret->h_aliases[alias_count] = 0;
+	
+	ret->h_addr_list = (char **) bufalloc (buf, buflen, offset, (addr_count + 1) * sizeof(char*));
+	if (ret->h_addr_list == NULL) {
+		*offset = orig_offset;
+		return NULL;
+	}
+	ret->h_addr_list[addr_count] = 0;
+
+	/* Process the result */
+	for (res = results; res != NULL; res = res->next) {
+		struct rrset_rec *rrset = res->as->ac_data;
+		
+		while (rrset) {
+			struct rr_rec *rr = rrset->rrs_data;
+
+			while (rr) {
+				// Handle CNAME RRs
+				if (rrset->rrs_type_h == ns_t_cname) {
+					
+					bzero(dname, MAXDNAME);
+					if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
+						*offset = orig_offset;
+						return NULL;
+					}
+					
+					if (alias_index < alias_count) {
+						ret->h_aliases[alias_index] = (char *) bufalloc(buf, buflen, offset,
+												(strlen(dname) + 1) * sizeof (char));
+						if (ret->h_aliases[alias_index] == NULL) {
+							*offset = orig_offset;
+							return NULL;
+						}
+						memcpy(ret->h_aliases[alias_index], dname, strlen(dname) + 1);
+						alias_index++;
+					}
+					
+					if (!ret->h_name) {
+						bzero(dname, MAXDNAME);
+						if (ns_name_ntop(rr->rr_rdata, dname, MAXDNAME) < 0) {
+							*offset = orig_offset;
+							return NULL;
+						}
+						ret->h_name = (char *) bufalloc (buf, buflen, offset, (strlen(dname) + 1)* sizeof(char));
+						if (ret->h_name == NULL) {
+							*offset = orig_offset;
+							return NULL;
+						}
+						memcpy(ret->h_name, dname, strlen(dname) + 1);
+					}
+				}
+				// Handle A and AAAA RRs
+				else if ( ((af == AF_INET) && (rrset->rrs_type_h == ns_t_a)) ||
+					  ((af == AF_INET6)&& (rrset->rrs_type_h == ns_t_aaaa)) ) {
+					
+					bzero(dname, MAXDNAME);
+					if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
+						*offset = orig_offset;
+						return NULL;
+					}
+					
+					if (!ret->h_name) {
+						ret->h_name = (char *) bufalloc(buf, buflen, offset, (strlen(dname) + 1) * sizeof(char));
+						if (ret->h_name == NULL) {
+							*offset = orig_offset;
+							return NULL;
+						}
+						memcpy(ret->h_name, dname, strlen(dname) + 1);
+					}
+					
+					if (strcasecmp (ret->h_name, dname) == 0) {
+						ret->h_length = rr->rr_rdata_length_h;
+						ret->h_addrtype = af;
+						
+						ret->h_addr_list[addr_index] = (char *) bufalloc (buf, buflen, offset,
+												  rr->rr_rdata_length_h * sizeof(char));
+						if (ret->h_addr_list[addr_index] == NULL) {
+							*offset = orig_offset;
+							return NULL;
+						}
+						
+						memcpy(ret->h_addr_list[addr_index], rr->rr_rdata, rr->rr_rdata_length_h);
+						addr_index++;
+					}
+				}
+				
+				rr = rr->rr_next;
+			}
+			
+			rrset = rrset->rrs_next;
+		}
+	}
+	
+	if (addr_count > 0) {
+		*h_errnop = NETDB_SUCCESS;
+		return ret;
+	}
+	else if (alias_count > 0) {
+		*h_errnop = NO_DATA;
+		return ret;
+	}
+	else {
+		*offset = orig_offset;
+		*h_errnop = HOST_NOT_FOUND;
+		return NULL;
+	}
+
+} /* get_hostent_from_response() */
+
+
+/*
+ * Function: val_gethostbyname2_r
+ *
+ * Purpose: A validating DNSSEC-aware version of the reentrant gethostbyname2_r
+ *          function.  This function supports both IPv4 and IPv6 addresses.
+ *
+ * Parameters:
+ *              ctx -- The validation context.  Can be NULL for default value.
+ *             name -- The domain name or IP address in string format.
+ *               af -- Address family AF_INET or AF_INET6
+ *              ret -- Pointer to a hostent variable to store the return value.
+ *                     This parameter must not be NULL.
+ *              buf -- Pointer to a buffer to store auxiliary data.  This
+ *                     parameter must not be NULL.
+ *           buflen -- Length of the buffer 'buf'.
+ *           result -- Pointer to a variable of type (struct hostent *).  This
+ *                     parameter must not be NULL.  *result will contain NULL on
+ *                     failure and will point to the 'ret' parameter on success.
+ *         h_errnop -- Pointer to an integer variable to return the h_errno error
+ *                     code.  This parameter must not be NULL.
+ *       val_status -- A pointer to a val_status_t variable to hold the
+ *                     returned validation-status value.  This parameter
+ *                     must not be NULL.
+ *                     If successful, *val_status will contain a success
+ *                     code. If there is a failure, *val_status will contain
+ *                     the validator error code. To test whether the returned
+ *                     error code represents a trustworthy status, the caller
+ *                     can use the val_istrusted() function. 
+ *
+ * Return value: 0 on success, and a non-zero error-code on failure.
+ *
+ * See also: val_gethostbyname2(), val_gethostbyname_r(), val_istrusted()
+ */
+int val_gethostbyname2_r( const val_context_t *ctx,
+			  const char *name,
+			  int af,
+			  struct hostent *ret,
+			  char *buf,
+			  size_t buflen,
+			  struct hostent **result,
+			  int *h_errnop,
+			  val_status_t *val_status )
+{
+	struct in_addr ip4_addr;
+	struct in6_addr ip6_addr;
+	int offset = 0;
+	
+	if (!name || !ret || !h_errnop || !val_status || !result || !buf) {
+		if (result) {
+			*result = NULL;
+		}
+		return EINVAL;
+	}
+	
+	bzero(&ip4_addr, sizeof(struct in_addr));
+	bzero(&ip6_addr, sizeof(struct in6_addr));
+	
+	/* Check if the address-family is AF_INET and the address is an IPv4 address */
+	if ((af == AF_INET) && (inet_pton(AF_INET, name, &ip4_addr) > 0)) {
+		bzero(ret, sizeof(struct hostent));
+
+		// Name
+		ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
+		if (ret->h_name == NULL) {
+			return ERANGE;
+		}
+		memcpy(ret->h_name, name, strlen(name) + 1);
+
+		// Alias
+		ret->h_aliases = (char **) bufalloc (buf, buflen, &offset, sizeof(char *));
+		if (ret->h_aliases == NULL) {
+			return ERANGE;
+		}
+		ret->h_aliases[0] = 0;
+
+		// Address
+		ret->h_addrtype = AF_INET;
+		ret->h_length = sizeof(struct in_addr);
+		ret->h_addr_list = (char **) bufalloc (buf, buflen, &offset, 2 * sizeof(char *));
+		if (ret->h_addr_list == NULL) {
+			return ERANGE;
+		}
+		ret->h_addr_list[0] = (char *) bufalloc (buf, buflen, &offset, sizeof(struct in_addr));
+		if (ret->h_addr_list[0] == NULL) {
+			return ERANGE;
+		}
+		memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+		ret->h_addr_list[1] = 0;
+
+		*val_status = LOCAL_ANSWER;
+		*h_errnop = NETDB_SUCCESS;
+		*result = ret;
+
+		return 0;
+	}
+
+	/* Check if the address-family is AF_INET6 and the address is an IPv6 address */
+	else if ((af == AF_INET6) && (inet_pton(AF_INET6, name, &ip6_addr) > 0)) {
+		bzero(ret, sizeof(struct hostent));
+
+		// Name
+		ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
+		if (ret->h_name == NULL) {
+			return ERANGE;
+		}
+		memcpy(ret->h_name, name, strlen(name) + 1);
+
+		// Alias
+		ret->h_aliases = (char **) bufalloc (buf, buflen, &offset, sizeof(char *));
+		if (ret->h_aliases == NULL) {
+			return ERANGE;
+		}
+		ret->h_aliases[0] = 0;
+
+		// Address
+		ret->h_addrtype = AF_INET6;
+		ret->h_length = sizeof(struct in6_addr);
+		ret->h_addr_list = (char **) bufalloc (buf, buflen, &offset, 2 * sizeof(char *));
+		if (ret->h_addr_list == NULL) {
+			return ERANGE;
+		}
+		ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, &offset, sizeof(struct in6_addr));
+		if (ret->h_addr_list[0] == NULL) {
+			return ERANGE;
+		}
+		memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
+		ret->h_addr_list[1] = 0;
+
+		*val_status = LOCAL_ANSWER;
+		*h_errnop = NETDB_SUCCESS;
+		*result = ret;
+
+		return 0;
+	}
+	else {
 		int retval;
 		struct query_chain *queries = NULL;
 		struct assertion_chain *assertions = NULL;
@@ -417,37 +562,42 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int 
 		if (ctx == NULL)
 			get_context(NULL, &context);
 		else
-			context = ctx;   
+			context = (val_context_t *) ctx;   
 
+		*result = NULL;
+		
 		/* First check the ETC_HOSTS file
 		 * XXX: TODO check the order in the ETC_HOST_CONF file
 		 */
-		hentry = get_hostent_from_etc_hosts (context, name);
+		*result = get_hostent_from_etc_hosts (context, name, af, ret, buf, buflen, &offset);
 		
-		if (hentry != NULL) {
-			hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
-			hentry_wrapper->dnssec_status = VALIDATE_SUCCESS; /* ??? or locally trusted ??? */
+		if (*result != NULL) {
+			*val_status = LOCAL_ANSWER;
 			*h_errnop = NETDB_SUCCESS;
 			if((ctx == NULL) && context)
 				destroy_context(context);
-			return hentry;
+			return 0;
 		}
 		
-		hentry = NULL;
-		
+		u_int16_t type = ns_t_a;
+		if (af == AF_INET6) {
+			type = ns_t_aaaa;
+		}
+
+		/* Query the validator */
 		if (((retval = ns_name_pton(name, name_n, MAXCDNAME-1)) != -1)
-		    && (NO_ERROR == (retval = resolve_n_check(context, name_n, ns_t_a, ns_c_in, 0,
+		    && (NO_ERROR == (retval = resolve_n_check(context, name_n, type, ns_c_in, 0,
 							      &queries, &assertions, &results)))) {
 			
-			hentry = get_hostent_from_response(context, results->as->ac_data, h_errnop);
+			/* Convert the validator result into hostent */
+		        *result = get_hostent_from_response(context, af, ret, results, h_errnop, buf, buflen, &offset);
 			
-			if (hentry) {
-				hentry_wrapper = (struct hostent_dnssec_wrapper *) hentry;
-				hentry_wrapper->dnssec_status = results->status;
+			if (*result) {
+			    *val_status = results->status;
 			}
 		}
 		
-		if(hentry == NULL)
+		if(*result == NULL)
 			*h_errnop = HOST_NOT_FOUND;
 		else
 			*h_errnop = NETDB_SUCCESS;
@@ -459,19 +609,121 @@ struct hostent *val_x_gethostbyname ( val_context_t *ctx, const char *name, int 
 		if((ctx == NULL) && context)
 			destroy_context(context);
 		
-		return hentry;
-		
+		// XXX what if error?
+		return 0;
 	}	
 }
 
 /*
- * Returns the entry from the host database for host.
- * If successful, dnssec_status will contain VALIDATE_SUCCESS
- * If there is a failure, dnssec_status will contain the validator
- * error code.  The dnssec_status can be accessed by the
- * function get_hostent_dnssec_status()
+ * Function: val_gethostbyname2
+ *
+ * Purpose: A validating DNSSEC-aware version of the gethostbyname2 function.
+ *          This function supports both IPv4 and IPv6 addresses.
+ *
+ * Parameters:
+ *              ctx -- The validation context.  Can be NULL for default value.
+ *             name -- The domain name or IP address in string form
+ *               af -- Address family AF_INET or AF_INET6
+ *       val_status -- A pointer to a val_status_t variable to hold the
+ *                     returned validation-status value.  This parameter
+ *                     must not be NULL.
+ *                     If successful, *val_status will contain a success
+ *                     code. If there is a failure, *val_status will contain
+ *                     the validator error code. To test whether the returned
+ *                     error code represents a trustworthy status, the caller
+ *                     can use the val_istrusted() function. 
+ *
+ * Return value:
+ *        Returns the entry from the host database or DNS for host on success.
+ *        Returns NULL on failure.
+ *
+ * See also: val_gethostbyname2_r, val_istrusted
  */
-struct hostent *val_gethostbyname ( const char *name, int *h_errnop )
+struct hostent *val_gethostbyname2( const val_context_t *ctx,
+				    const char *name,
+				    int af,
+				    val_status_t *val_status )
 {
-	return val_x_gethostbyname( NULL, name, h_errnop );
-}
+    struct hostent *result = NULL;
+    val_gethostbyname2_r(ctx, name, af, &g_hentry, g_auxbuf,
+			 AUX_BUFLEN, &result, &h_errno, val_status);
+    return result;
+
+} /* val_gethostbyname2() */
+
+/*
+ * Function: val_gethostbyname
+ *
+ * Purpose: A validating DNSSEC-aware version of the gethostbyname function.
+ *          This function supports only IPv4 addresses.
+ *
+ * Parameters:
+ *              ctx -- The validation context.  Can be NULL for default value.
+ *             name -- The domain name or IPv4 address in dotted-decimal format.
+ *       val_status -- A pointer to a val_status_t variable to hold the
+ *                     returned validation-status value.  This parameter
+ *                     must not be NULL.
+ *                     If successful, *val_status will contain a success
+ *                     code. If there is a failure, *val_status will contain
+ *                     the validator error code. To test whether the returned
+ *                     error code represents a trustworthy status, the caller
+ *                     can use the val_istrusted() function. 
+ *
+ * Return value:
+ *        Returns the entry from the host database or DNS for host on success.
+ *        Returns NULL on failure.
+ *
+ * See also: val_gethostbyname_r(), val_gethostbyname2, val_istrusted()
+ */
+struct hostent *val_gethostbyname( const val_context_t *ctx,
+				   const char *name,
+				   val_status_t *val_status )
+{
+    return val_gethostbyname2(ctx, name, AF_INET, val_status);
+
+} /* val_gethostbyname() */
+
+/*
+ * Function: val_gethostbyname_r
+ *
+ * Purpose: A validating DNSSEC-aware version of the reentrant gethostbyname_r
+ *          function.  This function only supports IPv4 addresses.
+ *
+ * Parameters:
+ *              ctx -- The validation context.  Can be NULL for default value.
+ *             name -- The domain name or IPv4 address in dotted-decimal format.
+ *              ret -- Pointer to a hostent variable to store the return value.
+ *                     This parameter must not be NULL.
+ *              buf -- Pointer to a buffer to store auxiliary data.  This
+ *                     parameter must not be NULL.
+ *           buflen -- Length of the buffer 'buf'.
+ *           result -- Pointer to a variable of type (struct hostent *).  This
+ *                     parameter must not be NULL.  *result will contain NULL on
+ *                     failure and will point to the 'ret' parameter on success.
+ *         h_errnop -- Pointer to an integer variable to return the h_errno error
+ *                     code.  This parameter must not be NULL.
+ *       val_status -- A pointer to a val_status_t variable to hold the
+ *                     returned validation-status value.  This parameter
+ *                     must not be NULL.
+ *                     If successful, *val_status will contain a success
+ *                     code. If there is a failure, *val_status will contain
+ *                     the validator error code. To test whether the returned
+ *                     error code represents a trustworthy status, the caller
+ *                     can use the val_istrusted() function. 
+ *
+ * Return value: 0 on success, and a non-zero error-code on failure.
+ *
+ * See also: val_gethostbyname2_r(), val_gethostbyname(), val_istrusted()
+ */
+int val_gethostbyname_r( const val_context_t *ctx,
+			 const char *name,
+			 struct hostent *ret,
+			 char *buf,
+			 size_t buflen,
+			 struct hostent **result,
+			 int *h_errnop,
+			 val_status_t *val_status )
+{
+    return val_gethostbyname2_r(ctx, name, AF_INET, ret, buf, buflen,
+				result, h_errnop, val_status);
+} /* val_gethostbyname_r() */
