@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -15,17 +16,40 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <resolv.h>
+#include <getopt.h>
 
 #include <resolver.h>
 #include <validator.h>
 
+// Program options
+static struct option prog_options[] = {
+    {"help", 0, 0, 'h'},
+    {"novalidate", 0, 0, 'n'},
+    {"canonname", 0, 0, 'c'},
+    {"service", 0, 0, 's'},
+    {0, 0, 0, 0}
+};
+
+void usage(char *progname)
+{
+	fprintf(stderr, "Usage: %s [options] <hostname|IPv4 address|IPv6 address>\n", progname);
+	fprintf(stderr, "Options:\n");
+	fprintf(stderr, "\t-h, --help                      display usage and exit\n");
+	fprintf(stderr, "\t-n, --novalidate                do not use the validator\n");
+	fprintf(stderr, "\t-c, --canonname                 use the AI_CANONNAME flag\n");
+	fprintf(stderr, "\t-s, --service=<PORT|SERVICE>    transport-layer port or service name\n");
+}
+
 static int validate = 0;
 
-static void print_addrinfo(struct addrinfo* ainfo)
+#define ADDRINFO_TYPE     0
+#define VAL_ADDRINFO_TYPE 1
+
+static void print_addrinfo(int type, void* ainfo)
 {
 	struct sockaddr_in  *s_inaddr = NULL;
 	struct sockaddr_in6 *s_in6addr = NULL;
-	struct addrinfo *a = ainfo;
+	struct addrinfo *a = (struct addrinfo *)ainfo;
 	char buf[INET6_ADDRSTRLEN];
 	
 	while (a != NULL) {
@@ -83,71 +107,97 @@ static void print_addrinfo(struct addrinfo* ainfo)
 		else
 			printf("\tCanonName: (null)\n");
 		
-		if (validate) {
-			printf("\tDNSSEC status: %s\n", p_val_error(val_get_addrinfo_dnssec_status(a)));
+		if (type == VAL_ADDRINFO_TYPE) {
+			printf("\tValStatus: %s\n", p_val_error(((struct val_addrinfo*)a)->val_status));
 		}
 		printf("}\n");
 		
-		a = a->ai_next;
+		a = (struct addrinfo*) (a->ai_next);
 	}
 }
+
 
 int main(int argc, char *argv[])
 {
 	char *node = NULL;
 	char *service = NULL;
 	struct addrinfo hints;
+	struct val_addrinfo *val_ainfo = NULL;
 	struct addrinfo *ainfo = NULL;
 	int retval;
 	int index = 0;
 	int getcanonname = 0;
+	int portspecified = 0;
 	
-	if (argc < 2) {
-		printf ("Usage: %s [-v] [-c] <hostname|IPv4 address|IPv6 address> [Port]\n", argv[0]);
-		exit(1);
+	// Parse the command line
+	validate = 1;
+	while (1) {
+		int opt_index = 0;
+		int c = getopt_long_only (argc, argv, "hcns:",
+					  prog_options, &opt_index);
+
+		if (c == -1) {
+			break;
+		}
+
+		switch (c) {
+		case 'h':
+			usage(argv[0]);
+			return 0;
+		case 'n':
+			validate = 0;
+			break;
+		case 's':
+		        portspecified = 1;
+			service = optarg;
+			break;
+		case 'c':
+			getcanonname = 1;
+			break;
+		default:
+			fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);
+			usage(argv[0]);
+			return 1;
+		}
 	}
-	
-	index = 1;
-	if (strcasecmp(argv[index], "-v") == 0) {
-		validate = 1;
-		index++;
+
+	if (optind < argc) {
+		node = argv[optind++];
 	}
-	
-	if (strcasecmp(argv[index], "-c") == 0) {
-		getcanonname = 1;
-		index++;
+	else {
+		fprintf(stderr, "Error: node name not specified\n");
+		usage(argv[0]);
+		return 1;
 	}
-	
-	if (strcasecmp(argv[index], "NULL")) {
-		node = argv[index];
-	}
-	
-	index++;
-	
-	if (argc > index) {
-		service = argv[index];
-	}
-	
+
 	bzero(&hints, sizeof(struct addrinfo));
 	if (getcanonname) {
 		hints.ai_flags |= AI_CANONNAME;
 	}
+
 	if (validate) {
-		retval = val_getaddrinfo(node, service, &hints, &ainfo);
-		// retval = val_getaddrinfo(node, service, NULL, &ainfo);
+		retval = val_getaddrinfo(NULL, node, service, &hints, &val_ainfo);
+
+		if (retval != 0) {
+			printf("Error in val_getaddrinfo(): %s\n", gai_strerror(retval));
+			exit(1);
+		}
+		else {
+			print_addrinfo(VAL_ADDRINFO_TYPE, val_ainfo);
+		}
+		
+		/* cleanup */
+		free_val_addrinfo(val_ainfo);
 	}
 	else {
 		retval = getaddrinfo(node, service, &hints, &ainfo);
+		if (retval != 0) {
+			printf("Error in getaddrinfo(): %s\n", gai_strerror(retval));
+			exit(1);
+		}
+		else {
+			print_addrinfo(ADDRINFO_TYPE, ainfo);
+		}
 	}
-	
-	if (retval != 0) {
-		printf("Error in val_getaddrinfo(): %s\n", gai_strerror(retval));
-		exit(1);
-	}
-	else {
-		print_addrinfo(ainfo);
-	}
-	
-	/* cleanup */
-	val_freeaddrinfo(ainfo);
+	return 0;
 }
