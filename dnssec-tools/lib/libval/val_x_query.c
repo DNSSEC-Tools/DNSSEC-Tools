@@ -15,11 +15,37 @@
 #include "val_cache.h"
 #include "val_support.h"
 
-static int compose_answer( const char *name_n,
+/*
+ * Function: compose_answer
+ *
+ * Purpose: Convert the results returned by the validator in the form
+ *          of a linked list of val_result structures into a linked
+ *          list of val_response structures, as returned by val_query.
+ *          The scope of this function is limited to this file.
+ *
+ * Parameters:
+ *              name_n -- The domain name.
+ *              type_h -- The DNS type.
+ *             class_h -- The DNS class.
+ *             results -- A linked list of val_result structures returned
+ *                        by the validator's resolve_n_check function.
+ *                resp -- An array of val_response structures in which to
+ *                        return the answer.  This must be pre-allocated
+ *                        by the caller.
+ *          resp_count -- A pointer to an integer variable that holds the
+ *                        length of the 'resp' array.  On return, this
+ *                        will contain the number of elements in the 'resp'
+ *                        array that were filled by this function.
+ *               flags -- Currently ignored.  This will be used in future to
+ *                        influence the evaluation and returned results.
+ *
+ * Return value: 0 on success, and a non-zero error-code on failure.
+ */
+static int compose_answer( const u_char *name_n,
 			const u_int16_t type_h,
 			const u_int16_t class_h,
 			struct val_result *results,
-			struct response_t *resp,
+			struct val_response *resp,
 			int *resp_count,
 			u_int8_t flags)
 {
@@ -32,6 +58,8 @@ static int compose_answer( const char *name_n,
 		return BAD_ARGUMENT;
 
 	*resp_count = 0; /* value-result parameter */
+
+	/* Iterate over the results returned by the validator */
 	for (res = results; res; res=res->next) {
 		unsigned char *cp, *ep;
 		int resplen;
@@ -128,43 +156,60 @@ static int compose_answer( const char *name_n,
 	}
 
 	return NO_ERROR;
-}
+
+} /* compose_answer() */
 
 
-// XXX This routine is provided for compatibility with some programs that 
-// XXX depend on this interface. 
-// XXX One should normally use getfoobybar() instead
+// XXX This routine is provided for compatibility with programs that 
+// XXX depend on the res_query() function. 
+// XXX If possible, one should use gethostbyname() or getaddrinfo() functions instead.
 /*
+ * Function: val_query
+ *
+ * Purpose: A DNSSEC-aware function intended as a replacement to res_query().
+ *          The scope of this function is global.
+ *
  * This routine makes a query for {domain_name, type, class} and returns the 
- * result in response_t. Memory for the response bytes within 
- * response_t must be sufficient to hold all the answers returned. If not, those 
- * answers are omitted from the result and NO_SPACE is returned. The result of
- * validation for a particular resource record is available in validation_result. 
- * The response_t array passed to val_query, resp, must be large enough to 
+ * result in resp. Memory for the response bytes within each
+ * val_response structure must be sufficient to hold all the answers returned.
+ * If not, those answers are omitted from the result and NO_SPACE is returned.
+ * The result of validation for a particular resource record is available in
+ * validation_result.
+ *
+ * Parameters:
+ * ctx -- The validation context.  May be NULL for default value.
+ * domain_name -- The domain name to be queried.  Must not be NULL.
+ * class -- The DNS class (typically IN)
+ * type  -- The DNS type  (for example: A, CNAME etc.)
+ * flags -- Reserved for future use.  Will be ignored in the current implementation.
+ * The parameter may be used in future to specify preferences such as the following:
+ * TRY_TCP_ON_DOS	Try connecting to the server using TCP when a DOS 
+ *			on the resolver is detected 
+ * resp -- An array of val_response structures used to return the result.
+ * This val_response array must be large enough to 
  * hold all answers. The size allocated by the user must be passed in the 
  * resp_count parameter. If space is insufficient to hold all answers, those 
  * answers are omitted and NO_SPACE is returned. 
+ * resp_count -- Points to a variable of type int that contains the length of the
+ *               resp array when this function is called.  On return, this will
+ *               contain the number of entries in the 'resp' array that were filled
+ *               with answers by this function.  'resp_count' must not be NULL.
  * 
- * XXX We may need flags later on to specify preferences such as the following:
- * TRY_TCP_ON_DOS		Try connecting to the server using TCP when a DOS 
- *						on the resolver is detected 
- *
  * Return values:
- * NO_ERROR			Operation succeeded
- * BAD_ARGUMENT	The domain name is invalid
+ * NO_ERROR		Operation succeeded
+ * BAD_ARGUMENT	        The domain name or other arguments are invalid
  * OUT_OF_MEMORY	Could not allocate enough memory for operation
  * NO_SPACE		Returned when the user allocated memory is not large enough 
- *					to hold all the answers.
+ *			to hold all the answers.
  *
  */
-
-int val_x_query(val_context_t	*ctx,
-			const char *domain_name,
-			const u_int16_t class,
-			const u_int16_t type,
-			const u_int8_t flags,
-			struct response_t *resp,
-			int *resp_count)
+int val_query ( val_context_t *ctx,
+		const char *domain_name,
+		const u_int16_t class,
+		const u_int16_t type,
+		const u_int8_t flags,
+		struct val_response *resp,
+		int *resp_count )
 {
 	struct query_chain *queries = NULL;	
 	struct assertion_chain *assertions = NULL;
@@ -180,18 +225,19 @@ int val_x_query(val_context_t	*ctx,
 	else	
 		context = ctx;
 
-    val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
-	   domain_name, p_class(class), p_type(type));
+	val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
+		domain_name, p_class(class), p_type(type));
 
 	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1) {
 		if((ctx == NULL)&& context)
 			destroy_context(context);
 		return (BAD_ARGUMENT);
 	}
-                                                                                        
+
+	/* Query the validator */
 	if(NO_ERROR == (retval = resolve_n_check(context, name_n, type, class, flags, 
 											&queries, &assertions, &results))) {
-		/* XXX Construct the answer response in response_t */
+		/* Construct the answer response in resp */
 		retval = compose_answer(name_n, type, class, results, resp, resp_count, flags);
 
 /*
@@ -222,40 +268,5 @@ int val_x_query(val_context_t	*ctx,
 //	free_validator_cache();
 
 	return retval;
-}
 
-
-/*
- * A validating DNS query interface.  Returns the length of the
- * answer if successful, or -1 on error.  If successful, the
- * dnssec_status return value will contain the DNSSEC validation status.
- * For an ANY query, this function cannot return multiple RRSETs. It
- * returns -1 instead.
- * For now, the flags parameter is reserved for future use, and should
- * be set to 0.
- */
-int val_query ( const char *dname, int class, int type,
-		unsigned char *ans, int anslen, int flags,
-		int *dnssec_status )
-{
-    struct response_t resp[1];
-    int respcount = 1;
-    int ret_val = INTERNAL_ERROR;
-
-    resp[0].response = (u_int8_t *) ans;
-    resp[0].response_length = anslen;
-
-    if (dnssec_status == NULL)
-	    return BAD_ARGUMENT;
-
-    ret_val = val_x_query (NULL, dname, class, type, flags, resp, &respcount);
-
-    if ((ret_val == NO_ERROR) && (respcount > 0)) {
-	    *dnssec_status = resp[0].validation_result;
-	    return resp[0].response_length;
-    }
-    else {
-	    *dnssec_status = ERROR;
-	    return -1; /* or ret_val since it is < 0 */
-    }
-}
+} /* val_query() */
