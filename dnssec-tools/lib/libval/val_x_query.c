@@ -75,7 +75,7 @@ static int compose_answer( const u_char *name_n,
 			return NO_SPACE;
 		}
 
-		resp[*resp_count].validation_result = res->status;
+		resp[*resp_count].val_status = res->status;
 		cp = resp[*resp_count].response;
 		resplen = resp[*resp_count].response_length;
 
@@ -174,7 +174,7 @@ static int compose_answer( const u_char *name_n,
  * val_response structure must be sufficient to hold all the answers returned.
  * If not, those answers are omitted from the result and NO_SPACE is returned.
  * The result of validation for a particular resource record is available in
- * validation_result.
+ * the val_status field of the val_response structure.
  *
  * Parameters:
  * ctx -- The validation context.  May be NULL for default value.
