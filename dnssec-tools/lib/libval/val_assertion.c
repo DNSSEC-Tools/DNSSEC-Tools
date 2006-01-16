@@ -1351,7 +1351,7 @@ int resolve_n_check(	val_context_t	*context,
 }
 
 /*
- * Function: isauthentic
+ * Function: val_isauthentic
  *
  * Purpose:   Tells whether the given validation status code represents an
  *            authentic response from the validator
@@ -1360,6 +1360,8 @@ int resolve_n_check(	val_context_t	*context,
  *
  * Returns:   1 if the validation status represents an authentic response
  *            0 if the validation status does not represent an authentic response
+ *
+ * See also: val_istrusted()
  */
 int val_isauthentic( int val_status )
 {
@@ -1372,4 +1374,30 @@ int val_isauthentic( int val_status )
 	default:
 		return 0;
 	}
+}
+
+/*
+ * Function: val_istrusted
+ *
+ * Purpose:   Tells whether the given validation status code represents an
+ *            answer that can be trusted.  An answer can be trusted if it
+ *	      has been obtained locally (for example from /etc/hosts) or if
+ *            it was an authentic response from the validator.
+ *
+ * Parameter: val_status -- a validation status code returned by the validator
+ *
+ * Returns:   1 if the validation status represents a trusted response
+ *            0 if the validation status does not represent a trusted response
+ *
+ * See also: val_isauthentic()
+ */
+int val_istrusted( int val_status )
+{
+    if ((val_status == LOCAL_ANSWER) ||
+	val_isauthentic(val_status)) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
 }
