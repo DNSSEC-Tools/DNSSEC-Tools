@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_gethostbyname 3"
-.TH val_gethostbyname 3 "2006-01-16" "perl v5.8.6" "Programmer's Manual"
+.TH val_gethostbyname 3 "2006-01-17" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_gethostbyname, val_gethostbyname2, val_gethostbyname_r,
 val_gethostbyname2_r \- get DNSSEC\-validated network host entry
@@ -213,7 +213,7 @@ the same meaning and syntax as the corresponding parameters for the original
 .PP
 The \fIval_status\fR parameter is used to return the validator error code.  The
 \&\fB\f(BIval_istrusted()\fB\fR function can be used to determine if this error code
-represents a positive trust value.  \fIval_status\fR must not be \fB\s-1NULL\s0\fR.
+represents a trusted value.  \fIval_status\fR must not be \fB\s-1NULL\s0\fR.
 .SH "RETURN VALUE"
 .IX Header "RETURN VALUE"
 The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_gethostbyname2()\fB\fR functions return a
