@@ -218,7 +218,7 @@ struct query_chain {
 };
 
 struct val_response {
-	u_int8_t *response;
+	unsigned char *response;
 	int	response_length;
 	val_status_t val_status;
 };
@@ -315,13 +315,13 @@ char *p_query_error(int errno);
 char *p_val_error(int valerrno);
 
 /* from val_x_query.c */
-int val_query(val_context_t *ctx,
-            const char *domain_name,
-            const u_int16_t class,
-            const u_int16_t type,
-            const u_int8_t flags,
-            struct val_response *resp,
-            int *resp_count);
+int val_query(const val_context_t *ctx,
+	      const char *domain_name,
+	      const u_int16_t class,
+	      const u_int16_t type,
+	      const u_int8_t flags,
+	      struct val_response *resp,
+	      int *resp_count);
 
 /* from val_gethostbyname.c */
 extern int h_errno;
