@@ -458,12 +458,12 @@ int main(int argc, char *argv[])
 				int i;
 				for (i=0; i<resp_count; i++) {
 				    bzero(&resp[i], sizeof (struct val_response));
-				    resp[i].response = (u_int8_t *) malloc (MAX_RESPSIZE * sizeof(u_int8_t));
+				    resp[i].response = (unsigned char *) malloc (MAX_RESPSIZE * sizeof(unsigned char));
 				    if (resp[i].response == NULL) {
 					    printf("Memory allocation error. Please try again later.\n");
 					    exit(1);
 				    }
-				    bzero(resp[i].response, MAX_RESPSIZE * sizeof(u_int8_t));
+				    bzero(resp[i].response, MAX_RESPSIZE * sizeof(unsigned char));
 				    resp[i].response_length = MAX_RESPSIZE;
 				}
 
