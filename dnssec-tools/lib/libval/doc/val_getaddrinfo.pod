@@ -2,99 +2,95 @@
 
 =head1 NAME
 
-val_getaddrinfo, val_x_getaddrinfo, val_get_addrinfo_dnssec_status,
-val_dupaddrinfo, val_freeaddrinfo - get DNSSEC-validated network address
+val_getaddrinfo, free_val_addrinfo - get DNSSEC-validated network address
 and service translation
 
 =head1 SYNOPSIS
 
   #include <validator.h>
 
-  int val_getaddrinfo(const char *nodename, const char *servname,
-                    const struct addrinfo *hints,
-                    struct addrinfo **res);
+  int val_getaddrinfo(const struct val_context *ctx,
+                      const char *nodename,
+                      const char *servname,
+                      const struct addrinfo *hints,
+                      struct val_addrinfo **res);
 
-  int val_x_getaddrinfo(const struct val_context *ctx,
-                    const char *nodename, const char *servname,
-                    const struct addrinfo *hints,
-                    struct addrinfo **res);
-
-  int val_get_addrinfo_dnssec_status(const struct addrinfo *ainfo);
-
-  struct addrinfo* val_dupaddrinfo(const struct addrinfo *ainfo);
-
-  void val_freeaddrinfo(struct addrinfo *ainfo);
+  void val_freeaddrinfo(struct val_addrinfo *ainfo);
 
 =head1 DESCRIPTION
 
-B<val_getaddrinfo()> is a DNSSEC-aware version of B<getaddrinfo(3)>.  It
-performs DNSSEC validation of DNS queries.  It returns a network address value
-of type I<addrinfo>.  (See B<getaddrinfo(3)> for more information on
-I<addrinfo>.)
+B<val_getaddrinfo()> is a DNSSEC-aware function intended as a replacement
+for B<getaddrinfo(3)>.  It performs DNSSEC validation of DNS queries.  It
+returns a network address value of type I<struct val_addrinfo> in the I<res>
+parameter.
 
-B<val_x_getaddrinfo()> performs the same function as B<val_getaddrinfo()>,
-but is optimized for multiple calls.  The two routines take the same
-parameters, but B<val_x_getaddrinfo()> takes an additional parameter I<ctx>,
-of type I<val_context>, which passes the validation context for use in call
-optimization.  The I<ctx> parameter also gives the caller more control over
-the resolver and validator policies.  If a B<NULL> value is passed for the
-I<ctx> parameter, the default validation context is used.  (See
-B<get_context(3)> for information on creating a validation context.)
-B<val_getaddrinfo()> is equivalent to calling B<val_x_getaddrinfo()> with a
-B<NULL> I<ctx> parameter.
+  struct val_addrinfo {
+          int ai_flags;
+          int ai_family;
+          int ai_socktype;
+          int ai_protocol;
+          size_t ai_addrlen;
+          struct sockaddr *ai_addr;
+          char * ai_canonname;
+          struct val_addrinfo *ai_next;
+          val_status_t val_status;
+  };
 
-B<val_dupaddrinfo()> duplicates the I<addrinfo> structure and its auxiliary
-data.  It performs a deep copy; i.e., the internal strings, arrays, and other
-structures are also copied.
+The I<val_addrinfo> structure is similar to the I<addrinfo> structure (see
+B<getaddrinfo(3)>), and has an additional field I<val_status> that represents
+the validation status for that particular record.  The B<val_istrusted()>
+function can be used to determine whether this validation status represents a
+trusted value.
 
-B<val_freeaddrinfo()> frees a I<addrinfo> structure, such as those returned
-by the B<val_getaddrinfo()>, B<val_x_getaddrinfo()> and B<val_dupaddrinfo()>
-functions.
+The I<ctx> parameter of type I<val_context> represents the validation context,
+which can be NULL for default value. The caller can use this parameter to
+control the resolver and validator policies used during validation.
+(See B<get_context(3)> for information on creating a validation context.)
 
-B<val_get_addrinfo_dnssec_status()> extracts the DNSSEC validation status
-from the returned I<addrinfo> structure.  This function must be called only
-for the values returned from B<val_getaddrinfo()>, B<val_x_getaddrinfo()>,
-and B<val_dupaddrinfo()> functions.
+The I<nodename>, I<servname> and I<hints> parameters are similar in
+meaning and syntax as the corresponding parameters for the original
+B<getaddrinfo()> function.  The I<res> parameter is similar to the
+I<res> parameter for B<getaddrinfo()>, except that it is of type
+I<struct val_addrinfo> instead of I<struct addrinfo>. Please see the manual
+page for B<getaddrinfo(3)> for more details about these parameters. 
+
+B<free_val_addrinfo()> frees the memory allocated for a I<val_addrinfo> linked
+list.
 
 =head1 RETURN VALUES
 
-The B<val_getaddrinfo()> and B<val_x_getaddrinfo()> functions return a value
-of type I<addrinfo> on success, and B<NULL> on error.  The memory for the
-returned value is dynamically allocated by these functions.  Hence, the caller
-must only call the B<val_freeaddrinfo()> function on the returned value in
-order to avoid memory leaks.
-
-The B<val_get_addrinfo_dnssec_status()> function returns the result of the
-DNSSEC validation.  The possible values for the DNSSEC status are given in
-B<val_errors.h>.
-
-The B<val_dupaddrinfo()> function returns a copy of the specified I<addrinfo>
-structure.  The returned value must be freed using B<val_freeaddrinfo()> to
-avoid memory leaks.
+The B<val_getaddrinfo()> function returns 0 on success and a non-zero error
+code on failure.  I<*res> will point to a dynamically allocated linked list
+of I<val_addrinfo> structures on success, and will be B<NULL> on error.  The
+memory for the value returned in I<*res> can be released using the
+B<free_val_addrinfo()> function.
 
 =head1 EXAMPLE
 
  #include <stdio.h>
+ #include <stdlib.h>
  #include <validator.h>
 
  int main(int argc, char *argv[])
  {
-          int dnssec_status = ERROR;
-          struct addrinfo *ainfo = NULL;
+          int val_status = ERROR;
+          struct val_addrinfo *ainfo = NULL;
+          int retval;
 
           if (argc < 2) {
                   printf("Usage: %s <hostname>\n", argv[0]);
                   exit(1);
           }
  
-          ainfo = val_getaddrinfo(argv[1]);
+          retval = val_getaddrinfo(NULL, argv[1], NULL, NULL, &ainfo);
 
-          if (ainfo) {
-                  dnssec_status = val_get_addrinfo_dnssec_status(h);
+          if ((retval == 0) && (ainfo != NULL)) {
 
-                  printf("DNSSEC Status = %d [%s]\n", dnssec_status,
-                         p_val_error(dnssec_status));
-                  val_freeaddrinfo(h);
+                  printf("Validation Status = %d [%s]\n",
+                         ainfo->val_status,
+                         p_val_error(ainfo->val_status));
+
+                  free_val_addrinfo(ainfo);
           }
 
           return 0;
@@ -111,13 +107,11 @@ Abhijit Hayatnagarkar
 
 =head1 SEE ALSO
 
-B<gethostbyname>(3)
+B<getaddrinfo(3)>
 
-B<get_context(3)>, B<val_duphostent(3)>, B<val_freehostent(3)>,
-B<val_gethostbyname(3)>, B<val_query(3)>, B<val_x_gethostbyname(3)>,
-B<val_x_query(3)>
+B<get_context(3)>, B<val_gethostbyname(3)>, B<val_query(3)>
 
-I<p_val_error>,
+B<p_val_error()>, B<val_istrusted()>
 
 http://dnssec-tools.sourceforge.net
 

@@ -129,10 +129,9 @@
 .\" ========================================================================
 .\"
 .IX Title "val_getaddrinfo 3"
-.TH val_getaddrinfo 3 "2005-08-31" "perl v5.8.6" "Programmer's Manual"
+.TH val_getaddrinfo 3 "2006-01-17" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
-val_getaddrinfo, val_x_getaddrinfo, val_get_addrinfo_dnssec_status,
-val_dupaddrinfo, val_freeaddrinfo \- get DNSSEC\-validated network address
+val_getaddrinfo, free_val_addrinfo \- get DNSSEC\-validated network address
 and service translation
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
@@ -140,87 +139,79 @@ and service translation
 \&  #include <validator.h>
 .Ve
 .PP
-.Vb 3
-\&  int val_getaddrinfo(const char *nodename, const char *servname,
-\&                    const struct addrinfo *hints,
-\&                    struct addrinfo **res);
-.Ve
-.PP
-.Vb 4
-\&  int val_x_getaddrinfo(const struct val_context *ctx,
-\&                    const char *nodename, const char *servname,
-\&                    const struct addrinfo *hints,
-\&                    struct addrinfo **res);
+.Vb 5
+\&  int val_getaddrinfo(const struct val_context *ctx,
+\&                      const char *nodename,
+\&                      const char *servname,
+\&                      const struct addrinfo *hints,
+\&                      struct val_addrinfo **res);
 .Ve
 .PP
 .Vb 1
-\&  int val_get_addrinfo_dnssec_status(const struct addrinfo *ainfo);
-.Ve
-.PP
-.Vb 1
-\&  struct addrinfo* val_dupaddrinfo(const struct addrinfo *ainfo);
-.Ve
-.PP
-.Vb 1
-\&  void val_freeaddrinfo(struct addrinfo *ainfo);
+\&  void val_freeaddrinfo(struct val_addrinfo *ainfo);
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\fB\f(BIval_getaddrinfo()\fB\fR is a DNSSEC-aware version of \fB\f(BIgetaddrinfo\fB\|(3)\fR.  It
-performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.  It returns a network address value
-of type \fIaddrinfo\fR.  (See \fB\f(BIgetaddrinfo\fB\|(3)\fR for more information on
-\&\fIaddrinfo\fR.)
+\&\fB\f(BIval_getaddrinfo()\fB\fR is a DNSSEC-aware function intended as a replacement
+for \fB\f(BIgetaddrinfo\fB\|(3)\fR.  It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.  It
+returns a network address value of type \fIstruct val_addrinfo\fR in the \fIres\fR
+parameter.
 .PP
-\&\fB\f(BIval_x_getaddrinfo()\fB\fR performs the same function as \fB\f(BIval_getaddrinfo()\fB\fR,
-but is optimized for multiple calls.  The two routines take the same
-parameters, but \fB\f(BIval_x_getaddrinfo()\fB\fR takes an additional parameter \fIctx\fR,
-of type \fIval_context\fR, which passes the validation context for use in call
-optimization.  The \fIctx\fR parameter also gives the caller more control over
-the resolver and validator policies.  If a \fB\s-1NULL\s0\fR value is passed for the
-\&\fIctx\fR parameter, the default validation context is used.  (See
-\&\fB\f(BIget_context\fB\|(3)\fR for information on creating a validation context.)
-\&\fB\f(BIval_getaddrinfo()\fB\fR is equivalent to calling \fB\f(BIval_x_getaddrinfo()\fB\fR with a
-\&\fB\s-1NULL\s0\fR \fIctx\fR parameter.
+.Vb 11
+\&  struct val_addrinfo {
+\&          int ai_flags;
+\&          int ai_family;
+\&          int ai_socktype;
+\&          int ai_protocol;
+\&          size_t ai_addrlen;
+\&          struct sockaddr *ai_addr;
+\&          char * ai_canonname;
+\&          struct val_addrinfo *ai_next;
+\&          val_status_t val_status;
+\&  };
+.Ve
 .PP
-\&\fB\f(BIval_dupaddrinfo()\fB\fR duplicates the \fIaddrinfo\fR structure and its auxiliary
-data.  It performs a deep copy; i.e., the internal strings, arrays, and other
-structures are also copied.
+The \fIval_addrinfo\fR structure is similar to the \fIaddrinfo\fR structure (see
+\&\fB\f(BIgetaddrinfo\fB\|(3)\fR), and has an additional field \fIval_status\fR that represents
+the validation status for that particular record.  The \fB\f(BIval_istrusted()\fB\fR
+function can be used to determine whether this validation status represents a
+trusted value.
 .PP
-\&\fB\f(BIval_freeaddrinfo()\fB\fR frees a \fIaddrinfo\fR structure, such as those returned
-by the \fB\f(BIval_getaddrinfo()\fB\fR, \fB\f(BIval_x_getaddrinfo()\fB\fR and \fB\f(BIval_dupaddrinfo()\fB\fR
-functions.
+The \fIctx\fR parameter of type \fIval_context\fR represents the validation context,
+which can be \s-1NULL\s0 for default value. The caller can use this parameter to
+control the resolver and validator policies used during validation.
+(See \fB\f(BIget_context\fB\|(3)\fR for information on creating a validation context.)
 .PP
-\&\fB\f(BIval_get_addrinfo_dnssec_status()\fB\fR extracts the \s-1DNSSEC\s0 validation status
-from the returned \fIaddrinfo\fR structure.  This function must be called only
-for the values returned from \fB\f(BIval_getaddrinfo()\fB\fR, \fB\f(BIval_x_getaddrinfo()\fB\fR,
-and \fB\f(BIval_dupaddrinfo()\fB\fR functions.
+The \fInodename\fR, \fIservname\fR and \fIhints\fR parameters are similar in
+meaning and syntax as the corresponding parameters for the original
+\&\fB\f(BIgetaddrinfo()\fB\fR function.  The \fIres\fR parameter is similar to the
+\&\fIres\fR parameter for \fB\f(BIgetaddrinfo()\fB\fR, except that it is of type
+\&\fIstruct val_addrinfo\fR instead of \fIstruct addrinfo\fR. Please see the manual
+page for \fB\f(BIgetaddrinfo\fB\|(3)\fR for more details about these parameters. 
+.PP
+\&\fB\f(BIfree_val_addrinfo()\fB\fR frees the memory allocated for a \fIval_addrinfo\fR linked
+list.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-The \fB\f(BIval_getaddrinfo()\fB\fR and \fB\f(BIval_x_getaddrinfo()\fB\fR functions return a value
-of type \fIaddrinfo\fR on success, and \fB\s-1NULL\s0\fR on error.  The memory for the
-returned value is dynamically allocated by these functions.  Hence, the caller
-must only call the \fB\f(BIval_freeaddrinfo()\fB\fR function on the returned value in
-order to avoid memory leaks.
-.PP
-The \fB\f(BIval_get_addrinfo_dnssec_status()\fB\fR function returns the result of the
-\&\s-1DNSSEC\s0 validation.  The possible values for the \s-1DNSSEC\s0 status are given in
-\&\fBval_errors.h\fR.
-.PP
-The \fB\f(BIval_dupaddrinfo()\fB\fR function returns a copy of the specified \fIaddrinfo\fR
-structure.  The returned value must be freed using \fB\f(BIval_freeaddrinfo()\fB\fR to
-avoid memory leaks.
+The \fB\f(BIval_getaddrinfo()\fB\fR function returns 0 on success and a non-zero error
+code on failure.  \fI*res\fR will point to a dynamically allocated linked list
+of \fIval_addrinfo\fR structures on success, and will be \fB\s-1NULL\s0\fR on error.  The
+memory for the value returned in \fI*res\fR can be released using the
+\&\fB\f(BIfree_val_addrinfo()\fB\fR function.
 .SH "EXAMPLE"
 .IX Header "EXAMPLE"
-.Vb 2
+.Vb 3
 \& #include <stdio.h>
+\& #include <stdlib.h>
 \& #include <validator.h>
 .Ve
 .PP
-.Vb 4
+.Vb 5
 \& int main(int argc, char *argv[])
 \& {
-\&          int dnssec_status = ERROR;
-\&          struct addrinfo *ainfo = NULL;
+\&          int val_status = ERROR;
+\&          struct val_addrinfo *ainfo = NULL;
+\&          int retval;
 .Ve
 .PP
 .Vb 4
@@ -231,18 +222,21 @@ avoid memory leaks.
 .Ve
 .PP
 .Vb 1
-\&          ainfo = val_getaddrinfo(argv[1]);
+\&          retval = val_getaddrinfo(NULL, argv[1], NULL, NULL, &ainfo);
+.Ve
+.PP
+.Vb 1
+\&          if ((retval == 0) && (ainfo != NULL)) {
+.Ve
+.PP
+.Vb 3
+\&                  printf("Validation Status = %d [%s]\en",
+\&                         ainfo->val_status,
+\&                         p_val_error(ainfo->val_status));
 .Ve
 .PP
 .Vb 2
-\&          if (ainfo) {
-\&                  dnssec_status = val_get_addrinfo_dnssec_status(h);
-.Ve
-.PP
-.Vb 4
-\&                  printf("DNSSEC Status = %d [%s]\en", dnssec_status,
-\&                         p_val_error(dnssec_status));
-\&                  val_freeaddrinfo(h);
+\&                  free_val_addrinfo(ainfo);
 \&          }
 .Ve
 .PP
@@ -259,12 +253,10 @@ See the \s-1COPYING\s0 file included with the DNSSEC-Tools package for details.
 Abhijit Hayatnagarkar
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fBgethostbyname\fR(3)
+\&\fB\f(BIgetaddrinfo\fB\|(3)\fR
 .PP
-\&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_duphostent\fB\|(3)\fR, \fB\f(BIval_freehostent\fB\|(3)\fR,
-\&\fB\f(BIval_gethostbyname\fB\|(3)\fR, \fB\f(BIval_query\fB\|(3)\fR, \fB\f(BIval_x_gethostbyname\fB\|(3)\fR,
-\&\fB\f(BIval_x_query\fB\|(3)\fR
+\&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_gethostbyname\fB\|(3)\fR, \fB\f(BIval_query\fB\|(3)\fR
 .PP
-\&\fIp_val_error\fR,
+\&\fB\f(BIp_val_error()\fB\fR, \fB\f(BIval_istrusted()\fB\fR
 .PP
 http://dnssec\-tools.sourceforge.net
