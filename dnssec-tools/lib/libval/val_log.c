@@ -351,10 +351,10 @@ int send_log_message(char *buffer)
 }
 #endif /* LOG_TO_NETWORK */
 
-void val_log (val_context_t *ctx, int level, const char *template, ...)
+void val_log (const val_context_t *ctx, int level, const char *template, ...)
 {
 	va_list ap;
-	char *id_buf;
+	const char *id_buf;
 
 	/* Needs to be at least two characters larger than message size */
 	char buf[1028]; 

@@ -223,7 +223,7 @@ int val_query ( const val_context_t *ctx,
 			return retval;
 	}
 	else	
-		context = ctx;
+	    context = (val_context_t *) ctx;
 
 	val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
 		domain_name, p_class(class), p_type(type));
