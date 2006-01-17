@@ -1978,10 +1978,10 @@ Example 1.
 
 In the first example, an existing I<keyrec> file is used to assist in signing
 the example.com domain.  Zone data are stored in B<example.com>, and the
-keyrec is in B<example.krf>.  The output zone file and final signed zone
-file will use B<db.example.com> as a base.  Using this execution:
+keyrec is in B<example.krf>.  The final signed zone file will be
+B<db.example.com>.  Using this execution:
 
-    # zonesigner -krfile example.krf example.com db.example.com
+    # zonesigner -krfile example.krf example.com db.example.com.signed
 
 the following files are created:
 
@@ -1989,28 +1989,27 @@ the following files are created:
     Kexample.com.+005+45842.key
     Kexample.com.+005+50186.private
     Kexample.com.+005+50186.key
-    Kexample.com.+005+59143.key
     Kexample.com.+005+59143.private
+    Kexample.com.+005+59143.key
 
     dsset-example.com.
     keyset-example.com.
 
-    db.example.com
     db.example.com.signed
 
-
 The first six files are the KSK and ZSK keys required for the zone.  The next
-two files are created by the zone-signing process.  The last two are the zone
-file used as input to the zone-signing process and the final signed zone.
+two files are created by the zone-signing process.  The last file is the zone
+the final signed zone file.
 
 Example 2.
 
 In the second example, an existing I<keyrec> file is used to assist in signing
 the example.com domain.  Zone data are stored in B<example.com>, and the
-keyrec is in B<example.krf>.  The generated keys, output zone file, and final
-signed zone file will use B<example.com> as a base.  Using this execution:
+keyrec is in B<example.krf>.  The generated keys, an intermediate zone file,
+and final signed zone file will use B<example.com> as a base.
+Using this execution:
 
-    # zonesigner -krfile example.krf example.com db.example.com
+    # zonesigner -krfile example.krf -intermediate example.zs example.com db.example.com
 
 the following files are created:
 
@@ -2024,11 +2023,13 @@ the following files are created:
     dsset-db.example.com.
     keyset-db.example.com.
 
-    db.example.com.signed
+    example.zs
+    db.example.com
 
 The first six files are the KSK and ZSK keys required for the zone.  The next
-two files are created by the zone-signing process.  The last file is file is
-the final signed zone.
+two files are created by the zone-signing process.  The second last file is
+an intermediate file that will be signed.  The last file is file is the final
+signed zone.
 
 Example 3.
 
@@ -2042,6 +2043,10 @@ domain name as its base.  Using this execution:
 the following I<keyrec> file is created:
 
     example.com.krf
+
+The signed zone file is created in:
+
+    db.example.com
 
 Example 4.
 
