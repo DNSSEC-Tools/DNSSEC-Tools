@@ -1363,7 +1363,7 @@ int resolve_n_check(	val_context_t	*context,
  *
  * See also: val_istrusted()
  */
-int val_isauthentic( int val_status )
+int val_isauthentic( val_status_t val_status )
 {
 	switch (val_status) {
 	case VALIDATE_SUCCESS:
@@ -1391,7 +1391,7 @@ int val_isauthentic( int val_status )
  *
  * See also: val_isauthentic()
  */
-int val_istrusted( int val_status )
+int val_istrusted( val_status_t val_status )
 {
     if ((val_status == LOCAL_ANSWER) ||
 	val_isauthentic(val_status)) {
