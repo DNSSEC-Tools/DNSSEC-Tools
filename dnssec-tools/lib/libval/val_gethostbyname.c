@@ -316,6 +316,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 	}
 	ret->h_addr_list[addr_count] = 0;
 
+	alias_index = alias_count -1;
+
 	/* Process the result */
 	for (res = results; res != NULL; res = res->next) {
 		struct rrset_rec *rrset = res->as->ac_data;
@@ -333,7 +335,7 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 						return NULL;
 					}
 					
-					if (alias_index < alias_count) {
+					if (alias_index >= 0) {
 						ret->h_aliases[alias_index] = (char *) bufalloc(buf, buflen, offset,
 												(strlen(dname) + 1) * sizeof (char));
 						if (ret->h_aliases[alias_index] == NULL) {
@@ -341,7 +343,7 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 							return NULL;
 						}
 						memcpy(ret->h_aliases[alias_index], dname, strlen(dname) + 1);
-						alias_index++;
+						alias_index--;
 					}
 					
 					if (!ret->h_name) {
