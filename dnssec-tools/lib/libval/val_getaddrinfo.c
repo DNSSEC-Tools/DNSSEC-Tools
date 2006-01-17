@@ -254,7 +254,7 @@ static int process_service_and_hints(val_status_t val_status,
  * See also: get_addrinfo_from_dns(), val_getaddrinfo()
  */
 static int get_addrinfo_from_etc_hosts (
-					val_context_t *ctx,
+					const val_context_t *ctx,
 					const char *nodename,
 					const char *servname,
 					const struct addrinfo *hints,
@@ -375,7 +375,7 @@ static int get_addrinfo_from_etc_hosts (
  * See also: get_addrinfo_from_etc_hosts(), val_addrinfo()
  */
 static int get_addrinfo_from_result (
-				    val_context_t *ctx,
+				    const val_context_t *ctx,
 				    struct val_result *results,
 				    int val_status,
 				    const char *servname,
@@ -504,7 +504,7 @@ static int get_addrinfo_from_result (
  *
  * See also: val_getaddrinfo()
  */
-static int get_addrinfo_from_dns (val_context_t *ctx,
+static int get_addrinfo_from_dns (const val_context_t *ctx,
 				  const char *nodename,
 				  const char *servname,
 				  const struct addrinfo *hints,
@@ -527,7 +527,7 @@ static int get_addrinfo_from_dns (val_context_t *ctx,
 		
 		/* Query the validator */
 		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
-			if ((retval = resolve_n_check(ctx, name_n, ns_t_a, ns_c_in, 0,
+			if ((retval = resolve_n_check((val_context_t *)ctx, name_n, ns_t_a, ns_c_in, 0,
 						      &queries, &assertions, &results)) != NO_ERROR) {
 				val_log(ctx, LOG_DEBUG, "resolve_n_check failed");
 			}
@@ -566,7 +566,7 @@ static int get_addrinfo_from_dns (val_context_t *ctx,
 		
 		/* Query the validator */
 		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
-			if ((retval = resolve_n_check(ctx, name_n, ns_t_aaaa, ns_c_in, 0,
+			if ((retval = resolve_n_check((val_context_t *)ctx, name_n, ns_t_aaaa, ns_c_in, 0,
 						      &queries, &assertions, &results)) != NO_ERROR) {
 				val_log(ctx, LOG_DEBUG, "resolve_n_check failed");
 			}
@@ -630,7 +630,7 @@ static int get_addrinfo_from_dns (val_context_t *ctx,
  *
  * See also: getaddrinfo(3), free_val_addrinfo()
  */
-int val_getaddrinfo(val_context_t *ctx,
+int val_getaddrinfo(const val_context_t *ctx,
 		    const char *nodename, const char *servname,
 		    const struct addrinfo *hints,
 		    struct val_addrinfo **res)
@@ -648,7 +648,7 @@ int val_getaddrinfo(val_context_t *ctx,
 	if (ctx == NULL)
 		get_context(NULL, &context);
 	else
-		context = ctx;
+		context = (val_context_t *) ctx;
 	
 	val_log(context, LOG_DEBUG, "val_getaddrinfo called with nodename = %s, servname = %s",
 		nodename == NULL? "(null)":nodename,

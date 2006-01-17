@@ -283,12 +283,12 @@ typedef struct val_ds_rdata {
  **********************************
  */
 /* from val_assertion.h */
-int val_isauthentic (int val_status);
-int val_istrusted( int val_status );
+int val_isauthentic (val_status_t val_status);
+int val_istrusted(val_status_t val_status);
 void free_query_chain(struct query_chain **queries);
 void free_assertion_chain(struct assertion_chain **assertions);
 void free_result_chain(struct val_result **results);
-int resolve_n_check(    val_context_t   *context,
+int resolve_n_check( val_context_t *context,
             u_char *domain_name_n,
             const u_int16_t type,
             const u_int16_t class,
@@ -310,7 +310,7 @@ void val_log_rrsig_rdata (val_context_t *ctx, int level, const char *prefix, val
 void val_log_dnskey_rdata (val_context_t *ctx, int level, const char *prefix, val_dnskey_rdata_t *rdata);
 void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
                 struct query_chain *queries, struct val_result *results);
-void val_log (val_context_t *ctx, int level, const char *template, ...);
+void val_log (const val_context_t *ctx, int level, const char *template, ...);
 char *p_query_error(int errno);
 char *p_val_error(int valerrno);
 
@@ -395,8 +395,9 @@ struct val_addrinfo {
  *               non-zero error codes if it fails.  See man getaddrinfo
  *               for more details.
  */
-int val_getaddrinfo ( val_context_t *ctx,
-		      const char *nodename, const char *servname,
+int val_getaddrinfo ( const val_context_t *ctx,
+		      const char *nodename,
+                      const char *servname,
 		      const struct addrinfo *hints,
 		      struct val_addrinfo **res );
 
