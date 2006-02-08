@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_query 3"
-.TH val_query 3 "2006-01-16" "perl v5.8.6" "Programmer's Manual"
+.TH val_query 3 "2006-02-08" "perl v5.8.5" "Programmer's Manual"
 .SH "NAME"
 val_query \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
@@ -149,7 +149,7 @@ val_query \- DNSSEC\-validated resolution of DNS queries
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIval_query()\fB\fR function is a DNSSEC-aware replacement for \fB\f(BIres_query\fB\|(3)\fR.
+The \fB\f(BIval_query()\fB\fR function is a DNSSEC-aware substitute for \fB\f(BIres_query\fB\|(3)\fR.
 It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.
 .PP
 The \fIctx\fR parameter is the validator context and can be set to \s-1NULL\s0 for
@@ -157,11 +157,10 @@ default settings.  More information about this field can be found in
 \&\fB\f(BIlibval\fB\|(3)\fR.
 .PP
 The \fIdname\fR parameter specifies the domain name, \fIclass\fR specifies the
-\&\s-1DNS\s0 class and \fItype\fR specifies the \s-1DNS\s0 type.  The \fIflags\fR parameter is
-reserved for future use, and must be set to 0 at present.
+\&\s-1DNS\s0 class and \fItype\fR specifies the \s-1DNS\s0 type.
 .PP
-The \fI\fIval_query()\fI\fR function returns results in \fIresp\fR which encapsultes the
-results into the following structure:
+The \fB\f(BIval_query()\fB\fR function returns results in the \fIresp\fR array which
+encapsultes the results into the following structure:
 .PP
 .Vb 5
 \&  struct val_response {
@@ -176,6 +175,8 @@ results into the following structure:
 and must be allocated by the user to be of sufficient size to hold all the
 answers returned by the \s-1DNS\s0 name server.  Each element in the \fIresp\fR array
 will contain an answer corresponding to a single RRSet in the \s-1DNS\s0 reply.
+The \fIresponse\fR field in each \fIval_response\fR structure must also be
+allocated by the user to be of sufficient size to hold an answer. 
 .PP
 If \s-1DNSSEC\s0 validation succeeds for a given RRSet, a value of
 \&\fB\s-1VALIDATE_SUCCESS\s0\fR is returned in the \fIval_status\fR field of the
@@ -192,7 +193,23 @@ from \fB\f(BIval_query()\fB\fR, it returns an error code of \fB\s-1NO_SPACE\s0\f
 \&\fIresp_count\fR is set to the total number of answers available.  Applications
 may re-query after reallocating \fIresp\fR to hold that many answers.  For
 queries that are not of type \f(CW\*(C`ns_t_any\*(C'\fR it is generally sufficient to
-allocate an array of three elements for *\fIresp\fR.
+allocate an array of three elements for the \fIresp\fR array.
+.PP
+The \fIflags\fR parameter controls the scope of validation and name
+resolution, and the output format.  At present only one flag is
+defined: \fB\s-1VAL_QUERY_MERGE_RRSETS\s0\fR.  This flag has been provided for
+legacy applications that already use \fB\f(BIres_query\fB\|(3)\fR and want to
+transition to \fB\f(BIval_query()\fB\fR with minimal change.  When this flag is
+specified, all RRsets in the answer are merged into a single response
+and returned in the first element of the \fIresp\fR array.  The response
+field of this element will have a format similar to the answer
+returned by \fB\f(BIres_query\fB\|(3)\fR.  The validation status will be
+\&\fB\s-1VALIDATE_SUCCESS\s0\fR only if all the individual RRsets have been
+successfully validated.  Otherwise, the validation status will be one
+of the other error codes.  Note that if a value other than
+\&\fB\s-1VALIDATE_SUCCESS\s0\fR is returned and if multiple RRsets are present in
+the answer, it is not possible to know which RRset resulted in the
+error status, if this flag is used.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
 The \fB\f(BIval_query()\fB\fR function returns \fB\s-1NO_ERROR\s0\fR on success.  It returns
