@@ -106,6 +106,9 @@ struct rrset_rec
 #define SR_ANS_NACK_SOA          4
 #define SR_ANS_BARE_RRSIG        5
 
+/* Flags for API functions */
+#define VAL_QUERY_MERGE_RRSETS 0x01
+
 /*
  * policies are defined for the following
  */
