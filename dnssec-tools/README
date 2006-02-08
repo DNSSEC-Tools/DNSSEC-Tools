@@ -58,12 +58,25 @@ CONTENTS DESCRIPTION
                 A library that provides DNSSEC resource-record
                 validation functionality.
 
+	lib/libval/bin/validate
+		A tool which can display the sequence of queries and
+		their results used to validate a DNS query.  The
+		stderr output of this command can serve as input to
+		the drawvalmap tool described below.
+
         tools/dnspktflow
                 A tool which can produce visual diagrams of DNS
                 traffic flows which have been captured using tcpdump.
 
         tools/donuts
                 A dnssec aware zone file checker / lint-like application.
+
+	tools/drawvalmap
+		A variation of dnspktflow which can produce visual
+		diagrams of DNS queries sent by the validator
+		while performing DNSSEC validation.  The input for
+		this command can come from the validate tool described
+		above.
 
         tools/etc       
                 Data required by DNSSEC-Tools programs.
