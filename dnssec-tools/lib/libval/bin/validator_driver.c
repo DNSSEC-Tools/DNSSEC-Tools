@@ -39,6 +39,7 @@ static struct option prog_options[] = {
                    {"print", 0, 0, 'p'},
                    {"class", 1, 0, 'c'},
                    {"type",  1, 0, 't'},
+		   {"merge", 0, 0, 'm'},
 		   {0, 0, 0, 0}
                };
 
@@ -366,11 +367,13 @@ void usage(char *progname)
 {
 	printf("Usage: validate [options] [DOMAIN_NAME]\n");
 	printf("Resolve and validate a DNS query.\n");
-	printf("Options:\n");
+	printf("Primary Options:\n");
 	printf("        -h, --help             Display this help and exit\n");
 	printf("        -p, --print            Print the answer and validation result\n");
 	printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
 	printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
+	printf("Advanced Options:\n");
+	printf("        -m, --merge            Merge different RRSETs into a single answer\n");
 	printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
 	printf("The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.\n");
 	printf("If no arguments are given, this program runs a set of predefined test queries.\n");
@@ -397,11 +400,12 @@ int main(int argc, char *argv[])
 		u_int16_t type_h  = ns_t_a;
 		int success       = 0;
 		int doprint       = 0;
+		u_int8_t flags    = (u_int8_t) 0;
 		int retvals[]     = {VALIDATE_SUCCESS, 0};
 
 		while (1) {
 			int opt_index     = 0;
-			c = getopt_long_only (argc, argv, "pc:t:",
+			c = getopt_long_only (argc, argv, "hpc:t:m",
 					      prog_options, &opt_index);
 
 			if (c == -1) {
@@ -433,6 +437,9 @@ int main(int argc, char *argv[])
 					usage(argv[0]);
 					return 1;
 				}
+				break;
+			case 'm':
+				flags |= VAL_QUERY_MERGE_RRSETS;
 				break;
 			default:
 				fprintf(stderr, "Unknown option %s (c = %d [%c])\n", argv[optind - 1], c, (char) c);
@@ -467,7 +474,7 @@ int main(int argc, char *argv[])
 				    resp[i].response_length = MAX_RESPSIZE;
 				}
 
-				retval = val_query(NULL, domain_name, class_h, type_h, 0, resp, &resp_count);
+				retval = val_query(NULL, domain_name, class_h, type_h, flags, resp, &resp_count);
 				
 				if (resp_count > 0) {
 					for (i=0; i<resp_count; i++) {
