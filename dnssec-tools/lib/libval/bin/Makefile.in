@@ -36,4 +36,4 @@ $(GETADDR): getaddr.lo
 	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
 
 install:
-	
+	$(INSTALL) validate $(bindir)	
