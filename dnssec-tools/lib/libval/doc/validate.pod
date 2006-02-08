@@ -1,0 +1,95 @@
+=pod
+
+=head1 NAME
+
+validate - Query the Domain Name System and display results of the
+           DNSSEC validation process
+
+=head1 SYNOPSIS
+
+  validate
+
+  validate [options] DOMAIN_NAME
+
+=head1 DESCRIPTION
+
+B<validate> is a diagnostic tool built on top of the DNSSEC validator.
+It takes a I<DOMAIN_NAME> as an argument and queries the DNS
+for that domain name.  It outputs the series of queries that were
+sent to the DNS and the DNSSEC validation results for each query on
+I<stderr>.  An examination of the queries and validation results
+can help an administrator uncover errors in DNSSEC configuration
+of DNS zones.
+
+If the I<DOMAIN_NAME> argument is not specified, B<validate> will
+perform a series of pre-defined test queries against the
+I<test.dnssec-tools.org> zone.  This essentially serves as a check
+for the validator.
+
+B<validate> can be used in conjunction with the B<drawvalmap> tool
+to display the query-sequence and validation results graphically:
+
+  bash# validate <DOMAIN_NAME> 2>&1 | drawvalmap -d
+
+=head1 OPTIONS
+
+=over
+
+=item -c I<CLASS>, --class=I<CLASS>
+
+This option can be used to specify the DNS class of the Resource
+Record queried.  If this option is not given, the default class
+B<IN> is used.
+
+=item -h, --help
+
+Display the help and exit.
+
+=item -m, --merge
+
+When this option is given, B<validate> will merge different RRsets
+in the response into a single answer.  If this option is not given,
+each RRset is output as a separate response.  This option makes
+sense only when used with the I<-p> option.
+
+=item -p, --print
+
+Print the answer(s) and validation result(s).  By default, B<validate>
+just outputs a series of queries and their validation results on
+I<stderr>.  When the I<-p> option is used, B<validate> will also output
+the final result on I<stdout>.
+
+=item -t I<TYPE>, --type=I<TYPE>
+
+This option can be used to specify the DNS type of the Resource Record
+queried.  If this option is not given, B<validate> will query for the
+B<A> record for the given I<DOMAIN_NAME>.
+
+=back
+
+=head1 NOTES
+
+This is an initial version of the B<validate> tool. In future, this
+tool will be extended to provide more features.
+
+=head1 PRE-REQUISITES
+
+libval
+
+=head1 COPYRIGHT
+
+Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHORS
+
+Abhijit Hayatnagarkar, Suresh Krishnaswamy
+
+=head1 SEE ALSO
+
+B<drawvalmap>, B<libval(3)>, B<val_query(3)>
+
+http://dnssec-tools.sourceforge.net
+
+=cut
+
