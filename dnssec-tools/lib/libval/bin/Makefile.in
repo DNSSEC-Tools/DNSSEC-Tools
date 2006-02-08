@@ -18,8 +18,8 @@ LOBJ=   validator_driver.lo \
 	gethost.lo
 
 VALIDATOR=validate
-GETHOST= gethost
-GETADDR= getaddr
+GETHOST=gethost
+GETADDR=getaddr
 
 all: $(VALIDATOR) $(GETHOST) $(GETADDR)
 
@@ -36,4 +36,4 @@ $(GETADDR): getaddr.lo
 	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
 
 install:
-	$(INSTALL) .libs/validate $(bindir)	
+	$(LIBTOOLIN) validate $(bindir)	
