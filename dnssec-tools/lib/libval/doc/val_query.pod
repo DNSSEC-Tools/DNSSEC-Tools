@@ -18,7 +18,7 @@ val_query - DNSSEC-validated resolution of DNS queries
 
 =head1 DESCRIPTION
 
-The B<val_query()> function is a DNSSEC-aware replacement for B<res_query(3)>.
+The B<val_query()> function is a DNSSEC-aware substitute for B<res_query(3)>.
 It performs DNSSEC validation of DNS queries.
 
 The I<ctx> parameter is the validator context and can be set to NULL for
@@ -26,11 +26,10 @@ default settings.  More information about this field can be found in
 B<libval(3)>.
 
 The I<dname> parameter specifies the domain name, I<class> specifies the
-DNS class and I<type> specifies the DNS type.  The I<flags> parameter is
-reserved for future use, and must be set to 0 at present.
+DNS class and I<type> specifies the DNS type.
 
-The I<val_query()> function returns results in I<resp> which encapsultes the
-results into the following structure:
+The B<val_query()> function returns results in the I<resp> array which
+encapsultes the results into the following structure:
 
   struct val_response {
         unsigned char *response;
@@ -43,6 +42,8 @@ I<answer> and I<anslen> parameters in B<res_query(3)>.  I<resp> is an array
 and must be allocated by the user to be of sufficient size to hold all the
 answers returned by the DNS name server.  Each element in the I<resp> array
 will contain an answer corresponding to a single RRSet in the DNS reply.
+The I<response> field in each I<val_response> structure must also be
+allocated by the user to be of sufficient size to hold an answer. 
 
 If DNSSEC validation succeeds for a given RRSet, a value of
 B<VALIDATE_SUCCESS> is returned in the I<val_status> field of the
@@ -59,7 +60,23 @@ from B<val_query()>, it returns an error code of B<NO_SPACE> and
 I<resp_count> is set to the total number of answers available.  Applications
 may re-query after reallocating I<resp> to hold that many answers.  For
 queries that are not of type C<ns_t_any> it is generally sufficient to
-allocate an array of three elements for *I<resp>.
+allocate an array of three elements for the I<resp> array.
+
+The I<flags> parameter controls the scope of validation and name
+resolution, and the output format.  At present only one flag is
+defined: B<VAL_QUERY_MERGE_RRSETS>.  This flag has been provided for
+legacy applications that already use B<res_query(3)> and want to
+transition to B<val_query()> with minimal change.  When this flag is
+specified, all RRsets in the answer are merged into a single response
+and returned in the first element of the I<resp> array.  The response
+field of this element will have a format similar to the answer
+returned by B<res_query(3)>.  The validation status will be
+B<VALIDATE_SUCCESS> only if all the individual RRsets have been
+successfully validated.  Otherwise, the validation status will be one
+of the other error codes.  Note that if a value other than
+B<VALIDATE_SUCCESS> is returned and if multiple RRsets are present in
+the answer, it is not possible to know which RRset resulted in the
+error status, if this flag is used.
 
 =head1 RETURN VALUES
 
