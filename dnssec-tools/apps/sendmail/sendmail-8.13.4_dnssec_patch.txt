@@ -9,7 +9,7 @@ Index: devtools/Site/site.config.m4
 Index: libmilter/sm_gethost.c
 ===================================================================
 --- libmilter/sm_gethost.c	2004-08-20 17:12:37.000000000 -0400
-+++ libmilter/sm_gethost.c	2006-02-08 21:08:28.000000000 -0500
++++ libmilter/sm_gethost.c	2006-02-09 10:55:57.000000000 -0500
 @@ -17,6 +17,43 @@
  #endif /* NETINET || NETINET6 */
  #include "libmilter.h"
@@ -108,7 +108,7 @@ Index: doc/op/op.me
 Index: sendmail/conf.c
 ===================================================================
 --- sendmail/conf.c	2005-06-24 13:20:14.000000000 -0400
-+++ sendmail/conf.c	2006-02-08 21:09:16.000000000 -0500
++++ sendmail/conf.c	2006-02-09 10:51:32.000000000 -0500
 @@ -4180,6 +4180,45 @@
  }
  
@@ -249,7 +249,7 @@ Index: sendmail/readcf.c
 Index: sendmail/domain.c
 ===================================================================
 --- sendmail/domain.c	2005-03-03 19:54:42.000000000 -0500
-+++ sendmail/domain.c	2006-02-08 21:13:27.000000000 -0500
++++ sendmail/domain.c	2006-02-09 10:48:55.000000000 -0500
 @@ -23,6 +23,9 @@
  
  # include <arpa/inet.h>
@@ -276,8 +276,8 @@ Index: sendmail/domain.c
 +		bzero(dname, MAXDNAME);
 +		strncpy(dname, host, MAXDNAME);
 +		getcanonname(dname, MAXDNAME, true, NULL);
-+		resp[0].response = answer.qb2;
-+		resp[0].response_length = sizeof answer.qb2;
++		resp[0].response = (unsigned char *) &answer;
++		resp[0].response_length = sizeof answer;
 +
 +		/* perform DNSSEC validation query */
 +		n = val_query (NULL, dname, C_IN, T_MX, VAL_QUERY_MERGE_RRSETS, resp, &resp_length);
@@ -349,8 +349,8 @@ Index: sendmail/domain.c
 +				sm_dprintf("dns_getcanonname(938): performing dnssec validation query.\n");
 +
 +			/* perform DNSSEC validation query */
-+			resp[0].response = answer.qb2;
-+			resp[0].response_length = sizeof answer.qb2;
++			resp[0].response = (unsigned char *) &answer;
++			resp[0].response_length = sizeof answer;
 +			ret = val_query (NULL, dname, C_IN, qtype, VAL_QUERY_MERGE_RRSETS, resp, &resp_length);
 +
 +			if (ret == 0) {
@@ -386,7 +386,7 @@ Index: sendmail/domain.c
 +				ret = -(abs(ret));
 +			}
 +		} while (0);
-+# else
++# else /* SUPPORT_DNSSEC */
  		ret = res_querydomain(host, *dp, C_IN, qtype,
  				      answer.qb2, sizeof(answer.qb2));
 +# endif /* SUPPORT_DNSSEC */
@@ -397,7 +397,7 @@ Index: sendmail/domain.c
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2004-08-04 17:17:57.000000000 -0400
-+++ sendmail/sm_resolve.c	2006-02-08 18:07:14.000000000 -0500
++++ sendmail/sm_resolve.c	2006-02-09 10:37:59.000000000 -0500
 @@ -70,6 +70,10 @@
  	{	NULL,		0		}
  };
