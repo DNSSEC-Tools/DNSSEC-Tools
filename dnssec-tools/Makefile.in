@@ -1,6 +1,6 @@
 PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts \
          tools/dnspktflow tools/maketestzone tools/etc tools/drawvalmap
-
+PERLARGS=@PERLARGS@
 SUBDIRS=lib/libsres lib/libval lib/libval/doc
 INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
 
@@ -52,7 +52,7 @@ perlmake:
 perlmakefiles:
 	@for i in $(PERLDIRS) ; do \
 	  if test ! -f $$i/Makefile ; then \
-	    (cd $$i ; perl Makefile.PL ) ; \
+	    (cd $$i ; perl Makefile.PL $(PERLARGS)) ; \
           fi ; \
          done
 

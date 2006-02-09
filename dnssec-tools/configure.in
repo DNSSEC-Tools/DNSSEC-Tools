@@ -18,6 +18,15 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 dnl ----------------------------------------------------------------------
+dnl perl specific arguments
+dnl
+AC_ARG_WITH(perl-build-args,
+[--with-perl-perl-args=ARGS           Add ARGS to building perl Makefiles.],
+	PERLARGS="$withval"
+)
+AC_SUBST(PERLARGS)
+
+dnl ----------------------------------------------------------------------
 dnl openssl
 dnl
 AC_ARG_WITH(openssl,
