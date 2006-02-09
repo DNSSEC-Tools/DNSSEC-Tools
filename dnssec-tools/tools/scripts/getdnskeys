@@ -75,8 +75,8 @@ foreach my $domain (@currentkeys, @ARGV) {
 	    $key =~ s/\s+//g;
 
 	    # if we're storing output (! -q) then print the keys
-	    Output(sprintf "  %s  %d %d %d \"%s\";\n",
-		   $domain, $rec->flags, $rec->protocol, $rec->algorithm, $key);
+	    Output_Key($domain, $rec->flags, $rec->protocol,
+		       $rec->algorithm, $key);
 
 	    # compare against cached named.conf records
 	    $newkeys += compare_keys(\%keystorage, $domain, $rec, $key)
@@ -90,6 +90,19 @@ foreach my $domain (@currentkeys, @ARGV) {
 	  "  Error pulling keys for $domain (maybe there were none)\n";
 	print STDERR
 	  "  Error: " . $res->errorstring . "\n";
+    }
+}
+
+#
+# find the keys we couldn't verify
+#
+foreach my $domain (keys(%keystorage)) {
+    foreach my $key (@{$keystorage{$domain}}) {
+	if (!$key->{'found'}) {
+	    # key wasn't found on-line.
+	    Output_Key($domain, $key->{'flags'}, $key->{'protocol'},
+		       $key->{'algorithm'}, $key->{'key'});
+	}
     }
 }
 
@@ -173,6 +186,18 @@ sub Verbose {
 #
 sub Output {
     print $output @_ if ($opts{'o'});
+}
+
+#######################################################################
+# Output_Key()
+#
+# Prints out a key to the output filehandle
+#
+sub Output_Key {
+    my ($domain, $flags, $protocol, $algorithm, $keydata) = @_;
+    # if we're storing output (! -q) then print the keys
+    Output(sprintf "  %s  %d %d %d \"%s\";\n",
+	   $domain, $flags, $protocol, $algorithm, $keydata);
 }
 
 #######################################################################
