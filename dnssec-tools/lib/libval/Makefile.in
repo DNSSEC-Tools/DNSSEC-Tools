@@ -76,7 +76,9 @@ install:
 	@for i in $(SUBDIRS) ; do \
 	  (cd $$i ; make install) ; \
 	done
+	$(MKPATH) $(libdir)
 	$(LIBTOOLIN) $(LIBVAL) $(libdir)
 	$(LIBTOOLFN)
+	$(MKPATH) $(includedir)
 	$(INSTALL) validator.h $(includedir)
 	$(INSTALL) val_errors.h $(includedir)

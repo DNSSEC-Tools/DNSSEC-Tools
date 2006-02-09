@@ -8,9 +8,11 @@ MAN3PAGES=val_getaddrinfo.3 \
 all: $(MAN1PAGES) $(MAN3PAGES)
 
 install:
+	$(MKPATH) $(man1dir)
 	for i in $(MAN1PAGES) ; do		\
 	  $(INSTALL) $$i $(man1dir) ;		\
 	done
+	$(MKPATH) $(man1dir)
 	for i in $(MAN3PAGES) ; do		\
 	  $(INSTALL) $$i $(man3dir) ;		\
 	done
