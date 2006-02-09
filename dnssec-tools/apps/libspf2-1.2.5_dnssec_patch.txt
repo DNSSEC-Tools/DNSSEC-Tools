@@ -308,7 +308,7 @@ Index: src/libspf2/spf_strerror.c
 Index: src/libspf2/spf_dns_resolv.c
 ===================================================================
 --- src/libspf2/spf_dns_resolv.c	2005-06-03 12:46:00.000000000 -0400
-+++ src/libspf2/spf_dns_resolv.c	2005-08-23 13:15:37.000000000 -0400
++++ src/libspf2/spf_dns_resolv.c	2006-02-09 10:28:13.000000000 -0500
 @@ -45,6 +45,10 @@
  # include <pthread.h>
  #endif
@@ -366,18 +366,29 @@ Index: src/libspf2/spf_dns_resolv.c
  	spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
  	SPF_ASSERT_NOTNULL(spfhook);
  #endif
-@@ -156,6 +170,19 @@
+@@ -156,6 +170,30 @@
      /*
       * try resolving the name
       */
 +#ifdef SUPPORT_DNSSEC
 +	SPF_debugf("libval present.  Checking if dodnssec flag is set");
 +	if ( spfhook->dodnssec ) {
++		struct val_response resp[0];
++		int resp_length = 1;
++		resp[0].response = response;
++		resp[0].response_length = sizeof response;
++		
 +		SPF_debugf( "dodnssec flag is set.  Performing val_query" );
-+		dns_len = val_query( domain, ns_c_in, rr_type, response, sizeof( response ),
-+				     0, &dnssec_status );
-+		SPF_debugf( "val_query() returned %d, dnssec_status = %s\n", dns_len,
-+			    p_val_error( dnssec_status ) );
++		dns_len = val_query( NULL, domain, ns_c_in, rr_type, VAL_QUERY_MERGE_RRSETS, resp, &resp_length );
++		if (dns_len == 0) {
++			dnssec_status = resp[0].val_status;
++			dns_len = resp[0].response_length;
++			SPF_debugf( "val_query() returned %d, dnssec_status = %s\n", dns_len,
++				    p_val_error( dnssec_status ) );
++		}
++		else {
++			dns_len = -(abs(dns_len));
++		}
 +	}
 +	else {
 +		SPF_debugf( "dodnssec flag is not set" );
@@ -386,7 +397,7 @@ Index: src/libspf2/spf_dns_resolv.c
  #if HAVE_DECL_RES_NINIT
  	dns_len = res_nquery(res_state, domain, ns_c_in, rr_type,
  			 response, sizeof(response));
-@@ -164,6 +191,10 @@
+@@ -164,6 +202,10 @@
  			 response, sizeof(response));
  #endif
  
@@ -397,7 +408,7 @@ Index: src/libspf2/spf_dns_resolv.c
  	if ( dns_len < 0 ) {
  		/* This block returns unconditionally. */
  		if ( spf_dns_server->debug )
-@@ -175,6 +206,16 @@
+@@ -175,6 +217,16 @@
  			return SPF_dns_lookup(spf_dns_server->layer_below,
  							domain, rr_type, should_cache);
  		}
@@ -414,7 +425,7 @@ Index: src/libspf2/spf_dns_resolv.c
  		return SPF_dns_rr_new_init(spf_dns_server,
  						domain, rr_type, 0, SPF_h_errno);
  	}
-@@ -182,6 +223,16 @@
+@@ -182,6 +234,16 @@
      /*
       * initialize stuff
       */
@@ -431,7 +442,7 @@ Index: src/libspf2/spf_dns_resolv.c
  	spfrr = SPF_dns_rr_new_init(spf_dns_server,
  					domain, rr_type, 0, NETDB_SUCCESS);
  
-@@ -447,6 +498,14 @@
+@@ -447,6 +509,14 @@
      if ( spfrr->num_rr == 0 )
  		spfrr->herrno = NO_DATA;
  
@@ -446,7 +457,7 @@ Index: src/libspf2/spf_dns_resolv.c
      return spfrr;
  }
  
-@@ -454,12 +513,18 @@
+@@ -454,12 +524,18 @@
  static void
  SPF_dns_resolv_free(SPF_dns_server_t *spf_dns_server)
  {
@@ -466,7 +477,7 @@ Index: src/libspf2/spf_dns_resolv.c
  #if 0
      if (spf_dns_server->hook) {
  		spfhook = SPF_voidp2spfhook(spf_dns_server->hook);
-@@ -477,12 +542,18 @@
+@@ -477,12 +553,18 @@
  	free(spf_dns_server);
  }
  
@@ -486,7 +497,7 @@ Index: src/libspf2/spf_dns_resolv.c
  	SPF_dns_resolv_config_t	*spfhook;
  #endif
  
-@@ -493,7 +564,7 @@
+@@ -493,7 +575,7 @@
  		return NULL;
  	memset(spf_dns_server, 0, sizeof(SPF_dns_server_t));
  
@@ -495,7 +506,7 @@ Index: src/libspf2/spf_dns_resolv.c
      spf_dns_server->hook = calloc(1, sizeof(SPF_dns_resolv_config_t));
      if ( spf_dns_server->hook == NULL ) {
  		free( spf_dns_server );
-@@ -513,9 +584,12 @@
+@@ -513,9 +595,12 @@
      spf_dns_server->name        = name;
      spf_dns_server->debug       = debug;
  
