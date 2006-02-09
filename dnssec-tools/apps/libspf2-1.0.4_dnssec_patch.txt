@@ -722,7 +722,7 @@ Index: src/libspf2/spf_strerror.c
 Index: src/libspf2/spf_dns_resolv.c
 ===================================================================
 --- src/libspf2/spf_dns_resolv.c	2005-05-06 12:56:10.000000000 -0400
-+++ src/libspf2/spf_dns_resolv.c	2005-08-23 13:12:38.000000000 -0400
++++ src/libspf2/spf_dns_resolv.c	2006-02-08 17:54:44.000000000 -0500
 @@ -41,6 +41,10 @@
  # include <netdb.h>
  #endif
@@ -768,24 +768,39 @@ Index: src/libspf2/spf_dns_resolv.c
  
      /*
       * initialize stuff
-@@ -147,6 +162,16 @@
+@@ -147,6 +162,31 @@
      /*
       * try resolving the name
       */
 +#ifdef SUPPORT_DNSSEC
 +    do
 +    {
-+	dns_len = val_query ( domain, ns_c_in, rr_type, response,
-+			      sizeof( response ), 0, &dnssec_status );
-+	if ( spfhook->debug )
-+	    SPF_debugf( "val_query returned %d, dnssec_status = %s",
-+			dns_len, p_val_error( dnssec_status ) );
++	struct val_response resp[1];
++	int resp_count = 1;
++	resp[0].response = response;
++	resp[0].response_length = sizeof( response );
++	resp[0].val_status = INTERNAL_ERROR;
++	int retval = 0;
++
++	retval = val_query ( NULL, domain, ns_c_in, rr_type, VAL_QUERY_MERGE_RRSETS,
++			      resp, &resp_count );
++
++	if ( retval == 0 ) {
++		dnssec_status = resp[0].val_status;
++		dns_len = resp[0].response_length;
++		if ( spfhook->debug )
++			SPF_debugf( "val_query returned %d, dnssec_status = %s",
++				    dns_len, p_val_error( dnssec_status ) );
++	}
++	else {
++		dns_len = - (abs(retval));
++	}
 +    } while (0);
 +#else
  #if HAVE_DECL_RES_NINIT
      dns_len = res_nquery( &spfhook->res_state, domain, ns_c_in, rr_type,
  			 response, sizeof( response ) );
-@@ -154,6 +179,7 @@
+@@ -154,6 +194,7 @@
      dns_len = res_query( domain, ns_c_in, rr_type,
  			 response, sizeof( response ) );
  #endif
@@ -793,7 +808,7 @@ Index: src/libspf2/spf_dns_resolv.c
  
      if ( dns_len < 0 )
      {
-@@ -161,16 +187,39 @@
+@@ -161,16 +202,39 @@
  	    SPF_debugf( "query failed: err = %d  %s (%d)",
  		    dns_len, hstrerror( SPF_h_errno ), SPF_h_errno );
  
@@ -835,7 +850,7 @@ Index: src/libspf2/spf_dns_resolv.c
      err = ns_initparse( response, dns_len, &ns_handle );
  
      if ( err < 0 )			/* 0 or -1 */
-@@ -437,16 +486,41 @@
+@@ -437,16 +501,41 @@
      if ( spfrr->num_rr == 0 )
  	spfhook->spfrr.herrno = NO_DATA;
  
@@ -878,7 +893,7 @@ Index: src/libspf2/spf_dns_resolv.c
      spfdic = malloc( sizeof( *spfdic ) );
      if ( spfdic == NULL )
  	return NULL;
-@@ -469,9 +543,13 @@
+@@ -469,9 +558,13 @@
      spfhook = SPF_voidp2spfhook( spfdic->hook );
  
      spfhook->debug = debug;
@@ -892,7 +907,7 @@ Index: src/libspf2/spf_dns_resolv.c
  #if HAVE_DECL_RES_NINIT
      if ( res_ninit( &spfhook->res_state ) != 0 )
      {
-@@ -485,6 +563,7 @@
+@@ -485,6 +578,7 @@
  	return NULL;
      }
  #endif
@@ -900,7 +915,7 @@ Index: src/libspf2/spf_dns_resolv.c
  
      return SPF_spfdic2dcid( spfdic );
  }
-@@ -501,6 +580,13 @@
+@@ -501,6 +595,13 @@
      SPF_dns_reset_rr( &(SPF_voidp2spfhook( spfdic->hook )->spfrr) );
  }
  
@@ -914,7 +929,7 @@ Index: src/libspf2/spf_dns_resolv.c
  void SPF_dns_destroy_config_resolv( SPF_dns_config_t spfdcid )
  {
      SPF_dns_iconfig_t     *spfdic = SPF_dcid2spfdic( spfdcid );
-@@ -514,12 +600,13 @@
+@@ -514,12 +615,13 @@
  
  	SPF_dns_destroy_rr_var( &spfhook->spfrr );
  
@@ -929,7 +944,7 @@ Index: src/libspf2/spf_dns_resolv.c
  	free( spfdic->hook );
      }
      
-@@ -528,4 +615,11 @@
+@@ -528,4 +630,11 @@
  	free( spfdic );
  }
  
@@ -1023,7 +1038,7 @@ Index: src/include/spf.h
 Index: config.h.in
 ===================================================================
 --- config.h.in	2004-07-08 13:18:43.000000000 -0400
-+++ config.h.in	2005-08-23 13:13:43.000000000 -0400
++++ config.h.in	2006-02-08 17:40:08.000000000 -0500
 @@ -37,6 +37,9 @@
  /* Define to 1 if you have the <inttypes.h> header file. */
  #undef HAVE_INTTYPES_H
@@ -1034,7 +1049,16 @@ Index: config.h.in
  /* Define to 1 if you have the `intl' library (-lintl). */
  #undef HAVE_LIBINTL
  
-@@ -52,6 +55,12 @@
+@@ -46,12 +49,21 @@
+ /* Define to 1 if you have the `nsl' library (-lnsl). */
+ #undef HAVE_LIBNSL
+ 
++/* Define to 1 if you have the `pthread' library (-lpthread). */
++#undef HAVE_LIBPTHREAD
++
+ /* Define to 1 if you have the `resolv' library (-lresolv). */
+ #undef HAVE_LIBRESOLV
+ 
  /* Define to 1 if you have the `socket' library (-lsocket). */
  #undef HAVE_LIBSOCKET
  
@@ -1047,7 +1071,7 @@ Index: config.h.in
  /* Define to 1 if your system has a GNU libc compatible `malloc' function, and
     to 0 otherwise. */
  #undef HAVE_MALLOC
-@@ -177,6 +186,9 @@
+@@ -177,6 +189,9 @@
  /* Define to 1 if the system has the type `u_int8_t'. */
  #undef HAVE_U_INT8_T
  
@@ -1057,7 +1081,7 @@ Index: config.h.in
  /* Define to 1 if you have the `vfork' function. */
  #undef HAVE_VFORK
  
-@@ -228,6 +240,9 @@
+@@ -228,6 +243,9 @@
  /* Define to 1 if you have the ANSI C header files. */
  #undef STDC_HEADERS
  
@@ -1070,7 +1094,7 @@ Index: config.h.in
 Index: configure.ac
 ===================================================================
 --- configure.ac	2004-07-07 07:55:34.000000000 -0400
-+++ configure.ac	2005-08-23 13:12:12.000000000 -0400
++++ configure.ac	2006-02-08 17:39:03.000000000 -0500
 @@ -3,9 +3,9 @@
  
  AC_PREREQ(2.59)
@@ -1082,7 +1106,7 @@ Index: configure.ac
  AM_CONFIG_HEADER(config.h)
  
  # remember the version info for later
-@@ -83,29 +83,89 @@
+@@ -83,29 +83,95 @@
  AC_CHECK_HEADERS([libintl.h ])
  AC_CHECK_HEADERS([getopt.h ])
  
@@ -1130,6 +1154,12 @@ Index: configure.ac
 +	fi
 +   )
 +
++   dnl Check pthread library
++   AC_CHECK_LIB(pthread, pthread_rwlock_rdlock, , [
++	echo "the pthread library is required to build this program."
++	exit 1;
++   ])
++
 +   dnl Check Secure Resolver Library libsres
 +   AC_CHECK_LIB(sres, query_send, , [
 +	echo "the secure resolver library is required to build this program."
@@ -1154,7 +1184,7 @@ Index: configure.ac
 +	echo "the validator library is required to build this program."
 +        echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
-+   ])
++   ], -lsres -lcrypto -lpthread)
 +
 +   AC_DEFINE([SUPPORT_DNSSEC], [], [Support DNSSEC validation])
 +
