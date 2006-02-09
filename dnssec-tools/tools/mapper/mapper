@@ -28,15 +28,54 @@ my $time = time();
 my %primes = dnssec_tools_get_qwprimitives();
 
 LocalGetOptions(\%opts,
-		['h|help','Show command line help'],
-		'',
-		['q|quiet-dnssec','Do not show expired or near-expired record warnings'],
-		['w|warn-time=i','Time in seconds ahead to warn about expiring records'],
-		'',
+		['GUI:separator', 'Map Output Style Options:'],
 		['l|layout-style=s','Layout style',
 		 question => { type => 'menu',
 			       values => [qw(dot neato twopi circo fdp)] }],
 		['L|legend','Add a legend to the map'],
+		['GUI:guionly', { type => 'checkbox',
+				  values => [1,0],
+				  default => 1,
+				  text => 'Show advanced GUI options',
+				  name => 'advancedoptions'}],
+
+		['GUI:separator', 'DNS Specific Map Style Options:'],
+		['r|resource-records','Show resource record types labels'],
+		['t|add-type-data=s','Show data for comma-sep types'],
+		['g|group-nodes','Group nodes around a domain name'],
+
+		['GUI:separator', 'DNS Record Selection Options:'],
+		['s|skip-types=s','Do not look at records of comma-sep. types'],
+		['T|show-types=s','Show only records with comma-sep types'],
+		['i|ignore-records=s',
+		 'Regex pattern of record names to ignore'],
+
+		['GUI:separator', 'Output options:'],
+		['o|output-file=s','Output File Name',
+		 question => { type => 'fileupload'}],
+		['GUI:guionly',{type => 'checkbox',
+				values => [1,0],
+				default => 1,
+				text => 'Show map in a window',
+				name => 'mapinwindow'}],
+		['q|quiet-dnssec',
+		 'Do not show expired or near-expired record warnings'],
+		['w|warn-time=i',
+		 'Time in seconds ahead to warn about expiring records'],
+
+		['GUI:separator', 'Help information:'],
+		['h|help','Show command line help'],
+
+		['GUI:nootherargs',1],
+		['GUI:submodules','getzonefiles','getzonenames'],
+		['GUI:actions', sub { require QWizard;
+				      import QWizard;
+				      $mapinwindow = qwparam('mapinwindow')}],
+		['GUI:otherprimaries',%primes],
+
+		['GUI:screen', 'Advanced Map Style Options:',
+		 introduction =>
+		 'These options affect the GraphViz layout engine.'],
 		['a|allow-overlap', 
 		 'Allow overlap of map nodes (makes tighter maps)'],
 		['e|edge-weight=i', 
@@ -45,29 +84,7 @@ LocalGetOptions(\%opts,
 		 'Font Size.  (default is 10)'],
 		['x|map-width=i', 'Maximum width of the map in pixels'],
 		['y|map-height=i', 'Maximum height of the map in pixels'],
-		'',
-		['r|resource-records','Show resource record types labels'],
-		['t|add-type-data=s','Show data for comma-sep types'],
-		['g|group-nodes','Group nodes around a domain name'],
-		'',
-		['s|skip-types=s','Do not look at records of comma-sep. types'],
-		['T|show-types=s','Show only records with comma-sep types'],
-		['i|ignore-records=s','Regex pattern of record names to ignore'],
-		'',
-		['o|output-file=s','Output File Name',
-		 question => { type => 'fileupload'}],
-		'',
-		['GUI:guionly',{type => 'checkbox',
-				values => [1,0],
-				default => 1,
-				text => 'Show map in a window',
-				name => 'mapinwindow'}],
-		['GUI:nootherargs',1],
-		['GUI:submodules','getzonefiles','getzonenames'],
-		['GUI:actions', sub { require QWizard;
-				      import QWizard;
-				      $mapinwindow = qwparam('mapinwindow')}],
-		['GUI:otherprimaries',%primes],
+		
 ) || exit();
 
 exit() if (exists($opts{'h'}));
@@ -296,8 +313,6 @@ if ($opts{'L'}) {
 # write the final resulting file
 #
 my $img;
-if ($opts{'t'}) {
-}
 $g->as_png(\$img);
 
 if ($opts{'o'}) {
