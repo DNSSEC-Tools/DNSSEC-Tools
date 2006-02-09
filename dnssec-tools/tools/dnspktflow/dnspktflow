@@ -20,10 +20,16 @@ my $mapinwindow;
 	);
 
 LocalGetOptions(\%opts,
+		['GUI:otherargs_text', 'tcpdump files to analyze'],
+		["GUI:separator", "Input Packet Selection:"],
 		['i|ignore-hosts=s',"A regular expression of host names to ignore"],
 		['r|only-hosts=s',"A regular expression of host names to analyze"],
-		"",
-		['o|output-file=s',"Output ping image file name (default: $opts{o})",
+		['f|show-frame-num',"Shows the packet frame numbers"],
+		['b|begin-frame=i',"Begin at frame NUMBER"],
+
+		["GUI:separator", "Output Options:"],
+		['o|output-file=s',
+		 "Output ping image file name (default: $opts{o})",
 #		 question => { 'type' => 'fileupload' }
 		],
 		['fig','Output format should be fig'],
@@ -36,18 +42,17 @@ LocalGetOptions(\%opts,
 #		 question => { 'type' => 'fileupload' }
 		],
 		['T|input-is-tethereal-out','The input file is already processed by tethereal'],
-		"",
+
+		["GUI:separator", "Graphical Options:"],
 		['t|show-type',"Shows message type in result image"],
 		['q|show-queries',"Shows query questions in result image"],
 		['a|show-answers',"Shows query answers in result image"],
 		['A|show-authoritative',"Shows authoritative information in result image"],
 		['x|show-additional',"Shows additional information in result image"],
 		['l|show-label-lines','Shows lines attaching labels to lines'],
-		"",
-		['f|show-frame-num',"Shows the packet frame numbers"],
-		['b|begin-frame=i',"Begin at frame NUMBER"],
-		"",
 		["fontsize=i","Font Size"],
+
+		["GUI:separator", "Debugging:"],
 		["d|dump-pkts", "Dump data collected from the packets"],
 		["h|help", "Show help for command line options"],
 
