@@ -67,6 +67,8 @@ subdirmake:
 	done
 
 install:
+	$(MKPATH) $(libdir)
 	$(LIBTOOLIN) $(LIBRES) $(libdir)
 	$(LIBTOOLFN)
+	$(MKPATH) $(includedir)
 	$(INSTALL) resolver.h    $(includedir)

@@ -36,4 +36,5 @@ $(GETADDR): getaddr.lo
 	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
 
 install:
+	$(MKPATH) $(bindir)
 	$(LIBTOOLIN) validate $(bindir)	

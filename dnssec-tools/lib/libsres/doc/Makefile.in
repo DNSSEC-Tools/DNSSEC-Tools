@@ -3,6 +3,7 @@ MAN3PAGES= libsres.3
 all: $(MAN3PAGES)
 
 install:
+	$(MKPATH) $(man3dir)
 	for i in $(MAN3PAGES) ; do		\
 	  $(INSTALL) $$i $(man3dir) ;		\
 	done
