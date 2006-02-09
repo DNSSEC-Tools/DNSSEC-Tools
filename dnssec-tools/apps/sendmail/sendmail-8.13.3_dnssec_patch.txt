@@ -1,7 +1,7 @@
 Index: devtools/Site/site.config.m4
 ===================================================================
 --- devtools/Site/site.config.m4	2005-04-25 11:33:21.000000000 -0400
-+++ devtools/Site/site.config.m4	2005-08-19 11:43:27.000000000 -0400
++++ devtools/Site/site.config.m4	2006-02-09 10:59:44.000000000 -0500
 @@ -0,0 +1,3 @@
 +APPENDDEF(`confENVDEF', `-DSUPPORT_DNSSEC=1')
 +define(`confLibSEARCH', `db 44bsd')
@@ -9,8 +9,8 @@ Index: devtools/Site/site.config.m4
 Index: libmilter/sm_gethost.c
 ===================================================================
 --- libmilter/sm_gethost.c	2005-04-28 13:32:29.000000000 -0400
-+++ libmilter/sm_gethost.c	2005-08-23 13:16:52.000000000 -0400
-@@ -17,6 +17,10 @@
++++ libmilter/sm_gethost.c	2006-02-09 11:06:02.000000000 -0500
+@@ -17,6 +17,43 @@
  #endif /* NETINET || NETINET6 */
  #include "libmilter.h"
  
@@ -18,27 +18,48 @@ Index: libmilter/sm_gethost.c
 +# include <validator.h>
 +#endif /* SUPPORT_DNSSEC */
 +
++/*
++**  MI_VAL_GETHOSTBYNAME -- wrapper for gethostbyname with support for
++**                          DNSSEC validation
++**
++**      Parameters:
++**              name -- a host name, or an IPv4 address in standard dot
++**                      notation, or an IPv6 address in colon (and possibly
++**                      dot) notation.
++**
++**      Returns:
++**              NULL, if there was an error
++**              A non-NULL value of type struct hostent*, if no error occurs
++**
++*/
++
++static struct hostent *
++mi_val_gethostbyname(name)
++        char *name;
++{
++	struct hostent *h;
++#if SUPPORT_DNSSEC
++	int dnssec_status = INTERNAL_ERROR;
++	h = val_gethostbyname(NULL, name, &dnssec_status);
++	if (RequireDNSSEC && (dnssec_status != VALIDATE_SUCCESS)) {
++		h = NULL;
++	}
++#else /* SUPPORT_DNSSEC */
++	h = gethostbyname(name);
++#endif /* SUPPORT_DNSSEC */
++
++	return h;
++}
++
  /*
  **  MI_GETHOSTBY{NAME,ADDR} -- compatibility routines for gethostbyXXX
  **
-@@ -59,13 +63,28 @@
+@@ -59,13 +96,15 @@
  		_res.options |= RES_USE_INET6;
  	}
  	SM_SET_H_ERRNO(0);
-+
-+# if SUPPORT_DNSSEC
-+	do {
-+	    int dnssec_status = INTERNAL_ERROR;
-+	    int val_h_errno = NETDB_INTERNAL;
-+	    h = val_gethostbyname(name, &val_h_errno);
-+	    h_errno = val_h_errno;
-+	    if (h) {
-+		dnssec_status = val_get_hostent_dnssec_status(h);
-+	    }
-+	} while (0);
-+# else /* SUPPORT_DNSSEC */
- 	h = gethostbyname(name);
-+# endif /* SUPPORT_DNSSEC */
+-	h = gethostbyname(name);
++	h = mi_val_gethostbyname(name);
  	if (family == AF_INET6 && !resv6)
  		_res.options &= ~RES_USE_INET6;
  	*err = h_errno;
@@ -50,13 +71,8 @@ Index: libmilter/sm_gethost.c
  void
  freehostent(h)
  	struct hostent *h;
-@@ -75,9 +94,12 @@
- 	**  they probably don't have the free routine either.
- 	*/
+@@ -77,7 +116,7 @@
  
-+# if SUPPORT_DNSSEC
-+	val_freehostent(h);
-+# endif /* SUPPORT_DNSSEC */
  	return;
  }
 -#endif /* NEEDSGETIPNODE && NETINET6 */
@@ -64,23 +80,12 @@ Index: libmilter/sm_gethost.c
  
  struct hostent *
  mi_gethostbyname(name, family)
-@@ -110,7 +132,19 @@
+@@ -110,7 +149,7 @@
  	h = getipnodebyname(name, family, flags, &err);
  	SM_SET_H_ERRNO(err);
  # else /* NETINET6 */
-+#  if SUPPORT_DNSSEC
-+	do {
-+	    int dnssec_status = INTERNAL_ERROR;
-+	    int val_h_errno = NETDB_INTERNAL;
-+	    h = val_gethostbyname(name, &val_h_errno);
-+	    h_errno = val_h_errno;
-+	    if (h) {
-+		dnssec_status = val_get_hostent_dnssec_status(h);
-+	    }
-+	} while (0);
-+#  else /* SUPPORT_DNSSEC */
- 	h = gethostbyname(name);
-+#  endif /* SUPPORT_DNSSEC */
+-	h = gethostbyname(name);
++	h = mi_val_gethostbyname(name);
  # endif /* NETINET6 */
  
  #endif /* (SOLARIS > 10000 && SOLARIS < 20400) || (defined(SOLARIS) && SOLARIS < 204) || (defined(sony_news) && defined(__svr4)) */
@@ -103,44 +108,63 @@ Index: doc/op/op.me
 Index: sendmail/conf.c
 ===================================================================
 --- sendmail/conf.c	2005-04-25 11:32:20.000000000 -0400
-+++ sendmail/conf.c	2005-08-23 13:17:07.000000000 -0400
-@@ -4180,6 +4180,10 @@
- **	Support IPv6 as well as IPv4.
- */
++++ sendmail/conf.c	2006-02-09 11:02:20.000000000 -0500
+@@ -4169,6 +4169,45 @@
+ }
  
+ #endif /* NEEDSTRSTR */
++
 +#if SUPPORT_DNSSEC
 +# include <validator.h>
 +#endif
 +
- #if NETINET6 && NEEDSGETIPNODE
- 
- # ifndef AI_DEFAULT
-@@ -4212,7 +4216,24 @@
++/*
++**  SM_VAL_GETHOSTBYNAME -- wrapper for gethostbyname with support for
++**                          DNSSEC validation
++**
++**      Parameters:
++**              name -- a host name, or an IPv4 address in standard dot
++**                      notation, or an IPv6 address in colon (and possibly
++**                      dot) notation.
++**
++**      Returns:
++**              NULL, if there was an error
++**              A non-NULL value of type struct hostent*, if no error occurs
++**
++*/
++
++static struct hostent *
++sm_val_gethostbyname(name)
++        char *name;
++{
++	struct hostent *h;
++
++#if SUPPORT_DNSSEC
++	int dnssec_status = INTERNAL_ERROR;
++	h = val_gethostbyname(NULL, name, &dnssec_status);
++	if (RequireDNSSEC && (dnssec_status != VALIDATE_SUCCESS)) {
++		h = NULL;
++	}
++#else /* SUPPORT_DNSSEC */
++	h = gethostbyname(name);
++#endif /* SUPPORT_DNSSEC */
++
++	return h;
++}
++
+ /*
+ **  SM_GETHOSTBY{NAME,ADDR} -- compatibility routines for gethostbyXXX
+ **
+@@ -4212,7 +4251,7 @@
  		_res.options |= RES_USE_INET6;
  	}
  	SM_SET_H_ERRNO(0);
-+# if SUPPORT_DNSSEC
-+	{
-+	    int dnssec_status = INTERNAL_ERROR;
-+	    int val_h_errno = NETDB_INTERNAL;
-+	    h = val_gethostbyname(name, &val_h_errno);
-+	    h_errno = val_h_errno;
-+	    if (h) {
-+		dnssec_status = val_get_hostent_dnssec_status(h);
-+	    }
-+	    if (RequireDNSSEC && dnssec_status != VALIDATE_SUCCESS) {
-+		    if (h)
-+			    val_freehostent(h);
-+		    h = NULL;
-+	    }
-+	}
-+# else
- 	h = gethostbyname(name);
-+# endif
+-	h = gethostbyname(name);
++	h = sm_val_gethostbyname(name);
  	if (!resv6)
  		_res.options &= ~RES_USE_INET6;
  	*err = h_errno;
-@@ -4233,7 +4254,9 @@
+@@ -4233,7 +4272,9 @@
  	*err = h_errno;
  	return h;
  }
@@ -150,13 +174,8 @@ Index: sendmail/conf.c
  void
  freehostent(h)
  	struct hostent *h;
-@@ -4243,9 +4266,12 @@
- 	**  they probably don't have the free routine either.
- 	*/
+@@ -4245,7 +4286,7 @@
  
-+# if SUPPORT_DNSSEC
-+	val_freehostent(h);
-+# endif
  	return;
  }
 -#endif /* NETINET6 && NEEDSGETIPNODE */
@@ -164,57 +183,25 @@ Index: sendmail/conf.c
  
  struct hostent *
  sm_gethostbyname(name, family)
-@@ -4292,7 +4318,24 @@
+@@ -4292,7 +4333,7 @@
  	h = getipnodebyname(name, family, flags, &err);
  	SM_SET_H_ERRNO(err);
  # else /* NETINET6 */
-+#  if SUPPORT_DNSSEC
-+	{
-+	    int dnssec_status = INTERNAL_ERROR;
-+	    int val_h_errno = NETDB_INTERNAL;
-+	    h = val_gethostbyname(name, &val_h_errno);
-+	    h_errno = val_h_errno;
-+	    if (h) {
-+		dnssec_status = val_get_hostent_dnssec_status(h);
-+	    }
-+	    if (RequireDNSSEC && dnssec_status != VALIDATE_SUCCESS) {
-+		    if (h)
-+			    val_freehostent(h);
-+		    h = NULL;
-+	    }
-+	}
-+#  else /* SUPPORT_DNSSEC */
- 	h = gethostbyname(name);
-+#  endif /* SUPPORT_DNSSEC */
+-	h = gethostbyname(name);
++	h = sm_val_gethostbyname(name);
  # endif /* NETINET6 */
  
  	save_errno = errno;
-@@ -4332,7 +4375,24 @@
+@@ -4332,7 +4373,7 @@
  				SM_SET_H_ERRNO(err);
  				save_errno = errno;
  # else /* NETINET6 */
-+#  if SUPPORT_DNSSEC
-+				{
-+				    int dnssec_status = INTERNAL_ERROR;
-+				    int val_h_errno = NETDB_INTERNAL;
-+				    h = val_gethostbyname(hbuf, &val_h_errno);
-+				    h_errno = val_h_errno;
-+				    if (h) {
-+					dnssec_status = val_get_hostent_dnssec_status(h);
-+				    }
-+				    if (RequireDNSSEC && dnssec_status != VALIDATE_SUCCESS) {
-+					    if (h)
-+						    val_freehostent(h);
-+					    h = NULL;
-+				    }
-+				}
-+#  else /* SUPPORT_DNSSEC */
- 				h = gethostbyname(hbuf);
-+#  endif /* SUPPORT_DNSSEC */
+-				h = gethostbyname(hbuf);
++				h = sm_val_gethostbyname(hbuf);
  				save_errno = errno;
  # endif /* NETINET6 */
  			}
-@@ -4638,7 +4698,7 @@
+@@ -4638,7 +4679,7 @@
  					*ha);
  		}
  	}
@@ -258,7 +245,7 @@ Index: sendmail/readcf.c
 Index: sendmail/domain.c
 ===================================================================
 --- sendmail/domain.c	2005-06-03 15:09:51.000000000 -0400
-+++ sendmail/domain.c	2005-08-23 13:16:58.000000000 -0400
++++ sendmail/domain.c	2006-02-09 11:02:53.000000000 -0500
 @@ -23,6 +23,9 @@
  
  # include <arpa/inet.h>
@@ -269,40 +256,53 @@ Index: sendmail/domain.c
  
  /*
  **  The standard udp packet size PACKETSZ (512) is not sufficient for some
-@@ -268,8 +271,40 @@
+@@ -268,8 +271,53 @@
  		resfunc = res_search;
  
  	errno = 0;
 +
 +# if SUPPORT_DNSSEC
 +	/* perform DNSSEC Validation of the answer */
++	do
 +	{
-+	    char dname[MAXDNAME];
-+	    bzero(dname, MAXDNAME);
-+	    strncpy(dname, host, MAXDNAME);
-+	    getcanonname(dname, MAXDNAME, true, NULL);
-+	    int dnssec_status = INTERNAL_ERROR;
++		char dname[MAXDNAME];
++		int dnssec_status = INTERNAL_ERROR;
++		struct val_response resp[1];
++		int resp_length = 1;
 +	    
-+	    if (tTd(8, 2))
-+		sm_dprintf("getmxrr(24): performing dnssec validation query.\n");
-+	    
-+	    n = val_query (dname, C_IN, T_MX, (unsigned char *) &answer, sizeof (answer),
-+			   0, &dnssec_status);
++		bzero(dname, MAXDNAME);
++		strncpy(dname, host, MAXDNAME);
++		getcanonname(dname, MAXDNAME, true, NULL);
++		resp[0].response = (unsigned char *) &answer;
++		resp[0].response_length = sizeof answer;
 +
-+	    if (RequireDNSSEC) {
-+		if (dnssec_status == VALIDATE_SUCCESS) {
-+		    if (tTd(8, 2))
-+			sm_dprintf("getmxrr: DNSSEC validation of MX record of %s succeeded.\n", dname);
++		if (tTd(8, 2))
++			sm_dprintf("getmxrr(24): performing dnssec validation query.\n");
++		
++		n = val_query (NULL, dname, C_IN, T_MX, VAL_QUERY_MERGE_RRSETS, resp, &resp_length);
++
++		if (n == 0) {
++			dnssec_status = resp[0].val_status;
++			n = resp[0].response_length;
++		
++			if (RequireDNSSEC) {
++				if (dnssec_status == VALIDATE_SUCCESS) {
++					if (tTd(8, 2))
++						sm_dprintf("getmxrr: DNSSEC validation of MX record of %s succeeded.\n", dname);
++				}
++				else {
++					if (tTd(8, 1))
++						sm_dprintf("getmxrr: DNSSEC validation of MX record of %s failed.\n", dname);
++					syserr("Error: DNSSEC validation of MX record of %s failed.\n", dname);
++					*rcode = EX_NOHOST;
++					return -1;
++				}
++			}
 +		}
 +		else {
-+		    if (tTd(8, 1))
-+			sm_dprintf("getmxrr: DNSSEC validation of MX record of %s failed.\n", dname);
-+		    syserr("Error: DNSSEC validation of MX record of %s failed.\n", dname);
-+		    *rcode = EX_NOHOST;
-+		    return -1;
++			n = -(abs(n));
 +		}
-+	    }
-+	}
++	} while (0);
 +# else /* SUPPORT_DNSSEC */
  	n = (*resfunc)(host, C_IN, T_MX, (unsigned char *) &answer,
  		       sizeof(answer));
@@ -310,7 +310,7 @@ Index: sendmail/domain.c
  	if (n < 0)
  	{
  		if (tTd(8, 1))
-@@ -517,10 +552,10 @@
+@@ -517,10 +565,10 @@
  				       host, MyHostName);
  				return -1;
  			}
@@ -323,51 +323,62 @@ Index: sendmail/domain.c
  		}
  		if (strlen(host) >= sizeof MXHostBuf)
  		{
-@@ -895,8 +930,51 @@
+@@ -895,8 +943,62 @@
  				qtype == T_MX ? "MX" :
  				"???");
  		errno = 0;
 +# if SUPPORT_DNSSEC
++		do
 +		{
-+		    char dname[MAXDNAME];
-+		    int dnssec_status = INTERNAL_ERROR;
++			char dname[MAXDNAME];
++			int dnssec_status = INTERNAL_ERROR;
++			struct val_response resp[1];
++			int resp_length = 1;
++			
++			bzero(dname, MAXDNAME);
++			memcpy(dname, host, strlen(host));
++			memcpy(dname + strlen(host), ".", 1);
++			memcpy(dname + strlen(host) + 1, *dp, strlen(*dp));
 +
-+		    bzero(dname, MAXDNAME);
-+		    memcpy(dname, host, strlen(host));
-+		    memcpy(dname + strlen(host), ".", 1);
-+		    memcpy(dname + strlen(host) + 1, *dp, strlen(*dp));
++			if (tTd(8, 5))
++				sm_dprintf("dns_getcanonname(938): performing dnssec validation query.\n");
++			
++			resp[0].response = (unsigned char *) &answer;
++			resp[0].response_length = sizeof answer;
++			ret = val_query (NULL, dname, C_IN, qtype, VAL_QUERY_MERGE_RRSETS, resp, &resp_length);
 +
-+		    if (tTd(8, 5))
-+			sm_dprintf("dns_getcanonname(938): performing dnssec validation query.\n");
-+	    
-+		    ret = val_query (dname, C_IN, qtype,
-+				     answer.qb2, sizeof(answer.qb2), 0,
-+				     &dnssec_status);
++			if (ret == 0) {
++				dnssec_status = resp[0].val_status;
++				ret = resp[0].response_length;
 +
-+		    if (RequireDNSSEC) {
-+			if (dnssec_status == VALIDATE_SUCCESS) {
-+			    if (tTd(8, 2))
-+				sm_dprintf("DNSSEC validation of %s succeeded.\n",
-+					   dname);
++				if (RequireDNSSEC) {
++					if (dnssec_status == VALIDATE_SUCCESS) {
++						if (tTd(8, 2))
++							sm_dprintf("DNSSEC validation of %s succeeded.\n",
++								   dname);
++					}
++					else {
++						if (tTd(8, 7))
++							sm_dprintf("\tNO: errno=%d, h_errno=%d\n",
++								   errno, h_errno);
++						
++						if (tTd(8, 5))
++							sm_dprintf("DNSSEC validation of %s (%s) failed.\n",
++								   dname,
++#  if NETINET6
++								   qtype == T_AAAA ? "AAAA" :
++#  endif /* NETINET6 */
++								   qtype == T_A ? "A" :
++								   qtype == T_MX ? "MX" :
++								   "???");
++						goto nexttype;
++					}
++				}
 +			}
 +			else {
-+			    if (tTd(8, 7))
-+				sm_dprintf("\tNO: errno=%d, h_errno=%d\n",
-+					   errno, h_errno);
-+			    
-+			    if (tTd(8, 5))
-+				sm_dprintf("DNSSEC validation of %s (%s) failed.\n",
-+					   dname,
-+#  if NETINET6
-+					   qtype == T_AAAA ? "AAAA" :
-+#  endif /* NETINET6 */
-+					   qtype == T_A ? "A" :
-+					   qtype == T_MX ? "MX" :
-+					   "???");
-+			    goto nexttype;
++				ret = -(abs(ret));
 +			}
-+		    }
-+		}
++		} while (0);
 +# else /* SUPPORT_DNSSEC */
  		ret = res_querydomain(host, *dp, C_IN, qtype,
  				      answer.qb2, sizeof(answer.qb2));
@@ -378,7 +389,7 @@ Index: sendmail/domain.c
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2005-02-25 10:55:24.000000000 -0500
-+++ sendmail/sm_resolve.c	2005-08-23 13:17:38.000000000 -0400
++++ sendmail/sm_resolve.c	2006-02-09 11:03:26.000000000 -0500
 @@ -70,6 +70,10 @@
  	{	NULL,		0		}
  };
@@ -390,7 +401,7 @@ Index: sendmail/sm_resolve.c
  static DNS_REPLY_T *parse_dns_reply __P((unsigned char *, int));
  
  /*
-@@ -409,7 +413,41 @@
+@@ -409,7 +413,53 @@
  	}
  	errno = 0;
  	SM_SET_H_ERRNO(0);
@@ -399,32 +410,44 @@ Index: sendmail/sm_resolve.c
 +	if (tTd(8, 16))
 +	    sm_dprintf("dns_lookup_int(%s, %d, %s): ",
 +		       domain, rr_class, dns_type_to_string(rr_type));
++	do
 +	{
-+	    char dname[MAXDNAME];
-+	    int dnssec_status = INTERNAL_ERROR;
-+
-+	    bzero(dname, MAXDNAME);
-+	    strncpy(dname, domain, MAXDNAME);
-+	    getcanonname(dname, MAXDNAME, true, NULL);
-+
-+	    if (tTd(8, 16))
-+		sm_dprintf("dns_lookup_int(): performing dnssec validation query.\n");
-+
-+	    len = val_query(dname, rr_class, rr_type, reply, sizeof reply, 0,
-+			    &dnssec_status);
-+
-+	    if (RequireDNSSEC) {
-+		if (dnssec_status == VALIDATE_SUCCESS) {
-+		    if (tTd(8, 2))
-+			sm_dprintf("\t\tdnssec validation of %s succeeded.\n", domain);
++		char dname[MAXDNAME];
++		struct val_response resp[1];
++		int resp_length = 1;
++		int dnssec_status = INTERNAL_ERROR;
++		resp[0].response = reply;
++		resp[0].response_length = sizeof reply;
++		
++		bzero(dname, MAXDNAME);
++		strncpy(dname, domain, MAXDNAME);
++		getcanonname(dname, MAXDNAME, true, NULL);
++		
++		if (tTd(8, 16))
++			sm_dprintf("dns_lookup_int(): performing dnssec validation query.\n");
++		
++		len = val_query(NULL, dname, rr_class, rr_type, VAL_QUERY_MERGE_RRSETS, resp, &resp_length);
++		
++		if (len == 0) {
++			dnssec_status = resp[0].val_status;
++			len = resp[0].response_length;
++			
++			if (RequireDNSSEC) {
++				if (dnssec_status == VALIDATE_SUCCESS) {
++					if (tTd(8, 2))
++						sm_dprintf("\t\tdnssec validation of %s succeeded.\n", domain);
++				}
++				else {
++					if (tTd(8, 1))
++						sm_dprintf("\t\tdnssec validation of %s failed.\n", domain);
++					return NULL;
++				}
++			}
 +		}
 +		else {
-+		    if (tTd(8, 1))
-+			sm_dprintf("\t\tdnssec validation of %s failed.\n", domain);
-+		    return NULL;
++			len = -(abs(len));
 +		}
-+	    }
-+	}
++	} while (0);
 +#  else /* SUPPORT_DNSSEC */
  	len = res_search(domain, rr_class, rr_type, reply, sizeof reply);
 +#  endif /* SUPPORT_DNSSEC */
