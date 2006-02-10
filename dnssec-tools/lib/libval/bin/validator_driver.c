@@ -274,7 +274,7 @@ static const struct testcase_st testcases[] = {
 
 // A wrapper function to send a query and print the output onto stderr
 //
-void sendquery(const char *desc, const char *name, const u_int16_t class, const u_int16_t type, const int result_ar[])
+void sendquery(const char *desc, const char *name, const u_int16_t class, const u_int16_t type, const int result_ar[], int trusted_only)
 {
 	int ret_val;
     struct query_chain *queries = NULL;
@@ -313,6 +313,7 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
 
 	if (ret_val == NO_ERROR) {
 		for (res=results; res; res=res->next) {
+
 			for(i=0; result_array[i]!=0; i++) {
 				if(res->status == result_array[i]) {
 					/* Mark this as done */
@@ -321,14 +322,24 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
 				}
 			}
 			if (result_array[i]==0) {
-				fprintf(stderr, "FAILED: Remaining error values expected\n"); 
-				for(i=0; result_array[i]!=0; i++) {
-					if(result_array[i]!=-1)
-						fprintf(stderr, "     %s(%d)\n", p_val_error(result_array[i]), result_array[i]);	
+				if (trusted_only) {
+					if (val_istrusted(res->status)) {
+						continue;
+					}
+					else {
+						err = 1;
+					}
 				}
-				fprintf(stderr, "\n");
-				val_log_assertion_chain(context, LOG_INFO, name_n, class, type, queries, results);
-				err = 1;
+				else {
+					fprintf(stderr, "FAILED: Remaining error values expected\n"); 
+					for(i=0; result_array[i]!=0; i++) {
+						if(result_array[i]!=-1)
+							fprintf(stderr, "     %s(%d)\n", p_val_error(result_array[i]), result_array[i]);	
+					}
+					fprintf(stderr, "\n");
+					val_log_assertion_chain(context, LOG_INFO, name_n, class, type, queries, results);
+					err = 1;
+				}
 			}
 		}
 
@@ -349,6 +360,11 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
 				val_log_assertion_chain(context, LOG_INFO, name_n, class, type, queries, results);
 			}
 		}
+		else if (trusted_only) {
+			fprintf(stderr, "FAILED: Some results were not validated successfully \n");
+			val_log_assertion_chain(context, LOG_INFO, name_n, class, type, queries, results);
+		}
+			
 	}
 	else {
 		printf ("FAILED: Error in resolve_n_check(): %d\n", ret_val);
@@ -386,7 +402,7 @@ int main(int argc, char *argv[])
 		// Run the set of pre-defined test cases
 		int i;
 		for (i= 0 ; testcases[i].desc != NULL; i++) {
-			sendquery(testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr);
+			sendquery(testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
 			fprintf(stderr, "\n");
 		}
 	}
@@ -401,7 +417,7 @@ int main(int argc, char *argv[])
 		int success       = 0;
 		int doprint       = 0;
 		u_int8_t flags    = (u_int8_t) 0;
-		int retvals[]     = {VALIDATE_SUCCESS, 0};
+		int retvals[]     = {0};
 
 		while (1) {
 			int opt_index     = 0;
@@ -452,8 +468,7 @@ int main(int argc, char *argv[])
 		// optind is a global variable.  See man page for getopt_long(3)
 		if (optind < argc) {
 			domain_name = argv[optind++];
-			sendquery("Result", domain_name, class_h, type_h,
-				  retvals);
+			sendquery("Result", domain_name, class_h, type_h, retvals, 1);
 			fprintf(stderr, "\n");
 
 			// If the print option is present, perform query and validation again for printing the result
