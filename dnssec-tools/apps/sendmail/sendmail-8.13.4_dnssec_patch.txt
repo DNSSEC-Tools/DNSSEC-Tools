@@ -9,7 +9,7 @@ Index: devtools/Site/site.config.m4
 Index: libmilter/sm_gethost.c
 ===================================================================
 --- libmilter/sm_gethost.c	2004-08-20 17:12:37.000000000 -0400
-+++ libmilter/sm_gethost.c	2006-02-09 10:55:57.000000000 -0500
++++ libmilter/sm_gethost.c	2006-02-09 23:07:37.000000000 -0500
 @@ -17,6 +17,43 @@
  #endif /* NETINET || NETINET6 */
  #include "libmilter.h"
@@ -41,7 +41,7 @@ Index: libmilter/sm_gethost.c
 +#if SUPPORT_DNSSEC
 +	int dnssec_status = INTERNAL_ERROR;
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
-+	if (RequireDNSSEC && (dnssec_status != VALIDATE_SUCCESS)) {
++	if (RequireDNSSEC && !val_istrusted(dnssec_status)) {
 +		h = NULL;
 +	}
 +#else /* SUPPORT_DNSSEC */
@@ -108,7 +108,7 @@ Index: doc/op/op.me
 Index: sendmail/conf.c
 ===================================================================
 --- sendmail/conf.c	2005-06-24 13:20:14.000000000 -0400
-+++ sendmail/conf.c	2006-02-09 10:51:32.000000000 -0500
++++ sendmail/conf.c	2006-02-09 23:07:59.000000000 -0500
 @@ -4180,6 +4180,45 @@
  }
  
@@ -142,7 +142,7 @@ Index: sendmail/conf.c
 +#if SUPPORT_DNSSEC
 +	int dnssec_status = INTERNAL_ERROR;
 +	h = val_gethostbyname(NULL, name, &dnssec_status);
-+	if (RequireDNSSEC && (dnssec_status != VALIDATE_SUCCESS)) {
++	if (RequireDNSSEC && !val_istrusted(dnssec_status)) {
 +		h = NULL;
 +	}
 +#else /* SUPPORT_DNSSEC */
@@ -249,7 +249,7 @@ Index: sendmail/readcf.c
 Index: sendmail/domain.c
 ===================================================================
 --- sendmail/domain.c	2005-03-03 19:54:42.000000000 -0500
-+++ sendmail/domain.c	2006-02-09 10:48:55.000000000 -0500
++++ sendmail/domain.c	2006-02-09 23:07:46.000000000 -0500
 @@ -23,6 +23,9 @@
  
  # include <arpa/inet.h>
@@ -397,7 +397,7 @@ Index: sendmail/domain.c
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2004-08-04 17:17:57.000000000 -0400
-+++ sendmail/sm_resolve.c	2006-02-09 10:37:59.000000000 -0500
++++ sendmail/sm_resolve.c	2006-02-09 23:07:41.000000000 -0500
 @@ -70,6 +70,10 @@
  	{	NULL,		0		}
  };
