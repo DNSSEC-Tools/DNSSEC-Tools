@@ -85,6 +85,7 @@ BuildRequires:  freetype-devel >= 2.1.9
 #Requires:       nspr >= %{nspr_version}
 #Requires:       nss >= %{nss_version}
 Requires:       desktop-file-utils >= %{desktop_file_utils_version}
+Requires:       dnssec-tools = 0.9
 Obsoletes:      phoenix, mozilla-firebird, MozillaFirebird
 Provides:       mozilla-firebird = %{epoch}:%{version}, MozillaFirebird = %{epoch}:%{version}
 Provides:       webclient
