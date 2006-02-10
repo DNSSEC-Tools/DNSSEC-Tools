@@ -72,7 +72,7 @@ Index: configure.ac
 Index: spfmilter.c
 ===================================================================
 --- spfmilter.c	2005-06-24 15:27:36.000000000 -0400
-+++ spfmilter.c	2005-06-24 15:53:15.000000000 -0400
++++ spfmilter.c	2006-02-09 22:36:21.000000000 -0500
 @@ -97,6 +97,11 @@
  #define SPFMILTER_ACTION_MARK 2
  #define SPFMILTER_ACTION_TEMPFAIL 3
@@ -357,13 +357,13 @@ Index: spfmilter.c
 -	case SPF_RESULT_NONE: return SPFMILTER_RESULT_NONE;
 -	default: return -1;
 -	}
-+	case SPF_RESULT_PASS: retval = SPFMILTER_RESULT_PASS;
-+	case SPF_RESULT_FAIL: retval = SPFMILTER_RESULT_FAIL;
-+	case SPF_RESULT_SOFTFAIL: retval = SPFMILTER_RESULT_SOFTFAIL;
-+	case SPF_RESULT_NEUTRAL: retval = SPFMILTER_RESULT_NEUTRAL;
-+	case SPF_RESULT_UNKNOWN: retval = SPFMILTER_RESULT_UNKNOWN;
-+	case SPF_RESULT_ERROR: retval = SPFMILTER_RESULT_ERROR;
-+	case SPF_RESULT_NONE: retval = SPFMILTER_RESULT_NONE;
++	case SPF_RESULT_PASS: retval = SPFMILTER_RESULT_PASS; break;
++	case SPF_RESULT_FAIL: retval = SPFMILTER_RESULT_FAIL; break;
++	case SPF_RESULT_SOFTFAIL: retval = SPFMILTER_RESULT_SOFTFAIL; break;
++	case SPF_RESULT_NEUTRAL: retval = SPFMILTER_RESULT_NEUTRAL; break;
++	case SPF_RESULT_UNKNOWN: retval = SPFMILTER_RESULT_UNKNOWN; break;
++	case SPF_RESULT_ERROR: retval = SPFMILTER_RESULT_ERROR; break;
++	case SPF_RESULT_NONE: retval = SPFMILTER_RESULT_NONE; break;
 +	default: retval = -1;
 +	}
 +
