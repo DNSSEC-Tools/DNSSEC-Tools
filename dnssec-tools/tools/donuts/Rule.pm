@@ -154,10 +154,11 @@ with it.  The rule file format follows this example:
 
   name: rulename
   class: Warning
-  test:
+  <test>
     my ($record) = @_;
     return "problem found"
       if ($record{xxx} != yyy);
+  </test>
 
 Further details about each section can be found below.  Besides the
 tokens below, other rule-specific data can be stored in also tokens
@@ -350,6 +351,41 @@ Examples:
 
 The feature tag prevents this rule from running unless the B<NAME>
 keyword was specified using the I<--features> flag.
+
+=item I<desc:> B<DESCRIPTION>
+
+A short description of what the rule tests that will be printed to the
+user in help output or in the error summary when donuts outputs the
+results.
+
+=item I<help:> B<TOKEN:> B<TOKEN-HELP>
+
+If the rule is configurable via the user's .donuts.conf file, this
+describes the configuration tokens for the user when they request
+configuration help via the -H or --help-config flags.  Tokens may be
+used within rules by accessing them within the rule argument passed to
+the code (the second argument).
+
+Example:
+
+  1) in the rule file (this is an incomplete definition):
+
+     name:           SOME_TEST
+     myconfig:       40
+     help: myconfig: A special number to configure this test
+     <test>
+      my ($record, $rule) = @_;
+      # ... use $rule->{'myconfig'}
+     </test>
+
+  2) This allows the user to change the value of myconfig via their
+     .donuts.conf file:
+
+     # change SOME_TEST config...
+     name:     SOME_TEST
+     myconfig: 40
+
+  3) and running donuts -H will show the help line for myconfig.
 
 =item I<noindent: 1>
 
