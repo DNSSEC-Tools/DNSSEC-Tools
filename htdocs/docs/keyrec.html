@@ -21,13 +21,16 @@
 		<li><a href="#keyrec_add_keyrec_type_keyrec_name_fields_"><strong>keyrec_add(keyrec_type,keyrec_name,fields)</strong></a></li>
 		<li><a href="#keyrec_del_keyrec_name_"><strong>keyrec_del(keyrec_name)</strong></a></li>
 		<li><a href="#keyrec_close__"><strong>keyrec_close()</strong></a></li>
+		<li><a href="#keyrec_creat_keyrec_file_"><strong>keyrec_creat(keyrec_file)</strong></a></li>
 		<li><a href="#keyrec_discard__"><strong>keyrec_discard()</strong></a></li>
 		<li><a href="#keyrec_fullrec_keyrec_name_"><strong>keyrec_fullrec(keyrec_name)</strong></a></li>
 		<li><a href="#keyrec_keyfields__"><strong>keyrec_keyfields()</strong></a></li>
 		<li><a href="#keyrec_names__"><strong>keyrec_names()</strong></a></li>
+		<li><a href="#keyrec_open_keyrec_file_"><strong>keyrec_open(keyrec_file)</strong></a></li>
 		<li><a href="#keyrec_read_keyrec_file_"><strong>keyrec_read(keyrec_file)</strong></a></li>
 		<li><a href="#keyrec_recval_keyrec_name_keyrec_field_"><strong>keyrec_recval(keyrec_name,keyrec_field)</strong></a></li>
 		<li><a href="#keyrec_setval_keyrec_type_keyrec_name_field_value_"><strong>keyrec_setval(keyrec_type,keyrec_name,field,value)</strong></a></li>
+		<li><a href="#keyrec_settime_keyrec_type_keyrec_name_"><strong>keyrec_settime(keyrec_type,keyrec_name)</strong></a></li>
 		<li><a href="#keyrec_write__"><strong>keyrec_write()</strong></a></li>
 		<li><a href="#keyrec_zonefields__"><strong>keyrec_zonefields()</strong></a></li>
 	</ul>
@@ -65,6 +68,8 @@
 <pre>
   use Net::DNS::SEC::Tools::keyrec;</pre>
 <pre>
+  keyrec_creat(&quot;localzone.keyrec&quot;);
+  keyrec_open(&quot;localzone.keyrec&quot;);
   keyrec_read(&quot;localzone.keyrec&quot;);</pre>
 <pre>
   @krnames = keyrec_names();</pre>
@@ -82,6 +87,9 @@
   keyrec_del(&quot;Kexample.com.+005+12345&quot;);</pre>
 <pre>
   keyrec_setval(&quot;zone&quot;,&quot;example.com&quot;,&quot;zonefile&quot;,&quot;db.example.com&quot;);</pre>
+<pre>
+  keyrec_settime(&quot;zone&quot;,&quot;example.com&quot;);
+  keyrec_settime(&quot;key&quot;,&quot;Kexample.com.+005+23456&quot;);</pre>
 <pre>
   @keyfields = keyrec_keyfields();
   @zonefields = keyrec_zonefields();</pre>
@@ -112,15 +120,19 @@ following is an example of a key <em>keyrec</em>:</p>
           zsklength       &quot;512&quot;
           keyrec_gensecs  &quot;1101183727&quot;
           keyrec_gendate  &quot;Tue Nov 23 04:22:07 2004&quot;</pre>
-<p>The first step in using this module <strong>must</strong> be to read the <em>keyrec</em>
-file.  The <em>keyrec_read()</em> interface reads the file and parses it
-into an internal format.  The file's records are copied into a hash
-table (for easy reference by the <strong>Net::DNS::SEC::Tools::keyrec</strong>
-routines) and in an array (for preserving formatting and comments.)</p>
+<p>The first step in using this module <strong>must</strong> be to create a new <em>keyrec</em>
+file or open and read an existing one.  The <strong>keyrec_creat()</strong> interface creates
+a <em>keyrec</em> file if it does not exist and opens it.  The <strong>keyrec_open()</strong>
+interface opens an existing <em>keyrec</em> file.  The <strong>keyrec_read()</strong> interface
+reads the file and parses it into an internal format. The file's
+records are copied into a hash table (for easy reference by the
+<strong>Net::DNS::SEC::Tools::keyrec</strong> routines) and in an array (for
+preserving formatting and comments.)</p>
 <p>After the file has been read, the contents are referenced using
 <strong>keyrec_fullrec()</strong> and <strong>keyrec_recval()</strong>.  The contents are modified
-using <strong>keyrec_add()</strong> and <strong>keyrec_setval()</strong>.  <em>keyrec</em>s may be deleted
-with the <strong>keyrec_del()</strong> interface.</p>
+using <strong>keyrec_add()</strong> and <strong>keyrec_setval()</strong>.  <strong>keyrec_settime()</strong> will
+update a <em>keyrec</em>'s timestamp to the current time.  <em>keyrec</em>s may be
+deleted with the <strong>keyrec_del()</strong> interface.</p>
 <p>If the <em>keyrec</em> file has been modified, it must be explicitly written or the
 changes are not saved.  <strong>keyrec_write()</strong> saves the new contents to disk.
 <strong>keyrec_close()</strong> saves the file and close the Perl file handle to the
@@ -143,8 +155,10 @@ representation of the file contents.  The <em>keyrec</em> is added to both the
 hash table that contains the name/value <em>keyrec</em> fields.  The keys of the
 hash table are always converted to lowercase, but the entry values are left
 as given.</p>
-<p>The <em>ksklength</em> entry is only added if <em>keyrec_type</em> is ``ksk''.</p>
-<p>The <em>zsklength</em> entry is only added if <em>keyrec_type</em> is ``zsk''.</p>
+<p>The <em>ksklength</em> entry is only added if the value of the <em>keyrec_type</em>
+field is ``ksk''.</p>
+<p>The <em>zsklength</em> entry is only added if the value of the <em>keyrec_type</em>
+field is ``zsk'', ``zskcur'', ``zskpub'', or ``zsknew''.</p>
 <p>Timestamp fields are added at the end of the <em>keyrec</em>.  For key <em>keyrec</em>s,
 the <em>keyrec_gensecs</em> and <em>keyrec_gendate</em> timestamp fields are added.  For
 zone <em>keyrec</em>s, the <em>keyrec_signsecs</em> and <em>keyrec_signdate</em> timestamp
@@ -174,7 +188,14 @@ and blank lines surrounding it are left intact.</p>
 </p>
 <h2><a name="keyrec_close__"><strong>keyrec_close()</strong></a></h2>
 <p>This interface saves the internal version of the <em>keyrec</em> file (opened with
-<strong>keyrec_read()</strong>) and closes the file handle.</p>
+<strong>keyrec_creat</strong>, <strong>keyrec_open</strong> or <strong>keyrec_read()</strong>) and closes the file handle.</p>
+<p>
+</p>
+<h2><a name="keyrec_creat_keyrec_file_"><strong>keyrec_creat(keyrec_file)</strong></a></h2>
+<p>This interface creates a <em>keyrec</em> file if it does not exist, and truncates
+the file if it already exists.  It leaves the file in the open state.</p>
+<p><strong>keyrec_creat()</strong> returns 1 if the file was created successfully.
+It returns 0 if there was an error in creating the file.</p>
 <p>
 </p>
 <h2><a name="keyrec_discard__"><strong>keyrec_discard()</strong></a></h2>
@@ -197,7 +218,15 @@ and new data will be lost.</p>
 <p>This routine returns a list of the <em>keyrec</em> names from the file.</p>
 <p>
 </p>
+<h2><a name="keyrec_open_keyrec_file_"><strong>keyrec_open(keyrec_file)</strong></a></h2>
+<p>This interface opens an existing <em>keyrec</em> file.</p>
+<p><strong>keyrec_open()</strong> returns 1 if the file was opened successfully.  It returns 0
+if the file does not exists or if there was an error in opening the file.</p>
+<p>
+</p>
 <h2><a name="keyrec_read_keyrec_file_"><strong>keyrec_read(keyrec_file)</strong></a></h2>
+<pre>
+    -1 unable to create I&lt;keyrec&gt; file</pre>
 <p>This interface reads the specified <em>keyrec</em> file and parses it into a
 <em>keyrec</em> hash table and a file contents array.  <strong>keyrec_read()</strong> <strong>must</strong> be
 called prior to any of the other <strong>Net::DNS::SEC::Tools::keyrec</strong> calls.  If
@@ -241,12 +270,19 @@ new <em>keyrec</em> is being created by this call.
     -1 invalid type was given</pre>
 <p>
 </p>
+<h2><a name="keyrec_settime_keyrec_type_keyrec_name_"><strong>keyrec_settime(keyrec_type,keyrec_name)</strong></a></h2>
+<p>Set the timestamp of a specified <em>keyrec</em>.  The file is <strong>not</strong> written
+after updating the value.  The value is saved in both <em>%keyrecs</em> and in
+<em>@keyreclines</em>, and the file-modified flag is set.  The <em>keyrec</em>'s
+<em>keyrec_signdate</em> and <em>keyrec_signsecs</em> fields are modified.</p>
+<p>
+</p>
 <h2><a name="keyrec_write__"><strong>keyrec_write()</strong></a></h2>
 <p>This interface saves the internal version of the <em>keyrec</em> file (opened with
-<strong>keyrec_read()</strong>).  It does not close the file handle.  As an efficiency
-measure, an internal modification flag is checked prior to writing the file.
-If the program has not modified the contents of the <em>keyrec</em> file, it is not
-rewritten.</p>
+<strong>keyrec_creat()</strong>, <strong>keyrec_open()</strong> or <strong>keyrec_read()</strong>).  It does not close
+the file handle.  As an efficiency measure, an internal modification flag is
+checked prior to writing the file.  If the program has not modified the
+contents of the <em>keyrec</em> file, it is not rewritten.</p>
 <p>
 </p>
 <h2><a name="keyrec_zonefields__"><strong>keyrec_zonefields()</strong></a></h2>

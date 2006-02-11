@@ -1,0 +1,105 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Net::DNS::SEC::Tools::timetrans - Convert an integer seconds count into text units.</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#examples">EXAMPLES</a></li>
+	<li><a href="#interfaces">INTERFACES</a></li>
+	<ul>
+
+		<li><a href="#timetrans__"><strong>timetrans()</strong></a></li>
+	</ul>
+
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>Net::DNS::SEC::Tools::timetrans - Convert an integer seconds count into text units.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  use Net::DNS::SEC::Tools::timetrans;</pre>
+<pre>
+  $timestring = timetrans(86488);</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <strong>timetrans</strong>() interface in the <strong>Net::DNS::SEC::Tools::timetrans</strong>
+converts an integer seconds count into the equivalent number of weeks,
+days, hours, and minutes.  The time converted is a relative time, <strong>not</strong>
+an absolute time.  The returned time is given in terms of weeks, days, hours,
+minutes, and seconds, as required to express the seconds count appropriately.</p>
+<p>
+</p>
+<hr />
+<h1><a name="examples">EXAMPLES</a></h1>
+<p><strong>timetrans(400)</strong> returns <em>6 minutes, 40 seconds</em></p>
+<p><strong>timetrans(420)</strong> returns <em>7 minutes</em></p>
+<p><strong>timetrans(888)</strong> returns <em>14 minutes, 48 seconds</em></p>
+<p><strong>timetrans(86400)</strong> returns <em>1 day</em></p>
+<p><strong>timetrans(86488)</strong> returns <em>1 day, 28 seconds</em></p>
+<p><strong>timetrans(715000)</strong> returns <em>1 week, 1 day, 6 hours, 36 minutes, 40 second</em></p>
+<p><strong>timetrans(720000)</strong> returns <em>1 week, 1 day, 8 hours</em></p>
+<p>
+</p>
+<hr />
+<h1><a name="interfaces">INTERFACES</a></h1>
+<p>The interfaces to the <strong>Net::DNS::SEC::Tools::timetrans</strong> module are given
+below.</p>
+<p>
+</p>
+<h2><a name="timetrans__"><strong>timetrans()</strong></a></h2>
+<p>This routine converts an integer seconds count into the equivalent number of
+weeks, days, hours, and minutes.  This converted seconds count is returned
+as a text string.  The seconds count must be greater than zero or an error
+will be returned.</p>
+<p>Return Values:</p>
+<pre>
+    If a valid seconds count was given, the count converted into the
+        appropriate text string will be returned.</pre>
+<pre>
+    An empty string is returned if the no seconds count was given or if
+        the seconds count is less than one.</pre>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>timetrans(1)</strong></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>

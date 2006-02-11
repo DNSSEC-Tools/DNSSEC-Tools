@@ -1,0 +1,57 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>getdnskeys - Fetch, compare and remember a list of DNSKEYs from DNS zones.</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#security_issues">SECURITY ISSUES</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>getdnskeys - Fetch, compare and remember a list of DNSKEYs from DNS zones.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<p># then fetch the dnssec-tools.org key using:</p>
+<pre>
+  getdnskeys -o /etc/named.trustkeys.conf -k -v -t dnssec-tools.org</pre>
+<p># then in your main named.conf file put the following line:</p>
+<pre>
+  include &quot;/etc/named.trustkeys.conf&quot;;</pre>
+<p># ... and restart named</p>
+<p># Finally, check the file against live keys occasionally.</p>
+<pre>
+  getdnskeys -i /etc/named.trustkeys.conf -T -k -v -t</pre>
+<p># And automatically update it if you wish:</p>
+<pre>
+  getdnskeys -i /etc/named.trustkeys.conf -T -o /etc/named.trustkeys.conf -k -v -t</pre>
+<p>
+</p>
+<hr />
+<h1><a name="security_issues">SECURITY ISSUES</a></h1>
+<p>Currently this does not validate new keys placed in the file in any
+way, nor does it validate change over keys which have been added.</p>
+<p>It also does not handle revokation of keys.</p>
+<p>It should prompt you before adding a new key so that you can always
+run the auto-update feature.</p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>

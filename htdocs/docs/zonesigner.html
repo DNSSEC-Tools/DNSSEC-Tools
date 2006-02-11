@@ -51,17 +51,16 @@
 <hr />
 <h1><a name="synopsis">SYNOPSIS</a></h1>
 <pre>
-  zonesigner [options] &lt;zone-file&gt; &lt;zone-out&gt;</pre>
+  zonesigner [options] &lt;zone-file&gt; &lt;signed-zone&gt;</pre>
 <pre>
   # get started immediately examples:</pre>
 <pre>
   # first run on a zone for example.com:
   zonesigner -genzsk -genksk -endtime +2678400 -zone example.com \
-     db-in.example.com db-out.example.com</pre>
+     db-example.com.signed</pre>
 <pre>
   # future runs before expiration time (reuses the same keys):
-  zonesigner -endtime +2678400 -zone example.com \
-     db-in.example.com db-out.example.com</pre>
+  zonesigner -endtime +2678400 -zone example.com out.example.signed</pre>
 <p>
 </p>
 <hr />
@@ -94,8 +93,8 @@ line.  Example 4 below contains the contents of a sample <em>keyrec</em> file.</
 <h1><a name="using_zonesigner">USING ZONESIGNER</a></h1>
 <p><em>zonesigner</em> is used in this way:</p>
 <pre>
-    zonesigner [options] &lt;zone-file&gt; &lt;zone-out&gt;</pre>
-<p>The <em>zone-file</em> and <em>zone-out</em> arguments are required.</p>
+    zonesigner [options] &lt;zone-file&gt; &lt;signed-zone&gt;</pre>
+<p>The <em>zone-file</em> and <em>signed-zone</em> arguments are required.</p>
 <p><em>zone-file</em> is the name of the zone file from which a signed zone file will
 be created.  If the <em>-zone</em> option is not given, then <em>zone-file</em> will be
 used as the name of the zone that will be signed.  Generated keys are given
@@ -106,11 +105,14 @@ not be modified by the user.  If the zone file already includes any key files,
 those inclusions will be deleted.  These lines are distinguished by starting
 with ``$INCLUDE'' and end with ``.key''.  Only the actual include lines are
 deleted; any related comment lines are left untouched.</p>
-<p><em>zone-out</em> is the name of the output zone file.  This file will be a copy
-of the <em>zone-file</em> zone file, with some modifications.  Several $INCLUDE
-lines will be added at the end of the file and the SOA serial number will be
-incremented.</p>
-<p>The signed zone file will be this name, appended with <em>.signed</em>.</p>
+<p>An intermediate file is used in signing the zone.  <em>zone-file</em> is copied to
+the intermediate file and is modified in preparation of signing the zone file.
+Several $INCLUDE lines will be added at the end of the file and the SOA serial
+number will be incremented.</p>
+<p><em>signed-zone</em> is the name of the signed zone file.  If it is not given on
+the command line, the default signed zone filename is the &lt;zone-file&gt;
+appended with ``.signed''.  Thus, exeucting <em>zonesigner example.com</em> will
+result in the signed zone being stored in <em>example.com.signed</em>.</p>
 <p>Unless the <em>-genkeys</em>, <em>-genksk</em>, or <em>-genzsk</em> options are specified, the
 last keys generated for a particular zone will be used in subsequent
 <em>zonesigner</em> executions.</p>
@@ -224,6 +226,13 @@ adjusted as follows:
 <p>This should only be used if you know what you're doing.</p>
 </dd>
 <p></p>
+<dt><strong><a name="item__2dintermediate">-intermediate</a></strong><br />
+</dt>
+<dd>
+Filename to use for the temporary zone file.  The zone file will be copied to
+this file and then the key names appended.
+</dd>
+<p></p>
 <dt><strong><a name="item__2dzone">-zone</a></strong><br />
 </dt>
 <dd>
@@ -308,7 +317,7 @@ the <em>-kgopts</em> option.
 <dd>
 Time that the zone expires, measured in seconds.  See the man page for
 <em>dnssec-signzone</em> for the valid format of this field.
-The default value is 259200 seconds (30 days.)
+The default value is 2592000 seconds (30 days.)
 </dd>
 <p></p>
 <dt><strong><a name="item__2dgends">-gends</a></strong><br />
@@ -340,34 +349,34 @@ the <em>-szopts</em> option.
 <p>Example 1.</p>
 <p>In the first example, an existing <em>keyrec</em> file is used to assist in signing
 the example.com domain.  Zone data are stored in <strong>example.com</strong>, and the
-keyrec is in <strong>example.krf</strong>.  The output zone file and final signed zone
-file will use <strong>db.example.com</strong> as a base.  Using this execution:</p>
+keyrec is in <strong>example.krf</strong>.  The final signed zone file will be
+<strong>db.example.com</strong>.  Using this execution:</p>
 <pre>
-    # zonesigner -krfile example.krf example.com db.example.com</pre>
+    # zonesigner -krfile example.krf example.com db.example.com.signed</pre>
 <p>the following files are created:</p>
 <pre>
     Kexample.com.+005+45842.private
     Kexample.com.+005+45842.key
     Kexample.com.+005+50186.private
     Kexample.com.+005+50186.key
-    Kexample.com.+005+59143.key
-    Kexample.com.+005+59143.private</pre>
+    Kexample.com.+005+59143.private
+    Kexample.com.+005+59143.key</pre>
 <pre>
     dsset-example.com.
     keyset-example.com.</pre>
 <pre>
-    db.example.com
     db.example.com.signed</pre>
 <p>The first six files are the KSK and ZSK keys required for the zone.  The next
-two files are created by the zone-signing process.  The last two are the zone
-file used as input to the zone-signing process and the final signed zone.</p>
+two files are created by the zone-signing process.  The last file is the zone
+the final signed zone file.</p>
 <p>Example 2.</p>
 <p>In the second example, an existing <em>keyrec</em> file is used to assist in signing
 the example.com domain.  Zone data are stored in <strong>example.com</strong>, and the
-keyrec is in <strong>example.krf</strong>.  The generated keys, output zone file, and final
-signed zone file will use <strong>example.com</strong> as a base.  Using this execution:</p>
+keyrec is in <strong>example.krf</strong>.  The generated keys, an intermediate zone file,
+and final signed zone file will use <strong>example.com</strong> as a base.
+Using this execution:</p>
 <pre>
-    # zonesigner -krfile example.krf example.com db.example.com</pre>
+    # zonesigner -krfile example.krf -intermediate example.zs example.com db.example.com</pre>
 <p>the following files are created:</p>
 <pre>
     Kdb.example.com.+005+12354.key
@@ -380,10 +389,12 @@ signed zone file will use <strong>example.com</strong> as a base.  Using this ex
     dsset-db.example.com.
     keyset-db.example.com.</pre>
 <pre>
-    db.example.com.signed</pre>
+    example.zs
+    db.example.com</pre>
 <p>The first six files are the KSK and ZSK keys required for the zone.  The next
-two files are created by the zone-signing process.  The last file is file is
-the final signed zone.</p>
+two files are created by the zone-signing process.  The second last file is
+an intermediate file that will be signed.  The last file is file is the final
+signed zone.</p>
 <p>Example 3.</p>
 <p>In the third example, no <em>keyrec</em> file is specified for the signing of
 the example.com domain.  In addition to files created as shown in previous
@@ -394,6 +405,9 @@ domain name as its base.  Using this execution:</p>
 <p>the following <em>keyrec</em> file is created:</p>
 <pre>
     example.com.krf</pre>
+<p>The signed zone file is created in:</p>
+<pre>
+    db.example.com</pre>
 <p>Example 4.</p>
 <p>This example shows a <em>keyrec</em> file generated by <em>zonesigner</em>.</p>
 <p>The command executed is:</p>
@@ -412,7 +426,7 @@ one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.</p>
         kskpath         &quot;./Kexample.com.+005+24082.key&quot;
         kskkey          &quot;Kexample.com.+005+24082&quot;
         kskdirectory    &quot;.&quot;
-        endtime         &quot;+259200&quot;
+        endtime         &quot;+2592000&quot;
         zonefile        &quot;db.example.com&quot;
         keyrec_type     &quot;zone&quot;
         keyrec_signsecs &quot;1115166642&quot;
@@ -476,7 +490,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::tooloptions.pm(3)</strong></p>
 
-<!--#include virtual="/page-bottom.html" -->
 <!--#include virtual="/page-bottom.html" -->
 </body>
 

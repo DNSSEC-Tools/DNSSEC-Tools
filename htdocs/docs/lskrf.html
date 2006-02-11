@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>lskrf - List the I&lt;keyrec&gt;s in a DNSSEC-Tools I&lt;keyrec&gt; file.</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<ul>
+
+		<li><a href="#recordselection_options">Record-Selection Options</a></li>
+		<li><a href="#recordattribute_options">Record-Attribute Options</a></li>
+		<li><a href="#outputformat_options">Output-Format Options</a></li>
+	</ul>
+
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>lskrf - List the <em>keyrec</em>s in a DNSSEC-Tools <em>keyrec</em> file.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  lskrf [options] &lt;keyrec-files&gt;</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This script lists the contents of the specified <em>keyrec</em> files.  All
+<em>keyrec</em> files are loaded before the output is displayed.  If any <em>keyrec</em>s
+have duplicated names, whether within one file or across multiple files, the
+later <em>keyrec</em> will be the one whose data are displayed.  The output given
+depends on the options selected.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<p><strong>lskrf</strong> has three types of options it can take:  record-selection options,
+record-attribute options, and output-style options.  These option sets are
+detailed below.</p>
+<p>
+</p>
+<h2><a name="recordselection_options">Record-Selection Options</a></h2>
+<p>These options select the types of <em>keyrec</em> that will be displayed.</p>
+<dl>
+<dt><strong><a name="item__2dall">-all</a></strong><br />
+</dt>
+<dd>
+This option displays all the records in a <em>keyrec</em> file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dzones">-zones</a></strong><br />
+</dt>
+<dd>
+This option displays the zones in a <em>keyrec</em> file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dkeys">-keys</a></strong><br />
+</dt>
+<dd>
+This option displays the keys in a <em>keyrec</em> file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dksk">-ksk</a></strong><br />
+</dt>
+<dd>
+This option displays the KSK keys in a <em>keyrec</em> file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dzsk">-zsk</a></strong><br />
+</dt>
+<dd>
+This option displays the ZSK keys in a <em>keyrec</em> file.  It does not include
+obsolete ZSK keys; the <em>-obs</em> option must be specified to display obsolete
+keys.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dcur">-cur</a></strong><br />
+</dt>
+<dd>
+This option displays the current ZSK keys in a <em>keyrec</em> file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dnew">-new</a></strong><br />
+</dt>
+<dd>
+This option displays the new ZSK keys in a <em>keyrec</em> file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dpub">-pub</a></strong><br />
+</dt>
+<dd>
+This option displays the published ZSK keys in a <em>keyrec</em> file.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dobs">-obs</a></strong><br />
+</dt>
+<dd>
+This option displays the obsolete ZSK keys in a <em>keyrec</em> file.  This option
+must be give if obsolete ZSK keys are to be displayed.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="recordattribute_options">Record-Attribute Options</a></h2>
+<p>These options select subsets of the <em>keyrec</em>s chosen by the
+record-selection options.</p>
+<dl>
+<dt><strong><a name="item__2dvalid">-valid</a></strong><br />
+</dt>
+<dd>
+This option displays the valid zones in a <em>keyrec</em> file.
+It implies the <em>-zones</em> option.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dexpired">-expired</a></strong><br />
+</dt>
+<dd>
+This option displays the expired zones in a <em>keyrec</em> file.
+It implies the <em>-zones</em> option.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dref">-ref</a></strong><br />
+</dt>
+<dd>
+This option displays the referenced key <em>keyrec</em>s in a <em>keyrec</em> file.
+If no record-selection options were specified, then the <em>-keys</em> option will
+be set.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dunref">-unref</a></strong><br />
+</dt>
+<dd>
+This option displays the unreferenced key <em>keyrec</em>s in a <em>keyrec</em> file.
+If no record-selection options were specified, then the <em>-keys</em> option will
+be set.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="outputformat_options">Output-Format Options</a></h2>
+<p>These options define how the <em>keyrec</em> information will be displayed.</p>
+<p>Without any of these options, the zone name, zone file, zone-signing date,
+and a label will be displayed for zones.  For types, the key name, the key's
+zone, the key's generation date, and a label will be displayed if these
+options aren't given.</p>
+<dl>
+<dt><strong><a name="item__2dcount">-count</a></strong><br />
+</dt>
+<dd>
+The count of matching records will be displayed, but the matching records
+will not be.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dnodate">-nodate</a></strong><br />
+</dt>
+<dd>
+The key's generation date will not be printed if this flag is given.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dlong">-long</a></strong><br />
+</dt>
+<dd>
+The long form of output will be given.  For zones, the zone name, the zone
+file, the zone's signing date, the zone's expiration date, and a label will
+be displayed.  For keys, the key name, the key's zone, the key's encryption
+algorithm, the key's length, the key's generation date, and a label are
+given.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dterse">-terse</a></strong><br />
+</dt>
+<dd>
+This options displays only the name of the zones or keys selected by other
+options.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dhelp">-help</a></strong><br />
+</dt>
+<dd>
+Display a usage message.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>
