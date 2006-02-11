@@ -1,29 +1,32 @@
 TOOLSDIR=../dnssec-tools
 
 FIXBOT=perl -p -i fixhtml
-all: tools modules stepbystep
+all: tools modules 
+# stepbystep
+
+TOOLS=donuts/donuts donuts/donutsd mapper/mapper \
+	scripts/zonesigner dnspktflow/dnspktflow maketestzone/maketestzone \
+	drawvalmap/drawvalmap scripts/getdnskeys \
+	scripts/lskrf scripts/keyrec-check scripts/genkrf scripts/expchk
+
+MODS=modules/conf modules/keyrec modules/tooloptions donuts/Rule \
+	modules/QWPrimitives modules/timetrans modules/ZoneFile-Fast/Fast
 
 tools:
-	pod2html $(TOOLSDIR)/tools/donuts/donuts > docs/donuts.html
-	$(FIXBOT) docs/donuts.html
-	pod2html $(TOOLSDIR)/tools/donuts/donutsd > docs/donutsd.html
-	$(FIXBOT) docs/donutsd.html
-	pod2html $(TOOLSDIR)/tools/mapper/mapper > docs/mapper.html
-	$(FIXBOT) docs/mapper.html
-	pod2html $(TOOLSDIR)/tools/scripts/zonesigner > docs/zonesigner.html
-	$(FIXBOT) docs/zonesigner.html
-	pod2html $(TOOLSDIR)/tools/dnspktflow/dnspktflow > docs/dnspktflow.html
-	$(FIXBOT) docs/zonesigner.html
-	pod2html $(TOOLSDIR)/tools/maketestzone/maketestzone > docs/maketestzone.html
-	$(FIXBOT) docs/maketestzone.html
+	for i in $(TOOLS) ; do \
+		ibase=`basename $$i` ; \
+		echo creating docs/$$ibase.html ; \
+		pod2html $(TOOLSDIR)/tools/$$i > docs/$$ibase.html ; \
+		$(FIXBOT) docs/$$ibase.html ; \
+	done
 
 modules:
-	pod2html $(TOOLSDIR)/tools/modules/conf.pm > docs/conf.html
-	$(FIXBOT) docs/conf.html
-	pod2html $(TOOLSDIR)/tools/modules/keyrec.pm > docs/keyrec.html
-	$(FIXBOT) docs/keyrec.html
-	pod2html $(TOOLSDIR)/tools/modules/tooloptions.pm > docs/tooloptions.html
-	$(FIXBOT) docs/tooloptions.html
+	for i in $(MODS) ; do \
+		ibase=`basename $$i` ; \
+		echo creating docs/$$ibase.html ; \
+		pod2html $(TOOLSDIR)/tools/$$i.pm > docs/$$ibase.html ; \
+		$(FIXBOT) docs/$$ibase.html ; \
+	done
 
 stepbystep:
 	wvHtml --targetdir=docs/step-by-step docs/step-by-step-guide-draft-v0.4.doc step-by-step-guide-draft-v0.4.html
