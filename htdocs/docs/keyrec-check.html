@@ -1,0 +1,181 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>keyrec-check - Check a DNSSEC-Tools I&lt;keyrec&gt; file for problems and
+inconsistencies.</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>keyrec-check - Check a DNSSEC-Tools <em>keyrec</em> file for problems and
+inconsistencies.</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  keyrec-check [-z | -k] [-c] [-q] [-v] [-h] keyrec-file</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This script checks a <em>keyrec</em> file for problems, potential problems,
+and inconsistencies.</p>
+<p>Recognized problems include:</p>
+<ul>
+<li><strong><a name="item_no_zones_defined">no zones defined</a></strong><br />
+</li>
+The <em>keyrec</em> file does not contain any zone <em>keyrec</em>s.
+<p></p>
+<li><strong><a name="item_no_keys_defined">no keys defined</a></strong><br />
+</li>
+The <em>keyrec</em> file does not contain any key <em>keyrec</em>s.
+<p></p>
+<li><strong><a name="item_unknown_zone_keyrecs">unknown zone <em>keyrec</em>s</a></strong><br />
+</li>
+A key <em>keyrec</em> references a non-existent zone <em>keyrec</em>.
+<p></p>
+<li><strong><a name="item_missing_key_from_zone_keyrec">missing key from zone <em>keyrec</em></a></strong><br />
+</li>
+A zone <em>keyrec</em> does not have both a KSK key and a ZSK key.
+<p></p>
+<li><strong><a name="item_expired_zone_keyrecs">expired zone <em>keyrec</em>s</a></strong><br />
+</li>
+A zone has expired.
+<p></p>
+<li><strong><a name="item_mislabeled_key">mislabeled key</a></strong><br />
+</li>
+A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
+opposite.
+<p></p>
+<li><strong><a name="item_invalid_zone_data_values">invalid zone data values</a></strong><br />
+</li>
+A zone's <em>keyrec</em> data are checked to ensure that they are valid.  The
+following conditions are checked:  existence of the zone file, existence of
+the KSK file, existence of the ZSK file, the end-time is greater than one
+day, and the seconds-count and date string match.
+<p></p>
+<li><strong><a name="item_invalid_key_data_values">invalid key data values</a></strong><br />
+</li>
+A key's <em>keyrec</em> data are checked to ensure that they are valid.  The
+following conditions are checked:  valid encryption algorithm, key length
+falls within algorithm's size range, random generator file exists, and the
+seconds-count and date string match.
+<p></p></ul>
+<p>Recognized potential problems include:</p>
+<ul>
+<li><strong><a name="item_imminent_zone_expiration">imminent zone expiration</a></strong><br />
+</li>
+A zone will expire within one week.
+<p></p>
+<li><strong><a name="item_odd_zone_2dsigning_date">odd zone-signing date</a></strong><br />
+</li>
+A zone's recorded signing date is later than the current system clock.
+<p></p>
+<li><strong><a name="item_orphaned_keys">orphaned keys</a></strong><br />
+</li>
+A key <em>keyrec</em> is unreferenced by any zone <em>keyrec</em>.
+<p></p>
+<li><strong><a name="item_missing_key_directories">missing key directories</a></strong><br />
+</li>
+A zone <em>keyrec</em>'s key directories (<em>kskdirectory</em> or <em>zskdirectory</em>) does
+not exist.
+<p></p></ul>
+<p>Recognized inconsistencies include:</p>
+<ul>
+<li><strong><a name="item_key_2dspecific_fields_in_a_zone_keyrec">key-specific fields in a zone <em>keyrec</em></a></strong><br />
+</li>
+A zone <em>keyrec</em> contains key-specific entries.  To allow for site-specific
+extensibility, <em>keyrec-check</em> does not check for undefined <em>keyrec</em> fields.
+<p></p>
+<li><strong><a name="item_zone_2dspecific_fields_in_a_key_keyrec">zone-specific fields in a key <em>keyrec</em></a></strong><br />
+</li>
+A key <em>keyrec</em> contains zone-specific entries.  To allow for site-specific
+extensibility, <em>keyrec-check</em> does not check for undefined <em>keyrec</em> fields.
+<p></p></ul>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<dl>
+<dt><strong><a name="item__2dk">-k</a></strong><br />
+</dt>
+<dd>
+Only perform checks of key <em>keyrec</em>s.  This option may not be combined with
+the <strong>-z</strong> option.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dz">-z</a></strong><br />
+</dt>
+<dd>
+Only perform checks of zone <em>keyrec</em>s.  This option may not be combined with
+the <strong>-k</strong> option.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dc">-c</a></strong><br />
+</dt>
+<dd>
+Display a final count of errors.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dq">-q</a></strong><br />
+</dt>
+<dd>
+Do not display messages.  This option supersedes the setting of the <em>-v</em>
+option.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dv">-v</a></strong><br />
+</dt>
+<dd>
+Display many messages.  This option is subordinate to the <em>-q</em> option.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dh">-h</a></strong><br />
+</dt>
+<dd>
+Display a usage message.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>

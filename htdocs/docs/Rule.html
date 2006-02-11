@@ -1,0 +1,383 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Net::DNS::SEC::Tools::Donuts::Rule - Define donuts DNS record-checking rules</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#rule_file_format">RULE FILE FORMAT</a></li>
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<pre>
+  Net::DNS::SEC::Tools::Donuts::Rule - Define donuts DNS record-checking rules</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>This class wraps around a rule definition which is used by the <em>donuts</em>
+DNS zone file checker.  It stores the data that implements a given rule.</p>
+<p>Rules are defined in <em>donuts</em> rule configuration files using the
+following syntax.  See the <em>donuts</em> manual page for details on where to
+place those files and how to get them loaded.</p>
+<p>
+</p>
+<hr />
+<h1><a name="rule_file_format">RULE FILE FORMAT</a></h1>
+<p>Each rule file can contain multiple rules.  Each rule is composed of a
+number of parts.  Minimally, it must contain a <strong>name</strong> and a <strong>test</strong>
+portion.  Everything else is optional and/or has defaults associated
+with it.  The rule file format follows this example:</p>
+<pre>
+  name: rulename
+  class: Warning
+  &lt;test&gt;
+    my ($record) = @_;
+    return &quot;problem found&quot;
+      if ($record{xxx} != yyy);
+  &lt;/test&gt;</pre>
+<p>Further details about each section can be found below.  Besides the
+tokens below, other rule-specific data can be stored in also tokens
+and each rule is a hash of the above tokens as keys and their
+associated data.  However, there are a few exceptions where special
+tokens imply special meanings.  These special tokens include <em>test</em>,
+<em>init</em>.  See below for details.</p>
+<p>Each rule definition within a file should be separated using a blank line.</p>
+<p>Lines beginning with the '#' character will be discarded as a comment.</p>
+<dl>
+<dt><strong><a name="item_name"><em>name</em></a></strong><br />
+</dt>
+<dd>
+The name of the rule.  This is mandatory, as the user may need to be
+able to refer to names in the future for use with the <em>-i</em> flag,
+specifying behavior in configuration files, and for other uses.
+</dd>
+<dd>
+<p>By convention, all names should be specified using capital letters and
+'_' characters between the words.  The leftmost word should give an
+indication of a global category of test, such as ``DNSSEC''.  The
+better-named the rules, the more power the user will have for
+selecting certain types of rules via <em>donuts -i</em> and other flags.</p>
+</dd>
+<dd>
+<p>Example:</p>
+</dd>
+<dd>
+<pre>
+  name: DNSSEC_TEST_SOME_SECURE_FEATURE</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_level"><em>level</em></a></strong><br />
+</dt>
+<dd>
+The rule's execution level, as recognized by <em>donuts</em>.  Only those
+rules at or above <em>donuts</em>' current execution level will be run by
+<em>donuts</em>.  The execution level is specified by the <em>-l</em> option to
+<em>donuts</em>; if not given, then the default execution level is 5.
+</dd>
+<dd>
+<p>The default <em>level</em> of every rule is 5.</p>
+</dd>
+<dd>
+<p>Generally, more serious problems should receive lower numbers and
+less serious problems should be placed at a higher number.  The
+maximum value is 9, which is reserved for debugging rules only.
+8 is the maximum rule level that user-defined rules should use.</p>
+</dd>
+<dd>
+<p>Example:</p>
+</dd>
+<dd>
+<pre>
+  name: DNSSEC_TEST_SOME_SECURE_FEATURE
+  level: 2</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_class"><em>class</em></a></strong><br />
+</dt>
+<dd>
+The <em>class</em> code indicates the type of problem associated with the
+rule.  It defaults to ``<em>Error</em>'', and the only other value that should
+be used is ``<em>Warning</em>''.
+</dd>
+<dd>
+<p>This value is displayed to the user.  Technically, any value could be
+specified, but using anything other than <em>Error</em>/<em>Warning</em> convention
+could break portability in future versions.</p>
+</dd>
+<dd>
+<p>Example:
+  name: DNSSEC_TEST_SOME_SECURE_FEATURE
+  class: Warning</p>
+</dd>
+<p></p>
+<dt><strong><a name="item_ruletype"><em>ruletype</em></a></strong><br />
+</dt>
+<dd>
+Rules fall into one of two types (currently): <em>record</em> or <em>name</em>.
+<em>record</em> rules have their test evaluated for each record being in
+a zone file.  <em>name</em> rules, on the other hand, get called once per
+name stored in the database.  See the <em>test</em> description below for
+further details on the arguments passed to each rule type.
+</dd>
+<dd>
+<p>The default value for this clause is <em>record</em>.</p>
+</dd>
+<dd>
+<p>Example:</p>
+</dd>
+<dd>
+<pre>
+  name: DNSSEC_TEST_SOME_SECURE_FEATURE
+  ruletype: record</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_type"><em>type</em></a></strong><br />
+</dt>
+<dd>
+Rules that test a particular type of record should specify the
+<em>type</em> field with the type of record it wants to test.  The rule
+will only be executed for records of that type.  This will result
+in less error checking for the user in the <em>test</em> section.
+</dd>
+<dd>
+<p>For example, if a rule is testing a particular aspect of an MX record,
+it should specify MX in this field.</p>
+</dd>
+<dd>
+<p>Example:</p>
+</dd>
+<dd>
+<pre>
+  name: DNSSEC_TEST_SOME_SECURE_FEATURE
+  type: MX</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_init"><em>init</em></a></strong><br />
+</dt>
+<dd>
+A block of code to be executed immediately. This is useful for
+boot-strap code to be performed only at start-up, rather than
+at every rule-test invocation.  For example, ``use MODULE;''
+type statements should be used in <em>init</em> sections.
+</dd>
+<dd>
+<p><em>init</em> sections contain are wrapped in an xml-like syntax which
+specifies the start and end of the init section of code:</p>
+</dd>
+<dd>
+<p>Example:</p>
+</dd>
+<dd>
+<pre>
+  &lt;init&gt;
+    use My::Module;
+    $value = calculate();
+  &lt;/init&gt;</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_test"><em>test</em></a></strong><br />
+</dt>
+<dd>
+A block of code that defining the test for each record or name.  The
+test statement follows the same multi-line code specification
+described in the <em>init</em> clause above.  Specifically, all the lines
+between the &lt;test&gt; and &lt;/test&gt; braces are considered part of the test
+code.
+</dd>
+<dd>
+<p>The end result must be a subroutine reference which will be called by
+the <em>donuts</em> program.  When the code is evaluated, if it does not
+begin with ``sub {'' then a ``sub {'' prefix and ``}'' suffix will be
+automatically added to the code to turn the code-snippet into a
+perl subroutine.</p>
+</dd>
+<dd>
+<p>If the test fails, it should return an error string which will be displayed
+for the user.  The text will be line-wrapped before display (and thus should
+be unformatted text.)  If the test is testing for multiple problems, a
+reference to an array of error strings may be returned.  A reference to an
+empty array being returned also indicates no error.</p>
+</dd>
+<dd>
+<p>There are two types of tests (currently), and the code snippet is
+called with arguments which depend on the <em>ruletype</em> clause above.
+These arguments and calling conventions are as follows:</p>
+</dd>
+<dl>
+<dt><strong><a name="item_record_tests"><em>record</em> tests</a></strong><br />
+</dt>
+<dd>
+These code snippets are expected to test a single <strong>Net::DNS::RR</strong> record.
+</dd>
+<dd>
+<p>It is called with two arguments:</p>
+</dd>
+<dd>
+<pre>
+  1) the record which is to be tested</pre>
+</dd>
+<dd>
+<pre>
+  2) the rule definition itself.</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_name_tests"><em>name</em> tests</a></strong><br />
+</dt>
+<dd>
+These code snippets are expected to test all the records
+associated with a given name record.
+</dd>
+<dd>
+<p>It is called with three arguments:</p>
+</dd>
+<dd>
+<pre>
+  1) a hash reference to all the record types associated
+     with that name (e.g., 'A', 'MX', ...) and each value of
+     the hash will contain an array of all the records for
+     that type (i.e., for names containing multiple 'A'
+     records then more than one entry in the array reference
+     will exist).</pre>
+</dd>
+<dd>
+<pre>
+  2) The rule definition</pre>
+</dd>
+<dd>
+<pre>
+  3) The record name being checked (the name associated with
+     the data from 1) above).</pre>
+</dd>
+<p></p></dl>
+<p>Examples:</p>
+<pre>
+  # local rule to mandate that each record must have a
+  # TTL &gt; 60 seconds
+  name: DNS_TTL_AT_LEAST_60
+  level: 8
+  type: record
+  &lt;test&gt;
+    return &quot;TTL too small&quot; if ($_[0]-&gt;ttl &lt; 60);
+  &lt;/test&gt;</pre>
+<pre>
+  # local policy to mandate that anything with an A record
+  # must have a HINFO record too
+  name: DNS_MX_MUST_HAVE_A
+  level: 8
+  type: name
+  &lt;test&gt;
+    return &quot;A records must have a HINFO record too&quot;
+      if (exists($_[0]{'A'}) &amp;&amp; !exists($_[0]{'HINFO'}));
+  &lt;/test&gt;</pre>
+<dt><strong><a name="item_feature_3a_name"><em>feature:</em> <strong>NAME</strong></a></strong><br />
+</dt>
+<dd>
+The feature tag prevents this rule from running unless the <strong>NAME</strong>
+keyword was specified using the <em>--features</em> flag.
+</dd>
+<p></p>
+<dt><strong><a name="item_desc_3a_description"><em>desc:</em> <strong>DESCRIPTION</strong></a></strong><br />
+</dt>
+<dd>
+A short description of what the rule tests that will be printed to the
+user in help output or in the error summary when donuts outputs the
+results.
+</dd>
+<p></p>
+<dt><strong><a name="item_help_3a_token_3a_token_2dhelp"><em>help:</em> <strong>TOKEN:</strong> <strong>TOKEN-HELP</strong></a></strong><br />
+</dt>
+<dd>
+If the rule is configurable via the user's .donuts.conf file, this
+describes the configuration tokens for the user when they request
+configuration help via the -H or --help-config flags.  Tokens may be
+used within rules by accessing them within the rule argument passed to
+the code (the second argument).
+</dd>
+<dd>
+<p>Example:</p>
+</dd>
+<dd>
+<pre>
+  1) in the rule file (this is an incomplete definition):</pre>
+</dd>
+<dd>
+<pre>
+     name:           SOME_TEST
+     myconfig:       40
+     help: myconfig: A special number to configure this test
+     &lt;test&gt;
+      my ($record, $rule) = @_;
+      # ... use $rule-&gt;{'myconfig'}
+     &lt;/test&gt;</pre>
+</dd>
+<dd>
+<pre>
+  2) This allows the user to change the value of myconfig via their
+     .donuts.conf file:</pre>
+</dd>
+<dd>
+<pre>
+     # change SOME_TEST config...
+     name:     SOME_TEST
+     myconfig: 40</pre>
+</dd>
+<dd>
+<pre>
+  3) and running donuts -H will show the help line for myconfig.</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_noindent_3a_1"><em>noindent: 1</em></a></strong><br />
+</dt>
+<dt><strong><a name="item_nowrap_3a_1"><em>nowrap: 1</em></a></strong><br />
+</dt>
+<dd>
+Normally <em>donuts</em> will line-wrap the error summary produced by a rule
+to enable automatic pretty printing of error results.  Sometimes,
+however, rules may not want this.  The <em>nowrap</em> option indicates to
+donuts that the output is pre-formatted but should still be indented
+to align with the output of the rest of the error text (current about
+15 spaces).  The <em>noindent</em> tag, however, says don't do either
+wrapping or indenting and just print the error as is.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wes Hardaker &lt;<a href="mailto:hardaker@users.sourceforge.net">hardaker@users.sourceforge.net</a>&gt;</p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>donuts(8)</strong></p>
+<p><strong>Net::DNS</strong>, <strong>Net::DNS::RR</strong></p>
+<p><a href="http://dnssec-tools.sourceforge.net">http://dnssec-tools.sourceforge.net</a></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>

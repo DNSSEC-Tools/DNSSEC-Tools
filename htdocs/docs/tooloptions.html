@@ -82,6 +82,10 @@
   opts_drop();</pre>
 <pre>
   opts_reset();</pre>
+<pre>
+  opts_gui();</pre>
+<pre>
+  opts_nogui();</pre>
 <p>
 </p>
 <hr />
@@ -335,6 +339,21 @@ of the command.
 Reset an internal flag so that the command-line arguments may be
 re-examined.  This is usually only useful if the arguments have been
 modified by the calling program itself.
+</dd>
+<p></p>
+<dt><strong><a name="item_opts_gui"><strong>opts_gui()</strong></a></strong><br />
+</dt>
+<dd>
+Set an internal flag so that command arguments may be specified with a GUI.
+GUI usage requires that Getopt::Long::GUI is available.  If it isn't, then 
+Getopt::Long will be used.
+</dd>
+<p></p>
+<dt><strong><a name="item_opts_nogui"><strong>opts_nogui()</strong></a></strong><br />
+</dt>
+<dd>
+Set an internal flag so that the GUI will not be used for specifying
+command arguments.
 </dd>
 <p></p></dl>
 <p>
