@@ -53,6 +53,68 @@
   help ease the deployment of DNSSEC related technologies.</p>
       </div>
 
+      <h2>Downloading and Installing</h2>
+      <div class="indent">
+	<ul>
+	  <li class="b">Minimum required perl module pre-requisites:</li>
+	    <ol>
+	      <li> perl -MCPAN -e shell</li>
+	      <li> At the prompt, type "install <em>X</em>" for each
+	      of these <b>required</b> <em>X</em>:
+		<ol>
+		  <li>Date::Parse</li>
+		  <li>Net::DNS</li>
+		  <li>Net::DNS::SEC</li>
+		</ol>
+	      </li>
+	      <li> At the prompt, type "install <em>X</em>" for each
+	      of these <b>optional</b> <em>X (mostly these are for the
+	      GUI and better command line help support)</em>:
+		<ol>
+		  <li>Gtk2</li>
+		  <li>QWizard</li>
+		  <li>Getopt::GUI::Long</li>
+		</ol>
+	      </li>
+	    </ol>
+	  <li class="b">Installing from source code: <em>(make sure you
+	  have the perl modules listed above)</em></li>
+	    <ol>
+	      <li><a
+	      href="http://sourceforge.net/project/showfiles.php?group_id=121671&package_id=151679">Get the source code</a></li>
+	      <li> gtar xzf dnssec-tools-*.tar.gz</li>
+	      <li> cd dnssec-tools-* </li>
+	      <li> ./configure </li>
+	      <li> make </li>
+	      <li> make install </li>
+	    </ol>
+	  <li class="b">Installing the dnssec-tools RPMs: <em>(make sure you
+	  have the perl modules listed above)</em></li>
+	    <ol>
+	      <li><a href="http://sourceforge.net/project/showfiles.php?group_id=121671&package_id=178846">Get the RPMs</a></li>
+	      <li>rpm -U dnssec-tools*.rpm
+		<ul>
+		  <li>This will produce dependency errors.  Fix as many of
+		    these as you can and make sure you have the perl modules
+		    it lists.  RPM is not smart enough to realize you
+		    have these perl modules installed by hand,
+		    however.  Thus do the next step afterwards:</li>
+		  <li>rpm -U --nodeps dnssec-tools*.rpm</li>
+		</ul>
+	      </li>
+	    </ol>
+	  <li class="b">Installing the Firefox RPM</li>
+	    <ol>
+	      <li><a href="http://sourceforge.net/project/showfiles.php?group_id=121671&package_id=178846">Get the RPM</a></li>
+	      <li>rpm -U firefox*.rpm</li>
+	      <li>To turn on dnssec support, use the pull-down menu
+	      within the "Content" section of the preference editing
+	      screen.</li>
+	    </ol>
+	</ul>
+      </div>
+      
+
       <h2>Project News</h2>
       <div class="indent">
 	<a href="http://sourceforge.net/export/rss2_projnews.php?group_id=121671&rss_fulltext=1">
@@ -286,7 +348,7 @@ Community Meeting, Cape Town, Nov 2004)</li>
     <hr>
 <!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
 <!-- hhmts start -->
-Last modified: Fri Feb 10 22:12:08 PST 2006
+Last modified: Wed Feb 15 07:39:29 PST 2006
 <!-- hhmts end -->
   </body>
 </html>
