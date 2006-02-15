@@ -1,0 +1,29 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>You are insecure</title>
+    <link rel="stylesheet" type="text/css" href="dnssec-tools.css" />
+  </head>
+
+  <body>
+    <h1>You are insecure</h1>
+
+    <p><b>So you told me, but why?</b></p>
+
+    <p>Because the bumper image actually is loaded from a domain name
+    which is insecure.  It actually has dnssec data for the A record
+    for the web server, but the A record actually contains a bad
+    signature.  A browser that was properly protected, either within
+    the browser itself or because your site's recursive validating
+    resolver was secured, it would prevent you from retrieving this
+    image since the zone date for the web server was known to be bad.
+    For a list of our test records, see our <a
+    href="http://www.dnssec-tools.org/testzone/">Test Zone</a> page.
+
+    <hr>
+<!-- Created: Wed Feb 15 09:18:57 PST 2006 -->
+<!-- hhmts start -->
+Last modified: Wed Feb 15 09:23:09 PST 2006
+<!-- hhmts end -->
+  </body>
+</html>
