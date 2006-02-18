@@ -1,14 +1,15 @@
 #
 #
-# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
 #
-#	Configuration file routines.
+#	DNSSEC-Tools configuration routines.
 #
-#	The routines in this module access the configuration file for
-#	the DNSSEC tools.
+#	The routines in this module perform configuration operations.
+#	Some routines access the DNSSEC-Tools cconfiguration file, while
+#	others validate the execution environment.
 #
 #	Entries in the configuration file are of the "key value" format.
 #	Comments may be included by prefacing them with the '#' or ';'
@@ -27,7 +28,9 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(parseconfig);
+our @EXPORT = qw(bindcheck parseconfig);
+
+our @BIND_COMMANDS = qw(checkzone keygen signzone);
 
 our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "0.01";
@@ -141,6 +144,59 @@ sub parseconfig
 	return(%dnssec_conf);
 }
 
+#######################################################################
+#
+# Routine:	bindcheck()
+#
+# Purpose:	Ensure that the needed BIND commands are available and
+#		executable.  If any of the commands either don't exist
+#		or aren't executable, then an error message will be
+#		given and the process will exit.  If all is well,
+#		everything will proceed quietly onwards.
+#
+#		Things that make you go "hmmm....":
+#			Is it *really* a good idea for a library routine
+#			to exit on error, rather than just giving an
+#			error return?
+#
+sub bindcheck
+{
+	my $ropts = shift;			# Options hash reference.
+	my %opts = %$ropts;			# Options hash.
+	my $cmd;				# BIND command path.
+
+	#
+	# Check each of these BIND commands for existence and executability.
+	#
+	foreach my $bcmd (@BIND_COMMANDS)
+	{
+		#
+		# Only check the defined commands.
+		#
+		next if(!exists($opts{$bcmd}));
+		$cmd = $opts{$bcmd};
+
+		#
+		# Check command's existence.
+		#
+		if(! -e $cmd)
+		{
+			print STDERR "BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n";
+			exit(3);
+		}
+
+		#
+		# Check command's executability.
+		#
+		if(! -x $cmd)
+		{
+			print STDERR "$cmd not executable\n";
+			exit(3);
+		}
+
+	}
+}
+
 1;
 
 #############################################################################
@@ -149,7 +205,7 @@ sub parseconfig
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::conf - DNSSEC tools configuration file routines.
+Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
 
 =head1 SYNOPSIS
 
@@ -159,7 +215,13 @@ Net::DNS::SEC::Tools::conf - DNSSEC tools configuration file routines.
 
   %dtconf = parseconfig("localzone.keyrec");
 
+  bindcheck(\%options_hashref);
+
 =head1 DESCRIPTION
+
+The routines in this module perform configuration operations.
+Some routines access the DNSSEC-Tools cconfiguration file, while others
+validate the execution environment.
 
 The DNSSEC tools have a configuration file for commonly used values.
 These values are the defaults for a variety of things, such as
@@ -206,11 +268,23 @@ file.  The parsed contents are put into a hash table, which is returned to
 the caller.  The routine quietly returns if the configuration file does not
 exist. 
 
+=item B<bindcheck(\%options_hashref)>
+
+This routine ensures that the needed BIND commands are available and
+executable.  If any of the commands either don't exist or aren't executable,
+then an error message will be given and the process will exit.  If all is
+well, everything will proceed quietly onwards.
+
+The BIND commands currently checked are I<checkzone>, I<keygen>, and
+I<signzone>.  The pathnames for these commands are found in the given options
+hash referenced by I<%options_hashref>.  If the hash doesn't contain an entry
+for one of those commands, it is not checked.
+
 =back
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
