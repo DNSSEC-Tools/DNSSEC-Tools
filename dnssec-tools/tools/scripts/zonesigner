@@ -23,6 +23,7 @@
 
 use strict;
 
+use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
@@ -167,7 +168,7 @@ sub main
 	#
 	optsandargs();
 	printopts();
-	bindcheck();
+	bindcheck(\%opts);
 
 	#
 	# If help was specified, give the usage and exit.
@@ -1651,46 +1652,6 @@ sub helpchk
 			usage(1);
 		}
 	}
-}
-
-#######################################################################
-#
-# Routine:	bindcheck()
-#
-# Purpose:	Ensure that the needed BIND commands are available and
-#		executable.
-#
-sub bindcheck
-{
-	my $cmd;				# BIND command path.
-
-	#
-	# Check each of these BIND commands for existence and executability.
-	#
-	foreach my $bcmd ('checkzone', 'keygen', 'signzone')
-	{
-		$cmd = $opts{$bcmd};
-
-		#
-		# Check command's existence.
-		#
-		if(! -e $cmd)
-		{
-			print STDERR "BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n";
-			exit(3);
-		}
-
-		#
-		# Check command's executability.
-		#
-		if(! -x $cmd)
-		{
-			print STDERR "$cmd not executable\n";
-			exit(3);
-		}
-
-	}
-
 }
 
 #######################################################################
