@@ -134,7 +134,6 @@ my @zsopts = ( '',
 
 my $forceroll = 0;			# Force-a-roll-over flag.
 
-
 #
 # Do our work.
 #
@@ -176,6 +175,17 @@ sub main
 	if($help == 1)
 	{
 		usage(1);
+	}
+
+	#
+	# Maybe display the warning about potential entropy hangs.
+	# We'll also force output to be flushed at write-time.
+	#
+	$| = 1;
+	if($entropymsg)
+	{
+		print "\n\tif zonesigner appears hung, strike keys until the program completes\n";
+		print "\t(see the \"Entropy\" section in the man page for details)\n\n";
 	}
 
 	#
@@ -974,15 +984,6 @@ sub zonesign
 	# Sign the zone with the new keys.
 	#
 	vprint("signing zone\n");
-
-	#
-	# Maybe display the warning about potential entropy hangs.
-	#
-	if($entropymsg)
-	{
-		print "if zonesigner appears hung, strike keys until the program completes\n";
-		print "(see the \"Entropy\" section in the man page for details)\n\n";
-	}
 
 	vhigh_print("$signzone $cmdopts $zoneftmp $zskcurpath\n");
 	$szone = `$signzone $cmdopts $zoneftmp $zskcurpath`;
