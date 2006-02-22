@@ -8,6 +8,7 @@ URL: http://www.dnssec-tools.org/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
 Requires: perl
+BuildRequires: autoconf213
 
 %description
 
