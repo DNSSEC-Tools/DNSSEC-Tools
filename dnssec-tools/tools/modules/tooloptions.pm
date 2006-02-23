@@ -40,7 +40,7 @@ our @EXPORT = qw(tooloptions tooloptions opts_krfile opts_getkeys
 #
 my @stdopts =
 (
-	['GUI:separator',	'Cryptography options:'],
+	['GUI:separator',	'Cryptography Options:'],
 		["algorithm=s",		"Cryptographic HASH algorithm",
 		 question => {
 				type	=> 'menu',
@@ -54,7 +54,7 @@ my @stdopts =
 
 	'',
 
-	['GUI:separator',	'Configuration options:'],
+	['GUI:separator',	'Configuration Options:'],
 		["keyrec=s",		"Keyrec name",
 		  helpdesc => 'test'
 		],
@@ -66,26 +66,28 @@ my @stdopts =
 
 	'',
 
-	['GUI:separator',	'Key-signing key options:'],
+	['GUI:separator',	'Key-signing Key Options:'],
 		["genksk",		"Generate KSK"],
 		["kskkey=s",		"KSK key"],
 		["ksklength=i",		"Length of KSK"],
+		["ksklife=i",		"Life-span of KSK"],
 		["kskpath=s",		"Path to KSK"],
 		["kskdirectory=s",	"Directory for KSK keys"],
 		["ksdir=s",		"Directory for keyset files"],
 
 	'',
 
-	['GUI:separator',	'Zone-signing key options:'],
+	['GUI:separator',	'Zone-signing Key Options:'],
 		["genzsk",		"Generate ZSK"],
 		["zskkey=s",		"ZSK key"],
 		["zsklength=i",		"Length of ZSK"],
+		["zsklife=i",		"Life-span of ZSK"],
 		["zskpath=s",		"Path to ZSK"],
 		["zskdirectory=s",	"Directory for ZSK keys"],
 
 	'',
 
-	['GUI:separator',	'Zone options:'],
+	['GUI:separator',	'Zone Options:'],
 		["zone=s",		"Zone name",	required => 1],
 		["zdata=s",		"Zone data filename"],
 		["zfile=s",		"Zone filename"],
@@ -97,7 +99,7 @@ my @stdopts =
 
 	'',
 
-	['GUI:separator',		'Control options:'],
+	['GUI:separator',		'Control Options:'],
 		["verbose+",		"Verbose mode"],
 		["help",		'Show command line help',
 		 question => {
