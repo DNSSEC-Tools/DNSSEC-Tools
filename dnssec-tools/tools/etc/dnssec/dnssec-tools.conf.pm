@@ -79,6 +79,11 @@ The path to the I<dnssec-keygen> command.
 
 The default KSK key length to be passed to I<dnssec-keygen>.
 
+=item ksklife
+
+The default length of time between KSK roll-overs.  This is measured in
+seconds.
+
 =item random
 
 The random device generator to be passed to I<dnssec-keygen>.
@@ -104,7 +109,24 @@ The path to the I<zonesigner> command.
 
 The default ZSK key length to be passed to I<dnssec-keygen>.
 
+=item zsklife
+
+The default length of time between ZSK roll-overs.  This is measured in
+seconds.
+
 =back
+
+=head1 Sample Times
+
+Several configuration fields measure various times.  This section is a
+convenient reference for several common times, as measured in seconds.
+
+    3600	- hour
+    86400	- day
+    604800	- week
+    2592000	- 30-day month
+    15768000	- half-year
+    31536000	- year
 
 =head1 Example File
 
@@ -134,6 +156,11 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     endtime		+2592000	# RRSIGs good for 30 days.
     
+    # Life-times for keys.  These defauluts indicate how long a key has
+    # between roll-overs.  The values are measured in seconds.
+    # 
+    ksklife         15768000		# Half-year.
+    zsklife         604800 		# One week.
     
     #
     # Settings that will be noticed by zonesigner.
