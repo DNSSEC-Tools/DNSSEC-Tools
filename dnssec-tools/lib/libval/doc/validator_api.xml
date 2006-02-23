@@ -4,21 +4,41 @@
 <?rfc toc="yes"?>
 
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
-<rfc ipr="full3978" docName="draft-dnssec-validator-api-00">
+<rfc ipr="full3978" docName="draft-ietf-dnsext-validator-api-00">
   <front>
   <title> DNSSEC Validator API </title>
-  <author initials="S." surname="Krishnaswamy"
-                fullname="Suresh Krishnaswamy"> 
-    <organization> SPARTA Inc. </organization>
-  </author>
-            
   <author initials="A." surname="Hayatnagarkar"
                 fullname="Abhijit Hayatnagarkar"> 
     <organization> SPARTA Inc. </organization>
+    <address>
+       <postal>
+        <street>7075 Samuel Morse Dr.</street>
+        <city>Columbia</city>
+        <region>MD</region>
+        <code>21046</code>
+        <country>US</country>
+      </postal>
+      <email>abhijit AT sparta.com</email>
+    </address>
   </author>
                 
+  <author initials="S." surname="Krishnaswamy"
+                fullname="Suresh Krishnaswamy"> 
+    <organization> SPARTA Inc. </organization>
+    <address>
+      <postal>
+        <street>7075 Samuel Morse Dr.</street>
+        <city>Columbia</city>
+        <region>MD</region>
+        <code>21046</code>
+        <country>US</country>
+      </postal>
+      <email>suresh AT sparta.com</email>
+    </address>
+  </author>
+            
   <date month="February" year="2006" />
-  <workgroup> ???  </workgroup>
+  <workgroup>Network Working Group</workgroup>
   <keyword>Internet-Draft</keyword>
 
   <abstract> 
@@ -51,11 +71,6 @@ validation process. This range allows for the creation of applications
 that are either only interested in basic results such as "validated"
 or "not-validated", or more sophisticated applications that can look
 for specific errors as a sign of some network abnormality or attack. </t>
-  </section> <!-- Introduction -->
-
-
-  <section title="Validator API">
-  <!--            ############# -->
 
   <t>
   The API can be broadly divided into three groups: 
@@ -82,17 +97,25 @@ resolver and validator policy into an opaque structure that may be used by
 applications to fine tune and control their validation processes. The context
 management API provides interfaces to manage the validator context.</t>
 
-  <t> The following sections describe these interfaces in greater detail. </t>
+  <t> <xref target="high_level_api" />, <xref target="low_level_api" />
+      and <xref target="val-context" /> describe these interfaces in greater
+      detail. </t>
+    <section title="Terminology">
+      <t>Trust Anchor</t>
+      <t>Chain of Trust</t>
+      <t>Assertion</t>
+    </section>
+  </section> <!-- Introduction -->
 
 
-    <section title="High-level Validation API">
+    <section title="High-level Validation API" anchor="high_level_api">
     <!--            ######################### -->
     <t>
     The high-level validation API provides DNSSEC-aware substitutes for commonly
 used DNS functions such as gethostbyname(), getaddrinfo() and res_query().
 It provides an easy path for applications already using these legacy functions
 towards becoming DNSSEC-aware.  </t>
-      <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyname2, val_gethostbyname2_r">
+      <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr, val_gethostbyaddr_r">
       <figure>
       <artwork>
 struct hostent *val_gethostbyname( const val_context_t *ctx,
@@ -168,7 +191,7 @@ parameter.
       </figure>
       </section>
 
-      <section title="val_getaddrinfo, free_val_addrinfo">
+      <section title="val_getaddrinfo, val_getnameinfo, free_val_addrinfo">
       <figure>
       <artwork>
 int val_getaddrinfo( const val_context_t   *ctx, 
@@ -308,7 +331,7 @@ functions can be trusted.
       </section> <!-- High-level Validation API -->
 
 
-      <section title="Low-level Validation API">
+      <section title="Low-level Validation API" anchor="low_level_api">
       <!-- #################################### -->
 
       <t> 
@@ -543,7 +566,7 @@ queries in the list.</t>
     </section> <!-- Low-level API -->
 
 
-    <section title="Context Management and Validator Policy" anchor="val-context">
+    <section title="Context Management and Validator Policy API" anchor="val-context">
     <!--            ####################################### -->
 
       <t>
@@ -709,8 +732,6 @@ update the base policy within the context.</t>
 
     </section> <!-- Context Management -->
       
-   </section> <!-- Validator API -->
-
    <section title="Error Codes">
 
    <t>
