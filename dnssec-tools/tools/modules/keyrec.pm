@@ -1,5 +1,5 @@
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -33,6 +33,7 @@
 #			keyrec_type	"ksk"
 #			algorithm	"rsasha1"
 #			length		"1024"
+#			ksklife		"15768000"
 #			random		"-r /dev/urandom"
 #
 #	The current implementation assumes that only one keyrec file will
@@ -67,7 +68,9 @@ my @KEYFIELDS = (
 			'random',
 			'keypath',		# Only set for obsolete ZSKs.
 			'ksklength',
+			'ksklife',
 			'zsklength',
+			'zsklife',
 			'kgopts',
 			'keyrec_gensec',
 			'keyrec_gendate',
@@ -606,15 +609,27 @@ sub keyrec_add
 			}
 
 			#
-			# Special case for keys:  Only give the key length
-			# for the key's type.
+			# Handle KSK-specific fields.
 			#
-			if((($fn eq 'ksklength')	&&
-			    ($fields{'keyrec_type'} ne 'ksk'))	||
-			   (($fn eq 'zsklength')	&&
-			    ($fields{'keyrec_type'} !~ /^zsk/)))
+			if($fields{'keyrec_type'} ne 'ksk')
 			{
-				next;
+				if(($fn eq 'ksklength')		||
+				   ($fn eq 'ksklife'))
+				{
+					next;
+				}
+			}
+
+			#
+			# Handle ZSK-specific fields.
+			#
+			if($fields{'keyrec_type'} !~ /^zsk/)
+			{
+				if(($fn eq 'zsklength')		||
+				   ($fn eq 'zsklife'))
+				{
+					next;
+				}
 			}
 
 			#
@@ -1036,7 +1051,8 @@ following is an example of a key I<keyrec>:
           keyrec_type     "ksk"
           algorithm       "rsasha1"
           random          "/dev/urandom"
-          zsklength       "512"
+          ksklength       "512"
+	  ksklife	  "15768000"
           keyrec_gensecs  "1101183727"
           keyrec_gendate  "Tue Nov 23 04:22:07 2004"
 
@@ -1278,7 +1294,7 @@ I<keyrec> file.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
