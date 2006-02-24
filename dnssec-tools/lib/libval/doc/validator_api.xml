@@ -42,10 +42,10 @@
   <keyword>Internet-Draft</keyword>
 
   <abstract> 
-    <t>The DNS Security Extensions (DNSSEC) provide origin authenticity and data
-integrity of DNS data.  However, the current resolver API does not allow the
-resolver to communicate results of DNSSEC processing back to the application.
- This document describes an Application Programming Interface between
+    <t>The DNS Security Extensions (DNSSEC) provide origin authentication and
+integrity of DNS data.  However, the current resolver API does not allow a
+security-aware resolver to communicate results of DNSSEC processing back to the
+application.  This document describes an Application Programming Interface between
 applications and a validating security-aware stub resolver that allows
 applications to control the validation process and obtain results of
 DNSSEC processing.</t>
@@ -71,8 +71,8 @@ a convenient way for applications to control the DNSSEC validation
 process and to obtain results of the validation process. </t>
   <t>
   The API can be broadly divided into three groups: 
-the High-Level validator API, the Low-Level validator API and 
-the Context management API. </t>
+the high-Level validator API, the low-Level validator API and 
+the context management API. </t>
 
   <t>
   The high-level validator API is designed for ease of 
@@ -112,8 +112,8 @@ and <xref target="val-context"/> describe these interfaces in greater detail. </
 
 	<t> </t>
 	<t hangText="validator policy:"> 
-	A set of configuration parameters for the validator which could potententially influence 
-	the eventual outcome from the validation process. </t>
+	A set of configuration parameters for the validator which could potentially influence 
+	the eventual outcome of the validation process. </t>
 
 	<t> </t>
         <t hangText="policy attribute: ">
@@ -213,28 +213,24 @@ int val_gethostbyaddr_r( const val_context_t *ctx,
       <postamble>
       <t>
       The val_gethostbyname() and val_gethostbyname_r() functions perform
-name to address translation.  The val_gethostbyaddr() and val_gethostbyaddr_r()
-functions perform the address to name translation.
+name-to-address translation.  The val_gethostbyaddr() and val_gethostbyaddr_r()
+functions perform the address-to-name translation.
       These functions are DNSSEC-aware versions of the gethostbyname(),
 gethostbyname_r(), gethostbyaddr() and gethostbyaddr_r() functions and
 can be used by applications to get the validation status of DNS queries
-performed during the name to address or address to name translation.
+performed during the name-to-address or address-to-name translation.
       </t>
       <t>
-      The val_gethostbyname() function returns a structure of type hostent for
-the given host name.  As with gethostbyname(), the val_gethostbyname()
-function sets the value of the global h_errno variable.  The return value
-may point to static data, which may be overwritten by subsequent calls.  This
-function returns a pointer to a struct hostent value on success, and NULL on
-error.</t>
-      <t>
-      The val_gethostbyaddr() function returns a pointer to a structure
-of type hostent for the given host address addr of length len and address
-type type.  Valid address types are AF_INET and AF_INET6.  As with
-gethostbyaddr(), the val_gethostbyaddr() function sets the value of the
-global h_errno variable.  The return value may point to static data,
-which may be overwritten by subsequent calls.  This function returns a
-pointer to a struct hostent value on success, and NULL on error.
+      The val_gethostbyname() function returns a pointer to a structure of
+type hostent for the given host name.  The val_gethostbyaddr() function
+returns a pointer to a structure of type hostent for the given host address
+addr whose length is given by the len parameter and address type is given by
+the type parameter.  Valid address types are AF_INET and AF_INET6.  As with
+gethostbyname() and gethostbyaddr(), the val_gethostbyname() and
+val_gethostbyaddr() functions set the value of the global h_errno variable.
+Their return value may point to static data, and it may be overwritten by
+subsequent calls.  These functions return a pointer to a struct hostent value
+on success, and NULL on error.
       </t>
       <t>
       The val_gethostbyname_r() and val_gethostbyaddr_r() functions are
@@ -304,15 +300,18 @@ represents the status of DNSSEC validation for that particular answer.  A
 successful validation status must be set only if both the address and
 canonical name (if present) have been validated successfully.  The memory for
 the value returned in *res is dynamically allocated by this function.  The
-caller should free it after use using the val_free_addrinfo() function. The
-val_getaddrinfo() function returns 0 on success and a non-zero value on error.
+caller should free it after use using the val_free_addrinfo() function.
       </t>
       <t>
-      The val_getnameinfo() function performs an address to name translation
+      The val_getnameinfo() function performs an address-to-name translation
 in a protocol independent manner.  It is a DNSSEC-aware version of the
 getnameinfo() function (<xref target="refs.RFC3493">RFC 3493</xref>).  In
 addition to the values returned by the getnameinfo() function, it returns
 the DNSSEC validation status via the val_status parameter.
+      </t>
+      <t>
+The val_getaddrinfo() and val_getnameinfo() functions return 0 on success and
+a non-zero value on error.
       </t>
       </postamble>
       </figure>
@@ -338,9 +337,10 @@ struct val_response {
       <postamble>
       <t>
       The val_query() function queries the name server for a fully qualified
-domain name of the given class and type.  It is a DNSSEC-aware replacement for the
-res_query() function.  It additionally gives results of DNSSEC validation of the
-answers returned.</t>
+domain name of the given class and type.  In addition to the answers to the
+query, it gives the status of DNSSEC validation for each answer returned.
+It is a intended as a DNSSEC-aware replacement for the res_query() function.
+      </t>
       <t>
       Multiple RRsets may be returned in response to a query, each with a 
 potentially different validation status. The answers are returned in an
@@ -359,9 +359,6 @@ for that particular RRset.</t>
 function is called *resp_count must contain the number of elements in the
 resp array.  On return, it will contain the actual number of responses
 returned by the validator.</t>
-     <t>
-     The ctx parameter is the validator context and can be set to NULL
-for default settings.</t>
      <t>
      The flags parameter controls the scope of validation and name
 resolution, and the output format.  At present only one flag is defined:
@@ -403,13 +400,13 @@ summarized below. </t>e
         <figure>
         <artwork>
 int val_resolve_and_check( const val_context_t    *context, 
-                     const char             *domain_name,
-                     const u_int16_t        class,
-                     const u_int16_t        type, 
-                     const u_int8_t         flags,
-                     struct val_result      **results, 
-                     struct assertion_chain **assertions,
-                     struct query_chain     **queries); 
+                           const char             *domain_name,
+                           const u_int16_t        class,
+                           const u_int16_t        type, 
+                           const u_int8_t         flags,
+                           struct val_result      **results, 
+                           struct assertion_chain **assertions,
+                           struct query_chain     **queries); 
 
 void val_free_result( struct val_result *results );
 
@@ -419,34 +416,34 @@ void val_free_query_chain ( struct query_chain *queries );
 
 
 struct val_result_chain {
-    val_status_t val_rc_status;
+    val_status_t               val_rc_status;
     struct val_assertion_chain *val_rc_trust;
-    struct val_result *val_rc_next;
+    struct val_result          *val_rc_next;
 };
 
 struct val_assertion_chain {
-  val_astatus_t val_ac_status;
-  struct val_rrset *val_ac_rrset;
-  struct val_query_chain *val_ac_query_more;
-  struct val_assertion_chain *val_ac_trust;
-  struct val_assertion_chain *val_ac_rrset_next;
-  struct val_assertion_chain *val_ac_next;
+    val_astatus_t              val_ac_status;
+    struct val_rrset           *val_ac_rrset;
+    struct val_query_chain     *val_ac_query_more;
+    struct val_assertion_chain *val_ac_trust;
+    struct val_assertion_chain *val_ac_rrset_next;
+    struct val_assertion_chain *val_ac_next;
 };
 
 struct val_rrset {
-   u_int8_t  val_rrset_section;
-   u_int16_t val_rrset_len;
-   u_int8_t *val_rrset_data;
+    u_int8_t  val_rrset_section;
+    u_int16_t val_rrset_len;
+    u_int8_t  *val_rrset_data;
 };
 
 
 struct val_query_chain {
-    val_qstatus_t val_qc_status;
-    u_int16_t val_qc_raw_response_length;
-    u_int8_t *val_qc_raw_response;
+    val_qstatus_t              val_qc_status;
+    u_int16_t                  val_qc_raw_response_length;
+    u_int8_t                   *val_qc_raw_response;
     struct val_assertion_chain *val_qc_answer;
     struct val_assertion_chain *val_qc_creator;
-    struch val_query_chain *val_qc_next;
+    struch val_query_chain     *val_qc_next;
 };
         </artwork>
         <postamble>
@@ -726,19 +723,23 @@ validation process.
    </t>
    <t>
    The validator API relies on three factors for performing validation.  The
-first is the /etc/hosts file for local name to address translation.  The
-second is the /etc/resolv.conf file for determining the DNS search path and
-addresses of name servers.  The third is the validator policy.  Each of these
-will affect the validation result.
+first is the /etc/hosts file for local name-to-address and address-to-name
+translations.  The second is the /etc/resolv.conf file for determining the
+DNS search path and addresses of name servers.  The third is the validator
+policy.  Each of these will affect the validation result.
    </t>
    <t>
-   The val_istrusted() function in the high-level validator API assumes that
-the addresses present in the /etc/hosts file can be trusted.  If the /etc/hosts
-file is modified during a DHCP lookup, the client system should ensure that the
-DHCP server is a trusted source, and that the communication path between the
-DHCP server and the client system is secured.  If these conditions are not
-satisfied, there is a potential attack vector whereby an attacker can poison
-the /etc/hosts file and an application using this API may trust the result.
+   The validator API functions can return a status of LOCAL_ANSWER if they get
+the answer to the query locally (for example, from the /etc/hosts file).  The
+application cannot assume that these answers can be trusted, unless the
+application is certain that local data (the /etc/hosts file) is trustworthy.
+If the /etc/hosts file is modified during a DHCP lookup, for example, the client
+system should ensure that the DHCP server is a trusted source, and that the
+communication path between the DHCP server and the client system is secured. 
+ If these conditions are not satisfied and if the application chooses to trust
+a validation status of LOCAL_ANSWER, there exists a potential attack vector
+whereby an attacker can poison the /etc/hosts file and an application using
+this API may trust the result.
    </t>
    <t>
    The DNS search path may affect the result of validation, especially in
@@ -755,10 +756,10 @@ and the client system is secured.
    <t>
    The default validator policy file (/etc/dnsval.conf) needs to be protected
 so that it cannot be overwritten by unauthorized users or processes.  Policies
-in this file will list the Trust Anchors for classes of applications.  The
-system administrator must ensure that the list of Trust Anchors are kept
-up-to-date in the event of key-rollovers.  If the Trust Anchors are outdated,
-the validator will not be able to validate responses from DNS successfully.
+in this file will list the trust anchors for classes of applications.  The
+system administrator must ensure that the list of trust anchors are kept
+up-to-date in the event of key-rollovers.  If the trust anchors are outdated,
+the validator will not be able to validate responses from DNS.
    </t>
    </section> <!-- Security Considerations -->
 
