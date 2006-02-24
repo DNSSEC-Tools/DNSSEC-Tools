@@ -487,7 +487,7 @@ sub usage
 
 =head1 NAME
 
-genkrf - Generate a I<keyrec> file from existing Key Signing Key (KSK)
+genkrf - Generate a I<keyrec> file from Key Signing Key (KSK)
          and/or Zone Signing Key (ZSK) files.
 
 =head1 SYNOPSIS
@@ -498,89 +498,132 @@ genkrf - Generate a I<keyrec> file from existing Key Signing Key (KSK)
 
 =head1 DESCRIPTION
 
-This script generates a I<keyrec> file (see zonesigner(1) for details) from
-existing KSK and/or ZSK files.  It generates new KSK and/or ZSK keys if
-needed.
+The I<genkrf> script generates a I<keyrec> file from KSK and/or ZSK files.  It
+generates new KSK and/or ZSK keys if needed.
 
 The name of the I<keyrec> file to be generated is given by the I<-krfile>
-option.  If this option is not specified, <zone-name>.krf is used as the
-name of the I<keyrec> file.  If the I<keyrec> file already exists, it will
-be overwritten with new I<keyrec> definitions.
+option.  If this option is not specified, B<E<lt>zone-nameE<gt>.krf> is used
+as the
+name of the I<keyrec> file.  If the I<keyrec> file already exists, it will be
+overwritten with new I<keyrec> definitions.
 
-The I<zone-file> argument is required.  It specifies the name of the zone
-file from which the signed zone file was created.  The optional
-I<signed-zone-file> argument specifies the name of the signed zone file.
-If it is not given, then it defaults to "I<<zone-file>>.signed".
+The I<zone-file> argument is required.  It specifies the name of the zone file
+from which the signed zone file was created.  The optional I<signed-zone-file>
+argument specifies the name of the signed zone file.  If it is not given, then
+it defaults to B<E<lt>zone-fileE<gt>.signed>.
 
 =head1 OPTIONS
 
-B<genkrf> has the following options:
+I<genkrf> has a number of options that assist in creation of the I<keyrec>
+file.  These options will be set to the first value found from this search
+path:
+
+    command line options
+    DNSSEC-Tools configuration file
+    DNSSEC-Tools defaults
+
+See I<tooloptions.pm(3)> for more details.
+Exceptions to this are given in the option descriptions.
+
+The I<genkrf> options are described below.
+
+=head2 General I<genkrf> Options
 
 =over 4
 
-=item -zone
+=item -zone I<zone-name>
 
 This option specifies the name of the zone.  If it is not given then
 I<zone-file> will be used as the name of the zone.
 
-=item -krfile
+=item -krfile I<keyrec-file>
 
-This option specifies the name of the keyrec file.  If it is not given
-then I<zone-name>.krf will be used as the name of the keyrec file to
-be generated.
+This option specifies the name of the I<keyrec> file to be generated.
+If it is not given, then B<E<lt>zone-nameE<gt>.krf> will be used.
 
-=item -ksk
+=item -algorithm I<algorithm>
 
-This option specifies the KSK being used to sign the zone.  If this
+This option specifies the algorithm used to generate encryption keys.
+
+=item -endtime I<endtime>
+
+This option specifies the time that the signature on the zone expires,
+measured in seconds.
+
+=item -random I<random-device>
+
+Source of randomness used to generate the zone's keys. See the man
+page for I<dnssec-signzone> for the valid format of this field.
+
+=item -verbose
+
+Display additional messages during processing.  If this option is given at
+least once, then a message will be displayed indicating the successful
+generation of the I<keyrec> file.  If it is given twice, then the values of
+all options will also be displayed.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head2 KSK-related Options
+
+=over 4
+
+=item -ksk I<KSK-name>
+
+This option specifies the KSK's key file being used to sign the zone.  If this
 option is not given, a new KSK will be created.
 
-=item -kskdir
+=item -kskdir I<KSK-directory>
 
 This option specifies the absolute or relative path of the directory
 where the KSK resides.  If this option is not given, it defaults to
 the current directory ".".
 
-=item -zskcur
+=item -ksklength I<KSK-length>
+
+This option specifies the length of the KSK encryption key.
+
+=item -ksklife I<KSK-lifetime>
+
+This option specifies the lifetime of the KSK encryption key.  This lifetime
+is B<not> inherent to the key itself.  It is B<only> used to determine when
+the KSK must be rolled over.
+
+=back
+
+=head2 ZSK-related Options
+
+=over 4
+
+=item -zskcur I<ZSK-name>
 
 This option specifies the current ZSK being used to sign the zone.
 If this option is not given, a new ZSK will be created.
 
-=item -zskpub
+=item -zskpub I<ZSK-name>
 
 This option specifies the published ZSK for the zone.  If this option
 is not given, a new ZSK will be created.
 
-=item -zskdir
+=item -zskdir I<ZSK-directory>
 
 This option specifies the absolute or relative path of the directory
 where the ZSKs reside.  If this option is not given, it defaults to
 the current directory ".".
 
-=item -endtime
+=item -zsklength I<ZSK-length>
 
-This option specifes the time that the signature on the zone expires,
-measured in seconds.  See the man page for I<dnssec-signzone> for the
-valid format of this field.  If this option is not specified, its
-value is read from the /usr/local/etc/dnssec/dnssec-tools.conf file.
-If this file does not specify an endtime field, the value of this
-option defaults to 2592000 seconds (30 days).
+This option specifies the length of the ZSK encryption key.
 
-=item -random
+=item -zsklife I<ZSK-lifetime>
 
-Source of randomness used to generate the zone's keys. See the man
-page for I<dnssec-signzone> for the valid format of this field.  If
-this option is not specified, its value is read from the
-/usr/local/etc/dnssec/dnssec-tools.conf file.  If this file does not
-specify a random field, the value of this option defaults to 
-"/dev/urandom".
-
-=back
-
-=over 4
-
-=item -help
-
-Display a usage message.
+This option specifies the lifetime of the ZSK encryption key.  This lifetime
+is B<not> inherent to the key itself.  It is B<only> used to determine when
+the ZSK must be rolled over.
 
 =back
 
@@ -595,10 +638,15 @@ Abhijit Hayatnagarkar
 
 =head1 SEE ALSO
 
+I<dnssec-signzone(8)>,
+I<zonesigner(8)>
+
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>,
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>
 
-B<zonesigner(1)>
+B<Net::DNS::SEC::Tools::conf(5)>,
+B<Net::DNS::SEC::Tools::keyrec(5)>
 
 =cut
+
