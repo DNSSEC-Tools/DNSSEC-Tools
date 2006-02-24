@@ -84,6 +84,9 @@ The default KSK key length to be passed to I<dnssec-keygen>.
 The default length of time between KSK roll-overs.  This is measured in
 seconds.
 
+This value is B<only> used for key roll-over.  Keys do not have a life-time
+in any other sense.
+
 =item random
 
 The random device generator to be passed to I<dnssec-keygen>.
@@ -113,6 +116,9 @@ The default ZSK key length to be passed to I<dnssec-keygen>.
 
 The default length of time between ZSK roll-overs.  This is measured in
 seconds.
+
+This value is B<only> used for key roll-over.  Keys do not have a life-time
+in any other sense.
 
 =back
 
