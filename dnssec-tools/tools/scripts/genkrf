@@ -12,22 +12,19 @@
 use strict;
 
 use Getopt::Long;
-use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::tooloptions;
 
 #######################################################################
 #
 # Constants
 #
-our $DEF_ENDTIME   = "+2592000";        # Thirty days
-our $DEF_RANDOM    = "/dev/urandom";    # Default source of randomness
-our $DEF_KEYGEN    = "dnssec-keygen";   # Default command for key generation
-our $DEF_ALGORITHM = "rsasha1";         # Default algorithm
-our $DEF_KSKSIZE   = 2048;              # Default KSK size
-our $DEF_ZSKSIZE   = 1024;              # Default ZSK size
 our $DEF_TOOLSCONF = "/usr/local/etc/dnssec/dnssec-tools.conf";
 
-# A hash mapping algorithm numbers to algorithm names
+#
+# A hash mapping algorithm numbers to algorithm names.
+#
 our %algos = (
     "001" => "rsa",
     "002" => "dh",
@@ -36,9 +33,11 @@ our %algos = (
     "157" => "hmac_md5"
 );
 
-# Names of fields from bind-9.3.1/lib/dns/dst_parse.c
+#
+# Names of fields from bind-9.3.1/lib/dns/dst_parse.c.
 # Private-key-format: v1.2
-# These help in finding the size of the key from the .private key file
+# These help in finding the size of the key from the .private key file.
+#
 our %algofields = (
     "001" => "Modulus:",
     "002" => "Prime(p):",
@@ -50,41 +49,39 @@ our %algofields = (
 #
 # Data required for command line options.
 #
-my $zone; 				# Name of the zone
+my $zone; 				# Name of the zone.
 my $ksk;  				# Name of KSK.
 my $zskcur;				# Name of current ZSK.
 my $zskpub;				# Name of published ZSK.
-my $zonefile;                           # Name of the zone file
-my $signedfile;                         # Name of the signed zone file
-my $kskdir;                             # Directory where the KSK resides
-my $zskdir;                             # Directory where the ZSKs reside
-my $endtime;                            # Endtime of signature validity
-my $random;                             # The source of randomness
-my $krfile;                             # Name of the keyrec file to generate
+my $zonefile;                           # Name of the zone file.
+my $signedfile;                         # Name of the signed zone file.
+my $kskdir;                             # Directory where the KSK resides.
+my $zskdir;                             # Directory where the ZSKs reside.
+my $endtime;                            # Endtime of signature validity.
+my $random;                             # The source of randomness.
+my $krfile;                             # Name of the keyrec file to generate.
+my $ksklife;                            # Lifetime of the KSK.
+my $zsklife;                            # Lifetime of the ZSK.
+my $algo;                               # The encryption algorithm.
+my $ksksize;                            # The KSK size.
+my $zsksize;                            # The ZSK size.
+
+my $verbose;
 my $helpflag;
 
 #
-# Command line options for this program
+# Command-line options specifically for this program.
 #
-my @opts = ("zone=s"      => \$zone,
-	    "ksk=s"       => \$ksk,
-	    "kskdir=s"    => \$kskdir,
-	    "zskcur=s"    => \$zskcur,
-	    "zskpub=s"    => \$zskpub,
-	    "zskdir=s"    => \$zskdir,
-	    "endtime=s"   => \$endtime,
-	    "random=s"    => \$random,
-	    "krfile=s"    => \$krfile,
-	    "help"        => \$helpflag # Give a usage message and exit.
-	    );
+my @opts = (
+		"ksk=s",
+		"zskcur=s",
+		"zskpub=s",
+	   );
 
 #
-# Data from the dnssec-tools.conf file
+# Data from the dnssec-tools.conf file.
 #
-my $keygen;                             # The key-generation program
-my $algo;                               # The algorithm
-my $ksksize;                            # The KSK size
-my $zsksize;                            # The ZSK size
+my $keygen;                             # The key-generation program.
 
 #######################################################################
 
@@ -129,71 +126,81 @@ sub main()
 	#
 	# Generate the keyrec file
 	#
-
-	# Initialize a keyrecc data structure
 	my $retval = keyrec_creat($krfile);
-
 	keyrec_read($krfile);
 
-	# Add zone keyrec
+	#
+	# Add zone keyrec.
+	#
 	keyrec_add('zone', $zone, {
-				   'keyrec_signdate' => "",
-				   'keyrec_signsecs' => "",
-				   'endtime'         => $endtime,
-				   'signedfile'      => $signedfile,
 				   'zonefile'        => $zonefile,
-				   'zskdirectory'    => $zskdir,
-				   'zskpubpath'      => "$zskdir/$zskpub.key",
-				   'zskcurpath'      => "$zskdir/$zskcur.key",
-				   'zskpub'          => $zskpub,
-				   'zskcur'          => $zskcur,
+				   'keyrec_type'     => "zone",
+				   'signedfile'      => $signedfile,
+				   'endtime'         => $endtime,
 				   'kskdirectory'    => $kskdir,
 				   'kskpath'         => "$kskdir/$ksk.key",
 				   'kskkey'          => $ksk,
-				   'keyrec_type'     => "zone"
+				   'zskdirectory'    => $zskdir,
+				   'zskcur'          => $zskcur,
+				   'zskpub'          => $zskpub,
+				   'zskcurpath'      => "$zskdir/$zskcur.key",
+				   'zskpubpath'      => "$zskdir/$zskpub.key",
+				   'keyrec_signdate' => "",
+				   'keyrec_signsecs' => "",
 				   });
 
-	# Add ksk keyrec
+	#
+	# Add ksk keyrec.
+	#
 	keyrec_add('key', $ksk, {
+				 'zonename'	  => $zone,
+				 'keyrec_type'	  => "ksk",
+				 'algorithm'	  => getkeyalgo($ksk),
+				 'random'	  => $random,
+				 'ksklength'	  => getkeysize('ksk', $ksk, $kskdir),
+				 'ksklife'	  => $ksklife,
+				 'keypath'	  => "$kskdir/$ksk.key",
 				 'keyrec_gendate' => "",
 				 'keyrec_gensecs' => "",
-				 'ksklength'      => getkeysize($ksk, $kskdir),
-				 'keypath'        => "$kskdir/$ksk.key",
-				 'random'         => $random,
-				 'algorithm'      => getkeyalgo($ksk),
-				 'zonename'       => $zone,
-				 'keyrec_type'    => "ksk"
 				 });
 
-	# Add zskcur keyrec
+	#
+	# Add zskcur keyrec.
+	#
 	keyrec_add('key', $zskcur, {
+				    'zonename'	     => $zone,
+				    'keyrec_type'    => "zskcur",
+				    'algorithm'	     => getkeyalgo($zskcur),
+				    'random'	     => $random,
+				    'zsklength'	     => getkeysize('zsk', $zskcur, $zskdir),
+				    'zsklife'	     => $zsklife,
+				    'keypath'	     => "$zskdir/$zskcur.key",
 				    'keyrec_gendate' => "",
 				    'keyrec_gensecs' => "",
-				    'zsklength'      => getkeysize($zskcur, $zskdir),
-				    'keypath'        => "$zskdir/$zskcur.key",
-				    'random'         => $random,
-				    'algorithm'      => getkeyalgo($zskcur),
-				    'zonename'       => $zone,
-				    'keyrec_type'    => "zskcur"
 				    });
 
-	# Add zskpub keyrec
+	#
+	# Add zskpub keyrec.
+	#
 	keyrec_add('key', $zskpub, {
+				    'zonename'	     => $zone,
+				    'keyrec_type'    => "zskpub",
+				    'algorithm'	     => getkeyalgo($zskpub),
+				    'random'	     => $random,
+				    'zsklength'	     => getkeysize('zsk', $zskpub, $zskdir),
+				    'zsklife'	     => $zsklife,
+				    'keypath'	     => "$zskdir/$zskpub.key",
 				    'keyrec_gendate' => "",
 				    'keyrec_gensecs' => "",
-				    'zsklength'      => getkeysize($zskpub, $zskdir),
-				    'keypath'        => "$zskdir/$zskpub.key",
-				    'random'         => $random,
-				    'algorithm'      => getkeyalgo($zskpub),
-				    'zonename'       => $zone,
-				    'keyrec_type'    => "zskpub"
 				    });
 
-	# Write the keyrec file
+	#
+	# Write the keyrec file.
+	#
 	keyrec_write();
 	keyrec_close();
 
-	print STDERR "genkrf: file $krfile created successfully.\n";
+	print STDERR "genkrf:. keyrec file $krfile created successfully\n" if($verbose);
 	return(0);
 }
 
@@ -207,15 +214,47 @@ sub main()
 #
 sub optsandargs
 {
-	# Parse the command-line options
-	GetOptions(@opts);
+	my $ropts;				# Reference to options hash.
+	my %opts = ();				# Options hash.
 
-	usage() if $helpflag;
+	#
+	# Slurp up the options.
+	#
+	$ropts = tooloptions("","",@opts);
+	%opts = %$ropts 	if($ropts != undef);
 
+	#
+	# Get the option values.  If these weren't given on the command
+	# line, they'll be taken from the config file or the defaults.
+	#
+	$ksk	   = $opts{'ksk'};
+	$zskcur	   = $opts{'zskcur'};
+	$zskpub	   = $opts{'zskpub'};
+
+	$ksksize   = $opts{'ksklength'} || dnssec_tools_defaults("ksklength");
+	$ksklife   = $opts{'ksklife'}   || dnssec_tools_defaults("ksklife");
+	$zsksize   = $opts{'zsklength'} || dnssec_tools_defaults("zsklength");
+	$zsklife   = $opts{'zsklife'}   || dnssec_tools_defaults("zsklife");
+
+	$algo	   = $opts{'algorithm'}	|| dnssec_tools_defaults("zsklife");
+	$endtime   = $opts{'endtime'}	|| dnssec_tools_defaults("enddate");
+	$random	   = $opts{'random'}	|| dnssec_tools_defaults("zsklife");
+
+	$keygen	   = $opts{'keygen'}	|| dnssec_tools_defaults("bind-keygen");
+
+	$verbose   = $opts{'verbose'};
+	$helpflag  = $opts{'help'};
+
+	#
+	# Give usage message in a few situations.
+	#
 	usage() if ($#ARGV < 0);
+	usage() if($helpflag);
 
-	$zonefile = $ARGV[0];
-
+	#
+	# Get the zone file and signed filename.
+	#
+	$zonefile   = $ARGV[0];
 	if ($#ARGV > 0) {
 	    $signedfile = $ARGV[1];
 	}
@@ -223,29 +262,40 @@ sub optsandargs
 	    $signedfile = $zonefile . ".signed";
 	}
 
-#	usage() if (!$ksk && !$zskcur && !$zskpub);
-
-	# Parse the dnssec-tools.conf file
-	my %dtconf = parseconfig();
-
-	$zone = $zonefile if (!$zone);
+	#
+	# Get the keyrec's zone and strip off a terminal ".".
+	#
+	$zone = $opts{'zone'} || $zonefile;
 	$zone =~ s/^(.*)\.$/$1/;
 
-	$krfile = $zone . ".krf" if (!$krfile);
+	#
+	# Set the output filename.
+	#
+	$krfile = $opts{'krfile'} || "$zone.krf";
 
 	$kskdir = "." if (!$kskdir);
 	$zskdir = "." if (!$zskdir);
 
-	$endtime = $dtconf{'endtime'} if (!$endtime);
-	$endtime = $DEF_ENDTIME if (!$endtime);
-
-	$random = $dtconf{'random'} if (!$random);
-	$random = $DEF_RANDOM if (!$random);
-
-	$keygen  = $dtconf{'keygen'}    || $DEF_KEYGEN;
-	$ksksize = $dtconf{'ksklength'} || $DEF_KSKSIZE;
-	$zsksize = $dtconf{'zsklength'} || $DEF_ZSKSIZE;
-	$algo    = $dtconf{'algorithm'} || $DEF_ALGORITHM;
+	#
+	# If the verbose flag was given, show all the values.
+	#
+	if($verbose > 1)
+	{
+		print "zonefile   - \"$zonefile\"\n";
+		print "signedfile - \"$signedfile\"\n";
+		print "krfile     - \"$krfile\"\n\n";
+		print "zone       - \"$zone\"\n";
+		print "algorithm  - \"$algo\"\n\n";
+		print "endtime    - \"$endtime\"\n\n";
+		print "random     - \"$random\"\n\n";
+		print "ksk        - \"$ksk\"\n";
+		print "zskcur     - \"$zskcur\"\n";
+		print "zskpub     - \"$zskpub\"\n\n";
+		print "ksksize    - \"$ksksize\"\n";
+		print "ksklife    - \"$ksklife\"\n";
+		print "zsksize    - \"$zsksize\"\n";
+		print "zsklife    - \"$zsklife\"\n\n";
+	}
 }
 
 #-----------------------------------------------------------------------------
@@ -260,11 +310,11 @@ sub optsandargs
 #
 #                     Knnnn.+aaa+iiiii
 #
-#               where
+#               where:
 #
 #                     nnnn is the key name
 #                     aaa  is the numeric representation of the algorithm
-#                 and iiiii is the key identifier (or footprint)
+#                     iiiii is the key identifier (or footprint)
 #
 sub getkeyalgo
 {
@@ -272,7 +322,7 @@ sub getkeyalgo
 
     my $algonum = $key;
     $algonum =~ s/^[^\+]*\+([^+]*)\+.*$/$1/g;
-    return $algos{$algonum};
+    return($algos{$algonum});
 }
 
 #-----------------------------------------------------------------------------
@@ -286,9 +336,22 @@ sub getkeyalgo
 #
 sub getkeysize
 {
-    my $key = shift;
-    my $keydir = shift;
-    my $keysize = 0;
+    my $keytype	= shift;			# Type of key to create.
+    my $key	= shift;			# Name of key.
+    my $keydir	= shift;			# Key's directory.
+
+    my $keysize = 0;				# Key length.
+
+    #
+    # If the key's size field is set, we'll use it instead of
+    # calculating things.
+    #
+    if($keytype eq "ksk") {
+	return($ksksize) if($ksksize > -1);
+    }
+    else {
+	return($zsksize) if($zsksize > -1);
+    }
 
     if (!$keydir) {
 	$keydir = ".";
@@ -305,38 +368,40 @@ sub getkeysize
 
     while(<KF>) {
 	my $line = $_;
-	if ($line =~ /^$algofield/) {
-	    # Extract the value of the field
-	    $line =~ s/^$algofield(.*)$/$1/;
-	    $line =~ s/\s//g;
 
-	    # The value is encoded in Base64, hence the
-	    # following algorithm for finding the keysize
-	    $keysize = length($line);
-	    $keysize = ($keysize / 4) * 3;
-	    if ($line =~ /==$/) {
+	next if ($line !~ /^$algofield/);
+
+	# Extract the value of the field.
+	$line =~ s/^$algofield(.*)$/$1/;
+	$line =~ s/\s//g;
+
+	# The value is encoded in Base64, hence the
+	# following algorithm for finding the keysize.
+	$keysize = length($line);
+	$keysize = ($keysize / 4) * 3;
+
+	if ($line =~ /==$/) {
 		$keysize -= 2;
-	    }
-	    elsif ($line =~ /=$/) {
-		$keysize -= 1;
-	    }
-	    
-	    $keysize *= 8;
-	    last;
 	}
+	elsif ($line =~ /=$/) {
+		$keysize -= 1;
+	}
+	    
+	$keysize *= 8;
+	last;
     }
+
+
     close(KF);
 
-    return $keysize;
+    return($keysize);
 }
 
 #-----------------------------------------------------------------------------
 #
 # Routine:      genksk()
 #
-# Purpose:      This routine generates a new Key Signing Key (KSK)
-#
-# Uses global variables in this file
+# Purpose:      This routine generates a new Key Signing Key (KSK).
 #
 sub genksk
 {
@@ -347,7 +412,10 @@ sub genksk
     if ($kskdir ne ".") {
 	`mkdir -p $kskdir && mv $ksk* $kskdir`;
     }
-    return $ksk || "";
+
+    $ksksize = -1;
+
+    return($ksk || "");
 }
 
 
@@ -355,46 +423,56 @@ sub genksk
 #
 # Routine:      genzsk()
 #
-# Purpose:      This routine generates a new Zone Signing Key (ZSK)
-#
-# Uses global variables in this file
+# Purpose:      This routine generates a new Zone Signing Key (ZSK).
 #
 sub genzsk
 {
     my $cmdopts = "-r $random -a $algo -b $zsksize";
-
     my $zsk = `$keygen $cmdopts -n zone $zone`;
+
     chomp $zsk;
     if ($zskdir ne ".") {
 	`mkdir -p $zskdir && mv $zsk* $zskdir`;
     }
-    return $zsk || "";
+
+    $zsksize = -1;
+
+    return($zsk || "");
 }
 
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
 #
-# Purpose:      This routine prints the usage and exits
+# Purpose:      This routine prints the usage and exits.
 #
 sub usage
 {
-	print STDERR "usage: genkrf [options] <zone-file> [<signed-zone-file>]\n";
+	print STDERR "usage: genkrf [options] <zone-file> [signed-zone-file]\n";
 
-	print STDERR "\n\t<zone-file>                  name of the zone file\n";
-	print STDERR "\t<signed-zone-file>           name of the signed zone file\n";
+	print STDERR "\n\t<zone-file>                     name of the zone file\n";
+	print STDERR "\t[signed-zone-file]              name of the signed zone file\n";
 
 	print STDERR "\n\toptions:\n";
-	print STDERR "\t\t-zone=<ZONE>         name of the zone\n";
-	print STDERR "\t\t-ksk=<KSK>           name of the Key Signing Key (KSK)\n";
-	print STDERR "\t\t-kskdir=<PATH>       KSK directory\n";
-	print STDERR "\t\t-zskcur=<ZSKCUR>     name of the current Zone Signing Key (ZSK)\n";
-	print STDERR "\t\t-zskpub=<ZSKPUB>     name of the published ZSK\n";
-	print STDERR "\t\t-zskdir=<PATH>       ZSK directory\n";
-	print STDERR "\t\t-endtime=<ENDTIME>   end time of signature\n";
-	print STDERR "\t\t-random=<RANDOMDEV>  source of randomness\n";
+	print STDERR "\t\t-zone ZONE              name of the zone\n";
+	print STDERR "\t\t-krfile KEYREC          zone's keyrec file\n";
+	print STDERR "\t\t-algorithm ALGORITHM    encryption algorithm\n";
+	print STDERR "\t\t-endtime ENDTIME        end time of signature\n";
+	print STDERR "\t\t-random RANDOMDEV       source of randomness\n\n";
 
-	print STDERR "\t\t-help\t              help message\n";
+	print STDERR "\t\t-ksk KSK                name of the KSK\n";
+	print STDERR "\t\t-kskdir PATH            KSK directory\n";
+	print STDERR "\t\t-ksklength KEYLEN       KSK length\n";
+	print STDERR "\t\t-ksklife LIFETIME       KSK lifetime\n\n";
+
+	print STDERR "\t\t-zskcur ZSKCUR          name of the current ZSK\n";
+	print STDERR "\t\t-zskpub ZSKPUB          name of the published ZSK\n";
+	print STDERR "\t\t-zskdir PATH            ZSK directory\n";
+	print STDERR "\t\t-zsklength KEYLEN       ZSK length\n";
+	print STDERR "\t\t-zsklife LIFETIME       ZSK lifetime\n\n";
+
+	print STDERR "\t\t-verbose                verbose output\n";
+	print STDERR "\t\t-help                   help message\n";
 
 	exit(0);
 }
