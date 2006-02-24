@@ -23,16 +23,21 @@ use Net::DNS::SEC::Tools::tooloptions;
 #
 # Data required for command line options.
 #
-my $zone; 				# Name of the zone
-my $ksk;  				# Name of KSK.
-my $ksklength; 				# Length of KSK.
-my $ksklife;  				# Lifetime of KSK.
+my $zone;				# Name of the zone
+my $zonefile;				# Name of the zone file.
+my $signedfile;				# Name of the signed zone file.
+my $krfile;				# Name of the output keyrec file.
+
+my $random;				# Name of random device.
+
+my $ksk;				# Name of KSK.
 my $zskcur;				# Name of current ZSK.
 my $zskpub;				# Name of published ZSK.
-my $zsklength; 				# Length of ZSK.
-my $zsklife;  				# Lifetime of ZSK.
-my $zonefile;                           # Name of the zone file
-my $signedfile;                         # Name of the signed zone file
+
+my $ksklength;				# Length of KSK.
+my $ksklife;				# Lifetime of KSK.
+my $zsklength;				# Length of ZSK.
+my $zsklife;				# Lifetime of ZSK.
 
 my $helpflag;
 my $verbose;
@@ -55,13 +60,6 @@ my %algos = (
 #######################################################################
 
 my $ret;				# Return code from main().
-# 
-# print "\n\n";
-# print "must implement:\n";
-# print "\t-ksklife\n";
-# print "\t-zsklife\n";
-# print "\t-output\n";
-# print "\n\n";
 
 $ret = main();
 exit($ret);
@@ -84,26 +82,24 @@ sub main()
 	my %dtconf = parseconfig();
 
 	#
-	# Generate the keyrec file.
-	#
 	# Initialize a keyrec data structure and add key records to it.
 	#
-	my $retval = keyrec_creat("$zone.krf");
+	my $retval = keyrec_creat("$krfile");
 
-	keyrec_read("$zone.krf");
+	keyrec_read("$krfile");
 
 	# Add the zone keyrec.
 	keyrec_add('zone', $zone, {
-				   'keyrec_type' => "zone",
-				   'zonefile'	 => "$zonefile",
-				   'signedfile'	 => "$signedfile",
-				   'endtime'	 => "",
-				   'kskpath'	 => "./$ksk.key",
-				   'kskkey'	 => "$ksk",
-				   'zskpub'	 => "$zskpub",
-				   'zskcur'	 => "$zskcur",
-				   'zskcurpath'	 => "./$zskcur.key",
-				   'zskpubpath'	 => "./$zskpub.key",
+				   'keyrec_type'	=> "zone",
+				   'zonefile'		=> "$zonefile",
+				   'signedfile'		=> "$signedfile",
+				   'endtime'		=> "",
+				   'kskpath'		=> "./$ksk.key",
+				   'kskkey'		=> "$ksk",
+				   'zskpub'		=> "$zskpub",
+				   'zskcur'		=> "$zskcur",
+				   'zskcurpath'		=> "./$zskcur.key",
+				   'zskpubpath'		=> "./$zskpub.key",
 				   'kskdirectory'	=> ".",
 				   'zskdirectory'	=> ".",
 				   'keyrec_signdate'	=> "",	# XXX to be done
@@ -116,7 +112,7 @@ sub main()
 #				 'zonename'		=> "$zone",
 				 'keypath'		=> "./$ksk.key",
 				 'algorithm'		=> getkeyalgo($ksk),
-				 'random'		=> $dtconf{'random'},
+				 'random'		=> "$random",
 				 'ksklength'		=> "$ksklength",
 				 'ksklife'		=> "$ksklife",
 				 'keyrec_gendate'	=> "",	# XXX to be done
@@ -129,7 +125,7 @@ sub main()
 #				    'zonename'		=> "$zone",
 				    'keypath'		=> "./$zskcur.key",
 				    'algorithm'		=> getkeyalgo($zskcur),
-				    'random'		=> $dtconf{'random'},
+				    'random'		=> "$random",
 				    'zsklength'		=> "$zsklength",
 				    'zsklife'		=> "$zsklife",
 				    'keyrec_gendate'	=> "",	# XXX to be done
@@ -142,7 +138,7 @@ sub main()
 #				    'zonename'		=> "$zone",
 				    'keypath'		=> "./$zskpub.key",
 				    'algorithm'		=> getkeyalgo($zskpub),
-				    'random'		=> $dtconf{'random'},
+				    'random'		=> "$random",
 				    'zsklength'		=> "$zsklength",
 				    'zsklife'		=> "$zsklife",
 				    'keyrec_gendate'	=> "",	# XXX to be done
@@ -152,7 +148,7 @@ sub main()
 	keyrec_write();
 	keyrec_close();
 
-	print "genkrf: file $zone.krf created successfully.\n" if($verbose);
+	print "genkrf: file $krfile created successfully.\n" if($verbose);
 	return(0);
 }
 
@@ -189,29 +185,16 @@ sub doopts()
 	$ksk	   = $opts{'ksk'};
 	$zskcur	   = $opts{'zskcur'};
 	$zskpub	   = $opts{'zskpub'};
+
 	$ksklength = $opts{'ksklength'};
 	$ksklife   = $opts{'ksklife'};
 	$zsklength = $opts{'zsklength'};
 	$zsklife   = $opts{'zsklife'};
+
+	$random	   = $opts{'random'};
+
 	$verbose   = $opts{'verbose'};
 	$helpflag  = $opts{'help'};
-
-	#
-	# If the verbose flag was given, show all the values.
-	#
-	if($verbose > 1)
-	{
-		print "zonefile   - \"$zonefile\"\n";
-		print "signedfile - \"$signedfile\"\n\n";
-		print "zone       - \"$zone\"\n";
-		print "ksk        - \"$ksk\"\n";
-		print "zskcur     - \"$zskcur\"\n";
-		print "zskpub     - \"$zskpub\"\n\n";
-		print "ksklength  - \"$ksklength\"\n";
-		print "ksklife    - \"$ksklife\"\n";
-		print "zsklength  - \"$zsklength\"\n";
-		print "zsklife    - \"$zsklife\"\n\n";
-	}
 
 	#
 	# Give a usage message, if the conditions are right.
@@ -248,6 +231,27 @@ sub doopts()
 
 
 	$zone =~ s/^(.*)\.$/$1/;
+
+	$krfile = $opts{'krfile'} || "$zone.krf";
+
+	#
+	# If the verbose flag was given, show all the values.
+	#
+	if($verbose > 1)
+	{
+		print "zonefile   - \"$zonefile\"\n";
+		print "signedfile - \"$signedfile\"\n";
+		print "krfile     - \"$krfile\"\n\n";
+		print "zone       - \"$zone\"\n";
+		print "random     - \"$random\"\n\n";
+		print "ksk        - \"$ksk\"\n";
+		print "zskcur     - \"$zskcur\"\n";
+		print "zskpub     - \"$zskpub\"\n\n";
+		print "ksklength  - \"$ksklength\"\n";
+		print "ksklife    - \"$ksklife\"\n";
+		print "zsklength  - \"$zsklength\"\n";
+		print "zsklife    - \"$zsklife\"\n\n";
+	}
 
 }
 
@@ -293,6 +297,7 @@ sub usage
 
 	print STDERR "usage:  genkrf [options] zonefile signed-zonefile\n";
 	print STDERR "\toptions:\n";
+	print STDERR "\t\t-krfile keyrec-file\n";
 	print STDERR "\t\t-zone zone\n";
 	print STDERR "\t\t-ksk keyname\n";
 	print STDERR "\t\t-zskcur keyname\n";
@@ -303,6 +308,7 @@ sub usage
 	print STDERR "\t\t-ksklife lifespan\n";
 	print STDERR "\t\t-zsklength length\n";
 	print STDERR "\t\t-zsklife lifespan\n";
+	print STDERR "\t\t-random random-device\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-help\n";
 	exit(0);
@@ -342,6 +348,11 @@ If it is not given, then it defaults to "I<<zone-file>>.signed".
 B<genkrf> has the following options:
 
 =over 4
+
+=item -krfile
+
+This option specifies the name of I<keyrec> file that will be created by
+I<genkrf>.
 
 =item -zone
 
@@ -383,6 +394,10 @@ This option specifies the length of the KSK.
 
 This option specifies the time between ZSK roll-overs.  This time is measured
 in seconds.
+
+=item -random
+
+This option specifies the random number generator device.
 
 =item -verbose
 
