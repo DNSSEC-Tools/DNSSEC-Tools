@@ -1,0 +1,122 @@
+#!/usr/bin/perl
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# DNSSEC-Tools:  dtdefs
+#
+#	This script displays the DNSSEC-Tools default values defined in
+#	the defaults.pm module.  The command is used in this way:
+#
+#		dtdefs
+#
+
+use strict;
+
+use Net::DNS::SEC::Tools::defaults;
+
+my @defnames;					# Array of default names.
+my $maxlen = 0;					# Maximum default name length.
+my $blanks = "";				# String o' blanks.
+
+main();
+exit(0);
+
+#----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# Purpose:	Yeah, yeah, a main() isn't necessary.  However, it offends my
+#		sense of aesthetics to have great gobs of code on the same
+#		level as a pile of globals.
+#
+#		But what about those globals, you ask...
+#
+sub main
+{
+	#
+	# Give a usage message when required.
+	#
+	usage() if(@ARGV > 0);
+
+	#
+	# Get the list of DNSSEC-Tools default names.
+	#
+	@defnames = dnssec_tools_defnames();
+	exit(0) if(@defnames == 0);
+
+	#
+	# Find the maximum length of the default names.
+	#
+	foreach my $dn (sort(@defnames))
+	{
+		my $len = length($dn);
+		$maxlen = $len if($len > $maxlen);
+	}
+
+	#
+	# Build a string of blanks that's as long as our longest default name.
+	#
+	$blanks = " " x $maxlen;
+
+	#
+	# Print all the default names and their values.  The names are adjusted
+	# such that the columns all line up nicely.
+	#
+	foreach my $dn (sort(@defnames))
+	{
+		my $dv;				# Default's value.
+		my $newname;			# Default name w/ blanks.
+
+		$dv = dnssec_tools_defaults($dn);
+		$dn .= $blanks;
+
+		$newname = substr($dn,0,$maxlen);
+		print "$newname\t\t$dv\n";
+	}
+
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage()
+{
+	print STDERR "usage:  dtdefs\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+dtdefs - Displays defaults defined for DNSSEC-Tools
+
+=head1 SYNOPSIS
+
+  dtdefs
+
+=head1 DESCRIPTION
+
+The I<dtdefs> program displays defaults defined for DNSSEC-Tools.
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<Net::DNS::SEC::Tools::defaults.pm(3)>
+
+=cut
