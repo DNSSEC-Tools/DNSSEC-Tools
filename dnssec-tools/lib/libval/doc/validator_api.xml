@@ -4,41 +4,21 @@
 <?rfc toc="yes"?>
 
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
-<rfc ipr="full3978" docName="draft-ietf-dnsext-validator-api-00">
+<rfc ipr="full3978" docName="draft-dnssec-validator-api-00">
   <front>
   <title> DNSSEC Validator API </title>
-  <author initials="A." surname="Hayatnagarkar"
-                fullname="Abhijit Hayatnagarkar"> 
-    <organization> SPARTA Inc. </organization>
-    <address>
-       <postal>
-        <street>7075 Samuel Morse Dr.</street>
-        <city>Columbia</city>
-        <region>MD</region>
-        <code>21046</code>
-        <country>US</country>
-      </postal>
-      <email>abhijit AT sparta.com</email>
-    </address>
-  </author>
-                
   <author initials="S." surname="Krishnaswamy"
                 fullname="Suresh Krishnaswamy"> 
     <organization> SPARTA Inc. </organization>
-    <address>
-      <postal>
-        <street>7075 Samuel Morse Dr.</street>
-        <city>Columbia</city>
-        <region>MD</region>
-        <code>21046</code>
-        <country>US</country>
-      </postal>
-      <email>suresh AT sparta.com</email>
-    </address>
   </author>
-            
+
+  <author initials="A." surname="Hayatnagarkar"
+                fullname="Abhijit Hayatnagarkar"> 
+    <organization> SPARTA Inc. </organization>
+  </author>
+
   <date month="February" year="2006" />
-  <workgroup>Network Working Group</workgroup>
+  <workgroup> DNS Extensions </workgroup>
   <keyword>Internet-Draft</keyword>
 
   <abstract> 
@@ -54,8 +34,8 @@ DNSSEC validator.</t>
   <t>
   DNS Security Extensions (<xref target="refs.RFC4033">RFC 4033</xref>,
 <xref target="refs.RFC4034">RFC 4034</xref>, <xref target="refs.RFC4035">RFC 4035</xref>)
-allow applications to test the authenticity and integrity of data returned
-by the DNS.  The validator is a piece of software that performs this test
+allow applications to test the origin authenticity and integrity of data returned by the 
+DNS.  The validator is a piece of software that performs this test
 by checking the cryptographic signatures that cover DNS records and by
 verifying a sequence of such records up to a trusted key. </t>
 
@@ -66,11 +46,77 @@ a convenient way for applications to control the DNSSEC validation
 process and to obtain results of validation.  The API contains 
 DNSSEC-aware substitutes for a number of well-known interfaces that
 applications may use in lieu of older interfaces. Other interfaces
-are also provided that allow applications to obtain more detail from the
+are also provided that allow applications to obtain more detail and fine-tune the
 validation process. This range allows for the creation of applications
 that are either only interested in basic results such as "validated"
 or "not-validated", or more sophisticated applications that can look
 for specific errors as a sign of some network abnormality or attack. </t>
+  </section> <!-- Introduction -->
+
+
+  <section title="Terminology">
+  <!--            ############# -->
+
+  <t>
+  The following terms are used in this specification: </t>
+
+      <list style="hanging">
+
+	<t> </t>
+	<t hangText="validator policy:"> 
+	A set of configuration parameters for the validator which could potententially influence 
+	the eventual outcome from the validation process. </t>
+
+	<t> </t>
+        <t hangText="policy attribute: ">
+        Refers to a particular configurable component of the validator policy,
+        for instance a trust anchor setting or an untrusted algorithm definition. </t>
+        <t> </t>
+
+        <t hangText="validator context:">
+	The validator context encapsulates
+	the validator policy into an opaque structure that may be used by
+	applications to fine tune and control their validation processes. 
+        The validator context is the application's handle to the validator policy. 
+	Contexts also maintain a reference to a "policy scope" 
+	(see definition below), which may be explicitly changed 
+	by applications. 
+        </t>
+
+        <t> </t>
+        <t hangText="base policy:">
+        Refers to the default policy associated with a context that is looked up  
+	whenever a policy attribute not existing in other more specific policy scopes 
+        is required. Different applications can have different base policies. 
+	</t>	
+
+	<t> </t>
+        <t hangText="policy scope: ">
+        Refers to a customization within the base-policy to address a particular scenario. 
+        Policy scopes are useful
+        when it becomes necessary to override certain policy attributes in specific
+        environments. As an example, an application may support functions for a web browser 
+        as well as a mail client with slighty differing validator policies for
+        each piece of functionality. In such cases the application may define a common
+        base policy and have overrides for specific scopes -- one for the mail
+        client and one for the web browser. </t> 
+
+	<t> </t>
+        <t hangText="effective policy:">
+        Refers to the policy that finally governs the validator action after all
+        relevant policy scopes have been applied. 
+        Policy scopes may be defined 
+        hierarchically, one below the other. In order to determine the effective policy, 
+        the validator context cumulatively applies the validator policy 
+        for all scopes that lie above its current scope up to and including its base policy. </t>
+
+      </list>
+
+  </section> <!-- Terminology -->
+
+
+  <section title="Validator API">
+  <!--            ############# -->
 
   <t>
   The API can be broadly divided into three groups: 
@@ -86,27 +132,15 @@ getaddrinfo() and res_query(). </t>
 
   <t> The low-level validation API gives more control over the 
 validation process and allows detailed inspection of validation 
-status for each element of the chain-of-trust.
-The high-level validation API indirectly makes use of the low-level interfaces but 
-the latter may also be used independently.</t> 
+status for each element of the chain-of-trust. </t>
 
   <t> Context management is orthogonal to the process of validation up the
 chain-of-trust. Results returned by the validator are often guided by local
-policy decisions.  The validator context encapsulates
-resolver and validator policy into an opaque structure that may be used by
-applications to fine tune and control their validation processes. The context
+policy decisions.  
+The context
 management API provides interfaces to manage the validator context.</t>
 
-  <t> <xref target="high_level_api" />, <xref target="low_level_api" />
-      and <xref target="val-context" /> describe these interfaces in greater
-      detail. </t>
-    <section title="Terminology">
-      <t>Trust Anchor</t>
-      <t>Chain of Trust</t>
-      <t>Assertion</t>
-    </section>
-  </section> <!-- Introduction -->
-
+  <t> The following sections describe these interfaces in greater detail. </t>
 
     <section title="High-level Validation API" anchor="high_level_api">
     <!--            ######################### -->
@@ -114,7 +148,7 @@ management API provides interfaces to manage the validator context.</t>
     The high-level validation API provides DNSSEC-aware substitutes for commonly
 used DNS functions such as gethostbyname(), getaddrinfo() and res_query().
 It provides an easy path for applications already using these legacy functions
-towards becoming DNSSEC-aware.  </t>
+to transition towards becoming DNSSEC-aware.  </t>
       <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr, val_gethostbyaddr_r">
       <figure>
       <artwork>
@@ -233,8 +267,6 @@ val_getaddrinfo() function returns 0 on success and a non-zero value on error.</
       </figure>
       </section>
 
-
-
       <section title="val_query">
       <figure>
       <artwork>
@@ -331,248 +363,192 @@ functions can be trusted.
       </section> <!-- High-level Validation API -->
 
 
-      <section title="Low-level Validation API" anchor="low_level_api">
+      <section title="Low-level Validation API">
       <!-- #################################### -->
 
       <t> 
       The low-level validation API provides the application with greater control and visibility 
-into the validation process. There is only one function, resolve_n_check(), 
-that actually performs query resolution and response validation; other
-functions are used to extract additional information from the 
-data returned by the above function. </t> 
+into the validation process. The functions and data structures defined in this API are 
+summarized below. </t>e
 
-
-        <section title="Query Resolution and Validation">
-        <!--            ############################### -->
         <figure>
         <artwork>
-int resolve_n_check( const val_context_t    *context, 
+int val_resolve_and_check( const val_context_t    *context, 
                      const char             *domain_name,
                      const u_int16_t        class,
                      const u_int16_t        type, 
                      const u_int8_t         flags,
-                     struct query_chain     **queries, 
+                     struct val_result      **results, 
                      struct assertion_chain **assertions,
-                     struct val_result      **results ); 
+                     struct query_chain     **queries); 
 
-void free_query_chain ( struct query_chain *queries );
+void val_free_query_chain ( struct query_chain *queries );
 
-void free_assertion_chain( struct assertion_chain *assertions );
+void val_free_assertion_chain( struct assertion_chain *assertions );
 
-void free_val_result( struct val_result *results );
+void val_free_result( struct val_result *results );
+
+
+struct val_result_chain {
+    val_status_t val_rc_status;
+    struct val_assertion_chain *val_rc_trust;
+    struct val_result *val_rc_next;
+};
+
+struct val_assertion_chain {
+  val_astatus_t val_ac_status;
+  struct val_rrset *val_ac_rrset;
+  struct val_query_chain *val_ac_query_more;
+  struct val_assertion_chain *val_ac_trust;
+  struct val_assertion_chain *val_ac_rrset_next;
+  struct val_assertion_chain *val_ac_next;
+};
+
+struct val_rrset {
+   u_int8_t  val_rrset_section;
+   u_int16_t val_rrset_len;
+   u_int8_t *val_rrset_data;
+};
+
+
+struct val_query_chain {
+    val_qstatus_t val_qc_status;
+    u_int16_t val_qc_raw_response_length;
+    u_int8_t *val_qc_raw_response;
+    struct val_assertion_chain *val_qc_answer;
+    struct val_assertion_chain *val_qc_creator;
+    struch val_query_chain *val_qc_next;
+};
         </artwork>
         <postamble>
         <t>
-        The resolve_n_check() function can be used to query a set of name servers
+        The val_resolve_and_check() function can be used to query a set of name servers
 for the &lt;domain_name, class, type&gt; tuple and to verify and validate
 the responses received. Verification is the step of checking the RRSIGs and
 validation includes performing verification up the chain-of-trust to a trust
 anchor.  All the information necessary for inspecting the validation
-chain-of-trust is available through the 'results', 'queries' and 'assertions'
-parameters.  The internal structures of these variables are themselves 
-opaque to the application.</t>
+chain-of-trust is available through the 'results', 'assertions' and 'queries'
+parameters. </t> 
+
 
         <t>
-        Answers for the query are returned in the 'results' array.  
-Each answer is a distinct RRset; multiple RRs within
-the RRset are all part of the same answer. Multiple answers are possible
+        Answers to the query are returned in the 'val_result_chain' linked list.  
+Each answer corresponds to a distinct RRset and is stored as a different element in the linked list; 
+multiple RRs within the RRset are all part of the same answer. Multiple answers are possible
 when type is ANY or when a proof of non-existence is returned, in
-which case RRsets of type NSEC and SOA may also be returned.</t>
+which case RRsets of type NSEC and SOA may also be returned. 
+'val_rc_trust' points to the next element in the chain-of-trust sequence and 'val_rc_next' can be used
+to iterate through the list of results returned by the validator. 
+The consolidated validation status value for an RRset in the  DNS response based on the 
+individual status values for all components in the chain-of-trust is stored in 'val_rc_status', which is of type 'val_status_t'. Possible values for this type are listed below: </t> 
+        <t> <list style="hanging">
+        <t> </t>
+        <t hangText="VALIDATE_SUCCESS">
+        Returned if the response was verified and validated.
+        </t>
+        <t hangText="INDETERMINATE_TRUST">
+        Returned if the validator lacked detail to complete validation up the chain-of-trust. 
+        </t>
+        <t hangText="BOGUS_PROVABLE">
+        Returned if the cryptographic signatures for the response could not be verified but the 
+        remaining portion of the chain-of-trust was. 
+        </t>
+        <t hangText="BOGUS_UNPROVABLE">
+        Returned if neither the response nor the chain-of-trust beyond it were verifiable.  
+        </t>
+        <t hangText="VALIDATION_ERROR">
+        Returned if the DNS returned some error for the original query. 
+        </t>
+        <t hangText="PROVABLY_UNSECURE">
+        Returned if the zone to which the response belongs can be shown to be 
+        part of an intentionally un-signed delegation.  
+        </t>
+        </list>
+        </t>
 
         <t>
-        'queries' returns a pointer to the complete set 
-of DNS queries that were issued while resolving and validating the 
-original DNS query, inclusive of the original query. This parameter 
-may also be thought of as a cache of queries sent out during the 
-validation process.</t>
-
-        <t>
-        'assertions' returns a pointer to the set of digested responses  
-received for a given query sent during validation.
-This set includes the answers to the original 
-query including their RRSIGs, DNSKEYs, DS and NSEC or SOA records. 'assertions' 
-may also be thought of as a cache of answers obtained during the validation process.</t>
-
+        The validator may initiate multiple queries to the DNS while trying to create the
+chain-of-trust. Each response is encapsulated into one or more elements of the 'struct val_assertion_chain' linked list. However not all elements in this list are present in the chain-of-trust. 
+For instance, responses for glue-fetching operations are not directly validated.
+The 'assertions' parameter in 'val_resolve_and_check()' returns a pointer to the set
+ of all digested responses  
+received over the course of validating an answer including data received for such ancillary information.
+'assertions' may also be thought of as a cache of responses obtained during the validation process.</t>
 
         <t>
         Most applications would only be interested in the 'results' parameter 
-since this provides a single error code for representing the authenticity of 
-returned data. More sophisticated applications such as a DNSSEC troubleshooting 
+since this provides a single error code that represents the authenticity of 
+returned data.  More sophisticated applications such as a DNSSEC troubleshooting 
 utility may look more closely at an individual assertion or query to identify 
-what particular component in the chain-of-trust led to validation failure, if any.</t>
+whch particular component in the chain-of-trust led to validation failure, if any.
+Given a pointer to an element of type 'struct val_assertion_chain' within the chain-of-trust, 
+it is possible to inspect further details of the validation status of each component therein using
+this structure's member variables. </t> 
+
+	<t> 'val_ac_status' returns the validation status 
+the particular component of the chain-of-trust referenced in the linked list. 
+(Author's note: the definition of the  
+error codes is an activity being undertaken in parallel by a sub-working group at the IETF. 
+The list of error codes returned by the validator in val_astatus_t will draw upon that effort.)  
+'val_ac_rrset' contains the actual RRset data stored internally within the 'struct val_rrset' structure as a length-value pair given by 'val_rrset_len' and 'val_rrset_data'. The section in which the RRset appears in the DNS response is also saved in 'val_rrset_section'. The following values may be returned in this variable. </t> 
+        <t> <list style="hanging">
+        <t> </t>
+        <t hangText="VAL_FROM_ANS">
+        Returned if the RRset was present in the answer section of the DNS response.
+        </t>
+        <t> </t>
+        <t hangText="VAL_FROM_AUT">
+        Returned if the RRset was present in the authority section of the DNS response.
+        </t>
+        <t> </t>
+        <t hangText="VAL_FROM_ADD">
+        Returned if the RRset was present in the additional section of the DNS response.
+        </t>
+	</list></t>
 
         <t>
-The validator internally allocates memory for the values of the 'results', 'queries' and 'assertions' 
+        The 'val_ac_rrset_next' member inside 'struct val_assertion_chain' points to the 
+next digested answer within the set of responses returned for a query. 
+In cases where validation fails due to some non-DNSSEC error, the 'val_ac_query_more' variable can be used to identify the
+query where the error was encountered. 
+'val_ac_trust' points to the next element in the chain-of-trust. Its value is NULL when a trust anchor is encountered. 
+'val_ac_next' can be used to iterate through the list of DNS responses within the 'struct val_assertion_chain' linked list.</t> 
+
+
+        <t>
+        The 'queries' parameter in 'val_resolve_and_check()' returns a pointer to a linked list containing the complete set 
+of DNS queries that were issued while resolving and validating the 
+original DNS query inclusive of the original query. This parameter 
+may also be thought of as a cache of queries sent out during the 
+validation process. The 'val_qc_status' member variable for an element in this liked list returns the
+status of the query: if it was answered, if there was no response or some other DNS-related value.
+The on-the-wire bytes returned as the response to a query are stored as a length-value field in
+'val_qc_raw_response_length' and 'val_qc_raw_response' respectively.
+'val_qc_answer' points to the digested answers created for the response and may be NULL when no responses are returned. 
+'val_qc_creator' isused to identify which link in the chain-of-trust led to the generation of this query and is NULL for
+the initial query issued by the 'val_resolve_and_check()' method. 
+'val_qc_next' can be used to iterate through the list of DNS queries within the 'struct val_query_chain' linked list.
+The combination of the previous two functions makes it possible to identify all queries sent out for a
+particular assertion. </t> 
+
+
+        <t>
+The 'val_resolve_and_check()' method internally allocates memory for the values of the 'results', 'queries' and 'assertions' 
 parameters  so they must be freed by the invoking application using the
-free_query_chain(), free_assertion_chain() and free_val_result() functions.</t>
+val_free_query_chain(), val_free_assertion_chain() and val_free_result() functions.</t>
 
         </postamble>
         </figure>
-        </section> <!-- "Query Resolution and validation" -->
 
-
-
-        <section title="Result Inspection">
-        <!--           ################### -->
-
-        <t> 
-        The following APIs can be used to inspect the results returned by the
-validation process. </t>
-
-        <figure>
-        <artwork>
-val_status_t get_status_for_result( struct val_result *res );
-
-struct assertion_chain *get_chain_of_trust_for_result(
-                         struct val_result *res );
-
-struct val_result *get_next_result( struct val_result *res );
-        </artwork>
-        <postamble>
-
-        <t>
-        get_status_for_result() gives a consolidated validation status for a DNS response
-based on the individual status values for all components in the chain-of-trust. </t>
-
-        <t>
-        get_chain_of_trust_for_result() returns a pointer to 
-the next element in the chain-of-trust sequence for a given result.  </t>
-
-        <t>
-        get_next_result() is used to iterate through the list of 
-results returned by the validator for a given query by passing each
-result as an argument to this query. This function 
-returns NULL when no more results are available.</t>
-        </postamble>
-        </figure>
-        </section>
-
-        <section title="Response Inspection">
-        <!--            ################### -->
-
-        <t> Given a pointer to the assertion_chain structure from the 
-get_chain_of_trust_for_result() function, it is possible to inspect 
-further details of the validation status of each component in the chain-of-trust. 
-Not all assertions are part of the chain-of-trust; some may contain
-ancillary information such as glue records, which would not contain
-any validation status information. Some information, such as the contents
-of the RRset within an assertion, may be extracted from any assertion 
-returned by the resolve_n_check() function.
-The application can use the following APIs to inspect the contents of the assertion_chain structure. </t> 
-        <figure>
-        <artwork>
-
-val_astatus_t get_status_for_assertion(
-                        struct assertion_chain *assertion );
-struct rrset_rec * get_rrset_for_assertion(
-                        struct assertion_chain *assertion );
-struct assertion_chain * get_next_assertion_in_reponse(
-                        struct assertion_chain *assertion );
-struct assertion_chain * get_parent_for_assertion(
-                        struct assertion_chain *assertion );
-
-        </artwork>
-        <postamble>
-
-        <t>
-        get_status_for_assertion() returns the validation status of 
-the particular component of the chain-of-trust pointed to by the  
-'assertion' parameter. </t>
-
-        <t>
-        get_rrset_for_assertion() returns the actual RRset data associated 
-with the particular component of the chain-of-trust pointed to by the  
-'assertion' parameter. The rrset_rec structure is opaque -- function are 
-available to extract information from this structure (TODO).  </t>
-
-        <t>
-        The get_next_assertion_in_reponse() function can be used to move to the
-next digested answer within the set of responses returned for a query. This function is required because each assertion only encapsulates a single RRset and the response to a query may consist of multiple RRsets. This function returns NULL when there are no more assertions within the response.</t>
-
-        <t>
-        get_parent_for_assertion() allows one to move "up" the chain-of-trust
-by returning the parent for a given component in the chain of trust pointed to 
-by 'assertion'. The function
-may return NULL if there are no more parent links in the chain of trust, 
-either because a trust anchor was reached or because an error was encountered. </t>
-        </postamble>
-        </figure>
-        </section>
-
-        <section title="Query Inspection">
-        <!--            ################ -->
-
-          <t>
-          The status values in the 'queries' parameter returned by resolve_n_check() can
-give additional information about a particular assertion's validation status.
-Some queries do not return any response and hence may not have a 
-corresponding assertion structure that wraps this information. In such
-cases the query chain may be able to provide additional information. </t>
-
-          <figure>
-          <artwork>
-
-val_astatus_t get_status_for_query ( struct query_chain *query );
-
-struct query_chain *get_failed_query_for_assertion(
-                        struct assertion_chain *assertion );
-
-struct assertion_chain *get_assertion_for_query (
-                        struct query_chain *query);
-
-struct assertion_chain *get_creator_for_query(
-                        struct query_chain *query);
-
-struct query_chain *get_next_query( struct query_chain *query );
-
-          </artwork>
-          <postamble>
-          <t>
-          get_status_for_query() returns the status of the query:
-if it was answered, if there was no response or some other DNS-related value. </t>
-
-          <t>
-          The get_failed_query_for_assertion() returns a pointer to the query
-that an assertion may have generated but did not obtain an answer for in order 
-to allow it to continue with the validation process. </t>
-
-          <t>
-          get_assertion_for_query() returns a pointer to the 
-response that was returned for this query. There 
-may be more than one RRset as part of this response
-and these can be obtained by using the 
-get_next_assertion_in_reponse() function described above. </t>
-
-          <t>
-          get_creator_for_query() returns the assertion that was
-responsible for the generation of a  particular query. For the
-query created as part of the original resolve_n_check()
-routine, this value is NULL. This function makes it
-possible to identify all queries sent out for a 
-particular assertion by comparing its return value 
-to each element in the query list obtained
-through get_next_query(). </t> 
-
-          <t>
-          The get_next_query() function can be used to iterate
-through the list of queries returned by the resolve_n_check()
-function by passing each query returned as the parameter for
-the subsequent call. It returns NULL when there are no more
-queries in the list.</t>
-
-        </postamble>
-        </figure>
-      </section>
     </section> <!-- Low-level API -->
 
-
-    <section title="Context Management and Validator Policy API" anchor="val-context">
+    <section title="Context Management and Validator Policy" anchor="val-context">
     <!--            ####################################### -->
 
       <t>
-      Applications can often define local policy to guide the 
-      validation process and to determine when the validator must break 
-      out from the process of constructing the chain-of-trust with 
+      Applications can use local policy to influence the decision 
+      about when the validator must break 
+      out from the process of constructing a chain-of-trust with 
       either a success or failure condition.  
       Examples of local policy elements include trust anchors for 
       different zones, untrusted algorithms for cryptographic keys and hashes, 
@@ -580,50 +556,11 @@ queries in the list.</t>
       name servers to direct queries to, all of which may be different for different 
       applications and operation scenarios. </t>
 
+
       <t> 
-      This API allows an application some flexibility in choosing its
-      validation policy based on its scope of execution. The following 
-      terms can be defined. </t>
+      The context management and validator policy API allows an application some flexibility in choosing its
+      validation policy based on its scope of execution. </t>
 
-      <list style="hanging">
-
-	<t> </t>
-        <t hangText="policy attributes: ">
-        Refers to a particular component of a validator policy that requires configuration, 
-        for instance a trust anchor setting or an untrusted algorithm definition. </t>
-
-	<t> </t>
-        <t hangText="policy locale: ">
-        Refers to a particular scope within the policy. Policy locales are useful
-        when it becomes necessary to override certain policy attributes in specific
-        scopes. As an example, an application may support functions for a web browser 
-        as well as a mail client with slighty differing validator policies for
-        each piece of functionality. In such cases the application may define a common
-        base policy and have overrides for specific locales -- one for the mail
-        client and one for the web browser. Locales may exist within other locales in a 
-        hierarchical ordering. A context recognizes all locales that lie recursively 
-        below its current locale up to and including its base policy. </t>
-
-	<t> </t>
-        <t hangText="base policy:">
-        Every context has a default base policy associated with it that is invoked 
-	whenever a reference to a policy attribute that 
-        does not exist in other more specific locales is required. 
-        Applications may request a specific policy to be 
-        associated as the base policy within a given context. 
-	Applications that rely on the validator to internally create a 
-        validator context on their behalf have contexts with a system-wide default policy associated with 
-	them.  
-	</t>	
-         
-	<t> </t>
-        <t hangText="effective policy:">
-        An application may change its policy locale at any time. 
-        An effective policy can be determined by applying each policy locale 
-        currently recognized within the context in the order of 
-        increasing specificity. </t> 
-
-      </list>
 
       <section title="get_context">
       <figure>
@@ -636,13 +573,15 @@ int get_context( const char    *label,
       <t>
       Returns a pointer to the val_context_t structure in 'newcontext'.  
 The validator context represents a handle to the resolver and validator policy; 
-its structure is opaque to the application.  'label' identifies the particular policy 
-to be used during validation. The application must release the memory allocated 
+'label' identifies the particular policy 
+to be used as the base policy during validation. The application must release the memory allocated 
 by this function using the free_context() interface once it is done with using it.</t>
 
       <t> 
-      A NULL label creates a context with the base policy. 
-A NULL context is returned if an error was encountered. </t> 
+      A NULL label creates a context with a default base policy. 
+A NULL context is returned if some error was encountered. </t> 
+
+	<t> TODO: clarification on the structure and semantics of the policy. </t>
 
       </postamble>
       </figure>
@@ -660,68 +599,68 @@ void free_context( val_context_t *context );
       </figure>
       </section>
 
-      <section title="switch_policy_locale">
+      <section title="switch_policy_scope">
       <figure>
       <artwork>
-int switch_policy_locale( val_context_t *ctx,
-                          const char    *locale );
+int switch_policy_scope( val_context_t *ctx,
+                          const char    *scope );
       </artwork>
       <postamble>
       <t>
-      This function allows applications to switch their context to a particular locale. 
-The context supplied in 'ctx' must not be NULL. An error is returned if the locale 
+      This function allows applications to switch their context to a particular scope. 
+The context supplied in 'ctx' must not be NULL. An error is returned if the scope 
 does not exist within the context. A NULL label switches the 
-context's locale to its base policy. </t> 
+context's current policy scope to its base policy. </t> 
       </postamble>
       </figure>
       </section>
 
-      <section title="get_locales_within_context">
+      <section title="get_scopes_within_context">
       <figure>
       <artwork>
-int get_locales_within_context( val_context *ctx,
-                                char        **locales,
+int get_scopes_within_context( val_context *ctx,
+                                char        **scopes,
                                 int         *count );
       </artwork>
       <postamble>
       <t>
-      This function allows applications to obtain the list of policy locales available within a given context.
-The application must allocate the 'locales' array to be large enough to hold all available answers. 
+      This function allows applications to obtain the list of policy scopes available within a given context.
+The application must allocate the 'scopes' array to be large enough to hold all available answers. 
 Each element in the array must be pre-allocated to at least MAX_POLICY_ID_LENGTH. 
-'count' is a value-result parameter that must be set to the number of elements allocated in the locale array. 
+'count' is a value-result parameter that must be set to the number of elements allocated in the scopes array. 
 If the size of the array is not large enough to hold all answers, the function returns -1 and *count contains 
-the actual number of locales available within the context. 0 is returned on success and *count contains 
-the number of locales. </t> 
+the actual number of scopes available within the context. 0 is returned on success and *count contains 
+the number of scopes. </t> 
       </postamble>
       </figure>
       </section>
 
-      <section title="get_locale_definition">
+      <section title="get_scope_definition">
       <figure>
       <artwork>
-int get_locale_definition( val_context *ctx,
-                           char        *locale,
+int get_scope_definition( val_context *ctx,
+                           char        *scope,
                            char        **pol_def ); 
       </artwork>
       <postamble>
       <t>
-      This function allows applications to obtain the policy definition for a given locale identifier.
+      This function allows applications to obtain the policy definition for a given scope identifier.
 The context supplied in 'ctx' must not be NULL.</t> 
       </postamble>
       </figure>
       </section>
 
-      <section title="set_locale_definition">
+      <section title="set_scope_definition">
       <figure>
       <artwork>
-int set_locale_definition( val_context *ctx,
+int set_scope_definition( val_context *ctx,
                            const char  *label, 
                            char        *policy_string );
       </artwork>
       <postamble>
       <t>
-      This function allows an application to modify an existing policy locale or 
-define a new policy locale within a context. The context supplied in 'ctx' must not 
+      This function allows an application to modify an existing policy scope or 
+define a new policy scope within a context. The context supplied in 'ctx' must not 
 be NULL. A 'label' of NULL can be used to 
 update the base policy within the context.</t> 
 
@@ -731,14 +670,12 @@ update the base policy within the context.</t>
 
 
     </section> <!-- Context Management -->
-      
-   <section title="Error Codes">
 
-   <t>
-   Definition of error codes is an activity being undertaken in parallel by a sub-working group at the IETF. 
-The list of error codes returned by the validator in val_status_t and val_astatus_t will draw upon that effort. </t>
 
-   </section> <!-- Error Codes -->
+   </section> <!-- Validator API -->
+
+
+
 
    <section title="IANA Considerations">
    <t> This document has no actions for IANA.</t>
@@ -817,3 +754,4 @@ The list of error codes returned by the validator in val_status_t and val_astatu
 </rfc>
 
 <!-- last updated Feb. 1, 2006 -->
+
