@@ -250,34 +250,6 @@ sub optsandargs
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	usage()
-#
-# Purpose:      This routine prints the usage and exits
-#
-sub usage
-{
-	print STDERR "usage: genkrf [options] <zone-file> [<signed-zone-file>]\n";
-
-	print STDERR "\n\t<zone-file>                  name of the zone file\n";
-	print STDERR "\t<signed-zone-file>           name of the signed zone file\n";
-
-	print STDERR "\n\toptions:\n";
-	print STDERR "\t\t-zone=<ZONE>         name of the zone\n";
-	print STDERR "\t\t-ksk=<KSK>           name of the Key Signing Key (KSK)\n";
-	print STDERR "\t\t-kskdir=<PATH>       KSK directory\n";
-	print STDERR "\t\t-zskcur=<ZSKCUR>     name of the current Zone Signing Key (ZSK)\n";
-	print STDERR "\t\t-zskpub=<ZSKPUB>     name of the published ZSK\n";
-	print STDERR "\t\t-zskdir=<PATH>       ZSK directory\n";
-	print STDERR "\t\t-endtime=<ENDTIME>   end time of signature\n";
-	print STDERR "\t\t-random=<RANDOMDEV>  source of randomness\n";
-
-	print STDERR "\t\t-help\t              help message\n";
-
-	exit(0);
-}
-
-#-----------------------------------------------------------------------------
-#
 # Routine:      getkeyalgo()
 #
 # Purpose:      This routine takes the identification string of the key
@@ -397,6 +369,34 @@ sub genzsk
 	`mkdir -p $zskdir && mv $zsk* $zskdir`;
     }
     return $zsk || "";
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+# Purpose:      This routine prints the usage and exits
+#
+sub usage
+{
+	print STDERR "usage: genkrf [options] <zone-file> [<signed-zone-file>]\n";
+
+	print STDERR "\n\t<zone-file>                  name of the zone file\n";
+	print STDERR "\t<signed-zone-file>           name of the signed zone file\n";
+
+	print STDERR "\n\toptions:\n";
+	print STDERR "\t\t-zone=<ZONE>         name of the zone\n";
+	print STDERR "\t\t-ksk=<KSK>           name of the Key Signing Key (KSK)\n";
+	print STDERR "\t\t-kskdir=<PATH>       KSK directory\n";
+	print STDERR "\t\t-zskcur=<ZSKCUR>     name of the current Zone Signing Key (ZSK)\n";
+	print STDERR "\t\t-zskpub=<ZSKPUB>     name of the published ZSK\n";
+	print STDERR "\t\t-zskdir=<PATH>       ZSK directory\n";
+	print STDERR "\t\t-endtime=<ENDTIME>   end time of signature\n";
+	print STDERR "\t\t-random=<RANDOMDEV>  source of randomness\n";
+
+	print STDERR "\t\t-help\t              help message\n";
+
+	exit(0);
 }
 
 
