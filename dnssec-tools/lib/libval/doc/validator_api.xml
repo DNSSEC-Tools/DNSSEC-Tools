@@ -42,8 +42,12 @@
   <keyword>Internet-Draft</keyword>
 
   <abstract> 
-    <t>This document describes the Application Programming Interface for the
-DNSSEC validator.</t>
+    <t>DNS Security Extensions allow a resolver to determine whether a DNS query
+was validated successfully or not.  However they do not address the issue of how
+to communicate details of the validation result to an application that wants to
+make decisions based on this result.  This document describes an Application
+Programming Interface that allows applications to control and get the results
+of the validation process.</t>
   </abstract>
   </front>
 
@@ -162,14 +166,24 @@ management API provides interfaces to manage the validator context.</t>
 
   <t> The following sections describe these interfaces in greater detail. </t>
 
-    <section title="High-level Validation API" anchor="high_level_api">
+    <section title="High-level Validator API" anchor="high_level_api">
     <!--            ######################### -->
     <t>
     The high-level validator API provides DNSSEC-aware substitutes for commonly
 used DNS functions such as gethostbyname(), getaddrinfo() and res_query().
 It provides an easy path for applications already using these legacy functions
-to transition towards becoming DNSSEC-aware.  </t>
-      <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr, val_gethostbyaddr_r">
+to transition towards becoming DNSSEC-aware.
+  </t>
+  <t>
+The ctx parameter of type val_context_t* used in the following functions points
+to the validator context.  The validator context is an abstraction to the current
+validator policy in effect when a query is issued for resolution and validation.
+An application may explicitly create a context using the val_get_context() function
+described later, or allow the API to create one internally on its behalf by 
+specifying the value of NULL for the ctx parameter.  Details for the validator
+context appear in <xref target="val-context"/>.
+  </t>
+     <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr, val_gethostbyaddr_r">
       <figure>
       <artwork>
 struct hostent *val_gethostbyname( const val_context_t *ctx,
@@ -185,61 +199,63 @@ int val_gethostbyname_r( const val_context_t *ctx,
                          int                 *h_errnop,
                          val_status_t        *val_status ); 
 
-struct hostent *val_gethostbyname2( const val_context_t *ctx,
-                                    const char          *name,
-                                    int                 af,
-                                    val_status_t        *val_status);
+struct hostent *val_gethostbyaddr( const val_context_t *ctx,
+                                   const char          *addr,
+                                   int                 len,
+                                   int                 type,
+                                   val_status_t        *val_status );
 
-int val_gethostbyname2_r( const val_context_t *ctx,
-                          const char          *name,
-                          int                 af,
-                          struct hostent      *ret,
-                          char                *buf,
-                          size_t              buflen,
-                          struct hostent      **result,
-                          int                 *h_errnop,
-                          val_status_t        *val_status ); 
-
+int val_gethostbyaddr_r( const val_context_t *ctx,
+                         const char          *addr,
+                         int                 len,
+                         int                 type,
+                         char                *buf,
+                         int                 buflen,
+                         struct hostent      **result,
+                         int                 *h_errnop,
+                         val_status_t        *val_status );
       </artwork>
       <postamble>
-      <t> 
+      <t>
+      The val_gethostbyname() and val_gethostbyname_r() functions perform
+name to address translation.  The val_gethostbyaddr() and val_gethostbyaddr_r()
+function perform the address to name translation.
       These functions are DNSSEC-aware versions of the gethostbyname()
-gethostbyname_r(), gethostbyname2() and gethostbyname2_r() functions
-respectively.  The ctx parameter points to the validator context. 
-The validator context is an abstraction to the current validator policy in effect when a 
-query is issued for resolution and validation. An application may explicitly create a
-context but often it simply relies on the validator to create one internally on its behalf by 
-specifying the value of NULL for ctx.  Details for the validator context 
-appear in <xref target="val-context"/>. The val_status parameter is used to
-return the status of DNSSEC validation, and must contain the address of a
-variable of type val_status_t.  The caller must
-not pass a NULL value for the val_status parameter.</t>
+gethostbyname_r(), gethostbyaddr() and gethostbyaddr_r() functions and
+can be used by applications to get the validation status of DNS queries
+performed during the name to address or address to name translation.
+      </t>
       <t>
       The val_gethostbyname() function returns a structure of type hostent for
 the given host name.  As with gethostbyname(), the val_gethostbyname()
 function sets the value of the global h_errno variable.  The return value
-may point to static data, hence must not be freed by the caller.  This
+may point to static data, which may be overwritten by subsequent calls.  This
 function returns a pointer to a struct hostent value on success, and NULL on
 error.</t>
-      <t>   
-      The val_gethostbyname_r() function is a reentrant version of the
-val_gethostbyname() function.  It returns 0 on success, and a non-zero value
-on error.  The result of the call is stored in the hostent structure whose
-address is passed in the ret parameter.  The caller must not pass a NULL
-value for the ret parameter.  This function does not modify the global
-h_errno variable, but returns the error numbers in the variable whose address
-is passed in the h_errnop parameter. The caller must not pass a NULL value
-for the h_errnop parameter.  After the call, *result will be NULL on error
-or point to the result on success.  Auxiliary data is stored in the buffer
-buf of length buflen. (If the buffer is too small, this function will
-return an error.)
+      <t>
+      The val_gethostbyaddr() function returns a pointer to a structure
+of type hostent for the given host address addr of length len and address
+type type.  Valid address types are AF_INET and AF_INET6.  As with
+gethostbyaddr(), the val_gethostbyaddr() function sets the value of the
+global h_errno variable.  The return value may point to static data,
+which may be overwritten by subsequent calls.  This function returns a
+pointer to a struct hostent value on success, and NULL on error.
       </t>
       <t>
-      The val_gethostbyname() and val_gethostbyname_r() functions support only
-IPv4 (AF_INET) addresses.  The val_gethostbyname2() and val_gethostbyname2_r()
-functions overcome this limitation by allowing the caller to specify the
-address family AF_INET (for IPv4) or AF_INET6 (for IPv6) using the af
-parameter.
+      The val_gethostbyname_r() and val_gethostbyaddr_r() functions are
+reentrant versions of the val_gethostbyname() and val_gethostbyaddr() functions.
+They return 0 on success, and a non-zero value on error.  The result of the
+call is stored in the hostent structure whose address is passed in the ret
+parameter.  These functions do not modify the global h_errno variable, but
+return the error numbers in the variable whose address is passed in the
+h_errnop parameter. After the call, *result will be NULL on error
+or point to the result on success.  Auxiliary data is stored in the buffer
+buf of length buflen. If the buffer is too small, this function will
+return an error.
+      </t>
+      <t>
+      The val_status parameter is used to return the status of DNSSEC
+validation, and must contain the address of a variable of type val_status_t.
       </t>
       </postamble>
       </figure>
@@ -253,6 +269,16 @@ int val_getaddrinfo( const val_context_t   *ctx,
                      const char            *servname,
                      const struct addrinfo *hints,
                      struct val_addrinfo   **res ); 
+
+int val_getnameinfo( const val_context_t   *ctx, 
+                     const struct sockaddr *sa,
+                     socklen_t             salen,
+                     char                  *host,
+                     size_t                hostlen,
+                     char                  *serv,
+                     size_t                servlen,
+                     int                   flags,
+                     val_status_t          *val_status );
 
 void free_val_addrinfo( struct val_addrinfo *ainfo );
 
@@ -269,11 +295,12 @@ struct val_addrinfo {
 }
       </artwork>
       <postamble>
-      <t> 
-      The val_getaddrinfo() function is a DNSSEC-aware version of the getaddrinfo() function
-(<xref target="refs.RFC3493">RFC 3493</xref>).  The ctx parameter is the validator context
-and can be set to
-NULL for default settings.  This function supports both IPv4 and IPv6
+      <t>
+      The val_getaddrinfo() function returns the address and service
+information for the specified domain name and service.  It is a
+DNSSEC-aware version of the getaddrinfo() function
+(<xref target="refs.RFC3493">RFC 3493</xref>).
+This function supports both IPv4 and IPv6
 addresses.  It returns a pointer to a value of type val_addrinfo in *res on
 success, and NULL on error.  The val_addrinfo structure is an augmented form
 of the addrinfo structure.  It contains an additional val_status field that
@@ -282,7 +309,15 @@ successful validation status must be set only if both the address and
 canonical name (if present) have been validated successfully.  The memory for
 the value returned in *res is dynamically allocated by this function.  The
 caller should free it after use using the free_val_addrinfo() function. The
-val_getaddrinfo() function returns 0 on success and a non-zero value on error.</t>
+val_getaddrinfo() function returns 0 on success and a non-zero value on error.
+      </t>
+      <t>
+      The val_getnameinfo() function performs an address to name translation
+in a protocol independent manner.  It is a DNSSEC-aware version of the
+getnameinfo() function (<xref target="refs.RFC3493">RFC 3493</xref>).  In
+addition to the values returned by the getnameinfo() function, it returns
+the DNSSEC validation status via the val_status parameter.
+      </t>
       </postamble>
       </figure>
       </section>
@@ -380,10 +415,10 @@ functions can be trusted.
       </figure>
       </section>
 
-      </section> <!-- High-level Validation API -->
+      </section> <!-- High-level Validator API -->
 
 
-      <section title="Low-level Validation API">
+      <section title="Low-level Validator API">
       <!-- #################################### -->
 
       <t> 
