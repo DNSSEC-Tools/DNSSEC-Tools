@@ -42,12 +42,13 @@
   <keyword>Internet-Draft</keyword>
 
   <abstract> 
-    <t>DNS Security Extensions allow a resolver to determine whether a DNS query
-was validated successfully or not.  However they do not address the issue of how
-to communicate details of the validation result to an application that wants to
-make decisions based on this result.  This document describes an Application
-Programming Interface that allows applications to control and get the results
-of the validation process.</t>
+    <t>The DNS Security Extensions (DNSSEC) provide origin authenticity and data
+integrity of DNS data.  However, the current resolver API does not allow the
+resolver to communicate results of DNSSEC processing back to the application.
+ This document describes an Application Programming Interface between
+applications and a validating security-aware stub resolver that allows
+applications to control the validation process and obtain results of
+DNSSEC processing.</t>
   </abstract>
   </front>
 
@@ -67,14 +68,37 @@ verifying a sequence of such records up to a trusted key. </t>
   This document presents an Application Programming Interface (API) 
 for the validator.  The API functions provide
 a convenient way for applications to control the DNSSEC validation
-process and to obtain results of validation.  The API contains 
-DNSSEC-aware substitutes for a number of well-known interfaces that
-applications may use in lieu of older interfaces. Other interfaces
-are also provided that allow applications to obtain more detail and fine-tune the
-validation process. This range allows for the creation of applications
+process and to obtain results of the validation process. </t>
+  <t>
+  The API can be broadly divided into three groups: 
+the High-Level validator API, the Low-Level validator API and 
+the Context management API. </t>
+
+  <t>
+  The high-level validator API is designed for ease of 
+use and mirrors existing DNS-related functions.
+These interfaces are best suited for existing applications that already use 
+legacy DNS-related functions such as gethostbyname(), 
+getaddrinfo() and res_query(). </t>
+
+  <t> The low-level validator API gives more control over the 
+validation process and allows detailed inspection of validation 
+status for each element of the chain-of-trust. </t>
+
+  <t> Context management is orthogonal to the process of validation up the
+chain-of-trust. Results returned by the validator are often guided by local
+policy decisions.  
+The context
+management API provides interfaces to manage the validator context.</t>
+
+  <t> This range of API functions allows for the creation of applications
 that are either only interested in basic results such as "validated"
 or "not-validated", or more sophisticated applications that can look
 for specific errors as a sign of some network abnormality or attack. </t>
+
+  <t> <xref target="high_level_api"/>, <xref target="low_level_api"/>,
+and <xref target="val-context"/> describe these interfaces in greater detail. </t>
+
   </section> <!-- Introduction -->
 
 
@@ -98,8 +122,7 @@ for specific errors as a sign of some network abnormality or attack. </t>
         <t> </t>
 
         <t hangText="validator context:">
-	The validator context encapsulates
-	the validator policy into an opaque structure that may be used by
+	An opaque structure encapsulating the validator policy that may be used by
 	applications to fine tune and control their validation processes. 
         The validator context is the application's handle to the validator policy. 
 	Contexts also maintain a reference to a "policy scope" 
@@ -138,33 +161,6 @@ for specific errors as a sign of some network abnormality or attack. </t>
 
   </section> <!-- Terminology -->
 
-
-  <section title="Validator API">
-  <!--            ############# -->
-
-  <t>
-  The API can be broadly divided into three groups: 
-the High-Level validator API, the Low-Level validator API and 
-the Context management API. </t>
-
-  <t>
-  The high-level validator API is designed for ease of 
-use and mirrors existing DNS-related functions.
-These interfaces are best suited for existing applications that already use 
-legacy DNS-related functions such as gethostbyname(), 
-getaddrinfo() and res_query(). </t>
-
-  <t> The low-level validator API gives more control over the 
-validation process and allows detailed inspection of validation 
-status for each element of the chain-of-trust. </t>
-
-  <t> Context management is orthogonal to the process of validation up the
-chain-of-trust. Results returned by the validator are often guided by local
-policy decisions.  
-The context
-management API provides interfaces to manage the validator context.</t>
-
-  <t> The following sections describe these interfaces in greater detail. </t>
 
     <section title="High-level Validator API" anchor="high_level_api">
     <!--            ######################### -->
@@ -219,8 +215,8 @@ int val_gethostbyaddr_r( const val_context_t *ctx,
       <t>
       The val_gethostbyname() and val_gethostbyname_r() functions perform
 name to address translation.  The val_gethostbyaddr() and val_gethostbyaddr_r()
-function perform the address to name translation.
-      These functions are DNSSEC-aware versions of the gethostbyname()
+functions perform the address to name translation.
+      These functions are DNSSEC-aware versions of the gethostbyname(),
 gethostbyname_r(), gethostbyaddr() and gethostbyaddr_r() functions and
 can be used by applications to get the validation status of DNS queries
 performed during the name to address or address to name translation.
@@ -261,7 +257,7 @@ validation, and must contain the address of a variable of type val_status_t.
       </figure>
       </section>
 
-      <section title="val_getaddrinfo, val_getnameinfo, free_val_addrinfo">
+      <section title="val_getaddrinfo, val_getnameinfo, val_free_addrinfo">
       <figure>
       <artwork>
 int val_getaddrinfo( const val_context_t   *ctx, 
@@ -280,7 +276,7 @@ int val_getnameinfo( const val_context_t   *ctx,
                      int                   flags,
                      val_status_t          *val_status );
 
-void free_val_addrinfo( struct val_addrinfo *ainfo );
+void val_free_addrinfo( struct val_addrinfo *ainfo );
 
 struct val_addrinfo {
            int                 ai_flags;
@@ -308,7 +304,7 @@ represents the status of DNSSEC validation for that particular answer.  A
 successful validation status must be set only if both the address and
 canonical name (if present) have been validated successfully.  The memory for
 the value returned in *res is dynamically allocated by this function.  The
-caller should free it after use using the free_val_addrinfo() function. The
+caller should free it after use using the val_free_addrinfo() function. The
 val_getaddrinfo() function returns 0 on success and a non-zero value on error.
       </t>
       <t>
@@ -341,10 +337,10 @@ struct val_response {
       </artwork>
       <postamble>
       <t>
-      This function is a DNSSEC-aware replacement for the res_query() function.
-It performs a DNS query for the given &lt;domain_name, class, type&gt; tuple similar
-to res_query() and additionally performs DNSSEC validation of the answers
-returned.</t>
+      The val_query() function queries the name server for a fully qualified
+domain name of the given class and type.  It is a DNSSEC-aware replacement for the
+res_query() function.  It additionally gives results of DNSSEC validation of the
+answers returned.</t>
       <t>
       Multiple RRsets may be returned in response to a query, each with a 
 potentially different validation status. The answers are returned in an
@@ -418,7 +414,7 @@ functions can be trusted.
       </section> <!-- High-level Validator API -->
 
 
-      <section title="Low-level Validator API">
+      <section title="Low-level Validator API" anchor="low_level_api">
       <!-- #################################### -->
 
       <t> 
@@ -597,7 +593,7 @@ val_free_query_chain(), val_free_assertion_chain() and val_free_result() functio
 
     </section> <!-- Low-level API -->
 
-    <section title="Context Management and Validator Policy" anchor="val-context">
+    <section title="Context Management and Validator Policy API" anchor="val-context">
     <!--            ####################################### -->
 
       <t>
@@ -617,11 +613,11 @@ val_free_query_chain(), val_free_assertion_chain() and val_free_result() functio
 	some flexibility in choosing its validation policy based on its scope of execution. </t>
 
 
-      <section title="get_context">
+      <section title="val_get_context">
       <figure>
       <artwork>
 
-int get_context( const char    *label,
+int val_get_context( const char    *label,
                  val_context_t **newcontext );
       </artwork>
       <postamble>
@@ -629,7 +625,7 @@ int get_context( const char    *label,
       Returns a pointer to the val_context_t structure in newcontext.  
 A NULL context is returned if some error was encountered. 
 The application must release the memory allocated 
-by the get_context() function using the free_context() interface once it is done with using it.</t>
+by the val_get_context() function using the val_free_context() interface once it is done with using it.</t>
 
 <t> 
 label identifies the particular policy to be used as the base policy for the context during validation. The policy label is a simple text string that can be used to identify the policy in the configuration file. As an example "browser" could be used as the label for a policy that defines the base policy for all web-browsers in a system.  
@@ -637,46 +633,46 @@ The ':' character in the label string is used to specify a new scope within a gi
 A label string with the value of ":" identifies the default base policy. </t>
 
 <t> 
-The label parameter in get_context() must be uniquely defined within the configuration file. A NULL
+The label parameter in val_get_context() must be uniquely defined within the configuration file. A NULL
 label creates a context with the default base policy. </t> 
 
       </postamble>
       </figure>
       </section>
 
-      <section title="free_context">
+      <section title="val_free_context">
       <figure>
       <artwork>
-void free_context( val_context_t *context );
+void val_free_context( val_context_t *context );
       </artwork>
       <postamble>
       <t>
-      Releases memory in the val_context_t structure previously allocated by the get_context() function.</t>
+      Releases memory in the val_context_t structure previously allocated by the val_get_context() function.</t>
       </postamble>
       </figure>
       </section>
 
-      <section title="switch_policy_scope">
+      <section title="val_switch_policy_scope">
       <figure>
       <artwork>
-int switch_policy_scope( val_context_t *ctx,
-                          const char    *scope );
+int val_switch_policy_scope( val_context_t *ctx,
+                             const char    *scope );
       </artwork>
       <postamble>
       <t>
       This function allows applications to switch their current to a particular scope.  
-The context supplied in ctx must not be NULL. The API only allows the context to switch its policy to a valid scope. Thus, trying to switch the policy scope to "mail:mozilla:browser" which the context was created with a base policy of "safari:browser" would result in an error. The effective policy is computed by applying the base policy for the context followed by overrides defined for all valid scopes defined in the configuration file in increasing order of specificity, up to and including the scope passed to switch_policy_scope().
+The context supplied in ctx must not be NULL. The API only allows the context to switch its policy to a valid scope. Thus, trying to switch the policy scope to "mail:mozilla:browser" which the context was created with a base policy of "safari:browser" would result in an error. The effective policy is computed by applying the base policy for the context followed by overrides defined for all valid scopes defined in the configuration file in increasing order of specificity, up to and including the scope passed to val_switch_policy_scope().
 A NULL label switches the context's current policy scope to its base policy. </t> 
       </postamble>
       </figure>
       </section>
 
-      <section title="get_scopes_within_context">
+      <section title="val_get_scopes_within_context">
       <figure>
       <artwork>
-int get_scopes_within_context( val_context *ctx,
-                                char        **scopes,
-                                int         *count );
+int val_get_scopes_within_context( val_context *ctx,
+                                   char        **scopes,
+                                   int         *count );
       </artwork>
       <postamble>
       <t>
@@ -691,12 +687,12 @@ the number of scopes. </t>
       </figure>
       </section>
 
-      <section title="get_scope_definition">
+      <section title="val_get_scope_definition">
       <figure>
       <artwork>
-int get_scope_definition( val_context *ctx,
-                           char        *scope,
-                           char        **pol_def ); 
+int val_get_scope_definition( val_context *ctx,
+                              char        *scope,
+                              char        **pol_def ); 
       </artwork>
       <postamble>
       <t>
@@ -706,12 +702,12 @@ The context supplied in ctx must not be NULL.</t>
       </figure>
       </section>
 
-      <section title="set_scope_definition">
+      <section title="val_set_scope_definition">
       <figure>
       <artwork>
-int set_scope_definition( val_context *ctx,
-                           const char  *label, 
-                           char        *policy_string );
+int val_set_scope_definition( val_context *ctx,
+                              const char  *label, 
+                              char        *policy_string );
       </artwork>
       <postamble>
       <t>
@@ -728,21 +724,61 @@ update the base policy within the context.</t>
     </section> <!-- Context Management -->
 
 
-   </section> <!-- Validator API -->
-
-
-
-
    <section title="IANA Considerations">
    <t> This document has no actions for IANA.</t>
    </section> <!-- IANA Considerations -->
 
    <section title="Security Considerations" anchor="security-considerations">
-   <t>(TODO)</t>
+   <t>
+   DNSSEC Security Extensions provide origin authentication and data integrity
+of DNS data.  This document describes an API for communicating results of
+DNSSEC validation to an application and for an application to control the
+validation process.
+   </t>
+   <t>
+   The validator API relies on three factors for performing validation.  The
+first is the /etc/hosts file for local name to address translation.  The
+second is the /etc/resolv.conf file for determining the DNS search path and
+addresses of name servers.  The third is the validator policy.  Each of these
+will affect the validation result.
+   </t>
+   <t>
+   The val_istrusted() function in the high-level validator API assumes that
+the addresses present in the /etc/hosts file can be trusted.  If the /etc/hosts
+file is modified during a DHCP lookup, the client system should ensure that the
+DHCP server is a trusted source, and that the communication path between the
+DHCP server and the client system is secured.  If these conditions are not
+satisfied, there is a potential attack vector whereby an attacker can poison
+the /etc/hosts file and an application using this API may trust the result.
+   </t>
+   <t>
+   The DNS search path may affect the result of validation, especially in
+the current Internet environment where not all DNS name servers are
+expected to be DNSSEC-aware.  If the name server pointed to by /etc/resolv.conf
+is not DNSSEC-aware (i.e. it does not return DNSSEC records), this API will not
+be able to perform validation.  This will prevent applications from getting
+results of DNSSEC validation.  The system on which the validator runs must
+ensure that the name servers listed in /etc/resolv.conf are DNSSEC-aware.
+Similarly, if the client system uses DHCP, it must ensure that the DHCP server
+is a trusted source, and that the communication path between the DHCP server
+and the client system is secured.
+   </t>
+   <t>
+   The default validator policy file (/etc/dnsval.conf) needs to be protected
+so that it cannot be overwritten by unauthorized users or processes.  Policies
+in this file will list the Trust Anchors for classes of applications.  The
+system administrator must ensure that the list of Trust Anchors are kept
+up-to-date in the event of key-rollovers.  If the Trust Anchors are outdated,
+the validator will not be able to validate responses from DNS successfully.
+   </t>
    </section> <!-- Security Considerations -->
 
    <section title="Acknowledgements">
-   <t>(TODO)</t>
+   <t>We would like to acknowledge the following individuals who have provided
+valuable feedback and suggestions for improving this document: Lindy Foster,
+Wayne Morrisson, Bill Sommerfeld, Robert Story.  We would like to acknowledge
+our team members at SPARTA for their inputs and suggestions while developing the
+validator API.</t>
    </section> <!-- Acknowledgements -->
 
    </middle>
@@ -796,11 +832,6 @@ update the base policy within the context.</t>
               </front>
               <seriesInfo name="RFC" value="4035" />
             </reference>
-            <reference anchor="">
-              <front>
-                <title>(TODO)</title>
-              </front>
-            </reference>
         </references>
         <!-- Appendices
         <section ...>
@@ -809,5 +840,5 @@ update the base policy within the context.</t>
     </back>
 </rfc>
 
-<!-- last updated Feb. 1, 2006 -->
+<!-- last updated Feb. 24, 2006 -->
 
