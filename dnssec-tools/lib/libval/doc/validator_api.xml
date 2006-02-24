@@ -247,7 +247,7 @@ return an error.
       <t>
       The val_status parameter is used to return the status of DNSSEC
 validation, and must contain the address of a variable of type val_status_t. 
-Possible values for val_status_t are defined in <xref target="low_level_api"/>.
+Possible values for val_status_t are defined in <xref target="val-ret-codes"/>.
       </t>
       </postamble>
       </figure>
@@ -397,6 +397,7 @@ val_query() with the appropriate number of elements in the resp array.</t>
 into the validation process. The functions and data structures defined in this API are 
 summarized below. </t>e
 
+      <section title="val_resolve_and_check, val_free_result, val_free_assertion_chain, val_free_query_chain">
         <figure>
         <artwork>
 int val_resolve_and_check( const val_context_t    *context, 
@@ -466,43 +467,7 @@ which case RRsets of type NSEC and SOA may also be returned.
 val_rc_trust points to the next element in the chain-of-trust sequence and val_rc_next can be used
 to iterate through the list of all results returned by the validator. 
 The consolidated validation status value for an RRset in the  DNS response based on the 
-individual status values for all components in the chain-of-trust is stored in val_rc_status, which is of type val_status_t. Possible values for this type are listed below. </t> 
-
-        <t> <list style="hanging">
-        <t> </t>
-        <t hangText="VALIDATE_SUCCESS">
-        Returned if the response was verified and validated.
-        </t>
-        <t hangText="LOCAL_ANSWER">
-        Returned if the response was obtained locally from a configuration file such as /etc/hosts.
-        </t>
-        <t hangText="BARE_RRSIG">
-        Returned if the response was for a query of type RRSIG. RRSIGs contain the cryptographic
-	signatures for other DNS data and cannot themselves be validated.
-        </t>
-        <t hangText="NONEXISTENT_NAME">
-        Returned if the proof for denial of existence for a domain name
-	was validated. 
-        </t>
-        <t hangText="NONEXISTENT_TYPE">
-        Returned if the proof for denial of existence for the resource record type for the
-	name queried was validated. 
-        </t>
-        <t hangText="INDETERMINATE">
-        Returned if the validator lacked detail to complete validation up the chain-of-trust. 
-        </t>
-        <t hangText="BOGUS">
-        Returned if the origin authenticity for the response could not be verified. 
-        </t>
-        <t hangText="VALIDATION_ERROR">
-        Returned if the DNS returned some error for the original query. 
-        </t>
-        <t hangText="PROVABLY_UNSECURE">
-        Returned if the zone to which the response belongs can be shown to be 
-        legitimately un-signed.  
-        </t>
-        </list>
-        </t>
+individual status values for all components in the chain-of-trust is stored in val_rc_status, which is of type val_status_t. Possible values for this type are listed in <xref target="val-ret-codes"/>.</t> 
 
         <t>
         The validator may initiate multiple queries to the DNS while trying to construct the
@@ -525,9 +490,6 @@ this structure's member variables. </t>
 
 	<t> val_ac_status returns the validation status for the specified 
 component in the linked list. 
-(Author's note: the definition of the  
-error codes is an activity being undertaken in parallel by a sub-working group at the IETF. 
-The list of error codes returned by the validator in val_astatus_t will draw upon that effort.)  
         The val_ac_rrset_next member inside struct val_assertion_chain points to the 
 next digested answer within the set of responses returned for a query. 
 In cases where validation fails due to some non-DNSSEC error, the val_ac_query_more variable can be used to identify the
@@ -559,7 +521,6 @@ original DNS query inclusive of the original query. This parameter
 may also be thought of as a cache of queries sent out during the 
 validation process. The val_qc_status member variable for an element in this liked list returns the
 status of the query: if it was answered, if there was no response or some other DNS-related value 
-(Author's note: the definition of possible values for this field, as in the case of values for val_astatus_t will draw upon efforts within the IETF to generate a complete list of error codes for the validator.) 
 The on-the-wire bytes returned as the response to a query are stored as a length-value field in
 val_qc_raw_response_length and val_qc_raw_response respectively.
 val_qc_answer points to the set of digested answers created for the response and may be NULL when no responses are returned. 
@@ -575,6 +536,113 @@ val_free_query_chain(), val_free_assertion_chain() and val_free_result() functio
 
         </postamble>
         </figure>
+
+        </section>
+
+	<section title="Return Values and Error codes" anchor="val-ret-codes">
+
+	<t> The functions listed above return an integer value to represent success 
+	and failure conditions arising from their invocation. The return values may
+	be one of the following. </t>
+
+        <t> <list style="hanging">
+        <t> </t>
+        <t hangText="VAL_NO_ERROR">
+        Returned if no error was encountered. 
+        </t>
+        <t> </t>
+        <t hangText="NOT_IMPLEMENTED">
+       	Returned if the implementation does not support a desired feature. 
+        </t>
+        <t> </t>
+        <t hangText="OUT_OF_MEMORY">
+       	Returned if memory could not be allocated for an operation. 
+        </t>
+        <t> </t>
+        <t hangText="BAD_ARGUMENT">
+	Returned if an unexpected value was passed as an argument.
+        </t>
+        <t> </t>
+        <t hangText="INTERNAL_ERROR">
+	Returned if an internal error was encountered in the validator library. 
+        </t>
+        <t> </t>
+        <t hangText="NO_PERMISSION">
+	Returned if the application lacked sufficient privileges to perform an operation. 
+        </t>
+        <t> </t>
+        <t hangText="RESOURCE_UNAVAILABLE">
+	Returned if some resource necessary for an operation was unavailable. 
+        </t>
+        <t> </t>
+        <t hangText="CONF_PARSE_ERROR">
+	Returned if the validator configuration file contains errors. 
+        </t>
+        <t> </t>
+        <t hangText="CONF_NOT_FOUND">
+	Returned if the validator configuration file could not be located. 
+        </t>
+        <t> </t>
+        <t hangText="NO_POLICY">
+	Returned if the policy identifier being referenced could not be located or is invalid for the current context. 
+        </t>
+        <t> </t>
+        <t hangText="ERROR">
+        Represents a generic error. 
+        </t>
+	</list></t>
+
+	<t> val_status_t defines the list of error codes returned by the validator
+	to an application for a DNSSEC response. Individual components of the chain of 
+	trust have their own val_astatus_t variable for maintaining per-rrset error codes, and
+	queries have a val_qstatus_t variable to track errors in name resolution. Possible values for          val_status_t are listed below. 
+(Author's note: the definition of possible values for val_astatus_t, as in the case of values for val_qstatus_t will draw upon efforts within the IETF to generate a complete list of error codes for the validator.) </t> 
+
+        <t> <list style="hanging">
+        <t> </t>
+        <t hangText="VALIDATE_SUCCESS">
+        Returned if the response was verified and validated.
+        </t>
+        <t> </t>
+        <t hangText="LOCAL_ANSWER">
+        Returned if the response was obtained locally from a configuration file such as /etc/hosts.
+        </t>
+        <t> </t>
+        <t hangText="BARE_RRSIG">
+        Returned if the response was for a query of type RRSIG. RRSIGs contain the cryptographic
+	signatures for other DNS data and cannot themselves be validated.
+        </t>
+        <t> </t>
+        <t hangText="NONEXISTENT_NAME">
+        Returned if the proof for denial of existence for a domain name
+	was validated. 
+        </t>
+        <t> </t>
+        <t hangText="NONEXISTENT_TYPE">
+        Returned if the proof for denial of existence for the resource record type for the
+	name queried was validated. 
+        </t>
+        <t> </t>
+        <t hangText="INDETERMINATE">
+        Returned if the validator lacked detail to complete validation up the chain-of-trust. 
+        </t>
+        <t> </t>
+        <t hangText="BOGUS">
+        Returned if the origin authenticity for the response could not be verified. 
+        </t>
+        <t> </t>
+        <t hangText="VALIDATION_ERROR">
+        Returned if the DNS returned some error for the original query. 
+        </t>
+        <t> </t>
+        <t hangText="PROVABLY_UNSECURE">
+        Returned if the zone to which the response belongs can be shown to be 
+        legitimately un-signed.  
+        </t>
+        </list>
+        </t>
+
+	</section>
 
     </section> <!-- Low-level API -->
 
