@@ -1,9 +1,9 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
-# zonesigner
+# DNSSEC-Tools:  zonesigner
 #
 #	This script combines a lot of actions required to sign a zone into a
 #	single command.  The command is used in this way:
@@ -24,6 +24,7 @@
 use strict;
 
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
@@ -44,25 +45,14 @@ my $MKDIR	= "/bin/mkdir";
 my $MV		= "/bin/mv";
 my $RM		= "/bin/rm";
 
-#
-# Default names for the dnssec- commands.
-#
-my $DEF_CHECKZONE	= "named-checkzone";
-my $DEF_KEYGEN		= "dnssec-keygen";
-my $DEF_SIGNZONE	= "dnssec-signzone";
 
 #
-# Default arguments to zonesigner and dnssec-* commands.
+# Default arguments to zonesigner.
 #
-my $DEF_ALGORITHM	= "rsasha1";		# Encryption algorithm.
-my $DEF_ENDDATE		= "+2592000";		# Zone life, in seconds.
 my $DEF_ENTROPYMSG	= 1;			# Display of entropy message.
-my $DEF_KSKLENGTH	= 2048;			# Length of KSK key.
-my $DEF_RANDOM		= "/dev/urandom";	# Random no. generator device.
+my $DEF_SAVEKEYS	= 0;			# Archive keys.
 my $DEF_REUSEKSK	= 0;			# Re-use KSK.
 my $DEF_REUSEZSK	= 0;			# Re-use ZSK.
-my $DEF_SAVEKEYS	= 0;			# Archive keys.
-my $DEF_ZSKLENGTH	= 1024;			# Length of ZSK key.
 
 #
 # Arguments for updzonerec().
@@ -81,26 +71,28 @@ my $gends;				# Generate DS records in zone signing.
 my $help = 0;				# Help flag.
 my $kgopts;				# Additional dnssec-keygen options.
 my $ksdir;				# Directory to hold keysets.
-my $ksize;				# Size of KSK.
-my $kskdir;				# Directory to hold KSK.
 my $nokrfile;				# Flag for not using a keyrec file.
 my $random;				# Random number generation method.
 my $szopts;				# Additional dnssec-signzone options.
 my $verbose = 0;			# Turn off verbosity.
-my $zsize;				# Size of ZSK.
-my $zskdir;				# Directory to hold ZSK.
 
 my $archdir;				# Archive directory for old keys.
 my $savekeys = 0;			# Flag for saving old keys.
 
 my $ksk;				# KSK we've generated.
+my $kskdir;				# Directory to hold KSK.
+my $ksklife;				# Time between KSK roll-overs.
 my $kskpath;				# Path to the KSK.
+my $ksize;				# Size of KSK.
 my $genksk;				# Generate a new KSK.
 
 my $zskcur;				# Current ZSK.
 my $zskpub;				# Published ZSK.
 my $zskcurpath;				# Path to the published KSK.
 my $zskpubpath;				# Path to the current KSK.
+my $zskdir;				# Directory to hold ZSK.
+my $zsklife;				# Time between ZSK roll-overs.
+my $zsize;				# Size of ZSK.
 my $genzsk;				# Generate a new ZSK.
 
 my $zone;				# Zone to play with.
@@ -311,8 +303,10 @@ sub optsandargs()
 	#
 	# Get the KSK- and ZSK-related arguments.
 	#
-	$ksize	  = $opts{'ksklength'}	  || $DEF_KSKLENGTH;
-	$zsize	  = $opts{'zsklength'}	  || $DEF_ZSKLENGTH;
+	$ksize	  = $opts{'ksklength'}	  || dnssec_tools_defaults("ksklength");
+	$zsize	  = $opts{'zsklength'}	  || dnssec_tools_defaults("zsklength");
+	$ksklife  = $opts{'ksklife'}	  || dnssec_tools_defaults("ksklife");
+	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_defaults("zsklife");
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
 	$kskpath  = $opts{'kskpath'}	  || "";
@@ -322,11 +316,11 @@ sub optsandargs()
 	#
 	# Get the rest of the options.
 	#
-	$alg	  = $opts{'algorithm'}	|| $DEF_ALGORITHM;
+	$alg	  = $opts{'algorithm'}	|| dnssec_tools_defaults("algorithm");
 	$archdir  = $opts{'archivedir'}	|| "";
-	$enddate  = $opts{'endtime'}	|| $DEF_ENDDATE;
+	$enddate  = $opts{'endtime'}	|| dnssec_tools_defaults("enddate");
 	$gends	  = $opts{'gends'}	|| "";
-	$random   = $opts{'random'}	|| $DEF_RANDOM;
+	$random   = $opts{'random'}	|| dnssec_tools_defaults("random");
 	$kgopts   = $opts{'kgopts'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
 	$savekeys = $opts{'savekeys'}	|| $DEF_SAVEKEYS;
@@ -423,9 +417,9 @@ sub optsandargs()
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$checkzone  = $opts{'checkzone'}   || $DEF_CHECKZONE;
-	$keygen	    = $opts{'keygen'}	   || $DEF_KEYGEN;
-	$signzone   = $opts{'signzone'}	   || $DEF_SIGNZONE;
+	$checkzone  = $opts{'checkzone'} || dnssec_tools_defaults("bind_checkzone");
+	$keygen	    = $opts{'keygen'}	 || dnssec_tools_defaults("bind_keygen");
+	$signzone   = $opts{'signzone'}	 || dnssec_tools_defaults("bind_signzone");
 
 	#
 	# Ensure that we were given the zone file and the zone output file.
@@ -1575,9 +1569,11 @@ sub printopts
 	print "\t\trandom		- <$random>\n";
 	print "\t\tksize		- <$ksize>\n";
 	print "\t\tkskdir		- <$kskdir>\n";
+	print "\t\tksklife		- <$ksklife>\n";
 	print "\t\tgenksk		- <$genksk>\n";
 	print "\t\tzsize		- <$zsize>\n";
 	print "\t\tzskdir		- <$zskdir>\n";
+	print "\t\tzsklife		- <$zsklife>\n";
 	print "\t\tgenzsk		- <$genzsk>\n";
 	print "\t\tkgopts		- <$kgopts>\n";
 	print "\n";
@@ -1674,6 +1670,8 @@ sub usage
 	print STDERR "\t\t\t-genkeys\n";
 	print STDERR "\t\t\t-genksk\n";
 	print STDERR "\t\t\t-genzsk\n";
+	print STDERR "\t\t\t-ksklife lifetime\n";
+	print STDERR "\t\t\t-zsklife lifetime\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-help\n";
@@ -1718,7 +1716,7 @@ zonesigner - Generates encryption keys and signs a DNS zone.
   # get started immediately examples:
 
   # first run on a zone for example.com:
-  zonesigner -genzsk -genksk -endtime +2678400 -zone example.com \
+  zonesigner -genkeys -endtime +2678400 -zone example.com \
      db-example.com.signed
 
   # future runs before expiration time (reuses the same keys):
@@ -1870,6 +1868,14 @@ zone will be used.
 
 Generate a new ZSK for the zone.  By default, the last ZSK generated for this
 zone will be used.
+
+=item -ksklife
+
+The time between KSK roll-overs.  This is measured in seconds.
+
+=item -zsklife
+
+The time between ZSK roll-overs.  This is measured in seconds.
 
 =item -forceroll
 
@@ -2086,6 +2092,7 @@ one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	random		"/dev/urandom"
 	keypath		"./Kexample.com.+005+24082.key"
 	ksklength	"1024"
+	ksklife		"15768000"
 	keyrec_gensecs	"1115166638"
 	keyrec_gendate	"Wed May  4 00:30:38 2005"
 
@@ -2096,6 +2103,7 @@ one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	random		"/dev/urandom"
 	keypath		"./Kexample.com.+005+53135.key"
 	zsklength	"512"
+	zsklife		"604800"
 	keyrec_gensecs	"1115166638"
 	keyrec_gendate	"Wed May  4 00:30:38 2005"
 
@@ -2106,6 +2114,7 @@ one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	random		"/dev/urandom"
 	keypath		"./Kexample.com.+005+13531.key"
 	zsklength	"512"
+	zsklife		"604800"
 	keyrec_gensecs	"1115166638"
 	keyrec_gendate	"Wed May  4 00:30:38 2005"
 
@@ -2123,7 +2132,7 @@ plans are to allow for more flexible serial number manipulation.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
@@ -2133,6 +2142,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 =head1 SEE ALSO
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::defaults.pm(3)>,
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
 B<Net::DNS::SEC::Tools::tooloptions.pm(3)>
 
