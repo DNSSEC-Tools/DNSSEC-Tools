@@ -93,8 +93,8 @@ management API provides interfaces to manage the validator context.</t>
 
   <t> This range of API functions allows for the creation of applications
 that are either only interested in basic results such as "validated"
-or "not-validated", or more sophisticated applications that can look
-for specific errors as a sign of some network abnormality or attack. </t>
+or "not-validated" as well as more sophisticated applications that can look
+for specific errors as a sign of a network abnormality or attack. </t>
 
   <t> <xref target="high_level_api"/>, <xref target="low_level_api"/>,
 and <xref target="val-context"/> describe these interfaces in greater detail. </t>
@@ -117,7 +117,7 @@ and <xref target="val-context"/> describe these interfaces in greater detail. </
 
 	<t> </t>
         <t hangText="policy attribute: ">
-        Refers to a particular configurable component of the validator policy,
+        Refers to a particular configurable component of the validator policy;
         for instance a trust anchor setting or an untrusted algorithm definition. </t>
         <t> </t>
 
@@ -166,8 +166,8 @@ The effective policy is computed by applying the default policy and the base pol
     <!--            ######################### -->
     <t>
     The high-level validator API provides DNSSEC-aware substitutes for commonly
-used DNS functions such as gethostbyname(), getaddrinfo() and res_query().
-It provides an easy path for applications already using these legacy functions
+used DNS functions such as gethostbyname(), getaddrinfo(), and res_query().
+This API provides an easy path for applications already using these legacy functions
 to transition towards becoming DNSSEC-aware.
   </t>
   <t>
@@ -235,7 +235,9 @@ on success, and NULL on error.
       <t>
       The val_gethostbyname_r() and val_gethostbyaddr_r() functions are
 reentrant versions of the val_gethostbyname() and val_gethostbyaddr() functions.
-They return 0 on success, and a non-zero value on error.  The result of the
+They should be used by multi-threaded applications or applications that want
+to make multiple calls to these functions and store the return values.
+These functions return 0 on success, and a non-zero value on error.  The result of the
 call is stored in the hostent structure whose address is passed in the ret
 parameter.  These functions do not modify the global h_errno variable, but
 return the error numbers in the variable whose address is passed in the
@@ -248,6 +250,8 @@ return an error.
       The val_status parameter is used to return the status of DNSSEC
 validation, and must contain the address of a variable of type val_status_t. 
 Possible values for val_status_t are defined in <xref target="val-ret-codes"/>.
+A validation status of VALIDATE_SUCCESS will be returned only if both the address and
+canonical name(s) (if present) have been validated successfully.
       </t>
       </postamble>
       </figure>
@@ -296,8 +300,8 @@ This function supports both IPv4 and IPv6
 addresses.  It returns a pointer to a value of type val_addrinfo in *res on
 success, and NULL on error.  The val_addrinfo structure is an augmented form
 of the addrinfo structure.  It contains an additional val_status field that
-represents the status of DNSSEC validation for that particular answer.  A
-successful validation status must be set only if both the address and
+represents the status of DNSSEC validation for that particular answer.  It will
+contain a validation status of VALIDATE_SUCCESS only if both the address and
 canonical name (if present) have been validated successfully.  The memory for
 the value returned in *res is dynamically allocated by this function.  The
 caller should free it after use using the val_free_addrinfo() function.
@@ -356,7 +360,7 @@ by res_query().  The val_status field contains the status of DNSSEC validation
 for that particular RRset.</t>
      <t>
      The resp_count parameter is a value-result parameter.  When this
-function is called *resp_count must contain the number of elements in the
+function is called, *resp_count must contain the number of elements in the
 resp array.  On return, it will contain the actual number of responses
 returned by the validator.</t>
      <t>
@@ -369,10 +373,10 @@ are merged into a single response and returned in the first element of the
 resp array.  The response field of this element will have a format similar
 to the answer returned by res_query().  The validation status will be
 VALIDATE_SUCCESS only if all the individual RRsets have been successfully
-validated.  Otherwise, the validation status will be one of the other error
-codes.  Note that if a value other than VALIDATE_SUCCESS is returned and if
-multiple RRsets are present in the answer, it is not possible to know which
-RRset resulted in the error status, if this flag is used.</t>
+validated.  Otherwise, the validation status will be an error code.
+Note that if this flag is used and a value other than VALIDATE_SUCCESS is returned with
+multiple RRsets in the answer, it is not possible to know which
+RRset resulted in the error status.</t>
      <t>
      The val_query() function returns 0 on success and a non-zero error code
 on failure. The error code NO_SPACE is returned if the resp array does not
@@ -449,10 +453,10 @@ struct val_query_chain {
         </artwork>
         <postamble>
         <t>
-        The val_resolve_and_check() function can be used to query a set of name servers
-for the &lt;domain_name, class, type&gt; tuple and to verify and validate
-the responses received. Verification is the step of checking the RRSIGs and
-validation includes performing verification up the chain-of-trust to a trust
+        The val_resolve_and_check() function queries a set of name servers
+for the &lt;domain_name, class, type&gt; tuple and verifies and validates
+the responses received. The verification step checks RRSIGs and the
+validation step performs verification up the chain-of-trust to a trust
 anchor.  All the information necessary for inspecting the validation
 chain-of-trust is available through the results, assertions and queries
 parameters. </t> 
@@ -481,9 +485,9 @@ assertions may also be thought of as a cache of responses obtained during the va
         <t>
         Most applications would only be interested in the results parameter 
 since this provides a single error code that represents the authenticity of 
-returned data.  More sophisticated applications such as a DNSSEC troubleshooting 
-utility may look more closely at an individual assertion or query to identify 
-whch particular component in the chain-of-trust led to validation failure, if any.
+returned data.  More sophisticated applications, such as a DNSSEC troubleshooting 
+utility, may look more closely at an individual assertion or query to identify 
+the particular component in the chain-of-trust that led to validation failure.
 Given a pointer to an element of type struct val_assertion_chain within the chain-of-trust, 
 it is possible to inspect further details of the validation status of each component therein using
 this structure's member variables. </t> 
@@ -517,8 +521,8 @@ val_ac_rrset contains the actual RRset data stored internally within the struct 
         <t>
         The queries parameter in val_resolve_and_check() returns a pointer to a linked list containing the complete set 
 of DNS queries that were issued while resolving and validating the 
-original DNS query inclusive of the original query. This parameter 
-may also be thought of as a cache of queries sent out during the 
+original DNS query. This includes the original query. This parameter 
+may also be thought of as a cache of queries sent during the 
 validation process. The val_qc_status member variable for an element in this liked list returns the
 status of the query: if it was answered, if there was no response or some other DNS-related value 
 The on-the-wire bytes returned as the response to a query are stored as a length-value field in
@@ -531,8 +535,8 @@ The combination of the previous two functions makes it possible to identify all 
 
 
         <t>
-The val_resolve_and_check() method internally allocates memory for the values of the results, queries and assertions parameters  so they must be freed by the invoking application using the
-val_free_query_chain(), val_free_assertion_chain() and val_free_result() functions.</t>
+The val_resolve_and_check() method internally allocates memory for the values of the results, queries, and assertions parameters  so they must be freed by the invoking application using the
+val_free_query_chain(), val_free_assertion_chain(), and val_free_result() functions.</t>
 
         </postamble>
         </figure>
@@ -657,8 +661,8 @@ val_free_query_chain(), val_free_assertion_chain() and val_free_result() functio
       either a success or failure condition.  
       Examples of local policy elements include trust anchors for 
       different zones, untrusted algorithms for cryptographic keys and hashes, 
-      acceptable clock skew for signature inception and expiration times and default 
-      name servers to direct queries to, all of which may be different for different 
+      acceptable clock skew for signature inception and expiration times, and default 
+      name servers. All of these may be different for different 
       applications and operation scenarios. </t>
 
 
@@ -679,7 +683,7 @@ int val_get_context( const char    *label,
       Returns a pointer to the val_context_t structure in newcontext.  
 A NULL context is returned if some error was encountered. 
 The application must release the memory allocated 
-by the val_get_context() function using the val_free_context() interface once it is done with using it.</t>
+by the val_get_context() function using the val_free_context() interface once it is done with using the validator context.</t>
 
 <t> 
 label identifies the particular policy to be used as the base policy for the context during validation. The policy label is a simple text string that can be used to identify the policy in the configuration file. As an example "browser" could be used as the label for a policy that defines the base policy for all web-browsers in a system.  
@@ -688,6 +692,10 @@ The ':' character in the label string is used to specify a new scope within a gi
 <t> 
 The label parameter in val_get_context() must be uniquely defined within the configuration file. A NULL
 label creates a context with the default base policy. The default base policy is identified within the validator configuration file by a lable value of ':'.</t> 
+
+<t>
+This function returns 0 on success, and a non-zero error value on error.
+</t>
 
       </postamble>
       </figure>
