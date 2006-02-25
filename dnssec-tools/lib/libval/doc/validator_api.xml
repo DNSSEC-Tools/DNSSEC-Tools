@@ -87,7 +87,7 @@ status for each element of the <xref target="refs.RFC4033">chain of trust</xref>
 
   <t> Context management is orthogonal to the process of validation.
 Results returned by the validator are often guided by local policy decisions.  
-The context management API provides interfaces to manage validator policies.</t>
+The context management API provides functions to manage validator policies.</t>
 
   <t> This range of API functions allows for the creation of applications
 that are either only interested in basic results such as "validated"
@@ -531,13 +531,13 @@ The on-the-wire bytes returned as the response to a query are stored as a length
 val_qc_raw_response_length and val_qc_raw_response respectively.
 val_qc_answer points to the set of answers created for the response and may be NULL when no responses are returned. 
 val_qc_creator is used to identify which link in the chain of trust led to the generation of this query and is NULL for
-the initial query issued by the val_resolve_and_check() method. 
+the initial query issued by the val_resolve_and_check() function. 
 val_qc_next can be used to iterate through the list of DNS queries within the struct val_query_chain linked list.
 The combination of the previous two functions makes it possible to identify all queries sent out in order to validate a particular assertion. </t> 
 
 
         <t>
-The val_resolve_and_check() method internally allocates memory for the values of the results, queries, and assertions parameters  so they must be freed by the caller using the
+The val_resolve_and_check() function internally allocates memory for the values of the results, queries, and assertions parameters  so they must be freed by the caller using the
 val_free_query_chain(), val_free_assertion_chain(), and val_free_result() functions.</t>
 
         </postamble>
@@ -686,7 +686,7 @@ void val_free_context( val_context_t *context );
       The val_get_context() function returns a pointer to the val_context_t structure in the newcontext parameter. 
 A NULL context is returned if some error was encountered. 
 The application must release the memory allocated 
-by the val_get_context() function using the val_free_context() interface once it is done with using the validator context.</t>
+by the val_get_context() function using the val_free_context() function once it is done with using the validator context.</t>
 
 <t> 
 The label parameter identifies the particular policy to be used as the base policy for the context during validation. The policy label is a simple text string that can be used to identify the policy in the validator configuration file. As an example "browser" could be used as the label for a policy that defines the base policy for all web-browsers in a system.  
