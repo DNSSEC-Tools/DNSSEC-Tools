@@ -88,8 +88,7 @@ getaddrinfo() and res_query(). </t>
 validation process and allows detailed inspection of validation 
 status for each element of the <xref target="refs.RFC4033">authentication chain</xref>. </t>
 
-  <t> Context management is orthogonal to the process of validation.
-Results returned by the validator can be guided by local policy decisions.  
+  <t> Results returned by the validator can be guided by local policy decisions.  
 The context management API provides functions to manage validator policies.</t>
 
   <t> The range of functions provided in this API allows for the creation of applications
@@ -125,15 +124,14 @@ and <xref target="val-context"/> describe these interfaces in greater detail. </
 	an opaque structure encapsulating the validator policy. 
         The validator context is the application's handle to the validator policy. 
 	Contexts also maintain a reference to a "policy scope" 
-	(see definition below), which may be explicitly changed 
-	by applications.  </t>
+	(see definition below).  </t>
 
         <t> </t>
         <t hangText="base policy:">
         the default policy associated with a validator context when the context is created.
 	This policy is looked up  whenever a policy attribute not existing in other more 
 	specific policy scopes is required. A "default" base policy can also be defined
-	to provide the definitions for system-wide policy attribute defaults.  </t>	
+	to provide the default definitions for system-wide policy attributes.  </t>	
 
 	<t> </t>
         <t hangText="policy scope: ">
@@ -249,7 +247,7 @@ return an error.
 validation, and must contain the address of a variable of type val_status_t. 
 Possible values for val_status_t are defined in <xref target="val-ret-codes"/>.
 A validation status of VAL_SUCCESS will be returned only if both the address and
-canonical name(s) (if present) have been validated successfully.
+canonical name(s), if present, have been validated successfully.
       </t>
       </postamble>
       </figure>
@@ -474,11 +472,23 @@ individual status values for all components in the authentication chain is store
 
         <t>
         The validator may initiate multiple queries to the DNS while trying to construct the
-authentication chain. Each response is encapsulated within one or more elements of the struct val_assertion_chain linked list. However not all elements in this list are present in the authentication chain; 
+authentication chain. Each response is encapsulated within one or more elements of the val_assertion_chain linked list. However not all elements in this list are present in the authentication chain; 
 for instance, responses for glue-fetching operations are not directly a part of the authentication chain and are not validated.
 The assertions parameter in val_resolve_and_check() returns a pointer to the set
  of all responses  received for each query sent during validation including data received for any ancillary information.
 assertions may also be thought of as a cache of responses obtained during the validation process.</t>
+
+        <t>
+        The queries parameter in val_resolve_and_check() returns a pointer to a linked list containing the complete set of DNS queries that was issued while resolving and validating the 
+original DNS query. This parameter may also be thought of as a cache of queries sent during the 
+validation process. val_qc_status returns the
+status for a particular query: if it was answered, if there was no response or some other DNS-related value.
+The on-the-wire bytes returned as the response to a query are stored as a length-value field in
+val_qc_raw_response_length and val_qc_raw_response respectively.
+val_qc_answer points to the set of members in assertions that are created for the response and may be NULL when no responses are returned. 
+val_qc_creator identifies the link in the authentication chain that led to the generation of this query and is NULL for the initial query issued by the val_resolve_and_check() function. 
+val_qc_next can be used to iterate through the list of DNS queries within the struct val_query_chain linked list. </t>
+
 
         <t>
         Most applications would only be interested in the results parameter 
@@ -515,17 +525,6 @@ The val_ac_rrset field contains the actual RRset data. This is stored in the val
         returned if the RRset was present in the additional section of the DNS response.
         </t>
 	</list></t>
-
-        <t>
-        The queries parameter in val_resolve_and_check() returns a pointer to a linked list containing the complete set of DNS queries that were issued while resolving and validating the 
-original DNS query. This parameter may also be thought of as a cache of queries sent during the 
-validation process. The val_qc_status field returns the
-status for a particular query: if it was answered, if there was no response or some other DNS-related value.
-The on-the-wire bytes returned as the response to a query are stored as a length-value field in
-val_qc_raw_response_length and val_qc_raw_response respectively.
-The val_qc_answer field points to the set of assertions that are created for the response and may be NULL when no responses are returned. 
-val_qc_creator identifies the link in the authentication chain that led to the generation of this query and is NULL for the initial query issued by the val_resolve_and_check() function. 
-val_qc_next can be used to iterate through the list of DNS queries within the struct val_query_chain linked list. </t>
 
 
         <t>
@@ -582,13 +581,8 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
 	</list></t>
 
 	<t> val_status_t defines the list of error codes returned by the validator
-	to an application. Possible values for val_status_t are listed below. 
-	Individual components of the authentication 
-	chain have their own val_ac_status for maintaining per-rrset error codes and
-	queries have a separate val_qc_status to track errors in name resolution. 
-	(author's note: the definition of possible values for val_astatus_t, as in the case of 
-	values for val_qstatus_t, will draw upon efforts within the IETF to 
-	generate a complete list of error codes for the validator.) </t> 
+	to an application. Possible values for val_status_t are listed below. </t> 
+
 
         <t> <list style="hanging">
         <t> </t>
@@ -633,6 +627,13 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
         </t>
         </list>
         </t>
+
+	<t> Individual components of the authentication 
+	chain have their own val_ac_status for maintaining per-rrset error codes and
+	queries have a separate val_qc_status to track errors in name resolution. 
+	(author's note: the definition of possible values for val_astatus_t, as in the case of 
+	values for val_qstatus_t, will draw upon efforts within the IETF to 
+	generate a complete list of error codes for the validator.) </t> 
 
 	</section>
 
