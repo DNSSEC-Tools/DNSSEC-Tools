@@ -236,9 +236,9 @@ sub optsandargs
 	$zsksize   = $opts{'zsklength'} || dnssec_tools_defaults("zsklength");
 	$zsklife   = $opts{'zsklife'}   || dnssec_tools_defaults("zsklife");
 
-	$algo	   = $opts{'algorithm'}	|| dnssec_tools_defaults("zsklife");
+	$algo	   = $opts{'algorithm'}	|| dnssec_tools_defaults("algorithm");
 	$endtime   = $opts{'endtime'}	|| dnssec_tools_defaults("enddate");
-	$random	   = $opts{'random'}	|| dnssec_tools_defaults("zsklife");
+	$random	   = $opts{'random'}	|| dnssec_tools_defaults("random");
 
 	$keygen	   = $opts{'keygen'}	|| dnssec_tools_defaults("bind-keygen");
 
