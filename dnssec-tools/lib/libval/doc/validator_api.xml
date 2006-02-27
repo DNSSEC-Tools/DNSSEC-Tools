@@ -528,7 +528,7 @@ The val_ac_rrset field contains the actual RRset data. This is stored in the val
 
 
         <t>
-The val_resolve_and_check() function internally allocates memory for the values of the results, assertions and queries parameters  so they must be freed by the caller using the val_free_result, 
+The val_resolve_and_check() function internally allocates memory for the values of the results, assertions and queries parameters  so they must be freed by the caller using the val_free_result(), 
 val_free_assertion_chain() and val_free_query_chain() functions respectively.</t>
 
         </postamble>
@@ -544,7 +544,7 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
         <t> <list style="hanging">
         <t> </t>
         <t hangText="VAL_NOT_IMPLEMENTED:">
-       	returned if the implementation does not support a particular feature. 
+       	returned if the implementation did not support a particular feature. 
         </t>
         <t> </t>
         <t hangText="VAL_OUT_OF_MEMORY:">
@@ -552,7 +552,7 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
         </t>
         <t> </t>
         <t hangText="VAL_BAD_ARGUMENT:">
-	returned if an unexpected value was passed as an argument.
+	returned if an unexpected value was passed as an argument to a function.
         </t>
         <t> </t>
         <t hangText="VAL_INTERNAL_ERROR:">
@@ -568,7 +568,7 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
         </t>
         <t> </t>
         <t hangText="VAL_CONF_PARSE_ERROR:">
-	returned if the validator configuration file contains errors. 
+	returned if the validator configuration file contained errors. 
         </t>
         <t> </t>
         <t hangText="VAL_CONF_NOT_FOUND:">
@@ -576,7 +576,8 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
         </t>
         <t> </t>
         <t hangText="VAL_NO_POLICY:">
-	returned if the policy identifier being referenced could not be located or is invalid for the current context. 
+	returned if the policy identifier being referenced could not be located 
+	or was invalid for the current context. 
         </t>
 	</list></t>
 
@@ -622,8 +623,7 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
         </t>
         <t> </t>
         <t hangText="VAL_PROVABLY_UNSECURE:">
-        returned if the zone to which the response belongs can be shown to be 
-        legitimately un-signed.  
+        returned if the zone to which the response belongs was inferred to be un-signed. 
         </t>
         </list>
         </t>
@@ -658,7 +658,7 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
 
 <t> Policy definitions have the following structure.  </t> 
 <t> &lt;label&gt; &lt;attribute&gt; &lt;additional-data&gt;; </t>
-<t> The only possible value for &lt;attribute&gt; is "trust-anchor". (author's note: the range of possible policy attributes will no doubt have to be extended in future.) &lt;additional-data&gt; depends on the type of attribute specified.  For the "trust-anchor" attribute this is a sequence of the zone name and a quoted string containing the RDATA portion for the trust anchor's DNSKEY. An example is given below. </t>
+<t> The only defined value for &lt;attribute&gt; is "trust-anchor". (author's note: the range of possible policy attributes will no doubt have to be extended in future.) The value for &lt;additional-data&gt; depends on the type of attribute specified.  For the "trust-anchor" attribute this is a sequence of the zone name and a quoted string containing the RDATA portion for the trust anchor's DNSKEY. An example is given below. </t>
       <figure>
       <artwork>
 browser trust-anchor example.com   "257 3 5 AQO8XS4y9r77X9SHBmrx \
@@ -806,7 +806,7 @@ in this file will list the trust anchors for classes of applications.  The
 system administrator must ensure that the list of trust anchors are kept
 up-to-date in the event of key-rollovers.  If the trust anchors are outdated,
 the validator may not be able to perform validation or may 
-create the false impression of having successfully validating the query when 
+create the false impression of having successfully validated a response when 
 it should have been flagged as bogus.
    </t>
    </section> <!-- Security Considerations -->
