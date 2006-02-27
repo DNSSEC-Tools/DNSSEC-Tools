@@ -491,16 +491,16 @@ authentication chain that led to a validation failure. </t>
 <t>
 Given a pointer to an element of type struct val_assertion_chain within the authentication chain, 
 it is possible to inspect further details of the validation status of each component therein using
-this structure's member variables. 
-val_ac_status returns the validation status for the specified RRset.  
-val_ac_rrset_next points to the next answer within the set of responses returned for a query. 
-In cases where validation fails due to some non-DNSSEC error, the val_ac_query_more variable identifies the
+this structure's fields. 
+The val_ac_status field returns the validation status for the specified RRset.  
+The val_ac_rrset_next field points to the next answer within the set of responses returned for a query. 
+In cases where validation fails due to some non-DNSSEC error, the val_ac_query_more field identifies the
 query where the error was encountered. 
-val_ac_trust points to the parent element in the authentication chain. Its value is NULL when the current element in the linked list points to a valid trust anchor. 
-val_ac_next can be used to iterate through the list of DNS responses within the struct val_assertion_chain linked list.</t> 
+The val_ac_trust field points to the parent element in the authentication chain. Its value is NULL when the current element in the linked list points to a valid trust anchor. 
+The val_ac_next field can be used to iterate through the list of DNS responses within the struct val_assertion_chain linked list.</t> 
 
 <t>
-val_ac_rrset contains the actual RRset data. This is stored in the val_rrset structure as the length-value pair, val_rrset_len and val_rrset_data. The section where the RRset appears in the DNS response is also saved in val_rrset_section. The following values may be returned in this variable. </t> 
+The val_ac_rrset field contains the actual RRset data. This is stored in the val_rrset structure as the length-value pair, val_rrset_len and val_rrset_data. The section where the RRset appears in the DNS response is saved in the val_rrset_section field. The following values may be returned in this field. </t> 
         <t> <list style="hanging">
         <t> </t>
         <t hangText="VAL_FROM_ANS:">
@@ -517,13 +517,13 @@ val_ac_rrset contains the actual RRset data. This is stored in the val_rrset str
 	</list></t>
 
         <t>
-        The queries parameter in val_resolve_and_check() returns a pointer to a linked list containing the complete set of DNS queries that was issued while resolving and validating the 
+        The queries parameter in val_resolve_and_check() returns a pointer to a linked list containing the complete set of DNS queries that were issued while resolving and validating the 
 original DNS query. This parameter may also be thought of as a cache of queries sent during the 
-validation process. val_qc_status member returns the
+validation process. The val_qc_status field returns the
 status for a particular query: if it was answered, if there was no response or some other DNS-related value.
 The on-the-wire bytes returned as the response to a query are stored as a length-value field in
 val_qc_raw_response_length and val_qc_raw_response respectively.
-val_qc_answer points to the set of members in assertions that are created for the response and may be NULL when no responses are returned. 
+The val_qc_answer field points to the set of assertions that are created for the response and may be NULL when no responses are returned. 
 val_qc_creator identifies the link in the authentication chain that led to the generation of this query and is NULL for the initial query issued by the val_resolve_and_check() function. 
 val_qc_next can be used to iterate through the list of DNS queries within the struct val_query_chain linked list. </t>
 
@@ -752,7 +752,7 @@ define a new policy scope within a context. A NULL label updates the base policy
 
 <t>
 The validator context supplied in the ctx parameter for these functions must not be NULL.
-The above functions returns 0 on success and an error code from <xref target="val-ret-codes"/> on failure.  </t>
+The above functions return 0 on success and an error code from <xref target="val-ret-codes"/> on failure.  </t>
       </postamble>
       </figure>
       </section>
@@ -775,7 +775,7 @@ configuration file (/etc/dnsval.conf).  Each of these will affect the validation
    </t>
    <t>
    The validator API functions return a status of VAL_LOCAL_ANSWER if they get
-the answer to the query locally (for example, from the /etc/hosts file).  The
+the answer to the query locally from a configuration file (for example, from the /etc/hosts file).  The
 application cannot assume that these answers can be trusted, unless the
 application is certain that local data (the /etc/hosts file) is trustworthy.
 If the /etc/hosts file is modified during a DHCP lookup, for example, the client
@@ -804,7 +804,7 @@ so that it cannot be overwritten by unauthorized users or processes.  Policies
 in this file will list the trust anchors for classes of applications.  The
 system administrator must ensure that the list of trust anchors are kept
 up-to-date in the event of key-rollovers.  If the trust anchors are outdated,
-the validator may not be able to perform validation or, worse still, may 
+the validator may not be able to perform validation or may 
 create the false impression of having successfully validating the query when 
 it should have been flagged as bogus.
    </t>
