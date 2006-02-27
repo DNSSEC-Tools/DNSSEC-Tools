@@ -142,8 +142,8 @@ and <xref target="val-context"/> describe these interfaces in greater detail. </
         when it becomes necessary to override certain policy attributes in specific
         environments. As an example, an application may require different validator policies 
 	for a web browser and a mail client. In such cases the application may define a common
-        base policy and have overrides for specific scopes: one for the mail
-        client and one for the web browser. </t> 
+        base policy and have overrides for specific scopes: one for the web browser
+        and one for the mail client. </t> 
 
 	<t> </t>
         <t hangText="effective policy:">
@@ -151,8 +151,8 @@ and <xref target="val-context"/> describe these interfaces in greater detail. </
         relevant policy scopes have been applied. 
         Policy scopes may be defined hierarchically, one below the other. 
 The effective policy is computed by applying the default policy, the base policy
-for the context and overrides defined for all valid scopes in the validator configuration
-file in increasing order of specificity, applying overrides as necessary.</t>
+for the context, and overrides defined for all valid scopes in the validator configuration
+file in increasing order of specificity.</t>
 
       </list> </t>
 
@@ -255,7 +255,7 @@ canonical name(s) (if present) have been validated successfully.
       </figure>
       </section>
 
-      <section title="val_getaddrinfo, val_getnameinfo, val_free_addrinfo">
+      <section title="val_getaddrinfo, val_getnameinfo, val_freeaddrinfo">
       <figure>
       <artwork>
 int val_getaddrinfo( const val_context_t   *ctx, 
@@ -274,7 +274,7 @@ int val_getnameinfo( const val_context_t   *ctx,
                      int                   flags,
                      val_status_t          *val_status );
 
-void val_free_addrinfo( struct val_addrinfo *ainfo );
+void val_freeaddrinfo( struct val_addrinfo *ainfo );
 
 struct val_addrinfo {
            int                 ai_flags;
@@ -302,7 +302,7 @@ represents the status of DNSSEC validation for that particular answer.  It will
 contain a validation status of VAL_SUCCESS only if both the address and
 canonical name (if present) have been validated successfully.  The memory for
 the value returned in *res is dynamically allocated by this function.  The
-caller should free it after use with the val_free_addrinfo() function.
+caller should free it after use with the val_freeaddrinfo() function.
       </t>
       <t>
       The val_getnameinfo() function performs an address-to-name translation
@@ -661,10 +661,10 @@ val_free_assertion_chain() and val_free_query_chain() functions respectively.</t
       <figure>
       <artwork>
 browser trust-anchor example.com   "257 3 5 AQO8XS4y9r77X9SHBmrx \
-		MoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6 \
-		mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 Ef \
-		GPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHk \
-		oDNCAlr qOA3lw==" ;
+                MoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6 \
+                mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 Ef \
+                GPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHk \
+                oDNCAlr qOA3lw==" ;
       </artwork>
       <postamble>
       </postamble>
@@ -813,7 +813,7 @@ it should have been flagged as bogus.
    <section title="Acknowledgements">
    <t>We would like to acknowledge the following individuals who have provided
 valuable feedback and suggestions for improving this document: Lindy Foster,
-Wayne Morrison, Bill Sommerfeld, Robert Story.  We would like to acknowledge
+Wayne Morrison, Russ Mundy, Bill Sommerfeld, Robert Story.  We would like to acknowledge
 our team members at SPARTA for their inputs and suggestions while developing the
 validator API.</t>
    </section> <!-- Acknowledgements -->
