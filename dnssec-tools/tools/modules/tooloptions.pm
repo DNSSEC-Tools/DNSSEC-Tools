@@ -960,7 +960,7 @@ will read each option source in turn, ending up with:
     I<wait>                600
 
 
-=head1 TOOL OPTION ARGUMENTS
+=head1 TOOLOPTION ARGUMENTS
 
 Many of the DNSSEC-Tools option interfaces take the same set of arguments:
 I<$keyrec_file>, I<$keyrec_name>, and I<@csopts>.  These arguments are used
@@ -995,7 +995,7 @@ included in the final option hash.  The I<@csopts> array may be passed
 directly to several interfaces or it may be saved in a call to
 B<opts_setcsopts()>.
 
-=head1 TOOL OPTION INTERFACES
+=head1 TOOLOPTION INTERFACES
 
 =over 4
 
