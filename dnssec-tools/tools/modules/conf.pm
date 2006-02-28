@@ -28,7 +28,7 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(bindcheck parseconfig);
+our @EXPORT = qw(bindcheck getconffile parseconfig);
 
 our @BIND_COMMANDS = qw(checkzone keygen signzone);
 
@@ -197,6 +197,17 @@ sub bindcheck
 	}
 }
 
+#######################################################################
+#
+# Routine:	getconffile()
+#
+# Purpose:	Return the configuration file name.
+#
+sub getconffile
+{
+	return($CONFFILE);
+}
+
 1;
 
 #############################################################################
@@ -216,6 +227,8 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
   %dtconf = parseconfig("localzone.keyrec");
 
   bindcheck(\%options_hashref);
+
+  $conffile = getconffile();
 
 =head1 DESCRIPTION
 
@@ -279,6 +292,10 @@ The BIND commands currently checked are I<checkzone>, I<keygen>, and
 I<signzone>.  The pathnames for these commands are found in the given options
 hash referenced by I<%options_hashref>.  If the hash doesn't contain an entry
 for one of those commands, it is not checked.
+
+=item B<getconffile()>
+
+This routine returns the name of the DNSSEC-Tools configuration file.
 
 =back
 
