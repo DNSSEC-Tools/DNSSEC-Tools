@@ -1,0 +1,864 @@
+#!/usr/bin/perl
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# DNSSEC-Tools:  dtinitconf
+#
+#	This script initializes the DNSSEC-Tools configuration file.
+#
+#		dtinitconf
+#
+
+use strict;
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Common locations for BIND.  These locations were found on:
+#
+#	FreeBSD 5.4
+#	MacOS X 10.4.5
+#	SunOS 5.8
+#
+my @COMMON_BINDLOCS =
+(
+	"/usr/local/sbin",
+	"/usr/sbin",
+);
+
+#
+# Command-line options specifically for this program.
+#
+my @opts =
+(
+	"outfile=s",				# Output config file.
+	"overwrite",				# Overwrite existing files.
+	"noprompt",				# Don't prompt user.
+	"v",					# Verbose equivalent.
+
+	"usegui",				# Use option GUI.
+	"noentropy_msg",			# Don't give entropy message.
+	"nosavekeys",				# Don't save old keys.
+	"nousegui",				# Don't use option GUI.
+
+	"checkzone=s",				# Path to named-checkzone.
+	"keygen=s",				# Path to dnssec-keygen.
+	"signzone=s",				# Path to dnssec-signzone.
+	"viewimage=s",				# Path to image viewer.
+);
+
+#
+# Data required for command-line options.
+#
+my $alg;				# The encryption algorithm.
+my $endtime;				# Endtime of signature validity.
+my $ksklife;				# Lifetime of the KSK.
+my $ksklen;				# The KSK size.
+my $random;				# The source of randomness.
+my $zsklife;				# Lifetime of the ZSK.
+my $zsklen;				# The ZSK size.
+
+my $keyarch;				# Key archive directory.
+my $savekeys;				# Save/delete old keys.
+my $entmsg;				# Display entropy message.
+my $usegui;				# Use-GUI flag.
+
+my $helpflag;				# Give usage message.
+my $noprompt = 0;			# Don't prompt -- just use defaults.
+my $outfile;				# Output filename.
+my $overwrite;				# Overwrite existing output file.
+my $verbose = 0;			# Give verbose output.
+
+#
+# Program paths.
+#
+my $checkzone;				# BIND's zone-checking program.
+my $keygen;				# BIND's key-generation program.
+my $signzone;				# BIND's zone-signing program.
+my $viewimg;				# Image viewer.
+
+
+
+main();
+exit(0);
+
+#----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# Purpose:	Yeah, yeah, a main() isn't necessary.  However, it offends my
+#		sense of aesthetics to have great gobs of code on the same
+#		level as a pile of globals.
+#
+#		But what about those globals, you ask...
+#
+sub main
+{
+	#
+	# Force output to be written right away.
+	#
+	$| = 1;
+
+	#
+	# Parse the command line options.
+	#
+	optsandargs();
+
+	#
+	# Ensure we're only going to overwrite an existing config file
+	# if the user wants us to.
+	#
+	if((-e $outfile) && (!$overwrite))
+	{
+		print STDERR "config file \"$outfile\" already exists;\n";
+		print STDERR " use -overwrite to overwrite it\n";
+		exit(1);
+	}
+
+	#
+	# Prompt the user for the data, unless they don't want to be prompted.
+	#
+	gatherdata() if(!$noprompt);
+
+	#
+	# Write the configuration file.
+	#
+	writeconf();
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	optsandargs()
+#
+# Purpose:	Parse the command line for options and arguments.
+#
+sub optsandargs
+{
+	my $ropts;				# Reference to options hash.
+	my %opts = ();				# Options hash.
+
+	#
+	# Slurp up the options.
+	#
+	$ropts = tooloptions("","",@opts);
+	%opts = %$ropts 	if($ropts != undef);
+
+	#
+	# Get the option values.  If these weren't given on the command
+	# line, they'll be taken the DNSSEC-Tools defaults.
+	#
+	$ksklen    = $opts{'ksklength'} || dnssec_tools_defaults("ksklength");
+	$ksklife   = $opts{'ksklife'}   || dnssec_tools_defaults("ksklife");
+	$zsklen    = $opts{'zsklength'} || dnssec_tools_defaults("zsklength");
+	$zsklife   = $opts{'zsklife'}   || dnssec_tools_defaults("zsklife");
+
+	$alg	   = $opts{'algorithm'}	|| dnssec_tools_defaults("algorithm");
+	$endtime   = $opts{'endtime'}	|| dnssec_tools_defaults("enddate");
+	$random	   = $opts{'random'}	|| dnssec_tools_defaults("random");
+
+	$keyarch   = $opts{'archivedir'};
+	$savekeys  = $opts{'savekeys'}	  || dnssec_tools_defaults("savekeys");
+	$usegui	   = $opts{'usegui'}	  || dnssec_tools_defaults("usegui");
+	$entmsg	   = $opts{'entropy_msg'} || dnssec_tools_defaults("entropy_msg");
+
+	$entmsg	   = 0  if(defined($opts{'noentropy_msg'}));
+	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
+	$usegui	   = 0  if(defined($opts{'nousegui'}));
+
+	$checkzone = $opts{'checkzone'};
+	$keygen	   = $opts{'keygen'};
+	$signzone  = $opts{'signzone'};
+	$viewimg   = $opts{'viewimage'} || dnssec_tools_defaults("viewimage");
+
+	$outfile   = $opts{'outfile'}	|| getconffile();
+	$overwrite = $opts{'overwrite'};
+
+	$verbose   = $opts{'verbose'}   || $opts{'v'};
+	$helpflag  = $opts{'help'};
+	$noprompt  = $opts{'noprompt'};
+
+	#
+	# Give usage message if desired.
+	#
+	usage() if($helpflag);
+
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	gatherdata()
+#
+# Purpose:	Get all our stray little data.
+#
+sub gatherdata()
+{
+	get_paths();
+	get_key_opts();
+	get_zone_opts();
+	get_dt_opts();
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	writeconf()
+#
+# Purpose:	Write the new config file.
+#
+sub writeconf()
+{
+	my $kronos = gmtime();		# Timestamp when file was created.
+
+	#
+	# If the verbose flag was given, show all the values.
+	#
+	if($verbose)
+	{
+		print "writing values to \"$outfile\":\n";
+
+		print "\talgorithm  - \"$alg\"\n";
+		print "\trandom     - \"$random\"\n";
+		print "\tksklen     - \"$ksklen\"\n";
+		print "\tksklife    - \"$ksklife\"\n";
+		print "\tzsklen     - \"$zsklen\"\n";
+		print "\tzsklife    - \"$zsklife\"\n\n";
+
+		print "\tendtime    - \"$endtime\"\n\n";
+
+		print "\tentropy message flag  - \"$entmsg\"\n";
+		print "\told key archive       - \"$keyarch\"\n";
+		print "\tsave-old-keys flag    - \"$savekeys\"\n";
+		print "\tuse-gui flag          - \"$usegui\"\n\n";
+
+		print "\tcheckzone  - \"$checkzone\"\n";
+		print "\tkeygen     - \"$keygen\"\n";
+		print "\tsignzone   - \"$signzone\"\n";
+		print "\tviewimage  - \"$viewimg\"\n\n";
+	}
+
+	open(DTCONF,">$outfile") or die "unable to open \"$outfile\" for writing";
+
+	print DTCONF "#
+# DNSSEC-Tools Configuration
+#
+#	This file contains configuration information for DNSSEC-Tools.
+#
+#	This was automatically generated by dtinitconf on
+#	$kronos (GMT).
+#
+";
+
+	print DTCONF "
+#
+# Paths to needed programs.  These may need adjusting for individual hosts.
+#
+checkzone	$checkzone
+keygen		$keygen
+signzone	$signzone
+viewimage	$viewimg
+zonesigner	/usr/bin/zonesigner
+";
+
+	print DTCONF "
+#
+# Key-related values.
+#
+algorithm	$alg
+ksklen		$ksklen
+zsklen		$zsklen
+random		$random
+";
+
+	print DTCONF "
+#
+# Settings for dnssec-signzone.
+#
+endtime		$endtime		# RRSIGs good for thirty days.
+";
+
+	print DTCONF "
+#
+# Life-times for keys.  These defaults indicate how long a key has
+# between roll-overs.  The values are measured in seconds.
+#
+# Sample values:
+#	3600		hour
+#	86400		day
+#	604800		week
+#	2592000		30-day month
+#	15768000	half-year
+#	31536000	year
+#
+ksklife		$ksklife
+zsklife		$zsklife
+";
+
+	print DTCONF "
+#
+# Settings for zonesigner.
+#
+archivedir	$keyarch
+entropy_msg	$entmsg
+savekeys	$savekeys
+";
+
+	print DTCONF "
+#
+# GUI-usage flag.
+#
+usegui		$usegui
+";
+
+	close(DTCONF);
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	get_paths()
+#
+# Purpose:	This routine gathers path-related data.  The primary task
+#		is to figure out the path for BIND programs.  After digging
+#		up this path, it's used to create paths for named_checkzone,
+#		dnssec_keygen, and dnssec_signzone.
+#
+sub get_paths()
+{
+	my $binddir;				# BIND directory.
+	my @binddirs;				# BIND directories.
+
+	my $def_cz;				# Default named_checkzone.
+	my $def_kg;				# Default dnssec_keygen.
+	my $def_sz;				# Default dnssec_signzone.
+
+	print "Path-related Options:\n";
+
+	#
+	# Get the directories that contain BIND programs.
+	#
+	@binddirs = findbind();
+
+	#
+	# If we found any directories with BIND programs, we'll list the
+	# directories for the user.  If we didn't find anything, we'll
+	# give a message.
+	#
+	if(@binddirs > 0)
+	{
+		#
+		# Print the directories that currently hold BIND programs.
+		#
+		print "\tThese directories contain BIND programs:\n";
+		foreach $binddir (sort(@binddirs))
+		{
+			print "\t\t$binddir\n";
+		}
+		print "\n";
+	}
+	else
+	{
+		print "\tBIND may not be installed on your system\n";
+	}
+	$binddir = getval("BIND directory",$binddirs[0]);
+
+	#
+	# Build paths for the BIND programs.
+	#
+	$checkzone = "$binddir/named_checkzone"	if(! $checkzone);
+	$keygen	   = "$binddir/dnssec_keygen"	if(! $keygen);
+	$signzone  = "$binddir/dnssec_signzone"	if(! $signzone);
+
+	#
+	# Get the path for an image viewer.
+	#
+	$viewimg = getval("Image Display Program",$viewimg);
+
+	print "\n";
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	get_key_opts()
+#
+# Purpose:	Get key-related options.
+#
+sub get_key_opts()
+{
+	print "Key-related Options:\n";
+
+	$alg	 = getval("Encryption Algorithm",$alg);
+	$random	 = getval("Random-number Generator",$random);
+	$ksklen	 = getval("KSK Length (in bits)",$ksklen);
+	$ksklife = getval("KSK Lifespan (in seconds)",$ksklife);
+	$zsklen	 = getval("ZSK Length (in bits)",$zsklen);
+	$zsklife = getval("ZSK Lifespan (in seconds)",$zsklife);
+
+	print "\n";
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	get_zone_opts()
+#
+# Purpose:	Get zone-related options.
+#
+sub get_zone_opts()
+{
+	print "Zone-related Options:\n";
+
+	$endtime = getval("End-time",$endtime);
+
+	print "\n";
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	get_dt_opts()
+#
+# Purpose:	Get DNSSEC-Tools-specific options.
+#
+sub get_dt_opts()
+{
+	print "DNSSEC-Tools Options:\n";
+
+	$usegui	  = getval("Use DNSSEC-Tools GUI Interface",$usegui,"boolean");
+	$entmsg	  = getval("Display Entropy Message in Zonesigner",$entmsg,"boolean");
+	$savekeys = getval("Save Old Keys",$savekeys,"boolean");
+	$keyarch  = getval("Key Archive Directory","");
+
+	print "\n";
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	getval()
+#
+# Purpose:	Prompt a user for input, providing a default.  If the return
+#		key is hit without anything else being entered, the default
+#		value is returned.  Otherwise, the user's input is returned
+#		(minus the trailing newline.)
+#
+sub getval()
+{
+	my $prompt = shift;				# User prompt.
+	my $defval = shift;				# Default value.
+	my $type = shift;				# Value type.
+
+	my $defstr;					# Default string.
+	my $val;					# User's value.
+
+	#
+	# Set up the default we'll actually print.
+	#
+	$defstr = $defval;
+	$defstr = "no default" if($defval eq "");
+
+	#
+	# If this is a boolean, we'll use friendly words.
+	#
+	if($type eq "boolean")
+	{
+		if($defval) { $defval = "yes"; }
+		else	    { $defval = "no";  }
+		$defstr = $defval;
+	}
+
+	#
+	# Prompt for the value and read it in.
+	#
+	print"\t$prompt [$defstr]:  ";
+	$val = <STDIN>;
+
+	#
+	# Get rid of the trailing newline.  If we're left with nothing,
+	# then we'll use the default value.
+	#
+	$val =~ s/\n$//;
+	$val = $defval if($val eq "");
+
+	#
+	# If this was a boolean field, we'll translate "yes" and "no" into
+	# one or zero.  We'll also be sure that good boolean values were
+	# submitted.  If not, an error message is given and we start all
+	# over again.
+	#
+	if($type eq "boolean")
+	{
+		#
+		# If this was "yes" or "no", make the translation.
+		#
+		$val = lc($val);
+		if(($val eq "yes") || ($val eq "no"))
+		{
+			if($val eq "yes")
+			{
+				$val = 1;
+			}
+			else
+			{
+				$val = 0;
+			}
+		}
+		else
+		{
+			#
+			# If the whole value is an integer, we'll use it as
+			# a boolean.  If not, then we were give an invalid
+			# response -- complain and try again.
+			#
+			if($val =~ /^[0-9]+$/)
+			{
+				$val = 1 * $val;
+			}
+			else
+			{
+				print STDERR "\ninvalid boolean value; you must use \"yes\", \"no\", \"1\", or \"0\"\n\n";
+				return(getval($prompt,$defval,$type));
+			}
+		}
+	}
+
+	#
+	# Return the value.
+	#
+	return($val);
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	findbind()
+#
+# Purpose:	This routine collects a set of directories that hold the
+#		BIND programs used by DNSSEC-Tools.  The following sources
+#		are checked:
+#			- directories in the path
+#			- directories that commonly are used for BIND
+#			- DNSSEC-Tools defaults
+#
+#		The list of collected directories are returned to the caller.
+#
+sub findbind()
+{
+	my $binddir;				# BIND directory.
+	my $pbg;				# Path to BIND programs.
+
+	my $paths;				# Path environment variable.
+	my @paths;				# Split-out paths.
+	my %hfound = ();			# Directories with BIND progs.
+	my @found;				# Directories with BIND progs.
+
+	#
+	# Look in the environment and in some common directories for a set
+	# of BIND programs.  Any time we find the program, we'll mark a hash
+	# entry for its directory.
+	#
+	foreach my $bind ("dnssec-keygen", "dnssec-signzone", "named-checkzone")
+	{
+		#
+		# Look in our path for the BIND program.
+		#
+		$paths = $ENV{'PATH'};
+		@paths = split /:/, $paths;
+		foreach my $path (@paths)
+		{
+			$pbg = "$path/$bind";
+			next if(! -e $pbg);
+			$hfound{$path} = 1;
+		}
+
+		#
+		# Look in a set of common locations for the BIND program.
+		#
+		foreach my $path (@COMMON_BINDLOCS)
+		{
+			$pbg = "$path/$bind";
+			next if(! -e $pbg);
+			$hfound{$path} = 1;
+		}
+	}
+
+	#
+	# Look for the BIND tools in our defaults.
+	#
+	$pbg = dnssec_tools_defaults("bind_keygen");
+	$pbg =~ s/\/dnssec-keygen$//;
+	$hfound{$pbg} = 1;
+	$pbg = dnssec_tools_defaults("bind_signzone");
+	$pbg =~ s/\/dnssec-signzone$//;
+	$hfound{$pbg} = 1;
+	$pbg = dnssec_tools_defaults("bind_checkzone");
+	$pbg =~ s/\/named-checkzone$//;
+	$hfound{$pbg} = 1;
+
+	#
+	# Return the directories we found with BIND programs.
+	#
+	@found = keys(%hfound);
+	return(@found);
+}
+
+
+#----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage()
+{
+	print STDERR "usage:  dtinitconf [options]\n";
+
+	print STDERR "\toptions:\n";
+
+	print STDERR "\t\t-algorithm <algorithm>\n";
+	print STDERR "\t\t-endtime <endtime>\n";
+	print STDERR "\t\t-random <randomdev>\n\n";
+
+	print STDERR "\t\t-ksklength <keylen>\n";
+	print STDERR "\t\t-ksklife <lifetime>\n";
+	print STDERR "\t\t-zsklength <keylen>\n";
+	print STDERR "\t\t-zsklife <lifetime>\n\n";
+
+	print STDERR "\t\t-checkzone <checkzone-path>\n";
+	print STDERR "\t\t-keygen <keygen-path>\n";
+	print STDERR "\t\t-signzone <signzone-path>\n";
+	print STDERR "\t\t-viewimage <image-viewer-path>\n";
+
+	print STDERR "\t\t-archivedir <directory>\n";
+	print STDERR "\t\t-entropy_msg\n";
+	print STDERR "\t\t-noentropy_msg\n";
+	print STDERR "\t\t-savekeys\n";
+	print STDERR "\t\t-nosavekeys\n";
+	print STDERR "\t\t-usegui\n\n";
+	print STDERR "\t\t-nousegui\n\n";
+
+	print STDERR "\t\t-outfile <conffile>\n";
+	print STDERR "\t\t-overwrite\n";
+	print STDERR "\t\t-noprompt\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-help\n";
+
+	exit(0);
+}
+
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+dtinitconf - Creates a DNSSEC-Tools configuration file
+
+=head1 SYNOPSIS
+
+  dtinitconf [options]
+
+=head1 DESCRIPTION
+
+The I<dtinitconf> program initializes the DNSSEC-Tools configuration file.
+By default, the actual configuration file will be created, though the created
+file can be given by the user.  Existing files, whether the default or one
+specified by the user, will not be overwritten unless specifically directed
+by the user.
+
+Each configuration field can be individually specified on the command line.
+The user will also be prompted for the fields, with default values taken from
+the DNSSEC-Tools I<defaults.pm> module.  If the I<-noprompt> option is given,
+then a default configuration file (modulo command-line arguments) will be
+created.
+
+Configuration entries are created for several BIND programs.  Several
+locations on the system are searched to find the locations of these programs. 
+First, the directories in the path environment variable are checked; the
+names of any directories that contain the BIND programs are saved.  Next,
+several common locations for BIND programs are checked; again, the names of
+directories that contain the BIND programs are saved.  After collecting these
+directories, the user is presented with this list and may choose to use
+whichever set is desired.  If no directories are found that contain the BIND
+programs, the user is prompted for the proper location.
+
+=head1 OPTIONS
+
+I<dtinitconf> takes options that control the contents of the newly generated
+DNSSEC-Tools configuration file.  Each configuration file entry has a
+corresponding command-line option.  The options, described below, are ordered
+in logical groups.
+
+=head2 Key-related Options
+
+These options deal with different aspects of creating and managing
+encryption keys.
+
+=over 4
+
+=item I<-algorithm E<lt>algorithmE<gt>>
+
+Selects the cryptographic algorithm. The value of algorithm must be one that
+is recognized by I<dnssec-keygen>.
+
+=item I<-ksklength E<lt>keylenE<gt>>
+
+The default KSK key length to be passed to I<dnssec-keygen>.
+
+=item I<-ksklife E<lt>lifetimeE<gt>>
+
+The default length of time between KSK roll-overs.  This is measured in   
+seconds.
+
+This value is B<only> used for key roll-over.  Keys do not have a life-time
+in any other sense.
+
+=item I<-zsklength E<lt>keylenE<gt>>
+
+The default ZSK key length to be passed to I<dnssec-keygen>.
+
+=item I<-zsklife E<lt>lifetimeE<gt>>
+
+The default length of time between ZSK roll-overs.  This is measured in   
+seconds.
+
+This value is B<only> used for key roll-over.  Keys do not have a life-time
+in any other sense.
+
+=item I<-random E<lt>randomdevE<gt>>
+
+The random device generator to be passed to I<dnssec-keygen>.
+
+=back
+
+=head2 Zone-related Options
+
+These options deal with different aspects of zone signing.
+
+=over 4
+
+=item I<-endtime E<lt>endtimeE<gt>>
+
+The zone default expiration time to be passed to I<dnssec-signzone>.
+
+=back
+
+=head2 Program Paths
+
+These options contain pathnames to programs required by DNSSEC-Tools.
+
+=over 4
+
+=item I<-checkzone E<lt>checkzone-pathE<gt>>
+
+The path to the BIND I<named-checkzone> command.
+
+=item I<-keygen E<lt>keygen-pathE<gt>>
+
+The path to the BIND I<dnssec-keygen> command.
+
+=item I<-signzone E<lt>signzone-pathE<gt>>
+
+The path to the BIND I<dnssec-signzone> command.
+
+=item I<-viewimage E<lt>image-viewer-pathE<gt>>
+
+The path to an image viewer command.  This is used by I<drawvalmap.pl> to
+display generated images.
+
+=back
+
+=head2 DNSSEC-Tools Options
+
+These options deal specifically with functionality provided by DNSSEC-Tools.
+
+=over 4
+
+=item I<-archivedir E<lt>directoryE<gt>>
+
+B<directory> is the archived-key directory.  Old encryption keys are moved to
+this directory, but only if they are to be saved and not deleted.
+
+=item I<-entropy_msg>
+
+A flag indicating that I<zonesigner> should display a message about entropy
+generation.  This is primarily dependent on the implementation of a system's
+random number generation.
+
+=item I<-noentropy_msg>
+
+A flag indicating that I<zonesigner> should not display a message about
+entropy generation.  This is primarily dependent on the implementation of
+a system's random number generation.
+
+=item I<-savekeys>
+
+A flag indicating that old keys should be moved to the archive directory.
+
+=item I<-nosavekeys>
+
+A flag indicating that old keys should not be moved to the archive directory.
+
+=item I<-usegui>
+
+A flag indicating that the GUI for specifying command options may be used.
+
+=item I<-nousegui>
+
+A flag indicating that the GUI for specifying command options should not be
+used.
+
+=head2 dtinitconf Options
+
+These options deal specifically with I<dtinitconf>.
+
+=item I<-outfile E<lt>conffileE<gt>>
+
+The configuration file will be written to B<conffile>.  If this is not given,
+then the default configuration file (as returned by
+I<Net::DNS::SEC::Tools::conf::getconffile()>) will be used.
+
+=item I<-overwrite>
+
+If I<-overwrite> is specified, existing output files may be overwritten.
+Without I<-overwrite>, if the output file is found to exist then I<dtinitconf>
+will give an error message and exit.
+
+=item I<-noprompt>
+
+If I<-noprompt> is specified, the user will not be prompted for any input.
+The configuration file will be created from command-line options and
+DNSSEC-Tools defaults.
+
+=item I<-verbose>
+
+Provide verbose output.
+
+=item I<-help>
+
+Display a usage message and exit.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING file
+included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<dnssec-keygen(8)>,
+B<dnssec-signzone(8)>,
+B<named-checkzone(8)>,
+B<zonesigner(8)>
+
+B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::defaults.pm(3)>,
+B<Net::DNS::SEC::Tools::tooloptions.pm(3)>,
+B<QWizard.pm(3)>
+
+B<dnssec-tools.conf(5)>
+
+=cut
