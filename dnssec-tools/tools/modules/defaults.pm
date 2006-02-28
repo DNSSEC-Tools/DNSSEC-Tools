@@ -17,27 +17,49 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(dnssec_tools_defaults);
+our @EXPORT = qw(dnssec_tools_defaults dnssec_tools_defnames);
 
 our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "0.01";
 
 my %defaults =
 (
-	"checkzone"	=> "named-checkzone",
-	"keygen"	=> "dnssec-keygen",
-	"signzone"	=> "dnssec-signzone",
+	"bind_checkzone" => "/usr/local/sbin/named-checkzone",
+	"bind_keygen"	 => "/usr/local/sbin/dnssec-keygen",
+	"bind_signzone"	 => "/usr/local/sbin/dnssec-signzone",
 
-	"algorithm"	=> "rsasha1",		# Encryption algorithm.
-	"enddate"	=> "+2592000",		# Zone life, in seconds.
-	"ksklength"	=> 2048,		# Length of KSK key.
-	"ksklife"	=> 15768000,		# Lifetime of KSK key.
-	"random"	=> "/dev/urandom",	# Random no. generator device.
-	"zsklength"	=> 1024,		# Length of ZSK key.
-	"zsklife"	=> 604800,		# Lifetime of ZSK key.
+	"viewimage"	 => "/usr/X11R6/bin/viewimage",
 
+	"algorithm"	 => "rsasha1",		# Encryption algorithm.
+	"enddate"	 => "+2592000",		# Zone life, in seconds.
+	"ksklength"	 => 2048,		# Length of KSK key.
+	"ksklife"	 => 15768000,		# Lifetime of KSK key.
+	"random"	 => "/dev/urandom",	# Random no. generator device.
+	"zsklength"	 => 1024,		# Length of ZSK key.
+	"zsklife"	 => 604800,		# Lifetime of ZSK key.
+
+	"entropy_msg"	 => 1,			# Display entropy message flag.
+        "savekeys"	 => 1,			# Save/delete old keys flag.
+	"usegui"	 => 0,			# Use GUI for option entry flag.
 );
 
+my @defnames =
+(
+	"algorithm",
+	"bind_checkzone",
+	"bind_keygen",
+	"bind_signzone",
+	"enddate",
+	"entropy_msg",
+	"ksklength",
+	"ksklife",
+	"random",
+	"savekeys",
+	"usegui",
+	"viewimage",
+	"zsklength",
+	"zsklife",
+);
 
 #--------------------------------------------------------------------------
 #
@@ -53,6 +75,17 @@ sub dnssec_tools_defaults
 
 	$defval = $defaults{$defvar};
 	return($defval);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	dnssec_tools_defnames()
+#
+# Purpose:	Return the names of the default values.
+#
+sub dnssec_tools_defnames
+{
+	return(@defnames);
 }
 
 1;
@@ -71,9 +104,11 @@ Net::DNS::SEC::Tools::defaults - DNSSEC-Tools default values.
 
   $defalg = dnssec_tools_defaults("algorithm");
 
-  $cz_path = dnssec_tools_defaults("checkzone");
+  $cz_path = dnssec_tools_defaults("bind_checkzone");
 
   $ksklife = dnssec_tools_defaults("ksklife");
+
+  @default_names = dnssec_tools_defnames();
 
 =head1 DESCRIPTION
 
@@ -81,36 +116,27 @@ This module maintains a set of default values used by DNSSEC-Tools
 programs.  This allows these defaults to be centralized in a single
 place and prevents them from being spread around multiple programs.
 
-I<dnssec_tools_defaults(default)> is the only interface in this module.
-It is passed I<default>, which is the name of a default to look up, and
-it returns the value of that default.
-
-=head1 DEFAULT FIELDS
-
-There are several types of defaults defined for DNSSEC-Tools.  These types,
-however, are only implicit and are not distinguished from one another.
-The I<dnssec_tools_defaults()> interface handles everything in exactly the
-same fashion.
-
-=head2 BIND Programs
+=head1 INTERFACES
 
 =over 4
 
-=item B<checkzone>
+=item I<dnssec_tools_defaults(default)>
 
-This default holds the path to the I<named-checkzone> BIND program.
+This interface returns the value of a DNSSEC-Tools default.  The interface
+is passed I<default>, which is the name of a default to look up.  The value
+of this default is returned to the caller.
 
-=item B<keygen>
+=item I<dnssec_tools_defnames()>
 
-This default holds the path to the I<dnssec-keygen> BIND program.
-
-=item B<signzone>
-
-This default holds the path to the I<dnssec-signzone> BIND program.
+This interface returns the names of all the DNSSEC-Tools defaults.
+No default values are returned, but the default names returned by
+I<dnssec_tools_defnames()> may then be passed to I<dnssec_tools_defaults()>.
 
 =back
 
-=head2 DNSSEC-Tools Fields
+=head1 DEFAULT FIELDS
+
+The following are the defaults defined for DNSSEC-Tools.
 
 =over 4
 
@@ -118,9 +144,26 @@ This default holds the path to the I<dnssec-signzone> BIND program.
 
 This default holds the default encryption algorithm.
 
+=item B<bind_checkzone>
+
+This default holds the path to the I<named-checkzone> BIND program.
+
+=item B<bind_keygen>
+
+This default holds the path to the I<dnssec-keygen> BIND program.
+
+=item B<bind_signzone>
+
+This default holds the path to the I<dnssec-signzone> BIND program.
+
 =item B<enddate>
 
 This default holds the default zone life, in seconds.
+
+=item B<entropy_msg>
+
+This default indicates whether or not I<zonesigner> should display an entropy
+message.
 
 =item B<ksklength>
 
@@ -135,6 +178,20 @@ concept of a lifetime.  This is measured in seconds.
 =item B<random>
 
 This default holds the default random number generator device.
+
+=item B<savekeys>
+
+This default indicates whether or not keys should be deleted when they are no
+longer in use.
+
+=item B<usegui>
+
+This default indicates whether or not the DNSSEC-Tools GUI should be used for
+option entry.
+
+=item B<viewimage>
+
+This default holds the default image viewer.
 
 =item B<zsklength>
 
