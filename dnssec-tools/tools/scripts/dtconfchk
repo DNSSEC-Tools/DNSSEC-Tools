@@ -136,7 +136,8 @@ sub main()
 	}
 	else
 	{
-		qprint("$conffile is invalid:  $errs errors\n");
+		qprint("$conffile is invalid:  $errs errors\n") if($errs > 1);
+		qprint("$conffile is invalid:  $errs error\n")  if($errs == 1);
 	}
 }
 
