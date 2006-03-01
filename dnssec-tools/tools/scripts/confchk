@@ -124,6 +124,7 @@ sub main()
 	file_check("checkzone","x");
 	file_check("keygen","x");
 	file_check("signzone","x");
+	file_check("viewimage","x");
 
 	#
 	# Give an exit message that depends on the error count.
@@ -571,6 +572,11 @@ the file must be a regular executable file.
 =item I<signzone>
 
 Ensure the I<signzone> field is valid.  If the filename starts with a '/',
+the file must be a regular executable file.
+
+=item I<viewimage>
+
+Ensure the I<viewimage> field is valid.  If the filename starts with a '/',
 the file must be a regular executable file.
 
 =back
