@@ -123,6 +123,11 @@ sub main()
 	check_files();
 
 	#
+	# Check the miscellaneous records.
+	#
+	check_misc();
+
+	#
 	# Give an exit message that depends on the error count.
 	#
 	if($errs == 0)
@@ -337,8 +342,7 @@ sub signzone_checks
 #
 # Routine:	check_file()
 #
-# Purpose:	Check the file fields:  ensure that the file exists and check
-#		some basic file-specific data.
+# Purpose:	Check the file configuration fields.
 #
 sub check_files
 {
@@ -347,6 +351,52 @@ sub check_files
 	file_check("keygen","x");
 	file_check("signzone","x");
 	file_check("viewimage","x");
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	check_misc()
+#
+# Purpose:	Check several miscellaneous fields.
+#
+sub check_misc
+{
+	my $savekeys;					# Save-old-keys flag.
+
+	#
+	# Check some boolean flags.
+	#
+	bool_check('entropy_msg');
+	bool_check('savekeys');
+	bool_check('usegui');
+
+	#
+	# If savekeys is on, check that archdir is set to a directory.
+	#
+	$savekeys = $dtconf{'savekeys'};
+	if($savekeys eq "1")
+	{
+		my $archdir = $dtconf{'archivedir'};
+
+		if(defined($archdir) && ($archdir ne ""))
+		{
+			$archdir = $dtconf{'archivedir'};
+			if(-d $archdir)
+			{
+				vprint("$archdir is an existing directory\n");
+			}
+			else
+			{
+				qprint("archivedir $archdir exists, but is not a directory\n");
+				$errs++;
+			}
+		}
+		else
+		{
+			qprint("savekeys is set on, but no archive directory is specified\n");
+			$errs++;
+		}
+	}
 }
 
 #-----------------------------------------------------------------------------
@@ -459,6 +509,29 @@ sub file_check
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	bool_check()
+#
+# Purpose:	Checks a boolean for good values (0 or 1.)
+#
+sub bool_check
+{
+	my $label = shift;				# Label to check.
+	my $val;					# Value of label.
+
+	$val = $dtconf{$label};
+	if(($val ne "0") && ($val ne "1"))
+	{
+		qprint("$label flag has unrecognized value  ($val)\n");
+		$errs++;
+	}
+	else
+	{
+		vprint("$label ($val) acceptable\n");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	qprint()
 #
 sub qprint
@@ -493,9 +566,9 @@ sub usage
 {
 	print STDERR "usage:  confchk [options] <config file>\n";
 	print STDERR "\toptions:\n";
-	print STDERR "\t\t-quiet	give no output\n";
-	print STDERR "\t\t-verbose	give voluminous output\n";
-	print STDERR "\t\t-help		display this help message\n";
+	print STDERR "\t\t-quiet\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-help\n";
 	exit(0);
 }
 
@@ -593,6 +666,32 @@ the file must be a regular executable file.
 
 =back
 
+=head2 Miscellaneous Checks
+
+The following miscellaneous checks are performed:
+
+=over 8
+
+=item I<archivedir>
+
+Ensure that the I<archivedir> directory is actually a directory.
+This check is only performed if the I<savekeys> flag is set on.
+
+=item I<entropy_msg>
+
+Ensure that the I<entropy_msg> flag is either 0 or 1.
+
+=item I<savekeys>
+
+Ensure that the I<savekeys> flag is either 0 or 1.
+If this flag is set to 1, then the I<archivedir> field will also be checked.
+
+=item I<usegui>
+
+Ensure that the I<usegui> flag is either 0 or 1.
+
+=back
+
 =head1 OPTIONS
 
 =over 4
@@ -604,7 +703,7 @@ exit code.
 
 =item -verbose
 
-Verbose output will be given.
+Success or failure status of each check will be given.
 
 =item -help
 
