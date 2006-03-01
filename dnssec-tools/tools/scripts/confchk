@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -510,9 +510,11 @@ The I<default_keyrec> configuration entry is not checked.  This entry
 specifies the default I<keyrec> file name and isn't necessarily expected
 to exist in any particular place.
 
-The following checks are performed:
+=head2 Key-related Checks
 
-=over 4
+The following key-related checks are performed:
+
+=over 8
 
 =item I<algorithm>
 
@@ -529,16 +531,32 @@ in the I<dnssec-keygen> man page.
 Ensure the I<zsklength> field is valid.  The acceptable values may be found
 in the I<dnssec-keygen> man page.
 
+=item I<random>
+
+Ensure the I<random> field is valid.  This file must be a character
+device file.
+
+=back
+
+=head2 Zone-related Checks
+
+The following zone-related checks are performed:
+
+=over 8
+
 =item I<endtime>
 
 Ensure the I<endtime> field is valid.  This value is assumed to be in the
 "+NNNNNN" format.  There is a lower limit of two hours.  (This is an
 artificial limit under which it may not make sense to have an endtime.)
 
-=item I<random>
+=back
 
-Ensure the I<random> field is valid.  This file must be a character
-device file.
+=head2 Path Checks
+
+The following path checks are performed:
+
+=over 8
 
 =item I<checkzone>
 
@@ -578,7 +596,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
