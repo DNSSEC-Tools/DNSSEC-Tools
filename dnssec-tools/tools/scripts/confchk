@@ -120,11 +120,7 @@ sub main()
 	#
 	# Check the file-specific records.
 	#
-	file_check("random","c");
-	file_check("checkzone","x");
-	file_check("keygen","x");
-	file_check("signzone","x");
-	file_check("viewimage","x");
+	check_files();
 
 	#
 	# Give an exit message that depends on the error count.
@@ -335,6 +331,22 @@ sub signzone_checks
 	{
 		vprint("endtime ($endtime) acceptable\n");
 	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	check_file()
+#
+# Purpose:	Check the file fields:  ensure that the file exists and check
+#		some basic file-specific data.
+#
+sub check_files
+{
+	file_check("random","c");
+	file_check("checkzone","x");
+	file_check("keygen","x");
+	file_check("signzone","x");
+	file_check("viewimage","x");
 }
 
 #-----------------------------------------------------------------------------
