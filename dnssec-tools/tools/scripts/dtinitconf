@@ -55,10 +55,10 @@ my @opts =
 #
 my $alg;				# The encryption algorithm.
 my $endtime;				# Endtime of signature validity.
-my $ksklife;				# Lifetime of the KSK.
+my $ksklife;				# Lifespan of the KSK.
 my $ksklen;				# The KSK size.
 my $random;				# The source of randomness.
-my $zsklife;				# Lifetime of the ZSK.
+my $zsklife;				# Lifespan of the ZSK.
 my $zsklen;				# The ZSK size.
 
 my $keyarch;				# Key archive directory.
@@ -614,9 +614,9 @@ sub usage()
 	print STDERR "\t\t-random <randomdev>\n\n";
 
 	print STDERR "\t\t-ksklength <keylen>\n";
-	print STDERR "\t\t-ksklife <lifetime>\n";
+	print STDERR "\t\t-ksklife <lifespan>\n";
 	print STDERR "\t\t-zsklength <keylen>\n";
-	print STDERR "\t\t-zsklife <lifetime>\n\n";
+	print STDERR "\t\t-zsklife <lifespan>\n\n";
 
 	print STDERR "\t\t-checkzone <checkzone-path>\n";
 	print STDERR "\t\t-keygen <keygen-path>\n";
@@ -703,7 +703,7 @@ is recognized by I<dnssec-keygen>.
 
 The default KSK key length to be passed to I<dnssec-keygen>.
 
-=item I<-ksklife E<lt>lifetimeE<gt>>
+=item I<-ksklife E<lt>lifespanE<gt>>
 
 The default length of time between KSK roll-overs.  This is measured in   
 seconds.
@@ -715,7 +715,7 @@ in any other sense.
 
 The default ZSK key length to be passed to I<dnssec-keygen>.
 
-=item I<-zsklife E<lt>lifetimeE<gt>>
+=item I<-zsklife E<lt>lifespanE<gt>>
 
 The default length of time between ZSK roll-overs.  This is measured in   
 seconds.

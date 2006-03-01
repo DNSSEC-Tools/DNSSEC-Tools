@@ -33,10 +33,10 @@ my %defaults =
 	"algorithm"	 => "rsasha1",		# Encryption algorithm.
 	"enddate"	 => "+2592000",		# Zone life, in seconds.
 	"ksklength"	 => 2048,		# Length of KSK key.
-	"ksklife"	 => 15768000,		# Lifetime of KSK key.
+	"ksklife"	 => 15768000,		# Lifespan of KSK key.
 	"random"	 => "/dev/urandom",	# Random no. generator device.
 	"zsklength"	 => 1024,		# Length of ZSK key.
-	"zsklife"	 => 604800,		# Lifetime of ZSK key.
+	"zsklife"	 => 604800,		# Lifespan of ZSK key.
 
 	"entropy_msg"	 => 1,			# Display entropy message flag.
         "savekeys"	 => 1,			# Save/delete old keys flag.
@@ -171,9 +171,9 @@ This default holds the default length of the KSK key.
 
 =item B<ksklife>
 
-This default holds the default lifetime of the KSK key.  This is only used
+This default holds the default lifespan of the KSK key.  This is only used
 for determining when to roll-over the KSK key.  Keys otherwise have no
-concept of a lifetime.  This is measured in seconds.
+concept of a lifespan.  This is measured in seconds.
 
 =item B<random>
 
@@ -199,9 +199,9 @@ This default holds the default length of the ZSK key.
 
 =item B<zsklife>
 
-This default holds the default lifetime of the ZSK key.  This is only used
+This default holds the default lifespan of the ZSK key.  This is only used
 for determining when to roll-over the ZSK key.  Keys otherwise have no
-concept of a lifetime.  This is measured in seconds.
+concept of a lifespan.  This is measured in seconds.
 
 =back
 

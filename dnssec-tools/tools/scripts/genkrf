@@ -60,8 +60,8 @@ my $zskdir;                             # Directory where the ZSKs reside.
 my $endtime;                            # Endtime of signature validity.
 my $random;                             # The source of randomness.
 my $krfile;                             # Name of the keyrec file to generate.
-my $ksklife;                            # Lifetime of the KSK.
-my $zsklife;                            # Lifetime of the ZSK.
+my $ksklife;                            # Lifespan of the KSK.
+my $zsklife;                            # Lifespan of the ZSK.
 my $algo;                               # The encryption algorithm.
 my $ksksize;                            # The KSK size.
 my $zsksize;                            # The ZSK size.
@@ -463,13 +463,13 @@ sub usage
 	print STDERR "\t\t-ksk KSK                name of the KSK\n";
 	print STDERR "\t\t-kskdir PATH            KSK directory\n";
 	print STDERR "\t\t-ksklength KEYLEN       KSK length\n";
-	print STDERR "\t\t-ksklife LIFETIME       KSK lifetime\n\n";
+	print STDERR "\t\t-ksklife LIFESPAN       KSK lifespan\n\n";
 
 	print STDERR "\t\t-zskcur ZSKCUR          name of the current ZSK\n";
 	print STDERR "\t\t-zskpub ZSKPUB          name of the published ZSK\n";
 	print STDERR "\t\t-zskdir PATH            ZSK directory\n";
 	print STDERR "\t\t-zsklength KEYLEN       ZSK length\n";
-	print STDERR "\t\t-zsklife LIFETIME       ZSK lifetime\n\n";
+	print STDERR "\t\t-zsklife LIFESPAN       ZSK lifespan\n\n";
 
 	print STDERR "\t\t-verbose                verbose output\n";
 	print STDERR "\t\t-help                   help message\n";
@@ -587,9 +587,9 @@ the current directory ".".
 
 This option specifies the length of the KSK encryption key.
 
-=item -ksklife I<KSK-lifetime>
+=item -ksklife I<KSK-lifespan>
 
-This option specifies the lifetime of the KSK encryption key.  This lifetime
+This option specifies the lifespan of the KSK encryption key.  This lifespan
 is B<not> inherent to the key itself.  It is B<only> used to determine when
 the KSK must be rolled over.
 
@@ -619,9 +619,9 @@ the current directory ".".
 
 This option specifies the length of the ZSK encryption key.
 
-=item -zsklife I<ZSK-lifetime>
+=item -zsklife I<ZSK-lifespan>
 
-This option specifies the lifetime of the ZSK encryption key.  This lifetime
+This option specifies the lifespan of the ZSK encryption key.  This lifespan
 is B<not> inherent to the key itself.  It is B<only> used to determine when
 the ZSK must be rolled over.
 
