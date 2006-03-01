@@ -25,6 +25,7 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	"quiet",			# Give no output.
+	"summary",			# Give only a summary output line.
 	"verbose",			# Give verbose output.
 	"help",				# Give a usage message and exit.
 );
@@ -60,6 +61,7 @@ my $MINEND = ((60*60) * 2);		# Minimum endtime (two hours.)
 #######################################################################
 
 my $quiet	= 0;			# Give no output.
+my $summary	= 0;			# Give only a summary output line.
 my $verbose	= 0;			# Give lotsa output.
 
 my $errs	= 0;			# Error count.
@@ -132,12 +134,12 @@ sub main()
 	#
 	if($errs == 0)
 	{
-		qprint("$conffile is valid\n");
+		sqprint("$conffile is valid\n");
 	}
 	else
 	{
-		qprint("$conffile is invalid:  $errs errors\n") if($errs > 1);
-		qprint("$conffile is invalid:  $errs error\n")  if($errs == 1);
+		sqprint("$conffile is invalid:  $errs errors\n") if($errs > 1);
+		sqprint("$conffile is invalid:  $errs error\n")  if($errs == 1);
 	}
 }
 
@@ -154,6 +156,7 @@ sub doopts
 	#
 	GetOptions(\%options,@opts);
 	$verbose = $options{'verbose'};
+	$summary = $options{'summary'};
 	$quiet	 = $options{'quiet'};
 
 	usage() if(defined($options{'help'}));
@@ -535,28 +538,43 @@ sub bool_check
 #
 # Routine:	qprint()
 #
+# Purpose:	Prints a line of output if -quiet and -summary weren't given.
+#
 sub qprint
 {
 	my $line = shift;
 
-	if(!$quiet)
-	{
-		print $line;
-	}
+	print $line if(!$quiet && !$summary);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	sqprint()
+#
+# Purpose:	Prints a line of output if -quiet wasn't given or if
+#		-summary was given.
+#
+#		This is intended to be used only by the final summarizing
+#		output lines of dtconfchk.
+#
+sub sqprint
+{
+	my $line = shift;
+
+	print $line if(!$quiet || $summary);
 }
 
 #-----------------------------------------------------------------------------
 #
 # Routine:	vprint()
 #
+# Purpose:	Prints a line of output if -verbose was given.
+#
 sub vprint
 {
 	my $line = shift;
 
-	if($verbose)
-	{
-		qprint($line);
-	}
+	qprint($line) if($verbose);
 }
 
 #-----------------------------------------------------------------------------
@@ -568,6 +586,7 @@ sub usage
 	print STDERR "usage:  confchk [options] <config file>\n";
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-quiet\n";
+	print STDERR "\t\t-status\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-help\n";
 	exit(0);
@@ -702,9 +721,15 @@ Ensure that the I<usegui> flag is either 0 or 1.
 No output will be given, but the number of errors will be used as the
 exit code.
 
+=item -summary
+
+A final summary of success or failure will be printed.
+The number of errors will be used as the exit code.
+
 =item -verbose
 
 Success or failure status of each check will be given.
+The number of errors will be used as the exit code.
 
 =item -help
 
