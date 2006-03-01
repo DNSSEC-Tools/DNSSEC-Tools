@@ -1,0 +1,64 @@
+
+			DNSSEC-Tools Configuration File
+
+The DNSSEC-Tools configuration file contains site-wide configuration
+information used by the DNSSEC-Tools commands.
+
+Configuration entries have the following format:
+
+	field	value
+
+For example, the default encryption algorithm and KSK length may be
+specified in this manner:
+
+	algorithm	rsasha1
+	ksklen		2048
+
+
+Changing the values of the configuration entries is straightforward
+enough, as they can be changed using a generic text editor.  Adding
+new fields, however, is a bit more complex.  The files listed below
+must be modified in the manner described for each.
+
+etc/dnssec/dnssec-tools.conf
+
+	This file is the prototype configuration file.  New fields
+	must be added here, along with a value and a brief description.
+	The installed configuration file must be changed separately or
+	be installed from this copy.
+
+etc/dnssec/dnssec-tools.conf.pm
+
+	This file is the Perl documentation describing the contents of
+	the configuration file.  A description must be added to the
+	"Configuration Records" section.  A sample entry should be added
+	to the "Example File" section.
+
+modules/defaults.pm
+
+	This module contains default values for the DNSSEC-Tools commands.
+	A field/value entry must be added to the %defaults hash.
+	The field name must be added to the @defnames array.
+	A description of the field must be added to the "DEFAULT FIELDS"
+	section of the pod.
+
+modules/tooloptions.pm
+
+	This module contains options shared by many of the DNSSEC-Tools
+	commands.  An entry for the field should be added to the @stdopts
+	array.  These options must be in the Getopt::GUI::Long format.
+
+scripts/confchk
+
+	This script performs validity and consistency checks on the
+	configuration file.  Appropriate checks for the new value
+	should be added.  A description of the checks should be added
+	to the "DESCRIPTION" section of the pod.
+
+scripts/dtinitconf
+
+	This script creates new configuration files based on command-line
+	options and the DNSSEC-Tools defaults.  Follow the model of other
+	options to create a command-line option and to provide for a
+	default value.  A description of the new option should be added
+	to the appropriate section of the pod.
