@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -87,6 +87,16 @@ seconds.
 This value is B<only> used for key roll-over.  Keys do not have a life-time
 in any other sense.
 
+=item lifespan-max
+
+The maximum length of time a key should be in use before it is rolled over.
+This is measured in seconds.
+
+=item lifespan-min
+
+The minimum length of time a key should be in use before it is rolled over.
+This is measured in seconds.
+
 =item random
 
 The random device generator to be passed to I<dnssec-keygen>.
@@ -167,6 +177,9 @@ The following is an example B<dnssec-tools.conf> configuration file.
     # 
     ksklife         15768000		# Half-year.
     zsklife         604800 		# One week.
+    lifespan-max    94608000		# Two years.
+    lifespan-min    3600		# One hour.
+
     
     #
     # Settings that will be noticed by zonesigner.
@@ -184,7 +197,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
@@ -193,6 +206,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<dtinitconf(8)>,
+B<dtconfchk(8)>,
 B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
