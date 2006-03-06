@@ -100,7 +100,14 @@ sub main()
 	{
 		$conffile = "/usr/local/etc/dnssec/dnssec-tools.conf";
 	}
-	vprint("checking config file \"$conffile\"\n");
+
+	#
+	# Maybe print the name of the config file we're checking.
+	#
+	if($verbose && !$quiet && !$summary)
+	{
+		print "checking config file \"$conffile\"\n";
+	}
 
 	#
 	# Read the config file.
@@ -108,8 +115,8 @@ sub main()
 	%dtconf = parseconfig($conffile);
 	if(!defined(%dtconf))
 	{
-		qprint("config file \"$conffile\" not parsed\n");
-		exit(1);
+		err("config file \"$conffile\" not parsed\n");
+		exit(-1);
 	}
 
 	#
@@ -202,11 +209,10 @@ sub keygen_checks
 	#
 	if(!defined($algorithm))
 	{
-		qprint("algorithm not defined; can't check length values\n");
+		prt(0,"algorithm not defined; can't check length values");
 		$errs++;
 		return;
 	}
-	vprint("algorithm is $algorithm\n");
 
 	#
 	# Search the algorithm list for this key's algorithm.  If we find
@@ -231,10 +237,11 @@ sub keygen_checks
 	#
 	if(!$found)
 	{
-		qprint("invalid algorithm:  \"$algorithm\"; can't check length values\n");
+		prt(0,"invalid algorithm:  \"$algorithm\"; can't check length values");
 		$errs++;
 		return;
 	}
+	prt(1,"valid algorithm is $algorithm");
 
 	#
 	# Get the key length range for this algorithm.
@@ -247,12 +254,12 @@ sub keygen_checks
 	#
 	if(!defined($dtconf{'ksklen'}))
 	{
-		vprint("ksklength not defined\n");
+		prt(1,"ksklength not defined");
 		$errs++;
 	}
 	else
 	{
-		vprint("ksklength is $ksklen\n");
+		prt(1,"ksklength is $ksklen");
 
 		#
 		# Ensure the KSK length is greater than the algorithm's
@@ -260,7 +267,7 @@ sub keygen_checks
 		#
 		if($ksklen < $lowval)
 		{
-			qprint("invalid ksklength:  length ($ksklen) < minimum ($lowval) for $algorithm\n");
+			prt(0,"invalid ksklength:  length ($ksklen) < minimum ($lowval) for $algorithm");
 			$errs++;
 		}
 
@@ -270,7 +277,7 @@ sub keygen_checks
 		#
 		if($ksklen > $highval)
 		{
-			qprint("invalid ksklength:  length ($ksklen) > maximum ($highval) for $algorithm\n");
+			prt(0,"invalid ksklength:  length ($ksklen) > maximum ($highval) for $algorithm");
 			$errs++;
 		}
 	}
@@ -280,12 +287,12 @@ sub keygen_checks
 	#
 	if(!defined($dtconf{'zsklen'}))
 	{
-		vprint("zsklength not defined\n");
+		prt(1,"zsklength not defined");
 		$errs++;
 	}
 	else
 	{
-		vprint("zsklength is $zsklen\n");
+		prt(1,"zsklength is $zsklen");
 
 		#
 		# Ensure the ZSK length is greater than the algorithm's
@@ -293,7 +300,7 @@ sub keygen_checks
 		#
 		if($zsklen < $lowval)
 		{
-			qprint("invalid zsklength:  length ($zsklen) < minimum ($lowval) for $algorithm\n");
+			prt(0,"invalid zsklength:  length ($zsklen) < minimum ($lowval) for $algorithm");
 			$errs++;
 		}
 
@@ -303,7 +310,7 @@ sub keygen_checks
 		#
 		if($zsklen > $highval)
 		{
-			qprint("invalid zsklength:  length ($zsklen) > maximum ($highval) for $algorithm\n");
+			prt(0,"invalid zsklength:  length ($zsklen) > maximum ($highval) for $algorithm");
 			$errs++;
 		}
 	}
@@ -316,12 +323,12 @@ sub keygen_checks
 	{
 		if(!defined($ksklife))
 		{
-			vprint("ksklife not defined\n");
+			prt(1,"ksklife not defined");
 			$errs++;
 		}
 		else
 		{
-			vprint("ksklife is $ksklife\n");
+			prt(1,"ksklife is $ksklife");
 
 			#
 			# Ensure the KSK lifespan is greater than the suggested
@@ -329,7 +336,7 @@ sub keygen_checks
 			#
 			if($ksklife < $lifemin)
 			{
-				qprint("invalid ksklife:  lifespan ($ksklife) < minimum lifespan ($lifemin)\n");
+				prt(0,"invalid ksklife:  lifespan ($ksklife) < minimum lifespan ($lifemin)");
 				$errs++;
 			}
 
@@ -339,7 +346,7 @@ sub keygen_checks
 			#
 			if($ksklife > $lifemax)
 			{
-				qprint("invalid ksklife:  lifespan ($ksklife) > maximum lifespan ($lifemax)\n");
+				prt(0,"invalid ksklife:  lifespan ($ksklife) > maximum lifespan ($lifemax)");
 				$errs++;
 			}
 		}
@@ -353,12 +360,12 @@ sub keygen_checks
 	{
 		if(!defined($zsklife))
 		{
-			vprint("zsklife not defined\n");
+			prt(1,"zsklife not defined");
 			$errs++;
 		}
 		else
 		{
-			vprint("zsklife is $zsklife\n");
+			prt(1,"zsklife is $zsklife");
 
 			#
 			# Ensure the ZSK lifespan is greater than the suggested
@@ -366,7 +373,7 @@ sub keygen_checks
 			#
 			if($zsklife < $lifemin)
 			{
-				qprint("invalid zsklife:  lifespan ($zsklife) < minimum lifespan ($lifemin)\n");
+				prt(0,"invalid zsklife:  lifespan ($zsklife) < minimum lifespan ($lifemin)");
 				$errs++;
 			}
 
@@ -376,7 +383,7 @@ sub keygen_checks
 			#
 			if($zsklife > $lifemax)
 			{
-				qprint("invalid zsklife:  lifespan ($zsklife) > maximum lifespan ($lifemax)\n");
+				prt(0,"invalid zsklife:  lifespan ($zsklife) > maximum lifespan ($lifemax)");
 				$errs++;
 			}
 		}
@@ -405,7 +412,7 @@ sub signzone_checks
 	#
 	if(!defined($endtime))
 	{
-		qprint("endtime not defined\n");
+		prt(0,"endtime not defined");
 		return;
 	}
 
@@ -421,12 +428,12 @@ sub signzone_checks
 	#
 	if($etcnt < $MINEND)
 	{
-		qprint("endtime ($endtime) < minimum realistic endtime ($MINEND)\n");
+		prt(0,"endtime ($endtime) < minimum realistic endtime ($MINEND)");
 		$errs++;
 	}
 	else
 	{
-		vprint("endtime ($endtime) acceptable\n");
+		prt(1,"endtime ($endtime) acceptable");
 	}
 }
 
@@ -475,17 +482,17 @@ sub check_misc
 			$archdir = $dtconf{'archivedir'};
 			if(-d $archdir)
 			{
-				vprint("$archdir is an existing directory\n");
+				prt(1,"$archdir is an existing directory");
 			}
 			else
 			{
-				qprint("archivedir $archdir exists, but is not a directory\n");
+				prt(0,"archivedir $archdir exists, but is not a directory");
 				$errs++;
 			}
 		}
 		else
 		{
-			qprint("savekeys is set on, but no archive directory is specified\n");
+			prt(0,"savekeys is set on, but no archive directory is specified");
 			$errs++;
 		}
 	}
@@ -511,7 +518,7 @@ sub file_check
 	#
 	if(!defined($fname))
 	{
-		vprint("$field not defined\n");
+		prt(1,"$field not defined");
 		return;
 	}
 
@@ -521,7 +528,7 @@ sub file_check
 	#
 	if($fname !~ /^\//)
 	{
-		qprint("no further checks for $field file $fname\n");
+		prt(1,"no further checks for $field file $fname");
 		return;
 	}
 
@@ -530,7 +537,7 @@ sub file_check
 	#
 	if(! -e $fname)
 	{
-		qprint("$field file $fname does not exist\n");
+		prt(0,"$field file $fname does not exist");
 		$errs++;
 		return;
 	}
@@ -546,11 +553,11 @@ sub file_check
 	{
 		if(-f $fname)
 		{
-			vprint("$field file $fname is a regular file\n");
+			prt(1,"$field file $fname is a regular file");
 		}
 		else
 		{
-			qprint("$field file $fname is not a regular file\n");
+			prt(0,"$field file $fname is not a regular file");
 			$errs++;
 		}
 	}
@@ -558,20 +565,20 @@ sub file_check
 	{
 		if(-f $fname)
 		{
-			vprint("$field file $fname is a regular file\n");
+			prt(1,"$field file $fname is a regular file");
 		}
 		else
 		{
-			qprint("$field file $fname is not a regular file\n");
+			prt(0,"$field file $fname is not a regular file");
 			$errs++;
 		}
 		if(-x $fname)
 		{
-			vprint("$field file $fname is an executable file\n");
+			prt(1,"$field file $fname is an executable file");
 		}
 		else
 		{
-			qprint("$field file $fname is not an executable file\n");
+			prt(0,"$field file $fname is not an executable file");
 			$errs++;
 		}
 	}
@@ -579,20 +586,20 @@ sub file_check
 	{
 		if(-c $fname)
 		{
-			vprint("$field file $fname is a character device file\n");
+			prt(1,"$field file $fname is a character device file");
 		}
 		else
 		{
-			qprint("$field file $fname is not a character device file\n");
+			prt(0,"$field file $fname is not a character device file");
 			$errs++;
 		}
 		if(-r $fname)
 		{
-			vprint("$field file $fname is a readable file\n");
+			prt(1,"$field file $fname is a readable file");
 		}
 		else
 		{
-			qprint("$field file $fname is not a readable file\n");
+			prt(0,"$field file $fname is not a readable file");
 			$errs++;
 		}
 	}
@@ -613,26 +620,13 @@ sub bool_check
 	$val = $dtconf{$label};
 	if(($val ne "0") && ($val ne "1"))
 	{
-		qprint("$label flag has unrecognized value  ($val)\n");
+		prt(0,"$label flag has unrecognized value  ($val)");
 		$errs++;
 	}
 	else
 	{
-		vprint("$label ($val) acceptable\n");
+		prt(1,"$label ($val) acceptable");
 	}
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	qprint()
-#
-# Purpose:	Prints a line of output if -quiet and -summary weren't given.
-#
-sub qprint
-{
-	my $line = shift;
-
-	print $line if(!$quiet && !$summary);
 }
 
 #-----------------------------------------------------------------------------
@@ -654,15 +648,50 @@ sub sqprint
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	vprint()
+# Routine:	prt()
 #
 # Purpose:	Prints a line of output if -verbose was given.
 #
-sub vprint
+sub prt
+{
+	my $good = shift;		# Flag indicating success/failure.
+	my $line = shift;		# Text to be printed.
+	my $prefix = "";		# Success/failure prefix (for verbose.)
+
+	#
+	# If -quiet or -summary was given, we won't print anything.
+	#
+	return if($quiet || $summary);
+
+	#
+	# Don't print if this was a success message and -verbose wasn't given.
+	#
+	return if($good && !$verbose);
+
+	#
+	# Set a prefix if we're in verbose mode.  Otherwise, we're in normal
+	# mode and have gotten an error.  Since only errors will be printed,
+	# we don't need the prefix.
+	#
+	if($verbose)
+	{
+		$prefix = $good ? '+ ' : '- ';
+	}
+
+	print "$prefix$line\n";
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	err()
+#
+# Purpose:	Prints a line of output if -quiet wasn't given.
+#
+sub err
 {
 	my $line = shift;
 
-	qprint($line) if($verbose);
+	print STDERR $line if(!$quiet);
 }
 
 #-----------------------------------------------------------------------------
@@ -822,8 +851,8 @@ the key lifespan checks from being run.
 
 =item -quiet
 
-No output will be given, but the number of errors will be used as the
-exit code.
+No output will be given.
+The number of errors will be used as the exit code.
 
 =item -summary
 
@@ -833,6 +862,7 @@ The number of errors will be used as the exit code.
 =item -verbose
 
 Success or failure status of each check will be given.
+A B<+> or B<-> prefix will be given for each valid and invalid entry.
 The number of errors will be used as the exit code.
 
 =item -help
