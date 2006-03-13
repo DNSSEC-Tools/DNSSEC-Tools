@@ -210,6 +210,7 @@ sub doopts
 	if($terse && $long)
 	{
 		print STDERR "lskrf:  only one of -long and -terse may be specified\n";
+		exit(1);
 	}
 
 	#
