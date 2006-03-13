@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -165,6 +165,21 @@ sub doopts
 	GetOptions(\%options,@opts);
 
 	#
+	# Give a usage flag if asked.
+	#
+	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a keyrec file to check.
+	#
+	$argc = @ARGV;
+	if($argc == 0)
+	{
+		usage();
+		exit(1);
+	}
+
+	#
 	# Set our option variables based on the parsed options.
 	#
 	$allflag	= $options{'all'}	|| 0;
@@ -189,18 +204,12 @@ sub doopts
 	$long		= $options{'long'}	|| 0;
 
 	#
-	# Give a usage flag if asked.
+	# If the valid-zone or the expired-zone option was given, but the
+	# zones specifier wasn't, we'll assume they want all the zones listed.
 	#
-	usage() if(defined($options{'help'}));
-
-	#
-	# Ensure we were given a keyrec file to check.
-	#
-	$argc = @ARGV;
-	if($argc == 0)
+	if($terse && $long)
 	{
-		usage();
-		exit(1);
+		print STDERR "lskrf:  only one of -long and -terse may be specified\n";
 	}
 
 	#
@@ -849,7 +858,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
