@@ -75,6 +75,17 @@ my $long;
 
 my $count   = 0;			# Record-match count.
 
+#########################################
+
+#
+# Flags for building output.
+#
+
+my $z_label;				# Print a leading label for zones.
+my $z_expdate;				# Print the zone's expiration date.
+my $z_signdate;				# Print the zone's signing date.
+my $z_zonefile;				# Print the zone's zone file.
+
 #######################################################################
 
 
@@ -272,6 +283,39 @@ sub doopts
 		$znewflag = 1;
 		$zpubflag = 1;
 	}
+
+	#
+	# Set up some zone output flags.
+	#
+	if($zonesflag)
+	{
+		#
+		# Set our defaults.
+		#
+		$z_label    = 1;
+		$z_expdate  = 0;
+		$z_signdate = 1;
+		$z_zonefile = 1;
+
+		#
+		# Set the non-defaults for -long.
+		#
+		if($long)
+		{
+			$z_expdate = 1;
+		}
+
+		#
+		# Set the non-defaults for -terse.
+		#
+		if($terse)
+		{
+			$z_label    = 0;
+			$z_signdate = 0;
+			$z_zonefile = 0;
+		}
+
+	}
 }
 
 #-----------------------------------------------------------------------------
@@ -357,6 +401,16 @@ sub getkeyrecs
 #
 sub showzones
 {
+	my $outstr = "";			# Output string to build.
+
+	my $signdate;				# Zone's signing date.
+	my $zonefile;				# Zone's zonefile.
+
+	my $endtime;				# Calculated expiration date.
+	my $signsecs;				# Signing date in seconds.
+	my $exptime;				# Expiration date in seconds.
+	my $expstr;				# Expiration date in string.
+
 	#
 	# Loop through the zone list and give data on the desired zones.
 	#
@@ -384,32 +438,31 @@ sub showzones
 		# Stay cloaked if only the count of matching records
 		# should be given.
 		#
-		if($cntflag)
-		{
-			next;
-		}
+		next if($cntflag);
 
 		#
-		# Give the appropriate style of output.
+		# Get a bunch of data from the zone keyrec.
 		#
-		if($terse)
-		{
-			print "$zk\n";
-		}
-		elsif($long)
-		{
-			my $endtime  = $kr{'endtime'};
-			my $signsecs = $kr{'keyrec_signsecs'};
+		$signdate = $kr{'keyrec_signdate'};
+		$zonefile = $kr{'zonefile'};
+		$endtime  = $kr{'endtime'};
+		$signsecs = $kr{'keyrec_signsecs'};
 
-			my $exptime  = $signsecs + $endtime;
-			my $expstr   = gmtime($exptime);
+		#
+		# Get a string holding the zone's expiration date.
+		#
+		$exptime  = $signsecs + $endtime;
+		$expstr   = gmtime($exptime);
 
-			print "zone $zk\t$kr{'zonefile'}\t\"$kr{'keyrec_signdate'}\"\t\"$expstr\"\n";
-		}
-		else
-		{
-			print "zone $zk\t$kr{'zonefile'}\t\t\"$kr{'keyrec_signdate'}\"\n";
-		}
+		#
+		# Build and print the output string.
+		#
+		$outstr  = $z_label ? "zone $zk" : $zk;
+		$outstr .= "\t$zonefile"	if($z_zonefile);
+		$outstr .= "\t\"$signdate\""	if($z_signdate);
+		$outstr .= "\t\"$expstr\"" 	if($z_expdate);
+		print "$outstr\n";
+
 	}
 }
 
