@@ -86,6 +86,13 @@ my $z_expdate;				# Print the zone's expiration date.
 my $z_signdate;				# Print the zone's signing date.
 my $z_zonefile;				# Print the zone's zone file.
 
+my $k_algorithm = 0;			# Key's algorithm
+my $k_date = 0;				# Key's signing date.
+my $k_label = 0;			# Label for output.
+my $k_length = 0;			# Key's length.
+my $k_life = 0;				# Key's lifespan.
+my $k_zonename = 0;			# Key's owning zone.
+
 #######################################################################
 
 
@@ -316,6 +323,44 @@ sub doopts
 		}
 
 	}
+
+	#
+	# Set up some key output flags.
+	#
+	if($kskflag || $zcurflag || $znewflag || $zpubflag)
+	{
+		#
+		# Set our defaults.
+		#
+		$k_algorithm = 0;
+		$k_date	     = 1;
+		$k_label     = 1;
+		$k_length    = 0;
+		$k_life	     = 0;
+		$k_zonename  = 1;
+
+		#
+		# Set the non-defaults for -long.
+		#
+		if($long)
+		{
+			$k_algorithm = 1;
+			$k_length    = 1;
+			$k_life	     = 1;
+		}
+
+		#
+		# Set the non-defaults for -terse.
+		#
+		if($terse)
+		{
+			$k_date	    = 0;
+			$k_label    = 0;
+			$k_zonename = 0;
+		}
+
+	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -486,7 +531,7 @@ sub showkeys
 		foreach my $k (sort(keys(%kskkeys)))
 		{
 			$krr = $kskkeys{$k};
-			outkey($k,$krr,"KSK-key\t","KSK");
+			outkey($k,$krr,"KSK");
 		}
 	}
 
@@ -498,7 +543,7 @@ sub showkeys
 		foreach my $k (sort(keys(%zcurkeys)))
 		{
 			$krr = $zcurkeys{$k};
-			outkey($k,$krr,"ZSK-cur-key","ZSK-cur");
+			outkey($k,$krr,"ZSK-cur");
 		}
 	}
 
@@ -510,7 +555,7 @@ sub showkeys
 		foreach my $k (sort(keys(%znewkeys)))
 		{
 			$krr = $znewkeys{$k};
-			outkey($k,$krr,"ZSK-new-key","ZSK-new");
+			outkey($k,$krr,"ZSK-new");
 		}
 	}
 
@@ -522,7 +567,7 @@ sub showkeys
 		foreach my $k (sort(keys(%zpubkeys)))
 		{
 			$krr = $zpubkeys{$k};
-			outkey($k,$krr,"ZSK-pub-key","ZSK-pub");
+			outkey($k,$krr,"ZSK-pub");
 		}
 	}
 
@@ -534,7 +579,7 @@ sub showkeys
 		foreach my $k (sort(keys(%zobskeys)))
 		{
 			$krr = $zobskeys{$k};
-			outkey($k,$krr,"ZSK-obs-key","ZSK-obs");
+			outkey($k,$krr,"ZSK-obs");
 		}
 	}
 
@@ -659,21 +704,24 @@ sub refdkey
 #
 sub outkey
 {
-	my $k	 = shift;		# Key name.
+	my $key	 = shift;		# Key name.
 	my $kkr	 = shift;		# Reference to key's keyrec.
-	my $long = shift;		# Long-output label.
-	my $reg	 = shift;		# Regular-output label.
-
-	my $life;			# Key's lifespan.
-	my $datestr = "";		# Key's date.  Or nothing.
+	my $lbl	 = shift;		# Output label.
 
 	my %kr = %$kkr;			# Key's keyrec.
 
+	my $algorithm;			# Key's algorithm.
+	my $datestr = "";		# Key's date.
+	my $length;			# Key's length.
+	my $life;			# Key's lifespan.
+	my $zonename;			# Name of key's owning zone.
+	my $outstr  = "";		# Output string.
+
 	#
-	# Check if this key is referenced or not.
+	# Check this key's reference state against the command options.
 	#
-	if(($refflag   && !refdkey($k)) ||
-	   ($unrefflag &&  refdkey($k)))
+	if(($refflag   && !refdkey($key)) ||
+	   ($unrefflag &&  refdkey($key)))
 	{
 		return;
 	}
@@ -686,45 +734,48 @@ sub outkey
 	#
 	# Run silent if only the count of matching records should be given.
 	#
-	if($cntflag)
+	return if($cntflag);
+
+	#
+	# Set up some -long specific stuff.
+	#
+	if($long)
 	{
-		return;
+		$lbl .= "-key";
 	}
 
 	#
-	# If -nodate wasn't given, we'll get the key's generation date.
+	# Get the key's data.
 	#
-	$datestr = "\"$kr{'keyrec_gendate'}\"" if(!$nodateflag);
+	$algorithm = $kr{'algorithm'};
+	$zonename = $kr{'zonename'};
+	$datestr = "$kr{'keyrec_gendate'}" if(!$nodateflag);
 
 	#
-	# Get the appropriate key lifespan.
+	# Set some key-type-specific values.
 	#
-	$life = $kr{'ksklife'};
-	$life = $kr{'zsklife'}   if(!defined($kr{'ksklife'}));
-
-	#
-	# Give the output line appropriate for output flags.
-	#
-	if($terse)
+	if($kr{'keyrec_type'} eq "ksk")
 	{
-		print "$k\n";
-	}
-	elsif($lifeflag)
-	{
-		print "$reg\t$k\t$life\n";
-	}
-	elsif($long)
-	{
-		my $len  = $kr{'ksklength'};		# Key's length.
-
-		$len  = $kr{'zsklength'} if(!defined($kr{'ksklength'}));
-
-		print "$long\t$k\t$kr{'zonename'}\t$kr{'algorithm'}\t$len\t$life\t$datestr\n";
+		$lbl	.= "\t" if($long);
+		$length	 = $kr{'ksklength'};
+		$life	 = $kr{'ksklife'};
 	}
 	else
 	{
-		print "$reg\t$k\t$kr{'zonename'}\t\t$datestr\n";
+		$length	= $kr{'zsklength'};
+		$life	= $kr{'zsklife'}
 	}
+
+	#
+	# Build and print the output string.
+	#
+	$outstr  = $k_label ? "$lbl\t$key" : $key;
+	$outstr .= "\t$zonename"	if($k_zonename);
+	$outstr .= "\t$algorithm"	if($k_algorithm);
+	$outstr .= "\t$length" 		if($k_length);
+	$outstr .= "\t$life" 		if($k_life);
+	$outstr .= "\t\"$datestr\"" 	if($k_date);
+	print "$outstr\n";
 }
 
 #-----------------------------------------------------------------------------
@@ -754,7 +805,7 @@ sub usage
 	print STDERR "\t\t-nodate		do not display date\n";
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
-	print STDERR "\t\t-h		help message \n";
+	print STDERR "\t\t-help		help message \n";
 	exit(0);
 }
 
