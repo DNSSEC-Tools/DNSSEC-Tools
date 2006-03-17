@@ -39,11 +39,11 @@ my @opts =
 	"valid",			# List unexpired zone keyrecs.
 	"expired",			# List expired zone keyrecs.
 
-	"algorithm",			# Show encryption algorithm.
-	"keyzone",			# Show key's zonefile.
-	"length",			# Show key length.
-	"lifespan",			# Show key lifespan.
-	"signdate",			# Show key's signing date.
+	"k-algorithm",			# Show encryption algorithm.
+	"k-zone",			# Show key's zonefile.
+	"k-length",			# Show key length.
+	"k-lifespan",			# Show key lifespan.
+	"k-signdate",			# Show key's signing date.
 
 	"count",			# Only give a count of matching keyrecs.
 	"life",				# Show the key's lifespan.
@@ -368,11 +368,11 @@ sub doopts
 		#
 		# Set some values for flags.
 		#
-		$k_algorithm = 1 if(defined($options{'algorithm'}));
-		$k_date      = 1 if(defined($options{'signdate'}));
-		$k_length    = 1 if(defined($options{'length'}));
-		$k_life      = 1 if(defined($options{'lifespan'}));
-		$k_zonename  = 1 if(defined($options{'keyzone'}));
+		$k_algorithm = 1 if(defined($options{'k-algorithm'}));
+		$k_date      = 1 if(defined($options{'k-signdate'}));
+		$k_length    = 1 if(defined($options{'k-length'}));
+		$k_life      = 1 if(defined($options{'k-lifespan'}));
+		$k_zonename  = 1 if(defined($options{'k-zone'}));
 
 	}
 
@@ -984,25 +984,25 @@ will be printed.
 
 =over 4
 
-=item -algorithm
+=item -k-algorithm
 
 Display the key's encryption algorithm.
 
-=item -keyzone
-
-Display the key's zonefile.
-
-=item -length
+=item -k-length
 
 Display the key's length.
 
-=item -lifespan
+=item -k-lifespan
 
 Display the key's lifespan.
 
-=item -signdate
+=item -k-signdate
 
 Display the key's signing date.
+
+=item -k-zone
+
+Display the key's zonefile.
 
 =back
 
