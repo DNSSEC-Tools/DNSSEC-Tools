@@ -45,6 +45,10 @@ my @opts =
 	"k-lifespan",			# Show key lifespan.
 	"k-signdate",			# Show key's signing date.
 
+	"z-expdate",			# Show zone's expiration date.
+	"z-signdate",			# Show zone's signing date.
+	"z-zonefile",			# Show zone's zonefile.
+
 	"count",			# Only give a count of matching keyrecs.
 	"life",				# Show the key's lifespan.
 	"nodate",			# Don't show the date.
@@ -327,6 +331,13 @@ sub doopts
 			$z_signdate = 0;
 			$z_zonefile = 0;
 		}
+
+		#
+		# Set some values for flags.
+		#
+		$z_expdate  = 1 if(defined($options{'z-expdate'}));
+		$z_signdate = 1 if(defined($options{'z-signdate'}));
+		$z_zonefile = 1 if(defined($options{'z-zonefile'}));
 
 	}
 
@@ -1003,6 +1014,28 @@ Display the key's signing date.
 =item -k-zone
 
 Display the key's zonefile.
+
+=back
+
+=head2 Zone-Attribute Options
+
+These options allow specific zone fields to be included in the output.  If
+combined with the I<-terse> option, only those fields specifically desired
+will be printed.
+
+=over 4
+
+=item z-expdate
+
+Display the zone's expiration date.
+
+=item z-signdate
+
+Display the zone's signing date.
+
+=item z-zonefile
+
+Display the zone's zonefile.
 
 =back
 
