@@ -40,17 +40,17 @@ my @opts =
 	"expired",			# List expired zone keyrecs.
 
 	"k-algorithm",			# Show encryption algorithm.
-	"k-zone",			# Show key's zonefile.
+	"k-enddate",			# Show end date.
 	"k-length",			# Show key length.
 	"k-lifespan",			# Show key lifespan.
 	"k-signdate",			# Show key's signing date.
+	"k-zone",			# Show key's zonefile.
 
 	"z-expdate",			# Show zone's expiration date.
 	"z-signdate",			# Show zone's signing date.
 	"z-zonefile",			# Show zone's zonefile.
 
 	"count",			# Only give a count of matching keyrecs.
-	"life",				# Show the key's lifespan.
 	"nodate",			# Don't show the date.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
@@ -78,7 +78,6 @@ my $validflag;
 my $expiredflag;
 
 my $cntflag;
-my $lifeflag;
 my $nodateflag;
 my $terse;
 my $long;
@@ -97,6 +96,7 @@ my $z_signdate;				# Print the zone's signing date.
 my $z_zonefile;				# Print the zone's zone file.
 
 my $k_algorithm = 0;			# Key's algorithm
+my $k_enddate = 0;			# Key's end date.
 my $k_date = 0;				# Key's signing date.
 my $k_label = 0;			# Label for output.
 my $k_length = 0;			# Key's length.
@@ -226,7 +226,6 @@ sub doopts
 	$expiredflag	= $options{'expired'}	|| 0;
 
 	$cntflag	= $options{'count'}	|| 0;
-	$lifeflag	= $options{'life'}	|| 0;
 	$nodateflag	= $options{'nodate'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
@@ -351,6 +350,7 @@ sub doopts
 		#
 		$k_algorithm = 0;
 		$k_date	     = 1;
+		$k_enddate   = 0;
 		$k_label     = 1;
 		$k_length    = 0;
 		$k_life	     = 0;
@@ -362,8 +362,8 @@ sub doopts
 		if($long)
 		{
 			$k_algorithm = 1;
+			$k_enddate   = 1;
 			$k_length    = 1;
-			$k_life	     = 1;
 		}
 
 		#
@@ -380,6 +380,7 @@ sub doopts
 		# Set some values for flags.
 		#
 		$k_algorithm = 1 if(defined($options{'k-algorithm'}));
+		$k_enddate   = 1 if(defined($options{'k-enddate'}));
 		$k_date      = 1 if(defined($options{'k-signdate'}));
 		$k_length    = 1 if(defined($options{'k-length'}));
 		$k_life      = 1 if(defined($options{'k-lifespan'}));
@@ -737,7 +738,9 @@ sub outkey
 	my %kr = %$kkr;			# Key's keyrec.
 
 	my $algorithm;			# Key's algorithm.
-	my $datestr = "";		# Key's date.
+	my $ender;			# Key's lifespan date (in seconds.)
+	my $gendate = "";		# Key's date.
+	my $enddate = "";		# Key's end-date (in text.)
 	my $length;			# Key's length.
 	my $life;			# Key's lifespan.
 	my $zonename;			# Name of key's owning zone.
@@ -775,7 +778,7 @@ sub outkey
 	#
 	$algorithm = $kr{'algorithm'};
 	$zonename = $kr{'zonename'};
-	$datestr = "$kr{'keyrec_gendate'}" if(!$nodateflag);
+	$gendate = "$kr{'keyrec_gendate'}" if(!$nodateflag);
 
 	#
 	# Set some key-type-specific values.
@@ -793,14 +796,21 @@ sub outkey
 	}
 
 	#
+	# Calculate the key's end-date.
+	#
+	$ender = $kr{'keyrec_gensecs'} + $life;
+	$enddate = gmtime($ender);
+
+	#
 	# Build and print the output string.
 	#
 	$outstr  = $k_label ? "$lbl\t$key" : $key;
 	$outstr .= "\t$zonename"	if($k_zonename);
 	$outstr .= "\t$algorithm"	if($k_algorithm);
 	$outstr .= "\t$length" 		if($k_length);
-	$outstr .= "\t$life" 		if($k_life);
-	$outstr .= "\t\"$datestr\"" 	if($k_date);
+	$outstr .= "\t\"$gendate\"" 	if($k_date);
+	$outstr .= "\t$life"	 	if($k_life);
+	$outstr .= "\t\"$enddate\"" 	if($k_enddate);
 	print "$outstr\n";
 }
 
@@ -837,6 +847,7 @@ sub usage
 
 	print STDERR "\tkey-attribute options:\n";
 	print STDERR "\t\t-k-algorithm	show key's algorithm\n";
+	print STDERR "\t\t-k-enddate	show key's end-date\n";
 	print STDERR "\t\t-k-length	show key's length\n";
 	print STDERR "\t\t-k-lifespan	show key's lifespan\n";
 	print STDERR "\t\t-k-signdate	show key's signing date\n";
@@ -973,12 +984,6 @@ options aren't given.
 The count of matching records will be displayed, but the matching records
 will not be.
 
-=item -life
-
-The key's lifespan will be printed if this flag is given.  This lifespan
-is B<only> related to the time between key roll-over.  There is no other
-lifespan associated with a key.
-
 =item -nodate
 
 The key's generation date will not be printed if this flag is given.
@@ -1014,13 +1019,20 @@ will be printed.
 
 Display the key's encryption algorithm.
 
+=item -k-enddate
+
+Display the key's end-date, calculated by adding the key's lifespan to its
+signing date.
+
 =item -k-length
 
 Display the key's length.
 
 =item -k-lifespan
 
-Display the key's lifespan.
+Display the key's lifespan (in seconds.) This lifespan is B<only> related to
+the time between key roll-over.  There is no other lifespan associated with a
+key.
 
 =item -k-signdate
 
