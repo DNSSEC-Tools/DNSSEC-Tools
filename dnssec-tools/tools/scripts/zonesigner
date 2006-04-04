@@ -121,10 +121,12 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool specific options:'],
 	       ["forceroll",		'Force the roll-over of zone keys.'],
+	       ["usepub",		'Use Publisehd ZSk for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	     );
 
 my $forceroll = 0;			# Force-a-roll-over flag.
+my $usepub = 0;				# Use-published-ZSK flag.
 
 #
 # Do our work.
@@ -164,10 +166,7 @@ sub main
 	#
 	# If help was specified, give the usage and exit.
 	#
-	if($help == 1)
-	{
-		usage(1);
-	}
+	usage(1) if($help == 1);
 
 	#
 	# Maybe display the warning about potential entropy hangs.
@@ -238,6 +237,7 @@ sub main
 	$kskpath    = "$kskdir/$ksk.key";
 	$zskcurpath = "$zskdir/$zskcur.key";
 	$zskpubpath = "$zskdir/$zskpub.key";
+	$zskcurpath = $zskpubpath if($usepub);
 
 	#
 	# Create the unsigned zone file and add include lines for the key files.
@@ -312,6 +312,7 @@ sub optsandargs()
 	$kskpath  = $opts{'kskpath'}	  || "";
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
+	$usepub	  = $opts{'usepub'}	  || 0;
 
 	#
 	# Get the rest of the options.
@@ -342,10 +343,7 @@ sub optsandargs()
 	# Check for the key roll-over flag.
 	#
 	$forceroll = 0;
-	if(defined($opts{'forceroll'}))
-	{
-		$forceroll = 1;
-	}
+	$forceroll = 1 if(defined($opts{'forceroll'}));
 
 	#
 	# Set up options and values, saving to global scalars and also
@@ -883,10 +881,13 @@ sub zoneincludes
 		#
 		# Adjust the current ZSK key.
 		#
-		$tail =~ /current zsk\n/m;
-		$newfile .= $` . $&;
-		$tail = $';
-		$tail =~ s/\$INCLUDE ".*?"/\$INCLUDE "$zskcurpath"/;
+		if(!$usepub)
+		{
+			$tail =~ /current zsk\n/m;
+			$newfile .= $` . $&;
+			$tail = $';
+			$tail =~ s/\$INCLUDE ".*?"/\$INCLUDE "$zskcurpath"/;
+		}
 
 		#
 		# Adjust the published ZSK key.
@@ -1437,7 +1438,7 @@ sub forceroll
 	my $krref;				# Reference to key's keyrec.
 	my $zoneref;				# Reference to zone's keyrec.
 
-	vprint("forcing a key roll-over\n");
+	vprint("forcing a ZSK roll-over\n");
 
 	#
 	# We're rolling ZSKs, so make sure they'll be generated.
@@ -1571,6 +1572,7 @@ sub printopts
 	print "\t\tkskdir		- <$kskdir>\n";
 	print "\t\tksklife		- <$ksklife>\n";
 	print "\t\tgenksk		- <$genksk>\n";
+	print "\t\tusepub		- <$usepub>\n";
 	print "\t\tzsize		- <$zsize>\n";
 	print "\t\tzskdir		- <$zskdir>\n";
 	print "\t\tzsklife		- <$zsklife>\n";
@@ -1670,6 +1672,7 @@ sub usage
 	print STDERR "\t\t\t-genkeys\n";
 	print STDERR "\t\t\t-genksk\n";
 	print STDERR "\t\t\t-genzsk\n";
+	print STDERR "\t\t\t-usepub\n";
 	print STDERR "\t\t\t-ksklife lifespan\n";
 	print STDERR "\t\t\t-zsklife lifespan\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
@@ -1868,6 +1871,10 @@ zone will be used.
 
 Generate a new ZSK for the zone.  By default, the last ZSK generated for this
 zone will be used.
+
+=item -usepub
+
+Use the existing Published ZSK to sign the zone.
 
 =item -ksklife
 
