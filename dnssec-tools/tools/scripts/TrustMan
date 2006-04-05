@@ -1,0 +1,202 @@
+#!/usr/bin/perl
+
+use Net::DNS;
+use Net::DNS::SEC;
+use Net::DNS::SEC::Tools::conf;
+use Getopt::Long;
+
+########################################################
+# Defaults
+
+my %opts = (
+        f => "/usr/local/etc/named/named.conf",
+        d => "netsec.tislabs.com",
+        D => 0,
+	v => 1
+);
+
+########################################################
+# main
+
+# Parse command-line options
+GetOptions(\%opts, "f=s", "d=s", D);
+
+LocalGetOptions(\%opts,
+                ['GUI:separator',"Trust Anchor Management Configuration:"],
+                ['f|named-conf-file=s', "Full path to named config file:"],
+		['GUI:separator',"Miscellaneous Configuration:"],
+		['v|verbose','Verbose Mode'],
+);
+
+#LocalGetOptions(\%opts,
+#                ['GUI:separator',"DNS Configuration:"],
+#
+#                ['GUI:separator',
+#                 "Named.conf configuration file input support:"],
+#                ['i|named-conf-in-file=s',
+#                'Read path as a named.conf to compare key lists with'],
+#                ['T|use-current-trusted-keys',
+#                 'Check the current trusted key list from named.conf'],
+#
+#                ['GUI:separator',
+#                 "Named.conf configuration file output support:"],
+#                ['o|output-file=s','Output the results to a file'],
+#                ['t|print-named-conf-tokens',
+#                 'Enclose output in needed named.conf syntax markers'],
+#
+#                ['GUI:separator','Miscellanious Configuration:'],
+#                ['v|verbose','Verbose mode'],
+#);
+
+# Parse the dnssec-tools.conf file
+my %dtconf = parseconfig();
+
+# then $dtconf{'name_of_option_in_dnssec-tools.conf'}
+# contains the value of that option as set in the conf file
+
+my $ncfile = $dtconf{'tanamedconffile'};
+my $contactaddr = $dtconf{'tacontact'};
+my $smtpserver = $dtconf{'tasmtpserver'};
+
+my %keystorage;
+my $domain_to_query = $opts{'d'};
+my $res = Net::DNS::Resolver->new;
+my $query = $res->query($domain_to_query,"SOA");
+
+#read_named_conf_keys(\%keystorage, $ncfile);
+
+#if ($query) {
+#    ($query->answer)[0]->print;
+#    my @soa_answer = $query->answer;
+#    print "Contact: ", $soa_answer[0]->rname, "\n";
+#    $soa_answer[0]->rname =~ /^(\w+)\.(\S+)$/;
+#    print $1, "@", $2, "\n";
+#} else {
+#    print "query failed: ", $res->errorstring, "\n";
+#}
+
+sub usage {
+}
+
+#######################################################################
+# read_named_conf_keys()
+#
+# reads in a named.conf file pointed to by $file and stores key
+# information in $storage
+#
+sub read_named_conf_keys {
+    my ($storage, $file) = @_;
+    Verbose("reading and parsing trust keys from $file\n");
+    # regexp pulled from Fast.pm
+    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+
+    my $fh = new IO::File;
+    if (!$fh->open("<$file")) {
+	print STDERR "Could not open named configuration file: $file\n";
+	exit 1;
+    }
+    while (<$fh>) {
+	if (/trusted-keys {/) {
+	    while (<$fh>) {
+		last if (/^\s*};/);
+		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
+		    push @{$storage->{$1}},
+		      { flags => $2,
+			protocol => $3,
+			algorithm => $4,
+			key => $5 };
+		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		}
+	    }
+	}
+    }
+}
+
+######################################################################
+# mailcontact()
+#  - emails a contact address with the donuts error output
+sub mailcontact {
+    my ($contact, $file, $zonename) = @_;
+    my $fromaddr = "TrustMan";
+
+    # set up the SMTP object and required data
+    my $message = Net::SMTP->new($contactaddr);
+    $message->mail($fromaddr);
+    $message->to(split(/,\s*/,$contact));
+    $message->data();
+
+    # create headers
+    $message->datasend("To: " . $contact . "\n");
+    $message->datasend("From: " . $fromaddr . "\n");
+    $message->datasend("Subject: TrustMan warning for zone: $zonename\n\n");
+
+    # create the body of the message: the warning
+    $message->datasend("TrustMan has detected a mismatch for the DNSKEY for \"$zonename\"\n");
+    $message->datasend("You should verify this key manually.\n\n");
+
+    # finish and send the message
+    $message->dataend();
+    $message->quit;
+}
+
+#######################################################################
+# Verbose()
+#
+# prints something(s) to STDERR only if -v was specified.
+#
+sub Verbose {
+    print STDERR @_ if ($opts{'v'});
+}
+
+#######################################################################
+# Getopt::GUI::Long portability
+#
+sub LocalGetOptions {
+    if (eval {require Getopt::GUI::Long;}) {
+	require Getopt::Long;
+	import Getopt::GUI::Long;
+	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
+	return GetOptions(@_);
+    }
+    require Getopt::Long;
+    import Getopt::Long;
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
+}
+
+=head1 NAME
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 OPTIONS
+
+=over #indent
+
+=item -d #explains the -d flag, add others as needed
+
+=back #unindent
+
+
+=head1 PRE-REQUISITES
+
+=head1 COPYRIGHT
+
+Copyright 2005 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=cut
