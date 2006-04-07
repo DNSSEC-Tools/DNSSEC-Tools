@@ -631,29 +631,11 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
 -#if defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
 -    || defined(_PR_HAVE_THREADSAFE_GETHOST)
 +#if (defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
-+     || defined(_PR_HAVE_THREADSAFE_GETHOST)) && !defined(MOZ_DNSSEC)
++     || defined(_PR_HAVE_THREADSAFE_GETHOST))
  #define _PR_NO_DNS_LOCK
  #endif
  
-@@ -421,7 +425,7 @@
- 	 (void)setnetconfig();
- #endif
- #endif
--#if !defined(_PR_NO_DNS_LOCK)
-+#if !defined(_PR_NO_LOCK_DNS)
- 	_pr_dnsLock = PR_NewLock();
- #endif
- #if !defined(_PR_HAVE_GETPROTO_R)
-@@ -434,7 +438,7 @@
- 
- void _PR_CleanupNet(void)
- {
--#if !defined(_PR_NO_DNS_LOCK)
-+#if !defined(_PR_NO_LOCK_DNS)
-     if (_pr_dnsLock) {
-         PR_DestroyLock(_pr_dnsLock);
-         _pr_dnsLock = NULL;
-@@ -629,6 +633,189 @@
+@@ -629,6 +633,214 @@
  }
  #endif /* !defined(_PR_HAVE_GETPROTO_R) */
  
@@ -831,6 +813,31 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
 +  DNSSECFUNRETURN(NULL);
 +}
 +
++struct hostent *
++dnssec_gethostbyname2(const char *name, int af,
++                     struct hostent *ret, char *buf, size_t buflen,
++                     struct hostent **result, int *h_errnop)
++{
++  val_status_t val_status;
++  int ret_stat;
++  
++  DNSSECFUNDEBUG((stderr, "input: name=%s\n", name));
++  ret_stat = val_gethostbyname2_r(NULL, name, af, 
++                                  ret, buf, buflen, result, h_errnop,
++                                  &val_status);
++  if (!ret_stat) {
++    DNSSECDEBUG((stderr, "  ERROR: ret_stat=%d returned\n", ret_stat));
++    DNSSECFUNRETURN(NULL);
++  }
++  
++  if (dnssec_check_policy(val_status, global_policy) == DNSSEC_SUCCESS) {
++    DNSSECDEBUG((stderr, "  policy = success\n"));
++    DNSSECFUNRETURN(ret);
++  }
++  DNSSECDEBUG((stderr, "  failed to lookup host\n"));
++  DNSSECFUNRETURN(NULL);
++}
++
 +
 +#else  /* !MOZ_DNSSEC */
 +
@@ -843,23 +850,33 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  /*
   * #################################################################
   * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -664,6 +851,15 @@
+@@ -664,6 +876,25 @@
  
  #endif  /* definition of GETHOSTBYXXX */
  
 +/* override functions if MOZ_DNSSEC is enabled */
 +#ifdef MOZ_DNSSEC
 +
++/* We do this in a special section to allow the GETHOSTBYADDR to be
++   pulled above as normal.  Unfortunately, even though the DNSSEC APIs
++   are thread safe, if GETHOSTBYADDR is not then we'll still perform
++   safe locking because this code doesn't differentiate between calls
++   at all.
++*/
 +#undef GETHOSTBYNAME
++#undef GETHOSTBYNAME2
++
 +#define GETHOSTBYNAME(name) \
 +    (dnssec_gethostbyname(name, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
++#define GETHOSTBYNAME2(name, af)                                           \
++  (dnssec_gethostbyname2(name, af, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
 +
 +#endif /* MOZ_DNSSEC */
 +
  PR_IMPLEMENT(PRStatus) PR_GetHostByName(
      const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
  {
-@@ -677,6 +873,7 @@
+@@ -677,6 +908,7 @@
  #endif
  
      if (!_pr_initialized) _PR_ImplicitInitialization();
@@ -867,7 +884,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  
  #if defined(_PR_HAVE_GETHOST_R)
      tmpbuf = localbuf;
-@@ -686,7 +883,7 @@
+@@ -686,7 +918,7 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -876,7 +893,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
          }
      }
  #endif
-@@ -698,13 +895,18 @@
+@@ -698,13 +930,18 @@
  #else
  	h = GETHOSTBYNAME(name);
  #endif
@@ -897,7 +914,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
  		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
  		if (PR_SUCCESS != rv)
-@@ -715,7 +917,7 @@
+@@ -715,7 +952,7 @@
      if (tmpbuf != localbuf)
          PR_Free(tmpbuf);
  #endif
@@ -906,7 +923,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  }
  
  #if !defined(_PR_INET6) && \
-@@ -826,11 +1028,12 @@
+@@ -826,11 +1063,12 @@
      PRBool did_af_inet = PR_FALSE;
  #endif
  
@@ -920,7 +937,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
      }
  
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
-@@ -873,11 +1076,13 @@
+@@ -873,11 +1111,13 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -935,7 +952,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
      /* Do not need to lock the DNS lock if getipnodebyname() is called */
  #ifdef _PR_INET6
  #ifdef _PR_HAVE_GETHOSTBYNAME2
-@@ -935,6 +1140,7 @@
+@@ -935,6 +1175,7 @@
      
  	if (NULL == h)
  	{
@@ -943,7 +960,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
  #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
-@@ -993,7 +1199,7 @@
+@@ -993,7 +1234,7 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -952,7 +969,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  }
  
  PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
-@@ -1015,6 +1221,7 @@
+@@ -1015,6 +1256,7 @@
  	int error_num;
  #endif
  
@@ -960,7 +977,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1160,7 +1367,7 @@
+@@ -1160,7 +1402,7 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -969,7 +986,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  }
  
  /******************************************************************************/
-@@ -1772,6 +1979,7 @@
+@@ -1772,6 +2014,7 @@
      PRStatus status = PR_SUCCESS;
      PRIntn rv;
  
@@ -977,7 +994,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  #if defined(_PR_HAVE_INET_NTOP)
      rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
      if (1 == rv)
-@@ -1783,23 +1991,26 @@
+@@ -1783,23 +2026,26 @@
          PR_ASSERT(0 == rv);
          /* clean up after the failed inet_pton() call */
          memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
@@ -1009,7 +1026,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
      }
      PR_ASSERT(0 == rv);
      /* clean up after the failed StringToV6Addr() call */
-@@ -1821,7 +2032,7 @@
+@@ -1821,7 +2067,7 @@
      }
  #endif /* _PR_HAVE_INET_NTOP */
  
@@ -1018,7 +1035,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  }
  
  PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
-@@ -1940,8 +2151,18 @@
+@@ -1940,8 +2186,18 @@
  #if defined(_PR_INET6)
  
  typedef struct addrinfo PRADDRINFO;
@@ -1037,7 +1054,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  
  #elif defined(_PR_INET6_PROBE)
  
-@@ -2025,8 +2246,11 @@
+@@ -2025,8 +2281,11 @@
  #endif
  }
  
@@ -1049,7 +1066,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
  
  #endif /* _PR_INET6 */
  
-@@ -2050,41 +2274,44 @@
+@@ -2050,41 +2309,44 @@
  {
      PRStatus rv;
      PRAddrInfoFB *ai;
@@ -1099,7 +1116,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
      }
  #endif
      {
-@@ -2097,6 +2324,21 @@
+@@ -2097,6 +2359,21 @@
           * RFC 3493.
           */
  
@@ -1121,7 +1138,7 @@ diff -u -r --new-file mozilla/nsprpub/pr/src/misc/prnetdb.c mozilla.mine/nsprpub
          memset(&hints, 0, sizeof(hints));
          hints.ai_flags = (flags & PR_AI_NOCANONNAME) ? 0: AI_CANONNAME;
          hints.ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
-@@ -2111,12 +2353,31 @@
+@@ -2111,12 +2388,31 @@
          hints.ai_socktype = SOCK_STREAM;
  
          rv = GETADDRINFO(hostname, NULL, &hints, &res);
