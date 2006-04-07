@@ -2,8 +2,9 @@
 INCL= ../../libsres
 LIB= ../../libsres
 CFLAGS_EX=-I$(INCL) -I.. -I../../libsres/include 
-EXTRALIBS=-lval -lsres -lcrypto -lpthread
-LDFLAGS_EX=-L.. -L$(LIB) $(EXTRALIBS)
+EXTRALIBS=-lcrypto -lpthread
+LOCALLIBS=../libval.la ../../libsres/libsres.la
+LDFLAGS_EX=$(LOCALLIBS) $(EXTRALIBS)
 
 SRC=  	val_resquery.c \
 	crypto/val_dsasha1.c
@@ -26,13 +27,13 @@ all: $(VALIDATOR) $(GETHOST) $(GETADDR)
 clean:
 	$(RM) -f $(LOBJ) $(OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR)
 
-$(VALIDATOR): validator_driver.lo
+$(VALIDATOR): validator_driver.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS)
 
-$(GETHOST): gethost.lo
+$(GETHOST): gethost.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS)
 
-$(GETADDR): getaddr.lo
+$(GETADDR): getaddr.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
 
 install:
