@@ -45,7 +45,7 @@ use IO::File;
 use Net::DNS;
 use MIME::Base64;
 
-$VERSION = '0.6';
+$VERSION = '0.6.1';
 
 my $MAXIMUM_TTL = 0x7fffffff;
 
@@ -700,7 +700,7 @@ sub parse_line
 		 nxtdname  => lc($1),
 		 typelist  => $2,
 		 typebm    =>
-		 Net::DNS::RR::NSEC::_typestr2typebm(split(/\s+/,$2)),
+		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$2)),
 		};
 	  } else {
 	      error("bad NSEC data");
