@@ -9,6 +9,8 @@
 #include <resolver.h>
 #include <validator.h>
 
+#define NO_ERROR 0
+
 
 /*
  *************************************************** 
@@ -29,10 +31,22 @@
 
 /* 
  *************************************************** 
+ * Assertion initial states 
+ *************************************************** 
+ */
+#define A_DONT_KNOW 0 
+#define A_CAN_VERIFY 1 
+#define A_WAIT_FOR_TRUST 2 
+#define A_WAIT_FOR_RRSIG  3
+#define A_INIT 4
+#define A_NEGATIVE_PROOF 5 
+#define A_LAST_STATE  10 /* Closest round number above A_NEGATIVE_PROOF */
+
+/* 
+ *************************************************** 
  * Validator return codes 
  *************************************************** 
  */
-#define NO_ERROR 0
 
 /* "Cannot do anything further" states */
 #define ERROR_BASE    			A_LAST_STATE /* 10 */
@@ -89,24 +103,39 @@ chain of trust can be completed */
 #define TRUST_KEY	 			LAST_FAILURE+3 /* key is trusted */ 
 #define TRUST_ZONE				LAST_FAILURE+4 /* zone is trusted */
 #define BARE_RRSIG 				LAST_FAILURE+5 /* No DNSSEC validation possible, query was for a RRSIG.*/
-#define VALIDATE_SUCCESS  		LAST_FAILURE+6	/* TRUSTED AND no error */
 #define LAST_SUCCESS			LAST_FAILURE+10 /* ERROR_BASE + 80 */
 
-/* failure result conditions */
-#define BOGUS_PROVABLE			LAST_SUCCESS+1	/* NOT_VERIFIED but not trusted */
-#define BOGUS_UNPROVABLE		LAST_SUCCESS+2	/* NOT_VERIFIED but not trusted */
-#define BOGUS BOGUS_UNPROVABLE
-#define VALIDATION_ERROR  		LAST_SUCCESS+3	
-#define NONEXISTENT_NAME 		LAST_SUCCESS+4	/* TRUSTED AND proof present */
-#define NONEXISTENT_TYPE 		LAST_SUCCESS+5	/* TRUSTED AND proof present */
-#define INCOMPLETE_PROOF 		LAST_SUCCESS+6	/* Proof does not have all required components */
-#define BOGUS_PROOF 			LAST_SUCCESS+7	/* proof cannot be validated */
-#define INDETERMINATE_DS 		LAST_SUCCESS+8	/* Can't prove that the DS is trusted */
-#define INDETERMINATE_PROOF		LAST_SUCCESS+9	/* Some intermediate Proof of non-existence obtained - dont know if answer exists and proof is bogus or answer is bogus.  */
-#define INDETERMINATE_ERROR		LAST_SUCCESS+10 /* Error sequence */
-#define INDETERMINATE_TRUST		LAST_SUCCESS+11 /* Dont know if trust is absent or answer is bogus */
-#define INDETERMINATE_ZONE		LAST_SUCCESS+12 /* Dont know if zone is unsigned or sigs have been stripped */
-#define INDETERMINATE	INDETERMINATE_TRUST
+
+/* 
+ *************************************************** 
+ * Result  codes 
+ *************************************************** 
+ */
+
+#define R_DONT_KNOW	0
+
+#define R_INDETERMINATE         1         
+#define R_INDETERMINATE_DS      R_INDETERMINATE /* Can't prove that the DS is trusted */
+#define R_INDETERMINATE_PROOF   R_INDETERMINATE /* Some intermediate Proof of non-existence obtained - dont know if answer exists and proof is bogus or answer is bogus.  */
+#define R_INCOMPLETE_PROOF      R_INDETERMINATE /* Proof does not have all required components */
+#define R_BOGUS                  2
+#define R_BOGUS_PROOF            R_BOGUS /* proof cannot be validated */
+#define R_BOGUS_UNPROVABLE       R_BOGUS /* Bogus result */
+#define R_BOGUS_PROVABLE	    (R_BOGUS | R_TRUST_FLAG)
+#define R_VERIFIED_CHAIN         3 /* All components were verified */
+#define R_VALIDATED_CHAIN       (R_VERIFIED_CHAIN | R_TRUST_FLAG)     
+#define R_LAST                   4
+
+#define VAL_LOCAL_ANSWER         R_LAST+1
+#define VAL_BARE_RRSIG           R_LAST+2
+#define VAL_NONEXISTENT_NAME     R_LAST+3
+#define VAL_NONEXISTENT_TYPE     R_LAST+4
+#define VAL_ERROR  			     R_LAST+5
+#define VAL_PROVABLY_UNSECURE    R_LAST+6
+#define VAL_INDETERMINATE        R_INDETERMINATE
+#define VAL_BOGUS                R_BOGUS
+#define VAL_NOTRUST              R_VERIFIED_CHAIN
+#define VAL_SUCCESS              R_VALIDATED_CHAIN
 
 
 #endif /* VAL_ERRORS_H */
