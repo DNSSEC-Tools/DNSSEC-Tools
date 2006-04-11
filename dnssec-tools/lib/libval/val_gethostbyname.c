@@ -230,7 +230,7 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 /*
  * Function: get_hostent_from_response
  *
- * Purpose: Converts the linked list of val_result structures obtained
+ * Purpose: Converts the linked list of val_result_chain structures obtained
  *          as a result from the validator into a hostent structure.
  *
  * Parameters:
@@ -238,7 +238,7 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
  *               af -- The address family: AF_INET or AF_INET6.
  *              ret -- Pointer to a hostent structure to return the result.
  *                     This parameter must not be NULL.
- *          results -- Pointer to a linked list of val_result structures.
+ *          results -- Pointer to a linked list of val_result_chain structures.
  *         h_errnop -- Pointer to an integer variable to store the h_errno value.
  *              buf -- A buffer to store auxiliary data.  This parameter must not be NULL.
  *           buflen -- Length of the buffer 'buf'.
@@ -252,7 +252,7 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
  * See also: get_hostent_from_etc_hosts()
  */
 static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, struct hostent *ret,
-						  struct val_result *results, int *h_errnop,
+						  struct val_result_chain *results, int *h_errnop,
 						  char *buf, int buflen, int *offset)
 {
 	int alias_count = 0;
@@ -270,11 +270,11 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 	orig_offset = *offset;
 	bzero(ret, sizeof(struct hostent));
 
-	struct val_result *res;
+	struct val_result_chain *res;
 
 	/* Count the number of aliases and addresses in the result */
-	for (res = results; res != NULL; res = res->next) {
-		struct rrset_rec *rrset = res->as->ac_data;
+	for (res = results; res != NULL; res = res->val_rc_next) {
+		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 		
 		// Get a count of aliases and addresses
 		while (rrset) {
@@ -319,8 +319,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 	alias_index = alias_count -1;
 
 	/* Process the result */
-	for (res = results; res != NULL; res = res->next) {
-		struct rrset_rec *rrset = res->as->ac_data;
+	for (res = results; res != NULL; res = res->val_rc_next) {
+		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 		
 		while (rrset) {
 			struct rr_rec *rr = rrset->rrs_data;
@@ -555,14 +555,12 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 	}
 	else {
 		int retval;
-		struct query_chain *queries = NULL;
-		struct assertion_chain *assertions = NULL;
-		struct val_result *results = NULL;
+		struct val_result_chain *results = NULL;
 		u_char name_n[MAXCDNAME];
 		val_context_t *context = NULL;
 		
 		if (ctx == NULL)
-			get_context(NULL, &context);
+			val_get_context(NULL, &context);
 		else
 			context = (val_context_t *) ctx;   
 
@@ -577,7 +575,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 			*val_status = LOCAL_ANSWER;
 			*h_errnop = NETDB_SUCCESS;
 			if((ctx == NULL) && context)
-				destroy_context(context);
+				val_free_context(context);
 			return 0;
 		}
 		
@@ -588,14 +586,14 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 
 		/* Query the validator */
 		if (((retval = ns_name_pton(name, name_n, MAXCDNAME-1)) != -1)
-		    && (NO_ERROR == (retval = resolve_n_check(context, name_n, type, ns_c_in, 0,
-							      &queries, &assertions, &results)))) {
+		    && (NO_ERROR == (retval = val_resolve_and_check(context, name_n, ns_c_in, type, 0,
+							      &results)))) {
 			
 			/* Convert the validator result into hostent */
 		        *result = get_hostent_from_response(context, af, ret, results, h_errnop, buf, buflen, &offset);
 			
 			if (*result) {
-			    *val_status = results->status;
+			    *val_status = results->val_rc_status;
 			}
 		}
 		
@@ -604,12 +602,10 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		else
 			*h_errnop = NETDB_SUCCESS;
 		
-		free_query_chain(&queries);
-		free_assertion_chain(&assertions);
-		free_result_chain(&results);
+		val_free_result_chain(results);
 		
 		if((ctx == NULL) && context)
-			destroy_context(context);
+			val_free_context(context);
 		
 		// XXX what if error?
 		return 0;

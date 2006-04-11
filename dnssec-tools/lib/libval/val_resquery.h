@@ -10,14 +10,14 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
 			u_int8_t *zone_name, struct rrset_rec *unchecked_zone_info, 
 			struct name_server **pending_glue);
 int extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns);
-void merge_glue_in_referral(struct query_chain *pc, struct query_chain **queries);
+void merge_glue_in_referral(struct val_query_chain *pc, struct val_query_chain **queries);
 int val_resquery_send (	val_context_t           *context,
-                        struct query_chain      *matched_q);
+                        struct val_query_chain      *matched_q);
 int val_resquery_rcv ( 	
 					val_context_t *context,
-					struct query_chain *matched_q,
+					struct val_query_chain *matched_q,
 					struct domain_info **response,
-					struct query_chain **queries);
+					struct val_query_chain **queries);
 
 #define SAVE_RR_TO_LIST(respondent_server, listtype, name_n, type_h, set_type_h,\
 				class_h, ttl_h, rdata, rdata_len_h, from_section, authoritive) \
