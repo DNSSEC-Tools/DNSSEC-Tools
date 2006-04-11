@@ -162,21 +162,21 @@ int extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
 	return NO_ERROR;
 }
 
-void  merge_glue_in_referral(struct query_chain *pc, struct query_chain **queries)
+void  merge_glue_in_referral(struct val_query_chain *pc, struct val_query_chain **queries)
 {
 	int retval;
-	struct query_chain *glueptr = pc->qc_referral->glueptr;
+	struct val_query_chain *glueptr = pc->qc_referral->glueptr;
 	struct name_server *pending_ns;
 
 	/* Check if glue was obtained */
 	if((glueptr->qc_state == Q_ANSWERED) && 
 		(glueptr->qc_as != NULL) && 
-		(glueptr->qc_as->ac_data != NULL)) {
+		(glueptr->qc_as->_as->ac_data != NULL)) {
 
-		if(glueptr->qc_as->ac_data->rrs_type_h != ns_t_a) {
+		if(glueptr->qc_as->_as->ac_data->rrs_type_h != ns_t_a) {
 			pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
 		}
-		else if(NO_ERROR != (retval = extract_glue_from_rdata(glueptr->qc_as->ac_data->rrs_data,
+		else if(NO_ERROR != (retval = extract_glue_from_rdata(glueptr->qc_as->_as->ac_data->rrs_data,
 					&pc->qc_referral->pending_glue_ns))) {
 			glueptr->qc_state = Q_ERROR_BASE+SR_RCV_INTERNAL_ERROR;
 		}
@@ -418,11 +418,11 @@ void free_referral_members(struct delegation_info *del)
 
 static int do_referral(		val_context_t		*context,
 						u_int8_t			*referral_zone_n, 
-						struct query_chain  *matched_q,
+						struct val_query_chain  *matched_q,
                         struct rrset_rec    **answers,
                         struct rrset_rec    **learned_zones,
                         struct qname_chain  **qnames,
-						struct query_chain **queries)
+						struct val_query_chain **queries)
 {
 	struct name_server *ref_ns_list = NULL;
 	struct name_server *pending_glue;
@@ -462,7 +462,7 @@ static int do_referral(		val_context_t		*context,
    	     ref_rrset = ref_rrset->rrs_next;
     }
 
-	/* save qnames to the query_chain structure */
+	/* save qnames to the val_query_chain structure */
 	if(matched_q->qc_referral->qnames==NULL)
 		matched_q->qc_referral->qnames = *qnames;
 	else if(*qnames) {
@@ -551,11 +551,11 @@ debug_name1, debug_name2);
 
 
 static int digest_response (   val_context_t 		*context,
-						struct query_chain *matched_q,
+						struct val_query_chain *matched_q,
 						struct name_server *respondent_server,
                         struct rrset_rec    **answers,
                         struct qname_chain  **qnames,
-						struct query_chain **queries,
+						struct val_query_chain **queries,
                         u_int8_t            *response,
                         u_int32_t           response_length)
 {
@@ -625,9 +625,9 @@ static int digest_response (   val_context_t 		*context,
                                                                                                                           
         /* Determine what part of the response I'm reading */
                                                                                                                           
-        if (i < answer) from_section = SR_FROM_ANSWER;
-        else if (i < answer+authority) from_section = SR_FROM_AUTHORITY;
-        else from_section = SR_FROM_ADDITIONAL;
+        if (i < answer) from_section = VAL_FROM_ANSWER;
+        else if (i < answer+authority) from_section = VAL_FROM_AUTHORITY;
+        else from_section = VAL_FROM_ADDITIONAL;
                                                                                                                           
         /* Response_index points to the beginning of an RR */
         /* Grab the uncompressed name, type, class, ttl, rdata_len */
@@ -654,8 +654,8 @@ static int digest_response (   val_context_t 		*context,
         if (nothing_other_than_cname && (i < answer))
             nothing_other_than_cname = (set_type_h == ns_t_cname);
                                                                                                                           
-        if ( from_section == SR_FROM_ANSWER
-                || (from_section == SR_FROM_AUTHORITY
+        if ( from_section == VAL_FROM_ANSWER
+                || (from_section == VAL_FROM_AUTHORITY
                         && nothing_other_than_cname && 
 							set_type_h != ns_t_ns 
 								&& set_type_h != ns_t_ds))
@@ -686,7 +686,7 @@ static int digest_response (   val_context_t 		*context,
                     return ret_val;
             }
         }
-        else if (from_section != SR_FROM_ADDITIONAL && 
+        else if (from_section != VAL_FROM_ADDITIONAL && 
 					set_type_h == ns_t_ns &&
 						(nothing_other_than_cname || answer == 0))
         {
@@ -715,7 +715,7 @@ static int digest_response (   val_context_t 		*context,
                              class_h, ttl_h, rdata, rdata_len_h, from_section, authoritive); 
 		}
         else if (set_type_h==ns_t_ns || /*set_type_h==ns_t_soa ||*/
-                (set_type_h==ns_t_a && from_section == SR_FROM_ADDITIONAL))
+                (set_type_h==ns_t_a && from_section == VAL_FROM_ADDITIONAL))
         {
             /* This record belongs in the zone_info chain */
 			SAVE_RR_TO_LIST(respondent_server, learned_zones, name_n, type_h, set_type_h,
@@ -787,7 +787,7 @@ static int digest_response (   val_context_t 		*context,
 }
 
 int val_resquery_send (	val_context_t           *context,
-                        struct query_chain      *matched_q)
+                        struct val_query_chain      *matched_q)
 {
 	char name[MAXDNAME];
 	int ret_val;
@@ -825,9 +825,9 @@ int val_resquery_send (	val_context_t           *context,
 
 int val_resquery_rcv ( 	
 					val_context_t *context,
-					struct query_chain *matched_q,
+					struct val_query_chain *matched_q,
 					struct domain_info **response,
-					struct query_chain **queries)
+					struct val_query_chain **queries)
 {
     struct name_server  *server = NULL;
 	u_int8_t			*response_data = NULL;

@@ -26,8 +26,8 @@
  *              name_n -- The domain name.
  *              type_h -- The DNS type.
  *             class_h -- The DNS class.
- *             results -- A linked list of val_result structures returned
- *                        by the validator's resolve_n_check function.
+ *             results -- A linked list of val_result_chain structures returned
+ *                        by the validator's val_resolve_and_check function.
  *            response -- A buffer in which to return the answer.
  *                        This must be pre-allocated by the caller.
  *     response_length -- A pointer to an integer variable that holds the
@@ -42,14 +42,14 @@
 static int compose_merged_answer( const u_char *name_n,
 				  const u_int16_t type_h,
 				  const u_int16_t class_h,
-				  struct val_result *results,
+				  struct val_result_chain *results,
 				  unsigned char *response,
 				  int *response_length,
 				  val_status_t *val_status,
 				  u_int8_t flags )
 {
 	int retval = NO_ERROR;
-	struct val_result *res = NULL;
+	struct val_result_chain *res = NULL;
 	int buflen;
 	int proof = 0;
 	int ancount = 0; // Answer Count
@@ -66,7 +66,7 @@ static int compose_merged_answer( const u_char *name_n,
 
 	buflen = *response_length;
 	*response_length = 0; /* value-result parameter */
-	*val_status = VALIDATE_SUCCESS;
+	*val_status = VAL_SUCCESS;
 
 	/**** Construct the message ****/	
 
@@ -96,7 +96,7 @@ static int compose_merged_answer( const u_char *name_n,
 	hp->qdcount = htons(1);
 	
 	/* Iterate over the results returned by the validator */
-	for (res = results; res; res=res->next) {
+	for (res = results; res; res=res->val_rc_next) {
 		int resplen;
 
 		if ((*response_length) >= buflen) {
@@ -109,12 +109,12 @@ static int compose_merged_answer( const u_char *name_n,
 			goto cleanup;
 		}
 
-		if (res->as) {
-			struct rrset_rec *rrset = res->as->ac_data;
+		if (res->val_rc_trust) {
+			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 			unsigned char *cp, *ep;
 			int *bufindex = NULL;
 
-			if (rrset->rrs_section == SR_FROM_ANSWER) {
+			if (rrset->rrs_section == VAL_FROM_ANSWER) {
 				if (anbuf == NULL) {
 					anbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
 					if (anbuf == NULL) {
@@ -125,7 +125,7 @@ static int compose_merged_answer( const u_char *name_n,
 				ep = anbuf + buflen;
 				bufindex = &anbufindex;
 			}
-			else if (rrset->rrs_section == SR_FROM_AUTHORITY) {
+			else if (rrset->rrs_section == VAL_FROM_AUTHORITY) {
 				if (nsbuf == NULL) {
 					nsbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
 					if (nsbuf == NULL) {
@@ -136,7 +136,7 @@ static int compose_merged_answer( const u_char *name_n,
 				ep = nsbuf + buflen;
 				bufindex = &nsbufindex;
 			}
-			else if (rrset->rrs_section == SR_FROM_ADDITIONAL) {
+			else if (rrset->rrs_section == VAL_FROM_ADDITIONAL) {
 				if (arbuf == NULL) {
 					arbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
 					if (arbuf == NULL) {
@@ -151,8 +151,8 @@ static int compose_merged_answer( const u_char *name_n,
 				continue;
 			}
 
-			if (res->status != VALIDATE_SUCCESS) {
-				*val_status = res->status;
+			if (res->val_rc_status != VAL_SUCCESS) {
+				*val_status = res->val_rc_status;
 			}
 
 			/* Answer/Authority/Additional section */
@@ -187,20 +187,20 @@ static int compose_merged_answer( const u_char *name_n,
 				*bufindex += rr->rr_rdata_length_h;
 
 
-				if (rrset->rrs_section == SR_FROM_ANSWER) {
+				if (rrset->rrs_section == VAL_FROM_ANSWER) {
 					ancount++;
-					if (!val_isauthentic(res->status)) {
+					if (!val_isauthentic(res->val_rc_status)) {
 						an_auth = 0;
 					}
 				}
-				else if (rrset->rrs_section == SR_FROM_AUTHORITY) {
+				else if (rrset->rrs_section == VAL_FROM_AUTHORITY) {
 					nscount++;
-					if (!val_isauthentic(res->status)) {
+					if (!val_isauthentic(res->val_rc_status)) {
 						ns_auth = 0;
 					}
 					proof = 1;
 				}
-				else if (rrset->rrs_section == SR_FROM_ADDITIONAL) {
+				else if (rrset->rrs_section == VAL_FROM_ADDITIONAL) {
 					arcount++;
 				}
 			} // end for each rr
@@ -254,7 +254,7 @@ static int compose_merged_answer( const u_char *name_n,
  * Function: compose_answer
  *
  * Purpose: Convert the results returned by the validator in the form
- *          of a linked list of val_result structures into a linked
+ *          of a linked list of val_result_chain structures into a linked
  *          list of val_response structures, as returned by val_query.
  *          The scope of this function is limited to this file.
  *
@@ -262,8 +262,8 @@ static int compose_merged_answer( const u_char *name_n,
  *              name_n -- The domain name.
  *              type_h -- The DNS type.
  *             class_h -- The DNS class.
- *             results -- A linked list of val_result structures returned
- *                        by the validator's resolve_n_check function.
+ *             results -- A linked list of val_result_chain structures returned
+ *                        by the validator's val_resolve_and_check function.
  *                resp -- An array of val_response structures in which to
  *                        return the answer.  This must be pre-allocated
  *                        by the caller.
@@ -282,13 +282,13 @@ static int compose_merged_answer( const u_char *name_n,
 static int compose_answer( const u_char *name_n,
 			const u_int16_t type_h,
 			const u_int16_t class_h,
-			struct val_result *results,
+			struct val_result_chain *results,
 			struct val_response *resp,
 			int *resp_count,
 			u_int8_t flags)
 {
 
-	struct val_result *res = results;
+	struct val_result_chain *res = results;
 	int res_count = *resp_count;
 	int proof = 0;
 
@@ -308,7 +308,7 @@ static int compose_answer( const u_char *name_n,
 	*resp_count = 0; /* value-result parameter */
 
 	/* Iterate over the results returned by the validator */
-	for (res = results; res; res=res->next) {
+	for (res = results; res; res=res->val_rc_next) {
 		unsigned char *cp, *ep;
 		int resplen;
 
@@ -318,12 +318,12 @@ static int compose_answer( const u_char *name_n,
 				return NO_ERROR;
 
 			/* Return the total count in resp_count */ 
-			for (;res; res=res->next)
+			for (;res; res=res->val_rc_next)
 				(*resp_count)++;
 			return NO_SPACE;
 		}
 
-		resp[*resp_count].val_status = res->status;
+		resp[*resp_count].val_status = res->val_rc_status;
 		cp = resp[*resp_count].response;
 		resplen = resp[*resp_count].response_length;
 
@@ -331,10 +331,10 @@ static int compose_answer( const u_char *name_n,
 			return BAD_ARGUMENT;
 		ep = cp + resplen;
 
-		if (res->as) {
+		if (res->val_rc_trust) {
 			/* Construct the message */
 
-			struct rrset_rec *rrset = res->as->ac_data;
+			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 			HEADER *hp = (HEADER *)cp; 
 			if (cp + sizeof(HEADER) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
 			bzero(hp, sizeof(HEADER));
@@ -383,16 +383,16 @@ static int compose_answer( const u_char *name_n,
 				anscount++;
 			}
 
-			if (rrset->rrs_section == SR_FROM_ANSWER) {
+			if (rrset->rrs_section == VAL_FROM_ANSWER) {
 				hp->ancount = htons(anscount);
 			}
-			else if (rrset->rrs_section == SR_FROM_AUTHORITY) {
+			else if (rrset->rrs_section == VAL_FROM_AUTHORITY) {
 				proof = 1;
 				hp->nscount = htons(anscount);
 			}
 
 			/* Set the AD bit if all RRSets in the Answer and Authority sections are authentic */
-			if (val_isauthentic(res->status)) {
+			if (val_isauthentic(res->val_rc_status)) {
 				hp->ad = 1;
 			}
 			else {
@@ -435,8 +435,8 @@ static int compose_answer( const u_char *name_n,
  *			on the resolver is detected 
  * At present only one flag is implemented VAL_QUERY_MERGE_RRSETS.  When this flag
  * is specified, val_query will merge the RRSETs into a single response message.
- * The validation status in this case will be VALIDATE_SUCCESS only if all the
- * individual RRSETs have the VALIDATE_SUCCESS status.  Otherwise, the status
+ * The validation status in this case will be VAL_SUCCESS only if all the
+ * individual RRSETs have the VAL_SUCCESS status.  Otherwise, the status
  * will be one of the other error codes.
  * resp -- An array of val_response structures used to return the result.
  * This val_response array must be large enough to 
@@ -464,15 +464,13 @@ int val_query ( const val_context_t *ctx,
 		struct val_response *resp,
 		int *resp_count )
 {
-	struct query_chain *queries = NULL;	
-	struct assertion_chain *assertions = NULL;
-	struct val_result *results = NULL;
+	struct val_result_chain *results = NULL;
 	int retval;
 	val_context_t *context;
 	u_char name_n[MAXCDNAME];
 
 	if(ctx == NULL) {
-		if(NO_ERROR !=(retval = get_context(NULL, &context)))
+		if(NO_ERROR !=(retval = val_get_context(NULL, &context)))
 			return retval;
 	}
 	else	
@@ -483,24 +481,24 @@ int val_query ( const val_context_t *ctx,
 
 	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1) {
 		if((ctx == NULL)&& context)
-			destroy_context(context);
+			val_free_context(context);
 		return (BAD_ARGUMENT);
 	}
 
 	/* Query the validator */
-	if(NO_ERROR == (retval = resolve_n_check(context, name_n, type, class, flags, 
-											&queries, &assertions, &results))) {
+	if(NO_ERROR == (retval = val_resolve_and_check(context, name_n, class, type, flags, 
+											&results))) {
 		/* Construct the answer response in resp */
 		retval = compose_answer(name_n, type, class, results, resp, resp_count, flags);
 
 /*
-		struct val_result *res = results;
+		struct val_result_chain *res = results;
 
 		val_log(context, LOG_DEBUG, "\nRESULT OF VALIDATION :\n");
 		
 		for (res = results; res; res=res->next) {
 			if(res->as) {
-				val_log_rrset(context, LOG_DEBUG, res->as->ac_data);
+				val_log_rrset(context, LOG_DEBUG, res->as->_as->ac_data);
 			}
 			
 			val_log (context, LOG_DEBUG, "Validation status = %d\n\n\n", res->status);
@@ -508,15 +506,12 @@ int val_query ( const val_context_t *ctx,
 */
 	}
 
-	val_log_assertion_chain(context, LOG_DEBUG, name_n, class, type, queries, results);
+	val_log_assertion_chain(context, LOG_DEBUG, name_n, class, type, context->q_list, results);
 
-	/* XXX De-register pending queries */
-	free_query_chain(&queries);
-	free_assertion_chain(&assertions);
-	free_result_chain(&results);
+	val_free_result_chain(results);
 
 	if((ctx == NULL)&& context)
-		destroy_context(context);
+		val_free_context(context);
 
 //	free_validator_cache();
 
