@@ -367,13 +367,13 @@ int init_rr_set (   struct rrset_rec    *new_set,
     new_set->rrs_next = NULL;
                                                                                                                           
     /* Set the credibility */
-   if (from_section==SR_FROM_ANSWER)
+   if (from_section==VAL_FROM_ANSWER)
         new_set->rrs_cred = authoritive_answer?
                                 SR_CRED_AUTH_ANS:SR_CRED_NONAUTH_ANS;
-    else if (from_section==SR_FROM_AUTHORITY)
+    else if (from_section==VAL_FROM_AUTHORITY)
         new_set->rrs_cred = authoritive_answer?
                                 SR_CRED_AUTH_AUTH:SR_CRED_NONAUTH_AUTH;
-    else if (from_section==SR_FROM_ADDITIONAL)
+    else if (from_section==VAL_FROM_ADDITIONAL)
         new_set->rrs_cred = authoritive_answer?
                                 SR_CRED_AUTH_ADD:SR_CRED_NONAUTH_ADD;
     else
@@ -533,7 +533,7 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
     (*answers)->rrs_class_h = query_class_h;
     (*answers)->rrs_ttl_h = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
-    (*answers)->rrs_section = SR_FROM_UNSET;
+    (*answers)->rrs_section = VAL_FROM_UNSET;
     (*answers)->rrs_data = NULL;
     (*answers)->rrs_sig = NULL;
     (*answers)->rrs_next = NULL;
