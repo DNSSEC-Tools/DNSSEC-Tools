@@ -148,14 +148,29 @@ static char *get_ns_string(struct name_server **server)
 	else\
 		serv_pr = "NULL";\
 	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s:%d",\
+		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_as_error(status), status);\
+} while (0)		
+
+#define VAL_LOG_RESULT(name_n, class_h, type_h, serv, status) do {\
+	char name[MAXDNAME]; \
+	char *name_pr, *serv_pr;\
+	if(ns_name_ntop(name_n, name, MAXDNAME-1) != -1) \
+		name_pr = name;\
+	else\
+		name_pr = "ERR_NAME";\
+	if(serv)\
+		serv_pr = ((serv_pr = get_ns_string(&(serv))) == NULL)?"VAL_CACHE":serv_pr;\
+	else\
+		serv_pr = "NULL";\
+	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s:%d",\
 		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_val_error(status), status);\
 } while (0)		
 
 void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
-				struct query_chain *queries, struct val_result *results)
+				struct val_query_chain *queries, struct val_result_chain *results)
 {
-	struct val_result *next_result;
-	struct query_chain *top_q = NULL;
+	struct val_result_chain *next_result;
+	struct val_query_chain *top_q = NULL;
 
 	/* Search for the "main" query */
 	for (top_q = queries; top_q; top_q=top_q->qc_next) {
@@ -165,28 +180,28 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 				break;
 	}
 
-	for (next_result = results; next_result; next_result = next_result->next) {
-		struct assertion_chain *next_as;
-		next_as = next_result->as;
+	for (next_result = results; next_result; next_result = next_result->val_rc_next) {
+		struct val_assertion_chain *next_as;
+		next_as = next_result->val_rc_trust;
 
 		if(top_q != NULL) {
 
-			VAL_LOG_ASSERTION(top_q->qc_name_n, top_q->qc_class_h, top_q->qc_type_h, 
-					top_q->qc_respondent_server, next_result->status);
+			VAL_LOG_RESULT(top_q->qc_name_n, top_q->qc_class_h, top_q->qc_type_h, 
+					top_q->qc_respondent_server, next_result->val_rc_status);
 			val_log(ctx, level, "Query Status = %s[%d]", 
 					p_query_error(top_q->qc_state), top_q->qc_state);
 		}
 
-		for (next_as = next_result->as; next_as; next_as = next_as->ac_trust) {
+		for (next_as = next_result->val_rc_trust; next_as; next_as = next_as->val_ac_trust) {
 			u_char *t_name_n;
-			if(next_as->ac_data == NULL)
+			if(next_as->_as->ac_data == NULL)
 				t_name_n = "NULL_DATA";
 			else
-				t_name_n = next_as->ac_data->rrs_name_n;
+				t_name_n = next_as->_as->ac_data->rrs_name_n;
 
-			VAL_LOG_ASSERTION(t_name_n, next_as->ac_data->rrs_class_h,
-					next_as->ac_data->rrs_type_h, next_as->ac_data->rrs_respondent_server, 
-					next_as->ac_state);
+			VAL_LOG_ASSERTION(t_name_n, next_as->_as->ac_data->rrs_class_h,
+					next_as->_as->ac_data->rrs_type_h, next_as->_as->ac_data->rrs_respondent_server, 
+					next_as->val_ac_status);
 		}
 	}
 }
@@ -235,7 +250,7 @@ char *p_query_error(int err)
 	return "UNKNOWN";
 }
 
-char *p_val_error(int err)
+char *p_as_error(int err)
 {
     switch (err) {
                                                                                                                              
@@ -289,20 +304,7 @@ char *p_val_error(int err)
     case TRUST_KEY: return "TRUST_KEY"; break;
     case TRUST_ZONE: return "TRUST_ZONE"; break;
     case BARE_RRSIG: return "BARE_RRSIG"; break;
-    case VALIDATE_SUCCESS: return "VALIDATE_SUCCESS"; break;
-                                                                                                                             
-    case BOGUS_PROVABLE: return "BOGUS_PROVABLE"; break;
-    case BOGUS_UNPROVABLE: return "BOGUS_UNPROVABLE"; break;
-    case VALIDATION_ERROR: return "VALIDATION_ERROR"; break;
-    case NONEXISTENT_NAME: return "NONEXISTENT_NAME"; break;
-    case NONEXISTENT_TYPE: return "NONEXISTENT_TYPE"; break;
-    case INCOMPLETE_PROOF: return "INCOMPLETE_PROOF"; break;
-    case BOGUS_PROOF: return "BOGUS_PROOF"; break;
-    case INDETERMINATE_DS: return "INDETERMINATE_DS"; break;
-    case INDETERMINATE_PROOF: return "INDETERMINATE_PROOF"; break;
-    case INDETERMINATE_ERROR: return "INDETERMINATE_ERROR"; break;
-    case INDETERMINATE_TRUST: return "INDETERMINATE_TRUST"; break;
-    case INDETERMINATE_ZONE: return "INDETERMINATE_ZONE"; break;
+
     /*
     case UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
     case CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
@@ -326,7 +328,44 @@ char *p_val_error(int err)
     }
 }
 
+char *p_val_error(int err)
+{
+    switch (err) {
 
+		case R_DONT_KNOW: 
+		case R_TRUST_FLAG|R_DONT_KNOW: 
+					return "Uninitialized"; break;
+		case VAL_INDETERMINATE:
+		case R_TRUST_FLAG|VAL_INDETERMINATE:
+					return "VAL_INDETERMINATE"; break;
+		case VAL_BOGUS: 
+		case R_TRUST_FLAG|VAL_BOGUS:
+					return "VAL_BOGUS"; break;
+		case VAL_LOCAL_ANSWER: 
+		case R_TRUST_FLAG|VAL_LOCAL_ANSWER: 
+					return "VAL_LOCAL_ANSWER"; break;
+		case VAL_BARE_RRSIG: 
+		case R_TRUST_FLAG|VAL_BARE_RRSIG: 
+					return "VAL_BARE_RRSIG"; break;
+		case VAL_NONEXISTENT_NAME: 
+		case R_TRUST_FLAG|VAL_NONEXISTENT_NAME: 
+					return "VAL_NONEXISTENT_NAME"; break;
+		case VAL_NONEXISTENT_TYPE: 
+		case R_TRUST_FLAG|VAL_NONEXISTENT_TYPE: 
+					return "VAL_NONEXISTENT_TYPE"; break;
+		case VAL_ERROR: 
+		case R_TRUST_FLAG|VAL_ERROR: 
+					return "VAL_ERROR"; break;
+		case VAL_PROVABLY_UNSECURE: 
+		case R_TRUST_FLAG|VAL_PROVABLY_UNSECURE: 
+					return "VAL_PROVABLY_UNSECURE"; break;
+
+		case VAL_SUCCESS: 
+					return "VAL_SUCCESS"; break;
+    	default:
+            return "Unknown Error Value";
+	}                                                                                                                             
+}
 
 #ifdef LOG_TO_NETWORK
 int send_log_message(char *buffer)
@@ -365,6 +404,8 @@ void val_log (const val_context_t *ctx, int level, const char *template, ...)
 	openlog(id_buf, LOG_PERROR, LOG_USER);
 	va_start (ap, template);
 	vsyslog(LOG_USER|level, template, ap);
+	va_end (ap);
+	va_start (ap, template);
 	vsnprintf(buf, 1024, template, ap);
 	va_end (ap);
 
