@@ -14,8 +14,9 @@
 #include <validator.h>
 #include "val_support.h"
 #include "val_policy.h"
+#include "val_assertion.h"
 
-int get_context(char *label, val_context_t **newcontext)
+int val_get_context(char *label, val_context_t **newcontext)
 {
 	int retval;
 
@@ -23,16 +24,19 @@ int get_context(char *label, val_context_t **newcontext)
 	if (*newcontext == NULL)
 		return OUT_OF_MEMORY;
 
+    (*newcontext)->q_list = NULL;
+	(*newcontext)->a_list = NULL;
+
 	if(snprintf((*newcontext)->id, VAL_CTX_IDLEN-1, "%u", (unsigned)(*newcontext)) < 0)
 		strcpy((*newcontext)->id, "libval");
 
-	/* Read the Resolver configuration file */	
-	if ((retval = read_res_config_file(*newcontext)) != NO_ERROR) {
+	if ((retval = read_root_hints_file(*newcontext)) != NO_ERROR) {
 		FREE (*newcontext);
 		return retval;
 	}
 
-	if ((retval = read_root_hints_file(*newcontext)) != NO_ERROR) {
+	/* Read the Resolver configuration file */	
+	if ((retval = read_res_config_file(*newcontext)) != NO_ERROR) {
 		FREE (*newcontext);
 		return retval;
 	}
@@ -49,18 +53,22 @@ int get_context(char *label, val_context_t **newcontext)
 	/* Over-ride with the first policy that we find in our list*/
 	OVERRIDE_POLICY(*newcontext, (*newcontext)->pol_overrides); 
 
+
 	return NO_ERROR;
 
 }
 
 
-void destroy_context(val_context_t *context)
+void val_free_context(val_context_t *context)
 {
 	if(context == NULL)
 		return;
 
 	destroy_respol(context);
 	destroy_valpol(context);
+
+	free_query_chain(context->q_list);
+	free_assertion_chain(context->a_list);
 
 	FREE(context);
 }
@@ -70,7 +78,7 @@ void destroy_context(val_context_t *context)
  * of labels. When doing the override, we must use all policy
  * fragments that are "relevant"
  */
-int switch_effective_policy(val_context_t *ctx, char *label)
+int val_switch_policy_scope(val_context_t *ctx, char *label)
 {
 	struct policy_overrides *cur, *t;
 	int retval;

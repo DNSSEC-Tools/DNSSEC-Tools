@@ -356,13 +356,13 @@ static int get_addrinfo_from_etc_hosts (
  * Function: get_addrinfo_from_result
  *
  * Purpose: Converts the result value from the validator (which is
- *          in the form of a linked list of val_result structures)
+ *          in the form of a linked list of val_result_chain structures)
  *          into a liked list of val_addrinfo structures.
  *          The scope of this function is limited to this file.
  *
  * Parameters:
  *              ctx -- The validation context.
- *          results -- The results obtained from the resolve_n_check
+ *          results -- The results obtained from the val_resolve_and_check
  *                     method in the validator API.
  *         servname -- The service name.  Can be NULL.
  *            hints -- Hints that influence the returned results.  Can be NULL.
@@ -376,7 +376,7 @@ static int get_addrinfo_from_etc_hosts (
  */
 static int get_addrinfo_from_result (
 				    const val_context_t *ctx,
-				    struct val_result *results,
+				    struct val_result_chain *results,
 				    int val_status,
 				    const char *servname,
 				    const struct addrinfo *hints,
@@ -393,10 +393,10 @@ static int get_addrinfo_from_result (
 		val_log(ctx, LOG_DEBUG, "rrset is null");
 	}
 	
-	struct val_result *result;
-	/* Loop for each result in the linked list of val_result structures */
-	for (result = results; result != NULL; result = result->next) {
-	    struct rrset_rec *rrset = result->as->ac_data;
+	struct val_result_chain *result;
+	/* Loop for each result in the linked list of val_result_chain structures */
+	for (result = results; result != NULL; result = result->val_rc_next) {
+	    struct rrset_rec *rrset = result->val_rc_trust->_as->ac_data;
 
 	    /* Loop for each rrset in the linked list of rrset_rec structures */
 	    while (rrset != NULL) {
@@ -510,9 +510,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 				  const struct addrinfo *hints,
 				  struct val_addrinfo **res)
 {
-	struct query_chain *queries = NULL;
-	struct assertion_chain *assertions = NULL;
-	struct val_result *results = NULL;
+	struct val_result_chain *results = NULL;
 	struct val_addrinfo *ainfo = NULL;
 	u_char name_n[MAXCDNAME];
 	int retval = 0;
@@ -527,9 +525,9 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		
 		/* Query the validator */
 		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
-			if ((retval = resolve_n_check((val_context_t *)ctx, name_n, ns_t_a, ns_c_in, 0,
-						      &queries, &assertions, &results)) != NO_ERROR) {
-				val_log(ctx, LOG_DEBUG, "resolve_n_check failed");
+			if ((retval = val_resolve_and_check((val_context_t *)ctx, name_n, ns_c_in, ns_t_a, 0,
+						      &results)) != NO_ERROR) {
+				val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
 			}
 		}
 		else {
@@ -537,9 +535,9 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		}
 		
 		/* Convert the validator result into val_addrinfo */
-		if (results && results->as && retval == NO_ERROR) {
+		if (results && results->val_rc_trust && retval == NO_ERROR) {
 			struct val_addrinfo *ainfo_new = NULL;
-			ret = get_addrinfo_from_result (ctx, results, results->status,
+			ret = get_addrinfo_from_result (ctx, results, results->val_rc_status,
 						       servname, hints, &ainfo_new);
 			if (ainfo_new) {
 				val_log(ctx, LOG_DEBUG, "A records found");
@@ -549,9 +547,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 				val_log(ctx, LOG_DEBUG, "A records not found");
 			}
 		}
-		free_query_chain(&queries); queries = NULL;
-		free_assertion_chain(&assertions); assertions = NULL;
-		free_result_chain(&results); results = NULL;
+		val_free_result_chain(results); results = NULL;
 		if (ret == EAI_SERVICE) {
 			if (ainfo) free_val_addrinfo(ainfo);
 
@@ -566,9 +562,9 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		
 		/* Query the validator */
 		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
-			if ((retval = resolve_n_check((val_context_t *)ctx, name_n, ns_t_aaaa, ns_c_in, 0,
-						      &queries, &assertions, &results)) != NO_ERROR) {
-				val_log(ctx, LOG_DEBUG, "resolve_n_check failed");
+			if ((retval = val_resolve_and_check((val_context_t *)ctx, name_n, ns_c_in, ns_t_aaaa, 0,
+						      &results)) != NO_ERROR) {
+				val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
 			}
 		}
 		else {
@@ -576,9 +572,9 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		}
 		
 		/* Convert the validator result into val_addrinfo */
-		if (results && results->as && retval == NO_ERROR) {
+		if (results && results->val_rc_trust && retval == NO_ERROR) {
 			struct val_addrinfo *ainfo_new = NULL;
-			ret = get_addrinfo_from_result (ctx, results, results->status,
+			ret = get_addrinfo_from_result (ctx, results, results->val_rc_status,
 						       servname, hints, &ainfo_new);
 			if (ainfo_new) {
 				val_log(ctx, LOG_DEBUG, "AAAA records found");
@@ -588,9 +584,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 				val_log(ctx, LOG_DEBUG, "AAAA records not found");
 			}
 		}
-		free_query_chain(&queries); queries = NULL;
-		free_assertion_chain(&assertions); assertions = NULL;
-		free_result_chain(&results); results = NULL;
+		val_free_result_chain(results); results = NULL;
 		if (ret == EAI_SERVICE) {
 			if (ainfo) free_val_addrinfo(ainfo);
 	
@@ -646,7 +640,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 	val_context_t *context = NULL;
 
 	if (ctx == NULL)
-		get_context(NULL, &context);
+		val_get_context(NULL, &context);
 	else
 		context = (val_context_t *) ctx;
 	
@@ -784,7 +778,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 
 done:
 	if((ctx == NULL) && context)
-		destroy_context(context);
+		val_free_context(context);
 	return retval;
 
 } /* val_getaddrinfo() */

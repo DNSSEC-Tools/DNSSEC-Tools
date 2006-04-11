@@ -19,6 +19,6 @@ typedef int val_result_t;
 /*
  * The Verifier Function.
  */
-void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as);
+void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as);
 
 #endif
