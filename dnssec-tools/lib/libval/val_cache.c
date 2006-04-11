@@ -210,7 +210,7 @@ int stow_root_info(struct rrset_rec *root_info)
 	struct name_server *pending_glue = NULL;
 	int retval;
 	u_char root_zone_n[MAXCDNAME];
-	char *root_zone = "root-servers.net.";
+	char *root_zone = ".";
 
    	if (ns_name_pton(root_zone, root_zone_n, MAXCDNAME-1) == -1)
     	return CONF_PARSE_ERROR; 
