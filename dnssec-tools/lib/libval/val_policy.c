@@ -382,7 +382,7 @@ static int get_token ( FILE *conf_ptr,
 				char comment_c,
 				char endstmt_c)
 {
-	char        c;
+	int        c;
 	int         i = 0;
 	int         escaped = 0;
 	int         quoted = 0;
@@ -821,10 +821,17 @@ int read_res_config_file(val_context_t *ctx)
 		}
 	}
 
-	ctx->nslist = ns_head;
-
 	flock(fd, LOCK_UN);
 	close(fd);
+
+	if (ns_head == NULL) {
+		get_root_ns(&ns_head);
+		if(ns_head == NULL) 
+			return NO_POLICY;
+	}
+
+	ctx->nslist = ns_head;
+
 	return NO_ERROR;
 
 err:
@@ -911,7 +918,7 @@ int read_root_hints_file(val_context_t *ctx)
 		else 
 			continue;
 
-		SAVE_RR_TO_LIST(NULL, root_info, zone_n, type_h, type_h, ns_c_in, ttl_h, rdata_n, rdata_len_h, SR_FROM_UNSET, 0); 
+		SAVE_RR_TO_LIST(NULL, root_info, zone_n, type_h, type_h, ns_c_in, ttl_h, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0); 
 
 		/* name */
 		if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
