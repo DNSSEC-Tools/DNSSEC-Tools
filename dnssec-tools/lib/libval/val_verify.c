@@ -449,7 +449,7 @@ static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *pub
 }
 
 /*
- * State returned in as->ac_state is one of:
+ * State returned in as->val_ac_status is one of:
  * VERIFIED : at least one sig passed
  * A_NOT_VERIFIED : multiple errors
  * the exact error
@@ -468,7 +468,7 @@ static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *pub
 // XXX WRONG_RRSIG_OWNER
 // XXX RRSIG_ALGO_MISMATCH
 // XXX KEYTAG_MISMATCH
-void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
+void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 {
 	struct rrset_rec *the_set;
 	struct rr_rec   *the_sig;
@@ -476,13 +476,13 @@ void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
 	u_int16_t       signby_footprint_n;
 	val_dnskey_rdata_t dnskey;
 	int             is_a_wildcard;
-	struct assertion_chain *the_trust;
+	struct val_assertion_chain *the_trust;
 	int retval;
 
-	as->ac_state = VERIFIED;
+	as->val_ac_status = VERIFIED;
 
-	the_set = as->ac_data;
-	the_trust = as->ac_trust;
+	the_set = as->_as->ac_data;
+	the_trust = as->val_ac_trust;
 	for (the_sig = the_set->rrs_sig;the_sig;the_sig = the_sig->rr_next) {
 
 		/* for each sig, identify key, */ 
@@ -491,9 +491,9 @@ void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
 		if(the_set->rrs_type_h != ns_t_dnskey) {
 			/* trust path contains the key */
 			if(NO_ERROR != (retval = 
-				find_key_for_tag (the_trust->ac_data->rrs_data, 
+				find_key_for_tag (the_trust->_as->ac_data->rrs_data, 
 					&signby_footprint_n, &dnskey))) {
-				SET_STATUS(as->ac_state, the_sig, DNSKEY_NOMATCH);
+				SET_STATUS(as->val_ac_status, the_sig, DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
 				continue;
@@ -502,7 +502,7 @@ void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
 		else {
 			/* data itself contains the key */
 			if(NO_ERROR != (retval = find_key_for_tag (the_set->rrs_data, &signby_footprint_n, &dnskey))) {
-				SET_STATUS(as->ac_state, the_sig, DNSKEY_NOMATCH);
+				SET_STATUS(as->val_ac_status, the_sig, DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
 				continue;
@@ -511,14 +511,14 @@ void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
 
 		/* do wildcard processing */
 		if(check_label_count (the_set, the_sig, &is_a_wildcard) != NO_ERROR) {
-			SET_STATUS(as->ac_state, the_sig, WRONG_LABEL_COUNT);
+			SET_STATUS(as->val_ac_status, the_sig, WRONG_LABEL_COUNT);
 			FREE(dnskey.public_key);
 			continue;
 		}
 
 		/* and check the signature */
 		if(NO_ERROR != (retval = do_verify(ctx, &the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard))) {
-			SET_STATUS(as->ac_state, the_sig, retval);
+			SET_STATUS(as->val_ac_status, the_sig, retval);
 			FREE(dnskey.public_key);
 			continue;
 		}
@@ -529,7 +529,7 @@ void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
 		if(the_sig->status == RRSIG_VERIFIED) {
 			if (the_set->rrs_type_h == ns_t_dnskey) {
 				/* follow the trust path */
-				struct rr_rec *dsrec = the_trust->ac_data->rrs_data;		
+				struct rr_rec *dsrec = the_trust->_as->ac_data->rrs_data;		
 				while(dsrec)	
 				{	
 					val_ds_rdata_t ds;
@@ -553,11 +553,11 @@ void verify_next_assertion(val_context_t *ctx, struct assertion_chain *as)
 				}
 
 				if(!dsrec)
-					SET_STATUS(as->ac_state, the_sig, SECURITY_LAME);
+					SET_STATUS(as->val_ac_status, the_sig, SECURITY_LAME);
 			}
 		}
 		else
-			SET_STATUS(as->ac_state, the_sig, the_sig->status);
+			SET_STATUS(as->val_ac_status, the_sig, the_sig->status);
 
 	}
 }
