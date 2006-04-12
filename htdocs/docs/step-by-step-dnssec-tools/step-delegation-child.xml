@@ -31,13 +31,13 @@
     linkend="step-zone-resign" />.</para>
 
     <para><prompt>$</prompt> <command>dig <option>@server-IP-address</option>
-    <option>SOA</option> <option>zone-name</option></command>
+    <option>DS</option> <option>zone-name</option></command>
     <userinput>[ENTER]</userinput></para>
 
     <para><computeroutput>; &lt;&lt;&gt;&gt; DiG 9.3.0 &lt;&lt;&gt;&gt; ...
     ... ;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 0
-    ... ;;ANSWER SECTION zone-name 3600 IN SOA servername contact ( 2005092101
-    ; This should be the most recent value. ; This value will most likely be
-    different in your zone file. ... ) ...</computeroutput></para>
+    ... ;;ANSWER SECTION: zone-name 600 IN DS 12960 5 1 5B10E822B935BC64DBEC2872A553EAA290443064
+    ; This value must match the data in your dsset-zone-name file.
+    </computeroutput></para>
   </section>
 </chapter>
