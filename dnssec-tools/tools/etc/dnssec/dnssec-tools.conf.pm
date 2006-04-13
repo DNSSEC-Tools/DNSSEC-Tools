@@ -195,7 +195,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     # Settings for rollover-manager.
     #
-    roll_logfile    w-roll-log
+    roll_logfile    /usr/local/etc/dnssec/rollerd
     roll_loglevel   info
     roll_sleeptime  60
 
