@@ -308,7 +308,7 @@ Index: src/libspf2/spf_strerror.c
 Index: src/libspf2/spf_dns_resolv.c
 ===================================================================
 --- src/libspf2/spf_dns_resolv.c	2005-06-03 12:46:00.000000000 -0400
-+++ src/libspf2/spf_dns_resolv.c	2006-02-09 10:28:13.000000000 -0500
++++ src/libspf2/spf_dns_resolv.c	2006-04-13 13:16:00.000000000 -0400
 @@ -45,6 +45,10 @@
  # include <pthread.h>
  #endif
@@ -413,7 +413,7 @@ Index: src/libspf2/spf_dns_resolv.c
  							domain, rr_type, should_cache);
  		}
 +#ifdef SUPPORT_DNSSEC
-+		if ( spfhook->dodnssec && ( dnssec_status != VALIDATE_SUCCESS ) ) {
++		if ( spfhook->dodnssec && ( dnssec_status != VAL_SUCCESS ) ) {
 +			if ( h_errno == NETDB_SUCCESS ) {
 +				h_errno = DNSSEC_FAILURE;
 +			}
@@ -430,7 +430,7 @@ Index: src/libspf2/spf_dns_resolv.c
       * initialize stuff
       */
 +#ifdef SUPPORT_DNSSEC
-+	if ( spfhook->dodnssec && ( dnssec_status != VALIDATE_SUCCESS ) ) {
++	if ( spfhook->dodnssec && ( dnssec_status != VAL_SUCCESS ) ) {
 +		if ( h_errno == NETDB_SUCCESS ) {
 +			h_errno = DNSSEC_FAILURE;
 +		}
@@ -447,7 +447,7 @@ Index: src/libspf2/spf_dns_resolv.c
  		spfrr->herrno = NO_DATA;
  
 +#ifdef SUPPORT_DNSSEC
-+    if ( spfhook->dodnssec && ( dnssec_status != VALIDATE_SUCCESS ) ) {
++    if ( spfhook->dodnssec && ( dnssec_status != VAL_SUCCESS ) ) {
 +	    if ( spfrr->herrno == NETDB_SUCCESS ) {
 +		    spfrr->herrno = DNSSEC_FAILURE;
 +	    }
