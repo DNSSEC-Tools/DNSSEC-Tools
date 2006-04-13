@@ -26,14 +26,18 @@ my %defaults =
 (
 	"bind_checkzone" => "/usr/local/sbin/named-checkzone",
 	"bind_keygen"	 => "/usr/local/sbin/dnssec-keygen",
+	"bind_rndc"	 => "/usr/local/sbin/rndc",
 	"bind_signzone"	 => "/usr/local/sbin/dnssec-signzone",
 
+	"rollrec_check"	 => "/usr/bin/rollrec_check",
 	"viewimage"	 => "/usr/X11R6/bin/viewimage",
 
 	"algorithm"	 => "rsasha1",		# Encryption algorithm.
 	"enddate"	 => "+2592000",		# Zone life, in seconds.
 	"ksklength"	 => 2048,		# Length of KSK key.
 	"ksklife"	 => 15768000,		# Lifespan of KSK key.
+	"lifespan-max"	 => 94608000,		# Maximum key lifespan.
+	"lifespan-min"	 => 3600,		# Maximum key lifespan.
 	"random"	 => "/dev/urandom",	# Random no. generator device.
 	"zsklength"	 => 1024,		# Length of ZSK key.
 	"zsklife"	 => 604800,		# Lifespan of ZSK key.
@@ -48,12 +52,16 @@ my @defnames =
 	"algorithm",
 	"bind_checkzone",
 	"bind_keygen",
+	"bind_rndc",
 	"bind_signzone",
 	"enddate",
 	"entropy_msg",
 	"ksklength",
 	"ksklife",
+	"lifespan-max",
+	"lifespan-min",
 	"random",
+	"rollrec_check",
 	"savekeys",
 	"usegui",
 	"viewimage",
@@ -152,6 +160,10 @@ This default holds the path to the I<named-checkzone> BIND program.
 
 This default holds the path to the I<dnssec-keygen> BIND program.
 
+=item B<bind_rndc>
+
+This default holds the path to the I<rndc> BIND program.
+
 =item B<bind_signzone>
 
 This default holds the path to the I<dnssec-signzone> BIND program.
@@ -175,9 +187,25 @@ This default holds the default lifespan of the KSK key.  This is only used
 for determining when to roll-over the KSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
 
+=item B<lifespan-max>
+
+This default holds the maximum lifespan of a key.  This is only used for
+determining when key roll-over should take place.  Keys otherwise have no
+concept of a lifespan.  This is measured in seconds.
+
+=item B<lifespan-min>
+
+This default holds the minimum lifespan of a key.  This is only used for
+determining when key roll-over should take place.  Keys otherwise have no
+concept of a lifespan.  This is measured in seconds.
+
 =item B<random>
 
 This default holds the default random number generator device.
+
+=item B<rollrec_check>
+
+This default holds the path to the DNSSEC-Tools I<rollrec-check> command.
 
 =item B<savekeys>
 
@@ -217,6 +245,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 =head1 SEE ALSO
 
 B<genkrf(8)>,
+B<rollerd(8)>,
+B<rollrec_check(8)>,
 B<zonesigner(8)>
 
 =cut
