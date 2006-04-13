@@ -14,6 +14,9 @@ pod man page which may be consulted for details.
 	conf.pm
 		Parses the DNSSEC-Tools configuration file.
 
+	defaults.pm
+		Contains default values for DNSSEC-Tools programs.
+
 	keyrec.pm
 		Manages a DNSSEC-Tools keyrec file.  Keyrec files maintain
 		meta-information about DNSSEC-signed DNS zones.
@@ -33,8 +36,12 @@ pod man page which may be consulted for details.
 		DO NOT USE.  This isn't even in a pre-alpha state.  This is
 		in a primordial state.
 
+	timetrans.pm
+		Converts an integer seconds count into equivalent text units.
+
 	tooloptions.pm
 		Parses command line options, and combines them with the
 		DNSSEC-Tools configuration file data and keyrec files to
 		determine the final set of options values to be used by
 		DNSSEC-Tools programs.
+
