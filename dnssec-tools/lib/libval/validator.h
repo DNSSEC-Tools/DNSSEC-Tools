@@ -425,5 +425,42 @@ int val_getaddrinfo ( const val_context_t *ctx,
  */
 void free_val_addrinfo (struct val_addrinfo *ainfo);
 
+#if 0
+/* The following three functions are to be implemented to
+ * conform to version 00 of the validator draft
+ */
+/* A DNSSEC-aware function to perform address to name translation
+ */
+struct hostent *val_gethostbyaddr( const val_context_t *ctx,
+                                   const char          *addr,
+                                   int                 len,
+                                   int                 type,
+                                   val_status_t        *val_status );
+
+/* A thread-safe, re-entrant version of val_gethostbyaddr */
+int val_gethostbyaddr_r( const val_context_t *ctx,
+                         const char          *addr,
+                         int                 len,
+                         int                 type,
+                         struct hostent      *ret,
+                         char                *buf,
+                         int                 buflen,
+                         struct hostent      **result,
+                         int                 *h_errnop,
+                         val_status_t        *val_status );
+
+/* An address-to-name and service translation function */
+int val_getnameinfo( const val_context_t   *ctx,
+                     const struct sockaddr *sa,
+                     socklen_t             salen,
+                     char                  *host,
+                     size_t                hostlen,
+                     char                  *serv,
+                     size_t                servlen,
+                     int                   flags,
+                     val_status_t          *val_status );
+
+#endif /* 0 */
+
 #endif /* VALIDATOR_H */
 
