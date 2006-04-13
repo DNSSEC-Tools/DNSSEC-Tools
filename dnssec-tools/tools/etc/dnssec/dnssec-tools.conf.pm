@@ -154,10 +154,13 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     checkzone       /usr/local/sbin/named-checkzone
     keygen          /usr/local/sbin/dnssec-keygen
+    rndc            /usr/local/sbin/rndc
     signzone        /usr/local/sbin/dnssec-signzone
     viewimage       /usr/X11R6/bin/xview
+
+    rollrec-chk     /usr/bin/rollrec-check
     zonesigner      /usr/bin/zonesigner
-    
+
     #
     # Settings for dnssec-keygen.
     #
@@ -184,11 +187,18 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     # Settings that will be noticed by zonesigner.
     #
+    archivedir          /usr/local/etc/dnssec/KEY-SAFE
     default_keyrec	default.krf
     entropy_msg		0
-
     savekeys            1
-    archivedir          /usr/local/etc/dnssec/KEY-SAFE
+
+    #
+    # Settings for rollover-manager.
+    #
+    roll_logfile    w-roll-log
+    roll_loglevel   info
+    roll_sleeptime  60
+
 
     #
     # GUI-usage flag.
@@ -208,6 +218,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<dtinitconf(8)>,
 B<dtconfchk(8)>,
+B<rollerd(8)>,
 B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
