@@ -249,7 +249,7 @@ Index: sendmail/readcf.c
 Index: sendmail/domain.c
 ===================================================================
 --- sendmail/domain.c	2005-03-03 19:54:42.000000000 -0500
-+++ sendmail/domain.c	2006-02-09 23:07:46.000000000 -0500
++++ sendmail/domain.c	2006-04-13 13:50:18.000000000 -0400
 @@ -23,6 +23,9 @@
  
  # include <arpa/inet.h>
@@ -288,7 +288,7 @@ Index: sendmail/domain.c
 +
 +			if (RequireDNSSEC)
 +			{
-+				if (dnssec_status == VALIDATE_SUCCESS)
++				if (dnssec_status == VAL_SUCCESS)
 +				{
 +					if (tTd(8, 2))
 +						sm_dprintf("getmxrr: DNSSEC validation of MX record of %s succeeded.\n", dname);
@@ -359,7 +359,7 @@ Index: sendmail/domain.c
 +				
 +				if (RequireDNSSEC)
 +				{
-+					if (dnssec_status == VALIDATE_SUCCESS)
++					if (dnssec_status == VAL_SUCCESS)
 +					{
 +						if (tTd(8, 2))
 +							sm_dprintf("DNSSEC validation of %s succeeded.\n", dname);
@@ -397,7 +397,7 @@ Index: sendmail/domain.c
 Index: sendmail/sm_resolve.c
 ===================================================================
 --- sendmail/sm_resolve.c	2004-08-04 17:17:57.000000000 -0400
-+++ sendmail/sm_resolve.c	2006-02-09 23:07:41.000000000 -0500
++++ sendmail/sm_resolve.c	2006-04-13 13:50:22.000000000 -0400
 @@ -70,6 +70,10 @@
  	{	NULL,		0		}
  };
@@ -440,7 +440,7 @@ Index: sendmail/sm_resolve.c
 +
 +			if (RequireDNSSEC)
 +			{
-+				if (dnssec_status == VALIDATE_SUCCESS)
++				if (dnssec_status == VAL_SUCCESS)
 +				{
 +					if (tTd(8, 2))
 +						sm_dprintf("\t\tdnssec validation of %s succeeded.\n", domain);
