@@ -128,12 +128,14 @@ int main(int argc, char *argv[])
 	}
 	else {
 		if (usereentrant) {
+#if 0
 			if (familyspecified)
 				retval = gethostbyname2_r(name, af, &hentry, auxbuf, AUX_BUFLEN,
 							  &result, &herrno);
 			else
 				retval = gethostbyname_r(name, &hentry, auxbuf, AUX_BUFLEN,
 							 &result, &herrno);
+#endif
 		}
 		else {
 			if (familyspecified)
