@@ -119,9 +119,9 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 # Zonesigner-specific command line arguments.
 #
 my @zsopts = ( '',
-	       ['GUI:separator',	'Tool specific options:'],
+	       ['GUI:separator',	'Tool-specific options:'],
 	       ["forceroll",		'Force the roll-over of zone keys.'],
-	       ["usepub",		'Use Publisehd ZSk for signing.'],
+	       ["usepub",		'Use Published ZSK for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	     );
 
@@ -1437,13 +1437,9 @@ sub forceroll
 	my $zskkey;				# ZSK key.
 	my $krref;				# Reference to key's keyrec.
 	my $zoneref;				# Reference to zone's keyrec.
+	my $publife;				# Published ZSK's lifespan.
 
 	vprint("forcing a ZSK roll-over\n");
-
-	#
-	# We're rolling ZSKs, so make sure they'll be generated.
-	#
-	$genzsk = 1;
 
 	#
 	# Ensure that a roll-over makes sense.
@@ -1453,6 +1449,11 @@ sub forceroll
 		print STDERR "zone $zone has no published ZSK to roll-over to a current ZSK\n";
 		exit(1);
 	}
+
+	#
+	# We're rolling ZSKs, so make sure they'll be generated.
+	#
+	$genzsk = 1;
 
 	#
 	# Get the zone's keyrec.
@@ -1502,6 +1503,7 @@ sub forceroll
 	$zskcur = $krref;
 	$zskcur = $opts{'zskcur'};
 	keyrec_setval("key",$zskcur,"keyrec_type","zskcur");
+	$publife = $krref->{'zsklife'};
 	vmed_print("published ZSK ($krref->{'keyrec_name'}) now current\n");
 
 	#
@@ -1515,6 +1517,7 @@ sub forceroll
 		$opts{'zskpub'} = $krref->{'keyrec_name'};
 		$zskpub = $krref;
 		$zskpub = $opts{'zskpub'};
+		keyrec_setval("key",$zsknew,"zsklife",$publife);
 
 		vmed_print("new ZSK ($krref->{'keyrec_name'}) now published\n");
 	}
@@ -1523,6 +1526,7 @@ sub forceroll
 		$zskpub = genzsk("pub");
 		$krref = keyrec_fullrec($opts{'zskpub'});
 		$opts{'zskpub'} = $krref->{'keyrec_name'};
+		keyrec_setval("key",$zskpub,"zsklife",$publife);
 
 		vmed_print("published ZSK ($krref->{'keyrec_name'}) created\n");
 	}
@@ -1536,6 +1540,8 @@ sub forceroll
 	vmed_print("new ZSK ($zsknew) created\n");
 	keyrec_setval("key",$zsknew,"keyrec_type","zsknew");
 	keyrec_setval("key",$zsknew,"zonename",$zone);
+	keyrec_setval("key",$zsknew,"zsklife",$publife);
+
 }
 
 #######################################################################
@@ -1893,6 +1899,8 @@ adjusted as follows:
     The published ZSK key is marked as current.
     The new ZSK key, if it exists, is marked as published.
     A new ZSK key is generated.
+    The published ZSK key's zsklife field is copied to the
+    new ZSK key's keyrec.
 
 This should only be used if you know what you're doing.
 
