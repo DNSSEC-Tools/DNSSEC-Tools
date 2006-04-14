@@ -1517,7 +1517,6 @@ sub forceroll
 		$opts{'zskpub'} = $krref->{'keyrec_name'};
 		$zskpub = $krref;
 		$zskpub = $opts{'zskpub'};
-		keyrec_setval("key",$zsknew,"zsklife",$publife);
 
 		vmed_print("new ZSK ($krref->{'keyrec_name'}) now published\n");
 	}
