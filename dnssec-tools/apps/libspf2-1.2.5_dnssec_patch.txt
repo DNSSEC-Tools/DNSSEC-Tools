@@ -685,7 +685,7 @@ Index: config.h.in
 Index: configure.ac
 ===================================================================
 --- configure.ac	2005-02-28 15:11:51.000000000 -0500
-+++ configure.ac	2006-01-11 13:28:49.000000000 -0500
++++ configure.ac	2006-04-13 18:12:31.000000000 -0400
 @@ -92,35 +92,97 @@
  	exit 1;
  ])
@@ -754,7 +754,7 @@ Index: configure.ac
 +	echo "the secure resolver library is required to build this program."
 +	echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
-+   ])
++   ], -L/usr/local/lib)
 +
 +   dnl Check libval
 +   AC_ARG_WITH(libval,
@@ -773,7 +773,7 @@ Index: configure.ac
 +	echo "the validator library is required to build this program."
 +        echo "see http://dnssec-tools.sourceforge.net"
 +	exit 1;
-+   ], -lsres -lcrypto -lpthread)
++   ], -lsres -lcrypto -lpthread -L/usr/local/lib)
 +
 +   AC_DEFINE([SUPPORT_DNSSEC], [], [Support DNSSEC validation])
 +
