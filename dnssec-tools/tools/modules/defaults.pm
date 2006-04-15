@@ -39,6 +39,9 @@ my %defaults =
 	"lifespan-max"	 => 94608000,		# Maximum key lifespan.
 	"lifespan-min"	 => 3600,		# Maximum key lifespan.
 	"random"	 => "/dev/urandom",	# Random no. generator device.
+	"roll_logfile"	 => "/usr/local/etc/dnssec/roll.log", # rollerd logfile.
+	"roll_loglevel"	 => "info",		# Logging level for rollerd.
+	"roll_sleeptime" => 60,			# Sleep interval for rollerd.
 	"zsklength"	 => 1024,		# Length of ZSK key.
 	"zsklife"	 => 604800,		# Lifespan of ZSK key.
 
@@ -62,6 +65,9 @@ my @defnames =
 	"lifespan-min",
 	"random",
 	"rollrec_check",
+	"roll_logfile",
+	"roll_loglevel",
+	"roll_sleeptime",
 	"savekeys",
 	"usegui",
 	"viewimage",
