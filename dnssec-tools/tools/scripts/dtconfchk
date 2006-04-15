@@ -60,6 +60,8 @@ my %length_high =
 
 my $MINEND = ((60*60) * 2);			# Minimum endtime (two hours.)
 
+my $MINSLEEP = 60;				# Minimum realistic sleeptime.
+
 #######################################################################
 
 my $expert	= 0;			# Don't do non-expert checks.
@@ -133,6 +135,11 @@ sub main()
 	# Check the file-specific records.
 	#
 	check_files();
+
+	#
+	# Check the rollerd records.
+	#
+	check_rollerd();
 
 	#
 	# Check the miscellaneous records.
@@ -211,107 +218,110 @@ sub keygen_checks
 	{
 		prt(0,"algorithm not defined; can't check length values");
 		$errs++;
-		return;
 	}
-
-	#
-	# Search the algorithm list for this key's algorithm.  If we find
-	# it, we'll mark that it's good.
-	#
-	if(defined($algorithm))
+	else
 	{
-		foreach my $alg (@algorithms)
+		#
+		# Search the algorithm list for this key's algorithm.  If we
+		# find it, we'll mark that it's good.
+		#
+		if(defined($algorithm))
 		{
-			if($alg eq $algorithm)
+			foreach my $alg (@algorithms)
 			{
-				$found = 1;
-				last;
+				if($alg eq $algorithm)
+				{
+					$found = 1;
+					last;
+				}
 			}
 		}
-	}
-
-	#
-	# If the key's encryption algorithm is bad, we'll give an error
-	# message.  If it's okay, we'll make sure the length is in the
-	# range of valid lengths for the key type.
-	#
-	if(!$found)
-	{
-		prt(0,"invalid algorithm:  \"$algorithm\"; can't check length values");
-		$errs++;
-		return;
-	}
-	prt(1,"valid algorithm is $algorithm");
-
-	#
-	# Get the key length range for this algorithm.
-	#
-	$lowval  = $length_low{$algorithm};
-	$highval = $length_high{$algorithm};
-
-	#
-	# Ensure the ZSK length is in the algorithm's value range.
-	#
-	if(!defined($dtconf{'ksklen'}))
-	{
-		prt(1,"ksklength not defined");
-		$errs++;
-	}
-	else
-	{
-		prt(1,"ksklength is $ksklen");
 
 		#
-		# Ensure the KSK length is greater than the algorithm's
-		# low value.
+		# If the key's encryption algorithm is bad, we'll give an error
+		# message.  If it's okay, we'll make sure the length is in the
+		# range of valid lengths for the key type.
 		#
-		if($ksklen < $lowval)
+		if(!$found)
 		{
-			prt(0,"invalid ksklength:  length ($ksklen) < minimum ($lowval) for $algorithm");
+			prt(0,"invalid algorithm:  \"$algorithm\"; can't check key-length values");
 			$errs++;
 		}
-
-		#
-		# Ensure the KSK length is greater than the algorithm's
-		# high value.
-		#
-		if($ksklen > $highval)
+		else
 		{
-			prt(0,"invalid ksklength:  length ($ksklen) > maximum ($highval) for $algorithm");
-			$errs++;
-		}
-	}
+			prt(1,"valid algorithm is $algorithm");
 
-	#
-	# Ensure the ZSK length is in the algorithm's value range.
-	#
-	if(!defined($dtconf{'zsklen'}))
-	{
-		prt(1,"zsklength not defined");
-		$errs++;
-	}
-	else
-	{
-		prt(1,"zsklength is $zsklen");
+			#
+			# Get the key length range for this algorithm.
+			#
+			$lowval  = $length_low{$algorithm};
+			$highval = $length_high{$algorithm};
 
-		#
-		# Ensure the ZSK length is greater than the algorithm's
-		# low value.
-		#
-		if($zsklen < $lowval)
-		{
-			prt(0,"invalid zsklength:  length ($zsklen) < minimum ($lowval) for $algorithm");
-			$errs++;
-		}
+			#
+			# Ensure the ZSK length is in algorithm's value range.
+			#
+			if(!defined($dtconf{'ksklen'}))
+			{
+				prt(1,"ksklength not defined");
+				$errs++;
+			}
+			else
+			{
+				prt(1,"ksklength is $ksklen");
 
-		#
-		# Ensure the ZSK length is greater than the algorithm's
-		# high value.
-		#
-		if($zsklen > $highval)
-		{
-			prt(0,"invalid zsklength:  length ($zsklen) > maximum ($highval) for $algorithm");
-			$errs++;
+				#
+				# Ensure the KSK length is greater than the
+				# algorithm's low value.
+				#
+				if($ksklen < $lowval)
+				{
+					prt(0,"invalid ksklength:  length ($ksklen) < minimum ($lowval) for $algorithm");
+					$errs++;
+				}
+
+				#
+				# Ensure the KSK length is greater than the
+				# algorithm's high value.
+				#
+				if($ksklen > $highval)
+				{
+					prt(0,"invalid ksklength:  length ($ksklen) > maximum ($highval) for $algorithm");
+					$errs++;
+				}
+			}
+
+			#
+			# Ensure the ZSK length is in algorithm's value range.
+			#
+			if(!defined($dtconf{'zsklen'}))
+			{
+				prt(1,"zsklength not defined");
+				$errs++;
+			}
+			else
+			{
+				prt(1,"zsklength is $zsklen");
+
+				#
+				# Ensure the ZSK length is greater than the
+				# algorithm's low value.
+				#
+				if($zsklen < $lowval)
+				{
+					prt(0,"invalid zsklength:  length ($zsklen) < minimum ($lowval) for $algorithm");
+					$errs++;
+				}
+
+				#
+				# Ensure the ZSK length is greater than the
+				# algorithm's high value.
+				#
+				if($zsklen > $highval)
+				{
+					prt(0,"invalid zsklength:  length ($zsklen) > maximum ($highval) for $algorithm");
+					$errs++;
+				}
+			}
 		}
 	}
 
@@ -439,7 +449,77 @@ sub signzone_checks
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	check_file()
+# Routine:	check_rollerd()
+#
+# Purpose:	Check the file configuration fields.
+#
+sub check_rollerd
+{
+	my $logfile;				# Logfile for rollerd.
+	my $loglevel;				# Log level for rollerd.
+	my $sleep;				# Sleep time for rollerd.
+
+	$logfile  = $dtconf{"roll_logfile"};
+	$loglevel = $dtconf{"roll_loglevel"};
+	$sleep	  = $dtconf{"roll_sleeptime"};
+
+	#
+	# Ensure rollerd's logfile (if it exists) is a regular file.
+	#
+	if(-e $logfile)
+	{
+		if(! -f $logfile))
+		{
+			prt(0,"invalid file type for logfile ($logfile)");
+			$errs++;
+		}
+		else
+		{
+			prt(1,"existing roll-over logfile ($logfile) acceptable");
+		}
+	}
+	else
+	{
+		prt(1,"nonexistent roll-over logfile ($logfile) acceptable");
+	}
+
+	#
+	# Give the appropriate message, depending on if rollerd's log-
+	# level is acceptable or not.
+	#
+	if(($loglevel =~ /^tmi$/i)	|| ($loglevel == 1)	||
+	   ($loglevel =~ /^info$/i)	|| ($loglevel == 3)	||
+	   ($loglevel =~ /^curphase$/i)	|| ($loglevel == 5)	||
+	   ($loglevel =~ /^err$/i)	|| ($loglevel == 7)	||
+	   ($loglevel =~ /^fatal$/i)	|| ($loglevel == 9))
+	{
+		prt(1,"roll-over loglevel ($loglevel) acceptable");
+	}
+	else
+	{
+		prt(0,"invalid roll-over loglevel ($loglevel)");
+		$errs++;
+	}
+
+	#
+	# Give the appropriate message, depending on if rollerd's sleep-
+	# time is acceptable or not.
+	#
+	if($sleep < $MINSLEEP)
+	{
+		prt(0,"roll-over sleeptime ($sleep) < minimum realistic sleeptime ($MINSLEEP)");
+		$errs++;
+	}
+	else
+	{
+		prt(1,"roll-over sleeptime ($sleep) acceptable");
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	check_files()
 #
 # Purpose:	Check the file configuration fields.
 #
@@ -814,6 +894,38 @@ the file must be a regular executable file.
 
 =back
 
+=head2 Roll-over Daemon Checks
+
+The following checks are performed for I<rollerd> values:
+
+=over 8
+
+=item I<roll_logfile>
+
+Ensure that the log file for the roll-over daemon is valid.  If the file
+exists, it must be a regular file.
+
+=item I<roll_loglevel>
+
+Ensure that the logging level for the roll-over daemon is reasonable.  The
+log level must be one of the following text or numeric values:
+
+    tmi        1       (Overly verbose informational messages.)
+    info       3       (Informational messages.)
+    curphase   5       (Current state of zone.)
+    err        7       (Error messages.)
+    fatal      9       (Fatal errors.)
+
+Specifying a particular log level will causes messages of a higher numeric
+value to also be displayed.
+
+=item I<roll_sleeptime>
+
+Ensure that the roll-over daemon's sleep-time is reasonable.
+The daemon's sleep-time must be at least one minute.
+
+=back
+
 =head2 Miscellaneous Checks
 
 The following miscellaneous checks are performed:
@@ -884,5 +996,9 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>
+
+B<dtdefs(8)>,
+B<rollerd(8)>,
+B<zonesigner(8)>
 
 =cut
