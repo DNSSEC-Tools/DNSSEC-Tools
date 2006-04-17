@@ -22,6 +22,8 @@ use ExtUtils::MakeMaker;
 				getdnskeys
 				keyrec-check
 				lskrf
+				rrchk
+				rrinit
 				tachk
 				timetrans
 				zonesigner
