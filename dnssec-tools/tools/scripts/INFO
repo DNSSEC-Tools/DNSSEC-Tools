@@ -99,6 +99,8 @@ environments.  Brief descriptions of these tools are given below.
 
 	clean-keyrec	Cleans unreferenced key keyrecs from keyrec files.
 
+	rrinit		Generates rollrec records for domains.
+
 	tachk		Reads a trusted-keys block from a named.conf file and
 			performs queries to see if the configured trust
 			anchors are still published by the zones.
@@ -119,10 +121,9 @@ environments.  Brief descriptions of these modules are given below.
 
 	defaults.pm	Holds default values for DNSSEC-Tools.
 
-	tooloptions.pm	Sets command options, based on the config file,
-			keyrec files, and command line options.
-
 	keyrec.pm	Reads and manipulates keyrec files.
+
+	rollrec.pm	Reads and manipulates rollrec files.
 
 	timetrans.pm	Translates a seconds count into the appropriate
 			time units (weeks, days, hours, minutes, seconds.)
@@ -131,3 +132,5 @@ environments.  Brief descriptions of these modules are given below.
 			the value 86800 will result in the string
 			"1 day, 6 minutes, 40 seconds" being returned.
 
+	tooloptions.pm	Sets command options, based on the config file,
+			keyrec files, and command line options.
