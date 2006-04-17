@@ -1,0 +1,512 @@
+#!/usr/bin/perl
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# rrchk
+#
+#	This script checks a rollrec file for problems and inconsistencies.
+#
+#	Problems include:
+#		- invalid roll-over phase
+#		- non-positive maxttl
+#		- non-existent zone file
+#		- non-existent keyrec file
+#		- in roll-over, but without a phasestart
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my $count   = 0;			# Error-count flag.
+my $quiet   = 0;			# Quiet flag.
+my $verbose = 0;			# Verbose flag.
+my $doroll  = 1;			# Roll rollrecs flag.
+my $doskip  = 1;			# Skip rollrecs flag.
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"roll",				# Check the roll rollrecs.
+	"skip",				# Check the skip rollrecs.
+	"count",			# Give final error count.
+	"quiet",			# Don't give any output.
+	"verbose",			# Give lotsa output.
+	"help",				# Give a usage message and exit.
+);
+
+
+my $errs = 0;				# Count of errors.
+my $rollerrs = 0;			# Count of roll rollrec errors.
+my $skiperrs = 0;			# Count of skip rollrec errors.
+
+my @rrnames;				# List of rollrecs in the file.
+
+my %rolls = ();				# Names of roll rollrecs.
+my %skips = ();				# Names of skip rollrecs.
+
+my $rollcnt  = 0;			# Count of roll rollrecs.
+my $skipcnt  = 0;			# Count of skip rollrecs.
+my $totalcnt = 0;			# Total count of rollrecs.
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+
+	#
+	# Check our options.
+	#
+	GetOptions(\%options,@opts);
+	$count	 = $options{'count'};
+	$quiet	 = $options{'quiet'};
+	$verbose = $options{'verbose'};
+	$doroll  = 0 if(defined($options{'skip'}));
+	$doskip  = 0 if(defined($options{'roll'}));
+
+	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a rollrec file to check.
+	#
+	usage() if($argc == 0);
+
+	#
+	# Read the rollrec file.
+	#
+	getrollrecs($ARGV[0]);
+
+	#
+	# Run the rollrec checks.
+	#
+	runchecks();
+
+	#
+	# Give error-related messages.
+	#
+	$errors = $errors + $rollerrs + $skiperrs;
+	vprint("\n") if($errors > 0);
+	vprint("$rollerrs roll-record errors\n");
+	vprint("$skiperrs skip-record errors\n");
+	print("$errors errors\n") if($count);
+
+	return($errors);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getrollrecs()
+#
+# Purpose:	This routine reads a rollrec file and copies the rollrec
+#		records into either the roll hash or the skip hash,
+#		depending on each record's type.  Any unrecognized rollrec
+#		entries are reported. 
+#
+sub getrollrecs
+{
+	my $rrfile = shift;			# Rollrec filename.
+
+	#
+	# Read the rollrec file and save the rollrec names.
+	#
+	exit(-1) if(rollrec_read($rrfile) < 0);
+	@rrnames = rollrec_names();
+
+	#
+	# Get the rollrecs and add them to the appropriate rollrec list.
+	#
+	foreach my $rrn (sort(@rrnames))
+	{
+		my $rr;				# Reference to rollrec.
+		my %rollrec;			# Rollrec.
+		my $type;			# Rollrec's type.
+
+		#
+		# Get this particular rollrec and its type.
+		#
+		$rr = rollrec_fullrec($rrn);
+		%rollrec = %$rr;
+		$type = $rollrec{'rollrec_type'};
+
+		#
+		# Add the rollrec to one of the rollrec lists.
+		#
+		if($type eq 'roll')
+		{
+			$rolls{$rrn} = $rr;
+			$rollcnt++;
+		}
+		elsif($type eq 'skip')
+		{
+			$skips{$rrn} = $rr;
+			$skipcnt++;
+		}
+		else
+		{
+			qprint("$rrn:  unknown rollrec type \"$type\"\n");
+			$errs++;
+		}
+
+		$totalcnt++;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	runchecks()
+#
+# Purpose:	This routine runs a number of checks on the roll and skip
+#		rollrecs.
+#
+sub runchecks
+{
+	my $rr;					# Rollrec hash reference.
+	my %rr;					# Rollrec hash table.
+
+	#
+	# Mark an error if no rollrecs were defined.
+	#
+	if($totalcnt == 0)
+	{
+		vprint("no rollrecs defined\n");
+		$errs++;
+		return;
+	}
+
+	#
+	# Check the roll rollrecs.
+	#
+	if($doroll)
+	{
+		foreach my $rrname (sort(keys(%rolls)))
+		{
+			$rr = $rolls{$rrname};
+			$rollerrs += rollrec_validate($rrname,$rr);
+		}
+	}
+
+	#
+	# Check the skip rollrecs.
+	#
+	if($doskip)
+	{
+		foreach my $rrname (sort(keys(%skips)))
+		{
+			$rr = $skips{$rrname};
+			$skiperrs += rollrec_validate($rrname,$rr);
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollrec_validate()
+#
+# Purpose:	This routine checks the validity of a rollrec.
+#		These checks are:
+#			- invalid roll-over phase
+#			- non-positive maxttl
+#			- non-existent rollrec file
+#			- zone file checks:
+#				- file exists
+#				- file is a regular file
+#				- file isn't zero-length
+#			- keyrec file checks:
+#				- file exists
+#				- file is a regular file
+#				- file isn't zero-length
+#
+sub rollrec_validate
+{
+	my $rrname = shift;			# Name of the rollrec.
+	my $rr = shift;				# Rollrec reference.
+
+	my %rr = %$rr;				# The rollrec itself.
+	my $errs = 0;				# Error count.
+
+	my $curphase;				# Rollrec's current phase.
+	my $krfile;				# Rollrec's keyrec file.
+	my $maxttl;				# Rollrec's maximum TTL.
+	my $zonefile;				# Rollrec's zonefile.
+
+	#
+	# Get the rollrec data.
+	#
+	$curphase = $rr{'curphase'};
+	$krfile	  = $rr{'keyrec'};
+	$maxttl	  = $rr{'maxttl'};
+	$zonefile = $rr{'zonefile'};
+
+	#
+	# Make sure we've got a valid current phase.
+	#
+	if(($curphase < 0) || ($curphase > 4))
+	{
+		qprint("$rrname:  invalid curphase \"$curphase\"\n");
+		$errs++;
+	}
+
+	#
+	# Make sure we've got a positive maximum TTL.
+	#
+	if($maxttl < 1)
+	{
+		qprint("$rrname:  invalid maxttl \"$curphase\"\n");
+		$errs++;
+	}
+
+	#
+	# Check the keyrec and zone files.
+	#
+	$errs += checkfile($rrname,"keyrec",$krfile);
+	$errs += checkfile($rrname,"zonefile",$zonefile);
+
+	#
+	# If we're rolling, ensure there's a phasestart.
+	#
+	if($curphase > 0)
+	{
+		if(!defined($rr{'phasestart'}))
+		{
+			qprint("$rrname:  no phasestart listed for curphase $curphase\n");
+			$errs++;
+		}
+	}
+
+	return($errs);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	checkfile()
+#
+sub checkfile
+{
+	my $rrname   = shift;				# Rollrec name.
+	my $filetype = shift;				# File's type.
+	my $fname    = shift;				# File's name.
+
+	#
+	# Check the existence of the file.
+	#
+	if(! -e $fname)
+	{
+		qprint("$rrname:  missing $filetype file \"$fname\"\n");
+		return(1);
+	}
+
+	#
+	# Check the normality of the file.
+	#
+	if(! -f $fname)
+	{
+		qprint("$rrname:  $filetype file \"$fname\" is not a regular file\n");
+		return(1);
+	}
+
+	#
+	# Check the non-nullity of the file.
+	#
+	if(! -s $fname)
+	{
+		qprint("$rrname:  $filetype file \"$fname\" is of size 0\n");
+		return(1);
+	}
+
+	#
+	# Return success.
+	#
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	dumpdata()
+#
+# Purpose:	Show the records we found in the rollrec file.
+#
+sub dumpdata
+{
+	my $name;				# Zone name for looping.
+
+	return if(!$verbose);
+
+	print "roll rollrecs:\n";
+	foreach $name (sort(keys(%rolls)))
+	{
+		print "\t$name\n";
+	}
+	print "\n";
+
+	print "skip rollrecs:\n";
+	foreach $name (sort(keys(%skips)))
+	{
+		print "\t$name\n";
+	}
+	print "\n";
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	qprint()
+#
+sub qprint
+{
+	my $line = shift;
+
+	print $line if(!$quiet);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	vprint()
+#
+sub vprint
+{
+	my $line = shift;
+
+	qprint($line) if($verbose);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  rrchk [options] <rollrec-file>\n";
+	print STDERR "	options:\n";
+	print STDERR "		roll\n";
+	print STDERR "		skip\n";
+	print STDERR "		count\n";
+	print STDERR "		quiet\n";
+	print STDERR "		verbose\n";
+	print STDERR "		help\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+rrchk - Check a DNSSEC-Tools I<rollrec> file for problems and
+inconsistencies.
+
+=head1 SYNOPSIS
+
+  rrchk [-roll | -skip] [-count] [-quiet] [-verbose] [-help] rollrec-file
+
+=head1 DESCRIPTION
+
+This script checks the I<rollrec> file specified by B<rollrec-file> for
+problems and inconsistencies.
+
+Recognized problems include:
+
+=over 4
+
+=item * non-existent rollrec file
+
+The specified I<rollrec> file does not exist.
+
+=item * no zones defined
+
+No zones are defined in the specified I<rollrec> file.
+
+=item * invalid roll-over phase
+
+A zone has an invalid roll-over phase.  These phases may be 0, 1, 2, 3, or 4;
+any other value is invalid.
+
+=item * non-positive maxttl
+
+The maximum TTL value must be greater than zero.
+
+=item * zone file checks
+
+Several checks are made for a zone's zone file.  The zone file must exist, it
+must be a regular file, and it must not be of zero length.
+
+=item * keyrec file checks
+
+Several checks are made for a zone's I<keyrec> file.  The I<keyrec> file must
+exist, it must be a regular file, and it must not be of zero length.
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item -roll
+
+Only display I<rollrec>s that are active ("roll") records.
+This option is mutually exclusive of the I<-skip> option.
+
+=item -skip
+
+Only display I<rollrec>s that are inactive ("skip") records.
+This option is mutually exclusive of the I<-roll> option.
+
+=item -count
+
+Display a final count of errors.
+
+=item -quiet
+
+Do not display messages.  This option supersedes the setting of the I<-v>
+option.
+
+=item -verbose
+
+Display many messages.  This option is subordinate to the I<-q> option.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
+
+B<lsrr(8)>,
+B<rollerd(8)>,
+B<rrinit(8)>
+
+=cut
