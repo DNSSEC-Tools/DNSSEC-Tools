@@ -716,9 +716,7 @@ sub unix_loadzone
 	# Reload the zone.
 	#
 	`$rndc reload $zone >/dev/null 2>&1`;
-my $foo = $?;
 	$ret = $? >> 8;
-print STDERR "unix_loadzone:  foo - <$foo>\tret - <$ret>\n";
 
 	return($ret);
 }
