@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details.
 #
 # DNSSEC Tools
@@ -53,7 +53,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(rollrec_read rollrec_names rollrec_fullrec rollrec_recval
 		 rollrec_setval rollrec_add rollrec_del rollrec_newrec
-		 rollrec_fields rollrec_init rollrec_default
+		 rollrec_fields rollrec_init rollrec_default rollrec_settime
 		 rollrec_discard rollrec_close rollrec_write
 		 rollrec_dump_hash rollrec_dump_array);
 
@@ -181,7 +181,7 @@ sub rollrec_read
 		# We'll save the name of the rollrec, and then proceed on to
 		# the next line.  
 		#
-		if($keyword =~ /^roll$/i)
+		if(($keyword =~ /^roll$/i) || ($keyword =~ /^skip$/i))
 		{
 			$name = $value;
 
@@ -197,7 +197,7 @@ sub rollrec_read
 				rollrec_discard();
 				return(-3);
 			}
-			rollrec_newrec($name);
+			rollrec_newrec($keyword,$name);
 			next;
 		}
 
@@ -293,12 +293,14 @@ sub rollrec_setval
 	# If a rollrec of the specified name doesn't exist, we'll create a
 	# new one.  We'll add it to @rollreclines and %rollrecs.
 	#
+	# We'll also assume it's a "roll" type rollrec.
+	#
 	if(!exists($rollrecs{$name}))
 	{
 		#
 		# Add the rollrec to the %rollrecs hash.
 		#
-		rollrec_newrec($name);
+		rollrec_newrec("roll",$name);
 
 		#
 		# Start the new rollrec in @rollreclines.
@@ -454,11 +456,13 @@ sub rollrec_setval
 #
 sub rollrec_add
 {
+	my $rrtype = shift;		# Rollrec type.
 	my $rrname = shift;		# Name of rollrec we're creating.
 	my $flds   = shift;		# Reference to rollrec fields.
 
 	my $chronosecs;			# Current time in seconds.
 	my $chronostr;			# Current time string.
+
 
 	my %fields;			# Rollrec fields.
 
@@ -473,7 +477,7 @@ sub rollrec_add
 	#
 	# Create the basic rollrec info.
 	#
-	rollrec_newrec($rrname);
+	rollrec_newrec($rrtype,$rrname);
 
 	#
 	# Add the new rollrec's first line to the end of the rollrec table.
@@ -652,17 +656,40 @@ sub rollrec_del
 
 #--------------------------------------------------------------------------
 #
+# Routine:	rollrec_settime()
+#
+# Purpose:	Sets the phase-start time in the rollrec.
+#
+sub rollrec_settime
+{
+	my $name = shift;		# Name of rollrec we're creating.
+	my $chronos;			# Timestamp for the record.
+
+# print "rollrec_settime:  down in\n";
+
+	$chronos = gmtime();
+	$chronos =~ s/\n$//;
+
+	rollrec_setval($name,"phasestart",$chronos);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	rollrec_newrec()
 #
 # Purpose:	Creates a rollrec in %rollrecs.  The name field of is set.
 #
 sub rollrec_newrec
 {
+	my $type = shift;		# Type of rollrec we're creating.
 	my $name = shift;		# Name of rollrec we're creating.
 
 # print "rollrec_newrec:  down in\n";
 
+	return if(($type ne "roll") && ($type ne "skip"));
+
 	$rollrecs{$name}{"rollrec_name"} = $name;
+	$rollrecs{$name}{"rollrec_type"} = $type;
 }
 
 #--------------------------------------------------------------------------
@@ -851,11 +878,14 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
 
   $val = rollrec_recval("example.com","zonefile");
 
-  rollrec_add("example.com",\%rollfields);
+  rollrec_add("roll","example.com",\%rollfields);
+  rollrec_add("skip","example.com",\%rollfields);
 
   rollrec_del("example.com");
 
   rollrec_setval("example.com","zonefile","db.example.com");
+
+  rollrec_settime("example.com");
 
   @rollrecfields = rollrec_fields();
 
@@ -894,7 +924,8 @@ preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
 B<rollrec_fullrec()> and B<rollrec_recval()>.  The contents are
-modified using B<rollrec_add()> and B<rollrec_setval()>.
+modified using B<rollrec_add()>, B<rollrec_setval()>, and
+B<rollrec_settime()>.
 
 If the I<rollrec> file has been modified, it must be explicitly written or
 the changes are not saved.  B<rollrec_write()> saves the new contents to disk.
@@ -907,17 +938,18 @@ closes and the file handle B<without> saving any modified data.
 
 The interfaces to the B<Net::DNS::SEC::Tools::rollrec> module are given below.
 
-=head2 B<rollrec_add(rollrec_name,fields)>
+=head2 B<rollrec_add(rollrec_type,rollrec_name,fields)>
 
 This routine adds a new I<rollrec> to the I<rollrec> file and the internal
 representation of the file contents.  The I<rollrec> is added to both the
 I<%rollrecs> hash table and the I<@rollreclines> array.  Entries are only
 added if they are defined for I<rollrec>s.
 
-I<rollrec_name> is the name of the I<rollrec>.  I<fields> is a reference to a
-hash table that contains the name/value I<rollrec> fields.  The keys of the
-hash table are always converted to lowercase, but the entry values are left
-as given.
+I<rollrec_typee> is the typee of the I<rollrec>.  This must be either "roll"
+or "skip".  I<rollrec_name> is the name of the I<rollrec>.  I<fields> is a
+reference to a hash table that contains the name/value I<rollrec> fields.  The
+keys of the hash table are always converted to lowercase, but the entry values
+are left as given.
 
 Timestamp fields are added at the end of the I<rollrec>.  These fields have
 the key values I<rollrec_gensecs> and I<rollrec_gendate>.
@@ -1004,9 +1036,16 @@ Set the value of a name/field pair in a specified I<rollrec>.  The file is
 B<not> written after updating the value, but the internal file-modified flag
 is set.  The value is saved in both I<%rollrecs> and in I<@rollreclines>.
 
-I<rollrec_name> is the name of the I<rollrec> that will be modified.
+I<rollrec_name> is the name of the I<rollrec> that will be modified.  If the
+named I<rollrec> does not exist, it will be created as a "roll"-type
+I<rollrec>.
 I<field> is the I<rollrec> field which will be modified.
 I<value> is the new value for the field.
+
+=head2 B<rollrec_settime(rollrec_name)>
+
+Set the timestamp in the I<rollrec> specified by I<rollrec_name>.
+The file is B<not> written after updating the value.
 
 =head2 B<rollrec_write()>
 
@@ -1030,10 +1069,11 @@ be lost.  An open I<rollrec> file handle will remain open, though the data are
 no longer held internally.  A new I<rollrec> file must be read in order to use
 the B<Net::DNS::SEC::Tools::rollrec> interfaces again.
 
-=head2 B<rollrec_newrec(name)>
+=head2 B<rollrec_newrec(type,name)>
 
 This interface creates a new I<rollrec>.  The I<rollrec_name> field in the
-I<rollrec> is set to the values of the I<name> parameter.
+I<rollrec> is set to the values of the I<name> parameter.  The I<type>
+parameter must be either "roll" or "skip".
 
 =head2 B<rollrec_default()>
 
@@ -1064,7 +1104,7 @@ preserved as given in the I<rollrec> file.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
@@ -1073,8 +1113,11 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-B<Net::DNS::SEC::Tools::keyrec(3)>
-
+B<Net::DNS::SEC::Tools::keyrec(3)>,
 B<Net::DNS::SEC::Tools::keyrec(5)>
+
+B<lsrr(8)>,
+B<rrchk(8)>,
+B<rrinit(8)>
 
 =cut
