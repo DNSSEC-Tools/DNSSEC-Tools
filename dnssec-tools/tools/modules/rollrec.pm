@@ -7,8 +7,8 @@
 #
 #	Rollrec file routines.
 #
-#	The routines in this module manipulate a rollrec file for the DNSSEC
-#	tools.  The rollrec file contains information about key roll-over
+#	The routines in this module manipulate a rollrec file for the DNSSEC-
+#	Tools.  The rollrec file contains information about key roll-over
 #	status.
 #
 #	Entries in the configuration file are of the "key value" format, with
@@ -47,17 +47,44 @@ package Net::DNS::SEC::Tools::rollrec;
 require Exporter;
 use strict;
 
+use Fcntl qw(:DEFAULT :flock);
+
+use Net::DNS::SEC::Tools::conf;
+
 our $VERSION = "0.01";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(rollrec_read rollrec_names rollrec_fullrec rollrec_recval
-		 rollrec_setval rollrec_add rollrec_del rollrec_newrec
-		 rollrec_fields rollrec_init rollrec_default rollrec_settime
-		 rollrec_discard rollrec_close rollrec_write
-		 rollrec_dump_hash rollrec_dump_array);
+our @EXPORT = qw(
+			rollrec_add
+			rollrec_close
+			rollrec_default
+			rollrec_del
+			rollrec_discard
+			rollrec_dump_array
+			rollrec_dump_hash
+			rollrec_fields
+			rollrec_fullrec
+			rollrec_init
+			rollrec_lock
+			rollrec_names
+			rollrec_newrec
+			rollrec_read
+			rollrec_recval
+			rollrec_settime
+			rollrec_setval
+			rollrec_unlock
+			rollrec_write
+		);
 
-my $DEFAULT_ROLLREC = "/usr/local/etc/dnssec/dnssec-tools.rollrec";
+#--------------------------------------------------------------------------
+
+#
+# Default file names.
+#
+my $DEFAULT_DNSSECTOOLS_DIR = "/usr/local/etc/dnssec";
+my $DEFAULT_ROLLREC = "dnssec-tools.rollrec";
+my $LOCKNAME = "rollrec.lock";
 
 #
 # Valid fields in a rollrec.
@@ -72,6 +99,8 @@ my @ROLLFIELDS = (
 			'rollrec_signsecs',
 		  );
 
+#--------------------------------------------------------------------------
+
 my @rollreclines;			# Rollrec lines.
 my $rollreclen;				# Number of rollrec lines.
 
@@ -79,12 +108,74 @@ my %rollrecs;				# Rollrec hash table (keywords/values.)
 
 my $modified;				# File-modified flag.
 
+#--------------------------------------------------------------------------
+#
+# Routine:	rollrec_lock()
+#
+# Purpose:	Lock rollrec processing so that only one process reads a
+#		rollrec file at a time.
+#
+#		The actual rollrec file is not locked; rather, a synch-
+#		ronization file is locked.  We lock in this manner due to
+#		the way the rollrec module's functionality is spread over
+#		a set of routines.
+#
+sub rollrec_lock
+{
+	my $confdir;			# Configuration file directory.
+	my $lockfile;			# Name of the lock file.
+
+# print "rollrec_lock:  down in\n";
+
+	#
+	# Get the DNSSEC-Tools config directory.
+	#
+	$confdir = getconffile() || $DEFAULT_DNSSECTOOLS_DIR;
+	$confdir =~ /^(.*)\/.*$/;
+	$confdir = $1;
+
+	#
+	# Build our lock file.
+	#
+	$lockfile = "$confdir/$LOCKNAME";
+
+	#
+	# Open (and create?) our lock file.
+	#
+	if(!sysopen(RRLOCK,$lockfile,O_RDONLY|O_CREAT))
+	{
+#		print STDERR "unable to open lock file \"$lockfile\"; not locking...\n";
+		return(0);
+	}
+
+	#
+	# Lock the lock file.
+	#
+	return(flock(RRLOCK,LOCK_EX));
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	rollrec_unlock()
+#
+# Purpose:	Unlock rollrec processing so that other processes may read
+#		a rollrec file.
+#
+sub rollrec_unlock
+{
+print "rollrec_unlock:  down in\n";
+
+	#
+	# Lock the lock file.
+	#
+	return(flock(RRLOCK,LOCK_UN));
+}
 
 #--------------------------------------------------------------------------
 #
 # Routine:	rollrec_read()
 #
-# Purpose:	Read a DNSSEC rollrec file.  The contents are read into the
+# Purpose:	Read a DNSSEC-Tools rollrec file.  The contents are read into the
 #		@rollreclines array and the rollrecs are broken out into the
 #		%rollrecs hash table.
 #
@@ -103,7 +194,7 @@ sub rollrec_read
 	#
 	if($rrf eq "")
 	{
-		$rrf = $DEFAULT_ROLLREC;
+		$rrf = rollrec_default();
 	}
 
 	#
@@ -713,9 +804,24 @@ sub rollrec_fields
 #
 sub rollrec_default
 {
+	my $confdir;				# Configuration directory.
+	my $defrr;				# Default rollrec name.
+
 # print "rollrec_default:  down in\n";
 
-	return($DEFAULT_ROLLREC);
+	#
+	# Get the DNSSEC-Tools config directory.
+	#
+	$confdir = getconffile() || $DEFAULT_DNSSECTOOLS_DIR;
+	$confdir =~ /^(.*)\/.*$/;
+	$confdir = $1;
+
+	#
+	# Build our lock file.
+	#
+	$defrr = "$confdir/$DEFAULT_ROLLREC";
+
+	return($defrr);
 }
 
 
@@ -868,6 +974,7 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
 
   use Net::DNS::SEC::Tools::rollrec;
 
+  rollrec_lock();
   rollrec_read("localhost.rollrec");
 
   @rrnames = rollrec_names();
@@ -894,6 +1001,8 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   rollrec_write();
   rollrec_close();
   rollrec_discard();
+
+  rollrec_unlock();
 
 =head1 DESCRIPTION
 
@@ -934,6 +1043,34 @@ I<rollrec> file.  If a I<rollrec> file is no longer wanted to be open, yet
 the contents should not be saved, B<rollrec_discard()> gets rid of the data
 closes and the file handle B<without> saving any modified data.
 
+=head1 ROLLREC LOCKING
+
+This module includes interfaces for synchronizing access to the I<rollrec>
+files.  This synchronization is very simple and relies upon locking and
+unlocking a single lock file for all I<rollrec> files.
+
+I<rollrec> locking is not required before using this module, but it is
+recommended.  The expected use of these facilities follows:
+
+    rollrec_lock() || die "unable to lock rollrec file\n";
+    rollrec_read();
+    ... perform other rollrec operations ...
+    rollrec_close();
+    rollrec_unlock();
+
+Synchronization is performed in this manner due to the way the module's
+functionality is implemented, as well as providing flexibility to users
+of the module.  It also provides a clear delineation in callers' code as
+to where and when I<rollrec> locking is performed.
+
+This synchronization method has the disadvantage of having a single lockfile
+as a bottleneck to all I<rollrec> file access.  However, it reduces complexity
+in the locking interfaces and cuts back on the potential number of required
+lockfiles.
+
+Using a single synchronization file may not be practical in large
+installations.  If that is found to be the case, then this will be reworked.
+
 =head1 ROLLREC INTERFACES
 
 The interfaces to the B<Net::DNS::SEC::Tools::rollrec> module are given below.
@@ -945,7 +1082,7 @@ representation of the file contents.  The I<rollrec> is added to both the
 I<%rollrecs> hash table and the I<@rollreclines> array.  Entries are only
 added if they are defined for I<rollrec>s.
 
-I<rollrec_typee> is the typee of the I<rollrec>.  This must be either "roll"
+I<rollrec_type> is the type of the I<rollrec>.  This must be either "roll"
 or "skip".  I<rollrec_name> is the name of the I<rollrec>.  I<fields> is a
 reference to a hash table that contains the name/value I<rollrec> fields.  The
 keys of the hash table are always converted to lowercase, but the entry values
@@ -988,6 +1125,14 @@ and new data will be lost.
 
 B<rollrec_fullrec()> returns a reference to the I<rollrec> specified in
 I<rollrec_name>.
+
+=head2 B<rollrec_lock()>
+
+B<rollrec_lock()> locks the I<rollrec> lockfile.  An exclusive lock is
+requested, so the execution will suspend until the lock is available.  If the
+I<rollrec> synchronization file does not exist, it will be created.  If the
+process can't create the synchronization file, an error will be returned.
+Success or failure is returned.
 
 =head2 B<rollrec_names()>
 
@@ -1046,6 +1191,10 @@ I<value> is the new value for the field.
 
 Set the timestamp in the I<rollrec> specified by I<rollrec_name>.
 The file is B<not> written after updating the value.
+
+=head2 B<rollrec_unlock()>
+
+B<rollrec_unlock()> unlocks the I<rollrec> synchronization file.
 
 =head2 B<rollrec_write()>
 
