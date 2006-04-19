@@ -98,6 +98,7 @@ our @EXPORT = qw(
 		 rollmgr_getid
 		 rollmgr_halt
 		 rollmgr_idfile
+		 rollmgr_loadzone
 		 rollmgr_qproc
 		 rollmgr_rmid
 		 rollmgr_saveid
@@ -114,6 +115,7 @@ my $GETDIR	= "getdir";
 my $GETID	= "getid";
 my $HALT	= "halt";
 my $IDFILE	= "idfile";
+my $LOADZONE	= "loadzone";
 my $QPROC	= "qproc";
 my $RMID	= "rmid";
 my $SAVEID	= "saveid";
@@ -125,38 +127,41 @@ my $SAVEID	= "saveid";
 # 
 my %switch_uninit =
 (
-	$DROPID	=>	\&uninit_dropid,
-	$GETDIR	=>	\&uninit_dir,
-	$GETID	=>	\&uninit_getid,
-	$HALT	=>	\&uninit_halt,
-	$IDFILE	=>	\&uninit_idfile,
-	$QPROC	=>	\&uninit_qproc,
-	$RMID	=>	\&uninit_rmid,
-	$SAVEID	=>	\&uninit_saveid,
+	$DROPID	  =>	\&uninit_dropid,
+	$GETDIR	  =>	\&uninit_dir,
+	$GETID	  =>	\&uninit_getid,
+	$HALT	  =>	\&uninit_halt,
+	$IDFILE	  =>	\&uninit_idfile,
+	$LOADZONE =>	\&uninit_loadzone,
+	$QPROC	  =>	\&uninit_qproc,
+	$RMID	  =>	\&uninit_rmid,
+	$SAVEID	  =>	\&uninit_saveid,
 );
 
 my %switch_unknown =
 (
-	$DROPID	=>	\&unknown_dropid,
-	$GETDIR	=>	\&unknown_dir,
-	$GETID	=>	\&unknown_getid,
-	$HALT	=>	\&unknown_halt,
-	$IDFILE	=>	\&unknown_idfile,
-	$QPROC	=>	\&unknown_qproc,
-	$RMID	=>	\&unknown_rmid,
-	$SAVEID	=>	\&unknown_saveid,
+	$DROPID	  =>	\&unknown_dropid,
+	$GETDIR	  =>	\&unknown_dir,
+	$GETID	  =>	\&unknown_getid,
+	$HALT	  =>	\&unknown_halt,
+	$IDFILE	  =>	\&unknown_idfile,
+	$LOADZONE =>	\&unknown_loadzone,
+	$QPROC	  =>	\&unknown_qproc,
+	$RMID	  =>	\&unknown_rmid,
+	$SAVEID	  =>	\&unknown_saveid,
 );
 
 my %switch_unix =
 (
-	$DROPID	=>	\&unix_dropid,
-	$GETDIR	=>	\&unix_dir,
-	$GETID	=>	\&unix_getid,
-	$HALT	=>	\&unix_halt,
-	$IDFILE	=>	\&unix_idfile,
-	$QPROC	=>	\&unix_qproc,
-	$RMID	=>	\&unix_rmid,
-	$SAVEID	=>	\&unix_saveid,
+	$DROPID	  =>	\&unix_dropid,
+	$GETDIR	  =>	\&unix_dir,
+	$GETID	  =>	\&unix_getid,
+	$HALT	  =>	\&unix_halt,
+	$IDFILE	  =>	\&unix_idfile,
+	$LOADZONE =>	\&unix_loadzone,
+	$QPROC	  =>	\&unix_qproc,
+	$RMID	  =>	\&unix_rmid,
+	$SAVEID	  =>	\&unix_saveid,
 );
 
 
@@ -335,6 +340,23 @@ sub rollmgr_idfile
 
 #--------------------------------------------------------------------------
 #
+# Routine:      rollmgr_loadzone()
+#
+# Purpose:	Front-end to the O/S-specific "load the zone" function.
+#
+sub rollmgr_loadzone
+{
+	my @args = shift;			# Routine arguments.
+	my $func;				# Actual function.
+
+# print "rollmgr_loadzone\n";
+
+	$func = $switchtab{$LOADZONE};
+	return(&$func(@args));
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:      rollmgr_qproc()
 #
 # Purpose:	Front-end to the O/S-specific "run roll-over manager's
@@ -483,6 +505,22 @@ sub uninit_idfile
 
 #--------------------------------------------------------------------------
 #
+# Routine:      uninit_loadzone()
+#
+# Purpose:	Switch for uninitialized "load the zone" command.
+#
+sub uninit_loadzone
+{
+	my @args = shift;			# Routine arguments.
+
+# print "uninit_loadzone\n";
+
+	rollmgr_prepdep();
+	return(rollmgr_loadzone(@args));
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:      uninit_qproc()
 #
 # Purpose:	Switch for uninitialized "force queue" command.
@@ -589,6 +627,15 @@ sub unknown_idfile
 
 #--------------------------------------------------------------------------
 #
+# Routine:      unknown_loadzone()
+#
+sub unknown_loadzone
+{
+	unknown_action();
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:      unknown_qproc()
 #
 sub unknown_qproc
@@ -645,6 +692,36 @@ sub unix_idfile
 	return($UNIX_ROLLMGR_PIDFILE);
 }
 
+#--------------------------------------------------------------------------
+#
+# Routine:	unix_loadzone()
+#
+# Purpose:	Kick the name server so it'll load the given zone.
+#
+sub unix_loadzone
+{
+	my $rndc = shift;				# Nameserver controller.
+	my $zone = shift;                               # Zone to reload.
+	my $ret;                                        # Execution return code.
+
+# print "unix_loadzone\n";
+
+	#
+	# Get the path to the name server control program.
+	#
+	$rndc = dnssec_tools_defaults("bind_signzone") if($rndc eq "");
+	return(0) if($rndc eq "");
+
+	#
+	# Reload the zone.
+	#
+	`$rndc reload $zone >/dev/null 2>&1`;
+my $foo = $?;
+	$ret = $? >> 8;
+print STDERR "unix_loadzone:  foo - <$foo>\tret - <$ret>\n";
+
+	return($ret);
+}
 
 #--------------------------------------------------------------------------
 #
