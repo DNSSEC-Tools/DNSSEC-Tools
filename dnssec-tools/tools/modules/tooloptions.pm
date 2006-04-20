@@ -99,6 +99,13 @@ my @stdopts =
 
 	'',
 
+	['GUI:separator',	'Roll-over Options:'],
+		["roll_logfile=s",	"Roll-over manager's log filename"],
+		["roll_loglevel=s",	"Roll-over manager's logging level"],
+		["roll_sleeptime=i",	"Sleep-time for Roll-over manager"],
+
+	'',
+
 	['GUI:separator',		'Control Options:'],
 		["verbose+",		"Verbose mode"],
 		["help",		'Show command line help',
