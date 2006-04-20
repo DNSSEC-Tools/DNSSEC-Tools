@@ -43,6 +43,7 @@ use 5.005;
 use vars qw($VERSION);
 use IO::File;
 use Net::DNS;
+use Net::DNS::RR;
 use MIME::Base64;
 
 $VERSION = '0.7';
@@ -73,6 +74,15 @@ my $soft_errors;
 my $fh;
 my @fhs;
 my @lns;
+
+# boot strap optional DNSSEC module functcions
+# (not optional if trying to parse a signed zone, but we don't need
+# these modules unless we are.
+eval {
+    require Net::DNS::RR::NSEC;
+    require Net::DNS::RR::DNSKEY;
+};
+
 
 sub parse
   {
@@ -169,7 +179,9 @@ sub parse
 	      $z->{mbox} = uc $z->{mbox} if defined $z->{mbox};
 	      $z->{txtdname} = uc $z->{txtdname} if defined $z->{txtdname};
 	  }
-	  my $newrec = Net::DNS::RR->new_from_hash(%$z);
+	  my $newrec = 
+	    Net::DNS::RR->new_from_hash(%$z);
+
 	  if ($newrec->{'type'} eq 'DNSKEY') {
 	      $newrec->setkeytag;
 	  }
@@ -622,7 +634,7 @@ sub parse_line
 	      $parse = \&parse_rrsig;
 	  } elsif (/\G(\d+)\s+(\d+)\s+($pat_maybefullname)\s+([^=]+=)\s*/gc) {
 	      # single-line
-	      $rrsig->{'siginceptation'} = $1;
+	      $rrsig->{'siginception'} = $1;
 	      $rrsig->{'keytag'} = $2;
 	      $rrsig->{'signame'} = $3;
 	      $rrsig->{'sig'} = $4;
@@ -825,7 +837,7 @@ sub parse_rrsig
       if ($rrsig->{'first'}) {
 	  delete $rrsig->{'first'};
 	  if (/\G\s*(\d+)\s+(\d+)\s+($pat_maybefullname)/gc) {
-	      $rrsig->{'siginceptation'} = $1;
+	      $rrsig->{'siginception'} = $1;
 	      $rrsig->{'keytag'} = $2;
 	      $rrsig->{'signame'} = $3;
 	  } else {
