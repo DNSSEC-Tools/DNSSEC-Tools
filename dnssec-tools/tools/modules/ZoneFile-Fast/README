@@ -8,18 +8,18 @@ Description:
 
   The Net::DNS::ZoneFile::Fast module provides an ability to parse zone
   files that BIND8 and BIND9 use, fast.  Currently it provides a single
-  function, I<parse()>, which returns a reference to an array of
-  traditional I<Net::DNS::RR> objects, so that no new API has to be
+  function, parse(), which returns a reference to an array of
+  traditional Net::DNS::RR objects, so that no new API has to be
   learned in order to manipulate zone records.
 
-  Great care was taken to ensure that I<parse()> does its job as fast as
+  Great care was taken to ensure that parse() does its job as fast as
   possible, so it is interesting to use this module to parse huge zones.
   As an example datapoint, it takes less than 5 seconds to parse a 2.2 MB
   zone with about 72000 records on an Athlon XP 2600+ box.
 
-  On the other hand, it is likely that I<Net::DNS::RR> objects that
-  I<parse()> returns are going to be further processed.  To make it easier
+  On the other hand, it is likely that Net::DNS::RR objects that
+  parse() returns are going to be further processed.  To make it easier
   to link any record back to the zone file (say, to report a logical error
   like infamous `CNAME and other data' back to the user, or to do a zone
-  file modification), I<parse()> inserts line numbering information into
-  I<Net::DNS::RR> objects.
+  file modification), parse() inserts line numbering information into
+  Net::DNS::RR objects.
