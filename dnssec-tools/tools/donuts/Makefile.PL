@@ -6,8 +6,7 @@ use ExtUtils::MakeMaker;
 
 %opts = (
 	 'NAME'		=> 'Net::DNS::SEC::Tools::Donuts::donuts',
-	 'PREREQ_PM'    => { Text::Wrap => '2001',
-			     Date::Parse => '2.2',
+	 'PREREQ_PM'    => { Date::Parse => '2.2',
 			   },
 	 'EXE_FILES' => [qw(donuts donutsd)],
 

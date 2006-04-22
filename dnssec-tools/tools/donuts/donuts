@@ -9,6 +9,12 @@ use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::QWPrimitives;
 use Data::Dumper;
 
+my $have_qw = 
+  eval {
+      require QWizard;
+     };
+my $qw;
+
 use strict;
 
 use Config;
@@ -19,23 +25,38 @@ my %opts = (l => 5,
 	    o => '%d.%t.pcap',
 	    r => $Config{'siteprefix'} . "/share/donuts/rules/*");
 
-my (@rules, %rules, $rf, $current_zone_file, $current_domain, %nrecs,
-    @ignorelist, $netdns, $netdns_error);
+our $current_domain;
+
+my (@rules, %rules, $rf, $current_zone_file, %nrecs,
+    @ignorelist, $netdns, $netdns_error, %outstructure);
 
 LocalGetOptions(\%opts,
-		['GUI:separator',"Rule Set Configuration:"],
-		["l|level=i", "The maximum rule level to run (default = 5)"],
+		['GUI:screen',"Rule Set Configuration:"],
+		["l|level=i", "The maximum rule level to run (default = 5)",
+		 question => { type => 'menu', values => [1..9] }],
+		["show-gui", "Display the results in a browsable window.",
+		 question => { type => 'checkbox', default => 1 }],
+		["v|verbose", "Verbose output showing extra information",,
+		 question => { type => 'checkbox', default => 1 }],
+		["q|quiet", "Quiet output (Do not print summary information)"],
+
+
+		['GUI:guionly',{type => 'checkbox',
+				values => [1,0],
+				default => 0,
+				text => 'Show Advanced Options',
+				name => 'advanced'}],,
+
+		['GUI:screen','Advanced Configuration:',
+		 doif => 'advanced'],
 		["r|rules=s", "glob pattern for rule files to load"],
 		["i|ignore=s", "Regular expression for rules to ignore"],
 		["f|features=s", "Extra features to turn on"],
 
-		['GUI:separator',"Configuration Files:"],
+		['GUI:screen',"Configuration Files:",
+		 doif => 'advanced'],
 		["c|config-file=s", "Use an alternate configuration file"],
 		["C|no-config","Do not load any configuration files"],
-
-		'',
-		["v|verbose", "Verbose output showing extra information"],
-		["q|quiet", "Quiet output (Do not print summary information)"],
 
 		['GUI:otherargs_text',"FILE DOMAIN [FILE DOMAIN...]"],
 		['GUI:otherargs_required',1],
@@ -50,7 +71,6 @@ LocalGetOptions(\%opts,
 		 doif => sub { 
 		     use Data::Dumper;;
 		     print Dumper($_[1]->{'generator'}{'datastore'});
-		     print STDERR "here: ",$_[1]->qwparam('live'),"\n";
 		     $_[1]->qwparam('live') && !$_[1]->qwparam('displayhelp');
 		 } ],
 		["t|tcpdump-capture=s", "Start tcpdump on interface STRING during run"],
@@ -66,6 +86,13 @@ LocalGetOptions(\%opts,
 		 'Show configuration tokens supported by the rules'],
 
 	       ) || exit;
+
+if ($#ARGV % 2 != 1) {
+    print STDERR "\nUsage Error: $0 called with wrong number of arguments\n";
+    print STDERR "  file and zone name arguments are both needed\n";
+    print STDERR "  (EG: $0 FILE1 example.com FILE2 other.example.com)\n\n";
+    exit 1;
+}
 
 #
 # initialize ignore list
@@ -181,6 +208,7 @@ while ($#ARGV > -1) {
     $current_zone_file = shift;
     $current_domain = shift;
     $current_domain =~ s/\.$//;  # remove potential trailing dot
+    print STDERR "here: $current_domain\n";
     %nrecs = ();
 
     #
@@ -287,7 +315,88 @@ while ($#ARGV > -1) {
 	$exitcode = 1;
     }
 }
+if ($opts{'show-gui'}) {
+    setup_gui();
+    display_gui_results();
+}
 exit($exitcode);
+
+######################################################################
+#
+# GUI support (requires the QWizard module)
+#
+
+#
+# setup: creates the qwizard instance and needed primaries
+#
+sub setup_gui {
+    return if (!$have_qw);
+    import QWizard;
+
+    my %primaries = 
+      (display_errors =>
+       {
+	title => 'Zone Errors',
+	introduction => 'Below are the errors found when analyzing the zones',
+	questions =>
+	[{ type => 'tree',
+	   name => 'showthis',
+	   text => 'Error List:',
+	   refresh_on_change => 1,
+	   expand_all => 2,
+	   root => 'Errors',
+	   parent => \&get_gui_parent,
+	   children => \&get_gui_children },
+	 { type => 'table',
+	   name => 'results',
+	   text => 'Results:',
+	   values => sub {
+	       if (qwparam('showthis')) {
+		   my $tab;
+		   foreach my $data (@{$outstructure{qwparam('showthis')}}) {
+		       push @$tab, $data;
+		   }
+use Data::Dumper;
+		   print STDERR Dumper($tab);
+		   return [$tab];
+	       }
+	       return [[[""]]];
+	   }
+	 }]
+       });
+
+    # the primaries
+    $qw = new QWizard(primaries => \%primaries);
+}
+
+#
+# calls QWizard
+#
+sub display_gui_results {
+    return if (!$have_qw);
+    $qw->magic('display_errors');
+}
+
+#
+# returns the parent of a given node
+#
+sub get_gui_parent {
+    my ($wiz, $name) = @_;
+    return if ($name eq 'Errors');
+    return 'Errors' if ($name eq 'By Name' || $name eq 'By Type');
+    return 'By Name' if (exists($outstructure{$name}));
+}
+
+#
+# returns the children of a given node
+#
+sub get_gui_children {
+    my ($wiz, $name) = @_;
+    return ['By Name', 'By Type'] if ($name eq 'Errors');
+    return [sort keys(%outstructure)] if ($name eq 'By Name');
+    return;
+}
+
 
 #######################################################################
 
@@ -318,6 +427,10 @@ sub add_rule {
     }
 
     print STDERR " $rule->{'name'}" if ($opts{'v'});
+
+    if ($opts{'show-gui'}) {
+	$rule->{'gui'} = \%outstructure;
+    }
 
     # remember the rule
     $rule = new Net::DNS::SEC::Tools::Donuts::Rule($rule);
@@ -549,6 +662,8 @@ for particular problems.  This is especially important for zones
 making use of DNSSEC security records, since many subtle problems can
 occur.
 
+Please install the Text::Wrap perl module for better output formatting.
+
 =head1 OPTIONS
 
 =over
@@ -688,6 +803,13 @@ record.
 
 =back
 
+=item --show-gui
+
+[alpha code]
+
+Displays a browsable GUI screen showing the results of the donuts tests.
+
+You must have the QWizard and Gtk2 perl modules installed for this to work.
 
 =item --live
 

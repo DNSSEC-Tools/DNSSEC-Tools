@@ -7,7 +7,7 @@ package Net::DNS::SEC::Tools::Donuts::Rule;
 
 use strict;
 use Net::DNS;
-use Text::Wrap;
+my $have_textwrap = eval { require Text::Wrap };
 our $VERSION="0.1";
 
 sub new {
@@ -16,32 +16,67 @@ sub new {
     return $ref;
 }
 
+sub output {
+    my $r = shift;
+    if (exists($r->{'gui'})) {
+	# XXX:
+	push @{$r->{'gui'}{$r->{'location'}}}, [@_];
+    } else {
+	if ($#_ == 0) {
+	    print STDERR "$_[0]\n";
+	} else {
+	    my $token = shift;
+	    print STDERR "  ", sprintf("%-13s", $token), @_, "\n";
+	}
+    }
+}
+
+sub wrapit {
+    my $r = shift;
+    if (exists($r->{'gui'})) {
+	# XXX:
+	push @{$r->{'gui'}{$r->{'location'}}}, [[@_]];
+    } else {
+	if ($have_textwrap) {
+	    print STDERR Text::Wrap::wrap(sprintf("  %-13s", $_[0]),
+					  " " x 15, $_[1]),"\n";
+	} else {
+	    printf STDERR ("  %-12s %s\n", $_[0], $_[1]);
+	}
+    }
+}
+
+
 # Print the results of an error for a given rule
 sub print_error {
     my ($r, $err, $loc, $verb, $rrname) = @_;
     my $class = $r->{class} || 'Error';
     my $output_width=13;
     my $indent = " " x ($output_width+2);  # to account for 2 space indent
-    print STDERR "$loc:\n";
-    print STDERR "  Location:    $rrname\n" if ($rrname);
+    $r->{'location'} = $loc;
+    $r->output("$loc:");
+    $r->output("Location:", $rrname) if ($rrname);
     if ($verb) {
-	print STDERR "  Rule Name:   $r->{name}\n";
-	print STDERR "  Level:       $r->{level}\n";
+	$r->output("Rule Name:", $r->{name});
+	$r->output("Level:",     $r->{level});
     }
     # print the output error, with one of 3 formatting styles
-    if ($r->{'noindent'}) {
-	print STDERR sprintf("  %-${output_width}s", "$class:"), $err,"\n";
+    if ($r->{'noindent'} || $r->{'gui'}) {
+	$r->output("$class:", $err);
     } elsif ($r->{'nowrap'}) {
 	$err =~ s/\n/\n$indent/g;
-	print STDERR sprintf("  %-${output_width}s", "$class:"), $err,"\n";
+	$r->output("$class:", $err);
     } else {
-	print STDERR wrap(sprintf("  %-${output_width}s", "$class:"),
-			  $indent, $err),"\n";
+	$r->wrapit("$class:",$err);
     }
     if ($r->{desc} && $verb) {
-	print STDERR wrap("  Details:     ",$indent,$r->{desc}),"\n";
+	if ($r->{'gui'}) {
+	    $r->output("Details:", $r->{desc});
+	} else {
+	    $r->wrapit("Details:", $r->{desc});
+	}
     }
-    print STDERR "\n";
+    $r->output("");
 }
 
 sub test_record {
@@ -115,16 +150,27 @@ sub print_help {
     my ($self) = @_;
     return if (!$self->{'help'});
     foreach my $h (@{$self->{help}}) {
-	printf STDERR wrap(sprintf("%-20s %-15s",
-				   $self->{'name'}, $h->{'token'} . ":"),
-			   " " x (20+15+1), $h->{'description'}) . "\n";
+	if ($have_textwrap) {
+	    printf STDERR 
+	      Text::Wrap::wrap(sprintf("%-20s %-15s",
+				       $self->{'name'}, $h->{'token'} . ":"),
+			       " " x (20+15+1), $h->{'description'}) . "\n";
+	} else {
+	    printf STDERR ("%-20s %-15s %s\n",
+			   $self->{'name'}, $h->{'token'} . ":",
+			     $h->{'description'})
+	}
     }
 }
 
 sub print_description {
     my ($self) = @_;
     print STDERR $self->{'name'},"\n";
-    print STDERR wrap("  ", "  ", $self->{'desc'} || "[no description]");
+    if ($have_textwrap) {
+	print STDERR Text::Wrap::wrap("  ", "  ", $self->{'desc'} || "[no description]");
+    } else {
+	print STDERR "  " . ($self->{'desc'} || "[no description]");
+    }
     print STDERR "\n\n";
 }
 
