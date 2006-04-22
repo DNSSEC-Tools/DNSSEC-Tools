@@ -102,9 +102,41 @@ our @EXPORT = qw(
 		 rollmgr_qproc
 		 rollmgr_rmid
 		 rollmgr_saveid
+		 LOG_NEVER
+		 LOG_TMI
+		 LOG_EXPIRE
+		 LOG_INFO
+		 LOG_CURPHASE
+		 LOG_ERR
+		 LOG_FATAL
+		 LOG_ALWAYS
 		);
 
 my $rollmgrid;				# Roll-over manager's process id.
+
+##############################################################################
+#
+# Log levels.  The first and last aren't selectable by a user.
+#
+my $LOG_NEVER	 =  0;			# Do not log this message.
+my $LOG_TMI	 =  1;			# Overly verbose informational message.
+my $LOG_EXPIRE	 =  3;			# Time-to-expiration given.
+my $LOG_INFO	 =  4;			# Informational message.
+my $LOG_CURPHASE =  6;			# Give current state of zone.
+my $LOG_ERR	 =  8;			# Non-fatal error message.
+my $LOG_FATAL	 =  9;			# Fatal error.
+my $LOG_ALWAYS	 = 10;			# Messages that should always be given.
+
+my $DEFAULT_LOGLEVEL = $LOG_INFO;	# Default log level.
+
+sub LOG_NEVER		{ return($LOG_NEVER); };
+sub LOG_TMI		{ return($LOG_TMI); };
+sub LOG_EXPIRE		{ return($LOG_EXPIRE); };
+sub LOG_INFO		{ return($LOG_INFO); };
+sub LOG_CURPHASE	{ return($LOG_CURPHASE); };
+sub LOG_ERR		{ return($LOG_ERR); };
+sub LOG_FATAL		{ return($LOG_FATAL); };
+sub LOG_ALWAYS		{ return($LOG_ALWAYS); };
 
 ##############################################################################
 #
