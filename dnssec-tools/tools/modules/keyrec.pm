@@ -818,12 +818,25 @@ sub keyrec_settime
 	my $chronostr;			# String version of now.
 
 	#
-	# Set a timestamp for the zone entry.
+	# Get the timestamp.
 	#
 	$chronosecs = time();
 	$chronostr  = gmtime($chronosecs);
-	keyrec_setval($krtype,$name,'keyrec_signsecs',$chronosecs);
-	keyrec_setval($krtype,$name,'keyrec_signdate',$chronostr);
+
+	#
+	# Set the timestamp in the entry, with the fields set depending
+	# on the keyrec type.
+	#
+	if($krtype eq "zone")
+	{
+		keyrec_setval($krtype,$name,'keyrec_signsecs',$chronosecs);
+		keyrec_setval($krtype,$name,'keyrec_signdate',$chronostr);
+	}
+	else
+	{
+		keyrec_setval($krtype,$name,'keyrec_gensecs',$chronosecs);
+		keyrec_setval($krtype,$name,'keyrec_gendate',$chronostr);
+	}
 }
 
 #--------------------------------------------------------------------------
@@ -1023,7 +1036,7 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   keyrec_setval("zone","example.com","zonefile","db.example.com");
 
   keyrec_settime("zone","example.com");
-  keyrec_settime("key","Kexample.com.+005+23456");
+  keyrec_settime("key","Kexample.com.+005+76543");
 
   @keyfields = keyrec_keyfields();
   @zonefields = keyrec_zonefields();
