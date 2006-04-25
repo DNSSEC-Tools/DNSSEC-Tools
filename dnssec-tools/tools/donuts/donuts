@@ -351,13 +351,12 @@ sub setup_gui {
 	   name => 'results',
 	   text => 'Results:',
 	   values => sub {
-	       if (qwparam('showthis')) {
+	       if (qwparam('showthis') =~ /::/) {
 		   my $tab;
-		   foreach my $data (@{$outstructure{qwparam('showthis')}}) {
+		   my ($spot, $value) = (qwparam('showthis') =~ /(.*)::(.*)/);
+		   foreach my $data (@{$outstructure{$spot}{$value}}) {
 		       push @$tab, $data;
 		   }
-use Data::Dumper;
-		   print STDERR Dumper($tab);
 		   return [$tab];
 	       }
 	       return [[[""]]];
@@ -383,8 +382,9 @@ sub display_gui_results {
 sub get_gui_parent {
     my ($wiz, $name) = @_;
     return if ($name eq 'Errors');
-    return 'Errors' if ($name eq 'By Name' || $name eq 'By Type');
-    return 'By Name' if (exists($outstructure{$name}));
+    return 'Errors' if ($name eq 'By Record Name' || $name eq 'By Rule Type');
+    return 'By Record Name' if ($name =~ /^location::/);
+    return 'By Rule Type' if ($name =~ /^rulename::/);
 }
 
 #
@@ -392,8 +392,24 @@ sub get_gui_parent {
 #
 sub get_gui_children {
     my ($wiz, $name) = @_;
-    return ['By Name', 'By Type'] if ($name eq 'Errors');
-    return [sort keys(%outstructure)] if ($name eq 'By Name');
+    return ['By Record Name', 'By Rule Type'] if ($name eq 'Errors');
+
+    if ($name eq 'By Record Name') {
+	my @ret;
+	map { push @ret, { name => 'location::' . $_,
+			   label => $_ }
+	  } keys(%{$outstructure{'location'}});
+	use Data::Dumper;
+	return \@ret;
+    }
+
+    if ($name eq 'By Rule Type') {
+	my @ret;
+	map { push @ret, { name => 'rulename::' . $_,
+			   label => $_ }
+	  } keys(%{$outstructure{'rulename'}});
+	return \@ret;
+    }
     return;
 }
 

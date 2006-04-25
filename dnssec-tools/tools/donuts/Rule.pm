@@ -20,7 +20,9 @@ sub output {
     my $r = shift;
     if (exists($r->{'gui'})) {
 	# XXX:
-	push @{$r->{'gui'}{$r->{'location'}}}, [@_];
+	foreach my $spot (qw(location rulename)) {
+	    push @{$r->{'gui'}{$spot}{$r->{$spot}}}, [@_];
+	}
     } else {
 	if ($#_ == 0) {
 	    print STDERR "$_[0]\n";
@@ -54,6 +56,7 @@ sub print_error {
     my $output_width=13;
     my $indent = " " x ($output_width+2);  # to account for 2 space indent
     $r->{'location'} = $loc;
+    $r->{'rulename'} = $r->{name};
     $r->output("$loc:");
     $r->output("Location:", $rrname) if ($rrname);
     if ($verb) {
