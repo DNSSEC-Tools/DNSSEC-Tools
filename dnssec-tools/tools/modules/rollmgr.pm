@@ -99,6 +99,9 @@ our @EXPORT = qw(
 		 rollmgr_halt
 		 rollmgr_idfile
 		 rollmgr_loadzone
+		 rollmgr_log
+		 rollmgr_logfile
+		 rollmgr_loglevel
 		 rollmgr_qproc
 		 rollmgr_rmid
 		 rollmgr_saveid
@@ -110,6 +113,7 @@ our @EXPORT = qw(
 		 LOG_ERR
 		 LOG_FATAL
 		 LOG_ALWAYS
+		 LOG_DEFAULT
 		);
 
 my $rollmgrid;				# Roll-over manager's process id.
@@ -137,6 +141,26 @@ sub LOG_CURPHASE	{ return($LOG_CURPHASE); };
 sub LOG_ERR		{ return($LOG_ERR); };
 sub LOG_FATAL		{ return($LOG_FATAL); };
 sub LOG_ALWAYS		{ return($LOG_ALWAYS); };
+
+sub LOG_DEFAULT		{ return($DEFAULT_LOGLEVEL); };
+
+my $loglevel = $DEFAULT_LOGLEVEL;		# Rollerd's logging level.
+my @logstrs =					# Valid strings for levels.
+(
+	"never",
+	"tmi",
+	undef,
+	"expire",
+	"info",
+	undef,
+	"curphase",
+	undef,
+	"err",
+	"fatal",
+	"always"
+);
+
+my $logfile;					# rollerd's log file.
 
 ##############################################################################
 #
@@ -1038,6 +1062,227 @@ sub unix_halt
 	return($ret);
 }
 
+#############################################################################
+#############################################################################
+#############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_loglevel()
+#
+# Purpose:	Get/set the logging level.  If no arguments are given, then
+#		the current logging level is returned.  If a valid new level
+#		is given, that will become the new level.
+#
+#		If a problem occurs (invalid log level), then -1 will be
+#		returned, unless a non-zero argument was passed for the
+#		second argument.  In this case, a usage message is given and
+#		the process exits.
+#
+sub rollmgr_loglevel
+{
+	my $newlevel = shift;			# New logging level.
+	my $useflag  = shift;			# Usage-on-error flag.
+
+	my $oldlevel = $loglevel;		# Current logging level.
+	my $err = 0;				# Error flag.
+
+	#
+	# Return the current log level if that's all they want.
+	#
+	return($loglevel) if(!defined($newlevel));
+
+	#
+	# If a non-numeric log level was given, translate it into the
+	# appropriate numeric value.
+	#
+	if($newlevel !~ /^[0-9]+$/)
+	{
+		if($newlevel =~ /tmi/i)
+		{
+			$loglevel = LOG_TMI;
+		}
+		elsif($newlevel =~ /expire/i)
+		{
+			$loglevel = LOG_EXPIRE;
+		}
+		elsif($newlevel =~ /info/i)
+		{
+			$loglevel = LOG_INFO;
+		}
+		elsif($newlevel =~ /curphase/i)
+		{
+			$loglevel = LOG_CURPHASE;
+		}
+		elsif($newlevel =~ /err/i)
+		{
+			$loglevel = LOG_ERR;
+		}
+		elsif($newlevel =~ /fatal/i)
+		{
+			$loglevel = LOG_FATAL;
+		}
+		else
+		{
+			$err = 1;
+		}
+
+	}
+	else
+	{
+		#
+		# If a valid log level was given, make it the current level.
+		#
+		if(($newlevel < 0) || !defined($logstrs[$newlevel]))
+		{
+			$err = 1;
+		}
+		else
+		{
+			$loglevel = $newlevel;
+		}
+	}
+
+	#
+	# If there was a problem, give usage messages and exit.
+	#
+	if($err)
+	{
+		return(-1) if(!$useflag);
+
+		print STDERR "unknown logging level \"$newlevel\"\n";
+		print STDERR "valid logging levels (text and numeric forms):\n";
+		print STDERR "\ttmi		 1\n";
+		print STDERR "\texpire		 3\n";
+		print STDERR "\tinfo		 4\n";
+		print STDERR "\tcurphase	 6\n";
+		print STDERR "\terr		 8\n";
+		print STDERR "\tfatal		 9\n";
+		exit(1);
+	}
+
+	#
+	# Return the old logging level.
+	#
+	return($oldlevel);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_logfile()
+#
+# Purpose:	Get/set the log file.  If no arguments are given, then
+#		the current log file is returned.  If a valid new file
+#		is given, that will become the new log file.
+#
+#		If a problem occurs (invalid log file), then -1 will be
+#		returned, unless a non-zero argument was passed for the
+#		second argument.  In this case, a usage message is given
+#		and the process exits.
+#
+sub rollmgr_logfile
+{
+	my $newlogfile = shift;				# Name of new logfile.
+	my $useflag    = shift;				# Usage-on-error flag.
+
+	my $oldlogfile = $logfile;			# Current logfile.
+
+	#
+	# Return the current log file if a log file wasn't given.
+	#
+	return($logfile) if(!defined($newlogfile));
+
+	#
+	# Allow "-" to represent stdout.
+	#
+	if($newlogfile eq "-")
+	{
+		$newlogfile = "/dev/stdout";
+		if(! -e $newlogfile)
+		{
+			print STDERR "logfile \"$newlogfile\" does not exist\n" if($useflag);
+			return("");
+		}
+	}
+
+	#
+	# If a log file was specified, ensure it's a writable regular file.
+	# If it isn't a regular file, ensure that it's one of the standard
+	# process-output files.
+	#
+	if(-e $newlogfile)
+	{
+		if((! -f $newlogfile)			&&
+		   (($newlogfile ne "/dev/stdout")	&&
+		    ($newlogfile ne "/dev/tty")))
+		{
+			print STDERR "logfile \"$newlogfile\" is not a regular file\n" if($useflag);
+			return("");
+		}
+		if(! -w $newlogfile)
+		{
+			print STDERR "logfile \"$newlogfile\" is not writable\n" if($useflag);
+			return("");
+		}
+	}
+
+	#
+	# Open up the log file.
+	#
+	$logfile = $newlogfile;
+	open(LOG,">> $logfile") || die "unable to open \"$logfile\"\n";
+	select(LOG);
+	$| = 1;
+
+	return($oldlogfile);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_log()
+#
+sub rollmgr_log
+{
+	my $lvl = shift;				# Message log level.
+	my $fld = shift;				# Message field.
+	my $msg = shift;				# Message to log.
+
+	my $kronos;					# Current time.
+	my $outstr;					# Output string.
+
+	#
+	# Don't give the message unless it's at or above the log level.
+	#
+	return if($lvl < $loglevel);
+
+	#
+	# Add an administrative field specifier if the field wasn't given.
+	#
+	$fld = "$fld: " if($fld ne "");
+
+	#
+	# Get the timestamp.
+	#
+	$kronos = gmtime();
+	$kronos =~ s/^....//;
+
+	#
+	# Build the output string.
+	#
+	chomp $msg;
+	$outstr = "$kronos: $fld$msg";
+
+	#
+	# Write the message. 
+	# 
+	print LOG "$outstr\n";
+
+	#
+	# If this was a fatal message, close up shop.
+	#
+	cleanup() if($lvl == LOG_FATAL);
+}
+
 1;
 
 #############################################################################
@@ -1066,6 +1311,16 @@ manager.
   rollmgr_qproc();
 
   rollmgr_halt();
+
+  $curlevel = rollmgr_loglevel();
+  $oldlevel = rollmgr_loglevel("info");
+  $oldlevel = rollmgr_loglevel(LOG_ERR,1);
+
+  $curlogfile = rollmgr_logfile();
+  $oldlogfile = rollmgr_logfile("-");
+  $oldlogfile = rollmgr_logfile("/var/log/roll.log",1);
+
+  rollmgr_log(LOG_INFO,"example.com","zone is valid");
 
 =head1 DESCRIPTION
 
@@ -1133,6 +1388,62 @@ This routine informs the roll-over manager to shut down.
 In the current implementation, the return code from the B<kill()> command is
 returned.
 
+=head2 B<rollmgr_loglevel(newlevel,useflag)>
+
+This routine sets and retrieves the logging level for the roll-over manager.
+The I<newlevel> argument specifies the new logging level to be set.  The
+valid levels are:
+
+    text       numeric  meaning
+    ----       -------  -------
+    tmi           1     The highest level -- all log messages are saved.
+    expire        3     A verbose countdown of zone expiration is given.
+    info          4     Many informational messages are recorded.
+    curphase      6     Each zone's current roll-over phase is given.
+    err        	  8     Errors are recorded.
+    fatal         9     Fatal errors are saved.
+
+I<newlevel> may be given in either text or numeric form.  The levels include
+all numerically higher levels.  For example, if the log level is set to
+B<curphase>, then B<err> and B<fatal> messages will also be recorded.
+
+The I<useflag> argument is a boolean that indicates whether or not to give a
+descriptive message and exit if an invalid logging level is given.  If
+I<useflag> is true, the message is given and the process exits; if false, -1
+is returned.
+
+If given with no arguments, the current logging level is returned.  In fact,
+the current level is always returned unless an error is found.  -1 is returned
+on error.
+
+=head2 B<rollmgr_logfile(newfile,useflag)>
+
+This routine sets and retrieves the log file for the roll-over manager.
+The I<newfile> argument specifies the new log file to be set.  If I<newfile>
+exists, it must be a regular file.
+
+The I<useflag> argument is a boolean that indicates whether or not to give a
+descriptive message if an invalid logging level is given.  If I<useflag> is
+true, the message is given and the process exits; if false, no message is
+given.  For any error condition, an empty string is returned.
+
+=head2 B<rollmgr_log(level,group,message)>
+
+The I<rollmgr_log()> interface writes a message to the log file.  Log
+messages have this format:
+
+	timestamp: group: message
+
+The I<level> argument is the message's logging level.  It will only be written
+to the log file if the current log level is numerically equal to or less than
+I<level>.
+
+I<group> allows messages to be associated together.  It is currently used by
+I<rollerd> to group messages by the zone to which the message applies.
+
+The I<message> argument is the log message itself.  Trailing newlines are
+removed.
+
 =head1 WARNINGS
 
 1.  B<rollmgr_getid()> attempts to exclusively lock the id file.
@@ -1143,7 +1454,7 @@ the file prior to opening it, but we can't do so without it being open.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
@@ -1152,10 +1463,11 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-B<Net::DNS::SEC::Tools::rollctl(1)>
+B<rollctl(1)>
 
-B<Net::DNS::SEC::Tools::rollrec(3)>
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>,
+B<Net::DNS::SEC::Tools::rollmgr.pm(3)>
 
-B<Net::DNS::SEC::Tools::rollmgr(8)>
+B<rollerd(8)>
 
 =cut
