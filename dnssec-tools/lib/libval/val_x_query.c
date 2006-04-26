@@ -109,7 +109,7 @@ static int compose_merged_answer( const u_char *name_n,
 			goto cleanup;
 		}
 
-		if (res->val_rc_trust) {
+		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
 			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 			unsigned char *cp, *ep;
 			int *bufindex = NULL;
@@ -331,7 +331,7 @@ static int compose_answer( const u_char *name_n,
 			return BAD_ARGUMENT;
 		ep = cp + resplen;
 
-		if (res->val_rc_trust) {
+		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
 			/* Construct the message */
 
 			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
