@@ -337,16 +337,18 @@ sub setup_gui {
        {
 	title => 'Zone Errors',
 	introduction => 'Below are the errors found when analyzing the zones',
-	questions =>
-	[{ type => 'tree',
+	leftside => 
+	["Browse Results", 
+	 { type => 'tree',
 	   name => 'showthis',
-	   text => 'Error List:',
 	   refresh_on_change => 1,
 	   expand_all => 2,
 	   root => 'Errors',
 	   parent => \&get_gui_parent,
 	   children => \&get_gui_children },
-	 { type => 'table',
+	],
+	questions =>
+	[{ type => 'table',
 	   name => 'results',
 	   text => 'Results:',
 	   values => sub {
