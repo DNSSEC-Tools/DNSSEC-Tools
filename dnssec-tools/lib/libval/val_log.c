@@ -186,7 +186,7 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 
 		if(top_q != NULL) {
 
-			VAL_LOG_RESULT(top_q->qc_name_n, top_q->qc_class_h, top_q->qc_type_h, 
+			VAL_LOG_RESULT(name_n, class_h, type_h, 
 					top_q->qc_respondent_server, next_result->val_rc_status);
 			val_log(ctx, level, "Query Status = %s[%d]", 
 					p_query_error(top_q->qc_state), top_q->qc_state);
@@ -194,14 +194,20 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 
 		for (next_as = next_result->val_rc_trust; next_as; next_as = next_as->val_ac_trust) {
 			u_char *t_name_n;
-			if(next_as->_as->ac_data == NULL)
+			if(next_as->_as->ac_data->rrs_name_n == NULL)
 				t_name_n = "NULL_DATA";
 			else
 				t_name_n = next_as->_as->ac_data->rrs_name_n;
 
-			VAL_LOG_ASSERTION(t_name_n, next_as->_as->ac_data->rrs_class_h,
+			if(next_as->_as->ac_data == NULL) {
+				val_log(ctx, level, "Assertion status = %s[%d]",
+					p_as_error(next_as->val_ac_status), next_as->val_ac_status);\
+			}
+			else {
+				VAL_LOG_ASSERTION(t_name_n, next_as->_as->ac_data->rrs_class_h,
 					next_as->_as->ac_data->rrs_type_h, next_as->_as->ac_data->rrs_respondent_server, 
 					next_as->val_ac_status);
+			}
 		}
 	}
 }
@@ -363,6 +369,11 @@ char *p_val_error(int err)
 		case VAL_SUCCESS: 
 					return "VAL_SUCCESS"; break;
     	default:
+            if((err >= VAL_DNS_ERROR_BASE) && (err < VAL_DNS_ERROR_LAST)) {
+				int errbase = VAL_DNS_ERROR_BASE;
+				int dnserr = err - errbase + Q_ERROR_BASE;
+                return p_query_error(dnserr);
+			} 
             return "Unknown Error Value";
 	}                                                                                                                             
 }
@@ -401,7 +412,7 @@ void val_log (const val_context_t *ctx, int level, const char *template, ...)
 
 	setlogmask(log_mask);
 	id_buf = (ctx == NULL)? "libval": ctx->id;
-	openlog(id_buf, LOG_PERROR, LOG_USER);
+	openlog(id_buf, VAL_LOG_OPTIONS, LOG_USER);
 	va_start (ap, template);
 	vsyslog(LOG_USER|level, template, ap);
 	va_end (ap);
