@@ -45,7 +45,7 @@ int main(int argc, char *argv[])
 	
 	int i;
 	char *alias;
-	int val_status;
+	val_status_t val_status;
 	int herrno = 0;
 	int dovalidate = 1;
 	int familyspecified = 0;
