@@ -321,7 +321,7 @@ static int get_addrinfo_from_etc_hosts (
 			continue;
 		}
 		
-		ainfo->val_status = LOCAL_ANSWER;
+		ainfo->val_status = VAL_LOCAL_ANSWER;
 
 		/* Expand the results based on servname and hints */
 		if (process_service_and_hints(ainfo->val_status, servname, hints, &ainfo) != 0) {
@@ -680,7 +680,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 		ainfo->ai_addr = (struct sockaddr *) saddr4;
 		ainfo->ai_canonname = NULL;
 		
-		ainfo->val_status = LOCAL_ANSWER;
+		ainfo->val_status = VAL_LOCAL_ANSWER;
 		if (process_service_and_hints(ainfo->val_status, servname, hints, &ainfo4) == EAI_SERVICE) {
 			free_val_addrinfo(ainfo);
 			free(saddr4);
@@ -724,7 +724,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 		ainfo->ai_addr = (struct sockaddr *) saddr6;
 		ainfo->ai_canonname = NULL;
 		
-		ainfo->val_status = LOCAL_ANSWER;
+		ainfo->val_status = VAL_LOCAL_ANSWER;
 		if (process_service_and_hints(ainfo->val_status, servname, hints, &ainfo6) == EAI_SERVICE) {
 			free_val_addrinfo(ainfo);
 			free(saddr6);

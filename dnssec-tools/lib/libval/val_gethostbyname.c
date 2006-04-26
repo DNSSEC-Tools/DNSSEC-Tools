@@ -508,7 +508,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
 		ret->h_addr_list[1] = 0;
 
-		*val_status = LOCAL_ANSWER;
+		*val_status = VAL_LOCAL_ANSWER;
 		*h_errnop = NETDB_SUCCESS;
 		*result = ret;
 
@@ -547,7 +547,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
 		ret->h_addr_list[1] = 0;
 
-		*val_status = LOCAL_ANSWER;
+		*val_status = VAL_LOCAL_ANSWER;
 		*h_errnop = NETDB_SUCCESS;
 		*result = ret;
 
@@ -572,7 +572,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		*result = get_hostent_from_etc_hosts (context, name, af, ret, buf, buflen, &offset);
 		
 		if (*result != NULL) {
-			*val_status = LOCAL_ANSWER;
+			*val_status = VAL_LOCAL_ANSWER;
 			*h_errnop = NETDB_SUCCESS;
 			if((ctx == NULL) && context)
 				val_free_context(context);
