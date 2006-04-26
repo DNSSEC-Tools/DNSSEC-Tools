@@ -132,6 +132,14 @@ chain of trust can be completed */
 #define VAL_NONEXISTENT_TYPE     R_LAST+4
 #define VAL_ERROR  			     R_LAST+5
 #define VAL_PROVABLY_UNSECURE    R_LAST+6
+
+
+#define VAL_DNS_ERROR_BASE	     R_LAST+7	
+/* 
+ * DNS errors lie within this range, 
+ */
+#define VAL_DNS_ERROR_LAST		VAL_DNS_ERROR_BASE + DNS_ERROR_LAST 
+
 #define VAL_INDETERMINATE        R_INDETERMINATE
 #define VAL_BOGUS                R_BOGUS
 #define VAL_NOTRUST              R_VERIFIED_CHAIN
