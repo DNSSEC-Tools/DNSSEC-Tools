@@ -404,14 +404,17 @@ static int NSEC_is_wrong_answer (
  * NO_ERROR			Operation succeeded
  * OUT_OF_MEMORY	Could not allocate enough memory for operation
  */
-static int add_to_assertion_chain(struct val_assertion_chain **assertions, struct rrset_rec *response_data)
+static int add_to_assertion_chain(struct val_assertion_chain **assertions, struct domain_info *response)
 {
 	struct val_assertion_chain *new_as, *first_as, *prev_as;
 	struct rrset_rec *next_rr;
 
+	if (response == NULL)
+		return NO_ERROR;
+
 	first_as = NULL;
 	prev_as = NULL;
-	next_rr = response_data;
+	next_rr = response->di_rrset;
 	while(next_rr) {
 
 		new_as = (struct val_assertion_chain *) MALLOC (sizeof (struct val_assertion_chain)); 
@@ -470,6 +473,11 @@ static int build_pending_query(val_context_t *context,
 {
 	u_int8_t *signby_name_n;
 	int retval;
+
+	if(as->_as->ac_data == NULL) {
+		as->val_ac_status = DATA_MISSING;
+		return NO_ERROR;
+	}
 
 	if(as->_as->ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) { 
 		as->val_ac_status = BARE_RRSIG;
@@ -562,15 +570,14 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 		return NO_ERROR; 
 	}
 
-
 	/* Create an assertion for the response data */
+	if(NO_ERROR != (retval = add_to_assertion_chain(assertions, response))) 
+		return retval;
+
 	if (response->di_rrset == NULL) {
 		matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
 		return NO_ERROR;
 	}
-
-	if(NO_ERROR != (retval = add_to_assertion_chain(assertions, response->di_rrset))) 
-		return retval;
 
 	as = *assertions; /* The first value in the list is the most recent element */
 	/* Link the original query to the above assertion */
@@ -935,9 +942,10 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 			 * for a DS record; but the DNSKEY that signs the proof is also in the 
 			 * chain of trust (not-validated)
 			 */
-			if((next_as->_as->ac_data->rrs_type_h == ns_t_dnskey) &&
-					(next_as->val_ac_trust) && 
-					(next_as == next_as->val_ac_trust->val_ac_trust)) {
+			if((next_as->_as->ac_data != NULL) &&
+				(next_as->_as->ac_data->rrs_type_h == ns_t_dnskey) &&
+				(next_as->val_ac_trust) && 
+				(next_as == next_as->val_ac_trust->val_ac_trust)) {
 				res->val_rc_status = R_INDETERMINATE_DS;
 				break;
 			}
@@ -998,6 +1006,7 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 			}
 			/* Check error conditions */
 			else if (next_as->val_ac_status <= LAST_ERROR) {
+				
 				res->val_rc_status = VAL_ERROR; 
 				break;
 			}
@@ -1005,7 +1014,9 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 				SET_MASKED_STATUS(res->val_rc_status, R_BOGUS_UNPROVABLE);
 				continue;
 			}
-			else  {
+			else  if (CHECK_MASKED_STATUS(res->val_rc_status, R_VERIFIED_CHAIN)
+					|| (res->val_rc_status == R_DONT_KNOW)) {
+
 				/* Success condition */
 				if (next_as->val_ac_status == VERIFIED) {
 					SET_MASKED_STATUS(res->val_rc_status, R_VERIFIED_CHAIN);
@@ -1263,7 +1274,7 @@ int val_resolve_and_check(	val_context_t	*context,
 				return OUT_OF_MEMORY;
 			}
 			(*results)->val_rc_trust = top_q->qc_as;
-			(*results)->val_rc_status = DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+			(*results)->val_rc_status = VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
 			(*results)->val_rc_next = NULL;
 		
 			break;
@@ -1364,7 +1375,7 @@ int val_isauthentic( val_status_t val_status )
  */
 int val_istrusted( val_status_t val_status )
 {
-    if ((val_status == LOCAL_ANSWER) ||
+    if ((val_status == VAL_LOCAL_ANSWER) ||
 	val_isauthentic(val_status)) {
 	return 1;
     }
