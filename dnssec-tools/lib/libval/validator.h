@@ -28,6 +28,8 @@
 #define RESOLV_CONF             "/etc/resolv.conf"
 #define ROOT_HINTS            	"/etc/root.hints"
 #define VAL_LOG_MASK	LOG_INFO
+#define VAL_LOG_OPTIONS LOG_PERROR
+
 
 #ifdef LOG_TO_NETWORK
 #define VALIDATOR_LOG_PORT 1053
@@ -116,13 +118,19 @@
 #define SET_MASKED_STATUS(st, new_val) st = (st & R_TRUST_FLAG) | new_val 
 #define CHECK_MASKED_STATUS(st, chk_val) ((st & R_TRUST_FLAG) == chk_val)
 
-typedef unsigned char val_status_t;
+typedef u_int8_t val_status_t;
 typedef u_int16_t val_astatus_t;
 
 struct val_query_chain; /* forward declaration */
 struct val_assertion_chain; /* forward declaration */
 
 struct val_rrset {
+
+    u_int8_t  *val_msg_header; 
+
+    u_int16_t val_queryset_len;
+    u_int8_t  *val_queryset_data; /* for {N,C,T} when no answer is returned, NSID etc  */
+
     u_int8_t  val_rrset_section;
     u_int16_t val_rrset_len;
     u_int8_t  *val_rrset_data;
