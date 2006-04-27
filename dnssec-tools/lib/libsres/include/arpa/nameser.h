@@ -56,7 +56,7 @@
 #define _ARPA_NAMESER_H_
 
 #include <sys/param.h>
-#if (!defined(BSD)) || (BSD < 199306)
+#if (!defined(__CYGWIN__)) && ((!defined(BSD)) || (BSD < 199306))
 # include <sys/bitypes.h>
 #else
 # include <sys/types.h>

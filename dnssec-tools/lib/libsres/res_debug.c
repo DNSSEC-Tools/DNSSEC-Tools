@@ -105,7 +105,6 @@
 #include <string.h>
 #include <time.h>
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
 #include <netinet/in.h>
 #include <resolv.h>
 #include "resolver.h"
@@ -293,7 +292,7 @@ libsres_pquery(const u_char *msg, int len, FILE *file) {
 
 const u_char *
 p_cdnname(const u_char *cp, const u_char *msg, int len, FILE *file) {
-	char name[MAXDNAME];
+	char name[NS_MAXDNAME];
 	int n;
 
 	if ((n = dn_expand(msg, msg + len, cp, name, sizeof name)) < 0)
@@ -307,7 +306,7 @@ p_cdnname(const u_char *cp, const u_char *msg, int len, FILE *file) {
 
 const u_char *
 p_cdname(const u_char *cp, const u_char *msg, FILE *file) {
-	return (p_cdnname(cp, msg, PACKETSZ, file));
+	return (p_cdnname(cp, msg, NS_PACKETSZ, file));
 }
 
 /* Return a fully-qualified domain name from a compressed name (with
@@ -338,10 +337,10 @@ p_fqnname(cp, msg, msglen, name, namelen)
 
 const u_char *
 p_fqname(const u_char *cp, const u_char *msg, FILE *file) {
-	char name[MAXDNAME];
+	char name[NS_MAXDNAME];
 	const u_char *n;
 
-	n = p_fqnname(cp, msg, MAXCDNAME, name, sizeof name);
+	n = p_fqnname(cp, msg, NS_MAXCDNAME, name, sizeof name);
 	if (n == NULL)
 		return (NULL);
 	fputs(name, file);
@@ -350,18 +349,18 @@ p_fqname(const u_char *cp, const u_char *msg, FILE *file) {
 
 /*
  * Names of RR classes and qclasses.  Classes and qclasses are the same, except
- * that C_ANY is a qclass but not a class.  (You can ask for records of class
- * C_ANY, but you can't have any records of that class in the database.)
+ * that ns_c_any is a qclass but not a class.  (You can ask for records of class
+ * ns_c_any, but you can't have any records of that class in the database.)
  */
 const struct res_sym __p_class_syms[] = {
-	{C_IN,		"IN",		(char *)0},
-	{C_CHAOS,	"CH",		(char *)0},
-	{C_CHAOS,	"CHAOS",	(char *)0},
-	{C_HS,		"HS",		(char *)0},
-	{C_HS,		"HESIOD",	(char *)0},
-	{C_ANY,		"ANY",		(char *)0},
-	{C_NONE,	"NONE",		(char *)0},
-	{C_IN, 		(char *)0,	(char *)0}
+	{ns_c_in,	"IN",		(char *)0},
+	{ns_c_chaos,	"CH",		(char *)0},
+	{ns_c_chaos,	"CHAOS",	(char *)0},
+	{ns_c_hs,	"HS",		(char *)0},
+	{ns_c_hs,	"HESIOD",	(char *)0},
+	{ns_c_any,	"ANY",		(char *)0},
+	{ns_c_none,	"NONE",		(char *)0},
+	{ns_c_in,	(char *)0,	(char *)0}
 };
 
 /*
@@ -376,10 +375,10 @@ const struct res_sym __p_default_section_syms[] = {
 };
 
 const struct res_sym __p_update_section_syms[] = {
-	{S_ZONE,	"ZONE",		(char *)0},
-	{S_PREREQ,	"PREREQUISITE",	(char *)0},
-	{S_UPDATE,	"UPDATE",	(char *)0},
-	{S_ADDT,	"ADDITIONAL",	(char *)0},
+	{ns_s_zn,	"ZONE",		(char *)0},
+	{ns_s_pr,	"PREREQUISITE",	(char *)0},
+	{ns_s_ud,	"UPDATE",	(char *)0},
+	{ns_s_ar,	"ADDITIONAL",	(char *)0},
 	{0,             (char *)0,	(char *)0}
 };
 
@@ -948,9 +947,9 @@ loc_aton(ascii, binary)
 	*bcp++ = siz;
 	*bcp++ = hp;
 	*bcp++ = vp;
-	PUTLONG(latit,bcp);
-	PUTLONG(longit,bcp);
-	PUTLONG(alt,bcp);
+	NS_PUT32(latit,bcp);
+	NS_PUT32(longit,bcp);
+	NS_PUT32(alt,bcp);
     
 	return (16);		/* size of RR in octets */
 }
@@ -995,13 +994,13 @@ loc_ntoa(binary, ascii)
 	hpval = *cp++;
 	vpval = *cp++;
 
-	GETLONG(templ, cp);
+	NS_GET32(templ, cp);
 	latval = (templ - ((unsigned)1<<31));
 
-	GETLONG(templ, cp);
+	NS_GET32(templ, cp);
 	longval = (templ - ((unsigned)1<<31));
 
-	GETLONG(templ, cp);
+	NS_GET32(templ, cp);
 	if (templ < referencealt) { /* below WGS 84 spheroid */
 		altval = referencealt - templ;
 		altsign = "-";

@@ -19,7 +19,6 @@
 #include <errno.h>
 #include <string.h>
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
 
 #include "resolver.h"
 

@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
+#include <arpa/header.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>

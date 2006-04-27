@@ -30,7 +30,6 @@
 #include "res_io_manager.h"
 
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
                                                                                                                              
 #ifndef NULL
 #define NULL (void*)0
@@ -45,11 +44,11 @@ static u_int16_t wire_name_length (const u_int8_t *field)
     u_short j;
     if (field==NULL) return 0;
                                                                                                                           
-    for (j = 0; field[j]&&!(0xc0&field[j])&&j<MAXDNAME ; j += field[j]+1);
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<NS_MAXDNAME ; j += field[j]+1);
     if (field[j]) j++;
     j++;
                                                                                                                           
-    if (j > MAXDNAME)
+    if (j > NS_MAXDNAME)
         return 0;
     else
         return j;
@@ -292,8 +291,8 @@ int query_send( const char*     name,
             struct name_server  *pref_ns,
 			int                 *trans_id)
 {
-	u_int8_t			query[12+MAXDNAME+4];
-	int					query_limit = 12+MAXDNAME+4;
+	u_int8_t			query[12+NS_MAXDNAME+4];
+	int					query_limit = 12+NS_MAXDNAME+4;
 	int					query_length;
 	int					ret_val;
 

@@ -76,7 +76,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
 
 #include "resolver.h"
 #include "res_mkquery.h"
@@ -125,15 +124,15 @@ res_val_nmkquery(struct name_server  *pref_ns,
 	/*
 	 * Initialize header fields.
 	 */
-	if ((buf == NULL) || (buflen < HFIXEDSZ))
+	if ((buf == NULL) || (buflen < NS_HFIXEDSZ))
 		return (-1);
-	memset(buf, 0, HFIXEDSZ);
+	memset(buf, 0, NS_HFIXEDSZ);
 	hp = (HEADER *) buf;
 	hp->id = libsres_randomid(); 
 	hp->opcode = op;
 	hp->rd = (pref_ns->ns_options & RES_RECURSE) != 0U;
-	hp->rcode = NOERROR;
-	cp = buf + HFIXEDSZ;
+	hp->rcode = ns_r_noerror;
+	cp = buf + NS_HFIXEDSZ;
 	ep = buf + buflen;
 	dpp = dnptrs;
 	*dpp++ = buf;
@@ -143,57 +142,57 @@ res_val_nmkquery(struct name_server  *pref_ns,
 	 * perform opcode specific processing
 	 */
 	switch (op) {
-	case QUERY:	/*FALLTHROUGH*/
-	case NS_NOTIFY_OP:
-		if (ep - cp < QFIXEDSZ)
+	case ns_o_query:	/*FALLTHROUGH*/
+	case ns_o_notify:
+		if (ep - cp < NS_QFIXEDSZ)
 			return (-1);
-		if ((n = dn_comp(dname, cp, ep - cp - QFIXEDSZ, dnptrs,
+		if ((n = dn_comp(dname, cp, ep - cp - NS_QFIXEDSZ, dnptrs,
 		    lastdnptr)) < 0)
 			return (-1);
 		cp += n;
 		ns_put16(type, cp);
-		cp += INT16SZ;
+		cp += NS_INT16SZ;
 		ns_put16(class, cp);
-		cp += INT16SZ;
+		cp += NS_INT16SZ;
 		hp->qdcount = htons(1);
-		if (op == QUERY || data == NULL)
+		if (op == ns_o_query || data == NULL)
 			break;
 		/*
 		 * Make an additional record for completion domain.
 		 */
-		if ((ep - cp) < RRFIXEDSZ)
+		if ((ep - cp) < NS_RRFIXEDSZ)
 			return (-1);
-		n = dn_comp((const char *)data, cp, ep - cp - RRFIXEDSZ,
+		n = dn_comp((const char *)data, cp, ep - cp - NS_RRFIXEDSZ,
 			    dnptrs, lastdnptr);
 		if (n < 0)
 			return (-1);
 		cp += n;
-		ns_put16(T_NULL, cp);
-		cp += INT16SZ;
+		ns_put16(ns_t_null, cp);
+		cp += NS_INT16SZ;
 		ns_put16(class, cp);
-		cp += INT16SZ;
+		cp += NS_INT16SZ;
 		ns_put32(0, cp);
-		cp += INT32SZ;
+		cp += NS_INT32SZ;
 		ns_put16(0, cp);
-		cp += INT16SZ;
+		cp += NS_INT16SZ;
 		hp->arcount = htons(1);
 		break;
 
-	case IQUERY:
+	case ns_o_iquery:
 		/*
 		 * Initialize answer section
 		 */
-		if (ep - cp < 1 + RRFIXEDSZ + datalen)
+		if (ep - cp < 1 + NS_RRFIXEDSZ + datalen)
 			return (-1);
 		*cp++ = '\0';	/* no domain name */
 		ns_put16(type, cp);
-		cp += INT16SZ;
+		cp += NS_INT16SZ;
 		ns_put16(class, cp);
-		cp += INT16SZ;
+		cp += NS_INT16SZ;
 		ns_put32(0, cp);
-		cp += INT32SZ;
+		cp += NS_INT32SZ;
 		ns_put16(datalen, cp);
-		cp += INT16SZ;
+		cp += NS_INT16SZ;
 		if (datalen) {
 			memcpy(cp, data, datalen);
 			cp += datalen;
@@ -230,17 +229,17 @@ res_val_nopt(struct name_server  *pref_ns,
 	cp = buf + n0;
 	ep = buf + buflen;
 
-	if ((ep - cp) < 1 + RRFIXEDSZ)
+	if ((ep - cp) < 1 + NS_RRFIXEDSZ)
 		return (-1);
 
 
 	*cp++ = 0;	/* "." */
 
-	ns_put16(T_OPT, cp);	/* TYPE */
-	cp += INT16SZ;
+	ns_put16(ns_t_opt, cp);	/* TYPE */
+	cp += NS_INT16SZ;
 	ns_put16(anslen & 0xffff, cp);	/* CLASS = UDP payload size */
-	cp += INT16SZ;
-	*cp++ = NOERROR;	/* extended RCODE */
+	cp += NS_INT16SZ;
+	*cp++ = ns_r_noerror;	/* extended RCODE */
 	*cp++ = 0;		/* EDNS version */
 //	if (pref_ns->ns_options & RES_USE_DNSSEC) {
 #ifdef DEBUG
@@ -250,9 +249,9 @@ res_val_nopt(struct name_server  *pref_ns,
 		flags |= NS_OPT_DNSSEC_OK;
 //	}
 	ns_put16(flags, cp);
-	cp += INT16SZ;
+	cp += NS_INT16SZ;
 	ns_put16(0, cp);	/* RDLEN */
-	cp += INT16SZ;
+	cp += NS_INT16SZ;
 	hp->arcount = htons(ntohs(hp->arcount) + 1);
 
 	return (cp - buf);

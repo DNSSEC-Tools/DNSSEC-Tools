@@ -17,7 +17,6 @@
 
 #include <sys/types.h>
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
 #include <netinet/in.h>
 #include <resolv.h>
 #include <sys/socket.h>
@@ -681,11 +680,11 @@ ns_sprintrrf(const u_char *msg, size_t msglen,
 		T(len = addname(msg, msglen, &rdata, origin, &buf, &buflen));
 		T(addstr(" ", 1, &buf, &buflen));
 		rdata += 8; /* time */
-		n = ns_get16(rdata); rdata += INT16SZ;
+		n = ns_get16(rdata); rdata += NS_INT16SZ;
 		rdata += n; /* sig */
-		n = ns_get16(rdata); rdata += INT16SZ; /* original id */
+		n = ns_get16(rdata); rdata += NS_INT16SZ; /* original id */
 		sprintf(buf, "%d", ns_get16(rdata));
-		rdata += INT16SZ;
+		rdata += NS_INT16SZ;
 		addlen(strlen(buf), &buf, &buflen);
 		break;
 	    }
