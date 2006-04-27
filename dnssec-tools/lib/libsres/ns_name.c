@@ -25,7 +25,6 @@
 #include <stdio.h>
 
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
 
 #include "resolver.h"
 
@@ -269,7 +268,7 @@ ns_name_pton(const char *src, u_char *dst, size_t dstsiz)
 					}
 					*bp++ = '\0';
 				}
-				if ((bp - dst) > MAXCDNAME) {
+				if ((bp - dst) > NS_MAXCDNAME) {
 					errno = EMSGSIZE;
 					return (-1);
 				}
@@ -306,7 +305,7 @@ ns_name_pton(const char *src, u_char *dst, size_t dstsiz)
 		}
 		*bp++ = 0;
 	}
-	if ((bp - dst) > MAXCDNAME) {	/* src too big */
+	if ((bp - dst) > NS_MAXCDNAME) {	/* src too big */
 		errno = EMSGSIZE;
 		return (-1);
 	}
@@ -500,7 +499,7 @@ ns_name_pack(const u_char *src, u_char *dst, int dstsiz,
 			return(-1);
 		}
 		l += l0 + 1;
-		if (l > MAXCDNAME) {
+		if (l > NS_MAXCDNAME) {
 			errno = EMSGSIZE;
 			return (-1);
 		}

@@ -42,9 +42,11 @@
 #define RES_USE_DNSSEC  0x00200000
 #endif
 
+#if 0
 #ifndef MAXDNAME
 #define MAXDNAME    256
 #endif                
+#endif
 
 #define ZONE_USE_NOTHING        0x00000000
 #define ZONE_USE_TSIG           0x00000001

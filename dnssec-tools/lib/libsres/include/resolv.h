@@ -61,7 +61,7 @@
 #else
 
 #include <sys/param.h>
-#if (!defined(BSD)) || (BSD < 199306)
+#if (!defined(__CYGWIN__)) && ((!defined(BSD)) || (BSD < 199306))
 # include <sys/bitypes.h>
 #else
 # include <sys/types.h>
@@ -70,7 +70,7 @@
 #include <sys/socket.h>
 #include <stdio.h>
 #include <arpa/nameser.h>
-
+#include <arpa/header.h>
 
 /*
  * Revision information.  This is the release date in YYYYMMDD format.
