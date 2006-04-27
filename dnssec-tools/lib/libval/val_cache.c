@@ -209,10 +209,10 @@ int stow_root_info(struct rrset_rec *root_info)
 	struct name_server *ns_list = NULL;
 	struct name_server *pending_glue = NULL;
 	int retval;
-	u_char root_zone_n[MAXCDNAME];
+	u_char root_zone_n[NS_MAXCDNAME];
 	char *root_zone = ".";
 
-   	if (ns_name_pton(root_zone, root_zone_n, MAXCDNAME-1) == -1)
+   	if (ns_name_pton(root_zone, root_zone_n, NS_MAXCDNAME-1) == -1)
     	return CONF_PARSE_ERROR; 
 
 	if (NO_ERROR != (retval = res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info, &pending_glue)))

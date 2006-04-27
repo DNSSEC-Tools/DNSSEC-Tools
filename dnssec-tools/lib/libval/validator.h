@@ -10,7 +10,6 @@
 #include <val_errors.h>
 
 #include <arpa/nameser.h>
-#include <arpa/nameser_compat.h>
 #include <netdb.h>
 
 #ifdef MEMORY_DEBUGGING
@@ -220,15 +219,15 @@ struct val_assertion_chain {
 
 struct query_list
 {
-    u_int8_t            ql_name_n[MAXDNAME];
-    u_int8_t            ql_zone_n[MAXDNAME];
+    u_int8_t            ql_name_n[NS_MAXDNAME];
+    u_int8_t            ql_zone_n[NS_MAXDNAME];
     u_int16_t           ql_type_h;
     struct query_list   *ql_next;
 };
 
 struct qname_chain
 {
-    u_int8_t        qnc_name_n[MAXDNAME];
+    u_int8_t        qnc_name_n[NS_MAXDNAME];
     struct qname_chain  *qnc_next;
 };
 
@@ -242,7 +241,7 @@ struct delegation_info {
 };
 
 struct val_query_chain {
-	u_char qc_name_n[MAXCDNAME];
+	u_char qc_name_n[NS_MAXCDNAME];
 	u_int16_t qc_type_h;
 	u_int16_t qc_class_h;
 	u_int16_t qc_state; /* DOS, TIMED_OUT, etc */

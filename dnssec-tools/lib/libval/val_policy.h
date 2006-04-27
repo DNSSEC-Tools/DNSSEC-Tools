@@ -95,13 +95,13 @@ struct policy_conf_element {
 };
 
 struct trust_anchor_policy {
-	u_int8_t zone_n[MAXCDNAME];
+	u_int8_t zone_n[NS_MAXCDNAME];
 	val_dnskey_rdata_t *publickey;
 	struct trust_anchor_policy *next;
 }; 
 
 struct zone_se_policy {
-	u_int8_t zone_n[MAXCDNAME];
+	u_int8_t zone_n[NS_MAXCDNAME];
 	int trusted;
 	struct zone_se_policy *next;
 };

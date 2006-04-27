@@ -260,7 +260,7 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 	int addr_count  = 0;
 	int addr_index  = 0;
 	int orig_offset = 0;
-	char dname [MAXDNAME];
+	char dname [NS_MAXDNAME];
 
 	/* Check parameter sanity */
 	if (!results || !h_errnop || !buf || !offset || !ret) {
@@ -329,8 +329,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 				// Handle CNAME RRs
 				if (rrset->rrs_type_h == ns_t_cname) {
 					
-					bzero(dname, MAXDNAME);
-					if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
+					bzero(dname, NS_MAXDNAME);
+					if (ns_name_ntop(rrset->rrs_name_n, dname, NS_MAXDNAME) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}
@@ -347,8 +347,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 					}
 					
 					if (!ret->h_name) {
-						bzero(dname, MAXDNAME);
-						if (ns_name_ntop(rr->rr_rdata, dname, MAXDNAME) < 0) {
+						bzero(dname, NS_MAXDNAME);
+						if (ns_name_ntop(rr->rr_rdata, dname, NS_MAXDNAME) < 0) {
 							*offset = orig_offset;
 							return NULL;
 						}
@@ -364,8 +364,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 				else if ( ((af == AF_INET) && (rrset->rrs_type_h == ns_t_a)) ||
 					  ((af == AF_INET6)&& (rrset->rrs_type_h == ns_t_aaaa)) ) {
 					
-					bzero(dname, MAXDNAME);
-					if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
+					bzero(dname, NS_MAXDNAME);
+					if (ns_name_ntop(rrset->rrs_name_n, dname, NS_MAXDNAME) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}
@@ -556,7 +556,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 	else {
 		int retval;
 		struct val_result_chain *results = NULL;
-		u_char name_n[MAXCDNAME];
+		u_char name_n[NS_MAXCDNAME];
 		val_context_t *context = NULL;
 		
 		if (ctx == NULL)
@@ -585,7 +585,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		}
 
 		/* Query the validator */
-		if (((retval = ns_name_pton(name, name_n, MAXCDNAME-1)) != -1)
+		if (((retval = ns_name_pton(name, name_n, NS_MAXCDNAME-1)) != -1)
 		    && (NO_ERROR == (retval = val_resolve_and_check(context, name_n, ns_c_in, type, 0,
 							      &results)))) {
 			

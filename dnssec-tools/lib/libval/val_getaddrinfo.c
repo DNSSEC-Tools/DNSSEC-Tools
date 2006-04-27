@@ -404,9 +404,9 @@ static int get_addrinfo_from_result (
 
 		    /* Check if the AI_CANONNAME flag is specified */
 		    if (hints && (hints->ai_flags & AI_CANONNAME) && (canonname == NULL)) {
-			    char dname[MAXDNAME];
-			    bzero(dname, MAXDNAME);
-			    if (ns_name_ntop(rrset->rrs_name_n, dname, MAXDNAME) < 0) {
+			    char dname[NS_MAXDNAME];
+			    bzero(dname, NS_MAXDNAME);
+			    if (ns_name_ntop(rrset->rrs_name_n, dname, NS_MAXDNAME) < 0) {
 				    /* error */
 				    val_log(ctx, LOG_DEBUG, "error in ns_name_ntop");
 			    }
@@ -512,7 +512,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 {
 	struct val_result_chain *results = NULL;
 	struct val_addrinfo *ainfo = NULL;
-	u_char name_n[MAXCDNAME];
+	u_char name_n[NS_MAXCDNAME];
 	int retval = 0;
 	int ret = 0;
 
@@ -524,7 +524,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		val_log(ctx, LOG_DEBUG, "checking for A records");
 		
 		/* Query the validator */
-		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
+		if ((retval = ns_name_pton(nodename, name_n, NS_MAXCDNAME - 1)) != -1) {
 			if ((retval = val_resolve_and_check((val_context_t *)ctx, name_n, ns_c_in, ns_t_a, 0,
 						      &results)) != NO_ERROR) {
 				val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
@@ -561,7 +561,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		val_log(ctx, LOG_DEBUG, "checking for AAAA records");
 		
 		/* Query the validator */
-		if ((retval = ns_name_pton(nodename, name_n, MAXCDNAME - 1)) != -1) {
+		if ((retval = ns_name_pton(nodename, name_n, NS_MAXCDNAME - 1)) != -1) {
 			if ((retval = val_resolve_and_check((val_context_t *)ctx, name_n, ns_c_in, ns_t_aaaa, 0,
 						      &results)) != NO_ERROR) {
 				val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");

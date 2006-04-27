@@ -565,7 +565,7 @@ static int digest_response (   val_context_t 		*context,
     u_int8_t            *end =(u_int8_t*)((u_int32_t)response+response_length);
     int                 i;
     int                 response_index;
-    u_int8_t            name_n[MAXDNAME];
+    u_int8_t            name_n[NS_MAXDNAME];
     u_int16_t           type_h;
     u_int16_t           set_type_h;
     u_int16_t           class_h;
@@ -590,7 +590,7 @@ static int digest_response (   val_context_t 		*context,
     *qnames = NULL;
 
     int referral_seen = FALSE;
-    u_int8_t            referral_zone_n[MAXDNAME];
+    u_int8_t            referral_zone_n[NS_MAXDNAME];
                                                                                                                           
     question = ntohs(header->qdcount);
     answer = ntohs(header->ancount);
@@ -789,7 +789,7 @@ static int digest_response (   val_context_t 		*context,
 int val_resquery_send (	val_context_t           *context,
                         struct val_query_chain      *matched_q)
 {
-	char name[MAXDNAME];
+	char name[NS_MAXDNAME];
 	int ret_val;
 
     /* Get a (set of) answer(s) from the default NS's */
@@ -809,7 +809,7 @@ int val_resquery_send (	val_context_t           *context,
 		nslist = matched_q->qc_ns_list;
 	}
 
-	if(ns_name_ntop(matched_q->qc_name_n, name, MAXDNAME-1) == -1) {
+	if(ns_name_ntop(matched_q->qc_name_n, name, NS_MAXDNAME-1) == -1) {
 		matched_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
 		return NO_ERROR;	
 	}
@@ -832,7 +832,7 @@ int val_resquery_rcv (
     struct name_server  *server = NULL;
 	u_int8_t			*response_data = NULL;
 	u_int32_t			response_length;
-	char name[MAXDNAME];
+	char name[NS_MAXDNAME];
 
     struct rrset_rec    *answers = NULL;
     struct qname_chain  *qnames = NULL;
@@ -853,7 +853,7 @@ int val_resquery_rcv (
 		return NO_ERROR;
 	}
 
-	if(ns_name_ntop(matched_q->qc_name_n, name, MAXDNAME-1) == -1) {
+	if(ns_name_ntop(matched_q->qc_name_n, name, NS_MAXDNAME-1) == -1) {
 		matched_q->qc_state = Q_ERROR_BASE + SR_RCV_INTERNAL_ERROR;
 		return NO_ERROR;	
 	}

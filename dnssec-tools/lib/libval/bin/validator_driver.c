@@ -282,7 +282,7 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
     struct val_result_chain *results = NULL;
 	struct val_result_chain *res;
     val_context_t *context;
-    u_char name_n[MAXCDNAME];
+    u_char name_n[NS_MAXCDNAME];
 	int err = 0;
 	int result_array[MAX_RESULTS];
 	int i;
@@ -294,7 +294,7 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
         return;
 	}
 
-    if (ns_name_pton(name, name_n, MAXCDNAME-1) == -1) {
+    if (ns_name_pton(name, name_n, NS_MAXCDNAME-1) == -1) {
 		fprintf(stderr, "Error: %d\n", BAD_ARGUMENT);		
         return;
 	}                                                                                                                 

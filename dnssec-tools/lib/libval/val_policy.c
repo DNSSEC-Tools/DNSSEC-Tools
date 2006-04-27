@@ -78,7 +78,7 @@ static const struct policy_conf_element conf_elem_array[] = {
 int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 {
 	char token[TOKEN_MAX];
-	u_char zone_n[MAXCDNAME];
+	u_char zone_n[NS_MAXCDNAME];
 	struct trust_anchor_policy *ta_pol, *ta_head, *ta_cur, *ta_prev;
 	int retval;
 	int name_len;
@@ -93,10 +93,10 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 			return retval;
 		if (endst && (strlen(token) == 1))
 			break;
-		if (feof(fp)) 
+		if (feof(fp))
 			return CONF_PARSE_ERROR;
 
-   		if (ns_name_pton(token, zone_n, MAXCDNAME-1) == -1)
+   		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1)
        		return CONF_PARSE_ERROR; 
 
 		/* XXX We may want to have another token that specifies if 
@@ -243,7 +243,7 @@ int free_use_tcp(policy_entry_t *pol_entry)
 int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 {
 	char token[TOKEN_MAX];
-	u_char zone_n[MAXCDNAME];
+	u_char zone_n[NS_MAXCDNAME];
 	struct zone_se_policy *zse_pol, *zse_head, *zse_cur, *zse_prev;
 	int retval;
 	int name_len;
@@ -262,7 +262,7 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 		if (feof(fp)) 
 			return CONF_PARSE_ERROR;
 
-   		if (ns_name_pton(token, zone_n, MAXCDNAME-1) == -1)
+   		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1)
        		return CONF_PARSE_ERROR; 
 
 		/* Read the zone status */
@@ -725,7 +725,7 @@ int read_res_config_file(val_context_t *ctx)
 {
 	struct sockaddr_in my_addr;
 	struct in_addr  address;
-	char auth_zone_info[MAXDNAME];
+	char auth_zone_info[NS_MAXDNAME];
 	FILE * fp;
 	int fd;
 	char line[MAX_LINE_SIZE+1];
@@ -768,10 +768,10 @@ int read_res_config_file(val_context_t *ctx)
 
 			/* Convert auth_zone_info to its on-the-wire format */
 
-			ns->ns_name_n = (u_int8_t *) MALLOC (MAXCDNAME);
+			ns->ns_name_n = (u_int8_t *) MALLOC (NS_MAXCDNAME);
 			if(ns->ns_name_n == NULL) 
 				return OUT_OF_MEMORY;
-			if (ns_name_pton(auth_zone_info, ns->ns_name_n, MAXCDNAME-1) == -1) {
+			if (ns_name_pton(auth_zone_info, ns->ns_name_n, NS_MAXCDNAME-1) == -1) {
 				FREE (ns->ns_name_n); 
 				ns->ns_name_n = NULL;
 				FREE (ns);
@@ -816,7 +816,7 @@ int read_res_config_file(val_context_t *ctx)
 				perror(RESOLV_CONF);
 				goto err;
 			}
-			if (ns_name_pton(cp, ns->ns_name_n, MAXCDNAME-1) == -1) 
+			if (ns_name_pton(cp, ns->ns_name_n, NS_MAXCDNAME-1) == -1) 
 				goto err;
 		}
 	}
@@ -849,8 +849,8 @@ int read_root_hints_file(val_context_t *ctx)
 	struct rrset_rec *root_info = NULL;
 	FILE *fp;
 	char token[TOKEN_MAX];
-	u_char zone_n[MAXCDNAME];
-	u_char rdata_n[MAXCDNAME];
+	u_char zone_n[NS_MAXCDNAME];
+	u_char rdata_n[NS_MAXCDNAME];
 	int endst = 0;
 	int line_number = 0;
 	u_int16_t type_h, class_h;	
@@ -871,7 +871,7 @@ int read_root_hints_file(val_context_t *ctx)
 		return retval;
 
 	while (!feof(fp)) {
-   		if (ns_name_pton(token, zone_n, MAXCDNAME-1) == -1)
+   		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1)
        		return CONF_PARSE_ERROR; 
 		
 		/* ttl */
@@ -911,7 +911,7 @@ int read_root_hints_file(val_context_t *ctx)
 			rdata_len_h = sizeof(u_int32_t);
 		}
 		else if (type_h == ns_t_ns) {
-   			if (ns_name_pton(token, rdata_n, MAXCDNAME-1) == -1)
+   			if (ns_name_pton(token, rdata_n, NS_MAXCDNAME-1) == -1)
        			return CONF_PARSE_ERROR; 
 			rdata_len_h = wire_name_length(rdata_n);
 		}

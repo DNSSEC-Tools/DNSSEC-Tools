@@ -137,9 +137,9 @@ static char *get_ns_string(struct name_server **server)
 }
 
 #define VAL_LOG_ASSERTION(name_n, class_h, type_h, serv, status) do {\
-	char name[MAXDNAME]; \
+	char name[NS_MAXDNAME]; \
 	char *name_pr, *serv_pr;\
-	if(ns_name_ntop(name_n, name, MAXDNAME-1) != -1) \
+	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) \
 		name_pr = name;\
 	else\
 		name_pr = "ERR_NAME";\
@@ -152,9 +152,9 @@ static char *get_ns_string(struct name_server **server)
 } while (0)		
 
 #define VAL_LOG_RESULT(name_n, class_h, type_h, serv, status) do {\
-	char name[MAXDNAME]; \
+	char name[NS_MAXDNAME]; \
 	char *name_pr, *serv_pr;\
-	if(ns_name_ntop(name_n, name, MAXDNAME-1) != -1) \
+	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) \
 		name_pr = name;\
 	else\
 		name_pr = "ERR_NAME";\
