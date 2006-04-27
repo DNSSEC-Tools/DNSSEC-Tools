@@ -152,9 +152,9 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 {
 	char *sp = keystr;
 	char *ep = sp + keystrlen + 1;
-	char token[MAXDNAME];
+	char token[NS_MAXDNAME];
 
-	if (ep - sp > MAXDNAME)
+	if (ep - sp > NS_MAXDNAME)
 		return BAD_ARGUMENT;
 
 	(*dnskey_rdata) = (val_dnskey_rdata_t *) MALLOC (sizeof(val_dnskey_rdata_t));

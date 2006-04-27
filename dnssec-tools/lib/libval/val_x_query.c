@@ -467,7 +467,7 @@ int val_query ( const val_context_t *ctx,
 	struct val_result_chain *results = NULL;
 	int retval;
 	val_context_t *context;
-	u_char name_n[MAXCDNAME];
+	u_char name_n[NS_MAXCDNAME];
 
 	if(ctx == NULL) {
 		if(NO_ERROR !=(retval = val_get_context(NULL, &context)))
@@ -479,7 +479,7 @@ int val_query ( const val_context_t *ctx,
 	val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
 		domain_name, p_class(class), p_type(type));
 
-	if (ns_name_pton(domain_name, name_n, MAXCDNAME-1) == -1) {
+	if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME-1) == -1) {
 		if((ctx == NULL)&& context)
 			val_free_context(context);
 		return (BAD_ARGUMENT);

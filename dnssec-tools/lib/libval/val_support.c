@@ -38,8 +38,8 @@ int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
     int             min_len = length1 < length2 ? length1 : length2;
     int             ret_val;
                                                                                                                           
-    u_int8_t        buffer1[MAXDNAME];
-    u_int8_t        buffer2[MAXDNAME];
+    u_int8_t        buffer1[NS_MAXDNAME];
+    u_int8_t        buffer2[NS_MAXDNAME];
     int             i;
                                                                                                                           
     /* Degenerate case - root versus root */
@@ -109,13 +109,13 @@ u_int16_t wire_name_labels (const u_int8_t *field)
     u_short l=0;
     if (field==NULL) return 0;
                                                                                                                           
-    for (j = 0; field[j]&&!(0xc0&field[j])&&j<MAXDNAME ; j += field[j]+1)
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<NS_MAXDNAME ; j += field[j]+1)
         l++;
     if (field[j]) j++;
     j++;
     l++;
                                                                                                                           
-    if (j > MAXDNAME)
+    if (j > NS_MAXDNAME)
         return 0;
     else
         return l;
@@ -127,11 +127,11 @@ u_int16_t wire_name_length (const u_int8_t *field)
     u_short j;
     if (field==NULL) return 0;
                                                                                                                           
-    for (j = 0; field[j]&&!(0xc0&field[j])&&j<MAXDNAME ; j += field[j]+1);
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<NS_MAXDNAME ; j += field[j]+1);
     if (field[j]) j++;
     j++;
                                                                                                                           
-    if (j > MAXDNAME)
+    if (j > NS_MAXDNAME)
         return 0;
     else
         return j;
@@ -548,8 +548,8 @@ int decompress( u_int8_t    **rdata,
                 u_int16_t   type_h,
                 u_int16_t   *rdata_len_h)
 {
-    u_int8_t    expanded_name[MAXDNAME];
-    u_int8_t    other_expanded_name[MAXDNAME];
+    u_int8_t    expanded_name[NS_MAXDNAME];
+    u_int8_t    other_expanded_name[NS_MAXDNAME];
     u_int8_t    prefix[6];
     int         p_index = 0;
     size_t      new_size;
@@ -582,7 +582,7 @@ int decompress( u_int8_t    **rdata,
                                                                                                                           
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    other_expanded_name,MAXDNAME);
+                                    other_expanded_name,NS_MAXDNAME);
                                                                                                                           
             if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
@@ -596,7 +596,7 @@ int decompress( u_int8_t    **rdata,
                                                                                                                           
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    expanded_name,MAXDNAME);
+                                    expanded_name,NS_MAXDNAME);
             if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
             working_index += working_increment;
@@ -644,7 +644,7 @@ int decompress( u_int8_t    **rdata,
                                                                                                                           
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    expanded_name,MAXDNAME);
+                                    expanded_name,NS_MAXDNAME);
             if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
             working_index += working_increment;
@@ -655,7 +655,7 @@ int decompress( u_int8_t    **rdata,
             {
                 working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    other_expanded_name,MAXDNAME);
+                                    other_expanded_name,NS_MAXDNAME);
                 if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
                 working_index += working_increment;
@@ -691,7 +691,7 @@ int decompress( u_int8_t    **rdata,
         case ns_t_rrsig:
 
             working_increment = ns_name_unpack (response,end,
-                    &response[working_index+SIGNBY], expanded_name,MAXDNAME);
+                    &response[working_index+SIGNBY], expanded_name,NS_MAXDNAME);
             if (working_increment < 0) return INTERNAL_ERROR;
                                                                                                                           
             name_length = wire_name_length (expanded_name);
@@ -738,7 +738,7 @@ int extract_from_rr (   u_int8_t *response,
                                                                                                                           
     /* Extract the uncompressed (unpacked) domain name in protocol format */
     if ((ret_val = ns_name_unpack (response, end, &response[*response_index],
-                                    name_n, MAXDNAME))==-1)
+                                    name_n, NS_MAXDNAME))==-1)
         return INTERNAL_ERROR;
                                                                                                                           
     *response_index += ret_val;

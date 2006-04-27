@@ -263,7 +263,7 @@ static int make_sigfield (  u_int8_t            **field,
     u_int16_t           class_n;
     u_int32_t           ttl_n;
     u_int16_t           rdata_length_n;
-    u_int8_t            lowered_owner_n[MAXDNAME];
+    u_int8_t            lowered_owner_n[NS_MAXDNAME];
     size_t              l_index;
                                                                                                                           
     if (predict_sigbuflength (rr_set, field_length, &signer_length)!=NO_ERROR)
@@ -309,7 +309,7 @@ static int make_sigfield (  u_int8_t            **field,
         if (is_a_wildcard)
         {
 			/* Construct the original name */
-			u_char wcard_n[MAXCDNAME];
+			u_char wcard_n[NS_MAXCDNAME];
 			u_int8_t *np = lowered_owner_n;
 			int i;
 

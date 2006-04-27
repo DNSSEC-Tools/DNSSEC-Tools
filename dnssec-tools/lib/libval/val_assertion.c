@@ -767,7 +767,7 @@ val_result_chain *results)
 				 * name falls within the range given in wcard_proof
 				 */	
 				u_int8_t *nxtname =	wcard_proof->rrs_data->rr_rdata;
-				u_char domain_name_n[MAXCDNAME];
+				u_char domain_name_n[NS_MAXCDNAME];
 				domain_name_n[0] = 0x01;
 				domain_name_n[1] = 0x2a; /* for the '*' character */
 				memcpy(&domain_name_n[2], closest_encounter, wire_name_length(closest_encounter));
@@ -1067,7 +1067,7 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 
 			if(next_answer) {
 				struct domain_info *response;
-				char name[MAXDNAME];
+				char name[NS_MAXDNAME];
 
 				val_log(context, LOG_DEBUG, "ask_cache(): found data for {%s %d %d}", 
 						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
@@ -1086,7 +1086,7 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
 				response->di_qnames->qnc_next = NULL;
 
-				if(ns_name_ntop(next_q->qc_name_n, name, MAXDNAME-1) == -1) {
+				if(ns_name_ntop(next_q->qc_name_n, name, NS_MAXDNAME-1) == -1) {
 					next_q->qc_state = Q_ERROR_BASE+SR_CALL_ERROR;
 					FREE(response->di_qnames);
 					FREE (response);
