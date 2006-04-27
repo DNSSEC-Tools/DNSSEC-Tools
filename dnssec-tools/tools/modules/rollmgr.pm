@@ -87,6 +87,7 @@ require Exporter;
 use strict;
 
 use Fcntl ':flock';
+use Socket;
 
 our $VERSION = "0.01";
 
@@ -99,12 +100,19 @@ our @EXPORT = qw(
 		 rollmgr_halt
 		 rollmgr_idfile
 		 rollmgr_loadzone
-		 rollmgr_log
-		 rollmgr_logfile
-		 rollmgr_loglevel
 		 rollmgr_qproc
 		 rollmgr_rmid
 		 rollmgr_saveid
+
+		 rollmgr_log
+		 rollmgr_logfile
+		 rollmgr_loglevel
+
+		 rollmgr_channel
+		 rollmgr_sendcmd
+		 rollmgr_getcmd
+		rollmgr_verifycmd
+
 		 LOG_NEVER
 		 LOG_TMI
 		 LOG_EXPIRE
@@ -149,18 +157,60 @@ my @logstrs =					# Valid strings for levels.
 (
 	"never",
 	"tmi",
-	undef,
+		undef,
 	"expire",
 	"info",
-	undef,
+		undef,
 	"curphase",
-	undef,
+		undef,
 	"err",
 	"fatal",
 	"always"
 );
 
 my $logfile;					# rollerd's log file.
+
+##############################################################################
+#
+# These "constants" are used by the roll-over manager's command interfaces.
+# 
+
+my $ADDR	= INADDR_ANY;			# rollerd's server address.
+my $CMDPORT	= 880109;			# rollerd's server port.
+my $EOL		= "\015\012";			# Net-standard end-of-line.
+
+my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
+my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
+my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
+my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
+my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
+my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
+my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
+my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
+my $ROLLCMD_STATUS	= "rollcmd_status";
+
+sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE); };
+sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL); };
+sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL); };
+sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC); };
+sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE); };
+sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE); };
+sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN); };
+sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME); };
+sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS); };
+
+my %roll_commands =
+(
+	ROLLCMD_LOGFILE		=> 1,
+	ROLLCMD_LOGLEVEL	=> 1,
+	ROLLCMD_ROLLALL		=> 1,
+	ROLLCMD_ROLLREC		=> 1,
+	ROLLCMD_ROLLZONE	=> 1,
+	ROLLCMD_RUNQUEUE	=> 1,
+	ROLLCMD_SHUTDOWN	=> 1,
+	ROLLCMD_SLEEPTIME	=> 1,
+	ROLLCMD_STATUS		=> 1,
+);
 
 ##############################################################################
 #
@@ -794,7 +844,7 @@ sub unix_dropid
 	my $ego = $$;				# My identity.
 	my $rdpid;				# Pid read from the pidfile.
 
-# print "unix_droppid:  down in\n";
+# print "unix_dropid:  down in\n";
 
 	#
 	# Get the pid from the roll-over manager's pidfile.
@@ -808,7 +858,7 @@ sub unix_dropid
 	if($rdpid < 0)
 	{
 # print "unix_dropid:  opening $UNIX_ROLLMGR_PIDFILE\n";
-		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPPID UNABLE TO OPEN <$UNIX_ROLLMGR_PIDFILE>\n";
+		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPID UNABLE TO OPEN <$UNIX_ROLLMGR_PIDFILE>\n";
 		flock(PIDFILE,LOCK_EX);
 	}
 	else
@@ -1283,6 +1333,181 @@ sub rollmgr_log
 	cleanup() if($lvl == LOG_FATAL);
 }
 
+#############################################################################
+#############################################################################
+#############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_channel()
+#
+# Purpose:	This routine initializes a socket to use for rollerd
+#		communications.  It is called by both the rollerd server
+#		and rollerd clients.
+#
+#		Currently, we're only setting up to connect to a rollerd
+#		running on our own host.  In time, we may allow remote
+#		connections.
+#
+sub rollmgr_channel
+{
+	my $server = shift;				# Server/client flag.
+
+	my $proto;					# Protocol to use.
+	my $remote = "localhost";			# Server's hostname.
+	my $serveraddr;					# Server's address.
+	my $conaddr;					# Address in connect().
+
+# print "rollmgr_channel($server):  down in\n";
+
+	#
+	# Get the protocol and create a socket.
+	#
+	$proto	= getprotobyname("tcp");
+	socket(SOCK,PF_INET,SOCK_STREAM,$proto);
+
+	#
+	# For the server, we'll set the socket's address and mark it as
+	# connectable.
+	# For the client, we'll get the address of the server and connect
+	# to it.  (Right now, we're only talking to localhost.)
+	#
+	if($server)
+	{
+		setsockopt(SOCK,SOL_SOCKET,SO_REUSEADDR,pack("l",1));
+		bind(SOCK,sockaddr_in($CMDPORT,$ADDR));
+		listen(SOCK,SOMAXCONN);
+	}
+	else
+	{
+
+		$remote = "localhost";
+
+		$serveraddr = inet_aton($remote);
+		$conaddr = sockaddr_in($CMDPORT,$serveraddr);
+
+		connect(SOCK,$conaddr);
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_getcmd()
+#
+# Purpose:	This routine is called by the server to fetch a command and
+#		its data from the command socket.  rollmgr_channel() is
+#		assumed to have been called to initialize the command socket.
+#
+sub rollmgr_getcmd
+{
+	my $waiter = shift || 5;		# Time to wait for connect.
+
+	my $cmd;				# Client's command.
+	my $data;				# Command's data.
+	my $user;				# ID info of sender.
+
+	my $raddr;				# Client's address.
+	my $rmtaddr;				# Client's address.
+	my $rmtname;				# Client's name.
+	my $rport;				# Remote port.
+
+	my $oldhandler = $SIG{ALRM};		# Old alarm handler.
+
+# print "rollmgr_getcmd:  down in\n";
+
+	#
+	# Set a time limit on how long we'll wait for the connection.
+	# Our alarm handler is a dummy, only intended to keep us from
+	# waiting forever.
+	#
+	$SIG{ALRM} = sub { my $foo = 42 };
+	alarm($waiter);
+
+	#
+	# Accept the waiting connection.
+	#
+	$rmtaddr = accept(RMTSOCK,SOCK);
+	return if(!defined($rmtaddr));
+
+	#
+	# Convert the client's address into a hostname.
+	#
+	($rport,$raddr) = sockaddr_in($rmtaddr);
+	$rmtname = gethostbyaddr($raddr,AF_INET);
+# print "rollmgr_getcmd:  connection from <$rmtname>\n";
+	return("bad host","$rmtname","") if($rmtname ne "localhost");
+
+	#
+	# Get the command and data, and lop off the trailing goo.
+	#
+	$cmd  = <RMTSOCK>;
+	$data = <RMTSOCK>;
+	$user = <RMTSOCK>;
+	$cmd  =~ s/ $EOL$//;
+	$data =~ s/ $EOL$//;
+	$user =~ s/ $EOL$//;
+
+	#
+	# Turn off the alarm and reset the alarm handler.
+	#
+	alarm(0);
+	$SIG{ALRM} = $oldhandler;
+
+	#
+	# Close the remote socket and return the client's data.
+	#
+	close(RMTSOCK);
+	return($cmd,$data,$user);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_sendcmd()
+#
+# Purpose:	This routine allows a client to send a message to the server.
+#		No other routines need be called to initialize anything.
+#
+sub rollmgr_sendcmd
+{
+	my $cmd	 = shift;				# Command to send.
+	my $data = shift;				# Data for command.
+	my $user = `id`;				# User info.
+
+# print "rollmgr_sendcmd:  down in\n";
+
+	return(0) if(rollmgr_verifycmd($cmd) == 0);
+
+	chomp $user;
+
+	rollmgr_channel(0);
+
+	print SOCK "$cmd $EOL";
+	print SOCK "$data $EOL";
+	print SOCK "$user $EOL";
+
+	close(SOCK);
+	return(1);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_verifycmd()
+#
+# Purpose:	This routine returns a boolean indicating if the specified
+#		command is a valid command for for the roll-over daemon.
+#
+sub rollmgr_verifycmd
+{
+	my $cmd	 = shift;				# Command to check.
+	my $hval;					# Command hash value.
+
+# print "rollmgr_verifycmd:  down in\n";
+
+	$hval = $roll_commands{$cmd};
+	return(0) if(!defined($hval));
+	return(1);
+}
+
 1;
 
 #############################################################################
@@ -1322,13 +1547,20 @@ manager.
 
   rollmgr_log(LOG_INFO,"example.com","zone is valid");
 
+  rollmgr_channel(1);
+  ($cmd,$data) = rollmgr_getcmd();
+  $ret = rollmgr_verifycmd($cmd);
+
+  rollmgr_sendcmd(ROLLCMD_ROLLZONE,"example.com");
+
 =head1 DESCRIPTION
 
 The B<Net::DNS::SEC::Tools::rollmgr> module provides standard,
-platform-independent  methods for a program to communicate with
-the roll-over manager.
+platform-independent methods for a program to communicate with DNSSEC-Tools'
+I<rollerd> roll-over manager.  There are three interface classes described
+here:  general interfaces, logging interfaces, and communications interfaces.
 
-=head1 ROLLMGR INTERFACES
+=head1 GENERAL INTERFACES
 
 The interfaces to the B<Net::DNS::SEC::Tools::rollmgr> module are given below.
 
@@ -1388,6 +1620,8 @@ This routine informs the roll-over manager to shut down.
 In the current implementation, the return code from the B<kill()> command is
 returned.
 
+=head1 LOGGING INTERFACES
+
 =head2 B<rollmgr_loglevel(newlevel,useflag)>
 
 This routine sets and retrieves the logging level for the roll-over manager.
@@ -1444,6 +1678,60 @@ I<rollerd> to group messages by the zone to which the message applies.
 The I<message> argument is the log message itself.  Trailing newlines are
 removed.
 
+=head1 ROLLERD COMMUNICATIONS INTERFACES
+
+=head2 B<rollmgr_channel(serverflag)>
+
+This interface sets up a persistent channel for communications with I<rollerd>.
+If I<serverflag> is true, then the server's side of the channel is created.
+If I<serverflag> is false, then the client's side of the channel is created.
+
+Currently, the connection may only be made to the localhost.  This may be
+changed to allow remote connections, if this is found to be needed.
+
+=head2 B<rollmgr_getcmd()>
+
+I<rollmgr_getcmd()> retrieves a command sent over I<rollerd>'s communications
+channel by a client program.  The command, the command's data, and some user
+information are sent in each message.
+
+The command, the command's data, and a set of sending-user information are
+returned.  No verification of these data are performed by I<rollmgr_getcmd()>.
+
+The sending-user information is the output of the I<id> command.  There is no
+trusted path available in the current networking system, so this information
+is informational and B<cannot> be trusted to be accurate.
+
+=head2 B<rollmgr_sendcmd(cmd,data)>
+
+I<rollmgr_sendcmd()> sends a command to I<rollerd>.  The command must be one
+of the commands from the table below.  This interface creates a communications
+channel to I<rollerd>, sends the message, and closes the channel.
+
+The available commands and their required data are:
+
+   command		data		purpose
+   -------		----		-------
+   ROLLCMD_LOGFILE	log-file	set rollerd's log filename
+   ROLLCMD_LOGLEVEL	log-level	set rollerd's logging level
+   ROLLCMD_ROLLALL	none		force all zones to start roll-over
+   ROLLCMD_ROLLREC	rollrec-name	change rollerd's rollrec file
+   ROLLCMD_ROLLZONE	zone-name	force a zone to start roll-over
+   ROLLCMD_RUNQUEUE	none		rollerd runs through its queue
+   ROLLCMD_SHUTDOWN	none		stop rollerd
+   ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
+   ROLLCMD_STATUS	none		get rollerd's status
+
+The data aren't checked for validity by I<rollmgr_sendcmd()>; validity
+checking is a responsibility of I<rollerd>.
+
+On success, 1 is returned.  If an invalid command is given, 0 is returned.
+
+=head2 B<rollmgr_verifycmd(cmd)>
+
+I<rollmgr_verifycmd()> verifies that I<cmd> is a valid command for I<rollerd>.
+1 is returned for a valid command; 0 is returned for an invalid command.
+
 =head1 WARNINGS
 
 1.  B<rollmgr_getid()> attempts to exclusively lock the id file.
@@ -1465,8 +1753,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<rollctl(1)>
 
-B<Net::DNS::SEC::Tools::rollrec.pm(3)>,
-B<Net::DNS::SEC::Tools::rollmgr.pm(3)>
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
 B<rollerd(8)>
 
