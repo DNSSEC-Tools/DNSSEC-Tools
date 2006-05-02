@@ -107,21 +107,29 @@ our @EXPORT = qw(
 		 rollmgr_log
 		 rollmgr_logfile
 		 rollmgr_loglevel
+			 LOG_NEVER
+			 LOG_TMI
+			 LOG_EXPIRE
+			 LOG_INFO
+			 LOG_CURPHASE
+			 LOG_ERR
+			 LOG_FATAL
+			 LOG_ALWAYS
+			 LOG_DEFAULT
 
 		 rollmgr_channel
 		 rollmgr_sendcmd
 		 rollmgr_getcmd
-		rollmgr_verifycmd
-
-		 LOG_NEVER
-		 LOG_TMI
-		 LOG_EXPIRE
-		 LOG_INFO
-		 LOG_CURPHASE
-		 LOG_ERR
-		 LOG_FATAL
-		 LOG_ALWAYS
-		 LOG_DEFAULT
+		 rollmgr_verifycmd
+			 ROLLCMD_LOGFILE
+			 ROLLCMD_LOGLEVEL
+			 ROLLCMD_ROLLALL
+			 ROLLCMD_ROLLREC
+			 ROLLCMD_ROLLZONE
+			 ROLLCMD_RUNQUEUE
+			 ROLLCMD_SHUTDOWN
+			 ROLLCMD_SLEEPTIME
+			 ROLLCMD_STATUS
 		);
 
 my $rollmgrid;				# Roll-over manager's process id.
@@ -201,15 +209,15 @@ sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS); };
 
 my %roll_commands =
 (
-	ROLLCMD_LOGFILE		=> 1,
-	ROLLCMD_LOGLEVEL	=> 1,
-	ROLLCMD_ROLLALL		=> 1,
-	ROLLCMD_ROLLREC		=> 1,
-	ROLLCMD_ROLLZONE	=> 1,
-	ROLLCMD_RUNQUEUE	=> 1,
-	ROLLCMD_SHUTDOWN	=> 1,
-	ROLLCMD_SLEEPTIME	=> 1,
-	ROLLCMD_STATUS		=> 1,
+	rollcmd_logfile		=> 1,
+	rollcmd_loglevel	=> 1,
+	rollcmd_rollall		=> 1,
+	rollcmd_rollrec		=> 1,
+	rollcmd_rollzone	=> 1,
+	rollcmd_runqueue	=> 1,
+	rollcmd_shutdown	=> 1,
+	rollcmd_sleeptime	=> 1,
+	rollcmd_status		=> 1,
 );
 
 ##############################################################################
@@ -1326,11 +1334,6 @@ sub rollmgr_log
 	# Write the message. 
 	# 
 	print LOG "$outstr\n";
-
-	#
-	# If this was a fatal message, close up shop.
-	#
-	cleanup() if($lvl == LOG_FATAL);
 }
 
 #############################################################################
@@ -1504,6 +1507,8 @@ sub rollmgr_verifycmd
 # print "rollmgr_verifycmd:  down in\n";
 
 	$hval = $roll_commands{$cmd};
+# print "rollmgr_verifycmd:  <$cmd>\t\t<$hval>\n";
+
 	return(0) if(!defined($hval));
 	return(1);
 }
