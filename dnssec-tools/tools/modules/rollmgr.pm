@@ -1,5 +1,5 @@
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -94,13 +94,13 @@ our $VERSION = "0.01";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
+		 rollmgr_cmdint
 		 rollmgr_dir
 		 rollmgr_dropid
 		 rollmgr_getid
 		 rollmgr_halt
 		 rollmgr_idfile
 		 rollmgr_loadzone
-		 rollmgr_qproc
 		 rollmgr_rmid
 		 rollmgr_saveid
 
@@ -224,13 +224,13 @@ my %roll_commands =
 #
 # These "constants" are the names of the roll-over manager's interfaces.
 # 
+my $CMDINT	= "cmdint";
 my $DROPID	= "dropid";
 my $GETDIR	= "getdir";
 my $GETID	= "getid";
 my $HALT	= "halt";
 my $IDFILE	= "idfile";
 my $LOADZONE	= "loadzone";
-my $QPROC	= "qproc";
 my $RMID	= "rmid";
 my $SAVEID	= "saveid";
 
@@ -241,39 +241,39 @@ my $SAVEID	= "saveid";
 # 
 my %switch_uninit =
 (
+	$CMDINT	  =>	\&uninit_cmdint,
 	$DROPID	  =>	\&uninit_dropid,
 	$GETDIR	  =>	\&uninit_dir,
 	$GETID	  =>	\&uninit_getid,
 	$HALT	  =>	\&uninit_halt,
 	$IDFILE	  =>	\&uninit_idfile,
 	$LOADZONE =>	\&uninit_loadzone,
-	$QPROC	  =>	\&uninit_qproc,
 	$RMID	  =>	\&uninit_rmid,
 	$SAVEID	  =>	\&uninit_saveid,
 );
 
 my %switch_unknown =
 (
+	$CMDINT	  =>	\&unknown_cmdint,
 	$DROPID	  =>	\&unknown_dropid,
 	$GETDIR	  =>	\&unknown_dir,
 	$GETID	  =>	\&unknown_getid,
 	$HALT	  =>	\&unknown_halt,
 	$IDFILE	  =>	\&unknown_idfile,
 	$LOADZONE =>	\&unknown_loadzone,
-	$QPROC	  =>	\&unknown_qproc,
 	$RMID	  =>	\&unknown_rmid,
 	$SAVEID	  =>	\&unknown_saveid,
 );
 
 my %switch_unix =
 (
+	$CMDINT	  =>	\&unix_cmdint,
 	$DROPID	  =>	\&unix_dropid,
 	$GETDIR	  =>	\&unix_dir,
 	$GETID	  =>	\&unix_getid,
 	$HALT	  =>	\&unix_halt,
 	$IDFILE	  =>	\&unix_idfile,
 	$LOADZONE =>	\&unix_loadzone,
-	$QPROC	  =>	\&unix_qproc,
 	$RMID	  =>	\&unix_rmid,
 	$SAVEID	  =>	\&unix_saveid,
 );
@@ -300,9 +300,6 @@ my %port_archs =
 
 my $UNIX_ROLLMGR_DIR	    = "/usr/local/etc/dnssec/";
 my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "rollmgr.pid");
-
-my $UNIX_CMD_QPROC	= "HUP";		# Signal for qproc command.
-my $UNIX_CMD_HALT	= "INT";		# Signal for halt command.
 
 ##############################################################################
 #
@@ -471,19 +468,19 @@ sub rollmgr_loadzone
 
 #--------------------------------------------------------------------------
 #
-# Routine:      rollmgr_qproc()
+# Routine:      rollmgr_cmdint()
 #
-# Purpose:	Front-end to the O/S-specific "run roll-over manager's
-#		queue" function.
+# Purpose:	Front-end to the O/S-specific "roll-over manager has a
+#		command" function.
 #
-sub rollmgr_qproc
+sub rollmgr_cmdint
 {
 	my @args = shift;			# Routine arguments.
 	my $func;				# Actual function.
 
-# print "rollmgr_qproc\n";
+# print "rollmgr_cmdint\n";
 
-	$func = $switchtab{$QPROC};
+	$func = $switchtab{$CMDINT};
 	return(&$func(@args));
 }
 
@@ -635,18 +632,18 @@ sub uninit_loadzone
 
 #--------------------------------------------------------------------------
 #
-# Routine:      uninit_qproc()
+# Routine:      uninit_cmdint()
 #
 # Purpose:	Switch for uninitialized "force queue" command.
 #
-sub uninit_qproc
+sub uninit_cmdint
 {
 	my @args = shift;			# Routine arguments.
 
-# print "uninit_qproc\n";
+# print "uninit_cmdint\n";
 
 	rollmgr_prepdep();
-	return(rollmgr_qproc(@args));
+	return(rollmgr_cmdint(@args));
 }
 
 #--------------------------------------------------------------------------
@@ -750,9 +747,9 @@ sub unknown_loadzone
 
 #--------------------------------------------------------------------------
 #
-# Routine:      unknown_qproc()
+# Routine:      unknown_cmdint()
 #
-sub unknown_qproc
+sub unknown_cmdint
 {
 	unknown_action();
 }
@@ -866,7 +863,8 @@ sub unix_dropid
 	if($rdpid < 0)
 	{
 # print "unix_dropid:  opening $UNIX_ROLLMGR_PIDFILE\n";
-		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPID UNABLE TO OPEN <$UNIX_ROLLMGR_PIDFILE>\n";
+		unlink("$UNIX_ROLLMGR_PIDFILE");
+		open(PIDFILE,"> $UNIX_ROLLMGR_PIDFILE") || warn "DROPID UNABLE TO OPEN \"$UNIX_ROLLMGR_PIDFILE\"\n";
 		flock(PIDFILE,LOCK_EX);
 	}
 	else
@@ -1064,38 +1062,43 @@ sub unix_getpid
 	#
 	# Close and unlock the file if the caller only wants the pid.
 	#
-	if($closeflag)
-	{
-		close(PIDFILE);
-	}
+	close(PIDFILE) if($closeflag);
 
 	#
 	# Lop off any trailing newlines and return.
 	#
-	$pid =~ s/\n//g;
+#	$pid =~ s/\n//g;
+	$pid =~ /([0-9]+)/;
+	$pid = $1;
+
 	return($pid);
 }
 
 #--------------------------------------------------------------------------
 #
-# Routine:	unix_qproc()
+# Routine:	unix_cmdint()
 #
 # Purpose:	Kick the roll-over manager to let it know it should
 #		re-read the rollrec file and process its queue again.
 #
-sub unix_qproc
+sub unix_cmdint
 {
 	my $pid;				# Roll-over manager's pid.
 	my $ret;				# Return code from kill().
 
-print "unix_qproc:  down in\n";
+# print "unix_cmdint:  down in\n";
+
+	#
+	# Get rollerd's process id.  Return an error if we couldn't get it
+	# or if what we got is below some low arbitrary limit.
+	#
 	$pid = unix_getpid(1);
+	return(-1) if(!defined($pid) ||  ($pid < 10));
 
-print "unix_qproc:  sending - kill($UNIX_CMD_QPROC,$pid)\n";
-	$ret = kill($UNIX_CMD_QPROC,$pid);
-
-print "unix_qproc:  kill($UNIX_CMD_QPROC,$pid) returned - $ret";
-
+	#
+	# Send HUP to the rollerd.
+	#
+	$ret = kill("HUP", $pid);
 	return($ret);
 }
 
@@ -1111,12 +1114,18 @@ sub unix_halt
 	my $ret;				# Return code from kill().
 
 # print "unix_halt:  down in\n";
+
+	#
+	# Get rollerd's process id.  Return an error if we couldn't get it
+	# or if what we got is below some low arbitrary limit.
+	#
 	$pid = unix_getpid(1);
+	return(-1) if(!defined($pid) ||  ($pid < 10));
 
-	$ret = kill($UNIX_CMD_HALT,$pid);
-
-# print "unix_halt:  kill($UNIX_CMD_HALT,$pid) returned - $ret";
-
+	#
+	# Send INT to the rollerd.
+	#
+	$ret = kill('INT',$pid);
 	return($ret);
 }
 
@@ -1285,9 +1294,10 @@ sub rollmgr_logfile
 	}
 
 	#
-	# Open up the log file.
+	# Open up the log file (after closing any open logs.)
 	#
 	$logfile = $newlogfile;
+	close(LOG);
 	open(LOG,">> $logfile") || die "unable to open \"$logfile\"\n";
 	select(LOG);
 	$| = 1;
@@ -1489,6 +1499,7 @@ sub rollmgr_sendcmd
 	print SOCK "$user $EOL";
 
 	close(SOCK);
+
 	return(1);
 }
 
@@ -1538,7 +1549,7 @@ manager.
 
   rollmgr_rmid();
 
-  rollmgr_qproc();
+  rollmgr_cmdint();
 
   rollmgr_halt();
 
@@ -1610,13 +1621,16 @@ Return Values:
     -1 - the calling process is not the roll-over manager
     -2 - unable to delete the id file
 
-=head2 B<rollmgr_qproc()>
+=head2 B<rollmgr_cmdint()>
 
-This routine informs the roll-over manager that it should re-read the
-I<rollrec> file and process its queue again.
+This routine informs the roll-over manager that a command has been sent via
+I<rollmgr_sendcmd()>.
 
-In the current implementation, the return code from the B<kill()> command is
-returned.
+Return Values:
+
+    -1 - an invalid process id was found for the roll-over manager
+    Anything else indicates the number of processes that were signaled.
+    (This should only ever be 1.)
 
 =head2 B<rollmgr_halt()>
 
@@ -1624,6 +1638,10 @@ This routine informs the roll-over manager to shut down.
 
 In the current implementation, the return code from the B<kill()> command is
 returned.
+
+    -1 - an invalid process id was found for the roll-over manager
+    Anything else indicates the number of processes that were signaled.
+    (This should only ever be 1.)
 
 =head1 LOGGING INTERFACES
 
@@ -1747,7 +1765,7 @@ the file prior to opening it, but we can't do so without it being open.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
