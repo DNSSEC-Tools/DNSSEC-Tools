@@ -1,0 +1,311 @@
+#!/usr/bin/perl
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# rollctl
+#
+#	This script controls the roll-over daemon.
+#	See the pod for more details.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"logfile=s",			# Set rollerd's log file.
+	"loglevel=s",			# Set rollerd's logging level.
+	"rollall",			# Roll all our zones.
+	"rollrec=s",			# Change the rollrec file.
+	"rollzone=s",			# Roll the specified zone.
+	"runqueue",			# Run the queue.
+	"shutdown",			# Shutdown rollerd.
+	"sleeptime=i",			# Set rollerd's sleep time.
+	"status",			# Get rollerd's status.
+
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flags for the options.  Variable/option mapping should obvious.
+#
+my $logfileflag;
+my $loglevelflag;
+my $rollallflag;
+my $rollrecflag;
+my $rollzoneflag;
+my $runqueueflag;
+my $shutdownflag;
+my $sleeptimeflag;
+my $statusflag;
+
+#######################################################################
+
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# Purpose:	Yeah, yeah, a main() isn't necessary.  However, it offends my
+#		sense of aesthetics to have great gobs of code on the same
+#		level as a pile of globals.
+#
+#		But what about all those globals, you ask...
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	#
+	# Check our options.  All the commands are alphabetized, except
+	# for shutdown.  We'll save that for last.
+	#
+	doopts($argc);
+
+	#
+	# Send commands for all the specified options.
+	#
+	if($logfileflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_LOGFILE,$logfileflag);
+	}
+	if($loglevelflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_LOGLEVEL,$loglevelflag);
+	}
+	if($rollallflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_ROLLALL);
+	}
+	if($rollrecflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_ROLLREC,$rollrecflag);
+	}
+	if($rollzoneflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_ROLLZONE,$rollzoneflag);
+	}
+	if($runqueueflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_RUNQUEUE);
+	}
+	if($sleeptimeflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_SLEEPTIME,$sleeptimeflag);
+	}
+	if($statusflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_STATUS);
+	}
+	if($shutdownflag)
+	{
+		rollmgr_sendcmd(ROLLCMD_SHUTDOWN);
+	}
+
+	#
+	# Now that all our commands are sent, we'll kick rollerd to
+	# let it know there are commands a-waiting.
+	#
+	rollmgr_cmdint();
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying options are given.
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+
+	#
+	# Give a usage flag if there aren't any options.
+	#
+	usage() if($argc == 0);
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$logfileflag	= $options{'logfile'}	|| 0;
+	$loglevelflag	= $options{'loglevel'}	|| 0;
+	$rollallflag	= $options{'rollall'}	|| 0;
+	$rollrecflag	= $options{'rollrec'}	|| 0;
+	$rollzoneflag	= $options{'rollzone'}	|| 0;
+	$runqueueflag	= $options{'runqueue'}	|| 0;
+	$shutdownflag	= $options{'shutdown'}	|| 0;
+	$sleeptimeflag	= $options{'sleeptime'}	|| 0;
+	$statusflag	= $options{'status'}	|| 0;
+
+	#
+	# Give a usage flag if asked.
+	#
+	usage() if(defined($options{'help'}));
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  rollctl [options] \n";
+	print STDERR "\t-logfile <logfile>		set log file\n";
+	print STDERR "\t-loglevel <loglevel>		set logging level\n";
+	print STDERR "\t-rollall			roll all zones\n";
+	print STDERR "\t-rollrec <rollrec>		set rollrec file\n";
+	print STDERR "\t-rollzone <zone>		roll named zone\n";
+	print STDERR "\t-runqueue			run queue\n";
+	print STDERR "\t-shutdown			shutdown rollerd\n";
+	print STDERR "\t-sleeptime <sleeptime>		set sleep time\n";
+	print STDERR "\t-status				get rollerd's status\n";
+	print STDERR "\t-help				help message \n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+rollctl - Send commands to the DNSSEC-Tools roll-over daemon.
+
+=head1 SYNOPSIS
+
+  rollctl [options]
+
+=head1 DESCRIPTION
+
+The I<rollctl> command sends commands to the DNSSEC-Tools roll-over daemon,
+I<rollerd>.  Multiple options may be specified on a single command line and
+they will be executed in I<alphabetical> order.  The exception to this
+ordering is that the I<-shutdown> command will always be executed last.
+
+Communication with I<rollerd> is entirely one-way:  I<rollctl> sends a set of
+commands to I<rollerd> and I<rollerd> executes them.  No response is given to
+I<rollctl> to indicate if the commands succeeded or failed.
+
+=head1 OPTIONS
+
+The following options are handled by I<rollctl>.
+
+=over 4
+
+=item I<-logfile E<lt>logfileE<gt>>
+
+Set the I<rollerd> log file to I<logfile>.
+This must be a valid logging file.  This means that if I<logfile> already
+exists, it must be a regular file.  The only exceptions to this are if
+I<logfile> is B</dev/stdout> or B</dev/tty>.
+
+=item I<-loglevel E<lt>loglevelE<gt>>
+
+Set the I<rollerd> logging level to I<loglevel>.
+This must be one of the valid logging levels defined in B<rollmgr.pm>.
+
+=item I<-rollall>
+
+Initiate roll-over for all the zones defined in I<rollerd>'s I<rollrec> file.
+
+I<This option is not currently implemented.>
+
+=item I<-rollrec E<lt>rollrec_fileE<gt>>
+
+Set I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
+
+=item I<-rollzone E<lt>zoneE<gt>>
+
+Initiate roll-over for the zones named by I<zone>.
+
+I<This option is not currently implemented.>
+
+=item I<-runqueue>
+
+Wake up I<rollerd> and have it run its queue of I<rollrec> entries.
+
+=item I<-shutdown>
+
+Shutdown I<rollerd>.
+
+=item I<-sleeptime E<lt>sleeptimeE<gt>>
+
+Set I<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
+at least as large as the B<$MIN_SLEEP> value in I<rollerd>.
+
+=item I<-status>
+
+Have I<rollerd> write several of its operational parameters to its log file.
+
+=item I<-help>
+
+Display a usage message.
+
+=back
+
+=head1 FUTURE
+
+The following modifications may be made in the future:
+
+=over 4
+
+=item command execution order
+
+The commands will be executed in the order given on the command line rather
+than in alphabetical order.
+
+=item results returned to I<rollctl>
+
+A success/failure result will be returned to I<rollctl> from I<rollerd>.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<Net::DNS::SEC::Tools::rollmgr.pm(3)>,
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
+
+B<rollerd(8)>
+
+=cut
