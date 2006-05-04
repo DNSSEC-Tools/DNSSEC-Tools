@@ -14,6 +14,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include "../../dnssec-tools-config.h"
 
 #include <sys/types.h>
 
@@ -24,6 +25,14 @@
 #include <resolv.h>
 
 #include "resolver.h"
+
+#ifndef STRUCT___NS_MSG_HAS__MSG_PTR 
+#   ifdef STRUCT___NS_MSG_HAS__PTR
+#      define _msg_ptr _ptr
+#   else
+#      error "unknown msg ptr member in struct __ns_msg"
+#   endif
+#endif
 
 /* Forward. */
 
@@ -55,9 +64,12 @@ struct _ns_flagdata _ns_flagdata[16] = {
 	{ 0x0000, 0 },		/* expansion (6/6). */
 };
 
-int ns_msg_getflag(ns_msg handle, int flag) {
-	return(((handle)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].shift);
+/* ns_msg_getflag is a macro on linux */
+#ifndef  ns_msg_getflag
+int ns_msg_getflag(ns_msg han, int flag) {
+	return(((han)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].shift);
 }
+#endif
 
 int
 ns_skiprr(const u_char *ptr, const u_char *eom, ns_sect section, int count) {
