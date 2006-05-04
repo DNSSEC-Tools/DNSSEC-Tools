@@ -5,6 +5,8 @@ dnl provide it a file to simply check for its existence.
 AC_INIT([dnssec-tools], [0.1], [dnssec-tools-users@lists.sourceforge.net])
 AC_PREREQ([2.59])
 
+AC_CONFIG_HEADER(dnssec-tools-config.h)
+
 AC_PATH_PROG([PERLPROG],perl)
 AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(RM, rm)
@@ -36,6 +38,13 @@ AC_ARG_WITH(openssl,
       AC_ADD_SEARCH_PATH($withval)
     fi
 )
+AC_ARG_ENABLE(openssl,,
+        AC_MSG_ERROR([ Invalid option. Use --with-openssl/--without-openssl instead ]) )
+AC_ARG_WITH(ssl,,
+        AC_MSG_ERROR([ Invalid option. Use --with-openssl/--without-openssl instead ]) )
+AC_ARG_ENABLE(ssl,,
+        AC_MSG_ERROR([ Invalid option. Use --with-openssl/--without-openssl instead ]) )
+
 dnl openssl defaults to /usr/local/ssl, so add it to the search path.
 if test "x$opensslpathset" != "x1"; then
     AC_ADD_SEARCH_PATH(/usr/local/ssl)
@@ -51,6 +60,10 @@ AC_CHECK_HEADERS(openssl/bio.h openssl/evp.h)
 if test "x$ac_cv_lib_crypto_EVP_md5" != "xyes" -o "x$ac_cv_header_openssl_bio_h" != "xyes" -o "x$ac_cv_header_openssl_evp_h" != "xyes"; then
 	AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
 fi
+
+dnl ----------------------------------------------------------------------
+AC_CHECK_HEADERS(arpa/nameser.h arpa/header.h)
+
 dnl ----------------------------------------------------------------------
 
 AC_CONFIG_FILES([
