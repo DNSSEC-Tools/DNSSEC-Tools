@@ -22,6 +22,7 @@ use ExtUtils::MakeMaker;
 				getdnskeys
 				keyrec-check
 				lskrf
+				rollctl
 				rrchk
 				rrinit
 				tachk
