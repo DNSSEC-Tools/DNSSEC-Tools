@@ -68,13 +68,17 @@ AC_CHECK_STRUCT_FOR([
 #if HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
-], ns_msg, _msg_ptr, no)
+], __ns_msg, _msg_ptr, no)
+AH_TEMPLATE([STRUCT___NS_MSG_HAS__MSG_PTR],
+            [Define if struct __ns_msg had _msg_ptr.])
 
 AC_CHECK_STRUCT_FOR([
 #if HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
-], ns_msg, _ptr, no)
+], __ns_msg, _ptr, no)
+AH_TEMPLATE([STRUCT___NS_MSG_HAS__PTR],
+            [Define if struct __ns_msg had _ptr.])
 
 
 dnl ----------------------------------------------------------------------
