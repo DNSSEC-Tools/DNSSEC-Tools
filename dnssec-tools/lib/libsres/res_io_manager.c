@@ -15,11 +15,12 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
+#include "../../dnssec-tools-config.h"
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <arpa/nameser.h>
-#include <arpa/header.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -28,12 +29,18 @@
 #include <sys/time.h>
 #include <string.h>
 #include <sys/ioctl.h>
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 #include <errno.h>
 #include <pthread.h>
 #include "resolver.h"
 #include "res_support.h"
 #include "res_io_manager.h"
 
+#ifndef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/header.h>
+#endif
 
 #ifndef NULL
 #define NULL (void*)0
