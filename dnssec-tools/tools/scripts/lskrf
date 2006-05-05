@@ -424,31 +424,31 @@ sub getkeyrecs
 		}
 		elsif($type eq 'ksk')
 		{
-			$allkeys{$krn} = $kr;
-			$kskkeys{$krn} = $kr;
+			$allkeys{$krn}	= $kr;
+			$kskkeys{$krn}	= $kr;
 		}
 		elsif($type eq 'zskcur')
 		{
-			$allkeys{$krn} = $kr;
-			$zcurkeys{$krn} = $kr;
-			$zskkeys{$krn} = $kr;
+			$allkeys{$krn}	= $kr;
+			$zcurkeys{$krn}	= $kr;
+			$zskkeys{$krn}	= $kr;
 		}
 		elsif($type eq 'zsknew')
 		{
-			$allkeys{$krn} = $kr;
-			$znewkeys{$krn} = $kr;
-			$zskkeys{$krn} = $kr;
+			$allkeys{$krn}	= $kr;
+			$znewkeys{$krn}	= $kr;
+			$zskkeys{$krn}	= $kr;
 		}
 		elsif($type eq 'zskpub')
 		{
-			$allkeys{$krn} = $kr;
-			$zpubkeys{$krn} = $kr;
-			$zskkeys{$krn} = $kr;
+			$allkeys{$krn}	= $kr;
+			$zpubkeys{$krn}	= $kr;
+			$zskkeys{$krn}	= $kr;
 		}
 		elsif($type eq 'zskobs')
 		{
-			$zobskeys{$krn} = $kr;
-			$zskkeys{$krn} = $kr;
+			$zobskeys{$krn}	= $kr;
+			$zskkeys{$krn}	= $kr;
 		}
 	}
 }
@@ -575,18 +575,6 @@ sub showkeys
 	}
 
 	#
-	# Print the information about the new ZSK keys.
-	#
-	if($znewflag)
-	{
-		foreach my $k (sort(keys(%znewkeys)))
-		{
-			$krr = $znewkeys{$k};
-			outkey($k,$krr,"ZSK-new");
-		}
-	}
-
-	#
 	# Print the information about the published ZSK keys.
 	#
 	if($zpubflag)
@@ -595,6 +583,18 @@ sub showkeys
 		{
 			$krr = $zpubkeys{$k};
 			outkey($k,$krr,"ZSK-pub");
+		}
+	}
+
+	#
+	# Print the information about the new ZSK keys.
+	#
+	if($znewflag)
+	{
+		foreach my $k (sort(keys(%znewkeys)))
+		{
+			$krr = $znewkeys{$k};
+			outkey($k,$krr,"ZSK-new");
 		}
 	}
 
