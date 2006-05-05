@@ -23,6 +23,7 @@ use ExtUtils::MakeMaker;
 				keyrec-check
 				lskrf
 				rollctl
+				rollerd
 				rrchk
 				rrinit
 				tachk
