@@ -92,6 +92,7 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#include "../../dnssec-tools-config.h"
 
 
 #include <sys/types.h>
@@ -133,6 +134,14 @@ const char *_libsres_opcodes[] = {
 # define SPRINTF(x) strlen(sprintf/**/x)
 #else
 # define SPRINTF(x) sprintf x
+#endif
+
+#ifdef sun
+#define P_OPTION_ARG_TYPE uint_t
+#define P_SECSTODATE_ARG_TYPE  uint_t
+#else
+#define P_OPTION_ARG_TYPE u_long
+#define P_SECSTODATE_ARG_TYPE  u_long
 #endif
 
 extern const char *_res_sectioncodes[];
@@ -592,7 +601,7 @@ p_class(int class) {
  * Return a mnemonic for an option
  */
 const char *
-p_option(u_long option) {
+p_option(P_OPTION_ARG_TYPE option) {
 	static char nbuf[40];
 
 	switch (option) {
@@ -1089,13 +1098,12 @@ dn_count_labels(const char *name) {
 	return (count);
 }
 
-
 /* 
  * Make dates expressed in seconds-since-Jan-1-1970 easy to read.  
  * SIG records are required to be printed like this, by the Secure DNS RFC.
  */
 char *
-p_secstodate (u_long secs) {
+p_secstodate (P_SECSTODATE_ARG_TYPE secs) {
 	/* XXX nonreentrant */
 	static char output[15];		/* YYYYMMDDHHMMSS and null */
 	time_t clock = secs;
