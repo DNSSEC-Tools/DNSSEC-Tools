@@ -1,7 +1,7 @@
 /* dnssec-tools-config.h.in.  Generated from configure.in by autoheader.  */
 
-/* Define to 1 if you have the <arpa/header.h> header file. */
-#undef HAVE_ARPA_HEADER_H
+/* Define to 1 if you have the <arpa/nameser_compat.h> header file. */
+#undef HAVE_ARPA_NAMESER_COMPAT_H
 
 /* Define to 1 if you have the <arpa/nameser.h> header file. */
 #undef HAVE_ARPA_NAMESER_H
@@ -122,9 +122,22 @@ typedef unsigned int     u_int32_t;
 typedef uint16_t        u_int16_t;
 #else
 #ifdef INT16_T
-typedef unsigned INT32_T u_int16_t;
+typedef unsigned INT16_T u_int16_t;
 #else
 typedef unsigned short     u_int16_t;
 #endif
 #endif
 #endif /* !HAVE_U_INT16_T */
+
+/* define u_int8_t if not available */
+#ifndef HAVE_U_INT8_T
+#ifdef HAVE_UINT8_T
+typedef uint8_t        u_int8_t;
+#else
+#ifdef INT8_T
+typedef unsigned INT8_T u_int8_t;
+#else
+typedef unsigned short     u_int8_t;
+#endif
+#endif
+#endif /* !HAVE_U_INT8_T */
