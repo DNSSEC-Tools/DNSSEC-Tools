@@ -70,6 +70,7 @@ our @EXPORT = qw(
 			rollrec_names
 			rollrec_newrec
 			rollrec_read
+			rollrec_rectype
 			rollrec_recval
 			rollrec_settime
 			rollrec_setval
@@ -192,10 +193,7 @@ sub rollrec_read
 	# Use the default rollrec file, unless the caller specified
 	# a different file.
 	#
-	if($rrf eq "")
-	{
-		$rrf = rollrec_default();
-	}
+	$rrf = rollrec_default() if($rrf eq "");
 
 	#
 	# Make sure the rollrec file exists.
@@ -211,10 +209,7 @@ sub rollrec_read
 	# save the file.
 	#
 	@sbuf = stat(ROLLREC);
-	if(@sbuf != 0)
-	{
-		rollrec_close();
-	}
+	rollrec_close() if(@sbuf != 0);
 
 	#
 	# Open up the rollrec file.
@@ -361,6 +356,68 @@ sub rollrec_recval
 
 #--------------------------------------------------------------------------
 #
+# Routine:	rollrec_rectype()
+#
+# Purpose:	Change the value of a rollrec.  The new value may only be
+#		"roll" or "skip".
+#
+# Return Values:
+#
+#		1 - success
+#		0 - failure (invalid record type or rollrec not found)
+#
+sub rollrec_rectype
+{
+	my $name    = shift;		# Name of rollrec we're modifying.
+	my $rectype = shift;		# Rollrec's new type.
+
+	#
+	# Make sure we've got a valid record type.
+	#
+	return(0) if(($rectype ne "roll") && ($rectype ne "skip"));
+
+	#
+	# Find the appropriate entry to modify in @rollreclines.  If the
+	# given field isn't set in $name's rollrec, we'll insert this as
+	# a new field at the end of that rollrec.
+	#
+	for(my $rrind=0;$rrind<$rollreclen;$rrind++)
+	{
+		my $line = $rollreclines[$rrind];	# Line in rollrec file.
+		my $rtype;				# Rollrec type.
+		my $rrname;				# Rollrec name.
+
+		#
+		# Dig out the line's keyword and value.
+		#
+		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
+		$rtype = $1;
+		$rrname = $2;
+
+		#
+		# If this line has the rollrec's name and is the start of a
+		# new rollrec, then we've found our man.  We'll change the
+		# record type and return success.
+		#
+		if(lc($rrname) eq lc($name))
+		{
+			$rollrecs{$name}{'rollrec_type'} = $rectype;
+
+			$line =~ s/$rtype/$rectype/;
+			$rollreclines[$rrind] = $line;
+			$modified = 1;
+			return(1);
+		}
+	}
+
+	#
+	# We didn't find the line, so we'll return failure.
+	#
+	return(0);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	rollrec_setval()
 #
 # Purpose:	Set the value of a name/subfield pair.  The value is saved
@@ -432,10 +489,7 @@ sub rollrec_setval
 		#		   ensures that there will be a rollrec with
 		#		   the name we want.
 		#
-		if(lc($rrname) eq lc($name))
-		{
-			last;
-		}
+		last if(lc($rrname) eq lc($name));
 	}
 
 	#
@@ -461,19 +515,13 @@ sub rollrec_setval
 		# If we hit the beginning of the next rollrec without
 		# finding the field, drop out and insert it.
 		#
-		if($lkw eq "")
-		{
-			next;
-		}
+		next if($lkw eq "");
 
 		#
 		# If we hit the beginning of the next rollrec without
 		# finding the field, drop out and insert it.
 		#
-		if(lc($lkw) eq "roll")
-		{
-			last;
-		}
+		last if(lc($lkw) eq "roll");
 
 		#
 		# Save the index of the last field we've looked at that
@@ -886,10 +934,7 @@ sub rollrec_write
 	#
 	# If the file hasn't changed, we'll skip writing.
 	#
-	if(!$modified)
-	{
-		return;
-	}
+	return if(!$modified);
 
 	#
 	# Loop through the array of rollrec lines and concatenate them all.
@@ -989,6 +1034,9 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   rollrec_add("skip","example.com",\%rollfields);
 
   rollrec_del("example.com");
+
+  rollrec_type("example.com","skip");
+  rollrec_type("example.com","roll");
 
   rollrec_setval("example.com","zonefile","db.example.com");
 
@@ -1174,6 +1222,21 @@ The call:
     rollrec_recval("example.com","zonefile")
 
 will return the value "db.example.com".
+
+=head2 B<rollrec_rectype(rollrec_name,rectype)>
+
+Set the type of the specified I<rollrec> record.  The file is
+B<not> written after updating the value, but the internal file-modified flag
+is set.  The value is saved in both I<%rollrecs> and in I<@rollreclines>.
+
+I<rollrec_name> is the name of the I<rollrec> that will be modified.
+I<rectype> is the new type of the I<rollrec>, which must be either "roll"
+or "skip".
+
+Return values:
+
+    0 - failure (invalid record type or rollrec not found)
+    1 - success
 
 =head2 B<rollrec_setval(rollrec_name,field,value)>
 
