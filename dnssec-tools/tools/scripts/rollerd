@@ -1,0 +1,1846 @@
+#!/usr/bin/perl
+#
+# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# rollerd
+#
+#	This script manages the key roll-over process.
+#
+#	ZSK roll-over takes place in four phases:
+#		- wait until it's time to perform a ZSK roll-over
+#		- sign the zone with the KSK and Published ZSK
+#		- wait for old zone data to expire from caches
+#		- sign the zone with a newly Current ZSK key
+#
+#--------------------------------------------------------------------------
+#
+#	WORKING ON:
+#		- ttl values are taken from unsigned file.  must
+#		  fix this.
+#
+#	TODO:
+#		- Move DNS reload function to rollmgr.pm.
+#		- roller probably assumes the rollrec file (and records)
+#		  are always consistent with keyrec file (and records).
+#		  Should figure out where errors may hit and what to do
+#		  about them.
+#		- Add interfaces to modify option values while rollerd is
+#		  running.
+#
+
+use strict;
+
+use Date::Format;
+use Date::Parse;
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::timetrans;
+use Net::DNS::SEC::Tools::tooloptions;
+
+use Net::DNS::ZoneFile::Fast;
+
+use POSIX qw(setsid);
+
+#######################################################################
+
+my $ME		= "rollerd";
+
+#
+# Some path variables to be set from the config file.
+#
+my $rndc;
+my $rrchk;
+
+my $DEFAULT_NAP	= 60;
+
+##########################################
+#
+# Data required for command line options.
+#
+my $verbose = 0;			# Verbose option.
+
+my $rollrecfile;			# Rollrec file to be managed.
+
+my %dtconf;				# DNSSEC-Tools config file.
+my $DT_LOGFILE	= "roll_logfile";
+my $DT_LOGLEVEL	= "roll_loglevel";
+my $DT_SLEEP	= "roll_sleeptime";
+
+my $OPT_HELP	 = "help";
+my $OPT_DIR	 = "directory";
+my $OPT_LOGFILE	 = "logfile";
+my $OPT_LOGLEVEL = "loglevel";
+my $OPT_PARAMS	 = "parameters";
+my $OPT_RRFILE	 = "rrfile";
+my $OPT_SLEEP	 = "sleep";
+my $OPT_VERBOSE	 = "verbose";
+
+my %opts = ();			# Filled option array.
+my @opts =
+(
+	"rrfile=s",			# Rollrec file.
+	"directory=s",			# Execution directory.
+	"logfile=s",			# Log file.
+	"loglevel=s",			# Logging level.
+	"sleep=i",			# Sleep amount (in seconds.)
+	"parameters",			# Display the parameters and exit.
+	"help",				# Give a usage message and exit.
+	"verbose",			# Verbose output.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $logfile;				# Log file.
+my $loglevel;				# Logging level.
+my $sleeptime;				# Sleep interval in seconds.
+my $sleepcnt;				# Time we've slept so far.
+
+my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
+
+
+#######################################################################
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+# steps:
+#	while rollrec file is not empty
+##		read rollrec file
+#
+#		for each rollrec in the rollrec file
+#			handle according to its phase
+#
+sub main
+{
+	my $argc;			# Number of command line arguments.
+
+	my $errors = 0;			# Total error count.
+
+	#
+	# Check our options and arguments.
+	#
+	%dtconf = parseconfig();
+	optsandargs();
+	getprogs();
+
+	#
+	# Daemonize ourself.
+	#
+	exit(0) if(fork());
+	POSIX::setsid();
+
+	#
+	# Tell the log we're up.
+	#
+	bootmsg(1);
+
+	#
+	# Ensure we're the only rollerd running and drop a pid file.
+	#
+	if(rollmgr_dropid() == 0)
+	{
+		print "another rollerd is already running\n";
+		rollmgr_log(LOG_FATAL,"","another rollover_manager is already running");
+		cleanup();
+	}
+
+	#
+	# Initial check for signed zonefile and keyrec file.
+	#
+	init_filechk($rollrecfile);
+
+	#
+	# Set up the command channel.
+	#
+	rollmgr_channel(1);
+
+	#
+	# Main event loop.  If the roll rec file is okay, we'll read it,
+	# check its zones -- rolling 'em if need be -- and saving its state.
+	# We'll always check for user commands and then sleep a bit.
+	#
+	while(42)
+	{
+# rollmgr_log(LOG_ALWAYS,"","looping ------------------------------------------");
+
+		#
+		# Turn off signal handlers so they don't interrupt us
+		# while we're running the queue.
+		#
+		controllers(0);
+
+		#
+		# Clean up and exit if the rollrec file doesn't exist
+		# or is empty.
+		#
+		if(rrfokay($rollrecfile,""))
+		{
+			#
+			# Get the current contents of the rollrec file.
+			#
+			rollrec_read($rollrecfile);
+
+			#
+			# Check the zones for expired ZSKs.
+			#
+			zsk_check();
+
+			#
+			# Save the current rollrec file state.
+			#
+			rollrec_write();
+		}
+
+		#
+		# Check for user commands.
+		#
+		commander();
+
+		#
+		# Turn our signal handlers on while we sleep.
+		#
+		controllers(1);
+
+		#
+		# Sleep for a bit.
+		#
+		sleeper($sleeptime);
+
+	}
+}
+
+###############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zsk_check()
+#
+sub zsk_check
+{
+	my @rrfstats;			# Stats for rollrec file.
+
+	foreach my $rname (rollrec_names())
+	{
+		my $rrr;		# Reference to rollrec.
+		my %rr;			# Rollrec hash.
+		my $phase;		# Rollrec's phase.
+
+		#
+		# Get the rollrec for this name.  If it doesn't have one,
+		# whinge and continue to the next.
+		#
+		$rrr = rollrec_fullrec($rname);
+		if(!defined($rrr))
+		{
+			rollmgr_log(LOG_ERR,$rname,"no rollrec defined for zone");
+			next;
+		}
+		%rr = %$rrr;
+
+		#
+		# Don't do anything with skip records.
+		#
+		if($rr{'rollrec_type'} eq "skip")
+		{
+			rollmgr_log(LOG_TMI,$rname,"is a skip rollrec");
+			next;
+		}
+
+		#
+		# Do basic set-up for brand new records.
+		#
+		if($rr{'curphase'} == -1)
+		{
+			rollmgr_log(LOG_CURPHASE,$rname,"new rollrec");
+			newphase($rname,$rrr,0)
+		}
+
+		#
+		# If this zone's current ZSK has expired, we'll get it rolling.
+		# 
+		if(expired($rname,$rrr,"zskcur"))
+		{
+			rollmgr_log(LOG_CURPHASE,$rname,"current ZSK has expired\n") if($rr{'curphase'} == 0);
+
+			zsk_phaser($rname,$rrr);
+		}
+		else
+		{
+			rollmgr_log(LOG_TMI,$rname,"current ZSK still valid");
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zsk_phaser()
+#
+sub zsk_phaser
+{
+	my $rname = shift;		# Zone name.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr;				# Rollrec hash.
+	my $phase;			# Zone's current roll-over phase.
+
+	#
+	# Get this rollrec record's current phase.
+	#
+	%rr = %$rrr;
+	$phase = $rr{'curphase'};
+
+	#
+	# Work on this rollrec's phase.
+	#
+	$phase = newphase($rname,$rrr,1)	if($phase == 0);
+	$phase = zsk_phasewait($rname,$rrr,1)	if($phase == 1);
+	$phase = zsk_phase2($rname,$rrr)     	if($phase == 2);
+	$phase = zsk_phasewait($rname,$rrr,3)	if($phase == 3);
+	$phase = zsk_phase4($rname,$rrr)     	if($phase == 4);
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zsk_phase1()
+#
+sub zsk_phasewait
+{
+	my $rname = shift;			# Name of rollrec.
+	my $rrr	  = shift;			# Reference to rollrec.
+	my $phase = shift;			# Roll-over phase.
+
+	my %rr;					# Rollrec hash.
+
+	$rrr = rollrec_fullrec($rname);
+	%rr = %$rrr;
+
+	#
+	# Check if we can go to the next roll-over phase.  If not, we'll
+	# go to the next rollrec entry and return to this later.
+	#
+	if(!ttlexpire($rname,$rrr,$phase))
+	{
+		return($phase);
+	}
+
+	#
+	# Bump this rollrec's phase number and return the new phase.
+	#
+	$phase++;
+	newphase($rname,$rrr,$phase);
+	return($phase);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zsk_phase2()
+#
+# Purpose:	Perform the phase 2 steps of the roll-over.  These are:
+#
+#			- sign the zone with the KSK and published ZSK
+#			- reload the zone
+#			- wait for old zone data to expire
+#
+sub zsk_phase2
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr;				# Rollrec hash.
+
+	my $krf;			# Rollrec's keyrec name.
+	my %krf;			# Keyrec hash.
+	my $krr;			# Keyrec reference.
+
+	my $ret;			# Result from command executions.
+
+	%rr = %$rrr;
+
+	#
+	# Get the rollrec's associated keyrec file and ensure that it
+	# exists.
+	#
+	$krf = $rr{'keyrec'};
+	if(!$krf  || ($krf eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 2:  no keyrec for zone specified");
+		return;
+	}
+	if(! -e $krf)
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 2:  keyrec \"$krf\" for zone does not exist");
+		return;
+	}
+
+	#
+	# Get the keyrec.
+	#
+	$krr = opts_zonekr($krf,$rname);
+	%krf = %$krr;
+
+	#
+	# Sign the zone with the published ZSK.
+	#
+	$ret = signer($rname,"-usepub",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 2:  unable to sign zone with the published ZSK");
+	}
+
+	#
+	# Update the timestamp in the zone's keyrec.
+	#
+	keyrec_settime("zone",$rname);
+	keyrec_write();
+
+	#
+	# Reload the zone.
+	#
+	$ret = rollmgr_loadzone($rndc,$rname);
+	if($ret != 0)
+	{
+#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
+	}
+
+	#
+	# Bump this rollrec's phase number and return the new phase.
+	#
+	newphase($rname,$rrr,3);
+	return(3);
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zsk_phase4()
+#
+sub zsk_phase4
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr;				# Rollrec hash.
+
+	my $krf;			# Rollrec's keyrec name.
+	my %krf;			# Keyrec hash.
+	my $krr;			# Keyrec reference.
+
+	my $ret;			# Result from command executions.
+
+	%rr = %$rrr;
+
+		#
+		# Get the rollrec's associated keyrec file and ensure that it
+		# exists.
+		#
+		$krf = $rr{'keyrec'};
+		if(!$krf  || ($krf eq ""))
+		{
+			rollmgr_log(LOG_ERR,$rname,"phase 4:  no keyrec for zone specified");
+			return;
+		}
+		if(! -e $krf)
+		{
+			rollmgr_log(LOG_ERR,$rname,"phase 4:  keyrec \"$krf\" for zone does not exist");
+			return;
+		}
+
+		#
+		# Get the keyrec.
+		#
+		rollmgr_log(LOG_TMI,$rname,"keyrec file is $krf");
+		$krr = opts_zonekr($krf,$rname);
+		%krf = %$krr;
+
+	#
+	# Adjust ZSKs in the zone's keyrec.
+	#
+	$ret = signer($rname,"-forceroll",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to adjust ZSK keyrec");
+	}
+
+	#
+	# Sign the zone with the current ZSK.
+	#
+	$ret = signer($rname,"",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to sign zone with the current ZSK");
+	}
+
+	#
+	# Reload the zone.
+	#
+	$ret = rollmgr_loadzone($rndc,$rname);
+	if($ret != 0)
+	{
+#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
+	}
+
+	#
+	# Put ourselves back in the pre-roll state.
+	#
+	newphase($rname,$rrr,0);
+	return(0);
+}
+
+###############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	expired()
+#
+# Purpose:	This routine returns a boolean indicating if the specified
+#		zone has an expired key of the given type.
+#
+#		The zone's keyrec file name is taken from the given rollrec
+#		entry.  The keyrec file is read and the zone's entry found.
+#		The key keyrec of the specified key type ("zskcur" or "ksk") 
+#		is pulled from the keyrec file.
+#		
+#		Key expiration is determined by comparing the key keyrec's
+#		gensecs field to the current time.  The key hasn't expired
+#		if the current time is less than the gensecs; the key has
+#		expired if the current time is greater than the gensecs.
+#
+sub expired
+{
+	my $rname = shift;			# Name of rollrec rec.
+	my $rrr = shift;			# Reference to rollrec.
+	my $key = shift;			# Key to check.
+
+	my %rr;					# Rollrec hash.
+
+	my $krname;				# Name of keyrec.
+	my $krec;				# Keyrec reference.
+	my %kh;					# Keyrec hash.
+
+	my $life;				# Name of keylife field.
+	my $cronus;				# Current time.
+	my $gentime;				# Key's generation date.
+	my $exptime;				# Key's lifespan.
+	my $krsecs;				# Key's expiration date.
+
+	my $waitsecs;				# Time to expiration.
+	my $chronostr;				# Textual expiration time.
+
+	#
+	# If this zone is in the middle of roll-over processing, we'll
+	# immediately assume the key has expired.
+	#
+	#	NOTE:	THIS IS LIKELY TO CHANGE A BIT WHEN WE START
+	#		LOOKING AT KSKs.
+	#
+	%rr = %$rrr;
+	return(1) if($rr{'curphase'} > 0);
+
+	#
+	# Get the rollin' key's keyrec for our zone.
+	#
+	$krname = $rr{'keyrec'};
+	$krec = zonekeykr($rname,$krname,$key);
+	if($krec == 0)
+	{
+		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
+		return(0);
+	}
+	%kh   = %$krec;
+
+	#
+	# Ensure that required keyrec fields exist.
+	#
+	if(!defined($kh{"keyrec_gensecs"}))
+	{
+		rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
+		return(0);
+	}
+	$life = $kh{"keyrec_type"};
+	$life = substr($life,0,3) . "life";
+	if(!defined($kh{$life}))
+	{
+		rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a $life record");
+		return(0);
+	}
+
+	#
+	# Get the key's generation time and the current time.
+	#
+	$gentime = $kh{"keyrec_gensecs"};
+	$cronus	 = time;
+
+	#
+	# Calculate the key's expiration time.
+	#
+	$exptime = $kh{$life};
+	$krsecs = $gentime + $exptime;
+
+	#
+	# Calculate the log message we should give.
+	#
+	$waitsecs = $krsecs - $cronus;
+	if($waitsecs >= 0)
+	{
+		$chronostr = timetrans($waitsecs);
+		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
+	}
+	else
+	{
+		$waitsecs = $cronus - $krsecs;
+		$chronostr = timetrans($waitsecs);
+		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
+	}
+
+	#
+	# Return success (expired) if the current time has passed the
+	# key's lifespan.
+	# Return failure (not expired) if the key's lifespan has yet
+	# to reach the current time.
+	#
+	return(1) if($cronus > $krsecs);
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	maxttl()
+#
+# Purpose:	
+#
+sub maxttl
+{
+	my $signdb = shift;		# Signed zone's db filename.
+
+	my $rrsref;			# Reference to zone's resource records.
+	my @rrs;			# Zone's resource records.
+	my $numrrs;			# Number of resource records in zone.
+	my $rrref;			# Reference to a resource record.
+	my %rr;				# A resource record to examine.
+	my $maxttl = -1;		# Zone's maximum time-to-live value.
+	my $ttl;			# Time-to-live value from a record.
+
+	#
+	# Ensure the zone file exists.
+	#
+	if(! -e $signdb)
+	{
+		rollmgr_log(LOG_ERR,$signdb,"zone file does not exist");
+		return(-1);
+	}
+
+	#
+	# Get the zone's resource record collection.
+	#
+	$rrsref = Net::DNS::ZoneFile::Fast::parse(file => $signdb);
+
+	#
+	# Get the number of resource records in the zone.
+	#
+	@rrs = @$rrsref;
+	$numrrs = @rrs;
+
+	#
+	# Look at each resource record and save the largest value.
+	#
+	for(my $ind=0;$ind<$numrrs;$ind++)
+	{
+		$rrref = $rrs[$ind];
+		%rr = %$rrref;
+
+		$ttl = $rr{'ttl'};
+		$maxttl = $ttl if($ttl > $maxttl);
+	}
+
+	#
+	# Return the zone's maximum TTL value to our caller.
+	#
+	return($maxttl);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	ttlexpire()
+#
+# Purpose:	Returns a boolean indicating if we can move to the next phase
+#		of roll-over.  This is calculated by adding twice the TTL
+#		length to the time we entered this phase.  If this is greater
+#		than the current time, then we must wait a bit longer.  If
+#		this is less than the current time, then we can proceed to
+#		the next roll-over phase.
+#
+# Return Values:
+#		0 - Zone's expiry date has not passed.
+#		1 - Zone's expiry date has passed.
+#
+sub ttlexpire
+{
+	my $rname = shift;			# Name of rollrec.
+	my $rrr	  = shift;			# Reference to rollrec.
+	my $phase = shift;			# Zone's current phase.
+
+	my %rr;					# Rollrec hash.
+
+	my $zonefile;				# Zone file.
+	my $maxttl;				# Zone's maximum TTL value.
+	my $phstart;				# Start of zone's phase.
+
+	my $curtime;				# Current time string.
+	my $curtempus;				# Current time in seconds.
+	my $endtempus;				# End-date in seconds.
+
+	my $timediff;				# Time until expiration.
+	my $tdstr;				# String of timediff.
+
+	#
+	# Get a few fields from the rollrec.
+	#
+	%rr = %$rrr;
+	$zonefile = $rr{'zonefile'};
+	$phstart  = $rr{'phasestart'};
+
+	#
+	# Get the signed zonefile's maximum TTL and save it into the
+	# rollrec.  We'll then double it as a safety margin.
+	#
+	$maxttl	= maxttl($zonefile);
+	rollrec_setval($rname,"maxttl",$maxttl);
+	$maxttl	*= 2;
+
+	#
+	# Get the current time in seconds.
+	#
+	$curtime = gmtime;
+	$curtempus = str2time($curtime);
+
+	#
+	# Get the end-time (in seconds) and add the TTL.
+	#
+	$endtempus = str2time($phstart);
+	$endtempus += $maxttl;
+
+	#
+	# Give any desired verbose output.
+	#
+	if($verbose)
+	{
+		my $endtime;				# End-date string.
+
+		$endtime = ctime($endtempus);
+		chomp $endtime;
+
+		rollmgr_log(LOG_TMI,$rname,"roll-over TTL check");
+		rollmgr_log(LOG_TMI,$rname,"endtime\t$endtime");
+		rollmgr_log(LOG_TMI,$rname,"curtime\t$curtime");
+	}
+
+	#
+	# Return success if we've passed the zone's adjusted end-date.
+	# Return failure (not expired) if the zone's adjusted end-date
+	# is in the future.
+	#
+# rollmgr_log(LOG_INFO,$rname,"phase $phase; pre-return ($curtempus) ($endtempus)");
+	return(1) if($curtempus >= $endtempus);
+
+	$timediff = $endtempus - $curtempus;
+	$tdstr = timetrans($timediff);
+	rollmgr_log(LOG_INFO,$rname,"phase $phase; cache expires in $tdstr");
+	return(0)
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	newphase()
+#
+# Purpose:	Moves a rollrec into the next phase, setting both the
+#		phase number and the phase start time.
+#
+sub newphase
+{
+	my $rname = shift;				# Name of rollrec.
+	my $rrr	  = shift;				# Rollrec reference.
+	my $phase = shift;				# New phase.
+
+	my %rr = %$rrr;					# Rollrec hash.
+
+	my $krname;					# Name of key's rollrec.
+	my $krec;					# Key's keyrec.
+
+	my $exptime;					# Key's time to expiry.
+	my $chronostr;					# Pretty roll-over time.
+
+	if($phase == 1)
+	{
+		rollmgr_log(LOG_TMI,$rname,"starting roll-over");
+	}
+	else
+	{
+		rollmgr_log(LOG_TMI,$rname,"moving to phase $phase");
+	}
+
+	rollmgr_log(LOG_CURPHASE,$rname,"phase $phase");
+
+	$rr{'curphase'} = $phase;
+	rollrec_setval($rname,"curphase",$phase);
+	rollrec_settime($rname);
+	rollrec_write();
+
+	#
+	# If we're at the start of a roll-over, we'll log the expiration time.
+	#
+	if($phase == 0)
+	{
+		#
+		# Get the rollin' key's keyrec for our zone.
+		#
+		$krname = $rr{'keyrec'};
+		$krec = zonekeykr($rname,$krname,"zskcur");
+		if($krec == 0)
+		{
+			rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for \"zskcur\" in \"$krname\"");
+			return(0);
+		}
+
+		#
+		# Tell the log when the zone will expire, based on the lifespan.
+		#
+		$exptime  = $krec->{'zsklife'};
+		$chronostr = timetrans($exptime);
+		rollmgr_log(LOG_INFO,$rname,"    expiration in $chronostr\n");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	signer()
+#
+# Purpose:	Signs a zone with a specified ZSK.
+#
+#		On success, the return value of the zone-signing command
+#			is returned.
+#		On failure, "" is returned.
+#
+sub signer
+{
+	my $rname  = shift;			# Name of rollrec.
+	my $zsflag = shift;			# Flag for key generation.
+	my $rrr	   = shift;			# Reference to rollrec.
+
+	my %rr;					# Rollrec hash.
+
+	my $zonefile;				# Zone file from keyrec.
+	my $zonesigned;				# Signed zone file from keyrec.
+	my $cmdstr;				# Command to be executed.
+
+	#
+	# Dig a few data out of the zone's keyrec file.
+	#
+	$zonefile = getkrval($rname,$rrr,"zonefile");
+	return("") if($zonefile eq "");
+
+	$zonesigned = getkrval($rname,$rrr,"signedzone");
+	return("") if($zonesigned eq "");
+
+	#
+	# Have zonesigner sign the zone for us.
+	#
+	$cmdstr = "zonesigner $zsflag $zonefile $zonesigned";
+	rollmgr_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
+	$ret = `$cmdstr`;
+
+	return($ret);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	zonekeykr()
+#
+# Purpose:	This routine returns the specified key's keyrec from specified
+#		zone from the specified keyrec file.  This routine is big on
+#		specified things.
+#
+sub zonekeykr
+{
+	my $rname = shift;			# Name of rollrec rec.
+	my $krname = shift;			# Name of keyrec.
+	my $key = shift;			# Key to check.
+
+	my $krec;				# Keyrec reference.
+	my %kh;					# Keyrec hash.
+
+	#
+	# Get the keyrec file's name and then read the file.
+	#
+	keyrec_read($krname);
+
+	#
+	# Get the zone's keyrec and complain if it doesn't exist.
+	#
+	$krec = keyrec_fullrec($rname);
+	if(!defined($krec))
+	{
+		rollmgr_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for zone");
+		return(0);
+	}
+	%kh   = %$krec;
+
+	#
+	# Get the key's keyrec and complain if it doesn't exist.
+	#
+	$key = $kh{$key};
+	$krec = keyrec_fullrec($key);
+	if(!defined($krec))
+	{
+		rollmgr_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for key");
+		return(0);
+	}
+
+	return($krec);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getkrval()
+#
+# Purpose:	This routine returns the value of a specified field in a
+#		keyrec.  Error checking is performed to ensure that the
+#		field exists in the keyrec and that it doesn't have an
+#		empty value.
+#
+sub getkrval
+{
+	my $name = shift;				# Owner's name.
+	my $krr	  = shift;				# Keyrec reference.
+	my $field = shift;				# Keyrec's field.
+
+	my %kh = %$krr;					# Keyrec hash.
+	my $val;					# Field's value.
+
+	#
+	# Ensure that the requested field exists.
+	#
+	if(!defined($kh{$field}))
+	{
+		rollmgr_log(LOG_ERR,$name,"keyrec has no entry for \"$field\"");
+		return("");
+	}
+
+	#
+	# Get the field from the keyrec.
+	#
+	$val = $kh{$field};
+
+	#
+	# Give an error if the value is empty.
+	#
+	if($val eq "")
+	{
+		rollmgr_log(LOG_ERR,$name,"keyrec has an empty entry for \"$field\"");
+	}
+
+	return($val);
+}
+
+##############################################################################
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	optsandargs()
+#
+sub optsandargs
+{
+	my $argc = @ARGV;				# Number of arguments.
+	my $dir;					# Execution directory.
+
+	#
+	# Check our options.
+	#
+	GetOptions(\%opts,@opts);
+	$verbose   = $opts{$OPT_VERBOSE};
+	$logfile   = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
+	$loglevel  = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
+	$sleeptime = $opts{$OPT_SLEEP}	  || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
+
+	usage() if(defined($opts{$OPT_HELP}));
+
+	#
+	# Check for a rollrec file name.
+	#
+	$rollrecfile = $opts{$OPT_RRFILE} || rollrec_default();
+
+	#
+	# Move into our execution directory.
+	#
+	$dir = $opts{$OPT_DIR} || getconfdir();
+	if(!defined($dir))
+	{
+		print STDERR "rollerd:  no execution directory defined\n";
+		exit(1);
+	}
+	if(! -e $dir)
+	{
+		print STDERR "rollerd:  execution directory \"$dir\" does not exist\n";
+		exit(1);
+	}
+	if(! -d $dir)
+	{
+		print STDERR "rollerd:  execution directory \"$dir\" is not a directory\n";
+		exit(1);
+	}
+	chdir($dir);
+
+	#
+	# Complain and die if a log file wasn't given on the command line
+	# or in the config file.
+	#
+	if(!defined($logfile))
+	{
+		print STDERR "rollerd:  no logfile specified on command line or in dnssec-tools.conf\n";
+		exit(1);
+	}
+
+	#
+	# Set the logging level and file.
+	#
+	rollmgr_loglevel($loglevel,1);
+	rollmgr_logfile($logfile,1);
+
+	#
+	# If the user only wants the parameters, print 'em and exit.
+	#
+	if($opts{$OPT_PARAMS})
+	{
+		print "$ME parameters:\n";
+		print "	rollrec file	\"$rollrecfile\"\n";
+		print "	directory	\"$dir\"\n";
+		print "	logfile		\"$logfile\"\n";
+		print "	loglevel	\"$loglevel\"\n";
+		print "	sleeptime	\"$sleeptime\"\n";
+		exit(0)
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getprogs()
+#
+# Purpose:	Get some program paths.
+#
+sub getprogs
+{
+	#
+	# Get the paths to the external commands.  If they aren't defined,
+	# use the default command names.
+	#
+	$rndc 	= $dtconf{'rndc'}	 || dnssec_tools_defaults("bind_rndc");
+	$rrchk	= $dtconf{'rollrec_chk'} || dnssec_tools_defaults("rollrec_check");
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	bootmsg()
+#
+# Purpose:	Write a start-up message to the log.
+#
+sub bootmsg
+{
+	my $bootflag = shift;				# Boot flag.
+
+	if($bootflag)
+	{
+		rollmgr_log(LOG_ALWAYS,"","$ME starting " . ("-" x 40));
+	}
+	else
+	{
+		rollmgr_log(LOG_ALWAYS,"","$ME changing logfiles " . ("-" x 31));
+	}
+
+	rollmgr_log(LOG_ALWAYS,"","$ME parameters:");
+	rollmgr_log(LOG_ALWAYS,"","		rollrec file	\"$rollrecfile\"");
+	rollmgr_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
+	rollmgr_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
+	rollmgr_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
+	rollmgr_log(LOG_ALWAYS,""," ");
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	init_filechk()
+#
+# Purpose:	This routine performs initial checking of the rollrec file.
+#		It checks each roll rollrec to ensure its zonefile and keyrec
+#		file exist.  If one or both don't exist, the rollrec's type
+#		will be changed into a skip rollrec.  This prevents lots of
+#		unnecessary repeated log messages of an invalid rollrec.
+#
+sub init_filechk
+{
+	my $rrf = shift;				# Rollrec file.
+	my $modified = 0;				# Modified flag.
+
+	#
+	# Exit if the rollrec file is bad.
+	# 
+	halt_handler() if(!rrfokay($rrf));
+
+	#
+	# Get the current contents of the rollrec file.
+	#
+	rollrec_read($rollrecfile);
+
+	#
+	# For each roll rollrec, check if its zonefile and keyrec file exist.
+	# If not, we'll change it to being a skip rollrec.
+	#
+	foreach my $rname (rollrec_names())
+	{
+		my $rrr;		# Reference to rollrec.
+		my %rr;			# Rollrec hash.
+		my $phase;		# Rollrec's phase.
+
+		my $errs = 0;		# Missing file errors.
+		my $zonefile;		# Zone's filename.
+		my $keyrec;		# Keyrec's filename.
+
+		#
+		# Get the rollrec for this name.  If it doesn't have one,
+		# whinge and continue to the next.
+		#
+		$rrr = rollrec_fullrec($rname);
+		if(!defined($rrr))
+		{
+			rollmgr_log(LOG_ERR,$rname,"no rollrec defined for zone");
+			next;
+		}
+		%rr = %$rrr;
+
+		#
+		# Don't look at skip records.
+		#
+		next if($rr{'rollrec_type'} eq "skip");
+
+		#
+		# Get our important files.
+		#
+		$zonefile = $rr{'zonefile'};
+		$keyrec	  = $rr{'keyrec'};
+
+		#
+		# Set the error flag if either the zonefile or the keyrec
+		# file don't exist.
+		#
+		if(! -e $zonefile)
+		{
+			rollmgr_log(LOG_ERR,$rname,"zonefile \"$zonefile\" does not exist");
+			$errs++;
+		}
+		if(! -e $keyrec)
+		{
+			rollmgr_log(LOG_ERR,$rname,"keyrec \"$keyrec\" does not exist");
+			$errs++;
+		}
+
+		#
+		# Skip this record if the zonefile and keyrec file exist.
+		#
+		next if(!$errs);
+
+		#
+		# If one of the files doesn't exist, then change the rollrec
+		# to a skip record.  There's no reason we should bang our
+		# head against non-existent files.
+		#
+		rollmgr_log(LOG_ERR,$rname,"changing roll record to a skip record");
+		rollrec_rectype($rname,"skip");
+		$modified++;
+
+	}
+
+	#
+	# Save the current rollrec file state.
+	#
+	rollrec_close();
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rrfokay()
+#
+# Purpose:	This routine checks to see if a rollrec file is okay.
+#
+#		Returns:
+#			0 - file is in error
+#			1 - file is okay
+#
+sub rrfokay
+{
+	my $rrf = shift;				# Rollrec file to check.
+	my $mp  = shift;				# Message prefix.
+
+	if(! -e $rrf)
+	{
+		rollmgr_log(LOG_ERR,$mp,"rollrec file \"$rrf\" does not exist");
+		return(0);
+	}
+	elsif(-z $rrf)
+	{
+		rollmgr_log(LOG_ERR,$mp,"rollrec file \"$rrf\" is zero length");
+		return(0);
+	}
+	return(1);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	sleeper()
+#
+# Purpose:	Sleep for a specific amount of time.  This will take into
+#		account interrupts we've taken from rollctl.
+#
+sub sleeper
+{
+	my $nap;				# Time left to sleep.
+
+	rollmgr_log(LOG_TMI,"","sleeping for $sleeptime seconds");
+
+	$sleepcnt = 0;
+
+	while($sleepcnt < $sleeptime)
+	{
+		$nap = $sleeptime - $sleepcnt;
+
+		$sleepcnt += sleep($nap);
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	commander()
+#
+# Purpose:	Get any commands sent to rollerd's command socket.
+#
+sub commander
+{
+	my $cmd;					# Client's command.
+	my $data;					# Command's data.
+	my $user;					# User info.
+
+	rollmgr_log(LOG_TMI,"<command>","checking commands");
+
+	#
+	# Read and handle all the commands we've been sent.
+	#
+	while(42)
+	{
+		#
+		# Get the command, return if there wasn't one.
+		#
+		($cmd,$data,$user) = rollmgr_getcmd(2);
+		return if(!defined($cmd));
+
+		rollmgr_log(LOG_TMI,"<command>","cmd  - \"$cmd\"");
+		rollmgr_log(LOG_TMI,"<command>","data - \"$data\"") if($data ne "");
+		rollmgr_log(LOG_TMI,"<command>","user - \"$user\"") if($data ne "");
+
+		if($cmd eq ROLLCMD_LOGFILE())
+		{
+			cmd_logfile($data);
+		}
+		elsif($cmd eq ROLLCMD_LOGLEVEL())
+		{
+			cmd_loglevel($data);
+		}
+		elsif($cmd eq ROLLCMD_ROLLALL())
+		{
+			cmd_rollall($data);
+		}
+		elsif($cmd eq ROLLCMD_ROLLREC())
+		{
+			cmd_rollrec($data);
+		}
+		elsif($cmd eq ROLLCMD_ROLLZONE())
+		{
+			cmd_rollzone($data);
+		}
+		elsif($cmd eq ROLLCMD_RUNQUEUE())
+		{
+			cmd_runqueue($data);
+		}
+		elsif($cmd eq ROLLCMD_SHUTDOWN())
+		{
+			cmd_shutdown($data);
+		}
+		elsif($cmd eq ROLLCMD_SLEEPTIME())
+		{
+			cmd_sleeptime($data);
+		}
+		elsif($cmd eq ROLLCMD_STATUS())
+		{
+			cmd_status($data);
+		}
+		else
+		{
+			rollmgr_log(LOG_ERR,"<command>","invalid command  - \"$cmd\"");
+		}
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_logfile()
+#
+# Purpose:	Set the logfile to the user's specified file.  Nothing is done
+#		if the user requests the same log file as is currently in use.
+#
+sub cmd_logfile
+{
+	my $newlog = shift;				# New log file.
+	my $oldlog;					# Old log file.
+
+	rollmgr_log(LOG_TMI,"<command>","logfile command received; new log file - \"$newlog\"");
+
+	#
+	# Do anything if the new logfile is the same as the current logfile.
+	#
+	$oldlog = rollmgr_logfile();
+	if($oldlog eq $newlog)
+	{
+		rollmgr_log(LOG_INFO,"<command>","new logfile ($newlog) same as the old logfile");
+		return;
+	}
+
+	#
+	# Change the logfile and give an appropriate set of log messages.
+	#
+	rollmgr_log(LOG_INFO,"<command>","logfile changed from $oldlog to $newlog");
+	rollmgr_log(LOG_INFO,"<command>","closing logfile $oldlog");
+	$oldlog = rollmgr_logfile($newlog,0);
+	if($oldlog ne "")
+	{
+		rollmgr_log(LOG_INFO,"<command>","logfile changed from $oldlog to $newlog");
+		bootmsg(0);
+	}
+	else
+	{
+		rollmgr_log(LOG_ERR,"<command>","unable to change logfile to $newlog");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_loglevel()
+#
+# Purpose:	Set the logging level to the user's specified level.
+#
+sub cmd_loglevel
+{
+	my $newlvl = shift;				# New level.
+	my $oldlvl;					# Old level.
+
+	rollmgr_log(LOG_TMI,"<command>","loglevel command received; new logging level - \"$newlvl\"");
+
+	$oldlvl = rollmgr_loglevel($newlvl,0);
+	if($oldlvl >= 0)
+	{
+		rollmgr_log(LOG_INFO,"<command>","loglevel changed from $oldlvl to $newlvl");
+	}
+	else
+	{
+		rollmgr_log(LOG_ERR,"<command>","unable to change loglevel to $newlvl");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_rollall()
+#
+sub cmd_rollall
+{
+	my $data = shift;				# Command's data.
+
+	rollmgr_log(LOG_TMI,"<command>","rollall command received; data - \"$data\"");
+
+	rollmgr_log(LOG_ERR,"<command>","rollall command not implemented yet");
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_rollrec()
+#
+# Purpose:	This routine changes the rollrec file being used by rollerd.
+#
+sub cmd_rollrec
+{
+	my $rrf = shift;				# New rollrec file.
+
+	rollmgr_log(LOG_TMI,"<command>","rollrec command received; rollrec file - \"$rrf\"");
+
+	if(rrfokay($rrf,"<command>"))
+	{
+		rollmgr_log(LOG_INFO,"<command>","setting rollrec file from \"$rollrecfile\" to \"$rrf\"");
+		$rollrecfile = $rrf;
+	}
+	else
+	{
+		rollmgr_log(LOG_ERR,"<command>","invalid rollrec file \"$rrf\"");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_rollzone()
+#
+sub cmd_rollzone
+{
+	my $data = shift;				# Command's data.
+
+	rollmgr_log(LOG_TMI,"<command>","rollzone command received; data - \"$data\"");
+
+	rollmgr_log(LOG_ERR,"<command>","rollzone command not implemented yet");
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_runqueue()
+#
+# Purpose:	This command forces rollerd to run its queue.  It does this
+#		by setting the elapsed-sleep-time equal to the time-to-sleep.
+#		Upon return, sleeper() will see that sleepers must awake, 
+#		and rollerd will go run its rollrec queue.
+#
+sub cmd_runqueue
+{
+	rollmgr_log(LOG_TMI,"<command>","runqueue command received");
+
+	$sleepcnt = $sleeptime;
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_shutdown()
+#
+# Purpose:	This command forces rollerd to shut down.
+#
+sub cmd_shutdown
+{
+	rollmgr_log(LOG_TMI,"<command>","shutdown command received");
+
+	halt_handler();
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_sleeptime()
+#
+# Purpose:	This command sets rollerd's time-to-sleep to the user's
+#		specified value.  This must be above a "constant" minimum
+#		sleep time in order to prevent malicious users from making
+#		rollerd continually run its queue without any resting.
+#
+#		It might be good to also enforce a maximum sleep time.
+#
+sub cmd_sleeptime
+{
+	my $newnap = shift;				# New sleep time.
+
+	rollmgr_log(LOG_TMI,"<command>","sleeptime command received; new sleep time - \"$newnap\"");
+
+	if($newnap < $MIN_SLEEP)
+	{
+		rollmgr_log(LOG_ERR,"<command>","sleep time must be greater than $MIN_SLEEP");
+	}
+	else
+	{
+		rollmgr_log(LOG_INFO,"<command>","setting sleep time to $newnap");
+		$sleeptime = $newnap;
+		$sleepcnt  = $newnap;
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_status()
+#
+# Purpose:	Write some rollerd settings to the log.
+#
+sub cmd_status
+{
+	my $data = shift;				# Command's data.
+
+	my $lfile;					# Log file.
+	my $lvl;					# Logging level.
+
+	#
+	# Get the info to report.
+	#
+	$lfile	= rollmgr_logfile();
+	$lvl	= rollmgr_loglevel();
+
+	rollmgr_log(LOG_TMI,"<command>","status command received");
+
+	rollmgr_log(LOG_ALWAYS,"<command>","status:");
+	rollmgr_log(LOG_ALWAYS,"<command>","\trollrec file      - $rollrecfile");
+	rollmgr_log(LOG_ALWAYS,"<command>","\tlogfile           - $lfile");
+	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvl");
+	rollmgr_log(LOG_ALWAYS,"<command>","\ttotal sleeptime   - $sleeptime");
+	rollmgr_log(LOG_ALWAYS,"<command>","\telapsed sleeptime - $sleepcnt");
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	controllers()
+#
+# Purpose:	Initialize handlers for our externally provided commands.
+#
+sub controllers
+{
+	my $onflag = shift;				# Handler on/off flag.
+
+	#
+	# Set the signal handlers that will manage incoming commands.
+	#
+	if($onflag)
+	{
+		$SIG{'HUP'} = \&intcmd_handler;
+		$SIG{'INT'} = \&halt_handler;
+	}
+	else
+	{
+		$SIG{'HUP'} = 'IGNORE';
+		$SIG{'INT'} = 'IGNORE';
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	intcmd_handler()
+#
+# Purpose:	Handle an interrupt and get a command.
+#
+sub intcmd_handler
+{
+	rollmgr_log(LOG_ALWAYS,"<command>","roll-over manager:  got a command interrupt\n");
+
+	controllers(0);
+	commander();
+	controllers(1);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	halt_handler()
+#
+# Purpose:	Handle the "halt" command.
+#
+sub halt_handler
+{
+	rollmgr_log(LOG_ALWAYS,"","roll-over manager shutting down...\n");
+	rollmgr_rmid();
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cleanup()
+#
+sub cleanup
+{
+	rollmgr_log(LOG_ALWAYS,"cleaning up...") if($loglevel == LOG_TMI);
+	rollmgr_rmid();
+	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  rollover-manager [options] <zone>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-directory <dir>\n";
+	print STDERR "\t\t-logfile <logfile>\n";
+	print STDERR "\t\t-loglevel <level>\n";
+	print STDERR "\t\t-sleep <sleeptime>\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-help\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+rollerd - DNSSEC-Tools daemon to manage DNSSEC key roll-over.
+
+=head1 SYNOPSIS
+
+  rollerd [-options] -rrfile <rollrec_file>
+
+=head1 DESCRIPTION
+
+The I<rollerd> daemon manages key roll-over for zones.  The Pre-Publish Method
+of key roll-over is used for ZSK key roll-overs.  (Currently, I<rollerd> only
+handles ZSK roll-over.) This method has four phases that are entered when it
+is time to perform the ZSK roll-over:
+
+    1. wait for old zone data to expire from caches
+    2. sign the zone with the KSK and Published ZSK
+    3. wait for old zone data to expire from caches
+    4. adjust keys in keyrec and sign the zone with new Current ZSK
+
+The Pre-Publish Method of key roll-over is defined in the Step-by-Step DNS
+Security Operator Guidance Document.  See that document for more detailed
+information.
+
+The zones to be managed by I<rollerd> are defined in a I<rollrec> file.  Each
+zone's entry contains data needed by I<rollerd> and some data useful to a user.
+Below is a sample I<rollrec> entry:
+
+	roll "example.com"
+		zonefile        "example.com.signed"
+		keyrec          "example.com.krf"
+		curphase        "3"
+		maxttl          "2400"
+		phasestart      "Thu May  4 19:19:21 2006"
+
+The first line gives the I<rollrec> entry's name.  The "roll" keyword
+indicates that I<rollerd> should include the zone in its roll queue.  Using
+"skip" in place of "roll" allows a zone to be stored in the I<rollrec> file,
+but it will not be included in roll-over processing.  The first three fields
+tell I<rollerd> where to find example.com's signed zone file and I<keyrec>
+file and the zone's current roll-over phase.  The last two are for reference
+by the user.  The I<maxttl> field is derived from the signed zone file.
+
+If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
+I<rollrec> will be changed into a "skip" I<rollrec>.  That record will not be
+processed.
+
+=head2 A Note About Files and Filenames
+
+There are a number of files and filenames used by I<rollerd> and
+I<zonesigner>.  The user must be aware of the files used by these programs,
+where the files are located, and where the programs are executed.
+
+By default, I<rollerd> will change directory to the DNSSEC-Tools directory,
+though this may be changed by the I<-directory> option.  Any programs started
+by I<rollerd>, most importantly I<zonesigner>, will run in this same
+directory.  If files and directories referenced by these programs are named
+with relative paths, those paths must be relative to this directory.
+
+The I<rollrec> entry name is used as a key to the I<rollrec> file and to the
+zone's I<keyrec> file.  This entry does not have to be the name of the
+entry's domain, but it is a very good idea to make it so.  Whatever is used
+for this entry name, the same name B<must> be used for the zone I<keyrec> in
+that zone's I<keyrec> file.
+
+It is probably easiest to store I<rollrec> files, I<keyrec> files, zone
+files, and key files in a single directory.
+
+=head1 INITIALIZATION AND USAGE
+
+The following steps must be taken to initialize and use I<rollerd>.  This
+assumes that zone files have been created, and that BIND and DNSSEC-Tools
+have been installed.
+
+=over 4
+
+=item 0. sign zones
+
+The zones to be managed by I<rollerd> must be signed.  Use I<zonesigner> to
+create the signed zone files and the I<keyrec> files needed by I<rollerd>.
+The I<rollrec> file created in the next step B<must> use the I<keyrec> file
+names and the signed zone file names created here.
+
+=item 1. create I<rollrec> file
+
+Before I<rollerd> may be used, a I<rollrec> file must first be created.
+While this file may be built by hand, the I<rrinit> command was
+written specifically to build the file.
+
+=item 2. select operational parameters
+
+A number of I<rollerd>'s operational parameters are taken from the
+DNSSEC-Tools configuration file.  However, these may be overridden
+by command-line options.  See the OPTIONS section below for more details.
+If non-standard parameters are desired to always be used, the appropriate
+fields in the DNSSEC-Tools configuration file may be modified to use these
+values.
+
+=item 3. install the roll-over configuration
+
+The complete roll-over configuration -- I<rollerd>, I<rollrec> file,
+DNSSEC-Tools configuration file values, zone files -- should be installed.  
+The appropriate places for these locations are both installation-dependent
+and operating system-dependent.
+
+=item 4. test the roll-over configuration
+
+The complete roll-over configuration should be tested.  
+
+Edit the zone files so that their zones have short TTL values.  A minute TTL
+should be sufficient.
+
+Run the following command:
+
+    rollerd -rrfile test.rollrec -logfile - -loglevel info -sleep 60
+
+This command assumes the test I<rollrec> file is B<test.rollrec>.  It writes
+a fair amount of log messages to the terminal, and checks its queue every 60
+seconds.  Follow the messages to ensure that the appropriate actions, as
+required by the Pre-Publish Method, are taking place.
+
+=item 5. set I<rollerd> to start at boot
+
+Once the configuration is found to work, I<rollerd> should be set to start
+at system boot.  The actual operations required for this step are operating
+system-dependent.
+
+=item 6. reboot and verify
+
+The system should be rebooted and the I<rollerd> logfile checked to ensure
+that I<rollerd> is operating properly.
+
+=back
+
+=head1 OPTIONS
+
+The following options are recognized:
+
+=over 4
+
+=item I<-rrfile E<lt>rollrec_fileE<gt>>
+
+Name of the I<rollrec> file to be processed.  This is the only required
+"option".
+
+=item I<-directory E<lt>dirE<gt>>
+
+Sets the I<rollerd> execution directory.  This must be a valid directory.
+
+=item I<-logfile E<lt>log_fileE<gt>>
+
+Sets the I<rollerd> log file to I<log_file>.
+This must be a valid logging file, meaning that if I<logfile> already
+exists, it must be a regular file.  The only exceptions to this are if
+I<logfile> is B</dev/stdout> or B</dev/tty>.
+
+=item I<-loglevel E<lt>levelE<gt>>
+
+Sets I<rollerd>'s logging level to I<level>.  The valid logging levels are
+defined in B<rollmgr.pm(3)>.
+
+=item I<-sleep E<lt>sleeptimeE<gt>>
+
+Sets I<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
+of time I<rollerd> waits between processing its I<rollrec>-based queue.
+
+=item I<-parameters>
+
+Prints a set of I<rollerd> parameters and then exit.
+
+=item -help
+
+Display a usage message.
+
+=item -verbose
+
+Verbose output will be given.
+
+=back
+
+=head1 ASSUMPTIONS
+
+I<rollover-manager> uses the I<rndc> command to communicate with the BIND
+I<named> daemon.  Therefore, it assumes that appropriate measure have been
+taken so that this communication is possible.
+
+=head1 KNOWN PROBLEMS
+
+The following problems (or potential problems) are known:
+
+=over 4
+
+=item -
+
+Only deals with ZSKs.
+
+=item -
+
+Rollrec files should be locked while in use.
+
+=item -
+
+Anyone can send commands to I<rollerd>.  This is probably not a Good Thing.
+
+=item -
+
+No response is sent to I<rollctl>.
+
+=item -
+
+No testing with zone files and key files not in the process' directory.
+
+=back
+
+=head1 POSSIBLE ENHANCEMENTS
+
+The following potential enhancements may be made:
+
+=over 4
+
+=item -
+
+It'd be good to base I<rollerd>'s sleep time on when the next operation must
+take place, rather than a simple seconds count.
+
+=item -
+
+It'd be nice to allow a each I<rollrec> entry to specify its own logging
+level.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::conf.pm(3),
+Net::DNS::SEC::Tools::defaults.pm(3),
+Net::DNS::SEC::Tools::keyrec.pm(3),
+Net::DNS::SEC::Tools::rollmgr.pm(3),
+Net::DNS::SEC::Tools::rollrec.pm(3)
+
+named(8),
+rndc(8),
+rollctl(8),
+rrchk(8),
+rrinit(8),
+zonesigner(8)
+
+=cut
