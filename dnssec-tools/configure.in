@@ -63,10 +63,11 @@ fi
 
 dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(sys/filio.h)
-AC_CHECK_HEADERS(arpa/nameser.h arpa/header.h)
+AC_CHECK_HEADERS(arpa/nameser.h arpa/nameser_compat.h)
 
 AC_CHECK_STRUCT_FOR([
-#if HAVE_ARPA_NAMESER_H
+#include <sys/types.h>
+#ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
 ], __ns_msg, _msg_ptr, no)
@@ -74,7 +75,8 @@ AH_TEMPLATE([STRUCT___NS_MSG_HAS__MSG_PTR],
             [Define if struct __ns_msg had _msg_ptr.])
 
 AC_CHECK_STRUCT_FOR([
-#if HAVE_ARPA_NAMESER_H
+#include <sys/types.h>
+#ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
 ], __ns_msg, _ptr, no)
@@ -113,12 +115,25 @@ typedef unsigned int     u_int32_t;
 typedef uint16_t        u_int16_t;
 #else
 #ifdef INT16_T
-typedef unsigned INT32_T u_int16_t;
+typedef unsigned INT16_T u_int16_t;
 #else
 typedef unsigned short     u_int16_t;
 #endif
 #endif
-#endif /* !HAVE_U_INT16_T */])
+#endif /* !HAVE_U_INT16_T */]
+
+/* define u_int8_t if not available */
+#ifndef HAVE_U_INT8_T
+#ifdef HAVE_UINT8_T
+typedef uint8_t        u_int8_t;
+#else
+#ifdef INT8_T
+typedef unsigned INT8_T u_int8_t;
+#else
+typedef unsigned short     u_int8_t;
+#endif
+#endif
+#endif /* !HAVE_U_INT8_T */])
 
 dnl ----------------------------------------------------------------------
 
