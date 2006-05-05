@@ -1,5 +1,4 @@
 #
-#
 # Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
@@ -28,7 +27,7 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(bindcheck getconffile parseconfig);
+our @EXPORT = qw(bindcheck getconfdir getconffile parseconfig);
 
 our @BIND_COMMANDS = qw(checkzone keygen signzone);
 
@@ -199,6 +198,22 @@ sub bindcheck
 
 #######################################################################
 #
+# Routine:	getconfdir()
+#
+# Purpose:	Return the configuration directory name.
+#
+sub getconfdir
+{
+	my $dir;			# DNSSEC-Tools configuration directory.
+
+	$CONFFILE =~ /^(.*)\/.*$/;
+	$dir = $1;
+
+	return($dir);
+}
+
+#######################################################################
+#
 # Routine:	getconffile()
 #
 # Purpose:	Return the configuration file name.
@@ -227,6 +242,8 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
   %dtconf = parseconfig("localzone.keyrec");
 
   bindcheck(\%options_hashref);
+
+  $confdir = getconfdir();
 
   $conffile = getconffile();
 
@@ -292,6 +309,10 @@ The BIND commands currently checked are I<checkzone>, I<keygen>, and
 I<signzone>.  The pathnames for these commands are found in the given options
 hash referenced by I<%options_hashref>.  If the hash doesn't contain an entry
 for one of those commands, it is not checked.
+
+=item B<getconfdir()>
+
+This routine returns the name of the DNSSEC-Tools configuration directory.
 
 =item B<getconffile()>
 
