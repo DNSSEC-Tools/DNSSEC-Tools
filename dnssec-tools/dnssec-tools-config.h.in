@@ -9,6 +9,12 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* Define to 1 if the system has the type `int16_t'. */
+#undef HAVE_INT16_T
+
+/* Define to 1 if the system has the type `int32_t'. */
+#undef HAVE_INT32_T
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
@@ -36,14 +42,29 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the <sys/filio.h> header file. */
+#undef HAVE_SYS_FILIO_H
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if the system has the type `uint16_t'. */
+#undef HAVE_UINT16_T
+
+/* Define to 1 if the system has the type `uint32_t'. */
+#undef HAVE_UINT32_T
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to 1 if the system has the type `u_int16_t'. */
+#undef HAVE_U_INT16_T
+
+/* Define to 1 if the system has the type `u_int32_t'. */
+#undef HAVE_U_INT32_T
 
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
@@ -60,6 +81,15 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* The size of a `int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* The size of a `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* The size of a `short', as computed by sizeof. */
+#undef SIZEOF_SHORT
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
@@ -68,3 +98,33 @@
 
 /* Define if struct __ns_msg had _ptr. */
 #undef STRUCT___NS_MSG_HAS__PTR
+
+
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+/* define u_int32_t if not available */
+#ifndef HAVE_U_INT32_T
+#ifdef HAVE_UINT32_T
+typedef uint32_t        u_int32_t;
+#else
+#ifdef INT32_T
+typedef unsigned INT32_T u_int32_t;
+#else
+typedef unsigned int     u_int32_t;
+#endif
+#endif
+#endif /* !HAVE_U_INT32_T */
+
+/* define u_int16_t if not available */
+#ifndef HAVE_U_INT16_T
+#ifdef HAVE_UINT16_T
+typedef uint16_t        u_int16_t;
+#else
+#ifdef INT16_T
+typedef unsigned INT32_T u_int16_t;
+#else
+typedef unsigned short     u_int16_t;
+#endif
+#endif
+#endif /* !HAVE_U_INT16_T */
