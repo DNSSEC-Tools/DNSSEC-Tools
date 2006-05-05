@@ -62,6 +62,7 @@ if test "x$ac_cv_lib_crypto_EVP_md5" != "xyes" -o "x$ac_cv_header_openssl_bio_h"
 fi
 
 dnl ----------------------------------------------------------------------
+AC_CHECK_HEADERS(sys/filio.h)
 AC_CHECK_HEADERS(arpa/nameser.h arpa/header.h)
 
 AC_CHECK_STRUCT_FOR([
@@ -80,6 +81,44 @@ AC_CHECK_STRUCT_FOR([
 AH_TEMPLATE([STRUCT___NS_MSG_HAS__PTR],
             [Define if struct __ns_msg had _ptr.])
 
+
+dnl ----------------------------------------------------------------------
+AC_CHECK_HEADERS(inttypes.h)
+AC_CHECK_SIZEOF(short)
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_TYPES([int16_t, uint16_t, u_int16_t])
+AC_CHECK_TYPES([int32_t, uint32_t, u_int32_t])
+
+AH_BOTTOM([
+#ifdef HAVE_INTTYPES_H
+#include <inttypes.h>
+#endif
+/* define u_int32_t if not available */
+#ifndef HAVE_U_INT32_T
+#ifdef HAVE_UINT32_T
+typedef uint32_t        u_int32_t;
+#else
+#ifdef INT32_T
+typedef unsigned INT32_T u_int32_t;
+#else
+typedef unsigned int     u_int32_t;
+#endif
+#endif
+#endif /* !HAVE_U_INT32_T */
+
+/* define u_int16_t if not available */
+#ifndef HAVE_U_INT16_T
+#ifdef HAVE_UINT16_T
+typedef uint16_t        u_int16_t;
+#else
+#ifdef INT16_T
+typedef unsigned INT32_T u_int16_t;
+#else
+typedef unsigned short     u_int16_t;
+#endif
+#endif
+#endif /* !HAVE_U_INT16_T */])
 
 dnl ----------------------------------------------------------------------
 
