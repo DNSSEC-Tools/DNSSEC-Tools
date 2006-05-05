@@ -12,22 +12,7 @@
 #		- wait until it's time to perform a ZSK roll-over
 #		- sign the zone with the KSK and Published ZSK
 #		- wait for old zone data to expire from caches
-#		- sign the zone with a newly Current ZSK key
-#
-#--------------------------------------------------------------------------
-#
-#	WORKING ON:
-#		- ttl values are taken from unsigned file.  must
-#		  fix this.
-#
-#	TODO:
-#		- Move DNS reload function to rollmgr.pm.
-#		- roller probably assumes the rollrec file (and records)
-#		  are always consistent with keyrec file (and records).
-#		  Should figure out where errors may hit and what to do
-#		  about them.
-#		- Add interfaces to modify option values while rollerd is
-#		  running.
+#		- sign the zone with the new Current ZSK key
 #
 
 use strict;
