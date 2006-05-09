@@ -38,8 +38,10 @@
 #include "res_support.h"
 #include "res_io_manager.h"
 
-#ifndef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/header.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
+#else
+#include "arpa/header.h"
 #endif
 
 #ifndef NULL
