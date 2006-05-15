@@ -122,12 +122,17 @@ static const struct testcase_st testcases[] = {
 	{"Test Case 64", "nosig-cname-to-baddata-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_ERROR, R_BOGUS_PROVABLE, 0}},
 	{"Test Case 65", "nosig-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_ERROR, R_BOGUS_PROVABLE, 0}},
 	{"Test Case 66", "nosig-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_ERROR, R_BOGUS_PROVABLE, 0}},
-	{"Test Case 67", "baddata-cname-to-good-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_PROVABLE, R_BOGUS_PROVABLE, 0}},
-	{"Test Case 68", "baddata-cname-to-badsign-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, R_BOGUS_PROVABLE, 0}},
-	{"Test Case 69", "baddata-cname-to-nosig-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_PROVABLE, R_BOGUS_PROVABLE, 0}},
-	{"Test Case 70", "baddata-cname-to-baddata-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, R_BOGUS_PROVABLE, 0}},
-	{"Test Case 71", "baddata-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, R_BOGUS_PROVABLE, 0}},
-	{"Test Case 72", "baddata-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_PROVABLE, R_BOGUS_PROVABLE, 0}},
+	{"Test Case 67", "baddata-cname-to-good-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_UNPROVABLE, R_BOGUS_UNPROVABLE, R_BOGUS_UNPROVABLE, 0}},
+	{"Test Case 68", "baddata-cname-to-badsign-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_UNPROVABLE, R_BOGUS_UNPROVABLE,
+R_BOGUS_UNPROVABLE, 0}},
+	{"Test Case 69", "baddata-cname-to-nosig-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_UNPROVABLE, R_BOGUS_UNPROVABLE,
+R_BOGUS_UNPROVABLE, 0}},
+	{"Test Case 70", "baddata-cname-to-baddata-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_UNPROVABLE, R_BOGUS_UNPROVABLE,
+R_BOGUS_UNPROVABLE, 0}},
+	{"Test Case 71", "baddata-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_UNPROVABLE,
+R_BOGUS_UNPROVABLE, R_BOGUS_UNPROVABLE, 0}},
+	{"Test Case 72", "baddata-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_UNPROVABLE, R_BOGUS_UNPROVABLE,
+R_BOGUS_UNPROVABLE, 0}},
 	{"Test Case 73", "futuredate-cname-to-good-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
 	{"Test Case 74", "futuredate-cname-to-badsign-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_PROVABLE, R_BOGUS_PROVABLE, 0}},
 	{"Test Case 75", "futuredate-cname-to-nosig-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_PROVABLE, VAL_ERROR, 0}},
@@ -196,32 +201,32 @@ static const struct testcase_st testcases[] = {
 	{"Test Case 138", "pastdate-AAAA.nods-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
 	{"Test Case 139", "addedlater-A.nods-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROOF, R_BOGUS_PROOF, 0}},
 	{"Test Case 140", "addedlater-AAAA.nods-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{R_BOGUS_PROOF, R_BOGUS_PROOF, 0}},
-	{"Test Case 141", "good-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}},	
-	{"Test Case 142", "badsign-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}}, 
+	{"Test Case 141", "good-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}},	
+	{"Test Case 142", "badsign-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}}, 
 	{"Test Case 143", "nosig-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}},
-	{"Test Case 144", "baddata-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}},
-	{"Test Case 145", "futuredate-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}}, 
-	{"Test Case 146", "pastdate-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}},
-	{"Test Case 147", "good-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}},	
-	{"Test Case 148", "badsign-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}}, 
+	{"Test Case 144", "baddata-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}},
+	{"Test Case 145", "futuredate-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}}, 
+	{"Test Case 146", "pastdate-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}},
+	{"Test Case 147", "good-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
+	{"Test Case 148", "badsign-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}}, 
 	{"Test Case 149", "nosig-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
-	{"Test Case 150", "baddata-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}},	
-	{"Test Case 151", "futuredate-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}},	
-	{"Test Case 152", "pastdate-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}}, 
+	{"Test Case 150", "baddata-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
+	{"Test Case 151", "futuredate-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
+	{"Test Case 152", "pastdate-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}}, 
 	{"Test Case 153", "addedlater-A.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a,	{R_BOGUS_PROOF, R_BOGUS_PROOF, 0}},
 	{"Test Case 154", "addedlater-AAAA.futuredate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROOF, R_BOGUS_PROOF, 0}},
-	{"Test Case 155", "good-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}}, 	
-	{"Test Case 156", "badsign-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}},	
+	{"Test Case 155", "good-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}}, 	
+	{"Test Case 156", "badsign-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}},	
 	{"Test Case 157", "nosig-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}}, 
-	{"Test Case 158", "baddata-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}},	
-	{"Test Case 159", "futuredate-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}}, 
-	{"Test Case 160", "pastdate-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {R_BOGUS_PROVABLE, 0}}, 
-	{"Test Case 161", "good-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}},	
-	{"Test Case 162", "badsign-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}},	
+	{"Test Case 158", "baddata-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}},	
+	{"Test Case 159", "futuredate-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}}, 
+	{"Test Case 160", "pastdate-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a, {VAL_ERROR, 0}}, 
+	{"Test Case 161", "good-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
+	{"Test Case 162", "badsign-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
 	{"Test Case 163", "nosig-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}}, 
-	{"Test Case 164", "baddata-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}},	
-	{"Test Case 165", "futuredate-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}}, 
-	{"Test Case 166", "pastdate-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {R_BOGUS_PROVABLE, 0}},	
+	{"Test Case 164", "baddata-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
+	{"Test Case 165", "futuredate-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in,	ns_t_aaaa, {VAL_ERROR, 0}}, 
+	{"Test Case 166", "pastdate-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_ERROR, 0}},	
 	{"Test Case 167", "addedlater-A.pastdate-ns.test.dnssec-tools.org", ns_c_in, 	ns_t_a,	{R_BOGUS_PROOF, R_BOGUS_PROOF, 0}},
 	{"Test Case 168", "addedlater-AAAA.pastdate-ns.test.dnssec-tools.org", ns_c_in, ns_t_aaaa, 	{R_BOGUS_PROOF, R_BOGUS_PROOF, 0}},
 	{"Test Case 169", "addedlater-A.test.dnssec-tools.org", ns_c_in, 	ns_t_a, 	{VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, 0}},
@@ -384,6 +389,7 @@ void usage(char *progname)
 	printf("Primary Options:\n");
 	printf("        -h, --help             Display this help and exit\n");
 	printf("        -p, --print            Print the answer and validation result\n");
+	printf("        -T, --testcase=<number> Specifies the test case number \n");
 	printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
 	printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
 	printf("Advanced Options:\n");
@@ -416,10 +422,11 @@ int main(int argc, char *argv[])
 		int doprint       = 0;
 		u_int8_t flags    = (u_int8_t) 0;
 		int retvals[]     = {0};
+		int tc;
 
 		while (1) {
 			int opt_index     = 0;
-			c = getopt_long_only (argc, argv, "hpc:t:m",
+			c = getopt_long_only (argc, argv, "hpc:t:T:m",
 					      prog_options, &opt_index);
 
 			if (c == -1) {
@@ -452,6 +459,17 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				break;
+
+			case 'T':
+				tc = atoi(optarg)-1;
+				sendquery(testcases[tc].desc, 
+					testcases[tc].qn, 
+					testcases[tc].qc, 
+					testcases[tc].qt, 
+					testcases[tc].qr, 0);
+				return 0;
+				break;
+
 			case 'm':
 				flags |= VAL_QUERY_MERGE_RRSETS;
 				break;
