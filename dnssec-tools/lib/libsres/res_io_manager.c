@@ -114,7 +114,7 @@ static struct expected_arrival	*transactions[MAX_TRANSACTIONS] =
 static int next_transaction = 0;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-static long res_timeout(struct name_server *ns)
+long res_timeout(struct name_server *ns)
 {
 	int		i;
 	long	cancel_delay = 0;
@@ -149,7 +149,7 @@ void set_alarm (struct timeval	*tv, long delay)
 }
 
 struct expected_arrival *res_ea_init (u_int8_t *signed_query,int signed_length,
-					struct name_server *ns)
+					struct name_server *ns, long delay)
 {
 	struct expected_arrival *temp;
 
@@ -168,8 +168,8 @@ struct expected_arrival *res_ea_init (u_int8_t *signed_query,int signed_length,
 	temp->ea_response = NULL;
 	temp->ea_response_length = 0;
 	temp->ea_remaining_attempts = ns->ns_retry;
-	set_alarm (&temp->ea_next_try, 0);
-	set_alarm (&temp->ea_cancel_time, res_timeout(ns));
+	set_alarm (&temp->ea_next_try, delay);
+	set_alarm (&temp->ea_cancel_time, delay + res_timeout(ns));
 	temp->ea_next = NULL;
 
 	return temp;
@@ -396,7 +396,7 @@ static int res_io_check(int transaction_id, struct timeval *next_evt)
 }
 
 int res_io_deliver (int *transaction_id, u_int8_t *signed_query,
-				int signed_length, struct name_server *ns)
+				int signed_length, struct name_server *ns, long delay)
 {
 	int						try_index;
 	struct expected_arrival	*temp;
@@ -432,7 +432,7 @@ int res_io_deliver (int *transaction_id, u_int8_t *signed_query,
 	{
 		/* Add this as the first request */
 		if ((transactions[*transaction_id] =
-			res_ea_init(signed_query, signed_length, ns))==NULL) {
+			res_ea_init(signed_query, signed_length, ns, delay))==NULL) {
 			/* We can't add this */
 			pthread_mutex_unlock( &mutex );	
 			return SR_IO_MEMORY_ERROR;
@@ -443,7 +443,7 @@ int res_io_deliver (int *transaction_id, u_int8_t *signed_query,
 		/* Retaining order is important */
 		temp = transactions[*transaction_id];
 		while (temp->ea_next) temp = temp->ea_next;
-		if ((temp->ea_next = res_ea_init(signed_query,signed_length,ns))==NULL) {
+		if ((temp->ea_next = res_ea_init(signed_query,signed_length,ns, delay))==NULL) {
 			pthread_mutex_unlock( &mutex );	
 			return SR_IO_MEMORY_ERROR;
 		}
