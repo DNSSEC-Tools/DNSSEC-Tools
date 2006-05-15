@@ -168,8 +168,9 @@ sub getlineattr {
 
 	$prop{'dir'} = 'back';
 
-	if (($val_status eq "VALIDATE_SUCCESS") ||
-			($val_status eq "NONEXISTENT_NAME")) { 
+	if (($val_status eq "VAL_SUCCESS") ||
+			($val_status eq "VAL_NONEXISTENT_NAME")||
+			($val_status eq "VAL_NONEXISTENT_TYPE")) { 
 		$prop{'color'} =  "green";
 		$prop{'style'} = 'bold';
 	} 
@@ -180,9 +181,9 @@ sub getlineattr {
 		$prop{'color'} =  "black";
 		$prop{'style'} = 'bold';
 	} 
-	elsif (($val_status eq "VALIDATION_ERROR") || 
-			($val_status eq "BOGUS_PROOF") || 
-			($val_status eq "BOGUS_PROVABLE") ||
+	elsif (($val_status eq "VAL_ERROR") || 
+			($val_status eq "SR_REFERRAL_ERROR") || 
+			($val_status eq "VAL_BOGUS") || 
 			($val_status eq "SECURITY_LAME")) {
 		$prop{'color'} = "red";
 		$prop{'style'} = 'bold';
@@ -193,6 +194,7 @@ sub getlineattr {
 		$prop{'color'} =  "red";
 	} 
 	elsif (($val_status eq "DNS_ERROR") ||
+			($val_status eq "SR_SERVFAIL") ||
 			($val_status eq "RRSIG_MISSING")) { 
 		$prop{'color'} =  "red";
 		$prop{'style'} = 'dashed';
@@ -201,7 +203,8 @@ sub getlineattr {
 		$prop{'color'} =  "brown";
 		$prop{'style'} = 'bold';
 	} 
-	elsif ($val_status eq "UNEVALUATED") {
+	elsif (($val_status eq "UNEVALUATED") ||
+			($val_status eq "VAL_INDETERMINATE")) {
 		$prop{'color'} =  "yellow";
 		$prop{'style'} = 'dashed';
 	} 
