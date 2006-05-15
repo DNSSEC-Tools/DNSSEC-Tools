@@ -63,9 +63,12 @@ struct _ns_flagdata _ns_flagdata[16] = {
 	{ 0x0000, 0 },		/* expansion (5/6). */
 	{ 0x0000, 0 },		/* expansion (6/6). */
 };
-
-/* ns_msg_getflag is a macro on linux */
-#ifndef  ns_msg_getflag
+/*
+ * ns_msg_getflag is a macro on linux, but Solaris and Darwin
+ * both use defines of the function to map to other function
+ * names.
+ */
+#if !defined(ns_msg_getflag) || defined(sun) || defined(__APPLE__)
 int ns_msg_getflag(ns_msg han, int flag) {
 	return(((han)._flags & _ns_flagdata[flag].mask) >> _ns_flagdata[flag].shift);
 }
