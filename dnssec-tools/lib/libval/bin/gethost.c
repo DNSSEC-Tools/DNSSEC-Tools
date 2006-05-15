@@ -8,12 +8,16 @@
  */
 
 #include <stdio.h>
+#include <unistd.h>
 #include <validator.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 #include <netdb.h>
 #include <sys/socket.h>
 #include <string.h>
 
+#ifdef HAVE_GETOPT_LONG
 // Program options
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
@@ -22,6 +26,7 @@ static struct option prog_options[] = {
     {"reentrant", 0, 0, 'r'},
     {0, 0, 0, 0}
 };
+#endif
 
 #define AUX_BUFLEN 16000
 
@@ -61,9 +66,19 @@ int main(int argc, char *argv[])
 	// Parse the command line
 
 	while (1) {
+		int c;
+#ifdef HAVE_GETOPT_LONG
 		int opt_index = 0;
-		int c = getopt_long_only (argc, argv, "hrnf:",
+#ifdef HAVE_GETOPT_LONG_ONLY
+		c = getopt_long_only (argc, argv, "hrnf:",
 					  prog_options, &opt_index);
+#else
+		c = getopt_long (argc, argv, "hrnf:",
+					      prog_options, &opt_index);
+#endif
+#else /* only have getopt */
+		c = getopt (argc, argv, "hrnf:");
+#endif
 
 		if (c == -1) {
 			break;

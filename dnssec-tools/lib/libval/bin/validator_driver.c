@@ -16,6 +16,7 @@
 #include "../../../dnssec-tools-config.h"
 
 #include <stdio.h>
+#include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
 #include <sys/socket.h>
@@ -26,7 +27,9 @@
 
 #include <resolver.h>
 #include <validator.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 
 #define MAX_RESULTS 10 
 #define BUFLEN 16000
@@ -34,6 +37,7 @@
 int MAX_RESPCOUNT = 10;
 int MAX_RESPSIZE = 8192;
 
+#ifdef HAVE_GETOPT_LONG
 // Program options
 static struct option prog_options[] = {
 		   {"help",  0, 0, 'h'},
@@ -43,6 +47,7 @@ static struct option prog_options[] = {
 		   {"merge", 0, 0, 'm'},
 		   {0, 0, 0, 0}
                };
+#endif
 
 struct testcase_st {
 	const char *desc;
@@ -425,9 +430,18 @@ int main(int argc, char *argv[])
 		int tc;
 
 		while (1) {
+#ifdef HAVE_GETOPT_LONG
 			int opt_index     = 0;
+#ifdef HAVE_GETOPT_LONG_ONLY
 			c = getopt_long_only (argc, argv, "hpc:t:T:m",
 					      prog_options, &opt_index);
+#else
+			c = getopt_long (argc, argv, "hpc:t:T:m",
+					      prog_options, &opt_index);
+#endif
+#else /* only have getopt */
+			c = getopt (argc, argv, "hpc:t:T:m");
+#endif
 
 			if (c == -1) {
 				break;

@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -16,11 +17,14 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <resolv.h>
+#ifdef HAVE_GETOPT_H
 #include <getopt.h>
+#endif
 
 #include <resolver.h>
 #include <validator.h>
 
+#ifdef HAVE_GETOPT_LONG
 // Program options
 static struct option prog_options[] = {
     {"help", 0, 0, 'h'},
@@ -29,6 +33,7 @@ static struct option prog_options[] = {
     {"service", 0, 0, 's'},
     {0, 0, 0, 0}
 };
+#endif
 
 void usage(char *progname)
 {
@@ -132,9 +137,19 @@ int main(int argc, char *argv[])
 	// Parse the command line
 	validate = 1;
 	while (1) {
+		int c;
+#ifdef HAVE_GETOPT_LONG
 		int opt_index = 0;
-		int c = getopt_long_only (argc, argv, "hcns:",
+#ifdef HAVE_GETOPT_LONG_ONLY
+		c = getopt_long_only (argc, argv, "hcns:",
 					  prog_options, &opt_index);
+#else
+		c = getopt_long (argc, argv, "hcns:",
+					      prog_options, &opt_index);
+#endif
+#else /* only have getopt */
+		c = getopt (argc, argv, "hcns:");
+#endif
 
 		if (c == -1) {
 			break;
