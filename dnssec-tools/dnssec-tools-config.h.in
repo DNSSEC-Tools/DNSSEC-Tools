@@ -6,6 +6,18 @@
 /* Define to 1 if you have the <arpa/nameser.h> header file. */
 #undef HAVE_ARPA_NAMESER_H
 
+/* Define to 1 if you have the declaration of `ns_r_badsig', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NS_R_BADSIG
+
+/* Define to 1 if you have the declaration of `ns_t_kx', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NS_T_KX
+
+/* Define to 1 if you have the declaration of `p_rcode', and to 0 if you
+   don't. */
+#undef HAVE_DECL_P_RCODE
+
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
@@ -26,6 +38,9 @@
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if the system has the type `ns_cert_types'. */
+#undef HAVE_NS_CERT_TYPES
 
 /* Define to 1 if you have the <openssl/bio.h> header file. */
 #undef HAVE_OPENSSL_BIO_H
@@ -110,6 +125,34 @@
 
 /* Define if struct __ns_msg had _ptr. */
 #undef STRUCT___NS_MSG_HAS__PTR
+
+
+/*
+ * FreeBSD is missing ns_t_kx, ns_t_cert, ns_t_a6, ns_t_dname, ns_t_sink, ns_t_tsig, ns_t_zxfr
+ * for now, assume if the first is missing, the rest are too. If we hit system that has some
+ * but not others, tweak accordingly.
+ */
+#if defined HAVE_DECL_NS_T_KX && !HAVE_DECL_NS_T_KX
+#define ns_t_kx      36  /* Key Exchange */
+#define ns_t_cert    37  /* Certification record */
+#define ns_t_a6      38  /* IPv6 address (deprecates AAAA) */
+#define ns_t_dname   39  /* Non-terminal DNAME (for IPv6) */
+#define ns_t_sink    40  /* Kitchen sink (experimentatl) */
+#define ns_t_tsig    250 /* Transaction signature. */
+#define ns_t_zxfr    256 /* BIND-specific, nonstandard. */
+#endif /* HAVE_NS_T_KX */
+
+/*
+ * FreeBSD is missing ns_r_badsig, ns_r_badkey, ns_r_badtime
+ * for now, assume if the first is missing, the rest are too. If we hit system that has some
+ * but not others, tweak accordingly.
+ */
+#if defined HAVE_DECL_NS_R_BADSIG && !HAVE_DECL_NS_R_BADSIG
+#define ns_r_badsig      16
+#define ns_r_badkey      17
+#define ns_r_badtime     18
+#endif /* HAVE_NS_R_BADSIG */
+
 
 
 #ifdef HAVE_INTTYPES_H
