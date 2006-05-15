@@ -53,6 +53,14 @@ sub timetrans
 	}
 
 	#
+	# Check for zero seconds.
+	#
+	if($seconds == 0)
+	{
+		return("0 seconds");
+	}
+
+	#
 	# Handle the less-than-a-minute case.
 	#
 	if($seconds < $MINUTE)
