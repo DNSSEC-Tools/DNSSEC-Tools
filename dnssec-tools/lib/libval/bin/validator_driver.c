@@ -13,6 +13,7 @@
  * It generates an output suitable for consumption by the
  * drawvalmap.pl script.  This output is written to stderr.
  */
+#include "../../../dnssec-tools-config.h"
 
 #include <stdio.h>
 #include <string.h>

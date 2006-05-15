@@ -8,6 +8,7 @@
  * Applications should be able to use this in place of getaddrinfo with
  * minimal change.
  */
+#include "../../dnssec-tools-config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
