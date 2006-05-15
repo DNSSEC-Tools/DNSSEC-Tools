@@ -9,6 +9,7 @@
  *
  * See RFC 2537, RFC 3110, RFC 4034 Appendix B.1
  */
+#include "../../../dnssec-tools-config.h"
 
 #include <openssl/bn.h>
 #include <openssl/md5.h>

@@ -3,6 +3,8 @@
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */ 
+#include "../../dnssec-tools-config.h"
+
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>

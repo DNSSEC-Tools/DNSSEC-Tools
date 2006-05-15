@@ -9,6 +9,7 @@
  *
  * See RFC 3110
  */
+#include "../../../dnssec-tools-config.h"
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
