@@ -20,6 +20,12 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 dnl ----------------------------------------------------------------------
+dnl
+AC_ARG_WITH(cflags,
+[  --with-cflags=CFLAGS            use CFLAGS as compile time arguments.],
+    [CFLAGS=$with_cflags; export CFLAGS])
+
+dnl ----------------------------------------------------------------------
 dnl perl specific arguments
 dnl
 AC_ARG_WITH(perl-build-args,
@@ -83,6 +89,40 @@ AC_CHECK_STRUCT_FOR([
 AH_TEMPLATE([STRUCT___NS_MSG_HAS__PTR],
             [Define if struct __ns_msg had _ptr.])
 
+dnl ----------------------------------------------------------------------
+AC_CHECK_TYPES([ns_cert_types],,,[#include <arpa/nameser.h>])
+
+dnl check for varios ns_* record types
+AC_CHECK_DECLS([ns_t_kx, ns_r_badsig],,,[#include <arpa/nameser.h>])
+AH_BOTTOM([
+/*
+ * FreeBSD is missing ns_t_kx, ns_t_cert, ns_t_a6, ns_t_dname, ns_t_sink, ns_t_tsig, ns_t_zxfr
+ * for now, assume if the first is missing, the rest are too. If we hit system that has some
+ * but not others, tweak accordingly.
+ */
+#if defined HAVE_DECL_NS_T_KX && !HAVE_DECL_NS_T_KX
+#define ns_t_kx      36  /* Key Exchange */
+#define ns_t_cert    37  /* Certification record */
+#define ns_t_a6      38  /* IPv6 address (deprecates AAAA) */
+#define ns_t_dname   39  /* Non-terminal DNAME (for IPv6) */
+#define ns_t_sink    40  /* Kitchen sink (experimentatl) */
+#define ns_t_tsig    250 /* Transaction signature. */
+#define ns_t_zxfr    256 /* BIND-specific, nonstandard. */
+#endif /* HAVE_NS_T_KX */
+
+/*
+ * FreeBSD is missing ns_r_badsig, ns_r_badkey, ns_r_badtime
+ * for now, assume if the first is missing, the rest are too. If we hit system that has some
+ * but not others, tweak accordingly.
+ */
+#if defined HAVE_DECL_NS_R_BADSIG && !HAVE_DECL_NS_R_BADSIG
+#define ns_r_badsig      16
+#define ns_r_badkey      17
+#define ns_r_badtime     18
+#endif /* HAVE_NS_R_BADSIG */
+])
+
+AC_CHECK_DECLS([p_rcode],,,[#include <resolv.h>])
 
 dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(inttypes.h)
