@@ -32,11 +32,6 @@
 #include "res_io_manager.h"
 
 #include <arpa/nameser.h>
-#ifdef HAVE_ARPA_NAMESER_COMPAT_H
-#include <arpa/nameser_compat.h>
-#else
-#include "arpa/header.h"
-#endif
                                                                                                                              
 #ifndef NULL
 #define NULL (void*)0
@@ -249,7 +244,7 @@ int clone_ns(struct name_server **cloned_ns, struct name_server *ns)
 	memcpy ((*cloned_ns)->ns_name_n, ns->ns_name_n, name_len);
 
 	/* Initialize the rest of the fields */
-	(*cloned_ns)->ns_tsig = NULL; //XXX Still not doing anything with TSIG
+	(*cloned_ns)->ns_tsig_key = NULL; //XXX Still not doing anything with TSIG
 	(*cloned_ns)->ns_security_options = ns->ns_security_options;
 	(*cloned_ns)->ns_status = ns->ns_status;
 
