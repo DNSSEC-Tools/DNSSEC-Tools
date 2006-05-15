@@ -275,6 +275,10 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 
 	/* Count the number of aliases and addresses in the result */
 	for (res = results; res != NULL; res = res->val_rc_next) {
+
+		if ((res->val_rc_trust == NULL) || (res->val_rc_trust->_as == NULL))
+			continue;
+
 		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 		
 		// Get a count of aliases and addresses
@@ -302,7 +306,7 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 			rrset = rrset->rrs_next;
 		}
 	} // end for
-	
+
 	ret->h_aliases = (char **) bufalloc (buf, buflen, offset, (alias_count + 1) * sizeof(char*));
 	if (ret->h_aliases == NULL) {
 		*offset = orig_offset;
@@ -321,6 +325,9 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 
 	/* Process the result */
 	for (res = results; res != NULL; res = res->val_rc_next) {
+		if ((res->val_rc_trust == NULL) || (res->val_rc_trust->_as == NULL))
+			continue;
+
 		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 		
 		while (rrset) {
