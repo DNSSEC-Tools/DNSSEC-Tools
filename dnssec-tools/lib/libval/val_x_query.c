@@ -3,6 +3,8 @@
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */ 
+#include "../../dnssec-tools-config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,6 +14,12 @@
 
 #include <resolver.h>
 #include <validator.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
+#else
+#include "arpa/header.h"
+#endif
+
 #include "val_cache.h"
 #include "val_support.h"
 
@@ -56,7 +64,7 @@ static int compose_merged_answer( const u_char *name_n,
 	int nscount = 0; // Authority Count
 	int arcount = 0; // Additional Count
 	int anbufindex = 0, nsbufindex = 0, arbufindex = 0;
-	char *anbuf = NULL, *nsbuf = NULL, *arbuf = NULL;
+	unsigned char *anbuf = NULL, *nsbuf = NULL, *arbuf = NULL;
 	int an_auth = 1;
 	int ns_auth = 1;
 	unsigned char *rp = NULL;
