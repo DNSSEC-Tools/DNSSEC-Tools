@@ -563,7 +563,7 @@ int res_io_read_udp (struct expected_arrival *arrival)
 {
 	int				bytes_waiting;
 	struct sockaddr	from;
-	int				from_length = sizeof (struct sockaddr);
+	socklen_t			from_length = sizeof (struct sockaddr);
 	int				ret_val;
 
 	/*
