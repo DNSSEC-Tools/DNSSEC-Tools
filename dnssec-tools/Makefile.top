@@ -29,6 +29,7 @@ man8dir		= $(mandir)/man8
 CC=@CC@
 CFLAGS_EX=
 CFLAGS=@CFLAGS@ $(CFLAGS_EX)
+CPPFLAGS=@CPPFLAGS@
 LDFLAGS_EX=
 LDFLAGS=@LDFLAGS@ $(LDFLAGS_EX)
 AR=@AR@
@@ -55,7 +56,7 @@ LIBAGE      = 0
 LIBREVISION = 0
 
 LIBTOOL=@LIBTOOL@
-LIBTOOLCC=$(LIBTOOL) --mode=compile $(CC) $(CFLAGS)
+LIBTOOLCC=$(LIBTOOL) --mode=compile $(CC) $(CFLAGS) $(CPPFLAGS)
 LIBTOOLLD=$(LIBTOOL) --mode=link $(CC) $(CFLAGS) -rpath $(libdir) -version-info $(LIBCURRENT):$(LIBREVISION):$(LIBAGE)
 LIBTOOLIN=$(LIBTOOL) --mode=install $(INSTALL)
 LIBTOOLFN=$(LIBTOOL) --mode=finish $(libdir)
