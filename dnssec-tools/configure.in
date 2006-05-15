@@ -138,6 +138,14 @@ typedef unsigned short     u_int8_t;
 
 dnl ----------------------------------------------------------------------
 
+case "$host" in
+ *-*-sunos4*)
+    AC_DEFINE(SPRINTF_CHAR, 1, [*s*printf() functions are char*])
+    ;;
+esac
+
+dnl ----------------------------------------------------------------------
+
 AC_CONFIG_FILES([
  Makefile:Makefile.top:Makefile.in
  lib/libsres/Makefile:Makefile.top:lib/libsres/Makefile.in:Makefile.bot
