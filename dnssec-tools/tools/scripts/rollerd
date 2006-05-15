@@ -1663,7 +1663,7 @@ names and the signed zone file names created here.
 =item 1. create I<rollrec> file
 
 Before I<rollerd> may be used, a I<rollrec> file must first be created.
-While this file may be built by hand, the I<rrinit> command was
+While this file may be built by hand, the I<rollinit> command was
 written specifically to build the file.
 
 =item 2. select operational parameters
@@ -1823,9 +1823,9 @@ Net::DNS::SEC::Tools::rollrec.pm(3)
 
 named(8),
 rndc(8),
+rollchk(8),
 rollctl(8),
-rrchk(8),
-rrinit(8),
+rollinit(8),
 zonesigner(8)
 
 =cut

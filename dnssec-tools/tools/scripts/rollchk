@@ -4,7 +4,7 @@
 # file distributed with this software for details
 #
 #
-# rrchk
+# rollchk
 #
 #	This script checks a rollrec file for problems and inconsistencies.
 #
@@ -394,7 +394,7 @@ sub vprint
 #
 sub usage
 {
-	print STDERR "usage:  rrchk [options] <rollrec-file>\n";
+	print STDERR "usage:  rollchk [options] <rollrec-file>\n";
 	print STDERR "	options:\n";
 	print STDERR "		roll\n";
 	print STDERR "		skip\n";
@@ -414,12 +414,12 @@ sub usage
 
 =head1 NAME
 
-rrchk - Check a DNSSEC-Tools I<rollrec> file for problems and
+rollchk - Check a DNSSEC-Tools I<rollrec> file for problems and
 inconsistencies.
 
 =head1 SYNOPSIS
 
-  rrchk [-roll | -skip] [-count] [-quiet] [-verbose] [-help] rollrec-file
+  rollchk [-roll | -skip] [-count] [-quiet] [-verbose] [-help] rollrec-file
 
 =head1 DESCRIPTION
 
@@ -505,8 +505,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
-B<lsrr(8)>,
+B<lsroll(8)>,
 B<rollerd(8)>,
-B<rrinit(8)>
+B<rollinit(8)>
 
 =cut
