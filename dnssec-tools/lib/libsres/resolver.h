@@ -102,7 +102,7 @@
 struct name_server
 {
     u_int8_t        *ns_name_n;
-    void            *ns_tsig;
+    void            *ns_tsig_key;
     u_int32_t       ns_security_options;
     u_int32_t       ns_status;
     struct name_server  *ns_next;
