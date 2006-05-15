@@ -1,0 +1,503 @@
+#!/usr/bin/perl
+#
+# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# lsroll
+#
+#	This script lists the rollrecs in a rollrec file.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"all",				# List all keyrecs.
+	"roll",				# Only show "active" rollrecs.
+	"skip",				# Only show skipped rollrecs.
+
+	"type",				# Give the record type.
+	"zone",				# List zone files.
+	"keyrec",			# List keyrec files.
+	"phase",			# List roll-over phases.
+	"ttl",				# List maximum TTL.
+	"phstart",			# List phase start.
+
+	"count",			# Only give a count of matching keyrecs.
+	"terse",			# Give terse output.
+	"long",				# Give long output.
+
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $allflag;
+my $rollflag;
+my $skipflag;
+
+my $typeflag;
+my $zoneflag;
+my $keyrecflag;
+my $phaseflag;
+my $ttlflag;
+my $phstartflag;
+
+my $cntflag;
+my $terse;
+my $long;
+
+my $count   = 0;			# Record-match count.
+
+#######################################################################
+
+
+my @rrnames;				# List of rollrecs in the files.
+
+my %rollrecs  = ();			# Rollrecs from the rollrec files.
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main()
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+	my $errors = 0;			# Total error count.
+
+	#
+	# Check our options.
+	#
+	doopts($argc);
+
+	#
+	# Read the keyrec files.
+	#
+	while($argc > 0)
+	{
+		getrollrecs($ARGV[0]);
+		shift @ARGV;
+		$argc = @ARGV;
+	}
+
+	#
+	# Give the output.
+	#
+	showrollrecs();
+
+	#
+	# If the matching-record count should be given, give the count in
+	# requested format.
+	#
+	if($cntflag)
+	{
+		if($terse)
+		{
+			print "$count\n";
+		}
+		else
+		{
+			my $plural = "s";
+			$plural = "" if($count == 1);
+
+			print "$count matching record$plural\n";
+		}
+	}
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	doopts()
+#
+# Purpose:	This routine shakes and bakes our command line options.
+#		A bunch of option variables are set according to the specified
+#		options.  Then a little massaging is done to make sure that
+#		the proper actions are taken.  A few options imply others, so
+#		the implied options are set if the implying options are given.
+#
+sub doopts
+{
+	my $argc = shift;			# Command line argument count.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts);
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$allflag	= $options{'all'}	|| 0;
+	$rollflag	= $options{'roll'}	|| 0;
+	$skipflag	= $options{'skip'}	|| 0;
+
+	$cntflag	= $options{'count'}	|| 0;
+	$terse		= $options{'terse'}	|| 0;
+	$long		= $options{'long'}	|| 0;
+
+	#
+	# Give a usage flag if asked.
+	#
+	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure we were given a rollrec file to check.
+	#
+	$argc = @ARGV;
+	usage() if($argc == 0);
+
+	#############################################################
+	#
+	# WARNING:  Code order beyond this point is critical.  Do *NOT* modify
+	#	    anything in the rest of this routine if you are an idiot.
+	#
+
+	#
+	# Select all records if the "-all" option was given.
+	#
+	if($allflag)
+	{
+		$rollflag = 1;
+		$skipflag = 1;
+	}
+
+	#
+	# Make sure conflicting options weren't given.
+	#
+	usage() if($long && $terse);
+	usage() if($rollflag && $skipflag && !$allflag);
+
+	#
+	# Set the default flag values.
+	#
+	$typeflag	= 0;
+	$zoneflag	= 1;
+	$keyrecflag	= 1;
+	$phaseflag	= 1;
+	$ttlflag	= 0;
+	$phstartflag	= 0;
+
+	#
+	# Set the output flags for -skip.
+	#
+	if($skipflag)
+	{
+		$typeflag	= 0;
+		$zoneflag	= 1;
+		$keyrecflag	= 1;
+		$phaseflag	= 0;
+		$ttlflag	= 0;
+		$phstartflag	= 0;
+	}
+
+	#
+	# Set the output flags for -long output.
+	#
+	if($long)
+	{
+		$typeflag	= 1;
+		$zoneflag	= 1;
+		$keyrecflag	= 1;
+		$phaseflag	= 1;
+		$ttlflag	= 1;
+		$phstartflag	= 1;
+	}
+	elsif($terse)
+	{
+		$typeflag	= 0;
+		$zoneflag	= 0;
+		$keyrecflag	= 0;
+		$phaseflag	= 0;
+		$ttlflag	= 0;
+		$phstartflag	= 0;
+	}
+
+	#
+	# Now fold in the option values...
+	#
+	$typeflag	= 1 if($options{'type'});
+	$zoneflag	= 1 if($options{'zone'});
+	$keyrecflag	= 1 if($options{'keyrec'});
+	$phaseflag	= 1 if($options{'phase'});
+	$ttlflag	= 1 if($options{'ttl'});
+	$phstartflag	= 1 if($options{'phstart'});
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	getrollrecs()
+#
+# Purpose:	This routine reads the specified rollrec file and puts each
+#		rollrec into the rollrec hash table.
+#
+sub getrollrecs
+{
+	my $rrfile = shift;			# Rollrec file.
+
+	rollrec_read($rrfile);
+
+	@rrnames = rollrec_names();
+
+	foreach my $rrn (sort(@rrnames))
+	{
+		my $rr;				# Reference to rollrec.
+		my %rollrec;			# Rollrec.
+
+		$rr = rollrec_fullrec($rrn);
+
+		$rollrecs{$rrn} = $rr;
+
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	showrollrecs()
+#
+# Purpose:	This routine displays rollrec data.  There are three output
+#		formats:
+#
+sub showrollrecs
+{
+	my $outstr;				# Output string.
+	my $zonefile;				# Zone file in rollrec.
+	my $keyrec;				# Keyrec file in rollrec.
+	my $phase;				# Current phase in rollrec.
+	my $ttl;				# Maximum TTL in rollrec.
+	my $phstart;				# Phase start in rollrec.
+	my $type;				# Rollrec's type.
+
+	#
+	# Loop through the zone list and give data on the desired zones.
+	#
+	foreach my $rrname (sort(keys(%rollrecs)))
+	{
+		my $rrr = $rollrecs{$rrname};
+		my %rr = %$rrr;
+		my $rr;
+		my %rollrec;
+
+		$rr = rollrec_fullrec($rrname);
+		%rollrec = %$rr;
+
+		$type = $rollrec{'rollrec_type'};
+
+		#
+		# Check the zone-validity flags against the zone to see if
+		# the record should be displayed.
+		#
+		if(($rollflag && ($type eq "skip"))	||
+		   ($skipflag && ($type eq "roll")))
+		{
+			next;
+		}
+
+		#
+		# Bump the matching-records count.
+		#
+		$count++;
+
+		#
+		# Stay cloaked if only the count of matching records
+		# should be given.
+		#
+		next if($cntflag);
+
+		#
+		# Set fields from the rollrec.  If this is a skip record,
+		# we won't get the phase, ttl, or phase start.
+		#
+		$zonefile = $rr{'zonefile'};
+		$keyrec	  = $rr{'keyrec'};
+		if($type eq "roll")
+		{
+			$phase	  = $rr{'curphase'};
+			$ttl	  = $rr{'maxttl'};
+			$phstart  = $rr{'phasestart'};
+		}
+		else
+		{
+			$phase	  = "---";
+			$ttl	  = "---";
+			$phstart  = "---";
+		}
+
+		#
+		# Build the output string.
+		#
+		$outstr = $rrname;
+		$outstr .= " ($type)"		if($typeflag);
+		$outstr .= "\t$zonefile"	if($zoneflag);
+		$outstr .= "\t$keyrec"		if($keyrecflag);
+		$outstr .= "\t$phase"		if($phaseflag);
+		$outstr .= "\t$ttl"		if($long || $ttlflag);
+		$outstr .= "\t\"$phstart\""	if($long || $phstartflag);
+
+		#
+		# Write the output.
+		#
+		print "$outstr\n";
+	}
+}
+
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  lsroll [options] <rollrec-file>\n";
+	print STDERR "\trecord-selection options:\n";
+	print STDERR "\t\t-all		list all records\n";
+	print STDERR "\t\t-roll		list roll records\n";
+	print STDERR "\t\t-skip		list skip records\n";
+	print STDERR "\tattribute-selection options:\n";
+	print STDERR "\t\t-type\t	list record type\n";
+	print STDERR "\t\t-zone\t	list zonefile\n";
+	print STDERR "\t\t-keyrec\t	list keyrec file\n";
+	print STDERR "\t\t-phase\t	list roll-over phase\n";
+	print STDERR "\t\t-ttl		list zone TTL\n";
+	print STDERR "\t\t-phstart	list start of roll-over phase\n";
+	print STDERR "\toutput-format options:\n";
+	print STDERR "\t\t-count		only give count of matching keyrecs\n";
+	print STDERR "\t\t-terse\t	terse output\n";
+	print STDERR "\t\t-long		long output\n";
+	print STDERR "\t\t-help		help message \n";
+
+	exit(1);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+lsroll - List the I<rollrec>s in a DNSSEC-Tools I<rollrec> file.
+
+=head1 SYNOPSIS
+
+  lsroll [options] <rollrec-files>
+
+=head1 DESCRIPTION
+
+This script lists the contents of the specified I<rollrec> files.  All
+I<rollrec> files are loaded before the output is displayed.  If any
+I<rollrec>s have duplicated names, whether within one file or across
+multiple files, the later I<rollrec> will be the one whose data are
+displayed.
+
+Each record's name is always included in the output.  Additional output
+depends on the options selected.
+
+=head1 OPTIONS
+
+=head2 Record-selection Options
+
+=item I<-all>
+
+List all records in the I<rollrec> file.
+
+=item I<-roll>
+
+List all "roll" records in the I<rollrec> file.
+
+=item I<-skip>
+
+List all "skip" records in the I<rollrec> file.
+
+=head2 Attribute-selection Options
+
+=item I<-type>
+
+Include each I<rollrec> record's type in the output.  The type will be either
+"roll" or "skip".  The type is given parenthetically.
+
+=item I<-zone>
+
+The record's zonefile is included in the output.  This field is part
+of the default output.
+
+=item I<-keyrec>
+
+The record's I<keyrec> file is included in the output.  This field is part of
+the default output.
+
+=item I<-phase>
+
+The record's roll-over phase is included in the output.  This field is part of
+the default output.
+
+=item I<-ttl>
+
+The record's TTL value is included in the output.
+
+=item I<-phstart>
+
+The record's roll-over phase is included in the output.
+
+=head2 Output-format Options
+
+=item I<-count>
+
+Only a count of matching keyrecs in the I<rollrec> file is given.
+
+=item I<-terse>
+
+Terse output is given.  Only the record name and any other fields specifically
+selected are included in the output.
+
+=item I<-long>
+
+Long output is given.  All record fields are included.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
+
+B<rollchk(8)>,
+B<rollerd(8)>,
+B<rollinit(8)>
+
+=cut
+
