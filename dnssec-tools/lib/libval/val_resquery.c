@@ -18,6 +18,8 @@
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */ 
+#include "../../dnssec-tools-config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +30,12 @@
 
 #include <resolver.h>
 #include <validator.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
+#else
+#include "arpa/header.h"
+#endif
+
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"
@@ -281,7 +289,7 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
                     memcpy (temp_ns->ns_name_n, ns_rr->rr_rdata, name_len);
                                                                                                                           
                     /* Initialize the rest of the fields */
-                    temp_ns->ns_tsig_key = NULL;
+                    temp_ns->ns_tsig = NULL;
                     temp_ns->ns_security_options = ZONE_USE_NOTHING;
                     temp_ns->ns_status = SR_ZI_STATUS_LEARNED;
 
