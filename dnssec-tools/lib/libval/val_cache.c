@@ -19,6 +19,8 @@
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */ 
+#include "../../dnssec-tools-config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -34,9 +36,17 @@
 static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
-static pthread_rwlock_t rwlock=PTHREAD_RWLOCK_INITIALIZER;
+static pthread_rwlock_t rwlock;
+static int rwlock_init = -1;
 
 static struct name_server *root_ns = NULL;
+
+#define LOCK_INIT() do{				\
+	if(0 != rwlock_init) {\
+		if(0 != pthread_rwlock_init(&rwlock, NULL))\
+		return INTERNAL_ERROR; \
+	}\
+} while(0);
 
 #define LOCK_SH() do{				\
 	if(0 != pthread_rwlock_rdlock(&rwlock))\
@@ -53,12 +63,15 @@ static struct name_server *root_ns = NULL;
 		return INTERNAL_ERROR;	\
 } while(0);
 
+
 static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
 {
     struct rrset_rec *new, *prev;
     struct rrset_rec *old;
     struct rrset_rec *trail_new;
     struct rr_rec *rr_exchange;
+                                                                                                                          
+    LOCK_INIT();
                                                                                                                           
     if (new_info == NULL) return NO_ERROR;
                                                                                                                           
@@ -143,6 +156,8 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
 {
 	struct rrset_rec *next_answer, *prev;
 
+    LOCK_INIT();
+
 	*cloned_answer = NULL;
     switch(type_h) {
                                                                                                                              
@@ -212,6 +227,8 @@ int stow_root_info(struct rrset_rec *root_info)
 	u_char root_zone_n[NS_MAXCDNAME];
 	char *root_zone = ".";
 
+	LOCK_INIT();
+
    	if (ns_name_pton(root_zone, root_zone_n, NS_MAXCDNAME-1) == -1)
     	return CONF_PARSE_ERROR; 
 
@@ -230,6 +247,7 @@ int stow_root_info(struct rrset_rec *root_info)
 
 int free_validator_cache()
 {
+	LOCK_INIT();
 	LOCK_EX();
 	res_sq_free_rrset_recs(&unchecked_key_info);
 	unchecked_key_info = NULL;
@@ -244,6 +262,7 @@ int free_validator_cache()
 
 int get_root_ns(struct name_server **ns)
 {
+	LOCK_INIT();
 	LOCK_SH();
 
 	*ns = NULL;
