@@ -21949,6 +21949,17 @@ fi
 
 
 
+case "$host" in
+ *-*-sunos4*])
+
+cat >>confdefs.h <<\_ACEOF
+#define SPRINTF_CHAR 1
+_ACEOF
+
+    ;;
+esac
+
+
                                                             ac_config_files="$ac_config_files Makefile:Makefile.top:Makefile.in lib/libsres/Makefile:Makefile.top:lib/libsres/Makefile.in:Makefile.bot lib/libsres/doc/Makefile:Makefile.top:lib/libsres/doc/Makefile.in:Makefile.bot lib/libval/Makefile:Makefile.top:lib/libval/Makefile.in:Makefile.bot lib/libval/doc/Makefile:Makefile.top:lib/libval/doc/Makefile.in:Makefile.bot lib/libval/bin/Makefile:Makefile.top:lib/libval/bin/Makefile.in:Makefile.bot"
 
           ac_config_commands="$ac_config_commands default"
@@ -21977,7 +21988,7 @@ _ACEOF
 {
   (set) 2>&1 |
     case `(ac_space=' '; set | grep ac_space) 2>&1` in
-    *ac_space=\ *])
+    *ac_space=\ *)
       # `set' does not quote correctly, so add quotes (double-quote
       # substitution turns \\\\ into \\, and sed turns \\ into \).
       sed -n \
