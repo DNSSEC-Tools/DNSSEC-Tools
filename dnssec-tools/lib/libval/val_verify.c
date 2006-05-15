@@ -6,6 +6,7 @@
  *
  * This is the implementation file for the verifier.
  */
+#include "../../dnssec-tools-config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -250,7 +251,7 @@ static int predict_sigbuflength (  struct rrset_rec *rr_set,
 }
 
 static int make_sigfield (  u_int8_t            **field,
-                        int                 *field_length,
+                        size_t              *field_length,
                         struct rrset_rec    *rr_set,
                         struct rr_rec       *rr_sig,
                         int                 is_a_wildcard)
