@@ -274,10 +274,12 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 			return retval;
 		if (feof(fp) && !endst)
 			return CONF_PARSE_ERROR;
-		if (!strcmp(token, ZONE_SE_YES))
-			zone_status = 1;
-		else if (!strcmp(token, ZONE_SE_NO))
-			zone_status = 0;
+		if (!strcmp(token, ZONE_SE_IGNORE_MSG))
+			zone_status = ZONE_SE_IGNORE;
+		else if (!strcmp(token, ZONE_SE_DO_VAL_MSG))
+			zone_status = ZONE_SE_DO_VAL;
+		else if (!strcmp(token, ZONE_SE_UNTRUSTED_MSG))
+			zone_status = ZONE_SE_UNTRUSTED;
 		else
 			return CONF_PARSE_ERROR;
 
@@ -868,8 +870,6 @@ int read_root_hints_file(val_context_t *ctx)
 	int success;
 	u_long ttl_h;
 	int retval;
-    struct rrset_rec    *rr_set;
-    int                 ret_val;
     u_int16_t           rdata_len_h;
 
 	fp = fopen (ROOT_HINTS, "r");

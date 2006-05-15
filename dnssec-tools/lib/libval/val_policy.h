@@ -37,10 +37,12 @@
 #define POL_DLV_MAX_LINKS_STR "dlv-max-links"
 #endif
 
-#define ZONE_SE_YES "trusted"
-#define ZONE_SE_NO "untrusted"
-
-
+#define ZONE_SE_IGNORE_MSG     "ignore"
+#define ZONE_SE_DO_VAL_MSG     "validate"
+#define ZONE_SE_UNTRUSTED_MSG  "untrusted"
+#define ZONE_SE_IGNORE 1 
+#define ZONE_SE_DO_VAL 2
+#define ZONE_SE_UNTRUSTED 3
 
 int read_root_hints_file(val_context_t *ctx); 
 int read_res_config_file(val_context_t *ctx);
