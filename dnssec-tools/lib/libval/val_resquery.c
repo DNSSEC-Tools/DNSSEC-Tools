@@ -36,6 +36,11 @@
 #include "arpa/header.h"
 #endif
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"
@@ -236,6 +241,7 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
     struct rr_rec       *ns_rr;
     struct name_server  *temp_ns;
     struct name_server  *ns;
+    struct name_server  *pending_glue_last;
     struct name_server  *trail_ns;
     struct name_server  *outer_trailer;
     struct name_server  *tail_ns;
@@ -365,6 +371,7 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
     ns = *ns_list;
     outer_trailer = NULL;
 	*pending_glue = NULL;
+	pending_glue_last = NULL;
     while (ns)
     {
         if (ns->ns_number_of_addresses==0)
@@ -372,15 +379,37 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
             if (outer_trailer)
             {
                 outer_trailer->ns_next = ns->ns_next;
-				ns->ns_next = *pending_glue;
-				*pending_glue = ns;
+
+				/* Add ns to the end of the pending_glue list */
+				if(*pending_glue == NULL) {
+					*pending_glue = ns;
+					pending_glue_last = *pending_glue;
+				}
+				else {
+					pending_glue_last->ns_next = ns;
+					pending_glue_last = ns;
+				}
+				ns->ns_next = NULL;
+
+				/* move to the next element */
                 ns = outer_trailer->ns_next;
             }
             else
             {
                 *ns_list = ns->ns_next;
-				ns->ns_next = *pending_glue;
-				*pending_glue = ns;
+
+				/* Add ns to the end of the pending_glue list */
+				if(*pending_glue == NULL) {
+					*pending_glue = ns;
+					pending_glue_last = *pending_glue;
+				}
+				else {
+					pending_glue_last->ns_next = ns;
+					pending_glue_last = ns;
+				}
+				ns->ns_next = NULL;
+
+				/* Move to the next element */
                 ns = *ns_list;
             }
         }
@@ -799,16 +828,15 @@ int val_resquery_send (	val_context_t           *context,
 {
 	char name[NS_MAXDNAME];
 	int ret_val;
+	struct name_server *tempns;
 
     /* Get a (set of) answer(s) from the default NS's */
 
 	/* If nslist is NULL, read the cached zones and name servers
 	 * in context to create the nslist
 	 */
-	// XXX Identify which are relevant and create the ns_list
 	struct name_server *nslist;
 	if (matched_q->qc_ns_list == NULL) {
-		// XXX look into the cache also
 		if(context == NULL)
 			return BAD_ARGUMENT;
 		nslist = context->nslist;
@@ -821,6 +849,13 @@ int val_resquery_send (	val_context_t           *context,
 		matched_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
 		return NO_ERROR;	
 	}
+
+	val_log (context, LOG_DEBUG, "Sending query for %s to:", name);
+	for(tempns = nslist; tempns; tempns= tempns->ns_next) {
+        struct sockaddr_in  *s=(struct sockaddr_in*)(&(tempns->ns_address[0]));
+		val_log (context, LOG_DEBUG, "    %s", inet_ntoa(s->sin_addr));
+	}
+	val_log (context, LOG_DEBUG, "End of Sending query for %s", name);
 
 	if ((ret_val = query_send(name, matched_q->qc_type_h, matched_q->qc_class_h, 
 						nslist, &(matched_q->qc_trans_id))) == SR_UNSET)
@@ -893,8 +928,8 @@ int val_resquery_rcv (
 
     /* What happens when an empty NXDOMAIN is returned? */
     /* What happens when an empty NOERROR is returned? */
-    
-    FREE (response_data);
+
+	FREE(response_data); 
 
 	(*response)->di_rrset = answers;
 	(*response)->di_qnames = qnames;
