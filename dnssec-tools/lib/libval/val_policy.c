@@ -7,6 +7,7 @@
  * Read the contents of the validator configuration file and 
  * update the validator context.
  */
+#include "../../dnssec-tools-config.h"
 
 #include <stdio.h>
 #include <sys/types.h>
@@ -15,6 +16,9 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(sun) && !defined(__EXTENSIONS__)
+extern char *strtok_r(char *, const char *, char **);
+#endif
 #include <ctype.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -668,6 +672,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 {
 	FILE *fp;
 	int fd;
+	struct flock fl;
 	struct policy_fragment *pol_frag = NULL;
 	int retval;
 	int line_number = 1;
@@ -681,11 +686,14 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 		perror(VAL_CONFIGURATION_FILE);
 		return NO_POLICY;
 	}
-	flock(fd, LOCK_SH);
+	memset(&fl, 0, sizeof (fl));
+	fl.l_type = F_RDLCK;
+	fcntl(fd, F_SETLKW, &fl);
+	fl.l_type = F_UNLCK;
 
 	fp = fdopen(fd, "r");
 	if(fp == NULL) {
-		flock(fd, LOCK_UN);
+		fcntl(fd, F_SETLKW, &fl);
 		close(fd);
 		return INTERNAL_ERROR;
 	}
@@ -693,7 +701,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 	val_log(ctx, LOG_DEBUG, "Reading next policy fragment");
 	while (NO_ERROR == (retval = get_next_policy_fragment(fp, scope, &pol_frag, &line_number))) {
 		if (feof(fp)) {
-			flock(fd, LOCK_UN);
+			fcntl(fd, F_SETLKW, &fl);
 			close(fd);
 			return NO_ERROR;
 		}
@@ -702,7 +710,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 	}
 
 	val_log(ctx, LOG_ERR, "Error in line %d of file %s\n", line_number, VAL_CONFIGURATION_FILE);
-	flock(fd, LOCK_UN);
+	fcntl(fd, F_SETLKW, &fl);
 	close(fd);
 	return retval;
 }	
@@ -728,6 +736,7 @@ int read_res_config_file(val_context_t *ctx)
 	char auth_zone_info[NS_MAXDNAME];
 	FILE * fp;
 	int fd;
+	struct flock fl;
 	char line[MAX_LINE_SIZE+1];
 	struct name_server *ns_head = NULL;
 	struct name_server *ns_tail = NULL;
@@ -743,7 +752,9 @@ int read_res_config_file(val_context_t *ctx)
 		perror(RESOLV_CONF);
 		return NO_POLICY;
 	}
-	flock(fd, LOCK_SH);
+	fl.l_type = F_RDLCK;
+	fcntl(fd, F_SETLKW, &fl);
+	fl.l_type = F_UNLCK;
 
 	fp = fdopen(fd, "r");
 
@@ -780,7 +791,7 @@ int read_res_config_file(val_context_t *ctx)
 			}
 
 			/* Initialize the rest of the fields */
-			ns->ns_tsig_key = NULL;
+			ns->ns_tsig = NULL;
 			ns->ns_security_options = ZONE_USE_NOTHING;
 			ns->ns_status = 0;
 
@@ -821,7 +832,7 @@ int read_res_config_file(val_context_t *ctx)
 		}
 	}
 
-	flock(fd, LOCK_UN);
+	fcntl(fd, F_SETLKW, &fl);
 	close(fd);
 
 	if (ns_head == NULL) {
@@ -838,7 +849,7 @@ err:
 	val_log (ctx, LOG_ERR, "Parse error in file %s\n", RESOLV_CONF);
 	free_name_servers(&ns_head);
 
-	flock(fd, LOCK_UN);
+	fcntl(fd, F_SETLKW, &fl);
 	close(fd);
 	return CONF_PARSE_ERROR;
 }
