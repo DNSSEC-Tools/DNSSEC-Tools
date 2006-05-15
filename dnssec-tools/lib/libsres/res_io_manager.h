@@ -52,7 +52,7 @@
 	SR_IO_TOO_MANY_TRANS	Too many current requests
 */
 int res_io_deliver (int *transaction_id, u_int8_t *signed_query,
-			int signed_length, struct name_server *ns);
+			int signed_length, struct name_server *ns, long delay);
 
 /*
 	res_io_accept

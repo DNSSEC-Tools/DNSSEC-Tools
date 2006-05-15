@@ -37,7 +37,7 @@
 #else
 #include "arpa/header.h"
 #endif
-                                                                                                                             
+ 
 #ifndef NULL
 #define NULL (void*)0
 #endif
@@ -308,6 +308,7 @@ int query_send( const char*     name,
 
 	struct name_server *ns_list = NULL; 
 	struct name_server *ns; 
+	long delay = 0;
 
 	*trans_id = -1;
 
@@ -324,15 +325,19 @@ int query_send( const char*     name,
 	/* Loop through the list of destinations */
 	for (ns = ns_list; ns; ns = ns->ns_next)
 	{
+
 		/* Form the query with res_val_nmkquery_n */
 		query_length = res_val_nmkquery (ns, ns_o_query, name, class_h, type_h,
 										NULL, 0, NULL, query, query_limit);
-   	 	query_length = res_val_nopt(ns, query_length, query, query_limit, EDNS_UDP_SIZE);	
+
+		if (ns->ns_options & RES_USE_DNSSEC) {
+   	 		query_length = res_val_nopt(ns, query_length, query, query_limit, EDNS_UDP_SIZE);	
+			/* Set the CD flag */
+			((HEADER *)query)->cd = 1;
+		}
 		if (query_length == -1)
 			return SR_MKQUERY_INTERNAL_ERROR;
-		/* Set the CD flag */
-		((HEADER *)query)->cd = 1;
-		//((HEADER *)query)->rd = 0;
+		// ((HEADER *)query)->rd = 0;
 
 		if ((ret_val = res_tsig_sign(query,query_length,ns,
 					&signed_query,&signed_length)) != SR_TS_OK)
@@ -347,10 +352,8 @@ int query_send( const char*     name,
 		}
 
 		if ((ret_val = res_io_deliver(trans_id, signed_query,
-						signed_length, ns)) <= 0)
+						signed_length, ns, delay)) < 0)
 		{
-
-			if (ret_val == 0) continue;
 
 			res_io_cancel(trans_id);
 
@@ -360,6 +363,7 @@ int query_send( const char*     name,
     	    return SR_SEND_INTERNAL_ERROR;
 		}
 
+		delay += res_timeout(ns);
 	}
 
 	return SR_UNSET;
@@ -406,11 +410,11 @@ int response_recv(int           *trans_id,
     	if ((ret_val = theres_something_wrong_with_header (*answer,
                                     *answer_length))!=SR_UNSET)
         	return ret_val;
-/*
+#if 0
 printf ("The Response: ");
 printf (":\n");
 print_response (*answer, *answer_length);
-*/
+#endif
 		return SR_UNSET;
 	}
 	else if (ret_val == SR_TS_FAIL)
