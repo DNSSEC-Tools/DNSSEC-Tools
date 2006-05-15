@@ -19,6 +19,8 @@
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */ 
+#include "../../dnssec-tools-config.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -788,7 +790,7 @@ int extract_from_rr (   u_int8_t *response,
     return NO_ERROR;
 }
 
-void lower_name (u_int8_t rdata[], int *index)
+void lower_name (u_int8_t rdata[], size_t *index)
 {
                                                                                                                           
     /* Convert the upper case characters in a domain name to lower case */
@@ -806,7 +808,7 @@ void lower (u_int16_t type_h, u_int8_t *rdata, int len)
 {
     /* Convert the case of any domain name to lower in the RDATA section */
                                                                                                                           
-    int index = 0;
+    size_t index = 0;
                                                                                                                           
     switch (type_h)
     {
