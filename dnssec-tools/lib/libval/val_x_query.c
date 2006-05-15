@@ -416,9 +416,10 @@ static int compose_answer( const u_char *name_n,
 } /* compose_answer() */
 
 
-// XXX This routine is provided for compatibility with programs that 
-// XXX depend on the res_query() function. 
-// XXX If possible, one should use gethostbyname() or getaddrinfo() functions instead.
+/* This routine is provided for compatibility with programs that 
+ * depend on the res_query() function. 
+ * If possible, one should use gethostbyname() or getaddrinfo() functions instead.
+ */
 /*
  * Function: val_query
  *
@@ -520,8 +521,6 @@ int val_query ( const val_context_t *ctx,
 
 	if((ctx == NULL)&& context)
 		val_free_context(context);
-
-//	free_validator_cache();
 
 	return retval;
 
