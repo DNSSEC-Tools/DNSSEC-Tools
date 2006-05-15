@@ -27,7 +27,11 @@
 #define RESOLV_CONF             "/etc/resolv.conf"
 #define ROOT_HINTS            	"/etc/root.hints"
 #define VAL_LOG_MASK	LOG_INFO
-#define VAL_LOG_OPTIONS LOG_PERROR
+#ifdef LOG_PERROR
+#define VAL_LOG_OPTIONS LOG_PID | LOG_PERROR
+#else
+#define VAL_LOG_OPTIONS LOG_PID
+#endif
 
 
 #ifdef LOG_TO_NETWORK
