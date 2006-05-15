@@ -123,6 +123,7 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 {
 	struct zone_se_policy *zse_pol, *zse_cur;
 	int name_len;
+	u_int8_t *p, *q;
 	
 	name_len = wire_name_length(name_n);
 
@@ -139,18 +140,31 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 		/* Because of the ordering, the longest match is found first */
 		for (; zse_cur; zse_cur=zse_cur->next) {
 
-			if (strstr(zse_cur->zone_n, name_n) != NULL) {
-				if (zse_cur->trusted) {
-					val_log(ctx, LOG_DEBUG, "zone %s is trusted", name_n);
-					return TRUST_ZONE;
-				}
-				else {
+			/* Find the last occurrence of zse_cur->zone_n in name_n */
+			p = name_n;
+			q = strstr(p, zse_cur->zone_n);
+			while(q != NULL) {
+				p = q;
+				q = strstr(q+1, zse_cur->zone_n);
+			}
+			if (!strcmp(p, zse_cur->zone_n)) {
+				if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
 					val_log(ctx, LOG_DEBUG, "zone %s is not trusted", name_n);
 					return UNTRUSTED_ZONE;
+				}
+				else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
+					val_log(ctx, LOG_DEBUG, "Doing validation for zone %s", name_n);
+					return A_WAIT_FOR_TRUST;
+				}
+				else { 
+					/* ZONE_SE_IGNORE */
+					val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for zone %s", name_n);
+					return TRUST_ZONE;
 				}
 			}
 		}
 	}
+	val_log(ctx, LOG_DEBUG, "Doing validation for zone %s", name_n);
 	return A_WAIT_FOR_TRUST;
 }
 
@@ -613,21 +627,24 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 				case SR_ANS_CNAME:
 					if ((as->_as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
 						(as->_as->ac_data->rrs_ans_kind != SR_ANS_CNAME) && 
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
+						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) &&
+						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
 
 				/* Only bare RRSIGs together */
 				case SR_ANS_BARE_RRSIG:
-					if (as->_as->ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG)
+					if (as->_as->ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+					}
 					break;
 
 				/* NACK_NXT and NACK_SOA are OK */
 				case SR_ANS_NACK_NXT:
 					if ((as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
+						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
+						(as->_as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
@@ -1126,7 +1143,7 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 }
 
 static int ask_resolver(val_context_t *context, struct val_query_chain **queries, int block, 
-					struct val_assertion_chain **assertions)
+					struct val_assertion_chain **assertions, int *data_received)
 {
 	struct val_query_chain *next_q;
 	struct domain_info *response;
@@ -1143,6 +1160,15 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 				next_q->qc_state = Q_SENT;
 				val_log(context, LOG_DEBUG, "ask_resolver(): sending query for {%s %d %d}", 
 						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
+
+				/* Only set the CD and EDS0 options if we feel the server 
+				 * is capable of handling DNSSEC
+				 */
+				if(is_trusted_zone(context, next_q->qc_name_n) ==  A_WAIT_FOR_TRUST) {
+					struct name_server *ns;
+					for(ns=next_q->qc_ns_list; ns; ns=ns->ns_next)
+						ns->ns_options |= RES_USE_DNSSEC;
+				}
 
 				if ((retval = val_resquery_send (context, next_q)) != NO_ERROR)
 					return retval;
@@ -1185,10 +1211,14 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 						free_domain_info_ptrs(response);
 						FREE(response);
 					}
-					if((next_q->qc_state == Q_WAIT_FOR_GLUE)
-						||(next_q->qc_state > Q_ERROR_BASE)) {
-
+					if((next_q->qc_state == Q_WAIT_FOR_GLUE) ||
+						(next_q->qc_referral != NULL)) {
 						answered = 1;
+						break;
+					}
+					if (next_q->qc_state >= Q_ANSWERED) {
+						answered = 1;
+						*data_received = 1;
 						break;
 					}
 				}
@@ -1246,9 +1276,8 @@ int val_resolve_and_check(	val_context_t	*context,
 			block = 0;
 
 		/* Send un-sent queries */
-		if(NO_ERROR != (retval = ask_resolver(context, &(context->q_list), block, &(context->a_list))))
+		if(NO_ERROR != (retval = ask_resolver(context, &(context->q_list), block, &(context->a_list), &data_received)))
 			return retval;
-		if(block) data_received = 1;
 
 		/* check if more queries have been added */
 		if(last_q != context->q_list) {
@@ -1262,11 +1291,11 @@ int val_resolve_and_check(	val_context_t	*context,
 		/* Henceforth we will need some data before we can continue */
 		block = 1;
 
-		if((!data_received) && (top_q->qc_state < Q_ANSWERED))
-			continue;
-
 		if(top_q->qc_state == Q_WAIT_FOR_GLUE) 
 			merge_glue_in_referral(top_q, &(context->q_list));
+
+		if((!data_received) && (top_q->qc_state < Q_ANSWERED))
+			continue;
 
 		/* No point going ahead if our original query had error conditions */
 		if (top_q->qc_state > Q_ERROR_BASE) {
@@ -1307,6 +1336,8 @@ int val_resolve_and_check(	val_context_t	*context,
 		/* Some error most likely, reflected in the val_query_chain */
 		if (res->val_rc_trust == NULL) 
 			res->val_rc_status = VAL_ERROR;
+		if (res->val_rc_status == (R_DONT_KNOW|R_TRUST_FLAG))
+			res->val_rc_status = VAL_SUCCESS;	
 		if (res->val_rc_status == VAL_SUCCESS)
 			success = 1;
 		val_log(context, LOG_DEBUG, "validate result set to %s[%d]", p_val_error(res->val_rc_status), res->val_rc_status);
