@@ -130,12 +130,10 @@ const char *_libsres_opcodes[] = {
     "ZONEREF",
 };
 
-#ifdef SPRINTF_CHAR
-# define SPRINTF(x) strlen(sprintf/**/x)
-#else
-# define SPRINTF(x) sprintf x
-#endif
 
+/*
+ * some system prototypes don't match up
+ */
 #ifdef sun
 #define P_OPTION_ARG_TYPE uint_t
 #define P_SECSTODATE_ARG_TYPE  uint_t
@@ -143,6 +141,33 @@ const char *_libsres_opcodes[] = {
 #define P_OPTION_ARG_TYPE u_long
 #define P_SECSTODATE_ARG_TYPE  u_long
 #endif
+
+/*
+ * some system headers are outdated
+ */
+#ifndef NS_ALG_DH
+#define NS_ALG_DH               2       /* Diffie Hellman KEY */
+#define NS_ALG_DSA              3       /* DSA KEY */
+#define NS_ALG_DSS              NS_ALG_DSA
+#endif
+
+#ifndef HAVE_NS_CERT_TYPES
+typedef enum __ns_cert_types {
+        cert_t_pkix = 1,        /* PKIX (X.509v3) */
+        cert_t_spki = 2,        /* SPKI */
+        cert_t_pgp  = 3,        /* PGP */
+        cert_t_url  = 253,      /* URL private type */
+        cert_t_oid  = 254       /* OID private type */
+} ns_cert_types;
+#endif
+
+/*
+ * some system prototypes are missing
+ */
+#if defined HAVE_DECL_P_RCODE && !HAVE_DECL_P_RCODE
+const char *  p_rcode (int);
+#endif
+
 
 extern const char *_res_sectioncodes[];
 
@@ -520,7 +545,7 @@ sym_ntos(const struct res_sym *syms, int number, int *success) {
 		}
 	}
 
-	sprintf(unname, "%d", number);		/* XXX nonreentrant */
+	snprintf(unname, sizeof(unname), "%d", number);		/* XXX nonreentrant */
 	if (success)
 		*success = 0;
 	return (unname);
@@ -537,7 +562,7 @@ sym_ntop(const struct res_sym *syms, int number, int *success) {
 			return (syms->humanname);
 		}
 	}
-	sprintf(unname, "%d", number);		/* XXX nonreentrant */
+	snprintf(unname, sizeof(unname), "%d", number);		/* XXX nonreentrant */
 	if (success)
 		*success = 0;
 	return (unname);
@@ -557,7 +582,7 @@ p_type(int type) {
 		return (result);
 	if (type < 0 || type > 0xfff)
 		return ("BADTYPE");
-	sprintf(typebuf, "TYPE%d", type);
+	snprintf(typebuf, sizeof(typebuf), "TYPE%d", type);
 	return (typebuf);
 }
 
@@ -593,7 +618,7 @@ p_class(int class) {
 		return (result);
 	if (class < 0 || class > 0xfff)
 		return ("BADCLASS");
-	sprintf(classbuf, "CLASS%d", class);
+	snprintf(classbuf, sizeof(classbuf), "CLASS%d", class);
 	return (classbuf);
 }
 
@@ -635,7 +660,7 @@ p_option(P_OPTION_ARG_TYPE option) {
 	case RES_NO_NIBBLE2:	return "no-nibble2";
 #endif
 				/* XXX nonreentrant */
-	default:		sprintf(nbuf, "?0x%lx?", (u_long)option);
+	default:		snprintf(nbuf, sizeof(nbuf), "?0x%lx?", (u_long)option);
 				return (nbuf);
 	}
 }
@@ -648,7 +673,7 @@ p_time(u_int32_t value) {
 	static char nbuf[40];		/* XXX nonreentrant */
 
 	if (ns_format_ttl(value, nbuf, sizeof nbuf) < 0)
-		sprintf(nbuf, "%u", value);
+		snprintf(nbuf, sizeof(nbuf), "%u", value);
 	return (nbuf);
 }
 
@@ -678,7 +703,7 @@ p_sockun(union res_sockaddr_union u, char *buf, size_t size) {
 		break;
 #endif
 	default:
-		sprintf(ret, "[af%d]", u.sin.sin_family);
+		snprintf(ret, sizeof(ret), "[af%d]", u.sin.sin_family);
 		break;
 	}
 	if (size > 0U) {
@@ -712,7 +737,7 @@ precsize_ntoa(prec)
 
 	val = mantissa * poweroften[exponent];
 
-	(void) sprintf(retbuf, "%lu.%.2lu", val/100, val%100);
+	(void) snprintf(retbuf, sizeof(retbuf), "%lu.%.2lu", val/100, val%100);
 	return (retbuf);
 }
 
@@ -1113,7 +1138,7 @@ p_secstodate (P_SECSTODATE_ARG_TYPE secs) {
 	time = gmtime_r(&clock, &res);
 	time->tm_year += 1900;
 	time->tm_mon += 1;
-	sprintf(output, "%04d%02d%02d%02d%02d%02d",
+	snprintf(output, sizeof(output), "%04d%02d%02d%02d%02d%02d",
 		time->tm_year, time->tm_mon, time->tm_mday,
 		time->tm_hour, time->tm_min, time->tm_sec);
 	return (output);
