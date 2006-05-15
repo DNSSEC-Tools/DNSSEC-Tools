@@ -247,13 +247,11 @@ res_val_nopt(struct name_server  *pref_ns,
 	cp += NS_INT16SZ;
 	*cp++ = ns_r_noerror;	/* extended RCODE */
 	*cp++ = 0;		/* EDNS version */
-//	if (pref_ns->ns_options & RES_USE_DNSSEC) {
 #ifdef DEBUG
 		if (pref_ns->ns_options & RES_DEBUG)
 			printf(";; res_opt()... ENDS0 DNSSEC\n");
 #endif
-		flags |= NS_OPT_DNSSEC_OK;
-//	}
+	flags |= NS_OPT_DNSSEC_OK;
 	ns_put16(flags, cp);
 	cp += NS_INT16SZ;
 	ns_put16(0, cp);	/* RDLEN */
