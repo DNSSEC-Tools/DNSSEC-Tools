@@ -28,13 +28,13 @@ clean:
 	$(RM) -f $(LOBJ) $(OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR)
 
 $(VALIDATOR): validator_driver.lo $(LOCALLIBS)
-	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS)
+	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS) $(LIBS)
 
 $(GETHOST): gethost.lo $(LOCALLIBS)
-	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS)
+	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS) $(LIBS)
 
 $(GETADDR): getaddr.lo $(LOCALLIBS)
-	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS)
+	$(LIBTOOLLD) -o $@ getaddr.lo $(LDFLAGS) $(LIBS)
 
 install:
 	$(MKPATH) $(bindir)
