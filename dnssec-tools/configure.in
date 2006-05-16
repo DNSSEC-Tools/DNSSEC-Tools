@@ -68,7 +68,15 @@ if test "x$ac_cv_lib_crypto_EVP_md5" != "xyes" -o "x$ac_cv_header_openssl_bio_h"
 fi
 
 dnl ----------------------------------------------------------------------
-AC_CHECK_HEADERS(sys/filio.h)
+AC_CHECK_HEADERS(sys/filio.h getopt.h)
+AC_CHECK_DECLS([getopt_long_only, getopt_long],,,[
+#include <unistd.h>
+#if HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+])
+
+dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(arpa/nameser.h arpa/nameser_compat.h)
 
 AC_CHECK_STRUCT_FOR([
@@ -90,10 +98,20 @@ AH_TEMPLATE([STRUCT___NS_MSG_HAS__PTR],
             [Define if struct __ns_msg had _ptr.])
 
 dnl ----------------------------------------------------------------------
-AC_CHECK_TYPES([ns_cert_types],,,[#include <arpa/nameser.h>])
+AC_CHECK_TYPES([ns_cert_types],,,[
+#include <sys/types.h>
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+])
 
 dnl check for varios ns_* record types
-AC_CHECK_DECLS([ns_t_kx, ns_r_badsig],,,[#include <arpa/nameser.h>])
+AC_CHECK_DECLS([ns_t_kx, ns_r_badsig],,,[
+#include <sys/types.h>
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+])
 AH_BOTTOM([
 /*
  * FreeBSD is missing ns_t_kx, ns_t_cert, ns_t_a6, ns_t_dname, ns_t_sink, ns_t_tsig, ns_t_zxfr
@@ -125,7 +143,6 @@ AH_BOTTOM([
 AC_CHECK_DECLS([p_rcode],,,[#include <resolv.h>])
 
 dnl ----------------------------------------------------------------------
-AC_CHECK_HEADERS(inttypes.h)
 AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long)
