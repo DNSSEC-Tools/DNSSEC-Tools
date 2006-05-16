@@ -35,6 +35,11 @@
 # define SPRINTF(x) ((size_t)sprintf x)
 #endif
 
+#ifndef MIN
+#define MIN(a, b)       ((a) < (b) ? (a) : (b))
+#endif
+
+
 /* Forward. */
 
 static size_t	prune_origin(const char *name, const char *origin);
