@@ -68,7 +68,7 @@ if test "x$ac_cv_lib_crypto_EVP_md5" != "xyes" -o "x$ac_cv_header_openssl_bio_h"
 fi
 
 dnl ----------------------------------------------------------------------
-AC_CHECK_HEADERS(sys/filio.h getopt.h)
+AC_CHECK_HEADERS(sys/filio.h getopt.h netinet/in.h)
 AC_CHECK_DECLS([getopt_long_only, getopt_long],,,[
 #include <unistd.h>
 #if HAVE_GETOPT_H
@@ -80,7 +80,9 @@ dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(arpa/nameser.h arpa/nameser_compat.h)
 
 AC_CHECK_STRUCT_FOR([
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
@@ -89,7 +91,9 @@ AH_TEMPLATE([STRUCT___NS_MSG_HAS__MSG_PTR],
             [Define if struct __ns_msg had _msg_ptr.])
 
 AC_CHECK_STRUCT_FOR([
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
@@ -99,7 +103,9 @@ AH_TEMPLATE([STRUCT___NS_MSG_HAS__PTR],
 
 dnl ----------------------------------------------------------------------
 AC_CHECK_TYPES([ns_cert_types],,,[
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
@@ -107,7 +113,9 @@ AC_CHECK_TYPES([ns_cert_types],,,[
 
 dnl check for varios ns_* record types
 AC_CHECK_DECLS([ns_t_kx, ns_r_badsig],,,[
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #ifdef HAVE_ARPA_NAMESER_H
 #include <arpa/nameser.h>
 #endif
@@ -140,7 +148,16 @@ AH_BOTTOM([
 #endif /* HAVE_NS_R_BADSIG */
 ])
 
-AC_CHECK_DECLS([p_rcode],,,[#include <resolv.h>])
+AC_CHECK_DECLS([p_rcode],,,[
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#if HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif
+#include <resolv.h>
+])
+
 
 dnl ----------------------------------------------------------------------
 AC_CHECK_SIZEOF(short)
