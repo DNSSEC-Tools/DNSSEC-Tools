@@ -22,10 +22,10 @@ use ExtUtils::MakeMaker;
 				getdnskeys
 				keyrec-check
 				lskrf
+				rollchk
 				rollctl
 				rollerd
-				rrchk
-				rrinit
+				rollinit
 				tachk
 				timetrans
 				zonesigner
