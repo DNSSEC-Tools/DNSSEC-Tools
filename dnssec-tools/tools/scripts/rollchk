@@ -124,11 +124,16 @@ sub main()
 sub getrollrecs
 {
 	my $rrfile = shift;			# Rollrec filename.
+	my $ret;				# rollrec_read() return.
 
 	#
 	# Read the rollrec file and save the rollrec names.
 	#
-	exit(-1) if(rollrec_read($rrfile) < 0);
+	rollrec_lock();
+	$ret = rollrec_read($rrfile);
+	rollrec_unlock();
+	exit(-1) if($ret < 0);
+
 	@rrnames = rollrec_names();
 
 	#

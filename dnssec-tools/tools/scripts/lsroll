@@ -255,7 +255,9 @@ sub getrollrecs
 {
 	my $rrfile = shift;			# Rollrec file.
 
+	rollrec_lock();
 	rollrec_read($rrfile);
+	rollrec_unlock();
 
 	@rrnames = rollrec_names();
 
