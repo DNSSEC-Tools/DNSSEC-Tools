@@ -1,8 +1,9 @@
 
+LIBS=@LIBS@
 INCL= ../../libsres
 LIB= ../../libsres
 CFLAGS_EX=-I$(INCL) -I.. -I../../libsres/include 
-EXTRALIBS=-lcrypto -lpthread
+EXTRALIBS=-lpthread
 LOCALLIBS=../libval.la ../../libsres/libsres.la
 LDFLAGS_EX=$(LOCALLIBS) $(EXTRALIBS)
 
