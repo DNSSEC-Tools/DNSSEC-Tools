@@ -164,7 +164,7 @@ sub rollrec_lock
 #
 sub rollrec_unlock
 {
-print "rollrec_unlock:  down in\n";
+# print "rollrec_unlock:  down in\n";
 
 	#
 	# Lock the lock file.
