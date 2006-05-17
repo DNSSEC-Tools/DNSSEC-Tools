@@ -704,7 +704,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 	while (NO_ERROR == (retval = get_next_policy_fragment(fp, scope, &pol_frag, &line_number))) {
 		if (feof(fp)) {
 			fcntl(fd, F_SETLKW, &fl);
-			close(fd);
+			fclose(fp);
 			return NO_ERROR;
 		}
 		/* Store this fragment as an override, consume pol_frag */ 
@@ -713,7 +713,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 
 	val_log(ctx, LOG_ERR, "Error in line %d of file %s\n", line_number, VAL_CONFIGURATION_FILE);
 	fcntl(fd, F_SETLKW, &fl);
-	close(fd);
+	fclose(fp);
 	return retval;
 }	
 
@@ -759,6 +759,11 @@ int read_res_config_file(val_context_t *ctx)
 	fl.l_type = F_UNLCK;
 
 	fp = fdopen(fd, "r");
+	if(fp == NULL) {
+		fcntl(fd, F_SETLKW, &fl);
+		close(fd);
+		return INTERNAL_ERROR;
+	}
 
 	while (NULL != fgets(line, MAX_LINE_SIZE, fp)) {
 																															 
@@ -835,7 +840,7 @@ int read_res_config_file(val_context_t *ctx)
 	}
 
 	fcntl(fd, F_SETLKW, &fl);
-	close(fd);
+	fclose(fp);
 
 	if (ns_head == NULL) {
 		get_root_ns(&ns_head);
@@ -852,7 +857,7 @@ err:
 	free_name_servers(&ns_head);
 
 	fcntl(fd, F_SETLKW, &fl);
-	close(fd);
+	fclose(fp);
 	return CONF_PARSE_ERROR;
 }
 
@@ -935,6 +940,8 @@ int read_root_hints_file(val_context_t *ctx)
 		if(NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
 			return retval;
 	}
+
+	fclose(fp);
 
 	return stow_root_info(root_info);
 }
@@ -1029,6 +1036,8 @@ struct hosts * parse_etc_hosts (const char *name)
 			}
 		}
 	}
+
+	fclose(fp);
 	
 	return retval;
 }
