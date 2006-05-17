@@ -33,7 +33,7 @@
 /* Pass in a context, to give acceptable time skew */
 static int val_sigverify (
 				val_context_t *ctx,
-				const char *data,
+				const unsigned char *data,
 			  int data_len,
 			  const val_dnskey_rdata_t dnskey,
 			  const val_rrsig_rdata_t rrsig)
@@ -161,8 +161,8 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
     
     rr = rrset->rrs_data;
     while (rr) {
-	memcpy(rrBuf + rrBuf_len, rrset->rrs_name_n, strlen(rrset->rrs_name_n) + 1);
-	rrBuf_len += strlen(rrset->rrs_name_n) + 1;
+	memcpy(rrBuf + rrBuf_len, rrset->rrs_name_n, strlen((char *)rrset->rrs_name_n) + 1);
+	rrBuf_len += strlen((char *)rrset->rrs_name_n) + 1;
 
 	cp = rrBuf + rrBuf_len;
 	NS_PUT16(rrset->rrs_type_h, cp);
