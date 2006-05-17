@@ -106,6 +106,7 @@ static int val_sigverify (
 
 }
 
+#if 0 /* never used, so why compile it in? */
 /* returns the number of bytes that were put into rrBuf */
 /* Concatenate the rrset into a buffer */
 /* Assume canonical ordering of RRs in the rrset */
@@ -218,6 +219,7 @@ static int have_rrsigs (struct domain_info *response)
 
     return 0;
 }
+#endif /* 0 */
 
 
 static int predict_sigbuflength (  struct rrset_rec *rr_set,
@@ -350,6 +352,7 @@ static int make_sigfield (  u_int8_t            **field,
     return NO_ERROR;
 }
 
+#if 0 /* never used, so why compile it in? */
 static int find_signature (u_int8_t **field, struct rr_rec *rr_sig)
 {
     int     sig_index;
@@ -360,6 +363,7 @@ static int find_signature (u_int8_t **field, struct rr_rec *rr_sig)
                                                                                                                           
     return rr_sig->rr_rdata_length_h - sig_index;
 }
+#endif
 
 static void identify_key_from_sig (struct rr_rec *sig,u_int8_t **name_n,u_int16_t *footprint_n)
 {
