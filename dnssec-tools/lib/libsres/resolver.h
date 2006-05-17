@@ -123,14 +123,14 @@ int query_send( const char*     name,
 int response_recv(int           *trans_id,
             struct name_server  **respondent,
 			u_int8_t		    **answer,
-			u_int32_t			*answer_length);
+			u_int			*answer_length);
 int get (   const char      *name_n,
             const u_int16_t     type_h,
             const u_int16_t     class_h,
             struct name_server  *nslist,
             struct name_server  **server,
             u_int8_t            **response,
-            u_int32_t           *response_length);
+            u_int               *response_length);
 void print_response (u_int8_t *ans, int resplen);
 int clone_ns(struct name_server **cloned_ns, struct name_server *ns);
 int clone_ns_list(struct name_server **ns_list, struct name_server *orig_ns_list);
