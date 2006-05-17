@@ -287,12 +287,11 @@ R_BOGUS_UNPROVABLE, 0}},
 
 // A wrapper function to send a query and print the output onto stderr
 //
-void sendquery(const char *desc, const char *name, const u_int16_t class, const u_int16_t type, const int result_ar[], int trusted_only)
+void sendquery(val_context_t *context, const char *desc, const char *name, const u_int16_t class, const u_int16_t type, const int result_ar[], int trusted_only)
 {
 	int ret_val;
     struct val_result_chain *results = NULL;
 	struct val_result_chain *res;
-    val_context_t *context;
     u_char name_n[NS_MAXCDNAME];
 	int err = 0;
 	int result_array[MAX_RESULTS];
@@ -300,18 +299,11 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
 
 	fprintf(stderr, "%s:\t", desc);
 
-    if(NO_ERROR !=(ret_val = val_get_context(NULL, &context))) {
-		fprintf(stderr, "Error: %d\n", ret_val);		
-        return;
-	}
-
     if (ns_name_pton(name, name_n, NS_MAXCDNAME-1) == -1) {
 		fprintf(stderr, "Error: %d\n", BAD_ARGUMENT);		
-        return;
+		return;
 	}                                                                                                                 
-
 	ret_val = val_resolve_and_check(context, name_n, class, type, 0, &results);
-
 
 	/* make a local copy of result array */
 	i = 0;
@@ -382,8 +374,6 @@ void sendquery(const char *desc, const char *name, const u_int16_t class, const 
 
     /* XXX De-register pending queries */
     val_free_result_chain(results); results = NULL;
-
-    val_free_context(context);
 }
 
 // Usage
@@ -407,13 +397,20 @@ void usage(char *progname)
 // Main
 int main(int argc, char *argv[])
 {
+    val_context_t *context;
+	int ret_val;
 	if (argc == 1) {
 		// Run the set of pre-defined test cases
 		int i;
+    	if(NO_ERROR !=(ret_val = val_get_context(NULL, &context))) {
+			fprintf(stderr, "Cannot create context: %d\n", ret_val);		
+   	     	return 1;
+		}
 		for (i= 0 ; testcases[i].desc != NULL; i++) {
-			sendquery(testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
+			sendquery(context, testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
 			fprintf(stderr, "\n");
 		}
+		val_free_context(context);
 	}
 	else {
 		// Parse the command line for a query and resolve+validate it
@@ -476,11 +473,16 @@ int main(int argc, char *argv[])
 
 			case 'T':
 				tc = atoi(optarg)-1;
-				sendquery(testcases[tc].desc, 
+			    if(NO_ERROR !=(ret_val = val_get_context(NULL, &context))) {
+					fprintf(stderr, "Cannot create context: %d\n", ret_val);		
+        			return 1;
+				}
+				sendquery(context, testcases[tc].desc, 
 					testcases[tc].qn, 
 					testcases[tc].qc, 
 					testcases[tc].qt, 
 					testcases[tc].qr, 0);
+				val_free_context(context);
 				return 0;
 				break;
 
@@ -498,7 +500,12 @@ int main(int argc, char *argv[])
 		// optind is a global variable.  See man page for getopt_long(3)
 		if (optind < argc) {
 			domain_name = argv[optind++];
-			sendquery("Result", domain_name, class_h, type_h, retvals, 1);
+    		if(NO_ERROR !=(ret_val = val_get_context(NULL, &context))) {
+				fprintf(stderr, "Cannot create context: %d\n", ret_val);		
+        		return 1;
+			}
+			sendquery(context, "Result", domain_name, class_h, type_h, retvals, 1);
+			val_free_context(context);
 			fprintf(stderr, "\n");
 
 			// If the print option is present, perform query and validation again for printing the result
