@@ -372,7 +372,7 @@ int query_send( const char*     name,
 int response_recv(int           *trans_id,
             struct name_server  **respondent,
 			u_int8_t		    **answer,
-			u_int32_t			*answer_length)
+			u_int			*answer_length)
 {
 	int ret_val;
 
@@ -431,7 +431,7 @@ int get (   const char*         name,
             struct name_server  *nslist,
             struct name_server  **server,
             u_int8_t            **response,
-            u_int32_t           *response_length)
+            u_int               *response_length)
 {
     int ret_val;
     int trans_id;

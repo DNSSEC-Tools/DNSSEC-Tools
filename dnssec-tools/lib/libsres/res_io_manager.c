@@ -502,7 +502,7 @@ int res_io_select_sockets (fd_set *read_descriptors, struct timeval *timeout)
 }
 
 int res_io_get_a_response(struct expected_arrival *ea_list, u_int8_t **answer,
-						int *answer_length, struct name_server **respondent)
+						u_int *answer_length, struct name_server **respondent)
 {
 	while (ea_list)
 	{
@@ -699,7 +699,7 @@ void res_io_read (fd_set *read_descriptors, struct expected_arrival *ea_list)
 	return;
 }
 
-int res_io_accept (int transaction_id, u_int8_t **answer, int *answer_length,
+int res_io_accept (int transaction_id, u_int8_t **answer, u_int *answer_length,
 				struct name_server **respondent)
 {
 	int				ret_val;
