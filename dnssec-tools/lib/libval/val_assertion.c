@@ -142,12 +142,12 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 
 			/* Find the last occurrence of zse_cur->zone_n in name_n */
 			p = name_n;
-			q = strstr(p, zse_cur->zone_n);
+			q = (u_int8_t*)strstr((char*)p, (char*)zse_cur->zone_n);
 			while(q != NULL) {
 				p = q;
-				q = strstr(q+1, zse_cur->zone_n);
+				q = (u_int8_t*)strstr((char*)q+1, (char*)zse_cur->zone_n);
 			}
-			if (!strcmp(p, zse_cur->zone_n)) {
+			if (!strcmp((char*)p, (char*)zse_cur->zone_n)) {
 				if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
 					val_log(ctx, LOG_DEBUG, "zone %s is not trusted", name_n);
 					return UNTRUSTED_ZONE;
