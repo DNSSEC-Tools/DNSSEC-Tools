@@ -89,6 +89,8 @@ my $loglevel;				# Logging level.
 my $sleeptime;				# Sleep interval in seconds.
 my $sleepcnt;				# Time we've slept so far.
 
+my $boottime = gmtime();		# Timestamp of rollerd's start time.
+
 my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
 
@@ -175,20 +177,33 @@ sub main
 		#
 		if(rrfokay($rollrecfile,""))
 		{
+			my $kronos1;			# Check's start time.
+			my $kronos2;			# Check's end time.
+			my $kronodiff;			# Difference of times.
+			my $kronos;			# difference string.
+
 			#
 			# Get the current contents of the rollrec file.
 			#
+			rollrec_lock();
 			rollrec_read($rollrecfile);
 
 			#
-			# Check the zones for expired ZSKs.
+			# Check the zones for expired ZSKs.  We'll also keep
+			# track of how long it takes to check the ZSKs.
 			#
+			$kronos1 = time;
 			zsk_check();
+			$kronos2 = time;
+			$kronodiff = $kronos2 - $kronos1;
+			$kronos = timetrans($kronodiff);
+			rollmgr_log(LOG_TMI,"<timer>","ZSKs checked in $kronos");
 
 			#
 			# Save the current rollrec file state.
 			#
 			rollrec_write();
+			rollrec_unlock();
 		}
 
 		#
@@ -1088,6 +1103,7 @@ sub init_filechk
 	#
 	# Get the current contents of the rollrec file.
 	#
+	rollrec_lock();
 	rollrec_read($rollrecfile);
 
 	#
@@ -1162,6 +1178,7 @@ sub init_filechk
 	# Save the current rollrec file state.
 	#
 	rollrec_close();
+	rollrec_unlock();
 }
 
 #-----------------------------------------------------------------------------
@@ -1482,6 +1499,7 @@ sub cmd_status
 	rollmgr_log(LOG_TMI,"<command>","status command received");
 
 	rollmgr_log(LOG_ALWAYS,"<command>","status:");
+	rollmgr_log(LOG_ALWAYS,"<command>","\tboot time         - $boottime");
 	rollmgr_log(LOG_ALWAYS,"<command>","\trollrec file      - $rollrecfile");
 	rollmgr_log(LOG_ALWAYS,"<command>","\tlogfile           - $lfile");
 	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvl");
