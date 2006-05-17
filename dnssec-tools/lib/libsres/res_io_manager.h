@@ -127,4 +127,10 @@ void res_io_view();
 */
 void res_io_stall();
 
+/*
+	res_timeout
+*/
+long res_timeout(struct name_server *ns);
+
+
 #endif
