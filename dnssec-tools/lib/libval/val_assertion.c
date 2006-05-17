@@ -1148,6 +1148,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 	struct val_query_chain *next_q;
 	struct domain_info *response;
 	int retval;
+	int need_data = 0;
 
 	response = NULL;
 
@@ -1156,6 +1157,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 
 		for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
 			if(next_q->qc_state == Q_INIT) {
+				need_data = 1;
 				next_q = next_q;
 				next_q->qc_state = Q_SENT;
 				val_log(context, LOG_DEBUG, "ask_resolver(): sending query for {%s %d %d}", 
@@ -1173,10 +1175,12 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 				if ((retval = val_resquery_send (context, next_q)) != NO_ERROR)
 					return retval;
 			}
+			else if (next_q->qc_state < Q_ANSWERED)
+				need_data = 1;
 		}
 
 		/* wait until we get at least one complete answer */
-		if (block) {
+		if ((block) && need_data) {
 
 			for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
 				if(next_q->qc_state < Q_ANSWERED) {
