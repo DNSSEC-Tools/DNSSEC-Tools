@@ -419,7 +419,15 @@ depends on the options selected.
 
 =head1 OPTIONS
 
+There are three types of options recognized by I<lsroll>:  record-selection
+options, attribute-selection options, and output-format options.  Each type
+is described in the sections below.
+
 =head2 Record-selection Options
+
+These options select the records that will be displayed by I<lsroll>.
+
+=over 4
 
 =item I<-all>
 
@@ -433,7 +441,14 @@ List all "roll" records in the I<rollrec> file.
 
 List all "skip" records in the I<rollrec> file.
 
+=back
+
 =head2 Attribute-selection Options
+
+These options select the attributes of the records that will be displayed
+by I<lsroll>.
+
+=over 4
 
 =item I<-type>
 
@@ -463,7 +478,13 @@ The record's TTL value is included in the output.
 
 The record's roll-over phase is included in the output.
 
+=back
+
 =head2 Output-format Options
+
+These options select the type of output that will be given by I<lsroll>.
+
+=over 4
 
 =item I<-count>
 
