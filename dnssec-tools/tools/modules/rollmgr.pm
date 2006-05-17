@@ -7,7 +7,7 @@
 # rollmgr.pm -	Roll-over manager functions.
 #
 #	The routines in this module provide a means to communicate with
-#	the roll-over manager.
+#	rollerd.
 #
 #
 #	Introduction
@@ -132,7 +132,7 @@ our @EXPORT = qw(
 			 ROLLCMD_STATUS
 		);
 
-my $rollmgrid;				# Roll-over manager's process id.
+my $rollmgrid;				# Rollerd's process id.
 
 ##############################################################################
 #
@@ -180,7 +180,7 @@ my $logfile;					# rollerd's log file.
 
 ##############################################################################
 #
-# These "constants" are used by the roll-over manager's command interfaces.
+# These "constants" are used by rollerd's command interfaces.
 # 
 
 my $ADDR	= INADDR_ANY;			# rollerd's server address.
@@ -222,7 +222,7 @@ my %roll_commands =
 
 ##############################################################################
 #
-# These "constants" are the names of the roll-over manager's interfaces.
+# These "constants" are the names of rollerd's interfaces.
 # 
 my $CMDINT	= "cmdint";
 my $DROPID	= "dropid";
@@ -363,7 +363,7 @@ sub rollmgr_prepdep
 #
 # Routine:      rollmgr_dir()
 #
-# Purpose:	Front-end to the O/S-specific "get roll-over manager's
+# Purpose:	Front-end to the O/S-specific "get rollerd's
 #		directory" function.
 #
 sub rollmgr_dir
@@ -381,7 +381,7 @@ sub rollmgr_dir
 #
 # Routine:      rollmgr_dropid()
 #
-# Purpose:	Front-end to the O/S-specific "save roll-over manager's
+# Purpose:	Front-end to the O/S-specific "save rollerd's
 #		process id" function.
 #
 sub rollmgr_dropid
@@ -399,7 +399,7 @@ sub rollmgr_dropid
 #
 # Routine:      rollmgr_getid()
 #
-# Purpose:	Front-end to the O/S-specific "get roll-over manager's
+# Purpose:	Front-end to the O/S-specific "get rollerd's
 #		identity" function.
 #
 sub rollmgr_getid
@@ -417,7 +417,7 @@ sub rollmgr_getid
 #
 # Routine:      rollmgr_halt()
 #
-# Purpose:	Front-end to the O/S-specific "halt roll-over manager"
+# Purpose:	Front-end to the O/S-specific "halt rollerd"
 #		function.
 #
 sub rollmgr_halt
@@ -435,7 +435,7 @@ sub rollmgr_halt
 #
 # Routine:      rollmgr_idfile()
 #
-# Purpose:	Front-end to the O/S-specific "get roll-over manager's
+# Purpose:	Front-end to the O/S-specific "get rollerd's
 #		identity filename" function.
 #
 sub rollmgr_idfile
@@ -470,7 +470,7 @@ sub rollmgr_loadzone
 #
 # Routine:      rollmgr_cmdint()
 #
-# Purpose:	Front-end to the O/S-specific "roll-over manager has a
+# Purpose:	Front-end to the O/S-specific "rollerd has a
 #		command" function.
 #
 sub rollmgr_cmdint
@@ -488,7 +488,7 @@ sub rollmgr_cmdint
 #
 # Routine:      rollmgr_rmid()
 #
-# Purpose:	Front-end to the O/S-specific "remove roll-over manager's
+# Purpose:	Front-end to the O/S-specific "remove rollerd's
 #		identity file" function.
 #
 sub rollmgr_rmid
@@ -506,7 +506,7 @@ sub rollmgr_rmid
 #
 # Routine:      rollmgr_saveid()
 #
-# Purpose:	Front-end to the O/S-specific "save roll-over manager's
+# Purpose:	Front-end to the O/S-specific "save rollerd's
 #		identity" function.
 #
 sub rollmgr_saveid
@@ -796,7 +796,7 @@ sub unix_dir
 #
 # Routine:	unix_idfile()
 #
-# Purpose:	Return the roll-over manager's id file.
+# Purpose:	Return rollerd's id file.
 #
 sub unix_idfile
 {
@@ -836,13 +836,13 @@ sub unix_loadzone
 #
 # Routine:	unix_dropid()
 #
-# Purpose:	Ensures that another instance of the roll-over manager is
+# Purpose:	Ensures that another instance of rollerd is
 #		running and then creates a pid file for future reference.
 #
 # Return Values:
 #		 1 - The pidfile was initialized for this process.
 #		 0 - Another process (not this one) is already acting as
-#		     the roll-over manager.
+#		     rollerd.
 #
 sub unix_dropid
 {
@@ -852,7 +852,7 @@ sub unix_dropid
 # print "unix_dropid:  down in\n";
 
 	#
-	# Get the pid from the roll-over manager's pidfile.
+	# Get the pid from rollerd's pidfile.
 	#
 	$rdpid = unix_getpid(0);
 
@@ -921,7 +921,7 @@ sub unix_dropid
 		# Return success if the current manager is us.
 		# Return failure if the current manager  isn't us.
 		#
-		if($psline =~ /rollover-manager/)
+		if($psline =~ /rollerd/)
 		{
 			flock(PIDFILE,LOCK_UN);
 
@@ -936,7 +936,7 @@ sub unix_dropid
 	}
 
 	#
-	# Save our pid as THE roll-over manager's pid.
+	# Save our pid as THE rollerd's pid.
 	#
 	print PIDFILE "$ego\n";
 	flock(PIDFILE,LOCK_UN);
@@ -954,13 +954,13 @@ sub unix_dropid
 #
 # Routine:	unix_rmid()
 #
-# Purpose:	Delete the roll-over manager's pidfile.  This is done when
+# Purpose:	Delete rollerd's pidfile.  This is done when
 #		as part of the manager's clean-up process.
 #
 # Return Values:
 #		 1 - The pidfile was deleted.
 #		 0 - No pidfile exists.
-#		-1 - The calling process is not the roll-over manager.
+#		-1 - The calling process is not rollerd.
 #		-2 - Unable to delete the pidfile.
 #
 sub unix_rmid
@@ -972,7 +972,7 @@ sub unix_rmid
 # print "unix_rmid:  down in\n";
 
 	#
-	# Get the pid from the roll-over manager's pidfile.
+	# Get the pid from rollerd's pidfile.
 	#
 	$rdpid = unix_getpid(0);
 	flock(PIDFILE,LOCK_EX);
@@ -982,7 +982,7 @@ sub unix_rmid
 	#
 	if($rdpid == -1)
 	{
-# print "unix_rmid:  roll-over manager's pidfile does not exist\n";
+# print "unix_rmid:  rollerd's pidfile does not exist\n";
 		return(0);
 	}
 
@@ -991,7 +991,7 @@ sub unix_rmid
 	#
 	if($rdpid != $ego)
 	{
-# print "unix_rmid:  we are not the roll-over manager\n";
+# print "unix_rmid:  we are not rollerd\n";
 		return(-1);
 	}
 
@@ -1016,7 +1016,7 @@ sub unix_rmid
 #
 # Routine:	unix_getpid()
 #
-# Purpose:	Return the roll-over manager, as recorded in its pidfile.
+# Purpose:	Return rollerd, as recorded in its pidfile.
 #		If the caller wants the file closed upon return, a non-zero
 #		value should be passed as an argument.
 #
@@ -1048,7 +1048,7 @@ sub unix_getpid
 	close(PIDFILE);
 	if(open(PIDFILE,"+< $UNIX_ROLLMGR_PIDFILE") == 0)
 	{
-		print STDERR "unix_getpid:  unable to open \"$UNIX_ROLLMGR_PIDFILE\"\n";
+#		print STDERR "unix_getpid:  unable to open \"$UNIX_ROLLMGR_PIDFILE\"\n";
 		return(-1);
 	}
 	flock(PIDFILE,LOCK_EX);
@@ -1078,12 +1078,12 @@ sub unix_getpid
 #
 # Routine:	unix_cmdint()
 #
-# Purpose:	Kick the roll-over manager to let it know it should
-#		re-read the rollrec file and process its queue again.
+# Purpose:	Kick rollerd to let it know it should re-read the rollrec
+#		file and process its queue again.
 #
 sub unix_cmdint
 {
-	my $pid;				# Roll-over manager's pid.
+	my $pid;				# Rollerd's pid.
 	my $ret;				# Return code from kill().
 
 # print "unix_cmdint:  down in\n";
@@ -1096,7 +1096,7 @@ sub unix_cmdint
 	return(-1) if(!defined($pid) ||  ($pid < 10));
 
 	#
-	# Send HUP to the rollerd.
+	# Send HUP to rollerd.
 	#
 	$ret = kill("HUP", $pid);
 	return($ret);
@@ -1106,11 +1106,11 @@ sub unix_cmdint
 #
 # Routine:	unix_halt()
 #
-# Purpose:	Tell the roll-over manager to shut down.
+# Purpose:	Tell rollerd to shut down.
 #
 sub unix_halt
 {
-	my $pid;				# Roll-over manager's pid.
+	my $pid;				# Rollerd's pid.
 	my $ret;				# Return code from kill().
 
 # print "unix_halt:  down in\n";
@@ -1123,7 +1123,7 @@ sub unix_halt
 	return(-1) if(!defined($pid) ||  ($pid < 10));
 
 	#
-	# Send INT to the rollerd.
+	# Send INT to rollerd.
 	#
 	$ret = kill('INT',$pid);
 	return($ret);
@@ -1355,8 +1355,8 @@ sub rollmgr_log
 # Routine:	rollmgr_channel()
 #
 # Purpose:	This routine initializes a socket to use for rollerd
-#		communications.  It is called by both the rollerd server
-#		and rollerd clients.
+#		communications.  It is called by both rollerd and rollerd
+#		clients.
 #
 #		Currently, we're only setting up to connect to a rollerd
 #		running on our own host.  In time, we may allow remote
@@ -1582,15 +1582,15 @@ The interfaces to the B<Net::DNS::SEC::Tools::rollmgr> module are given below.
 
 =head2 B<rollmgr_dir()>
 
-This routine returns the roll-over manager's directory.
+This routine returns I<rollerd>'s directory.
 
 =head2 B<rollmgr_idfile()>
 
-This routine returns the roll-over manager's id file.
+This routine returns I<rollerd>'s id file.
 
 =head2 B<rollmgr_getid()>
 
-This routine returns the roll-over manager's process id.  If a non-zero value
+This routine returns I<rollerd>'s process id.  If a non-zero value
 is passed as an argument, the id file will be left open and accessible through
 the PIDFILE file handle.  See the WARNINGS section below.
 
@@ -1602,44 +1602,44 @@ Return Values:
 
 =head2 B<rollmgr_dropid()>
 
-This interface ensures that another instance of the roll-over manager is not
+This interface ensures that another instance of I<rollerd> is not
 running and then creates a id file for future reference.
 
 Return Values:
 
     1 - the id file was successfully created for this process
-    0 - another process is already acting as the roll-over manager
+    0 - another process is already acting as rollerd
 
 =head2 B<rollmgr_rmid()>
 
-This interface deletes the roll-over manager's id file.
+This interface deletes I<rollerd>'s id file.
 
 Return Values:
 
      1 - the id file was successfully deleted
      0 - no id file exists
-    -1 - the calling process is not the roll-over manager
+    -1 - the calling process is not rollerd
     -2 - unable to delete the id file
 
 =head2 B<rollmgr_cmdint()>
 
-This routine informs the roll-over manager that a command has been sent via
+This routine informs I<rollerd> that a command has been sent via
 I<rollmgr_sendcmd()>.
 
 Return Values:
 
-    -1 - an invalid process id was found for the roll-over manager
+    -1 - an invalid process id was found for rollerd
     Anything else indicates the number of processes that were signaled.
     (This should only ever be 1.)
 
 =head2 B<rollmgr_halt()>
 
-This routine informs the roll-over manager to shut down.
+This routine informs I<rollerd> to shut down.
 
 In the current implementation, the return code from the B<kill()> command is
 returned.
 
-    -1 - an invalid process id was found for the roll-over manager
+    -1 - an invalid process id was found for rollerd
     Anything else indicates the number of processes that were signaled.
     (This should only ever be 1.)
 
@@ -1647,7 +1647,7 @@ returned.
 
 =head2 B<rollmgr_loglevel(newlevel,useflag)>
 
-This routine sets and retrieves the logging level for the roll-over manager.
+This routine sets and retrieves the logging level for I<rollerd>.
 The I<newlevel> argument specifies the new logging level to be set.  The
 valid levels are:
 
@@ -1675,7 +1675,7 @@ on error.
 
 =head2 B<rollmgr_logfile(newfile,useflag)>
 
-This routine sets and retrieves the log file for the roll-over manager.
+This routine sets and retrieves the log file for I<rollerd>.
 The I<newfile> argument specifies the new log file to be set.  If I<newfile>
 exists, it must be a regular file.
 
