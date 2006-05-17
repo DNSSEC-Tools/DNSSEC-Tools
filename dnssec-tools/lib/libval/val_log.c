@@ -21,7 +21,7 @@
 #include "val_cache.h"
 #include "val_support.h"
 
-char *get_hex_string(char *data, int datalen, char *buf, int buflen)
+char *get_hex_string(const unsigned char *data, int datalen, char *buf, int buflen)
 {
 	int i;
 	char *ptr = buf;
@@ -197,7 +197,7 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 		for (next_as = next_result->val_rc_trust; next_as; next_as = next_as->val_ac_trust) {
 			u_char *t_name_n;
 			if(next_as->_as->ac_data->rrs_name_n == NULL)
-				t_name_n = "NULL_DATA";
+				t_name_n = (u_char*) "NULL_DATA";
 			else
 				t_name_n = next_as->_as->ac_data->rrs_name_n;
 
