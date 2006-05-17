@@ -333,7 +333,7 @@ void val_free_context(val_context_t *context);
 int val_switch_policy_scope(val_context_t *ctx, char *label);
 
 /* from val_log.h */
-char *get_hex_string(char *data, int datalen, char *buf, int buflen);
+char *get_hex_string(const unsigned char *data, int datalen, char *buf, int buflen);
 void val_log_rrset(val_context_t *ctx, int level, struct rrset_rec *rrset);
 void val_log_base64(val_context_t *ctx, int level, unsigned char * message, int message_len);
 void val_log_rrsig_rdata (val_context_t *ctx, int level, const char *prefix, val_rrsig_rdata_t *rdata);
