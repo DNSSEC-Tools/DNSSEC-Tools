@@ -59,7 +59,7 @@ int val_parse_dname(const unsigned char *buf, int buflen, int offset,
     while (buf[newoffset] != 0) {
 	int len, i;
 
-	if ((buf[newoffset] & 0x00C0) == 0xC0) { /* domain name compression */
+	if ((buf[newoffset] & 0xC0) == 0xC0) { /* domain name compression */
 
 	    newoffset = ((buf[newoffset] & 0x3F) << 8) + buf[newoffset+1];
 
@@ -77,6 +77,7 @@ int val_parse_dname(const unsigned char *buf, int buflen, int offset,
 	}
 
 	dname[nindex++] = '.';
+	dname[nindex] = '\0';
 
 	if (!compressed) {
 	    count += (len + 1);
