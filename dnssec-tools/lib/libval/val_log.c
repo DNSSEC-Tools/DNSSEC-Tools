@@ -277,6 +277,8 @@ char *p_as_error(int err)
                                                                                                                              
     case DATA_MISSING: return "DATA_MISSING"; break;
     case RRSIG_MISSING: return "RRSIG_MISSING"; break;
+    case DNSKEY_MISSING: return "DNSKEY_MISSING"; break;
+    case DS_MISSING: return "DS_MISSING"; break;
     case NO_TRUST_ANCHOR: return "NO_TRUST_ANCHOR"; break;
     case UNTRUSTED_ZONE: return "UNTRUSTED_ZONE"; break;
     case IRRELEVANT_PROOF: return "IRRELEVANT_PROOF"; break;
