@@ -649,9 +649,11 @@ static int digest_response (   val_context_t 		*context,
         return prepare_empty_nxdomain (answers, query_name_n, query_type_h,
                                             query_class_h) ;
     }
-                                                                                                                          
+
+	/* we're not directly querying for a CNAME */
     nothing_other_than_cname = query_type_h != ns_t_cname &&
-                                    query_type_h != ns_t_any;
+                                    query_type_h != ns_t_any &&
+									query_type_h != ns_t_rrsig;
 
     /* Add the query name to the chain of acceptable names */
     if ((ret_val=add_to_qname_chain(qnames,query_name_n))!=NO_ERROR)
