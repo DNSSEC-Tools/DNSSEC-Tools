@@ -1178,6 +1178,9 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 				 */
 				if(is_trusted_zone(context, next_q->qc_name_n) ==  A_WAIT_FOR_TRUST) {
 					struct name_server *ns;
+					if(next_q->qc_ns_list == NULL) 
+						clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+
 					for(ns=next_q->qc_ns_list; ns; ns=ns->ns_next)
 						ns->ns_options |= RES_USE_DNSSEC;
 				}
