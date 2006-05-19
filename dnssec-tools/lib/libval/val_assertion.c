@@ -836,7 +836,17 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 	}
 
 	if (pc->qc_state > Q_ERROR_BASE) {
-		next_as->val_ac_status = DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
+		if(next_as->val_ac_status == A_WAIT_FOR_RRSIG) 
+			next_as->val_ac_status = RRSIG_MISSING; 
+		else if (next_as->val_ac_status == A_WAIT_FOR_TRUST) {
+			/* We're either waiting for DNSKEY or DS */
+			if(pc->qc_type_h == ns_t_ds)
+				next_as->val_ac_status = DS_MISSING;
+			else if (pc->qc_type_h == ns_t_dnskey)
+				next_as->val_ac_status = DNSKEY_MISSING;
+		}
+		else
+			next_as->val_ac_status = DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
 	}
 
 	if (pc->qc_state == Q_ANSWERED) {
@@ -1330,7 +1340,7 @@ int val_resolve_and_check(	val_context_t	*context,
 	}
 
 	/* Results are available */
-	int partially_correct = 0;
+	int partially_wrong = 0;
 	int negative_proof = 0;
 
 	for (res=*results; res && res->val_rc_trust && res->val_rc_trust->_as->ac_data; res=res->val_rc_next) {
@@ -1347,14 +1357,14 @@ int val_resolve_and_check(	val_context_t	*context,
 		val_log(context, LOG_DEBUG, "validate result set to %s[%d]", p_val_error(res->val_rc_status), res->val_rc_status);
 
 		if (!success) 
-			partially_correct = 1;
+			partially_wrong = 1;
 		if((res->val_rc_trust->_as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT) || 
 			(res->val_rc_trust->_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA))
 			negative_proof = 1;
 	}
 			
 	if (negative_proof) {
-		if (partially_correct) { 
+		if (partially_wrong) { 
 			/* mark all answers as bogus - 
 			 * all answers are related in the proof 
 			 */
