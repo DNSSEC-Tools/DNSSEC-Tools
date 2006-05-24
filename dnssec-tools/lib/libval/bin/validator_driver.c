@@ -42,8 +42,11 @@ int MAX_RESPSIZE = 8192;
 static struct option prog_options[] = {
 		   {"help",  0, 0, 'h'},
                    {"print", 0, 0, 'p'},
+                   {"selftest", 0, 0, 's'},
                    {"class", 1, 0, 'c'},
                    {"type",  1, 0, 't'},
+                   {"resolv-conf",  1, 0, 'r'},
+                   {"root-hints",  1, 0, 'i'},
 		   {"merge", 0, 0, 'm'},
 		   {0, 0, 0, 0}
                };
@@ -384,9 +387,12 @@ void usage(char *progname)
 	printf("Primary Options:\n");
 	printf("        -h, --help             Display this help and exit\n");
 	printf("        -p, --print            Print the answer and validation result\n");
+	printf("        -s, --selftest         Run internal sefltest\n");
 	printf("        -T, --testcase=<number> Specifies the test case number \n");
 	printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
 	printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
+	printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
+	printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
 	printf("Advanced Options:\n");
 	printf("        -m, --merge            Merge different RRSETs into a single answer\n");
 	printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
@@ -400,17 +406,6 @@ int main(int argc, char *argv[])
     val_context_t *context;
 	int ret_val;
 	if (argc == 1) {
-		// Run the set of pre-defined test cases
-		int i;
-    	if(NO_ERROR !=(ret_val = val_get_context(NULL, &context))) {
-			fprintf(stderr, "Cannot create context: %d\n", ret_val);		
-   	     	return 1;
-		}
-		for (i= 0 ; testcases[i].desc != NULL; i++) {
-			sendquery(context, testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
-			fprintf(stderr, "\n");
-		}
-		val_free_context(context);
 	}
 	else {
 		// Parse the command line for a query and resolve+validate it
@@ -418,10 +413,12 @@ int main(int argc, char *argv[])
 		char *classstr    = NULL;
 		char *typestr     = NULL;
 		char *domain_name = NULL;
+		char *args        = "hi:pc:r:st:T:m";
 		u_int16_t class_h = ns_c_in;
 		u_int16_t type_h  = ns_t_a;
 		int success       = 0;
 		int doprint       = 0;
+		int selftest      = 0;
 		u_int8_t flags    = (u_int8_t) 0;
 		int retvals[]     = {0};
 		int tc;
@@ -430,14 +427,14 @@ int main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_LONG
 			int opt_index     = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-			c = getopt_long_only (argc, argv, "hpc:t:T:m",
+			c = getopt_long_only (argc, argv, args,
 					      prog_options, &opt_index);
 #else
-			c = getopt_long (argc, argv, "hpc:t:T:m",
+			c = getopt_long (argc, argv, args,
 					      prog_options, &opt_index);
 #endif
 #else /* only have getopt */
-			c = getopt (argc, argv, "hpc:t:T:m");
+			c = getopt (argc, argv, args);
 #endif
 
 			if (c == -1) {
@@ -448,6 +445,10 @@ int main(int argc, char *argv[])
 			case 'h':
 			        usage(argv[0]);
 			        return(0);
+
+			case 's':
+				selftest = 1;
+				break;
 
 			case 'p':
 				doprint = 1;
@@ -462,6 +463,14 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				break;
+			case 'i':
+				root_hints_set(optarg);
+				break;
+
+			case 'r':
+				resolver_config_set(optarg);
+				break;
+
 			case 't':
 				type_h = res_nametotype(optarg, &success);
 				if (!success) {
@@ -549,10 +558,25 @@ int main(int argc, char *argv[])
 			}
 		}
 		else {
+			if (!selftest) {
 			fprintf(stderr, "Please specify domain name\n");
 			usage(argv[0]);
 			return 1;
+			}
+			else {
+		// Run the set of pre-defined test cases
+		int i;
+    	if(NO_ERROR !=(ret_val = val_get_context(NULL, &context))) {
+			fprintf(stderr, "Cannot create context: %d\n", ret_val);		
+   	     	return 1;
 		}
+		for (i= 0 ; testcases[i].desc != NULL; i++) {
+			sendquery(context, testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
+			fprintf(stderr, "\n");
+		}
+		val_free_context(context);
+		}
+			}
 	}
 
 	return 0;
