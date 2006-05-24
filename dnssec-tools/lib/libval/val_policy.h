@@ -44,6 +44,13 @@
 #define ZONE_SE_DO_VAL 2
 #define ZONE_SE_UNTRUSTED 3
 
+char * resolver_config_get(void);
+int resolver_config_set(const char *name);
+
+char * root_hints_get(void);
+int root_hints_set(const char *name);
+
+
 int read_root_hints_file(val_context_t *ctx); 
 int read_res_config_file(val_context_t *ctx);
 int read_val_config_file(val_context_t *ctx, char *scope);

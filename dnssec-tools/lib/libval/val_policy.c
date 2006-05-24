@@ -44,6 +44,64 @@ static int get_token ( FILE *conf_ptr,
 				char comment_c, 
 				char endstmt_c);
 
+/*
+ ***************************************************************
+ * These are functions to read/set the location of the resolver
+ * configuration and root.hints files.
+ ***************************************************************
+ */
+static char *resolver_config = NULL;
+static char *root_hints = NULL;
+
+char *
+resolver_config_get(void)
+{
+   if (NULL == resolver_config)
+      resolver_config = strdup(RESOLV_CONF);
+
+   return resolver_config;
+}
+
+int
+resolver_config_set(const char *name)
+{
+   char *new_name = strdup(name);
+
+   if (NULL == new_name)
+      return 1;
+
+   if (NULL != resolver_config)
+      free(resolver_config);
+
+   resolver_config = new_name;
+
+   return 0;
+}
+
+char *
+root_hints_get(void)
+{
+   if (NULL == root_hints)
+      root_hints = strdup(ROOT_HINTS);
+
+   return root_hints;
+}
+
+int
+root_hints_set(const char *name)
+{
+   char *new_name = strdup(name);
+
+   if (NULL == new_name)
+      return 1;
+
+   if (NULL != root_hints)
+      free(root_hints);
+
+   root_hints = new_name;
+
+   return 0;
+}
 
 /*
  ***************************************************************
@@ -737,6 +795,7 @@ int read_res_config_file(val_context_t *ctx)
 	struct sockaddr_in my_addr;
 	struct in_addr  address;
 	char auth_zone_info[NS_MAXDNAME];
+	char *resolv_conf;
 	FILE * fp;
 	int fd;
 	struct flock fl;
@@ -749,10 +808,14 @@ int read_res_config_file(val_context_t *ctx)
 
 	strcpy(auth_zone_info, DEFAULT_ZONE);
 
-	val_log(ctx, LOG_DEBUG, "Reading resolver policy from %s", RESOLV_CONF);
-	fd = open(RESOLV_CONF, O_RDONLY);
+	resolv_conf = resolver_config_get();
+	if (NULL == resolv_conf)
+		return INTERNAL_ERROR;
+
+	val_log(ctx, LOG_DEBUG, "Reading resolver policy from %s", resolv_conf);
+	fd = open(resolv_conf, O_RDONLY);
 	if (fd == -1) {
-		perror(RESOLV_CONF);
+		perror(resolv_conf);
 		return NO_POLICY;
 	}
 	fl.l_type = F_RDLCK;
@@ -777,7 +840,7 @@ int read_res_config_file(val_context_t *ctx)
 			strtok_r(line, white, &buf);
 			cp = strtok_r(NULL, white, &buf);
 			if (cp == NULL) {
-				perror(RESOLV_CONF);
+				perror(resolv_conf);
 				goto err;
 			}
 
@@ -832,7 +895,7 @@ int read_res_config_file(val_context_t *ctx)
 			strtok_r(line, white, &buf);
 			cp = strtok_r(NULL, white, &buf);
 			if (cp == NULL) {
-				perror(RESOLV_CONF);
+				perror(resolv_conf);
 				goto err;
 			}
 			if (ns_name_pton(cp, ns->ns_name_n, NS_MAXCDNAME-1) == -1) 
@@ -854,7 +917,7 @@ int read_res_config_file(val_context_t *ctx)
 	return NO_ERROR;
 
 err:
-	val_log (ctx, LOG_ERR, "Parse error in file %s\n", RESOLV_CONF);
+	val_log (ctx, LOG_ERR, "Parse error in file %s\n", resolv_conf);
 	free_name_servers(&ns_head);
 
 	fcntl(fd, F_SETLKW, &fl);
@@ -868,6 +931,7 @@ int read_root_hints_file(val_context_t *ctx)
 	struct rrset_rec *root_info = NULL;
 	FILE *fp;
 	char token[TOKEN_MAX];
+	char *root_hints;
 	u_char zone_n[NS_MAXCDNAME];
 	u_char rdata_n[NS_MAXCDNAME];
 	int endst = 0;
@@ -878,7 +942,11 @@ int read_root_hints_file(val_context_t *ctx)
 	int retval;
     u_int16_t           rdata_len_h;
 
-	fp = fopen (ROOT_HINTS, "r");
+	root_hints = root_hints_get();
+	if (NULL == root_hints)
+		return INTERNAL_ERROR;
+
+	fp = fopen (root_hints, "r");
 	if (fp == NULL) {
 		return NO_ERROR;
 	}
