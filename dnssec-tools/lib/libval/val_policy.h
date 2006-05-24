@@ -50,6 +50,9 @@ int resolver_config_set(const char *name);
 char * root_hints_get(void);
 int root_hints_set(const char *name);
 
+char * dnsval_conf_get(void);
+int dnsval_conf_set(const char *name);
+
 
 int read_root_hints_file(val_context_t *ctx); 
 int read_res_config_file(val_context_t *ctx);

@@ -52,6 +52,7 @@ static int get_token ( FILE *conf_ptr,
  */
 static char *resolver_config = NULL;
 static char *root_hints = NULL;
+static char *dnsval_conf = NULL;
 
 char *
 resolver_config_get(void)
@@ -99,6 +100,31 @@ root_hints_set(const char *name)
       free(root_hints);
 
    root_hints = new_name;
+
+   return 0;
+}
+
+char *
+dnsval_conf_get(void)
+{
+   if (NULL == dnsval_conf)
+      dnsval_conf = strdup(VAL_CONFIGURATION_FILE);
+
+   return dnsval_conf;
+}
+
+int
+dnsval_conf_set(const char *name)
+{
+   char *new_name = strdup(name);
+
+   if (NULL == new_name)
+      return 1;
+
+   if (NULL != dnsval_conf)
+      free(dnsval_conf);
+
+   dnsval_conf = new_name;
 
    return 0;
 }
@@ -733,18 +759,23 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 {
 	FILE *fp;
 	int fd;
+	char *dnsval_conf;
 	struct flock fl;
 	struct policy_fragment *pol_frag = NULL;
 	int retval;
 	int line_number = 1;
 
+	dnsval_conf = dnsval_conf_get();
+	if (NULL == dnsval_conf)
+		return INTERNAL_ERROR;
+
 	/* free up existing policies */
 	destroy_valpol(ctx);
 
-	val_log(ctx, LOG_DEBUG, "Reading validator policy from %s", VAL_CONFIGURATION_FILE);
-	fd = open(VAL_CONFIGURATION_FILE, O_RDONLY);
+	val_log(ctx, LOG_DEBUG, "Reading validator policy from %s", dnsval_conf);
+	fd = open(dnsval_conf, O_RDONLY);
 	if (fd == -1) {
-		perror(VAL_CONFIGURATION_FILE);
+		perror(dnsval_conf);
 		return NO_POLICY;
 	}
 	memset(&fl, 0, sizeof (fl));
@@ -770,7 +801,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 		store_policy_overrides(ctx, &pol_frag);
 	}
 
-	val_log(ctx, LOG_ERR, "Error in line %d of file %s\n", line_number, VAL_CONFIGURATION_FILE);
+	val_log(ctx, LOG_ERR, "Error in line %d of file %s\n", line_number, dnsval_conf);
 	fcntl(fd, F_SETLKW, &fl);
 	fclose(fp);
 	return retval;
