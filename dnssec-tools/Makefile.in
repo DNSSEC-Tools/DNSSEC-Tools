@@ -6,6 +6,8 @@ INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $
 
 all: makeit
 
+libs: subdirmake
+
 makeit: perlmakefiles perlmake subdirmake
 
 install: makedirectories perlinstall subdirinstall
