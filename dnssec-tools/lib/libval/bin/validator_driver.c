@@ -46,6 +46,7 @@ static struct option prog_options[] = {
                    {"class", 1, 0, 'c'},
                    {"type",  1, 0, 't'},
                    {"resolv-conf",  1, 0, 'r'},
+                   {"dnsval-conf",  1, 0, 'v'},
                    {"root-hints",  1, 0, 'i'},
 		   {"merge", 0, 0, 'm'},
 		   {0, 0, 0, 0}
@@ -391,6 +392,7 @@ void usage(char *progname)
 	printf("        -T, --testcase=<number> Specifies the test case number \n");
 	printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
 	printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
+	printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
 	printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
 	printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
 	printf("Advanced Options:\n");
@@ -413,7 +415,7 @@ int main(int argc, char *argv[])
 		char *classstr    = NULL;
 		char *typestr     = NULL;
 		char *domain_name = NULL;
-		char *args        = "hi:pc:r:st:T:m";
+		char *args        = "hi:pc:r:st:T:mv:";
 		u_int16_t class_h = ns_c_in;
 		u_int16_t type_h  = ns_t_a;
 		int success       = 0;
@@ -463,6 +465,11 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				break;
+
+			case 'v':
+				dnsval_conf_set(optarg);
+				break;
+
 			case 'i':
 				root_hints_set(optarg);
 				break;
