@@ -836,8 +836,8 @@ sub unix_loadzone
 #
 # Routine:	unix_dropid()
 #
-# Purpose:	Ensures that another instance of rollerd is
-#		running and then creates a pid file for future reference.
+# Purpose:	Ensures that another instance of rollerd is running and then
+#		creates a pid file for future reference.
 #
 # Return Values:
 #		 1 - The pidfile was initialized for this process.
@@ -874,6 +874,7 @@ sub unix_dropid
 		my $psline;			# Output line from ps.
 		my $openrc;			# Return code from open().
 
+# print "unix_dropid:  $UNIX_ROLLMGR_PIDFILE exists\n";
 		flock(PIDFILE,LOCK_EX);
 
 		#
@@ -902,7 +903,6 @@ sub unix_dropid
 			$lpid = $1;
 			$psline = "$5";
 
-			
 			#
 			# Drop out if the pid matches the file's pid.
 			#
@@ -912,14 +912,14 @@ sub unix_dropid
 			# Reset the saved command and go to the next line.
 			#
 			$psline = "";
-			next;
+#			next;
 		}
 		close(PSOUT);
 
 		#
 		# Check if the pidfile's process is still running.
 		# Return success if the current manager is us.
-		# Return failure if the current manager  isn't us.
+		# Return failure if the current manager isn't us.
 		#
 		if($psline =~ /rollerd/)
 		{
@@ -928,16 +928,17 @@ sub unix_dropid
 			return(1) if($rdpid == $ego);
 			return(0);
 		}
-
-		#
-		# Zap the file contents.
-		#
-		truncate($UNIX_ROLLMGR_PIDFILE,0);
 	}
+
+	#
+	# Zap the file contents.
+	#
+	truncate($UNIX_ROLLMGR_PIDFILE,0);
 
 	#
 	# Save our pid as THE rollerd's pid.
 	#
+	seek(PIDFILE,0,0);
 	print PIDFILE "$ego\n";
 	flock(PIDFILE,LOCK_UN);
 	close(PIDFILE);
