@@ -21,15 +21,17 @@ I<stderr>.  An examination of the queries and validation results
 can help an administrator uncover errors in DNSSEC configuration
 of DNS zones.
 
-If the I<DOMAIN_NAME> argument is not specified, B<validate> will
-perform a series of pre-defined test queries against the
-I<test.dnssec-tools.org> zone.  This essentially serves as a check
-for the validator.
+If no options are specified and no I<DOMAIN_NAME> argument is present,
+B<validate> will perform a series of pre-defined test queries against
+the I<test.dnssec-tools.org> zone.  This essentially serves as a
+test-suite for the validator.  If any options are specified (e.g.
+configuration file locations), I<-s> or I<--selftest> must be specified
+to run the test-suite.
 
 B<validate> can be used in conjunction with the B<drawvalmap> tool
 to display the query-sequence and validation results graphically:
 
-  bash# validate <DOMAIN_NAME> 2>&1 | drawvalmap -d
+  bash$ validate <DOMAIN_NAME> 2>&1 | drawvalmap -d
 
 =head1 OPTIONS
 
@@ -64,6 +66,33 @@ the final result on I<stdout>.
 This option can be used to specify the DNS type of the Resource Record
 queried.  If this option is not given, B<validate> will query for the
 B<A> record for the given I<DOMAIN_NAME>.
+
+=item -v I<FILE>, --dnsval-conf=I<FILE>
+
+This option can be used to specify the location of the dnsval.conf
+configuration file.
+
+=item -r I<FILE>, --resolv-conf=I<FILE>
+
+This option can be used to specify the location of the resolv.conf
+configuration file containing the namservers to use for lookups.
+
+=item -i I<FILE>, --root-hints=I<FILE>
+
+This option can be used to specify the location of the root.hints
+configuration file, containing the root nameservers. This is only
+used when no nameserver is found, and B<validate> must do recursive
+lookups itself.
+
+=item -s, --selftest
+
+This option can be used to specify that the application should perform
+its test-suite against the I<dnssec-tools.org> test domain. If the
+nameservers configured in the system resolv.conf do not support DNSSEC,
+use the I<-r> and I<-i> options to enable 
+B<validate> to use it's own internal recursive resolver.
+
+  bash$ validate -s -r /dev/null -i /etc/named/root.hints
 
 =back
 
