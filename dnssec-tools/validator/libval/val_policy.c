@@ -7,7 +7,7 @@
  * Read the contents of the validator configuration file and 
  * update the validator context.
  */
-#include "../../dnssec-tools-config.h"
+#include "validator-config.h"
 
 #include <stdio.h>
 #include <sys/types.h>

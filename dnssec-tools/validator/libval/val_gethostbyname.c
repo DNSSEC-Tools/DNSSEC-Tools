@@ -7,7 +7,7 @@
  * This is the implementation file for a validating gethostbyname function.
  * Applications should be able to use this with minimal change.
  */
-#include "../../dnssec-tools-config.h"
+#include "validator-config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
