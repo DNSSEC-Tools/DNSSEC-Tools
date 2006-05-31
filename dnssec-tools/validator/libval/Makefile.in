@@ -1,0 +1,84 @@
+
+INCL= ../libsres
+LIB= ../libsres
+CFLAGS_EX=-I$(INCL) -I. -I../libsres/include -D_GNU_SOURCE 
+
+SRC=  	val_resquery.c \
+	val_support.c \
+	val_cache.c \
+	val_context.c \
+	val_verify.c \
+	val_parse.c \
+	val_policy.c \
+	val_log.c \
+	val_x_query.c \
+	val_assertion.c\
+	val_getaddrinfo.c \
+	val_gethostbyname.c \
+	crypto/val_rsamd5.c \
+	crypto/val_rsasha1.c \
+	crypto/val_dsasha1.c
+
+# can't use gmake conventions to translate SRC -> OBJ for portability
+OBJ=  	val_resquery.o \
+	val_support.o \
+	val_cache.o \
+	val_context.o \
+	val_verify.o \
+	val_parse.o \
+	val_policy.o \
+	val_log.o \
+	val_x_query.o \
+	val_assertion.o\
+	val_getaddrinfo.o \
+	val_gethostbyname.o \
+	crypto/val_rsamd5.o \
+	crypto/val_rsasha1.o \
+	crypto/val_dsasha1.o
+
+LOBJ=  	val_resquery.lo \
+	val_support.lo \
+	val_cache.lo \
+	val_context.lo \
+	val_verify.lo \
+	val_parse.lo \
+	val_policy.lo \
+	val_log.lo \
+	val_x_query.lo \
+	val_assertion.lo\
+	val_getaddrinfo.lo \
+	val_gethostbyname.lo \
+	crypto/val_rsamd5.lo \
+	crypto/val_rsasha1.lo \
+	crypto/val_dsasha1.lo
+
+SUBDIRS=bin doc
+
+LIBVAL=libval.la
+
+all: $(LIBVAL) subdirmake
+
+clean:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make clean) ; \
+	done
+	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL)
+
+$(LIBVAL): $(LOBJ)
+	$(LIBTOOLLD) -o $@ $(LOBJ)
+
+subdirmake:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make) ; \
+	done
+
+install:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make install) ; \
+	done
+	$(MKPATH) $(libdir)
+	$(LIBTOOLIN) $(LIBVAL) $(libdir)
+	$(LIBTOOLFN)
+	$(MKPATH) $(includedir)
+	$(INSTALL) validator.h $(includedir)
+	$(INSTALL) val_errors.h $(includedir)
