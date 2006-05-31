@@ -67,6 +67,8 @@ if test "x$ac_cv_lib_crypto_EVP_md5" != "xyes" -o "x$ac_cv_header_openssl_bio_h"
 	AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
 fi
 
+AC_SUBST(LIBS)
+
 dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(sys/filio.h getopt.h netinet/in.h)
 AC_CHECK_DECLS([getopt_long_only, getopt_long],,,[
@@ -221,11 +223,11 @@ esac
 dnl ----------------------------------------------------------------------
 
 AC_CONFIG_FILES([
- Makefile:../Makefile.top:Makefile.in
- libsres/Makefile:../Makefile.top:libsres/Makefile.in:../Makefile.bot
- libval/Makefile:../Makefile.top:libval/Makefile.in:../Makefile.bot
- doc/Makefile:../Makefile.top:doc/Makefile.in:../Makefile.bot
- apps/Makefile:../Makefile.top:apps/Makefile.in:../Makefile.bot
+ Makefile:Makefile.top:Makefile.in
+ libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot
+ libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot
+ doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot
+ apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot
 ])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT
