@@ -1,0 +1,74 @@
+# the resulting Makefile is built from  TOPSRCDIR/Makefile.top and Makefile.in
+
+SRC=	ns_name.c	\
+	res_support.c	\
+	res_debug.c	\
+	ns_netint.c	\
+	ns_print.c	\
+	base64.c	\
+	ns_samedomain.c	\
+	ns_parse.c	\
+	ns_ttl.c	\
+	res_comp.c	\
+	res_mkquery.c 	\
+	res_io_manager.c \
+	res_tsig.c	\
+	res_query.c	
+
+# can't use gmake conventions to translate SRC -> OBJ for portability
+OBJ=	ns_name.o	\
+	res_support.o	\
+	res_debug.o	\
+	ns_netint.o	\
+	ns_print.o	\
+	base64.o	\
+	ns_samedomain.o	\
+	ns_parse.o	\
+	ns_ttl.o	\
+	res_comp.o	\
+	res_mkquery.o 	\
+	res_io_manager.o \
+	res_tsig.o	\
+	res_query.o	
+
+LOBJ=	ns_name.lo	\
+	res_support.lo	\
+	res_debug.lo	\
+	ns_netint.lo	\
+	ns_print.lo	\
+	base64.lo	\
+	ns_samedomain.lo \
+	ns_parse.lo	\
+	ns_ttl.lo	\
+	res_comp.lo	\
+	res_mkquery.lo 	\
+	res_io_manager.lo \
+	res_tsig.lo	\
+	res_query.lo	
+
+SUBDIRS=doc
+
+LIBRES= libsres.la
+
+INCLUDE= include
+CFLAGS_EX=-I$(INCLUDE)
+
+all: $(LIBRES) subdirmake 
+
+clean:
+	rm -f $(OBJ) $(LOBJ) $(LIBRES) $(LIBSRESSO)
+
+$(LIBRES): $(LOBJ)
+	$(LIBTOOLLD) -o $@ $(LOBJ) 
+
+subdirmake:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make) ; \
+	done
+
+install:
+	$(MKPATH) $(libdir)
+	$(LIBTOOLIN) $(LIBRES) $(libdir)
+	$(LIBTOOLFN)
+	$(MKPATH) $(includedir)
+	$(INSTALL) resolver.h    $(includedir)
