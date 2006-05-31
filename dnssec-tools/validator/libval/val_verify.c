@@ -6,7 +6,7 @@
  *
  * This is the implementation file for the verifier.
  */
-#include "../../dnssec-tools-config.h"
+#include "validator-config.h"
 
 #include <stdio.h>
 #include <stdlib.h>

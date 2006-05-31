@@ -9,7 +9,7 @@
  *
  * See RFC 2536
  */
-#include "../../../dnssec-tools-config.h"
+#include "validator-config.h"
 
 #include <openssl/bn.h>
 #include <openssl/sha.h>
