@@ -1,7 +1,7 @@
 
-INCL= ../libsres
+INCL= ../include
 LIB= ../libsres
-CFLAGS_EX=-I$(INCL) -I. -I../libsres/include -D_GNU_SOURCE 
+CFLAGS_EX=-I$(INCL) -I. -I../libsres -D_GNU_SOURCE 
 
 SRC=  	val_resquery.c \
 	val_support.c \
@@ -52,30 +52,17 @@ LOBJ=  	val_resquery.lo \
 	crypto/val_rsasha1.lo \
 	crypto/val_dsasha1.lo
 
-SUBDIRS=bin doc
-
 LIBVAL=libval.la
 
-all: $(LIBVAL) subdirmake
+all: $(LIBVAL)
 
 clean:
-	@for i in $(SUBDIRS) ; do \
-	  (cd $$i ; make clean) ; \
-	done
 	$(RM) -f $(LOBJ) $(OBJ) $(LIBVAL)
 
 $(LIBVAL): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ)
 
-subdirmake:
-	@for i in $(SUBDIRS) ; do \
-	  (cd $$i ; make) ; \
-	done
-
 install:
-	@for i in $(SUBDIRS) ; do \
-	  (cd $$i ; make install) ; \
-	done
 	$(MKPATH) $(libdir)
 	$(LIBTOOLIN) $(LIBVAL) $(libdir)
 	$(LIBTOOLFN)

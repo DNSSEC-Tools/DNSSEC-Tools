@@ -1,10 +1,10 @@
 
 LIBS=@LIBS@
-INCL= ../../libsres
-LIB= ../../libsres
-CFLAGS_EX=-I$(INCL) -I.. -I../../libsres/include 
+INCL= ../include
+LIB= ../include
+CFLAGS_EX=-I$(INCL) -I.. -I../libsres -I../libval
 EXTRALIBS=-lpthread
-LOCALLIBS=../libval.la ../../libsres/libsres.la
+LOCALLIBS=../libval/libval.la ../libsres/libsres.la
 LDFLAGS_EX=$(LOCALLIBS) $(EXTRALIBS)
 
 SRC=  	val_resquery.c \
