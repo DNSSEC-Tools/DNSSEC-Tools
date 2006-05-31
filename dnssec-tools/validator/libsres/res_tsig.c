@@ -14,7 +14,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
-#include "../../dnssec-tools-config.h"
+#include "validator-config.h"
 
 #include <stdlib.h>
 #include <string.h>
