@@ -1,0 +1,54 @@
+SUBDIRS=libsres libval apps doc
+INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
+
+all: subdirmake
+
+libs: subdirmake
+
+makeit: subdirmake
+
+install: makedirectories subdirinstall
+
+clean: subdirclean
+
+distclean: clean configclean
+
+makedirectories:
+	@for i in $(INSTALLDIRS) ; do \
+		if test ! -d $$i ; then \
+			echo "creating directory $$i/" \
+			$(MKPATH) $$I ; \
+		fi \
+	done
+#
+# Subdir build rules
+#
+
+subdirmake:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make ) ; \
+	  if test $$? != 0 ; then \
+	     exit 1 ; \
+	  fi  \
+         done
+
+subdirinstall:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make install ) ; \
+	  if test $$? != 0 ; then \
+	     exit 1 ; \
+	  fi  \
+         done
+
+subdirclean:
+	@for i in $(SUBDIRS) ; do \
+	  (cd $$i ; make clean ) ; \
+         done
+
+#
+# Config system rules
+#
+
+configclean:
+	rm -f config.cache config.status config.log \
+		Makefile stamp-h *.core
