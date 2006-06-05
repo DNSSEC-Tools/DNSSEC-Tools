@@ -116,10 +116,10 @@
 
 #define RETRIEVE_POLICY(ctx, index, type)	\
 			(!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
-#define R_TRUST_FLAG 0x80
-#define SET_RESULT_TRUSTED(status)	status |= R_TRUST_FLAG
-#define SET_MASKED_STATUS(st, new_val) st = (st & R_TRUST_FLAG) | new_val 
-#define CHECK_MASKED_STATUS(st, chk_val) ((st & R_TRUST_FLAG) == chk_val)
+#define VAL_R_TRUST_FLAG 0x80
+#define SET_RESULT_TRUSTED(status)	status |= VAL_R_TRUST_FLAG
+#define SET_MASKED_STATUS(st, new_val) st = (st & VAL_R_TRUST_FLAG) | new_val 
+#define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_TRUST_FLAG) == chk_val)
 
 typedef u_int8_t val_status_t;
 typedef u_int16_t val_astatus_t;
@@ -127,17 +127,6 @@ typedef u_int16_t val_astatus_t;
 struct val_query_chain; /* forward declaration */
 struct val_assertion_chain; /* forward declaration */
 
-struct val_rrset {
-
-    u_int8_t  *val_msg_header; 
-
-    u_int16_t val_queryset_len;
-    u_int8_t  *val_queryset_data; /* for {N,C,T} when no answer is returned, NSID etc  */
-
-    u_int8_t  val_rrset_section;
-    u_int16_t val_rrset_len;
-    u_int8_t  *val_rrset_data;
-};
 
 #define policy_entry_t void* 
 /* 
@@ -150,25 +139,36 @@ struct rr_rec
 {
     u_int16_t       rr_rdata_length_h;  /* RDATA length */
     u_int8_t        *rr_rdata;      /* Raw RDATA */
-	int				status;
-    struct rr_rec       *rr_next;
+	val_astatus_t    rr_status;
+    struct rr_rec   *rr_next;
+};
+
+struct val_rrset {
+	/* Header */
+    u_int8_t  *val_msg_header; 
+    u_int16_t val_msg_headerlen;
+	/* Question */
+    u_int8_t  *val_queryset_data; /* for {N,C,T} when no answer is returned, NSID etc  */
+    u_int16_t val_queryset_datalen;
+	/* Answer */
+    u_int8_t  *val_rrset_name_n;    /* Owner */
+    u_int16_t val_rrset_class_h;    /* ns_c_... */
+    u_int16_t val_rrset_type_h; /* ns_t_... */
+    u_int32_t val_rrset_ttl_h;  /* Received ttl */
+    u_int8_t  val_rrset_section;    /* VAL_FROM_... */
+    struct rr_rec *val_rrset_data;  /* All data RR's */
+    struct rr_rec *val_rrset_sig;   /* All signatures */
 };
 
 struct rrset_rec
 {
-	struct val_rrset *rrs_raw;
+	struct val_rrset *rrs;
 	struct name_server *rrs_respondent_server;
-    u_int8_t        *rrs_name_n;    /* Owner */
-    u_int16_t       rrs_type_h; /* ns_t_... */
-    u_int16_t       rrs_class_h;    /* ns_c_... */
-    u_int32_t       rrs_ttl_h;  /* Received ttl */
     u_int8_t        rrs_cred;   /* SR_CRED_... */
-    u_int8_t        rrs_section;    /* VAL_FROM_... */
     u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
-    struct rr_rec       *rrs_data;  /* All data RR's */
-    struct rr_rec       *rrs_sig;   /* All signatures */
     struct rrset_rec    *rrs_next;
 };
+
 struct policy_list {
 	int index; 
 	policy_entry_t pol;
@@ -321,14 +321,14 @@ int val_isauthentic (val_status_t val_status);
 int val_istrusted(val_status_t val_status);
 void val_free_result_chain(struct val_result_chain *results);
 int val_resolve_and_check( val_context_t *context,
-            u_char *domain_name_n,
+            u_char *domain_name,
             const u_int16_t class,
             const u_int16_t type,
             const u_int8_t flags,
             struct val_result_chain **results);
 
 /* from val_context.h */
-int val_get_context(char *label, val_context_t **newcontext);
+int val_create_context(char *label, val_context_t **newcontext);
 void val_free_context(val_context_t *context);
 int val_switch_policy_scope(val_context_t *ctx, char *label);
 
@@ -353,6 +353,16 @@ int val_query(const val_context_t *ctx,
 	      const u_int8_t flags,
 	      struct val_response *resp,
 	      int *resp_count);
+
+/* from val_policy.c */
+char * resolver_config_get(void);
+int resolver_config_set(const char *name);
+
+char * root_hints_get(void);
+int root_hints_set(const char *name);
+
+char * dnsval_conf_get(void);
+int dnsval_conf_set(const char *name);
 
 /* from val_gethostbyname.c */
 extern int h_errno;

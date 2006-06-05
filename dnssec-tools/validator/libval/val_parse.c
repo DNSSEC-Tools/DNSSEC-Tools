@@ -138,7 +138,7 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 	while ((sp < ep) && isspace(*sp))		\
 		sp++;								\
 	if (sp >= ep)							\
-		return BAD_ARGUMENT;				\
+		return VAL_BAD_ARGUMENT;				\
 	while ((sp < ep) && !isspace(*sp)) { 	\
 		token[i++] = *sp;					\
 		sp++;								\
@@ -158,11 +158,11 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	char token[NS_MAXDNAME];
 
 	if (ep - sp > NS_MAXDNAME)
-		return BAD_ARGUMENT;
+		return VAL_BAD_ARGUMENT;
 
 	(*dnskey_rdata) = (val_dnskey_rdata_t *) MALLOC (sizeof(val_dnskey_rdata_t));
 	if((*dnskey_rdata) == NULL)
-		return OUT_OF_MEMORY;
+		return VAL_OUT_OF_MEMORY;
 
 	TOK_IN_STR();
 	(*dnskey_rdata)->flags = atoi(token);
@@ -194,7 +194,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	int bufsize = ep - keyptr;
 	(*dnskey_rdata)->public_key = (u_char *) MALLOC (bufsize * sizeof(char));
 	if ((*dnskey_rdata)->public_key == NULL)
-		return OUT_OF_MEMORY;
+		return VAL_OUT_OF_MEMORY;
 
 	/* decode the base64 public key */
 	BIO *b64 = BIO_new(BIO_f_base64());
@@ -207,7 +207,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	if ((*dnskey_rdata)->public_key_len <= 0) {
 		FREE((*dnskey_rdata)->public_key);
 		FREE(*dnskey_rdata);	
-		return BAD_ARGUMENT;
+		return VAL_BAD_ARGUMENT;
 	}
 
 	/* 
@@ -220,7 +220,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 							sizeof (u_int8_t); /*algo */
 	u_char *buf = (u_char *) MALLOC (buflen * sizeof (u_char));
 	if (buf == NULL)
-		return OUT_OF_MEMORY;
+		return VAL_OUT_OF_MEMORY;
 
 	u_char *bp = buf;
 	u_int16_t flags = (*dnskey_rdata)->flags;
@@ -243,7 +243,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	(*dnskey_rdata)->next = NULL;
 	FREE(buf);
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 

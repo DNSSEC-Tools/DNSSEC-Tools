@@ -42,8 +42,8 @@ void val_free_result_chain(struct val_result_chain *results)
  * for validating a response. 
  *
  * Returns:
- * NO_ERROR			Operation succeeded
- * OUT_OF_MEMORY	Could not allocate enough memory for operation
+ * VAL_NO_ERROR			Operation succeeded
+ * VAL_OUT_OF_MEMORY	Could not allocate enough memory for operation
  */
 int add_to_query_chain(struct val_query_chain **queries, u_char *name_n, 
 						const u_int16_t type_h, const u_int16_t class_h)
@@ -69,11 +69,11 @@ int add_to_query_chain(struct val_query_chain **queries, u_char *name_n,
 			temp->qc_next = *queries;
 			*queries = temp;
 		}
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 	}
 
 	temp = (struct val_query_chain *) MALLOC (sizeof (struct val_query_chain));
-	if (temp==NULL) return OUT_OF_MEMORY;
+	if (temp==NULL) return VAL_OUT_OF_MEMORY;
                                                                                                                           
 	memcpy (temp->qc_name_n, name_n, wire_name_length(name_n));
 	temp->qc_type_h = type_h; 
@@ -88,7 +88,7 @@ int add_to_query_chain(struct val_query_chain **queries, u_char *name_n,
 	temp->qc_next = *queries;
 	*queries = temp;
                                                                                                                           
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 /*
@@ -150,22 +150,22 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 			if (!strcmp((char*)p, (char*)zse_cur->zone_n)) {
 				if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
 					val_log(ctx, LOG_DEBUG, "zone %s is not trusted", name_n);
-					return UNTRUSTED_ZONE;
+					return VAL_A_UNTRUSTED_ZONE;
 				}
 				else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
 					val_log(ctx, LOG_DEBUG, "Doing validation for zone %s", name_n);
-					return A_WAIT_FOR_TRUST;
+					return VAL_A_WAIT_FOR_TRUST;
 				}
 				else { 
 					/* ZONE_SE_IGNORE */
 					val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for zone %s", name_n);
-					return TRUST_ZONE;
+					return VAL_A_TRUST_ZONE;
 				}
 			}
 		}
 	}
 	val_log(ctx, LOG_DEBUG, "Doing validation for zone %s", name_n);
-	return A_WAIT_FOR_TRUST;
+	return VAL_A_WAIT_FOR_TRUST;
 }
 
 
@@ -180,7 +180,7 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 	name_len = wire_name_length(zp);
 	ta_pol = RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);	
 	if (ta_pol == NULL)
-		return NO_TRUST_ANCHOR;
+		return VAL_A_NO_TRUST_ANCHOR;
 
 	/* skip longer names */
 	for (ta_cur = ta_pol; 
@@ -203,7 +203,7 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 					if (dnskey.public_key != NULL)
 						FREE (dnskey.public_key);
 					val_log(ctx, LOG_DEBUG, "key %s is trusted", zp);
-					return TRUST_KEY;
+					return VAL_A_TRUST_KEY;
 				}
 				if (dnskey.public_key != NULL)
 					FREE (dnskey.public_key);
@@ -224,13 +224,13 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 
 			if (namecmp(ta_cur->zone_n, zp) == 0) {
 				/* We have hope */
-				return A_WAIT_FOR_TRUST;
+				return VAL_A_WAIT_FOR_TRUST;
 			}
 		}
 	}
 
 	val_log(ctx, LOG_DEBUG, "Cannot find a good trust anchor for the chain of trust above %s", zp);
-	return NO_TRUST_ANCHOR;	
+	return VAL_A_NO_TRUST_ANCHOR;	
 }
 
 
@@ -245,64 +245,64 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
         /* Referals won't make it this far, therr handled in digest_response */
                                                                                                                           
     /* Answer is a NACK_NXT if... */
-	if((the_set->rrs_data == NULL) && (the_set->rrs_sig != NULL)) {
+	if((the_set->rrs->val_rrset_data == NULL) && (the_set->rrs->val_rrset_sig != NULL)) {
 		the_set->rrs_ans_kind = SR_ANS_BARE_RRSIG;
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 	}
                                                                                                                           
-    if (the_set->rrs_type_h == ns_t_nsec)
+    if (the_set->rrs->val_rrset_type_h == ns_t_nsec)
     {
-        if (namecmp(the_set->rrs_name_n, qc_name_n)==0 &&
+        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
                             (q_type_h == ns_t_any || q_type_h == ns_t_nsec))
             /* We asked for it */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
             the_set->rrs_ans_kind = SR_ANS_NACK_NXT;
                                                                                                                           
-        return NO_ERROR;
+        return VAL_NO_ERROR;
     }
                                                                                                                           
     /* Answer is a NACK_SOA if... */
                                                                                                                           
-    if (the_set->rrs_type_h == ns_t_soa)
+    if (the_set->rrs->val_rrset_type_h == ns_t_soa)
     {
-        if (namecmp(the_set->rrs_name_n, qc_name_n)==0 &&
+        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
                             (q_type_h == ns_t_any || q_type_h == ns_t_soa))
             /* We asked for it */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
             the_set->rrs_ans_kind = SR_ANS_NACK_SOA;
                                                                                                                           
-        return NO_ERROR;
+        return VAL_NO_ERROR;
     }
                                                                                                                           
     /* Answer is a CNAME if... */
                                                                                                                           
-    if (the_set->rrs_type_h == ns_t_cname)
+    if (the_set->rrs->val_rrset_type_h == ns_t_cname)
     {
-        if (namecmp(the_set->rrs_name_n, qc_name_n)==0 &&
+        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
                             (q_type_h == ns_t_any || q_type_h == ns_t_cname))
             /* We asked for it */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
             the_set->rrs_ans_kind = SR_ANS_CNAME;
                                                                                                                           
-        return NO_ERROR;
+        return VAL_NO_ERROR;
     }
                                                                                                                           
     /* Answer is an ANSWER if... */
-    if (namecmp(the_set->rrs_name_n, qc_name_n)==0 &&
-                    (q_type_h==ns_t_any || q_type_h==the_set->rrs_type_h))
+    if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
+                    (q_type_h==ns_t_any || q_type_h==the_set->rrs->val_rrset_type_h))
     {
         /* We asked for it */
         the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
-        return NO_ERROR;
+        return VAL_NO_ERROR;
     }
                                                                                                                           
     the_set->rrs_ans_kind = SR_ANS_UNSET;
-	*status = DNS_ERROR_BASE + SR_WRONG_ANSWER; 
+	*status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER; 
                                                                                                                           
-    return ERROR;
+    return VAL_ERROR;
 }
 
 #define TOP_OF_QNAMES   0
@@ -317,14 +317,14 @@ static int name_in_q_names (
                                                                                                                           
     if (q_names_n==NULL) return NOT_IN_QNAMES;
                                                                                                                           
-    if (namecmp(the_set->rrs_name_n, q_names_n->qnc_name_n)==0)
+    if (namecmp(the_set->rrs->val_rrset_name_n, q_names_n->qnc_name_n)==0)
         return TOP_OF_QNAMES;
                                                                                                                           
     temp_qc = q_names_n->qnc_next;
                                                                                                                           
     while (temp_qc)
     {
-        if (namecmp(the_set->rrs_name_n, temp_qc->qnc_name_n)==0)
+        if (namecmp(the_set->rrs->val_rrset_name_n, temp_qc->qnc_name_n)==0)
             return MID_OF_QNAMES;
         temp_qc = temp_qc->qnc_next;
     }
@@ -340,9 +340,9 @@ int fails_to_answer_query(
 					  u_int16_t			*status)
 {
     int name_present = name_in_q_names (q_names_n, the_set);
-    int type_match = the_set->rrs_type_h==q_type_h || q_type_h==ns_t_any;
-    int class_match = the_set->rrs_class_h==q_class_h || q_class_h==ns_c_any;
-    int data_present = the_set->rrs_data != NULL;
+    int type_match = the_set->rrs->val_rrset_type_h==q_type_h || q_type_h==ns_t_any;
+    int class_match = the_set->rrs->val_rrset_class_h==q_class_h || q_class_h==ns_c_any;
+    int data_present = the_set->rrs->val_rrset_data != NULL;
                                                                                                                           
     if (!data_present) return FALSE;
                                                                                                                           
@@ -359,7 +359,7 @@ int fails_to_answer_query(
                 the_set->rrs_ans_kind == SR_ANS_NACK_SOA))
         )
         {
-            *status = DNS_ERROR_BASE + SR_WRONG_ANSWER;
+            *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
             return TRUE;
         }
                                                                                                                           
@@ -383,14 +383,14 @@ static int NSEC_is_wrong_answer (
         later (in "the matrix").
     */
                                                                                                                           
-    if (namecmp(the_set->rrs_name_n, qc_name_n)==0)
+    if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0)
     {
         /* NXT owner = query name & q_type not in list */
-        nsec_bit_field = wire_name_length (the_set->rrs_data->rr_rdata);
+        nsec_bit_field = wire_name_length (the_set->rrs->val_rrset_data->rr_rdata);
                                                                                                                           
-        if (ISSET((&(the_set->rrs_data->rr_rdata[nsec_bit_field])), q_type_h))
+        if (ISSET((&(the_set->rrs->val_rrset_data->rr_rdata[nsec_bit_field])), q_type_h))
         {
-			*status = IRRELEVANT_PROOF; 
+			*status = VAL_A_IRRELEVANT_PROOF; 
             return TRUE;
         }
         else
@@ -403,9 +403,9 @@ static int NSEC_is_wrong_answer (
 		 * or if it is the SOA but that logic is handled in 
 		 * prove_nonexistence()
 		 */
-        if (namecmp(the_set->rrs_name_n, qc_name_n) > 0)
+        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n) > 0)
         {
-			*status = IRRELEVANT_PROOF;	
+			*status = VAL_A_IRRELEVANT_PROOF;	
             return TRUE;
         }
         
@@ -417,8 +417,8 @@ static int NSEC_is_wrong_answer (
  * Add a new assertion for the response data 
  *
  * Returns:
- * NO_ERROR			Operation succeeded
- * OUT_OF_MEMORY	Could not allocate enough memory for operation
+ * VAL_NO_ERROR			Operation succeeded
+ * VAL_OUT_OF_MEMORY	Could not allocate enough memory for operation
  */
 static int add_to_assertion_chain(struct val_assertion_chain **assertions, struct domain_info *response)
 {
@@ -426,7 +426,7 @@ static int add_to_assertion_chain(struct val_assertion_chain **assertions, struc
 	struct rrset_rec *next_rr;
 
 	if (response == NULL)
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 
 	first_as = NULL;
 	prev_as = NULL;
@@ -434,17 +434,17 @@ static int add_to_assertion_chain(struct val_assertion_chain **assertions, struc
 	while(next_rr) {
 
 		new_as = (struct val_assertion_chain *) MALLOC (sizeof (struct val_assertion_chain)); 
-		if (new_as==NULL) return OUT_OF_MEMORY;
+		if (new_as==NULL) return VAL_OUT_OF_MEMORY;
 
 		new_as->_as = (struct val_rrset_digested *) MALLOC (sizeof (struct val_rrset_digested));
 		if (new_as->_as == NULL)
-			return OUT_OF_MEMORY;
+			return VAL_OUT_OF_MEMORY;
 		new_as->_as->ac_data = copy_rrset_rec(next_rr);
 		new_as->val_ac_trust = NULL;        
 		new_as->val_ac_rrset_next = NULL;        
 		new_as->val_ac_next = NULL;        
 		new_as->_as->ac_pending_query = NULL; 
-		new_as->val_ac_status = A_INIT;
+		new_as->val_ac_status = VAL_A_INIT;
 		if(first_as != NULL) { 
 			/* keep the first assertion constant */
 			new_as->val_ac_next = first_as->val_ac_next;
@@ -461,7 +461,7 @@ static int add_to_assertion_chain(struct val_assertion_chain **assertions, struc
 		next_rr = next_rr->rrs_next;
 	}
                                                                                                                   
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 /*
@@ -491,35 +491,35 @@ static int build_pending_query(val_context_t *context,
 	int retval;
 
 	if(as->_as->ac_data == NULL) {
-		as->val_ac_status = DATA_MISSING;
-		return NO_ERROR;
+		as->val_ac_status = VAL_A_DATA_MISSING;
+		return VAL_NO_ERROR;
 	}
 
 	if(as->_as->ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) { 
-		as->val_ac_status = BARE_RRSIG;
-		return NO_ERROR;
+		as->val_ac_status = VAL_A_BARE_RRSIG;
+		return VAL_NO_ERROR;
 	}
 
-	if(as->_as->ac_data->rrs_data == NULL) {
-		as->val_ac_status = DATA_MISSING;
-		return NO_ERROR;
+	if(as->_as->ac_data->rrs->val_rrset_data == NULL) {
+		as->val_ac_status = VAL_A_DATA_MISSING;
+		return VAL_NO_ERROR;
 	}
 
 	/* Check if this zone is locally trusted/untrusted */
-	u_int16_t tzonestatus = is_trusted_zone(context, as->_as->ac_data->rrs_name_n);
-	if (tzonestatus != A_WAIT_FOR_TRUST) {
+	u_int16_t tzonestatus = is_trusted_zone(context, as->_as->ac_data->rrs->val_rrset_name_n);
+	if (tzonestatus != VAL_A_WAIT_FOR_TRUST) {
 		as->val_ac_status = tzonestatus;
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 	}
 
-	if(as->_as->ac_data->rrs_sig == NULL) {
-		as->val_ac_status = A_WAIT_FOR_RRSIG;
+	if(as->_as->ac_data->rrs->val_rrset_sig == NULL) {
+		as->val_ac_status = VAL_A_WAIT_FOR_RRSIG;
 		/* create a query and link it as the pending query for this assertion */
-		if(NO_ERROR != (retval = add_to_query_chain(queries, 
-						as->_as->ac_data->rrs_name_n, ns_t_rrsig, as->_as->ac_data->rrs_class_h)))
+		if(VAL_NO_ERROR != (retval = add_to_query_chain(queries, 
+						as->_as->ac_data->rrs->val_rrset_name_n, ns_t_rrsig, as->_as->ac_data->rrs->val_rrset_class_h)))
 			return retval;
 		as->_as->ac_pending_query = *queries;/* The first value in the list is the most recent element */
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 	}
 
 	/* 
@@ -527,33 +527,33 @@ static int build_pending_query(val_context_t *context,
 	 */
 
 	/* First identify the signer name from the RRSIG */
-	signby_name_n = &as->_as->ac_data->rrs_sig->rr_rdata[SIGNBY];
+	signby_name_n = &as->_as->ac_data->rrs->val_rrset_sig->rr_rdata[SIGNBY];
 	//XXX The signer name has to be within the zone
 
 	/* Then look for  {signby_name_n, DNSKEY/DS, type} */
-	if(as->_as->ac_data->rrs_type_h == ns_t_dnskey) {
+	if(as->_as->ac_data->rrs->val_rrset_type_h == ns_t_dnskey) {
 
-		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->_as->ac_data->rrs_data);
+		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->_as->ac_data->rrs->val_rrset_data);
 		as->val_ac_status = tkeystatus;
-		if (as->val_ac_status != A_WAIT_FOR_TRUST)
-			return NO_ERROR;
+		if (as->val_ac_status != VAL_A_WAIT_FOR_TRUST)
+			return VAL_NO_ERROR;
 
 		/* Create a query for missing data */
-		if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
-					ns_t_ds, as->_as->ac_data->rrs_class_h)))
+		if(VAL_NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
+					ns_t_ds, as->_as->ac_data->rrs->val_rrset_class_h)))
 			return retval;
 
 	}
 	else { 
 		/* look for DNSKEY records */
-		if(NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
-						ns_t_dnskey, as->_as->ac_data->rrs_class_h)))
+		if(VAL_NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
+						ns_t_dnskey, as->_as->ac_data->rrs->val_rrset_class_h)))
 			return retval;
-		as->val_ac_status = A_WAIT_FOR_TRUST;
+		as->val_ac_status = VAL_A_WAIT_FOR_TRUST;
 	}
 
 	as->_as->ac_pending_query = *queries; /* The first value in the list is the most recent element */
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 
@@ -563,7 +563,7 @@ static int build_pending_query(val_context_t *context,
  * can proceed.
  * 
  * Returns:
- * NO_ERROR			Operation completed successfully
+ * VAL_NO_ERROR			Operation completed successfully
  * SR_CALL_ERROR	If the name could not be converted from host to network format
  *
  */ 
@@ -578,21 +578,21 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 	u_int8_t kind = SR_ANS_UNSET;
 
 	if (matched_q == NULL)
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 
 	if(matched_q->qc_as != NULL) {
 		/* We already had an assertion for this query */
 		// XXX What about FLOOD_ATTACKS ?
-		return NO_ERROR; 
+		return VAL_NO_ERROR; 
 	}
 
 	/* Create an assertion for the response data */
-	if(NO_ERROR != (retval = add_to_assertion_chain(assertions, response))) 
+	if(VAL_NO_ERROR != (retval = add_to_assertion_chain(assertions, response))) 
 		return retval;
 
 	if (response->di_rrset == NULL) {
 		matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 	}
 
 	as = *assertions; /* The first value in the list is the most recent element */
@@ -605,7 +605,7 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 		/* Cover error conditions first */
 		/* SOA checks will appear during sanity checks later on */
 		if((	set_ans_kind(response->di_qnames->qnc_name_n, type_h, class_h, 
-					as->_as->ac_data, &as->val_ac_status) == ERROR)
+					as->_as->ac_data, &as->val_ac_status) == VAL_ERROR)
 				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->_as->ac_data, &as->val_ac_status)
 				|| NSEC_is_wrong_answer (response->di_qnames->qnc_name_n, type_h, class_h, 
 					as->_as->ac_data, &as->val_ac_status)) {
@@ -664,11 +664,11 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 		}
 
 		if (!matched_q->qc_glue_request) { 
-			if (NO_ERROR != (retval = build_pending_query(context, queries, as)))
+			if (VAL_NO_ERROR != (retval = build_pending_query(context, queries, as)))
 				return retval;
 		}
 	}
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 static void  prove_nonexistence (val_context_t *ctx, struct val_query_chain *top_q, struct
@@ -695,19 +695,19 @@ val_result_chain *results)
 	for(res = results; res; res = res->val_rc_next) {
 		struct rrset_rec *the_set = res->val_rc_trust->_as->ac_data;
 		if (the_set->rrs_ans_kind == SR_ANS_NACK_SOA) {
-			soa_name_n = the_set->rrs_name_n;
+			soa_name_n = the_set->rrs->val_rrset_name_n;
 			break;
 		}
 	}
 
 	if (soa_name_n == NULL)
-		status = R_INCOMPLETE_PROOF;
+		status = VAL_R_INCOMPLETE_PROOF;
 	else {
 		/* for every NSEC */
 		for(res = results; res; res = res->val_rc_next) {
 			struct rrset_rec *the_set = res->val_rc_trust->_as->ac_data;
 			if (the_set->rrs_ans_kind == SR_ANS_NACK_NXT) { 
-				if (!namecmp(the_set->rrs_name_n, top_q->qc_name_n)) {
+				if (!namecmp(the_set->rrs->val_rrset_name_n, top_q->qc_name_n)) {
 					/* we already made sure that the type was missing in
 					 * NSEC_is_wrong_answer()
 					 */
@@ -720,9 +720,9 @@ val_result_chain *results)
 					 */
 					struct rr_rec *sig;
 					int wcard;
-					for (sig = the_set->rrs_sig; sig; sig = sig->rr_next) {
-						if ((sig->status == RRSIG_VERIFIED) && 
-							(NO_ERROR == check_label_count(the_set, sig, &wcard))) {
+					for (sig = the_set->rrs->val_rrset_sig; sig; sig = sig->rr_next) {
+						if ((sig->rr_status == VAL_A_RRSIG_VERIFIED) && 
+							(VAL_NO_ERROR == check_label_count(the_set, sig, &wcard))) {
 							if (wcard == 0)
 								wcard_chk = 1;
 							break;
@@ -731,7 +731,7 @@ val_result_chain *results)
 				}
 				else {
 					/* Find the next name */
-					u_int8_t *nxtname =	the_set->rrs_data->rr_rdata;
+					u_int8_t *nxtname =	the_set->rrs->val_rrset_data->rr_rdata;
 
 					/* 
 					 * We've already checked within NSEC_is_wrong_answer() 
@@ -761,13 +761,13 @@ val_result_chain *results)
 					while (offset < maxoffset) {
 						u_int8_t *cur_name_n = &top_q->qc_name_n[offset];
 						int cmp;
-						if ((cmp = namecmp(cur_name_n, the_set->rrs_name_n)) == 0) {
+						if ((cmp = namecmp(cur_name_n, the_set->rrs->val_rrset_name_n)) == 0) {
 							closest_encounter = cur_name_n;
 							break;
 						}
 						else if (cmp < 0) {
 							/* strip off one label from the NSEC owner name */
-							closest_encounter = &the_set->rrs_name_n[the_set->rrs_name_n[0] + 1];
+							closest_encounter = &the_set->rrs->val_rrset_name_n[the_set->rrs->val_rrset_name_n[0] + 1];
 							break; 
 						}
 						offset += cur_name_n[0] + 1;
@@ -776,23 +776,23 @@ val_result_chain *results)
 			}
 		}
 		if (!span_chk)
-			status = R_INCOMPLETE_PROOF;
+			status = VAL_R_INCOMPLETE_PROOF;
 		else if (!wcard_chk) {
 			if (!closest_encounter)
-				status = R_INCOMPLETE_PROOF;	
+				status = VAL_R_INCOMPLETE_PROOF;	
 			else {
 				/* Check the wild card proof */
 				/* prefix "*" to the closest encounter, and check if that 
 				 * name falls within the range given in wcard_proof
 				 */	
-				u_int8_t *nxtname =	wcard_proof->rrs_data->rr_rdata;
+				u_int8_t *nxtname =	wcard_proof->rrs->val_rrset_data->rr_rdata;
 				u_char domain_name_n[NS_MAXCDNAME];
 				domain_name_n[0] = 0x01;
 				domain_name_n[1] = 0x2a; /* for the '*' character */
 				memcpy(&domain_name_n[2], closest_encounter, wire_name_length(closest_encounter));
-				if ((namecmp(domain_name_n, wcard_proof->rrs_name_n) <= 0) ||  
+				if ((namecmp(domain_name_n, wcard_proof->rrs->val_rrset_name_n) <= 0) ||  
 					(namecmp(nxtname, domain_name_n) <= 0))
-					status = R_INCOMPLETE_PROOF;	
+					status = VAL_R_INCOMPLETE_PROOF;	
 			}
 		}
 	}	
@@ -808,7 +808,7 @@ val_result_chain *results)
  * Verify an assertion if possible. Complete assertions are those for which 
  * you have data, rrsigs and key information. 
  * Returns:
- * NO_ERROR			Operation completed successfully
+ * VAL_NO_ERROR			Operation completed successfully
  * Other return values from add_to_query_chain()
  */
 static int try_verify_assertion(val_context_t *context, struct val_query_chain **queries, 
@@ -821,7 +821,7 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 
 	/* Sanity check */
 	if(next_as == NULL)
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 
 	pc = next_as->_as->ac_pending_query;
 	if (!pc)
@@ -829,29 +829,29 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 		 * If there is no pending query, we've already 
 		 * reached some end-state.
 		 */
-		return NO_ERROR;
+		return VAL_NO_ERROR;
 
 	if (pc->qc_state == Q_WAIT_FOR_GLUE) {
 		merge_glue_in_referral(pc, queries);
 	}
 
 	if (pc->qc_state > Q_ERROR_BASE) {
-		if(next_as->val_ac_status == A_WAIT_FOR_RRSIG) 
-			next_as->val_ac_status = RRSIG_MISSING; 
-		else if (next_as->val_ac_status == A_WAIT_FOR_TRUST) {
+		if(next_as->val_ac_status == VAL_A_WAIT_FOR_RRSIG) 
+			next_as->val_ac_status = VAL_A_RRSIG_MISSING; 
+		else if (next_as->val_ac_status == VAL_A_WAIT_FOR_TRUST) {
 			/* We're either waiting for DNSKEY or DS */
 			if(pc->qc_type_h == ns_t_ds)
-				next_as->val_ac_status = DS_MISSING;
+				next_as->val_ac_status = VAL_A_DS_MISSING;
 			else if (pc->qc_type_h == ns_t_dnskey)
-				next_as->val_ac_status = DNSKEY_MISSING;
+				next_as->val_ac_status = VAL_A_DNSKEY_MISSING;
 		}
 		else
-			next_as->val_ac_status = DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
+			next_as->val_ac_status = VAL_A_DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
 	}
 
 	if (pc->qc_state == Q_ANSWERED) {
 
-		if(next_as->val_ac_status == A_WAIT_FOR_RRSIG) {
+		if(next_as->val_ac_status == VAL_A_WAIT_FOR_RRSIG) {
 		
 			for(pending_as = pc->qc_as; pending_as; pending_as = pending_as->val_ac_rrset_next) {
 				/* We were waiting for the RRSIG */
@@ -860,18 +860,18 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 				/* 
 				 * Check if what we got was an RRSIG 
 				 */
-				if (pending_as->val_ac_status == BARE_RRSIG) {
+				if (pending_as->val_ac_status == VAL_A_BARE_RRSIG) {
 					/* Find the RRSIG that matches the type */
 					/* Check if type is in the RRSIG */
 					u_int16_t rrsig_type_n;
-					memcpy(&rrsig_type_n, pending_rrset->rrs_sig->rr_rdata, sizeof(u_int16_t));
-					if (next_as->_as->ac_data->rrs_type_h == ntohs(rrsig_type_n)) {
+					memcpy(&rrsig_type_n, pending_rrset->rrs->val_rrset_sig->rr_rdata, sizeof(u_int16_t));
+					if (next_as->_as->ac_data->rrs->val_rrset_type_h == ntohs(rrsig_type_n)) {
 						/* store the RRSIG in the assertion */
-						next_as->_as->ac_data->rrs_sig = 
-							copy_rr_rec(pending_rrset->rrs_type_h, pending_rrset->rrs_sig, 0);
-						next_as->val_ac_status = A_WAIT_FOR_TRUST; 
+						next_as->_as->ac_data->rrs->val_rrset_sig = 
+							copy_rr_rec(pending_rrset->rrs->val_rrset_type_h, pending_rrset->rrs->val_rrset_sig, 0);
+						next_as->val_ac_status = VAL_A_WAIT_FOR_TRUST; 
 						/* create a pending query for the trust portion */
-						if (NO_ERROR != (retval = build_pending_query(context, queries, next_as)))
+						if (VAL_NO_ERROR != (retval = build_pending_query(context, queries, next_as)))
 							return retval;
 						break;
 					}
@@ -879,10 +879,10 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 			}
 			if(pending_as == NULL) {
 				/* Could not find any RRSIG matching query type*/
-				next_as->val_ac_status = RRSIG_MISSING; 
+				next_as->val_ac_status = VAL_A_RRSIG_MISSING; 
 			}
 		}
-		else if (next_as->val_ac_status == A_WAIT_FOR_TRUST) {
+		else if (next_as->val_ac_status == VAL_A_WAIT_FOR_TRUST) {
 			pending_as = pc->qc_as;
 			next_as->val_ac_trust = pending_as;
 			next_as->_as->ac_pending_query = NULL;
@@ -891,7 +891,7 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
                   || (pending_as->_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
 
 				/* proof of non-existence should follow */
-				next_as->val_ac_status = A_NEGATIVE_PROOF;
+				next_as->val_ac_status = VAL_A_NEGATIVE_PROOF;
 			}
 			else { 
 				/* XXX what if this is an SR_ANS_CNAME? Can DS or DNSKEY return a CNAME? */
@@ -899,17 +899,17 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 				 * if the pending assertion contains a straight answer, 
 			   	 * trust is useful for verification 
 				 */
-				next_as->val_ac_status = A_CAN_VERIFY;
+				next_as->val_ac_status = VAL_A_CAN_VERIFY;
 			}
 		}
 	}
 
-	if(next_as->val_ac_status == A_CAN_VERIFY) {
+	if(next_as->val_ac_status == VAL_A_CAN_VERIFY) {
 		val_log(context, LOG_DEBUG, "verifying next assertion"); 
 		verify_next_assertion(context, next_as);
 	}
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 /*
@@ -938,7 +938,7 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 			if (res->val_rc_trust == as_more) 
 				break;
 		if (res) {
-			if (!CHECK_MASKED_STATUS(res->val_rc_status, R_DONT_KNOW))
+			if (!CHECK_MASKED_STATUS(res->val_rc_status, VAL_R_DONT_KNOW))
 				/* we've already dealt with this one */
 				continue;
 		}
@@ -946,9 +946,9 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 			/* Add this result to the list */
 			res= (struct val_result_chain *) MALLOC (sizeof (struct val_result_chain));
 			if(res== NULL)
-				return OUT_OF_MEMORY;
+				return VAL_OUT_OF_MEMORY;
 			res->val_rc_trust = as_more;
-			res->val_rc_status = R_DONT_KNOW;
+			res->val_rc_status = VAL_R_DONT_KNOW;
 			res->val_rc_next = *results;
 			*results = res;
 		}
@@ -960,9 +960,9 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 		int thisdone = 1;
 		for (next_as=as_more; next_as; next_as=next_as->val_ac_trust) {
 
-			if (next_as->val_ac_status <= A_INIT) {
+			if (next_as->val_ac_status <= VAL_A_INIT) {
 				/* Go up the chain of trust */
-				if(NO_ERROR != (retval = try_verify_assertion(context, queries, next_as))) 
+				if(VAL_NO_ERROR != (retval = try_verify_assertion(context, queries, next_as))) 
 					return retval;
 			}
 
@@ -972,24 +972,24 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 			 * chain of trust (not-validated)
 			 */
 			if((next_as->_as->ac_data != NULL) &&
-				(next_as->_as->ac_data->rrs_type_h == ns_t_dnskey) &&
+				(next_as->_as->ac_data->rrs->val_rrset_type_h == ns_t_dnskey) &&
 				(next_as->val_ac_trust) && 
 				(next_as == next_as->val_ac_trust->val_ac_trust)) {
-				res->val_rc_status = R_INDETERMINATE_DS;
+				res->val_rc_status = VAL_R_INDETERMINATE_DS;
 				break;
 			}
 			/* Check initial states */
-			if(next_as->val_ac_status <= A_INIT) {
+			if(next_as->val_ac_status <= VAL_A_INIT) {
 				/* still need more data to validate this assertion */
 				*done = 0;
 				thisdone = 0;
 			}
-			else if ((next_as->val_ac_status == TRUST_KEY) || 
-						(next_as->val_ac_status == TRUST_ZONE)) {
+			else if ((next_as->val_ac_status == VAL_A_TRUST_KEY) || 
+						(next_as->val_ac_status == VAL_A_TRUST_ZONE)) {
 				SET_RESULT_TRUSTED(res->val_rc_status); 
 				break;
 			}
-			else if (next_as->val_ac_status == A_NEGATIVE_PROOF) {
+			else if (next_as->val_ac_status == VAL_A_NEGATIVE_PROOF) {
 				if((next_as->_as->ac_pending_query != NULL) &&
 					(next_as->_as->ac_pending_query->qc_referral == NULL) && 
 					(next_as->_as->ac_pending_query->qc_type_h == ns_t_ds)) {
@@ -1005,13 +1005,13 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 					get_root_ns(&root_ns);
 					if(root_ns == NULL) {
 						/* No root hints configured */
-						res->val_rc_status = R_INDETERMINATE_PROOF;
+						res->val_rc_status = VAL_R_INDETERMINATE_PROOF;
 						break;
 					}
 					else {
 						/* send query to root */
-						next_as->val_ac_status = A_WAIT_FOR_TRUST;
-						if (NO_ERROR != (retval = build_pending_query(context, queries, next_as)))
+						next_as->val_ac_status = VAL_A_WAIT_FOR_TRUST;
+						if (VAL_NO_ERROR != (retval = build_pending_query(context, queries, next_as)))
 							return retval;
 						(*queries)->qc_ns_list = root_ns;
 						*done = 0;
@@ -1029,35 +1029,35 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 					 * Dont see any use for separating these conditions, so treat them
 					 * as INDETERMINATE always
 					 */
-					res->val_rc_status = R_INDETERMINATE_PROOF;
+					res->val_rc_status = VAL_R_INDETERMINATE_PROOF;
 					break;
 				}
 			}
 			/* Check error conditions */
-			else if (next_as->val_ac_status <= LAST_ERROR) {
+			else if (next_as->val_ac_status <= VAL_A_LAST_ERROR) {
 				
 				res->val_rc_status = VAL_ERROR; 
 				break;
 			}
-			else if (next_as->val_ac_status <= LAST_FAILURE){
-				SET_MASKED_STATUS(res->val_rc_status, R_BOGUS_UNPROVABLE);
+			else if (next_as->val_ac_status <= VAL_A_LAST_FAILURE){
+				SET_MASKED_STATUS(res->val_rc_status, VAL_R_BOGUS_UNPROVABLE);
 				continue;
 			}
-			else  if (CHECK_MASKED_STATUS(res->val_rc_status, R_VERIFIED_CHAIN)
-					|| (res->val_rc_status == R_DONT_KNOW)) {
+			else  if (CHECK_MASKED_STATUS(res->val_rc_status, VAL_R_VERIFIED_CHAIN)
+					|| (res->val_rc_status == VAL_R_DONT_KNOW)) {
 
 				/* Success condition */
-				if (next_as->val_ac_status == VERIFIED) {
-					SET_MASKED_STATUS(res->val_rc_status, R_VERIFIED_CHAIN);
+				if (next_as->val_ac_status == VAL_A_VERIFIED) {
+					SET_MASKED_STATUS(res->val_rc_status, VAL_R_VERIFIED_CHAIN);
 					continue;
 				}
-				else if ((next_as->val_ac_status == LOCAL_ANSWER)	
-						|| (next_as->val_ac_status == TRUST_KEY)
-						|| (next_as->val_ac_status == TRUST_ZONE)) {
+				else if ((next_as->val_ac_status == VAL_A_LOCAL_ANSWER)	
+						|| (next_as->val_ac_status == VAL_A_TRUST_KEY)
+						|| (next_as->val_ac_status == VAL_A_TRUST_ZONE)) {
 					res->val_rc_status = VAL_LOCAL_ANSWER;
 					break;
 				}
-				else if (next_as->val_ac_status == BARE_RRSIG) {
+				else if (next_as->val_ac_status == VAL_A_BARE_RRSIG) {
 					res->val_rc_status = VAL_BARE_RRSIG;
 					break;
 				}	
@@ -1065,10 +1065,10 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 		}
 		if (!thisdone)
 			/* more work required */
-			SET_MASKED_STATUS(res->val_rc_status, R_DONT_KNOW);
+			SET_MASKED_STATUS(res->val_rc_status, VAL_R_DONT_KNOW);
 	}
 	
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 
@@ -1090,7 +1090,7 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 
 			val_log(context, LOG_DEBUG, "ask_cache(): looking for {%s %d %d}", 
 						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
-			if(NO_ERROR != (retval = get_cached_rrset(next_q->qc_name_n, 
+			if(VAL_NO_ERROR != (retval = get_cached_rrset(next_q->qc_name_n, 
 								next_q->qc_class_h, next_q->qc_type_h, &next_answer)))
 				return retval; 
 
@@ -1106,12 +1106,12 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 				/* Construct a dummy response */
 				response = (struct domain_info *) MALLOC (sizeof(struct domain_info));
 				if(response == NULL)
-					return OUT_OF_MEMORY;
+					return VAL_OUT_OF_MEMORY;
 
 				response->di_rrset = next_answer;
 			    response->di_qnames = (struct qname_chain *) MALLOC (sizeof(struct qname_chain));
 				if (response->di_qnames == NULL) 
-					return OUT_OF_MEMORY;
+					return VAL_OUT_OF_MEMORY;
 				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
 				response->di_qnames->qnc_next = NULL;
 
@@ -1126,7 +1126,7 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 			    response->di_requested_class_h = next_q->qc_class_h;
 				response->di_res_error = SR_UNSET;
 
-				if(NO_ERROR != (retval = 
+				if(VAL_NO_ERROR != (retval = 
 						assimilate_answers(context, queries, 
 							response, next_q, assertions))) {
 					FREE(response->di_rrset);
@@ -1149,7 +1149,7 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 		return ask_cache(context, top_q, queries, assertions, data_received);
 
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 static int ask_resolver(val_context_t *context, struct val_query_chain **queries, int block, 
@@ -1176,7 +1176,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 				/* Only set the CD and EDS0 options if we feel the server 
 				 * is capable of handling DNSSEC
 				 */
-				if(is_trusted_zone(context, next_q->qc_name_n) ==  A_WAIT_FOR_TRUST) {
+				if(is_trusted_zone(context, next_q->qc_name_n) ==  VAL_A_WAIT_FOR_TRUST) {
 					struct name_server *ns;
 					if(next_q->qc_ns_list == NULL) 
 						clone_ns_list(&(next_q->qc_ns_list), context->nslist);
@@ -1185,7 +1185,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 						ns->ns_options |= RES_USE_DNSSEC;
 				}
 
-				if ((retval = val_resquery_send (context, next_q)) != NO_ERROR)
+				if ((retval = val_resquery_send (context, next_q)) != VAL_NO_ERROR)
 					return retval;
 			}
 			else if (next_q->qc_state < Q_ANSWERED)
@@ -1197,13 +1197,13 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 
 			for(next_q = *queries; next_q ; next_q = next_q->qc_next) {
 				if(next_q->qc_state < Q_ANSWERED) {
-					if( (retval = val_resquery_rcv (context, next_q, &response, queries)) != NO_ERROR)	
+					if( (retval = val_resquery_rcv (context, next_q, &response, queries)) != VAL_NO_ERROR)	
 						return retval;
 
 					if ((next_q->qc_state == Q_ANSWERED) && (response != NULL)) {
 						val_log(context, LOG_DEBUG, "ask_resolver(): found data for {%s %d %d}", 
 							next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
-						if(NO_ERROR != (retval = 
+						if(VAL_NO_ERROR != (retval = 
 								assimilate_answers(context, queries, 
 									response, next_q, assertions))) {
 							free_domain_info_ptrs(response);
@@ -1212,7 +1212,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 						}
 
 						/* Save new responses in the cache */
-						if(NO_ERROR != (retval = stow_answer(response->di_rrset))) {
+						if(VAL_NO_ERROR != (retval = stow_answer(response->di_rrset))) {
 							free_domain_info_ptrs(response);
 							FREE(response);
 							return retval;
@@ -1245,7 +1245,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 			break;	
 	}
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 /*
@@ -1273,7 +1273,7 @@ int val_resolve_and_check(	val_context_t	*context,
 	val_log(context, LOG_DEBUG, "val_resolve_and_check(): looking for {%s %d %d}", 
 						domain_name_n, class, type);
 
-	if (NO_ERROR != (retval = add_to_query_chain(&(context->q_list), domain_name_n, type, class)))
+	if (VAL_NO_ERROR != (retval = add_to_query_chain(&(context->q_list), domain_name_n, type, class)))
 		return retval;
 
 	top_q = context->q_list;
@@ -1287,13 +1287,13 @@ int val_resolve_and_check(	val_context_t	*context,
 
 		/* Data might already be present in the cache */
 		/* XXX by-pass this functionality through flags if needed */
-		if(NO_ERROR != (retval = ask_cache(context, NULL, &(context->q_list), &(context->a_list), &data_received)))
+		if(VAL_NO_ERROR != (retval = ask_cache(context, NULL, &(context->q_list), &(context->a_list), &data_received)))
 			return retval;
 		if(data_received)
 			block = 0;
 
 		/* Send un-sent queries */
-		if(NO_ERROR != (retval = ask_resolver(context, &(context->q_list), block, &(context->a_list), &data_received)))
+		if(VAL_NO_ERROR != (retval = ask_resolver(context, &(context->q_list), block, &(context->a_list), &data_received)))
 			return retval;
 
 		/* check if more queries have been added */
@@ -1319,7 +1319,7 @@ int val_resolve_and_check(	val_context_t	*context,
 			/* the original query had some error */
 			*results= (struct val_result_chain *) MALLOC (sizeof (struct val_result_chain));
 			if((*results) == NULL) {
-				return OUT_OF_MEMORY;
+				return VAL_OUT_OF_MEMORY;
 			}
 			(*results)->val_rc_trust = top_q->qc_as;
 			(*results)->val_rc_status = VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
@@ -1336,7 +1336,7 @@ int val_resolve_and_check(	val_context_t	*context,
 			 * We have sufficient data to at least perform some validation --
 			 * validate what ever is possible. 
 			 */
-			if(NO_ERROR != (retval = verify_and_validate(context, &(context->q_list), 
+			if(VAL_NO_ERROR != (retval = verify_and_validate(context, &(context->q_list), 
 								top_q->qc_as, flags, results, &done))) 
 				return retval;
 		}
@@ -1353,7 +1353,7 @@ int val_resolve_and_check(	val_context_t	*context,
 		/* Some error most likely, reflected in the val_query_chain */
 		if (res->val_rc_trust == NULL) 
 			res->val_rc_status = VAL_ERROR;
-		if (res->val_rc_status == (R_DONT_KNOW|R_TRUST_FLAG))
+		if (res->val_rc_status == (VAL_R_DONT_KNOW|VAL_R_TRUST_FLAG))
 			res->val_rc_status = VAL_SUCCESS;	
 		if (res->val_rc_status == VAL_SUCCESS)
 			success = 1;
@@ -1372,14 +1372,14 @@ int val_resolve_and_check(	val_context_t	*context,
 			 * all answers are related in the proof 
 			 */
 			for (res=*results; res; res=res->val_rc_next) 
-				res->val_rc_status = R_BOGUS_PROOF;
+				res->val_rc_status = VAL_R_BOGUS_PROOF;
 		}
 		else 
 			prove_nonexistence (context, top_q, *results);
 	}
 
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 /*

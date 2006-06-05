@@ -31,7 +31,7 @@
 
 /* Verify a signature, given the data and the dnskey */
 /* Pass in a context, to give acceptable time skew */
-static int val_sigverify (
+static val_astatus_t val_sigverify (
 				val_context_t *ctx,
 				const unsigned char *data,
 			  int data_len,
@@ -41,21 +41,21 @@ static int val_sigverify (
     /* Check if the dnskey is a zone key */
     if ((dnskey.flags & ZONE_KEY_FLAG) == 0) {
 	val_log(ctx, LOG_DEBUG, "DNSKEY not a zone signing key");
-	return NOT_A_ZONE_KEY;
+	return VAL_A_NOT_A_ZONE_KEY;
     }
     
     /* Check dnskey protocol value */
     if (dnskey.protocol != 3) {
 	val_log(ctx, LOG_DEBUG, "Invalid protocol field in DNSKEY record: %d",
 	       dnskey.protocol);
-	return UNKNOWN_DNSKEY_PROTO;
+	return VAL_A_UNKNOWN_DNSKEY_PROTO;
     }
 
     /* Match dnskey and rrsig algorithms */
     if (dnskey.algorithm != rrsig.algorithm) {
 	val_log(ctx, LOG_DEBUG, "Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.",
 	       dnskey.algorithm, rrsig.algorithm);
-	return RRSIG_ALGO_MISMATCH;
+	return VAL_A_RRSIG_ALGO_MISMATCH;
     }
 
     /* Check signature inception and expiration times */
@@ -71,7 +71,7 @@ static int val_sigverify (
 	ctime_r((const time_t *)(&(rrsig.sig_incp)), incpTime);
 	val_log(ctx, LOG_DEBUG, "Signature not yet valid. Current time (%s) is less than signature inception time (%s).",
 	       currTime, incpTime);
-	return RRSIG_NOTYETACTIVE;
+	return VAL_A_RRSIG_NOTYETACTIVE;
     }
 
     if (tv.tv_sec > rrsig.sig_expr) {
@@ -83,7 +83,7 @@ static int val_sigverify (
 	ctime_r((const time_t *)(&(rrsig.sig_expr)), exprTime);
 	val_log(ctx, LOG_DEBUG, "Signature expired. Current time (%s) is greater than signature expiration time (%s).",
 	       currTime, exprTime);
-	return RRSIG_EXPIRED;
+	return VAL_A_RRSIG_EXPIRED;
     }
 
     switch(rrsig.algorithm) {
@@ -94,13 +94,13 @@ static int val_sigverify (
     case 2:
     case 4:
 	val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.\n", dnskey.algorithm);
-	return ALGO_NOT_SUPPORTED;
+	return VAL_A_ALGO_NOT_SUPPORTED;
 	break;
 
     default:
 	do {
 	    val_log(ctx, LOG_DEBUG, "Unknown algorithm %d.", dnskey.algorithm);
-	    return UNKNOWN_ALGO;
+	    return VAL_A_UNKNOWN_ALGO;
 	} while (0);
     }
 
@@ -119,13 +119,13 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
     struct rr_rec *rr = NULL;
     unsigned char *cp;
     
-    /* Assume that elements of the rrs_data list are in canonical form */
-    /* sort the rrs_rdata by bubble-sort */
+    /* Assume that elements of the rrs->val_rrset_data list are in canonical form */
+    /* sort the rrs->val_rrset_rdata by bubble-sort */
     int sorted = 0;
     while (!sorted) {
 	struct rr_rec *first_rr = NULL, *prev_rr = NULL, *curr_rr1 = NULL, *curr_rr2 = NULL, *next_rr = NULL;
 	sorted = 1;
-	curr_rr1 = rrset->rrs_data;
+	curr_rr1 = rrset->rrs->val_rrset_data;
 	first_rr = curr_rr1;
 
 	if (curr_rr1) curr_rr2 = curr_rr1->rr_next;
@@ -157,19 +157,19 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
 	    curr_rr1 = curr_rr2;
 	    curr_rr2 = curr_rr2->rr_next;
 	}
-	rrset->rrs_data = first_rr;
+	rrset->rrs->val_rrset_data = first_rr;
     }
     
-    rr = rrset->rrs_data;
+    rr = rrset->rrs->val_rrset_data;
     while (rr) {
-	memcpy(rrBuf + rrBuf_len, rrset->rrs_name_n, strlen((char *)rrset->rrs_name_n) + 1);
-	rrBuf_len += strlen((char *)rrset->rrs_name_n) + 1;
+	memcpy(rrBuf + rrBuf_len, rrset->rrs->val_rrset_name_n, strlen((char *)rrset->rrs->val_rrset_name_n) + 1);
+	rrBuf_len += strlen((char *)rrset->rrs->val_rrset_name_n) + 1;
 
 	cp = rrBuf + rrBuf_len;
-	NS_PUT16(rrset->rrs_type_h, cp);
+	NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
 	rrBuf_len += 2;
 
-	NS_PUT16(rrset->rrs_class_h, cp);
+	NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
 	rrBuf_len += 2;
 
 	/* Put the original ttl */
@@ -204,7 +204,7 @@ static int have_rrsigs (struct domain_info *response)
 	    bzero(&rrsig_rdata, sizeof(rrsig_rdata));
 	    val_parse_rrsig_rdata(rrs_sig->rr_rdata, rrs_sig->rr_rdata_length_h,
 				  &rrsig_rdata);
-	    if ((rrsig_rdata.type_covered == rrset->rrs_type_h) ||
+	    if ((rrsig_rdata.type_covered == rrset->rrs->val_rrset_type_h) ||
 	        (rrsig_rdata.type_covered == ns_t_nsec)) {
 			if(rrsig_rdata.signature != NULL)
 				FREE(rrsig_rdata.signature);
@@ -238,18 +238,18 @@ static int predict_sigbuflength (  struct rrset_rec *rr_set,
     struct rr_rec   *rr;
     int             owner_length;
                                                                                                                           
-    owner_length = wire_name_length (rr_set->rrs_name_n);
+    owner_length = wire_name_length (rr_set->rrs->val_rrset_name_n);
                                                                                                                           
-    *signer_length = wire_name_length (&rr_set->rrs_sig->rr_rdata[SIGNBY]);
+    *signer_length = wire_name_length (&rr_set->rrs->val_rrset_sig->rr_rdata[SIGNBY]);
                                                                                                                           
-    if (*signer_length == 0) return INTERNAL_ERROR;
+    if (*signer_length == 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
     *field_length = SIGNBY + (*signer_length);
                                                                                                                           
-    for (rr = rr_set->rrs_data; rr; rr = rr->rr_next)
+    for (rr = rr_set->rrs->val_rrset_data; rr; rr = rr->rr_next)
         *field_length += owner_length + ENVELOPE + rr->rr_rdata_length_h;
                                                                                                                           
-    return NO_ERROR;
+    return VAL_NO_ERROR;
 }
 
 static int make_sigfield (  u_int8_t            **field,
@@ -269,33 +269,33 @@ static int make_sigfield (  u_int8_t            **field,
     u_int8_t            lowered_owner_n[NS_MAXDNAME];
     size_t              l_index;
                                                                                                                           
-    if (predict_sigbuflength (rr_set, field_length, &signer_length)!=NO_ERROR)
-        return INTERNAL_ERROR;
+    if (predict_sigbuflength (rr_set, field_length, &signer_length)!=VAL_NO_ERROR)
+        return VAL_INTERNAL_ERROR;
                                                                                                                           
     *field = (u_int8_t*) MALLOC (*field_length);
                                                                                                                           
-    if (*field == NULL) return OUT_OF_MEMORY;
+    if (*field == NULL) return VAL_OUT_OF_MEMORY;
                                                                                                                           
     /* Make sure we are using the correct TTL */
                                                                                                                           
     memcpy (&ttl_n, &rr_sig->rr_rdata[TTL],sizeof(u_int32_t));
-    rr_set->rrs_ttl_h = ntohl (ttl_n);
+    rr_set->rrs->val_rrset_ttl_h = ntohl (ttl_n);
                                                                                                                           
     /*
         While we're at it, we'll gather other common info, specifically
         network ordered numbers (type, class) and name length.
     */
                                                                                                                           
-    owner_length = wire_name_length (rr_set->rrs_name_n);
+    owner_length = wire_name_length (rr_set->rrs->val_rrset_name_n);
                                                                                                                           
-    if (owner_length == 0) return INTERNAL_ERROR;
+    if (owner_length == 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
-    memcpy (lowered_owner_n, rr_set->rrs_name_n, owner_length);
+    memcpy (lowered_owner_n, rr_set->rrs->val_rrset_name_n, owner_length);
     l_index = 0;
     lower_name (lowered_owner_n, &l_index);
                                                                                                                           
-    type_n = htons(rr_set->rrs_type_h);
-    class_n = htons(rr_set->rrs_class_h);
+    type_n = htons(rr_set->rrs->val_rrset_type_h);
+    class_n = htons(rr_set->rrs->val_rrset_class_h);
                                                                                                                           
     /* Copy in the SIG RDATA (up to the signature */
                                                                                                                           
@@ -305,7 +305,7 @@ static int make_sigfield (  u_int8_t            **field,
                                                                                                                           
     /* For each record of data, copy in the envelope & the lower cased rdata */
                                                                                                                           
-    for (curr_rr = rr_set->rrs_data; curr_rr; curr_rr = curr_rr->rr_next)
+    for (curr_rr = rr_set->rrs->val_rrset_data; curr_rr; curr_rr = curr_rr->rr_next)
     {
         /* Copy in the envelope information */
                                                                                                                           
@@ -349,7 +349,7 @@ static int make_sigfield (  u_int8_t            **field,
     }
             
 	*field_length = index;                                                                                                              
-    return NO_ERROR;
+    return VAL_NO_ERROR;
 }
 
 #if 0 /* never used, so why compile it in? */
@@ -380,7 +380,7 @@ static int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey
 	for (nextrr = keyrr; nextrr; nextrr=nextrr->rr_next)
 	{
 		if (new_dnskey_rdata == NULL) 
-			return OUT_OF_MEMORY;
+			return VAL_OUT_OF_MEMORY;
 
 		val_parse_dnskey_rdata (nextrr->rr_rdata,
                     nextrr->rr_rdata_length_h,
@@ -388,17 +388,17 @@ static int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey
 		new_dnskey_rdata->next = NULL;        
                                                                                                            
 		if (new_dnskey_rdata->key_tag == tag_h)
-			return NO_ERROR;
+			return VAL_NO_ERROR;
 	}
 	
-	return DNSKEY_NOMATCH;
+	return VAL_A_DNSKEY_NOMATCH;
 }
 
 
 
 static int do_verify (   
 					val_context_t *ctx,
-					int                 *sig_status,
+					val_astatus_t     *sig_status,
                   struct rrset_rec    *the_set,
                   struct rr_rec       *the_sig,
                   val_dnskey_rdata_t  *the_key,
@@ -415,10 +415,10 @@ static int do_verify (
     int                 ret_val;
 	val_rrsig_rdata_t rrsig_rdata;
 
-    if (the_set==NULL||the_key==NULL) return INTERNAL_ERROR;
+    if (the_set==NULL||the_key==NULL) return VAL_INTERNAL_ERROR;
                                                                                                                           
     if ((ret_val=make_sigfield (&ver_field, &ver_length, the_set, the_sig,
-                                        is_a_wildcard)) != NO_ERROR)
+                                        is_a_wildcard)) != VAL_NO_ERROR)
         return ret_val;
                                                                                                                           
     /* Find the signature - no memory is malloc'ed for this operation  */
@@ -436,7 +436,7 @@ static int do_verify (
 		FREE(rrsig_rdata.signature);
 
     FREE (ver_field);
-    return NO_ERROR;
+    return VAL_NO_ERROR;
 }
 
 
@@ -455,24 +455,24 @@ static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *pub
 
 /*
  * State returned in as->val_ac_status is one of:
- * VERIFIED : at least one sig passed
- * A_NOT_VERIFIED : multiple errors
+ * VAL_A_VERIFIED : at least one sig passed
+ * VAL_A_NOT_VERIFIED : multiple errors
  * the exact error
  */
 
 #define SET_STATUS(savedstatus, sig, newstatus) \
 	do { \
-		sig->status = newstatus; \
-		if ((savedstatus != VERIFIED) && (savedstatus != newstatus))  \
-			savedstatus = NOT_VERIFIED; \
+		sig->rr_status = newstatus; \
+		if ((savedstatus != VAL_A_VERIFIED) && (savedstatus != newstatus))  \
+			savedstatus = VAL_A_NOT_VERIFIED; \
 		else	\
 			savedstatus = newstatus; \
 	} while (0)
 
 // XXX Still have to check for the following error conditions
-// XXX WRONG_RRSIG_OWNER
-// XXX RRSIG_ALGO_MISMATCH
-// XXX KEYTAG_MISMATCH
+// XXX VAL_A_WRONG_RRSIG_OWNER
+// XXX VAL_A_RRSIG_ALGO_MISMATCH
+// XXX VAL_A_KEYTAG_MISMATCH
 void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 {
 	struct rrset_rec *the_set;
@@ -484,21 +484,21 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 	struct val_assertion_chain *the_trust;
 	int retval;
 
-	as->val_ac_status = VERIFIED;
+	as->val_ac_status = VAL_A_VERIFIED;
 
 	the_set = as->_as->ac_data;
 	the_trust = as->val_ac_trust;
-	for (the_sig = the_set->rrs_sig;the_sig;the_sig = the_sig->rr_next) {
+	for (the_sig = the_set->rrs->val_rrset_sig;the_sig;the_sig = the_sig->rr_next) {
 
 		/* for each sig, identify key, */ 
 		identify_key_from_sig (the_sig, &signby_name_n, &signby_footprint_n);
 
-		if(the_set->rrs_type_h != ns_t_dnskey) {
+		if(the_set->rrs->val_rrset_type_h != ns_t_dnskey) {
 			/* trust path contains the key */
-			if(NO_ERROR != (retval = 
-				find_key_for_tag (the_trust->_as->ac_data->rrs_data, 
+			if(VAL_NO_ERROR != (retval = 
+				find_key_for_tag (the_trust->_as->ac_data->rrs->val_rrset_data, 
 					&signby_footprint_n, &dnskey))) {
-				SET_STATUS(as->val_ac_status, the_sig, DNSKEY_NOMATCH);
+				SET_STATUS(as->val_ac_status, the_sig, VAL_A_DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
 				continue;
@@ -506,8 +506,8 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 		}
 		else {
 			/* data itself contains the key */
-			if(NO_ERROR != (retval = find_key_for_tag (the_set->rrs_data, &signby_footprint_n, &dnskey))) {
-				SET_STATUS(as->val_ac_status, the_sig, DNSKEY_NOMATCH);
+			if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs->val_rrset_data, &signby_footprint_n, &dnskey))) {
+				SET_STATUS(as->val_ac_status, the_sig, VAL_A_DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
 				continue;
@@ -515,14 +515,14 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 		}	
 
 		/* do wildcard processing */
-		if(check_label_count (the_set, the_sig, &is_a_wildcard) != NO_ERROR) {
-			SET_STATUS(as->val_ac_status, the_sig, WRONG_LABEL_COUNT);
+		if(check_label_count (the_set, the_sig, &is_a_wildcard) != VAL_NO_ERROR) {
+			SET_STATUS(as->val_ac_status, the_sig, VAL_A_WRONG_LABEL_COUNT);
 			FREE(dnskey.public_key);
 			continue;
 		}
 
 		/* and check the signature */
-		if(NO_ERROR != (retval = do_verify(ctx, &the_sig->status, the_set, the_sig, &dnskey, is_a_wildcard))) {
+		if(VAL_NO_ERROR != (retval = do_verify(ctx, &(the_sig->rr_status), the_set, the_sig, &dnskey, is_a_wildcard))) {
 			SET_STATUS(as->val_ac_status, the_sig, retval);
 			FREE(dnskey.public_key);
 			continue;
@@ -531,16 +531,16 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 		FREE(dnskey.public_key);
 
 		/* If this record contains a DNSKEY, check if the DS record contains this key */
-		if(the_sig->status == RRSIG_VERIFIED) {
-			if (the_set->rrs_type_h == ns_t_dnskey) {
+		if(the_sig->rr_status == VAL_A_RRSIG_VERIFIED) {
+			if (the_set->rrs->val_rrset_type_h == ns_t_dnskey) {
 				/* follow the trust path */
-				struct rr_rec *dsrec = the_trust->_as->ac_data->rrs_data;		
+				struct rr_rec *dsrec = the_trust->_as->ac_data->rrs->val_rrset_data;		
 				while(dsrec)	
 				{	
 					val_ds_rdata_t ds;
 					val_parse_ds_rdata(dsrec->rr_rdata, dsrec->rr_rdata_length_h, &ds);
 					u_int16_t ds_keytag_n = htons(ds.d_keytag);
-					if(NO_ERROR != (retval = find_key_for_tag (the_set->rrs_data, &ds_keytag_n, &dnskey))) {
+					if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs->val_rrset_data, &ds_keytag_n, &dnskey))) {
 						dsrec = dsrec->rr_next;
 						continue;
 					}
@@ -558,11 +558,11 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 				}
 
 				if(!dsrec)
-					SET_STATUS(as->val_ac_status, the_sig, SECURITY_LAME);
+					SET_STATUS(as->val_ac_status, the_sig, VAL_A_SECURITY_LAME);
 			}
 		}
 		else
-			SET_STATUS(as->val_ac_status, the_sig, the_sig->status);
+			SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
 
 	}
 }

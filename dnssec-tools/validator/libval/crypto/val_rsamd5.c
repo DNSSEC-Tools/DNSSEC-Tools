@@ -22,7 +22,7 @@
 #include <validator.h>
 #include "val_rsamd5.h"
 
-/* Returns NO_ERROR on success, other values on failure */
+/* Returns VAL_NO_ERROR on success, other values on failure */
 static int rsamd5_parse_public_key (const unsigned char *buf,
 				    int buflen,
 				    RSA *rsa)
@@ -33,7 +33,7 @@ static int rsamd5_parse_public_key (const unsigned char *buf,
 	BIGNUM *bn_exp;
 	BIGNUM *bn_mod;
 	
-	if (!rsa) return INTERNAL_ERROR;
+	if (!rsa) return VAL_INTERNAL_ERROR;
 	
 	cp = (u_char *) buf;
 	
@@ -59,7 +59,7 @@ static int rsamd5_parse_public_key (const unsigned char *buf,
 	rsa->e = bn_exp;
 	rsa->n = bn_mod;
 	
-	return NO_ERROR; /* success */
+	return VAL_NO_ERROR; /* success */
 }
 
 /* See RFC 4034, Appendix B.1 :
@@ -79,13 +79,13 @@ u_int16_t rsamd5_keytag (const unsigned char *pubkey,
 	int modulus_len;
 	
 	if ((rsa = RSA_new()) == NULL) {
-		return OUT_OF_MEMORY;
+		return VAL_OUT_OF_MEMORY;
 	};
 	
 	if (rsamd5_parse_public_key(pubkey, pubkey_len,
-				    rsa) != NO_ERROR) {
+				    rsa) != VAL_NO_ERROR) {
 		RSA_free(rsa);
-		return INTERNAL_ERROR;
+		return VAL_INTERNAL_ERROR;
 	}
 	
 	modulus = rsa->n;
@@ -116,14 +116,14 @@ int rsamd5_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): parsing the public key...\n");
 	if ((rsa = RSA_new()) == NULL) {
 		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify could not allocate rsa structure.\n");
-		return OUT_OF_MEMORY;
+		return VAL_OUT_OF_MEMORY;
 	};
 	
 	if (rsamd5_parse_public_key(dnskey.public_key, dnskey.public_key_len,
-				    rsa) != NO_ERROR) {
+				    rsa) != VAL_NO_ERROR) {
 		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
 		RSA_free(rsa);
-		return INTERNAL_ERROR;
+		return VAL_INTERNAL_ERROR;
 	}
 	
 	bzero(md5_hash, MD5_DIGEST_LENGTH);
@@ -137,11 +137,11 @@ int rsamd5_sigverify (val_context_t *ctx,
 		       rrsig.signature, rrsig.signature_len, rsa)) {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
 		RSA_free(rsa);
-		return RRSIG_VERIFIED;
+		return VAL_A_RRSIG_VERIFIED;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
 		RSA_free(rsa);
-		return RRSIG_VERIFY_FAILED;
+		return VAL_A_RRSIG_VERIFY_FAILED;
 	}   
 }
