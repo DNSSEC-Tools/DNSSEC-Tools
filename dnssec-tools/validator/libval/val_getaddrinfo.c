@@ -401,13 +401,13 @@ static int get_addrinfo_from_result (
 
 	    /* Loop for each rrset in the linked list of rrset_rec structures */
 	    while (rrset != NULL) {
-		    struct rr_rec *rr = rrset->rrs_data;
+		    struct rr_rec *rr = rrset->rrs->val_rrset_data;
 
 		    /* Check if the AI_CANONNAME flag is specified */
 		    if (hints && (hints->ai_flags & AI_CANONNAME) && (canonname == NULL)) {
 			    char dname[NS_MAXDNAME];
 			    bzero(dname, NS_MAXDNAME);
-			    if (ns_name_ntop(rrset->rrs_name_n, dname, NS_MAXDNAME) < 0) {
+			    if (ns_name_ntop(rrset->rrs->val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
 				    /* error */
 				    val_log(ctx, LOG_DEBUG, "error in ns_name_ntop");
 			    }
@@ -426,7 +426,7 @@ static int get_addrinfo_from_result (
 			    bzero(ainfo, sizeof(struct val_addrinfo));
 
 			    /* Check if the record-type is A */
-			    if (rrset->rrs_type_h == ns_t_a) {
+			    if (rrset->rrs->val_rrset_type_h == ns_t_a) {
 				    struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 				    val_log(ctx, LOG_DEBUG, "rrset of type A found");
 				    ainfo->ai_family = AF_INET;
@@ -435,7 +435,7 @@ static int get_addrinfo_from_result (
 				    ainfo->ai_addr = (struct sockaddr *) saddr4;
 			    }
 			    /* Check if the record-type is AAAA */
-			    else if (rrset->rrs_type_h == ns_t_aaaa) {
+			    else if (rrset->rrs->val_rrset_type_h == ns_t_aaaa) {
 				    struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
 				    val_log(ctx, LOG_DEBUG, "rrset of type AAAA found");
 				    ainfo->ai_family = AF_INET6;
@@ -527,7 +527,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		/* Query the validator */
 		if ((retval = ns_name_pton(nodename, name_n, NS_MAXCDNAME - 1)) != -1) {
 			if ((retval = val_resolve_and_check((val_context_t *)ctx, name_n, ns_c_in, ns_t_a, 0,
-						      &results)) != NO_ERROR) {
+						      &results)) != VAL_NO_ERROR) {
 				val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
 			}
 		}
@@ -536,7 +536,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		}
 		
 		/* Convert the validator result into val_addrinfo */
-		if (results && results->val_rc_trust && retval == NO_ERROR) {
+		if (results && results->val_rc_trust && retval == VAL_NO_ERROR) {
 			struct val_addrinfo *ainfo_new = NULL;
 			ret = get_addrinfo_from_result (ctx, results, results->val_rc_status,
 						       servname, hints, &ainfo_new);
@@ -564,7 +564,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		/* Query the validator */
 		if ((retval = ns_name_pton(nodename, name_n, NS_MAXCDNAME - 1)) != -1) {
 			if ((retval = val_resolve_and_check((val_context_t *)ctx, name_n, ns_c_in, ns_t_aaaa, 0,
-						      &results)) != NO_ERROR) {
+						      &results)) != VAL_NO_ERROR) {
 				val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
 			}
 		}
@@ -573,7 +573,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		}
 		
 		/* Convert the validator result into val_addrinfo */
-		if (results && results->val_rc_trust && retval == NO_ERROR) {
+		if (results && results->val_rc_trust && retval == VAL_NO_ERROR) {
 			struct val_addrinfo *ainfo_new = NULL;
 			ret = get_addrinfo_from_result (ctx, results, results->val_rc_status,
 						       servname, hints, &ainfo_new);
@@ -641,7 +641,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 	val_context_t *context = NULL;
 
 	if (ctx == NULL)
-		val_get_context(NULL, &context);
+		val_create_context(NULL, &context);
 	else
 		context = (val_context_t *) ctx;
 	

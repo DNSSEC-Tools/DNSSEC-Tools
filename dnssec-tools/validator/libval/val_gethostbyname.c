@@ -283,19 +283,19 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 		
 		// Get a count of aliases and addresses
 		while (rrset) {
-			struct rr_rec *rr = rrset->rrs_data;
+			struct rr_rec *rr = rrset->rrs->val_rrset_data;
 			
 			while (rr) {
 				
-				if (rrset->rrs_type_h == ns_t_cname) {
+				if (rrset->rrs->val_rrset_type_h == ns_t_cname) {
 					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = CNAME");
 					alias_count++;
 				}
-				else if ((af == AF_INET) && (rrset->rrs_type_h == ns_t_a)) {
+				else if ((af == AF_INET) && (rrset->rrs->val_rrset_type_h == ns_t_a)) {
 					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = A");
 					addr_count++;
 				}
-				else if ((af == AF_INET6) && (rrset->rrs_type_h == ns_t_aaaa)) {
+				else if ((af == AF_INET6) && (rrset->rrs->val_rrset_type_h == ns_t_aaaa)) {
 					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = AAAA");
 					addr_count++;
 				}
@@ -331,14 +331,14 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 		
 		while (rrset) {
-			struct rr_rec *rr = rrset->rrs_data;
+			struct rr_rec *rr = rrset->rrs->val_rrset_data;
 
 			while (rr) {
 				// Handle CNAME RRs
-				if (rrset->rrs_type_h == ns_t_cname) {
+				if (rrset->rrs->val_rrset_type_h == ns_t_cname) {
 					
 					bzero(dname, NS_MAXDNAME);
-					if (ns_name_ntop(rrset->rrs_name_n, dname, NS_MAXDNAME) < 0) {
+					if (ns_name_ntop(rrset->rrs->val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}
@@ -369,11 +369,11 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 					}
 				}
 				// Handle A and AAAA RRs
-				else if ( ((af == AF_INET) && (rrset->rrs_type_h == ns_t_a)) ||
-					  ((af == AF_INET6)&& (rrset->rrs_type_h == ns_t_aaaa)) ) {
+				else if ( ((af == AF_INET) && (rrset->rrs->val_rrset_type_h == ns_t_a)) ||
+					  ((af == AF_INET6)&& (rrset->rrs->val_rrset_type_h == ns_t_aaaa)) ) {
 					
 					bzero(dname, NS_MAXDNAME);
-					if (ns_name_ntop(rrset->rrs_name_n, dname, NS_MAXDNAME) < 0) {
+					if (ns_name_ntop(rrset->rrs->val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}
@@ -568,7 +568,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		val_context_t *context = NULL;
 		
 		if (ctx == NULL)
-			val_get_context(NULL, &context);
+			val_create_context(NULL, &context);
 		else
 			context = (val_context_t *) ctx;   
 
@@ -594,7 +594,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 
 		/* Query the validator */
 		if (((retval = ns_name_pton(name, name_n, NS_MAXCDNAME-1)) != -1)
-		    && (NO_ERROR == (retval = val_resolve_and_check(context, name_n, ns_c_in, type, 0,
+		    && (VAL_NO_ERROR == (retval = val_resolve_and_check(context, name_n, ns_c_in, type, 0,
 							      &results)))) {
 			
 			/* Convert the validator result into hostent */

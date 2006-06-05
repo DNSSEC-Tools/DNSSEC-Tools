@@ -9,7 +9,7 @@
 #include <resolver.h>
 #include <validator.h>
 
-#define NO_ERROR 0
+#define VAL_NO_ERROR 0
 
 
 /*
@@ -17,30 +17,30 @@
  * Process error codes 
  *************************************************** 
  */
-#define ERROR	-1 /* Generic error */
-#define NOT_IMPLEMENTED	-2	/* Functionality not yet implemented */
-#define OUT_OF_MEMORY -3 /*Could not allocate memory.*/
-#define BAD_ARGUMENT -4 /*Bad arguments passed as parameters.*/
-#define INTERNAL_ERROR -5 /*Encountered some internal error.*/
-#define NO_PERMISSION	-6 /*No permission to perform operation.*/
-#define RESOURCE_UNAVAILABLE -7	/*Some resource (crypto possibly) was unavailable.*/
-#define CONF_PARSE_ERROR -8 /*Error in parsing some configuration file.*/ 
-#define NO_POLICY -9	/*Could not find one or both of the configuration files*/
-#define NO_SPACE -10 /*Not enough space for storing all available answers.*/
-#define UNKNOWN_LOCALE -11 /*Could not identify the policy to which we need to switch.*/	
+#define VAL_ERROR	-1 /* Generic error */
+#define VAL_NOT_IMPLEMENTED	-2	/* Functionality not yet implemented */
+#define VAL_OUT_OF_MEMORY -3 /*Could not allocate memory.*/
+#define VAL_BAD_ARGUMENT -4 /*Bad arguments passed as parameters.*/
+#define VAL_INTERNAL_ERROR -5 /*Encountered some internal error.*/
+#define VAL_NO_PERMISSION	-6 /*No permission to perform operation.*/
+#define VAL_RESOURCE_UNAVAILABLE -7	/*Some resource (crypto possibly) was unavailable.*/
+#define VAL_CONF_PARSE_ERROR -8 /*Error in parsing some configuration file.*/ 
+#define VAL_CONF_NOT_FOUND -9	/*Could not find one or both of the configuration files*/
+#define VAL_NO_POLICY -10 /*Could not identify the policy to which we need to switch.*/	
+#define VAL_NO_SPACE -11 /*Not enough space for storing all available answers.*/
 
 /* 
  *************************************************** 
  * Assertion initial states 
  *************************************************** 
  */
-#define A_DONT_KNOW 0 
-#define A_CAN_VERIFY 1 
-#define A_WAIT_FOR_TRUST 2 
-#define A_WAIT_FOR_RRSIG  3
-#define A_INIT 4
-#define A_NEGATIVE_PROOF 5 
-#define A_LAST_STATE  10 /* Closest round number above A_NEGATIVE_PROOF */
+#define VAL_A_DONT_KNOW 0 
+#define VAL_A_CAN_VERIFY 1 
+#define VAL_A_WAIT_FOR_TRUST 2 
+#define VAL_A_WAIT_FOR_RRSIG  3
+#define VAL_A_INIT 4
+#define VAL_A_NEGATIVE_PROOF 5 
+#define VAL_A_LAST_STATE  10 /* Closest round number above A_NEGATIVE_PROOF */
 
 /* 
  *************************************************** 
@@ -49,103 +49,108 @@
  */
 
 /* "Cannot do anything further" states */
-#define ERROR_BASE    			A_LAST_STATE /* 10 */
-#define DATA_MISSING			(ERROR_BASE+1)
-#define RRSIG_MISSING 			(ERROR_BASE+2)
-#define DNSKEY_MISSING 			(ERROR_BASE+3)
-#define DS_MISSING	 			(ERROR_BASE+4)
-#define NO_TRUST_ANCHOR 		(ERROR_BASE+5)
-#define UNTRUSTED_ZONE	 		(ERROR_BASE+6)
-#define IRRELEVANT_PROOF		(ERROR_BASE+7)
-#define DNSSEC_VERSION_ERROR	(ERROR_BASE+8)
-#define TOO_MANY_LINKS	 		(ERROR_BASE+9)
-#define UNKNOWN_DNSKEY_PROTO  	(ERROR_BASE+10)
-#define FLOOD_ATTACK_DETECTED	(ERROR_BASE+11)
+#define VAL_A_ERROR_BASE VAL_A_LAST_STATE /* 10 */
+#define VAL_A_DATA_MISSING (VAL_A_ERROR_BASE+1)
+#define VAL_A_RRSIG_MISSING (VAL_A_ERROR_BASE+2)
+#define VAL_A_DNSKEY_MISSING (VAL_A_ERROR_BASE+3)
+#define VAL_A_DS_MISSING (VAL_A_ERROR_BASE+4)
+#define VAL_A_NO_TRUST_ANCHOR (VAL_A_ERROR_BASE+5)
+#define VAL_A_UNTRUSTED_ZONE (VAL_A_ERROR_BASE+6)
+#define VAL_A_IRRELEVANT_PROOF (VAL_A_ERROR_BASE+7)
+#define VAL_A_DNSSEC_VERSION_ERROR (VAL_A_ERROR_BASE+8)
+#define VAL_A_TOO_MANY_LINKS (VAL_A_ERROR_BASE+9)
+#define VAL_A_UNKNOWN_DNSKEY_PROTO (VAL_A_ERROR_BASE+10)
+#define VAL_A_FLOOD_ATTACK_DETECTED	(VAL_A_ERROR_BASE+11)
 
-#define DNS_ERROR_BASE			(ERROR_BASE+15)
+#define VAL_A_DNS_ERROR_BASE (VAL_A_ERROR_BASE+15)
 /* 
  * DNS errors lie within this range, 
  * there are SR_LAST_ERROR (22) of them in total
  */
-#define SR_REFERRAL_ERROR       (SR_LAST_ERROR+1) /* one more DNS error for referral failures */ 
-#define SR_MISSING_GLUE         (SR_LAST_ERROR+2) /* one more DNS error for referral failures */ 
-#define SR_CONFLICTING_ANSWERS  (SR_LAST_ERROR+3)
-#define DNS_ERROR_LAST			(DNS_ERROR_BASE + SR_CONFLICTING_ANSWERS)
-#define LAST_ERROR				DNS_ERROR_LAST /* ERROR_BASE+40 */ 
+#define SR_REFERRAL_ERROR (SR_LAST_ERROR+1) /* one more DNS error for referral failures */ 
+#define SR_MISSING_GLUE (SR_LAST_ERROR+2) /* one more DNS error for referral failures */ 
+#define SR_CONFLICTING_ANSWERS (SR_LAST_ERROR+3)
+#define VAL_A_DNS_ERROR_LAST (VAL_A_DNS_ERROR_BASE + SR_CONFLICTING_ANSWERS)
+
+
+#define VAL_A_LAST_ERROR VAL_A_DNS_ERROR_LAST /* VAL_A_ERROR_BASE+40 */ 
 
 /* "Error, but can prove the chain-of-trust above this" states */
-#define FAIL_BASE				LAST_ERROR /* ERROR_BASE+40 */ 
-#define DNSKEY_NOMATCH			(FAIL_BASE+1) /*RRSIG was created by a DNSKEY that does not exist in the apex keyset.*/
-#define WRONG_LABEL_COUNT  		(FAIL_BASE+2) /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA.*/
-#define SECURITY_LAME	  		(FAIL_BASE+3) /*RRSIG created by a key that does not exist in the parent DS record set.*/
-#define NOT_A_ZONE_KEY	 		(FAIL_BASE+4) /*The key used to verify the RRSIG is not a zone key, but some other key such as the public key used for TSIG.*/
-#define RRSIG_NOTYETACTIVE	 	(FAIL_BASE+5) /*The RRSIG's inception time is in the future.*/
-#define RRSIG_EXPIRED	 		(FAIL_BASE+6) /*The RRSIG has expired.*/
-#define ALGO_NOT_SUPPORTED	 	(FAIL_BASE+7) /* Algorithm in DNSKEY or RRSIG or DS is not supported.*/
-#define UNKNOWN_ALGO	 		(FAIL_BASE+8)	/* Unknown DNSKEY or RRSIG or DS algorithm */ 
-#define RRSIG_VERIFIED	 		(FAIL_BASE+9)  /* The RRSIG verified successfully.*/ 
-#define RRSIG_VERIFY_FAILED		(FAIL_BASE+10) /*The RRSIG did not verify.*/ 
-#define NOT_VERIFIED 			(FAIL_BASE+11) /*Different RRSIGs failed for different reasons */ 
-#define KEY_TOO_LARGE			(FAIL_BASE+12) /*The zone is using a key size that is too large as per local policy.*/
-#define KEY_TOO_SMALL 			(FAIL_BASE+13) /*The zone is using a key size that is too small as per local policy*/
-#define KEY_NOT_AUTHORIZED		(FAIL_BASE+14) /*The zone is using a key that is not authorized as per local policy.*/
-#define ALGO_REFUSED			(FAIL_BASE+15) /*Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy */
-#define CLOCK_SKEW				(FAIL_BASE+16) /*Verified but with clock skew taken into account*/
-#define DUPLICATE_KEYTAG		(FAIL_BASE+17) /*Two DNSKEYs have the same keytag*/
-#define NO_PREFERRED_SEP		(FAIL_BASE+18) /*There is no DNSKEY in the parent DS set that our local policy allows us to traverse*/
-#define WRONG_RRSIG_OWNER		(FAIL_BASE+19) /* The RRSIG and the data that it purportedly covers have differing notions of owner name*/
-#define RRSIG_ALGO_MISMATCH 	(FAIL_BASE+20) /* The DNSKEY and RRSIG pair have a mismatch in their algorithm.*/
-#define KEYTAG_MISMATCH			(FAIL_BASE+21) /* The DNSKEY and RRSIG pair have a mismatch in their key tags*/
-#define LAST_FAILURE			(FAIL_BASE+30) /* ERROR_BASE + 70 */
+#define VAL_A_FAIL_BASE VAL_A_LAST_ERROR /* VAL_A_ERROR_BASE+40 */ 
+#define VAL_A_DNSKEY_NOMATCH (VAL_A_FAIL_BASE+1) /*RRSIG was created by a DNSKEY that does not exist in the apex keyset.*/
+#define VAL_A_WRONG_LABEL_COUNT (VAL_A_FAIL_BASE+2) /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA.*/
+#define VAL_A_SECURITY_LAME (VAL_A_FAIL_BASE+3) /*RRSIG created by a key that does not exist in the parent DS record set.*/
+#define VAL_A_NOT_A_ZONE_KEY (VAL_A_FAIL_BASE+4) /*The key used to verify the RRSIG is not a zone key, but some other key such as the public key used for TSIG.*/
+#define VAL_A_RRSIG_NOTYETACTIVE (VAL_A_FAIL_BASE+5) /*The RRSIG's inception time is in the future.*/
+#define VAL_A_RRSIG_EXPIRED	(VAL_A_FAIL_BASE+6) /*The RRSIG has expired.*/
+#define VAL_A_ALGO_NOT_SUPPORTED (VAL_A_FAIL_BASE+7) /* Algorithm in DNSKEY or RRSIG or DS is not supported.*/
+#define VAL_A_UNKNOWN_ALGO (VAL_A_FAIL_BASE+8)	/* Unknown DNSKEY or RRSIG or DS algorithm */ 
+#define VAL_A_RRSIG_VERIFIED (VAL_A_FAIL_BASE+9)  /* The RRSIG verified successfully.*/ 
+#define VAL_A_RRSIG_VERIFY_FAILED (VAL_A_FAIL_BASE+10) /*The RRSIG did not verify.*/ 
+#define VAL_A_NOT_VERIFIED (VAL_A_FAIL_BASE+11) /*Different RRSIGs failed for different reasons */ 
+#define VAL_A_KEY_TOO_LARGE (VAL_A_FAIL_BASE+12) /*The zone is using a key size that is too large as per local policy.*/
+#define VAL_A_KEY_TOO_SMALL (VAL_A_FAIL_BASE+13) /*The zone is using a key size that is too small as per local policy*/
+#define VAL_A_KEY_NOT_AUTHORIZED (VAL_A_FAIL_BASE+14) /*The zone is using a key that is not authorized as per local policy.*/
+#define VAL_A_ALGO_REFUSED (VAL_A_FAIL_BASE+15) /*Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy */
+#define VAL_A_CLOCK_SKEW (VAL_A_FAIL_BASE+16) /*Verified but with clock skew taken into account*/
+#define VAL_A_DUPLICATE_KEYTAG (VAL_A_FAIL_BASE+17) /*Two DNSKEYs have the same keytag*/
+#define VAL_A_NO_PREFERRED_SEP (VAL_A_FAIL_BASE+18) /*There is no DNSKEY in the parent DS set that our local policy allows us to traverse*/
+#define VAL_A_WRONG_RRSIG_OWNER (VAL_A_FAIL_BASE+19) /* The RRSIG and the data that it purportedly covers have differing notions of owner name*/
+#define VAL_A_RRSIG_ALGO_MISMATCH (VAL_A_FAIL_BASE+20) /* The DNSKEY and RRSIG pair have a mismatch in their algorithm.*/
+#define VAL_A_KEYTAG_MISMATCH (VAL_A_FAIL_BASE+21) /* The DNSKEY and RRSIG pair have a mismatch in their key tags*/
+#define VAL_A_LAST_FAILURE (VAL_A_FAIL_BASE+30) /* VAL_A_ERROR_BASE + 70 */
 
 /* success results conditions */
-#define VERIFIED				(LAST_FAILURE+1) /* This is a transient state, it will settle at VALIDATED_SUCCESS if the
+#define VAL_A_VERIFIED (VAL_A_LAST_FAILURE+1) /* This is a transient state, it will settle at VALIDATED_SUCCESS if the
 chain of trust can be completed */ 
-#define LOCAL_ANSWER			(LAST_FAILURE+2)	/* Answer obtained locally */
-#define TRUST_KEY	 			(LAST_FAILURE+3) /* key is trusted */ 
-#define TRUST_ZONE				(LAST_FAILURE+4) /* zone is trusted */
-#define BARE_RRSIG 				(LAST_FAILURE+5) /* No DNSSEC validation possible, query was for a RRSIG.*/
-#define LAST_SUCCESS			(LAST_FAILURE+10) /* ERROR_BASE + 80 */
-
+#define VAL_A_LOCAL_ANSWER (VAL_A_LAST_FAILURE+2)	/* Answer obtained locally */
+#define VAL_A_TRUST_KEY (VAL_A_LAST_FAILURE+3) /* key is trusted */ 
+#define VAL_A_TRUST_ZONE (VAL_A_LAST_FAILURE+4) /* zone is trusted */
+#define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+5) /* No DNSSEC validation possible, query was for a RRSIG.*/
+#define VAL_A_LAST_SUCCESS (VAL_A_LAST_FAILURE+10) /* VAL_A_ERROR_BASE + 80 */
 
 /* 
  *************************************************** 
- * Result  codes 
+ * Result  codes (ephemeral) 
  *************************************************** 
  */
 
-#define R_DONT_KNOW	0
+#define VAL_R_DONT_KNOW	0
 
-#define R_INDETERMINATE         1         
-#define R_INDETERMINATE_DS      R_INDETERMINATE /* Can't prove that the DS is trusted */
-#define R_INDETERMINATE_PROOF   R_INDETERMINATE /* Some intermediate Proof of non-existence obtained - dont know if answer exists and proof is bogus or answer is bogus.  */
-#define R_INCOMPLETE_PROOF      R_INDETERMINATE /* Proof does not have all required components */
-#define R_BOGUS                  2
-#define R_BOGUS_PROOF            R_BOGUS /* proof cannot be validated */
-#define R_BOGUS_UNPROVABLE       R_BOGUS /* Bogus result */
-#define R_BOGUS_PROVABLE	    (R_BOGUS | R_TRUST_FLAG)
-#define R_VERIFIED_CHAIN         3 /* All components were verified */
-#define R_VALIDATED_CHAIN       (R_VERIFIED_CHAIN | R_TRUST_FLAG)     
-#define R_LAST                   4
+#define VAL_R_INDETERMINATE 1         
+#define VAL_R_INDETERMINATE_DS VAL_R_INDETERMINATE /* Can't prove that the DS is trusted */
+#define VAL_R_INDETERMINATE_PROOF  VAL_R_INDETERMINATE /* Some intermediate Proof of non-existence obtained - dont know if answer exists and proof is bogus or answer is bogus.  */
+#define VAL_R_INCOMPLETE_PROOF VAL_R_INDETERMINATE /* Proof does not have all required components */
+#define VAL_R_BOGUS 2
+#define VAL_R_BOGUS_PROOF VAL_R_BOGUS /* proof cannot be validated */
+#define VAL_R_BOGUS_UNPROVABLE VAL_R_BOGUS /* Bogus result */
+#define VAL_R_BOGUS_PROVABLE (VAL_R_BOGUS | VAL_R_TRUST_FLAG)
+#define VAL_R_VERIFIED_CHAIN 3 /* All components were verified */
+#define VAL_R_VALIDATED_CHAIN (VAL_R_VERIFIED_CHAIN | VAL_R_TRUST_FLAG)     
+#define VAL_R_LAST 4
 
-#define VAL_LOCAL_ANSWER         (R_LAST+1)
-#define VAL_BARE_RRSIG           (R_LAST+2)
-#define VAL_NONEXISTENT_NAME     (R_LAST+3)
-#define VAL_NONEXISTENT_TYPE     (R_LAST+4)
-#define VAL_ERROR                (R_LAST+5)
-#define VAL_PROVABLY_UNSECURE    (R_LAST+6)
+/* 
+ *************************************************** 
+ * Result  codes (final) 
+ *************************************************** 
+ */
 
+#define VAL_LOCAL_ANSWER (VAL_R_LAST+1)
+#define VAL_BARE_RRSIG (VAL_R_LAST+2)
+#define VAL_NONEXISTENT_NAME (VAL_R_LAST+3)
+#define VAL_NONEXISTENT_TYPE (VAL_R_LAST+4)
+#define VAL_ERROR (VAL_R_LAST+5)
+#define VAL_PROVABLY_UNSECURE (VAL_R_LAST+6)
 
-#define VAL_DNS_ERROR_BASE	     (R_LAST+7)
+#define VAL_DNS_ERROR_BASE (VAL_R_LAST+7)
 /* 
  * DNS errors lie within this range, 
  */
-#define VAL_DNS_ERROR_LAST		(VAL_DNS_ERROR_BASE + DNS_ERROR_LAST)
+#define VAL_DNS_ERROR_LAST (VAL_DNS_ERROR_BASE + SR_CONFLICTING_ANSWERS)
 
-#define VAL_INDETERMINATE        R_INDETERMINATE
-#define VAL_BOGUS                R_BOGUS
-#define VAL_NOTRUST              R_VERIFIED_CHAIN
-#define VAL_SUCCESS              R_VALIDATED_CHAIN
-
+#define VAL_INDETERMINATE VAL_R_INDETERMINATE
+#define VAL_BOGUS VAL_R_BOGUS
+#define VAL_NOTRUST VAL_R_VERIFIED_CHAIN 
+#define VAL_SUCCESS VAL_R_VALIDATED_CHAIN
 
 #endif /* VAL_ERRORS_H */

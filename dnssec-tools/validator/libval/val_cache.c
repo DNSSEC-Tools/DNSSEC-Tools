@@ -44,23 +44,23 @@ static struct name_server *root_ns = NULL;
 #define LOCK_INIT() do{				\
 	if(0 != rwlock_init) {\
 		if(0 != pthread_rwlock_init(&rwlock, NULL))\
-		return INTERNAL_ERROR; \
+		return VAL_INTERNAL_ERROR; \
 	}\
 } while(0);
 
 #define LOCK_SH() do{				\
 	if(0 != pthread_rwlock_rdlock(&rwlock))\
-		return INTERNAL_ERROR; \
+		return VAL_INTERNAL_ERROR; \
 } while(0);
 
 #define LOCK_EX() do{				\
 	if(0 != pthread_rwlock_wrlock(&rwlock))\
-		return INTERNAL_ERROR;	\
+		return VAL_INTERNAL_ERROR;	\
 } while(0);
 
 #define UNLOCK() do{				\
 	if (0 != pthread_rwlock_unlock(&rwlock)) \
-		return INTERNAL_ERROR;	\
+		return VAL_INTERNAL_ERROR;	\
 } while(0);
 
 
@@ -73,7 +73,7 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
                                                                                                                           
     LOCK_INIT();
                                                                                                                           
-    if (new_info == NULL) return NO_ERROR;
+    if (new_info == NULL) return VAL_NO_ERROR;
                                                                                                                           
     /* Tie the two together */
                         
@@ -86,9 +86,9 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
 		new = new_info;
 		trail_new = NULL;
        	while (new) {
-    	    if (old->rrs_type_h == new->rrs_type_h &&
-                old->rrs_class_h == new->rrs_class_h &&
-                namecmp (old->rrs_name_n, new->rrs_name_n)==0) {
+    	    if (old->rrs->val_rrset_type_h == new->rrs->val_rrset_type_h &&
+                old->rrs->val_rrset_class_h == new->rrs->val_rrset_class_h &&
+                namecmp (old->rrs->val_rrset_name_n, new->rrs->val_rrset_name_n)==0) {
 
 				UNLOCK();	
 				LOCK_EX();
@@ -96,7 +96,7 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
     	        /* old and new are competitors */
 	            if (!(old->rrs_cred < new->rrs_cred ||
    	                     (old->rrs_cred == new->rrs_cred &&
-   	                         old->rrs_section <= new->rrs_section))) {
+   	                         old->rrs->val_rrset_section <= new->rrs->val_rrset_section))) {
    	            	/*
    	                     exchange the two -
    	                         copy from new to old:
@@ -105,14 +105,14 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
    	                             data, sig
    	            	*/
    	            	old->rrs_cred = new->rrs_cred;
-   	                old->rrs_section = new->rrs_section;
+   	                old->rrs->val_rrset_section = new->rrs->val_rrset_section;
    	                old->rrs_ans_kind = new->rrs_ans_kind;
-   	                rr_exchange = old->rrs_data;
-   	                old->rrs_data = new->rrs_data;
-   	                new->rrs_data = rr_exchange;
-   		            rr_exchange = old->rrs_sig;
-       	            old->rrs_sig = new->rrs_sig;
-       	            new->rrs_sig = rr_exchange;
+   	                rr_exchange = old->rrs->val_rrset_data;
+   	                old->rrs->val_rrset_data = new->rrs->val_rrset_data;
+   	                new->rrs->val_rrset_data = rr_exchange;
+   		            rr_exchange = old->rrs->val_rrset_sig;
+       	            old->rrs->val_rrset_sig = new->rrs->val_rrset_sig;
+       	            new->rrs->val_rrset_sig = rr_exchange;
        	        }
 
        		    /* delete new */
@@ -120,7 +120,7 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
 					new_info = new->rrs_next;
 					if (new_info == NULL) {
 						UNLOCK();
-						return NO_ERROR;
+						return VAL_NO_ERROR;
 					}
 				}
 				else
@@ -148,7 +148,7 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
 		prev->rrs_next = new_info;
 
 	UNLOCK();                    
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h, 
@@ -182,10 +182,10 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
 	LOCK_SH();
     while(next_answer)  {
         
-        if ((next_answer->rrs_type_h == type_h) &&
-        	(next_answer->rrs_class_h == class_h) &&
-            (namecmp(next_answer->rrs_name_n, name_n) == 0)) {
-            	if (next_answer->rrs_data != NULL) {
+        if ((next_answer->rrs->val_rrset_type_h == type_h) &&
+        	(next_answer->rrs->val_rrset_class_h == class_h) &&
+            (namecmp(next_answer->rrs->val_rrset_name_n, name_n) == 0)) {
+            	if (next_answer->rrs->val_rrset_data != NULL) {
 					*cloned_answer = copy_rrset_rec(next_answer);
                 	break;
 				}
@@ -195,7 +195,7 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
         next_answer = next_answer->rrs_next;
     }
 	UNLOCK();
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 int stow_zone_info(struct rrset_rec *new_info)
@@ -230,9 +230,9 @@ int stow_root_info(struct rrset_rec *root_info)
 	LOCK_INIT();
 
    	if (ns_name_pton(root_zone, root_zone_n, NS_MAXCDNAME-1) == -1)
-    	return CONF_PARSE_ERROR; 
+    	return VAL_CONF_PARSE_ERROR; 
 
-	if (NO_ERROR != (retval = res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info, &pending_glue)))
+	if (VAL_NO_ERROR != (retval = res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info, &pending_glue)))
 		return retval;
 	/* We are not interested in fetching glue for the root */
 	free_name_servers(&pending_glue);
@@ -257,7 +257,7 @@ int free_validator_cache()
 	unchecked_answers = NULL;
 	UNLOCK();
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }
 
 int get_root_ns(struct name_server **ns)
@@ -271,5 +271,5 @@ int get_root_ns(struct name_server **ns)
 
 	UNLOCK();
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 }

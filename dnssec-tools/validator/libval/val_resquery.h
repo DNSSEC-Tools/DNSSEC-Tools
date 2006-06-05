@@ -26,18 +26,18 @@ int val_resquery_rcv (
             int ret_val;\
             rr_set = find_rr_set (respondent_server, &listtype, name_n, type_h, set_type_h,\
                              class_h, ttl_h, rdata, from_section,authoritive);\
-            if (rr_set==NULL) return OUT_OF_MEMORY;\
+            if (rr_set==NULL) return VAL_OUT_OF_MEMORY;\
             rr_set->rrs_ans_kind = SR_ANS_STRAIGHT;\
             if (type_h != ns_t_rrsig)\
             {\
                 /* Add this record to its chain of rr_rec's. */\
-                if ((ret_val = add_to_set(rr_set,rdata_len_h,rdata))!=NO_ERROR) \
+                if ((ret_val = add_to_set(rr_set,rdata_len_h,rdata))!=VAL_NO_ERROR) \
                     return ret_val;\
             }\
             else\
             {\
                 /* Add this record to the sig of rrset_rec. */\
-                if ((ret_val = add_as_sig(rr_set,rdata_len_h,rdata))!=NO_ERROR)\
+                if ((ret_val = add_as_sig(rr_set,rdata_len_h,rdata))!=VAL_NO_ERROR)\
                     return ret_val;\
             }\
 	} while (0);

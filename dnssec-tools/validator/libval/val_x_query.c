@@ -56,7 +56,7 @@ static int compose_merged_answer( const u_char *name_n,
 				  val_status_t *val_status,
 				  u_int8_t flags )
 {
-	int retval = NO_ERROR;
+	int retval = VAL_NO_ERROR;
 	struct val_result_chain *res = NULL;
 	int buflen;
 	int proof = 0;
@@ -70,7 +70,7 @@ static int compose_merged_answer( const u_char *name_n,
 	unsigned char *rp = NULL;
 
 	if ((response == NULL) || response_length == NULL || (*response_length) <= 0) 
-		return BAD_ARGUMENT;
+		return VAL_BAD_ARGUMENT;
 
 	buflen = *response_length;
 	*response_length = 0; /* value-result parameter */
@@ -81,23 +81,23 @@ static int compose_merged_answer( const u_char *name_n,
 	/* Header */
 	rp = response;
 	HEADER *hp = (HEADER *)rp; 
-	if (sizeof(HEADER) > buflen) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+	if (sizeof(HEADER) > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	bzero(hp, sizeof(HEADER));
 	*response_length += sizeof(HEADER);
 	rp += sizeof(HEADER);
 	
 	/*  Question section */
 	int len = wire_name_length(name_n);
-	if (*response_length + len > buflen) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+	if (*response_length + len > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	memcpy (rp, name_n, len);
 	*response_length += len;
 	rp += len;
 	
-	if (*response_length + sizeof(u_int16_t) > buflen) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+	if (*response_length + sizeof(u_int16_t) > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	NS_PUT16(type_h, rp);
 	*response_length += 2;
 	
-	if (*response_length + sizeof(u_int16_t) > buflen) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+	if (*response_length + sizeof(u_int16_t) > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	NS_PUT16(class_h, rp);
 	*response_length += 2;
 	
@@ -110,9 +110,9 @@ static int compose_merged_answer( const u_char *name_n,
 		if ((*response_length) >= buflen) {
 
 			if (proof)
-				retval = NO_ERROR;
+				retval = VAL_NO_ERROR;
 			else
-				retval = NO_SPACE;
+				retval = VAL_NO_SPACE;
 
 			goto cleanup;
 		}
@@ -122,33 +122,33 @@ static int compose_merged_answer( const u_char *name_n,
 			unsigned char *cp, *ep;
 			int *bufindex = NULL;
 
-			if (rrset->rrs_section == VAL_FROM_ANSWER) {
+			if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
 				if (anbuf == NULL) {
 					anbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
 					if (anbuf == NULL) {
-						h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;
+						h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;
 					}
 				}
 				cp = anbuf + anbufindex;
 				ep = anbuf + buflen;
 				bufindex = &anbufindex;
 			}
-			else if (rrset->rrs_section == VAL_FROM_AUTHORITY) {
+			else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
 				if (nsbuf == NULL) {
 					nsbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
 					if (nsbuf == NULL) {
-						h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;
+						h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;
 					}
 				}
 				cp = nsbuf + nsbufindex;
 				ep = nsbuf + buflen;
 				bufindex = &nsbufindex;
 			}
-			else if (rrset->rrs_section == VAL_FROM_ADDITIONAL) {
+			else if (rrset->rrs->val_rrset_section == VAL_FROM_ADDITIONAL) {
 				if (arbuf == NULL) {
 					arbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
 					if (arbuf == NULL) {
-						h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;
+						h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;
 					}
 				}
 				cp = arbuf + arbufindex;
@@ -165,50 +165,50 @@ static int compose_merged_answer( const u_char *name_n,
 
 			/* Answer/Authority/Additional section */
 			struct rr_rec *rr;
-			for (rr=rrset->rrs_data; rr; rr=rr->rr_next) {
-				int len = wire_name_length(rrset->rrs_name_n);
+			for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
+				int len = wire_name_length(rrset->rrs->val_rrset_name_n);
 
-				if (cp + len >= ep) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
-				memcpy (cp, rrset->rrs_name_n, len);
+				if (cp + len >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
+				memcpy (cp, rrset->rrs->val_rrset_name_n, len);
 				cp += len;
 				*bufindex += len;
 
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
-				NS_PUT16(rrset->rrs_type_h, cp);
+				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
+				NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
 				*bufindex += 2;
 
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
-				NS_PUT16(rrset->rrs_class_h, cp);
+				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
+				NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
 				*bufindex += 2;
 
-				if (cp + sizeof(u_int32_t) >= ep) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
-				NS_PUT32(rrset->rrs_ttl_h, cp);
+				if (cp + sizeof(u_int32_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
+				NS_PUT32(rrset->rrs->val_rrset_ttl_h, cp);
 				*bufindex += 4;
 
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
+				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 				NS_PUT16(rr->rr_rdata_length_h, cp);
 				*bufindex += 2;
 
-				if (cp + rr->rr_rdata_length_h >= ep) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
+				if (cp + rr->rr_rdata_length_h >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 				memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
 				cp += rr->rr_rdata_length_h;
 				*bufindex += rr->rr_rdata_length_h;
 
 
-				if (rrset->rrs_section == VAL_FROM_ANSWER) {
+				if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
 					ancount++;
 					if (!val_isauthentic(res->val_rc_status)) {
 						an_auth = 0;
 					}
 				}
-				else if (rrset->rrs_section == VAL_FROM_AUTHORITY) {
+				else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
 					nscount++;
 					if (!val_isauthentic(res->val_rc_status)) {
 						ns_auth = 0;
 					}
 					proof = 1;
 				}
-				else if (rrset->rrs_section == VAL_FROM_ADDITIONAL) {
+				else if (rrset->rrs->val_rrset_section == VAL_FROM_ADDITIONAL) {
 					arcount++;
 				}
 			} // end for each rr
@@ -216,21 +216,21 @@ static int compose_merged_answer( const u_char *name_n,
 	} // end for each res
 
 	if (anbuf) {
-		if (*response_length + anbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
+		if (*response_length + anbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 		memcpy(rp, anbuf, anbufindex);
 		rp += anbufindex;
 		*response_length += anbufindex;
 	}
 
 	if (nsbuf) {
-		if (*response_length + nsbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
+		if (*response_length + nsbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 		memcpy(rp, nsbuf, nsbufindex);
 		rp += nsbufindex;
 		*response_length += nsbufindex;
 	}
 
 	if (arbuf) {
-		if (*response_length + arbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = NO_SPACE; goto cleanup;}
+		if (*response_length + arbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 		memcpy(rp, arbuf, arbufindex);
 		rp += arbufindex;
 		*response_length += arbufindex;
@@ -246,7 +246,7 @@ static int compose_merged_answer( const u_char *name_n,
 	else
 		hp->ad = 0;
 
-	retval = NO_ERROR;
+	retval = VAL_NO_ERROR;
 
  cleanup:
 	if (anbuf) free(anbuf);
@@ -301,13 +301,13 @@ static int compose_answer( const u_char *name_n,
 	int proof = 0;
 
 	if ((resp == NULL) || res_count == 0) 
-		return BAD_ARGUMENT;
+		return VAL_BAD_ARGUMENT;
 
 	if (flags & VAL_QUERY_MERGE_RRSETS) {
 		int retval = 0;
 		retval = compose_merged_answer(name_n, type_h, class_h, results, resp->response, &(resp->response_length),
 					       &(resp->val_status), flags);
-		if (retval == NO_ERROR) {
+		if (retval == VAL_NO_ERROR) {
 			*resp_count = 1;
 		}
 		return retval;
@@ -323,12 +323,12 @@ static int compose_answer( const u_char *name_n,
 		if ((*resp_count) >= res_count) {
 
 			if (proof)
-				return NO_ERROR;
+				return VAL_NO_ERROR;
 
 			/* Return the total count in resp_count */ 
 			for (;res; res=res->val_rc_next)
 				(*resp_count)++;
-			return NO_SPACE;
+			return VAL_NO_SPACE;
 		}
 
 		resp[*resp_count].val_status = res->val_rc_status;
@@ -336,7 +336,7 @@ static int compose_answer( const u_char *name_n,
 		resplen = resp[*resp_count].response_length;
 
 		if ((cp == NULL) || ((resplen) == 0))
-			return BAD_ARGUMENT;
+			return VAL_BAD_ARGUMENT;
 		ep = cp + resplen;
 
 		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
@@ -344,21 +344,21 @@ static int compose_answer( const u_char *name_n,
 
 			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
 			HEADER *hp = (HEADER *)cp; 
-			if (cp + sizeof(HEADER) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+			if (cp + sizeof(HEADER) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 			bzero(hp, sizeof(HEADER));
 			cp += sizeof(HEADER);
 
 
 			/*  Question section */
 			int len = wire_name_length(name_n);
-			if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+			if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 			memcpy (cp, name_n, len);
 			cp += len;
 			
-			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 			NS_PUT16(type_h, cp);
 
-			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 			NS_PUT16(class_h, cp);
 	
 			hp->qdcount = htons(1);
@@ -366,35 +366,35 @@ static int compose_answer( const u_char *name_n,
 			/* Answer section */
 			struct rr_rec *rr;
 			int anscount  = 0;
-			for (rr=rrset->rrs_data; rr; rr=rr->rr_next) {
-				int len = wire_name_length(rrset->rrs_name_n);
+			for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
+				int len = wire_name_length(rrset->rrs->val_rrset_name_n);
 
-				if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
-				memcpy (cp, rrset->rrs_name_n, len);
+				if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
+				memcpy (cp, rrset->rrs->val_rrset_name_n, len);
 				cp += len;
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
-				NS_PUT16(rrset->rrs_type_h, cp);
+				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
+				NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
 
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
-				NS_PUT16(rrset->rrs_class_h, cp);
+				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
+				NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
 
-				if (cp + sizeof(u_int32_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
-				NS_PUT32(rrset->rrs_ttl_h, cp);
+				if (cp + sizeof(u_int32_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
+				NS_PUT32(rrset->rrs->val_rrset_ttl_h, cp);
 
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 				NS_PUT16(rr->rr_rdata_length_h, cp);
 
-				if (cp + rr->rr_rdata_length_h >= ep) {h_errno = NETDB_INTERNAL; return NO_SPACE;}
+				if (cp + rr->rr_rdata_length_h >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 				memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
 				cp += rr->rr_rdata_length_h;
 
 				anscount++;
 			}
 
-			if (rrset->rrs_section == VAL_FROM_ANSWER) {
+			if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
 				hp->ancount = htons(anscount);
 			}
-			else if (rrset->rrs_section == VAL_FROM_AUTHORITY) {
+			else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
 				proof = 1;
 				hp->nscount = htons(anscount);
 			}
@@ -411,7 +411,7 @@ static int compose_answer( const u_char *name_n,
 		(*resp_count)++;
 	}
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 
 } /* compose_answer() */
 
@@ -429,7 +429,7 @@ static int compose_answer( const u_char *name_n,
  * This routine makes a query for {domain_name, type, class} and returns the 
  * result in resp. Memory for the response bytes within each
  * val_response structure must be sufficient to hold all the answers returned.
- * If not, those answers are omitted from the result and NO_SPACE is returned.
+ * If not, those answers are omitted from the result and VAL_NO_SPACE is returned.
  * The result of validation for a particular resource record is available in
  * the val_status field of the val_response structure.
  *
@@ -451,17 +451,17 @@ static int compose_answer( const u_char *name_n,
  * This val_response array must be large enough to 
  * hold all answers. The size allocated by the user must be passed in the 
  * resp_count parameter. If space is insufficient to hold all answers, those 
- * answers are omitted and NO_SPACE is returned. 
+ * answers are omitted and VAL_NO_SPACE is returned. 
  * resp_count -- Points to a variable of type int that contains the length of the
  *               resp array when this function is called.  On return, this will
  *               contain the number of entries in the 'resp' array that were filled
  *               with answers by this function.  'resp_count' must not be NULL.
  * 
  * Return values:
- * NO_ERROR		Operation succeeded
- * BAD_ARGUMENT	        The domain name or other arguments are invalid
- * OUT_OF_MEMORY	Could not allocate enough memory for operation
- * NO_SPACE		Returned when the user allocated memory is not large enough 
+ * VAL_NO_ERROR		Operation succeeded
+ * VAL_BAD_ARGUMENT	        The domain name or other arguments are invalid
+ * VAL_OUT_OF_MEMORY	Could not allocate enough memory for operation
+ * VAL_NO_SPACE		Returned when the user allocated memory is not large enough 
  *			to hold all the answers.
  *
  */
@@ -479,7 +479,7 @@ int val_query ( const val_context_t *ctx,
 	u_char name_n[NS_MAXCDNAME];
 
 	if(ctx == NULL) {
-		if(NO_ERROR !=(retval = val_get_context(NULL, &context)))
+		if(VAL_NO_ERROR !=(retval = val_create_context(NULL, &context)))
 			return retval;
 	}
 	else	
@@ -491,11 +491,11 @@ int val_query ( const val_context_t *ctx,
 	if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME-1) == -1) {
 		if((ctx == NULL)&& context)
 			val_free_context(context);
-		return (BAD_ARGUMENT);
+		return (VAL_BAD_ARGUMENT);
 	}
 
 	/* Query the validator */
-	if(NO_ERROR == (retval = val_resolve_and_check(context, name_n, class, type, flags, 
+	if(VAL_NO_ERROR == (retval = val_resolve_and_check(context, name_n, class, type, flags, 
 											&results))) {
 		/* Construct the answer response in resp */
 		retval = compose_answer(name_n, type, class, results, resp, resp_count, flags);

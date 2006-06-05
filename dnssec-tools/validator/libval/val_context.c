@@ -17,13 +17,13 @@
 #include "val_policy.h"
 #include "val_assertion.h"
 
-int val_get_context(char *label, val_context_t **newcontext)
+int val_create_context(char *label, val_context_t **newcontext)
 {
 	int retval;
 
 	*newcontext = (val_context_t *) MALLOC (sizeof(val_context_t));
 	if (*newcontext == NULL)
-		return OUT_OF_MEMORY;
+		return VAL_OUT_OF_MEMORY;
 
     (*newcontext)->q_list = NULL;
 	(*newcontext)->a_list = NULL;
@@ -31,13 +31,13 @@ int val_get_context(char *label, val_context_t **newcontext)
 	if(snprintf((*newcontext)->id, VAL_CTX_IDLEN-1, "%u", (unsigned)(*newcontext)) < 0)
 		strcpy((*newcontext)->id, "libval");
 
-	if ((retval = read_root_hints_file(*newcontext)) != NO_ERROR) {
+	if ((retval = read_root_hints_file(*newcontext)) != VAL_NO_ERROR) {
 		FREE (*newcontext);
 		return retval;
 	}
 
 	/* Read the Resolver configuration file */	
-	if ((retval = read_res_config_file(*newcontext)) != NO_ERROR) {
+	if ((retval = read_res_config_file(*newcontext)) != VAL_NO_ERROR) {
 		FREE (*newcontext);
 		return retval;
 	}
@@ -46,7 +46,7 @@ int val_get_context(char *label, val_context_t **newcontext)
 	memset((*newcontext)->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
 	(*newcontext)->pol_overrides = NULL;
 	(*newcontext)->cur_override = NULL;
-	if ((retval = read_val_config_file(*newcontext, label)) != NO_ERROR) {
+	if ((retval = read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
 		destroy_respol(*newcontext);
 		FREE (*newcontext);	
 		return retval;
@@ -55,7 +55,7 @@ int val_get_context(char *label, val_context_t **newcontext)
 	OVERRIDE_POLICY(*newcontext, (*newcontext)->pol_overrides); 
 
 
-	return NO_ERROR;
+	return VAL_NO_ERROR;
 
 }
 
@@ -90,7 +90,7 @@ int val_switch_policy_scope(val_context_t *ctx, char *label)
 			/* switch to first override */
 			memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
 			OVERRIDE_POLICY(ctx, ctx->pol_overrides);
-			return NO_ERROR;
+			return VAL_NO_ERROR;
 		}
 
 		for(cur = ctx->pol_overrides; 
@@ -102,14 +102,14 @@ int val_switch_policy_scope(val_context_t *ctx, char *label)
 			for (t = ctx->pol_overrides; t != cur->next; t = t->next) {
 				/* Override only if this is relevant */
 				int relevant, label_count;
-				if (NO_ERROR != (retval = (check_relevance(label, t->label, &label_count, &relevant)))) 
+				if (VAL_NO_ERROR != (retval = (check_relevance(label, t->label, &label_count, &relevant)))) 
 						return retval;
 				if(relevant)	
 					OVERRIDE_POLICY(ctx, t);
 			}
-			return NO_ERROR;
+			return VAL_NO_ERROR;
 		}
 	}
-	return UNKNOWN_LOCALE;
+	return VAL_NO_POLICY;
 }
 

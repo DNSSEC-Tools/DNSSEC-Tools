@@ -23,7 +23,7 @@
 #include <validator.h>
 #include "val_dsasha1.h"
 
-/* Returns NO_ERROR on success, other values on failure */
+/* Returns VAL_NO_ERROR on success, other values on failure */
 static int dsasha1_parse_public_key (const unsigned char *buf,
 				     int buflen,
 				     DSA *dsa)
@@ -33,7 +33,7 @@ static int dsasha1_parse_public_key (const unsigned char *buf,
 	BIGNUM *bn_p, *bn_q, *bn_g, *bn_y;
 	
 	if (!dsa) {
-		return INTERNAL_ERROR;
+		return VAL_INTERNAL_ERROR;
 	}
 	
 	T = (u_int8_t)(buf[index]);
@@ -56,7 +56,7 @@ static int dsasha1_parse_public_key (const unsigned char *buf,
 	dsa->g       = bn_g;
 	dsa->pub_key = bn_y;
 	
-	return NO_ERROR; /* success */
+	return VAL_NO_ERROR; /* success */
 }
 
 int dsasha1_sigverify (val_context_t *ctx,
@@ -73,14 +73,14 @@ int dsasha1_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): parsing the public key...\n");
 	if ((dsa = DSA_new()) == NULL) {
 		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify could not allocate dsa structure.\n");
-		return OUT_OF_MEMORY;
+		return VAL_OUT_OF_MEMORY;
 	};
 	
 	if (dsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
-				     dsa) != NO_ERROR) {
+				     dsa) != VAL_NO_ERROR) {
 		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
 		DSA_free(dsa);
-		return INTERNAL_ERROR;
+		return VAL_INTERNAL_ERROR;
 	}
 	
 	bzero(sha1_hash, SHA_DIGEST_LENGTH);
@@ -94,11 +94,11 @@ int dsasha1_sigverify (val_context_t *ctx,
 		       rrsig.signature, rrsig.signature_len, dsa)) {
 		val_log(ctx, LOG_DEBUG, "DSA_verify returned SUCCESS\n");
 		DSA_free(dsa);
-		return RRSIG_VERIFIED;
+		return VAL_A_RRSIG_VERIFIED;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "DSA_verify returned FAILURE\n");
 		DSA_free(dsa);
-		return RRSIG_VERIFY_FAILED;
+		return VAL_A_RRSIG_VERIFY_FAILED;
 	}   
 }
