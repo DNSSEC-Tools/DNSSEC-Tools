@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_gethostbyname 3"
-.TH val_gethostbyname 3 "2006-02-08" "perl v5.8.5" "Programmer's Manual"
+.TH val_gethostbyname 3 "2006-06-05" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_gethostbyname, val_gethostbyname2, val_gethostbyname_r,
 val_gethostbyname2_r \- get DNSSEC\-validated network host entry
@@ -180,7 +180,7 @@ val_gethostbyname2_r \- get DNSSEC\-validated network host entry
 The \fB\f(BIval_gethostbyname()\fB\fR, \fB\f(BIval_gethostbyname2()\fB\fR, \fB\f(BIval_gethostbyname_r()\fB\fR
 and \fB\f(BIval_gethostbyname2_r()\fB\fR functions are DNSSEC-aware versions of the
 \&\fB\f(BIgethostbyname\fB\|(3)\fR, \fB\f(BIgethostbyname2\fB\|(3)\fR, \fBgethostbyname_r\fR and
-\&\fBgethostbyname2_r\fR functions respectively.  They performs \s-1DNSSEC\s0 validation
+\&\fBgethostbyname2_r\fR functions respectively.  They perform \s-1DNSSEC\s0 validation
 of \s-1DNS\s0 queries.  They return a network host entry value of type
 \&\fIstruct hostent\fR.  (See \fB\f(BIgethostbyname\fB\|(3)\fR for more information on type
 \&\fIstruct hostent\fR).
@@ -195,7 +195,7 @@ versions, and can be safely used in multi-threaded applications.
 The \fIctx\fR parameter specifies the validation context which can be set to \s-1NULL\s0
 for default values.  The caller can use it to control the resolver and
 validator policies.  Using a non-NULL validator context over multiple calls
-can also provide some optimization.  (See \fB\f(BIget_context()\fB\fR for information on
+can also provide some optimization.  (See \fB\f(BIlibval\fB\|(3)\fR for information on
 creating a validation context.)
 .PP
 The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_gethostbyname2()\fB\fR functions set the
@@ -211,9 +211,12 @@ the same meaning and syntax as the corresponding parameters for the original
 \&\fBgethostbyname*()\fR functions.  Please see the manual page for
 \&\fB\f(BIgethostbyname\fB\|(3)\fR for more details about these parameters.
 .PP
-The \fIval_status\fR parameter is used to return the validator error code.  The
-\&\fB\f(BIval_istrusted()\fB\fR function can be used to determine if this error code
-represents a trusted value.  \fIval_status\fR must not be \fB\s-1NULL\s0\fR.
+The \fIval_status\fR parameter is used to return the validator error code.  
+The \fB\f(BIval_istrusted()\fB\fR function can be used to determine whether this 
+validation status represents a trusted value and the \fB\f(BIp_val_error()\fB\fR 
+function can be used to display this value to the user in a useful 
+manner (See \fB\f(BIlibval\fB\|(3)\fR more for information). \fIval_status\fR must not 
+be \fB\s-1NULL\s0\fR.
 .SH "RETURN VALUE"
 .IX Header "RETURN VALUE"
 The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_gethostbyname2()\fB\fR functions return a
@@ -284,6 +287,6 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 \&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_getaddrinfo\fB\|(3)\fR, \fB\f(BIfree_val_addrinfo\fB\|(3)\fR,
 \&\fB\f(BIval_query\fB\|(3)\fR 
 .PP
-\&\fB\f(BIp_val_error()\fB\fR, \fB\f(BIval_istrusted()\fB\fR
+\&\fB\f(BIlibval\fB\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net
