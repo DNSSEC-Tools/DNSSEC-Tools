@@ -46,17 +46,17 @@ The I<response> field in each I<val_response> structure must also be
 allocated by the user to be of sufficient size to hold an answer. 
 
 If DNSSEC validation succeeds for a given RRSet, a value of
-B<VALIDATE_SUCCESS> is returned in the I<val_status> field of the
+B<VAL_SUCCESS> is returned in the I<val_status> field of the
 I<val_response> structure for that RRSet. Other values are returned in case
 of errors.  See B<val_errors.h> for a listing of possible error codes.  The
 B<p_val_error()> function can be used to return a brief string description
 of the error code.  The B<val_istrusted()> function can be used to determine
 if the error code represents a value which indicates that the response can
-be trusted.
+be trusted (see B<libval(3)> for further information).
 
 The number of answers actually available is returned in the I<resp_count>
 parameter.  In case I<resp> is not large enough to hold all answers returned
-from B<val_query()>, it returns an error code of B<NO_SPACE> and
+from B<val_query()>, it returns an error code of B<VAL_NO_SPACE> and
 I<resp_count> is set to the total number of answers available.  Applications
 may re-query after reallocating I<resp> to hold that many answers.  For
 queries that are not of type C<ns_t_any> it is generally sufficient to
@@ -71,17 +71,17 @@ specified, all RRsets in the answer are merged into a single response
 and returned in the first element of the I<resp> array.  The response
 field of this element will have a format similar to the answer
 returned by B<res_query(3)>.  The validation status will be
-B<VALIDATE_SUCCESS> only if all the individual RRsets have been
+B<VAL_SUCCESS> only if all the individual RRsets have been
 successfully validated.  Otherwise, the validation status will be one
 of the other error codes.  Note that if a value other than
-B<VALIDATE_SUCCESS> is returned and if multiple RRsets are present in
+B<VAL_SUCCESS> is returned and if multiple RRsets are present in
 the answer, it is not possible to know which RRset resulted in the
 error status, if this flag is used.
 
 =head1 RETURN VALUES
 
-The B<val_query()> function returns B<NO_ERROR> on success.  It returns
-B<NO_SPACE> if the application has not allocated enough memory to hold all
+The B<val_query()> function returns 0 on success.  It returns
+B<VAL_NO_SPACE> if the application has not allocated enough memory to hold all
 results returned by the validator.  This function internally invokes
 B<resolve_n_check()>, and errors from this function may also be returned.
 See B<libval(3)> for more details.
@@ -130,7 +130,7 @@ See B<libval(3)> for more details.
           retval = val_query(NULL, argv[1], class, type, 0, resp,
                              &resp_count);
 
-          if (retval == NO_ERROR) {
+          if (retval == 0) {
                   for (i=0; i<resp_count; i++) {
                           printf("Validation Status = %d [%s]\n", resp[i].val_status,
                                  p_val_error(resp[i].val_status));
@@ -154,8 +154,6 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 B<res_query(3)>
 
 B<get_context(3)>, B<val_getaddrinfo(3)>, B<val_gethostbyname(3)>
-
-B<p_val_error()>, B<val_istrusted()>
 
 B<libval(3)>
 

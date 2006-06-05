@@ -43,7 +43,7 @@ val_gethostbyname2_r - get DNSSEC-validated network host entry
 The B<val_gethostbyname()>, B<val_gethostbyname2()>, B<val_gethostbyname_r()>
 and B<val_gethostbyname2_r()> functions are DNSSEC-aware versions of the
 B<gethostbyname(3)>, B<gethostbyname2(3)>, B<gethostbyname_r> and
-B<gethostbyname2_r> functions respectively.  They performs DNSSEC validation
+B<gethostbyname2_r> functions respectively.  They perform DNSSEC validation
 of DNS queries.  They return a network host entry value of type
 I<struct hostent>.  (See B<gethostbyname(3)> for more information on type
 I<struct hostent>).
@@ -58,7 +58,7 @@ versions, and can be safely used in multi-threaded applications.
 The I<ctx> parameter specifies the validation context which can be set to NULL
 for default values.  The caller can use it to control the resolver and
 validator policies.  Using a non-NULL validator context over multiple calls
-can also provide some optimization.  (See B<get_context()> for information on
+can also provide some optimization.  (See B<libval(3)> for information on
 creating a validation context.)
 
 The B<val_gethostbyname()> and B<val_gethostbyname2()> functions set the
@@ -74,9 +74,12 @@ the same meaning and syntax as the corresponding parameters for the original
 B<gethostbyname*()> functions.  Please see the manual page for
 B<gethostbyname(3)> for more details about these parameters.
 
-The I<val_status> parameter is used to return the validator error code.  The
-B<val_istrusted()> function can be used to determine if this error code
-represents a trusted value.  I<val_status> must not be B<NULL>.
+The I<val_status> parameter is used to return the validator error code.  
+The B<val_istrusted()> function can be used to determine whether this 
+validation status represents a trusted value and the B<p_val_error()> 
+function can be used to display this value to the user in a useful 
+manner (See B<libval(3)> more for information). I<val_status> must not 
+be B<NULL>.
 
 =head1 RETURN VALUE
 
@@ -143,7 +146,7 @@ B<gethostbyname2_r(3)>
 B<get_context(3)>, B<val_getaddrinfo(3)>, B<free_val_addrinfo(3)>,
 B<val_query(3)> 
 
-B<p_val_error()>, B<val_istrusted()>
+B<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 

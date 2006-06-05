@@ -40,12 +40,13 @@ The I<val_addrinfo> structure is similar to the I<addrinfo> structure (see
 B<getaddrinfo(3)>), and has an additional field I<val_status> that represents
 the validation status for that particular record.  The B<val_istrusted()>
 function can be used to determine whether this validation status represents a
-trusted value.
+trusted value and the B<p_val_error()> function can be used to display this
+value to the user in a useful manner (See B<libval(3)> more for information).
 
 The I<ctx> parameter of type I<val_context> represents the validation context,
 which can be NULL for default value. The caller can use this parameter to
 control the resolver and validator policies used during validation.
-(See B<get_context(3)> for information on creating a validation context.)
+(See B<libval(3)> for information on creating a validation context.)
 
 The I<nodename>, I<servname> and I<hints> parameters are similar in
 meaning and syntax as the corresponding parameters for the original
@@ -109,9 +110,9 @@ Abhijit Hayatnagarkar
 
 B<getaddrinfo(3)>
 
-B<get_context(3)>, B<val_gethostbyname(3)>, B<val_query(3)>
+B<val_gethostbyname(3)>, B<val_query(3)>
 
-B<p_val_error()>, B<val_istrusted()>
+B<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 

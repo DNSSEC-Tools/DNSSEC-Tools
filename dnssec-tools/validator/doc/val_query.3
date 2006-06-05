@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_query 3"
-.TH val_query 3 "2006-02-08" "perl v5.8.5" "Programmer's Manual"
+.TH val_query 3 "2006-06-05" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_query \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
@@ -179,17 +179,17 @@ The \fIresponse\fR field in each \fIval_response\fR structure must also be
 allocated by the user to be of sufficient size to hold an answer. 
 .PP
 If \s-1DNSSEC\s0 validation succeeds for a given RRSet, a value of
-\&\fB\s-1VALIDATE_SUCCESS\s0\fR is returned in the \fIval_status\fR field of the
+\&\fB\s-1VAL_SUCCESS\s0\fR is returned in the \fIval_status\fR field of the
 \&\fIval_response\fR structure for that RRSet. Other values are returned in case
 of errors.  See \fBval_errors.h\fR for a listing of possible error codes.  The
 \&\fB\f(BIp_val_error()\fB\fR function can be used to return a brief string description
 of the error code.  The \fB\f(BIval_istrusted()\fB\fR function can be used to determine
 if the error code represents a value which indicates that the response can
-be trusted.
+be trusted (see \fB\f(BIlibval\fB\|(3)\fR for further information).
 .PP
 The number of answers actually available is returned in the \fIresp_count\fR
 parameter.  In case \fIresp\fR is not large enough to hold all answers returned
-from \fB\f(BIval_query()\fB\fR, it returns an error code of \fB\s-1NO_SPACE\s0\fR and
+from \fB\f(BIval_query()\fB\fR, it returns an error code of \fB\s-1VAL_NO_SPACE\s0\fR and
 \&\fIresp_count\fR is set to the total number of answers available.  Applications
 may re-query after reallocating \fIresp\fR to hold that many answers.  For
 queries that are not of type \f(CW\*(C`ns_t_any\*(C'\fR it is generally sufficient to
@@ -204,16 +204,16 @@ specified, all RRsets in the answer are merged into a single response
 and returned in the first element of the \fIresp\fR array.  The response
 field of this element will have a format similar to the answer
 returned by \fB\f(BIres_query\fB\|(3)\fR.  The validation status will be
-\&\fB\s-1VALIDATE_SUCCESS\s0\fR only if all the individual RRsets have been
+\&\fB\s-1VAL_SUCCESS\s0\fR only if all the individual RRsets have been
 successfully validated.  Otherwise, the validation status will be one
 of the other error codes.  Note that if a value other than
-\&\fB\s-1VALIDATE_SUCCESS\s0\fR is returned and if multiple RRsets are present in
+\&\fB\s-1VAL_SUCCESS\s0\fR is returned and if multiple RRsets are present in
 the answer, it is not possible to know which RRset resulted in the
 error status, if this flag is used.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-The \fB\f(BIval_query()\fB\fR function returns \fB\s-1NO_ERROR\s0\fR on success.  It returns
-\&\fB\s-1NO_SPACE\s0\fR if the application has not allocated enough memory to hold all
+The \fB\f(BIval_query()\fB\fR function returns 0 on success.  It returns
+\&\fB\s-1VAL_NO_SPACE\s0\fR if the application has not allocated enough memory to hold all
 results returned by the validator.  This function internally invokes
 \&\fB\f(BIresolve_n_check()\fB\fR, and errors from this function may also be returned.
 See \fB\f(BIlibval\fB\|(3)\fR for more details.
@@ -278,7 +278,7 @@ See \fB\f(BIlibval\fB\|(3)\fR for more details.
 .Ve
 .PP
 .Vb 6
-\&          if (retval == NO_ERROR) {
+\&          if (retval == 0) {
 \&                  for (i=0; i<resp_count; i++) {
 \&                          printf("Validation Status = %d [%s]\en", resp[i].val_status,
 \&                                 p_val_error(resp[i].val_status));
@@ -302,8 +302,6 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 \&\fB\f(BIres_query\fB\|(3)\fR
 .PP
 \&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_getaddrinfo\fB\|(3)\fR, \fB\f(BIval_gethostbyname\fB\|(3)\fR
-.PP
-\&\fB\f(BIp_val_error()\fB\fR, \fB\f(BIval_istrusted()\fB\fR
 .PP
 \&\fB\f(BIlibval\fB\|(3)\fR
 .PP

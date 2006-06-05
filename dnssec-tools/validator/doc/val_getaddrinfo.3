@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_getaddrinfo 3"
-.TH val_getaddrinfo 3 "2006-02-08" "perl v5.8.5" "Programmer's Manual"
+.TH val_getaddrinfo 3 "2006-06-05" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_getaddrinfo, free_val_addrinfo \- get DNSSEC\-validated network address
 and service translation
@@ -175,12 +175,13 @@ The \fIval_addrinfo\fR structure is similar to the \fIaddrinfo\fR structure (see
 \&\fB\f(BIgetaddrinfo\fB\|(3)\fR), and has an additional field \fIval_status\fR that represents
 the validation status for that particular record.  The \fB\f(BIval_istrusted()\fB\fR
 function can be used to determine whether this validation status represents a
-trusted value.
+trusted value and the \fB\f(BIp_val_error()\fB\fR function can be used to display this
+value to the user in a useful manner (See \fB\f(BIlibval\fB\|(3)\fR more for information).
 .PP
 The \fIctx\fR parameter of type \fIval_context\fR represents the validation context,
 which can be \s-1NULL\s0 for default value. The caller can use this parameter to
 control the resolver and validator policies used during validation.
-(See \fB\f(BIget_context\fB\|(3)\fR for information on creating a validation context.)
+(See \fB\f(BIlibval\fB\|(3)\fR for information on creating a validation context.)
 .PP
 The \fInodename\fR, \fIservname\fR and \fIhints\fR parameters are similar in
 meaning and syntax as the corresponding parameters for the original
@@ -255,8 +256,8 @@ Abhijit Hayatnagarkar
 .IX Header "SEE ALSO"
 \&\fB\f(BIgetaddrinfo\fB\|(3)\fR
 .PP
-\&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_gethostbyname\fB\|(3)\fR, \fB\f(BIval_query\fB\|(3)\fR
+\&\fB\f(BIval_gethostbyname\fB\|(3)\fR, \fB\f(BIval_query\fB\|(3)\fR
 .PP
-\&\fB\f(BIp_val_error()\fB\fR, \fB\f(BIval_istrusted()\fB\fR
+\&\fB\f(BIlibval\fB\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net
