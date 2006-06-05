@@ -12,20 +12,24 @@ the validator.
 To compile:
 	make
 
-To run the test cases for the validator:
+To install:
+	make install
 
-        ./validate
 
-To run the validator for a specific query:
+./validate [options] [DOMAIN_NAME]
+./validate -s
+	Check validation status for a given {name, class, type} or for a sequence of test cases.
+	A list of possible options can be obtained by running 
+		./validate -h 
 
-        ./validate [options] DOMAIN_NAME
 
-     If the -c option is not given, the class is assumed to be IN.
-     If the -t option is not given, the type is assumed to be A.
+./gethost [options] <hostname>
+	Return the address(es) for a given host name using the DNSSEC-aware version of gethostbyname().
+	The list of possible options can be obtained by running
+		./gethost -h
 
-To run gethost:
 
-        ./gethost [options] <hostname>
-
-To run getaddr:
-	./getaddr [options] <hostname>
+./getaddr [options] <hostname>
+	Return the address(es) for a given host name using the DNSSEC-aware version of getaddrinfo().
+	The list of possible options can be obtained by running
+		./getaddr -h
