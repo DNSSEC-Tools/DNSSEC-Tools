@@ -21,6 +21,7 @@
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_verify.h"
+#include "val_log.h"
 #include "crypto/val_rsamd5.h"
 #include "crypto/val_rsasha1.h"
 #include "crypto/val_dsasha1.h"

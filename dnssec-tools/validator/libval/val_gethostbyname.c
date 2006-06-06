@@ -21,6 +21,7 @@
 #include <validator.h>
 #include <resolver.h>
 #include "val_policy.h"
+#include "val_log.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"
 #define ETC_HOSTS      "/etc/hosts"

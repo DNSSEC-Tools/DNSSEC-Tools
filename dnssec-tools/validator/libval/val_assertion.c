@@ -17,6 +17,7 @@
 #include "val_cache.h"
 #include "val_verify.h"
 #include "val_policy.h"
+#include "val_log.h"
 
 #define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
 

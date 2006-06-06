@@ -21,6 +21,7 @@
 #include <ctype.h>
 
 #include <validator.h>
+#include <val_log.h>
 #include "val_rsasha1.h"
 
 /* Returns VAL_NO_ERROR on success, other values on failure */

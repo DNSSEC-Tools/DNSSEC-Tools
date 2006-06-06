@@ -22,6 +22,9 @@
 
 #include "val_cache.h"
 #include "val_support.h"
+#include "val_x_query.h"
+#include "val_log.h"
+#include "val_assertion.h"
 
 /*
  * Function: compose_merged_answer
@@ -105,7 +108,6 @@ static int compose_merged_answer( const u_char *name_n,
 	
 	/* Iterate over the results returned by the validator */
 	for (res = results; res; res=res->val_rc_next) {
-		int resplen;
 
 		if ((*response_length) >= buflen) {
 
