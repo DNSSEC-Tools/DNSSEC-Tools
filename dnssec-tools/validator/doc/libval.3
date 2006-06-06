@@ -129,43 +129,62 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2005-08-31" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-06-06" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
-resolve_n_check, free_query_chain, free_assertion_chain, 
-free_result_chain \- query and validate answers from a DNS name server
+val_resolve_and_check, 
+val_free_result_chain \- query and validate answers from a DNS name server
 .PP
-get_context, destroy_context, switch_effective_policy \- manage validator context
+val_istrusted \- check if status value corresponds to that of a trust\-worthy answer.
 .PP
-p_val_error \- display error information
+val_create_context, val_free_context, val_switch_policy_scope \- manage validator context
+.PP
+resolver_config_set, 
+root_hints_set, 
+dnsval_conf_set,
+resolver_config_get, 
+root_hints_get, 
+dnsval_conf_get  \- set/get current location for the validator configuration files.
+.PP
+p_as_error, p_val_error \- display validator status information
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 #include <validator.h>
 .PP
-int resolve_n_check( val_context_t          *context,
+int val_resolve_and_check( val_context_t          *context,
                      u_char                 *domain_name_n,
                      const u_int16_t        type,
                      const u_int16_t        class,
                      const u_int8_t         flags,
-                     struct query_chain     **queries,
-                     struct assertion_chain **assertions,
-                     struct val_result      **results);
+                     struct val_result_chain      **results);
 .PP
-void free_query_chain(struct query_chain **queries);
+void val_free_result_chain(struct val_result *results);
 .PP
-void free_assertion_chain(struct assertion_chain **assertions);
+int val_istrusted(val_status_t val_status);
 .PP
-void free_result_chain(struct val_result **results);
+int val_create_context(const char *label, val_context_t **newcontext);
 .PP
-int get_context(const char *label, val_context_t **newcontext);
+int val_switch_policy_scope(val_context_t *ctx, const char *label);
 .PP
-int switch_effective_policy(val_context_t *ctx, const char *label);
+void val_free_context(val_context_t *context);
 .PP
-void destroy_context(val_context_t *context);
+char *resolver_config_get(void);
 .PP
-char *p_val_error(int valerrno);
+int resolver_config_set(const char *name);
+.PP
+char *root_hints_get(void);
+.PP
+int root_hints_set(const char *name);
+.PP
+char *dnsval_conf_get(void);
+.PP
+int dnsval_conf_set(const char *name);
+.PP
+char *p_as_error(val_astatus_t valerrno);
+.PP
+char *p_val_error(val_status_t valerrno);
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIresolve_n_check()\fB\fR method can be used to query a set of name
+The \fB\f(BIval_resolve_and_check()\fB\fR function can be used to query a set of name
 servers for the <\fIdomain_name_n\fR, \fItype\fR, \fIclass\fR> tuple and 
 to verify and validate the response. Verification is the step of 
 checking the RRSIGs and validation includes performing 
@@ -175,7 +194,7 @@ anchor. The \fIdomain_name_n\fR parameter is the queried name in
 can be done using the  \fB\f(BIns_name_pton()\fB\fR function exported by 
 the \fB\f(BIlibsres\fB\|(3)\fR library.
 .PP
-Answers returned by \fB\f(BIresolve_n_check()\fB\fR are made available 
+Answers returned by \fB\f(BIval_resolve_and_check()\fB\fR are made available 
 in the *\fIresults\fR array.  Each answer is a 
 distinct RRset; multiple RRs within the RRset are
 treated as the same answer. Multiple answers are possible when
@@ -183,542 +202,532 @@ treated as the same answer. Multiple answers are possible when
 returned in which case RRsets of type \f(CW\*(C`ns_t_nsec\*(C'\fR and 
 \&\f(CW\*(C`ns_t_soa\*(C'\fR are also returned. 
 .PP
-Individual elements in *\fIresults\fR point to corresponding 
-elements in the **\fIassertions\fR linked list. The assertions contain
+Individual elements in *\fIresults\fR point to the authentication chain
+contained within the val_assertion_chain linked list. The assertions contain
 the actual RRsets returned by the name server in response to the
-query. The **\fIqueries\fR linked-list provides a handle to
-the query that returned the data present within an assertion.
+query. 
 .PP
-The three dimensions of results, assertions and queries allow the
-invoking application to select the level of detail it needs to 
-investigate the \s-1DNSSEC\s0 validation status of a particular response. 
-Most applications would only require *\fIresults\fR since this provides a 
+Most applications would only require the status value within 
+*\fIresults\fR since this provides a 
 single error code for representing the authenticity of returned 
 data. Other more intrusive applications such as a \s-1DNSSEC\s0 
 troubleshooting utility may look at the individual assertions 
 to identify what particular component in the chain-of-trust led 
-to validation failure if any.
+to validation failure if any. \fB\f(BIval_istrusted()\fB\fR is a helper function
+that can be used to easily identify if a given validator status value
+corresponds to one of the authenticated and/or trusted data codes.
+Validator status values returned in the val_result_chain and val_assertion_chain
+linked lists can be displayed in a user understandable format using the functions
+\&\fB\f(BIp_val_error()\fB\fR and \fB\f(BIp_as_error()\fB\fR respectively.
 .PP
-*\fIqueries\fR, *\fIassertions\fR and *\fIresults\fR must be initially set
-to \s-1NULL\s0.  The libval library internally allocates memory for these 
-parameters  so they must be freed by the invoking application 
-using the \fB\f(BIfree_query_chain()\fB\fR, \fB\f(BIfree_assertion_chain()\fB\fR 
-and \fB\f(BIfree_result_chain()\fB\fR interfaces respectively. 
+The libval library internally allocates memory for *\fIresults\fR 
+and this must be freed by the invoking application 
+using the \fB\f(BIfree_result_chain()\fB\fR interface.
 .PP
-The first parameter to \fB\f(BIresolve_n_check()\fB\fR is the validator context. 
+The first parameter to \fB\f(BIval_resolve_n_check()\fB\fR is the validator context. 
 Applications can create a new validator context using the
-\&\fB\f(BIget_context()\fB\fR method. This method parses the resolver and validator 
+\&\fB\f(BIval_create_context()\fB\fR function. This function parses the resolver and validator 
 configuration files and creates the handle \fInewcontext\fR to this parsed 
 information. Information stored as part of validator context includes 
-the validation policy and resolver policy. Validator policy is 
-applied hierarchically based on the name used to identify a particular 
-policy fragment. 
+the validation policy and resolver policy. 
+Validator and resolver policy are read by default from
+the \fB/etc/dnsval.conf\fR and \fB/etc/resolv.conf\fR files. \*(L"Root hints\*(R"
+that allows the library to bootstrap its lookup process when functioning 
+as a full resolver is read from \fB/etc/root.hints\fR. The locations of each
+of these files may be changed using the interfaces \fBdnsval_conf_set\fR, 
+\&\fBresolver_config_set\fR and \fBroot_hints_set\fR respectively. 
+The corresponding \*(L"get\*(R" interfaces, namely, \fBdnsval_conf_get\fR, 
+\&\fBresolver_config_get\fR and \fBroot_hints_get\fR can be used to return the 
+current location from where these configuration files are read. 
 .PP
+Validator policy is applied hierarchically based on the name used to 
+identify a particular policy fragment. 
 As an example, \f(CW\*(C`browser\*(C'\fR and \f(CW\*(C`mozilla.browser\*(C'\fR form a 
 hierarchical ordering of policy, where the configuration 
 under the identifier of \f(CW\*(C`mozilla.browser\*(C'\fR may be used to override 
 generic browser policy with mozilla-specific options. Applications may
 switch their default policy to a policy that lies below (\f(CW\*(C`mozilla:browser\*(C'\fR 
 lies below \f(CW\*(C`browser\*(C'\fR) the originally defined label using the 
-\&\fB\f(BIswitch_effective_policy()\fB\fR method. In both of the \fB\f(BIresolve_n_check()\fB\fR 
-and \fB\f(BIswitch_effective_policy()\fB\fR, the \fIlabel\fR parameter is a simple string that
-must match another string that appears as the policy definition
+\&\fB\f(BIval_switch_policy_scope()\fB\fR function. In both of the \fB\f(BIval_resolve_n_check()\fB\fR 
+and \fB\f(BIval_switch_policy_scope()\fB\fR, the \fIlabel\fR parameter is a simple string that
+must match another string which appears as the policy definition
 identifier in the validator configuration file. It is a simple text string
 with the \f(CW\*(C`:\*(C'\fR character used as the delimiter between two levels in the
 hierarchy. The \f(CW\*(C`:\*(C'\fR label by itself refers to the default policy in the 
-configuration file. \f(CW\*(C`NULL\*(C'\fR may also be used to represent the label for
-the default policy.
+configuration file. 
 .SH "DATA STRUCTURES"
 .IX Header "DATA STRUCTURES"
-.IP "\fIstruct val_result\fR {" 4
-.IX Item "struct val_result {"
+.IP "\fIstruct val_result_chain\fR {" 4
+.IX Item "struct val_result_chain {"
 .Vb 4
-\&    struct assertion_chain *as;
-\&    int status;
-\&    int trusted;
-\&    struct val_result *next;
+\&    val_status_t val_rc_status;
+\&    struct val_assertion_chain *val_rc_trust;
+\&    struct val_result_chain *val_rc_next;
+\&};
 .Ve
-.Sp
-};
 .RS 4
-.IP "\fIas\fR" 4
-.IX Item "as"
-The assertion pointed to by the result. 
-.IP "\fItrusted\fR" 4
-.IX Item "trusted"
-If set, this indicates that the chain-of-trust for this answer led up
-to trust anchor. This field is used internally and must not be used
-by applications. It may go away in the future.
-.IP "\fInext\fR" 4
-.IX Item "next"
-Used internally and must not be used by applications. 
-It will go away in the future.
+.IP "\fIval_rc_trust\fR" 4
+.IX Item "val_rc_trust"
+The authentication chain for a given RRset. 
+.IP "\fIval_rc_next\fR" 4
+.IX Item "val_rc_next"
+Points to the next RRset in the set of answers returned for a query.
 .IP "\fIstatus\fR" 4
 .IX Item "status"
-Can be one of the following:
+The validation status for a given RRset. This can be one of the following:
 .Sp
 .Vb 2
-\&        BARE_RRSIG
+\&        VAL_LOCAL_ANSWER
+\&                Answer was available from a local file.
+.Ve
+.Sp
+.Vb 2
+\&        VAL_BARE_RRSIG
 \&                No DNSSEC validation possible, query was for an RRSIG.
 .Ve
 .Sp
 .Vb 2
-\&        VALIDATE_SUCCESS
-\&                Answer received and validated successfully.
+\&        VAL_NONEXISTENT_NAME        
+\&                No name present, trusted, and proof present.
 .Ve
 .Sp
 .Vb 2
-\&        BOGUS_UNPROVABLE 
-\&                Could not build a chain of trust for a failure condition.
-.Ve
-.Sp
-.Vb 2
-\&        BOGUS_PROVABLE
-\&                Failure condition that was provable.
+\&        VAL_NONEXISTENT_TYPE
+\&                No type exists for name, trusted, and proof present.
 .Ve
 .Sp
 .Vb 3
-\&        VALIDATION_ERROR
+\&        VAL_ERROR
 \&                Did not have sufficient or relevant data to complete validation, 
 \&                or encountered some DNS error.
 .Ve
 .Sp
 .Vb 2
-\&        NONEXISTENT_NAME        
-\&                No name present, trusted, and proof present.
+\&        VAL_DNS_ERROR_BASE < x < VAL_DNS_ERROR_LAST
+\&                where is one of the resolver error codes described in libsres(3).
 .Ve
 .Sp
 .Vb 2
-\&        NONEXISTENT_TYPE
-\&                No type exists for name, trusted, and proof present.
+\&        VAL_INDETERMINATE
+\&                Lacking information to give a more conclusive answer.
 .Ve
 .Sp
 .Vb 2
-\&        INCOMPLETE_PROOF
-\&                Proof does not have all required components to prove non-existence.
+\&        VAL_BOGUS
+\&                Validation failure condition.
+.Ve
+.Sp
+.Vb 3
+\&        VAL_NOTRUST
+\&                All available components in the authentication chain verified
+\&                properly, but there was no trust anchor available.
 .Ve
 .Sp
 .Vb 2
-\&        BOGUS_PROOF
-\&                Proof of non-existence cannot be validated.
+\&        VAL_SUCCESS
+\&                Answer received and validated successfully.
 .Ve
 .Sp
-.Vb 2
-\&        INDETERMINATE_DS
-\&                Can't prove that the DS is trusted.
-.Ve
-.Sp
-.Vb 4
-\&        INDETERMINATE_PROOF
-\&                Some intermediate Proof of non-existence obtained
-\&                dont know if answer exists and proof is bogus
-\&                or answer is bogus.
-.Ve
-.Sp
-.Vb 2
-\&        INDETERMINATE_ERROR
-\&                Sequence of errors.
-.Ve
-.Sp
-.Vb 2
-\&        INDETERMINATE_TRUST
-\&                Don't know if trust is absent or answer is bogus.
-.Ve
-.Sp
-.Vb 2
-\&        INDETERMINATE_ZONE
-\&                Dont know if zone is unsigned or sigs have been stripped.
-.Ve
-.Sp
-Error values in **\fIresults\fR returned by the validator can be displayed 
-in a more user friendly format using the \fB\f(BIp_val_error()\fB\fR method.
+Error values in val_status_t returned by the validator can be displayed 
+in a more user friendly format using the \fB\f(BIp_val_error()\fB\fR function.
 .RE
 .RS 4
 .RE
-.IP "\fIstruct assertion_chain\fR {" 4
-.IX Item "struct assertion_chain {"
-.Vb 7
-\&    u_int16_t ac_state;
-\&    struct rrset_rec *ac_data;
-\&    struct query_chain *ac_pending_query;
-\&    struct assertion_chain *ac_more_data;
-\&    struct assertion_chain *ac_trust;
-\&    struct assertion_chain *ac_next;
+.IP "\fIstruct val_assertion_chain\fR {" 4
+.IX Item "struct val_assertion_chain {"
+.Vb 6
+\&    val_astatus_t val_ac_status;
+\&    struct val_rrset *val_ac_rrset;
+\&    struct val_assertion_chain *val_ac_trust;
+\&    struct val_assertion_chain *val_ac_rrset_next;
+\&    struct val_assertion_chain *val_ac_next;
 \&};
 .Ve
 .RS 4
-.IP "\fIac_state\fR" 4
-.IX Item "ac_state"
+.IP "\fIval_ac_status\fR" 4
+.IX Item "val_ac_status"
 This contains the validation state of the assertion. Upon completion 
-of the \fB\f(BIresolve_n_check()\fB\fR call this field will contain the error
+of the \fB\f(BIval_resolve_n_check()\fB\fR call this field will contain the error
 or success code for \s-1DNSSEC\s0 validation over the current assertion. This
 field may contain the following values:
 .Sp
 .Vb 2
-\&        DNSKEY_NOMATCH
+\&        VAL_A_DNSKEY_NOMATCH
 \&                RRSIG was created by a DNSKEY that does not exist in the apex keyset.
 .Ve
 .Sp
 .Vb 3
-\&        WRONG_LABEL_COUNT
+\&        VAL_A_WRONG_LABEL_COUNT
 \&                The number of labels on the signature is greater than the the count given in
 \&                the RRSIG RDATA.
 .Ve
 .Sp
 .Vb 2
-\&        SECURITY_LAME
+\&        VAL_A_SECURITY_LAME
 \&                RRSIG created by a key that does not exist in the parent DS record set.
 .Ve
 .Sp
 .Vb 3
-\&        NOT_A_ZONE_KEY
+\&        VAL_A_NOT_A_ZONE_KEY
 \&                The key used to verify the RRSIG is not a zone key, but some other key such as
 \&                the public key used for TSIG.
 .Ve
 .Sp
 .Vb 2
-\&        RRSIG_NOTYETACTIVE
+\&        VAL_A_RRSIG_NOTYETACTIVE
 \&                The RRSIG's inception time is in the future.
 .Ve
 .Sp
 .Vb 2
-\&        RRSIG_EXPIRED
+\&        VAL_A_RRSIG_EXPIRED
 \&                The RRSIG has expired.
 .Ve
 .Sp
 .Vb 2
-\&        ALGO_NOT_SUPPORTED
+\&        VAL_A_ALGO_NOT_SUPPORTED
 \&                Algorithm in DNSKEY or RRSIG or DS is not supported.
 .Ve
 .Sp
 .Vb 2
-\&        UNKNOWN_ALGO
+\&        VAL_A_UNKNOWN_ALGO
 \&                Unknown DNSKEY or RRSIG or DS algorithm
 .Ve
 .Sp
 .Vb 2
-\&        RRSIG_VERIFIED
+\&        VAL_A_RRSIG_VERIFIED
 \&                The RRSIG verified successfully.
 .Ve
 .Sp
 .Vb 2
-\&        RRSIG_VERIFY_FAILED
+\&        VAL_A_RRSIG_VERIFY_FAILED
 \&                The RRSIG did not verify.
 .Ve
 .Sp
 .Vb 2
-\&        NOT_VERIFIED
+\&        VAL_A_NOT_VERIFIED
 \&                Different RRSIGs failed for different reasons
 .Ve
 .Sp
 .Vb 2
-\&        KEY_TOO_LARGE
+\&        VAL_A_KEY_TOO_LARGE
 \&                The zone is using a key size that is too large as per local policy.
 .Ve
 .Sp
 .Vb 2
-\&        KEY_TOO_SMALL
+\&        VAL_A_KEY_TOO_SMALL
 \&                The zone is using a key size that is too small as per local policy
 .Ve
 .Sp
 .Vb 2
-\&        KEY_NOT_AUTHORIZED
+\&        VAL_A_KEY_NOT_AUTHORIZED
 \&                The zone is using a key that is not authorized as per local policy.
 .Ve
 .Sp
 .Vb 2
-\&        ALGO_REFUSED
+\&        VAL_A_ALGO_REFUSED
 \&                Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy
 .Ve
 .Sp
 .Vb 2
-\&        CLOCK_SKEW
+\&        VAL_A_CLOCK_SKEW
 \&                Verified but with clock skew taken into accoun
 .Ve
 .Sp
 .Vb 2
-\&        DUPLICATE_KEYTAG
+\&        VAL_A_DUPLICATE_KEYTAG
 \&                Two DNSKEYs have the same keytag
 .Ve
 .Sp
 .Vb 3
-\&        NO_PREFERRED_SEP
+\&        VAL_A_NO_PREFERRED_SEP
 \&                There is no DNSKEY in the parent DS set that our local policy allows us to
 \&                traverse
 .Ve
 .Sp
 .Vb 3
-\&        WRONG_RRSIG_OWNER
+\&        VAL_A_WRONG_RRSIG_OWNER
 \&                The RRSIG and the data that it purportedly covers have differing notions of
 \&                owner name
 .Ve
 .Sp
 .Vb 2
-\&        RRSIG_ALGO_MISMATCH
+\&        VAL_A_RRSIG_ALGO_MISMATCH
 \&                 The DNSKEY and RRSIG pair have a mismatch in their algorithm.
 .Ve
 .Sp
 .Vb 2
-\&        KEYTAG_MISMATCH
+\&        VAL_A_KEYTAG_MISMATCH
 \&                 The DNSKEY and RRSIG pair have a mismatch in the key tags.
 .Ve
 .Sp
 .Vb 2
-\&        VERIFIED
+\&        VAL_A_VERIFIED
 \&                The signature verified OK.
 .Ve
 .Sp
 .Vb 2
-\&        LOCAL_ANSWER
-\&                Answer was obtained locally. This is currently not implemented.
+\&        VAL_A_LOCAL_ANSWER
+\&                Answer was obtained locally.
 .Ve
 .Sp
 .Vb 2
-\&        TRUST_KEY
+\&        VAL_A_TRUST_KEY
 \&                The key present in this assertion is trusted.
 .Ve
 .Sp
 .Vb 2
-\&        TRUST_ZONE
+\&        VAL_A_TRUST_ZONE
 \&                The zone in this assertion is trusted.
 .Ve
 .Sp
 .Vb 2
-\&        BARE_RRSIG
+\&        VAL_A_BARE_RRSIG
 \&                Query was for an RRSIG.
 .Ve
 .Sp
 In cases where data is insufficient to generate a validation result, 
-\&\fIac_state\fR may also contain the following status values. The final 
-validation result in such circumstances is \s-1VALIDATION_ERROR\s0.
+\&\fIval_ac_status\fR may also contain the following status values. The final 
+validation result in val_status_t in such circumstances is \s-1VAL_ERROR\s0.
 .Sp
 .Vb 3
-\&        DATA_MISSING
+\&        VAL_A_DATA_MISSING
 \&                No data was returned in the response. Based on what data was queried
 \&                for this also covers cases where the DNSKEY or DS are missing.
 .Ve
 .Sp
 .Vb 2
-\&        RRSIG_MISSING
+\&        VAL_A_RRSIG_MISSING
 \&                Could not find an RRSIG that matched the query type.
 .Ve
 .Sp
+.Vb 2
+\&        VAL_A_DNSKEY_MISSING
+\&                Could not find a DNSKEY for verifying the RRSIG over a resource record.
+.Ve
+.Sp
+.Vb 2
+\&        VAL_A_DS_MISSING
+\&                Could not find a DS for verifying a given DNSKEY.
+.Ve
+.Sp
 .Vb 3
-\&        NO_TRUST_ANCHOR
+\&        VAL_A_NO_TRUST_ANCHOR
 \&                No trust anchor at current level and no possiblity
 \&                for finding any up this tree.
 .Ve
 .Sp
 .Vb 2
-\&        UNTRUSTED_ZONE
+\&        VAL_A_UNTRUSTED_ZONE
 \&                The zone has been configured as un-trusted.
 .Ve
 .Sp
 .Vb 3
-\&        IRRELEVANT_PROOF
+\&        VAL_A_IRRELEVANT_PROOF
 \&                An NSEC received does not contribute towards proving
 \&                non-existence.
 .Ve
 .Sp
 .Vb 2
-\&        DNSSEC_VERSION_ERROR
+\&        VAL_A_DNSSEC_VERSION_ERROR
 \&                DNSSEC version error. Not implemented.
 .Ve
 .Sp
 .Vb 3
-\&        TOO_MANY_LINKS
+\&        VAL_A_TOO_MANY_LINKS
 \&                Too many links were traversed in going up the chain-of-trust. 
 \&                Not implemented.
 .Ve
 .Sp
 .Vb 2
-\&        UNKNOWN_DNSKEY_PROTO
+\&        VAL_A_UNKNOWN_DNSKEY_PROTO
 \&                The protocol field in the DNSKEY is not set to 3 (DNSSEC).
 .Ve
 .Sp
 .Vb 3
-\&        FLOOD_ATTACK_DETECTED
+\&        VAL_A_FLOOD_ATTACK_DETECTED
 \&                Detected multiple (conflicting) answers for the same query. 
 \&                Possible spoofing attack. Not implemented.
 .Ve
 .Sp
-.Vb 2
-\&        CONFLICTING_ANSWERS     
-\&                Multiple answers received for a query which conflict.
+.Vb 3
+\&        VAL_A_DNS_ERROR_BASE < x < VAL_A_DNS_ERROR_LAST
+\&                where x is one of the error values returned by the resolver as 
+\&                described in libsres(3) including the following:
 .Ve
 .Sp
 .Vb 2
-\&        SR_REFERRAL_ERROR
-\&                Some error encountered while following referrals.
+\&                SR_CONFLICTING_ANSWERS  
+\&                        Multiple answers received for a query which conflict.
 .Ve
 .Sp
 .Vb 2
-\&        SR_MISSING_GLUE
-\&                Glue was missing
+\&                SR_REFERRAL_ERROR
+\&                        Some error encountered while following referrals.
 .Ve
 .Sp
-.Vb 1
-\&        All other resolver errors returned by libsres(3)
+.Vb 2
+\&                SR_MISSING_GLUE
+\&                        Glue was missing
 .Ve
-.IP "\fIac_data\fR" 4
-.IX Item "ac_data"
-This field contains a pointer to an RRset obtained from the \s-1DNS\s0 response.
-.IP "\fIac_pending_query\fR" 4
-.IX Item "ac_pending_query"
-This field contains a pointer to an element in the **\fIqueries\fR 
-linked list. In order to validate a resource record, the
-validator may have to send additional queries for data not returned 
-as part of the original answer. Dependencies such as these are 
-reflected in the \fIac_pending_query\fR field. 
-.IP "\fIac_more_data\fR" 4
-.IX Item "ac_more_data"
+.IP "\fIval_ac_rrset\fR" 4
+.IX Item "val_ac_rrset"
+This field contains a pointer to an RRset of type \fBstruct val_rrset\fR
+obtained from the \s-1DNS\s0 response.
+.IP "\fIval_ac_rrset_next\fR" 4
+.IX Item "val_ac_rrset_next"
 Certain queries may return more than one RRset as part of the answer.
 This field points to the next RRset in the \s-1DNS\s0 response.
-.IP "\fIac_trust\fR" 4
-.IX Item "ac_trust"
+.IP "\fIval_ac_trust\fR" 4
+.IX Item "val_ac_trust"
 This field points to an assertion that either contains a \s-1DNSKEY\s0 RRset that
 can be used to verify RRSIGs over the current record, or contains a \s-1DS\s0
 RRset that can be used to build the chain-of-trust towards a trust
 anchor. 
-.IP "\fIac_next\fR" 4
-.IX Item "ac_next"
-This field points to the next element in the **\fIassertions\fR linked\-list.
+.IP "\fIval_ac_next\fR" 4
+.IX Item "val_ac_next"
+This field points to the next element in the val_assertion_chain linked\-list.
 .RE
 .RS 4
 .RE
-.IP "\fIstruct query_chain\fR {" 4
-.IX Item "struct query_chain {"
-.Vb 10
-\&    u_char qc_name_n[MAXCDNAME];
-\&    u_int16_t qc_type_h;
-\&    u_int16_t qc_class_h;
-\&    u_int16_t qc_state; /* DOS, TIMED_OUT, etc */
-\&    struct name_server *qc_ns_list;
-\&    struct delegation_info *qc_referral;
-\&    int qc_trans_id;
-\&    struct assertion_chain *qc_as;
-\&    struct query_chain *qc_next;
-\&};
-.Ve
+.IP "\fIstruct val_rrset\fR { u_int8_t  *val_msg_header; u_int16_t val_msg_headerlen; u_int8_t  *val_queryset_data; u_int16_t val_queryset_datalen; u_int8_t  *val_rrset_name_n; u_int16_t val_rrset_class_h; u_int16_t val_rrset_type_h; u_int32_t val_rrset_ttl_h; u_int8_t  val_rrset_section; struct rr_rec *val_rrset_data; struct rr_rec *val_rrset_sig; };" 4
+.IX Item "struct val_rrset { u_int8_t  *val_msg_header; u_int16_t val_msg_headerlen; u_int8_t  *val_queryset_data; u_int16_t val_queryset_datalen; u_int8_t  *val_rrset_name_n; u_int16_t val_rrset_class_h; u_int16_t val_rrset_type_h; u_int32_t val_rrset_ttl_h; u_int8_t  val_rrset_section; struct rr_rec *val_rrset_data; struct rr_rec *val_rrset_sig; };"
 .RS 4
-.IP "\fIqc_name_n\fR" 4
-.IX Item "qc_name_n"
-Contains the queried name in \s-1DNS\s0 wire format.
-.IP "\fIqc_type_h\fR" 4
-.IX Item "qc_type_h"
-Contains the queried type.
-.IP "\fIqc_class_h\fR" 4
-.IX Item "qc_class_h"
-Contains the queried class.
-.IP "\fIqc_state\fR" 4
-.IX Item "qc_state"
-This field contains the current status of the query. Upon completion
-of the \fB\f(BIresolve_n_check()\fB\fR call this field will either be Q_ANSWERED, 
-which says that the query was answered, and the returned response in present in
-he assertion pointed to by \fIqc_as\fR, or a value greater than Q_ERROR_BASE in which
-case the error value is one of those returned by the resolver as defined in 
-\&\fB\f(BIlibsres\fB\|(3)\fR offset by Q_ERROR_BASE. For example, if the resolver returned 
-an error of \s-1SR_SERVFAIL\s0, this value would contain the value 
-Q_ERROR_BASE+SR_SERVFAIL.
-.IP "\fIqc_ns_list\fR" 4
-.IX Item "qc_ns_list"
-Contains the list of name servers towards which the query is directed.
-Details on the \fIstruct name_server\fR structure may be found in the 
-man page for \fB\f(BIlibsres\fB\|(3)\fR
-.IP "\fIqc_referral\fR" 4
-.IX Item "qc_referral"
-Points to referral information. This field is used internally and may
-go away in future. 
-.IP "\fIqc_trans_id\fR" 4
-.IX Item "qc_trans_id"
-The identifier that the resolver uses to keep track of the query. Additional
-information about the query transaction \s-1ID\s0 may be found in the man page 
-for \fB\f(BIlibsres\fB\|(3)\fR.
-.IP "\fIqc_as\fR" 4
-.IX Item "qc_as"
-This field points to an assertion that contains the response returned by 
-the \s-1DNS\s0 name server for this query.
-.IP "\fIqc_next\fR" 4
-.IX Item "qc_next"
-Points to the next element in the **\fIqueries\fR linked\-list.
+.PD 0
+.IP "\fIval_msg_header\fR" 4
+.IX Item "val_msg_header"
+.PD
+The header of the \s-1DNS\s0 response in which the RRset was received
+.IP "\fIval_msg_headerlen\fR" 4
+.IX Item "val_msg_headerlen"
+The length of the header information in \fIval_msg_header\fR.
+.IP "\fIval_queryset_data\fR" 4
+.IX Item "val_queryset_data"
+The query section of the \s-1DNS\s0 response in which the RRset was received.
+.IP "\fIval_queryset_datalen\fR" 4
+.IX Item "val_queryset_datalen"
+The length of the query section in \fIval_queryset_data\fR.
+.IP "\fIval_rrset_name_n\fR" 4
+.IX Item "val_rrset_name_n"
+The owner name of the RRset represented in on-the-wire format.
+.IP "\fIval_rrset_class_h\fR" 4
+.IX Item "val_rrset_class_h"
+The class of the RRset.
+.IP "\fIval_val_rrset_type_h\fR" 4
+.IX Item "val_val_rrset_type_h"
+The type of the RRset.
+.IP "\fIval_rrset_ttl_h\fR" 4
+.IX Item "val_rrset_ttl_h"
+The \s-1TTL\s0 of the RRset.
+.IP "\fIval_rrset_section\fR" 4
+.IX Item "val_rrset_section"
+The section in which the RRset was received \*(-- \s-1VAL_FROM_ANS\s0, \s-1VAL_FROM_AUT\s0 or \s-1VAL_FROM_ADD\s0.
+.IP "\fIval_rrset_data\fR" 4
+.IX Item "val_rrset_data"
+The response \s-1RDATA\s0.
+.IP "\fIval_rrset_sig\fR" 4
+.IX Item "val_rrset_sig"
+Any associated RRSIGs for the \s-1RDATA\s0 returned in \fIval_rrset_data\fR. 
 .RE
 .RS 4
+.IP "\fIstruct rr_rec\fR { u_int16_t       rr_rdata_length_h; u_int8_t        *rr_rdata; val_astatus_t    rr_status; struct rr_rec   *rr_next; };" 4
+.IX Item "struct rr_rec { u_int16_t       rr_rdata_length_h; u_int8_t        *rr_rdata; val_astatus_t    rr_status; struct rr_rec   *rr_next; };"
+.RS 4
+.PD 0
+.IP "\fIrr_rdata_length_h\fR" 4
+.IX Item "rr_rdata_length_h"
+.PD
+The length of data stored in \fIrr_rdata\fR.
+.IP "\fIrr_rdata\fR" 4
+.IX Item "rr_rdata"
+The \s-1RDATA\s0 bytes.
+.IP "\fIrr_status\fR" 4
+.IX Item "rr_status"
+The verification status of the \s-1RRSIG\s0. This value is set 0 for the \s-1RDATA\s0 portion.
+.IP "\fIrr_next\fR" 4
+.IX Item "rr_next"
+Points to the next resource record in the RRset.
 .RE
+.RS 4
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-.IP "\fB\f(BIresolve_n_check()\fB\fR can return one of the following values:" 4
-.IX Item "resolve_n_check() can return one of the following values:"
+.IP "\fB\f(BIval_resolve_n_check()\fB\fR can return one of the following values:" 4
+.IX Item "val_resolve_n_check() can return one of the following values:"
 .RS 4
 .PD 0
-.IP "\s-1NO_ERROR\s0" 4
-.IX Item "NO_ERROR"
+.IP "\s-1VAL_NO_ERROR\s0" 4
+.IX Item "VAL_NO_ERROR"
 .PD
 No error was encountered.
-.IP "\s-1ERROR\s0" 4
-.IX Item "ERROR"
+.IP "\s-1VAL_ERROR\s0" 4
+.IX Item "VAL_ERROR"
 Generic error encountered.
-.IP "\s-1NOT_IMPLEMENTED\s0" 4
-.IX Item "NOT_IMPLEMENTED"
+.IP "\s-1VAL_NOT_IMPLEMENTED\s0" 4
+.IX Item "VAL_NOT_IMPLEMENTED"
 Functionality not yet implemented. 
-.IP "\s-1OUT_OF_MEMORY\s0" 4
-.IX Item "OUT_OF_MEMORY"
+.IP "\s-1VAL_OUT_OF_MEMORY\s0" 4
+.IX Item "VAL_OUT_OF_MEMORY"
 Could not allocate memory.
-.IP "\s-1BAD_ARGUMENT\s0" 4
-.IX Item "BAD_ARGUMENT"
+.IP "\s-1VAL_BAD_ARGUMENT\s0" 4
+.IX Item "VAL_BAD_ARGUMENT"
 Bad arguments passed as parameters.
-.IP "\s-1INTERNAL_ERROR\s0" 4
-.IX Item "INTERNAL_ERROR"
+.IP "\s-1VAL_INTERNAL_ERROR\s0" 4
+.IX Item "VAL_INTERNAL_ERROR"
 Encountered some internal error.
-.IP "\s-1NO_PERMISSION\s0" 4
-.IX Item "NO_PERMISSION"
+.IP "\s-1VAL_NO_PERMISSION\s0" 4
+.IX Item "VAL_NO_PERMISSION"
 No permission to perform operation. Currently not implemented.
-.IP "\s-1RESOURCE_UNAVAILABLE\s0" 4
-.IX Item "RESOURCE_UNAVAILABLE"
+.IP "\s-1VAL_RESOURCE_UNAVAILABLE\s0" 4
+.IX Item "VAL_RESOURCE_UNAVAILABLE"
 Some resource (crypto possibly) was unavailable. Currently not implemented.
-.IP "\s-1NO_SPACE\s0" 4
-.IX Item "NO_SPACE"
-Not enough space in *\fIresults\fR for storing all available answers.
+.IP "\s-1VAL_NO_SPACE\s0" 4
+.IX Item "VAL_NO_SPACE"
+Not enough space for storing all available answers.
 .RE
 .RS 4
 .RE
-.IP "\fB\f(BIget_context()\fB\fR can return one of the following values:" 4
-.IX Item "get_context() can return one of the following values:"
+.RE
+.RS 4
+.IP "\fB\f(BIval_create_context()\fB\fR can return one of the following values:" 4
+.IX Item "val_create_context() can return one of the following values:"
 .RS 4
 .PD 0
-.IP "\s-1NO_ERROR\s0" 4
-.IX Item "NO_ERROR"
+.IP "\s-1VAL_NO_ERROR\s0" 4
+.IX Item "VAL_NO_ERROR"
 .PD
 No error was encountered.
-.IP "\s-1OUT_OF_MEMORY\s0" 4
-.IX Item "OUT_OF_MEMORY"
+.IP "\s-1VAL_OUT_OF_MEMORY\s0" 4
+.IX Item "VAL_OUT_OF_MEMORY"
 Could not allocate memory.
-.IP "\s-1CONF_PARSE_ERROR\s0" 4
-.IX Item "CONF_PARSE_ERROR"
+.IP "\s-1VAL_CONF_PARSE_ERROR\s0" 4
+.IX Item "VAL_CONF_PARSE_ERROR"
 Error in parsing some configuration file.
-.IP "\s-1NO_POLICY\s0" 4
-.IX Item "NO_POLICY"
-Could not find one or both of the configuration files 
-/etc/resolv.conf and /etc/dnsval.conf.
+.IP "\s-1VAL_CONF_NOT_FOUND\s0" 4
+.IX Item "VAL_CONF_NOT_FOUND"
+A configuration file was not available.
 .RE
 .RS 4
 .RE
-.IP "\fB\f(BIswitch_effective_policy()\fB\fR can return one of the following values:" 4
-.IX Item "switch_effective_policy() can return one of the following values:"
+.RE
+.RS 4
+.IP "\fB\f(BIval_switch_policy_scope()\fB\fR can return one of the following values:" 4
+.IX Item "val_switch_policy_scope() can return one of the following values:"
 .RS 4
 .PD 0
-.IP "\s-1NO_ERROR\s0" 4
-.IX Item "NO_ERROR"
+.IP "\s-1VAL_NO_ERROR\s0" 4
+.IX Item "VAL_NO_ERROR"
 .PD
 No error was encountered.
-.IP "\s-1OUT_OF_MEMORY\s0" 4
-.IX Item "OUT_OF_MEMORY"
+.IP "\s-1VAL_OUT_OF_MEMORY\s0" 4
+.IX Item "VAL_OUT_OF_MEMORY"
 Could not allocate memory.
-.IP "\s-1UNKNOWN_LOCALE\s0" 4
-.IX Item "UNKNOWN_LOCALE"
-Could not identify the policy to which we need to switch.
+.IP "\s-1VAL_NO_POLICY\s0" 4
+.IX Item "VAL_NO_POLICY"
+A policy with the specified label (identifier) was not found.
 .RE
 .RS 4
 .RE
+.RE
+.RS 4
 .SH "FILES"
 .IX Header "FILES"
 The validator library reads configuration information from two separate files,
@@ -777,26 +786,31 @@ quoted string containing the \s-1RDATA\s0 portion for the trust anchor's
 .IX Item "zone-security-expectation"
 Specifies the local security expection for a zone. The additional
 data portion for this keyword is a sequence of the zone name and 
-its trust status \- trusted or untrusted. An example is:
+its trust status \- ignore, validate or untrusted. An example is:
 .Sp
-mozilla zone-security-expectation wesh.fruits.netsec.tislabs.com untrusted;		 
+: zone-security-expectation    
+	org ignore 
+	net ignore
+	dnssec\-tools.org validate
+	com ignore
 .RE
 .RS 4
 .RE
+.RE
+.RS 4
 .SH "CURRENT STATUS"
 .IX Header "CURRENT STATUS"
 There is currently no support for IPv6. 
-The library is not thread\-safe. 
 The caching functionality is very basic and no timeout logic currently exists. 
 There are a number of feature enhancements that still remain to be done.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
-Copyright 2004\-2005 \s-1SPARTA\s0, Inc.  All rights reserved.
+Copyright 2004\-2006 \s-1SPARTA\s0, Inc.  All rights reserved.
 See the \s-1COPYING\s0 file included with the dnssec-tools package for details.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
 \&\fB\f(BIlibsres\fB\|(3)\fR
-.PP
+.Sp
 \&\fB\f(BIval_x_query\fB\|(3)\fR
-.PP
+.Sp
 http://dnssec\-tools.sourceforge.net
