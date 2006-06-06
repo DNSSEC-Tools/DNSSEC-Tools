@@ -174,32 +174,32 @@ sub getlineattr {
 		$prop{'color'} =  "green";
 		$prop{'style'} = 'bold';
 	} 
-	elsif ($val_status eq "VERIFIED") { 
+	elsif ($val_status eq "VAL_A_VERIFIED") { 
 		$prop{'color'} =  "green";
 	} 
-	elsif ($val_status eq "TRUST_KEY") { 
+	elsif ($val_status eq "VAL_A_TRUST_KEY") { 
 		$prop{'color'} =  "black";
 		$prop{'style'} = 'bold';
 	} 
 	elsif (($val_status eq "VAL_ERROR") || 
 			($val_status eq "SR_REFERRAL_ERROR") || 
 			($val_status eq "VAL_BOGUS") || 
-			($val_status eq "SECURITY_LAME")) {
+			($val_status eq "VAL_A_SECURITY_LAME")) {
 		$prop{'color'} = "red";
 		$prop{'style'} = 'bold';
 	} 
-	elsif (($val_status eq "RRSIG_EXPIRED") ||
-			($val_status eq "RRSIG_NOTYETACTIVE") ||
-			($val_status eq "RRSIG_VERIFY_FAILED")) {
+	elsif (($val_status eq "VAL_A_RRSIG_EXPIRED") ||
+			($val_status eq "VAL_A_RRSIG_NOTYETACTIVE") ||
+			($val_status eq "VAL_A_RRSIG_VERIFY_FAILED")) {
 		$prop{'color'} =  "red";
 	} 
-	elsif (($val_status eq "DNS_ERROR") ||
+	elsif (($val_status eq "VAL_A_DNS_ERROR") ||
 			($val_status eq "SR_SERVFAIL") ||
-			($val_status eq "RRSIG_MISSING")) { 
+			($val_status eq "VAL_A_RRSIG_MISSING")) { 
 		$prop{'color'} =  "red";
 		$prop{'style'} = 'dashed';
 	} 
-	elsif ($val_status eq "NO_TRUST_ANCHOR") { 
+	elsif ($val_status eq "VAL_A_NO_TRUST_ANCHOR") { 
 		$prop{'color'} =  "brown";
 		$prop{'style'} = 'bold';
 	} 
