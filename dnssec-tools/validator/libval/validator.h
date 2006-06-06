@@ -342,8 +342,8 @@ int dnsval_conf_set(const char *name);
 void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
                 struct val_query_chain *queries, struct val_result_chain *results);
 char *p_query_error(int errno);
-char *p_as_error(int valerrno);
-char *p_val_error(int err);
+char *p_as_error(val_astatus_t valerrno);
+char *p_val_error(val_status_t err);
 
 /* from val_x_query.c */
 int val_query(const val_context_t *ctx,

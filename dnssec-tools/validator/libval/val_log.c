@@ -259,7 +259,7 @@ char *p_query_error(int err)
 	return "UNKNOWN";
 }
 
-char *p_as_error(int err)
+char *p_as_error(val_astatus_t err)
 {
     switch (err) {
                                                                                                                              
@@ -334,7 +334,7 @@ char *p_as_error(int err)
     }
 }
 
-char *p_val_error(int err)
+char *p_val_error(val_status_t err)
 {
     switch (err) {
 
