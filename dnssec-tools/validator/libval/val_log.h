@@ -14,7 +14,7 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
                 struct val_query_chain *queries, struct val_result_chain *results);
 void val_log (const val_context_t *ctx, int level, const char *template, ...);
 char *p_query_error(int errno);
-char *p_as_error(int valerrno);
-char *p_val_error(int err);
+char *p_as_error(val_astatus_t valerrno);
+char *p_val_error(val_status_t err);
 
 #endif
