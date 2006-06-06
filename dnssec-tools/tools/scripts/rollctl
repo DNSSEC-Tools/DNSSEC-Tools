@@ -227,14 +227,14 @@ The following options are handled by I<rollctl>.
 =item I<-logfile E<lt>logfileE<gt>>
 
 Set the I<rollerd> log file to I<logfile>.
-This must be a valid logging file.  This means that if I<logfile> already
+This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout> or B</dev/tty>.
 
 =item I<-loglevel E<lt>loglevelE<gt>>
 
 Set the I<rollerd> logging level to I<loglevel>.
-This must be one of the valid logging levels defined in B<rollmgr.pm>.
+This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
 
 =item I<-rollall>
 
