@@ -1023,7 +1023,7 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 					 * if we are able to prove non existence, we have 
 					 * shown that a component of the chain-of-trust is provably 
 					 * absent (provably unsecure).
-					 * If we cannot prove this later on (!trusted) we cannot believe 
+					 * On the other hand if we cannot prove this we cannot believe 
 					 * the original answer either, since we still haven't reached 
 					 * a trust anchor. 
 					 * Dont see any use for separating these conditions, so treat them
