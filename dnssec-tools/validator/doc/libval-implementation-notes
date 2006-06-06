@@ -9,8 +9,8 @@
 DNSSEC validator
 ----------------
 
-This library provides basic functionality for resource-record validation.  It
-relies on the resolver component (see ../libsres/README for more details) to
+The libval(2) library provides basic functionality for resource-record validation.  It
+relies on the resolver component (see libsres-implementation-notes for more details) to
 fetch answers from a DNSSEC-aware name server.
 
 Overview 
@@ -19,156 +19,103 @@ Overview
 The security extensions to DNS allows applications to test the authenticity of
 data returned by the DNS. The validator library performs this test by checking
 the cryptographic signatures that cover DNS records and by building a sequence 
-of such verified records up to a trusted key. The library exports a number of 
-basic interfaces that applications may use in lieu of older resolver interfaces 
+of such verified records up to a trusted key. The library currently performs 
+"bottom-up" validation. The library exports a number of basic interfaces 
+that applications may use in lieu of older resolver interfaces 
 provided by the libres(3) library. Other interfaces are also provided that 
 allow applications more detail into the validation process. This range allows 
 for the creation of applications that are either only interested in a basic
-validated or not-validated result, or more sophisticated applications that
+"validated" or "not-validated" result, or more sophisticated applications that
 can look for specific errors as a sign of some network abnormality or attack.
 
 The following interfaces are exported by the validator. See libval(3), 
 val_gethostbyname(3), val_getaddrinfo(3) and val_query(3) for more
-details.
+details. The current api specification is also available in validator_api.xml.
 
-1. High-level application interface
-
-char *p_val_error(int valerrno);
-                                                                                                                             
-int val_query ( const char *domain_name, int class, int type,
-        unsigned char *answer, int anslen, int flags,
-        int *dnssec_status );
-                                                                                                                             
-int val_x_query(const val_context_t *ctx,
-            const char *domain_name,
-            const u_int16_t class,
-            const u_int16_t type,
-            const u_int8_t flags,
-            struct response_t *resp,
-            int *resp_count);
-                                                                                                                             
-struct hostent *val_gethostbyname ( const char *name, int *h_errnop );
-struct hostent *val_x_gethostbyname ( const val_context_t *ctx, const char *name,
-                      int *h_errnop );
-int val_getaddrinfo ( const char *nodename, const char *servname,
-              const struct addrinfo *hints,
-              struct addrinfo **res );
-int val_x_getaddrinfo ( const val_context_t *ctx,
-                const char *nodename, const char *servname,
-            const struct addrinfo *hints,
-            struct addrinfo **res );
-
-
-2. Core validation check interface:
-
-int resolve_n_check(    val_context_t   *context,
-            u_char *domain_name_n,
-            const u_int16_t type,
-            const u_int16_t class,
-            const u_int8_t flags,
-            struct query_chain **queries,
-            struct assertion_chain **assertions,
-            struct val_result **results);
-void free_query_chain(struct query_chain **queries);
-void free_assertion_chain(struct assertion_chain **assertions);
-void free_result_chain(struct val_result **results);
-
-
-3. Validator policy
-                                                                                                                          
-int get_context(char *label, val_context_t **newcontext);
-int switch_effective_policy(val_context_t *ctx, char *label);
-void destroy_context(val_context_t *context);
-                   
 
 Validator Algorithm
 -------------------
 
-The validator was built to allow both active and passive modes of operation. In
+The validator was designed to allow both active and passive modes of operation. In
 the first mode, the validator library actively looks for answers by sending out 
 queries needed to build the chain of trust. In the second mode of operation the
-validator only uses from the local cache while trying to build the chain-of-trust 
-(the second mode of operation is still not developed completely). The 
-resolve_n_check() interface forms the core interface for both of these modes of
+validator would only use the local cache while trying to build the chain-of-trust 
+(only limited support is available for the second mode of operation). The 
+val_resolve_and_check() interface forms the core interface for both of these modes of
 operation. Its algorithm is as follows:
 
+i)	A new validator context is created if one does not exist already.
 
-i)	The first step in resolve_n_check() is to build a data request entry for the 
-	missing data and to fetch this answer from either a local cache or the DNS.
-	The data request entry is stored in the "queries" linked list which is of 
-	type "struct query_chain".
+ii)	The next step in val_resolve_and_check() is to build a data request entry for the 
+	missing data. The data request entry is stored in the "queries" linked list which is of 
+	type "struct val_query_chain". The val_query_chain linked list is stored within 
+	the validator context.
 	
-ii)	Not all data requests get translated into actual DNS queries; some answers may
+iii)Not all data requests get translated into actual DNS queries; some answers may
 	be obtained from the local cache. When operating in the passive mode,
 	the validator only reads answers from the local cache and never sends out
-	any queries.
+	any queries (not yet implemented).
 
-iii)For every answer that is received, the validator assimilates this data and
+iv) For every answer that is received, the validator assimilates this data and
 	indentifies any additional queries need to be made in order to either
 	verify the data contained in the response or to build the chain-of-trust to
-	a trust anchor. Assimilated data is stored in the "struct assertion" structure,
+	a trust anchor. Assimilated data is stored in the "struct val_assertion_chain" structure,
 	which is also a linked list. A separate data request entry is created for each such 
 	data component that is required and all of them are added to the "queries" 
-	linked-list.
+	linked-list. The val_assertion_chain linked list is also stored within the 
+	validator context.
 
-iv)	An data contained in an assertion can be verified as long as all cryptographic 
-	components necessary to complete this operation is available locally. The assertion 
-	is verified even if other components in the chain of trust is still not available. 
-	This allows for some level of amortization of crypto costs for verification of some 
-	data over the time taken to fetch additional answers from the DNS.	 
+v)	Data contained in an assertion can be verified as long as all cryptographic 
+	components necessary to complete this operation is available locally. The 
+	verification operation may be performed even if other components in the 
+	chain of trust are still being built. 
 
-v)	Steps ii) through iv) are repeated as long as there are additional queries
+vi)	Steps iii) through v) are repeated as long as there are additional queries
 	that have still not received a response or failure from the DNS. Upon completion,
 	the assertion linked list contains the list of all answers that were returned from
-	the DNS with a field describing their validation status. If no answers were returned
-	or some DNS error was encountered for a particular query, the data request entry in 
-	the struct query_chain linked list directly contains this error value.
+	the DNS with a field describing each of their validation status values. 
+	If no answers were returned or some DNS error was encountered for a particular 
+	query, an empty assertion node is created to contain this error value.
 
-vi) The resolve_n_check() method also constructs a results linked list, which is 
+vii)Finally, non-existence proofs are checked at this time, but only if all 
+	components of the proof are validated. If proved the final result code
+	either contains the VAL_NONEXISTENT_NAME or VAL_NONEXISTENT_TYPE code or the 
+	error code indicating why the proof failed.
+
+viii)The val_resolve_and_check() method returns a results linked list containing 
+	the final validation result for each RRset returned as an answer, which is 
 	essentially a consolidated answer for all assertions falling under the chain of 
-	trust. (See the man page for libval(3) for more details on these error codes.)
-	Most applications would not have to see much beyond the answers returned in 
-	the results linked list. 
+	trust for that RRset. 
 
-vii) Finally, non-existence proofs are checked at this time, but only if all 
-	 components of the proof are validated. If proved the final result code
-	 either contains the NONEXISTENT_NAME or NONEXISTENT_TYPE code or the 
-	 error code indicating why the proof failed.
-
+See the man page for libval(3) for more details on these error codes.
 
 Digesting and assimilating answers
 ----------------------------------
 
-Assimilation of data takes place in step iv) of the validation algorithm.
+Assimilation of data takes place in step v) above. 
 
 The validator uses the asynchronous val_resquery_send() and val_resquery_rcv() 
 resolver interfaces (see man page for libsres(3)) to fetch answers from the DNS.  
 After the answer is received, the first step is "digesting" the response -- 
 RRsets in the answer and authority sections are extracted as is any 
 referral information present in the additional section of the response. Any
-DS or DNSKEY information is also cached for future use. The cache exists only 
-for the lifetime of the query, but this may change in future. Another aspect
+DS or DNSKEY information is also cached for future use. The cache entry 
+currently exists indefinitely but this will change in future. Another aspect
 of the caching functionality that will change in future is the notion of
-credibility of data stored within ithe cache -- although credibility values
-(SR_CRED*) are stored with each RRset, this information is not used when
-making a decision of whether cached data is acceptable as-is or a separate
-query needs to be sent.
+credibility of data stored within ithe cache. 
 
 The validator follows any referrals that are returned as part of the response but
-it does not query those name servers for which glue is not returned in the additional 
-section of the response. No additional queries are made for missing glue.
-Information gathered as part of following referrals are maintained separately within
-the data request entry (struct query_chain) structure. Once the referral operation
+and issues queries to fetch any missing glue. Information gathered as part of 
+following referrals are maintained separately within
+the data request entry (struct val_query_chain) structure. Once the referral operation
 completes, all information within this entry are merged into the validator cache.
 
 Digestion of answers is followed by assimilation of answers. 
 Here, the data returned by the digestion process 
-is transformed into an assertion. An assertion may not be created if the query
-resulted in a DNS error in which case the qc_state field data request entry 
-structure itself contains the error code. Here checks are made to determine the 
+is transformed into an assertion.  Cecks are made to determine the 
 answer kind and if the data or NSEC was actually relevant.  A sanity check is 
 also made to ensure that all answers received as part of a query with type 
-as ANY, must have the same answer kind.  
+as ANY have the same answer kind.  
 
 Answer kinds may be one of the following:
 	SR_ANS_STRAIGHT 
@@ -176,7 +123,7 @@ Answer kinds may be one of the following:
 
 	SR_ANS_CNAME   
 		If the type of data is CNAME and we did
-		not query for a CNAME or ANY.
+		not query for a CNAME, ANY or RRSIG.
 
 	SR_ANS_NACK_NXT
 		If the type of data is NSEC and we did
@@ -209,88 +156,118 @@ Q_INIT ----------> Q_SENT --------> (Q_ERROR_BASE + SR_<error_condition>)
 Assertion states transition as follows:
 
 
-A_INIT ---------> BARE_RRSIG
-   |   ---------> DATA_MISSING
-   |   ---------> TRUST_ZONE
-   |   ---------> TRUST_KEY
-   |   ---------> UNTRUSTED_ZONE
-   |   ---------> IRRELEVANT_PROOF
-   |
-   |
-   v
- A_WAIT_FOR_TRUST
-          ------> NO_TRUST_ANCHOR
-          ------> A_NEGATIVE_PROOF 
-   |  ^   ------> A_CAN_VERIFY -------> VERIFIED
-   |  |                                                      ----+
-   |  |                        -------> SECURITY_LAME            |
-   |  |                        -------> NOT_A_ZONE_KEY           |
-   |  |                        -------> UNKNOWN_DNSKEY_PROTO     |
-   |  |                        -------> RRSIG_NOTYETACTIVE       > NOT_VERIFIED
-   |  |                        -------> RRSIG_EXPIRED            | 
-   |  |                        -------> RRSIG_ALGO_MISMATCH      | 
-   |  |                        -------> RRSIG_VERIFY_FAILED      |
-   |  |                        -------> ALGO_NOT_SUPPORTED       |
-   |  |                        -------> UNKNOWN_ALGO             |
-   |  |                        -------> DNSKEY_NOMATCH           |
-   |  |                        -------> WRONG_LABEL_COUNT        |
-   |  |                                                      ----+
-   v  |
- A_WAIT_FOR_RRSIG ------> RRSIG_MISSING
+VAL_A_INIT 
+|  |      |------> VAL_A_DATA_MISSING
+|  |      |------> VAL_A_BARE_RRSIG
+|  |      |------> VAL_A_TRUST_ZONE
+|  |      |------> VAL_A_TRUST_KEY
+|  |      |------> VAL_A_UNTRUSTED_ZONE
+|  |      |------> VAL_A_IRRELEVANT_PROOF
+|  |      |------> VAL_A_LOCAL_ANSWER
+|  |      +------> VAL_A_DNS_ERROR_BASE+SR_<error_condition>
+|  |
+|  v
+|  VAL_A_WAIT_FOR_TRUST
+|  |  ^   |------> VAL_A_NO_TRUST_ANCHOR
+|  |  |   |------> VAL_A_TRUST_ZONE
+|  |  |   |------> VAL_A_TRUST_KEY
+|  |  |   |------> VAL_A_LOCAL_ANSWER
+|  |  |   |------> VAL_A_UNTRUSTED_ZONE
+|  |  |   |------> VAL_A_DNSKEY_MISSING
+|  |  |   |------> VAL_A_DS_MISSING
+|  |  |   |------> VAL_A_IRRELEVANT_PROOF
+|  |  |   |------> VAL_A_NEGATIVE_PROOF 
+|  |  |   |
+|  |  |   |
+|  |  |   +------> VAL_A_CAN_VERIFY 
+|  |  |                        |
+|  |  |                        |-------> VAL_A_RRSIG_VERIFIED ) ----------------> VAL_A_VERIFIED
+|  |  |                        |-------> VAL_A_CLOCK_SKEW     )
+|  |  |                        |                                    ----)
+|  |  |                        |-------> VAL_A_SECURITY_LAME            )
+|  |  |                        |-------> VAL_A_NOT_A_ZONE_KEY           )
+|  |  |                        |-------> VAL_A_UNKNOWN_DNSKEY_PROTO     )
+|  |  |                        |-------> VAL_A_RRSIG_NOTYETACTIVE       ) 
+|  |  |                        |-------> VAL_A_RRSIG_EXPIRED            ) 
+|  |  |                        |-------> VAL_A_RRSIG_ALGO_MISMATCH      +-----> VAL_A_NOT_VERIFIED 
+|  |  |                        |-------> VAL_A_KEYTAG_MISMATCH          ) 
+|  |  |                        |-------> VAL_A_RRSIG_VERIFY_FAILED      ) 
+|  |  |                        |-------> VAL_A_KEY_TOO_LARGE            )
+|  |  |                        |-------> VAL_A_KEY_TOO_SMALL            )
+|  |  |                        |-------> VAL_A_KEY_NOT_AUTHORIZED       )
+|  |  |                        |-------> VAL_A_ALGO_NOT_SUPPORTED       )
+|  |  |                        |-------> VAL_A_ALGO_REFUSED             )
+|  |  |                        |-------> VAL_A_UNKNOWN_ALGO             )
+|  |  |                        |-------> VAL_A_DNSKEY_NOMATCH           )
+|  |  |                        |-------> VAL_A_DUPLICATE_KEYTAG         )
+|  |  |                        |-------> VAL_A_NO_PREFERRED_SEP         )
+|  |  |                        |-------> VAL_A_WRONG_RRSIG_OWNER        )
+|  |  |                        +-------> VAL_A_WRONG_LABEL_COUNT        )
+|  |  |                                                             ----)
+v  v  |
+VAL_A_WAIT_FOR_RRSIG 
+                |---------> VAL_A_BARE_RRSIG
+                +---------> VAL_RRSIG_MISSING
+
 
 
 The consolidated dnssec validation results obtained in the results array
 are derived from the assertion states in the following manner:
 
-trust anchor seen       top assertion status       result status
-====================================================================== 
-    YES                     VERIFIED               VALIDATE_SUCCESS
-    NO                      VERIFIED               INDETERMINATE_TRUST
-    YES             > FAIL_BASE, <=LAST_FAILURE    BOGUS_PROVABLE
-    NO              > FAIL_BASE, <=LAST_FAILURE    BOGUS_UNPROVABLE
-    --              > ERROR_BASE, <=LAST_ERROR     VALIDATION_ERROR 
-    --                      BARE_RRSIG             BARE_RRSIG
+
+top assertion status       final result status
+=================================================
+ VAL_A_TRUST_KEY            VAL_LOCAL_ANSWER 
+ VAL_A_TRUST_ZONE           VAL_LOCAL_ANSWER 
+ VAL_A_LOCAL_ANSWER         VAL_LOCAL_ANSWER
+ VAL_A_BARE_RRSIG           VAL_BARE_RRSIG
+
+trust anchor seen    any assertion status       intermediate result status     final result status
+======================================================================================================= 
+
+    YES             > FAIL_BASE,                   VAL_R_BOGUS_PROVABLE           VAL_BOGUS 
+                    <=LAST_FAILURE   
+
+    NO              > FAIL_BASE,                   VAL_R_BOGUS_UNPROVABLE         VAL_BOGUS 
+                    <=LAST_FAILURE   
+
+    --              > VAL_A_ERROR_BASE,            ---                            VAL_ERROR 
+                    <=VAL_A_LAST_ERROR     
+
+    --              > VAL_A_DNS_ERROR_BASE         ---                            error between 
+                    <=VAL_A_DNS_ERROR_LAST                                        VAL_DNS_ERROR_BASE
+                                                                                  and VAL_DNS_ERROR_LAST
+
+
+(Note: see val_errors.h for values of *_BASE and *_LAST)
+
+trust anchor seen    every assertion status       intermediate result status     final result status
+======================================================================================================= 
+
+    NO               VERIFIED                     VAL_R_VERIFIED_CHAIN           VAL_NOTRUST
+    YES              VERIFIED                     VAL_R_VALIDATED_CHAIN          VAL_SUCCESS
+
+
+#define VAL_NONEXISTENT_NAME (VAL_R_LAST+3)
+#define VAL_NONEXISTENT_TYPE (VAL_R_LAST+4)
+
 
 Other error states depend on certain sequences of assertion types and states
 
-                   Condition                             result status
-============================================================================
-All components of the proof of non-existence,       NONEXISTENT_NAME
- also trusted                                        or NONEXISTENT_TYPE
-Any component of the proof of non-existence is      BOGUS_PROOF
+                   Condition                       intermediate result status    final result status 
+=======================================================================================================
+All components of the proof of non-existence,                                   VAL_NONEXISTENT_NAME
+ also trusted                                                                    or VAL_NONEXISTENT_TYPE
+Any component of the proof of non-existence is      VAL_R_BOGUS_PROOF           VAL_BOGUS
  not trusted
-Proof components are trusted but are incomplete     INCOMPLETE_PROOF
-DNSKEY followed by a DS followed by the same key    INDETERMINATE_DS	
-Any data followed by a proof of non-existence       INDETERMINATE_PROOF
-Any error condition followed by another error       INDETERMINATE_ERROR
+Proof components are trusted but are incomplete     VAL_R_INCOMPLETE_PROOF      VAL_INDETERMINATE
+DNSKEY followed by a DS followed by the same key    VAL_R_INDETERMINATE_DS      VAL_INDETERMINATE	
+Any data followed by a proof of non-existence       VAL_R_INDETERMINATE_PROOF   VAL_INDETERMINATE 
 
-
-
-
-
-Configuring the validator  - validator context
-----------------------------------------------
-
-The first parameter to resolve_n_check() is the validator context.
-Applications can create a new validator context using the
-get_context() method. This method parses the resolver and validator
-configuration files in /etc/resolv.conf and /etc/dnsval.conf 
-respectively and creates a handle to this parsed
-information. Information stored as part of validator context includes
-the validation policy and resolver policy. Validator policy is
-applied hierarchically based on the name used to identify a particular
-policy fragment.
-
-For example, "browser" and "mozilla.browser" is a  
-hierarchical ordering of policy, where the configuration
-under the identifier of "mozilla.browser" may be used to override
-generic browser policy with mozilla-specific options. Applications may
-switch their default policy to a policy that lies hierarchically below 
-("mozilla:browser" lies below "browser") its label using the
-switch_effective_policy() method. 
 
 Acknowledgements
 ----------------
 
 Some of the code for this library was borrowed from an older implementation
 of the secure resolver library written by Ed Lewis at Tislabs. 
+
