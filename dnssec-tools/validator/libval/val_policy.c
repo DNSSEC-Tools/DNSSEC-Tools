@@ -32,6 +32,7 @@ extern char *strtok_r(char *, const char *, char **);
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_resquery.h"
+#include "val_log.h"
 #include "res_debug.h"
 
 

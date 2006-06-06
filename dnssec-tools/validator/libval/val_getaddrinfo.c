@@ -22,6 +22,7 @@
 #include <validator.h>
 #include <resolver.h>
 #include "val_policy.h"
+#include "val_log.h"
 
 
 /*

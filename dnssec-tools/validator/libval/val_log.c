@@ -20,6 +20,7 @@
 #include <validator.h>
 #include "val_cache.h"
 #include "val_support.h"
+#include "val_log.h"
 
 char *get_hex_string(const unsigned char *data, int datalen, char *buf, int buflen)
 {
