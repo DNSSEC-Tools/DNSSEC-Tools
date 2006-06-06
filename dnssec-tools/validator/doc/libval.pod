@@ -2,43 +2,63 @@
                                                                                 
 =head1 NAME
 
-resolve_n_check, free_query_chain, free_assertion_chain, 
-free_result_chain - query and validate answers from a DNS name server
+val_resolve_and_check, 
+val_free_result_chain - query and validate answers from a DNS name server
 
-get_context, destroy_context, switch_effective_policy - manage validator context
+val_istrusted - check if status value corresponds to that of a trust-worthy answer.
 
-p_val_error - display error information
+val_create_context, val_free_context, val_switch_policy_scope - manage validator context
+
+resolver_config_set, 
+root_hints_set, 
+dnsval_conf_set,
+resolver_config_get, 
+root_hints_get, 
+dnsval_conf_get  - set/get current location for the validator configuration files.
+
+p_as_error, p_val_error - display validator status information
 
 =head1 SYNOPSIS
 
 #include <validator.h>
 
-int resolve_n_check( val_context_t          *context,
+int val_resolve_and_check( val_context_t          *context,
                      u_char                 *domain_name_n,
                      const u_int16_t        type,
                      const u_int16_t        class,
                      const u_int8_t         flags,
-                     struct query_chain     **queries,
-                     struct assertion_chain **assertions,
-                     struct val_result      **results);
+                     struct val_result_chain      **results);
 
-void free_query_chain(struct query_chain **queries);
+void val_free_result_chain(struct val_result *results);
 
-void free_assertion_chain(struct assertion_chain **assertions);
+int val_istrusted(val_status_t val_status);
 
-void free_result_chain(struct val_result **results);
+int val_create_context(const char *label, val_context_t **newcontext);
 
-int get_context(const char *label, val_context_t **newcontext);
+int val_switch_policy_scope(val_context_t *ctx, const char *label);
 
-int switch_effective_policy(val_context_t *ctx, const char *label);
+void val_free_context(val_context_t *context);
 
-void destroy_context(val_context_t *context);
+char *resolver_config_get(void);
 
-char *p_val_error(int valerrno);
+int resolver_config_set(const char *name);
+
+char *root_hints_get(void);
+
+int root_hints_set(const char *name);
+
+char *dnsval_conf_get(void);
+
+int dnsval_conf_set(const char *name);
+
+char *p_as_error(val_astatus_t valerrno);
+
+char *p_val_error(val_status_t valerrno);
+
 
 =head1 DESCRIPTION
 
-The B<resolve_n_check()> method can be used to query a set of name
+The B<val_resolve_and_check()> function can be used to query a set of name
 servers for the <I<domain_name_n>, I<type>, I<class>> tuple and 
 to verify and validate the response. Verification is the step of 
 checking the RRSIGs and validation includes performing 
@@ -48,7 +68,7 @@ DNS wire format. The conversion from host format to DNS wire format
 can be done using the  B<ns_name_pton()> function exported by 
 the B<libsres(3)> library.
 
-Answers returned by B<resolve_n_check()> are made available 
+Answers returned by B<val_resolve_and_check()> are made available 
 in the *I<results> array.  Each answer is a 
 distinct RRset; multiple RRs within the RRset are
 treated as the same answer. Multiple answers are possible when
@@ -56,137 +76,123 @@ I<type> is C<ns_t_any> or when a proof of non-existence is
 returned in which case RRsets of type C<ns_t_nsec> and 
 C<ns_t_soa> are also returned. 
 
-Individual elements in *I<results> point to corresponding 
-elements in the **I<assertions> linked list. The assertions contain
+Individual elements in *I<results> point to the authentication chain
+contained within the val_assertion_chain linked list. The assertions contain
 the actual RRsets returned by the name server in response to the
-query. The **I<queries> linked-list provides a handle to
-the query that returned the data present within an assertion.
+query. 
 
-The three dimensions of results, assertions and queries allow the
-invoking application to select the level of detail it needs to 
-investigate the DNSSEC validation status of a particular response. 
-Most applications would only require *I<results> since this provides a 
+Most applications would only require the status value within 
+*I<results> since this provides a 
 single error code for representing the authenticity of returned 
 data. Other more intrusive applications such as a DNSSEC 
 troubleshooting utility may look at the individual assertions 
 to identify what particular component in the chain-of-trust led 
-to validation failure if any.
+to validation failure if any. B<val_istrusted()> is a helper function
+that can be used to easily identify if a given validator status value
+corresponds to one of the authenticated and/or trusted data codes.
+Validator status values returned in the val_result_chain and val_assertion_chain
+linked lists can be displayed in a user understandable format using the functions
+B<p_val_error()> and B<p_as_error()> respectively.
 
-*I<queries>, *I<assertions> and *I<results> must be initially set
-to NULL.  The libval library internally allocates memory for these 
-parameters  so they must be freed by the invoking application 
-using the B<free_query_chain()>, B<free_assertion_chain()> 
-and B<free_result_chain()> interfaces respectively. 
+The libval library internally allocates memory for *I<results> 
+and this must be freed by the invoking application 
+using the B<free_result_chain()> interface.
 
-The first parameter to B<resolve_n_check()> is the validator context. 
+The first parameter to B<val_resolve_n_check()> is the validator context. 
 Applications can create a new validator context using the
-B<get_context()> method. This method parses the resolver and validator 
+B<val_create_context()> function. This function parses the resolver and validator 
 configuration files and creates the handle I<newcontext> to this parsed 
 information. Information stored as part of validator context includes 
-the validation policy and resolver policy. Validator policy is 
-applied hierarchically based on the name used to identify a particular 
-policy fragment. 
+the validation policy and resolver policy. 
+Validator and resolver policy are read by default from
+the B</etc/dnsval.conf> and B</etc/resolv.conf> files. "Root hints"
+that allows the library to bootstrap its lookup process when functioning 
+as a full resolver is read from B</etc/root.hints>. The locations of each
+of these files may be changed using the interfaces B<dnsval_conf_set>, 
+B<resolver_config_set> and B<root_hints_set> respectively. 
+The corresponding "get" interfaces, namely, B<dnsval_conf_get>, 
+B<resolver_config_get> and B<root_hints_get> can be used to return the 
+current location from where these configuration files are read. 
 
+Validator policy is applied hierarchically based on the name used to 
+identify a particular policy fragment. 
 As an example, C<browser> and C<mozilla.browser> form a 
 hierarchical ordering of policy, where the configuration 
 under the identifier of C<mozilla.browser> may be used to override 
 generic browser policy with mozilla-specific options. Applications may
 switch their default policy to a policy that lies below (C<mozilla:browser> 
 lies below C<browser>) the originally defined label using the 
-B<switch_effective_policy()> method. In both of the B<resolve_n_check()> 
-and B<switch_effective_policy()>, the I<label> parameter is a simple string that
-must match another string that appears as the policy definition
+B<val_switch_policy_scope()> function. In both of the B<val_resolve_n_check()> 
+and B<val_switch_policy_scope()>, the I<label> parameter is a simple string that
+must match another string which appears as the policy definition
 identifier in the validator configuration file. It is a simple text string
 with the C<:> character used as the delimiter between two levels in the
 hierarchy. The C<:> label by itself refers to the default policy in the 
-configuration file. C<NULL> may also be used to represent the label for
-the default policy.
+configuration file. 
 
 
 =head1 DATA STRUCTURES
 
 =over 4
 
-=item I<struct val_result> { 
+=item I<struct val_result_chain> { 
 
-    struct assertion_chain *as;
-    int status;
-    int trusted;
-    struct val_result *next;
-
+    val_status_t val_rc_status;
+    struct val_assertion_chain *val_rc_trust;
+    struct val_result_chain *val_rc_next;
 };
 
 
 =over 4
 
-=item I<as> 
 
-The assertion pointed to by the result. 
+=item I<val_rc_trust> 
 
-=item I<trusted> 
+The authentication chain for a given RRset. 
 
-If set, this indicates that the chain-of-trust for this answer led up
-to trust anchor. This field is used internally and must not be used
-by applications. It may go away in the future.
+=item I<val_rc_next> 
 
-=item I<next> 
-
-Used internally and must not be used by applications. 
-It will go away in the future.
+Points to the next RRset in the set of answers returned for a query.
 
 =item I<status> 
 
-Can be one of the following:
+The validation status for a given RRset. This can be one of the following:
 
+	VAL_LOCAL_ANSWER
+		Answer was available from a local file.
 
-	BARE_RRSIG
+	VAL_BARE_RRSIG
 		No DNSSEC validation possible, query was for an RRSIG.
 
-	VALIDATE_SUCCESS
-		Answer received and validated successfully.
-		
-	BOGUS_UNPROVABLE 
-		Could not build a chain of trust for a failure condition.
-
-	BOGUS_PROVABLE
-		Failure condition that was provable.
-
-	VALIDATION_ERROR
-		Did not have sufficient or relevant data to complete validation, 
-		or encountered some DNS error.
-		
-	NONEXISTENT_NAME        
+	VAL_NONEXISTENT_NAME        
 		No name present, trusted, and proof present.
 
-	NONEXISTENT_TYPE
+	VAL_NONEXISTENT_TYPE
 		No type exists for name, trusted, and proof present.
 
-	INCOMPLETE_PROOF
-		Proof does not have all required components to prove non-existence.
+	VAL_ERROR
+		Did not have sufficient or relevant data to complete validation, 
+		or encountered some DNS error.
 
-	BOGUS_PROOF
-		Proof of non-existence cannot be validated.
+	VAL_DNS_ERROR_BASE < x < VAL_DNS_ERROR_LAST
+		where is one of the resolver error codes described in libsres(3).
 
-	INDETERMINATE_DS
-		Can't prove that the DS is trusted.
+	VAL_INDETERMINATE
+		Lacking information to give a more conclusive answer.
 
-	INDETERMINATE_PROOF
-		Some intermediate Proof of non-existence obtained
-		dont know if answer exists and proof is bogus
-		or answer is bogus.
+	VAL_BOGUS
+		Validation failure condition.
 
-	INDETERMINATE_ERROR
-		Sequence of errors.
+	VAL_NOTRUST
+		All available components in the authentication chain verified
+		properly, but there was no trust anchor available.	
 
-	INDETERMINATE_TRUST
-		Don't know if trust is absent or answer is bogus. 
-
-	INDETERMINATE_ZONE
-		Dont know if zone is unsigned or sigs have been stripped.
+	VAL_SUCCESS
+		Answer received and validated successfully.
 
 
-Error values in **I<results> returned by the validator can be displayed 
-in a more user friendly format using the B<p_val_error()> method.
+Error values in val_status_t returned by the validator can be displayed 
+in a more user friendly format using the B<p_val_error()> function.
 
 =back
 
@@ -194,182 +200,181 @@ in a more user friendly format using the B<p_val_error()> method.
 
 =over 4
 
-=item I<struct assertion_chain> {
+=item I<struct val_assertion_chain> {
 
-    u_int16_t ac_state;
-    struct rrset_rec *ac_data;
-    struct query_chain *ac_pending_query;
-    struct assertion_chain *ac_more_data;
-    struct assertion_chain *ac_trust;
-    struct assertion_chain *ac_next;
+    val_astatus_t val_ac_status;
+    struct val_rrset *val_ac_rrset;
+    struct val_assertion_chain *val_ac_trust;
+    struct val_assertion_chain *val_ac_rrset_next;
+    struct val_assertion_chain *val_ac_next;
 };
 
 =over 4
 
-=item I<ac_state> 
+=item I<val_ac_status> 
 
 This contains the validation state of the assertion. Upon completion 
-of the B<resolve_n_check()> call this field will contain the error
+of the B<val_resolve_n_check()> call this field will contain the error
 or success code for DNSSEC validation over the current assertion. This
 field may contain the following values:
 
-	DNSKEY_NOMATCH
+	VAL_A_DNSKEY_NOMATCH
 		RRSIG was created by a DNSKEY that does not exist in the apex keyset.
 
-	WRONG_LABEL_COUNT
+	VAL_A_WRONG_LABEL_COUNT
 		The number of labels on the signature is greater than the the count given in
 		the RRSIG RDATA.
 
-	SECURITY_LAME
+	VAL_A_SECURITY_LAME
 		RRSIG created by a key that does not exist in the parent DS record set.
 
-	NOT_A_ZONE_KEY
+	VAL_A_NOT_A_ZONE_KEY
 		The key used to verify the RRSIG is not a zone key, but some other key such as
 		the public key used for TSIG.
 
-	RRSIG_NOTYETACTIVE
+	VAL_A_RRSIG_NOTYETACTIVE
 		The RRSIG's inception time is in the future.
 
-	RRSIG_EXPIRED
+	VAL_A_RRSIG_EXPIRED
 		The RRSIG has expired.		
 
-	ALGO_NOT_SUPPORTED
+	VAL_A_ALGO_NOT_SUPPORTED
 		Algorithm in DNSKEY or RRSIG or DS is not supported.
 
-	UNKNOWN_ALGO
+	VAL_A_UNKNOWN_ALGO
 		Unknown DNSKEY or RRSIG or DS algorithm
 	
-	RRSIG_VERIFIED
+	VAL_A_RRSIG_VERIFIED
 		The RRSIG verified successfully.
 
-	RRSIG_VERIFY_FAILED
+	VAL_A_RRSIG_VERIFY_FAILED
 		The RRSIG did not verify.
 	
-	NOT_VERIFIED
+	VAL_A_NOT_VERIFIED
 		Different RRSIGs failed for different reasons
 
-	KEY_TOO_LARGE
+	VAL_A_KEY_TOO_LARGE
 		The zone is using a key size that is too large as per local policy.
 
-	KEY_TOO_SMALL
+	VAL_A_KEY_TOO_SMALL
 		The zone is using a key size that is too small as per local policy
 
-	KEY_NOT_AUTHORIZED
+	VAL_A_KEY_NOT_AUTHORIZED
 		The zone is using a key that is not authorized as per local policy.
 	
-	ALGO_REFUSED
+	VAL_A_ALGO_REFUSED
 		Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy
 
-	CLOCK_SKEW
+	VAL_A_CLOCK_SKEW
 		Verified but with clock skew taken into accoun
 
-	DUPLICATE_KEYTAG
+	VAL_A_DUPLICATE_KEYTAG
 		Two DNSKEYs have the same keytag
 
-	NO_PREFERRED_SEP
+	VAL_A_NO_PREFERRED_SEP
 		There is no DNSKEY in the parent DS set that our local policy allows us to
 		traverse
 
-	WRONG_RRSIG_OWNER
+	VAL_A_WRONG_RRSIG_OWNER
 		The RRSIG and the data that it purportedly covers have differing notions of
 		owner name
 
-	RRSIG_ALGO_MISMATCH
+	VAL_A_RRSIG_ALGO_MISMATCH
 		 The DNSKEY and RRSIG pair have a mismatch in their algorithm.
 
-	KEYTAG_MISMATCH
+	VAL_A_KEYTAG_MISMATCH
 		 The DNSKEY and RRSIG pair have a mismatch in the key tags.
 		
-	VERIFIED
+	VAL_A_VERIFIED
 		The signature verified OK.
 
-	LOCAL_ANSWER
-		Answer was obtained locally. This is currently not implemented.
+	VAL_A_LOCAL_ANSWER
+		Answer was obtained locally. 
 
-	TRUST_KEY
+	VAL_A_TRUST_KEY
 		The key present in this assertion is trusted.
 
-	TRUST_ZONE
+	VAL_A_TRUST_ZONE
 		The zone in this assertion is trusted.
 
-	BARE_RRSIG
+	VAL_A_BARE_RRSIG
 		Query was for an RRSIG.
 
 In cases where data is insufficient to generate a validation result, 
-I<ac_state> may also contain the following status values. The final 
-validation result in such circumstances is VALIDATION_ERROR.
+I<val_ac_status> may also contain the following status values. The final 
+validation result in val_status_t in such circumstances is VAL_ERROR.
 
-	DATA_MISSING
+	VAL_A_DATA_MISSING
 		No data was returned in the response. Based on what data was queried
 		for this also covers cases where the DNSKEY or DS are missing.
 	
-	RRSIG_MISSING
+	VAL_A_RRSIG_MISSING
 		Could not find an RRSIG that matched the query type.
 
-	NO_TRUST_ANCHOR
+	VAL_A_DNSKEY_MISSING
+		Could not find a DNSKEY for verifying the RRSIG over a resource record.
+
+	VAL_A_DS_MISSING
+		Could not find a DS for verifying a given DNSKEY. 
+
+	VAL_A_NO_TRUST_ANCHOR
 		No trust anchor at current level and no possiblity
 		for finding any up this tree.
 
-	UNTRUSTED_ZONE
+	VAL_A_UNTRUSTED_ZONE
 		The zone has been configured as un-trusted.
 	
-	IRRELEVANT_PROOF
+	VAL_A_IRRELEVANT_PROOF
 		An NSEC received does not contribute towards proving
 		non-existence.
 
-	DNSSEC_VERSION_ERROR
+	VAL_A_DNSSEC_VERSION_ERROR
 		DNSSEC version error. Not implemented.		
 
-	TOO_MANY_LINKS
+	VAL_A_TOO_MANY_LINKS
 		Too many links were traversed in going up the chain-of-trust. 
 		Not implemented.
 
-	UNKNOWN_DNSKEY_PROTO
+	VAL_A_UNKNOWN_DNSKEY_PROTO
 		The protocol field in the DNSKEY is not set to 3 (DNSSEC).	
 
-	FLOOD_ATTACK_DETECTED
+	VAL_A_FLOOD_ATTACK_DETECTED
 		Detected multiple (conflicting) answers for the same query. 
 		Possible spoofing attack. Not implemented.
 
-	CONFLICTING_ANSWERS	
-		Multiple answers received for a query which conflict.
+	VAL_A_DNS_ERROR_BASE < x < VAL_A_DNS_ERROR_LAST
+		where x is one of the error values returned by the resolver as 
+		described in libsres(3) including the following:
 
-	SR_REFERRAL_ERROR
-		Some error encountered while following referrals.
+		SR_CONFLICTING_ANSWERS	
+			Multiple answers received for a query which conflict.
 
-	SR_MISSING_GLUE
-		Glue was missing
+		SR_REFERRAL_ERROR
+			Some error encountered while following referrals.
 
-	All other resolver errors returned by libsres(3)
+		SR_MISSING_GLUE
+			Glue was missing
 
+=item I<val_ac_rrset> 
 
-=item I<ac_data> 
+This field contains a pointer to an RRset of type B<struct val_rrset>
+obtained from the DNS response.
 
-This field contains a pointer to an RRset obtained from the DNS response.
-
-=item I<ac_pending_query> 
-
-This field contains a pointer to an element in the **I<queries> 
-linked list. In order to validate a resource record, the
-validator may have to send additional queries for data not returned 
-as part of the original answer. Dependencies such as these are 
-reflected in the I<ac_pending_query> field. 
-
-=item I<ac_more_data> 
+=item I<val_ac_rrset_next> 
 
 Certain queries may return more than one RRset as part of the answer.
 This field points to the next RRset in the DNS response.
 
-=item I<ac_trust> 
+=item I<val_ac_trust> 
 
 This field points to an assertion that either contains a DNSKEY RRset that
 can be used to verify RRSIGs over the current record, or contains a DS
 RRset that can be used to build the chain-of-trust towards a trust
 anchor. 
 
-=item I<ac_next> 
+=item I<val_ac_next> 
 
-This field points to the next element in the **I<assertions> linked-list.
+This field points to the next element in the val_assertion_chain linked-list.
 
 =back
 
@@ -377,117 +382,142 @@ This field points to the next element in the **I<assertions> linked-list.
 
 =over 4
 
-=item I<struct query_chain> {
-
-    u_char qc_name_n[MAXCDNAME];
-    u_int16_t qc_type_h;
-    u_int16_t qc_class_h;
-    u_int16_t qc_state; /* DOS, TIMED_OUT, etc */
-    struct name_server *qc_ns_list;
-    struct delegation_info *qc_referral;
-    int qc_trans_id;
-    struct assertion_chain *qc_as;
-    struct query_chain *qc_next;
+=item I<struct val_rrset> {
+    u_int8_t  *val_msg_header; 
+    u_int16_t val_msg_headerlen;
+    u_int8_t  *val_queryset_data;
+    u_int16_t val_queryset_datalen;
+    u_int8_t  *val_rrset_name_n; 
+    u_int16_t val_rrset_class_h;
+    u_int16_t val_rrset_type_h;
+    u_int32_t val_rrset_ttl_h;
+    u_int8_t  val_rrset_section;
+    struct rr_rec *val_rrset_data;
+    struct rr_rec *val_rrset_sig;
 };
 
 =over 4
 
-=item I<qc_name_n>
+=item I<val_msg_header> 
 
-Contains the queried name in DNS wire format.
+The header of the DNS response in which the RRset was received
 
-=item I<qc_type_h>
+=item I<val_msg_headerlen> 
 
-Contains the queried type.
+The length of the header information in I<val_msg_header>.
 
-=item I<qc_class_h>
+=item I<val_queryset_data> 
 
-Contains the queried class.
+The query section of the DNS response in which the RRset was received.
 
-=item I<qc_state>
+=item I<val_queryset_datalen> 
 
-This field contains the current status of the query. Upon completion
-of the B<resolve_n_check()> call this field will either be Q_ANSWERED, 
-which says that the query was answered, and the returned response in present in
-he assertion pointed to by I<qc_as>, or a value greater than Q_ERROR_BASE in which
-case the error value is one of those returned by the resolver as defined in 
-B<libsres(3)> offset by Q_ERROR_BASE. For example, if the resolver returned 
-an error of SR_SERVFAIL, this value would contain the value 
-Q_ERROR_BASE+SR_SERVFAIL.
+The length of the query section in I<val_queryset_data>.
 
-=item I<qc_ns_list>
+=item I<val_rrset_name_n> 
 
-Contains the list of name servers towards which the query is directed.
-Details on the I<struct name_server> structure may be found in the 
-man page for B<libsres(3)>
+The owner name of the RRset represented in on-the-wire format.
 
-=item I<qc_referral>
+=item I<val_rrset_class_h> 
 
-Points to referral information. This field is used internally and may
-go away in future. 
+The class of the RRset.
 
-=item I<qc_trans_id>
+=item I<val_val_rrset_type_h> 
 
-The identifier that the resolver uses to keep track of the query. Additional
-information about the query transaction ID may be found in the man page 
-for B<libsres(3)>.
+The type of the RRset.
 
-=item I<qc_as>
+=item I<val_rrset_ttl_h> 
 
-This field points to an assertion that contains the response returned by 
-the DNS name server for this query.
+The TTL of the RRset.
 
-=item I<qc_next>
+=item I<val_rrset_section> 
 
-Points to the next element in the **I<queries> linked-list.
+The section in which the RRset was received -- VAL_FROM_ANS, VAL_FROM_AUT or VAL_FROM_ADD.
+
+=item I<val_rrset_data> 
+
+The response RDATA.
+
+=item I<val_rrset_sig> 
+
+Any associated RRSIGs for the RDATA returned in I<val_rrset_data>. 
 
 =back
+=back
 
-=back 
+=over 4
+
+=item I<struct rr_rec> {
+	u_int16_t       rr_rdata_length_h;  
+    u_int8_t        *rr_rdata;      
+    val_astatus_t    rr_status;
+    struct rr_rec   *rr_next;
+};
+
+=over 4
+
+=item I<rr_rdata_length_h> 
+
+The length of data stored in I<rr_rdata>.
+
+=item I<rr_rdata> 
+
+The RDATA bytes.
+
+=item I<rr_status> 
+
+The verification status of the RRSIG. This value is set 0 for the RDATA portion.
+
+=item I<rr_next> 
+
+Points to the next resource record in the RRset.
+
+=back
+=back
 
 =head1 RETURN VALUES
 
 =over 4
 
-=item B<resolve_n_check()> can return one of the following values:
+=item B<val_resolve_n_check()> can return one of the following values:
 
 =over 4
 
-=item NO_ERROR
+=item VAL_NO_ERROR
 
 No error was encountered.
 
-=item ERROR   
+=item VAL_ERROR   
 
 Generic error encountered.
 
-=item NOT_IMPLEMENTED 
+=item VAL_NOT_IMPLEMENTED 
 
 Functionality not yet implemented. 
 
-=item OUT_OF_MEMORY 
+=item VAL_OUT_OF_MEMORY 
 
 Could not allocate memory.
 
-=item BAD_ARGUMENT
+=item VAL_BAD_ARGUMENT
 
 Bad arguments passed as parameters.
 
-=item INTERNAL_ERROR
+=item VAL_INTERNAL_ERROR
 
 Encountered some internal error.
 
-=item NO_PERMISSION 
+=item VAL_NO_PERMISSION 
 
 No permission to perform operation. Currently not implemented.
 
-=item RESOURCE_UNAVAILABLE
+=item VAL_RESOURCE_UNAVAILABLE
 
 Some resource (crypto possibly) was unavailable. Currently not implemented.
 
-=item NO_SPACE
+=item VAL_NO_SPACE
 
-Not enough space in *I<results> for storing all available answers.
+Not enough space for storing all available answers.
 
 =back
 
@@ -495,26 +525,25 @@ Not enough space in *I<results> for storing all available answers.
 
 =over 4
 
-=item B<get_context()> can return one of the following values:
+=item B<val_create_context()> can return one of the following values:
 
 =over 4
 
-=item NO_ERROR
+=item VAL_NO_ERROR
 
 No error was encountered.
 
-=item OUT_OF_MEMORY 
+=item VAL_OUT_OF_MEMORY 
 
 Could not allocate memory.
 
-=item CONF_PARSE_ERROR
+=item VAL_CONF_PARSE_ERROR
 
 Error in parsing some configuration file.
 
-=item NO_POLICY
+=item VAL_CONF_NOT_FOUND 
 
-Could not find one or both of the configuration files 
-/etc/resolv.conf and /etc/dnsval.conf.
+A configuration file was not available.
 
 =back
 
@@ -522,21 +551,21 @@ Could not find one or both of the configuration files
 
 =over 4
 
-=item B<switch_effective_policy()> can return one of the following values:
+=item B<val_switch_policy_scope()> can return one of the following values:
 
 =over 4
 
-=item NO_ERROR
+=item VAL_NO_ERROR
 
 No error was encountered.
 
-=item OUT_OF_MEMORY 
+=item VAL_OUT_OF_MEMORY 
 
 Could not allocate memory.
 
-=item UNKNOWN_LOCALE
+=item VAL_NO_POLICY 
 
-Could not identify the policy to which we need to switch.
+A policy with the specified label (identifier) was not found.
 
 =back
 
@@ -607,26 +636,27 @@ DNSKEY. An example is:
 
 Specifies the local security expection for a zone. The additional
 data portion for this keyword is a sequence of the zone name and 
-its trust status - trusted or untrusted. An example is:
+its trust status - ignore, validate or untrusted. An example is:
 
-mozilla zone-security-expectation wesh.fruits.netsec.tislabs.com untrusted;		 
-
+: zone-security-expectation    
+	org ignore 
+	net ignore
+	dnssec-tools.org validate
+	com ignore
 
 =back
-
 
 =back
 
 =head1 CURRENT STATUS
 
 There is currently no support for IPv6. 
-The library is not thread-safe. 
 The caching functionality is very basic and no timeout logic currently exists. 
 There are a number of feature enhancements that still remain to be done.
 
 =head1 COPYRIGHT
                                                                                 
-Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO
