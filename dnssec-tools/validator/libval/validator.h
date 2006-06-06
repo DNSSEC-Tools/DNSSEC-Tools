@@ -33,7 +33,6 @@
 #define VAL_LOG_OPTIONS LOG_PID
 #endif
 
-
 #ifdef LOG_TO_NETWORK
 #define VALIDATOR_LOG_PORT 1053
 #define VALIDATOR_LOG_SERVER "127.0.0.1"
@@ -317,7 +316,6 @@ typedef struct val_ds_rdata {
  **********************************
  */
 /* from val_assertion.h */
-int val_isauthentic (val_status_t val_status);
 int val_istrusted(val_status_t val_status);
 void val_free_result_chain(struct val_result_chain *results);
 int val_resolve_and_check( val_context_t *context,
@@ -332,15 +330,17 @@ int val_create_context(char *label, val_context_t **newcontext);
 void val_free_context(val_context_t *context);
 int val_switch_policy_scope(val_context_t *ctx, char *label);
 
+/* from val_policy.c */
+char *resolver_config_get(void);
+int resolver_config_set(const char *name);
+char *root_hints_get(void);
+int root_hints_set(const char *name);
+char *dnsval_conf_get(void);
+int dnsval_conf_set(const char *name);
+
 /* from val_log.h */
-char *get_hex_string(const unsigned char *data, int datalen, char *buf, int buflen);
-void val_log_rrset(val_context_t *ctx, int level, struct rrset_rec *rrset);
-void val_log_base64(val_context_t *ctx, int level, unsigned char * message, int message_len);
-void val_log_rrsig_rdata (val_context_t *ctx, int level, const char *prefix, val_rrsig_rdata_t *rdata);
-void val_log_dnskey_rdata (val_context_t *ctx, int level, const char *prefix, val_dnskey_rdata_t *rdata);
 void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
                 struct val_query_chain *queries, struct val_result_chain *results);
-void val_log (const val_context_t *ctx, int level, const char *template, ...);
 char *p_query_error(int errno);
 char *p_as_error(int valerrno);
 char *p_val_error(int err);
@@ -354,15 +354,6 @@ int val_query(const val_context_t *ctx,
 	      struct val_response *resp,
 	      int *resp_count);
 
-/* from val_policy.c */
-char * resolver_config_get(void);
-int resolver_config_set(const char *name);
-
-char * root_hints_get(void);
-int root_hints_set(const char *name);
-
-char * dnsval_conf_get(void);
-int dnsval_conf_set(const char *name);
 
 /* from val_gethostbyname.c */
 extern int h_errno;
@@ -407,58 +398,22 @@ struct val_addrinfo {
 	val_status_t val_status;
 };
 
-/**
- * val_getaddrinfo: A validating getaddrinfo function.
- *                  Based on getaddrinfo() as defined in RFC3493.
- *
- * Parameters:
- *     Note: All the parameters, except the val_status parameter,
- *     ----  are similar to the getaddrinfo function.
- *
- *     [IN]  ctx: The validation context.
- *     [IN]  nodename: Specifies either a numerical network address (dotted-
- *                decimal format for IPv4, hexadecimal format for IPv6)
- *                or a network hostname, whose network addresses are
- *                looked up and resolved.
- *                node or service parameter, but not both, may be NULL.
- *     [IN]  servname: Used to set the port number in the network address
- *                of each socket structure returned.  If service is NULL
- *                the  port  number will be left uninitialized.
- *     [IN]  hints: Specifies  the  preferred socket type, or protocol.
- *                A NULL hints specifies that any network address or
- *                protocol is acceptable.
- *     [OUT] res: Points to a dynamically-allocated link list of addrinfo
- *                structures, linked by the ai_next member.  This output
- *                value can be used in the val_get_addrinfo_val_status()
- *                and the val_dupaddrinfo() functions.
- *
- * Return value: This function returns 0 if it succeeds, or one of the
- *               non-zero error codes if it fails.  See man getaddrinfo
- *               for more details.
- */
 int val_getaddrinfo ( const val_context_t *ctx,
 		      const char *nodename,
                       const char *servname,
 		      const struct addrinfo *hints,
 		      struct val_addrinfo **res );
 
-/* A function to free memory allocated by val_getaddrinfo()
- */
 void free_val_addrinfo (struct val_addrinfo *ainfo);
 
+/***********************************************************/
 #if 0
-/* The following three functions are to be implemented to
- * conform to version 00 of the validator draft
- */
-/* A DNSSEC-aware function to perform address to name translation
- */
 struct hostent *val_gethostbyaddr( const val_context_t *ctx,
                                    const char          *addr,
                                    int                 len,
                                    int                 type,
                                    val_status_t        *val_status );
 
-/* A thread-safe, re-entrant version of val_gethostbyaddr */
 int val_gethostbyaddr_r( const val_context_t *ctx,
                          const char          *addr,
                          int                 len,
@@ -470,7 +425,6 @@ int val_gethostbyaddr_r( const val_context_t *ctx,
                          int                 *h_errnop,
                          val_status_t        *val_status );
 
-/* An address-to-name and service translation function */
 int val_getnameinfo( const val_context_t   *ctx,
                      const struct sockaddr *sa,
                      socklen_t             salen,
@@ -481,7 +435,8 @@ int val_getnameinfo( const val_context_t   *ctx,
                      int                   flags,
                      val_status_t          *val_status );
 
-#endif /* 0 */
+#endif 
+/***********************************************************/
 
 #endif /* VALIDATOR_H */
 
