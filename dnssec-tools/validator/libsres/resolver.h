@@ -107,10 +107,10 @@ struct name_server
     u_int32_t       ns_status;
     struct name_server  *ns_next;
     int         ns_number_of_addresses;
+    struct sockaddr     ns_address[1];
 	u_long  ns_options;
 	int ns_retrans;
 	int ns_retry;
-    struct sockaddr     ns_address[1];
 };
 
 
