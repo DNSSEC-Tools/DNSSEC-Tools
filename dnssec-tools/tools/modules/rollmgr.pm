@@ -123,6 +123,7 @@ our @EXPORT = qw(
 		 rollmgr_verifycmd
 			 ROLLCMD_LOGFILE
 			 ROLLCMD_LOGLEVEL
+			 ROLLCMD_LOGMSG
 			 ROLLCMD_ROLLALL
 			 ROLLCMD_ROLLREC
 			 ROLLCMD_ROLLZONE
@@ -189,6 +190,7 @@ my $EOL		= "\015\012";			# Net-standard end-of-line.
 
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
+my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
 my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
 my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
 my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
@@ -197,20 +199,22 @@ my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_STATUS	= "rollcmd_status";
 
-sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE); };
-sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL); };
-sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL); };
-sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC); };
-sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE); };
-sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE); };
-sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN); };
-sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME); };
-sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS); };
+sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
+sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
+sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
+sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
+sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
+sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
+sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
+sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
+sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
+sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 
 my %roll_commands =
 (
 	rollcmd_logfile		=> 1,
 	rollcmd_loglevel	=> 1,
+	rollcmd_logmsg		=> 1,
 	rollcmd_rollall		=> 1,
 	rollcmd_rollrec		=> 1,
 	rollcmd_rollzone	=> 1,
