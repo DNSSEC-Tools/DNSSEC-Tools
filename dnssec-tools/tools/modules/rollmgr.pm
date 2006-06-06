@@ -840,8 +840,8 @@ sub unix_loadzone
 #
 # Routine:	unix_dropid()
 #
-# Purpose:	Ensures that another instance of rollerd is running and then
-#		creates a pid file for future reference.
+# Purpose:	Ensures that another instance of rollerd is not running and
+#		then creates a pid file for future reference.
 #
 # Return Values:
 #		 1 - The pidfile was initialized for this process.
@@ -850,21 +850,22 @@ sub unix_loadzone
 #
 sub unix_dropid
 {
-	my $ego = $$;				# My identity.
-	my $rdpid;				# Pid read from the pidfile.
+	my $ego = $$;					# My identity.
+	my $pfpid;					# Pid from the pidfile.
+	my $pspid = -1;					# Pid from ps execution.
 
 # print "unix_dropid:  down in\n";
 
 	#
 	# Get the pid from rollerd's pidfile.
 	#
-	$rdpid = unix_getpid(0);
+	$pfpid = unix_getpid(0);
 
 	#
 	# Create the file if it doesn't exist.
 	# If it does exist, we'll make sure the listed process isn't running.
 	#
-	if($rdpid < 0)
+	if($pfpid < 0)
 	{
 # print "unix_dropid:  opening $UNIX_ROLLMGR_PIDFILE\n";
 		unlink("$UNIX_ROLLMGR_PIDFILE");
@@ -886,50 +887,43 @@ sub unix_dropid
 		# we found in the pidfile.
 		#
 		#	We shouldn't have to do this this way.
-		#	We should be able to do "ps -p $rdpid" and
+		#	We should be able to do "ps -p $pfpid" and
 		#	skip the search loop.
-		#	However, the $rdpid seems to be dropped
+		#	However, the $pfpid seems to be dropped
 		#	when using that method.
 		#
-		$pscmd = "/bin/ps -ax";
+		$pscmd = "/bin/ps -wax";
 		$openrc = open(PSOUT,"$pscmd |");
 		$psline = <PSOUT>;
 		while(<PSOUT>)
 		{
-			my $lpid;		# Pid from ps output.
-			my $lcmd;		# Command from ps output.
+			my @psout;		# ps line array.
 
 			#
-			# Get the pid and command from the ps line.
+			# Skip this line if it isn't a rollerd line.
 			#
-			$psline = $_;
-			$psline =~ /\s*(\S*)\s*(\S*)\s*(\S*)\s*(\S*)\s*(.*$)/;
-			$lpid = $1;
-			$psline = "$5";
+			next if(! /rollerd/);
 
 			#
-			# Drop out if the pid matches the file's pid.
+			# Get the pid from the line and drop out.
 			#
-			last if($lpid == $rdpid);
-
-			#
-			# Reset the saved command and go to the next line.
-			#
-			$psline = "";
-#			next;
+			s/^[ ]*//;
+			@psout = split / /;
+			$pspid = $psout[0];
+			last;
 		}
 		close(PSOUT);
 
 		#
 		# Check if the pidfile's process is still running.
-		# Return success if the current manager is us.
+		# Return success if the current, executing manager is us.
 		# Return failure if the current manager isn't us.
 		#
-		if($psline =~ /rollerd/)
+		if($pfpid == $pspid)
 		{
 			flock(PIDFILE,LOCK_UN);
 
-			return(1) if($rdpid == $ego);
+			return(1) if($pspid == $ego);
 			return(0);
 		}
 	}
