@@ -132,19 +132,19 @@ sub main
 	POSIX::setsid();
 
 	#
-	# Tell the log we're up.
-	#
-	bootmsg(1);
-
-	#
 	# Ensure we're the only rollerd running and drop a pid file.
 	#
 	if(rollmgr_dropid() == 0)
 	{
-		print "another rollerd is already running\n";
-		rollmgr_log(LOG_FATAL,"","another rollover_manager is already running");
+		print STDERR "another rollerd is already running\n";
+		rollmgr_log(LOG_ALWAYS,"","another rollerd tried to start");
 		cleanup();
 	}
+
+	#
+	# Tell the log we're up.
+	#
+	bootmsg(1);
 
 	#
 	# Initial check for signed zonefile and keyrec file.
@@ -1242,7 +1242,7 @@ sub commander
 {
 	my $cmd;					# Client's command.
 	my $data;					# Command's data.
-	my $user;					# User info.
+	my $data2;					# Second data line.
 
 	rollmgr_log(LOG_TMI,"<command>","checking commands");
 
@@ -1254,12 +1254,12 @@ sub commander
 		#
 		# Get the command, return if there wasn't one.
 		#
-		($cmd,$data,$user) = rollmgr_getcmd(2);
+		($cmd,$data,$data2) = rollmgr_getcmd(2);
 		return if(!defined($cmd));
 
-		rollmgr_log(LOG_TMI,"<command>","cmd  - \"$cmd\"");
-		rollmgr_log(LOG_TMI,"<command>","data - \"$data\"") if($data ne "");
-		rollmgr_log(LOG_TMI,"<command>","user - \"$user\"") if($data ne "");
+		rollmgr_log(LOG_TMI,"<command>","cmd   - \"$cmd\"");
+		rollmgr_log(LOG_TMI,"<command>","data  - \"$data\"") if($data ne "");
+		rollmgr_log(LOG_TMI,"<command>","data2 - \"$data2\"") if($data2 ne "");
 
 		if($cmd eq ROLLCMD_LOGFILE())
 		{
@@ -1268,6 +1268,10 @@ sub commander
 		elsif($cmd eq ROLLCMD_LOGLEVEL())
 		{
 			cmd_loglevel($data);
+		}
+		elsif($cmd eq ROLLCMD_LOGMSG())
+		{
+			cmd_logmsg($data,$data2);
 		}
 		elsif($cmd eq ROLLCMD_ROLLALL())
 		{
@@ -1368,6 +1372,43 @@ sub cmd_loglevel
 	{
 		rollmgr_log(LOG_ERR,"<command>","unable to change loglevel to $newlvl");
 	}
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_logmsg()
+#
+# Purpose:	Write a log message to the log file.
+#
+sub cmd_logmsg
+{
+	my $loglvl = shift;			# Logging level.
+	my $logmsg = shift;			# Log message.
+
+	my $oldlvl;				# Real logging level.
+	my $goodlvl;				# Real version of new level.
+
+	rollmgr_log(LOG_TMI,"<command>","logmsg command received");
+
+	#
+	# Check the validity of the caller's log level.  If it's invalid,
+	# rollmgr_loglevel() will return a failure and we'll return.
+	#
+	chomp $loglvl;
+	$oldlvl = rollmgr_loglevel($loglvl,0);
+	if($oldlvl < 0)
+	{
+		rollmgr_log(LOG_INFO,"<command>","invalid loglevel ($loglvl) specified for logmsg command");
+		return;
+	}
+
+	#
+	# Reset the logging level and write the caller's message.
+	#
+rollmgr_log(LOG_ALWAYS,"------>","loglvl - <$loglvl>");
+rollmgr_log(LOG_ALWAYS,"------>","logmsg - <$logmsg>");
+	$goodlvl = rollmgr_loglevel($oldlvl,0);
+	rollmgr_log($goodlvl,"<command>",$logmsg);
 }
 
 #-----------------------------------------------------------------------------
@@ -1577,7 +1618,7 @@ sub cleanup
 #
 sub usage
 {
-	print STDERR "usage:  rollover-manager [options] <zone>\n";
+	print STDERR "usage:  rollerd [options] <zone>\n";
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-directory <dir>\n";
 	print STDERR "\t\t-logfile <logfile>\n";
