@@ -54,11 +54,9 @@ LocalGetOptions(\%opts,
 		['GUI:separator', 'Output options:'],
 		['o|output-file=s','Output File Name',
 		 question => { type => 'fileupload'}],
-		['GUI:guionly',{type => 'checkbox',
-				values => [1,0],
-				default => 1,
-				text => 'Show map in a window',
-				name => 'mapinwindow'}],
+		['W|show-in-window',
+		 'Show map in a window (requires QWizard and Gtk2 or Tk)',
+		 {default => 1}],
 		['q|quiet-dnssec',
 		 'Do not show expired or near-expired record warnings'],
 		['w|warn-time=i',
@@ -324,20 +322,21 @@ if ($opts{'o'}) {
     print O $img;
     close(O);
 }
-if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
-    $Getopt::GUI::Long::GUI_qw->merge_primaries(
-						{
-						 mapout =>
-						 {
-						  title => 'Map',
-						  questions => 
-						  [{
-						    addscalebuttons => 1,
-						    type => 'image',
-						    imgdata => [$img]
-						   }]
-						 }});
-    $Getopt::GUI::Long::GUI_qw->magic('mapout');
+if ($opts{'W'}) {
+    require QWizard;
+    my $qw = new QWizard(primaries =>
+			 {
+			  mapout =>
+			  {
+			   title => 'Map',
+			   questions => 
+			   [{
+			     addscalebuttons => 1,
+			     type => 'image',
+			     imgdata => [$img]
+			    }]
+			  }});
+    $qw->magic('mapout');
 }
 
 sub get_parms {
