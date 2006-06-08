@@ -7,12 +7,14 @@ use strict;
 use IO::File;
 use Net::DNS;
 use Net::DNS::RR;
+use Net::DNS::SEC;
+use Net::DNS::RR::RRSIG;
 
 my %opts =
   ( 'd' => 'test.dnssec-tools.org',
     'ns' => 'dns1=127.0.0.1',
     'a-addr' => '127.0.0.1',
-    aaaa => '::1',
+    'aaaa-addr' => '::1',
     'S' => ";\n; %s\n;\n",
 
     o => "db.",
@@ -30,8 +32,8 @@ my %opts =
 # nsec skips the good record
 # nsec says type shouldn't be used
 # sig doesn't cover type
-    'p' => 'good,badsign,nosig,baddata,futuredate,pastdate',
-    'P' => 'good,badsign,nosig,nods,futuredate,pastdate',
+    'p' => 'good,badsign,nosig,baddata,futuredate,pastdate,reverseddates',
+    'P' => 'good,badsign,nosig,nods,futuredate,pastdate,reverseddates',
   );
 
 LocalGetOptions(\%opts,
@@ -55,9 +57,9 @@ LocalGetOptions(\%opts,
 		 'AAAA record (IPv6) address to use in data'],
 
 		['GUI:separator',"Output Data Type Selection:"],
-		['p|record-prefixes',
+		['p|record-prefixes=s',
 		 'Comma separated list of record prefixes to use'],
-		['P|ns-prefixes',
+		['P|ns-prefixes=s',
 		 'Comma separated list of NS record prefixes to use'],
 		['c|no-cname-records','Don\'t create CNAME records'],
 		['s|no-ns-records','Don\'t create sub-zone records'],
@@ -117,6 +119,11 @@ my %addrs =
 # data modification functions
 #
 #   regexp -> function
+#        OR
+#   regexp -> [function, EXTRA_ARG1, ARG2, ...]
+#
+#  function will be called with all the REGEXP match args followed by
+#  the optionla args
 #
 my %destroyFunctions =
   (
@@ -146,6 +153,10 @@ my %destroyFunctions =
    [\&make_new_date, -(30*24*60*60), -300],
    '^(pastdate[-\w]+).*IN\s+NS\s+' =>
    [\&make_new_date, 'DS', -(30*24*60*60), -300],
+
+   # reverse dates
+   '^(reverseddates[-\w]+).*IN\s+(A+|CNAME)\s+' => \&reverse_dates,
+   '^(reverseddates[-\w]+).*IN\s+NS\s+' => [\&reverse_dates, 'DS'],
   );
 
 #
@@ -234,6 +245,16 @@ sub generate_zone {
     $currentdomain = $olddomain;
 }
 
+#######################################################################
+# Generate output records
+#
+# args: string    the domain name,
+#       boolean   whether to generate cnames
+#       boolean   whether to generate sub-domains
+#
+#   - loops through output record types (%addrs) and generates them
+#   - generates cnames for each record type if appropriate
+#
 sub generate_records {
     my ($domain, $nocnames, $nosubdomains) = @_;
     my $file = $opts{'o'} . $domain;
@@ -291,6 +312,14 @@ sub generate_records {
     $fh->close();
 }
 
+#######################################################################
+# Setup and open the various output files
+#
+#  - bind configuration output file  --bind-config
+#  - html output file                --html-out
+#  - apache config file              --apache-out
+#  - sh test script                  --sh-test-out
+#
 sub setup_global_files {
 
     #
@@ -416,6 +445,10 @@ sub shutdown_global_files {
     }
 }
 
+######################################################################
+# Create the apache web configuration file
+# Create the shell script test script file
+#
 sub add_web_stuff_for_domain {
     my ($domain, $addr, $type) = @_;
     if ($htmlfh) {
@@ -645,6 +678,38 @@ sub make_date {
 		   $timeinfo[4]+1, $timeinfo[3], $timeinfo[2], $timeinfo[1],
 		   $timeinfo[0]);
 }
+
+sub reverse_dates {
+    my ($name, $type) = @_;
+    Verbose("  reversing dates for signatures of $_[0]");
+
+    # print and save the current rr set
+    print $fh $_;
+    my $currentrr = $_;
+
+    # delete the old signature
+    my $inrec = 0;
+    my ($keyid, $keyname);
+    while (<I>) {
+	last if /^\w/;
+	if (/RRSIG\s+$type.*\s+(\d+)\s*\(/) {
+	    my $futuredate = $1;
+	    my $firstline = $_;
+
+	    my $secondline = <I>;
+	    my ($pastdate) = ($secondline =~ /^\s*(\d+)/);
+
+	    $secondline =~ s/$pastdate/$futuredate/;
+	    $firstline =~ s/$futuredate/$pastdate/;
+
+	    print $fh $firstline;
+	    print $fh $secondline;
+	} else {
+	    print $fh $_;
+	}
+    }
+}
+
 
 ######################################################################
 # printing-subs
