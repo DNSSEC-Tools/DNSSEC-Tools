@@ -34,6 +34,8 @@ LocalGetOptions(\%opts,
 		['GUI:screen',"Rule Set Configuration:"],
 		["l|level=i", "The maximum rule level to run (default = 5)",
 		 question => { type => 'menu', values => [1..9] }],
+
+		['GUI:seperator','Output Format Options:'],
 		["show-gui", "Display the results in a browsable window.",
 		 question => { type => 'checkbox', default => 1 }],
 		["v|verbose", "Verbose output showing extra information",,
@@ -200,14 +202,17 @@ my $exitcode = 0;
 my $parseerror;
 my $errcount;
 
+my ($globalrulecount, $globalrrset, $globalnrecs,
+    $globalerrcount, @filestested);
+
 while ($#ARGV > -1) {
     $errcount = 0;
     my $rulecount = 0;
     my ($rulesrun, $errorsfound);
     $current_zone_file = shift;
+    push @filestested, $current_zone_file;
     $current_domain = shift;
     $current_domain =~ s/\.$//;  # remove potential trailing dot
-    print STDERR "here: $current_domain\n";
     %nrecs = ();
 
     #
@@ -219,6 +224,10 @@ while ($#ARGV > -1) {
 						soft_errors => 1,
 						on_error => \&print_parse_error);
     next if ($parseerror);
+    if (!$rrset) {
+	print STDERR "WARNING: failed to read $current_zone_file for an unknown reason\n";
+	next;
+    }
 
     #
     # Start collecting TCPDUMP data if requested
@@ -235,8 +244,6 @@ while ($#ARGV > -1) {
 	if ($tcpdumpproc = fork()) {
 	    # parent
 	    sleep(2);  # wait for child to get going
-# 	    print STDERR "--- Starting tcpdump to file $file\n" if ($opts{v});
-# 	    print STDERR "    args: ",join("/",@args), "\n";
 	    print STDERR "--- Starting tcpdump\n" if ($opts{v});
 	} else {
 	    # child
@@ -298,12 +305,19 @@ while ($#ARGV > -1) {
 	sleep(1);
 	kill(9, $tcpdumpproc);
     }
+
+    # collect global stats for gui display
+    $globalrulecount += $rulecount if ($globalrulecount == 0);
+    $globalrrset += 1 + $#$rrset;
+    my @a = keys(%nrecs);
+    $globalnrecs += 1 + $#a;
+    $globalerrcount += $errcount;
+
     if ($opts{'v'}) {
 	print "results on testing $current_zone_file:\n";
 	print "  rules considered:\t" . (1+$#rules) . "\n";
 	print "  rules tested:\t\t$rulecount\n";
 	print "  records analyzed:\t" . (1+$#$rrset) . "\n";
-	my @a = keys(%nrecs);
 	print "  names analyzed:\t" . (1+$#a) . "\n";
 	print "  errors found:\t\t$errcount\n";
     } else {
@@ -350,7 +364,9 @@ sub setup_gui {
 	questions =>
 	[{ type => 'table',
 	   name => 'results',
-	   text => 'Results:',
+	   text => sub { ((qwparam('showthis') eq 'Errors' ||
+			   qwparam('showthis') eq '') ?
+			  'Summary:' : 'Results:') },
 	   values => sub {
 	       if (qwparam('showthis') =~ /::/) {
 		   my $tab;
@@ -358,6 +374,17 @@ sub setup_gui {
 		   foreach my $data (@{$outstructure{$spot}{$value}}) {
 		       push @$tab, $data;
 		   }
+		   return [$tab];
+	       } elsif (qwparam('showthis') eq 'Errors' ||
+			qwparam('showthis') eq '') {
+		   my $tab;
+
+		   push @$tab, ['results on testing:', join(', ',@filestested)];
+		   push @$tab, ['rules considered:', (1+$#rules)];
+		   push @$tab, ['rules tested:',     $globalrulecount];
+		   push @$tab, ['records analyzed:', ($globalrrset)];
+		   push @$tab, ['names analyzed:',   $globalnrecs];
+		   push @$tab, ['errors found:',     $globalerrcount];
 		   return [$tab];
 	       }
 	       return [[[""]]];
