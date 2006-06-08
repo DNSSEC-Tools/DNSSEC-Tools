@@ -100,7 +100,11 @@ Net::DNS::SEC::Tools::QWPrimitives - QWizard primitives for DNSSEC-Tools
   use Net::DNS::SEC::Tools::QWPrimitives;
   use Getopt::Long::GUI;
 
-  GetOptions(...,['GUI:otherprimaries',dnssec_tools_get_qwprimitives()]);
+  GetOptions(...,
+	     ['GUI:nootherargs',1],
+             ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
+  	     ['GUI:submodules','getzonefiles','getzonenames'],
+            );
 
 =head1 DESCRIPTION
 
@@ -108,9 +112,15 @@ B<QWizard> is a dynamic GUI-construction kit.  It displays a series of
 questions, and then retrieves and acts upon the answers.  This module
 provides access to B<QWizard> for DNSSEC-Tools software.
 
+In particular the dnssec_tools_get_qwprimitives() returns a set of
+primary screens for requesting a set of zone files followed by a set
+of domain names for those zone files.  These are then pushed into the
+__otherargs qwparam variable, which is what Getopt::GUI::Long uses to
+generate the @ARGV list.
+
 =head1 COPYRIGHT
 
-Copyright 2005 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
