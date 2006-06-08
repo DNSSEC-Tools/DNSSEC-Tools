@@ -35,7 +35,7 @@ LocalGetOptions(\%opts,
 		["l|level=i", "The maximum rule level to run (default = 5)",
 		 question => { type => 'menu', values => [1..9] }],
 
-		['GUI:seperator','Output Format Options:'],
+		['GUI:separator','Output Format Options:'],
 		["show-gui", "Display the results in a browsable window.",
 		 question => { type => 'checkbox', default => 1 }],
 		["v|verbose", "Verbose output showing extra information",,
@@ -43,9 +43,11 @@ LocalGetOptions(\%opts,
 		["q|quiet", "Quiet output (Do not print summary information)"],
 
 
+		['GUI:separator','Advanced:'],
 		['GUI:guionly',{type => 'checkbox',
 				values => [1,0],
 				default => 0,
+				indent => 1,
 				text => 'Show Advanced Options',
 				name => 'advanced'}],,
 
@@ -85,7 +87,10 @@ LocalGetOptions(\%opts,
 		["F|help-features", "Show available additional features of available rules."],
 		["H|help-config",
 		 'Show configuration tokens supported by the rules'],
-
+		
+		['GUI:nootherargs',1],
+		['GUI:submodules','getzonefiles','getzonenames'],
+		['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
 	       ) || exit;
 
 if ($#ARGV % 2 != 1) {
