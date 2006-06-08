@@ -69,6 +69,8 @@ LocalGetOptions(\%opts,
 
 		['GUI:nootherargs',1],
 		['GUI:submodules','getzonefiles','getzonenames'],
+		['GUI:otherargs_text',"FILE DOMAIN [FILE DOMAIN...]"],
+		['GUI:otherargs_required',1],
 		['GUI:actions', sub { require QWizard;
 				      import QWizard;
 				      $mapinwindow = qwparam('mapinwindow')}],
