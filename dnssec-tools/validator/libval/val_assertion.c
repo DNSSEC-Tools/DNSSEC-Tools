@@ -140,15 +140,20 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 		// XXX casing and endien order are accounted for 
 		/* Because of the ordering, the longest match is found first */
 		for (; zse_cur; zse_cur=zse_cur->next) {
-
-			/* Find the last occurrence of zse_cur->zone_n in name_n */
-			p = name_n;
-			q = (u_int8_t*)strstr((char*)p, (char*)zse_cur->zone_n);
-			while(q != NULL) {
-				p = q;
-				q = (u_int8_t*)strstr((char*)q+1, (char*)zse_cur->zone_n);
+			int root_zone = 0;
+			if(!namecmp(zse_cur->zone_n, ""))
+				root_zone = 1;
+			else {
+				/* Find the last occurrence of zse_cur->zone_n in name_n */
+				p = name_n;
+				q = (u_int8_t*)strstr((char*)p, (char*)zse_cur->zone_n);
+				while(q != NULL) {
+					p = q;
+					q = (u_int8_t*)strstr((char*)q+1, (char*)zse_cur->zone_n);
+				}
 			}
-			if (!strcmp((char*)p, (char*)zse_cur->zone_n)) {
+
+			if (root_zone || (!strcmp((char*)p, (char*)zse_cur->zone_n))) {
 				if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
 					val_log(ctx, LOG_DEBUG, "zone %s is not trusted", name_n);
 					return VAL_A_UNTRUSTED_ZONE;
