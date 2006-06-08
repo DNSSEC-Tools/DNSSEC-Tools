@@ -1,6 +1,6 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 0.9
+Version: 0.9.1
 Release: 1
 License: BSD
 Group: System Environment
@@ -77,6 +77,19 @@ rm -rf $RPM_BUILD_ROOT
    /usr/bin/zonesigner
    /usr/share/donuts/rules/*
 
+# newer
+   /usr/bin/clean-keyrec
+   /usr/bin/dtconfchk
+   /usr/bin/dtdefs
+   /usr/bin/dtinitconf
+   /usr/bin/fixkrf
+   /usr/bin/rrchk
+   /usr/bin/rrinit
+   /usr/bin/tachk
+   /usr/bin/timetrans
+
+
+
    /usr/share/man/man1/dnspktflow.1.gz
    /usr/share/man/man1/donuts.1.gz
    /usr/share/man/man1/donutsd.1.gz
@@ -91,6 +104,18 @@ rm -rf $RPM_BUILD_ROOT
    /usr/share/man/man1/validate.1.gz
    /usr/share/man/man1/zonesigner.1.gz
 
+# newer
+   /usr/share/man/man1/clean-keyrec.1.gz
+   /usr/share/man/man1/dtconfchk.1.gz
+   /usr/share/man/man1/dtdefs.1.gz
+   /usr/share/man/man1/dtinitconf.1.gz
+   /usr/share/man/man1/fixkrf.1.gz
+   /usr/share/man/man1/rrchk.1.gz
+   /usr/share/man/man1/rrinit.1.gz
+   /usr/share/man/man1/tachk.1.gz
+   /usr/share/man/man1/timetrans.1.gz
+
+
 ##%{_mandir}/man*/*
 
 %files perlmods
@@ -100,8 +125,9 @@ rm -rf $RPM_BUILD_ROOT
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/QWPrimitives.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/conf.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/keyrec.pm
-#   /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/rollmgr.pm
-#   /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/rollrec.pm
+   /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/rollmgr.pm
+   /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/rollrec.pm
+   /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/defaults.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/timetrans.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/tooloptions.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/ZoneFile/Fast.pm
@@ -110,8 +136,9 @@ rm -rf $RPM_BUILD_ROOT
    /usr/share/man/man3/Net::DNS::SEC::Tools::QWPrimitives.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::conf.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::keyrec.3pm.gz
-#   /usr/share/man/man3/Net::DNS::SEC::Tools::rollmgr.3pm.gz
-#   /usr/share/man/man3/Net::DNS::SEC::Tools::rollrec.3pm.gz
+   /usr/share/man/man3/Net::DNS::SEC::Tools::rollmgr.3pm.gz
+   /usr/share/man/man3/Net::DNS::SEC::Tools::rollrec.3pm.gz
+   /usr/share/man/man3/Net::DNS::SEC::Tools::defaults.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::timetrans.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::tooloptions.3pm.gz
    /usr/share/man/man3/Net::DNS::ZoneFile::Fast.3pm.gz
