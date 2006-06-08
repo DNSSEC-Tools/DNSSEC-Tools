@@ -28,6 +28,7 @@ my $time = time();
 my %primes = dnssec_tools_get_qwprimitives();
 
 LocalGetOptions(\%opts,
+		['GUI:screen','Basic Options'],
 		['GUI:separator', 'Map Output Style Options:'],
 		['l|layout-style=s','Layout style',
 		 question => { type => 'menu',
@@ -35,7 +36,7 @@ LocalGetOptions(\%opts,
 		['L|legend','Add a legend to the map'],
 		['GUI:guionly', { type => 'checkbox',
 				  values => [1,0],
-				  default => 1,
+				  default => 0,
 				  text => 'Show advanced GUI options',
 				  name => 'advancedoptions'}],
 
@@ -75,7 +76,8 @@ LocalGetOptions(\%opts,
 
 		['GUI:screen', 'Advanced Map Style Options:',
 		 introduction =>
-		 'These options affect the GraphViz layout engine.'],
+		 'These options affect the GraphViz layout engine.',
+		 doif => 'advancedoptions'],
 		['a|allow-overlap', 
 		 'Allow overlap of map nodes (makes tighter maps)'],
 		['e|edge-weight=i', 
@@ -328,6 +330,7 @@ if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
 						  title => 'Map',
 						  questions => 
 						  [{
+						    addscalebuttons => 1,
 						    type => 'image',
 						    imgdata => [$img]
 						   }]
