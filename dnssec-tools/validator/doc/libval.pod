@@ -578,77 +578,13 @@ A policy with the specified label (identifier) was not found.
 The validator library reads configuration information from two separate files,
 /etc/resolv.conf and /etc/dnsval.conf.
 
-=over 4
-
-=item /etc/resolv.conf
-
 Only the "nameserver" option is supported in the resolv.conf file. This option
 is used to specify the IP address of the name server to which queries must be
 sent by default. For example,
 
 nameserver 10.0.0.1
 
-=item /etc/dnsval.conf
-
-This file contains a sequence of the following "policy-fragments":
-
-<label> <KEYWORD> <additional-data>; 
-
-label is the context to which this policy applies
-and KEYWORD is the specific policy component that is 
-being configured. The format of additional-data depends on the 
-keyword specified.
-
-Policy fragments are indexed by the label and keyword. If multiple
-policy fragments are defined for the same label and keyword combination
-then the last definition in the file is used.  
-
-Currently two different keywords are specified:
-
-=over 4
-
-=item trust-anchor
-
-Specifies the trust anchors for a sequence of zones. The additional
-data portion for this keyword is a sequence of the zone name and a 
-quoted string containing the RDATA portion for the trust anchor's 
-DNSKEY. An example is:
-
-=over 4
-	
-=item mozilla trust-anchor
-
-=over 4
-
-=item fruits.netsec.tislabs.com.   
-
-"257 3 5 AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr qOA3lw=="
-
-=item netsec.tislabs.com.         
-
-"257 3 5 AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr qOA3lw=="
-
-;
-
-=back
-
-=back
-
-=item zone-security-expectation
-
-Specifies the local security expection for a zone. The additional
-data portion for this keyword is a sequence of the zone name and 
-its trust status - ignore, validate or untrusted. An example is:
-
-: zone-security-expectation    
-	org ignore 
-	net ignore
-	dnssec-tools.org validate
-	com ignore
-
-=back
-
-=back
+See B<dnsval.conf(3)> for a description of the validator configuration file.
 
 =head1 CURRENT STATUS
 
@@ -662,6 +598,8 @@ Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO
+
+B<dnsval.conf(3)>
 
 B<libsres(3)>
 
