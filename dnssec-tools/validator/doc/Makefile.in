@@ -1,13 +1,30 @@
 MAN1PAGES=validate.1
 
+LIBVAL_MAN=libval.3
+
 MAN3PAGES=val_getaddrinfo.3 \
 	  val_gethostbyname.3 \
 	  val_query.3 \
 	  dnsval.conf.3 \
-	  libval.3 \
+	  $(LIBVAL_MAN) \
 	  libsres.3
 
-all: $(MAN1PAGES) $(MAN3PAGES)
+MAN3PAGES_SYMLINKS=val_resolve_and_check.3	\
+	val_free_result_chain.3	\
+	val_istrusted.3	\
+	val_create_context.3	\
+	val_free_context.3	\
+	val_switch_policy_scope.3	\
+	resolver_config_set.3	\
+	root_hints_set.3	\
+	dnsval_conf_set.3	\
+	resolver_config_get.3	\
+	root_hints_get.3	\
+	dnsval_conf_get.3	\
+	p_as_error.3	\
+	p_val_error.3
+
+all: $(MAN1PAGES) $(MAN3PAGES) 
 
 install:
 	$(MKPATH) $(man1dir)
@@ -18,6 +35,11 @@ install:
 	for i in $(MAN3PAGES) ; do		\
 	  $(DOCINSTALL) $$i $(man3dir) ;	\
 	done
+	for i in $(MAN3PAGES_SYMLINKS) ; do		\
+	  rm -f $(man3dir)/$$i ;	\
+	  echo ".so $(man3dir)/$(LIBVAL_MAN)" > $(man3dir)/$$i  ;	\
+	done
+	
 
 # we don't clean up the man pages as they're normally distributed with
 # the package and the generation rules are for the developers.
