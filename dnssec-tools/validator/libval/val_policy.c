@@ -558,31 +558,28 @@ static int get_token ( FILE *conf_ptr,
  */
 int check_relevance(char *label, char *scope, int *label_count, int *relevant)
 {
-	char *c, *tmpstr;
+	int label_len;
+	char *c, *p;
 
 	*label_count = 1;
 	*relevant = 1;
+	c = label;
 
 	/* Check if this level is relevant */
 	if (scope != NULL) {
-
-		tmpstr= STRDUP(label); 
-		if(tmpstr == NULL)
-			return VAL_OUT_OF_MEMORY;
-		c = tmpstr;
-
+		label_len = strlen(label);
 		while (strcmp(c, scope)) {
-			if (NULL == strsep(&c, LVL_DELIM)) {
+			/* read ahead past the next delimiter */
+			if(NULL == (p = strstr(c, LVL_DELIM))) {
 				*relevant = 0;
 				break;
 			}
+			c = p+1;
 			(*label_count)++;	
 		}
 
-		FREE(tmpstr);
 	}
 	else {
-		char *c = label;
 		/* A NULL scope is always relevant */
 		if (!strcmp(label, LVL_DELIM)) {
 			/* This is the default policy */
@@ -824,7 +821,7 @@ void destroy_respol(val_context_t *ctx)
 
 int read_res_config_file(val_context_t *ctx)
 {
-	struct sockaddr_in my_addr;
+	struct sockaddr_in serv_addr;
 	struct in_addr  address;
 	char auth_zone_info[NS_MAXDNAME];
 	char *resolv_conf;
@@ -904,13 +901,14 @@ int read_res_config_file(val_context_t *ctx)
 
 			ns->ns_next = NULL;
 			ns->ns_number_of_addresses = 0;
-			if (inet_aton (cp, &address)==0)
+
+			if (inet_pton(AF_INET, cp, &address) != 1)
 				goto err;
-				bzero(&my_addr, sizeof(struct sockaddr));
-			my_addr.sin_family = AF_INET;         // host byte order
-			my_addr.sin_port = htons(DNS_PORT);     // short, network byte order
-			my_addr.sin_addr = address;
-			memcpy(ns->ns_address, &my_addr, sizeof(struct sockaddr));
+			bzero(&serv_addr, sizeof(struct sockaddr));
+			serv_addr.sin_family = AF_INET;         // host byte order
+			serv_addr.sin_port = htons(DNS_PORT);     // short, network byte order
+			serv_addr.sin_addr = address;
+			memcpy(ns->ns_address, &serv_addr, sizeof(struct sockaddr));
 
 			if (ns_tail == NULL) {
 				ns_head = ns;
@@ -1022,10 +1020,11 @@ int read_root_hints_file(val_context_t *ctx)
 		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
 			return retval;
 		if(type_h == ns_t_a) {
-			struct sockaddr_in server;
-			inet_aton(token, &server.sin_addr);
-        		memcpy (rdata_n, &(server.sin_addr), sizeof(u_int32_t));
-			rdata_len_h = sizeof(u_int32_t);
+			struct in_addr address;
+			if (inet_pton(AF_INET, token, &address) != 1)
+				return VAL_CONF_PARSE_ERROR;
+			rdata_len_h = sizeof(struct in_addr);
+        	memcpy (rdata_n, &address, rdata_len_h);
 		}
 		else if (type_h == ns_t_ns) {
    			if (ns_name_pton(token, rdata_n, NS_MAXCDNAME-1) == -1)
