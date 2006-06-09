@@ -60,6 +60,8 @@ AC_CHECK_LIB(crypto, EVP_md5,,
         AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
 )
 
+AC_CHECK_LIB(c, inet_nsap_ntoa, AC_DEFINE(HAVE_NSAP_ADDR),)
+
 AC_CHECK_HEADERS(openssl/bio.h openssl/evp.h)
 
 # error and die if we couldn't find it.
@@ -104,6 +106,13 @@ AH_TEMPLATE([STRUCT___NS_MSG_HAS__PTR],
             [Define if struct __ns_msg had _ptr.])
 
 dnl ----------------------------------------------------------------------
+dnl check for non-portable functions 
+dnl
+
+AC_CHECK_FUNCS(strerror_r)
+
+dnl ----------------------------------------------------------------------
+
 AC_CHECK_TYPES([ns_cert_types],,,[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
