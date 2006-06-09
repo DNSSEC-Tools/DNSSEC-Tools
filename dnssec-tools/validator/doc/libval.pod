@@ -186,6 +186,8 @@ The validation status for a given RRset. This can be one of the following:
 	VAL_NOTRUST
 		All available components in the authentication chain verified
 		properly, but there was no trust anchor available.	
+		(Note that this condition should not show up since a missing trust anchor
+		would show up with the appropriate error value)
 
 	VAL_SUCCESS
 		Answer received and validated successfully.
