@@ -391,7 +391,8 @@ int send_log_message(char *buffer)
 
 	server.sin_family = AF_INET;
 	server.sin_port = htons(VALIDATOR_LOG_PORT);
-	inet_aton(VALIDATOR_LOG_SERVER, &server.sin_addr);
+	if (inet_pton(AF_INET, VALIDATOR_LOG_SERVER, &server.sin_addr) != 1)
+		return VAL_INTERNAL_ERROR;
 	length=sizeof(struct sockaddr_in);
 
 	if(sendto(sock, buffer, strlen(buffer),0,&server,length) < 0)
