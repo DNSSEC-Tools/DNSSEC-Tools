@@ -244,13 +244,8 @@ trust anchor seen    any assertion status       intermediate result status     f
 trust anchor seen    every assertion status       intermediate result status     final result status
 ======================================================================================================= 
 
-    NO               VERIFIED                     VAL_R_VERIFIED_CHAIN           VAL_NOTRUST
     YES              VERIFIED                     VAL_R_VALIDATED_CHAIN          VAL_SUCCESS
-
-
-#define VAL_NONEXISTENT_NAME (VAL_R_LAST+3)
-#define VAL_NONEXISTENT_TYPE (VAL_R_LAST+4)
-
+	
 
 Other error states depend on certain sequences of assertion types and states
 
