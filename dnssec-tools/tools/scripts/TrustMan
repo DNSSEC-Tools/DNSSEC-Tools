@@ -3,15 +3,18 @@
 use Net::DNS;
 use Net::DNS::SEC;
 use Net::DNS::SEC::Tools::conf;
+use Net::SMTP;
 use Getopt::Long;
+use IO::File;
 
 ########################################################
 # Defaults
 
 my %opts = (
-        f => "/usr/local/etc/named/named.conf",
-        d => "netsec.tislabs.com",
-        D => 0,
+        k => "",
+        d => "",
+        t => 3600, # default to one hour
+        f => "",
 	v => 1
 );
 
@@ -19,34 +22,7 @@ my %opts = (
 # main
 
 # Parse command-line options
-GetOptions(\%opts, "f=s", "d=s", D);
-
-LocalGetOptions(\%opts,
-                ['GUI:separator',"Trust Anchor Management Configuration:"],
-                ['f|named-conf-file=s', "Full path to named config file:"],
-		['GUI:separator',"Miscellaneous Configuration:"],
-		['v|verbose','Verbose Mode'],
-);
-
-#LocalGetOptions(\%opts,
-#                ['GUI:separator',"DNS Configuration:"],
-#
-#                ['GUI:separator',
-#                 "Named.conf configuration file input support:"],
-#                ['i|named-conf-in-file=s',
-#                'Read path as a named.conf to compare key lists with'],
-#                ['T|use-current-trusted-keys',
-#                 'Check the current trusted key list from named.conf'],
-#
-#                ['GUI:separator',
-#                 "Named.conf configuration file output support:"],
-#                ['o|output-file=s','Output the results to a file'],
-#                ['t|print-named-conf-tokens',
-#                 'Enclose output in needed named.conf syntax markers'],
-#
-#                ['GUI:separator','Miscellanious Configuration:'],
-#                ['v|verbose','Verbose mode'],
-#);
+GetOptions(\%opts, "k=s", "d=s", t, f, v);
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
@@ -54,37 +30,94 @@ my %dtconf = parseconfig();
 # then $dtconf{'name_of_option_in_dnssec-tools.conf'}
 # contains the value of that option as set in the conf file
 
-my $ncfile = $dtconf{'tanamedconffile'};
+my $ncfile;
+my $dvfile;
+if ($opts{'k'}) {
+    $ncfile = $opts{'k'};
+} else {
+    $ncfile = $dtconf{'tanamedconffile'};
+    $dvfile = $dtconf{'tadnsvalconffile'};
+}
 my $contactaddr = $dtconf{'tacontact'};
 my $smtpserver = $dtconf{'tasmtpserver'};
 
-my %keystorage;
-my $domain_to_query = $opts{'d'};
-my $res = Net::DNS::Resolver->new;
-my $query = $res->query($domain_to_query,"SOA");
-
-#read_named_conf_keys(\%keystorage, $ncfile);
-
-#if ($query) {
-#    ($query->answer)[0]->print;
-#    my @soa_answer = $query->answer;
-#    print "Contact: ", $soa_answer[0]->rname, "\n";
-#    $soa_answer[0]->rname =~ /^(\w+)\.(\S+)$/;
-#    print $1, "@", $2, "\n";
-#} else {
-#    print "query failed: ", $res->errorstring, "\n";
+#my $keyfiles;
+#if (exists $dtconf{'takeyfiles'}) {
+#    $keyfiles = $dtconf{'takeyfiles'};
+#    my @kfiles = split (" ",$keyfiles);
+#    foreach my $kf (@kfiles) {
+#        # read the file to get domain names to check and get the keys as well
+#    }
 #}
 
-sub usage {
+my $sleeptime;
+$sleeptime = $dtconf{'tasleeptime'} if (exists($dtconf{'tasleeptime'}));
+$sleeptime = $opts{'t'} if (!$sleeptime);
+
+if (!$opts{'f'}) {
+    &daemonize;
+    while (1) {
+        &checkkeys;
+        sleep($sleeptime);
+    }
+} else {
+    &checkkeys;
 }
 
+sub usage {
+    print "TrustMan [-k key_containing_file] [-d domain] [-f]\n";
+    print "use the -f option to run in the foreground.\n";
+    print "If a domain is not specified, all domains in the key_containing_files will be checked.\n";
+    print "If no key_containing_files are specified, dnssec-tools.conf will be
+parsed for takeyfiles.\n";
+}
+
+sub checkkeys {
+    my %keystorage;
+    my @baddomains;
+    my @domains;
+    push @domains, $opts{'d'} if ($opts{'d'});
+    my $res = Net::DNS::Resolver->new;
+    # needed to ensure that +dnssec is used on subsequent queries
+    my $setdnssec = $res->dnssec(1);
+    
+    read_named_conf_file(\%keystorage, $ncfile);
+    read_dnsval_conf_file(\%keystorage, $dvfile);
+
+# if a domain is specified on the command line, we will only
+# check that domain. Otherwise, check all domains found in config files.
+    if (!exists ($domains[0])) {
+        foreach my $k (keys(%keystorage)) {
+            push @domains, $k;
+        }
+    }
+    
+    foreach my $d (@domains) {
+        my $query = $res->query($d,"DNSKEY");
+
+        if ($query) {
+            foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer) {
+                next if (!($keyrec->flags & 1));
+                my $key = $keyrec->key;
+                $key =~ s/\s+//g; # remove all spaces   
+                $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
+                if ($nonmatch) {
+                    push @baddomains, $d;
+                }
+            }
+        } else {
+            print "query failed for domain " . $d . ": " . $res->errorstring . "\n";
+        }
+    }
+    mailcontact($smtpserver,$contactaddr,@baddomains) if (@baddomains);
+}
 #######################################################################
-# read_named_conf_keys()
+# read_named_conf_file()
 #
 # reads in a named.conf file pointed to by $file and stores key
 # information in $storage
 #
-sub read_named_conf_keys {
+sub read_named_conf_file {
     my ($storage, $file) = @_;
     Verbose("reading and parsing trust keys from $file\n");
     # regexp pulled from Fast.pm
@@ -110,17 +143,51 @@ sub read_named_conf_keys {
 	    }
 	}
     }
+    $fh->close;
+}
+#######################################################################
+# read_dnsval_conf_file()
+#
+# reads in a dnsval.conf file pointed to by $file and stores key
+# information in $storage
+#
+sub read_dnsval_conf_file {
+    my ($storage, $file) = @_;
+    Verbose("reading and parsing trust keys from $file\n");
+    # regexp pulled from Fast.pm
+    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+
+    my $fh = new IO::File;
+    if (!$fh->open("<$file")) {
+	print STDERR "Could not open named configuration file: $file\n";
+	exit 1;
+    }
+    while (<$fh>) {
+	if (/trust-anchor/) {
+	    while (<$fh>) {
+		if (/\s*($pat_maybefullname)\s+\"(256|257)\s+(\d+)\s+(\d+)\s+(.+)\"\s*/) {
+		    push @{$storage->{$1}},
+		      { flags => $2,
+			protocol => $3,
+			algorithm => $4,
+			key => $5 };
+		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		}
+	    }
+	}
+    }
+    $fh->close;
 }
 
 ######################################################################
 # mailcontact()
-#  - emails a contact address with the donuts error output
+#  - emails a contact address with the error output
 sub mailcontact {
-    my ($contact, $file, $zonename) = @_;
-    my $fromaddr = "TrustMan";
+    my ($smtp,$contact,@domains) = @_;
+    my $fromaddr = 'TrustMan@localhost';
 
     # set up the SMTP object and required data
-    my $message = Net::SMTP->new($contactaddr);
+    my $message = Net::SMTP->new($smtp) || die "failed to create smtp message";
     $message->mail($fromaddr);
     $message->to(split(/,\s*/,$contact));
     $message->data();
@@ -128,15 +195,45 @@ sub mailcontact {
     # create headers
     $message->datasend("To: " . $contact . "\n");
     $message->datasend("From: " . $fromaddr . "\n");
-    $message->datasend("Subject: TrustMan warning for zone: $zonename\n\n");
+    $message->datasend("Subject: TrustMan warning -- DNSKEY mismatches\n\n");
 
     # create the body of the message: the warning
-    $message->datasend("TrustMan has detected a mismatch for the DNSKEY for \"$zonename\"\n");
-    $message->datasend("You should verify this key manually.\n\n");
+    $message->datasend("TrustMan has detected DNSKEY mismatches for the following zones: \n\n");
+    foreach my $d (@domains) {
+        $message->datasend("\t" . $d . "\n");
+    }
+    $message->datasend("\n\nYou should verify mismatched keys manually.\n\n");
 
     # finish and send the message
     $message->dataend();
     $message->quit;
+}
+
+#######################################################################
+# compare_keys()
+#
+# compares the contents of two keys to see if the new one ($domain,
+# $rec, and $keyin) matches the cached one previously remembered (in
+# $storage->{$domain} )
+#
+sub compare_keys {
+    my ($storage, $domain, $rec, $keyin) = @_;
+    if (!exists($storage->{$domain})) {
+# What would nonexistence of this really mean?
+#	print STDERR "  Found a key for $domain; previously we had none cached\n";
+    }
+    my $keys = $storage->{$domain};
+    foreach my $key (@$keys) {
+	if ($key->{'flags'} eq $rec->flags &&
+	    $key->{'protocol'} eq $rec->protocol &&
+	    $key->{'algorithm'} eq $rec->algorithm &&
+	    $key->{'key'} eq $keyin) {
+	    # the key exactly matches a stored key
+	    $key->{'found'} = 1;
+	    return 0;
+	}
+    }
+    return 1;
 }
 
 #######################################################################
@@ -146,6 +243,17 @@ sub mailcontact {
 #
 sub Verbose {
     print STDERR @_ if ($opts{'v'});
+}
+
+sub daemonize {
+  chdir '/' or die "Can't chdir to /: $!";
+  open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
+#open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+  open STDERR, '>/dev/null' or die "Can't write to /dev/null: $!";
+  defined(my $pid = fork) or die "Can't fork: $!";
+  exit if $pid;
+  setsid or die "Can't start a new session: $!";
+  umask 0;
 }
 
 #######################################################################
@@ -179,24 +287,61 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
+TrustMan - manage keys used as trust anchors
+
 =head1 SYNOPSIS
 
+TrustMan [options]
+
 =head1 DESCRIPTION
+
+TrustMan runs by default as a daemon to verify if keys stored locally
+in configuration files like named.conf still match the same keys
+as fetched from the zone where they are defined. If mismatches
+are detected, the daemon notifies the contact person defined in
+the config file or on the command line by mail.
+
+This script can also be run in the foreground (-f) to run this same check once
+manually.
+
+This script can also be used to set up configuration data in the file
+dnssec-tools.conf for later use by the daemon, making fewer command
+line arguments necessary. Configuration data is stored in dnssec-tools.conf.
+The current version requires you to edit dnssec-tools.conf by hand and
+supply values for the contact person email address (tacontact) and the
+SMTP server (tasmtpserver). Also edit the location of named.conf and
+dnsval.conf in that file if necessary.
 
 =head1 OPTIONS
 
 =over #indent
 
-=item -d #explains the -d flag, add others as needed
+=item -k 
+
+A key-containing file to read, such as named.conf or dnsval.conf
+
+=item -d
+
+The domain to check (supersedes configuration file)
+
+=item -t
+
+The number of seconds to sleep between checks. Default is 3600 (one hour)
+
+=item -f
+
+Run in the foreground.
+
+=item -v
+
+Verbose.
 
 =back #unindent
-
-
 =head1 PRE-REQUISITES
 
 =head1 COPYRIGHT
 
-Copyright 2005 SPARTA, Inc.  All rights reserved.
+Copyright 2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =cut
