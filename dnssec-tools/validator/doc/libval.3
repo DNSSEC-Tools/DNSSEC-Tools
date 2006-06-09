@@ -734,72 +734,14 @@ A policy with the specified label (identifier) was not found.
 .IX Header "FILES"
 The validator library reads configuration information from two separate files,
 /etc/resolv.conf and /etc/dnsval.conf.
-.IP "/etc/resolv.conf" 4
-.IX Item "/etc/resolv.conf"
+.Sp
 Only the \*(L"nameserver\*(R" option is supported in the resolv.conf file. This option
 is used to specify the \s-1IP\s0 address of the name server to which queries must be
 sent by default. For example,
 .Sp
 nameserver 10.0.0.1
-.IP "/etc/dnsval.conf" 4
-.IX Item "/etc/dnsval.conf"
-This file contains a sequence of the following \*(L"policy\-fragments\*(R":
 .Sp
-<label> <\s-1KEYWORD\s0> <additional\-data>; 
-.Sp
-label is the context to which this policy applies
-and \s-1KEYWORD\s0 is the specific policy component that is 
-being configured. The format of additional-data depends on the 
-keyword specified.
-.Sp
-Policy fragments are indexed by the label and keyword. If multiple
-policy fragments are defined for the same label and keyword combination
-then the last definition in the file is used.  
-.Sp
-Currently two different keywords are specified:
-.RS 4
-.IP "trust-anchor" 4
-.IX Item "trust-anchor"
-Specifies the trust anchors for a sequence of zones. The additional
-data portion for this keyword is a sequence of the zone name and a 
-quoted string containing the \s-1RDATA\s0 portion for the trust anchor's 
-\&\s-1DNSKEY\s0. An example is:
-.RS 4
-.IP "mozilla trust-anchor" 4
-.IX Item "mozilla trust-anchor"
-.RS 4
-.PD 0
-.IP "fruits.netsec.tislabs.com." 4
-.IX Item "fruits.netsec.tislabs.com."
-.PD
-\&\*(L"257 3 5 AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr qOA3lw==\*(R"
-.IP "netsec.tislabs.com." 4
-.IX Item "netsec.tislabs.com."
-\&\*(L"257 3 5 AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr qOA3lw==\*(R"
-.Sp
-;
-.RE
-.RS 4
-.RE
-.RE
-.RS 4
-.RE
-.IP "zone-security-expectation" 4
-.IX Item "zone-security-expectation"
-Specifies the local security expection for a zone. The additional
-data portion for this keyword is a sequence of the zone name and 
-its trust status \- ignore, validate or untrusted. An example is:
-.Sp
-: zone-security-expectation    
-	org ignore 
-	net ignore
-	dnssec\-tools.org validate
-	com ignore
-.RE
-.RS 4
-.RE
-.RE
-.RS 4
+See \fB\f(BIdnsval.conf\fB\|(3)\fR for a description of the validator configuration file.
 .SH "CURRENT STATUS"
 .IX Header "CURRENT STATUS"
 There is currently no support for IPv6. 
@@ -811,6 +753,8 @@ Copyright 2004\-2006 \s-1SPARTA\s0, Inc.  All rights reserved.
 See the \s-1COPYING\s0 file included with the dnssec-tools package for details.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
+\&\fB\f(BIdnsval.conf\fB\|(3)\fR
+.Sp
 \&\fB\f(BIlibsres\fB\|(3)\fR
 .Sp
 \&\fB\f(BIval_x_query\fB\|(3)\fR
