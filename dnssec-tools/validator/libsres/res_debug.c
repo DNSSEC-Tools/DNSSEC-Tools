@@ -183,7 +183,9 @@ do_section(
 	char *buf;
 	ns_opcode opcode;
 	ns_rr rr;
+#ifdef HAVE_STRERROR_R
 	char err_buf[ERRBUFLEN+1];
+#endif
 
 	buf = MALLOC(buflen);
 	if (buf == NULL) {
@@ -196,11 +198,16 @@ do_section(
 	for (;;) {
 		if (ns_parserr(handle, section, rrnum, &rr)) {
 			if (errno != ENODEV) { 
+#ifdef HAVE_STRERROR_R
 				if(!strerror_r(errno, err_buf, ERRBUFLEN))
 					fprintf(file, ";; ns_parserr: %s\n",
 						err_buf);
 				else
 					fprintf(file, ";; ns_parserr: Error\n");
+#else
+				fprintf(file, ";; ns_parserr: %s\n",
+						strerror(errno));
+#endif
 			}
 			goto cleanup;
 		}
@@ -232,11 +239,17 @@ do_section(
 					}
 					continue;
 				}
+
+#ifdef HAVE_STRERROR_R
 				if(!strerror_r(errno, err_buf, ERRBUFLEN))
 					fprintf(file, ";; ns_sprintrr: %s\n",
 						err_buf);
 				else
 					fprintf(file, ";; ns_sprintrr: Error\n");
+#else
+				fprintf(file, ";; ns_sprintrr: %s\n",
+					strerror(errno));
+#endif
 				goto cleanup;
 			}
 			fputs(buf, file);
@@ -258,13 +271,20 @@ libsres_pquery(const u_char *msg, int len, FILE *file) {
 	ns_msg handle;
 	int qdcount, ancount, nscount, arcount;
 	u_int opcode, rcode, id;
+#ifdef HAVE_STRERROR_R
 	char err_buf[ERRBUFLEN+1];
+#endif
 
 	if (ns_initparse(msg, len, &handle) < 0) {
+#ifdef HAVE_STRERROR_R
 		if(!strerror_r(errno, err_buf, ERRBUFLEN))
 			fprintf(file, ";; ns_initparse: %s\n", err_buf);
 		else
 			fprintf(file, ";; ns_initparse: Error\n");
+#else
+		fprintf(file, ";; ns_initparse: %s\n", strerror(errno));
+#endif
+		
 		return;
 	}
 	opcode = ns_msg_getflag(handle, ns_f_opcode);
