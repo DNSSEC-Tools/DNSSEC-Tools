@@ -430,6 +430,7 @@ static int get_addrinfo_from_result (
 			    if (rrset->rrs->val_rrset_type_h == ns_t_a) {
 				    struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 				    val_log(ctx, LOG_DEBUG, "rrset of type A found");
+                                    saddr4->sin_family = AF_INET;
 				    ainfo->ai_family = AF_INET;
 				    ainfo->ai_addrlen = sizeof (struct sockaddr_in);
 				    memcpy(&(saddr4->sin_addr.s_addr), rr->rr_rdata, rr->rr_rdata_length_h);
@@ -439,6 +440,7 @@ static int get_addrinfo_from_result (
 			    else if (rrset->rrs->val_rrset_type_h == ns_t_aaaa) {
 				    struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
 				    val_log(ctx, LOG_DEBUG, "rrset of type AAAA found");
+                                    saddr6->sin6_family = AF_INET6;
 				    ainfo->ai_family = AF_INET6;
 				    ainfo->ai_addrlen = sizeof (struct sockaddr_in6);
 				    memcpy(&(saddr6->sin6_addr.s6_addr), rr->rr_rdata, rr->rr_rdata_length_h);
