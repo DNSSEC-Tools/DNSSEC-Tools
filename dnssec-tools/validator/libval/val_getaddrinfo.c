@@ -662,7 +662,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 	/* Check if the nodename was NULL or is an IPv4 address in dotted-decimal format */
 	if (nodename == NULL || inet_pton(AF_INET, nodename, &ip4_addr) > 0) {
 
-		struct val_addrinfo *ainfo = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo *));
+		struct val_addrinfo *ainfo = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
 		struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 		
 		is_ip4 = 1;
