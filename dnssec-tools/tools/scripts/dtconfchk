@@ -468,7 +468,7 @@ sub check_rollerd
 	#
 	if(-e $logfile)
 	{
-		if(! -f $logfile))
+		if(! -f $logfile)
 		{
 			prt(0,"invalid file type for logfile ($logfile)");
 			$errs++;
@@ -559,16 +559,21 @@ sub check_misc
 
 		if(defined($archdir) && ($archdir ne ""))
 		{
-			$archdir = $dtconf{'archivedir'};
+#			$archdir = $dtconf{'archivedir'};
 			if(-d $archdir)
 			{
 				prt(1,"$archdir is an existing directory");
 			}
-			else
+			elsif (-e $archdir)
 			{
 				prt(0,"archivedir $archdir exists, but is not a directory");
 				$errs++;
 			}
+                        else
+                        {
+                                prt(0,"archivedir $archdir does not exist");
+                                $errs++;
+                        }
 		}
 		else
 		{
