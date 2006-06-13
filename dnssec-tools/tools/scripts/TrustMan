@@ -1,4 +1,8 @@
 #!/usr/bin/perl
+#
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
 
 use Net::DNS;
 use Net::DNS::SEC;
@@ -259,6 +263,8 @@ sub daemonize {
 #######################################################################
 # Getopt::GUI::Long portability
 #
+# will be used in a near-future version
+
 sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	require Getopt::Long;
