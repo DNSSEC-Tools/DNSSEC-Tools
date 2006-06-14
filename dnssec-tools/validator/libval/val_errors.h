@@ -54,13 +54,12 @@
 #define VAL_A_RRSIG_MISSING (VAL_A_ERROR_BASE+2)
 #define VAL_A_DNSKEY_MISSING (VAL_A_ERROR_BASE+3)
 #define VAL_A_DS_MISSING (VAL_A_ERROR_BASE+4)
-#define VAL_A_NO_TRUST_ANCHOR (VAL_A_ERROR_BASE+5)
-#define VAL_A_UNTRUSTED_ZONE (VAL_A_ERROR_BASE+6)
-#define VAL_A_IRRELEVANT_PROOF (VAL_A_ERROR_BASE+7)
-#define VAL_A_DNSSEC_VERSION_ERROR (VAL_A_ERROR_BASE+8)
-#define VAL_A_TOO_MANY_LINKS (VAL_A_ERROR_BASE+9)
-#define VAL_A_UNKNOWN_DNSKEY_PROTO (VAL_A_ERROR_BASE+10)
-#define VAL_A_FLOOD_ATTACK_DETECTED	(VAL_A_ERROR_BASE+11)
+#define VAL_A_UNTRUSTED_ZONE (VAL_A_ERROR_BASE+5)
+#define VAL_A_IRRELEVANT_PROOF (VAL_A_ERROR_BASE+6)
+#define VAL_A_DNSSEC_VERSION_ERROR (VAL_A_ERROR_BASE+7)
+#define VAL_A_TOO_MANY_LINKS (VAL_A_ERROR_BASE+8)
+#define VAL_A_UNKNOWN_DNSKEY_PROTO (VAL_A_ERROR_BASE+9)
+#define VAL_A_FLOOD_ATTACK_DETECTED	(VAL_A_ERROR_BASE+10)
 
 #define VAL_A_DNS_ERROR_BASE (VAL_A_ERROR_BASE+15)
 /* 
@@ -100,14 +99,14 @@
 #define VAL_A_KEYTAG_MISMATCH (VAL_A_FAIL_BASE+21) /* The DNSKEY and RRSIG pair have a mismatch in their key tags*/
 #define VAL_A_LAST_FAILURE (VAL_A_FAIL_BASE+30) /* VAL_A_ERROR_BASE + 70 */
 
-/* success results conditions */
+/* success or unknown result conditions */
 #define VAL_A_VERIFIED (VAL_A_LAST_FAILURE+1) /* This is a transient state, it will settle at VALIDATED_SUCCESS if the
 chain of trust can be completed */ 
 #define VAL_A_LOCAL_ANSWER (VAL_A_LAST_FAILURE+2)	/* Answer obtained locally */
 #define VAL_A_TRUST_KEY (VAL_A_LAST_FAILURE+3) /* key is trusted */ 
 #define VAL_A_TRUST_ZONE (VAL_A_LAST_FAILURE+4) /* zone is trusted */
 #define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+5) /* No DNSSEC validation possible, query was for a RRSIG.*/
-#define VAL_A_LAST_SUCCESS (VAL_A_LAST_FAILURE+10) /* VAL_A_ERROR_BASE + 80 */
+#define VAL_A_NO_TRUST_ANCHOR (VAL_A_LAST_FAILURE+6) /* No trust anchor available, but components were verified */
 
 /* 
  *************************************************** 

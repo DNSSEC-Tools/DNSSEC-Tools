@@ -365,6 +365,8 @@ char *p_val_error(val_status_t err)
 		case VAL_PROVABLY_UNSECURE: 
 		case VAL_R_TRUST_FLAG|VAL_PROVABLY_UNSECURE: 
 					return "VAL_PROVABLY_UNSECURE"; break;
+		case VAL_NOTRUST:
+					return "VAL_NOTRUST"; break;
 
 		case VAL_SUCCESS: 
 					return "VAL_SUCCESS"; break;

@@ -1067,6 +1067,12 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 					res->val_rc_status = VAL_BARE_RRSIG;
 					break;
 				}	
+				/* unknown result */
+				else if (next_as->val_ac_status == VAL_A_NO_TRUST_ANCHOR) {
+					/* verified but no trust */
+					res->val_rc_status = VAL_R_VERIFIED_CHAIN;
+					break;
+				}
 			}
 		}
 		if (!thisdone)
