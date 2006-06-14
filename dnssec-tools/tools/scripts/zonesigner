@@ -69,6 +69,7 @@ my $enddate;				# End-time for zone signing.
 my $entropymsg = $DEF_ENTROPYMSG;	# Display flag for entropy message.
 my $gends;				# Generate DS records in zone signing.
 my $help = 0;				# Help flag.
+my $version = 0;			# Version flag.
 my $kgopts;				# Additional dnssec-keygen options.
 my $ksdir;				# Directory to hold keysets.
 my $nokrfile;				# Flag for not using a keyrec file.
@@ -166,6 +167,7 @@ sub main
 	#
 	# If help was specified, give the usage and exit.
 	#
+	show_version() if($version == 1);
 	usage(1) if($help == 1);
 
 	#
@@ -408,8 +410,10 @@ sub optsandargs()
 		$entropymsg = $opts{'entropy_msg'};
 	}
 	$help	 = $opts{'help'};
+	$version = $opts{'version'};
 	$verbose = $opts{'verbose'};
 
+	show_version() if ($version);
 
 	#
 	# Get the paths to the external commands.  If they aren't defined,
@@ -1665,6 +1669,19 @@ sub helpchk
 #
 # Purpose:	Give usage message and exit.
 #
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+# Purpose:	Give usage message and exit.
+#
 sub usage
 {
 	my $whence = shift;			# Location of call.
@@ -1684,6 +1701,7 @@ sub usage
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-help\n";
+	print STDERR "\t\t\t-version\n";
 	print STDERR "\t\t\t-verbose\n";
 	print STDERR "\n";
 
@@ -1917,6 +1935,11 @@ option or as the first non-option command line argument.
 =item -help
 
 Display a usage message.
+
+=item -version
+
+Display zonesigner's version number and the DNSSEC-Tools package
+version number that it came from.
 
 =item -verbose
 
