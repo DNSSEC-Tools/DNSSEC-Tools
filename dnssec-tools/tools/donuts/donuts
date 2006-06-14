@@ -31,6 +31,7 @@ my (@rules, %rules, $rf, $current_zone_file, %nrecs,
     @ignorelist, $netdns, $netdns_error, %outstructure);
 
 LocalGetOptions(\%opts,
+		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 0.9.1"],
 		['GUI:screen',"Rule Set Configuration:"],
 		["l|level=i", "The maximum rule level to run (default = 5)",
 		 question => { type => 'menu', values => [1..9] }],
@@ -129,10 +130,9 @@ if ($features{'live'}) {
 # load rule files
 #   (comma separated list)
 #
-foreach my $rfexp (split(/,\s*/, $opts{'r'})) {
-    my @rfs = glob($rfexp);
-    foreach $rf (@rfs) {
-	next if (! -f $rf || $rf =~ /.bak$/ || $rf =~ /~$/);
+foreach_rule_file(
+    sub {
+        my $rf = shift;
 	print STDERR "--- loading rule file $rf\n    rules:" if ($opts{'v'});
 	if ($rf =~ /\.pl$/) {
 	    do $rf;
@@ -141,7 +141,7 @@ foreach my $rfexp (split(/,\s*/, $opts{'r'})) {
 	}
 	print STDERR "\n" if ($opts{'v'});
     }
-}
+);
 
 #
 # load optional user-config file
@@ -448,6 +448,17 @@ sub get_gui_children {
 
 
 #######################################################################
+
+sub foreach_rule_file {
+    my ($cb) = @_;
+    foreach my $rfexp (split(/,\s*/, $opts{'r'})) {
+	my @rfs = glob($rfexp);
+	foreach $rf (@rfs) {
+	    next if (! -f $rf || $rf =~ /.bak$/ || $rf =~ /~$/);
+	    $cb->($rf);
+	}
+    }
+}
 
 sub add_rule {
     my $rule = shift;
