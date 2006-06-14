@@ -22,6 +22,7 @@ use ExtUtils::MakeMaker;
 				getdnskeys
 				keyrec-check
 				lskrf
+				lsroll
 				rollchk
 				rollctl
 				rollerd
@@ -29,6 +30,7 @@ use ExtUtils::MakeMaker;
 				tachk
 				timetrans
 				zonesigner
+				TrustMan
 			)]
 	);
 
