@@ -242,10 +242,11 @@ trust anchor seen    any assertion status       intermediate result status     f
 (Note: see val_errors.h for values of *_BASE and *_LAST)
 
 trust anchor seen    every assertion status       intermediate result status     final result status
+                     (if present)
 ======================================================================================================= 
 
     YES              VERIFIED                     VAL_R_VALIDATED_CHAIN          VAL_SUCCESS
-	
+	NO               VERIFIED                     VAL_R_VERIFIED_CHAIN           VAL_NOTRUST	
 
 Other error states depend on certain sequences of assertion types and states
 
