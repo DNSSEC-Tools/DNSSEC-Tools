@@ -303,6 +303,7 @@ static int get_addrinfo_from_etc_hosts (
 			struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 			bzero(saddr4, sizeof(struct sockaddr_in));
 			ainfo->ai_family = AF_INET;
+                        saddr4->sin_family = AF_INET;
 			ainfo->ai_addrlen = sizeof (struct sockaddr_in);
 			memcpy(&(saddr4->sin_addr), &ip4_addr, sizeof(struct in_addr));
 			ainfo->ai_addr = (struct sockaddr *) saddr4;
@@ -313,6 +314,7 @@ static int get_addrinfo_from_etc_hosts (
 			struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
 			bzero(saddr6, sizeof(struct sockaddr_in6));
 			ainfo->ai_family = AF_INET6;
+                        saddr6->sin6_family = AF_INET6;
 			ainfo->ai_addrlen = sizeof (struct sockaddr_in6);
 			memcpy(&(saddr6->sin6_addr), &ip6_addr, sizeof(struct in6_addr));
 			ainfo->ai_addr = (struct sockaddr *) saddr6;
@@ -677,7 +679,8 @@ int val_getaddrinfo(const val_context_t *ctx,
 		
 		bzero(ainfo, sizeof(struct val_addrinfo));
 		bzero(saddr4, sizeof(struct sockaddr_in));
-		
+
+                saddr4->sin_family = AF_INET;
 		ainfo->ai_family = AF_INET;
 		ainfo->ai_addrlen = sizeof (struct sockaddr_in);
 		memcpy(&(saddr4->sin_addr), &ip4_addr, sizeof(struct in_addr));
@@ -722,12 +725,13 @@ int val_getaddrinfo(const val_context_t *ctx,
 		bzero(ainfo, sizeof(struct val_addrinfo));
 		bzero(saddr6, sizeof(struct sockaddr_in6));
 		
+                saddr6->sin6_family = AF_INET6;
 		ainfo->ai_family = AF_INET6;
 		ainfo->ai_addrlen = sizeof (struct sockaddr_in6);
 		memcpy(&(saddr6->sin6_addr), &ip6_addr, sizeof(struct in6_addr));
 		ainfo->ai_addr = (struct sockaddr *) saddr6;
 		ainfo->ai_canonname = NULL;
-		
+ 		
 		ainfo->val_status = VAL_LOCAL_ANSWER;
 		if (process_service_and_hints(ainfo->val_status, servname, hints, &ainfo6) == EAI_SERVICE) {
 			free_val_addrinfo(ainfo);
