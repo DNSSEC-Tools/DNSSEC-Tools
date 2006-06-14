@@ -1282,6 +1282,9 @@ int val_resolve_and_check(	val_context_t	*context,
 	int done = 0;
 	int data_received = 0;
 
+	if ((context == NULL) || (domain_name_n == NULL))
+		return VAL_BAD_ARGUMENT;
+
 	val_log(context, LOG_DEBUG, "val_resolve_and_check(): looking for {%s %d %d}", 
 						domain_name_n, class, type);
 
