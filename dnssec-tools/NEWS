@@ -12,3 +12,24 @@ This file contains a list of major changes per release.
 		- APIs modified to comply with (upcoming version of) 
 		  draft-draft-hayatnagarkar-dnsext-validator-api
  
+  - dtinitconf, dtconfchk, dtdefs:
+                - these tools are used to create, check and consult the 
+                  file dnssec-tools.conf which is used by many of the
+                  dnssec tools. dtconfchk was previously known as confchk.
+                 
+                - modules/defaults.pm was also added to provide defaults
+                  for the above tools.
+
+  - rollinit, rollctl, rollchk, rollerd, lsroll:
+                - these tools are used to create, check, and list the roll
+                  rec files to be used by rollerd and rollctl.
+
+                - rollerd is a daemon to manage DNSSEC key roll-over.
+
+                - rollctl is used to send commands to a rollerd daemon.
+
+  - TrustMan:
+                - manages keys used as trust anchors in named.conf and
+                  dnsval.conf
+                - can be run as a daemon or as a one-time check
+                - configuration is placed in dnssec-tools.conf
