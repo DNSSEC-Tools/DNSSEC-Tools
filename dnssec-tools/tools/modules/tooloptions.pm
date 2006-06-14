@@ -108,6 +108,7 @@ my @stdopts =
 
 	['GUI:separator',		'Control Options:'],
 		["verbose+",		"Verbose mode"],
+		["version",		"Display version number"],
 		["help",		'Show command line help',
 		 question => {
 				values	=> 'Display Help',
