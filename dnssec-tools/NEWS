@@ -1,4 +1,14 @@
 This file contains a list of major changes per release.
 
 0.9.1:
-  - 
+  - validator library (dnssec-tools/validator):
+		- code has been re-structured within the following sub-directories: 
+		  libsres/ libval/ doc/ etc/ apps/ and include/
+		- configures and builds cleanly on the following systems: 
+		  Fedora, MacOSX, FreeBSD
+		  (should configure and build on Solaris -- not actually tested)   
+		- includes support for tuning "off" DNSSEC using the
+		  "zone-security-expectation" policy construct. 
+		- APIs modified to comply with (upcoming version of) 
+		  draft-draft-hayatnagarkar-dnsext-validator-api
+ 
