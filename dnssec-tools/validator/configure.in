@@ -60,7 +60,9 @@ AC_CHECK_LIB(crypto, EVP_md5,,
         AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
 )
 
-AC_CHECK_LIB(c, inet_nsap_ntoa, AC_DEFINE(HAVE_NSAP_ADDR),)
+AH_TEMPLATE([HAVE_NSAP_ADDR],
+            [Define if libc contains inet_nsap_ntoa.])
+AC_CHECK_LIB(c, inet_nsap_ntoa, AC_DEFINE(HAVE_NSAP_ADDR), )
 
 AC_CHECK_HEADERS(openssl/bio.h openssl/evp.h)
 
