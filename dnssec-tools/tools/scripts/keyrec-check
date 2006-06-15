@@ -93,6 +93,7 @@ my %length_high =
 my $count   = 0;			# Error-count flag.
 my $quiet   = 0;			# Quiet flag.
 my $verbose = 0;			# Verbose flag.
+my $version = 0;			# Display the version number.
 my $keychk  = 0;			# Keys-only flag.
 my $zonechk = 0;			# Zones-only flag.
 my %options = ();			# Filled option array.
@@ -103,6 +104,7 @@ my @opts =
 	"verbose+",			# Give lotsa output.
 	"help",				# Give a usage message and exit.
 	"zone",				# Only check zone keyrecs.
+	"version",			# Display the version nmuber .
 	"key",				# Only check key keyrecs.
 );
 
@@ -141,6 +143,9 @@ sub main()
 	$verbose = $options{'verbose'};
 	$keychk	 = $options{'key'};
 	$zonechk = $options{'zone'};
+	$version = $options{'version'};
+
+	show_version() if($options{'version'});
 
 	if(defined($options{'help'}))
 	{
@@ -973,13 +978,26 @@ sub vprint
 	}
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
 #
 sub usage
 {
-	print STDERR "usage:  keyrec-check [-c] [-q] [-v] [-h]\n";
+	print STDERR "usage:  keyrec-check [-c] [-q] [-v] [-h] [-version]\n";
 	exit(0);
 }
 

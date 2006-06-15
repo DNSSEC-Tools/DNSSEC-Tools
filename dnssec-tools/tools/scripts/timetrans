@@ -67,6 +67,7 @@ my @opts =
         "days=i",				# Number of days.
         "weeks=i",				# Number of weeks.
         "count=i",				# Seconds count.
+	"version",				# Display the version nmuber .
 );
 
 #
@@ -140,6 +141,11 @@ sub optsandargs()
 	GetOptions(\%options,@opts);
 
 	#
+	# Show the version number if requested
+	#
+	show_version() if(defined($options{'version'}));
+
+	#
 	# Check for command line errors.
 	#
 	if(keys(%options) == 0)
@@ -198,6 +204,20 @@ sub optsandargs()
 	}
 }
 
+######################################################################
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #######################################################################
 #
 # Routine:	usage()
@@ -208,7 +228,7 @@ sub usage
 {
 	my $whence = shift;			# Location of call.
 
-	print STDERR "usage:  timetrans [units-options] [count-options] [-help]\n";
+	print STDERR "usage:  timetrans [units-options] [count-options] [-help] [-version]\n";
 	print STDERR "\n";
 
 	print STDERR "\t\tunits-options:\n";

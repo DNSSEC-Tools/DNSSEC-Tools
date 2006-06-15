@@ -30,6 +30,7 @@ my @OPTS =
 	"list",				# List, but don't do anything.
 	"verbose",			# Give lotsa output.
 	"help",				# Give a usage message and exit.
+	"version",			# Display the version nmuber .
 );
 
 #
@@ -56,6 +57,7 @@ my %zones = ();				# Names of zone keyrecs.
 my %keys = ();				# Names of ZSK keyrecs.
 
 my $USELOC = 1;				# Show location is usage().
+my $version	= 0;			# Display the version number.
 
 main();
 exit(0);
@@ -149,7 +151,9 @@ sub optsandargs
 	GetOptions(\%options,@OPTS);
 	$list	 = $options{'list'};
 	$verbose = $options{'verbose'};
+	$version = $options{'version'};
 
+	show_version() if(defined($options{'version'}));
 	usage(1) if(defined($options{'help'}));
 
 	#
@@ -245,6 +249,19 @@ sub checkkey
 
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -257,6 +274,7 @@ sub usage
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-list	    -  give output, but don't fix the keyrec\n";
 	print STDERR "\t\t-verbose  -  give lots of output\n";
+	print STDERR "\t\t-version  -  display version number\n";
 	print STDERR "\t\t-help     -  give a usage message and exit\n";
 
 	print "\ncalled from $loc\n" if($USELOC);

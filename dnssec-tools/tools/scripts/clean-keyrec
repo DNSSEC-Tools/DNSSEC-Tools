@@ -26,6 +26,7 @@ my $list    = 0;			# List-only flag.
 my $quiet   = 0;			# Quiet flag.
 my $remove  = 0;			# Remove key file flag.
 my $verbose = 0;			# Verbose flag.
+my $version = 0;			# Version flag.
 my %options = ();			# Filled option array.
 my @opts =
 (
@@ -34,6 +35,7 @@ my @opts =
 	"quiet",			# Don't give any output.
 	"rm",				# Remove key file.
 	"verbose",			# Give lotsa output.
+	"version",			# show version number.
 	"help",				# Give a usage message and exit.
 );
 
@@ -140,8 +142,10 @@ sub optsandargs
 	$quiet	 = $options{'quiet'};
 	$remove	 = $options{'rm'};
 	$verbose = $options{'verbose'};
+	$version = $options{'version'};
 
 	usage() if(defined($options{'help'}));
+	show_version() if(defined($options{'version'}));
 
 	#
 	# Can't have verbosity and quietude.
@@ -389,6 +393,19 @@ sub vprint
 	}
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -402,6 +419,7 @@ sub usage
 	print STDERR "\t\t-rm       -  delete orphaned keys\n";
 	print STDERR "\t\t-quiet    -  don't give any output\n";
 	print STDERR "\t\t-verbose  -  give lotsa output\n";
+	print STDERR "\t\t-version  -  show the version number\n";
 	print STDERR "\t\t-help     -  give a usage message and exit\n";
 
 	exit(0);

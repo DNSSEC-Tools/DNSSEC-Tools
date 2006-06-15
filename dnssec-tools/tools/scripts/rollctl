@@ -35,6 +35,7 @@ my @opts =
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
 
+	"version",			# Display the version nmuber .
 	"help",				# Give a usage message and exit.
 );
 
@@ -50,6 +51,7 @@ my $runqueueflag;
 my $shutdownflag;
 my $sleeptimeflag;
 my $statusflag;
+my $version	= 0;			# Display the version number.
 
 #######################################################################
 
@@ -164,6 +166,12 @@ sub doopts
 	$shutdownflag	= $options{'shutdown'}	|| 0;
 	$sleeptimeflag	= $options{'sleeptime'}	|| 0;
 	$statusflag	= $options{'status'}	|| 0;
+	$version        = $options{'version'}   || 0;
+
+	#
+	# Show the version number if requested
+	#
+	show_version() if(defined($options{'version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -171,6 +179,20 @@ sub doopts
 	usage() if(defined($options{'help'}));
 
 }
+
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
 
 #-----------------------------------------------------------------------------
 #
@@ -188,6 +210,7 @@ sub usage
 	print STDERR "\t-shutdown			shutdown rollerd\n";
 	print STDERR "\t-sleeptime <sleeptime>		set sleep time\n";
 	print STDERR "\t-status				get rollerd's status\n";
+	print STDERR "\t-version			display version number\n";
 	print STDERR "\t-help				help message \n";
 	exit(0);
 }

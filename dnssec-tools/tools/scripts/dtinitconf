@@ -38,6 +38,7 @@ my @opts =
 	"overwrite",				# Overwrite existing files.
 	"noprompt",				# Don't prompt user.
 	"v",					# Verbose equivalent.
+	"version",			        # Display the version nmuber .
 
 	"usegui",				# Use option GUI.
 	"noentropy_msg",			# Don't give entropy message.
@@ -75,6 +76,7 @@ my $noprompt = 0;			# Don't prompt -- just use defaults.
 my $outfile;				# Output filename.
 my $overwrite;				# Overwrite existing output file.
 my $verbose = 0;			# Give verbose output.
+my $version	= 0;			# Display the version number.
 
 my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
@@ -189,8 +191,14 @@ sub optsandargs
 	$overwrite = $opts{'overwrite'};
 
 	$verbose   = $opts{'verbose'}   || $opts{'v'};
+	$version   = $opts{'version'};
 	$helpflag  = $opts{'help'};
 	$noprompt  = $opts{'noprompt'};
+
+	#
+	# Display the version number
+	#
+	show_version() if($version);
 
 	#
 	# Give usage message if desired.
@@ -616,6 +624,22 @@ sub findbind()
 }
 
 
+
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
+
 #----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -656,6 +680,7 @@ sub usage()
 	print STDERR "\t\t-overwrite\n";
 	print STDERR "\t\t-noprompt\n";
 	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-version\n";
 	print STDERR "\t\t-help\n";
 
 	exit(0);

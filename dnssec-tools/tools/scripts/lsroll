@@ -38,6 +38,7 @@ my @opts =
 	"count",			# Only give a count of matching keyrecs.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
+	"version",			# Display the version nmuber .
 
 	"help",				# Give a usage message and exit.
 );
@@ -60,6 +61,7 @@ my $phstartflag;
 my $cntflag;
 my $terse;
 my $long;
+my $version = 0;			# Display the version number.
 
 my $count   = 0;			# Record-match count.
 
@@ -154,6 +156,11 @@ sub doopts
 	$cntflag	= $options{'count'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
+
+	#
+	# Show the version number if requested
+	#
+	show_version() if(defined($options{'version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -364,6 +371,20 @@ sub showrollrecs
 }
 
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -386,6 +407,7 @@ sub usage
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
+	print STDERR "\t\t-version	display version number\n";
 	print STDERR "\t\t-help		help message \n";
 
 	exit(1);
