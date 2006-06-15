@@ -29,6 +29,7 @@ my @opts =
 	"quiet",			# Give no output.
 	"summary",			# Give only a summary output line.
 	"verbose",			# Give verbose output.
+	"version",			# Display the version nmuber .
 	"help",				# Give a usage message and exit.
 );
 
@@ -68,6 +69,7 @@ my $expert	= 0;			# Don't do non-expert checks.
 my $quiet	= 0;			# Give no output.
 my $summary	= 0;			# Give only a summary output line.
 my $verbose	= 0;			# Give lotsa output.
+my $version	= 0;			# Display the version number.
 
 my $errs	= 0;			# Error count.
 
@@ -174,9 +176,14 @@ sub doopts
 	GetOptions(\%options,@opts);
 	$expert	 = $options{'expert'};
 	$verbose = $options{'verbose'};
+	$version = $options{'version'};
 	$summary = $options{'summary'};
 	$quiet	 = $options{'quiet'};
 
+	#
+	# Show the version number if requested
+	#
+	show_version() if(defined($options{'version'}));
 	usage() if(defined($options{'help'}));
 }
 
@@ -779,6 +786,19 @@ sub err
 	print STDERR $line if(!$quiet);
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -791,6 +811,7 @@ sub usage
 	print STDERR "\t\t-quiet\n";
 	print STDERR "\t\t-status\n";
 	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-version\n";
 	print STDERR "\t\t-help\n";
 	exit(0);
 }

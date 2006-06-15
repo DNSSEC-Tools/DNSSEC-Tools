@@ -65,6 +65,7 @@ my $zsklife;                            # Lifespan of the ZSK.
 my $algo;                               # The encryption algorithm.
 my $ksksize;                            # The KSK size.
 my $zsksize;                            # The ZSK size.
+my $version	= 0;			# Display the version number.
 
 my $verbose;
 my $helpflag;
@@ -76,6 +77,7 @@ my @opts = (
 		"ksk=s",
 		"zskcur=s",
 		"zskpub=s",
+	        "version",			# Display the version nmuber .
 	   );
 
 #
@@ -243,7 +245,10 @@ sub optsandargs
 	$keygen	   = $opts{'keygen'}	|| dnssec_tools_defaults("bind-keygen");
 
 	$verbose   = $opts{'verbose'};
+	$version   = $opts{'version'};
 	$helpflag  = $opts{'help'};
+
+	show_version() if(defined($opts{'version'}));
 
 	#
 	# Give usage message in a few situations.
@@ -440,6 +445,20 @@ sub genzsk
     return($zsk || "");
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -472,6 +491,7 @@ sub usage
 	print STDERR "\t\t-zsklife LIFESPAN       ZSK lifespan\n\n";
 
 	print STDERR "\t\t-verbose                verbose output\n";
+	print STDERR "\t\t-version		  display version number\n";
 	print STDERR "\t\t-help                   help message\n";
 
 	exit(0);

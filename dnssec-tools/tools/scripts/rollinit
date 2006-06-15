@@ -28,6 +28,7 @@ my @opts =
 	"keyrec=s",			# Keyrec file.
 	"out=s",			# Output file.
 	"skip",				# Skip record flag.
+	"version",			# Display the version nmuber .
 	"help",				# Give a usage message and exit.
 );
 
@@ -39,6 +40,7 @@ my $zoneopt;
 my $kropt;
 my $outfile;
 my $skipopt = 0;
+my $version = 0;			# Display the version number.
 
 my $argc;				# Number of command line arguments.
 my $noopts = 0;				# No-options flag.
@@ -102,11 +104,17 @@ sub doopts
 	$kropt	 = $options{'keyrec'}	|| "";
 	$outfile = $options{'out'}	|| "";
 	$skipopt = $options{'skip'}	|| 0;
+	$version = $options{'version'};
 
 	if(($zoneopt eq "") && ($kropt eq ""))
 	{
 		$noopts = 1;
 	}
+
+	#
+	# Show the version number if requested
+	#
+	show_version() if(defined($options{'version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -199,6 +207,20 @@ sub newrollrec
 	print OUT "\n";
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -210,6 +232,7 @@ sub usage
 	print STDERR "\t-keyrec		keyrec file\n";
 	print STDERR "\t-skip		skip records\n";
 	print STDERR "\t-out		output file\n";
+	print STDERR "\t-version	display version number\n";
 	print STDERR "\t-help		help message \n";
 	exit(0);
 }

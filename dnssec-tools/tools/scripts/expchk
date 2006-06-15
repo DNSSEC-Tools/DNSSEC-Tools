@@ -41,6 +41,7 @@ my @opts =
 
 	"count",			# Give count of expired/valid keyrecs.
 	"help",				# Give a usage message and exit.
+	"version",			# Display the version nmuber .
 );
 
 my $allflag	= 0;			# Report on all zones.
@@ -49,6 +50,7 @@ my $expiredflag	= 0;			# Report on expired zones.
 my $validflag	= 0;			# Report on valid zones.
 my $warndays	= 0;			# Warn on expire in N days.
 my $zone	= "";			# Only report on this zone
+my $version	= 0;			# Display the version number.
 
 my $count   = 0;			# Matching-zones count.
 
@@ -127,6 +129,7 @@ sub doopts
 	$zone		= $options{'zone'};
 	$cntflag	= $options{'count'};
 
+	show_version() if(defined($options{'version'}));
 	usage() if(defined($options{'help'}));
 
 	#
@@ -354,6 +357,20 @@ sub checkexpire
 	}
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -369,6 +386,7 @@ sub usage
 	print STDERR "\t\t-zone <name>	show the specified zone only\n";
 	print STDERR "\t\t-count		only show the count of matching zones\n";
 	print STDERR "\t\t-help		display this help message\n";
+	print STDERR "\t\t-version	display version number\n";
 	exit(0);
 }
 

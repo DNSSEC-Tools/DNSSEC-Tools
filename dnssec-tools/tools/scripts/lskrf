@@ -54,6 +54,7 @@ my @opts =
 	"nodate",			# Don't show the date.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
+	"version",			# Display the version nmuber .
 
 	"help",				# Give a usage message and exit.
 );
@@ -83,6 +84,7 @@ my $terse;
 my $long;
 
 my $count   = 0;			# Record-match count.
+my $version	= 0;			# Display the version number.
 
 #########################################
 
@@ -191,6 +193,8 @@ sub doopts
 	# Parse the options.
 	#
 	GetOptions(\%options,@opts);
+
+	show_version() if(defined($options{'version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -814,6 +818,20 @@ sub outkey
 	print "$outstr\n";
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -844,6 +862,7 @@ sub usage
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-help		help message \n";
+	print STDERR "\t\t-version	Show version information\n";
 
 	print STDERR "\tkey-attribute options:\n";
 	print STDERR "\t\t-k-algorithm	show key's algorithm\n";

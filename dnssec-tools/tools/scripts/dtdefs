@@ -35,6 +35,11 @@ exit(0);
 sub main
 {
 	#
+	# show the version number.
+	#
+	show_version() if(grep(/^-version$/,@ARGV));
+
+	#
 	# Give a usage message when required.
 	#
 	usage() if(@ARGV > 0);
@@ -77,13 +82,26 @@ sub main
 
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.9.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
 #----------------------------------------------------------------------------
 #
 # Routine:	usage()
 #
 sub usage()
 {
-	print STDERR "usage:  dtdefs\n";
+	print STDERR "usage:  dtdefs [-version]\n";
 	exit(0);
 }
 

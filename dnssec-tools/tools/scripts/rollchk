@@ -42,6 +42,7 @@ my @opts =
 	"count",			# Give final error count.
 	"quiet",			# Don't give any output.
 	"verbose",			# Give lotsa output.
+	"version",			# Display the version nmuber .
 	"help",				# Give a usage message and exit.
 );
 
@@ -58,6 +59,7 @@ my %skips = ();				# Names of skip rollrecs.
 my $rollcnt  = 0;			# Count of roll rollrecs.
 my $skipcnt  = 0;			# Count of skip rollrecs.
 my $totalcnt = 0;			# Total count of rollrecs.
+my $version	= 0;			# Display the version number.
 
 my $ret;				# Return code from main().
 
@@ -80,8 +82,14 @@ sub main()
 	$count	 = $options{'count'};
 	$quiet	 = $options{'quiet'};
 	$verbose = $options{'verbose'};
+	$version = $options{'version'};
 	$doroll  = 0 if(defined($options{'skip'}));
 	$doskip  = 0 if(defined($options{'roll'}));
+
+	#
+	# Show the version number if requested
+	#
+	show_version() if(defined($options{'version'}));
 
 	usage() if(defined($options{'help'}));
 
@@ -393,6 +401,20 @@ sub vprint
 	qprint($line) if($verbose);
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -407,6 +429,7 @@ sub usage
 	print STDERR "		quiet\n";
 	print STDERR "		verbose\n";
 	print STDERR "		help\n";
+	print STDERR "		version\n";
 	exit(0);
 }
 

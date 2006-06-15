@@ -9,6 +9,7 @@ my %opts;
 my @origargs = @ARGV;
 
 LocalGetOptions(\%opts,
+		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 0.9.1"],
 		['GUI:separator',"DNS Configuration:"],
 		['k','Only look for key signing keys (KSK) and ignore others'],
 

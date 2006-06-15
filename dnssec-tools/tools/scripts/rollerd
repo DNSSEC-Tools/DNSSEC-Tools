@@ -66,6 +66,7 @@ my $OPT_PARAMS	 = "parameters";
 my $OPT_RRFILE	 = "rrfile";
 my $OPT_SLEEP	 = "sleep";
 my $OPT_VERBOSE	 = "verbose";
+my $OPT_VERSION	 = "version";
 
 my %opts = ();			# Filled option array.
 my @opts =
@@ -78,6 +79,7 @@ my @opts =
 	"parameters",			# Display the parameters and exit.
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
+	"version",			# Display the version nmuber .
 );
 
 #
@@ -90,6 +92,7 @@ my $sleeptime;				# Sleep interval in seconds.
 my $sleepcnt;				# Time we've slept so far.
 
 my $boottime = gmtime();		# Timestamp of rollerd's start time.
+my $version	= 0;			# Display the version number.
 
 my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
@@ -972,10 +975,16 @@ sub optsandargs
 	# Check our options.
 	#
 	GetOptions(\%opts,@opts);
+	$version =   $opts{$OPT_VERSION};
 	$verbose   = $opts{$OPT_VERBOSE};
 	$logfile   = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
 	$loglevel  = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
 	$sleeptime = $opts{$OPT_SLEEP}	  || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
+
+	#
+	# Show the version number if requested
+	#
+	show_version() if(defined($opts{$OPT_VERSION}));
 
 	usage() if(defined($opts{$OPT_HELP}));
 
@@ -1612,6 +1621,20 @@ sub cleanup
 	exit(0);
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -1625,6 +1648,7 @@ sub usage
 	print STDERR "\t\t-loglevel <level>\n";
 	print STDERR "\t\t-sleep <sleeptime>\n";
 	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-version\n";
 	print STDERR "\t\t-help\n";
 	exit(0);
 }
