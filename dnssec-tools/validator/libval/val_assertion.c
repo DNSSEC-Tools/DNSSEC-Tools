@@ -1266,7 +1266,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
  * Return when we are ready with some useful answer (error condition is 
  * a useful answer)
  */
-int val_resolve_and_check(	val_context_t	*context,
+int val_resolve_and_check(	val_context_t	*ctx,
 			u_char *domain_name_n,
 			const u_int16_t class,
 			const u_int16_t type,
@@ -1282,14 +1282,24 @@ int val_resolve_and_check(	val_context_t	*context,
 	int done = 0;
 	int data_received = 0;
 
-	if ((context == NULL) || (domain_name_n == NULL))
+	val_context_t *context = NULL;
+		
+	/* Create a default context if one does not exist */
+	if (ctx == NULL) {
+		if(VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
+			return retval;
+	}
+	else
+		context = (val_context_t *) ctx;   
+
+	if (domain_name_n == NULL)
 		return VAL_BAD_ARGUMENT;
 
 	val_log(context, LOG_DEBUG, "val_resolve_and_check(): looking for {%s %d %d}", 
 						domain_name_n, class, type);
 
 	if (VAL_NO_ERROR != (retval = add_to_query_chain(&(context->q_list), domain_name_n, type, class)))
-		return retval;
+		goto err;
 
 	top_q = context->q_list;
 
@@ -1303,13 +1313,13 @@ int val_resolve_and_check(	val_context_t	*context,
 		/* Data might already be present in the cache */
 		/* XXX by-pass this functionality through flags if needed */
 		if(VAL_NO_ERROR != (retval = ask_cache(context, NULL, &(context->q_list), &(context->a_list), &data_received)))
-			return retval;
+			goto err;
 		if(data_received)
 			block = 0;
 
 		/* Send un-sent queries */
 		if(VAL_NO_ERROR != (retval = ask_resolver(context, &(context->q_list), block, &(context->a_list), &data_received)))
-			return retval;
+			goto err;
 
 		/* check if more queries have been added */
 		if(last_q != context->q_list) {
@@ -1353,7 +1363,7 @@ int val_resolve_and_check(	val_context_t	*context,
 			 */
 			if(VAL_NO_ERROR != (retval = verify_and_validate(context, &(context->q_list), 
 								top_q->qc_as, flags, results, &done))) 
-				return retval;
+				goto err;
 		}
 	}
 
@@ -1393,8 +1403,13 @@ int val_resolve_and_check(	val_context_t	*context,
 			prove_nonexistence (context, top_q, *results);
 	}
 
+	retval = VAL_NO_ERROR;
 
-	return VAL_NO_ERROR;
+err:
+	if((ctx == NULL) && context)
+		val_free_context(context);
+
+	return retval;
 }
 
 /*
