@@ -568,8 +568,10 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		u_char name_n[NS_MAXCDNAME];
 		val_context_t *context = NULL;
 		
-		if (ctx == NULL)
-			val_create_context(NULL, &context);
+		if (ctx == NULL) {
+			if(VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
+				return retval;
+		}
 		else
 			context = (val_context_t *) ctx;   
 
