@@ -38,6 +38,7 @@ int MAX_RESPCOUNT = 10;
 int MAX_RESPSIZE = 8192;
 
 #ifdef HAVE_GETOPT_LONG
+
 // Program options
 static struct option prog_options[] = {
 		   {"help",  0, 0, 'h'},
@@ -45,6 +46,8 @@ static struct option prog_options[] = {
                    {"selftest", 0, 0, 's'},
                    {"class", 1, 0, 'c'},
                    {"type",  1, 0, 't'},
+                   {"testcase",  1, 0, 'T'},
+                   {"label",  1, 0, 'l'},
                    {"resolv-conf",  1, 0, 'r'},
                    {"dnsval-conf",  1, 0, 'v'},
                    {"root-hints",  1, 0, 'i'},
@@ -396,6 +399,7 @@ void usage(char *progname)
 	printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
 	printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
 	printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
+	printf("        -l, --label=<label-string> Specifies the policy to use during validation\n");
 	printf("Advanced Options:\n");
 	printf("        -m, --merge            Merge different RRSETs into a single answer\n");
 	printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
@@ -416,7 +420,7 @@ int main(int argc, char *argv[])
 		char *classstr    = NULL;
 		char *typestr     = NULL;
 		char *domain_name = NULL;
-		char *args        = "hi:pc:r:st:T:mv:";
+		char *args        = "hi:pc:r:st:T:l:mv:";
 		u_int16_t class_h = ns_c_in;
 		u_int16_t type_h  = ns_t_a;
 		int success       = 0;
@@ -424,7 +428,8 @@ int main(int argc, char *argv[])
 		int selftest      = 0;
 		u_int8_t flags    = (u_int8_t) 0;
 		int retvals[]     = {0};
-		int tc;
+		int tc = -1;
+		char *label_str	      = NULL;
 
 		while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -490,17 +495,10 @@ int main(int argc, char *argv[])
 
 			case 'T':
 				tc = atoi(optarg)-1;
-			    if(VAL_NO_ERROR !=(ret_val = val_create_context(NULL, &context))) {
-					fprintf(stderr, "Cannot create context: %d\n", ret_val);		
-        			return 1;
-				}
-				sendquery(context, testcases[tc].desc, 
-					testcases[tc].qn, 
-					testcases[tc].qc, 
-					testcases[tc].qt, 
-					testcases[tc].qr, 0);
-				val_free_context(context);
-				return 0;
+				break;
+
+			case 'l':
+				label_str = optarg;
 				break;
 
 			case 'm':
@@ -514,10 +512,25 @@ int main(int argc, char *argv[])
 			} // end switch
 		}
 
+		/* run an individual test case */
+		if (tc != -1) {
+			if(VAL_NO_ERROR !=(ret_val = val_create_context(label_str, &context))) {
+				fprintf(stderr, "Cannot create context: %d\n", ret_val);		
+   	    	 	return 1;
+			}
+			sendquery(context, testcases[tc].desc, 
+			testcases[tc].qn, 
+			testcases[tc].qc, 
+			testcases[tc].qt, 
+			testcases[tc].qr, 0);
+			val_free_context(context);
+			return 0;
+		}
+
 		// optind is a global variable.  See man page for getopt_long(3)
 		if (optind < argc) {
 			domain_name = argv[optind++];
-    		if(VAL_NO_ERROR !=(ret_val = val_create_context(NULL, &context))) {
+    		if(VAL_NO_ERROR !=(ret_val = val_create_context(label_str, &context))) {
 				fprintf(stderr, "Cannot create context: %d\n", ret_val);		
         		return 1;
 			}
@@ -574,7 +587,7 @@ int main(int argc, char *argv[])
 			else {
 		// Run the set of pre-defined test cases
 		int i;
-    	if(VAL_NO_ERROR !=(ret_val = val_create_context(NULL, &context))) {
+    	if(VAL_NO_ERROR !=(ret_val = val_create_context(label_str, &context))) {
 			fprintf(stderr, "Cannot create context: %d\n", ret_val);		
    	     	return 1;
 		}
