@@ -258,8 +258,6 @@ int free_trust_anchor(policy_entry_t *pol_entry)
 		ta_cur = ta_next;
 	}		
 
-	*pol_entry = NULL;
-
 	return VAL_NO_ERROR;
 }
 
@@ -412,8 +410,6 @@ int free_zone_security_expectation(policy_entry_t *pol_entry)
 		zse_cur = zse_next;
 	}		
 
-	*pol_entry = NULL;
-
 	return VAL_NO_ERROR;
 }
 
@@ -561,8 +557,15 @@ int check_relevance(char *label, char *scope, int *label_count, int *relevant)
 	int label_len;
 	char *c, *p;
 
-	*label_count = 1;
 	*relevant = 1;
+
+	/* a "default" label is always relevant */
+	if (!strcmp(label, LVL_DELIM)) {
+		*label_count = 0;
+		return VAL_NO_ERROR;
+	}
+
+	*label_count = 1;
 	c = label;
 
 	/* Check if this level is relevant */
@@ -581,16 +584,10 @@ int check_relevance(char *label, char *scope, int *label_count, int *relevant)
 	}
 	else {
 		/* A NULL scope is always relevant */
-		if (!strcmp(label, LVL_DELIM)) {
-			/* This is the default policy */
-			*label_count = 0;
-		}
-		else {
-			/* count the number of levels in the label */
-			while(strstr(c, LVL_DELIM)) {
-				(*label_count)++;
-				c++;
-			}
+		/* count the number of levels in the label */
+		while(strstr(c, LVL_DELIM)) {
+			(*label_count)++;
+			c++;
 		}
 	}
 	return VAL_NO_ERROR;
@@ -615,7 +612,7 @@ static int get_next_policy_fragment(FILE *fp, char *scope,
 
 		/* free up previous iteration policy */
 		if (pol != NULL) {
-			conf_elem_array[index].free(pol);
+			conf_elem_array[index].free(&pol);
 			pol = NULL;
 		}
 
@@ -739,7 +736,7 @@ void destroy_valpol(val_context_t *ctx)
 	prev = NULL;
 	for (cur = ctx->pol_overrides; cur; prev = cur, cur = cur->next) {
 			FREE (cur->label);
-			conf_elem_array[cur->plist->index].free(&cur->plist->pol);
+			conf_elem_array[cur->plist->index].free(&(cur->plist->pol));
 			FREE (cur->plist);
 			if (prev != NULL)
 				FREE (prev);
