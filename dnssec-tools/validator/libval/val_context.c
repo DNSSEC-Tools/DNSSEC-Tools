@@ -51,12 +51,14 @@ int val_create_context(char *label, val_context_t **newcontext)
 		FREE (*newcontext);	
 		return retval;
 	}
-	/* Over-ride with the first policy that we find in our list*/
-	OVERRIDE_POLICY(*newcontext, (*newcontext)->pol_overrides); 
-
+	/* Switch to correct policy */
+	if(VAL_NO_ERROR != (retval = val_switch_policy_scope(*newcontext, label))) {
+		val_free_context(*newcontext);
+		*newcontext = NULL;
+		return retval;
+	}
 
 	return VAL_NO_ERROR;
-
 }
 
 
