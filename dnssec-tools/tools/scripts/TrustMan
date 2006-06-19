@@ -19,14 +19,25 @@ my %opts = (
         d => "",
         t => 3600, # default to one hour
         f => "",
-	v => 1
+	v => 1,
+        c => 0
 );
 
 ########################################################
 # main
 
 # Parse command-line options
-GetOptions(\%opts, "k=s", "d=s", t, f, v);
+GetOptions(\%opts,
+             'd|domain=s',
+             't|sleeptime=i',
+             'v|verbose',
+             'f|foreground|fg',
+             'c|config',
+             'o|outfile=s',
+             's|smtp_server=s',
+             'n|named_conf_file=s',
+             'k|dnsval_conf_file=s',
+             'm|mail_contact_addr=s');
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
@@ -34,46 +45,78 @@ my %dtconf = parseconfig();
 # then $dtconf{'name_of_option_in_dnssec-tools.conf'}
 # contains the value of that option as set in the conf file
 
-my $ncfile;
-my $dvfile;
-if ($opts{'k'}) {
-    $ncfile = $opts{'k'};
+my $ncfile = $opts{'n'} ? $opts{'n'}
+                        : $dtconf{'tanamedconffile'};
+
+my $dvfile = $opts{'k'} ? $opts{'k'}
+                        : $dtconf{'tadnsvalconffile'};
+
+my $contactaddr = $opts{'m'} ? $opts{'m'}
+                             : $dtconf{'tacontact'};
+
+my $smtpserver =  $opts{'s'} ? $opts{'s'}
+                             : $dtconf{'tasmtpserver'};
+
+my $sleeptime = $opts{'t'} ? $opts{'t'}
+                           : $dtconf{'tasleeptime'};
+
+if ($opts{'f'}) {
+    &checkkeys;
+} elsif ($opts{'c'}) {
+    # do config stuff only
+    # already have opts parsed
+# open config file for reading
+# open outfile for writing
+# write each line to outfile, unless is is /^ta/ something
+# then write new line with config data from cmd line if given
+# close both files and exit
+    my $conffile = getconffile();
+    open(CONF,$conffile) or die "unable to open \"$conffile\".";
+    usage () unless $opts{'o'};
+    open(OUT,">$opts{'o'}") or die "unable to open \"$opts{'o'}\" for writing.";
+    while(<CONF>) {
+        if (/^tasleeptime/ && ($opts{'t'})) {
+            print OUT "tasleeptime\t" . $sleeptime . "\n";
+            next;
+        }
+        if (/^tasmtpserver/ && ($opts{'s'})) {
+            print OUT "tasmtpserver\t" . $smtpserver . "\n";
+            next;
+        }
+        if (/^tacontact/ && ($opts{'m'})) {
+            print OUT "tacontact\t" . $contactaddr . "\n";
+            next;
+        }
+        if (/^tanamedconffile/ && ($opts{'n'})) {
+            print OUT "tanamedconffile\t" . $ncfile . "\n";
+            next;
+        }
+        if (/^tadnsvalconffile/ && ($opts{'k'})) {
+            print OUT "tadnsvalconffile\t" . $dvfile . "\n";
+            next;
+        }
+        print OUT $_;
+    }
+    close (OUT);
+    close (CONF);
+
 } else {
-    $ncfile = $dtconf{'tanamedconffile'};
-    $dvfile = $dtconf{'tadnsvalconffile'};
-}
-my $contactaddr = $dtconf{'tacontact'};
-my $smtpserver = $dtconf{'tasmtpserver'};
-
-#my $keyfiles;
-#if (exists $dtconf{'takeyfiles'}) {
-#    $keyfiles = $dtconf{'takeyfiles'};
-#    my @kfiles = split (" ",$keyfiles);
-#    foreach my $kf (@kfiles) {
-#        # read the file to get domain names to check and get the keys as well
-#    }
-#}
-
-my $sleeptime;
-$sleeptime = $dtconf{'tasleeptime'} if (exists($dtconf{'tasleeptime'}));
-$sleeptime = $opts{'t'} if (!$sleeptime);
-
-if (!$opts{'f'}) {
     &daemonize;
     while (1) {
         &checkkeys;
         sleep($sleeptime);
     }
-} else {
-    &checkkeys;
-}
+} 
 
 sub usage {
     print "TrustMan [-k key_containing_file] [-d domain] [-f]\n";
+    print "\t[-c] [-o outfile] [-m mailcontact] [-s smtpserver]
     print "use the -f option to run in the foreground.\n";
     print "If a domain is not specified, all domains in the key_containing_files will be checked.\n";
     print "If no key_containing_files are specified, dnssec-tools.conf will be
 parsed for takeyfiles.\n";
+    print "When running the configure option (-c or --config), you MUST specify an output file (-o).\n";
+    exit(1);
 }
 
 sub checkkeys {
@@ -322,9 +365,21 @@ dnsval.conf in that file if necessary.
 
 =over #indent
 
+=item -f
+
+Run in the foreground
+
+=item -c
+
+Create a configure file for TrustMan from the command line options given.
+
+=item -o
+
+Output file for configuration
+
 =item -k 
 
-A key-containing file to read, such as named.conf or dnsval.conf
+A dnsval.conf file to read
 
 =item -d
 
@@ -334,9 +389,13 @@ The domain to check (supersedes configuration file)
 
 The number of seconds to sleep between checks. Default is 3600 (one hour)
 
-=item -f
+=item -m
 
-Run in the foreground.
+Mail address for the contact person to whom reports should be sent
+
+=item -s
+
+SMTP server TrustMan should use to send reports
 
 =item -v
 
