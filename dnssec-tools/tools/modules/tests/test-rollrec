@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -197,19 +197,19 @@ sub test_rollrec_add
 	$fields{'curphase'}	= "0";
 	$fields{'maxttl'}	= "86400";
 	$fields{'rollrec_signsecs'} = "1101183759";
-	$fields{'rollrec_signdate'} = "Tue Nov 23 04:22:39 2004";
+	$fields{'rollrec_signdate'} = "Tue Nov 23 04:22:39 2004-2006";
 	rollrec_add("harp.portrigh.com",\%fields);
 
 	%fields = ();
 	$fields{'zonefile'} = "db.pipes.portrigh.com";
 	$fields{'rollrec_gensecs'} = "1101183760";
-	$fields{'rollrec_gendate'} = "Tue Nov 23 04:22:40 2004";
+	$fields{'rollrec_gendate'} = "Tue Nov 23 04:22:40 2004-2006";
 	rollrec_add("pipes.portrigh.com",\%fields);
 
 	%fields = ();
 	$fields{'zonename'} = "db.whistle.portrigh.com";
 	$fields{'rollrec_gensecs'} = "1101183762";
-	$fields{'rollrec_gendate'} = "Tue Nov 23 04:22:42 2004";
+	$fields{'rollrec_gendate'} = "Tue Nov 23 04:22:42 2004-2006";
 	rollrec_add("whistle.portrigh.com",\%fields);
 
 	#
@@ -371,9 +371,9 @@ roll "portrigh.com"
 	keyrec			"/usr/etc/dnssec/keyrec/portrigh.keyrec"
 	curphase		"2"
 	maxttl			"86400"
-	phasestart		"Thu Mar 18 17:58:22 2005"
+	phasestart		"Thu Mar 18 17:58:22 2005-2006"
 	rollrec_signsecs	"1111100309"
-	rollrec_signdate	"Thu Mar 17 17:58:29 2005"
+	rollrec_signdate	"Thu Mar 17 17:58:29 2005-2006"
 
 
 roll "triharpskel.com"
@@ -381,9 +381,9 @@ roll "triharpskel.com"
 	keyrec			"/usr/etc/dnssec/keyrec/triharpskel.keyrec"
 	curphase		"1"
 	maxttl			"100000"
-	phasestart		"Thu Mar 18 20:00:00 2005"
+	phasestart		"Thu Mar 18 20:00:00 2005-2006"
 	rollrec_signsecs	"1111100390"
-	rollrec_signdate	"Thu Mar 17 17:59:50 2005"
+	rollrec_signdate	"Thu Mar 17 17:59:50 2005-2006"
 
 
 EOF

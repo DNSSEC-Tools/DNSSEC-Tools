@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2004 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -213,7 +213,7 @@ sub test_keyrec_add
 	$fields{'zskkey'} = "Kharp.portrigh.com.+005+23456";
 	$fields{'endtime'} = "+2598000";
 	$fields{'keyrec_signsecs'} = "1101183759";
-	$fields{'keyrec_signdate'} = "Tue Nov 23 04:22:39 2004";
+	$fields{'keyrec_signdate'} = "Tue Nov 23 04:22:39 2004-2006";
 	keyrec_add("zone","harp.portrigh.com",\%fields);
 
 	%fields = ();
@@ -223,7 +223,7 @@ sub test_keyrec_add
 	$fields{'algorithm'} = "rsasha1";
 	$fields{'random'} = "-r /dev/urandom";
 	$fields{'keyrec_gensecs'} = "1101183759";
-	$fields{'keyrec_gendate'} = "Tue Nov 23 04:22:39 2004";
+	$fields{'keyrec_gendate'} = "Tue Nov 23 04:22:39 2004-2006";
 	keyrec_add("key","Kharp.portrigh.com.+005+12345",\%fields);
 
 	%fields = ();
@@ -233,7 +233,7 @@ sub test_keyrec_add
 	$fields{'algorithm'} = "rsasha1";
 	$fields{'random'} = "-r /dev/urandom";
 	$fields{'keyrec_gensecs'} = "1101183759";
-	$fields{'keyrec_gendate'} = "Tue Nov 23 04:22:39 2004";
+	$fields{'keyrec_gendate'} = "Tue Nov 23 04:22:39 2004-2006";
 	keyrec_add("key","Kharp.portrigh.com.+005+23456",\%fields);
 
 
@@ -333,7 +333,7 @@ zone "portrigh.com"
 	zskpath		"./Kportrigh.com.+005+52000.key"
 	endtime		"+2592000"		# good for 30 days
 	keyrec_signsecs	"1101183759"
-	keyrec_signdate	"Tue Nov 23 04:22:39 2004"
+	keyrec_signdate	"Tue Nov 23 04:22:39 2004-2006"
 
 key "Kportrigh.com.+005+26000"
 	zonename	"portrigh.com"
@@ -342,7 +342,7 @@ key "Kportrigh.com.+005+26000"
 	ksklength	"1024"
 	random		"-r /dev/urandom"
 	keyrec_gensecs	"1101183759"
-	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004-2006"
 
 key "Kportrigh.com.+005+52000"
 	zonename	"portrigh.com"
@@ -351,7 +351,7 @@ key "Kportrigh.com.+005+52000"
 	zsklength	"512"
 	random		"-r /dev/urandom"
 	keyrec_gensecs	"1101183759"
-	keyrec_gendate	"Tue Nov 23 04:22:39 2004"
+	keyrec_gendate	"Tue Nov 23 04:22:39 2004-2006"
 EOF
 
 	close(KRF);
