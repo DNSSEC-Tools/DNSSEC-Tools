@@ -770,7 +770,6 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 	val_log(ctx, LOG_DEBUG, "Reading validator policy from %s", dnsval_conf);
 	fd = open(dnsval_conf, O_RDONLY);
 	if (fd == -1) {
-		perror(dnsval_conf);
 		return VAL_CONF_NOT_FOUND;
 	}
 	memset(&fl, 0, sizeof (fl));
@@ -841,7 +840,6 @@ int read_res_config_file(val_context_t *ctx)
 	val_log(ctx, LOG_DEBUG, "Reading resolver policy from %s", resolv_conf);
 	fd = open(resolv_conf, O_RDONLY);
 	if (fd == -1) {
-		perror(resolv_conf);
 		return VAL_CONF_NOT_FOUND;
 	}
 	fl.l_type = F_RDLCK;
@@ -866,7 +864,6 @@ int read_res_config_file(val_context_t *ctx)
 			strtok_r(line, white, &buf);
 			cp = strtok_r(NULL, white, &buf);
 			if (cp == NULL) {
-				perror(resolv_conf);
 				goto err;
 			}
 
@@ -922,7 +919,6 @@ int read_res_config_file(val_context_t *ctx)
 			strtok_r(line, white, &buf);
 			cp = strtok_r(NULL, white, &buf);
 			if (cp == NULL) {
-				perror(resolv_conf);
 				goto err;
 			}
 			if (ns_name_pton(cp, ns->ns_name_n, NS_MAXCDNAME-1) == -1) 
