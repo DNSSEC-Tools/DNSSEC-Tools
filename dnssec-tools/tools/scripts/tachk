@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005 Sparta, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2006 Sparta, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -31,6 +31,7 @@ my @opts =
 
 	"count",			# Only give a count of trust anchors
 	"terse",			# Give terse output.
+	"version",			# Display Version.
 	"long",				# Give long output.
 
 	"help",				# Give a usage message and exit.
@@ -51,6 +52,7 @@ my $invalidflag;
 my $cntflag;
 my $terse;
 my $long;
+my $version;
 
 my $count   = 0;			# Record-match count.
 
@@ -141,6 +143,12 @@ sub doopts
 	$cntflag	= $options{'count'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
+	$version	= $options{'version'}	|| 0;
+
+	#
+	# Display the version number
+	#
+	show_version() if ($options{'version'});
 
 	#
 	# Give a usage flag if asked.
@@ -336,6 +344,19 @@ sub showanchors
 	}
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	show_version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub show_version
+{
+	print STDERR "Version: 0.1\n";
+	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	exit(1);
+}
+
 #-----------------------------------------------------------------------------
 #
 # Routine:	usage()
@@ -370,6 +391,8 @@ tachk - Check the validity of the trust anchors in a B<named.conf> file.
   tachk [options] named.conf
 
 =head1 DESCRIPTION
+
+[NOTE: this script may be removed in future releases]
 
 This script checks the validity of the trust anchors in the specified
 B<named.conf> file. The output given depends on the options selected.
