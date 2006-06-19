@@ -1283,7 +1283,12 @@ int val_resolve_and_check(	val_context_t	*ctx,
 	int data_received = 0;
 
 	val_context_t *context = NULL;
-		
+
+	if (results == NULL)
+		return VAL_BAD_ARGUMENT;
+
+	*results = NULL;
+	
 	/* Create a default context if one does not exist */
 	if (ctx == NULL) {
 		if(VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
