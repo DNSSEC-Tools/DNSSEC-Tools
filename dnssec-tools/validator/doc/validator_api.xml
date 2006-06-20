@@ -445,15 +445,15 @@ struct val_assertion_chain {
 struct val_rrset {
     u_int8_t  *val_msg_header;
     u_int16_t val_msg_headerlen;
-    u_int8_t  *val_queryset_data; /* for {N,C,T} when no answer is returned, NSID etc  */
+    u_int8_t  *val_queryset_data; 
     u_int16_t val_queryset_datalen;
-    u_int8_t  *val_rrset_name_n;    /* Owner */
-    u_int16_t val_rrset_class_h;    /* ns_c_... */
-    u_int16_t val_rrset_type_h; /* ns_t_... */
-    u_int32_t val_rrset_ttl_h;  /* Received ttl */
-    u_int8_t  val_rrset_section;    /* VAL_FROM_... */
-    struct rr_rec *val_rrset_data;  /* All data RR's */
-    struct rr_rec *val_rrset_sig;   /* All signatures */
+    u_int8_t  *val_rrset_name_n; 
+    u_int16_t val_rrset_class_h;
+    u_int16_t val_rrset_type_h;
+    u_int32_t val_rrset_ttl_h; 
+    u_int8_t  val_rrset_section;
+    struct rr_rec *val_rrset_data;
+    struct rr_rec *val_rrset_sig;
 };
 
 struct rr_rec
