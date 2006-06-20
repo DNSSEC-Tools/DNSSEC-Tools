@@ -2,15 +2,16 @@ This file contains a list of major changes per release.
 
 0.9.1:
   - validator library (dnssec-tools/validator):
-		- code has been re-structured within the following sub-directories: 
-		  libsres/ libval/ doc/ etc/ apps/ and include/
-		- configures and builds cleanly on the following systems: 
-		  Fedora, MacOSX, FreeBSD
-		  (should configure and build on Solaris -- not actually tested)   
-		- includes support for tuning "off" DNSSEC using the
-		  "zone-security-expectation" policy construct. 
-		- APIs modified to comply with (upcoming version of) 
-		  draft-draft-hayatnagarkar-dnsext-validator-api
+                - code has been re-structured within the following 
+                  sub-directories: 
+                  libsres/ libval/ doc/ etc/ apps/ and include/
+                - configures and builds cleanly on the following systems: 
+                  Fedora, MacOSX, FreeBSD
+                  (should configure and build on Solaris -- not actually tested)   
+                - includes support for tuning "off" DNSSEC using the
+                  "zone-security-expectation" policy construct. 
+                - APIs modified to comply with (upcoming version of) 
+                  draft-draft-hayatnagarkar-dnsext-validator-api
  
   - dtinitconf, dtconfchk, dtdefs:
                 - these tools are used to create, check and consult the 
@@ -33,3 +34,6 @@ This file contains a list of major changes per release.
                   dnsval.conf
                 - can be run as a daemon or as a one-time check
                 - configuration is placed in dnssec-tools.conf
+
+  - Other minor improvements have been made to other tools and
+    supporting files.
