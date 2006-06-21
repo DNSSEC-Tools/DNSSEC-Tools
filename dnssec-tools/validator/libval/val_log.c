@@ -273,7 +273,6 @@ char *p_as_error(val_astatus_t err)
     case VAL_RESOURCE_UNAVAILABLE: return "VAL_RESOURCE_UNAVAILABLE"; break;
     case VAL_CONF_PARSE_ERROR: return "VAL_CONF_PARSE_ERROR"; break;
     case VAL_CONF_NOT_FOUND: return "VAL_CONF_NOT_FOUND"; break;
-    case VAL_NO_SPACE: return "VAL_NO_SPACE"; break;
     case VAL_NO_POLICY: return "VAL_NO_POLICY"; break;
 
     case VAL_A_DATA_MISSING: return "VAL_A_DATA_MISSING"; break;
