@@ -97,7 +97,7 @@ static struct val_addrinfo *dup_val_addrinfo (const struct val_addrinfo *a)
 	}
 	new_a->ai_next = NULL;
 	
-	new_a->val_status = a->val_status;
+	new_a->ai_val_status = a->ai_val_status;
 
 	return new_a;
 }
@@ -181,7 +181,7 @@ static int process_service_and_hints(val_status_t val_status,
 		return 0;
 	}
 
-	a1->val_status = val_status;
+	a1->ai_val_status = val_status;
 	*res = a1;
 	
 	/* Flags */
@@ -325,10 +325,10 @@ static int get_addrinfo_from_etc_hosts (
 			continue;
 		}
 		
-		ainfo->val_status = VAL_LOCAL_ANSWER;
+		ainfo->ai_val_status = VAL_LOCAL_ANSWER;
 
 		/* Expand the results based on servname and hints */
-		if (process_service_and_hints(ainfo->val_status, servname, hints, &ainfo) != 0) {
+		if (process_service_and_hints(ainfo->ai_val_status, servname, hints, &ainfo) != 0) {
 			free_val_addrinfo(ainfo);
 			if (retval) free_val_addrinfo(retval);
 			return EAI_SERVICE;
@@ -455,7 +455,7 @@ static int get_addrinfo_from_result (
 			    }
 			    
 			    ainfo->ai_canonname = canonname;
-			    ainfo->val_status = val_status;
+			    ainfo->ai_val_status = val_status;
 
 			    /* Expand the results based on servname and hints */
 			    if (process_service_and_hints (val_status, servname, hints, &ainfo) == EAI_SERVICE) {
@@ -689,8 +689,8 @@ int val_getaddrinfo(const val_context_t *ctx,
 		ainfo->ai_addr = (struct sockaddr *) saddr4;
 		ainfo->ai_canonname = NULL;
 		
-		ainfo->val_status = VAL_LOCAL_ANSWER;
-		if (process_service_and_hints(ainfo->val_status, servname, hints, &ainfo4) == EAI_SERVICE) {
+		ainfo->ai_val_status = VAL_LOCAL_ANSWER;
+		if (process_service_and_hints(ainfo->ai_val_status, servname, hints, &ainfo4) == EAI_SERVICE) {
 			free_val_addrinfo(ainfo);
 			free(saddr4);
 			retval = EAI_SERVICE;
@@ -734,8 +734,8 @@ int val_getaddrinfo(const val_context_t *ctx,
 		ainfo->ai_addr = (struct sockaddr *) saddr6;
 		ainfo->ai_canonname = NULL;
  		
-		ainfo->val_status = VAL_LOCAL_ANSWER;
-		if (process_service_and_hints(ainfo->val_status, servname, hints, &ainfo6) == EAI_SERVICE) {
+		ainfo->ai_val_status = VAL_LOCAL_ANSWER;
+		if (process_service_and_hints(ainfo->ai_val_status, servname, hints, &ainfo6) == EAI_SERVICE) {
 			free_val_addrinfo(ainfo);
 			free(saddr6);
 			retval = EAI_SERVICE;
