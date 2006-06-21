@@ -26,6 +26,21 @@
 #include "val_log.h"
 #include "val_assertion.h"
 
+#define OUTER_HEADER_LEN (sizeof(HEADER) + wire_name_length(name_n) + sizeof(u_int16_t) + sizeof(u_int16_t))
+
+/* Calculate rrset length */
+static int find_rrset_len(const u_char *name_n, struct rrset_rec *rrset)
+{ 
+	struct rr_rec *rr;
+	int resp_len = 0;
+	int rrset_name_n_len = wire_name_length(rrset->rrs->val_rrset_name_n);
+	for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
+		resp_len += rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) + sizeof(u_int32_t) 
+						+ sizeof(u_int16_t) + rr->rr_rdata_length_h; 
+	} 
+	return resp_len;
+}
+
 /*
  * Function: compose_merged_answer
  *
@@ -39,14 +54,7 @@
  *             class_h -- The DNS class.
  *             results -- A linked list of val_result_chain structures returned
  *                        by the validator's val_resolve_and_check function.
- *            response -- A buffer in which to return the answer.
- *                        This must be pre-allocated by the caller.
- *     response_length -- A pointer to an integer variable that holds the
- *                        length of the 'response' buffer.  On return, this
- *                        will contain the length of 'response' buffer
- *                        that was filled by this function.
- *               flags -- Currently ignored.  This will be used in future to
- *                        influence the evaluation and returned results.
+ *                resp -- A buffer in which to return the answer.
  *
  * Return value: 0 on success, and a non-zero error-code on failure.
  */
@@ -54,14 +62,9 @@ static int compose_merged_answer( const u_char *name_n,
 				  const u_int16_t type_h,
 				  const u_int16_t class_h,
 				  struct val_result_chain *results,
-				  unsigned char *response,
-				  int *response_length,
-				  val_status_t *val_status,
-				  u_int8_t flags )
+				  struct val_response *resp)
 {
-	int retval = VAL_NO_ERROR;
 	struct val_result_chain *res = NULL;
-	int buflen;
 	int proof = 0;
 	int ancount = 0; // Answer Count
 	int nscount = 0; // Authority Count
@@ -72,170 +75,116 @@ static int compose_merged_answer( const u_char *name_n,
 	int ns_auth = 1;
 	unsigned char *rp = NULL;
 
-	if ((response == NULL) || response_length == NULL || (*response_length) <= 0) 
+	if (resp == NULL)
 		return VAL_BAD_ARGUMENT;
+	resp->vr_val_status = VAL_SUCCESS;
+	resp->vr_next = NULL;
 
-	buflen = *response_length;
-	*response_length = 0; /* value-result parameter */
-	*val_status = VAL_SUCCESS;
+	/* Calculate the length of the response buffer */
+	int resp_len = 0; 
+	for (res = results; res; res=res->val_rc_next) {
+		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
+			resp_len += find_rrset_len(name_n, res->val_rc_trust->_as->ac_data);	
+		}
+	}
+	resp->vr_response = (unsigned char *)MALLOC ((resp_len + OUTER_HEADER_LEN) * sizeof (unsigned char));
+	if (resp->vr_response == NULL)
+		return VAL_OUT_OF_MEMORY;
+	resp->vr_length = (resp_len + OUTER_HEADER_LEN);
 
-	/**** Construct the message ****/	
+	/* temporary buffers for different sections */
+	anbuf = (unsigned char *) MALLOC (resp_len * sizeof(unsigned char));
+	nsbuf = (unsigned char *) MALLOC (resp_len * sizeof(unsigned char));
+	arbuf = (unsigned char *) MALLOC (resp_len * sizeof(unsigned char));
+	if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL))
+		return VAL_OUT_OF_MEMORY;
 
 	/* Header */
-	rp = response;
+	rp = resp->vr_response;
 	HEADER *hp = (HEADER *)rp; 
-	if (sizeof(HEADER) > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	bzero(hp, sizeof(HEADER));
-	*response_length += sizeof(HEADER);
 	rp += sizeof(HEADER);
 	
 	/*  Question section */
 	int len = wire_name_length(name_n);
-	if (*response_length + len > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	memcpy (rp, name_n, len);
-	*response_length += len;
 	rp += len;
-	
-	if (*response_length + sizeof(u_int16_t) > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	NS_PUT16(type_h, rp);
-	*response_length += 2;
-	
-	if (*response_length + sizeof(u_int16_t) > buflen) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
 	NS_PUT16(class_h, rp);
-	*response_length += 2;
-	
 	hp->qdcount = htons(1);
+
+	/**** Construct the message ****/	
 	
 	/* Iterate over the results returned by the validator */
 	for (res = results; res; res=res->val_rc_next) {
-
-		if ((*response_length) >= buflen) {
-
-			if (proof)
-				retval = VAL_NO_ERROR;
-			else
-				retval = VAL_NO_SPACE;
-
-			goto cleanup;
-		}
-
 		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
 			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
-			unsigned char *cp, *ep;
+			unsigned char *cp;
 			int *bufindex = NULL;
 
 			if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
-				if (anbuf == NULL) {
-					anbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
-					if (anbuf == NULL) {
-						h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;
-					}
-				}
 				cp = anbuf + anbufindex;
-				ep = anbuf + buflen;
 				bufindex = &anbufindex;
+				ancount++;
+				if (!val_isauthentic(res->val_rc_status)) {
+					an_auth = 0;
+				}
 			}
 			else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
-				if (nsbuf == NULL) {
-					nsbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
-					if (nsbuf == NULL) {
-						h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;
-					}
-				}
 				cp = nsbuf + nsbufindex;
-				ep = nsbuf + buflen;
 				bufindex = &nsbufindex;
+				nscount++;
+				if (!val_isauthentic(res->val_rc_status)) {
+					ns_auth = 0;
+				}
+				proof = 1;
 			}
 			else if (rrset->rrs->val_rrset_section == VAL_FROM_ADDITIONAL) {
-				if (arbuf == NULL) {
-					arbuf = (unsigned char *) malloc (buflen * sizeof(unsigned char));
-					if (arbuf == NULL) {
-						h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;
-					}
-				}
 				cp = arbuf + arbufindex;
-				ep = arbuf + buflen;
 				bufindex = &arbufindex;
+				arcount++;
 			}
 			else {
 				continue;
 			}
 
 			if (res->val_rc_status != VAL_SUCCESS) {
-				*val_status = res->val_rc_status;
+				resp->vr_val_status = res->val_rc_status;
 			}
 
 			/* Answer/Authority/Additional section */
 			struct rr_rec *rr;
+			int rrset_name_n_len = wire_name_length(rrset->rrs->val_rrset_name_n);
 			for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
-				int len = wire_name_length(rrset->rrs->val_rrset_name_n);
-
-				if (cp + len >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
-				memcpy (cp, rrset->rrs->val_rrset_name_n, len);
-				cp += len;
-				*bufindex += len;
-
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
+				memcpy (cp, rrset->rrs->val_rrset_name_n, rrset_name_n_len);
+				cp += rrset_name_n_len;
 				NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
-				*bufindex += 2;
-
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 				NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
-				*bufindex += 2;
-
-				if (cp + sizeof(u_int32_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 				NS_PUT32(rrset->rrs->val_rrset_ttl_h, cp);
-				*bufindex += 4;
-
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 				NS_PUT16(rr->rr_rdata_length_h, cp);
-				*bufindex += 2;
-
-				if (cp + rr->rr_rdata_length_h >= ep) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 				memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
 				cp += rr->rr_rdata_length_h;
-				*bufindex += rr->rr_rdata_length_h;
 
-
-				if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
-					ancount++;
-					if (!val_isauthentic(res->val_rc_status)) {
-						an_auth = 0;
-					}
-				}
-				else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
-					nscount++;
-					if (!val_isauthentic(res->val_rc_status)) {
-						ns_auth = 0;
-					}
-					proof = 1;
-				}
-				else if (rrset->rrs->val_rrset_section == VAL_FROM_ADDITIONAL) {
-					arcount++;
-				}
 			} // end for each rr
+
+			*bufindex += find_rrset_len(name_n, rrset); 
+
 		} // end if res->as
 	} // end for each res
 
 	if (anbuf) {
-		if (*response_length + anbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 		memcpy(rp, anbuf, anbufindex);
 		rp += anbufindex;
-		*response_length += anbufindex;
 	}
 
 	if (nsbuf) {
-		if (*response_length + nsbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 		memcpy(rp, nsbuf, nsbufindex);
 		rp += nsbufindex;
-		*response_length += nsbufindex;
 	}
 
 	if (arbuf) {
-		if (*response_length + arbufindex > buflen) {h_errno = NETDB_INTERNAL; retval = VAL_NO_SPACE; goto cleanup;}
 		memcpy(rp, arbuf, arbufindex);
 		rp += arbufindex;
-		*response_length += arbufindex;
 	}
 
 	hp->ancount = htons(ancount);
@@ -248,14 +197,7 @@ static int compose_merged_answer( const u_char *name_n,
 	else
 		hp->ad = 0;
 
-	retval = VAL_NO_ERROR;
-
- cleanup:
-	if (anbuf) free(anbuf);
-	if (nsbuf) free(nsbuf);
-	if (arbuf) free(arbuf);
-
-	return retval;
+	return VAL_NO_ERROR;
 
 } /* compose_merged_answer() */
 
@@ -274,13 +216,7 @@ static int compose_merged_answer( const u_char *name_n,
  *             class_h -- The DNS class.
  *             results -- A linked list of val_result_chain structures returned
  *                        by the validator's val_resolve_and_check function.
- *                resp -- An array of val_response structures in which to
- *                        return the answer.  This must be pre-allocated
- *                        by the caller.
- *          resp_count -- A pointer to an integer variable that holds the
- *                        length of the 'resp' array.  On return, this
- *                        will contain the number of elements in the 'resp'
- *                        array that were filled by this function.
+ *                resp -- The structures within which answers are to be returned 
  *               flags -- Handles the VAL_QUERY_MERGE_RRSETS flag.  If
  *                        this flag is set, this function will call the
  *                        compose_merged_answer() function above.
@@ -293,124 +229,117 @@ static int compose_answer( const u_char *name_n,
 			const u_int16_t type_h,
 			const u_int16_t class_h,
 			struct val_result_chain *results,
-			struct val_response *resp,
-			int *resp_count,
+			struct val_response **resp,
 			u_int8_t flags)
 {
 
 	struct val_result_chain *res = results;
-	int res_count = *resp_count;
+	struct val_response *new_resp, *last_resp;
 	int proof = 0;
-
-	if ((resp == NULL) || res_count == 0) 
-		return VAL_BAD_ARGUMENT;
 
 	if (flags & VAL_QUERY_MERGE_RRSETS) {
 		int retval = 0;
-		retval = compose_merged_answer(name_n, type_h, class_h, results, resp->response, &(resp->response_length),
-					       &(resp->val_status), flags);
-		if (retval == VAL_NO_ERROR) {
-			*resp_count = 1;
-		}
+		/* Allocate a single element of the val_response array to hold the result */
+		*resp = (struct val_response *) MALLOC (sizeof (struct val_response));
+		if (*resp == NULL)
+			return VAL_OUT_OF_MEMORY;
+		(*resp)->vr_response = NULL;
+		(*resp)->vr_length = 0;
+		retval = compose_merged_answer(name_n, type_h, class_h, results, *resp);
 		return retval;
 	}
 
-	*resp_count = 0; /* value-result parameter */
+	last_resp = NULL;
 
 	/* Iterate over the results returned by the validator */
-	for (res = results; res; res=res->val_rc_next) {
-		unsigned char *cp, *ep;
-		int resplen;
+	for (res = results; 
+			res && res->val_rc_trust && res->val_rc_trust->_as->ac_data; 
+				res=res->val_rc_next) {
 
-		if ((*resp_count) >= res_count) {
-
-			if (proof)
-				return VAL_NO_ERROR;
-
-			/* Return the total count in resp_count */ 
-			for (;res; res=res->val_rc_next)
-				(*resp_count)++;
-			return VAL_NO_SPACE;
+		unsigned char *cp;
+		struct rr_rec *rr;
+		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
+		
+		new_resp = (struct val_response *) MALLOC (sizeof (struct val_response));
+		if (new_resp == NULL)
+			return VAL_OUT_OF_MEMORY;
+		/* add this to the response linked-list */
+		if (last_resp != NULL) {
+			last_resp->vr_next = new_resp;
 		}
+		else {
+			*resp = new_resp;
+		}
+		last_resp = new_resp;
+		new_resp->vr_response = NULL;
+		new_resp->vr_length = 0;
+		new_resp->vr_val_status = res->val_rc_status;
+		new_resp->vr_next = NULL;
 
-		resp[*resp_count].val_status = res->val_rc_status;
-		cp = resp[*resp_count].response;
-		resplen = resp[*resp_count].response_length;
+		/* The response size has to be allocated to the following size:
+		 * sizeof(HEADER) + 
+		 * 
+		 * wire_name_length(name_n) +
+		 * 	sizeof(u_int16_t) +
+		 *	sizeof(u_int16_t) +
+		 *	
+		 * [wire_name_length(rrset->rrs->val_rrset_name_n) +
+		 *		sizeof(u_int16_t) + sizeof(u_int16_t) + sizeof(u_int32_t) +		
+		 *		sizeof(u_int16_t) + rr->rr_rdata_length_h] for each rr
+		 */
+		/* Calculate length of response */
+		new_resp->vr_length = find_rrset_len(name_n, rrset) + OUTER_HEADER_LEN;
+		new_resp->vr_response = (unsigned char *) MALLOC (new_resp->vr_length * sizeof(unsigned char));
+		if (new_resp->vr_response == NULL)
+			return VAL_OUT_OF_MEMORY; 
 
-		if ((cp == NULL) || ((resplen) == 0))
-			return VAL_BAD_ARGUMENT;
-		ep = cp + resplen;
+		/* fill in response contents */
+		cp = new_resp->vr_response;
 
-		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
-			/* Construct the message */
+		HEADER *hp = (HEADER *)cp; 
+		bzero(hp, sizeof(HEADER));
+		cp += sizeof(HEADER);
 
-			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
-			HEADER *hp = (HEADER *)cp; 
-			if (cp + sizeof(HEADER) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-			bzero(hp, sizeof(HEADER));
-			cp += sizeof(HEADER);
-
-
-			/*  Question section */
-			int len = wire_name_length(name_n);
-			if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-			memcpy (cp, name_n, len);
-			cp += len;
+		/*  Question section */
+		int len = wire_name_length(name_n);
+		memcpy (cp, name_n, len);
+		cp += len;
 			
-			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-			NS_PUT16(type_h, cp);
+		NS_PUT16(type_h, cp);
+		NS_PUT16(class_h, cp);
+		hp->qdcount = htons(1);
 
-			if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-			NS_PUT16(class_h, cp);
-	
-			hp->qdcount = htons(1);
+		/* Answer section */
+		int anscount  = 0;
+		int rrset_name_n_len = wire_name_length(rrset->rrs->val_rrset_name_n);
+		for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
 
-			/* Answer section */
-			struct rr_rec *rr;
-			int anscount  = 0;
-			for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
-				int len = wire_name_length(rrset->rrs->val_rrset_name_n);
-
-				if (cp + len >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-				memcpy (cp, rrset->rrs->val_rrset_name_n, len);
-				cp += len;
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-				NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
-
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-				NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
-
-				if (cp + sizeof(u_int32_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-				NS_PUT32(rrset->rrs->val_rrset_ttl_h, cp);
-
-				if (cp + sizeof(u_int16_t) >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-				NS_PUT16(rr->rr_rdata_length_h, cp);
-
-				if (cp + rr->rr_rdata_length_h >= ep) {h_errno = NETDB_INTERNAL; return VAL_NO_SPACE;}
-				memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
-				cp += rr->rr_rdata_length_h;
-
-				anscount++;
-			}
-
-			if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
-				hp->ancount = htons(anscount);
-			}
-			else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
-				proof = 1;
-				hp->nscount = htons(anscount);
-			}
-
-			/* Set the AD bit if all RRSets in the Answer and Authority sections are authentic */
-			if (val_isauthentic(res->val_rc_status)) {
-				hp->ad = 1;
-			}
-			else {
-				hp->ad = 0;
-			}
+			memcpy (cp, rrset->rrs->val_rrset_name_n, rrset_name_n_len);
+			cp += rrset_name_n_len;
+			NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
+			NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
+			NS_PUT32(rrset->rrs->val_rrset_ttl_h, cp);
+			NS_PUT16(rr->rr_rdata_length_h, cp);
+			memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
+			cp += rr->rr_rdata_length_h;
+			anscount++;
 		}
-		resp[*resp_count].response_length = cp - resp[*resp_count].response;
-		(*resp_count)++;
+
+		if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
+			hp->ancount = htons(anscount);
+		}
+		else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
+			proof = 1;
+			hp->nscount = htons(anscount);
+		}
+
+		/* Set the AD bit if all RRSets in the Answer and Authority sections are authentic */
+		if (val_isauthentic(res->val_rc_status)) {
+			hp->ad = 1;
+		}
+		else {
+			hp->ad = 0;
+		}
 	}
 
 	return VAL_NO_ERROR;
@@ -429,9 +358,7 @@ static int compose_answer( const u_char *name_n,
  *          The scope of this function is global.
  *
  * This routine makes a query for {domain_name, type, class} and returns the 
- * result in resp. Memory for the response bytes within each
- * val_response structure must be sufficient to hold all the answers returned.
- * If not, those answers are omitted from the result and VAL_NO_SPACE is returned.
+ * result in resp. 
  * The result of validation for a particular resource record is available in
  * the val_status field of the val_response structure.
  *
@@ -441,30 +368,17 @@ static int compose_answer( const u_char *name_n,
  * class -- The DNS class (typically IN)
  * type  -- The DNS type  (for example: A, CNAME etc.)
  * flags -- 
- * The parameter may be used in future to specify preferences such as the following:
- * TRY_TCP_ON_DOS	Try connecting to the server using TCP when a DOS 
- *			on the resolver is detected 
  * At present only one flag is implemented VAL_QUERY_MERGE_RRSETS.  When this flag
  * is specified, val_query will merge the RRSETs into a single response message.
  * The validation status in this case will be VAL_SUCCESS only if all the
  * individual RRSETs have the VAL_SUCCESS status.  Otherwise, the status
  * will be one of the other error codes.
  * resp -- An array of val_response structures used to return the result.
- * This val_response array must be large enough to 
- * hold all answers. The size allocated by the user must be passed in the 
- * resp_count parameter. If space is insufficient to hold all answers, those 
- * answers are omitted and VAL_NO_SPACE is returned. 
- * resp_count -- Points to a variable of type int that contains the length of the
- *               resp array when this function is called.  On return, this will
- *               contain the number of entries in the 'resp' array that were filled
- *               with answers by this function.  'resp_count' must not be NULL.
  * 
  * Return values:
  * VAL_NO_ERROR		Operation succeeded
  * VAL_BAD_ARGUMENT	        The domain name or other arguments are invalid
  * VAL_OUT_OF_MEMORY	Could not allocate enough memory for operation
- * VAL_NO_SPACE		Returned when the user allocated memory is not large enough 
- *			to hold all the answers.
  *
  */
 int val_query ( const val_context_t *ctx,
@@ -472,8 +386,7 @@ int val_query ( const val_context_t *ctx,
 		const u_int16_t class,
 		const u_int16_t type,
 		const u_int8_t flags,
-		struct val_response *resp,
-		int *resp_count )
+		struct val_response **resp)
 {
 	struct val_result_chain *results = NULL;
 	int retval;
@@ -486,6 +399,10 @@ int val_query ( const val_context_t *ctx,
 	}
 	else	
 	    context = (val_context_t *) ctx;
+
+	if (resp == NULL)
+		return VAL_BAD_ARGUMENT;
+	*resp = NULL;
 
 	val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
 		domain_name, p_class(class), p_type(type));
@@ -500,21 +417,7 @@ int val_query ( const val_context_t *ctx,
 	if(VAL_NO_ERROR == (retval = val_resolve_and_check(context, name_n, class, type, flags, 
 											&results))) {
 		/* Construct the answer response in resp */
-		retval = compose_answer(name_n, type, class, results, resp, resp_count, flags);
-
-/*
-		struct val_result_chain *res = results;
-
-		val_log(context, LOG_DEBUG, "\nRESULT OF VALIDATION :\n");
-		
-		for (res = results; res; res=res->next) {
-			if(res->as) {
-				val_log_rrset(context, LOG_DEBUG, res->as->_as->ac_data);
-			}
-			
-			val_log (context, LOG_DEBUG, "Validation status = %d\n\n\n", res->status);
-		}
-*/
+		retval = compose_answer(name_n, type, class, results, resp, flags);
 	}
 
 	val_log_assertion_chain(context, LOG_DEBUG, name_n, class, type, context->q_list, results);
@@ -527,3 +430,22 @@ int val_query ( const val_context_t *ctx,
 	return retval;
 
 } /* val_query() */
+
+
+/* Release memory allocated by the val_query() function */
+int val_free_response(struct val_response *resp)
+{
+	struct val_response *prev, *cur; 
+	cur = resp;
+
+	while (cur) {
+		prev = cur;
+		cur = cur->vr_next;
+
+		if (prev->vr_response != NULL)
+			FREE(prev->vr_response);
+		FREE(prev);
+	}	
+
+	return VAL_NO_ERROR;
+}
