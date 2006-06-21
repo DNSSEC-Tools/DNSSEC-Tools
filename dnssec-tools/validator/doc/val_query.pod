@@ -13,8 +13,7 @@ val_query - DNSSEC-validated resolution of DNS queries
                 const u_int16_t class,
                 const u_int16_t type,
                 const u_int8_t flags,
-                struct val_response *resp,
-                int *resp_count)
+                struct val_response **resp);
 
 =head1 DESCRIPTION
 
@@ -28,39 +27,31 @@ B<libval(3)>.
 The I<dname> parameter specifies the domain name, I<class> specifies the
 DNS class and I<type> specifies the DNS type.
 
-The B<val_query()> function returns results in the I<resp> array which
+The B<val_query()> function returns results in the I<resp> linked-list which
 encapsultes the results into the following structure:
 
   struct val_response {
-        unsigned char *response;
-        int response_length;
-        val_status_t val_status;
+        unsigned char *vr_response;
+        int vr_length;
+        val_status_t vr_val_status;
+		struct val_response *vr_next;
   }; 
 
-I<response> and I<response_length> fields are functionally similar to the
-I<answer> and I<anslen> parameters in B<res_query(3)>.  I<resp> is an array
-and must be allocated by the user to be of sufficient size to hold all the
-answers returned by the DNS name server.  Each element in the I<resp> array
+I<vr_response> and I<vr_length> fields are functionally similar to the
+I<answer> and I<anslen> parameters in B<res_query(3)>.  Memory for the 
+I<resp> linked-list is internally allocated and must be released after
+a successful invocation of the function using the val_free_response() function. 
+Each element in the I<resp> linked-list
 will contain an answer corresponding to a single RRSet in the DNS reply.
-The I<response> field in each I<val_response> structure must also be
-allocated by the user to be of sufficient size to hold an answer. 
 
 If DNSSEC validation succeeds for a given RRSet, a value of
-B<VAL_SUCCESS> is returned in the I<val_status> field of the
+B<VAL_SUCCESS> is returned in the I<vr_val_status> field of the
 I<val_response> structure for that RRSet. Other values are returned in case
 of errors.  See B<val_errors.h> for a listing of possible error codes.  The
 B<p_val_error()> function can be used to return a brief string description
 of the error code.  The B<val_istrusted()> function can be used to determine
 if the error code represents a value which indicates that the response can
 be trusted (see B<libval(3)> for further information).
-
-The number of answers actually available is returned in the I<resp_count>
-parameter.  In case I<resp> is not large enough to hold all answers returned
-from B<val_query()>, it returns an error code of B<VAL_NO_SPACE> and
-I<resp_count> is set to the total number of answers available.  Applications
-may re-query after reallocating I<resp> to hold that many answers.  For
-queries that are not of type C<ns_t_any> it is generally sufficient to
-allocate an array of three elements for the I<resp> array.
 
 The I<flags> parameter controls the scope of validation and name
 resolution, and the output format.  At present only one flag is
@@ -80,10 +71,9 @@ error status, if this flag is used.
 
 =head1 RETURN VALUES
 
-The B<val_query()> function returns 0 on success.  It returns
-B<VAL_NO_SPACE> if the application has not allocated enough memory to hold all
-results returned by the validator.  This function internally invokes
-B<resolve_n_check()>, and errors from this function may also be returned.
+The B<val_query()> function returns 0 on success.  
+This function internally invokes B<resolve_n_check()>, 
+and errors from this function may be returned.
 See B<libval(3)> for more details.
 
 =head1 EXAMPLES
@@ -99,43 +89,27 @@ See B<libval(3)> for more details.
 
  int main(int argc, char *argv[])
  {
-          int dnssec_status = ERROR;
           int retval;
-	  int i;
+	      int i;
           int class = ns_c_in;
           int type = ns_t_a;
-          struct val_response resp[RESPCOUNT];
-          int resp_count = RESPCOUNT;
-          char buf0[BUFLEN];
-	  char buf1[BUFLEN];
-          char buf2[BUFLEN];
+          struct val_response *resp, *iter;
 
           if (argc < 2) {
                   printf("Usage: %s <domain-name>\n", argv[0]);
                   exit(1);
           }
  
-          bzero(buf0, BUFLEN);
-          bzero(buf1, BUFLEN);
-          bzero(buf2, BUFLEN);
-
-          resp[0].response = buf0;
-          resp[1].response = buf1;
-          resp[2].response = buf2;
-
-          resp[0].response_length = BUFLEN;
-          resp[1].response_length = BUFLEN;
-          resp[2].response_length = BUFLEN;
-
-          retval = val_query(NULL, argv[1], class, type, 0, resp,
-                             &resp_count);
+          retval = val_query(NULL, argv[1], class, type, 0, &resp);
 
           if (retval == 0) {
-                  for (i=0; i<resp_count; i++) {
-                          printf("Validation Status = %d [%s]\n", resp[i].val_status,
-                                 p_val_error(resp[i].val_status));
+                  for (iter=resp; iter; iter=iter->vr_next) {
+                          printf("Validation Status = %d [%s]\n", iter->vr_val_status,
+                                 p_val_error(iter->vr_val_status));
                   }
           }
+
+          free_val_response(resp);
 
           return 0;
  }

@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_getaddrinfo 3"
-.TH val_getaddrinfo 3 "2006-06-05" "perl v5.8.6" "Programmer's Manual"
+.TH val_getaddrinfo 3 "2006-06-20" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_getaddrinfo, free_val_addrinfo \- get DNSSEC\-validated network address
 and service translation
@@ -167,12 +167,12 @@ parameter.
 \&          struct sockaddr *ai_addr;
 \&          char * ai_canonname;
 \&          struct val_addrinfo *ai_next;
-\&          val_status_t val_status;
+\&          val_status_t ai_val_status;
 \&  };
 .Ve
 .PP
 The \fIval_addrinfo\fR structure is similar to the \fIaddrinfo\fR structure (see
-\&\fB\f(BIgetaddrinfo\fB\|(3)\fR), and has an additional field \fIval_status\fR that represents
+\&\fB\f(BIgetaddrinfo\fB\|(3)\fR), and has an additional field \fIai_val_status\fR that represents
 the validation status for that particular record.  The \fB\f(BIval_istrusted()\fB\fR
 function can be used to determine whether this validation status represents a
 trusted value and the \fB\f(BIp_val_error()\fB\fR function can be used to display this
@@ -207,10 +207,9 @@ memory for the value returned in \fI*res\fR can be released using the
 \& #include <validator.h>
 .Ve
 .PP
-.Vb 5
+.Vb 4
 \& int main(int argc, char *argv[])
 \& {
-\&          int val_status = ERROR;
 \&          struct val_addrinfo *ainfo = NULL;
 \&          int retval;
 .Ve
@@ -232,8 +231,8 @@ memory for the value returned in \fI*res\fR can be released using the
 .PP
 .Vb 3
 \&                  printf("Validation Status = %d [%s]\en",
-\&                         ainfo->val_status,
-\&                         p_val_error(ainfo->val_status));
+\&                         ainfo->ai_val_status,
+\&                         p_val_error(ainfo->ai_val_status));
 .Ve
 .PP
 .Vb 2
