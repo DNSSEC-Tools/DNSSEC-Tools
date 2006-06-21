@@ -27,7 +27,6 @@
 #define VAL_CONF_PARSE_ERROR -8 /*Error in parsing some configuration file.*/ 
 #define VAL_CONF_NOT_FOUND -9	/*Could not find one or both of the configuration files*/
 #define VAL_NO_POLICY -10 /*Could not identify the policy to which we need to switch.*/	
-#define VAL_NO_SPACE -11 /*Not enough space for storing all available answers.*/
 
 /* 
  *************************************************** 
