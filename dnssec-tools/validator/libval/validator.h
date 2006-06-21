@@ -258,9 +258,10 @@ struct val_query_chain {
 };
 
 struct val_response {
-	unsigned char *response;
-	int	response_length;
-	val_status_t val_status;
+	unsigned char *vr_response;
+	int vr_length;
+	val_status_t vr_val_status;
+	struct val_response *vr_next;
 };
 
 struct domain_info
@@ -346,14 +347,15 @@ char *p_as_error(val_astatus_t valerrno);
 char *p_val_error(val_status_t err);
 
 /* from val_x_query.c */
+/* from val_x_query.c */
 int val_query(const val_context_t *ctx,
-	      const char *domain_name,
-	      const u_int16_t class,
-	      const u_int16_t type,
-	      const u_int8_t flags,
-	      struct val_response *resp,
-	      int *resp_count);
+			const char *domain_name,
+			const u_int16_t class,
+			const u_int16_t type,
+			const u_int8_t flags,
+			struct val_response **resp);
 
+int val_free_response(struct val_response *resp);
 
 /* from val_gethostbyname.c */
 extern int h_errno;
@@ -395,7 +397,7 @@ struct val_addrinfo {
 	struct sockaddr *ai_addr;
 	char * ai_canonname;
 	struct val_addrinfo *ai_next;
-	val_status_t val_status;
+	val_status_t ai_val_status;
 };
 
 int val_getaddrinfo ( const val_context_t *ctx,
