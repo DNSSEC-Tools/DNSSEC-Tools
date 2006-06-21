@@ -1,30 +1,31 @@
-			sendmail-8.13.3 DNSSEC HOWTO
-			============================
-			       (Version 0.1)
+			sendmail DNSSEC HOWTO
+			=====================
+			    (Version 0.1)
 
 Introduction
 ============
 
 This HOWTO describes the installation, configuration and execution steps for
-adding DNSSEC validation to outbound email for sendmail-8.13.3.
+adding DNSSEC validation to outbound email for sendmail. This patch has been 
+tested for sendmail 8.13.6.
 
 
 Installation
 ============
 
-Download sendmail-8.13.3.tar.gz from ftp://ftp.sendmail.org/pub/sendmail/.
+Download sendmail-8.13.x.tar.gz from ftp://ftp.sendmail.org/pub/sendmail/.
 
 Unzip and untar it by:
 
-	tar -xvzf sendmail-8.13.3.tar.gz
+	tar -xvzf sendmail-8.13.x.tar.gz
 
-Go to the sendmail-8.13.3 directory:
+Go to the sendmail-8.13.x directory:
 
-	cd sendmail-8.13.3
+	cd sendmail-8.13.x
 
-Apply the sendmail-8.13.3_dnssec_patch.txt patch found in this directory by:
+Apply the sendmail-8.13.x_dnssec_patch.txt patch found in this directory by:
 
-	patch -p 0 -b -z .orig </path/to/patch/sendmail-8.13.3_dnssec_patch.txt
+	patch -p 0 -b -z .orig </path/to/patch/sendmail-8.13.x_dnssec_patch.txt
 
 This will apply the patch and store the original files with a .orig suffix.
 
@@ -32,7 +33,7 @@ This patch requires the 'libval' library for DNSSEC validation.  This
 library can be found at http://dnssec-tools.sourceforge.net/.  You must
 install this library before compiling the patched sendmail source.
 
-Add the following line to the sendmail-8.13.3/devtools/Site/site.config.m4
+Add the following line to the sendmail-8.13.x/devtools/Site/site.config.m4
 file, if it is not already present:
 
 APPENDDEF(`confLIBS', `-lsres -lval -lcrypto')
