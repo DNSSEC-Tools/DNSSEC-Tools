@@ -326,7 +326,7 @@ a non-zero value on error.
       </figure>
       </section>
 
-      <section title="val_query">
+      <section title="val_query, val_res_query">
       <figure>
       <artwork>
 int val_query( const val_context_t *ctx, 
@@ -338,6 +338,9 @@ int val_query( const val_context_t *ctx,
 
 int val_free_response(struct val_response *resp);
 
+int val_res_query(const val_context_t *ctx, const char *dname, int class, int type,
+        u_char *answer, int anslen, val_status_t *val_status);
+
 struct val_response {
         unsigned char *vr_response;
         int           vr_length;
@@ -347,14 +350,15 @@ struct val_response {
       </artwork>
       <postamble>
       <t>
-      The val_query() function queries the name server for a fully qualified
+      The val_query() and val_res_query() functions query the name server for a fully qualified
 domain name of the given class and type.  In addition to the answers to the
-query, it gives the status of DNSSEC validation for each answer returned.
-It is intended as a DNSSEC-aware replacement for the res_query() function.
+query, they give the status of DNSSEC validation for each answer returned.
+They are intended as DNSSEC-aware replacements for the res_query() function.
       </t>
       <t>
-      Multiple RRsets may be returned in response to a query, each with a 
-potentially different validation status. 
+      val_query() is provided to return the individual validation status values for multiple RRsets returned in
+response to a query. Multiple RRsets may be returned if the query is for a type of "any" or for non-existent name or
+type in which case the proof of non-existence is also returned. 
 The val_query() function returns 0 on success and a non-zero error code
 on failure.  When a success value is returned, the 
 memory pointed to by resp contains a linked-list of responses returned by the validator.  
@@ -387,6 +391,12 @@ validated.
 If this flag is used and a value other than VAL_SUCCESS is returned with
 multiple RRsets in the answer, it will not be possible to know which
 RRset resulted in the error status.</t>
+
+	<t>
+	The val_res_query() function is a closer substitute for the res_query(3) function. It internally invokes the
+val_query() function supplying it with the proper set of arguments and returning the final response in the answer field.
+The number of bytes available in the answer field is returned in the anslen field. The val_res_query()
+function returns the value of anslen on success and -1 on failure. </t> 
 
       </postamble>
       </figure>
@@ -980,7 +990,9 @@ high-level and low-level APIs, and the return values for the low-level and conte
         </t>
         <t> </t>
         <t hangText="VAL_PROVABLY_UNSECURE:">
-        returned if the zone to which the response belongs was inferred to be un-signed. 
+        returned if the authetication chain from a trust anchor to a given zone cannot be constructed
+		due to the provable absence of a DS record for this zone in the parent. This condition 
+		is generally treated as equivalent to an (unsigned) zone for which validation is to be ignored.
         </t>
         <t> </t>
         <t hangText="VAL_INDETERMINATE:">
@@ -1050,7 +1062,7 @@ it should have been flagged as bogus.
    </t>
 	<t> The results of validation must be communicated by the validator to the
 application in a trustworthy manner. This is generally not a problem if the validating resolver and the application
-reside on the same local machine. However, if the validator is instead instantiated as a validating security-aware
+reside on the same local machine. However, if the validator is instead implemented as a validating security-aware
 name server on a remote system, additional security mechanisms may be required to protect the integrity of the
 communication channel between the application and the validator. </t>
    </section> <!-- Security Considerations -->
