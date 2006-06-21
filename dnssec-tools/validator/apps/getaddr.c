@@ -113,7 +113,7 @@ static void print_addrinfo(int type, void* ainfo)
 			printf("\tCanonName: (null)\n");
 		
 		if (type == VAL_ADDRINFO_TYPE) {
-			printf("\tValStatus: %s\n", p_val_error(((struct val_addrinfo*)a)->val_status));
+			printf("\tValStatus: %s\n", p_val_error(((struct val_addrinfo*)a)->ai_val_status));
 		}
 		printf("}\n");
 		

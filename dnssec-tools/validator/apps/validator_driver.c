@@ -542,40 +542,31 @@ int main(int argc, char *argv[])
 			if (doprint) {
 				int retval = 0;
 				int dnssec_status = -1;
-				struct val_response resp[MAX_RESPCOUNT];
-				int resp_count = MAX_RESPCOUNT;
-				int i;
-				for (i=0; i<resp_count; i++) {
-				    bzero(&resp[i], sizeof (struct val_response));
-				    resp[i].response = (unsigned char *) malloc (MAX_RESPSIZE * sizeof(unsigned char));
-				    if (resp[i].response == NULL) {
-					    printf("Memory allocation error. Please try again later.\n");
-					    exit(1);
-				    }
-				    bzero(resp[i].response, MAX_RESPSIZE * sizeof(unsigned char));
-				    resp[i].response_length = MAX_RESPSIZE;
+				struct val_response *resp, *cur;
+				retval = val_query(NULL, domain_name, class_h, type_h, flags, &resp);
+				if (retval != VAL_NO_ERROR) {
+					printf("val_query() returned error %d\n", retval);
+					return 1;
 				}
 
-				retval = val_query(NULL, domain_name, class_h, type_h, flags, resp, &resp_count);
-				
-				if (resp_count > 0) {
-					for (i=0; i<resp_count; i++) {
-						
-						printf("DNSSEC status: %s [%d]\n", p_val_error(resp[i].val_status),
-						       resp[i].val_status);
-						if (resp[i].val_status == VAL_SUCCESS) {
-							printf("Validated response:\n");
-						}
-						else {
-							printf("Non-validated response:\n");
-						}
-						print_response(resp[i].response, resp[i].response_length);
-						printf("\n");
+				if (resp == NULL) {
+					printf("No answers returned. \n");
+				}
+
+				for(cur=resp; cur; cur=cur->vr_next) {
+					printf("DNSSEC status: %s [%d]\n", p_val_error(cur->vr_val_status),
+					       cur->vr_val_status);
+					if (cur->vr_val_status == VAL_SUCCESS) {
+						printf("Validated response:\n");
 					}
+					else {
+						printf("Non-validated response:\n");
+					}
+					print_response(cur->vr_response, cur->vr_length);
+					printf("\n");
 				}
-				else {
-					printf("No answers returned. [resp_count = %d, retval = %d]\n", resp_count, retval);
-				}
+
+				val_free_response(resp);
 			}
 		}
 		else {
