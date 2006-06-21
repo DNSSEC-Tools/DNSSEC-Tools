@@ -449,3 +449,28 @@ int val_free_response(struct val_response *resp)
 
 	return VAL_NO_ERROR;
 }
+
+/* wrapper around val_query() that is closer to res_query() */
+int val_res_query(const val_context_t *ctx, const char *dname, int class, int type, 
+					u_char *answer, int anslen, val_status_t *val_status) 
+{
+	struct val_response *resp;
+	int retval = -1;
+
+	if(VAL_NO_ERROR != (retval = val_query(ctx, dname, class, type, VAL_QUERY_MERGE_RRSETS, &resp))) {
+		return -1;
+	}
+
+	if (resp->vr_length > anslen) 
+		goto err;
+
+	memcpy(answer, resp->vr_response, resp->vr_length);
+	*val_status = resp->vr_val_status;
+	retval = resp->vr_length;
+
+err:	
+	if(VAL_NO_ERROR != (retval = val_free_response(resp))) {
+		return -1;
+	}
+	return retval;
+}
