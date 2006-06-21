@@ -19,11 +19,11 @@
  */
 #define VAL_ERROR	-1 /* Generic error */
 #define VAL_NOT_IMPLEMENTED	-2	/* Functionality not yet implemented */
-#define VAL_OUT_OF_MEMORY -3 /*Could not allocate memory.*/
+#define VAL_RESOURCE_UNAVAILABLE -3	/*Some resource (crypto or memory possibly) was unavailable.*/
 #define VAL_BAD_ARGUMENT -4 /*Bad arguments passed as parameters.*/
 #define VAL_INTERNAL_ERROR -5 /*Encountered some internal error.*/
 #define VAL_NO_PERMISSION	-6 /*No permission to perform operation.*/
-#define VAL_RESOURCE_UNAVAILABLE -7	/*Some resource (crypto possibly) was unavailable.*/
+#define VAL_OUT_OF_MEMORY VAL_RESOURCE_UNAVAILABLE /*Could not allocate memory.*/
 #define VAL_CONF_PARSE_ERROR -8 /*Error in parsing some configuration file.*/ 
 #define VAL_CONF_NOT_FOUND -9	/*Could not find one or both of the configuration files*/
 #define VAL_NO_POLICY -10 /*Could not identify the policy to which we need to switch.*/	

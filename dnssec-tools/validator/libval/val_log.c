@@ -266,7 +266,6 @@ char *p_as_error(val_astatus_t err)
     case VAL_NO_ERROR: return "VAL_NO_ERROR"; break;
                                                                                                                              
     case VAL_NOT_IMPLEMENTED: return "VAL_NOT_IMPLEMENTED"; break;
-    case VAL_OUT_OF_MEMORY: return "VAL_OUT_OF_MEMORY"; break;
     case VAL_BAD_ARGUMENT: return "VAL_BAD_ARGUMENT"; break;
     case VAL_INTERNAL_ERROR: return "VAL_INTERNAL_ERROR"; break;
     case VAL_NO_PERMISSION: return "VAL_NO_PERMISSION"; break;
