@@ -347,15 +347,15 @@ char *p_as_error(val_astatus_t valerrno);
 char *p_val_error(val_status_t err);
 
 /* from val_x_query.c */
-/* from val_x_query.c */
 int val_query(const val_context_t *ctx,
 			const char *domain_name,
 			const u_int16_t class,
 			const u_int16_t type,
 			const u_int8_t flags,
 			struct val_response **resp);
-
 int val_free_response(struct val_response *resp);
+int val_res_query(const val_context_t *ctx, const char *dname, int class, int type,
+                    u_char *answer, int anslen, val_status_t *val_status);
 
 /* from val_gethostbyname.c */
 extern int h_errno;
