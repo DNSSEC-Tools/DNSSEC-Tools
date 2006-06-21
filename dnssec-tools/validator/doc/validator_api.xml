@@ -340,10 +340,10 @@ int val_query( const val_context_t *ctx,
 int val_free_response(struct val_response *resp);
 
 struct val_response {
-        unsigned char *response;
-        int           response_length;
-        val_status_t  val_status;
-        struct val_response *next_response;
+        unsigned char *vr_response;
+        int           vr_length;
+        val_status_t  vr_val_status;
+        struct val_response *vr_next;
 };
       </artwork>
       <postamble>
@@ -364,12 +364,14 @@ after a successful invocation of val_query() using the
 val_free_response() function. </t> 
       <t>
       By default, each val_response structure in the *resp linked list 
-holds a single RRset response. The format of the response field 
+holds a single RRset response. The format of the vr_response field 
 within the val_response structure is similar to the format 
-of the answer returned by res_query(). The val_status field contains 
-the status of DNSSEC validation for that particular RRset and may
-be displayed in a human-understandable format using
-the p_val_error() function as described in <xref target="p-val-error"/>.
+of the answer returned by res_query() and is of length vr_length. 
+The vr_val_status field contains the status of DNSSEC validation 
+for that particular RRset and may be displayed in a human-understandable format using
+the p_val_error() function as described in <xref target="p-val-error"/>. Elements
+within the *resp linked-list may be accessed by traversing the list using the 
+vr_next field. 
 </t>
      <t>
      The flags parameter controls the scope of validation and name
