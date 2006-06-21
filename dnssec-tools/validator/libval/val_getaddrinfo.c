@@ -647,7 +647,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 
 	if (ctx == NULL) {
 		if(VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
-			return retval;
+			return EAI_FAIL;
 	}
 	else
 		context = (val_context_t *) ctx;
