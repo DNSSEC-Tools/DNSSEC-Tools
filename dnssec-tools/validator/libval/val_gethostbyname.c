@@ -277,26 +277,26 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 	/* Count the number of aliases and addresses in the result */
 	for (res = results; res != NULL; res = res->val_rc_next) {
 
-		if ((res->val_rc_trust == NULL) || (res->val_rc_trust->_as == NULL))
+		if (res->val_rc_trust == NULL)
 			continue;
 
-		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
+		struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
 		
 		// Get a count of aliases and addresses
 		while (rrset) {
-			struct rr_rec *rr = rrset->rrs->val_rrset_data;
+			struct rr_rec *rr = rrset->rrs.val_rrset_data;
 			
 			while (rr) {
 				
-				if (rrset->rrs->val_rrset_type_h == ns_t_cname) {
+				if (rrset->rrs.val_rrset_type_h == ns_t_cname) {
 					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = CNAME");
 					alias_count++;
 				}
-				else if ((af == AF_INET) && (rrset->rrs->val_rrset_type_h == ns_t_a)) {
+				else if ((af == AF_INET) && (rrset->rrs.val_rrset_type_h == ns_t_a)) {
 					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = A");
 					addr_count++;
 				}
-				else if ((af == AF_INET6) && (rrset->rrs->val_rrset_type_h == ns_t_aaaa)) {
+				else if ((af == AF_INET6) && (rrset->rrs.val_rrset_type_h == ns_t_aaaa)) {
 					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = AAAA");
 					addr_count++;
 				}
@@ -326,20 +326,20 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 
 	/* Process the result */
 	for (res = results; res != NULL; res = res->val_rc_next) {
-		if ((res->val_rc_trust == NULL) || (res->val_rc_trust->_as == NULL))
+		if (res->val_rc_trust == NULL) 
 			continue;
 
-		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
+		struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
 		
 		while (rrset) {
-			struct rr_rec *rr = rrset->rrs->val_rrset_data;
+			struct rr_rec *rr = rrset->rrs.val_rrset_data;
 
 			while (rr) {
 				// Handle CNAME RRs
-				if (rrset->rrs->val_rrset_type_h == ns_t_cname) {
+				if (rrset->rrs.val_rrset_type_h == ns_t_cname) {
 					
 					bzero(dname, NS_MAXDNAME);
-					if (ns_name_ntop(rrset->rrs->val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
+					if (ns_name_ntop(rrset->rrs.val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}
@@ -370,11 +370,11 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 					}
 				}
 				// Handle A and AAAA RRs
-				else if ( ((af == AF_INET) && (rrset->rrs->val_rrset_type_h == ns_t_a)) ||
-					  ((af == AF_INET6)&& (rrset->rrs->val_rrset_type_h == ns_t_aaaa)) ) {
+				else if ( ((af == AF_INET) && (rrset->rrs.val_rrset_type_h == ns_t_a)) ||
+					  ((af == AF_INET6)&& (rrset->rrs.val_rrset_type_h == ns_t_aaaa)) ) {
 					
 					bzero(dname, NS_MAXDNAME);
-					if (ns_name_ntop(rrset->rrs->val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
+					if (ns_name_ntop(rrset->rrs.val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}

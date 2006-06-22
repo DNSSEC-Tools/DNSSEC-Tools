@@ -185,12 +185,12 @@ void  merge_glue_in_referral(struct val_query_chain *pc, struct val_query_chain 
 	/* Check if glue was obtained */
 	if((glueptr->qc_state == Q_ANSWERED) && 
 		(glueptr->qc_as != NULL) && 
-		(glueptr->qc_as->_as->ac_data != NULL)) {
+		(glueptr->qc_as->_as.ac_data != NULL)) {
 
-		if(glueptr->qc_as->_as->ac_data->rrs->val_rrset_type_h != ns_t_a) {
+		if(glueptr->qc_as->_as.ac_data->rrs.val_rrset_type_h != ns_t_a) {
 			pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
 		}
-		else if(VAL_NO_ERROR != (retval = extract_glue_from_rdata(glueptr->qc_as->_as->ac_data->rrs->val_rrset_data,
+		else if(VAL_NO_ERROR != (retval = extract_glue_from_rdata(glueptr->qc_as->_as.ac_data->rrs.val_rrset_data,
 					&pc->qc_referral->pending_glue_ns))) {
 			glueptr->qc_state = Q_ERROR_BASE+SR_RCV_INTERNAL_ERROR;
 		}
@@ -254,8 +254,8 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL)
     {
-        if (unchecked_set->rrs->val_rrset_type_h == ns_t_ns &&
-                (namecmp(zone_name, unchecked_set->rrs->val_rrset_name_n) == 0))
+        if (unchecked_set->rrs.val_rrset_type_h == ns_t_ns &&
+                (namecmp(zone_name, unchecked_set->rrs.val_rrset_name_n) == 0))
         {
             if (*ns_list != NULL)
             {
@@ -272,7 +272,7 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
             }
             else
             {
-                ns_rr = unchecked_set->rrs->val_rrset_data;
+                ns_rr = unchecked_set->rrs.val_rrset_data;
                 while (ns_rr)
                 {
                     /* Create the structure for the name server */
@@ -337,18 +337,18 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL)
     {
-        if (unchecked_set->rrs->val_rrset_type_h == ns_t_a)
+        if (unchecked_set->rrs.val_rrset_type_h == ns_t_a)
         {
             /* If the owner name matches the name in an *ns_list entry...*/
             trail_ns = NULL;
             ns = *ns_list;
             while (ns)
             {
-                if (namecmp(unchecked_set->rrs->val_rrset_name_n,ns->ns_name_n)==0)
+                if (namecmp(unchecked_set->rrs.val_rrset_name_n,ns->ns_name_n)==0)
                 {
 					struct name_server *old_ns = ns;
                     /* Found that address set is for an NS */
-					if(VAL_NO_ERROR != (retval = extract_glue_from_rdata(unchecked_set->rrs->val_rrset_data, &ns)))
+					if(VAL_NO_ERROR != (retval = extract_glue_from_rdata(unchecked_set->rrs.val_rrset_data, &ns)))
 						return retval;
 					if(old_ns != ns) {
 						/* ns was realloc'd */
@@ -488,11 +488,11 @@ static int do_referral(		val_context_t		*context,
     ref_rrset = *answers;
    	while (ref_rrset)
     {
-  	     if (ref_rrset->rrs->val_rrset_type_h == ns_t_cname
-                   && namecmp(matched_q->qc_name_n,ref_rrset->rrs->val_rrset_name_n)==0)
+  	     if (ref_rrset->rrs.val_rrset_type_h == ns_t_cname
+                   && namecmp(matched_q->qc_name_n,ref_rrset->rrs.val_rrset_name_n)==0)
          {
    	            if((ret_val=add_to_qname_chain(qnames,
-       	                ref_rrset->rrs->val_rrset_data->rr_rdata)) != VAL_NO_ERROR) {
+       	                ref_rrset->rrs.val_rrset_data->rr_rdata)) != VAL_NO_ERROR) {
 					free_qname_chain (qnames);
            	        return ret_val;
 				}

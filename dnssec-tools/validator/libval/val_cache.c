@@ -86,9 +86,9 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
 		new = new_info;
 		trail_new = NULL;
        	while (new) {
-    	    if (old->rrs->val_rrset_type_h == new->rrs->val_rrset_type_h &&
-                old->rrs->val_rrset_class_h == new->rrs->val_rrset_class_h &&
-                namecmp (old->rrs->val_rrset_name_n, new->rrs->val_rrset_name_n)==0) {
+    	    if (old->rrs.val_rrset_type_h == new->rrs.val_rrset_type_h &&
+                old->rrs.val_rrset_class_h == new->rrs.val_rrset_class_h &&
+                namecmp (old->rrs.val_rrset_name_n, new->rrs.val_rrset_name_n)==0) {
 
 				UNLOCK();	
 				LOCK_EX();
@@ -96,7 +96,7 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
     	        /* old and new are competitors */
 	            if (!(old->rrs_cred < new->rrs_cred ||
    	                     (old->rrs_cred == new->rrs_cred &&
-   	                         old->rrs->val_rrset_section <= new->rrs->val_rrset_section))) {
+   	                         old->rrs.val_rrset_section <= new->rrs.val_rrset_section))) {
    	            	/*
    	                     exchange the two -
    	                         copy from new to old:
@@ -105,14 +105,14 @@ static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_i
    	                             data, sig
    	            	*/
    	            	old->rrs_cred = new->rrs_cred;
-   	                old->rrs->val_rrset_section = new->rrs->val_rrset_section;
+   	                old->rrs.val_rrset_section = new->rrs.val_rrset_section;
    	                old->rrs_ans_kind = new->rrs_ans_kind;
-   	                rr_exchange = old->rrs->val_rrset_data;
-   	                old->rrs->val_rrset_data = new->rrs->val_rrset_data;
-   	                new->rrs->val_rrset_data = rr_exchange;
-   		            rr_exchange = old->rrs->val_rrset_sig;
-       	            old->rrs->val_rrset_sig = new->rrs->val_rrset_sig;
-       	            new->rrs->val_rrset_sig = rr_exchange;
+   	                rr_exchange = old->rrs.val_rrset_data;
+   	                old->rrs.val_rrset_data = new->rrs.val_rrset_data;
+   	                new->rrs.val_rrset_data = rr_exchange;
+   		            rr_exchange = old->rrs.val_rrset_sig;
+       	            old->rrs.val_rrset_sig = new->rrs.val_rrset_sig;
+       	            new->rrs.val_rrset_sig = rr_exchange;
        	        }
 
        		    /* delete new */
@@ -182,10 +182,10 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
 	LOCK_SH();
     while(next_answer)  {
         
-        if ((next_answer->rrs->val_rrset_type_h == type_h) &&
-        	(next_answer->rrs->val_rrset_class_h == class_h) &&
-            (namecmp(next_answer->rrs->val_rrset_name_n, name_n) == 0)) {
-            	if (next_answer->rrs->val_rrset_data != NULL) {
+        if ((next_answer->rrs.val_rrset_type_h == type_h) &&
+        	(next_answer->rrs.val_rrset_class_h == class_h) &&
+            (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0)) {
+            	if (next_answer->rrs.val_rrset_data != NULL) {
 					*cloned_answer = copy_rrset_rec(next_answer);
                 	break;
 				}

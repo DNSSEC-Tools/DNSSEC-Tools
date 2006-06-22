@@ -26,7 +26,7 @@
 #define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
 #define RESOLV_CONF             "/etc/resolv.conf"
 #define ROOT_HINTS            	"/etc/root.hints"
-#define VAL_LOG_MASK	LOG_INFO
+#define VAL_LOG_MASK  LOG_INFO
 #ifdef LOG_PERROR
 #define VAL_LOG_OPTIONS LOG_PID | LOG_PERROR
 #else
@@ -161,7 +161,7 @@ struct val_rrset {
 
 struct rrset_rec
 {
-	struct val_rrset *rrs;
+	struct val_rrset rrs;
 	struct name_server *rrs_respondent_server;
     u_int8_t        rrs_cred;   /* SR_CRED_... */
     u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
@@ -203,20 +203,21 @@ typedef struct val_context {
 
 } val_context_t;
 
+
 struct val_rrset_digested {
 	struct rrset_rec *ac_data;
 	struct val_query_chain *ac_pending_query;
+	struct val_assertion_chain *val_ac_next;
 };
 
 struct val_assertion_chain {
 	val_astatus_t val_ac_status;
 	union {
 		struct val_rrset *val_ac_rrset;
-		struct val_rrset_digested *_as;
+		struct val_rrset_digested _as;
 	};
 	struct val_assertion_chain *val_ac_trust;
 	struct val_assertion_chain *val_ac_rrset_next;
-	struct val_assertion_chain *val_ac_next;
 };
 
 
