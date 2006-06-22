@@ -161,10 +161,9 @@ void res_sq_free_rrset_recs (struct rrset_rec **set)
     if (*set)
     {
 		if ((*set)->rrs_respondent_server) free_name_server(&((*set)->rrs_respondent_server));
-        if ((*set)->rrs->val_rrset_name_n) FREE ((*set)->rrs->val_rrset_name_n);
-        if ((*set)->rrs->val_rrset_data) res_sq_free_rr_recs (&((*set)->rrs->val_rrset_data));
-        if ((*set)->rrs->val_rrset_sig) res_sq_free_rr_recs (&((*set)->rrs->val_rrset_sig));
-		if ((*set)->rrs) FREE((*set)->rrs);
+        if ((*set)->rrs.val_rrset_name_n) FREE ((*set)->rrs.val_rrset_name_n);
+        if ((*set)->rrs.val_rrset_data) res_sq_free_rr_recs (&((*set)->rrs.val_rrset_data));
+        if ((*set)->rrs.val_rrset_sig) res_sq_free_rr_recs (&((*set)->rrs.val_rrset_sig));
         if ((*set)->rrs_next) res_sq_free_rrset_recs (&((*set)->rrs_next));
         FREE (*set);
         *set = NULL;
@@ -274,14 +273,14 @@ int add_to_set (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
     struct rr_rec *rr;
                                                                                                                           
     /* Add it to the end of the current list of RR's */
-    if (rr_set->rrs->val_rrset_data==NULL)
+    if (rr_set->rrs.val_rrset_data==NULL)
     {
-        rr_set->rrs->val_rrset_data = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
-        rr = rr_set->rrs->val_rrset_data;
+        rr_set->rrs.val_rrset_data = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
+        rr = rr_set->rrs.val_rrset_data;
     }
     else
     {
-        rr = rr_set->rrs->val_rrset_data;
+        rr = rr_set->rrs.val_rrset_data;
         while (rr->rr_next)
             rr = rr->rr_next;
         rr->rr_next = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
@@ -304,10 +303,10 @@ int add_as_sig (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
 {
     struct rr_rec *rr;
                                                                                                                           
-    if (rr_set->rrs->val_rrset_sig==NULL)
+    if (rr_set->rrs.val_rrset_sig==NULL)
     {
-        rr_set->rrs->val_rrset_sig = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
-        rr = rr_set->rrs->val_rrset_sig;
+        rr_set->rrs.val_rrset_sig = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
+        rr = rr_set->rrs.val_rrset_sig;
     }
     else
     {
@@ -315,7 +314,7 @@ int add_as_sig (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
             If this code is executed, then there is a problem brewing.
             It will be caught in pre_verify to keep the code level.
         */
-        rr = rr_set->rrs->val_rrset_sig;
+        rr = rr_set->rrs.val_rrset_sig;
         while (rr->rr_next)
             rr = rr->rr_next;
         rr->rr_next = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
@@ -349,24 +348,24 @@ int init_rr_set (   struct rrset_rec    *new_set,
 {
     int                 name_len = wire_name_length(name_n);
                                                                                                                           
-    if (new_set->rrs->val_rrset_name_n != NULL)
+    if (new_set->rrs.val_rrset_name_n != NULL)
         /* This has already been initialized */
         return VAL_NO_ERROR;
                                                                                                                           
     /* Initialize it */
-    new_set->rrs->val_rrset_name_n = (u_int8_t *)MALLOC (name_len);
-    if (new_set->rrs->val_rrset_name_n==NULL)
+    new_set->rrs.val_rrset_name_n = (u_int8_t *)MALLOC (name_len);
+    if (new_set->rrs.val_rrset_name_n==NULL)
     {
         FREE (new_set);
         return VAL_OUT_OF_MEMORY;
     }
                                                                                                                           
-    memcpy (new_set->rrs->val_rrset_name_n, name_n, name_len);
-    new_set->rrs->val_rrset_type_h = set_type_h;
-    new_set->rrs->val_rrset_class_h = class_h;
-    new_set->rrs->val_rrset_ttl_h = ttl_h;
-    new_set->rrs->val_rrset_data = NULL;
-    new_set->rrs->val_rrset_sig = NULL;
+    memcpy (new_set->rrs.val_rrset_name_n, name_n, name_len);
+    new_set->rrs.val_rrset_type_h = set_type_h;
+    new_set->rrs.val_rrset_class_h = class_h;
+    new_set->rrs.val_rrset_ttl_h = ttl_h;
+    new_set->rrs.val_rrset_data = NULL;
+    new_set->rrs.val_rrset_sig = NULL;
     new_set->rrs_next = NULL;
                                                                                                                           
     /* Set the credibility */
@@ -384,7 +383,7 @@ int init_rr_set (   struct rrset_rec    *new_set,
                                                                                                                           
     /* Set the source section */
                                                                                                                           
-    new_set->rrs->val_rrset_section = from_section;
+    new_set->rrs.val_rrset_section = from_section;
                                                                                                                           
     /* Can't set the answer kind yet - need the cnames figured out first */
                                                                                                                           
@@ -398,26 +397,26 @@ int init_rr_set (   struct rrset_rec    *new_set,
     a &&                                     /* If there's a record */        \
     (                                                                         \
         (s != ns_t_nsec &&                    /* If the type is not nxt: */    \
-        a->rrs->val_rrset_type_h == s &&                    /* does type match */        \
-        a->rrs->val_rrset_class_h == c &&                   /* does class match */       \
-        memcmp (a->rrs->val_rrset_name_n,n,l)==0            /* does name match */        \
+        a->rrs.val_rrset_type_h == s &&                    /* does type match */        \
+        a->rrs.val_rrset_class_h == c &&                   /* does class match */       \
+        memcmp (a->rrs.val_rrset_name_n,n,l)==0            /* does name match */        \
         )                                                                     \
         ||                                   /* or */                         \
         (t == ns_t_rrsig &&                    /* if it is a sig(nxt) */        \
-        a->rrs->val_rrset_sig==NULL &&                      /* is there no sig here */   \
-        a->rrs->val_rrset_data!=NULL &&                     /* is there data here */     \
-        a->rrs->val_rrset_class_h == c &&                   /* does class match */       \
-        memcmp (a->rrs->val_rrset_name_n,n,l)==0 &&         /* does name match */        \
-        nxt_sig_match (n,a->rrs->val_rrset_data->rr_rdata,&r[SIGNBY])                    \
+        a->rrs.val_rrset_sig==NULL &&                      /* is there no sig here */   \
+        a->rrs.val_rrset_data!=NULL &&                     /* is there data here */     \
+        a->rrs.val_rrset_class_h == c &&                   /* does class match */       \
+        memcmp (a->rrs.val_rrset_name_n,n,l)==0 &&         /* does name match */        \
+        nxt_sig_match (n,a->rrs.val_rrset_data->rr_rdata,&r[SIGNBY])                    \
                                                  /* does sig match nxt */     \
         )                                                                     \
         ||                                   /* or */                         \
         (t == ns_t_nsec &&                    /* if it is a nxt */             \
-        a->rrs->val_rrset_sig!=NULL &&                      /* is there a sig here */    \
-        a->rrs->val_rrset_data==NULL &&                     /* is there no data here */  \
-        a->rrs->val_rrset_class_h == c &&                   /* does class match */       \
-        memcmp (a->rrs->val_rrset_name_n,n,l)==0 &&         /* does name match */        \
-        nxt_sig_match (n,r,&a->rrs->val_rrset_sig->rr_rdata[SIGNBY])                     \
+        a->rrs.val_rrset_sig!=NULL &&                      /* is there a sig here */    \
+        a->rrs.val_rrset_data==NULL &&                     /* is there no data here */  \
+        a->rrs.val_rrset_class_h == c &&                   /* does class match */       \
+        memcmp (a->rrs.val_rrset_name_n,n,l)==0 &&         /* does name match */        \
+        nxt_sig_match (n,r,&a->rrs.val_rrset_sig->rr_rdata[SIGNBY])                     \
                                                  /* does sig match nxt */     \
         )                                                                     \
     )                                                                         \
@@ -458,9 +457,7 @@ struct rrset_rec *find_rr_set (
         new_one = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
         if (new_one==NULL) return NULL;
         memset (new_one, 0, sizeof (struct rrset_rec));
-		new_one->rrs = (struct val_rrset *) MALLOC (sizeof(struct val_rrset));
-		if(new_one->rrs == NULL) return NULL;
-        memset (new_one->rrs, 0, sizeof (struct val_rrset));
+        memset (&(new_one->rrs), 0, sizeof (struct val_rrset));
 
         /* If this is the first ever record, change *the_list */
         if (last==NULL)
@@ -486,7 +483,7 @@ struct rrset_rec *find_rr_set (
     {
         new_one = try;
         /* Make sure it has the lowest ttl (doesn't really matter) */
-        if (new_one->rrs->val_rrset_ttl_h > ttl_h) new_one->rrs->val_rrset_ttl_h = ttl_h;
+        if (new_one->rrs.val_rrset_ttl_h > ttl_h) new_one->rrs.val_rrset_ttl_h = ttl_h;
     }
                                                                                                                           
     /* In all cases, return the value of new_one */
@@ -499,7 +496,7 @@ int check_label_count (
                             struct rr_rec       *the_sig,
                             int                 *is_a_wildcard)
 {
-    u_int8_t owner_labels = wire_name_labels (the_set->rrs->val_rrset_name_n);
+    u_int8_t owner_labels = wire_name_labels (the_set->rrs.val_rrset_name_n);
     u_int8_t sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
                                                                                                                           
     if (sig_labels > owner_labels) return VAL_ERROR;
@@ -521,27 +518,25 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
                                                                                                                           
     *answers = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
     if (*answers==NULL) return VAL_OUT_OF_MEMORY;
-	(*answers)->rrs = (struct val_rrset *) MALLOC (sizeof(struct val_rrset));
-	if((*answers)->rrs == NULL) return VAL_OUT_OF_MEMORY;
 
 	(*answers)->rrs_respondent_server = NULL;                                                                                                          
-    (*answers)->rrs->val_rrset_name_n = (u_int8_t *) MALLOC (length);
+    (*answers)->rrs.val_rrset_name_n = (u_int8_t *) MALLOC (length);
                                                                                                                           
-    if ((*answers)->rrs->val_rrset_name_n == NULL)
+    if ((*answers)->rrs.val_rrset_name_n == NULL)
     {
         FREE (*answers);
         *answers = NULL;
         return VAL_OUT_OF_MEMORY;
     }
                                                                                                                           
-    memcpy ((*answers)->rrs->val_rrset_name_n, query_name_n, length);
-    (*answers)->rrs->val_rrset_type_h = query_type_h;
-    (*answers)->rrs->val_rrset_class_h = query_class_h;
-    (*answers)->rrs->val_rrset_ttl_h = 0;
+    memcpy ((*answers)->rrs.val_rrset_name_n, query_name_n, length);
+    (*answers)->rrs.val_rrset_type_h = query_type_h;
+    (*answers)->rrs.val_rrset_class_h = query_class_h;
+    (*answers)->rrs.val_rrset_ttl_h = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
-    (*answers)->rrs->val_rrset_section = VAL_FROM_UNSET;
-    (*answers)->rrs->val_rrset_data = NULL;
-    (*answers)->rrs->val_rrset_sig = NULL;
+    (*answers)->rrs.val_rrset_section = VAL_FROM_UNSET;
+    (*answers)->rrs.val_rrset_data = NULL;
+    (*answers)->rrs.val_rrset_sig = NULL;
     (*answers)->rrs_next = NULL;
                                                                                                                           
     return VAL_NO_ERROR;
@@ -997,55 +992,53 @@ struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
     copy_set = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
     if (copy_set == NULL) return NULL;
     memcpy (copy_set, rr_set, sizeof(struct rrset_rec));
-	copy_set->rrs = (struct val_rrset *) MALLOC (sizeof(struct val_rrset));
-	if(copy_set->rrs == NULL) return NULL;
-    memcpy (copy_set->rrs, rr_set->rrs, sizeof(struct val_rrset));
+    memcpy (&(copy_set->rrs), &(rr_set->rrs), sizeof(struct val_rrset));
 
-    o_length = wire_name_length (rr_set->rrs->val_rrset_name_n);
+    o_length = wire_name_length (rr_set->rrs.val_rrset_name_n);
 
 	if (SR_UNSET != clone_ns(&copy_set->rrs_respondent_server, rr_set->rrs_respondent_server)) {
 		FREE(copy_set);
 		return NULL;
 	}
-    copy_set->rrs->val_rrset_data = NULL;
+    copy_set->rrs.val_rrset_data = NULL;
     copy_set->rrs_next = NULL;
-    copy_set->rrs->val_rrset_sig = NULL;
-    copy_set->rrs->val_rrset_name_n = NULL;
-	copy_set->rrs->val_rrset_name_n = (u_int8_t *) MALLOC (o_length);
-	if (copy_set->rrs->val_rrset_name_n == NULL) {
+    copy_set->rrs.val_rrset_sig = NULL;
+    copy_set->rrs.val_rrset_name_n = NULL;
+	copy_set->rrs.val_rrset_name_n = (u_int8_t *) MALLOC (o_length);
+	if (copy_set->rrs.val_rrset_name_n == NULL) {
 		FREE(copy_set);
 		return NULL;
 	}
-	memcpy(copy_set->rrs->val_rrset_name_n, rr_set->rrs->val_rrset_name_n, o_length); 
+	memcpy(copy_set->rrs.val_rrset_name_n, rr_set->rrs.val_rrset_name_n, o_length); 
                                                                                                                      
     /*
         Do an insertion sort of the records in rr_set.  As records are
         copied, convert the domain names to lower case.
     */
                                                                                                                           
-    for (orig_rr = rr_set->rrs->val_rrset_data; orig_rr; orig_rr = orig_rr->rr_next)
+    for (orig_rr = rr_set->rrs.val_rrset_data; orig_rr; orig_rr = orig_rr->rr_next)
     {
         /* Copy it into the right form for verification */
-        copy_rr = copy_rr_rec (rr_set->rrs->val_rrset_type_h, orig_rr, 1);
+        copy_rr = copy_rr_rec (rr_set->rrs.val_rrset_type_h, orig_rr, 1);
                                                                                                                           
         if (copy_rr==NULL) return NULL;
                                                                                                                           
         /* Now, find a place for it */
                                                                                                                           
-        link_rr (&copy_set->rrs->val_rrset_data, copy_rr);
+        link_rr (&copy_set->rrs.val_rrset_data, copy_rr);
     }
 	/* Copy the rrsigs also */
 
-    for (orig_rr = rr_set->rrs->val_rrset_sig; orig_rr; orig_rr = orig_rr->rr_next)
+    for (orig_rr = rr_set->rrs.val_rrset_sig; orig_rr; orig_rr = orig_rr->rr_next)
     {
         /* Copy it into the right form for verification */
-        copy_rr = copy_rr_rec (rr_set->rrs->val_rrset_type_h, orig_rr, 0);
+        copy_rr = copy_rr_rec (rr_set->rrs.val_rrset_type_h, orig_rr, 0);
                                                                                                                           
         if (copy_rr==NULL) return NULL;
                                                                                                                           
         /* Now, find a place for it */
                                                                                                                           
-        link_rr (&copy_set->rrs->val_rrset_sig, copy_rr);
+        link_rr (&copy_set->rrs.val_rrset_sig, copy_rr);
     }
 
     return copy_set;

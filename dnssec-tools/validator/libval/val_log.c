@@ -60,10 +60,10 @@ void val_log_rrset(val_context_t *ctx, int level, struct rrset_rec *rrset)
 
 		val_log(ctx, level, "rrs->val_rrset_name=%s rrs->val_rrset_type=%s rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d"
 			"rrs->val_rrset_section=%s rrs->val_rrset_data=%s rrs->val_rrset_sig=%s",
-			rrset->rrs->val_rrset_name_n, p_type(rrset->rrs->val_rrset_type_h), p_class(rrset->rrs->val_rrset_class_h),
-			rrset->rrs->val_rrset_ttl_h, p_section(rrset->rrs->val_rrset_section - 1, !ns_o_update),
-			get_rr_string(rrset->rrs->val_rrset_data, buf, 2048),
-			get_rr_string(rrset->rrs->val_rrset_sig, buf, 2048));
+			rrset->rrs.val_rrset_name_n, p_type(rrset->rrs.val_rrset_type_h), p_class(rrset->rrs.val_rrset_class_h),
+			rrset->rrs.val_rrset_ttl_h, p_section(rrset->rrs.val_rrset_section - 1, !ns_o_update),
+			get_rr_string(rrset->rrs.val_rrset_data, buf, 2048),
+			get_rr_string(rrset->rrs.val_rrset_sig, buf, 2048));
 	
 		rrset = rrset->rrs_next;
     }
@@ -197,18 +197,18 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 
 		for (next_as = next_result->val_rc_trust; next_as; next_as = next_as->val_ac_trust) {
 			u_char *t_name_n;
-			if(next_as->_as->ac_data->rrs->val_rrset_name_n == NULL)
+			if(next_as->_as.ac_data->rrs.val_rrset_name_n == NULL)
 				t_name_n = (u_char*) "NULL_DATA";
 			else
-				t_name_n = next_as->_as->ac_data->rrs->val_rrset_name_n;
+				t_name_n = next_as->_as.ac_data->rrs.val_rrset_name_n;
 
-			if(next_as->_as->ac_data == NULL) {
+			if(next_as->_as.ac_data == NULL) {
 				val_log(ctx, level, "Assertion status = %s[%d]",
 					p_as_error(next_as->val_ac_status), next_as->val_ac_status);\
 			}
 			else {
-				VAL_LOG_ASSERTION(t_name_n, next_as->_as->ac_data->rrs->val_rrset_class_h,
-					next_as->_as->ac_data->rrs->val_rrset_type_h, next_as->_as->ac_data->rrs_respondent_server, 
+				VAL_LOG_ASSERTION(t_name_n, next_as->_as.ac_data->rrs.val_rrset_class_h,
+					next_as->_as.ac_data->rrs.val_rrset_type_h, next_as->_as.ac_data->rrs_respondent_server, 
 					next_as->val_ac_status);
 			}
 		}

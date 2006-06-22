@@ -33,8 +33,8 @@ static int find_rrset_len(const u_char *name_n, struct rrset_rec *rrset)
 { 
 	struct rr_rec *rr;
 	int resp_len = 0;
-	int rrset_name_n_len = wire_name_length(rrset->rrs->val_rrset_name_n);
-	for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
+	int rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
+	for (rr=rrset->rrs.val_rrset_data; rr; rr=rr->rr_next) {
 		resp_len += rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) + sizeof(u_int32_t) 
 						+ sizeof(u_int16_t) + rr->rr_rdata_length_h; 
 	} 
@@ -83,8 +83,8 @@ static int compose_merged_answer( const u_char *name_n,
 	/* Calculate the length of the response buffer */
 	int resp_len = 0; 
 	for (res = results; res; res=res->val_rc_next) {
-		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
-			resp_len += find_rrset_len(name_n, res->val_rc_trust->_as->ac_data);	
+		if (res->val_rc_trust && res->val_rc_trust->_as.ac_data) {
+			resp_len += find_rrset_len(name_n, res->val_rc_trust->_as.ac_data);	
 		}
 	}
 	resp->vr_response = (unsigned char *)MALLOC ((resp_len + OUTER_HEADER_LEN) * sizeof (unsigned char));
@@ -117,12 +117,12 @@ static int compose_merged_answer( const u_char *name_n,
 	
 	/* Iterate over the results returned by the validator */
 	for (res = results; res; res=res->val_rc_next) {
-		if (res->val_rc_trust && res->val_rc_trust->_as->ac_data) {
-			struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
+		if (res->val_rc_trust && res->val_rc_trust->_as.ac_data) {
+			struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
 			unsigned char *cp;
 			int *bufindex = NULL;
 
-			if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
+			if (rrset->rrs.val_rrset_section == VAL_FROM_ANSWER) {
 				cp = anbuf + anbufindex;
 				bufindex = &anbufindex;
 				ancount++;
@@ -130,7 +130,7 @@ static int compose_merged_answer( const u_char *name_n,
 					an_auth = 0;
 				}
 			}
-			else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
+			else if (rrset->rrs.val_rrset_section == VAL_FROM_AUTHORITY) {
 				cp = nsbuf + nsbufindex;
 				bufindex = &nsbufindex;
 				nscount++;
@@ -139,7 +139,7 @@ static int compose_merged_answer( const u_char *name_n,
 				}
 				proof = 1;
 			}
-			else if (rrset->rrs->val_rrset_section == VAL_FROM_ADDITIONAL) {
+			else if (rrset->rrs.val_rrset_section == VAL_FROM_ADDITIONAL) {
 				cp = arbuf + arbufindex;
 				bufindex = &arbufindex;
 				arcount++;
@@ -154,13 +154,13 @@ static int compose_merged_answer( const u_char *name_n,
 
 			/* Answer/Authority/Additional section */
 			struct rr_rec *rr;
-			int rrset_name_n_len = wire_name_length(rrset->rrs->val_rrset_name_n);
-			for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
-				memcpy (cp, rrset->rrs->val_rrset_name_n, rrset_name_n_len);
+			int rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
+			for (rr=rrset->rrs.val_rrset_data; rr; rr=rr->rr_next) {
+				memcpy (cp, rrset->rrs.val_rrset_name_n, rrset_name_n_len);
 				cp += rrset_name_n_len;
-				NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
-				NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
-				NS_PUT32(rrset->rrs->val_rrset_ttl_h, cp);
+				NS_PUT16(rrset->rrs.val_rrset_type_h, cp);
+				NS_PUT16(rrset->rrs.val_rrset_class_h, cp);
+				NS_PUT32(rrset->rrs.val_rrset_ttl_h, cp);
 				NS_PUT16(rr->rr_rdata_length_h, cp);
 				memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
 				cp += rr->rr_rdata_length_h;
@@ -253,12 +253,12 @@ static int compose_answer( const u_char *name_n,
 
 	/* Iterate over the results returned by the validator */
 	for (res = results; 
-			res && res->val_rc_trust && res->val_rc_trust->_as->ac_data; 
+			res && res->val_rc_trust && res->val_rc_trust->_as.ac_data; 
 				res=res->val_rc_next) {
 
 		unsigned char *cp;
 		struct rr_rec *rr;
-		struct rrset_rec *rrset = res->val_rc_trust->_as->ac_data;
+		struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
 		
 		new_resp = (struct val_response *) MALLOC (sizeof (struct val_response));
 		if (new_resp == NULL)
@@ -283,7 +283,7 @@ static int compose_answer( const u_char *name_n,
 		 * 	sizeof(u_int16_t) +
 		 *	sizeof(u_int16_t) +
 		 *	
-		 * [wire_name_length(rrset->rrs->val_rrset_name_n) +
+		 * [wire_name_length(rrset->rrs.val_rrset_name_n) +
 		 *		sizeof(u_int16_t) + sizeof(u_int16_t) + sizeof(u_int32_t) +		
 		 *		sizeof(u_int16_t) + rr->rr_rdata_length_h] for each rr
 		 */
@@ -311,24 +311,24 @@ static int compose_answer( const u_char *name_n,
 
 		/* Answer section */
 		int anscount  = 0;
-		int rrset_name_n_len = wire_name_length(rrset->rrs->val_rrset_name_n);
-		for (rr=rrset->rrs->val_rrset_data; rr; rr=rr->rr_next) {
+		int rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
+		for (rr=rrset->rrs.val_rrset_data; rr; rr=rr->rr_next) {
 
-			memcpy (cp, rrset->rrs->val_rrset_name_n, rrset_name_n_len);
+			memcpy (cp, rrset->rrs.val_rrset_name_n, rrset_name_n_len);
 			cp += rrset_name_n_len;
-			NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
-			NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
-			NS_PUT32(rrset->rrs->val_rrset_ttl_h, cp);
+			NS_PUT16(rrset->rrs.val_rrset_type_h, cp);
+			NS_PUT16(rrset->rrs.val_rrset_class_h, cp);
+			NS_PUT32(rrset->rrs.val_rrset_ttl_h, cp);
 			NS_PUT16(rr->rr_rdata_length_h, cp);
 			memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
 			cp += rr->rr_rdata_length_h;
 			anscount++;
 		}
 
-		if (rrset->rrs->val_rrset_section == VAL_FROM_ANSWER) {
+		if (rrset->rrs.val_rrset_section == VAL_FROM_ANSWER) {
 			hp->ancount = htons(anscount);
 		}
-		else if (rrset->rrs->val_rrset_section == VAL_FROM_AUTHORITY) {
+		else if (rrset->rrs.val_rrset_section == VAL_FROM_AUTHORITY) {
 			proof = 1;
 			hp->nscount = htons(anscount);
 		}

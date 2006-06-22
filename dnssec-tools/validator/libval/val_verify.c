@@ -126,7 +126,7 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
     while (!sorted) {
 	struct rr_rec *first_rr = NULL, *prev_rr = NULL, *curr_rr1 = NULL, *curr_rr2 = NULL, *next_rr = NULL;
 	sorted = 1;
-	curr_rr1 = rrset->rrs->val_rrset_data;
+	curr_rr1 = rrset->rrs.val_rrset_data;
 	first_rr = curr_rr1;
 
 	if (curr_rr1) curr_rr2 = curr_rr1->rr_next;
@@ -158,19 +158,19 @@ static int val_concat_rrset ( struct rrset_rec *rrset,
 	    curr_rr1 = curr_rr2;
 	    curr_rr2 = curr_rr2->rr_next;
 	}
-	rrset->rrs->val_rrset_data = first_rr;
+	rrset->rrs.val_rrset_data = first_rr;
     }
     
-    rr = rrset->rrs->val_rrset_data;
+    rr = rrset->rrs.val_rrset_data;
     while (rr) {
-	memcpy(rrBuf + rrBuf_len, rrset->rrs->val_rrset_name_n, strlen((char *)rrset->rrs->val_rrset_name_n) + 1);
-	rrBuf_len += strlen((char *)rrset->rrs->val_rrset_name_n) + 1;
+	memcpy(rrBuf + rrBuf_len, rrset->rrs.val_rrset_name_n, strlen((char *)rrset->rrs.val_rrset_name_n) + 1);
+	rrBuf_len += strlen((char *)rrset->rrs.val_rrset_name_n) + 1;
 
 	cp = rrBuf + rrBuf_len;
-	NS_PUT16(rrset->rrs->val_rrset_type_h, cp);
+	NS_PUT16(rrset->rrs.val_rrset_type_h, cp);
 	rrBuf_len += 2;
 
-	NS_PUT16(rrset->rrs->val_rrset_class_h, cp);
+	NS_PUT16(rrset->rrs.val_rrset_class_h, cp);
 	rrBuf_len += 2;
 
 	/* Put the original ttl */
@@ -205,7 +205,7 @@ static int have_rrsigs (struct domain_info *response)
 	    bzero(&rrsig_rdata, sizeof(rrsig_rdata));
 	    val_parse_rrsig_rdata(rrs_sig->rr_rdata, rrs_sig->rr_rdata_length_h,
 				  &rrsig_rdata);
-	    if ((rrsig_rdata.type_covered == rrset->rrs->val_rrset_type_h) ||
+	    if ((rrsig_rdata.type_covered == rrset->rrs.val_rrset_type_h) ||
 	        (rrsig_rdata.type_covered == ns_t_nsec)) {
 			if(rrsig_rdata.signature != NULL)
 				FREE(rrsig_rdata.signature);
@@ -239,15 +239,15 @@ static int predict_sigbuflength (  struct rrset_rec *rr_set,
     struct rr_rec   *rr;
     int             owner_length;
                                                                                                                           
-    owner_length = wire_name_length (rr_set->rrs->val_rrset_name_n);
+    owner_length = wire_name_length (rr_set->rrs.val_rrset_name_n);
                                                                                                                           
-    *signer_length = wire_name_length (&rr_set->rrs->val_rrset_sig->rr_rdata[SIGNBY]);
+    *signer_length = wire_name_length (&rr_set->rrs.val_rrset_sig->rr_rdata[SIGNBY]);
                                                                                                                           
     if (*signer_length == 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
     *field_length = SIGNBY + (*signer_length);
                                                                                                                           
-    for (rr = rr_set->rrs->val_rrset_data; rr; rr = rr->rr_next)
+    for (rr = rr_set->rrs.val_rrset_data; rr; rr = rr->rr_next)
         *field_length += owner_length + ENVELOPE + rr->rr_rdata_length_h;
                                                                                                                           
     return VAL_NO_ERROR;
@@ -280,23 +280,23 @@ static int make_sigfield (  u_int8_t            **field,
     /* Make sure we are using the correct TTL */
                                                                                                                           
     memcpy (&ttl_n, &rr_sig->rr_rdata[TTL],sizeof(u_int32_t));
-    rr_set->rrs->val_rrset_ttl_h = ntohl (ttl_n);
+    rr_set->rrs.val_rrset_ttl_h = ntohl (ttl_n);
                                                                                                                           
     /*
         While we're at it, we'll gather other common info, specifically
         network ordered numbers (type, class) and name length.
     */
                                                                                                                           
-    owner_length = wire_name_length (rr_set->rrs->val_rrset_name_n);
+    owner_length = wire_name_length (rr_set->rrs.val_rrset_name_n);
                                                                                                                           
     if (owner_length == 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
-    memcpy (lowered_owner_n, rr_set->rrs->val_rrset_name_n, owner_length);
+    memcpy (lowered_owner_n, rr_set->rrs.val_rrset_name_n, owner_length);
     l_index = 0;
     lower_name (lowered_owner_n, &l_index);
                                                                                                                           
-    type_n = htons(rr_set->rrs->val_rrset_type_h);
-    class_n = htons(rr_set->rrs->val_rrset_class_h);
+    type_n = htons(rr_set->rrs.val_rrset_type_h);
+    class_n = htons(rr_set->rrs.val_rrset_class_h);
                                                                                                                           
     /* Copy in the SIG RDATA (up to the signature */
                                                                                                                           
@@ -306,7 +306,7 @@ static int make_sigfield (  u_int8_t            **field,
                                                                                                                           
     /* For each record of data, copy in the envelope & the lower cased rdata */
                                                                                                                           
-    for (curr_rr = rr_set->rrs->val_rrset_data; curr_rr; curr_rr = curr_rr->rr_next)
+    for (curr_rr = rr_set->rrs.val_rrset_data; curr_rr; curr_rr = curr_rr->rr_next)
     {
         /* Copy in the envelope information */
                                                                                                                           
@@ -487,17 +487,17 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 
 	as->val_ac_status = VAL_A_VERIFIED;
 
-	the_set = as->_as->ac_data;
+	the_set = as->_as.ac_data;
 	the_trust = as->val_ac_trust;
-	for (the_sig = the_set->rrs->val_rrset_sig;the_sig;the_sig = the_sig->rr_next) {
+	for (the_sig = the_set->rrs.val_rrset_sig;the_sig;the_sig = the_sig->rr_next) {
 
 		/* for each sig, identify key, */ 
 		identify_key_from_sig (the_sig, &signby_name_n, &signby_footprint_n);
 
-		if(the_set->rrs->val_rrset_type_h != ns_t_dnskey) {
+		if(the_set->rrs.val_rrset_type_h != ns_t_dnskey) {
 			/* trust path contains the key */
 			if(VAL_NO_ERROR != (retval = 
-				find_key_for_tag (the_trust->_as->ac_data->rrs->val_rrset_data, 
+				find_key_for_tag (the_trust->_as.ac_data->rrs.val_rrset_data, 
 					&signby_footprint_n, &dnskey))) {
 				SET_STATUS(as->val_ac_status, the_sig, VAL_A_DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
@@ -507,7 +507,7 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 		}
 		else {
 			/* data itself contains the key */
-			if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs->val_rrset_data, &signby_footprint_n, &dnskey))) {
+			if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs.val_rrset_data, &signby_footprint_n, &dnskey))) {
 				SET_STATUS(as->val_ac_status, the_sig, VAL_A_DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
@@ -533,15 +533,15 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 
 		/* If this record contains a DNSKEY, check if the DS record contains this key */
 		if(the_sig->rr_status == VAL_A_RRSIG_VERIFIED) {
-			if (the_set->rrs->val_rrset_type_h == ns_t_dnskey) {
+			if (the_set->rrs.val_rrset_type_h == ns_t_dnskey) {
 				/* follow the trust path */
-				struct rr_rec *dsrec = the_trust->_as->ac_data->rrs->val_rrset_data;		
+				struct rr_rec *dsrec = the_trust->_as.ac_data->rrs.val_rrset_data;		
 				while(dsrec)	
 				{	
 					val_ds_rdata_t ds;
 					val_parse_ds_rdata(dsrec->rr_rdata, dsrec->rr_rdata_length_h, &ds);
 					u_int16_t ds_keytag_n = htons(ds.d_keytag);
-					if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs->val_rrset_data, &ds_keytag_n, &dnskey))) {
+					if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs.val_rrset_data, &ds_keytag_n, &dnskey))) {
 						dsrec = dsrec->rr_next;
 						continue;
 					}

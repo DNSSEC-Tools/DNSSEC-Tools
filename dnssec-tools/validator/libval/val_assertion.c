@@ -251,14 +251,14 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
         /* Referals won't make it this far, therr handled in digest_response */
                                                                                                                           
     /* Answer is a NACK_NXT if... */
-	if((the_set->rrs->val_rrset_data == NULL) && (the_set->rrs->val_rrset_sig != NULL)) {
+	if((the_set->rrs.val_rrset_data == NULL) && (the_set->rrs.val_rrset_sig != NULL)) {
 		the_set->rrs_ans_kind = SR_ANS_BARE_RRSIG;
 		return VAL_NO_ERROR;
 	}
                                                                                                                           
-    if (the_set->rrs->val_rrset_type_h == ns_t_nsec)
+    if (the_set->rrs.val_rrset_type_h == ns_t_nsec)
     {
-        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
+        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0 &&
                             (q_type_h == ns_t_any || q_type_h == ns_t_nsec))
             /* We asked for it */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
@@ -270,9 +270,9 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
                                                                                                                           
     /* Answer is a NACK_SOA if... */
                                                                                                                           
-    if (the_set->rrs->val_rrset_type_h == ns_t_soa)
+    if (the_set->rrs.val_rrset_type_h == ns_t_soa)
     {
-        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
+        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0 &&
                             (q_type_h == ns_t_any || q_type_h == ns_t_soa))
             /* We asked for it */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
@@ -284,9 +284,9 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
                                                                                                                           
     /* Answer is a CNAME if... */
                                                                                                                           
-    if (the_set->rrs->val_rrset_type_h == ns_t_cname)
+    if (the_set->rrs.val_rrset_type_h == ns_t_cname)
     {
-        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
+        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0 &&
                             (q_type_h == ns_t_any || q_type_h == ns_t_cname))
             /* We asked for it */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
@@ -297,8 +297,8 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
     }
                                                                                                                           
     /* Answer is an ANSWER if... */
-    if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0 &&
-                    (q_type_h==ns_t_any || q_type_h==the_set->rrs->val_rrset_type_h))
+    if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0 &&
+                    (q_type_h==ns_t_any || q_type_h==the_set->rrs.val_rrset_type_h))
     {
         /* We asked for it */
         the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
@@ -323,14 +323,14 @@ static int name_in_q_names (
                                                                                                                           
     if (q_names_n==NULL) return NOT_IN_QNAMES;
                                                                                                                           
-    if (namecmp(the_set->rrs->val_rrset_name_n, q_names_n->qnc_name_n)==0)
+    if (namecmp(the_set->rrs.val_rrset_name_n, q_names_n->qnc_name_n)==0)
         return TOP_OF_QNAMES;
                                                                                                                           
     temp_qc = q_names_n->qnc_next;
                                                                                                                           
     while (temp_qc)
     {
-        if (namecmp(the_set->rrs->val_rrset_name_n, temp_qc->qnc_name_n)==0)
+        if (namecmp(the_set->rrs.val_rrset_name_n, temp_qc->qnc_name_n)==0)
             return MID_OF_QNAMES;
         temp_qc = temp_qc->qnc_next;
     }
@@ -346,9 +346,9 @@ int fails_to_answer_query(
 					  u_int16_t			*status)
 {
     int name_present = name_in_q_names (q_names_n, the_set);
-    int type_match = the_set->rrs->val_rrset_type_h==q_type_h || q_type_h==ns_t_any;
-    int class_match = the_set->rrs->val_rrset_class_h==q_class_h || q_class_h==ns_c_any;
-    int data_present = the_set->rrs->val_rrset_data != NULL;
+    int type_match = the_set->rrs.val_rrset_type_h==q_type_h || q_type_h==ns_t_any;
+    int class_match = the_set->rrs.val_rrset_class_h==q_class_h || q_class_h==ns_c_any;
+    int data_present = the_set->rrs.val_rrset_data != NULL;
                                                                                                                           
     if (!data_present) return FALSE;
                                                                                                                           
@@ -389,12 +389,12 @@ static int NSEC_is_wrong_answer (
         later (in "the matrix").
     */
                                                                                                                           
-    if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n)==0)
+    if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0)
     {
         /* NXT owner = query name & q_type not in list */
-        nsec_bit_field = wire_name_length (the_set->rrs->val_rrset_data->rr_rdata);
+        nsec_bit_field = wire_name_length (the_set->rrs.val_rrset_data->rr_rdata);
                                                                                                                           
-        if (ISSET((&(the_set->rrs->val_rrset_data->rr_rdata[nsec_bit_field])), q_type_h))
+        if (ISSET((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])), q_type_h))
         {
 			*status = VAL_A_IRRELEVANT_PROOF; 
             return TRUE;
@@ -409,7 +409,7 @@ static int NSEC_is_wrong_answer (
 		 * or if it is the SOA but that logic is handled in 
 		 * prove_nonexistence()
 		 */
-        if (namecmp(the_set->rrs->val_rrset_name_n, qc_name_n) > 0)
+        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) > 0)
         {
 			*status = VAL_A_IRRELEVANT_PROOF;	
             return TRUE;
@@ -442,25 +442,22 @@ static int add_to_assertion_chain(struct val_assertion_chain **assertions, struc
 		new_as = (struct val_assertion_chain *) MALLOC (sizeof (struct val_assertion_chain)); 
 		if (new_as==NULL) return VAL_OUT_OF_MEMORY;
 
-		new_as->_as = (struct val_rrset_digested *) MALLOC (sizeof (struct val_rrset_digested));
-		if (new_as->_as == NULL)
-			return VAL_OUT_OF_MEMORY;
-		new_as->_as->ac_data = copy_rrset_rec(next_rr);
+		new_as->_as.ac_data = copy_rrset_rec(next_rr);
 		new_as->val_ac_trust = NULL;        
 		new_as->val_ac_rrset_next = NULL;        
-		new_as->val_ac_next = NULL;        
-		new_as->_as->ac_pending_query = NULL; 
+		new_as->_as.val_ac_next = NULL;        
+		new_as->_as.ac_pending_query = NULL; 
 		new_as->val_ac_status = VAL_A_INIT;
 		if(first_as != NULL) { 
 			/* keep the first assertion constant */
-			new_as->val_ac_next = first_as->val_ac_next;
-			first_as->val_ac_next = new_as;
+			new_as->_as.val_ac_next = first_as->_as.val_ac_next;
+			first_as->_as.val_ac_next = new_as;
 			prev_as->val_ac_rrset_next = new_as;	
 			
 		}
 		else {
 			first_as = new_as;
-			new_as->val_ac_next = *assertions;
+			new_as->_as.val_ac_next = *assertions;
 			*assertions = new_as;
 		}
 		prev_as = new_as;
@@ -477,13 +474,12 @@ void free_assertion_chain(struct val_assertion_chain *assertions)
 {
 	if (assertions==NULL) return;
                                                                                                                           
-	if (assertions->val_ac_next)
-		free_assertion_chain (assertions->val_ac_next);
+	if (assertions->_as.val_ac_next)
+		free_assertion_chain (assertions->_as.val_ac_next);
 
-	if (assertions->_as->ac_data)
-		res_sq_free_rrset_recs(&(assertions->_as->ac_data));
+	if (assertions->_as.ac_data)
+		res_sq_free_rrset_recs(&(assertions->_as.ac_data));
 
-	FREE(assertions->_as);
 	FREE (assertions);
 }
 
@@ -496,35 +492,35 @@ static int build_pending_query(val_context_t *context,
 	u_int8_t *signby_name_n;
 	int retval;
 
-	if(as->_as->ac_data == NULL) {
+	if(as->_as.ac_data == NULL) {
 		as->val_ac_status = VAL_A_DATA_MISSING;
 		return VAL_NO_ERROR;
 	}
 
-	if(as->_as->ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) { 
+	if(as->_as.ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) { 
 		as->val_ac_status = VAL_A_BARE_RRSIG;
 		return VAL_NO_ERROR;
 	}
 
-	if(as->_as->ac_data->rrs->val_rrset_data == NULL) {
+	if(as->_as.ac_data->rrs.val_rrset_data == NULL) {
 		as->val_ac_status = VAL_A_DATA_MISSING;
 		return VAL_NO_ERROR;
 	}
 
 	/* Check if this zone is locally trusted/untrusted */
-	u_int16_t tzonestatus = is_trusted_zone(context, as->_as->ac_data->rrs->val_rrset_name_n);
+	u_int16_t tzonestatus = is_trusted_zone(context, as->_as.ac_data->rrs.val_rrset_name_n);
 	if (tzonestatus != VAL_A_WAIT_FOR_TRUST) {
 		as->val_ac_status = tzonestatus;
 		return VAL_NO_ERROR;
 	}
 
-	if(as->_as->ac_data->rrs->val_rrset_sig == NULL) {
+	if(as->_as.ac_data->rrs.val_rrset_sig == NULL) {
 		as->val_ac_status = VAL_A_WAIT_FOR_RRSIG;
 		/* create a query and link it as the pending query for this assertion */
 		if(VAL_NO_ERROR != (retval = add_to_query_chain(queries, 
-						as->_as->ac_data->rrs->val_rrset_name_n, ns_t_rrsig, as->_as->ac_data->rrs->val_rrset_class_h)))
+						as->_as.ac_data->rrs.val_rrset_name_n, ns_t_rrsig, as->_as.ac_data->rrs.val_rrset_class_h)))
 			return retval;
-		as->_as->ac_pending_query = *queries;/* The first value in the list is the most recent element */
+		as->_as.ac_pending_query = *queries;/* The first value in the list is the most recent element */
 		return VAL_NO_ERROR;
 	}
 
@@ -533,32 +529,32 @@ static int build_pending_query(val_context_t *context,
 	 */
 
 	/* First identify the signer name from the RRSIG */
-	signby_name_n = &as->_as->ac_data->rrs->val_rrset_sig->rr_rdata[SIGNBY];
+	signby_name_n = &as->_as.ac_data->rrs.val_rrset_sig->rr_rdata[SIGNBY];
 	//XXX The signer name has to be within the zone
 
 	/* Then look for  {signby_name_n, DNSKEY/DS, type} */
-	if(as->_as->ac_data->rrs->val_rrset_type_h == ns_t_dnskey) {
+	if(as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
 
-		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->_as->ac_data->rrs->val_rrset_data);
+		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->_as.ac_data->rrs.val_rrset_data);
 		as->val_ac_status = tkeystatus;
 		if (as->val_ac_status != VAL_A_WAIT_FOR_TRUST)
 			return VAL_NO_ERROR;
 
 		/* Create a query for missing data */
 		if(VAL_NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
-					ns_t_ds, as->_as->ac_data->rrs->val_rrset_class_h)))
+					ns_t_ds, as->_as.ac_data->rrs.val_rrset_class_h)))
 			return retval;
 
 	}
 	else { 
 		/* look for DNSKEY records */
 		if(VAL_NO_ERROR != (retval = add_to_query_chain(queries, signby_name_n, 
-						ns_t_dnskey, as->_as->ac_data->rrs->val_rrset_class_h)))
+						ns_t_dnskey, as->_as.ac_data->rrs.val_rrset_class_h)))
 			return retval;
 		as->val_ac_status = VAL_A_WAIT_FOR_TRUST;
 	}
 
-	as->_as->ac_pending_query = *queries; /* The first value in the list is the most recent element */
+	as->_as.ac_pending_query = *queries; /* The first value in the list is the most recent element */
 	return VAL_NO_ERROR;
 }
 
@@ -611,54 +607,54 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 		/* Cover error conditions first */
 		/* SOA checks will appear during sanity checks later on */
 		if((	set_ans_kind(response->di_qnames->qnc_name_n, type_h, class_h, 
-					as->_as->ac_data, &as->val_ac_status) == VAL_ERROR)
-				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->_as->ac_data, &as->val_ac_status)
+					as->_as.ac_data, &as->val_ac_status) == VAL_ERROR)
+				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->_as.ac_data, &as->val_ac_status)
 				|| NSEC_is_wrong_answer (response->di_qnames->qnc_name_n, type_h, class_h, 
-					as->_as->ac_data, &as->val_ac_status)) {
+					as->_as.ac_data, &as->val_ac_status)) {
 			continue;
 		}
 
 		if (kind == SR_ANS_UNSET)
-			kind = as->_as->ac_data->rrs_ans_kind;
+			kind = as->_as.ac_data->rrs_ans_kind;
 		else {
 			switch(kind) {
 				/* STRAIGHT and CNAME are OK */
 				case SR_ANS_STRAIGHT:
-					if ((as->_as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
 
 				case SR_ANS_CNAME:
-					if ((as->_as->ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_CNAME) && 
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) &&
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT)) {
+					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME) && 
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) &&
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NXT)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
 
 				/* Only bare RRSIGs together */
 				case SR_ANS_BARE_RRSIG:
-					if (as->_as->ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG) {
+					if (as->_as.ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
 
 				/* NACK_NXT and NACK_SOA are OK */
 				case SR_ANS_NACK_NXT:
-					if ((as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
 
 				case SR_ANS_NACK_SOA:
-					if ((as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
-						(as->_as->ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
@@ -699,9 +695,9 @@ val_result_chain *results)
 	/* inspect the SOA record first */
 	// XXX Can we assume that the SOA record is always present?
 	for(res = results; res; res = res->val_rc_next) {
-		struct rrset_rec *the_set = res->val_rc_trust->_as->ac_data;
+		struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
 		if (the_set->rrs_ans_kind == SR_ANS_NACK_SOA) {
-			soa_name_n = the_set->rrs->val_rrset_name_n;
+			soa_name_n = the_set->rrs.val_rrset_name_n;
 			break;
 		}
 	}
@@ -711,9 +707,9 @@ val_result_chain *results)
 	else {
 		/* for every NSEC */
 		for(res = results; res; res = res->val_rc_next) {
-			struct rrset_rec *the_set = res->val_rc_trust->_as->ac_data;
+			struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
 			if (the_set->rrs_ans_kind == SR_ANS_NACK_NXT) { 
-				if (!namecmp(the_set->rrs->val_rrset_name_n, top_q->qc_name_n)) {
+				if (!namecmp(the_set->rrs.val_rrset_name_n, top_q->qc_name_n)) {
 					/* we already made sure that the type was missing in
 					 * NSEC_is_wrong_answer()
 					 */
@@ -726,7 +722,7 @@ val_result_chain *results)
 					 */
 					struct rr_rec *sig;
 					int wcard;
-					for (sig = the_set->rrs->val_rrset_sig; sig; sig = sig->rr_next) {
+					for (sig = the_set->rrs.val_rrset_sig; sig; sig = sig->rr_next) {
 						if ((sig->rr_status == VAL_A_RRSIG_VERIFIED) && 
 							(VAL_NO_ERROR == check_label_count(the_set, sig, &wcard))) {
 							if (wcard == 0)
@@ -737,7 +733,7 @@ val_result_chain *results)
 				}
 				else {
 					/* Find the next name */
-					u_int8_t *nxtname =	the_set->rrs->val_rrset_data->rr_rdata;
+					u_int8_t *nxtname =	the_set->rrs.val_rrset_data->rr_rdata;
 
 					/* 
 					 * We've already checked within NSEC_is_wrong_answer() 
@@ -767,13 +763,13 @@ val_result_chain *results)
 					while (offset < maxoffset) {
 						u_int8_t *cur_name_n = &top_q->qc_name_n[offset];
 						int cmp;
-						if ((cmp = namecmp(cur_name_n, the_set->rrs->val_rrset_name_n)) == 0) {
+						if ((cmp = namecmp(cur_name_n, the_set->rrs.val_rrset_name_n)) == 0) {
 							closest_encounter = cur_name_n;
 							break;
 						}
 						else if (cmp < 0) {
 							/* strip off one label from the NSEC owner name */
-							closest_encounter = &the_set->rrs->val_rrset_name_n[the_set->rrs->val_rrset_name_n[0] + 1];
+							closest_encounter = &the_set->rrs.val_rrset_name_n[the_set->rrs.val_rrset_name_n[0] + 1];
 							break; 
 						}
 						offset += cur_name_n[0] + 1;
@@ -791,12 +787,12 @@ val_result_chain *results)
 				/* prefix "*" to the closest encounter, and check if that 
 				 * name falls within the range given in wcard_proof
 				 */	
-				u_int8_t *nxtname =	wcard_proof->rrs->val_rrset_data->rr_rdata;
+				u_int8_t *nxtname =	wcard_proof->rrs.val_rrset_data->rr_rdata;
 				u_char domain_name_n[NS_MAXCDNAME];
 				domain_name_n[0] = 0x01;
 				domain_name_n[1] = 0x2a; /* for the '*' character */
 				memcpy(&domain_name_n[2], closest_encounter, wire_name_length(closest_encounter));
-				if ((namecmp(domain_name_n, wcard_proof->rrs->val_rrset_name_n) <= 0) ||  
+				if ((namecmp(domain_name_n, wcard_proof->rrs.val_rrset_name_n) <= 0) ||  
 					(namecmp(nxtname, domain_name_n) <= 0))
 					status = VAL_R_INCOMPLETE_PROOF;	
 			}
@@ -829,7 +825,7 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 	if(next_as == NULL)
 		return VAL_NO_ERROR;
 
-	pc = next_as->_as->ac_pending_query;
+	pc = next_as->_as.ac_pending_query;
 	if (!pc)
 		/* 
 		 * If there is no pending query, we've already 
@@ -861,7 +857,7 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 		
 			for(pending_as = pc->qc_as; pending_as; pending_as = pending_as->val_ac_rrset_next) {
 				/* We were waiting for the RRSIG */
-				pending_rrset = pending_as->_as->ac_data;
+				pending_rrset = pending_as->_as.ac_data;
 
 				/* 
 				 * Check if what we got was an RRSIG 
@@ -870,11 +866,11 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 					/* Find the RRSIG that matches the type */
 					/* Check if type is in the RRSIG */
 					u_int16_t rrsig_type_n;
-					memcpy(&rrsig_type_n, pending_rrset->rrs->val_rrset_sig->rr_rdata, sizeof(u_int16_t));
-					if (next_as->_as->ac_data->rrs->val_rrset_type_h == ntohs(rrsig_type_n)) {
+					memcpy(&rrsig_type_n, pending_rrset->rrs.val_rrset_sig->rr_rdata, sizeof(u_int16_t));
+					if (next_as->_as.ac_data->rrs.val_rrset_type_h == ntohs(rrsig_type_n)) {
 						/* store the RRSIG in the assertion */
-						next_as->_as->ac_data->rrs->val_rrset_sig = 
-							copy_rr_rec(pending_rrset->rrs->val_rrset_type_h, pending_rrset->rrs->val_rrset_sig, 0);
+						next_as->_as.ac_data->rrs.val_rrset_sig = 
+							copy_rr_rec(pending_rrset->rrs.val_rrset_type_h, pending_rrset->rrs.val_rrset_sig, 0);
 						next_as->val_ac_status = VAL_A_WAIT_FOR_TRUST; 
 						/* create a pending query for the trust portion */
 						if (VAL_NO_ERROR != (retval = build_pending_query(context, queries, next_as)))
@@ -891,10 +887,10 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 		else if (next_as->val_ac_status == VAL_A_WAIT_FOR_TRUST) {
 			pending_as = pc->qc_as;
 			next_as->val_ac_trust = pending_as;
-			next_as->_as->ac_pending_query = NULL;
+			next_as->_as.ac_pending_query = NULL;
 
-			if((pending_as->_as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT)
-                  || (pending_as->_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
+			if((pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NXT)
+                  || (pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
 
 				/* proof of non-existence should follow */
 				next_as->val_ac_status = VAL_A_NEGATIVE_PROOF;
@@ -977,8 +973,8 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 			 * for a DS record; but the DNSKEY that signs the proof is also in the 
 			 * chain of trust (not-validated)
 			 */
-			if((next_as->_as->ac_data != NULL) &&
-				(next_as->_as->ac_data->rrs->val_rrset_type_h == ns_t_dnskey) &&
+			if((next_as->_as.ac_data != NULL) &&
+				(next_as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) &&
 				(next_as->val_ac_trust) && 
 				(next_as == next_as->val_ac_trust->val_ac_trust)) {
 				res->val_rc_status = VAL_R_INDETERMINATE_DS;
@@ -996,9 +992,9 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 				break;
 			}
 			else if (next_as->val_ac_status == VAL_A_NEGATIVE_PROOF) {
-				if((next_as->_as->ac_pending_query != NULL) &&
-					(next_as->_as->ac_pending_query->qc_referral == NULL) && 
-					(next_as->_as->ac_pending_query->qc_type_h == ns_t_ds)) {
+				if((next_as->_as.ac_pending_query != NULL) &&
+					(next_as->_as.ac_pending_query->qc_referral == NULL) && 
+					(next_as->_as.ac_pending_query->qc_type_h == ns_t_ds)) {
 
 					/* 
 					 * If this is a query for DS, we may have asked the child,
@@ -1376,7 +1372,7 @@ int val_resolve_and_check(	val_context_t	*ctx,
 	int partially_wrong = 0;
 	int negative_proof = 0;
 
-	for (res=*results; res && res->val_rc_trust && res->val_rc_trust->_as->ac_data; res=res->val_rc_next) {
+	for (res=*results; res && res->val_rc_trust && res->val_rc_trust->_as.ac_data; res=res->val_rc_next) {
 		int success = 0;
 
 		/* Fix validation results */
@@ -1391,8 +1387,8 @@ int val_resolve_and_check(	val_context_t	*ctx,
 
 		if (!success) 
 			partially_wrong = 1;
-		if((res->val_rc_trust->_as->ac_data->rrs_ans_kind == SR_ANS_NACK_NXT) || 
-			(res->val_rc_trust->_as->ac_data->rrs_ans_kind == SR_ANS_NACK_SOA))
+		if((res->val_rc_trust->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NXT) || 
+			(res->val_rc_trust->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_SOA))
 			negative_proof = 1;
 	}
 			
