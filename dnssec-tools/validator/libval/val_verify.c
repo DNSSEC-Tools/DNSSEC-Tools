@@ -474,7 +474,7 @@ static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *pub
 // XXX VAL_A_WRONG_RRSIG_OWNER
 // XXX VAL_A_RRSIG_ALGO_MISMATCH
 // XXX VAL_A_KEYTAG_MISMATCH
-void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
+void verify_next_assertion(val_context_t *ctx, struct val_authentication_chain *as)
 {
 	struct rrset_rec *the_set;
 	struct rr_rec   *the_sig;
@@ -482,7 +482,7 @@ void verify_next_assertion(val_context_t *ctx, struct val_assertion_chain *as)
 	u_int16_t       signby_footprint_n;
 	val_dnskey_rdata_t dnskey;
 	int             is_a_wildcard;
-	struct val_assertion_chain *the_trust;
+	struct val_authentication_chain *the_trust;
 	int retval;
 
 	as->val_ac_status = VAL_A_VERIFIED;

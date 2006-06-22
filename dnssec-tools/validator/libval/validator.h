@@ -12,6 +12,13 @@
 #include <arpa/nameser.h>
 #include <netdb.h>
 
+#ifndef NS_MAXDNAME
+#define NS_MAXDNAME 1025    /* maximum domain name */
+#endif
+#ifndef NS_MAXCDNAME
+#define NS_MAXCDNAME    255 /* maximum compressed domain name */
+#endif
+
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
 #define FREE(p) my_free(p,__FILE__,__LINE__)
@@ -124,7 +131,7 @@ typedef u_int8_t val_status_t;
 typedef u_int16_t val_astatus_t;
 
 struct val_query_chain; /* forward declaration */
-struct val_assertion_chain; /* forward declaration */
+struct val_authentication_chain; /* forward declaration */
 
 
 #define policy_entry_t void* 
@@ -198,7 +205,7 @@ typedef struct val_context {
 	struct policy_overrides *cur_override;
 
 	/* caches */
-	struct val_assertion_chain *a_list;
+	struct val_authentication_chain *a_list;
 	struct val_query_chain *q_list;
 
 } val_context_t;
@@ -207,17 +214,17 @@ typedef struct val_context {
 struct val_rrset_digested {
 	struct rrset_rec *ac_data;
 	struct val_query_chain *ac_pending_query;
-	struct val_assertion_chain *val_ac_next;
+	struct val_authentication_chain *val_ac_next;
 };
 
-struct val_assertion_chain {
+struct val_authentication_chain {
 	val_astatus_t val_ac_status;
 	union {
 		struct val_rrset *val_ac_rrset;
 		struct val_rrset_digested _as;
 	};
-	struct val_assertion_chain *val_ac_trust;
-	struct val_assertion_chain *val_ac_rrset_next;
+	struct val_authentication_chain *val_ac_trust;
+	struct val_authentication_chain *val_ac_rrset_next;
 };
 
 
@@ -253,7 +260,7 @@ struct val_query_chain {
 	struct name_server *qc_respondent_server;
 	struct delegation_info *qc_referral;
 	int qc_trans_id;
-	struct val_assertion_chain *qc_as;
+	struct val_authentication_chain *qc_as;
 	int qc_glue_request;
 	struct val_query_chain *qc_next;
 };
@@ -277,7 +284,7 @@ struct domain_info
 
 struct val_result_chain {
 	val_status_t val_rc_status;
-	struct val_assertion_chain *val_rc_trust;
+	struct val_authentication_chain *val_rc_trust;
 	struct val_result_chain *val_rc_next;
 };
 
@@ -341,7 +348,7 @@ char *dnsval_conf_get(void);
 int dnsval_conf_set(const char *name);
 
 /* from val_log.h */
-void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
+void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
                 struct val_query_chain *queries, struct val_result_chain *results);
 char *p_query_error(int errno);
 char *p_as_error(val_astatus_t valerrno);

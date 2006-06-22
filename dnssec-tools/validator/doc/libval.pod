@@ -77,7 +77,7 @@ returned in which case RRsets of type C<ns_t_nsec> and
 C<ns_t_soa> are also returned. 
 
 Individual elements in *I<results> point to the authentication chain
-contained within the val_assertion_chain linked list. The assertions contain
+contained within the val_authentication_chain linked list. The authentication chain elements contain
 the actual RRsets returned by the name server in response to the
 query. 
 
@@ -85,12 +85,12 @@ Most applications would only require the status value within
 *I<results> since this provides a 
 single error code for representing the authenticity of returned 
 data. Other more intrusive applications such as a DNSSEC 
-troubleshooting utility may look at the individual assertions 
+troubleshooting utility may look at the individual authentication chain element 
 to identify what particular component in the chain-of-trust led 
 to validation failure if any. B<val_istrusted()> is a helper function
 that can be used to easily identify if a given validator status value
 corresponds to one of the authenticated and/or trusted data codes.
-Validator status values returned in the val_result_chain and val_assertion_chain
+Validator status values returned in the val_result_chain and val_authentication_chain
 linked lists can be displayed in a user understandable format using the functions
 B<p_val_error()> and B<p_as_error()> respectively.
 
@@ -138,7 +138,7 @@ configuration file.
 =item I<struct val_result_chain> { 
 
     val_status_t val_rc_status;
-    struct val_assertion_chain *val_rc_trust;
+    struct val_authentication_chain *val_rc_trust;
     struct val_result_chain *val_rc_next;
 };
 
@@ -200,22 +200,22 @@ in a more user friendly format using the B<p_val_error()> function.
 
 =over 4
 
-=item I<struct val_assertion_chain> {
+=item I<struct val_authentication_chain> {
 
     val_astatus_t val_ac_status;
     struct val_rrset *val_ac_rrset;
-    struct val_assertion_chain *val_ac_trust;
-    struct val_assertion_chain *val_ac_rrset_next;
-    struct val_assertion_chain *val_ac_next;
+    struct val_authentication_chain *val_ac_trust;
+    struct val_authentication_chain *val_ac_rrset_next;
+    struct val_authentication_chain *val_ac_next;
 };
 
 =over 4
 
 =item I<val_ac_status> 
 
-This contains the validation state of the assertion. Upon completion 
+This contains the validation state of the authentication chain element. Upon completion 
 of the B<val_resolve_n_check()> call this field will contain the error
-or success code for DNSSEC validation over the current assertion. This
+or success code for DNSSEC validation over the current authentication chain element. This
 field may contain the following values:
 
 	VAL_A_DNSKEY_NOMATCH
@@ -292,10 +292,10 @@ field may contain the following values:
 		Answer was obtained locally. 
 
 	VAL_A_TRUST_KEY
-		The key present in this assertion is trusted.
+		The key present in this authentication chain element is trusted.
 
 	VAL_A_TRUST_ZONE
-		The zone in this assertion is trusted.
+		The zone in this authentication chain element is trusted.
 
 	VAL_A_BARE_RRSIG
 		Query was for an RRSIG.
@@ -367,14 +367,14 @@ This field points to the next RRset in the DNS response.
 
 =item I<val_ac_trust> 
 
-This field points to an assertion that either contains a DNSKEY RRset that
+This field points to an authentication chain element that either contains a DNSKEY RRset that
 can be used to verify RRSIGs over the current record, or contains a DS
 RRset that can be used to build the chain-of-trust towards a trust
 anchor. 
 
 =item I<val_ac_next> 
 
-This field points to the next element in the val_assertion_chain linked-list.
+This field points to the next element in the val_authentication_chain linked-list.
 
 =back
 

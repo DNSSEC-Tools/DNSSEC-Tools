@@ -169,7 +169,7 @@ static char *get_ns_string(struct name_server **server)
 		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_val_error(status), status);\
 } while (0)		
 
-void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
+void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
 				struct val_query_chain *queries, struct val_result_chain *results)
 {
 	struct val_result_chain *next_result;
@@ -184,7 +184,7 @@ void val_log_assertion_chain(val_context_t *ctx, int level, u_char *name_n, u_in
 	}
 
 	for (next_result = results; next_result; next_result = next_result->val_rc_next) {
-		struct val_assertion_chain *next_as;
+		struct val_authentication_chain *next_as;
 		next_as = next_result->val_rc_trust;
 
 		if(top_q != NULL) {
