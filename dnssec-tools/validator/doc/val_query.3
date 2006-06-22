@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_query 3"
-.TH val_query 3 "2006-06-20" "perl v5.8.6" "Programmer's Manual"
+.TH val_query 3 "2006-06-21" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_query \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
@@ -146,10 +146,19 @@ val_query \- DNSSEC\-validated resolution of DNS queries
 \&                const u_int8_t flags,
 \&                struct val_response **resp);
 .Ve
+.PP
+.Vb 1
+\&  int val_free_response(struct val_response *resp);
+.Ve
+.PP
+.Vb 2
+\&  int val_res_query(const val_context_t *ctx, const char *dname, int class, int type,
+\&        u_char *answer, int anslen, val_status_t *val_status);
+.Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIval_query()\fB\fR function is a DNSSEC-aware substitute for \fB\f(BIres_query\fB\|(3)\fR.
-It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.
+The \fB\f(BIval_query()\fB\fR and \fB\f(BIval_res_query()\fB\fR functions are DNSSEC-aware substitutes for \fB\f(BIres_query\fB\|(3)\fR.
+They perform \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.
 .PP
 The \fIctx\fR parameter is the validator context and can be set to \s-1NULL\s0 for
 default settings.  More information about this field can be found in
@@ -201,12 +210,20 @@ of the other error codes.  Note that if a value other than
 \&\fB\s-1VAL_SUCCESS\s0\fR is returned and if multiple RRsets are present in
 the answer, it is not possible to know which RRset resulted in the
 error status, if this flag is used.
+.PP
+The \fB\f(BIval_res_query()\fB\fR function is provided as a closer substitute
+for \fIres_query\fR\|(3). It calls \fIval_query()\fR internally with the 
+\&\s-1VAL_QUERY_MERGE_RRSETS\s0 flag and returns the answers in the field 
+answer with length of anslen. The validation status is returned in the
+field val_status. 
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
 The \fB\f(BIval_query()\fB\fR function returns 0 on success.  
 This function internally invokes \fB\f(BIresolve_n_check()\fB\fR, 
 and errors from this function may be returned.
-See \fB\f(BIlibval\fB\|(3)\fR for more details.
+.PP
+The \fB\f(BIval_res_query()\fB\fR function returns the number of bytes received on 
+success and \-1 on failure. 
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
 .Vb 5

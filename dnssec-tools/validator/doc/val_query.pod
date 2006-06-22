@@ -15,10 +15,15 @@ val_query - DNSSEC-validated resolution of DNS queries
                 const u_int8_t flags,
                 struct val_response **resp);
 
+  int val_free_response(struct val_response *resp);
+
+  int val_res_query(const val_context_t *ctx, const char *dname, int class, int type,
+        u_char *answer, int anslen, val_status_t *val_status);
+
 =head1 DESCRIPTION
 
-The B<val_query()> function is a DNSSEC-aware substitute for B<res_query(3)>.
-It performs DNSSEC validation of DNS queries.
+The B<val_query()> and B<val_res_query()> functions are DNSSEC-aware substitutes for B<res_query(3)>.
+They perform DNSSEC validation of DNS queries.
 
 The I<ctx> parameter is the validator context and can be set to NULL for
 default settings.  More information about this field can be found in
@@ -69,12 +74,21 @@ B<VAL_SUCCESS> is returned and if multiple RRsets are present in
 the answer, it is not possible to know which RRset resulted in the
 error status, if this flag is used.
 
+The B<val_res_query()> function is provided as a closer substitute
+for res_query(3). It calls val_query() internally with the 
+VAL_QUERY_MERGE_RRSETS flag and returns the answers in the field 
+answer with length of anslen. The validation status is returned in the
+field val_status. 
+
 =head1 RETURN VALUES
 
 The B<val_query()> function returns 0 on success.  
 This function internally invokes B<resolve_n_check()>, 
 and errors from this function may be returned.
-See B<libval(3)> for more details.
+
+The B<val_res_query()> function returns the number of bytes received on 
+success and -1 on failure. 
+
 
 =head1 EXAMPLES
  
