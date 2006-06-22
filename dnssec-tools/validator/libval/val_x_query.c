@@ -420,7 +420,7 @@ int val_query ( const val_context_t *ctx,
 		retval = compose_answer(name_n, type, class, results, resp, flags);
 	}
 
-	val_log_assertion_chain(context, LOG_DEBUG, name_n, class, type, context->q_list, results);
+	val_log_authentication_chain(context, LOG_DEBUG, name_n, class, type, context->q_list, results);
 
 	val_free_result_chain(results);
 

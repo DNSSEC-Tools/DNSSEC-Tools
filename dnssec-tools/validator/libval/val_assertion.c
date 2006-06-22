@@ -426,9 +426,9 @@ static int NSEC_is_wrong_answer (
  * VAL_NO_ERROR			Operation succeeded
  * VAL_OUT_OF_MEMORY	Could not allocate enough memory for operation
  */
-static int add_to_assertion_chain(struct val_assertion_chain **assertions, struct domain_info *response)
+static int add_to_authentication_chain(struct val_authentication_chain **assertions, struct domain_info *response)
 {
-	struct val_assertion_chain *new_as, *first_as, *prev_as;
+	struct val_authentication_chain *new_as, *first_as, *prev_as;
 	struct rrset_rec *next_rr;
 
 	if (response == NULL)
@@ -439,7 +439,7 @@ static int add_to_assertion_chain(struct val_assertion_chain **assertions, struc
 	next_rr = response->di_rrset;
 	while(next_rr) {
 
-		new_as = (struct val_assertion_chain *) MALLOC (sizeof (struct val_assertion_chain)); 
+		new_as = (struct val_authentication_chain *) MALLOC (sizeof (struct val_authentication_chain)); 
 		if (new_as==NULL) return VAL_OUT_OF_MEMORY;
 
 		new_as->_as.ac_data = copy_rrset_rec(next_rr);
@@ -468,14 +468,14 @@ static int add_to_assertion_chain(struct val_assertion_chain **assertions, struc
 }
 
 /*
- * Free up the assertion chain.
+ * Free up the authentication chain.
  */
-void free_assertion_chain(struct val_assertion_chain *assertions)
+void free_authentication_chain(struct val_authentication_chain *assertions)
 {
 	if (assertions==NULL) return;
                                                                                                                           
 	if (assertions->_as.val_ac_next)
-		free_assertion_chain (assertions->_as.val_ac_next);
+		free_authentication_chain (assertions->_as.val_ac_next);
 
 	if (assertions->_as.ac_data)
 		res_sq_free_rrset_recs(&(assertions->_as.ac_data));
@@ -487,7 +487,7 @@ void free_assertion_chain(struct val_assertion_chain *assertions)
  * For a given assertion identify its pending queries
  */
 static int build_pending_query(val_context_t *context, 
-		struct val_query_chain **queries, struct val_assertion_chain *as)
+		struct val_query_chain **queries, struct val_authentication_chain *as)
 {
 	u_int8_t *signby_name_n;
 	int retval;
@@ -571,10 +571,10 @@ static int build_pending_query(val_context_t *context,
  */ 
 static int assimilate_answers(val_context_t *context, struct val_query_chain **queries, 
 							struct domain_info *response, struct val_query_chain *matched_q, 
-								struct val_assertion_chain **assertions)
+								struct val_authentication_chain **assertions)
 {
 	int retval;
-	struct val_assertion_chain *as = NULL;
+	struct val_authentication_chain *as = NULL;
 	u_int16_t type_h = response->di_requested_type_h;
     u_int16_t class_h = response->di_requested_class_h;	
 	u_int8_t kind = SR_ANS_UNSET;
@@ -589,7 +589,7 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 	}
 
 	/* Create an assertion for the response data */
-	if(VAL_NO_ERROR != (retval = add_to_assertion_chain(assertions, response))) 
+	if(VAL_NO_ERROR != (retval = add_to_authentication_chain(assertions, response))) 
 		return retval;
 
 	if (response->di_rrset == NULL) {
@@ -814,10 +814,10 @@ val_result_chain *results)
  * Other return values from add_to_query_chain()
  */
 static int try_verify_assertion(val_context_t *context, struct val_query_chain **queries, 
-				struct val_assertion_chain *next_as)
+				struct val_authentication_chain *next_as)
 {
 	struct val_query_chain *pc;
-	struct val_assertion_chain *pending_as;
+	struct val_authentication_chain *pending_as;
 	int retval;
 	struct rrset_rec *pending_rrset; 
 
@@ -919,12 +919,12 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
  * Do not try and validate assertions that have already been validated.
  */
 static int  verify_and_validate(val_context_t *context, struct val_query_chain **queries, 
-								struct val_assertion_chain *top_as, u_int8_t flags, 
+								struct val_authentication_chain *top_as, u_int8_t flags, 
 								struct val_result_chain **results, int *done)
 {
-	struct val_assertion_chain *next_as;
+	struct val_authentication_chain *next_as;
 	int retval;
-	struct val_assertion_chain *as_more;
+	struct val_authentication_chain *as_more;
 	struct val_result_chain *res;
 	
 	*done = 1;
@@ -1084,7 +1084,7 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 // XXX the stealth mode
 static int ask_cache(val_context_t *context, struct val_query_chain *end_q, 
 				struct val_query_chain **queries, 
-				struct val_assertion_chain **assertions,
+				struct val_authentication_chain **assertions,
 				int *data_received)
 {
 	struct val_query_chain *next_q, *top_q;
@@ -1161,7 +1161,7 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 }
 
 static int ask_resolver(val_context_t *context, struct val_query_chain **queries, int block, 
-					struct val_assertion_chain **assertions, int *data_received)
+					struct val_authentication_chain **assertions, int *data_received)
 {
 	struct val_query_chain *next_q;
 	struct domain_info *response;

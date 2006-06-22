@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-06-20" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-06-22" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_resolve_and_check, 
 val_free_result_chain \- query and validate answers from a DNS name server
@@ -203,7 +203,7 @@ returned in which case RRsets of type \f(CW\*(C`ns_t_nsec\*(C'\fR and
 \&\f(CW\*(C`ns_t_soa\*(C'\fR are also returned. 
 .PP
 Individual elements in *\fIresults\fR point to the authentication chain
-contained within the val_assertion_chain linked list. The assertions contain
+contained within the val_authentication_chain linked list. The authentication chain elements contain
 the actual RRsets returned by the name server in response to the
 query. 
 .PP
@@ -211,12 +211,12 @@ Most applications would only require the status value within
 *\fIresults\fR since this provides a 
 single error code for representing the authenticity of returned 
 data. Other more intrusive applications such as a \s-1DNSSEC\s0 
-troubleshooting utility may look at the individual assertions 
+troubleshooting utility may look at the individual authentication chain element 
 to identify what particular component in the chain-of-trust led 
 to validation failure if any. \fB\f(BIval_istrusted()\fB\fR is a helper function
 that can be used to easily identify if a given validator status value
 corresponds to one of the authenticated and/or trusted data codes.
-Validator status values returned in the val_result_chain and val_assertion_chain
+Validator status values returned in the val_result_chain and val_authentication_chain
 linked lists can be displayed in a user understandable format using the functions
 \&\fB\f(BIp_val_error()\fB\fR and \fB\f(BIp_as_error()\fB\fR respectively.
 .PP
@@ -261,7 +261,7 @@ configuration file.
 .IX Item "struct val_result_chain {"
 .Vb 4
 \&    val_status_t val_rc_status;
-\&    struct val_assertion_chain *val_rc_trust;
+\&    struct val_authentication_chain *val_rc_trust;
 \&    struct val_result_chain *val_rc_next;
 \&};
 .Ve
@@ -333,22 +333,22 @@ in a more user friendly format using the \fB\f(BIp_val_error()\fB\fR function.
 .RE
 .RS 4
 .RE
-.IP "\fIstruct val_assertion_chain\fR {" 4
-.IX Item "struct val_assertion_chain {"
+.IP "\fIstruct val_authentication_chain\fR {" 4
+.IX Item "struct val_authentication_chain {"
 .Vb 6
 \&    val_astatus_t val_ac_status;
 \&    struct val_rrset *val_ac_rrset;
-\&    struct val_assertion_chain *val_ac_trust;
-\&    struct val_assertion_chain *val_ac_rrset_next;
-\&    struct val_assertion_chain *val_ac_next;
+\&    struct val_authentication_chain *val_ac_trust;
+\&    struct val_authentication_chain *val_ac_rrset_next;
+\&    struct val_authentication_chain *val_ac_next;
 \&};
 .Ve
 .RS 4
 .IP "\fIval_ac_status\fR" 4
 .IX Item "val_ac_status"
-This contains the validation state of the assertion. Upon completion 
+This contains the validation state of the authentication chain element. Upon completion 
 of the \fB\f(BIval_resolve_n_check()\fB\fR call this field will contain the error
-or success code for \s-1DNSSEC\s0 validation over the current assertion. This
+or success code for \s-1DNSSEC\s0 validation over the current authentication chain element. This
 field may contain the following values:
 .Sp
 .Vb 2
@@ -472,12 +472,12 @@ field may contain the following values:
 .Sp
 .Vb 2
 \&        VAL_A_TRUST_KEY
-\&                The key present in this assertion is trusted.
+\&                The key present in this authentication chain element is trusted.
 .Ve
 .Sp
 .Vb 2
 \&        VAL_A_TRUST_ZONE
-\&                The zone in this assertion is trusted.
+\&                The zone in this authentication chain element is trusted.
 .Ve
 .Sp
 .Vb 2
@@ -579,13 +579,13 @@ Certain queries may return more than one RRset as part of the answer.
 This field points to the next RRset in the \s-1DNS\s0 response.
 .IP "\fIval_ac_trust\fR" 4
 .IX Item "val_ac_trust"
-This field points to an assertion that either contains a \s-1DNSKEY\s0 RRset that
+This field points to an authentication chain element that either contains a \s-1DNSKEY\s0 RRset that
 can be used to verify RRSIGs over the current record, or contains a \s-1DS\s0
 RRset that can be used to build the chain-of-trust towards a trust
 anchor. 
 .IP "\fIval_ac_next\fR" 4
 .IX Item "val_ac_next"
-This field points to the next element in the val_assertion_chain linked\-list.
+This field points to the next element in the val_authentication_chain linked\-list.
 .RE
 .RS 4
 .RE

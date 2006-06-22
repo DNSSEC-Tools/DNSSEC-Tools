@@ -59,23 +59,23 @@ iii)Not all data requests get translated into actual DNS queries; some answers m
 iv) For every answer that is received, the validator assimilates this data and
 	indentifies any additional queries need to be made in order to either
 	verify the data contained in the response or to build the chain-of-trust to
-	a trust anchor. Assimilated data is stored in the "struct val_assertion_chain" structure,
+	a trust anchor. Assimilated data is stored in the "struct val_authentication_chain" structure,
 	which is also a linked list. A separate data request entry is created for each such 
 	data component that is required and all of them are added to the "queries" 
-	linked-list. The val_assertion_chain linked list is also stored within the 
+	linked-list. The val_authentication_chain linked list is also stored within the 
 	validator context.
 
-v)	Data contained in an assertion can be verified as long as all cryptographic 
+v)	Data contained in an element of the authentcation chain can be verified as long as all cryptographic 
 	components necessary to complete this operation is available locally. The 
 	verification operation may be performed even if other components in the 
 	chain of trust are still being built. 
 
 vi)	Steps iii) through v) are repeated as long as there are additional queries
 	that have still not received a response or failure from the DNS. Upon completion,
-	the assertion linked list contains the list of all answers that were returned from
+	the authentication chain linked list contains the list of all answers that were returned from
 	the DNS with a field describing each of their validation status values. 
 	If no answers were returned or some DNS error was encountered for a particular 
-	query, an empty assertion node is created to contain this error value.
+	query, an empty authentication chain node is created to contain this error value.
 
 vii)Finally, non-existence proofs are checked at this time, but only if all 
 	components of the proof are validated. If proved the final result code
@@ -84,8 +84,7 @@ vii)Finally, non-existence proofs are checked at this time, but only if all
 
 viii)The val_resolve_and_check() method returns a results linked list containing 
 	the final validation result for each RRset returned as an answer, which is 
-	essentially a consolidated answer for all assertions falling under the chain of 
-	trust for that RRset. 
+	essentially a consolidated answer for the authentication chain for that RRset. 
 
 See the man page for libval(3) for more details on these error codes.
 
@@ -112,7 +111,7 @@ completes, all information within this entry are merged into the validator cache
 
 Digestion of answers is followed by assimilation of answers. 
 Here, the data returned by the digestion process 
-is transformed into an assertion.  Cecks are made to determine the 
+is transformed into an authentication chain element.  Cecks are made to determine the 
 answer kind and if the data or NSEC was actually relevant.  A sanity check is 
 also made to ensure that all answers received as part of a query with type 
 as ANY have the same answer kind.  
@@ -212,17 +211,17 @@ VAL_A_WAIT_FOR_RRSIG
 
 
 The consolidated dnssec validation results obtained in the results array
-are derived from the assertion states in the following manner:
+are derived from the authentication chain states in the following manner:
 
 
-top assertion status       final result status
-=================================================
- VAL_A_TRUST_KEY            VAL_LOCAL_ANSWER 
- VAL_A_TRUST_ZONE           VAL_LOCAL_ANSWER 
- VAL_A_LOCAL_ANSWER         VAL_LOCAL_ANSWER
- VAL_A_BARE_RRSIG           VAL_BARE_RRSIG
+top authentication chain element status       final result status
+==================================================================
+ VAL_A_TRUST_KEY                              VAL_LOCAL_ANSWER 
+ VAL_A_TRUST_ZONE                             VAL_LOCAL_ANSWER 
+ VAL_A_LOCAL_ANSWER                           VAL_LOCAL_ANSWER
+ VAL_A_BARE_RRSIG                             VAL_BARE_RRSIG
 
-trust anchor seen    any assertion status       intermediate result status     final result status
+trust anchor seen    any auth.chain.elem status   intermediate result status     final result status
 ======================================================================================================= 
 
     YES             > FAIL_BASE,                   VAL_R_BOGUS_PROVABLE           VAL_BOGUS 
@@ -241,14 +240,14 @@ trust anchor seen    any assertion status       intermediate result status     f
 
 (Note: see val_errors.h for values of *_BASE and *_LAST)
 
-trust anchor seen    every assertion status       intermediate result status     final result status
+trust anchor seen    every auth.chain.elem status intermediate result status     final result status
                      (if present)
 ======================================================================================================= 
 
     YES              VERIFIED                     VAL_R_VALIDATED_CHAIN          VAL_SUCCESS
 	NO               VERIFIED                     VAL_R_VERIFIED_CHAIN           VAL_NOTRUST	
 
-Other error states depend on certain sequences of assertion types and states
+Other error states depend on certain sequences of authentication chain element types and states
 
                    Condition                       intermediate result status    final result status 
 =======================================================================================================

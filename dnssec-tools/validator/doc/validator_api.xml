@@ -441,16 +441,16 @@ void val_free_result( struct val_result_chain *results );
 
 struct val_result_chain {
     val_status_t               val_rc_status;
-    struct val_assertion_chain *val_rc_trust;
+    struct val_authentication_chain *val_rc_trust;
     struct val_result_chain    *val_rc_next;
 };
 
-struct val_assertion_chain {
+struct val_authentication_chain {
     val_astatus_t              val_ac_status;
     struct val_rrset           *val_ac_rrset;
-    struct val_assertion_chain *val_ac_trust;
-    struct val_assertion_chain *val_ac_rrset_next;
-    struct val_assertion_chain *val_ac_next;
+    struct val_authentication_chain *val_ac_trust;
+    struct val_authentication_chain *val_ac_rrset_next;
+    struct val_authentication_chain *val_ac_next;
 };
 
 struct val_rrset {
@@ -502,7 +502,7 @@ Each answer corresponds to a distinct RRset and is stored as a different element
 multiple RRs within the RRset are all part of the same answer. Multiple answers are possible
 when the query type is ANY or when a proof of non-existence is returned, in
 which case RRsets of type NSEC and SOA may also be returned. Members of the authentication chain
-sequence are encapsulated in the val_assertion_chain structure and 
+sequence are encapsulated in the val_authentication_chain structure and 
 the val_rc_trust field points to the first element in the authentication chain sequence. 
 The val_rc_next field can be used to iterate through the list of all results returned by the validator. 
 The consolidated validation status value for an RRset in the  DNS response based on the 
@@ -520,15 +520,15 @@ The val_ac_status field returns the validation status for the specified RRset. P
 defined in <xref target="val-astatus"/>. These values can be displayed in a human-understandable format using
 the p_as_error() function. 
 The val_ac_rrset_next field points to the next RRset within the set of responses returned for a query. 
-The val_ac_trust field points to the parent element for the current assertion in the authentication chain.
+The val_ac_trust field points to the parent element in the authentication chain.
 For a element with type DNSKEY, this would correspond to a DS record in the parent zone and for a DS record
 this would correspond to the DNSKEY in the current zone. Its value is NULL when the current element in the
 linked list points to a valid trust anchor or in case of an error when the parent node in the authentication chain
 cannot be constructed. The val_ac-status field can be used to differentiate between these two cases. 
-The val_ac_next field can be used to iterate through the list of DNS responses within the struct val_assertion_chain linked list.</t> 
+The val_ac_next field can be used to iterate through the list of DNS responses within the struct val_authentication_chain linked list.</t> 
 
 <t>
-The val_ac_rrset field in the val_assertion_chain structure contains the actual RRset data. 
+The val_ac_rrset field in the val_authentication_chain structure contains the actual RRset data. 
 The following information is stored in this structure: the header of the DNS response in which the RRset was
 received in val_msg_header, with a length of val_msg_headerlen; the query section of the DNS response in which
 the RRset was received in val_queryset_data, with a length val_queryset_datalen; the DNS response "envelope"
@@ -1072,7 +1072,7 @@ communication channel between the application and the validator. </t>
 valuable feedback and suggestions for improving this document: Lindy Foster,
 Wayne Morrison, Russ Mundy, Bill Sommerfeld, Robert Story, Wes Hardaker.  
 We would like to acknowledge our other team members at SPARTA for their 
-inputs and suggestions while developing the validator API. The list of assertion
+inputs and suggestions while developing the validator API. The list of authentication
 status codes listed in <xref target="val-astatus"/> was 
 generated through multiple brainstorming sessions by the "apps" sub-working group
 at the IETF meetings. This draft draws on the results from that effort.</t>

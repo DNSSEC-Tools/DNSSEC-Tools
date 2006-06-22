@@ -347,7 +347,7 @@ void sendquery(val_context_t *context, const char *desc, const char *name, const
 							fprintf(stderr, "     %s(%d)\n", p_val_error(result_array[i]), result_array[i]);	
 					}
 					fprintf(stderr, "\n");
-					val_log_assertion_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
+					val_log_authentication_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
 					err = 1;
 				}
 			}
@@ -359,7 +359,7 @@ void sendquery(val_context_t *context, const char *desc, const char *name, const
 			for(i=0; result_array[i]!=0; i++) {
 				if(result_array[i]!= -1) {
 					fprintf(stderr, "FAILED: Some results were not received \n");
-					val_log_assertion_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
+					val_log_authentication_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
 					err = 1;
 					break;
 				}
@@ -367,12 +367,12 @@ void sendquery(val_context_t *context, const char *desc, const char *name, const
 
 			if (!err) {
 				fprintf(stderr, "OK\n");
-				val_log_assertion_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
+				val_log_authentication_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
 			}
 		}
 		else if (trusted_only) {
 			fprintf(stderr, "FAILED: Some results were not validated successfully \n");
-			val_log_assertion_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
+			val_log_authentication_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
 		}
 			
 	}

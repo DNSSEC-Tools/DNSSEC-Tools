@@ -71,7 +71,7 @@ void val_free_context(val_context_t *context)
 	destroy_valpol(context);
 
 	free_query_chain(context->q_list);
-	free_assertion_chain(context->a_list);
+	free_authentication_chain(context->a_list);
 
 	FREE(context);
 }
