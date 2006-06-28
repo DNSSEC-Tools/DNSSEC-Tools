@@ -15,10 +15,7 @@ use IO::File;
 # Defaults
 
 my %opts = (
-        k => "",
-        d => "",
         t => 3600, # default to one hour
-        f => "",
 	v => 1,
         c => 0
 );
@@ -63,13 +60,6 @@ my $sleeptime = $opts{'t'} ? $opts{'t'}
 if ($opts{'f'}) {
     &checkkeys;
 } elsif ($opts{'c'}) {
-    # do config stuff only
-    # already have opts parsed
-# open config file for reading
-# open outfile for writing
-# write each line to outfile, unless is is /^ta/ something
-# then write new line with config data from cmd line if given
-# close both files and exit
     my $conffile = getconffile();
     open(CONF,$conffile) or die "unable to open \"$conffile\".";
     usage () unless $opts{'o'};
@@ -128,8 +118,8 @@ sub checkkeys {
     # needed to ensure that +dnssec is used on subsequent queries
     my $setdnssec = $res->dnssec(1);
     
-    read_named_conf_file(\%keystorage, $ncfile);
-    read_dnsval_conf_file(\%keystorage, $dvfile);
+    read_named_conf_file(\%keystorage, $ncfile) if ($ncfile);
+    read_dnsval_conf_file(\%keystorage, $dvfile) if ($dvfile);
 
 # if a domain is specified on the command line, we will only
 # check that domain. Otherwise, check all domains found in config files.
@@ -139,6 +129,11 @@ sub checkkeys {
         }
     }
     
+    if (!@domains) {
+        print "No domains to check, exiting....\n";
+        exit(1);
+    }
+
     foreach my $d (@domains) {
         my $query = $res->query($d,"DNSKEY");
 
@@ -206,7 +201,7 @@ sub read_dnsval_conf_file {
 
     my $fh = new IO::File;
     if (!$fh->open("<$file")) {
-	print STDERR "Could not open named configuration file: $file\n";
+	print STDERR "Could not open dnsval configuration file: $file\n";
 	exit 1;
     }
     while (<$fh>) {
