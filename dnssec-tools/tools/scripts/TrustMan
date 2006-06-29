@@ -9,6 +9,7 @@ use Net::DNS::SEC;
 use Net::DNS::SEC::Tools::conf;
 use Net::SMTP;
 use Getopt::Long;
+use Sys::Syslog;
 use IO::File;
 
 ########################################################
@@ -16,7 +17,7 @@ use IO::File;
 
 my %opts = (
         t => 3600, # default to one hour
-	v => 1,
+        v => 1,
         c => 0
 );
 
@@ -34,6 +35,7 @@ GetOptions(\%opts,
              's|smtp_server=s',
              'n|named_conf_file=s',
              'k|dnsval_conf_file=s',
+             'L|syslog',
              'm|mail_contact_addr=s');
 
 # Parse the dnssec-tools.conf file
@@ -56,6 +58,10 @@ my $smtpserver =  $opts{'s'} ? $opts{'s'}
 
 my $sleeptime = $opts{'t'} ? $opts{'t'}
                            : $dtconf{'tasleeptime'};
+
+if ((!$contactaddr) && (!$opts{'L'})) {
+    usage();
+}
 
 if ($opts{'f'}) {
     &checkkeys;
@@ -99,13 +105,15 @@ if ($opts{'f'}) {
 } 
 
 sub usage {
-    print "TrustMan [-k key_containing_file] [-d domain] [-f]\n";
-    print "\t[-c] [-o outfile] [-m mailcontact] [-s smtpserver]";
-    print "use the -f option to run in the foreground.\n";
-    print "If a domain is not specified, all domains in the key_containing_files will be checked.\n";
-    print "If no key_containing_files are specified, dnssec-tools.conf will be
-parsed for takeyfiles.\n";
-    print "When running the configure option (-c or --config), you MUST specify an output file (-o).\n";
+    print "TrustMan [-d domain] [-L] [-f] [-c] [-v]\n";
+    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
+    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
+    print "\tuse the -f option to run in the foreground.\n";
+    print "\tUse -L to log to syslog; this can be in addition to mail.\n";
+    print "\tIf a domain is not specified, all domains in the key_containing_files will be checked.\n";
+    print "\tIf no key_containing_files are specified, dnssec-tools.conf will be
+parsed for appropriate files.\n";
+    print "\tWhen running the configure option (-c or --config), you MUST specify an output file (-o).\n";
     exit(1);
 }
 
@@ -151,8 +159,20 @@ sub checkkeys {
             print "query failed for domain " . $d . ": " . $res->errorstring . "\n";
         }
     }
-    mailcontact($smtpserver,$contactaddr,@baddomains) if (@baddomains);
+    if (@baddomains) {
+        if ($opts{'L'}) { # log it to syslog
+            openlog('TrustMan','pid','user') || warn "could not open syslog";
+            foreach my $d (@baddomains) {
+                syslog('warning', %s, "DNSKEY mismatch for zone $d");
+            closelog();
+            }
+        } 
+        if ($contactaddr) { # mail it
+            mailcontact($smtpserver,$contactaddr,@baddomains);
+        }
+    }
 }
+
 #######################################################################
 # read_named_conf_file()
 #
@@ -287,6 +307,11 @@ sub Verbose {
     print STDERR @_ if ($opts{'v'});
 }
 
+####################################################################
+# daemonize
+# 
+# run as a daemon
+
 sub daemonize {
   chdir '/' or die "Can't chdir to /: $!";
   open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
@@ -296,6 +321,20 @@ sub daemonize {
   exit if $pid;
   setsid or die "Can't start a new session: $!";
   umask 0;
+}
+
+####################################################################
+# tmprint
+#
+# print to appropriate source
+# may be syslog or a file
+
+sub tmprint {
+    my $str = shift;
+    if ($opts{'l'}) {
+    } else {
+        print "$out\n";
+    }
 }
 
 #######################################################################
