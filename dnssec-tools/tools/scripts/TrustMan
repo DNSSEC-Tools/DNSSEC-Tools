@@ -36,6 +36,7 @@ GetOptions(\%opts,
              'n|named_conf_file=s',
              'k|dnsval_conf_file=s',
              'L|syslog',
+             'p|print',
              'm|mail_contact_addr=s');
 
 # Parse the dnssec-tools.conf file
@@ -59,7 +60,7 @@ my $smtpserver =  $opts{'s'} ? $opts{'s'}
 my $sleeptime = $opts{'t'} ? $opts{'t'}
                            : $dtconf{'tasleeptime'};
 
-if ((!$contactaddr) && (!$opts{'L'})) {
+if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
 }
 
@@ -169,6 +170,12 @@ sub checkkeys {
         } 
         if ($contactaddr) { # mail it
             mailcontact($smtpserver,$contactaddr,@baddomains);
+        }
+        if ($opts{'p'}) {
+            # write to stdout
+            foreach my $d (@baddomains) {
+                print "DNSKEY mismatch for zone $d\n";
+            }
         }
     }
 }
