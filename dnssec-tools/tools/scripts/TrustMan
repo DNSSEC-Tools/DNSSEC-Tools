@@ -37,6 +37,7 @@ GetOptions(\%opts,
              'k|dnsval_conf_file=s',
              'L|syslog',
              'p|print',
+             'N|no_error',
              'm|mail_contact_addr=s');
 
 # Parse the dnssec-tools.conf file
@@ -177,7 +178,25 @@ sub checkkeys {
                 print "DNSKEY mismatch for zone $d\n";
             }
         }
+    } elsif ($opts{'N'}) {
+        if ($opts{'L'}) { # log it to syslog
+            openlog('TrustMan','pid','user') || warn "could not open syslog";
+            foreach my $d (@domains) {
+                syslog('warning', %s, "DNSKEY okay for zone $d");
+            closelog();
+            }
+        } 
+        if ($contactaddr) { # mail it
+            mailcontact($smtpserver,$contactaddr,@domains);
+        }
+        if ($opts{'p'}) {
+            # write to stdout
+            foreach my $d (@domains) {
+                print "DNSKEY okay for zone $d\n";
+            }
+        }
     }
+        
 }
 
 #######################################################################
@@ -264,14 +283,21 @@ sub mailcontact {
     # create headers
     $message->datasend("To: " . $contact . "\n");
     $message->datasend("From: " . $fromaddr . "\n");
-    $message->datasend("Subject: TrustMan warning -- DNSKEY mismatches\n\n");
 
     # create the body of the message: the warning
-    $message->datasend("TrustMan has detected DNSKEY mismatches for the following zones: \n\n");
+    if ($opts{'N'}) {
+        $message->datasend("Subject: TrustMan all clear\n\n");
+        $message->datasend("TrustMan detected no DNSKEY mismatches for the following zones: \n\n");
+    } else {
+        $message->datasend("Subject: TrustMan warning -- DNSKEY mismatches\n\n");
+        $message->datasend("TrustMan has detected DNSKEY mismatches for the following zones: \n\n");
+    }
     foreach my $d (@domains) {
         $message->datasend("\t" . $d . "\n");
     }
-    $message->datasend("\n\nYou should verify mismatched keys manually.\n\n");
+    if (!$opts{'N'}) {
+        $message->datasend("\n\nYou should verify mismatched keys manually.\n\n");
+    }
 
     # finish and send the message
     $message->dataend();
