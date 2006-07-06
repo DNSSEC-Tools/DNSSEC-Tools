@@ -122,6 +122,7 @@ parsed for appropriate files.\n";
 sub checkkeys {
     my %keystorage;
     my @baddomains;
+    my @gooddomains;
     my @domains;
     push @domains, $opts{'d'} if ($opts{'d'});
     my $res = Net::DNS::Resolver->new;
@@ -155,6 +156,8 @@ sub checkkeys {
                 $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
                 if ($nonmatch) {
                     push @baddomains, $d;
+                } else {
+                    push @gooddomains, $d;
                 }
             }
         } else {
@@ -162,36 +165,32 @@ sub checkkeys {
         }
     }
     if (@baddomains) {
-        if ($opts{'L'}) { # log it to syslog
-            openlog('TrustMan','pid','user') || warn "could not open syslog";
-            foreach my $d (@baddomains) {
-                syslog('warning', %s, "DNSKEY mismatch for zone $d");
-            closelog();
-            }
-        } 
         if ($contactaddr) { # mail it
-            mailcontact($smtpserver,$contactaddr,@baddomains);
+            mailcontact(0,$smtpserver,$contactaddr,@baddomains);
         }
-        if ($opts{'p'}) {
-            # write to stdout
-            foreach my $d (@baddomains) {
+        foreach my $d (@baddomains) {
+            if ($opts{'L'}) { # log it to syslog
+                openlog('TrustMan','pid','user') || warn "could not open syslog";
+                syslog('warning', %s, "DNSKEY mismatch for zone $d");
+                closelog();
+            }
+            if ($opts{'p'}) {
+                # write to stdout
                 print "DNSKEY mismatch for zone $d\n";
             }
         }
     } elsif ($opts{'N'}) {
-        if ($opts{'L'}) { # log it to syslog
-            openlog('TrustMan','pid','user') || warn "could not open syslog";
-            foreach my $d (@domains) {
-                syslog('warning', %s, "DNSKEY okay for zone $d");
-            closelog();
-            }
-        } 
         if ($contactaddr) { # mail it
-            mailcontact($smtpserver,$contactaddr,@domains);
+            mailcontact(1,$smtpserver,$contactaddr,@domains);
         }
-        if ($opts{'p'}) {
-            # write to stdout
-            foreach my $d (@domains) {
+        foreach my $d (@gooddomains) {
+            if ($opts{'L'}) { # log it to syslog
+                openlog('TrustMan','pid','user') || warn "could not open syslog";
+                syslog('warning', %s, "DNSKEY okay for zone $d");
+                closelog();
+            }
+            if ($opts{'p'}) {
+                # write to stdout
                 print "DNSKEY okay for zone $d\n";
             }
         }
@@ -271,7 +270,7 @@ sub read_dnsval_conf_file {
 # mailcontact()
 #  - emails a contact address with the error output
 sub mailcontact {
-    my ($smtp,$contact,@domains) = @_;
+    my ($ok,$smtp,$contact,@domains) = @_;
     my $fromaddr = 'TrustMan@localhost';
 
     # set up the SMTP object and required data
@@ -285,7 +284,7 @@ sub mailcontact {
     $message->datasend("From: " . $fromaddr . "\n");
 
     # create the body of the message: the warning
-    if ($opts{'N'}) {
+    if ($ok) {
         $message->datasend("Subject: TrustMan all clear\n\n");
         $message->datasend("TrustMan detected no DNSKEY mismatches for the following zones: \n\n");
     } else {
@@ -295,7 +294,7 @@ sub mailcontact {
     foreach my $d (@domains) {
         $message->datasend("\t" . $d . "\n");
     }
-    if (!$opts{'N'}) {
+    if (!$ok) {
         $message->datasend("\n\nYou should verify mismatched keys manually.\n\n");
     }
 
