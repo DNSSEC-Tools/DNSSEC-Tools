@@ -447,6 +447,10 @@ Output file for configuration
 
 A dnsval.conf file to read
 
+=item -n 
+
+A named.conf file to read
+
 =item -d
 
 The domain to check (supersedes configuration file)
@@ -459,9 +463,21 @@ The number of seconds to sleep between checks. Default is 3600 (one hour)
 
 Mail address for the contact person to whom reports should be sent
 
+=item -p
+
+Log messages to stdout.
+
+=item -L
+
+Log messages to syslog.
+
 =item -s
 
 SMTP server TrustMan should use to send reports
+
+=item -N
+
+Send report when there are no errors.
 
 =item -v
 
