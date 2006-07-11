@@ -119,7 +119,6 @@ our @EXPORT = qw(
 
 		 rollmgr_channel
 		 rollmgr_closechan
-		 rollmgr_cmdresp
 		 rollmgr_getcmd
 		 rollmgr_getresp
 		 rollmgr_sendcmd
@@ -1550,9 +1549,9 @@ sub rollmgr_sendcmd
 		#
 		# Get a response from rollerd.
 		#
-# print "rollmgr_sendcmd:  calling rollmgr_cmdresp($cmd)\n";
-		($ret, $resp) = rollmgr_cmdresp($cmd);
-# print "rollmgr_sendcmd:  cmdresp() returned ($ret) ($resp)\n";
+# print "rollmgr_sendcmd:  calling rollmgr_getresp($cmd)\n";
+		($ret, $resp) = rollmgr_getresp($cmd);
+# print "rollmgr_sendcmd:  getresp() returned ($ret) ($resp)\n";
 	}
 
 	close(SOCK);
@@ -1576,6 +1575,8 @@ print "rollmgr_sendresp:  down in\n";
 
 print "rollmgr_sendresp:  sending <$retcode> <$respmsg>\n";
 
+print "rollmgr_sendresp:  retcode - <$retcode>";
+print "rollmgr_sendresp:  respmsg - <$respmsg>";
 my $r1; my $r2;
 $r1 =
 	print RMTSOCK "$retcode $EOL";
@@ -1587,13 +1588,13 @@ print "rollmgr_sendresp:  r1 - <$r1>\tr2 - <$r2>\n\n";
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	rollmgr_cmdresp()
+# Routine:	rollmgr_getresp()
 #
 # Purpose:	This routine allows a client to wait for a message response
 #		from the server.  It will keep reading response lines until
 #		either the socket closes or the timer expires.
 #
-sub rollmgr_cmdresp
+sub rollmgr_getresp
 {
 	my $cmd	 = shift;				# Command to send.
 	my $retcode = -1;				# Return code.
@@ -1602,7 +1603,7 @@ sub rollmgr_cmdresp
 	my $oldhandler = $SIG{ALRM};			# Old alarm handler.
 	my $waiter = 5;					# Wait-time for resp.
 
-# print "rollmgr_cmdresp:  down in\n";
+# print "rollmgr_getresp:  down in\n";
 
 	#
 	# Set a time limit on how long we'll wait for the response.
@@ -1617,6 +1618,8 @@ sub rollmgr_cmdresp
 	#
 	$retcode = <RMTSOCK>;
 	while(<RMTSOCK>)
+#	$retcode = <SOCK>;
+#	while(<SOCK>)
 	{
 		$respbuf .= $_;
 	}
@@ -1626,8 +1629,8 @@ sub rollmgr_cmdresp
 	#
 	alarm(0);
 	$SIG{ALRM} = $oldhandler;
-print "rollmgr_cmdresp:  retcode - <$retcode>\n";
-print "rollmgr_cmdresp:  respbuf - <$respbuf>\n";
+print "rollmgr_getresp:  retcode - <$retcode>\n";
+print "rollmgr_getresp:  respbuf - <$respbuf>\n";
 	return($retcode,$respbuf);
 }
 
