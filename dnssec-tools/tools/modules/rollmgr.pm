@@ -89,8 +89,6 @@ use strict;
 use Fcntl ':flock';
 use Socket;
 
-use Net::DNS::SEC::Tools::conf;
-
 our $VERSION = "0.01";
 
 our @ISA = qw(Exporter);
@@ -120,9 +118,14 @@ our @EXPORT = qw(
 			 LOG_DEFAULT
 
 		 rollmgr_channel
-		 rollmgr_sendcmd
+		 rollmgr_closechan
+		 rollmgr_cmdresp
 		 rollmgr_getcmd
+		 rollmgr_getresp
+		 rollmgr_sendcmd
+		 rollmgr_sendresp
 		 rollmgr_verifycmd
+			 ROLLCMD_GETSTATUS
 			 ROLLCMD_LOGFILE
 			 ROLLCMD_LOGLEVEL
 			 ROLLCMD_LOGMSG
@@ -190,9 +193,7 @@ my $ADDR	= INADDR_ANY;			# rollerd's server address.
 my $CMDPORT	= 880109;			# rollerd's server port.
 my $EOL		= "\015\012";			# Net-standard end-of-line.
 
-my $CHANNEL_TYPE = PF_UNIX;			# Type of channel we're using.
-my $UNIXSOCK	 = "/rollmgr.socket";		# Unix socket name.
-
+my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
 my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
@@ -204,6 +205,7 @@ my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_STATUS	= "rollcmd_status";
 
+sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
 sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
 sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
 sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
@@ -217,6 +219,7 @@ sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 
 my %roll_commands =
 (
+	rollcmd_getstatus	=> 1,
 	rollcmd_logfile		=> 1,
 	rollcmd_loglevel	=> 1,
 	rollcmd_logmsg		=> 1,
@@ -1370,78 +1373,62 @@ sub rollmgr_channel
 {
 	my $server = shift;				# Server/client flag.
 
+	my $proto;					# Protocol to use.
+	my $remote = "localhost";			# Server's hostname.
+	my $serveraddr;					# Server's address.
+	my $conaddr;					# Address in connect().
+
 # print "rollmgr_channel($server):  down in\n";
 
-	if($CHANNEL_TYPE == PF_INET)
+	#
+	# Close any previously opened sockets.
+	#
+	close(RMTSOCK);
+	close(SOCK);
+
+	#
+	# Get the protocol and create a socket.
+	#
+	$proto	= getprotobyname("tcp");
+	socket(SOCK,PF_INET,SOCK_STREAM,$proto);
+
+	#
+	# For the server, we'll set the socket's address and mark it as
+	# connectable.
+	# For the client, we'll get the address of the server and connect
+	# to it.  (Right now, we're only talking to localhost.)
+	#
+	if($server)
 	{
-		my $remote = "localhost";		# Server's hostname.
-		my $serveraddr;				# Server's address.
-		my $conaddr;				# Address in connect().
-		my $proto = getprotobyname("tcp");	# Protocol to use.
-
-		#
-		# Get the protocol and create a socket.
-		#
-		socket(SOCK,PF_INET,SOCK_STREAM,$proto);
-
-		#
-		# For the server, we'll set the socket's address and mark
-		# it as connectable.
-		# For the client, we'll get the address of the server and
-		# connect to it.  (Right now, we're only talking to localhost.)
-		#
-		if($server)
-		{
-			setsockopt(SOCK,SOL_SOCKET,SO_REUSEADDR,pack("l",1));
-			bind(SOCK,sockaddr_in($CMDPORT,$ADDR)) || return(0);
-			listen(SOCK,SOMAXCONN) || return(0);
-		}
-		else
-		{
-
-			$remote = "localhost";
-
-			$serveraddr = inet_aton($remote);
-			$conaddr = sockaddr_in($CMDPORT,$serveraddr);
-
-			connect(SOCK,$conaddr) || return(0);
-		}
+		setsockopt(SOCK,SOL_SOCKET,SO_REUSEADDR,pack("l",1));
+		bind(SOCK,sockaddr_in($CMDPORT,$ADDR));
+		listen(SOCK,SOMAXCONN);
 	}
-	elsif($CHANNEL_TYPE == PF_UNIX)
+	else
 	{
-		my $sockdata;				# Path for socket.
-		my $unixsock;				# Unix socket file.
 
-		#
-		# Build the socket name and construct the socket data.
-		#
-		$unixsock = getconfdir() . $UNIXSOCK;
-# print STDERR "rollmgr_channel:  unixsock - <$unixsock>\n";
-		$sockdata = sockaddr_un($unixsock);
+		$remote = "localhost";
 
-		#
-		# Create a Unix domain socket.
-		#
-		socket(SOCK,PF_UNIX,SOCK_STREAM,0) || return(-1);
+		$serveraddr = inet_aton($remote);
+		$conaddr = sockaddr_in($CMDPORT,$serveraddr);
 
-		#
-		# For the server, we'll create the socket's file and bind it.
-		# For the client, we'll get the connect to the server's socket.
-		#
-		if($server)
-		{
-			unlink($unixsock);
-			bind(SOCK,$sockdata)	|| return(-2);
-			chmod 0600, $unixsock	|| return(-3);
-			listen(SOCK,SOMAXCONN)	|| return(-4);
-		}
-		else
-		{
-			connect(SOCK,$sockdata)	|| return(0);
-		}
+		connect(SOCK,$conaddr);
 	}
+}
 
-	return(1);
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_closechan()
+#
+# Purpose:	This routine closes down the communications channel to
+#		rollerd.  It is called by both rollerd and rollerd clients.
+#
+sub rollmgr_closechan
+{
+
+# print "rollmgr_closechan:  down in\n";
+
+	close(RMTSOCK);
 }
 
 #-----------------------------------------------------------------------------
@@ -1460,7 +1447,10 @@ sub rollmgr_getcmd
 	my $data;				# Command's data.
 	my $user;				# ID info of sender.
 
-	my $accresp;				# Response from accept().
+	my $raddr;				# Client's address.
+	my $rmtaddr;				# Client's address.
+	my $rmtname;				# Client's name.
+	my $rport;				# Remote port.
 
 	my $oldhandler = $SIG{ALRM};		# Old alarm handler.
 
@@ -1477,43 +1467,24 @@ sub rollmgr_getcmd
 	#
 	# Accept the waiting connection.
 	#
-	$accresp = accept(CLNTSOCK,SOCK);
-	return if(!defined($accresp));
+	close(RMTSOCK);
+	$rmtaddr = accept(RMTSOCK,SOCK);
+	return if(!defined($rmtaddr));
 
 	#
-	# Do any required domain-specific checks.
+	# Convert the client's address into a hostname.
 	#
-	if($CHANNEL_TYPE == PF_INET)
-	{
-		my $raddr;				# Client's address.
-		my $rmtname;				# Client's name.
-		my $rport;				# Remote port.
-
-		#
-		# Convert the client's address into a hostname.
-		#
-		($rport,$raddr) = sockaddr_in($accresp);
-		$rmtname = gethostbyaddr($raddr,AF_INET);
+	($rport,$raddr) = sockaddr_in($rmtaddr);
+	$rmtname = gethostbyaddr($raddr,AF_INET);
 # print "rollmgr_getcmd:  connection from <$rmtname>\n";
-
-		#
-		# Ensure we're coming from the localhost.
-		#
-		return("bad host","$rmtname","") if($rmtname ne "localhost");
-	}
-	elsif($CHANNEL_TYPE == PF_UNIX)
-	{
-		#
-		# Nothing to do now for Unix-domain sockets.
-		#
-	}
+	return("bad host","$rmtname","") if($rmtname ne "localhost");
 
 	#
 	# Get the command and data, and lop off the trailing goo.
 	#
-	$cmd  = <CLNTSOCK>;
-	$data = <CLNTSOCK>;
-	$user = <CLNTSOCK>;
+	$cmd  = <RMTSOCK>;
+	$data = <RMTSOCK>;
+	$user = <RMTSOCK>;
 	$cmd  =~ s/ $EOL$//;
 	$data =~ s/ $EOL$//;
 	$user =~ s/ $EOL$//;
@@ -1527,7 +1498,6 @@ sub rollmgr_getcmd
 	#
 	# Close the remote socket and return the client's data.
 	#
-	close(CLNTSOCK);
 	return($cmd,$data,$user);
 }
 
@@ -1545,21 +1515,120 @@ sub rollmgr_sendcmd
 	my $data = shift;				# Data for command.
 	my $user = `id`;				# User info.
 
+	my $resp;					# Response.
+	my $ret	 = 1;					# Return code.
+
 # print "rollmgr_sendcmd:  down in\n";
 
 	return(0) if(rollmgr_verifycmd($cmd) == 0);
 
 	chomp $user;
 
+	#
+	# Create the communications channel to rollerd and send
+	# the message.
+	#
 	rollmgr_channel(0);
-
+# print "rollmgr_sendcmd:  got channel\n";
 	print SOCK "$cmd $EOL";
 	print SOCK "$data $EOL";
 	print SOCK "$user $EOL";
+# print "rollmgr_sendcmd:  commands sent\n";
+
+	#
+	# If the user wants a response, we'll try to get one.
+	#
+	if($wait)
+	{
+# print "rollmgr_sendcmd:  waiting for response\n";
+		#
+		# Now that all our commands are sent, we'll kick rollerd to
+		# let it know there are commands a-waiting.
+		#
+		rollmgr_cmdint();
+
+		#
+		# Get a response from rollerd.
+		#
+# print "rollmgr_sendcmd:  calling rollmgr_cmdresp($cmd)\n";
+		($ret, $resp) = rollmgr_cmdresp($cmd);
+# print "rollmgr_sendcmd:  cmdresp() returned ($ret) ($resp)\n";
+	}
 
 	close(SOCK);
 
-	return(1);
+# print "rollmgr_sendcmd:  returning\n";
+	return($ret, $resp);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_sendresp()
+#
+# Purpose:	This routine allows rollerd to send a message to a client.
+#
+sub rollmgr_sendresp
+{
+	my $retcode = shift;				# Return code.
+	my $respmsg = shift;				# Response message.
+
+print "rollmgr_sendresp:  down in\n";
+
+print "rollmgr_sendresp:  sending <$retcode> <$respmsg>\n";
+
+my $r1; my $r2;
+$r1 =
+	print RMTSOCK "$retcode $EOL";
+$r2 =
+	print RMTSOCK "$respmsg $EOL";
+
+print "rollmgr_sendresp:  r1 - <$r1>\tr2 - <$r2>\n\n";
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_cmdresp()
+#
+# Purpose:	This routine allows a client to wait for a message response
+#		from the server.  It will keep reading response lines until
+#		either the socket closes or the timer expires.
+#
+sub rollmgr_cmdresp
+{
+	my $cmd	 = shift;				# Command to send.
+	my $retcode = -1;				# Return code.
+	my $respbuf;					# Response buffer.
+
+	my $oldhandler = $SIG{ALRM};			# Old alarm handler.
+	my $waiter = 5;					# Wait-time for resp.
+
+# print "rollmgr_cmdresp:  down in\n";
+
+	#
+	# Set a time limit on how long we'll wait for the response.
+	# Our alarm handler is a dummy, only intended to keep us from
+	# waiting forever.
+	#
+	$SIG{ALRM} = sub { my $foo = 42 };
+	alarm($waiter);
+
+	#
+	# Get data from rollerd and append it to our response buffer.
+	#
+	$retcode = <RMTSOCK>;
+	while(<RMTSOCK>)
+	{
+		$respbuf .= $_;
+	}
+
+	#
+	# Reset the alarm handler and return the response buffer.
+	#
+	alarm(0);
+	$SIG{ALRM} = $oldhandler;
+print "rollmgr_cmdresp:  retcode - <$retcode>\n";
+print "rollmgr_cmdresp:  respbuf - <$respbuf>\n";
+	return($retcode,$respbuf);
 }
 
 #-----------------------------------------------------------------------------
@@ -1567,7 +1636,7 @@ sub rollmgr_sendcmd
 # Routine:	rollmgr_verifycmd()
 #
 # Purpose:	This routine returns a boolean indicating if the specified
-#		command is a valid command for for the roll-over daemon.
+#		command is a valid command for the roll-over daemon.
 #
 sub rollmgr_verifycmd
 {
@@ -1626,7 +1695,7 @@ manager.
   ($cmd,$data) = rollmgr_getcmd();
   $ret = rollmgr_verifycmd($cmd);
 
-  rollmgr_sendcmd(ROLLCMD_ROLLZONE,1,"example.com");
+  rollmgr_sendcmd(ROLLCMD_ROLLZONE,"example.com");
 
 =head1 DESCRIPTION
 
@@ -1784,7 +1853,7 @@ The sending-user information is the output of the I<id> command.  There is no
 trusted path available in the current networking system, so this information
 is informational and B<cannot> be trusted to be accurate.
 
-=head2 B<rollmgr_sendcmd(cmd,waitflag,data)>
+=head2 B<rollmgr_sendcmd(cmd,data)>
 
 I<rollmgr_sendcmd()> sends a command to I<rollerd>.  The command must be one
 of the commands from the table below.  This interface creates a communications
@@ -1808,9 +1877,6 @@ The data aren't checked for validity by I<rollmgr_sendcmd()>; validity
 checking is a responsibility of I<rollerd>.
 
 On success, 1 is returned.  If an invalid command is given, 0 is returned.
-
-The I<waitflag> is not currently used by I<rollmgr_sendcmd()>.  However, a
-placeholder scalar value must be included.
 
 =head2 B<rollmgr_verifycmd(cmd)>
 
