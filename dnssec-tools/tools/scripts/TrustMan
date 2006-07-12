@@ -69,31 +69,36 @@ if ($opts{'f'}) {
     &checkkeys;
 } elsif ($opts{'c'}) {
     my $conffile = getconffile();
+    my $didnconf = 0;
+    my $didvconf = 0;
+    my $didtime = 0;
+    my $didcontact = 0;
+    my $didsmtp = 0;
     open(CONF,$conffile) or die "unable to open \"$conffile\".";
     usage () unless $opts{'o'};
     open(OUT,">$opts{'o'}") or die "unable to open \"$opts{'o'}\" for writing.";
     while(<CONF>) {
-        if (/^tasleeptime/ && ($opts{'t'})) {
-            print OUT "tasleeptime\t" . $sleeptime . "\n";
-            next;
-        }
-        if (/^tasmtpserver/ && ($opts{'s'})) {
-            print OUT "tasmtpserver\t" . $smtpserver . "\n";
-            next;
-        }
-        if (/^tacontact/ && ($opts{'m'})) {
-            print OUT "tacontact\t" . $contactaddr . "\n";
-            next;
-        }
-        if (/^tanamedconffile/ && ($opts{'n'})) {
-            print OUT "tanamedconffile\t" . $ncfile . "\n";
-            next;
-        }
-        if (/^tadnsvalconffile/ && ($opts{'k'})) {
-            print OUT "tadnsvalconffile\t" . $dvfile . "\n";
-            next;
-        }
+        next if (/^tasleeptime/ && ($opts{'t'}));
+        next if (/^tasmtpserver/ && ($opts{'s'}));
+        next if (/^tacontact/ && ($opts{'m'}));
+        next if (/^tanamedconffile/ && ($opts{'n'}));
+        next if (/^tadnsvalconffile/ && ($opts{'k'}));
         print OUT $_;
+    }
+    if ($opts{'t'}) {
+        print OUT "tasleeptime\t" . $sleeptime . "\n";
+    }
+    if ($opts{'s'}) {
+        print OUT "tasmtpserver\t" . $smtpserver . "\n";
+    }
+    if ($opts{'m'}) {
+        print OUT "tacontact\t" . $contactaddr . "\n";
+    }
+    if ($opts{'n'}) {
+        print OUT "tanamedconffile\t" . $ncfile . "\n";
+    }
+    if ($opts{'k'}) {
+        print OUT "tadnsvalconffile\t" . $dvfile . "\n";
     }
     close (OUT);
     close (CONF);
