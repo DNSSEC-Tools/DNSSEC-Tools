@@ -213,7 +213,7 @@ sub read_named_conf_file {
     my $fh = new IO::File;
     if (!$fh->open("<$file")) {
 	print STDERR "Could not open named configuration file: $file\n";
-	exit 1;
+	exit (1);
     }
     while (<$fh>) {
 	if (/trusted-keys {/) {
@@ -247,7 +247,7 @@ sub read_dnsval_conf_file {
     my $fh = new IO::File;
     if (!$fh->open("<$file")) {
 	print STDERR "Could not open dnsval configuration file: $file\n";
-	exit 1;
+	exit (1);
     }
     while (<$fh>) {
 	if (/trust-anchor/) {
@@ -353,20 +353,6 @@ sub daemonize {
   exit if $pid;
   setsid or die "Can't start a new session: $!";
   umask 0;
-}
-
-####################################################################
-# tmprint
-#
-# print to appropriate source
-# may be syslog or a file
-
-sub tmprint {
-    my $str = shift;
-    if ($opts{'l'}) {
-    } else {
-        print "$out\n";
-    }
 }
 
 #######################################################################
