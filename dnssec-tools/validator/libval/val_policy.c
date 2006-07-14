@@ -896,8 +896,20 @@ int read_res_config_file(val_context_t *ctx)
 			ns->ns_next = NULL;
 			ns->ns_number_of_addresses = 0;
 
-			if (inet_pton(AF_INET, cp, &address) != 1)
-				goto err;
+			if (inet_pton(AF_INET, cp, &address) != 1) {
+                          /* drop ipv6 addresses and keep parsing */
+                          if (inet_pton(AF_INET6, cp, &address) == 1) {
+                            val_log (ctx, LOG_WARNING, "Parse warning in file %s: unable to read IPv6 nameserver address.\n", resolv_conf);
+                            FREE (ns->ns_name_n); 
+                            ns->ns_name_n = NULL;
+                            FREE (ns);
+                            ns = NULL;
+                            break;
+                          }
+                          else
+                            goto err;
+                        }
+
 			bzero(&serv_addr, sizeof(struct sockaddr));
 			serv_addr.sin_family = AF_INET;         // host byte order
 			serv_addr.sin_port = htons(DNS_PORT);     // short, network byte order
