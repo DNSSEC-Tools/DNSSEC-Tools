@@ -642,7 +642,11 @@ int val_getaddrinfo(const val_context_t *ctx,
 	int is_ip4 = 0;
 	int is_ip6 = 0;
 	int retval = 0;
-
+        const char *localhost4 = "127.0.0.1";
+        const char *localhost6 = "::1";
+        const char *nname = nodename;
+        
+        *res = NULL;
 	val_context_t *context = NULL;
 
 	if (ctx == NULL) {
@@ -653,7 +657,7 @@ int val_getaddrinfo(const val_context_t *ctx,
 		context = (val_context_t *) ctx;
 	
 	val_log(context, LOG_DEBUG, "val_getaddrinfo called with nodename = %s, servname = %s",
-		nodename == NULL? "(null)":nodename,
+		nodename == NULL? "(null)": nodename,
 		servname == NULL? "(null)": servname);
 	
 	/* Check if at least one of nodename or servname is non-NULL */
@@ -665,101 +669,94 @@ int val_getaddrinfo(const val_context_t *ctx,
 	bzero(&ip4_addr, sizeof(struct in_addr));
 	bzero(&ip6_addr, sizeof(struct in6_addr));
 	
-	/* Check if the nodename was NULL or is an IPv4 address in dotted-decimal format */
-	if (nodename == NULL || inet_pton(AF_INET, nodename, &ip4_addr) > 0) {
+        /* if nodename is blank and hints doesn't exist or it
+           includes IPv4, use IPv4 localhost */
+        if ( NULL == nodename && 
+             ( NULL == hints || AF_INET == hints->ai_family 
+                             || AF_UNSPEC == hints->ai_family )
+            ) {
+          nname = localhost4;
+        }
+          
+	/* check for IPv4 addresses */
+	if ( NULL != nname && inet_pton(AF_INET, nname, &ip4_addr) > 0) {
 
-		struct val_addrinfo *ainfo = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
+		ainfo4 = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
 		struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 		
 		is_ip4 = 1;
-		if (nodename == NULL) {
-			if (inet_pton(AF_INET, "127.0.0.1", &ip4_addr) < 0) {
-				/* ??? */
-				;
-			}				
-		}
 		
-		bzero(ainfo, sizeof(struct val_addrinfo));
+		bzero(ainfo4, sizeof(struct val_addrinfo));
 		bzero(saddr4, sizeof(struct sockaddr_in));
 
                 saddr4->sin_family = AF_INET;
-		ainfo->ai_family = AF_INET;
-		ainfo->ai_addrlen = sizeof (struct sockaddr_in);
+		ainfo4->ai_family = AF_INET;
 		memcpy(&(saddr4->sin_addr), &ip4_addr, sizeof(struct in_addr));
-		ainfo->ai_addr = (struct sockaddr *) saddr4;
-		ainfo->ai_canonname = NULL;
-		
-		ainfo->ai_val_status = VAL_LOCAL_ANSWER;
-		if (process_service_and_hints(ainfo->ai_val_status, servname, hints, &ainfo4) == EAI_SERVICE) {
-			free_val_addrinfo(ainfo);
+		ainfo4->ai_addr = (struct sockaddr *) saddr4;
+		ainfo4->ai_addrlen = sizeof (struct sockaddr_in);
+		ainfo4->ai_canonname = NULL;
+		ainfo4->ai_val_status = VAL_LOCAL_ANSWER;
+
+		if (process_service_and_hints(ainfo4->ai_val_status, servname, hints, &ainfo4) == EAI_SERVICE) {
+			free_val_addrinfo(ainfo4);
 			free(saddr4);
 			retval = EAI_SERVICE;
 			goto done;
 		}	 
 		
-		if (nodename != NULL) {
-			*res = ainfo4;
-			if (*res != NULL) {
-				retval = 0;
-			}
-			else {
-				retval = EAI_NONAME;
-			}
-			goto done;
-		}
+                *res = ainfo4;
+                retval = 0;
+                goto done;
 	}
 	
-	/* Check if the nodename was NULL or is an IPv6 address */
-	if (nodename == NULL || inet_pton(AF_INET6, nodename, &ip6_addr) > 0) {
+        /* if nodename is blank and hints doesn't exist or it
+           includes IPv6, use IPv6 localhost */
+        if ( NULL == nodename && 
+             ( NULL == hints || AF_INET6 == hints->ai_family 
+                             || AF_UNSPEC == hints->ai_family )
+            ) {
+          nname = localhost6;
+        }
+
+	/* Check for IPv6 address */
+	if (nname != NULL && inet_pton(AF_INET6, nname, &ip6_addr) > 0) {
 		
-		struct val_addrinfo *ainfo = (struct val_addrinfo *) malloc (sizeof(struct val_addrinfo));
+		ainfo6 = (struct val_addrinfo *) malloc (sizeof(struct val_addrinfo));
 		struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
 		
 		is_ip6 = 1;
 		
-		if (nodename == NULL) {
-			if (inet_pton(AF_INET6, "::1", &ip6_addr) < 0) {
-				/* ??? */
-				;
-			}
-		}
-		
-		bzero(ainfo, sizeof(struct val_addrinfo));
+		bzero(ainfo6, sizeof(struct val_addrinfo));
 		bzero(saddr6, sizeof(struct sockaddr_in6));
 		
                 saddr6->sin6_family = AF_INET6;
-		ainfo->ai_family = AF_INET6;
-		ainfo->ai_addrlen = sizeof (struct sockaddr_in6);
+		ainfo6->ai_family = AF_INET6;
 		memcpy(&(saddr6->sin6_addr), &ip6_addr, sizeof(struct in6_addr));
-		ainfo->ai_addr = (struct sockaddr *) saddr6;
-		ainfo->ai_canonname = NULL;
- 		
-		ainfo->ai_val_status = VAL_LOCAL_ANSWER;
-		if (process_service_and_hints(ainfo->ai_val_status, servname, hints, &ainfo6) == EAI_SERVICE) {
-			free_val_addrinfo(ainfo);
+		ainfo6->ai_addr = (struct sockaddr *) saddr6;
+		ainfo6->ai_addrlen = sizeof (struct sockaddr_in6);
+		ainfo6->ai_canonname = NULL;
+		ainfo6->ai_val_status = VAL_LOCAL_ANSWER;
+
+		if (process_service_and_hints(ainfo6->ai_val_status, servname, hints, &ainfo6) == EAI_SERVICE) {
+			free_val_addrinfo(ainfo6);
 			free(saddr6);
 			retval = EAI_SERVICE;
 			goto done;
 		}
 		
-		if (nodename == NULL) {
-			*res = append_val_addrinfo(ainfo4, ainfo6);
+		if (NULL != *res) {
+			*res = append_val_addrinfo(*res, ainfo6);
 		}
 		else {
 			*res = ainfo6;
 		}
 		
-		if (*res != NULL) {
-			retval = 0;
-		}
-		else {
-			retval = EAI_NONAME;
-		}
+                retval = 0;
 		goto done;
 	}
 	
-	/* If nodename was specified and was not an IPv4 or IPv6 address, get its information
-	 * from local store or from dns
+	/* If nodename was specified and was not an IPv4 or IPv6
+	   address, get its information from local store or from dns
 	 */
 	if (nodename && !is_ip4 && !is_ip6) {
 		/* First check ETC_HOSTS file
