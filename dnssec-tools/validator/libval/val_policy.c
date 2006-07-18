@@ -899,7 +899,7 @@ int read_res_config_file(val_context_t *ctx)
 			if (inet_pton(AF_INET, cp, &address) != 1) {
                           /* drop ipv6 addresses and keep parsing */
                           if (inet_pton(AF_INET6, cp, &address) == 1) {
-                            val_log (ctx, LOG_WARNING, "Parse warning in file %s: unable to read IPv6 nameserver address.\n", resolv_conf);
+                            val_log (ctx, LOG_WARNING, "Parse warning in file %s: IPv6 nameserver addresses not handled yet, skipping.\n", resolv_conf);
                             FREE (ns->ns_name_n); 
                             ns->ns_name_n = NULL;
                             FREE (ns);
