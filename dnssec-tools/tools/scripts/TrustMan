@@ -129,13 +129,17 @@ sub checkkeys {
     my @baddomains;
     my @gooddomains;
     my @domains;
+    my $named_conf_pat = "trusted-keys";
+    my $dnsval_conf_pat = "trust-anchor";
     push @domains, $opts{'d'} if ($opts{'d'});
     my $res = Net::DNS::Resolver->new;
     # needed to ensure that +dnssec is used on subsequent queries
     my $setdnssec = $res->dnssec(1);
     
-    read_named_conf_file(\%keystorage, $ncfile) if ($ncfile);
-    read_dnsval_conf_file(\%keystorage, $dvfile) if ($dvfile);
+#    read_named_conf_file(\%keystorage, $ncfile) if ($ncfile);
+    read_conf_file($named_conf_pat, \%keystorage, $ncfile) if ($ncfile);
+#    read_dnsval_conf_file(\%keystorage, $dvfile) if ($dvfile);
+    read_conf_file($dnsval_conf_pat, \%keystorage, $ncfile) if ($ncfile);
 
 # if a domain is specified on the command line, we will only
 # check that domain. Otherwise, check all domains found in config files.
@@ -204,6 +208,42 @@ sub checkkeys {
 }
 
 #######################################################################
+# read_conf_file()
+#
+# reads in a config file pointed to by $file
+# looks for trust anchors using $pat and stores key
+# information in $storage
+#
+sub read_conf_file {
+    my ($pat, $storage, $file) = @_;
+    Verbose("reading and parsing trust keys from $file\n");
+    # regexp pulled from Fast.pm
+    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+
+    my $fh = new IO::File;
+    if (!$fh->open("<$file")) {
+	print STDERR "Could not open named configuration file: $file\n";
+	exit (1);
+    }
+    while (<$fh>) {
+	if (/$pat {/) {
+	    while (<$fh>) {
+		last if (/^\s*};/);
+		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
+		    push @{$storage->{$1}},
+		      { flags => $2,
+			protocol => $3,
+			algorithm => $4,
+			key => $5 };
+		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		}
+	    }
+	}
+    }
+    $fh->close;
+}
+
+#######################################################################
 # read_named_conf_file()
 #
 # reads in a named.conf file pointed to by $file and stores key
@@ -237,6 +277,7 @@ sub read_named_conf_file {
     }
     $fh->close;
 }
+
 #######################################################################
 # read_dnsval_conf_file()
 #
