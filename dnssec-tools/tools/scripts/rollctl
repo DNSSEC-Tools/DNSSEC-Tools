@@ -86,46 +86,47 @@ sub main()
 	#
 	if($logfileflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_LOGFILE,$logfileflag);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGFILE,$logfileflag);
 	}
 	if($loglevelflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_LOGLEVEL,$loglevelflag);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGLEVEL,$loglevelflag);
 	}
 	if($rollallflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_ROLLALL);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLALL);
 	}
 	if($rollrecflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_ROLLREC,$rollrecflag);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLREC,$rollrecflag);
 	}
 	if($rollzoneflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_ROLLZONE,$rollzoneflag);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,$rollzoneflag);
 	}
 	if($runqueueflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_RUNQUEUE);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_RUNQUEUE);
 	}
 	if($sleeptimeflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_SLEEPTIME,$sleeptimeflag);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_SLEEPTIME,$sleeptimeflag);
 	}
 	if($statusflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_STATUS);
+		my $ret;
+		my $resp;
+
+		rollmgr_sendcmd(CHANNEL_RETAIN,ROLLCMD_STATUS);
+		($ret, $resp) = rollmgr_getresp();
+		print "\n\n";
+		print "ret  - <$ret>\n";
+		print "resp - <$resp>\n";
 	}
 	if($shutdownflag)
 	{
-		rollmgr_sendcmd(ROLLCMD_SHUTDOWN);
+		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_SHUTDOWN);
 	}
-
-	#
-	# Now that all our commands are sent, we'll kick rollerd to
-	# let it know there are commands a-waiting.
-	#
-	rollmgr_cmdint();
 
 	return(0);
 }

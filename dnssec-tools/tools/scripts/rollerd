@@ -1251,7 +1251,6 @@ sub commander
 {
 	my $cmd;					# Client's command.
 	my $data;					# Command's data.
-	my $data2;					# Second data line.
 
 	rollmgr_log(LOG_TMI,"<command>","checking commands");
 
@@ -1263,12 +1262,13 @@ sub commander
 		#
 		# Get the command, return if there wasn't one.
 		#
-		($cmd,$data,$data2) = rollmgr_getcmd(2);
+		($cmd,$data) = rollmgr_getcmd(5);
+rollmgr_log(LOG_TMI,"<command>","checking command - \"$cmd\"");
 		return if(!defined($cmd));
+rollmgr_log(LOG_TMI,"<command>","command is okay");
 
 		rollmgr_log(LOG_TMI,"<command>","cmd   - \"$cmd\"");
 		rollmgr_log(LOG_TMI,"<command>","data  - \"$data\"") if($data ne "");
-		rollmgr_log(LOG_TMI,"<command>","data2 - \"$data2\"") if($data2 ne "");
 
 		if($cmd eq ROLLCMD_LOGFILE())
 		{
@@ -1280,7 +1280,7 @@ sub commander
 		}
 		elsif($cmd eq ROLLCMD_LOGMSG())
 		{
-			cmd_logmsg($data,$data2);
+			cmd_logmsg($data);
 		}
 		elsif($cmd eq ROLLCMD_ROLLALL())
 		{
@@ -1314,6 +1314,8 @@ sub commander
 		{
 			rollmgr_log(LOG_ERR,"<command>","invalid command  - \"$cmd\"");
 		}
+
+		rollmgr_closechan();
 	}
 
 }
@@ -1539,12 +1541,28 @@ sub cmd_status
 
 	my $lfile;					# Log file.
 	my $lvl;					# Logging level.
+	my $outbuf = "";				# Response buffer.
 
+rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  down in");
 	#
 	# Get the info to report.
 	#
 	$lfile	= rollmgr_logfile();
 	$lvl	= rollmgr_loglevel();
+
+rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  got some info");
+	#
+	# Build status report.
+	#
+	$outbuf  = "status:\n";
+	$outbuf .= "\tboot time         - $boottime\n";
+	$outbuf .= "\trollrec file      - $rollrecfile\n";
+	$outbuf .= "\tlogfile           - $lfile\n";
+	$outbuf .= "\tloglevel          - $lvl\n";
+	$outbuf .= "\ttotal sleeptime   - $sleeptime\n";
+	$outbuf .= "\telapsed sleeptime - $sleepcnt\n";
+
+rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  built outbuf");
 
 	rollmgr_log(LOG_TMI,"<command>","status command received");
 
@@ -1555,6 +1573,11 @@ sub cmd_status
 	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvl");
 	rollmgr_log(LOG_ALWAYS,"<command>","\ttotal sleeptime   - $sleeptime");
 	rollmgr_log(LOG_ALWAYS,"<command>","\telapsed sleeptime - $sleepcnt");
+
+rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  sending response");
+rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  outbuf - <$outbuf>");
+	rollmgr_sendresp(1,$outbuf);
+rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  all done!");
 }
 
 #-----------------------------------------------------------------------------
