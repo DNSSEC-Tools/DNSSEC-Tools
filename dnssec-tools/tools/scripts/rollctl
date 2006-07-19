@@ -118,10 +118,16 @@ sub main()
 		my $resp;
 
 		rollmgr_sendcmd(CHANNEL_RETAIN,ROLLCMD_STATUS);
+
 		($ret, $resp) = rollmgr_getresp();
-		print "\n\n";
-		print "ret  - <$ret>\n";
-		print "resp - <$resp>\n";
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "rollctl:  status failed:  \"$resp\"\n";
+		}
 	}
 	if($shutdownflag)
 	{
