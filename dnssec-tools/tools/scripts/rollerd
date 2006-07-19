@@ -17,6 +17,7 @@
 
 use strict;
 
+use Cwd;
 use Date::Format;
 use Date::Parse;
 use Getopt::Long;
@@ -1539,45 +1540,44 @@ sub cmd_status
 {
 	my $data = shift;				# Command's data.
 
+	my $curdir;					# Directory.
 	my $lfile;					# Log file.
 	my $lvl;					# Logging level.
 	my $outbuf = "";				# Response buffer.
 
-rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  down in");
 	#
 	# Get the info to report.
 	#
+	$curdir = getcwd();
 	$lfile	= rollmgr_logfile();
 	$lvl	= rollmgr_loglevel();
 
-rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  got some info");
 	#
 	# Build status report.
 	#
-	$outbuf  = "status:\n";
+	$outbuf  = "rollerd status:\n";
 	$outbuf .= "\tboot time         - $boottime\n";
+	$outbuf	.= "\tdirectory         - $curdir\n";
 	$outbuf .= "\trollrec file      - $rollrecfile\n";
 	$outbuf .= "\tlogfile           - $lfile\n";
 	$outbuf .= "\tloglevel          - $lvl\n";
-	$outbuf .= "\ttotal sleeptime   - $sleeptime\n";
-	$outbuf .= "\telapsed sleeptime - $sleepcnt\n";
+#	$outbuf .= "\ttotal sleeptime   - $sleeptime\n";
+#	$outbuf .= "\telapsed sleeptime - $sleepcnt\n";
 
-rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  built outbuf");
 
 	rollmgr_log(LOG_TMI,"<command>","status command received");
 
-	rollmgr_log(LOG_ALWAYS,"<command>","status:");
+	rollmgr_log(LOG_ALWAYS,"<command>","rollerd status:");
 	rollmgr_log(LOG_ALWAYS,"<command>","\tboot time         - $boottime");
+	rollmgr_log(LOG_ALWAYS,"<command>","\tdirectory         - $curdir");
 	rollmgr_log(LOG_ALWAYS,"<command>","\trollrec file      - $rollrecfile");
 	rollmgr_log(LOG_ALWAYS,"<command>","\tlogfile           - $lfile");
 	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvl");
-	rollmgr_log(LOG_ALWAYS,"<command>","\ttotal sleeptime   - $sleeptime");
-	rollmgr_log(LOG_ALWAYS,"<command>","\telapsed sleeptime - $sleepcnt");
 
-rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  sending response");
-rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  outbuf - <$outbuf>");
-	rollmgr_sendresp(1,$outbuf);
-rollmgr_log(LOG_ALWAYS,"<command>","cmd_status:  all done!");
+#	rollmgr_log(LOG_ALWAYS,"<command>","\ttotal sleeptime   - $sleeptime");
+#	rollmgr_log(LOG_ALWAYS,"<command>","\telapsed sleeptime - $sleepcnt");
+
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
 }
 
 #-----------------------------------------------------------------------------
