@@ -89,6 +89,8 @@ use strict;
 use Fcntl ':flock';
 use Socket;
 
+use Net::DNS::SEC::Tools::conf;
+
 our $VERSION = "0.01";
 
 our @ISA = qw(Exporter);
@@ -135,6 +137,9 @@ our @EXPORT = qw(
 			 ROLLCMD_SHUTDOWN
 			 ROLLCMD_SLEEPTIME
 			 ROLLCMD_STATUS
+
+			 CHANNEL_RETAIN
+			 CHANNEL_CLOSE
 		);
 
 my $rollmgrid;				# Rollerd's process id.
@@ -192,6 +197,9 @@ my $ADDR	= INADDR_ANY;			# rollerd's server address.
 my $CMDPORT	= 880109;			# rollerd's server port.
 my $EOL		= "\015\012";			# Net-standard end-of-line.
 
+my $CHANNEL_TYPE = PF_UNIX;			# Type of channel we're using.
+my $UNIXSOCK	= "/rollmgr.socket";		# Unix socket name.
+
 my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
@@ -215,6 +223,12 @@ sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
 sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
+
+my $CHANNEL_RETAIN	= 0;
+my $CHANNEL_CLOSE	= 1;
+
+sub CHANNEL_RETAIN		{ return($CHANNEL_RETAIN);	};
+sub CHANNEL_CLOSE		{ return($CHANNEL_CLOSE);	};
 
 my %roll_commands =
 (
@@ -1372,47 +1386,88 @@ sub rollmgr_channel
 {
 	my $server = shift;				# Server/client flag.
 
-	my $proto;					# Protocol to use.
-	my $remote = "localhost";			# Server's hostname.
-	my $serveraddr;					# Server's address.
-	my $conaddr;					# Address in connect().
-
 # print "rollmgr_channel($server):  down in\n";
 
 	#
 	# Close any previously opened sockets.
 	#
-	close(RMTSOCK);
+	close(CLNTSOCK);
 	close(SOCK);
 
-	#
-	# Get the protocol and create a socket.
-	#
-	$proto	= getprotobyname("tcp");
-	socket(SOCK,PF_INET,SOCK_STREAM,$proto);
-
-	#
-	# For the server, we'll set the socket's address and mark it as
-	# connectable.
-	# For the client, we'll get the address of the server and connect
-	# to it.  (Right now, we're only talking to localhost.)
-	#
-	if($server)
-	{
-		setsockopt(SOCK,SOL_SOCKET,SO_REUSEADDR,pack("l",1));
-		bind(SOCK,sockaddr_in($CMDPORT,$ADDR));
-		listen(SOCK,SOMAXCONN);
-	}
-	else
+	if($CHANNEL_TYPE == PF_INET)
 	{
 
-		$remote = "localhost";
+		my $remote = "localhost";		# Server's hostname.
+		my $serveraddr;				# Server's address.
+		my $conaddr;				# Address in connect().
+		my $proto = getprotobyname("tcp");	# Protocol to use.
 
-		$serveraddr = inet_aton($remote);
-		$conaddr = sockaddr_in($CMDPORT,$serveraddr);
+		#
+		# Create a socket.
+		#
+		socket(SOCK,PF_INET,SOCK_STREAM,$proto);
 
-		connect(SOCK,$conaddr);
+		#
+		# For the server, we'll set the socket's address and mark
+		# it as connectable.
+		# For the client, we'll get the address of the server and
+		# connect to it.  (Right now, we're only talking to localhost.)
+		#
+		if($server)
+		{
+			setsockopt(SOCK,SOL_SOCKET,SO_REUSEADDR,pack("l",1));
+			bind(SOCK,sockaddr_in($CMDPORT,$ADDR)) || return(0);
+			listen(SOCK,SOMAXCONN) || return(0);
+		}
+		else
+		{
+			$remote = "localhost";
+
+			$serveraddr = inet_aton($remote);
+			$conaddr = sockaddr_in($CMDPORT,$serveraddr);
+
+			connect(SOCK,$conaddr) || return(0);
+		}
 	}
+	elsif($CHANNEL_TYPE == PF_UNIX)
+	{
+		my $sockdata;				# Path for socket.
+		my $unixsock;				# Unix socket file.
+
+		#
+		# Build the socket name and construct the socket data.
+		#
+		$unixsock = getconfdir() . $UNIXSOCK;
+# print STDERR "rollmgr_channel:  unixsock - <$unixsock>\n";
+		$sockdata = sockaddr_un($unixsock);
+
+		#
+		# For the server, we'll create the socket's file and bind it.
+		# For the client, we'll get the connect to the server's socket.
+		#
+		if($server)
+		{
+			#
+			# Create a Unix domain socket.
+			#
+			socket(SOCK,PF_UNIX,SOCK_STREAM,0) || return(-1);
+
+			unlink($unixsock);
+			bind(SOCK,$sockdata)	|| return(-2);
+			chmod 0600, $unixsock	|| return(-3);
+			listen(SOCK,SOMAXCONN)	|| return(-4);
+		}
+		else
+		{
+			#
+			# Create and connect to a Unix domain socket.
+			#
+			socket(CLNTSOCK,PF_UNIX,SOCK_STREAM,0)	|| return(-1);
+			connect(CLNTSOCK,$sockdata)		|| return(0);
+		}
+	}
+
+	return(1);
 }
 
 #-----------------------------------------------------------------------------
@@ -1426,8 +1481,7 @@ sub rollmgr_closechan
 {
 
 # print "rollmgr_closechan:  down in\n";
-
-	close(RMTSOCK);
+	close(CLNTSOCK);
 }
 
 #-----------------------------------------------------------------------------
@@ -1444,12 +1498,8 @@ sub rollmgr_getcmd
 
 	my $cmd;				# Client's command.
 	my $data;				# Command's data.
-	my $user;				# ID info of sender.
 
-	my $raddr;				# Client's address.
-	my $rmtaddr;				# Client's address.
-	my $rmtname;				# Client's name.
-	my $rport;				# Remote port.
+	my $accresp;				# Response from accept().
 
 	my $oldhandler = $SIG{ALRM};		# Old alarm handler.
 
@@ -1466,27 +1516,45 @@ sub rollmgr_getcmd
 	#
 	# Accept the waiting connection.
 	#
-	close(RMTSOCK);
-	$rmtaddr = accept(RMTSOCK,SOCK);
-	return if(!defined($rmtaddr));
+	$accresp = accept(CLNTSOCK,SOCK);
+	return if(!defined($accresp));
 
 	#
-	# Convert the client's address into a hostname.
+	# Do any required domain-specific checks.
 	#
-	($rport,$raddr) = sockaddr_in($rmtaddr);
-	$rmtname = gethostbyaddr($raddr,AF_INET);
-# print "rollmgr_getcmd:  connection from <$rmtname>\n";
-	return("bad host","$rmtname","") if($rmtname ne "localhost");
+	if($CHANNEL_TYPE == PF_INET)
+	{
+		my $raddr;				# Client's address.
+		my $clntname;				# Client's name.
+		my $rport;				# Remote port.
+
+		#
+		# Convert the client's address into a hostname.
+		#
+		($rport,$raddr) = sockaddr_in($accresp);
+		$clntname = gethostbyaddr($raddr,AF_INET);
+# print "rollmgr_getcmd:  connection from <$clntname>\n";
+
+		#
+		# Ensure we're coming from the localhost.
+		#
+		return("bad host","$clntname","") if($clntname ne "localhost");
+	}
+	elsif($CHANNEL_TYPE == PF_UNIX)
+	{
+		#
+		# Nothing to do now for Unix-domain sockets.
+		#
+	}
+
 
 	#
 	# Get the command and data, and lop off the trailing goo.
 	#
-	$cmd  = <RMTSOCK>;
-	$data = <RMTSOCK>;
-	$user = <RMTSOCK>;
+	$cmd  = <CLNTSOCK>;
+	$data = <CLNTSOCK>;
 	$cmd  =~ s/ $EOL$//;
 	$data =~ s/ $EOL$//;
-	$user =~ s/ $EOL$//;
 
 	#
 	# Turn off the alarm and reset the alarm handler.
@@ -1497,7 +1565,7 @@ sub rollmgr_getcmd
 	#
 	# Close the remote socket and return the client's data.
 	#
-	return($cmd,$data,$user);
+	return($cmd,$data);
 }
 
 #-----------------------------------------------------------------------------
@@ -1509,11 +1577,11 @@ sub rollmgr_getcmd
 #
 sub rollmgr_sendcmd
 {
-	my $cmd	 = shift;				# Command to send.
-	my $wait = shift;				# Wait flag.
-	my $data = shift;				# Data for command.
-	my $user = `id`;				# User info.
+	my $close = shift;				# Close flag.
+	my $cmd	  = shift;				# Command to send.
+	my $data  = shift;				# Data for command.
 
+	my $oldsel;					# Currently selected fh.
 	my $resp;					# Response.
 	my $ret	 = 1;					# Return code.
 
@@ -1521,43 +1589,34 @@ sub rollmgr_sendcmd
 
 	return(0) if(rollmgr_verifycmd($cmd) == 0);
 
-	chomp $user;
+	#
+	# Create the communications channel to rollerd and send the message.
+	#
+	return(0) if(rollmgr_channel(0) != 1);
 
 	#
-	# Create the communications channel to rollerd and send
-	# the message.
+	# Make CLNTSOCK autoflush its output.
 	#
-	rollmgr_channel(0);
-# print "rollmgr_sendcmd:  got channel\n";
-	print SOCK "$cmd $EOL";
-	print SOCK "$data $EOL";
-	print SOCK "$user $EOL";
-# print "rollmgr_sendcmd:  commands sent\n";
+	$oldsel = select(CLNTSOCK);
+	$| = 1;
 
 	#
-	# If the user wants a response, we'll try to get one.
+	# Send the command and data.
 	#
-	if($wait)
-	{
-# print "rollmgr_sendcmd:  waiting for response\n";
-		#
-		# Now that all our commands are sent, we'll kick rollerd to
-		# let it know there are commands a-waiting.
-		#
-		rollmgr_cmdint();
+	print CLNTSOCK "$cmd $EOL";
+	print CLNTSOCK "$data $EOL";
 
-		#
-		# Get a response from rollerd.
-		#
-# print "rollmgr_sendcmd:  calling rollmgr_getresp($cmd)\n";
-		($ret, $resp) = rollmgr_getresp($cmd);
-# print "rollmgr_sendcmd:  getresp() returned ($ret) ($resp)\n";
-	}
+	#
+	# Select the previous file handle once more.
+	#
+	select($oldsel);
 
-	close(SOCK);
+	#
+	# Close the socket if the client doesn't want a response.
+	#
+	close(CLNTSOCK) if($close);
 
-# print "rollmgr_sendcmd:  returning\n";
-	return($ret, $resp);
+	return(1);
 }
 
 #-----------------------------------------------------------------------------
@@ -1571,19 +1630,26 @@ sub rollmgr_sendresp
 	my $retcode = shift;				# Return code.
 	my $respmsg = shift;				# Response message.
 
-print "rollmgr_sendresp:  down in\n";
+	my $oldsel;					# Currently selected fh.
 
-print "rollmgr_sendresp:  sending <$retcode> <$respmsg>\n";
+# print "rollmgr_sendresp:  down in\n";
 
-print "rollmgr_sendresp:  retcode - <$retcode>";
-print "rollmgr_sendresp:  respmsg - <$respmsg>";
-my $r1; my $r2;
-$r1 =
-	print RMTSOCK "$retcode $EOL";
-$r2 =
-	print RMTSOCK "$respmsg $EOL";
+	#
+	# Make CLNTSOCK autoflush its output.
+	#
+	$oldsel = select(CLNTSOCK);
+	$| = 1;
 
-print "rollmgr_sendresp:  r1 - <$r1>\tr2 - <$r2>\n\n";
+	#
+	# Send the return code and response message.
+	#
+	print CLNTSOCK "$retcode $EOL";
+	print CLNTSOCK "$respmsg $EOL";
+
+	#
+	# Select the previous file handle once more.
+	#
+	select($oldsel);
 }
 
 #-----------------------------------------------------------------------------
@@ -1596,7 +1662,6 @@ print "rollmgr_sendresp:  r1 - <$r1>\tr2 - <$r2>\n\n";
 #
 sub rollmgr_getresp
 {
-	my $cmd	 = shift;				# Command to send.
 	my $retcode = -1;				# Return code.
 	my $respbuf;					# Response buffer.
 
@@ -1616,21 +1681,19 @@ sub rollmgr_getresp
 	#
 	# Get data from rollerd and append it to our response buffer.
 	#
-	$retcode = <RMTSOCK>;
-	while(<RMTSOCK>)
-#	$retcode = <SOCK>;
-#	while(<SOCK>)
+	$retcode = <CLNTSOCK>;
+	while(<CLNTSOCK>)
 	{
 		$respbuf .= $_;
 	}
+	$retcode =~ s/ $EOL$//;
+	$respbuf =~ s/ $EOL$//;
 
 	#
 	# Reset the alarm handler and return the response buffer.
 	#
 	alarm(0);
 	$SIG{ALRM} = $oldhandler;
-print "rollmgr_getresp:  retcode - <$retcode>\n";
-print "rollmgr_getresp:  respbuf - <$respbuf>\n";
 	return($retcode,$respbuf);
 }
 
@@ -1698,7 +1761,10 @@ manager.
   ($cmd,$data) = rollmgr_getcmd();
   $ret = rollmgr_verifycmd($cmd);
 
-  rollmgr_sendcmd(ROLLCMD_ROLLZONE,"example.com");
+  rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,"example.com");
+
+  rollmgr_sendcmd(CHANNEL_RETAIN,ROLLCMD_ROLLZONE,"example.com");
+  ($retcode, $respmsg) = rollmgr_getresp();
 
 =head1 DESCRIPTION
 
@@ -1846,21 +1912,17 @@ changed to allow remote connections, if this is found to be needed.
 =head2 B<rollmgr_getcmd()>
 
 I<rollmgr_getcmd()> retrieves a command sent over I<rollerd>'s communications
-channel by a client program.  The command, the command's data, and some user
-information are sent in each message.
+channel by a client program.  The command and the command's data are sent in
+each message.
 
-The command, the command's data, and a set of sending-user information are
-returned.  No verification of these data are performed by I<rollmgr_getcmd()>.
+The command and the command's data are returned to the caller.
 
-The sending-user information is the output of the I<id> command.  There is no
-trusted path available in the current networking system, so this information
-is informational and B<cannot> be trusted to be accurate.
-
-=head2 B<rollmgr_sendcmd(cmd,data)>
+=head2 B<rollmgr_sendcmd(closeflag,cmd,data)>
 
 I<rollmgr_sendcmd()> sends a command to I<rollerd>.  The command must be one
 of the commands from the table below.  This interface creates a communications
-channel to I<rollerd>, sends the message, and closes the channel.
+channel to I<rollerd> and sends the message.  The channel is not closed, in
+case the caller wants to receive a response from I<rollerd>.
 
 The available commands and their required data are:
 
@@ -1879,7 +1941,21 @@ The available commands and their required data are:
 The data aren't checked for validity by I<rollmgr_sendcmd()>; validity
 checking is a responsibility of I<rollerd>.
 
+If the caller does not need a response from I<rollerd>, then I<closeflag>
+should be set to B<CHANNEL_CLOSE>; if a response is required then
+I<closeflag> should be B<CHANNEL_RETAIN>.  These values are boolean values,
+and the constants aren't required.
+
 On success, 1 is returned.  If an invalid command is given, 0 is returned.
+
+=head2 B<rollmgr_getresp()>
+
+After executing a client command sent via I<rollmgr_sendcmd()>, I<rollerd>
+will send a response to the client.  I<rollmgr_getresp()> allows
+the client to retrieve the response.
+
+A return code and a response string are returned, in that order.  Both are
+specific to the command sent.
 
 =head2 B<rollmgr_verifycmd(cmd)>
 
