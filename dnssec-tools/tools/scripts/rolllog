@@ -1,0 +1,145 @@
+#!/usr/bin/perl
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# rolllog
+#
+#	This script writes log messages in the roll-over manager's log file.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::rollmgr;
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my $loglevel;				# Logging level.
+
+my $OPT_HELP	 = "help";
+my $OPT_LOGLEVEL = "loglevel";
+
+my %opts = ();				# Filled option array.
+my @opts =
+(
+	"loglevel=s",			# Logging level.
+	"help",				# Give a usage message and exit.
+);
+
+#######################################################################
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	main()
+#
+sub main
+{
+	my $logmsg = "";			# The constructed log message.
+
+	#
+	# Check our arguments.
+	#
+	optsandargs();
+	usage() if(@ARGV == 0);
+
+	#
+	# Build our log message from the remaining arguments.
+	#
+	$logmsg = join(" ",@ARGV);
+
+	rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGMSG,"$loglevel\n$logmsg");
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	optsandargs()
+#
+sub optsandargs
+{
+	my $argc = @ARGV;				# Number of arguments.
+	my $dir;					# Execution directory.
+
+	#
+	# Check our options.
+	#
+	GetOptions(\%opts,@opts);
+	$loglevel  = $opts{$OPT_LOGLEVEL} || usage();
+
+	usage() if(defined($opts{$OPT_HELP}));
+
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  rolllog [-loglevel <level> <log_message> | -help]\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+rolllog - DNSSEC-Tools utility to write messages to the DNSSEC roll-over
+manager's log file.
+
+=head1 SYNOPSIS
+
+  rolllog -loglevel <level> <log_message>
+
+=head1 DESCRIPTION
+
+The I<rolllog> program writes log messages to the DNSSEC roll-over manager's
+log file.  I<rolllog> does not actually write the messages itself; rather, it
+sends them to the I<rollerd> roll-over daemon to write the messages.
+I<rollerd> keeps track of a logging level, and only messages of that level or
+higher are written to the log file.
+
+=head1 OPTIONS
+
+The following options are recognized:
+
+=over 4
+
+=item I<-loglevel E<lt>levelE<gt>>
+
+Logging level of this message.  The valid levels are defined in
+B<rollmgr.pm>(3).   This option is required.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+Net::DNS::SEC::Tools::rollmgr.pm(3),
+
+rollctl(8),
+rollerd(8),
+
+=cut
