@@ -117,7 +117,7 @@ sub main()
 		my $ret;
 		my $resp;
 
-		rollmgr_sendcmd(CHANNEL_RETAIN,ROLLCMD_STATUS);
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_STATUS);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
