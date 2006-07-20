@@ -46,6 +46,8 @@ exit($ret);
 sub main
 {
 	my $logmsg = "";			# The constructed log message.
+	my $ret;				# Return code from rollerd.
+	my $resp;				# Return message from rollerd.
 
 	#
 	# Check our arguments.
@@ -58,7 +60,19 @@ sub main
 	#
 	$logmsg = join(" ",@ARGV);
 
-	rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGMSG,"$loglevel\n$logmsg");
+	#
+	# Send the logging command to rollerd.
+	#
+	rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGMSG,"($loglevel)$logmsg");
+
+	#
+	# Give an error message if rollerd didn't like something. 
+	# 
+	($ret, $resp) = rollmgr_getresp();
+	if($ret != ROLLCMD_RC_OKAY)
+	{
+		print STDERR "rolllog:  rollerd was unable to write message to log file:  \"$resp\"\n";
+	}
 }
 
 #-----------------------------------------------------------------------------
