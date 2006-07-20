@@ -139,8 +139,9 @@ our @EXPORT = qw(
 			 ROLLCMD_STATUS
 
 			 ROLLCMD_RC_OKAY
+			 ROLLCMD_RC_BADLEVEL
 
-			 CHANNEL_RETAIN
+			 CHANNEL_WAIT
 			 CHANNEL_CLOSE
 		);
 
@@ -226,14 +227,16 @@ sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 
-my $ROLLCMD_RC_OKAY	= 1;
+my $ROLLCMD_RC_OKAY	= 0;
+my $ROLLCMD_RC_BADLEVEL	= 1;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);	};
+sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);	};
 
-my $CHANNEL_RETAIN	= 0;
+my $CHANNEL_WAIT	= 0;
 my $CHANNEL_CLOSE	= 1;
 
-sub CHANNEL_RETAIN		{ return($CHANNEL_RETAIN);	};
+sub CHANNEL_WAIT		{ return($CHANNEL_WAIT);	};
 sub CHANNEL_CLOSE		{ return($CHANNEL_CLOSE);	};
 
 my %roll_commands =
@@ -1769,7 +1772,7 @@ manager.
 
   rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,"example.com");
 
-  rollmgr_sendcmd(CHANNEL_RETAIN,ROLLCMD_ROLLZONE,"example.com");
+  rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZONE,"example.com");
   ($retcode, $respmsg) = rollmgr_getresp();
 
 =head1 DESCRIPTION
@@ -1949,7 +1952,7 @@ checking is a responsibility of I<rollerd>.
 
 If the caller does not need a response from I<rollerd>, then I<closeflag>
 should be set to B<CHANNEL_CLOSE>; if a response is required then
-I<closeflag> should be B<CHANNEL_RETAIN>.  These values are boolean values,
+I<closeflag> should be B<CHANNEL_WAIT>.  These values are boolean values,
 and the constants aren't required.
 
 On success, 1 is returned.  If an invalid command is given, 0 is returned.
