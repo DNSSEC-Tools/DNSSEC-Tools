@@ -1392,10 +1392,15 @@ sub cmd_loglevel
 #
 # Purpose:	Write a log message to the log file.
 #
+#		The way we check for a valid log level is only good in a
+#		single-threaded environment.
+#
 sub cmd_logmsg
 {
-	my $loglvl = shift;			# Logging level.
-	my $logmsg = shift;			# Log message.
+	my $logstr = shift;			# Log level and message.
+
+	my $loglvl;				# Logging level.
+	my $logmsg;				# Log message.
 
 	my $oldlvl;				# Real logging level.
 	my $goodlvl;				# Real version of new level.
@@ -1404,23 +1409,29 @@ sub cmd_logmsg
 
 	#
 	# Check the validity of the caller's log level.  If it's invalid,
+	#
+	$logstr =~ /^\((\w+)\)(.*)$/;
+	$loglvl = $1;
+	$logmsg = $2;
+
+	#
+	# Check the validity of the caller's log level.  If it's invalid,
 	# rollmgr_loglevel() will return a failure and we'll return.
 	#
-	chomp $loglvl;
 	$oldlvl = rollmgr_loglevel($loglvl,0);
 	if($oldlvl < 0)
 	{
 		rollmgr_log(LOG_INFO,"<command>","invalid loglevel ($loglvl) specified for logmsg command");
+		rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid loglevel \"$loglvl\"");
 		return;
 	}
 
 	#
 	# Reset the logging level and write the caller's message.
 	#
-rollmgr_log(LOG_ALWAYS,"------>","loglvl - <$loglvl>");
-rollmgr_log(LOG_ALWAYS,"------>","logmsg - <$logmsg>");
 	$goodlvl = rollmgr_loglevel($oldlvl,0);
-	rollmgr_log($goodlvl,"<command>",$logmsg);
+	rollmgr_log($goodlvl,"<user msg>",$logmsg);
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"message written to log");
 }
 
 #-----------------------------------------------------------------------------
