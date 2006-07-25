@@ -308,7 +308,7 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
     the_set->rrs_ans_kind = SR_ANS_UNSET;
 	*status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER; 
                                                                                                                           
-    return VAL_ERROR;
+    return VAL_GENERIC_ERROR;
 }
 
 #define TOP_OF_QNAMES   0
@@ -607,7 +607,7 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 		/* Cover error conditions first */
 		/* SOA checks will appear during sanity checks later on */
 		if((	set_ans_kind(response->di_qnames->qnc_name_n, type_h, class_h, 
-					as->_as.ac_data, &as->val_ac_status) == VAL_ERROR)
+					as->_as.ac_data, &as->val_ac_status) == VAL_GENERIC_ERROR)
 				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->_as.ac_data, &as->val_ac_status)
 				|| NSEC_is_wrong_answer (response->di_qnames->qnc_name_n, type_h, class_h, 
 					as->_as.ac_data, &as->val_ac_status)) {

@@ -17,7 +17,7 @@
  * Process error codes 
  *************************************************** 
  */
-#define VAL_ERROR	-1 /* Generic error */
+#define VAL_GENERIC_ERROR	-1 /* Generic error */
 #define VAL_NOT_IMPLEMENTED	-2	/* Functionality not yet implemented */
 #define VAL_RESOURCE_UNAVAILABLE -3	/*Some resource (crypto or memory possibly) was unavailable.*/
 #define VAL_BAD_ARGUMENT -4 /*Bad arguments passed as parameters.*/
