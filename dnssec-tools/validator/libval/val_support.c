@@ -499,7 +499,7 @@ int check_label_count (
     u_int8_t owner_labels = wire_name_labels (the_set->rrs.val_rrset_name_n);
     u_int8_t sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
                                                                                                                           
-    if (sig_labels > owner_labels) return VAL_ERROR;
+    if (sig_labels > owner_labels) return VAL_GENERIC_ERROR;
                                                                                                                           
     *is_a_wildcard = (owner_labels - sig_labels);
                                                                                                                           
