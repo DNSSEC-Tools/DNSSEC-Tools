@@ -21,7 +21,13 @@ install:: installrulefiles
 
 installrulefiles:
 	$(MKPATH) $(CONFDIR)
-	$(INSTALL) dnssec/dnssec-tools.conf $(CONFDIR)
+	if test -f $(CONFDIR)/dnssec-tools.conf ; then \\
+		echo "**********************************************************************" ; \\
+		echo "*** Not installing over $(CONFDIR)/dnssec-tools.conf" ; \\
+		echo "**********************************************************************" ; \\
+	else \\
+		$(INSTALL) dnssec/dnssec-tools.conf $(CONFDIR) ; \\
+	fi
 
 ';
 }
