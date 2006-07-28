@@ -518,6 +518,21 @@ sub parse_line
 	  } else {
 	      error("bad txtdata in TXT");
 	  }
+      } elsif (/\G(sshfp)[ \t]+/igc) {
+	  if (/\G(\d+)\s+(\d+)\s+(.*)$pat_skip$/gc) {
+	      push @zone, {
+			   Line    => $ln,
+			   name    => $domain,
+			   type    => "SSHFP",
+			   ttl     => $ttl,
+			   class   => "IN",
+			   algorithm => $1,
+			   fptype => $2,
+			   fingerprint => $3,
+			  };
+	  } else {
+	      error("bad data in in SSHFP");
+	  }
       } elsif (/\G(loc)[ \t]+/igc) {
 	  # parsing stolen from Net::DNS::RR::LOC
 	  if (/\G (\d+) \s+		# deg lat
