@@ -41,6 +41,7 @@ BEGIN {
 	 q{acme.com. IN AAAA 2001:688:0:102::1:2},
 	 q{acme.com. IN AAAA 2001:688:0:102::3},
 	 q{acme.com. IN RP abuse.acme.com. acme.com.},
+	 q{acme.com. IN SSHFP 2 1 123456789abcdef67890123456789abcdef67890},
 	 );
 }
 
