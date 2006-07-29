@@ -1,8 +1,10 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>genkrf - Generate a I&lt;keyrec&gt; file from existing Key Signing Key
+<title>genkrf - Generate a I&lt;keyrec&gt; file from Key Signing Key
          and/or Zone Signing Key (ZSK) files.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -17,6 +19,13 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#options">OPTIONS</a></li>
+	<ul>
+
+		<li><a href="#general_genkrf_options">General <em>genkrf</em> Options</a></li>
+		<li><a href="#kskrelated_options">KSK-related Options</a></li>
+		<li><a href="#zskrelated_options">ZSK-related Options</a></li>
+	</ul>
+
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
@@ -28,7 +37,7 @@
 </p>
 <hr />
 <h1><a name="name">NAME</a></h1>
-<p>genkrf - Generate a <em>keyrec</em> file from existing Key Signing Key (KSK)
+<p>genkrf - Generate a <em>keyrec</em> file from Key Signing Key (KSK)
          and/or Zone Signing Key (ZSK) files.</p>
 <p>
 </p>
@@ -42,109 +51,165 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>This script generates a <em>keyrec</em> file (see <code>zonesigner(1)</code> for details) from
-existing KSK and/or ZSK files.  It generates new KSK and/or ZSK keys if
-needed.</p>
+<p>The <em>genkrf</em> script generates a <em>keyrec</em> file from KSK and/or ZSK files.  It
+generates new KSK and/or ZSK keys if needed.</p>
 <p>The name of the <em>keyrec</em> file to be generated is given by the <em>-krfile</em>
-option.  If this option is not specified, &lt;zone-name&gt;.krf is used as the
-name of the <em>keyrec</em> file.  If the <em>keyrec</em> file already exists, it will
-be overwritten with new <em>keyrec</em> definitions.</p>
-<p>The <em>zone-file</em> argument is required.  It specifies the name of the zone
-file from which the signed zone file was created.  The optional
-<em>signed-zone-file</em> argument specifies the name of the signed zone file.
-If it is not given, then it defaults to ``<em>&lt;zone-file</em>&gt;.signed''.</p>
+option.  If this option is not specified, <strong>&lt;zone-name&gt;.krf</strong> is used
+as the
+name of the <em>keyrec</em> file.  If the <em>keyrec</em> file already exists, it will be
+overwritten with new <em>keyrec</em> definitions.</p>
+<p>The <em>zone-file</em> argument is required.  It specifies the name of the zone file
+from which the signed zone file was created.  The optional <em>signed-zone-file</em>
+argument specifies the name of the signed zone file.  If it is not given, then
+it defaults to <strong>&lt;zone-file&gt;.signed</strong>.</p>
 <p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
-<p><strong>genkrf</strong> has the following options:</p>
+<p><em>genkrf</em> has a number of options that assist in creation of the <em>keyrec</em>
+file.  These options will be set to the first value found from this search
+path:</p>
+<pre>
+    command line options
+    DNSSEC-Tools configuration file
+    DNSSEC-Tools defaults</pre>
+<p>See <em>tooloptions.pm(3)</em> for more details.
+Exceptions to this are given in the option descriptions.</p>
+<p>The <em>genkrf</em> options are described below.</p>
+<p>
+</p>
+<h2><a name="general_genkrf_options">General <em>genkrf</em> Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dzone">-zone</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dzone_zone_2dname">-zone <em>zone-name</em></a></strong>
+
 <dd>
-This option specifies the name of the zone.  If it is not given then
-<em>zone-file</em> will be used as the name of the zone.
+<p>This option specifies the name of the zone.  If it is not given then
+<em>zone-file</em> will be used as the name of the zone.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dkrfile">-krfile</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dkrfile_keyrec_2dfile">-krfile <em>keyrec-file</em></a></strong>
+
 <dd>
-This option specifies the name of the keyrec file.  If it is not given
-then <em>zone-name</em>.krf will be used as the name of the keyrec file to
-be generated.
+<p>This option specifies the name of the <em>keyrec</em> file to be generated.
+If it is not given, then <strong>&lt;zone-name&gt;.krf</strong> will be used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dksk">-ksk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dalgorithm_algorithm">-algorithm <em>algorithm</em></a></strong>
+
 <dd>
-This option specifies the KSK being used to sign the zone.  If this
-option is not given, a new KSK will be created.
+<p>This option specifies the algorithm used to generate encryption keys.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dkskdir">-kskdir</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dendtime_endtime">-endtime <em>endtime</em></a></strong>
+
 <dd>
-This option specifies the absolute or relative path of the directory
+<p>This option specifies the time that the signature on the zone expires,
+measured in seconds.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2drandom_random_2ddevice">-random <em>random-device</em></a></strong>
+
+<dd>
+<p>Source of randomness used to generate the zone's keys. See the man
+page for <em>dnssec-signzone</em> for the valid format of this field.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+
+<dd>
+<p>Display additional messages during processing.  If this option is given at
+least once, then a message will be displayed indicating the successful
+generation of the <em>keyrec</em> file.  If it is given twice, then the values of
+all options will also be displayed.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dhelp">-help</a></strong>
+
+<dd>
+<p>Display a usage message.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="kskrelated_options">KSK-related Options</a></h2>
+<dl>
+<dt><strong><a name="item__2dksk_ksk_2dname">-ksk <em>KSK-name</em></a></strong>
+
+<dd>
+<p>This option specifies the KSK's key file being used to sign the zone.  If this
+option is not given, a new KSK will be created.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dkskdir_ksk_2ddirectory">-kskdir <em>KSK-directory</em></a></strong>
+
+<dd>
+<p>This option specifies the absolute or relative path of the directory
 where the KSK resides.  If this option is not given, it defaults to
-the current directory ``.''.
+the current directory ``.''.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzskcur">-zskcur</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksklength_ksk_2dlength">-ksklength <em>KSK-length</em></a></strong>
+
 <dd>
-This option specifies the current ZSK being used to sign the zone.
-If this option is not given, a new ZSK will be created.
+<p>This option specifies the length of the KSK encryption key.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzskpub">-zskpub</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksklife_ksk_2dlifespan">-ksklife <em>KSK-lifespan</em></a></strong>
+
 <dd>
-This option specifies the published ZSK for the zone.  If this option
-is not given, a new ZSK will be created.
+<p>This option specifies the lifespan of the KSK encryption key.  This lifespan
+is <strong>not</strong> inherent to the key itself.  It is <strong>only</strong> used to determine when
+the KSK must be rolled over.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzskdir">-zskdir</a></strong><br />
-</dt>
-<dd>
-This option specifies the absolute or relative path of the directory
-where the ZSKs reside.  If this option is not given, it defaults to
-the current directory ``.''.
-</dd>
-<p></p>
-<dt><strong><a name="item__2dendtime">-endtime</a></strong><br />
-</dt>
-<dd>
-This option specifes the time that the signature on the zone expires,
-measured in seconds.  See the man page for <em>dnssec-signzone</em> for the
-valid format of this field.  If this option is not specified, its
-value is read from the /usr/local/etc/dnssec/dnssec-tools.conf file.
-If this file does not specify an endtime field, the value of this
-option defaults to 2592000 seconds (30 days).
-</dd>
-<p></p>
-<dt><strong><a name="item__2drandom">-random</a></strong><br />
-</dt>
-<dd>
-Source of randomness used to generate the zone's keys. See the man
-page for <em>dnssec-signzone</em> for the valid format of this field.  If
-this option is not specified, its value is read from the
-/usr/local/etc/dnssec/dnssec-tools.conf file.  If this file does not
-specify a random field, the value of this option defaults to 
-``/dev/urandom''.
-</dd>
-<p></p></dl>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="zskrelated_options">ZSK-related Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dhelp">-help</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dzskcur_zsk_2dname">-zskcur <em>ZSK-name</em></a></strong>
+
 <dd>
-Display a usage message.
+<p>This option specifies the current ZSK being used to sign the zone.
+If this option is not given, a new ZSK will be created.</p>
 </dd>
-<p></p></dl>
+</li>
+<dt><strong><a name="item__2dzskpub_zsk_2dname">-zskpub <em>ZSK-name</em></a></strong>
+
+<dd>
+<p>This option specifies the published ZSK for the zone.  If this option
+is not given, a new ZSK will be created.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzskdir_zsk_2ddirectory">-zskdir <em>ZSK-directory</em></a></strong>
+
+<dd>
+<p>This option specifies the absolute or relative path of the directory
+where the ZSKs reside.  If this option is not given, it defaults to
+the current directory ``.''.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzsklength_zsk_2dlength">-zsklength <em>ZSK-length</em></a></strong>
+
+<dd>
+<p>This option specifies the length of the ZSK encryption key.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzsklife_zsk_2dlifespan">-zsklife <em>ZSK-lifespan</em></a></strong>
+
+<dd>
+<p>This option specifies the lifespan of the ZSK encryption key.  This lifespan
+is <strong>not</strong> inherent to the key itself.  It is <strong>only</strong> used to determine when
+the ZSK must be rolled over.</p>
+</dd>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -155,8 +220,13 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 </p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
-<p><strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
-<p><strong>zonesigner(1)</strong></p>
+<p><em>dnssec-signzone(8)</em>,
+<em>zonesigner(8)</em></p>
+<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::conf(5)</strong>,
+<strong>Net::DNS::SEC::Tools::keyrec(5)</strong></p>
 
 <!--#include virtual="/page-bottom.html" -->
 </body>

@@ -1,0 +1,26 @@
+usage: genkrf [options] <zone-file> [signed-zone-file]
+
+	<zone-file>                     name of the zone file
+	[signed-zone-file]              name of the signed zone file
+
+	options:
+		-zone ZONE              name of the zone
+		-krfile KEYREC          zone's keyrec file
+		-algorithm ALGORITHM    encryption algorithm
+		-endtime ENDTIME        end time of signature
+		-random RANDOMDEV       source of randomness
+
+		-ksk KSK                name of the KSK
+		-kskdir PATH            KSK directory
+		-ksklength KEYLEN       KSK length
+		-ksklife LIFESPAN       KSK lifespan
+
+		-zskcur ZSKCUR          name of the current ZSK
+		-zskpub ZSKPUB          name of the published ZSK
+		-zskdir PATH            ZSK directory
+		-zsklength KEYLEN       ZSK length
+		-zsklife LIFESPAN       ZSK lifespan
+
+		-verbose                verbose output
+		-version                display version number
+		-help                   help message

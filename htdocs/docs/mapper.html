@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>mapper - Create graphical maps of DNS zone data</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -50,151 +52,153 @@ problem spots.</p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item__2dh">-h</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dh">-h</a></strong>
+
 <dd>
-Help summary.
+<p>Help summary.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2do_outfile_2epng">-o OUTFILE.png</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2do_outfile_2epng">-o OUTFILE.png</a></strong>
+
 <dd>
-Saves the results to a given filename.  If this option is not given, the map
-will be saved to <strong>map.png</strong>.
+<p>Saves the results to a given filename.  If this option is not given, the map
+will be saved to <strong>map.png</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dr">-r</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dr">-r</a></strong>
+
 <dd>
-Lists resources records assigned to each node within the map.
+<p>Lists resources records assigned to each node within the map.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-t TYPE,TYPE...</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-t TYPE,TYPE...</a></strong>
+
 <dd>
-Adds the data portion of a resource record to the displayed node
+<p>Adds the data portion of a resource record to the displayed node
 information.  Data types passed will be automatically upper-cased for
 ease of use.  Example usage: <em>-t A</em> will add IPv4 addresses to
-all displayed nodes that have A records.
+all displayed nodes that have A records.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dl">-L</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dl">-L</a></strong>
+
 <dd>
-Adds a legend to the map.
+<p>Adds a legend to the map.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_l">-l (neato|dot|twopi|circo|fdp)</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_l">-l (neato|dot|twopi|circo|fdp)</a></strong>
+
 <dd>
-Selects a layout format.  The default is <em>neato</em> which is circular in
+<p>Selects a layout format.  The default is <em>neato</em> which is circular in
 pattern.  See the documentation on the <em>graphviz</em> package and the
-<strong>GraphViz</strong> Perl module for further details.
+<strong>GraphViz</strong> Perl module for further details.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2da">-a</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2da">-a</a></strong>
+
 <dd>
-Allows overlapping of nodes.  This makes much tighter maps with the
+<p>Allows overlapping of nodes.  This makes much tighter maps with the
 downside being that they are somewhat cluttered.  Maps of extremely
-large zones will be difficult to decipher if this option is not used.
+large zones will be difficult to decipher if this option is not used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2de_weight">-e WEIGHT</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2de_weight">-e WEIGHT</a></strong>
+
 <dd>
-Assigns an edge weight to edges.  In theory &gt;1 means shorter, &lt;1 means
+<p>Assigns an edge weight to edges.  In theory &gt;1 means shorter, &lt;1 means
 longer although I don't believe as implemented it will have any
-effect.  Should work better in the future.
+effect.  Should work better in the future.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2df_integer">-f INTEGER</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2df_integer">-f INTEGER</a></strong>
+
 <dd>
-Uses the INTEGER value for the font size to print node names with.
-Defaults to 10.
+<p>Uses the INTEGER value for the font size to print node names with.
+Defaults to 10.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dw_warntime">-w WARNTIME</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dw_warntime">-w WARNTIME</a></strong>
+
 <dd>
-How far in advance that warnings are turned on for signed
+<p>How far in advance that warnings are turned on for signed
 resource records that are about to expire.  The default is 7 days.
-The warning time is measured in seconds.
+The warning time is measured in seconds.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2di_regex">-i REGEX</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2di_regex">-i REGEX</a></strong>
+
 <dd>
-Ignore record types matching a <em>REGEX</em> regular expression.
+<p>Ignore record types matching a <em>REGEX</em> regular expression.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2ds_type_2ctype_2e_2e_2e">-s TYPE,TYPE...</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2ds_type_2ctype_2e_2e_2e">-s TYPE,TYPE...</a></strong>
+
 <dd>
-Skips a list of record types from being analyzed or displayed in the map.
+<p>Skips a list of record types from being analyzed or displayed in the map.
 By default, this is set to NSEC and CNAME in order to reduce clutter.
-Setting it to ``'' will display these results again.
+Setting it to ``'' will display these results again.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-T TYPE,TYPE...</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dt_type_2ctype_2e_2e_2e">-T TYPE,TYPE...</a></strong>
+
 <dd>
-Only process record types of type <em>TYPE</em>.  This is the converse of the
+<p>Only process record types of type <em>TYPE</em>.  This is the converse of the
 <em>-s</em> option.  It is not meaningful to use both <em>-s</em> and <em>-t</em> in the same
 invocation.  They will both work at once, however, so if <em>-T</em> specifies a
-type which <em>-s</em> excludes, it will not be shown.
+type which <em>-s</em> excludes, it will not be shown.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dg">-g</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dg">-g</a></strong>
+
 <dd>
-Attempts to cluster nodes around the domain name.  For 'dot' layouts,
+<p>Attempts to cluster nodes around the domain name.  For 'dot' layouts,
 this actually means drawing a box around the cluster.  For the other
-types, it makes very little, if any, difference.
+types, it makes very little, if any, difference.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dq">-q</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dq">-q</a></strong>
+
 <dd>
-Don't output warnings or errors about records that have DNSSEC signatures
-that are near or beyond their signature lifetimes.
+<p>Don't output warnings or errors about records that have DNSSEC signatures
+that are near or beyond their signature lifetimes.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="example_invocations">EXAMPLE INVOCATIONS</a></h1>
 <dl>
-<dt><strong><a name="item_mapper__2ds_cname_2cnsec__2di_dhcp__2dl_zonefile_z"><em>mapper -s cname,nsec -i dhcp -L zonefile zone.com</em></a></strong><br />
-</dt>
+<dt><strong><a name="item_mapper__2ds_cname_2cnsec__2di_dhcp__2dl_zonefile_z"><em>mapper -s cname,nsec -i dhcp -L zonefile zone.com</em></a></strong>
+
 <dd>
-Writes to the default file (<strong>map.png</strong>) of a <em>zone.com</em> zone
+<p>Writes to the default file (<strong>map.png</strong>) of a <em>zone.com</em> zone
 stored in <em>zonefile</em>.  It excludes any hosts with a name containing
 <em>dhcp</em> and ignores any record of type <em>CNAME</em> or <em>NSEC</em>.  It also
-includes a legend in the output.
+includes a legend in the output.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_mapper__2ds_txt_2chinfo_2ccname_2cnsec_2ca_2caaaa_"><em>mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_mapper__2ds_txt_2chinfo_2ccname_2cnsec_2ca_2caaaa_"><em>mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong>
+
 <dd>
-Removes a lot of records from the display in order to display mostly a
-map of a zone hierarchy.
+<p>Removes a lot of records from the display in order to display mostly a
+map of a zone hierarchy.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_mapper__2dl_dot__2ds_txt_2chinfo_2ccname_2cnsec_2c"><em>mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_mapper__2dl_dot__2ds_txt_2chinfo_2ccname_2cnsec_2c"><em>mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...</em></a></strong>
+
 <dd>
-The same thing, but draws a more vertical tree-style graph of the
+<p>The same thing, but draws a more vertical tree-style graph of the
 zone.  This works well for fairly deep but narrow hierarchies.  Tree-style
-diagrams rarely look as nice for full zones.
+diagrams rarely look as nice for full zones.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

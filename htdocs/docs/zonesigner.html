@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>zonesigner - Generates encryption keys and signs a DNS zone.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -56,7 +58,7 @@
   # get started immediately examples:</pre>
 <pre>
   # first run on a zone for example.com:
-  zonesigner -genzsk -genksk -endtime +2678400 -zone example.com \
+  zonesigner -genkeys -endtime +2678400 -zone example.com \
      db-example.com.signed</pre>
 <pre>
   # future runs before expiration time (reuses the same keys):
@@ -176,81 +178,108 @@ intended.  These commands are  <em>dnssec-keygen</em>, <em>dnssec-signzone</em>,
 </p>
 <h2><a name="zonesignerspecific_options"><em>zonesigner</em>-specific Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dnokrfile">-nokrfile</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dnokrfile">-nokrfile</a></strong>
+
 <dd>
-No <em>keyrec</em> file will be consulted or created.
+<p>No <em>keyrec</em> file will be consulted or created.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dkrfile">-krfile</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dkrfile">-krfile</a></strong>
+
 <dd>
-<em>keyrec</em> file to use in processing options.  See the man page for
-<strong>Net::DNS::SEC::Tools::tooloptions</strong> for more details about this file.
+<p><em>keyrec</em> file to use in processing options.  See the man page for
+<strong>Net::DNS::SEC::Tools::tooloptions</strong> for more details about this file.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgenkeys">-genkeys</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgenkeys">-genkeys</a></strong>
+
 <dd>
-Generate a new KSK and ZSK for the zone.
+<p>Generate a new KSK and ZSK for the zone.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgenksk">-genksk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgenksk">-genksk</a></strong>
+
 <dd>
-Generate a new KSK for the zone.  By default, the last KSK generated for this
-zone will be used.
+<p>Generate a new KSK for the zone.  By default, the last KSK generated for this
+zone will be used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgenzsk">-genzsk</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgenzsk">-genzsk</a></strong>
+
 <dd>
-Generate a new ZSK for the zone.  By default, the last ZSK generated for this
-zone will be used.
+<p>Generate a new ZSK for the zone.  By default, the last ZSK generated for this
+zone will be used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dforceroll">-forceroll</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dusepub">-usepub</a></strong>
+
 <dd>
-Force a roll-over of the ZSK keys.  The <em>keyrec</em>s of the ZSK keys are
-adjusted as follows:
+<p>Use the existing Published ZSK to sign the zone.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dksklife">-ksklife</a></strong>
+
+<dd>
+<p>The time between KSK roll-overs.  This is measured in seconds.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzsklife">-zsklife</a></strong>
+
+<dd>
+<p>The time between ZSK roll-overs.  This is measured in seconds.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dforceroll">-forceroll</a></strong>
+
+<dd>
+<p>Force a roll-over of the ZSK keys.  The <em>keyrec</em>s of the ZSK keys are
+adjusted as follows:</p>
 </dd>
 <dd>
 <pre>
     The current ZSK key is marked as obsolete.
     The published ZSK key is marked as current.
     The new ZSK key, if it exists, is marked as published.
-    A new ZSK key is generated.</pre>
+    A new ZSK key is generated.
+    The published ZSK key's zsklife field is copied to the
+    new ZSK key's keyrec.</pre>
 </dd>
 <dd>
 <p>This should only be used if you know what you're doing.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dintermediate">-intermediate</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dintermediate">-intermediate</a></strong>
+
 <dd>
-Filename to use for the temporary zone file.  The zone file will be copied to
-this file and then the key names appended.
+<p>Filename to use for the temporary zone file.  The zone file will be copied to
+this file and then the key names appended.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzone">-zone</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dzone">-zone</a></strong>
+
 <dd>
-Name of the zone that will be signed.  This zone name may be given with this
-option or as the first non-option command line argument.
+<p>Name of the zone that will be signed.  This zone name may be given with this
+option or as the first non-option command line argument.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dhelp">-help</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dhelp">-help</a></strong>
+
 <dd>
-Display a usage message.
+<p>Display a usage message.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dverbose">-verbose</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dversion">-version</a></strong>
+
 <dd>
-Verbose output will be given.  As more instances of <em>-verbose</em> are given on
-the command line, additional levels of verbosity are achieved.
+<p>Display zonesigner's version number and the DNSSEC-Tools package
+version number that it came from.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dverbose">-verbose</a></strong>
+
+<dd>
+<p>Verbose output will be given.  As more instances of <em>-verbose</em> are given on
+the command line, additional levels of verbosity are achieved.</p>
 </dd>
 <dd>
 <pre>
@@ -268,80 +297,83 @@ the command line, additional levels of verbosity are achieved.
 <p>Higher levels of verbosity are cumulative.  Specifying two instances of
 <em>-verbose</em> will get the output from the first and second levels of output.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="dnsseckeygenspecific_options"><em>dnssec-keygen</em>-specific Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dalgorithm">-algorithm</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dalgorithm">-algorithm</a></strong>
+
 <dd>
-Cryptographic algorithm used to generate the zone's keys.
-The default value is RSASHA1.
+<p>Cryptographic algorithm used to generate the zone's keys.
+The default value is RSASHA1.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dksklength">-ksklength</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksklength">-ksklength</a></strong>
+
 <dd>
-Bit length of the zone's KSK key.
-The default is 1024.
+<p>Bit length of the zone's KSK key.
+The default is 1024.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2drandom">-random</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2drandom">-random</a></strong>
+
 <dd>
-Source of randomness used to generate the zone's keys.	(/dev/urandom)
+<p>Source of randomness used to generate the zone's keys.	(/dev/urandom)</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dzsklength">-zsklength</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dzsklength">-zsklength</a></strong>
+
 <dd>
-Bit length of the zone's ZSK key.
-The default is 512.
+<p>Bit length of the zone's ZSK key.
+The default is 512.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dkgopts">-kgopts</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dkgopts">-kgopts</a></strong>
+
 <dd>
-Additional options for <em>dnssec-keygen</em> may be specified using this option.
+<p>Additional options for <em>dnssec-keygen</em> may be specified using this option.
 The additional options are passed as a single string value as an argument to
-the <em>-kgopts</em> option.
+the <em>-kgopts</em> option.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <h2><a name="dnssecsignzonespecific_options"><em>dnssec-signzone</em>-specific Options</a></h2>
 <dl>
-<dt><strong><a name="item__2dendtime">-endtime</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dendtime">-endtime</a></strong>
+
 <dd>
-Time that the zone expires, measured in seconds.  See the man page for
+<p>Time that the zone expires, measured in seconds.  See the man page for
 <em>dnssec-signzone</em> for the valid format of this field.
-The default value is 2592000 seconds (30 days.)
+The default value is 2592000 seconds (30 days.)</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dgends">-gends</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dgends">-gends</a></strong>
+
 <dd>
-Force <em>dnssec-signzone</em> to generate DS records for the zone.  This option is
-translated into <em>-g</em> when passed to <em>dnssec-signzone</em>.
+<p>Force <em>dnssec-signzone</em> to generate DS records for the zone.  This option is
+translated into <em>-g</em> when passed to <em>dnssec-signzone</em>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dksdir">-ksdir</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dksdir">-ksdir</a></strong>
+
 <dd>
-Specify a directory for storing keysets.  This is passed to <em>dnssec-signzone</em>
-as the <em>-d</em> option.
+<p>Specify a directory for storing keysets.  This is passed to <em>dnssec-signzone</em>
+as the <em>-d</em> option.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dszopts">-szopts</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dszopts">-szopts</a></strong>
+
 <dd>
-Additional options for <em>dnssec-signzone</em> may be specified using this option.
+<p>Additional options for <em>dnssec-signzone</em> may be specified using this option.
 The additional options are passed as a single string value as an argument to
-the <em>-szopts</em> option.
+the <em>-szopts</em> option.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
@@ -439,6 +471,7 @@ one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.</p>
         random          &quot;/dev/urandom&quot;
         keypath         &quot;./Kexample.com.+005+24082.key&quot;
         ksklength       &quot;1024&quot;
+        ksklife         &quot;15768000&quot;
         keyrec_gensecs  &quot;1115166638&quot;
         keyrec_gendate  &quot;Wed May  4 00:30:38 2005&quot;</pre>
 <pre>
@@ -449,6 +482,7 @@ one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.</p>
         random          &quot;/dev/urandom&quot;
         keypath         &quot;./Kexample.com.+005+53135.key&quot;
         zsklength       &quot;512&quot;
+        zsklife         &quot;604800&quot;
         keyrec_gensecs  &quot;1115166638&quot;
         keyrec_gendate  &quot;Wed May  4 00:30:38 2005&quot;</pre>
 <pre>
@@ -459,6 +493,7 @@ one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.</p>
         random          &quot;/dev/urandom&quot;
         keypath         &quot;./Kexample.com.+005+13531.key&quot;
         zsklength       &quot;512&quot;
+        zsklife         &quot;604800&quot;
         keyrec_gensecs  &quot;1115166638&quot;
         keyrec_gendate  &quot;Wed May  4 00:30:38 2005&quot;</pre>
 <p>
@@ -466,16 +501,17 @@ one KSK <em>keyrec</em>, and two ZSK <em>keyrec</em>s.</p>
 <hr />
 <h1><a name="notes">NOTES</a></h1>
 <ol>
-<li><strong><a name="item_soa_serial_numbers">SOA Serial Numbers</a></strong><br />
+<li><strong><a name="item_soa_serial_numbers">SOA Serial Numbers</a></strong>
+
+<p>Serial numbers in SOA records are merely incremented in this version.  Future
+plans are to allow for more flexible serial number manipulation.</p>
 </li>
-Serial numbers in SOA records are merely incremented in this version.  Future
-plans are to allow for more flexible serial number manipulation.
-<p></p></ol>
+</ol>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
@@ -487,6 +523,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <hr />
 <h1><a name="see_also">SEE ALSO</a></h1>
 <p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::keyrec.pm(3)</strong>,
 <strong>Net::DNS::SEC::Tools::tooloptions.pm(3)</strong></p>
 

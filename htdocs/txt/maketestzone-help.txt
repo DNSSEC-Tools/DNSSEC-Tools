@@ -1,0 +1,56 @@
+Usage: /usr/bin/maketestzone [OPTIONS] Other Arguments
+
+OPTIONS:
+
+Output File Naming:
+   -o STRING             Output prefix to use for zone files (default = db.)    
+   -O STRING             Output suffix to be given to zonesigner (default = .zs)
+   -M STRING             Output suffix for the modified zone file (default = .modified)
+
+   -D                    Run donuts on the results                              
+  --donuts-output-suffix=STRING The file suffix to use for donuts output (default = .donuts)
+
+Output Zone Information:
+   -d STRING             domain name to generate records for                    
+  --ns=STRING            Comma separated name=addr name-server records          
+  --a-addr=STRING        A record (IPv4) address to use in data                 
+  --aaaa-addr=STRING     AAAA record (IPv6) address to use in data              
+
+Output Data Type Selection:
+   -p STRING             Comma separated list of record prefixes to use         
+   -P STRING             Comma separated list of NS record prefixes to use      
+   -c                    Don't create CNAME records                             
+   -s                    Don't create sub-zone records                          
+
+
+Task Selection:
+   -g                    Do not generate the zone; use the existing and sign/modify it
+   -z                    Do not run zonesigner to sign the records              
+   -Z                    Do not destroy the records and leave them properly signed
+  --bind-config=STRING   Generate a bind configuration file snippit to load the DB sets
+  --html-out=STRING      Generate a HTML page containing a list of record names 
+  --apache-out=STRING    Generate a Apache config snippit for configuring apache for each zone record
+  --sh-test-out=STRING   Generate a test script for running dig commands        
+   -v                    Verbose output                                         
+
+Zonesigner Configuration:
+   -a STRING             Arguments to pass to zonesigner                        
+   -k                    Have zonesigner generate needed keys                   
+
+
+Bind Configuration Options
+  --bind-db-dir=STRING   The base directory where the bind DB files will be placed
+
+HTML Output Configuration
+  --html-out-add-links   Make each html record name a http link to that address 
+  --html-out-add-db-links Add a link to each of the generated DB files.          
+  --html-out-add-donuts-links Add a link to each of the generated donuts error list files.
+
+SH Test Script Configuration Options
+  --sh-test-resolver=STRING The resolver address to force                          
+
+Help Options:
+   -h                    Display help options -- short flags preferred          
+  --help                 Display help options -- long flags preferred           
+  --help-full            Display all help options -- short and long             
+  --version              Display the version number                             
