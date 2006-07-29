@@ -1,0 +1,23 @@
+Usage: /usr/bin/getdnskeys [OPTIONS] Other Arguments
+
+OPTIONS:
+
+DNS Configuration:
+   -k                    Only look for key signing keys (KSK) and ignore others 
+
+Named.conf configuration file input support:
+   -i STRING             Read path as a named.conf to compare key lists with    
+   -T                    Check the current trusted key list from named.conf     
+
+Named.conf configuration file output support:
+   -o STRING             Output the results to a file                           
+   -t                    Enclose output in needed named.conf syntax markers     
+
+Miscellanious Configuration:
+   -v                    Verbose mode                                           
+
+Help Options:
+   -h                    Display help options -- short flags preferred          
+  --help                 Display help options -- long flags preferred           
+  --help-full            Display all help options -- short and long             
+  --version              Display the version number                             

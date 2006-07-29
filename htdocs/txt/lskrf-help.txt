@@ -1,0 +1,34 @@
+usage:  lskrf [options] <keyrec-file>
+	record-selection options:
+		-all		list all records
+		-zones		list all zones
+		-keys		list all keys
+		-ksk		list KSK keys
+		-zsk		list ZSK keys
+		-cur		list current ZSK keys
+		-pub		list published ZSK keys
+		-obs		list obsolete ZSK keys
+	record-attribute options:
+		-valid		show keyrecs of unexpired zones
+		-expired	show keyrecs of expired zones
+		-ref		show referenced key keyrecs
+		-unref		show unreferenced key keyrecs
+	output-format options:
+		-count		only give count of matching keyrecs
+		-life		display date
+		-nodate		do not display date
+		-terse		terse output
+		-long		long output
+		-help		help message 
+		-version	Show version information
+	key-attribute options:
+		-k-algorithm	show key's algorithm
+		-k-enddate	show key's end-date
+		-k-length	show key's length
+		-k-lifespan	show key's lifespan
+		-k-signdate	show key's signing date
+		-k-zone		show key's zonefile
+	zone-attribute options:
+		-z-expdate	show zone's expiration date
+		-z-signdate	show zone's signing date
+		-z-zonefile	show zone's zonefile

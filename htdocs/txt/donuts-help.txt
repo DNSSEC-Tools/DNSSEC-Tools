@@ -1,0 +1,38 @@
+Usage: /usr/bin/donuts [OPTIONS] FILE DOMAIN [FILE DOMAIN...]
+
+OPTIONS:
+
+Rule Set Configuration:
+   -l INTEGER            The maximum rule level to run (default = 5)            
+
+Output Format Options:
+  --show-gui             Display the results in a browsable window.             
+   -v                    Verbose output showing extra information               
+   -q                    Quiet output (Do not print summary information)        
+
+Advanced:
+
+Advanced Configuration:
+   -r STRING             glob pattern for rule files to load                    
+   -i STRING             Regular expression for rules to ignore                 
+   -f STRING             Extra features to turn on                              
+
+Configuration Files:
+   -c STRING             Use an alternate personal configuration file           
+   -C                    Do not load perlocal configuration files               
+
+Extra Live Query Options:
+   -t STRING             Start tcpdump on interface STRING during run           
+   -T STRING             Use tcpdump filter (default port 53 or fragments)      
+   -o STRING             Save tcpdump results to file STRING.                   
+
+Help Options:
+   -R                    Show the rules that donuts checks                      
+   -F                    Show available additional features of available rules. 
+   -H                    Show configuration tokens supported by the rules       
+
+Help Options:
+   -h                    Display help options -- short flags preferred          
+  --help                 Display help options -- long flags preferred           
+  --help-full            Display all help options -- short and long             
+  --version              Display the version number                             

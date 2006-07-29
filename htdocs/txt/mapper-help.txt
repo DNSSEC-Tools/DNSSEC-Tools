@@ -1,0 +1,41 @@
+Usage: /usr/bin/mapper [OPTIONS] FILE DOMAIN [FILE DOMAIN...]
+
+OPTIONS:
+
+Basic Options
+
+Map Output Style Options:
+   -l STRING             Layout style                                           
+   -L                    Add a legend to the map                                
+
+DNS Specific Map Style Options:
+   -r                    Show resource record types labels                      
+   -t STRING             Show data for comma-sep types                          
+   -g                    Group nodes around a domain name                       
+
+DNS Record Selection Options:
+   -s STRING             Do not look at records of comma-sep. types             
+   -T STRING             Show only records with comma-sep types                 
+   -i STRING             Regex pattern of record names to ignore                
+
+Output options:
+   -o STRING             Output File Name                                       
+   -W                    Show map in a window (requires QWizard and Gtk2 or Tk) 
+   -q                    Do not show expired or near-expired record warnings    
+   -w INTEGER            Time in seconds ahead to warn about expiring records   
+
+Help information:
+   -h                    Show command line help                                 
+
+Advanced Map Style Options:
+   -a                    Allow overlap of map nodes (makes tighter maps)        
+   -e INTEGER            Weight of lines.  >1 means shorter, <1 means longer    
+   -f INTEGER            Font Size.  (default is 10)                            
+   -x INTEGER            Maximum width of the map in pixels                     
+   -y INTEGER            Maximum height of the map in pixels                    
+
+Help Options:
+   -h                    Display help options -- short flags preferred          
+  --help                 Display help options -- long flags preferred           
+  --help-full            Display all help options -- short and long             
+  --version              Display the version number                             

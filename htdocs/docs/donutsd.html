@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>DoNutSD - Run the donuts syntax checker periodically and email the results</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -55,69 +57,70 @@ administrator's email address.</p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item__2dv">-v</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dv">-v</a></strong>
+
 <dd>
-Turns on more verbose output.
+<p>Turns on more verbose output.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2do">-o</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2do">-o</a></strong>
+
 <dd>
-Run once and quit, as opposed to sleeping or re-running forever.
+<p>Run once and quit, as opposed to sleeping or re-running forever.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2da_arguments">-a ARGUMENTS</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2da_arguments">-a ARGUMENTS</a></strong>
+
 <dd>
-Passes arguments to command line arguments of <em>donuts</em> runs.
+<p>Passes arguments to command line arguments of <em>donuts</em> runs.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dz_time">-z TIME</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dz_time">-z TIME</a></strong>
+
 <dd>
-Sleeps TIME seconds between calls to <em>donuts</em>.
+<p>Sleeps TIME seconds between calls to <em>donuts</em>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2de_address">-e ADDRESS</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2de_address">-e ADDRESS</a></strong>
+
 <dd>
-Mail ADDRESS with a summary of the results from all the files.
+<p>Mail ADDRESS with a summary of the results from all the files.
 These are the last few lines of the <em>donuts</em> output for each zone that
-details the number of errors found.
+details the number of errors found.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2ds_smtpserver">-s SMTPSERVER</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2ds_smtpserver">-s SMTPSERVER</a></strong>
+
 <dd>
-When sending mail, send it to the SMTPSERVER specified.  The default
-is <em>localhost</em>.
+<p>When sending mail, send it to the SMTPSERVER specified.  The default
+is <em>localhost</em>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2df_fromaddr">-f FROMADDR</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2df_fromaddr">-f FROMADDR</a></strong>
+
 <dd>
-When sending mail, use FROMADDR for the From: address.
+<p>When sending mail, use FROMADDR for the From: address.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dx">-x</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dx">-x</a></strong>
+
 <dd>
-Send the <em>diff</em> output in the email message as well as the <em>donuts</em> output.
+<p>Send the <em>diff</em> output in the email message as well as the <em>donuts</em> output.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dt_tmpdir">-t TMPDIR</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dt_tmpdir">-t TMPDIR</a></strong>
+
 <dd>
-Store temporary files in TMPDIR.
+<p>Store temporary files in TMPDIR.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2di_inputzones">-i INPUTZONES</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2di_inputzones">-i INPUTZONES</a></strong>
+
 <dd>
-[see the next section details]
+<p>[see the next section details]</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
@@ -125,25 +128,26 @@ Store temporary files in TMPDIR.
 <p>The rest of the arguments to <em>donutsd</em> should be triplets of the
 following information:</p>
 <dl>
-<dt><strong><a name="item_zonefile">ZONEFILE</a></strong><br />
-</dt>
+<dt><strong><a name="item_zonefile">ZONEFILE</a></strong>
+
 <dd>
-The zone file to examine
+<p>The zone file to examine</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_zonename">ZONENAME</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_zonename">ZONENAME</a></strong>
+
 <dd>
-The zonename that file is supposed to be defining
+<p>The zonename that file is supposed to be defining</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_zonecontact">ZONECONTACT</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_zonecontact">ZONECONTACT</a></strong>
+
 <dd>
-An email address of the zone administrator (or a comma-separated
-list of addresses).  The results will be sent to this email address.
+<p>An email address of the zone administrator (or a comma-separated
+list of addresses).  The results will be sent to this email address.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>Additionally, instead of listing all the zones you wish to monitor on
 the command line, you can instead use the <em>-i</em> flag which specifies a
 file to be read listing the TRIPLES instead.  Each line in this file
@@ -194,7 +198,7 @@ in the <strong>.xml</strong> file, however.</p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2005 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

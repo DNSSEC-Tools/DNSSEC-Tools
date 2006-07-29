@@ -1,8 +1,10 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>keyrec-check - Check a DNSSEC-Tools I&lt;keyrec&gt; file for problems and
 inconsistencies.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -44,125 +46,129 @@ inconsistencies.</p>
 and inconsistencies.</p>
 <p>Recognized problems include:</p>
 <ul>
-<li><strong><a name="item_no_zones_defined">no zones defined</a></strong><br />
+<li><strong><a name="item_no_zones_defined">no zones defined</a></strong>
+
+<p>The <em>keyrec</em> file does not contain any zone <em>keyrec</em>s.</p>
 </li>
-The <em>keyrec</em> file does not contain any zone <em>keyrec</em>s.
-<p></p>
-<li><strong><a name="item_no_keys_defined">no keys defined</a></strong><br />
+<li><strong><a name="item_no_keys_defined">no keys defined</a></strong>
+
+<p>The <em>keyrec</em> file does not contain any key <em>keyrec</em>s.</p>
 </li>
-The <em>keyrec</em> file does not contain any key <em>keyrec</em>s.
-<p></p>
-<li><strong><a name="item_unknown_zone_keyrecs">unknown zone <em>keyrec</em>s</a></strong><br />
+<li><strong><a name="item_unknown_zone_keyrecs">unknown zone <em>keyrec</em>s</a></strong>
+
+<p>A key <em>keyrec</em> references a non-existent zone <em>keyrec</em>.</p>
 </li>
-A key <em>keyrec</em> references a non-existent zone <em>keyrec</em>.
-<p></p>
-<li><strong><a name="item_missing_key_from_zone_keyrec">missing key from zone <em>keyrec</em></a></strong><br />
+<li><strong><a name="item_missing_key_from_zone_keyrec">missing key from zone <em>keyrec</em></a></strong>
+
+<p>A zone <em>keyrec</em> does not have both a KSK key and a ZSK key.</p>
 </li>
-A zone <em>keyrec</em> does not have both a KSK key and a ZSK key.
-<p></p>
-<li><strong><a name="item_expired_zone_keyrecs">expired zone <em>keyrec</em>s</a></strong><br />
+<li><strong><a name="item_expired_zone_keyrecs">expired zone <em>keyrec</em>s</a></strong>
+
+<p>A zone has expired.</p>
 </li>
-A zone has expired.
-<p></p>
-<li><strong><a name="item_mislabeled_key">mislabeled key</a></strong><br />
+<li><strong><a name="item_mislabeled_key">mislabeled key</a></strong>
+
+<p>A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
+opposite.</p>
 </li>
-A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
-opposite.
-<p></p>
-<li><strong><a name="item_invalid_zone_data_values">invalid zone data values</a></strong><br />
-</li>
-A zone's <em>keyrec</em> data are checked to ensure that they are valid.  The
+<li><strong><a name="item_invalid_zone_data_values">invalid zone data values</a></strong>
+
+<p>A zone's <em>keyrec</em> data are checked to ensure that they are valid.  The
 following conditions are checked:  existence of the zone file, existence of
 the KSK file, existence of the ZSK file, the end-time is greater than one
-day, and the seconds-count and date string match.
-<p></p>
-<li><strong><a name="item_invalid_key_data_values">invalid key data values</a></strong><br />
+day, and the seconds-count and date string match.</p>
 </li>
-A key's <em>keyrec</em> data are checked to ensure that they are valid.  The
+<li><strong><a name="item_invalid_key_data_values">invalid key data values</a></strong>
+
+<p>A key's <em>keyrec</em> data are checked to ensure that they are valid.  The
 following conditions are checked:  valid encryption algorithm, key length
 falls within algorithm's size range, random generator file exists, and the
-seconds-count and date string match.
-<p></p></ul>
+seconds-count and date string match.</p>
+</li>
+</ul>
 <p>Recognized potential problems include:</p>
 <ul>
-<li><strong><a name="item_imminent_zone_expiration">imminent zone expiration</a></strong><br />
+<li><strong><a name="item_imminent_zone_expiration">imminent zone expiration</a></strong>
+
+<p>A zone will expire within one week.</p>
 </li>
-A zone will expire within one week.
-<p></p>
-<li><strong><a name="item_odd_zone_2dsigning_date">odd zone-signing date</a></strong><br />
+<li><strong><a name="item_odd_zone_2dsigning_date">odd zone-signing date</a></strong>
+
+<p>A zone's recorded signing date is later than the current system clock.</p>
 </li>
-A zone's recorded signing date is later than the current system clock.
-<p></p>
-<li><strong><a name="item_orphaned_keys">orphaned keys</a></strong><br />
+<li><strong><a name="item_orphaned_keys">orphaned keys</a></strong>
+
+<p>A key <em>keyrec</em> is unreferenced by any zone <em>keyrec</em>.</p>
 </li>
-A key <em>keyrec</em> is unreferenced by any zone <em>keyrec</em>.
-<p></p>
-<li><strong><a name="item_missing_key_directories">missing key directories</a></strong><br />
+<li><strong><a name="item_missing_key_directories">missing key directories</a></strong>
+
+<p>A zone <em>keyrec</em>'s key directories (<em>kskdirectory</em> or <em>zskdirectory</em>) does
+not exist.</p>
 </li>
-A zone <em>keyrec</em>'s key directories (<em>kskdirectory</em> or <em>zskdirectory</em>) does
-not exist.
-<p></p></ul>
+</ul>
 <p>Recognized inconsistencies include:</p>
 <ul>
-<li><strong><a name="item_key_2dspecific_fields_in_a_zone_keyrec">key-specific fields in a zone <em>keyrec</em></a></strong><br />
+<li><strong><a name="item_key_2dspecific_fields_in_a_zone_keyrec">key-specific fields in a zone <em>keyrec</em></a></strong>
+
+<p>A zone <em>keyrec</em> contains key-specific entries.  To allow for site-specific
+extensibility, <em>keyrec-check</em> does not check for undefined <em>keyrec</em> fields.</p>
 </li>
-A zone <em>keyrec</em> contains key-specific entries.  To allow for site-specific
-extensibility, <em>keyrec-check</em> does not check for undefined <em>keyrec</em> fields.
-<p></p>
-<li><strong><a name="item_zone_2dspecific_fields_in_a_key_keyrec">zone-specific fields in a key <em>keyrec</em></a></strong><br />
+<li><strong><a name="item_zone_2dspecific_fields_in_a_key_keyrec">zone-specific fields in a key <em>keyrec</em></a></strong>
+
+<p>A key <em>keyrec</em> contains zone-specific entries.  To allow for site-specific
+extensibility, <em>keyrec-check</em> does not check for undefined <em>keyrec</em> fields.</p>
 </li>
-A key <em>keyrec</em> contains zone-specific entries.  To allow for site-specific
-extensibility, <em>keyrec-check</em> does not check for undefined <em>keyrec</em> fields.
-<p></p></ul>
+</ul>
 <p>
 </p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item__2dk">-k</a></strong><br />
-</dt>
+<dt><strong><a name="item__2dk">-k</a></strong>
+
 <dd>
-Only perform checks of key <em>keyrec</em>s.  This option may not be combined with
-the <strong>-z</strong> option.
+<p>Only perform checks of key <em>keyrec</em>s.  This option may not be combined with
+the <strong>-z</strong> option.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dz">-z</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dz">-z</a></strong>
+
 <dd>
-Only perform checks of zone <em>keyrec</em>s.  This option may not be combined with
-the <strong>-k</strong> option.
+<p>Only perform checks of zone <em>keyrec</em>s.  This option may not be combined with
+the <strong>-k</strong> option.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dc">-c</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dc">-c</a></strong>
+
 <dd>
-Display a final count of errors.
+<p>Display a final count of errors.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dq">-q</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dq">-q</a></strong>
+
 <dd>
-Do not display messages.  This option supersedes the setting of the <em>-v</em>
-option.
+<p>Do not display messages.  This option supersedes the setting of the <em>-v</em>
+option.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dv">-v</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dv">-v</a></strong>
+
 <dd>
-Display many messages.  This option is subordinate to the <em>-q</em> option.
+<p>Display many messages.  This option is subordinate to the <em>-q</em> option.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__2dh">-h</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__2dh">-h</a></strong>
+
 <dd>
-Display a usage message.
+<p>Display a usage message.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>

@@ -1,0 +1,30 @@
+usage:  zonesigner [options] <zone-file> [signed-zone]
+
+		zonesigner options:
+			-krfile keyrec-file
+			-nokrfile
+			-genkeys
+			-genksk
+			-genzsk
+			-usepub
+			-ksklife lifespan
+			-zsklife lifespan
+			-intermediate tmp-zone-file
+			-zone zone-name
+			-help
+			-version
+			-verbose
+
+		dnssec-keygen options:
+			-algorithm algorithm
+			-ksklength KSK-size
+			-zsklength ZSK-size
+			-random random-path
+			-kgopts dnssec-keygen-options
+
+		dnssec-signzone options:
+			-endtime end-time
+			-gends
+			-ksdir keyset-directory
+			-szopts dnssec-signzone-options
+
