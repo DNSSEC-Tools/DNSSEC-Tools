@@ -412,8 +412,9 @@ void val_log (const val_context_t *ctx, int level, const char *template, ...)
 	int log_mask = LOG_UPTO(VAL_LOG_MASK);
 
 	setlogmask(log_mask);
-	id_buf = (ctx == NULL)? "libval": ctx->id;
-	openlog(id_buf, VAL_LOG_OPTIONS, LOG_USER);
+        snprintf(buf, sizeof(buf), "libval(%d)",
+                 (ctx == NULL)? "0": ctx->id);
+	openlog(buf, VAL_LOG_OPTIONS, LOG_USER);
 	va_start (ap, template);
 	vsyslog(LOG_USER|level, template, ap);
 	va_end (ap);
@@ -428,5 +429,4 @@ void val_log (const val_context_t *ctx, int level, const char *template, ...)
 		send_log_message(buf);
 	}
 #endif /* LOG_TO_NETWORK */
-
 }
