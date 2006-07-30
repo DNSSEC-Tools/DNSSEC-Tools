@@ -10,6 +10,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include <resolv.h>
 #include <resolver.h>
 #include <validator.h>
 #include "val_resquery.h"
@@ -154,17 +155,20 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 			}
 
 			if (root_zone || (!strcmp((char*)p, (char*)zse_cur->zone_n))) {
+                                char name_p[NS_MAXCDNAME];
+                                if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
+                                    snprintf(name_p, sizeof(name_p), "unknown/error");
 				if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
-					val_log(ctx, LOG_DEBUG, "zone %s is not trusted", name_n);
+					val_log(ctx, LOG_DEBUG, "zone %s is not trusted", name_p);
 					return VAL_A_UNTRUSTED_ZONE;
 				}
 				else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
-					val_log(ctx, LOG_DEBUG, "Doing validation for zone %s", name_n);
+					val_log(ctx, LOG_DEBUG, "Doing validation for zone %s", name_p);
 					return VAL_A_WAIT_FOR_TRUST;
 				}
 				else { 
 					/* ZONE_SE_IGNORE */
-					val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for zone %s", name_n);
+					val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for zone %s", name_p);
 					return VAL_A_TRUST_ZONE;
 				}
 			}
@@ -206,9 +210,12 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 			for (curkey = key; curkey; curkey=curkey->rr_next) {
 				val_parse_dnskey_rdata (curkey->rr_rdata, curkey->rr_rdata_length_h, &dnskey);	
 				if(!dnskey_compare(&dnskey, ta_cur->publickey)) {
+                                        char name_p[NS_MAXCDNAME];
+                                        if (-1 == ns_name_ntop(zp, name_p, sizeof(name_p)))
+                                            snprintf(name_p, sizeof(name_p), "unknown/error");
 					if (dnskey.public_key != NULL)
 						FREE (dnskey.public_key);
-					val_log(ctx, LOG_DEBUG, "key %s is trusted", zp);
+					val_log(ctx, LOG_DEBUG, "key %s is trusted", name_p);
 					return VAL_A_TRUST_KEY;
 				}
 				if (dnskey.public_key != NULL)
@@ -1090,24 +1097,28 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 	struct val_query_chain *next_q, *top_q;
 	struct rrset_rec *next_answer;
 	int retval;
+        char name_p[NS_MAXCDNAME];
 
 	top_q = *queries;
 
 	for(next_q = *queries; next_q && next_q != end_q; next_q=next_q->qc_next) {
 		if(next_q->qc_state == Q_INIT) {
 
-			val_log(context, LOG_DEBUG, "ask_cache(): looking for {%s %d %d}", 
-						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
+                        if (-1 == ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p)))
+                            snprintf(name_p, sizeof(name_p), "unknown/error");
+			val_log(context, LOG_DEBUG, "ask_cache(): looking for {%s %s(%d) %s(%d)}", 
+                                name_p, p_class(next_q->qc_class_h), next_q->qc_class_h, p_type(next_q->qc_type_h), next_q->qc_type_h);
 			if(VAL_NO_ERROR != (retval = get_cached_rrset(next_q->qc_name_n, 
 								next_q->qc_class_h, next_q->qc_type_h, &next_answer)))
 				return retval; 
 
 			if(next_answer) {
 				struct domain_info *response;
-				char name[NS_MAXDNAME];
 
+                                if (-1 == ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p)))
+                                    snprintf(name_p, sizeof(name_p), "unknown/error");
 				val_log(context, LOG_DEBUG, "ask_cache(): found data for {%s %d %d}", 
-						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
+						name_p, next_q->qc_class_h, next_q->qc_type_h);
 				*data_received = 1;
 
 				next_q->qc_state = Q_ANSWERED;
@@ -1123,13 +1134,13 @@ static int ask_cache(val_context_t *context, struct val_query_chain *end_q,
 				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
 				response->di_qnames->qnc_next = NULL;
 
-				if(ns_name_ntop(next_q->qc_name_n, name, NS_MAXDNAME-1) == -1) {
+				if(ns_name_ntop(next_q->qc_name_n, name_p, NS_MAXDNAME-1) == -1) {
 					next_q->qc_state = Q_ERROR_BASE+SR_CALL_ERROR;
 					FREE(response->di_qnames);
 					FREE (response);
 					continue;
 				}
-			    response->di_requested_name_h = name; 
+			    response->di_requested_name_h = name_p;
 			    response->di_requested_type_h = next_q->qc_type_h;
 			    response->di_requested_class_h = next_q->qc_class_h;
 				response->di_res_error = SR_UNSET;
@@ -1167,6 +1178,7 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 	struct domain_info *response;
 	int retval;
 	int need_data = 0;
+        char name_p[NS_MAXCDNAME];
 
 	response = NULL;
 
@@ -1177,9 +1189,11 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 			if(next_q->qc_state == Q_INIT) {
 				need_data = 1;
 				next_q = next_q;
+                                if (-1 == ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p)))
+                                    snprintf(name_p, sizeof(name_p), "unknown/error");
 				next_q->qc_state = Q_SENT;
 				val_log(context, LOG_DEBUG, "ask_resolver(): sending query for {%s %d %d}", 
-						next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
+						name_p, next_q->qc_class_h, next_q->qc_type_h);
 
 				/* Only set the CD and EDS0 options if we feel the server 
 				 * is capable of handling DNSSEC
@@ -1209,8 +1223,10 @@ static int ask_resolver(val_context_t *context, struct val_query_chain **queries
 						return retval;
 
 					if ((next_q->qc_state == Q_ANSWERED) && (response != NULL)) {
+                                                if (-1 == ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p)))
+                                                    snprintf(name_p, sizeof(name_p), "unknown/error");
 						val_log(context, LOG_DEBUG, "ask_resolver(): found data for {%s %d %d}", 
-							next_q->qc_name_n, next_q->qc_class_h, next_q->qc_type_h);
+							name_p, next_q->qc_class_h, next_q->qc_type_h);
 						if(VAL_NO_ERROR != (retval = 
 								assimilate_answers(context, queries, 
 									response, next_q, assertions))) {
@@ -1274,6 +1290,7 @@ int val_resolve_and_check(	val_context_t	*ctx,
 	struct val_query_chain *top_q;
 	struct val_result_chain *res;
 	char block = 1; /* block until at least some data is returned */
+        char name_p[NS_MAXCDNAME];
 
 	int done = 0;
 	int data_received = 0;
@@ -1296,8 +1313,10 @@ int val_resolve_and_check(	val_context_t	*ctx,
 	if (domain_name_n == NULL)
 		return VAL_BAD_ARGUMENT;
 
+        if (-1 == ns_name_ntop(domain_name_n, name_p, sizeof(name_p)))
+            snprintf(name_p, sizeof(name_p), "unknown/error");
 	val_log(context, LOG_DEBUG, "val_resolve_and_check(): looking for {%s %d %d}", 
-						domain_name_n, class, type);
+						name_p, class, type);
 
 	if (VAL_NO_ERROR != (retval = add_to_query_chain(&(context->q_list), domain_name_n, type, class)))
 		goto err;
