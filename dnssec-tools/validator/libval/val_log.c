@@ -139,20 +139,42 @@ static char *get_ns_string(struct name_server **server)
 	return inet_ntoa(s->sin_addr);
 }
 
-#define VAL_LOG_ASSERTION(name_n, class_h, type_h, serv, status) do {\
-	char name[NS_MAXDNAME]; \
-	char *name_pr, *serv_pr;\
-	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) \
-		name_pr = name;\
-	else\
-		name_pr = "ERR_NAME";\
-	if(serv)\
-		serv_pr = ((serv_pr = get_ns_string(&(serv))) == NULL)?"VAL_CACHE":serv_pr;\
-	else\
-		serv_pr = "NULL";\
-	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s:%d",\
-		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_as_error(status), status);\
-} while (0)		
+void val_log_assertion( val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
+						struct rr_rec *data, struct name_server *serv, val_astatus_t status) 
+{ 
+	char name[NS_MAXDNAME]; 
+	char *name_pr, *serv_pr;
+	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) 
+		name_pr = name;
+	else
+		name_pr = "ERR_NAME";
+	if(serv)
+		serv_pr = ((serv_pr = get_ns_string(&(serv))) == NULL)?"VAL_CACHE":serv_pr;
+	else
+		serv_pr = "NULL";
+
+	int tag = 0;
+	if (type_h == ns_t_dnskey) {
+		struct rr_rec *curkey;
+		for (curkey = data; curkey; curkey=curkey->rr_next) {
+			if(curkey->rr_status == VAL_A_VERIFIED_LINK) {
+				/* Extract the key tag */
+				val_dnskey_rdata_t dnskey;
+				val_parse_dnskey_rdata (curkey->rr_rdata, curkey->rr_rdata_length_h, &dnskey);
+				tag = dnskey.key_tag;
+				break;
+			}	
+		}
+	}
+	if (tag !=0) {
+		val_log(ctx, level, "name=%s class=%s type=%s[tag=%d] from-server=%s status=%s:%d",
+			name_pr, p_class(class_h), p_type(type_h), tag, serv_pr, p_as_error(status), status);
+	}
+	else {
+		val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s:%d",
+			name_pr, p_class(class_h), p_type(type_h), serv_pr, p_as_error(status), status);
+	}
+} 
 
 #define VAL_LOG_RESULT(name_n, class_h, type_h, serv, status) do {\
 	char name[NS_MAXDNAME]; \
@@ -207,9 +229,9 @@ void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n,
 					p_as_error(next_as->val_ac_status), next_as->val_ac_status);\
 			}
 			else {
-				VAL_LOG_ASSERTION(t_name_n, next_as->_as.ac_data->rrs.val_rrset_class_h,
-					next_as->_as.ac_data->rrs.val_rrset_type_h, next_as->_as.ac_data->rrs_respondent_server, 
-					next_as->val_ac_status);
+				val_log_assertion(ctx, level, t_name_n, next_as->_as.ac_data->rrs.val_rrset_class_h,
+					next_as->_as.ac_data->rrs.val_rrset_type_h, next_as->_as.ac_data->rrs.val_rrset_data, 
+					next_as->_as.ac_data->rrs_respondent_server, next_as->val_ac_status);
 			}
 		}
 	}
@@ -309,6 +331,7 @@ char *p_as_error(val_astatus_t err)
     case VAL_A_KEYTAG_MISMATCH: return "VAL_A_KEYTAG_MISMATCH"; break;
                                                                                                                              
     case VAL_A_VERIFIED: return "VAL_A_VERIFIED"; break;
+    case VAL_A_VERIFIED_LINK: return "VAL_A_VERIFIED_LINK"; break;
     case VAL_A_LOCAL_ANSWER: return "VAL_A_LOCAL_ANSWER"; break;
     case VAL_A_TRUST_KEY: return "VAL_A_TRUST_KEY"; break;
     case VAL_A_TRUST_ZONE: return "VAL_A_TRUST_ZONE"; break;

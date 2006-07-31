@@ -215,6 +215,7 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
                                             snprintf(name_p, sizeof(name_p), "unknown/error");
 					if (dnskey.public_key != NULL)
 						FREE (dnskey.public_key);
+					curkey->rr_status = VAL_A_VERIFIED_LINK;
 					val_log(ctx, LOG_DEBUG, "key %s is trusted", name_p);
 					return VAL_A_TRUST_KEY;
 				}
@@ -542,8 +543,7 @@ static int build_pending_query(val_context_t *context,
 	/* Then look for  {signby_name_n, DNSKEY/DS, type} */
 	if(as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
 
-		u_int16_t tkeystatus = is_trusted_key(context, signby_name_n, as->_as.ac_data->rrs.val_rrset_data);
-		as->val_ac_status = tkeystatus;
+		as->val_ac_status = is_trusted_key(context, signby_name_n, as->_as.ac_data->rrs.val_rrset_data);
 		if (as->val_ac_status != VAL_A_WAIT_FOR_TRUST)
 			return VAL_NO_ERROR;
 
@@ -1056,7 +1056,8 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 					|| (res->val_rc_status == VAL_R_DONT_KNOW)) {
 
 				/* Success condition */
-				if (next_as->val_ac_status == VAL_A_VERIFIED) {
+				if ((next_as->val_ac_status == VAL_A_VERIFIED) ||
+					(next_as->val_ac_status == VAL_A_VERIFIED_LINK)) {
 					SET_MASKED_STATUS(res->val_rc_status, VAL_R_VERIFIED_CHAIN);
 					continue;
 				}
