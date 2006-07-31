@@ -410,8 +410,11 @@ void usage(char *progname)
 // Main
 int main(int argc, char *argv[])
 {
-    val_context_t *context;
+	val_context_t *context;
 	int ret_val;
+	int tc_count;
+	int i;
+
 	if (argc == 1) {
 	}
 	else {
@@ -512,17 +515,26 @@ int main(int argc, char *argv[])
 			} // end switch
 		}
 
+		/* Count the number of testcase entries */
+		tc_count = 0;
+		for (i= 0 ; testcases[i].desc != NULL; i++) 
+			tc_count++;
+
 		/* run an individual test case */
 		if (tc != -1) {
 			if(VAL_NO_ERROR !=(ret_val = val_create_context(label_str, &context))) {
 				fprintf(stderr, "Cannot create context: %d\n", ret_val);		
    	    	 	return 1;
 			}
+			if (tc >= tc_count) {
+				fprintf(stderr, "Invalid test case number (must be less than %d)\n", tc_count);
+				return 1;
+			}
 			sendquery(context, testcases[tc].desc, 
-			testcases[tc].qn, 
-			testcases[tc].qc, 
-			testcases[tc].qt, 
-			testcases[tc].qr, 0);
+				testcases[tc].qn, 
+				testcases[tc].qc, 
+				testcases[tc].qt, 
+				testcases[tc].qr, 0);
 			val_free_context(context);
 			return 0;
 		}
@@ -571,24 +583,23 @@ int main(int argc, char *argv[])
 		}
 		else {
 			if (!selftest) {
-			fprintf(stderr, "Please specify domain name\n");
-			usage(argv[0]);
-			return 1;
+				fprintf(stderr, "Please specify domain name\n");
+				usage(argv[0]);
+				return 1;
 			}
 			else {
-		// Run the set of pre-defined test cases
-		int i;
-    	if(VAL_NO_ERROR !=(ret_val = val_create_context(label_str, &context))) {
-			fprintf(stderr, "Cannot create context: %d\n", ret_val);		
-   	     	return 1;
-		}
-		for (i= 0 ; testcases[i].desc != NULL; i++) {
-			sendquery(context, testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
-			fprintf(stderr, "\n");
-		}
-		val_free_context(context);
-		}
+				// Run the set of pre-defined test cases
+				if(VAL_NO_ERROR !=(ret_val = val_create_context(label_str, &context))) {
+					fprintf(stderr, "Cannot create context: %d\n", ret_val);		
+					return 1;
+				}
+				for (i= 0 ; testcases[i].desc != NULL; i++) {
+					sendquery(context, testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
+					fprintf(stderr, "\n");
+				}
+				val_free_context(context);
 			}
+		}
 	}
 
 	return 0;
