@@ -373,11 +373,14 @@ static void identify_key_from_sig (struct rr_rec *sig,u_int8_t **name_n,u_int16_
                 sizeof(u_int16_t));
 }
 
-static int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey_rdata_t *new_dnskey_rdata)
+static int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, 
+							val_dnskey_rdata_t *new_dnskey_rdata, 
+							struct rr_rec **matching_rr)
 {
 	struct rr_rec *nextrr;
 	u_int16_t tag_h = ntohs(*tag_n);
 
+	*matching_rr = NULL;
 	for (nextrr = keyrr; nextrr; nextrr=nextrr->rr_next)
 	{
 		if (new_dnskey_rdata == NULL) 
@@ -388,8 +391,10 @@ static int  find_key_for_tag (struct rr_rec *keyrr, u_int16_t *tag_n, val_dnskey
                     new_dnskey_rdata);
 		new_dnskey_rdata->next = NULL;        
                                                                                                            
-		if (new_dnskey_rdata->key_tag == tag_h)
+		if (new_dnskey_rdata->key_tag == tag_h) {
+			*matching_rr = nextrr;
 			return VAL_NO_ERROR;
+		}
 	}
 	
 	return VAL_A_DNSKEY_NOMATCH;
@@ -464,9 +469,13 @@ static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *pub
 #define SET_STATUS(savedstatus, sig, newstatus) \
 	do { \
 		sig->rr_status = newstatus; \
-		if ((savedstatus != VAL_A_VERIFIED) && (savedstatus != newstatus))  \
+		if ((savedstatus != VAL_A_VERIFIED) && \
+			(savedstatus != VAL_A_VERIFIED_LINK) && \
+				(savedstatus != newstatus))  \
 			savedstatus = VAL_A_NOT_VERIFIED; \
-		else	\
+		else if (newstatus == VAL_A_VERIFIED_LINK)	\
+			savedstatus = VAL_A_VERIFIED; \
+		else \
 			savedstatus = newstatus; \
 	} while (0)
 
@@ -478,6 +487,7 @@ void verify_next_assertion(val_context_t *ctx, struct val_authentication_chain *
 {
 	struct rrset_rec *the_set;
 	struct rr_rec   *the_sig;
+	struct rr_rec   *matching_dnskey_rr;
 	u_int8_t        *signby_name_n;
 	u_int16_t       signby_footprint_n;
 	val_dnskey_rdata_t dnskey;
@@ -498,7 +508,7 @@ void verify_next_assertion(val_context_t *ctx, struct val_authentication_chain *
 			/* trust path contains the key */
 			if(VAL_NO_ERROR != (retval = 
 				find_key_for_tag (the_trust->_as.ac_data->rrs.val_rrset_data, 
-					&signby_footprint_n, &dnskey))) {
+					&signby_footprint_n, &dnskey, &matching_dnskey_rr))) {
 				SET_STATUS(as->val_ac_status, the_sig, VAL_A_DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
@@ -507,7 +517,10 @@ void verify_next_assertion(val_context_t *ctx, struct val_authentication_chain *
 		}
 		else {
 			/* data itself contains the key */
-			if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs.val_rrset_data, &signby_footprint_n, &dnskey))) {
+			if(VAL_NO_ERROR != 
+					(retval = find_key_for_tag (the_set->rrs.val_rrset_data,
+												&signby_footprint_n, &dnskey, 
+												&matching_dnskey_rr))) {
 				SET_STATUS(as->val_ac_status, the_sig, VAL_A_DNSKEY_NOMATCH);
 				if (dnskey.public_key != NULL)
 					FREE(dnskey.public_key);
@@ -541,7 +554,8 @@ void verify_next_assertion(val_context_t *ctx, struct val_authentication_chain *
 					val_ds_rdata_t ds;
 					val_parse_ds_rdata(dsrec->rr_rdata, dsrec->rr_rdata_length_h, &ds);
 					u_int16_t ds_keytag_n = htons(ds.d_keytag);
-					if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs.val_rrset_data, &ds_keytag_n, &dnskey))) {
+					if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs.val_rrset_data,
+&ds_keytag_n, &dnskey, &matching_dnskey_rr))) {
 						dsrec = dsrec->rr_next;
 						continue;
 					}
@@ -552,6 +566,7 @@ void verify_next_assertion(val_context_t *ctx, struct val_authentication_chain *
 								ds.d_hash, dnskey.public_key,
 								dnskey.public_key_len))) {
 							FREE(dnskey.public_key);
+							matching_dnskey_rr->rr_status = VAL_A_VERIFIED_LINK;
 							break;
 					}
 

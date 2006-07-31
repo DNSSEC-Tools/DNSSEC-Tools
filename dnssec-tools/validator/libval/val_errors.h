@@ -99,13 +99,14 @@
 #define VAL_A_LAST_FAILURE (VAL_A_FAIL_BASE+30) /* VAL_A_ERROR_BASE + 70 */
 
 /* success or unknown result conditions */
-#define VAL_A_VERIFIED (VAL_A_LAST_FAILURE+1) /* This is a transient state, it will settle at VALIDATED_SUCCESS if the
-chain of trust can be completed */ 
-#define VAL_A_LOCAL_ANSWER (VAL_A_LAST_FAILURE+2)	/* Answer obtained locally */
-#define VAL_A_TRUST_KEY (VAL_A_LAST_FAILURE+3) /* key is trusted */ 
-#define VAL_A_TRUST_ZONE (VAL_A_LAST_FAILURE+4) /* zone is trusted */
-#define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+5) /* No DNSSEC validation possible, query was for a RRSIG.*/
-#define VAL_A_NO_TRUST_ANCHOR (VAL_A_LAST_FAILURE+6) /* No trust anchor available, but components were verified */
+#define VAL_A_VERIFIED (VAL_A_LAST_FAILURE+1) /* This is a transient state, it will settle at
+VALIDATED_SUCCESS if the */
+#define VAL_A_VERIFIED_LINK (VAL_A_LAST_FAILURE+2) /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */ 
+#define VAL_A_LOCAL_ANSWER (VAL_A_LAST_FAILURE+3)	/* Answer obtained locally */
+#define VAL_A_TRUST_KEY (VAL_A_LAST_FAILURE+4) /* key is trusted */ 
+#define VAL_A_TRUST_ZONE (VAL_A_LAST_FAILURE+5) /* zone is trusted */
+#define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+6) /* No DNSSEC validation possible, query was for a RRSIG.*/
+#define VAL_A_NO_TRUST_ANCHOR (VAL_A_LAST_FAILURE+7) /* No trust anchor available, but components were verified */
 
 /* 
  *************************************************** 
