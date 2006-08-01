@@ -1625,6 +1625,11 @@ sub rollmgr_sendcmd
 	#
 	close(CLNTSOCK) if($close);
 
+	#
+	# Let rollerd know there's a command waiting.
+	#
+	rollmgr_cmdint();
+
 	return(1);
 }
 
