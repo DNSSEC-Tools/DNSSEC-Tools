@@ -1512,6 +1512,7 @@ sub cmd_runqueue
 sub cmd_shutdown
 {
 	rollmgr_log(LOG_TMI,"<command>","shutdown command received");
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd shutting down");
 
 	halt_handler();
 }

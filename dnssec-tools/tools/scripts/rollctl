@@ -17,6 +17,8 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 
+my $NOT_IMPLEMENTED = 0;				# Execution barrier.
+
 #######################################################################
 
 #
@@ -116,22 +118,6 @@ print "ret - $ret\n";
 			print STDERR "rollctl:  log-level set failed:  $resp\n";
 		}
 	}
-	if($rollallflag)
-	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLALL);
-	}
-	if($rollrecflag)
-	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLREC,$rollrecflag);
-	}
-	if($rollzoneflag)
-	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,$rollzoneflag);
-	}
-	if($runqueueflag)
-	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_RUNQUEUE);
-	}
 	if($sleeptimeflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag);
@@ -163,7 +149,36 @@ print "ret - $ret\n";
 	}
 	if($shutdownflag)
 	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_SHUTDOWN);
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SHUTDOWN);
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "rollctl:  shutdown failed:  \"$resp\"\n";
+		}
+	}
+
+	if($NOT_IMPLEMENTED)
+	{
+		if($rollallflag)
+		{
+			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLALL);
+		}
+		if($rollrecflag)
+		{
+			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLREC,$rollrecflag);
+		}
+		if($rollzoneflag)
+		{
+			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,$rollzoneflag);
+		}
+		if($runqueueflag)
+		{
+			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_RUNQUEUE);
+		}
 	}
 
 	return(0);
