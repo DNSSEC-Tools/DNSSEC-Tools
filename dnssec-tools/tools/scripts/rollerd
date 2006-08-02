@@ -1531,13 +1531,16 @@ sub cmd_sleeptime
 
 	if($newnap < $MIN_SLEEP)
 	{
-		rollmgr_log(LOG_ERR,"<command>","sleep time must be greater than $MIN_SLEEP");
+		rollmgr_log(LOG_ERR,"<command>","sleep-time must be >= $MIN_SLEEP");
+		rollmgr_sendresp(ROLLCMD_RC_BADSLEEP,"invalid sleep-time \"$newnap\"");
 	}
 	else
 	{
-		rollmgr_log(LOG_INFO,"<command>","setting sleep time to $newnap");
+		rollmgr_log(LOG_INFO,"<command>","setting sleep-time to $newnap");
 		$sleeptime = $newnap;
 		$sleepcnt  = $newnap;
+
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"sleep-time set to $newnap");
 	}
 }
 
