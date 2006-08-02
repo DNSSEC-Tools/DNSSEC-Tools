@@ -1355,10 +1355,12 @@ sub cmd_logfile
 	{
 		rollmgr_log(LOG_INFO,"<command>","logfile changed from $oldlog to $newlog");
 		bootmsg(0);
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"logfile changed to \"$newlog\"");
 	}
 	else
 	{
 		rollmgr_log(LOG_ERR,"<command>","unable to change logfile to $newlog");
+		rollmgr_sendresp(ROLLCMD_RC_BADFILE,"unable to change logfile to \"$newlog\"");
 	}
 }
 
@@ -1379,10 +1381,12 @@ sub cmd_loglevel
 	if($oldlvl >= 0)
 	{
 		rollmgr_log(LOG_INFO,"<command>","loglevel changed from $oldlvl to $newlvl");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"loglevel set to \"$newlvl\"");
 	}
 	else
 	{
 		rollmgr_log(LOG_ERR,"<command>","unable to change loglevel to $newlvl");
+		rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid loglevel \"$newlvl\"");
 	}
 }
 
