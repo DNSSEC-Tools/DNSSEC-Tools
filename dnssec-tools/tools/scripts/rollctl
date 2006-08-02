@@ -75,6 +75,9 @@ sub main()
 {
 	my $argc = @ARGV;		# Number of command line arguments.
 
+	my $ret;			# Return code.
+	my $resp;			# Response message.
+
 	#
 	# Check our options.  All the commands are alphabetized, except
 	# for shutdown.  We'll save that for last.
@@ -87,10 +90,31 @@ sub main()
 	if($logfileflag)
 	{
 		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGFILE,$logfileflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd log file set to $logfileflag\n";
+		}
+		else
+		{
+			print STDERR "rollctl:  log-level set failed:  \"$resp\"\n";
+		}
 	}
 	if($loglevelflag)
 	{
 		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGLEVEL,$loglevelflag);
+
+		($ret, $resp) = rollmgr_getresp();
+print "ret - $ret\n";
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd log level set to $loglevelflag\n";
+		}
+		else
+		{
+			print STDERR "rollctl:  log-level set failed:  \"$resp\"\n";
+		}
 	}
 	if($rollallflag)
 	{
@@ -111,12 +135,20 @@ sub main()
 	if($sleeptimeflag)
 	{
 		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_SLEEPTIME,$sleeptimeflag);
+
+		($ret, $resp) = rollmgr_getresp();
+print "ret - $ret\n";
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd sleep time set to $sleeptimeflag\n";
+		}
+		else
+		{
+			print STDERR "rollctl:  sleep-time set failed:  \"$resp\"\n";
+		}
 	}
 	if($statusflag)
 	{
-		my $ret;
-		my $resp;
-
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_STATUS);
 
 		($ret, $resp) = rollmgr_getresp();
