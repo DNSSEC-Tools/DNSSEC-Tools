@@ -140,6 +140,7 @@ our @EXPORT = qw(
 
 			 ROLLCMD_RC_OKAY
 			 ROLLCMD_RC_BADLEVEL
+			 ROLLCMD_RC_BADFILE
 			 ROLLCMD_RC_BADSLEEP
 
 			 CHANNEL_WAIT
@@ -230,10 +231,12 @@ sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 
 my $ROLLCMD_RC_OKAY	= 0;
 my $ROLLCMD_RC_BADLEVEL	= 1;
-my $ROLLCMD_RC_BADSLEEP	= 2;
+my $ROLLCMD_RC_BADFILE	= 2;
+my $ROLLCMD_RC_BADSLEEP	= 3;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);	};
 sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);	};
+sub ROLLCMD_RC_BADFILE		{ return($ROLLCMD_RC_BADFILE);	};
 sub ROLLCMD_RC_BADSLEEP		{ return($ROLLCMD_RC_BADSLEEP);	};
 
 my $CHANNEL_WAIT	= 0;
@@ -1649,7 +1652,7 @@ sub rollmgr_sendresp
 
 	my $oldsel;					# Currently selected fh.
 
-# print "rollmgr_sendresp:  down in\n";
+# print STDERR "rollmgr_sendresp:  down in\n";
 
 	#
 	# Make CLNTSOCK autoflush its output.
@@ -1696,7 +1699,7 @@ sub rollmgr_getresp
 	alarm($waiter);
 
 	#
-	# Get data from rollerd and append it to our response buffer.
+	# Get the response code and message from rollerd.
 	#
 	$retcode = <CLNTSOCK>;
 	while(<CLNTSOCK>)
