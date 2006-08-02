@@ -89,7 +89,7 @@ sub main()
 	#
 	if($logfileflag)
 	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGFILE,$logfileflag);
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGFILE,$logfileflag);
 
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
@@ -98,12 +98,12 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  log-level set failed:  \"$resp\"\n";
+			print STDERR "rollctl:  log-level set failed:  $resp\n";
 		}
 	}
 	if($loglevelflag)
 	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_LOGLEVEL,$loglevelflag);
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag);
 
 		($ret, $resp) = rollmgr_getresp();
 print "ret - $ret\n";
@@ -113,7 +113,7 @@ print "ret - $ret\n";
 		}
 		else
 		{
-			print STDERR "rollctl:  log-level set failed:  \"$resp\"\n";
+			print STDERR "rollctl:  log-level set failed:  $resp\n";
 		}
 	}
 	if($rollallflag)
@@ -134,7 +134,7 @@ print "ret - $ret\n";
 	}
 	if($sleeptimeflag)
 	{
-		rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_SLEEPTIME,$sleeptimeflag);
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag);
 
 		($ret, $resp) = rollmgr_getresp();
 print "ret - $ret\n";
