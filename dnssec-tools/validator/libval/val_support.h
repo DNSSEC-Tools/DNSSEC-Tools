@@ -70,7 +70,9 @@ struct rrset_rec *find_rr_set (
                                 u_int32_t           ttl_h,
                                 u_int8_t            *rdata_n,
                                 int                 from_section,
-                                int                 authoritive_answer);
+                                int                 authoritive_answer,
+								u_int8_t            *zonecut_n);
+
 int check_label_count (
                             struct rrset_rec    *the_set,
                             struct rr_rec       *the_sig,
