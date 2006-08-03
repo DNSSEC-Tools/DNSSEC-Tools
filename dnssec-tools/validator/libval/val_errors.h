@@ -39,6 +39,7 @@
 #define VAL_A_WAIT_FOR_RRSIG  3
 #define VAL_A_INIT 4
 #define VAL_A_NEGATIVE_PROOF 5 
+#define VAL_A_DONT_VALIDATE 6
 #define VAL_A_LAST_STATE  10 /* Closest round number above A_NEGATIVE_PROOF */
 
 /* 
@@ -105,8 +106,9 @@ VALIDATED_SUCCESS if the */
 #define VAL_A_LOCAL_ANSWER (VAL_A_LAST_FAILURE+3)	/* Answer obtained locally */
 #define VAL_A_TRUST_KEY (VAL_A_LAST_FAILURE+4) /* key is trusted */ 
 #define VAL_A_TRUST_ZONE (VAL_A_LAST_FAILURE+5) /* zone is trusted */
-#define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+6) /* No DNSSEC validation possible, query was for a RRSIG.*/
-#define VAL_A_NO_TRUST_ANCHOR (VAL_A_LAST_FAILURE+7) /* No trust anchor available, but components were verified */
+#define VAL_A_PROVABLY_UNSECURE (VAL_A_LAST_FAILURE+6)
+#define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+7) /* No DNSSEC validation possible, query was for a RRSIG.*/
+#define VAL_A_NO_TRUST_ANCHOR (VAL_A_LAST_FAILURE+8) /* No trust anchor available, but components were verified */
 
 /* 
  *************************************************** 
@@ -139,9 +141,8 @@ VALIDATED_SUCCESS if the */
 #define VAL_NONEXISTENT_NAME (VAL_R_LAST+3)
 #define VAL_NONEXISTENT_TYPE (VAL_R_LAST+4)
 #define VAL_ERROR (VAL_R_LAST+5)
-#define VAL_PROVABLY_UNSECURE (VAL_R_LAST+6)
 
-#define VAL_DNS_ERROR_BASE (VAL_R_LAST+7)
+#define VAL_DNS_ERROR_BASE (VAL_R_LAST+6)
 /* 
  * DNS errors lie within this range, 
  */
