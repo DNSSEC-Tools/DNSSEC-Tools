@@ -169,6 +169,7 @@ struct val_rrset {
 struct rrset_rec
 {
 	struct val_rrset rrs;
+	u_int8_t           *rrs_zonecut_n;
 	struct name_server *rrs_respondent_server;
     u_int8_t        rrs_cred;   /* SR_CRED_... */
     u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
@@ -208,12 +209,15 @@ typedef struct val_context {
 	struct val_authentication_chain *a_list;
 	struct val_query_chain *q_list;
 
+	//XXX Needs a lock variable here
+
 } val_context_t;
 
 
 struct val_rrset_digested {
 	struct rrset_rec *ac_data;
 	struct val_query_chain *ac_pending_query;
+	struct val_authentication_chain *val_ac_rrset_next;
 	struct val_authentication_chain *val_ac_next;
 };
 
@@ -224,7 +228,6 @@ struct val_authentication_chain {
 		struct val_rrset_digested _as;
 	};
 	struct val_authentication_chain *val_ac_trust;
-	struct val_authentication_chain *val_ac_rrset_next;
 };
 
 
@@ -248,6 +251,7 @@ struct delegation_info {
 	struct rrset_rec    *answers;
 	struct rrset_rec    *learned_zones;
 	struct name_server  *pending_glue_ns;
+	u_int8_t            *pending_zonecut_n;
 	struct val_query_chain  *glueptr;
 };
 
@@ -258,6 +262,7 @@ struct val_query_chain {
 	u_int16_t qc_state; /* DOS, TIMED_OUT, etc */
 	struct name_server *qc_ns_list;
 	struct name_server *qc_respondent_server;
+	u_int8_t *qc_zonecut_n;
 	struct delegation_info *qc_referral;
 	int qc_trans_id;
 	struct val_authentication_chain *qc_as;
@@ -333,6 +338,10 @@ int val_resolve_and_check( val_context_t *context,
             const u_int16_t type,
             const u_int8_t flags,
             struct val_result_chain **results);
+
+/* Flags for val_resolve_and_check */
+#define F_DEFAULT 0x00000000
+#define F_DONT_VALIDATE 0x00000001
 
 /* from val_context.h */
 int val_create_context(char *label, val_context_t **newcontext);
