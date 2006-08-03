@@ -10,11 +10,19 @@ libs: subdirmake
 
 makeit: perlmakefiles perlmake subdirmake
 
-install: makedirectories perlinstall subdirinstall
+install: makedirectories perlinstall subdirinstall nextstepinstructions
 
 clean: perlclean subdirclean
 
 distclean: clean configclean
+
+nextstepinstructions:
+	@echo ""
+	@echo "**********************************************************************"
+	@echo "** NEXT: Please run 'dtinitconf' in order to set up the required"
+	@echo "**       $(prefix)/etc/dnssec/dnssec-tools.conf file"
+	@echo "**********************************************************************"
+	@echo ""
 
 makedirectories:
 	@for i in $(INSTALLDIRS) ; do \
