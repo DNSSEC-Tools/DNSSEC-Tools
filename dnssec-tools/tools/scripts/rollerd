@@ -153,7 +153,7 @@ sub main
 	#
 	# Initial check for signed zonefile and keyrec file.
 	#
-	init_filechk($rollrecfile);
+	init_filechk($rollrecfile,1);
 
 	#
 	# Set up the command channel.
@@ -1102,13 +1102,19 @@ sub bootmsg
 #
 sub init_filechk
 {
-	my $rrf = shift;				# Rollrec file.
+	my $rrf	 = shift;				# Rollrec file.
+	my $halt = shift;				# Halt-on-error flag.
 	my $modified = 0;				# Modified flag.
 
 	#
 	# Exit if the rollrec file is bad.
+	#
+	#		(Do we really want to do this?)
 	# 
-	halt_handler() if(!rrfokay($rrf));
+	if(!rrfokay($rrf,"") && $halt)
+	{
+		halt_handler();
+	}
 
 	#
 	# Get the current contents of the rollrec file.
@@ -1465,6 +1471,7 @@ sub cmd_rollrec
 
 	if(rrfokay($rrf,"<command>"))
 	{
+		rollmgr_log(LOG_INFO,"<command>","------------------------------------------------");
 		rollmgr_log(LOG_INFO,"<command>","setting rollrec file from \"$rollrecfile\" to \"$rrf\"");
 		$rollrecfile = $rrf;
 	}
@@ -1675,7 +1682,6 @@ sub show_version
 	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
 	exit(1);
 }
-
 
 #-----------------------------------------------------------------------------
 #
