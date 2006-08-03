@@ -161,6 +161,7 @@ void res_sq_free_rrset_recs (struct rrset_rec **set)
     if (*set)
     {
 		if ((*set)->rrs_respondent_server) free_name_server(&((*set)->rrs_respondent_server));
+		if ((*set)->rrs_zonecut_n) FREE((*set)->rrs_zonecut_n);
         if ((*set)->rrs.val_rrset_name_n) FREE ((*set)->rrs.val_rrset_name_n);
         if ((*set)->rrs.val_rrset_data) res_sq_free_rr_recs (&((*set)->rrs.val_rrset_data));
         if ((*set)->rrs.val_rrset_sig) res_sq_free_rr_recs (&((*set)->rrs.val_rrset_sig));
@@ -224,7 +225,7 @@ void free_domain_info_ptrs (struct domain_info *di)
     }
 
     if (di->di_rrset) res_sq_free_rrset_recs (&di->di_rrset);
-                                                                                                                          
+
 	if (di->di_qnames)
 	{
 		free_qname_chain(&di->di_qnames);
@@ -432,7 +433,8 @@ struct rrset_rec *find_rr_set (
                                 u_int32_t           ttl_h,
                                 u_int8_t            *rdata_n,
                                 int                 from_section,
-                                int                 authoritive_answer)
+                                int                 authoritive_answer,
+								u_int8_t            *zonecut_n)
 {
     struct rrset_rec    *try;
     struct rrset_rec    *last;
@@ -470,7 +472,19 @@ struct rrset_rec *find_rr_set (
             res_sq_free_rrset_recs (the_list);
             return NULL;
 		}
- 
+
+		if (zonecut_n != NULL) {
+			int len = wire_name_length(zonecut_n);
+			new_one->rrs_zonecut_n = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+			if (new_one->rrs_zonecut_n == NULL) {
+				res_sq_free_rrset_recs (the_list);
+				return NULL;
+			}
+			memcpy(new_one->rrs_zonecut_n, zonecut_n, len);
+		}
+		else
+			new_one->rrs_zonecut_n = NULL;
+
         if ((init_rr_set (new_one, name_n, type_h, set_type_h,
                 class_h,ttl_h,rdata_n,from_section, authoritive_answer))
                     !=VAL_NO_ERROR)
@@ -519,7 +533,8 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
     *answers = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
     if (*answers==NULL) return VAL_OUT_OF_MEMORY;
 
-	(*answers)->rrs_respondent_server = NULL;                                                                                                          
+	(*answers)->rrs_respondent_server = NULL;
+	(*answers)->rrs_zonecut_n = NULL;
     (*answers)->rrs.val_rrset_name_n = (u_int8_t *) MALLOC (length);
                                                                                                                           
     if ((*answers)->rrs.val_rrset_name_n == NULL)
@@ -880,7 +895,9 @@ struct rr_rec *copy_rr_rec (u_int16_t type_h, struct rr_rec *r, int dolower)
         domain name in the RR section.
     */
     struct rr_rec *the_copy;
-                                                                                                                          
+  
+	if (r == NULL)
+		return NULL;                                                                                                                        
     the_copy = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
                                                                                                                           
     if (the_copy==NULL) return NULL;
@@ -997,16 +1014,29 @@ struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
     o_length = wire_name_length (rr_set->rrs.val_rrset_name_n);
 
 	if (SR_UNSET != clone_ns(&copy_set->rrs_respondent_server, rr_set->rrs_respondent_server)) {
-		FREE(copy_set);
+		res_sq_free_rrset_recs(&copy_set);
 		return NULL;
 	}
+
+	if (rr_set->rrs_zonecut_n != NULL) {
+		int len = wire_name_length(rr_set->rrs_zonecut_n);
+		copy_set->rrs_zonecut_n = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+		if (copy_set->rrs_zonecut_n == NULL) {
+			res_sq_free_rrset_recs(&copy_set);
+			return NULL;
+		}
+		memcpy(copy_set->rrs_zonecut_n, rr_set->rrs_zonecut_n, len);
+	}
+	else
+		copy_set->rrs_zonecut_n = NULL;
+
     copy_set->rrs.val_rrset_data = NULL;
     copy_set->rrs_next = NULL;
     copy_set->rrs.val_rrset_sig = NULL;
     copy_set->rrs.val_rrset_name_n = NULL;
 	copy_set->rrs.val_rrset_name_n = (u_int8_t *) MALLOC (o_length);
 	if (copy_set->rrs.val_rrset_name_n == NULL) {
-		FREE(copy_set);
+		res_sq_free_rrset_recs(&copy_set);
 		return NULL;
 	}
 	memcpy(copy_set->rrs.val_rrset_name_n, rr_set->rrs.val_rrset_name_n, o_length); 
