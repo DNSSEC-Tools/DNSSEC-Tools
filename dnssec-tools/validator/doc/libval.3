@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-07-25" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-08-02" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_resolve_and_check, 
 val_free_result_chain \- query and validate answers from a DNS name server
@@ -335,12 +335,10 @@ in a more user friendly format using the \fB\f(BIp_val_error()\fB\fR function.
 .RE
 .IP "\fIstruct val_authentication_chain\fR {" 4
 .IX Item "struct val_authentication_chain {"
-.Vb 6
+.Vb 4
 \&    val_astatus_t val_ac_status;
 \&    struct val_rrset *val_ac_rrset;
 \&    struct val_authentication_chain *val_ac_trust;
-\&    struct val_authentication_chain *val_ac_rrset_next;
-\&    struct val_authentication_chain *val_ac_next;
 \&};
 .Ve
 .RS 4
@@ -476,6 +474,11 @@ field may contain the following values:
 .Ve
 .Sp
 .Vb 2
+\&        VAL_A_PROVABLY_UNSECURE
+\&                The zone containing this name is "provably unsecure"
+.Ve
+.Sp
+.Vb 2
 \&        VAL_A_TRUST_ZONE
 \&                The zone in this authentication chain element is trusted.
 .Ve
@@ -573,19 +576,12 @@ validation result in val_status_t in such circumstances is \s-1VAL_ERROR\s0.
 .IX Item "val_ac_rrset"
 This field contains a pointer to an RRset of type \fBstruct val_rrset\fR
 obtained from the \s-1DNS\s0 response.
-.IP "\fIval_ac_rrset_next\fR" 4
-.IX Item "val_ac_rrset_next"
-Certain queries may return more than one RRset as part of the answer.
-This field points to the next RRset in the \s-1DNS\s0 response.
 .IP "\fIval_ac_trust\fR" 4
 .IX Item "val_ac_trust"
 This field points to an authentication chain element that either contains a \s-1DNSKEY\s0 RRset that
 can be used to verify RRSIGs over the current record, or contains a \s-1DS\s0
 RRset that can be used to build the chain-of-trust towards a trust
 anchor. 
-.IP "\fIval_ac_next\fR" 4
-.IX Item "val_ac_next"
-This field points to the next element in the val_authentication_chain linked\-list.
 .RE
 .RS 4
 .RE
@@ -642,7 +638,10 @@ The length of data stored in \fIrr_rdata\fR.
 The \s-1RDATA\s0 bytes.
 .IP "\fIrr_status\fR" 4
 .IX Item "rr_status"
-The verification status of the \s-1RRSIG\s0. This value is set 0 for the \s-1RDATA\s0 portion.
+The verification status of the \s-1RRSIG\s0. In addition to any of the
+assertion status values pertaining to signature verification, this
+field can also have the value \s-1VAL_A_VERIFIED_LINK\s0 for some \s-1DNSKEY\s0 
+resource records to signify that it is a part of the chain of trust.
 .IP "\fIrr_next\fR" 4
 .IX Item "rr_next"
 Points to the next resource record in the RRset.
