@@ -205,8 +205,6 @@ in a more user friendly format using the B<p_val_error()> function.
     val_astatus_t val_ac_status;
     struct val_rrset *val_ac_rrset;
     struct val_authentication_chain *val_ac_trust;
-    struct val_authentication_chain *val_ac_rrset_next;
-    struct val_authentication_chain *val_ac_next;
 };
 
 =over 4
@@ -294,6 +292,9 @@ field may contain the following values:
 	VAL_A_TRUST_KEY
 		The key present in this authentication chain element is trusted.
 
+	VAL_A_PROVABLY_UNSECURE
+		The zone containing this name is "provably unsecure"	
+
 	VAL_A_TRUST_ZONE
 		The zone in this authentication chain element is trusted.
 
@@ -360,21 +361,12 @@ validation result in val_status_t in such circumstances is VAL_ERROR.
 This field contains a pointer to an RRset of type B<struct val_rrset>
 obtained from the DNS response.
 
-=item I<val_ac_rrset_next> 
-
-Certain queries may return more than one RRset as part of the answer.
-This field points to the next RRset in the DNS response.
-
 =item I<val_ac_trust> 
 
 This field points to an authentication chain element that either contains a DNSKEY RRset that
 can be used to verify RRSIGs over the current record, or contains a DS
 RRset that can be used to build the chain-of-trust towards a trust
 anchor. 
-
-=item I<val_ac_next> 
-
-This field points to the next element in the val_authentication_chain linked-list.
 
 =back
 
@@ -466,7 +458,10 @@ The RDATA bytes.
 
 =item I<rr_status> 
 
-The verification status of the RRSIG. This value is set 0 for the RDATA portion.
+The verification status of the RRSIG. In addition to any of the
+assertion status values pertaining to signature verification, this
+field can also have the value VAL_A_VERIFIED_LINK for some DNSKEY 
+resource records to signify that it is a part of the chain of trust.
 
 =item I<rr_next> 
 
