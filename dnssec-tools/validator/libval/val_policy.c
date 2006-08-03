@@ -811,7 +811,9 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 
 void destroy_respol(val_context_t *ctx)
 {
-	free_name_servers(&ctx->nslist);
+	if (ctx->nslist != NULL) {
+		free_name_servers(&ctx->nslist);
+	}
 }
 
 
@@ -941,13 +943,13 @@ int read_res_config_file(val_context_t *ctx)
 	fcntl(fd, F_SETLKW, &fl);
 	fclose(fp);
 
+	/* Check if we have root hints */
 	if (ns_head == NULL) {
 		get_root_ns(&ns_head);
 		if(ns_head == NULL) 
 			return VAL_CONF_NOT_FOUND;
 	}
-
-	ctx->nslist = ns_head;
+	free_name_servers(&ns_head);
 
 	return VAL_NO_ERROR;
 
@@ -1039,7 +1041,7 @@ int read_root_hints_file(val_context_t *ctx)
 		else 
 			continue;
 
-		SAVE_RR_TO_LIST(NULL, root_info, zone_n, type_h, type_h, ns_c_in, ttl_h, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0); 
+		SAVE_RR_TO_LIST(NULL, root_info, zone_n, type_h, type_h, ns_c_in, ttl_h, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0, zone_n); 
 
 		/* name */
 		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
