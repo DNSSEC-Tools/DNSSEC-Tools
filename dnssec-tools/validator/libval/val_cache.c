@@ -35,6 +35,7 @@
 
 static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
+static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 static pthread_rwlock_t rwlock;
 static int rwlock_init = -1;
@@ -170,7 +171,7 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
             break;
 
 		case ns_t_ns:
-			next_answer = unchecked_answers;
+			next_answer = unchecked_ns_info;
 			break;
                                                                                                                          
         default:
@@ -200,9 +201,8 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
 
 int stow_zone_info(struct rrset_rec *new_info)
 {
-	return stow_info(&unchecked_answers, new_info);
+	return stow_info(&unchecked_ns_info, new_info);
 }
-
 
 int stow_key_info(struct rrset_rec *new_info)
 {
@@ -242,7 +242,7 @@ int stow_root_info(struct rrset_rec *root_info)
 	UNLOCK();
 
 	/* store the records in the cache */
-	return stow_info(&unchecked_answers, root_info);
+	return stow_info(&unchecked_ns_info, root_info);
 }
 
 int free_validator_cache()
@@ -253,6 +253,8 @@ int free_validator_cache()
 	unchecked_key_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_ds_info);
 	unchecked_ds_info = NULL;
+	res_sq_free_rrset_recs(&unchecked_ns_info);
+	unchecked_ns_info = NULL;
 	res_sq_free_rrset_recs(&unchecked_answers);
 	unchecked_answers = NULL;
 	UNLOCK();
@@ -273,3 +275,56 @@ int get_root_ns(struct name_server **ns)
 
 	return VAL_NO_ERROR;
 }
+
+
+int get_matching_nslist(struct val_query_chain  *matched_q, 
+					struct val_query_chain **queries,
+					struct name_server **ref_ns_list)
+{
+	/* find closest matching name zone_n */
+	struct rrset_rec *nsrrset;
+	u_int8_t *name_n = NULL;
+	u_int8_t *qname_n = NULL;
+	u_int8_t *tname_n = NULL;
+	u_int8_t *p;
+	u_int16_t qtype;
+
+	qname_n = matched_q->qc_name_n;
+	qtype = matched_q->qc_type_h;
+
+	LOCK_INIT();
+	LOCK_SH();
+
+	for (nsrrset=unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
+
+		if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {
+			tname_n = nsrrset->rrs.val_rrset_name_n;
+
+			/* Check if tname_n is within qname_n */
+			if (NULL != (p = strstr((char*)qname_n, (char*)tname_n))) {
+
+				if ((!name_n) || 
+					( wire_name_length(tname_n) > wire_name_length(name_n))) {
+
+					/* 
+					 * If type is DS, you don't want an exact match
+					 * since that will lead you to the child zone
+					 */
+					if ((qtype == ns_t_ds) && (p == qname_n)) {
+						continue;
+					}
+
+					/* New name is longer than old name */
+					name_n = tname_n; 
+				}
+			}
+		}
+	}
+
+	bootstrap_referral(name_n, &unchecked_ns_info, matched_q, queries, ref_ns_list); 
+
+	UNLOCK();
+
+	return VAL_NO_ERROR;
+}
+
