@@ -453,7 +453,6 @@ struct val_authentication_chain {
     val_astatus_t              val_ac_status;
     struct val_rrset           *val_ac_rrset;
     struct val_authentication_chain *val_ac_trust;
-    struct val_authentication_chain *val_ac_rrset_next;
 };
 
 struct val_rrset {
@@ -526,7 +525,6 @@ Within the val_authentication_chain structure, the val_ac_status field returns t
 validation status for the specified RRset. Possible values for this field are
 defined in <xref target="val-astatus"/>. These values can be displayed in a 
 human-understandable format using the p_as_error() function. 
-The val_ac_rrset_next field points to the next RRset within the set of responses returned for a query. 
 The val_ac_trust field points to the next element in the inverted authentication chain.
 For a element with type DNSKEY, this would correspond to a DS record in the parent zone and for a DS record
 this would correspond to the DNSKEY in the current zone. Its value is NULL when the current element in the
@@ -553,7 +551,9 @@ Members of the val_rrset_sig linked list also have an rr_status field which
 indicates whether the signature verified
 succesfully over the corresponding RRset or not. Although rr_status is of type val_astatus_t, 
 this field only takes on a subset of status values defined in <xref
-target="val-astatus"/>), specifically those pertaining to signature verification. 
+target="val-astatus"/>), specifically those pertaining to signature verification. In addition, rr_status may 
+also contain the value VAL_A_VERIFIED_LINK if the RRset corresponds to that of a DNSKEY and if the
+particular resource record within that set is a member of the chain of trust. 
 		</t>
 
 <t> The section where the RRset appears in the DNS response is saved in the 
@@ -725,6 +725,12 @@ authentication chain from.
         <t> </t>
         <t hangText="VAL_A_TRUST_ZONE:">
         returned if local policy defines a given zone to be trusted. 
+        </t>
+        <t> </t>
+        <t hangText="VAL_A_PROVABLY_UNSECURE:">
+        returned if the authetication chain from a trust anchor to a given zone cannot be constructed
+		due to the provable absence of a DS record for this zone in the parent. This condition 
+		is treated as equivalent to a trust point being recognized.
         </t>
         <t> </t>
         <t hangText="VAL_A_BARE_RRSIG:">
@@ -1004,12 +1010,6 @@ so the return values from these functions are identical to their predecessors. <
         <t> </t>
         <t hangText="VAL_ERROR:">
         returned if the an error was encountered while validating the authentication chain. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_PROVABLY_UNSECURE:">
-        returned if the authetication chain from a trust anchor to a given zone cannot be constructed
-		due to the provable absence of a DS record for this zone in the parent. This condition 
-		is generally treated as equivalent to an (unsigned) zone for which validation is to be ignored.
         </t>
         <t> </t>
         <t hangText="VAL_INDETERMINATE:">
