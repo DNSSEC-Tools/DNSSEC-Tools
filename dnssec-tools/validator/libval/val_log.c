@@ -20,6 +20,7 @@
 #include <validator.h>
 #include "val_cache.h"
 #include "val_support.h"
+#include "val_parse.h"
 #include "val_log.h"
 
 char *get_hex_string(const unsigned char *data, int datalen, char *buf, int buflen)
@@ -218,20 +219,21 @@ void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n,
 		}
 
 		for (next_as = next_result->val_rc_trust; next_as; next_as = next_as->val_ac_trust) {
-			u_char *t_name_n;
-			if(next_as->_as.ac_data->rrs.val_rrset_name_n == NULL)
-				t_name_n = (u_char*) "NULL_DATA";
-			else
-				t_name_n = next_as->_as.ac_data->rrs.val_rrset_name_n;
 
-			if(next_as->_as.ac_data == NULL) {
+			if(next_as->val_ac_rrset == NULL) {
 				val_log(ctx, level, "Assertion status = %s[%d]",
 					p_as_error(next_as->val_ac_status), next_as->val_ac_status);\
 			}
 			else {
-				val_log_assertion(ctx, level, t_name_n, next_as->_as.ac_data->rrs.val_rrset_class_h,
-					next_as->_as.ac_data->rrs.val_rrset_type_h, next_as->_as.ac_data->rrs.val_rrset_data, 
-					next_as->_as.ac_data->rrs_respondent_server, next_as->val_ac_status);
+				u_char *t_name_n;
+				if(next_as->val_ac_rrset->val_rrset_name_n == NULL)
+					t_name_n = (u_char*) "NULL_DATA";
+				else
+					t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
+
+				val_log_assertion(ctx, level, t_name_n, next_as->val_ac_rrset->val_rrset_class_h,
+					next_as->val_ac_rrset->val_rrset_type_h, next_as->val_ac_rrset->val_rrset_data, 
+					(struct name_server *)NULL, next_as->val_ac_status);
 			}
 		}
 	}
@@ -335,7 +337,11 @@ char *p_as_error(val_astatus_t err)
     case VAL_A_LOCAL_ANSWER: return "VAL_A_LOCAL_ANSWER"; break;
     case VAL_A_TRUST_KEY: return "VAL_A_TRUST_KEY"; break;
     case VAL_A_TRUST_ZONE: return "VAL_A_TRUST_ZONE"; break;
+	case VAL_A_PROVABLY_UNSECURE: return "VAL_A_PROVABLY_UNSECURE"; break;
     case VAL_A_BARE_RRSIG: return "VAL_A_BARE_RRSIG"; break;
+
+
+	case VAL_A_DONT_VALIDATE: return "VAL_A_DONT_VALIDATE"; break;
 
     /*
     case VAL_A_UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
@@ -383,9 +389,6 @@ char *p_val_error(val_status_t err)
 		case VAL_ERROR: 
 		case VAL_R_TRUST_FLAG|VAL_ERROR: 
 					return "VAL_ERROR"; break;
-		case VAL_PROVABLY_UNSECURE: 
-		case VAL_R_TRUST_FLAG|VAL_PROVABLY_UNSECURE: 
-					return "VAL_PROVABLY_UNSECURE"; break;
 		case VAL_NOTRUST:
 					return "VAL_NOTRUST"; break;
 
@@ -428,7 +431,6 @@ int send_log_message(char *buffer)
 void val_log (const val_context_t *ctx, int level, const char *template, ...)
 {
 	va_list ap;
-	const char *id_buf;
 
 	/* Needs to be at least two characters larger than message size */
 	char buf[1028]; 
