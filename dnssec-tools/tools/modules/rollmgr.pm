@@ -109,6 +109,7 @@ our @EXPORT = qw(
 		 rollmgr_log
 		 rollmgr_logfile
 		 rollmgr_loglevel
+		 rollmgr_logstr
 			 LOG_NEVER
 			 LOG_TMI
 			 LOG_EXPIRE
@@ -1271,6 +1272,38 @@ sub rollmgr_loglevel
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	rollmgr_logstr()
+#
+# Purpose:	Return the text form of the specified log level.
+#		undef is returned for bad levels.
+#
+sub rollmgr_logstr
+{
+	my $level = shift;				# New logging level.
+
+	#
+	# If log level isn't a numeric, we'll ensure that it's a valid
+	# level string.
+	#
+	if($level =~ /[a-zA-Z]/)
+	{
+		foreach my $lstr (@logstrs)
+		{
+			return($lstr) if(lc($lstr) eq lc($level));
+		}
+		return(undef);
+	}
+
+	#
+	# Check for out-of-bounds levels and return the text string.
+	#
+	return(undef) if(!defined($level));
+	return(undef) if(($level < $LOG_NEVER) || ($level > $LOG_ALWAYS));
+	return($logstrs[$level]);
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	rollmgr_logfile()
 #
 # Purpose:	Get/set the log file.  If no arguments are given, then
@@ -1775,6 +1808,9 @@ manager.
   $oldlogfile = rollmgr_logfile("-");
   $oldlogfile = rollmgr_logfile("/var/log/roll.log",1);
 
+  $loglevelstr = rollmgr_logstr(8)
+  $loglevelstr = rollmgr_logstr("info")
+
   rollmgr_log(LOG_INFO,"example.com","zone is valid");
 
   rollmgr_channel(1);
@@ -1900,6 +1936,17 @@ The I<useflag> argument is a boolean that indicates whether or not to give a
 descriptive message if an invalid logging level is given.  If I<useflag> is
 true, the message is given and the process exits; if false, no message is
 given.  For any error condition, an empty string is returned.
+
+=head2 B<rollmgr_logstr(loglevel)>
+
+This routine translates a log level (given in I<loglevel>) into the associated
+text log level.  The text log level is returned to the caller.
+
+If I<loglevel> is a text string, it is checked to ensure it is a valid log
+level.  Case is irrelevant when checking I<loglevel>.
+
+If I<loglevel> is numeric, it is must be in the valid range of log levels.
+I<undef> is returned if I<loglevel> is invalid.
 
 =head2 B<rollmgr_log(level,group,message)>
 
