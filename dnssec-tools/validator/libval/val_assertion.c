@@ -200,7 +200,7 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 					return VAL_A_UNTRUSTED_ZONE;
 				}
 				else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
-					val_log(ctx, LOG_DEBUG, "Doing validation for  %s", name_p);
+					val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
 					return VAL_A_WAIT_FOR_TRUST;
 				}
 				else { 
@@ -211,7 +211,7 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 			}
 		}
 	}
-	val_log(ctx, LOG_DEBUG, "Doing validation for  %s", name_n);
+	val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_n);
 	return VAL_A_WAIT_FOR_TRUST;
 }
 
@@ -1372,9 +1372,14 @@ static int ask_resolver(val_context_t *context, u_int8_t flags, struct val_query
 				/* Only set the CD and EDS0 options if we feel the server 
 				 * is capable of handling DNSSEC
 				 */
+				u_int8_t *test_n;
+				if (next_q->qc_zonecut_n != NULL)
+					test_n = next_q->qc_zonecut_n;
+				else
+					test_n = next_q->qc_name_n;
+
 				if (!(flags & F_DONT_VALIDATE) &&
-						(is_trusted_zone(context, next_q->qc_ns_list->ns_name_n) 
-							==  VAL_A_WAIT_FOR_TRUST)) {
+						(is_trusted_zone(context, test_n) ==  VAL_A_WAIT_FOR_TRUST)) {
 
 					val_log(context, LOG_DEBUG, "Setting D0 bit and using EDNS0");
 
