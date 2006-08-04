@@ -134,6 +134,10 @@ name: DNSSEC_NSEC_TTL
 desc: RFC3845: The NSEC RR SHOULD have the same TTL value as the SOA minimum TTL field.  This is in the spirit of negative caching [RFC2308].
 type: NSEC
 <test>
+  # skip the current record if it's not within our current zone
+  # (happens with glue especially)
+  return if ($_[0] !~ /$current_domain$/);
+
   $_[0]->ttl ne $nrecs{$current_domain}{'SOA'}[0]->minimum && 
      "NSEC TTL for " . $_[0]->name . " (" . $_[0]->ttl . 
      ") does not match SOA MIN TTL (" . 
