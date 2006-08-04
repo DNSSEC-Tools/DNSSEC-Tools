@@ -19,7 +19,7 @@ type:  RRSIG
 #
 name: DNSSEC_MEMORIZE_NS_RECORDS
 internal: yes
-level: 3
+level: 1
 type: NS
 <test>
   if ($_[0]->name eq $current_domain) {
@@ -320,6 +320,7 @@ desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.2: An RRSIG RR itself MUST
 
 name: DNSSEC_MEMORIZE_KEYS
 type: DNSKEY
+level: 1
 internal: yes
 <test>
   push @{$donuts::dnskeys}, $_[0];
