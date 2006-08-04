@@ -151,11 +151,6 @@ sub main
 	bootmsg(1);
 
 	#
-	# Initial check for signed zonefile and keyrec file.
-	#
-	init_filechk($rollrecfile,1);
-
-	#
 	# Set up the command channel.
 	#
 	rollmgr_channel(1);
@@ -176,10 +171,10 @@ sub main
 		controllers(0);
 
 		#
-		# Clean up and exit if the rollrec file doesn't exist
-		# or is empty.
+		# If we have a valid rollrec file, we'll read its contents
+		# and handle for expired ZSKs.
 		#
-		if(rrfokay($rollrecfile,""))
+		if(rrfchk($rollrecfile))
 		{
 			my $kronos1;			# Check's start time.
 			my $kronos2;			# Check's end time.
@@ -187,26 +182,30 @@ sub main
 			my $kronos;			# difference string.
 
 			#
-			# Get the current contents of the rollrec file.
+			# Get the contents of the rollrec file and check
+			# for expired ZSKs.
 			#
 			rollrec_lock();
-			rollrec_read($rollrecfile);
+			if(rollrec_read($rollrecfile) > 0)
+			{
 
-			#
-			# Check the zones for expired ZSKs.  We'll also keep
-			# track of how long it takes to check the ZSKs.
-			#
-			$kronos1 = time;
-			zsk_check();
-			$kronos2 = time;
-			$kronodiff = $kronos2 - $kronos1;
-			$kronos = timetrans($kronodiff);
-			rollmgr_log(LOG_TMI,"<timer>","ZSKs checked in $kronos");
+				#
+				# Check the zones for expired ZSKs.  We'll also
+				# keep track of how long it takes to check the
+				# ZSKs.
+				#
+				$kronos1 = time;
+				zsk_check();
+				$kronos2 = time;
+				$kronodiff = $kronos2 - $kronos1;
+				$kronos = timetrans($kronodiff);
+				rollmgr_log(LOG_TMI,"<timer>","ZSKs checked in $kronos");
 
-			#
-			# Save the current rollrec file state.
-			#
-			rollrec_write();
+				#
+				# Save the current rollrec file state.
+				#
+				rollrec_write();
+			}
 			rollrec_unlock();
 		}
 
@@ -216,13 +215,9 @@ sub main
 		commander();
 
 		#
-		# Turn our signal handlers on while we sleep.
+		# Turn our signal handlers and then take a nap.
 		#
 		controllers(1);
-
-		#
-		# Sleep for a bit.
-		#
 		sleeper($sleeptime);
 
 	}
@@ -1092,7 +1087,7 @@ sub bootmsg
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	init_filechk()
+# Routine:	rrfchk()
 #
 # Purpose:	This routine performs initial checking of the rollrec file.
 #		It checks each roll rollrec to ensure its zonefile and keyrec
@@ -1100,20 +1095,17 @@ sub bootmsg
 #		will be changed into a skip rollrec.  This prevents lots of
 #		unnecessary repeated log messages of an invalid rollrec.
 #
-sub init_filechk
+sub rrfchk
 {
 	my $rrf	 = shift;				# Rollrec file.
-	my $halt = shift;				# Halt-on-error flag.
 	my $modified = 0;				# Modified flag.
 
 	#
-	# Exit if the rollrec file is bad.
-	#
-	#		(Do we really want to do this?)
+	# Return failure if the rollrec file is bad.
 	# 
-	if(!rrfokay($rrf,"") && $halt)
+	if(!rrfokay($rrf,""))
 	{
-		halt_handler();
+		return(0);
 	}
 
 	#
@@ -1195,6 +1187,11 @@ sub init_filechk
 	#
 	rollrec_close();
 	rollrec_unlock();
+
+	#
+	# Return success.
+	# 
+	return(1);
 }
 
 #-----------------------------------------------------------------------------
@@ -1381,13 +1378,19 @@ sub cmd_loglevel
 	my $newlvl = shift;				# New level.
 	my $oldlvl;					# Old level.
 
-	rollmgr_log(LOG_TMI,"<command>","loglevel command received; new logging level - \"$newlvl\"");
+	my $oldstr;					# Old level's string.
+	my $newstr;					# New level's string.
+
+	$newstr = rollmgr_logstr($newlvl);
+	rollmgr_log(LOG_TMI,"<command>","loglevel command received; new logging level - \"$newstr\"");
 
 	$oldlvl = rollmgr_loglevel($newlvl,0);
 	if($oldlvl >= 0)
 	{
-		rollmgr_log(LOG_INFO,"<command>","loglevel changed from $oldlvl to $newlvl");
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,"loglevel set to \"$newlvl\"");
+		$oldstr = rollmgr_logstr($oldlvl);
+
+		rollmgr_log(LOG_INFO,"<command>","loglevel changed from $oldstr to $newstr");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"loglevel changed from \"$oldstr\" to \"$newstr\"");
 	}
 	else
 	{
@@ -1569,6 +1572,7 @@ sub cmd_status
 	my $curdir;					# Directory.
 	my $lfile;					# Log file.
 	my $lvl;					# Logging level.
+	my $lvlstr;					# Logging level string.
 	my $outbuf = "";				# Response buffer.
 
 	#
@@ -1577,6 +1581,7 @@ sub cmd_status
 	$curdir = getcwd();
 	$lfile	= rollmgr_logfile();
 	$lvl	= rollmgr_loglevel();
+	$lvlstr	= rollmgr_logstr($lvl);
 
 	#
 	# Build status report.
@@ -1587,7 +1592,7 @@ sub cmd_status
 	$outbuf .= "\trollrec file      - $rollrecfile\n";
 	$outbuf .= "\tlogfile           - $lfile\n";
 	$outbuf .= "\tloglevel          - $lvl\n";
-#	$outbuf .= "\ttotal sleeptime   - $sleeptime\n";
+	$outbuf .= "\tsleeptime         - $sleeptime\n";
 #	$outbuf .= "\telapsed sleeptime - $sleepcnt\n";
 
 
@@ -1598,9 +1603,9 @@ sub cmd_status
 	rollmgr_log(LOG_ALWAYS,"<command>","\tdirectory         - $curdir");
 	rollmgr_log(LOG_ALWAYS,"<command>","\trollrec file      - $rollrecfile");
 	rollmgr_log(LOG_ALWAYS,"<command>","\tlogfile           - $lfile");
-	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvl");
+	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvlstr");
 
-#	rollmgr_log(LOG_ALWAYS,"<command>","\ttotal sleeptime   - $sleeptime");
+	rollmgr_log(LOG_ALWAYS,"<command>","\tsleeptime         - $sleeptime");
 #	rollmgr_log(LOG_ALWAYS,"<command>","\telapsed sleeptime - $sleepcnt");
 
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
