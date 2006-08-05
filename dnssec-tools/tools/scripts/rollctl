@@ -108,7 +108,6 @@ sub main()
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGLEVEL,$loglevelflag);
 
 		($ret, $resp) = rollmgr_getresp();
-print "ret - $ret\n";
 		if($ret == ROLLCMD_RC_OKAY)
 		{
 			print "rollerd log level set to $loglevelflag\n";
@@ -118,12 +117,25 @@ print "ret - $ret\n";
 			print STDERR "rollctl:  log-level set failed:  $resp\n";
 		}
 	}
+	if($rollrecflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLREC,$rollrecflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd now using rollrec file $rollrecflag\n";
+		}
+		else
+		{
+			print STDERR "rollctl:  couldn't set rollrec file:  $resp\n";
+		}
+	}
 	if($sleeptimeflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag);
 
 		($ret, $resp) = rollmgr_getresp();
-print "ret - $ret\n";
 		if($ret == ROLLCMD_RC_OKAY)
 		{
 			print "rollerd sleep time set to $sleeptimeflag\n";
@@ -166,10 +178,6 @@ print "ret - $ret\n";
 		if($rollallflag)
 		{
 			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLALL);
-		}
-		if($rollrecflag)
-		{
-			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLREC,$rollrecflag);
 		}
 		if($rollzoneflag)
 		{
