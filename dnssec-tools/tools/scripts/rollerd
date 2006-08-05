@@ -1292,7 +1292,10 @@ rollmgr_log(LOG_TMI,"<command>","command is okay");
 		}
 		elsif($cmd eq ROLLCMD_ROLLREC())
 		{
-			cmd_rollrec($data);
+			if(cmd_rollrec($data))
+			{
+				last;
+			}
 		}
 		elsif($cmd eq ROLLCMD_ROLLZONE())
 		{
@@ -1465,6 +1468,8 @@ sub cmd_rollall
 # Routine:	cmd_rollrec()
 #
 # Purpose:	This routine changes the rollrec file being used by rollerd.
+#		If this command is successful, then the communications channel
+#		will be closed.
 #
 sub cmd_rollrec
 {
@@ -1477,11 +1482,19 @@ sub cmd_rollrec
 		rollmgr_log(LOG_INFO,"<command>","------------------------------------------------");
 		rollmgr_log(LOG_INFO,"<command>","setting rollrec file from \"$rollrecfile\" to \"$rrf\"");
 		$rollrecfile = $rrf;
+
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd now using rollrec file $rrf");
+
+		#
+		# Close the channel and return success.
+		#
+		rollmgr_closechan();
+		return(1);
 	}
-	else
-	{
-		rollmgr_log(LOG_ERR,"<command>","invalid rollrec file \"$rrf\"");
-	}
+
+	rollmgr_log(LOG_ERR,"<command>","invalid rollrec file \"$rrf\"");
+	rollmgr_sendresp(ROLLCMD_RC_BADROLLREC,"invalid rollrec file \"$rrf\"");
+	return(0);
 }
 
 #-----------------------------------------------------------------------------
