@@ -71,6 +71,19 @@
 	newname = name + label_len + 1;\
 } while(0);
 
+#define ALLOCATE_REFERRAL_BLOCK(ref) do{ \
+		ref = (struct delegation_info *) MALLOC (sizeof(struct delegation_info)); \
+		if (ref == NULL) \
+			return VAL_OUT_OF_MEMORY; \
+		ref->queries = NULL; \
+		ref->qnames = NULL; \
+		ref->answers = NULL; \
+		ref->learned_zones = NULL; \
+		ref->pending_glue_ns = NULL; \
+		ref->pending_zonecut_n = NULL; \
+		ref->glueptr = NULL; \
+} while(0) \
+
 
 static int skip_questions(const u_int8_t *buf)
 {
@@ -503,6 +516,10 @@ int bootstrap_referral(u_int8_t            *referral_zone_n,
 		}
 		/* didn't find any referral with glue, look for one now */
 		else if(pending_glue) {
+			/* Create a new referral if one does not exist */			
+			if (matched_q->qc_referral == NULL) {
+				ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+			}
 
 			/* Create a query for glue for pending_ns */
 			matched_q->qc_referral->pending_glue_ns = pending_glue;
@@ -545,19 +562,8 @@ static int do_referral(		val_context_t		*context,
     /* If this request has already been made then Referral Error */
 
 	if(matched_q->qc_referral == NULL) {
-		matched_q->qc_referral = (struct delegation_info *) 
-							MALLOC (sizeof(struct delegation_info));
-		if (matched_q->qc_referral == NULL)
-			return VAL_OUT_OF_MEMORY;
-		matched_q->qc_referral->queries = NULL;
-		matched_q->qc_referral->qnames = NULL;
-		matched_q->qc_referral->answers = NULL;
-		matched_q->qc_referral->learned_zones = NULL;
-		matched_q->qc_referral->pending_glue_ns = NULL;
-		matched_q->qc_referral->pending_zonecut_n = NULL;
-		matched_q->qc_referral->glueptr = NULL;
+		ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
 	}
-
 
     /* Update the qname chain */
 	struct rrset_rec    *ref_rrset;
