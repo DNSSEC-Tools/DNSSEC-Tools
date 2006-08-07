@@ -27,6 +27,7 @@ my $NOT_IMPLEMENTED = 0;				# Execution barrier.
 my %options = ();			# Filled option array.
 my @opts =
 (
+	"halt",				# Shutdown rollerd.
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel=s",			# Set rollerd's logging level.
 	"rollall",			# Roll all our zones.
@@ -131,6 +132,23 @@ sub main()
 			print STDERR "rollctl:  couldn't set rollrec file:  $resp\n";
 		}
 	}
+	if($runqueueflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_RUNQUEUE);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd checking rollrec queue\n";
+		}
+		else
+		{
+			#
+			# Shouldn't ever get here...
+			#
+			print STDERR "rollctl:  couldn't force the rollrec queue:  $resp\n";
+		}
+	}
 	if($sleeptimeflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SLEEPTIME,$sleeptimeflag);
@@ -183,10 +201,6 @@ sub main()
 		{
 			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,$rollzoneflag);
 		}
-		if($runqueueflag)
-		{
-			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_RUNQUEUE);
-		}
 	}
 
 	return(0);
@@ -225,7 +239,7 @@ sub doopts
 	$rollrecflag	= $options{'rollrec'}	|| 0;
 	$rollzoneflag	= $options{'rollzone'}	|| 0;
 	$runqueueflag	= $options{'runqueue'}	|| 0;
-	$shutdownflag	= $options{'shutdown'}	|| 0;
+	$shutdownflag	= ($options{'shutdown'} || $options{'halt'})   || 0;
 	$sleeptimeflag	= $options{'sleeptime'}	|| 0;
 	$statusflag	= $options{'status'}	|| 0;
 	$version        = $options{'version'}   || 0;
@@ -263,6 +277,7 @@ sub show_version
 sub usage
 {
 	print STDERR "usage:  rollctl [options] \n";
+	print STDERR "\t-halt				shutdown rollerd\n";
 	print STDERR "\t-logfile <logfile>		set log file\n";
 	print STDERR "\t-loglevel <loglevel>		set logging level\n";
 	print STDERR "\t-rollall			roll all zones\n";
@@ -299,10 +314,8 @@ I<rollerd>.  Multiple options may be specified on a single command line and
 they will be executed in I<alphabetical> order.  The exception to this
 ordering is that the I<-shutdown> command will always be executed last.
 
-Communication with I<rollerd> is entirely one-way:  I<rollctl> sends a set of
-commands to I<rollerd> and I<rollerd> executes them.  No response is given to
-I<rollctl> to indicate if the commands succeeded or failed.  It is expected
-that this will be remedied in the future.
+In most cases, I<rollerd> will send a response to I<rollctl>.  I<rollctl> will
+print a succes or failure message, as appropriate.
 
 =head1 OPTIONS
 
@@ -310,54 +323,60 @@ The following options are handled by I<rollctl>.
 
 =over 4
 
+=item I<-halt>
+
+Cleanly halts I<rollerd> execution.
+
 =item I<-logfile E<lt>logfileE<gt>>
 
-Set the I<rollerd> log file to I<logfile>.
+Sets the I<rollerd> log file to I<logfile>.
 This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout> or B</dev/tty>.
 
 =item I<-loglevel E<lt>loglevelE<gt>>
 
-Set the I<rollerd> logging level to I<loglevel>.
+Sets the I<rollerd> logging level to I<loglevel>.
 This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
 
 =item I<-rollall>
 
-Initiate roll-over for all the zones defined in I<rollerd>'s I<rollrec> file.
+Initiates roll-over for all the zones defined in I<rollerd>'s I<rollrec> file.
 
 I<This option is not currently implemented.>
 
 =item I<-rollrec E<lt>rollrec_fileE<gt>>
 
-Set I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
+Sets I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
 
 =item I<-rollzone E<lt>zoneE<gt>>
 
-Initiate roll-over for the zones named by I<zone>.
+Initiates roll-over for the zones named by I<zone>.
 
 I<This option is not currently implemented.>
 
 =item I<-runqueue>
 
-Wake up I<rollerd> and have it run its queue of I<rollrec> entries.
+Wakes up I<rollerd> and has it run its queue of I<rollrec> entries.
 
 =item I<-shutdown>
 
-Shutdown I<rollerd>.
+Synonym for I<-halt>.
 
 =item I<-sleeptime E<lt>sleeptimeE<gt>>
 
-Set I<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
+Sets I<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
 at least as large as the B<$MIN_SLEEP> value in I<rollerd>.
 
 =item I<-status>
 
-Have I<rollerd> write several of its operational parameters to its log file.
+Has I<rollerd> write several of its operational parameters to its log file.
+The parameters are also reported to I<rollctl>, which prints them to the
+screen.
 
 =item I<-help>
 
-Display a usage message.
+Displays a usage message.
 
 =back
 
