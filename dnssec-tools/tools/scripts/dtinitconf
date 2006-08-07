@@ -449,7 +449,7 @@ sub get_dt_opts()
 	print "\n";
 
 	$rlogfile  = getval("Roll-over Manager's Logfile",$rlogfile,"");
-	$rloglevel = getval("Roll-over Manager's Logging Level",$rloglevel,"");
+	$rloglevel = getval("Roll-over Manager's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, curphase, err, fatal)");
 	$rsleep	   = getval("Roll-over Manager's Sleep-time",$rsleep,"");
 
 	print "\n";
@@ -468,7 +468,8 @@ sub getval()
 {
 	my $prompt = shift;				# User prompt.
 	my $defval = shift;				# Default value.
-	my $type = shift;				# Value type.
+	my $type   = shift;				# Value type.
+	my $secstr = shift;				# Secondary string.
 
 	my $defstr;					# Default string.
 	my $val;					# User's value.
@@ -492,7 +493,15 @@ sub getval()
 	#
 	# Prompt for the value and read it in.
 	#
-	print"\t$prompt [$defstr]:  ";
+	if(defined($secstr))
+	{
+		print"\t$prompt [$defstr]\n";
+		print"\t    $secstr:  " if(defined($secstr));
+	}
+	else
+	{
+		print"\t$prompt [$defstr]:  ";
+	}
 	$val = <STDIN>;
 
 	#
@@ -539,7 +548,7 @@ sub getval()
 			else
 			{
 				print STDERR "\ninvalid boolean value; you must use \"yes\", \"no\", \"1\", or \"0\"\n\n";
-				return(getval($prompt,$defval,$type));
+				return(getval($prompt,$defval,$type,$secstr));
 			}
 		}
 	}
