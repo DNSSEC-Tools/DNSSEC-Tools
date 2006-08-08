@@ -107,6 +107,8 @@ exit(0);
 #
 sub main
 {
+	my $confdir;				# Configuration directory.
+
 	#
 	# Force output to be written right away.
 	#
@@ -116,6 +118,27 @@ sub main
 	# Parse the command line options.
 	#
 	optsandargs();
+
+	#
+	# Ensure our configuration directory exists and is a directory.
+	#
+	$confdir = getconfdir();
+	if(! -e $confdir)
+	{
+		my $uid = 0;				# UID of confdir.
+		my $gid;				# GID of confdir.
+
+		print STDERR "configuration directory \"$confdir\" does not exist; creating...\n\n";
+
+		$gid = getgrnam("dnssec") || -1;
+		mkdir($confdir,0755);
+		chown($uid,$gid,$confdir);
+	}
+	elsif(! -d $confdir)
+	{
+		print STDERR "configuration directory \"$confdir\" is not a directory; unable to continue\n";
+		exit(1);
+	}
 
 	#
 	# Ensure we're only going to overwrite an existing config file
@@ -734,6 +757,11 @@ directories that contain the BIND programs are saved.  After collecting these
 directories, the user is presented with this list and may choose to use
 whichever set is desired.  If no directories are found that contain the BIND
 programs, the user is prompted for the proper location.
+
+If the configuration file's parent directory does not exist, then an attempt
+is made to create the directory.  The new directory's ownership will be set
+to I<root> for the owner and I<dnssec> for the group, assuming the I<dnssec>
+group exists.
 
 =head1 OPTIONS
 
