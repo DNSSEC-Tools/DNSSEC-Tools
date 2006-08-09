@@ -138,12 +138,15 @@ our @EXPORT = qw(
 			 ROLLCMD_SHUTDOWN
 			 ROLLCMD_SLEEPTIME
 			 ROLLCMD_STATUS
+			 ROLLCMD_ZONESTATUS
 
 			 ROLLCMD_RC_OKAY
 			 ROLLCMD_RC_BADLEVEL
 			 ROLLCMD_RC_BADFILE
 			 ROLLCMD_RC_BADSLEEP
 			 ROLLCMD_RC_BADROLLREC
+			 ROLLCMD_RC_RRFOPEN
+			 ROLLCMD_RC_NOZONES
 
 			 CHANNEL_WAIT
 			 CHANNEL_CLOSE
@@ -218,6 +221,7 @@ my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
 my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_STATUS	= "rollcmd_status";
+my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
 
 sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
 sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
@@ -230,18 +234,23 @@ sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
 sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
+sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
 
 my $ROLLCMD_RC_OKAY	  = 0;
 my $ROLLCMD_RC_BADLEVEL	  = 1;
 my $ROLLCMD_RC_BADFILE	  = 2;
 my $ROLLCMD_RC_BADSLEEP	  = 3;
-my $ROLLCMD_RC_BADROLLREC = 3;
+my $ROLLCMD_RC_BADROLLREC = 4;
+my $ROLLCMD_RC_RRFOPEN	  = 5;
+my $ROLLCMD_RC_NOZONES	  = 6;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);		};
 sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);		};
 sub ROLLCMD_RC_BADFILE		{ return($ROLLCMD_RC_BADFILE);		};
 sub ROLLCMD_RC_BADSLEEP		{ return($ROLLCMD_RC_BADSLEEP);		};
 sub ROLLCMD_RC_BADROLLREC	{ return($ROLLCMD_RC_BADROLLREC);	};
+sub ROLLCMD_RC_RRFOPEN		{ return($ROLLCMD_RC_RRFOPEN);		};
+sub ROLLCMD_RC_NOZONES		{ return($ROLLCMD_RC_NOZONES);		};
 
 my $CHANNEL_WAIT	= 0;
 my $CHANNEL_CLOSE	= 1;
@@ -262,6 +271,7 @@ my %roll_commands =
 	rollcmd_shutdown	=> 1,
 	rollcmd_sleeptime	=> 1,
 	rollcmd_status		=> 1,
+	rollcmd_zonestatus	=> 1,
 );
 
 ##############################################################################
