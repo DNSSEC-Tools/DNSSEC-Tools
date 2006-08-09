@@ -1523,6 +1523,8 @@ sub cmd_runqueue
 {
 	rollmgr_log(LOG_TMI,"<command>","runqueue command received");
 
+	rollmgr_log(LOG_INFO,"<command>","checking rollrec queue");
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd checking rollrec queue");
 	$sleepcnt = $sleeptime;
 }
 
