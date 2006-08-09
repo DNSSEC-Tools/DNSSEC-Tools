@@ -37,8 +37,9 @@ my @opts =
 	"shutdown",			# Shutdown rollerd.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
+	"zonestatus",			# Get status of zones.
 
-	"version",			# Display the version nmuber .
+	"version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
 
@@ -54,6 +55,7 @@ my $runqueueflag;
 my $shutdownflag;
 my $sleeptimeflag;
 my $statusflag;
+my $zonestatflag;
 my $version	= 0;			# Display the version number.
 
 #######################################################################
@@ -132,6 +134,20 @@ sub main()
 			print STDERR "rollctl:  couldn't set rollrec file:  $resp\n";
 		}
 	}
+	if($rollzoneflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLZONE,$rollzoneflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp\n";
+		}
+		else
+		{
+			print STDERR "rollctl:  unable to force roll-over process for $rollzoneflag:  $resp\n";
+		}
+	}
 	if($runqueueflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_RUNQUEUE);
@@ -190,16 +206,26 @@ sub main()
 			print STDERR "rollctl:  shutdown failed:  \"$resp\"\n";
 		}
 	}
+	if($zonestatflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONESTATUS);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "$resp";
+		}
+		else
+		{
+			print STDERR "rollctl:  zonestatus failed:  \"$resp\"\n";
+		}
+	}
 
 	if($NOT_IMPLEMENTED)
 	{
 		if($rollallflag)
 		{
 			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLALL);
-		}
-		if($rollzoneflag)
-		{
-			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLZONE,$rollzoneflag);
 		}
 	}
 
@@ -233,16 +259,17 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$logfileflag	= $options{'logfile'}	|| 0;
-	$loglevelflag	= $options{'loglevel'}	|| 0;
-	$rollallflag	= $options{'rollall'}	|| 0;
-	$rollrecflag	= $options{'rollrec'}	|| 0;
-	$rollzoneflag	= $options{'rollzone'}	|| 0;
-	$runqueueflag	= $options{'runqueue'}	|| 0;
-	$shutdownflag	= ($options{'shutdown'} || $options{'halt'})   || 0;
-	$sleeptimeflag	= $options{'sleeptime'}	|| 0;
-	$statusflag	= $options{'status'}	|| 0;
-	$version        = $options{'version'}   || 0;
+	$logfileflag	= $options{'logfile'}	 || 0;
+	$loglevelflag	= $options{'loglevel'}	 || 0;
+	$rollallflag	= $options{'rollall'}	 || 0;
+	$rollrecflag	= $options{'rollrec'}	 || 0;
+	$rollzoneflag	= $options{'rollzone'}	 || 0;
+	$runqueueflag	= $options{'runqueue'}	 || 0;
+	$shutdownflag	= ($options{'shutdown'}  || $options{'halt'})   || 0;
+	$sleeptimeflag	= $options{'sleeptime'}	 || 0;
+	$statusflag	= $options{'status'}	 || 0;
+	$zonestatflag	= $options{'zonestatus'} || 0;
+	$version        = $options{'version'}    || 0;
 
 	#
 	# Show the version number if requested
@@ -287,6 +314,7 @@ sub usage
 	print STDERR "\t-shutdown			shutdown rollerd\n";
 	print STDERR "\t-sleeptime <sleeptime>		set sleep time\n";
 	print STDERR "\t-status				get rollerd's status\n";
+	print STDERR "\t-zonestatus			get status of zones\n";
 	print STDERR "\t-version			display version number\n";
 	print STDERR "\t-help				help message \n";
 	exit(0);
@@ -315,7 +343,7 @@ they will be executed in I<alphabetical> order.  The exception to this
 ordering is that the I<-shutdown> command will always be executed last.
 
 In most cases, I<rollerd> will send a response to I<rollctl>.  I<rollctl> will
-print a succes or failure message, as appropriate.
+print a success or failure message, as appropriate.
 
 =head1 OPTIONS
 
@@ -351,9 +379,7 @@ Sets I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
 
 =item I<-rollzone E<lt>zoneE<gt>>
 
-Initiates roll-over for the zones named by I<zone>.
-
-I<This option is not currently implemented.>
+Initiates roll-over for the zone named by I<zone>.
 
 =item I<-runqueue>
 
@@ -374,6 +400,15 @@ Has I<rollerd> write several of its operational parameters to its log file.
 The parameters are also reported to I<rollctl>, which prints them to the
 screen.
 
+=item I<-zonestatus>
+
+Has I<rollerd> give the status of zones in the current I<rollrec> file to the
+I<rollerd> log file.  The status is also reported to I<rollctl>, which prints
+it to the screen.
+
+For each zone in the I<rollrec> file, the zone name, the record type ("skip"
+or "roll", and the current roll-over phase are given.
+
 =item I<-help>
 
 Displays a usage message.
@@ -390,10 +425,6 @@ The following modifications may be made in the future:
 
 The commands will be executed in the order given on the command line rather
 than in alphabetical order.
-
-=item results returned to I<rollctl>
-
-A success/failure result will be returned to I<rollctl> from I<rollerd>.
 
 =back
 
