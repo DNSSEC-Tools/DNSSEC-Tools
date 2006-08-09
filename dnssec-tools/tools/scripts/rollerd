@@ -1267,9 +1267,7 @@ sub commander
 		# Get the command, return if there wasn't one.
 		#
 		($cmd,$data) = rollmgr_getcmd(5);
-rollmgr_log(LOG_TMI,"<command>","checking command - \"$cmd\"");
 		return if(!defined($cmd));
-rollmgr_log(LOG_TMI,"<command>","command is okay");
 
 		rollmgr_log(LOG_TMI,"<command>","cmd   - \"$cmd\"");
 		rollmgr_log(LOG_TMI,"<command>","data  - \"$data\"") if($data ne "");
@@ -1316,6 +1314,10 @@ rollmgr_log(LOG_TMI,"<command>","command is okay");
 		elsif($cmd eq ROLLCMD_STATUS())
 		{
 			cmd_status($data);
+		}
+		elsif($cmd eq ROLLCMD_ZONESTATUS())
+		{
+			cmd_zonestatus($data);
 		}
 		else
 		{
@@ -1501,13 +1503,23 @@ sub cmd_rollrec
 #
 # Routine:	cmd_rollzone()
 #
+# Purpose:	This command moves a zone into immediate roll-over.  It
+#		calls rollnow() to move the zone into immediate roll-over.
+#
 sub cmd_rollzone
 {
-	my $data = shift;				# Command's data.
+	my $zone = shift;				# Command's data.
 
-	rollmgr_log(LOG_TMI,"<command>","rollzone command received; data - \"$data\"");
+	rollmgr_log(LOG_TMI,"<command>","rollzone command received; zone - \"$zone\"");
 
-	rollmgr_log(LOG_ERR,"<command>","rollzone command not implemented yet");
+	if(rollnow($zone) == 1)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone roll-over started");
+	}
+	else
+	{
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+	}
 }
 
 #-----------------------------------------------------------------------------
@@ -1624,6 +1636,134 @@ sub cmd_status
 #	rollmgr_log(LOG_ALWAYS,"<command>","\telapsed sleeptime - $sleepcnt");
 
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_zonestatus()
+#
+# Purpose:	Return zone status to the control program.
+#
+sub cmd_zonestatus
+{
+	my $data = shift;				# Command's data.
+
+	my $cnt = 0;					# Zone count.
+	my $outbuf = "zone status:\n";			# Zone status line.
+
+	rollmgr_log(LOG_TMI,"<command>","zonestatus command received");
+
+	rollrec_lock();
+
+	#
+	# Read the rollrec file.  If we couldn't, complain and return.
+	#
+	if(rollrec_read($rollrecfile) <= 0)
+	{
+		rollrec_unlock();
+		rollmgr_sendresp(ROLLCMD_RC_RRFOPEN,"unable to open rollrec file $rollrecfile");
+		rollmgr_log(LOG_ALWAYS,"<command>","unable to open rollrec fiile $rollrecfile\n");
+		return;
+	}
+
+	rollmgr_log(LOG_ALWAYS,"<command>","zone status:");
+
+	#
+	# Add the status of each zone in the rollrec file to our output buffer.
+	#
+	foreach my $rname (rollrec_names())
+	{
+		my $rrr;		# Reference to rollrec.
+		my %rr;			# Rollrec hash.
+
+		my $phase;		# Rollrec's phase.
+		my $rtype;		# Rollrec's record type.
+
+		#
+		# Get the rollrec for this name.
+		#
+		$rrr = rollrec_fullrec($rname);
+		next if(!defined($rrr));
+		%rr = %$rrr;
+
+		#
+		# Get the data we're interested in.
+		#
+		$phase = $rr{'curphase'};
+		$rtype = $rr{'rollrec_type'};
+
+		#
+		# Add the data to the output buffer and bump our zone count.
+		#
+		$outbuf .= "\t$rname\t$rtype\t$phase\n";
+		rollmgr_log(LOG_ALWAYS,"<command>","\t$rname\t$rtype\t$phase\n");
+		$cnt++;
+	}
+
+	#
+	# Send a response to the control program.
+	#
+	if($cnt == 0)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_NOZONES,"no zones defined in $rollrecfile");
+		rollmgr_log(LOG_ALWAYS,"<command>","no zones defined in $rollrecfile\n");
+	}
+	else
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
+	}
+
+	rollrec_unlock();
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollnow()
+#
+# Purpose:	This command moves a zone into immediate roll-over.  It
+#		doesn't sit in the initial waiting period, but starts
+#		right off into roll-over phase 2.
+#
+sub rollnow
+{
+	my $zone = shift;				# Command's data.
+	my $rrr;					# Reference to rollrec.
+	my %rr;						# Rollrec hash.
+
+	#
+	# Get the rollrec for the zone.
+	#
+	$rrr = rollrec_fullrec($zone);
+	if(!defined($rrr))
+	{
+		rollmgr_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
+		return(0);
+	}
+	%rr = %$rrr;
+
+	#
+	# A skip record is changed to a regular rollrec.
+	#
+	if($rr{'rollrec_type'} eq "skip")
+	{
+		rollmgr_log(LOG_INFO,"<command>","$zone skip rollrec changed to a roll rollrec");
+		rollrec_rectype($zone,"roll");
+		$rrr = rollrec_fullrec($zone);
+	}
+
+	#
+	# Change the zone's phase to roll-over phase 2.  This bypasses the
+	# initial roll-over waiting period and gets right to the nitty gritty
+	# of doing a roll-over.
+	#
+	newphase($zone,$rrr,2);
+
+	#
+	# Setting the sleep values such that the queue will be run.
+	#
+	$sleepcnt = $sleeptime;
+	rollmgr_log(LOG_INFO,"<command>","forcing a roll-over for zone $zone");
+	return(1);
 }
 
 #-----------------------------------------------------------------------------
