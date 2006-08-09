@@ -121,7 +121,8 @@
 #endif
 
 #define RETRIEVE_POLICY(ctx, index, type)	\
-			(!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
+			(ctx == NULL) ? NULL : \
+                        (!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
 #define VAL_R_TRUST_FLAG 0x80
 #define SET_RESULT_TRUSTED(status)	status |= VAL_R_TRUST_FLAG
 #define SET_MASKED_STATUS(st, new_val) st = (st & VAL_R_TRUST_FLAG) | new_val 
