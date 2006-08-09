@@ -105,12 +105,20 @@ struct name_server
     void            *ns_tsig;
     u_int32_t       ns_security_options;
     u_int32_t       ns_status;
+    u_long          ns_options;
+    int             ns_retrans;
+    int             ns_retry;
+
     struct name_server  *ns_next;
-    int         ns_number_of_addresses;
-    struct sockaddr     ns_address[1];
-	u_long  ns_options;
-	int ns_retrans;
-	int ns_retry;
+
+    /*
+     * NOTE: ns_address MUST be last element
+     */
+    int             ns_number_of_addresses;
+    struct sockaddr ns_address[1];
+    /*
+     * DO NOT ADD MEMBERS BELOW ns_addresses
+     */
 };
 
 
