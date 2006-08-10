@@ -35,6 +35,7 @@ my @opts =
 	"rollzone=s",			# Roll the specified zone.
 	"runqueue",			# Run the queue.
 	"shutdown",			# Shutdown rollerd.
+	"skipzone=s",			# Stop this specified zone from rolling.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
 	"zonestatus",			# Get status of zones.
@@ -53,9 +54,11 @@ my $rollrecflag;
 my $rollzoneflag;
 my $runqueueflag;
 my $shutdownflag;
+my $skipzoneflag;
 my $sleeptimeflag;
 my $statusflag;
 my $zonestatflag;
+
 my $version	= 0;			# Display the version number.
 
 #######################################################################
@@ -145,7 +148,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  unable to force roll-over process for $rollzoneflag:  $resp\n";
+			print STDERR "unable to force roll-over process for $rollzoneflag:  $resp\n";
 		}
 	}
 	if($runqueueflag)
@@ -163,6 +166,20 @@ sub main()
 			# Shouldn't ever get here...
 			#
 			print STDERR "rollctl:  couldn't force the rollrec queue:  $resp\n";
+		}
+	}
+	if($skipzoneflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$skipzoneflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "roll-over stopped for zone $skipzoneflag\n";
+		}
+		else
+		{
+			print STDERR "unable to stop roll-over for zone $skipzoneflag:  \"$resp\"\n";
 		}
 	}
 	if($sleeptimeflag)
@@ -266,6 +283,7 @@ sub doopts
 	$rollzoneflag	= $options{'rollzone'}	 || 0;
 	$runqueueflag	= $options{'runqueue'}	 || 0;
 	$shutdownflag	= ($options{'shutdown'}  || $options{'halt'})   || 0;
+	$skipzoneflag	= $options{'skipzone'}	 || 0;
 	$sleeptimeflag	= $options{'sleeptime'}	 || 0;
 	$statusflag	= $options{'status'}	 || 0;
 	$zonestatflag	= $options{'zonestatus'} || 0;
@@ -312,6 +330,7 @@ sub usage
 	print STDERR "\t-rollzone <zone>		roll named zone\n";
 	print STDERR "\t-runqueue			run queue\n";
 	print STDERR "\t-shutdown			shutdown rollerd\n";
+	print STDERR "\t-skipzone <zone>		skip named zone\n";
 	print STDERR "\t-sleeptime <sleeptime>		set sleep time\n";
 	print STDERR "\t-status				get rollerd's status\n";
 	print STDERR "\t-zonestatus			get status of zones\n";
@@ -388,6 +407,10 @@ Wakes up I<rollerd> and has it run its queue of I<rollrec> entries.
 =item I<-shutdown>
 
 Synonym for I<-halt>.
+
+=item I<-skipzone E<lt>zoneE<gt>>
+
+Stops roll-over for the zone named by I<zone>.
 
 =item I<-sleeptime E<lt>sleeptimeE<gt>>
 
