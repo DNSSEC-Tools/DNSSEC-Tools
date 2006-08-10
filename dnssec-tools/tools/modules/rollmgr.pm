@@ -136,6 +136,7 @@ our @EXPORT = qw(
 			 ROLLCMD_ROLLZONE
 			 ROLLCMD_RUNQUEUE
 			 ROLLCMD_SHUTDOWN
+			 ROLLCMD_SKIPALL
 			 ROLLCMD_SKIPZONE
 			 ROLLCMD_SLEEPTIME
 			 ROLLCMD_STATUS
@@ -212,34 +213,19 @@ my $EOL		= "\015\012";			# Net-standard end-of-line.
 my $CHANNEL_TYPE = PF_UNIX;			# Type of channel we're using.
 my $UNIXSOCK	= "/rollmgr.socket";		# Unix socket name.
 
-my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
-my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
-my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
-my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
-my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
-my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
-my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
-my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
-my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
-my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
-my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
-my $ROLLCMD_STATUS	= "rollcmd_status";
-my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
+#
+# The CHANNEL_ entities are used for specifying whether rollmgr_sendcmd()
+# should or should not wait for a response from rollerd.
+#
+my $CHANNEL_WAIT	= 0;
+my $CHANNEL_CLOSE	= 1;
+sub CHANNEL_WAIT		{ return($CHANNEL_WAIT);	};
+sub CHANNEL_CLOSE		{ return($CHANNEL_CLOSE);	};
 
-sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
-sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
-sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
-sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
-sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
-sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
-sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
-sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
-sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
-sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
-sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
-sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
-sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
-
+#
+# The ROLLCMD_RC_ entities are return codes sent from rollerd and received
+# by client programs from rollmgr_getresp().
+#
 my $ROLLCMD_RC_OKAY	  = 0;
 my $ROLLCMD_RC_BADLEVEL	  = 1;
 my $ROLLCMD_RC_BADFILE	  = 2;
@@ -258,11 +244,39 @@ sub ROLLCMD_RC_RRFOPEN		{ return($ROLLCMD_RC_RRFOPEN);		};
 sub ROLLCMD_RC_NOZONES		{ return($ROLLCMD_RC_NOZONES);		};
 sub ROLLCMD_RC_BADZONE		{ return($ROLLCMD_RC_BADZONE);		};
 
-my $CHANNEL_WAIT	= 0;
-my $CHANNEL_CLOSE	= 1;
+#
+# The remaining ROLLCMD_ entities are the rollmgr_sendcmd() commands
+# recognized by rollerd.  %roll_commands is a hash table of valid commands.
+#
+my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
+my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
+my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
+my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
+my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
+my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
+my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
+my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
+my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
+my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
+my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
+my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
+my $ROLLCMD_STATUS	= "rollcmd_status";
+my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
 
-sub CHANNEL_WAIT		{ return($CHANNEL_WAIT);	};
-sub CHANNEL_CLOSE		{ return($CHANNEL_CLOSE);	};
+sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
+sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
+sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
+sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
+sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
+sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
+sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
+sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
+sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
+sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
+sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
+sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
+sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
+sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
 
 my %roll_commands =
 (
@@ -275,6 +289,7 @@ my %roll_commands =
 	rollcmd_rollzone	=> 1,
 	rollcmd_runqueue	=> 1,
 	rollcmd_shutdown	=> 1,
+	rollcmd_skipall		=> 1,
 	rollcmd_skipzone	=> 1,
 	rollcmd_sleeptime	=> 1,
 	rollcmd_status		=> 1,
