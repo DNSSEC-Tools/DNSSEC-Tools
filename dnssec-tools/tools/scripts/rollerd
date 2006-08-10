@@ -1307,6 +1307,10 @@ sub commander
 		{
 			cmd_shutdown($data);
 		}
+		elsif($cmd eq ROLLCMD_SKIPZONE())
+		{
+			cmd_skipzone($data);
+		}
 		elsif($cmd eq ROLLCMD_SLEEPTIME())
 		{
 			cmd_sleeptime($data);
@@ -1556,6 +1560,28 @@ sub cmd_shutdown
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	cmd_skipzone()
+#
+# Purpose:	This command removes a zone from roll-over processing. 
+#
+sub cmd_skipzone
+{
+	my $zone = shift;				# Command's data.
+
+	rollmgr_log(LOG_TMI,"<command>","skipzone command received; zone - \"$zone\"");
+
+	if(skipnow($zone) == 1)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone roll-over stopped");
+	}
+	else
+	{
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	cmd_sleeptime()
 #
 # Purpose:	This command sets rollerd's time-to-sleep to the user's
@@ -1762,6 +1788,48 @@ sub rollnow
 	#
 	$sleepcnt = $sleeptime;
 	rollmgr_log(LOG_INFO,"<command>","forcing a roll-over for zone $zone");
+	return(1);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	skipnow()
+#
+# Purpose:	This command prevents a zone from rolling over.  It is marked
+#		as a skip record in the rollrec file.
+#
+sub skipnow
+{
+	my $zone = shift;				# Command's data.
+	my $rrr;					# Reference to rollrec.
+	my %rr;						# Rollrec hash.
+
+	#
+	# Get the rollrec for the zone.
+	#
+	$rrr = rollrec_fullrec($zone);
+	if(!defined($rrr))
+	{
+		rollmgr_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
+		return(0);
+	}
+	%rr = %$rrr;
+
+	#
+	# A roll record is changed to a skip rollrec and its phase set to 0.
+	#
+	if($rr{'rollrec_type'} eq "roll")
+	{
+		rollmgr_log(LOG_INFO,"<command>","$zone roll rollrec changed to a skip rollrec");
+
+		rollrec_setval($zone,"curphase",0);
+		rollrec_rectype($zone,"skip");
+		rollrec_write();
+	}
+	else
+	{
+		rollmgr_log(LOG_INFO,"<command>","zone $zone already a skip rollrec");
+	}
 	return(1);
 }
 
