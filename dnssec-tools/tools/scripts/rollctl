@@ -106,7 +106,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  log-level set failed:  $resp\n";
+			print STDERR "log-level set failed:  $resp\n";
 		}
 	}
 	if($loglevelflag)
@@ -120,7 +120,21 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  log-level set failed:  $resp\n";
+			print STDERR "log-level set failed:  $resp\n";
+		}
+	}
+	if($rollallflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ROLLALL);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "all zones now in roll-over:  $resp\n";
+		}
+		else
+		{
+			print STDERR "$resp";
 		}
 	}
 	if($rollrecflag)
@@ -134,7 +148,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  couldn't set rollrec file:  $resp\n";
+			print STDERR "couldn't set rollrec file:  $resp\n";
 		}
 	}
 	if($rollzoneflag)
@@ -165,7 +179,7 @@ sub main()
 			#
 			# Shouldn't ever get here...
 			#
-			print STDERR "rollctl:  couldn't force the rollrec queue:  $resp\n";
+			print STDERR "couldn't force the rollrec queue:  $resp\n";
 		}
 	}
 	if($skipzoneflag)
@@ -193,7 +207,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  sleep-time set failed:  \"$resp\"\n";
+			print STDERR "sleep-time set failed:  \"$resp\"\n";
 		}
 	}
 	if($statusflag)
@@ -207,7 +221,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  status failed:  \"$resp\"\n";
+			print STDERR "status failed:  \"$resp\"\n";
 		}
 	}
 	if($shutdownflag)
@@ -220,7 +234,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  shutdown failed:  \"$resp\"\n";
+			print STDERR "shutdown failed:  \"$resp\"\n";
 		}
 	}
 	if($zonestatflag)
@@ -234,15 +248,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "rollctl:  zonestatus failed:  \"$resp\"\n";
-		}
-	}
-
-	if($NOT_IMPLEMENTED)
-	{
-		if($rollallflag)
-		{
-			rollmgr_sendcmd(CHANNEL_CLOSE,ROLLCMD_ROLLALL);
+			print STDERR "zonestatus failed:  \"$resp\"\n";
 		}
 	}
 
@@ -388,13 +394,11 @@ This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
 
 =item I<-rollall>
 
-Initiates roll-over for all the zones defined in I<rollerd>'s I<rollrec> file.
-
-I<This option is not currently implemented.>
+Initiates roll-over for all the zones defined in the current I<rollrec> file.
 
 =item I<-rollrec E<lt>rollrec_fileE<gt>>
 
-Sets I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
+Sets the I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
 
 =item I<-rollzone E<lt>zoneE<gt>>
 
