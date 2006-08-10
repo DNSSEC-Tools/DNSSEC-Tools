@@ -1307,6 +1307,10 @@ sub commander
 		{
 			cmd_shutdown($data);
 		}
+		elsif($cmd eq ROLLCMD_SKIPALL())
+		{
+			cmd_skipall();
+		}
 		elsif($cmd eq ROLLCMD_SKIPZONE())
 		{
 			cmd_skipzone($data);
@@ -1526,6 +1530,7 @@ sub cmd_rollall
 		#
 		# If there were any zones that were put into roll-over,
 		# we'll add them to the message as well.
+		#
 		if($gcnt > 0)
 		{
 			$resp .= "zones now in roll-over:  $good\n";
@@ -1622,6 +1627,87 @@ sub cmd_shutdown
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd shutting down");
 
 	halt_handler();
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	cmd_skipall()
+#
+# Purpose:	This command stops roll-over for all the zones in the rollrec
+#		file.  The zones' rollrec records are marked as being "skip"
+#		records, which will cause rollerd to ignore them.  This change
+#		is reflected in the rollrec file.  skipnow() is called for each
+#		zone, in order to stop roll-over.  We'll also keep track of the
+#		zones we were and weren't able to stop and report them to the
+#		caller.
+#
+sub cmd_skipall
+{
+	my $good = "";					# Skipped zones.
+	my $bad	 = "";					# Unskipped zones.
+
+	my $cnt	 = 0;					# Total count.
+	my $gcnt = 0;					# Skipped count.
+	my $bcnt = 0;					# Unskipped count.
+
+	rollmgr_log(LOG_TMI,"<command>","skipall command received");
+
+	#
+	# Each zone in the rollrec file will be removed from the roll-over
+	# process.  We'll keep track of the zones that were skipped and those
+	# that weren't in order to provide an appropriate response message.
+	#
+	foreach my $zone (rollrec_names())
+	{
+		$cnt++;
+
+		#
+		# If the skip worked, increment the good count and add
+		# the domain name to the list of good zones.  If it didn't
+		# work, do the same for the bad count and bad-zone list.
+		#
+		if(skipnow($zone) == 1)
+		{
+			$gcnt++;
+			$good .= "$zone ";
+		}
+		else
+		{
+			$bcnt++;
+			$bad .= "$zone ";
+		}
+	}
+
+	#
+	# We still don't need no steenkin' trailing whitespace.
+	#
+	chomp $good;
+	chomp $bad;
+
+	#
+	# Send a response message to the caller.
+	#
+	if($gcnt == $cnt)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,$good);
+	}
+	else
+	{
+		my $resp;				# Response message.
+
+		$resp = "zones not in rollrec file $rollrecfile:  $bad\n";
+
+		#
+		# If there were any zones that were removed from roll-over,
+		# we'll add them to the message as well.
+		#
+		if($gcnt > 0)
+		{
+			$resp .= "zones now skipped:  $good\n";
+		}
+
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,$resp);
+	}
 }
 
 #-----------------------------------------------------------------------------

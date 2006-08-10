@@ -35,7 +35,8 @@ my @opts =
 	"rollzone=s",			# Roll the specified zone.
 	"runqueue",			# Run the queue.
 	"shutdown",			# Shutdown rollerd.
-	"skipzone=s",			# Stop this specified zone from rolling.
+	"skipall",			# Stop all zones from rolling.
+	"skipzone=s",			# Stop the specified zone from rolling.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
 	"zonestatus",			# Get status of zones.
@@ -54,6 +55,7 @@ my $rollrecflag;
 my $rollzoneflag;
 my $runqueueflag;
 my $shutdownflag;
+my $skipallflag;
 my $skipzoneflag;
 my $sleeptimeflag;
 my $statusflag;
@@ -182,6 +184,20 @@ sub main()
 			print STDERR "couldn't force the rollrec queue:  $resp\n";
 		}
 	}
+	if($skipallflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPALL,$skipzoneflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "roll-over stopped for all zones:  $resp\n";
+		}
+		else
+		{
+			print STDERR "$resp";
+		}
+	}
 	if($skipzoneflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_SKIPZONE,$skipzoneflag);
@@ -289,6 +305,7 @@ sub doopts
 	$rollzoneflag	= $options{'rollzone'}	 || 0;
 	$runqueueflag	= $options{'runqueue'}	 || 0;
 	$shutdownflag	= ($options{'shutdown'}  || $options{'halt'})   || 0;
+	$skipallflag	= $options{'skipall'}	 || 0;
 	$skipzoneflag	= $options{'skipzone'}	 || 0;
 	$sleeptimeflag	= $options{'sleeptime'}	 || 0;
 	$statusflag	= $options{'status'}	 || 0;
@@ -336,6 +353,7 @@ sub usage
 	print STDERR "\t-rollzone <zone>		roll named zone\n";
 	print STDERR "\t-runqueue			run queue\n";
 	print STDERR "\t-shutdown			shutdown rollerd\n";
+	print STDERR "\t-skipall <zone>			skip named zone\n";
 	print STDERR "\t-skipzone <zone>		skip named zone\n";
 	print STDERR "\t-sleeptime <sleeptime>		set sleep time\n";
 	print STDERR "\t-status				get rollerd's status\n";
@@ -411,6 +429,10 @@ Wakes up I<rollerd> and has it run its queue of I<rollrec> entries.
 =item I<-shutdown>
 
 Synonym for I<-halt>.
+
+=item I<-skipall>
+
+Stops roll-over for all zones in the current I<rollrec> file.
 
 =item I<-skipzone E<lt>zoneE<gt>>
 
