@@ -136,6 +136,7 @@ our @EXPORT = qw(
 			 ROLLCMD_ROLLZONE
 			 ROLLCMD_RUNQUEUE
 			 ROLLCMD_SHUTDOWN
+			 ROLLCMD_SKIPZONE
 			 ROLLCMD_SLEEPTIME
 			 ROLLCMD_STATUS
 			 ROLLCMD_ZONESTATUS
@@ -220,6 +221,7 @@ my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
 my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
 my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
 my $ROLLCMD_SHUTDOWN	= "rollcmd_shutdown";
+my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_STATUS	= "rollcmd_status";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
@@ -233,6 +235,7 @@ sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
 sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
 sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
 sub ROLLCMD_SHUTDOWN		{ return($ROLLCMD_SHUTDOWN);	};
+sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
 sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
@@ -272,6 +275,7 @@ my %roll_commands =
 	rollcmd_rollzone	=> 1,
 	rollcmd_runqueue	=> 1,
 	rollcmd_shutdown	=> 1,
+	rollcmd_skipzone	=> 1,
 	rollcmd_sleeptime	=> 1,
 	rollcmd_status		=> 1,
 	rollcmd_zonestatus	=> 1,
