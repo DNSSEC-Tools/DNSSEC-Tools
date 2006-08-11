@@ -94,7 +94,15 @@ sub test_record {
 
 	    # and the type matches
 
-	    my $res = $r->{'test'}->($rec, $r);
+	    my $res = eval { $r->{'test'}->($rec, $r); };
+	    if (!defined($res) && $@) {
+		print STDERR "\nProblem executing rule $r->{name}: \n";
+		print STDERR "  Record:   " . $rec->name . " -- (" 
+		  . ref($rec) . ")\n";
+		print STDERR "  Location: $file:$rec->{Line}\n\n";
+		print STDERR "  Error:    $@\n";
+		return (0,0);
+	    }
 	    if (ref($res) ne 'ARRAY') {
 		if ($res) {
 		    $res = [$res];
