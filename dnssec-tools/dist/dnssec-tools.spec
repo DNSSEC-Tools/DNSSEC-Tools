@@ -1,14 +1,23 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 0.9.1
-Release: 1
+Version: 0.9.2
+Release: 3
 License: BSD
 Group: System Environment
 URL: http://www.dnssec-tools.org/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
-Requires: perl
 BuildRequires: autoconf213
+# we auto-load at runtime (with errors and help text) a bunch of stuff
+# so we try to not force require some perl modules that the rpm build
+# system would otherwise find.  Hence the no auto requirement derivation.
+#AutoReqProv: no
+Requires: perl, perl-Net-DNS, dnssec-tools-perlmods, bind
+Patch1: dnssec-tools-runtime-perlloading.patch
+Patch2: zonefilefast.ssh.patch
+Patch3: dnssec-tools-conf-install-dir.patch
+Patch4: dnssec-tools-linux-conf-paths.patch
+Patch4: dnssec-tools-conf-file-location.patch
 
 %description
 
@@ -45,13 +54,17 @@ C-based libraries useful for developing dnssec aware tools.
 %prep
 %setup -q
 
-%build
+%patch1 -p0
+%patch2 -p0
+%patch3 -p0
+%patch4 -p0
+
 %configure --with-perl-build-args="PREFIX=$RPM_BUILD_ROOT%{_prefix} INSTALLDIRS=vendor"
 make
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%makeinstall
+%makeinstall DESTCONFDIR=$RPM_BUILD_ROOT/etc/dnssec
 
 find $RPM_BUILD_ROOT/usr/lib/perl5/ -name .packlist | xargs rm -rf
 find $RPM_BUILD_ROOT/usr/lib/perl5/ -name perllocal.pod | xargs rm -f
@@ -62,6 +75,8 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc README INSTALL COPYING
+
+%config(noreplace) /etc/dnssec/dnssec-tools.conf
 
    /usr/bin/dnspktflow
    /usr/bin/donuts
@@ -83,10 +98,17 @@ rm -rf $RPM_BUILD_ROOT
    /usr/bin/dtdefs
    /usr/bin/dtinitconf
    /usr/bin/fixkrf
-   /usr/bin/rrchk
-   /usr/bin/rrinit
    /usr/bin/tachk
    /usr/bin/timetrans
+
+# 0.9.1
+   /usr/bin/TrustMan
+   /usr/bin/lsroll
+   /usr/bin/rollchk
+   /usr/bin/rollctl
+   /usr/bin/rollerd
+   /usr/bin/rollinit
+
 
 
 
@@ -110,11 +132,16 @@ rm -rf $RPM_BUILD_ROOT
    /usr/share/man/man1/dtdefs.1.gz
    /usr/share/man/man1/dtinitconf.1.gz
    /usr/share/man/man1/fixkrf.1.gz
-   /usr/share/man/man1/rrchk.1.gz
-   /usr/share/man/man1/rrinit.1.gz
    /usr/share/man/man1/tachk.1.gz
    /usr/share/man/man1/timetrans.1.gz
 
+# 0.9.1
+   /usr/share/man/man1/TrustMan.1.gz
+   /usr/share/man/man1/lsroll.1.gz
+   /usr/share/man/man1/rollchk.1.gz
+   /usr/share/man/man1/rollctl.1.gz
+   /usr/share/man/man1/rollerd.1.gz
+   /usr/share/man/man1/rollinit.1.gz
 
 ##%{_mandir}/man*/*
 
@@ -123,6 +150,7 @@ rm -rf $RPM_BUILD_ROOT
 
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/Donuts/Rule.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/QWPrimitives.pm
+   /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/BootStrap.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/conf.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/keyrec.pm
    /usr/lib/perl5/vendor_perl/*/Net/DNS/SEC/Tools/rollmgr.pm
@@ -134,6 +162,7 @@ rm -rf $RPM_BUILD_ROOT
 
    /usr/share/man/man3/Net::DNS::SEC::Tools::Donuts::Rule.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::QWPrimitives.3pm.gz
+   /usr/share/man/man3/Net::DNS::SEC::Tools::BootStrap.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::conf.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::keyrec.3pm.gz
    /usr/share/man/man3/Net::DNS::SEC::Tools::rollmgr.3pm.gz
@@ -158,8 +187,31 @@ rm -rf $RPM_BUILD_ROOT
    /usr/share/man/man3/val_getaddrinfo.3.gz
    /usr/share/man/man3/val_gethostbyname.3.gz
    /usr/share/man/man3/val_query.3.gz
+   /usr/share/man/man3/dnsval.conf.3.gz
+   /usr/share/man/man3/dnsval_conf_get.3.gz
+   /usr/share/man/man3/dnsval_conf_set.3.gz
+   /usr/share/man/man3/libsres.3.gz
+   /usr/share/man/man3/p_as_error.3.gz
+   /usr/share/man/man3/p_val_error.3.gz
+   /usr/share/man/man3/resolver_config_get.3.gz
+   /usr/share/man/man3/resolver_config_set.3.gz
+   /usr/share/man/man3/root_hints_get.3.gz
+   /usr/share/man/man3/root_hints_set.3.gz
+   /usr/share/man/man3/val_create_context.3.gz
+   /usr/share/man/man3/val_free_context.3.gz
+   /usr/share/man/man3/val_free_result_chain.3.gz
+   /usr/share/man/man3/val_istrusted.3.gz
+   /usr/share/man/man3/val_resolve_and_check.3.gz
+   /usr/share/man/man3/val_switch_policy_scope.3.gz
 
 %changelog
-* Thu Feb  9 2006  <Wes Hardaker <hardaker@users.sourceforge.net>> - tools-1
-- Initial build.
 
+* Mon Jun 19 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 0.9.2-4
+- updated to 0.9.2
+- modified installation paths as appropriate to 
+
+* Mon Jun 19 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 0.9.1-1
+- updated to 0.9.1
+
+* Thu Feb  9 2006  <Wes Hardaker <hardaker@users.sourceforge.net> - 0.9.0
+- initial rpm
