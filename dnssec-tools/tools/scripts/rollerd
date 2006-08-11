@@ -18,8 +18,6 @@
 use strict;
 
 use Cwd;
-use Date::Format;
-use Date::Parse;
 use Getopt::Long;
 
 use Net::DNS::SEC::Tools::conf;
@@ -29,8 +27,15 @@ use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
+use Net::DNS::SEC::Tools::BootStrap;
 
 use Net::DNS::ZoneFile::Fast;
+
+######################################################################
+# detect needed perl module requirements
+#
+dnssec_tools_load_mods('Date::Parse' => "",
+		       'Date::Format' => "",);
 
 use POSIX qw(setsid);
 

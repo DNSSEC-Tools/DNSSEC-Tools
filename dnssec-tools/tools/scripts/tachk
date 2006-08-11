@@ -14,9 +14,14 @@ use strict;
 use Getopt::Long;
 
 use Net::DNS;
-use Net::DNS::SEC;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::tooloptions;
+use Net::DNS::SEC::Tools::BootStrap;
+
+######################################################################
+# detect needed perl module requirements
+#
+dnssec_tools_load_mods('Net::DNS::SEC' => "");
 
 #######################################################################
 
