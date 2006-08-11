@@ -7,8 +7,14 @@ use strict;
 use IO::File;
 use Net::DNS;
 use Net::DNS::RR;
-use Net::DNS::SEC;
-use Net::DNS::RR::RRSIG;
+use Net::DNS::SEC::Tools::BootStrap;
+
+######################################################################
+# detect needed perl modules
+#
+dnssec_tools_load_mods("Net::DNS::SEC"     => "",
+		       "Net::DNS::SEC::RR" => "noerror",
+		      );
 
 my %opts =
   ( 'd' => 'test.dnssec-tools.org',
