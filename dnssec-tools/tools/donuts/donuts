@@ -7,6 +7,12 @@ use Net::DNS;
 use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::Donuts::Rule;
 use Net::DNS::SEC::Tools::QWPrimitives;
+use Net::DNS::SEC::Tools::BootStrap;
+
+######################################################################
+# detect needed perl module requirements
+#
+dnssec_tools_load_mods('Date::Parse' => "");
 use Data::Dumper;
 
 my $have_qw = 
@@ -231,6 +237,7 @@ while ($#ARGV > -1) {
     next if ($parseerror);
     if (!$rrset) {
 	print STDERR "WARNING: failed to read $current_zone_file for an unknown reason\n";
+	print STDERR "$@\n" if ($@);
 	next;
     }
 
