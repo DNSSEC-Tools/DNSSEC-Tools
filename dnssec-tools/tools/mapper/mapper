@@ -4,9 +4,15 @@
 
 use Net::DNS::ZoneFile::Fast;
 use Net::DNS::SEC::Tools::QWPrimitives;
-use GraphViz;
+use Net::DNS::SEC::Tools::BootStrap;
 use Data::Dumper;
 use strict;
+
+######################################################################
+# detect basic needed module requirements
+#
+dnssec_tools_load_mods('GraphViz'    => "",
+		       'Date::Parse' => "");
 
 my %nodes;
 my %nodesonce;
@@ -245,7 +251,6 @@ while ($#ARGV > -1) {
 
 	# Process DNSsec keys specially to check for lifetime validity.
 	if ($rr->type eq 'RRSIG') {
-	    use Date::Parse;
 	    my $date = $rr->sigexpiration;
 	    $date =~ s/(....)(..)(..)(..)(..)(..)/$2-$3-$1 $4:$5:$6/;
 	    my $extime = str2time($date);
