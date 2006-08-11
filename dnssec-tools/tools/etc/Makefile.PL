@@ -14,21 +14,22 @@ use ExtUtils::MakeMaker;
 sub MY::postamble {
     return '
 
-CONFDIR=/usr/local/etc/dnssec
+CONFDIR=$(PREFIX)/etc/dnssec
+DESTCONFDIR=$(DESTDIR)$(CONFDIR)
 INSTALL=$(PERLRUN) "-MExtUtils::Command" -e cp
 
 install:: installrulefiles
 
 installrulefiles:
-	$(MKPATH) $(CONFDIR)
-	if test -f $(CONFDIR)/dnssec-tools.conf ; then \\
-		echo "**********************************************************************" ; \\
-		echo "*** Not installing over $(CONFDIR)/dnssec-tools.conf" ; \\
-		echo "**********************************************************************" ; \\
-	else \\
-		$(INSTALL) dnssec/dnssec-tools.conf $(CONFDIR) ; \\
+	$(MKPATH) $(DESTCONFDIR)
+	@if test -f $(DESTCONFDIR)/dnssec-tools.conf ; then \
+		echo "**********************************************************************" ; \
+		echo "*** Not installing over $(DESTCONFDIR)/dnssec-tools.conf" ; \
+		echo "**********************************************************************" ; \
+	else \
+		$(INSTALL) dnssec/dnssec-tools.conf $(DESTCONFDIR) ; \
+		echo "installing dnssec-tools.conf in $(DESTCONFDIR)" ; \
 	fi
-
 ';
 }
 
