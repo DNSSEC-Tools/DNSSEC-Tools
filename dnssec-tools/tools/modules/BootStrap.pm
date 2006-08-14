@@ -53,7 +53,9 @@ $extra_help_text{$k}$modules{$k}
 	    }
 	    $oops = 1;
 	} else {
+	    package main;
 	    import $k;
+	    package Net::DNS::SEC::Tools::BootStrap;
 	}
     }
     exit if ($oops);
