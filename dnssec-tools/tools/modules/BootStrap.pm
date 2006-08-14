@@ -42,7 +42,7 @@ I could not find an installation of the '$k' perl module, which this
 tool needs in order to operate.
 
 Please obtain and install this module.  You may be able do this using
-the CPAN ( http://www.cpan.org/ ) system as followins:
+the CPAN ( http://www.cpan.org/ ) system as follows:
 
    perl -MCPAN -e 'install \"$k\"'
 
@@ -70,7 +70,7 @@ $extra_help_text{$k}$modules{$k}
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::BootStrap - Optional loading of perl modules
+Net::DNS::SEC::Tools::BootStrap - Optional loading of Perl modules
 
 =head1 SYNOPSIS
 
@@ -83,18 +83,19 @@ Net::DNS::SEC::Tools::BootStrap - Optional loading of perl modules
 
 =head1 DESCRIPTION
 
-Since the DNSSEC-Tools package requires a fair number of perl modules
+Since the DNSSEC-Tools package requires a number of Perl modules
 that are only needed by some of the tools, this module helps determine
 at run-time rather than at installation time if the right tools are
-available on the system.  If any module fails to load the function
-will call exit().
+available on the system.  If any module fails to load,
+I<dnssec_tools_load_mods()> will display an error message describing how to
+install a module via CPAN and then it will call I<exit()>.
 
-The arguments to dnssec_tools_load_mods is given in pairs.  Each pair
-is a module to try and load (and import) and an optional supplimental
-error string/message to display in addition to the internal one
-describing how to install a module via CPAN.  If the error consists of
-the string 'noerror' then no error will be displayed but the function
-will still exit..
+The arguments to I<dnssec_tools_load_mods()> are given in pairs.  Each pair
+is a module to try to load (and import) and an optional supplemental
+error message.  The supplemental error message will be displayed, in addition
+to the installation-via-CPAN message.  If the error message consists of
+the string 'noerror', then no error will be displayed before the function
+will exits.
 
 =head1 COPYRIGHT
 
