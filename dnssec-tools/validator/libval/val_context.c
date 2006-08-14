@@ -21,6 +21,9 @@ int val_create_context(char *label, val_context_t **newcontext)
 {
 	int retval;
 
+        if (newcontext == NULL)
+            return VAL_BAD_ARGUMENT;
+
 	*newcontext = (val_context_t *) MALLOC (sizeof(val_context_t));
 	if (*newcontext == NULL)
 		return VAL_OUT_OF_MEMORY;
@@ -33,12 +36,14 @@ int val_create_context(char *label, val_context_t **newcontext)
 
 	if ((retval = read_root_hints_file(*newcontext)) != VAL_NO_ERROR) {
 		FREE (*newcontext);
+                *newcontext = NULL;
 		return retval;
 	}
 
 	/* Read the Resolver configuration file */	
 	if ((retval = read_res_config_file(*newcontext)) != VAL_NO_ERROR) {
 		FREE (*newcontext);
+                *newcontext = NULL;
 		return retval;
 	}
 
@@ -49,6 +54,7 @@ int val_create_context(char *label, val_context_t **newcontext)
 	if ((retval = read_val_config_file(*newcontext, label)) != VAL_NO_ERROR) {
 		destroy_respol(*newcontext);
 		FREE (*newcontext);	
+                *newcontext = NULL;
 		return retval;
 	}
 	/* Switch to correct policy */
