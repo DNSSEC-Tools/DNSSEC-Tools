@@ -45,7 +45,9 @@ static struct val_addrinfo *append_val_addrinfo (struct val_addrinfo *a1,
 	if (a1 == NULL) {
 		return a2;
 	}
-	
+	if (a2 == NULL)
+		return a1;
+
 	a = a1;
 	while (a->ai_next != NULL) {
 		a = a->ai_next;
@@ -78,6 +80,9 @@ static struct val_addrinfo *dup_val_addrinfo (const struct val_addrinfo *a)
 	}
 	
 	new_a = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
+	if (new_a == NULL)
+		return NULL;
+
 	bzero(new_a, sizeof(struct val_addrinfo));
 
 	new_a->ai_flags    = a->ai_flags;
@@ -86,11 +91,20 @@ static struct val_addrinfo *dup_val_addrinfo (const struct val_addrinfo *a)
 	new_a->ai_protocol = a->ai_protocol;
 	new_a->ai_addrlen  = a->ai_addrlen;
 	new_a->ai_addr     = (struct sockaddr *) malloc (a->ai_addrlen);
+	if (new_a->ai_addr == NULL) {
+		free(new_a);
+		return NULL;
+	}
 
 	memcpy(new_a->ai_addr, a->ai_addr, a->ai_addrlen);
 	
 	if (a->ai_canonname != NULL) {
 		new_a->ai_canonname = strdup(a->ai_canonname);
+		if (new_a->ai_canonname == NULL) {
+			free(new_a->ai_addr);
+			free(new_a);
+			return NULL;
+		}
 	}
 	else {
 		new_a->ai_canonname = NULL;
@@ -171,6 +185,9 @@ static int process_service_and_hints(val_status_t val_status,
 
 	if (*res == NULL) {
 	    a1 = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
+	    if (a1 == NULL)
+		return EAI_MEMORY;
+
 	    bzero (a1, sizeof(struct val_addrinfo));
 	}
 	else {
@@ -203,6 +220,8 @@ static int process_service_and_hints(val_status_t val_status,
 		
 		if (proto_found) {
 			a2 = dup_val_addrinfo (a1);
+			if (a2 == NULL)
+			    return EAI_MEMORY;
 			a1->ai_next = a2;
 			a1 = a2;
 		}
@@ -217,6 +236,12 @@ static int process_service_and_hints(val_status_t val_status,
 		
 		if (proto_found) {
 			a2 = dup_val_addrinfo (a1);
+			// xxx-note: uggh. may have augmented caller's res ptr
+			//     above, so I hate returning an error. But then
+			//     returning 0 in the face of an error doesn't
+			//     seem right either.
+			if (a2 == NULL)
+			    return EAI_MEMORY;
 			a1->ai_next = a2;
 			a1 = a2;
 		}
@@ -230,6 +255,10 @@ static int process_service_and_hints(val_status_t val_status,
 	}
 	else {
 		/* no valid protocol found */
+	    // xxx-audit: function documentation doesn't mention anything
+	    //     about possibly nuking the caller's ptr and freeing their
+	    //     memory. Maybe there needs to be a better separation
+	    //     between memory allocated here and caller's memory.
 		*res = NULL;
 	        free_val_addrinfo(a1);
 		return EAI_SERVICE;
@@ -265,6 +294,9 @@ static int get_addrinfo_from_etc_hosts (
 	struct hosts *hs = NULL;
 	struct val_addrinfo *retval = NULL;
 	
+	if (res == NULL)
+		return 0;
+
 	val_log(ctx, LOG_DEBUG, "Parsing /etc/hosts");
 
 	/* Parse the /etc/hosts/ file */
@@ -275,8 +307,9 @@ static int get_addrinfo_from_etc_hosts (
 		struct in_addr ip4_addr;
 		struct in6_addr ip6_addr;
 		struct hosts *h_prev = hs;
-		struct val_addrinfo *ainfo = (struct val_addrinfo*) malloc (sizeof (struct val_addrinfo));
+		struct val_addrinfo *ainfo;
 		
+		ainfo = (struct val_addrinfo*) malloc (sizeof (struct val_addrinfo));
 		if (!ainfo) {
 			if (retval) free_val_addrinfo(retval);
 			return EAI_MEMORY;
@@ -301,6 +334,11 @@ static int get_addrinfo_from_etc_hosts (
 		/* Check if the address is an IPv4 address */
 		if (inet_pton(AF_INET, hs->address, &ip4_addr) > 0) {
 			struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
+			if (saddr4 == NULL) {
+				if (retval) free_val_addrinfo(retval);
+				free_val_addrinfo(ainfo);
+				return EAI_MEMORY;
+			}
 			bzero(saddr4, sizeof(struct sockaddr_in));
 			ainfo->ai_family = AF_INET;
                         saddr4->sin_family = AF_INET;
@@ -312,6 +350,11 @@ static int get_addrinfo_from_etc_hosts (
 		/* Check if the address is an IPv6 address */
 		else if (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0) {
 			struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
+			if (saddr6 == NULL) {
+				if (retval) free_val_addrinfo(retval);
+				free_val_addrinfo(ainfo);
+				return EAI_MEMORY;
+			}
 			bzero(saddr6, sizeof(struct sockaddr_in6));
 			ainfo->ai_family = AF_INET6;
                         saddr6->sin6_family = AF_INET6;
@@ -388,8 +431,12 @@ static int get_addrinfo_from_result (
 {
 	struct val_addrinfo *ainfo_head = NULL;
 	struct val_addrinfo *ainfo_tail = NULL;
+	struct val_result_chain *result;
 	char *canonname = NULL;
-	
+
+	if (res == NULL)
+		return 0;
+
 	val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result called with val_status = %d [%s]", 
 		val_status, p_val_error(val_status));
 
@@ -397,10 +444,10 @@ static int get_addrinfo_from_result (
 		val_log(ctx, LOG_DEBUG, "rrset is null");
 	}
 	
-	struct val_result_chain *result;
 	/* Loop for each result in the linked list of val_result_chain structures */
 	for (result = results; result != NULL; result = result->val_rc_next) {
-	    struct rrset_rec *rrset = result->val_rc_trust->_as.ac_data;
+	    struct rrset_rec *rrset = result->val_rc_trust ? 
+		result->val_rc_trust->_as.ac_data : NULL;
 
 	    /* Loop for each rrset in the linked list of rrset_rec structures */
 	    while (rrset != NULL) {
@@ -417,7 +464,8 @@ static int get_addrinfo_from_result (
 			    else {
 				    val_log(ctx, LOG_DEBUG, "duplicating the canonname");
 				    canonname = (char *) malloc ((strlen(dname) + 1) * sizeof(char));
-				    memcpy(canonname, dname, strlen(dname) + 1);
+				    if (canonname != NULL)
+				    	memcpy(canonname, dname, strlen(dname) + 1);
 			    }
 		    }
 		    
@@ -426,11 +474,18 @@ static int get_addrinfo_from_result (
 			    struct val_addrinfo *ainfo = NULL;
 			    
 			    ainfo = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
+			    if (ainfo == NULL)
+				return EAI_MEMORY;
 			    bzero(ainfo, sizeof(struct val_addrinfo));
 
 			    /* Check if the record-type is A */
 			    if (rrset->rrs.val_rrset_type_h == ns_t_a) {
 				    struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
+				    if (saddr4 == NULL) {
+					if (retval) free_val_addrinfo(retval);
+					free_val_addrinfo(ainfo);
+					return EAI_MEMORY;
+				    }
 				    val_log(ctx, LOG_DEBUG, "rrset of type A found");
                                     saddr4->sin_family = AF_INET;
 				    ainfo->ai_family = AF_INET;
@@ -441,6 +496,11 @@ static int get_addrinfo_from_result (
 			    /* Check if the record-type is AAAA */
 			    else if (rrset->rrs.val_rrset_type_h == ns_t_aaaa) {
 				    struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
+				    if (saddr6 == NULL) {
+					if (retval) free_val_addrinfo(retval);
+					free_val_addrinfo(ainfo);
+					return EAI_MEMORY;
+				    }
 				    val_log(ctx, LOG_DEBUG, "rrset of type AAAA found");
                                     saddr6->sin6_family = AF_INET6;
 				    ainfo->ai_family = AF_INET6;
@@ -460,6 +520,7 @@ static int get_addrinfo_from_result (
 			    /* Expand the results based on servname and hints */
 			    if (process_service_and_hints (val_status, servname, hints, &ainfo) == EAI_SERVICE) {
 				    free_val_addrinfo(ainfo_head);
+				    free_val_addrinfo (ainfo);
 				    return EAI_SERVICE;
 			    }
 			    
@@ -521,6 +582,9 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 	u_char name_n[NS_MAXCDNAME];
 	int retval = 0;
 	int ret = 0;
+
+	if (res == NULL)
+	    return 0;
 
 	val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns() called");
 
@@ -645,9 +709,12 @@ int val_getaddrinfo(const val_context_t *ctx,
         const char *localhost4 = "127.0.0.1";
         const char *localhost6 = "::1";
         const char *nname = nodename;
-        
-        *res = NULL;
 	val_context_t *context = NULL;
+
+	if (res == NULL)
+	    return 0;
+
+        *res = NULL;
 
 	if (ctx == NULL) {
 		if(VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
@@ -681,8 +748,17 @@ int val_getaddrinfo(const val_context_t *ctx,
 	/* check for IPv4 addresses */
 	if ( NULL != nname && inet_pton(AF_INET, nname, &ip4_addr) > 0) {
 
-		ainfo4 = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
 		struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
+		if (saddr4 == NULL) {
+		    retval = EAI_MEMORY;
+		    goto done;
+		}
+		ainfo4 = (struct val_addrinfo *) malloc (sizeof (struct val_addrinfo));
+		if (ainfo4 == NULL) {
+		    free(saddr4);
+		    retval = EAI_MEMORY;
+		    goto done;
+		}
 		
 		is_ip4 = 1;
 		
@@ -721,8 +797,17 @@ int val_getaddrinfo(const val_context_t *ctx,
 	/* Check for IPv6 address */
 	if (nname != NULL && inet_pton(AF_INET6, nname, &ip6_addr) > 0) {
 		
-		ainfo6 = (struct val_addrinfo *) malloc (sizeof(struct val_addrinfo));
 		struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
+		if (saddr6 == NULL) {
+		    retval = EAI_MEMORY;
+		    goto done;
+		}
+		ainfo6 = (struct val_addrinfo *) malloc (sizeof(struct val_addrinfo));
+		if (ainfo6 == NULL) {
+		    free(saddr6);
+		    retval = EAI_MEMORY;
+		    goto done;
+		}
 		
 		is_ip6 = 1;
 		
