@@ -45,9 +45,8 @@ my @opts =
 	"nosavekeys",				# Don't save old keys.
 	"nousegui",				# Don't use option GUI.
 
-	"checkzone=s",				# Path to named-checkzone.
-	"keygen=s",				# Path to dnssec-keygen.
-	"signzone=s",				# Path to dnssec-signzone.
+	"binddir=s",				# Path to BIND programs.
+
 	"viewimage=s",				# Path to image viewer.
 
 	"roll-logfile=s",			# Logfile for rollerd.
@@ -85,6 +84,7 @@ my $rsleep;				# Sleep-time for rollerd.
 #
 # Program paths.
 #
+my $binddir;				# BIND directory.
 my $checkzone;				# BIND's zone-checking program.
 my $keygen;				# BIND's key-generation program.
 my $signzone;				# BIND's zone-signing program.
@@ -205,9 +205,7 @@ sub optsandargs
 	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
 	$usegui	   = 0  if(defined($opts{'nousegui'}));
 
-	$checkzone = $opts{'checkzone'};
-	$keygen	   = $opts{'keygen'};
-	$signzone  = $opts{'signzone'};
+	$binddir   = $opts{'binddir'};
 	$viewimg   = $opts{'viewimage'} || dnssec_tools_defaults("viewimage");
 
 	$outfile   = $opts{'outfile'}	|| getconffile();
@@ -367,54 +365,98 @@ usegui		$usegui
 #
 sub get_paths()
 {
-	my $binddir;				# BIND directory.
 	my @binddirs;				# BIND directories.
 
 	my $def_cz;				# Default named_checkzone.
 	my $def_kg;				# Default dnssec_keygen.
 	my $def_sz;				# Default dnssec_signzone.
+	my $pcret  = 0;				# pathchk() return value.
 
 	print "Path-related Options:\n";
 
 	#
-	# Get the directories that contain BIND programs.
+	# If the user didn't give -binddir, we'll go through our internal
+	# collection of possible BIND directories.
 	#
-	@binddirs = findbind();
-
-	#
-	# If we found any directories with BIND programs, we'll list the
-	# directories for the user.  If we didn't find anything, we'll
-	# give a message.
-	#
-	if(@binddirs > 0)
+	if($binddir eq "")
 	{
 		#
-		# Print the directories that currently hold BIND programs.
+		# Get the directories that contain BIND programs.
 		#
-		print "\tThese directories contain BIND programs:\n";
-		foreach $binddir (sort(@binddirs))
+		@binddirs = findbind();
+
+		#
+		# If we found any directories with BIND programs, we'll list the
+		# directories for the user.  If we didn't find anything, we'll
+		# give a message.
+		#
+		if(@binddirs > 0)
 		{
-			print "\t\t$binddir\n";
+			#
+			# Print the directories that currently hold BIND programs.
+			#
+			print "\tThese directories contain BIND programs:\n";
+			foreach $binddir (sort(@binddirs))
+			{
+				print "\t\t$binddir\n";
+			}
+			print "\n";
 		}
+		else
+		{
+			print "\tBIND may not be installed on your system\n";
+		}
+		$binddir = getval("BIND directory",$binddirs[0]);
 		print "\n";
 	}
 	else
 	{
-		print "\tBIND may not be installed on your system\n";
+		print "\n\tUsing \"$binddir\" for BIND directory\n\n";
 	}
-	$binddir = getval("BIND directory",$binddirs[0]);
 
 	#
 	# Build paths for the BIND programs.
 	#
-	$checkzone = "$binddir/named_checkzone"	if(! $checkzone);
-	$keygen	   = "$binddir/dnssec_keygen"	if(! $keygen);
-	$signzone  = "$binddir/dnssec_signzone"	if(! $signzone);
+	$checkzone = "$binddir/named-checkzone";
+	$keygen	   = "$binddir/dnssec-keygen";
+	$signzone  = "$binddir/dnssec-signzone";
 
 	#
 	# Get the path for an image viewer.
 	#
 	$viewimg = getval("Image Display Program",$viewimg);
+
+	#
+	# Check that the paths all valid.
+	#
+	print "\n\tChecking validity of paths:\n";
+	$pcret += pathchk("BIND directory",$binddir);
+	$pcret += pathchk("BIND's named_checkzone",$checkzone);
+	$pcret += pathchk("BIND's dnssec_keygen",$keygen);
+	$pcret += pathchk("BIND's dnssec_signzone",$signzone);
+	$pcret += pathchk("Image display program",$viewimg);
+
+	#
+	# If any of the paths don't exist, then we'll give the user
+	# the option of re-entering the paths.
+	#
+	if($pcret)
+	{
+		my $again;				# Re-entry flag.
+
+		$again = getval("\n\tAt least one path did not exist.\n\tWould you like to try again?  ",1,"boolean");
+
+		if($again)
+		{
+			print "\n";
+			$binddir = "";
+			get_paths();
+		}
+	}
+	else
+	{
+		print "\tAll paths are valid.\n";
+	}
 
 	print "\n";
 }
@@ -546,9 +588,10 @@ sub getval()
 		# If this was "yes" or "no", make the translation.
 		#
 		$val = lc($val);
-		if(($val eq "yes") || ($val eq "no"))
+		if(($val eq "yes") || ($val eq "ye") || ($val eq "y")	||
+		   ($val eq "no") || ($val eq "n"))
 		{
-			if($val eq "yes")
+			if(($val eq "yes") || ($val eq "ye") || ($val eq "y"))
 			{
 				$val = 1;
 			}
@@ -655,7 +698,23 @@ sub findbind()
 	return(@found);
 }
 
+#----------------------------------------------------------------------------
+#
+# Routine:	pathchk()
+#
+# Purpose:	Check for existence of a path.  If it doesn't exist, an
+#		error message will be printed.
+#
+sub pathchk()
+{
+	my $descr = shift;			# Description of path to check.
+	my $path  = shift;			# Path to check.
 
+	return(0) if(-e $path);
+
+	print "\t\t$descr ($path) does not exist\n";
+	return(1);
+}
 
 #----------------------------------------------------------------------
 #
@@ -669,8 +728,6 @@ sub show_version
 	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
 	exit(1);
 }
-
-
 
 #----------------------------------------------------------------------------
 #
@@ -691,17 +748,14 @@ sub usage()
 	print STDERR "\t\t-zsklength <keylen>\n";
 	print STDERR "\t\t-zsklife <lifespan>\n\n";
 
-	print STDERR "\t\t-checkzone <checkzone-path>\n";
-	print STDERR "\t\t-keygen <keygen-path>\n";
-	print STDERR "\t\t-signzone <signzone-path>\n";
-	print STDERR "\t\t-viewimage <image-viewer-path>\n";
-
 	print STDERR "\t\t-archivedir <directory>\n";
+	print STDERR "\t\t-binddir <directory>\n";
 	print STDERR "\t\t-entropy_msg\n";
 	print STDERR "\t\t-noentropy_msg\n";
 	print STDERR "\t\t-savekeys\n";
-	print STDERR "\t\t-nosavekeys\n";
-	print STDERR "\t\t-usegui\n\n";
+	print STDERR "\t\t-nosavekeys\n\n";
+
+	print STDERR "\t\t-usegui\n";
 	print STDERR "\t\t-nousegui\n\n";
 
 	print STDERR "\t\t-roll-logfile <logfile>\n";
@@ -717,7 +771,6 @@ sub usage()
 
 	exit(0);
 }
-
 
 1;
 
@@ -824,31 +877,6 @@ The zone default expiration time to be passed to I<dnssec-signzone>.
 
 =back
 
-=head2 Program Paths
-
-These options contain pathnames to programs required by DNSSEC-Tools.
-
-=over 4
-
-=item I<-checkzone E<lt>checkzone-pathE<gt>>
-
-The path to the BIND I<named-checkzone> command.
-
-=item I<-keygen E<lt>keygen-pathE<gt>>
-
-The path to the BIND I<dnssec-keygen> command.
-
-=item I<-signzone E<lt>signzone-pathE<gt>>
-
-The path to the BIND I<dnssec-signzone> command.
-
-=item I<-viewimage E<lt>image-viewer-pathE<gt>>
-
-The path to an image viewer command.  This is used by I<drawvalmap.pl> to
-display generated images.
-
-=back
-
 =head2 DNSSEC-Tools Options
 
 These options deal specifically with functionality provided by DNSSEC-Tools.
@@ -859,6 +887,10 @@ These options deal specifically with functionality provided by DNSSEC-Tools.
 
 B<directory> is the archived-key directory.  Old encryption keys are moved to
 this directory, but only if they are to be saved and not deleted.
+
+=item I<-binddir E<lt>directoryE<gt>>
+
+B<directory> is the directory holding the BIND programs.
 
 =item I<-entropy_msg>
 
