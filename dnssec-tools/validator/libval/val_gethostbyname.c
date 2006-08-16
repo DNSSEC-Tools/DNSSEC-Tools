@@ -150,8 +150,7 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 		if (hs->canonical_hostname) {
 			ret->h_name = (char *) bufalloc(buf, buflen, offset, len + 1);
 			if (ret->h_name == NULL) {
-				*offset = orig_offset;
-				return NULL;
+				goto err;
 			}
 
 			memcpy(ret->h_name, hs->canonical_hostname, len + 1);
@@ -170,8 +169,7 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 		ret->h_aliases = (char **) bufalloc(buf, buflen, offset, alias_count * sizeof(char *));
 
 		if (ret->h_aliases == NULL) {
-			*offset = orig_offset;
-			return NULL;
+			goto err;
 		}
 		
 		for (i=0; i<alias_count; i++) {
@@ -179,8 +177,7 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 			if (hs->aliases[i]) {
 				ret->h_aliases[i] = (char *) bufalloc(buf, buflen, offset, len + 1);
 				if (ret->h_aliases[i] == NULL) {
-					*offset = orig_offset;
-					return NULL;
+					goto err;
 				}
 				memcpy(ret->h_aliases[i], hs->aliases[i], len + 1);
 			}
@@ -191,13 +188,15 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 		
 		// Addresses
 		ret->h_addr_list = (char **) bufalloc(buf, buflen, offset, 2 * sizeof(char *));
+		if ((ret->h_addr_list == NULL) || ((af != AF_INET) && (af != AF_INET6))) {
+			goto err;
+		}
 		if (af == AF_INET) {
 		    ret->h_addrtype = AF_INET;
 		    ret->h_length = sizeof(struct in_addr);
 		    ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, offset, sizeof(struct in_addr));
 		    if (ret->h_addr_list[0] == NULL) {
-			    *offset = orig_offset;
-			    return NULL;
+			    goto err;
 		    }
 		    memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
 		    ret->h_addr_list[1] = 0;
@@ -207,23 +206,32 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 		    ret->h_length = sizeof(struct in6_addr);
 		    ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, offset, sizeof(struct in6_addr));
 		    if (ret->h_addr_list[0] == NULL) {
-			    *offset = orig_offset;
-			    return NULL;
+			    goto err;
 		    }
 		    memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
 		    ret->h_addr_list[1] = 0;
 		}
-		else {
-			*offset = orig_offset;
-			return NULL;
+
+		/* clean up host list */
+		while(hs) {
+			h_prev = hs;
+			hs = hs->next;
+			FREE_HOSTS(h_prev);
 		}
-		
-		hs = hs->next;
-		h_prev = hs;
-		FREE_HOSTS(h_prev);
 		return ret;
 	}
 	
+	return NULL;
+
+  err:
+	/* clean up host list */
+	while(hs) {
+		h_prev = hs;
+		hs = hs->next;
+		FREE_HOSTS(h_prev);
+	}
+
+	*offset = orig_offset;
 	return NULL;
 	
 } /* get_hostent_from_etc_hosts() */
@@ -263,6 +271,7 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 	int addr_index  = 0;
 	int orig_offset = 0;
 	char dname [NS_MAXDNAME];
+	struct val_result_chain *res;
 
 	/* Check parameter sanity */
 	if (!results || !h_errnop || !buf || !offset || !ret) {
@@ -272,15 +281,14 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 	orig_offset = *offset;
 	bzero(ret, sizeof(struct hostent));
 
-	struct val_result_chain *res;
-
 	/* Count the number of aliases and addresses in the result */
 	for (res = results; res != NULL; res = res->val_rc_next) {
+		struct rrset_rec *rrset;
 
 		if (res->val_rc_trust == NULL)
 			continue;
 
-		struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
+		rrset = res->val_rc_trust->_as.ac_data;
 		
 		// Get a count of aliases and addresses
 		while (rrset) {
@@ -313,23 +321,25 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 		*offset = orig_offset;
 		return NULL;
 	}
-	ret->h_aliases[alias_count] = 0;
+	ret->h_aliases[alias_count] = NULL;
 	
 	ret->h_addr_list = (char **) bufalloc (buf, buflen, offset, (addr_count + 1) * sizeof(char*));
 	if (ret->h_addr_list == NULL) {
 		*offset = orig_offset;
 		return NULL;
 	}
-	ret->h_addr_list[addr_count] = 0;
+	ret->h_addr_list[addr_count] = NULL;
 
 	alias_index = alias_count -1;
 
 	/* Process the result */
 	for (res = results; res != NULL; res = res->val_rc_next) {
+		struct rrset_rec *rrset;
+
 		if (res->val_rc_trust == NULL) 
 			continue;
 
-		struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
+		rrset = res->val_rc_trust->_as.ac_data;
 		
 		while (rrset) {
 			struct rr_rec *rr = rrset->rrs.val_rrset_data;
@@ -499,7 +509,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		// Alias
 		ret->h_aliases = (char **) bufalloc (buf, buflen, &offset, sizeof(char *));
 		if (ret->h_aliases == NULL) {
-			return ERANGE;
+			return ERANGE;  // xxx-audit: what about *offset = orig_offset; ?
 		}
 		ret->h_aliases[0] = 0;
 
@@ -508,11 +518,11 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		ret->h_length = sizeof(struct in_addr);
 		ret->h_addr_list = (char **) bufalloc (buf, buflen, &offset, 2 * sizeof(char *));
 		if (ret->h_addr_list == NULL) {
-			return ERANGE;
+			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
 		}
 		ret->h_addr_list[0] = (char *) bufalloc (buf, buflen, &offset, sizeof(struct in_addr));
 		if (ret->h_addr_list[0] == NULL) {
-			return ERANGE;
+			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
 		}
 		memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
 		ret->h_addr_list[1] = 0;
@@ -538,7 +548,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		// Alias
 		ret->h_aliases = (char **) bufalloc (buf, buflen, &offset, sizeof(char *));
 		if (ret->h_aliases == NULL) {
-			return ERANGE;
+			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
 		}
 		ret->h_aliases[0] = 0;
 
@@ -547,11 +557,11 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		ret->h_length = sizeof(struct in6_addr);
 		ret->h_addr_list = (char **) bufalloc (buf, buflen, &offset, 2 * sizeof(char *));
 		if (ret->h_addr_list == NULL) {
-			return ERANGE;
+			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
 		}
 		ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, &offset, sizeof(struct in6_addr));
 		if (ret->h_addr_list[0] == NULL) {
-			return ERANGE;
+			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
 		}
 		memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
 		ret->h_addr_list[1] = 0;
@@ -567,6 +577,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 		struct val_result_chain *results = NULL;
 		u_char name_n[NS_MAXCDNAME];
 		val_context_t *context = NULL;
+		u_int16_t type;
 		
 		if (ctx == NULL) {
 			if(VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
@@ -587,10 +598,10 @@ int val_gethostbyname2_r( const val_context_t *ctx,
 			*h_errnop = NETDB_SUCCESS;
 			if((ctx == NULL) && context)
 				val_free_context(context);
-			return 0;
+			return 0;  // xxx-audit: what about *offset = orig_offset; ?
 		}
 		
-		u_int16_t type = ns_t_a;
+		type = ns_t_a;
 		if (af == AF_INET6) {
 			type = ns_t_aaaa;
 		}
