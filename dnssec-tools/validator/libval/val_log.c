@@ -28,10 +28,17 @@ char *get_hex_string(const unsigned char *data, int datalen, char *buf, int bufl
 	int i;
 	char *ptr = buf;
 	char *endptr = ptr+buflen;
+
+	if (buf == NULL)
+		return NULL;
+
 	strcpy(ptr, "");
 
 	snprintf(ptr, endptr-ptr, "0x");
 	ptr += strlen(ptr);
+
+	if (data == NULL)
+		return buf;
 
 	for (i=0; i<datalen; i++) { 
 		snprintf(ptr, endptr-ptr, "%02x", data[i]);
@@ -56,15 +63,15 @@ static char *get_rr_string(struct rr_rec *rr, char *buf, int buflen)
 
 void val_log_rrset(val_context_t *ctx, int level, struct rrset_rec *rrset)
 {
-	char buf[2049];
+    char buf1[2049], buf2[2049];
     while (rrset) {
 
 		val_log(ctx, level, "rrs->val_rrset_name=%s rrs->val_rrset_type=%s rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d"
 			"rrs->val_rrset_section=%s rrs->val_rrset_data=%s rrs->val_rrset_sig=%s",
 			rrset->rrs.val_rrset_name_n, p_type(rrset->rrs.val_rrset_type_h), p_class(rrset->rrs.val_rrset_class_h),
 			rrset->rrs.val_rrset_ttl_h, p_section(rrset->rrs.val_rrset_section - 1, !ns_o_update),
-			get_rr_string(rrset->rrs.val_rrset_data, buf, 2048),
-			get_rr_string(rrset->rrs.val_rrset_sig, buf, 2048));
+			get_rr_string(rrset->rrs.val_rrset_data, buf1, 2048),
+			get_rr_string(rrset->rrs.val_rrset_sig, buf2, 2048));
 	
 		rrset = rrset->rrs_next;
     }
@@ -103,7 +110,7 @@ static const char *get_algorithm_string (u_int8_t algo)
 
 void val_log_rrsig_rdata (val_context_t *ctx, int level, const char *prefix, val_rrsig_rdata_t *rdata)
 {
-	char ctime_buf[1028];
+    char ctime_buf1[1028],ctime_buf2[1028];
 	char buf[1028];
     if (rdata) {
 		if (!prefix) prefix = "";
@@ -111,8 +118,8 @@ void val_log_rrsig_rdata (val_context_t *ctx, int level, const char *prefix, val
 					"SigExp=%s SigIncp=%s KeyTag=%d[0x %04x] Signer=%s Sig=%s", prefix, 
 					rdata->algorithm, get_algorithm_string(rdata->algorithm),
 					rdata->labels, rdata->orig_ttl, 
-					ctime_r((const time_t *)(&(rdata->sig_expr)), ctime_buf),
-					ctime_r((const time_t *)(&(rdata->sig_incp)), ctime_buf),
+					ctime_r((const time_t *)(&(rdata->sig_expr)), ctime_buf1),
+					ctime_r((const time_t *)(&(rdata->sig_incp)), ctime_buf2),
 					rdata->key_tag, rdata->key_tag, rdata->signer_name, 
 					get_base64_string(rdata->signature, rdata->signature_len, buf, 1024));
     }
@@ -145,6 +152,8 @@ void val_log_assertion( val_context_t *ctx, int level, u_char *name_n, u_int16_t
 { 
 	char name[NS_MAXDNAME]; 
 	char *name_pr, *serv_pr;
+	int tag = 0;
+
 	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) 
 		name_pr = name;
 	else
@@ -154,7 +163,6 @@ void val_log_assertion( val_context_t *ctx, int level, u_char *name_n, u_int16_t
 	else
 		serv_pr = "NULL";
 
-	int tag = 0;
 	if (type_h == ns_t_dnskey) {
 		struct rr_rec *curkey;
 		for (curkey = data; curkey; curkey=curkey->rr_next) {
@@ -418,13 +426,18 @@ int send_log_message(char *buffer)
 	server.sin_family = AF_INET;
 	server.sin_port = htons(VALIDATOR_LOG_PORT);
 	if (inet_pton(AF_INET, VALIDATOR_LOG_SERVER, &server.sin_addr) != 1)
-		return VAL_INTERNAL_ERROR;
+		goto err;
 	length=sizeof(struct sockaddr_in);
 
 	if(sendto(sock, buffer, strlen(buffer),0,&server,length) < 0)
-		return VAL_INTERNAL_ERROR; 
+		goto err;
 
+	close(sock);
 	return VAL_NO_ERROR;
+
+  err:
+	close(sock);
+	return VAL_INTERNAL_ERROR;
 }
 #endif /* LOG_TO_NETWORK */
 
@@ -440,16 +453,17 @@ void val_log (const val_context_t *ctx, int level, const char *template, ...)
         snprintf(buf, sizeof(buf), "libval(%d)",
                  (ctx == NULL)? "0": ctx->id);
 	openlog(buf, VAL_LOG_OPTIONS, LOG_USER);
+
 	va_start (ap, template);
 	vsyslog(LOG_USER|level, template, ap);
-	va_end (ap);
-	va_start (ap, template);
-	vsnprintf(buf, 1024, template, ap);
 	va_end (ap);
 
 #ifdef LOG_TO_NETWORK
 	if(LOG_MASK(level) & log_mask) {
 		/* We allocated extra space  */
+		va_start (ap, template);
+		vsnprintf(buf, 1024, template, ap);
+		va_end (ap);
 		strcat(buf, "\n");
 		send_log_message(buf);
 	}
