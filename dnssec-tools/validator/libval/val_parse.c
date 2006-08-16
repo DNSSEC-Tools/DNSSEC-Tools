@@ -34,7 +34,10 @@ keytag (
 {
     unsigned long ac;     /* assumed to be 32 bits or larger */
     int i;                /* loop index */
-    
+
+    if (key == NULL)
+        return 0;
+
     for ( ac = 0, i = 0; i < keysize; ++i )
 	ac += (i & 1) ? key[i] : key[i] << 8;
     ac += (ac >> 16) & 0xFFFF;
@@ -53,10 +56,13 @@ int val_parse_dname(const unsigned char *buf, int buflen, int offset,
     int count = 0;
     int compressed = 0;
 
+    if ((dname == NULL) || (buf == NULL) || (offset > buflen))
+        return 0;
+
     newoffset = offset;
     bzero(dname, sizeof(dname));
 
-    while (buf[newoffset] != 0) {
+    while ((newoffset < buflen) && (buf[newoffset] != 0)) {
 	int len, i;
 
 	if ((buf[newoffset] & 0xC0) == 0xC0) { /* domain name compression */
@@ -72,7 +78,7 @@ int val_parse_dname(const unsigned char *buf, int buflen, int offset,
 
 	len = buf[newoffset];
 
-	for (i=1; i<=len; i++) {
+	for (i=1; (i<=len) && ((newoffset+i) < buflen); i++) {
 	    dname[nindex++] = buf[newoffset+i];
 	}
 
@@ -98,8 +104,10 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
     int index = 0;
     u_char *cp;
 
-    if (!rdata) return -1;
+    if (!rdata || !buf) return -1;
 
+    if (index+4 > buflen)
+        return -1;
     cp = (u_char *) buf;
     NS_GET16(rdata->flags, cp);
     index += 2;
@@ -114,6 +122,8 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 
     if (rdata->public_key_len > 0) {
         rdata->public_key = (u_char *) MALLOC (rdata->public_key_len * sizeof(u_char));
+        if (rdata->public_key == NULL)
+            return -1; /* xxx-check: should we return bytes parsed so far? */
         memcpy (rdata->public_key, buf + index, rdata->public_key_len);
         index += rdata->public_key_len;
     }
@@ -139,7 +149,7 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 		sp++;								\
 	if (sp >= ep)							\
 		return VAL_BAD_ARGUMENT;				\
-	while ((sp < ep) && !isspace(*sp)) { 	\
+	while ((sp < ep) && !isspace(*sp) && (i<NS_MAXDNAME)) {         \
 		token[i++] = *sp;					\
 		sp++;								\
 	}										\
@@ -156,8 +166,17 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	char *sp = keystr;
 	char *ep = sp + keystrlen + 1;
 	char token[NS_MAXDNAME];
+	char *keyptr = NULL;
+	char *cp;
+	int bufsize;
+	BIO *b64;
+	BIO *mem;
+	int buflen;
+	u_char *buf;
+	u_char *bp;
+	u_int16_t flags;
 
-	if (ep - sp > NS_MAXDNAME)
+	if ((ep - sp > NS_MAXDNAME) || (dnskey_rdata == NULL))
 		return VAL_BAD_ARGUMENT;
 
 	(*dnskey_rdata) = (val_dnskey_rdata_t *) MALLOC (sizeof(val_dnskey_rdata_t));
@@ -178,8 +197,6 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	 */
 
 	/* Remove any white spaces*/
-	char *keyptr = NULL;
-	char *cp;
 	for(cp = sp; sp < ep; sp++) { 
 		if (!isspace(*sp)) {
 			if (keyptr == NULL)
@@ -191,14 +208,14 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	}
 	*cp = '\0';
 
-	int bufsize = ep - keyptr;
+	bufsize = ep - keyptr;
 	(*dnskey_rdata)->public_key = (u_char *) MALLOC (bufsize * sizeof(char));
 	if ((*dnskey_rdata)->public_key == NULL)
 		return VAL_OUT_OF_MEMORY;
 
 	/* decode the base64 public key */
-	BIO *b64 = BIO_new(BIO_f_base64());
-	BIO *mem = BIO_new_mem_buf(keyptr, -1);
+	b64 = BIO_new(BIO_f_base64());
+	mem = BIO_new_mem_buf(keyptr, -1);
 	BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
 	mem = BIO_push(b64, mem);
 	(*dnskey_rdata)->public_key_len = 
@@ -214,16 +231,16 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	 * For calculating the keytag, we need the 
 	 * complete DNSKEY RDATA in wire format
 	 */
-	int buflen = (*dnskey_rdata)->public_key_len +
+	buflen = (*dnskey_rdata)->public_key_len +
 					sizeof(u_int16_t) + /* flags */
 						sizeof(u_int8_t) + /* proto */
 							sizeof (u_int8_t); /*algo */
-	u_char *buf = (u_char *) MALLOC (buflen * sizeof (u_char));
+	buf = (u_char *) MALLOC (buflen * sizeof (u_char));
 	if (buf == NULL)
 		return VAL_OUT_OF_MEMORY;
 
-	u_char *bp = buf;
-	u_int16_t flags = (*dnskey_rdata)->flags;
+	bp = buf;
+	flags = (*dnskey_rdata)->flags;
 
 	memcpy(bp, &flags, sizeof(u_int16_t));
 	bp += sizeof(u_int16_t);
@@ -257,7 +274,10 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
     int index = 0;
     u_char *cp;
 
-    if (!rdata) return -1;
+    if (!rdata || !buf) return -1;
+
+    if (index+18 > buflen)
+        return -1;
 
     cp = (u_char *) buf;
     NS_GET16(rdata->type_covered, cp);
@@ -288,6 +308,8 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
 
     if (rdata->signature_len > 0) {
         rdata->signature = (u_char *) MALLOC (rdata->signature_len * sizeof(u_char));
+        if (rdata->signature == NULL)
+        	return -1; /* xxx-check: should we return bytes parsed so far? */
         memcpy (rdata->signature, buf + index, rdata->signature_len);
         index += rdata->signature_len;
     }
@@ -308,7 +330,10 @@ int val_parse_ds_rdata (const unsigned char *buf, int buflen,
     int index = 0;
     u_char *cp;
 
-    if (!rdata) return -1;
+    if (!rdata || !buf) return -1;
+
+    if (index+ > buflen)
+        return -1;
 
     cp = (u_char *) buf;
     NS_GET16(rdata->d_keytag, cp);
@@ -323,6 +348,9 @@ int val_parse_ds_rdata (const unsigned char *buf, int buflen,
 	/* Only SHA-1 is understood */
 	if(rdata->d_type != DIGEST_SHA_1)
 		return -1;
+
+        if (index+sizeof(rdata->d_hash) > buflen)
+            return -1;
 
     memcpy (rdata->d_hash, buf + index, sizeof(rdata->d_hash));
     index += sizeof(rdata->d_hash);
