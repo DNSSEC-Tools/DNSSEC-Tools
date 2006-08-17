@@ -47,8 +47,9 @@
 #include "val_assertion.h"
 #include "val_log.h"
 
-#define ITS_BEEN_DONE   TRUE
-#define IT_HASNT        FALSE
+#define ITS_BEEN_DONE   0
+#define IT_HASNT        1
+#define IT_WONT         (-1)
 
 #define MERGE_RR(old_rr, new_rr) do{ \
 	if (old_rr == NULL) \
@@ -69,7 +70,7 @@
 		return VAL_NO_ERROR;\
 	}\
 	newname = name + label_len + 1;\
-} while(0);
+} while(0)
 
 #define ALLOCATE_REFERRAL_BLOCK(ref) do{ \
 		ref = (struct delegation_info *) MALLOC (sizeof(struct delegation_info)); \
@@ -82,22 +83,38 @@
 		ref->pending_glue_ns = NULL; \
 		ref->pending_zonecut_n = NULL; \
 		ref->glueptr = NULL; \
-} while(0) \
+} while(0)
 
 
 static int skip_questions(const u_int8_t *buf)
 {
+    if (buf == NULL)
+        return 0;
+
+    // xxx-note : i'd feel a lot better about this if there was a length
+    //            argument to check too
+
     return 12 + wire_name_length (&buf[12]) + 4;
 }
 
+/*
+ *
+ * returns
+ *         ITS_BEEN_DONE
+ *         IT_HASNT
+ *         IT_WONT
+ */
 static int register_query (struct query_list **q, u_int8_t *name_n, u_int32_t type_h, u_int8_t *zone_n)
 {
+    if ((q == NULL) || (name_n == NULL) || (zone_n == NULL))
+        return IT_WONT;
+
     if (*q==NULL)
     {
         *q = (struct query_list *)MALLOC(sizeof(struct query_list));
         if (*q==NULL)
         {
-            /* Out of memory */
+                return IT_WONT; /* Out of memory */
         }
         memcpy ((*q)->ql_name_n, name_n, wire_name_length(name_n));
         memcpy ((*q)->ql_zone_n, zone_n, wire_name_length(zone_n));
@@ -106,27 +123,26 @@ static int register_query (struct query_list **q, u_int8_t *name_n, u_int32_t ty
     }
     else
     {
-        while ((*q)->ql_next != NULL)
+        struct query_list *cur_q = (*q);
+
+        while (cur_q->ql_next != NULL)
         {
-            if(namecmp((*q)->ql_zone_n,zone_n)==0&&namecmp((*q)->ql_name_n,name_n)==0)
+            if(namecmp(cur_q->ql_zone_n,zone_n)==0&&namecmp(cur_q->ql_name_n,name_n)==0)
                 return ITS_BEEN_DONE;
-            (*q) = (*q)->ql_next;
+            cur_q = cur_q->ql_next;
         }
-        if(namecmp((*q)->ql_zone_n,zone_n)==0&&namecmp((*q)->ql_name_n,name_n)==0)
+        if(namecmp(cur_q->ql_zone_n,zone_n)==0&&namecmp(cur_q->ql_name_n,name_n)==0)
                 return ITS_BEEN_DONE;
-        (*q)->ql_next = (struct query_list *)MALLOC(sizeof(struct query_list));
-        (*q) = (*q)->ql_next;
-        if ((*q) == NULL)
+        cur_q->ql_next = (struct query_list *)MALLOC(sizeof(struct query_list));
+        if (cur_q->ql_next == NULL)
         {
-            /* Out of memory */
-                                                                                                                          
-    /* Check for NO MORE MEMORY */
-                                                                                                                          
+            return IT_WONT;  /* Out of memory */
         }
-        memcpy ((*q)->ql_name_n, name_n, wire_name_length(name_n));
-        memcpy ((*q)->ql_zone_n, zone_n, wire_name_length(zone_n));
-        (*q)->ql_type_h = type_h;
-        (*q)->ql_next = NULL;
+        cur_q = cur_q->ql_next;
+        memcpy (cur_q->ql_name_n, name_n, wire_name_length(name_n));
+        memcpy (cur_q->ql_zone_n, zone_n, wire_name_length(zone_n));
+        cur_q->ql_type_h = type_h;
+        cur_q->ql_next = NULL;
     }
     return IT_HASNT;
 }
@@ -135,7 +151,8 @@ static void deregister_queries (struct query_list **q)
 {
     struct query_list   *p;
                                                                                                                           
-    if (*q==NULL) return;
+	if (q == NULL)
+		return;
 
 	while(*q) {
 		p = *q;
@@ -145,16 +162,37 @@ static void deregister_queries (struct query_list **q)
 }
 
 
-static void *weird_al_realloc (void *old, size_t new_size)
+/*
+ * pseudo-implementation of realloc
+ *
+ * allocate new memory, copy old data to new block, and free old block.
+ * Old block is not released if the new allocation fails.
+ *
+ * Parameters
+ *              old:  ptr to old memory
+ *         new_size: size to allocate for new ptr
+ *
+ * returns new memory block, or NULL on failure
+ */
+static void *weird_al_realloc (void *old, size_t old_size, size_t new_size)
 {
-    void    *new;
+    void    *newp = NULL;
                                                                                                                           
+
     if (new_size>0)
     {
-        new = MALLOC (new_size);
-        if (new==NULL) return new;
-        memset (new, 0, new_size);
-        if (old) memcpy (new, old, new_size);
+        /* don't reallocate for smaller size */
+        if ((old != NULL) && (new_size < old_size)) {
+            memset(&old[new_size], 0, old_size - new_size);
+            return old;
+        }
+        
+        newp = MALLOC (new_size);
+        if (newp==NULL)
+            return NULL;
+        memset (&newp[old_size], 0, new_size - old_size);
+        if (old)
+            memcpy (new, old, old_size);
     }
     if (old) FREE (old);
                                                                                                                           
@@ -165,23 +203,33 @@ int extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
 {
     struct sockaddr_in  *sock_in;
     size_t              new_ns_size;
+
+    if ((ns == NULL) || (*ns == NULL))
+        return VAL_BAD_ARGUMENT;
+
     while (addr_rr)
     {
         if ((*ns)->ns_number_of_addresses > 0)
         {
+            struct name_server *new_ns;
+
             /* Have to grow the ns structure */
             /* Determine the new size */
             new_ns_size = sizeof (struct name_server)
-                           + (*ns)->ns_number_of_addresses
-                               * sizeof (struct sockaddr);
+                          + ((*ns)->ns_number_of_addresses
+                             * sizeof (struct sockaddr));
                                                                                                                           
             /*
              * Realloc the ns's structure to be able to
              * add a struct sockaddr
              */
-            (*ns) = (struct name_server *) weird_al_realloc(*ns, new_ns_size);
+            new_ns = (struct name_server *)
+                weird_al_realloc(*ns, new_ns_size - sizeof (struct sockaddr),
+                                 new_ns_size);
                                                                                                                           
-            if (*ns==NULL) return VAL_OUT_OF_MEMORY;
+            if (new_ns==NULL) return VAL_OUT_OF_MEMORY;
+            (*ns) = new_ns;
+
 		}    
                                                                                                                       
         sock_in = (struct sockaddr_in *)
@@ -202,8 +250,14 @@ int extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
 void  merge_glue_in_referral(struct val_query_chain *pc, struct val_query_chain **queries)
 {
 	int retval;
-	struct val_query_chain *glueptr = pc->qc_referral->glueptr;
+	struct val_query_chain *glueptr;
 	struct name_server *pending_ns;
+
+	if ((queries == NULL) || (pc == NULL) || (pc->qc_referrel == NULL) ||
+	    (pc->qc_referrel->glueptr == NULL))
+		return VAL_BAD_ARGUMENT;
+
+	glueptr = pc->qc_referral->glueptr;
 
 	/* Check if glue was obtained */
 	if((glueptr->qc_state == Q_ANSWERED) && 
@@ -250,10 +304,13 @@ void  merge_glue_in_referral(struct val_query_chain *pc, struct val_query_chain 
 	if (glueptr->qc_state > Q_ERROR_BASE) {
 
 		/* look for next ns to send our glue request to */
-		pending_ns = pc->qc_referral->pending_glue_ns->ns_next;
-		free_name_server(&pc->qc_referral->pending_glue_ns);
-		pc->qc_referral->pending_glue_ns = pending_ns;
-
+		if (pc->qc_referral->pending_glue_ns == NULL)
+			pending_ns =  = NULL;
+		else {
+			pending_ns = pc->qc_referral->pending_glue_ns->ns_next;
+			free_name_server(&pc->qc_referral->pending_glue_ns);
+			pc->qc_referral->pending_glue_ns = pending_ns;
+		}
 		if(pending_ns == NULL) {
 			pc->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
 		}
@@ -281,7 +338,10 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
     struct name_server  *tail_ns;
     size_t              name_len;
 	int retval;        
-                                                                                                                  
+
+	if ((ns_list == NULL) || (pending_glue == NULL))
+	    return VAL_BAD_ARGUMENT;
+
     *ns_list = NULL;
                                                                                                                           
     unchecked_set = unchecked_zone_info;
@@ -298,6 +358,9 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
                     during the stowage of the zone information.
                     If so, this code may never get executed.
                 */
+		// xxx-audit: dereference of unitialized ptr
+		//     the first time through this loop, trailer is
+		//     uninitialized.
                 trailer->rrs_next = unchecked_set->rrs_next;
                 unchecked_set->rrs_next = NULL;
                 res_sq_free_rrset_recs (&unchecked_set);
@@ -324,6 +387,7 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
                     if (temp_ns->ns_name_n==NULL)
                     {
                         free_name_servers (ns_list);
+			free(temp_ns);
                         return VAL_OUT_OF_MEMORY;
                     }
                     memcpy (temp_ns->ns_name_n, ns_rr->rr_rdata, name_len);
@@ -500,6 +564,10 @@ int bootstrap_referral(u_int8_t            *referral_zone_n,
 	struct name_server *pending_glue;
 	int ret_val;
 
+	if ((learned_zones == NULL) || (matched_q == NULL) ||
+	    (queries == NULL) || (ref_ns_list == NULL))
+		return VAL_BAD_ARGUMENT;
+
 	*ref_ns_list = NULL;
 
 	if ((ret_val=res_zi_unverified_ns_list (ref_ns_list, referral_zone_n, *learned_zones, &pending_glue))
@@ -556,7 +624,11 @@ static int do_referral(		val_context_t		*context,
     int                 ret_val;
 	struct name_server *ref_ns_list;
 	int len;
+	struct rrset_rec    *ref_rrset;
 
+	if ((matched_q == NULL) || (answers == NULL) || (qnames == NULL) ||
+	    (learned_zones == NULL) || (queries == NULL))
+		return VAL_BAD_ARGUMENT;
 
     /* Register the request name and zone with our referral monitor */
     /* If this request has already been made then Referral Error */
@@ -566,7 +638,6 @@ static int do_referral(		val_context_t		*context,
 	}
 
     /* Update the qname chain */
-	struct rrset_rec    *ref_rrset;
 
     ref_rrset = *answers;
    	while (ref_rrset)
@@ -688,17 +759,23 @@ static int digest_response (   val_context_t 		*context,
     struct rrset_rec    *learned_keys = NULL;
     struct rrset_rec    *learned_ds = NULL;
 
-	const u_int8_t      *query_name_n = matched_q->qc_name_n;
-    u_int16_t           query_type_h = matched_q->qc_type_h;
-    u_int16_t           query_class_h = matched_q->qc_class_h;
+	const u_int8_t      *query_name_n;
+    u_int16_t           query_type_h;
+    u_int16_t           query_class_h;
 	u_int8_t            *rrs_zonecut_n = NULL;    
-                                                                                              
-    *answers = NULL;
-    *qnames = NULL;
-
     int referral_seen = FALSE;
     u_int8_t            referral_zone_n[NS_MAXDNAME];
                                                                                                                           
+    if ((matched_q == NULL) || (answers == NULL) || (qnames == NULL) ||
+	(queries == NULL) || (response == NULL))
+	return VAL_BAD_ARGUMENT;
+
+    query_name_n = matched_q->qc_name_n;
+    query_type_h = matched_q->qc_type_h;
+    query_class_h = matched_q->qc_class_h;
+    *answers = NULL;
+    *qnames = NULL;
+
     question = ntohs(header->qdcount);
     answer = ntohs(header->ancount);
     authority = ntohs(header->nscount);
@@ -954,6 +1031,9 @@ int val_resquery_rcv (
 
     int                 ret_val;
 
+    if ((matched_q == NULL) || (response == NULL) || (queries == NULL))
+	return VAL_BAD_ARGUMENT;
+
 	*response = NULL;
     ret_val = response_recv(&(matched_q->qc_trans_id), &server, 
 					&response_data, &response_length);
@@ -983,8 +1063,11 @@ int val_resquery_rcv (
     (*response)->di_requested_type_h = matched_q->qc_type_h;
     (*response)->di_requested_class_h = matched_q->qc_class_h;
 
-    if (((*response)->di_requested_name_h = STRDUP (name))==NULL)
+    if (((*response)->di_requested_name_h = STRDUP (name))==NULL) {
+	free(*response);
+	*response = NULL;
         return VAL_OUT_OF_MEMORY;
+    }
 
     if ((ret_val = digest_response (context, matched_q, 
 					matched_q->qc_respondent_server,
@@ -992,6 +1075,7 @@ int val_resquery_rcv (
 					response_length) != VAL_NO_ERROR))
     {
         FREE (response_data);
+	// xxx-audit: memory leak? free/clear *response?
         return ret_val;
     }
 
@@ -1015,6 +1099,10 @@ int find_next_zonecut(struct rrset_rec *rrset, u_int8_t *curzone_n, u_int8_t **n
 {
 	u_int8_t *qname;
 	int retval;
+	struct val_result_chain *results;
+
+	if (name_n == NULL)
+	    return VAL_BAD_ARGUMENT;
 
 	*name_n = NULL;
 	qname = NULL;
@@ -1054,7 +1142,6 @@ int find_next_zonecut(struct rrset_rec *rrset, u_int8_t *curzone_n, u_int8_t **n
 		return VAL_NO_ERROR;
 
 	/* query for the SOA and return the zone cut */
-	struct val_result_chain *results;
 	if(VAL_NO_ERROR == (retval = val_resolve_and_check(NULL, qname, 
 			ns_c_in, ns_t_soa, F_DONT_VALIDATE, &results))) {
 
