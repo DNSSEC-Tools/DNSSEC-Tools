@@ -147,7 +147,7 @@ dnsval_conf_set(const char *name)
  * file
  **************************************************************
  */
-static const struct policy_conf_element conf_elem_array[] = {
+static const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
 	{POL_TRUST_ANCHOR_STR, parse_trust_anchor, free_trust_anchor},
 	{POL_PREFERRED_SEP_STR, parse_preferred_sep, free_preferred_sep},	
 	{POL_MUST_VERIFY_COUNT_STR, parse_must_verify_count, free_must_verify_count},
@@ -174,20 +174,30 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 	int name_len;
 	int endst = 0;
 
+	if ((fp == NULL) || (pol_entry == NULL) || (line_number == NULL))
+	    return VAL_BAD_ARGUMENT;
+
 	ta_head = NULL;
 
 	while (!endst) {	
+		char *pkstr;
+		val_dnskey_rdata_t *dnskey_rdata;
 
 		/* Read the zone for which this trust anchor applies */
-		if(VAL_NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
-			return retval;
+		if(VAL_NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT))) {
+			goto err;
+		}
 		if (endst && (strlen(token) == 1))
 			break;
-		if (feof(fp))
-			return VAL_CONF_PARSE_ERROR;
+		if (feof(fp)) {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 
-   		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1)
-       		return VAL_CONF_PARSE_ERROR; 
+   		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1) {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 
 		/* XXX We may want to have another token that specifies if 
 		 * XXX this is a DS or a DNSKEY
@@ -195,26 +205,31 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 		 */
 		/* Read the public key */
 		if(VAL_NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
-			return retval;
-		if (feof(fp) && !endst)
-			return VAL_CONF_PARSE_ERROR;
+			goto err;
+		if (feof(fp) && !endst) {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 		/* Remove leading and trailing quotation marks */
 		if ((token[0] != '\"') || 
 				(strlen(token) <= 1) || 
-					token[strlen(token) - 1] != '\"')
-			return VAL_CONF_PARSE_ERROR;
+					token[strlen(token) - 1] != '\"') {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 		token[strlen(token) - 1] = '\0';
-		char *pkstr = &token[1];
+		pkstr = &token[1];
 
 
 		// Parse the public key
-		val_dnskey_rdata_t *dnskey_rdata;
         if (VAL_NO_ERROR != (retval = val_parse_dnskey_string (pkstr, strlen(pkstr), &dnskey_rdata)))
-			return retval;
+			goto err;
 
 		ta_pol = (struct trust_anchor_policy *) MALLOC (sizeof(struct trust_anchor_policy));
-		if (ta_pol == NULL)
-			return VAL_OUT_OF_MEMORY;
+		if (ta_pol == NULL) {
+			retval = VAL_OUT_OF_MEMORY;
+			goto err;
+		}
 		name_len = wire_name_length (zone_n);
 		memcpy (ta_pol->zone_n, zone_n, name_len);
 		ta_pol->publickey = dnskey_rdata;	
@@ -238,6 +253,14 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 	*pol_entry = (policy_entry_t)(ta_head);
 	
 	return VAL_NO_ERROR;
+
+  err:
+	while(ta_prev = ta_head) {
+	    ta_head = ta_head->next;
+	    FREE(ta_prev);
+	}
+
+	return retval;
 }
 
 int free_trust_anchor(policy_entry_t *pol_entry)
@@ -338,38 +361,51 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 	int endst = 0;
 	int zone_status;
 
+	if ((fp == NULL) || (pol_entry == NULL) || (line_number == NULL))
+	    return VAL_BAD_ARGUMENT;
+
 	zse_head = NULL;
 
 	while (!endst) {	
 
 		/* Read the zone for which this trust anchor applies */
 		if(VAL_NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
-			return retval;
+			goto err;
 		if (endst && (strlen(token) == 1))
 			break;
-		if (feof(fp)) 
-			return VAL_CONF_PARSE_ERROR;
+		if (feof(fp)) {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 
-   		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1)
-       		return VAL_CONF_PARSE_ERROR; 
+   		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1) {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 
 		/* Read the zone status */
 		if(VAL_NO_ERROR != (retval = get_token ( fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
-			return retval;
-		if (feof(fp) && !endst)
-			return VAL_CONF_PARSE_ERROR;
+			goto err;
+		if (feof(fp) && !endst) {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 		if (!strcmp(token, ZONE_SE_IGNORE_MSG))
 			zone_status = ZONE_SE_IGNORE;
 		else if (!strcmp(token, ZONE_SE_DO_VAL_MSG))
 			zone_status = ZONE_SE_DO_VAL;
 		else if (!strcmp(token, ZONE_SE_UNTRUSTED_MSG))
 			zone_status = ZONE_SE_UNTRUSTED;
-		else
-			return VAL_CONF_PARSE_ERROR;
+		else {
+			retval = VAL_CONF_PARSE_ERROR;
+			goto err;
+		}
 
 		zse_pol = (struct zone_se_policy *) MALLOC (sizeof(struct trust_anchor_policy));
-		if (zse_pol == NULL)
-			return VAL_OUT_OF_MEMORY;
+		if (zse_pol == NULL) {
+			retval = VAL_OUT_OF_MEMORY;
+			goto err;
+		}
 		name_len = wire_name_length (zone_n);
 		memcpy (zse_pol->zone_n, zone_n, name_len);
 		zse_pol->trusted = zone_status;	
@@ -393,22 +429,31 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 	*pol_entry = (policy_entry_t)(zse_head);
 	
 	return VAL_NO_ERROR;
+
+  err:
+	while(zse_prev = zse_head) {
+	    zse_head = zse_head->next;
+	    FREE(zse_prev);
+	}
+
+	return retval;
 }
 
 int free_zone_security_expectation(policy_entry_t *pol_entry)
 {
-	struct zone_se_policy *zse_head, *zse_cur, *zse_next;
+	struct zone_se_policy *zse_cur, *zse_next;
 
-	if (pol_entry == NULL)
+	if ((pol_entry == NULL) || (*pol_entry == NULL))
 		return VAL_NO_ERROR;
 
-	zse_head = (struct zone_se_policy *)(*pol_entry);
-	zse_cur = zse_head;
+	zse_cur = (struct zone_se_policy *)(*pol_entry);
 	while (zse_cur) {
 		zse_next = zse_cur->next;
 		FREE (zse_cur);
 		zse_cur = zse_next;
 	}		
+
+	(*pol_entry) = NULL;
 
 	return VAL_NO_ERROR;
 }
@@ -475,7 +520,11 @@ static int get_token ( FILE *conf_ptr,
 	int         escaped = 0;
 	int         quoted = 0;
 	int         comment = 0;
-    
+
+	if ((conf_ptr == NULL) || (line_number == NULL) ||
+	    (conf_token == NULL) || (endst == NULL))
+	    return VAL_BAD_ARGUMENT;
+
 	*endst = 0;            
 	strcpy (conf_token, "");
 
@@ -557,6 +606,10 @@ int check_relevance(char *label, char *scope, int *label_count, int *relevant)
 	int label_len;
 	char *c, *p;
 
+	/* sanity check; NULL scope is OK */
+	if ((label == NULL) || (label_count == NULL) || (relevant == NULL))
+	    return VAL_BAD_ARGUMENT;
+
 	*relevant = 1;
 
 	/* a "default" label is always relevant */
@@ -602,11 +655,14 @@ static int get_next_policy_fragment(FILE *fp, char *scope,
 {
 	char token[TOKEN_MAX];
 	int retval;
-	char *keyword, *label;
+	char *keyword, *label = NULL;
 	int relevant = 0;
 	int index, label_count;
 	int endst;
 	policy_entry_t pol = NULL;
+
+	if ((fp == NULL) || (pol_frag == NULL) || (line_number == NULL))
+	    return VAL_BAD_ARGUMENT;
 
 	while (!relevant) {
 
@@ -622,14 +678,18 @@ static int get_next_policy_fragment(FILE *fp, char *scope,
 			return VAL_NO_ERROR;
 		if (endst)
 			return VAL_CONF_PARSE_ERROR;
+		if (label != NULL)
+			FREE(label);
 		label = (char *) MALLOC (strlen(token) + 1);
 		if (label == NULL)
 			return VAL_OUT_OF_MEMORY;
 		strcpy(label, token);
 
 		/* read the keyword */
-		if (VAL_NO_ERROR != (retval = get_token(fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT)))
+		if (VAL_NO_ERROR != (retval = get_token(fp, line_number, token, TOKEN_MAX, &endst, CONF_COMMENT, CONF_END_STMT))) {
+			FREE (label);
 			return retval;
+		}
 		if (feof(fp) || endst) {
 			FREE (label);
 			return VAL_CONF_PARSE_ERROR;
@@ -660,8 +720,11 @@ static int get_next_policy_fragment(FILE *fp, char *scope,
 	} 
 
 	*pol_frag = (struct policy_fragment *) MALLOC (sizeof (struct policy_fragment));
-	if (*pol_frag == NULL) 
+	if (*pol_frag == NULL) {
+		if (label != NULL)
+			FREE(label);
 		return VAL_OUT_OF_MEMORY;
+	}
 	(*pol_frag)->label = label; 
 	(*pol_frag)->label_count = label_count;
 	(*pol_frag)->index = index;
@@ -678,6 +741,9 @@ static int store_policy_overrides(val_context_t *ctx, struct policy_fragment **p
 {
 	struct policy_overrides *cur, *prev, *newp;
 	struct policy_list *entry;
+
+	if ((ctx == NULL) || (pfrag == NULL) || (*pfrag == NULL))
+	    return VAL_BAD_ARGUMENT;
 
 	/* search for a node with this label */
 	cur = prev = NULL;
@@ -730,14 +796,22 @@ void destroy_valpol(val_context_t *ctx)
 {
 	int i;
 	struct policy_overrides *cur, *prev;
+
+	if (ctx == NULL)
+	    return;
+
 	for (i = 0; i< MAX_POL_TOKEN; i++)
 			ctx->e_pol[i] = NULL;
 
 	prev = NULL;
 	for (cur = ctx->pol_overrides; cur; prev = cur, cur = cur->next) {
 			FREE (cur->label);
-			conf_elem_array[cur->plist->index].free(&(cur->plist->pol));
-			FREE (cur->plist);
+			if (cur->plist != NULL) {
+				if ((cur->plist->pol != NULL) &&
+				    (cur->plist->index < MAX_POL_TOKEN))
+				    conf_elem_array[cur->plist->index].free(&(cur->plist->pol));
+				FREE (cur->plist);
+			}
 			if (prev != NULL)
 				FREE (prev);
 	}
@@ -811,7 +885,7 @@ int read_val_config_file(val_context_t *ctx, char *scope)
 
 void destroy_respol(val_context_t *ctx)
 {
-	if (ctx->nslist != NULL) {
+    if ((ctx != NULL) && (ctx->nslist != NULL)) {
 		free_name_servers(&ctx->nslist);
 	}
 }
@@ -830,6 +904,9 @@ int read_res_config_file(val_context_t *ctx)
 	struct name_server *ns_head = NULL;
 	struct name_server *ns_tail = NULL;
 	struct name_server *ns = NULL;
+
+	if (ctx == NULL)
+	    return VAL_BAD_ARGUMENT;
 
 	ctx->nslist = NULL;
 
@@ -963,7 +1040,7 @@ err:
 }
 
 /* parse the contents of the root.hints file into resource records */
-int read_root_hints_file(val_context_t *ctx) 
+int read_root_hints_file(val_context_t *ctx) // xxx-audit: why the unused parameter?
 {
 	struct rrset_rec *root_info = NULL;
 	FILE *fp;
@@ -989,53 +1066,63 @@ int read_root_hints_file(val_context_t *ctx)
 	}
 
 	/* name */
-	if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+	if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT))) {
+		fclose(fp);
 		return retval;
+	}
 
 	while (!feof(fp)) {
    		if (ns_name_pton(token, zone_n, NS_MAXCDNAME-1) == -1)
-       		return VAL_CONF_PARSE_ERROR; 
+       		goto err; 
 		
 		/* ttl */
 		if (feof(fp))
-			return VAL_CONF_PARSE_ERROR;
-		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			goto err;
+		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT))) {
+			fclose(fp);
 			return retval;
+		}
 		if (-1 == ns_parse_ttl(token, &ttl_h))
-			return VAL_CONF_PARSE_ERROR;
+			goto err;
 
 		/* class */
 		if (feof(fp))
-			return VAL_CONF_PARSE_ERROR;
-		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			goto err;
+		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT))) {
+			fclose(fp);
 			return retval;
+		}
 		class_h = res_nametoclass(token, &success);
 		if (!success)
-			return VAL_CONF_PARSE_ERROR;
+			goto err;
 
 		/* type */
 		if (feof(fp))
-			return VAL_CONF_PARSE_ERROR;
-		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			goto err;
+		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT))) {
+			fclose(fp);
 			return retval;
+		}
 		type_h = res_nametotype(token, &success);
 		if (!success)
-			return VAL_CONF_PARSE_ERROR;
+			goto err;
 
 		if (feof(fp))
-			return VAL_CONF_PARSE_ERROR;
-		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+			goto err;
+		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT))) {
+			fclose(fp);
 			return retval;
+		}
 		if(type_h == ns_t_a) {
 			struct in_addr address;
 			if (inet_pton(AF_INET, token, &address) != 1)
-				return VAL_CONF_PARSE_ERROR;
+				goto err;
 			rdata_len_h = sizeof(struct in_addr);
         	memcpy (rdata_n, &address, rdata_len_h);
 		}
 		else if (type_h == ns_t_ns) {
    			if (ns_name_pton(token, rdata_n, NS_MAXCDNAME-1) == -1)
-       			return VAL_CONF_PARSE_ERROR; 
+       			goto err; 
 			rdata_len_h = wire_name_length(rdata_n);
 		}
 		else 
@@ -1044,13 +1131,20 @@ int read_root_hints_file(val_context_t *ctx)
 		SAVE_RR_TO_LIST(NULL, root_info, zone_n, type_h, type_h, ns_c_in, ttl_h, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0, zone_n); 
 
 		/* name */
-		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT)))
+		if(VAL_NO_ERROR != (retval = get_token ( fp, &line_number, token, TOKEN_MAX, &endst, ZONE_COMMENT, ZONE_END_STMT))) {
+			fclose(fp);
 			return retval;
+		}
 	}
 
 	fclose(fp);
 
 	return stow_root_info(root_info);
+
+  err:
+
+	fclose(fp);
+	return VAL_CONF_PARSE_ERROR;
 }
 
 /*
@@ -1065,6 +1159,9 @@ struct hosts * parse_etc_hosts (const char *name)
 	struct hosts *retval = NULL;
 	struct hosts *retval_tail = NULL;
 	
+	if (name == NULL)
+	    return NULL;
+
 	fp = fopen (ETC_HOSTS, "r");
 	if (fp == NULL) {
 		return NULL;
@@ -1087,14 +1184,14 @@ struct hosts * parse_etc_hosts (const char *name)
 		if (!cp) continue;
 		
 		memset(fileentry, 0, MAXLINE);
-		memcpy(fileentry, cp, strlen(cp));
+		strncpy(fileentry, cp, sizeof(fileentry));
 		
 		/* read the ip address */
 		cp = (char *) strtok_r (fileentry, white, &buf);
 		if (!cp) continue;
 		
 		memset(addr_buf, 0, INET6_ADDRSTRLEN);
-		memcpy(addr_buf, cp, strlen(cp));
+		strncpy(addr_buf, cp, sizeof(addr_buf));
 		
 		/* read the full domain name */
 		cp = (char *) strtok_r (NULL, white, &buf);
@@ -1120,17 +1217,33 @@ struct hosts * parse_etc_hosts (const char *name)
 		if (matchfound) {
 			int i;
 			struct hosts *hentry = (struct hosts*) MALLOC (sizeof(struct hosts));
+			if (hentry == NULL) 
+				break; /* return results so far */
 			
 			bzero(hentry, sizeof(struct hosts));
 			hentry->address = (char *) strdup (addr_buf);
 			hentry->canonical_hostname = (char *) strdup(domain_name);
 			hentry->aliases = (char **) MALLOC ((alias_index + 1) * sizeof(char *));
+			if ((hentry->aliases == NULL) || (hentry->address == NULL) ||
+			    (hentry->canonical_hostname == NULL)) 
+				if (hentry->address != NULL)
+					free(hentry->address);
+				if (hentry->canonical_hostname != NULL)
+					free(hentry->canonical_hostname);
+				if (hentry->aliases != NULL)
+					free(hentry->aliases);
+				free(hentry);
+				break; /* return results so far */
+			}
 			
 			for (i=0; i<alias_index; i++) {
 				hentry->aliases[i] = (char *) strdup(alias_list[i]);
+				if ( hentry->aliases[i] == NULL )
+					break; /* return results so far */
 			}
+			for (; i<=alias_index; i++) {
+				hentry->aliases[i] = NULL;
 			
-			hentry->aliases[alias_index] = NULL;
 			hentry->next = NULL;
 			
 			if (retval) {
