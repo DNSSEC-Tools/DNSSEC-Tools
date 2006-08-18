@@ -29,12 +29,15 @@ my @COMMON_BINDLOCS =
 	"/usr/sbin",
 );
 
+my $DEFAULT_EDITOR = "vi";
+
 #
 # Command-line options specifically for this program.
 #
 my @opts =
 (
 	"outfile=s",				# Output config file.
+	"edit",					# Edit resulting file.
 	"overwrite",				# Overwrite existing files.
 	"noprompt",				# Don't prompt user.
 	"v",					# Verbose equivalent.
@@ -71,6 +74,7 @@ my $entmsg;				# Display entropy message.
 my $usegui;				# Use-GUI flag.
 
 my $helpflag;				# Give usage message.
+my $editflag;				# Edit resulting config file.
 my $noprompt = 0;			# Don't prompt -- just use defaults.
 my $outfile;				# Output filename.
 my $overwrite;				# Overwrite existing output file.
@@ -141,14 +145,39 @@ sub main
 	}
 
 	#
-	# Ensure we're only going to overwrite an existing config file
-	# if the user wants us to.
+	# Ensure that we can write the output file.
 	#
-	if((-e $outfile) && (!$overwrite))
+	if(-e $outfile)
 	{
-		print STDERR "config file \"$outfile\" already exists;\n";
-		print STDERR " use -overwrite to overwrite it\n";
-		exit(1);
+		#
+		# Only overwrite an existing config file if the user wants it.
+		#
+		if(!$overwrite)
+		{
+			print STDERR "config file \"$outfile\" already exists;\n";
+			print STDERR " use -overwrite to overwrite it\n";
+			exit(1);
+		}
+
+		#
+		# Ensure the existing config file is writable.
+		#
+		if(! -w $outfile)
+		{
+			print STDERR "\nwarning:  configuration file \"$outfile\" is not writable;\n";
+			print STDERR "\t\tthis must be fixed before the final pieces of data are gathered\n\n";
+		}
+	}
+	else
+	{
+		#
+		# Ensure the config directory is writable.
+		#
+		if(! -w $confdir)
+		{
+			print STDERR "\nwarning:  configuration directory \"$confdir\" is not writable;\n";
+			print STDERR "\t\tthis must be fixed before the final pieces of data are gathered\n\n";
+		}
 	}
 
 	#
@@ -160,6 +189,11 @@ sub main
 	# Write the configuration file.
 	#
 	writeconf();
+
+	#
+	# Edit the configuration file.
+	#
+	editconf();
 }
 
 #-----------------------------------------------------------------------------
@@ -214,6 +248,7 @@ sub optsandargs
 	$verbose   = $opts{'verbose'}   || $opts{'v'};
 	$version   = $opts{'version'};
 	$helpflag  = $opts{'help'};
+	$editflag  = $opts{'edit'};
 	$noprompt  = $opts{'noprompt'};
 
 	#
@@ -352,6 +387,37 @@ usegui		$usegui
 ";
 
 	close(DTCONF);
+}
+
+#----------------------------------------------------------------------------
+#
+# Routine:	editconf()
+#
+# Purpose:	Edit the new config file.
+#
+sub editconf()
+{
+	my $eddie;				# User's preferred editor.
+	my $cmdstr = "";			# Edit command string.
+
+	return if(!$editflag);
+
+	#
+	# Get the editor's path.
+	#
+	$eddie = $ENV{'EDITOR'};	
+	$eddie = $DEFAULT_EDITOR if(!defined($eddie));
+	if(!defined($eddie))
+	{
+		print STDERR "unable to find editor\n";
+		return;
+	}
+
+	#
+	# Try to execute the editor.
+	#
+	$cmdstr = "$eddie $outfile";
+	system($cmdstr);
 }
 
 #----------------------------------------------------------------------------
@@ -765,6 +831,7 @@ sub usage()
 	print STDERR "\t\t-outfile <conffile>\n";
 	print STDERR "\t\t-overwrite\n";
 	print STDERR "\t\t-noprompt\n";
+	print STDERR "\t\t-edit\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-version\n";
 	print STDERR "\t\t-help\n";
@@ -954,6 +1021,13 @@ will give an error message and exit.
 If I<-noprompt> is specified, the user will not be prompted for any input.
 The configuration file will be created from command-line options and
 DNSSEC-Tools defaults.
+
+=item I<-edit>
+
+If I<-edit> is specified, the output file will be edited after it has been
+created.  The EDITOR environment variable is consulted for the editor to
+use.  If the EDITOR environment variable isn't defined, then the B<vi>
+editor will be used.
 
 =item I<-verbose>
 
