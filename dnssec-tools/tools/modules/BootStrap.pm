@@ -97,6 +97,35 @@ to the installation-via-CPAN message.  If the error message consists of
 the string 'noerror', then no error will be displayed before the function
 will exits.
 
+=head1 CAVEATS
+
+The module will try and import any exported subroutines from the
+module into the I<main> namespace.  This means that the BootStrap
+module is likely not useful for importing symbols into other modules.
+Work arounds for this are:
+
+=over
+
+=item - import the symbols by hand into
+
+  dnssec_tools_load_mods(
+     PerlModule => 'Additional help/error text'
+  );
+
+  import PerlModule qw(func1 func2);
+
+  func1(arg1, arg2);
+
+=item - call the fully qualified function names instead
+
+  dnssec_tools_load_mods(
+     PerlModule => 'Additional help/error text'
+  );
+
+  PerlModule::func1(arg1, arg2);
+
+=back
+
 =head1 COPYRIGHT
 
 Copyright 2006 SPARTA, Inc.  All rights reserved.
