@@ -13,7 +13,7 @@ use Net::DNS::SEC::Tools::BootStrap;
 # detect needed perl modules
 #
 dnssec_tools_load_mods("Net::DNS::SEC"     => "",
-		       "Net::DNS::SEC::RR" => "noerror",
+		       "Net::DNS::RR::RRSIG" => "noerror",
 		      );
 
 my %opts =
