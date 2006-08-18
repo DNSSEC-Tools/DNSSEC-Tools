@@ -35,17 +35,27 @@ int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
     /* Compare two names, assuming same number of labels in each */
     int             index1 = 0;
     int             index2 = 0;
-    int             length1 = (int) name1[index1];
-    int             length2 = (int) name2[index2];
-    int             min_len = length1 < length2 ? length1 : length2;
+    int             length1;
+    int             length2;
+    int             min_len;
     int             ret_val;
                                                                                                                           
     u_int8_t        buffer1[NS_MAXDNAME];
     u_int8_t        buffer2[NS_MAXDNAME];
     int             i;
                                                                                                                           
+    length1 = (int) name1 ? name1[index1] : 0;
+    length2 = (int) name2 ? name2[index2] : 0;
+    min_len = (length1 < length2) ? length1 : length2;
+
     /* Degenerate case - root versus root */
-    if (length1==0 && length2==0) return 0;
+    if (length1==0 && length2==0)
+        return 0;
+
+    /* If the first n bytes are the same, then the length determines
+        the difference - if any */
+    if (length1==0 || length2 == 0)
+        return length1-length2;
                                                                                                                           
     /* Recurse to try more significant label(s) first */
     ret_val=labelcmp(&name1[length1+1],&name2[length2+1]);
@@ -71,18 +81,36 @@ int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
         the difference - if any */
     return length1-length2;
 }
-                                                                                                                          
+
+/*
+ * compare DNS wire format names
+ *
+ * returns
+ *	<0 if name1 is before name2
+ *	 0 if equal
+ *	>0 if name1 is after name2
+ */
 int namecmp (const u_int8_t *name1, const u_int8_t *name2)
 {
-    /* compare the DNS wire format names in name1 and name2 */
-    /* return -1 if name1 is before name2, 0 if equal, +1 otherwise */
     int labels1 = 1;
     int labels2 = 1;
     int index1 = 0;
     int index2 = 0;
     int ret_val;
     int i;
-                                                                                                                          
+
+    /* deal w/any null ptrs */
+    if (name1 == NULL) {
+        if (name2 == NULL)
+            return 0;
+        else
+            return -1;
+    }
+    else {
+        if (name2 == NULL)
+            return 1;
+    }
+                                                                                                                         
     /* count labels */
     for (;name1[index1];index1 += (int) name1[index1]+1) labels1++;
     for (;name2[index2];index2 += (int) name2[index2]+1) labels2++;
@@ -90,11 +118,13 @@ int namecmp (const u_int8_t *name1, const u_int8_t *name2)
     index1 = 0;
     index2 = 0;
                                                                                                                           
+    /* find index in longer name where the number of labels is equal */
     if (labels1 > labels2)
         for (i = 0; i < labels1-labels2; i++) index1 += (int) name1[index1]+1;
     else
         for (i = 0; i < labels2-labels1; i++) index2 += (int) name2[index2]+1;
                                                                                                                           
+    /* compare last N labels */
     ret_val = labelcmp(&name1[index1], &name2[index2]);
                                                                                                                           
     if (ret_val != 0) return ret_val;
@@ -106,7 +136,7 @@ int namecmp (const u_int8_t *name1, const u_int8_t *name2)
 
 u_int16_t wire_name_labels (const u_int8_t *field)
 {
-    /* Calculates the number of bytes in a DNS wire format name */
+    /* Calculates the number of labels in a DNS wire format name */
     u_short j;
     u_short l=0;
     if (field==NULL) return 0;
@@ -177,6 +207,9 @@ int add_to_qname_chain (  struct qname_chain  **qnames,
 {
     struct qname_chain *temp;
                                                                                                                           
+    if ((qnames == NULL) || (name_n == NULL))
+        return VAL_BAD_ARGUMENT;
+
     temp = (struct qname_chain *) MALLOC (sizeof (struct qname_chain));
                                                                                                                           
     if (temp==NULL) return VAL_OUT_OF_MEMORY;
@@ -238,7 +271,10 @@ int is_tail (u_int8_t *full, u_int8_t *tail)
     int t_len = wire_name_length (tail);
                                                                                                                           
     if (f_len==t_len)
-        return memcmp(full, tail, f_len)==0;
+        if (f_len)
+            return memcmp(full, tail, f_len)==0;
+        else
+            return 0;
                                                                                                                           
     if (t_len > f_len)
         return FALSE;
@@ -273,27 +309,37 @@ int add_to_set (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
 {
     struct rr_rec *rr;
                                                                                                                           
+    if ((rr_set == NULL) || (rdata == NULL) || (rdata_len_h == 0))
+        return VAL_BAD_ARGUMENT;
+
+    /* Make sure we got the memory for it */
+    rr = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
+    if (rr == NULL)
+        return VAL_OUT_OF_MEMORY;
+
+    rr->rr_rdata = (u_int8_t *) MALLOC (rdata_len_h);
+    if (rr->rr_rdata == NULL) {
+        free(rr);
+        return VAL_OUT_OF_MEMORY;
+    }
+
     /* Add it to the end of the current list of RR's */
     if (rr_set->rrs.val_rrset_data==NULL)
     {
-        rr_set->rrs.val_rrset_data = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
-        rr = rr_set->rrs.val_rrset_data;
+        rr_set->rrs.val_rrset_data = rr;
     }
     else
     {
-        rr = rr_set->rrs.val_rrset_data;
-        while (rr->rr_next)
-            rr = rr->rr_next;
-        rr->rr_next = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
-        rr = rr->rr_next;
+        struct rr_rec *tmp_rr;
+        tmp_rr = rr_set->rrs.val_rrset_data;
+        while (tmp_rr->rr_next)
+            tmp_rr = tmp_rr->rr_next;
+        tmp_rr->rr_next = rr;
     }
                                                                                                                           
-    /* Make sure we got the memory for it */
-    if (rr == NULL) return VAL_OUT_OF_MEMORY;
                                                                                                                           
     /* Insert the data, copying the rdata pointer */
     rr->rr_rdata_length_h = rdata_len_h;
-    rr->rr_rdata = (u_int8_t *) MALLOC (rdata_len_h);
     memcpy (rr->rr_rdata ,rdata, rdata_len_h);
     rr->rr_next = NULL;
                                                                                                                           
@@ -303,11 +349,24 @@ int add_to_set (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
 int add_as_sig (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
 {
     struct rr_rec *rr;
-                                                                                                                          
+
+    if ((rr_set == NULL) || (rdata == NULL) || (rdata_len_h == 0))
+        return VAL_BAD_ARGUMENT;
+
+    /* Make sure we got the memory for it */
+    rr = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
+    if (rr == NULL)
+        return VAL_OUT_OF_MEMORY;
+
+    rr->rr_rdata = (u_int8_t *) MALLOC (rdata_len_h);
+    if (rr->rr_rdata == NULL) {
+        free(rr);
+        return VAL_OUT_OF_MEMORY;
+    }
+
     if (rr_set->rrs.val_rrset_sig==NULL)
     {
-        rr_set->rrs.val_rrset_sig = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
-        rr = rr_set->rrs.val_rrset_sig;
+        rr_set->rrs.val_rrset_sig = rr;
     }
     else
     {
@@ -315,22 +374,15 @@ int add_as_sig (struct rrset_rec *rr_set,u_int16_t rdata_len_h,u_int8_t *rdata)
             If this code is executed, then there is a problem brewing.
             It will be caught in pre_verify to keep the code level.
         */
-        rr = rr_set->rrs.val_rrset_sig;
-        while (rr->rr_next)
-            rr = rr->rr_next;
-        rr->rr_next = (struct rr_rec *) MALLOC (sizeof(struct rr_rec));
-        rr = rr->rr_next;
+        struct rr_rec *tmp_rr;
+        tmp_rr = rr_set->rrs.val_rrset_sig;
+        while (tmp_rr->rr_next)
+            tmp_rr = tmp_rr->rr_next;
+        tmp_rr->rr_next = rr;
     }
-                                                                                                                          
-    /* Make sure we got the memory for it */
-    if (rr == NULL) return VAL_OUT_OF_MEMORY;
                                                                                                                           
     /* Insert the data, copying the rdata pointer */
     rr->rr_rdata_length_h = rdata_len_h;
-    rr->rr_rdata = (u_int8_t *) MALLOC (rdata_len_h);
-                                                                                                                          
-    /* Check for NO MORE MEMORY */
-                                                                                                                          
     memcpy (rr->rr_rdata ,rdata, rdata_len_h);
     rr->rr_next = NULL;
                                                                                                                           
@@ -343,12 +395,15 @@ int init_rr_set (   struct rrset_rec    *new_set,
                     u_int16_t           set_type_h,
                     u_int16_t           class_h,
                     u_int32_t           ttl_h,
-                    u_int8_t            *rdata_n,
+                    u_int8_t            *rdata_n,    /* unused param */
                     int                 from_section,
                     int                 authoritive_answer)
 {
     int                 name_len = wire_name_length(name_n);
                                                                                                                           
+    if ((new_set == NULL) || (name_n == NULL))
+        return VAL_BAD_ARGUMENT;
+
     if (new_set->rrs.val_rrset_name_n != NULL)
         /* This has already been initialized */
         return VAL_NO_ERROR;
@@ -356,10 +411,7 @@ int init_rr_set (   struct rrset_rec    *new_set,
     /* Initialize it */
     new_set->rrs.val_rrset_name_n = (u_int8_t *)MALLOC (name_len);
     if (new_set->rrs.val_rrset_name_n==NULL)
-    {
-        FREE (new_set);
         return VAL_OUT_OF_MEMORY;
-    }
                                                                                                                           
     memcpy (new_set->rrs.val_rrset_name_n, name_n, name_len);
     new_set->rrs.val_rrset_type_h = set_type_h;
@@ -436,30 +488,32 @@ struct rrset_rec *find_rr_set (
                                 int                 authoritive_answer,
 								u_int8_t            *zonecut_n)
 {
-    struct rrset_rec    *try;
+    struct rrset_rec    *tryit;
     struct rrset_rec    *last;
     struct rrset_rec    *new_one;
     int                 name_len = wire_name_length(name_n);
                                                                                                                           
+    if ((the_list == NULL) || (name_n == NULL))
+        return VAL_BAD_ARGUMENT;
+
     /* Search through the list for a matching record */
-    try = *the_list;
+    tryit = *the_list;
     last = NULL;
                                                                                                                           
-    while (try)
+    while (tryit)
     {
-        if (IS_THE_ONE (try, name_n, name_len, type_h, set_type_h,
+        if (IS_THE_ONE (tryit, name_n, name_len, type_h, set_type_h,
                                 class_h, rdata_n))
             break;
-        last = try;
-        try = try->rrs_next;
+        last = tryit;
+        tryit = tryit->rrs_next;
     }
     /* If no record matches, then create a new one */
-    if (try==NULL)
+    if (tryit==NULL)
     {
         new_one = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
         if (new_one==NULL) return NULL;
         memset (new_one, 0, sizeof (struct rrset_rec));
-        memset (&(new_one->rrs), 0, sizeof (struct val_rrset));
 
         /* If this is the first ever record, change *the_list */
         if (last==NULL)
@@ -495,7 +549,7 @@ struct rrset_rec *find_rr_set (
     }
     else
     {
-        new_one = try;
+        new_one = tryit;
         /* Make sure it has the lowest ttl (doesn't really matter) */
         if (new_one->rrs.val_rrset_ttl_h > ttl_h) new_one->rrs.val_rrset_ttl_h = ttl_h;
     }
@@ -510,8 +564,14 @@ int check_label_count (
                             struct rr_rec       *the_sig,
                             int                 *is_a_wildcard)
 {
-    u_int8_t owner_labels = wire_name_labels (the_set->rrs.val_rrset_name_n);
-    u_int8_t sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
+    u_int8_t owner_labels;;
+    u_int8_t sig_labels;
+                                                                                                                          
+    if ((the_set == NULL) || (the_sig == NULL) || (is_a_wildcard == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    owner_labels = wire_name_labels (the_set->rrs.val_rrset_name_n);
+    sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
                                                                                                                           
     if (sig_labels > owner_labels) return VAL_GENERIC_ERROR;
                                                                                                                           
@@ -528,6 +588,9 @@ int prepare_empty_nxdomain (struct rrset_rec    **answers,
 {
     size_t length = wire_name_length (query_name_n);
                                                                                                                           
+    if (answers == NULL)
+        return VAL_BAD_ARGUMENT;
+
     if (length ==0) return VAL_INTERNAL_ERROR;
                                                                                                                           
     *answers = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
@@ -576,6 +639,9 @@ int decompress( u_int8_t    **rdata,
     int         working_increment;
     int         expansion = 0;
                                                                                                                           
+    if ((rdata == NULL) || (response == NULL) || (rdata_len_h == NULL))
+        return VAL_BAD_ARGUMENT;
+
     switch (type_h)
     {
         /* The first group has no domain names to convert */
@@ -651,6 +717,8 @@ int decompress( u_int8_t    **rdata,
                                                 2*sizeof(u_int16_t));
             working_index += 2*sizeof(u_int16_t);
             p_index += 2*sizeof(u_int16_t);
+            /* fall through */
+
         case ns_t_rt: case ns_t_mx: case ns_t_afsdb: case ns_t_px:
                                                                                                                           
             memcpy (&prefix[p_index],&response[working_index],
@@ -752,6 +820,11 @@ int extract_from_rr (   u_int8_t *response,
     u_int32_t   net_int;
     int         ret_val;
                                                                                                                           
+    if ((response == NULL) || (response_index == NULL) || (type_h == NULL) ||
+        (class_h == NULL) || (ttl_h == NULL) || (rdata_length_h == NULL) ||
+        (set_type_h == NULL))
+        return VAL_BAD_ARGUMENT;
+
     /* Extract the uncompressed (unpacked) domain name in protocol format */
     if ((ret_val = ns_name_unpack (response, end, &response[*response_index],
                                     name_n, NS_MAXDNAME))==-1)
@@ -806,10 +879,14 @@ int extract_from_rr (   u_int8_t *response,
 
 void lower_name (u_int8_t rdata[], size_t *index)
 {
+    int length;
                                                                                                                           
+    if ((rdata == NULL) || (index == NULL))
+        return;
+
     /* Convert the upper case characters in a domain name to lower case */
                                                                                                                           
-    int length = wire_name_length(&rdata[(*index)]);
+    length = wire_name_length(&rdata[(*index)]);
                                                                                                                           
     while ((*index) < length)
     {
@@ -824,6 +901,9 @@ void lower (u_int16_t type_h, u_int8_t *rdata, int len)
                                                                                                                           
     size_t index = 0;
                                                                                                                           
+    if (rdata == NULL)
+        return;
+
     switch (type_h)
     {
         /* These RR's have no domain name in them */
@@ -905,7 +985,10 @@ struct rr_rec *copy_rr_rec (u_int16_t type_h, struct rr_rec *r, int dolower)
     the_copy->rr_rdata_length_h = r->rr_rdata_length_h;
     the_copy->rr_rdata = (u_int8_t *) MALLOC (the_copy->rr_rdata_length_h);
                                                                                                                           
-    if (the_copy->rr_rdata==NULL) return NULL;
+    if (the_copy->rr_rdata==NULL) {
+        FREE(the_copy);
+        return NULL;
+    }
                                                                                                                           
     memcpy (the_copy->rr_rdata, r->rr_rdata, r->rr_rdata_length_h);
                                                                                                                           
@@ -913,6 +996,10 @@ struct rr_rec *copy_rr_rec (u_int16_t type_h, struct rr_rec *r, int dolower)
 	    lower (type_h, the_copy->rr_rdata, the_copy->rr_rdata_length_h);
                                                                                                                           
     the_copy->rr_next = NULL;
+    //
+    // xxx-audit: uninitialized member in structure
+    //     appropriate value (or 0?) for rr_status
+    //
     return the_copy;
 }
 
@@ -922,12 +1009,15 @@ int link_rr (struct rr_rec **cs, struct rr_rec *cr)
 {
     /*
         Insert a copied RR into the set being prepared for signing.  This
-        is an implementation of an insertoin sort.
+        is an implementation of an insertion sort.
     */
     int             ret_val;
     int             length;
     struct rr_rec   *temp_rr;
                                                                                                                           
+    if (cs == NULL)
+        return 0;
+
     if (*cs == NULL)
     {
         *cs = cr;
@@ -1006,10 +1096,20 @@ struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
     struct rr_rec       *copy_rr;
     size_t              o_length;
                                                                               
+    if (rr_set == NULL)
+        return NULL;
+
     copy_set = (struct rrset_rec *) MALLOC (sizeof(struct rrset_rec));
     if (copy_set == NULL) return NULL;
+
+    // xxx-audit: memcpy of struct w/ptrs; deep copy needed
+    //     this is BAD, as all error cases below call res_sq_free_rrset_recs(),
+    //     which will free memory from the original rr_set for any ptr
+    //     which hasn't been cloned before the error occurs.
+    //     recommend memset copy_set to 0, and do item by item
+    //     assignments/cloning.
+    //
     memcpy (copy_set, rr_set, sizeof(struct rrset_rec));
-    memcpy (&(copy_set->rrs), &(rr_set->rrs), sizeof(struct val_rrset));
 
     o_length = wire_name_length (rr_set->rrs.val_rrset_name_n);
 
@@ -1051,7 +1151,10 @@ struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
         /* Copy it into the right form for verification */
         copy_rr = copy_rr_rec (rr_set->rrs.val_rrset_type_h, orig_rr, 1);
                                                                                                                           
-        if (copy_rr==NULL) return NULL;
+        if (copy_rr==NULL) {
+		res_sq_free_rrset_recs(&copy_set);
+                return NULL;
+        }
                                                                                                                           
         /* Now, find a place for it */
                                                                                                                           
@@ -1064,7 +1167,10 @@ struct rrset_rec *copy_rrset_rec (struct rrset_rec *rr_set)
         /* Copy it into the right form for verification */
         copy_rr = copy_rr_rec (rr_set->rrs.val_rrset_type_h, orig_rr, 0);
                                                                                                                           
-        if (copy_rr==NULL) return NULL;
+        if (copy_rr==NULL) {
+		res_sq_free_rrset_recs(&copy_set);
+                return NULL;
+        }
                                                                                                                           
         /* Now, find a place for it */
                                                                                                                           
