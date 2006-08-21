@@ -45,8 +45,10 @@ modules/defaults.pm
 modules/tooloptions.pm
 
 	This module contains options shared by many of the DNSSEC-Tools
-	commands.  An entry for the field should be added to the @stdopts
-	array.  These options must be in the Getopt::GUI::Long format.
+	commands.  If this new entry is expected to be used by several
+	commands, then an entry for the field should be added to the
+	@stdopts array.  These options must be in the Getopt::GUI::Long
+	format.
 
 scripts/dtconfchk
 
