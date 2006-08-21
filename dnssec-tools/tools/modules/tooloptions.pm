@@ -69,10 +69,10 @@ my @stdopts =
 	['GUI:separator',	'Key-signing Key Options:'],
 		["genksk",		"Generate KSK"],
 		["kskkey=s",		"KSK key"],
+		["kskdirectory=s",	"Directory for KSK keys"],
 		["ksklength=i",		"Length of KSK"],
 		["ksklife=i",		"Life-span of KSK"],
 		["kskpath=s",		"Path to KSK"],
-		["kskdirectory=s",	"Directory for KSK keys"],
 		["ksdir=s",		"Directory for keyset files"],
 
 	'',
@@ -80,10 +80,11 @@ my @stdopts =
 	['GUI:separator',	'Zone-signing Key Options:'],
 		["genzsk",		"Generate ZSK"],
 		["zskkey=s",		"ZSK key"],
+		["zskcount=i",		"Number of Current ZSKs to generate"],
+		["zskdirectory=s",	"Directory for ZSK keys"],
 		["zsklength=i",		"Length of ZSK"],
 		["zsklife=i",		"Life-span of ZSK"],
 		["zskpath=s",		"Path to ZSK"],
-		["zskdirectory=s",	"Directory for ZSK keys"],
 
 	'',
 
@@ -108,7 +109,7 @@ my @stdopts =
 
 	['GUI:separator',		'Control Options:'],
 		["verbose+",		"Verbose mode"],
-		["version",		"Display version number"],
+		["Version",		"Display version number"],
 		["help",		'Show command line help',
 		 question => {
 				values	=> 'Display Help',
