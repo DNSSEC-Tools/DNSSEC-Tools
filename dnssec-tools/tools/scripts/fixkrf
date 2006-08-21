@@ -17,6 +17,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "fixkrf";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 #
@@ -30,7 +37,7 @@ my @OPTS =
 	"list",				# List, but don't do anything.
 	"verbose",			# Give lotsa output.
 	"help",				# Give a usage message and exit.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 );
 
 #
@@ -151,9 +158,9 @@ sub optsandargs
 	GetOptions(\%options,@OPTS);
 	$list	 = $options{'list'};
 	$verbose = $options{'verbose'};
-	$version = $options{'version'};
+	$version = $options{'Version'};
 
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 	usage(1) if(defined($options{'help'}));
 
 	#
@@ -251,14 +258,15 @@ sub checkkey
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -274,7 +282,7 @@ sub usage
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-list	    -  give output, but don't fix the keyrec\n";
 	print STDERR "\t\t-verbose  -  give lots of output\n";
-	print STDERR "\t\t-version  -  display version number\n";
+	print STDERR "\t\t-Version  -  display version number\n";
 	print STDERR "\t\t-help     -  give a usage message and exit\n";
 
 	print "\ncalled from $loc\n" if($USELOC);

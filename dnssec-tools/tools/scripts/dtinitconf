@@ -17,6 +17,13 @@ use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
+# Version information.
+#
+my $NAME   = "dtinitconf";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
+#
 # Common locations for BIND.  These locations were found on:
 #
 #	FreeBSD 5.4
@@ -41,7 +48,7 @@ my @opts =
 	"overwrite",				# Overwrite existing files.
 	"noprompt",				# Don't prompt user.
 	"v",					# Verbose equivalent.
-	"version",			        # Display the version nmuber .
+	"Version",			        # Display the version number.
 
 	"usegui",				# Use option GUI.
 	"noentropy_msg",			# Don't give entropy message.
@@ -246,7 +253,7 @@ sub optsandargs
 	$overwrite = $opts{'overwrite'};
 
 	$verbose   = $opts{'verbose'}   || $opts{'v'};
-	$version   = $opts{'version'};
+	$version   = $opts{'Version'};
 	$helpflag  = $opts{'help'};
 	$editflag  = $opts{'edit'};
 	$noprompt  = $opts{'noprompt'};
@@ -254,7 +261,7 @@ sub optsandargs
 	#
 	# Display the version number
 	#
-	show_version() if($version);
+	version() if($version);
 
 	#
 	# Give usage message if desired.
@@ -784,14 +791,15 @@ sub pathchk()
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -833,7 +841,7 @@ sub usage()
 	print STDERR "\t\t-noprompt\n";
 	print STDERR "\t\t-edit\n";
 	print STDERR "\t\t-verbose\n";
-	print STDERR "\t\t-version\n";
+	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
 
 	exit(0);

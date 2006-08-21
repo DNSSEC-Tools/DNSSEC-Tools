@@ -4,7 +4,7 @@
 # file distributed with this software for details
 #
 #
-# confchk
+# dtconfchk
 #
 #	This script performs sanity checks on a DNSSEC-Tools
 #	configuration file.
@@ -16,6 +16,13 @@ use Getopt::Long;
 
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
+
+#
+# Version information.
+#
+my $NAME   = "dtconfchk";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
 
 #######################################################################
 
@@ -29,7 +36,7 @@ my @opts =
 	"quiet",			# Give no output.
 	"summary",			# Give only a summary output line.
 	"verbose",			# Give verbose output.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
 
@@ -176,14 +183,14 @@ sub doopts
 	GetOptions(\%options,@opts);
 	$expert	 = $options{'expert'};
 	$verbose = $options{'verbose'};
-	$version = $options{'version'};
+	$version = $options{'Version'};
 	$summary = $options{'summary'};
 	$quiet	 = $options{'quiet'};
 
 	#
 	# Show the version number if requested
 	#
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 	usage() if(defined($options{'help'}));
 }
 
@@ -818,14 +825,15 @@ sub err
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -841,7 +849,7 @@ sub usage
 	print STDERR "\t\t-quiet\n";
 	print STDERR "\t\t-status\n";
 	print STDERR "\t\t-verbose\n";
-	print STDERR "\t\t-version\n";
+	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
 	exit(0);
 }

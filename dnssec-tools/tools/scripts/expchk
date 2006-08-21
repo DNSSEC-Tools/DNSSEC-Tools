@@ -16,6 +16,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "expchk";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 #
@@ -41,7 +48,7 @@ my @opts =
 
 	"count",			# Give count of expired/valid keyrecs.
 	"help",				# Give a usage message and exit.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 );
 
 my $allflag	= 0;			# Report on all zones.
@@ -129,7 +136,7 @@ sub doopts
 	$zone		= $options{'zone'};
 	$cntflag	= $options{'count'};
 
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 	usage() if(defined($options{'help'}));
 
 	#
@@ -359,14 +366,15 @@ sub checkexpire
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -386,7 +394,7 @@ sub usage
 	print STDERR "\t\t-zone <name>	show the specified zone only\n";
 	print STDERR "\t\t-count		only show the count of matching zones\n";
 	print STDERR "\t\t-help		display this help message\n";
-	print STDERR "\t\t-version	display version number\n";
+	print STDERR "\t\t-Version	display version number\n";
 	exit(0);
 }
 

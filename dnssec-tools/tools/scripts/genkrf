@@ -16,6 +16,13 @@ use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "genkrf";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 #
 # Constants
@@ -77,7 +84,7 @@ my @opts = (
 		"ksk=s",
 		"zskcur=s",
 		"zskpub=s",
-	        "version",			# Display the version nmuber .
+	        "Version",			# Display the version number.
 	   );
 
 #
@@ -245,10 +252,10 @@ sub optsandargs
 	$keygen	   = $opts{'keygen'}	|| dnssec_tools_defaults("bind-keygen");
 
 	$verbose   = $opts{'verbose'};
-	$version   = $opts{'version'};
+	$version   = $opts{'Version'};
 	$helpflag  = $opts{'help'};
 
-	show_version() if(defined($opts{'version'}));
+	version() if(defined($opts{'Version'}));
 
 	#
 	# Give usage message in a few situations.
@@ -447,14 +454,15 @@ sub genzsk
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -491,7 +499,7 @@ sub usage
 	print STDERR "\t\t-zsklife LIFESPAN       ZSK lifespan\n\n";
 
 	print STDERR "\t\t-verbose                verbose output\n";
-	print STDERR "\t\t-version                display version number\n";
+	print STDERR "\t\t-Version                display version number\n";
 	print STDERR "\t\t-help                   help message\n";
 
 	exit(0);

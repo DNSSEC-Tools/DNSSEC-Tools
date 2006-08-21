@@ -15,6 +15,13 @@ use strict;
 
 use Net::DNS::SEC::Tools::defaults;
 
+#
+# Version information.
+#
+my $NAME   = "dtdefs";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 my @defnames;					# Array of default names.
 my $maxlen = 0;					# Maximum default name length.
 my $blanks = "";				# String o' blanks.
@@ -37,7 +44,7 @@ sub main
 	#
 	# show the version number.
 	#
-	show_version() if(grep(/^-version$/,@ARGV));
+	version() if(grep(/^-Version$/,@ARGV));
 
 	#
 	# Give a usage message when required.
@@ -84,14 +91,15 @@ sub main
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -101,7 +109,7 @@ sub show_version
 #
 sub usage()
 {
-	print STDERR "usage:  dtdefs [-version]\n";
+	print STDERR "usage:  dtdefs [-Version]\n";
 	exit(0);
 }
 

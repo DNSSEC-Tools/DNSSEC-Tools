@@ -16,6 +16,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "lsroll";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 #
@@ -38,7 +45,7 @@ my @opts =
 	"count",			# Only give a count of matching keyrecs.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 
 	"help",				# Give a usage message and exit.
 );
@@ -160,7 +167,7 @@ sub doopts
 	#
 	# Show the version number if requested
 	#
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -373,14 +380,15 @@ sub showrollrecs
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -407,7 +415,7 @@ sub usage
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
-	print STDERR "\t\t-version	display version number\n";
+	print STDERR "\t\t-Version	display version number\n";
 	print STDERR "\t\t-help		help message \n";
 
 	exit(1);

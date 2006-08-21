@@ -33,6 +33,13 @@ use Net::DNS::ZoneFile::Fast;
 
 use POSIX qw(setsid);
 
+#
+# Version information.
+#
+my $NAME   = "rollerd";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 my $ME		= "rollerd";
@@ -66,7 +73,7 @@ my $OPT_PARAMS	 = "parameters";
 my $OPT_RRFILE	 = "rrfile";
 my $OPT_SLEEP	 = "sleep";
 my $OPT_VERBOSE	 = "verbose";
-my $OPT_VERSION	 = "version";
+my $OPT_VERSION	 = "Version";
 
 my %opts = ();			# Filled option array.
 my @opts =
@@ -79,7 +86,7 @@ my @opts =
 	"parameters",			# Display the parameters and exit.
 	"help",				# Give a usage message and exit.
 	"verbose",			# Verbose output.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 );
 
 #
@@ -92,7 +99,7 @@ my $sleeptime;				# Sleep interval in seconds.
 my $sleepcnt;				# Time we've slept so far.
 
 my $boottime = gmtime();		# Timestamp of rollerd's start time.
-my $version	= 0;			# Display the version number.
+my $version  = 0;			# Display the version number.
 
 my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
@@ -979,7 +986,7 @@ sub optsandargs
 	# Check our options.
 	#
 	GetOptions(\%opts,@opts);
-	$version =   $opts{$OPT_VERSION};
+	$version   = $opts{$OPT_VERSION};
 	$verbose   = $opts{$OPT_VERBOSE};
 	$logfile   = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
 	$loglevel  = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
@@ -988,9 +995,8 @@ sub optsandargs
 	#
 	# Show the version number if requested
 	#
-	show_version() if(defined($opts{$OPT_VERSION}));
-
 	usage() if(defined($opts{$OPT_HELP}));
+	version() if(defined($opts{$OPT_VERSION}));
 
 	#
 	# Check for a rollrec file name.
@@ -2059,14 +2065,15 @@ sub cleanup
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -2083,7 +2090,7 @@ sub usage
 	print STDERR "\t\t-loglevel <level>\n";
 	print STDERR "\t\t-sleep <sleeptime>\n";
 	print STDERR "\t\t-verbose\n";
-	print STDERR "\t\t-version\n";
+	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
 	exit(0);
 }

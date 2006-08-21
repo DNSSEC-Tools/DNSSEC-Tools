@@ -16,6 +16,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "lskrf";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 #
@@ -54,7 +61,7 @@ my @opts =
 	"nodate",			# Don't show the date.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 
 	"help",				# Give a usage message and exit.
 );
@@ -194,7 +201,7 @@ sub doopts
 	#
 	GetOptions(\%options,@opts);
 
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -820,14 +827,15 @@ sub outkey
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -862,7 +870,7 @@ sub usage
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-help		help message \n";
-	print STDERR "\t\t-version	Show version information\n";
+	print STDERR "\t\t-Version	Show version information\n";
 
 	print STDERR "\tkey-attribute options:\n";
 	print STDERR "\t\t-k-algorithm	show key's algorithm\n";
