@@ -72,6 +72,7 @@ my $endtime;				# Endtime of signature validity.
 my $ksklife;				# Lifespan of the KSK.
 my $ksklen;				# The KSK size.
 my $random;				# The source of randomness.
+my $zskcnt;				# Count of ZSK keys.
 my $zsklife;				# Lifespan of the ZSK.
 my $zsklen;				# The ZSK size.
 
@@ -226,6 +227,7 @@ sub optsandargs
 	#
 	$ksklen    = $opts{'ksklength'} || dnssec_tools_defaults("ksklength");
 	$ksklife   = $opts{'ksklife'}   || dnssec_tools_defaults("ksklife");
+	$zskcnt	   = $opts{'zskcount'}  || dnssec_tools_defaults("zskcount");
 	$zsklen    = $opts{'zsklength'} || dnssec_tools_defaults("zsklength");
 	$zsklife   = $opts{'zsklife'}   || dnssec_tools_defaults("zsklife");
 
@@ -305,6 +307,7 @@ sub writeconf()
 		print "\trandom     - \"$random\"\n";
 		print "\tksklen     - \"$ksklen\"\n";
 		print "\tksklife    - \"$ksklife\"\n";
+		print "\tzskcount   - \"$zskcnt\"\n\n";
 		print "\tzsklen     - \"$zsklen\"\n";
 		print "\tzsklife    - \"$zsklife\"\n\n";
 
@@ -379,6 +382,7 @@ zsklife		$zsklife
 archivedir	$keyarch
 entropy_msg	$entmsg
 savekeys	$savekeys
+zskcount	$zskcnt
 
 #
 # Settings for rollerd.
@@ -550,6 +554,7 @@ sub get_key_opts()
 	$ksklife = getval("KSK Lifespan (in seconds)",$ksklife);
 	$zsklen	 = getval("ZSK Length (in bits)",$zsklen);
 	$zsklife = getval("ZSK Lifespan (in seconds)",$zsklife);
+	$zskcnt	 = getval("ZSK Count",$zskcnt);
 
 	print "\n";
 }
@@ -819,6 +824,7 @@ sub usage()
 
 	print STDERR "\t\t-ksklength <keylen>\n";
 	print STDERR "\t\t-ksklife <lifespan>\n";
+	print STDERR "\t\t-zskcnt <ZSK-count>\n\n";
 	print STDERR "\t\t-zsklength <keylen>\n";
 	print STDERR "\t\t-zsklife <lifespan>\n\n";
 
@@ -921,6 +927,10 @@ seconds.
 
 This value is B<only> used for key roll-over.  Keys do not have a life-time
 in any other sense.
+
+=item I<-zskcount E<lt>ZSK-countE<gt>>
+
+The default number of ZSK keys that will be created for a zone.
 
 =item I<-zsklength E<lt>keylenE<gt>>
 
