@@ -17,6 +17,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "rollctl";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 my $NOT_IMPLEMENTED = 0;				# Execution barrier.
 
 #######################################################################
@@ -41,7 +48,7 @@ my @opts =
 	"status",			# Get rollerd's status.
 	"zonestatus",			# Get status of zones.
 
-	"version",			# Display the version number.
+	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
 
@@ -310,12 +317,12 @@ sub doopts
 	$sleeptimeflag	= $options{'sleeptime'}	 || 0;
 	$statusflag	= $options{'status'}	 || 0;
 	$zonestatflag	= $options{'zonestatus'} || 0;
-	$version        = $options{'version'}    || 0;
+	$version        = $options{'Version'}    || 0;
 
 	#
 	# Show the version number if requested
 	#
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -326,14 +333,15 @@ sub doopts
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -358,7 +366,7 @@ sub usage
 	print STDERR "\t-sleeptime <sleeptime>		set sleep time\n";
 	print STDERR "\t-status				get rollerd's status\n";
 	print STDERR "\t-zonestatus			get status of zones\n";
-	print STDERR "\t-version			display version number\n";
+	print STDERR "\t-Version			display version number\n";
 	print STDERR "\t-help				help message \n";
 	exit(0);
 }

@@ -23,6 +23,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "rollchk";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 #
@@ -42,7 +49,7 @@ my @opts =
 	"count",			# Give final error count.
 	"quiet",			# Don't give any output.
 	"verbose",			# Give lotsa output.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
 
@@ -82,14 +89,14 @@ sub main()
 	$count	 = $options{'count'};
 	$quiet	 = $options{'quiet'};
 	$verbose = $options{'verbose'};
-	$version = $options{'version'};
+	$version = $options{'Version'};
 	$doroll  = 0 if(defined($options{'skip'}));
 	$doskip  = 0 if(defined($options{'roll'}));
 
 	#
 	# Show the version number if requested
 	#
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 
 	usage() if(defined($options{'help'}));
 
@@ -403,14 +410,15 @@ sub vprint
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -429,7 +437,7 @@ sub usage
 	print STDERR "		quiet\n";
 	print STDERR "		verbose\n";
 	print STDERR "		help\n";
-	print STDERR "		version\n";
+	print STDERR "		Version\n";
 	exit(0);
 }
 

@@ -51,6 +51,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "keyrec-check";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 #
@@ -104,7 +111,7 @@ my @opts =
 	"verbose+",			# Give lotsa output.
 	"help",				# Give a usage message and exit.
 	"zone",				# Only check zone keyrecs.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 	"key",				# Only check key keyrecs.
 );
 
@@ -143,9 +150,9 @@ sub main()
 	$verbose = $options{'verbose'};
 	$keychk	 = $options{'key'};
 	$zonechk = $options{'zone'};
-	$version = $options{'version'};
+	$version = $options{'Version'};
 
-	show_version() if($options{'version'});
+	version() if($options{'Version'});
 
 	if(defined($options{'help'}))
 	{
@@ -980,14 +987,15 @@ sub vprint
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -997,7 +1005,7 @@ sub show_version
 #
 sub usage
 {
-	print STDERR "usage:  keyrec-check [-c] [-q] [-v] [-h] [-version]\n";
+	print STDERR "usage:  keyrec-check [-c] [-q] [-verbose] [-h] [-Version]\n";
 	exit(0);
 }
 
@@ -1015,7 +1023,7 @@ inconsistencies.
 
 =head1 SYNOPSIS
 
-  keyrec-check [-z | -k] [-c] [-q] [-v] [-h] keyrec-file
+  keyrec-check [-z | -k] [-c] [-q] [-verbose] [-h] keyrec-file
 
 =head1 DESCRIPTION
 
@@ -1129,7 +1137,7 @@ Display a final count of errors.
 Do not display messages.  This option supersedes the setting of the I<-v>
 option.
 
-=item -v
+=item -verbose
 
 Display many messages.  This option is subordinate to the I<-q> option.
 

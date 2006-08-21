@@ -16,6 +16,13 @@ use Getopt::Long;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
+#
+# Version information.
+#
+my $NAME   = "rollinit";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 
 #
@@ -28,7 +35,7 @@ my @opts =
 	"keyrec=s",			# Keyrec file.
 	"out=s",			# Output file.
 	"skip",				# Skip record flag.
-	"version",			# Display the version nmuber .
+	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
 
@@ -104,7 +111,7 @@ sub doopts
 	$kropt	 = $options{'keyrec'}	|| "";
 	$outfile = $options{'out'}	|| "";
 	$skipopt = $options{'skip'}	|| 0;
-	$version = $options{'version'};
+	$version = $options{'Version'};
 
 	if(($zoneopt eq "") && ($kropt eq ""))
 	{
@@ -114,7 +121,7 @@ sub doopts
 	#
 	# Show the version number if requested
 	#
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 
 	#
 	# Give a usage flag if asked.
@@ -209,14 +216,15 @@ sub newrollrec
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -232,7 +240,7 @@ sub usage
 	print STDERR "\t-keyrec		keyrec file\n";
 	print STDERR "\t-skip		skip records\n";
 	print STDERR "\t-out		output file\n";
-	print STDERR "\t-version	display version number\n";
+	print STDERR "\t-Version	display version number\n";
 	print STDERR "\t-help		help message \n";
 	exit(0);
 }

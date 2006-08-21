@@ -35,6 +35,13 @@ use Getopt::Long;
 
 use Net::DNS::SEC::Tools::timetrans;
 
+#
+# Version information.
+#
+my $NAME   = "timetrans";
+my $VERS   = "$NAME version: 0.9.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
 #######################################################################
 #
 # Time-related constants.
@@ -67,7 +74,7 @@ my @opts =
         "days=i",				# Number of days.
         "weeks=i",				# Number of weeks.
         "count=i",				# Seconds count.
-	"version",				# Display the version nmuber .
+	"Version",				# Display the version number.
 );
 
 #
@@ -143,7 +150,7 @@ sub optsandargs()
 	#
 	# Show the version number if requested
 	#
-	show_version() if(defined($options{'version'}));
+	version() if(defined($options{'Version'}));
 
 	#
 	# Check for command line errors.
@@ -206,14 +213,15 @@ sub optsandargs()
 
 ######################################################################
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
 	exit(1);
 }
 
@@ -228,7 +236,7 @@ sub usage
 {
 	my $whence = shift;			# Location of call.
 
-	print STDERR "usage:  timetrans [units-options] [count-options] [-help] [-version]\n";
+	print STDERR "usage:  timetrans [units-options] [count-options] [-help] [-Version]\n";
 	print STDERR "\n";
 
 	print STDERR "\t\tunits-options:\n";
