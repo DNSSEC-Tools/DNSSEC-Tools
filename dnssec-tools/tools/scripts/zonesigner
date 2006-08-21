@@ -93,6 +93,7 @@ my $zskcurpath;				# Path to the published KSK.
 my $zskpubpath;				# Path to the current KSK.
 my $zskdir;				# Directory to hold ZSK.
 my $zsklife;				# Time between ZSK roll-overs.
+my $zskcnt;				# Number of current ZSKs.
 my $zsize;				# Size of ZSK.
 my $genzsk;				# Generate a new ZSK.
 
@@ -151,7 +152,7 @@ sub main
 	my $status;				# Status of zone-signing.
 
 	#
-	# If help was specified, give the usage and exit.
+	# Give the usage and exit if help was specified.
 	#
 	helpchk();
 
@@ -163,12 +164,6 @@ sub main
 	optsandargs();
 	printopts();
 	bindcheck(\%opts);
-
-	#
-	# If help was specified, give the usage and exit.
-	#
-	show_version() if($version == 1);
-	usage(1) if($help == 1);
 
 	#
 	# Maybe display the warning about potential entropy hangs.
@@ -309,6 +304,7 @@ sub optsandargs()
 	$zsize	  = $opts{'zsklength'}	  || dnssec_tools_defaults("zsklength");
 	$ksklife  = $opts{'ksklife'}	  || dnssec_tools_defaults("ksklife");
 	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_defaults("zsklife");
+	$zskcnt	  = $opts{'zskcount'};
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
 	$kskpath  = $opts{'kskpath'}	  || "";
@@ -363,6 +359,17 @@ sub optsandargs()
 		$zsize = "-b $zsize";
 	}
 
+	if($zskcnt ne "")
+	{
+		if($zskcnt < 1)
+		{
+			print STDERR "ZSK count ($zskcnt) must be positive\n";
+			exit(1);
+		}
+
+		$opts{'zskcount'} = $zskcnt;
+	}
+
 	if($alg ne "")
 	{
 		$opts{'algorithm'} = $alg;
@@ -410,10 +417,10 @@ sub optsandargs()
 		$entropymsg = $opts{'entropy_msg'};
 	}
 	$help	 = $opts{'help'};
-	$version = $opts{'version'};
+	$version = $opts{'Version'};
 	$verbose = $opts{'verbose'};
 
-	show_version() if ($version);
+	version() if ($version);
 
 	#
 	# Get the paths to the external commands.  If they aren't defined,
@@ -1097,6 +1104,7 @@ sub updzonerec
 	$opts{'kskpath'}	= $kskpath;
 	$opts{'zskcur'}		= $zskcur;
 	$opts{'zskpub'}		= $zskpub;
+	$opts{'zskcount'}	= $zskcnt;
 	$opts{'zskdirectory'}	= $zskdir;
 	$opts{'zskcurpath'}	= $zskcurpath;
 	$opts{'zskpubpath'}	= $zskpubpath;
@@ -1584,6 +1592,7 @@ sub printopts
 	print "\t\tgenksk		- <$genksk>\n";
 	print "\t\tusepub		- <$usepub>\n";
 	print "\t\tzsize		- <$zsize>\n";
+	print "\t\tzskcount     	- <$zskcnt>\n";
 	print "\t\tzskdir		- <$zskdir>\n";
 	print "\t\tzsklife		- <$zsklife>\n";
 	print "\t\tgenzsk		- <$genzsk>\n";
@@ -1665,11 +1674,11 @@ sub helpchk
 
 #----------------------------------------------------------------------
 #
-# Routine:	show_version()
+# Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
 #
-sub show_version
+sub version
 {
 	print STDERR "Version: 0.9.1\n";
 	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
@@ -1709,6 +1718,7 @@ sub usage
 	print STDERR "\t\t\t-algorithm algorithm\n";
 	print STDERR "\t\t\t-ksklength KSK-size\n";
 	print STDERR "\t\t\t-zsklength ZSK-size\n";
+	print STDERR "\t\t\t-zskcount ZSK-number\n";
 	print STDERR "\t\t\t-random random-path\n";
 	print STDERR "\t\t\t-kgopts dnssec-keygen-options\n";
 	print STDERR "\n";
@@ -1936,10 +1946,9 @@ option or as the first non-option command line argument.
 
 Display a usage message.
 
-=item -version
+=item -Version
 
-Display zonesigner's version number and the DNSSEC-Tools package
-version number that it came from.
+Display the version information for zonesigner and the DNSSEC-Tools package.
 
 =item -verbose
 

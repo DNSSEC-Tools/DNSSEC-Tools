@@ -31,12 +31,6 @@ use Net::DNS::SEC::Tools::BootStrap;
 
 use Net::DNS::ZoneFile::Fast;
 
-######################################################################
-# detect needed perl module requirements
-#
-dnssec_tools_load_mods('Date::Parse' => "",
-		       'Date::Format' => "",);
-
 use POSIX qw(setsid);
 
 #######################################################################
@@ -107,6 +101,15 @@ my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
 my $ret;				# Return code from main().
 
+#
+# Detect required Perl modules.
+#
+dnssec_tools_load_mods('Date::Parse'	=> "",
+		       'Date::Format'	=> "",);
+
+#
+# Do Everything.
+#
 $ret = main();
 exit($ret);
 
