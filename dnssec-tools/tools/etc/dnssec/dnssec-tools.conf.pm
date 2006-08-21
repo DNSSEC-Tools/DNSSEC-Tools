@@ -118,6 +118,10 @@ Flag to allow/disallow usage of the GUI for specifying command options.
 
 The path to the I<zonesigner> command.
 
+=item zskcount
+
+The default number of ZSK keys that will be generated for each zone.
+
 =item zsklength
 
 The default ZSK key length to be passed to I<dnssec-keygen>.
@@ -191,6 +195,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     default_keyrec	default.krf
     entropy_msg		0
     savekeys            1
+    zskcount            1
 
     #
     # Settings for rollover-manager.
