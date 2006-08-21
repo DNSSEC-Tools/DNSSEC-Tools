@@ -126,7 +126,7 @@ sub main()
 	#
 	# Check the key-related records.
 	#
-	keygen_checks();
+	key_checks();
 
 	#
 	# Check the signzone-related records.
@@ -189,11 +189,11 @@ sub doopts
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	keygen_checks()
+# Routine:	key_checks()
 #
-# Purpose:	Check the algorithm and key length fields.
+# Purpose:	Check key-related fields:  algorithm, count, and key length.
 #
-sub keygen_checks
+sub key_checks
 {
 	my $algorithm;				# Encryption algorithm.
 	my $ksklen;				# KSK length.
@@ -204,18 +204,23 @@ sub keygen_checks
 	my $highval;				# High key length.
 
 	my $ksklife;				# Lifespan of KSK.
+	my $zskcnt;				# Count of ZSKs.
 	my $zsklife;				# Lifespan of ZSK.
-	my $lifemax = dnssec_tools_defaults('lifespan-max');	# Max. key life.
-	my $lifemin = dnssec_tools_defaults('lifespan-min');	# Min. key life.
+	my $lifemax;				# Max. key life.
+	my $lifemin;				# Min. key life.
+
+	$lifemax = dnssec_tools_defaults('lifespan-max') || 0;
+	$lifemin = dnssec_tools_defaults('lifespan-min') || 0;
 
 	#
 	# Get the key-related config entries.
 	#
 	$algorithm = lc($dtconf{'algorithm'});
-	$ksklen	   = $dtconf{'ksklen'};
-	$zsklen	   = $dtconf{'zsklen'};
+	$ksklen	   = $dtconf{'ksklength'};
+	$zsklen	   = $dtconf{'zsklength'};
 	$ksklife   = $dtconf{'ksklife'};
 	$zsklife   = $dtconf{'zsklife'};
+	$zskcnt	   = $dtconf{'zskcount'};
 
 	#
 	# If the key's encryption algorithm isn't defined here, then we
@@ -267,7 +272,7 @@ sub keygen_checks
 			#
 			# Ensure the ZSK length is in algorithm's value range.
 			#
-			if(!defined($dtconf{'ksklen'}))
+			if(!defined($dtconf{'ksklength'}))
 			{
 				prt(1,"ksklength not defined");
 				$errs++;
@@ -300,7 +305,7 @@ sub keygen_checks
 			#
 			# Ensure the ZSK length is in algorithm's value range.
 			#
-			if(!defined($dtconf{'zsklen'}))
+			if(!defined($dtconf{'zsklength'}))
 			{
 				prt(1,"zsklength not defined");
 				$errs++;
@@ -361,7 +366,7 @@ sub keygen_checks
 			# Ensure the KSK lifespan is less than the suggested
 			# maximum lifespan.
 			#
-			if($ksklife > $lifemax)
+			if(($ksklife > $lifemax) && ($lifemax > 0))
 			{
 				prt(0,"invalid ksklife:  lifespan ($ksklife) > maximum lifespan ($lifemax)");
 				$errs++;
@@ -398,12 +403,37 @@ sub keygen_checks
 			# Ensure the ZSK lifespan is less than the suggested
 			# maximum lifespan.
 			#
-			if($zsklife > $lifemax)
+			if(($zsklife > $lifemax) && ($lifemax > 0))
 			{
 				prt(0,"invalid zsklife:  lifespan ($zsklife) > maximum lifespan ($lifemax)");
 				$errs++;
 			}
 		}
+	}
+
+	#
+	# Ensure the ZSK count is positive.
+	#
+	if(!defined($zskcnt))
+	{
+		prt(0,"zskcount not defined");
+		$errs++;
+	}
+	else
+	{
+		#
+		# Ensure the ZSK count is positive.
+		#
+		if($zskcnt < 1)
+		{
+			prt(0,"invalid zskcount:  ZSK count ($zskcnt) < 1");
+			$errs++;
+		}
+		else
+		{
+			prt(1,"zskcount is $zskcnt");
+		}
+
 	}
 
 }
@@ -860,6 +890,10 @@ in the I<dnssec-keygen> man page.
 
 Ensure the I<ksklife> field is valid.  The acceptable values may be found
 in the B<Net::DNS::SEC::Tools::defaults.pm(3)> man page.
+
+=item I<zskcount>
+
+Ensure the I<zskcount> field is valid.  The ZSK count must be positive.
 
 =item I<zsklength>
 
