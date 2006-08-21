@@ -183,16 +183,16 @@ static void *weird_al_realloc (void *old, size_t old_size, size_t new_size)
     {
         /* don't reallocate for smaller size */
         if ((old != NULL) && (new_size < old_size)) {
-            memset(&old[new_size], 0, old_size - new_size);
+            memset(&((char *)old)[new_size], 0, old_size - new_size);
             return old;
         }
         
         newp = MALLOC (new_size);
         if (newp==NULL)
             return NULL;
-        memset (&newp[old_size], 0, new_size - old_size);
+        memset (&((char*)newp)[old_size], 0, new_size - old_size);
         if (old)
-            memcpy (new, old, old_size);
+            memcpy (newp, old, old_size);
     }
     if (old) FREE (old);
                                                                                                                           
@@ -253,9 +253,9 @@ void  merge_glue_in_referral(struct val_query_chain *pc, struct val_query_chain 
 	struct val_query_chain *glueptr;
 	struct name_server *pending_ns;
 
-	if ((queries == NULL) || (pc == NULL) || (pc->qc_referrel == NULL) ||
-	    (pc->qc_referrel->glueptr == NULL))
-		return VAL_BAD_ARGUMENT;
+	if ((queries == NULL) || (pc == NULL) || (pc->qc_referral == NULL) ||
+	    (pc->qc_referral->glueptr == NULL))
+        	return; // xxx-check: log message?
 
 	glueptr = pc->qc_referral->glueptr;
 
@@ -305,7 +305,7 @@ void  merge_glue_in_referral(struct val_query_chain *pc, struct val_query_chain 
 
 		/* look for next ns to send our glue request to */
 		if (pc->qc_referral->pending_glue_ns == NULL)
-			pending_ns =  = NULL;
+			pending_ns = NULL;
 		else {
 			pending_ns = pc->qc_referral->pending_glue_ns->ns_next;
 			free_name_server(&pc->qc_referral->pending_glue_ns);
