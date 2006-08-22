@@ -482,7 +482,7 @@ static int get_addrinfo_from_result (
 			    if (rrset->rrs.val_rrset_type_h == ns_t_a) {
 				    struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 				    if (saddr4 == NULL) {
-					if (retval) free_val_addrinfo(retval);
+					if (ainfo_head) free_val_addrinfo(ainfo_head);
 					free_val_addrinfo(ainfo);
 					return EAI_MEMORY;
 				    }
@@ -497,7 +497,7 @@ static int get_addrinfo_from_result (
 			    else if (rrset->rrs.val_rrset_type_h == ns_t_aaaa) {
 				    struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
 				    if (saddr6 == NULL) {
-					if (retval) free_val_addrinfo(retval);
+					if (ainfo_head) free_val_addrinfo(ainfo_head);
 					free_val_addrinfo(ainfo);
 					return EAI_MEMORY;
 				    }
