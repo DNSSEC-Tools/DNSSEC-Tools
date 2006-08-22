@@ -334,7 +334,7 @@ sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	import Getopt::GUI::Long;
 	# optional configure call
-	Getopt::Long::Configure(qw(auto_help no_ignore_case));
+        Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
 	return GetOptions(@_);
     }
     require Getopt::Long;
