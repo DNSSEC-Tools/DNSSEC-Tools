@@ -1175,6 +1175,8 @@ struct hosts * parse_etc_hosts (const char *name)
 		int matchfound = 0;
 		char *alias_list[MAX_ALIAS_COUNT];
 		int alias_index = 0;
+		int i;
+		struct hosts *hentry;
 		
 		if (line[0] == '#') continue;
 		
@@ -1215,8 +1217,7 @@ struct hosts * parse_etc_hosts (const char *name)
 		
 		/* match input name with the full domain name and aliases */
 		if (matchfound) {
-			int i;
-			struct hosts *hentry = (struct hosts*) MALLOC (sizeof(struct hosts));
+			hentry = (struct hosts*) MALLOC (sizeof(struct hosts));
 			if (hentry == NULL) 
 				break; /* return results so far */
 			
