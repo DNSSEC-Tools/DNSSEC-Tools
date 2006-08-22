@@ -332,7 +332,7 @@ int val_parse_ds_rdata (const unsigned char *buf, int buflen,
 
     if (!rdata || !buf) return -1;
 
-    if (index+ > buflen)
+    if (index+2+1+1 > buflen)
         return -1;
 
     cp = (u_char *) buf;
