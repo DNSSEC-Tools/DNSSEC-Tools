@@ -784,7 +784,7 @@ val_result_chain *results)
 	struct rrset_rec *wcard_proof = NULL;
 
 	if (NULL == top_q)
-	    return VAL_BAD_ARGUMENT;
+	    return;
 
 	val_log(ctx, LOG_DEBUG, "proving non-existence for {%s, %d, %d}", 
 		top_q->qc_name_n, top_q->qc_class_h, top_q->qc_type_h);
@@ -909,7 +909,7 @@ val_result_chain *results)
 				/* prefix "*" to the closest encounter, and check if that 
 				 * name falls within the range given in wcard_proof
 				 */	
-				u_int8_t *nxtname
+				u_int8_t *nxtname;
 				u_char domain_name_n[NS_MAXCDNAME];
 				if ((NULL == wcard_proof) ||
 				    (NULL == wcard_proof->rrs.val_rrset_data))
