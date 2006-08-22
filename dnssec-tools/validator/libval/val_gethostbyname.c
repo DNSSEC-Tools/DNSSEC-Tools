@@ -102,6 +102,7 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 {
 	int orig_offset = 0;
 	struct hosts *hs = NULL;
+	struct hosts *h_prev = NULL;
 
 	if ((ret == NULL) || (buf == NULL) || (offset == NULL) || (*offset < 0)) {
 		return NULL;
@@ -115,7 +116,6 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
 	
 	/* XXX: todo -- can hs have more than one element ? */
 	while (hs) {
-		struct hosts *h_prev = NULL;
 		struct in_addr ip4_addr;
 		struct in6_addr ip6_addr;
 		char addr_buf[INET6_ADDRSTRLEN];
