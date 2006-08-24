@@ -1226,7 +1226,7 @@ struct hosts * parse_etc_hosts (const char *name)
 			hentry->canonical_hostname = (char *) strdup(domain_name);
 			hentry->aliases = (char **) MALLOC ((alias_index + 1) * sizeof(char *));
 			if ((hentry->aliases == NULL) || (hentry->address == NULL) ||
-			    (hentry->canonical_hostname == NULL)) 
+			    (hentry->canonical_hostname == NULL)) {
 				if (hentry->address != NULL)
 					free(hentry->address);
 				if (hentry->canonical_hostname != NULL)
@@ -1244,7 +1244,7 @@ struct hosts * parse_etc_hosts (const char *name)
 			}
 			for (; i<=alias_index; i++) {
 				hentry->aliases[i] = NULL;
-			
+			}
 			hentry->next = NULL;
 			
 			if (retval) {
