@@ -948,7 +948,11 @@ static int verify_provably_unsecure(val_context_t *context, struct val_authentic
 		return 0;
 
 	rrset = as->_as.ac_data;
-	name_p_orig[0] = '\0';
+
+        /* save original zone name */
+        if (-1 == ns_name_ntop(rrset->rrs.val_rrset_name_n, name_p_orig,
+                               sizeof(name_p_orig)))
+            snprintf(name_p_orig, sizeof(name_p_orig), "unknown/error");
 
 	while (error) {
 
@@ -963,12 +967,6 @@ static int verify_provably_unsecure(val_context_t *context, struct val_authentic
 			val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
 
 			return 0;
-		}
-
-		/* save original zone name the first time through this loop */
-		if ('\0' == name_p_orig[0]) {
-			if (-1 == ns_name_ntop(curzone_n, name_p_orig, sizeof(name_p_orig)))
-			    snprintf(name_p_orig, sizeof(name_p_orig), "unknown/error");
 		}
 
 		// xxx-check: sanity check
