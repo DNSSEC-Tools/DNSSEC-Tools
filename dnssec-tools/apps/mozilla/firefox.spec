@@ -8,8 +8,8 @@
 
 Summary:        Mozilla Firefox Web browser.
 Name:           firefox
-Version:        1.5
-Release:        dnssec.3
+Version:        1.5.0.6
+Release:        2.1.fc5.dnssec
 URL:            http://www.mozilla.org/projects/firefox/
 License:        MPL/LGPL
 Group:          Applications/Internet
@@ -19,9 +19,7 @@ Group:          Applications/Internet
 %define tarball firefox-1.5rc3-source.tar.bz2
 %endif
 Source0:        %{tarball}
-Source1:        firefox-gnomestripe-0.1.tar.gz
-Source2:        firefox-1.0-locales.tar.bz2
-
+Source2:        firefox-langpacks-%{version}-20060803.tar.bz2
 Source10:       firefox-mozconfig
 Source11:       firefox-mozconfig-branded
 Source12:       firefox-redhat-default-bookmarks.html
@@ -35,21 +33,19 @@ Source50:       firefox-xremote-client.sh.in
 Source100:      find-external-requires
 
 # build patches
-Patch1:         firefox-1.0-prdtoa.patch
-Patch3:         firefox-1.1-nss-system-nspr.patch
-Patch4:         firefox-1.5-with-system-nss.patch
+#Patch3:         firefox-1.1-nss-system-nspr.patch
+#Patch4:         firefox-1.5-with-system-nss.patch
 Patch5:         firefox-1.1-visibility.patch
 
 # customization patches
 Patch20:        firefox-redhat-homepage.patch
-Patch21:        firefox-0.7.3-default-plugin-less-annoying.patch
-Patch22:        firefox-0.7.3-psfonts.patch
-Patch24:        firefox-1.1-default-applications.patch
-Patch25:        firefox-1.1-software-update.patch
-Patch26:        firefox-RC1-stock-icons-be.patch
-Patch27:        firefox-RC1-stock-icons-fe.patch
-Patch28:        firefox-RC1-stock-icons-gnomestripe.patch
-Patch29:        firefox-gnomestripe-0.1-livemarks.patch
+Patch21:        firefox-0.7.3-psfonts.patch
+Patch22:        firefox-1.1-default-applications.patch
+Patch23:        firefox-1.1-software-update.patch
+Patch24:        firefox-RC1-stock-icons-be.patch
+Patch25:        firefox-RC1-stock-icons-fe.patch
+Patch26:        firefox-RC1-stock-icons-gnomestripe.patch
+Patch27:        firefox-gnomestripe-0.1-livemarks.patch
 
 # local bugfixes
 Patch42:        firefox-1.1-uriloader.patch
@@ -58,10 +54,15 @@ Patch42:        firefox-1.1-uriloader.patch
 Patch81:        firefox-nopangoxft.patch
 
 # patches from upstream (Patch100+)
-Patch100:       firefox-bug305970.patch
+Patch101:       firefox-1.5-pango-ua.patch
+Patch102:       firefox-1.5-pango-about.patch
 
-# DNSSEC patch
-Patch200:	firefox-dnssec-rpm.patch
+# DNSSEC Patches
+Patch201:       dnssec-firefox.patch
+#Patch202:       dnssec-both.firefox.patch
+Patch203:       dnssec-both.patch
+#Patch204:       dnssec-nspr.patch
+Patch205:       dnssec-mozconfig.patch
 
 
 # ---------------------------------------------------
@@ -81,13 +82,14 @@ BuildRequires:  libgnomeui-devel
 BuildRequires:  krb5-devel
 BuildRequires:  pango-devel
 BuildRequires:  freetype-devel >= 2.1.9
+BuildRequires:  libXt-devel
+BuildRequires:  libXrender-devel
 
 #Requires:       nspr >= %{nspr_version}
 #Requires:       nss >= %{nss_version}
 Requires:       desktop-file-utils >= %{desktop_file_utils_version}
-Requires:       dnssec-tools = 0.9
+Requires:	dnssec-tools >= 0.9.2
 Obsoletes:      phoenix, mozilla-firebird, MozillaFirebird
-Provides:       mozilla-firebird = %{epoch}:%{version}, MozillaFirebird = %{epoch}:%{version}
 Provides:       webclient
 %define ffdir %{_libdir}/firefox-%{version}
 
@@ -103,9 +105,8 @@ compliance, performance and portability.
 
 %prep
 %setup -q -n mozilla
-#%{__tar} -xzf %{SOURCE1}
-%patch3  -p1
-%patch4  -p1
+#%patch3  -p1
+#%patch4  -p1
 
 # Pragma visibility is broken on most platforms for some reason.
 # It works on i386 so leave it alone there.  Disable elsewhere.
@@ -116,19 +117,17 @@ compliance, performance and portability.
 
 %patch20 -p0
 %patch21 -p1
-%patch22 -p1
-%patch24 -p0
+%patch22 -p0
+#%patch23 -p0
+#%patch24 -p0
 #%patch25 -p0
 #%patch26 -p0
-#%patch27 -p0
-#%patch28 -p0
-#%patch29 -p1
+#%patch27 -p1
 %patch42 -p0
 %patch81 -p1
 
-%patch100 -p1
-
-%patch200 -p1
+%patch101 -p0 -b .pango-ua
+%patch102 -p0 -b .pango-about
 
 %{__rm} -f .mozconfig
 %{__cp} %{SOURCE10} .mozconfig
@@ -136,10 +135,27 @@ compliance, performance and portability.
 %{__cat} %{SOURCE11} >> .mozconfig
 %endif
 
+
+###############################
+# begin dnssec related patches
+%patch201 -p1
+#%patch202 -p0
+%patch203 -p1
+#%patch204 -p0
+
+# remove the system-nspr and system-nss from the normal fedora mozconfig
+%patch205 -p0
+
+# end dnssec related patches
+###############################
+
+
+
 # set up our default bookmarks
 %{__cp} %{SOURCE12} $RPM_BUILD_DIR/mozilla/profile/defaults/bookmarks.html
 
-# rebuild configure(s)
+
+# rebuild configure(s) due to dnssec patches
 /bin/rm -f ./configure
 /usr/bin/autoconf-2.13
 /bin/rm -f ./nsprpub/configure
@@ -149,23 +165,15 @@ compliance, performance and portability.
 
 %build
 
-# rerun config.status since one of the dnssec patches apparently
-# doesn't get it to regneerate.
-
 export RPM_OPT_FLAGS=`echo $RPM_OPT_FLAGS | %{__sed} s/-O2/-Os/`
-MAKE="gmake %{?_smp_mflags}" make -f client.mk build
 
-for locale in `cat browser/locales/all-locales`
-do
-  if [ -d browser/locales/$locale ] ; then
-    %{__perl} -pi -e "s|browser.startup.homepage.*$|browser.startup.homepage=%{indexhtml}|g;" \
-       browser/locales/$locale/chrome/browser-region/region.properties
-    %{__make} -C browser/locales AB_CD=$locale
-  fi
-  if [ -d toolkit/locales/$locale ] ; then
-    %{__make} -C toolkit/locales AB_CD=$locale
-  fi
-done
+%ifarch ppc ppc64 s390 s390x
+%define moz_make_flags -j1
+%else
+%define moz_make_flags %{?_smp_mflags}
+%endif
+
+MAKE="gmake %{moz_make_flags}" make -f client.mk build
 
 #---------------------------------------------------------------------
 
@@ -230,6 +238,30 @@ EOF
 # own mozilla plugin dir (#135050)
 %{__mkdir_p} $RPM_BUILD_ROOT%{_libdir}/mozilla/plugins
 
+# Install langpacks
+%{__mkdir_p} $RPM_BUILD_ROOT%{ffdir}/extensions
+%{__tar} xjf %{SOURCE2}
+for langpack in `ls firefox-langpacks/*.xpi`; do
+  language=`basename $langpack .xpi`
+  extensiondir=$RPM_BUILD_ROOT%{ffdir}/extensions/langpack-$language@firefox.mozilla.org
+  %{__mkdir_p} $extensiondir
+  unzip $langpack -d $extensiondir
+  find $extensiondir -type f | xargs chmod 644
+
+  langtmp=%{_tmpdir}/%{name}/langpack-$language
+  %{__mkdir_p} $langtmp
+  jarfile=$extensiondir/chrome/$language.jar
+  unzip $jarfile -d $langtmp
+  sed -i -e "s|browser.startup.homepage.*$|browser.startup.homepage=%{indexhtml}|g;" $langtmp/locale/browser-region/region.properties
+  find $langtmp -type f | xargs chmod 644
+  %{__rm} -rf $jarfile
+  cd $langtmp
+  zip -r -D $jarfile locale
+  %{__rm} -rf locale
+  cd -
+done
+%{__rm} -rf firefox-langpacks
+
 # ghost files
 touch $RPM_BUILD_ROOT%{ffdir}/components/compreg.dat
 touch $RPM_BUILD_ROOT%{ffdir}/components/xpti.dat
@@ -270,6 +302,69 @@ fi
 #---------------------------------------------------------------------
 
 %changelog
+* Thu Aug 08 2006 Jesse Keating <jkeating@redhat.com> - 1.5.0.6-2
+- Use dist tag
+- rebuild
+
+* Thu Aug 03 2006 Kai Engert <kengert@redhat.com> - 1.5.0.6-1.1.fc5
+- Update to 1.5.0.6
+
+* Thu Jul 27 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.5-1.1.fc5
+- Update to 1.5.0.5
+
+* Wed Jun 14 2006 Kai Engert <kengert@redhat.com> - 1.5.0.4-1.2.fc5
+- Force "gmake -j1" on ppc ppc64 s390 s390x
+
+* Mon Jun 12 2006 Kai Engert <kengert@redhat.com> - 1.5.0.4-1.1.fc5
+- Firefox 1.5.0.4
+
+* Thu May  4 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.3-1.1.fc5
+- Firefox 1.5.0.3
+
+* Wed Apr 19 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.2-1.2.fc5
+- Drop some broken language packs.
+
+* Mon Apr 17 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.2-1.1.fc5
+- Update to 1.5.0.2
+
+* Sat Mar 11 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.1-9
+- Add a notice to the about dialog denoting this is a pango enabled build.
+- Tweak the user agent denoting this is a pango enabled build.
+
+* Mon Mar  6 2006 Warren Togami <wtogami@redhat.com> - 1.5.0.1-7
+- make links point to the correct release
+
+* Mon Mar  6 2006 Ray Strode <rstrode@redhat.com> - 1.5.0.1-6
+- Add new bookmarks file from Warren (bug 182386)
+
+* Tue Feb 28 2006 Karsten Hopp <karsten@redhat.de>
+- add buildrequires libXt-devel for X11/Intrinsic.h, X11/Shell.h
+
+* Mon Feb 20 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.1-5
+- Rebuild
+
+* Mon Feb 20 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.1-4
+- Ensure our wrapper handles URLs with commas/spaces (Ilya Konstantinov)
+- Fix a pango typo
+
+* Fri Feb 10 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.1-3
+- Improve the langpack install stuff
+- Fix up dumpstack.patch to match the finalized change
+
+* Tue Feb  7 2006 Jesse Keating <jkeating@redhat.com> - 1.5.0.1-2.1
+- rebuilt for new gcc4.1 snapshot and glibc changes
+
+* Wed Feb  1 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.1-2
+- Update language packs to 1.5.0.1
+- Add dumpstack.patch
+
+* Wed Feb  1 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.1-1
+- Update to 1.5.0.1
+
+* Thu Jan 26 2006 Christopher Aillon <caillon@redhat.com> - 1.5-5
+- Ship langpacks again from upstream
+- Stop providing MozillaFirebird and mozilla-firebird
+
 * Tue Jan  3 2006 Christopher Aillon <caillon@redhat.com> - 1.5-4
 - Looks like we can build ppc64 again.  Happy New Year!
 
