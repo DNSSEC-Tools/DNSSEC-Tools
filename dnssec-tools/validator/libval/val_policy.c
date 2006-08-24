@@ -953,8 +953,12 @@ int read_res_config_file(val_context_t *ctx)
 			/* Convert auth_zone_info to its on-the-wire format */
 
 			ns->ns_name_n = (u_int8_t *) MALLOC (NS_MAXCDNAME);
-			if(ns->ns_name_n == NULL) 
+			if(ns->ns_name_n == NULL) {
+				FREE (ns);
+				ns = NULL;
+				goto err;
 				return VAL_OUT_OF_MEMORY;
+                        }
 			if (ns_name_pton(auth_zone_info, ns->ns_name_n, NS_MAXCDNAME-1) == -1) {
 				FREE (ns->ns_name_n); 
 				ns->ns_name_n = NULL;
