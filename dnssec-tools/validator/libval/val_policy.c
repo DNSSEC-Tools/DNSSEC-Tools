@@ -1215,46 +1215,47 @@ struct hosts * parse_etc_hosts (const char *name)
 			}
 		}
 		
+		if (!matchfound)
+			continue;
+
 		/* match input name with the full domain name and aliases */
-		if (matchfound) {
-			hentry = (struct hosts*) MALLOC (sizeof(struct hosts));
-			if (hentry == NULL) 
+		hentry = (struct hosts*) MALLOC (sizeof(struct hosts));
+		if (hentry == NULL) 
+			break; /* return results so far */
+		
+		bzero(hentry, sizeof(struct hosts));
+		hentry->address = (char *) strdup (addr_buf);
+		hentry->canonical_hostname = (char *) strdup(domain_name);
+		hentry->aliases = (char **) MALLOC ((alias_index + 1) * sizeof(char *));
+		if ((hentry->aliases == NULL) || (hentry->address == NULL) ||
+		    (hentry->canonical_hostname == NULL)) {
+			if (hentry->address != NULL)
+				free(hentry->address);
+			if (hentry->canonical_hostname != NULL)
+				free(hentry->canonical_hostname);
+			if (hentry->aliases != NULL)
+				free(hentry->aliases);
+			free(hentry);
+			break; /* return results so far */
+		}
+		
+		for (i=0; i<alias_index; i++) {
+			hentry->aliases[i] = (char *) strdup(alias_list[i]);
+			if ( hentry->aliases[i] == NULL )
 				break; /* return results so far */
-			
-			bzero(hentry, sizeof(struct hosts));
-			hentry->address = (char *) strdup (addr_buf);
-			hentry->canonical_hostname = (char *) strdup(domain_name);
-			hentry->aliases = (char **) MALLOC ((alias_index + 1) * sizeof(char *));
-			if ((hentry->aliases == NULL) || (hentry->address == NULL) ||
-			    (hentry->canonical_hostname == NULL)) {
-				if (hentry->address != NULL)
-					free(hentry->address);
-				if (hentry->canonical_hostname != NULL)
-					free(hentry->canonical_hostname);
-				if (hentry->aliases != NULL)
-					free(hentry->aliases);
-				free(hentry);
-				break; /* return results so far */
-			}
-			
-			for (i=0; i<alias_index; i++) {
-				hentry->aliases[i] = (char *) strdup(alias_list[i]);
-				if ( hentry->aliases[i] == NULL )
-					break; /* return results so far */
-			}
-			for (; i<=alias_index; i++) {
-				hentry->aliases[i] = NULL;
-			}
-			hentry->next = NULL;
-			
-			if (retval) {
-				retval_tail->next = hentry;
-				retval_tail = hentry;
-			}
-			else {
-				retval = hentry;
-				retval_tail = hentry;
-			}
+		}
+		for (; i<=alias_index; i++) {
+			hentry->aliases[i] = NULL;
+		}
+		hentry->next = NULL;
+		
+		if (retval) {
+			retval_tail->next = hentry;
+			retval_tail = hentry;
+		}
+		else {
+			retval = hentry;
+			retval_tail = hentry;
 		}
 	}
 
