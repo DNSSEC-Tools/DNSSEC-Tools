@@ -196,7 +196,7 @@ static void *weird_al_realloc (void *old, size_t old_size, size_t new_size)
     }
     if (old) FREE (old);
                                                                                                                           
-    return new;
+    return newp;
 }
 
 int extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
