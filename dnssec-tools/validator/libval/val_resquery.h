@@ -47,6 +47,6 @@ int find_next_zonecut(struct rrset_rec *rrset, u_int8_t *curzone_n, u_int8_t **n
                 if ((ret_val = add_as_sig(rr_set,rdata_len_h,rdata))!=VAL_NO_ERROR)\
                     return ret_val;\
             }\
-	} while (0);
+	} while (0)
 
 #endif /* VAL_RESQUERY_H */
