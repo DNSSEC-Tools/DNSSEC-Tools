@@ -186,7 +186,7 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 		/* Because of the ordering, the longest match is found first */
 		for (; zse_cur; zse_cur=zse_cur->next) {
 			int root_zone = 0;
-			if(!namecmp(zse_cur->zone_n, ""))
+			if(!namecmp(zse_cur->zone_n, (u_int8_t*)""))
 				root_zone = 1;
 			else {
 				/* Find the last occurrence of zse_cur->zone_n in name_n */
@@ -300,7 +300,7 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
                       const u_int16_t     q_type_h,
                       const u_int16_t     q_class_h,
                       struct rrset_rec    *the_set,
-					  u_int16_t			*status)
+					  val_astatus_t			*status)
 {
     if ((NULL == the_set) || (NULL == status))
         return VAL_BAD_ARGUMENT;
@@ -403,7 +403,7 @@ int fails_to_answer_query(
                       const u_int16_t     q_type_h,
                       const u_int16_t     q_class_h,
                       struct rrset_rec    *the_set,
-					  u_int16_t			*status)
+					  val_astatus_t			*status)
 {
     int name_present = name_in_q_names (q_names_n, the_set);
     int type_match = the_set->rrs.val_rrset_type_h==q_type_h || q_type_h==ns_t_any;
@@ -446,7 +446,7 @@ static int NSEC_is_wrong_answer (
                       const u_int16_t     q_type_h,
                       const u_int16_t     q_class_h,
                       struct rrset_rec    *the_set,
-					  u_int16_t			*status)
+					  val_astatus_t			*status)
 {
     int                 nsec_bit_field;
 
