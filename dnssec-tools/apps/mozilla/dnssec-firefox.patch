@@ -1,5 +1,5 @@
 --- mozilla.firefox.1.5.0.6.rpmdist/browser/components/preferences/advanced.xul	2005-09-14 14:24:40.000000000 -0700
-+++ mozilla.newdnssec/browser/components/preferences/advanced.xul	2006-08-23 12:10:47.000000000 -0700
++++ mozilla/browser/components/preferences/advanced.xul	2006-08-24 09:17:05.000000000 -0700
 @@ -94,6 +94,9 @@
        <preference id="security.disable_button.openDeviceManager"
                    name="security.disable_button.openDeviceManager"
@@ -18,7 +18,7 @@
        </tabs>
        <tabpanels flex="1">
          <tabpanel orient="vertical">
-@@ -251,6 +255,21 @@
+@@ -251,6 +255,19 @@
  #endif
            </groupbox>
          </tabpanel>
@@ -28,12 +28,10 @@
 +            <description>&dnssec.description;</description>
 +	    <radiogroup id="networkDnssecBehaviour"
 +	                preference="security.dnssec.dnssecBehavior">
-+	      <radio value="0" label="&neverDNSSecure.label;"
++	      <radio value="1" label="&neverDNSSecure.label;"
 +	             accesskey="&neverDNSSecure.accesskey;"/>
-+	      <radio value="1" label="&possibleDNSSecure.label;"
++	      <radio value="0" label="&possibleDNSSecure.label;"
 +	             accesskey="&possibleDNSSecure.accesskey;"/>
-+	      <radio value="2" label="&allDNSSecure.label;"
-+	             accesskey="&allDNSSecure.accesskey;"/>
 +	    </radiogroup>
 +          </groupbox>
 +        </tabpanel>
@@ -41,26 +39,26 @@
      </tabbox>   
    </prefpane>
 --- mozilla.firefox.1.5.0.6.rpmdist/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2005-10-14 19:57:43.000000000 -0700
-+++ mozilla.newdnssec/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2006-08-23 11:41:37.000000000 -0700
++++ mozilla/browser/locales/en-US/chrome/browser/preferences/advanced.dtd	2006-08-24 09:25:25.000000000 -0700
 @@ -56,6 +56,16 @@
  <!ENTITY viewSecurityDevices.label      "Security Devices">
  <!ENTITY viewSecurityDevices.accesskey  "y">
  
 +<!ENTITY dnssecTab.label                "DNS Security">
-+<!ENTITY dnssec.description             "When should Server Name Lookups be Secure:">
-+<!ENTITY dnsSecurity.label              "DNS Security Options">
++<!ENTITY dnssec.description             "DNS Security Policy is currently set at the system level (/etc/dnsval.conf) and this option allows that policy to be enforced or ignoredspecifies if those policies should be enforced.">
++<!ENTITY dnsSecurity.label              "DNS Security Policy">
 +<!ENTITY neverDNSSecure.label           "Ignore DNS security">
 +<!ENTITY neverDNSSecure.accesskey       "N">
-+<!ENTITY possibleDNSSecure.label        "Use DNS Security if possible">
-+<!ENTITY possibleDNSSecure.accesskey    "P">
-+<!ENTITY allDNSSecure.label            "Require all DNS lookups to be secure">
++<!ENTITY possibleDNSSecure.label        "Enforce DNS Security">
++<!ENTITY possibleDNSSecure.accesskey    "E">
++<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
 +<!ENTITY allDNSSecure.accesskey         "A">
 +
  <!ENTITY languages.caption              "Languages">
  <!ENTITY languagesInfo.label            "Choose Languages web pages are displayed in.">
  <!ENTITY showLanguages.label            "Edit Languages...">
 --- mozilla.firefox.1.5.0.6.rpmdist/browser/locales/en-US/chrome/overrides/appstrings.properties	2005-09-02 14:39:52.000000000 -0700
-+++ mozilla.newdnssec/browser/locales/en-US/chrome/overrides/appstrings.properties	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/browser/locales/en-US/chrome/overrides/appstrings.properties	2006-08-23 19:01:13.000000000 -0700
 @@ -37,6 +37,7 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=Firefox can't find the file at %S.
@@ -70,7 +68,7 @@
  connectionFailure=Firefox can't establish a connection to the server at %S.
  netInterrupt=The connection to %S was interrupted while the page was loading.
 --- mozilla.firefox.1.5.0.6.rpmdist/browser/locales/en-US/chrome/overrides/netError.dtd	2005-08-29 13:10:06.000000000 -0700
-+++ mozilla.newdnssec/browser/locales/en-US/chrome/overrides/netError.dtd	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/browser/locales/en-US/chrome/overrides/netError.dtd	2006-08-23 19:01:13.000000000 -0700
 @@ -25,6 +25,9 @@
  </ul>
  ">
@@ -82,7 +80,7 @@
  <!ENTITY fileNotFound.longDesc "
  <ul>
 --- mozilla.firefox.1.5.0.6.rpmdist/dom/locales/en-US/chrome/netError.dtd	2005-08-21 20:23:35.000000000 -0700
-+++ mozilla.newdnssec/dom/locales/en-US/chrome/netError.dtd	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/dom/locales/en-US/chrome/netError.dtd	2006-08-23 19:01:13.000000000 -0700
 @@ -12,6 +12,9 @@
  <!ENTITY dnsNotFound.title "Address Not Found">
  <!ENTITY dnsNotFound.longDesc "<p>The browser could not find the host server for the provided address.</p><ul><li>Did you make a mistake when typing the domain? (e.g. <q><strong>ww</strong>.mozilla.org</q> instead of <q><strong>www</strong>.mozilla.org</q>)</li><li>Are you certain this domain address exists?  Its registration may have expired.</li><li>Are you unable to browse other sites?  Check your network connection and DNS server settings.</li><li>Is your computer or network protected by a firewall or proxy?  Incorrect settings can interfere with Web browsing.</li></ul>">
@@ -94,7 +92,7 @@
  <!ENTITY fileNotFound.longDesc "<ul><li>Could the item have been renamed, removed, or relocated?</li><li>Is there a spelling, capitalization, or other typographical error in the address?</li><li>Do you have sufficient access permissions to the requested item?</li></ul>">
  
 --- mozilla.firefox.1.5.0.6.rpmdist/layout/base/nsPresContext.cpp	2006-04-21 16:30:50.000000000 -0700
-+++ mozilla.newdnssec/layout/base/nsPresContext.cpp	2006-08-23 13:18:17.000000000 -0700
++++ mozilla/layout/base/nsPresContext.cpp	2006-08-24 09:28:37.000000000 -0700
 @@ -68,6 +68,7 @@
  #include "nsIWeakReferenceUtils.h"
  #include "nsCSSRendering.h"
@@ -118,31 +116,23 @@
  #ifdef IBMBIDI
    nsContentUtils::UnregisterPrefCallback("bidi.", PrefChangedCallback, this);
  
-@@ -571,6 +580,17 @@
+@@ -571,6 +580,11 @@
    else if (animatePref.Equals("once"))
      mImageAnimationModePref = imgIContainer::kLoopOnceAnimMode;
  
-+  fprintf(stderr, "XYZhere : before\n");
 +#ifdef MOZ_DNSSEC
-+  {
-+    int dnssecpref =
-+      nsContentUtils::GetIntPref("security.dnssec.dnssecBehavior");
-+    fprintf(stderr, "XYZhere : yes: %d\n", dnssecpref);
-+    PR_set_dnssec_validate_policy(dnssecpref);
-+  }
++  PR_set_dnssec_validate_policy(nsContentUtils::GetIntPref("security.dnssec.dnssecBehavior"));
 +#endif /* MOZ_DNSSEC */
 +
 +
  #ifdef IBMBIDI
    PRInt32 prefInt =
      nsContentUtils::GetIntPref("bidi.direction",
-@@ -704,6 +724,13 @@
+@@ -704,6 +718,11 @@
    nsContentUtils::RegisterPrefCallback("image.animation_mode",
                                         nsPresContext::PrefChangedCallback,
                                         this);
-+  fprintf(stderr, "ABChere out:\n");
 +#ifdef MOZ_DNSSEC
-+  fprintf(stderr, "ABChere in:\n");
 +  nsContentUtils::RegisterPrefCallback("security.dnssec.dnssecBehavior",
 +                                       nsPresContext::PrefChangedCallback,
 +                                       this);
