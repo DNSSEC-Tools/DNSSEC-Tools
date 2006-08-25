@@ -86,7 +86,7 @@ static void print_addrinfo(int type, void* ainfo)
 		printf("\tAddrLen:   %d\n", a->ai_addrlen);
 		
 		if (a->ai_addr != NULL) {
-			printf("\tAddrPtr:   %d\n", a->ai_addr);
+			printf("\tAddrPtr:   %p\n", a->ai_addr);
 			if (a->ai_family == AF_INET) {
 				s_inaddr = (struct sockaddr_in *) (a->ai_addr);
 				printf("\tAddr:      %s\n",
@@ -130,7 +130,6 @@ int main(int argc, char *argv[])
 	struct val_addrinfo *val_ainfo = NULL;
 	struct addrinfo *ainfo = NULL;
 	int retval;
-	int index = 0;
 	int getcanonname = 0;
 	int portspecified = 0;
 	

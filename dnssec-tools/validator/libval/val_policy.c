@@ -255,7 +255,7 @@ int parse_trust_anchor(FILE *fp, policy_entry_t *pol_entry, int *line_number)
 	return VAL_NO_ERROR;
 
   err:
-	while(ta_prev = ta_head) {
+	while((ta_prev = ta_head)) { /* double parens keep compiler happy) */
 	    ta_head = ta_head->next;
 	    FREE(ta_prev);
 	}
@@ -431,7 +431,7 @@ int parse_zone_security_expectation(FILE *fp, policy_entry_t *pol_entry, int *li
 	return VAL_NO_ERROR;
 
   err:
-	while(zse_prev = zse_head) {
+	while((zse_prev = zse_head)) { /* double parens keep compiler happy */
 	    zse_head = zse_head->next;
 	    FREE(zse_prev);
 	}

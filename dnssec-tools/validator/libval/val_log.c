@@ -450,7 +450,7 @@ void val_log (const val_context_t *ctx, int level, const char *template, ...)
 	int log_mask = LOG_UPTO(VAL_LOG_MASK);
 
 	setlogmask(log_mask);
-        snprintf(buf, sizeof(buf), "libval(%d)",
+        snprintf(buf, sizeof(buf), "libval(%s)",
                  (ctx == NULL)? "0": ctx->id);
 	openlog(buf, VAL_LOG_OPTIONS, LOG_USER);
 

@@ -31,6 +31,8 @@
 #include <getopt.h>
 #endif
 
+#include "res_debug.h"
+
 #define MAX_RESULTS 10 
 #define BUFLEN 16000
 
@@ -420,8 +422,6 @@ int main(int argc, char *argv[])
 	else {
 		// Parse the command line for a query and resolve+validate it
 		int c;
-		char *classstr    = NULL;
-		char *typestr     = NULL;
 		char *domain_name = NULL;
 		char *args        = "hi:pc:r:st:T:l:mv:";
 		u_int16_t class_h = ns_c_in;
@@ -553,7 +553,6 @@ int main(int argc, char *argv[])
 			// If the print option is present, perform query and validation again for printing the result
 			if (doprint) {
 				int retval = 0;
-				int dnssec_status = -1;
 				struct val_response *resp, *cur;
 				retval = val_query(NULL, domain_name, class_h, type_h, flags, &resp);
 				if (retval != VAL_NO_ERROR) {
