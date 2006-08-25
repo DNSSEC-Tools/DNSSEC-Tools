@@ -1,5 +1,5 @@
 --- mozilla.firefox.1.5.0.6.rpmdist/config/autoconf.mk.in	2006-04-21 13:50:30.000000000 -0700
-+++ mozilla.newdnssec/config/autoconf.mk.in	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/config/autoconf.mk.in	2006-08-23 19:01:13.000000000 -0700
 @@ -243,7 +243,7 @@
  OS_COMPILE_CXXFLAGS = $(OS_CPPFLAGS) @COMPILE_CXXFLAGS@
  
@@ -25,7 +25,7 @@
  MOZ_ENABLE_GTK		= @MOZ_ENABLE_GTK@
  MOZ_ENABLE_GTK2		= @MOZ_ENABLE_GTK2@
 --- mozilla.firefox.1.5.0.6.rpmdist/docshell/base/nsWebShell.cpp	2005-10-18 06:36:50.000000000 -0700
-+++ mozilla.newdnssec/docshell/base/nsWebShell.cpp	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/docshell/base/nsWebShell.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -827,6 +827,7 @@
  
      // Errors to be shown only on top-level frames
@@ -35,7 +35,7 @@
           aStatus == NS_ERROR_UNKNOWN_PROXY_HOST || 
           aStatus == NS_ERROR_PROXY_CONNECTION_REFUSED) &&
 --- mozilla.firefox.1.5.0.6.rpmdist/docshell/resources/content/netError.xhtml	2005-10-03 12:34:55.000000000 -0700
-+++ mozilla.newdnssec/docshell/resources/content/netError.xhtml	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/docshell/resources/content/netError.xhtml	2006-08-23 19:01:13.000000000 -0700
 @@ -145,6 +145,7 @@
      <div id="errorContainer">
        <div id="errorTitlesContainer">
@@ -53,7 +53,7 @@
          <div id="ed_malformedURI">&malformedURI.longDesc;</div>
          <div id="ed_protocolNotFound">&protocolNotFound.longDesc;</div>
 --- mozilla.firefox.1.5.0.6.rpmdist/dom/locales/en-US/chrome/appstrings.properties	2005-02-20 10:10:14.000000000 -0800
-+++ mozilla.newdnssec/dom/locales/en-US/chrome/appstrings.properties	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/dom/locales/en-US/chrome/appstrings.properties	2006-08-23 19:01:13.000000000 -0700
 @@ -37,6 +37,7 @@
  malformedURI=The URL is not valid and cannot be loaded.
  fileNotFound=The file %S cannot be found. Please check the location and try again.
@@ -63,7 +63,7 @@
  connectionFailure=The connection was refused when attempting to contact %S.
  netInterrupt=The connection to %S has terminated unexpectedly. Some data may have been transferred.
 --- mozilla.firefox.1.5.0.6.rpmdist/embedding/browser/photon/src/Makefile.in	2005-04-26 10:37:02.000000000 -0700
-+++ mozilla.newdnssec/embedding/browser/photon/src/Makefile.in	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/embedding/browser/photon/src/Makefile.in	2006-08-23 19:01:13.000000000 -0700
 @@ -100,6 +100,7 @@
  XP_LIBS		+= \
  		$(PNG_LIBS) \
@@ -73,7 +73,7 @@
  		$(NULL)
  
 --- mozilla.firefox.1.5.0.6.rpmdist/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd	1969-12-31 16:00:00.000000000 -0800
-+++ mozilla.newdnssec/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd	2006-08-23 19:01:13.000000000 -0700
 @@ -0,0 +1,18 @@
 +<!ENTITY dnssecHeader                    "DNS Security">
 +
@@ -94,7 +94,7 @@
 +<!ENTITY neverDNSSecure.label           "Ignore DNS security.">
 +<!ENTITY neverDNSSecure.accesskey       "N">
 --- mozilla.firefox.1.5.0.6.rpmdist/modules/libpr0n/build/Makefile.in	2004-12-09 11:28:21.000000000 -0800
-+++ mozilla.newdnssec/modules/libpr0n/build/Makefile.in	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/modules/libpr0n/build/Makefile.in	2006-08-23 19:01:13.000000000 -0700
 @@ -89,6 +89,7 @@
  EXTRA_DSO_LDOPTS = \
  		$(LIBS_DIR) \
@@ -104,7 +104,7 @@
  		$(EXTRA_DSO_LIBS) \
  		$(MOZ_COMPONENT_LIBS) \
 --- mozilla.firefox.1.5.0.6.rpmdist/netwerk/base/public/nsNetError.h	2004-06-16 12:51:19.000000000 -0700
-+++ mozilla.newdnssec/netwerk/base/public/nsNetError.h	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/netwerk/base/public/nsNetError.h	2006-08-23 19:01:13.000000000 -0700
 @@ -252,6 +252,9 @@
  #define NS_ERROR_UNKNOWN_HOST \
      NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 30)
@@ -116,7 +116,7 @@
   * The lookup of a proxy hostname failed.
   *
 --- mozilla.firefox.1.5.0.6.rpmdist/netwerk/base/src/nsSocketTransport2.cpp	2005-09-23 12:36:12.000000000 -0700
-+++ mozilla.newdnssec/netwerk/base/src/nsSocketTransport2.cpp	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/netwerk/base/src/nsSocketTransport2.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -1212,6 +1212,7 @@
          mCondition != NS_ERROR_PROXY_CONNECTION_REFUSED &&
          mCondition != NS_ERROR_NET_TIMEOUT &&
@@ -137,7 +137,7 @@
              else
                  mCondition = status;
 --- mozilla.firefox.1.5.0.6.rpmdist/netwerk/dns/src/nsDNSService2.cpp	2005-10-18 14:25:45.000000000 -0700
-+++ mozilla.newdnssec/netwerk/dns/src/nsDNSService2.cpp	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/netwerk/dns/src/nsDNSService2.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -122,6 +122,10 @@
          NS_ENSURE_STATE(mHostRecord->addr);
  
@@ -150,7 +150,7 @@
          // set given port
          port = PR_htons(port);
 --- mozilla.firefox.1.5.0.6.rpmdist/netwerk/dns/src/nsHostResolver.cpp	2005-09-23 12:36:18.000000000 -0700
-+++ mozilla.newdnssec/netwerk/dns/src/nsHostResolver.cpp	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/netwerk/dns/src/nsHostResolver.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -58,6 +58,7 @@
  #include "pratom.h"
  #include "prthread.h"
@@ -189,7 +189,7 @@
      }
      NS_RELEASE(resolver);
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/config/autoconf.mk.in	2006-02-22 15:03:11.000000000 -0800
-+++ mozilla.newdnssec/nsprpub/config/autoconf.mk.in	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/nsprpub/config/autoconf.mk.in	2006-08-23 19:01:13.000000000 -0700
 @@ -34,6 +34,7 @@
  
  LIBNSPR		= @LIBNSPR@
@@ -199,7 +199,7 @@
  CROSS_COMPILE	= @CROSS_COMPILE@
  BUILD_OPT	= @MOZ_OPTIMIZE@
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/config/nspr-config.in	2005-05-10 18:03:44.000000000 -0700
-+++ mozilla.newdnssec/nsprpub/config/nspr-config.in	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/nsprpub/config/nspr-config.in	2006-08-23 19:01:13.000000000 -0700
 @@ -138,6 +138,6 @@
  	  libdirs="$libdirs $i"
          fi
@@ -209,7 +209,7 @@
  fi      
  
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/configure.in	2006-02-22 15:03:11.000000000 -0800
-+++ mozilla.newdnssec/nsprpub/configure.in	2006-08-23 13:40:31.000000000 -0700
++++ mozilla/nsprpub/configure.in	2006-08-23 19:01:13.000000000 -0700
 @@ -2138,6 +2138,52 @@
  dnl AC_CHECK_LIB(thread, main)
  dnl AC_CHECK_LIB(vms_jackets, main)
@@ -272,7 +272,7 @@
  AC_SUBST(USE_PTHREADS)
  AC_SUBST(USE_BTHREADS)
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/configure	2006-02-22 15:03:10.000000000 -0800
-+++ mozilla.newdnssec/nsprpub/configure	2006-08-23 13:40:39.000000000 -0700
++++ mozilla/nsprpub/configure	2006-08-23 19:01:13.000000000 -0700
 @@ -46,6 +46,15 @@
                            Set the minimum MacOS version needed at runtime
                            [10.1 for ppc, 10.4 for x86]"
@@ -1488,7 +1488,7 @@
  s%@USE_BTHREADS@%$USE_BTHREADS%g
  s%@USE_USER_PTHREADS@%$USE_USER_PTHREADS%g
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/include/prerr.h	2004-04-27 17:33:43.000000000 -0700
-+++ mozilla.newdnssec/nsprpub/pr/include/prerr.h	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/nsprpub/pr/include/prerr.h	2006-08-23 19:01:13.000000000 -0700
 @@ -269,8 +269,11 @@
  /* The library is not loaded */
  #define PR_LIBRARY_NOT_LOADED_ERROR              (-5926L)
@@ -1503,7 +1503,7 @@
  extern void nspr_InitializePRErrorTable(void);
  #define ERROR_TABLE_BASE_nspr (-6000L)
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/include/prnetdb.h	2004-08-30 16:29:52.000000000 -0700
-+++ mozilla.newdnssec/nsprpub/pr/include/prnetdb.h	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/nsprpub/pr/include/prnetdb.h	2006-08-23 19:01:13.000000000 -0700
 @@ -494,6 +494,15 @@
  NSPR_API(PRUint32) PR_htonl(PRUint32);
  NSPR_API(PRUint64) PR_htonll(PRUint64);
@@ -1521,7 +1521,7 @@
  
  #endif /* prnetdb_h___ */
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prerr.c	2004-04-27 17:34:07.000000000 -0700
-+++ mozilla.newdnssec/nsprpub/pr/src/misc/prerr.c	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.c	2006-08-23 19:01:13.000000000 -0700
 @@ -117,11 +117,12 @@
  	{"PR_CONNECT_ABORTED_ERROR",    "Connection aborted"},
  	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
@@ -1537,7 +1537,7 @@
  void nspr_InitializePRErrorTable(void) {
      PR_ErrorInstallTable(&et);
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prerr.et	2005-03-07 18:38:53.000000000 -0800
-+++ mozilla.newdnssec/nsprpub/pr/src/misc/prerr.et	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.et	2006-08-23 19:01:13.000000000 -0700
 @@ -133,6 +133,7 @@
  ec PR_CONNECT_ABORTED_ERROR,    "Connection aborted"
  ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
@@ -1547,7 +1547,7 @@
  ec PR_MAX_ERROR,                "Placeholder for the end of the list"
  
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prerr.properties	2004-04-27 17:34:07.000000000 -0700
-+++ mozilla.newdnssec/nsprpub/pr/src/misc/prerr.properties	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.properties	2006-08-23 19:01:13.000000000 -0700
 @@ -113,4 +113,5 @@
  PR_CONNECT_ABORTED_ERROR=Connection aborted
  PR_HOST_UNREACHABLE_ERROR=Host is unreachable
@@ -1555,7 +1555,7 @@
 +PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
  PR_MAX_ERROR=Placeholder for the end of the list
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prnetdb.c	2005-08-18 10:24:38.000000000 -0700
-+++ mozilla.newdnssec/nsprpub/pr/src/misc/prnetdb.c	2006-08-23 15:33:38.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2006-08-24 09:18:40.000000000 -0700
 @@ -39,6 +39,10 @@
  
  #include <string.h>
@@ -1578,7 +1578,7 @@
  #define _PR_NO_DNS_LOCK
  #endif
  
-@@ -629,6 +633,214 @@
+@@ -629,6 +633,217 @@
  }
  #endif /* !defined(_PR_HAVE_GETPROTO_R) */
  
@@ -1617,10 +1617,10 @@
 +#endif
 +
 +
-+/* 2 = ignore, 1 = allow indeterm, 0 = always secure */
-+int global_policy = 1;
-+#define DNSSEC_POLICY_IGNORE              0
-+#define DNSSEC_POLICY_ALLOW_INDETERMINATE 1
++/* 0 = enforce system policy, 1 = ignore, 2 = always secure */
++int global_policy = 0;
++#define DNSSEC_POLICY_ENFORCE_SYS_POLICY 0
++#define DNSSEC_POLICY_IGNORE              1
 +#define DNSSEC_POLICY_ALWAYS_SECURE       2
 +void
 +PR_set_dnssec_validate_policy(int policy)
@@ -1651,11 +1651,11 @@
 + * If global_policy = DNSSEC_POLICY_IGNORE
 + *    - DNSSEC_SUCCESS: 
 + *
-+ * If global_policy = DNSSEC_POLICY_ALLOW_INDETERMINATE
++ * If global_policy = DNSSEC_POLICY_ENFORCE_SYS_POLICY
 + *    - DNSSEC_SUCCESS if verified
 + *    - DNSSEC_FAILURE if not
 + *
-+ * If global_policy = DNSSEC_POLICY_ALLOW_INDETERMINATE
++ * If global_policy = DNSSEC_POLICY_ENFORCE_SYS_POLICY
 + *    - DNSSEC_SUCCESS if verified
 + *    - DNSSEC_FAILURE if not
 + */
@@ -1709,27 +1709,30 @@
 +{
 +  DNSSECFUNDEBUG((stderr, "input: policy=%d, status=%d = %s\n",
 +                  policytype, val_status, p_val_error(val_status)));
++  /*
++   * POLICY: ignore errors
++   */
 +  if (policytype == DNSSEC_POLICY_IGNORE)
 +      DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+  
-+  if (val_istrusted(val_status))
-+      DNSSECFUNRETURN(DNSSEC_SUCCESS);
 +
-+  switch (val_status) {
-+
-+  case VAL_SUCCESS:
-+    DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+    
-+  case VAL_INDETERMINATE:
-+    if (policytype == DNSSEC_POLICY_ALLOW_INDETERMINATE)
++  /*
++   * POLICY: require only when possible
++   *   -- IE, trust the policy specified in dnssec-tools's dnsval.conf
++   */
++  if (policytype == DNSSEC_POLICY_ENFORCE_SYS_POLICY) {
++    if (val_istrusted(val_status))
 +        DNSSECFUNRETURN(DNSSEC_SUCCESS);
 +    DNSSECFUNRETURN(DNSSEC_FAILURE);
-+    
-+    /* assume everything else is a failure */
-+    /* XXX: allow for expired sigs to be declared ok in policy */
-+  default:
-+    DNSSECFUNRETURN(DNSSEC_FAILURE);
 +  }
++  
++  /*
++   * POLICY: always secure.
++   *    -- IE, require all lookups to return only secure results
++   */
++  
++  if (val_status == VAL_SUCCESS)
++      DNSSECFUNRETURN(DNSSEC_SUCCESS);
++  DNSSECFUNRETURN(DNSSEC_FAILURE);
 +}
 +
 +struct hostent *
@@ -1793,7 +1796,7 @@
  /*
   * #################################################################
   * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -664,6 +876,25 @@
+@@ -664,6 +879,25 @@
  
  #endif  /* definition of GETHOSTBYXXX */
  
@@ -1819,7 +1822,7 @@
  PR_IMPLEMENT(PRStatus) PR_GetHostByName(
      const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
  {
-@@ -677,6 +908,7 @@
+@@ -677,6 +911,7 @@
  #endif
  
      if (!_pr_initialized) _PR_ImplicitInitialization();
@@ -1827,7 +1830,7 @@
  
  #if defined(_PR_HAVE_GETHOST_R)
      tmpbuf = localbuf;
-@@ -686,7 +918,7 @@
+@@ -686,7 +921,7 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -1836,7 +1839,7 @@
          }
      }
  #endif
-@@ -698,13 +930,18 @@
+@@ -698,13 +933,18 @@
  #else
  	h = GETHOSTBYNAME(name);
  #endif
@@ -1857,7 +1860,7 @@
  		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
  		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
  		if (PR_SUCCESS != rv)
-@@ -715,7 +952,7 @@
+@@ -715,7 +955,7 @@
      if (tmpbuf != localbuf)
          PR_Free(tmpbuf);
  #endif
@@ -1866,7 +1869,7 @@
  }
  
  #if !defined(_PR_INET6) && \
-@@ -826,11 +1063,12 @@
+@@ -826,11 +1066,12 @@
      PRBool did_af_inet = PR_FALSE;
  #endif
  
@@ -1880,7 +1883,7 @@
      }
  
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
-@@ -873,11 +1111,13 @@
+@@ -873,11 +1114,13 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -1895,7 +1898,7 @@
      /* Do not need to lock the DNS lock if getipnodebyname() is called */
  #ifdef _PR_INET6
  #ifdef _PR_HAVE_GETHOSTBYNAME2
-@@ -935,6 +1175,7 @@
+@@ -935,6 +1178,7 @@
      
  	if (NULL == h)
  	{
@@ -1903,7 +1906,7 @@
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
  #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
-@@ -993,7 +1234,7 @@
+@@ -993,7 +1237,7 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -1912,7 +1915,7 @@
  }
  
  PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
-@@ -1015,6 +1256,7 @@
+@@ -1015,6 +1259,7 @@
  	int error_num;
  #endif
  
@@ -1920,7 +1923,7 @@
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1160,7 +1402,7 @@
+@@ -1160,7 +1405,7 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -1929,7 +1932,7 @@
  }
  
  /******************************************************************************/
-@@ -1772,6 +2014,7 @@
+@@ -1772,6 +2017,7 @@
      PRStatus status = PR_SUCCESS;
      PRIntn rv;
  
@@ -1937,7 +1940,7 @@
  #if defined(_PR_HAVE_INET_NTOP)
      rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
      if (1 == rv)
-@@ -1783,23 +2026,26 @@
+@@ -1783,23 +2029,26 @@
          PR_ASSERT(0 == rv);
          /* clean up after the failed inet_pton() call */
          memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
@@ -1969,7 +1972,7 @@
      }
      PR_ASSERT(0 == rv);
      /* clean up after the failed StringToV6Addr() call */
-@@ -1821,7 +2067,7 @@
+@@ -1821,7 +2070,7 @@
      }
  #endif /* _PR_HAVE_INET_NTOP */
  
@@ -1978,7 +1981,7 @@
  }
  
  PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
-@@ -1940,8 +2186,18 @@
+@@ -1940,8 +2189,18 @@
  #if defined(_PR_INET6)
  
  typedef struct addrinfo PRADDRINFO;
@@ -1997,7 +2000,7 @@
  
  #elif defined(_PR_INET6_PROBE)
  
-@@ -2025,8 +2281,11 @@
+@@ -2025,8 +2284,11 @@
  #endif
  }
  
@@ -2009,7 +2012,7 @@
  
  #endif /* _PR_INET6 */
  
-@@ -2050,41 +2309,44 @@
+@@ -2050,41 +2312,44 @@
  {
      PRStatus rv;
      PRAddrInfoFB *ai;
@@ -2059,7 +2062,7 @@
      }
  #endif
      {
-@@ -2097,6 +2359,21 @@
+@@ -2097,6 +2362,21 @@
           * RFC 3493.
           */
  
@@ -2081,7 +2084,7 @@
          memset(&hints, 0, sizeof(hints));
          hints.ai_flags = (flags & PR_AI_NOCANONNAME) ? 0: AI_CANONNAME;
          hints.ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
-@@ -2111,12 +2388,31 @@
+@@ -2111,12 +2391,31 @@
          hints.ai_socktype = SOCK_STREAM;
  
          rv = GETADDRINFO(hostname, NULL, &hints, &res);
@@ -2117,7 +2120,7 @@
  }
  
 --- mozilla.firefox.1.5.0.6.rpmdist/configure.in	2006-06-15 06:29:32.000000000 -0700
-+++ mozilla.newdnssec/configure.in	2006-08-23 13:46:49.000000000 -0700
++++ mozilla/configure.in	2006-08-23 19:01:13.000000000 -0700
 @@ -3538,6 +3538,54 @@
  fi
  
@@ -2195,7 +2198,7 @@
  AC_SUBST(MOZ_JPEG_LIBS)
  AC_SUBST(MOZ_ZLIB_CFLAGS)
 --- mozilla.firefox.1.5.0.6.rpmdist/configure	2006-06-16 13:04:20.000000000 -0700
-+++ mozilla.newdnssec/configure	2006-08-23 13:46:51.000000000 -0700
++++ mozilla/configure	2006-08-23 19:01:13.000000000 -0700
 @@ -44,6 +44,15 @@
    --with-nspr-exec-prefix=PFX
                            Exec prefix where NSPR is installed"
@@ -7810,7 +7813,7 @@
  s%@MOZ_JPEG_LIBS@%$MOZ_JPEG_LIBS%g
  s%@MOZ_ZLIB_CFLAGS@%$MOZ_ZLIB_CFLAGS%g
 --- mozilla.firefox.1.5.0.6.rpmdist/security/nss/cmd/platlibs.mk	2005-04-06 14:35:41.000000000 -0700
-+++ mozilla.newdnssec/security/nss/cmd/platlibs.mk	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/security/nss/cmd/platlibs.mk	2006-08-23 19:01:13.000000000 -0700
 @@ -233,3 +233,5 @@
  endif
  
@@ -7818,7 +7821,7 @@
 +
 +OS_LIBS += -lval -lsres -lcrypto
 --- mozilla.firefox.1.5.0.6.rpmdist/docshell/base/nsDocShell.cpp	2006-06-07 00:36:09.000000000 -0700
-+++ mozilla.newdnssec/docshell/base/nsDocShell.cpp	2006-08-22 16:47:31.000000000 -0700
++++ mozilla/docshell/base/nsDocShell.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -2983,6 +2983,15 @@
          formatStrCount = 1;
          error.AssignLiteral("dnsNotFound");
