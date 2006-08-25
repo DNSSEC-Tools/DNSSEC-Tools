@@ -302,7 +302,7 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
     NS_GET16(rdata->key_tag, cp);
     index += 2;
     
-    index += val_parse_dname(buf, buflen, index, rdata->signer_name);
+    index += val_parse_dname(buf, buflen, index, (char*)rdata->signer_name);
     
     rdata->signature_len = (buflen > index) ? (buflen - index): 0;
 

@@ -17,6 +17,8 @@
 #include <sys/socket.h>
 #include <string.h>
 
+#include <arpa/inet.h>
+
 #ifdef HAVE_GETOPT_LONG
 // Program options
 static struct option prog_options[] = {
@@ -49,7 +51,6 @@ int main(int argc, char *argv[])
 	struct hostent *result = NULL;
 	
 	int i;
-	char *alias;
 	val_status_t val_status;
 	int herrno = 0;
 	int dovalidate = 1;
@@ -201,4 +202,6 @@ int main(int argc, char *argv[])
 	else {
 		printf("h_errno = %s\n", hstrerror(h_errno));
 	}
+
+	return 0;
 }

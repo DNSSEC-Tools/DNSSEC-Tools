@@ -270,11 +270,12 @@ int is_tail (u_int8_t *full, u_int8_t *tail)
     int f_len = wire_name_length (full);
     int t_len = wire_name_length (tail);
                                                                                                                           
-    if (f_len==t_len)
+    if (f_len==t_len) {
         if (f_len)
             return memcmp(full, tail, f_len)==0;
         else
             return 0;
+    }
                                                                                                                           
     if (t_len > f_len)
         return FALSE;
@@ -494,7 +495,7 @@ struct rrset_rec *find_rr_set (
     int                 name_len = wire_name_length(name_n);
                                                                                                                           
     if ((the_list == NULL) || (name_n == NULL))
-        return VAL_BAD_ARGUMENT;
+        return NULL;
 
     /* Search through the list for a matching record */
     tryit = *the_list;
