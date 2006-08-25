@@ -58,16 +58,14 @@ struct hosts {
 	    if (hentry->address) free (hentry->address); \
 	    if (hentry->canonical_hostname) free (hentry->canonical_hostname); \
 	    if (hentry->aliases) { \
-                i = 0; \
 		for (i=0; hentry->aliases[i] != 0; i++) { \
 		    if (hentry->aliases[i]) free (hentry->aliases[i]); \
 		} \
-		if (hentry->aliases[i]) free (hentry->aliases[i]); \
 		free (hentry->aliases); \
 	    } \
 	    free (hentry); \
 	} \
-} while (0);
+} while (0)
 
 
 #endif
