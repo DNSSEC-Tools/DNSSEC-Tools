@@ -39,7 +39,9 @@ my %opts =
 # nsec says type shouldn't be used
 # sig doesn't cover type
     'p' => 'good,badsign,nosig,baddata,futuredate,pastdate,reverseddates',
-    'P' => 'good,badsign,nosig,nods,futuredate,pastdate,reverseddates',
+# XXX:
+#   newksk: doesn't work because zonesigner requires generation of zsks too
+    'P' => 'good,badsign,nosig,nods,futuredate,pastdate,reverseddates,rollzsk,newzsk,newkeys',
   );
 
 LocalGetOptions(\%opts,
@@ -112,7 +114,7 @@ LocalGetOptions(\%opts,
 	       );
 
 # default zonesigner opts: add key generation stuff if -k specified.
-$opts{'a'} .= " --genzsk --genksk  --ksklength 4096 --zsklength 2048"
+$opts{'a'} .= " --genzsk --genksk  --ksklength 2048 --zsklength 1024"
   if ($opts{'k'});
 
 #
@@ -181,6 +183,10 @@ my %LegendInformation =
  good => 'An unmodified record that should be completely valid.',
  nosig => 'The RRSIG record has been completely removed from the data set and is not available to verify the original record.',
  nods => 'A valid NS record where the parent zone did not have the DNSKEY for the child and thus does not provide a valid DS record to securely delegate to the child zone.',
+ rollzsk => 'The ZSK for this zone is rolled every time the zone is generated',
+ newzsk => 'The ZSKs for this zone are brand new every time the zone is generated',
+ newksk => 'The KSKs (but not the ZSKs) for this zone are brand new every time the zone is generated',
+ newkeys => 'The KSKs and the ZSKs for this zone are brand new every time the zone is generated',
 
  # record types
  A => 'An A (IPv4) address record',
@@ -189,7 +195,17 @@ my %LegendInformation =
  NS => 'An NS record pointing to a child zone.',
 );
 
-
+#
+# ZONENAME => EXTRAOPTS
+#   defines extra options that zonesigner will run with for a given domain
+#
+my %zonesigner_domain_opts =
+  (
+   'rollzsk-ns.' . $opts{'d'} => '-forceroll',
+   'newzsk-ns.' . $opts{'d'} => '-genzsk',
+   'newksk-ns.' . $opts{'d'} => '-genksk',
+   'newkeys-ns.' . $opts{'d'} => '-genkeys',
+  );
 
 #
 # globals
@@ -491,8 +507,8 @@ sub run_zonesigner {
     #
     # Run zonesigner to sign the thing
     #
-    Verbose("running zonesigner on $infile to produce $outfile.signed");
-    System("zonesigner $opts{'a'} --intermediate $infile$opts{'O'} --zone $domain $infile $outfile.signed");
+    Verbose("running zonesigner on $infile ($domain) to produce $outfile.signed");
+    System("zonesigner $opts{'a'} $zonesigner_domain_opts{$domain} --intermediate $infile$opts{'O'} --zone $domain $infile $outfile.signed");
 }
 
 ######################################################################
@@ -717,6 +733,10 @@ sub reverse_dates {
     }
 }
 
+sub freq_zsk_roll {
+    my ($name, $type) = @_;
+}
+
 
 ######################################################################
 # printing-subs
@@ -765,6 +785,7 @@ sub Verbose {
 sub System {
     Verbose("running: ",@_);
     system(@_);
+    die "system command failed!!!\n" if ($_[0] !~ /^donuts/ && $? != 0)
 }
 
 ######################################################################
@@ -826,7 +847,28 @@ see how the data in them has been tampered with to be invalid.
 zonesigner from the dnssec-tools project
 bind software 9.3.1 or greater
 
-=head1 ADDING NEW RECORD MODIFICATIONS
+=head1 ADDING NEW OUTPUT
+
+... XXX: a high level description needed about development guides
+
+=head2 ADDING LEGEND INFORMATION
+
+For the legend HTML output, the %LegendInformation hash contains a
+keyname and description for each modification type.
+
+=head2 ADDING NEW SUBZONE DIFFERENCES
+
+The I<%zonesigner_domain_opts> hash lists additional arguments between
+how zonesigner is called for various sub-domains.  Thus you can create
+additional sub-zones with different zonesigner optionns to test other
+operational parameters between parent and child.  For example:
+
+   'rollzsk-ns.' . $opts{'d'} => '-forceroll',
+
+Forces the rollzsk-ns test sub-zone to roll it's zsk when the zone is
+signed.
+
+=head2 ADDING NEW RECORD MODIFICATIONS
 
 Maketestzone is in early development stages but already has the
 beginnings of an extnesible system allowing you to modify records at
