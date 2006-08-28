@@ -133,7 +133,7 @@ extern          "C" {
 #define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_TRUST_FLAG) == chk_val)
 
 typedef u_int8_t val_status_t;
-typedef int16_t val_astatus_t;
+typedef u_int16_t val_astatus_t;
 
 struct val_query_chain; /* forward declaration */
 struct val_authentication_chain; /* forward declaration */
