@@ -6,6 +6,10 @@
 #ifndef VALIDATOR_H
 #define VALIDATOR_H
 
+#ifdef __cplusplus
+extern          "C" {
+#endif
+
 #include <syslog.h>
 #include <val_errors.h>
 
@@ -335,7 +339,7 @@ int val_istrusted(val_status_t val_status);
 void val_free_result_chain(struct val_result_chain *results);
 int val_resolve_and_check( val_context_t *context,
             u_char *domain_name,
-            const u_int16_t class,
+            const u_int16_t q_class,
             const u_int16_t type,
             const u_int8_t flags,
             struct val_result_chain **results);
@@ -367,12 +371,12 @@ char *p_val_error(val_status_t err);
 /* from val_x_query.c */
 int val_query(const val_context_t *ctx,
 			const char *domain_name,
-			const u_int16_t class,
+			const u_int16_t q_class,
 			const u_int16_t type,
 			const u_int8_t flags,
 			struct val_response **resp);
 int val_free_response(struct val_response *resp);
-int val_res_query(const val_context_t *ctx, const char *dname, int class, int type,
+int val_res_query(const val_context_t *ctx, const char *dname, int q_class, int type,
                     u_char *answer, int anslen, val_status_t *val_status);
 
 /* from val_gethostbyname.c */
@@ -457,6 +461,10 @@ int val_getnameinfo( const val_context_t   *ctx,
 
 #endif 
 /***********************************************************/
+
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
 #endif /* VALIDATOR_H */
 
