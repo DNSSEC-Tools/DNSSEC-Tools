@@ -29,11 +29,18 @@
 #define OUTER_HEADER_LEN (sizeof(HEADER) + wire_name_length(name_n) + sizeof(u_int16_t) + sizeof(u_int16_t))
 
 /* Calculate rrset length */
+// xxx-audit: unused parameter name_n
+//     if it's not needed, why not get rid of it?
 static int find_rrset_len(const u_char *name_n, struct rrset_rec *rrset)
 { 
 	struct rr_rec *rr;
 	int resp_len = 0;
-	int rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
+	int rrset_name_n_len;
+
+	if (rrset == NULL)
+		return 0;
+
+	rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
 	for (rr=rrset->rrs.val_rrset_data; rr; rr=rr->rr_next) {
 		resp_len += rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) + sizeof(u_int32_t) 
 						+ sizeof(u_int16_t) + rr->rr_rdata_length_h; 
@@ -74,19 +81,24 @@ static int compose_merged_answer( const u_char *name_n,
 	int an_auth = 1;
 	int ns_auth = 1;
 	unsigned char *rp = NULL;
+	int resp_len = 0; 
+	HEADER *hp;
+	int len;
 
-	if (resp == NULL)
+	if ((resp == NULL) || (name_n == NULL))
 		return VAL_BAD_ARGUMENT;
 	resp->vr_val_status = VAL_SUCCESS;
 	resp->vr_next = NULL;
 
 	/* Calculate the length of the response buffer */
-	int resp_len = 0; 
 	for (res = results; res; res=res->val_rc_next) {
 		if (res->val_rc_trust && res->val_rc_trust->_as.ac_data) {
 			resp_len += find_rrset_len(name_n, res->val_rc_trust->_as.ac_data);	
 		}
 	}
+	if (resp_len == 0)
+	    return VAL_INTERNAL_ERROR;
+
 	resp->vr_response = (unsigned char *)MALLOC ((resp_len + OUTER_HEADER_LEN) * sizeof (unsigned char));
 	if (resp->vr_response == NULL)
 		return VAL_OUT_OF_MEMORY;
@@ -96,17 +108,27 @@ static int compose_merged_answer( const u_char *name_n,
 	anbuf = (unsigned char *) MALLOC (resp_len * sizeof(unsigned char));
 	nsbuf = (unsigned char *) MALLOC (resp_len * sizeof(unsigned char));
 	arbuf = (unsigned char *) MALLOC (resp_len * sizeof(unsigned char));
-	if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL))
+	if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
+		if(anbuf != NULL)
+			FREE(anbuf);
+		if(nsbuf != NULL)
+			FREE(nsbuf);
+		if(arbuf != NULL)
+			FREE(arbuf);
+		FREE(resp->vr_response);
+		resp->vr_response = NULL;
+		resp->vr_length = 0;
 		return VAL_OUT_OF_MEMORY;
+	}
 
 	/* Header */
 	rp = resp->vr_response;
-	HEADER *hp = (HEADER *)rp; 
+	hp = (HEADER *)rp; 
 	bzero(hp, sizeof(HEADER));
 	rp += sizeof(HEADER);
 	
 	/*  Question section */
-	int len = wire_name_length(name_n);
+	len = wire_name_length(name_n);
 	memcpy (rp, name_n, len);
 	rp += len;
 	NS_PUT16(type_h, rp);
@@ -117,59 +139,72 @@ static int compose_merged_answer( const u_char *name_n,
 	
 	/* Iterate over the results returned by the validator */
 	for (res = results; res; res=res->val_rc_next) {
-		if (res->val_rc_trust && res->val_rc_trust->_as.ac_data) {
-			struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
-			unsigned char *cp;
-			int *bufindex = NULL;
+		struct rrset_rec *rrset;
+		unsigned char *cp;
+		int *bufindex = NULL;
+		struct rr_rec *rr;
+		int rrset_name_n_len;
 
-			if (rrset->rrs.val_rrset_section == VAL_FROM_ANSWER) {
-				cp = anbuf + anbufindex;
-				bufindex = &anbufindex;
-				ancount++;
-				if (!val_isauthentic(res->val_rc_status)) {
-					an_auth = 0;
-				}
+		if (!res->val_rc_trust || !res->val_rc_trust->_as.ac_data)
+			continue;
+
+		rrset = res->val_rc_trust->_as.ac_data;
+		if (rrset->rrs.val_rrset_section == VAL_FROM_ANSWER) {
+			cp = anbuf + anbufindex;
+			bufindex = &anbufindex;
+			ancount++;
+			if (!val_isauthentic(res->val_rc_status)) {
+				an_auth = 0;
 			}
-			else if (rrset->rrs.val_rrset_section == VAL_FROM_AUTHORITY) {
-				cp = nsbuf + nsbufindex;
-				bufindex = &nsbufindex;
-				nscount++;
-				if (!val_isauthentic(res->val_rc_status)) {
-					ns_auth = 0;
-				}
-				proof = 1;
+		}
+		else if (rrset->rrs.val_rrset_section == VAL_FROM_AUTHORITY) {
+			cp = nsbuf + nsbufindex;
+			bufindex = &nsbufindex;
+			nscount++;
+			if (!val_isauthentic(res->val_rc_status)) {
+				ns_auth = 0;
 			}
-			else if (rrset->rrs.val_rrset_section == VAL_FROM_ADDITIONAL) {
-				cp = arbuf + arbufindex;
-				bufindex = &arbufindex;
-				arcount++;
+			proof = 1;
+		}
+		else if (rrset->rrs.val_rrset_section == VAL_FROM_ADDITIONAL) {
+			cp = arbuf + arbufindex;
+			bufindex = &arbufindex;
+			arcount++;
+		}
+		else {
+			continue;
+		}
+
+		if (res->val_rc_status != VAL_SUCCESS) {
+			resp->vr_val_status = res->val_rc_status;
+		}
+
+		/* Answer/Authority/Additional section */
+		rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
+		for (rr=rrset->rrs.val_rrset_data; rr; rr=rr->rr_next) {
+
+			if ((*bufindex + rrset_name_n_len + 10 + rr->rr_rdata_length_h) > resp_len) {
+				/* log error message? */
+				goto err;
 			}
-			else {
-				continue;
-			}
+			
+			memcpy (cp, rrset->rrs.val_rrset_name_n, rrset_name_n_len);
+			cp += rrset_name_n_len;
+			NS_PUT16(rrset->rrs.val_rrset_type_h, cp);
+			NS_PUT16(rrset->rrs.val_rrset_class_h, cp);
+			NS_PUT32(rrset->rrs.val_rrset_ttl_h, cp);
+			NS_PUT16(rr->rr_rdata_length_h, cp);
+			memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
+			cp += rr->rr_rdata_length_h;
 
-			if (res->val_rc_status != VAL_SUCCESS) {
-				resp->vr_val_status = res->val_rc_status;
-			}
+		} // end for each rr
 
-			/* Answer/Authority/Additional section */
-			struct rr_rec *rr;
-			int rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
-			for (rr=rrset->rrs.val_rrset_data; rr; rr=rr->rr_next) {
-				memcpy (cp, rrset->rrs.val_rrset_name_n, rrset_name_n_len);
-				cp += rrset_name_n_len;
-				NS_PUT16(rrset->rrs.val_rrset_type_h, cp);
-				NS_PUT16(rrset->rrs.val_rrset_class_h, cp);
-				NS_PUT32(rrset->rrs.val_rrset_ttl_h, cp);
-				NS_PUT16(rr->rr_rdata_length_h, cp);
-				memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
-				cp += rr->rr_rdata_length_h;
+		*bufindex += find_rrset_len(name_n, rrset); 
+		if (*bufindex > resp_len) {
+			/* log error message? */
+			goto err;
+		}
 
-			} // end for each rr
-
-			*bufindex += find_rrset_len(name_n, rrset); 
-
-		} // end if res->as
 	} // end for each res
 
 	if (anbuf) {
@@ -197,7 +232,20 @@ static int compose_merged_answer( const u_char *name_n,
 	else
 		hp->ad = 0;
 
+	FREE(anbuf);
+	FREE(nsbuf);
+	FREE(arbuf);
+
 	return VAL_NO_ERROR;
+
+  err:
+	FREE(anbuf);
+	FREE(nsbuf);
+	FREE(arbuf);
+	FREE(resp->vr_response);
+	resp->vr_response = NULL;
+	resp->vr_length = 0;
+	return VAL_INTERNAL_ERROR;
 
 } /* compose_merged_answer() */
 
@@ -237,6 +285,9 @@ static int compose_answer( const u_char *name_n,
 	struct val_response *new_resp, *last_resp;
 	int proof = 0;
 
+	if (resp == NULL)
+		return VAL_BAD_ARGUMENT;
+
 	if (flags & VAL_QUERY_MERGE_RRSETS) {
 		int retval = 0;
 		/* Allocate a single element of the val_response array to hold the result */
@@ -259,6 +310,8 @@ static int compose_answer( const u_char *name_n,
 		unsigned char *cp;
 		struct rr_rec *rr;
 		struct rrset_rec *rrset = res->val_rc_trust->_as.ac_data;
+		HEADER *hp;
+		int len, anscount, rrset_name_n_len;
 		
 		new_resp = (struct val_response *) MALLOC (sizeof (struct val_response));
 		if (new_resp == NULL)
@@ -296,32 +349,43 @@ static int compose_answer( const u_char *name_n,
 		/* fill in response contents */
 		cp = new_resp->vr_response;
 
-		HEADER *hp = (HEADER *)cp; 
+		hp = (HEADER *)cp; 
 		bzero(hp, sizeof(HEADER));
 		cp += sizeof(HEADER);
 
 		/*  Question section */
-		int len = wire_name_length(name_n);
+		len = wire_name_length(name_n);
+		if ((len + sizeof(HEADER)) > new_resp->vr_length)
+		    return VAL_INTERNAL_ERROR;
 		memcpy (cp, name_n, len);
 		cp += len;
+		len += sizeof(HEADER);
 			
+		if ((len + 4) > new_resp->vr_length)
+		    return VAL_INTERNAL_ERROR;
 		NS_PUT16(type_h, cp);
 		NS_PUT16(class_h, cp);
 		hp->qdcount = htons(1);
+		len += 4;
 
 		/* Answer section */
-		int anscount  = 0;
-		int rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
+		anscount  = 0;
+		rrset_name_n_len = wire_name_length(rrset->rrs.val_rrset_name_n);
 		for (rr=rrset->rrs.val_rrset_data; rr; rr=rr->rr_next) {
 
+			if ((len + rrset_name_n_len + 10 + rr->rr_rdata_length_h) > new_resp->vr_length)
+				return VAL_INTERNAL_ERROR;
 			memcpy (cp, rrset->rrs.val_rrset_name_n, rrset_name_n_len);
 			cp += rrset_name_n_len;
+			len += rrset_name_n_len;
 			NS_PUT16(rrset->rrs.val_rrset_type_h, cp);
 			NS_PUT16(rrset->rrs.val_rrset_class_h, cp);
 			NS_PUT32(rrset->rrs.val_rrset_ttl_h, cp);
 			NS_PUT16(rr->rr_rdata_length_h, cp);
+			len += 10;
 			memcpy (cp, rr->rr_rdata, rr->rr_rdata_length_h);
 			cp += rr->rr_rdata_length_h;
+			len += rr->rr_rdata_length_h;
 			anscount++;
 		}
 
@@ -383,7 +447,7 @@ static int compose_answer( const u_char *name_n,
  */
 int val_query ( const val_context_t *ctx,
 		const char *domain_name,
-		const u_int16_t class,
+		const u_int16_t class_h,
 		const u_int16_t type,
 		const u_int8_t flags,
 		struct val_response **resp)
@@ -393,6 +457,10 @@ int val_query ( const val_context_t *ctx,
 	val_context_t *context;
 	u_char name_n[NS_MAXCDNAME];
 
+	if ((resp == NULL) || (domain_name == NULL))
+		return VAL_BAD_ARGUMENT;
+	*resp = NULL;
+
 	if(ctx == NULL) {
 		if(VAL_NO_ERROR !=(retval = val_create_context(NULL, &context)))
 			return retval;
@@ -400,12 +468,8 @@ int val_query ( const val_context_t *ctx,
 	else	
 	    context = (val_context_t *) ctx;
 
-	if (resp == NULL)
-		return VAL_BAD_ARGUMENT;
-	*resp = NULL;
-
 	val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
-		domain_name, p_class(class), p_type(type));
+		domain_name, p_class(class_h), p_type(type));
 
 	if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME-1) == -1) {
 		if((ctx == NULL)&& context)
@@ -414,13 +478,13 @@ int val_query ( const val_context_t *ctx,
 	}
 
 	/* Query the validator */
-	if(VAL_NO_ERROR == (retval = val_resolve_and_check(context, name_n, class, type, flags, 
+	if(VAL_NO_ERROR == (retval = val_resolve_and_check(context, name_n, class_h, type, flags, 
 											&results))) {
 		/* Construct the answer response in resp */
-		retval = compose_answer(name_n, type, class, results, resp, flags);
+		retval = compose_answer(name_n, type, class_h, results, resp, flags);
 	}
 
-	val_log_authentication_chain(context, LOG_DEBUG, name_n, class, type, context->q_list, results);
+	val_log_authentication_chain(context, LOG_DEBUG, name_n, class_h, type, context->q_list, results);
 
 	val_free_result_chain(results);
 
@@ -451,13 +515,16 @@ int val_free_response(struct val_response *resp)
 }
 
 /* wrapper around val_query() that is closer to res_query() */
-int val_res_query(const val_context_t *ctx, const char *dname, int class, int type, 
+int val_res_query(const val_context_t *ctx, const char *dname, int class_h, int type, 
 					u_char *answer, int anslen, val_status_t *val_status) 
 {
 	struct val_response *resp;
 	int retval = -1;
 
-	if(VAL_NO_ERROR != (retval = val_query(ctx, dname, class, type, VAL_QUERY_MERGE_RRSETS, &resp))) {
+	if (val_status == NULL)
+		return -1;
+
+	if(VAL_NO_ERROR != (retval = val_query(ctx, dname, class_h, type, VAL_QUERY_MERGE_RRSETS, &resp))) {
 		return -1;
 	}
 
