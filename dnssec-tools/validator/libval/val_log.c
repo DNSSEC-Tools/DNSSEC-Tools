@@ -295,17 +295,6 @@ char *p_as_error(val_astatus_t err)
 {
     switch (err) {
                                                                                                                              
-    case VAL_NO_ERROR: return "VAL_NO_ERROR"; break;
-                                                                                                                             
-    case VAL_NOT_IMPLEMENTED: return "VAL_NOT_IMPLEMENTED"; break;
-    case VAL_BAD_ARGUMENT: return "VAL_BAD_ARGUMENT"; break;
-    case VAL_INTERNAL_ERROR: return "VAL_INTERNAL_ERROR"; break;
-    case VAL_NO_PERMISSION: return "VAL_NO_PERMISSION"; break;
-    case VAL_RESOURCE_UNAVAILABLE: return "VAL_RESOURCE_UNAVAILABLE"; break;
-    case VAL_CONF_PARSE_ERROR: return "VAL_CONF_PARSE_ERROR"; break;
-    case VAL_CONF_NOT_FOUND: return "VAL_CONF_NOT_FOUND"; break;
-    case VAL_NO_POLICY: return "VAL_NO_POLICY"; break;
-
     case VAL_A_DATA_MISSING: return "VAL_A_DATA_MISSING"; break;
     case VAL_A_RRSIG_MISSING: return "VAL_A_RRSIG_MISSING"; break;
     case VAL_A_DNSKEY_MISSING: return "VAL_A_DNSKEY_MISSING"; break;
@@ -350,6 +339,8 @@ char *p_as_error(val_astatus_t err)
 
 
 	case VAL_A_DONT_VALIDATE: return "VAL_A_DONT_VALIDATE"; break;
+
+	case VAL_A_DONT_KNOW: return "VAL_A_DONT_KNOW"; break;
 
     /*
     case VAL_A_UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
