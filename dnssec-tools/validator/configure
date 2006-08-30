@@ -464,7 +464,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE PERLARGS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE PERLARGS DEVFLAGS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -19564,6 +19564,24 @@ fi
 
 
 
+echo "$as_me:$LINENO: checking for developer gcc flags" >&5
+echo $ECHO_N "checking for developer gcc flags... $ECHO_C" >&6
+DEVFLAGS=""
+if test -d $srcdir/.svn; then
+  # disable --enable-shared by default in cvs/developer cases.
+  # don't do anything if option set via cmdline
+  if test "${enable_shared+set}" != set; then
+    enable_shared=no
+  fi
+
+  if test "x$GCC" = "xyes"; then
+    DEVFLAGS="-Wall -Winline -Wstrict-prototypes -Wwrite-strings -Wcast-qual -Wno-char-subscripts"
+  fi
+fi
+echo "$as_me:$LINENO: result: $DEVFLAGS" >&5
+echo "${ECHO_T}$DEVFLAGS" >&6
+
+
 
 
 
@@ -23141,6 +23159,7 @@ s,@INSTALL_SCRIPT@,$INSTALL_SCRIPT,;t t
 s,@INSTALL_DATA@,$INSTALL_DATA,;t t
 s,@SET_MAKE@,$SET_MAKE,;t t
 s,@PERLARGS@,$PERLARGS,;t t
+s,@DEVFLAGS@,$DEVFLAGS,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
 s,@LTLIBOBJS@,$LTLIBOBJS,;t t
 CEOF
