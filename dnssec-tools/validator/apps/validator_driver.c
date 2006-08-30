@@ -423,7 +423,7 @@ int main(int argc, char *argv[])
 		// Parse the command line for a query and resolve+validate it
 		int c;
 		char *domain_name = NULL;
-		char *args        = "hi:pc:r:st:T:l:mv:";
+		const char *args        = "hi:pc:r:st:T:l:mv:";
 		u_int16_t class_h = ns_c_in;
 		u_int16_t type_h  = ns_t_a;
 		int success       = 0;
