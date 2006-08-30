@@ -74,6 +74,23 @@ fi
 AC_SUBST(LIBS)
 
 dnl ----------------------------------------------------------------------
+AC_MSG_CHECKING([for developer gcc flags])
+DEVFLAGS=""
+if test -d $srcdir/.svn; then
+  # disable --enable-shared by default in cvs/developer cases.
+  # don't do anything if option set via cmdline
+  if test "${enable_shared+set}" != set; then
+    enable_shared=no
+  fi
+
+  if test "x$GCC" = "xyes"; then
+    DEVFLAGS="-Wall -Winline -Wstrict-prototypes -Wwrite-strings -Wcast-qual -Wno-char-subscripts"
+  fi
+fi
+AC_MSG_RESULT($DEVFLAGS)
+AC_SUBST(DEVFLAGS)
+
+dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(sys/filio.h getopt.h netinet/in.h)
 AC_CHECK_DECLS([getopt_long_only, getopt_long],,,[
 #include <unistd.h>
