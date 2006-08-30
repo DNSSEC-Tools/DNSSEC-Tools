@@ -89,7 +89,7 @@ ns_skiprr(const u_char *ptr, const u_char *eom, ns_sect section, int count) {
 			if (ptr + NS_INT32SZ + NS_INT16SZ > eom)
 				RETERR(EMSGSIZE);
 			ptr += NS_INT32SZ/*TTL*/;
-			NS_GET16(rdlength, ptr);
+			RES_GET16(rdlength, ptr);
 			ptr += rdlength/*RData*/;
 		}
 	}
@@ -108,14 +108,14 @@ ns_initparse(const u_char *msg, int msglen, ns_msg *handle) {
 	handle->_eom = eom;
 	if (msg + NS_INT16SZ > eom)
 		RETERR(EMSGSIZE);
-	NS_GET16(handle->_id, msg);
+	RES_GET16(handle->_id, msg);
 	if (msg + NS_INT16SZ > eom)
 		RETERR(EMSGSIZE);
-	NS_GET16(handle->_flags, msg);
+	RES_GET16(handle->_flags, msg);
 	for (i = 0; i < ns_s_max; i++) {
 		if (msg + NS_INT16SZ > eom)
 			RETERR(EMSGSIZE);
-		NS_GET16(handle->_counts[i], msg);
+		RES_GET16(handle->_counts[i], msg);
 	}
 	for (i = 0; i < ns_s_max; i++)
 		if (handle->_counts[i] == 0)
@@ -171,8 +171,8 @@ ns_parserr(ns_msg *handle, ns_sect section, int rrnum, ns_rr *rr) {
 	handle->_msg_ptr += b;
 	if (handle->_msg_ptr + NS_INT16SZ + NS_INT16SZ > handle->_eom)
 		RETERR(EMSGSIZE);
-	NS_GET16(rr->type, handle->_msg_ptr);
-	NS_GET16(rr->rr_class, handle->_msg_ptr);
+	RES_GET16(rr->type, handle->_msg_ptr);
+	RES_GET16(rr->rr_class, handle->_msg_ptr);
 	if (section == ns_s_qd) {
 		rr->ttl = 0;
 		rr->rdlength = 0;
@@ -180,8 +180,8 @@ ns_parserr(ns_msg *handle, ns_sect section, int rrnum, ns_rr *rr) {
 	} else {
 		if (handle->_msg_ptr + NS_INT32SZ + NS_INT16SZ > handle->_eom)
 			RETERR(EMSGSIZE);
-		NS_GET32(rr->ttl, handle->_msg_ptr);
-		NS_GET16(rr->rdlength, handle->_msg_ptr);
+		RES_GET32(rr->ttl, handle->_msg_ptr);
+		RES_GET16(rr->rdlength, handle->_msg_ptr);
 		if (handle->_msg_ptr + rr->rdlength > handle->_eom)
 			RETERR(EMSGSIZE);
 		rr->rdata = handle->_msg_ptr;

@@ -745,8 +745,7 @@ static const unsigned int poweroften[10] = {1, 10, 100, 1000, 10000, 100000,
 
 /* takes an XeY precision/size value, returns a string representation. */
 static const char *
-precsize_ntoa(prec)
-	u_int8_t prec;
+precsize_ntoa(u_int8_t prec)
 {
 	static char retbuf[sizeof "90000000.00"];	/* XXX nonreentrant */
 	unsigned long val;
@@ -1048,13 +1047,13 @@ loc_ntoa(binary, ascii)
 	hpval = *cp++;
 	vpval = *cp++;
 
-	NS_GET32(templ, cp);
+	RES_GET32(templ, cp);
 	latval = (templ - ((unsigned)1<<31));
 
-	NS_GET32(templ, cp);
+	RES_GET32(templ, cp);
 	longval = (templ - ((unsigned)1<<31));
 
-	NS_GET32(templ, cp);
+	RES_GET32(templ, cp);
 	if (templ < referencealt) { /* below WGS 84 spheroid */
 		altval = referencealt - templ;
 		altsign = "-";
