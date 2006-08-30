@@ -147,11 +147,11 @@ static char *get_ns_string(struct name_server **server)
 	return inet_ntoa(s->sin_addr);
 }
 
-void val_log_assertion( val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
+void val_log_assertion( const val_context_t *ctx, int level, const u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
 						struct rr_rec *data, struct name_server *serv, val_astatus_t status) 
 { 
 	char name[NS_MAXDNAME]; 
-	char *name_pr, *serv_pr;
+	const char *name_pr, *serv_pr;
 	int tag = 0;
 
 	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) 
@@ -187,7 +187,7 @@ void val_log_assertion( val_context_t *ctx, int level, u_char *name_n, u_int16_t
 
 #define VAL_LOG_RESULT(name_n, class_h, type_h, serv, status) do {\
 	char name[NS_MAXDNAME]; \
-	char *name_pr, *serv_pr;\
+	const char *name_pr, *serv_pr;\
 	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) \
 		name_pr = name;\
 	else\
@@ -200,7 +200,7 @@ void val_log_assertion( val_context_t *ctx, int level, u_char *name_n, u_int16_t
 		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_val_error(status), status);\
 } while (0)		
 
-void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
+void val_log_authentication_chain(const val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h, 
 				struct val_query_chain *queries, struct val_result_chain *results)
 {
 	struct val_result_chain *next_result;
@@ -233,9 +233,9 @@ void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n,
 					p_as_error(next_as->val_ac_status), next_as->val_ac_status);\
 			}
 			else {
-				u_char *t_name_n;
+				const u_char *t_name_n;
 				if(next_as->val_ac_rrset->val_rrset_name_n == NULL)
-					t_name_n = (u_char*) "NULL_DATA";
+                                    t_name_n = (const u_char*)"NULL_DATA";
 				else
 					t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
 
@@ -247,7 +247,7 @@ void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n,
 	}
 }
 
-char *p_query_error(int err)
+const char *p_query_error(int err)
 {
 	if (err < Q_ERROR_BASE) {
 		switch(err) {
@@ -291,7 +291,7 @@ char *p_query_error(int err)
 	return "UNKNOWN";
 }
 
-char *p_as_error(val_astatus_t err)
+const char *p_as_error(val_astatus_t err)
 {
     switch (err) {
                                                                                                                              
@@ -360,7 +360,7 @@ char *p_as_error(val_astatus_t err)
     }
 }
 
-char *p_val_error(val_status_t err)
+const char *p_val_error(val_status_t err)
 {
     switch (err) {
 

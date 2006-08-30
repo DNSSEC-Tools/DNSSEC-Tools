@@ -445,7 +445,7 @@ static int compose_answer( const u_char *name_n,
  * VAL_OUT_OF_MEMORY	Could not allocate enough memory for operation
  *
  */
-int val_query ( const val_context_t *ctx,
+int val_query ( val_context_t *ctx,
 		const char *domain_name,
 		const u_int16_t class_h,
 		const u_int16_t type,
@@ -515,7 +515,7 @@ int val_free_response(struct val_response *resp)
 }
 
 /* wrapper around val_query() that is closer to res_query() */
-int val_res_query(const val_context_t *ctx, const char *dname, int class_h, int type, 
+int val_res_query(val_context_t *ctx, const char *dname, int class_h, int type, 
 					u_char *answer, int anslen, val_status_t *val_status) 
 {
 	struct val_response *resp;

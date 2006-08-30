@@ -29,19 +29,19 @@ static int rsamd5_parse_public_key (const unsigned char *buf,
 				    RSA *rsa)
 {
 	int index = 0;
-	u_char *cp;
+	const u_char *cp;
 	u_int16_t exp_len = 0x0000;
 	BIGNUM *bn_exp;
 	BIGNUM *bn_mod;
 	
 	if (!rsa) return VAL_INTERNAL_ERROR;
 	
-	cp = (u_char *) buf;
+	cp = buf;
 	
 	if ((u_int8_t)(buf[index]) == (u_int8_t) 0) {
 		index += 1;
-		cp = (u_char *) (buf + index);
-		NS_GET16(exp_len, cp);
+		cp = (buf + index);
+		VAL_GET16(exp_len, cp);
 		index += 2;
 	}
 	else {

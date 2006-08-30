@@ -571,7 +571,7 @@ static int get_addrinfo_from_result (
  *
  * See also: val_getaddrinfo()
  */
-static int get_addrinfo_from_dns (const val_context_t *ctx,
+static int get_addrinfo_from_dns (val_context_t *ctx,
 				  const char *nodename,
 				  const char *servname,
 				  const struct addrinfo *hints,
@@ -595,7 +595,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
 		
 		/* Query the validator */
 		if ((retval = ns_name_pton(nodename, name_n, NS_MAXCDNAME - 1)) != -1) {
-			if ((retval = val_resolve_and_check((val_context_t *)ctx, name_n, ns_c_in, ns_t_a, 0,
+			if ((retval = val_resolve_and_check(ctx, name_n, ns_c_in, ns_t_a, 0,
 						      &results)) != VAL_NO_ERROR) {
 				val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
 			}
@@ -694,7 +694,7 @@ static int get_addrinfo_from_dns (const val_context_t *ctx,
  *
  * See also: getaddrinfo(3), free_val_addrinfo()
  */
-int val_getaddrinfo(const val_context_t *ctx,
+int val_getaddrinfo(val_context_t *ctx,
 		    const char *nodename, const char *servname,
 		    const struct addrinfo *hints,
 		    struct val_addrinfo **res)

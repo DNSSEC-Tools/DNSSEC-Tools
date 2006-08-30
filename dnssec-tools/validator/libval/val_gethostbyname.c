@@ -29,7 +29,9 @@
 #define MAX_ALIAS_COUNT 2048
 #define AUX_BUFLEN 16384
 
+#ifndef h_errno /* can be a macro */
 extern int h_errno;
+#endif
 static struct hostent g_hentry;
 static char g_auxbuf[AUX_BUFLEN];
 
@@ -471,7 +473,7 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
  *
  * See also: val_gethostbyname2(), val_gethostbyname_r(), val_istrusted()
  */
-int val_gethostbyname2_r( const val_context_t *ctx,
+int val_gethostbyname2_r( val_context_t *ctx,
 			  const char *name,
 			  int af,
 			  struct hostent *ret,
@@ -659,7 +661,7 @@ int val_gethostbyname2_r( const val_context_t *ctx,
  *
  * See also: val_gethostbyname2_r, val_istrusted
  */
-struct hostent *val_gethostbyname2( const val_context_t *ctx,
+struct hostent *val_gethostbyname2( val_context_t *ctx,
 				    const char *name,
 				    int af,
 				    val_status_t *val_status )
@@ -695,7 +697,7 @@ struct hostent *val_gethostbyname2( const val_context_t *ctx,
  *
  * See also: val_gethostbyname_r(), val_gethostbyname2, val_istrusted()
  */
-struct hostent *val_gethostbyname( const val_context_t *ctx,
+struct hostent *val_gethostbyname( val_context_t *ctx,
 				   const char *name,
 				   val_status_t *val_status )
 {
@@ -735,7 +737,7 @@ struct hostent *val_gethostbyname( const val_context_t *ctx,
  *
  * See also: val_gethostbyname2_r(), val_gethostbyname(), val_istrusted()
  */
-int val_gethostbyname_r( const val_context_t *ctx,
+int val_gethostbyname_r( val_context_t *ctx,
 			 const char *name,
 			 struct hostent *ret,
 			 char *buf,

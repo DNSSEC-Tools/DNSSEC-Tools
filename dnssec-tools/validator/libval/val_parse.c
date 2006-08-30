@@ -102,14 +102,13 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 			    val_dnskey_rdata_t *rdata)
 {
     int index = 0;
-    u_char *cp;
 
     if (!rdata || !buf) return -1;
 
     if (index+4 > buflen)
         return -1;
-    cp = (u_char *) buf;
-    NS_GET16(rdata->flags, cp);
+
+    VAL_GET16(rdata->flags, buf);
     index += 2;
 
     rdata->protocol = (u_int8_t)(buf[index]);
@@ -272,15 +271,15 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
 			   val_rrsig_rdata_t *rdata)
 {
     int index = 0;
-    u_char *cp;
+    const u_char *cp;
 
     if (!rdata || !buf) return -1;
 
     if (index+18 > buflen)
         return -1;
 
-    cp = (u_char *) buf;
-    NS_GET16(rdata->type_covered, cp);
+    cp = buf;
+    VAL_GET16(rdata->type_covered, cp);
     index += 2;
 
     rdata->algorithm = (u_int8_t)(buf[index]);
@@ -289,17 +288,17 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
     rdata->labels = (u_int8_t)(buf[index]);
     index += 1;
 
-    cp = (u_char *)(buf + index);
-    NS_GET32(rdata->orig_ttl, cp);
+    cp = (buf + index);
+    VAL_GET32(rdata->orig_ttl, cp);
     index += 4;
 
-    NS_GET32(rdata->sig_expr, cp);
+    VAL_GET32(rdata->sig_expr, cp);
     index += 4;
 
-    NS_GET32(rdata->sig_incp, cp);
+    VAL_GET32(rdata->sig_incp, cp);
     index += 4;
 
-    NS_GET16(rdata->key_tag, cp);
+    VAL_GET16(rdata->key_tag, cp);
     index += 2;
     
     index += val_parse_dname(buf, buflen, index, (char*)rdata->signer_name);
@@ -328,15 +327,14 @@ int val_parse_ds_rdata (const unsigned char *buf, int buflen,
 			    val_ds_rdata_t *rdata)
 {
     int index = 0;
-    u_char *cp;
+    const u_char *cp = buf;
 
     if (!rdata || !buf) return -1;
 
     if (index+2+1+1 > buflen)
         return -1;
 
-    cp = (u_char *) buf;
-    NS_GET16(rdata->d_keytag, cp);
+    VAL_GET16(rdata->d_keytag, cp);
     index += 2;
 
     rdata->d_algo = (u_int8_t)(buf[index]);
