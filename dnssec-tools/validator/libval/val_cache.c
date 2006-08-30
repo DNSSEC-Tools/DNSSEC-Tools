@@ -263,7 +263,7 @@ int stow_root_info(struct rrset_rec *root_info)
 	struct name_server *pending_glue = NULL;
 	int retval;
 	u_char root_zone_n[NS_MAXCDNAME];
-	char *root_zone = ".";
+	const char *root_zone = ".";
 
 	LOCK_INIT();
 
@@ -287,7 +287,7 @@ int stow_root_info(struct rrset_rec *root_info)
 	return retval;
 }
 
-int free_validator_cache()
+int free_validator_cache(void)
 {
 	LOCK_INIT();
 	LOCK_EX();

@@ -13,7 +13,7 @@ int stow_root_info(struct rrset_rec *root_info);
 int stow_answer(struct rrset_rec *new_info);
 int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h, 
 		u_int16_t type_h, struct rrset_rec **cloned_answer);
-int free_validator_cache();
+int free_validator_cache(void);
 int get_root_ns(struct name_server **ns);
 int get_matching_nslist(struct val_query_chain  *matched_q, 
 					struct val_query_chain **queries,
