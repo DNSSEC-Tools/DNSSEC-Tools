@@ -101,7 +101,7 @@ struct policy_fragment {
 };
 
 struct policy_conf_element {
-	char *keyword;
+	const char *keyword;
 	int (*parse)(FILE*, policy_entry_t*, int*);
 	int (*free)(policy_entry_t*);
 };

@@ -23,6 +23,25 @@ extern          "C" {
 #define NS_MAXCDNAME    255 /* maximum compressed domain name */
 #endif
 
+#define VAL_GET16(s, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (s) = ((u_int16_t)t_cp[0] << 8) \
+            | ((u_int16_t)t_cp[1]) \
+            ; \
+        (cp) += NS_INT16SZ; \
+} while (0)
+
+#define VAL_GET32(l, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (l) = ((u_int32_t)t_cp[0] << 24) \
+            | ((u_int32_t)t_cp[1] << 16) \
+            | ((u_int32_t)t_cp[2] << 8) \
+            | ((u_int32_t)t_cp[3]) \
+            ; \
+        (cp) += NS_INT32SZ; \
+} while (0)
+
+
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
 #define FREE(p) my_free(p,__FILE__,__LINE__)
@@ -362,30 +381,32 @@ char *dnsval_conf_get(void);
 int dnsval_conf_set(const char *name);
 
 /* from val_log.h */
-void val_log_authentication_chain(val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
+void val_log_authentication_chain(const val_context_t *ctx, int level, u_char *name_n, u_int16_t class_h, u_int16_t type_h,
                 struct val_query_chain *queries, struct val_result_chain *results);
-char *p_query_error(int errno);
-char *p_as_error(val_astatus_t valerrno);
-char *p_val_error(val_status_t err);
+const char *p_query_error(int err);
+const char *p_as_error(val_astatus_t valerrno);
+const char *p_val_error(val_status_t err);
 
 /* from val_x_query.c */
-int val_query(const val_context_t *ctx,
+int val_query(val_context_t *ctx,
 			const char *domain_name,
 			const u_int16_t q_class,
 			const u_int16_t type,
 			const u_int8_t flags,
 			struct val_response **resp);
 int val_free_response(struct val_response *resp);
-int val_res_query(const val_context_t *ctx, const char *dname, int q_class, int type,
+int val_res_query(val_context_t *ctx, const char *dname, int q_class, int type,
                     u_char *answer, int anslen, val_status_t *val_status);
 
 /* from val_gethostbyname.c */
+#ifndef h_errno /* on linux, netdb.h defines this as a macro */
 extern int h_errno;
-struct hostent *val_gethostbyname( const val_context_t *ctx,
+#endif
+struct hostent *val_gethostbyname( val_context_t *ctx,
 				   const char *name,
 				   val_status_t *val_status );
 
-int val_gethostbyname_r( const val_context_t *ctx,
+int val_gethostbyname_r( val_context_t *ctx,
 			 const char *name,
 			 struct hostent *ret,
 			 char *buf,
@@ -394,12 +415,12 @@ int val_gethostbyname_r( const val_context_t *ctx,
 			 int *h_errnop,
 			 val_status_t *val_status );
 
-struct hostent *val_gethostbyname2( const val_context_t *ctx,
+struct hostent *val_gethostbyname2( val_context_t *ctx,
 				    const char *name,
 				    int af,
 				    val_status_t *val_status );
 
-int val_gethostbyname2_r( const val_context_t *ctx,
+int val_gethostbyname2_r( val_context_t *ctx,
 			  const char *name,
 			  int af,
 			  struct hostent *ret,
@@ -422,7 +443,7 @@ struct val_addrinfo {
 	val_status_t ai_val_status;
 };
 
-int val_getaddrinfo ( const val_context_t *ctx,
+int val_getaddrinfo ( val_context_t *ctx,
 		      const char *nodename,
                       const char *servname,
 		      const struct addrinfo *hints,
