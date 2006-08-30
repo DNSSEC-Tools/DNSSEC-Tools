@@ -812,7 +812,7 @@ void res_io_cancel (int *transaction_id)
 	*transaction_id = -1;
 }
 
-void res_io_cancel_all ()
+void res_io_cancel_all (void)
 {
 	int i,j;
 	for (i=0;i<MAX_TRANSACTIONS;i++)
@@ -838,7 +838,7 @@ void res_print_ea (struct expected_arrival *ea)
 	}
 }
 
-void res_io_view()
+void res_io_view(void)
 {
 	int						i;
 	int						j;
@@ -863,7 +863,7 @@ void res_io_view()
 	pthread_mutex_unlock( &mutex );	
 }
 
-void res_io_stall()
+void res_io_stall(void)
 {
 	/* Used to cause pretty printing in debug mode */
 	struct timeval			tv;

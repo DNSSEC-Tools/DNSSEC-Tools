@@ -27,7 +27,7 @@ u_int
 ns_get16(const u_char *src) {
 	u_int dst;
 
-	NS_GET16(dst, src);
+	RES_GET16(dst, src);
 	return (dst);
 }
 
@@ -35,7 +35,7 @@ u_long
 ns_get32(const u_char *src) {
 	u_long dst;
 
-	NS_GET32(dst, src);
+	RES_GET32(dst, src);
 	return (dst);
 }
 

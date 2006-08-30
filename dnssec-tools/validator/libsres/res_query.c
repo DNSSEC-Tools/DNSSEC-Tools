@@ -87,7 +87,7 @@ void dump_response (const u_int8_t *ans, int resplen)
     do
     {
         j = wire_name_length(&ans[k]) + 10; /* j = envelope length */
-        j += ntohs(*(u_short*)(&ans[k+j-2])); /* adds rdata length to j */
+        j += ntohs(*(const u_short*)(&ans[k+j-2])); /* adds rdata length to j */
         for (i = k; i < k+j; i++) printf ("%02x ", (u_char) ans[i]);
         printf ("\n");
         k += j;

@@ -107,7 +107,7 @@ void res_io_cancel (int *transaction_id);
 
 	Cancels all outstanding requests remaining for all transactions.
 */
-void res_io_cancel_all ();
+void res_io_cancel_all (void);
 
 			/* Debugging routines */
 /*
@@ -115,7 +115,7 @@ void res_io_cancel_all ();
 
 	Prints the status of the res_io_mamager
 */
-void res_io_view();
+void res_io_view(void);
 
 /*
 	res_io_stall
@@ -125,7 +125,7 @@ void res_io_view();
 	printed in res_io_view).  This is an obtuse function, but when used
 	in debugging, its value is obvious.
 */
-void res_io_stall();
+void res_io_stall(void);
 
 /*
 	res_timeout
