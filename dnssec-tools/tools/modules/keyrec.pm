@@ -56,8 +56,9 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_names
 		 keyrec_fullrec keyrec_recval keyrec_setval keyrec_add
 		 keyrec_del keyrec_newkeyrec keyrec_settime keyrec_keyfields
 		 keyrec_zonefields keyrec_init keyrec_discard keyrec_close
-		 keyrec_write keyrec_defkrf
-		 keyrec_dump_hash keyrec_dump_array);
+		 keyrec_write keyrec_defkrf keyrec_dump_hash keyrec_dump_array
+		 keyrec_signsets keyrec_signset_byname keyrec_signset_bytype
+		 signsets_add signsets_clear signsets_del signsets_list2array);
 
 #
 # Fields in a key keyrec.
@@ -69,11 +70,13 @@ my @KEYFIELDS = (
 			'keypath',		# Only set for obsolete ZSKs.
 			'ksklength',
 			'ksklife',
+			'zskcount',
 			'zsklength',
 			'zsklife',
 			'kgopts',
 			'keyrec_gensec',
 			'keyrec_gendate',
+			'signing_set',
 		        'zonename',
 		 );
 
@@ -157,9 +160,9 @@ sub keyrec_open
 	#
 	# Open an existing keyrec file
 	#
-	open(KEYREC,"+< $krf") || return 0;
+	open(KEYREC,"+< $krf") || return(0);
 
-	return 1;
+	return(1);
 }
 
 #--------------------------------------------------------------------------
@@ -625,7 +628,8 @@ sub keyrec_add
 			#
 			if($fields{'keyrec_type'} !~ /^zsk/)
 			{
-				if(($fn eq 'zsklength')		||
+				if(($fn eq 'zskcount')		||
+				   ($fn eq 'zsklength')		||
 				   ($fn eq 'zsklife'))
 				{
 					next;
@@ -863,6 +867,324 @@ sub keyrec_zonefields
 
 #--------------------------------------------------------------------------
 #
+# Routine:	keyrec_signsets()
+#
+# Purpose:	Return the names of the Signing Sets in the keyrec file.
+#
+sub keyrec_signsets
+{
+	my $domain = shift;				# Domain name.
+
+	my %signhash = ();				# Signing set hash.
+	my @signset = ();				# Signing set.
+
+	#
+	# Build a list of signing set names.
+	#
+	foreach my $kr (keys(%keyrecs))
+	{
+		my $ssns;			# Keyrec's signset name list.
+		my @ssns;			# Array of signset names.
+
+		#
+		# Get the keyrec's signing sets and skip any empty sets.
+		#
+		$ssns = $keyrecs{$kr}{'signing_set'};
+		next if($ssns eq "");
+
+		#
+		# Convert our sorting set list into an array of names.
+		#
+		@ssns = signsets_list2array($ssns);
+
+		#
+		# Add each set name to our hash.
+		#
+		foreach my $ssn (@ssns)
+		{
+			$signhash{$ssn} = 1;
+		}
+	}
+
+	#
+	# Build a list of unique signing set names.
+	#
+	foreach my $ssn (sort(keys(%signhash)))
+	{
+		push @signset, $ssn;
+	}
+
+	#
+	# Return the signing set names.
+	#
+	return(@signset);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_signset_byname()
+#
+# Purpose:	Return the Signing Set for the specified zone keyrec,
+#		based on the requested set's name.
+#
+sub keyrec_signset_byname
+{
+	my $ssname = shift;				# SSet name to find.
+
+	my $zkrec;					# Domain's keyrec ref.
+	my %krec;					# Domain's keyrec.
+	my @signset = ();				# Signing set array.
+	my %signset = ();				# Signing set hash.
+
+	#
+	# Build a list of signing sets based on the given signing set name.
+	#
+	foreach my $kr (keys(%keyrecs))
+	{
+		my $kn;					# Keyrec's signset name.
+		my @ssns;				# Signing set names.
+
+		#
+		# Get the keyrec's signing set name.
+		#
+		$kn = $keyrecs{$kr}{'signing_set'};
+
+		#
+		# Convert our sorting set list into an array of names.
+		#
+		@ssns = signsets_list2array($kn);
+
+		#
+		# Add this keyrec's name to the set if it has the
+		# specified signing set name.
+		#
+		foreach $kn (@ssns)
+		{
+			$signset{$kr} = 1 if($kn eq $ssname);
+		}
+	}
+
+	foreach my $kn (sort(keys(%signset)))
+	{
+		push @signset, $kn;
+	}
+
+	#
+	# Return the signing set.
+	#
+	return(@signset);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_signset_bytype()
+#
+# Purpose:	Return the Signing Set for the specified zone keyrec,
+#		based on the requested key type.
+#
+sub keyrec_signset_bytype
+{
+	my $domain = shift;				# Domain name.
+	my $keytype = shift;				# Key type to search.
+
+	my $zkrec;					# Domain's keyrec ref.
+	my %krec;					# Domain's keyrec.
+	my @signset = ();				# Signing set.
+
+	#
+	# Get the keyrec for the specified zone.
+	#
+	$zkrec = $keyrecs{$domain};
+	return() if(!defined($zkrec));
+	%krec = %$zkrec;
+	return() if(!defined(%krec));
+
+	#
+	# Build a list of signing sets based on the requested key type.
+	#
+	foreach my $kr (keys(%keyrecs))
+	{
+		my $kt;					# Keyrec's key type.
+
+		#
+		# Get the keyrec's type.
+		#
+		$kt = $keyrecs{$kr}{'keyrec_type'};
+
+		#
+		# Add this keyrec to the set if it's the requested type.
+		#
+		push @signset, $kr if($keytype eq $kt);
+	}
+
+	#
+	# Return the signing set.
+	#
+	return(@signset);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	signsets_add()
+#
+# Purpose:	Add an entry to a Signing Set for the specified keyrec.
+#
+sub signsets_add
+{
+	my $krname = shift;				# Keyrec to modify.
+	my $ssname = shift;				# SSet name to add.
+
+	my $krtype;					# Keyrec's type.
+	my $kss;					# Keyrec's signing set.
+
+	#
+	# Return failure if the named keyrec doesn't exist.
+	#
+	return(0) if(!exists($keyrecs{$krname}));
+
+	#
+	# Get the keyrec's type and signing set.
+	#
+	$krtype	= $keyrecs{$krname}{'keyrec_type'};
+	$kss	= $keyrecs{$krname}{'signing_set'};
+
+	#
+	# Add the signing set name to the keyrec, appending if it exists
+	# and adding if it doesn't.
+	#
+	if($kss eq '')
+	{
+		keyrec_setval($krtype,$krname,'signing_set',$ssname);
+	}
+	else
+	{
+		$kss .= " $ssname";
+		keyrec_setval($krtype,$krname,'signing_set',$kss);
+	}
+
+	#
+	# Return success.
+	#
+	return(1);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	signsets_del()
+#
+# Purpose:	Delete an entry from a Signing Set for the specified keyrec.
+#
+sub signsets_del
+{
+	my $krname = shift;				# Keyrec to modify.
+	my $ssname = shift;				# SSet name to delete.
+
+	my $krtype;					# Keyrec's type.
+	my $kss;					# Keyrec's signing set.
+	my @ssns;					# Signing set array.
+
+	#
+	# Return failure if the named keyrec doesn't exist.
+	#
+	return(0) if(!exists($keyrecs{$krname}));
+
+	#
+	# Get the keyrec's type and signing set.
+	#
+	$krtype	= $keyrecs{$krname}{'keyrec_type'};
+	$kss	= $keyrecs{$krname}{'signing_set'};
+
+	#
+	# Convert our sorting set list into an array of names.
+	#
+	@ssns = signsets_list2array($kss);
+
+	#
+	# Remove the specified name from the signing set array.
+	#
+	for (my $ind = 0;$ind < @ssns; $ind++)
+	{
+		if($ssns[$ind] eq $ssname)
+		{
+			splice @ssns, $ind, 1;
+		}
+	}
+
+	#
+	# Save the new signing set value.
+	#
+	$kss = join(', ', @ssns);
+	keyrec_setval($krtype,$krname,'signing_set',$kss);
+
+	#
+	# Return success.
+	#
+	return(1);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	signsets_clear()
+#
+# Purpose:	Clear the Signing Set for the specified keyrec.
+#
+sub signsets_clear
+{
+	my $krname = shift;				# Keyrec to modify.
+
+	my $krtype;					# Keyrec's type.
+	my $kss;					# Keyrec's signing set.
+
+	#
+	# Return failure if the named keyrec doesn't exist.
+	#
+	return(0) if(!exists($keyrecs{$krname}));
+
+	#
+	# Get the keyrec's type.
+	#
+	$krtype	= $keyrecs{$krname}{'keyrec_type'};
+
+	#
+	# Save the new signing set value.
+	#
+	$kss = "";
+	keyrec_setval($krtype,$krname,'signing_set',$kss);
+
+	#
+	# Return success.
+	#
+	return(1);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	signsets_list2array()
+#
+# Purpose:	Convert a list (string) of signing set names to an array
+#		of names.
+#
+sub signsets_list2array
+{
+	my $ssns = shift;			# List of signing set names.
+	my @ssns;				# Array of signing set names.
+
+	#
+	# Collapse any duplicated separators into a single one per.
+	#
+	$ssns =~ s/\,+/ /g;
+	$ssns =~ s/[ \t]+/ /g;
+	$ssns =~ s/ $//g;
+
+	#
+	# Break the list into an array and return the array.
+	#
+	@ssns = split / /,$ssns;
+	return(@ssns);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	keyrec_init()
 #
 # Purpose:	Initialize the internal data.
@@ -1040,6 +1362,15 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   @keyfields = keyrec_keyfields();
   @zonefields = keyrec_zonefields();
+
+  @signset = keyrec_signsets("example.com");
+  @signset = keyrec_signset_byname("signing-set-name");
+  @signset = keyrec_signset_bytype("zskcur");
+  @signset_names = signsets_list2array($signset);
+
+  signsets_add("Kexample.com.+005+12345","signset-88");
+  signsets_del("Kexample.com.+005+12345","signset-88");
+  signsets_clear("Kexample.com.+005+12345");
 
   keyrec_write();
   keyrec_close();
@@ -1255,6 +1586,51 @@ contents of the I<keyrec> file, it is not rewritten.
 =head2 B<keyrec_zonefields()>
 
 This routine returns a list of the recognized fields for a zone I<keyrec>.
+
+=head1 KEYREC SIGNING SET INTERFACES
+
+The signing-set-specific interfaces are given below.
+
+=head2 B<keyrec_signsets(zone_keyrec_name)>
+
+I<keyrec_signset()> returns the names of the signing sets associated with the
+zone I<keyrec> named by I<zone_keyrec_name>.  Signing sets are associated with
+a zone I<keyrec> if they are found in a key I<keyrec> associated with that
+zone.  These names are returned in an array.
+
+=head2 B<keyrec_signset_byname(signing_set_name)>
+
+I<keyrec_signset_byname()> returns the names of I<keyrecs> that are in the
+signing set named by I<signing_set_name>.  These names are returned in an
+array.
+
+=head2 B<keyrec_signset_bytype(keyrec_type)>
+
+I<keyrec_signset_bytype()> returns the names of I<keyrecs> that are in the
+signing set associated with I<keyrecs> of the type given in I<keyrec_type>.
+These names are returned in an array.
+
+=head2 B<signsets_list2array(signing_set_string)>
+
+I<signsets_list2array()> converts a I<keyrec>'s signing set string into an
+array of names.  This array is returned to the caller.
+
+=head2 B<signsets_add(keyrec_name,signing_set_name)>
+
+I<signsets_add()> adds the signing set named by I<signing_set_name> to the
+I<keyrec> named by I<keyrec_name>.  It returns 1 if the call is successful;
+0 if it is not.
+
+=head2 B<signsets_del(keyrec_name,signing_set_name)>
+
+I<signsets_del()> deletes the signing set named by I<signing_set_name> from
+the I<keyrec> named by I<keyrec_name>.  It returns 1 if the call is successful;
+0 if it is not.
+
+=head2 B<signsets_clear(keyrec_name)>
+
+I<signsets_clear()> clears the entire signing set from the I<keyrec> named
+by I<keyrec_name>.  It returns 1 if the call is successful; 0 if it is not.
 
 =head1 KEYREC INTERNAL INTERFACES
 
