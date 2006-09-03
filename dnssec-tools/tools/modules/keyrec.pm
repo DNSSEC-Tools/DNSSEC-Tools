@@ -1478,7 +1478,8 @@ Return values are:
 =head2 B<keyrec_close()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
-B<keyrec_creat>, B<keyrec_open> or B<keyrec_read()>) and closes the file handle.
+B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>) and closes the file
+handle.
 
 =head2 B<keyrec_creat(keyrec_file)>
 
