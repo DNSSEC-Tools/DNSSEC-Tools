@@ -102,13 +102,15 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 			    val_dnskey_rdata_t *rdata)
 {
     int index = 0;
+    const u_char *cp;
 
     if (!rdata || !buf) return -1;
 
     if (index+4 > buflen)
         return -1;
 
-    VAL_GET16(rdata->flags, buf);
+    cp = buf;
+    VAL_GET16(rdata->flags, cp);
     index += 2;
 
     rdata->protocol = (u_int8_t)(buf[index]);
