@@ -297,7 +297,7 @@ VAL_R_BOGUS_UNPROVABLE, 0}},
 
 // A wrapper function to send a query and print the output onto stderr
 //
-void sendquery(val_context_t *context, const char *desc, const char *name, const u_int16_t class, const u_int16_t type, const int result_ar[], int trusted_only)
+int sendquery(val_context_t *context, const char *desc, const char *name, const u_int16_t class, const u_int16_t type, const int result_ar[], int trusted_only)
 {
 	int ret_val;
     struct val_result_chain *results = NULL;
@@ -311,7 +311,7 @@ void sendquery(val_context_t *context, const char *desc, const char *name, const
 
     if (ns_name_pton(name, name_n, NS_MAXCDNAME-1) == -1) {
 		fprintf(stderr, "Error: %d\n", VAL_BAD_ARGUMENT);		
-		return;
+		return 1;
 	}                                                                                                                 
 	ret_val = val_resolve_and_check(context, name_n, class, type, 0, &results);
 
@@ -384,6 +384,8 @@ void sendquery(val_context_t *context, const char *desc, const char *name, const
 
     /* XXX De-register pending queries */
     val_free_result_chain(results); results = NULL;
+
+    return (err != 0); /* 0 success, 1 error */
 }
 
 // Usage
@@ -587,16 +589,20 @@ int main(int argc, char *argv[])
 				return 1;
 			}
 			else {
+				int rc, failed = 0;
 				// Run the set of pre-defined test cases
 				if(VAL_NO_ERROR !=(ret_val = val_create_context(label_str, &context))) {
 					fprintf(stderr, "Cannot create context: %d\n", ret_val);		
 					return 1;
 				}
-				for (i= 0 ; testcases[i].desc != NULL; i++) {
-					sendquery(context, testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
+				for (rc=0,i= 0 ; testcases[i].desc != NULL; i++) {
+					rc = sendquery(context, testcases[i].desc, testcases[i].qn, testcases[i].qc, testcases[i].qt, testcases[i].qr, 0);
+					if (rc)
+						++failed;
 					fprintf(stderr, "\n");
 				}
 				val_free_context(context);
+				fprintf(stderr," Final results: %d/%d tests failed\n", failed, i);
 			}
 		}
 	}
