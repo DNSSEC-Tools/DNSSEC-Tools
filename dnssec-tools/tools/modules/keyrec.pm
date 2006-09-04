@@ -56,7 +56,8 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_names
 		 keyrec_fullrec keyrec_recval keyrec_setval keyrec_add
 		 keyrec_del keyrec_newkeyrec keyrec_settime keyrec_keyfields
 		 keyrec_zonefields keyrec_init keyrec_discard keyrec_close
-		 keyrec_write keyrec_defkrf keyrec_dump_hash keyrec_dump_array
+		 keyrec_write keyrec_saveas
+		 keyrec_defkrf keyrec_dump_hash keyrec_dump_array
 		 keyrec_signsets keyrec_signset_byname keyrec_signset_bytype
 		 signsets_add signsets_clear signsets_del signsets_list2array);
 
@@ -1255,15 +1256,12 @@ sub keyrec_close
 #
 sub keyrec_write
 {
-	my $krc = "";		# Concatenated keyrec file contents.
+	my $krc = "";			# Concatenated keyrec file contents.
 
 	#
 	# If the file hasn't changed, we'll skip writing.
 	#
-	if(!$modified)
-	{
-		return;
-	}
+	return if(!$modified);
 
 	#
 	# Loop through the array of keyrec lines and concatenate them all.
@@ -1279,6 +1277,39 @@ sub keyrec_write
 	seek(KEYREC,0,0);
 	truncate(KEYREC,0);
 	print KEYREC $krc;
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_saveas()
+#
+# Purpose:	Save the key record file into a user-specified file.  A new
+#		file handle is used and it is closed after writing.
+#
+sub keyrec_saveas
+{
+	my $newname = shift;		# Name of new file.
+	my $krc = "";			# Concatenated keyrec file contents.
+
+	#
+	# Loop through the array of keyrec lines and concatenate them all.
+	#
+	for(my $ind=0;$ind<$keyreclen;$ind++)
+	{
+		$krc .= $keyreclines[$ind];
+	}
+
+	#
+	# Open the new file.
+	#
+	open(NEWKEYREC,">$newname") || return(0);
+	print NEWKEYREC $krc;
+	close(NEWKEYREC);
+
+	#
+	# Return success.
+	#
+	return(1);
 }
 
 #--------------------------------------------------------------------------
@@ -1373,6 +1404,7 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   signsets_clear("Kexample.com.+005+12345");
 
   keyrec_write();
+  keyrec_saveas("filecopy.krf);
   keyrec_close();
   keyrec_discard();
 
@@ -1417,10 +1449,12 @@ deleted with the B<keyrec_del()> interface.
 
 If the I<keyrec> file has been modified, it must be explicitly written or the
 changes are not saved.  B<keyrec_write()> saves the new contents to disk.
-B<keyrec_close()> saves the file and close the Perl file handle to the
-I<keyrec> file.  If a I<keyrec> file is no longer wanted to be open, yet the
-contents should not be saved, B<keyrec_discard()> gets rid of the data, and
-closes the file handle B<without> saving any modified data.
+B<keyrec_saveas()> saves the in-memory I<keyrec> contents to the specified
+file name, without affecting the original file.  B<keyrec_close()> saves the
+file and close the Perl file handle to the I<keyrec> file.  If a I<keyrec>
+file is no longer wanted to be open, yet the contents should not be saved,
+B<keyrec_discard()> gets rid of the data, and closes the file handle
+B<without> saving any modified data.
 
 =head1 KEYREC INTERFACES
 
@@ -1583,6 +1617,14 @@ B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>).  It does not close
 the file handle.  As an efficiency measure, an internal modification flag is
 checked prior to writing the file.  If the program has not modified the
 contents of the I<keyrec> file, it is not rewritten.
+
+=head2 B<keyrec_saveas(keyrec_file_copy)>
+
+This interface saves the internal version of the I<keyrec> file (opened with
+B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>) to the file named in
+the I<keyrec_file_copy> parameter.  The new file's file handle is closed, 
+but the original file and the file handle to the original file are not
+affected.
 
 =head2 B<keyrec_zonefields()>
 
