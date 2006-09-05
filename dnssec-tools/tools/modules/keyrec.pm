@@ -246,7 +246,8 @@ sub keyrec_read
 		# and a number of punctuation characters.  The value *must*
 		# be enclosed in double quotes.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+#		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$keyword = $1;
 		$value = $2;
 #		print "keyrec_read:  keyword <$keyword>\t\t<$value>\n";
@@ -400,7 +401,8 @@ sub keyrec_setval
 		#
 		# Dig out the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+#		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$krtype = $1;
 		$krname = $2;
 
@@ -436,13 +438,13 @@ sub keyrec_setval
 		#
 		# Get the line's keyword and value.
 		#
-		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+#		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$lkw = $1;
 		$lval = $2;
 
 		#
-		# If we hit the beginning of the next keyrec without
-		# finding the field, drop out and insert it.
+		# Skip empty lines.
 		#
 		if($lkw eq "")
 		{
@@ -482,7 +484,8 @@ sub keyrec_setval
 	#
 	if($found)
 	{
-		$keyreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]+)"/"$val"/;
+#		$keyreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]+)"/"$val"/;
+		$keyreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]*)"/"$val"/;
 	}
 	else
 	{
@@ -1059,7 +1062,7 @@ sub signsets_add
 	}
 	else
 	{
-		$kss .= " $ssname";
+		$kss .= ", $ssname";
 		keyrec_setval($krtype,$krname,'signing_set',$kss);
 	}
 
@@ -1101,9 +1104,9 @@ sub signsets_del
 	@ssns = signsets_list2array($kss);
 
 	#
-	# Remove the specified name from the signing set array.
+	# Remove the specified name from the signing-set array.
 	#
-	for (my $ind = 0;$ind < @ssns; $ind++)
+	for(my $ind = 0;$ind < @ssns; $ind++)
 	{
 		if($ssns[$ind] eq $ssname)
 		{
@@ -1495,20 +1498,6 @@ Return values are:
     0 success
     -1 invalid I<krtype>
 
-=head2 B<keyrec_del(keyrec_name)>
-
-This routine deletes a I<keyrec> from the I<keyrec> file and the internal
-representation of the file contents.  The I<keyrec> is deleted from both
-the I<%keyrecs> hash table and the I<@keyreclines> array.
-
-Only the I<keyrec> itself is deleted from the file.  Any associated comments
-and blank lines surrounding it are left intact.
-
-Return values are:
-
-    0 successful I<keyrec> deletion
-    -1 invalid I<krtype> (empty string or unknown name)
-
 =head2 B<keyrec_close()>
 
 This interface saves the internal version of the I<keyrec> file (opened with
@@ -1522,6 +1511,20 @@ the file if it already exists.  It leaves the file in the open state.
 
 B<keyrec_creat()> returns 1 if the file was created successfully.
 It returns 0 if there was an error in creating the file.
+
+=head2 B<keyrec_del(keyrec_name)>
+
+This routine deletes a I<keyrec> from the I<keyrec> file and the internal
+representation of the file contents.  The I<keyrec> is deleted from both
+the I<%keyrecs> hash table and the I<@keyreclines> array.
+
+Only the I<keyrec> itself is deleted from the file.  Any associated comments
+and blank lines surrounding it are left intact.
+
+Return values are:
+
+    0 successful I<keyrec> deletion
+    -1 invalid I<krtype> (empty string or unknown name)
 
 =head2 B<keyrec_discard()>
 
@@ -1586,6 +1589,14 @@ The call:
 
 will return the value "db.example.com".
 
+=head2 B<keyrec_saveas(keyrec_file_copy)>
+
+This interface saves the internal version of the I<keyrec> file (opened with
+B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>) to the file named in
+the I<keyrec_file_copy> parameter.  The new file's file handle is closed, 
+but the original file and the file handle to the original file are not
+affected.
+
 =head2 B<keyrec_setval(keyrec_type,keyrec_name,field,value)>
 
 Set the value of a I<name/field> pair in a specified I<keyrec>.  The file is
@@ -1618,14 +1629,6 @@ the file handle.  As an efficiency measure, an internal modification flag is
 checked prior to writing the file.  If the program has not modified the
 contents of the I<keyrec> file, it is not rewritten.
 
-=head2 B<keyrec_saveas(keyrec_file_copy)>
-
-This interface saves the internal version of the I<keyrec> file (opened with
-B<keyrec_creat()>, B<keyrec_open()> or B<keyrec_read()>) to the file named in
-the I<keyrec_file_copy> parameter.  The new file's file handle is closed, 
-but the original file and the file handle to the original file are not
-affected.
-
 =head2 B<keyrec_zonefields()>
 
 This routine returns a list of the recognized fields for a zone I<keyrec>.
@@ -1653,16 +1656,16 @@ I<keyrec_signset_bytype()> returns the names of I<keyrecs> that are in the
 signing set associated with I<keyrecs> of the type given in I<keyrec_type>.
 These names are returned in an array.
 
-=head2 B<signsets_list2array(signing_set_string)>
-
-I<signsets_list2array()> converts a I<keyrec>'s signing set string into an
-array of names.  This array is returned to the caller.
-
 =head2 B<signsets_add(keyrec_name,signing_set_name)>
 
 I<signsets_add()> adds the signing set named by I<signing_set_name> to the
 I<keyrec> named by I<keyrec_name>.  It returns 1 if the call is successful;
 0 if it is not.
+
+=head2 B<signsets_clear(keyrec_name)>
+
+I<signsets_clear()> clears the entire signing set from the I<keyrec> named
+by I<keyrec_name>.  It returns 1 if the call is successful; 0 if it is not.
 
 =head2 B<signsets_del(keyrec_name,signing_set_name)>
 
@@ -1670,10 +1673,10 @@ I<signsets_del()> deletes the signing set named by I<signing_set_name> from
 the I<keyrec> named by I<keyrec_name>.  It returns 1 if the call is successful;
 0 if it is not.
 
-=head2 B<signsets_clear(keyrec_name)>
+=head2 B<signsets_list2array(signing_set_string)>
 
-I<signsets_clear()> clears the entire signing set from the I<keyrec> named
-by I<keyrec_name>.  It returns 1 if the call is successful; 0 if it is not.
+I<signsets_list2array()> converts a I<keyrec>'s signing set string into an
+array of names.  This array is returned to the caller.
 
 =head1 KEYREC INTERNAL INTERFACES
 
