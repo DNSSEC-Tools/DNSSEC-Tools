@@ -27,6 +27,7 @@ use ExtUtils::MakeMaker;
 				rollctl
 				rollerd
 				rollinit
+				signset-editor
 				tachk
 				timetrans
 				zonesigner

@@ -1,0 +1,1861 @@
+#!/usr/bin/perl
+#
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# DNSSEC-Tools:  signset-editor
+#
+#	signset-editor provides the capability for easy management of signing
+#	sets in a GUI.  The signing sets found in the given keyrec file are
+#	displayed in a new window.  The new signing sets may be created and
+#	existing signing sets may be modified or deleted from signset-editor.
+#	The command is used in this way:
+#
+#               signset-editor [-v] <keyrec-file>
+#
+#	The -v option will cause signset-editor to print a version message
+#	and exit.
+#	The keyrec-file is a DNSSEC-Tools keyrec file that maintains
+#	information about a zone and its encryption keys.
+#
+#
+#	Keyboard Accelerators:
+#		Ctrl-D  Delete Signing Set
+#		Ctrl-E  Display Extended Data / Do Not Display Extended Data
+#		Ctrl-H  Help
+#		Ctrl-M  Modify Signing Set
+#		Ctrl-N  New Signing Set
+#		Ctrl-O  Open
+#		Ctrl-Q  Quit
+#		Ctrl-S  Save
+#		Ctrl-U  Undo Changes
+#		Ctrl-V  View Signing Sets / View Keyrecs
+#		Ctrl-W  Close Window (New Signing Set, Modify Signing Set, Help)
+#
+#
+#	To Be Done:
+#		- create signing set
+#			- bind enter key to button
+#
+#		- modify signing set
+#			- bind enter key to button
+#
+#		- help
+#			- bind enter key to button
+#
+
+use strict;
+
+use Tk;
+use Tk::Dialog;
+use Tk::FileSelect;
+
+use Net::DNS::SEC::Tools::keyrec;
+
+#
+# Version information.
+#
+my $NAME   = "signset-editor";
+my $VERS   = "$NAME version: 0.1.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
+
+#
+# File name variables.
+#
+my $krfile  = "dummy";				# Keyrec file we're examining.
+my $curnode = "dummy";				# Node of krfile.
+my $title   = "dummy";				# Node for title.
+
+#
+# Main window constants.
+#
+my $MAINGEOM	= "550x245";
+my $MAINTITLE	= "DNSSEC-Tools Signing Set Editor";
+
+#
+# Arrays and lists of keyrecs and signing sets.
+#
+my %key_lists = ();
+my @key_lists = ();
+my %sign_sets = ();
+my @sign_sets = ();
+
+#
+# Various flags.
+#
+my $inhelpwind = 0;				# Showing help window.
+my $insubwind = 0;				# Creating/not creating signset.
+my $modified = 0;				# Modified-krfile flag.
+my $showing_extended = 1;			# Show extended/terse data.
+my $showing_sets;				# Displaying sets/keyrecs.
+
+#
+# Data from the keyrec file.
+#
+my @krnames;					# Keyrec names.
+my @ssnames;					# Signing Set names.
+
+#
+# Undo data.
+#
+my @undo_stack;					# Stack for undo commands.
+
+#
+# The main window and its frames.
+#
+my $wm;						# Main window.
+my $subwin;					# Create/Modify window.
+my $helpwin;					# Help window.
+
+my $mbar;					# Menubar frame.
+my $krfl;					# Keyrec frame.
+my $body;					# Window body frame.
+my $bodylist;					# Listbox for body.
+my $null;					# Empty frame.
+my $whichwind = "Signing Sets Display";		# Window indicator for null.
+
+#
+# Menu item widgets.
+#
+my $fm_open;					# Open keyrec file item.
+my $fm_save;					# Save keyrec file item.
+my $fm_svas;					# Save-as keyrec file item.
+my $fm_quit;					# Quit file item.
+
+my $em_undo;					# Undo edit item.
+
+my $cm_create;					# Create signing set item.
+my $cm_delete;					# Delete signing set item.
+my $cm_modify;					# Modify signing set item.
+
+my $dm_togl;					# View signstes/keyrecs item.
+my $dm_extd;					# Toggle extended data item.
+
+my $hm_help;					# Help item.
+
+#
+# Data for the New Signing Set and Modify Signing Set commands.
+#
+my %keyrecbox = ();				# Checkbuttons for keyrecs.
+my $modset = '';				# Name of modified signing set.
+my $newset = '';				# Name of new signing set.
+
+###########################################################################
+
+main();
+exit(0);
+
+#---------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $argc = @ARGV;
+
+	#
+	# Check for the -V option and usage on other options.
+	#
+	if($ARGV[0] =~ /^-/)
+	{
+		usage() if($ARGV[0] ne "-V");
+		version();
+	}
+
+	#
+	# Usage if we were given more than a single keyrec file.
+	#
+	usage() if($argc != 1);
+
+	#
+	# Get the keyrec filename and the path's node.
+	#
+	$krfile = $ARGV[0];
+	$curnode = getnode($krfile);
+	settitle($curnode);
+
+	#
+	# Ensure this keyrec file actually exists.
+	#
+	if(! -e $krfile)
+	{
+		print STDERR "$krfile does not exist\n";
+		exit(1);
+	}
+
+	#
+	# Build the main window.
+	#
+	buildmainwind();
+
+	#
+	# Start the whole shebang rollin'.
+	#
+	MainLoop;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildmainwind()
+#
+sub buildmainwind
+{
+
+	my $file;					# File menu.
+	my $edit;					# Edit menu.
+	my $cmds;					# Commands menu.
+	my $dspy;					# Display menu.
+	my $help;					# Help menu.
+
+	my $curfile;					# Current keyrec.
+	my $keyrecs;					# Keyrec listbox.
+	my $nulline;					# Empty line.
+
+	#
+	# Create the main window and set its size.
+	#
+	$wm = MainWindow->new(-title => $MAINTITLE);
+	$wm->geometry($MAINGEOM);
+
+	#
+	# Get the keyrec file info.
+	#
+	readkrf($krfile);
+
+	#
+	# Create the frames we'll need.
+	#
+	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$krfl = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$null = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$mbar->pack(-fill => 'x');
+	$krfl->pack(-fill => 'x');
+	$body->pack(-fill => 'x');
+	$null->pack(-fill => 'x');
+
+	#
+	# Create our menus.
+	#
+	$file = $mbar->Menubutton(-text => 'File',
+				  -tearoff => 0,
+				  -underline => 0);
+	$edit = $mbar->Menubutton(-text => 'Edit',
+				  -tearoff => 0,
+				  -underline => 0);
+	$cmds = $mbar->Menubutton(-text => 'Commands',
+				  -tearoff => 0,
+				  -underline => 0);
+	$dspy = $mbar->Menubutton(-text => 'Display',
+				  -tearoff => 0,
+				  -underline => 0);
+	$help = $mbar->Menubutton(-text => 'Help',
+				  -tearoff => 0,
+				  -underline => 0);
+
+	##################################################
+	#
+	# Add the File menu entries.
+	#
+	$fm_open = $file->command(-label => 'Open...',
+			          -command => \&file_open,
+			          -accelerator => 'Ctrl+O',
+			          -underline => 0);
+	$fm_save = $file->command(-label => 'Save',
+			          -command => \&file_save,
+			          -accelerator => 'Ctrl+S',
+			          -underline => 0);
+	$fm_svas = $file->command(-label => 'Save As...',
+			          -command => \&file_saveas,
+			          -underline => 0);
+	$file->separator();
+	$fm_quit = $file->command(-label => 'Quit',
+			          -command => \&file_quit,
+			          -accelerator => 'Ctrl+Q',
+			          -underline => 0);
+	$file->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-O>',\&file_open);
+	$wm->bind('<Control-Key-o>',\&file_open);
+	$wm->bind('<Control-Key-S>',\&file_save);
+	$wm->bind('<Control-Key-s>',\&file_save);
+	$wm->bind('<Control-Key-Q>',\&file_quit);
+	$wm->bind('<Control-Key-q>',\&file_quit);
+
+	##################################################
+	#
+	# Add the Edit menu entries.
+	#
+	$em_undo = $edit->command(-label	=> 'Undo Changes',
+				  -command	=> \&edit_undo,
+				  -accelerator	=> 'Ctrl+U',
+				  -state	=> 'disabled',
+				  -underline	=> 0);
+	$edit->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-U>',\&edit_undo);
+	$wm->bind('<Control-Key-u>',\&edit_undo);
+
+	##################################################
+	#
+	# Add the Commands menu entries.
+	#
+	$cm_create = $cmds->command(-label => 'New Signing Set...',
+				    -command => \&cmds_create,
+				    -accelerator => 'Ctrl+N',
+				    -underline => 0);
+	$cm_delete = $cmds->command(-label => 'Delete Signing Set',
+				    -command => \&cmds_delete,
+				    -accelerator => 'Ctrl+D',
+				    -underline => 0);
+	$cm_modify = $cmds->command(-label => 'Modify Signing Set...',
+				    -command => \&cmds_modify,
+				    -accelerator => 'Ctrl+M',
+				    -underline => 0);
+	$cmds->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-N>',\&cmds_create);
+	$wm->bind('<Control-Key-n>',\&cmds_create);
+	$wm->bind('<Control-Key-D>',\&cmds_delete);
+	$wm->bind('<Control-Key-d>',\&cmds_delete);
+	$wm->bind('<Control-Key-M>',\&cmds_modify);
+	$wm->bind('<Control-Key-m>',\&cmds_modify);
+
+	##################################################
+	#
+	# Add the Display menu entries.
+	#
+	$dm_togl = $dspy->command(-label => 'View Keyrecs',
+			          -command => \&display_toggle,
+			          -accelerator => 'Ctrl+V',
+			          -underline => 0);
+	$dm_extd = $dspy->command(-label => 'Do Not Display Extended Data',
+			          -command => \&display_extdata,
+			          -accelerator => 'Ctrl+E',
+			          -underline => 19);
+	$dspy->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-V>',\&display_toggle);
+	$wm->bind('<Control-Key-v>',\&display_toggle);
+	$wm->bind('<Control-Key-E>',\&display_extdata);
+	$wm->bind('<Control-Key-e>',\&display_extdata);
+
+	##################################################
+	#
+	# Add the Help menu entries.
+	#
+	$hm_help = $help->command(-label => 'Help',
+			          -command => \&help_help,
+			          -accelerator => 'Ctrl+H',
+			          -underline => 0);
+	$help->pack(-side => 'right');
+
+	$wm->bind('<Control-Key-H>',\&help_help);
+	$wm->bind('<Control-Key-h>',\&help_help);
+
+	##################################################
+	#
+	# Create a line holding the current keyrec filename.
+	#
+
+	$curfile = $krfl->Label(-text => "Editing Keyrec File:  ");
+	$curfile->pack(-side => 'left');
+	$curfile = $krfl->Label(-textvariable => \$title);
+	$curfile->pack(-side => 'left');
+	$krfl->pack(-side => 'top', -fill => 'x');
+
+	#
+	# Add a label saying which display mode we're in.
+	#
+	$krfl->Label(-textvariable => \$whichwind)->pack(-side => 'right');
+
+	##################################################
+	#
+	# Create a listbox with scrollbars to hold shtuff.
+	#
+	$bodylist = $body->Listbox(-relief => 'raised', -borderwidth => 1);
+	$body->AddScrollbars($bodylist);
+	$body->configure(-scrollbars => 'se');
+	signingsets();
+
+	#
+	# Create a line holding the current keyrec filename.
+	#
+	$nulline = $null->Label(-text => " ");
+	$nulline->pack();
+	$null->pack(-side => 'top', -fill => 'x');
+
+}
+
+##############################################################################
+#
+# Menu widget interface routines.
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	file_open()
+#
+sub file_open
+{
+	my $fowin;					# File-open widget.
+	my $newfile;					# New file name.
+
+	#
+	# Warn the user if this file has been modified.  We'll also give
+	# the user a chance to save the file, not save the file, or cancel
+	# the process of opening the new file.
+	#
+	if($modified)
+	{
+		my $dlg;				# Warning dialog widget.
+		my $ret;				# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$curnode has been modified; save before proceeding?",
+				   -buttons => ["Save","Don't Save","Cancel"]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Cancel");
+
+		keyrec_close() if($ret eq "Save");
+	}
+
+	#
+	# Prompt for the new file.  Return to our caller if nothing was chosen.
+	#
+	$fowin = $wm->FileSelect(-directory => '.' );
+	$newfile = $fowin->Show;
+	return if($newfile eq "");
+
+	#
+	# Save the new filename and its node.
+	#
+	$krfile = $newfile;
+	$curnode = getnode($krfile);
+	settitle($curnode);
+
+	#
+	# Read the new keyrec file.
+	#
+	readkrf($krfile);
+	updatewindow();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_save()
+#
+sub file_save
+{
+	return if(!$modified);
+
+	#
+	# Save and re-open the keyrec file.  We'll also toss in a window
+	# update, just to be safe...
+	#
+	keyrec_close();
+	readkrf($krfile);
+	updatewindow();
+
+	#
+	# Disable the undo menu option, reset our undo stack, and mark
+	# the file as unmodified.
+	#
+	$em_undo->configure(-state => 'disabled');
+	@undo_stack = ();
+
+#	$modified = 0;
+#	settitle($curnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_saveas()
+#
+sub file_saveas
+{
+	my $fowin;					# File-open widget.
+	my $newfile;					# New file's name.
+
+	#
+	# Prompt for the new file.
+	#
+	$fowin = $wm->FileSelect(-directory => '.' );
+	$newfile = $fowin->Show;
+	return if($newfile eq "");
+
+	#
+	# Make sure the user *really* wants to overwrite an existing file.
+	# Continue if they do, return if they don't.
+	#
+	if(-e $newfile)
+	{
+		my $dlg;				# Warning dialog widget.
+		my $ret;				# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$newfile already exists; overwrite?",
+				   -buttons => ["Overwrite","Cancel"]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Cancel");
+	}
+
+	#
+	# Save the file.
+	#
+	keyrec_saveas($newfile);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_quit()
+#
+sub file_quit
+{
+	#
+	# Warn the user if this file has been modified.  We'll also give
+	# the user a chance to save the file, not save the file, or cancel
+	# the process of opening the new file.
+	#
+	if($modified)
+	{
+		my $dlg;				# Warning dialog widget.
+		my $ret;				# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$curnode has been modified; save before proceeding?",
+				   -buttons => ["Save","Don't Save","Cancel"]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Cancel");
+
+		keyrec_close() if($ret eq "Save");
+	}
+
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	edit_undo()
+#
+sub edit_undo
+{
+	my $undohash;				# First hash from undo stack.
+
+	my $type;				# Undo type.
+	my $op;					# Undo operation.
+	my $field;				# Undo field.
+	my $value;				# Undo value.
+
+	#
+	# Ensure we have something to undo.
+	#
+	return if(@undo_stack == 0);
+
+	#
+	# Get the undo entry fields.
+	#
+	$undohash = shift @undo_stack;
+	$type  = $undohash->{'type'};
+	$op    = $undohash->{'op'};
+	$field = $undohash->{'field'};
+	$value = $undohash->{'value'};
+
+	#
+	# Undo based on the operation.  This means that creates are deleted,
+	# deletes are re-created, and modifies are returned to the old ways.
+	#
+	if($op eq "create")
+	{
+		my @signset;			# Signing set's keyrecs.
+
+		#
+		# Delete the signing set name from each keyrec in the set.
+		#
+		@signset = keyrec_signset_byname($field);
+		foreach my $kr (@signset)
+		{
+			signsets_del($kr,$field);
+		}
+
+		#
+		# Delete the signing set name from our list of names.
+		#
+		for(my $ind=0; $ind < @ssnames; $ind++)
+		{
+			if($ssnames[$ind] eq $field)
+			{
+				splice @ssnames, $ind, 1;
+				last;
+			}
+		}
+
+	}
+	elsif($op eq "delete")
+	{
+		my @signset;			# Signing set's keyrecs.
+
+		#
+		# If the signing set was deleted, we'll add the signing set
+		# to each keyrec in the set.
+		# If the keyrec was deleted, we'll add each signing set in
+		# the record to the named keyrec.
+		#
+		if($type eq "signing_set")
+		{
+			#
+			# Add the signing set name to each keyrec in the set.
+			#
+			@signset = split /, /, $value;
+			foreach my $kr (sort(@signset))
+			{
+				signsets_add($kr,$field);
+			}
+
+			#
+			# Add the new set's name to the list of signing sets.
+			#
+			push @ssnames, $field;
+			@ssnames = sort(@ssnames);
+		}
+		else
+		{
+			#
+			# Add each signing set name to the keyrec.
+			#
+			@signset = split /, /, $value;
+			foreach my $ssn (@signset)
+			{
+				signsets_add($field,$ssn);
+			}
+
+			#
+			# Add the keyrec's set list back to the keyrec list.
+			#
+			$key_lists{$field} = $value;
+		}
+
+	}
+	elsif($op eq "modify")
+	{
+		my @nlists;		# Add-list and delete-list array.
+		my @addlist;		# Add list.
+		my @dellist;		# Delete list.
+
+		#
+		# Split the value into the set-added list and the
+		# set-deleted list.
+		@nlists = split /; /, $value;
+
+		#
+		# Delete the signing set name from each add-list keyrec.
+		#
+		@addlist = split /, /, @nlists[0];
+		foreach my $kr (@addlist)
+		{
+			signsets_del($kr,$field);
+		}
+
+		#
+		# Add the signing set name to each delete-list keyrec.
+		#
+		@dellist = split /, /, @nlists[1];
+		foreach my $kr (@dellist)
+		{
+			signsets_add($kr,$field);
+		}
+	}
+
+	#
+	# Disable the undo menu option if this was the last undo item.
+	#
+	$em_undo->configure(-state => 'disabled') if(@undo_stack == 0);
+
+	#
+	# Update the window and decrement our modifications counter.
+	#
+	updatewindow();
+	$modified--;
+	settitle($curnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	undo_add()
+#
+sub undo_add
+{
+	my %undo = ();					# Undo hash.
+
+	#
+	# Add the arguments to our undo hash.
+	#
+	$undo{'type'}	= shift;
+	$undo{'op'}	= shift;
+	$undo{'field'}	= shift;
+	$undo{'value'}	= shift;
+
+	#
+	# Add the undo hash to the beginning of the undo stack.
+	#
+	unshift @undo_stack, \%undo;
+
+	#
+	# Make sure the undo menu option is enabled.
+	#
+	$em_undo->configure(-state => 'normal');
+
+	return;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_create()
+#
+sub cmds_create
+{
+	my $nameframe;					# Frame for ssname.
+	my $krframe;					# Frame for keyrecs.
+	my $btnframe;					# Frame for buttons.
+
+	my $wdgt;					# General widget.
+	my $krbox;					# Keyrec checkboxen.
+
+# print "cmds_create:  down in New Signing Set\n";
+
+	#
+	# If we're mid-operation already, we'll give an error and return.
+	# Otherwise, we'll turn on our in-subwindow flag.
+	#
+	if($insubwind)
+	{
+		error("You are already in the middle of a command");
+		return;
+	}
+	$insubwind = 1;
+
+	#
+	# Create a new window to hold our creation shtuff.  Bind up some
+	# key accelerators, too.
+	#
+	$subwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Signing Set Creation',
+				  -takefocus => 1,
+				  -borderwidth => 1);
+	$subwin->bind('<Control-Key-Q>',\&file_quit);
+	$subwin->bind('<Control-Key-q>',\&file_quit);
+#	$subwin->bind('<Enter-Key>',\&creator);
+	$subwin->bind('<Control-Key-W>',\&cancelit);
+	$subwin->bind('<Control-Key-w>',\&cancelit);
+
+	#
+	# Now make the containers for the window.
+	#
+	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$krframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$nameframe->pack(-fill => 'x');
+	$krframe->pack(-fill => 'x');
+	$btnframe->pack(-fill => 'x');
+
+	#
+	# Add some fields to the name stripe.
+	#
+	$wdgt = $nameframe->Label(-text => 'Name of new signing set:  ');
+	$wdgt->pack(-side => 'left');
+	$wdgt = $nameframe->Entry(-text => '',
+				  -textvariable => \$newset,
+				  -font => '*-*-bold-*-*-*-*-*-*-*-*-*-*-*',
+				  -takefocus => 1);
+	$wdgt->pack(-side => 'left');
+
+	#
+	# Start building the body of the window.
+	#
+	$wdgt = $krframe->Label(-text => 'Select keyrecs for new signing set');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Build a collection of keyrec checkboxen.
+	#
+	%keyrecbox = ();
+	foreach my $kr (@krnames)
+	{
+		$keyrecbox{$kr} = $krframe->Checkbutton(-text => $kr);
+		$keyrecbox{$kr}->pack(-side => 'top');
+	}
+
+	#
+	# Create a set of buttons to accept or cancel this operation.
+	#
+	$wdgt = $btnframe->Button(-text => 'Create Signing Set',
+				  -command => \&creator);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Cancel',
+				  -command => \&cancelit);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Select All',
+				  -command => \&keyrecbox_setall);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Clear All',
+				  -command => \&keyrecbox_setnone);
+	$wdgt->pack(-side => 'left');
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_delete()
+#
+sub cmds_delete
+{
+	my $lab;					# Window's text.
+
+	my $name;					# Entity we're deleting.
+	my $nlist;					# Entity's containers.
+
+	my @lsel;					# Listbox selections.
+	my $lsel;					# Selected element.
+
+	#
+	# Get the user's selection.
+	#
+	if($bodylist->curselection eq '')
+	{
+		error("This operation requires a selection to have been made, but nothing was selected");
+		return;
+	}
+	@lsel = $bodylist->curselection;
+	$lsel = $lsel[0];
+
+	#
+	# If we're displaying signing sets, we'll delete the selected
+	# signing set from all the keyrecs which reference it.
+	# If we're displaying keyrecs, we'll delete all signing sets
+	# from that keyrec.
+	#
+	if($showing_sets)
+	{
+		my @krlist;				# Keyrec list.
+
+		#
+		# Delete the selected thingy from the display.
+		#
+		$bodylist->delete($lsel);
+
+		#
+		# Get the selected signing set's name and the list of
+		# keyrecs which include that set.
+		#
+		$name = $sign_sets[$lsel];
+		$nlist = $sign_sets{$name};
+		@krlist = split /, /, $nlist;
+
+		#
+		# Delete this signing set from each keyrec that has it listed.
+		#
+		foreach my $kr (@krlist)
+		{
+			signsets_del($kr,$name);
+		}
+
+		#
+		# Add an undo record.
+		#
+		undo_add("signing_set", "delete", $name, $nlist);
+
+		#
+		# Delete the signing set name from our list of names.
+		#
+		for(my $ind=0; $ind < @ssnames; $ind++)
+		{
+			if($ssnames[$ind] eq $name)
+			{
+				splice @ssnames, $ind, 1;
+				last;
+			}
+		}
+	}
+	else
+	{
+		#
+		# Get the name of the keyrec whose signing sets will be zapped.
+		#
+		$name = $key_lists[$lsel];
+
+		#
+		# Add an undo record.
+		#
+		undo_add("keyrec", "delete", $name, $key_lists{$name});
+
+		#
+		# Zap the signing set for the selected keyrec.
+		#
+		$key_lists{$name} = '';
+		signsets_clear($name);
+	}
+
+	#
+	# Update the window.
+	#
+	updatewindow();
+
+	#
+	# Set the file-modified flag.
+	#
+	$modified++;
+	settitle($curnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_modify()
+#
+sub cmds_modify
+{
+	my $nameframe;					# Frame for ssname.
+	my $ssframe;					# Frame for keyrecs.
+	my $btnframe;					# Frame for buttons.
+
+	my $wdgt;					# General widget.
+	my $krbox;					# Keyrec checkboxen.
+
+	my @lsel;					# Listbox selections.
+	my $lsel;					# Selected element.
+
+	my $name;					# Name of signing set.
+	my @boxen;					# Keyrecs in set.
+
+# print "cmds_modify:  down in Modify Signing Set\n";
+
+	#
+	# If we're mid-operation already, we'll give an error and return.
+	# Otherwise, we'll turn on our in-subwindow flag.
+	#
+	if($insubwind)
+	{
+		error("You are already in the middle of a command");
+		return;
+	}
+	$insubwind = 1;
+
+	#
+	# Make sure the signing sets are being displayed.
+	#
+	if(!$showing_sets)
+	{
+		error("This command is only available from the signing-set view\n");
+		$insubwind = 0;
+		return;
+	}
+
+	#
+	# Get the user's selection.
+	#
+	if($bodylist->curselection eq '')
+	{
+		error("This operation requires a selection to have been made, but nothing was selected");
+		$insubwind = 0;
+		return;
+	}
+
+	#
+	# Get the name of the selected signing set.
+	#
+	@lsel = $bodylist->curselection;
+	$lsel = $lsel[0];
+	$name = $sign_sets[$lsel];
+	$modset = $name;
+
+	#
+	# Create a new window to hold our modification shtuff.  Bind up some
+	# key accelerators, too.
+	#
+	$subwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Signing Set Modification',
+				  -borderwidth => 1);
+	$subwin->bind('<Control-Key-Q>',\&file_quit);
+	$subwin->bind('<Control-Key-q>',\&file_quit);
+	$subwin->bind('<Control-Key-W>',\&cancelit);
+	$subwin->bind('<Control-Key-w>',\&cancelit);
+
+	#
+	# Now make the containers for the window.
+	#
+	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$ssframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$nameframe->pack(-fill => 'x');
+	$ssframe->pack(-fill => 'x');
+	$btnframe->pack(-fill => 'x');
+
+	#
+	# Add some fields to the name stripe.
+	#
+	$wdgt = $nameframe->Label(-text => "Modifying signing set:  $name");
+	$wdgt->pack(-side => 'left');
+
+	#
+	# Start building the body of the window.
+	#
+	$wdgt = $ssframe->Label(-text => 'Check to include keyrecs, uncheck to exclude keyrecs');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Build a collection of keyrec checkboxen.
+	#
+
+	%keyrecbox = ();
+	foreach my $kr (@krnames)
+	{
+		$keyrecbox{$kr} = $ssframe->Checkbutton(-text => $kr);
+		$keyrecbox{$kr}->pack(-side => 'top');
+	}
+
+	#
+	# Select the checkboxes for each keyrecs in the signing set.
+	#
+	@boxen = split /, /, @sign_sets{$name};
+	foreach my $kr (@boxen)
+	{
+		$keyrecbox{$kr}->select();
+	}
+
+	#
+	# Create a set of buttons to accept or cancel this operation.
+	#
+	$wdgt = $btnframe->Button(-text => 'Modify Signing Set',
+				  -command => \&modifier);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Cancel',
+				  -command => \&cancelit);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Select All',
+				  -command => \&keyrecbox_setall);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Clear All',
+				  -command => \&keyrecbox_setnone);
+	$wdgt->pack(-side => 'left');
+}
+
+##############################################################################
+#
+# Utility routines
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	readkrf()
+#
+sub readkrf
+{
+	my $krf = shift;				# Keyrec file.
+	my @names;					# Keyrec names.
+
+	#
+	# If the specified file doesn't exist, ask the user if we should
+	# continue or quit.
+	#
+	if(! -e $krf)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$curnode does not exist",
+				   -buttons => ["Continue", "Quit" ]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Continue");
+
+		file_quit();
+	}
+
+	#
+	# Zap the old data.
+	#
+	@krnames = ();
+	@ssnames = ();
+
+	#
+	# Get data from the keyrec file.
+	#
+	keyrec_read($krf);
+	@ssnames = keyrec_signsets();
+	@names = keyrec_names();
+
+	#
+	# Strip out the zone keyrecs.
+	#
+	foreach my $kn (sort(@names))
+	{
+		my $keyrec;				# Keyrec.
+		my $krt;				# Keyrec's type.
+
+		$keyrec = keyrec_fullrec($kn);
+		$krt = $keyrec->{'keyrec_type'};
+		next if($krt eq "zone");
+
+		push @krnames, $kn;
+	}
+
+	#
+	# Reset the modified-keyrec file flag.
+	#
+	$modified = 0;
+	settitle($curnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	display_toggle()
+#
+sub display_toggle
+{
+	if($showing_sets)
+	{
+		$dm_togl->configure(-label => 'View Signing Sets');
+		$whichwind = "Keyrecs Display";
+	}
+	else
+	{
+		$dm_togl->configure(-label => 'View Keyrecs');
+		$whichwind = "Signing Sets Display";
+	}
+
+	updatewindow();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	display_extdata()
+#
+sub display_extdata
+{
+	if($showing_extended == 0)
+	{
+		$showing_extended = 1;
+		$dm_extd->configure(-label => 'Do Not Display Extended Data');
+	}
+	else
+	{
+		$showing_extended = 0;
+		$dm_extd->configure(-label => 'Display Extended Data');
+	}
+
+	updatewindow();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	updatewindow()
+#
+sub updatewindow
+{
+	if($showing_sets)
+	{
+		signingsets();
+	}
+	else
+	{
+		keyrecs();
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	keyrecs()
+#
+sub keyrecs
+{
+	my $llen = $bodylist->size();			# Listbox length.
+
+	#
+	# Disable the "Modify signing set" menu item.
+	#
+	$cm_modify->configure(-state => 'disabled');
+
+	#
+	# Delete any existing entries in the listbox.
+	#
+	$bodylist->delete(0,$llen) if($llen);
+	%key_lists = ();
+	@key_lists = ();
+
+	#
+	# Indicate that we're showing keyrecs, not signing sets.
+	#
+	$showing_sets = 0;
+
+	#
+	# Add the non-zone keyrecs to our listbox, sorted by name.
+	#
+	foreach my $kr (sort(@krnames))
+	{
+		my $keyrec;				# Keyrec entry.
+		my $krstr;				# Listbox text.
+		my $kss;				# Keyrec's signing sets.
+		my @kss;				# Signing set array.
+
+		#
+		# Get the complete keyrec and skip any zone keyrecs.
+		#
+		$keyrec = keyrec_fullrec($kr);
+		next if($keyrec->{'keyrec_type'} eq "zone");
+
+		#
+		# Put the keyrec's signing sets into a nicely formatted string.
+		#
+		$kss = $keyrec->{'signing_set'};
+		@kss = signsets_list2array($kss);
+		$kss = join(', ',sort(@kss));
+
+		#
+		# Add this keyrec to the listbox.
+		#
+		if($showing_extended) { $krstr = "$kr:     $kss"; }
+		else		      { $krstr = "$kr"; }
+		$bodylist->insert("end",$krstr);
+
+		$key_lists{$kr} = $kss;
+		push @key_lists, $kr;
+	}
+
+	#
+	# Pack 'er up.
+	#
+	$bodylist->pack(-fill => 'x');
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	signingsets()
+#
+sub signingsets
+{
+	my $llen = $bodylist->size();			# Listbox length.
+
+	#
+	# Enable the "Modify signing set" menu item.
+	#
+	$cm_modify->configure(-state => 'normal');
+
+	#
+	# Delete any existing entries in the listbox.
+	#
+	$bodylist->delete(0,$llen) if($llen);
+	%sign_sets = ();
+	@sign_sets = ();
+
+	#
+	# Indicate that we're showing signing sets, not keyrecs.
+	#
+	$showing_sets = 1;
+
+	#
+	# Add the signing sets to our listbox, sorted by name.
+	#
+	foreach my $sset (sort(@ssnames))
+	{
+		my $outstr;				# List string.
+		my @siggies;
+
+		@siggies = keyrec_signset_byname($sset);
+
+		my $signlist = join(', ',sort(@siggies));
+
+		if($showing_extended) { $outstr = "$sset:    $signlist"; }
+		else		      { $outstr = "$sset"; }
+
+		$bodylist->insert("end",$outstr);
+		$sign_sets{$sset} = $signlist;
+		push @sign_sets, $sset;
+	}
+
+	#
+	# Pack 'er up.
+	#
+	$bodylist->pack(-fill => 'x');
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	creator()
+#
+sub creator
+{
+	my @krlist = ();			# Keyrecs for signset.
+	my $undoarg = '';			# Keyrec list for undo.
+
+	#
+	# Make sure we were given a name.
+	#
+	if($newset eq '')
+	{
+		error("The new signing set must be named");
+		return;
+	}
+
+	#
+	# Make sure we were given a *valid* name.
+	#
+	if($newset =~ /[ \t\n]/)
+	{
+		error("Whitespace is not allowed in a signing set name");
+		return;
+	}
+
+	#
+	# Make sure this name isn't taken yet.
+	#
+	foreach my $ssn (@ssnames)
+	{
+		if($ssn eq $newset)
+		{
+			error("\"$newset\" is already assigned to a signing set");
+			return;
+		}
+	}
+
+	#
+	# Add the signing set to the selected keyrecs.
+	#
+	foreach my $krn (sort(keys(%keyrecbox)))
+	{
+		my $cbh = $keyrecbox{$krn};		# Checkbox hash.
+
+		if($cbh->{'Value'} == 1)
+		{
+			signsets_add($krn,$newset);
+
+			$undoarg .= "$krn, ";
+		}
+	}
+
+	#
+	# Add the new set's name to the list of signing sets.
+	#
+	push @ssnames, $newset;
+	@ssnames = sort(@ssnames);
+
+	#
+	# Add an undo record.
+	#
+	$undoarg =~ s/, $//;
+	undo_add("signing_set", "create", $newset, $undoarg);
+
+	#
+	# Set the file-modified flag and reset the new signing set's name.
+	#
+	$newset = '';
+	$modified++;
+	settitle($curnode);
+
+	#
+	# Destroy our creation window and update the main window.
+	#
+	$subwin->destroy();
+	updatewindow();
+	$insubwind = 0;
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	modifier()
+#
+sub modifier
+{
+	my $addlist = "";			# Added keyrecs.
+	my $dellist = "";			# Deleted keyrecs.
+	my $nlist;				# Combined keyrec list.
+
+	#
+	# Modify the signing set so that only those keyrecs selected by the
+	# user are included.
+	#
+	foreach my $krn (keyrec_names())
+	{
+		my $kr;					# Keyrec hash.
+		my $sset;				# Keyrec's signing set.
+		my @ssns;				# Signing set array.
+		my $found = 0;				# Found flag.
+
+		#
+		# Get this keyrec and skip any zone keyrecs.
+		#
+		$kr = keyrec_fullrec($krn);
+		next if($kr->{'keyrec_type'} eq "zone");
+
+		#
+		# Break the keyrec's signing set string out into an array.
+		#
+		$sset = $kr->{'signing_set'};
+		@ssns = signsets_list2array($sset);
+
+		#
+		# Set a flag if this keyrec contains the selected signing set.
+		#
+		foreach my $k (@ssns)
+		{
+			$found = 1 if($k eq $modset);
+		}
+
+		#
+		# If the user checked this keyrec, we'll be sure the keyrec's
+		# signing set contains the selected signing set.
+		# Otherwise, we'll make sure it isn't in the keyrec's signing
+		# set.
+		#
+		if($keyrecbox{$krn}->{'Value'} == 1)
+		{
+			if(!$found)
+			{
+				signsets_add($krn,$modset);
+				$addlist .= ", $krn";
+			}
+		}
+		else
+		{
+			if($found)
+			{
+				signsets_del($krn,$modset);
+				$dellist .= ", $krn";
+			}
+		}
+
+	}
+
+	#
+	# Add an undo record.
+	#
+	$addlist =~ s/^, //;
+	$dellist =~ s/^, //;
+	$nlist = "$addlist; $dellist";
+	undo_add("signing_set", "modify", $modset, $nlist);
+
+	#
+	# Set the file-modified flag and reset the modified signing set's name.
+	#
+	$modset = '';
+	$modified++;
+	settitle($curnode);
+
+	#
+	# Destroy our modification window and update the main window.
+	#
+	$subwin->destroy();
+	updatewindow();
+	$insubwind = 0;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	keyrecbox_setall()
+#
+sub keyrecbox_setall
+{
+	my $cbh;					# Checkbox hash.
+
+	foreach my $krn (sort(keys(%keyrecbox)))
+	{
+		$cbh = $keyrecbox{$krn};
+		$cbh->{'Value'} = 1;
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	keyrecbox_setnone()
+#
+sub keyrecbox_setnone
+{
+	my $cbh;					# Checkbox hash.
+
+	#
+	# Add the signing set to the selected keyrecs.
+	#
+	foreach my $krn (sort(keys(%keyrecbox)))
+	{
+		$cbh = $keyrecbox{$krn};
+		$cbh->{'Value'} = 0;
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getnode()
+#
+sub getnode
+{
+	my @pathelts;					# Path elements.
+	my $pathnode;					# Last path elements.
+
+	@pathelts = split /\//, $krfile;
+	$pathnode = pop @pathelts;
+
+	return($pathnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cancelit()
+#
+sub cancelit
+{
+	$subwin->destroy();
+	$insubwind = 0;
+	$newset = '';
+	$modset = '';
+}
+
+#---------------------------------------------------------------------------
+# Routine:	helpbegone()
+#
+sub helpbegone
+{
+	$helpwin->destroy();
+	$inhelpwind = 0;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	error()
+#
+sub error
+{
+	my $msg = shift;			# Warning message.
+	my $dlg;				# Warning dialog widget.
+
+	$dlg = $wm->Dialog(-title => "$NAME Warning",
+			   -text  => $msg,
+			   -default_button => "Okay",
+			   -buttons => ["Okay"]);
+	$dlg->Show();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	help_help()
+#
+sub help_help
+{
+	my $hframe;					# Help frame.
+	my $wdgt;					# General widget.
+
+	my $helpstr;
+
+	$helpstr = "
+
+signset-editor - DNSSEC-Tools Signing Set GUI Editor
+         
+SYNOPSIS
+         
+    signset-editor <keyrec-file>
+
+DESCRIPTION
+
+signset-editor provides the capability for easy management of signing sets in
+a GUI.  The signing sets found in the given keyrec file are displayed in a new
+window.  The new signing sets may be created and existing signing sets may be
+modified or deleted from signset-editor.
+
+A signing set consists of zero or more keyrec names.  These sets are used by
+other DNSSEC-Tools utilities for signing zones.
+
+signset-editor has two display modes.  The Signing Set Display shows the names
+of all the signing sets in the given keyrec file.  The Keyrec Display shows
+the names of all the keyrecs in the given keyrec file.  signset-editor starts
+in Signing Set Display mode, but the mode can be toggled back and forth as
+needed.
+
+An additional toggle controls the display of additional data.  If the Extended
+Data toggle is turned on, then the Signing Set Display shows the names of the
+keyrecs in each signing set and the Keyrec Display shows the names of each
+signing set in a keyrec.  If the Extended Data toggle is turned off, then the
+Signing Set Display only shows the names of the signing sets and the Keyrec
+Display only shows the names keyrecs.
+
+signset-editor has a small number of commands.  These commands are all
+available through the menus, and must have a keyboard accelerator.
+
+Management of signing sets may be handled using a normal text editor.
+However, signset-editor provides a nice GUI that only manipulates signing sets
+without the potential visual clutter of the rest of the keyrec entries.
+
+";
+
+	#
+	# If we've already got another help window, we'll give an error and
+	# return.  Otherwise, we'll turn on our in-helpwindow flag.
+	#
+	if($inhelpwind)
+	{
+		error("Multiple help windows cannot be created\n");
+		return;
+	}
+	$inhelpwind = 1;
+
+	#
+	# Create a new window to hold our help info.  Bind up some
+	# key accelerators, too.
+	#
+	$helpwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Help!',
+				  -borderwidth => 1);
+	$helpwin->bind('<Control-Key-Q>',\&file_quit);
+	$helpwin->bind('<Control-Key-q>',\&file_quit);
+	$helpwin->bind('<Control-Key-W>',\&helpbegone);
+	$helpwin->bind('<Control-Key-w>',\&helpbegone);
+
+	#
+	# Now make the containers for the window.
+	#
+	$hframe = $helpwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$hframe->pack(-fill => 'x');
+
+	#
+	# Add the help data to the frame.
+	#
+	$wdgt = $hframe->Label(-text => $helpstr,
+			       -justify => 'left');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Add a button to dismiss the window.
+	#
+	$wdgt = $hframe->Button(-text => 'Done',
+				-command => \&helpbegone);
+	$wdgt->pack(-side => 'top');
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      settitle()
+#
+# Purpose:      Set the title for use in the "Editing File" line.
+#
+sub settitle
+{
+	my $name = shift;				# Name to use.
+
+	$name .= " *" if($modified);
+	$title = $name;
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:      Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  signset-editor [-v] <keyrec-file>\n";
+	exit(0);
+}
+
+1;
+
+#############################################################################
+
+=pod
+
+=head1 NAME
+
+signset-editor - DNSSEC-Tools Signing Set GUI Editor
+
+=head1 SYNOPSIS
+
+  signset-editor <keyrec-file>
+
+=head1 DESCRIPTION
+
+I<signset-editor> provides the capability for easy management of signing sets
+in a GUI.  The signing sets found in the given I<keyrec> file are displayed in
+a new window.  The new signing sets may be created and existing signing sets
+may be modified or deleted from I<signset-editor>.
+
+A signing set consists of zero or more I<keyrec> names.  These sets are used
+by other DNSSEC-Tools utilities for signing zones.
+
+I<signset-editor> has two display modes.  The Signing Set Display shows the
+names of all the signing sets in the given I<keyrec> file.  The Keyrec Display
+shows the names of all the I<keyrecs> in the given I<keyrec> file.
+I<signset-editor> starts in Signing Set Display mode, but the mode can be
+toggled back and forth as needed.
+
+An additional toggle controls the display of additional data.  If the Extended
+Data toggle is turned on, then the Signing Set Display shows the names of the
+I<keyrecs> in each signing set and the Keyrec Display shows the names of each
+signing set in a I<keyrec>.  If the Extended Data toggle is turned off, then
+the Signing Set Display only shows the names of the signing sets and the
+Keyrec Display only shows the names I<keyrecs>.
+
+I<signset-editor> has a small number of commands.  These commands are all
+available through the menus, and must have a keyboard accelerator.  The
+commands are described in the next section.
+
+Management of signing sets may be handled using a normal text editor.
+However, I<signset-editor> provides a nice GUI that B<only> manipulates
+signing sets without the potential visual clutter of the rest of the
+I<keyrec> entries.
+
+=head2 UNDOING MODIFICATIONS
+
+I<signset-editor> has the ability to reverse modifications it has made to a
+I<keyrec> file.  This historical restoration will only work for modifications
+made during a particular execution of I<signset-editor>; modifications made
+during a previous execution may not be undone.
+
+When undoing modifications, I<signset-editor> does not necessarily restore
+name-ordering within a I<keyrec>'s B<signing_set> field.  However, the
+signing-set data are maintained.  This means that an "undone" I<keyrec> file
+may not be exactly the same, byte-for-byte, as the original file, but the
+proper meaning of the data is kept.
+
+After a "Save" operation, the data required for reversing modifications are
+deleted.  This is not the case for the "Save As" operation.
+
+=head1 COMMANDS
+
+I<signset-editor> provides the following commands, organized by menus:
+
+=over 4
+
+=item B<Open> (File menu)	(Accelerator:  Ctrl-O)
+
+Open a new I<keyrec> file.  If the specified file does not exist, user will be
+prompted for the action to take.  If the user chooses the "Continue" action,
+then I<signset-editor> will continue editing the current I<keyrec> file.  If
+the "Quit" action is selected, then I<signset-editor> will exit.
+
+=item B<Save> (File menu)	(Accelerator:  Ctrl-S)
+
+Save the current I<keyrec> file.  The data for the "Undo Changes" command are
+purged, so this command will appear to be unmodified.
+
+Nothing will happen if no changes have been made.
+
+=item B<Save As> (File menu)	(Accelerator:  none)
+
+Save the current I<keyrec> file to a name selected by the user.
+
+=item B<Quit> (File menu)	(Accelerator:  Ctrl-Q)
+
+Exit I<signset-editor>.
+
+=item B<Undo Changes> (Edit menu)	(Accelerator:  Ctrl-U)
+
+Undo modifications made to the signing sets and keyrecs.  This is B<only> for
+the in-memory version of the I<keyrec> file.
+
+=item B<New Signing Set> (Commands menu)	(Accelerator:  Ctrl-N)
+
+Create a new signing set, with the option of adding I<keyrecs> to it.
+
+=item B<Delete Signing Set> (Commands menu)	(Accelerator:  Ctrl-D)
+
+Delete the selected signing set.  This command is available from both viewing
+modes.  If used from the Signing Set Display mode, then the selected signing
+set will be removed from all the I<keyrecs> that are part of the set.  If used
+from the Keyrec Display mode, then the selected I<keyrec> will no longer be
+part of any signing set.
+
+=item B<Modify Signing Set> (Commands menu)	(Accelerator:  Ctrl-M)
+
+Modify the selected signing set.  All, some, or none of the existing
+I<keyrecs> may be added to the signing set.
+
+=item B<View Signing Sets> (Display menu)	(Accelerator:  Ctrl-V)
+
+The main window will display the I<keyrec> file's signing sets.  If Extended
+Data are to be displayed, then each I<keyrec> in the signing set will also be
+shown.  If Extended data are not to be displayed, then only the signing set
+names will be shown.
+
+This command is a toggle that switches between View Signing Sets mode and
+View Keyrecs mode.
+
+=item B<View Keyrecs> (Display menu)	(Accelerator:  Ctrl-V)
+
+The main window will display the names of the I<keyrec> file's non-zone
+I<keyrecs>.  If Extended Data are to be displayed, then the name of each
+signing set of the I<keyrec> will also be shown.  If Extended data are not
+to be shown, then only the I<keyrec> names will be displayed.
+
+This command is a toggle that switches between View Keyrecs mode and View
+Signing Sets mode.
+
+=item B<Display Extended Data> (Display menu)	(Accelerator:  Ctrl-E)
+
+Additional data will be shown in the main window.  For Signing Sets Display
+mode, the names of the signing set and their constituent I<keyrecs> will be
+displayed.  For Keyrec Display mode, the names of the I<keyrecs> and their
+signing sets will be displayed.
+
+This command is a toggle that switches between Extended Data display and
+No Extended Data display.
+
+=item B<Do Not Display Extended Data> (Display menu)	(Accelerator:  Ctrl-E)
+
+No additional data will be shown in the main window.  For Signing Sets Display
+mode, only the names of the signing set will be displayed.  For Keyrec Display
+mode, only the names of the I<keyrecs> will be displayed.
+
+This command is a toggle that switches between No Extended Data display and
+Extended Data display.
+
+=item B<Help> (Help menu)	(Accelerator:  Ctrl-H)
+
+Display a help window.
+
+=back 4
+
+=head1 KEYBOARD ACCELERATORS
+
+Below are the keyboard accelerators for the I<signset-editor> commands:
+
+    Ctrl-D  Delete Signing Set
+
+    Ctrl-E  Display Extended Data / Do Not Display Extended Data
+
+    Ctrl-H  Help
+
+    Ctrl-M  Modify Signing Set
+
+    Ctrl-N  New Signing Set
+
+    Ctrl-O  Open
+
+    Ctrl-Q  Quit
+
+    Ctrl-S  Save
+
+    Ctrl-U  Undo Changes
+
+    Ctrl-V  View Signing Sets / View Keyrecs
+
+    Ctrl-W  Close Window (New Signing Set, Modify Signing Set, Help)
+
+=head1 REQUIREMENTS
+
+I<signset-editor> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+installed on your system.
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<clean-keyrec(8)>, B<fixkrf(8)>, B<genkrf(8)>, B<keyrec-check(8)>,
+B<lskrf(8)>, B<zonesigner(8)>
+
+B<Net::DNS::SEC::Tools::keyrec(5)>
+
+=cut
+
