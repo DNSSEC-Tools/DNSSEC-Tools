@@ -1,0 +1,38 @@
+Usage: /usr/bin/dnspktflow [OPTIONS] tcpdump files to analyze
+
+OPTIONS:
+
+Input Packet Selection:
+   -i STRING             A regular expression of host names to ignore           
+   -r STRING             A regular expression of host names to analyze          
+   -f                    Shows the packet frame numbers                         
+   -b INTEGER            Begin at frame NUMBER                                  
+
+Output Options:
+   -o STRING             Output ping image file name (default: out%03d.png)     
+  --fig                  Output format should be fig                            
+   -m                    Creates one picture per request (use %03d in the filename)
+   -M STRING             Saves a Magic Point presentation file for showing the output
+   -L                    Only show data on the last line drawn.                 
+   -z INTEGER            Only show at most INTEGER lines.                       
+
+   -O STRING             Save tethereal output to this file                     
+   -T                    The input file is already processed by tethereal       
+
+Graphical Options:
+   -t                    Shows message type in result image                     
+   -q                    Shows query questions in result image                  
+   -a                    Shows query answers in result image                    
+   -A                    Shows authoritative information in result image        
+   -x                    Shows additional information in result image           
+   -l                    Shows lines attaching labels to lines                  
+  --fontsize=INTEGER     Font Size                                              
+
+Debugging:
+   -d                    Dump data collected from the packets                   
+   -h                    Show help for command line options                     
+
+Help Options:
+   -h                    Display help options -- short flags preferred          
+  --help                 Display help options -- long flags preferred           
+  --help-full            Display all help options -- short and long             
