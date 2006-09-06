@@ -1,0 +1,338 @@
+	<!--#include virtual="/top.html" -->
+
+	<h2>DNSSEC-Tools Software Overview</h2>
+      <div class="indent">
+	<p> The following table shows the software available in the
+	<a href="http://sourceforge.net/project/showfiles.php?group_id=121671">DNSSEC-Tools 0.9.2</a> package.</p>
+
+      <p>To retrieve these applications and components, please see our
+      <a href="/resources/download.html">Download</a> page. </p>
+
+      <p>Many of the tools in the table below have
+	screen shots of their GUI interface.  <b>The GUI interface is
+	optional</b>.  A large number of the tools can be used with a
+	normal command line options or (if you have the QWizard and
+	Gtk2 perl modules installed) by simply launching it without
+	arguments and a GUI wizard interface will appear to walk you
+	through selecting the right options.  Users can pick which
+	mode is most comfortable for them.  The GUI interfaces require
+	installation of the optional perl modules on the <a
+	href="/resources/download.html">download</a> page.</p>
+    </div>
+    <br />
+      <div class="major">
+  
+        <h3>DNS Zone Administration Applications:</h3>
+	  <table class="soft">
+
+	      <tr>
+		<th class="thtitle">Tool</th>
+                <th class="thtitle">Description</th>
+		<th class="thtitle">CLI Example</th>
+		<th class="thtitle">GUI Example<br />(Optional Interface)</th>
+	      </tr>
+
+
+	      <!-- ZoneSigner -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="docs/zonesigner.html">zonesigner</a>:
+		</td>
+		<td class="description">
+		  A zone database signing utility that takes care of
+		  all necessary steps to sign and maintain a zone with
+		  as little hassle as possible.
+		</td>
+		<td>
+		  <a href="/txt/zonesigner-help.txt">CLI Help</a>
+		  <a href="/txt/zonesigner-example.txt">Example Output</a>
+		</td>
+		<td>
+		  [none]
+                  <!-- current zonesigner gui is out of date and
+                  impossible to turn on easily -->
+		  <!--
+		  <a href="/images/zonesigner.png">
+		    <img border=0 src="/images/zonesigner.sm.png">
+		  </a><br />
+                  -->
+		</td>
+	      </tr>
+
+	      <!-- donuts -->
+	      <tr>
+		<td class="tdtitle"><a href="docs/donuts.html">donuts</a>:</td>
+		<td class="description">
+		  A dnslint like application to analyze zone files.
+		  Specifically tailored to dnssec but also tests for more
+		  general (non-dnssec) problems.
+		</td>
+		<td>
+		  <a href="/txt/donuts-help.txt">CLI Help</a>
+		  <a href="/txt/donuts-example.txt">Example Output</a>
+		</td>
+		<td>
+		  <a href="/screenshots/donuts.html">
+		    <img border=0 src="/images/donuts.sm.png">
+		  </a>
+		</td>
+	      </tr>
+
+	      <!-- donutsd -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="docs/donutsd.html">donutsd</a>:
+		</td>
+		<td class="description">
+		  A long running daemon that routinely runs donuts on
+		  a number of zones and e-mails the appropriate
+		  administrators.  It is intened to notify admins when
+		  their zones are expiring or have other problems.
+		</td>
+		<td>
+		  <a href="/txt/donutsd-help.txt">CLI Help</a>
+		</td>
+		<td>
+		  <a href="/images/donutsd1.png">
+		    <img border=0 src="/images/donutsd.sm.png">
+		  </a>
+		</td>
+	      </tr>
+
+	      <!-- TrustMan -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="docs/TrustMan.html">TrustMan</a>:
+		</td>
+		<td class="description">
+		  TrustMan runs by default as a daemon to verify if
+		  keys stored locally in configuration files like
+		  named.conf still match the same keys as fetched from
+		  the zone where they are defined. If mismatches are
+		  detected, the daemon notifies the contact person
+		  defined in the config file or on the command line by
+		  mail.
+		</td>
+		<td>
+		  <a href="/txt/TrustMan-help.txt">CLI Help</a>
+		</td>
+		<td>
+	          [none]
+		</td>
+	      </tr>
+
+	      <!-- ifup-dyn-dns -->
+	      <tr>
+		<td class="tdtitle">ifup-dyn-dns:</td>
+		<td class="description">
+		  A linux ifup addition that propagates
+		  current IP addresses into a live zone(s) using dynamic
+		  DNS.  Allows for security to be used as well so
+		  transfers are properly authenticated.
+		</td>
+		<td>
+	          [none]
+		</td>
+		<td>
+	          [none]
+		</td>
+	      </tr>
+
+      </table>
+      <div class="major"><h3>DNS Debugging Applications::</h3>
+	<table class="soft">
+	      <!-- mapper -->
+	      <tr>
+		<td class="tdtitle"><a href="docs/mapper.html">mapper</a>:</td>
+		<td class="description">
+		  Maps DNS realms color coding the results to
+		  allow for easy visual interpretation of the results.  Color
+		  codes are based on record types and/or errors and
+		  warnings.
+		</td>
+		<td>
+		  <a href="/txt/mapper-help.txt">CLI Help</a>
+                </td>
+		<td>
+		  <a href="/screenshots/mapper.html">
+		    <img border=0 src="/images/mapper.sm.png">
+		    <img border=0 src="/images/exampmap.sm.png">
+		  </a>
+		</td>
+	      </tr>
+
+	      <!-- dnspktflow -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="docs/dnspktflow.html">dnspktflow</a>:
+		</td>
+		<td class="description">
+		  This tool, when combined with
+		  <a href="http://www.ethereal.org/">tethereal</a> and
+		  <a href="http://www.graphviz.org/">graphviz</a>, can trace
+		  tcpdump/tethereal network packet captures to visually
+		  diagram dns packet flows.  It is very useful for debugging
+		  dns queries being issued to resolvers, etc.  It outputs
+		  png files or
+		  <a href="http://member.wide.ad.jp/wg/mgp/">MagicPoint</a>
+		  packet-by-packet screen presentations.
+		</td>
+		<td>
+		<!-- (currently blank; problem!)
+		  <a href="/txt/dnspktflow-help.txt">CLI Help</a>
+		-->
+		</td>
+		<td>
+		  <a href="/images/dnspktflow1.png">
+		    <img border=0 src="/images/dnspktflow.sm.png">
+		  </a>
+		  <a href="/images/dnssec-tools.png">
+		    <img border=0 src="/images/dnssec-tools.sm.png">
+		  </a>
+		</td>
+	      </tr>
+
+	      <!-- maketestzone -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="docs/maketestzone.html">maketestzone</a>:
+		</td>
+		<td class="description">
+		  This tool generates a zone file(s)
+		  full of DNS records, then signs them, and then modifies
+		  them in various ways such that the final resulting file is
+		  a zone which contains DNSSEC "errors".  This is useful for
+		  generating test data which DNSSEC aware software can be
+		  tested against.  Our own
+		  <a href="testzone">test.dnssec-tools.org</a> testzone is
+		  created using this package.
+		</td>
+		<td>
+		  <a href="/txt/maketestzone-help.txt">CLI Help</a>
+		</td>
+		<td>
+		  <a href="/images/maketestzone1.png">
+		    <img border=0 src="/images/maketestzone.sm.png">
+		  </a>
+		</td>
+	      </tr>
+
+	  </table>
+	</div>
+
+	<div class="major"><h3>Libraries:</h3>
+	  <table class="soft">
+	    <tbody>
+	      <tr><td class="tdtitle"> libval and libsres</a>:</td>
+		<td class="description">
+		  These libraries implement
+		  DNSSEC aware DNS resolution APIs.  They offer both simple
+		  to use replacements for existing common resolver functions
+		  (eg, val_gethostbyname is a replacement for gethostbyname)
+		  and more complete APIs to return the results of validation
+		  at each step in validating a DNSSEC chain up to a trust
+		  anchor.
+		</td>
+	      </tr>
+	    </tbody>
+	  </table>
+	</div>
+
+	<div class="major"><h3>Perl modules:</h3>
+	  <table class="soft">
+	    <tbody>
+	      <tr>
+		<td class="tdtitle">
+		  <a
+		  href="docs/conf.html">Net::DNS::SEC::Tools::conf</a>:
+		</td>
+		<td class="description">
+		  Parses Net::DNS::SEC::Tools specific configuration
+		  files
+		</td>
+	      </tr>
+	      <tr>
+		<td class="tdtitle">
+		  <a href="docs/keyrec.html">Net::DNS::SEC::Tools::keyrec</a>:
+		</td>
+		<td class="description">
+		  Manipulates key records for the dnssec-tools that
+		  deal with keys
+		</td>
+	      </tr>
+	      <tr>
+		<td class="tdtitle">
+		  <a href="docs/tooloptions.html">
+		    Net::DNS::SEC::Tools::tooloptions
+		  </a>:
+		</td>
+		<td class="description">
+		  Implement option lists for perl based dnssec-tools
+		  for key manipulation.
+		</td>
+	      </tr>
+	      <tr>
+		<td class="tdtitle">Net::DNS::ZoneFile::Fast</td>
+		<td class="description">
+		  We've taken over development of this module and have
+		  made it dnssec compliant so it can load zone files
+		  with DNSSEC records in them.
+		</td>
+	      </tr>
+	    </tbody>
+	  </table>
+	</div>
+	<div class="major"><h3>Patches or plugins to other applications:</h3>
+	  <table class="soft">
+
+	    <tr><td class="tdtitle">Sendmail / Postfix / libspf</td>
+
+		<td class="description"> A patch to validate SPF
+		rules, incoming connections, etc against DNSsec
+		records to ensure lookups within MTAs are not using
+		spoofed DNS records.</td>
+		<td>
+		  <a href="/images/12.mta-3.png"><img border=0 src="/images/12.mta-3-sm.png"></a>
+		  <a href="/images/15.mta-6.png"><img border=0 src="/images/15.mta-6-sm.png"></a>
+		</td>
+	</tr>
+
+	      <tr><td class="tdtitle">Thunderbird</td>
+		<td class="description">A plugin which automatically
+		displays the DNSSEC validation headers in the
+		Thunderbird E-Mail reader</td>
+		<td>
+	      <a href="/images/16.mta-7.png"><img border=0 src="/images/16.mta-7-sm.png"></a>
+	      <a href="/images/13.mta-4.png"><img border=0 src="/images/13.mta-4-sm.png"></a>
+	      </td>
+	      </tr>
+
+	      <tr><td class="tdtitle">FireFox & Mozilla</td>
+		<td class="description">A patch which enables DNSSEC
+		validation of DNS lookups in the firefox application
+		suite (the firefox browser, mozilla, etc).</td><td>
+	      <a href="/images/moz-dnssec-prefs.png"><img border=0 src="/images/moz-dnssec-prefs.sm.png"></a><a href="/images/moz-dnssec-err.png"><br><img border=0 src="/images/moz-dnssec-err.sm.png"></a></td>
+	      </tr>
+
+	      <tr><td class="tdtitle">LogWatch</td>
+		<td class="description">A configuration plugin to
+		logwatch to have logwatch perform DNSSEC parsing of
+		system logging messages from running bind
+		servers.  (this patch is now included in the latest
+		release of logwatch)</td>
+		<td><a href="/txt/logwatch.txt">Example Output</a></td>
+	      </tr>
+
+	  </table>
+	</div>
+
+<!--#include virtual="/page-bottom.html" -->
+    <hr>
+<!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
+<!-- hhmts start -->
+Last modified: Wed Sep  6 15:38:57 PDT 2006
+<!-- hhmts end -->
+    </span>
+	</div>
+  </body>
+</html>
