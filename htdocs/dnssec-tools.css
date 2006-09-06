@@ -1,6 +1,7 @@
 body {
   margin:0px;
   padding:5px;
+  padding-left: 10px;
   font-family:verdana, arial, helvetica, sans-serif;
   font-size: 1em;
   color:#000;
@@ -36,8 +37,6 @@ div.title {
   color: #000000;
   padding-top: 20px;
   padding-bottom: 20px;
-  margin-left: 10px;
-  margin-right: 10px;
   margin-top: 5px;
   border-color: 66e;
   border-style: outset;
@@ -53,11 +52,14 @@ div.slogan {
 
 h2 { 
   background: #bbf;
-  padding-left: 5px;
+  padding-left: 5px; 
   border-color: #fff #fff #66e #fff;
   border-style: solid;
   border-width: 2px;
   padding-top: 3px;
+  font-size: 1.4em;
+  font-weight: bold;
+/*  margin-left: 100px; */
 }
 
 h3 { 
@@ -68,7 +70,13 @@ h3 {
   border-width: 2px;
 }
 
-div.indent { 
+div.indent, span.indent { 
+  margin-left: 20px;
+  margin-right: 20px;
+  padding-left: 5px;
+}
+
+span#indent { 
   margin-left: 20px;
   margin-right: 20px;
   padding-left: 5px;
@@ -92,7 +100,7 @@ table.soft {
   text-align: left;
   border-color: #bbbbbb;
   border-style: solid;
-  width: 100%;
+  width: 95%;
 }
 
 td.tdtitle { 
@@ -185,7 +193,7 @@ a.toplink:visited {
 }
 a.toplink:hover { 
   width: 100%;
-  background: #66e;
+  background: #99f;
   text-decoration:none;
 }
 
@@ -201,3 +209,117 @@ a:link {
 a:visited { 
   color: #d44;
 }
+
+/* ********************************************************************** */
+/* LEFT SIDE */
+
+.leftmenu ul, .leftcol { 
+  padding-left: 0px;
+  margin-right: 0px;
+  padding-right: 0px;
+  margin: 1px 1px 1px 1px;
+}
+
+.lilinks { 
+  color: #000;
+  list-style-type: none;
+  padding-left: 7px;
+  padding-right: 7px;
+  background: #ccf;
+/*  text-align: center; */
+  font-weight: bold;
+  font-size: .6em;
+  width: 150px;
+  border-color: #99f;
+  border-width: 2px;
+  border-style: outset;
+  margin-right: 0px;
+  padding-bottom: 3px;
+  padding-top: 3px;
+}
+
+.lititle { 
+  list-style-type: none;
+  padding-left: 7px;
+  padding-right: 7px;
+  margin-right: 0px;
+  text-align: center;
+  font-weight: bold;
+  font-style: underline;
+  font-size: .9em;
+  width: 150px;
+  color: #000;
+  background: #99f;
+  border: outset;
+  border-width: 2px;
+  margin-top: 15px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  border-color: #66e #66e #fff #66e;
+}
+
+.middlesect { 
+  margin-left: 250px;
+  float: right;
+}
+
+#rightside { 
+  width: 200px;
+  display: inline;
+}
+
+.middlesect h4 { 
+  margin-left: 200px;
+  padding-left: 200px;
+}
+
+.secttitle { 
+  background: #bbf;
+  padding-left: 5px; 
+  border-color: #fff #fff #66e #fff;
+  border-style: solid;
+  border-width: 2px;
+  padding-top: 3px;
+  font-size: 1.4em;
+  margin-left: 1px;
+  width: 100%;
+  padding-right: 200px;
+}
+
+div.tophalf { 
+  border-color: #0f0;
+}
+
+span.leftmenu { 
+  width: 20%;
+  margin-left: 10px;
+  padding-left: 10px;
+  background-color: #ffffff;
+  display: inline;
+  float: right;
+  padding-bottom: 10px;
+}
+
+span.testb { 
+  width: 75%;
+  display: inline;
+}
+
+div.testb { 
+  width: 50%;
+  display: inline;
+}
+
+
+span.sectitle { 
+  display: inline;
+  background: #bbf;
+  border-color: #fff #fff #66e #fff;
+  border-style: solid;
+  border-width: 2px;
+  padding-top: 3px;
+  font-size: 1.4em;
+  font-weight: bold;
+  width: 75%;
+}
+
