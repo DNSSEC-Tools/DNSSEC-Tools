@@ -30,20 +30,32 @@ my %opts = (
 # main
 
 # Parse command-line options
-GetOptions(\%opts,
-             'd|domain=s',
-             't|sleeptime=i',
-             'v|verbose',
-             'f|foreground|fg',
-             'c|config',
-             'o|outfile=s',
-             's|smtp_server=s',
-             'n|named_conf_file=s',
-             'k|dnsval_conf_file=s',
-             'L|syslog',
-             'p|print',
-             'N|no_error',
-             'm|mail_contact_addr=s');
+LocalGetOptions(\%opts,
+		['GUI:screen',           'TrustMan Options'],
+		['d|domain=s',
+		 'Comma separated list of new domain names to check'],
+
+		['GUI:separator',        'Daemon Options:'],
+		['t|sleeptime=i',        'Time to sleep between checks'],
+		['f|foreground|fg',
+		 'Run in the foreground, checking only once'],
+
+		['GUI:separator',        'Configuration file options:'],
+		['c|config',             'Read the dnssec-tools config file'],
+		['o|outfile=s',          'Output configuration file'],
+		['n|named_conf_file=s',  'The named.conf file to read'],
+		['k|dnsval_conf_file=s', 'The dnsval.conf file to read'],
+
+		['GUI:separator',        'Output options:'],
+		['L|syslog',             'Log results to syslog'],
+		['p|print',              'Print results to stdout'],
+		['N|no_error',           'Display good results, not just bad'],
+		['v|verbose',            'Turn on Verbose Output'],
+
+		['GUI:separator',        'EMail output options:'],
+		['m|mail_contact_addr=s', 'E-Mail results to address'],
+		['s|smtp_server=s',     'The SMTP server to send mail through'],
+		);
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
@@ -118,8 +130,8 @@ if ($opts{'f'}) {
 
 sub usage {
     print "TrustMan [-d domain] [-L] [-f] [-c] [-v]\n";
-    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
-    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
+    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]\n";
+    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]\n";
     print "\tuse the -f option to run in the foreground.\n";
     print "\tUse -L to log to syslog; this can be in addition to mail.\n";
     print "\tIf a domain is not specified, all domains in the key_containing_files will be checked.\n";
@@ -136,7 +148,7 @@ sub checkkeys {
     my @domains;
     my $named_conf_pat = "trusted-keys";
     my $dnsval_conf_pat = "trust-anchor";
-    push @domains, $opts{'d'} if ($opts{'d'});
+    push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
     my $res = Net::DNS::Resolver->new;
     # needed to ensure that +dnssec is used on subsequent queries
     my $setdnssec = $res->dnssec(1);
