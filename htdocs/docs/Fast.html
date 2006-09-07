@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>Net::DNS::ZoneFile::Fast -- parse BIND8/9 zone files</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -63,48 +65,48 @@ file modification), <em>parse()</em> inserts line numbering information into
 <em>Net::DNS::RR</em> objects.</p>
 <p>The module currently understands:</p>
 <dl>
-<dt><strong><a name="item__24generate_directive"><strong>$GENERATE</strong> directive</a></strong><br />
-</dt>
-<dt><strong><a name="item__24origin_directive"><strong>$ORIGIN</strong> directive</a></strong><br />
-</dt>
-<dt><strong><a name="item__24ttl_directive"><strong>$TTL</strong> directive</a></strong><br />
-</dt>
-<dt><strong><a name="item_directive"><strong>$INCLUDE</strong> directive (only while processing files or filehandles)</a></strong><br />
-</dt>
-<dt><strong><a name="item_a_records"><strong>A</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_aaaa_records"><strong>AAAA</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_cname_records"><strong>CNAME</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_hinfo_records"><strong>HINFO</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_loc_records"><strong>LOC</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_mx_records"><strong>MX</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_ns_records"><strong>NS</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_ptr_records"><strong>PTR</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_rp_records"><strong>RP</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_soa_records"><strong>SOA</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_srv_records"><strong>SRV</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_txt_records"><strong>TXT</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_rrsig_records"><strong>RRSIG</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_dnskey_records"><strong>DNSKEY</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_ds_records"><strong>DS</strong> records</a></strong><br />
-</dt>
-<dt><strong><a name="item_nsec_records"><strong>NSEC</strong> records</a></strong><br />
-</dt>
-<dt><strong><strong>RRSIG</strong> records</strong><br />
-</dt>
+<dt><strong><a name="item__generate"><strong>$GENERATE</strong> directive</a></strong>
+
+<dt><strong><a name="item__origin"><strong>$ORIGIN</strong> directive</a></strong>
+
+<dt><strong><a name="item__ttl"><strong>$TTL</strong> directive</a></strong>
+
+<dt><strong><a name="item_directive"><strong>$INCLUDE</strong> directive (only while processing files or filehandles)</a></strong>
+
+<dt><strong><a name="item_a_records"><strong>A</strong> records</a></strong>
+
+<dt><strong><a name="item_aaaa_records"><strong>AAAA</strong> records</a></strong>
+
+<dt><strong><a name="item_cname_records"><strong>CNAME</strong> records</a></strong>
+
+<dt><strong><a name="item_hinfo_records"><strong>HINFO</strong> records</a></strong>
+
+<dt><strong><a name="item_loc_records"><strong>LOC</strong> records</a></strong>
+
+<dt><strong><a name="item_mx_records"><strong>MX</strong> records</a></strong>
+
+<dt><strong><a name="item_ns_records"><strong>NS</strong> records</a></strong>
+
+<dt><strong><a name="item_ptr_records"><strong>PTR</strong> records</a></strong>
+
+<dt><strong><a name="item_rp_records"><strong>RP</strong> records</a></strong>
+
+<dt><strong><a name="item_soa_records"><strong>SOA</strong> records</a></strong>
+
+<dt><strong><a name="item_srv_records"><strong>SRV</strong> records</a></strong>
+
+<dt><strong><a name="item_txt_records"><strong>TXT</strong> records</a></strong>
+
+<dt><strong><a name="item_rrsig_records"><strong>RRSIG</strong> records</a></strong>
+
+<dt><strong><a name="item_dnskey_records"><strong>DNSKEY</strong> records</a></strong>
+
+<dt><strong><a name="item_ds_records"><strong>DS</strong> records</a></strong>
+
+<dt><strong><a name="item_nsec_records"><strong>NSEC</strong> records</a></strong>
+
+<dt><strong><strong>RRSIG</strong> records</strong>
+
 </dl>
 <p>
 </p>
@@ -118,73 +120,74 @@ file modification), <em>parse()</em> inserts line numbering information into
 </p>
 <h2><a name="subroutines">Subroutines</a></h2>
 <dl>
-<dt><strong><a name="item_parse"><em>parse</em></a></strong><br />
-</dt>
+<dt><strong><a name="item_parse"><em>parse</em></a></strong>
+
 <dd>
-Parses zone data and returns a reference to an array of <em>Net::DNS::RR</em>
+<p>Parses zone data and returns a reference to an array of <em>Net::DNS::RR</em>
 objects if successful.  Takes the following named (no pun intended)
-parameters:
+parameters:</p>
 </dd>
 <dl>
-<dt><strong><a name="item_text"><strong>text</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item_text"><strong>text</strong></a></strong>
+
 <dd>
-A semi-mandatory parameter, textual contents of the zone to be parsed.
+<p>A semi-mandatory parameter, textual contents of the zone to be parsed.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_fh"><strong>fh</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_fh"><strong>fh</strong></a></strong>
+
 <dd>
-A semi-mandatory parameter, a file handle from which zone contents can
-be read for parsing.
+<p>A semi-mandatory parameter, a file handle from which zone contents can
+be read for parsing.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_file"><strong>file</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_file"><strong>file</strong></a></strong>
+
 <dd>
-A semi-mandatory parameter, a file name with the zone to parse.
+<p>A semi-mandatory parameter, a file name with the zone to parse.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_origin"><strong>origin</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_origin"><strong>origin</strong></a></strong>
+
 <dd>
-An optional parameter specifying zone origin.  The default is ``.''.  A
-trailing ``.'' is appended if necessary.
+<p>An optional parameter specifying zone origin.  The default is ``.''.  A
+trailing ``.'' is appended if necessary.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_on_error"><strong>on_error</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_on_error"><strong>on_error</strong></a></strong>
+
 <dd>
-An optional parameter, user-defined error handler.  If specified, it
+<p>An optional parameter, user-defined error handler.  If specified, it
 must be a subroutine reference, which will be called on any error.  This
 subroutine will be passed two parameters: a line number in the zone,
-where the error occurred, and the error description.
+where the error occurred, and the error description.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_soft_errors"><strong>soft_errors</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_soft_errors"><strong>soft_errors</strong></a></strong>
+
 <dd>
-By default, <em>parse</em> throws an exception on any error.  Set this
+<p>By default, <em>parse</em> throws an exception on any error.  Set this
 optional parameter to a true value to avoid this.  The default is false,
-unless <strong>on_error</strong> is also specified, in which case it is true.
+unless <strong>on_error</strong> is also specified, in which case it is true.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_quiet"><strong>quiet</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_quiet"><strong>quiet</strong></a></strong>
+
 <dd>
-An optional parameter.  By default, on any error, the error description
+<p>An optional parameter.  By default, on any error, the error description
 is printed via warn().  Set <strong>quiet</strong> to a true value if you don't want
 this.  The default is false, unless <strong>on_error</strong> is also specified, in
-which case it is true.
+which case it is true.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_debug"><strong>debug</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_debug"><strong>debug</strong></a></strong>
+
 <dd>
-An optional parameter.  If set to true, will produce some debug
-printing.  You probably don't want to use that.
+<p>An optional parameter.  If set to true, will produce some debug
+printing.  You probably don't want to use that.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>One of <strong>text</strong>, <strong>fh</strong>, <strong>file</strong> must be specified.  If more than one is
 specified at the same time, <strong>fh</strong> takes precedence over <strong>file</strong>, which
 takes precedence over <strong>text</strong>.</p>
@@ -221,7 +224,7 @@ thing on around 50000 real life zones I tested it with.</p>
   you think this stuff is worth it, you can buy me a beer in return.</pre>
 <pre>
   Anton Berezin</pre>
-<p>Copyright (c) 2004-2005, SPARTA, Inc.
+<p>Copyright (c) 2004-2006, SPARTA, Inc.
   All rights reserved.
 </p>
 <pre>

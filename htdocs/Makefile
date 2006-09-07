@@ -8,6 +8,8 @@ TOOLS=donuts/donuts donuts/donutsd mapper/mapper \
 	scripts/zonesigner dnspktflow/dnspktflow maketestzone/maketestzone \
 	scripts/getdnskeys scripts/TrustMan \
 	scripts/lskrf scripts/keyrec-check scripts/genkrf scripts/expchk \
+	scripts/rollerd scripts/rollctl \
+	scripts/dtinitconf \
 	drawvalmap/drawvalmap 
 
 MODS=modules/conf modules/keyrec modules/tooloptions donuts/Rule \

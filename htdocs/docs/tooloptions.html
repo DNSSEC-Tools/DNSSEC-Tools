@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>Net::DNS::SEC::Tools::tooloptions - DNSSEC-Tools option routines.</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -16,8 +18,8 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#example">EXAMPLE</a></li>
-	<li><a href="#tool_option_arguments">TOOL OPTION ARGUMENTS</a></li>
-	<li><a href="#tool_option_interfaces">TOOL OPTION INTERFACES</a></li>
+	<li><a href="#tooloption_arguments">TOOLOPTION ARGUMENTS</a></li>
+	<li><a href="#tooloption_interfaces">TOOLOPTION INTERFACES</a></li>
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
@@ -116,27 +118,28 @@ dropping of command-line options are only effective after the initial
 <strong>tooloptions()</strong> call.</p>
 <p>The options sources are combined in this manner:</p>
 <ol>
-<li><strong><a name="item_dnssec_2dtools_2econf"><strong>dnssec-tools.conf</strong></a></strong><br />
-</li>
-The system-wide configuration file is read and these option values are used
+<li><strong><a name="item_dnssec_2dtools_2econf"><strong>dnssec-tools.conf</strong></a></strong>
+
+<p>The system-wide configuration file is read and these option values are used
 as the defaults.  These options are put into a hash table, with the option
-names as the hash key.
-<p></p>
-<li><strong><a name="item_keyrec_file"><em>keyrec</em> File</a></strong><br />
+names as the hash key.</p>
 </li>
-If a <em>keyrec</em> file was specified, then the <em>keyrec</em> named by <em>keyrec_name</em>
+<li><strong><a name="item_keyrec_file"><em>keyrec</em> File</a></strong>
+
+<p>If a <em>keyrec</em> file was specified, then the <em>keyrec</em> named by <em>keyrec_name</em>
 will be retrieved.  The <em>keyrec</em>'s fields are added to the hash table.  Any
 field whose keyword matches an existing hash key will override the existing
-value.
-<p></p>
-<li><strong><a name="item_command_2dline_options">Command-line Options</a></strong><br />
+value.</p>
 </li>
-The command-line options, specified in <em>@specopts</em>, are parsed using
+<li><strong><a name="item_command_2dline_options">Command-line Options</a></strong>
+
+<p>The command-line options, specified in <em>@specopts</em>, are parsed using
 <strong>Getoptions()</strong> from the <strong>Getopt::Long</strong> Perl module.  These options are
 folded into the hash table; again possibly overriding existing hash values.
 The options given in <em>@specopts</em> must be in the format required by
-<strong>Getoptions()</strong>.
-<p></p></ol>
+<strong>Getoptions()</strong>.</p>
+</li>
+</ol>
 <p>A reference to the hash table created in these three steps is returned to the
 caller.</p>
 <p>
@@ -162,30 +165,31 @@ will read each option source in turn, ending up with:
 <p>
 </p>
 <hr />
-<h1><a name="tool_option_arguments">TOOL OPTION ARGUMENTS</a></h1>
+<h1><a name="tooloption_arguments">TOOLOPTION ARGUMENTS</a></h1>
 <p>Many of the DNSSEC-Tools option interfaces take the same set of arguments:
 <em>$keyrec_file</em>, <em>$keyrec_name</em>, and <em>@csopts</em>.  These arguments are used
 similarly by most of the interfaces; differences are noted in the interface
 descriptions in the next section.</p>
 <dl>
-<dt><strong><a name="item__24keyrec_file"><em>$keyrec_file</em></a></strong><br />
-</dt>
+<dt><strong><a name="item__keyrec_file"><em>$keyrec_file</em></a></strong>
+
 <dd>
-Name of the <em>keyrec</em> file to be searched.
+<p>Name of the <em>keyrec</em> file to be searched.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__24keyrec_name"><em>$keyrec_name</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__keyrec_name"><em>$keyrec_name</em></a></strong>
+
 <dd>
-Name of the <em>keyrec</em> that is being sought
+<p>Name of the <em>keyrec</em> that is being sought</p>
 </dd>
-<p></p>
-<dt><strong><a name="item__40csopts"><em>@csopts</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item__csopts"><em>@csopts</em></a></strong>
+
 <dd>
-Command-specific options.
+<p>Command-specific options.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>The <em>keyrec</em> named in <em>$keyrec_name</em> is selected from the <em>keyrec</em> file
 given in <em>$keyrec_file</em>.  If either <em>$keyrec_file</em> or <em>$keyrec_name</em> are
 given as empty strings, their values will be taken from the <em>-krfile</em> and
@@ -199,14 +203,14 @@ directly to several interfaces or it may be saved in a call to
 <p>
 </p>
 <hr />
-<h1><a name="tool_option_interfaces">TOOL OPTION INTERFACES</a></h1>
+<h1><a name="tooloption_interfaces">TOOLOPTION INTERFACES</a></h1>
 <dl>
-<dt><strong><a name="item_tooloptions"><strong>tooloptions($keyrec_file,$keyrec_name,@csopts)</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item_tooloptions"><strong>tooloptions($keyrec_file,$keyrec_name,@csopts)</strong></a></strong>
+
 <dd>
-This <strong>tooloptions()</strong> call builds an option hash from the system configuration
+<p>This <strong>tooloptions()</strong> call builds an option hash from the system configuration
 file, a <em>keyrec</em>, and a set of command-specific options.  A reference to
-this option hash is returned to the caller.
+this option hash is returned to the caller.</p>
 </dd>
 <dd>
 <p>If <em>$keyrec_file</em> is given as an empty string, then no <em>keyrec</em> file will
@@ -220,14 +224,14 @@ must be called for each <em>keyrec</em> file that must be created, as the
 <strong>tooloptions</strong> <em>keyrec</em>-creation state is reset after <strong>tooloptions()</strong> has
 completed.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_krfile"><strong>opts_krfile($keyrec_file,$keyrec_name,@csopts)</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_krfile"><strong>opts_krfile($keyrec_file,$keyrec_name,@csopts)</strong></a></strong>
+
 <dd>
-The <strong>opts_krfile()</strong> routine looks up the <em>keyrec</em> file and <em>keyrec</em> name
+<p>The <strong>opts_krfile()</strong> routine looks up the <em>keyrec</em> file and <em>keyrec</em> name
 and uses those fields to help build an options hash.  References to the
 <em>keyrec</em> file name, <em>keyrec</em> name, and the option hash table are returned
-to the caller.
+to the caller.</p>
 </dd>
 <dd>
 <p>The <em>$keyrec_file</em> and <em>$keyrec_name</em> arguments are required parameters.
@@ -238,13 +242,13 @@ They may be given as empty strings, but they <strong>must</strong> be given.</p>
 the caller, then this routine will have the same effect as directly calling
 <strong>tooloptions()</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_getkeys"><strong>opts_getkeys($keyrec_file,$keyrec_name,@csopts)</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_getkeys"><strong>opts_getkeys($keyrec_file,$keyrec_name,@csopts)</strong></a></strong>
+
 <dd>
-This routine returns references to the KSK and ZSK <em>keyrec</em>s associated with
+<p>This routine returns references to the KSK and ZSK <em>keyrec</em>s associated with
 a specified <em>keyrec</em> entry.  This gives an easy way to get a zone's <em>keyrec</em>
-entries in a single step.
+entries in a single step.</p>
 </dd>
 <dd>
 <p>This routine acts as a front-end to the <strong>opts_krfile()</strong> routine.
@@ -256,13 +260,13 @@ Arguments to <strong>opts_getkeys()</strong> conform to those of <strong>opts_kr
 case, their values will be taken from the <em>-krfile</em> and <em>-keyrec</em> command
 line options.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_keykr"><strong>opts_keykr($keyrec_file,$keyrec_name,@csopts)</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_keykr"><strong>opts_keykr($keyrec_file,$keyrec_name,@csopts)</strong></a></strong>
+
 <dd>
-This routine returns a reference to the key <em>keyrec</em> named by
+<p>This routine returns a reference to the key <em>keyrec</em> named by
 <em>$keyrec_name</em>.  It ensures that the named <em>keyrec</em> is a key <em>keyrec</em>;
-if it isn't, <em>undef</em> is returned.
+if it isn't, <em>undef</em> is returned.</p>
 </dd>
 <dd>
 <p>This routine acts as a front-end to the <strong>opts_krfile()</strong> routine.
@@ -274,15 +278,15 @@ if it isn't, <em>undef</em> is returned.
 case, their values will be taken from the <em>-krfile</em> and <em>-keyrec</em> command
 line options.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_zonekr"><strong>opts_zonekr($keyrec_file,$keyrec_name,@csopts)</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_zonekr"><strong>opts_zonekr($keyrec_file,$keyrec_name,@csopts)</strong></a></strong>
+
 <dd>
-This routine returns a reference to the zone <em>keyrec</em> named by
+<p>This routine returns a reference to the zone <em>keyrec</em> named by
 <em>$keyrec_name</em>.  The <em>keyrec</em> fields from the zone's KSK and ZSK are
 folded in as well, but the key's <em>keyrec_</em> fields are excluded.  This
 call ensures that the named <em>keyrec</em> is a zone <em>keyrec</em>; if it isn't,
-<em>undef</em> is returned.
+<em>undef</em> is returned.</p>
 </dd>
 <dd>
 <p>This routine acts as a front-end to the <strong>opts_krfile()</strong> routine.
@@ -294,73 +298,74 @@ call ensures that the named <em>keyrec</em> is a zone <em>keyrec</em>; if it isn
 case, their values will be taken from the <em>-krfile</em> and <em>-keyrec</em> command
 line options.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_setcsopts"><strong>opts_setcsopts(@csopts)</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_setcsopts"><strong>opts_setcsopts(@csopts)</strong></a></strong>
+
 <dd>
-This routine saves a copy of the command-specific options given in <em>@csopts</em>.
+<p>This routine saves a copy of the command-specific options given in <em>@csopts</em>.
 This collection of options is added to the <em>@csopts</em> array that may be passed
-to <strong>tooloptions()</strong>.
+to <strong>tooloptions()</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_createkrf"><strong>opts_createkrf()</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_createkrf"><strong>opts_createkrf()</strong></a></strong>
+
 <dd>
-Force creation of an empty <em>keyrec</em> file if the specified file does not
+<p>Force creation of an empty <em>keyrec</em> file if the specified file does not
 exist.  This may happen on calls to <strong>tooloptions()</strong>, <strong>opts_getkeys()</strong>,
-<strong>opts_krfile()</strong>, and <strong>opts_zonekr()</strong>.
+<strong>opts_krfile()</strong>, and <strong>opts_zonekr()</strong>.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_suspend"><strong>opts_suspend()</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_suspend"><strong>opts_suspend()</strong></a></strong>
+
 <dd>
-Suspend inclusion of the command-line options in building the final hash
-table of responses.
+<p>Suspend inclusion of the command-line options in building the final hash
+table of responses.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_restore"><strong>opts_restore()</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_restore"><strong>opts_restore()</strong></a></strong>
+
 <dd>
-Restore inclusion of the command-line options in building the final hash
-table of responses.
+<p>Restore inclusion of the command-line options in building the final hash
+table of responses.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_drop"><strong>opts_drop()</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_drop"><strong>opts_drop()</strong></a></strong>
+
 <dd>
-Discard the command-line options.  They will no longer be available for
+<p>Discard the command-line options.  They will no longer be available for
 inclusion in building the final hash table of responses for this execution
-of the command.
+of the command.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_reset"><strong>opts_reset()</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_reset"><strong>opts_reset()</strong></a></strong>
+
 <dd>
-Reset an internal flag so that the command-line arguments may be
+<p>Reset an internal flag so that the command-line arguments may be
 re-examined.  This is usually only useful if the arguments have been
-modified by the calling program itself.
+modified by the calling program itself.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_gui"><strong>opts_gui()</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_gui"><strong>opts_gui()</strong></a></strong>
+
 <dd>
-Set an internal flag so that command arguments may be specified with a GUI.
+<p>Set an internal flag so that command arguments may be specified with a GUI.
 GUI usage requires that Getopt::Long::GUI is available.  If it isn't, then 
-Getopt::Long will be used.
+Getopt::Long will be used.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_opts_nogui"><strong>opts_nogui()</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_opts_nogui"><strong>opts_nogui()</strong></a></strong>
+
 <dd>
-Set an internal flag so that the GUI will not be used for specifying
-command arguments.
+<p>Set an internal flag so that the GUI will not be used for specifying
+command arguments.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />
 <h1><a name="copyright">COPYRIGHT</a></h1>
-<p>Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+<p>Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.</p>
 <p>
 </p>
