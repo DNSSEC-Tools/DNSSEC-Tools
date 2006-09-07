@@ -1,7 +1,9 @@
+<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>Net::DNS::SEC::Tools::Donuts::Rule - Define donuts DNS record-checking rules</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
 <link rev="made" href="mailto:root@localhost" />
 </head>
 
@@ -62,12 +64,12 @@ tokens imply special meanings.  These special tokens include <em>test</em>,
 <p>Each rule definition within a file should be separated using a blank line.</p>
 <p>Lines beginning with the '#' character will be discarded as a comment.</p>
 <dl>
-<dt><strong><a name="item_name"><em>name</em></a></strong><br />
-</dt>
+<dt><strong><a name="item_name"><em>name</em></a></strong>
+
 <dd>
-The name of the rule.  This is mandatory, as the user may need to be
+<p>The name of the rule.  This is mandatory, as the user may need to be
 able to refer to names in the future for use with the <em>-i</em> flag,
-specifying behavior in configuration files, and for other uses.
+specifying behavior in configuration files, and for other uses.</p>
 </dd>
 <dd>
 <p>By convention, all names should be specified using capital letters and
@@ -83,14 +85,14 @@ selecting certain types of rules via <em>donuts -i</em> and other flags.</p>
 <pre>
   name: DNSSEC_TEST_SOME_SECURE_FEATURE</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_level"><em>level</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_level"><em>level</em></a></strong>
+
 <dd>
-The rule's execution level, as recognized by <em>donuts</em>.  Only those
+<p>The rule's execution level, as recognized by <em>donuts</em>.  Only those
 rules at or above <em>donuts</em>' current execution level will be run by
 <em>donuts</em>.  The execution level is specified by the <em>-l</em> option to
-<em>donuts</em>; if not given, then the default execution level is 5.
+<em>donuts</em>; if not given, then the default execution level is 5.</p>
 </dd>
 <dd>
 <p>The default <em>level</em> of every rule is 5.</p>
@@ -109,13 +111,13 @@ maximum value is 9, which is reserved for debugging rules only.
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   level: 2</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_class"><em>class</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_class"><em>class</em></a></strong>
+
 <dd>
-The <em>class</em> code indicates the type of problem associated with the
+<p>The <em>class</em> code indicates the type of problem associated with the
 rule.  It defaults to ``<em>Error</em>'', and the only other value that should
-be used is ``<em>Warning</em>''.
+be used is ``<em>Warning</em>''.</p>
 </dd>
 <dd>
 <p>This value is displayed to the user.  Technically, any value could be
@@ -127,15 +129,15 @@ could break portability in future versions.</p>
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   class: Warning</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_ruletype"><em>ruletype</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_ruletype"><em>ruletype</em></a></strong>
+
 <dd>
-Rules fall into one of two types (currently): <em>record</em> or <em>name</em>.
+<p>Rules fall into one of two types (currently): <em>record</em> or <em>name</em>.
 <em>record</em> rules have their test evaluated for each record being in
 a zone file.  <em>name</em> rules, on the other hand, get called once per
 name stored in the database.  See the <em>test</em> description below for
-further details on the arguments passed to each rule type.
+further details on the arguments passed to each rule type.</p>
 </dd>
 <dd>
 <p>The default value for this clause is <em>record</em>.</p>
@@ -148,14 +150,14 @@ further details on the arguments passed to each rule type.
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   ruletype: record</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_type"><em>type</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_type"><em>type</em></a></strong>
+
 <dd>
-Rules that test a particular type of record should specify the
+<p>Rules that test a particular type of record should specify the
 <em>type</em> field with the type of record it wants to test.  The rule
 will only be executed for records of that type.  This will result
-in less error checking for the user in the <em>test</em> section.
+in less error checking for the user in the <em>test</em> section.</p>
 </dd>
 <dd>
 <p>For example, if a rule is testing a particular aspect of an MX record,
@@ -169,14 +171,14 @@ it should specify MX in this field.</p>
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
   type: MX</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_init"><em>init</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_init"><em>init</em></a></strong>
+
 <dd>
-A block of code to be executed immediately. This is useful for
+<p>A block of code to be executed immediately. This is useful for
 boot-strap code to be performed only at start-up, rather than
 at every rule-test invocation.  For example, ``use MODULE;''
-type statements should be used in <em>init</em> sections.
+type statements should be used in <em>init</em> sections.</p>
 </dd>
 <dd>
 <p><em>init</em> sections contain are wrapped in an xml-like syntax which
@@ -192,15 +194,15 @@ specifies the start and end of the init section of code:</p>
     $value = calculate();
   &lt;/init&gt;</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_test"><em>test</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_test"><em>test</em></a></strong>
+
 <dd>
-A block of code that defining the test for each record or name.  The
+<p>A block of code that defining the test for each record or name.  The
 test statement follows the same multi-line code specification
 described in the <em>init</em> clause above.  Specifically, all the lines
 between the &lt;test&gt; and &lt;/test&gt; braces are considered part of the test
-code.
+code.</p>
 </dd>
 <dd>
 <p>The end result must be a subroutine reference which will be called by
@@ -222,10 +224,10 @@ called with arguments which depend on the <em>ruletype</em> clause above.
 These arguments and calling conventions are as follows:</p>
 </dd>
 <dl>
-<dt><strong><a name="item_record_tests"><em>record</em> tests</a></strong><br />
-</dt>
+<dt><strong><a name="item_record_tests"><em>record</em> tests</a></strong>
+
 <dd>
-These code snippets are expected to test a single <strong>Net::DNS::RR</strong> record.
+<p>These code snippets are expected to test a single <strong>Net::DNS::RR</strong> record.</p>
 </dd>
 <dd>
 <p>It is called with two arguments:</p>
@@ -238,12 +240,12 @@ These code snippets are expected to test a single <strong>Net::DNS::RR</strong> 
 <pre>
   2) the rule definition itself.</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_name_tests"><em>name</em> tests</a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_name_tests"><em>name</em> tests</a></strong>
+
 <dd>
-These code snippets are expected to test all the records
-associated with a given name record.
+<p>These code snippets are expected to test all the records
+associated with a given name record.</p>
 </dd>
 <dd>
 <p>It is called with three arguments:</p>
@@ -266,7 +268,8 @@ associated with a given name record.
   3) The record name being checked (the name associated with
      the data from 1) above).</pre>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>Examples:</p>
 <pre>
   # local rule to mandate that each record must have a
@@ -287,29 +290,29 @@ associated with a given name record.
     return &quot;A records must have a HINFO record too&quot;
       if (exists($_[0]{'A'}) &amp;&amp; !exists($_[0]{'HINFO'}));
   &lt;/test&gt;</pre>
-<dt><strong><a name="item_feature_3a_name"><em>feature:</em> <strong>NAME</strong></a></strong><br />
-</dt>
+<dt><strong><a name="item_feature_3a_name"><em>feature:</em> <strong>NAME</strong></a></strong>
+
 <dd>
-The feature tag prevents this rule from running unless the <strong>NAME</strong>
-keyword was specified using the <em>--features</em> flag.
+<p>The feature tag prevents this rule from running unless the <strong>NAME</strong>
+keyword was specified using the <em>--features</em> flag.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_desc_3a_description"><em>desc:</em> <strong>DESCRIPTION</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_desc_3a_description"><em>desc:</em> <strong>DESCRIPTION</strong></a></strong>
+
 <dd>
-A short description of what the rule tests that will be printed to the
+<p>A short description of what the rule tests that will be printed to the
 user in help output or in the error summary when donuts outputs the
-results.
+results.</p>
 </dd>
-<p></p>
-<dt><strong><a name="item_help_3a_token_3a_token_2dhelp"><em>help:</em> <strong>TOKEN:</strong> <strong>TOKEN-HELP</strong></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_help_3a_token_3a_token_2dhelp"><em>help:</em> <strong>TOKEN:</strong> <strong>TOKEN-HELP</strong></a></strong>
+
 <dd>
-If the rule is configurable via the user's .donuts.conf file, this
+<p>If the rule is configurable via the user's .donuts.conf file, this
 describes the configuration tokens for the user when they request
 configuration help via the -H or --help-config flags.  Tokens may be
 used within rules by accessing them within the rule argument passed to
-the code (the second argument).
+the code (the second argument).</p>
 </dd>
 <dd>
 <p>Example:</p>
@@ -343,21 +346,22 @@ the code (the second argument).
 <pre>
   3) and running donuts -H will show the help line for myconfig.</pre>
 </dd>
-<p></p>
-<dt><strong><a name="item_noindent_3a_1"><em>noindent: 1</em></a></strong><br />
-</dt>
-<dt><strong><a name="item_nowrap_3a_1"><em>nowrap: 1</em></a></strong><br />
-</dt>
+</li>
+<dt><strong><a name="item_noindent_3a_1"><em>noindent: 1</em></a></strong>
+
+<dt><strong><a name="item_nowrap_3a_1"><em>nowrap: 1</em></a></strong>
+
 <dd>
-Normally <em>donuts</em> will line-wrap the error summary produced by a rule
+<p>Normally <em>donuts</em> will line-wrap the error summary produced by a rule
 to enable automatic pretty printing of error results.  Sometimes,
 however, rules may not want this.  The <em>nowrap</em> option indicates to
 donuts that the output is pre-formatted but should still be indented
 to align with the output of the rest of the error text (current about
 15 spaces).  The <em>noindent</em> tag, however, says don't do either
-wrapping or indenting and just print the error as is.
+wrapping or indenting and just print the error as is.</p>
 </dd>
-<p></p></dl>
+</li>
+</dl>
 <p>
 </p>
 <hr />

@@ -19,9 +19,8 @@
 	installation of the optional perl modules on the <a
 	href="/resources/download.html">download</a> page.</p>
     </div>
-    <br />
+
       <div class="major">
-  
         <h3>DNS Zone Administration Applications:</h3>
 	  <table class="soft">
 
@@ -36,7 +35,7 @@
 	      <!-- ZoneSigner -->
 	      <tr>
 		<td class="tdtitle">
-		  <a href="docs/zonesigner.html">zonesigner</a>:
+		  <a href="/docs/zonesigner.html">zonesigner</a>:
 		</td>
 		<td class="description">
 		  A zone database signing utility that takes care of
@@ -61,7 +60,7 @@
 
 	      <!-- donuts -->
 	      <tr>
-		<td class="tdtitle"><a href="docs/donuts.html">donuts</a>:</td>
+		<td class="tdtitle"><a href="/docs/donuts.html">donuts</a>:</td>
 		<td class="description">
 		  A dnslint like application to analyze zone files.
 		  Specifically tailored to dnssec but also tests for more
@@ -81,7 +80,7 @@
 	      <!-- donutsd -->
 	      <tr>
 		<td class="tdtitle">
-		  <a href="docs/donutsd.html">donutsd</a>:
+		  <a href="/docs/donutsd.html">donutsd</a>:
 		</td>
 		<td class="description">
 		  A long running daemon that routinely runs donuts on
@@ -96,28 +95,6 @@
 		  <a href="/images/donutsd1.png">
 		    <img border=0 src="/images/donutsd.sm.png">
 		  </a>
-		</td>
-	      </tr>
-
-	      <!-- TrustMan -->
-	      <tr>
-		<td class="tdtitle">
-		  <a href="docs/TrustMan.html">TrustMan</a>:
-		</td>
-		<td class="description">
-		  TrustMan runs by default as a daemon to verify if
-		  keys stored locally in configuration files like
-		  named.conf still match the same keys as fetched from
-		  the zone where they are defined. If mismatches are
-		  detected, the daemon notifies the contact person
-		  defined in the config file or on the command line by
-		  mail.
-		</td>
-		<td>
-		  <a href="/txt/TrustMan-help.txt">CLI Help</a>
-		</td>
-		<td>
-	          [none]
 		</td>
 	      </tr>
 
@@ -137,13 +114,98 @@
 	          [none]
 		</td>
 	      </tr>
+        </table>
+      </div>
+
+      <div class="major">
+        <h3>Network Operation Applications for DNS Deployment:</h3>
+	  <table class="soft">
+
+	      <tr>
+		<th class="thtitle">Tool</th>
+                <th class="thtitle">Description</th>
+		<th class="thtitle">CLI Example</th>
+		<th class="thtitle">GUI Example<br />(Optional Interface)</th>
+	      </tr>
+
+
+	      <!-- TrustMan -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="/docs/TrustMan.html">TrustMan</a>:
+		</td>
+		<td class="description">
+		  TrustMan runs by default as a daemon to verify if
+		  keys stored locally in configuration files like
+		  named.conf still match the same keys as fetched from
+		  the zone where they are defined. If mismatches are
+		  detected, the daemon notifies the contact person
+		  defined in the config file or on the command line by
+		  mail.
+		</td>
+		<td>
+		  <a href="/txt/TrustMan-help.txt">CLI Help</a>
+		</td>
+		<td>
+	          <a href="/images/TrustMan.png">
+	            <img src="/images/TrustMan.sm.png" />
+     	          </a>
+	          <br />
+	    <font size="-1">(GUI in next release)</font>
+		</td>
+	      </tr>
+
+	      <!-- rollerd -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="/docs/rollerd.html">rollerd</a>:
+		</td>
+		<td class="description">
+       The rollerd daemon manages key roll-over for zones.  The
+       Pre-Publish Method of key roll-over is used for ZSK key
+       roll-overs.  (Currently, rollerd only handles ZSK roll-over.)
+       This method uses a four phase process that is entered into when
+       it is time to perform a ZSK roll-over.
+		</td>
+		<td>
+		  <a href="/txt/rollerd-help.txt">CLI Help</a>
+		</td>
+		<td>
+		  [none]
+		</td>
+	      </tr>
+
+
+	      <!-- rollctl -->
+	      <tr>
+		<td class="tdtitle">
+		  <a href="/docs/rollctl.html">rollctl</a>:
+		</td>
+		<td class="description">
+       The rollctl command sends commands to the DNSSEC-Tools
+       roll-over dae- mon, <a href="/docs/rollerd.html">rollerd</a>.
+       Multiple options may be specified on a single command line and
+       they will be executed in alphabetical order.  The exception to
+       this ordering is that the -shutdown command will always be
+       executed last.
+		</td>
+		<td>
+		  <a href="/txt/rollctl-help.txt">CLI Help</a>
+		</td>
+		<td>
+		  [none]
+		</td>
+	      </tr>
 
       </table>
+    </div>
+
+
       <div class="major"><h3>DNS Debugging Applications::</h3>
 	<table class="soft">
 	      <!-- mapper -->
 	      <tr>
-		<td class="tdtitle"><a href="docs/mapper.html">mapper</a>:</td>
+		<td class="tdtitle"><a href="/docs/mapper.html">mapper</a>:</td>
 		<td class="description">
 		  Maps DNS realms color coding the results to
 		  allow for easy visual interpretation of the results.  Color
@@ -164,7 +226,7 @@
 	      <!-- dnspktflow -->
 	      <tr>
 		<td class="tdtitle">
-		  <a href="docs/dnspktflow.html">dnspktflow</a>:
+		  <a href="/docs/dnspktflow.html">dnspktflow</a>:
 		</td>
 		<td class="description">
 		  This tool, when combined with
@@ -193,7 +255,7 @@
 	      <!-- maketestzone -->
 	      <tr>
 		<td class="tdtitle">
-		  <a href="docs/maketestzone.html">maketestzone</a>:
+		  <a href="/docs/maketestzone.html">maketestzone</a>:
 		</td>
 		<td class="description">
 		  This tool generates a zone file(s)
@@ -242,7 +304,7 @@
 	      <tr>
 		<td class="tdtitle">
 		  <a
-		  href="docs/conf.html">Net::DNS::SEC::Tools::conf</a>:
+		  href="/docs/conf.html">Net::DNS::SEC::Tools::conf</a>:
 		</td>
 		<td class="description">
 		  Parses Net::DNS::SEC::Tools specific configuration
@@ -251,7 +313,7 @@
 	      </tr>
 	      <tr>
 		<td class="tdtitle">
-		  <a href="docs/keyrec.html">Net::DNS::SEC::Tools::keyrec</a>:
+		  <a href="/docs/keyrec.html">Net::DNS::SEC::Tools::keyrec</a>:
 		</td>
 		<td class="description">
 		  Manipulates key records for the dnssec-tools that
@@ -260,7 +322,7 @@
 	      </tr>
 	      <tr>
 		<td class="tdtitle">
-		  <a href="docs/tooloptions.html">
+		  <a href="/docs/tooloptions.html">
 		    Net::DNS::SEC::Tools::tooloptions
 		  </a>:
 		</td>
@@ -309,7 +371,7 @@
 		<td class="description">A patch which enables DNSSEC
 		validation of DNS lookups in the firefox application
 		suite (the firefox browser, mozilla, etc).</td><td>
-	      <a href="/images/moz-dnssec-prefs.png"><img border=0 src="/images/moz-dnssec-prefs.sm.png"></a><a href="/images/moz-dnssec-err.png"><br><img border=0 src="/images/moz-dnssec-err.sm.png"></a></td>
+	      <a href="/images/firefox-prefs.png"><img border=0 src="/images/firefox-prefs.sm.png"></a><a href="/images/firefox-denied.png"><br><img border=0 src="/images/firefox-denied.sm.png"></a></td>
 	      </tr>
 
 	      <tr><td class="tdtitle">LogWatch</td>
@@ -328,7 +390,7 @@
     <hr>
 <!-- Created: Tue Oct 19 14:05:17 PDT 2004 -->
 <!-- hhmts start -->
-Last modified: Wed Sep  6 15:49:06 PDT 2006
+Last modified: Thu Sep  7 09:32:41 PDT 2006
 <!-- hhmts end -->
     </span>
 	</div>

@@ -18,7 +18,14 @@
 	<li><a href="#synopsis">SYNOPSIS</a></li>
 	<li><a href="#description">DESCRIPTION</a></li>
 	<li><a href="#prerequisites">PRE-REQUISITES</a></li>
-	<li><a href="#adding_new_record_modifications">ADDING NEW RECORD MODIFICATIONS</a></li>
+	<li><a href="#adding_new_output">ADDING NEW OUTPUT</a></li>
+	<ul>
+
+		<li><a href="#adding_legend_information">ADDING LEGEND INFORMATION</a></li>
+		<li><a href="#adding_new_subzone_differences">ADDING NEW SUBZONE DIFFERENCES</a></li>
+		<li><a href="#adding_new_record_modifications">ADDING NEW RECORD MODIFICATIONS</a></li>
+	</ul>
+
 	<li><a href="#copyright">COPYRIGHT</a></li>
 	<li><a href="#author">AUTHOR</a></li>
 	<li><a href="#see_also">SEE ALSO</a></li>
@@ -60,7 +67,27 @@ bind software 9.3.1 or greater</p>
 <p>
 </p>
 <hr />
-<h1><a name="adding_new_record_modifications">ADDING NEW RECORD MODIFICATIONS</a></h1>
+<h1><a name="adding_new_output">ADDING NEW OUTPUT</a></h1>
+<p>... XXX: a high level description needed about development guides</p>
+<p>
+</p>
+<h2><a name="adding_legend_information">ADDING LEGEND INFORMATION</a></h2>
+<p>For the legend HTML output, the %LegendInformation hash contains a
+keyname and description for each modification type.</p>
+<p>
+</p>
+<h2><a name="adding_new_subzone_differences">ADDING NEW SUBZONE DIFFERENCES</a></h2>
+<p>The <em>%zonesigner_domain_opts</em> hash lists additional arguments between
+how zonesigner is called for various sub-domains.  Thus you can create
+additional sub-zones with different zonesigner optionns to test other
+operational parameters between parent and child.  For example:</p>
+<pre>
+   'rollzsk-ns.' . $opts{'d'} =&gt; '-forceroll',</pre>
+<p>Forces the rollzsk-ns test sub-zone to roll it's zsk when the zone is
+signed.</p>
+<p>
+</p>
+<h2><a name="adding_new_record_modifications">ADDING NEW RECORD MODIFICATIONS</a></h2>
 <p>Maketestzone is in early development stages but already has the
 beginnings of an extnesible system allowing you to modify records at
 will based on regexp =&gt; subroutine hooks.</p>

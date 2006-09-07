@@ -268,11 +268,10 @@ option or as the first non-option command line argument.</p>
 <p>Display a usage message.</p>
 </dd>
 </li>
-<dt><strong><a name="item__2dversion">-version</a></strong>
+<dt><strong><a name="item__2dversion">-Version</a></strong>
 
 <dd>
-<p>Display zonesigner's version number and the DNSSEC-Tools package
-version number that it came from.</p>
+<p>Display the version information for zonesigner and the DNSSEC-Tools package.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dverbose">-verbose</a></strong>
@@ -306,8 +305,10 @@ the command line, additional levels of verbosity are achieved.</p>
 <dt><strong><a name="item__2dalgorithm">-algorithm</a></strong>
 
 <dd>
-<p>Cryptographic algorithm used to generate the zone's keys.
-The default value is RSASHA1.</p>
+<p>Cryptographic algorithm used to generate the zone's keys.  The default
+value is RSASHA1.  The option value is passed to the -a flag of
+dnssec-keygen.  Consult the manual page for that to determine legal
+values.</p>
 </dd>
 </li>
 <dt><strong><a name="item__2dksklength">-ksklength</a></strong>
