@@ -425,7 +425,7 @@ sub daemonize {
 
 sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
-	require Getopt::Long;
+	require Getopt::GUI::Long;
 	import Getopt::GUI::Long;
 	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
 	return GetOptions(@_);
