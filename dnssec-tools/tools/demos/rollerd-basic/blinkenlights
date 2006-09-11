@@ -1,0 +1,836 @@
+#!/usr/bin/perl
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# DNSSEC-Tools:  blinkenlights
+#
+
+use strict;
+
+use Tk;
+use Tk::Table;
+
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "blinkenlights";
+my $VERS   = "$NAME version: 0.1.1";
+my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
+
+#
+# Font size for output window.
+#
+my $fontsize = 24;
+my $font = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+
+#
+# Background colors for the zones,  cycling through the list for table rows.
+#
+my $NUMCOLORS = 4;				# Maximum number of colors.
+my $colorind = 0;				# Current color index.
+my $skipcolor = "grey";				# Color for skip zones.
+
+my @phasecolors =
+(
+	['dummy'],
+	['blue', 'LightBlue2',  'skyblue1',  'cornflower blue', 'dodger blue'],
+	['red',  'pink',        'indianred', 'violetred1',      'orangered1'],
+	['green', 'lightgreen', 'seagreen1', 'greenyellow',	'lawngreen'], 
+);
+
+#
+# Descriptions of the rollover phasees.
+#
+my @phasedescr =
+(
+	"  normal operation  ",			# phase 0
+	"  first cache-expire wait  ",		# phase 1
+	"  sign with ZSKCUR and ZSKPUB  ",	# phase 2
+	"  second cache-expire wait  ",		# phase 3
+	"  sign with ZSKPUB and ZSKNEW  ",	# phase 4
+);
+
+#
+# Main window constants.
+#
+my $MAINGEOM	= "500x237";
+my $MAINTITLE	= "blinkenlights";
+
+#
+# The main window and its frames.
+#
+my $wm;							# Main window.
+my $helpwin;						# Help window.
+my $mbar;						# Menubar frame.
+my $body;						# Window body frame.
+my $zonetab;						# Zone data table.
+my $null;						# Empty frame.
+
+my $bodyframe;						# Frame in body.
+
+#
+# Menu item widgets.
+#
+my $fm_quit;						# Quit file item.
+my $dm_togl;						# Viewing toggle.
+my $hm_help;						# Help item.
+
+#
+# Flags.
+#
+my $inhelpwind = 0;					# Showing help window.
+
+#
+# Filename variables.
+#
+my $rrfile = "dummy";					# Our rollrec file.
+my $title = "dummy";					# Node for title.
+
+#
+# Zone information.
+#
+my %rollers = ();				# Zones that might roll.
+my %zones = ();					# Zones we're watching.
+my @zones = ();					# Screen-order list of zones.
+my $zonecnt = 1;				# Count of zones we're watching.
+my %keyrecs = ();				# Zones' keyrec filenames.
+
+
+###########################################################################
+
+main();
+exit(0);
+
+#---------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $argc = @ARGV;
+
+	#
+	# Check for the -V option and usage on other options.
+	#
+	if($ARGV[0] =~ /^-/)
+	{
+		usage() if($ARGV[0] ne "-V");
+		version();
+	}
+	$rrfile = $ARGV[0];
+
+	#
+	# Build the main window.
+	#
+	buildmainwind();
+
+	#
+	# Start the whole shebang rollin'.
+	#
+	MainLoop;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildmainwind()
+#
+sub buildmainwind
+{
+
+	my $file;					# File menu.
+	my $edit;					# Edit menu.
+	my $cmds;					# Commands menu.
+	my $help;					# Help menu.
+
+	my $curfile;					# Current keyrec.
+	my $nulline;					# Empty line.
+
+	#
+	# Create the main window.
+	#
+	$wm = MainWindow->new(-title => $MAINTITLE);
+
+	#
+	# Create the frames we'll need.
+	#
+	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$null = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$mbar->pack(-fill => 'x', -expand => 1);
+	$body->pack(-fill => 'x', -expand => 1);
+	$null->pack(-fill => 'x', -expand => 1);
+
+	#
+	# Create our menus.
+	#
+	$file = $mbar->Menubutton(-text => 'File',
+				  -tearoff => 0,
+				  -underline => 0);
+	$help = $mbar->Menubutton(-text => 'Help',
+				  -tearoff => 0,
+				  -underline => 0);
+
+	##################################################
+	#
+	# Add the File menu entries.
+	#
+	$fm_quit = $file->command(-label => 'Quit',
+			          -command => \&file_quit,
+			          -accelerator => 'Ctrl+Q',
+			          -underline => 0);
+	$file->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-Q>',\&file_quit);
+	$wm->bind('<Control-Key-q>',\&file_quit);
+
+	##################################################
+	#
+	# Create a line holding the current keyrec filename.
+	#
+	$curfile = $mbar->Label(-text => "                         Monitoring Rollrec File:  ");
+	$curfile->pack(-side => 'left');
+	$curfile = $mbar->Label(-textvariable => \$title);
+	$curfile->pack(-side => 'left');
+	$mbar->pack(-side => 'top', -fill => 'x');
+
+	##################################################
+	#
+	# Add the Help menu entries.
+	#
+	$hm_help = $help->command(-label => 'Help',
+			          -command => \&help_help,
+			          -accelerator => 'Ctrl+H',
+			          -underline => 0);
+	$help->pack(-side => 'right');
+
+	$wm->bind('<Control-Key-H>',\&help_help);
+	$wm->bind('<Control-Key-h>',\&help_help);
+
+	##################################################
+	#
+	# Add a container and scrollbar to the body.
+	#
+	$body->grid();
+	$zonetab = $body->Table(-rows => 12, -columns => 5,
+				-scrollbars => '',
+				-relief => 'raised', -borderwidth => 1,
+			       );
+	$zonetab->pack(-fill => 'x', -expand => 1, -fill => 'both');
+	$body->pack(-fill => 'x', -expand => 1, -fill => 'both');
+
+	#
+	# Get the keyrec file info.
+	#
+	readrrf($rrfile);
+
+	#
+	# Initialize our rollerd-input handler.
+	#
+	$wm->fileevent('STDIN',readable => \&rollerdcmd);
+}
+
+##############################################################################
+#
+# Menu widget interface routines.
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	file_quit()
+#
+sub file_quit
+{
+	exit(0);
+}
+
+##############################################################################
+#
+# Utility routines
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	headerstripe()
+#
+sub headerstripe
+{
+	my $lab;
+
+	$lab = $zonetab->Label(-text => 'Zone Name    ',
+			       -font => $font, -background => 'tan');
+	$zonetab->put(0,0,$lab);
+
+	$lab = $zonetab->Label(-text => 'Rollover Phase    ',
+			       -font => $font, -background => 'tan');
+	$zonetab->put(0,1,$lab);
+
+	$lab = $zonetab->Label(-text => 'ZSK Type    ',
+			       -font => $font, -background => 'tan');
+	$zonetab->put(0,2,$lab);
+
+	$lab = $zonetab->Label(-text => 'ZSK Name    ',
+			       -font => $font, -background => 'tan');
+	$zonetab->put(0,3,$lab);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	zonestripe()
+#
+sub zonestripe
+{
+	my $zone    = shift;			# Zone to add.
+	my $phase   = shift;			# Zone's rollover phase.
+	my $keyflag = shift;			# Get-key flag.
+
+	my $bgcolor;				# Background color.
+	my $phasecolor;				# Color of phase column.
+
+	my $row0;				# First row in group.
+	my $row1;				# Second row in group.
+	my $row2;				# Third row in group.
+
+	my $blank;				# Blank label.
+	my $lab;				# Non-blank label.
+	my $zonetxt;				# Zone name.
+
+	#
+	# Get this zone's row group and row indices.
+	#
+	$row0 = $zones{$zone} * 3;
+	$row1 = $row0 + 1;
+	$row2 = $row0 + 2;
+
+	#
+	# Get this zone's background color.
+	#
+	$bgcolor    = getcolor($zone,$phase,1);
+	$phasecolor = getcolor($zone,$phase,0);
+
+	#
+	# First column:  zone name
+	#
+	$zonetxt  = "$zone    ";
+#	$zonetxt  = "  $zone  ";
+	$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+	$zonetab->put($row0,0,$blank);
+	$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
+			       -background => $bgcolor);
+#			       -background => $bgcolor, -anchor => 'w');
+
+	$zonetab->put($row1,0,$lab);
+	$blank = $zonetab->Label(-text => ' ', -font => $font,
+				 -background => $bgcolor);
+	$zonetab->put($row2,0,$blank);
+
+	#
+	# Second column:  zone rollover phase
+	#
+	if(($phase == -42) || ($rollers{$zone} == 0))
+	{
+		#
+		# Skipped zones.
+		#
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row0,1,$blank);
+		$lab = $zonetab->Label(-text => 'skipping', -font => $font,
+				       -background => $bgcolor);
+		$zonetab->put($row1,1,$lab);
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row2,1,$blank);
+
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row0,2,$blank);
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row1,2,$blank);
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row2,2,$blank);
+
+		$blank = $zonetab->Label(-text => ' ', -background => $phasecolor);
+		$zonetab->put($row0,3,$blank);
+		$blank = $zonetab->Label(-text => ' ', -background => $phasecolor);
+		$zonetab->put($row1,3,$blank);
+		$blank = $zonetab->Label(-text => ' ', -background => $phasecolor);
+		$zonetab->put($row2,3,$blank);
+
+		$keyflag = 0;
+
+	}
+	else
+	{
+		my $chronos = shift || " ";		# Expiration-time data.
+
+		#
+		# Rolled zones.
+		#
+		$lab = $zonetab->Label(-text => $phase, -font => $font,
+				       -background => $phasecolor);
+		$zonetab->put($row0,1,$lab);
+		$lab = $zonetab->Label(-text => $phasedescr[$phase],
+				       -font => $font,
+				       -background => $phasecolor);
+		$zonetab->put($row1,1,$lab);
+		$lab = $zonetab->Label(-text => $chronos, -font => $font,
+				       -background => $phasecolor);
+		$zonetab->put($row2,1,$lab);
+	}
+
+	#
+	# Redisplay the ZSK keys, if necessary.
+	#
+	if($keyflag)
+	{
+		my $zskcur;					# Current ZSK.
+		my $zskpub;					# Published ZSK.
+		my $zsknew;					# New ZSK.
+
+		#
+		# Get the zone's key names.
+		#
+		my $krf = $keyrecs{$zone};
+		keyrec_read($krf);
+		$zskcur = keyrec_recval($zone,'zskcur');
+		$zskpub = keyrec_recval($zone,'zskpub');
+		$zsknew = keyrec_recval($zone,'zsknew');
+		keyrec_close();
+
+		#
+		# Add some spacing to the fields.
+		#
+		$zskcur	 .= "    ";
+		$zskpub	 .= "    ";
+		$zsknew	 .= "    ";
+
+		#
+		# Third column:  key label
+		#
+		$lab = $zonetab->Label(-text => "Current   ", -font => $font,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row0,2,$lab);
+		$lab = $zonetab->Label(-text => "Published   ", -font => $font,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row1,2,$lab);
+		$lab = $zonetab->Label(-text => "New   ", -font => $font,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row2,2,$lab);
+
+		#
+		# Fourth columns:  key name
+		#
+		$lab = $zonetab->Label(-text => $zskcur, -font => $font,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row0,3,$lab);
+
+		$lab = $zonetab->Label(-text => $zskpub, -font => $font,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row1,3,$lab);
+
+		$lab = $zonetab->Label(-text => $zsknew, -font => $font,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row2,3,$lab);
+
+	}
+
+	#
+	# Update the display.
+	#
+	$zonetab->update();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	readrrf()
+#
+sub readrrf
+{
+	my $rrf = shift;				# Rollrec to read.
+	my $rr;						# Rollrec reference.
+
+	#
+	# Pretty-up the window.
+	#
+	settitle($rrf);
+	headerstripe();
+
+	#
+	# Get the rollrec contents and the names of the zones it contains.
+	#
+	rollrec_read($rrf);
+	@zones = rollrec_names();
+
+	foreach my $zone (@zones)
+	{
+		my $krf;				# Keyrec file.
+		my $kr;					# Keyrec reference.
+		my $phase;				# Rollover phase.
+
+		#
+		# Read the zone's rollrec record and save the current phase.
+		#
+		$rr = rollrec_fullrec($zone);
+		$phase  = $rr->{'curphase'};
+
+		#
+		# Save the zone's index and add it (or don't) to our list
+		# of roll-enabled zones.
+		#
+		$zones{$zone} = $zonecnt++;
+		$rollers{$zone} = 1;
+		$rollers{$zone} = 0 if($rr->{'rollrec_type'} ne "roll");
+
+		#
+		# Read the zone's keyrec and save the filename.
+		#
+		$krf = $rr->{'keyrec'};
+		$keyrecs{$zone} = $krf;
+
+
+# print "$zone:  zonestripe($zone,$phase,1)\n\n";
+		zonestripe($zone,$phase,1);
+	}
+
+	rollrec_close();
+	$zonetab->update();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rollerdcmd()
+#
+sub rollerdcmd
+{
+	my $band;					# Band of rows.
+	my $bgcolor;					# Background color.
+
+	my $row0;					# First row in group.
+	my $row1;					# Second row in group.
+	my $row2;					# Third row in group.
+
+	my $blank;					# Blank label.
+	my $lab;					# Non-blank label.
+	my $wij;					# Zone's phase widget.
+
+	my $line;					# Input from rollerd.
+	my $cmd;					# Command.
+	my $zone;					# Command's zone.
+	my $phase;					# Command's phase.
+
+	#
+	# Get the data from rollerd.
+	#
+	$line = <STDIN>;
+	chomp($line);
+
+	#
+	# Break the line into its pieces.
+	#
+	$line =~ /^([a-z]+)\W+([a-zA-z0-9\.\+\-]+)\W+([0-9]+)/;
+	$cmd	= $1;
+	$zone	= $2;
+	$phase	= $3;
+
+	#
+	# Exit if this was an empty line.
+	#
+	exit(0) if($cmd eq '');
+
+	#
+	# Get this zone's row group and row indices.
+	#
+	$band = $zones{$zone};
+	$row0 = $band * 3;
+	$row1 = $row0 + 1;
+	$row2 = $row0 + 2;
+
+	#
+	# Get the background color for this zone in this phase.
+	#
+	$bgcolor  = getcolor($phase,$phase);
+$bgcolor  = getcolor($zone,$phase,0);
+
+	#
+	# Handle the commands from rollerd:
+	#
+	#	phase		change the specified zone's phase
+	#	halt		exit
+	#	startroll	start a zone in rollover
+	#	stoproll	stop a zone's rollover
+	#	expiration	zone will soon expire
+	#
+	if($cmd eq "phase")
+	{
+		zonestripe($zone,$phase,1);
+	}
+	elsif($cmd eq "halt")
+	{
+		exit(0);
+	}
+	elsif($cmd eq "startroll")
+	{
+		rollrec_read($rrfile);
+		$phase = rollrec_recval($zone,'curphase');
+		rollrec_close();
+
+		$rollers{$zone} = 1;
+		zonestripe($zone,$phase,1);
+	}
+	elsif($cmd eq "stoproll")
+	{
+		$rollers{$zone} = 0;
+		zonestripe($zone,-42,0);
+	}
+	elsif($cmd eq "expiration")
+	{
+		my $other;				# Additional data.
+
+		$line =~ /^([a-z]+)\W+([a-zA-z0-9\.\+\-]+)\W+([0-9]+)\W(.*)$/;
+		$other	= $4;
+
+		$other = "starting roll in $other" if($phase == 0);
+		zonestripe($zone,$phase,1,$other);
+	}
+
+	$zonetab->update();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getnode()
+#
+sub getnode
+{
+	my @pathelts;					# Path elements.
+	my $pathnode;					# Last path elements.
+
+	@pathelts = split /\//, $rrfile;
+	$pathnode = pop @pathelts;
+
+	return($pathnode);
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      settitle()
+#
+# Purpose:      Set the title for use in the "Monitoring File" line.
+#
+sub settitle
+{
+	my $name = shift;				# Name to use.
+
+	$title = getnode($name);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getcolor()
+#
+sub getcolor
+{
+	my $zone = shift;		# Zone whose color we're getting.
+	my $phase = shift;		# Zone's phase.
+	my $base = shift;		# Base-color flag.
+
+	my $band;			# Zone's output band.
+	my $color;			# Color to return.
+
+	#
+	# Return this skipped-zone color if this zone isn't rolling.
+	#
+	return($skipcolor) if($rollers{$zone} != 1);
+
+	#
+	# Get the background color for this zone in this phase.
+	# Increment our color counter, wrapping around if we've reached the end.
+	#
+	$band = $zones{$zone};
+	$band = $band % $NUMCOLORS if($colorind == $NUMCOLORS);
+	$colorind = $band;
+
+	#
+	# Get the background color for this zone in this phase and
+	# return the color.
+	#
+	$color = $phasecolors[$band];
+	return($color->[0]) if($base);
+	return($color->[$phase]);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	error()
+#
+sub error
+{
+	my $msg = shift;			# Warning message.
+	my $dlg;				# Warning dialog widget.
+
+	$dlg = $wm->Dialog(-title => "$NAME Warning",
+			   -text  => $msg,
+			   -default_button => "Okay",
+			   -buttons => ["Okay"]);
+	$dlg->Show();
+}
+
+#---------------------------------------------------------------------------
+# Routine:      helpbegone()
+#
+sub helpbegone
+{
+	$helpwin->destroy();
+	$inhelpwind = 0;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	help_help()
+#
+sub help_help
+{
+	my $hframe;					# Help frame.
+	my $wdgt;					# General widget.
+
+	my $helpstr;
+
+	$helpstr = "
+
+blinkenlights - DNSSEC-Tools Rollerd Demo
+         
+SYNOPSIS
+         
+    blinkenlights <rollrec-file>
+
+DESCRIPTION
+
+blinkenlights is a demo tool for use with the DNSSEC-Tools rollerd
+program.  As rollerd rolls the zones listed in the rollrec file,
+blinkenlights will display status information for the file's zones.
+
+For ease of reading, each zone's row is a different color.  The rollover
+phase column color will change, depending on the current phase.  When the
+zone's phase returns to not being in mid-rollover, the color will match that
+of the rest of the row.
+
+This is only intended to be started by rollerd.  The -demo option must
+be given on rollerd's command line.
+
+";
+
+	#
+	# If we've already got another help window, we'll give an error and
+	# return.  Otherwise, we'll turn on our in-helpwindow flag.
+	#
+	if($inhelpwind)
+	{
+		error("Multiple help windows cannot be created\n");
+		return;
+	}
+	$inhelpwind = 1;
+
+	#
+	# Create a new window to hold our help info.  Bind up some
+	# key accelerators, too.
+	#
+	$helpwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Help!',
+				  -borderwidth => 1);
+	$helpwin->bind('<Control-Key-Q>',\&file_quit);
+	$helpwin->bind('<Control-Key-q>',\&file_quit);
+	$helpwin->bind('<Control-Key-W>',\&helpbegone);
+	$helpwin->bind('<Control-Key-w>',\&helpbegone);
+
+	#
+	# Now make the containers for the window.
+	#
+	$hframe = $helpwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$hframe->pack(-fill => 'x');
+
+	#
+	# Add the help data to the frame.
+	#
+	$wdgt = $hframe->Label(-text => $helpstr,
+			       -justify => 'left');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Add a button to dismiss the window.
+	#
+	$wdgt = $hframe->Button(-text => 'Done',
+				-command => \&helpbegone);
+	$wdgt->pack(-side => 'top');
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:      Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  blinkenlights [-Version] <rollrec-file>\n";
+	exit(0);
+}
+
+1;
+
+#############################################################################
+
+=pod
+
+=head1 NAME
+
+blinkenlights - DNSSEC-Tools Rollerd Demo
+
+=head1 SYNOPSIS
+
+  blinkenlights <rollrec-file>
+
+=head1 DESCRIPTION
+
+B<blinkenlights> is a demo tool for use with the DNSSEC-Tools B<rollerd>
+program.  As B<rollerd> rolls the zones listed in the I<rollrec> file,
+B<blinkenlights> will display status information for the file's zones.
+
+For ease of reading, each zone's row is a different color.  The I<rollover
+phase> column color will change, depending on the current phase.  When the
+zone's phase returns to not being in mid-rollover, the color will match that
+of the rest of the row.
+
+This is only intended to be started by B<rollerd>.  The I<-demo> option must
+be given on B<rollerd>'s command line.
+
+=head1 REQUIREMENTS
+
+I<blinkenlights> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+installed on your system.
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<rollerd(8)>,
+B<zonesigner(8)>
+
+B<Net::DNS::SEC::Tools::keyrec(5)>,
+B<Net::DNS::SEC::Tools::rollrec(5)>
+
+=cut
+
