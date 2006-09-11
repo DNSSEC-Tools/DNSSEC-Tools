@@ -1,0 +1,85 @@
+#!/usr/bin/perl
+# Copyright 2006 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# phaser
+#
+#	This script adjusts the phasestart lines in a DNSSEC-Tools rollrec
+#	file so the current phases have only just started.
+#
+#	This is ONLY intended for building testing and demo environments!
+#
+
+usage() if(@ARGV == 0);
+
+$rrf = $ARGV[0];
+
+#
+# Get the GMT time and lop off the trailing newline.
+#
+$tempus = gmtime;
+$tempus =~ s/\n$//;
+
+#
+# Split the time up into three chunks, with the minutes in the middle.
+#
+$tempus =~ /(.*?:)(..)(:.*)/;
+$date1 = $1;
+$min   = $2;
+$date2 = $3;
+
+#
+# Drop the minutes back a shade.
+#
+$min1 = adjuster($min,3);
+$min2 = adjuster($min,2);
+$min3 = adjuster($min,1);
+
+#
+# Build the new "phasestart" lines for the rollrec file.
+#
+$phase1 = sprintf("phasestart	\"$date1%02d$date2\"",$min1);
+$phase2 = sprintf("phasestart	\"$date1%02d$date2\"",$min2);
+$phase3 = sprintf("phasestart	\"$date1%02d$date2\"",$min3);
+
+#
+# Fix the "phasestart" lines in the rollrec file.
+#
+system("perl -pi -e 's/phasestart1/$phase1/' $rrf");
+system("perl -pi -e 's/phasestart2/$phase2/' $rrf");
+system("perl -pi -e 's/phasestart3/$phase3/' $rrf");
+
+print "gmtime  - $tempus\n";
+print "phase 1 - $phase1\n";
+print "phase 2 - $phase2\n";
+print "phase 3 - $phase3\n";
+
+exit(0);
+
+#########################################################################
+#
+# Adjust a minutes count by a certain amount, making sure it doesn't go
+# negative.
+#
+sub adjuster
+{
+	my $min = shift;				# Minutes to adjust.
+	my $adj = shift;				# Adjustment value.
+
+	$min -= $adj;
+
+	$min = 0 if($min < 0);
+	return($min);
+}
+
+#########################################################################
+#
+# Give usage and exit.
+#
+sub usage
+{
+	print STDERR "usage:  phaser <rollrec-file>\n";
+	exit(0);
+}
+
+
