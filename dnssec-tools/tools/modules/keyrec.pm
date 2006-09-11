@@ -269,7 +269,7 @@ sub keyrec_read
 			#
 			if(exists($keyrecs{$name}))
 			{
-				print STDERR "keyrec_read:  duplicate record name; aborting...\n";
+				print STDERR "keyrec_read:  duplicate record name \"$name\"; aborting...\n";
 
 				keyrec_discard();
 				return(-3);
