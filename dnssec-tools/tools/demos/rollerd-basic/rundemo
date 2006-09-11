@@ -8,11 +8,13 @@
 #	This script runs the basic demo for the DNSSEC-Tools rollerd daemon.
 #
 
+set log = "log.demo"
+
 rollctl -halt >& /dev/null
 
-cp /dev/null log.demo
+cp /dev/null $log
 
-rollerd -dir . -logfile log.demo -loglevel info -sleep 15 -rrf demo.rollrec -demo &
+rollerd -dir . -logfile $log -loglevel info -sleep 15 -rrf demo.rollrec -demo &
 
-tail -f log.demo
+tail -f $log
 
