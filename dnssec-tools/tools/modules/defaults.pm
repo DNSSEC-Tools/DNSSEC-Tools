@@ -35,6 +35,7 @@ my %defaults =
 	"ksklength"	 => 2048,		# Length of KSK key.
 	"ksklife"	 => 15768000,		# Lifespan of KSK key.
 	"random"	 => "/dev/urandom",	# Random no. generator device.
+	"zskcount"	 => 1,			# Number of Current ZSK keys.
 	"zsklength"	 => 1024,		# Length of ZSK key.
 	"zsklife"	 => 604800,		# Lifespan of ZSK key.
 
@@ -61,6 +62,7 @@ my @defnames =
 	"savekeys",
 	"usegui",
 	"viewimage",
+	"zskcount",
 	"zsklength",
 	"zsklife",
         "tanamedconffile",
@@ -201,6 +203,10 @@ option entry.
 =item B<viewimage>
 
 This default holds the default image viewer.
+
+=item B<zskcount>
+
+This default holds the default number of ZSK keys to generate for a zone.
 
 =item B<zsklength>
 
