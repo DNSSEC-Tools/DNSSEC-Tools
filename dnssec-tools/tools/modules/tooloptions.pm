@@ -79,6 +79,7 @@ my @stdopts =
 
 	['GUI:separator',	'Zone-signing Key Options:'],
 		["genzsk",		"Generate ZSK"],
+		["signset=s",		"Signing Set"],
 		["zskkey=s",		"ZSK key"],
 		["zskcount=i",		"Number of Current ZSKs to generate"],
 		["zskdirectory=s",	"Directory for ZSK keys"],
