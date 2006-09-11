@@ -55,11 +55,6 @@ my @phasedescr =
 	"  sign with ZSKPUB and ZSKNEW  ",	# phase 4
 );
 
-#
-# Main window constants.
-#
-my $MAINGEOM	= "500x237";
-my $MAINTITLE	= "blinkenlights";
 
 #
 # The main window and its frames.
@@ -151,7 +146,7 @@ sub buildmainwind
 	#
 	# Create the main window.
 	#
-	$wm = MainWindow->new(-title => $MAINTITLE);
+	$wm = MainWindow->new(-title => "blinkenlights");
 
 	#
 	# Create the frames we'll need.
@@ -167,11 +162,11 @@ sub buildmainwind
 	#
 	# Create our menus.
 	#
-	$file = $mbar->Menubutton(-text => 'File',
-				  -tearoff => 0,
+	$file = $mbar->Menubutton(-text	     => 'File',
+				  -tearoff   => 0,
 				  -underline => 0);
-	$help = $mbar->Menubutton(-text => 'Help',
-				  -tearoff => 0,
+	$help = $mbar->Menubutton(-text      => 'Help',
+				  -tearoff   => 0,
 				  -underline => 0);
 
 	##################################################
@@ -546,8 +541,7 @@ sub rollerdcmd
 	#
 	# Get the background color for this zone in this phase.
 	#
-	$bgcolor  = getcolor($phase,$phase);
-$bgcolor  = getcolor($zone,$phase,0);
+	$bgcolor  = getcolor($zone,$phase,0);
 
 	#
 	# Handle the commands from rollerd:
