@@ -638,6 +638,7 @@ sub getcolor
 	#
 	$band = $zones{$zone};
 	$band = $band % $NUMCOLORS if($colorind == $NUMCOLORS);
+	$band = 1 if($band == 0);
 	$colorind = $band;
 
 	#
