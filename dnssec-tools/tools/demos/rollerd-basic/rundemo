@@ -10,7 +10,7 @@
 
 rollctl -halt >& /dev/null
 
-cp /dev/null demo.log
+cp /dev/null log.demo
 
 rollerd -dir . -logfile log.demo -loglevel info -sleep 15 -rrf demo.rollrec -demo &
 
