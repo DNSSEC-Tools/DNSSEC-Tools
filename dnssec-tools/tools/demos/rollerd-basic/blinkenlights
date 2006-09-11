@@ -21,6 +21,10 @@ my $NAME   = "blinkenlights";
 my $VERS   = "$NAME version: 0.1.1";
 my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
 
+#
+# blinkenlight's configuration file.
+#
+my $CONFIG = "rc.blinkenlights";
 
 #
 # Font size for output window.
@@ -44,7 +48,7 @@ my @phasecolors =
 );
 
 #
-# Descriptions of the rollover phasees.
+# Descriptions of the rollover phases.
 #
 my @phasedescr =
 (
@@ -117,6 +121,11 @@ sub main
 		version();
 	}
 	$rrfile = $ARGV[0];
+
+	#
+	# Read our configuration file.
+	#
+	readconfig();
 
 	#
 	# Build the main window.
@@ -753,6 +762,80 @@ be given on rollerd's command line.
 	$wdgt->pack(-side => 'top');
 }
 
+#---------------------------------------------------------------------------
+# Routine:	readconfig()
+#
+# Purpose:      Read our configuration file.  Config entries are "field value"
+#		pairs, with the following fields recognized:
+#
+#			fontsize	size of demo output font
+#			skipcolor	color to use for skip records
+#
+sub readconfig
+{
+	my $line;					# Configuration line.
+	my $field;					# Field name from line.
+	my $value;					# Field value from line.
+
+	#
+	# Return if we don't have a configuration file.
+	#
+	return if(!-e $CONFIG);
+
+	#
+	# Complain and return if we can't read our configuration file.
+	#
+	if(!-r $CONFIG)
+	{
+		print STDERR "unable to read $CONFIG; continuing...\n";
+		return;
+	}
+
+	#
+	# Read the config file, ignoring comment lines.  Each non-comment
+	# line is expected to be in a "field value" pair.  As we read each
+	# line, we'll take the appropriate action.
+	#
+	open(CONF,"<$CONFIG");
+	while(<CONF>)
+	{
+		$line = $_;
+		chomp($line);
+
+		#
+		# Skip empty and comment lines.
+		#
+		$line =~ s/^[ \t]+//;
+		next if(($line =~ /^\#/) || ($line =~ /^$/));
+
+		#
+		# Pull out the field and value from the line.
+		#
+		$line =~ /([a-zA-Z_\-]+)\W+([a-zA-Z0-9_\-]+)/;
+		$field = lc($1);
+		$value = $2;
+
+		#
+		# Handle the field values appropriately.
+		#
+		if($field eq "fontsize")
+		{
+			if($value =~ /[a-zA-Z\_\-]/)
+			{
+				print STDERR "invalid fontsize \"$value\" in configuration file\n";
+				next;
+			}
+			$fontsize = $value;
+		}
+		elsif($field eq "skipcolor")
+		{
+			$skipcolor = $value;
+		}
+	}
+
+	close(CONF);
+}
+
 #----------------------------------------------------------------------
 #
 # Routine:      version()
@@ -804,6 +887,23 @@ of the rest of the row.
 
 This is only intended to be started by B<rollerd>.  The I<-demo> option must
 be given on B<rollerd>'s command line.
+
+=head1 CONFIGURATION FILE
+
+B<blinkenlights> has a configuration file in B<rc.blinkenlights>.  This file
+controls several aspects of the output.  This file is B<only> searched for in
+the current directory.  This file is in the "field value" format, where
+I<field> specifies the output aspect and I<value> defines the value for that
+field.  The following are the recognized fields:
+
+    fontsize	The size of the font in the output window
+    skipcolor	The background color used for skipped zones.
+
+Empty lines and comments are ignored.  Comment lines are lines that start
+with an octothorpe ('#').
+
+Spaces are not allowed in the configuration values.  Choose your skipcolors
+carefully...
 
 =head1 REQUIREMENTS
 
