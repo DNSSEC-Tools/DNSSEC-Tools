@@ -102,6 +102,15 @@ AC_CHECK_DECLS([getopt_long_only, getopt_long],,,[
 dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(arpa/nameser.h arpa/nameser_compat.h)
 
+AC_CACHE_CHECK(for struct HEADER in arpa/nameser.h, ac_cv_nameser_has_header,
+[AC_EGREP_CPP(HEADER, [
+#include <arpa/nameser.h>
+],  ac_cv_nameser_has_header="yes", ac_cv_nameser_has_header="no")])
+if test "x$ac_cv_nameser_has_header" = "xyes" ; then
+  AC_DEFINE([NAMESER_HAS_HEADER], 1, [Define if <arpa/nameser.h> has HEADER. ])
+fi
+AC_MSG_RESULT($ac_cv_nameser_has_header)
+
 AC_CHECK_STRUCT_FOR([
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -127,11 +136,9 @@ AH_TEMPLATE([STRUCT___NS_MSG_HAS__PTR],
 dnl ----------------------------------------------------------------------
 dnl check for non-portable functions 
 dnl
-
 AC_CHECK_FUNCS(strerror_r)
 
-dnl ----------------------------------------------------------------------
-
+dnl ---------------------------------------------------------------------- 
 AC_CHECK_TYPES([ns_cert_types],,,[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -142,7 +149,7 @@ AC_CHECK_TYPES([ns_cert_types],,,[
 ])
 
 dnl check for varios ns_* record types
-AC_CHECK_DECLS([ns_t_kx, ns_r_badsig],,,[
+AC_CHECK_DECLS([ns_t_a,ns_t_kx,ns_r_badsig,ns_parse_ttl,ns_name_pton,ns_name_unpack,ns_name_ntop],,,[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -151,6 +158,13 @@ AC_CHECK_DECLS([ns_t_kx, ns_r_badsig],,,[
 #endif
 ])
 AH_BOTTOM([
+/*
+ * OpenBSD has t_*, but not ns_t_*
+ */
+#if ! HAVE_DECL_NS_T_A
+#include "val_ns_types.h"
+#endif
+
 /*
  * FreeBSD is missing ns_t_kx, ns_t_cert, ns_t_a6, ns_t_dname, ns_t_sink, ns_t_tsig, ns_t_zxfr
  * for now, assume if the first is missing, the rest are too. If we hit system that has some
@@ -178,7 +192,7 @@ AH_BOTTOM([
 #endif /* HAVE_NS_R_BADSIG */
 ])
 
-AC_CHECK_DECLS([p_rcode],,,[
+AC_CHECK_DECLS([p_rcode,p_section],,,[
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
