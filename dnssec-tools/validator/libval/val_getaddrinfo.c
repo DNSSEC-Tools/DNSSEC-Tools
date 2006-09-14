@@ -202,7 +202,16 @@ static int process_service_and_hints(val_status_t val_status,
 	*res = a1;
 	
 	/* Flags */
-	a1->ai_flags = (hints == NULL || hints->ai_flags == 0) ? (AI_V4MAPPED | AI_ADDRCONFIG) : hints->ai_flags;
+	if ((hints != NULL) && (hints->ai_flags != 0)) {
+		a1->ai_flags = hints->ai_flags;
+	}
+	else {
+#if defined(AI_V4MAPPED) && defined(AI_ADDRCONFIG)
+		a1->ai_flags = (AI_V4MAPPED | AI_ADDRCONFIG);
+#else
+		a1->ai_flags = 0; /* ?? something else? */
+#endif
+	}
 
 	/* Check if we have to return val_addrinfo structures for the SOCK_STREAM socktype */
 	if ((hints == NULL || hints->ai_socktype == 0 || hints->ai_socktype == SOCK_STREAM) &&
