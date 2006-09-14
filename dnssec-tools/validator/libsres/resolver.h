@@ -66,6 +66,19 @@
 #endif                
 #endif
 
+/** START:some missing macros on OpenBSD 3.9 */
+#ifndef NS_CMPRSFLGS
+#define NS_CMPRSFLGS   0xc0
+#endif
+#if !defined(NS_MAXCDNAME) && defined (MAXCDNAME)
+#define NS_MAXCDNAME MAXCDNAME
+#endif
+#if !defined(NS_INT16SZ) && defined(INT16SZ)
+#define NS_INT16SZ INT16SZ
+#define NS_INT32SZ INT32SZ
+#endif
+/** END:some missing macros on OpenBSD 3.9 */
+
 #define ZONE_USE_NOTHING        0x00000000
 #define ZONE_USE_TSIG           0x00000001
 
@@ -163,5 +176,18 @@ int clone_ns_list(struct name_server **ns_list, struct name_server *orig_ns_list
 void free_name_server (struct name_server **ns);
 void free_name_servers (struct name_server **ns);
 
+#ifndef HAVE_DECL_NS_NTOP
+int ns_name_ntop(const u_char *src, char *dst, size_t dstsiz);
+#endif
+#ifndef HAVE_DECL_NS_NAME_UNPACK
+int ns_name_unpack(const u_char *msg, const u_char *eom, const u_char *src,
+               u_char *dst, size_t dstsiz);
+#endif
+#ifndef HAVE_DECL_NS_NAME_PTON
+int ns_name_pton(const char *src, u_char *dst, size_t dstsiz);
+#endif
+#ifndef HAVE_DECL_NS_PARSE_TTL
+int ns_parse_ttl(const char *src, u_long *dst);
+#endif
 
 #endif /* RESOLVER_H */

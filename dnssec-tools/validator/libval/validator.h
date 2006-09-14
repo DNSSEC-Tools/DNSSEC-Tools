@@ -23,6 +23,11 @@ extern          "C" {
 #define NS_MAXCDNAME    255 /* maximum compressed domain name */
 #endif
 
+#if !defined(NS_INT16SZ) && defined(INT16SZ)
+#define NS_INT16SZ INT16SZ
+#define NS_INT32SZ INT32SZ
+#endif
+
 #define VAL_GET16(s, cp) do { \
         register const u_char *t_cp = (const u_char *)(cp); \
         (s) = ((u_int16_t)t_cp[0] << 8) \
@@ -40,6 +45,11 @@ extern          "C" {
             ; \
         (cp) += NS_INT32SZ; \
 } while (0)
+
+#if !defined(NS_PUT16) && defined(PUTSHORT)
+#define NS_PUT16 PUTSHORT
+#define NS_PUT32 PUTLONG
+#endif
 
 
 #ifdef MEMORY_DEBUGGING
