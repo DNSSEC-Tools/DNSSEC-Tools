@@ -14,11 +14,13 @@
 
 #include <resolver.h>
 #include <validator.h>
+#ifndef NAMESER_HAS_HEADER
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
 #else
 #include "arpa/header.h"
 #endif
+#endif /* NAMESER_HAS_HEADER */
 
 #include "val_cache.h"
 #include "val_support.h"
