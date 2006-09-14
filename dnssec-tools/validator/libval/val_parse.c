@@ -12,6 +12,8 @@
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 
+#include <arpa/nameser.h>
+#include <resolver.h>
 #include <validator.h>
 #include "val_parse.h"
 #include "val_support.h"
