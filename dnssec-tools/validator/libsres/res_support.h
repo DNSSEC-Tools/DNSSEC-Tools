@@ -17,28 +17,30 @@
 /*
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
- */ 
+ */
 #ifndef RES_SUPPORT_H
 #define RES_SUPPORT_H
 
 #ifndef TRUE
 #define TRUE    1
 #endif
-                                                                                                                          
+
 #ifndef FALSE
 #define FALSE   0
 #endif
 
-void my_free (void *p, char *filename, int lineno);
-void *my_malloc (size_t t, char *filename, int lineno);
-char *my_strdup (const char *str, char *filename, int lineno);
+void            my_free(void *p, char *filename, int lineno);
+void           *my_malloc(size_t t, char *filename, int lineno);
+char           *my_strdup(const char *str, char *filename, int lineno);
 
-void print_response (u_int8_t *ans, int resplen);
-void print_hex_field (u_int8_t field[], int length, int width, char *pref);
-void print_hex (u_int8_t field[], int length);
-int complete_read (int sock, void* field, int length);
-void dump_response (const u_int8_t *ans, int resplen);
-int wire_to_ascii_name (char *name, u_int8_t *wire, int name_length);
-u_int16_t retrieve_type (const u_int8_t *rr);
+void            print_response(u_int8_t * ans, int resplen);
+void            print_hex_field(u_int8_t field[], int length, int width,
+                                char *pref);
+void            print_hex(u_int8_t field[], int length);
+int             complete_read(int sock, void *field, int length);
+void            dump_response(const u_int8_t * ans, int resplen);
+int             wire_to_ascii_name(char *name, u_int8_t * wire,
+                                   int name_length);
+u_int16_t       retrieve_type(const u_int8_t * rr);
 
-#endif /* RES_SUPPORT_H */
+#endif                          /* RES_SUPPORT_H */

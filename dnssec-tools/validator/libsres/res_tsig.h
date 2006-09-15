@@ -20,21 +20,18 @@
 #include <sys/types.h>
 #include "resolver.h"
 
-#define SR_TS_UNSET		0
-#define SR_TS_OK		1
-#define SR_TS_FAIL		-2
-#define SR_TS_CALL_ERROR	-3
+#define SR_TS_UNSET             0
+#define SR_TS_OK                1
+#define SR_TS_FAIL              -2
+#define SR_TS_CALL_ERROR        -3
 
-int res_tsig_sign (
-			u_int8_t *query,
-			int query_length,
-			struct name_server *ns,
-			u_int8_t **signed_query,
-			int *signed_length);
+int             res_tsig_sign(u_int8_t * query,
+                              int query_length,
+                              struct name_server *ns,
+                              u_int8_t ** signed_query,
+                              int *signed_length);
 
-int res_tsig_verifies (
-			struct name_server *respondent,
-			u_int8_t *answer,
-			int answer_length);
+int             res_tsig_verifies(struct name_server *respondent,
+                                  u_int8_t * answer, int answer_length);
 
 #endif
