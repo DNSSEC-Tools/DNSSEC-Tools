@@ -12,8 +12,8 @@
  *    documentation and/or other materials provided with the distribution.
  * 3. All advertising materials mentioning features or use of this software
  *    must display the following acknowledgement:
- * 	This product includes software developed by the University of
- * 	California, Berkeley and its contributors.
+ *      This product includes software developed by the University of
+ *      California, Berkeley and its contributors.
  * 4. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
@@ -88,14 +88,15 @@
  * Return size of compressed name or -1 if there was an error.
  */
 int
-dn_expand(const u_char *msg, const u_char *eom, const u_char *src,
-	  char *dst, int dstsiz)
+dn_expand(const u_char * msg, const u_char * eom, const u_char * src,
+          char *dst, int dstsiz)
 {
-	int n = ns_name_uncompress(msg, eom, src, dst, (size_t)dstsiz);
+    int             n =
+        ns_name_uncompress(msg, eom, src, dst, (size_t) dstsiz);
 
-	if (n > 0 && dst[0] == '.')
-		dst[0] = '\0';
-	return (n);
+    if (n > 0 && dst[0] == '.')
+        dst[0] = '\0';
+    return (n);
 }
 
 /*
@@ -104,24 +105,25 @@ dn_expand(const u_char *msg, const u_char *eom, const u_char *src,
  * 'length' is the size of the array pointed to by 'comp_dn'.
  */
 int
-dn_comp(const char *src, u_char *dst, int dstsiz,
-	u_char **dnptrs, u_char **lastdnptr)
+dn_comp(const char *src, u_char * dst, int dstsiz,
+        u_char ** dnptrs, u_char ** lastdnptr)
 {
-	return (ns_name_compress(src, dst, (size_t)dstsiz,
-				 (const u_char **)dnptrs,
-				 (const u_char **)lastdnptr));
+    return (ns_name_compress(src, dst, (size_t) dstsiz,
+                             (const u_char **) dnptrs,
+                             (const u_char **) lastdnptr));
 }
 
 /*
  * Skip over a compressed domain name. Return the size or -1.
  */
 int
-dn_skipname(const u_char *ptr, const u_char *eom) {
-	const u_char *saveptr = ptr;
+dn_skipname(const u_char * ptr, const u_char * eom)
+{
+    const u_char   *saveptr = ptr;
 
-	if (ns_name_skip(&ptr, eom) == -1)
-		return (-1);
-	return (ptr - saveptr);
+    if (ns_name_skip(&ptr, eom) == -1)
+        return (-1);
+    return (ptr - saveptr);
 }
 
 /*
@@ -135,40 +137,41 @@ dn_skipname(const u_char *ptr, const u_char *eom) {
  * is not careful about this, but for some reason, we're doing it right here.
  */
 #define PERIOD 0x2e
-#define	hyphenchar(c) ((c) == 0x2d)
+#define hyphenchar(c) ((c) == 0x2d)
 #define bslashchar(c) ((c) == 0x5c)
 #define periodchar(c) ((c) == PERIOD)
 #define asterchar(c) ((c) == 0x2a)
 #define alphachar(c) (((c) >= 0x41 && (c) <= 0x5a) \
-		   || ((c) >= 0x61 && (c) <= 0x7a))
+                      || ((c) >= 0x61 && (c) <= 0x7a))
 #define digitchar(c) ((c) >= 0x30 && (c) <= 0x39)
 
 #define borderchar(c) (alphachar(c) || digitchar(c))
 #define middlechar(c) (borderchar(c) || hyphenchar(c))
-#define	domainchar(c) ((c) > 0x20 && (c) < 0x7f)
+#define domainchar(c) ((c) > 0x20 && (c) < 0x7f)
 
 int
-res_hnok(const char *dn) {
-	int pch = PERIOD, ch = *dn++;
+res_hnok(const char *dn)
+{
+    int             pch = PERIOD, ch = *dn++;
 
-	while (ch != '\0') {
-		int nch = *dn++;
+    while (ch != '\0') {
+        int             nch = *dn++;
 
-		if (periodchar(ch)) {
-			(void)NULL;
-		} else if (periodchar(pch)) {
-			if (!borderchar(ch))
-				return (0);
-		} else if (periodchar(nch) || nch == '\0') {
-			if (!borderchar(ch))
-				return (0);
-		} else {
-			if (!middlechar(ch))
-				return (0);
-		}
-		pch = ch, ch = nch;
-	}
-	return (1);
+        if (periodchar(ch)) {
+            (void) NULL;
+        } else if (periodchar(pch)) {
+            if (!borderchar(ch))
+                return (0);
+        } else if (periodchar(nch) || nch == '\0') {
+            if (!borderchar(ch))
+                return (0);
+        } else {
+            if (!middlechar(ch))
+                return (0);
+        }
+        pch = ch, ch = nch;
+    }
+    return (1);
 }
 
 /*
@@ -176,14 +179,15 @@ res_hnok(const char *dn) {
  * but must otherwise be as a host name.
  */
 int
-res_ownok(const char *dn) {
-	if (asterchar(dn[0])) {
-		if (periodchar(dn[1]))
-			return (res_hnok(dn+2));
-		if (dn[1] == '\0')
-			return (1);
-	}
-	return (res_hnok(dn));
+res_ownok(const char *dn)
+{
+    if (asterchar(dn[0])) {
+        if (periodchar(dn[1]))
+            return (res_hnok(dn + 2));
+        if (dn[1] == '\0')
+            return (1);
+    }
+    return (res_hnok(dn));
 }
 
 /*
@@ -191,27 +195,32 @@ res_ownok(const char *dn) {
  * label, but the rest of the name has to look like a host name.
  */
 int
-res_mailok(const char *dn) {
-	int ch, escaped = 0;
+res_mailok(const char *dn)
+{
+    int             ch, escaped = 0;
 
-	/* "." is a valid missing representation */
-	if (*dn == '\0')
-		return (1);
+    /*
+     * "." is a valid missing representation 
+     */
+    if (*dn == '\0')
+        return (1);
 
-	/* otherwise <label>.<hostname> */
-	while ((ch = *dn++) != '\0') {
-		if (!domainchar(ch))
-			return (0);
-		if (!escaped && periodchar(ch))
-			break;
-		if (escaped)
-			escaped = 0;
-		else if (bslashchar(ch))
-			escaped = 1;
-	}
-	if (periodchar(ch))
-		return (res_hnok(dn));
-	return (0);
+    /*
+     * otherwise <label>.<hostname> 
+     */
+    while ((ch = *dn++) != '\0') {
+        if (!domainchar(ch))
+            return (0);
+        if (!escaped && periodchar(ch))
+            break;
+        if (escaped)
+            escaped = 0;
+        else if (bslashchar(ch))
+            escaped = 1;
+    }
+    if (periodchar(ch))
+        return (res_hnok(dn));
+    return (0);
 }
 
 /*
@@ -219,12 +228,12 @@ res_mailok(const char *dn) {
  * recommendations.
  */
 int
-res_dnok(const char *dn) {
-	int ch;
+res_dnok(const char *dn)
+{
+    int             ch;
 
-	while ((ch = *dn++) != '\0')
-		if (!domainchar(ch))
-			return (0);
-	return (1);
+    while ((ch = *dn++) != '\0')
+        if (!domainchar(ch))
+            return (0);
+    return (1);
 }
-

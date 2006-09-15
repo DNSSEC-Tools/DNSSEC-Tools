@@ -21,30 +21,36 @@
 
 #include "resolver.h"
 
-/* Public. */
+/*
+ * Public. 
+ */
 
 u_int
-ns_get16(const u_char *src) {
-	u_int dst;
+ns_get16(const u_char * src)
+{
+    u_int           dst;
 
-	RES_GET16(dst, src);
-	return (dst);
+    RES_GET16(dst, src);
+    return (dst);
 }
 
 u_long
-ns_get32(const u_char *src) {
-	u_long dst;
+ns_get32(const u_char * src)
+{
+    u_long          dst;
 
-	RES_GET32(dst, src);
-	return (dst);
+    RES_GET32(dst, src);
+    return (dst);
 }
 
 void
-ns_put16(u_int src, u_char *dst) {
-	NS_PUT16(src, dst);
+ns_put16(u_int src, u_char * dst)
+{
+    NS_PUT16(src, dst);
 }
 
 void
-ns_put32(u_long src, u_char *dst) {
-	NS_PUT32(src, dst);
+ns_put32(u_long src, u_char * dst)
+{
+    NS_PUT32(src, dst);
 }
