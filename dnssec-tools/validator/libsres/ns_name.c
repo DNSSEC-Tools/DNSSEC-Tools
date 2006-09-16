@@ -596,7 +596,7 @@ ns_name_uncompress(const u_char * msg, const u_char * eom,
     u_char          tmp[NS_MAXCDNAME];
     int             n;
 
-    if ((n = ns_name_unpack(msg, eom, src, tmp, sizeof tmp)) == -1)
+    if ((n = ns_name_unpack(msg, eom, src, tmp, sizeof(tmp))) == -1)
         return (-1);
     if (ns_name_ntop(tmp, dst, dstsiz) == -1)
         return (-1);
@@ -623,7 +623,7 @@ ns_name_compress(const char *src, u_char * dst, size_t dstsiz,
 {
     u_char          tmp[NS_MAXCDNAME];
 
-    if (ns_name_pton(src, tmp, sizeof tmp) == -1)
+    if (ns_name_pton(src, tmp, sizeof(tmp)) == -1)
         return (-1);
     return (ns_name_pack(tmp, dst, dstsiz, dnptrs, lastdnptr));
 }

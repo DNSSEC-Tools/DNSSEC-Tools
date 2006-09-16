@@ -119,7 +119,7 @@ ns_initparse(const u_char * msg, int msglen, ns_msg * handle)
     const u_char   *eom = msg + msglen;
     int             i;
 
-    memset(handle, 0x5e, sizeof *handle);
+    memset(handle, 0x5e, sizeof(*handle));
     handle->_msg = msg;
     handle->_eom = eom;
     if (msg + NS_INT16SZ > eom)

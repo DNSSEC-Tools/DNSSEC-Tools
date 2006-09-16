@@ -336,7 +336,7 @@ p_cdnname(const u_char * cp, const u_char * msg, int len, FILE * file)
     char            name[NS_MAXDNAME];
     int             n;
 
-    if ((n = dn_expand(msg, msg + len, cp, name, sizeof name)) < 0)
+    if ((n = dn_expand(msg, msg + len, cp, name, sizeof(name))) < 0)
         return (NULL);
     if (name[0] == '\0')
         putc('.', file);
@@ -387,7 +387,7 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
     char            name[NS_MAXDNAME];
     const u_char   *n;
 
-    n = p_fqnname(cp, msg, NS_MAXCDNAME, name, sizeof name);
+    n = p_fqnname(cp, msg, NS_MAXCDNAME, name, sizeof(name));
     if (n == NULL)
         return (NULL);
     fputs(name, file);
@@ -715,7 +715,7 @@ p_time(u_int32_t value)
 {
     static char     nbuf[40];   /* XXX nonreentrant */
 
-    if (ns_format_ttl(value, nbuf, sizeof nbuf) < 0)
+    if (ns_format_ttl(value, nbuf, sizeof(nbuf)) < 0)
         snprintf(nbuf, sizeof(nbuf), "%u", value);
     return (nbuf);
 }
@@ -735,15 +735,15 @@ p_rcode(int rcode)
 /*
  * const char *
  * p_sockun(union res_sockaddr_union u, char *buf, size_t size) {
- * char ret[sizeof "ffff:ffff:ffff:ffff:ffff:ffff:123.123.123.123"];
+ * char ret[sizeof("ffff:ffff:ffff:ffff:ffff:ffff:123.123.123.123")];
  * 
  * switch (u.sin.sin_family) {
  * case AF_INET:
- * inet_ntop(AF_INET, &u.sin.sin_addr, ret, sizeof ret);
+ * inet_ntop(AF_INET, &u.sin.sin_addr, ret, sizeof(ret));
  * break;
  * #ifdef HAS_INET6_STRUCTS
  * case AF_INET6:
- * inet_ntop(AF_INET6, &u.sin6.sin6_addr, ret, sizeof ret);
+ * inet_ntop(AF_INET6, &u.sin6.sin6_addr, ret, sizeof(ret));
  * break;
  * #endif
  * default:
@@ -775,7 +775,7 @@ static const unsigned int poweroften[10] =
 static const char *
 precsize_ntoa(u_int8_t prec)
 {
-    static char     retbuf[sizeof "90000000.00"];       /* XXX nonreentrant */
+    static char     retbuf[sizeof("90000000.00")];       /* XXX nonreentrant */
     unsigned long   val;
     int             mantissa, exponent;
 

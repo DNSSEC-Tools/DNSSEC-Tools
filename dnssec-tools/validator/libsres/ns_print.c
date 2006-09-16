@@ -554,7 +554,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
              * Public key data. 
              */
             len = b64_ntop(rdata, edata - rdata,
-                           base64_key, sizeof base64_key);
+                           base64_key, sizeof(base64_key));
             if (len < 0)
                 goto formerr;
             if (len > 15) {
@@ -621,7 +621,7 @@ ns_sprintrrf(const u_char * msg, size_t msglen,
 
             /** Signature.  */
             len = b64_ntop(rdata, edata - rdata,
-                           base64_key, sizeof base64_key);
+                           base64_key, sizeof(base64_key));
             if (len > 15) {
                 T(addstr(" (", 2, &buf, &buflen));
                 leader = "\n\t\t";
