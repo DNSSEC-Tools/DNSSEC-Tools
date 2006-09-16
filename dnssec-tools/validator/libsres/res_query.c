@@ -55,13 +55,13 @@ wire_name_length(const u_int8_t * field)
     if (field == NULL)
         return 0;
 
-    for (j = 0; field[j] && !(0xc0 & field[j]) && j < NS_MAXDNAME;
+    for (j = 0; field[j] && !(0xc0 & field[j]) && j < NS_MAXCDNAME;
          j += field[j] + 1);
     if (field[j])
         j++;
     j++;
 
-    if (j > NS_MAXDNAME)
+    if (j > NS_MAXCDNAME)
         return 0;
     else
         return j;
