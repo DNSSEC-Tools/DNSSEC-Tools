@@ -147,7 +147,7 @@ res_val_nmkquery(struct name_server *pref_ns, int op,   /* opcode of query */
     dpp = dnptrs;
     *dpp++ = buf;
     *dpp++ = NULL;
-    lastdnptr = dnptrs + sizeof dnptrs / sizeof dnptrs[0];
+    lastdnptr = dnptrs + sizeof(dnptrs) / sizeof(dnptrs[0]);
     /*
      * perform opcode specific processing
      */

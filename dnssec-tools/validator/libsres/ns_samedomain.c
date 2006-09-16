@@ -178,7 +178,7 @@ ns_makecanon(const char *src, char *dst, size_t dstsize)
 {
     size_t          n = strlen(src);
 
-    if (n + sizeof "." > dstsize) {     /* Note: sizeof == 2 */
+    if (n + sizeof(".") > dstsize) {     /* Note: sizeof == 2 */
         errno = EMSGSIZE;
         return (-1);
     }
@@ -209,8 +209,8 @@ ns_samename(const char *a, const char *b)
 {
     char            ta[NS_MAXDNAME], tb[NS_MAXDNAME];
 
-    if (ns_makecanon(a, ta, sizeof ta) < 0 ||
-        ns_makecanon(b, tb, sizeof tb) < 0)
+    if (ns_makecanon(a, ta, sizeof(ta)) < 0 ||
+        ns_makecanon(b, tb, sizeof(tb)) < 0)
         return (-1);
     if (strcasecmp(ta, tb) == 0)
         return (1);
