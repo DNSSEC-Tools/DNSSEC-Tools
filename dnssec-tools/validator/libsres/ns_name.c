@@ -504,23 +504,23 @@ ns_name_pack(const u_char * src, u_char * dst, int dstsiz,
      */
     l = 0;
     do {
-        int             l0;
+        int             tmp_l;
 
         n = *srcp;
         if ((n & NS_CMPRSFLGS) == NS_CMPRSFLGS) {
             errno = EMSGSIZE;
             return (-1);
         }
-        if ((l0 = labellen(srcp)) < 0) {
+        if ((tmp_l = labellen(srcp)) < 0) {
             errno = EINVAL;
             return (-1);
         }
-        l += l0 + 1;
+        l += tmp_l + 1;
         if (l > NS_MAXCDNAME) {
             errno = EMSGSIZE;
             return (-1);
         }
-        srcp += l0 + 1;
+        srcp += tmp_l + 1;
     } while (n != 0);
 
     /*
