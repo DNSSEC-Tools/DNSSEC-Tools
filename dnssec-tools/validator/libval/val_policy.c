@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #if defined(sun) && !defined(__EXTENSIONS__)
 extern char *strtok_r(char *, const char *, char **);
 #endif
