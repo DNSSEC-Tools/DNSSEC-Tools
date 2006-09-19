@@ -429,18 +429,25 @@ response_recv(int *trans_id,
 
     struct name_server *temp_ns = NULL;
 
-    if ((ret_val =
-         res_io_accept(*trans_id, answer, answer_length, &temp_ns))
-        == SR_IO_NO_ANSWER_YET)
+    ret_val = res_io_accept(*trans_id, answer, answer_length, &temp_ns);
+
+    if (ret_val == SR_IO_NO_ANSWER_YET)
         return SR_NO_ANSWER_YET;
 
     if (temp_ns == NULL) {
         *respondent = NULL;
+        if (ret_val == SR_IO_GOT_ANSWER) {
+            FREE(answer);
+        }
         return SR_NO_ANSWER;
     }
 
-    if (clone_ns(respondent, temp_ns) != SR_UNSET)
+    if (clone_ns(respondent, temp_ns) != SR_UNSET) {
+        if (ret_val == SR_IO_GOT_ANSWER) {
+            FREE(answer);
+        }
         return ret_val;
+    }
 
     res_io_cancel(trans_id);
 
@@ -449,6 +456,10 @@ response_recv(int *trans_id,
 
     if ((ret_val == SR_IO_SOCKET_ERROR) || (ret_val == SR_IO_NO_ANSWER))
         return SR_NO_ANSWER;
+
+    if (ret_val != SR_IO_GOT_ANSWER) {
+        return SR_RCV_INTERNAL_ERROR;
+    }
 
     /*
      * ret_val is SR_IO_GOT_ANSWER 
