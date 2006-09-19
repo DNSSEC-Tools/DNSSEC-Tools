@@ -601,7 +601,12 @@ res_io_read_udp(struct expected_arrival *arrival)
      * shorten the name of the address held deep within arrival).
      */
     struct sockaddr_in *from_in = (struct sockaddr_in *) &from;
-    struct sockaddr_in *arr_in = (struct sockaddr_in *)
+    struct sockaddr_in *arr_in;
+
+    if (NULL == arrival)
+        return SR_IO_INTERNAL_ERROR;
+
+    arr_in = (struct sockaddr_in *)
         &arrival->ea_ns->ns_address[arrival->ea_which_address];
 
     if (ioctl(arrival->ea_socket, FIONREAD, &bytes_waiting) == -1) {
@@ -609,9 +614,10 @@ res_io_read_udp(struct expected_arrival *arrival)
         arrival->ea_socket = -1;
         return SR_IO_SOCKET_ERROR;
     }
-    arrival->ea_response = (u_int8_t *) MALLOC(bytes_waiting);
 
-    /** XXX Check for out of memory !  */
+    arrival->ea_response = (u_int8_t *) MALLOC(bytes_waiting);
+    if (NULL == arrival->ea_response)
+        return SR_IO_MEMORY_ERROR;
 
     ret_val =
         recvfrom(arrival->ea_socket, arrival->ea_response, bytes_waiting,
@@ -644,6 +650,9 @@ res_switch_to_tcp(struct expected_arrival *ea)
 {
     if (res_io_debug)
         printf("Switching to TCP\n");
+
+    if (NULL == ea)
+        return;
 
     FREE(ea->ea_response);
     ea->ea_response = NULL;
