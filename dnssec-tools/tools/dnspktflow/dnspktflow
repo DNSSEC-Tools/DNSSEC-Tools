@@ -26,26 +26,33 @@ my $mapinwindow;
 
 LocalGetOptions(\%opts,
 		['GUI:otherargs_text', 'tcpdump files to analyze'],
-		["GUI:separator", "Input Packet Selection:"],
+
+		["GUI:screen", "Input Packet Selection:"],
+		["GUI:guionly", { type => 'label', text => 'DNS Name Filters:'}],
 		['i|ignore-hosts=s',"A regular expression of host names to ignore"],
 		['r|only-hosts=s',"A regular expression of host names to analyze"],
-		['f|show-frame-num',"Shows the packet frame numbers"],
-		['b|begin-frame=i',"Begin at frame NUMBER"],
+		['f|show-frame-num',"Display the packet frame numbers"],
+		['b|begin-frame=i',"Begin at packet frame NUMBER"],
 
-		["GUI:separator", "Output Options:"],
+		["GUI:screen", "Output File Options:"],
 		['o|output-file=s',
-		 "Output ping image file name (default: $opts{o})",
+		 "Output file name (default: $opts{o} as png format)",
 #		 question => { 'type' => 'fileupload' }
 		],
 		['fig','Output format should be fig'],
-		['m|multiple-outputs', "Creates one picture per request (use %03d in the filename)"],
-		['M|magic-point=s', "Saves a Magic Point presentation file for showing the output"],
-		['L|last-line-labels-only', "Only show data on the last line drawn."],
-		['z|most-lines=i', "Only show at most INTEGER lines."],
-		"",
 		['O|tethereal-out=s','Save tethereal output to this file',
 #		 question => { 'type' => 'fileupload' }
 		],
+		['m|multiple-outputs',
+		 "Creates one picture per request (use %03d in the filename)"],
+		['M|magic-point=s',
+		 "Saves a Magic Point presentation file for showing the output"],
+
+		["GUI:screen", "Output Vizualization Options:"],
+		['L|last-line-labels-only',
+		 "Only show data on the last line drawn."],
+		['z|most-lines=i', "Only show at most INTEGER connections."],
+		"",
 		['T|input-is-tethereal-out','The input file is already processed by tethereal'],
 
 		["GUI:separator", "Graphical Options:"],
@@ -87,6 +94,10 @@ my $eitherexp = '[\w\.:]+';
 
 foreach my $file (@ARGV) {
     my ($fh, $filename);
+
+    # use tethereal to parse the tcpdump file and save the text output
+    # to the file specified by the -f option.  Then set the file
+    # variable to that file for use later.
     if (!$opts{'T'}) {
 	if ($opts{'O'}) {
 	    $fh = new IO::File;
@@ -105,21 +116,23 @@ foreach my $file (@ARGV) {
 	$file = $filename;
     }
 
+    # read in the tethereal output text file and parse it for various patterns
     open(I, $file);
     while (<I>) {
+
+	# If it's a new fram, it's a brand new packet
 	if (/^Frame (\d+)/) {
-	    # brand new packet
 	    $data = { Frame => $1 };
 	}
 
 	# mark if we're a TCP packet
 	$data->{'tcp'} = 1 if (/Transmission Control Protocol/);
 
-	# collect to/from addresses
+	# collect to/from addresses (v4 or v6)
 	$data->{'src'} = $1 if (/^Internet.*Src Addr: ($eitherexp)/);
 	$data->{'dst'} = $1 if (/^Internet.*Dst Addr: ($eitherexp)/);
 
-	# If DNS, mark the type of message and push to packet list
+	# If DNS, remember the type of DNS message and push to packet list
 	if (/Domain Name System \((\w+)\)/) {
 	    $data->{'type'} = $1;
 	    push @dnspkts, $data;
@@ -140,10 +153,16 @@ foreach my $file (@ARGV) {
 	# collect queries and answers and ...
 	$state = $1 if (/^\s*(Queries|Additional|Authoritative)/);
 
-	# start  a new record on a Name: field
+	# start a new record on a Name: field
 	if (/^\s*Name: ($nameexp)/) {
+	    # remember the query itself
 	    $qdata = { Name => $1, type => $shorttype };
+
+	    # save the query data by packet section.
 	    push @{$data->{'dns'}{$state}}, $qdata;
+
+	    # If the name matches the -i flag regexp, drop it
+	    # if the name doesn't match -r flag, drop it
 	    if (($opts{'i'} && $qdata->{'Name'} =~ /$opts{'i'}/) ||
 		($opts{'r'} && $qdata->{'Name'} !~ /$opts{'r'}/)) {
 		# drop packets we don't care about
@@ -168,6 +187,7 @@ foreach my $file (@ARGV) {
     unlink($filename) if (! $opts{'O'});
 }
 
+# debugging output
 if ($opts{'d'}) {
     print "-" x 70, "\npackets:";
     print Dumper(\@dnspkts);
@@ -177,12 +197,18 @@ if ($opts{'d'}) {
     print Dumper(\%ipdata);
 }
 
+#######################################################################
+# actually draw/output the results
 #
-# actually draw the results
+
+#
+# multiple output files
 #
 if ($opts{'m'}) {
     $| = 1;
     print "Generating $#dnspkts images: ";
+
+    # magic point output files
     if ($opts{'M'}) {
 	open(M,">$opts{'M'}");
 	print M "%default 1 leftfill, size 2, fore \"dark blue\", back \"white\"\n";
@@ -191,7 +217,14 @@ if ($opts{'m'}) {
     }
 }
 
+#
+# graphviz images
+#
 my $gv;
+
+# either display everything at once, or if multiple files are
+# requested: save a series of cascading images to create an animitaion
+# with each new packet adding to the previous screen's data.
 for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
     $gv = GraphViz->new(rankdir => 1,
 			edge => { fontsize => $opts{'fontsize'}});
@@ -210,10 +243,14 @@ for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
 			get_edge_properties($pkt, $i, $m),
 			decorateP => $opts{'l'});
     }
+
+    # if doing multiple files, save each frame to an individual image
     if ($opts{'m'}) {
 	print " $m";
 	my $file = sprintf($opts{'o'}, $m);
 	save_now($gv, $file);
+
+	# if doing magic-point output, write the presentation screen
 	if ($opts{'M'}) {
 	    print M "%page\n\nMessage " . ($m+1) . " / " . ($#dnspkts+1) . 
 	      "\n" . get_host_label($dnspkts[$m]{'src'}) . " -> " .
@@ -224,12 +261,18 @@ for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
 }
 
 if ($opts{'m'}) {
+    # finish multiple output display
     print "\n";
 } else {
+    # if not multiple, save the final results
+    # (if magic point then the results were already saved above)
     $opts{'o'} =~ s/\%\d*d//;
     save_now($gv, $opts{'o'});
 }
 
+#
+# display the results in a window if requested
+#
 if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
     $Getopt::GUI::Long::GUI_qw->merge_primaries(
 						{
@@ -245,6 +288,9 @@ if ($mapinwindow && $Getopt::GUI::Long::GUI_qw) {
     $Getopt::GUI::Long::GUI_qw->magic('mapout');
 }
 
+#
+# saves the current graphviz output as a fig or a png file
+#
 sub save_now {
     my ($gv,$file) = @_;
     if ($opts{'fig'}) {
@@ -264,6 +310,9 @@ sub get_host_label {
     return $lab;
 }
 
+#
+# create an edge label based on packet data
+#
 sub get_edge_properties {
     my ($pkt, $num, $mnum) = @_;
     my $lab = '';
@@ -326,7 +375,7 @@ sub add_breakdown {
     return $lab;
 }
 
-#
+######################################################################
 # Getopt::GUI::Long niceness wrapper
 #
 
