@@ -28,7 +28,6 @@ patches, applications, wrappers, extensions, and plugins that will
 help ease the deployment of DNSSEC-related technologies.
 
 %package perlmods
-BuildArch: noarch
 Group: System Environment/Libraries
 Summary: Perl modules supporting DNSSEC (needed by the dnssec-tools)
 #Provides: perl(Net::DNS::SEC::Tools::timetrans), perl(Net::DNS::SEC::Tools::QWPrimitives), perl(Net::DNS::SEC::Tools::conf), perl(Net::DNS::SEC::Tools::keyrec), perl(Net::DNS::SEC::Tools::timetrans), perl(Net::DNS::SEC::Tools::tooloptions), perl(Net::DNS::ZoneFile::Fast)
