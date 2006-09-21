@@ -8,8 +8,8 @@
 
 Summary:        Mozilla Firefox Web browser.
 Name:           firefox
-Version:        1.5.0.6
-Release:        2.1.fc5.dnssec
+Version:        1.5.0.7
+Release:        1%{?dist}.fc5.dnssec.1
 URL:            http://www.mozilla.org/projects/firefox/
 License:        MPL/LGPL
 Group:          Applications/Internet
@@ -19,7 +19,7 @@ Group:          Applications/Internet
 %define tarball firefox-1.5rc3-source.tar.bz2
 %endif
 Source0:        %{tarball}
-Source2:        firefox-langpacks-%{version}-20060803.tar.bz2
+Source2:        firefox-langpacks-%{version}-20060911.tar.bz2
 Source10:       firefox-mozconfig
 Source11:       firefox-mozconfig-branded
 Source12:       firefox-redhat-default-bookmarks.html
@@ -51,7 +51,9 @@ Patch27:        firefox-gnomestripe-0.1-livemarks.patch
 Patch42:        firefox-1.1-uriloader.patch
 
 # font system fixes
-Patch81:        firefox-nopangoxft.patch
+Patch81:        firefox-1.5-nopangoxft.patch
+Patch82:        firefox-1.5-pango-mathml.patch
+Patch83:        firefox-1.5-pango-cursor-position.patch
 
 # patches from upstream (Patch100+)
 Patch101:       firefox-1.5-pango-ua.patch
@@ -59,9 +61,7 @@ Patch102:       firefox-1.5-pango-about.patch
 
 # DNSSEC Patches
 Patch201:       dnssec-firefox.patch
-#Patch202:       dnssec-both.firefox.patch
 Patch203:       dnssec-both.patch
-#Patch204:       dnssec-nspr.patch
 Patch205:       dnssec-mozconfig.patch
 
 
@@ -84,6 +84,7 @@ BuildRequires:  pango-devel
 BuildRequires:  freetype-devel >= 2.1.9
 BuildRequires:  libXt-devel
 BuildRequires:  libXrender-devel
+BuildRequires:  autoconf213
 
 #Requires:       nspr >= %{nspr_version}
 #Requires:       nss >= %{nss_version}
@@ -302,6 +303,10 @@ fi
 #---------------------------------------------------------------------
 
 %changelog
+* Wed Sep 13 2006 Christopher Aillon <caillon@redhat.com> - 1.5.0.7-1
+- Update to 1.5.0.7
+- Bring in pango patches from rawhide to fix MathML and cursor positioning
+
 * Thu Aug 08 2006 Jesse Keating <jkeating@redhat.com> - 1.5.0.6-2
 - Use dist tag
 - rebuild
