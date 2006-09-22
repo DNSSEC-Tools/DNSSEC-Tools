@@ -272,9 +272,6 @@ clone_ns(struct name_server **cloned_ns, struct name_server *ns)
      * Make room for the name and insert the name 
      */
     int             name_len = wire_name_length(ns->ns_name_n);
-    (*cloned_ns)->ns_name_n = (u_int8_t *) MALLOC(name_len);
-    if ((*cloned_ns)->ns_name_n == NULL)
-        return SR_MEMORY_ERROR;
     memcpy((*cloned_ns)->ns_name_n, ns->ns_name_n, name_len);
 
     /*
