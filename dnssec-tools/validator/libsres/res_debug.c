@@ -505,6 +505,9 @@ const struct res_sym __p_type_syms[] = {
     {ns_t_dnskey, "DNSKEY", "DNS keys"},
     {ns_t_rrsig, "RRSIG", "signatures"},
     {ns_t_nsec, "NSEC", "next record"},
+#ifdef LIBVAL_NSEC3 
+    {ns_t_nsec3, "NSEC3", "NSEC3 next record"},
+#endif
     {ns_t_ds, "DS", "delegation signer"},
     {0, NULL, NULL}
 };
