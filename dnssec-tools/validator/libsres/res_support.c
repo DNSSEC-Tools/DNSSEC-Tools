@@ -180,8 +180,6 @@ void
 free_name_server(struct name_server **ns)
 {
     if (ns && *ns) {
-        if ((*ns)->ns_name_n)
-            FREE((*ns)->ns_name_n);
         if ((*ns)->ns_tsig)
             FREE((*ns)->ns_tsig);
         FREE(*ns);
