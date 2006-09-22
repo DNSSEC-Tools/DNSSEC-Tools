@@ -40,8 +40,8 @@ int labelcmp (const u_int8_t *name1, const u_int8_t *name2)
     int             min_len;
     int             ret_val;
                                                                                                                           
-    u_int8_t        buffer1[NS_MAXDNAME];
-    u_int8_t        buffer2[NS_MAXDNAME];
+    u_int8_t        buffer1[NS_MAXCDNAME];
+    u_int8_t        buffer2[NS_MAXCDNAME];
     int             i;
                                                                                                                           
     length1 = (int) name1 ? name1[index1] : 0;
@@ -134,6 +134,122 @@ int namecmp (const u_int8_t *name1, const u_int8_t *name2)
     return labels1-labels2;
 }
 
+#ifdef LIBVAL_NSEC3 
+
+/* 
+ * create the Base 32 Encoding With Extended Hex Alphabet according to
+ * rfc3548bis
+ */
+void base32hex_encode(u_int8_t *in, u_int8_t inlen, u_int8_t **out, u_int8_t *outlen)
+{
+    u_int8_t base32hex[32] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+    u_int8_t *in_ch, *buf;
+    u_int8_t *out_ch;
+    u_int8_t padbuf[5];
+    int i, rem, extra;
+
+    *out = NULL;
+    *outlen = 0;
+
+    if((in == NULL) || (inlen <= 0))
+        return;
+
+    /* outlen = (inlen * 3/5) */
+    rem = inlen%5;
+    extra = rem? (40-rem):0;
+
+    *outlen = inlen + ((inlen*8 + extra)/40)*3;
+    *out = (u_int8_t *) MALLOC (*outlen * sizeof(u_int8_t));
+    if (*out == NULL) {
+        *outlen = 0;
+        return;
+    }
+
+    memset(*out, 0, *outlen);
+    out_ch = *out;
+
+    memset(padbuf, 0, 5);
+    in_ch = in;
+
+    while (inlen > 0) {
+
+        if (inlen - 5 < 0) {
+            /* pad with zeros */
+            i = 0;
+            while (inlen) {
+                padbuf[i++] = *in_ch;
+                in_ch++;
+                inlen--;
+            }
+            buf = padbuf;
+        }
+        else {
+            /* identify next 40 bits */
+            buf = in_ch;
+            in_ch += 5;
+            inlen -= 5;
+        }
+
+        /* There are 40 bits in buf */
+        *out_ch = tolower(base32hex[((buf[0]&0xf8)>>3)]);
+        out_ch++;
+        *out_ch = tolower(base32hex[((buf[0] &0x07)<<2)|((buf[1]&0xc0)>>6)]);
+        out_ch++;
+        *out_ch = tolower(base32hex[((buf[1]&0x3e)>>1)]);
+        out_ch++;
+        *out_ch = tolower(base32hex[((buf[1]&0x01)<<4)|((buf[2]&0xf0)>>4)]);
+        out_ch++;
+        *out_ch = tolower(base32hex[((buf[2]&0x0f)<<1)|((buf[3]&0x80)>>7)]);
+        out_ch++;
+        *out_ch = tolower(base32hex[((buf[3]&0x7c)>>2)]);
+        out_ch++;
+        *out_ch = tolower(base32hex[((buf[3]&0x03)<<3)|((buf[4]&0xe0)>>5)]);
+        out_ch++;
+        *out_ch = tolower(base32hex[(buf[4]&0x1f)]);
+        out_ch++;
+    }
+}
+
+/* This is a straight copy from labelcmp() */
+int nsec3_order_cmp(u_int8_t *hash1, int length1, u_int8_t *hash2, int length2)
+{
+    u_int8_t        buffer1[NS_MAXCDNAME];
+    u_int8_t        buffer2[NS_MAXCDNAME];
+    int             i;
+    int min_len;    
+    int ret_val;
+    
+    min_len = (length1 < length2) ? length1 : length2;
+    
+    if (length1==0 && length2==0)
+        return 0;
+        
+    /* If the first n bytes are the same, then the length determines
+        the difference - if any */
+    if (length1==0 || length2 == 0)
+        return length1-length2;
+                               
+
+    /* Compare this label's first min_len bytes */
+    /* Convert to lower case first */
+    memcpy (buffer1, hash1, min_len);
+    for (i =0; i < min_len; i++)
+        if (isupper(buffer1[i])) buffer1[i]=tolower(buffer1[i]);
+                                                                
+    memcpy (buffer2, hash2, min_len);
+    for (i =0; i < min_len; i++)
+        if (isupper(buffer2[i])) buffer2[i]=tolower(buffer2[i]);
+                                                                
+    ret_val=memcmp(buffer1, buffer2, min_len);
+                                              
+    /* If they differ, propgate that */
+    if (ret_val!=0) return ret_val;
+    /* If the first n bytes are the same, then the length determines
+        the difference - if any */
+    return length1-length2;
+}
+#endif
+
 u_int16_t wire_name_labels (const u_int8_t *field)
 {
     /* Calculates the number of labels in a DNS wire format name */
@@ -141,13 +257,13 @@ u_int16_t wire_name_labels (const u_int8_t *field)
     u_short l=0;
     if (field==NULL) return 0;
                                                                                                                           
-    for (j = 0; field[j]&&!(0xc0&field[j])&&j<NS_MAXDNAME ; j += field[j]+1)
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<NS_MAXCDNAME ; j += field[j]+1)
         l++;
     if (field[j]) j++;
     j++;
     l++;
                                                                                                                           
-    if (j > NS_MAXDNAME)
+    if (j > NS_MAXCDNAME)
         return 0;
     else
         return l;
@@ -159,11 +275,11 @@ u_int16_t wire_name_length (const u_int8_t *field)
     u_short j;
     if (field==NULL) return 0;
                                                                                                                           
-    for (j = 0; field[j]&&!(0xc0&field[j])&&j<NS_MAXDNAME ; j += field[j]+1);
+    for (j = 0; field[j]&&!(0xc0&field[j])&&j<NS_MAXCDNAME ; j += field[j]+1);
     if (field[j]) j++;
     j++;
                                                                                                                           
-    if (j > NS_MAXDNAME)
+    if (j > NS_MAXCDNAME)
         return 0;
     else
         return j;
@@ -250,7 +366,7 @@ void free_qname_chain (struct qname_chain **qnames)
 void free_domain_info_ptrs (struct domain_info *di)
 {
     if (di==NULL) return;
-                                                                                                                          
+     
     if (di->di_requested_name_h)
     {
         FREE (di->di_requested_name_h);
@@ -293,8 +409,8 @@ int is_tail (u_int8_t *full, u_int8_t *tail)
                                                                                                                           
     return FALSE;
 }
-                                                                                                                          
-int nxt_sig_match (u_int8_t *owner, u_int8_t *next, u_int8_t *signer)
+/* make sure that this is the correct nxt, rrsig combination (both from parent, or both from child) */
+int nsec_sig_match (u_int8_t *owner, u_int8_t *next, u_int8_t *signer)
 {
     int o_len = wire_name_length (owner);
     int s_len = wire_name_length (signer);
@@ -418,6 +534,8 @@ int init_rr_set (   struct rrset_rec    *new_set,
     new_set->rrs.val_rrset_type_h = set_type_h;
     new_set->rrs.val_rrset_class_h = class_h;
     new_set->rrs.val_rrset_ttl_h = ttl_h;
+    new_set->rrs.val_msg_header = NULL;
+    new_set->rrs.val_msg_headerlen = 0;
     new_set->rrs.val_rrset_data = NULL;
     new_set->rrs.val_rrset_sig = NULL;
     new_set->rrs_next = NULL;
@@ -456,21 +574,23 @@ int init_rr_set (   struct rrset_rec    *new_set,
         memcmp (a->rrs.val_rrset_name_n,n,l)==0            /* does name match */        \
         )                                                                     \
         ||                                   /* or */                         \
-        (t == ns_t_rrsig &&                    /* if it is a sig(nxt) */        \
-        a->rrs.val_rrset_sig==NULL &&                      /* is there no sig here */   \
+        (s == ns_t_nsec &&														\
+		 t == ns_t_rrsig &&                    /* if it is a sig(nxt) */        \
         a->rrs.val_rrset_data!=NULL &&                     /* is there data here */     \
         a->rrs.val_rrset_class_h == c &&                   /* does class match */       \
+		a->rrs.val_rrset_type_h == ns_t_nsec &&													\
         memcmp (a->rrs.val_rrset_name_n,n,l)==0 &&         /* does name match */        \
-        nxt_sig_match (n,a->rrs.val_rrset_data->rr_rdata,&r[SIGNBY])                    \
+        nsec_sig_match (n,a->rrs.val_rrset_data->rr_rdata,&r[SIGNBY])                    \
                                                  /* does sig match nxt */     \
         )                                                                     \
         ||                                   /* or */                         \
-        (t == ns_t_nsec &&                    /* if it is a nxt */             \
+        (s == ns_t_nsec &&														\
+        t == ns_t_nsec &&                    /* if it is a nxt */             \
         a->rrs.val_rrset_sig!=NULL &&                      /* is there a sig here */    \
-        a->rrs.val_rrset_data==NULL &&                     /* is there no data here */  \
         a->rrs.val_rrset_class_h == c &&                   /* does class match */       \
+		a->rrs.val_rrset_type_h == ns_t_nsec &&													\
         memcmp (a->rrs.val_rrset_name_n,n,l)==0 &&         /* does name match */        \
-        nxt_sig_match (n,r,&a->rrs.val_rrset_sig->rr_rdata[SIGNBY])                     \
+        nsec_sig_match (n,r,&a->rrs.val_rrset_sig->rr_rdata[SIGNBY])                     \
                                                  /* does sig match nxt */     \
         )                                                                     \
     )                                                                         \
@@ -503,9 +623,18 @@ struct rrset_rec *find_rr_set (
                                                                                                                           
     while (tryit)
     {
+        /* make sure this is the correct nsec and rrsig combination */
+        /* we don't need to make this check for NSEC3 because the names
+        * will be different in the parent and the child.
+        * For example, the delegation a.example.com will appear as
+        * <hash>.example.com in the parent zone and
+        * <hash>.a.example.com in the child zone
+        */
         if (IS_THE_ONE (tryit, name_n, name_len, type_h, set_type_h,
                                 class_h, rdata_n))
             break;
+
+
         last = tryit;
         tryit = tryit->rrs_next;
     }
@@ -628,8 +757,8 @@ int decompress( u_int8_t    **rdata,
                 u_int16_t   type_h,
                 u_int16_t   *rdata_len_h)
 {
-    u_int8_t    expanded_name[NS_MAXDNAME];
-    u_int8_t    other_expanded_name[NS_MAXDNAME];
+    u_int8_t    expanded_name[NS_MAXCDNAME];
+    u_int8_t    other_expanded_name[NS_MAXCDNAME];
     u_int8_t    prefix[6];
     int         p_index = 0;
     size_t      new_size;
@@ -665,7 +794,7 @@ int decompress( u_int8_t    **rdata,
                                                                                                                           
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    other_expanded_name,NS_MAXDNAME);
+                                    other_expanded_name,NS_MAXCDNAME);
                                                                                                                           
             if (working_increment < 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
@@ -679,7 +808,7 @@ int decompress( u_int8_t    **rdata,
                                                                                                                           
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    expanded_name,NS_MAXDNAME);
+                                    expanded_name,NS_MAXCDNAME);
             if (working_increment < 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
             working_index += working_increment;
@@ -729,7 +858,7 @@ int decompress( u_int8_t    **rdata,
                                                                                                                           
             working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    expanded_name,NS_MAXDNAME);
+                                    expanded_name,NS_MAXCDNAME);
             if (working_increment < 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
             working_index += working_increment;
@@ -740,7 +869,7 @@ int decompress( u_int8_t    **rdata,
             {
                 working_increment = ns_name_unpack (response,end,
                                     &response[working_index],
-                                    other_expanded_name,NS_MAXDNAME);
+                                    other_expanded_name,NS_MAXCDNAME);
                 if (working_increment < 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
                 working_index += working_increment;
@@ -776,7 +905,7 @@ int decompress( u_int8_t    **rdata,
         case ns_t_rrsig:
 
             working_increment = ns_name_unpack (response,end,
-                    &response[working_index+SIGNBY], expanded_name,NS_MAXDNAME);
+                    &response[working_index+SIGNBY], expanded_name,NS_MAXCDNAME);
             if (working_increment < 0) return VAL_INTERNAL_ERROR;
                                                                                                                           
             name_length = wire_name_length (expanded_name);
@@ -828,7 +957,7 @@ int extract_from_rr (   u_int8_t *response,
 
     /* Extract the uncompressed (unpacked) domain name in protocol format */
     if ((ret_val = ns_name_unpack (response, end, &response[*response_index],
-                                    name_n, NS_MAXDNAME))==-1)
+                                    name_n, NS_MAXCDNAME))==-1)
         return VAL_INTERNAL_ERROR;
                                                                                                                           
     *response_index += ret_val;
