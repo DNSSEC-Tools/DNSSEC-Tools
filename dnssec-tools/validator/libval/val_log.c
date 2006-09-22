@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <unistd.h>
 #include <openssl/bio.h>
 #include <openssl/evp.h>
 #include <netinet/in.h>
@@ -22,6 +23,26 @@
 #include "val_support.h"
 #include "val_parse.h"
 #include "val_log.h"
+
+#ifndef HAVE_DECL_P_SECTION
+#include "res_debug.h"
+#endif
+
+static int debug_level = LOG_INFO;
+static val_log_t *log_head = NULL;
+
+int
+val_log_debug_level(void)
+{
+    return debug_level;
+}
+
+void
+val_log_set_debug_level(int level)
+{
+    debug_level = level;
+}
+
 
 char *get_hex_string(const unsigned char *data, int datalen, char *buf, int buflen)
 {
@@ -186,10 +207,10 @@ void val_log_assertion( const val_context_t *ctx, int level, const u_char *name_
 } 
 
 #define VAL_LOG_RESULT(name_n, class_h, type_h, serv, status) do {\
-	char name[NS_MAXDNAME]; \
+	char name_p[NS_MAXDNAME]; \
 	const char *name_pr, *serv_pr;\
-	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) \
-		name_pr = name;\
+	if(ns_name_ntop(name_n, name_p, sizeof(name_p)-1) != -1)    \
+		name_pr = name_p;\
 	else\
 		name_pr = "ERR_NAME";\
 	if(serv)\
@@ -403,60 +424,279 @@ const char *p_val_error(val_status_t err)
 	}                                                                                                                             
 }
 
-#ifdef LOG_TO_NETWORK
-int send_log_message(char *buffer)
+static void
+val_log_insert(val_log_t *logp)
 {
-	int sock;
-	struct sockaddr_in server;
-	int length;
+    val_log_t *tmp_log;
 
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
-	if (sock < 0)
-		return VAL_INTERNAL_ERROR;
+    if (NULL == logp)
+        return;
 
-	server.sin_family = AF_INET;
-	server.sin_port = htons(VALIDATOR_LOG_PORT);
-	if (inet_pton(AF_INET, VALIDATOR_LOG_SERVER, &server.sin_addr) != 1)
-		goto err;
-	length=sizeof(struct sockaddr_in);
+    for(tmp_log = log_head; tmp_log && tmp_log->next; tmp_log = tmp_log->next)
+        ;
 
-	if(sendto(sock, buffer, strlen(buffer),0,&server,length) < 0)
-		goto err;
-
-	close(sock);
-	return VAL_NO_ERROR;
-
-  err:
-	close(sock);
-	return VAL_INTERNAL_ERROR;
+    if (NULL == tmp_log) 
+        log_head = logp;
+    else
+        tmp_log->next = logp;
 }
-#endif /* LOG_TO_NETWORK */
+
+void val_log_udp (val_log_t *logp, const val_context_t *ctx, int level, const char *template, va_list ap)
+{
+    /** Needs to be at least two characters larger than message size */
+    char buf[1028]; 
+    int length = sizeof(struct sockaddr_in);
+    
+    if (NULL == logp)
+        return;
+    
+    /** We allocated extra space  */
+    vsnprintf(buf, sizeof(buf)-2, template, ap);
+    strcat(buf, "\n");
+    
+    sendto(logp->opt.udp.sock, buf, strlen(buf),0,&logp->opt.udp.server,length);
+    
+    return;
+}
+
+void val_log_filep (val_log_t *logp, const val_context_t *ctx, int level, const char *template, va_list ap)
+{
+    if (NULL == logp)
+        return;
+    
+    if (NULL == logp->opt.file.fp) {
+        logp->opt.file.fp = fopen(logp->opt.file.name, "a");
+        if (NULL == logp->opt.file.fp)
+            return;
+    }
+    vfprintf(logp->opt.file.fp, template, ap);
+    fprintf(logp->opt.file.fp, "\n");
+}
+
+void val_log_syslog (val_log_t *logp, const val_context_t *ctx, int level, const char *template, va_list ap)
+{
+    /* Needs to be at least two characters larger than message size */
+    char buf[sizeof("libval(0000000000000000)..")]; 
+    
+    snprintf(buf, sizeof(buf), "libval(%s)",
+             (ctx == NULL) ? "0" : ctx->id);
+    openlog(buf, VAL_LOG_OPTIONS, logp->opt.syslog.facility);
+    
+    vsyslog(logp->opt.syslog.facility|level, template, ap);
+}
+
+val_log_t *
+val_log_create_logp(int level)
+{
+    val_log_t *logp;
+    
+    logp = MALLOC(sizeof(val_log_t));
+    if (NULL == logp)
+        return NULL;
+    memset(logp, 0, sizeof(val_log_t));
+    
+    if (level < 0)
+        logp->level = debug_level;
+    else if (level > LOG_DEBUG)
+        logp->level = LOG_DEBUG;
+    else
+        logp->level = level;
+    
+    return logp;
+}
+
+val_log_t *
+val_log_add_udp(int level, char *host, int port)
+{
+    val_log_t *logp;
+    
+    if ((NULL == host) || (0==port))
+        return NULL;
+    
+    logp = val_log_create_logp(level);
+    if (NULL == logp)
+        return NULL;
+
+    if (-1 == logp->opt.udp.sock) {
+        logp->opt.udp.sock = socket(AF_INET, SOCK_DGRAM, 0);
+        if (logp->opt.udp.sock < 0) {
+            FREE(logp);
+            return NULL;
+        }
+    }
+
+    logp->opt.udp.server.sin_family = AF_INET;
+    logp->opt.udp.server.sin_port = htons(port);
+    if (inet_pton(AF_INET, host, &logp->opt.udp.server.sin_addr) <= 0) {
+        close(logp->opt.udp.sock);
+        FREE(logp);
+        logp = NULL;
+    }
+
+    return logp;
+}
+
+val_log_t *
+val_log_add_filep(int level, FILE* p)
+{
+    val_log_t *logp;
+
+    if (NULL == p)
+        return NULL;
+    
+    logp = val_log_create_logp(level);
+    if (NULL == logp)
+        return NULL;
+    
+    logp->opt.file.fp = p;
+    logp->logf = val_log_filep;
+    
+    val_log_insert(logp);
+
+    return logp;    
+}
+
+val_log_t *
+val_log_add_file(int level, const char *filen)
+{
+    val_log_t *logp;
+    FILE *filep;
+    
+    if (NULL == filen)
+        return NULL;
+
+    filep = fopen(filen, "a");
+
+    logp = val_log_add_filep(level, filep);
+    if (NULL == logp)
+        fclose(filep);
+
+    return logp;
+}
+
+val_log_t *
+val_log_add_syslog(int level, int facility)
+{
+    val_log_t *logp;
+    
+    logp = val_log_create_logp(level);
+    if (NULL == logp)
+        return NULL;
+    
+    logp->opt.syslog.facility = facility;
+    logp->logf = val_log_syslog;
+    
+    val_log_insert(logp);
+
+    return logp;    
+}
+
+val_log_t *
+val_log_add_optarg(char *str, int use_stderr)
+{
+    val_log_t *logp;
+    char *l;    /** assume we can write to string */
+    int level;
+
+    if (NULL == str)
+        return NULL;
+
+    l = strchr(str,':');
+    if ((NULL == l) || (0 == l[1])) {
+        if (use_stderr)
+            fprintf(stderr,"unknown output format string\n");
+        return NULL;
+    }
+    *l++ = 0;
+    level = atoi(str);
+    str = l;
+
+    switch( *str ) {
+
+        case 'f': /* file */
+            l = strchr(str,':');
+            if ((NULL == l) || (0 == l[1])) {
+                if (use_stderr)
+                    fprintf(stderr,"file requires a filename parameter\n");
+                return NULL;
+            }
+            str = ++l;
+            logp = val_log_add_file(level, str);
+            break;
+
+        case 's': /* stderr|stdout */
+            if (0 == strcmp(str, "stderr"))
+                logp = val_log_add_filep(level, stderr);
+            else if (0 == strcmp(str, "stdout"))
+                logp = val_log_add_filep(level, stdout);
+            else if (0 == strcmp(str, "syslog")) {
+                int facility;
+                l = strchr(str,':');
+                if ((NULL != l) && (0 != l[1])) {
+                    str = ++l;
+                    facility = atoi(str) << 3;
+                }
+                else
+                    facility = LOG_USER;
+                logp = val_log_add_syslog(level, facility);
+            }
+            else {
+                if (use_stderr)
+                    fprintf(stderr,"unknown output format string\n");
+                return NULL;
+            }
+            break;
+
+        case 'n': /* net/udp */
+        {
+            char *host;
+            int   port;
+
+            l = strchr(str,':');
+            if ((NULL == l) || (0 == l[1])) {
+                if (use_stderr)
+                    fprintf(stderr,"net requires a host parameter\n");
+                return NULL;
+            }
+            host = str = ++l;
+
+            l = strchr(str,':');
+            if ((NULL == l) || (0 == l[1])) {
+                if (use_stderr)
+                    fprintf(stderr,"net requires a port parameter\n");
+                return NULL;
+            }
+            *l++ = 0;
+            port = atoi(str);
+
+            logp = val_log_add_udp(level, host, port);
+        }
+            break;
+
+        default:
+            fprintf(stderr,"unknown output format type\n");
+            return NULL;
+    }
+
+    return logp;
+}
 
 void val_log (const val_context_t *ctx, int level, const char *template, ...)
 {
-	va_list ap;
+    va_list ap;
+    val_log_t *logp = log_head;
+    
+    if (NULL == template)
+        return;
+    
+    for(; NULL != logp; logp = logp->next) {
 
-	/* Needs to be at least two characters larger than message size */
-	char buf[1028]; 
-	int log_mask = LOG_UPTO(VAL_LOG_MASK);
+        /** check individual level */
+        if ((level > logp->level) || (NULL == logp->logf))
+            continue;
 
-	setlogmask(log_mask);
-        snprintf(buf, sizeof(buf), "libval(%s)",
-                 (ctx == NULL)? "0": ctx->id);
-	openlog(buf, VAL_LOG_OPTIONS, LOG_USER);
-
-	va_start (ap, template);
-	vsyslog(LOG_USER|level, template, ap);
-	va_end (ap);
-
-#ifdef LOG_TO_NETWORK
-	if(LOG_MASK(level) & log_mask) {
-		/* We allocated extra space  */
-		va_start (ap, template);
-		vsnprintf(buf, 1024, template, ap);
-		va_end (ap);
-		strcat(buf, "\n");
-		send_log_message(buf);
-	}
-#endif /* LOG_TO_NETWORK */
+        va_start(ap, template);
+        (*logp->logf)(logp, ctx, level, template, ap);
+        va_end(ap);
+    }
 }
