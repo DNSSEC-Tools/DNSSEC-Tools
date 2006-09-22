@@ -36,7 +36,7 @@
 #define VAL_A_DONT_KNOW 0 
 #define VAL_A_CAN_VERIFY 1 
 #define VAL_A_WAIT_FOR_TRUST 2 
-#define VAL_A_WAIT_FOR_RRSIG  3
+#define VAL_A_WAIT_FOR_RRSIG 3 
 #define VAL_A_INIT 4
 #define VAL_A_NEGATIVE_PROOF 5 
 #define VAL_A_DONT_VALIDATE 6
@@ -48,20 +48,23 @@
  *************************************************** 
  */
 
-/* "Cannot do anything further" states */
+/* "Cannot do anything further" states, but should check proof of non existence */
 #define VAL_A_ERROR_BASE VAL_A_LAST_STATE /* 10 */
 #define VAL_A_DATA_MISSING (VAL_A_ERROR_BASE+1)
 #define VAL_A_RRSIG_MISSING (VAL_A_ERROR_BASE+2)
 #define VAL_A_DNSKEY_MISSING (VAL_A_ERROR_BASE+3)
 #define VAL_A_DS_MISSING (VAL_A_ERROR_BASE+4)
 #define VAL_A_UNTRUSTED_ZONE (VAL_A_ERROR_BASE+5)
-#define VAL_A_IRRELEVANT_PROOF (VAL_A_ERROR_BASE+6)
-#define VAL_A_DNSSEC_VERSION_ERROR (VAL_A_ERROR_BASE+7)
-#define VAL_A_TOO_MANY_LINKS (VAL_A_ERROR_BASE+8)
-#define VAL_A_UNKNOWN_DNSKEY_PROTO (VAL_A_ERROR_BASE+9)
-#define VAL_A_FLOOD_ATTACK_DETECTED	(VAL_A_ERROR_BASE+10)
+#define VAL_A_LAST_ERROR VAL_A_UNTRUSTED_ZONE
 
-#define VAL_A_DNS_ERROR_BASE (VAL_A_ERROR_BASE+15)
+/* error and dont want to check if provably unsecure either */
+#define VAL_A_BAD_BASE VAL_A_LAST_ERROR
+#define VAL_A_IRRELEVANT_PROOF (VAL_A_BAD_BASE+1)
+#define VAL_A_DNSSEC_VERSION_ERROR (VAL_A_BAD_BASE+2)
+#define VAL_A_TOO_MANY_LINKS (VAL_A_BAD_BASE+3)
+#define VAL_A_UNKNOWN_DNSKEY_PROTO (VAL_A_BAD_BASE+4)
+#define VAL_A_FLOOD_ATTACK_DETECTED	(VAL_A_BAD_BASE+5)
+#define VAL_A_DNS_ERROR_BASE (VAL_A_BAD_BASE+10)
 /* 
  * DNS errors lie within this range, 
  * there are SR_LAST_ERROR (22) of them in total
@@ -71,11 +74,10 @@
 #define SR_CONFLICTING_ANSWERS (SR_LAST_ERROR+3)
 #define VAL_A_DNS_ERROR_LAST (VAL_A_DNS_ERROR_BASE + SR_CONFLICTING_ANSWERS)
 
-
-#define VAL_A_LAST_ERROR VAL_A_DNS_ERROR_LAST /* VAL_A_ERROR_BASE+40 */ 
+#define VAL_A_LAST_BAD VAL_A_DNS_ERROR_LAST /* VAL_A_ERROR_BASE+40 */ 
 
 /* "Error, but can prove the chain-of-trust above this" states */
-#define VAL_A_FAIL_BASE VAL_A_LAST_ERROR /* VAL_A_ERROR_BASE+40 */ 
+#define VAL_A_FAIL_BASE VAL_A_LAST_BAD /* VAL_A_ERROR_BASE+40 */ 
 #define VAL_A_DNSKEY_NOMATCH (VAL_A_FAIL_BASE+1) /*RRSIG was created by a DNSKEY that does not exist in the apex keyset.*/
 #define VAL_A_WRONG_LABEL_COUNT (VAL_A_FAIL_BASE+2) /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA.*/
 #define VAL_A_SECURITY_LAME (VAL_A_FAIL_BASE+3) /*RRSIG created by a key that does not exist in the parent DS record set.*/
@@ -121,14 +123,15 @@ VALIDATED_SUCCESS if the */
 #define VAL_R_INDETERMINATE 1         
 #define VAL_R_INDETERMINATE_DS VAL_R_INDETERMINATE /* Can't prove that the DS is trusted */
 #define VAL_R_INDETERMINATE_PROOF  VAL_R_INDETERMINATE /* Some intermediate Proof of non-existence obtained - dont know if answer exists and proof is bogus or answer is bogus.  */
-#define VAL_R_INCOMPLETE_PROOF VAL_R_INDETERMINATE /* Proof does not have all required components */
 #define VAL_R_BOGUS 2
 #define VAL_R_BOGUS_PROOF VAL_R_BOGUS /* proof cannot be validated */
+#define VAL_R_INCOMPLETE_PROOF VAL_R_BOGUS /* Proof does not have all required components */
 #define VAL_R_BOGUS_UNPROVABLE VAL_R_BOGUS /* Bogus result */
 #define VAL_R_BOGUS_PROVABLE (VAL_R_BOGUS | VAL_R_TRUST_FLAG)
 #define VAL_R_VERIFIED_CHAIN 3 /* All components were verified */
 #define VAL_R_VALIDATED_CHAIN (VAL_R_VERIFIED_CHAIN | VAL_R_TRUST_FLAG)     
-#define VAL_R_LAST 4
+#define VAL_R_PROVABLY_UNSECURE 4
+#define VAL_R_LAST 5
 
 /* 
  *************************************************** 
@@ -141,8 +144,13 @@ VALIDATED_SUCCESS if the */
 #define VAL_NONEXISTENT_NAME (VAL_R_LAST+3)
 #define VAL_NONEXISTENT_TYPE (VAL_R_LAST+4)
 #define VAL_ERROR (VAL_R_LAST+5)
-
+#ifdef LIBVAL_NSEC3 
+#define VAL_NONEXISTENT_NAME_OPTOUT (VAL_R_LAST+6)
+#define VAL_DNS_ERROR_BASE (VAL_R_LAST+7)
+#else
 #define VAL_DNS_ERROR_BASE (VAL_R_LAST+6)
+#endif
+
 /* 
  * DNS errors lie within this range, 
  */
@@ -150,6 +158,7 @@ VALIDATED_SUCCESS if the */
 
 #define VAL_INDETERMINATE VAL_R_INDETERMINATE
 #define VAL_BOGUS VAL_R_BOGUS
+#define VAL_PROVABLY_UNSECURE (VAL_R_PROVABLY_UNSECURE | VAL_R_TRUST_FLAG)
 #define VAL_NOTRUST VAL_R_VERIFIED_CHAIN 
 #define VAL_SUCCESS VAL_R_VALIDATED_CHAIN
 
