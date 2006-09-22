@@ -16,12 +16,6 @@ extern          "C" {
 #include <arpa/nameser.h>
 #include <netdb.h>
 
-#ifndef NS_MAXDNAME
-#define NS_MAXDNAME 1025    /* maximum domain name */
-#endif
-#ifndef NS_MAXCDNAME
-#define NS_MAXCDNAME    255 /* maximum compressed domain name */
-#endif
 
 #if !defined(NS_INT16SZ) && defined(INT16SZ)
 #define NS_INT16SZ INT16SZ
@@ -94,9 +88,12 @@ extern          "C" {
 #define SR_ANS_UNSET             0
 #define SR_ANS_STRAIGHT          1
 #define SR_ANS_CNAME             2
-#define SR_ANS_NACK_NXT          3
-#define SR_ANS_NACK_SOA          4
-#define SR_ANS_BARE_RRSIG        5
+#define SR_ANS_NACK_NSEC         3
+#ifdef LIBVAL_NSEC3 
+#define SR_ANS_NACK_NSEC3        4
+#endif
+#define SR_ANS_NACK_SOA          5
+#define SR_ANS_BARE_RRSIG        6
 
 /* Policies associated with Keys */
 #define	CANNOT_BE_USED			0x00				
@@ -111,6 +108,28 @@ extern          "C" {
 #define VAL_CTX_IDLEN       20
 #ifndef SHA_DIGEST_LENGTH
 #define SHA_DIGEST_LENGTH 20
+#endif
+
+/* Algorithm definitions for DS digest */
+#define ALG_DS_HASH_SHA1 1
+
+#ifdef LIBVAL_NSEC3 
+#define ALG_NSEC3_HASH_SHA1 1
+#endif
+
+/* Algorithm definitions for NSEC3 digest */
+#ifdef LIBVAL_NSEC3 
+#define ALG_NSEC_HASH_SHA1 1
+#endif
+
+/* DNSSEC Algorithm definitions */
+#define ALG_RSAMD5  1
+#define ALG_DH      2
+#define ALG_DSASHA1 3
+#define ALG_RSASHA1 5
+#ifdef LIBVAL_NSEC3 
+#define ALG_NSEC3_DSASHA1 131
+#define ALG_NSEC3_RSASHA1 133 
 #endif
 
 /* Section values of an RRset */
@@ -138,12 +157,19 @@ extern          "C" {
 #define	P_EXPIRED_SIGS				7 
 #define P_USE_TCP					8 
 #define P_ZONE_SECURITY_EXPECTATION 9 
-#ifndef DLV
-#define MAX_POL_TOKEN	 			10	
-#else
-#define P_DLV_TRUST_POINTS			10
-#define P_DLV_MAX_VALIDATION_LINKS	11
-#define MAX_POL_TOKEN	 			12
+#define MAX_POL_TOKEN	 			10
+
+#ifdef LIBVAL_NSEC3 
+#define P_NSEC3_MAX_ITER            10 
+#undef  MAX_POL_TOKEN
+#define MAX_POL_TOKEN	 		    11 
+#endif
+
+#ifdef DLV
+#define P_DLV_TRUST_POINTS		    10	
+#define P_DLV_MAX_VALIDATION_LINKS  11	
+#undef  MAX_POL_TOKEN
+#define MAX_POL_TOKEN	 		    12 
 #endif
 
 #define RETRIEVE_POLICY(ctx, index, type)	\
@@ -177,12 +203,10 @@ struct rr_rec
 };
 
 struct val_rrset {
-	/* Header */
-    u_int8_t  *val_msg_header; 
+    /* Header */
+    u_int8_t  *val_msg_header;
     u_int16_t val_msg_headerlen;
-	/* Question */
-    u_int8_t  *val_queryset_data; /* for {N,C,T} when no answer is returned, NSID etc  */
-    u_int16_t val_queryset_datalen;
+
 	/* Answer */
     u_int8_t  *val_rrset_name_n;    /* Owner */
     u_int16_t val_rrset_class_h;    /* ns_c_... */
@@ -260,25 +284,22 @@ struct val_authentication_chain {
 
 struct query_list
 {
-    u_int8_t            ql_name_n[NS_MAXDNAME];
-    u_int8_t            ql_zone_n[NS_MAXDNAME];
+    u_int8_t            ql_name_n[NS_MAXCDNAME];
+    u_int8_t            ql_zone_n[NS_MAXCDNAME];
     u_int16_t           ql_type_h;
     struct query_list   *ql_next;
 };
 
 struct qname_chain
 {
-    u_int8_t        qnc_name_n[NS_MAXDNAME];
+    u_int8_t        qnc_name_n[NS_MAXCDNAME];
     struct qname_chain  *qnc_next;
 };
 
 struct delegation_info {
 	struct query_list   *queries;
 	struct qname_chain  *qnames;
-	struct rrset_rec    *answers;
-	struct rrset_rec    *learned_zones;
 	struct name_server  *pending_glue_ns;
-	u_int8_t            *pending_zonecut_n;
 	struct val_query_chain  *glueptr;
 };
 
@@ -348,8 +369,22 @@ typedef struct val_ds_rdata {
     u_int16_t d_keytag;
     u_int8_t d_algo;
     u_int8_t d_type;
-    u_int8_t d_hash[SHA_DIGEST_LENGTH];
+    u_int8_t *d_hash;
+    u_int32_t d_hash_len;
 } val_ds_rdata_t;
+
+#ifdef LIBVAL_NSEC3
+typedef struct val_nsec3_rdata{
+    u_int8_t alg;
+    u_int8_t optout;
+    u_int32_t iterations;
+    u_int8_t saltlen;
+    u_int8_t *salt;
+    u_int8_t nexthashlen;
+    u_int8_t *nexthash;
+    u_int16_t bit_field;
+} val_nsec3_rdata_t;
+#endif
 
 /*
  **********************************
