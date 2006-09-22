@@ -74,6 +74,77 @@ struct testcase_st {
 // A set of pre-defined test cases
 static const struct testcase_st testcases[] = {
 
+#if 0
+	{"Test Case 1", "www.n0.n0.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_PROVABLY_UNSECURE, 0}},
+	{"Test Case 2", "www.n0.n1u.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_PROVABLY_UNSECURE, 0}},
+	{"Test Case 3", "www.n3.n1s.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 4", "www.n0.n3u.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_PROVABLY_UNSECURE, 0}},
+	{"Test Case 5", "www.n0.n3o.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_PROVABLY_UNSECURE, 0}},
+	{"Test Case 6", "www.n1.n3s.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 7", "www.n3.n3s.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+#endif
+
+#if 0
+	{"Test Case 1", "www.roll.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 2", "www.n0.roll.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_PROVABLY_UNSECURE, 0}},
+	{"Test Case 3", "www.n1.roll.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 4", "www.n3.roll.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 5", "www.nx.roll.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, 0}},
+#endif
+
+#if 0
+	{"Test Case 1", "a1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 2", "a2.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 3", "a3.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 4", "a4.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 5", "a5.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 6", "a6.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 7", "a7.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 8", "a8.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 9", "b1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 10", "b2.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 11", "b3.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 12", "b4.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 13", "c1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 14", "c2.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 15", "c3.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 16", "c4.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 17", "c5.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 18", "c6.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 19", "c7.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 20", "c8.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 21", "d1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 22", "d2.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 23", "d3.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 24", "d4.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 25", "ref.e1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 26", "ref.e2.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 27", "oo.f1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 28", "oo.f2.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 29", "oo.f3.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 30", "oo.f4.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 31", "g1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 32", "h1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 33", "h2.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 34", "h3.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 35", "i1.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 36", "i2.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 37", "i3.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 38", "1.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 39", "2.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 40", "3.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 41", "4.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 42", "5.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 43", "6.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 44", "7.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 45", "8.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 46", "9.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 47", "10.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 48", "11.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+	{"Test Case 49", "12.a.j.b.ws.nsec3.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
+#endif
+
+
 #if 1
 	{"Test Case 1", "good-A.test.dnssec-tools.org", ns_c_in, ns_t_a, {VAL_SUCCESS, 0}},
 	{"Test Case 2", "badsign-A.test.dnssec-tools.org", ns_c_in, ns_t_a, {VAL_R_BOGUS_PROVABLE, 0}},
@@ -141,18 +212,12 @@ static const struct testcase_st testcases[] = {
 	{"Test Case 64", "nosig-cname-to-baddata-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_ERROR, VAL_R_BOGUS_PROVABLE, 0}},
 	{"Test Case 65", "nosig-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_ERROR, VAL_R_BOGUS_PROVABLE, 0}},
 	{"Test Case 66", "nosig-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_ERROR, VAL_R_BOGUS_PROVABLE, 0}},
-	{"Test Case 67", "baddata-cname-to-good-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE, 0}},
-	{"Test Case 68", "baddata-cname-to-badsign-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa,
-{VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE, 0}},
-	{"Test Case 69", "baddata-cname-to-nosig-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE,
-VAL_R_BOGUS_UNPROVABLE, 0}},
-	{"Test Case 70", "baddata-cname-to-baddata-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE,
-VAL_R_BOGUS_UNPROVABLE, 0}},
-	{"Test Case 71", "baddata-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa,
-{VAL_R_BOGUS_UNPROVABLE,
-VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE, 0}},
-	{"Test Case 72", "baddata-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_UNPROVABLE, VAL_R_BOGUS_UNPROVABLE,
-VAL_R_BOGUS_UNPROVABLE, 0}},
+	{"Test Case 67", "baddata-cname-to-good-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_PROVABLE, 0}},
+	{"Test Case 68", "baddata-cname-to-badsign-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+	{"Test Case 69", "baddata-cname-to-nosig-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_PROVABLE, 0}},
+	{"Test Case 70", "baddata-cname-to-baddata-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+	{"Test Case 71", "baddata-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+	{"Test Case 72", "baddata-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_PROVABLE, 0}},
 	{"Test Case 73", "futuredate-cname-to-good-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
 	{"Test Case 74", "futuredate-cname-to-badsign-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
 	{"Test Case 75", "futuredate-cname-to-nosig-AAAA.test.dnssec-tools.org", ns_c_in, 	ns_t_aaaa, 	{VAL_R_BOGUS_PROVABLE, VAL_ERROR, 0}},
@@ -312,9 +377,9 @@ int sendquery(val_context_t *context, const char *desc, const char *name, const 
 	int result_array[MAX_RESULTS];
 	int i;
 
-	fprintf(stderr, "%s:\t", desc);
+	fprintf(stderr, "%s: ****START**** \n", desc);
 
-    if (ns_name_pton(name, name_n, NS_MAXCDNAME-1) == -1) {
+    if (ns_name_pton(name, name_n, NS_MAXCDNAME) == -1) {
 		fprintf(stderr, "Error: %d\n", VAL_BAD_ARGUMENT);		
 		return 1;
 	}                                                                                                                 
@@ -348,6 +413,7 @@ int sendquery(val_context_t *context, const char *desc, const char *name, const 
 					}
 				}
 				else {
+					fprintf(stderr, "%s: \t", desc);
 					fprintf(stderr, "FAILED: Remaining error values expected\n"); 
 					for(i=0; result_array[i]!=0; i++) {
 						if(result_array[i]!=-1)
@@ -365,6 +431,7 @@ int sendquery(val_context_t *context, const char *desc, const char *name, const 
 			/* Check if all error values were marked */
 			for(i=0; result_array[i]!=0; i++) {
 				if(result_array[i]!= -1) {
+					fprintf(stderr, "%s: \t", desc);
 					fprintf(stderr, "FAILED: Some results were not received \n");
 					val_log_authentication_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
 					err = 1;
@@ -373,22 +440,26 @@ int sendquery(val_context_t *context, const char *desc, const char *name, const 
 			}
 
 			if (!err) {
+				fprintf(stderr, "%s: \t", desc);
 				fprintf(stderr, "OK\n");
 				val_log_authentication_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
 			}
 		}
-		else if (trusted_only) {
+		else if (trusted_only) {	
+			fprintf(stderr, "%s: \t", desc);
 			fprintf(stderr, "FAILED: Some results were not validated successfully \n");
 			val_log_authentication_chain(context, LOG_INFO, name_n, class, type, context->q_list, results);
 		}
 			
 	}
 	else {
-		printf ("FAILED: Error in val_resolve_and_check(): %d\n", ret_val);
+		fprintf(stderr, "%s: \t", desc);
+		fprintf (stderr, "FAILED: Error in val_resolve_and_check(): %d\n", ret_val);
 	}
 
     /* XXX De-register pending queries */
     val_free_result_chain(results); results = NULL;
+	fprintf(stderr, "%s: ****END**** \n", desc);
 
     return (err != 0); /* 0 success, 1 error */
 }
