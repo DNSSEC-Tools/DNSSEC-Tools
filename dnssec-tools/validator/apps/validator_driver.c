@@ -19,6 +19,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <sys/socket.h>
 #include <arpa/nameser.h>
 #include <netinet/in.h>
@@ -30,6 +31,9 @@
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif
+
+#include "val_cache.h"
+#include "val_log.h"
 
 #include "res_debug.h"
 
@@ -50,6 +54,7 @@ static struct option prog_options[] = {
                    {"type",  1, 0, 't'},
                    {"testcase",  1, 0, 'T'},
                    {"label",  1, 0, 'l'},
+                   {"output",  1, 0, 'o'},
                    {"resolv-conf",  1, 0, 'r'},
                    {"dnsval-conf",  1, 0, 'v'},
                    {"root-hints",  1, 0, 'i'},
@@ -391,24 +396,33 @@ int sendquery(val_context_t *context, const char *desc, const char *name, const 
 // Usage
 void usage(char *progname)
 {
-	printf("Usage: validate [options] [DOMAIN_NAME]\n");
-	printf("Resolve and validate a DNS query.\n");
-	printf("Primary Options:\n");
-	printf("        -h, --help             Display this help and exit\n");
-	printf("        -p, --print            Print the answer and validation result\n");
-	printf("        -s, --selftest         Run internal sefltest\n");
-	printf("        -T, --testcase=<number> Specifies the test case number \n");
-	printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
-	printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
-	printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
-	printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
-	printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
-	printf("        -l, --label=<label-string> Specifies the policy to use during validation\n");
-	printf("Advanced Options:\n");
-	printf("        -m, --merge            Merge different RRSETs into a single answer\n");
-	printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
-	printf("The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.\n");
-	printf("If no arguments are given, this program runs a set of predefined test queries.\n");
+    /* *INDENT-OFF* */
+    printf("Usage: validate [options] [DOMAIN_NAME]\n");
+    printf("Resolve and validate a DNS query.\n");
+    printf("Primary Options:\n");
+    printf("        -h, --help             Display this help and exit\n");
+    printf("        -p, --print            Print the answer and validation result\n");
+    printf("        -s, --selftest         Run internal sefltest\n");
+    printf("        -T, --testcase=<number> Specifies the test case number \n");
+    printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
+    printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
+    printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
+    printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
+    printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
+    printf("        -l, --label=<label-string> Specifies the policy to use during validation\n");
+    printf("        -o, --output=<debug-level>:<dest-type>[:<dest-options>]\n");
+    printf("              <debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG\n");
+    printf("              <dest-type> is one of file, net, syslog, stderr, stdout\n");
+    printf("              <dest-options> depends on <dest-type>\n");
+    printf("                  file:<file-name>   (opened in append mode)\n");
+    printf("                  net[:<host-name>:<host-port>] (127.0.0.1:1053\n");
+    printf("                  syslog[:facility] (0-23 (default 1 USER))\n");
+    printf("Advanced Options:\n");
+    printf("        -m, --merge            Merge different RRSETs into a single answer\n");
+    printf("\nThe DOMAIN_NAME parameter is not required for the -h option.\n");
+    printf("The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.\n");
+    printf("If no arguments are given, this program runs a set of predefined test queries.\n");
+    /* *INDENT-ON* */
 }
 
 // Main
@@ -425,7 +439,7 @@ int main(int argc, char *argv[])
 		// Parse the command line for a query and resolve+validate it
 		int c;
 		char *domain_name = NULL;
-		const char *args        = "hi:pc:r:st:T:l:mv:";
+		const char *args        = "hi:o:pc:r:st:T:l:mv:";
 		u_int16_t class_h = ns_c_in;
 		u_int16_t type_h  = ns_t_a;
 		int success       = 0;
@@ -435,6 +449,7 @@ int main(int argc, char *argv[])
 		int retvals[]     = {0};
 		int tc = -1;
 		char *label_str	      = NULL;
+                val_log_t *logp;
 
 		while (1) {
 #ifdef HAVE_GETOPT_LONG
@@ -476,6 +491,15 @@ int main(int argc, char *argv[])
 					return 1;
 				}
 				break;
+
+                        case 'o':
+                            logp = val_log_add_optarg(optarg, 1);
+                            if (NULL == logp) { /* err msg already logged */
+                                usage(argv[0]);
+                                return 1;
+                            }
+                            break;
+
 
 			case 'v':
 				dnsval_conf_set(optarg);
