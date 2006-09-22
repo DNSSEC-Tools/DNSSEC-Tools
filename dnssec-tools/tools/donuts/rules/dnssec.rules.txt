@@ -62,9 +62,9 @@ ruletype: name
 name: DNSSEC_RRSIG_NOT_SIGNING_RRSIG
 level: 7
 type: RRSIG
-desc: draft-ietf-dnsext-dnssec-protocol-09.txt: Section 2.2: An RRSIG RR itself MUST NOT be signed, since signing an RRSIG RR would add no value and would create an infinite loop in the signing process.
+desc: RFC4035: Section 2.2: An RRSIG RR itself MUST NOT be signed, as signing an RRSIG RR would add no value and would create an infinite loop in the signing process.
 <test>
-  "$_[0]->{name} has an RRSIG that signs an RRSIG"
+  "RRSIG records must not be signed but a signature for a RRSIG on $_[0]{name} is."
     if ($_[0]->typecovered eq 'RRSIG');
 </test>
 
@@ -147,7 +147,7 @@ type: NSEC
 name: DNSSEC_DNSKEY_MUST_HAVE_SAME_NAME
 level: 4
 type: DNSKEY
-desc: draft-ietf-dnsext-dnssec-records-11.txt section 2.1.1: If bit 7 has value 1, then the DNSKEY record holds a DNS zone key and the DNSKEY RR's owner name MUST be the name of a zone.
+desc: RFC4034 section 2.1.1: If bit 7 has value 1, then the DNSKEY record holds a DNS zone key, and the DNSKEY RR's owner name MUST be the name of a zone.
 <test>
   if ($_[0]->flags & 0x100 && $current_domain ne $_[0]->name) {
     return "DNSKEY record found for '$_[0]' in wrong domain: '$current_domain'."
@@ -157,7 +157,7 @@ desc: draft-ietf-dnsext-dnssec-records-11.txt section 2.1.1: If bit 7 has value 
 name: DNSSEC_DNSKEY_PROTOCOL_MUST_BE_3
 level: 4
 type: DNSKEY
-desc: draft-ietf-dnsext-dnssec-records-11.txt section 2.1.2: The Protocol Field MUST have value 3 and the DNSKEY RR MUST be treated as invalid during signature verification if found to be some value other than 3.
+desc: RFC4934 section 2.1.2: The Protocol Field MUST have value 3, and the DNSKEY RR MUST be treated as invalid during signature verification if it is found to be some value other than 3.
 <test>
   if ($_[0]->protocol != 3) {
     return "DNSKEY record found for '$_[0]->{name}' with protocol other than '3'."
@@ -231,7 +231,7 @@ desc: RRSIG records signed by the zone's key are required for all records in ord
 name: DNSSEC_RRSIG_TTL_MUST_MATCH_RECORD
 level: 3
 ruletype: name
-desc: draft-ietf-dnsext-dnssec-records-11.txt section 3.0: The TTL value of an RRSIG RR MUST match the TTL value of the RRset it covers. 
+desc: RFC4034 section 3.0: The TTL value of an RRSIG RR MUST match the TTL value of the RRset it covers.
 <test>
   my %rrsigs;
   foreach my $rec (@{$_[0]->{'RRSIG'}}) {
@@ -295,7 +295,7 @@ desc: NSEC records are required for all names except child glue records in order
 
 name: DNSSEC_RRSIG_SIGNER_NAME_MATCHES
 type: RRSIG
-desc: draft-ietf-dnsext-dnssec-records-11: section 3.1.7: The Signer's Name field MUST contain the name of the zone of the covered RRset.
+desc: RFC4034: section 3.1.7: The Signer's Name field MUST contain the name of the zone of the covered RRset
 <test>
   if ($_[0]->signame ne $current_domain . "." &&
       $_[0]->signame ne $current_domain) {
@@ -306,20 +306,12 @@ desc: draft-ietf-dnsext-dnssec-records-11: section 3.1.7: The Signer's Name fiel
 name: DNSSEC_NSEC_RRSEC_MUST_NOT_BE_ALONE
 ruletype: name
 level: 5
-desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST NOT be the only RRset at any particular owner name.
+desc: RFC4035: section 2.3: An NSEC record (and its associated RRSIG RRset) MUST NOT be the only RRset at any particular owner name.
 <test>
   my @keys = sort keys(%{$_[0]});
   return if ($#keys == 1);
   "$_[0]->{name} only contains NSEC and RRSIG records"
     if ($keys[0] eq 'NSEC' && $keys[1] eq 'RRSIG');
-</test>
-
-name: DNSSEC_RRSIGS_MUST_NOT_BE_SIGNED
-type: RRSIG
-desc: draft-ietf-dnsext-dnssec-protocol-09: section 2.2: An RRSIG RR itself MUST NOT be signed, since signing an RRSIG RR would add no value and would create an infinite loop in the signing process.
-<test>
-  "RRSIG records must not be signed but a signature for a RRSIG on $_[0]{name} is."
-    if ($_[0]->typecovered eq 'RRSIG');
 </test>
 
 name: DNSSEC_MEMORIZE_KEYS
