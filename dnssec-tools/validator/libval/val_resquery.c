@@ -329,6 +329,7 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
 	    return VAL_BAD_ARGUMENT;
 
     *ns_list = NULL;
+	trailer = NULL;
                                                                                                                           
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL)
@@ -336,7 +337,7 @@ int res_zi_unverified_ns_list(struct name_server **ns_list,
         if (unchecked_set->rrs.val_rrset_type_h == ns_t_ns &&
                 (namecmp(zone_name, unchecked_set->rrs.val_rrset_name_n) == 0))
         {
-            if (*ns_list != NULL)
+            if ((*ns_list != NULL) && (trailer != NULL))
             {
                 /* We've hit a duplicate, remove it from the list */
                 /*
