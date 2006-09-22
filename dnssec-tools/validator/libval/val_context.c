@@ -89,7 +89,7 @@ void val_free_context(val_context_t *context)
  */
 int val_switch_policy_scope(val_context_t *ctx, char *label)
 {
-	struct policy_overrides *cur, *t;
+	struct policy_overrides *t;
 	int retval;
 
 	if (ctx) {
@@ -101,22 +101,17 @@ int val_switch_policy_scope(val_context_t *ctx, char *label)
 			return VAL_NO_ERROR;
 		}
 
-		for(cur = ctx->pol_overrides; 
-			 cur && strcmp(cur->label, label); 
-			  cur = cur->next); 
-		if (cur) {
-			/* cur is the exact match */
-			memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
-			for (t = ctx->pol_overrides; t != cur->next; t = t->next) {
-				/* Override only if this is relevant */
-				int relevant, label_count;
-				if (VAL_NO_ERROR != (retval = (check_relevance(label, t->label, &label_count, &relevant)))) 
-						return retval;
-				if(relevant)	
-					OVERRIDE_POLICY(ctx, t);
-			}
-			return VAL_NO_ERROR;
+		/* cur is the exact match */
+		memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
+		for (t = ctx->pol_overrides; t != NULL; t = t->next) {
+			/* Override only if this is relevant */
+			int relevant, label_count;
+			if (VAL_NO_ERROR != (retval = (check_relevance(label, t->label, &label_count, &relevant)))) 
+					return retval;
+			if(relevant)	
+				OVERRIDE_POLICY(ctx, t);
 		}
+		return VAL_NO_ERROR;
 	}
 	return VAL_NO_POLICY;
 }
