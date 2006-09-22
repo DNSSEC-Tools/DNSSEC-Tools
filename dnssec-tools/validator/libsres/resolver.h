@@ -66,6 +66,13 @@
 #endif
 #endif
 
+#ifndef NS_MAXDNAME
+#define NS_MAXDNAME 1025    /* maximum domain name */
+#endif
+#ifndef NS_MAXCDNAME
+#define NS_MAXCDNAME    255 /* maximum compressed domain name */
+#endif
+
 /** START:some missing macros on OpenBSD 3.9 */
 #ifndef NS_CMPRSFLGS
 #define NS_CMPRSFLGS   0xc0
@@ -100,6 +107,13 @@
 #ifndef ns_t_nsec
 #define ns_t_nsec     47
 #endif
+
+#ifdef LIBVAL_NSEC3 
+#ifndef ns_t_nsec3
+#define ns_t_nsec3   65324 
+#endif
+#endif
+
 #ifndef ns_t_ds
 #define ns_t_ds       43
 #endif
@@ -133,7 +147,7 @@
 #define SR_LAST_ERROR             22
 
 struct name_server {
-    u_int8_t       *ns_name_n;
+    u_int8_t       ns_name_n[NS_MAXCDNAME];
     void           *ns_tsig;
     u_int32_t       ns_security_options;
     u_int32_t       ns_status;
