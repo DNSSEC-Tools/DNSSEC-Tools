@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
+#include <openssl/sha.h>
 
 #include <resolver.h>
 #include <validator.h>
@@ -94,11 +95,19 @@ static val_astatus_t val_sigverify (
 
     switch(rrsig.algorithm) {
 	
-    case 1: return  rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig);
-    case 3: return dsasha1_sigverify(ctx, data, data_len, dnskey, rrsig);
-    case 5: return rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig);
-    case 2:
-    case 4:
+    case ALG_RSAMD5: return  rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig);
+
+#ifdef LIBVAL_NSEC3 
+    case ALG_NSEC3_DSASHA1:                 
+#endif
+    case ALG_DSASHA1: return dsasha1_sigverify(ctx, data, data_len, dnskey, rrsig);
+
+#ifdef LIBVAL_NSEC3 
+    case ALG_NSEC3_RSASHA1:                 
+#endif
+    case ALG_RSASHA1: return rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig);
+
+    case ALG_DH:
 	val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.\n", dnskey.algorithm);
 	return VAL_A_ALGO_NOT_SUPPORTED;
 	break;
@@ -209,6 +218,9 @@ static int have_rrsigs (struct domain_info *response)
 	    val_parse_rrsig_rdata(rrs_sig->rr_rdata, rrs_sig->rr_rdata_length_h,
 				  &rrsig_rdata);
 	    if ((rrsig_rdata.type_covered == rrset->rrs.val_rrset_type_h) ||
+#ifdef LIBVAL_NSEC3 
+            (rrsig_rdata.type_covered == ns_t_nsec3) ||
+#endif
 	        (rrsig_rdata.type_covered == ns_t_nsec)) {
 			if(rrsig_rdata.signature != NULL)
 				FREE(rrsig_rdata.signature);
@@ -275,7 +287,7 @@ static int make_sigfield (  u_int8_t            **field,
     u_int16_t           class_n;
     u_int32_t           ttl_n;
     u_int16_t           rdata_length_n;
-    u_int8_t            lowered_owner_n[NS_MAXDNAME];
+    u_int8_t            lowered_owner_n[NS_MAXCDNAME];
     size_t              l_index;
                                                                                                                           
     if ((field == NULL) || (field_length == NULL) || (rr_set == NULL) ||
@@ -497,20 +509,42 @@ static int do_verify (
     return VAL_NO_ERROR;
 }
 
-
-#ifndef DIGEST_SHA_1
-#define DIGEST_SHA_1 1
-#endif
-static int hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, u_int8_t *public_key, u_int32_t public_key_len)
+static int ds_hash_is_equal (u_int8_t ds_hashtype, u_int8_t *ds_hash, 
+        u_int32_t ds_hash_len, u_int8_t *name_n, struct rr_rec *dnskey)
 {
+    u_int8_t ds_digest[SHA_DIGEST_LENGTH];
+    u_int8_t *rrdata;
+    u_int16_t rrdatalen; 
+    int namelen;
+    SHA_CTX c;
+   
 	/* Only SHA-1 is understood */
-    if(ds_hashtype != DIGEST_SHA_1)
+    if(ds_hashtype != ALG_DS_HASH_SHA1)
         return 0;
 
-	// XXX check hashes
-	// xxx-audit: hash_is_equal always returns 1!
-	return 1;	
-}
+    if ((dnskey == NULL) || (ds_hash == NULL) || (name_n == NULL) || (ds_hash_len != SHA_DIGEST_LENGTH))
+        return 0;
+    
+    rrdata = dnskey->rr_rdata; 
+    rrdatalen = dnskey->rr_rdata_length_h; 
+
+    if (rrdata == NULL)
+        return 0;
+   
+    namelen = wire_name_length(name_n);
+
+    memset(ds_digest, SHA_DIGEST_LENGTH, 0);
+
+    SHA1_Init(&c);
+    SHA1_Update(&c, name_n, namelen);
+    SHA1_Update(&c, rrdata, rrdatalen);
+    SHA1_Final(ds_digest, &c);
+
+    if (!memcmp(ds_digest, ds_hash, ds_hash_len))
+        return 1;
+
+    return 0;
+} 
 
 /*
  * State returned in as->val_ac_status is one of:
@@ -625,20 +659,24 @@ void verify_next_assertion(val_context_t *ctx, struct val_authentication_chain *
 					if(VAL_NO_ERROR != (retval = find_key_for_tag (the_set->rrs.val_rrset_data,
 &ds_keytag_n, &dnskey, &matching_dnskey_rr))) {
 						dsrec = dsrec->rr_next;
+                        FREE(ds.d_hash);
 						continue;
 					}
 
 					if((ds.d_keytag == dnskey.key_tag) 
 						&& (ds.d_algo == dnskey.algorithm) 
-						 && (hash_is_equal(ds.d_type, 
-								ds.d_hash, dnskey.public_key,
-								dnskey.public_key_len))) {
+						 && (ds_hash_is_equal(ds.d_type, 
+								ds.d_hash, ds.d_hash_len, 
+                                the_set->rrs.val_rrset_name_n, 
+                                matching_dnskey_rr))) { 
 							FREE(dnskey.public_key);
 							dnskey.public_key = NULL;
+                            FREE(ds.d_hash);
 							matching_dnskey_rr->rr_status = VAL_A_VERIFIED_LINK;
 							break;
 					}
 
+                    FREE(ds.d_hash);
 					dsrec = dsrec->rr_next;
 				}
 
