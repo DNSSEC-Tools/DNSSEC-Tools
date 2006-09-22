@@ -11,7 +11,15 @@
 #	into the equivalent number of weeks, days, hours, and minutes.
 #
 
+package Net::DNS::SEC::Tools::timetrans;
+
 use strict;
+
+require Exporter;
+
+our @ISA = qw(Exporter);
+
+our @EXPORT = qw(timetrans);
 
 #######################################################################
 #
