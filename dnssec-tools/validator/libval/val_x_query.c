@@ -474,7 +474,7 @@ int val_query ( val_context_t *ctx,
 	val_log(context, LOG_DEBUG, "val_query called with dname=%s, class=%s, type=%s",
 		domain_name, p_class(class_h), p_type(type));
 
-	if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME-1) == -1) {
+	if (ns_name_pton(domain_name, name_n, sizeof(name_n)) == -1) {
 		if((ctx == NULL)&& context)
 			val_free_context(context);
 		return (VAL_BAD_ARGUMENT);
