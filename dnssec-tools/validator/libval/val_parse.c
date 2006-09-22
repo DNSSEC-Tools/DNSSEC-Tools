@@ -133,7 +133,7 @@ int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
 	else
 		rdata->public_key = NULL;
 
-    if (rdata->algorithm == 1) {
+    if (rdata->algorithm == ALG_RSAMD5) {
 	rdata->key_tag = rsamd5_keytag(buf, buflen);
     }
     else {
@@ -254,7 +254,7 @@ int val_parse_dnskey_string (char *keystr, int keystrlen,
 	memcpy(bp, (*dnskey_rdata)->public_key, (*dnskey_rdata)->public_key_len);
 
 	/* Calculate the keytag */
-    if ((*dnskey_rdata)->algorithm == 1) {
+    if ((*dnskey_rdata)->algorithm == ALG_RSAMD5) {
     	(*dnskey_rdata)->key_tag = rsamd5_keytag(buf, buflen);
     }
     else {
@@ -326,7 +326,6 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
  * Parse rdata portion of a DS Resource Record.
  * Returns the number of bytes in the DS rdata portion that were parsed.
  */
-#define DIGEST_SHA_1	1
 int val_parse_ds_rdata (const unsigned char *buf, int buflen,
 			    val_ds_rdata_t *rdata)
 {
@@ -348,14 +347,19 @@ int val_parse_ds_rdata (const unsigned char *buf, int buflen,
     index += 1;
 
 	/* Only SHA-1 is understood */
-	if(rdata->d_type != DIGEST_SHA_1)
+	if(rdata->d_type != ALG_DS_HASH_SHA1)
 		return -1;
 
-        if (index+sizeof(rdata->d_hash) > buflen)
+    rdata->d_hash_len = SHA_DIGEST_LENGTH;
+    rdata->d_hash = (u_int8_t *) MALLOC (rdata->d_hash_len * sizeof (u_int8_t));
+    if (rdata->d_hash == NULL)
+        return -1;
+
+    if (index+rdata->d_hash_len > buflen)
             return -1;
 
-    memcpy (rdata->d_hash, buf + index, sizeof(rdata->d_hash));
-    index += sizeof(rdata->d_hash);
+    memcpy (rdata->d_hash, buf + index, rdata->d_hash_len);
+    index += rdata->d_hash_len;
 
     return index;
 }
@@ -380,4 +384,55 @@ int dnskey_compare(val_dnskey_rdata_t *key1, val_dnskey_rdata_t *key2)
 	return 1;
 }
 
+#ifdef LIBVAL_NSEC3
+val_nsec3_rdata_t *val_parse_nsec3_rdata(u_int8_t *rr_rdata, u_int16_t rdatalen, val_nsec3_rdata_t *nd)
+{
+    u_int8_t *cp;
+    u_int8_t nexthashlen;
+    u_int8_t *nexthash;
 
+    if (nd == NULL)
+        return NULL;
+
+    cp = rr_rdata;
+
+    if (rdatalen < 5) {
+        /* somethings wrong */
+        return NULL;
+    }
+    nd->alg = *cp;
+    memcpy(&nd->iterations, cp, 4 * sizeof(u_int8_t));
+    nd->optout = (nd->iterations & 0x00800000) ? 1 : 0;
+    nd->iterations &= 0x007fffff;
+    cp += 4; 
+
+    nd->saltlen = *cp;
+    cp += 1;
+    if ((cp - rr_rdata) >= rdatalen)
+        return NULL;
+
+    nd->salt = cp;
+    cp += nd->saltlen;
+    if ((cp - rr_rdata) >= rdatalen)
+        return NULL;
+
+    nexthashlen = *cp;
+    cp += 1;
+    if ((cp - rr_rdata) >= rdatalen)
+        return NULL;
+
+    nexthash = cp;
+    cp += nexthashlen;
+    if ((cp - rr_rdata) >= rdatalen)
+        return NULL;
+
+    base32hex_encode(nexthash, nexthashlen, &(nd->nexthash), &(nd->nexthashlen));
+    
+    nd->bit_field = cp - rr_rdata;
+    if ((cp - rr_rdata) >= rdatalen)
+        return NULL;
+
+    return nd;
+}
+
+#endif
