@@ -175,7 +175,7 @@ void val_log_assertion( const val_context_t *ctx, int level, const u_char *name_
 	const char *name_pr, *serv_pr;
 	int tag = 0;
 
-	if(ns_name_ntop(name_n, name, NS_MAXDNAME-1) != -1) 
+	if(ns_name_ntop(name_n, name, sizeof(name)) != -1) 
 		name_pr = name;
 	else
 		name_pr = "ERR_NAME";
@@ -209,7 +209,7 @@ void val_log_assertion( const val_context_t *ctx, int level, const u_char *name_
 #define VAL_LOG_RESULT(name_n, class_h, type_h, serv, status) do {\
 	char name_p[NS_MAXDNAME]; \
 	const char *name_pr, *serv_pr;\
-	if(ns_name_ntop(name_n, name_p, sizeof(name_p)-1) != -1)    \
+	if(ns_name_ntop(name_n, name_p, sizeof(name_p)) != -1) \
 		name_pr = name_p;\
 	else\
 		name_pr = "ERR_NAME";\
@@ -235,17 +235,19 @@ void val_log_authentication_chain(const val_context_t *ctx, int level, u_char *n
 				break;
 	}
 
+	if(top_q != NULL) {
+		val_log(ctx, level, "Query Status = %s[%d]", 
+				p_query_error(top_q->qc_state), top_q->qc_state);
+	}
+
 	for (next_result = results; next_result; next_result = next_result->val_rc_next) {
 		struct val_authentication_chain *next_as;
 		next_as = next_result->val_rc_trust;
-
-		if(top_q != NULL) {
-
-			VAL_LOG_RESULT(name_n, class_h, type_h, 
-					top_q->qc_respondent_server, next_result->val_rc_status);
-			val_log(ctx, level, "Query Status = %s[%d]", 
-					p_query_error(top_q->qc_state), top_q->qc_state);
-		}
+        
+	    if(top_q != NULL) {
+		    VAL_LOG_RESULT(name_n, class_h, type_h, 
+				top_q->qc_respondent_server, next_result->val_rc_status);
+	    }
 
 		for (next_as = next_result->val_rc_trust; next_as; next_as = next_as->val_ac_trust) {
 
@@ -315,7 +317,6 @@ const char *p_query_error(int err)
 const char *p_as_error(val_astatus_t err)
 {
     switch (err) {
-                                                                                                                             
     case VAL_A_DATA_MISSING: return "VAL_A_DATA_MISSING"; break;
     case VAL_A_RRSIG_MISSING: return "VAL_A_RRSIG_MISSING"; break;
     case VAL_A_DNSKEY_MISSING: return "VAL_A_DNSKEY_MISSING"; break;
@@ -409,11 +410,13 @@ const char *p_val_error(val_status_t err)
 		case VAL_ERROR: 
 		case VAL_R_TRUST_FLAG|VAL_ERROR: 
 					return "VAL_ERROR"; break;
+        case VAL_PROVABLY_UNSECURE:
+					return "VAL_PROVABLY_UNSECURE"; break;
 		case VAL_NOTRUST:
 					return "VAL_NOTRUST"; break;
-
 		case VAL_SUCCESS: 
 					return "VAL_SUCCESS"; break;
+
     	default:
             if((err >= VAL_DNS_ERROR_BASE) && (err < VAL_DNS_ERROR_LAST)) {
 				int errbase = VAL_DNS_ERROR_BASE;
