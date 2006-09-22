@@ -31,10 +31,9 @@ int find_next_zonecut(struct rrset_rec *rrset, u_int8_t *curzone_n, u_int8_t **n
 	do { \
             struct rrset_rec *rr_set;\
             int ret_val;\
-            rr_set = find_rr_set (respondent_server, &listtype, name_n, type_h, set_type_h,\
+            rr_set = find_rr_set (respondent_server, listtype, name_n, type_h, set_type_h,\
                              class_h, ttl_h, rdata, from_section,authoritive, zonecut_n);\
             if (rr_set==NULL) return VAL_OUT_OF_MEMORY;\
-            rr_set->rrs_ans_kind = SR_ANS_STRAIGHT;\
             if (type_h != ns_t_rrsig)\
             {\
                 /* Add this record to its chain of rr_rec's. */\
