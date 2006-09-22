@@ -36,6 +36,10 @@ int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
 int val_parse_ds_rdata (const unsigned char *buf, int buflen,
 			    val_ds_rdata_t *rdata);
 
+#ifdef LIBVAL_NSEC3 
+val_nsec3_rdata_t *val_parse_nsec3_rdata(u_int8_t *rr_rdata, 
+        u_int16_t rdatalen, val_nsec3_rdata_t *nd);
+#endif
 
 /*Compare if two public keys are identical */
 int dnskey_compare(val_dnskey_rdata_t *key1, val_dnskey_rdata_t *key2);
