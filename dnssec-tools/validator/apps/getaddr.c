@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdarg.h>
 #include <strings.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -23,6 +24,8 @@
 
 #include <resolver.h>
 #include <validator.h>
+
+#include "val_log.h"
 
 #ifdef HAVE_GETOPT_LONG
 // Program options
@@ -132,7 +135,8 @@ int main(int argc, char *argv[])
 	int retval;
 	int getcanonname = 0;
 	int portspecified = 0;
-	
+        val_log_t *logp;
+
 	// Parse the command line
 	validate = 1;
 	while (1) {
@@ -140,14 +144,14 @@ int main(int argc, char *argv[])
 #ifdef HAVE_GETOPT_LONG
 		int opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-		c = getopt_long_only (argc, argv, "hcns:",
+		c = getopt_long_only (argc, argv, "hcno:s:",
 					  prog_options, &opt_index);
 #else
-		c = getopt_long (argc, argv, "hcns:",
+		c = getopt_long (argc, argv, "hcno:s:",
 					      prog_options, &opt_index);
 #endif
 #else /* only have getopt */
-		c = getopt (argc, argv, "hcns:");
+		c = getopt (argc, argv, "hcno:s:");
 #endif
 
 		if (c == -1) {
@@ -161,6 +165,14 @@ int main(int argc, char *argv[])
 		case 'n':
 			validate = 0;
 			break;
+                case 'o':
+                    logp = val_log_add_optarg(optarg, 1);
+                    if (NULL == logp) { /* err msg already logged */
+                        usage(argv[0]);
+                        return 1;
+                    }
+                    break;
+
 		case 's':
 		        portspecified = 1;
 			service = optarg;
