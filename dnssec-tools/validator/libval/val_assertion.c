@@ -9,6 +9,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#ifdef LIBVAL_NSEC3 
+#include <openssl/sha.h>
+#endif
+
+#include <arpa/nameser.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
+#else
+#include "arpa/header.h"
+#endif
 
 #include <resolver.h>
 #include <validator.h>
@@ -20,7 +30,41 @@
 #include "val_policy.h"
 #include "val_log.h"
 
-#define ISSET(field,bit)        (field[bit/8]&(1<<(7-(bit%8))))
+/*
+ * Identify if the type is present in the bitmap
+ * The encoding of the bitmap is a sequence of <block#, len, bitmap> tuples
+ */
+static int is_type_set(u_int8_t *field, int field_len, u_int16_t type)
+{
+	int block, blen;
+
+	/* The type will be present in the following block */
+	int t_block = type/256;
+	/* within the bitmap, the type will be present in the following byte */
+	int t_bm_offset = type/8; 
+
+	int cnt = 0;
+
+	/* need at least two bytes */
+	while(field_len > cnt+2) {
+
+		block = field[cnt];
+		blen = 	field[cnt+1];
+		cnt += 2;
+		
+		if (block == t_block) {
+			/* see if we have space */
+			if ((blen >= t_bm_offset) && (field_len >= cnt+blen)) {	
+				/* see if the bit is set */
+				if (field[cnt+t_bm_offset]&(1<<(7-(type%8))))
+					return 1;
+			}
+			return 0;
+		}
+		cnt += blen; 
+	}
+	return 0;
+}
 
 #define CLONE_NAME_LEN(oldb, oldlen, newb, newlen) do {\
 		newb =	(u_int8_t *) MALLOC (oldlen * sizeof(u_int8_t));\
@@ -29,6 +73,17 @@
 		memcpy(newb, oldb, oldlen); \
 		newlen = oldlen;\
 } while (0)
+
+
+#ifdef LIBVAL_NSEC3 
+#define CHECK_RANGE(range1, range1len, range2, range2len, hash, hashlen) \
+            ((nsec3_order_cmp(range2, range2len, hash, hashlen) != 0) &&\
+                ((nsec3_order_cmp(range2, range2len, range1, range1len) > 0)?\
+                    ((nsec3_order_cmp(hash, hashlen, range1, range1len) > 0) && \
+					(nsec3_order_cmp(hash, hashlen, range2, range2len) < 0)) :\
+                    ((nsec3_order_cmp(hash, hashlen, range2, range2len) < 0)||\
+                     (nsec3_order_cmp(hash, hashlen, range1, range1len) > 0))))
+#endif
 
 /*
  * Create a "result" list whose elements point to assertions and also have their
@@ -51,8 +106,6 @@ void val_free_result_chain(struct val_result_chain *results)
 			if(trust->val_ac_rrset != NULL) {
 				if(trust->val_ac_rrset->val_msg_header)
 					FREE(trust->val_ac_rrset->val_msg_header);
-				if(trust->val_ac_rrset->val_queryset_data)
-					FREE(trust->val_ac_rrset->val_queryset_data);
 				if(trust->val_ac_rrset->val_rrset_name_n)
 					FREE(trust->val_ac_rrset->val_rrset_name_n);
 				if (trust->val_ac_rrset->val_rrset_data != NULL)
@@ -165,7 +218,7 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 	struct zone_se_policy *zse_pol, *zse_cur;
 	int name_len;
 	u_int8_t *p, *q;
-	char name_p[NS_MAXCDNAME];
+	char name_p[NS_MAXDNAME];
 
 	/* sanity checks */
 	if (NULL == name_n)
@@ -224,7 +277,6 @@ static u_int16_t is_trusted_zone(val_context_t *ctx, u_int8_t *name_n)
 	return VAL_A_WAIT_FOR_TRUST;
 }
 
-
 static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_rec *key)
 {
 	struct trust_anchor_policy *ta_pol, *ta_cur, *ta_tmphead;
@@ -234,6 +286,9 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 	struct rr_rec *curkey;
 
 	// xxx-audit: does it make sense to continue if zone_n/zp is NULL?
+    /* This function should never be called with a NULL zone_n, but still... */
+    if (zone_n == NULL)
+        return VAL_A_NO_TRUST_ANCHOR;
 
 	name_len = wire_name_length(zp);
 	ta_pol = RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);	
@@ -258,7 +313,7 @@ static u_int16_t is_trusted_key(val_context_t *ctx, u_int8_t *zone_n, struct rr_
 			for (curkey = key; curkey; curkey=curkey->rr_next) {
 				val_parse_dnskey_rdata (curkey->rr_rdata, curkey->rr_rdata_length_h, &dnskey);	
 				if(!dnskey_compare(&dnskey, ta_cur->publickey)) {
-                                        char name_p[NS_MAXCDNAME];
+                                        char name_p[NS_MAXDNAME];
                                         if (-1 == ns_name_ntop(zp, name_p, sizeof(name_p)))
                                             snprintf(name_p, sizeof(name_p), "unknown/error");
 					if (dnskey.public_key != NULL)
@@ -309,12 +364,12 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
 
         /* Referals won't make it this far, they are handled in digest_response */
 
-    /* Answer is a NACK_NXT if... */
 	if((the_set->rrs.val_rrset_data == NULL) && (the_set->rrs.val_rrset_sig != NULL)) {
 		the_set->rrs_ans_kind = SR_ANS_BARE_RRSIG;
 		return VAL_NO_ERROR;
 	}
 
+    /* Answer is a NACK_NSEC if... */
     if (the_set->rrs.val_rrset_type_h == ns_t_nsec)
     {
         if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0 &&
@@ -322,10 +377,26 @@ static int set_ans_kind (    u_int8_t    *qc_name_n,
             /* We asked for it */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
-            the_set->rrs_ans_kind = SR_ANS_NACK_NXT;
+            the_set->rrs_ans_kind = SR_ANS_NACK_NSEC;
                                                                                                                           
         return VAL_NO_ERROR;
     }
+
+#ifdef LIBVAL_NSEC3 
+    /* Answer is a NACK_NSEC3 if... */
+    if (the_set->rrs.val_rrset_type_h == ns_t_nsec3)
+    {
+        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0 &&
+                            (q_type_h == ns_t_any || q_type_h == ns_t_nsec3))
+            /* We asked for it */
+            the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
+        else
+            the_set->rrs_ans_kind = SR_ANS_NACK_NSEC3;
+                                                                                                                          
+        return VAL_NO_ERROR;
+    }
+
+#endif
                                                                                                                           
     /* Answer is a NACK_SOA if... */
                                                                                                                           
@@ -411,13 +482,14 @@ int fails_to_answer_query(
     int data_present = the_set->rrs.val_rrset_data != NULL;
 
     if ((NULL == the_set) || (NULL == status))
-        return FALSE;
+        return TRUE;
 
     name_present = name_in_q_names (q_names_n, the_set);
     type_match = the_set->rrs.val_rrset_type_h==q_type_h || q_type_h==ns_t_any;
     class_match = the_set->rrs.val_rrset_class_h==q_class_h || q_class_h==ns_c_any;
     data_present = the_set->rrs.val_rrset_data != NULL;
                                                                                                                           
+    /* Could be an empty answer or only RRSIGs */
     if (!data_present) return FALSE;
                                                                                                                           
     if (
@@ -429,7 +501,10 @@ int fails_to_answer_query(
         (name_present!=MID_OF_QNAMES && !type_match &&
                         the_set->rrs_ans_kind == SR_ANS_CNAME) ||
         (name_present==MID_OF_QNAMES && !type_match &&
-            (the_set->rrs_ans_kind == SR_ANS_NACK_NXT ||
+            (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC ||
+#ifdef LIBVAL_NSEC3 
+            the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3 ||
+#endif
                 the_set->rrs_ans_kind == SR_ANS_NACK_SOA))
         )
         {
@@ -440,57 +515,7 @@ int fails_to_answer_query(
     return FALSE;
 }
 
-
-static int NSEC_is_wrong_answer (
-                      u_int8_t    *qc_name_n,
-                      const u_int16_t     q_type_h,
-                      const u_int16_t     q_class_h,
-                      struct rrset_rec    *the_set,
-					  u_int16_t			*status)
-{
-    int                 nsec_bit_field;
-
-    if ((NULL == the_set) || (NULL == status))
-        return FALSE; // xxx-audit: did I guess right?
-
-    if (the_set->rrs_ans_kind != SR_ANS_NACK_NXT) return FALSE;
-                                                                                                                          
-    /*
-        Signer name doesn't matter here, incorrectly signed ones will caught
-        later (in "the matrix").
-    */
-                                                                                                                          
-    if ((NULL != the_set->rrs.val_rrset_data) &&
-        (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)==0))
-    {
-        /* NXT owner = query name & q_type not in list */
-        nsec_bit_field = wire_name_length (the_set->rrs.val_rrset_data->rr_rdata);
-                                                                                                                          
-        if (ISSET((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])), q_type_h))
-        {
-			*status = VAL_A_IRRELEVANT_PROOF; 
-            return TRUE;
-        }
-        else
-            return FALSE;
-    }
-    else
-    {
-		/* query name comes after the NXT owner */
-		/* It can be less than the owner if this is a wildcard proof, 
-		 * or if it is the SOA but that logic is handled in 
-		 * prove_nonexistence()
-		 */
-        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) > 0)
-        {
-			*status = VAL_A_IRRELEVANT_PROOF;	
-            return TRUE;
-        }
-        
-        return FALSE;
-    }
-}
-
+    
 /*
  * Add a new assertion for the response data 
  *
@@ -499,26 +524,26 @@ static int NSEC_is_wrong_answer (
  * VAL_OUT_OF_MEMORY	Could not allocate enough memory for operation
  * VAL_BAD_ARGUMENT	Bad argument (eg NULL ptr)
  */
-static int add_to_authentication_chain(struct val_authentication_chain **assertions, struct domain_info *response)
+static int add_to_authentication_chain(struct val_authentication_chain **assertions, 
+		struct rrset_rec *rrset)
 {
 	struct val_authentication_chain *new_as, *first_as, *prev_as;
 	struct rrset_rec *next_rr;
-
-	if (response == NULL)
-		return VAL_NO_ERROR;
 
         if (NULL == assertions)
             return VAL_BAD_ARGUMENT;
 
 	first_as = NULL;
 	prev_as = NULL;
-	next_rr = response->di_rrset;
+
+	next_rr = rrset;
 	while(next_rr) {
 
 		new_as = (struct val_authentication_chain *) MALLOC (sizeof (struct val_authentication_chain)); 
 		if (new_as==NULL) return VAL_OUT_OF_MEMORY;
 
 		new_as->_as.ac_data = copy_rrset_rec(next_rr);
+
 		new_as->val_ac_trust = NULL;        
 		new_as->_as.val_ac_rrset_next = NULL;        
 		new_as->_as.val_ac_next = NULL;        
@@ -683,16 +708,17 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 		return VAL_NO_ERROR; 
 	}
 
-	/* Create an assertion for the response data */
-	if(VAL_NO_ERROR != (retval = add_to_authentication_chain(assertions, response))) 
-		return retval;
-
 	if (response->di_rrset == NULL) {
 		matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
 		return VAL_NO_ERROR;
 	}
 
+	/* Create an assertion for the response data */
+	if(VAL_NO_ERROR != (retval = add_to_authentication_chain(assertions, response->di_rrset))) 
+		return retval;
+
 	as = *assertions; /* The first value in the list is the most recent element */
+
 	/* Link the original query to the above assertion */
 	matched_q->qc_as = as;
 
@@ -704,10 +730,9 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
                 // xxx-audit: ptr deref w/out NULL check (response->di_qnames)
 	    if( (NULL == response->di_qnames) || // xxx-check: is continue ok in this case??
 		    (set_ans_kind(response->di_qnames->qnc_name_n, type_h, class_h, 
-					as->_as.ac_data, &as->val_ac_status) == VAL_GENERIC_ERROR)
-				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->_as.ac_data, &as->val_ac_status)
-				|| NSEC_is_wrong_answer (response->di_qnames->qnc_name_n, type_h, class_h, 
-					as->_as.ac_data, &as->val_ac_status)) {
+					as->_as.ac_data, &as->val_ac_status) != VAL_NO_ERROR)
+				|| fails_to_answer_query(response->di_qnames, type_h, class_h, as->_as.ac_data, &as->val_ac_status)) {
+
 			continue;
 		}
 
@@ -727,7 +752,11 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
 						(as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME) && 
 						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) &&
-						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NXT)) {
+#ifdef LIBVAL_NSEC3 
+                        /* check if there is a mix of NSEC and NSEC3 later in the proof */
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
+#endif
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
@@ -740,16 +769,27 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 					break;
 
 				/* NACK_NXT and NACK_SOA are OK */
-				case SR_ANS_NACK_NXT:
-					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
+				case SR_ANS_NACK_NSEC:
+#ifdef LIBVAL_NSEC3 
+				case SR_ANS_NACK_NSEC3:
+#endif
+					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC) &&
+#ifdef LIBVAL_NSEC3 
+                        /* check if there is a mix of NSEC and NSEC3 later in the proof */
+                        (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
+#endif
 						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
 						(as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
 					}
 					break;
-
+                    
 				case SR_ANS_NACK_SOA:
-					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NXT) &&
+					if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC) &&
+#ifdef LIBVAL_NSEC3 
+                        /* check if there is a mix of NSEC and NSEC3 later in the proof */
+						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
+#endif
 						(as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) && 
 						(as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
 						matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
@@ -768,17 +808,472 @@ static int assimilate_answers(val_context_t *context, struct val_query_chain **q
 			if (VAL_NO_ERROR != (retval = build_pending_query(context, queries, as)))
 				return retval;
 		}
+
 	}
 	return VAL_NO_ERROR;
 }
 
-static void  prove_nonexistence (val_context_t *ctx, struct val_query_chain *top_q, struct
-val_result_chain *results) 
+
+static void prove_nsec_wildcard_check(val_context_t *ctx, 
+		u_int16_t qc_type_h, struct rrset_rec *wcard_proof, 
+        u_int8_t *closest_encounter, val_status_t *status)
+{ 
+    /* Check the wild card proof */
+    /* prefix "*" to the closest encounter, and check if that 
+     * name falls within the range given in wcard_proof
+     */	
+    u_int8_t *nxtname;
+    u_char domain_name_n[NS_MAXCDNAME];
+    if ((NULL == wcard_proof) ||
+        (NULL == wcard_proof->rrs.val_rrset_data))
+	        nxtname = NULL;
+    else
+	        nxtname = wcard_proof->rrs.val_rrset_data->rr_rdata;
+
+	if (NS_MAXCDNAME < wire_name_length(closest_encounter) + 2) { 
+		val_log(ctx, LOG_DEBUG, "NSEC Error: label length with wildcard exceeds bounds");
+        *status = VAL_R_BOGUS_PROOF;
+        return;
+	}
+		
+	domain_name_n[0] = 0x01;
+	domain_name_n[1] = 0x2a; /* for the '*' character */
+	memcpy(&domain_name_n[2], closest_encounter, wire_name_length(closest_encounter));
+    /* 
+     *  either we should be able to prove that wild card does not exist, 
+     *  or that type is not
+     *  present at that wild card 
+     */
+    if ((nxtname != NULL) && 
+        (!namecmp(domain_name_n, wcard_proof->rrs.val_rrset_name_n))) {
+
+        int nsec_bit_field;
+        nsec_bit_field = wire_name_length (wcard_proof->rrs.val_rrset_data->rr_rdata);
+        if (is_type_set((&(wcard_proof->rrs.val_rrset_data->rr_rdata[nsec_bit_field])), 
+					wcard_proof->rrs.val_rrset_data->rr_rdata_length_h - nsec_bit_field,
+					qc_type_h)) 
+		{
+			val_log(ctx, LOG_DEBUG, "NSEC error: type exists at wildcard");
+		    *status = VAL_R_BOGUS_PROOF; 
+        }
+    }
+    else if ((nxtname == NULL) ||
+       (namecmp(domain_name_n, wcard_proof->rrs.val_rrset_name_n) < 0) ||  
+	   (namecmp(nxtname, domain_name_n) < 0)) {
+			val_log(ctx, LOG_DEBUG, "NSEC error: Incorrect span for wildcard proof");
+	       *status = VAL_R_BOGUS_PROOF;	
+	}
+}
+
+static void nsec_proof_chk(val_context_t *ctx,
+		struct rrset_rec *the_set, u_int8_t *qc_name_n, u_int16_t qc_type_h, 
+        u_int8_t *soa_name_n, int *span_chk, int *wcard_chk, struct rrset_rec **wcard_proof, 
+        u_int8_t **closest_encounter, val_status_t *status) { 
+
+    int nsec_bit_field;
+
+	if (!namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)) {
+    	struct rr_rec *sig;
+    	int wcard;
+
+        /* NSEC owner = query name & q_type not in list */
+        nsec_bit_field = wire_name_length (the_set->rrs.val_rrset_data->rr_rdata);
+        if (is_type_set((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])), 
+					the_set->rrs.val_rrset_data->rr_rdata_length_h - nsec_bit_field,
+					qc_type_h)) 
+		{
+			val_log(ctx, LOG_DEBUG, "NSEC error: Type exists at NSEC record");
+			*status = VAL_R_BOGUS_PROOF; 
+            return;
+        }
+
+		*span_chk = 1;
+		*status = VAL_NONEXISTENT_TYPE;
+
+	    /* if the label count in the RRSIG equals the labels
+	     * in the nsec owner name, wildcard absence is also proved
+	     * Be sure to check the label count in an RRSIG that was 
+	     * verified
+	     */
+		for (sig = the_set->rrs.val_rrset_sig; sig; sig = sig->rr_next) {
+		    if ((sig->rr_status == VAL_A_RRSIG_VERIFIED) && 
+			    (VAL_NO_ERROR == check_label_count(the_set, sig, &wcard))) {
+				    if (wcard == 0)
+					    *wcard_chk = 1;
+				    return;
+			}
+		}
+    }
+    else if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) > 0) {
+		/* query name comes after the NSEC owner */
+		val_log(ctx, LOG_DEBUG, "NSEC error: Incorrect span");
+        *status = VAL_R_BOGUS_PROOF;	
+        return;
+    }
+
+    /* else */
+    
+	/* Find the next name */
+	u_int8_t *nxtname = the_set->rrs.val_rrset_data ?
+	    the_set->rrs.val_rrset_data->rr_rdata : NULL;
+
+	if (namecmp(qc_name_n, nxtname) > 0) {
+	    /* check if the next name wraps around */
+		if (namecmp(nxtname, soa_name_n) != 0) {
+			/* if no, check if this is the proof for no wild-card present */
+			/* i.e the proof must tell us that "*" does not exist */
+			*wcard_proof = the_set;
+            return;
+		}
+	}
+
+	*span_chk = 1;
+	/* The same NSEC may prove wildcard absence also */
+	if (*wcard_proof == NULL)
+	    *wcard_proof = the_set;
+
+	/* The closest encounter is the longest label match between 
+	 * this NSEC's owner name and the query name
+	 */
+	int maxoffset = wire_name_length(qc_name_n);
+	int offset = qc_name_n[0] + 1;
+	while (offset < maxoffset) {
+		u_int8_t *cur_name_n = &qc_name_n[offset];
+		int cmp;
+		if ((cmp = namecmp(cur_name_n, the_set->rrs.val_rrset_name_n)) == 0) {
+			*closest_encounter = cur_name_n;
+			break;
+		}
+		else if (cmp < 0) {
+			/* strip off one label from the NSEC owner name */
+			*closest_encounter = the_set->rrs.val_rrset_name_n ?
+			    &the_set->rrs.val_rrset_name_n[the_set->rrs.val_rrset_name_n[0] + 1] : NULL;
+			break; 
+		}
+		offset += cur_name_n[0] + 1;
+	}
+
+    return;
+}
+
+
+#ifdef LIBVAL_NSEC3 
+u_int8_t *compute_nsec3_hash(val_context_t *ctx, u_int8_t *qc_name_n, u_int8_t *soa_name_n, u_int8_t alg, u_int16_t iter, 
+        u_int8_t saltlen, u_int8_t *salt, u_int8_t *b32_hashlen, u_int8_t **b32_hash)
+{
+    SHA_CTX c;
+    int i;
+    int name_len;
+    struct nsec3_max_iter_policy *pol, *cur;
+	u_int8_t *p, *q;
+	char name_p[NS_MAXDNAME];
+    u_int8_t hashlen;
+    u_int8_t *hash;
+
+    if(alg != ALG_NSEC3_HASH_SHA1)
+       return NULL; 
+
+    pol = NULL;
+    
+    if (soa_name_n != NULL) {
+    	name_len = wire_name_length(soa_name_n);
+    	pol = RETRIEVE_POLICY(ctx, P_NSEC3_MAX_ITER, struct nsec3_max_iter_policy *);
+    }
+
+	if (pol != NULL) {
+        /* go past longer names */
+		for (cur = pol; 
+		  cur && (wire_name_length(cur->zone_n) > name_len); 
+		  cur=cur->next);	
+
+		/* for all zones which are shorter or as long, do a strstr */ 
+		// XXX We will probably need to use namecmp() instead so that
+		// XXX casing and endien order are accounted for 
+		/* Because of the ordering, the longest match is found first */
+		for (; cur; cur=cur->next) {
+			int root_zone = 0;
+			if(!namecmp(cur->zone_n, (const u_int8_t*)""))
+				root_zone = 1;
+			else {
+				/* Find the last occurrence of cur->zone_n in soa_name_n */
+				p = soa_name_n;
+				q = (u_int8_t*)strstr((char*)p, (char*)cur->zone_n);
+				while(q != NULL) {
+					p = q;
+					q = (u_int8_t*)strstr((char*)q+1, (char*)cur->zone_n);
+				}
+			}
+
+			if (root_zone || (!strcmp((char*)p, (char*)cur->zone_n))) {
+                if (-1 == ns_name_ntop(soa_name_n, name_p, sizeof(name_p)))
+                    snprintf(name_p, sizeof(name_p), "unknown/error");
+
+                if (cur->iter < iter)
+                   return NULL; 
+                break;
+			}
+		}
+	}
+
+    hashlen = SHA_DIGEST_LENGTH; 
+    hash = (u_int8_t *) MALLOC (SHA_DIGEST_LENGTH * sizeof (u_int8_t));
+    if (hash == NULL)
+       return NULL;
+
+    memset(hash, 0, SHA_DIGEST_LENGTH);
+   
+    /* IH(salt, x, 0) = H( x || salt) */ 
+    SHA1_Init(&c);
+    SHA1_Update(&c, qc_name_n, wire_name_length(qc_name_n));
+    SHA1_Update(&c, salt, saltlen);
+    SHA1_Final(hash, &c);
+
+    /* IH(salt, x, k) = H(IH(salt, x, k-1) || salt) */
+    for (i=0; i<iter; i++) {
+        SHA1_Init(&c);
+        SHA1_Update(&c, hash, hashlen);
+        SHA1_Update(&c, salt, saltlen);
+        SHA1_Final(hash, &c);
+    }
+   
+    base32hex_encode(hash, hashlen, b32_hash, b32_hashlen);
+    FREE(hash);
+    return *b32_hash;
+}
+
+static void nsec3_proof_chk( val_context_t *ctx, struct val_result_chain *results, u_int8_t *qc_name_n, u_int16_t qc_type_h, 
+        u_int8_t *soa_name_n, val_status_t *status) { 
+        
+    struct val_result_chain *res;
+    u_int8_t hashlen;
+    u_int8_t nsec3_hashlen;
+    val_nsec3_rdata_t nd;
+    u_int8_t *cp = NULL;
+    u_int8_t *cpe = NULL; 
+    u_int8_t *ncn = NULL;
+    u_char wc_n[NS_MAXCDNAME];
+    u_int8_t *hash = NULL;
+    u_int8_t *nsec3_hash = NULL;
+    int optout = 0;
+    
+    cp = qc_name_n;        
+    
+    while ((namecmp(cp, soa_name_n) >= 0) && !cpe) {
+        
+        /* we have all the data we're looking for */
+        if (ncn && ((ncn == cpe) || (cpe == (ncn + ncn[0] + 1)))) {
+            break;
+        }
+        
+        for(res = results;
+	        res && res->val_rc_trust && res->val_rc_trust->_as.ac_data;
+	        res = res->val_rc_next) {
+		
+            struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
+
+            if (the_set->rrs_ans_kind != SR_ANS_NACK_NSEC3) 
+                continue;
+
+            nsec3_hashlen = the_set->rrs.val_rrset_name_n[0];
+            nsec3_hash = (nsec3_hashlen == 0)? NULL : the_set->rrs.val_rrset_name_n+1;
+
+            if (NULL == val_parse_nsec3_rdata(the_set->rrs.val_rrset_data->rr_rdata, 
+                    the_set->rrs.val_rrset_data->rr_rdata_length_h, &nd)) {
+				val_log(ctx, LOG_DEBUG, "Cannot parse NSEC3 rdata");
+                *status = VAL_R_BOGUS_PROOF;
+                return;
+            }
+            
+            /* hash name according to nsec3 parameters */
+            if( NULL == compute_nsec3_hash(ctx, cp, soa_name_n, nd.alg, nd.iterations, 
+                            nd.saltlen, nd.salt, &hashlen, &hash)) {
+				val_log(ctx, LOG_DEBUG, "Cannot compute NSEC3 hash with given params");
+                *status = VAL_R_BOGUS_PROOF;
+                FREE(nd.nexthash);
+                return;
+            }
+            
+            /* Check if there is an exact match */
+            if((nsec3_hashlen == hashlen) && !memcmp(hash, nsec3_hash, hashlen)) {
+    	        struct rr_rec *sig;
+    	        int wcard;
+				int nsec3_bm_len = the_set->rrs.val_rrset_data->rr_rdata_length_h - nd.bit_field;
+
+                /* This is the closest provable encounter */ 
+                cpe = cp;
+#if 0
+                /* NS can only be set if the SOA bit is set */
+				/* XXX The NSEC3 that proves that a DS record for a delegation is absent
+				 * XXX is an exact match for that delegation owner name. The NS bit will be
+				 * XXX set but the SOA will not. So there is some confusion here.
+				 */ 
+                if ((is_type_set((&(the_set->rrs.val_rrset_data->rr_rdata[nd.bit_field])), 
+								nsec3_bm_len, ns_t_ns)) 
+                	&& (!is_type_set((&(the_set->rrs.val_rrset_data->rr_rdata[nd.bit_field])), 
+							nsec3_bm_len, ns_t_soa))) 
+				{
+					val_log(ctx, LOG_DEBUG, "NSEC3 error: NS can only be set if the SOA bit is set");
+			        *status = VAL_R_BOGUS_PROOF; 
+                    FREE(nd.nexthash);
+                    FREE(hash);
+                    return;
+                }
+#endif
+                /* hashes match */
+                if (cp == qc_name_n) {
+                    /* this is the query name */
+                    /* make sure that type is missing */
+
+                    if (is_type_set((&(the_set->rrs.val_rrset_data->rr_rdata[nd.bit_field])), 
+								nsec3_bm_len, qc_type_h)) 
+					{
+						val_log(ctx, LOG_DEBUG, "NSEC3 error: hashes equal but type is present");
+			            *status = VAL_R_BOGUS_PROOF; 
+                        FREE(nd.nexthash);
+                        FREE(hash);
+                        return;
+                    }
+            
+                    ncn = cp;
+		            *status = VAL_NONEXISTENT_TYPE;
+
+            	    /* if the label count in the RRSIG equals the labels
+            	     * in the nsec owner name, wildcard absence is also proved
+            	     * Be sure to check the label count in an RRSIG that was 
+            	     * verified
+            	     */
+            		for (sig = the_set->rrs.val_rrset_sig; sig; sig = sig->rr_next) {
+            		    if ((sig->rr_status == VAL_A_RRSIG_VERIFIED) && 
+            			    (VAL_NO_ERROR == check_label_count(the_set, sig, &wcard))) {
+            				if (wcard == 0) {
+                                /* proof complete */
+                                FREE(nd.nexthash);
+                                FREE(hash);
+                                return;
+                            }
+                            /* still need to do wildcard check */
+            				break;
+            			}
+            		}
+                }
+            }    
+
+            /* Check if NSEC3 covers the hash */
+            if (CHECK_RANGE(nsec3_hash, nsec3_hashlen, nd.nexthash, nd.nexthashlen, hash, hashlen)) {
+                ncn = cp;
+                if (nd.optout) {
+                    optout = 1;
+                }
+                else {
+                    optout = 0;
+                }
+            }
+
+            FREE(nd.nexthash);
+            FREE(hash);
+        }
+
+        /* strip leading label */
+        cp += cp[0] + 1; 
+    }
+    
+    if (!ncn || !cpe) {
+		if (!ncn)
+			val_log(ctx, LOG_DEBUG, "NSEC3 error: NCN was not found");
+		if (!cpe)
+			val_log(ctx, LOG_DEBUG, "NSEC3 error: CPE was not found");
+        *status = VAL_R_INCOMPLETE_PROOF;
+        return;
+    }        
+
+    /* if ncn is not one label greater than cpe then we have a problem */
+    if ((ncn != cpe) && (cpe != (ncn + ncn[0] + 1))) {
+		val_log(ctx, LOG_DEBUG, "NSEC3 error: NCN is not one label greater than CPE");
+        *status = VAL_R_BOGUS_PROOF;
+        return;
+    }
+
+	if (NS_MAXCDNAME < wire_name_length(cpe) + 2) { 
+		val_log(ctx, LOG_DEBUG, "NSEC3 Error: label length with wildcard exceeds bounds");
+        *status = VAL_R_BOGUS_PROOF;
+        return;
+	}
+    /* Check for wildcard */
+    /* Create a the name *.cpe */
+    memset(wc_n, 0, sizeof(wc_n));
+    wc_n[0] = 0x01;
+    wc_n[1] = 0x2a; /* for the '*' character */
+    memcpy(&wc_n[2], cpe, wire_name_length(cpe));
+    
+    for(res = results; res && res->val_rc_trust && res->val_rc_trust->_as.ac_data; res = res->val_rc_next) {
+        struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
+        if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
+
+            nsec3_hashlen = the_set->rrs.val_rrset_name_n[0];
+            nsec3_hash = (nsec3_hashlen == 0) ? NULL : the_set->rrs.val_rrset_name_n+1;
+
+            if (NULL == val_parse_nsec3_rdata(the_set->rrs.val_rrset_data->rr_rdata, 
+                    the_set->rrs.val_rrset_data->rr_rdata_length_h, &nd)) {
+				val_log(ctx, LOG_DEBUG, "NSEC3 error: Cannot parse NSEC3 rdata");
+                *status = VAL_R_BOGUS_PROOF;
+                return;
+            }
+
+            /* hash name according to nsec3 parameters */
+            if( NULL == compute_nsec3_hash(ctx, wc_n, soa_name_n, nd.alg, nd.iterations, 
+                            nd.saltlen, nd.salt, &hashlen, &hash)) {
+				val_log(ctx, LOG_DEBUG, "NSEC3 error: Cannot compute hash with given params");
+                FREE(nd.nexthash);
+                *status = VAL_R_BOGUS_PROOF;
+                return;
+            }
+            if (!nsec3_order_cmp(nsec3_hash, nsec3_hashlen, hash, hashlen)) {
+                /* if type is set, that's a problem */
+                if (is_type_set((&(the_set->rrs.val_rrset_data->rr_rdata[nd.bit_field])), 
+							the_set->rrs.val_rrset_data->rr_rdata_length_h - nd.bit_field,
+							qc_type_h)) 
+				{
+					val_log(ctx, LOG_DEBUG, "NSEC3 error: wildcard proof does not prove non-existence");
+			        *status = VAL_R_BOGUS_PROOF; 
+                }
+				else
+					*status = VAL_NONEXISTENT_TYPE;
+                FREE(nd.nexthash);
+                FREE(hash);
+                return;
+            }
+            else if (CHECK_RANGE(nsec3_hash, nsec3_hashlen, nd.nexthash, nd.nexthashlen, hash, hashlen)) {
+                /* proved */
+                FREE(nd.nexthash);
+                FREE(hash);
+                if (optout) {
+                    *status = VAL_NONEXISTENT_NAME_OPTOUT;
+                }
+                else {
+                    *status = VAL_NONEXISTENT_NAME;
+                }
+                return;
+            }
+
+            FREE(nd.nexthash);
+            FREE(hash);
+        }
+    }
+
+	val_log(ctx, LOG_DEBUG, "NSEC3 error: wildcard proof does not exist");
+    /* Could not find a proof covering the wildcard */
+	*status = VAL_R_BOGUS_PROOF; 
+}
+#endif
+
+static void  prove_nonexistence (val_context_t *ctx, struct val_query_chain *top_q, 
+        struct val_result_chain *results) 
 {
 	struct val_result_chain *res;
 	int wcard_chk = 0;
 	int span_chk = 0;
-	int status = VAL_NONEXISTENT_NAME; 
+    int provably_unsecure = 0;
+	val_status_t status = VAL_R_DONT_KNOW; 
 	u_int8_t *soa_name_n = NULL;	
 	u_int8_t *closest_encounter = NULL;	
 	struct rrset_rec *wcard_proof = NULL;
@@ -798,145 +1293,113 @@ val_result_chain *results)
 	// XXX Can we assume that the SOA record is always present?
 	for(res = results;
 	    res && res->val_rc_trust && res->val_rc_trust->_as.ac_data;
-	    res = res->val_rc_next)
-	{
+	    res = res->val_rc_next) {
 		struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
 		if (the_set->rrs_ans_kind == SR_ANS_NACK_SOA) {
 			soa_name_n = the_set->rrs.val_rrset_name_n;
+            if (res->val_rc_status == VAL_PROVABLY_UNSECURE)
+                provably_unsecure = 1;
 			break;
 		}
 	}
-
 	if (soa_name_n == NULL)
 		status = VAL_R_INCOMPLETE_PROOF;
-	else {
-		/* for every NSEC */
+	else if (provably_unsecure) {
+        /* use the error code as status */
+		if (top_q->qc_as && 
+				top_q->qc_as->val_ac_rrset && 
+					top_q->qc_as->val_ac_rrset &&
+						top_q->qc_as->val_ac_rrset->val_msg_header) {	
+			
+			HEADER *hp = (HEADER *) top_q->qc_as->val_ac_rrset->val_msg_header;
+			if (hp->rcode == ns_r_noerror) {
+            	status = VAL_NONEXISTENT_TYPE;
+			}	
+			else if (hp->rcode == ns_r_nxdomain) {
+            	status = VAL_NONEXISTENT_NAME;
+			}	
+			else 
+            	status = VAL_ERROR;
+		}
+		else
+            status = VAL_ERROR;
+    }
+    else {
+        int nsec = 0; 
+#ifdef LIBVAL_NSEC3 
+        int nsec3 = 0; 
+#endif
+		/* for every NSEC or NSEC3 proof */
 		for(res = results;
 		    res && res->val_rc_trust && res->val_rc_trust->_as.ac_data;
 		    res = res->val_rc_next) {
 			struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
-			if (the_set->rrs_ans_kind == SR_ANS_NACK_NXT) { 
-				if (!namecmp(the_set->rrs.val_rrset_name_n, top_q->qc_name_n)) {
-					struct rr_rec *sig;
-					int wcard;
 
-					/* we already made sure that the type was missing in
-					 * NSEC_is_wrong_answer()
-					 */
-					span_chk = 1;
-					status = VAL_NONEXISTENT_TYPE;
-					// xxx-check: sanity check
-					//     just verifying that this status may not
-					//     the final status code, but will be used
-					//     if continued execution of the loop doesn't
-					//     set some other status.
-					//
-					/* if the label count in the RRSIG equals the labels
-					 * in the nsec owner name, wildcard absence is also proved
-					 * Be sure to check the label count in an RRSIG that was 
-					 * verified
-					 */
-					for (sig = the_set->rrs.val_rrset_sig; sig; sig = sig->rr_next) {
-						if ((sig->rr_status == VAL_A_RRSIG_VERIFIED) && 
-							(VAL_NO_ERROR == check_label_count(the_set, sig, &wcard))) {
-							if (wcard == 0)
-								wcard_chk = 1;
-							// xxx-sanity check
-							//     shouldn't there be a
-							//     wcard_proof = the_set?
-							break;
-						}
-					}
-				}
-				else {
-					/* Find the next name */
-					u_int8_t *nxtname = the_set->rrs.val_rrset_data ?
-					    the_set->rrs.val_rrset_data->rr_rdata : NULL;
+            if (NULL == the_set->rrs.val_rrset_data) { 
+	            status = VAL_R_BOGUS_PROOF; 
+                break;
+            } 
 
-					/* 
-					 * We've already checked within NSEC_is_wrong_answer() 
-					 * that the NSEC owner name is less than the query name. 
-					 * Now check if the next name in the NSEC record comes 
-					 * after the query name
-					 */
-					if (namecmp(top_q->qc_name_n, nxtname) > 0) {
-						/* if no, check if the next name wraps around */
-						if (namecmp(nxtname, soa_name_n) != 0) {
-							/* if no, check if this is the proof for no wild-card present */
-							/* i.e the proof must tell us that "*" does not exist */
-							wcard_proof = the_set;
-							// xxx-check: sanity check
-							//     isn't wcard_chk=1 needed?
-							break;
-						}
-					}
-					span_chk = 1;
-					/* The same NSEC may prove wildcard absence also */
-					if (wcard_proof == NULL)
-						wcard_proof = the_set;
+			if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC) { 
 
-					/* The closest encounter is the longest label match between 
-					 * this NSEC's owner name and the query name
-					 */
-					int maxoffset = wire_name_length(top_q->qc_name_n);
-					int offset = top_q->qc_name_n[0] + 1;
-					while (offset < maxoffset) {
-						u_int8_t *cur_name_n = &top_q->qc_name_n[offset];
-						int cmp;
-						if ((cmp = namecmp(cur_name_n, the_set->rrs.val_rrset_name_n)) == 0) {
-							closest_encounter = cur_name_n;
-							break;
-						}
-						else if (cmp < 0) {
-							/* strip off one label from the NSEC owner name */
-							closest_encounter = 
-							    the_set->rrs.val_rrset_name_n ?
-							    &the_set->rrs.val_rrset_name_n[the_set->rrs.val_rrset_name_n[0] + 1] : NULL;
-							break; 
-						}
-						offset += cur_name_n[0] + 1;
-					}
-				}
-			}
-		}
-		if (!span_chk)
-			status = VAL_R_INCOMPLETE_PROOF;
-		else if (!wcard_chk) {
-			if (!closest_encounter)
-				status = VAL_R_INCOMPLETE_PROOF;	
-			else {
-				/* Check the wild card proof */
-				/* prefix "*" to the closest encounter, and check if that 
-				 * name falls within the range given in wcard_proof
-				 */	
-				u_int8_t *nxtname;
-				u_char domain_name_n[NS_MAXCDNAME];
-				if ((NULL == wcard_proof) ||
-				    (NULL == wcard_proof->rrs.val_rrset_data))
-				    nxtname = NULL;
-				else
-				    nxtname = wcard_proof->rrs.val_rrset_data->rr_rdata;
-				domain_name_n[0] = 0x01;
-				domain_name_n[1] = 0x2a; /* for the '*' character */
-				memcpy(&domain_name_n[2], closest_encounter, wire_name_length(closest_encounter));
-				if ((namecmp(domain_name_n, wcard_proof->rrs.val_rrset_name_n) <= 0) ||  
-					(namecmp(nxtname, domain_name_n) <= 0))
-					status = VAL_R_INCOMPLETE_PROOF;	
-			}
-		}
-	}	
+#ifdef LIBVAL_NSEC3 
+                nsec = 1;
+#endif
+                nsec_proof_chk(ctx, the_set, top_q->qc_name_n, top_q->qc_type_h,
+                            soa_name_n, &span_chk, &wcard_chk, &wcard_proof, 
+                            &closest_encounter, &status);
+                if(status != VAL_R_DONT_KNOW) 
+                    break;
+            }
+#ifdef LIBVAL_NSEC3 
+            else if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
+                nsec3 = 1;
+            }
+#endif
+        }
+
+
+#ifdef LIBVAL_NSEC3 
+        /* Check if we received NSEC and NSEC3 proofs */
+        if ((nsec && nsec3) || (!nsec && !nsec3))
+            status = VAL_R_BOGUS_PROOF;
+        else
+#endif
+        if (nsec) {
+    	    if (!span_chk) 
+    		    status = VAL_R_INCOMPLETE_PROOF;
+            else if (!wcard_chk) {
+                if (!closest_encounter) 
+    	            status = VAL_R_INCOMPLETE_PROOF;	
+    	        else 
+                    prove_nsec_wildcard_check(ctx, top_q->qc_type_h, wcard_proof, 
+                        closest_encounter, &status);
+            }
+        }
+#ifdef LIBVAL_NSEC3 
+        else if(nsec3) { 
+            /* only nsec3 records */
+            nsec3_proof_chk(ctx, results, top_q->qc_name_n, top_q->qc_type_h, 
+                soa_name_n, &status); 
+        }
+#endif
+        
+        /* passed all tests */
+        if (status == VAL_R_DONT_KNOW)
+            status = VAL_NONEXISTENT_NAME;
+    }
 
 	/* set the error condition in all elements of the proof */
 	for(res = results; res; res = res->val_rc_next) 
 		res->val_rc_status = status;
-
 }
 
-static int verify_provably_unsecure(val_context_t *context, struct val_authentication_chain *as)
+
+static int verify_provably_unsecure(val_context_t *context, struct val_query_chain *top_q, struct val_authentication_chain *as)
 {
 	struct val_result_chain *results = NULL;
-	char name_p[NS_MAXCDNAME];
-	char name_p_orig[NS_MAXCDNAME];
+	char name_p[NS_MAXDNAME];
+	char name_p_orig[NS_MAXDNAME];
 
 	u_int8_t *curzone_n = NULL;
 	u_int8_t *zonecut_n = NULL;
@@ -961,27 +1424,40 @@ static int verify_provably_unsecure(val_context_t *context, struct val_authentic
 			results = NULL;
 		}
 
-		if(VAL_NO_ERROR != find_next_zonecut(rrset, curzone_n, &zonecut_n)) {
-			if (-1 == ns_name_ntop(curzone_n, name_p, sizeof(name_p)))
+		/* break out of possible loop */
+		/* got an soa from the same zone while querying for a DS */
+		
+		if ((top_q->qc_type_h == ns_t_ds) &&
+				!namecmp(top_q->qc_name_n, rrset->rrs.val_rrset_name_n) && 
+					(as->val_ac_status == VAL_A_RRSIG_MISSING) &&
+					(rrset->rrs_ans_kind == SR_ANS_NACK_SOA)) {
+
+			if (-1 == ns_name_ntop(top_q->qc_name_n, name_p, sizeof(name_p)))
+				snprintf(name_p, sizeof(name_p), "unknown/error");
+			val_log(context, LOG_DEBUG, "Cannot show that zone %s is provably unsecure. \n", name_p);
+			return 0;
+		}
+		
+        val_log(context, LOG_DEBUG, "Finding next zone cut \n");
+		if((VAL_NO_ERROR != find_next_zonecut(rrset, curzone_n, &zonecut_n)) 
+                || (zonecut_n == NULL)) {
+
+			if (curzone_n == NULL)
+				val_log(context, LOG_DEBUG, "SOA not returned");
+			else if (-1 == ns_name_ntop(curzone_n, name_p, sizeof(name_p))) {
 			    snprintf(name_p, sizeof(name_p), "unknown/error");
-			val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
+				val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
+			}
 
 			return 0;
 		}
-
-		// xxx-check: sanity check
-		//     how is this case different than an error, esp the one above?
-		//     shouldn't a message be logged?
-		if (zonecut_n == NULL)
-			return 0;
 
 		if (-1 == ns_name_ntop(zonecut_n, name_p, sizeof(name_p)))
 			snprintf(name_p, sizeof(name_p), "unknown/error");
 
 		val_log(context, LOG_DEBUG, "About to check if %s is provably unsecure. \n", name_p);
 
-		if ((VAL_NO_ERROR != 
-				val_resolve_and_check(context, zonecut_n, 
+		if ((VAL_NO_ERROR != val_resolve_and_check(context, zonecut_n, 
 					ns_c_in, ns_t_ds, 0, &results)) ||
 			 (results == NULL)) {
 
@@ -1031,6 +1507,15 @@ static int verify_provably_unsecure(val_context_t *context, struct val_authentic
 		as->val_ac_status = VAL_A_PROVABLY_UNSECURE;
 		return 1;
 	}
+
+#ifdef LIBVAL_NSEC3 
+	if (results->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) {
+		val_log(context, LOG_DEBUG, "Zone %s is optout provably unsecure", name_p_orig);
+		val_free_result_chain(results);
+		as->val_ac_status = VAL_A_PROVABLY_UNSECURE;
+		return 1;
+	}
+#endif
 
 	val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure. \n", name_p_orig);
 	val_free_result_chain(results);
@@ -1122,8 +1607,11 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
 			next_as->_as.ac_pending_query = NULL;
 
 			// xxx-audit: ptr deref w/out NULL check (pending_as->_as.ac_data)
-			if((pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NXT)
-                  || (pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
+			if((pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NSEC)
+#ifdef LIBVAL_NSEC3 
+                || (pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NSEC3)
+#endif
+                || (pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)) { 
 
 				/* proof of non-existence should follow */
 				next_as->val_ac_status = VAL_A_NEGATIVE_PROOF;
@@ -1154,16 +1642,21 @@ static int try_verify_assertion(val_context_t *context, struct val_query_chain *
  * Do not try and validate assertions that have already been validated.
  */
 static int  verify_and_validate(val_context_t *context, struct val_query_chain **queries, 
-								struct val_authentication_chain *top_as, u_int8_t flags, 
+								struct val_query_chain *top_q, u_int8_t flags, 
 								struct val_result_chain **results, int *done)
 {
 	struct val_authentication_chain *next_as;
 	int retval;
 	struct val_authentication_chain *as_more;
 	struct val_result_chain *res;
-	
-	if ((NULL == queries) || (NULL == results) || (NULL == done))
+	struct val_authentication_chain *top_as;	
+
+	if ((top_q == NULL) || (NULL == queries) || (NULL == results) || (NULL == done))
 	    return VAL_BAD_ARGUMENT;
+
+	if ((top_as = top_q->qc_as) == NULL)  
+		/* nothing to do */
+		return VAL_NO_ERROR;
 
 	*done = 1;
 
@@ -1231,6 +1724,7 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 				break;
 			}
 
+
 			/* Check initial states */
 			if(next_as->val_ac_status <= VAL_A_INIT) {
 				/* still need more data to validate this assertion */
@@ -1247,35 +1741,40 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 				break;
 			}
 			else if (next_as->val_ac_status == VAL_A_NEGATIVE_PROOF) {
+                /* This means that the trust point has a proof of non-existence */
 
-				if(next_as->_as.ac_pending_query == NULL) {
+                if (next_as->val_ac_trust == NULL) {
 					res->val_rc_status = VAL_R_INDETERMINATE_PROOF;
 					break;
-				}
-				else if ((next_as->_as.ac_pending_query->qc_type_h == ns_t_ds)
-				 	&& (next_as->_as.ac_pending_query->qc_referral == NULL)) { 
+                }
+
+                /* We may have asked the child zone for the DS;
+                 * This can only happen if the current member in
+                 * the chain of trust is the DNSKEY record
+                 */
+                if (next_as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey) {
 
 					int asked_the_parent = 0;
 					struct val_authentication_chain *as;
-					struct name_server *root_ns = NULL;
 
-					/* 
-					 * If this is a query for DS, we may have asked the child.
-					 * If the name in the SOA is same as the owner name for the DS
-					 * we've actually sent the query to the child
-					 */
-					for (as=next_as; as; as=as->_as.val_ac_rrset_next) {
+                    /* 
+                     * Check if the name in the soa record is the same as the
+                     * owner name of the DS record
+                     */  
+					for (as=next_as->val_ac_trust; as; as=as->_as.val_ac_rrset_next) {
 						if ((as->val_ac_rrset != NULL) &&
 						    (as->val_ac_rrset->val_rrset_type_h == ns_t_soa)) {
 							if (namecmp(as->val_ac_rrset->val_rrset_name_n, 
-										next_as->_as.ac_pending_query->qc_name_n))
+										next_as->val_ac_rrset->val_rrset_name_n))
 								asked_the_parent = 1;
 							break;
 						}
 					}
 					if (asked_the_parent) {
-						if (verify_provably_unsecure(context, as))
+						if (verify_provably_unsecure(context, top_q, as)) {
+			                res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
 							SET_RESULT_TRUSTED(res->val_rc_status);
+                        }
 						break;
 					}
 
@@ -1283,6 +1782,14 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 					 * We could only be asking the child if our default name server is 
 					 * the child, so ty again starting from root; state will be WAIT_FOR_TRUST 
 					 */
+                    /*
+                     * XXX There is an opportunity for an infinite loop here: 
+                     * XXX If some nameserver actually sends a referral for the DS record
+                     * XXX to the child (faulty/malicious NS) we'll keep recursing from root
+                     * XXX Need to detect this case
+                     */
+#if 0
+					struct name_server *root_ns = NULL;
 					get_root_ns(&root_ns);
 					if(root_ns == NULL) {
 						/* No root hints configured */
@@ -1300,25 +1807,50 @@ static int  verify_and_validate(val_context_t *context, struct val_query_chain *
 						*done = 0;
 						thisdone = 0;
 					}
+#else
+					res->val_rc_status = VAL_R_INDETERMINATE_PROOF;
+					break;
+#endif
 				}
 				else { 
-					if (verify_provably_unsecure(context, next_as))
+					if (verify_provably_unsecure(context, top_q, next_as)) {
+			            res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
 						SET_RESULT_TRUSTED(res->val_rc_status);
+                    }
 					break;
 				}
 			}
 
 			/* Check error conditions */
 			else if (next_as->val_ac_status <= VAL_A_LAST_ERROR) {
-				if (verify_provably_unsecure(context, next_as))
+				if (verify_provably_unsecure(context, top_q, next_as)) {
+			        res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
 					SET_RESULT_TRUSTED(res->val_rc_status);
+                }
 				else 
 					res->val_rc_status = VAL_ERROR; 
 				break;
 			}
+            else if (next_as->val_ac_status <= VAL_A_LAST_BAD) {
+                
+			    res->val_rc_status = VAL_ERROR; 
+                break;
+            }
 			else if (next_as->val_ac_status <= VAL_A_LAST_FAILURE){
-				SET_MASKED_STATUS(res->val_rc_status, VAL_R_BOGUS_UNPROVABLE);
-				continue;
+                /* double failures are errors */
+                if (CHECK_MASKED_STATUS(res->val_rc_status, VAL_R_BOGUS_UNPROVABLE)) {
+				    if (verify_provably_unsecure(context, top_q, next_as)) {
+			            res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
+					    SET_RESULT_TRUSTED(res->val_rc_status);
+                    }
+				    else 
+					    res->val_rc_status = VAL_ERROR; 
+				    break;
+                }
+                else {
+				   	SET_MASKED_STATUS(res->val_rc_status, VAL_R_BOGUS_UNPROVABLE);
+				   	continue;
+                }
 			}
 			else  if (CHECK_MASKED_STATUS(res->val_rc_status, VAL_R_VERIFIED_CHAIN)
 					|| (res->val_rc_status == VAL_R_DONT_KNOW)) {
@@ -1366,7 +1898,7 @@ static int ask_cache(val_context_t *context, u_int8_t flags, struct val_query_ch
 	struct val_query_chain *next_q, *top_q;
 	struct rrset_rec *next_answer;
 	int retval;
-        char name_p[NS_MAXCDNAME];
+        char name_p[NS_MAXDNAME];
 
 	if ((queries == NULL) || (assertions == NULL) || (data_received == NULL))
 	    return VAL_BAD_ARGUMENT;
@@ -1394,21 +1926,25 @@ static int ask_cache(val_context_t *context, u_int8_t flags, struct val_query_ch
 				next_q->qc_state = Q_ANSWERED;
 				/* Construct a dummy response */
 				response = (struct domain_info *) MALLOC (sizeof(struct domain_info));
-				if(response == NULL)
+				if(response == NULL) {
+					FREE(next_answer);
 					return VAL_OUT_OF_MEMORY;
+				}
 
 				response->di_rrset = next_answer;
 			    response->di_qnames = (struct qname_chain *) MALLOC (sizeof(struct qname_chain));
 			    if (response->di_qnames == NULL) {
+					FREE(response->di_rrset);
 					FREE(response);
 					return VAL_OUT_OF_MEMORY;
 			    }
 				memcpy (response->di_qnames->qnc_name_n, next_q->qc_name_n, wire_name_length(next_q->qc_name_n));
 				response->di_qnames->qnc_next = NULL;
 
-				if(ns_name_ntop(next_q->qc_name_n, name_p, NS_MAXDNAME-1) == -1) {
+				if(ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
 					next_q->qc_state = Q_ERROR_BASE+SR_CALL_ERROR;
 					FREE(response->di_qnames);
+					FREE(response->di_rrset);
 					FREE (response);
 					continue;
 				}
@@ -1446,7 +1982,7 @@ static int ask_resolver(val_context_t *context, u_int8_t flags, struct val_query
 	struct domain_info *response;
 	int retval;
 	int need_data = 0;
-        char name_p[NS_MAXCDNAME];
+        char name_p[NS_MAXDNAME];
 	int answered = 0;
 
 	if ((queries == NULL) || (assertions == NULL) || (data_received == NULL))
@@ -1469,29 +2005,30 @@ static int ask_resolver(val_context_t *context, u_int8_t flags, struct val_query
 						name_p, next_q->qc_class_h, next_q->qc_type_h);
 
 				if(next_q->qc_ns_list == NULL) {
-					if (context->nslist != NULL) {
-						clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+                    
+				    /* See if we can get an answer from a closer NS (from cache) */ 
+					struct name_server *ref_ns_list;
+					int ret_val;
+					ret_val = get_matching_nslist(next_q, queries, &ref_ns_list);
+					if ((ret_val == VAL_NO_ERROR) && (ref_ns_list != NULL)) {
+					    next_q->qc_ns_list = ref_ns_list;
 					}
-					else {
-						/* See if we can get an answer from a closer NS (from cache) */ 
-						struct name_server *ref_ns_list;
-						int ret_val;
-						ret_val = get_matching_nslist(next_q, queries, &ref_ns_list);
-						if ((ret_val != VAL_NO_ERROR) || (ref_ns_list != NULL)) {
-							next_q->qc_ns_list = ref_ns_list;
-						}
-						else {
-							/* work downward from root */
-							struct name_server *root_ns = NULL;
-							get_root_ns(&root_ns);
-							if(root_ns == NULL) {
-								/* No root hints; should not happen here */
-								return VAL_INTERNAL_ERROR;
-								// xxx-check: log message?
-							}
-							next_q->qc_ns_list = root_ns;
-						}
-					}
+                    else if (context->nslist != NULL) {
+					    clone_ns_list(&(next_q->qc_ns_list), context->nslist);
+						for(ns=next_q->qc_ns_list; ns; ns=ns->ns_next) 
+							ns->ns_options |= RES_RECURSE;
+				    }
+                    else {
+   					    /* work downward from root */
+   						struct name_server *root_ns = NULL;
+   						get_root_ns(&root_ns);
+   						if(root_ns == NULL) {
+   							/* No root hints; should not happen here */
+   							return VAL_INTERNAL_ERROR;
+   							// xxx-check: log message?
+   						}
+   						next_q->qc_ns_list = root_ns;
+   					}
 				} 
 
 				/* Only set the CD and EDS0 options if we feel the server 
@@ -1567,6 +2104,12 @@ static int ask_resolver(val_context_t *context, u_int8_t flags, struct val_query
 					if((next_q->qc_state == Q_WAIT_FOR_GLUE) ||
 						(next_q->qc_referral != NULL)) {
 						answered = 1;
+                        /* Check if we fetched this same glue before and it was answered */
+                        if (next_q->qc_referral->glueptr &&
+                               (next_q->qc_referral->glueptr->qc_state == Q_ANSWERED)) {
+                            merge_glue_in_referral(next_q, queries);
+                            *data_received = 1;
+                        }
 						break;
 					}
 					if (next_q->qc_state >= Q_ANSWERED) {
@@ -1620,10 +2163,6 @@ int clone_result_assertions(struct val_result_chain *results)
 								o_ac->val_ac_rrset->val_msg_headerlen,
 								n_ac->val_ac_rrset->val_msg_header,
 								n_ac->val_ac_rrset->val_msg_headerlen);
-				CLONE_NAME_LEN(o_ac->val_ac_rrset->val_queryset_data,
-								o_ac->val_ac_rrset->val_queryset_datalen,
-								n_ac->val_ac_rrset->val_queryset_data,
-								n_ac->val_ac_rrset->val_queryset_datalen);
 
 				len = wire_name_length(o_ac->val_ac_rrset->val_rrset_name_n);
 				n_ac->val_ac_rrset->val_rrset_name_n = 
@@ -1673,23 +2212,45 @@ void fix_validation_results(val_context_t *context, struct val_result_chain *res
 	int negative_proof = 0;
 
 	for (res=results; res ; res=res->val_rc_next) {
-		int success = 0;
 
 		/* Fix validation results */
 		/* Some error most likely, reflected in the val_query_chain */
 		if (res->val_rc_trust == NULL) 
 			res->val_rc_status = VAL_ERROR;
+
+        /* 
+         *  Special case of provably unsecure: algorithms used
+         *  for signing the DNSKEY record are not understood
+         */  
+        if (res->val_rc_status == VAL_R_BOGUS_PROVABLE) {
+            /* implies that the trust flag is set */
+            struct val_authentication_chain *as;
+            for (as = res->val_rc_trust; as; as=as->val_ac_trust) {
+                if ((as->val_ac_rrset) && 
+                        (as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey)) {
+                    if(as->val_ac_status == VAL_A_UNKNOWN_ALGO) {
+                        res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
+						SET_RESULT_TRUSTED(res->val_rc_status);
+                        break;
+                    }
+                }
+            }
+        }
+       
 		if (res->val_rc_status == (VAL_R_DONT_KNOW|VAL_R_TRUST_FLAG))
 			res->val_rc_status = VAL_SUCCESS;	
-		if (res->val_rc_status == VAL_SUCCESS)
-			success = 1;
-		val_log(context, LOG_DEBUG, "validate result set to %s[%d]", p_val_error(res->val_rc_status), res->val_rc_status);
 
-		if (!success) 
+		val_log(context, LOG_DEBUG, "validate result set to %s[%d]", p_val_error(res->val_rc_status), res->val_rc_status);
+        
+		if ((res->val_rc_status != VAL_SUCCESS) && 
+                (res->val_rc_status != VAL_PROVABLY_UNSECURE))
 			partially_wrong = 1;
 
 		if((res->val_rc_trust) && (res->val_rc_trust->_as.ac_data != NULL) &&
-				((res->val_rc_trust->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NXT) || 
+				((res->val_rc_trust->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NSEC) || 
+#ifdef LIBVAL_NSEC3 
+				(res->val_rc_trust->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NSEC3) || 
+#endif
 				(res->val_rc_trust->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_SOA)))
 			negative_proof = 1;
 	}
@@ -1747,7 +2308,7 @@ int val_resolve_and_check(	val_context_t	*ctx,
 	int retval;
 	struct val_query_chain *top_q;
 	char block = 1; /* block until at least some data is returned */
-        char name_p[NS_MAXCDNAME];
+        char name_p[NS_MAXDNAME];
 
 	int done = 0;
 	int data_received = 0;
@@ -1831,28 +2392,28 @@ int val_resolve_and_check(	val_context_t	*ctx,
 		/* Answer will be digested */
 		data_received = 0;
 
-		if (top_q->qc_as != NULL) { 
-			/* 
-			 * We have sufficient data to at least perform some validation --
-			 * validate what ever is possible. 
-			 */
-			if(VAL_NO_ERROR != (retval = verify_and_validate(context, &(context->q_list), 
-								top_q->qc_as, flags, results, &done))) 
-				goto err;
-		}
+		/* 
+		 * We have sufficient data to at least perform some validation --
+		 * validate what ever is possible. 
+		 */
+		if(VAL_NO_ERROR != (retval = verify_and_validate(context, &(context->q_list), 
+							top_q, flags, results, &done))) 
+			goto err;
 	}
 
-	// xxx-audit: ptr deref w/out NULL check (results)
+    if (results) {
 
-	if (!(flags & F_DONT_VALIDATE))
-		fix_validation_results(context, *results, top_q);
+	    if (!(flags & F_DONT_VALIDATE))
+		    fix_validation_results(context, *results, top_q);
 
-	/* 
-	 * Clone the required assertion list elements, so that 
-	 * context can be free'd up if necessary
-	 */
-	if (VAL_NO_ERROR != (retval = clone_result_assertions(*results)))
-		return retval;
+    	/* 
+    	 * Clone the required assertion list elements, so that 
+    	 * context can be free'd up if necessary
+    	 */
+    	if (VAL_NO_ERROR != (retval = clone_result_assertions(*results)))
+    		return retval;
+
+    }
 
 	retval = VAL_NO_ERROR;
 
