@@ -350,8 +350,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 				// Handle CNAME RRs
 				if (rrset->rrs.val_rrset_type_h == ns_t_cname) {
 					
-					bzero(dname, NS_MAXDNAME);
-					if (ns_name_ntop(rrset->rrs.val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
+					bzero(dname, sizeof(dname));
+					if (ns_name_ntop(rrset->rrs.val_rrset_name_n, dname, sizeof(dname)) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}
@@ -368,8 +368,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 					}
 					
 					if (!ret->h_name) {
-						bzero(dname, NS_MAXDNAME);
-						if (ns_name_ntop(rr->rr_rdata, dname, NS_MAXDNAME) < 0) {
+						bzero(dname, sizeof(dname));
+						if (ns_name_ntop(rr->rr_rdata, dname, sizeof(dname)) < 0) {
 							*offset = orig_offset;
 							return NULL;
 						}
@@ -385,8 +385,8 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
 				else if ( ((af == AF_INET) && (rrset->rrs.val_rrset_type_h == ns_t_a)) ||
 					  ((af == AF_INET6)&& (rrset->rrs.val_rrset_type_h == ns_t_aaaa)) ) {
 					
-					bzero(dname, NS_MAXDNAME);
-					if (ns_name_ntop(rrset->rrs.val_rrset_name_n, dname, NS_MAXDNAME) < 0) {
+					bzero(dname, sizeof(dname));
+					if (ns_name_ntop(rrset->rrs.val_rrset_name_n, dname, sizeof(dname)) < 0) {
 						*offset = orig_offset;
 						return NULL;
 					}
@@ -609,7 +609,7 @@ int val_gethostbyname2_r( val_context_t *ctx,
 		}
 
 		/* Query the validator */
-		if (((retval = ns_name_pton(name, name_n, NS_MAXCDNAME-1)) != -1)
+		if (((retval = ns_name_pton(name, name_n, sizeof(name_n))) != -1)
 		    && (VAL_NO_ERROR == (retval = val_resolve_and_check(context, name_n, ns_c_in, type, 0,
 							      &results)))) {
 			
