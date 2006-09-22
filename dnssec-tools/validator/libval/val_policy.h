@@ -36,6 +36,9 @@
 #define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
 #define POL_DLV_MAX_LINKS_STR "dlv-max-links"
 #endif
+#ifdef LIBVAL_NSEC3 
+#define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter" 
+#endif
 
 #define ZONE_SE_IGNORE_MSG     "ignore"
 #define ZONE_SE_DO_VAL_MSG     "validate"
@@ -81,6 +84,10 @@ int parse_use_tcp(FILE*, policy_entry_t*, int*);
 int free_use_tcp(policy_entry_t*);
 int parse_zone_security_expectation(FILE*, policy_entry_t*, int*);
 int free_zone_security_expectation(policy_entry_t*);
+#ifdef LIBVAL_NSEC3 
+int parse_nsec3_max_iter(FILE *fp, policy_entry_t *pol_entry, int *line_number);
+int free_nsec3_max_iter(policy_entry_t *pol_entry);
+#endif
 #ifdef DLV
 int parse_dlv_trust_points(FILE*, policy_entry_t*, int*);
 int free_dlv_trust_points(policy_entry_t*);
@@ -117,5 +124,14 @@ struct zone_se_policy {
 	int trusted;
 	struct zone_se_policy *next;
 };
+
+
+#ifdef LIBVAL_NSEC3 
+struct nsec3_max_iter_policy {
+    u_int8_t zone_n[NS_MAXCDNAME];
+    int iter;
+    struct nsec3_max_iter_policy *next;
+};
+#endif
 
 #endif /* VAL_POLICY_H */ 
