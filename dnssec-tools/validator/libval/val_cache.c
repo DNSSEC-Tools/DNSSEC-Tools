@@ -212,7 +212,6 @@ int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h,
 int stow_zone_info(struct rrset_rec *new_info)
 {
 	int rc;
-
 	LOCK_INIT();
 	LOCK_SH();
 	rc = stow_info(&unchecked_ns_info, new_info);
@@ -267,7 +266,7 @@ int stow_root_info(struct rrset_rec *root_info)
 
 	LOCK_INIT();
 
-   	if (ns_name_pton(root_zone, root_zone_n, NS_MAXCDNAME-1) == -1)
+   	if (ns_name_pton(root_zone, root_zone_n, sizeof(root_zone_n)) == -1)
     	return VAL_CONF_PARSE_ERROR; 
 
 	if (VAL_NO_ERROR != (retval = res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info, &pending_glue)))
@@ -279,12 +278,9 @@ int stow_root_info(struct rrset_rec *root_info)
 	root_ns = ns_list;
 	UNLOCK();
 
-	/* store the records in the cache */
-	LOCK_SH();
-	retval = stow_info(&unchecked_ns_info, root_info);
-	UNLOCK();
-
-	return retval;
+	/* Don't store the records in the cache */
+   
+    return VAL_NO_ERROR; 
 }
 
 int free_validator_cache(void)
