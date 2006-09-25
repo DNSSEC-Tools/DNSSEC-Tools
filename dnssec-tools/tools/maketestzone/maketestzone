@@ -41,7 +41,7 @@ my %opts =
     'p' => 'good,badsign,nosig,baddata,futuredate,pastdate,reverseddates',
 # XXX:
 #   newksk: doesn't work because zonesigner requires generation of zsks too
-    'P' => 'good,badsign,nosig,nods,futuredate,pastdate,reverseddates,rollzsk,newzsk,newkeys',
+    'P' => 'insecure,good,badsign,nosig,nods,futuredate,pastdate,reverseddates,rollzsk,newzsk,newkeys,rsamd5keys',
   );
 
 LocalGetOptions(\%opts,
@@ -183,10 +183,13 @@ my %LegendInformation =
  good => 'An unmodified record that should be completely valid.',
  nosig => 'The RRSIG record has been completely removed from the data set and is not available to verify the original record.',
  nods => 'A valid NS record where the parent zone did not have the DNSKEY for the child and thus does not provide a valid DS record to securely delegate to the child zone.',
+
+ # key difference subzones
  rollzsk => 'The ZSK for this zone is rolled every time the zone is generated',
  newzsk => 'The ZSKs for this zone are brand new every time the zone is generated',
  newksk => 'The KSKs (but not the ZSKs) for this zone are brand new every time the zone is generated',
  newkeys => 'The KSKs and the ZSKs for this zone are brand new every time the zone is generated',
+ rsamd5keys => 'The keys for this zone are of type RSAMD5',
 
  # record types
  A => 'An A (IPv4) address record',
@@ -199,12 +202,16 @@ my %LegendInformation =
 # ZONENAME => EXTRAOPTS
 #   defines extra options that zonesigner will run with for a given domain
 #
+#   - using special op of NOSIGN means it won't run zonesigner
+#
 my %zonesigner_domain_opts =
   (
    'rollzsk-ns.' . $opts{'d'} => '-forceroll',
    'newzsk-ns.' . $opts{'d'} => '-genzsk',
    'newksk-ns.' . $opts{'d'} => '-genksk',
    'newkeys-ns.' . $opts{'d'} => '-genkeys',
+   'rsamd5keys-ns.' . $opts{'d'} => '-algorithm RSAMD5 -genkeys',
+   'insecure-ns.' . $opts{'d'} => 'NOSIGN',
   );
 
 #
@@ -507,8 +514,15 @@ sub run_zonesigner {
     #
     # Run zonesigner to sign the thing
     #
-    Verbose("running zonesigner on $infile ($domain) to produce $outfile.signed");
-    System("zonesigner $opts{'a'} $zonesigner_domain_opts{$domain} --intermediate $infile$opts{'O'} --zone $domain $infile $outfile.signed");
+    print "here: $zonesigner_domain_opts{$domain} $domain\n";
+    if ($zonesigner_domain_opts{$domain} eq 'NOSIGN') {
+	# we don't actually want to sign this zone; just copy it
+	Verbose("copying $infile to produce (unsigned) $outfile.signed");
+	System("cp $infile $outfile.signed");
+    } else {
+	Verbose("running zonesigner on $infile ($domain) to produce $outfile.signed");
+	System("zonesigner $opts{'a'} $zonesigner_domain_opts{$domain} --intermediate $infile$opts{'O'} --zone $domain $infile $outfile.signed");
+    }
 }
 
 ######################################################################
@@ -534,7 +548,16 @@ sub modify_records {
     my ($domain) = @_;
     my $infile = $opts{'o'} . $domain . $opts{'O'} . '.signed';
     my $outfile = $opts{'o'} . $domain . $opts{'O'} . '.signed' . $opts{'M'};
-    Verbose("modifying records in $infile to produce $outfile");
+
+    push @resultfiles, $outfile;
+
+    # if it wasn't signed, the modifications won't work
+    if ($zonesigner_domain_opts{$domain} eq 'NOSIGN') {
+	Verbose("Not modifying records in $infile; copying to $outfile");
+	System("cp $infile $outfile");
+	return;
+    }
+
     open(I,"$infile");
     $fh = new IO::File (">$outfile");
     $_ = <I>;
@@ -587,7 +610,6 @@ sub modify_records {
 
     close(I);
     $fh->close();
-    push @resultfiles, $outfile;
 }
 
 ######################################################################
@@ -678,9 +700,14 @@ sub make_new_date {
     croak "can't read one of keyid ($keyid) or keyname ($keyname) from input RRSIG\n" if (!$keyid || !$keyname);
 
     # XXX: assumes 005 alg.
-    my $keypath = sprintf("K${keyname}+005+%05d.private",$keyid);
-    $keypaths{$currentdomain} = $keypath;
+    my $keypath;
+    foreach my $alg (1, 5) {
+	$keypath = sprintf("K${keyname}+%03d+%05d.private",$alg, $keyid);
+	last if (-f $keypath);
+    }
+
     croak "can't find needed private key file: $keypath\n" if (!-f $keypath);
+    $keypaths{$currentdomain} = $keypath;
 
     # create the new record
     my $sigrr = Net::DNS::RR::RRSIG->create([$rec], $keypath,
