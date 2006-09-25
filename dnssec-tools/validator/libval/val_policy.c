@@ -250,8 +250,7 @@ parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
              val_parse_dnskey_string(pkstr, strlen(pkstr), &dnskey_rdata)))
             goto err;
 
-        ta_pol =
-            (struct trust_anchor_policy *)
+        ta_pol = (struct trust_anchor_policy *)
             MALLOC(sizeof(struct trust_anchor_policy));
         if (ta_pol == NULL) {
             retval = VAL_OUT_OF_MEMORY;
@@ -483,8 +482,7 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
             goto err;
         }
 
-        zse_pol =
-            (struct zone_se_policy *)
+        zse_pol = (struct zone_se_policy *)
             MALLOC(sizeof(struct trust_anchor_policy));
         if (zse_pol == NULL) {
             retval = VAL_OUT_OF_MEMORY;
@@ -603,8 +601,7 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
 
         nsec3_iter = atoi(token);
 
-        pol =
-            (struct nsec3_max_iter_policy *)
+        pol = (struct nsec3_max_iter_policy *)
             MALLOC(sizeof(struct nsec3_max_iter_policy));
         if (pol == NULL) {
             retval = VAL_OUT_OF_MEMORY;
@@ -1015,8 +1012,7 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
          prev = cur, cur = cur->next);
 
     if ((cur == NULL) || (strcmp(cur->label, (*pfrag)->label) > 0)) {
-        newp =
-            (struct policy_overrides *)
+        newp = (struct policy_overrides *)
             MALLOC(sizeof(struct policy_overrides));
         if (newp == NULL)
             return VAL_OUT_OF_MEMORY;

@@ -36,7 +36,7 @@
  * Pass in a context, to give acceptable time skew 
  */
 // xxx-audit: recommend passing structs by reference
-static val_astatus_t
+static          val_astatus_t
 val_sigverify(val_context_t * ctx,
               const unsigned char *data,
               int data_len,
