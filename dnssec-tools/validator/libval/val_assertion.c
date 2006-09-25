@@ -619,8 +619,6 @@ add_to_authentication_chain(struct val_authentication_chain **assertions,
 
         new_as = (struct val_authentication_chain *)
             MALLOC(sizeof(struct val_authentication_chain));
-        if (new_as == NULL)
-            return VAL_OUT_OF_MEMORY;
 
         new_as->_as.ac_data = copy_rrset_rec(next_rr);
 
