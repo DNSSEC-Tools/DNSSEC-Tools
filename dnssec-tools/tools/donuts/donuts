@@ -31,76 +31,146 @@ my %opts = (l => 5,
 	    o => '%d.%t.pcap',
 	    r => $Config{'siteprefix'} . "/share/donuts/rules/*");
 
-our $current_domain;
-
 my (@rules, %rules, $rf, $current_zone_file, %nrecs,
-    @ignorelist, $netdns, $netdns_error, %outstructure);
+    @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
+    $globalrulecount, $globalrrset, $globalnrecs,
+    $globalerrcount, @filestested);
+
+
+my %primaries = 
+  (display_errors =>
+   {
+    title => 'Zone Errors',
+    introduction => 'Below are the errors found when analyzing the zones',
+    leftside => 
+    ["Browse Results", 
+     { type => 'tree',
+       name => 'showthis',
+       refresh_on_change => 1,
+       expand_all => 2,
+       root => 'Errors',
+       parent => \&get_gui_parent,
+       children => \&get_gui_children },
+    ],
+    questions =>
+    [{ type => 'table',
+       name => 'results',
+       text => sub { ((qwparam('showthis') eq 'Errors' ||
+		       qwparam('showthis') eq '') ?
+		      'Summary:' : 'Results:') },
+       values => sub {
+	   if (qwparam('showthis') =~ /::/) {
+	       my $tab;
+	       my ($spot, $value) = (qwparam('showthis') =~ /(.*)::(.*)/);
+	       foreach my $data (@{$outstructure{$spot}{$value}}) {
+		   push @$tab, $data;
+	       }
+	       return [$tab];
+	   } elsif (qwparam('showthis') eq 'Errors' ||
+		    qwparam('showthis') eq '') {
+	       my $tab;
+
+	       push @$tab, ['results on testing:', join(', ',@filestested)];
+	       push @$tab, ['rules considered:', (1+$#rules)];
+	       push @$tab, ['rules tested:',     $globalrulecount];
+	       push @$tab, ['records analyzed:', ($globalrrset)];
+	       push @$tab, ['names analyzed:',   $globalnrecs];
+	       push @$tab, ['errors found:',     $globalerrcount];
+	       return [$tab];
+	   }
+	   return [[[""]]];
+       }
+     }]
+   });
+
+$Getopt::GUI::Long::verbose = 1;
 
 LocalGetOptions(\%opts,
 		['GUI:VERSION',"0.9.1\nDNSSEC-Tools Version: 0.9.1"],
+
 		['GUI:screen',"Rule Set Configuration:"],
 		["l|level=i", "The maximum rule level to run (default = 5)",
+		 helpdesc => '(higher number = include more nit-picking tests)',
 		 question => { type => 'menu', values => [1..9] }],
 
 		['GUI:separator','Output Format Options:'],
 		["show-gui", "Display the results in a browsable window.",
-		 question => { type => 'checkbox', default => 1 }],
-		["v|verbose", "Verbose output showing extra information",,
-		 question => { type => 'checkbox', default => 1 }],
-		["q|quiet", "Quiet output (Do not print summary information)"],
+		 question => { type => 'checkbox', default => 1, indent => 1}],
+		["v|verbose",
+		 "Verbose output (show extra processing information)",
+		 question => { type => 'checkbox', default => 1, indent => 1 }],
+		["q|quiet", "Quiet output (Do not print summary information)",
+		 indent => 1],
 
-
-		['GUI:separator','Advanced:'],
+		['GUI:separator','Advanced Options:'],
 		['GUI:guionly',{type => 'checkbox',
 				values => [1,0],
 				default => 0,
 				indent => 1,
 				text => 'Show Advanced Options',
-				name => 'advanced'}],,
+				name => 'advanced'}],
 
-		['GUI:screen','Advanced Configuration:',
-		 doif => 'advanced'],
-		["r|rules=s", "glob pattern for rule files to load"],
-		["i|ignore=s", "Regular expression for rules to ignore"],
-		["f|features=s", "Extra features to turn on"],
-
-		['GUI:screen',"Configuration Files:",
-		 doif => 'advanced'],
-		["c|config-file=s", "Use an alternate personal configuration file"],
-		["C|no-config","Do not load perlocal configuration files"],
-
-		['GUI:otherargs_text',"FILE DOMAIN [FILE DOMAIN...]"],
-		['GUI:otherargs_required',1],
-		
+		"",
 		['GUI:guionly',{type => 'button',
 				values => 'Help',
 				default => 1,
 				text => 'Display Help Options',
 				name => 'displayhelp'}],
 
+		['GUI:screen','Advanced Configuration:', doif => 'advanced'],
+		['GUI:separator','Rules Selection Configuration:'],
+		["r|rules=s", "glob pattern for rule files to load",
+		 indent => 1,
+		 doif =>
+		 sub { ref($_[1]->{'generator'}) !~ /HTML/}, # not safe for web
+		],
+		["i|ignore=s", "Regular expression for rules to ignore",
+		 indent => 1],
+		["f|features=s", "Extra features to turn on",
+		 indent => 1],
+
+		['GUI:separator',"Configuration Files:"],
+		["C|no-config","Do not load personal configuration files",
+		 indent => 1],
+		["c|config-file=s",
+		 "Use an alternate personal configuration file",
+		 indent => 1,
+		 doif =>
+		 sub { ref($_[1]->{'generator'}) !~ /HTML/}, # not safe for web
+		],
+
+		['GUI:otherargs_text',"FILE DOMAIN [FILE DOMAIN...]"],
+		['GUI:otherargs_required',1],
+		
 		['GUI:screen',"Extra Live Query Options:",
 		 doif => sub { 
-		     use Data::Dumper;;
-		     print Dumper($_[1]->{'generator'}{'datastore'});
-		     $_[1]->qwparam('live') && !$_[1]->qwparam('displayhelp');
-		 } ],
-		["t|tcpdump-capture=s", "Start tcpdump on interface STRING during run"],
-		["T|tcpdump-filter=s", "Use tcpdump filter (default port 53 or fragments)"],
-		["o|tcpdump-output-file=s", "Save tcpdump results to file STRING."],
+		     $_[1]->qwparam('live') && !$_[1]->qwparam('displayhelp') &&
+		       ref($_[1]->{'generator'}) !~ /HTML/  # not safe for web
+			 ;
+		 }
+		],
+		["t|tcpdump-capture=s",
+		 "Start tcpdump on interface STRING during run"],
+		["T|tcpdump-filter=s",
+		 "Use tcpdump filter (default: port 53 or fragments)"],
+		["o|tcpdump-output-file=s",
+		 "Save tcpdump results to file STRING."],
 
 		['GUI:screen',"Help Options:",
 		 doif => 'displayhelp'],
 		["R|help-rules", 'Show the rules that donuts checks'],
-		["F|help-features", "Show available additional features of available rules."],
+		["F|help-features",
+		 "Show available additional features of available rules."],
 		["H|help-config",
 		 'Show configuration tokens supported by the rules'],
 		
 		['GUI:nootherargs',1],
 		['GUI:submodules','getzonefiles','getzonenames'],
-		['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
+		['GUI:otherprimaries',
+		 dnssec_tools_get_qwprimitives(%primaries)],
 	       ) || exit;
 
-if ($#ARGV % 2 != 1) {
+if ($#ARGV == -1 || $#ARGV % 2 != 1) {
     print STDERR "\nUsage Error: $0 called with wrong number of arguments\n";
     print STDERR "  file and zone name arguments are both needed\n";
     print STDERR "  (EG: $0 FILE1 example.com FILE2 other.example.com)\n\n";
@@ -160,6 +230,7 @@ if ($opts{'c'} && !$opts{'C'} && -f $opts{'c'}) {
 # display config file help
 #
 if ($opts{'H'}) {
+    maybe_output_to_web();
     print STDERR "$0 configuration tokens for loaded rules:\n\n";
     printf STDERR sprintf("%-20s %-15s%s\n",
 			  "RULE NAME", "TOKEN", "DESCRIPTION");
@@ -175,6 +246,7 @@ if ($opts{'H'}) {
 # display a list of rules
 #
 if ($opts{'R'}) {
+    maybe_output_to_web();
     print STDERR "\n$0 rules:\n\n";
     printf STDERR "RULE NAME\n  DESCRIPTION...\n";
     printf STDERR "_" x 75 . "\n";
@@ -188,6 +260,7 @@ if ($opts{'R'}) {
 # display a list of rules
 #
 if ($opts{'F'}) {
+    maybe_output_to_web();
     print STDERR "\n$0 feature list:\n";
     print STDERR "  (Turn these on using the --features flag)\n\n";
     my %shown;
@@ -213,9 +286,7 @@ my $exitcode = 0;
 my $parseerror;
 my $errcount;
 
-my ($globalrulecount, $globalrrset, $globalnrecs,
-    $globalerrcount, @filestested);
-
+maybe_output_to_web();
 while ($#ARGV > -1) {
     $errcount = 0;
     my $rulecount = 0;
@@ -233,7 +304,7 @@ while ($#ARGV > -1) {
     my $rrset = Net::DNS::ZoneFile::Fast::parse(file => $current_zone_file,
 						origin => "$current_domain.",
 						soft_errors => 1,
-						on_error => \&print_parse_error);
+						on_error =>\&print_parse_error);
     next if ($parseerror);
     if (!$rrset) {
 	print STDERR "WARNING: failed to read $current_zone_file for an unknown reason\n";
@@ -326,7 +397,7 @@ while ($#ARGV > -1) {
     $globalerrcount += $errcount;
 
     if ($opts{'v'}) {
-	print "results on testing $current_zone_file:\n";
+	print "results on testing $current_domain:\n";
 	print "  rules considered:\t" . (1+$#rules) . "\n";
 	print "  rules tested:\t\t$rulecount\n";
 	print "  records analyzed:\t" . (1+$#$rrset) . "\n";
@@ -340,8 +411,11 @@ while ($#ARGV > -1) {
 	$exitcode = 1;
     }
 }
+
 if ($opts{'show-gui'}) {
+    print STDERR "starting GUI\n";
     setup_gui();
+    print STDERR "starting GUI2\n";
     display_gui_results();
 }
 exit($exitcode);
@@ -358,54 +432,9 @@ sub setup_gui {
     return if (!$have_qw);
     import QWizard;
 
-    my %primaries = 
-      (display_errors =>
-       {
-	title => 'Zone Errors',
-	introduction => 'Below are the errors found when analyzing the zones',
-	leftside => 
-	["Browse Results", 
-	 { type => 'tree',
-	   name => 'showthis',
-	   refresh_on_change => 1,
-	   expand_all => 2,
-	   root => 'Errors',
-	   parent => \&get_gui_parent,
-	   children => \&get_gui_children },
-	],
-	questions =>
-	[{ type => 'table',
-	   name => 'results',
-	   text => sub { ((qwparam('showthis') eq 'Errors' ||
-			   qwparam('showthis') eq '') ?
-			  'Summary:' : 'Results:') },
-	   values => sub {
-	       if (qwparam('showthis') =~ /::/) {
-		   my $tab;
-		   my ($spot, $value) = (qwparam('showthis') =~ /(.*)::(.*)/);
-		   foreach my $data (@{$outstructure{$spot}{$value}}) {
-		       push @$tab, $data;
-		   }
-		   return [$tab];
-	       } elsif (qwparam('showthis') eq 'Errors' ||
-			qwparam('showthis') eq '') {
-		   my $tab;
-
-		   push @$tab, ['results on testing:', join(', ',@filestested)];
-		   push @$tab, ['rules considered:', (1+$#rules)];
-		   push @$tab, ['rules tested:',     $globalrulecount];
-		   push @$tab, ['records analyzed:', ($globalrrset)];
-		   push @$tab, ['names analyzed:',   $globalnrecs];
-		   push @$tab, ['errors found:',     $globalerrcount];
-		   return [$tab];
-	       }
-	       return [[[""]]];
-	   }
-	 }]
-       });
-
     # the primaries
-    $qw = new QWizard(primaries => \%primaries);
+    $qw = $Getopt::Long::GUI_qw || new QWizard();
+    $qw->merge_primaries(\%primaries);
 }
 
 #
@@ -413,6 +442,8 @@ sub setup_gui {
 #
 sub display_gui_results {
     return if (!$have_qw);
+    $qw->reset_qwizard();
+    $qw->{'generator'}{'noheaders'} = 1;
     $qw->magic('display_errors');
 }
 
@@ -439,7 +470,6 @@ sub get_gui_children {
 	map { push @ret, { name => 'location::' . $_,
 			   label => $_ }
 	  } keys(%{$outstructure{'location'}});
-	use Data::Dumper;
 	return \@ret;
     }
 
@@ -685,6 +715,23 @@ sub print_parse_error {
     print STDERR "$current_zone_file:$line $err\n";
 }
 
+#
+# setup for printing some things to a web page instead
+#
+sub maybe_output_to_web {
+    #
+    # some stuff for web purposes should be redirected to the screen
+    #
+    if (defined($Getopt::GUI::Long::GUI_qw) && $Getopt::GUI::Long::GUI_qw->{'generator'} =~ /HTML/) {
+	close STDERR;
+	*STDERR = *STDOUT;  # alias stderr to stdout so it'll go to the web
+	print "<br /><pre>\n\n";
+    }
+}
+
+#######################################################################
+# Getopt::GUI::Long safe calling in case it doesn't exist on the system
+#
 sub LocalGetOptions {
     if (eval {require Getopt::GUI::Long;}) {
 	require Getopt::Long;
