@@ -67,12 +67,16 @@ static int is_type_set(u_int8_t *field, int field_len, u_int16_t type)
 }
 
 #define CLONE_NAME_LEN(oldb, oldlen, newb, newlen) do {\
-		newb =	(u_int8_t *) MALLOC (oldlen * sizeof(u_int8_t));\
-		if (newb == NULL)\
-			return VAL_OUT_OF_MEMORY;\
-		memcpy(newb, oldb, oldlen); \
-		newlen = oldlen;\
-} while (0)
+        if (oldlen) {                                                   \
+            newb =	(u_int8_t *) MALLOC (oldlen * sizeof(u_int8_t)); \
+            if (newb == NULL)                                           \
+                return VAL_OUT_OF_MEMORY;                               \
+            memcpy(newb, oldb, oldlen);                                 \
+        }                                                               \
+        else                                                            \
+            newb = NULL;                                                \
+        newlen = oldlen;                                                \
+    } while (0)
 
 
 #ifdef LIBVAL_NSEC3 
