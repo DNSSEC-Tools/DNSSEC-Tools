@@ -5,8 +5,9 @@
 #ifndef VAL_CONTEXT_H
 #define VAL_CONTEXT_H
 
-int val_create_context(char *label, val_context_t **newcontext);
-void val_free_context(val_context_t *context);
-int val_switch_policy_scope(val_context_t *ctx, char *label);
+int             val_create_context(char *label,
+                                   val_context_t ** newcontext);
+void            val_free_context(val_context_t * context);
+int             val_switch_policy_scope(val_context_t * ctx, char *label);
 
 #endif

@@ -18,7 +18,7 @@
 /*
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
- */ 
+ */
 #include "validator-config.h"
 
 #include <stdio.h>
@@ -38,7 +38,7 @@ static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 static pthread_rwlock_t rwlock;
-static int rwlock_init = -1;
+static int      rwlock_init = -1;
 
 static struct name_server *root_ns = NULL;
 
@@ -78,294 +78,332 @@ static struct name_server *root_ns = NULL;
 /*
  * NOTE: This assumes a read lock is alread held by the caller.
  */
-static int stow_info (struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
+static int
+stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
 {
     struct rrset_rec *new_rr, *prev;
     struct rrset_rec *old;
     struct rrset_rec *trail_new;
-    struct rr_rec *rr_exchange;
-                                                                                                                          
-    if (new_info == NULL) return VAL_NO_ERROR;
-                                                                                                                          
-    /* Tie the two together */
-	prev = NULL; 
-    old = *unchecked_info; 
+    struct rr_rec  *rr_exchange;
+
+    if (new_info == NULL)
+        return VAL_NO_ERROR;
+
+    /*
+     * Tie the two together 
+     */
+    prev = NULL;
+    old = *unchecked_info;
     while (old) {
 
-		/* Look for duplicates */
-		new_rr = new_info;
-		trail_new = NULL;
-       	while (new_rr) {
-    	    if (old->rrs.val_rrset_type_h == new_rr->rrs.val_rrset_type_h &&
-                old->rrs.val_rrset_class_h == new_rr->rrs.val_rrset_class_h &&
-                namecmp (old->rrs.val_rrset_name_n, new_rr->rrs.val_rrset_name_n)==0) {
+        /*
+         * Look for duplicates 
+         */
+        new_rr = new_info;
+        trail_new = NULL;
+        while (new_rr) {
+            if (old->rrs.val_rrset_type_h == new_rr->rrs.val_rrset_type_h
+                && old->rrs.val_rrset_class_h ==
+                new_rr->rrs.val_rrset_class_h
+                && namecmp(old->rrs.val_rrset_name_n,
+                           new_rr->rrs.val_rrset_name_n) == 0) {
 
 
-				// xxx-audit: dangerous locking
-				//     there is a window here. recommend just getting
-				//     and exclusive lock all the time...
-				LOCK_UPGRADE();
+                // xxx-audit: dangerous locking
+                //     there is a window here. recommend just getting
+                //     and exclusive lock all the time...
+                LOCK_UPGRADE();
 
-    	        /* old and new are competitors */
-	            if (!(old->rrs_cred < new_rr->rrs_cred ||
-   	                     (old->rrs_cred == new_rr->rrs_cred &&
-   	                         old->rrs.val_rrset_section <= new_rr->rrs.val_rrset_section))) {
-   	            	/*
-   	                     exchange the two -
-   	                         copy from new to old:
-   	                             cred, status, section, ans_kind
-   		                         exchange:
-   	                             data, sig
-   	            	*/
-   	            	old->rrs_cred = new_rr->rrs_cred;
-   	                old->rrs.val_rrset_section = new_rr->rrs.val_rrset_section;
-   	                old->rrs_ans_kind = new_rr->rrs_ans_kind;
-   	                rr_exchange = old->rrs.val_rrset_data;
-   	                old->rrs.val_rrset_data = new_rr->rrs.val_rrset_data;
-   	                new_rr->rrs.val_rrset_data = rr_exchange;
-   		            rr_exchange = old->rrs.val_rrset_sig;
-       	            old->rrs.val_rrset_sig = new_rr->rrs.val_rrset_sig;
-       	            new_rr->rrs.val_rrset_sig = rr_exchange;
-       	        }
+                /*
+                 * old and new are competitors 
+                 */
+                if (!(old->rrs_cred < new_rr->rrs_cred ||
+                      (old->rrs_cred == new_rr->rrs_cred &&
+                       old->rrs.val_rrset_section <=
+                       new_rr->rrs.val_rrset_section))) {
+                    /*
+                     * exchange the two -
+                     * copy from new to old: cred, status, section, ans_kind
+                     * exchange: data, sig
+                     */
+                    old->rrs_cred = new_rr->rrs_cred;
+                    old->rrs.val_rrset_section =
+                        new_rr->rrs.val_rrset_section;
+                    old->rrs_ans_kind = new_rr->rrs_ans_kind;
+                    rr_exchange = old->rrs.val_rrset_data;
+                    old->rrs.val_rrset_data = new_rr->rrs.val_rrset_data;
+                    new_rr->rrs.val_rrset_data = rr_exchange;
+                    rr_exchange = old->rrs.val_rrset_sig;
+                    old->rrs.val_rrset_sig = new_rr->rrs.val_rrset_sig;
+                    new_rr->rrs.val_rrset_sig = rr_exchange;
+                }
 
-       		    /* delete new */
-				if (trail_new == NULL) {
-					new_info = new_rr->rrs_next;
-					if (new_info == NULL) {
-						return VAL_NO_ERROR;
-					}
-				}
-				else
-	           	    trail_new->rrs_next = new_rr->rrs_next;
-           	    new_rr->rrs_next = NULL;
-           	    res_sq_free_rrset_recs (&new_rr);
+                /*
+                 * delete new 
+                 */
+                if (trail_new == NULL) {
+                    new_info = new_rr->rrs_next;
+                    if (new_info == NULL) {
+                        return VAL_NO_ERROR;
+                    }
+                } else
+                    trail_new->rrs_next = new_rr->rrs_next;
+                new_rr->rrs_next = NULL;
+                res_sq_free_rrset_recs(&new_rr);
 
-				UNLOCK();
-				LOCK_SH();
+                UNLOCK();
+                LOCK_SH();
 
-				break;
-           	}
-			else {
-				trail_new = new_rr; 
-				new_rr = new_rr->rrs_next;
-			}
-		}	
+                break;
+            } else {
+                trail_new = new_rr;
+                new_rr = new_rr->rrs_next;
+            }
+        }
 
-		prev = old;
-		old = old->rrs_next;
+        prev = old;
+        old = old->rrs_next;
     }
-	if(prev == NULL)
-		*unchecked_info = new_info;
-	else
-		prev->rrs_next = new_info;
+    if (prev == NULL)
+        *unchecked_info = new_info;
+    else
+        prev->rrs_next = new_info;
 
-	return VAL_NO_ERROR;
+    return VAL_NO_ERROR;
 }
 
-int get_cached_rrset(u_int8_t *name_n, u_int16_t class_h, 
-		u_int16_t type_h, struct rrset_rec **cloned_answer)
+int
+get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
+                 u_int16_t type_h, struct rrset_rec **cloned_answer)
 {
-	struct rrset_rec *next_answer, *prev;
+    struct rrset_rec *next_answer, *prev;
 
     LOCK_INIT();
 
-	*cloned_answer = NULL;
-    switch(type_h) {
-                                                                                                                             
-    	case ns_t_ds:
-        	next_answer = unchecked_ds_info; 
-            break;
-                                                                                                                             
-        case ns_t_dnskey:
-            next_answer = unchecked_key_info; 
-            break;
+    *cloned_answer = NULL;
+    switch (type_h) {
 
-		case ns_t_ns:
-			next_answer = unchecked_ns_info;
-			break;
-                                                                                                                         
-        default:
-            next_answer = unchecked_answers; 
-            break;
+    case ns_t_ds:
+        next_answer = unchecked_ds_info;
+        break;
+
+    case ns_t_dnskey:
+        next_answer = unchecked_key_info;
+        break;
+
+    case ns_t_ns:
+        next_answer = unchecked_ns_info;
+        break;
+
+    default:
+        next_answer = unchecked_answers;
+        break;
     }
 
-	prev = NULL; 
-	LOCK_SH();
-    while(next_answer)  {
-        
+    prev = NULL;
+    LOCK_SH();
+    while (next_answer) {
+
         if ((next_answer->rrs.val_rrset_type_h == type_h) &&
-        	(next_answer->rrs.val_rrset_class_h == class_h) &&
+            (next_answer->rrs.val_rrset_class_h == class_h) &&
             (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0)) {
-            	if (next_answer->rrs.val_rrset_data != NULL) {
-					*cloned_answer = copy_rrset_rec(next_answer);
-                	break;
-				}
+            if (next_answer->rrs.val_rrset_data != NULL) {
+                *cloned_answer = copy_rrset_rec(next_answer);
+                break;
+            }
         }
 
-		prev = next_answer;
+        prev = next_answer;
         next_answer = next_answer->rrs_next;
     }
-	UNLOCK();
-	return VAL_NO_ERROR;
+    UNLOCK();
+    return VAL_NO_ERROR;
 }
 
-int stow_zone_info(struct rrset_rec *new_info)
+int
+stow_zone_info(struct rrset_rec *new_info)
 {
-	int rc;
-	LOCK_INIT();
-	LOCK_SH();
-	rc = stow_info(&unchecked_ns_info, new_info);
-	UNLOCK();
+    int             rc;
+    LOCK_INIT();
+    LOCK_SH();
+    rc = stow_info(&unchecked_ns_info, new_info);
+    UNLOCK();
 
-	return rc;
+    return rc;
 }
 
-int stow_key_info(struct rrset_rec *new_info)
+int
+stow_key_info(struct rrset_rec *new_info)
 {
-	int rc;
+    int             rc;
 
-	LOCK_INIT();
-	LOCK_SH();
-	rc = stow_info(&unchecked_key_info, new_info);
-	UNLOCK();
+    LOCK_INIT();
+    LOCK_SH();
+    rc = stow_info(&unchecked_key_info, new_info);
+    UNLOCK();
 
-	return rc;
+    return rc;
 }
 
-int stow_ds_info(struct rrset_rec *new_info)
+int
+stow_ds_info(struct rrset_rec *new_info)
 {
-	int rc;
+    int             rc;
 
-	LOCK_INIT();
-	LOCK_SH();
-	rc = stow_info(&unchecked_ds_info, new_info);
-	UNLOCK();
+    LOCK_INIT();
+    LOCK_SH();
+    rc = stow_info(&unchecked_ds_info, new_info);
+    UNLOCK();
 
-	return rc;
+    return rc;
 }
 
-int stow_answer(struct rrset_rec *new_info)
+int
+stow_answer(struct rrset_rec *new_info)
 {
-	int rc;
+    int             rc;
 
-	LOCK_INIT();
-	LOCK_SH();
-	rc = stow_info(&unchecked_answers, new_info);
-	UNLOCK();
+    LOCK_INIT();
+    LOCK_SH();
+    rc = stow_info(&unchecked_answers, new_info);
+    UNLOCK();
 
-	return rc;
+    return rc;
 }
 
-int stow_root_info(struct rrset_rec *root_info)
+int
+stow_root_info(struct rrset_rec *root_info)
 {
-	struct name_server *ns_list = NULL;
-	struct name_server *pending_glue = NULL;
-	int retval;
-	u_char root_zone_n[NS_MAXCDNAME];
-	const char *root_zone = ".";
+    struct name_server *ns_list = NULL;
+    struct name_server *pending_glue = NULL;
+    int             retval;
+    u_char          root_zone_n[NS_MAXCDNAME];
+    const char     *root_zone = ".";
 
-	LOCK_INIT();
+    LOCK_INIT();
 
-   	if (ns_name_pton(root_zone, root_zone_n, sizeof(root_zone_n)) == -1)
-    	return VAL_CONF_PARSE_ERROR; 
+    if (ns_name_pton(root_zone, root_zone_n, sizeof(root_zone_n)) == -1)
+        return VAL_CONF_PARSE_ERROR;
 
-	if (VAL_NO_ERROR != (retval = res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info, &pending_glue)))
-		return retval;
-	/* We are not interested in fetching glue for the root */
-	free_name_servers(&pending_glue);
+    if (VAL_NO_ERROR !=
+        (retval =
+         res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info,
+                                   &pending_glue)))
+        return retval;
+    /*
+     * We are not interested in fetching glue for the root 
+     */
+    free_name_servers(&pending_glue);
 
-	LOCK_EX();
-	root_ns = ns_list;
-	UNLOCK();
+    LOCK_EX();
+    root_ns = ns_list;
+    UNLOCK();
 
-	/* Don't store the records in the cache */
-   
-    return VAL_NO_ERROR; 
+    /*
+     * Don't store the records in the cache 
+     */
+
+    return VAL_NO_ERROR;
 }
 
-int free_validator_cache(void)
+int
+free_validator_cache(void)
 {
-	LOCK_INIT();
-	LOCK_EX();
-	res_sq_free_rrset_recs(&unchecked_key_info);
-	unchecked_key_info = NULL;
-	res_sq_free_rrset_recs(&unchecked_ds_info);
-	unchecked_ds_info = NULL;
-	res_sq_free_rrset_recs(&unchecked_ns_info);
-	unchecked_ns_info = NULL;
-	res_sq_free_rrset_recs(&unchecked_answers);
-	unchecked_answers = NULL;
-	UNLOCK();
+    LOCK_INIT();
+    LOCK_EX();
+    res_sq_free_rrset_recs(&unchecked_key_info);
+    unchecked_key_info = NULL;
+    res_sq_free_rrset_recs(&unchecked_ds_info);
+    unchecked_ds_info = NULL;
+    res_sq_free_rrset_recs(&unchecked_ns_info);
+    unchecked_ns_info = NULL;
+    res_sq_free_rrset_recs(&unchecked_answers);
+    unchecked_answers = NULL;
+    UNLOCK();
 
-	return VAL_NO_ERROR;
+    return VAL_NO_ERROR;
 }
 
-int get_root_ns(struct name_server **ns)
+int
+get_root_ns(struct name_server **ns)
 {
-	LOCK_INIT();
-	LOCK_SH();
+    LOCK_INIT();
+    LOCK_SH();
 
-	*ns = NULL;
-	/* return a cloned copy */
-	clone_ns_list(ns, root_ns);
+    *ns = NULL;
+    /*
+     * return a cloned copy 
+     */
+    clone_ns_list(ns, root_ns);
 
-	UNLOCK();
+    UNLOCK();
 
-	return VAL_NO_ERROR;
+    return VAL_NO_ERROR;
 }
 
 
-int get_matching_nslist(struct val_query_chain  *matched_q, 
-					struct val_query_chain **queries,
-					struct name_server **ref_ns_list)
+int
+get_matching_nslist(struct val_query_chain *matched_q,
+                    struct val_query_chain **queries,
+                    struct name_server **ref_ns_list)
 {
-	/* find closest matching name zone_n */
-	struct rrset_rec *nsrrset;
-	u_int8_t *name_n = NULL;
-	u_int8_t *qname_n = NULL;
-	u_int8_t *tname_n = NULL;
-	u_int8_t *p;
-	u_int16_t qtype;
+    /*
+     * find closest matching name zone_n 
+     */
+    struct rrset_rec *nsrrset;
+    u_int8_t       *name_n = NULL;
+    u_int8_t       *qname_n = NULL;
+    u_int8_t       *tname_n = NULL;
+    u_int8_t       *p;
+    u_int16_t       qtype;
 
-	qname_n = matched_q->qc_name_n;
-	qtype = matched_q->qc_type_h;
+    qname_n = matched_q->qc_name_n;
+    qtype = matched_q->qc_type_h;
 
-	LOCK_INIT();
-	// xxx-audit: insufficient lock?
-	//     bootstrap_referral passes unchecked_ns_info to res_zi_unverified_ns_list,
-	//     which modifies the list.. should an EX lock should be used, not SH?
-	LOCK_SH();
+    LOCK_INIT();
+    // xxx-audit: insufficient lock?
+    //     bootstrap_referral passes unchecked_ns_info to res_zi_unverified_ns_list,
+    //     which modifies the list.. should an EX lock should be used, not SH?
+    LOCK_SH();
 
-	for (nsrrset=unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
+    for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
 
-		if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {
-			tname_n = nsrrset->rrs.val_rrset_name_n;
+        if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {
+            tname_n = nsrrset->rrs.val_rrset_name_n;
 
-			/* Check if tname_n is within qname_n */
-			if (NULL != (p = (u_int8_t*)strstr((char*)qname_n, (char*)tname_n))) {
+            /*
+             * Check if tname_n is within qname_n 
+             */
+            if (NULL !=
+                (p =
+                 (u_int8_t *) strstr((char *) qname_n,
+                                     (char *) tname_n))) {
 
-				if ((!name_n) || 
-					( wire_name_length(tname_n) > wire_name_length(name_n))) {
+                if ((!name_n) ||
+                    (wire_name_length(tname_n) >
+                     wire_name_length(name_n))) {
 
-					/* 
-					 * If type is DS, you don't want an exact match
-					 * since that will lead you to the child zone
-					 */
-					if ((qtype == ns_t_ds) && (p == qname_n)) {
-						continue;
-					}
+                    /*
+                     * If type is DS, you don't want an exact match
+                     * since that will lead you to the child zone
+                     */
+                    if ((qtype == ns_t_ds) && (p == qname_n)) {
+                        continue;
+                    }
 
-					/* New name is longer than old name */
-					name_n = tname_n; 
-				}
-			}
-		}
-	}
+                    /*
+                     * New name is longer than old name 
+                     */
+                    name_n = tname_n;
+                }
+            }
+        }
+    }
 
-	bootstrap_referral(name_n, &unchecked_ns_info, matched_q, queries, ref_ns_list); 
+    bootstrap_referral(name_n, &unchecked_ns_info, matched_q, queries,
+                       ref_ns_list);
 
-	UNLOCK();
+    UNLOCK();
 
-	return VAL_NO_ERROR;
+    return VAL_NO_ERROR;
 }
-

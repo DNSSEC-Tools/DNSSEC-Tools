@@ -29,11 +29,11 @@
 #define MAX_ALIAS_COUNT 2048
 #define AUX_BUFLEN 16384
 
-#ifndef h_errno /* can be a macro */
-extern int h_errno;
+#ifndef h_errno                 /* can be a macro */
+extern int      h_errno;
 #endif
 static struct hostent g_hentry;
-static char g_auxbuf[AUX_BUFLEN];
+static char     g_auxbuf[AUX_BUFLEN];
 
 /*
  * Function: bufalloc
@@ -54,20 +54,20 @@ static char g_auxbuf[AUX_BUFLEN];
  * Return value: Returns pointer to the allocated memory if successful.
  *               Returns NULL on failure.
  */
-static void *bufalloc (char *buf, size_t buflen, int *offset, size_t alloc_size)
+static void    *
+bufalloc(char *buf, size_t buflen, int *offset, size_t alloc_size)
 {
-	if ((buf == NULL) || (offset == NULL)) {
-		return NULL;
-	}
+    if ((buf == NULL) || (offset == NULL)) {
+        return NULL;
+    }
 
-	if (((*offset) + alloc_size) >= buflen) {
-		return NULL;
-	}
-	else {
-		void *retval = (void *) (buf + (*offset));
-		(*offset) += alloc_size;
-		return retval;
-	}
+    if (((*offset) + alloc_size) >= buflen) {
+        return NULL;
+    } else {
+        void           *retval = (void *) (buf + (*offset));
+        (*offset) += alloc_size;
+        return retval;
+    }
 }
 
 
@@ -94,149 +94,172 @@ static void *bufalloc (char *buf, size_t buflen, int *offset, size_t alloc_size)
  *
  * See also: get_hostent_from_response()
  */
-static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
-						   const char *name,
-						   int af,
-						   struct hostent *ret,
-						   char *buf,
-						   int buflen,
-						   int *offset)
+static struct hostent *
+get_hostent_from_etc_hosts(val_context_t * ctx,
+                           const char *name,
+                           int af,
+                           struct hostent *ret,
+                           char *buf, int buflen, int *offset)
 {
-	int orig_offset = 0;
-	struct hosts *hs = NULL;
-	struct hosts *h_prev = NULL;
+    int             orig_offset = 0;
+    struct hosts   *hs = NULL;
+    struct hosts   *h_prev = NULL;
 
-	if ((ret == NULL) || (buf == NULL) || (offset == NULL) || (*offset < 0)) {
-		return NULL;
-	}
+    if ((ret == NULL) || (buf == NULL) || (offset == NULL)
+        || (*offset < 0)) {
+        return NULL;
+    }
 
-	/* Parse the /etc/hosts file */
-	hs = parse_etc_hosts (name);
+    /*
+     * Parse the /etc/hosts file 
+     */
+    hs = parse_etc_hosts(name);
 
-	orig_offset = *offset;
-	bzero(ret, sizeof(struct hostent));
-	
-	/* XXX: todo -- can hs have more than one element ? */
-	while (hs) {
-		struct in_addr ip4_addr;
-		struct in6_addr ip6_addr;
-		char addr_buf[INET6_ADDRSTRLEN];
-		int i, alias_count;
-		int len = 0;
-		
-		bzero(&ip4_addr, sizeof(struct in_addr));
-		bzero(&ip6_addr, sizeof(struct in6_addr));
-		
-		if ((af == AF_INET) && (inet_pton(AF_INET, hs->address, &ip4_addr) > 0)) {
-			val_log(ctx, LOG_DEBUG, "...type of address is IPv4");
-			val_log(ctx, LOG_DEBUG, "Address is: %s",
-				inet_ntop(AF_INET, &ip4_addr, addr_buf, INET_ADDRSTRLEN));
-		}
-		else if ((af == AF_INET6) && (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0)) {
-			val_log(ctx, LOG_DEBUG, "...type of address is IPv6");
-			val_log(ctx, LOG_DEBUG, "Address is: %s",
-				inet_ntop(AF_INET, &ip6_addr, addr_buf, INET6_ADDRSTRLEN));
-		}
-		else {
-			/* not a valid address ... skip this line */
-			val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts() error in address format: %s", hs->address);
-			h_prev = hs;
-			hs = hs->next;
-			FREE_HOSTS(h_prev);
-			continue;
-		}
+    orig_offset = *offset;
+    bzero(ret, sizeof(struct hostent));
 
-		// Name
-		len = (hs->canonical_hostname == NULL) ? 0 : strlen(hs->canonical_hostname);
+    /*
+     * XXX: todo -- can hs have more than one element ? 
+     */
+    while (hs) {
+        struct in_addr  ip4_addr;
+        struct in6_addr ip6_addr;
+        char            addr_buf[INET6_ADDRSTRLEN];
+        int             i, alias_count;
+        int             len = 0;
 
-		if (hs->canonical_hostname) {
-			ret->h_name = (char *) bufalloc(buf, buflen, offset, len + 1);
-			if (ret->h_name == NULL) {
-				goto err;
-			}
+        bzero(&ip4_addr, sizeof(struct in_addr));
+        bzero(&ip6_addr, sizeof(struct in6_addr));
 
-			memcpy(ret->h_name, hs->canonical_hostname, len + 1);
-		}
-		else {
-			ret->h_name = NULL;
-		}
+        if ((af == AF_INET)
+            && (inet_pton(AF_INET, hs->address, &ip4_addr) > 0)) {
+            val_log(ctx, LOG_DEBUG, "...type of address is IPv4");
+            val_log(ctx, LOG_DEBUG, "Address is: %s",
+                    inet_ntop(AF_INET, &ip4_addr, addr_buf,
+                              INET_ADDRSTRLEN));
+        } else if ((af == AF_INET6)
+                   && (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0)) {
+            val_log(ctx, LOG_DEBUG, "...type of address is IPv6");
+            val_log(ctx, LOG_DEBUG, "Address is: %s",
+                    inet_ntop(AF_INET, &ip6_addr, addr_buf,
+                              INET6_ADDRSTRLEN));
+        } else {
+            /*
+             * not a valid address ... skip this line 
+             */
+            val_log(ctx, LOG_DEBUG,
+                    "get_hostent_from_etc_hosts() error in address format: %s",
+                    hs->address);
+            h_prev = hs;
+            hs = hs->next;
+            FREE_HOSTS(h_prev);
+            continue;
+        }
 
-		// Aliases
-		alias_count = 0;
-		while (hs->aliases[alias_count]) {
-			alias_count++;
-		}
-		alias_count++;
-		
-		ret->h_aliases = (char **) bufalloc(buf, buflen, offset, alias_count * sizeof(char *));
+        // Name
+        len =
+            (hs->canonical_hostname ==
+             NULL) ? 0 : strlen(hs->canonical_hostname);
 
-		if (ret->h_aliases == NULL) {
-			goto err;
-		}
-		
-		for (i=0; i<alias_count; i++) {
-			len = (hs->aliases[i] == NULL) ? 0 : strlen(hs->aliases[i]);
-			if (hs->aliases[i]) {
-				ret->h_aliases[i] = (char *) bufalloc(buf, buflen, offset, len + 1);
-				if (ret->h_aliases[i] == NULL) {
-					goto err;
-				}
-				memcpy(ret->h_aliases[i], hs->aliases[i], len + 1);
-			}
-			else {
-				ret->h_aliases[i] = NULL;
-			}
-		}
-		
-		// Addresses
-		ret->h_addr_list = (char **) bufalloc(buf, buflen, offset, 2 * sizeof(char *));
-		if ((ret->h_addr_list == NULL) || ((af != AF_INET) && (af != AF_INET6))) {
-			goto err;
-		}
-		if (af == AF_INET) {
-		    ret->h_addrtype = AF_INET;
-		    ret->h_length = sizeof(struct in_addr);
-		    ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, offset, sizeof(struct in_addr));
-		    if (ret->h_addr_list[0] == NULL) {
-			    goto err;
-		    }
-		    memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
-		    ret->h_addr_list[1] = 0;
-		}
-		else if (af == AF_INET6) {
-		    ret->h_addrtype = AF_INET6;
-		    ret->h_length = sizeof(struct in6_addr);
-		    ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, offset, sizeof(struct in6_addr));
-		    if (ret->h_addr_list[0] == NULL) {
-			    goto err;
-		    }
-		    memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
-		    ret->h_addr_list[1] = 0;
-		}
+        if (hs->canonical_hostname) {
+            ret->h_name = (char *) bufalloc(buf, buflen, offset, len + 1);
+            if (ret->h_name == NULL) {
+                goto err;
+            }
 
-		/* clean up host list */
-		while(hs) {
-			h_prev = hs;
-			hs = hs->next;
-			FREE_HOSTS(h_prev);
-		}
-		return ret;
-	}
-	
-	return NULL;
+            memcpy(ret->h_name, hs->canonical_hostname, len + 1);
+        } else {
+            ret->h_name = NULL;
+        }
+
+        // Aliases
+        alias_count = 0;
+        while (hs->aliases[alias_count]) {
+            alias_count++;
+        }
+        alias_count++;
+
+        ret->h_aliases =
+            (char **) bufalloc(buf, buflen, offset,
+                               alias_count * sizeof(char *));
+
+        if (ret->h_aliases == NULL) {
+            goto err;
+        }
+
+        for (i = 0; i < alias_count; i++) {
+            len = (hs->aliases[i] == NULL) ? 0 : strlen(hs->aliases[i]);
+            if (hs->aliases[i]) {
+                ret->h_aliases[i] =
+                    (char *) bufalloc(buf, buflen, offset, len + 1);
+                if (ret->h_aliases[i] == NULL) {
+                    goto err;
+                }
+                memcpy(ret->h_aliases[i], hs->aliases[i], len + 1);
+            } else {
+                ret->h_aliases[i] = NULL;
+            }
+        }
+
+        // Addresses
+        ret->h_addr_list =
+            (char **) bufalloc(buf, buflen, offset, 2 * sizeof(char *));
+        if ((ret->h_addr_list == NULL)
+            || ((af != AF_INET) && (af != AF_INET6))) {
+            goto err;
+        }
+        if (af == AF_INET) {
+            ret->h_addrtype = AF_INET;
+            ret->h_length = sizeof(struct in_addr);
+            ret->h_addr_list[0] =
+                (char *) bufalloc(buf, buflen, offset,
+                                  sizeof(struct in_addr));
+            if (ret->h_addr_list[0] == NULL) {
+                goto err;
+            }
+            memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+            ret->h_addr_list[1] = 0;
+        } else if (af == AF_INET6) {
+            ret->h_addrtype = AF_INET6;
+            ret->h_length = sizeof(struct in6_addr);
+            ret->h_addr_list[0] =
+                (char *) bufalloc(buf, buflen, offset,
+                                  sizeof(struct in6_addr));
+            if (ret->h_addr_list[0] == NULL) {
+                goto err;
+            }
+            memcpy(ret->h_addr_list[0], &ip6_addr,
+                   sizeof(struct in6_addr));
+            ret->h_addr_list[1] = 0;
+        }
+
+        /*
+         * clean up host list 
+         */
+        while (hs) {
+            h_prev = hs;
+            hs = hs->next;
+            FREE_HOSTS(h_prev);
+        }
+        return ret;
+    }
+
+    return NULL;
 
   err:
-	/* clean up host list */
-	while(hs) {
-		h_prev = hs;
-		hs = hs->next;
-		FREE_HOSTS(h_prev);
-	}
+    /*
+     * clean up host list 
+     */
+    while (hs) {
+        h_prev = hs;
+        hs = hs->next;
+        FREE_HOSTS(h_prev);
+    }
 
-	*offset = orig_offset;
-	return NULL;
-	
-} /* get_hostent_from_etc_hosts() */
+    *offset = orig_offset;
+    return NULL;
+
+}                               /* get_hostent_from_etc_hosts() */
 
 
 /*
@@ -263,178 +286,209 @@ static struct hostent* get_hostent_from_etc_hosts (val_context_t *ctx,
  *
  * See also: get_hostent_from_etc_hosts()
  */
-static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, struct hostent *ret,
-						  struct val_result_chain *results, int *h_errnop,
-						  char *buf, int buflen, int *offset)
+static struct hostent *
+get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
+                          struct val_result_chain *results, int *h_errnop,
+                          char *buf, int buflen, int *offset)
 {
-	int alias_count = 0;
-	int alias_index = 0;
-	int addr_count  = 0;
-	int addr_index  = 0;
-	int orig_offset = 0;
-	char dname [NS_MAXDNAME];
-	struct val_result_chain *res;
+    int             alias_count = 0;
+    int             alias_index = 0;
+    int             addr_count = 0;
+    int             addr_index = 0;
+    int             orig_offset = 0;
+    char            dname[NS_MAXDNAME];
+    struct val_result_chain *res;
 
-	/* Check parameter sanity */
-	if (!results || !h_errnop || !buf || !offset || !ret) {
-		return NULL;
-	}
-	
-	orig_offset = *offset;
-	bzero(ret, sizeof(struct hostent));
+    /*
+     * Check parameter sanity 
+     */
+    if (!results || !h_errnop || !buf || !offset || !ret) {
+        return NULL;
+    }
 
-	/* Count the number of aliases and addresses in the result */
-	for (res = results; res != NULL; res = res->val_rc_next) {
-		struct val_rrset *rrset;
+    orig_offset = *offset;
+    bzero(ret, sizeof(struct hostent));
 
-		if (res->val_rc_trust == NULL)
-			continue;
+    /*
+     * Count the number of aliases and addresses in the result 
+     */
+    for (res = results; res != NULL; res = res->val_rc_next) {
+        struct val_rrset *rrset;
 
-		rrset = res->val_rc_trust->val_ac_rrset;
-		
-		// Get a count of aliases and addresses
-		if (rrset) {
-			struct rr_rec *rr = rrset->val_rrset_data;
-			
-			while (rr) {
-				
-				if (rrset->val_rrset_type_h == ns_t_cname) {
-					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = CNAME");
-					alias_count++;
-				}
-				else if ((af == AF_INET) && (rrset->val_rrset_type_h == ns_t_a)) {
-					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = A");
-					addr_count++;
-				}
-				else if ((af == AF_INET6) && (rrset->val_rrset_type_h == ns_t_aaaa)) {
-					val_log(ctx, LOG_DEBUG, "val_gethostbyname: type of record = AAAA");
-					addr_count++;
-				}
-				
-				rr = rr->rr_next;
-			}
-		}
-	} 
+        if (res->val_rc_trust == NULL)
+            continue;
 
-	ret->h_aliases = (char **) bufalloc (buf, buflen, offset, (alias_count + 1) * sizeof(char*));
-	if (ret->h_aliases == NULL) {
-		*offset = orig_offset;
-		return NULL;
-	}
-	ret->h_aliases[alias_count] = NULL;
-	
-	ret->h_addr_list = (char **) bufalloc (buf, buflen, offset, (addr_count + 1) * sizeof(char*));
-	if (ret->h_addr_list == NULL) {
-		*offset = orig_offset;
-		return NULL;
-	}
-	ret->h_addr_list[addr_count] = NULL;
+        rrset = res->val_rc_trust->val_ac_rrset;
 
-	alias_index = alias_count -1;
+        // Get a count of aliases and addresses
+        if (rrset) {
+            struct rr_rec  *rr = rrset->val_rrset_data;
 
-	/* Process the result */
-	for (res = results; res != NULL; res = res->val_rc_next) {
-		struct val_rrset *rrset;
+            while (rr) {
 
-		if (res->val_rc_trust == NULL) 
-			continue;
+                if (rrset->val_rrset_type_h == ns_t_cname) {
+                    val_log(ctx, LOG_DEBUG,
+                            "val_gethostbyname: type of record = CNAME");
+                    alias_count++;
+                } else if ((af == AF_INET)
+                           && (rrset->val_rrset_type_h == ns_t_a)) {
+                    val_log(ctx, LOG_DEBUG,
+                            "val_gethostbyname: type of record = A");
+                    addr_count++;
+                } else if ((af == AF_INET6)
+                           && (rrset->val_rrset_type_h == ns_t_aaaa)) {
+                    val_log(ctx, LOG_DEBUG,
+                            "val_gethostbyname: type of record = AAAA");
+                    addr_count++;
+                }
 
-		rrset = res->val_rc_trust->val_ac_rrset;
-		
-		if (rrset) {
-			struct rr_rec *rr = rrset->val_rrset_data;
+                rr = rr->rr_next;
+            }
+        }
+    }
 
-			while (rr) {
-				// Handle CNAME RRs
-				if (rrset->val_rrset_type_h == ns_t_cname) {
-					
-					bzero(dname, sizeof(dname));
-					if (ns_name_ntop(rrset->val_rrset_name_n, dname, sizeof(dname)) < 0) {
-						*offset = orig_offset;
-						return NULL;
-					}
-					
-					if (alias_index >= 0) {
-						ret->h_aliases[alias_index] = (char *) bufalloc(buf, buflen, offset,
-												(strlen(dname) + 1) * sizeof (char));
-						if (ret->h_aliases[alias_index] == NULL) {
-							*offset = orig_offset;
-							return NULL;
-						}
-						memcpy(ret->h_aliases[alias_index], dname, strlen(dname) + 1);
-						alias_index--;
-					}
-					
-					if (!ret->h_name) {
-						bzero(dname, sizeof(dname));
-						if (ns_name_ntop(rr->rr_rdata, dname, sizeof(dname)) < 0) {
-							*offset = orig_offset;
-							return NULL;
-						}
-						ret->h_name = (char *) bufalloc (buf, buflen, offset, (strlen(dname) + 1)* sizeof(char));
-						if (ret->h_name == NULL) {
-							*offset = orig_offset;
-							return NULL;
-						}
-						memcpy(ret->h_name, dname, strlen(dname) + 1);
-					}
-				}
-				// Handle A and AAAA RRs
-				else if ( ((af == AF_INET) && (rrset->val_rrset_type_h == ns_t_a)) ||
-					  ((af == AF_INET6)&& (rrset->val_rrset_type_h == ns_t_aaaa)) ) {
-					
-					bzero(dname, sizeof(dname));
-					if (ns_name_ntop(rrset->val_rrset_name_n, dname, sizeof(dname)) < 0) {
-						*offset = orig_offset;
-						return NULL;
-					}
-					
-					if (!ret->h_name) {
-						ret->h_name = (char *) bufalloc(buf, buflen, offset, (strlen(dname) + 1) * sizeof(char));
-						if (ret->h_name == NULL) {
-							*offset = orig_offset;
-							return NULL;
-						}
-						memcpy(ret->h_name, dname, strlen(dname) + 1);
-					}
-					
-					if (strcasecmp (ret->h_name, dname) == 0) {
-						ret->h_length = rr->rr_rdata_length_h;
-						ret->h_addrtype = af;
-						
-						ret->h_addr_list[addr_index] = (char *) bufalloc (buf, buflen, offset,
-												  rr->rr_rdata_length_h * sizeof(char));
-						if (ret->h_addr_list[addr_index] == NULL) {
-							*offset = orig_offset;
-							return NULL;
-						}
-						
-						memcpy(ret->h_addr_list[addr_index], rr->rr_rdata, rr->rr_rdata_length_h);
-						addr_index++;
-					}
-				}
-				
-				rr = rr->rr_next;
-			}
-			
-		}
-	}
-	
-	if (addr_count > 0) {
-		*h_errnop = NETDB_SUCCESS;
-		return ret;
-	}
-	else if (alias_count > 0) {
-		*h_errnop = NO_DATA;
-		return ret;
-	}
-	else {
-		*offset = orig_offset;
-		*h_errnop = HOST_NOT_FOUND;
-		return NULL;
-	}
+    ret->h_aliases =
+        (char **) bufalloc(buf, buflen, offset,
+                           (alias_count + 1) * sizeof(char *));
+    if (ret->h_aliases == NULL) {
+        *offset = orig_offset;
+        return NULL;
+    }
+    ret->h_aliases[alias_count] = NULL;
 
-} /* get_hostent_from_response() */
+    ret->h_addr_list =
+        (char **) bufalloc(buf, buflen, offset,
+                           (addr_count + 1) * sizeof(char *));
+    if (ret->h_addr_list == NULL) {
+        *offset = orig_offset;
+        return NULL;
+    }
+    ret->h_addr_list[addr_count] = NULL;
+
+    alias_index = alias_count - 1;
+
+    /*
+     * Process the result 
+     */
+    for (res = results; res != NULL; res = res->val_rc_next) {
+        struct val_rrset *rrset;
+
+        if (res->val_rc_trust == NULL)
+            continue;
+
+        rrset = res->val_rc_trust->val_ac_rrset;
+
+        if (rrset) {
+            struct rr_rec  *rr = rrset->val_rrset_data;
+
+            while (rr) {
+                // Handle CNAME RRs
+                if (rrset->val_rrset_type_h == ns_t_cname) {
+
+                    bzero(dname, sizeof(dname));
+                    if (ns_name_ntop
+                        (rrset->val_rrset_name_n, dname,
+                         sizeof(dname)) < 0) {
+                        *offset = orig_offset;
+                        return NULL;
+                    }
+
+                    if (alias_index >= 0) {
+                        ret->h_aliases[alias_index] =
+                            (char *) bufalloc(buf, buflen, offset,
+                                              (strlen(dname) +
+                                               1) * sizeof(char));
+                        if (ret->h_aliases[alias_index] == NULL) {
+                            *offset = orig_offset;
+                            return NULL;
+                        }
+                        memcpy(ret->h_aliases[alias_index], dname,
+                               strlen(dname) + 1);
+                        alias_index--;
+                    }
+
+                    if (!ret->h_name) {
+                        bzero(dname, sizeof(dname));
+                        if (ns_name_ntop
+                            (rr->rr_rdata, dname, sizeof(dname)) < 0) {
+                            *offset = orig_offset;
+                            return NULL;
+                        }
+                        ret->h_name =
+                            (char *) bufalloc(buf, buflen, offset,
+                                              (strlen(dname) +
+                                               1) * sizeof(char));
+                        if (ret->h_name == NULL) {
+                            *offset = orig_offset;
+                            return NULL;
+                        }
+                        memcpy(ret->h_name, dname, strlen(dname) + 1);
+                    }
+                }
+                // Handle A and AAAA RRs
+                else if (((af == AF_INET)
+                          && (rrset->val_rrset_type_h == ns_t_a))
+                         || ((af == AF_INET6)
+                             && (rrset->val_rrset_type_h == ns_t_aaaa))) {
+
+                    bzero(dname, sizeof(dname));
+                    if (ns_name_ntop
+                        (rrset->val_rrset_name_n, dname,
+                         sizeof(dname)) < 0) {
+                        *offset = orig_offset;
+                        return NULL;
+                    }
+
+                    if (!ret->h_name) {
+                        ret->h_name =
+                            (char *) bufalloc(buf, buflen, offset,
+                                              (strlen(dname) +
+                                               1) * sizeof(char));
+                        if (ret->h_name == NULL) {
+                            *offset = orig_offset;
+                            return NULL;
+                        }
+                        memcpy(ret->h_name, dname, strlen(dname) + 1);
+                    }
+
+                    if (strcasecmp(ret->h_name, dname) == 0) {
+                        ret->h_length = rr->rr_rdata_length_h;
+                        ret->h_addrtype = af;
+
+                        ret->h_addr_list[addr_index] =
+                            (char *) bufalloc(buf, buflen, offset,
+                                              rr->rr_rdata_length_h *
+                                              sizeof(char));
+                        if (ret->h_addr_list[addr_index] == NULL) {
+                            *offset = orig_offset;
+                            return NULL;
+                        }
+
+                        memcpy(ret->h_addr_list[addr_index], rr->rr_rdata,
+                               rr->rr_rdata_length_h);
+                        addr_index++;
+                    }
+                }
+
+                rr = rr->rr_next;
+            }
+
+        }
+    }
+
+    if (addr_count > 0) {
+        *h_errnop = NETDB_SUCCESS;
+        return ret;
+    } else if (alias_count > 0) {
+        *h_errnop = NO_DATA;
+        return ret;
+    } else {
+        *offset = orig_offset;
+        *h_errnop = HOST_NOT_FOUND;
+        return NULL;
+    }
+
+}                               /* get_hostent_from_response() */
 
 
 /*
@@ -470,167 +524,190 @@ static struct hostent *get_hostent_from_response (val_context_t *ctx, int af, st
  *
  * See also: val_gethostbyname2(), val_gethostbyname_r(), val_istrusted()
  */
-int val_gethostbyname2_r( val_context_t *ctx,
-			  const char *name,
-			  int af,
-			  struct hostent *ret,
-			  char *buf,
-			  size_t buflen,
-			  struct hostent **result,
-			  int *h_errnop,
-			  val_status_t *val_status )
+int
+val_gethostbyname2_r(val_context_t * ctx,
+                     const char *name,
+                     int af,
+                     struct hostent *ret,
+                     char *buf,
+                     size_t buflen,
+                     struct hostent **result,
+                     int *h_errnop, val_status_t * val_status)
 {
-	struct in_addr ip4_addr;
-	struct in6_addr ip6_addr;
-	int offset = 0;
-	
-	if (!name || !ret || !h_errnop || !val_status || !result || !buf) {
-		if (result) {
-			*result = NULL;
-		}
-		return EINVAL;
-	}
-	
-	bzero(&ip4_addr, sizeof(struct in_addr));
-	bzero(&ip6_addr, sizeof(struct in6_addr));
-	
-	/* Check if the address-family is AF_INET and the address is an IPv4 address */
-	if ((af == AF_INET) && (inet_pton(AF_INET, name, &ip4_addr) > 0)) {
-		bzero(ret, sizeof(struct hostent));
+    struct in_addr  ip4_addr;
+    struct in6_addr ip6_addr;
+    int             offset = 0;
 
-		// Name
-		ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
-		if (ret->h_name == NULL) {
-			return ERANGE;
-		}
-		memcpy(ret->h_name, name, strlen(name) + 1);
+    if (!name || !ret || !h_errnop || !val_status || !result || !buf) {
+        if (result) {
+            *result = NULL;
+        }
+        return EINVAL;
+    }
 
-		// Alias
-		ret->h_aliases = (char **) bufalloc (buf, buflen, &offset, sizeof(char *));
-		if (ret->h_aliases == NULL) {
-			return ERANGE;  // xxx-audit: what about *offset = orig_offset; ?
-		}
-		ret->h_aliases[0] = 0;
+    bzero(&ip4_addr, sizeof(struct in_addr));
+    bzero(&ip6_addr, sizeof(struct in6_addr));
 
-		// Address
-		ret->h_addrtype = AF_INET;
-		ret->h_length = sizeof(struct in_addr);
-		ret->h_addr_list = (char **) bufalloc (buf, buflen, &offset, 2 * sizeof(char *));
-		if (ret->h_addr_list == NULL) {
-			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
-		}
-		ret->h_addr_list[0] = (char *) bufalloc (buf, buflen, &offset, sizeof(struct in_addr));
-		if (ret->h_addr_list[0] == NULL) {
-			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
-		}
-		memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
-		ret->h_addr_list[1] = 0;
+    /*
+     * Check if the address-family is AF_INET and the address is an IPv4 address 
+     */
+    if ((af == AF_INET) && (inet_pton(AF_INET, name, &ip4_addr) > 0)) {
+        bzero(ret, sizeof(struct hostent));
 
-		*val_status = VAL_LOCAL_ANSWER;
-		*h_errnop = NETDB_SUCCESS;
-		*result = ret;
+        // Name
+        ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
+        if (ret->h_name == NULL) {
+            return ERANGE;
+        }
+        memcpy(ret->h_name, name, strlen(name) + 1);
 
-		return 0;
-	}
+        // Alias
+        ret->h_aliases =
+            (char **) bufalloc(buf, buflen, &offset, sizeof(char *));
+        if (ret->h_aliases == NULL) {
+            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+        }
+        ret->h_aliases[0] = 0;
 
-	/* Check if the address-family is AF_INET6 and the address is an IPv6 address */
-	else if ((af == AF_INET6) && (inet_pton(AF_INET6, name, &ip6_addr) > 0)) {
-		bzero(ret, sizeof(struct hostent));
+        // Address
+        ret->h_addrtype = AF_INET;
+        ret->h_length = sizeof(struct in_addr);
+        ret->h_addr_list =
+            (char **) bufalloc(buf, buflen, &offset, 2 * sizeof(char *));
+        if (ret->h_addr_list == NULL) {
+            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+        }
+        ret->h_addr_list[0] =
+            (char *) bufalloc(buf, buflen, &offset,
+                              sizeof(struct in_addr));
+        if (ret->h_addr_list[0] == NULL) {
+            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+        }
+        memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
+        ret->h_addr_list[1] = 0;
 
-		// Name
-		ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
-		if (ret->h_name == NULL) {
-			return ERANGE;
-		}
-		memcpy(ret->h_name, name, strlen(name) + 1);
+        *val_status = VAL_LOCAL_ANSWER;
+        *h_errnop = NETDB_SUCCESS;
+        *result = ret;
 
-		// Alias
-		ret->h_aliases = (char **) bufalloc (buf, buflen, &offset, sizeof(char *));
-		if (ret->h_aliases == NULL) {
-			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
-		}
-		ret->h_aliases[0] = 0;
+        return 0;
+    }
 
-		// Address
-		ret->h_addrtype = AF_INET6;
-		ret->h_length = sizeof(struct in6_addr);
-		ret->h_addr_list = (char **) bufalloc (buf, buflen, &offset, 2 * sizeof(char *));
-		if (ret->h_addr_list == NULL) {
-			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
-		}
-		ret->h_addr_list[0] = (char *) bufalloc(buf, buflen, &offset, sizeof(struct in6_addr));
-		if (ret->h_addr_list[0] == NULL) {
-			return ERANGE; // xxx-audit: what about *offset = orig_offset; ?
-		}
-		memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
-		ret->h_addr_list[1] = 0;
+    /*
+     * Check if the address-family is AF_INET6 and the address is an IPv6 address 
+     */
+    else if ((af == AF_INET6)
+             && (inet_pton(AF_INET6, name, &ip6_addr) > 0)) {
+        bzero(ret, sizeof(struct hostent));
 
-		*val_status = VAL_LOCAL_ANSWER;
-		*h_errnop = NETDB_SUCCESS;
-		*result = ret;
+        // Name
+        ret->h_name = bufalloc(buf, buflen, &offset, strlen(name) + 1);
+        if (ret->h_name == NULL) {
+            return ERANGE;
+        }
+        memcpy(ret->h_name, name, strlen(name) + 1);
 
-		return 0;
-	}
-	else {
-		int retval;
-		struct val_result_chain *results = NULL;
-		u_char name_n[NS_MAXCDNAME];
-		val_context_t *context = NULL;
-		u_int16_t type;
-		
-		if (ctx == NULL) {
-			if(VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
-				return retval;
-		}
-		else
-			context = (val_context_t *) ctx;   
+        // Alias
+        ret->h_aliases =
+            (char **) bufalloc(buf, buflen, &offset, sizeof(char *));
+        if (ret->h_aliases == NULL) {
+            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+        }
+        ret->h_aliases[0] = 0;
 
-		*result = NULL;
-		
-		/* First check the ETC_HOSTS file
-		 * XXX: TODO check the order in the ETC_HOST_CONF file
-		 */
-		*result = get_hostent_from_etc_hosts (context, name, af, ret, buf, buflen, &offset);
-		
-		if (*result != NULL) {
-			*val_status = VAL_LOCAL_ANSWER;
-			*h_errnop = NETDB_SUCCESS;
-			if((ctx == NULL) && context)
-				val_free_context(context);
-			return 0;  // xxx-audit: what about *offset = orig_offset; ?
-		}
-		
-		type = ns_t_a;
-		if (af == AF_INET6) {
-			type = ns_t_aaaa;
-		}
+        // Address
+        ret->h_addrtype = AF_INET6;
+        ret->h_length = sizeof(struct in6_addr);
+        ret->h_addr_list =
+            (char **) bufalloc(buf, buflen, &offset, 2 * sizeof(char *));
+        if (ret->h_addr_list == NULL) {
+            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+        }
+        ret->h_addr_list[0] =
+            (char *) bufalloc(buf, buflen, &offset,
+                              sizeof(struct in6_addr));
+        if (ret->h_addr_list[0] == NULL) {
+            return ERANGE;      // xxx-audit: what about *offset = orig_offset; ?
+        }
+        memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
+        ret->h_addr_list[1] = 0;
 
-		/* Query the validator */
-		if (((retval = ns_name_pton(name, name_n, sizeof(name_n))) != -1)
-		    && (VAL_NO_ERROR == (retval = val_resolve_and_check(context, name_n, ns_c_in, type, 0,
-							      &results)))) {
-			
-			/* Convert the validator result into hostent */
-		        *result = get_hostent_from_response(context, af, ret, results, h_errnop, buf, buflen, &offset);
-			
-			if (*result) {
-			    *val_status = results->val_rc_status;
-			}
-		}
-		
-		if(*result == NULL)
-			*h_errnop = HOST_NOT_FOUND;
-		else
-			*h_errnop = NETDB_SUCCESS;
-		
-		val_free_result_chain(results);
-		
-		if((ctx == NULL) && context)
-			val_free_context(context);
-		
-		// XXX what if error?
-		return 0;
-	}	
+        *val_status = VAL_LOCAL_ANSWER;
+        *h_errnop = NETDB_SUCCESS;
+        *result = ret;
+
+        return 0;
+    } else {
+        int             retval;
+        struct val_result_chain *results = NULL;
+        u_char          name_n[NS_MAXCDNAME];
+        val_context_t  *context = NULL;
+        u_int16_t       type;
+
+        if (ctx == NULL) {
+            if (VAL_NO_ERROR !=
+                (retval = val_create_context(NULL, &context)))
+                return retval;
+        } else
+            context = (val_context_t *) ctx;
+
+        *result = NULL;
+
+        /*
+         * First check the ETC_HOSTS file
+         * XXX: TODO check the order in the ETC_HOST_CONF file
+         */
+        *result =
+            get_hostent_from_etc_hosts(context, name, af, ret, buf, buflen,
+                                       &offset);
+
+        if (*result != NULL) {
+            *val_status = VAL_LOCAL_ANSWER;
+            *h_errnop = NETDB_SUCCESS;
+            if ((ctx == NULL) && context)
+                val_free_context(context);
+            return 0;           // xxx-audit: what about *offset = orig_offset; ?
+        }
+
+        type = ns_t_a;
+        if (af == AF_INET6) {
+            type = ns_t_aaaa;
+        }
+
+        /*
+         * Query the validator 
+         */
+        if (((retval = ns_name_pton(name, name_n, sizeof(name_n))) != -1)
+            && (VAL_NO_ERROR ==
+                (retval =
+                 val_resolve_and_check(context, name_n, ns_c_in, type, 0,
+                                       &results)))) {
+
+            /*
+             * Convert the validator result into hostent 
+             */
+            *result =
+                get_hostent_from_response(context, af, ret, results,
+                                          h_errnop, buf, buflen, &offset);
+
+            if (*result) {
+                *val_status = results->val_rc_status;
+            }
+        }
+
+        if (*result == NULL)
+            *h_errnop = HOST_NOT_FOUND;
+        else
+            *h_errnop = NETDB_SUCCESS;
+
+        val_free_result_chain(results);
+
+        if ((ctx == NULL) && context)
+            val_free_context(context);
+
+        // XXX what if error?
+        return 0;
+    }
 }
 
 /*
@@ -658,17 +735,16 @@ int val_gethostbyname2_r( val_context_t *ctx,
  *
  * See also: val_gethostbyname2_r, val_istrusted
  */
-struct hostent *val_gethostbyname2( val_context_t *ctx,
-				    const char *name,
-				    int af,
-				    val_status_t *val_status )
+struct hostent *
+val_gethostbyname2(val_context_t * ctx,
+                   const char *name, int af, val_status_t * val_status)
 {
     struct hostent *result = NULL;
     val_gethostbyname2_r(ctx, name, af, &g_hentry, g_auxbuf,
-			 AUX_BUFLEN, &result, &h_errno, val_status);
+                         AUX_BUFLEN, &result, &h_errno, val_status);
     return result;
 
-} /* val_gethostbyname2() */
+}                               /* val_gethostbyname2() */
 
 /*
  * Function: val_gethostbyname
@@ -694,13 +770,13 @@ struct hostent *val_gethostbyname2( val_context_t *ctx,
  *
  * See also: val_gethostbyname_r(), val_gethostbyname2, val_istrusted()
  */
-struct hostent *val_gethostbyname( val_context_t *ctx,
-				   const char *name,
-				   val_status_t *val_status )
+struct hostent *
+val_gethostbyname(val_context_t * ctx,
+                  const char *name, val_status_t * val_status)
 {
     return val_gethostbyname2(ctx, name, AF_INET, val_status);
 
-} /* val_gethostbyname() */
+}                               /* val_gethostbyname() */
 
 /*
  * Function: val_gethostbyname_r
@@ -734,15 +810,15 @@ struct hostent *val_gethostbyname( val_context_t *ctx,
  *
  * See also: val_gethostbyname2_r(), val_gethostbyname(), val_istrusted()
  */
-int val_gethostbyname_r( val_context_t *ctx,
-			 const char *name,
-			 struct hostent *ret,
-			 char *buf,
-			 size_t buflen,
-			 struct hostent **result,
-			 int *h_errnop,
-			 val_status_t *val_status )
+int
+val_gethostbyname_r(val_context_t * ctx,
+                    const char *name,
+                    struct hostent *ret,
+                    char *buf,
+                    size_t buflen,
+                    struct hostent **result,
+                    int *h_errnop, val_status_t * val_status)
 {
     return val_gethostbyname2_r(ctx, name, AF_INET, ret, buf, buflen,
-				result, h_errnop, val_status);
-} /* val_gethostbyname_r() */
+                                result, h_errnop, val_status);
+}                               /* val_gethostbyname_r() */

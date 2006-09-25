@@ -14,48 +14,66 @@
 #include <resolver.h>
 
 
-/* Parse a domain name */
-int val_parse_dname(const unsigned char *buf, int buflen, int offset,
-		    char *dname);
+/*
+ * Parse a domain name 
+ */
+int             val_parse_dname(const unsigned char *buf, int buflen,
+                                int offset, char *dname);
 
-/* Parse the rdata portion of a DNSKEY resource record */
-int val_parse_dnskey_rdata (const unsigned char *buf, int buflen,
-			    val_dnskey_rdata_t *rdata);
+/*
+ * Parse the rdata portion of a DNSKEY resource record 
+ */
+int             val_parse_dnskey_rdata(const unsigned char *buf,
+                                       int buflen,
+                                       val_dnskey_rdata_t * rdata);
 /*
  * Parse the dnskey from the string. The string contains the flags, 
  * protocol, algorithm and the base64 key delimited by spaces.
  */
-int val_parse_dnskey_string (char *keystr, int keystrlen, 
-				val_dnskey_rdata_t **dnskey_rdata);
+int             val_parse_dnskey_string(char *keystr, int keystrlen,
+                                        val_dnskey_rdata_t **
+                                        dnskey_rdata);
 
-/* Parse the rdata portion of an RRSIG resource record */
-int val_parse_rrsig_rdata (const unsigned char *buf, int buflen,
-			   val_rrsig_rdata_t *rdata);
+/*
+ * Parse the rdata portion of an RRSIG resource record 
+ */
+int             val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
+                                      val_rrsig_rdata_t * rdata);
 
-/* Parse the rdata portion of an DS resource record */
-int val_parse_ds_rdata (const unsigned char *buf, int buflen,
-			    val_ds_rdata_t *rdata);
+/*
+ * Parse the rdata portion of an DS resource record 
+ */
+int             val_parse_ds_rdata(const unsigned char *buf, int buflen,
+                                   val_ds_rdata_t * rdata);
 
-#ifdef LIBVAL_NSEC3 
-val_nsec3_rdata_t *val_parse_nsec3_rdata(u_int8_t *rr_rdata, 
-        u_int16_t rdatalen, val_nsec3_rdata_t *nd);
+#ifdef LIBVAL_NSEC3
+val_nsec3_rdata_t *val_parse_nsec3_rdata(u_int8_t * rr_rdata,
+                                         u_int16_t rdatalen,
+                                         val_nsec3_rdata_t * nd);
 #endif
 
-/*Compare if two public keys are identical */
-int dnskey_compare(val_dnskey_rdata_t *key1, val_dnskey_rdata_t *key2);
+/*
+ * Compare if two public keys are identical 
+ */
+int             dnskey_compare(val_dnskey_rdata_t * key1,
+                               val_dnskey_rdata_t * key2);
 
-/* Parse the ETC_HOSTS file */
+/*
+ * Parse the ETC_HOSTS file 
+ */
 #define ETC_HOSTS      "/etc/hosts"
 #define MAXLINE 4096
 #define MAX_ALIAS_COUNT 2048
 struct hosts {
-	char *address;
-	char *canonical_hostname;
-	char **aliases; /* An array.  The last element is NULL */
-	struct hosts *next;
+    char           *address;
+    char           *canonical_hostname;
+    char          **aliases;    /* An array.  The last element is NULL */
+    struct hosts   *next;
 };
 
-/* A macro to free memory allocated for hosts */
+/*
+ * A macro to free memory allocated for hosts 
+ */
 #define FREE_HOSTS(hentry) do { \
 	if (hentry) { \
 	    int i = 0; \
