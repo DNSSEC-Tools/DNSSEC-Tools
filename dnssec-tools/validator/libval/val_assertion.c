@@ -1592,7 +1592,6 @@ prove_nonexistence(val_context_t * ctx, struct val_query_chain *top_q,
          */
         if (top_q->qc_as &&
             top_q->qc_as->val_ac_rrset &&
-            top_q->qc_as->val_ac_rrset &&
             top_q->qc_as->val_ac_rrset->val_msg_header) {
 
             HEADER         *hp =
