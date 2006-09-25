@@ -42,10 +42,9 @@ static struct val_addrinfo *
 append_val_addrinfo(struct val_addrinfo *a1, struct val_addrinfo *a2)
 {
     struct val_addrinfo *a;
-    if (a1 == NULL) {
+    if (a1 == NULL)  
         return a2;
-    }
-    if (a2 == NULL)
+    if (a2 == NULL)  
         return a1;
 
     a = a1;
@@ -76,12 +75,11 @@ dup_val_addrinfo(const struct val_addrinfo *a)
 {
     struct val_addrinfo *new_a = NULL;
 
-    if (a == NULL) {
+    if (a == NULL)  
         return NULL;
-    }
 
     new_a = (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
-    if (new_a == NULL)
+    if (new_a == NULL)  
         return NULL;
 
     bzero(new_a, sizeof(struct val_addrinfo));
@@ -172,35 +170,35 @@ free_val_addrinfo(struct val_addrinfo *ainfo)
  * Returns: 0 if successful, a non-zero value if failure.
  */
 static int
-process_service_and_hints(val_status_t val_status,
-                          const char *servname,
+process_service_and_hints(val_status_t           val_status,
+                          const char            *servname,
                           const struct addrinfo *hints,
-                          struct val_addrinfo **res)
+                          struct val_addrinfo   **res)
 {
     struct val_addrinfo *a1 = NULL;
     struct val_addrinfo *a2 = NULL;
-    int             proto_found = 0;
+    int proto_found         = 0;
+    int created_locally     = 0;
 
-    if (res == NULL) {
-        return 0;
-    }
-
+    if (res == NULL)  
+        return NULL;
+   
     if (*res == NULL) {
+        created_locally = 1;
         a1 = (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
-        if (a1 == NULL)
+        if (a1 == NULL)  
             return EAI_MEMORY;
 
         bzero(a1, sizeof(struct val_addrinfo));
+        *res = a1;
     } else {
         a1 = *res;
     }
 
-    if (!a1) {
+    if (!a1)
         return 0;
-    }
 
     a1->ai_val_status = val_status;
-    *res = a1;
 
     /*
      * Flags 
@@ -216,15 +214,16 @@ process_service_and_hints(val_status_t val_status,
     }
 
     /*
-     * Check if we have to return val_addrinfo structures for the SOCK_STREAM socktype 
+     * Check if we have to return val_addrinfo structures for the
+       SOCK_STREAM socktype
      */
-    if ((hints == NULL || hints->ai_socktype == 0
-         || hints->ai_socktype == SOCK_STREAM) && (servname == NULL
-                                                   ||
-                                                   getservbyname(servname,
-                                                                 "tcp") !=
-                                                   NULL)) {
-
+    if ((hints == NULL || hints->ai_socktype == 0 
+         || hints->ai_socktype == SOCK_STREAM) 
+        && (servname == NULL 
+            || getservbyname(servname, "tcp") != NULL
+            || ( atoi(servname) && getservbyport(atoi(servname), "tcp") )
+           ) 
+       )  {
         a1->ai_socktype = SOCK_STREAM;
         a1->ai_protocol = IPPROTO_TCP;
         a1->ai_next = NULL;
@@ -232,19 +231,20 @@ process_service_and_hints(val_status_t val_status,
     }
 
     /*
-     * Check if we have to return val_addrinfo structures for the SOCK_DGRAM socktype 
+     * Check if we have to return val_addrinfo structures for the
+       SOCK_DGRAM socktype
      */
     if ((hints == NULL || hints->ai_socktype == 0
-         || hints->ai_socktype == SOCK_DGRAM) && (servname == NULL
-                                                  ||
-                                                  getservbyname(servname,
-                                                                "udp") !=
-                                                  NULL)) {
-
+         || hints->ai_socktype == SOCK_DGRAM) 
+        && (servname == NULL 
+            || getservbyname(servname, "udp") != NULL
+            || ( atoi(servname) && getservbyport(atoi(servname), "udp") )
+           )
+       )  {
         if (proto_found) {
             a2 = dup_val_addrinfo(a1);
-            if (a2 == NULL)
-                return EAI_MEMORY;
+            if (a2 == NULL) 
+              return EAI_MEMORY;
             a1->ai_next = a2;
             a1 = a2;
         }
@@ -254,14 +254,16 @@ process_service_and_hints(val_status_t val_status,
     }
 
     /*
-     * Check if we have to return val_addrinfo structures for the SOCK_RAW socktype 
+     * Check if we have to return val_addrinfo structures for the
+       SOCK_RAW socktype
      */
     if ((hints == NULL || hints->ai_socktype == 0
-         || hints->ai_socktype == SOCK_RAW) && (servname == NULL
-                                                || getservbyname(servname,
-                                                                 "ip") !=
-                                                NULL)) {
-
+         || hints->ai_socktype == SOCK_RAW) 
+        && (servname == NULL 
+            || getservbyname(servname, "ip") != NULL
+            || ( atoi(servname) && getservbyport(atoi(servname), "ip") )
+           )
+       )  {
         if (proto_found) {
             a2 = dup_val_addrinfo(a1);
             // xxx-note: uggh. may have augmented caller's res ptr
@@ -288,11 +290,15 @@ process_service_and_hints(val_status_t val_status,
         //     about possibly nuking the caller's ptr and freeing their
         //     memory. Maybe there needs to be a better separation
         //     between memory allocated here and caller's memory.
-        *res = NULL;
-        free_val_addrinfo(a1);
+        /* if top memory allocated locally, delete */
+        if (created_locally) {
+            *res = NULL;
+            free_val_addrinfo(a1);
+        }
         return EAI_SERVICE;
     }
 }                               /* end process_service_and_hints */
+
 
 /*
  * Function: get_addrinfo_from_etc_hosts
@@ -314,7 +320,7 @@ process_service_and_hints(val_status_t val_status,
  * See also: get_addrinfo_from_dns(), val_getaddrinfo()
  */
 static int
-get_addrinfo_from_etc_hosts(const val_context_t * ctx,
+get_addrinfo_from_etc_hosts(const val_context_t *ctx,
                             const char *nodename,
                             const char *servname,
                             const struct addrinfo *hints,
@@ -466,7 +472,7 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
  * See also: get_addrinfo_from_etc_hosts(), val_addrinfo()
  */
 static int
-get_addrinfo_from_result(const val_context_t * ctx,
+get_addrinfo_from_result(const val_context_t *ctx,
                          struct val_result_chain *results,
                          int val_status,
                          const char *servname,
@@ -475,8 +481,8 @@ get_addrinfo_from_result(const val_context_t * ctx,
 {
     struct val_addrinfo *ainfo_head = NULL;
     struct val_addrinfo *ainfo_tail = NULL;
-    struct val_result_chain *result;
-    char           *canonname = NULL;
+    struct val_result_chain *result = NULL;
+    char *canonname                 = NULL;
 
     if (res == NULL)
         return 0;
@@ -585,8 +591,9 @@ get_addrinfo_from_result(const val_context_t * ctx,
                 /*
                  * Expand the results based on servname and hints 
                  */
-                if (process_service_and_hints
-                    (val_status, servname, hints, &ainfo) == EAI_SERVICE) {
+                if (process_service_and_hints(val_status, servname, 
+                                              hints, &ainfo) 
+                    == EAI_SERVICE) {
                     free_val_addrinfo(ainfo_head);
                     free_val_addrinfo(ainfo);
                     return EAI_SERVICE;
@@ -637,17 +644,17 @@ get_addrinfo_from_result(const val_context_t * ctx,
  * See also: val_getaddrinfo()
  */
 static int
-get_addrinfo_from_dns(val_context_t * ctx,
+get_addrinfo_from_dns(val_context_t *ctx,
                       const char *nodename,
                       const char *servname,
                       const struct addrinfo *hints,
                       struct val_addrinfo **res)
 {
     struct val_result_chain *results = NULL;
-    struct val_addrinfo *ainfo = NULL;
-    u_char          name_n[NS_MAXCDNAME];
-    int             retval = 0;
-    int             ret = 0;
+    struct val_addrinfo *ainfo       = NULL;
+    u_char name_n[NS_MAXCDNAME];
+    int retval                       = 0;
+    int ret                          = 0;
 
     if (res == NULL)
         return 0;
@@ -816,9 +823,11 @@ val_getaddrinfo(val_context_t * ctx,
             servname == NULL ? "(null)" : servname);
 
     /*
-     * Check if at least one of nodename or servname is non-NULL 
+     * Check if hints is non-NULL and that at least one of nodename
+       or servname is non-NULL
      */
-    if ((nodename == NULL) && (servname == NULL)) {
+    if ( (NULL == nodename && NULL == servname) ||
+         (NULL == hints) )  {
         retval = EAI_NONAME;
         goto done;
     }
@@ -827,12 +836,12 @@ val_getaddrinfo(val_context_t * ctx,
     bzero(&ip6_addr, sizeof(struct in6_addr));
 
     /*
-     * if nodename is blank and hints doesn't exist or it
-     * includes IPv4, use IPv4 localhost 
+     * if nodename is blank or hints includes ipv4 or unspecified,
+     * use IPv4 localhost 
      */
     if (NULL == nodename &&
-        (NULL == hints || AF_INET == hints->ai_family
-         || AF_UNSPEC == hints->ai_family)
+        ( AF_INET   == hints->ai_family || 
+          AF_UNSPEC == hints->ai_family )
         ) {
         nname = localhost4;
     }
@@ -861,19 +870,19 @@ val_getaddrinfo(val_context_t * ctx,
         bzero(ainfo4, sizeof(struct val_addrinfo));
         bzero(saddr4, sizeof(struct sockaddr_in));
 
-        saddr4->sin_family = AF_INET;
-        ainfo4->ai_family = AF_INET;
+        saddr4->sin_family    = AF_INET;
+        ainfo4->ai_family     = AF_INET;
         memcpy(&(saddr4->sin_addr), &ip4_addr, sizeof(struct in_addr));
-        ainfo4->ai_addr = (struct sockaddr *) saddr4;
-        ainfo4->ai_addrlen = sizeof(struct sockaddr_in);
-        ainfo4->ai_canonname = NULL;
+        ainfo4->ai_addr       = (struct sockaddr *) saddr4;
+        saddr4                = NULL;
+        ainfo4->ai_addrlen    = sizeof(struct sockaddr_in);
+        ainfo4->ai_canonname  = NULL;
         ainfo4->ai_val_status = VAL_LOCAL_ANSWER;
 
-        if (process_service_and_hints
-            (ainfo4->ai_val_status, servname, hints,
-             &ainfo4) == EAI_SERVICE) {
+        if (process_service_and_hints(ainfo4->ai_val_status, servname, 
+                                      hints, &ainfo4)
+            == EAI_SERVICE) {
             free_val_addrinfo(ainfo4);
-            free(saddr4);
             retval = EAI_SERVICE;
             goto done;
         }
@@ -884,12 +893,12 @@ val_getaddrinfo(val_context_t * ctx,
     }
 
     /*
-     * if nodename is blank and hints doesn't exist or it
-     * includes IPv6, use IPv6 localhost 
+     * if nodename is blank and hints includes ipv6 or unspecified,
+     * use IPv6 localhost 
      */
     if (NULL == nodename &&
-        (NULL == hints || AF_INET6 == hints->ai_family
-         || AF_UNSPEC == hints->ai_family)
+        ( AF_INET6  == hints->ai_family || 
+          AF_UNSPEC == hints->ai_family )
         ) {
         nname = localhost6;
     }
@@ -918,19 +927,19 @@ val_getaddrinfo(val_context_t * ctx,
         bzero(ainfo6, sizeof(struct val_addrinfo));
         bzero(saddr6, sizeof(struct sockaddr_in6));
 
-        saddr6->sin6_family = AF_INET6;
-        ainfo6->ai_family = AF_INET6;
+        saddr6->sin6_family   = AF_INET6;
+        ainfo6->ai_family     = AF_INET6;
         memcpy(&(saddr6->sin6_addr), &ip6_addr, sizeof(struct in6_addr));
-        ainfo6->ai_addr = (struct sockaddr *) saddr6;
-        ainfo6->ai_addrlen = sizeof(struct sockaddr_in6);
-        ainfo6->ai_canonname = NULL;
+        ainfo6->ai_addr       = (struct sockaddr *) saddr6;
+        saddr6                = NULL;
+        ainfo6->ai_addrlen    = sizeof(struct sockaddr_in6);
+        ainfo6->ai_canonname  = NULL;
         ainfo6->ai_val_status = VAL_LOCAL_ANSWER;
 
-        if (process_service_and_hints
-            (ainfo6->ai_val_status, servname, hints,
-             &ainfo6) == EAI_SERVICE) {
+        if (process_service_and_hints(ainfo6->ai_val_status, servname, 
+                                      hints, &ainfo6) 
+            == EAI_SERVICE) {
             free_val_addrinfo(ainfo6);
-            free(saddr6);
             retval = EAI_SERVICE;
             goto done;
         }
@@ -954,8 +963,9 @@ val_getaddrinfo(val_context_t * ctx,
          * First check ETC_HOSTS file
          * * XXX: TODO check the order in the ETC_HOST_CONF file
          */
-        if (get_addrinfo_from_etc_hosts
-            (context, nodename, servname, hints, res) == EAI_SERVICE) {
+        if (get_addrinfo_from_etc_hosts(context, nodename, servname, 
+                                        hints, res) 
+            == EAI_SERVICE) {
             retval = EAI_SERVICE;
         } else if (*res != NULL) {
             retval = 0;
@@ -964,9 +974,9 @@ val_getaddrinfo(val_context_t * ctx,
         /*
          * Try DNS
          */
-        else if (get_addrinfo_from_dns
-                 (context, nodename, servname, hints,
-                  res) == EAI_SERVICE) {
+        else if (get_addrinfo_from_dns(context, nodename, servname, 
+                                       hints, res) 
+                 == EAI_SERVICE) {
             retval = EAI_SERVICE;
         } else if (*res != NULL) {
             retval = 0;
@@ -976,7 +986,7 @@ val_getaddrinfo(val_context_t * ctx,
     }
 
   done:
-    if ((ctx == NULL) && context)
+    if ( (ctx == NULL) && context )
         val_free_context(context);
     return retval;
 
