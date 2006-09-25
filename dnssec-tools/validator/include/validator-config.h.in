@@ -14,9 +14,29 @@
    you don't. */
 #undef HAVE_DECL_GETOPT_LONG_ONLY
 
+/* Define to 1 if you have the declaration of `ns_name_ntop', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NS_NAME_NTOP
+
+/* Define to 1 if you have the declaration of `ns_name_pton', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NS_NAME_PTON
+
+/* Define to 1 if you have the declaration of `ns_name_unpack', and to 0 if
+   you don't. */
+#undef HAVE_DECL_NS_NAME_UNPACK
+
+/* Define to 1 if you have the declaration of `ns_parse_ttl', and to 0 if you
+   don't. */
+#undef HAVE_DECL_NS_PARSE_TTL
+
 /* Define to 1 if you have the declaration of `ns_r_badsig', and to 0 if you
    don't. */
 #undef HAVE_DECL_NS_R_BADSIG
+
+/* Define to 1 if you have the declaration of `ns_t_a', and to 0 if you don't.
+   */
+#undef HAVE_DECL_NS_T_A
 
 /* Define to 1 if you have the declaration of `ns_t_kx', and to 0 if you
    don't. */
@@ -25,6 +45,10 @@
 /* Define to 1 if you have the declaration of `p_rcode', and to 0 if you
    don't. */
 #undef HAVE_DECL_P_RCODE
+
+/* Define to 1 if you have the declaration of `p_section', and to 0 if you
+   don't. */
+#undef HAVE_DECL_P_SECTION
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
@@ -110,6 +134,12 @@
 /* Define to 1 if the system has the type `u_int8_t'. */
 #undef HAVE_U_INT8_T
 
+/* Define if NSEC3 is required. */
+#undef LIBVAL_NSEC3
+
+/* Define if <arpa/nameser.h> has HEADER. */
+#undef NAMESER_HAS_HEADER
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
@@ -146,6 +176,13 @@
 /* Define if struct __ns_msg had _ptr. */
 #undef STRUCT___NS_MSG_HAS__PTR
 
+
+/*
+ * OpenBSD has t_*, but not ns_t_*
+ */
+#if ! HAVE_DECL_NS_T_A
+#include "val_ns_types.h"
+#endif
 
 /*
  * FreeBSD is missing ns_t_kx, ns_t_cert, ns_t_a6, ns_t_dname, ns_t_sink, ns_t_tsig, ns_t_zxfr
