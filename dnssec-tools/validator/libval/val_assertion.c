@@ -240,7 +240,7 @@ free_query_chain(struct val_query_chain *queries)
 
 }
 
-static u_int16_t
+static          u_int16_t
 is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
 {
     struct zone_se_policy *zse_pol, *zse_cur;
@@ -320,7 +320,7 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
     return VAL_A_WAIT_FOR_TRUST;
 }
 
-static u_int16_t
+static          u_int16_t
 is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key)
 {
     struct trust_anchor_policy *ta_pol, *ta_cur, *ta_tmphead;
@@ -617,8 +617,7 @@ add_to_authentication_chain(struct val_authentication_chain **assertions,
     next_rr = rrset;
     while (next_rr) {
 
-        new_as =
-            (struct val_authentication_chain *)
+        new_as = (struct val_authentication_chain *)
             MALLOC(sizeof(struct val_authentication_chain));
         if (new_as == NULL)
             return VAL_OUT_OF_MEMORY;
@@ -2037,8 +2036,7 @@ verify_and_validate(val_context_t * context,
             /*
              * Add this result to the list 
              */
-            res =
-                (struct val_result_chain *)
+            res = (struct val_result_chain *)
                 MALLOC(sizeof(struct val_result_chain));
             if (res == NULL)
                 return VAL_OUT_OF_MEMORY;
@@ -2323,8 +2321,7 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 /*
                  * Construct a dummy response 
                  */
-                response =
-                    (struct domain_info *)
+                response = (struct domain_info *)
                     MALLOC(sizeof(struct domain_info));
                 if (response == NULL) {
                     FREE(next_answer);
@@ -2332,8 +2329,7 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 }
 
                 response->di_rrset = next_answer;
-                response->di_qnames =
-                    (struct qname_chain *)
+                response->di_qnames = (struct qname_chain *)
                     MALLOC(sizeof(struct qname_chain));
                 if (response->di_qnames == NULL) {
                     FREE(response->di_rrset);
@@ -2866,8 +2862,7 @@ val_resolve_and_check(val_context_t * ctx,
             /*
              * the original query had some error 
              */
-            *results =
-                (struct val_result_chain *)
+            *results = (struct val_result_chain *)
                 MALLOC(sizeof(struct val_result_chain));
             if ((*results) == NULL) {
                 retval = VAL_OUT_OF_MEMORY;

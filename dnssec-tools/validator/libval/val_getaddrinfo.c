@@ -389,8 +389,7 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
          * Check if the address is an IPv6 address 
          */
         else if (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0) {
-            struct sockaddr_in6 *saddr6 =
-                (struct sockaddr_in6 *)
+            struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)
                 malloc(sizeof(struct sockaddr_in6));
             if (saddr6 == NULL) {
                 if (retval)
@@ -529,8 +528,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
             while (rr != NULL) {
                 struct val_addrinfo *ainfo = NULL;
 
-                ainfo =
-                    (struct val_addrinfo *)
+                ainfo = (struct val_addrinfo *)
                     malloc(sizeof(struct val_addrinfo));
                 if (ainfo == NULL)
                     return EAI_MEMORY;
@@ -540,8 +538,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                  * Check if the record-type is A 
                  */
                 if (rrset->val_rrset_type_h == ns_t_a) {
-                    struct sockaddr_in *saddr4 =
-                        (struct sockaddr_in *)
+                    struct sockaddr_in *saddr4 = (struct sockaddr_in *)
                         malloc(sizeof(struct sockaddr_in));
                     if (saddr4 == NULL) {
                         if (ainfo_head)
@@ -561,8 +558,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                  * Check if the record-type is AAAA 
                  */
                 else if (rrset->val_rrset_type_h == ns_t_aaaa) {
-                    struct sockaddr_in6 *saddr6 =
-                        (struct sockaddr_in6 *)
+                    struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *)
                         malloc(sizeof(struct sockaddr_in6));
                     if (saddr6 == NULL) {
                         if (ainfo_head)

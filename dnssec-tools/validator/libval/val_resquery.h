@@ -9,8 +9,7 @@ void            free_referral_members(struct delegation_info *del);
 int             res_zi_unverified_ns_list(struct name_server **ns_list,
                                           u_int8_t * zone_name,
                                           struct rrset_rec
-                                          *unchecked_zone_info,
-                                          struct name_server
+                                          *unchecked_zone_info, struct name_server
                                           **pending_glue);
 int             bootstrap_referral(u_int8_t * referral_zone_n,
                                    struct rrset_rec **learned_zones,

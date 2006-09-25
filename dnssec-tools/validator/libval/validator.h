@@ -468,8 +468,7 @@ extern          "C" {
                                                  u_int16_t class_h,
                                                  u_int16_t type_h,
                                                  struct val_query_chain
-                                                 *queries,
-                                                 struct val_result_chain
+                                                 *queries, struct val_result_chain
                                                  *results);
     const char     *p_query_error(int err);
     const char     *p_as_error(val_astatus_t valerrno);

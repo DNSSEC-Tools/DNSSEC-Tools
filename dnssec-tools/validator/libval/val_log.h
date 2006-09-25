@@ -62,8 +62,7 @@ void            val_log_authentication_chain(const val_context_t * ctx,
                                              u_int16_t class_h,
                                              u_int16_t type_h,
                                              struct val_query_chain
-                                             *queries,
-                                             struct val_result_chain
+                                             *queries, struct val_result_chain
                                              *results);
 void            val_log(const val_context_t * ctx, int level,
                         const char *template, ...);
