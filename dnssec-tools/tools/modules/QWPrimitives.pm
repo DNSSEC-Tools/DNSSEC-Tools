@@ -47,11 +47,9 @@ sub dnssec_tools_get_qwprimitives {
 	     import QWizard;
 	     my $rstr;
 	     for (my $i = 1; $i <=5; $i++) {
-		 print STDERR "yyyere: " . qwparam('file'.$i) . "--" . qwparam('file'.$i) . "\n";
 		 if (qwparam('file'.$i)) {
 		     my $fn =
 		       $Getopt::GUI::Long::GUI_qw->qw_upload_file('file'.$i);
-		     print STDERR "hhhere: $fn\n";
 		     $fn =~ s/.*qwHTML//;
 		     qwparam('tmp_name' . $i, $fn);
 		 }
@@ -68,13 +66,11 @@ sub dnssec_tools_get_qwprimitives {
 	     import QWizard;
 	     my $rstr;
 	     for (my $i = 1; $i <=5; $i++) {
-		 print STDERR "zzzhere: $i - " . qwparam('file'.$i) . " - " . qwparam('zonename'.$i) . "\n";
 		 if (qwparam('file'.$i) &&
 		     qwparam('zonename'.$i)) {
 		     if (ref($_[0]->{'generator'}) =~ /HTML/) {
 			 # don't allow web users to specify other file names
 			 my $fn = qwparam('tmp_name'.$i);
-			 print STDERR "hereeeeeeeeeeeeeeeeeeeeeee: $fn\n";
 			 if ($fn =~ /^[^\.\/]{6}\.tmp$/) {
 			     $fn = "/tmp/qwHTML$fn";
 			     next if (! -f $fn);
@@ -90,7 +86,6 @@ sub dnssec_tools_get_qwprimitives {
 		     }
 		 }
 	     }
-	     print STDERR "setting other args: $rstr\n";
 	     qwparam('__otherargs',$rstr);
 	 }],
 	questions => [{type => 'dynamic',
