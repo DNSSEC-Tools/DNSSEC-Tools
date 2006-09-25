@@ -36,102 +36,105 @@
 #define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
 #define POL_DLV_MAX_LINKS_STR "dlv-max-links"
 #endif
-#ifdef LIBVAL_NSEC3 
-#define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter" 
+#ifdef LIBVAL_NSEC3
+#define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
 #endif
 
 #define ZONE_SE_IGNORE_MSG     "ignore"
 #define ZONE_SE_DO_VAL_MSG     "validate"
 #define ZONE_SE_UNTRUSTED_MSG  "untrusted"
-#define ZONE_SE_IGNORE 1 
+#define ZONE_SE_IGNORE 1
 #define ZONE_SE_DO_VAL 2
 #define ZONE_SE_UNTRUSTED 3
 
-char * resolver_config_get(void);
-int resolver_config_set(const char *name);
+char           *resolver_config_get(void);
+int             resolver_config_set(const char *name);
 
-char * root_hints_get(void);
-int root_hints_set(const char *name);
+char           *root_hints_get(void);
+int             root_hints_set(const char *name);
 
-char * dnsval_conf_get(void);
-int dnsval_conf_set(const char *name);
+char           *dnsval_conf_get(void);
+int             dnsval_conf_set(const char *name);
 
 
-int read_root_hints_file(val_context_t *ctx); 
-int read_res_config_file(val_context_t *ctx);
-int read_val_config_file(val_context_t *ctx, char *scope);
-void destroy_valpol(val_context_t *ctx);
-void destroy_respol(val_context_t *ctx);
-struct hosts * parse_etc_hosts (const char *name);
+int             read_root_hints_file(val_context_t * ctx);
+int             read_res_config_file(val_context_t * ctx);
+int             read_val_config_file(val_context_t * ctx, char *scope);
+void            destroy_valpol(val_context_t * ctx);
+void            destroy_respol(val_context_t * ctx);
+struct hosts   *parse_etc_hosts(const char *name);
 
-int parse_trust_anchor(FILE*, policy_entry_t*, int*);
-int free_trust_anchor(policy_entry_t*);
-int parse_preferred_sep(FILE*, policy_entry_t*, int*);
-int free_preferred_sep(policy_entry_t*);
-int parse_must_verify_count(FILE*, policy_entry_t*, int*);
-int free_must_verify_count(policy_entry_t*);
-int parse_preferred_algo_data(FILE*, policy_entry_t*, int*);
-int free_preferred_algo_data(policy_entry_t*);
-int parse_preferred_algo_keys(FILE*, policy_entry_t*, int*);
-int free_preferred_algo_keys(policy_entry_t*);
-int parse_preferred_algo_ds(FILE*, policy_entry_t*, int*);
-int free_preferred_algo_ds(policy_entry_t*);
-int parse_clock_skew(FILE*, policy_entry_t*, int*);
-int free_clock_skew(policy_entry_t*);
-int parse_expired_sigs(FILE*, policy_entry_t*, int*);
-int free_expired_sigs(policy_entry_t*);
-int parse_use_tcp(FILE*, policy_entry_t*, int*);
-int free_use_tcp(policy_entry_t*);
-int parse_zone_security_expectation(FILE*, policy_entry_t*, int*);
-int free_zone_security_expectation(policy_entry_t*);
-#ifdef LIBVAL_NSEC3 
-int parse_nsec3_max_iter(FILE *fp, policy_entry_t *pol_entry, int *line_number);
-int free_nsec3_max_iter(policy_entry_t *pol_entry);
+int             parse_trust_anchor(FILE *, policy_entry_t *, int *);
+int             free_trust_anchor(policy_entry_t *);
+int             parse_preferred_sep(FILE *, policy_entry_t *, int *);
+int             free_preferred_sep(policy_entry_t *);
+int             parse_must_verify_count(FILE *, policy_entry_t *, int *);
+int             free_must_verify_count(policy_entry_t *);
+int             parse_preferred_algo_data(FILE *, policy_entry_t *, int *);
+int             free_preferred_algo_data(policy_entry_t *);
+int             parse_preferred_algo_keys(FILE *, policy_entry_t *, int *);
+int             free_preferred_algo_keys(policy_entry_t *);
+int             parse_preferred_algo_ds(FILE *, policy_entry_t *, int *);
+int             free_preferred_algo_ds(policy_entry_t *);
+int             parse_clock_skew(FILE *, policy_entry_t *, int *);
+int             free_clock_skew(policy_entry_t *);
+int             parse_expired_sigs(FILE *, policy_entry_t *, int *);
+int             free_expired_sigs(policy_entry_t *);
+int             parse_use_tcp(FILE *, policy_entry_t *, int *);
+int             free_use_tcp(policy_entry_t *);
+int             parse_zone_security_expectation(FILE *, policy_entry_t *,
+                                                int *);
+int             free_zone_security_expectation(policy_entry_t *);
+#ifdef LIBVAL_NSEC3
+int             parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
+                                     int *line_number);
+int             free_nsec3_max_iter(policy_entry_t * pol_entry);
 #endif
 #ifdef DLV
-int parse_dlv_trust_points(FILE*, policy_entry_t*, int*);
-int free_dlv_trust_points(policy_entry_t*);
-int parse_dlv_max_links(FILE*, policy_entry_t*, int*);
-int free_dlv_max_links(policy_entry_t*);
+int             parse_dlv_trust_points(FILE *, policy_entry_t *, int *);
+int             free_dlv_trust_points(policy_entry_t *);
+int             parse_dlv_max_links(FILE *, policy_entry_t *, int *);
+int             free_dlv_max_links(policy_entry_t *);
 #endif
-int check_relevance(char *label, char *scope, int *label_count, int *relevant);
+int             check_relevance(char *label, char *scope, int *label_count,
+                                int *relevant);
 
 /*
  * fragment of the configuration file containing 
  * one policy chunk
  */
 struct policy_fragment {
-	char *label;
-	int label_count;
-	int index;
-	policy_entry_t pol;
+    char           *label;
+    int             label_count;
+    int             index;
+    policy_entry_t  pol;
 };
 
 struct policy_conf_element {
-	const char *keyword;
-	int (*parse)(FILE*, policy_entry_t*, int*);
-	int (*free)(policy_entry_t*);
+    const char     *keyword;
+    int             (*parse) (FILE *, policy_entry_t *, int *);
+    int             (*free) (policy_entry_t *);
 };
 
 struct trust_anchor_policy {
-	u_int8_t zone_n[NS_MAXCDNAME];
-	val_dnskey_rdata_t *publickey;
-	struct trust_anchor_policy *next;
-}; 
+    u_int8_t        zone_n[NS_MAXCDNAME];
+    val_dnskey_rdata_t *publickey;
+    struct trust_anchor_policy *next;
+};
 
 struct zone_se_policy {
-	u_int8_t zone_n[NS_MAXCDNAME];
-	int trusted;
-	struct zone_se_policy *next;
+    u_int8_t        zone_n[NS_MAXCDNAME];
+    int             trusted;
+    struct zone_se_policy *next;
 };
 
 
-#ifdef LIBVAL_NSEC3 
+#ifdef LIBVAL_NSEC3
 struct nsec3_max_iter_policy {
-    u_int8_t zone_n[NS_MAXCDNAME];
-    int iter;
+    u_int8_t        zone_n[NS_MAXCDNAME];
+    int             iter;
     struct nsec3_max_iter_policy *next;
 };
 #endif
 
-#endif /* VAL_POLICY_H */ 
+#endif                          /* VAL_POLICY_H */
