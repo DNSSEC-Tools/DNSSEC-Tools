@@ -32,10 +32,31 @@ sub dnssec_tools_get_qwprimitives {
 				 {type => 'fileupload',
 				  text => 'Zone File ' . $i,
 				  name => 'file' . $i},
+			       push @qs,
+				 {type => 'hidden',
+				  text => '',
+				  name => 'tmp_name' . $i,
+				  values => ''},
 			      }
 			   return \@qs;
 		       }},
 		     ],
+	post_answers => 
+	[sub {
+	     require QWizard;
+	     import QWizard;
+	     my $rstr;
+	     for (my $i = 1; $i <=5; $i++) {
+		 print STDERR "yyyere: " . qwparam('file'.$i) . "--" . qwparam('file'.$i) . "\n";
+		 if (qwparam('file'.$i)) {
+		     my $fn =
+		       $Getopt::GUI::Long::GUI_qw->qw_upload_file('file'.$i);
+		     print STDERR "hhhere: $fn\n";
+		     $fn =~ s/.*qwHTML//;
+		     qwparam('tmp_name' . $i, $fn);
+		 }
+	     }
+	 }],
        },
 
        'getzonenames' =>
@@ -47,17 +68,29 @@ sub dnssec_tools_get_qwprimitives {
 	     import QWizard;
 	     my $rstr;
 	     for (my $i = 1; $i <=5; $i++) {
+		 print STDERR "zzzhere: $i - " . qwparam('file'.$i) . " - " . qwparam('zonename'.$i) . "\n";
 		 if (qwparam('file'.$i) &&
 		     qwparam('zonename'.$i)) {
-		     if (qwparam('dnssec_zone_names_first')) {
-			 $rstr .= qwparam('zonename'.$i) . " " .
-			   qwparam('file'.$i) . " ";
+		     if (ref($_[0]->{'generator'}) =~ /HTML/) {
+			 # don't allow web users to specify other file names
+			 my $fn = qwparam('tmp_name'.$i);
+			 print STDERR "hereeeeeeeeeeeeeeeeeeeeeee: $fn\n";
+			 if ($fn =~ /^[^\.\/]{6}\.tmp$/) {
+			     $fn = "/tmp/qwHTML$fn";
+			     next if (! -f $fn);
+			     if (qwparam('dnssec_zone_names_first')) {
+				 $rstr .= qwparam('zonename'.$i) . " $fn ";
+			     } else {
+				 $rstr .= "$fn " . qwparam('zonename'.$i);
+			     }
+			 }
 		     } else {
-			 $rstr .= qwparam('file'.$i) . " " .
-			   qwparam('zonename'.$i) . " ";
+			 $rstr .= qwparam('file' . $i) . " " .
+			   qwparam('zonename'.$i);
 		     }
 		 }
 	     }
+	     print STDERR "setting other args: $rstr\n";
 	     qwparam('__otherargs',$rstr);
 	 }],
 	questions => [{type => 'dynamic',
@@ -71,6 +104,7 @@ sub dnssec_tools_get_qwprimitives {
 				   $def =~ s/^.*\///;
 				   $def =~ s/^db\.//;
 				   $def =~ s/\.signed$//;
+				   $def =~ s/\.zs$//;
 				   push @qs,
 				     {type => 'text',
 				      name => 'zonename' . $i,
@@ -81,6 +115,7 @@ sub dnssec_tools_get_qwprimitives {
 			   return \@qs;
 		       }}]
        },
+       @_,
       );
     return %qwp;
 }
