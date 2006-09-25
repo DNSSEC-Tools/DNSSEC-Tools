@@ -32,12 +32,12 @@ int             find_next_zonecut(struct rrset_rec *rrset,
                                   u_int8_t ** name_n);
 
 #define SAVE_RR_TO_LIST(respondent_server, listtype, name_n, type_h, set_type_h,\
-				class_h, ttl_h, rdata, rdata_len_h, from_section, authoritive, zonecut_n) \
+				class_h, ttl_h, hptr, rdata, rdata_len_h, from_section, authoritive, zonecut_n) \
 	do { \
             struct rrset_rec *rr_set;\
             int ret_val;\
             rr_set = find_rr_set (respondent_server, listtype, name_n, type_h, set_type_h,\
-                             class_h, ttl_h, rdata, from_section,authoritive, zonecut_n);\
+                             class_h, ttl_h, hptr, rdata, from_section,authoritive, zonecut_n);\
             if (rr_set==NULL) return VAL_OUT_OF_MEMORY;\
             if (type_h != ns_t_rrsig)\
             {\
