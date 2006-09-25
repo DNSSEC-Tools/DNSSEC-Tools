@@ -413,9 +413,7 @@ while ($#ARGV > -1) {
 }
 
 if ($opts{'show-gui'}) {
-    print STDERR "starting GUI\n";
     setup_gui();
-    print STDERR "starting GUI2\n";
     display_gui_results();
 }
 exit($exitcode);
