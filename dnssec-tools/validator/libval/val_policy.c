@@ -1436,8 +1436,8 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
             continue;
 
         SAVE_RR_TO_LIST(NULL, &root_info, zone_n, type_h, type_h, ns_c_in,
-                        ttl_h, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0,
-                        zone_n);
+                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET,
+                        0, zone_n);
 
         /*
          * name 

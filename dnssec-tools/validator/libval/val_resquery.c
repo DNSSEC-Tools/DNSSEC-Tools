@@ -783,6 +783,7 @@ digest_response(val_context_t * context,
     int             rdata_index;
     int             authoritive;
     u_int8_t       *rdata;
+    u_int8_t       *hptr;
     int             ret_val;
     int             from_section;
     struct rrset_rec *learned_zones = NULL;
@@ -799,8 +800,6 @@ digest_response(val_context_t * context,
     HEADER         *header;
     u_int8_t       *end;
     int             qnamelen, tot;
-    u_int8_t       *response_qptr = NULL;
-    u_int8_t       *response_aptr = NULL;
 
     struct rrset_rec **answers;
     struct qname_chain **qnames;
@@ -820,6 +819,7 @@ digest_response(val_context_t * context,
     query_class_h = matched_q->qc_class_h;
     *answers = NULL;
     *qnames = NULL;
+    hptr = NULL;
 
     question = ntohs(header->qdcount);
     answer = ntohs(header->ancount);
@@ -836,12 +836,10 @@ digest_response(val_context_t * context,
     } else {
         qnamelen = wire_name_length(&response_data[sizeof(HEADER)]);
         tot = sizeof(HEADER) + qnamelen + sizeof(u_int32_t);
-
         if (tot <= response_length) {
-            response_qptr = response_data + sizeof(HEADER);
-            response_aptr = response_data + tot;
+            hptr = response_data;	
             response_index = tot;
-        } else
+        } else 
             response_index = 0;
     }
 
@@ -928,8 +926,9 @@ digest_response(val_context_t * context,
                     return ret_val;
 
             SAVE_RR_TO_LIST(respondent_server, answers, name_n, type_h,
-                            set_type_h, class_h, ttl_h, rdata, rdata_len_h,
-                            from_section, authoritive, rrs_zonecut_n);
+                            set_type_h, class_h, ttl_h, hptr, rdata, 
+                            rdata_len_h, from_section, authoritive, 
+                            rrs_zonecut_n);
         } else if (from_section == VAL_FROM_AUTHORITY
                    && set_type_h == ns_t_ns) {
             /*
@@ -950,14 +949,15 @@ digest_response(val_context_t * context,
 
         if (set_type_h == ns_t_dnskey) {
             SAVE_RR_TO_LIST(respondent_server, &learned_keys, name_n,
-                            type_h, set_type_h, class_h, ttl_h, rdata,
-                            rdata_len_h, from_section, authoritive,
-                            rrs_zonecut_n);
+                            type_h, set_type_h, class_h, ttl_h, hptr, 
+                            rdata, rdata_len_h, from_section, 
+                            authoritive, rrs_zonecut_n);
         }
         if (set_type_h == ns_t_ds) {
             SAVE_RR_TO_LIST(respondent_server, &learned_ds, name_n, type_h,
-                            set_type_h, class_h, ttl_h, rdata, rdata_len_h,
-                            from_section, authoritive, rrs_zonecut_n);
+                            set_type_h, class_h, ttl_h, hptr, rdata, 
+                            rdata_len_h, from_section, authoritive, 
+                            rrs_zonecut_n);
         } else if (set_type_h == ns_t_ns ||     /*set_type_h==ns_t_soa || */
                    (set_type_h == ns_t_a
                     && from_section == VAL_FROM_ADDITIONAL)) {
@@ -965,9 +965,9 @@ digest_response(val_context_t * context,
              * This record belongs in the zone_info chain 
              */
             SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
-                            type_h, set_type_h, class_h, ttl_h, rdata,
-                            rdata_len_h, from_section, authoritive,
-                            rrs_zonecut_n);
+                            type_h, set_type_h, class_h, ttl_h, hptr,
+                            rdata, rdata_len_h, from_section, 
+                            authoritive, rrs_zonecut_n);
         }
         /*
          * XXX Save the RRSIGs for additional data in the zone_info chain 
