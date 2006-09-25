@@ -1976,8 +1976,10 @@ I<-verbose> will get the output from the first and second levels of output.
 
 =item -algorithm
 
-Cryptographic algorithm used to generate the zone's keys.
-The default value is RSASHA1.
+Cryptographic algorithm used to generate the zone's keys.  The default
+value is RSASHA1.  The option value is passed to the -a flag of
+dnssec-keygen.  Consult the manual page for that to determine legal
+values.
 
 =item -ksklength
 
