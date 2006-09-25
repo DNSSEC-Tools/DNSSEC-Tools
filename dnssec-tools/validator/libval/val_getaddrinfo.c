@@ -455,18 +455,17 @@ static int get_addrinfo_from_result (
 	
 	/* Loop for each result in the linked list of val_result_chain structures */
 	for (result = results; result != NULL; result = result->val_rc_next) {
-	    struct rrset_rec *rrset = result->val_rc_trust ? 
-		result->val_rc_trust->_as.ac_data : NULL;
+	    struct val_rrset *rrset = result->val_rc_trust ? 
+			result->val_rc_trust->val_ac_rrset : NULL;
 
-	    /* Loop for each rrset in the linked list of rrset_rec structures */
-	    while (rrset != NULL) {
-		    struct rr_rec *rr = rrset->rrs.val_rrset_data;
+	    if (rrset != NULL) {
+		    struct rr_rec *rr = rrset->val_rrset_data;
 
 		    /* Check if the AI_CANONNAME flag is specified */
 		    if (hints && (hints->ai_flags & AI_CANONNAME) && (canonname == NULL)) {
 			    char dname[NS_MAXDNAME];
 			    bzero(dname, NS_MAXDNAME);
-			    if (ns_name_ntop(rrset->rrs.val_rrset_name_n, dname, sizeof(dname)) < 0) {
+			    if (ns_name_ntop(rrset->val_rrset_name_n, dname, sizeof(dname)) < 0) {
 				    /* error */
 				    val_log(ctx, LOG_DEBUG, "error in ns_name_ntop");
 			    }
@@ -488,7 +487,7 @@ static int get_addrinfo_from_result (
 			    bzero(ainfo, sizeof(struct val_addrinfo));
 
 			    /* Check if the record-type is A */
-			    if (rrset->rrs.val_rrset_type_h == ns_t_a) {
+			    if (rrset->val_rrset_type_h == ns_t_a) {
 				    struct sockaddr_in *saddr4 = (struct sockaddr_in *) malloc (sizeof (struct sockaddr_in));
 				    if (saddr4 == NULL) {
 					if (ainfo_head) free_val_addrinfo(ainfo_head);
@@ -503,7 +502,7 @@ static int get_addrinfo_from_result (
 				    ainfo->ai_addr = (struct sockaddr *) saddr4;
 			    }
 			    /* Check if the record-type is AAAA */
-			    else if (rrset->rrs.val_rrset_type_h == ns_t_aaaa) {
+			    else if (rrset->val_rrset_type_h == ns_t_aaaa) {
 				    struct sockaddr_in6 *saddr6 = (struct sockaddr_in6 *) malloc (sizeof (struct sockaddr_in6));
 				    if (saddr6 == NULL) {
 					if (ainfo_head) free_val_addrinfo(ainfo_head);
@@ -545,10 +544,8 @@ static int get_addrinfo_from_result (
 			    
 			    rr = rr->rr_next;
 		    }
-		    
-		    rrset = rrset->rrs_next;
 	    }
-	} // end for
+	} 
 
 	*res = ainfo_head;
 	if (ainfo_head) {
