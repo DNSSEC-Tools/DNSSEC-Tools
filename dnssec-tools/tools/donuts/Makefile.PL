@@ -19,7 +19,7 @@ WriteMakefile(%opts);
 sub MY::postamble {
     return '
 
-RULESDIR=$(SITEPREFIX)/share/donuts/rules
+RULESDIR=$(DESTDIR)/$(SITEPREFIX)/share/donuts/rules
 INSTALL=$(PERLRUN) "-MExtUtils::Command" -e cp
 
 install:: installrulefiles
