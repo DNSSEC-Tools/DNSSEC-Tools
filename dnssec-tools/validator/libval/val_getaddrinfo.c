@@ -181,7 +181,7 @@ process_service_and_hints(val_status_t           val_status,
     int created_locally     = 0;
 
     if (res == NULL)  
-        return NULL;
+        return EAI_SERVICE;
    
     if (*res == NULL) {
         created_locally = 1;
