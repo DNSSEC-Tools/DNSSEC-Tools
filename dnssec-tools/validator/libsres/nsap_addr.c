@@ -16,7 +16,7 @@
  */
 
 #include "validator-config.h"
-
+#include <ctype.h>
 #include <sys/types.h>
 
 #ifndef HAVE_NSAP_ADDR

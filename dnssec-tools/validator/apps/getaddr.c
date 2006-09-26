@@ -6,6 +6,7 @@
  *
  * A command-line tool for testing the val_getaddrinfo() function.
  */
+#include "validator-config.h"
 
 #include <stdio.h>
 #include <stdlib.h>
