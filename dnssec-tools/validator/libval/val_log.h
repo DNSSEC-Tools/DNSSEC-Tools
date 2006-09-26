@@ -5,6 +5,8 @@
 #ifndef VAL_LOG_H
 #define VAL_LOG_H
 
+#include <stdarg.h>
+
 struct val_log;
 
 typedef void    (*val_log_logger_t) (struct val_log * logp,

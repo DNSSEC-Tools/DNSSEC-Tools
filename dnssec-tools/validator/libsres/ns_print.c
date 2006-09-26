@@ -27,6 +27,7 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "nsap_addr.h"
 #include "resolver.h"
 
 #ifdef SPRINTF_CHAR

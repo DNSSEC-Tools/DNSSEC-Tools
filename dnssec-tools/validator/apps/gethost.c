@@ -6,9 +6,11 @@
  *
  * A command-line tool for testing the val_gethostbyname*() functions.
  */
+#include "validator-config.h"
 
 #include <stdio.h>
 #include <unistd.h>
+#include <strings.h>
 #include <validator.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
@@ -128,10 +130,12 @@ int main(int argc, char *argv[])
 
 	if (dovalidate) {
 		if (usereentrant) {
+#ifdef HAVE_GETHOSTBYNAME2
 			if (familyspecified)
 				retval = val_gethostbyname2_r(NULL, name, af, &hentry, auxbuf, AUX_BUFLEN,
 							      &result, &herrno, &val_status);
 			else
+#endif
 				retval = val_gethostbyname_r(NULL, name, &hentry, auxbuf, AUX_BUFLEN,
 							     &result, &herrno, &val_status);
 		}
@@ -154,9 +158,11 @@ int main(int argc, char *argv[])
 #endif
 		}
 		else {
+#ifdef HAVE_GETHOSTBYNAME2
 			if (familyspecified)
 				result = gethostbyname2 (name, af);
 			else
+#endif
 				result = gethostbyname (name);
 		}
 	}
@@ -197,10 +203,18 @@ int main(int argc, char *argv[])
 		printf("Validation status = %s\n", p_val_error(val_status));
 	}
 	if (usereentrant) {
+#ifdef HAVE_HSTRERROR
 		printf("h_errno = %s\n", hstrerror(herrno));
+#else
+		printf("h_errno = %d\n", herrno);
+#endif
 	}
 	else {
+#ifdef HAVE_HSTRERROR
 		printf("h_errno = %s\n", hstrerror(h_errno));
+#else
+		printf("h_errno = %d\n", h_errno);
+#endif
 	}
 
 	return 0;

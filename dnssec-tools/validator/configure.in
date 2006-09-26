@@ -68,9 +68,21 @@ AC_CHECK_LIB(crypto, EVP_md5,,
         AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
 )
 
+dnl add any libraries that may be dependencies
+AC_CHECK_LIB(nsl, inet_ntop)
+AC_CHECK_LIB(socket, gai_strerror)
+
 AH_TEMPLATE([HAVE_NSAP_ADDR],
             [Define if libc contains inet_nsap_ntoa.])
 AC_CHECK_LIB(c, inet_nsap_ntoa, AC_DEFINE(HAVE_NSAP_ADDR), )
+    
+AH_TEMPLATE([HAVE_GETHOSTBYNAME2],
+            [Define if libc contains gethostbyname2.])
+AC_CHECK_LIB(c, gethostbyname2, AC_DEFINE(HAVE_GETHOSTBYNAME2), )
+
+AH_TEMPLATE([HAVE_HSTRERROR],
+            [Define if libc contains hstrerror.])
+AC_CHECK_LIB(c, hstrerror, AC_DEFINE(HAVE_HSTRERROR), )
 
 AC_CHECK_HEADERS(openssl/bio.h openssl/evp.h)
 
