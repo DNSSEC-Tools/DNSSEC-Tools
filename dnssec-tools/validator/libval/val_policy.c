@@ -45,7 +45,6 @@ static int      get_token(FILE * conf_ptr,
                           char *conf_token,
                           int conf_limit,
                           int *endst, char comment_c, char endstmt_c);
-
 /*
  ***************************************************************
  * These are functions to read/set the location of the resolver
@@ -56,11 +55,32 @@ static char    *resolver_config = NULL;
 static char    *root_hints = NULL;
 static char    *dnsval_conf = NULL;
 
+static int      atexit_reg = 0;
+
+static void 
+policy_cleanup(void)
+{
+    if (NULL != resolver_config)
+        free(resolver_config);
+
+    if (NULL != root_hints)
+        free(root_hints);
+
+    if (NULL != dnsval_conf)
+        free(dnsval_conf);
+}
+
+
 char           *
 resolver_config_get(void)
 {
-    if (NULL == resolver_config)
+    if (NULL == resolver_config) {
+        if (0 == atexit_reg) {
+            atexit_reg = 1;
+            atexit(policy_cleanup);
+        }
         resolver_config = strdup(RESOLV_CONF);
+    }
 
     return resolver_config;
 }
@@ -75,7 +95,10 @@ resolver_config_set(const char *name)
 
     if (NULL != resolver_config)
         free(resolver_config);
-
+    else if (0 == atexit_reg) {
+        atexit_reg = 1;
+        atexit(policy_cleanup);
+    }
     resolver_config = new_name;
 
     return 0;
@@ -84,8 +107,14 @@ resolver_config_set(const char *name)
 char           *
 root_hints_get(void)
 {
-    if (NULL == root_hints)
+    if (NULL == root_hints) {
+        if (0 == atexit_reg) {
+            atexit_reg = 1;
+            atexit(policy_cleanup);
+        }
+
         root_hints = strdup(ROOT_HINTS);
+    }
 
     return root_hints;
 }
@@ -100,6 +129,10 @@ root_hints_set(const char *name)
 
     if (NULL != root_hints)
         free(root_hints);
+    else if (0 == atexit_reg) {
+        atexit_reg = 1;
+        atexit(policy_cleanup);
+    }
 
     root_hints = new_name;
 
@@ -199,7 +232,7 @@ parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT))) {
             goto err;
         }
@@ -225,7 +258,7 @@ parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (feof(fp) && !endst) {
@@ -444,7 +477,7 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (endst && (strlen(token) == 1))
@@ -464,7 +497,7 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (feof(fp) && !endst) {
@@ -572,7 +605,7 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (endst && (strlen(token) == 1))
@@ -591,7 +624,7 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (feof(fp) && !endst) {
@@ -915,7 +948,7 @@ get_next_policy_fragment(FILE * fp, char *scope,
 
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             return retval;
         if (feof(fp))
@@ -934,7 +967,7 @@ get_next_policy_fragment(FILE * fp, char *scope,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT))) {
             FREE(label);
             return retval;
@@ -1068,13 +1101,16 @@ destroy_valpol(val_context_t * ctx)
 
     prev = NULL;
     for (cur = ctx->pol_overrides; cur; prev = cur, cur = cur->next) {
+        struct policy_list *plist, *plist_next;
+
         FREE(cur->label);
-        if (cur->plist != NULL) {
-            if ((cur->plist->pol != NULL) &&
-                (cur->plist->index < MAX_POL_TOKEN))
-                conf_elem_array[cur->plist->index].
-                    free(&(cur->plist->pol));
-            FREE(cur->plist);
+        for (plist = cur->plist; plist; plist = plist_next) {
+            plist_next = plist->next;
+            if ((plist->pol != NULL) &&
+                (plist->index < MAX_POL_TOKEN))
+                conf_elem_array[plist->index].
+                    free(&(plist->pol));
+            FREE(plist);
         }
         if (prev != NULL)
             FREE(prev);
@@ -1172,7 +1208,7 @@ read_res_config_file(val_context_t * ctx)
 {
     struct sockaddr_in serv_addr;
     struct in_addr  address;
-    char            auth_zone_info[NS_MAXDNAME];
+    char            auth_zone_info_p[NS_MAXDNAME];
     char           *resolv_conf;
     FILE           *fp;
     int             fd;
@@ -1187,7 +1223,7 @@ read_res_config_file(val_context_t * ctx)
 
     ctx->nslist = NULL;
 
-    strcpy(auth_zone_info, DEFAULT_ZONE);
+    strcpy(auth_zone_info_p, DEFAULT_ZONE);
 
     resolv_conf = resolver_config_get();
     if (NULL == resolv_conf)
@@ -1229,11 +1265,11 @@ read_res_config_file(val_context_t * ctx)
                 goto err;
 
             /*
-             * Convert auth_zone_info to its on-the-wire format 
+             * Convert auth_zone_info_p to its on-the-wire format 
              */
 
             if (ns_name_pton
-                (auth_zone_info, ns->ns_name_n,
+                (auth_zone_info_p, ns->ns_name_n,
                  sizeof(ns->ns_name_n)) == -1) {
                 FREE(ns);
                 ns = NULL;
@@ -1341,6 +1377,13 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
     u_long          ttl_h;
     int             retval;
     u_int16_t       rdata_len_h;
+    struct rrset_rec *rr_set;
+    static int been_there_done_that = 0;
+    
+    if (been_there_done_that)
+        return VAL_NO_ERROR;
+    else
+        ++been_there_done_that;
 
     root_hints = root_hints_get();
     if (NULL == root_hints)
@@ -1356,7 +1399,7 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
      */
     if (VAL_NO_ERROR !=
         (retval =
-         get_token(fp, &line_number, token, TOKEN_MAX, &endst,
+         get_token(fp, &line_number, token, sizeof(token), &endst,
                    ZONE_COMMENT, ZONE_END_STMT))) {
         fclose(fp);
         return retval;
@@ -1373,7 +1416,7 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1388,7 +1431,7 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1404,7 +1447,7 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1417,7 +1460,7 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1435,16 +1478,38 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
         } else
             continue;
 
-        SAVE_RR_TO_LIST(NULL, &root_info, zone_n, type_h, type_h, ns_c_in,
-                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET,
-                        0, zone_n);
+//        SAVE_RR_TO_LIST(NULL, &root_info, zone_n, type_h, type_h, ns_c_in,
+//                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0,
+//                        zone_n);
+        rr_set = find_rr_set (NULL, &root_info, zone_n, type_h, type_h,
+                              ns_c_in, ttl_h, NULL, rdata_n, VAL_FROM_UNSET, 0,
+                              zone_n);
+        if (rr_set==NULL) {
+            fclose(fp);
+            res_sq_free_rrset_recs(&root_info);
+            return VAL_OUT_OF_MEMORY;
+        }
+        if (type_h != ns_t_rrsig) {
+            /** Add this record to its chain of rr_rec's. */
+            retval = add_to_set(rr_set,rdata_len_h,rdata_n);
+        }
+        else {
+            /** Add this record to the sig of rrset_rec. */
+            retval = add_as_sig(rr_set,rdata_len_h,rdata_n);
+        }
+        if (retval != VAL_NO_ERROR) {
+            fclose(fp);
+            res_sq_free_rrset_recs(&root_info);
+            return retval;
+        }
+// end save_rr_to_list
 
         /*
          * name 
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, TOKEN_MAX, &endst,
+             get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1461,6 +1526,7 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
   err:
 
     fclose(fp);
+    res_sq_free_rrset_recs(&root_info);
     return VAL_CONF_PARSE_ERROR;
 }
 
