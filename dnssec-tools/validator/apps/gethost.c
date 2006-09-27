@@ -37,19 +37,16 @@ static struct option prog_options[] = {
 void
 usage(char *progname)
 {
+    /* *INDENT-OFF* */
     fprintf(stderr, "Usage: %s [options] name\n", progname);
     fprintf(stderr, "Options:\n");
-    fprintf(stderr,
-            "\t-h, --help                      display usage and exit\n");
-    fprintf(stderr,
-            "\t-n, --novalidate                do not use the validator\n");
-    fprintf(stderr,
-            "\t-r, --reentrant                 use reentrant versions of functions\n");
+    fprintf(stderr, "\t-h, --help                      display usage and exit\n");
+    fprintf(stderr, "\t-n, --novalidate                do not use the validator\n");
+    fprintf(stderr, "\t-r, --reentrant                 use reentrant versions of functions\n");
     fprintf(stderr, "\t-f, --family=[AF_INET|AF_INET6] address family\n");
-    fprintf(stderr,
-            "\t                                AF_INET for IPv4 addresses,\n");
-    fprintf(stderr,
-            "\t                                and AF_INET6 for IPv6 addresses\n");
+    fprintf(stderr, "\t                                AF_INET for IPv4 addresses,\n");
+    fprintf(stderr, "\t                                and AF_INET6 for IPv6 addresses\n");
+    /* *INDENT-ON* */
 }
 
 int
@@ -131,14 +128,16 @@ main(int argc, char *argv[])
         return 1;
     }
 
-    <<<<<<<.mine if (dovalidate) {
+    if (dovalidate) {
         if (usereentrant) {
+#ifdef HAVE_GETHOSTBYNAME2
             if (familyspecified)
                 retval =
                     val_gethostbyname2_r(NULL, name, af, &hentry, auxbuf,
                                          AUX_BUFLEN, &result, &herrno,
                                          &val_status);
             else
+#endif
                 retval =
                     val_gethostbyname_r(NULL, name, &hentry, auxbuf,
                                         AUX_BUFLEN, &result, &herrno,
@@ -151,52 +150,16 @@ main(int argc, char *argv[])
         }
     } else {
         if (usereentrant) {
-            == == == = if (dovalidate) {
-                if (usereentrant) {
-#ifdef HAVE_GETHOSTBYNAME2
-                    if (familyspecified)
-                        retval =
-                            val_gethostbyname2_r(NULL, name, af, &hentry,
-                                                 auxbuf, AUX_BUFLEN,
-                                                 &result, &herrno,
-                                                 &val_status);
-                    else
-#endif
-                        retval =
-                            val_gethostbyname_r(NULL, name, &hentry,
-                                                auxbuf, AUX_BUFLEN,
-                                                &result, &herrno,
-                                                &val_status);
-                } else {
-                    if (familyspecified)
-                        result =
-                            val_gethostbyname2(NULL, name, af,
-                                               &val_status);
-                    else
-                        result =
-                            val_gethostbyname(NULL, name, &val_status);
-                }
-            } else {
-                if (usereentrant) {
-                    >>>>>>>.r2053
 #if 0
-                        if (familyspecified)
-                        retval =
-                            gethostbyname2_r(name, af, &hentry, auxbuf,
-                                             AUX_BUFLEN, &result, &herrno);
-                    else
-                        retval =
-                            gethostbyname_r(name, &hentry, auxbuf,
-                                            AUX_BUFLEN, &result, &herrno);
+            if (familyspecified)
+                retval =
+                    gethostbyname2_r(name, af, &hentry, auxbuf, AUX_BUFLEN,
+                                     &result, &herrno);
+            else
+                retval = gethostbyname_r(name, &hentry, auxbuf, AUX_BUFLEN,
+                                         &result, &herrno);
 #endif
-                <<<<<<<.mine} else {
-                    if (familyspecified)
-                        result = gethostbyname2(name, af);
-                    else
-                        result = gethostbyname(name);
-                }
-            }
-        == == == =} else {
+        } else {
 #ifdef HAVE_GETHOSTBYNAME2
             if (familyspecified)
                 result = gethostbyname2(name, af);
@@ -205,7 +168,8 @@ main(int argc, char *argv[])
                 result = gethostbyname(name);
         }
     }
-    >>>>>>>.r2053 if (result != NULL) {
+
+    if (result != NULL) {
         printf("\n\th_name = %s\n", result->h_name);
         if (result->h_aliases) {
             printf("\th_aliases = \n");
@@ -221,7 +185,7 @@ main(int argc, char *argv[])
         } else {
             printf("\th_addrtype = %d\n", result->h_addrtype);
         }
-        <<<<<<<.mine printf("\th_length = %d\n", result->h_length);
+        printf("\th_length = %d\n", result->h_length);
         printf("\th_addr_list = \n");
         for (i = 0; result->h_addr_list[i] != 0; i++) {
             bzero(buf, INET6_ADDRSTRLEN);
@@ -237,14 +201,6 @@ main(int argc, char *argv[])
         printf("Validation status = %s\n", p_val_error(val_status));
     }
     if (usereentrant) {
-        printf("h_errno = %s\n", hstrerror(herrno));
-    } else {
-        printf("h_errno = %s\n", hstrerror(h_errno));
-    }
-    == == == = if (dovalidate) {
-        printf("Validation status = %s\n", p_val_error(val_status));
-    }
-    if (usereentrant) {
 #ifdef HAVE_HSTRERROR
         printf("h_errno = %s\n", hstrerror(herrno));
 #else
@@ -257,5 +213,6 @@ main(int argc, char *argv[])
         printf("h_errno = %d\n", h_errno);
 #endif
     }
-    >>>>>>>.r2053 return 0;
+
+    return 0;
 }
