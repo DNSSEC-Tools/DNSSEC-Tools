@@ -718,7 +718,9 @@ sendquery(val_context_t * context, const char *desc, const char *name,
                     fprintf(stderr, "\n");
                     val_log_authentication_chain(context, LOG_INFO, name_n,
                                                  class, type,
-                                                 context->q_list, results);
+                                                 context ?
+                                                 context->q_list : NULL,
+                                                 results);
                     err = 1;
                 }
             }
@@ -738,7 +740,9 @@ sendquery(val_context_t * context, const char *desc, const char *name,
                             "FAILED: Some results were not received \n");
                     val_log_authentication_chain(context, LOG_INFO, name_n,
                                                  class, type,
-                                                 context->q_list, results);
+                                                 context ?
+                                                 context->q_list : NULL,
+                                                 results);
                     err = 1;
                     break;
                 }
@@ -748,7 +752,8 @@ sendquery(val_context_t * context, const char *desc, const char *name,
                 fprintf(stderr, "%s: \t", desc);
                 fprintf(stderr, "OK\n");
                 val_log_authentication_chain(context, LOG_INFO, name_n,
-                                             class, type, context->q_list,
+                                             class, type, context ?
+                                             context->q_list : NULL,
                                              results);
             }
         } else if (trusted_only) {
@@ -756,7 +761,8 @@ sendquery(val_context_t * context, const char *desc, const char *name,
             fprintf(stderr,
                     "FAILED: Some results were not validated successfully \n");
             val_log_authentication_chain(context, LOG_INFO, name_n, class,
-                                         type, context->q_list, results);
+                                         type, context ?
+                                         context->q_list : NULL, results);
         }
 
     } else {
@@ -786,7 +792,8 @@ usage(char *progname)
     printf("        -h, --help             Display this help and exit\n");
     printf("        -p, --print            Print the answer and validation result\n");
     printf("        -s, --selftest         Run internal sefltest\n");
-    printf("        -T, --testcase=<number> Specifies the test case number \n");
+    printf("        -T, --testcase=<number>[:<number>\n");
+    printf("                               Specifies the test case number/range \n");
     printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
     printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
     printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
@@ -830,8 +837,8 @@ main(int argc, char *argv[])
         int             selftest = 0;
         u_int8_t        flags = (u_int8_t) 0;
         int             retvals[] = { 0 };
-        int             tc = -1;
-        char           *label_str = NULL;
+        int             tcs = -1, tce;
+        char           *label_str = NULL, *nextarg = NULL;
         val_log_t      *logp;
 
         while (1) {
@@ -905,7 +912,11 @@ main(int argc, char *argv[])
                 break;
 
             case 'T':
-                tc = atoi(optarg) - 1;
+                tcs = strtol(optarg, &nextarg, 10) - 1;
+                if (*nextarg == '\0')
+                    tce = tcs;
+                else
+                    tce = atoi(++nextarg) - 1;
                 break;
 
             case 'l':
@@ -931,28 +942,6 @@ main(int argc, char *argv[])
         for (i = 0; testcases[i].desc != NULL; i++)
             tc_count++;
 
-        /*
-         * run an individual test case 
-         */
-        if (tc != -1) {
-            if (VAL_NO_ERROR !=
-                (ret_val = val_create_context(label_str, &context))) {
-                fprintf(stderr, "Cannot create context: %d\n", ret_val);
-                return 1;
-            }
-            if (tc >= tc_count) {
-                fprintf(stderr,
-                        "Invalid test case number (must be less than %d)\n",
-                        tc_count);
-                return 1;
-            }
-            sendquery(context, testcases[tc].desc,
-                      testcases[tc].qn,
-                      testcases[tc].qc,
-                      testcases[tc].qt, testcases[tc].qr, 0);
-            val_free_context(context);
-            return 0;
-        }
         // optind is a global variable.  See man page for getopt_long(3)
         if (optind < argc) {
             domain_name = argv[optind++];
@@ -966,7 +955,8 @@ main(int argc, char *argv[])
             val_free_context(context);
             fprintf(stderr, "\n");
 
-            // If the print option is present, perform query and validation again for printing the result
+            // If the print option is present, perform query and validation
+            // again for printing the result
             if (doprint) {
                 int             retval = 0;
                 struct val_response *resp, *cur;
@@ -998,20 +988,44 @@ main(int argc, char *argv[])
                 val_free_response(resp);
             }
         } else {
-            if (!selftest) {
+            if (!selftest && (tcs == -1)) {
                 fprintf(stderr, "Please specify domain name\n");
                 usage(argv[0]);
                 return 1;
             } else {
-                int             rc, failed = 0;
-                // Run the set of pre-defined test cases
+                int             rc, failed = 0, cnt = 0;
+
+                /*
+                 * Run the set of pre-defined test cases
+                 */
+                if (selftest) {
+                    tcs = 0;
+                    tce = tc_count;
+                }
+                else if ((tce >= tc_count) || (tcs >= tc_count)) {
+                    fprintf(stderr,
+                            "Invalid test case number (must be 0-%d)\n",
+                            tc_count);
+                    return 1;
+                }
+
+/*
+ * comment out this define to have each test case use a temporary
+ * context (useful for checking for memory leaks).
+ */
+#define ONE_CTX 1
+#ifdef ONE_CTX
                 if (VAL_NO_ERROR !=
                     (ret_val = val_create_context(label_str, &context))) {
                     fprintf(stderr, "Cannot create context: %d\n",
                             ret_val);
                     return 1;
                 }
-                for (rc = 0, i = 0; testcases[i].desc != NULL; i++) {
+#else
+                context = NULL;
+#endif
+                for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
+                    ++cnt;
                     rc = sendquery(context, testcases[i].desc,
                                    testcases[i].qn, testcases[i].qc,
                                    testcases[i].qt, testcases[i].qr, 0);
@@ -1019,7 +1033,8 @@ main(int argc, char *argv[])
                         ++failed;
                     fprintf(stderr, "\n");
                 }
-                val_free_context(context);
+                if (context)
+                    val_free_context(context);
                 fprintf(stderr, " Final results: %d/%d tests failed\n",
                         failed, i);
             }
