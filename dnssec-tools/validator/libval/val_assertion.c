@@ -604,10 +604,10 @@ fails_to_answer_query(struct qname_chain *q_names_n,
  * VAL_BAD_ARGUMENT     Bad argument (eg NULL ptr)
  */
 static int
-add_to_authentication_chain(struct val_authentication_chain **assertions,
+add_to_authentication_chain(struct _val_authentication_chain **assertions,
                             struct rrset_rec *rrset)
 {
-    struct val_authentication_chain *new_as, *first_as, *prev_as;
+    struct _val_authentication_chain *new_as, *first_as, *prev_as;
     struct rrset_rec *next_rr;
 
     if (NULL == assertions)
@@ -619,8 +619,8 @@ add_to_authentication_chain(struct val_authentication_chain **assertions,
     next_rr = rrset;
     while (next_rr) {
 
-        new_as = (struct val_authentication_chain *)
-            MALLOC(sizeof(struct val_authentication_chain));
+        new_as = (struct _val_authentication_chain *)
+            MALLOC(sizeof(struct _val_authentication_chain));
 
         new_as->_as.ac_data = copy_rrset_rec(next_rr);
 
@@ -653,7 +653,7 @@ add_to_authentication_chain(struct val_authentication_chain **assertions,
  * Free up the authentication chain.
  */
 void
-free_authentication_chain(struct val_authentication_chain *assertions)
+free_authentication_chain(struct _val_authentication_chain *assertions)
 {
 
     if (assertions == NULL)
@@ -678,7 +678,7 @@ free_authentication_chain(struct val_authentication_chain *assertions)
 static int
 build_pending_query(val_context_t * context,
                     struct val_query_chain **queries,
-                    struct val_authentication_chain *as)
+                    struct _val_authentication_chain *as)
 {
     u_int8_t       *signby_name_n;
     u_int16_t       tzonestatus;
@@ -797,11 +797,11 @@ assimilate_answers(val_context_t * context,
                    struct val_query_chain **queries,
                    struct domain_info *response,
                    struct val_query_chain *matched_q,
-                   struct val_authentication_chain **assertions,
+                   struct _val_authentication_chain **assertions,
                    u_int8_t flags)
 {
     int             retval;
-    struct val_authentication_chain *as = NULL;
+    struct _val_authentication_chain *as = NULL;
     u_int16_t       type_h;
     u_int16_t       class_h;
     u_int8_t        kind = SR_ANS_UNSET;
@@ -1243,12 +1243,12 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qc_name_n,
 }
 
 static void
-nsec3_proof_chk(val_context_t * ctx, struct val_result_chain *results,
+nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                 u_int8_t * qc_name_n, u_int16_t qc_type_h,
                 u_int8_t * soa_name_n, val_status_t * status)
 {
 
-    struct val_result_chain *res;
+    struct _val_result_chain *res;
     u_int8_t        hashlen;
     u_int8_t        nsec3_hashlen;
     val_nsec3_rdata_t nd;
@@ -1549,9 +1549,9 @@ nsec3_proof_chk(val_context_t * ctx, struct val_result_chain *results,
 
 static void
 prove_nonexistence(val_context_t * ctx, struct val_query_chain *top_q,
-                   struct val_result_chain *results)
+                   struct _val_result_chain *results)
 {
-    struct val_result_chain *res;
+    struct _val_result_chain *res;
     int             wcard_chk = 0;
     int             span_chk = 0;
     int             provably_unsecure = 0;
@@ -1692,7 +1692,7 @@ prove_nonexistence(val_context_t * ctx, struct val_query_chain *top_q,
 static int
 verify_provably_unsecure(val_context_t * context,
                          struct val_query_chain *top_q,
-                         struct val_authentication_chain *as)
+                         struct _val_authentication_chain *as)
 {
     struct val_result_chain *results = NULL;
     char            name_p[NS_MAXDNAME];
@@ -1849,9 +1849,9 @@ verify_provably_unsecure(val_context_t * context,
 static int
 try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                      struct val_query_chain **queries,
-                     struct val_authentication_chain *next_as)
+                     struct _val_authentication_chain *next_as)
 {
-    struct val_authentication_chain *pending_as;
+    struct _val_authentication_chain *pending_as;
     int             retval;
     struct rrset_rec *pending_rrset;
 
@@ -1991,13 +1991,13 @@ static int
 verify_and_validate(val_context_t * context,
                     struct val_query_chain **queries,
                     struct val_query_chain *top_q, u_int8_t flags,
-                    struct val_result_chain **results, int *done)
+                    struct _val_result_chain **results, int *done)
 {
-    struct val_authentication_chain *next_as;
+    struct _val_authentication_chain *next_as;
     int             retval;
-    struct val_authentication_chain *as_more;
-    struct val_result_chain *res;
-    struct val_authentication_chain *top_as;
+    struct _val_authentication_chain *as_more;
+    struct _val_result_chain *res;
+    struct _val_authentication_chain *top_as;
 
     if ((top_q == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
@@ -2035,8 +2035,8 @@ verify_and_validate(val_context_t * context,
             /*
              * Add this result to the list 
              */
-            res = (struct val_result_chain *)
-                MALLOC(sizeof(struct val_result_chain));
+            res = (struct _val_result_chain *)
+                MALLOC(sizeof(struct _val_result_chain));
             if (res == NULL)
                 return VAL_OUT_OF_MEMORY;
             res->val_rc_trust = as_more;
@@ -2124,7 +2124,7 @@ verify_and_validate(val_context_t * context,
                 if (next_as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey) {
 
                     int             asked_the_parent = 0;
-                    struct val_authentication_chain *as;
+                    struct _val_authentication_chain *as;
 
                     /*
                      * Check if the name in the soa record is the same as the
@@ -2278,7 +2278,7 @@ verify_and_validate(val_context_t * context,
 static int
 ask_cache(val_context_t * context, u_int8_t flags,
           struct val_query_chain *end_q, struct val_query_chain **queries,
-          struct val_authentication_chain **assertions, int *data_received)
+          struct _val_authentication_chain **assertions, int *data_received)
 {
     struct val_query_chain *next_q, *top_q;
     struct rrset_rec *next_answer;
@@ -2381,7 +2381,7 @@ ask_cache(val_context_t * context, u_int8_t flags,
 static int
 ask_resolver(val_context_t * context, u_int8_t flags,
              struct val_query_chain **queries, int block,
-             struct val_authentication_chain **assertions,
+             struct _val_authentication_chain **assertions,
              int *data_received)
 {
     struct val_query_chain *next_q;
@@ -2564,23 +2564,40 @@ ask_resolver(val_context_t * context, u_int8_t flags,
 }
 
 int
-clone_result_assertions(struct val_result_chain *results)
+transform_results(struct _val_result_chain **w_results, 
+                  struct val_result_chain **results)
 {
-    struct val_result_chain *res;
+    struct _val_result_chain *w_res, *t_res;
+    struct val_result_chain *cur_res, *prev_res, *temp_res;
+    int retval;
+    
+    cur_res = NULL;
+    prev_res = NULL;
+    
+    w_res = *w_results;
+    while(w_res) {
 
-    for (res = results; res && res->val_rc_trust; res = res->val_rc_next) {
-
-        struct val_authentication_chain *n_ac, *o_ac, *head_ac, *prev_ac;
+        struct val_authentication_chain *n_ac, *head_ac, *prev_ac;
+        struct _val_authentication_chain *o_ac;
 
         head_ac = NULL;
         prev_ac = NULL;
 
-        for (o_ac = res->val_rc_trust; o_ac; o_ac = o_ac->val_ac_trust) {
+        cur_res = (struct val_result_chain *) MALLOC (sizeof(struct val_result_chain));
+        if (cur_res == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        } 
+        cur_res->val_rc_status = w_res->val_rc_status;
+        
+        for (o_ac = w_res->val_rc_trust; o_ac; o_ac = o_ac->val_ac_trust) {
 
             n_ac = (struct val_authentication_chain *)
                 MALLOC(sizeof(struct val_authentication_chain));
-            if (n_ac == NULL)
-                return VAL_OUT_OF_MEMORY;
+            if (n_ac == NULL){
+                retval = VAL_OUT_OF_MEMORY;
+                goto err;
+            }
             memset(n_ac, 0, sizeof(struct val_authentication_chain));
             n_ac->val_ac_status = o_ac->val_ac_status;
             n_ac->val_ac_trust = NULL;
@@ -2590,8 +2607,10 @@ clone_result_assertions(struct val_result_chain *results)
 
                 n_ac->val_ac_rrset =
                     (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
-                if (n_ac->val_ac_rrset == NULL)
-                    return VAL_OUT_OF_MEMORY;
+                if (n_ac->val_ac_rrset == NULL) {
+                    retval = VAL_OUT_OF_MEMORY;
+                    goto err;
+                }
                 memset(n_ac->val_ac_rrset, 0, sizeof(struct val_rrset));
 
                 // xxx- bug 1537734: potential memory leak
@@ -2632,27 +2651,67 @@ clone_result_assertions(struct val_result_chain *results)
 
             if (head_ac == NULL) {
                 head_ac = n_ac;
-                prev_ac = head_ac;
             } else {
                 prev_ac->val_ac_trust = n_ac;
-                prev_ac = n_ac;
             }
+            prev_ac = n_ac;
         }
+
         // xxx-audit: huh? huge memory leak?
         //     so we just clones the entire val_rc_trust, and now
         //     replace original w/clone. who frees original?
-        res->val_rc_trust = head_ac;
+
+        cur_res->val_rc_trust = head_ac;
+        cur_res->val_rc_next = NULL;
+
+        if (prev_res == NULL) {
+            *results = cur_res;
+        }
+        else {
+            prev_res->val_rc_next = cur_res;
+        }
+        prev_res = cur_res;
+        *w_results = w_res->val_rc_next;
+
+        /* 
+         *  The _val_result_chain structure only has a reference to 
+         *  the authentication chain. The actual authentication chain
+         *  is still present in the validator context.
+         */
+        FREE(w_res);
+        w_res = *w_results;
     }
 
     return VAL_NO_ERROR;
+
+err:
+    /* free results working set */
+    w_res = *w_results;
+    while(w_res) {
+        t_res = w_res->val_rc_next;
+        FREE(w_res);
+        w_res = t_res;
+    }
+    *w_results = NULL;
+    
+    /* free actual results */
+    cur_res = *results;
+    while(cur_res) {
+        temp_res = cur_res->val_rc_next;
+        FREE(cur_res);
+        cur_res = temp_res;
+    }
+    
+    *results = NULL;
+    return retval;
 }
 
 void
 fix_validation_results(val_context_t * context,
-                       struct val_result_chain *results,
+                       struct _val_result_chain *results,
                        struct val_query_chain *top_q)
 {
-    struct val_result_chain *res;
+    struct _val_result_chain *res;
     int             partially_wrong = 0;
     int             negative_proof = 0;
 
@@ -2675,7 +2734,7 @@ fix_validation_results(val_context_t * context,
             /*
              * implies that the trust flag is set 
              */
-            struct val_authentication_chain *as;
+            struct _val_authentication_chain *as;
             for (as = res->val_rc_trust; as; as = as->val_ac_trust) {
                 if ((as->val_ac_rrset) &&
                     (as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey)) {
@@ -2713,7 +2772,7 @@ fix_validation_results(val_context_t * context,
 
     if (negative_proof) {
         int             asked_the_child = 0;
-        struct val_authentication_chain *as;
+        struct _val_authentication_chain *as;
 
         if ((top_q != NULL) && (top_q->qc_type_h == ns_t_ds)) {
             /*
@@ -2770,6 +2829,7 @@ val_resolve_and_check(val_context_t * ctx,
     int             data_received = 0;
 
     val_context_t  *context = NULL;
+    struct _val_result_chain *w_results = NULL;
 
     if ((results == NULL) || (domain_name_n == NULL))
         return VAL_BAD_ARGUMENT;
@@ -2861,16 +2921,16 @@ val_resolve_and_check(val_context_t * ctx,
             /*
              * the original query had some error 
              */
-            *results = (struct val_result_chain *)
+            w_results = (struct _val_result_chain *)
                 MALLOC(sizeof(struct val_result_chain));
-            if ((*results) == NULL) {
+            if ((w_results) == NULL) {
                 retval = VAL_OUT_OF_MEMORY;
                 goto err;
             }
-            (*results)->val_rc_trust = top_q->qc_as;
-            (*results)->val_rc_status =
+            (w_results)->val_rc_trust = top_q->qc_as;
+            (w_results)->val_rc_status =
                 VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
-            (*results)->val_rc_next = NULL;
+            (w_results)->val_rc_next = NULL;
 
             break;
         }
@@ -2887,20 +2947,20 @@ val_resolve_and_check(val_context_t * ctx,
         if (VAL_NO_ERROR !=
             (retval =
              verify_and_validate(context, &(context->q_list), top_q, flags,
-                                 results, &done)))
+                                 &w_results, &done)))
             goto err;
     }
 
-    if (results) {
+    if (w_results) {
 
         if (!(flags & F_DONT_VALIDATE))
-            fix_validation_results(context, *results, top_q);
+            fix_validation_results(context, w_results, top_q);
 
         /*
          * Clone the required assertion list elements, so that 
          * context can be free'd up if necessary
          */
-        if (VAL_NO_ERROR != (retval = clone_result_assertions(*results)))
+        if (VAL_NO_ERROR != (retval = transform_results(&w_results, results)))
             return retval;
 
     }

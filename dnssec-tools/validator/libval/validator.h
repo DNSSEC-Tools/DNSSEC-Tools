@@ -206,7 +206,7 @@ extern          "C" {
     typedef u_int16_t val_astatus_t;
 
     struct val_query_chain;     /* forward declaration */
-    struct val_authentication_chain;    /* forward declaration */
+    struct _val_authentication_chain;    /* forward declaration */
 
 
 #define policy_entry_t void*
@@ -289,7 +289,7 @@ extern          "C" {
         /*
          * caches 
          */
-        struct val_authentication_chain *a_list;
+        struct _val_authentication_chain *a_list;
         struct val_query_chain *q_list;
 
         //XXX Needs a lock variable here
@@ -300,17 +300,17 @@ extern          "C" {
     struct val_rrset_digested {
         struct rrset_rec *ac_data;
         struct val_query_chain *ac_pending_query;
-        struct val_authentication_chain *val_ac_rrset_next;
-        struct val_authentication_chain *val_ac_next;
+        struct _val_authentication_chain *val_ac_rrset_next;
+        struct _val_authentication_chain *val_ac_next;
     };
 
-    struct val_authentication_chain {
+    struct _val_authentication_chain {
         val_astatus_t   val_ac_status;
         union {
             struct val_rrset *val_ac_rrset;
             struct val_rrset_digested _as;
         };
-        struct val_authentication_chain *val_ac_trust;
+        struct _val_authentication_chain *val_ac_trust;
     };
 
 
@@ -343,7 +343,7 @@ extern          "C" {
         u_int8_t       *qc_zonecut_n;
         struct delegation_info *qc_referral;
         int             qc_trans_id;
-        struct val_authentication_chain *qc_as;
+        struct _val_authentication_chain *qc_as;
         int             qc_glue_request;
         struct val_query_chain *qc_next;
     };
@@ -364,10 +364,22 @@ extern          "C" {
         int             di_res_error;
     };
 
+    struct val_authentication_chain {
+        val_astatus_t   val_ac_status;
+        struct val_rrset *val_ac_rrset;
+        struct val_authentication_chain *val_ac_trust;
+    };
+
     struct val_result_chain {
         val_status_t    val_rc_status;
         struct val_authentication_chain *val_rc_trust;
         struct val_result_chain *val_rc_next;
+    };
+
+    struct _val_result_chain {
+        val_status_t    val_rc_status;
+        struct _val_authentication_chain *val_rc_trust;
+        struct _val_result_chain *val_rc_next;
     };
 
     typedef struct val_dnskey_rdata {
