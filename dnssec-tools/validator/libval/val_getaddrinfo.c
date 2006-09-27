@@ -511,7 +511,7 @@ get_addrinfo_from_result(const val_context_t *ctx,
             if (hints && (hints->ai_flags & AI_CANONNAME)
                 && (canonname == NULL)) {
                 char            dname[NS_MAXDNAME];
-                bzero(dname, NS_MAXDNAME);
+                bzero(dname, sizeof(dname));
                 if (ns_name_ntop
                     (rrset->val_rrset_name_n, dname, sizeof(dname)) < 0) {
                     /*
@@ -536,8 +536,11 @@ get_addrinfo_from_result(const val_context_t *ctx,
 
                 ainfo = (struct val_addrinfo *)
                     malloc(sizeof(struct val_addrinfo));
-                if (ainfo == NULL)
+                if (ainfo == NULL) {
+                    if (canonname)
+                        FREE(canonname);
                     return EAI_MEMORY;
+                }
                 bzero(ainfo, sizeof(struct val_addrinfo));
 
                 /*
@@ -550,6 +553,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
                         if (ainfo_head)
                             free_val_addrinfo(ainfo_head);
                         free_val_addrinfo(ainfo);
+                        if (canonname)
+                            FREE(canonname);
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "rrset of type A found");
@@ -570,6 +575,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
                         if (ainfo_head)
                             free_val_addrinfo(ainfo_head);
                         free_val_addrinfo(ainfo);
+                        if (canonname)
+                            FREE(canonname);
                         return EAI_MEMORY;
                     }
                     val_log(ctx, LOG_DEBUG, "rrset of type AAAA found");
@@ -585,7 +592,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
                     continue;
                 }
 
-                ainfo->ai_canonname = canonname;
+                if (canonname)
+                    ainfo->ai_canonname = strdup(canonname);
                 ainfo->ai_val_status = val_status;
 
                 /*
