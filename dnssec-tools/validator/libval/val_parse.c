@@ -147,19 +147,18 @@ val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
 }
 
 
-#define TOK_IN_STR() do {					\
-	int i = 0;								\
-	strcpy (token, "");						\
-	while ((sp < ep) && isspace(*sp))		\
-		sp++;								\
+#define TOK_IN_STR() do {                                               \
+	int i = 0;                                                      \
+	token[0] = '\0';						\
+	while ((sp < ep) && isspace(*sp))                               \
+            sp++;                                                       \
 	if (sp >= ep)							\
-		return VAL_BAD_ARGUMENT;				\
-	while ((sp < ep) && !isspace(*sp) && (i<NS_MAXDNAME)) {         \
-		token[i++] = *sp;					\
-		sp++;								\
-	}										\
+            return VAL_BAD_ARGUMENT;                                    \
+	while ((sp < ep) && !isspace(*sp) && (i<sizeof(token))) {       \
+            token[i++] = *sp++;                                         \
+	}                                                               \
 	token[i] = '\0';						\
-} while (0)
+    } while (0)
 
 /*
  * Parse the dnskey from the string. The string contains the flags, 
@@ -220,8 +219,11 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     bufsize = ep - keyptr;
     (*dnskey_rdata)->public_key =
         (u_char *) MALLOC(bufsize * sizeof(char));
-    if ((*dnskey_rdata)->public_key == NULL)
+    if ((*dnskey_rdata)->public_key == NULL) {
+        FREE(*dnskey_rdata);
+        *dnskey_rdata = NULL;
         return VAL_OUT_OF_MEMORY;
+    }
 
     /*
      * decode the base64 public key 
@@ -236,6 +238,7 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     if ((*dnskey_rdata)->public_key_len <= 0) {
         FREE((*dnskey_rdata)->public_key);
         FREE(*dnskey_rdata);
+        *dnskey_rdata = NULL;
         return VAL_BAD_ARGUMENT;
     }
 
@@ -247,8 +250,12 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
         sizeof(u_int8_t) +      /* proto */
         sizeof(u_int8_t);       /*algo */
     buf = (u_char *) MALLOC(buflen * sizeof(u_char));
-    if (buf == NULL)
+    if (buf == NULL) {
+        FREE((*dnskey_rdata)->public_key);
+        FREE(*dnskey_rdata);
+        *dnskey_rdata = NULL;
         return VAL_OUT_OF_MEMORY;
+    }
 
     bp = buf;
     flags = (*dnskey_rdata)->flags;
@@ -280,6 +287,7 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
 /*
  * Parse rdata portion of an RRSIG Resource Record.
  * Returns the number of bytes in the RRSIG rdata portion that were parsed.
+ * Caller assumes responsiblity for allocated dnskey_rdata memory.
  */
 int
 val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
