@@ -402,7 +402,7 @@ res_sq_free_rrset_recs(struct rrset_rec **set)
 
     if (*set) {
         if ((*set)->rrs_respondent_server)
-            free_name_server(&((*set)->rrs_respondent_server));
+            free_name_servers(&((*set)->rrs_respondent_server));
         if ((*set)->rrs_zonecut_n)
             FREE((*set)->rrs_zonecut_n);
         if ((*set)->rrs.val_msg_header) 
@@ -798,12 +798,13 @@ find_rr_set(struct name_server *respondent_server,
             *the_list = new_one;
         else
             last->rrs_next = new_one;
+
         /*
          * we need to at least set the predecesor, while we have it 
          */
-
-        if (SR_UNSET !=
-            clone_ns(&new_one->rrs_respondent_server, respondent_server)) {
+        if (respondent_server &&
+            (SR_UNSET !=
+             clone_ns(&new_one->rrs_respondent_server, respondent_server))) {
             res_sq_free_rrset_recs(the_list);
             return NULL;
         }
@@ -966,7 +967,7 @@ decompress(u_int8_t ** rdata,
         working_increment = ns_name_unpack(response, end,
                                            &response[working_index],
                                            other_expanded_name,
-                                           NS_MAXCDNAME);
+                                           sizeof(other_expanded_name));
 
         if (working_increment < 0)
             return VAL_INTERNAL_ERROR;
@@ -988,7 +989,8 @@ decompress(u_int8_t ** rdata,
 
         working_increment = ns_name_unpack(response, end,
                                            &response[working_index],
-                                           expanded_name, NS_MAXCDNAME);
+                                           expanded_name,
+                                           sizeof(expanded_name));
         if (working_increment < 0)
             return VAL_INTERNAL_ERROR;
 
@@ -1053,7 +1055,8 @@ decompress(u_int8_t ** rdata,
 
         working_increment = ns_name_unpack(response, end,
                                            &response[working_index],
-                                           expanded_name, NS_MAXCDNAME);
+                                           expanded_name,
+                                           sizeof(expanded_name));
         if (working_increment < 0)
             return VAL_INTERNAL_ERROR;
 
@@ -1065,7 +1068,7 @@ decompress(u_int8_t ** rdata,
             working_increment = ns_name_unpack(response, end,
                                                &response[working_index],
                                                other_expanded_name,
-                                               NS_MAXCDNAME);
+                                               sizeof(other_expanded_name));
             if (working_increment < 0)
                 return VAL_INTERNAL_ERROR;
 
@@ -1113,7 +1116,8 @@ decompress(u_int8_t ** rdata,
         working_increment = ns_name_unpack(response, end,
                                            &response[working_index +
                                                      SIGNBY],
-                                           expanded_name, NS_MAXCDNAME);
+                                           expanded_name,
+                                           sizeof(expanded_name));
         if (working_increment < 0)
             return VAL_INTERNAL_ERROR;
 
