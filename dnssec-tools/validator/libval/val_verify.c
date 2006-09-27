@@ -409,6 +409,8 @@ make_sigfield(u_int8_t ** field,
 
             wcard_n[0] = (u_int8_t) 1;
             wcard_n[1] = '*';
+            if ((outer_len + 2) > sizeof(wcard_n))
+                goto err;
             memcpy(&wcard_n[2], np, outer_len);
             if ((index + outer_len + 2) > *field_length)
                 goto err;
@@ -497,23 +499,27 @@ find_key_for_tag(struct rr_rec *keyrr, u_int16_t * tag_n,
     struct rr_rec  *nextrr;
     u_int16_t       tag_h;
 
-    if ((tag_n == NULL) || (matching_rr == NULL))
+    if ((tag_n == NULL) || (matching_rr == NULL) || (new_dnskey_rdata == NULL))
         return VAL_BAD_ARGUMENT;
 
     tag_h = ntohs(*tag_n);
     *matching_rr = NULL;
     for (nextrr = keyrr; nextrr; nextrr = nextrr->rr_next) {
-        if (new_dnskey_rdata == NULL)
-            return VAL_OUT_OF_MEMORY;
 
-        val_parse_dnskey_rdata(nextrr->rr_rdata,
-                               nextrr->rr_rdata_length_h,
-                               new_dnskey_rdata);
+        if (-1 == val_parse_dnskey_rdata(nextrr->rr_rdata,
+                                         nextrr->rr_rdata_length_h,
+                                         new_dnskey_rdata))
+            continue;
+
         new_dnskey_rdata->next = NULL;
 
         if (new_dnskey_rdata->key_tag == tag_h) {
             *matching_rr = nextrr;
             return VAL_NO_ERROR;
+        }
+        else if (new_dnskey_rdata->public_key != NULL) {
+            FREE(new_dnskey_rdata->public_key);
+            new_dnskey_rdata->public_key = NULL;
         }
     }
 
@@ -758,6 +764,10 @@ verify_next_assertion(val_context_t * ctx,
                                           &ds_keytag_n, &dnskey,
                                           &matching_dnskey_rr))) {
                         dsrec = dsrec->rr_next;
+                        if (dnskey.public_key != NULL) {
+                            FREE(dnskey.public_key);
+                            dnskey.public_key = NULL;
+                        }
                         FREE(ds.d_hash);
                         continue;
                     }
