@@ -70,6 +70,12 @@ static struct name_server *root_ns = NULL;
 		return VAL_INTERNAL_ERROR;	\
 } while(0)
 
+#define LOCK_DOWNGRADE() do{				\
+	if((0 != pthread_rwlock_unlock(&rwlock)) ||	\
+	   (0 != pthread_rwlock_rdlock(&rwlock)))	\
+		return VAL_INTERNAL_ERROR;	\
+} while(0)
+
 #define UNLOCK() do{				\
 	if (0 != pthread_rwlock_unlock(&rwlock)) \
 		return VAL_INTERNAL_ERROR;	\
@@ -112,6 +118,9 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
                 // xxx-audit: dangerous locking
                 //     there is a window here. recommend just getting
                 //     and exclusive lock all the time...
+                /*
+                 * caller has a read lock, now we need a write lock...
+                 */
                 LOCK_UPGRADE();
 
                 /*
@@ -144,6 +153,8 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
                 if (trail_new == NULL) {
                     new_info = new_rr->rrs_next;
                     if (new_info == NULL) {
+                        res_sq_free_rrset_recs(&new_rr);
+                        LOCK_DOWNGRADE();
                         return VAL_NO_ERROR;
                     }
                 } else
@@ -151,8 +162,7 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
                 new_rr->rrs_next = NULL;
                 res_sq_free_rrset_recs(&new_rr);
 
-                UNLOCK();
-                LOCK_SH();
+                LOCK_DOWNGRADE();
 
                 break;
             } else {
@@ -181,6 +191,8 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
     LOCK_INIT();
 
     *cloned_answer = NULL;
+
+    LOCK_SH();
     switch (type_h) {
 
     case ns_t_ds:
@@ -201,7 +213,6 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
     }
 
     prev = NULL;
-    LOCK_SH();
     while (next_answer) {
 
         if ((next_answer->rrs.val_rrset_type_h == type_h) &&
@@ -282,20 +293,31 @@ stow_root_info(struct rrset_rec *root_info)
 
     LOCK_INIT();
 
-    if (ns_name_pton(root_zone, root_zone_n, sizeof(root_zone_n)) == -1)
+    LOCK_SH();
+    if (NULL != root_ns) {
+        UNLOCK();
+        return VAL_NO_ERROR;
+    }
+
+    if (ns_name_pton(root_zone, root_zone_n, sizeof(root_zone_n)) == -1) {
+        UNLOCK();
         return VAL_CONF_PARSE_ERROR;
+    }
 
     if (VAL_NO_ERROR !=
         (retval =
          res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info,
-                                   &pending_glue)))
+                                   &pending_glue))) {
+        UNLOCK();
         return retval;
+    }
+
     /*
      * We are not interested in fetching glue for the root 
      */
     free_name_servers(&pending_glue);
 
-    LOCK_EX();
+    LOCK_UPGRADE();
     root_ns = ns_list;
     UNLOCK();
 
@@ -319,6 +341,8 @@ free_validator_cache(void)
     unchecked_ns_info = NULL;
     res_sq_free_rrset_recs(&unchecked_answers);
     unchecked_answers = NULL;
+    free_name_servers(&root_ns);
+    root_ns = NULL;
     UNLOCK();
 
     return VAL_NO_ERROR;
