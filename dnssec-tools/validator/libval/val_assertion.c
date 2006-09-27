@@ -1,4 +1,3 @@
-
 /*
  * Copyright 2005 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
@@ -361,6 +360,12 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key)
         if (!namecmp(ta_cur->zone_n, zp)) {
 
             for (curkey = key; curkey; curkey = curkey->rr_next) {
+                /** clear any data from previous iterations */
+                memset(&dnskey, 0x00, sizeof(dnskey));
+
+                /*
+                 * parse key and compare
+                 */
                 val_parse_dnskey_rdata(curkey->rr_rdata,
                                        curkey->rr_rdata_length_h, &dnskey);
                 if (!dnskey_compare(&dnskey, ta_cur->publickey)) {
@@ -975,10 +980,17 @@ prove_nsec_wildcard_check(val_context_t * ctx,
      */
     /*
      * prefix "*" to the closest encounter, and check if that 
-     * * name falls within the range given in wcard_proof
+     * name falls within the range given in wcard_proof
      */
     u_int8_t       *nxtname;
     u_char          domain_name_n[NS_MAXCDNAME];
+
+    if (NULL == status) {
+        val_log(ctx, LOG_WARNING,
+                "bad parameter to prove_nsec_wildcard_check");
+        return;
+    }
+
     if ((NULL == wcard_proof) || (NULL == wcard_proof->rrs.val_rrset_data))
         nxtname = NULL;
     else
@@ -993,12 +1005,12 @@ prove_nsec_wildcard_check(val_context_t * ctx,
 
     domain_name_n[0] = 0x01;
     domain_name_n[1] = 0x2a;    /* for the '*' character */
-    memcpy(&domain_name_n[2], closest_encounter,
-           wire_name_length(closest_encounter));
+    if (closest_encounter)
+        memcpy(&domain_name_n[2], closest_encounter,
+               wire_name_length(closest_encounter));
     /*
      *  either we should be able to prove that wild card does not exist, 
-     *  or that type is not
-     *  present at that wild card 
+     *  or that type is not present at that wild card 
      */
     if ((nxtname != NULL) &&
         (!namecmp(domain_name_n, wcard_proof->rrs.val_rrset_name_n))) {
@@ -1744,7 +1756,7 @@ verify_provably_unsecure(val_context_t * context,
 
         val_log(context, LOG_DEBUG, "Finding next zone cut \n");
         if ((VAL_NO_ERROR !=
-             find_next_zonecut(rrset, curzone_n, &zonecut_n))
+             find_next_zonecut(context, rrset, curzone_n, &zonecut_n))
             || (zonecut_n == NULL)) {
 
             if (curzone_n == NULL)
@@ -2323,7 +2335,7 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 response = (struct domain_info *)
                     MALLOC(sizeof(struct domain_info));
                 if (response == NULL) {
-                    FREE(next_answer);
+                    res_sq_free_rrset_recs(&next_answer);
                     return VAL_OUT_OF_MEMORY;
                 }
 
@@ -2331,7 +2343,7 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 response->di_qnames = (struct qname_chain *)
                     MALLOC(sizeof(struct qname_chain));
                 if (response->di_qnames == NULL) {
-                    FREE(response->di_rrset);
+                    free_domain_info_ptrs(response);
                     FREE(response);
                     return VAL_OUT_OF_MEMORY;
                 }
@@ -2342,8 +2354,7 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 if (ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p))
                     == -1) {
                     next_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
-                    FREE(response->di_qnames);
-                    FREE(response->di_rrset);
+                    free_domain_info_ptrs(response);
                     FREE(response);
                     continue;
                 }
@@ -2355,8 +2366,8 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 retval = assimilate_answers(context, queries,
                                             response, next_q, assertions,
                                             flags);
-                FREE(response->di_rrset);
-                FREE(response->di_qnames);
+                response->di_requested_name_h = NULL;
+                free_domain_info_ptrs(response);
                 FREE(response);
                 if (VAL_NO_ERROR != retval) {
                     return retval;
@@ -2951,6 +2962,8 @@ val_resolve_and_check(val_context_t * ctx,
             goto err;
     }
 
+    retval = VAL_NO_ERROR;
+
     if (w_results) {
 
         if (!(flags & F_DONT_VALIDATE))
@@ -2960,12 +2973,9 @@ val_resolve_and_check(val_context_t * ctx,
          * Clone the required assertion list elements, so that 
          * context can be free'd up if necessary
          */
-        if (VAL_NO_ERROR != (retval = transform_results(&w_results, results)))
-            return retval;
-
+        retval = transform_results(&w_results, results);
     }
 
-    retval = VAL_NO_ERROR;
 
   err:
     if ((ctx == NULL) && context) {
