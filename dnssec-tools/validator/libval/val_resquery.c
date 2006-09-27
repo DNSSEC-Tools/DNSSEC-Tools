@@ -761,6 +761,35 @@ do_referral(val_context_t * context,
 }
 
 
+#define SAVE_RR_TO_LIST(respondent_server, listtype, name_n, type_h,    \
+                        set_type_h, class_h, ttl_h, hptr, rdata,        \
+                        rdata_len_h, from_section, authoritive, zonecut_n) \
+    do {                                                                \
+        struct rrset_rec *rr_set;                                       \
+        int ret_val;                                                    \
+        rr_set = find_rr_set (respondent_server, listtype, name_n, type_h, \
+                              set_type_h, class_h, ttl_h, hptr, rdata,  \
+                              from_section, authoritive, zonecut_n);    \
+        if (rr_set==NULL) {                                             \
+            ret_val = VAL_OUT_OF_MEMORY;                                \
+        }                                                               \
+        else {                                                          \
+            if (type_h != ns_t_rrsig) {                                 \
+                /* Add this record to its chain of rr_rec's. */         \
+                ret_val = add_to_set(rr_set,rdata_len_h,rdata);         \
+            } else  {                                                   \
+                /* Add this record to the sig of rrset_rec. */          \
+                ret_val = add_as_sig(rr_set,rdata_len_h,rdata);         \
+            }                                                           \
+        }                                                               \
+        if (ret_val != VAL_NO_ERROR) {                                  \
+            res_sq_free_rrset_recs(&learned_keys);                      \
+            res_sq_free_rrset_recs(&learned_zones);                     \
+            res_sq_free_rrset_recs(&learned_ds);                        \
+            FREE(rdata);                                                \
+            return ret_val;                                             \
+        }                                                               \
+    } while (0)
 
 static int
 digest_response(val_context_t * context,
@@ -953,7 +982,7 @@ digest_response(val_context_t * context,
                             rdata, rdata_len_h, from_section, 
                             authoritive, rrs_zonecut_n);
         }
-        if (set_type_h == ns_t_ds) {
+        else if (set_type_h == ns_t_ds) {
             SAVE_RR_TO_LIST(respondent_server, &learned_ds, name_n, type_h,
                             set_type_h, class_h, ttl_h, hptr, rdata, 
                             rdata_len_h, from_section, authoritive, 
@@ -1039,15 +1068,22 @@ digest_response(val_context_t * context,
         struct rrset_rec *gluedata = copy_rrset_rec(*answers);
         if (VAL_NO_ERROR != (ret_val = stow_zone_info(gluedata))) {
             res_sq_free_rrset_recs(&gluedata);
+            res_sq_free_rrset_recs(&learned_keys);
+            res_sq_free_rrset_recs(&learned_zones);
+            res_sq_free_rrset_recs(&learned_ds);
         }
     }
 
     if (VAL_NO_ERROR != (ret_val = stow_key_info(learned_keys))) {
         res_sq_free_rrset_recs(&learned_keys);
+        res_sq_free_rrset_recs(&learned_zones);
+        res_sq_free_rrset_recs(&learned_ds);
         return ret_val;
     }
 
     if (VAL_NO_ERROR != (ret_val = stow_ds_info(learned_ds))) {
+        res_sq_free_rrset_recs(&learned_zones);
+        res_sq_free_rrset_recs(&learned_keys);
         res_sq_free_rrset_recs(&learned_ds);
         return ret_val;
     }
@@ -1059,15 +1095,12 @@ int
 val_resquery_send(val_context_t * context,
                   struct val_query_chain *matched_q)
 {
-    char            name[NS_MAXDNAME];
+    char            name_p[NS_MAXDNAME];
     int             ret_val;
     struct name_server *tempns;
 
     /*
-     * Get a (set of) answer(s) from the default NS's 
-     */
-
-    /*
+     * Get a (set of) answer(s) from the default NS's.
      * If nslist is NULL, read the cached zones and name servers
      * in context to create the nslist
      */
@@ -1078,21 +1111,21 @@ val_resquery_send(val_context_t * context,
     }
     nslist = matched_q->qc_ns_list;
 
-    if (ns_name_ntop(matched_q->qc_name_n, name, sizeof(name)) == -1) {
+    if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
         matched_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
         return VAL_NO_ERROR;
     }
 
-    val_log(context, LOG_DEBUG, "Sending query for %s to:", name);
+    val_log(context, LOG_DEBUG, "Sending query for %s to:", name_p);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
         struct sockaddr_in *s =
             (struct sockaddr_in *) (&(tempns->ns_address[0]));
         val_log(context, LOG_DEBUG, "    %s", inet_ntoa(s->sin_addr));
     }
-    val_log(context, LOG_DEBUG, "End of Sending query for %s", name);
+    val_log(context, LOG_DEBUG, "End of Sending query for %s", name_p);
 
     if ((ret_val =
-         query_send(name, matched_q->qc_type_h, matched_q->qc_class_h,
+         query_send(name_p, matched_q->qc_type_h, matched_q->qc_class_h,
                     nslist, &(matched_q->qc_trans_id))) == SR_UNSET)
         return VAL_NO_ERROR;
 
@@ -1112,7 +1145,7 @@ val_resquery_rcv(val_context_t * context,
     struct name_server *server = NULL;
     u_int8_t       *response_data = NULL;
     u_int32_t       response_length = 0;
-    char            name[NS_MAXDNAME];
+    char            name_p[NS_MAXDNAME];
 
     int             ret_val;
 
@@ -1129,18 +1162,25 @@ val_resquery_rcv(val_context_t * context,
     server = NULL;
 
     if (ret_val != SR_UNSET) {
+        if (response_data)
+            FREE(response_data);
         matched_q->qc_state = Q_ERROR_BASE + ret_val;
         return VAL_NO_ERROR;
     }
 
-    if (ns_name_ntop(matched_q->qc_name_n, name, sizeof(name)) == -1) {
+    if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
         matched_q->qc_state = Q_ERROR_BASE + SR_RCV_INTERNAL_ERROR;
+        if (response_data)
+            FREE(response_data);
         return VAL_NO_ERROR;
     }
 
     *response = (struct domain_info *) MALLOC(sizeof(struct domain_info));
-    if (*response == NULL)
+    if (*response == NULL) {
+        if (response_data)
+            FREE(response_data);
         return VAL_OUT_OF_MEMORY;
+    }
 
     /*
      * Initialize the response structure 
@@ -1150,9 +1190,11 @@ val_resquery_rcv(val_context_t * context,
     (*response)->di_requested_type_h = matched_q->qc_type_h;
     (*response)->di_requested_class_h = matched_q->qc_class_h;
 
-    if (((*response)->di_requested_name_h = STRDUP(name)) == NULL) {
+    if (((*response)->di_requested_name_h = STRDUP(name_p)) == NULL) {
         FREE(*response);
         *response = NULL;
+        if (response_data)
+            FREE(response_data);
         return VAL_OUT_OF_MEMORY;
     }
 
@@ -1160,8 +1202,7 @@ val_resquery_rcv(val_context_t * context,
                                    matched_q->qc_respondent_server,
                                    queries, response_data, response_length,
                                    *response) != VAL_NO_ERROR)) {
-        // xxx-audit: memory leak? free/clear *response?
-        FREE((*response)->di_requested_name_h);
+        free_domain_info_ptrs(*response);
         FREE(*response);
         *response = NULL;
         FREE(response_data);
@@ -1187,12 +1228,13 @@ val_resquery_rcv(val_context_t * context,
  * find the zonecut for this name and type 
  */
 int
-find_next_zonecut(struct rrset_rec *rrset, u_int8_t * curzone_n,
-                  u_int8_t ** name_n)
+find_next_zonecut(val_context_t *ctx, struct rrset_rec *rrset,
+                  u_int8_t * curzone_n, u_int8_t ** name_n)
 {
     u_int8_t       *qname;
     int             retval;
     struct val_result_chain *results;
+    val_context_t *context = NULL;
 
     if (name_n == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1237,12 +1279,18 @@ find_next_zonecut(struct rrset_rec *rrset, u_int8_t * curzone_n,
         return VAL_NO_ERROR;
 
     /*
-     * query for the SOA and return the zone cut 
+     * query for the SOA and return the zone cut.
+     * create a context if we don't already have one.
      */
-    if (VAL_NO_ERROR == (retval = val_resolve_and_check(NULL, qname,
-                                                        ns_c_in, ns_t_soa,
-                                                        F_DONT_VALIDATE,
-                                                        &results))) {
+    if (ctx == NULL) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
+            return EAI_FAIL;
+    } else
+        context = (val_context_t *) ctx;
+
+    retval = val_resolve_and_check(context, qname, ns_c_in, ns_t_soa,
+                                   F_DONT_VALIDATE, &results);
+    if (VAL_NO_ERROR == retval) {
 
         struct val_result_chain *res = results;
         for (res = results;
@@ -1259,8 +1307,10 @@ find_next_zonecut(struct rrset_rec *rrset, u_int8_t * curzone_n,
                     wire_name_length(res->val_rc_trust->val_ac_rrset->
                                      val_rrset_name_n);
                 *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-                if (*name_n == NULL)
-                    return VAL_OUT_OF_MEMORY;
+                if (*name_n == NULL) {
+                    retval = VAL_OUT_OF_MEMORY;
+                    goto done;
+                }
                 memcpy(*name_n,
                        res->val_rc_trust->val_ac_rrset->val_rrset_name_n,
                        len);
@@ -1271,7 +1321,11 @@ find_next_zonecut(struct rrset_rec *rrset, u_int8_t * curzone_n,
         }
     }
 
+  done:
     val_free_result_chain(results);
 
+    if ((ctx == NULL) && context)
+        val_free_context(context);
+    
     return retval;
 }
