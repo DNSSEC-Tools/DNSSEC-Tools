@@ -702,5 +702,7 @@ int main(int argc, char *argv[])
 		}
 	}
 
+        free_validator_cache();
+
 	return 0;
 }
