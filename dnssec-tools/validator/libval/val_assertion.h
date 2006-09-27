@@ -8,7 +8,7 @@
 int             add_to_query_chain(struct val_query_chain **queries,
                                    u_char * name_n, const u_int16_t type_h,
                                    const u_int16_t class_h);
-void            free_authentication_chain(struct val_authentication_chain
+void            free_authentication_chain(struct _val_authentication_chain
                                           *assertions);
 void            free_query_chain(struct val_query_chain *queries);
 int             val_isauthentic(val_status_t val_status);

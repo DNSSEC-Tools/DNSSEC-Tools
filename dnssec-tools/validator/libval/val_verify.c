@@ -641,7 +641,7 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
 // XXX VAL_A_KEYTAG_MISMATCH
 void
 verify_next_assertion(val_context_t * ctx,
-                      struct val_authentication_chain *as)
+                      struct _val_authentication_chain *as)
 {
     struct rrset_rec *the_set;
     struct rr_rec  *the_sig;
@@ -650,7 +650,7 @@ verify_next_assertion(val_context_t * ctx,
     u_int16_t       signby_footprint_n;
     val_dnskey_rdata_t dnskey;
     int             is_a_wildcard;
-    struct val_authentication_chain *the_trust;
+    struct _val_authentication_chain *the_trust;
     int             retval;
 
     if ((as == NULL) || (as->_as.ac_data == NULL) ||
