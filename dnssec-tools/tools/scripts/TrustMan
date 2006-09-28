@@ -26,6 +26,8 @@ my %opts = (
         c => 0
 );
 
+my $daemon = 1; # default is to run as a daemon
+
 ########################################################
 # main
 
@@ -60,9 +62,6 @@ LocalGetOptions(\%opts,
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
 
-# then $dtconf{'name_of_option_in_dnssec-tools.conf'}
-# contains the value of that option as set in the conf file
-
 my $ncfile = $opts{'n'} ? $opts{'n'}
                         : $dtconf{'tanamedconffile'};
 
@@ -83,6 +82,7 @@ if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
 }
 
 if ($opts{'f'}) {
+    $daemon = 0;
     &checkkeys;
 } elsif ($opts{'c'}) {
     my $conffile = getconffile();
@@ -153,9 +153,7 @@ sub checkkeys {
     # needed to ensure that +dnssec is used on subsequent queries
     my $setdnssec = $res->dnssec(1);
     
-#    read_named_conf_file(\%keystorage, $ncfile) if ($ncfile);
     read_conf_file($named_conf_pat, \%keystorage, $ncfile) if ($ncfile);
-#    read_dnsval_conf_file(\%keystorage, $dvfile) if ($dvfile);
     read_conf_file($dnsval_conf_pat, \%keystorage, $ncfile) if ($ncfile);
 
 # if a domain is specified on the command line, we will only
@@ -172,11 +170,20 @@ sub checkkeys {
     }
 
     foreach my $d (@domains) {
+        my $rrsigquery = $res->query($d,"RRSIG");
+        foreach my $rr ($rrsigquery->answer) {
+            my $ottl = $rr->orgttl;
+            my $sigexp = $rr->sigexpiration;
+            my $domainname = $rr->name;
+        # do I need the sig?
+            my $sig = $rr->sig;
+        }
         my $query = $res->query($d,"DNSKEY");
 
         if ($query) {
             foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer) {
                 next if (!($keyrec->flags & 1));
+                my $ttl = $keyrec->ttl;
                 my $key = $keyrec->key;
                 $key =~ s/\s+//g; # remove all spaces   
                 $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
@@ -186,7 +193,9 @@ sub checkkeys {
                     push @gooddomains, $d;
                 }
             }
+            
         } else {
+# TODO see notes under Active Refresh for how to handle query failure
             print "query failed for domain " . $d . ": " . $res->errorstring . "\n";
         }
     }
@@ -410,7 +419,6 @@ sub Verbose {
 sub daemonize {
   chdir '/' or die "Can't chdir to /: $!";
   open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
-#open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
   open STDERR, '>/dev/null' or die "Can't write to /dev/null: $!";
   defined(my $pid = fork) or die "Can't fork: $!";
   exit if $pid;
