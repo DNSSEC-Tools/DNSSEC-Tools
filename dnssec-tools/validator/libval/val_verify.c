@@ -10,12 +10,16 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <strings.h>
 #include <string.h>
 #include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
 #include <openssl/sha.h>
+#if defined(sun) && !defined(__EXTENSIONS__)
+extern char *ctime_r(const time_t *, char *);
+#endif
 
 #include <resolver.h>
 #include <validator.h>
