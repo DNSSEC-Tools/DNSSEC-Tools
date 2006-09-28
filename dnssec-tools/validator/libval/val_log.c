@@ -16,6 +16,9 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <resolv.h>
+#if defined(sun) && !defined(__EXTENSIONS__)
+extern char *ctime_r(const time_t *, char *);
+#endif
 
 #include <resolver.h>
 #include <validator.h>
@@ -646,9 +649,9 @@ val_log_udp(val_log_t * logp, const val_context_t * ctx, int level,
     /** We allocated extra space  */
     vsnprintf(buf, sizeof(buf) - 2, template, ap);
     strcat(buf, "\n");
-
-    sendto(logp->opt.udp.sock, buf, strlen(buf), 0, &logp->opt.udp.server,
-           length);
+    
+    sendto(logp->opt.udp.sock, buf, strlen(buf),0,
+           (struct sockaddr *)&logp->opt.udp.server,length);
 
     return;
 }
