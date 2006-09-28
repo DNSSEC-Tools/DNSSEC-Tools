@@ -10,6 +10,7 @@
 #include "validator-config.h"
 
 #include <stdio.h>
+#include <stdarg.h>
 #include <sys/types.h>
 #include <regex.h>
 #include <sys/stat.h>

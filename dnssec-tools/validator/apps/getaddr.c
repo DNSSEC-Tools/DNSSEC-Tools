@@ -23,6 +23,7 @@
 #include <getopt.h>
 #endif
 
+#include <arpa/nameser.h>
 #include <resolver.h>
 #include <validator.h>
 
