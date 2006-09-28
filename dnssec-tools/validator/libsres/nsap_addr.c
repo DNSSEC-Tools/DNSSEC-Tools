@@ -18,6 +18,7 @@
 #include "validator-config.h"
 #include <ctype.h>
 #include <sys/types.h>
+#include <ctype.h>
 
 #ifndef HAVE_NSAP_ADDR
 static char
