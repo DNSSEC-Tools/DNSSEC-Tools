@@ -6,7 +6,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 #ifdef LIBVAL_NSEC3
 #include <openssl/sha.h>
