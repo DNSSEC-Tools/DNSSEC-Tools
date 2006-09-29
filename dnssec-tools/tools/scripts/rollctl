@@ -35,8 +35,10 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	"halt",				# Shutdown rollerd.
+	"display",			# Turn on rollerd's graphical display.
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel=s",			# Set rollerd's logging level.
+	"nodisplay",			# Turn off rollerd's graphical display.
 	"rollall",			# Roll all our zones.
 	"rollrec=s",			# Change the rollrec file.
 	"rollzone=s",			# Roll the specified zone.
@@ -55,8 +57,10 @@ my @opts =
 #
 # Flags for the options.  Variable/option mapping should obvious.
 #
+my $dispflag;
 my $logfileflag;
 my $loglevelflag;
+my $nodispflag;
 my $rollallflag;
 my $rollrecflag;
 my $rollzoneflag;
@@ -104,6 +108,20 @@ sub main()
 	#
 	# Send commands for all the specified options.
 	#
+	if($dispflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,1);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd display started\n";
+		}
+		else
+		{
+			print STDERR "rollerd display not started\n";
+		}
+	}
 	if($logfileflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_LOGFILE,$logfileflag);
@@ -130,6 +148,20 @@ sub main()
 		else
 		{
 			print STDERR "log-level set failed:  $resp\n";
+		}
+	}
+	if($nodispflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DISPLAY,0);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd display stopped\n";
+		}
+		else
+		{
+			print STDERR "rollerd display not stopped\n";
 		}
 	}
 	if($rollallflag)
@@ -305,6 +337,8 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
+	$dispflag	= $options{'display'}	 || 0;
+	$nodispflag	= $options{'nodisplay'}	 || 0;
 	$logfileflag	= $options{'logfile'}	 || 0;
 	$loglevelflag	= $options{'loglevel'}	 || 0;
 	$rollallflag	= $options{'rollall'}	 || 0;
@@ -328,6 +362,15 @@ sub doopts
 	# Give a usage flag if asked.
 	#
 	usage() if(defined($options{'help'}));
+
+	#
+	# Ensure that conflicting options weren't given.
+	#
+	if($dispflag && $nodispflag)
+	{
+		print STDERR "-display and -nodisplay are mutually exclusive\n";
+		exit(1);
+	}
 
 }
 
@@ -354,8 +397,10 @@ sub usage
 {
 	print STDERR "usage:  rollctl [options] \n";
 	print STDERR "\t-halt				shutdown rollerd\n";
+	print STDERR "\t-display			start graphical display\n";
 	print STDERR "\t-logfile <logfile>		set log file\n";
 	print STDERR "\t-loglevel <loglevel>		set logging level\n";
+	print STDERR "\t-nodisplay			stop graphical display\n";
 	print STDERR "\t-rollall			roll all zones\n";
 	print STDERR "\t-rollrec <rollrec>		set rollrec file\n";
 	print STDERR "\t-rollzone <zone>		roll named zone\n";
