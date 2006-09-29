@@ -14,7 +14,7 @@ rollctl -halt >& /dev/null
 
 cp /dev/null $log
 
-rollerd -dir . -logfile $log -loglevel info -sleep 15 -rrf demo.rollrec -demo &
+rollerd -dir . -logfile $log -loglevel info -sleep 15 -rrf demo.rollrec -display &
 
 tail -f $log
 
