@@ -5,6 +5,13 @@
 #
 # DNSSEC-Tools:  blinkenlights
 #
+#	blinkenlights is a display tool for use with the DNSSEC-Tools rollerd
+#	program.  As rollerd rolls the zones listed in the rollrec file,
+#	blinkenlights will display status information for the file's zones.
+#
+#	blinkenlights is implemented in Perl/Tk, so both Perl and Perl/Tk must
+#	be installed on your system.
+#
 
 use strict;
 
@@ -712,7 +719,7 @@ phase column color will change, depending on the current phase.  When the
 zone's phase returns to not being in mid-rollover, the color will match that
 of the rest of the row.
 
-This is only intended to be started by rollerd.  The -demo option must
+This is only intended to be started by rollerd.  The -display option must
 be given on rollerd's command line.
 
 ";
@@ -876,7 +883,7 @@ blinkenlights - DNSSEC-Tools Rollerd Demo
 
 =head1 DESCRIPTION
 
-B<blinkenlights> is a demo tool for use with the DNSSEC-Tools B<rollerd>
+B<blinkenlights> is a display tool for use with the DNSSEC-Tools B<rollerd>
 program.  As B<rollerd> rolls the zones listed in the I<rollrec> file,
 B<blinkenlights> will display status information for the file's zones.
 
@@ -885,7 +892,7 @@ phase> column color will change, depending on the current phase.  When the
 zone's phase returns to not being in mid-rollover, the color will match that
 of the rest of the row.
 
-This is only intended to be started by B<rollerd>.  The I<-demo> option must
+This is only intended to be started by B<rollerd>.  The I<-display> option must
 be given on B<rollerd>'s command line.
 
 =head1 CONFIGURATION FILE
