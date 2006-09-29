@@ -56,8 +56,6 @@ my $DEFAULT_NAP	= 60;
 #
 # Data required for command line options.
 #
-my $verbose = 0;			# Verbose option.
-
 my $rollrecfile;			# Rollrec file to be managed.
 
 my %dtconf;				# DNSSEC-Tools config file.
@@ -66,8 +64,8 @@ my $DT_LOGLEVEL	= "roll_loglevel";
 my $DT_SLEEP	= "roll_sleeptime";
 
 my $OPT_HELP	 = "help";
-my $OPT_DEMO	 = "demo";
 my $OPT_DIR	 = "directory";
+my $OPT_DISPLAY	 = "display";
 my $OPT_LOGFILE	 = "logfile";
 my $OPT_LOGLEVEL = "loglevel";
 my $OPT_PARAMS	 = "parameters";
@@ -80,8 +78,8 @@ my %opts = ();			# Filled option array.
 my @opts =
 (
 	"rrfile=s",			# Rollrec file.
-	"demo",				# Demo processing.
 	"directory=s",			# Execution directory.
+	"display",			# Use output GUI.
 	"logfile=s",			# Log file.
 	"loglevel=s",			# Logging level.
 	"sleep=i",			# Sleep amount (in seconds.)
@@ -99,8 +97,10 @@ my $logfile;				# Log file.
 my $loglevel;				# Logging level.
 my $sleeptime;				# Sleep interval in seconds.
 my $sleepcnt;				# Time we've slept so far.
+my $verbose = 0;			# Verbose option.
 
-my $demo = 0;				# Do demo processing.
+
+my $display = 0;			# Do display processing.
 
 my $boottime = gmtime();		# Timestamp of rollerd's start time.
 my $version  = 0;			# Display the version number.
@@ -618,14 +618,14 @@ sub expired
 	{
 		$chronostr = timetrans($waitsecs);
 		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
-		demo("expiration $rname 0 $chronostr");
+		display("expiration $rname 0 $chronostr");
 	}
 	else
 	{
 		$waitsecs = $cronus - $krsecs;
 		$chronostr = timetrans($waitsecs);
 		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
-		demo("phase $rname 0");
+		display("phase $rname 0");
 	}
 
 	#
@@ -781,7 +781,7 @@ sub ttlexpire
 	$timediff = $endtempus - $curtempus;
 	$tdstr = timetrans($timediff);
 	rollmgr_log(LOG_INFO,$rname,"phase $phase; cache expires in $tdstr");
-	demo("expiration $rname $phase $tdstr");
+	display("expiration $rname $phase $tdstr");
 
 	return(0)
 }
@@ -823,7 +823,7 @@ sub newphase
 	rollrec_settime($rname);
 	rollrec_write();
 
-	demo("phase $rname $phase");
+	display("phase $rname $phase");
 
 	#
 	# If we're at the start of a roll-over, we'll log the expiration time.
@@ -1002,7 +1002,7 @@ sub optsandargs
 	$loglevel  = $opts{$OPT_LOGLEVEL} || $dtconf{$DT_LOGLEVEL} || LOG_DEFAULT;
 	$sleeptime = $opts{$OPT_SLEEP}	  || $dtconf{$DT_SLEEP}    || $DEFAULT_NAP;
 
-	$demo = $opts{$OPT_DEMO}	  || 0;
+	$display = $opts{$OPT_DISPLAY}	  || 0;
 
 	#
 	# Show the version number if requested
@@ -1067,11 +1067,11 @@ sub optsandargs
 	}
 
 	#
-	# Start up our demo program if -demo was given.
+	# Start up our display program if -display was given.
 	#
-	if($demo)
+	if($display)
 	{
-		open(DEMO, "|blinkenlights $rollrecfile");
+		open(DISPLAY, "|blinkenlights $rollrecfile");
 	}
 
 }
@@ -1974,7 +1974,7 @@ sub rollnow
 	#
 	$sleepcnt = $sleeptime;
 	rollmgr_log(LOG_INFO,"<command>","forcing a roll-over for zone $zone");
-	demo("startroll $zone 0");
+	display("startroll $zone 0");
 	return(1);
 }
 
@@ -2012,7 +2012,7 @@ sub skipnow
 		rollrec_setval($zone,"curphase",0);
 		rollrec_rectype($zone,"skip");
 		rollrec_write();
-		demo("stoproll $zone 0");
+		display("stoproll $zone 0");
 	}
 	else
 	{
@@ -2069,7 +2069,7 @@ sub intcmd_handler
 #
 sub halt_handler
 {
-	demo("halt");
+	display("halt");
 
 	rollmgr_log(LOG_ALWAYS,"","roll-over manager shutting down...\n");
 	rollmgr_rmid();
@@ -2089,21 +2089,21 @@ sub cleanup
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	demo()
+# Routine:	display()
 #
-sub demo
+sub display
 {
 	my $dmsg = shift;				# Message to send.
 	my $savedsel;					# Saved descriptor.
 
-	return if(!$demo);
+	return if(!$display);
 
 	#
 	# Force this message to be unbuffered.
 	#
-	$savedsel = select(DEMO);
+	$savedsel = select(DISPLAY);
 	$| = 1;
-	print DEMO "$dmsg\n";
+	print DISPLAY "$dmsg\n";
 	select($savedsel);
 }
 
@@ -2133,6 +2133,7 @@ sub usage
 	print STDERR "\t\t-logfile <logfile>\n";
 	print STDERR "\t\t-loglevel <level>\n";
 	print STDERR "\t\t-sleep <sleeptime>\n";
+	print STDERR "\t\t-display\n";
 	print STDERR "\t\t-verbose\n";
 	print STDERR "\t\t-Version\n";
 	print STDERR "\t\t-help\n";
@@ -2316,6 +2317,11 @@ of time I<rollerd> waits between processing its I<rollrec>-based queue.
 
 Prints a set of I<rollerd> parameters and then exit.
 
+=item I<-display>
+
+Starts the I<blinkenlights> graphical display program to show the status of
+zones managed by I<rollerd>.
+
 =item -help
 
 Display a usage message.
@@ -2390,6 +2396,7 @@ Net::DNS::SEC::Tools::keyrec.pm(3),
 Net::DNS::SEC::Tools::rollmgr.pm(3),
 Net::DNS::SEC::Tools::rollrec.pm(3)
 
+blinkenlights(8),
 named(8),
 rndc(8),
 rollchk(8),
