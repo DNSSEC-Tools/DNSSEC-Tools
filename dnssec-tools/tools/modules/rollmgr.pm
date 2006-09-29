@@ -127,6 +127,7 @@ our @EXPORT = qw(
 		 rollmgr_sendcmd
 		 rollmgr_sendresp
 		 rollmgr_verifycmd
+			 ROLLCMD_DISPLAY
 			 ROLLCMD_GETSTATUS
 			 ROLLCMD_LOGFILE
 			 ROLLCMD_LOGLEVEL
@@ -147,6 +148,7 @@ our @EXPORT = qw(
 			 ROLLCMD_RC_BADFILE
 			 ROLLCMD_RC_BADSLEEP
 			 ROLLCMD_RC_BADROLLREC
+			 ROLLCMD_RC_DISPLAY
 			 ROLLCMD_RC_RRFOPEN
 			 ROLLCMD_RC_NOZONES
 			 ROLLCMD_RC_BADZONE
@@ -234,6 +236,7 @@ my $ROLLCMD_RC_BADROLLREC = 4;
 my $ROLLCMD_RC_RRFOPEN	  = 5;
 my $ROLLCMD_RC_NOZONES	  = 6;
 my $ROLLCMD_RC_BADZONE	  = 7;
+my $ROLLCMD_RC_DISPLAY	  = 8;
 
 sub ROLLCMD_RC_OKAY		{ return($ROLLCMD_RC_OKAY);		};
 sub ROLLCMD_RC_BADLEVEL		{ return($ROLLCMD_RC_BADLEVEL);		};
@@ -243,11 +246,13 @@ sub ROLLCMD_RC_BADROLLREC	{ return($ROLLCMD_RC_BADROLLREC);	};
 sub ROLLCMD_RC_RRFOPEN		{ return($ROLLCMD_RC_RRFOPEN);		};
 sub ROLLCMD_RC_NOZONES		{ return($ROLLCMD_RC_NOZONES);		};
 sub ROLLCMD_RC_BADZONE		{ return($ROLLCMD_RC_BADZONE);		};
+sub ROLLCMD_RC_DISPLAY		{ return($ROLLCMD_RC_DISPLAY);		};
 
 #
 # The remaining ROLLCMD_ entities are the rollmgr_sendcmd() commands
 # recognized by rollerd.  %roll_commands is a hash table of valid commands.
 #
+my $ROLLCMD_DISPLAY	= "rollcmd_display";
 my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
@@ -263,6 +268,7 @@ my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_STATUS	= "rollcmd_status";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
 
+sub ROLLCMD_DISPLAY		{ return($ROLLCMD_DISPLAY);	};
 sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
 sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
 sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
@@ -280,10 +286,12 @@ sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
 
 my %roll_commands =
 (
+	rollcmd_display		=> 1,
 	rollcmd_getstatus	=> 1,
 	rollcmd_logfile		=> 1,
 	rollcmd_loglevel	=> 1,
 	rollcmd_logmsg		=> 1,
+	rollcmd_nodisplay	=> 1,
 	rollcmd_rollall		=> 1,
 	rollcmd_rollrec		=> 1,
 	rollcmd_rollzone	=> 1,
@@ -2030,6 +2038,7 @@ The available commands and their required data are:
 
    command		data		purpose
    -------		----		-------
+   ROLLCMD_DISPLAY	1/0		start/stop rollerd's graphical display
    ROLLCMD_LOGFILE	log-file	set rollerd's log filename
    ROLLCMD_LOGLEVEL	log-level	set rollerd's logging level
    ROLLCMD_ROLLALL	none		force all zones to start roll-over
