@@ -1069,10 +1069,7 @@ sub optsandargs
 	#
 	# Start up our display program if -display was given.
 	#
-	if($display)
-	{
-		open(DISPLAY, "|blinkenlights $rollrecfile");
-	}
+	displayer($display);
 
 }
 
@@ -1306,7 +1303,11 @@ sub commander
 		rollmgr_log(LOG_TMI,"<command>","cmd   - \"$cmd\"");
 		rollmgr_log(LOG_TMI,"<command>","data  - \"$data\"") if($data ne "");
 
-		if($cmd eq ROLLCMD_LOGFILE())
+		if($cmd eq ROLLCMD_DISPLAY())
+		{
+			cmd_display($data);
+		}
+		elsif($cmd eq ROLLCMD_LOGFILE())
 		{
 			cmd_logfile($data);
 		}
@@ -1373,6 +1374,53 @@ sub commander
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	cmd_display()
+#
+# Purpose:	Set the logfile to the user's specified file.  Nothing is done
+#		if the user requests the same log file as is currently in use.
+#
+sub cmd_display
+{
+	my $onflag = shift;				# Display-on flag.
+
+	rollmgr_log(LOG_TMI,"<command>","display command received; status flag - \"$onflag\"");
+
+	#
+	# Do nothing if the we're already doing what the user wants.
+	#
+	if($display == $onflag)
+	{
+		if($display == 1)
+		{
+			rollmgr_log(LOG_INFO,"<command>","graphical display is already on");
+		}
+		else
+		{
+			rollmgr_log(LOG_INFO,"<command>","graphical display is already off");
+		}
+		rollmgr_sendresp(ROLLCMD_RC_DISPLAY,"display status already as requested");
+		return;
+	}
+
+	#
+	# Change the logfile and give an appropriate set of log messages.
+	#
+	if($onflag)
+	{
+		displayer(1);
+		rollmgr_log(LOG_INFO,"<command>","rollerd display started");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd display started");
+	}
+	else
+	{
+		displayer(0);
+		rollmgr_log(LOG_INFO,"<command>","rollerd display stopped");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd display stopped");
+	}
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	cmd_logfile()
 #
 # Purpose:	Set the logfile to the user's specified file.  Nothing is done
@@ -1386,7 +1434,7 @@ sub cmd_logfile
 	rollmgr_log(LOG_TMI,"<command>","logfile command received; new log file - \"$newlog\"");
 
 	#
-	# Do anything if the new logfile is the same as the current logfile.
+	# Do nothing if the new logfile is the same as the current logfile.
 	#
 	$oldlog = rollmgr_logfile();
 	if($oldlog eq $newlog)
@@ -2085,6 +2133,34 @@ sub cleanup
 	rollmgr_log(LOG_ALWAYS,"cleaning up...") if($loglevel == LOG_TMI);
 	rollmgr_rmid();
 	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	displayer()
+#
+sub displayer
+{
+	#
+	# Set the global display flag to an argument -- iff we got one.
+	#
+	if(@_ == 1)
+	{
+		$display = shift;
+	}
+
+	#
+	# Turn on or off the graphical display, depending on the display flag.
+	#
+	if($display)
+	{
+		open(DISPLAY, "|blinkenlights $rollrecfile");
+	}
+	else
+	{
+		display("halt");
+		close(DISPLAY);
+	}
 }
 
 #-----------------------------------------------------------------------------
