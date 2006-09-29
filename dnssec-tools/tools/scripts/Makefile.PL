@@ -12,6 +12,7 @@ use ExtUtils::MakeMaker;
 			   },
 #	 'VERSION_FROM'	=> 'zonesigner', # finds $VERSION
 	 'EXE_FILES' => [qw(
+				blinkenlights
 				clean-keyrec
 				dtconfchk
 				dtdefs
