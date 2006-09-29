@@ -129,7 +129,6 @@ AC_CACHE_CHECK(for struct HEADER in arpa/nameser.h, ac_cv_nameser_has_header,
 if test "x$ac_cv_nameser_has_header" = "xyes" ; then
   AC_DEFINE([NAMESER_HAS_HEADER], 1, [Define if <arpa/nameser.h> has HEADER. ])
 fi
-AC_MSG_RESULT($ac_cv_nameser_has_header)
 
 AC_CHECK_STRUCT_FOR([
 #ifdef HAVE_SYS_TYPES_H
