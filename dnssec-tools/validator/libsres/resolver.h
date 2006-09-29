@@ -200,6 +200,10 @@ int             ns_name_unpack(const u_char * msg, const u_char * eom,
                                const u_char * src, u_char * dst,
                                size_t dstsiz);
 #endif
+#ifndef HAVE_DECL_NS_SAMENAME
+int             ns_samename(const char *a, const char *b);
+int             ns_samedomain(const char *a, const char *b);
+#endif
 #ifndef HAVE_DECL_NS_NAME_PTON
 int             ns_name_pton(const char *src, u_char * dst, size_t dstsiz);
 #endif
