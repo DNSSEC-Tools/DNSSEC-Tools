@@ -15,6 +15,8 @@
 
 use strict;
 
+use Getopt::Long;
+
 use Tk;
 use Tk::Table;
 
@@ -27,6 +29,31 @@ use Net::DNS::SEC::Tools::rollrec;
 my $NAME   = "blinkenlights";
 my $VERS   = "$NAME version: 0.1.1";
 my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"noskip",			# Don't show skipped zones.
+	"nomodify",			# Don't allow zones to be modified.
+
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+#
+# Flags for the options.  Variable/option mapping should obvious.
+#
+my $noskipflag;
+my $nomodflag;
+
+my $version	= 0;			# Display the version number.
+
+#######################################################################
 
 #
 # blinkenlight's configuration file.
@@ -117,17 +144,10 @@ exit(0);
 #
 sub main
 {
-	my $argc = @ARGV;
-
 	#
-	# Check for the -V option and usage on other options.
+	# Check for options.
 	#
-	if($ARGV[0] =~ /^-/)
-	{
-		usage() if($ARGV[0] ne "-V");
-		version();
-	}
-	$rrfile = $ARGV[0];
+	optsandargs();
 
 	#
 	# Read our configuration file.
@@ -146,18 +166,53 @@ sub main
 }
 
 #---------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	Parse the command line for options and arguments.
+#
+sub optsandargs
+{
+	my $argc = shift;			# Command line argument count.
+
+	#
+	# Parse the options.
+	#
+	GetOptions(\%options,@opts) || usage();
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$noskipflag	= $options{'noskip'}	 || 0;
+	$nomodflag	= $options{'nomod'}	 || 0;
+	$version        = $options{'Version'}    || 0;
+
+	#
+	# Show the version number if requested
+	#
+	version() if(defined($options{'Version'}));
+
+	#
+	# Give a usage flag if asked.
+	#
+	usage() if(defined($options{'help'}));
+
+	$rrfile = $ARGV[0];
+}
+
+#---------------------------------------------------------------------------
 # Routine:	buildmainwind()
 #
 sub buildmainwind
 {
-
 	my $file;					# File menu.
-	my $edit;					# Edit menu.
+	my $disp;					# Edit menu.
 	my $cmds;					# Commands menu.
 	my $help;					# Help menu.
 
 	my $curfile;					# Current keyrec.
 	my $nulline;					# Empty line.
+
+	my $zn_entry;					# Zone menu entry.
 
 	#
 	# Create the main window.
@@ -181,6 +236,12 @@ sub buildmainwind
 	$file = $mbar->Menubutton(-text	     => 'File',
 				  -tearoff   => 0,
 				  -underline => 0);
+	$disp = $mbar->Menubutton(-text	     => 'Display',
+				  -tearoff   => 0,
+				  -underline => 0);
+	$cmds = $mbar->Menubutton(-text	     => 'Zone Control',
+				  -tearoff   => 0,
+				  -underline => 0);
 	$help = $mbar->Menubutton(-text      => 'Help',
 				  -tearoff   => 0,
 				  -underline => 0);
@@ -197,6 +258,29 @@ sub buildmainwind
 
 	$wm->bind('<Control-Key-Q>',\&file_quit);
 	$wm->bind('<Control-Key-q>',\&file_quit);
+
+	##################################################
+	#
+	# Add the Zone Control menu entries.
+	#
+	$zn_entry = $cmds->command(-label => 'Roll Selected Zone',
+				   -command => [\&zone_rollcmd, "rollzone"]);
+	$zn_entry = $cmds->command(-label => 'Roll All Zones',
+				   -command => [\&zone_rollcmd, "rollall"]);
+	$zn_entry = $cmds->command(-label => 'Run the Queue',
+				   -command => [\&zone_rollcmd, "runqueue"]);
+	$cmds->separator();
+
+	$zn_entry = $cmds->command(-label => 'Skip Selected Zone',
+				   -command => [\&zone_rollcmd, "skipzone"]);
+	$zn_entry = $cmds->command(-label => 'Skip All Zones',
+				   -command => [\&zone_rollcmd, "skipall"]);
+	$cmds->separator();
+
+	$zn_entry = $cmds->command(-label => 'Halt Rollerd',
+				   -command => [\&zone_rollcmd, "halt"]);
+
+	$cmds->pack(-side => 'left');
 
 	##################################################
 	#
@@ -227,8 +311,9 @@ sub buildmainwind
 	#
 	$body->grid();
 	$zonetab = $body->Table(-rows => 12, -columns => 5,
-				-scrollbars => '',
-				-relief => 'raised', -borderwidth => 1,
+				-scrollbars  => 'e',
+				-relief	     => 'raised',
+				-borderwidth => 1,
 			       );
 	$zonetab->pack(-fill => 'x', -expand => 1, -fill => 'both');
 	$body->pack(-fill => 'x', -expand => 1, -fill => 'both');
@@ -256,6 +341,30 @@ sub buildmainwind
 sub file_quit
 {
 	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	zone_rollcmd()
+#
+sub zone_rollcmd
+{
+	my $rcmd = shift;				# Command to run.
+
+	#
+	# These commands need a zone.  We've got to query the user for
+	# one, but until then they're unimplemented.
+	#
+	if(($rcmd eq "rollzone") || ($rcmd eq "skipzone"))
+	{
+		print "\t$rcmd command not implemented yet\n";
+		return;
+	}
+
+	#
+	# Build and execute the command string.
+	#
+	$rcmd = "rollctl -$rcmd";
+	system($rcmd);
 }
 
 ##############################################################################
