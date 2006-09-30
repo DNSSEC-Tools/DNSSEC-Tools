@@ -31,7 +31,6 @@ my $VERS   = "$NAME version: 0.1.1";
 my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
 
 #######################################################################
-
 #
 # Data required for command line options.
 #
@@ -48,8 +47,8 @@ my @opts =
 #
 # Flags for the options.  Variable/option mapping should obvious.
 #
-my $noskipflag;
-my $nomodflag;
+my $noskip;
+my $nomodify;
 
 my $version	= 0;			# Display the version number.
 
@@ -60,22 +59,32 @@ my $version	= 0;			# Display the version number.
 #
 my $CONFIG = "rc.blinkenlights";
 
+#######################################################################
+#
+# Data involved with display.
+#
+
+#
+# Row constants.
+#
+my $STARTROW = 1;		# First row on which zone info will be shown.
+my $ROWINCR  = 3;		# Number of rows for each zone.
+
 #
 # Font size for output window.
 #
-my $fontsize = 24;
+my $fontsize = 18;
 my $font = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
 
 #
 # Background colors for the zones,  cycling through the list for table rows.
 #
-my $NUMCOLORS = 4;				# Maximum number of colors.
+my $NUMCOLORS = 3;				# Maximum number of colors.
 my $colorind = 0;				# Current color index.
 my $skipcolor = "grey";				# Color for skip zones.
 
 my @phasecolors =
 (
-	['dummy'],
 	['blue', 'LightBlue2',  'skyblue1',  'cornflower blue', 'dodger blue'],
 	['red',  'pink',        'indianred', 'violetred1',      'orangered1'],
 	['green', 'lightgreen', 'seagreen1', 'greenyellow',	'lawngreen'], 
@@ -93,6 +102,10 @@ my @phasedescr =
 	"  sign with ZSKPUB and ZSKNEW  ",	# phase 4
 );
 
+#######################################################################
+#
+# Global Tk widgets.
+#
 
 #
 # The main window and its frames.
@@ -113,6 +126,11 @@ my $fm_quit;						# Quit file item.
 my $dm_togl;						# Viewing toggle.
 my $hm_help;						# Help item.
 
+#######################################################################
+#
+# Global shtuff.
+#
+
 #
 # Flags.
 #
@@ -129,7 +147,9 @@ my $title = "dummy";					# Node for title.
 #
 my %rollers = ();				# Zones that might roll.
 my %zones = ();					# Zones we're watching.
-my @zones = ();					# Screen-order list of zones.
+my %zonecolors = ();				# Zone color indices.
+my %zonerows = ();				# Zones' starting-row indices.
+my @zonenames = ();				# Screen-order list of zones.
 my $zonecnt = 1;				# Count of zones we're watching.
 my %keyrecs = ();				# Zones' keyrec filenames.
 
@@ -182,9 +202,9 @@ sub optsandargs
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$noskipflag	= $options{'noskip'}	 || 0;
-	$nomodflag	= $options{'nomod'}	 || 0;
-	$version        = $options{'Version'}    || 0;
+	$noskip	  = $options{'noskip'}	 || 0;
+	$nomodify = $options{'nomodify'} || 0;
+	$version  = $options{'Version'}	 || 0;
 
 	#
 	# Show the version number if requested
@@ -226,8 +246,8 @@ sub buildmainwind
 	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
 	$null = $wm->Frame(-relief => 'raised', -borderwidth => 1);
 
-	$mbar->pack(-fill => 'x', -expand => 1);
-	$body->pack(-fill => 'x', -expand => 1);
+	$mbar->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
+	$body->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
 	$null->pack(-fill => 'x', -expand => 1);
 
 	#
@@ -314,9 +334,13 @@ sub buildmainwind
 				-scrollbars  => 'e',
 				-relief	     => 'raised',
 				-borderwidth => 1,
+				-fixedrows => 0,
+				-takefocus => 1,
 			       );
-	$zonetab->pack(-fill => 'x', -expand => 1, -fill => 'both');
-	$body->pack(-fill => 'x', -expand => 1, -fill => 'both');
+#	$zonetab->pack(-fill => 'x', -expand => 1);
+#	$body->pack(-fill => 'x', -expand => 1);
+	$zonetab->pack(-fill => 'both', -expand => 1);
+	$body->pack(-fill => 'both', -expand => 1);
 
 	#
 	# Get the keyrec file info.
@@ -365,6 +389,15 @@ sub zone_rollcmd
 	#
 	$rcmd = "rollctl -$rcmd";
 	system($rcmd);
+
+	#
+	# Wait a short bit and exit if rollerd hasn't killed us.
+	#
+	if($rcmd eq "halt")
+	{
+		sleep(10);
+		exit(0);
+	}
 }
 
 ##############################################################################
@@ -420,7 +453,7 @@ sub zonestripe
 	#
 	# Get this zone's row group and row indices.
 	#
-	$row0 = $zones{$zone} * 3;
+	$row0 = $zonerows{$zone};
 	$row1 = $row0 + 1;
 	$row2 = $row0 + 2;
 
@@ -569,6 +602,12 @@ sub readrrf
 	my $rr;						# Rollrec reference.
 
 	#
+	# Initialize some data.
+	#
+	@zonenames = ();
+	headerstripe();
+
+	#
 	# Pretty-up the window.
 	#
 	settitle($rrf);
@@ -578,9 +617,9 @@ sub readrrf
 	# Get the rollrec contents and the names of the zones it contains.
 	#
 	rollrec_read($rrf);
-	@zones = rollrec_names();
+	@zonenames = rollrec_names();
 
-	foreach my $zone (@zones)
+	foreach my $zone (@zonenames)
 	{
 		my $krf;				# Keyrec file.
 		my $kr;					# Keyrec reference.
@@ -606,8 +645,14 @@ sub readrrf
 		$krf = $rr->{'keyrec'};
 		$keyrecs{$zone} = $krf;
 
+		#
+		# Figure out where each zone's stripe starts.
+		#
+		calcrows();
 
-# print "$zone:  zonestripe($zone,$phase,1)\n\n";
+		#
+		# Paint the window with this zone's info.
+		#
 		zonestripe($zone,$phase,1);
 	}
 
@@ -620,7 +665,6 @@ sub readrrf
 #
 sub rollerdcmd
 {
-	my $band;					# Band of rows.
 	my $bgcolor;					# Background color.
 
 	my $row0;					# First row in group.
@@ -658,8 +702,7 @@ sub rollerdcmd
 	#
 	# Get this zone's row group and row indices.
 	#
-	$band = $zones{$zone};
-	$row0 = $band * 3;
+	$row0 = $zonerows{$zone};
 	$row1 = $row0 + 1;
 	$row2 = $row0 + 2;
 
@@ -713,6 +756,38 @@ sub rollerdcmd
 	$zonetab->update();
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:      calcrows()
+#
+# Purpose:      Calculate the starting row for each displayed zone.
+#
+sub calcrows
+{
+	my $row = $STARTROW;				# Starting-row index.
+
+	#
+	# Zap the zone row index table and zone-colors table.
+	#
+	%zonerows = ();
+	%zonecolors = ();
+
+	#
+	# Sort the zone-names list and set the zone row index table
+	# according to whether or not each zone is displayed.
+	#
+	foreach my $zn (sort(@zonenames))
+	{
+		$zonerows{$zn} = $row;
+		$zonerows{$zn} = 0 if($noskip && ($rollers{$zn} == 0));
+		$row += $ROWINCR;
+
+		$zonecolors{$zn} = $colorind;
+		$colorind++;
+		$colorind = 0 if($colorind == $NUMCOLORS);
+	}
+}
+
 #---------------------------------------------------------------------------
 # Routine:	getnode()
 #
@@ -725,19 +800,6 @@ sub getnode
 	$pathnode = pop @pathelts;
 
 	return($pathnode);
-}
-
-#----------------------------------------------------------------------
-#
-# Routine:      settitle()
-#
-# Purpose:      Set the title for use in the "Monitoring File" line.
-#
-sub settitle
-{
-	my $name = shift;				# Name to use.
-
-	$title = getnode($name);
 }
 
 #---------------------------------------------------------------------------
@@ -759,12 +821,8 @@ sub getcolor
 
 	#
 	# Get the background color for this zone in this phase.
-	# Increment our color counter, wrapping around if we've reached the end.
 	#
-	$band = $zones{$zone};
-	$band = $band % $NUMCOLORS if($colorind == $NUMCOLORS);
-	$band = 1 if($band == 0);
-	$colorind = $band;
+	$band = $zonecolors{$zone};
 
 	#
 	# Get the background color for this zone in this phase and
@@ -773,6 +831,19 @@ sub getcolor
 	$color = $phasecolors[$band];
 	return($color->[0]) if($base);
 	return($color->[$phase]);
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      settitle()
+#
+# Purpose:      Set the title for use in the "Monitoring File" line.
+#
+sub settitle
+{
+	my $name = shift;				# Name to use.
+
+	$title = getnode($name);
 }
 
 #---------------------------------------------------------------------------
@@ -829,7 +900,7 @@ zone's phase returns to not being in mid-rollover, the color will match that
 of the rest of the row.
 
 This is only intended to be started by rollerd.  The -display option must
-be given on rollerd's command line.
+be given on rollerd's command line in order to have it start blinkenlights.
 
 ";
 
@@ -1001,8 +1072,9 @@ phase> column color will change, depending on the current phase.  When the
 zone's phase returns to not being in mid-rollover, the color will match that
 of the rest of the row.
 
-This is only intended to be started by B<rollerd>.  The I<-display> option must
-be given on B<rollerd>'s command line.
+This is only intended to be started by B<rollerd>.  The I<-display>
+option must be given on B<rollerd>'s command line in order to have it
+start B<blinkenlights>.
 
 =head1 CONFIGURATION FILE
 
