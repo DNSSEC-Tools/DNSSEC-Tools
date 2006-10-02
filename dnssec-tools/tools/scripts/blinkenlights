@@ -18,6 +18,7 @@ use strict;
 use Getopt::Long;
 
 use Tk;
+use Tk::Dialog;
 use Tk::Table;
 
 use Net::DNS::SEC::Tools::keyrec;
@@ -158,6 +159,12 @@ my %keyrecs = ();				# Zones' keyrec filenames.
 #
 my %zonephase = ();				# Zones' phases.
 my %zonechron = ();				# Zones' chronoses.
+
+#
+# Data for button-selected zones.
+#
+my $selzone;					# Selected zone name.
+my $lastrow = $STARTROW;			# Final row index.
 
 ###########################################################################
 
@@ -356,6 +363,7 @@ sub buildmainwind
 	# Initialize our rollerd-input handler.
 	#
 	$wm->fileevent('STDIN',readable => \&rollerdcmd);
+#	$wm->bind('<Button>',\&selector);
 }
 
 ##############################################################################
@@ -385,8 +393,11 @@ sub zone_rollcmd
 	#
 	if(($rcmd eq "rollzone") || ($rcmd eq "skipzone"))
 	{
-		print "\t$rcmd command not implemented yet\n";
-		return;
+		my $zone;				# Zone to handle.
+
+		$zone = getzone($rcmd);
+		return if($zone eq "");
+		$rcmd = "$rcmd $zone"
 	}
 
 	#
@@ -400,7 +411,7 @@ sub zone_rollcmd
 	#
 	if($rcmd eq "halt")
 	{
-		sleep(10);
+		sleep(5);
 		exit(0);
 	}
 }
@@ -797,7 +808,13 @@ sub calcrows
 	#
 	foreach my $zn (sort(@zonenames))
 	{
+		#
+		# Save the row index for the zone name and in case this
+		# is the last row.
+		#
 		$zonerows{$zn} = $row;
+		$lastrow = $row;
+
 		if($noskip && ($rollers{$zn} == 0))
 		{
 			$zonerows{$zn} = 0;
@@ -817,6 +834,7 @@ sub calcrows
 			$colorind = 0 if($colorind == $NUMCOLORS);
 		}
 	}
+
 }
 
 #---------------------------------------------------------------------------
@@ -862,6 +880,106 @@ sub getcolor
 	$color = $phasecolors[$band];
 	return($color->[0]) if($base);
 	return($color->[$phase]);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getzone()
+#
+#	Things to handle:
+#		- get rid of empty stripe to right of scrollbar
+#		- shrink size as needed
+#
+sub getzone
+{
+	my $op = shift;					# Operation for zone.
+	my $opflag = 0;					# Operation flag.
+
+	my $dlg;					# Dialog widget.
+	my $zlist;					# Zone listbox.
+
+	my $listcnt = 0;				# Count of listed zones.
+
+	my $ret;					# Dialog's return value.
+	my @indarr;					# Listbox' select array.
+	my $selzone;					# Selected zone.
+	my @selzones;					# Selected zones.
+
+my $DLGHEIGHT = 10;
+	my $height = $DLGHEIGHT;			# Height of dialog box.
+	my $zonecount = @zonenames;			# Number of zones.
+
+	#
+	# Set the zone operation flag.
+	#
+	$opflag = 1 if($op eq "rollzone");
+
+	#
+	# Massage the zone operation for the dialog box's title.
+	#
+	$op =~ s/zone//;
+	$op = ucfirst($op);
+
+	#
+	# Set the dialog box height.
+	#
+	$height = $zonecount if($zonecount < $height);
+
+	#
+	# Build and configure the dialog box and the widgets it contains.
+	#
+	$dlg = $wm->Dialog(-title => "Select Zone to $op", -text  => '',
+			   -default_button => "Okay",
+			   -buttons => ["Okay", "Cancel"]);
+	$zlist = $dlg->Listbox(-relief	    => 'raised',
+			       -borderwidth => 1,
+			       -selectmode  => 'single');
+	$dlg->AddScrollbars($zlist);
+	$dlg->configure(-scrollbars => 'e');
+
+	#
+	# Add the zone names to the dialog's listbox.  However, we'll
+	# only add rolling zones to a skip-zone command and we'll
+	# only add skipped zones to a roll-zone command.
+	#
+	foreach my $zone (sort(@zonenames))
+	{
+		if((!$opflag && ($rollers{$zone} == 1))		||
+		   ( $opflag && ($rollers{$zone} == 0)))
+		{
+			$zlist->insert("end",$zone);
+			$listcnt++;
+		}
+	}
+
+	#
+	# If there weren't any zones added, we'll return 'cause there's
+	# nothing for us to do.  The pack() is to keep Tk from whining.
+	#
+	if($listcnt == 0)
+	{
+		$zlist->pack(-fill => 'x', -expand => 1);
+		return;
+	}
+
+	#
+	# Pack 'er up and display the zone list.
+	#
+	$zlist->pack(-fill => 'x', -expand => 1);
+	$ret = $dlg->Show();
+
+	#
+	# Go no further if no zone was selected.
+	#
+	return("") if($ret eq "Cancel");
+
+	#
+	# Dig out the selected zone and return it.
+	#
+	@indarr = $zlist->curselection;
+	return("") if(@indarr == 0);
+	@selzones = $zlist->get($indarr[0]);
+	$selzone = $selzones[0];
+	return($selzone);
 }
 
 #----------------------------------------------------------------------
