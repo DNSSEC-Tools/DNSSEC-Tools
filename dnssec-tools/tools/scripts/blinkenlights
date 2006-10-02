@@ -885,9 +885,11 @@ sub getcolor
 #---------------------------------------------------------------------------
 # Routine:	getzone()
 #
-#	Things to handle:
-#		- get rid of empty stripe to right of scrollbar
-#		- shrink size as needed
+# Purpose:	This routine creates a modal dialog box to allow the user
+#		to select a zone to be rolled/skipped.  For to-be-rolled
+#		zones, only those zones are listed which are currently
+#		skipped.  Similarly, for to-be-skipped zones, only those
+#		zones are listed which are currently being rolled.
 #
 sub getzone
 {
