@@ -403,7 +403,6 @@ struct res_sym_const {
     int     number;         /* Identifying number, like T_MX */
     const char *  name;           /* Its symbolic name, like "MX" */
     const char *  humanname;      /* Its fun name, like "mail exchanger" */
-    int test;
 };
 
 /*
