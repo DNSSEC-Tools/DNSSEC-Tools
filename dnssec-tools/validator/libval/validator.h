@@ -56,10 +56,10 @@ extern          "C" {
 #define STRDUP(p) strdup(p)
 #endif
 
-#define DNS_PORT	53
-#define VAL_CONFIGURATION_FILE	"/etc/dnsval.conf"
+#define DNS_PORT                53
+#define VAL_CONFIGURATION_FILE  "/etc/dnsval.conf"
 #define RESOLV_CONF             "/etc/resolv.conf"
-#define ROOT_HINTS            	"/etc/root.hints"
+#define ROOT_HINTS              "/etc/root.hints"
 #define VAL_LOG_OPTIONS LOG_PID
 
 #define VALIDATOR_LOG_PORT 1053
@@ -68,11 +68,11 @@ extern          "C" {
     /*
      * Query states 
      */
-#define Q_INIT	1
-#define Q_SENT	2
+#define Q_INIT          1
+#define Q_SENT          2
 #define Q_WAIT_FOR_GLUE 3
-#define Q_ANSWERED 4
-#define Q_ERROR_BASE 5
+#define Q_ANSWERED      4
+#define Q_ERROR_BASE    5
 
     /*
      * Credibility values of an RRset - from DNSIND-Clarify 
@@ -108,15 +108,15 @@ extern          "C" {
     /*
      * Policies associated with Keys 
      */
-#define	CANNOT_BE_USED			0x00
-#define CAN_SIGN_KEY			0x01
-#define CAN_SIGN_ZONE			0x02
-#define CAN_SIGN_ZONE_AND_KEY 	CAN_SIGN_KEY|CAN_SIGN_ZONE
+#define CANNOT_BE_USED                  0x00
+#define CAN_SIGN_KEY                    0x01
+#define CAN_SIGN_ZONE                   0x02
+#define CAN_SIGN_ZONE_AND_KEY   CAN_SIGN_KEY|CAN_SIGN_ZONE
 
 #define SIGNBY              18
 #define ENVELOPE            10
-#define RRSIGLABEL			3
-#define TTL					4
+#define RRSIGLABEL           3
+#define TTL                  4
 #define VAL_CTX_IDLEN       20
 #ifndef SHA_DIGEST_LENGTH
 #define SHA_DIGEST_LENGTH 20
@@ -169,37 +169,37 @@ extern          "C" {
      * policies are defined for the following
      */
 
-#define P_TRUST_ANCHOR				0
-#define P_PREFERRED_SEP				1
-#define P_MUST_VERIFY_COUNT			2
-#define P_PREFERRED_ALGO_DATA		3
-#define P_PREFERRED_ALGO_KEYS		4
-#define P_PREFERRED_ALGO_DS			5
-#define P_CLOCK_SKEW				6
-#define	P_EXPIRED_SIGS				7
-#define P_USE_TCP					8
+#define P_TRUST_ANCHOR              0
+#define P_PREFERRED_SEP             1
+#define P_MUST_VERIFY_COUNT         2
+#define P_PREFERRED_ALGO_DATA       3
+#define P_PREFERRED_ALGO_KEYS       4
+#define P_PREFERRED_ALGO_DS         5
+#define P_CLOCK_SKEW                6
+#define P_EXPIRED_SIGS              7
+#define P_USE_TCP                   8
 #define P_ZONE_SECURITY_EXPECTATION 9
-#define MAX_POL_TOKEN	 			10
+#define MAX_POL_TOKEN               10
 
 #ifdef LIBVAL_NSEC3
 #define P_NSEC3_MAX_ITER            10
 #undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN	 		    11
+#define MAX_POL_TOKEN               11
 #endif
 
 #ifdef DLV
-#define P_DLV_TRUST_POINTS		    10
+#define P_DLV_TRUST_POINTS          10
 #define P_DLV_MAX_VALIDATION_LINKS  11
 #undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN	 		    12
+#define MAX_POL_TOKEN               12
 #endif
 
-#define RETRIEVE_POLICY(ctx, index, type)	\
-			(ctx == NULL) ? NULL : \
-                        (!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
+#define RETRIEVE_POLICY(ctx, index, type)      \
+    (ctx == NULL) ? NULL :                                              \
+    (!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
 #define VAL_R_TRUST_FLAG 0x80
-#define SET_RESULT_TRUSTED(status)	status |= VAL_R_TRUST_FLAG
-#define SET_MASKED_STATUS(st, new_val) st = (st & VAL_R_TRUST_FLAG) | new_val
+#define SET_RESULT_TRUSTED(status)         status |= VAL_R_TRUST_FLAG
+#define SET_MASKED_STATUS(st, new_val)     st = (st & VAL_R_TRUST_FLAG) | new_val
 #define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_TRUST_FLAG) == chk_val)
 
     typedef u_int8_t val_status_t;
