@@ -153,6 +153,54 @@ free_val_addrinfo(struct val_addrinfo *ainfo)
 }
 
 /*
+ * Function: val_setport
+ *
+ * Purpose: Set the port number in an sockaddr... structure (IPv4 or
+ *          IPv6 address) given a string value of a port number or
+ *          service name.
+ *
+ * Parameters:
+ *          saddr -- A pointer to the address
+ *          serv  -- a char point to a port number or service name.
+ *          proto -- the protocol to look up the port information 
+ *                   with. (usually "udp" or "tcp")
+ *
+ * Returns:
+ *          This function has no return value.
+ *
+ * See also: process_service_and_hints
+ */
+void
+val_setport(struct sockaddr *saddr, const char *serv, const char *proto)
+{
+  struct servent *sent    = NULL;
+  int             portnum = 0;
+  
+  /* figure out the port number */
+  if (NULL == serv) {
+      portnum = 0;
+  }
+  else if ( atoi(serv) && 
+            (NULL != (sent = getservbyport(atoi(serv), proto)))
+          )  {
+      portnum = sent->s_port;
+  }
+  else if ( NULL != (sent = getservbyname(serv, proto)) )  {
+      portnum = sent->s_port;
+  }
+
+  /* set port number depending on address family*/
+  /* note: s_port above is already in network byte order */
+  if (PF_INET == saddr->sa_family) {
+      ((struct sockaddr_in *)saddr)->sin_port = portnum;
+  }
+  else if (PF_INET6 == saddr->sa_family)  {
+      ((struct sockaddr_in6 *)saddr)->sin6_port = portnum;
+  }
+} /* val_setport */
+
+
+/*
  * Function: process_service_and_hints
  *
  * Purpose: Add additional val_addrinfo structures to the list depending on
@@ -176,10 +224,11 @@ process_service_and_hints(val_status_t           val_status,
                           const struct addrinfo *hints,
                           struct val_addrinfo   **res)
 {
-    struct val_addrinfo *a1 = NULL;
-    struct val_addrinfo *a2 = NULL;
-    int proto_found         = 0;
-    int created_locally     = 0;
+    struct val_addrinfo  *a1 = NULL;
+    struct val_addrinfo  *a2 = NULL;
+    struct servent *servinfo = NULL;
+    int proto_found          = 0;
+    int created_locally      = 0;
 
     if (res == NULL)  
         return EAI_SERVICE;
@@ -189,8 +238,8 @@ process_service_and_hints(val_status_t           val_status,
         a1 = (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
         if (a1 == NULL)  
             return EAI_MEMORY;
-
         bzero(a1, sizeof(struct val_addrinfo));
+
         *res = a1;
     } else {
         a1 = *res;
@@ -198,6 +247,17 @@ process_service_and_hints(val_status_t           val_status,
 
     if (!a1)
         return 0;
+
+    /* check for sockaddr... memory allocation */
+    if (NULL == a1->ai_addr) {
+        a1->ai_addr = (struct sockaddr *) 
+            malloc(sizeof(struct sockaddr_storage));
+        bzero(a1->ai_addr, sizeof(struct sockaddr_storage));
+    }
+    if (NULL == a1->ai_addr) {
+        free(a1);
+        return EAI_MEMORY;
+    }
 
     a1->ai_val_status = val_status;
 
@@ -218,15 +278,12 @@ process_service_and_hints(val_status_t           val_status,
      * Check if we have to return val_addrinfo structures for the
        SOCK_STREAM socktype
      */
-    if ((hints == NULL || hints->ai_socktype == 0 
-         || hints->ai_socktype == SOCK_STREAM) 
-        && (servname == NULL 
-            || getservbyname(servname, "tcp") != NULL
-            || ( atoi(servname) && getservbyport(atoi(servname), "tcp") )
-           ) 
-       )  {
+    if (hints == NULL || hints->ai_socktype == 0 
+        || hints->ai_socktype == SOCK_STREAM) {
+
         a1->ai_socktype = SOCK_STREAM;
         a1->ai_protocol = IPPROTO_TCP;
+        val_setport(a1->ai_addr, servname, "tcp");
         a1->ai_next = NULL;
         proto_found = 1;
     }
@@ -235,13 +292,9 @@ process_service_and_hints(val_status_t           val_status,
      * Check if we have to return val_addrinfo structures for the
        SOCK_DGRAM socktype
      */
-    if ((hints == NULL || hints->ai_socktype == 0
-         || hints->ai_socktype == SOCK_DGRAM) 
-        && (servname == NULL 
-            || getservbyname(servname, "udp") != NULL
-            || ( atoi(servname) && getservbyport(atoi(servname), "udp") )
-           )
-       )  {
+    if ( (hints == NULL || hints->ai_socktype == 0
+          || hints->ai_socktype == SOCK_DGRAM) ) {
+
         if (proto_found) {
             a2 = dup_val_addrinfo(a1);
             if (a2 == NULL) 
@@ -251,6 +304,7 @@ process_service_and_hints(val_status_t           val_status,
         }
         a1->ai_socktype = SOCK_DGRAM;
         a1->ai_protocol = IPPROTO_UDP;
+        val_setport(a1->ai_addr, servname, "udp");
         proto_found = 1;
     }
 
@@ -258,13 +312,9 @@ process_service_and_hints(val_status_t           val_status,
      * Check if we have to return val_addrinfo structures for the
        SOCK_RAW socktype
      */
-    if ((hints == NULL || hints->ai_socktype == 0
-         || hints->ai_socktype == SOCK_RAW) 
-        && (servname == NULL 
-            || getservbyname(servname, "ip") != NULL
-            || ( atoi(servname) && getservbyport(atoi(servname), "ip") )
-           )
-       )  {
+    if ( (hints == NULL || hints->ai_socktype == 0
+          || hints->ai_socktype == SOCK_RAW) )  {
+
         if (proto_found) {
             a2 = dup_val_addrinfo(a1);
             // xxx-note: uggh. may have augmented caller's res ptr
@@ -278,6 +328,7 @@ process_service_and_hints(val_status_t           val_status,
         }
         a1->ai_socktype = SOCK_RAW;
         a1->ai_protocol = IPPROTO_IP;
+        val_setport(a1->ai_addr, servname, "ip");
         proto_found = 1;
     }
 
@@ -898,7 +949,6 @@ val_getaddrinfo(val_context_t * ctx,
 
         *res = ainfo4;
         retval = 0;
-        goto done;
     }
 
     /*
@@ -960,7 +1010,6 @@ val_getaddrinfo(val_context_t * ctx,
         }
 
         retval = 0;
-        goto done;
     }
 
     /*
