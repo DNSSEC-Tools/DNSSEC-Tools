@@ -19,7 +19,7 @@ require Exporter;
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(timetrans);
+our @EXPORT = qw(timetrans fuzzytimetrans);
 
 #######################################################################
 #
@@ -54,19 +54,12 @@ sub timetrans
 	#
 	# Ensure we were given a valid seconds count.
 	#
-	if($seconds < 0)
-	{
-		print "bad value - <$seconds>\n";
-		return("");
-	}
+	return("") if($seconds < 0);
 
 	#
 	# Check for zero seconds.
 	#
-	if($seconds == 0)
-	{
-		return("0 seconds");
-	}
+	return("0 seconds") if($seconds == 0);
 
 	#
 	# Handle the less-than-a-minute case.
@@ -175,6 +168,74 @@ sub timetrans
 	return($tstr);
 }
 
+#---------------------------------------------------------------------------
+#
+# Routine:	fuzzytimetrans()
+#
+# Purpose:	This routine converts an integer seconds count into the
+#		equivalent number of weeks *or* days *or* hours *or* minutes.
+#
+sub fuzzytimetrans
+{
+	my $seconds = shift;				# Seconds to translate.
+
+	my $div;					# Divisor.
+	my $unit;					# Time unit.
+
+	my $remnant;					# Calculated time.
+	my $timestr;					# Translated time.
+
+	#
+	# Ensure we were given a valid seconds count.
+	#
+	return("") if($seconds < 0);
+
+	#
+	# Check for zero seconds.
+	#
+	return("0 seconds") if($seconds == 0);
+
+	#
+	# Set the divisor and textual units we'll be using, based on
+	# how many seconds we were given.
+	#
+	if($seconds < $MINUTE)
+	{
+		$div  = 1;		$unit = "second";
+	}
+	elsif($seconds < $HOUR)
+	{
+		$div  = $MINUTE;	$unit = "minute";
+	}
+	elsif($seconds < $DAY)
+	{
+		$div  = $HOUR;		$unit = "hour";
+	}
+	elsif($seconds < $WEEK)
+	{
+		$div  = $DAY;		$unit = "day";
+	}
+	else
+	{
+		$div  = $WEEK;		$unit = "week";
+	}
+
+	#
+	# Calculate the number of units we have and translate it into
+	# an "N.M" floating format.
+	#
+	$remnant = $seconds / $div;
+	$timestr = sprintf("%.1f",$remnant);
+
+	#
+	# Pluralize the units if needed and build our return value.
+	#
+	$unit = $unit . "s" if($timestr != 1);
+	$timestr = "$timestr $unit";
+
+	return($timestr);
+}
+
 1;
 
 #############################################################################
@@ -191,29 +252,20 @@ Net::DNS::SEC::Tools::timetrans - Convert an integer seconds count into text uni
 
   $timestring = timetrans(86488);
 
+  $timestring = fuzzytimetrans(86488);
+
 =head1 DESCRIPTION
 
-The B<timetrans>() interface in the B<Net::DNS::SEC::Tools::timetrans>
+The I<timetrans>() interface in B<Net::DNS::SEC::Tools::timetrans>
 converts an integer seconds count into the equivalent number of weeks,
 days, hours, and minutes.  The time converted is a relative time, B<not>
 an absolute time.  The returned time is given in terms of weeks, days, hours,
 minutes, and seconds, as required to express the seconds count appropriately.
 
-=head1 EXAMPLES
-
-B<timetrans(400)> returns I<6 minutes, 40 seconds>
-
-B<timetrans(420)> returns I<7 minutes>
-
-B<timetrans(888)> returns I<14 minutes, 48 seconds>
-
-B<timetrans(86400)> returns I<1 day>
-
-B<timetrans(86488)> returns I<1 day, 28 seconds>
-
-B<timetrans(715000)> returns I<1 week, 1 day, 6 hours, 36 minutes, 40 second>
-
-B<timetrans(720000)> returns I<1 week, 1 day, 8 hours>
+The I<fuzzytimetrans>() interface converts an integer seconds count into the
+equivalent number of weeks B<or> days B<or> hours B<or> minutes.  The unit
+chosen is that which is most natural for the seconds count.  One decimal
+place of precision is included in the result.
 
 =head1 INTERFACES
 
@@ -232,8 +284,53 @@ Return Values:
     If a valid seconds count was given, the count converted into the
 	appropriate text string will be returned.
 
-    An empty string is returned if the no seconds count was given or if
+    An empty string is returned if no seconds count was given or if
 	the seconds count is less than one.
+
+=head2 B<fuzzytimetrans()>
+
+This routine converts an integer seconds count into the equivalent number of
+weeks, days, hours, or minutes.  This converted seconds count is returned
+as a text string.  The seconds count must be greater than zero or an error
+will be returned.
+
+Return Values:
+
+    If a valid seconds count was given, the count converted into the
+	appropriate text string will be returned.
+
+    An empty string is returned if no seconds count was given or if
+	the seconds count is less than one.
+
+=head1 EXAMPLES
+
+B<timetrans(400)> returns I<6 minutes, 40 seconds>
+
+B<timetrans(420)> returns I<7 minutes>
+
+B<timetrans(888)> returns I<14 minutes, 48 seconds>
+
+B<timetrans(86400)> returns I<1 day>
+
+B<timetrans(86488)> returns I<1 day, 28 seconds>
+
+B<timetrans(715000)> returns I<1 week, 1 day, 6 hours, 36 minutes, 40 second>
+
+B<timetrans(720000)> returns I<1 week, 1 day, 8 hours>
+
+B<fuzzytimetrans(400)> returns I<6.7 minutes>
+
+B<fuzzytimetrans(420)> returns I<7.0 minutes>
+
+B<fuzzytimetrans(888)> returns I<14.8 minutes>
+
+B<fuzzytimetrans(86400)> returns I<1.0 day>
+
+B<fuzzytimetrans(86488)> returns I<1.0 day>
+
+B<fuzzytimetrans(715000)> returns I<1.2 weeks>
+
+B<fuzzytimetrans(720000)> returns I<1.2 weeks>
 
 =head1 COPYRIGHT
 
