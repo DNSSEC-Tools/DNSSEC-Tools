@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/time.h>
+
 #ifndef NAMESER_HAS_HEADER
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>
@@ -635,6 +637,7 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
             int authoritive_answer)
 {
     int             name_len = wire_name_length(name_n);
+    struct timeval  tv;
 
     if ((new_set == NULL) || (name_n == NULL))
         return VAL_BAD_ARGUMENT;
@@ -671,6 +674,11 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
     new_set->rrs.val_rrset_type_h = set_type_h;
     new_set->rrs.val_rrset_class_h = class_h;
     new_set->rrs.val_rrset_ttl_h = ttl_h;
+    if (0 == gettimeofday(&tv,NULL)) {
+        new_set->rrs.val_rrset_ttl_x = tv.tv_sec + ttl;
+    }
+    else
+        new_set->rrs.val_rrset_ttl_x = 0;
     new_set->rrs.val_rrset_data = NULL;
     new_set->rrs.val_rrset_sig = NULL;
     new_set->rrs_next = NULL;
@@ -1200,7 +1208,7 @@ extract_from_rr(u_int8_t * response,
      */
     memcpy(&net_int, &response[*response_index], sizeof(u_int32_t));
     *ttl_h = ntohl(net_int);
-    *response_index += sizeof(u_int32_t);
+    *response_index += sizeof(u_int32_t);    
 
     /*
      * Extract the rdata length, and save it in host format 
@@ -1547,6 +1555,7 @@ copy_rrset_rec(struct rrset_rec *rr_set)
 	copy_set->rrs.val_rrset_class_h = rr_set->rrs.val_rrset_class_h;
 	copy_set->rrs.val_rrset_type_h = rr_set->rrs.val_rrset_type_h;
 	copy_set->rrs.val_rrset_ttl_h = rr_set->rrs.val_rrset_ttl_h;
+	copy_set->rrs.val_rrset_ttl_x = rr_set->rrs.val_rrset_ttl_x;
 	copy_set->rrs.val_rrset_section = rr_set->rrs.val_rrset_section;
 	
     copy_set->rrs.val_rrset_data = NULL;

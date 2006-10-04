@@ -239,6 +239,7 @@ extern          "C" {
         u_int16_t       val_rrset_class_h;      /* ns_c_... */
         u_int16_t       val_rrset_type_h;       /* ns_t_... */
         u_int32_t       val_rrset_ttl_h;        /* Received ttl */
+        u_int32_t       val_rrset_ttl_x;        /* ttl expire time */
         u_int8_t        val_rrset_section;      /* VAL_FROM_... */
         struct rr_rec  *val_rrset_data; /* All data RR's */
         struct rr_rec  *val_rrset_sig;  /* All signatures */
