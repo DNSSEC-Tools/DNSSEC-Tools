@@ -922,6 +922,10 @@ sub calcrows
 		$lastrow = $row;
 	}
 
+	#
+	# Set the table to the new row size.
+	#
+	$zonetab->configure(-rows => $lastrow);
 }
 
 #---------------------------------------------------------------------------
