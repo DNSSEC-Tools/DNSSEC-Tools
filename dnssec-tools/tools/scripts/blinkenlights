@@ -118,20 +118,29 @@ my @phasedescr =
 # The main window and its frames.
 #
 my $wm;							# Main window.
-my $helpwin;						# Help window.
 my $mbar;						# Menubar frame.
+my $helpwin;						# Help window.
 my $body;						# Window body frame.
 my $zonetab;						# Zone data table.
 my $null;						# Empty frame.
 
-my $bodyframe;						# Frame in body.
+my $file;						# File menu.
+my $disp;						# Edit menu.
+my $cmds;						# Commands menu.
+my $help;						# Help menu.
 
 #
 # Menu item widgets.
 #
 my $fm_quit;						# Quit file item.
-my $dm_togl;						# Viewing toggle.
+my $dp_mdfy;						# Modify toggle.
 my $hm_help;						# Help item.
+
+#
+# Messages for the Display menu.
+#
+my $ALLOWCMDS	 = "Allow Commands";
+my $DISALLOWCMDS = "Disallow Commands";
 
 #######################################################################
 #
@@ -247,15 +256,11 @@ sub optsandargs
 #
 sub buildmainwind
 {
-	my $file;					# File menu.
-	my $disp;					# Edit menu.
-	my $cmds;					# Commands menu.
-	my $help;					# Help menu.
-
 	my $curfile;					# Current keyrec.
 	my $nulline;					# Empty line.
 
 	my $zn_entry;					# Zone menu entry.
+	my $modmsg;					# Modify menu message.
 
 	#
 	# Create the main window.
@@ -304,6 +309,16 @@ sub buildmainwind
 
 	##################################################
 	#
+	# Add the Display menu entries.
+	#
+	$modmsg = $DISALLOWCMDS;
+	$modmsg = $ALLOWCMDS if($nomodify);
+	$dp_mdfy = $disp->command(-label => $modmsg,
+				  -command => \&disp_modify);
+	$disp->pack(-side => 'left');
+
+	##################################################
+	#
 	# Add the Zone Control menu entries.
 	#
 	$zn_entry = $cmds->command(-label => 'Roll Selected Zone',
@@ -331,6 +346,11 @@ sub buildmainwind
 	$wm->bind('<Control-Key-r>', \&zone_rollzone);
 	$wm->bind('<Control-Key-S>', \&zone_skipzone);
 	$wm->bind('<Control-Key-s>', \&zone_skipzone);
+
+	if($nomodify)
+	{
+		$cmds->configure(-state => 'disabled');
+	}
 
 	##################################################
 	#
@@ -399,6 +419,27 @@ sub file_quit
 }
 
 #---------------------------------------------------------------------------
+# Routine:	disp_modify()
+#
+# Purpose:	Handle the Modify menu toggle.
+#
+sub disp_modify
+{
+	if($nomodify)
+	{
+		$dp_mdfy->configure(-label => $DISALLOWCMDS);
+		$cmds->configure(-state => 'normal');
+		$nomodify = 0;
+	}
+	else
+	{
+		$dp_mdfy->configure(-label => $ALLOWCMDS);
+		$cmds->configure(-state => 'disabled');
+		$nomodify = 1;
+	}
+}
+
+#---------------------------------------------------------------------------
 # Routine:	zone_rollzone()
 #
 # Purpose:	Handle the Roll Zone menu command.
@@ -428,6 +469,11 @@ sub zone_skipzone
 sub zone_rollcmd
 {
 	my $rcmd = shift;				# Command to run.
+
+	#
+	# Don't allow commands if -nomodify was given.
+	#
+	return if($nomodify);
 
 	#
 	# These commands need a zone.  We've got to query the user for
