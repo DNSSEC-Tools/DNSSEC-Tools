@@ -134,6 +134,7 @@ my $help;						# Help menu.
 #
 my $fm_quit;						# Quit file item.
 my $dp_mdfy;						# Modify toggle.
+my $dp_skip;						# Skip toggle.
 my $hm_help;						# Help item.
 
 #
@@ -141,6 +142,8 @@ my $hm_help;						# Help item.
 #
 my $ALLOWCMDS	 = "Allow Commands";
 my $DISALLOWCMDS = "Disallow Commands";
+my $SHOWSKIP	 = "Display Skipped Zones";
+my $NOSKIP	 = "Hide Skipped Zones";
 
 #######################################################################
 #
@@ -261,6 +264,7 @@ sub buildmainwind
 
 	my $zn_entry;					# Zone menu entry.
 	my $modmsg;					# Modify menu message.
+	my $skipmsg;					# Skip menu message.
 
 	#
 	# Create the main window.
@@ -311,10 +315,14 @@ sub buildmainwind
 	#
 	# Add the Display menu entries.
 	#
+	$skipmsg = $NOSKIP;
+	$skipmsg = $SHOWSKIP if($noskip);
+	$dp_skip = $disp->command(-label => $skipmsg, -command => \&disp_skip);
+	$disp->pack(-side => 'left');
+
 	$modmsg = $DISALLOWCMDS;
 	$modmsg = $ALLOWCMDS if($nomodify);
-	$dp_mdfy = $disp->command(-label => $modmsg,
-				  -command => \&disp_modify);
+	$dp_mdfy = $disp->command(-label => $modmsg, -command => \&disp_modify);
 	$disp->pack(-side => 'left');
 
 	##################################################
@@ -437,6 +445,28 @@ sub disp_modify
 		$cmds->configure(-state => 'disabled');
 		$nomodify = 1;
 	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_skip()
+#
+# Purpose:	Handle the Skip menu toggle.
+#
+sub disp_skip
+{
+	if($noskip)
+	{
+		$dp_skip->configure(-label => $NOSKIP);
+		$noskip = 0;
+	}
+	else
+	{
+		$dp_skip->configure(-label => $SHOWSKIP);
+		$noskip = 1;
+	}
+
+	calcrows();
+	repaint();
 }
 
 #---------------------------------------------------------------------------
