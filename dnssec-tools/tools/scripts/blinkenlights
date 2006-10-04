@@ -23,6 +23,7 @@ use Tk::Table;
 
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::timetrans;
 
 #
 # Version information.
@@ -959,13 +960,17 @@ sub rollerdcmd
 	}
 	elsif($cmd eq "expiration")
 	{
-		my $other;				# Additional data.
+		my $secs;				# Additional data.
+		my $timestr;				# Translated time.
 
 		$line =~ /^([a-z]+)\W+([a-zA-z0-9\.\+\-]+)\W+([0-9]+)\W(.*)$/;
-		$other	= $4;
 
-		$other = "starting roll in $other" if($phase == 0);
-		zonestripe($zone,$phase,$other);
+		$secs	= $4;
+		$timestr = fuzzytimetrans($secs);
+		$timestr =~ s/\.0//;
+
+		$timestr = "starting roll in $timestr" if($phase == 0);
+		zonestripe($zone,$phase,$timestr);
 	}
 
 	$zonetab->update();
