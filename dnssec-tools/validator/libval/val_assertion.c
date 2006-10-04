@@ -2652,6 +2652,8 @@ transform_results(struct _val_result_chain **w_results,
                     o_ac->val_ac_rrset->val_rrset_type_h;
                 n_ac->val_ac_rrset->val_rrset_ttl_h =
                     o_ac->val_ac_rrset->val_rrset_ttl_h;
+                n_ac->val_ac_rrset->val_rrset_ttl_x =
+                    o_ac->val_ac_rrset->val_rrset_ttl_x;
                 n_ac->val_ac_rrset->val_rrset_section =
                     o_ac->val_ac_rrset->val_rrset_section;
                 n_ac->val_ac_rrset->val_rrset_data =

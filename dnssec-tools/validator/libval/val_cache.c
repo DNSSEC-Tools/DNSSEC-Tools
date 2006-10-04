@@ -25,6 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/time.h>
 #include <pthread.h>
 
 #include <resolver.h>
@@ -32,6 +33,7 @@
 #include "val_support.h"
 #include "val_resquery.h"
 #include "val_cache.h"
+#include "val_log.h"
 
 static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
@@ -187,10 +189,12 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
                  u_int16_t type_h, struct rrset_rec **cloned_answer)
 {
     struct rrset_rec *next_answer, *prev;
+    struct timeval    tv;
 
     LOCK_INIT();
 
     *cloned_answer = NULL;
+    gettimeofday(&tv, NULL);
 
     LOCK_SH();
     switch (type_h) {
@@ -217,7 +221,8 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
 
         if ((next_answer->rrs.val_rrset_type_h == type_h) &&
             (next_answer->rrs.val_rrset_class_h == class_h) &&
-            (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0)) {
+            (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0) &&
+            (tv.tv_sec > next_answer->rrs.val_rrset_ttl_x )) {
             if (next_answer->rrs.val_rrset_data != NULL) {
                 *cloned_answer = copy_rrset_rec(next_answer);
                 break;
