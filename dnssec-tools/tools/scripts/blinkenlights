@@ -157,13 +157,13 @@ my $NOSKIP	 = "Hide Skipped Zones";
 #
 # Flags.
 #
-my $inhelpwind = 0;					# Showing help window.
+my $inhelpwind = 0;				# Flag for showing help window.
 
 #
 # Filename variables.
 #
-my $rrfile = "dummy";					# Our rollrec file.
-my $title = "dummy";					# Node for title.
+my $rrfile = "dummy";				# Rollrec file being watched.
+my $title = "dummy";				# File node for title.
 
 #
 # Zone information.
@@ -181,6 +181,14 @@ my %keyrecs = ();				# Zones' keyrec filenames.
 #
 my %zonephase = ();				# Zones' phases.
 my %zonechron = ();				# Zones' chronoses.
+
+#
+# Data for the info stripe.
+#
+my $rollcnt = 0;				# Count of rolled zones.
+my $rollcntmsg;					# Message about rolled zones.
+my $skipcnt = 0;				# Count of skipped zones.
+my $skipcntmsg;					# Message about skipped zones.
 
 #
 # Data for button-selected zones.
@@ -546,10 +554,86 @@ sub zone_rollcmd
 #
 ##############################################################################
 
-my $rollcnt = 0;
-my $rollcntmsg;
-my $skipcnt = 0;
-my $skipcntmsg;
+#---------------------------------------------------------------------------
+# Routine:	readrrf()
+#
+# Purpose:	Read a rollrec file and put the info on the screen.
+#
+sub readrrf
+{
+	my $rrf = shift;				# Rollrec to read.
+	my $rr;						# Rollrec reference.
+
+	#
+	# Initialize some data.
+	#
+	@zonenames = ();
+
+	#
+	# Pretty-up the window.
+	#
+	settitle($rrf);
+	infostripe();
+	headerstripe();
+
+	#
+	# Get the rollrec contents and the names of the zones it contains.
+	#
+	rollrec_read($rrf);
+	@zonenames = rollrec_names();
+
+	foreach my $zone (@zonenames)
+	{
+		my $krf;				# Keyrec file.
+		my $kr;					# Keyrec reference.
+		my $phase;				# Rollover phase.
+
+		#
+		# Read the zone's rollrec record and save the current phase.
+		#
+		$rr = rollrec_fullrec($zone);
+		$phase  = $rr->{'curphase'};
+
+		#
+		# Save the zone's index and add it (or don't) to our list
+		# of roll-enabled zones.
+		#
+		$zones{$zone} = $zonecnt++;
+		if($rr->{'rollrec_type'} eq "roll")
+		{
+			$rollers{$zone} = 1;
+			$rollcnt++;
+		}
+		else
+		{
+			$rollers{$zone} = 0;
+			$skipcnt++;
+		}
+
+		#
+		# Read the zone's keyrec and save the filename.
+		#
+		$krf = $rr->{'keyrec'};
+		$keyrecs{$zone} = $krf;
+
+		#
+		# Figure out where each zone's stripe starts.
+		#
+		calcrows();
+
+		#
+		# Paint the window with this zone's info.
+		#
+		zonestripe($zone,$phase);
+	}
+
+	#
+	# Housekeeping before returning.
+	#
+	setcountmsgs();
+	rollrec_close();
+	$zonetab->update();
+}
 
 #---------------------------------------------------------------------------
 # Routine:	infostripe()
@@ -796,85 +880,6 @@ sub zonestripe
 	#
 	# Update the display.
 	#
-	$zonetab->update();
-}
-
-#---------------------------------------------------------------------------
-# Routine:	readrrf()
-#
-# Purpose:	Read a rollrec file and put the info on the screen.
-#
-sub readrrf
-{
-	my $rrf = shift;				# Rollrec to read.
-	my $rr;						# Rollrec reference.
-
-	#
-	# Initialize some data.
-	#
-	@zonenames = ();
-
-	#
-	# Pretty-up the window.
-	#
-	settitle($rrf);
-	infostripe();
-	headerstripe();
-
-	#
-	# Get the rollrec contents and the names of the zones it contains.
-	#
-	rollrec_read($rrf);
-	@zonenames = rollrec_names();
-
-	foreach my $zone (@zonenames)
-	{
-		my $krf;				# Keyrec file.
-		my $kr;					# Keyrec reference.
-		my $phase;				# Rollover phase.
-
-		#
-		# Read the zone's rollrec record and save the current phase.
-		#
-		$rr = rollrec_fullrec($zone);
-		$phase  = $rr->{'curphase'};
-
-		#
-		# Save the zone's index and add it (or don't) to our list
-		# of roll-enabled zones.
-		#
-		$zones{$zone} = $zonecnt++;
-		if($rr->{'rollrec_type'} eq "roll")
-		{
-			$rollers{$zone} = 1;
-			$rollcnt++;
-		}
-		else
-		{
-			$rollers{$zone} = 0;
-			$skipcnt++;
-		}
-
-		#
-		# Read the zone's keyrec and save the filename.
-		#
-		$krf = $rr->{'keyrec'};
-		$keyrecs{$zone} = $krf;
-
-		#
-		# Figure out where each zone's stripe starts.
-		#
-		calcrows();
-
-		#
-		# Paint the window with this zone's info.
-		#
-		zonestripe($zone,$phase);
-	}
-
-	setcountmsgs();
-
-	rollrec_close();
 	$zonetab->update();
 }
 
