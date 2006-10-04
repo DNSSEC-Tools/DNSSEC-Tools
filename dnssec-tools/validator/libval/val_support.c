@@ -675,7 +675,7 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
     new_set->rrs.val_rrset_class_h = class_h;
     new_set->rrs.val_rrset_ttl_h = ttl_h;
     if (0 == gettimeofday(&tv,NULL)) {
-        new_set->rrs.val_rrset_ttl_x = tv.tv_sec + ttl;
+        new_set->rrs.val_rrset_ttl_x = tv.tv_sec + ttl_h;
     }
     else
         new_set->rrs.val_rrset_ttl_x = 0;
