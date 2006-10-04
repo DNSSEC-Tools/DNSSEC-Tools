@@ -618,7 +618,7 @@ sub expired
 	{
 		$chronostr = timetrans($waitsecs);
 		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
-		display("expiration $rname 0 $chronostr");
+		display("expiration $rname 0 $waitsecs");
 	}
 	else
 	{
@@ -781,7 +781,7 @@ sub ttlexpire
 	$timediff = $endtempus - $curtempus;
 	$tdstr = timetrans($timediff);
 	rollmgr_log(LOG_INFO,$rname,"phase $phase; cache expires in $tdstr");
-	display("expiration $rname $phase $tdstr");
+	display("expiration $rname $phase $timediff");
 
 	return(0)
 }
