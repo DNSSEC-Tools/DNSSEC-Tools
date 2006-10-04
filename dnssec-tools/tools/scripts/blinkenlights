@@ -68,7 +68,9 @@ my $CONFIG = "rc.blinkenlights";
 #
 # Row constants.
 #
-my $STARTROW = 1;		# First row on which zone info will be shown.
+my $INFOROW  = 0;		# Row on which columns titles will be shown.
+my $TITLEROW = 1;		# Row on which columns titles will be shown.
+my $STARTROW = 2;		# First row on which zone info will be shown.
 my $ROWINCR  = 3;		# Number of rows for each zone.
 
 #
@@ -87,6 +89,8 @@ my $SELECTEDFG	= 'white';			# Selected foreground color.
 # Background colors for the zones, cycling through the list for table rows.
 #
 my $NUMCOLORS = 3;				# Maximum number of colors.
+my $INFOBG = "white";				# Color for the info row.
+
 my $colorind = 0;				# Current color index.
 my $skipcolor = "grey";				# Color for skip zones.
 
@@ -292,11 +296,12 @@ sub buildmainwind
 				  -tearoff   => 0,
 				  -underline => 0);
 	$cmds = $mbar->Menubutton(-text	     => 'Zone Control',
-				  -tearoff   => 0,
+				  -tearoff   => 1,
 				  -underline => 0);
 	$help = $mbar->Menubutton(-text      => 'Help',
 				  -tearoff   => 0,
 				  -underline => 0);
+	$mbar->pack(-side => 'top', -fill => 'x');
 
 	##################################################
 	#
@@ -359,16 +364,6 @@ sub buildmainwind
 	{
 		$cmds->configure(-state => 'disabled');
 	}
-
-	##################################################
-	#
-	# Create a line holding the current keyrec filename.
-	#
-	$curfile = $mbar->Label(-text => "                         Monitoring Rollrec File:  ");
-	$curfile->pack(-side => 'left');
-	$curfile = $mbar->Label(-textvariable => \$title);
-	$curfile->pack(-side => 'left');
-	$mbar->pack(-side => 'top', -fill => 'x');
 
 	##################################################
 	#
@@ -551,6 +546,37 @@ sub zone_rollcmd
 #
 ##############################################################################
 
+my $rollcnt = 0;
+my $rollcntmsg;
+my $skipcnt = 0;
+my $skipcntmsg;
+
+#---------------------------------------------------------------------------
+# Routine:	infostripe()
+#
+# Purpose:	Puts an information line in the top table row.
+#
+sub infostripe
+{
+	my $lab;
+
+	$lab = $zonetab->Label(-textvariable => \$title,
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,0,$lab);
+
+	$lab = $zonetab->Label(-textvariable => \$rollcntmsg,
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,1,$lab);
+
+	$lab = $zonetab->Label(-textvariable => \$skipcntmsg,
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,2,$lab);
+
+	$lab = $zonetab->Label(-text => ' ',
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,3,$lab);
+}
+
 #---------------------------------------------------------------------------
 # Routine:	headerstripe()
 #
@@ -560,21 +586,23 @@ sub headerstripe
 {
 	my $lab;
 
+	infostripe();
+
 	$lab = $zonetab->Label(-text => 'Zone Name    ',
 			       -font => $font, -background => 'tan');
-	$zonetab->put(0,0,$lab);
+	$zonetab->put($TITLEROW,0,$lab);
 
 	$lab = $zonetab->Label(-text => 'Status',
 			       -font => $font, -background => 'tan');
-	$zonetab->put(0,1,$lab);
+	$zonetab->put($TITLEROW,1,$lab);
 
 	$lab = $zonetab->Label(-text => 'ZSK Type    ',
 			       -font => $font, -background => 'tan');
-	$zonetab->put(0,2,$lab);
+	$zonetab->put($TITLEROW,2,$lab);
 
 	$lab = $zonetab->Label(-text => 'ZSK Name    ',
 			       -font => $font, -background => 'tan');
-	$zonetab->put(0,3,$lab);
+	$zonetab->put($TITLEROW,3,$lab);
 }
 
 #---------------------------------------------------------------------------
@@ -785,12 +813,12 @@ sub readrrf
 	# Initialize some data.
 	#
 	@zonenames = ();
-	headerstripe();
 
 	#
 	# Pretty-up the window.
 	#
 	settitle($rrf);
+	infostripe();
 	headerstripe();
 
 	#
@@ -816,8 +844,16 @@ sub readrrf
 		# of roll-enabled zones.
 		#
 		$zones{$zone} = $zonecnt++;
-		$rollers{$zone} = 1;
-		$rollers{$zone} = 0 if($rr->{'rollrec_type'} ne "roll");
+		if($rr->{'rollrec_type'} eq "roll")
+		{
+			$rollers{$zone} = 1;
+			$rollcnt++;
+		}
+		else
+		{
+			$rollers{$zone} = 0;
+			$skipcnt++;
+		}
 
 		#
 		# Read the zone's keyrec and save the filename.
@@ -835,6 +871,8 @@ sub readrrf
 		#
 		zonestripe($zone,$phase);
 	}
+
+	setcountmsgs();
 
 	rollrec_close();
 	$zonetab->update();
@@ -897,6 +935,9 @@ sub rollerdcmd
 		$rollers{$zone} = 1;
 		calcrows();
 
+		$rollcnt++; $skipcnt--;
+		setcountmsgs();
+
 		$zonephase{$zone} = $phase;
 		repaint();
 	}
@@ -905,6 +946,10 @@ sub rollerdcmd
 		$rollers{$zone} = 0;
 		calcrows();
 		$zonephase{$zone} = -42;
+
+		$rollcnt--; $skipcnt++;
+		setcountmsgs();
+
 		repaint();
 	}
 	elsif($cmd eq "expiration")
@@ -1156,6 +1201,254 @@ my $DLGHEIGHT = 10;
 }
 
 #----------------------------------------------------------------------
+# Routine:      selector()
+#
+# Purpose:      Register a mouse-selected zone name.
+#
+sub selector
+{
+	my $argv = shift;				# Argument reference.
+	my %argv = %$argv;				# Argument hash.
+
+	my $wijname;					# Event's widget.
+	my @pieces;					# Pieces of array.
+
+	my $found = 0;					# Found-row flag.
+	my $selx;					# Selection x-coord.
+	my $wij;					# Selection's widget.
+
+	my @zonearr = ();				# Temp. zone/row array.
+
+	#
+	# Make sure we're clicking in our table and not in a menu
+	# or frame.
+	#
+	#	(This ugly bit of coding depends on our only
+	#	ever making a single table.)
+	#
+	$wijname = $argv{'_TkValue_'};
+	@pieces = split /\./, $wijname;
+
+	#
+	# If the selected widget isn't a table, we'll unselect the
+	# currently selected widget.
+	#
+	if($pieces[2] ne "table")
+	{
+		if($selwidget && ($pieces[2] !~ /menubutton/))
+		{
+			$selwidget->configure(-foreground => $NORMALFG);
+			$selzone = '';
+			$selwidget = undef;
+
+		}
+		return;
+	}
+
+	#
+	# Find the widget that has the same name as the event window.
+	#
+	for(my $xind=0; $xind < $lastrow; $xind++)
+	{
+		for(my $yind=0; $yind < 4; $yind++)
+		{
+			my $pn;				# Widget's pathname.
+
+			#
+			# Get this x,y widget and its name.
+			#
+			$wij = $zonetab->get($xind,$yind);
+			$pn = $wij->PathName;
+
+			#
+			# Go to the next widget if this isn't it.
+			#
+			next if($pn ne $wijname);
+
+			#
+			# Save the index and drop out.
+			#
+			$selx = $xind;
+			$found = 1;
+			last;
+		}
+
+		last if($found);
+	}
+
+	#
+	# Nothing gets selected if the user didn't select anything.
+	# Obviously.
+	#
+	return if(!$found);
+
+	#
+	# Clear the selection and return if the click came in the
+	# information row or the title row.
+	#
+	if(($selx == $INFOROW) || ($selx == $TITLEROW))
+	{
+		$selwidget->configure(-foreground => $NORMALFG) if($selwidget);
+		$selwidget = undef;
+
+		$selzone = '';
+		return;
+	}
+
+	#
+	# Build an array of zone-names, indexed by the zone's first row.
+	#
+	foreach my $zone (keys(%zonerows))
+	{
+		$zonearr[$zonerows{$zone}] = $zone;
+	}
+
+	#
+	# Mark the proper zone name (row N, column 0) with a highlighted
+	# marking.  All others will be unhighlighted.  We'll work backwards
+	# in our newly constructed zone-name array and find the zone's name
+	# in the array by working backwards from the index.
+	#
+	for(my $i=$selx; $i > 0; $i--)
+	{
+		#
+		# Skip any blank widgets.
+		#
+		next if($zonearr[$i] eq '');
+
+		#
+		# Get the zone string's widget and set the selection
+		# color for each zone in the zone column.
+		#
+		for(my $rind=0; $rind < $lastrow; $rind++)
+		{
+			my $wij;			# Zone's widget.
+			my $zstr;			# Widget's zone.
+
+			#
+			# Get this row's column-zero widget.  Go to the
+			# next if there isn't a zone in it.
+			#
+			$wij = $zonetab->get($rind,0);
+			$zstr = $wij->cget('-text');
+			$zstr =~ s/[ ]*$//;
+			next if($zstr eq '');
+
+			#
+			# If this is our selected zone, mark the zone
+			# string as highlighted.  All others go to the
+			# normal unhighlighted look.
+			#
+			if($zstr eq $zonearr[$i])
+			{
+				$wij->configure(-foreground => $SELECTEDFG);
+				$selwidget = $wij;
+			}
+			else
+			{
+				$wij->configure(-foreground => $NORMALFG);
+			}
+		}
+
+		#
+		# Select this zone.
+		#
+		$selzone = $zonearr[$i];
+		last;
+	}
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	readconfig()
+#
+# Purpose:      Read our configuration file.  Config entries are "field value"
+#		pairs, with the following fields recognized:
+#
+#			fontsize	size of demo output font
+#			skipcolor	color to use for skip records
+#
+sub readconfig
+{
+	my $line;					# Configuration line.
+	my $field;					# Field name from line.
+	my $value;					# Field value from line.
+
+	#
+	# Return if we don't have a configuration file.
+	#
+	return if(!-e $CONFIG);
+
+	#
+	# Complain and return if we can't read our configuration file.
+	#
+	if(!-r $CONFIG)
+	{
+		print STDERR "unable to read $CONFIG; continuing...\n";
+		return;
+	}
+
+	#
+	# Read the config file, ignoring comment lines.  Each non-comment
+	# line is expected to be in a "field value" pair.  As we read each
+	# line, we'll take the appropriate action.
+	#
+	open(CONF,"<$CONFIG");
+	while(<CONF>)
+	{
+		$line = $_;
+		chomp($line);
+
+		#
+		# Skip empty and comment lines.
+		#
+		$line =~ s/^[ \t]+//;
+		next if(($line =~ /^\#/) || ($line =~ /^$/));
+
+		#
+		# Pull out the field and value from the line.
+		#
+		$line =~ /([a-zA-Z_\-]+)\W+([a-zA-Z0-9_\-]+)/;
+		$field = lc($1);
+		$value = $2;
+
+		#
+		# Handle the field values appropriately.
+		#
+		if($field eq "fontsize")
+		{
+			if($value =~ /[a-zA-Z\_\-]/)
+			{
+				print STDERR "invalid fontsize \"$value\" in configuration file\n";
+				next;
+			}
+			$fontsize = $value;
+		}
+		elsif($field eq "skipcolor")
+		{
+			$skipcolor = $value;
+		}
+	}
+
+	close(CONF);
+}
+
+#----------------------------------------------------------------------
+# Routine:      setcountmsgs()
+#
+# Purpose:      Set the rolled zone and skipped zone messages with the
+#		current counts.
+#
+sub setcountmsgs
+{
+	$rollcntmsg = "$rollcnt Rolling Zones";
+	$rollcntmsg = "0 Rolling Zones"		if($rollcnt == 0);
+
+	$skipcntmsg = "$skipcnt Skipped Zones";
+	$skipcntmsg = "0 Skipped Zones"		if($skipcnt == 0);
+}
+
+#----------------------------------------------------------------------
 # Routine:      settitle()
 #
 # Purpose:      Set the title for use in the "Monitoring File" line.
@@ -1274,226 +1567,6 @@ be given on rollerd's command line in order to have it start blinkenlights.
 	$wdgt = $hframe->Button(-text => 'Done',
 				-command => \&helpbegone);
 	$wdgt->pack(-side => 'top');
-}
-
-#---------------------------------------------------------------------------
-# Routine:	readconfig()
-#
-# Purpose:      Read our configuration file.  Config entries are "field value"
-#		pairs, with the following fields recognized:
-#
-#			fontsize	size of demo output font
-#			skipcolor	color to use for skip records
-#
-sub readconfig
-{
-	my $line;					# Configuration line.
-	my $field;					# Field name from line.
-	my $value;					# Field value from line.
-
-	#
-	# Return if we don't have a configuration file.
-	#
-	return if(!-e $CONFIG);
-
-	#
-	# Complain and return if we can't read our configuration file.
-	#
-	if(!-r $CONFIG)
-	{
-		print STDERR "unable to read $CONFIG; continuing...\n";
-		return;
-	}
-
-	#
-	# Read the config file, ignoring comment lines.  Each non-comment
-	# line is expected to be in a "field value" pair.  As we read each
-	# line, we'll take the appropriate action.
-	#
-	open(CONF,"<$CONFIG");
-	while(<CONF>)
-	{
-		$line = $_;
-		chomp($line);
-
-		#
-		# Skip empty and comment lines.
-		#
-		$line =~ s/^[ \t]+//;
-		next if(($line =~ /^\#/) || ($line =~ /^$/));
-
-		#
-		# Pull out the field and value from the line.
-		#
-		$line =~ /([a-zA-Z_\-]+)\W+([a-zA-Z0-9_\-]+)/;
-		$field = lc($1);
-		$value = $2;
-
-		#
-		# Handle the field values appropriately.
-		#
-		if($field eq "fontsize")
-		{
-			if($value =~ /[a-zA-Z\_\-]/)
-			{
-				print STDERR "invalid fontsize \"$value\" in configuration file\n";
-				next;
-			}
-			$fontsize = $value;
-		}
-		elsif($field eq "skipcolor")
-		{
-			$skipcolor = $value;
-		}
-	}
-
-	close(CONF);
-}
-
-#----------------------------------------------------------------------
-# Routine:      selector()
-#
-# Purpose:      Register a mouse-selected zone name.
-#
-sub selector
-{
-	my $argv = shift;				# Argument reference.
-	my %argv = %$argv;				# Argument hash.
-
-	my $wijname;					# Event's widget.
-	my @pieces;					# Pieces of array.
-
-	my $found = 0;					# Found-row flag.
-	my $selx;					# Selection x-coord.
-	my $wij;					# Selection's widget.
-
-	my @zonearr = ();				# Temp. zone/row array.
-
-	#
-	# Make sure we're clicking in our table and not in a menu
-	# or frame.
-	#
-	#	(This ugly bit of coding depends on our only
-	#	ever making a single table.)
-	#
-	$wijname = $argv{'_TkValue_'};
-	@pieces = split /\./, $wijname;
-
-	#
-	# If the selected widget isn't a table, we'll unselect the
-	# currently selected widget.
-	#
-	if($pieces[2] ne "table")
-	{
-		if($selwidget && ($pieces[2] !~ /menubutton/))
-		{
-			$selwidget->configure(-foreground => $NORMALFG);
-			$selzone = '';
-			$selwidget = undef;
-
-		}
-		return;
-	}
-
-	#
-	# Find the widget that has the same name as the event window.
-	#
-	for(my $xind=1; $xind < $lastrow; $xind++)
-	{
-		for(my $yind=0; $yind < 4; $yind++)
-		{
-			my $pn;				# Widget's pathname.
-
-			#
-			# Get this x,y widget and its name.
-			#
-			$wij = $zonetab->get($xind,$yind);
-			$pn = $wij->PathName;
-
-			#
-			# Go to the next widget if this isn't it.
-			#
-			next if($pn ne $wijname);
-
-			#
-			# Save the index and drop out.
-			#
-			$selx = $xind;
-			$found = 1;
-			last;
-		}
-
-		last if($found);
-	}
-
-	#
-	# Nothing gets selected if the user didn't select anything.
-	# Obviously.
-	#
-	return if(!$found);
-
-	#
-	# Build an array of zone-names, indexed by the zone's first row.
-	#
-	foreach my $zone (keys(%zonerows))
-	{
-		$zonearr[$zonerows{$zone}] = $zone;
-	}
-
-	#
-	# Mark the proper zone name (row N, column 0) with a highlighted
-	# marking.  All others will be unhighlighted.  We'll work backwards
-	# in our newly constructed zone-name array and find the zone's name
-	# in the array by working backwards from the index.
-	#
-	for(my $i=$selx; $i > 0; $i--)
-	{
-		#
-		# Skip any blank widgets.
-		#
-		next if($zonearr[$i] eq '');
-
-		#
-		# Get the zone string's widget and set the selection
-		# color for each zone in the zone column.
-		#
-		for(my $rind=0; $rind < $lastrow; $rind++)
-		{
-			my $wij;			# Zone's widget.
-			my $zstr;			# Widget's zone.
-
-			#
-			# Get this row's column-zero widget.  Go to the
-			# next if there isn't a zone in it.
-			#
-			$wij = $zonetab->get($rind,0);
-			$zstr = $wij->cget('-text');
-			$zstr =~ s/[ ]*$//;
-			next if($zstr eq '');
-
-			#
-			# If this is our selected zone, mark the zone
-			# string as highlighted.  All others go to the
-			# normal unhighlighted look.
-			#
-			if($zstr eq $zonearr[$i])
-			{
-				$wij->configure(-foreground => $SELECTEDFG);
-				$selwidget = $wij;
-			}
-			else
-			{
-				$wij->configure(-foreground => $NORMALFG);
-			}
-		}
-
-		#
-		# Select this zone.
-		#
-		$selzone = $zonearr[$i];
-		last;
-	}
-
 }
 
 #----------------------------------------------------------------------
