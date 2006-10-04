@@ -78,7 +78,13 @@ my $fontsize = 18;
 my $font = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
 
 #
-# Background colors for the zones,  cycling through the list for table rows.
+# Foreground colors for zones.
+#
+my $NORMALFG	= 'black';			# Normal foreground color.
+my $SELECTEDFG	= 'white';			# Selected foreground color.
+
+#
+# Background colors for the zones, cycling through the list for table rows.
 #
 my $NUMCOLORS = 3;				# Maximum number of colors.
 my $colorind = 0;				# Current color index.
@@ -164,6 +170,7 @@ my %zonechron = ();				# Zones' chronoses.
 # Data for button-selected zones.
 #
 my $selzone;					# Selected zone name.
+my $selwidget;					# Selected zone's widget.
 my $lastrow = $STARTROW;			# Final row index.
 
 ###########################################################################
@@ -173,6 +180,8 @@ exit(0);
 
 #---------------------------------------------------------------------------
 # Routine:	main()
+#
+# Purpose:	Do shtuff.
 #
 sub main
 {
@@ -233,6 +242,8 @@ sub optsandargs
 
 #---------------------------------------------------------------------------
 # Routine:	buildmainwind()
+#
+# Purpose:	Build the main window.
 #
 sub buildmainwind
 {
@@ -296,7 +307,8 @@ sub buildmainwind
 	# Add the Zone Control menu entries.
 	#
 	$zn_entry = $cmds->command(-label => 'Roll Selected Zone',
-				   -command => [\&zone_rollcmd, "rollzone"]);
+				   -command => [\&zone_rollcmd, "rollzone"],
+			           -accelerator => 'Ctrl+R');
 	$zn_entry = $cmds->command(-label => 'Roll All Zones',
 				   -command => [\&zone_rollcmd, "rollall"]);
 	$zn_entry = $cmds->command(-label => 'Run the Queue',
@@ -304,7 +316,8 @@ sub buildmainwind
 	$cmds->separator();
 
 	$zn_entry = $cmds->command(-label => 'Skip Selected Zone',
-				   -command => [\&zone_rollcmd, "skipzone"]);
+				   -command => [\&zone_rollcmd, "skipzone"],
+			           -accelerator => 'Ctrl+S');
 	$zn_entry = $cmds->command(-label => 'Skip All Zones',
 				   -command => [\&zone_rollcmd, "skipall"]);
 	$cmds->separator();
@@ -313,6 +326,11 @@ sub buildmainwind
 				   -command => [\&zone_rollcmd, "halt"]);
 
 	$cmds->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-R>', \&zone_rollzone);
+	$wm->bind('<Control-Key-r>', \&zone_rollzone);
+	$wm->bind('<Control-Key-S>', \&zone_skipzone);
+	$wm->bind('<Control-Key-s>', \&zone_skipzone);
 
 	##################################################
 	#
@@ -349,8 +367,6 @@ sub buildmainwind
 				-fixedrows => 0,
 				-takefocus => 1,
 			       );
-#	$zonetab->pack(-fill => 'x', -expand => 1);
-#	$body->pack(-fill => 'x', -expand => 1);
 	$zonetab->pack(-fill => 'both', -expand => 1);
 	$body->pack(-fill => 'both', -expand => 1);
 
@@ -363,7 +379,7 @@ sub buildmainwind
 	# Initialize our rollerd-input handler.
 	#
 	$wm->fileevent('STDIN',readable => \&rollerdcmd);
-#	$wm->bind('<Button>',\&selector);
+	$wm->bind('<Button>',\&selector);
 }
 
 ##############################################################################
@@ -375,13 +391,39 @@ sub buildmainwind
 #---------------------------------------------------------------------------
 # Routine:	file_quit()
 #
+# Purpose:	Handle the quit menu command.
+#
 sub file_quit
 {
 	exit(0);
 }
 
 #---------------------------------------------------------------------------
+# Routine:	zone_rollzone()
+#
+# Purpose:	Handle the Roll Zone menu command.
+#
+sub zone_rollzone
+{
+	return if($rollers{$selzone});
+	zone_rollcmd("rollzone");
+}
+
+#---------------------------------------------------------------------------
+# Routine:	zone_skipzone()
+#
+# Purpose:	Handle the Skip Zone menu command.
+#
+sub zone_skipzone
+{
+	return if(!$rollers{$selzone});
+	zone_rollcmd("skipzone");
+}
+
+#---------------------------------------------------------------------------
 # Routine:	zone_rollcmd()
+#
+# Purpose:	Handle the Zone Command menu commands.
 #
 sub zone_rollcmd
 {
@@ -395,9 +437,20 @@ sub zone_rollcmd
 	{
 		my $zone;				# Zone to handle.
 
-		$zone = getzone($rcmd);
-		return if($zone eq "");
-		$rcmd = "$rcmd $zone"
+		#
+		# If a zone has been selected, we'll use it.  If not,
+		# we'll prompt the user for the zone.
+		#
+		if($selzone ne '')
+		{
+			$rcmd = "$rcmd $selzone";
+		}
+		else
+		{
+			$zone = getzone($rcmd);
+			return if($zone eq "");
+			$rcmd = "$rcmd $zone";
+		}
 	}
 
 	#
@@ -435,7 +488,7 @@ sub headerstripe
 			       -font => $font, -background => 'tan');
 	$zonetab->put(0,0,$lab);
 
-	$lab = $zonetab->Label(-text => 'Rollover Phase    ',
+	$lab = $zonetab->Label(-text => 'Status',
 			       -font => $font, -background => 'tan');
 	$zonetab->put(0,1,$lab);
 
@@ -459,8 +512,10 @@ sub zonestripe
 	my $phase   = shift;				# Zone's rollover phase.
 	my $chronos = shift || " ";			# Expiration-time data.
 
+	my $fgcolor = $NORMALFG;			# Foreground color.
 	my $bgcolor;					# Background color.
 	my $phasecolor;					# Color of phase column.
+	my $phasestr;					# Phase description.
 
 	my $row0;					# First row in group.
 	my $row1;					# Second row in group.
@@ -489,6 +544,11 @@ sub zonestripe
 	$phasecolor = getcolor($zone,$phase,0);
 
 	#
+	# Get this zone's foreground color.
+	#
+	$fgcolor = $SELECTEDFG if($zone eq $selzone);
+
+	#
 	# Save this zone's data in case we need a repaint.
 	#
 	$zonephase{$zone} = $phase;
@@ -513,11 +573,13 @@ sub zonestripe
 		return if($noskip);
 
 		$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
-			       -background => $bgcolor);
-#			       -background => $bgcolor, -anchor => 'w');
+				       -foreground => $fgcolor,
+				       -background => $bgcolor);
+#				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row0,0,$lab);
 
 		$lab = $zonetab->Label(-text => 'skipping', -font => $font,
+				       -foreground => $NORMALFG,
 				       -background => $bgcolor);
 		$zonetab->put($row0,1,$lab);
 
@@ -541,6 +603,7 @@ sub zonestripe
 	$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
 	$zonetab->put($row0,0,$blank);
 	$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
+			       -foreground => $fgcolor,
 			       -background => $bgcolor);
 #			       -background => $bgcolor, -anchor => 'w');
 
@@ -553,14 +616,19 @@ sub zonestripe
 	#
 	# Second column:  zone rollover phase
 	#
-	$lab = $zonetab->Label(-text => $phase, -font => $font,
+	$phasestr = "phase $phase";
+	$phasestr = " " if($phase == 0);
+	$lab = $zonetab->Label(-text => $phasestr, -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
 	$zonetab->put($row0,1,$lab);
 	$lab = $zonetab->Label(-text => $phasedescr[$phase],
 			       -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
 	$zonetab->put($row1,1,$lab);
 	$lab = $zonetab->Label(-text => $chronos, -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
 	$zonetab->put($row2,1,$lab);
 
@@ -590,12 +658,15 @@ sub zonestripe
 	# Third column:  key label
 	#
 	$lab = $zonetab->Label(-text => "Current   ", -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
 	$zonetab->put($row0,2,$lab);
 	$lab = $zonetab->Label(-text => "Published   ", -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
 	$zonetab->put($row1,2,$lab);
 	$lab = $zonetab->Label(-text => "New   ", -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
 	$zonetab->put($row2,2,$lab);
 
@@ -603,14 +674,17 @@ sub zonestripe
 	# Fourth columns:  key name
 	#
 	$lab = $zonetab->Label(-text => $zskcur, -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
 	$zonetab->put($row0,3,$lab);
 
 	$lab = $zonetab->Label(-text => $zskpub, -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
 	$zonetab->put($row1,3,$lab);
 
 	$lab = $zonetab->Label(-text => $zsknew, -font => $font,
+			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
 	$zonetab->put($row2,3,$lab);
 
@@ -623,6 +697,8 @@ sub zonestripe
 
 #---------------------------------------------------------------------------
 # Routine:	readrrf()
+#
+# Purpose:	Read a rollrec file and put the info on the screen.
 #
 sub readrrf
 {
@@ -690,6 +766,8 @@ sub readrrf
 
 #---------------------------------------------------------------------------
 # Routine:	rollerdcmd()
+#
+# Purpose:	Handle commands from rollerd.
 #
 sub rollerdcmd
 {
@@ -768,7 +846,6 @@ sub rollerdcmd
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:      repaint()
 #
 # Purpose:      Redisplay the current zone data.
@@ -782,7 +859,6 @@ sub repaint
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:      calcrows()
 #
 # Purpose:      Calculate the starting row for each displayed zone.
@@ -809,18 +885,24 @@ sub calcrows
 	foreach my $zn (sort(@zonenames))
 	{
 		#
-		# Save the row index for the zone name and in case this
-		# is the last row.
+		# Save the row index for the zone name.
 		#
 		$zonerows{$zn} = $row;
-		$lastrow = $row;
 
+		#
+		# Skip this zone if we aren't showing skipped zones.
+		#
 		if($noskip && ($rollers{$zn} == 0))
 		{
 			$zonerows{$zn} = 0;
 			next;
 		}
 
+		#
+		# Bump the row count by the appropriate amount, depending
+		# on if it's a rolled or skipped zone.  Rolled zones also
+		# get color information.
+		#
 		if($rollers{$zn} == 0)
 		{
 			$row += 1;
@@ -833,12 +915,19 @@ sub calcrows
 			$colorind++;
 			$colorind = 0 if($colorind == $NUMCOLORS);
 		}
+
+		#
+		# Save the row index in case this is the last row.
+		#
+		$lastrow = $row;
 	}
 
 }
 
 #---------------------------------------------------------------------------
 # Routine:	getnode()
+#
+# Purpose:	Return the last element in a path.
 #
 sub getnode
 {
@@ -853,6 +942,8 @@ sub getnode
 
 #---------------------------------------------------------------------------
 # Routine:	getcolor()
+#
+# Purpose:	Figure out what color this zone's stripe needs.
 #
 sub getcolor
 {
@@ -985,7 +1076,6 @@ my $DLGHEIGHT = 10;
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:      settitle()
 #
 # Purpose:      Set the title for use in the "Monitoring File" line.
@@ -999,6 +1089,8 @@ sub settitle
 
 #---------------------------------------------------------------------------
 # Routine:	error()
+#
+# Purpose:	Give an error dialog box.
 #
 sub error
 {
@@ -1015,6 +1107,8 @@ sub error
 #---------------------------------------------------------------------------
 # Routine:      helpbegone()
 #
+# Purpose:	Dismiss the help window.
+#
 sub helpbegone
 {
 	$helpwin->destroy();
@@ -1023,6 +1117,8 @@ sub helpbegone
 
 #---------------------------------------------------------------------------
 # Routine:	help_help()
+#
+# Purpose:	Display the help window.
 #
 sub help_help
 {
@@ -1175,7 +1271,152 @@ sub readconfig
 }
 
 #----------------------------------------------------------------------
+# Routine:      selector()
 #
+# Purpose:      Register a mouse-selected zone name.
+#
+sub selector
+{
+	my $argv = shift;				# Argument reference.
+	my %argv = %$argv;				# Argument hash.
+
+	my $wijname;					# Event's widget.
+	my @pieces;					# Pieces of array.
+
+	my $found = 0;					# Found-row flag.
+	my $selx;					# Selection x-coord.
+	my $wij;					# Selection's widget.
+
+	my @zonearr = ();				# Temp. zone/row array.
+
+	#
+	# Make sure we're clicking in our table and not in a menu
+	# or frame.
+	#
+	#	(This ugly bit of coding depends on our only
+	#	ever making a single table.)
+	#
+	$wijname = $argv{'_TkValue_'};
+	@pieces = split /\./, $wijname;
+
+	#
+	# If the selected widget isn't a table, we'll unselect the
+	# currently selected widget.
+	#
+	if($pieces[2] ne "table")
+	{
+		if($selwidget && ($pieces[2] !~ /menubutton/))
+		{
+			$selwidget->configure(-foreground => $NORMALFG);
+			$selzone = '';
+			$selwidget = undef;
+
+		}
+		return;
+	}
+
+	#
+	# Find the widget that has the same name as the event window.
+	#
+	for(my $xind=1; $xind < $lastrow; $xind++)
+	{
+		for(my $yind=0; $yind < 4; $yind++)
+		{
+			my $pn;				# Widget's pathname.
+
+			#
+			# Get this x,y widget and its name.
+			#
+			$wij = $zonetab->get($xind,$yind);
+			$pn = $wij->PathName;
+
+			#
+			# Go to the next widget if this isn't it.
+			#
+			next if($pn ne $wijname);
+
+			#
+			# Save the index and drop out.
+			#
+			$selx = $xind;
+			$found = 1;
+			last;
+		}
+
+		last if($found);
+	}
+
+	#
+	# Nothing gets selected if the user didn't select anything.
+	# Obviously.
+	#
+	return if(!$found);
+
+	#
+	# Build an array of zone-names, indexed by the zone's first row.
+	#
+	foreach my $zone (keys(%zonerows))
+	{
+		$zonearr[$zonerows{$zone}] = $zone;
+	}
+
+	#
+	# Mark the proper zone name (row N, column 0) with a highlighted
+	# marking.  All others will be unhighlighted.  We'll work backwards
+	# in our newly constructed zone-name array and find the zone's name
+	# in the array by working backwards from the index.
+	#
+	for(my $i=$selx; $i > 0; $i--)
+	{
+		#
+		# Skip any blank widgets.
+		#
+		next if($zonearr[$i] eq '');
+
+		#
+		# Get the zone string's widget and set the selection
+		# color for each zone in the zone column.
+		#
+		for(my $rind=0; $rind < $lastrow; $rind++)
+		{
+			my $wij;			# Zone's widget.
+			my $zstr;			# Widget's zone.
+
+			#
+			# Get this row's column-zero widget.  Go to the
+			# next if there isn't a zone in it.
+			#
+			$wij = $zonetab->get($rind,0);
+			$zstr = $wij->cget('-text');
+			$zstr =~ s/[ ]*$//;
+			next if($zstr eq '');
+
+			#
+			# If this is our selected zone, mark the zone
+			# string as highlighted.  All others go to the
+			# normal unhighlighted look.
+			#
+			if($zstr eq $zonearr[$i])
+			{
+				$wij->configure(-foreground => $SELECTEDFG);
+				$selwidget = $wij;
+			}
+			else
+			{
+				$wij->configure(-foreground => $NORMALFG);
+			}
+		}
+
+		#
+		# Select this zone.
+		#
+		$selzone = $zonearr[$i];
+		last;
+	}
+
+}
+
+#----------------------------------------------------------------------
 # Routine:      version()
 #
 # Purpose:      Print the version number(s) and exit.
