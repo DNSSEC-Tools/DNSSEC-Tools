@@ -226,7 +226,6 @@ process_service_and_hints(val_status_t           val_status,
 {
     struct val_addrinfo  *a1 = NULL;
     struct val_addrinfo  *a2 = NULL;
-    struct servent *servinfo = NULL;
     int proto_found          = 0;
     int created_locally      = 0;
 
