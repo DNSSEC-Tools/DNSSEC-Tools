@@ -1573,12 +1573,15 @@ prove_nonexistence(val_context_t * ctx, struct val_query_chain *top_q,
     u_int8_t       *soa_name_n = NULL;
     u_int8_t       *closest_encounter = NULL;
     struct rrset_rec *wcard_proof = NULL;
+    char            name_p[NS_MAXDNAME];
 
     if (NULL == top_q)
         return;
 
+    if (-1 == ns_name_ntop(top_q->qc_name_n, name_p, sizeof(name_p)))
+        snprintf(name_p, sizeof(name_p), "unknown/error");
     val_log(ctx, LOG_DEBUG, "proving non-existence for {%s, %d, %d}",
-            top_q->qc_name_n, top_q->qc_class_h, top_q->qc_type_h);
+            name_p, top_q->qc_class_h, top_q->qc_type_h);
 
     /*
      * Check if this is the whole proof and nothing but the proof
