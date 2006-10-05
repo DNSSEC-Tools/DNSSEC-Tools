@@ -47,7 +47,7 @@ int             MAX_RESPCOUNT = 10;
 int             MAX_RESPSIZE = 8192;
 
 int             listen_fd = -1;
-int             done      =  0;
+int             done = 0;
 
 
 #ifdef HAVE_GETOPT_LONG
@@ -671,7 +671,7 @@ static const struct testcase_st testcases[] = {
  *===========================================================================*/
 
 int
-check_results(val_context_t *context, const char *desc, u_char *name_n,
+check_results(val_context_t * context, const char *desc, u_char * name_n,
               const u_int16_t class, const u_int16_t type,
               const int *result_ar, struct val_result_chain *results,
               int trusted_only)
@@ -692,11 +692,11 @@ check_results(val_context_t *context, const char *desc, u_char *name_n,
         i++;
     }
     result_array[i] = 0;
-    
+
     for (res = results; res && (err == 0); res = res->val_rc_next) {
         for (i = 0; result_array[i] != 0; i++) {
             if (res->val_rc_status == result_array[i]) {
-                result_array[i] = -1; /* Mark this as done  */
+                result_array[i] = -1;   /* Mark this as done  */
                 break;
             }
         }
@@ -739,7 +739,7 @@ check_results(val_context_t *context, const char *desc, u_char *name_n,
                 break;
             }
         }
-        
+
         if (!err) {
             fprintf(stderr, "%s: \t", desc);
             fprintf(stderr, "OK\n");
@@ -750,7 +750,8 @@ check_results(val_context_t *context, const char *desc, u_char *name_n,
                 "FAILED: Some results were not validated successfully \n");
     }
     val_log_authentication_chain(context, LOG_INFO, name_n, class, type,
-                                 context ? context->q_list : NULL, results);
+                                 context ? context->q_list : NULL,
+                                 results);
 
     return err;
 }
@@ -758,7 +759,7 @@ check_results(val_context_t *context, const char *desc, u_char *name_n,
 // A wrapper function to send a query and print the output onto stderr
 //
 int
-sendquery(val_context_t * context, const char *desc, u_char *name_n,
+sendquery(val_context_t * context, const char *desc, u_char * name_n,
           const u_int16_t class, const u_int16_t type,
           const int *result_ar, int trusted_only)
 {
@@ -774,8 +775,9 @@ sendquery(val_context_t * context, const char *desc, u_char *name_n,
     if (ret_val == VAL_NO_ERROR) {
 
         if (result_ar)
-            err = check_results(context, desc, name_n, class, type, result_ar,
-                                results, trusted_only);
+            err =
+                check_results(context, desc, name_n, class, type,
+                              result_ar, results, trusted_only);
 
     } else {
         fprintf(stderr, "%s: \t", desc);
@@ -827,6 +829,66 @@ usage(char *progname)
     /* *INDENT-ON* */
 }
 
+int
+self_test(int tcs, int tce, char *label_str)
+{
+    int             rc, failed = 0, cnt = 0, i, tc_count, ret_val;
+    val_context_t  *context;
+    u_char          name_n[NS_MAXCDNAME];
+
+    /*
+     * Count the number of testcase entries 
+     */
+    tc_count = 0;
+    for (i = 0; testcases[i].desc != NULL; i++)
+        tc_count++;
+
+    if (-1 == tce)
+        tce = tc_count - 1;
+
+    if ((tce >= tc_count) || (tcs >= tc_count)) {
+        fprintf(stderr,
+                "Invalid test case number (must be 0-%d)\n", tc_count);
+        return 1;
+    }
+
+    /*
+     * comment out this define to have each test case use a temporary
+     * context (useful for checking for memory leaks).
+     */
+#define ONE_CTX 1
+#ifdef ONE_CTX
+    if (VAL_NO_ERROR !=
+        (ret_val = val_create_context(label_str, &context))) {
+        fprintf(stderr, "Cannot create context: %d\n", ret_val);
+        return 1;
+    }
+#else
+    context = NULL;
+#endif
+    for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
+        ++cnt;
+        if (ns_name_pton(testcases[i].qn, name_n, NS_MAXCDNAME) == -1) {
+            fprintf(stderr, "Cannot convert %s to wire format\n",
+                    testcases[i].qn);
+            ++failed;
+            continue;
+        }
+        rc = sendquery(context, testcases[i].desc,
+                       name_n, testcases[i].qc,
+                       testcases[i].qt, testcases[i].qr, 0);
+        if (rc)
+            ++failed;
+        fprintf(stderr, "\n");
+    }
+    if (context)
+        val_free_context(context);
+    fprintf(stderr, " Final results: %d/%d tests failed\n", failed, i);
+
+    free_validator_cache();
+
+    return 0;
+}
 
 /*============================================================================
  *
@@ -837,7 +899,7 @@ usage(char *progname)
 static int
 port_setup(u_short port)
 {
-    int rc;
+    int             rc;
     struct sockaddr_in addr;
 
     if (listen_fd > 0)
@@ -875,13 +937,13 @@ wait_for_packet(void)
      */
     do {
         FD_ZERO(&read_fds);
-        FD_SET(listen_fd,&read_fds);
-        rc = select(listen_fd+1, &read_fds, NULL, NULL, NULL);
+        FD_SET(listen_fd, &read_fds);
+        rc = select(listen_fd + 1, &read_fds, NULL, NULL, NULL);
         if (rc < 0 && errno != EINTR) {
-            break; /* xxx-rks: more robust error handling */
+            break;              /* xxx-rks: more robust error handling */
         }
     } while (rc < 0);
-    
+
     return rc;
 }
 
@@ -895,7 +957,7 @@ process_packet(void)
 
     struct sockaddr from;
     size_t          from_len;
-    
+
     u_char          query[4096], response[4096];
     int             query_size, response_size;
 
@@ -934,7 +996,8 @@ process_packet(void)
     VAL_GET16(q_type, pos);
     VAL_GET16(q_class, pos);
 
-    sendquery(NULL, "test", &query[sizeof(HEADER)], q_class, q_type, NULL, 0);
+    sendquery(NULL, "test", &query[sizeof(HEADER)], q_class, q_type, NULL,
+              0);
 
     return -1;
 
@@ -948,9 +1011,9 @@ process_packet(void)
             // xxx-rks: log err msg
             break;
         }
-    }while (rc < 0);
+    } while (rc < 0);
 
-    return 0; /* no error */
+    return 0;                   /* no error */
 }
 
 static void
@@ -974,248 +1037,191 @@ main(int argc, char *argv[])
 {
     val_context_t  *context;
     int             ret_val;
-    int             tc_count;
-    int             i;
+
+    // Parse the command line for a query and resolve+validate it
+    int             c;
+    char           *domain_name = NULL;
+    const char     *args = "c:dhi:l:mo:pr:st:T:v:";
+    u_int16_t       class_h = ns_c_in;
+    u_int16_t       type_h = ns_t_a;
+    int             success = 0;
+    int             doprint = 0;
+    int             selftest = 0;
+    int             daemon = 0;
+    u_int8_t        flags = (u_int8_t) 0;
+    int             retvals[] = { 0 };
+    int             tcs = -1, tce;
+    char           *label_str = NULL, *nextarg = NULL;
+    u_char          name_n[NS_MAXCDNAME];
+    val_log_t      *logp;
 
     if (argc == 1)
         return 0;
 
-        // Parse the command line for a query and resolve+validate it
-        int             c;
-        char           *domain_name = NULL;
-        const char     *args = "c:dhi:l:mo:pr:st:T:v:";
-        u_int16_t       class_h = ns_c_in;
-        u_int16_t       type_h = ns_t_a;
-        int             success = 0;
-        int             doprint = 0;
-        int             selftest = 0;
-        int             daemon = 0;
-        u_int8_t        flags = (u_int8_t) 0;
-        int             retvals[] = { 0 };
-        int             tcs = -1, tce;
-        char           *label_str = NULL, *nextarg = NULL;
-        u_char          name_n[NS_MAXCDNAME];
-        val_log_t      *logp;
 
-        while (1) {
+    while (1) {
 #ifdef HAVE_GETOPT_LONG
-            int             opt_index = 0;
+        int             opt_index = 0;
 #ifdef HAVE_GETOPT_LONG_ONLY
-            c = getopt_long_only(argc, argv, args,
-                                 prog_options, &opt_index);
+        c = getopt_long_only(argc, argv, args, prog_options, &opt_index);
 #else
-            c = getopt_long(argc, argv, args, prog_options, &opt_index);
+        c = getopt_long(argc, argv, args, prog_options, &opt_index);
 #endif
 #else                           /* only have getopt */
-            c = getopt(argc, argv, args);
+        c = getopt(argc, argv, args);
 #endif
 
-            if (c == -1) {
-                break;
-            }
-
-            switch (c) {
-            case 'h':
-                usage(argv[0]);
-                return (0);
-
-            case 'd':
-                daemon = 1;
-                break;
-
-            case 's':
-                selftest = 1;
-                break;
-
-            case 'p':
-                doprint = 1;
-                break;
-
-            case 'c':
-                // optarg is a global variable.  See man page for getopt_long(3).
-                class_h = res_nametoclass(optarg, &success);
-                if (!success) {
-                    fprintf(stderr, "Cannot parse class %s\n", optarg);
-                    usage(argv[0]);
-                    return 1;
-                }
-                break;
-
-            case 'o':
-                logp = val_log_add_optarg(optarg, 1);
-                if (NULL == logp) {     /* err msg already logged */
-                    usage(argv[0]);
-                    return 1;
-                }
-                break;
-
-
-            case 'v':
-                dnsval_conf_set(optarg);
-                break;
-
-            case 'i':
-                root_hints_set(optarg);
-                break;
-
-            case 'r':
-                resolver_config_set(optarg);
-                break;
-
-            case 't':
-                type_h = res_nametotype(optarg, &success);
-                if (!success) {
-                    fprintf(stderr, "Cannot parse type %s\n", optarg);
-                    usage(argv[0]);
-                    return 1;
-                }
-                break;
-
-            case 'T':
-                tcs = strtol(optarg, &nextarg, 10) - 1;
-                if (*nextarg == '\0')
-                    tce = tcs;
-                else
-                    tce = atoi(++nextarg) - 1;
-                break;
-
-            case 'l':
-                label_str = optarg;
-                break;
-
-            case 'm':
-                flags |= VAL_QUERY_MERGE_RRSETS;
-                break;
-            default:
-                fprintf(stderr, "Unknown option %s (c = %d [%c])\n",
-                        argv[optind - 1], c, (char) c);
-                usage(argv[0]);
-                return 1;
-
-            }                   // end switch
+        if (c == -1) {
+            break;
         }
 
-        if(daemon) {
-            endless_loop();
-            return 0;
-        }
+        switch (c) {
+        case 'h':
+            usage(argv[0]);
+            return (0);
 
-        /*
-         * Count the number of testcase entries 
-         */
-        tc_count = 0;
-        for (i = 0; testcases[i].desc != NULL; i++)
-            tc_count++;
+        case 'd':
+            daemon = 1;
+            break;
 
-        // optind is a global variable.  See man page for getopt_long(3)
-        if (optind < argc) {
-            domain_name = argv[optind++];
-            if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME) == -1) {
-                fprintf(stderr, "Cannot convert name to wire format\n");
+        case 's':
+            selftest = 1;
+            break;
+
+        case 'p':
+            doprint = 1;
+            break;
+
+        case 'c':
+            // optarg is a global variable.  See man page for getopt_long(3).
+            class_h = res_nametoclass(optarg, &success);
+            if (!success) {
+                fprintf(stderr, "Cannot parse class %s\n", optarg);
+                usage(argv[0]);
                 return 1;
             }
-            if (VAL_NO_ERROR !=
-                (ret_val = val_create_context(label_str, &context))) {
-                fprintf(stderr, "Cannot create context: %d\n", ret_val);
+            break;
+
+        case 'o':
+            logp = val_log_add_optarg(optarg, 1);
+            if (NULL == logp) { /* err msg already logged */
+                usage(argv[0]);
                 return 1;
             }
-            sendquery(context, "Result", name_n, class_h, type_h,
-                      retvals, 1);
-            val_free_context(context);
-            fprintf(stderr, "\n");
+            break;
 
-            // If the print option is present, perform query and validation
-            // again for printing the result
-            if (doprint) {
-                int             retval = 0;
-                struct val_response *resp, *cur;
-                retval =
-                    val_query(NULL, domain_name, class_h, type_h, flags,
-                              &resp);
-                if (retval != VAL_NO_ERROR) {
-                    printf("val_query() returned error %d\n", retval);
-                    return 1;
-                }
 
-                if (resp == NULL) {
-                    printf("No answers returned. \n");
-                }
+        case 'v':
+            dnsval_conf_set(optarg);
+            break;
 
-                for (cur = resp; cur; cur = cur->vr_next) {
-                    printf("DNSSEC status: %s [%d]\n",
-                           p_val_error(cur->vr_val_status),
-                           cur->vr_val_status);
-                    if (cur->vr_val_status == VAL_SUCCESS) {
-                        printf("Validated response:\n");
-                    } else {
-                        printf("Non-validated response:\n");
-                    }
-                    print_response(cur->vr_response, cur->vr_length);
-                    printf("\n");
-                }
+        case 'i':
+            root_hints_set(optarg);
+            break;
 
-                val_free_response(resp);
+        case 'r':
+            resolver_config_set(optarg);
+            break;
+
+        case 't':
+            type_h = res_nametotype(optarg, &success);
+            if (!success) {
+                fprintf(stderr, "Cannot parse type %s\n", optarg);
+                usage(argv[0]);
+                return 1;
             }
+            break;
+
+        case 'T':
+            tcs = strtol(optarg, &nextarg, 10) - 1;
+            if (*nextarg == '\0')
+                tce = tcs;
+            else
+                tce = atoi(++nextarg) - 1;
+            break;
+
+        case 'l':
+            label_str = optarg;
+            break;
+
+        case 'm':
+            flags |= VAL_QUERY_MERGE_RRSETS;
+            break;
+        default:
+            fprintf(stderr, "Unknown option %s (c = %d [%c])\n",
+                    argv[optind - 1], c, (char) c);
+            usage(argv[0]);
+            return 1;
+
+        }                       // end switch
+    }
+
+    if (daemon) {
+        endless_loop();
+        return 0;
+    }
+    // optind is a global variable.  See man page for getopt_long(3)
+    if (optind >= argc) {
+        int             rc;
+        if (!selftest && (tcs == -1)) {
+            fprintf(stderr, "Please specify domain name\n");
+            usage(argv[0]);
+            rc = 1;
         } else {
-            if (!selftest && (tcs == -1)) {
-                fprintf(stderr, "Please specify domain name\n");
-                usage(argv[0]);
-                return 1;
-            } else {
-                int             rc, failed = 0, cnt = 0;
-
-                /*
-                 * Run the set of pre-defined test cases
-                 */
-                if (selftest) {
-                    tcs = 0;
-                    tce = tc_count;
-                }
-                else if ((tce >= tc_count) || (tcs >= tc_count)) {
-                    fprintf(stderr,
-                            "Invalid test case number (must be 0-%d)\n",
-                            tc_count);
-                    return 1;
-                }
-
-/*
- * comment out this define to have each test case use a temporary
- * context (useful for checking for memory leaks).
- */
-#define ONE_CTX 1
-#ifdef ONE_CTX
-                if (VAL_NO_ERROR !=
-                    (ret_val = val_create_context(label_str, &context))) {
-                    fprintf(stderr, "Cannot create context: %d\n",
-                            ret_val);
-                    return 1;
-                }
-#else
-                context = NULL;
-#endif
-                for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
-                    ++cnt;
-                    if (ns_name_pton(testcases[i].qn, name_n, NS_MAXCDNAME)
-                        == -1) {
-                        fprintf(stderr, "Cannot convert %s to wire format\n",
-                                testcases[i].qn);
-                        ++failed;
-                        continue;
-                    }
-                    rc = sendquery(context, testcases[i].desc,
-                                   name_n, testcases[i].qc,
-                                   testcases[i].qt, testcases[i].qr, 0);
-                    if (rc)
-                        ++failed;
-                    fprintf(stderr, "\n");
-                }
-                if (context)
-                    val_free_context(context);
-                fprintf(stderr, " Final results: %d/%d tests failed\n",
-                        failed, i);
+            if (selftest) {
+                /** run all the tests */
+                tcs = 0;
+                tce = -1;
             }
+            rc = self_test(tcs, tce, label_str);
+        }
+        return rc;
+    }
+
+    domain_name = argv[optind++];
+    if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME) == -1) {
+        fprintf(stderr, "Cannot convert name to wire format\n");
+        return 1;
+    }
+    if (VAL_NO_ERROR !=
+        (ret_val = val_create_context(label_str, &context))) {
+        fprintf(stderr, "Cannot create context: %d\n", ret_val);
+        return 1;
+    }
+    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1);
+    val_free_context(context);
+    fprintf(stderr, "\n");
+
+    // If the print option is present, perform query and validation
+    // again for printing the result
+    if (doprint) {
+        int             retval = 0;
+        struct val_response *resp, *cur;
+        retval =
+            val_query(NULL, domain_name, class_h, type_h, flags, &resp);
+        if (retval != VAL_NO_ERROR) {
+            printf("val_query() returned error %d\n", retval);
+            return 1;
         }
 
+        if (resp == NULL) {
+            printf("No answers returned. \n");
+        }
+
+        for (cur = resp; cur; cur = cur->vr_next) {
+            printf("DNSSEC status: %s [%d]\n",
+                   p_val_error(cur->vr_val_status), cur->vr_val_status);
+            if (cur->vr_val_status == VAL_SUCCESS) {
+                printf("Validated response:\n");
+            } else {
+                printf("Non-validated response:\n");
+            }
+            print_response(cur->vr_response, cur->vr_length);
+            printf("\n");
+        }
+
+        val_free_response(resp);
+    }
 
     free_validator_cache();
 
