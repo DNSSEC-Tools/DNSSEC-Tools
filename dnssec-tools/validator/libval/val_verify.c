@@ -129,7 +129,7 @@ val_sigverify(val_context_t * ctx,
         return rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig);
 
     case ALG_DH:
-        val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.\n",
+        val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.",
                 dnskey.algorithm);
         return VAL_A_ALGO_NOT_SUPPORTED;
         break;

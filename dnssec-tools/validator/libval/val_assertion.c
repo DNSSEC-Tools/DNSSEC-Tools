@@ -1751,12 +1751,12 @@ verify_provably_unsecure(val_context_t * context,
                 ns_name_ntop(top_q->qc_name_n, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
             val_log(context, LOG_DEBUG,
-                    "Cannot show that zone %s is provably unsecure. \n",
+                    "Cannot show that zone %s is provably unsecure.",
                     name_p);
             return 0;
         }
 
-        val_log(context, LOG_DEBUG, "Finding next zone cut \n");
+        val_log(context, LOG_DEBUG, "Finding next zone cut");
         if ((VAL_NO_ERROR !=
              find_next_zonecut(context, rrset, curzone_n, &zonecut_n))
             || (zonecut_n == NULL)) {
@@ -1776,7 +1776,7 @@ verify_provably_unsecure(val_context_t * context,
             snprintf(name_p, sizeof(name_p), "unknown/error");
 
         val_log(context, LOG_DEBUG,
-                "About to check if %s is provably unsecure. \n", name_p);
+                "About to check if %s is provably unsecure.", name_p);
 
         if ((VAL_NO_ERROR != val_resolve_and_check(context, zonecut_n,
                                                    ns_c_in, ns_t_ds, 0,
@@ -1784,7 +1784,7 @@ verify_provably_unsecure(val_context_t * context,
             || (results == NULL)) {
 
             val_log(context, LOG_DEBUG,
-                    "Zone %s is not provably unsecure. \n", name_p);
+                    "Zone %s is not provably unsecure.", name_p);
             return 0;
         }
 
@@ -1824,7 +1824,7 @@ verify_provably_unsecure(val_context_t * context,
     //     level routines?
 
     if (results->val_rc_status == VAL_SUCCESS) {
-        val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure. \n",
+        val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure.",
                 name_p_orig);
         val_free_result_chain(results);
         return 0;
@@ -1847,7 +1847,7 @@ verify_provably_unsecure(val_context_t * context,
     }
 #endif
 
-    val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure. \n",
+    val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure.",
             name_p_orig);
     val_free_result_chain(results);
     return 0;

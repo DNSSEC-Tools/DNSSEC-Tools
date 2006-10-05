@@ -114,15 +114,15 @@ int rsamd5_sigverify (val_context_t *ctx,
 	RSA *rsa = NULL;
 	unsigned char md5_hash[MD5_DIGEST_LENGTH];
 	
-	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): parsing the public key...\n");
+	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): parsing the public key...");
 	if ((rsa = RSA_new()) == NULL) {
-		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify could not allocate rsa structure.\n");
+		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify could not allocate rsa structure.");
 		return VAL_OUT_OF_MEMORY;
 	};
 	
 	if (rsamd5_parse_public_key(dnskey.public_key, dnskey.public_key_len,
 				    rsa) != VAL_NO_ERROR) {
-		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
+		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE");
 		RSA_free(rsa);
 		return VAL_INTERNAL_ERROR;
 	}
@@ -132,16 +132,16 @@ int rsamd5_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): MD5 hash = %s", 
 				get_hex_string(md5_hash, MD5_DIGEST_LENGTH, buf, buflen));
 	
-	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): verifying RSA signature...\n");
+	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): verifying RSA signature...");
 	
 	if (RSA_verify(NID_md5, (unsigned char *) md5_hash, MD5_DIGEST_LENGTH,
 		       rrsig.signature, rrsig.signature_len, rsa)) {
-		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
+		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS");
 		RSA_free(rsa);
 		return VAL_A_RRSIG_VERIFIED;
 	}
 	else {
-		val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
+		val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE");
 		RSA_free(rsa);
 		return VAL_A_RRSIG_VERIFY_FAILED;
 	}   
