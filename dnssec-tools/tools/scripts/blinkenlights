@@ -1653,6 +1653,38 @@ carefully...
 I<blinkenlights> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
 installed on your system.
 
+=head1 WARNINGS
+
+B<blinkenlights> has several potential problems that must be taken into
+account.
+
+=over 4
+
+=item development environment
+
+B<blinkenlights> was developed and tested on a single-user system
+running X11.  While it works fine in this environment, it has not been
+run on a system with many users or in a situation where the system
+console hasn't been in use by the B<blinkenlights> user.
+
+=item long-term performance issues
+
+In early tests, the longer B<blinkenlights> runs, the slower the
+updates become.  This is I<probably> a result of the Tk implementation
+or the way Tk interfaces with X11.  This is pure supposition, though.
+
+This performance impact is affected by a number of things, such as the
+number of zones managed by B<rollerd> and the length of B<rollerd>'s
+sleep interval.  Large numbers of zones or very short sleep intervals
+will increase the possibility of B<blinkenlights>' performance
+degrading.
+
+For this reason, B<blinkenlights> is most likely to have its greatest
+utility as a short-term interface and monitoring tool to B<rollerd>.
+The length of "short term" is dependent on above-mentioned factors.
+
+=back 4
+
 =head1 COPYRIGHT
 
 Copyright 2006 SPARTA, Inc.  All rights reserved.
@@ -1668,7 +1700,8 @@ B<rollerd(8)>,
 B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::keyrec(5)>,
-B<Net::DNS::SEC::Tools::rollrec(5)>
+B<Net::DNS::SEC::Tools::rollrec(5)>,
+B<Net::DNS::SEC::Tools::timetrans(5)>
 
 =cut
 
