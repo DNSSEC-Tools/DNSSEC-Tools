@@ -101,10 +101,17 @@ val_sigverify(val_context_t * ctx,
     if (tv.tv_sec > rrsig.sig_expr) {
         char            currTime[1028];
         char            exprTime[1028];
+        int             len;
         bzero(currTime, 1028);
         bzero(exprTime, 1028);
         ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
+        len = strlen(currTime);
+        if (len > 0)
+            currTime[len-1] = 0;
         ctime_r((const time_t *) (&(rrsig.sig_expr)), exprTime);
+        len = strlen(exprTime);
+        if (len > 0)
+            exprTime[len-1] = 0;
         val_log(ctx, LOG_DEBUG,
                 "Signature expired. Current time (%s) is greater than signature expiration time (%s).",
                 currTime, exprTime);
