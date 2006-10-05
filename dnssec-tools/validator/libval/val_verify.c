@@ -88,10 +88,17 @@ val_sigverify(val_context_t * ctx,
     if (tv.tv_sec < rrsig.sig_incp) {
         char            currTime[1028];
         char            incpTime[1028];
+        int             len;
         bzero(currTime, 1028);
         bzero(incpTime, 1028);
         ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
+        len = strlen(currTime);
+        if (len > 0)
+            currTime[len-1] = 0;
         ctime_r((const time_t *) (&(rrsig.sig_incp)), incpTime);
+        len = strlen(incpTime);
+        if (len > 0)
+            incpTime[len-1] = 0;
         val_log(ctx, LOG_DEBUG,
                 "Signature not yet valid. Current time (%s) is less than signature inception time (%s).",
                 currTime, incpTime);
