@@ -41,6 +41,7 @@ my @opts =
 (
 	"noskip",			# Don't show skipped zones.
 	"nomodify",			# Don't allow zones to be modified.
+	"noshading",			# Don't change colors in column 2.
 
 	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
@@ -49,8 +50,9 @@ my @opts =
 #
 # Flags for the options.  Variable/option mapping should obvious.
 #
-my $noskip;
 my $nomodify;
+my $noshading;
+my $noskip;
 
 my $version	= 0;			# Display the version number.
 
@@ -138,8 +140,9 @@ my $help;						# Help menu.
 # Menu item widgets.
 #
 my $fm_quit;						# Quit file item.
-my $dp_mdfy;						# Modify toggle.
-my $dp_skip;						# Skip toggle.
+my $op_mdfy;						# Modify toggle.
+my $op_shad;						# Shading toggle.
+my $op_skip;						# Skip toggle.
 my $hm_help;						# Help item.
 
 #
@@ -147,6 +150,10 @@ my $hm_help;						# Help item.
 #
 my $ALLOWCMDS	 = "Allow Commands";
 my $DISALLOWCMDS = "Disallow Commands";
+
+my $SHADING	 = "Shade Status Column";
+my $NOSHADING	 = "Don't Shade Status Column";
+
 my $SHOWSKIP	 = "Display Skipped Zones";
 my $NOSKIP	 = "Hide Skipped Zones";
 
@@ -188,6 +195,7 @@ my %zonechron = ();				# Zones' chronoses.
 #
 my $rollcnt = 0;				# Count of rolled zones.
 my $rollcntmsg;					# Message about rolled zones.
+my $shademsg;					# Message about shading.
 my $skipcnt = 0;				# Count of skipped zones.
 my $skipcntmsg;					# Message about skipped zones.
 
@@ -248,9 +256,10 @@ sub optsandargs
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$noskip	  = $options{'noskip'}	 || 0;
-	$nomodify = $options{'nomodify'} || 0;
-	$version  = $options{'Version'}	 || 0;
+	$noskip	   = $options{'noskip'}	   || 0;
+	$nomodify  = $options{'nomodify'}  || 0;
+	$noshading = $options{'noshading'} || 0;
+	$version   = $options{'Version'}   || 0;
 
 	#
 	# Show the version number if requested
@@ -301,7 +310,7 @@ sub buildmainwind
 	$file = $mbar->Menubutton(-text	     => 'File',
 				  -tearoff   => 0,
 				  -underline => 0);
-	$disp = $mbar->Menubutton(-text	     => 'Display',
+	$disp = $mbar->Menubutton(-text	     => 'Options',
 				  -tearoff   => 0,
 				  -underline => 0);
 	$cmds = $mbar->Menubutton(-text	     => 'Zone Control',
@@ -327,16 +336,21 @@ sub buildmainwind
 
 	##################################################
 	#
-	# Add the Display menu entries.
+	# Add the Options menu entries.
 	#
+	$shademsg = $NOSHADING;
+	$shademsg = $SHADING if($noshading);
+	$op_shad = $disp->command(-label => $shademsg,-command => \&disp_shade);
+	$disp->pack(-side => 'left');
+
 	$skipmsg = $NOSKIP;
 	$skipmsg = $SHOWSKIP if($noskip);
-	$dp_skip = $disp->command(-label => $skipmsg, -command => \&disp_skip);
+	$op_skip = $disp->command(-label => $skipmsg, -command => \&disp_skip);
 	$disp->pack(-side => 'left');
 
 	$modmsg = $DISALLOWCMDS;
 	$modmsg = $ALLOWCMDS if($nomodify);
-	$dp_mdfy = $disp->command(-label => $modmsg, -command => \&disp_modify);
+	$op_mdfy = $disp->command(-label => $modmsg, -command => \&disp_modify);
 	$disp->pack(-side => 'left');
 
 	##################################################
@@ -439,16 +453,38 @@ sub disp_modify
 {
 	if($nomodify)
 	{
-		$dp_mdfy->configure(-label => $DISALLOWCMDS);
+		$op_mdfy->configure(-label => $DISALLOWCMDS);
 		$cmds->configure(-state => 'normal');
 		$nomodify = 0;
 	}
 	else
 	{
-		$dp_mdfy->configure(-label => $ALLOWCMDS);
+		$op_mdfy->configure(-label => $ALLOWCMDS);
 		$cmds->configure(-state => 'disabled');
 		$nomodify = 1;
 	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_shad()
+#
+# Purpose:	Handle the Shading menu toggle.
+#
+sub disp_shade
+{
+	if($noshading)
+	{
+		$op_shad->configure(-label => $NOSHADING);
+		$noshading = 0;
+	}
+	else
+	{
+		$op_shad->configure(-label => $SHADING);
+		$noshading = 1;
+	}
+
+	calcrows();
+	repaint();
 }
 
 #---------------------------------------------------------------------------
@@ -460,12 +496,12 @@ sub disp_skip
 {
 	if($noskip)
 	{
-		$dp_skip->configure(-label => $NOSKIP);
+		$op_skip->configure(-label => $NOSKIP);
 		$noskip = 0;
 	}
 	else
 	{
-		$dp_skip->configure(-label => $SHOWSKIP);
+		$op_skip->configure(-label => $SHOWSKIP);
 		$noskip = 1;
 	}
 
@@ -1060,22 +1096,6 @@ sub calcrows
 }
 
 #---------------------------------------------------------------------------
-# Routine:	getnode()
-#
-# Purpose:	Return the last element in a path.
-#
-sub getnode
-{
-	my @pathelts;					# Path elements.
-	my $pathnode;					# Last path elements.
-
-	@pathelts = split /\//, $rrfile;
-	$pathnode = pop @pathelts;
-
-	return($pathnode);
-}
-
-#---------------------------------------------------------------------------
 # Routine:	getcolor()
 #
 # Purpose:	Figure out what color this zone's stripe needs.
@@ -1104,8 +1124,24 @@ sub getcolor
 	# return the color.
 	#
 	$color = $phasecolors[$band];
-	return($color->[0]) if($base);
+	return($color->[0]) if($base || $noshading);
 	return($color->[$phase]);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getnode()
+#
+# Purpose:	Return the last element in a path.
+#
+sub getnode
+{
+	my @pathelts;					# Path elements.
+	my $pathnode;					# Last path elements.
+
+	@pathelts = split /\//, $rrfile;
+	$pathnode = pop @pathelts;
+
+	return($pathnode);
 }
 
 #---------------------------------------------------------------------------
@@ -1630,6 +1666,26 @@ of the rest of the row.
 This is only intended to be started by B<rollerd>.  The I<-display>
 option must be given on B<rollerd>'s command line in order to have it
 start B<blinkenlights>.
+
+=head1 LAYOUT AND SCREEN COLORS
+
+things to include:
+
+=over 4
+
+=item *
+
+zone stripe definition
+
+=item *
+
+colors are row-positional and B<not> attached to specific zones
+
+=item *
+
+color of column two changes as rollover proceeds
+
+=back
 
 =head1 CONFIGURATION FILE
 
