@@ -298,7 +298,7 @@ compose_merged_answer(const u_char * name_n,
  *
  * Return value: 0 on success, and a non-zero error-code on failure.
  */
-static int
+int
 compose_answer(const u_char * name_n,
                const u_int16_t type_h,
                const u_int16_t class_h,
