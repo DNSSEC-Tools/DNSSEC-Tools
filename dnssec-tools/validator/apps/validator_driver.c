@@ -20,18 +20,21 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <errno.h>
+#ifdef HAVE_GETOPT_H
+#include <getopt.h>
+#endif
+
 #include <sys/socket.h>
 #include <arpa/nameser.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <resolv.h>
 
-#include <resolver.h>
-#include <validator.h>
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#endif
+#include "resolver.h"
+#include "validator.h"
 
+#include "val_support.h"
 #include "val_cache.h"
 #include "val_log.h"
 
@@ -42,6 +45,10 @@
 
 int             MAX_RESPCOUNT = 10;
 int             MAX_RESPSIZE = 8192;
+
+int             listen_fd = -1;
+int             done      =  0;
+
 
 #ifdef HAVE_GETOPT_LONG
 
@@ -62,6 +69,12 @@ static struct option prog_options[] = {
     {0, 0, 0, 0}
 };
 #endif
+
+/*============================================================================
+ *
+ * TEST CASE DATA
+ *
+ *===========================================================================*/
 
 struct testcase_st {
     const char     *desc;
@@ -651,30 +664,24 @@ static const struct testcase_st testcases[] = {
     {NULL, NULL, 0, 0, {0}},
 };
 
+/*============================================================================
+ *
+ * SUPPORT FUNCTIONS BEGIN HERE
+ *
+ *===========================================================================*/
 
-// A wrapper function to send a query and print the output onto stderr
-//
 int
-sendquery(val_context_t * context, const char *desc, const char *name,
-          const u_int16_t class, const u_int16_t type,
-          const int result_ar[], int trusted_only)
+check_results(val_context_t *context, const char *desc, u_char *name_n,
+              const u_int16_t class, const u_int16_t type,
+              const int *result_ar, struct val_result_chain *results,
+              int trusted_only)
 {
-    int             ret_val;
-    struct val_result_chain *results = NULL;
-    struct val_result_chain *res;
-    u_char          name_n[NS_MAXCDNAME];
-    int             err = 0;
     int             result_array[MAX_RESULTS];
-    int             i;
+    int             err = 0, i;
+    struct val_result_chain *res;
 
-    fprintf(stderr, "%s: ****START**** \n", desc);
-
-    if (ns_name_pton(name, name_n, NS_MAXCDNAME) == -1) {
-        fprintf(stderr, "Error: %d\n", VAL_BAD_ARGUMENT);
-        return 1;
-    }
-    ret_val =
-        val_resolve_and_check(context, name_n, class, type, 0, &results);
+    if ((NULL == result_ar) || (NULL == results))
+        return -1;
 
     /*
      * make a local copy of result array 
@@ -685,85 +692,90 @@ sendquery(val_context_t * context, const char *desc, const char *name,
         i++;
     }
     result_array[i] = 0;
+    
+    for (res = results; res && (err == 0); res = res->val_rc_next) {
+        for (i = 0; result_array[i] != 0; i++) {
+            if (res->val_rc_status == result_array[i]) {
+                result_array[i] = -1; /* Mark this as done  */
+                break;
+            }
+        }
+        if (result_array[i] == 0) {
+            if (trusted_only) {
+                if (val_istrusted(res->val_rc_status)) {
+                    continue;
+                } else {
+                    err = 1;
+                }
+            } else {
+                fprintf(stderr, "%s: \t", desc);
+                fprintf(stderr,
+                        "FAILED: Remaining error values expected\n");
+                for (i = 0; result_array[i] != 0; i++) {
+                    if (result_array[i] != -1)
+                        fprintf(stderr, "     %s(%d)\n",
+                                p_val_error(result_array[i]),
+                                result_array[i]);
+                }
+                fprintf(stderr, "\n");
+                err = 1;
+            }
+        }
+    }
+
+    /*
+     * All results were in the result array 
+     */
+    if (!err) {
+        /*
+         * Check if all error values were marked 
+         */
+        for (i = 0; result_array[i] != 0; i++) {
+            if (result_array[i] != -1) {
+                fprintf(stderr, "%s: \t", desc);
+                fprintf(stderr,
+                        "FAILED: Some results were not received \n");
+                err = 1;
+                break;
+            }
+        }
+        
+        if (!err) {
+            fprintf(stderr, "%s: \t", desc);
+            fprintf(stderr, "OK\n");
+        }
+    } else if (trusted_only) {
+        fprintf(stderr, "%s: \t", desc);
+        fprintf(stderr,
+                "FAILED: Some results were not validated successfully \n");
+    }
+    val_log_authentication_chain(context, LOG_INFO, name_n, class, type,
+                                 context ? context->q_list : NULL, results);
+
+    return err;
+}
+
+// A wrapper function to send a query and print the output onto stderr
+//
+int
+sendquery(val_context_t * context, const char *desc, u_char *name_n,
+          const u_int16_t class, const u_int16_t type,
+          const int *result_ar, int trusted_only)
+{
+    int             ret_val;
+    struct val_result_chain *results = NULL;
+    int             err = 0;
+
+    fprintf(stderr, "%s: ****START**** \n", desc);
+
+    ret_val =
+        val_resolve_and_check(context, name_n, class, type, 0, &results);
 
     if (ret_val == VAL_NO_ERROR) {
-        for (res = results; res; res = res->val_rc_next) {
 
-            for (i = 0; result_array[i] != 0; i++) {
-                if (res->val_rc_status == result_array[i]) {
-                    /*
-                     * Mark this as done 
-                     */
-                    result_array[i] = -1;
-                    break;
-                }
-            }
-            if (result_array[i] == 0) {
-                if (trusted_only) {
-                    if (val_istrusted(res->val_rc_status)) {
-                        continue;
-                    } else {
-                        err = 1;
-                    }
-                } else {
-                    fprintf(stderr, "%s: \t", desc);
-                    fprintf(stderr,
-                            "FAILED: Remaining error values expected\n");
-                    for (i = 0; result_array[i] != 0; i++) {
-                        if (result_array[i] != -1)
-                            fprintf(stderr, "     %s(%d)\n",
-                                    p_val_error(result_array[i]),
-                                    result_array[i]);
-                    }
-                    fprintf(stderr, "\n");
-                    val_log_authentication_chain(context, LOG_INFO, name_n,
-                                                 class, type,
-                                                 context ?
-                                                 context->q_list : NULL,
-                                                 results);
-                    err = 1;
-                }
-            }
-        }
-
-        /*
-         * All results were in the result array 
-         */
-        if (!err) {
-            /*
-             * Check if all error values were marked 
-             */
-            for (i = 0; result_array[i] != 0; i++) {
-                if (result_array[i] != -1) {
-                    fprintf(stderr, "%s: \t", desc);
-                    fprintf(stderr,
-                            "FAILED: Some results were not received \n");
-                    val_log_authentication_chain(context, LOG_INFO, name_n,
-                                                 class, type,
-                                                 context ?
-                                                 context->q_list : NULL,
-                                                 results);
-                    err = 1;
-                    break;
-                }
-            }
-
-            if (!err) {
-                fprintf(stderr, "%s: \t", desc);
-                fprintf(stderr, "OK\n");
-                val_log_authentication_chain(context, LOG_INFO, name_n,
-                                             class, type, context ?
-                                             context->q_list : NULL,
-                                             results);
-            }
-        } else if (trusted_only) {
-            fprintf(stderr, "%s: \t", desc);
-            fprintf(stderr,
-                    "FAILED: Some results were not validated successfully \n");
-            val_log_authentication_chain(context, LOG_INFO, name_n, class,
-                                         type, context ?
-                                         context->q_list : NULL, results);
-        }
+        if (result_ar)
+            err = check_results(context, desc, name_n, class, type, result_ar,
+                                results, trusted_only);
 
     } else {
         fprintf(stderr, "%s: \t", desc);
@@ -815,7 +827,148 @@ usage(char *progname)
     /* *INDENT-ON* */
 }
 
-// Main
+
+/*============================================================================
+ *
+ * DAEMON MODE SUPPORT FUNCTIONS BEGIN HERE
+ *
+ *===========================================================================*/
+
+static int
+port_setup(u_short port)
+{
+    int rc;
+    struct sockaddr_in addr;
+
+    if (listen_fd > 0)
+        return listen_fd;
+
+    memset(&addr, 0, sizeof(struct sockaddr_in));
+    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+
+    listen_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (listen_fd < 0)
+        return listen_fd;
+
+    rc = bind(listen_fd, (struct sockaddr *) &addr,
+              sizeof(struct sockaddr));
+    if (0 != rc) {
+        /** xxx-rks: log err message */
+        close(listen_fd);
+        listen_fd = -1;
+        return -1;
+    }
+
+    return listen_fd;
+}
+
+static int
+wait_for_packet(void)
+{
+    fd_set          read_fds;
+    int             rc;
+
+    /*
+     * wait for data
+     */
+    do {
+        FD_ZERO(&read_fds);
+        FD_SET(listen_fd,&read_fds);
+        rc = select(listen_fd+1, &read_fds, NULL, NULL, NULL);
+        if (rc < 0 && errno != EINTR) {
+            break; /* xxx-rks: more robust error handling */
+        }
+    } while (rc < 0);
+    
+    return rc;
+}
+
+static int
+process_packet(void)
+{
+    HEADER         *header;
+    u_char         *pos;
+    int             q_name_len, rc;
+    u_int16_t       q_type, q_class;
+
+    struct sockaddr from;
+    size_t          from_len;
+    
+    u_char          query[4096], response[4096];
+    int             query_size, response_size;
+
+    /*
+     * get a packet
+     */
+    from_len = sizeof(from);
+    memset(&from, 0x0, sizeof(from));
+    do {
+        rc = recvfrom(listen_fd, query, sizeof(query), 0, &from,
+                      &from_len);
+        if (rc < 0 && errno != EINTR) {
+            // xxx-rks: log err msg
+            break;
+        }
+    } while (rc < 0);
+    if (rc < 0)
+        return rc;
+
+    query_size = rc;
+    if (query_size < (sizeof(HEADER) + 1))
+        return -1;
+
+    header = (HEADER *) query;
+
+    /*
+     * get query name
+     */
+    pos = &query[sizeof(HEADER)];
+    q_name_len = wire_name_length(pos);
+    pos += q_name_len;
+
+    /*
+     * get class and type
+     */
+    VAL_GET16(q_type, pos);
+    VAL_GET16(q_class, pos);
+
+    sendquery(NULL, "test", &query[sizeof(HEADER)], q_class, q_type, NULL, 0);
+
+    return -1;
+
+    /*
+     * send response
+     */
+    do {
+        rc = sendto(listen_fd, response, response_size, 0, &from,
+                    sizeof(from));
+        if (rc < 0 && errno != EINTR) {
+            // xxx-rks: log err msg
+            break;
+        }
+    }while (rc < 0);
+
+    return 0; /* no error */
+}
+
+static void
+endless_loop(void)
+{
+
+    port_setup(1153);
+    while (!done) {
+        wait_for_packet();
+        process_packet();
+    }
+}
+
+/*============================================================================
+ *
+ * main() BEGINS HERE
+ *
+ *===========================================================================*/
 int
 main(int argc, char *argv[])
 {
@@ -824,21 +977,24 @@ main(int argc, char *argv[])
     int             tc_count;
     int             i;
 
-    if (argc == 1) {
-    } else {
+    if (argc == 1)
+        return 0;
+
         // Parse the command line for a query and resolve+validate it
         int             c;
         char           *domain_name = NULL;
-        const char     *args = "hi:o:pc:r:st:T:l:mv:";
+        const char     *args = "c:dhi:l:mo:pr:st:T:v:";
         u_int16_t       class_h = ns_c_in;
         u_int16_t       type_h = ns_t_a;
         int             success = 0;
         int             doprint = 0;
         int             selftest = 0;
+        int             daemon = 0;
         u_int8_t        flags = (u_int8_t) 0;
         int             retvals[] = { 0 };
         int             tcs = -1, tce;
         char           *label_str = NULL, *nextarg = NULL;
+        u_char          name_n[NS_MAXCDNAME];
         val_log_t      *logp;
 
         while (1) {
@@ -862,6 +1018,10 @@ main(int argc, char *argv[])
             case 'h':
                 usage(argv[0]);
                 return (0);
+
+            case 'd':
+                daemon = 1;
+                break;
 
             case 's':
                 selftest = 1;
@@ -935,6 +1095,11 @@ main(int argc, char *argv[])
             }                   // end switch
         }
 
+        if(daemon) {
+            endless_loop();
+            return 0;
+        }
+
         /*
          * Count the number of testcase entries 
          */
@@ -945,12 +1110,16 @@ main(int argc, char *argv[])
         // optind is a global variable.  See man page for getopt_long(3)
         if (optind < argc) {
             domain_name = argv[optind++];
+            if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME) == -1) {
+                fprintf(stderr, "Cannot convert name to wire format\n");
+                return 1;
+            }
             if (VAL_NO_ERROR !=
                 (ret_val = val_create_context(label_str, &context))) {
                 fprintf(stderr, "Cannot create context: %d\n", ret_val);
                 return 1;
             }
-            sendquery(context, "Result", domain_name, class_h, type_h,
+            sendquery(context, "Result", name_n, class_h, type_h,
                       retvals, 1);
             val_free_context(context);
             fprintf(stderr, "\n");
@@ -1026,8 +1195,15 @@ main(int argc, char *argv[])
 #endif
                 for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
                     ++cnt;
+                    if (ns_name_pton(testcases[i].qn, name_n, NS_MAXCDNAME)
+                        == -1) {
+                        fprintf(stderr, "Cannot convert %s to wire format\n",
+                                testcases[i].qn);
+                        ++failed;
+                        continue;
+                    }
                     rc = sendquery(context, testcases[i].desc,
-                                   testcases[i].qn, testcases[i].qc,
+                                   name_n, testcases[i].qc,
                                    testcases[i].qt, testcases[i].qr, 0);
                     if (rc)
                         ++failed;
@@ -1039,7 +1215,7 @@ main(int argc, char *argv[])
                         failed, i);
             }
         }
-    }
+
 
     free_validator_cache();
 
