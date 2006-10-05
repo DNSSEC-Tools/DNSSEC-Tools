@@ -718,7 +718,7 @@ do_referral(val_context_t * context,
         ns_name_ntop(matched_q->qc_name_n, debug_name1,
                      sizeof(debug_name1));
         ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
-        val_log(context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)\n",
+        val_log(context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)",
                 debug_name1, debug_name2);
     }
 

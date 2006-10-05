@@ -71,15 +71,15 @@ int dsasha1_sigverify (val_context_t *ctx,
 	DSA *dsa = NULL;
 	unsigned char sha1_hash[SHA_DIGEST_LENGTH];
 	
-	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): parsing the public key...\n");
+	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): parsing the public key...");
 	if ((dsa = DSA_new()) == NULL) {
-		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify could not allocate dsa structure.\n");
+		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify could not allocate dsa structure.");
 		return VAL_OUT_OF_MEMORY;
 	};
 	
 	if (dsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
 				     dsa) != VAL_NO_ERROR) {
-		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
+		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE");
 		DSA_free(dsa);
 		return VAL_INTERNAL_ERROR;
 	}
@@ -89,16 +89,16 @@ int dsasha1_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): SHA-1 hash = %s", 
 				get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
 
-	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): verifying DSA signature...\n");
+	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): verifying DSA signature...");
 	
 	if (DSA_verify(NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
 		       rrsig.signature, rrsig.signature_len, dsa)) {
-		val_log(ctx, LOG_DEBUG, "DSA_verify returned SUCCESS\n");
+		val_log(ctx, LOG_DEBUG, "DSA_verify returned SUCCESS");
 		DSA_free(dsa);
 		return VAL_A_RRSIG_VERIFIED;
 	}
 	else {
-		val_log(ctx, LOG_DEBUG, "DSA_verify returned FAILURE\n");
+		val_log(ctx, LOG_DEBUG, "DSA_verify returned FAILURE");
 		DSA_free(dsa);
 		return VAL_A_RRSIG_VERIFY_FAILED;
 	}   

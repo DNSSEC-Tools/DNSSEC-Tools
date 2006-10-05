@@ -1180,7 +1180,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
         store_policy_overrides(ctx, &pol_frag);
     }
 
-    val_log(ctx, LOG_ERR, "Error in line %d of file %s\n", line_number,
+    val_log(ctx, LOG_ERR, "Error in line %d of file %s", line_number,
             dnsval_conf);
     fcntl(fd, F_SETLKW, &fl);
     fclose(fp);
@@ -1297,7 +1297,7 @@ read_res_config_file(val_context_t * ctx)
                  */
                 if (inet_pton(AF_INET6, cp, &address) == 1) {
                     val_log(ctx, LOG_WARNING,
-                            "Parse warning in file %s: IPv6 nameserver addresses not handled yet, skipping.\n",
+                            "Parse warning in file %s: IPv6 nameserver addresses not handled yet, skipping.",
                             resolv_conf);
                     FREE(ns);
                     ns = NULL;
@@ -1351,7 +1351,7 @@ read_res_config_file(val_context_t * ctx)
     return VAL_NO_ERROR;
 
   err:
-    val_log(ctx, LOG_ERR, "Parse error in file %s\n", resolv_conf);
+    val_log(ctx, LOG_ERR, "Parse error in file %s", resolv_conf);
     free_name_servers(&ns_head);
 
     fcntl(fd, F_SETLKW, &fl);
