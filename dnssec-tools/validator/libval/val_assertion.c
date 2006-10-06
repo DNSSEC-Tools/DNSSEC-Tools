@@ -2660,11 +2660,11 @@ transform_results(struct _val_result_chain **w_results,
                 n_ac->val_ac_rrset->val_rrset_section =
                     o_ac->val_ac_rrset->val_rrset_section;
                 n_ac->val_ac_rrset->val_rrset_data =
-                    copy_rr_rec(n_ac->val_ac_rrset->val_rrset_type_h,
-                                o_ac->val_ac_rrset->val_rrset_data, 0);
+                    copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
+                                     o_ac->val_ac_rrset->val_rrset_data, 0);
                 n_ac->val_ac_rrset->val_rrset_sig =
-                    copy_rr_rec(n_ac->val_ac_rrset->val_rrset_type_h,
-                                o_ac->val_ac_rrset->val_rrset_sig, 0);
+                    copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
+                                     o_ac->val_ac_rrset->val_rrset_sig, 0);
             }
 
             if (head_ac == NULL) {
@@ -2674,10 +2674,6 @@ transform_results(struct _val_result_chain **w_results,
             }
             prev_ac = n_ac;
         }
-
-        // xxx-audit: huh? huge memory leak?
-        //     so we just clones the entire val_rc_trust, and now
-        //     replace original w/clone. who frees original?
 
         cur_res->val_rc_trust = head_ac;
         cur_res->val_rc_next = NULL;
