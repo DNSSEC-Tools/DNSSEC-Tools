@@ -670,6 +670,12 @@ static const struct testcase_st testcases[] = {
  *
  *===========================================================================*/
 
+void
+sig_shutdown(int a)
+{
+    done = 1;
+}
+
 int
 check_results(val_context_t * context, const char *desc, u_char * name_n,
               const u_int16_t class, const u_int16_t type,
@@ -749,9 +755,6 @@ check_results(val_context_t * context, const char *desc, u_char * name_n,
         fprintf(stderr,
                 "FAILED: Some results were not validated successfully \n");
     }
-    val_log_authentication_chain(context, LOG_INFO, name_n, class, type,
-                                 context ? context->q_list : NULL,
-                                 results);
 
     return err;
 }
@@ -767,6 +770,9 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
     struct val_result_chain *results = NULL;
     int             err = 0;
 
+    if ((NULL == desc) || (NULL == name_n) || (NULL == result_ar))
+        return -1;
+
     fprintf(stderr, "%s: ****START**** \n", desc);
 
     ret_val =
@@ -778,6 +784,10 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
             err =
                 check_results(context, desc, name_n, class, type,
                               result_ar, results, trusted_only);
+
+        val_log_authentication_chain(context, LOG_INFO, name_n, class, type,
+                                     context ? context->q_list : NULL,
+                                     results);
 
     } else {
         fprintf(stderr, "%s: \t", desc);
@@ -947,10 +957,95 @@ wait_for_packet(void)
     return rc;
 }
 
+extern int
+compose_answer(const u_char * name_n,
+               const u_int16_t type_h,
+               const u_int16_t class_h,
+               struct val_result_chain *results,
+               struct val_response **resp, u_int8_t flags);
+
+static int
+get_results(val_context_t * context, const char *desc, u_char *name_n,
+            const u_int16_t class_h, const u_int16_t type_h, u_char *response,
+            int *response_size, int trusted_only)
+{
+    int             response_size_max, ret_val, err = 0;
+    struct val_result_chain *results = NULL;
+    struct val_response *resp, *cur;
+
+    if ((NULL == desc) || (NULL == name_n) || (NULL == response) ||
+        (NULL == response_size))
+        return -1;
+
+    response_size_max = *response_size;
+    *response_size = 0;
+
+    fprintf(stderr, "%s: ****START**** \n", desc);
+
+    /*
+     * Query the validator
+     * xxx-rks: merge rrset flag?
+     */
+    ret_val = val_resolve_and_check(context, name_n, class_h, type_h, 0,
+                                    &results);
+    val_log_authentication_chain(context, LOG_DEBUG, name_n, class_h, type_h,
+                                 context ? context->q_list : NULL, results);
+
+    if (ret_val == VAL_NO_ERROR) {
+
+        ret_val = compose_answer(name_n, type_h, class_h, results, &resp,
+                                 0);
+
+        if (VAL_NO_ERROR != ret_val) {
+            fprintf(stderr, "%s: \t", desc);
+            fprintf(stderr, "FAILED: Error in compose_answer(): %d\n",
+                    ret_val);
+        }
+        else {
+            for (cur = resp; cur; cur = cur->vr_next) {
+                printf("DNSSEC status: %s [%d]\n",
+                       p_val_error(cur->vr_val_status), cur->vr_val_status);
+                if (cur->vr_val_status == VAL_SUCCESS) {
+                    printf("Validated response:\n");
+                } else {
+                    printf("Non-validated response:\n");
+                }
+                print_response(cur->vr_response, cur->vr_length);
+                printf("\n");
+            }
+            
+            if (resp->vr_next == NULL) {
+                if (resp->vr_length > response_size_max) {
+                    err = 1;
+                }
+                else {
+                    memcpy(response, resp->vr_response, resp->vr_length);
+                    *response_size = resp->vr_length;
+                }
+            }
+            else {
+                fprintf(stderr, "%s: \t", desc);
+                fprintf(stderr, "FAILED: multiple responses from val_query()\n");
+            }
+            
+            val_free_result_chain(results);
+        }
+
+    } else {
+        fprintf(stderr, "%s: \t", desc);
+        fprintf(stderr, "FAILED: Error in val_query(): %d\n",
+                ret_val);
+    }
+
+    fprintf(stderr, "%s: ****END**** \n", desc);
+
+    return (err != 0);          /* 0 success, 1 error */
+}
+
 static int
 process_packet(void)
 {
-    HEADER         *header;
+    HEADER         *query_header, *response_header;
     u_char         *pos;
     int             q_name_len, rc;
     u_int16_t       q_type, q_class;
@@ -981,7 +1076,7 @@ process_packet(void)
     if (query_size < (sizeof(HEADER) + 1))
         return -1;
 
-    header = (HEADER *) query;
+    query_header = (HEADER *) query;
 
     /*
      * get query name
@@ -996,10 +1091,21 @@ process_packet(void)
     VAL_GET16(q_type, pos);
     VAL_GET16(q_class, pos);
 
-    sendquery(NULL, "test", &query[sizeof(HEADER)], q_class, q_type, NULL,
-              0);
+    response_size = sizeof(response);
+    get_results(NULL, "test", &query[sizeof(HEADER)], q_class, q_type,
+                response, &response_size, 0);
 
-    return -1;
+    /*
+     * check to see if we need a dummy response
+     */
+    val_log(NULL, LOG_DEBUG, "XXX-RKS: handle no response");
+    if (0 == response_size) {
+        // no response; generate dummy/nxdomain response?
+        return 1;
+    }
+
+    response_header = (HEADER*)response;
+    response_header->id = query_header->id;
 
     /*
      * send response
@@ -1012,6 +1118,9 @@ process_packet(void)
             break;
         }
     } while (rc < 0);
+    if (rc > 0) {
+        val_log(NULL, LOG_DEBUG, "sent %d bytes", rc);
+    }
 
     return 0;                   /* no error */
 }
@@ -1019,12 +1128,26 @@ process_packet(void)
 static void
 endless_loop(void)
 {
+    /*
+     * signal handlers to exit gracefully
+     */
+#ifdef SIGTERM
+    signal(SIGTERM, sig_shutdown);
+#endif
+#ifdef SIGINT
+    signal(SIGINT, sig_shutdown);
+#endif
 
+    /*
+     * open a port and process incoming packets
+     */
     port_setup(1153);
     while (!done) {
         wait_for_packet();
         process_packet();
     }
+
+    free_validator_cache();
 }
 
 /*============================================================================
@@ -1057,7 +1180,6 @@ main(int argc, char *argv[])
 
     if (argc == 1)
         return 0;
-
 
     while (1) {
 #ifdef HAVE_GETOPT_LONG
