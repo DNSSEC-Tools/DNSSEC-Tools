@@ -1403,11 +1403,47 @@ copy_rr_rec(u_int16_t type_h, struct rr_rec *r, int dolower)
         lower(type_h, the_copy->rr_rdata, the_copy->rr_rdata_length_h);
 
     the_copy->rr_next = NULL;
+
     //
     // xxx-audit: uninitialized member in structure
     //     appropriate value (or 0?) for rr_status
     //
     return the_copy;
+}
+
+/*
+ * copy the entire list of rr_recs
+ *
+ * see copy_rr_rec() to copy a single rr_rec
+ */
+struct rr_rec *
+copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr, int dolower)
+{
+    struct rr_rec *n_rr, *n_head;
+
+    if (NULL == o_rr)
+        return NULL;
+
+    /*
+     * copy list head
+     */
+    n_head = n_rr = copy_rr_rec(type_h, o_rr, dolower);
+    if (NULL == n_rr)
+        return NULL;
+
+    /*
+     * loop over list and copy each record
+     */
+    while (o_rr->rr_next) {
+        n_rr->rr_next = copy_rr_rec(type_h, o_rr->rr_next, dolower);
+        if (NULL == n_rr->rr_next)
+            break;
+        
+        o_rr = o_rr->rr_next;
+        n_rr = n_rr->rr_next;
+    }
+
+    return n_head;
 }
 
 #define INSERTED    1
