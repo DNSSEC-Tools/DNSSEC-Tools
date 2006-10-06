@@ -106,6 +106,8 @@ void            lower_name(u_int8_t rdata[], size_t * index);
 void            lower(u_int16_t type_h, u_int8_t * rdata, int len);
 struct rr_rec  *copy_rr_rec(u_int16_t type_h, struct rr_rec *r,
                             int dolower);
+struct rr_rec *copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr,
+                                int dolower);
 int             link_rr(struct rr_rec **cs, struct rr_rec *cr);
 struct rrset_rec *copy_rrset_rec(struct rrset_rec *rr_set);
 
