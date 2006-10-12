@@ -1,0 +1,200 @@
+# Copyright 2006 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+
+
+			     DNSSEC-Tools
+			Is your domain secure?
+
+
+rollerd-manyzones demo
+
+	This directory contains tools and data for demonstrating the
+	DNSSEC-Tools rollover daemon.
+
+	This demo shows the operation of rollerd as it controls zone rollover
+	for seven zones.  The zones have a wide range of rollover periods,
+	some of which won't take place during the demo.
+
+	A graphical window will appear showing the zones' rollover phases and
+	in-use encryption keys.  As rollover proceeds, the phases and key
+	names (as displayed in the graphical window) will change.
+
+	A second rollrec file exists that can be used to show that rollerd can
+	dynamically change between sets of zones it's managing.  This change
+	will be reflected in the output of the graphical window as well as in
+	log file.
+
+To run the demo:
+
+	- Run the demo with these commands:
+
+		# make
+		# rundemo
+
+	  The first command will build and sign the zones and initialize
+	  various state.
+
+	  The second command starts the demo running.
+
+	- This demo uses *very* short zone lifetimes for several zones,
+	  lifetimes that are impractically short.  Several other zones have
+	  much longer lifetimes, lifetimes which won't allow the zones to
+	  roll during the course of the demo.
+
+	- A graphical window is created that holds the whole of the demo
+	  output.  The window in which the demo was started will have a
+	  "tail -f demo.log" of rollerd's log file.
+
+	- To change rollrec files, execute this command:
+
+		# rollctl -rollrec demo-smallset.rollrec
+
+	All commands should be run as root.
+
+To stop the demo:
+
+	- Run this command:
+
+		# rollctl -halt
+
+	  Stopping rollerd will also stop the blinkenlights graphical program.
+	  Usually.
+
+Demo Operation:
+
+	- The demo follows the rollover operation of three zones:
+
+		dummy.com		woof.com
+		example.com		xorn.com
+		test.com		yowzah.com
+					zero.com
+
+	  The zones in the second column all have rollover periods greater
+	  than a single day.
+
+	  The zones in the first column have very short rollover periods,
+	  and are the focus of the demo.  dummy.com and test.com are in
+	  active rollover state; example.com is being skipped.
+
+	  This is a very simple demo -- the rollover phase and key names are
+	  what visibly change.
+
+	- The colors of the blocks in the "Rollover Phase" column change to
+	  show the change in rollover phase:
+
+		During normal operation, the color is supposed to match the
+		rest of the row.  
+
+		During rollover, the colors start very light in phase 1 and
+		progressively converge on the color of the rest of the row 
+		as rollover phases move along
+
+	- The ZSK key names are given vertically in this order:  current,
+	  published, new.  When a rollover cycle completes:
+
+		- the old "published" key becomes the new "current" key
+		- the old "new" key becomes the new "published" key
+		- a new "new" key is created
+
+	  This gives the effect of the key names (very slowly) rolling up the
+	  screen and disappearing.
+
+	- The zones have different expiration times, so don't expect each
+	  zone to proceed at the same rate.
+
+	- The times given in the "Rollover Phase" columns are approximate
+	  and depend on rollerd, blinkenlights, multitasking queue updates,
+	  and timers timing out.
+
+	- When the demo is first started, dummy.com and test.com are in
+	  active rollover management.  example.com is not being rolled at
+	  the start of the demo.  At some point, rollover for example.com
+	  should be started with this command:
+
+		# rollctl -rollzone example.com
+
+	  Alternatively, this can be done using a command in the "Zone
+	  Control" menu:
+		- Click on example.com's "stripe".  The color of the zone
+		  name will change to white.
+		- Select the "Roll Selected Zone" command from the "Zone
+		  Control" menu.  example.com will then enter rollover and
+		  its stripe will expand to match the others.
+
+	- If you want to disable a zone's rollover, use this command:
+
+		# rollctl -skipzone <zonename>
+
+	  Alternatively, this can be done using a command in the "Zone
+	  Control" menu:
+		- Click on example.com's "stripe".  The color of the zone
+		  name will change to white.
+		- Select the "Skip Selected Zone" command from the "Zone
+		  Control" menu.  example.com will then leave rollover and
+		  its stripe will shrink and turn grey.
+
+	- Demo phases 2 and 4 are very short-lived.  It is possible to
+	  miss them if you blink at the wrong time.  Seriously.
+
+	- If you've got all the demo files, you can run the demo by just
+	  executing "rundemo".  It's probably best, however, to start
+	  fresh each time by running "make" before running "rundemo".
+
+Possible cosmetic changes, if desired:
+
+	- If demo window is too big (or too small) adjust the size by editing
+	  blinkenlights and changing the font size variable $fontsize.
+
+	- If you don't like the descriptions in the "Rollover Phase" column,
+	  they may be fixed in blinkenlights in @phasedescr.
+
+	- If you don't like the rollover-phase colors of the "Rollover Phase"
+	  column, they may be changed in blinkenlights in @phasecolors.
+
+	- There's some extra horizontal spacing added to strings for column
+	  spacing and readability.  If this is too much, then it can be
+	  adjusted in blinkenlights in these places:
+
+		- "Zone Name" column:	    zonestripe(), where $zonetxt is set.
+		- "Rollover Phase" column:  @phasedescr
+		- "ZSK Type" column:	    zonestripe(), in the code with the
+					    "Third Column" comment.
+		- "ZSK Name" column:	    zonestripe(), in the code with the
+					    "Add some spacing" comment.
+
+	- If you don't like the skipped-zone color, it may be changed in
+	  blinkenlights in $skipcolor.
+
+	- If you want the zone name to be centered, then adjust the commented
+	  lines in zonestripe() near the "First column" comment.  The first
+	  commented line may just be uncommented.  The second commented line
+	  must be switch with a similar line such that the "-anchor => 'w'"
+	  is no longer in effect.
+
+WARNINGS:
+
+	- This demo requires the DNSSEC-Tools scripts and modules, BIND, Perl,
+	  and Perl/Tk.
+
+	- Occasionally, blinkenlights will not go away when you stop the demo.
+	  Clicking in that window and giving a ctrl-Q should kill the program.
+
+
+Files:
+	Makefile			Makefile to control demo execution
+	README				This file
+	phaser				Adjusts zone start times in rollrec file
+	rundemo				Executes demo
+	save-db.cache			Pristine copy of demo's db.cache file
+	save-demo.rollrec		Pristine copy of demo's rollrec file
+	save-demo-smallset.rollrec	Pristine copy of demo's 2nd rollrec file
+	save-dummy.com			Pristine copy of dummy.com's zone file
+	save-example.com		Pristine copy of example.com's zone file
+	save-test.com			Pristine copy of test.com's zone file
+	save-woof.com			Pristine copy of woof.com's zone file
+	save-xorn.com			Pristine copy of xorn.com's zone file
+	save-yowzah.com			Pristine copy of yowzah.com's zone file
+	save-zero.com			Pristine copy of zero.com's zone file
+
+
+

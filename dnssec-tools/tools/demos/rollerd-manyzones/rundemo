@@ -1,0 +1,22 @@
+#!/bin/csh
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.
+# See the COPYING file included with the DNSSEC-Tools package for details.
+#
+# rundemo
+#
+#	This script runs the many-zones demo for the DNSSEC-Tools
+#	rollerd daemon.
+#
+
+set log = "log.demo"
+
+rollctl -halt >& /dev/null
+
+cp /dev/null $log
+
+rollerd -dir . -logfile $log -loglevel info -sleep 15 -rrf demo.rollrec -display &
+
+tail -f $log
+
+# cat > /dev/null
