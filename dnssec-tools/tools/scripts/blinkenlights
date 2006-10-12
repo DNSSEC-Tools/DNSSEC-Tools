@@ -71,7 +71,7 @@ my $ROWINCR  = 3;		# Number of rows for each zone.
 my $RRFCOL	= 0;		# Infostripe column holding rollrec filename.
 my $ROLLCNTCOL	= 1;		# Infostripe column holding rolled zones count.
 my $SKIPCNTCOL	= 2;		# Infostripe column holding skipped zones count.
-my $OTHERCOL	= 3;		# Infostripe column holding something else.
+my $SLEEPCOL	= 3;		# Infostripe column holding rollerd's sleeptime.
 
 my $PAINTMAX	= 100;		# Maximum screen paints before screen rebuild.
 my $paintcount	= -1;		# Count of screen paints.
@@ -161,12 +161,13 @@ my $NOSKIP	 = "Hide Skipped Zones";
 
 
 #
-# Flags for the menu options.  Variable/option mapping should obvious.
+# Flags for the menu options.
 #
-my $nomodify;
-my $noshading;
-my $noskip;
-my $shademsg;						# Message about shading.
+my $nomodify;				# Allowing/disallowing commands flag.
+my $noshading;				# Shading/not shading zone stripes flag.
+my $noskip;				# Show/don't show skipped zones flag.
+
+my $shademsg;				# Message about shading.
 
 #######################################################################
 #
@@ -768,6 +769,7 @@ sub infostripe
 	my $lab;
 	my $rollmsg;				# Message about rolled zones.
 	my $skipmsg;				# Message about skipped zones.
+	my $timestr;				# Rollerd's sleep time.
 
 	setcounts();
 
@@ -783,9 +785,33 @@ sub infostripe
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$SKIPCNTCOL,$lab);
 
-	$lab = $zonetab->Label(-text => ' ',
+	open(RINFO,"rollctl -status |");
+	while(<RINFO>)
+	{
+		my $line;			# Input line from rollctl.
+		my $key;			# Entry key from line.
+		my $value;			# Entry value from line.
+
+		$line = $_;
+		chomp($line);
+
+		$line =~ /^(.*?):\W*(.*)$/;
+		$key = $1;
+		$value = $2;
+
+		if($key eq "sleeptime")
+		{
+			$timestr = fuzzytimetrans($value);
+			$timestr =~ s/\.0//;
+			$timestr = "sleep-time:  $timestr";
+			last;
+		}
+	}
+	close(RINFO);
+
+	$lab = $zonetab->Label(-text => $timestr,
 			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,$OTHERCOL,$lab);
+	$zonetab->put($INFOROW,$SLEEPCOL,$lab);
 
 	paintcnt();
 }
@@ -1031,13 +1057,15 @@ sub rollerdcmd
 	#
 	# Break the line into its pieces.
 	#
-	$line =~ /^([a-z]+)\W+([a-zA-z0-9\.\+\-]+)\W+([0-9]+)/;
+	$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-]+)\W+([0-9]+)/;
 	$cmd	= $1;
 	$zone	= $2;
 	$phase	= $3;
 
 	#
 	# Exit if this was an empty line.
+	#
+	#		(Is this really a good idea?)
 	#
 	exit(0) if($cmd eq '');
 
@@ -1095,6 +1123,17 @@ sub rollerdcmd
 
 		$timestr = "starting roll in $timestr" if($phase == 0);
 		zonestripe($zone,$phase,$timestr);
+	}
+	elsif($cmd eq "rollrec")
+	{
+		$rrfile = $zone;
+		buildtable();
+		return;
+	}
+	elsif($cmd eq "sleeptime")
+	{
+		infostripe();
+		return;
 	}
 
 	#
