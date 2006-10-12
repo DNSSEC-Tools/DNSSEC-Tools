@@ -1643,6 +1643,7 @@ sub cmd_rollrec
 		$rollrecfile = $rrf;
 
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd now using rollrec file $rrf");
+		display("rollrec $rrf 0");
 
 		#
 		# Close the channel and return success.
@@ -1843,6 +1844,7 @@ sub cmd_sleeptime
 		$sleepcnt  = $newnap;
 
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"sleep-time set to $newnap");
+		display("sleeptime all $sleeptime");
 	}
 }
 
