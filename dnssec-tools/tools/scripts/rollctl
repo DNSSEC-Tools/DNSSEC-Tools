@@ -51,6 +51,7 @@ my @opts =
 	"zonestatus",			# Get status of zones.
 
 	"Version",			# Display the version number.
+	"quiet",			# Don't print anything.
 	"help",				# Give a usage message and exit.
 );
 
@@ -71,6 +72,8 @@ my $skipzoneflag;
 my $sleeptimeflag;
 my $statusflag;
 my $zonestatflag;
+
+my $quiet;
 
 my $version	= 0;			# Display the version number.
 
@@ -339,6 +342,7 @@ sub doopts
 	#
 	$dispflag	= $options{'display'}	 || 0;
 	$nodispflag	= $options{'nodisplay'}	 || 0;
+	$quiet		= $options{'quiet'}	 || 0;
 	$logfileflag	= $options{'logfile'}	 || 0;
 	$loglevelflag	= $options{'loglevel'}	 || 0;
 	$rollallflag	= $options{'rollall'}	 || 0;
@@ -352,6 +356,15 @@ sub doopts
 	$statusflag	= $options{'status'}	 || 0;
 	$zonestatflag	= $options{'zonestatus'} || 0;
 	$version        = $options{'Version'}    || 0;
+
+	#
+	# Close our output descriptors if the -quiet option was given.
+	#
+	if($quiet)
+	{
+		close(STDOUT);
+		close(STDERR);
+	}
 
 	#
 	# Show the version number if requested
@@ -371,7 +384,6 @@ sub doopts
 		print STDERR "-display and -nodisplay are mutually exclusive\n";
 		exit(1);
 	}
-
 }
 
 #----------------------------------------------------------------------
@@ -412,6 +424,7 @@ sub usage
 	print STDERR "\t-status				get rollerd's status\n";
 	print STDERR "\t-zonestatus			get status of zones\n";
 	print STDERR "\t-Version			display version number\n";
+	print STDERR "\t-quiet				don't give any output\n";
 	print STDERR "\t-help				help message \n";
 	exit(0);
 }
@@ -510,6 +523,11 @@ it to the screen.
 
 For each zone in the I<rollrec> file, the zone name, the record type ("skip"
 or "roll", and the current roll-over phase are given.
+
+=item I<-quiet>
+
+Prevents output from being given.  Both error and non-error output is
+stopped.
 
 =item I<-help>
 
