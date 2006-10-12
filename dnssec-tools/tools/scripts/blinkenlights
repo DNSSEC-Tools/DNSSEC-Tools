@@ -77,6 +77,19 @@ my $STARTROW = 2;		# First row on which zone info will be shown.
 my $ROWINCR  = 3;		# Number of rows for each zone.
 
 #
+# Column constants.
+#
+my $RRFCOL	= 0;		# Infostripe column holding rollrec filename.
+my $ROLLCNTCOL	= 1;		# Infostripe column holding rolled zones count.
+my $SKIPCNTCOL	= 2;		# Infostripe column holding skipped zones count.
+my $OTHERCOL	= 3;		# Infostripe column holding something else.
+
+my $PAINTMAX	= 100;		# Maximum screen paints before screen rebuild.
+my $paintcount	= -1;		# Count of screen paints.
+
+my $DLGHEIGHT = 10;		# Height of the dialog box.
+
+#
 # Font size for output window.
 #
 my $fontsize = 18;
@@ -157,6 +170,8 @@ my $NOSHADING	 = "Don't Shade Status Column";
 my $SHOWSKIP	 = "Display Skipped Zones";
 my $NOSKIP	 = "Hide Skipped Zones";
 
+my $shademsg;						# Message about shading.
+
 #######################################################################
 #
 # Global shtuff.
@@ -193,11 +208,8 @@ my %zonechron = ();				# Zones' chronoses.
 #
 # Data for the info stripe.
 #
-my $rollcnt = 0;				# Count of rolled zones.
-my $rollcntmsg;					# Message about rolled zones.
-my $shademsg;					# Message about shading.
-my $skipcnt = 0;				# Count of skipped zones.
-my $skipcntmsg;					# Message about skipped zones.
+my $rollcntmsg = ' ';				# Count of rolled zones.
+my $skipcntmsg = ' ';				# Count of skipped zones.
 
 #
 # Data for button-selected zones.
@@ -218,6 +230,8 @@ exit(0);
 #
 sub main
 {
+	$| = 1;
+
 	#
 	# Check for options.
 	#
@@ -405,8 +419,7 @@ sub buildmainwind
 	#
 	# Add the big ol' zone-status widget.
 	#
-#	$body->grid();
-	$zonetab = $body->Table(-rows => 12, -columns => 5,
+	$zonetab = $body->Table(-rows => 12, -columns => 4,
 				-scrollbars  => 'e',
 				-relief	     => 'raised',
 				-borderwidth => 1,
@@ -419,7 +432,7 @@ sub buildmainwind
 	#
 	# Get the keyrec file info.
 	#
-	readrrf($rrfile);
+	readrrf($rrfile,0);
 
 	#
 	# Initialize our rollerd-input handler.
@@ -572,7 +585,7 @@ sub zone_rollcmd
 	#
 	# Build and execute the command string.
 	#
-	$rcmd = "rollctl -$rcmd";
+	$rcmd = "rollctl -q -$rcmd";
 	system($rcmd);
 
 	#
@@ -592,14 +605,89 @@ sub zone_rollcmd
 ##############################################################################
 
 #---------------------------------------------------------------------------
+# Routine:	paintcnt()
+#
+# Purpose:	Adjust the screen-painting count as needed.  If we've hit
+#		a maximum value, destroy and rebuild the zone table.
+#
+sub paintcnt
+{
+	#
+	# Set the paint-count to a user-specified value, or increment
+	# the current value if one wasn't given.
+	#
+	if(@_ > 0)
+	{
+		$paintcount = shift;
+	}
+	else
+	{
+		$paintcount++;
+	}
+
+	#
+	# If we've exceeded our maximum, reset the paint-count and rebuild
+	# the zone's table.
+	#
+	if($paintcount > $PAINTMAX)
+	{
+		$paintcount = 0;
+		buildtable();
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildtable()
+#
+# Purpose:	Rebuild the zone status table.  This also re-reads the
+#		current rollrec file, so the zones listed may increase
+#		or shrink depending on the state of that file..
+#
+sub buildtable
+{
+	#
+	# Destroy the zone table's widgets.
+	#
+	if($zonetab)
+	{
+		$zonetab->clear;
+		$zonetab->destroy;
+	}
+
+	#
+	# Create a brand new table.
+	#
+	$zonetab = $body->Table(-rows => 12, -columns => 4,
+				-scrollbars  => 'e',
+				-relief	     => 'raised',
+				-borderwidth => 1,
+				-fixedrows   => 0,
+				-takefocus   => 1,
+			       );
+
+	#
+	# Re-populate and update the table.
+	#
+	readrrf($rrfile,1);
+	$zonetab->update();
+
+	#
+	# Pack it all up.
+	#
+	$zonetab->pack(-fill => 'both', -expand => 1);
+	$body->pack(-fill => 'both', -expand => 1);
+}
+
+#---------------------------------------------------------------------------
 # Routine:	readrrf()
 #
 # Purpose:	Read a rollrec file and put the info on the screen.
 #
 sub readrrf
 {
-	my $rrf = shift;				# Rollrec to read.
-	my $rr;						# Rollrec reference.
+	my $rrf = shift;			# Rollrec to read.
+	my $timeflag = shift;			# Flag for using current time.
+	my $rr;					# Rollrec reference.
 
 	#
 	# Initialize some data.
@@ -639,12 +727,10 @@ sub readrrf
 		if($rr->{'rollrec_type'} eq "roll")
 		{
 			$rollers{$zone} = 1;
-			$rollcnt++;
 		}
 		else
 		{
 			$rollers{$zone} = 0;
-			$skipcnt++;
 		}
 
 		#
@@ -661,13 +747,20 @@ sub readrrf
 		#
 		# Paint the window with this zone's info.
 		#
-		zonestripe($zone,$phase);
+		if($timeflag)
+		{
+			zonestripe($zone,$phase,$zonechron{$zone});
+		}
+		else
+		{
+			zonestripe($zone,$phase);
+		}
 	}
 
 	#
 	# Housekeeping before returning.
 	#
-	setcountmsgs();
+	infostripe();
 	rollrec_close();
 	$zonetab->update();
 }
@@ -680,34 +773,38 @@ sub readrrf
 sub infostripe
 {
 	my $lab;
+	my $rollmsg;				# Message about rolled zones.
+	my $skipmsg;				# Message about skipped zones.
 
-	$lab = $zonetab->Label(-textvariable => \$title,
-			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,0,$lab);
+	setcounts();
 
-	$lab = $zonetab->Label(-textvariable => \$rollcntmsg,
+	$lab = $zonetab->Label(-text => $title,
 			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,1,$lab);
+	$zonetab->put($INFOROW,$RRFCOL,$lab);
 
-	$lab = $zonetab->Label(-textvariable => \$skipcntmsg,
+	$lab = $zonetab->Label(-text => $rollcntmsg,
 			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,2,$lab);
+	$zonetab->put($INFOROW,$ROLLCNTCOL,$lab);
+
+	$lab = $zonetab->Label(-text => $skipcntmsg,
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,$SKIPCNTCOL,$lab);
 
 	$lab = $zonetab->Label(-text => ' ',
 			       -font => $font, -background => $INFOBG);
-	$zonetab->put($INFOROW,3,$lab);
+	$zonetab->put($INFOROW,$OTHERCOL,$lab);
+
+	paintcnt();
 }
 
 #---------------------------------------------------------------------------
 # Routine:	headerstripe()
 #
-# Purpose:	Puts a header line in the top table row.
+# Purpose:	Puts a column header line in the top table row.
 #
 sub headerstripe
 {
 	my $lab;
-
-	infostripe();
 
 	$lab = $zonetab->Label(-text => 'Zone Name    ',
 			       -font => $font, -background => 'tan');
@@ -977,8 +1074,7 @@ sub rollerdcmd
 		$rollers{$zone} = 1;
 		calcrows();
 
-		$rollcnt++; $skipcnt--;
-		setcountmsgs();
+		infostripe();
 
 		$zonephase{$zone} = $phase;
 		repaint();
@@ -989,8 +1085,7 @@ sub rollerdcmd
 		calcrows();
 		$zonephase{$zone} = -42;
 
-		$rollcnt--; $skipcnt++;
-		setcountmsgs();
+		infostripe();
 
 		repaint();
 	}
@@ -1009,6 +1104,10 @@ sub rollerdcmd
 		zonestripe($zone,$phase,$timestr);
 	}
 
+	#
+	# Increment the screen-paint count and update the zone table.
+	#
+	paintcnt();
 	$zonetab->update();
 }
 
@@ -1168,7 +1267,6 @@ sub getzone
 	my $selzone;					# Selected zone.
 	my @selzones;					# Selected zones.
 
-my $DLGHEIGHT = 10;
 	my $height = $DLGHEIGHT;			# Height of dialog box.
 	my $zonecount = @zonenames;			# Number of zones.
 
@@ -1480,18 +1578,62 @@ sub readconfig
 }
 
 #----------------------------------------------------------------------
-# Routine:      setcountmsgs()
+# Routine:      setcounts()
 #
 # Purpose:      Set the rolled zone and skipped zone messages with the
 #		current counts.
 #
-sub setcountmsgs
+sub setcounts
 {
-	$rollcntmsg = "$rollcnt Rolling Zones";
-	$rollcntmsg = "0 Rolling Zones"		if($rollcnt == 0);
+	my $total = 0;					# Total zone count.
+	my $rollcnt = 0;				# Rolled zone count.
+	my $skipcnt = 0;				# Skipped zone count.
 
-	$skipcntmsg = "$skipcnt Skipped Zones";
-	$skipcntmsg = "0 Skipped Zones"		if($skipcnt == 0);
+	#
+	# Calculate the number of rolled and skipped zones.
+	#
+	$total = keys(%rollers);
+	foreach my $zn (keys(%rollers))
+	{
+		$rollcnt++ if($rollers{$zn});
+	}
+
+	$skipcnt = $total - $rollcnt;
+
+	#
+	# Set the messages, in a grammatically anal-retentive manner.
+	#
+	if($rollcnt != 0)
+	{
+		if($rollcnt == 1)
+		{
+			$rollcntmsg = "$rollcnt Rolling Zone";
+		}
+		else
+		{
+			$rollcntmsg = "$rollcnt Rolling Zones";
+		}
+	}
+	else
+	{
+		$rollcntmsg = "0 Rolling Zones";
+	}
+
+	if($skipcnt != 0)
+	{
+		if($skipcnt == 1)
+		{
+			$skipcntmsg = "$skipcnt Skipped Zone";
+		}
+		else
+		{
+			$skipcntmsg = "$skipcnt Skipped Zones";
+		}
+	}
+	else
+	{
+		$skipcntmsg = "0 Skipped Zones";
+	}
 }
 
 #----------------------------------------------------------------------
