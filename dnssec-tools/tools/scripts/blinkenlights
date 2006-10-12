@@ -39,20 +39,9 @@ my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"noskip",			# Don't show skipped zones.
-	"nomodify",			# Don't allow zones to be modified.
-	"noshading",			# Don't change colors in column 2.
-
 	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
-
-#
-# Flags for the options.  Variable/option mapping should obvious.
-#
-my $nomodify;
-my $noshading;
-my $noskip;
 
 my $version	= 0;			# Display the version number.
 
@@ -170,6 +159,13 @@ my $NOSHADING	 = "Don't Shade Status Column";
 my $SHOWSKIP	 = "Display Skipped Zones";
 my $NOSKIP	 = "Hide Skipped Zones";
 
+
+#
+# Flags for the menu options.  Variable/option mapping should obvious.
+#
+my $nomodify;
+my $noshading;
+my $noskip;
 my $shademsg;						# Message about shading.
 
 #######################################################################
@@ -270,9 +266,6 @@ sub optsandargs
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$noskip	   = $options{'noskip'}	   || 0;
-	$nomodify  = $options{'nomodify'}  || 0;
-	$noshading = $options{'noshading'} || 0;
 	$version   = $options{'Version'}   || 0;
 
 	#
