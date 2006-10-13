@@ -398,19 +398,27 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
  * the original res_sym struct used regular, non-const, char* pointers.
  * this causes a slew of warning about initialization discarding qualifiers,
  * so this is the same structure but with const char* pointers.
+ *
+ * Unfortuantely, on OS X, __p_class_sym is a macro, and exported with the
+ * original res_sym type. So if the macro exists, we don't use this hack.
  */
+#ifdef __p_class_syms
+#define RES_SYM_TYPE res_sym
+#else
+#define RES_SYM_TYPE res_sym_const
 struct res_sym_const {
     int     number;         /* Identifying number, like T_MX */
     const char *  name;           /* Its symbolic name, like "MX" */
     const char *  humanname;      /* Its fun name, like "mail exchanger" */
 };
+#endif
 
 /*
  * Names of RR classes and qclasses.  Classes and qclasses are the same, except
  * that ns_c_any is a qclass but not a class.  (You can ask for records of class
  * ns_c_any, but you can't have any records of that class in the database.)
  */
-const struct res_sym_const __p_class_syms[] = {
+const struct RES_SYM_TYPE __p_class_syms[] = {
     {ns_c_in, "IN", (char *) 0},
     {ns_c_chaos, "CH", (char *) 0},
     {ns_c_chaos, "CHAOS", (char *) 0},
@@ -424,7 +432,7 @@ const struct res_sym_const __p_class_syms[] = {
 /*
  * Names of message sections.
  */
-const struct res_sym_const __p_default_section_syms[] = {
+const struct RES_SYM_TYPE __p_default_section_syms[] = {
     {ns_s_qd, "QUERY", (char *) 0},
     {ns_s_an, "ANSWER", (char *) 0},
     {ns_s_ns, "AUTHORITY", (char *) 0},
@@ -432,7 +440,7 @@ const struct res_sym_const __p_default_section_syms[] = {
     {0, (char *) 0, (char *) 0}
 };
 
-const struct res_sym_const __p_update_section_syms[] = {
+const struct RES_SYM_TYPE __p_update_section_syms[] = {
     {ns_s_zn, "ZONE", (char *) 0},
     {ns_s_pr, "PREREQUISITE", (char *) 0},
     {ns_s_ud, "UPDATE", (char *) 0},
@@ -440,7 +448,7 @@ const struct res_sym_const __p_update_section_syms[] = {
     {0, (char *) 0, (char *) 0}
 };
 
-const struct res_sym_const __p_key_syms[] = {
+const struct RES_SYM_TYPE __p_key_syms[] = {
     {NS_ALG_MD5RSA, "RSA", "RSA KEY with MD5 hash"},
     {NS_ALG_DH, "DH", "Diffie Hellman"},
     {NS_ALG_DSA, "DSA", "Digital Signature Algorithm"},
@@ -449,7 +457,7 @@ const struct res_sym_const __p_key_syms[] = {
     {0, NULL, NULL}
 };
 
-const struct res_sym_const __p_cert_syms[] = {
+const struct RES_SYM_TYPE __p_cert_syms[] = {
     {cert_t_pkix, "PKIX", "PKIX (X.509v3) Certificate"},
     {cert_t_spki, "SPKI", "SPKI certificate"},
     {cert_t_pgp, "PGP", "PGP certificate"},
@@ -463,7 +471,7 @@ const struct res_sym_const __p_cert_syms[] = {
  * that T_ANY is a qtype but not a type.  (You can ask for records of type
  * T_ANY, but you can't have any records of that type in the database.)
  */
-const struct res_sym_const __p_type_syms[] = {
+const struct RES_SYM_TYPE __p_type_syms[] = {
     {ns_t_a, "A", "address"},
     {ns_t_ns, "NS", "name server"},
     {ns_t_md, "MD", "mail destination (deprecated)"},
@@ -527,7 +535,7 @@ const struct res_sym_const __p_type_syms[] = {
 /*
  * Names of DNS rcodes.
  */
-const struct res_sym_const __p_rcode_syms[] = {
+const struct RES_SYM_TYPE __p_rcode_syms[] = {
     {ns_r_noerror, "NOERROR", "no error"},
     {ns_r_formerr, "FORMERR", "format error"},
     {ns_r_servfail, "SERVFAIL", "server failed"},
