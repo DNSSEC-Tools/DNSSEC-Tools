@@ -10,10 +10,21 @@ programs.  The tools and data files are divided into subdirectories by demo.
 The demos are described below.
 
 
-basic-rollerd
+rollerd-basic
 
 	This demo shows the basic operation of rollerd as it controls zone
 	rollover for three zones.  A graphical window will appear showing the
 	zones' rollover phases and in-use encryption keys.  As rollover
 	proceeds, the phases and key names (as displayed in the graphical
 	window) will change.
+
+rollerd-manyzones
+
+	This demo shows the basic operation of rollerd as it controls zone
+	rollover for seven zones.  Three zones have lifetimes that allow very
+	fast rollover, though one of them starts the demo in the "skipped"
+	state.  The other four zones have very long rollover times.
+
+	A graphical window will appear showing the zones' rollover phases and
+	in-use encryption keys.  As rollover proceeds, the phases and key
+	names (as displayed in the graphical window) will change.
