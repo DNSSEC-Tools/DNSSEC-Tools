@@ -594,17 +594,17 @@ sub zone_rollcmd
 
 ##############################################################################
 #
-# Utility routines
+# Screen-drawing routines
 #
 ##############################################################################
 
 #---------------------------------------------------------------------------
-# Routine:	paintcnt()
+# Routine:	painter()
 #
 # Purpose:	Adjust the screen-painting count as needed.  If we've hit
 #		a maximum value, destroy and rebuild the zone table.
 #
-sub paintcnt
+sub painter
 {
 	#
 	# Set the paint-count to a user-specified value, or increment
@@ -813,7 +813,7 @@ sub infostripe
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$SLEEPCOL,$lab);
 
-	paintcnt();
+	painter();
 }
 
 #---------------------------------------------------------------------------
@@ -1036,6 +1036,25 @@ sub zonestripe
 	$zonetab->update();
 }
 
+#----------------------------------------------------------------------
+# Routine:      repaint()
+#
+# Purpose:      Redisplay the current zone data.
+#
+sub repaint
+{
+	foreach my $zone (sort(@zonenames))
+	{
+		zonestripe($zone,$zonephase{$zone},$zonechron{$zone});
+	}
+}
+
+##############################################################################
+#
+# Utility routines
+#
+##############################################################################
+
 #---------------------------------------------------------------------------
 # Routine:	rollerdcmd()
 #
@@ -1139,21 +1158,167 @@ sub rollerdcmd
 	#
 	# Increment the screen-paint count and update the zone table.
 	#
-	paintcnt();
+	painter();
 	$zonetab->update();
 }
 
 #----------------------------------------------------------------------
-# Routine:      repaint()
+# Routine:      selector()
 #
-# Purpose:      Redisplay the current zone data.
+# Purpose:      Register a mouse-selected zone name.
 #
-sub repaint
+sub selector
 {
-	foreach my $zone (sort(@zonenames))
+	my $argv = shift;				# Argument reference.
+	my %argv = %$argv;				# Argument hash.
+
+	my $wijname;					# Event's widget.
+	my @pieces;					# Pieces of array.
+
+	my $found = 0;					# Found-row flag.
+	my $selx;					# Selection x-coord.
+	my $wij;					# Selection's widget.
+
+	my @zonearr = ();				# Temp. zone/row array.
+
+	#
+	# Make sure we're clicking in our table and not in a menu
+	# or frame.
+	#
+	#	(This ugly bit of coding depends on our only
+	#	ever making a single table.)
+	#
+	$wijname = $argv{'_TkValue_'};
+	@pieces = split /\./, $wijname;
+
+	#
+	# If the selected widget isn't a table, we'll unselect the
+	# currently selected widget.
+	#
+	if($pieces[2] ne "table")
 	{
-		zonestripe($zone,$zonephase{$zone},$zonechron{$zone});
+		if($selwidget && ($pieces[2] !~ /menubutton/))
+		{
+			$selwidget->configure(-foreground => $NORMALFG);
+			$selzone = '';
+			$selwidget = undef;
+
+		}
+		return;
 	}
+
+	#
+	# Find the widget that has the same name as the event window.
+	#
+	for(my $xind=0; $xind < $lastrow; $xind++)
+	{
+		for(my $yind=0; $yind < 4; $yind++)
+		{
+			my $pn;				# Widget's pathname.
+
+			#
+			# Get this x,y widget and its name.
+			#
+			$wij = $zonetab->get($xind,$yind);
+			$pn = $wij->PathName;
+
+			#
+			# Go to the next widget if this isn't it.
+			#
+			next if($pn ne $wijname);
+
+			#
+			# Save the index and drop out.
+			#
+			$selx = $xind;
+			$found = 1;
+			last;
+		}
+
+		last if($found);
+	}
+
+	#
+	# Nothing gets selected if the user didn't select anything.
+	# Obviously.
+	#
+	return if(!$found);
+
+	#
+	# Clear the selection and return if the click came in the
+	# information row or the title row.
+	#
+	if(($selx == $INFOROW) || ($selx == $TITLEROW))
+	{
+		$selwidget->configure(-foreground => $NORMALFG) if($selwidget);
+		$selwidget = undef;
+
+		$selzone = '';
+		return;
+	}
+
+	#
+	# Build an array of zone-names, indexed by the zone's first row.
+	#
+	foreach my $zone (keys(%zonerows))
+	{
+		$zonearr[$zonerows{$zone}] = $zone;
+	}
+
+	#
+	# Mark the proper zone name (row N, column 0) with a highlighted
+	# marking.  All others will be unhighlighted.  We'll work backwards
+	# in our newly constructed zone-name array and find the zone's name
+	# in the array by working backwards from the index.
+	#
+	for(my $i=$selx; $i > 0; $i--)
+	{
+		#
+		# Skip any blank widgets.
+		#
+		next if($zonearr[$i] eq '');
+
+		#
+		# Get the zone string's widget and set the selection
+		# color for each zone in the zone column.
+		#
+		for(my $rind=0; $rind < $lastrow; $rind++)
+		{
+			my $wij;			# Zone's widget.
+			my $zstr;			# Widget's zone.
+
+			#
+			# Get this row's column-zero widget.  Go to the
+			# next if there isn't a zone in it.
+			#
+			$wij = $zonetab->get($rind,0);
+			$zstr = $wij->cget('-text');
+			$zstr =~ s/[ ]*$//;
+			next if($zstr eq '');
+
+			#
+			# If this is our selected zone, mark the zone
+			# string as highlighted.  All others go to the
+			# normal unhighlighted look.
+			#
+			if($zstr eq $zonearr[$i])
+			{
+				$wij->configure(-foreground => $SELECTEDFG);
+				$selwidget = $wij;
+			}
+			else
+			{
+				$wij->configure(-foreground => $NORMALFG);
+			}
+		}
+
+		#
+		# Select this zone.
+		#
+		$selzone = $zonearr[$i];
+		last;
+	}
+
 }
 
 #----------------------------------------------------------------------
@@ -1376,165 +1541,6 @@ sub getzone
 	return($selzone);
 }
 
-#----------------------------------------------------------------------
-# Routine:      selector()
-#
-# Purpose:      Register a mouse-selected zone name.
-#
-sub selector
-{
-	my $argv = shift;				# Argument reference.
-	my %argv = %$argv;				# Argument hash.
-
-	my $wijname;					# Event's widget.
-	my @pieces;					# Pieces of array.
-
-	my $found = 0;					# Found-row flag.
-	my $selx;					# Selection x-coord.
-	my $wij;					# Selection's widget.
-
-	my @zonearr = ();				# Temp. zone/row array.
-
-	#
-	# Make sure we're clicking in our table and not in a menu
-	# or frame.
-	#
-	#	(This ugly bit of coding depends on our only
-	#	ever making a single table.)
-	#
-	$wijname = $argv{'_TkValue_'};
-	@pieces = split /\./, $wijname;
-
-	#
-	# If the selected widget isn't a table, we'll unselect the
-	# currently selected widget.
-	#
-	if($pieces[2] ne "table")
-	{
-		if($selwidget && ($pieces[2] !~ /menubutton/))
-		{
-			$selwidget->configure(-foreground => $NORMALFG);
-			$selzone = '';
-			$selwidget = undef;
-
-		}
-		return;
-	}
-
-	#
-	# Find the widget that has the same name as the event window.
-	#
-	for(my $xind=0; $xind < $lastrow; $xind++)
-	{
-		for(my $yind=0; $yind < 4; $yind++)
-		{
-			my $pn;				# Widget's pathname.
-
-			#
-			# Get this x,y widget and its name.
-			#
-			$wij = $zonetab->get($xind,$yind);
-			$pn = $wij->PathName;
-
-			#
-			# Go to the next widget if this isn't it.
-			#
-			next if($pn ne $wijname);
-
-			#
-			# Save the index and drop out.
-			#
-			$selx = $xind;
-			$found = 1;
-			last;
-		}
-
-		last if($found);
-	}
-
-	#
-	# Nothing gets selected if the user didn't select anything.
-	# Obviously.
-	#
-	return if(!$found);
-
-	#
-	# Clear the selection and return if the click came in the
-	# information row or the title row.
-	#
-	if(($selx == $INFOROW) || ($selx == $TITLEROW))
-	{
-		$selwidget->configure(-foreground => $NORMALFG) if($selwidget);
-		$selwidget = undef;
-
-		$selzone = '';
-		return;
-	}
-
-	#
-	# Build an array of zone-names, indexed by the zone's first row.
-	#
-	foreach my $zone (keys(%zonerows))
-	{
-		$zonearr[$zonerows{$zone}] = $zone;
-	}
-
-	#
-	# Mark the proper zone name (row N, column 0) with a highlighted
-	# marking.  All others will be unhighlighted.  We'll work backwards
-	# in our newly constructed zone-name array and find the zone's name
-	# in the array by working backwards from the index.
-	#
-	for(my $i=$selx; $i > 0; $i--)
-	{
-		#
-		# Skip any blank widgets.
-		#
-		next if($zonearr[$i] eq '');
-
-		#
-		# Get the zone string's widget and set the selection
-		# color for each zone in the zone column.
-		#
-		for(my $rind=0; $rind < $lastrow; $rind++)
-		{
-			my $wij;			# Zone's widget.
-			my $zstr;			# Widget's zone.
-
-			#
-			# Get this row's column-zero widget.  Go to the
-			# next if there isn't a zone in it.
-			#
-			$wij = $zonetab->get($rind,0);
-			$zstr = $wij->cget('-text');
-			$zstr =~ s/[ ]*$//;
-			next if($zstr eq '');
-
-			#
-			# If this is our selected zone, mark the zone
-			# string as highlighted.  All others go to the
-			# normal unhighlighted look.
-			#
-			if($zstr eq $zonearr[$i])
-			{
-				$wij->configure(-foreground => $SELECTEDFG);
-				$selwidget = $wij;
-			}
-			else
-			{
-				$wij->configure(-foreground => $NORMALFG);
-			}
-		}
-
-		#
-		# Select this zone.
-		#
-		$selzone = $zonearr[$i];
-		last;
-	}
-
-}
-
 #---------------------------------------------------------------------------
 # Routine:	readconfig()
 #
@@ -1680,6 +1686,12 @@ sub settitle
 	$title = getnode($name);
 }
 
+##############################################################################
+#
+# Utility-window routines.
+#
+##############################################################################
+
 #---------------------------------------------------------------------------
 # Routine:	error()
 #
@@ -1788,6 +1800,12 @@ be given on rollerd's command line in order to have it start blinkenlights.
 				-command => \&helpbegone);
 	$wdgt->pack(-side => 'top');
 }
+
+##############################################################################
+#
+# Option-based routines.
+#
+##############################################################################
 
 #----------------------------------------------------------------------
 # Routine:      version()
