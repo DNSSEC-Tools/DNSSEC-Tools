@@ -5,9 +5,9 @@
 # Makefile for building demo data for the basic rollerd demo.
 #
 
-basic-rollerd:	basic
-
 basic:		short
+
+basic-rollerd:	basic
 
 basic-short:	short
 
