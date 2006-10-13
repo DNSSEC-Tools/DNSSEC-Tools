@@ -1549,6 +1549,9 @@ sub getzone
 #
 #			fontsize	size of demo output font
 #			skipcolor	color to use for skip records
+#			modify		allow modification commands
+#			shading		shade the status columns
+#			showskip	show skipped zones
 #
 sub readconfig
 {
@@ -1610,9 +1613,48 @@ sub readconfig
 		{
 			$skipcolor = $value;
 		}
+		elsif($field eq "shading")
+		{
+			my $ret = flagval($value);
+
+			if($ret) { $noshading = 0; }
+			else	 { $noshading = 1; }
+		}
+		elsif($field eq "showskip")
+		{
+			my $ret = flagval($value);
+
+			if($ret) { $noskip = 0; }
+			else	 { $noskip = 1; }
+		}
+		elsif($field eq "modify")
+		{
+			my $ret = flagval($value);
+
+			if($ret) { $nomodify = 0; }
+			else	 { $nomodify = 1; }
+		}
 	}
 
 	close(CONF);
+}
+
+#----------------------------------------------------------------------
+# Routine:      flagval()
+#
+# Purpose:      Translate a flag value into a numeric.
+#
+sub flagval
+{
+	my $val = shift;			# Flag value to translate.
+	my $ret = 0;				# Return value.
+
+	if(($val != 0) || ($val =~ /on/i))
+	{
+		$ret = 1;
+	}
+
+	return($ret);
 }
 
 #----------------------------------------------------------------------
