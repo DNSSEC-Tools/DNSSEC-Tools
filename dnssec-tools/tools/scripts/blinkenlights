@@ -21,6 +21,7 @@ use Tk;
 use Tk::Dialog;
 use Tk::Table;
 
+use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::timetrans;
@@ -257,7 +258,8 @@ sub main
 #
 sub optsandargs
 {
-	my $argc = shift;			# Command line argument count.
+	my $argc = shift;		# Command line argument count.
+	my %dtconf;			# DNSSEC-Tools config file contents.
 
 	#
 	# Parse the options.
@@ -279,7 +281,20 @@ sub optsandargs
 	#
 	usage() if(defined($options{'help'}));
 
+	#
+	# Save the name of the rollrec file.
+	#
 	$rrfile = $ARGV[0];
+
+	#
+	# Set the option values based on the config file.
+	# Non-blinkenlights options will be ignored by setopt().
+	#
+	%dtconf = parseconfig();
+	foreach my $dtk (keys(%dtconf))
+	{
+		setopt($dtk,$dtconf{$dtk});
+	}
 }
 
 #---------------------------------------------------------------------------
@@ -1598,45 +1613,72 @@ sub readconfig
 		$value = $2;
 
 		#
-		# Handle the field values appropriately.
+		# Set the config value.
 		#
-		if($field eq "fontsize")
-		{
-			if($value =~ /[a-zA-Z\_\-]/)
-			{
-				print STDERR "invalid fontsize \"$value\" in configuration file\n";
-				next;
-			}
-			$fontsize = $value;
-		}
-		elsif($field eq "skipcolor")
-		{
-			$skipcolor = $value;
-		}
-		elsif($field eq "shading")
-		{
-			my $ret = flagval($value);
-
-			if($ret) { $noshading = 0; }
-			else	 { $noshading = 1; }
-		}
-		elsif($field eq "showskip")
-		{
-			my $ret = flagval($value);
-
-			if($ret) { $noskip = 0; }
-			else	 { $noskip = 1; }
-		}
-		elsif($field eq "modify")
-		{
-			my $ret = flagval($value);
-
-			if($ret) { $nomodify = 0; }
-			else	 { $nomodify = 1; }
-		}
+		setopt($field,$value);
 	}
 
 	close(CONF);
+}
+
+#----------------------------------------------------------------------
+# Routine:      setopt()
+#
+# Purpose:      Set the appropriate option from the specified field.
+#		This is done here in order to centralize things for both
+#		handling the DNSSEC-Tools configuration file and users'
+#		configuration files.
+#
+#		The following fields are recognized:
+#			fontsize	size of demo output font
+#			skipcolor	color to use for skip records
+#			modify		allow modification commands
+#			shading		shade the status columns
+#			showskip	show skipped zones
+#
+sub setopt
+{
+	my $field = shift;				
+	my $value = shift;				
+
+	#
+	# Handle the field values appropriately.
+	#
+	if($field eq "fontsize")
+	{
+		if($value =~ /[a-zA-Z\_\-]/)
+		{
+			print STDERR "invalid fontsize \"$value\" in configuration file\n";
+			next;
+		}
+		$fontsize = $value;
+		setfont();
+	}
+	elsif($field eq "skipcolor")
+	{
+		$skipcolor = $value;
+	}
+	elsif($field eq "shading")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $noshading = 0; }
+		else	 { $noshading = 1; }
+	}
+	elsif($field eq "showskip")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $noskip = 0; }
+		else	 { $noskip = 1; }
+	}
+	elsif($field eq "modify")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $nomodify = 0; }
+		else	 { $nomodify = 1; }
+	}
 }
 
 #----------------------------------------------------------------------
@@ -1649,13 +1691,30 @@ sub flagval
 	my $val = shift;			# Flag value to translate.
 	my $ret = 0;				# Return value.
 
-	if(($val != 0) || ($val =~ /on/i))
+	$val = lc($val);
+
+	if(($val != 0)		||
+	   ($val eq "on")	||
+	   ($val eq "y")	||
+	   ($val eq "ye")	||
+	   ($val eq "yes"))
 	{
 		$ret = 1;
 	}
 
 	return($ret);
 }
+
+#----------------------------------------------------------------------
+# Routine:      setfont()
+#
+# Purpose:      Set the $font global variable.
+#
+sub setfont
+{
+	$font = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+}
+
 
 #----------------------------------------------------------------------
 # Routine:      setcounts()
