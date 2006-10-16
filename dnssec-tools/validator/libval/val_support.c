@@ -484,8 +484,11 @@ free_domain_info_ptrs(struct domain_info *di)
         di->di_requested_name_h = NULL;
     }
 
-    if (di->di_rrset)
-        res_sq_free_rrset_recs(&di->di_rrset);
+    if (di->di_answers)
+        res_sq_free_rrset_recs(&di->di_answers);
+
+    if (di->di_proofs)
+        res_sq_free_rrset_recs(&di->di_proofs);
 
     if (di->di_qnames) {
         free_qname_chain(&di->di_qnames);
@@ -578,6 +581,7 @@ add_to_set(struct rrset_rec *rr_set, u_int16_t rdata_len_h,
      */
     rr->rr_rdata_length_h = rdata_len_h;
     memcpy(rr->rr_rdata, rdata, rdata_len_h);
+    rr->rr_status = VAL_A_DONT_KNOW;
     rr->rr_next = NULL;
 
     return VAL_NO_ERROR;
@@ -624,6 +628,7 @@ add_as_sig(struct rrset_rec *rr_set, u_int16_t rdata_len_h,
      */
     rr->rr_rdata_length_h = rdata_len_h;
     memcpy(rr->rr_rdata, rdata, rdata_len_h);
+    rr->rr_status = VAL_A_DONT_KNOW;
     rr->rr_next = NULL;
 
     return VAL_NO_ERROR;
@@ -1402,6 +1407,7 @@ copy_rr_rec(u_int16_t type_h, struct rr_rec *r, int dolower)
     if (dolower)
         lower(type_h, the_copy->rr_rdata, the_copy->rr_rdata_length_h);
 
+    the_copy->rr_status = r->rr_status;
     the_copy->rr_next = NULL;
 
     //
