@@ -8,9 +8,8 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <openssl/bio.h>
-#include <openssl/evp.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
@@ -26,6 +25,7 @@ extern char *ctime_r(const time_t *, char *);
 #include "val_support.h"
 #include "val_parse.h"
 #include "val_log.h"
+#include "val_crypto.h"
 
 #ifndef HAVE_DECL_P_SECTION
 #include "res_debug.h"
@@ -110,20 +110,6 @@ val_log_rrset(val_context_t * ctx, int level, struct rrset_rec *rrset)
     }
 }
 
-static char    *
-get_base64_string(unsigned char *message, int message_len, char *buf,
-                  int bufsize)
-{
-    BIO            *b64 = BIO_new(BIO_f_base64());
-    BIO            *mem = BIO_new_mem_buf(message, message_len);
-    mem = BIO_push(b64, mem);
-
-    if (-1 == BIO_write(mem, buf, bufsize))
-        strcpy(buf, "");
-    BIO_free_all(mem);
-
-    return buf;
-}
 
 static const char *
 get_algorithm_string(u_int8_t algo)
@@ -305,7 +291,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
     for (next_result = results; next_result;
          next_result = next_result->val_rc_next) {
         struct val_authentication_chain *next_as;
-        next_as = next_result->val_rc_trust;
+        int i;
 
         if (top_q != NULL) {
             VAL_LOG_RESULT(name_n, class_h, type_h,
@@ -313,7 +299,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                            next_result->val_rc_status);
         }
 
-        for (next_as = next_result->val_rc_trust; next_as;
+        for (next_as = next_result->val_rc_answer; next_as;
              next_as = next_as->val_ac_trust) {
 
             if (next_as->val_ac_rrset == NULL) {
@@ -333,6 +319,35 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                                   next_as->val_ac_rrset->val_rrset_data,
                                   (struct name_server *) NULL,
                                   next_as->val_ac_status);
+            }
+        }
+
+        if (next_result->val_rc_proof_count > 0) {
+            val_log(ctx, level, "Proofs Follow", 
+                    p_query_error(top_q->qc_state), top_q->qc_state);
+        }
+        for (i=0; i<next_result->val_rc_proof_count; i++) {
+            for (next_as = next_result->val_rc_proofs[i]; next_as;
+                next_as = next_as->val_ac_trust) {
+
+                if (next_as->val_ac_rrset == NULL) {
+                    val_log(ctx, level, "Assertion status = %s[%d]",
+                            p_as_error(next_as->val_ac_status),
+                            next_as->val_ac_status);
+                } else {
+                    const u_char   *t_name_n;
+                    if (next_as->val_ac_rrset->val_rrset_name_n == NULL)
+                        t_name_n = (const u_char *) "NULL_DATA";
+                    else
+                        t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
+
+                    val_log_assertion(ctx, level, t_name_n,
+                                      next_as->val_ac_rrset->val_rrset_class_h,
+                                      next_as->val_ac_rrset->val_rrset_type_h,
+                                      next_as->val_ac_rrset->val_rrset_data,
+                                      (struct name_server *) NULL,
+                                      next_as->val_ac_status);
+                }
             }
         }
     }
