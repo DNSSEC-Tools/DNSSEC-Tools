@@ -82,7 +82,7 @@ val_sigverify(val_context_t * ctx,
      * Check signature inception and expiration times 
      */
     gettimeofday(&tv, &tz);
-    if (tv.tv_sec < rrsig.sig_incp) {
+    if (tv.tv_sec < rrsig.sig_incp-SIG_ACCEPT_WINDOW) {
         char            currTime[1028];
         char            incpTime[1028];
         int             len;
@@ -102,7 +102,7 @@ val_sigverify(val_context_t * ctx,
         return VAL_A_RRSIG_NOTYETACTIVE;
     }
 
-    if (tv.tv_sec > rrsig.sig_expr) {
+    if (tv.tv_sec > rrsig.sig_expr+SIG_ACCEPT_WINDOW) {
         char            currTime[1028];
         char            exprTime[1028];
         int             len;
