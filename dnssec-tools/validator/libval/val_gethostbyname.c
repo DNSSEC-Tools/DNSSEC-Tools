@@ -316,10 +316,10 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     for (res = results; res != NULL; res = res->val_rc_next) {
         struct val_rrset *rrset;
 
-        if (res->val_rc_trust == NULL)
+        if (res->val_rc_answer == NULL)
             continue;
 
-        rrset = res->val_rc_trust->val_ac_rrset;
+        rrset = res->val_rc_answer->val_ac_rrset;
 
         // Get a count of aliases and addresses
         if (rrset) {
@@ -374,10 +374,10 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     for (res = results; res != NULL; res = res->val_rc_next) {
         struct val_rrset *rrset;
 
-        if (res->val_rc_trust == NULL)
+        if (res->val_rc_answer == NULL)
             continue;
 
-        rrset = res->val_rc_trust->val_ac_rrset;
+        rrset = res->val_rc_answer->val_ac_rrset;
 
         if (rrset) {
             struct rr_rec  *rr = rrset->val_rrset_data;
@@ -691,8 +691,10 @@ val_gethostbyname2_r(val_context_t * ctx,
                 get_hostent_from_response(context, af, ret, results,
                                           h_errnop, buf, buflen, &offset);
 
-            if (*result) {
+            if (results) {
                 *val_status = results->val_rc_status;
+            } else {
+                *val_status = VAL_INDETERMINATE; 
             }
         }
 
