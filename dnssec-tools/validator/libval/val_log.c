@@ -253,21 +253,6 @@ val_log_assertion(const val_context_t * ctx, int level,
     }
 }
 
-#define VAL_LOG_RESULT(name_n, class_h, type_h, serv, status) do {\
-	char name_p[NS_MAXDNAME]; \
-	const char *name_pr, *serv_pr;\
-	if(ns_name_ntop(name_n, name_p, sizeof(name_p)) != -1) \
-		name_pr = name_p;\
-	else\
-		name_pr = "ERR_NAME";\
-	if(serv)\
-		serv_pr = ((serv_pr = get_ns_string(&(serv))) == NULL)?"VAL_CACHE":serv_pr;\
-	else\
-		serv_pr = "NULL";\
-	val_log(ctx, level, "name=%s class=%s type=%s from-server=%s status=%s:%d",\
-		name_pr, p_class(class_h), p_type(type_h), serv_pr, p_val_error(status), status);\
-} while (0)
-
 void
 val_log_authentication_chain(const val_context_t * ctx, int level,
                              u_char * name_n, u_int16_t class_h,
@@ -288,7 +273,18 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
     }
 
     if (top_q != NULL) {
-        val_log(ctx, level, "Query Status = %s[%d]",
+	    char name_p[NS_MAXDNAME]; 
+	    const char *name_pr, *serv_pr;
+	    if(ns_name_ntop(name_n, name_p, sizeof(name_p)) != -1) 
+		    name_pr = name_p;
+	    else
+		    name_pr = "ERR_NAME";
+	    if(top_q->qc_respondent_server)
+		    serv_pr = ((serv_pr = get_ns_string(&(top_q->qc_respondent_server))) == NULL)?"VAL_CACHE":serv_pr;
+	    else
+		    serv_pr = "NULL";
+	    val_log(ctx, level, "name=%s class=%s type=%s from-server=%s, Query-status=%s[%d]",
+		        name_pr, p_class(class_h), p_type(type_h), serv_pr, 
                 p_query_error(top_q->qc_state), top_q->qc_state);
     }
 
@@ -297,11 +293,9 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
         struct val_authentication_chain *next_as;
         int i;
 
-        if (top_q != NULL) {
-            VAL_LOG_RESULT(name_n, class_h, type_h,
-                           top_q->qc_respondent_server,
-                           next_result->val_rc_status);
-        }
+        val_log(ctx, level, "Next Result: %s:%d", 
+                p_val_error(next_result->val_rc_status), 
+                next_result->val_rc_status);
 
         for (next_as = next_result->val_rc_answer; next_as;
              next_as = next_as->val_ac_trust) {
@@ -327,8 +321,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
         }
 
         if (next_result->val_rc_proof_count > 0) {
-            val_log(ctx, level, "Proofs Follow", 
-                    p_query_error(top_q->qc_state), top_q->qc_state);
+            val_log(ctx, level, "Associated Proofs Follow:");
         }
         for (i=0; i<next_result->val_rc_proof_count; i++) {
             for (next_as = next_result->val_rc_proofs[i]; next_as;
