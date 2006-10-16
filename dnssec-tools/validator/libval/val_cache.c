@@ -216,6 +216,12 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
         break;
     }
 
+    /* XXX get_cached_rrset should return a domain_info structure
+     * XXX This is to allow a CNAME chain to be returned
+     * XXX In such cases, the qname_chain will also have to be tweaked 
+     * XXX appropriately
+     * XXX Look for a cached CNAME
+     */  
     prev = NULL;
     while (next_answer) {
 
