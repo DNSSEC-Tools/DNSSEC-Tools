@@ -9,15 +9,13 @@
 #include <strings.h>
 #include <ctype.h>
 #include <stdio.h>
-#include <openssl/bio.h>
-#include <openssl/evp.h>
 
 #include <arpa/nameser.h>
 #include <resolver.h>
 #include <validator.h>
 #include "val_parse.h"
 #include "val_support.h"
-#include "crypto/val_rsamd5.h"
+#include "val_crypto.h"
 
 /*
  * From RFC 4034
@@ -174,8 +172,6 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     char           *keyptr = NULL;
     char           *cp;
     int             bufsize;
-    BIO            *b64;
-    BIO            *mem;
     int             buflen;
     u_char         *buf;
     u_char         *bp;
@@ -228,14 +224,9 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     /*
      * decode the base64 public key 
      */
-    b64 = BIO_new(BIO_f_base64());
-    mem = BIO_new_mem_buf(keyptr, -1);
-    BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-    mem = BIO_push(b64, mem);
-    (*dnskey_rdata)->public_key_len =
-        BIO_read(mem, (*dnskey_rdata)->public_key, bufsize);
-    BIO_free_all(b64);
-    if ((*dnskey_rdata)->public_key_len <= 0) {
+    if(((*dnskey_rdata)->public_key_len = decode_base64_key(keyptr, 
+                    (*dnskey_rdata)->public_key, bufsize)) <= 0) {
+
         FREE((*dnskey_rdata)->public_key);
         FREE(*dnskey_rdata);
         *dnskey_rdata = NULL;
