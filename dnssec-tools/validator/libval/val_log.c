@@ -17,6 +17,8 @@
 #include <resolv.h>
 #if defined(sun) && !defined(__EXTENSIONS__)
 extern char *ctime_r(const time_t *, char *);
+#else
+#include <time.h>
 #endif
 
 #include <resolver.h>
