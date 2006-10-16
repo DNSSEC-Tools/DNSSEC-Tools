@@ -10,9 +10,6 @@
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
-#ifdef LIBVAL_NSEC3
-#include <openssl/sha.h>
-#endif
 
 #include <sys/types.h>
 
@@ -32,6 +29,7 @@
 #include "val_verify.h"
 #include "val_policy.h"
 #include "val_log.h"
+#include "val_crypto.h"
 
 /*
  * Identify if the type is present in the bitmap
@@ -109,6 +107,7 @@ val_free_result_chain(struct val_result_chain *results)
 {
     struct val_result_chain *prev;
     struct val_authentication_chain *trust;
+    int i;
 
     while (NULL != (prev = results)) {
         results = results->val_rc_next;
@@ -116,9 +115,9 @@ val_free_result_chain(struct val_result_chain *results)
         /*
          * free the chain of trust 
          */
-        while (NULL != (trust = prev->val_rc_trust)) {
+        while (NULL != (trust = prev->val_rc_answer)) {
 
-            prev->val_rc_trust = trust->val_ac_trust;
+            prev->val_rc_answer = trust->val_ac_trust;
 
             if (trust->val_ac_rrset != NULL) {
                 if (trust->val_ac_rrset->val_msg_header)
@@ -136,6 +135,31 @@ val_free_result_chain(struct val_result_chain *results)
             }
 
             FREE(trust);
+        }
+
+        for (i=0; i<prev->val_rc_proof_count; i++) {
+
+            if(prev->val_rc_proofs[i] == NULL)
+                break;
+            
+            while (NULL != (trust = prev->val_rc_proofs[i])) {
+                prev->val_rc_proofs[i] = trust->val_ac_trust;
+                if (trust->val_ac_rrset != NULL) {
+                    if (trust->val_ac_rrset->val_msg_header)
+                        FREE(trust->val_ac_rrset->val_msg_header);
+                    if (trust->val_ac_rrset->val_rrset_name_n)
+                        FREE(trust->val_ac_rrset->val_rrset_name_n);
+                    if (trust->val_ac_rrset->val_rrset_data != NULL)
+                        res_sq_free_rr_recs(&trust->val_ac_rrset->
+                                            val_rrset_data);
+                    if (trust->val_ac_rrset->val_rrset_sig != NULL)
+                        res_sq_free_rr_recs(&trust->val_ac_rrset->
+                                            val_rrset_sig);
+
+                    FREE(trust->val_ac_rrset);
+                }
+                FREE(trust);
+            }
         }
 
         FREE(prev);
@@ -200,7 +224,8 @@ add_to_query_chain(struct val_query_chain **queries, u_char * name_n,
     temp->qc_class_h = class_h;
     temp->qc_state = Q_INIT;
     temp->qc_zonecut_n = NULL;
-    temp->qc_as = NULL;
+    temp->qc_ans = NULL;
+    temp->qc_proof = NULL;
     temp->qc_glue_request = 0;
     temp->qc_ns_list = NULL;
     temp->qc_respondent_server = NULL;
@@ -243,7 +268,7 @@ free_query_chain(struct val_query_chain *queries)
 
 }
 
-static          u_int16_t
+u_int16_t
 is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
 {
     struct zone_se_policy *zse_pol, *zse_cur;
@@ -425,9 +450,6 @@ set_ans_kind(u_int8_t * qc_name_n,
         return VAL_BAD_ARGUMENT;
 
     /*
-     * Answer is a Referral if... 
-     */
-    /*
      * Referals won't make it this far, they are handled in digest_response 
      */
 
@@ -550,35 +572,37 @@ name_in_q_names(struct qname_chain *q_names_n, struct rrset_rec *the_set)
     return NOT_IN_QNAMES;
 }
 
-int
+static int
 fails_to_answer_query(struct qname_chain *q_names_n,
                       const u_int16_t q_type_h,
                       const u_int16_t q_class_h,
                       struct rrset_rec *the_set, u_int16_t * status)
 {
-    int             name_present = name_in_q_names(q_names_n, the_set);
-    int             type_match = the_set->rrs.val_rrset_type_h == q_type_h
-        || q_type_h == ns_t_any;
-    int             class_match =
-        the_set->rrs.val_rrset_class_h == q_class_h
-        || q_class_h == ns_c_any;
-    int             data_present = the_set->rrs.val_rrset_data != NULL;
+    int             name_present;
+    int             type_match;
+    int             class_match; 
+    int             data_present;
 
-    if ((NULL == the_set) || (NULL == status))
+    if ((NULL == the_set) || (NULL == q_names_n) || (NULL == status)) {
+        *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
         return TRUE;
+    }
 
     name_present = name_in_q_names(q_names_n, the_set);
-    type_match = the_set->rrs.val_rrset_type_h == q_type_h
-        || q_type_h == ns_t_any;
-    class_match = the_set->rrs.val_rrset_class_h == q_class_h
-        || q_class_h == ns_c_any;
-    data_present = the_set->rrs.val_rrset_data != NULL;
-
-    /*
-     * Could be an empty answer or only RRSIGs 
-     */
-    if (!data_present)
-        return FALSE;
+    type_match = (the_set->rrs.val_rrset_type_h == q_type_h) 
+        || (q_type_h == ns_t_any);
+    class_match = (the_set->rrs.val_rrset_class_h == q_class_h)
+        || (q_class_h == ns_c_any);
+    if (q_type_h != ns_t_rrsig) {
+        data_present = the_set->rrs.val_rrset_data != NULL;
+    } else {
+        data_present = the_set->rrs.val_rrset_sig != NULL;
+    }
+    
+    if (!data_present) {
+        *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+        return TRUE;
+    }
 
     if (!class_match ||
         (!type_match && the_set->rrs_ans_kind == SR_ANS_STRAIGHT) ||
@@ -611,10 +635,10 @@ fails_to_answer_query(struct qname_chain *q_names_n,
  * VAL_BAD_ARGUMENT     Bad argument (eg NULL ptr)
  */
 static int
-add_to_authentication_chain(struct _val_authentication_chain **assertions,
+add_to_authentication_chain(struct val_digested_auth_chain **assertions,
                             struct rrset_rec *rrset)
 {
-    struct _val_authentication_chain *new_as, *first_as, *prev_as;
+    struct val_digested_auth_chain *new_as, *first_as, *prev_as;
     struct rrset_rec *next_rr;
 
     if (NULL == assertions)
@@ -626,8 +650,8 @@ add_to_authentication_chain(struct _val_authentication_chain **assertions,
     next_rr = rrset;
     while (next_rr) {
 
-        new_as = (struct _val_authentication_chain *)
-            MALLOC(sizeof(struct _val_authentication_chain));
+        new_as = (struct val_digested_auth_chain *)
+            MALLOC(sizeof(struct val_digested_auth_chain));
 
         new_as->_as.ac_data = copy_rrset_rec(next_rr);
 
@@ -660,7 +684,7 @@ add_to_authentication_chain(struct _val_authentication_chain **assertions,
  * Free up the authentication chain.
  */
 void
-free_authentication_chain(struct _val_authentication_chain *assertions)
+free_authentication_chain(struct val_digested_auth_chain *assertions)
 {
 
     if (assertions == NULL)
@@ -685,7 +709,7 @@ free_authentication_chain(struct _val_authentication_chain *assertions)
 static int
 build_pending_query(val_context_t * context,
                     struct val_query_chain **queries,
-                    struct _val_authentication_chain *as)
+                    struct val_digested_auth_chain *as)
 {
     u_int8_t       *signby_name_n;
     u_int16_t       tzonestatus;
@@ -717,6 +741,18 @@ build_pending_query(val_context_t * context,
     if (tzonestatus != VAL_A_WAIT_FOR_TRUST) {
         as->val_ac_status = tzonestatus;
         return VAL_NO_ERROR;
+    }
+
+    /*
+     * Check if this is a DNSKEY and it is trusted
+     */
+    if (as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
+
+        as->val_ac_status =
+            is_trusted_key(context, as->_as.ac_data->rrs.val_rrset_name_n,
+                           as->_as.ac_data->rrs.val_rrset_data);
+        if (as->val_ac_status != VAL_A_WAIT_FOR_TRUST)
+            return VAL_NO_ERROR;
     }
 
     if (as->_as.ac_data->rrs.val_rrset_sig == NULL) {
@@ -757,12 +793,6 @@ build_pending_query(val_context_t * context,
      */
     if (as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
 
-        as->val_ac_status =
-            is_trusted_key(context, signby_name_n,
-                           as->_as.ac_data->rrs.val_rrset_data);
-        if (as->val_ac_status != VAL_A_WAIT_FOR_TRUST)
-            return VAL_NO_ERROR;
-
         /*
          * Create a query for missing data 
          */
@@ -788,6 +818,15 @@ build_pending_query(val_context_t * context,
     return VAL_NO_ERROR;
 }
 
+/* XXX Move function definition up */
+static int
+check_conflicting_answers(val_context_t * context,
+                          struct val_digested_auth_chain *as, 
+                          struct val_query_chain **queries,
+                          struct val_query_chain *matched_q,
+                          struct qname_chain *q_names_n, 
+                          u_int16_t type_h, u_int16_t class_h,
+                          u_int8_t flags); 
 
 /*
  * Read the response that came in and create assertions from it. Set the state
@@ -796,7 +835,6 @@ build_pending_query(val_context_t * context,
  * 
  * Returns:
  * VAL_NO_ERROR                 Operation completed successfully
- * SR_CALL_ERROR        If the name could not be converted from host to network format
  *
  */
 static int
@@ -804,25 +842,25 @@ assimilate_answers(val_context_t * context,
                    struct val_query_chain **queries,
                    struct domain_info *response,
                    struct val_query_chain *matched_q,
-                   struct _val_authentication_chain **assertions,
+                   struct val_digested_auth_chain **assertions,
                    u_int8_t flags)
 {
     int             retval;
-    struct _val_authentication_chain *as = NULL;
     u_int16_t       type_h;
     u_int16_t       class_h;
-    u_int8_t        kind = SR_ANS_UNSET;
-
+    
     if (matched_q == NULL)
         return VAL_NO_ERROR;
 
-    if ((NULL == queries) || (NULL == response) || (NULL == assertions))
-        return VAL_BAD_ARGUMENT;        // xxx-audit: or SR_??
+    if ((NULL == queries) || (NULL == response) 
+         || ((NULL == response->di_qnames)) 
+         || (NULL == assertions) || (matched_q == NULL))
+        return VAL_BAD_ARGUMENT; 
 
     type_h = response->di_requested_type_h;
     class_h = response->di_requested_class_h;
 
-    if (matched_q->qc_as != NULL) {
+    if ((matched_q->qc_ans != NULL) || (matched_q->qc_proof != NULL)) {
         /*
          * We already had an assertion for this query 
          */
@@ -830,25 +868,63 @@ assimilate_answers(val_context_t * context,
         return VAL_NO_ERROR;
     }
 
-    if (response->di_rrset == NULL) {
+    if ((response->di_answers == NULL) 
+         && (response->di_proofs == NULL)) {
         matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
         return VAL_NO_ERROR;
     }
 
     /*
-     * Create an assertion for the response data 
+     * Create assertion for the response answers and proof 
      */
-    if (VAL_NO_ERROR !=
-        (retval =
-         add_to_authentication_chain(assertions, response->di_rrset)))
-        return retval;
 
-    as = *assertions;           /* The first value in the list is the most recent element */
+    if (response->di_answers) {
+        if (VAL_NO_ERROR !=
+            (retval =
+            add_to_authentication_chain(assertions, response->di_answers)))
+            return retval;
+        /*
+         * Link the assertion to the query
+         */
+        matched_q->qc_ans = *assertions;
+        if (VAL_NO_ERROR != (retval = 
+                    check_conflicting_answers(context, *assertions, queries, 
+                        matched_q, response->di_qnames, type_h, class_h, flags))) {
+            return retval;
+        }
+    } 
+    
+    if (response->di_proofs) {
+        if (VAL_NO_ERROR !=
+            (retval =
+            add_to_authentication_chain(assertions, response->di_proofs)))
+            return retval;
 
-    /*
-     * Link the original query to the above assertion 
-     */
-    matched_q->qc_as = as;
+        /*
+         * Link the assertion to the query
+         */
+        matched_q->qc_proof = *assertions;
+        if (VAL_NO_ERROR != (retval = 
+                    check_conflicting_answers(context, *assertions, queries, 
+                        matched_q, response->di_qnames, type_h, class_h, flags))) {
+            return retval;
+        }
+    }
+    return VAL_NO_ERROR;
+}
+
+
+static int
+check_conflicting_answers(val_context_t * context,
+                          struct val_digested_auth_chain *as, 
+                          struct val_query_chain **queries,
+                          struct val_query_chain *matched_q,
+                          struct qname_chain *q_names_n, 
+                          u_int16_t type_h, u_int16_t class_h,
+                          u_int8_t flags) 
+{
+    int             retval;
+    u_int8_t        kind = SR_ANS_UNSET;
 
     /*
      * Identify the state for each of the assertions obtained 
@@ -859,12 +935,10 @@ assimilate_answers(val_context_t * context,
          * Cover error conditions first 
          * SOA checks will appear during sanity checks later on 
          */
-        // xxx-audit: ptr deref w/out NULL check (response->di_qnames)
-        if ((NULL == response->di_qnames) ||    // xxx-check: is continue ok in this case??
-            (set_ans_kind(response->di_qnames->qnc_name_n, type_h, class_h,
+        if ((set_ans_kind(q_names_n->qnc_name_n, type_h, class_h,
                           as->_as.ac_data,
                           &as->val_ac_status) != VAL_NO_ERROR)
-            || fails_to_answer_query(response->di_qnames, type_h, class_h,
+            || fails_to_answer_query(q_names_n, type_h, class_h,
                                      as->_as.ac_data,
                                      &as->val_ac_status)) {
 
@@ -887,16 +961,7 @@ assimilate_answers(val_context_t * context,
                 break;
 
             case SR_ANS_CNAME:
-                if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME) &&
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) &&
-#ifdef LIBVAL_NSEC3
-                    /*
-                     * check if there is a mix of NSEC and NSEC3 later in the proof 
-                     */
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
-#endif
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC)) {
+                if (as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) {
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                 }
@@ -926,8 +991,7 @@ assimilate_answers(val_context_t * context,
                      */
                     (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
 #endif
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) &&
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) { 
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                 }
@@ -941,10 +1005,9 @@ assimilate_answers(val_context_t * context,
                      */
                     (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
 #endif
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA) &&
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
-                    matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                    (1 == 1)) {
+
+                    matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                 }
                 break;
 
@@ -957,7 +1020,7 @@ assimilate_answers(val_context_t * context,
             }
         }
 
-        if (flags & F_DONT_VALIDATE)
+        if (flags & VAL_FLAGS_DONT_VALIDATE)
             as->val_ac_status = VAL_A_DONT_VALIDATE;
         else if (!matched_q->qc_glue_request) {
             if (VAL_NO_ERROR !=
@@ -967,6 +1030,208 @@ assimilate_answers(val_context_t * context,
 
     }
     return VAL_NO_ERROR;
+}
+
+static int
+transform_authentication_chain(struct val_digested_auth_chain *top_as, 
+                               struct val_authentication_chain **a_chain)
+{
+    struct val_authentication_chain *n_ac, *prev_ac;
+    struct val_digested_auth_chain *o_ac;
+
+    if (a_chain == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    (*a_chain) = NULL;
+    prev_ac = NULL;
+    for (o_ac = top_as; o_ac; o_ac = o_ac->val_ac_trust) {
+
+        n_ac = (struct val_authentication_chain *)
+            MALLOC(sizeof(struct val_authentication_chain));
+        if (n_ac == NULL){
+            return VAL_OUT_OF_MEMORY;
+        }
+        memset(n_ac, 0, sizeof(struct val_authentication_chain));
+        n_ac->val_ac_status = o_ac->val_ac_status;
+        n_ac->val_ac_trust = NULL;
+
+        if (o_ac->val_ac_rrset != NULL) {
+            int             len;
+
+            n_ac->val_ac_rrset =
+                (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
+            if (n_ac->val_ac_rrset == NULL) {
+                return VAL_OUT_OF_MEMORY;
+            }
+            memset(n_ac->val_ac_rrset, 0, sizeof(struct val_rrset));
+
+            // xxx- bug 1537734: potential memory leak
+            //     not just in this loop iteration, but previous as well.
+            //     iterate over head_ac & preforms frees?
+            CLONE_NAME_LEN(o_ac->val_ac_rrset->val_msg_header,
+                           o_ac->val_ac_rrset->val_msg_headerlen,
+                           n_ac->val_ac_rrset->val_msg_header,
+                           n_ac->val_ac_rrset->val_msg_headerlen);
+
+            len = wire_name_length(o_ac->val_ac_rrset->val_rrset_name_n);
+            n_ac->val_ac_rrset->val_rrset_name_n =
+                (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+            // xxx-audit: memory leak, no release of prior allocs before return
+            //     not just in this loop iteration, but previous as well.
+            //     iterate over head_ac & preforms frees?
+            if (n_ac->val_ac_rrset->val_rrset_name_n == NULL)
+                return VAL_OUT_OF_MEMORY;
+            memcpy(n_ac->val_ac_rrset->val_rrset_name_n,
+                   o_ac->val_ac_rrset->val_rrset_name_n, len);
+
+            n_ac->val_ac_rrset->val_rrset_class_h =
+                o_ac->val_ac_rrset->val_rrset_class_h;
+            n_ac->val_ac_rrset->val_rrset_type_h =
+                o_ac->val_ac_rrset->val_rrset_type_h;
+            n_ac->val_ac_rrset->val_rrset_ttl_h =
+                o_ac->val_ac_rrset->val_rrset_ttl_h;
+            n_ac->val_ac_rrset->val_rrset_ttl_x =
+                o_ac->val_ac_rrset->val_rrset_ttl_x;
+            n_ac->val_ac_rrset->val_rrset_section =
+                o_ac->val_ac_rrset->val_rrset_section;
+            n_ac->val_ac_rrset->val_rrset_data =
+                copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
+                                 o_ac->val_ac_rrset->val_rrset_data, 0);
+            n_ac->val_ac_rrset->val_rrset_sig =
+                copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
+                                 o_ac->val_ac_rrset->val_rrset_sig, 0);
+        }
+
+        if ((*a_chain) == NULL) {
+            (*a_chain) = n_ac;
+        } else {
+            prev_ac->val_ac_trust = n_ac;
+        }
+        prev_ac = n_ac;
+    }
+
+    return VAL_NO_ERROR;
+    
+}
+
+#define CREATE_RESULT_BLOCK(new_res, prev_res, head_res) do {\
+    new_res = (struct val_result_chain *) MALLOC (sizeof(struct val_result_chain));\
+    if (new_res == NULL) {\
+        return VAL_OUT_OF_MEMORY;\
+    } \
+    (new_res)->val_rc_answer = NULL;\
+    memset((new_res)->val_rc_proofs, 0, sizeof((new_res)->val_rc_proofs));\
+    (new_res)->val_rc_proof_count = 0;\
+    (new_res)->val_rc_next = NULL;\
+    if (prev_res == NULL) {\
+        head_res = new_res;\
+    } else {\
+        prev_res->val_rc_next = new_res;\
+    }\
+    prev_res = new_res;\
+} while(0)
+
+/*
+ * If proof_res is not NULL, if w_res is of type proof, store it in proof_res
+ * else create a new val_result_chain structure for w_res, add add it to the
+ * end of results. The new result (if created) or proof_res (if this was used)
+ * is returned in *mod_res 
+ */
+static int
+transform_single_result(struct val_internal_result *w_res, 
+                        struct val_result_chain **results,
+                        struct val_result_chain *proof_res, 
+                        struct val_result_chain **mod_res)
+{    
+    struct val_authentication_chain **aptr;
+    struct val_result_chain *prev_res;
+
+    if ((results == NULL) || (mod_res == NULL) || (w_res == NULL))
+        return VAL_BAD_ARGUMENT;
+    
+    /* get a pointer to the last result */    
+    prev_res = *results;
+    while(prev_res && prev_res->val_rc_next) {
+        prev_res = prev_res->val_rc_next;
+    }
+
+    *mod_res = NULL;
+    aptr = NULL;
+    if (w_res->val_rc_is_proof) {
+        if (proof_res) {
+            if (proof_res->val_rc_proof_count == MAX_PROOFS) {
+                proof_res->val_rc_status = VAL_R_BOGUS_PROOF;
+                *mod_res = proof_res;
+                return VAL_NO_ERROR;
+            } else {
+                aptr = &proof_res->val_rc_proofs[proof_res->val_rc_proof_count];
+            }
+        } else {
+            CREATE_RESULT_BLOCK(proof_res, prev_res, *results);
+            aptr = &proof_res->val_rc_proofs[0];
+        }
+        proof_res->val_rc_proof_count++;
+        *mod_res = proof_res;
+    } else {
+        CREATE_RESULT_BLOCK(proof_res, prev_res, *results);
+        aptr = &proof_res->val_rc_answer;
+        *mod_res = proof_res;
+    }
+    *aptr = NULL;
+    w_res->val_rc_consumed = 1;
+  
+    return transform_authentication_chain(w_res->val_rc_rrset, aptr);
+}
+
+/*
+ * Transform the val_internal_result structure
+ * into the results structure. If proofs exist, they are placed
+ * together in a single val_result_chain structure.
+ */
+static int
+transform_outstanding_results(struct val_internal_result *w_results, 
+                  struct val_result_chain **results, const u_int8_t flags)
+{
+    struct val_internal_result *w_res;
+    struct val_result_chain *new_res, *proof_res;
+    int retval;
+
+    if (results == NULL)
+        return VAL_BAD_ARGUMENT;
+    
+    proof_res = NULL;
+    w_res = w_results;
+    /* for each remaining internal result */
+    while(w_res) {
+
+        if (!w_res->val_rc_consumed) {
+            if (VAL_NO_ERROR != (retval = transform_single_result(w_res, results, proof_res, &new_res))) {
+                goto err;
+            }
+            
+            if (w_res->val_rc_is_proof) {
+                proof_res = new_res;
+                if (flags & VAL_FLAGS_DONT_VALIDATE) {
+                    proof_res->val_rc_status = w_res->val_rc_status;
+                } else {
+                    /* remaining proofs are bogus */
+                    proof_res->val_rc_status = VAL_R_BOGUS;
+                }
+            } else {
+                /* Update the result */
+                new_res->val_rc_status = w_res->val_rc_status;
+            }
+        }
+
+        w_res = w_res->val_rc_next;
+    }
+    return VAL_NO_ERROR;
+
+err:
+    /* free actual results */
+    val_free_result_chain(*results);
+    *results = NULL;
+    return retval;
 }
 
 
@@ -1027,7 +1292,22 @@ prove_nsec_wildcard_check(val_context_t * ctx,
              nsec_bit_field, qc_type_h)) {
             val_log(ctx, LOG_DEBUG, "NSEC error: type exists at wildcard");
             *status = VAL_R_BOGUS_PROOF;
+        } else if (is_type_set
+            ((&
+              (wcard_proof->rrs.val_rrset_data->rr_rdata[nsec_bit_field])),
+             wcard_proof->rrs.val_rrset_data->rr_rdata_length_h -
+             nsec_bit_field, ns_t_cname)) {
+            val_log(ctx, LOG_DEBUG, "NSEC error: CNAME exists at wildcard");
+            *status = VAL_R_BOGUS_PROOF;
+        } else if (is_type_set
+            ((&
+              (wcard_proof->rrs.val_rrset_data->rr_rdata[nsec_bit_field])),
+             wcard_proof->rrs.val_rrset_data->rr_rdata_length_h -
+             nsec_bit_field, ns_t_dname)) {
+            val_log(ctx, LOG_DEBUG, "NSEC error: DNAME exists at wildcard");
+            *status = VAL_R_BOGUS_PROOF;
         }
+        
     } else if ((nxtname == NULL) ||
                (namecmp(domain_name_n, wcard_proof->rrs.val_rrset_name_n) <
                 0) || (namecmp(nxtname, domain_name_n) < 0)) {
@@ -1038,7 +1318,7 @@ prove_nsec_wildcard_check(val_context_t * ctx,
 }
 
 static void
-nsec_proof_chk(val_context_t * ctx,
+prove_nsec_span_chk(val_context_t * ctx,
                struct rrset_rec *the_set, u_int8_t * qc_name_n,
                u_int16_t qc_type_h, u_int8_t * soa_name_n, int *span_chk,
                int *wcard_chk, struct rrset_rec **wcard_proof,
@@ -1049,7 +1329,6 @@ nsec_proof_chk(val_context_t * ctx,
 
     if (!namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)) {
         struct rr_rec  *sig;
-        int             wcard;
 
         /*
          * NSEC owner = query name & q_type not in list 
@@ -1064,6 +1343,22 @@ nsec_proof_chk(val_context_t * ctx,
                     "NSEC error: Type exists at NSEC record");
             *status = VAL_R_BOGUS_PROOF;
             return;
+        } else if (is_type_set
+            ((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])),
+             the_set->rrs.val_rrset_data->rr_rdata_length_h -
+             nsec_bit_field, ns_t_cname)) {
+            val_log(ctx, LOG_DEBUG,
+                    "NSEC error: CNAME exists at NSEC record, but was not checked");
+            *status = VAL_R_BOGUS_PROOF;
+            return;
+        } else if (is_type_set
+            ((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])),
+             the_set->rrs.val_rrset_data->rr_rdata_length_h -
+             nsec_bit_field, ns_t_dname)) {
+            val_log(ctx, LOG_DEBUG,
+                    "NSEC error: DNAME exists at NSEC record, but was not checked");
+            *status = VAL_R_BOGUS_PROOF;
+            return;
         }
 
         *span_chk = 1;
@@ -1072,15 +1367,13 @@ nsec_proof_chk(val_context_t * ctx,
         /*
          * if the label count in the RRSIG equals the labels
          * in the nsec owner name, wildcard absence is also proved
-         * Be sure to check the label count in an RRSIG that was 
-         * verified
+         * If a wildcard was used, the status would be 
+         * VAL_A_WCARD_VERIFIED instead of VAL_A_RRSIG_VERIFIED
+         * proofs should not be expanded from wildcards
          */
         for (sig = the_set->rrs.val_rrset_sig; sig; sig = sig->rr_next) {
-            if ((sig->rr_status == VAL_A_RRSIG_VERIFIED) &&
-                (VAL_NO_ERROR ==
-                 check_label_count(the_set, sig, &wcard))) {
-                if (wcard == 0)
-                    *wcard_chk = 1;
+            if (sig->rr_status == VAL_A_RRSIG_VERIFIED) { 
+                *wcard_chk = 1;
                 return;
             }
         }
@@ -1161,8 +1454,6 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qc_name_n,
                    u_int8_t saltlen, u_int8_t * salt,
                    u_int8_t * b32_hashlen, u_int8_t ** b32_hash)
 {
-    SHA_CTX         c;
-    int             i;
     int             name_len;
     struct nsec3_max_iter_policy *pol, *cur;
     u_int8_t       *p, *q;
@@ -1226,43 +1517,24 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qc_name_n,
         }
     }
 
-    hashlen = SHA_DIGEST_LENGTH;
-    hash = (u_int8_t *) MALLOC(SHA_DIGEST_LENGTH * sizeof(u_int8_t));
-    if (hash == NULL)
+    if(NULL == nsec3_sha_hash_compute(qc_name_n, salt, saltlen, iter, &hash, &hashlen))
         return NULL;
-
-    memset(hash, 0, SHA_DIGEST_LENGTH);
-
-    /*
-     * IH(salt, x, 0) = H( x || salt) 
-     */
-    SHA1_Init(&c);
-    SHA1_Update(&c, qc_name_n, wire_name_length(qc_name_n));
-    SHA1_Update(&c, salt, saltlen);
-    SHA1_Final(hash, &c);
-
-    /*
-     * IH(salt, x, k) = H(IH(salt, x, k-1) || salt) 
-     */
-    for (i = 0; i < iter; i++) {
-        SHA1_Init(&c);
-        SHA1_Update(&c, hash, hashlen);
-        SHA1_Update(&c, salt, saltlen);
-        SHA1_Final(hash, &c);
-    }
 
     base32hex_encode(hash, hashlen, b32_hash, b32_hashlen);
     FREE(hash);
     return *b32_hash;
 }
 
-static void
-nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
+static int
+nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
+                struct val_result_chain **proof_res,
+                struct val_result_chain **results,
                 u_int8_t * qc_name_n, u_int16_t qc_type_h,
                 u_int8_t * soa_name_n, val_status_t * status)
 {
 
-    struct _val_result_chain *res;
+    struct val_result_chain *new_res;
+    struct val_internal_result *res;
     u_int8_t        hashlen;
     u_int8_t        nsec3_hashlen;
     val_nsec3_rdata_t nd;
@@ -1273,6 +1545,9 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
     u_int8_t       *hash = NULL;
     u_int8_t       *nsec3_hash = NULL;
     int             optout = 0;
+    struct val_internal_result *ncn_res = NULL;
+    struct val_internal_result *cpe_res = NULL;
+    int retval;
 
     cp = qc_name_n;
 
@@ -1285,12 +1560,14 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
             break;
         }
 
-        for (res = results;
-             res && res->val_rc_trust && res->val_rc_trust->_as.ac_data;
-             res = res->val_rc_next) {
+        for (res = w_results; res; res = res->val_rc_next) {
+            struct rrset_rec *the_set;
 
-            struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
+            if (!res->val_rc_is_proof) {
+                continue;
+            }
 
+            the_set = res->val_rc_rrset->_as.ac_data;
             if (the_set->rrs_ans_kind != SR_ANS_NACK_NSEC3)
                 continue;
 
@@ -1306,7 +1583,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                                       rr_rdata_length_h, &nd)) {
                 val_log(ctx, LOG_DEBUG, "Cannot parse NSEC3 rdata");
                 *status = VAL_R_BOGUS_PROOF;
-                return;
+                return VAL_NO_ERROR;
             }
 
             /*
@@ -1320,7 +1597,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                         "Cannot compute NSEC3 hash with given params");
                 *status = VAL_R_BOGUS_PROOF;
                 FREE(nd.nexthash);
-                return;
+                return VAL_NO_ERROR;
             }
 
             /*
@@ -1329,7 +1606,6 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
             if ((nsec3_hashlen == hashlen)
                 && !memcmp(hash, nsec3_hash, hashlen)) {
                 struct rr_rec  *sig;
-                int             wcard;
                 int             nsec3_bm_len =
                     the_set->rrs.val_rrset_data->rr_rdata_length_h -
                     nd.bit_field;
@@ -1338,6 +1614,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                  * This is the closest provable encounter 
                  */
                 cpe = cp;
+                cpe_res = res;
 #if 0
                 /*
                  * NS can only be set if the SOA bit is set 
@@ -1362,7 +1639,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                     *status = VAL_R_BOGUS_PROOF;
                     FREE(nd.nexthash);
                     FREE(hash);
-                    return;
+                    return VAL_NO_ERROR;
                 }
 #endif
                 /*
@@ -1373,48 +1650,76 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                      * this is the query name 
                      * make sure that type is missing 
                      */
-
                     if (is_type_set
                         ((&
                           (the_set->rrs.val_rrset_data->
                            rr_rdata[nd.bit_field])), nsec3_bm_len,
                          qc_type_h)) {
                         val_log(ctx, LOG_DEBUG,
-                                "NSEC3 error: hashes equal but type is present");
+                                "NSEC3 error: Type exists at NSEC3 record");
                         *status = VAL_R_BOGUS_PROOF;
                         FREE(nd.nexthash);
                         FREE(hash);
-                        return;
+                        return VAL_NO_ERROR;
+                    } else if (is_type_set
+                        ((&
+                          (the_set->rrs.val_rrset_data->
+                           rr_rdata[nd.bit_field])), nsec3_bm_len,
+                         ns_t_cname)) {
+                        val_log(ctx, LOG_DEBUG,
+                                "NSEC3 error: CNAME exists at NSEC3 record, but was not checked");
+                        *status = VAL_R_BOGUS_PROOF;
+                        FREE(nd.nexthash);
+                        FREE(hash);
+                        return VAL_NO_ERROR;
+                    } else if (is_type_set
+                        ((&
+                          (the_set->rrs.val_rrset_data->
+                           rr_rdata[nd.bit_field])), nsec3_bm_len,
+                         ns_t_dname)) {
+                        val_log(ctx, LOG_DEBUG,
+                                "NSEC3 error: DNAME exists at NSEC3 record, but was not checked");
+                        *status = VAL_R_BOGUS_PROOF;
+                        FREE(nd.nexthash);
+                        FREE(hash);
+                        return VAL_NO_ERROR;
                     }
 
-                    ncn = cp;
-                    *status = VAL_NONEXISTENT_TYPE;
+                    /* This proof is relevant */
+                    if (VAL_NO_ERROR != 
+                            (retval = 
+                            transform_single_result(res, results, 
+                                *proof_res, &new_res))) {
+                        goto err;
+                    }
+                    *proof_res = new_res;
 
                     /*
                      * if the label count in the RRSIG equals the labels
                      * in the nsec owner name, wildcard absence is also proved
-                     * Be sure to check the label count in an RRSIG that was 
-                     * verified
+                     * If a wildcard was used, the status would be 
+                     * VAL_A_WCARD_VERIFIED instead of VAL_A_RRSIG_VERIFIED
+                     * Proofs sould not be expanded from wildcards
                      */
                     for (sig = the_set->rrs.val_rrset_sig; sig;
                          sig = sig->rr_next) {
-                        if ((sig->rr_status == VAL_A_RRSIG_VERIFIED)
-                            && (VAL_NO_ERROR ==
-                                check_label_count(the_set, sig, &wcard))) {
-                            if (wcard == 0) {
-                                /*
-                                 * proof complete 
-                                 */
-                                FREE(nd.nexthash);
-                                FREE(hash);
-                                return;
-                            }
+                        if (sig->rr_status == VAL_A_RRSIG_VERIFIED){
                             /*
-                             * still need to do wildcard check 
+                             * proof complete 
                              */
-                            break;
+                            *status = VAL_NONEXISTENT_TYPE;
+                            (*proof_res)->val_rc_status = *status;
+                            FREE(nd.nexthash);
+                            FREE(hash);
+                            return VAL_NO_ERROR;
                         }
                     }
+
+                    *status = VAL_R_BOGUS_PROOF;
+                    (*proof_res)->val_rc_status = *status;
+                    FREE(nd.nexthash);
+                    FREE(hash);
+                    return VAL_NO_ERROR;
                 }
             }
 
@@ -1425,6 +1730,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                 (nsec3_hash, nsec3_hashlen, nd.nexthash, nd.nexthashlen,
                  hash, hashlen)) {
                 ncn = cp;
+                ncn_res = res;
                 if (nd.optout) {
                     optout = 1;
                 } else {
@@ -1442,13 +1748,31 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
         cp += cp[0] + 1;
     }
 
+
+    if (ncn_res) {
+        /* This proof is relevant */
+        if (VAL_NO_ERROR != (retval = transform_single_result(ncn_res, results, 
+                                *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
+    }
+    if (cpe_res && (cpe_res != ncn_res)) {
+        /* This proof is relevant */
+        if (VAL_NO_ERROR != (retval = transform_single_result(cpe_res, results, 
+                                *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
+    }
+    
     if (!ncn || !cpe) {
         if (!ncn)
             val_log(ctx, LOG_DEBUG, "NSEC3 error: NCN was not found");
         if (!cpe)
             val_log(ctx, LOG_DEBUG, "NSEC3 error: CPE was not found");
         *status = VAL_R_INCOMPLETE_PROOF;
-        return;
+        return VAL_NO_ERROR;
     }
 
     /*
@@ -1458,14 +1782,14 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
         val_log(ctx, LOG_DEBUG,
                 "NSEC3 error: NCN is not one label greater than CPE");
         *status = VAL_R_BOGUS_PROOF;
-        return;
+        return VAL_NO_ERROR;
     }
 
     if (NS_MAXCDNAME < wire_name_length(cpe) + 2) {
         val_log(ctx, LOG_DEBUG,
                 "NSEC3 Error: label length with wildcard exceeds bounds");
         *status = VAL_R_BOGUS_PROOF;
-        return;
+        return VAL_NO_ERROR;
     }
     /*
      * Check for wildcard 
@@ -1478,10 +1802,11 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
     wc_n[1] = 0x2a;             /* for the '*' character */
     memcpy(&wc_n[2], cpe, wire_name_length(cpe));
 
-    for (res = results;
-         res && res->val_rc_trust && res->val_rc_trust->_as.ac_data;
-         res = res->val_rc_next) {
-        struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
+    for (res = w_results; res; res = res->val_rc_next) {
+        if (!res->val_rc_rrset) {
+            continue;
+        }
+        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
         if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
 
             nsec3_hashlen = the_set->rrs.val_rrset_name_n[0];
@@ -1497,7 +1822,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                 val_log(ctx, LOG_DEBUG,
                         "NSEC3 error: Cannot parse NSEC3 rdata");
                 *status = VAL_R_BOGUS_PROOF;
-                return;
+                return VAL_NO_ERROR;
             }
 
             /*
@@ -1511,7 +1836,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                         "NSEC3 error: Cannot compute hash with given params");
                 FREE(nd.nexthash);
                 *status = VAL_R_BOGUS_PROOF;
-                return;
+                return VAL_NO_ERROR;
             }
             if (!nsec3_order_cmp(nsec3_hash, nsec3_hashlen, hash, hashlen)) {
                 /*
@@ -1526,11 +1851,29 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                     val_log(ctx, LOG_DEBUG,
                             "NSEC3 error: wildcard proof does not prove non-existence");
                     *status = VAL_R_BOGUS_PROOF;
+                } else if (is_type_set
+                    ((&
+                      (the_set->rrs.val_rrset_data->
+                       rr_rdata[nd.bit_field])),
+                     the_set->rrs.val_rrset_data->rr_rdata_length_h -
+                     nd.bit_field, ns_t_cname)) {
+                    val_log(ctx, LOG_DEBUG,
+                            "NSEC3 error: wildcard proof has CNAME");
+                    *status = VAL_R_BOGUS_PROOF;
+                } else if (is_type_set
+                    ((&
+                      (the_set->rrs.val_rrset_data->
+                       rr_rdata[nd.bit_field])),
+                     the_set->rrs.val_rrset_data->rr_rdata_length_h -
+                     nd.bit_field, ns_t_dname)) {
+                    val_log(ctx, LOG_DEBUG,
+                            "NSEC3 error: wildcard proof has DNAME");
+                    *status = VAL_R_BOGUS_PROOF;
                 } else
                     *status = VAL_NONEXISTENT_TYPE;
                 FREE(nd.nexthash);
                 FREE(hash);
-                return;
+                return VAL_NO_ERROR;
             } else
                 if (CHECK_RANGE
                     (nsec3_hash, nsec3_hashlen, nd.nexthash,
@@ -1545,7 +1888,7 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
                 } else {
                     *status = VAL_NONEXISTENT_NAME;
                 }
-                return;
+                return VAL_NO_ERROR;
             }
 
             FREE(nd.nexthash);
@@ -1558,25 +1901,108 @@ nsec3_proof_chk(val_context_t * ctx, struct _val_result_chain *results,
      * Could not find a proof covering the wildcard 
      */
     *status = VAL_R_BOGUS_PROOF;
+    return VAL_NO_ERROR;
+    
+err:
+    /* free actual results */
+    val_free_result_chain(*results);
+    *results = NULL;
+    *proof_res = NULL;
+    return retval;
 }
 #endif
 
-static void
-prove_nonexistence(val_context_t * ctx, struct val_query_chain *top_q,
-                   struct _val_result_chain *results)
+
+
+static int
+nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
+                struct val_result_chain **proof_res,
+                struct val_result_chain **results,
+                u_int8_t * qc_name_n, u_int16_t qc_type_h,
+                u_int8_t * soa_name_n, val_status_t * status)
 {
-    struct _val_result_chain *res;
+    struct val_internal_result *res;
     int             wcard_chk = 0;
     int             span_chk = 0;
-    int             provably_unsecure = 0;
-    val_status_t    status = VAL_R_DONT_KNOW;
-    u_int8_t       *soa_name_n = NULL;
     u_int8_t       *closest_encounter = NULL;
     struct rrset_rec *wcard_proof = NULL;
-    char            name_p[NS_MAXDNAME];
+    struct val_result_chain *new_res;
+    int retval;
 
-    if (NULL == top_q)
-        return;
+    for (res = w_results; res; res = res->val_rc_next) {
+        if (!res->val_rc_is_proof) 
+            continue;
+        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
+        prove_nsec_span_chk(ctx, the_set, qc_name_n,
+                       qc_type_h, soa_name_n, &span_chk,
+                       &wcard_chk, &wcard_proof,
+                       &closest_encounter, status);
+        if (*status != VAL_R_DONT_KNOW) {
+            /* This proof is relevant */
+            if (VAL_NO_ERROR != 
+                        (retval = transform_single_result(res, results, 
+                                 *proof_res, &new_res))) {
+                    goto err;
+            }
+            *proof_res = new_res;
+            break;
+        }
+    }
+
+    if (!span_chk)
+        *status = VAL_R_INCOMPLETE_PROOF;
+    else if (!wcard_chk) {
+        if (!closest_encounter)
+            *status = VAL_R_INCOMPLETE_PROOF;
+        else {
+            prove_nsec_wildcard_check(ctx, qc_type_h,
+                                      wcard_proof,
+                                      closest_encounter, status);
+            /* This proof is relevant */
+            if (VAL_NO_ERROR != (retval = 
+                            transform_single_result(res, results, 
+                            *proof_res, &new_res))) {
+                goto err;
+            }
+            *proof_res = new_res;
+        }
+    }
+    return VAL_NO_ERROR;
+
+err:
+    /* free actual results */
+    val_free_result_chain(*results);
+    *results = NULL;
+    *proof_res = NULL;
+    return retval;
+}
+
+                        
+static int
+prove_nonexistence( val_context_t * ctx, 
+                    struct val_internal_result *w_results,
+                    struct val_result_chain **proof_res,
+                    struct val_result_chain **results,
+                    struct val_query_chain *top_q,
+                    val_status_t *status)
+{
+    struct val_internal_result *res;
+    int             provably_unsecure = 0;
+    u_int8_t       *soa_name_n = NULL;
+    char            name_p[NS_MAXDNAME];
+    int retval;
+
+    int             nsec = 0;
+    int             proof_seen = 0;
+#ifdef LIBVAL_NSEC3
+    int             nsec3 = 0;
+#endif
+
+    if (proof_res == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *proof_res = NULL;
+    *status = VAL_R_DONT_KNOW;
 
     if (-1 == ns_name_ntop(top_q->qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
@@ -1592,11 +2018,18 @@ prove_nonexistence(val_context_t * ctx, struct val_query_chain *top_q,
      * inspect the SOA record first 
      */
     // XXX Can we assume that the SOA record is always present?
-    for (res = results;
-         res && res->val_rc_trust && res->val_rc_trust->_as.ac_data;
-         res = res->val_rc_next) {
-        struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
-        if (the_set->rrs_ans_kind == SR_ANS_NACK_SOA) {
+    for (res = w_results; res; res = res->val_rc_next) {
+        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
+        if ((the_set) && (the_set->rrs_ans_kind == SR_ANS_NACK_SOA)) {
+            struct val_result_chain *new_res;
+            /* This proof is relevant */
+            if (VAL_NO_ERROR != (retval = 
+                    transform_single_result(res, results, 
+                        *proof_res, &new_res))) {
+                goto err;
+            }
+            *proof_res = new_res;
+
             soa_name_n = the_set->rrs.val_rrset_name_n;
             if (res->val_rc_status == VAL_PROVABLY_UNSECURE)
                 provably_unsecure = 1;
@@ -1604,112 +2037,232 @@ prove_nonexistence(val_context_t * ctx, struct val_query_chain *top_q,
         }
     }
     if (soa_name_n == NULL)
-        status = VAL_R_INCOMPLETE_PROOF;
+        *status = VAL_R_INCOMPLETE_PROOF;
     else if (provably_unsecure) {
         /*
          * use the error code as status 
          */
-        if (top_q->qc_as &&
-            top_q->qc_as->val_ac_rrset &&
-            top_q->qc_as->val_ac_rrset->val_msg_header) {
+        if (top_q->qc_proof &&
+            top_q->qc_proof->val_ac_rrset &&
+            top_q->qc_proof->val_ac_rrset->val_msg_header) {
 
             HEADER         *hp =
-                (HEADER *) top_q->qc_as->val_ac_rrset->val_msg_header;
+                (HEADER *) top_q->qc_proof->val_ac_rrset->val_msg_header;
             if (hp->rcode == ns_r_noerror) {
-                status = VAL_NONEXISTENT_TYPE;
+                *status = VAL_NONEXISTENT_TYPE;
             } else if (hp->rcode == ns_r_nxdomain) {
-                status = VAL_NONEXISTENT_NAME;
+                *status = VAL_NONEXISTENT_NAME;
             } else
-                status = VAL_ERROR;
-        } else
-            status = VAL_ERROR;
-    } else {
-        int             nsec = 0;
-#ifdef LIBVAL_NSEC3
-        int             nsec3 = 0;
-#endif
-        /*
-         * for every NSEC or NSEC3 proof 
-         */
-        for (res = results;
-             res && res->val_rc_trust && res->val_rc_trust->_as.ac_data;
-             res = res->val_rc_next) {
-            struct rrset_rec *the_set = res->val_rc_trust->_as.ac_data;
-
-            if (NULL == the_set->rrs.val_rrset_data) {
-                status = VAL_R_BOGUS_PROOF;
-                break;
-            }
-
-            if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC) {
-
-#ifdef LIBVAL_NSEC3
-                nsec = 1;
-#endif
-                nsec_proof_chk(ctx, the_set, top_q->qc_name_n,
-                               top_q->qc_type_h, soa_name_n, &span_chk,
-                               &wcard_chk, &wcard_proof,
-                               &closest_encounter, &status);
-                if (status != VAL_R_DONT_KNOW)
-                    break;
-            }
-#ifdef LIBVAL_NSEC3
-            else if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
-                nsec3 = 1;
-            }
-#endif
+                *status = VAL_ERROR;
+        } else {
+            *status = VAL_ERROR;
         }
+        return VAL_NO_ERROR;
+    } 
 
+    /*
+     * Perform general sanity check of proofs
+     */
+    for (res = w_results; res; res = res->val_rc_next) {
+        if (!res->val_rc_is_proof) 
+            continue;
 
+        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
+        if ((!the_set) || (!the_set->rrs.val_rrset_data)) {
+            *status = VAL_R_BOGUS_PROOF;
+            return VAL_NO_ERROR;
+        }
+            
+        if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC) {
+            nsec = 1;
+        }
 #ifdef LIBVAL_NSEC3
-        /*
-         * Check if we received NSEC and NSEC3 proofs 
-         */
-        if ((nsec && nsec3) || (!nsec && !nsec3))
-            status = VAL_R_BOGUS_PROOF;
-        else
+        else if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
+            nsec3 = 1;
+        }
 #endif
-        if (nsec) {
-            if (!span_chk)
-                status = VAL_R_INCOMPLETE_PROOF;
-            else if (!wcard_chk) {
-                if (!closest_encounter)
-                    status = VAL_R_INCOMPLETE_PROOF;
-                else
-                    prove_nsec_wildcard_check(ctx, top_q->qc_type_h,
-                                              wcard_proof,
-                                              closest_encounter, &status);
-            }
+    }
+        
+    proof_seen = nsec? 1 : 0;
+#ifdef LIBVAL_NSEC3
+    proof_seen = nsec3? (proof_seen == 0) : proof_seen;
+#endif
+    /*
+     * Check if we received NSEC and NSEC3 proofs 
+     */
+    if (!proof_seen)
+        *status = VAL_R_BOGUS_PROOF;
+    else if (nsec) {
+        /*
+         * only nsec records 
+         */
+        if(VAL_NO_ERROR != (retval = nsec_proof_chk(ctx, w_results, proof_res, results, 
+                            top_q->qc_name_n, top_q->qc_type_h, soa_name_n, status)))
+            goto err;
         }
 #ifdef LIBVAL_NSEC3
         else if (nsec3) {
-            /*
-             * only nsec3 records 
-             */
-            nsec3_proof_chk(ctx, results, top_q->qc_name_n,
-                            top_q->qc_type_h, soa_name_n, &status);
-        }
+        /*
+         * only nsec3 records 
+         */
+        if(VAL_NO_ERROR != (retval = nsec3_proof_chk(ctx, w_results, proof_res, results, 
+                            top_q->qc_name_n, top_q->qc_type_h, soa_name_n, status)))
+            goto err;
+            
+    }
 #endif
 
-        /*
-         * passed all tests 
-         */
-        if (status == VAL_R_DONT_KNOW)
-            status = VAL_NONEXISTENT_NAME;
-    }
-
     /*
-     * set the error condition in all elements of the proof 
+     * passed all tests 
      */
-    for (res = results; res; res = res->val_rc_next)
-        res->val_rc_status = status;
+    if (*status == VAL_R_DONT_KNOW)
+        *status = VAL_NONEXISTENT_NAME;
+
+    return VAL_NO_ERROR;
+
+err:
+    /* free actual results */
+    val_free_result_chain(*results);
+    *results = NULL;
+    *proof_res = NULL;
+    return retval;
 }
 
+static int
+prove_existence(val_context_t *context, 
+                u_int8_t *qc_name_n, 
+                u_int16_t qc_type_h, 
+                u_int8_t * soa_name_n,
+                struct val_internal_result *w_results, 
+                struct val_result_chain **proof_res, 
+                struct val_result_chain **results, 
+                val_status_t *status)
+{
+    struct val_internal_result *res;
+    int             nsec_bit_field;
+#ifdef LIBVAL_NSEC3
+    u_int8_t        nsec3_hashlen;
+    val_nsec3_rdata_t nd;
+    u_int8_t        hashlen;
+    u_int8_t       *hash;
+    u_int8_t       *cp = NULL;
+    u_int8_t       *nsec3_hash = NULL;
+#endif
+    int retval;
+
+    for (res = w_results; res; res = res->val_rc_next) {
+        if (!res->val_rc_is_proof) 
+            continue;
+
+        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
+        if ((!the_set) || (!the_set->rrs.val_rrset_data)) {
+            continue;
+        }
+            
+        if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC) {
+
+            if (!namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)) {
+                /*
+                 * NSEC owner = query name & q_type not in list 
+                 */
+                nsec_bit_field =
+                    wire_name_length(the_set->rrs.val_rrset_data->rr_rdata);
+                if (is_type_set
+                    ((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])),
+                    the_set->rrs.val_rrset_data->rr_rdata_length_h -
+                    nsec_bit_field, qc_type_h)) {
+                        val_log(context, LOG_DEBUG,
+                            "Wildcard expansion: Type exists at NSEC record");
+                        *status = VAL_SUCCESS;
+                        break;
+                } 
+            }
+        }
+#ifdef LIBVAL_NSEC3
+        else if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
+
+            nsec3_hashlen = the_set->rrs.val_rrset_name_n[0];
+            nsec3_hash =
+                (nsec3_hashlen ==
+                 0) ? NULL : the_set->rrs.val_rrset_name_n + 1;
+
+            if (NULL ==
+                val_parse_nsec3_rdata(the_set->rrs.val_rrset_data->
+                                      rr_rdata,
+                                      the_set->rrs.val_rrset_data->
+                                      rr_rdata_length_h, &nd)) {
+                val_log(context, LOG_DEBUG, "Cannot parse NSEC3 rdata");
+                *status = VAL_R_BOGUS_PROOF;
+                return VAL_NO_ERROR;
+            }
+
+            /*
+             * hash name according to nsec3 parameters 
+             */
+            if (NULL ==
+                compute_nsec3_hash(context, cp, soa_name_n, nd.alg,
+                                   nd.iterations, nd.saltlen, nd.salt,
+                                   &hashlen, &hash)) {
+                val_log(context, LOG_DEBUG,
+                        "Cannot compute NSEC3 hash with given params");
+                *status = VAL_R_BOGUS_PROOF;
+                FREE(nd.nexthash);
+                return VAL_NO_ERROR;
+            }
+
+            /*
+             * Check if there is an exact match 
+             */
+            if ((nsec3_hashlen == hashlen)
+                && !memcmp(hash, nsec3_hash, hashlen)) {
+                int             nsec3_bm_len =
+                    the_set->rrs.val_rrset_data->rr_rdata_length_h -
+                    nd.bit_field;
+
+                if (is_type_set
+                    ((&(the_set->rrs.val_rrset_data->
+                           rr_rdata[nd.bit_field])), nsec3_bm_len,
+                         qc_type_h)) {
+                   val_log(context, LOG_DEBUG,
+                            "Wildcard expansion: Type exists at NSEC3 record");
+                   *status = VAL_SUCCESS;
+                   FREE(nd.nexthash);
+                   FREE(hash);
+                   break;
+                } 
+            }
+        }
+#endif
+    }
+
+    if (res) {
+
+        struct val_result_chain *new_res;
+        /* This proof is relevant */
+        if (VAL_NO_ERROR != (retval = transform_single_result(res, 
+                                        results, *proof_res, &new_res))) {
+            goto err;
+        }
+        *proof_res = new_res;
+        (*proof_res)->val_rc_status = VAL_SUCCESS;
+        return VAL_NO_ERROR;
+    }
+
+    *status = VAL_R_BOGUS_PROOF;
+    return VAL_NO_ERROR;
+
+err:
+    /* free actual results */
+    val_free_result_chain(*results);
+    *results = NULL;
+    *proof_res = NULL;
+    return retval;
+}
 
 static int
 verify_provably_unsecure(val_context_t * context,
                          struct val_query_chain *top_q,
-                         struct _val_authentication_chain *as)
+                         struct val_digested_auth_chain *as)
 {
     struct val_result_chain *results = NULL;
     char            name_p[NS_MAXDNAME];
@@ -1794,17 +2347,20 @@ verify_provably_unsecure(val_context_t * context,
         /*
          * check new results 
          */
-        if ((results->val_rc_trust == NULL) ||
-            (results->val_rc_trust->val_ac_rrset == NULL)) {
+        error = 0;
+        if ((results->val_rc_answer == NULL) ||
+            (results->val_rc_answer->val_ac_rrset == NULL)) {
 
-            /*
-             * query wasn't answered 
-             */
+            if (results->val_rc_proof_count == 0) { 
+            
+                /*
+                 * query wasn't answered 
+                 */
 
-            error = 1;
-            rrset = NULL;
-        } else
-            error = 0;
+                error = 1;
+                rrset = NULL;
+            }
+        } 
 
         if (curzone_n) {
             FREE(curzone_n);
@@ -1866,9 +2422,9 @@ verify_provably_unsecure(val_context_t * context,
 static int
 try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                      struct val_query_chain **queries,
-                     struct _val_authentication_chain *next_as)
+                     struct val_digested_auth_chain *next_as)
 {
-    struct _val_authentication_chain *pending_as;
+    struct val_digested_auth_chain *pending_as;
     int             retval;
     struct rrset_rec *pending_rrset;
 
@@ -1906,7 +2462,7 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
 
         if (next_as->val_ac_status == VAL_A_WAIT_FOR_RRSIG) {
 
-            for (pending_as = pc->qc_as; pending_as;
+            for (pending_as = pc->qc_ans; pending_as;
                  pending_as = pending_as->_as.val_ac_rrset_next) {
                 /*
                  * We were waiting for the RRSIG 
@@ -1936,7 +2492,7 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                          * store the RRSIG in the assertion 
                          */
                         next_as->_as.ac_data->rrs.val_rrset_sig =
-                            copy_rr_rec(pending_rrset->rrs.
+                            copy_rr_rec_list(pending_rrset->rrs.
                                         val_rrset_type_h,
                                         pending_rrset->rrs.val_rrset_sig,
                                         0);
@@ -1960,24 +2516,9 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                 next_as->val_ac_status = VAL_A_RRSIG_MISSING;
             }
         } else if (next_as->val_ac_status == VAL_A_WAIT_FOR_TRUST) {
-            pending_as = pc->qc_as;
-            next_as->val_ac_trust = pending_as;
-            next_as->_as.ac_pending_query = NULL;
 
             // xxx-audit: ptr deref w/out NULL check (pending_as->_as.ac_data)
-            if ((pending_as->_as.ac_data->rrs_ans_kind == SR_ANS_NACK_NSEC)
-#ifdef LIBVAL_NSEC3
-                || (pending_as->_as.ac_data->rrs_ans_kind ==
-                    SR_ANS_NACK_NSEC3)
-#endif
-                || (pending_as->_as.ac_data->rrs_ans_kind ==
-                    SR_ANS_NACK_SOA)) {
-
-                /*
-                 * proof of non-existence should follow 
-                 */
-                next_as->val_ac_status = VAL_A_NEGATIVE_PROOF;
-            } else {
+            if (pc->qc_ans) {
                 /*
                  * XXX what if this is an SR_ANS_CNAME? Can DS or DNSKEY return a CNAME? 
                  */
@@ -1986,7 +2527,25 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                  * trust is useful for verification 
                  */
                 next_as->val_ac_status = VAL_A_CAN_VERIFY;
+                pending_as = pc->qc_ans;
+                /* we don't really care for what is in pc->qc_proof */
+
+            } else if (pc->qc_proof) {
+                /*
+                 * proof of non-existence should follow 
+                 */
+                next_as->val_ac_status = VAL_A_NEGATIVE_PROOF;
+                pending_as = pc->qc_proof;
+
+            } else {
+                if (pc->qc_type_h == ns_t_ds)
+                    next_as->val_ac_status = VAL_A_DS_MISSING;
+                else if (pc->qc_type_h == ns_t_dnskey)
+                    next_as->val_ac_status = VAL_A_DNSKEY_MISSING;
+                return VAL_NO_ERROR;
             }
+            next_as->val_ac_trust = pending_as;
+            next_as->_as.ac_pending_query = NULL;
         }
     }
 
@@ -2007,27 +2566,30 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
 static int
 verify_and_validate(val_context_t * context,
                     struct val_query_chain **queries,
-                    struct val_query_chain *top_q, u_int8_t flags,
-                    struct _val_result_chain **results, int *done)
+                    struct val_query_chain *top_q, int is_proof, 
+                    u_int8_t flags, struct val_internal_result **results, 
+                    int *done)
 {
-    struct _val_authentication_chain *next_as;
+    struct val_digested_auth_chain *next_as;
     int             retval;
-    struct _val_authentication_chain *as_more;
-    struct _val_result_chain *res;
-    struct _val_authentication_chain *top_as;
+    struct val_digested_auth_chain *as_more;
+    struct val_digested_auth_chain *top_as;
+    struct val_internal_result *res;
+    struct val_internal_result *cur_res, *temp_res;
 
     if ((top_q == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
         return VAL_BAD_ARGUMENT;
 
-    if ((top_as = top_q->qc_as) == NULL)
-        /*
-         * nothing to do 
-         */
-        return VAL_NO_ERROR;
-
     *done = 1;
 
+    if (is_proof) {
+        top_as = top_q->qc_proof;
+    }
+    else {
+        top_as = top_q->qc_ans;
+    }
+    
     /*
      * Look at every answer that was returned 
      */
@@ -2039,9 +2601,10 @@ verify_and_validate(val_context_t * context,
          * If this assertion is already in the results list with a completed status
          * no need for repeating the validation process
          */
-        for (res = *results; res; res = res->val_rc_next)
-            if (res->val_rc_trust == as_more)
+        for (res = *results; res; res = res->val_rc_next) {
+            if (res->val_rc_rrset == as_more)
                 break;
+        }
         if (res) {
             if (!CHECK_MASKED_STATUS(res->val_rc_status, VAL_R_DONT_KNOW))
                 /*
@@ -2052,11 +2615,22 @@ verify_and_validate(val_context_t * context,
             /*
              * Add this result to the list 
              */
-            res = (struct _val_result_chain *)
-                MALLOC(sizeof(struct _val_result_chain));
-            if (res == NULL)
+            res = (struct val_internal_result *)
+                MALLOC(sizeof(struct val_internal_result));
+            if (res == NULL) {
+                /* free the result list */
+                cur_res = *results;
+                while(cur_res) {
+                    temp_res = cur_res->val_rc_next;
+                    FREE(cur_res);
+                    cur_res = temp_res;
+                }
+                *results = NULL;
                 return VAL_OUT_OF_MEMORY;
-            res->val_rc_trust = as_more;
+            }
+            res->val_rc_is_proof = is_proof; 
+            res->val_rc_consumed = 0;
+            res->val_rc_rrset = as_more;
             res->val_rc_status = VAL_R_DONT_KNOW;
             res->val_rc_next = *results;
             *results = res;
@@ -2080,7 +2654,7 @@ verify_and_validate(val_context_t * context,
                     next_as->val_ac_status =
                         VAL_A_DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
 
-                if (!(flags & F_DONT_VALIDATE)) {
+                if (!(flags & VAL_FLAGS_DONT_VALIDATE)) {
                     /*
                      * Go up the chain of trust 
                      */
@@ -2141,7 +2715,7 @@ verify_and_validate(val_context_t * context,
                 if (next_as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey) {
 
                     int             asked_the_parent = 0;
-                    struct _val_authentication_chain *as;
+                    struct val_digested_auth_chain *as;
 
                     /*
                      * Check if the name in the soa record is the same as the
@@ -2245,8 +2819,7 @@ verify_and_validate(val_context_t * context,
                                       VAL_R_BOGUS_UNPROVABLE);
                     continue;
                 }
-            } else
-                if (CHECK_MASKED_STATUS
+            } else if (CHECK_MASKED_STATUS
                     (res->val_rc_status, VAL_R_VERIFIED_CHAIN)
                     || (res->val_rc_status == VAL_R_DONT_KNOW)) {
 
@@ -2254,6 +2827,7 @@ verify_and_validate(val_context_t * context,
                  * Success condition 
                  */
                 if ((next_as->val_ac_status == VAL_A_VERIFIED) ||
+                    (next_as->val_ac_status == VAL_A_WCARD_VERIFIED) ||
                     (next_as->val_ac_status == VAL_A_VERIFIED_LINK)) {
                     SET_MASKED_STATUS(res->val_rc_status,
                                       VAL_R_VERIFIED_CHAIN);
@@ -2295,7 +2869,7 @@ verify_and_validate(val_context_t * context,
 static int
 ask_cache(val_context_t * context, u_int8_t flags,
           struct val_query_chain *end_q, struct val_query_chain **queries,
-          struct _val_authentication_chain **assertions, int *data_received)
+          struct val_digested_auth_chain **assertions, int *data_received)
 {
     struct val_query_chain *next_q, *top_q;
     struct rrset_rec *next_answer;
@@ -2323,6 +2897,11 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 (retval =
                  get_cached_rrset(next_q->qc_name_n, next_q->qc_class_h,
                                   next_q->qc_type_h, &next_answer)))
+                /* XXX get_cached_rrset should return a domain_info structure
+                 * XXX This is to allow a CNAME chain to be returned
+                 * XXX In such cases, the qname_chain will also have to be tweaked 
+                 * XXX appropriately
+                 */  
                 return retval;
 
             if (next_answer) {
@@ -2331,7 +2910,12 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 val_log(context, LOG_DEBUG,
                         "ask_cache(): found data for {%s %d %d}", name_p,
                         next_q->qc_class_h, next_q->qc_type_h);
-                *data_received = 1;
+                /* 
+                 * If we were fetching glue, don't claim to have an answer 
+                 * that we can validate 
+                 */
+                if (!next_q->qc_glue_request)
+                    *data_received = 1;
 
                 next_q->qc_state = Q_ANSWERED;
                 /*
@@ -2344,7 +2928,8 @@ ask_cache(val_context_t * context, u_int8_t flags,
                     return VAL_OUT_OF_MEMORY;
                 }
 
-                response->di_rrset = next_answer;
+                response->di_answers = next_answer;
+                response->di_proofs = NULL;
                 response->di_qnames = (struct qname_chain *)
                     MALLOC(sizeof(struct qname_chain));
                 if (response->di_qnames == NULL) {
@@ -2397,7 +2982,7 @@ ask_cache(val_context_t * context, u_int8_t flags,
 static int
 ask_resolver(val_context_t * context, u_int8_t flags,
              struct val_query_chain **queries, int block,
-             struct _val_authentication_chain **assertions,
+             struct val_digested_auth_chain **assertions,
              int *data_received)
 {
     struct val_query_chain *next_q;
@@ -2421,7 +3006,6 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                 u_int8_t       *test_n;
 
                 need_data = 1;
-                next_q = next_q;        // xxx-audit: huh? assignemnt to self??
                 if (-1 ==
                     ns_name_ntop(next_q->qc_name_n, name_p,
                                  sizeof(name_p)))
@@ -2460,6 +3044,13 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                             // xxx-check: log message?
                         }
                         next_q->qc_ns_list = root_ns;
+                        if (next_q->qc_zonecut_n)
+                            FREE(next_q->qc_zonecut_n);
+                        next_q->qc_zonecut_n = 
+                            (u_int8_t *) MALLOC(sizeof(u_int8_t));
+                        if(next_q->qc_zonecut_n == NULL) 
+                            return VAL_OUT_OF_MEMORY;
+                        *(next_q->qc_zonecut_n) = (u_int8_t)'\0';
                     }
                 }
 
@@ -2475,18 +3066,21 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                 else
                     test_n = next_q->qc_name_n;
 
-                if (!(flags & F_DONT_VALIDATE) &&
-                    (is_trusted_zone(context, test_n) ==
-                     VAL_A_WAIT_FOR_TRUST)) {
+                if (next_q->qc_ns_list && 
+                        !(next_q->qc_ns_list->ns_options & RES_USE_DNSSEC)) { 
+                    if (!(flags & VAL_FLAGS_DONT_VALIDATE) &&
+                        (is_trusted_zone(context, test_n) ==
+                        VAL_A_WAIT_FOR_TRUST)) {
 
-                    val_log(context, LOG_DEBUG,
-                            "Setting D0 bit and using EDNS0");
+                        val_log(context, LOG_DEBUG,
+                                "Setting D0 bit and using EDNS0");
 
-                    for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
-                        ns->ns_options |= RES_USE_DNSSEC;
-                } else {
-                    val_log(context, LOG_DEBUG,
-                            "Not setting D0 bit nor using EDNS0");
+                        for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
+                            ns->ns_options |= RES_USE_DNSSEC;
+                    } else {
+                        val_log(context, LOG_DEBUG,
+                                "Not setting D0 bit nor using EDNS0");
+                    }
                 }
 
                 if ((retval =
@@ -2535,13 +3129,21 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                          * Save new responses in the cache 
                          */
                         if (VAL_NO_ERROR !=
-                            (retval = stow_answer(response->di_rrset))) {
+                            (retval = stow_answer(response->di_answers))) {
                             free_domain_info_ptrs(response);
                             FREE(response);
                             return retval;
                         }
 
-                        response->di_rrset = NULL;
+                        if (VAL_NO_ERROR !=
+                            (retval = stow_answer(response->di_proofs))) {
+                            free_domain_info_ptrs(response);
+                            FREE(response);
+                            return retval;
+                        }
+
+                        response->di_answers = NULL;
+                        response->di_proofs = NULL;
                         free_domain_info_ptrs(response);
                         FREE(response);
                         answered = 1;
@@ -2561,7 +3163,6 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                             (next_q->qc_referral->glueptr->qc_state ==
                              Q_ANSWERED)) {
                             merge_glue_in_referral(next_q, queries);
-                            *data_received = 1;
                         }
                         break;
                     }
@@ -2579,165 +3180,165 @@ ask_resolver(val_context_t * context, u_int8_t flags,
     return VAL_NO_ERROR;
 }
 
-int
-transform_results(struct _val_result_chain **w_results, 
-                  struct val_result_chain **results)
+
+static int 
+check_proof_sanity( val_context_t * context, 
+                    struct val_internal_result *w_results,
+                    struct val_result_chain **results,
+                    struct val_query_chain *top_q)
 {
-    struct _val_result_chain *w_res, *t_res;
-    struct val_result_chain *cur_res, *prev_res, *temp_res;
-    int retval;
-    
-    cur_res = NULL;
-    prev_res = NULL;
-    
-    w_res = *w_results;
-    while(w_res) {
+    struct val_digested_auth_chain *as;
+    struct val_internal_result *res;
+    struct val_result_chain *proof_res;
+    val_status_t status = VAL_R_DONT_KNOW;
+    int retval = VAL_NO_ERROR;
 
-        struct val_authentication_chain *n_ac, *head_ac, *prev_ac;
-        struct _val_authentication_chain *o_ac;
-
-        head_ac = NULL;
-        prev_ac = NULL;
-
-        cur_res = (struct val_result_chain *) MALLOC (sizeof(struct val_result_chain));
-        if (cur_res == NULL) {
-            retval = VAL_OUT_OF_MEMORY;
-            goto err;
-        } 
-        cur_res->val_rc_status = w_res->val_rc_status;
-        
-        for (o_ac = w_res->val_rc_trust; o_ac; o_ac = o_ac->val_ac_trust) {
-
-            n_ac = (struct val_authentication_chain *)
-                MALLOC(sizeof(struct val_authentication_chain));
-            if (n_ac == NULL){
-                retval = VAL_OUT_OF_MEMORY;
-                goto err;
-            }
-            memset(n_ac, 0, sizeof(struct val_authentication_chain));
-            n_ac->val_ac_status = o_ac->val_ac_status;
-            n_ac->val_ac_trust = NULL;
-
-            if (o_ac->val_ac_rrset != NULL) {
-                int             len;
-
-                n_ac->val_ac_rrset =
-                    (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
-                if (n_ac->val_ac_rrset == NULL) {
-                    retval = VAL_OUT_OF_MEMORY;
-                    goto err;
-                }
-                memset(n_ac->val_ac_rrset, 0, sizeof(struct val_rrset));
-
-                // xxx- bug 1537734: potential memory leak
-                //     not just in this loop iteration, but previous as well.
-                //     iterate over head_ac & preforms frees?
-                CLONE_NAME_LEN(o_ac->val_ac_rrset->val_msg_header,
-                               o_ac->val_ac_rrset->val_msg_headerlen,
-                               n_ac->val_ac_rrset->val_msg_header,
-                               n_ac->val_ac_rrset->val_msg_headerlen);
-
-                len =
-                    wire_name_length(o_ac->val_ac_rrset->val_rrset_name_n);
-                n_ac->val_ac_rrset->val_rrset_name_n =
-                    (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-                // xxx-audit: memory leak, no release of prior allocs before return
-                //     not just in this loop iteration, but previous as well.
-                //     iterate over head_ac & preforms frees?
-                if (n_ac->val_ac_rrset->val_rrset_name_n == NULL)
-                    return VAL_OUT_OF_MEMORY;
-                memcpy(n_ac->val_ac_rrset->val_rrset_name_n,
-                       o_ac->val_ac_rrset->val_rrset_name_n, len);
-
-                n_ac->val_ac_rrset->val_rrset_class_h =
-                    o_ac->val_ac_rrset->val_rrset_class_h;
-                n_ac->val_ac_rrset->val_rrset_type_h =
-                    o_ac->val_ac_rrset->val_rrset_type_h;
-                n_ac->val_ac_rrset->val_rrset_ttl_h =
-                    o_ac->val_ac_rrset->val_rrset_ttl_h;
-                n_ac->val_ac_rrset->val_rrset_ttl_x =
-                    o_ac->val_ac_rrset->val_rrset_ttl_x;
-                n_ac->val_ac_rrset->val_rrset_section =
-                    o_ac->val_ac_rrset->val_rrset_section;
-                n_ac->val_ac_rrset->val_rrset_data =
-                    copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
-                                     o_ac->val_ac_rrset->val_rrset_data, 0);
-                n_ac->val_ac_rrset->val_rrset_sig =
-                    copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
-                                     o_ac->val_ac_rrset->val_rrset_sig, 0);
-            }
-
-            if (head_ac == NULL) {
-                head_ac = n_ac;
-            } else {
-                prev_ac->val_ac_trust = n_ac;
-            }
-            prev_ac = n_ac;
-        }
-
-        cur_res->val_rc_trust = head_ac;
-        cur_res->val_rc_next = NULL;
-
-        if (prev_res == NULL) {
-            *results = cur_res;
-        }
-        else {
-            prev_res->val_rc_next = cur_res;
-        }
-        prev_res = cur_res;
-        *w_results = w_res->val_rc_next;
-
-        /* 
-         *  The _val_result_chain structure only has a reference to 
-         *  the authentication chain. The actual authentication chain
-         *  is still present in the validator context.
+    if ((top_q != NULL) && (top_q->qc_type_h == ns_t_ds)) {
+        /*
+         * If we've asked for a DS and the soa has the same 
+         * name, we've actually asked the child zone
+         * Don't re-try from the root because we then will have the
+         * possibility of an infinite loop
          */
-        FREE(w_res);
-        w_res = *w_results;
+        for (res = w_results; res; res = res->val_rc_next) {
+            if (NULL == (as = res->val_rc_rrset))
+                continue;
+            if (as->val_ac_rrset->val_rrset_type_h == ns_t_soa) {
+                if (!namecmp(as->val_ac_rrset->val_rrset_name_n,
+                             top_q->qc_name_n)) {
+                    val_log(context, LOG_DEBUG, "Indeterminate Response: Proof of non-existence for DS received from child");
+                    status = VAL_R_INDETERMINATE_PROOF;
+                }
+                break;
+            }
+        }
+    }
+
+    if (status == VAL_R_DONT_KNOW) {
+        if( VAL_NO_ERROR != 
+                (retval = prove_nonexistence(context, w_results, &proof_res, results, top_q, &status)))
+            return retval;
+    }
+
+    if (proof_res) {
+        proof_res->val_rc_status = status;
     }
 
     return VAL_NO_ERROR;
-
-err:
-    /* free results working set */
-    w_res = *w_results;
-    while(w_res) {
-        t_res = w_res->val_rc_next;
-        FREE(w_res);
-        w_res = t_res;
-    }
-    *w_results = NULL;
-    
-    /* free actual results */
-    cur_res = *results;
-    while(cur_res) {
-        temp_res = cur_res->val_rc_next;
-        FREE(cur_res);
-        cur_res = temp_res;
-    }
-    
-    *results = NULL;
-    return retval;
 }
 
-void
-fix_validation_results(val_context_t * context,
-                       struct _val_result_chain *results,
-                       struct val_query_chain *top_q)
+static int
+check_wildcard_sanity(val_context_t * context,
+                      struct val_internal_result *w_results,
+                      struct val_result_chain **results,
+                      struct val_query_chain *top_q)
 {
-    struct _val_result_chain *res;
+    struct val_internal_result *res;
+    struct val_result_chain *target_res;
+    struct val_result_chain *new_res;
+    u_int8_t *zonecut_n;
+    val_status_t status;
+    int retval;
+  
+    zonecut_n = NULL;
+    target_res = NULL; 
+
+    /* Any proofs that have been wildcard expanded are bogus */
+    for (res = w_results; res; res = res->val_rc_next) {
+        if ((res->val_rc_status == VAL_SUCCESS) &&
+            (res->val_rc_rrset) && 
+            (res->val_rc_is_proof) &&
+            (!res->val_rc_consumed) &&
+            (res->val_rc_rrset->val_ac_status == VAL_A_WCARD_VERIFIED)) {
+
+            val_log(context, LOG_DEBUG, "Wildcard sanity check failed");
+            if (VAL_NO_ERROR != 
+                    (retval = transform_single_result(res, results, 
+                                            target_res, &new_res))) {
+                goto err;
+            }
+
+            target_res = new_res;
+            target_res->val_rc_status = VAL_R_BOGUS_PROOF;                
+        }
+    }
+
+    for (res = w_results; res; res = res->val_rc_next) {
+        if ((res->val_rc_status == VAL_SUCCESS) &&
+            (res->val_rc_rrset) && 
+            (!res->val_rc_is_proof) &&
+            (!res->val_rc_consumed) &&
+            (res->val_rc_rrset->val_ac_status == VAL_A_WCARD_VERIFIED)) {
+
+            /* Move to a fresh result structure */
+            if (VAL_NO_ERROR != (retval = transform_single_result(res, results, 
+                                            NULL, &new_res))) {
+                goto err;
+            }
+            target_res = new_res;
+            target_res->val_rc_status = VAL_SUCCESS;
+
+            /*  we need to prove that this type exists in some
+             *  accompanying wildcard
+             */
+            if ((res->val_rc_rrset->_as.ac_data) &&
+                ((zonecut_n = res->val_rc_rrset->_as.ac_data->rrs_zonecut_n))) {
+                u_char domain_name_n[NS_MAXCDNAME];
+                domain_name_n[0] = 0x01;
+                domain_name_n[1] = 0x2a;    /* for the '*' character */
+                memcpy(&domain_name_n[2], zonecut_n, wire_name_length(zonecut_n));
+                /* find appropriate proof */ 
+                /* Check if this proves existence of type */
+                if (VAL_NO_ERROR != (retval = prove_existence(context, domain_name_n, 
+                                res->val_rc_rrset->_as.ac_data->rrs.val_rrset_type_h,
+                                zonecut_n, w_results, &target_res, results, &status)))
+                    goto err; 
+
+                target_res->val_rc_status = status; 
+            } else {
+                /* Can't prove wildcard */
+                val_log(context, LOG_DEBUG, "Wildcard sanity check failed");
+                target_res->val_rc_status = VAL_R_BOGUS;                
+            }
+        }
+    }
+    return VAL_NO_ERROR;
+
+err:
+    /* free actual results */
+    val_free_result_chain(*results);
+    *results = NULL;
+    return retval;
+
+}
+
+/* 
+ * Identify if there is anything that must be proved
+ */
+static int
+perform_sanity_checks(val_context_t * context,
+                      struct val_internal_result *w_results,
+                      struct val_result_chain **results,
+                      struct val_query_chain *top_q,
+                      const u_int8_t flags)
+{
+    struct val_internal_result *res;
     int             partially_wrong = 0;
-    int             negative_proof = 0;
+    int             negative_proof = 1;
+    int retval;
 
-    for (res = results; res; res = res->val_rc_next) {
+    if (flags & VAL_FLAGS_DONT_VALIDATE)
+        return VAL_NO_ERROR;
 
-        /*
-         * Fix validation results 
-         */
+    /*
+     * Fix validation results 
+     */
+    for (res = w_results; res; res = res->val_rc_next) {
+
         /*
          * Some error most likely, reflected in the val_query_chain 
          */
-        if (res->val_rc_trust == NULL)
+        if (res->val_rc_rrset == NULL)
             res->val_rc_status = VAL_ERROR;
 
         /*
@@ -2748,8 +3349,10 @@ fix_validation_results(val_context_t * context,
             /*
              * implies that the trust flag is set 
              */
-            struct _val_authentication_chain *as;
-            for (as = res->val_rc_trust; as; as = as->val_ac_trust) {
+            struct val_digested_auth_chain *as;
+            struct val_digested_auth_chain *top_as;
+            top_as = res->val_rc_rrset;
+            for (as = top_as; as; as = as->val_ac_trust) {
                 if ((as->val_ac_rrset) &&
                     (as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey)) {
                     if (as->val_ac_status == VAL_A_UNKNOWN_ALGO) {
@@ -2764,60 +3367,110 @@ fix_validation_results(val_context_t * context,
         if (res->val_rc_status == (VAL_R_DONT_KNOW | VAL_R_TRUST_FLAG))
             res->val_rc_status = VAL_SUCCESS;
 
-        val_log(context, LOG_DEBUG, "validate result set to %s[%d]",
-                p_val_error(res->val_rc_status), res->val_rc_status);
-
+        /* 
+         * If we see something other than a proof, this is no longer
+         * "only a negative response"
+         */
+        if (!res->val_rc_is_proof)
+            negative_proof = 0;
+            
         if ((res->val_rc_status != VAL_SUCCESS) &&
-            (res->val_rc_status != VAL_PROVABLY_UNSECURE))
+            (res->val_rc_status != VAL_PROVABLY_UNSECURE)) {
+            /*
+             * All components were not validated success
+             */
             partially_wrong = 1;
-
-        if ((res->val_rc_trust) && (res->val_rc_trust->_as.ac_data != NULL)
-            &&
-            ((res->val_rc_trust->_as.ac_data->rrs_ans_kind ==
-              SR_ANS_NACK_NSEC) ||
-#ifdef LIBVAL_NSEC3
-             (res->val_rc_trust->_as.ac_data->rrs_ans_kind ==
-              SR_ANS_NACK_NSEC3) ||
-#endif
-             (res->val_rc_trust->_as.ac_data->rrs_ans_kind ==
-              SR_ANS_NACK_SOA)))
-            negative_proof = 1;
+        }
     }
 
     if (negative_proof) {
-        int             asked_the_child = 0;
-        struct _val_authentication_chain *as;
-
-        if ((top_q != NULL) && (top_q->qc_type_h == ns_t_ds)) {
-            /*
-             * If we've asked for a DS and the soa has the same 
-             * name, we've actually asked the child zone
-             */
-            for (res = results; res; res = res->val_rc_next) {
-                as = res->val_rc_trust;
-                if (as->val_ac_rrset->val_rrset_type_h == ns_t_soa) {
-                    if (!namecmp(as->val_ac_rrset->val_rrset_name_n,
-                                 top_q->qc_name_n))
-                        asked_the_child = 1;
-                    break;
-                }
-            }
-        }
-
-        if ((asked_the_child) || (partially_wrong)) {
-
+        if (partially_wrong) {
             /*
              * mark all answers as bogus - 
              * all answers are related in the proof 
              */
             val_log(context, LOG_DEBUG, "Bogus Proof");
-            for (res = results; res; res = res->val_rc_next)
+            for (res = w_results; res; res = res->val_rc_next)
                 res->val_rc_status = VAL_R_BOGUS_PROOF;
-        } else
-            prove_nonexistence(context, top_q, results);
-    }
+        } else {
+            /*
+             * We only received some proof of non-existence 
+             */
+            return check_proof_sanity(context, w_results, results, top_q);
+        }
+        return VAL_NO_ERROR;
+    } 
+
+    /* 
+     * Ensure that we have the relevant proofs to 
+     * support the primary assertion 
+     */
+
+    /* 
+     * If there was some wildcard expansion, 
+     * make sure that this was for a valid type
+     */ 
+    if (VAL_NO_ERROR != (retval = check_wildcard_sanity(context, w_results, results, top_q)))
+        return retval;
+   
+    //check_cname_sanity(context, w_results, results, top_q);
+    //check_dname_sanity(context, w_results, results, top_q);
+
+    return VAL_NO_ERROR;
 }
 
+static int
+create_error_result(struct val_query_chain *top_q, struct val_internal_result **w_results)
+{
+    struct val_internal_result *w_temp;
+    if (top_q == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *w_results = NULL;
+    if (top_q->qc_ans) {
+        w_temp = (struct val_internal_result *)
+            MALLOC(sizeof(struct val_internal_result));
+        if (w_temp == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        w_temp->val_rc_rrset = top_q->qc_ans;
+        w_temp->val_rc_is_proof = 0; 
+        w_temp->val_rc_status =
+            VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+        w_temp->val_rc_next = NULL;
+        *w_results = w_temp;
+    }
+    if (top_q->qc_proof) {
+        w_temp = (struct val_internal_result *)
+            MALLOC(sizeof(struct val_internal_result));
+        if (w_temp == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        w_temp->val_rc_rrset = top_q->qc_proof;
+        w_temp->val_rc_is_proof = 1; 
+        w_temp->val_rc_status =
+            VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+        w_temp->val_rc_next = NULL;
+        if (*w_results == NULL)
+            *w_results = w_temp;
+        else
+            (*w_results)->val_rc_next = w_temp;
+    }
+    if (*w_results == NULL) {
+        *w_results = (struct val_internal_result *)
+            MALLOC(sizeof(struct val_internal_result));
+        if ((*w_results) == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        (*w_results)->val_rc_rrset = NULL;
+        (*w_results)->val_rc_is_proof = 0; 
+        (*w_results)->val_rc_status =
+            VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+        (*w_results)->val_rc_next = NULL;
+    }
+
+    return VAL_NO_ERROR;
+}
 
 /*
  * Look inside the cache, ask the resolver for missing data.
@@ -2839,11 +3492,13 @@ val_resolve_and_check(val_context_t * ctx,
     char            block = 1;  /* block until at least some data is returned */
     char            name_p[NS_MAXDNAME];
 
-    int             done = 0;
+    int             ans_done = 0;
+    int             proof_done = 0;
     int             data_received = 0;
 
     val_context_t  *context = NULL;
-    struct _val_result_chain *w_results = NULL;
+    struct val_internal_result *w_results = NULL;
+    struct val_internal_result *w_res = NULL;
 
     if ((results == NULL) || (domain_name_n == NULL))
         return VAL_BAD_ARGUMENT;
@@ -2872,8 +3527,10 @@ val_resolve_and_check(val_context_t * ctx,
         goto err;
 
     top_q = context->q_list;
+    if (top_q == NULL)
+        return VAL_INTERNAL_ERROR;
 
-    while (!done) {
+    while (!ans_done || !proof_done) {
 
         struct val_query_chain *last_q;
 
@@ -2935,16 +3592,8 @@ val_resolve_and_check(val_context_t * ctx,
             /*
              * the original query had some error 
              */
-            w_results = (struct _val_result_chain *)
-                MALLOC(sizeof(struct val_result_chain));
-            if ((w_results) == NULL) {
-                retval = VAL_OUT_OF_MEMORY;
+            if (VAL_NO_ERROR != create_error_result(top_q, &w_results))
                 goto err;
-            }
-            (w_results)->val_rc_trust = top_q->qc_as;
-            (w_results)->val_rc_status =
-                VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
-            (w_results)->val_rc_next = NULL;
 
             break;
         }
@@ -2958,10 +3607,19 @@ val_resolve_and_check(val_context_t * ctx,
          * We have sufficient data to at least perform some validation --
          * validate what ever is possible. 
          */
+
+        /* validate all answers */
         if (VAL_NO_ERROR !=
             (retval =
-             verify_and_validate(context, &(context->q_list), top_q, flags,
-                                 &w_results, &done)))
+             verify_and_validate(context, &(context->q_list), top_q, 0, flags,
+                                 &w_results, &ans_done)))
+            goto err;
+
+        /* validate all proofs */
+        if (VAL_NO_ERROR !=
+            (retval =
+             verify_and_validate(context, &(context->q_list), top_q, 1, flags,
+                                 &w_results, &proof_done)))
             goto err;
     }
 
@@ -2969,14 +3627,21 @@ val_resolve_and_check(val_context_t * ctx,
 
     if (w_results) {
 
-        if (!(flags & F_DONT_VALIDATE))
-            fix_validation_results(context, w_results, top_q);
+        retval = perform_sanity_checks(context, w_results, results, top_q, flags);
 
-        /*
-         * Clone the required assertion list elements, so that 
-         * context can be free'd up if necessary
+        if (retval == VAL_NO_ERROR) 
+            retval = transform_outstanding_results(w_results, results, flags);
+        /* 
+         *  The val_internal_result structure only has a reference to 
+         *  the authentication chain. The actual authentication chain
+         *  is still present in the validator context.
          */
-        retval = transform_results(&w_results, results);
+        w_res = w_results;
+        while (w_res) {
+            w_results = w_res->val_rc_next;
+            FREE(w_res);
+            w_res = w_results;
+        }
     }
 
 
