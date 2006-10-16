@@ -818,102 +818,6 @@ build_pending_query(val_context_t * context,
     return VAL_NO_ERROR;
 }
 
-/* XXX Move function definition up */
-static int
-check_conflicting_answers(val_context_t * context,
-                          struct val_digested_auth_chain *as, 
-                          struct val_query_chain **queries,
-                          struct val_query_chain *matched_q,
-                          struct qname_chain *q_names_n, 
-                          u_int16_t type_h, u_int16_t class_h,
-                          u_int8_t flags); 
-
-/*
- * Read the response that came in and create assertions from it. Set the state
- * of the assertion based on what data is available and whether validation
- * can proceed.
- * 
- * Returns:
- * VAL_NO_ERROR                 Operation completed successfully
- *
- */
-static int
-assimilate_answers(val_context_t * context,
-                   struct val_query_chain **queries,
-                   struct domain_info *response,
-                   struct val_query_chain *matched_q,
-                   struct val_digested_auth_chain **assertions,
-                   u_int8_t flags)
-{
-    int             retval;
-    u_int16_t       type_h;
-    u_int16_t       class_h;
-    
-    if (matched_q == NULL)
-        return VAL_NO_ERROR;
-
-    if ((NULL == queries) || (NULL == response) 
-         || ((NULL == response->di_qnames)) 
-         || (NULL == assertions) || (matched_q == NULL))
-        return VAL_BAD_ARGUMENT; 
-
-    type_h = response->di_requested_type_h;
-    class_h = response->di_requested_class_h;
-
-    if ((matched_q->qc_ans != NULL) || (matched_q->qc_proof != NULL)) {
-        /*
-         * We already had an assertion for this query 
-         */
-        // XXX What about FLOOD_ATTACKS ?
-        return VAL_NO_ERROR;
-    }
-
-    if ((response->di_answers == NULL) 
-         && (response->di_proofs == NULL)) {
-        matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
-        return VAL_NO_ERROR;
-    }
-
-    /*
-     * Create assertion for the response answers and proof 
-     */
-
-    if (response->di_answers) {
-        if (VAL_NO_ERROR !=
-            (retval =
-            add_to_authentication_chain(assertions, response->di_answers)))
-            return retval;
-        /*
-         * Link the assertion to the query
-         */
-        matched_q->qc_ans = *assertions;
-        if (VAL_NO_ERROR != (retval = 
-                    check_conflicting_answers(context, *assertions, queries, 
-                        matched_q, response->di_qnames, type_h, class_h, flags))) {
-            return retval;
-        }
-    } 
-    
-    if (response->di_proofs) {
-        if (VAL_NO_ERROR !=
-            (retval =
-            add_to_authentication_chain(assertions, response->di_proofs)))
-            return retval;
-
-        /*
-         * Link the assertion to the query
-         */
-        matched_q->qc_proof = *assertions;
-        if (VAL_NO_ERROR != (retval = 
-                    check_conflicting_answers(context, *assertions, queries, 
-                        matched_q, response->di_qnames, type_h, class_h, flags))) {
-            return retval;
-        }
-    }
-    return VAL_NO_ERROR;
-}
-
-
 static int
 check_conflicting_answers(val_context_t * context,
                           struct val_digested_auth_chain *as, 
@@ -1028,6 +932,91 @@ check_conflicting_answers(val_context_t * context,
                 return retval;
         }
 
+    }
+    return VAL_NO_ERROR;
+}
+
+/*
+ * Read the response that came in and create assertions from it. Set the state
+ * of the assertion based on what data is available and whether validation
+ * can proceed.
+ * 
+ * Returns:
+ * VAL_NO_ERROR                 Operation completed successfully
+ *
+ */
+static int
+assimilate_answers(val_context_t * context,
+                   struct val_query_chain **queries,
+                   struct domain_info *response,
+                   struct val_query_chain *matched_q,
+                   struct val_digested_auth_chain **assertions,
+                   u_int8_t flags)
+{
+    int             retval;
+    u_int16_t       type_h;
+    u_int16_t       class_h;
+    
+    if (matched_q == NULL)
+        return VAL_NO_ERROR;
+
+    if ((NULL == queries) || (NULL == response) 
+         || ((NULL == response->di_qnames)) 
+         || (NULL == assertions) || (matched_q == NULL))
+        return VAL_BAD_ARGUMENT; 
+
+    type_h = response->di_requested_type_h;
+    class_h = response->di_requested_class_h;
+
+    if ((matched_q->qc_ans != NULL) || (matched_q->qc_proof != NULL)) {
+        /*
+         * We already had an assertion for this query 
+         */
+        // XXX What about FLOOD_ATTACKS ?
+        return VAL_NO_ERROR;
+    }
+
+    if ((response->di_answers == NULL) 
+         && (response->di_proofs == NULL)) {
+        matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
+        return VAL_NO_ERROR;
+    }
+
+    /*
+     * Create assertion for the response answers and proof 
+     */
+
+    if (response->di_answers) {
+        if (VAL_NO_ERROR !=
+            (retval =
+            add_to_authentication_chain(assertions, response->di_answers)))
+            return retval;
+        /*
+         * Link the assertion to the query
+         */
+        matched_q->qc_ans = *assertions;
+        if (VAL_NO_ERROR != (retval = 
+                    check_conflicting_answers(context, *assertions, queries, 
+                        matched_q, response->di_qnames, type_h, class_h, flags))) {
+            return retval;
+        }
+    } 
+    
+    if (response->di_proofs) {
+        if (VAL_NO_ERROR !=
+            (retval =
+            add_to_authentication_chain(assertions, response->di_proofs)))
+            return retval;
+
+        /*
+         * Link the assertion to the query
+         */
+        matched_q->qc_proof = *assertions;
+        if (VAL_NO_ERROR != (retval = 
+                    check_conflicting_answers(context, *assertions, queries, 
+                        matched_q, response->di_qnames, type_h, class_h, flags))) {
+            return retval;
+        }
     }
     return VAL_NO_ERROR;
 }
@@ -1389,6 +1378,7 @@ prove_nsec_span_chk(val_context_t * ctx,
     /*
      * else 
      */
+    *status = VAL_NONEXISTENT_NAME; /** This can change later on if wildcard checks fail **/
 
     /*
      * Find the next name 
@@ -1958,13 +1948,6 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             prove_nsec_wildcard_check(ctx, qc_type_h,
                                       wcard_proof,
                                       closest_encounter, status);
-            /* This proof is relevant */
-            if (VAL_NO_ERROR != (retval = 
-                            transform_single_result(res, results, 
-                            *proof_res, &new_res))) {
-                goto err;
-            }
-            *proof_res = new_res;
         }
     }
     return VAL_NO_ERROR;
