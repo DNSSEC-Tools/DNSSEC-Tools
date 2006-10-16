@@ -16,7 +16,6 @@
 #include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
-#include <openssl/sha.h>
 #if defined(sun) && !defined(__EXTENSIONS__)
 extern char *ctime_r(const time_t *, char *);
 #endif
@@ -27,9 +26,7 @@ extern char *ctime_r(const time_t *, char *);
 #include "val_cache.h"
 #include "val_verify.h"
 #include "val_log.h"
-#include "crypto/val_rsamd5.h"
-#include "crypto/val_rsasha1.h"
-#include "crypto/val_dsasha1.h"
+#include "val_crypto.h"
 
 
 #define ZONE_KEY_FLAG 0x0100    /* Zone Key Flag, RFC 4034 */
@@ -267,7 +264,7 @@ have_rrsigs(struct domain_info *response)
         return 0;
     }
 
-    rrset = response->di_rrset;
+    rrset = response->di_answers;
     while (rrset) {
         struct rr_rec  *rrs_sig = rrset->rrs_sig;
         while (rrs_sig) {
@@ -568,6 +565,16 @@ do_verify(val_context_t * ctx,
         (the_sig == NULL))
         return VAL_INTERNAL_ERROR;
 
+    /*
+     * Wildcard expansions for DNSKEYs and DSs are not permitted
+     */
+    if(is_a_wildcard && 
+        ((the_set->rrs.val_rrset_type_h == ns_t_ds) || 
+         (the_set->rrs.val_rrset_type_h == ns_t_dnskey))) {
+        *sig_status = VAL_A_RRSIG_VERIFY_FAILED;
+        return VAL_NO_ERROR;
+    }
+    
     if ((ret_val = make_sigfield(&ver_field, &ver_length, the_set, the_sig,
                                  is_a_wildcard)) != VAL_NO_ERROR)
         return ret_val;
@@ -602,12 +609,6 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
                  u_int32_t ds_hash_len, u_int8_t * name_n,
                  struct rr_rec *dnskey)
 {
-    u_int8_t        ds_digest[SHA_DIGEST_LENGTH];
-    u_int8_t       *rrdata;
-    u_int16_t       rrdatalen;
-    int             namelen;
-    SHA_CTX         c;
-
     /*
      * Only SHA-1 is understood 
      */
@@ -617,26 +618,9 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
     if ((dnskey == NULL) || (ds_hash == NULL) || (name_n == NULL)
         || (ds_hash_len != SHA_DIGEST_LENGTH))
         return 0;
-
-    rrdata = dnskey->rr_rdata;
-    rrdatalen = dnskey->rr_rdata_length_h;
-
-    if (rrdata == NULL)
-        return 0;
-
-    namelen = wire_name_length(name_n);
-
-    memset(ds_digest, SHA_DIGEST_LENGTH, 0);
-
-    SHA1_Init(&c);
-    SHA1_Update(&c, name_n, namelen);
-    SHA1_Update(&c, rrdata, rrdatalen);
-    SHA1_Final(ds_digest, &c);
-
-    if (!memcmp(ds_digest, ds_hash, ds_hash_len))
-        return 1;
-
-    return 0;
+    
+    return ds_sha_hash_is_equal(name_n, dnskey->rr_rdata, 
+            dnskey->rr_rdata_length_h, ds_hash);
 }
 
 /*
@@ -649,14 +633,21 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
 #define SET_STATUS(savedstatus, sig, newstatus) \
 	do { \
 		sig->rr_status = newstatus; \
-		if ((savedstatus != VAL_A_VERIFIED) && \
-			(savedstatus != VAL_A_VERIFIED_LINK) && \
-				(savedstatus != newstatus))  \
-			savedstatus = VAL_A_NOT_VERIFIED; \
-		else if (newstatus == VAL_A_VERIFIED_LINK)	\
-			savedstatus = VAL_A_VERIFIED; \
-		else \
-			savedstatus = newstatus; \
+        /* Any success is good */\
+		if ((newstatus == VAL_A_RRSIG_VERIFIED) || \
+			(newstatus == VAL_A_VERIFIED_LINK)) \
+            savedstatus = VAL_A_VERIFIED;\
+        else if ((savedstatus != VAL_A_VERIFIED) && \
+                 (savedstatus != VAL_A_WCARD_VERIFIED)){\
+                /* dont have success */\
+                if ((savedstatus != newstatus) &&  \
+                        (savedstatus != VAL_A_DONT_KNOW))\
+                    /* different errors */\
+			        savedstatus = VAL_A_NOT_VERIFIED; \
+                else\
+                    savedstatus = newstatus;\
+        }\
+        /* else leave savedstatus untouched */\
 	} while (0)
 
 // XXX Still have to check for the following error conditions
@@ -665,7 +656,7 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
 // XXX VAL_A_KEYTAG_MISMATCH
 void
 verify_next_assertion(val_context_t * ctx,
-                      struct _val_authentication_chain *as)
+                      struct val_digested_auth_chain *as)
 {
     struct rrset_rec *the_set;
     struct rr_rec  *the_sig;
@@ -674,14 +665,14 @@ verify_next_assertion(val_context_t * ctx,
     u_int16_t       signby_footprint_n;
     val_dnskey_rdata_t dnskey;
     int             is_a_wildcard;
-    struct _val_authentication_chain *the_trust;
+    struct val_digested_auth_chain *the_trust;
     int             retval;
 
     if ((as == NULL) || (as->_as.ac_data == NULL) ||
         (as->val_ac_trust == NULL))
         return;
 
-    as->val_ac_status = VAL_A_VERIFIED;
+    as->val_ac_status = VAL_A_DONT_KNOW;
 
     the_set = as->_as.ac_data;
     the_trust = as->val_ac_trust;
@@ -752,17 +743,22 @@ verify_next_assertion(val_context_t * ctx,
             (retval =
              do_verify(ctx, &(the_sig->rr_status), the_set, the_sig,
                        &dnskey, is_a_wildcard))) {
-            SET_STATUS(as->val_ac_status, the_sig, retval);
+            if ((the_sig->rr_status == VAL_A_RRSIG_VERIFIED) && (is_a_wildcard))
+                the_sig->rr_status = VAL_A_WCARD_VERIFIED;
+            SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
             FREE(dnskey.public_key);
             dnskey.public_key = NULL;
             continue;
         }
 
+        SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
         FREE(dnskey.public_key);
         dnskey.public_key = NULL;
 
         /*
          * If this record contains a DNSKEY, check if the DS record contains this key 
+         * DNSKEYs cannot be wildcard expanded, so VAL_A_WCARD_VERIFIED does not
+         * count as a good sig
          */
         if (the_sig->rr_status == VAL_A_RRSIG_VERIFIED) {
             if (the_set->rrs.val_rrset_type_h == ns_t_dnskey) {
