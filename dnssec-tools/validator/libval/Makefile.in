@@ -7,6 +7,7 @@ SRC=  	val_resquery.c \
 	val_support.c \
 	val_cache.c \
 	val_context.c \
+	val_crypto.c \
 	val_verify.c \
 	val_parse.c \
 	val_policy.c \
@@ -14,16 +15,14 @@ SRC=  	val_resquery.c \
 	val_x_query.c \
 	val_assertion.c\
 	val_getaddrinfo.c \
-	val_gethostbyname.c \
-	crypto/val_rsamd5.c \
-	crypto/val_rsasha1.c \
-	crypto/val_dsasha1.c
+	val_gethostbyname.c 
 
 # can't use gmake conventions to translate SRC -> OBJ for portability
 OBJ=  	val_resquery.o \
 	val_support.o \
 	val_cache.o \
 	val_context.o \
+	val_crypto.o \
 	val_verify.o \
 	val_parse.o \
 	val_policy.o \
@@ -31,15 +30,13 @@ OBJ=  	val_resquery.o \
 	val_x_query.o \
 	val_assertion.o\
 	val_getaddrinfo.o \
-	val_gethostbyname.o \
-	crypto/val_rsamd5.o \
-	crypto/val_rsasha1.o \
-	crypto/val_dsasha1.o
+	val_gethostbyname.o 
 
 LOBJ=  	val_resquery.lo \
 	val_support.lo \
 	val_cache.lo \
 	val_context.lo \
+	val_crypto.lo \
 	val_verify.lo \
 	val_parse.lo \
 	val_policy.lo \
@@ -47,10 +44,7 @@ LOBJ=  	val_resquery.lo \
 	val_x_query.lo \
 	val_assertion.lo\
 	val_getaddrinfo.lo \
-	val_gethostbyname.lo \
-	crypto/val_rsamd5.lo \
-	crypto/val_rsasha1.lo \
-	crypto/val_dsasha1.lo
+	val_gethostbyname.lo 
 
 LIBVAL=libval.la
 
