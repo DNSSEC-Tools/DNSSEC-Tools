@@ -163,7 +163,9 @@ extern          "C" {
     /*
      * Flags for API functions 
      */
-#define VAL_QUERY_MERGE_RRSETS 0x01
+#define VAL_FLAGS_DEFAULT 0x00000000
+#define VAL_FLAGS_DONT_VALIDATE 0x00000001
+#define VAL_QUERY_MERGE_RRSETS 0x00000002
 
     /*
      * policies are defined for the following
@@ -206,7 +208,7 @@ extern          "C" {
     typedef u_int16_t val_astatus_t;
 
     struct val_query_chain;     /* forward declaration */
-    struct _val_authentication_chain;    /* forward declaration */
+    struct val_digested_auth_chain;    /* forward declaration */
 
 
 #define policy_entry_t void*
@@ -290,7 +292,7 @@ extern          "C" {
         /*
          * caches 
          */
-        struct _val_authentication_chain *a_list;
+        struct val_digested_auth_chain *a_list;
         struct val_query_chain *q_list;
 
         //XXX Needs a lock variable here
@@ -301,17 +303,17 @@ extern          "C" {
     struct val_rrset_digested {
         struct rrset_rec *ac_data;
         struct val_query_chain *ac_pending_query;
-        struct _val_authentication_chain *val_ac_rrset_next;
-        struct _val_authentication_chain *val_ac_next;
+        struct val_digested_auth_chain *val_ac_rrset_next;
+        struct val_digested_auth_chain *val_ac_next;
     };
 
-    struct _val_authentication_chain {
+    struct val_digested_auth_chain {
         val_astatus_t   val_ac_status;
         union {
             struct val_rrset *val_ac_rrset;
             struct val_rrset_digested _as;
         };
-        struct _val_authentication_chain *val_ac_trust;
+        struct val_digested_auth_chain *val_ac_trust;
     };
 
 
@@ -344,7 +346,8 @@ extern          "C" {
         u_int8_t       *qc_zonecut_n;
         struct delegation_info *qc_referral;
         int             qc_trans_id;
-        struct _val_authentication_chain *qc_as;
+        struct val_digested_auth_chain *qc_ans;
+        struct val_digested_auth_chain *qc_proof;
         int             qc_glue_request;
         struct val_query_chain *qc_next;
     };
@@ -360,7 +363,8 @@ extern          "C" {
         char           *di_requested_name_h;
         u_int16_t       di_requested_type_h;
         u_int16_t       di_requested_class_h;
-        struct rrset_rec *di_rrset;
+        struct rrset_rec *di_answers;
+        struct rrset_rec *di_proofs;
         struct qname_chain *di_qnames;
         int             di_res_error;
     };
@@ -371,16 +375,21 @@ extern          "C" {
         struct val_authentication_chain *val_ac_trust;
     };
 
+#define MAX_PROOFS 10 
     struct val_result_chain {
         val_status_t    val_rc_status;
-        struct val_authentication_chain *val_rc_trust;
+        struct val_authentication_chain *val_rc_answer;
+        int             val_rc_proof_count;
+        struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
         struct val_result_chain *val_rc_next;
     };
 
-    struct _val_result_chain {
+    struct val_internal_result {
         val_status_t    val_rc_status;
-        struct _val_authentication_chain *val_rc_trust;
-        struct _val_result_chain *val_rc_next;
+        int val_rc_is_proof;
+        int val_rc_consumed;
+        struct val_digested_auth_chain *val_rc_rrset;
+        struct val_internal_result *val_rc_next;
     };
 
     typedef struct val_dnskey_rdata {
@@ -447,11 +456,6 @@ extern          "C" {
                                           struct val_result_chain
                                           **results);
 
-    /*
-     * Flags for val_resolve_and_check 
-     */
-#define F_DEFAULT 0x00000000
-#define F_DONT_VALIDATE 0x00000001
 
     /*
      * from val_context.h 
