@@ -27,6 +27,11 @@
 
 #include <sys/socket.h>
 #include <arpa/nameser.h>
+#ifdef HAVE_ARPA_NAMESER_COMPAT_H
+#include <arpa/nameser_compat.h>
+#else
+#include "arpa/header.h"
+#endif
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <resolv.h>
@@ -114,8 +119,7 @@ static const struct testcase_st testcases[] = {
     {"Test Case 4", "www.n3.roll.ws.nsec3.org", ns_c_in, ns_t_a,
      {VAL_SUCCESS, 0}},
     {"Test Case 5", "www.nx.roll.ws.nsec3.org", ns_c_in, ns_t_a,
-     {VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME,
-      0}},
+     {VAL_NONEXISTENT_NAME, 0}},
 #endif
 
 #if 0
@@ -431,9 +435,9 @@ static const struct testcase_st testcases[] = {
     {"Test Case 96", "pastdate-AAAA.good-ns.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 97", "addedlater-A.good-ns.test.dnssec-tools.org", ns_c_in,
-     ns_t_a, {VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, 0}},
+     ns_t_a, {VAL_NONEXISTENT_NAME, 0}},
     {"Test Case 98", "addedlater-AAAA.good-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_NONEXISTENT_NAME, 0}},
     {"Test Case 99", "good-A.badsign-ns.test.dnssec-tools.org", ns_c_in,
      ns_t_a, {VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 100", "badsign-A.badsign-ns.test.dnssec-tools.org",
@@ -577,9 +581,9 @@ static const struct testcase_st testcases[] = {
     {"Test Case 168", "addedlater-AAAA.pastdate-ns.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROOF, VAL_R_BOGUS_PROOF, 0}},
     {"Test Case 169", "addedlater-A.test.dnssec-tools.org", ns_c_in,
-     ns_t_a, {VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, 0}},
+     ns_t_a, {VAL_NONEXISTENT_NAME, 0}},
     {"Test Case 170", "addedlater-AAAA.test.dnssec-tools.org", ns_c_in,
-     ns_t_aaaa, {VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, 0}},
+     ns_t_aaaa, {VAL_NONEXISTENT_NAME, 0}},
 #endif
 
 #if 0
@@ -597,8 +601,7 @@ static const struct testcase_st testcases[] = {
      */
     {"Checking non-existence proofs",
      "dns1.wesh.fruits.netsec.tislabs.com.", ns_c_in, ns_t_a,
-     {VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_NAME,
-      0}},
+     {VAL_NONEXISTENT_NAME, 0}},
 #endif
 
 #if 1
@@ -984,10 +987,9 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
 
     /*
      * Query the validator
-     * xxx-rks: merge rrset flag?
      */
-    ret_val = val_resolve_and_check(context, name_n, class_h, type_h, 0,
-                                    &results);
+    ret_val = val_resolve_and_check(context, name_n, class_h, type_h, 
+                                VAL_QUERY_MERGE_RRSETS, &results);
     val_log_authentication_chain(context, LOG_DEBUG, name_n, class_h, type_h,
                                  context ? context->q_list : NULL, results);
 
@@ -1014,7 +1016,9 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
                 printf("\n");
             }
             
-            if (resp->vr_next == NULL) {
+            if (resp == NULL) {
+                fprintf(stderr, "FAILED: No response\n");
+            } else if (resp->vr_next == NULL) {
                 if (resp->vr_length > response_size_max) {
                     err = 1;
                 }
@@ -1043,7 +1047,7 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
 }
 
 static int
-process_packet(void)
+process_packet(val_context_t *context)
 {
     HEADER         *query_header, *response_header;
     u_char         *pos;
@@ -1092,7 +1096,8 @@ process_packet(void)
     VAL_GET16(q_class, pos);
 
     response_size = sizeof(response);
-    get_results(NULL, "test", &query[sizeof(HEADER)], q_class, q_type,
+    
+    get_results(context, "test", &query[sizeof(HEADER)], q_class, q_type,
                 response, &response_size, 0);
 
     /*
@@ -1128,6 +1133,8 @@ process_packet(void)
 static void
 endless_loop(void)
 {
+    val_context_t *context;
+
     /*
      * signal handlers to exit gracefully
      */
@@ -1142,10 +1149,17 @@ endless_loop(void)
      * open a port and process incoming packets
      */
     port_setup(1153);
+    if (VAL_NO_ERROR != val_create_context(NULL, &context)) {
+        val_log(NULL, LOG_ERR, "Cannot create validator context. Exiting.");
+        return;
+    }
+
     while (!done) {
         wait_for_packet();
-        process_packet();
+        process_packet(context);
     }
+
+    val_free_context(context);
 
     free_validator_cache();
 }
