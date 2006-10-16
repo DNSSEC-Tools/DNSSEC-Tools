@@ -234,6 +234,8 @@ val_log_assertion(const val_context_t * ctx, int level,
                 val_parse_dnskey_rdata(curkey->rr_rdata,
                                        curkey->rr_rdata_length_h, &dnskey);
                 tag = dnskey.key_tag;
+                if (dnskey.public_key)
+                    FREE(dnskey.public_key);
                 break;
             }
         }
