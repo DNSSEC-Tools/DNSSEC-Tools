@@ -204,6 +204,8 @@ extern          "C" {
 #define SET_MASKED_STATUS(st, new_val)     st = (st & VAL_R_TRUST_FLAG) | new_val
 #define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_TRUST_FLAG) == chk_val)
 
+#define SIG_ACCEPT_WINDOW   (86400*7) /** 7 days **/
+    
     typedef u_int8_t val_status_t;
     typedef u_int16_t val_astatus_t;
 
