@@ -20,6 +20,6 @@ typedef int     val_result_t;
  * The Verifier Function.
  */
 void            verify_next_assertion(val_context_t * ctx,
-                                      struct _val_authentication_chain *as);
+                                      struct val_digested_auth_chain *as);
 
 #endif
