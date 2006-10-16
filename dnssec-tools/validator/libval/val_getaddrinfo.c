@@ -550,8 +550,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
      * Loop for each result in the linked list of val_result_chain structures 
      */
     for (result = results; result != NULL; result = result->val_rc_next) {
-        struct val_rrset *rrset = result->val_rc_trust ?
-            result->val_rc_trust->val_ac_rrset : NULL;
+        struct val_rrset *rrset = result->val_rc_answer ?
+            result->val_rc_answer->val_ac_rrset : NULL;
 
         if (rrset != NULL) {
             struct rr_rec  *rr = rrset->val_rrset_data;
@@ -745,7 +745,7 @@ get_addrinfo_from_dns(val_context_t *ctx,
         /*
          * Convert the validator result into val_addrinfo 
          */
-        if (results && results->val_rc_trust && retval == VAL_NO_ERROR) {
+        if (results && results->val_rc_answer && retval == VAL_NO_ERROR) {
             struct val_addrinfo *ainfo_new = NULL;
             ret =
                 get_addrinfo_from_result(ctx, results,
@@ -794,7 +794,7 @@ get_addrinfo_from_dns(val_context_t *ctx,
         /*
          * Convert the validator result into val_addrinfo 
          */
-        if (results && results->val_rc_trust && retval == VAL_NO_ERROR) {
+        if (results && results->val_rc_answer && retval == VAL_NO_ERROR) {
             struct val_addrinfo *ainfo_new = NULL;
             ret =
                 get_addrinfo_from_result(ctx, results,
