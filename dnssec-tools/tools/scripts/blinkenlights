@@ -82,8 +82,11 @@ my $DLGHEIGHT = 10;		# Height of the dialog box.
 #
 # Font size for output window.
 #
-my $fontsize = 18;
-my $font = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+my $FONTMIN	= 10;		# Minimum font size we'll allow.
+my $FONTMAX	= 42;		# Maximum font size we'll allow.
+my $FONTINCR	= 2;		# Font creation loop increment.
+my $fontsize	= 18;
+my $font	= "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
 
 #
 # Foreground colors for zones.
@@ -143,6 +146,7 @@ my $help;						# Help menu.
 # Menu item widgets.
 #
 my $fm_quit;						# Quit file item.
+my $op_fsz;						# Fontsize item.
 my $op_mdfy;						# Modify toggle.
 my $op_shad;						# Shading toggle.
 my $op_skip;						# Skip toggle.
@@ -310,6 +314,7 @@ sub buildmainwind
 	my $zn_entry;					# Zone menu entry.
 	my $modmsg;					# Modify menu message.
 	my $skipmsg;					# Skip menu message.
+	my $fnsmenu;					# Font-size menu.
 
 	#
 	# Create the main window.
@@ -374,6 +379,15 @@ sub buildmainwind
 	$modmsg = $DISALLOWCMDS;
 	$modmsg = $ALLOWCMDS if($nomodify);
 	$op_mdfy = $disp->command(-label => $modmsg, -command => \&disp_modify);
+	$disp->pack(-side => 'left');
+
+	$fnsmenu = $disp->cascade(-label => "Font Size");
+	for(my $ind = $FONTMIN; $ind <= $FONTMAX; $ind += $FONTINCR)
+	{
+		$fnsmenu->radiobutton(-label	=> "$ind",
+				      -variable => \$fontsize,
+				      -command	=> \&disp_font);
+	}
 	$disp->pack(-side => 'left');
 
 	##################################################
@@ -464,6 +478,18 @@ sub buildmainwind
 sub file_quit
 {
 	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_font()
+#
+# Purpose:	Handle the Font Size menu item.  We'll set the font string
+#		and repaint the screen.
+#
+sub disp_font
+{
+	setfont();
+	painter($PAINTMAX+1);
 }
 
 #---------------------------------------------------------------------------
