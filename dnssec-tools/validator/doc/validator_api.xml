@@ -4,99 +4,93 @@
 <?rfc toc="yes"?>
 
 <!DOCTYPE rfc SYSTEM "rfc2629.dtd">
-<rfc ipr="full3978" docName="draft-hayatnagarkar-dnsext-validator-api-01">
+<rfc ipr="full3978" docName="draft-hayatnagarkar-dnsext-validator-api-02">
   <front>
-  <title> DNSSEC Validator API </title>
+    <title> DNSSEC Validator API </title>
 
-  <author initials="S." surname="Krishnaswamy"
-                fullname="Suresh Krishnaswamy"> 
-    <organization> SPARTA, Inc. </organization>
-    <address>
-       <postal>
-        <street>7110 Samuel Morse Dr.</street>
-        <city>Columbia</city>
-        <region>MD</region>
-        <code>21046</code>
-        <country>US</country>
-      </postal>
-      <email>suresh AT sparta.com</email>
-    </address>
-  </author>
+    <author initials="S." surname="Krishnaswamy"
+            fullname="Suresh Krishnaswamy"> 
+      <organization> SPARTA, Inc. </organization>
+      <address>
+        <postal>
+          <street>7110 Samuel Morse Dr.</street>
+          <city>Columbia</city>
+          <region>MD</region>
+          <code>21046</code>
+          <country>US</country>
+        </postal>
+        <email>suresh AT sparta.com</email>
+      </address>
+    </author>
+    <author initials="A." surname="Hayatnagarkar"
+            fullname="Abhijit Hayatnagarkar"> 
+      <organization> SPARTA, Inc. </organization>
+      <address>
+        <postal>
+          <street>7110 Samuel Morse Dr.</street>
+          <city>Columbia</city>
+          <region>MD</region>
+          <code>21046</code>
+          <country>US</country>
+        </postal>
+        <email>abhijit AT sparta.com</email>
+      </address>
+    </author>
 
-  <author initials="A." surname="Hayatnagarkar"
-                fullname="Abhijit Hayatnagarkar"> 
-    <organization> SPARTA, Inc. </organization>
-    <address>
-       <postal>
-        <street>7110 Samuel Morse Dr.</street>
-        <city>Columbia</city>
-        <region>MD</region>
-        <code>21046</code>
-        <country>US</country>
-      </postal>
-      <email>abhijit AT sparta.com</email>
-    </address>
-  </author>
+    <date month="October" year="2006" />
+    <workgroup> DNS Extensions </workgroup>
+    <keyword>Internet-Draft</keyword>
 
-  <date month="June" year="2006" />
-  <workgroup> DNS Extensions </workgroup>
-  <keyword>Internet-Draft</keyword>
-
-  <abstract> 
-    <t>The DNS Security Extensions (DNSSEC) provide origin authentication and
+    <abstract> 
+<t>The DNS Security Extensions (DNSSEC) provide origin authentication and
 integrity of DNS data.  However, the current resolver Application Programming 
 Interface (API) does not allow a security-aware resolver to communicate 
 detailed results of DNSSEC processing back to the application.  
-This document describes an API  between applications and a validating 
+This document describes an API between applications and a validating 
 security-aware stub resolver that allows applications to control the 
 validation process and obtain results of DNSSEC processing.</t>
-  </abstract>
+    </abstract>
   </front>
 
   <middle>
   <section title="Introduction">
   <!--           ############## -->
 
-  <t>
-  The DNS Security Extensions (<xref target="refs.RFC4033">RFC 4033</xref>,
+<t>The DNS Security Extensions (<xref target="refs.RFC4033">RFC 4033</xref>,
 <xref target="refs.RFC4034">RFC 4034</xref>, <xref target="refs.RFC4035">RFC 4035</xref>)
 allow resolvers to test the origin authenticity and integrity of data returned by the 
 DNS.  A validator, or more formally, a validating security-aware stub resolver, 
-is a piece of software that performs these tests
-by checking the cryptographic signatures that cover DNS records and by
-verifying a sequence of such records from a <xref target="refs.RFC4033">trust anchor</xref> to
-these returned records.  
-This document presents an API between an application and a validator.
-The API functions provide a convenient way for applications to control the DNSSEC validation
-process, and to obtain and use results of the validation process to control their behavior. </t>
+is a piece of software that performs these tests by checking the cryptographic 
+signatures that cover DNS records and by verifying a sequence of such records 
+from a <xref target="refs.RFC4033">trust anchor</xref> to these signed records.  
+This document presents an API between an application and a validator, which provides
+a convenient way for applications to control the DNSSEC validation
+process and obtain detailed validation results on which to base program behavior. </t>
 
-  <t>
-  The API can be broadly divided into three groups: 
-the high-Level validator API, the low-Level validator API and 
-the context management API. </t>
-
-  <t>
-  The high-level validator API is designed for ease of 
-use and mirrors existing DNS-related functions.
-This API is best suited for existing applications that already use 
-legacy DNS-related functions such as gethostbyname(), 
-getaddrinfo() and res_query(), or for applications that have no requirement 
+<t>The API can be broadly divided into three groups: the high-Level validator API, 
+the low-Level validator API and the context management API. </t>
+    
+<t>The high-level validator API is designed for ease of use and mirrors 
+existing DNS-related functions. This API is best suited for existing 
+applications that already use legacy DNS-related functions such as 
+gethostbyname(), getaddrinfo() and res_query() and have no requirement 
 for detailed validation status information. </t>
 
-  <t> The low-level validator API gives more control over the 
-validation process and allows detailed inspection of validation 
-status for each element of the <xref target="refs.RFC4033">authentication chain</xref>. </t>
+<t> The low-level validator API allows detailed inspection of validation 
+status for each element of the <xref target="refs.RFC4033">authentication 
+chain</xref>. </t>
 
-  <t> Results returned by the validator can be guided by local policy decisions.  
-The context management API provides functions for applications to control which policies 
+<t> Validator operation can be guided by local policy. The context 
+management API provides functions for applications to control which policies 
 are used during DNSSEC validation.</t>
 
-  <t> The range of functions provided in this API allows for the creation of applications
-that are either only interested in basic results such as "validated"
-or "not-validated",  or more sophisticated applications that can look
-for specific errors as a sign of a network abnormality or attack. </t>
+<t> The range of functions provided in this API allows for the 
+creation of applications that are either only interested in basic 
+results such as "validated" or "not-validated",  or more sophisticated 
+applications that can look for specific errors in the authentication 
+chain as a sign of a network abnormality or attack. </t>
 
-  <t> <xref target="high_level_api"/>, <xref target="low_level_api"/>,
+<t> <xref target="high_level_api"/>, <xref target="low_level_api"/>,
 and <xref target="val-context"/> describe these interfaces in greater detail. </t>
 
   </section> <!-- Introduction -->
@@ -105,63 +99,50 @@ and <xref target="val-context"/> describe these interfaces in greater detail. </
   <section title="Terminology">
   <!--            ############# -->
 
-  <t> Some of the terminology used in this specification are defined below: 
+<t> Some of the terms used in this specification are defined below: 
 
   <list style="hanging">
-
-		<t> </t>
-		<t hangText="validator policy:"> 
-		a set of configuration parameters for the validator that can influence 
-		the eventual outcome of the validation process. </t>
-
-		<t> </t>
-        <t hangText="policy attribute: ">
-        a particular configurable component of the validator policy;
-        for instance a trust anchor setting or an untrusted algorithm definition. </t>
-
-        <t> </t>
-        <t hangText="validator context:">
-		an opaque structure encapsulating the validator policy. 
-        The validator context is the application's handle to the validator policy.  </t>
-
-        <t> </t>
-        <t hangText="base policy:">
-		the default policy definition that is associated with a validator context. 
-		The base policy can be different for different validator contexts. </t>
-
-		<t> </t>
-        <t hangText="policy scope: ">
-        a customization within the base policy to address the requirements of a particular 
-		operating scenario.  Policy scopes are useful
-        when it becomes necessary to override certain policy attributes in specific
-        environments. As an example, an application may require different validator policies 
-		for a web browser and a mail client. In such cases the application may define a common
-        base policy for the system and have overrides for specific scopes: one for the web browser
-        and one for the mail client. </t> 
-
-      </list> </t>
+    <t> </t>
+    <t hangText="legacy functions:"> 
+Functions such as gethostbyname() and getaddrinfo() that are 
+not capable of returning validation status values and are typically 
+used by DNSSEC-unaware applications. </t>
+    <t> </t>
+    <t hangText="validator policy:"> 
+a set of configuration parameters for the validator that can influence 
+the eventual outcome of the validation process. </t>
+   	<t> </t>
+    <t hangText="policy attribute: ">
+a particular configurable component of the validator policy;
+for instance a trust anchor setting or an untrusted algorithm definition. </t>
+    <t> </t>
+    <t hangText="validator context:">
+an opaque structure encapsulating the validator policy. 
+The validator context is the application's handle to the validator policy.  </t>
+    <t> </t>
+    <t hangText="active policy:">
+the policy definition that is associated with a validator context. </t> 
+  </list> </t>
 
   </section> <!-- Terminology -->
 
 
-    <section title="High-level Validator API" anchor="high_level_api">
-    <!--            ######################### -->
-    <t>
-    The high-level validator API provides DNSSEC-aware substitutes for commonly
+  <section title="High-level Validator API" anchor="high_level_api">
+  <!--            ######################### -->
+
+<t> The high-level validator API provides DNSSEC-aware substitutes for commonly
 used DNS functions such as gethostbyname(), getaddrinfo(), and res_query().
 This API provides an easy path for applications already using these legacy functions
-to transition towards becoming DNSSEC-aware.
-  </t>
-  <t>
-The ctx parameter of type val_context_t* used in the following functions points
-to the validator context.  
-An application may explicitly create a context using the val_create_context() function
-described in <xref target="val-context"/>, or allow the API to create one internally by 
-specifying the value of NULL for the ctx parameter.  
+to transition towards becoming DNSSEC-aware.  </t>
 
-  </t>
-     <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr, val_gethostbyaddr_r">
-      <figure>
+<t> The ctx parameter used in the following functions points
+to the validator context. An application may explicitly create a context 
+using the val_create_context() function described in <xref target="val-context"/>, 
+or allow the API to create one internally by specifying the value of NULL 
+for the ctx parameter. </t>
+
+    <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr, val_gethostbyaddr_r">
+    <figure>
       <artwork>
 struct hostent *val_gethostbyname( const val_context_t *ctx,
                                    const char          *name,
@@ -194,64 +175,63 @@ int val_gethostbyaddr_r( const val_context_t *ctx,
                          val_status_t        *val_status );
       </artwork>
       <postamble>
-      <t>
-      The val_gethostbyname() and val_gethostbyname_r() functions perform
-name-to-address translation while the val_gethostbyaddr() and val_gethostbyaddr_r()
-functions perform the address-to-name translation.
-      These functions are DNSSEC-aware versions of the gethostbyname(),
-gethostbyname_r(), gethostbyaddr() and gethostbyaddr_r() functions and
-can be used by applications to get the validation status of DNS queries
-performed during the name-to-address or address-to-name translations.
-The parameters to the above functions closely mirror the legacy functions
-and must be only used when replacing such functions with their DNSSEC-aware 
-counterparts. For applications that do not already use these older functions
-it is instead recommended to use functions from <xref target="hl_getaddrinfo"/> 
-to perform address-to-name and name-to-address translations.
-      </t>
-      <t>
-      The val_gethostbyname() function returns a pointer to a structure of
-type hostent for the host name provided in the name parameter. The name can also
-be an IPv4 address in standard dot notation, or an IPv6 address in colon (and
-possibly dot) notation. If name is an IPv4 or IPv6 address, no lookup is performed 
-and val_gethostbyname() simply copies name into the h_name field and its 
-struct in-addr equivalent into the h_addr_list[0] of the returned hostnet structure.
-	</t>
-	<t>
-The val_gethostbyaddr() function returns a pointer to a structure of type 
-hostent for the given host address
-addr whose length is given by the len parameter and address type is given by
-the type parameter.  Valid address types are AF_INET and AF_INET6. 
-	</t> 
-	<t> As with gethostbyname() and gethostbyaddr(), the val_gethostbyname() and
+<t>The val_gethostbyname(), val_gethostbyname_r(), val_gethostbyaddr() 
+and val_gethostbyaddr_r() functions are DNSSEC-aware versions of the 
+gethostbyname(), gethostbyname_r(), gethostbyaddr() and gethostbyaddr_r() 
+legacy functions that  perform name-to-address and address-to-name 
+translations and also return the validation status of DNS responses.
+These functions must be only used when retrofitting DNSSEC in applications
+that use these legacy functions. For applications that do not 
+already use these older functions it is instead recommended to use 
+functions from <xref target="hl_getaddrinfo"/> to perform 
+address-to-name and name-to-address translations.  </t>
+
+<t> The val_gethostbyname() function returns a pointer to a structure of
+type hostent for the host name provided in name. The name can also be an 
+IPv4 address in standard dot notation, or an IPv6 address in colon (and
+possibly dot) notation. If name is an IPv4 or IPv6 address, no lookup 
+is performed and val_gethostbyname() simply copies name into the 
+h_name field and its struct in-addr equivalent into the h_addr_list[0] 
+of the returned hostnet structure.  </t>
+
+<t> The val_gethostbyaddr() function returns a pointer to a structure of 
+type hostent for the given host address addr whose length is given by 
+the len parameter and address type is given by the type parameter. 
+Valid address types are AF_INET and AF_INET6.  </t> 
+
+<t> As with gethostbyname() and gethostbyaddr(), the val_gethostbyname() and
 val_gethostbyaddr() functions set the value of the global h_errno variable.
 These functions return a pointer to a struct hostent value on success, 
-and NULL on error. Their return value may point to static data, and it may be overwritten by
-subsequent calls. Copying the struct hostent does not suffice since it contains pointers -
-a deep copy is required. 
-      </t>
-      <t>
-      The val_gethostbyname_r() and val_gethostbyaddr_r() functions are
-reentrant and thread-safe versions of the val_gethostbyname() and val_gethostbyaddr() functions.
-These functions return 0 on success, and a non-zero value on error.  The result of the
-call is stored in the ret parameter.  These functions do not modify the global h_errno variable, but
-return the error numbers in the h_errnop parameter. After the call, the value of result will be NULL on error
-or point to the ret paramter on success.  Auxiliary data is stored in the buffer
-buf of length buflen. If the buffer is too small, these functions will
-return the error ERANGE.
-      </t>
-      <t>
-      The val_status parameter, which has the type val_status_t, contains the status of DNSSEC
-validation. Possible values for val_status_t are defined in <xref target="val-status"/>.
-A validation status of VAL_SUCCESS will be returned only if both the address and
-canonical name(s) within the hostent structure, if any, have been 
-validated successfully.
-      </t>
-      </postamble>
-      </figure>
-      </section>
+and NULL on error. Their return values may point to static data, and 
+may be overwritten by subsequent calls. Copying the struct hostent 
+is not sufficient since the structure contains pointers - a 
+deep copy is required.  </t>
 
-      <section title="val_getaddrinfo, val_getnameinfo, val_freeaddrinfo" anchor="hl_getaddrinfo">
-      <figure>
+<t> The val_gethostbyname_r() and val_gethostbyaddr_r() functions are
+reentrant and thread-safe versions of the val_gethostbyname() and 
+val_gethostbyaddr() functions.  These functions return 0 on success, 
+and a non-zero value on error.  The result of the call is stored in the 
+ret parameter.  These functions do not modify the global h_errno variable, 
+but return the error numbers in the h_errnop parameter. After the call, 
+the value of result will be NULL on error or point to the ret paramter 
+on success.  Auxiliary data is stored in the buffer
+buf of length buflen. If the buffer is too small, these functions will
+return the error ERANGE.  </t>
+
+<t> The val_status parameter contains the status of DNSSEC
+validation. Possible values for this type are defined in 
+<xref target="val-status"/>.  A validation status of VAL_SUCCESS will 
+be returned only if both the address and canonical name(s) within the 
+hostent structure, if any, are considered trusted. The 
+validation status value can be displayed in a human-understandable 
+format using the p_val_error() function as described in 
+<xref target="p-val-error"/>. </t>
+      </postamble>
+    </figure>
+    </section>
+
+    <section title="val_getaddrinfo, val_getnameinfo, val_freeaddrinfo" anchor="hl_getaddrinfo">
+    <figure>
       <artwork>
 int val_getaddrinfo( const val_context_t   *ctx, 
                      const char            *nodename,
@@ -285,47 +265,44 @@ struct val_addrinfo {
 }
       </artwork>
       <postamble>
-      <t>
-      The val_getaddrinfo() function returns the address and service
+<t> The val_getaddrinfo() function returns the address and service
 information for the specified domain name and service.  It is a
-DNSSEC-aware version of the getaddrinfo() function
-(<xref target="refs.RFC3493">RFC 3493</xref>).
-This function supports both IPv4 and IPv6
-addresses.  It returns a pointer to a value of type val_addrinfo 
-in the value of the res field on
-success, and NULL on error.  The val_addrinfo structure is an augmented form
-of the addrinfo structure.  It contains an additional ai_val_status field that
-represents the status of DNSSEC validation for that particular answer.  
-The memory for the value of res is dynamically allocated by this 
-function.  The caller should release it after use with the val_freeaddrinfo() function.
-The syntax and semantics of other parameters in val_getaddrinfo() are identical to
-that specified in <xref target="refs.RFC3493"/>. 
-      </t>
-      <t>
-      The val_getnameinfo() function performs an address-to-name translation
-in a protocol independent manner.  It is a DNSSEC-aware version of the
-getnameinfo() function (<xref target="refs.RFC3493">RFC 3493</xref>).  In
-addition to the values returned by the getnameinfo() function, it returns
-the DNSSEC validation status via the val_status parameter.
-The syntax and semantics of other parameters in val_getnameinfo() are identical to
-that specified in <xref target="refs.RFC3493"/>. 
-      </t>
-	  <t>
-val_status will contain a validation status of VAL_SUCCESS 
+DNSSEC-aware version of the getaddrinfo() legacy function
+(<xref target="refs.RFC3493">RFC 3493</xref>). This function 
+supports both IPv4 and IPv6 addresses.  It returns a pointer to 
+a value of type val_addrinfo in the value of the res field on
+success, and NULL on error.  The val_addrinfo structure is an 
+augmented form of the addrinfo structure.  It contains an additional 
+ai_val_status field that represents the status of DNSSEC validation 
+for that particular answer.  The memory for the value of res is 
+dynamically allocated by this function and the caller should release 
+it after use with the val_freeaddrinfo() function. The syntax and 
+semantics of other parameters in val_getaddrinfo() are identical to
+that specified in <xref target="refs.RFC3493"/>.  </t>
+
+<t> The val_getnameinfo() function performs an address-to-name 
+translation in a protocol independent manner.  It is a DNSSEC-aware 
+version of the getnameinfo() legacy function 
+(<xref target="refs.RFC3493">RFC 3493</xref>).  In
+addition to the values returned by the getnameinfo() function, 
+this function  returns the DNSSEC validation status in the val_status 
+parameter.  The syntax and semantics of other parameters in 
+val_getnameinfo() are identical to that specified in 
+<xref target="refs.RFC3493"/>.  </t>
+
+<t> val_status will contain a validation status of VAL_SUCCESS 
 only if both the address and canonical name within the val_addrinfo 
-structure, if present, have been validated successfully.  
+structure, if present, are considered trusted.  
 The validation status value can be displayed in a human-understandable format using
-the p_val_error() function as described in <xref target="p-val-error"/>.
-	  </t>
-      <t>
-The val_getaddrinfo() and val_getnameinfo() functions return 0 on success and
-a non-zero value on error.
-      </t>
+the p_val_error() function as described in <xref target="p-val-error"/>.  </t>
+
+<t> The val_getaddrinfo() and val_getnameinfo() functions return 0 on success and
+a non-zero value on error.  </t>
       </postamble>
       </figure>
-      </section>
+    </section>
 
-      <section title="val_query, val_res_query">
+    <section title="val_query, val_res_query">
       <figure>
       <artwork>
 int val_query( const val_context_t *ctx, 
@@ -338,8 +315,12 @@ int val_query( const val_context_t *ctx,
 int val_free_response(struct val_response *resp);
 
 int val_res_query(const val_context_t *ctx, 
-        const char *domain_name, int class, int type,
-        u_char *answer, int anslen, val_status_t *val_status);
+                  const char          *domain_name, 
+                  int                 class, 
+                  int                 type,
+                  u_char              *answer, 
+                  int                 anslen, 
+                  val_status_t        *val_status);
 
 struct val_response {
         unsigned char       *vr_response;
@@ -349,62 +330,54 @@ struct val_response {
 };
       </artwork>
       <postamble>
-      <t>
-      The val_query() and val_res_query() functions query the name server for the fully qualified
-domain name present in the domain_name field of the given class and type.  In addition to the answers to the
-query, they give the status of DNSSEC validation. 
-They are intended as DNSSEC-aware replacements for the res_query() function.
-      </t>
-      <t>
-      val_query() is provided to return the individual validation status values for multiple RRsets returned in
-response to a query. Multiple RRsets may be returned if the query is for a type of ANY 
-or when a proof of non-existence is returned, in which case, RRsets of type NSEC and SOA may
-also be returned.
-	</t>
-	<t>
-The val_query() function returns 0 on success and a non-zero error code
-on failure.  When a success value is returned, the 
-memory pointed to by resp contains a linked-list of responses returned by the validator.  
-The memory for the value of resp is internally allocated and must be released 
-after a successful invocation of val_query() using the 
+<t> The val_query() and val_res_query() functions query the name server 
+for the fully qualified domain name present in the domain_name field 
+of the given class and type.  In addition to the answers to the
+query, they give the status of DNSSEC validation. They are intended 
+as DNSSEC-aware replacements for the res_query() function.  </t>
+
+<t> val_query() is provided to return the individual validation status 
+values for multiple RRsets returned in response to a query. Multiple 
+RRsets may be returned if the query is for a type of ANY or RRSIG. 
+The memory for the value of resp is internally allocated and must be 
+released after a successful invocation of val_query() using the 
 val_free_response() function. </t> 
-      <t>
-      By default, each val_response structure in the linked-list within resp 
+
+<t> The val_query() function returns 0 on success and a non-zero error 
+code on failure.  On success, the memory pointed to by resp contains 
+a linked-list of responses returned by the validator.  
+By default, each val_response structure in the linked-list within resp 
 holds a single RRset response. The format of the vr_response field 
 within the val_response structure is similar to the format 
 of the answer returned by res_query() and is of length vr_length. 
 The vr_val_status field contains the status of DNSSEC validation 
-for that particular RRset and may be displayed in a human-understandable format using
-the p_val_error() function as described in <xref target="p-val-error"/>. Elements
-within the resp linked-list may be accessed by traversing the list using the 
-vr_next field. 
-</t>
-     <t>
-     The flags parameter controls the scope of validation and the output 
-format.  At present only one flag is defined:
-VAL_QUERY_MERGE_RRSETS. When this flag is specified, all RRsets in the answer
+for that particular RRset and may be displayed in a human-understandable 
+format using the p_val_error() function as described in 
+<xref target="p-val-error"/>. Elements within the resp linked-list may 
+be accessed by traversing the list using the vr_next field. </t> 
+
+<t> The flags parameter controls the scope of validation and the output 
+format.  Only the VAL_QUERY_MERGE_RRSETS flag is currently defined.
+When this flag is specified, all RRsets in the answer
 are merged into a single response and returned in the first (and only)
-element of the resp linked list.  
-The vr_response field of this element will have a format similar
-to the answer returned by res_query().  The validation status will be
-VAL_SUCCESS only if all the individual RRsets have been successfully
-validated.  
-If this flag is used and a value other than VAL_SUCCESS is returned with
-multiple RRsets in the answer, it will not be possible to know which
-RRset resulted in the error status.</t>
+element of the resp linked list. The vr_response field of this element 
+will have a format similar to the answer returned by res_query(). 
+The validation status will be VAL_SUCCESS only if all the individual 
+RRsets are trusted. If this flag is used and a value other than 
+VAL_SUCCESS is returned with multiple RRsets in the answer, 
+it will not be possible to know which RRset resulted in the error status.</t>
 
-	<t>
-	The val_res_query() function is semantically closer to the res_query(3) function than val_query(). 
-It internally invokes the val_query() function supplying it with 
-the proper set of arguments and returning the final response in the answer field.
-The number of bytes available in the answer field is returned in the anslen field. 
-The val_res_query() function returns the value of anslen on success and -1 on failure. 
-</t> 
-
+<t> The val_res_query() function is semantically closer to the res_query(3) 
+function than val_query(). It internally invokes the val_query() function 
+supplying it with the VAL_QUERY_MERGE_RRSETS flag and returns the final 
+response in the answer field. The number of bytes available in the 
+answer field is returned in the anslen field.  The val_res_query() function 
+returns the value of anslen on success and -1 on failure.  </t> 
       </postamble>
       </figure>
-      </section>
-     <section title="p_val_error" anchor="p-val-error">
+    </section>
+
+    <section title="p_val_error" anchor="p-val-error">
       <figure>
       <artwork>
 char *p_val_error(val_status_t err);
@@ -412,28 +385,26 @@ char *p_val_error(val_status_t err);
       <postamble>
       <t>
 The p_val_error() function can be used to display the validation status information 
-contained in the parameter with type
-val_status_t in a human-understandable format. The returned values are essentially 
-string representations of the
+contained in the parameter with type val_status_t in a human-understandable 
+format. The returned values are string representations of the
 definitions given in <xref target="val-status"/>. 
       </t>
       </postamble>
       </figure>
-      </section>
+    </section>
 
-      </section> <!-- High-level Validator API -->
+  </section> <!-- High-level Validator API -->
 
-      <section title="Low-level Validator API" anchor="low_level_api">
-      <!-- #################################### -->
+  <section title="Low-level Validator API" anchor="low_level_api">
+  <!-- #################################### -->
 
-      <t> 
-      The low-level validator API provides the application with greater control and visibility 
+<t> The low-level validator API provides the application with greater control and visibility 
 into the validation process. The functions and data structures defined in the low-level 
 validator API are summarized below. </t>
 
-      <section title="val_resolve_and_check, val_free_result">
-        <figure>
-        <artwork>
+    <section title="val_resolve_and_check, val_free_result_chain, p_as_error">
+      <figure>
+      <artwork>
 int val_resolve_and_check( const val_context_t        *context, 
                            const char                 *domain_name,
                            const u_int16_t            class,
@@ -441,32 +412,37 @@ int val_resolve_and_check( const val_context_t        *context,
                            const u_int8_t             flags,
                            struct val_result_chain    **results);
 
-void val_free_result( struct val_result_chain *results );
+void val_free_result_chain( struct val_result_chain *results );
+
+char *p_as_error(val_astatus_t err);
 
 struct val_result_chain {
-    val_status_t               val_rc_status;
-    struct val_authentication_chain *val_rc_trust;
-    struct val_result_chain    *val_rc_next;
+    val_status_t                    val_rc_status;
+    struct val_authentication_chain *val_rc_answer;
+    int                             val_rc_proof_count;
+    struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
+    struct val_result_chain         *val_rc_next;
 };
 
 struct val_authentication_chain {
-    val_astatus_t              val_ac_status;
-    struct val_rrset           *val_ac_rrset;
+    val_astatus_t                   val_ac_status;
+    struct val_rrset                *val_ac_rrset;
     struct val_authentication_chain *val_ac_trust;
 };
-
+      </artwork>
+      </figure>
+      <figure>
+      <artwork>
 struct val_rrset {
-    u_int8_t  *val_msg_header;
-    u_int16_t val_msg_headerlen;
-    u_int8_t  *val_queryset_data; 
-    u_int16_t val_queryset_datalen;
-    u_int8_t  *val_rrset_name_n; 
-    u_int16_t val_rrset_class_h;
-    u_int16_t val_rrset_type_h;
-    u_int32_t val_rrset_ttl_h; 
-    u_int8_t  val_rrset_section;
-    struct rr_rec *val_rrset_data;
-    struct rr_rec *val_rrset_sig;
+    u_int8_t        *val_msg_header;
+    u_int16_t       val_msg_headerlen;
+    u_int8_t        *val_rrset_name_n; 
+    u_int16_t       val_rrset_class_h;
+    u_int16_t       val_rrset_type_h;
+    u_int32_t       val_rrset_ttl_h; 
+    u_int8_t        val_rrset_section;
+    struct rr_rec   *val_rrset_data;
+    struct rr_rec   *val_rrset_sig;
 };
 
 struct rr_rec {
@@ -476,572 +452,497 @@ struct rr_rec {
     struct rr_rec   *rr_next;
 };
 
-char *p_as_error(val_astatus_t err);
-        </artwork>
-        <postamble>
-
-        <t>
-        The val_resolve_and_check() function queries a set of name servers
+      </artwork>
+      <postamble>
+<t> The val_resolve_and_check() function queries a set of name servers
 for the &lt;domain_name, class, type&gt; tuple and then verifies and validates
 the responses received. The verification step checks RRSIGs and the
 validation step performs verification down the authentication chain from a trust
 anchor.  All the information necessary for inspecting the authentication chain 
-is available through the results parameter. 
-The context parameter points to the validator context.  
-An application may explicitly create a context using the val_create_context() 
-function described in <xref target="val-context"/>, or allow the validator to create 
-one internally by specifying the value of NULL for this parameter.  The flags field is currently unused.
-		</t>
+is available through the results parameter. The context parameter points 
+to the validator context. An application may explicitly create a 
+context using the val_create_context() function described in 
+<xref target="val-context"/>, or allow the validator to create 
+one internally by specifying the value of NULL for this parameter.  
+Only the VAL_FLAGS_DONT_VALIDATE flag is currently defined. This flag has
+the effect of turning off validation -- no authentication chain is constructed
+for this response. </t>
 
-		<t> 
-val_resolve_and_check() returns 0 on success and an error code from 
-<xref target="val-return-values"/> on failure. 
-The val_resolve_and_check() function internally allocates memory for the value of the result
+<t> val_resolve_and_check() returns 0 on success and an error code from 
+<xref target="val-return-values"/> on failure. The val_resolve_and_check() 
+function internally allocates memory for the value of the result
 parameter, which must be released after a successful call to this 
-function using the val_free_result() function. 
-		</t>
+function using the val_free_result_chain() function.  </t>
 
-        <t>
-        Answers to the query are returned in results, which is a linked-list of val_result_chain structures.  
-Each element in the linked-list corresponds to a distinct RRset. 
-Multiple RRs within the RRset are all part of the same answer. Multiple answers are possible
-when the query type is ANY or when a proof of non-existence is returned, in
-which case RRsets of type NSEC and SOA may also be returned. 
-The val_rc_next field can be used to iterate through the list of all results returned by the validator. 
-The consolidated validation status value for an RRset in the  DNS response based on the 
-individual status values for all components in the authentication chain is stored in 
-the val_rc_status field, which is of type val_status_t. 
-Possible values for this type are listed in <xref target="val-status"/> and can be
-displayed in a human-understandable format using the p_val_error() function as described 
-in <xref target="p-val-error"/>.
-Members of the authentication chain sequence are encapsulated in the val_authentication_chain 
-structure, which provides greater detail about the validation status for each component in the chain.
-The val_rc_trust field in the val_result_chain structure points to the first element 
-in the inverted authentication chain sequence. 
-		</t> 
+<t> Answers to the query are returned in results, which is a linked-list 
+of val_result_chain structures.  Each element in the linked-list corresponds 
+to a distinct RRset returned in the answer section along with any 
+associated proofs of non-existence.  Multiple RRs within the RRset are 
+all part of the same answer. Multiple answers are possible when the 
+query type is ANY or RRSIG. The val_rc_next field can be used to iterate 
+through the list of all results returned by the validator.  The consolidated 
+validation status value for an RRset in the  DNS response based on the 
+individual status values for all components in the authentication chain is 
+stored in the val_rc_status field, which is of type val_status_t. 
+Possible values for this type are listed in <xref target="val-status"/> 
+and can be displayed in a human-understandable format using the p_val_error() 
+function as described in <xref target="p-val-error"/>.  Members of the 
+authentication chain sequence are encapsulated in the 
+val_authentication_chain structure, which provides greater detail about 
+the validation status for each component in the authentication chain.
+The val_rc_answer field in the val_result_chain structure points to the 
+next element in the  authentication chain sequence proceeding from the 
+signed record towards the trust anchor. The proofs of non-existence
+for this query or any proofs that are required to support the validity 
+of information in val_rc_answer are returned in the val_rc_proofs array. 
+val_rc_proof_count provides the number of elements present in this array.  </t> 
 
-		<t>
-Within the val_authentication_chain structure, the val_ac_status field returns the 
-validation status for the specified RRset. Possible values for this field are
-defined in <xref target="val-astatus"/>. These values can be displayed in a 
-human-understandable format using the p_as_error() function. 
-The val_ac_trust field points to the next element in the inverted authentication chain.
-For a element with type DNSKEY, this would correspond to a DS record in the parent zone and for a DS record
-this would correspond to the DNSKEY in the current zone. Its value is NULL when the current element in the
-linked list points to a valid trust anchor or in case of an error when the next node in 
-the authentication chain cannot be constructed. 
-The val_ac_status field can be used to differentiate between these two cases. 
-		</t>
+<t> Within the val_authentication_chain structure, the val_ac_status field 
+returns the validation status for the specified RRset. Possible values for 
+this field are defined in <xref target="val-astatus"/>. These values can 
+be displayed in a human-understandable format using the p_as_error() function. 
+The val_ac_trust field points to the next element in the authentication chain.
+For a element with type DNSKEY, the next element corresponds to a DS record 
+in the parent zone and for a DS record the next element corresponds to the 
+DNSKEY in the current zone. Its value is NULL when the current element in the
+linked list points to a valid trust anchor or in the case of an error, when 
+the next node in the authentication chain from the record to the trust anchor 
+cannot be constructed.  The val_ac_status field can be used to differentiate 
+between these two cases.  </t>
 
-		<t>
-The val_ac_rrset field in the val_authentication_chain structure contains the actual RRset data. 
-The information stored in this structure includes the header of the DNS response in which the RRset was
+<t> The val_ac_rrset field in the val_authentication_chain structure contains 
+the actual RRset data.  The information stored in this structure includes 
+the header of the DNS response in which the RRset was
 received (in the val_msg_header field with length given by the 
-val_msg_headerlen field), the query section of the DNS response in which
-the RRset was received (in the val_queryset_data field with length given by the 
-val_queryset_datalen field), and the DNS response "envelope"
-comprising of the name, class, type and time-to-live tuple (in the val_rrset_name_n, val_rrset_class_h,
-val_rrset_type_h and val_rrset_ttl_h fields respectively).
-	</t>
-	<t>
-The response RDATA is stored within val_rrset_data. Any RRSIGs that are applicable
-to the response RDATA are stored within val_rrset_sig. Both of these variables are of type rr_rec, which is
-essentially a list of name-value pairs corresponding to each resource-record within the RRset. 
-Members of the val_rrset_sig linked list also have an rr_status field which 
-indicates whether the signature verified
-succesfully over the corresponding RRset or not. Although rr_status is of type val_astatus_t, 
-this field only takes on a subset of status values defined in <xref
-target="val-astatus"/>), specifically those pertaining to signature verification. In addition, rr_status may 
-also contain the value VAL_A_VERIFIED_LINK if the RRset corresponds to that of a DNSKEY and if the
-particular resource record within that set is a member of the chain of trust. 
-		</t>
+val_msg_headerlen field) and the DNS response "envelope"
+comprising of the name, class, type and time-to-live tuple (in the 
+val_rrset_name_n, val_rrset_class_h, val_rrset_type_h and val_rrset_ttl_h 
+fields respectively).  </t>
+
+<t> The response RDATA is stored within val_rrset_data. Any RRSIGs that are 
+applicable to the response RDATA are stored within val_rrset_sig. Both of 
+these variables are of type rr_rec, which is a list of 
+name-value pairs corresponding to each resource-record within the RRset. 
+Members of the val_rrset_sig and val_rrset_data linked lists also have 
+rr_status fields of type val_astatus_t.  This field only takes on a subset 
+of all status values possible for val_astatus_t, specifically, those pertaining 
+to signature verification as defined in <xref target="val-astatus"/>).  </t>
 
 <t> The section where the RRset appears in the DNS response is saved in the 
 val_rrset_section field within the val_rrset structure and may contain one
 of the following values, </t> 
 
         <t> <list style="hanging">
-        <t> </t>
-        <t hangText="VAL_FROM_ANS:">
-        returned if the RRset was present in the answer section of the DNS response.
-        </t>
-        <t> </t>
-        <t hangText="VAL_FROM_AUT:">
-        returned if the RRset was present in the authority section of the DNS response.
-        </t>
-        <t> </t>
-        <t hangText="VAL_FROM_ADD:">
-        returned if the RRset was present in the additional section of the DNS response.
-        </t>
-	</list></t>
+<t hangText="VAL_FROM_ANSWER:">
+returned if the RRset was present in the answer section of the DNS response.  </t>
+<t> </t>
+<t hangText="VAL_FROM_AUTHORITY:">
+returned if the RRset was present in the authority section of the DNS response.  </t>
+<t> </t>
+<t hangText="VAL_FROM_ADDITIONAL:">
+returned if the RRset was present in the additional section of the DNS response.  </t>
+        </list></t>
+      </postamble>
+      </figure>
 
-        </postamble>
-        </figure>
+    </section>
 
-        </section>
+    <section title="Assertion Status Codes" anchor="val-astatus">
 
-        <section title="Assertion Status Codes" anchor="val-astatus">
+      <t> <list style="symbols">
+        <t> The verification status value stored in the val_ac_status member 
+of the val_authentication_chain structure can have one of the following values:
+        <list style="hanging">
+<t> </t>
+<t hangText="VAL_A_DATA_MISSING:">
+returned if there was no data returned for a query and the DNS did not indicate an error.  </t>
+<t> </t>
+<t hangText="VAL_A_RRSIG_MISSING:">
+returned if RRSIG data could not be retrieved for a resource record.  </t>
+<t> </t>
+<t hangText="VAL_A_DNSKEY_MISSING:">
+returned if the DNSKEY for an RRSIG covering a resource record was not available.  </t>
+<t> </t>
+<t hangText="VAL_A_DS_MISSING:">
+returned if the DS record covering a DNSKEY record was not available.  </t>
+<t> </t>
+<t hangText="VAL_A_UNTRUSTED_ZONE:">
+returned if local policy defined a given zone as untrusted.  </t>
+<t> </t>
+<t hangText="VAL_A_DNSSEC_VERSION_ERROR:">
+returned if the DNSSEC version was unrecognized.  </t>
+<t> </t>
+<t hangText="VAL_A_TOO_MANY_LINKS:">
+returned if local policy identified a given authentication chain as being too long.  </t>
+<t> </t>
+<t hangText="VAL_A_UNKNOWN_DNSKEY_PROTO:">
+returned if the DNSKEY protocol number was unrecognized.  </t>
+<t> </t>
+<t hangText="VAL_A_NOT_VERIFIED:">
+returned if all RRSIGs covering the an RRset could not be verified.  </t>
+<t> </t>
+<t hangText="VAL_A_VERIFIED:">
+returned if at least one RRSIG covering a resource record had a status of VAL_A_RRSIG_VERIFIED.  </t>
+<t> </t>
+<t hangText="VAL_A_LOCAL_ANSWER:">
+returned if the answer was obtained locally (for example, a file such as /etc/hosts).  </t>
+<t> </t>
+<t hangText="VAL_A_TRUST_KEY:">
+returned if a given DNSKEY or a DS record was locally defined to be a trust anchor.  </t>
+<t> </t>
+<t hangText="VAL_A_TRUST_ZONE:">
+returned if local policy defined a given zone as trusted.  </t>
+<t> </t>
+<t hangText="VAL_A_PROVABLY_UNSECURE:">
+returned if the authentication chain from a trust anchor to a given zone could not be constructed
+due to the provable absence of a DS record for this zone in the parent.  </t>
+<t> </t>
+<t hangText="VAL_A_BARE_RRSIG:">
+returned if the response was for a query of type RRSIG. RRSIGs contain the cryptographic
+signatures for other DNS data and cannot themselves be validated.  </t>
+<t> </t>
+<t hangText="VAL_A_NO_TRUST_ANCHOR:">
+returned if there was no trust anchor configured for a given authentication chain.  </t> 
+        </list> </t> 
+      </list> </t>
 
-		<t> The verification status value stored in the val_ac_status member of the val_authentication_chain structure 
-can have one of the following values:</t> 	
-        <t> <list style="hanging">
-        <t> </t>
-        <t hangText="VAL_A_DATA_MISSING:">
-        returned if there was no data returned for a query and the DNS did not indicate an error. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_RRSIG_MISSING:">
-        returned if RRSIG data could not be retrieved for a resource record.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_DNSKEY_MISSING:">
-        returned if the DNSKEY for an RRSIG covering a resource record was not available.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_DS_MISSING:">
-        returned if the DS record covering a DNSKEY record was not available.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_NO_TRUST_ANCHOR:">
-        returned if there was no trust anchor configured for a given authentication chain.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_UNTRUSTED_ZONE:">
-        returned if local policy defines a given zone to be untrusted.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_IRRELEVANT_PROOF:">
-        returned if the proof of nonexistence returned for a query is ambiguous. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_DNSSEC_VERSION_ERROR:">
-        returned if the DNSSEC version is unrecognized.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_TOO_MANY_LINKS:">
-        returned if local policy identifies a given authentication chain to be too long.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_UNKNOWN_DNSKEY_PROTO:">
-        returned if the DNSKEY protocol number is unrecognized.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_DNSKEY_NOMATCH:">
-        returned if an RRSIG was created by a DNSKEY that does not exist in the apex keyset.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_WRONG_LABEL_COUNT:">
-        returned if the number of labels on the signature is greater than the the count given in the RRSIG RDATA.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_SECURITY_LAME:">
-        returned if an was RRSIG created with a key that does not exist in the parent DS record set.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_NOT_A_ZONE_KEY:">
-        returned if the key used to verify the RRSIG is not valid DNSKEY.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_RRSIG_NOTYETACTIVE:">
-        returned if the RRSIG's inception time is in the future.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_RRSIG_EXPIRED:">
-        returned if the RRSIG has expired.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_ALGO_NOT_SUPPORTED:">
-        returned if the algorithm in the DNSKEY, RRSIG or DS resource record is not supported.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_UNKNOWN_ALGO:">
-        returned if the DNSKEY, RRSIG or DS algorithm is unknown.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_RRSIG_VERIFIED:">
-        returned if the RRSIG verified successfully.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_RRSIG_VERIFY_FAILED:">
-        returned if the RRSIG did not verify.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_NOT_VERIFIED:">
-        returned if different RRSIGs covering the same resource record failed for different reasons. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_KEY_TOO_LARGE:">
-        returned if local policy has identified the key size as being too large.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_KEY_TOO_SMALL:">
-        returned if local policy has identified the key size as being too small.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_KEY_NOT_AUTHORIZED:">
-        returned if local policy has identified the key to be unauthorized for validation. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_ALGO_REFUSED:">
-        returned if the algorithm in the DNSKEY, RRSIG or DS is not allowed as per local policy.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_CLOCK_SKEW:">
-        returned if the signature over the resource record could only be verified after clock skew is taken into account 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_DUPLICATE_KEYTAG:">
-        returned if two different DNSKEYs in a zone have the same keytag. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_NO_PREFERRED_SEP:">
-        returned if there is no DNSKEY in the parent DS set that local policy permits the validator to build its
-authentication chain from. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_WRONG_RRSIG_OWNER:">
-        returned if the RRSIG and the data that it purportedly covers have differing notions of owner name
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_RRSIG_ALGO_MISMATCH:">
-        returned if the DNSKEY and RRSIG pair have a mismatch in their algorithm. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_KEYTAG_MISMATCH:">
-        returned if the DNSKEY and RRSIG pair have a mismatch in their key tags 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_VERIFIED:">
-        returned if at least one RRSIG covering a resource record had a status of VAL_A_RRSIG_VERIFIED. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_LOCAL_ANSWER:">
-        returned if the answer was obtained locally (for example, a file such as /etc/hosts).
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_TRUST_KEY:">
-        returned if a given DNSKEY or a DS record has been locally defined to be a trust anchor. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_TRUST_ZONE:">
-        returned if local policy defines a given zone to be trusted. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_PROVABLY_UNSECURE:">
-        returned if the authetication chain from a trust anchor to a given zone cannot be constructed
-		due to the provable absence of a DS record for this zone in the parent. This condition 
-		is treated as equivalent to a trust point being recognized.
-        </t>
-        <t> </t>
-        <t hangText="VAL_A_BARE_RRSIG:">
-        returned if the response was for a query of type RRSIG. RRSIGs contain the cryptographic
-		signatures for other DNS data and cannot themselves be validated.
-        </t>
-        </list>
-        </t>
+      <t> <list style="symbols">
+      <t> Resolver-related status values in val_ac_status are reflected by one of the 
+following values, offset by the value of VAL_A_DNS_ERROR_BASE : 
+        <list style="hanging">
+<t> </t>
+<t hangText="SR_INTERNAL_ERROR:">
+returned if an internal error was encountered in the resolver.  </t>
+<t> </t>
+<t hangText="SR_TSIG_ERROR:">
+returned if there was an error in TSIG processing.  </t>
+<t> </t>
+<t hangText="SR_NO_ANSWER:">
+returned if no answer was received for a query.  </t>
+<t> </t>
+<t hangText="SR_WRONG_ANSWER:">
+returned if a message received was not a valid response to a query.  </t>
+<t> </t>
+<t hangText="SR_HEADER_BADSIZE:">
+returned if the message size was not consistent with header values.  </t>
+<t> </t>
+<t hangText="SR_NXDOMAIN:">
+returned if rcode was set to NXDOMAIN, but either the authority section contains data other
+than a proof of non-existence or the answer and additional sections were not empty.  </t>
+<t> </t>
+<t hangText="SR_FORMERR:">
+returned if rcode was set to FORMERR.  </t>
+<t> </t>
+<t hangText="SR_SERVFAIL:">
+returned if rcode was set to SERVFAIL.  </t>
+<t> </t>
+<t hangText="SR_NOTIMPL:">
+returned if rcode was set to NOTIMPL.  </t>
+<t> </t>
+<t hangText="SR_REFUSED:">
+returned if rcode was set to REFUSED.  </t>
+<t> </t>
+<t hangText="SR_DNS_GENERIC_ERROR:">
+returned if the response was received with the rcode set to one of the well-known error values
+namely NXDOMAIN, FORMERR, SR_SERVFAIL, SR_NOTIMPL and SR_REFUSED.  </t>
+<t> </t>
+<t hangText="SR_EDNS_VERSION_ERROR:">
+returned if the EDNS0 version was not recognized.  </t>
+<t> </t>
+<t hangText="SR_UNSUPP_EDNS0_LABEL:">
+returned if the EDNS0 label was not supported.  </t>
+<t> </t>
+<t hangText="SR_SUSPICIOUS_BIT:">
+returned if some bit in the response headers was unexpectedly set or unset.  </t>
+<t> </t>
+<t hangText="SR_NAME_EXPANSION_FAILURE:">
+returned if DNS name uncompression failed.  </t>
+<t> </t>
+<t hangText="SR_REFERRAL_ERROR:">
+returned if referrals for a query could not be successfully followed.  </t>
+<t> </t>
+<t hangText="SR_MISSING_GLUE:">
+returned if glue records were not available for a referral.  </t>
+<t> </t>
+<t hangText="SR_CONFLICTING_ANSWERS:">
+returned if multiple answers were returned for a query, but they were inconsistent with each other.  </t> 
 
-		<t> Resolver-related status values in val_ac_status are reflected by one of the following values, offset by 
-the value of VAL_A_DNS_ERROR_BASE : </t> 	
-        <t> <list style="hanging">
-        <t> </t>
-        <t hangText="SR_TSIG_ERROR:">
-        returned if there was an error in TSIG processing.
-        </t>
-        <t> </t>
-        <t hangText="SR_NO_ANSWER:">
-        returned if no answer was received for a query. 
-        </t>
-        <t> </t>
-        <t hangText="SR_INTERNAL_ERROR:">
-        returned if an internal error was encountered in the resolver.
-        </t>
-        <t> </t>
-        <t hangText="SR_WRONG_ANSWER:">
-        returned if a message received was not a valid response to a query.
-        </t>
-        <t> </t>
-        <t hangText="SR_HEADER_BADSIZE:">
-        returned if the message size was not consistent with header values.
-        </t>
-        <t> </t>
-        <t hangText="SR_DNS_GENERIC_ERROR:">
-        returned if the response was received with the rcode set to one of the well-known error values
-		such as NXDOMAIN, FORMERR, etc. 
-        </t>
-        <t> </t>
-        <t hangText="SR_EDNS_VERSION_ERROR:">
-        returned if the EDNS0 version was not recognized. 
-        </t>
-        <t> </t>
-        <t hangText="SR_UNSUPP_EDNS0_LABEL:">
-        returned if the EDNS0 label is not supported. 
-        </t>
-        <t> </t>
-        <t hangText="SR_SUSPICIOUS_BIT:">
-        returned if some bit in the response headers is unexpectedly set or unset. 
-        </t>
-        <t> </t>
-        <t hangText="SR_NAME_EXPANSION_FAILURE:">
-        returned if DNS name uncompression failed. 
-        </t>
-        <t> </t>
-        <t hangText="SR_MISSING_GLUE:">
-        returned if glue records are not available for a referral.
-        </t>
-        <t> </t>
-        <t hangText="SR_CONFLICTING_ANSWERS:">
-        returned if multiple answers are returned for a query, and they are inconsistent with each other. 
-        </t>
-        </list>
-        </t>
+        </list> </t> 
+      </list> </t>
 
-		</section>
+      <t> <list style="symbols">
+      <t>  For each signature rr_rec member within the authentication chain 
+val_ac_rrset, the validation status stored in the variable rr_status can 
+return one of the following values: 
+        <list style="hanging">
+<t> </t>
+<t hangText="VAL_A_RRSIG_VERIFIED:">
+for an RRSIG, returned if the RRSIG verified successfully.  </t>
+<t> </t>
+<t hangText="VAL_A_WCARD_VERIFIED:">
+for an RRSIG, returned if a given RRSIG covering a resource record 
+shows that the record was wildcard expanded.  </t>
+<t> </t>
+<t hangText="VAL_A_RRSIG_VERIFY_FAILED:">
+for an RRSIG, returned if a given RRSIG covering an RRset was bogus.  </t>
+<t> </t>
+<t hangText="VAL_A_DNSKEY_NOMATCH:">
+for an RRSIG, returned if an RRSIG was created by a DNSKEY that did not exist 
+in the apex keyset.  </t>
+<t> </t>
+<t hangText="VAL_A_WRONG_LABEL_COUNT:">
+for an RRSIG, returned if the number of labels on the signature was greater 
+than the the count given in the RRSIG RDATA.  </t>
+<t> </t>
+<t hangText="VAL_A_SECURITY_LAME:">
+for an RRSIG, returned if an RRSIG was created with a key that did not exist 
+in the parent DS record set.  </t>
+<t> </t>
+<t hangText="VAL_A_RRSIG_NOTYETACTIVE:">
+for an RRSIG, returned if the RRSIG's inception time was in the future.  </t>
+<t> </t>
+<t hangText="VAL_A_RRSIG_EXPIRED:">
+for an RRSIG, returned if the RRSIG had expired.  </t>
+<t> </t>
+<t hangText="VAL_A_VERIFIED_LINK:">
+for a DNSKEY,  returned if this provided the link in the authentication chain from 
+the trust anchor to the signed record.  </t>
+<t> </t>
+<t hangText="VAL_A_NOT_A_ZONE_KEY:">
+returned if the key used to verify the RRSIG was not valid DNSKEY.  </t>
+<t> </t>
+<t hangText="VAL_A_KEY_TOO_LARGE:">
+for a DNSKEY, returned if local policy defined the key size as being too large.</t>
+<t> </t>
+<t hangText="VAL_A_KEY_TOO_SMALL:">
+for a DNSKEY, returned if local policy defined the key size as being too small.  </t>
+<t> </t>
+<t hangText="VAL_A_KEY_NOT_AUTHORIZED:">
+for a DNSKEY, returned if local policy defined the key to be unauthorized for validation.  </t>
+<t> </t>
+<t hangText="VAL_A_NO_PREFERRED_SEP:">
+for a DNSKEY, returned if the parent DS record contained a corresponding hash 
+but local policy did not permits the validator to build its authentication 
+chain from this key.  </t> 
+<t> </t>
+<t hangText="VAL_A_ALGO_NOT_SUPPORTED:">
+returned if the algorithm in the DNSKEY, RRSIG or DS resource record was not supported.  </t>
+<t> </t>
+<t hangText="VAL_A_UNKNOWN_ALGO:">
+returned if the DNSKEY, RRSIG or DS algorithm was unknown.  </t>
+<t> </t>
+<t hangText="VAL_A_ALGO_REFUSED:">
+returned if the algorithm in the DNSKEY, RRSIG or DS was not allowed as per local policy.  </t>
+        </list> </t> 
+      </list> </t>
+    </section>
 
-    </section> <!-- Low-level API -->
+  </section> <!-- Low-level API -->
 
-    <section title="Context Management and Validator Policy API" anchor="val-context">
-    <!--            ####################################### -->
+  <section title="Context Management and Validator Policy API" anchor="val-context">
+  <!--            ####################################### -->
 
-      <t>
-      Applications can use local policy to influence the decision 
-      about when the validator must break 
-      out from the process of constructing the authentication chain with 
-      either a success or failure condition.  
-      Examples of local policy elements include trust anchors for 
-      different zones and untrusted algorithms for cryptographic keys and hashes.
-      Local policy may be different for different applications and operating scenarios. </t> 
+<t> Applications can use local policy to influence the validation outcome. 
+Examples of local policy elements include trust anchors for 
+different zones and untrusted algorithms for cryptographic keys and hashes.
+Local policy may be different for different applications and operating scenarios. </t> 
 
-	<t> Local policy for the validator is stored in the local configration system (typically the configuration file, 
-	/etc/dnsval.conf).  
-Policies are identified by labels or simple text strings, which must be unique within the configuration system. As an
-example, "browser" could be used as the label for a policy that defines the base policy for all web-browsers in a
-system.  A label value of ":" identifies the "default" base policy, or the policy that is used
-when a NULL context is specified as the ctx parameter for functions in <xref target="low_level_api"/> 
-and <xref target="high_level_api"/>. 
-	</t>
+<t> Local policy for the validator is stored in the local 
+configration system (typically the configuration file, /etc/dnsval.conf).  
+Policies are identified by simple text strings called labels, which must be 
+unique within the configuration system. As an example, "browser" could be used 
+as the label that defines the validator policy for all web-browsers in a
+system.  A label value of ":" identifies the "default" policy, or the 
+policy that is used when a NULL context is specified as the ctx parameter 
+for functions in <xref target="low_level_api"/> and <xref target="high_level_api"/>. 
+The default policy is unique within the configuraion system.
+Furthermore, the ':' character is only allowed in the default policy label.
+The configuration system must flag an error if some other label contains the 
+':' character.</t>
 
 <t> Policy definitions have the following structure.  </t> 
 <t> &lt;label&gt; &lt;attribute&gt; &lt;additional-data&gt;; </t>
 <t> Currently the only defined value for &lt;attribute&gt; is "trust-anchor". 
-The value for &lt;additional-data&gt; depends on the type of attribute specified.  For the "trust-anchor" attribute this is a sequence of the zone name and a quoted string containing the RDATA portion for the trust anchor's DNSKEY. An example is given below. </t>
-      <figure>
-      <artwork>
+The value for &lt;additional-data&gt; depends on the type of attribute 
+specified.  For the "trust-anchor" attribute this is a sequence of the 
+zone name and a quoted string containing the RDATA portion for the 
+trust anchor's DNSKEY. An example is given below. </t>
+    <figure>
+    <artwork>
 browser trust-anchor example.com   "257 3 5 AQO8XS4y9r77X9SHBmrx \
                 MoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6 \
                 mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 Ef \
                 GPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHk \
                 oDNCAlr qOA3lw==" ;
-      </artwork>
-      <postamble>
-      </postamble>
-      </figure>
+    </artwork>
+    <postamble>
+    </postamble>
+    </figure>
 
-      <section title="val_create_context, val_free_context">
+    <section title="val_create_context, val_free_context">
       <figure>
       <artwork>
-int val_create_context( const char    *label,
+int val_create_context( const char    *scope,
                      val_context_t **newcontext );
 
 void val_free_context( val_context_t *context );
       </artwork>
       <postamble>
-      <t>
-      The val_create_context() creates a handle to a validator policy context.
-The label parameter identifies the particular policy to be used as the base policy for the context during validation. 
-The label parameter in val_create_context() must be uniquely defined within the configuration system. A NULL
-label creates a context with the "default" base policy (the policy identified by the ":" label in the 
-configuration system). The val_create_context() function returns 0 on success, 
+<t> The val_create_context() creates a handle to a validator policy context.
+The scope parameter identifies the particular policy to be used as the 
+active policy for the context during validation.  Policy scopes have a 
+hierarchical organization, with each member in the hierarchy separated 
+by the ':' character. The default policy forms the base of this hierarchy. 
+The validator forms an effective policy by cumulatively applying the policies
+for each member in the hierarchy. For example, for the policy scope 
+"mozilla:browser", the effective policy is computed by applying policies 
+for the default ":", "browser" and "mozilla" policies, in that order. 
+A NULL scope creates a context with the default base policy . </t>
+
+<t>The val_create_context() function returns 0 on success, 
 and an error code from <xref target="val-return-values"/> on failure. 
 The newly created context is returned in the newcontext field.
 A NULL context is returned if an error is encountered.  
 The application must release the memory allocated after a successful call to the 
 val_create_context() function using the val_free_context() function. </t> 
 
-      </postamble>
-      </figure>
-      </section>
+    </postamble>
+    </figure>
+    </section>
 
-      <section title="val_switch_policy_scope">
+    <section title="val_get_policy_definition, val_set_policy_definition">
       <figure>
       <artwork>
-int val_switch_policy_scope( val_context_t *ctx,
-                             const char    *scope );
-      </artwork>
-      <postamble>
-      <t>
-      This function allows applications to switch their current validator context to a particular policy scope.  
-The validator context supplied in ctx must not be NULL and the scope must be valid for the context. 
-The semantics of what constitutes a valid switch is implementation-specific. 
-A NULL scope switches the context's current policy scope to its base policy. </t> 
-
-<t> The val_switch_policy_scope() function returns 0 on success, and an error code from <xref
-target="val-return-values"/> on failure.  </t>
-      </postamble>
-      </figure>
-      </section>
-
-      <section title="val_get_scopes_within_context">
-      <figure>
-      <artwork>
-int val_get_scopes_within_context( val_context *ctx,
-                                   char        **scopes,
-                                   int         *count );
-      </artwork>
-      <postamble>
-      <t>
-      This function allows applications to obtain the list of valid policy scopes available within a given context.
-The validator context supplied in the ctx parameter for this function must not be NULL.
-The function returns 0 on success and sets count to the number of scopes available. 
-It returns one of the error codes from <xref target="val-return-values"/> on failure. 
-The memory for the scopes parameter is internally allocated after a successful call to this function; 
-application must release the memory allocated to each of the count elements returned in scopes after use. 
-</t>
-      </postamble>
-      </figure>
-      </section>
-
-      <section title="val_get_scope_definition, val_set_scope_definition">
-      <figure>
-      <artwork>
-int val_get_scope_definition( val_context *ctx,
-                              char        *scope,
+int val_get_policy_definition(char        *label,
                               char        **pol_def ); 
 
-int val_set_scope_definition( val_context *ctx,
-                              const char  *scope, 
+int val_set_policy_definition(const char  *label, 
                               char        *policy_string );
       </artwork>
       <postamble>
-      <t>
-      The val_get_scope_definition() function allows applications to obtain the policy definition for a given scope
-identifier. Memory for pol_def, if the definition for scope exists, is internally allocated and must be released
-by the application after use.
-      </t>
-      <t>
-      The val_set_scope_definition() function allows an application to modify the definition of an existing policy scope or 
-define a new policy scope within a context. A NULL scope updates the base policy within the context. </t>
+<t> The val_get_policy_definition() function allows applications to obtain 
+the policy definition for a given label identifier.  A NULL label returns 
+the definition for the default policy.  Memory for pol_def, if the definition 
+for label exists, is internally allocated and must be released by the 
+application after use.  </t>
 
-<t>
-The validator context supplied in the ctx parameter for the val_get_scope_definition() 
-and val_set_scope_definition() functions must not be NULL.
-The above functions return 0 on success and an error code from <xref target="val-return-values"/> on failure.  </t>
-      </postamble>
-      </figure>
-      </section>
+<t> The val_set_policy_definition() function allows an application to 
+modify the definition of an existing policy or define a new policy label 
+within the configuration system. A NULL label updates the default policy. 
+The rules for a valid label in the above calls are same as that for 
+labels within the configuration system in that the ':' character is only 
+allowed in the default policy label. </t>  
+
+<t> The above functions return 0 on success and an error code from 
+<xref target="val-return-values"/> on failure.  </t>
+    </postamble>
+    </figure>
+    </section>
 
     </section> <!-- Context Management -->
 
-	<section title="Validation Status Codes and Return Values">
+    <section title="Validation Status Codes and Return Values">
     <!--            ####################################### -->
 
-	<t> The following sections specify the values that may be returned as the validation status value for the 
-val_status_t parameter type in the high-level and low-level APIs, and the return values for the low-level 
-and context-management APIs. The High-level API mirrors existing DNS-related functions, 
-so the return values from these functions are identical to their predecessors. </t> 
+<t> The following sections specify the values that may be returned as 
+the validation status value for the val_status_t parameter type in the 
+high-level and low-level APIs, and the return values for the low-level 
+and context-management APIs. The High-level API mirrors existing legacy 
+DNS-related functions, so the return values from these functions are 
+identical to their predecessors. </t> 
 
-	<section title="Return Values" anchor="val-return-values">
+      <section title="Return Values" anchor="val-return-values">
 
-	<t> The following values may be returned by functions in the low-level and context-management APIs. </t>
-
-        <t> <list style="hanging">
-        <t> </t>
-        <t hangText="VAL_NOT_IMPLEMENTED:">
-       	returned if the implementation does not support a particular feature. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_BAD_ARGUMENT:">
-	returned if an unexpected value was passed as an argument to a function.
-        </t>
-        <t> </t>
-        <t hangText="VAL_INTERNAL_ERROR:">
-	returned if an internal error was encountered in the validator library. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_NO_PERMISSION:">
-	returned if the application lacked sufficient privileges to perform an operation. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_RESOURCE_UNAVAILABLE:">
-	returned if some resource necessary for an operation was unavailable. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_CONF_PARSE_ERROR:">
-	returned if the validator configuration was improperly specified in the configuration 
-	system. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_CONF_NOT_FOUND:">
-	returned if the validator configuration could not be located in the 
-	configuration system. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_NO_POLICY:">
-	returned if the policy identifier being referenced could not be located 
-	or was invalid for the current context. 
-        </t>
-	</list></t>
-
-	</section>
-	<section title="Validation Status Codes" anchor="val-status">
-
-	<t> Possible values for the validator status codes as returned 
-	in the variable of type val_status_t are listed below. </t> 
+<t> The following values may be returned by functions in the low-level 
+and context-management APIs. </t>
 
         <t> <list style="hanging">
-        <t> </t>
-        <t hangText="VAL_LOCAL_ANSWER:">
-        returned if the response was obtained locally (for example, a file such as /etc/hosts).
-        </t>
-        <t> </t>
-        <t hangText="VAL_BARE_RRSIG:">
-        returned if the response was for a query of type RRSIG. RRSIGs contain the cryptographic
-	signatures for other DNS data and cannot themselves be validated.
-        </t>
-        <t> </t>
-        <t hangText="VAL_NONEXISTENT_NAME:">
-        returned if the proof for denial of existence for a domain name
-	was validated. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_NONEXISTENT_TYPE:">
-        returned if the proof for denial of existence for the resource record type for the
-	name queried was validated. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_ERROR:">
-        returned if the an error was encountered while validating the authentication chain. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_INDETERMINATE:">
-        returned if the validator lacked data required to complete validation down the authentication chain. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_BOGUS:">
-        returned if the response could not be validated due to signature verification failures. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_NOTRUST:">
-        returned if all available components in the authentication chain were successfully verified
-		but there was no trust anchor available. 
-        </t>
-        <t> </t>
-        <t hangText="VAL_SUCCESS:">
-        returned if the response was verified and validated.
-        </t>
-        </list>
-        </t>
+<t> </t>
+<t hangText="VAL_NOT_IMPLEMENTED:">
+returned if the implementation did not support a particular feature.  </t>
+<t> </t>
+<t hangText="VAL_BAD_ARGUMENT:">
+returned if an unexpected value was passed as an argument to a function.  </t>
+<t> </t>
+<t hangText="VAL_INTERNAL_ERROR:">
+returned if an internal error was encountered in the validator library.  </t>
+<t> </t>
+<t hangText="VAL_NO_PERMISSION:">
+returned if the application lacked sufficient privileges to perform an operation.  </t>
+<t> </t>
+<t hangText="VAL_RESOURCE_UNAVAILABLE:">
+returned if some resource necessary for an operation was unavailable.  </t>
+<t> </t>
+<t hangText="VAL_CONF_PARSE_ERROR:">
+returned if the validator configuration was improperly specified in the 
+configuration system.  </t>
+<t> </t>
+<t hangText="VAL_CONF_NOT_FOUND:">
+returned if the validator configuration could not be located in the 
+configuration system.  </t>
+<t> </t>
+<t hangText="VAL_NO_POLICY:">
+returned if the policy identifier being referenced could not be located 
+or was invalid for the current context.  </t>
+        </list></t>
+      </section>
 
-		<t> In cases where a DNS error is returned for the initial query, the resolver-related error values listed in <xref target="val-astatus"/> are also returned in val_status_t, offset by the value of VAL_DNS_ERROR_BASE. </t>
-	</section>
-	</section>
+      <section title="Validation Status Codes" anchor="val-status">
+<t> Possible values for the validator status codes as returned 
+in the variable of type val_status_t are listed below. </t> 
+
+        <t> <list style="hanging">
+<t> </t>
+<t hangText="VAL_LOCAL_ANSWER:">
+returned if the response was obtained locally (for example, a file such as /etc/hosts).  </t>
+<t> </t>
+<t hangText="VAL_BARE_RRSIG:">
+returned if the response was for a query of type RRSIG. RRSIGs contain the cryptographic
+signatures for other DNS data and cannot themselves be validated.  </t>
+<t> </t>
+<t hangText="VAL_NONEXISTENT_NAME:">
+returned if the proof for denial of existence for a domain name
+was validated.  </t>
+<t> </t>
+<t hangText="VAL_NONEXISTENT_TYPE:">
+returned if the proof for denial of existence for the resource record type for the
+name queried was validated.  </t>
+<t> </t>
+<t hangText="VAL_ERROR:">
+returned if the an error was encountered while validating the authentication chain.  </t>
+<t> </t>
+<t hangText="VAL_INDETERMINATE:">
+returned if the validator lacked data required to complete validation down the authentication chain.  </t>
+<t> </t>
+<t hangText="VAL_BOGUS:">
+returned if the response could not be validated due to signature verification 
+failures or inability to verify proofs.  </t>
+<t> </t>
+<t hangText="VAL_PROVABLY_UNSECURE:">
+returned if the record or some ancestor of the record in the authentication chain 
+towards the trust anchor was known to be provably unsecure. This condition 
+is treated as equivalent to a trust point being reached.  </t>
+<t> </t>
+<t hangText="VAL_NOTRUST:">
+returned if all available components in the authentication chain were successfully verified
+but there was no trust anchor available.  </t>
+<t> </t>
+<t hangText="VAL_SUCCESS:">
+returned if the response was verified and validated.  </t>
+        </list> </t>
+
+<t> In cases where a DNS error is returned for the initial query, the 
+resolver-related error values listed in <xref target="val-astatus"/> are 
+also returned in val_status_t, offset by the value of VAL_DNS_ERROR_BASE. </t>
+      </section>
+    </section>
 
    <section title="IANA Considerations">
    <t> This document has no actions for IANA.</t>
    </section> <!-- IANA Considerations -->
 
    <section title="Security Considerations" anchor="security-considerations">
-   <t>
-   The validator API functions return a status of VAL_LOCAL_ANSWER if they are 
+<t> The validator API functions return a status of VAL_LOCAL_ANSWER if they are 
 returned an answer to a given query from the local configuration system 
 (for example, from the /etc/hosts file).  The
 application cannot assume that these answers can be trusted, unless the
@@ -1052,10 +953,16 @@ communication path between the DHCP server and the client system is secured.
  If these conditions are not satisfied and if the application chooses to trust
 a validation status of VAL_LOCAL_ANSWER, there exists a potential attack vector
 whereby an attacker can poison the configuration system and an application using
-this API may trust the result.
-   </t>
-   <t>
-   The DNS search path may affect the result of validation, especially in
+this API may trust the result.  </t>
+
+<t> Applications will consider data from provably unsecure zones to be trusted.
+The same effect is noticed if a VAL_FLAGS_DONT_VALIDATE flag is passed to
+the val_resolve_and_check() function. Not performing validation and having a 
+zone that has DNSSEC intentionally turned off is no worse than the current 
+situation of DNSSEC-unaware applications not being able to detect the integrity
+of DNS data. </t>
+
+<t> The DNS search path may affect the result of validation, especially in
 the current Internet environment where not all DNS name servers are
 expected to be DNSSEC-aware.  If the name server pointed to by the configuration system 
 is not DNSSEC-aware (i.e. it does not return DNSSEC records), validation will not 
@@ -1063,20 +970,18 @@ be performed. The list of default name servers (such as in the file /etc/resolv.
 is typically modified by DHCP clients.  Hence,
 if the client system uses DHCP, it must ensure that the DHCP server
 is a trusted source, and that the communication path between the DHCP server
-and the client system is secured.
-   </t>
-   <t>
-   The validator configuration information needs to be protected similarly
+and the client system is secured.  </t>
+
+<t> The validator configuration information needs to be protected similarly
 so that it cannot be overwritten by unauthorized users or processes. Access to 
-the val_set_scope_definition() function must similarly be controlled to 
+the val_set_policy_definition() function must similarly be controlled to 
 prevent malicious changes to the validator policy.  Configuration for the 
 validator also contains the trust anchors for classes of applications.  The
 system administrator must ensure that the list of trust anchors are kept
 up-to-date in the event of key-rollovers.  If the trust anchors are outdated,
 the validator may not be able to perform validation or may 
 create the false impression of having successfully validated a response when 
-it should have been flagged as bogus.
-   </t>
+it should have been flagged as bogus.  </t>
    </section> <!-- Security Considerations -->
 
    <section title="Acknowledgements">
@@ -1157,5 +1062,5 @@ at the IETF meetings. This draft draws on the results from that effort.</t>
     </back>
 </rfc>
 
-<!-- last updated Feb. 24, 2006 -->
+<!-- last updated Oct. 18, 2006 -->
 
