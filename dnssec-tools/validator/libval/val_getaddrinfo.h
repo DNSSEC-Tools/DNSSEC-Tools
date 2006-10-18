@@ -58,7 +58,7 @@ int             val_getaddrinfo(const val_context_t * ctx,
 /*
  * A function to free memory allocated by val_getaddrinfo()
  */
-void            free_val_addrinfo(struct val_addrinfo *ainfo);
+void            val_freeaddrinfo(struct val_addrinfo *ainfo);
 
 /**************************************************************/
 #if 0
