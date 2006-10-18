@@ -652,17 +652,13 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
                 if ((savedstatus != newstatus) &&  \
                         (savedstatus != VAL_A_DONT_KNOW))\
                     /* different errors */\
-			        savedstatus = VAL_A_NOT_VERIFIED; \
+                    savedstatus = VAL_A_NOT_VERIFIED; \
                 else\
                     savedstatus = newstatus;\
         }\
         /* else leave savedstatus untouched */\
 	} while (0)
 
-// XXX Still have to check for the following error conditions
-// XXX VAL_A_WRONG_RRSIG_OWNER
-// XXX VAL_A_RRSIG_ALGO_MISMATCH
-// XXX VAL_A_KEYTAG_MISMATCH
 void
 verify_next_assertion(val_context_t * ctx,
                       struct val_digested_auth_chain *as)
