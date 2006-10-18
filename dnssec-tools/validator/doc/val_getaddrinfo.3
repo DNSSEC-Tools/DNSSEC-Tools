@@ -129,9 +129,9 @@
 .\" ========================================================================
 .\"
 .IX Title "val_getaddrinfo 3"
-.TH val_getaddrinfo 3 "2006-06-20" "perl v5.8.6" "Programmer's Manual"
+.TH val_getaddrinfo 3 "2006-10-18" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
-val_getaddrinfo, free_val_addrinfo \- get DNSSEC\-validated network address
+val_getaddrinfo, val_freeaddrinfo \- get DNSSEC\-validated network address
 and service translation
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
@@ -190,7 +190,7 @@ meaning and syntax as the corresponding parameters for the original
 \&\fIstruct val_addrinfo\fR instead of \fIstruct addrinfo\fR. Please see the manual
 page for \fB\f(BIgetaddrinfo\fB\|(3)\fR for more details about these parameters. 
 .PP
-\&\fB\f(BIfree_val_addrinfo()\fB\fR frees the memory allocated for a \fIval_addrinfo\fR linked
+\&\fB\f(BIval_freeaddrinfo()\fB\fR frees the memory allocated for a \fIval_addrinfo\fR linked
 list.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
@@ -198,7 +198,7 @@ The \fB\f(BIval_getaddrinfo()\fB\fR function returns 0 on success and a non-zero
 code on failure.  \fI*res\fR will point to a dynamically allocated linked list
 of \fIval_addrinfo\fR structures on success, and will be \fB\s-1NULL\s0\fR on error.  The
 memory for the value returned in \fI*res\fR can be released using the
-\&\fB\f(BIfree_val_addrinfo()\fB\fR function.
+\&\fB\f(BIval_freeaddrinfo()\fB\fR function.
 .SH "EXAMPLE"
 .IX Header "EXAMPLE"
 .Vb 3
@@ -236,7 +236,7 @@ memory for the value returned in \fI*res\fR can be released using the
 .Ve
 .PP
 .Vb 2
-\&                  free_val_addrinfo(ainfo);
+\&                  val_freeaddrinfo(ainfo);
 \&          }
 .Ve
 .PP

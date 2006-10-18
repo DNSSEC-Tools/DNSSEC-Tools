@@ -228,7 +228,7 @@ main(int argc, char *argv[])
         /*
          * cleanup 
          */
-        free_val_addrinfo(val_ainfo);
+        val_freeaddrinfo(val_ainfo);
     } else {
         retval = getaddrinfo(node, service, &hints, &ainfo);
         if (retval != 0) {

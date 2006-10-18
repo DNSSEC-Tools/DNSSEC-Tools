@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-val_getaddrinfo, free_val_addrinfo - get DNSSEC-validated network address
+val_getaddrinfo, val_freeaddrinfo - get DNSSEC-validated network address
 and service translation
 
 =head1 SYNOPSIS
@@ -55,7 +55,7 @@ I<res> parameter for B<getaddrinfo()>, except that it is of type
 I<struct val_addrinfo> instead of I<struct addrinfo>. Please see the manual
 page for B<getaddrinfo(3)> for more details about these parameters. 
 
-B<free_val_addrinfo()> frees the memory allocated for a I<val_addrinfo> linked
+B<val_freeaddrinfo()> frees the memory allocated for a I<val_addrinfo> linked
 list.
 
 =head1 RETURN VALUES
@@ -64,7 +64,7 @@ The B<val_getaddrinfo()> function returns 0 on success and a non-zero error
 code on failure.  I<*res> will point to a dynamically allocated linked list
 of I<val_addrinfo> structures on success, and will be B<NULL> on error.  The
 memory for the value returned in I<*res> can be released using the
-B<free_val_addrinfo()> function.
+B<val_freeaddrinfo()> function.
 
 =head1 EXAMPLE
 
@@ -90,7 +90,7 @@ B<free_val_addrinfo()> function.
                          ainfo->ai_val_status,
                          p_val_error(ainfo->ai_val_status));
 
-                  free_val_addrinfo(ainfo);
+                  val_freeaddrinfo(ainfo);
           }
 
           return 0;

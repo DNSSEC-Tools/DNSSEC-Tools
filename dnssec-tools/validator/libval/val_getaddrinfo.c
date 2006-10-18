@@ -117,7 +117,7 @@ dup_val_addrinfo(const struct val_addrinfo *a)
 
 
 /*
- * Function: free_val_addrinfo
+ * Function: val_freeaddrinfo
  *
  * Purpose: Free memory allocated for a val_addrinfo structure.  This
  *          function frees the entire linked list.  This function is
@@ -135,7 +135,7 @@ dup_val_addrinfo(const struct val_addrinfo *a)
  * See also: val_getaddrinfo()
  */
 void
-free_val_addrinfo(struct val_addrinfo *ainfo)
+val_freeaddrinfo(struct val_addrinfo *ainfo)
 {
     struct val_addrinfo *acurr = ainfo;
 
@@ -344,7 +344,7 @@ process_service_and_hints(val_status_t           val_status,
         /* if top memory allocated locally, delete */
         if (created_locally) {
             *res = NULL;
-            free_val_addrinfo(a1);
+            val_freeaddrinfo(a1);
         }
         return EAI_SERVICE;
     }
@@ -401,7 +401,7 @@ get_addrinfo_from_etc_hosts(const val_context_t *ctx,
             (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
         if (!ainfo) {
             if (retval)
-                free_val_addrinfo(retval);
+                val_freeaddrinfo(retval);
             return EAI_MEMORY;
         }
 
@@ -430,8 +430,8 @@ get_addrinfo_from_etc_hosts(const val_context_t *ctx,
                 (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));
             if (saddr4 == NULL) {
                 if (retval)
-                    free_val_addrinfo(retval);
-                free_val_addrinfo(ainfo);
+                    val_freeaddrinfo(retval);
+                val_freeaddrinfo(ainfo);
                 return EAI_MEMORY;
             }
             bzero(saddr4, sizeof(struct sockaddr_in));
@@ -450,8 +450,8 @@ get_addrinfo_from_etc_hosts(const val_context_t *ctx,
                 malloc(sizeof(struct sockaddr_in6));
             if (saddr6 == NULL) {
                 if (retval)
-                    free_val_addrinfo(retval);
-                free_val_addrinfo(ainfo);
+                    val_freeaddrinfo(retval);
+                val_freeaddrinfo(ainfo);
                 return EAI_MEMORY;
             }
             bzero(saddr6, sizeof(struct sockaddr_in6));
@@ -463,7 +463,7 @@ get_addrinfo_from_etc_hosts(const val_context_t *ctx,
             ainfo->ai_addr = (struct sockaddr *) saddr6;
             ainfo->ai_canonname = NULL;
         } else {
-            free_val_addrinfo(ainfo);
+            val_freeaddrinfo(ainfo);
             continue;
         }
 
@@ -474,9 +474,9 @@ get_addrinfo_from_etc_hosts(const val_context_t *ctx,
          */
         if (process_service_and_hints
             (ainfo->ai_val_status, servname, hints, &ainfo) != 0) {
-            free_val_addrinfo(ainfo);
+            val_freeaddrinfo(ainfo);
             if (retval)
-                free_val_addrinfo(retval);
+                val_freeaddrinfo(retval);
             return EAI_SERVICE;
         }
 
@@ -602,8 +602,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
                         malloc(sizeof(struct sockaddr_in));
                     if (saddr4 == NULL) {
                         if (ainfo_head)
-                            free_val_addrinfo(ainfo_head);
-                        free_val_addrinfo(ainfo);
+                            val_freeaddrinfo(ainfo_head);
+                        val_freeaddrinfo(ainfo);
                         if (canonname)
                             FREE(canonname);
                         return EAI_MEMORY;
@@ -624,8 +624,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
                         malloc(sizeof(struct sockaddr_in6));
                     if (saddr6 == NULL) {
                         if (ainfo_head)
-                            free_val_addrinfo(ainfo_head);
-                        free_val_addrinfo(ainfo);
+                            val_freeaddrinfo(ainfo_head);
+                        val_freeaddrinfo(ainfo);
                         if (canonname)
                             FREE(canonname);
                         return EAI_MEMORY;
@@ -638,7 +638,7 @@ get_addrinfo_from_result(const val_context_t *ctx,
                            rr->rr_rdata_length_h);
                     ainfo->ai_addr = (struct sockaddr *) saddr6;
                 } else {
-                    free_val_addrinfo(ainfo);
+                    val_freeaddrinfo(ainfo);
                     rr = rr->rr_next;
                     continue;
                 }
@@ -653,8 +653,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
                 if (process_service_and_hints(val_status, servname, 
                                               hints, &ainfo) 
                     == EAI_SERVICE) {
-                    free_val_addrinfo(ainfo_head);
-                    free_val_addrinfo(ainfo);
+                    val_freeaddrinfo(ainfo_head);
+                    val_freeaddrinfo(ainfo);
                     return EAI_SERVICE;
                 }
 
@@ -696,7 +696,7 @@ get_addrinfo_from_result(const val_context_t *ctx,
  *            hints -- Hints to influence the return value.  Can be NULL.
  *              res -- A pointer to a variable of type (struct val_addrinfo *) to
  *                     hold the result.  The caller must free this return value
- *                     using free_val_addrinfo().
+ *                     using val_freeaddrinfo().
  *
  * Returns: 0 on success and a non-zero value on error.
  *
@@ -762,7 +762,7 @@ get_addrinfo_from_dns(val_context_t *ctx,
         results = NULL;
         if (ret == EAI_SERVICE) {
             if (ainfo)
-                free_val_addrinfo(ainfo);
+                val_freeaddrinfo(ainfo);
 
             return EAI_SERVICE;
         }
@@ -811,7 +811,7 @@ get_addrinfo_from_dns(val_context_t *ctx,
         results = NULL;
         if (ret == EAI_SERVICE) {
             if (ainfo)
-                free_val_addrinfo(ainfo);
+                val_freeaddrinfo(ainfo);
 
             return EAI_SERVICE;
         }
@@ -840,13 +840,13 @@ get_addrinfo_from_dns(val_context_t *ctx,
  *            hints -- Hints to influence the result value.  Can be NULL.
  *              res -- A pointer to a variable of type (struct val_addrinfo*) to
  *                     hold the result.  The caller must free this return value
- *                     using free_val_addrinfo().
+ *                     using val_freeaddrinfo().
  *
  *         Note that at least one of nodename or servname must be a non-NULL value.
  *
  * Returns: 0 if successful, a non-zero error code on error.
  *
- * See also: getaddrinfo(3), free_val_addrinfo()
+ * See also: getaddrinfo(3), val_freeaddrinfo()
  */
 int
 val_getaddrinfo(val_context_t * ctx,
@@ -941,7 +941,7 @@ val_getaddrinfo(val_context_t * ctx,
         if (process_service_and_hints(ainfo4->ai_val_status, servname, 
                                       hints, &ainfo4)
             == EAI_SERVICE) {
-            free_val_addrinfo(ainfo4);
+            val_freeaddrinfo(ainfo4);
             retval = EAI_SERVICE;
             goto done;
         }
@@ -997,7 +997,7 @@ val_getaddrinfo(val_context_t * ctx,
         if (process_service_and_hints(ainfo6->ai_val_status, servname, 
                                       hints, &ainfo6) 
             == EAI_SERVICE) {
-            free_val_addrinfo(ainfo6);
+            val_freeaddrinfo(ainfo6);
             retval = EAI_SERVICE;
             goto done;
         }
