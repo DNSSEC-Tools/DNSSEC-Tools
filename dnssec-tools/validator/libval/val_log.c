@@ -367,24 +367,14 @@ p_query_error(int err)
     } else {
         int             dnserr = err - Q_ERROR_BASE;
         switch (dnserr) {
-        case SR_CALL_ERROR:
-            return "SR_CALL_ERROR";
+        case SR_INTERNAL_ERROR:
+            return "SR_INTERNAL_ERROR";
         case SR_TSIG_ERROR:
             return "SR_TSIG_ERROR";
-        case SR_MEMORY_ERROR:
-            return "SR_MEMORY_ERROR";
         case SR_NO_ANSWER:
             return "SR_NO_ANSWER";
         case SR_NO_ANSWER_YET:
             return "SR_NO_ANSWER_YET";
-        case SR_MKQUERY_INTERNAL_ERROR:
-            return "SR_MKQUERY_INTERNAL_ERROR";
-        case SR_TSIG_INTERNAL_ERROR:
-            return "SR_TSIG_INTERNAL_ERROR";
-        case SR_SEND_INTERNAL_ERROR:
-            return "SR_SEND_INTERNAL_ERROR";
-        case SR_RCV_INTERNAL_ERROR:
-            return "SR_RCV_INTERNAL_ERROR";
         case SR_WRONG_ANSWER:
             return "SR_WRONG_ANSWER";
         case SR_HEADER_BADSIZE:
@@ -399,8 +389,8 @@ p_query_error(int err)
             return "SR_NOTIMPL";
         case SR_REFUSED:
             return "SR_REFUSED";
-        case SR_GENERIC_FAILURE:
-            return "SR_GENERIC_FAILURE";
+        case SR_DNS_GENERIC_ERROR:
+            return "SR_DNS_GENERIC_ERROR";
         case SR_EDNS_VERSION_ERROR:
             return "SR_EDNS_VERSION_ERROR";
         case SR_UNSUPP_EDNS0_LABEL:
@@ -444,9 +434,6 @@ p_as_error(val_astatus_t err)
         break;
     case VAL_A_UNTRUSTED_ZONE:
         return "VAL_A_UNTRUSTED_ZONE";
-        break;
-    case VAL_A_IRRELEVANT_PROOF:
-        return "VAL_A_IRRELEVANT_PROOF";
         break;
     case VAL_A_DNSSEC_VERSION_ERROR:
         return "VAL_A_DNSSEC_VERSION_ERROR";
@@ -506,25 +493,12 @@ p_as_error(val_astatus_t err)
     case VAL_A_ALGO_REFUSED:
         return "VAL_A_ALGO_REFUSED";
         break;
-    case VAL_A_CLOCK_SKEW:
-        return "VAL_A_CLOCK_SKEW";
-        break;
-    case VAL_A_DUPLICATE_KEYTAG:
-        return "VAL_A_DUPLICATE_KEYTAG";
-        break;
     case VAL_A_NO_PREFERRED_SEP:
         return "VAL_A_NO_PREFERRED_SEP";
-        break;
-    case VAL_A_WRONG_RRSIG_OWNER:
-        return "VAL_A_WRONG_RRSIG_OWNER";
         break;
     case VAL_A_RRSIG_ALGO_MISMATCH:
         return "VAL_A_RRSIG_ALGO_MISMATCH";
         break;
-    case VAL_A_KEYTAG_MISMATCH:
-        return "VAL_A_KEYTAG_MISMATCH";
-        break;
-
     case VAL_A_VERIFIED:
         return "VAL_A_VERIFIED";
         break;
