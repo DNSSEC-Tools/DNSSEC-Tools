@@ -871,7 +871,7 @@ check_label_count(struct rrset_rec *the_set,
     sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
 
     if (sig_labels > owner_labels)
-        return VAL_GENERIC_ERROR;
+        return VAL_BAD_ARGUMENT; 
 
     *is_a_wildcard = (owner_labels - sig_labels);
 
