@@ -542,7 +542,7 @@ set_ans_kind(u_int8_t * qc_name_n,
     the_set->rrs_ans_kind = SR_ANS_UNSET;
     *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
 
-    return VAL_GENERIC_ERROR;
+    return VAL_NO_ERROR;
 }
 
 #define TOP_OF_QNAMES   0
@@ -587,6 +587,10 @@ fails_to_answer_query(struct qname_chain *q_names_n,
         *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
         return TRUE;
     }
+
+    /* If this is already a wrong answer return */
+    if (*status == (VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER))
+        return TRUE;
 
     name_present = name_in_q_names(q_names_n, the_set);
     type_match = (the_set->rrs.val_rrset_type_h == q_type_h) 
@@ -1203,8 +1207,8 @@ transform_outstanding_results(struct val_internal_result *w_results,
                 if (flags & VAL_FLAGS_DONT_VALIDATE) {
                     proof_res->val_rc_status = w_res->val_rc_status;
                 } else {
-                    /* remaining proofs are bogus */
-                    proof_res->val_rc_status = VAL_R_BOGUS;
+                    /* remaining proofs are irrelevent */
+                    proof_res->val_rc_status = VAL_R_IRRELEVANT_PROOF;
                 }
             } else {
                 /* Update the result */
@@ -2810,8 +2814,7 @@ verify_and_validate(val_context_t * context,
                  * Success condition 
                  */
                 if ((next_as->val_ac_status == VAL_A_VERIFIED) ||
-                    (next_as->val_ac_status == VAL_A_WCARD_VERIFIED) ||
-                    (next_as->val_ac_status == VAL_A_VERIFIED_LINK)) {
+                    (next_as->val_ac_status == VAL_A_WCARD_VERIFIED)) { 
                     SET_MASKED_STATUS(res->val_rc_status,
                                       VAL_R_VERIFIED_CHAIN);
                     continue;
@@ -3226,62 +3229,56 @@ check_wildcard_sanity(val_context_t * context,
     zonecut_n = NULL;
     target_res = NULL; 
 
-    /* Any proofs that have been wildcard expanded are bogus */
     for (res = w_results; res; res = res->val_rc_next) {
         if ((res->val_rc_status == VAL_SUCCESS) &&
             (res->val_rc_rrset) && 
-            (res->val_rc_is_proof) &&
             (!res->val_rc_consumed) &&
             (res->val_rc_rrset->val_ac_status == VAL_A_WCARD_VERIFIED)) {
 
-            val_log(context, LOG_DEBUG, "Wildcard sanity check failed");
-            if (VAL_NO_ERROR != 
+            /* Any proofs that have been wildcard expanded are bogus */
+            if (res->val_rc_is_proof) {
+                val_log(context, LOG_DEBUG, "Wildcard sanity check failed");
+                if (VAL_NO_ERROR != 
                     (retval = transform_single_result(res, results, 
                                             target_res, &new_res))) {
-                goto err;
-            }
+                    goto err;
+                }
+                target_res = new_res;
+                target_res->val_rc_status = VAL_R_BOGUS_PROOF;                
 
-            target_res = new_res;
-            target_res->val_rc_status = VAL_R_BOGUS_PROOF;                
-        }
-    }
-
-    for (res = w_results; res; res = res->val_rc_next) {
-        if ((res->val_rc_status == VAL_SUCCESS) &&
-            (res->val_rc_rrset) && 
-            (!res->val_rc_is_proof) &&
-            (!res->val_rc_consumed) &&
-            (res->val_rc_rrset->val_ac_status == VAL_A_WCARD_VERIFIED)) {
-
-            /* Move to a fresh result structure */
-            if (VAL_NO_ERROR != (retval = transform_single_result(res, results, 
+            } else {
+                /* Move to a fresh result structure */
+                if (VAL_NO_ERROR != (retval = transform_single_result(res, results, 
                                             NULL, &new_res))) {
-                goto err;
-            }
-            target_res = new_res;
-            target_res->val_rc_status = VAL_SUCCESS;
+                    goto err;
+                }
+                target_res = new_res;
 
-            /*  we need to prove that this type exists in some
-             *  accompanying wildcard
-             */
-            if ((res->val_rc_rrset->_as.ac_data) &&
-                ((zonecut_n = res->val_rc_rrset->_as.ac_data->rrs_zonecut_n))) {
-                u_char domain_name_n[NS_MAXCDNAME];
-                domain_name_n[0] = 0x01;
-                domain_name_n[1] = 0x2a;    /* for the '*' character */
-                memcpy(&domain_name_n[2], zonecut_n, wire_name_length(zonecut_n));
-                /* find appropriate proof */ 
-                /* Check if this proves existence of type */
-                if (VAL_NO_ERROR != (retval = prove_existence(context, domain_name_n, 
+                /*  we need to prove that this type exists in some
+                 *  accompanying wildcard
+                 */
+                if ((res->val_rc_rrset->_as.ac_data) &&
+                    ((zonecut_n = res->val_rc_rrset->_as.ac_data->rrs_zonecut_n))) {
+                    u_char domain_name_n[NS_MAXCDNAME];
+                    domain_name_n[0] = 0x01;
+                    domain_name_n[1] = 0x2a;    /* for the '*' character */
+                    memcpy(&domain_name_n[2], zonecut_n, wire_name_length(zonecut_n));
+                    /* find appropriate proof */ 
+                    /* Check if this proves existence of type */
+                    if (VAL_NO_ERROR != (retval = prove_existence(context, domain_name_n, 
                                 res->val_rc_rrset->_as.ac_data->rrs.val_rrset_type_h,
                                 zonecut_n, w_results, &target_res, results, &status)))
-                    goto err; 
-
-                target_res->val_rc_status = status; 
-            } else {
-                /* Can't prove wildcard */
-                val_log(context, LOG_DEBUG, "Wildcard sanity check failed");
-                target_res->val_rc_status = VAL_R_BOGUS;                
+                        goto err; 
+                    target_res->val_rc_status = status; 
+                    if ((status == VAL_SUCCESS) && (target_res->val_rc_answer)) {
+                        /* Change from VAL_A_WCARD_VERIFIED to VAL_A_VERIFIED */
+                        target_res->val_rc_answer->val_ac_status = VAL_A_VERIFIED;
+                    }
+                } else {
+                    /* Can't prove wildcard */
+                    val_log(context, LOG_DEBUG, "Wildcard sanity check failed");
+                    target_res->val_rc_status = VAL_R_BOGUS;                
+                }
             }
         }
     }
