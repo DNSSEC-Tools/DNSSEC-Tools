@@ -123,27 +123,30 @@
  */
 #define SR_UNSET    0
 
-#define SR_CALL_ERROR             1
+#define SR_INTERNAL_ERROR         1
+#define SR_CALL_ERROR             SR_INTERNAL_ERROR 
+#define SR_MEMORY_ERROR           SR_INTERNAL_ERROR 
+#define SR_MKQUERY_INTERNAL_ERROR SR_INTERNAL_ERROR 
+#define SR_TSIG_INTERNAL_ERROR    SR_INTERNAL_ERROR 
+#define SR_SEND_INTERNAL_ERROR    SR_INTERNAL_ERROR 
+#define SR_RCV_INTERNAL_ERROR     SR_INTERNAL_ERROR 
+
 #define SR_TSIG_ERROR             2
-#define SR_MEMORY_ERROR           3
-#define SR_NO_ANSWER              4     /* No answer received */
-#define SR_NO_ANSWER_YET          5
-#define SR_MKQUERY_INTERNAL_ERROR 6
-#define SR_TSIG_INTERNAL_ERROR    7
-#define SR_SEND_INTERNAL_ERROR    8
-#define SR_RCV_INTERNAL_ERROR     9
-#define SR_WRONG_ANSWER           10    /*Message is not a response to a query */
-#define SR_HEADER_BADSIZE         11    /*Message size not consistent with record counts */
+#define SR_NO_ANSWER              3     /* No answer received */
+#define SR_NO_ANSWER_YET          4     /* No answer as yet, but this value will change */
+#define SR_WRONG_ANSWER           5    /*Message is not a response to a query */
+#define SR_HEADER_BADSIZE         6    /*Message size not consistent with record counts */
+#define SR_DNS_GENERIC_ERROR      7    /*Look at RCODE */
+#define SR_EDNS_VERSION_ERROR     8
+#define SR_UNSUPP_EDNS0_LABEL     9
+#define SR_SUSPICIOUS_BIT         10
+#define SR_NAME_EXPANSION_FAILURE 11
+
 #define SR_NXDOMAIN               12    /*RCODE set to NXDOMAIN w/o appropriate records */
 #define SR_FORMERR                13    /*RCODE set to FORMERR */
 #define SR_SERVFAIL               14    /*RCODE set to SERVFAIL */
 #define SR_NOTIMPL                15    /*RCODE set to NOTIMPL */
 #define SR_REFUSED                16    /*RCODE set to REFUSED */
-#define SR_GENERIC_FAILURE        17    /*Look at RCODE */
-#define SR_EDNS_VERSION_ERROR     18
-#define SR_UNSUPP_EDNS0_LABEL     19
-#define SR_SUSPICIOUS_BIT         20
-#define SR_NAME_EXPANSION_FAILURE 21
 #define SR_LAST_ERROR             22
 
 struct name_server {
