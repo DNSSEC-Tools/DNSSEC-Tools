@@ -1965,7 +1965,7 @@ sub usage
 
 =head1 NAME
 
-blinkenlights - DNSSEC-Tools Rollerd Demo
+blinkenlights - DNSSEC-Tools Rollerd GUI
 
 =head1 SYNOPSIS
 
@@ -1982,19 +1982,69 @@ phase> column color will change, depending on the current phase.  When the
 zone's phase returns to not being in mid-rollover, the color will match that
 of the rest of the row.
 
-This is only intended to be started by B<rollerd>.  The I<-display>
-option must be given on B<rollerd>'s command line in order to have it
-start B<blinkenlights>.
+This is only intended to be started by B<rollerd>.  There are two ways to
+start B<blinkenlights>.  First, the I<-display> option may be given on
+B<rollerd>'s command line.  Second, B<rollctl> may be given the I<-display>
+option.
 
-=head1 LAYOUT AND SCREEN COLORS
+=head1 SCREEN LAYOUT
 
-things to include:
+The B<blinkenlights> window is laid out as a series of "stripes".  The top
+stripe contains status information about B<rollerd>, the second stripe contains
+column headers, and the bulk of the window consists of zone stripes.  The
+list below provides more detail on the contents of each stripe.
+
+See the SCREEN COLORS section for a discussion of the colors used for the
+zone stripes.
 
 =over 4
 
 =item *
 
-zone stripe definition
+B<rollerd> information stripe
+
+The information stripe contains four pieces of information:  B<rollerd>'s
+current I<rollrec> file, the count of rolling zones, the count of skipped
+zones, and the amount of time B<rollerd> waits between processing its queue.
+Coincidentally, that last datum is also the amount of time between
+B<blinkenlights> screen updates.
+
+=item *
+
+column headers stripe
+
+This stripe contains the column headers for the columns of each zone stripe.
+
+=item *
+
+zone stripes
+
+Each zone managed by B<rollerd> (i.e., every zone in the current I<rollrec>
+file) will have a zone stripe which describes that zone's current state.
+The stripe is divided into three sections:  the zone name, the current rollover
+state, and the zone's DNSSEC keys.
+
+The zone name section just contains the name of the zone.
+
+The rollover state section contains the rollover phase number, a text
+explanation of the phase, and the amount of time remaining in that rollover
+phase.  The phase explanation is "normal operation" when the zone isn't
+currently in rollover.
+
+The DNSSEC key section contains the names of the Current, Published, and New
+ZSK keys for that stripe's zone.  
+
+=back
+
+=head1 SCREEN COLORS
+
+(to be done)
+
+=over 4
+
+=item *
+
+only the color of status column changes
 
 =item *
 
@@ -2006,26 +2056,188 @@ color of column two changes as rollover proceeds
 
 =back
 
+=head1 MENU COMMANDS
+
+A number of menu commands are available to control the behavior of
+B<blinkenlights> and to send commands to B<rollerd>.  These commands
+are discusses in this section.
+
+=head2 File Menu
+
+The commands in this menu are basic GUI commands.
+
+=over 4
+
+=item *
+
+Quit
+
+B<blinkenlights> will stop execution.
+
+=back
+
+=head2 Options Menu
+
+The commands in this menu control the appearance and behavior of
+B<blinkenlights>.
+
+=over 4
+
+=item *
+
+Status Column Shading (toggle)
+
+This menu item is a toggle to turn on or off the shading of the zone status
+column.  If shading is turned off, the zone stripes will present a solid,
+unchanging band of color for each zone.  If shading is turned on, the color
+of the zone status column will change according to the zone's rollover state.
+
+=item *
+
+Skipped Zones Display (toggle)
+
+This menu item is a toggle to turn on or off the display of skipped zones.
+If display is turned off, zone stripes for skipped zones will not be
+displayed.  If display is turned on, zone stripes for all zones will be
+displayed.
+
+=item *
+
+Row Colors (toggle)
+
+This menu item is a toggle to turn on or off the coloring of zone stripes.
+If row coloring is turned off, zone stripes will all be the same color.
+If row coloring is turned on, zone stripes will be displayed in varying
+colors.  See the SCREEN COLORS section for a discussion of row coloring.
+
+(This option is not yet implemented.)
+
+=item *
+
+Modification Commands (toggle)
+
+In some situations, it may be desirable to turn off B<blinkenlights>' ability
+to send commands to B<rollerd>.  This menu item is a toggle to turn on or off
+this ability.  If the commands are turned off, then the "Zone Control" menu
+and keyboard shortcuts are disabled.  If the commands are turned on, then the
+"Zone Control" menu and keyboard shortcuts are enabled.
+
+=item *
+
+Font Size
+
+This menu item allows selection of font size of text displayed in the main
+window.
+
+Normally, changing the font size causes the window to grow and shrink as
+required.  However, on Mac OS X there seems to be a problem when the size
+selected increases the window size to be greater than will fit on the
+screen.  If the font size is subsequently reduced, the window size does not
+shrink in response.
+
+=back
+
+=head2 Zone Control Menu
+
+The commands in this menu are GUI interfaces for the B<rollctl> command.
+Not all of the B<rollctl> commands have interfaces -- only those which
+directly affect zone management.
+
+=over 4
+
+=item *
+
+Roll Selected Zone
+
+The selected zone will be moved to the rollover state.  This only has an
+effect on skipped zones.  A zone may be selected by clicking on its zone
+stripe.  If this command is selected without a zone having been selected,
+a dialog box is displayed from which a currently skipped zone may be chosen.
+
+=item *
+
+Roll All Zones
+
+All zones will be moved to the rollover state.  This has no effect on
+currently rolling zones.
+
+=item *
+
+Run the Queue
+
+B<rollerd> is awoken and runs through its queue of zones.  The operation
+required for each zone is then performed.
+
+=item *
+
+Skip Selected Zone
+
+The selected zone will be moved to the skipped state.  This only has an
+effect on rolling zones.  A zone may be selected by clicking on its zone
+stripe.  If this command is selected without a zone having been selected,
+a dialog box is displayed from which a currently rolling zone may be chosen.
+
+=item *
+
+Skip All Zones
+
+All zones will be moved to the skipped state.  This has no effect on
+currently skipped zones.
+
+=item *
+
+Halt Rollerd
+
+B<rollerd>'s execution is halted.  As a result, B<blinkenlights>' execution
+will also be halted.
+
+=back
+
+=head2 Help Menu
+
+The commands in this menu provide assistance to the user.
+
+=over 4
+
+=item *
+
+Help
+
+Display a window containing help information.
+
+=back
+
 =head1 CONFIGURATION FILE
 
-B<blinkenlights> has a configuration file in B<rc.blinkenlights>.  This file
-controls several aspects of the output.  This file is B<only> searched for in
-the current directory.  This file is in the "field value" format, where
-I<field> specifies the output aspect and I<value> defines the value for that
-field.  The following are the recognized fields:
+Several aspects of B<blinkenlights>' behavior may be controlled from
+configuration files.  Configuration value may be specified in the DNSSEC
+Tools configuration file or in a B<rc.blinkenlights>.
 
     fontsize	The size of the font in the output window
-    skipcolor	The background color used for skipped zones.
+    modify	Turn on/off execution of rollerd modification commands
+    shading	Turn on/off shading of the status columns
+    showskip	Turn on/off display of skipped zones
+    skipcolor	The background color used for skipped zones
+
+The B<rc.blinkenlights> file is B<only> searched for in the directory in which
+B<blinkenlights> is executed.  The potential problems inherent in this may
+cause these B<blinkenlights>-specific configuration files to be removed in
+the future.
+
+This file is in the "field value" format, where I<field> specifies the output
+aspect and I<value> defines the value for that field.  The following are the
+recognized fields:
 
 Empty lines and comments are ignored.  Comment lines are lines that start
 with an octothorpe ('#').
 
-Spaces are not allowed in the configuration values.  Choose your skipcolors
-carefully...
+Spaces are not allowed in the configuration values.
+
+Choose your skipcolors carefully.
 
 =head1 REQUIREMENTS
 
-I<blinkenlights> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+B<blinkenlights> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
 installed on your system.
 
 =head1 WARNINGS
@@ -2054,9 +2266,14 @@ sleep interval.  Large numbers of zones or very short sleep intervals
 will increase the possibility of B<blinkenlights>' performance
 degrading.
 
-For this reason, B<blinkenlights> is most likely to have its greatest
-utility as a short-term interface and monitoring tool to B<rollerd>.
-The length of "short term" is dependent on above-mentioned factors.
+This appears to have been resolved by periodically performing a complete
+rebuild of the screen.  B<blinkenlights> keeps track of the number of screen
+updates it makes and rebuilds the screen when this count exceeds a threshold.
+The threshold is built into B<blinkenlights> and stored in the B<$PAINTMAX>
+variable.  This threshold may be adjusted if there are too many screen rebuilds
+or if B<blinkenlights>' performance slows too much.  Raising the number will
+reduce the screen rebuilds; lowering the number will (may) increase
+performance.
 
 =back 4
 
@@ -2071,6 +2288,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<rollctl(8)>,
 B<rollerd(8)>,
 B<zonesigner(8)>
 
