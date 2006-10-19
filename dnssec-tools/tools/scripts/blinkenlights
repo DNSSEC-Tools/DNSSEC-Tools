@@ -146,6 +146,7 @@ my $help;						# Help menu.
 # Menu item widgets.
 #
 my $fm_quit;						# Quit file item.
+my $op_clrs;						# Colors item.
 my $op_fsz;						# Fontsize item.
 my $op_mdfy;						# Modify toggle.
 my $op_shad;						# Shading toggle.
@@ -158,6 +159,9 @@ my $hm_help;						# Help item.
 my $ALLOWCMDS	 = "Allow Commands";
 my $DISALLOWCMDS = "Disallow Commands";
 
+my $COLORING	 = "Color Zone Stripes";
+my $NOCOLORING	 = "Don't Color Zone Stripes";
+
 my $SHADING	 = "Shade Status Column";
 my $NOSHADING	 = "Don't Shade Status Column";
 
@@ -168,6 +172,7 @@ my $NOSKIP	 = "Hide Skipped Zones";
 #
 # Flags for the menu options.
 #
+my $nocolors;				# Use/don't use colors in stripes.
 my $nomodify;				# Allowing/disallowing commands flag.
 my $noshading;				# Shading/not shading zone stripes flag.
 my $noskip;				# Show/don't show skipped zones flag.
@@ -312,6 +317,7 @@ sub buildmainwind
 	my $nulline;					# Empty line.
 
 	my $zn_entry;					# Zone menu entry.
+	my $colormsg;					# Color menu message.
 	my $modmsg;					# Modify menu message.
 	my $skipmsg;					# Skip menu message.
 	my $fnsmenu;					# Font-size menu.
@@ -366,6 +372,11 @@ sub buildmainwind
 	#
 	# Add the Options menu entries.
 	#
+	$colormsg = $NOCOLORING;
+	$colormsg = $COLORING if($nocolors);
+	$op_clrs = $disp->command(-label => $colormsg,-command => \&disp_color);
+	$disp->pack(-side => 'left');
+
 	$shademsg = $NOSHADING;
 	$shademsg = $SHADING if($noshading);
 	$op_shad = $disp->command(-label => $shademsg,-command => \&disp_shade);
@@ -376,9 +387,15 @@ sub buildmainwind
 	$op_skip = $disp->command(-label => $skipmsg, -command => \&disp_skip);
 	$disp->pack(-side => 'left');
 
+	$disp->separator();
+	$disp->pack(-side => 'left');
+
 	$modmsg = $DISALLOWCMDS;
 	$modmsg = $ALLOWCMDS if($nomodify);
 	$op_mdfy = $disp->command(-label => $modmsg, -command => \&disp_modify);
+	$disp->pack(-side => 'left');
+
+	$disp->separator();
 	$disp->pack(-side => 'left');
 
 	$fnsmenu = $disp->cascade(-label => "Font Size");
@@ -478,6 +495,30 @@ sub buildmainwind
 sub file_quit
 {
 	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_color()
+#
+# Purpose:	Handle the Colors menu toggle.
+#
+sub disp_color
+{
+	if($nocolors)
+	{
+		$op_clrs->configure(-label => $NOCOLORING);
+		$cmds->configure(-state => 'normal');
+		$nocolors = 0;
+	}
+	else
+	{
+		$op_clrs->configure(-label => $COLORING);
+		$cmds->configure(-state => 'disabled');
+		$nocolors = 1;
+	}
+
+	calcrows();
+	repaint();
 }
 
 #---------------------------------------------------------------------------
@@ -1449,7 +1490,11 @@ sub getcolor
 	#
 	# Return this skipped-zone color if this zone isn't rolling.
 	#
-	return($skipcolor) if($rollers{$zone} != 1);
+	if(($rollers{$zone} != 1)	||
+	   $nocolors)
+	{
+		return($skipcolor);
+	}
 
 	#
 	# Get the background color for this zone in this phase.
@@ -1680,9 +1725,19 @@ sub setopt
 		$fontsize = $value;
 		setfont();
 	}
-	elsif($field eq "skipcolor")
+	elsif($field eq "modify")
 	{
-		$skipcolor = $value;
+		my $ret = flagval($value);
+
+		if($ret) { $nomodify = 0; }
+		else	 { $nomodify = 1; }
+	}
+	elsif($field eq "colors")
+	{
+		my $ret = flagval($value);
+
+		if($ret) { $nocolors = 0; }
+		else	 { $nocolors = 1; }
 	}
 	elsif($field eq "shading")
 	{
@@ -1698,12 +1753,9 @@ sub setopt
 		if($ret) { $noskip = 0; }
 		else	 { $noskip = 1; }
 	}
-	elsif($field eq "modify")
+	elsif($field eq "skipcolor")
 	{
-		my $ret = flagval($value);
-
-		if($ret) { $nomodify = 0; }
-		else	 { $nomodify = 1; }
+		$skipcolor = $value;
 	}
 }
 
@@ -2054,6 +2106,14 @@ colors are row-positional and B<not> attached to specific zones
 
 color of column two changes as rollover proceeds
 
+=item *
+
+colors config item and menu command
+
+=item *
+
+shading of status column config item and menu command
+
 =back
 
 =head1 MENU COMMANDS
@@ -2085,6 +2145,15 @@ B<blinkenlights>.
 
 =item *
 
+Row Colors (toggle)
+
+This menu item is a toggle to turn on or off the coloring of zone stripes.
+If row coloring is turned off, zone stripes will all be the same color.
+If row coloring is turned on, zone stripes will be displayed in varying
+colors.  See the SCREEN COLORS section for a discussion of row coloring.
+
+=item *
+
 Status Column Shading (toggle)
 
 This menu item is a toggle to turn on or off the shading of the zone status
@@ -2100,17 +2169,6 @@ This menu item is a toggle to turn on or off the display of skipped zones.
 If display is turned off, zone stripes for skipped zones will not be
 displayed.  If display is turned on, zone stripes for all zones will be
 displayed.
-
-=item *
-
-Row Colors (toggle)
-
-This menu item is a toggle to turn on or off the coloring of zone stripes.
-If row coloring is turned off, zone stripes will all be the same color.
-If row coloring is turned on, zone stripes will be displayed in varying
-colors.  See the SCREEN COLORS section for a discussion of row coloring.
-
-(This option is not yet implemented.)
 
 =item *
 
@@ -2213,6 +2271,7 @@ Several aspects of B<blinkenlights>' behavior may be controlled from
 configuration files.  Configuration value may be specified in the DNSSEC
 Tools configuration file or in a B<rc.blinkenlights>.
 
+    colors	Turn on/off use of colors on zone stripes
     fontsize	The size of the font in the output window
     modify	Turn on/off execution of rollerd modification commands
     shading	Turn on/off shading of the status columns
