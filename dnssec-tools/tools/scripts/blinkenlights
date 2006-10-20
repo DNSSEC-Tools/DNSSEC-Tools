@@ -398,6 +398,9 @@ sub buildmainwind
 	$disp->separator();
 	$disp->pack(-side => 'left');
 
+	#
+	# Add a bunch of font sizes.
+	#
 	$fnsmenu = $disp->cascade(-label => "Font Size");
 	for(my $ind = $FONTMIN; $ind <= $FONTMAX; $ind += $FONTINCR)
 	{
@@ -432,9 +435,7 @@ sub buildmainwind
 
 	$cmds->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-R>', \&zone_rollzone);
 	$wm->bind('<Control-Key-r>', \&zone_rollzone);
-	$wm->bind('<Control-Key-S>', \&zone_skipzone);
 	$wm->bind('<Control-Key-s>', \&zone_skipzone);
 
 	if($nomodify)
@@ -452,7 +453,6 @@ sub buildmainwind
 			          -underline => 0);
 	$help->pack(-side => 'right');
 
-	$wm->bind('<Control-Key-H>',\&help_help);
 	$wm->bind('<Control-Key-h>',\&help_help);
 
 	##################################################
@@ -475,9 +475,13 @@ sub buildmainwind
 	readrrf($rrfile,0);
 
 	#
-	# Initialize our rollerd-input handler.
+	# Set up to get input from rollerd.
 	#
 	$wm->fileevent('STDIN',readable => \&rollerdcmd);
+
+	#
+	# Set up to handle mouse clicks.
+	#
 	$wm->bind('<Button>',\&selector);
 }
 
@@ -2039,6 +2043,8 @@ start B<blinkenlights>.  First, the I<-display> option may be given on
 B<rollerd>'s command line.  Second, B<rollctl> may be given the I<-display>
 option.
 
+(expand on this a little)
+
 =head1 SCREEN LAYOUT
 
 The B<blinkenlights> window is laid out as a series of "stripes".  The top
@@ -2046,7 +2052,7 @@ stripe contains status information about B<rollerd>, the second stripe contains
 column headers, and the bulk of the window consists of zone stripes.  The
 list below provides more detail on the contents of each stripe.
 
-See the SCREEN COLORS section for a discussion of the colors used for the
+See the WINDOW COLORS section for a discussion of the colors used for the
 zone stripes.
 
 =over 4
@@ -2086,33 +2092,67 @@ currently in rollover.
 The DNSSEC key section contains the names of the Current, Published, and New
 ZSK keys for that stripe's zone.  
 
+See the WINDOW COLORS section for a discussion of the colors used for the
+zone stripes.
+
 =back
 
-=head1 SCREEN COLORS
+=head1 WINDOW COLORS
 
-(to be done)
+The default B<blinkenlights> configuration uses window coloring to provide
+visual cues and to aid in easily distinguishing zone information.  The default
+window coloring behavior gives each zone stripe has its own color and the
+rollover state section of each zone stripe is shaded to show the zone's phase.
+Window coloring can be turned off (and on) with configuration options and menu
+commands.
+
+The two window coloring behaviors are discussed more fully below:
 
 =over 4
 
 =item *
 
-only the color of status column changes
+zone stripe colors
+
+Each rolling zone's stripe is given one of three colors:  blue, red, or green.
+The color is assigned on a top-down basis and the colors wrap if there are
+more than three zones.  So, the first zone is always blue, the second zone
+red, the third zone green, the fourth zone blue, etc.
+
+The colors do not stay with a particular zone.  If a rolling zone becomes a
+skipped zone, the zone stripes will be reassigned new colors to account for
+that skipped zone.
+
+Skipped zones are not colored with these three colors.  Stripes for skipped
+zones are colored either grey or a color set in the configuration file.  If
+you choose to use a non-standard color for skipped zones your should ensure
+that it is B<not> one of the colors used for rolling zones' stripes.
+Modifying the B<skipcolor> configuration field allows the skipped-zone color
+to be changing.
+
+The B<colors> configuration field can be used to turn on or off the use of
+colors for zone stripes.  If stripe coloring is turned off, then every stripe
+will be displayed using the B<skipcolor> color.
 
 =item *
 
-colors are row-positional and B<not> attached to specific zones
+rollover-state shading
 
-=item *
+The only portion of a zone stripe that changes color is the status column; the
+color of the rest of the zone stripe stays constant.  Before a zone enters
+rollover, the status column is the same color as the rest of the stripe.  When
+the zone enters rollover, the status column's color is changed to a very light
+shade of the stripe's normal color.  As the rollover phases progress towards
+rollover completion, the status column's shade darkens.  Once rollover
+completes, the status column returns again to the same shade as the rest of
+that stripe.
 
-color of column two changes as rollover proceeds
+The B<shading> configuration field can be used to turn on or off the use of
+shading in the rollover-state column.  If shading is turned off, then the zone
+stripe will be a solid color.
 
-=item *
-
-colors config item and menu command
-
-=item *
-
-shading of status column config item and menu command
+See the CONFIGURATION FILE section for information on setting the
+configuration fields.
 
 =back
 
@@ -2150,7 +2190,7 @@ Row Colors (toggle)
 This menu item is a toggle to turn on or off the coloring of zone stripes.
 If row coloring is turned off, zone stripes will all be the same color.
 If row coloring is turned on, zone stripes will be displayed in varying
-colors.  See the SCREEN COLORS section for a discussion of row coloring.
+colors.  See the WINDOW COLORS section for a discussion of row coloring.
 
 =item *
 
