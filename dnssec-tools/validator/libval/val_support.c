@@ -403,8 +403,6 @@ res_sq_free_rrset_recs(struct rrset_rec **set)
         return;
 
     if (*set) {
-        if ((*set)->rrs_respondent_server)
-            free_name_servers(&((*set)->rrs_respondent_server));
         if ((*set)->rrs_zonecut_n)
             FREE((*set)->rrs_zonecut_n);
         if ((*set)->rrs.val_msg_header) 
@@ -639,7 +637,8 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
             u_int16_t type_h, u_int16_t set_type_h, 
             u_int16_t class_h, u_int32_t ttl_h, 
             u_int8_t * hptr, int from_section, 
-            int authoritive_answer)
+            int authoritive_answer,
+            struct name_server *respondent_server)
 {
     int             name_len = wire_name_length(name_n);
     struct timeval  tv;
@@ -686,6 +685,22 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
         new_set->rrs.val_rrset_ttl_x = 0;
     new_set->rrs.val_rrset_data = NULL;
     new_set->rrs.val_rrset_sig = NULL;
+
+    if (respondent_server == NULL) {
+        new_set->rrs.val_rrset_server = NULL;
+    } else {
+        new_set->rrs.val_rrset_server = 
+            (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
+        if (new_set->rrs.val_rrset_server == NULL) { 
+			FREE(new_set->rrs.val_rrset_name_n);
+			new_set->rrs.val_rrset_name_n = NULL;
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy(new_set->rrs.val_rrset_server,
+               respondent_server->ns_address,
+               sizeof(struct sockaddr_storage));
+    }
+ 
     new_set->rrs_next = NULL;
 
     /*
@@ -812,16 +827,6 @@ find_rr_set(struct name_server *respondent_server,
         else
             last->rrs_next = new_one;
 
-        /*
-         * we need to at least set the predecesor, while we have it 
-         */
-        if (respondent_server &&
-            (SR_UNSET !=
-             clone_ns(&new_one->rrs_respondent_server, respondent_server))) {
-            res_sq_free_rrset_recs(the_list);
-            return NULL;
-        }
-
         if (zonecut_n != NULL) {
             int             len = wire_name_length(zonecut_n);
             new_one->rrs_zonecut_n =
@@ -836,7 +841,7 @@ find_rr_set(struct name_server *respondent_server,
 
         if ((init_rr_set(new_one, name_n, type_h, set_type_h,
                          class_h, ttl_h, hptr, from_section,
-                         authoritive_answer))
+                         authoritive_answer, respondent_server))
             != VAL_NO_ERROR) {
             res_sq_free_rrset_recs(the_list);
             return NULL;
@@ -896,7 +901,6 @@ prepare_empty_nxdomain(struct rrset_rec **answers,
     if (*answers == NULL)
         return VAL_OUT_OF_MEMORY;
 
-    (*answers)->rrs_respondent_server = NULL;
     (*answers)->rrs_zonecut_n = NULL;
     (*answers)->rrs.val_rrset_name_n = (u_int8_t *) MALLOC(length);
 
@@ -1565,12 +1569,6 @@ copy_rrset_rec(struct rrset_rec *rr_set)
 		memcpy(copy_set->rrs_zonecut_n, rr_set->rrs_zonecut_n, len);
 	}
 
-	if (SR_UNSET != clone_ns(&copy_set->rrs_respondent_server, rr_set->rrs_respondent_server)) {
-	   	FREE(copy_set->rrs_zonecut_n);	
-		FREE(copy_set);
-		return NULL;
-	}
-
     copy_set->rrs_cred = SR_CRED_UNSET;
     copy_set->rrs_ans_kind = SR_ANS_UNSET;
     copy_set->rrs_next = NULL;
@@ -1646,6 +1644,15 @@ copy_rrset_rec(struct rrset_rec *rr_set)
         link_rr(&copy_set->rrs.val_rrset_sig, copy_rr);
     }
 
+    /* Copy respondent server information */
+    copy_set->rrs.val_rrset_server = 
+        (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
+    if (copy_set->rrs.val_rrset_server == NULL) {
+        goto err;
+    }
+    memcpy(copy_set->rrs.val_rrset_server, rr_set->rrs.val_rrset_server,
+            sizeof(struct sockaddr_storage)); 
+ 
     return copy_set;
 
 err:
