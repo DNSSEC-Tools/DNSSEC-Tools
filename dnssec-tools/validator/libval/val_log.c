@@ -192,21 +192,30 @@ val_log_dnskey_rdata(val_context_t * ctx, int level, const char *prefix,
 }
 
 static char    *
-get_ns_string(struct name_server **server)
+get_ns_string(struct sockaddr *serv)
 {
-    if ((server == NULL) || (*server == NULL))
+    struct sockaddr_in *sin;
+    struct sockaddr_storage *server;
+    
+    if (serv == NULL) 
         return NULL;
 
-    struct sockaddr_in *s =
-        (struct sockaddr_in *) (&((*server)->ns_address[0]));
-    return inet_ntoa(s->sin_addr);
+    server = (struct sockaddr_storage *) serv;
+    
+    /* XXX Need to support IPv6 */
+    switch (server->ss_family) {
+      case AF_INET:
+            sin = (struct sockaddr_in *)server;
+            return inet_ntoa(sin->sin_addr);
+    }
+    return NULL;
 }
 
 void
 val_log_assertion(const val_context_t * ctx, int level,
                   const u_char * name_n, u_int16_t class_h,
                   u_int16_t type_h, struct rr_rec *data,
-                  struct name_server *serv, val_astatus_t status)
+                  struct sockaddr *serv, val_astatus_t status)
 {
     char            name[NS_MAXDNAME];
     const char     *name_pr, *serv_pr;
@@ -219,7 +228,7 @@ val_log_assertion(const val_context_t * ctx, int level,
     if (serv)
         serv_pr =
             ((serv_pr =
-              get_ns_string(&(serv))) == NULL) ? "VAL_CACHE" : serv_pr;
+              get_ns_string(serv)) == NULL) ? "VAL_CACHE" : serv_pr;
     else
         serv_pr = "NULL";
 
@@ -280,7 +289,9 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 	    else
 		    name_pr = "ERR_NAME";
 	    if(top_q->qc_respondent_server)
-		    serv_pr = ((serv_pr = get_ns_string(&(top_q->qc_respondent_server))) == NULL)?"VAL_CACHE":serv_pr;
+		    serv_pr = ((serv_pr = get_ns_string(
+                            (struct sockaddr *)top_q->qc_respondent_server->ns_address)) == NULL)?
+                "VAL_CACHE":serv_pr;
 	    else
 		    serv_pr = "NULL";
 	    val_log(ctx, level, "name=%s class=%s type=%s from-server=%s, Query-status=%s[%d]",
@@ -315,7 +326,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                                   next_as->val_ac_rrset->val_rrset_class_h,
                                   next_as->val_ac_rrset->val_rrset_type_h,
                                   next_as->val_ac_rrset->val_rrset_data,
-                                  (struct name_server *) NULL,
+                                  next_as->val_ac_rrset->val_rrset_server,
                                   next_as->val_ac_status);
             }
         }
@@ -342,7 +353,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                                       next_as->val_ac_rrset->val_rrset_class_h,
                                       next_as->val_ac_rrset->val_rrset_type_h,
                                       next_as->val_ac_rrset->val_rrset_data,
-                                      (struct name_server *) NULL,
+                                      next_as->val_ac_rrset->val_rrset_server,
                                       next_as->val_ac_status);
                 }
             }
