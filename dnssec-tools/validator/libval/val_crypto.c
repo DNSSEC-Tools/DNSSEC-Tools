@@ -73,7 +73,8 @@ int dsasha1_sigverify (val_context_t *ctx,
 				const unsigned char *data,
 		       int data_len,
 		       const val_dnskey_rdata_t dnskey,
-		       const val_rrsig_rdata_t rrsig)
+		       const val_rrsig_rdata_t rrsig,
+               val_astatus_t *sig_status)
 {
 	char buf[1028];
 	int buflen = 1024;
@@ -104,12 +105,14 @@ int dsasha1_sigverify (val_context_t *ctx,
 		       rrsig.signature, rrsig.signature_len, dsa)) {
 		val_log(ctx, LOG_DEBUG, "DSA_verify returned SUCCESS\n");
 		DSA_free(dsa);
-		return VAL_A_RRSIG_VERIFIED;
+        *sig_status = VAL_A_RRSIG_VERIFIED;
+        return VAL_NO_ERROR;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "DSA_verify returned FAILURE\n");
 		DSA_free(dsa);
-		return VAL_A_RRSIG_VERIFY_FAILED;
+        *sig_status = VAL_A_RRSIG_VERIFY_FAILED;
+        return VAL_NO_ERROR;
 	}   
 }
 
@@ -201,7 +204,8 @@ int rsamd5_sigverify (val_context_t *ctx,
 			const unsigned char *data,
 		      int data_len,
 		      const val_dnskey_rdata_t dnskey,
-		      const val_rrsig_rdata_t rrsig)
+		      const val_rrsig_rdata_t rrsig,
+              val_astatus_t *sig_status)
 {
 	char buf[1028];
 	int buflen = 1024;
@@ -232,12 +236,14 @@ int rsamd5_sigverify (val_context_t *ctx,
 		       rrsig.signature, rrsig.signature_len, rsa)) {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
 		RSA_free(rsa);
-		return VAL_A_RRSIG_VERIFIED;
+        *sig_status = VAL_A_RRSIG_VERIFIED;
+        return VAL_NO_ERROR;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
 		RSA_free(rsa);
-		return VAL_A_RRSIG_VERIFY_FAILED;
+        *sig_status = VAL_A_RRSIG_VERIFY_FAILED;
+        return VAL_NO_ERROR;
 	}   
 }
 /* Returns VAL_NO_ERROR on success, other values on failure */
@@ -283,7 +289,8 @@ int rsasha1_sigverify (val_context_t *ctx,
 				const unsigned char *data,
 		       int data_len,
 		       const val_dnskey_rdata_t dnskey,
-		       const val_rrsig_rdata_t rrsig)
+		       const val_rrsig_rdata_t rrsig,
+               val_astatus_t *sig_status)
 {
 	char buf[1028];
 	int buflen = 1024;
@@ -314,12 +321,14 @@ int rsasha1_sigverify (val_context_t *ctx,
 		       rrsig.signature, rrsig.signature_len, rsa)) {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
 		RSA_free(rsa);
-		return VAL_A_RRSIG_VERIFIED;
+        *sig_status = VAL_A_RRSIG_VERIFIED;
+        return VAL_NO_ERROR;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
 		RSA_free(rsa);
-		return VAL_A_RRSIG_VERIFY_FAILED;
+        *sig_status = VAL_A_RRSIG_VERIFY_FAILED;
+        return VAL_NO_ERROR;
 	}
 }
 
