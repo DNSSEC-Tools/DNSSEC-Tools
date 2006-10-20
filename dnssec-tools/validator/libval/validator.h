@@ -245,6 +245,7 @@ extern          "C" {
         u_int32_t       val_rrset_ttl_h;        /* Received ttl */
         u_int32_t       val_rrset_ttl_x;        /* ttl expire time */
         u_int8_t        val_rrset_section;      /* VAL_FROM_... */
+        struct sockaddr *val_rrset_server; /* respondent server */
         struct rr_rec  *val_rrset_data; /* All data RR's */
         struct rr_rec  *val_rrset_sig;  /* All signatures */
     };
@@ -252,7 +253,6 @@ extern          "C" {
     struct rrset_rec {
         struct val_rrset rrs;
         u_int8_t       *rrs_zonecut_n;
-        struct name_server *rrs_respondent_server;
         u_int8_t        rrs_cred;       /* SR_CRED_... */
         u_int8_t        rrs_ans_kind;   /* SR_ANS_... */
         struct rrset_rec *rrs_next;
@@ -377,7 +377,7 @@ extern          "C" {
         struct val_authentication_chain *val_ac_trust;
     };
 
-#define MAX_PROOFS 10 
+#define MAX_PROOFS 4
     struct val_result_chain {
         val_status_t    val_rc_status;
         struct val_authentication_chain *val_rc_answer;
