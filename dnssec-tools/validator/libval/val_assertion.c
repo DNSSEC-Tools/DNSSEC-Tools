@@ -1093,6 +1093,22 @@ transform_authentication_chain(struct val_digested_auth_chain *top_as,
             n_ac->val_ac_rrset->val_rrset_sig =
                 copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
                                  o_ac->val_ac_rrset->val_rrset_sig, 0);
+            n_ac->val_ac_rrset->val_rrset_server = 
+                    (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
+
+            if (o_ac->val_ac_rrset->val_rrset_server) {
+                if (n_ac->val_ac_rrset->val_rrset_server == NULL) {
+                    // xxx-audit: memory leak, no release of prior allocs before return
+                    //     not just in this loop iteration, but previous as well.
+                    //     iterate over head_ac & preforms frees?
+                    return VAL_OUT_OF_MEMORY;
+                }
+                memcpy(n_ac->val_ac_rrset->val_rrset_server, 
+                    o_ac->val_ac_rrset->val_rrset_server,
+                    sizeof(struct sockaddr_storage));
+            } else {
+                n_ac->val_ac_rrset->val_rrset_server = NULL;
+            }
         }
 
         if ((*a_chain) == NULL) {
