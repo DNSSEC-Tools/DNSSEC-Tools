@@ -122,6 +122,10 @@ The validator context is the application's handle to the validator policy.  </t>
     <t> </t>
     <t hangText="active policy:">
 the policy definition that is associated with a validator context. </t> 
+    <t> </t>
+    <t hangText="default policy:">
+the policy definition that is used by the validator when the application does 
+not specify its own preference while creating a validator context. </t> 
   </list> </t>
 
   </section> <!-- Terminology -->
@@ -416,6 +420,8 @@ void val_free_result_chain( struct val_result_chain *results );
 
 char *p_as_error(val_astatus_t err);
 
+#define MAX_PROOFS 4
+
 struct val_result_chain {
     val_status_t                    val_rc_status;
     struct val_authentication_chain *val_rc_answer;
@@ -441,6 +447,7 @@ struct val_rrset {
     u_int16_t       val_rrset_type_h;
     u_int32_t       val_rrset_ttl_h; 
     u_int8_t        val_rrset_section;
+    struct sockaddr *val_rrset_server;
     struct rr_rec   *val_rrset_data;
     struct rr_rec   *val_rrset_sig;
 };
@@ -517,7 +524,8 @@ received (in the val_msg_header field with length given by the
 val_msg_headerlen field) and the DNS response "envelope"
 comprising of the name, class, type and time-to-live tuple (in the 
 val_rrset_name_n, val_rrset_class_h, val_rrset_type_h and val_rrset_ttl_h 
-fields respectively).  </t>
+fields respectively). The name servers from where these RRsets were
+received is stored in the val_rrset_server field.</t>
 
 <t> The response RDATA is stored within val_rrset_data. Any RRSIGs that are 
 applicable to the response RDATA are stored within val_rrset_sig. Both of 
