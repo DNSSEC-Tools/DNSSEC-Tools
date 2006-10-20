@@ -562,6 +562,9 @@ returned if the RRset was present in the additional section of the DNS response.
 of the val_authentication_chain structure can have one of the following values:
         <list style="hanging">
 <t> </t>
+<t hangText="VAL_A_UNSET:">
+returned if the status was not set.  </t>
+<t> </t>
 <t hangText="VAL_A_DATA_MISSING:">
 returned if there was no data returned for a query and the DNS did not indicate an error.  </t>
 <t> </t>
@@ -685,62 +688,86 @@ return one of the following values:
         <list style="hanging">
 <t> </t>
 <t hangText="VAL_A_RRSIG_VERIFIED:">
-for an RRSIG, returned if the RRSIG verified successfully.  </t>
+returned if the RRSIG verified successfully.  </t>
 <t> </t>
 <t hangText="VAL_A_WCARD_VERIFIED:">
-for an RRSIG, returned if a given RRSIG covering a resource record 
+returned if a given RRSIG covering a resource record 
 shows that the record was wildcard expanded.  </t>
 <t> </t>
 <t hangText="VAL_A_RRSIG_VERIFY_FAILED:">
-for an RRSIG, returned if a given RRSIG covering an RRset was bogus.  </t>
+returned if a given RRSIG covering an RRset was bogus.  </t>
 <t> </t>
 <t hangText="VAL_A_DNSKEY_NOMATCH:">
-for an RRSIG, returned if an RRSIG was created by a DNSKEY that did not exist 
+returned if an RRSIG was created by a DNSKEY that did not exist 
 in the apex keyset.  </t>
 <t> </t>
 <t hangText="VAL_A_WRONG_LABEL_COUNT:">
-for an RRSIG, returned if the number of labels on the signature was greater 
+returned if the number of labels on the signature was greater 
 than the the count given in the RRSIG RDATA.  </t>
 <t> </t>
 <t hangText="VAL_A_SECURITY_LAME:">
-for an RRSIG, returned if an RRSIG was created with a key that did not exist 
+returned if an RRSIG was created with a key that did not exist 
 in the parent DS record set.  </t>
 <t> </t>
 <t hangText="VAL_A_RRSIG_NOTYETACTIVE:">
-for an RRSIG, returned if the RRSIG's inception time was in the future.  </t>
+returned if the RRSIG's inception time was in the future.  </t>
 <t> </t>
 <t hangText="VAL_A_RRSIG_EXPIRED:">
-for an RRSIG, returned if the RRSIG had expired.  </t>
+returned if the RRSIG had expired.  </t>
+<t> </t>
+<t hangText="VAL_A_ALGO_NOT_SUPPORTED:">
+returned if the RRSIG algorithm was not supported.  </t>
+<t> </t>
+<t hangText="VAL_A_UNKNOWN_ALGO:">
+returned if the RRSIG algorithm was unknown.  </t>
+<t> </t>
+<t hangText="VAL_A_ALGO_REFUSED:">
+returned if the RRSIG algorithm was not allowed as per local policy.  </t>
+        </list> </t> 
+      </list> </t>
+
+      <t> <list style="symbols">
+      <t>  For each rr_rec member of type DNSKEY (or DS where relevant) 
+within the authentication chain val_ac_rrset, the validation status is
+stored in the variable rr_status can return one of the following values: 
+        <list style="hanging">
+<t> </t>
+<t hangText="VAL_A_SIGNING_KEY:">
+returned if this DNSKEY was used to create an RRSIG for the resource record set.  </t>
 <t> </t>
 <t hangText="VAL_A_VERIFIED_LINK:">
-for a DNSKEY,  returned if this provided the link in the authentication chain from 
+returned if this DNSKEY provided the link in the authentication chain from 
 the trust anchor to the signed record.  </t>
 <t> </t>
-<t hangText="VAL_A_NOT_A_ZONE_KEY:">
+<t hangText="VAL_A_UNKOWN_ALGO_LINK:">
+returned if this DNSKEY provided the link in the authentication chain from 
+the trust anchor to the signed record, but the DNSKEY algorithm was unknown.  </t>
+<t> </t>
+<t hangText="VAL_A_INVALID_KEY:">
 returned if the key used to verify the RRSIG was not valid DNSKEY.  </t>
 <t> </t>
 <t hangText="VAL_A_KEY_TOO_LARGE:">
-for a DNSKEY, returned if local policy defined the key size as being too large.</t>
+returned if local policy defined the DNSKEY size as being too large.</t>
 <t> </t>
 <t hangText="VAL_A_KEY_TOO_SMALL:">
-for a DNSKEY, returned if local policy defined the key size as being too small.  </t>
+returned if local policy defined the DNSKEY size as being too small.  </t>
 <t> </t>
 <t hangText="VAL_A_KEY_NOT_AUTHORIZED:">
-for a DNSKEY, returned if local policy defined the key to be unauthorized for validation.  </t>
+returned if local policy defined the DNSKEY to be unauthorized for validation.  </t>
 <t> </t>
 <t hangText="VAL_A_NO_PREFERRED_SEP:">
-for a DNSKEY, returned if the parent DS record contained a corresponding hash 
+returned if the parent DS record contained a corresponding hash 
 but local policy did not permits the validator to build its authentication 
-chain from this key.  </t> 
+chain from this DNSKEY.  </t> 
 <t> </t>
 <t hangText="VAL_A_ALGO_NOT_SUPPORTED:">
-returned if the algorithm in the DNSKEY, RRSIG or DS resource record was not supported.  </t>
+returned if the DNSKEY or DS algorithm was not supported.  </t>
 <t> </t>
 <t hangText="VAL_A_UNKNOWN_ALGO:">
-returned if the DNSKEY, RRSIG or DS algorithm was unknown.  </t>
+returned if the DNSKEY or DS algorithm was unknown.  </t>
 <t> </t>
 <t hangText="VAL_A_ALGO_REFUSED:">
-returned if the algorithm in the DNSKEY, RRSIG or DS was not allowed as per local policy.  </t>
+returned if the DNSKEY or DS algorithm was not allowed as per local policy.  </t>
         </list> </t> 
       </list> </t>
     </section>
@@ -865,7 +892,6 @@ identical to their predecessors. </t>
 and context-management APIs. </t>
 
         <t> <list style="hanging">
-<t> </t>
 <t hangText="VAL_NOT_IMPLEMENTED:">
 returned if the implementation did not support a particular feature.  </t>
 <t> </t>
@@ -900,7 +926,6 @@ or was invalid for the current context.  </t>
 in the variable of type val_status_t are listed below. </t> 
 
         <t> <list style="hanging">
-<t> </t>
 <t hangText="VAL_LOCAL_ANSWER:">
 returned if the response was obtained locally (for example, a file such as /etc/hosts).  </t>
 <t> </t>
