@@ -209,8 +209,8 @@ res_io_send(struct expected_arrival *shipit)
         if ((shipit->ea_socket = socket(PF_INET, socket_type, 0)) == -1)
             return SR_IO_SOCKET_ERROR;
 
-        if (connect(shipit->ea_socket, &shipit->ea_ns->ns_address[i],
-                    sizeof(shipit->ea_ns->ns_address[i])) == -1) {
+        if (connect(shipit->ea_socket, (struct sockaddr *)&shipit->ea_ns->ns_address[i],
+                    sizeof(struct sockaddr)) == -1) {
             close(shipit->ea_socket);
             shipit->ea_socket = -1;
             return SR_IO_SOCKET_ERROR;
@@ -529,11 +529,19 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_int8_t ** answer,
                       u_int * answer_length,
                       struct name_server **respondent)
 {
+    int retval;
+
     while (ea_list) {
         if (ea_list->ea_response) {
             *answer = ea_list->ea_response;
             *answer_length = ea_list->ea_response_length;
-            *respondent = ea_list->ea_ns;
+            if (SR_UNSET != (retval = clone_ns(respondent, ea_list->ea_ns))) 
+                return retval; 
+            /* fix the actual server */
+            (*respondent)->ns_number_of_addresses = 1;
+            memcpy((*respondent)->ns_address,
+                   &ea_list->ea_ns->ns_address[ea_list->ea_which_address], 
+                   sizeof (struct sockaddr_storage));             
             ea_list->ea_response = NULL;
             ea_list->ea_response_length = 0;
             return SR_IO_GOT_ANSWER;
