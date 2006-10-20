@@ -210,15 +210,15 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
              */
             new_ns_size = sizeof(struct name_server)
                 + ((*ns)->ns_number_of_addresses
-                   * sizeof(struct sockaddr));
+                   * sizeof(struct sockaddr_storage));
 
             /*
              * Realloc the ns's structure to be able to
-             * add a struct sockaddr
+             * add a struct sockaddr_storage
              */
             new_ns = (struct name_server *)
                 weird_al_realloc(*ns,
-                                 new_ns_size - sizeof(struct sockaddr),
+                                 new_ns_size - sizeof(struct sockaddr_storage),
                                  new_ns_size);
 
             if (new_ns == NULL)
@@ -1167,7 +1167,7 @@ val_resquery_send(val_context_t * context,
     val_log(context, LOG_DEBUG, "Sending query for %s to:", name_p);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
         struct sockaddr_in *s =
-            (struct sockaddr_in *) (&(tempns->ns_address[0]));
+            (struct sockaddr_in *) (tempns->ns_address);
         val_log(context, LOG_DEBUG, "    %s", inet_ntoa(s->sin_addr));
     }
     val_log(context, LOG_DEBUG, "End of Sending query for %s", name_p);
