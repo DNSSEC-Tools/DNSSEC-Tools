@@ -164,7 +164,7 @@ struct name_server {
      * NOTE: ns_address MUST be last element
      */
     int             ns_number_of_addresses;
-    struct sockaddr ns_address[1];
+    struct sockaddr_storage ns_address[1];
     /*
      * DO NOT ADD MEMBERS BELOW ns_addresses
      */
