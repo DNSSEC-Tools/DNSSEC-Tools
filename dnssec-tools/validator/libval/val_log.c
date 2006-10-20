@@ -213,14 +213,22 @@ get_ns_string(struct sockaddr *serv)
 
 void
 val_log_assertion(const val_context_t * ctx, int level,
-                  const u_char * name_n, u_int16_t class_h,
-                  u_int16_t type_h, struct rr_rec *data,
-                  struct sockaddr *serv, val_astatus_t status)
+                  const u_char * name_n,
+                  struct val_authentication_chain *next_as)
 {
     char            name[NS_MAXDNAME];
     const char     *name_pr, *serv_pr;
     int             tag = 0;
 
+    if (next_as == NULL)
+        return;
+    
+    u_int16_t class_h = next_as->val_ac_rrset->val_rrset_class_h;
+    u_int16_t type_h = next_as->val_ac_rrset->val_rrset_type_h; 
+    struct rr_rec *data = next_as->val_ac_rrset->val_rrset_data;
+    struct sockaddr *serv = next_as->val_ac_rrset->val_rrset_server;
+    val_astatus_t status = next_as->val_ac_status;
+    
     if (ns_name_ntop(name_n, name, sizeof(name)) != -1)
         name_pr = name;
     else
@@ -235,7 +243,8 @@ val_log_assertion(const val_context_t * ctx, int level,
     if (type_h == ns_t_dnskey) {
         struct rr_rec  *curkey;
         for (curkey = data; curkey; curkey = curkey->rr_next) {
-            if (curkey->rr_status == VAL_A_VERIFIED_LINK) {
+            if ((curkey->rr_status == VAL_A_VERIFIED_LINK) ||
+                   (curkey->rr_status == VAL_A_UNKNOWN_ALGO_LINK)) {
                 /*
                  * Extract the key tag 
                  */
@@ -260,6 +269,16 @@ val_log_assertion(const val_context_t * ctx, int level,
                 name_pr, p_class(class_h), p_type(type_h), serv_pr,
                 p_as_error(status), status);
     }
+#if 0
+    struct rr_rec *rr;
+    struct rr_rec *sig = next_as->val_ac_rrset->val_rrset_sig;
+    for (rr=data; rr; rr=rr->rr_next) {
+        val_log(ctx, level, "    data_status=%s:%d", p_as_error(rr->rr_status), rr->rr_status);
+    }
+    for (rr=sig; rr; rr=rr->rr_next) {
+        val_log(ctx, level, "    sig_status=%s:%d", p_as_error(rr->rr_status), rr->rr_status);
+    }
+#endif
 }
 
 void
@@ -294,7 +313,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                 "VAL_CACHE":serv_pr;
 	    else
 		    serv_pr = "NULL";
-	    val_log(ctx, level, "name=%s class=%s type=%s from-server=%s, Query-status=%s[%d]",
+	    val_log(ctx, level, "name=%s class=%s type=%s from-server=%s, Query-status=%s:%d",
 		        name_pr, p_class(class_h), p_type(type_h), serv_pr, 
                 p_query_error(top_q->qc_state), top_q->qc_state);
     }
@@ -312,7 +331,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
              next_as = next_as->val_ac_trust) {
 
             if (next_as->val_ac_rrset == NULL) {
-                val_log(ctx, level, "Assertion status = %s[%d]",
+                val_log(ctx, level, "Assertion status = %s:%d",
                         p_as_error(next_as->val_ac_status),
                         next_as->val_ac_status);
             } else {
@@ -322,12 +341,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                 else
                     t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
 
-                val_log_assertion(ctx, level, t_name_n,
-                                  next_as->val_ac_rrset->val_rrset_class_h,
-                                  next_as->val_ac_rrset->val_rrset_type_h,
-                                  next_as->val_ac_rrset->val_rrset_data,
-                                  next_as->val_ac_rrset->val_rrset_server,
-                                  next_as->val_ac_status);
+                val_log_assertion(ctx, level, t_name_n, next_as);
             }
         }
 
@@ -339,7 +353,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                 next_as = next_as->val_ac_trust) {
 
                 if (next_as->val_ac_rrset == NULL) {
-                    val_log(ctx, level, "Assertion status = %s[%d]",
+                    val_log(ctx, level, "Assertion status = %s:%d",
                             p_as_error(next_as->val_ac_status),
                             next_as->val_ac_status);
                 } else {
@@ -349,12 +363,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                     else
                         t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
 
-                    val_log_assertion(ctx, level, t_name_n,
-                                      next_as->val_ac_rrset->val_rrset_class_h,
-                                      next_as->val_ac_rrset->val_rrset_type_h,
-                                      next_as->val_ac_rrset->val_rrset_data,
-                                      next_as->val_ac_rrset->val_rrset_server,
-                                      next_as->val_ac_status);
+                    val_log_assertion(ctx, level, t_name_n, next_as);
                 }
             }
         }
@@ -468,8 +477,8 @@ p_as_error(val_astatus_t err)
     case VAL_A_SECURITY_LAME:
         return "VAL_A_SECURITY_LAME";
         break;
-    case VAL_A_NOT_A_ZONE_KEY:
-        return "VAL_A_NOT_A_ZONE_KEY";
+    case VAL_A_INVALID_KEY:
+        return "VAL_A_INVALID_KEY";
         break;
     case VAL_A_RRSIG_NOTYETACTIVE:
         return "VAL_A_RRSIG_NOTYETACTIVE";
@@ -516,8 +525,14 @@ p_as_error(val_astatus_t err)
     case VAL_A_VERIFIED_LINK:
         return "VAL_A_VERIFIED_LINK";
         break;
+    case VAL_A_UNKNOWN_ALGO_LINK:
+        return "VAL_A_UNKNOWN_ALGO_LINK";
+        break;
     case VAL_A_LOCAL_ANSWER:
         return "VAL_A_LOCAL_ANSWER";
+        break;
+    case VAL_A_SIGNING_KEY:
+        return "VAL_A_SIGNING_KEY";
         break;
     case VAL_A_TRUST_KEY:
         return "VAL_A_TRUST_KEY";
@@ -537,8 +552,8 @@ p_as_error(val_astatus_t err)
         return "VAL_A_DONT_VALIDATE";
         break;
 
-    case VAL_A_DONT_KNOW:
-        return "VAL_A_DONT_KNOW";
+    case VAL_A_UNSET:
+        return "VAL_A_UNSET";
         break;
 
         /*
