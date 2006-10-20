@@ -32,7 +32,7 @@
  * Assertion initial states 
  *************************************************** 
  */
-#define VAL_A_DONT_KNOW 0
+#define VAL_A_UNSET 0
 #define VAL_A_CAN_VERIFY 1
 #define VAL_A_WAIT_FOR_TRUST 2
 #define VAL_A_WAIT_FOR_RRSIG 3
@@ -88,7 +88,7 @@
 #define VAL_A_DNSKEY_NOMATCH (VAL_A_FAIL_BASE+2)        /*RRSIG was created by a DNSKEY that does not exist in the apex keyset. */
 #define VAL_A_WRONG_LABEL_COUNT (VAL_A_FAIL_BASE+3)     /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA. */
 #define VAL_A_SECURITY_LAME (VAL_A_FAIL_BASE+4) /*RRSIG created by a key that does not exist in the parent DS record set. */
-#define VAL_A_NOT_A_ZONE_KEY (VAL_A_FAIL_BASE+5)        /*The key used to verify the RRSIG is not a zone key, but some other key such as the public key used for TSIG. */
+#define VAL_A_INVALID_KEY (VAL_A_FAIL_BASE+5)        /*The key used to verify the RRSIG is not a zone key, but some other key such as the public key used for TSIG. */
 #define VAL_A_RRSIG_NOTYETACTIVE (VAL_A_FAIL_BASE+6)    /*The RRSIG's inception time is in the future. */
 #define VAL_A_RRSIG_EXPIRED	(VAL_A_FAIL_BASE+7)     /*The RRSIG has expired. */
 #define VAL_A_ALGO_NOT_SUPPORTED (VAL_A_FAIL_BASE+8)    /* Algorithm in DNSKEY or RRSIG or DS is not supported. */
@@ -110,14 +110,16 @@
 /* This signature status on success contains the following */
 #define VAL_A_RRSIG_VERIFIED (VAL_A_LAST_FAILURE+2)        /* The RRSIG verified successfully. */
 #define VAL_A_WCARD_VERIFIED (VAL_A_LAST_FAILURE+3)        /* The RRSIG verified successfully after wildcard expansion. */
-#define VAL_A_VERIFIED_LINK (VAL_A_LAST_FAILURE+4)      /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
+#define VAL_A_SIGNING_KEY (VAL_A_LAST_FAILURE+4) 
+#define VAL_A_VERIFIED_LINK (VAL_A_LAST_FAILURE+5)      /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
+#define VAL_A_UNKNOWN_ALGO_LINK (VAL_A_LAST_FAILURE+6)      /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
 
-#define VAL_A_LOCAL_ANSWER (VAL_A_LAST_FAILURE+5)       /* Answer obtained locally */
-#define VAL_A_TRUST_KEY (VAL_A_LAST_FAILURE+6)  /* key is trusted */
-#define VAL_A_TRUST_ZONE (VAL_A_LAST_FAILURE+7) /* zone is trusted */
-#define VAL_A_PROVABLY_UNSECURE (VAL_A_LAST_FAILURE+8)
-#define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+9) /* No DNSSEC validation possible, query was for a RRSIG. */
-#define VAL_A_NO_TRUST_ANCHOR (VAL_A_LAST_FAILURE+10)    /* No trust anchor available, but components were verified */
+#define VAL_A_LOCAL_ANSWER (VAL_A_LAST_FAILURE+7)       /* Answer obtained locally */
+#define VAL_A_TRUST_KEY (VAL_A_LAST_FAILURE+8)  /* key is trusted */
+#define VAL_A_TRUST_ZONE (VAL_A_LAST_FAILURE+9) /* zone is trusted */
+#define VAL_A_PROVABLY_UNSECURE (VAL_A_LAST_FAILURE+10)
+#define VAL_A_BARE_RRSIG (VAL_A_LAST_FAILURE+11) /* No DNSSEC validation possible, query was for a RRSIG. */
+#define VAL_A_NO_TRUST_ANCHOR (VAL_A_LAST_FAILURE+12)    /* No trust anchor available, but components were verified */
 
 /*
  *************************************************** 
