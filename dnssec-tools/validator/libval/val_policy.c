@@ -1306,11 +1306,13 @@ read_res_config_file(val_context_t * ctx)
                     goto err;
             }
 
-            bzero(&serv_addr, sizeof(struct sockaddr));
+            bzero(&serv_addr, sizeof(struct sockaddr_in));
             serv_addr.sin_family = AF_INET;     // host byte order
             serv_addr.sin_port = htons(DNS_PORT);       // short, network byte order
             serv_addr.sin_addr = address;
-            memcpy(ns->ns_address, &serv_addr, sizeof(struct sockaddr));
+            
+            memcpy(ns->ns_address, &serv_addr, sizeof(struct sockaddr_in));
+            ns->ns_number_of_addresses = 1;
 
             if (ns_tail == NULL) {
                 ns_head = ns;
