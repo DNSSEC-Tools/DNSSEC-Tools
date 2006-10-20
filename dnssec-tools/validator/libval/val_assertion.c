@@ -3351,10 +3351,16 @@ perform_sanity_checks(val_context_t * context,
             for (as = top_as; as; as = as->val_ac_trust) {
                 if ((as->val_ac_rrset) &&
                     (as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey)) {
-                    if (as->val_ac_status == VAL_A_UNKNOWN_ALGO) {
-                        res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
-                        SET_RESULT_TRUSTED(res->val_rc_status);
-                        break;
+                    if (as->val_ac_status == VAL_A_NOT_VERIFIED) {
+                        /* see if one of the DNSKEYs links up */
+                        struct rr_rec  *drr;
+                        for (drr = as->val_ac_rrset->val_rrset_data; drr; drr=drr->rr_next) {
+                            if(drr->rr_status == VAL_A_UNKNOWN_ALGO_LINK) {
+                                res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
+                                SET_RESULT_TRUSTED(res->val_rc_status);
+                                break;
+                            }
+                        }
                     }
                 }
             }
