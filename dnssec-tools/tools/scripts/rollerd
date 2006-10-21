@@ -125,15 +125,16 @@ $ret = main();
 exit($ret);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
 #
-# steps:
-#	while rollrec file is not empty
-#		read rollrec file
+# Purpose:	Do Everything.
 #
-#		for each rollrec in the rollrec file
-#			handle according to its phase
+#			 steps:
+#				while rollrec file is not empty
+#					read rollrec file
+#
+#					for each rollrec in the rollrec file
+#						handle according to its phase
 #
 sub main
 {
@@ -245,8 +246,10 @@ sub main
 ###############################################################################
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zsk_check()
+#
+# Purpose:	Go through the zones in the rollrec file and start rolling
+#		those which have expired.
 #
 sub zsk_check
 {
@@ -305,8 +308,9 @@ sub zsk_check
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zsk_phaser()
+#
+# Purpose:	Move the specified zone through the appropriate phases.
 #
 sub zsk_phaser
 {
@@ -334,8 +338,10 @@ sub zsk_phaser
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	zsk_phasewait()
 #
-# Routine:	zsk_phase1()
+# Purpose:	Check if this zone's rollover-wait phase is over.
+#		The zone's phase number -- current or new -- is returned.
 #
 sub zsk_phasewait
 {
@@ -366,7 +372,6 @@ sub zsk_phasewait
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zsk_phase2()
 #
 # Purpose:	Perform the phase 2 steps of the roll-over.  These are:
@@ -445,8 +450,14 @@ sub zsk_phase2
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zsk_phase4()
+#
+# Purpose:	Perform the phase 4 steps of the roll-over.  These are:
+#
+#			- juggle the ZSKs in the zone's keyrec
+#			- sign the zone with the KSK and new current ZSK
+#			- reload the zone
+#			- return the zone to the pre-rollover state
 #
 sub zsk_phase4
 {
@@ -463,28 +474,28 @@ sub zsk_phase4
 
 	%rr = %$rrr;
 
-		#
-		# Get the rollrec's associated keyrec file and ensure that it
-		# exists.
-		#
-		$krf = $rr{'keyrec'};
-		if(!$krf  || ($krf eq ""))
-		{
-			rollmgr_log(LOG_ERR,$rname,"phase 4:  no keyrec for zone specified");
-			return;
-		}
-		if(! -e $krf)
-		{
-			rollmgr_log(LOG_ERR,$rname,"phase 4:  keyrec \"$krf\" for zone does not exist");
-			return;
-		}
+	#
+	# Get the rollrec's associated keyrec file and ensure that it
+	# exists.
+	#
+	$krf = $rr{'keyrec'};
+	if(!$krf  || ($krf eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  no keyrec for zone specified");
+		return;
+	}
+	if(! -e $krf)
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  keyrec \"$krf\" for zone does not exist");
+		return;
+	}
 
-		#
-		# Get the keyrec.
-		#
-		rollmgr_log(LOG_TMI,$rname,"keyrec file is $krf");
-		$krr = opts_zonekr($krf,$rname);
-		%krf = %$krr;
+	#
+	# Get the keyrec.
+	#
+	rollmgr_log(LOG_TMI,$rname,"keyrec file is $krf");
+	$krr = opts_zonekr($krf,$rname);
+	%krf = %$krr;
 
 	#
 	# Adjust ZSKs in the zone's keyrec.
@@ -523,7 +534,6 @@ sub zsk_phase4
 ###############################################################################
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	expired()
 #
 # Purpose:	This routine returns a boolean indicating if the specified
@@ -639,10 +649,10 @@ sub expired
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	maxttl()
 #
-# Purpose:	
+# Purpose:	Calculate the zone's maximum TTL value, based on the largest
+#		TTL in its zone file.
 #
 sub maxttl
 {
@@ -695,7 +705,6 @@ sub maxttl
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	ttlexpire()
 #
 # Purpose:	Returns a boolean indicating if we can move to the next phase
@@ -787,7 +796,6 @@ sub ttlexpire
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	newphase()
 #
 # Purpose:	Moves a rollrec into the next phase, setting both the
@@ -851,7 +859,6 @@ sub newphase
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	signer()
 #
 # Purpose:	Signs a zone with a specified ZSK.
@@ -892,7 +899,6 @@ sub signer
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zonekeykr()
 #
 # Purpose:	This routine returns the specified key's keyrec from specified
@@ -939,7 +945,6 @@ sub zonekeykr
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	getkrval()
 #
 # Purpose:	This routine returns the value of a specified field in a
@@ -984,8 +989,9 @@ sub getkrval
 ##############################################################################
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	optsandargs()
+#
+# Purpose:	Parse our options and arguments.
 #
 sub optsandargs
 {
@@ -1074,7 +1080,6 @@ sub optsandargs
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	getprogs()
 #
 # Purpose:	Get some program paths.
@@ -1090,7 +1095,6 @@ sub getprogs
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	bootmsg()
 #
 # Purpose:	Write a start-up message to the log.
@@ -1117,7 +1121,6 @@ sub bootmsg
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rrfchk()
 #
 # Purpose:	This routine performs initial checking of the rollrec file.
@@ -1226,7 +1229,6 @@ sub rrfchk
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rrfokay()
 #
 # Purpose:	This routine checks to see if a rollrec file is okay.
@@ -1254,7 +1256,6 @@ sub rrfokay
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	sleeper()
 #
 # Purpose:	Sleep for a specific amount of time.  This will take into
@@ -1277,7 +1278,6 @@ sub sleeper
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	commander()
 #
 # Purpose:	Get any commands sent to rollerd's command socket.
@@ -1373,7 +1373,6 @@ sub commander
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_display()
 #
 # Purpose:	Set the logfile to the user's specified file.  Nothing is done
@@ -1420,7 +1419,6 @@ sub cmd_display
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_logfile()
 #
 # Purpose:	Set the logfile to the user's specified file.  Nothing is done
@@ -1463,7 +1461,6 @@ sub cmd_logfile
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_loglevel()
 #
 # Purpose:	Set the logging level to the user's specified level.
@@ -1495,7 +1492,6 @@ sub cmd_loglevel
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_logmsg()
 #
 # Purpose:	Write a log message to the log file.
@@ -1543,7 +1539,6 @@ sub cmd_logmsg
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_rollall()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
@@ -1623,7 +1618,6 @@ sub cmd_rollall
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_rollrec()
 #
 # Purpose:	This routine changes the rollrec file being used by rollerd.
@@ -1658,7 +1652,6 @@ sub cmd_rollrec
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_rollzone()
 #
 # Purpose:	This command moves a zone into immediate roll-over.  It
@@ -1681,7 +1674,6 @@ sub cmd_rollzone
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_runqueue()
 #
 # Purpose:	This command forces rollerd to run its queue.  It does this
@@ -1699,7 +1691,6 @@ sub cmd_runqueue
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_shutdown()
 #
 # Purpose:	This command forces rollerd to shut down.
@@ -1713,7 +1704,6 @@ sub cmd_shutdown
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_skipall()
 #
 # Purpose:	This command stops roll-over for all the zones in the rollrec
@@ -1794,7 +1784,6 @@ sub cmd_skipall
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_skipzone()
 #
 # Purpose:	This command removes a zone from roll-over processing. 
@@ -1816,7 +1805,6 @@ sub cmd_skipzone
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_sleeptime()
 #
 # Purpose:	This command sets rollerd's time-to-sleep to the user's
@@ -1849,7 +1837,6 @@ sub cmd_sleeptime
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_status()
 #
 # Purpose:	Write some rollerd settings to the log.
@@ -1900,7 +1887,6 @@ sub cmd_status
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cmd_zonestatus()
 #
 # Purpose:	Return zone status to the control program.
@@ -1978,7 +1964,6 @@ sub cmd_zonestatus
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollnow()
 #
 # Purpose:	This command moves a zone into immediate roll-over.  It
@@ -2029,7 +2014,6 @@ sub rollnow
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	skipnow()
 #
 # Purpose:	This command prevents a zone from rolling over.  It is marked
@@ -2072,7 +2056,6 @@ sub skipnow
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	controllers()
 #
 # Purpose:	Initialize handlers for our externally provided commands.
@@ -2097,7 +2080,6 @@ sub controllers
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	intcmd_handler()
 #
 # Purpose:	Handle an interrupt and get a command.
@@ -2112,7 +2094,6 @@ sub intcmd_handler
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	halt_handler()
 #
 # Purpose:	Handle the "halt" command.
@@ -2127,8 +2108,9 @@ sub halt_handler
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	cleanup()
+#
+# Purpose:	Perform whatever clean-up is required.
 #
 sub cleanup
 {
@@ -2138,8 +2120,10 @@ sub cleanup
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	displayer()
+#
+# Purpose:	Turn on/off the graphical display, depending on the display
+#		flag.
 #
 sub displayer
 {
@@ -2166,13 +2150,17 @@ sub displayer
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	display()
+#
+# Purpose:	Send a message to the display program iff the display flag
+#		is on.  If we couldn't send the message, then we'll turn
+#		the flag off.
 #
 sub display
 {
 	my $dmsg = shift;				# Message to send.
 	my $savedsel;					# Saved descriptor.
+	my $ret;					# Retcode from print.
 
 	return if(!$display);
 
@@ -2181,12 +2169,17 @@ sub display
 	#
 	$savedsel = select(DISPLAY);
 	$| = 1;
-	print DISPLAY "$dmsg\n";
+	$ret = print DISPLAY "$dmsg\n";
 	select($savedsel);
+
+	if(!$ret)
+	{
+		rollmgr_log(LOG_INFO,"<command>","unable to send message to blinkenlights; turning off display");
+		$display = 0;
+	}
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -2200,8 +2193,9 @@ sub version
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
+#
+# Purpose:	Print a usage message and exit.
 #
 sub usage
 {
