@@ -41,6 +41,7 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	"Version",			# Display the version number.
+	"display",			# Tell rollerd to execute us.
 	"help",				# Give a usage message and exit.
 );
 
@@ -267,18 +268,13 @@ sub main
 #
 sub optsandargs
 {
-	my $argc = shift;		# Command line argument count.
+	my $argc = @ARGV;		# Command line argument count.
 	my %dtconf;			# DNSSEC-Tools config file contents.
 
 	#
 	# Parse the options.
 	#
 	GetOptions(\%options,@opts) || usage();
-
-	#
-	# Set our option variables based on the parsed options.
-	#
-	$version   = $options{'Version'}   || 0;
 
 	#
 	# Show the version number if requested
@@ -289,6 +285,16 @@ sub optsandargs
 	# Give a usage flag if asked.
 	#
 	usage() if(defined($options{'help'}));
+
+	#
+	# Kick rollerd into *really* starting blinkenlights, but only if
+	# no arguments were given or -display was given.
+	#
+	if(($argc == 0) || defined($options{'display'}))
+	{
+		exec "rollctl -display" || print STDERR "unable to execute rollctl -display\n";
+		exit(1);
+	}
 
 	#
 	# Save the name of the rollrec file.
@@ -1168,20 +1174,14 @@ sub rollerdcmd
 	$phase	= $3;
 
 	#
-	# Exit if this was an empty line.
-	#
-	#		(Is this really a good idea?)
-	#
-	exit(0) if($cmd eq '');
-
-	#
 	# Handle the commands from rollerd:
 	#
-	#	phase		change the specified zone's phase
+	#	expiration	zone will soon expire
 	#	halt		exit
+	#	nop		do nothing
+	#	phase		change the specified zone's phase
 	#	startroll	start a zone in rollover
 	#	stoproll	stop a zone's rollover
-	#	expiration	zone will soon expire
 	#
 	if($cmd eq "phase")
 	{
@@ -1238,6 +1238,10 @@ sub rollerdcmd
 	elsif($cmd eq "sleeptime")
 	{
 		infostripe();
+		return;
+	}
+	elsif($cmd eq "nop")
+	{
 		return;
 	}
 
