@@ -1880,34 +1880,6 @@ sub settitle
 ##############################################################################
 
 #---------------------------------------------------------------------------
-# Routine:	error()
-#
-# Purpose:	Give an error dialog box.
-#
-sub error
-{
-	my $msg = shift;			# Warning message.
-	my $dlg;				# Warning dialog widget.
-
-	$dlg = $wm->Dialog(-title => "$NAME Warning",
-			   -text  => $msg,
-			   -default_button => "Okay",
-			   -buttons => ["Okay"]);
-	$dlg->Show();
-}
-
-#---------------------------------------------------------------------------
-# Routine:      helpbegone()
-#
-# Purpose:	Dismiss the help window.
-#
-sub helpbegone
-{
-	$helpwin->destroy();
-	$inhelpwind = 0;
-}
-
-#---------------------------------------------------------------------------
 # Routine:	help_help()
 #
 # Purpose:	Display the help window.
@@ -1916,12 +1888,17 @@ sub helpbegone
 #		requirement section was removed because if the user is
 #		seeing this, then they've already got Perl/Tk.
 #
+#		Changes to this text should be reflected in the pod.
+#
 sub help_help
 {
-	my $hframe;					# Help frame.
-	my $wdgt;					# General widget.
+	my $hframe;				# Help frame.
+	my $wdgt;				# General widget.
 
-	my $helpstr;
+	my $helpstr;				# The help message to display.
+	my $helpwij;				# Text widget for help message.
+
+    ####################    beginning of help text    ####################
 
 	$helpstr = "
 
@@ -2242,45 +2219,36 @@ SEE ALSO
 
 	rollctl(8), rollerd(8), zonesigner(8)
 
-	Net::DNS::SEC::Tools::keyrec(5), Net::DNS::SEC::Tools::rollrec(5),
+	Net::DNS::SEC::Tools::keyrec(5),
+	Net::DNS::SEC::Tools::rollrec(5),
 	Net::DNS::SEC::Tools::timetrans(5)
 
 
 ";
 
+    ####################    end of help text    ####################
+
 	#
-	# Create a new window to hold our help info.  Bind up some
-	# key accelerators, too.
+	# Create a new dialog box to hold our help info.
 	#
 	$helpwin = $wm->Dialog(-title => "Help!",
 			   -default_button => "Okay",
 			   -buttons => ["Okay"]);
 
-#	$zlist = $dlg->Listbox(-relief	    => 'raised',
-#			       -borderwidth => 1,
-#			       -selectmode  => 'single');
-
-
-	my $frammis = $helpwin->Frame(-relief => 'raised', -borderwidth => 1);
+	#
+	# Create a scrolled text widget for the help message itself.
+	# 
+	$helpwij = $helpwin->Scrolled("Text",
+				      -scrollbars => 'e',
+				      -state => 'normal');
+	$helpwij->insert('1.0',$helpstr);
+	$helpwij->configure(-state => 'disabled');
+	$helpwij->pack(-side => 'top');
 
 	#
-	# Add the help data to the frame.
-	#
-	$wdgt = $frammis->Label(-text => $helpstr,
-				-justify => 'left');
-	$wdgt->pack(-side => 'top');
-	$frammis->pack(-side => 'top');
-
-	$frammis->Scrollbar();
-
-#	$helpwin->AddScrollbars($frammis);
-#	$helpwin->configure(-scrollbars => 'e');
-
+	# Display our modal dialog.
+	# 
 	$helpwin->Show();
-
-#	$helpwin->bind('<Control-Key-q>',\&file_quit);
-#	$helpwin->bind('<Control-Key-w>',\&helpbegone);
-
 }
 
 ##############################################################################
@@ -2315,6 +2283,10 @@ sub usage
 1;
 
 #############################################################################
+#
+#	This text is also displayed in the help dialog.  Any changes to this
+#	text should be reflected in that function.
+#
 
 =pod
 
