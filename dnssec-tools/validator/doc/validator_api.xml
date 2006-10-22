@@ -105,8 +105,8 @@ and <xref target="val-context"/> describe these interfaces in greater detail. </
     <t> </t>
     <t hangText="legacy functions:"> 
 Functions such as gethostbyname() and getaddrinfo() that are 
-not capable of returning validation status values and are typically 
-used by DNSSEC-unaware applications. </t>
+not capable of returning validation status values for DNS responses and are 
+typically used by DNSSEC-unaware applications. </t>
     <t> </t>
     <t hangText="validator policy:"> 
 a set of configuration parameters for the validator that can influence 
@@ -185,10 +185,9 @@ gethostbyname(), gethostbyname_r(), gethostbyaddr() and gethostbyaddr_r()
 legacy functions that  perform name-to-address and address-to-name 
 translations and also return the validation status of DNS responses.
 These functions must be only used when retrofitting DNSSEC in applications
-that use these legacy functions. For applications that do not 
-already use these older functions it is instead recommended to use 
-functions from <xref target="hl_getaddrinfo"/> to perform 
-address-to-name and name-to-address translations.  </t>
+that use the legacy functions. For other applications, it is instead 
+recommended to use the replacement functions from <xref target="hl_getaddrinfo"/> 
+to perform address-to-name and name-to-address translations. </t>
 
 <t> The val_gethostbyname() function returns a pointer to a structure of
 type hostent for the host name provided in name. The name can also be an 
@@ -207,7 +206,7 @@ Valid address types are AF_INET and AF_INET6.  </t>
 val_gethostbyaddr() functions set the value of the global h_errno variable.
 These functions return a pointer to a struct hostent value on success, 
 and NULL on error. Their return values may point to static data, and 
-may be overwritten by subsequent calls. Copying the struct hostent 
+may be overwritten by subsequent calls. Making a simple copy of struct hostent 
 is not sufficient since the structure contains pointers - a 
 deep copy is required.  </t>
 
@@ -226,8 +225,8 @@ return the error ERANGE.  </t>
 validation. Possible values for this type are defined in 
 <xref target="val-status"/>.  A validation status of VAL_SUCCESS will 
 be returned only if both the address and canonical name(s) within the 
-hostent structure, if any, are considered trusted. The 
-validation status value can be displayed in a human-understandable 
+hostent structure, if any, are validated successfully. The 
+validation status value can be displayed in a string 
 format using the p_val_error() function as described in 
 <xref target="p-val-error"/>. </t>
       </postamble>
@@ -294,10 +293,10 @@ parameter.  The syntax and semantics of other parameters in
 val_getnameinfo() are identical to that specified in 
 <xref target="refs.RFC3493"/>.  </t>
 
-<t> val_status will contain a validation status of VAL_SUCCESS 
+<t> val_status contains a validation status of VAL_SUCCESS 
 only if both the address and canonical name within the val_addrinfo 
-structure, if present, are considered trusted.  
-The validation status value can be displayed in a human-understandable format using
+structure, if present, are validated successfully.  
+The validation status value can be displayed in a string format using
 the p_val_error() function as described in <xref target="p-val-error"/>.  </t>
 
 <t> The val_getaddrinfo() and val_getnameinfo() functions return 0 on success and
@@ -337,12 +336,12 @@ struct val_response {
 <t> The val_query() and val_res_query() functions query the name server 
 for the fully qualified domain name present in the domain_name field 
 of the given class and type.  In addition to the answers to the
-query, they give the status of DNSSEC validation. They are intended 
+query, they return the status of DNSSEC validation. They are intended 
 as DNSSEC-aware replacements for the res_query() function.  </t>
 
 <t> val_query() is provided to return the individual validation status 
 values for multiple RRsets returned in response to a query. Multiple 
-RRsets may be returned if the query is for a type of ANY or RRSIG. 
+RRsets may be returned if the query type is ANY or RRSIG. 
 The memory for the value of resp is internally allocated and must be 
 released after a successful invocation of val_query() using the 
 val_free_response() function. </t> 
@@ -355,7 +354,7 @@ holds a single RRset response. The format of the vr_response field
 within the val_response structure is similar to the format 
 of the answer returned by res_query() and is of length vr_length. 
 The vr_val_status field contains the status of DNSSEC validation 
-for that particular RRset and may be displayed in a human-understandable 
+for that particular RRset and may be displayed in a string 
 format using the p_val_error() function as described in 
 <xref target="p-val-error"/>. Elements within the resp linked-list may 
 be accessed by traversing the list using the vr_next field. </t> 
@@ -389,7 +388,7 @@ char *p_val_error(val_status_t err);
       <postamble>
       <t>
 The p_val_error() function can be used to display the validation status information 
-contained in the parameter with type val_status_t in a human-understandable 
+contained in the parameter with type val_status_t in a string 
 format. The returned values are string representations of the
 definitions given in <xref target="val-status"/>. 
       </t>
@@ -463,7 +462,7 @@ struct rr_rec {
       <postamble>
 <t> The val_resolve_and_check() function queries a set of name servers
 for the &lt;domain_name, class, type&gt; tuple and then verifies and validates
-the responses received. The verification step checks RRSIGs and the
+the responses received. The verification step checks the RRSIGs and the
 validation step performs verification down the authentication chain from a trust
 anchor.  All the information necessary for inspecting the authentication chain 
 is available through the results parameter. The context parameter points 
@@ -492,7 +491,7 @@ validation status value for an RRset in the  DNS response based on the
 individual status values for all components in the authentication chain is 
 stored in the val_rc_status field, which is of type val_status_t. 
 Possible values for this type are listed in <xref target="val-status"/> 
-and can be displayed in a human-understandable format using the p_val_error() 
+and can be displayed in a string format using the p_val_error() 
 function as described in <xref target="p-val-error"/>.  Members of the 
 authentication chain sequence are encapsulated in the 
 val_authentication_chain structure, which provides greater detail about 
@@ -507,7 +506,7 @@ val_rc_proof_count provides the number of elements present in this array.  </t>
 <t> Within the val_authentication_chain structure, the val_ac_status field 
 returns the validation status for the specified RRset. Possible values for 
 this field are defined in <xref target="val-astatus"/>. These values can 
-be displayed in a human-understandable format using the p_as_error() function. 
+be displayed in a string format using the p_as_error() function. 
 The val_ac_trust field points to the next element in the authentication chain.
 For a element with type DNSKEY, the next element corresponds to a DS record 
 in the parent zone and for a DS record the next element corresponds to the 
@@ -916,8 +915,7 @@ returned if the validator configuration could not be located in the
 configuration system.  </t>
 <t> </t>
 <t hangText="VAL_NO_POLICY:">
-returned if the policy identifier being referenced could not be located 
-or was invalid for the current context.  </t>
+returned if the policy identifier being referenced was invalid. </t>
         </list></t>
       </section>
 
@@ -935,11 +933,11 @@ signatures for other DNS data and cannot themselves be validated.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_NAME:">
 returned if the proof for denial of existence for a domain name
-was validated.  </t>
+was validated successfully.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_TYPE:">
 returned if the proof for denial of existence for the resource record type for the
-name queried was validated.  </t>
+name queried was validate successfully.  </t>
 <t> </t>
 <t hangText="VAL_ERROR:">
 returned if the an error was encountered while validating the authentication chain.  </t>
@@ -978,8 +976,8 @@ also returned in val_status_t, offset by the value of VAL_DNS_ERROR_BASE. </t>
 <t> The validator API functions return a status of VAL_LOCAL_ANSWER if they are 
 returned an answer to a given query from the local configuration system 
 (for example, from the /etc/hosts file).  The
-application cannot assume that these answers can be trusted, unless the
-application is certain that local data (such the /etc/hosts file) is trustworthy.
+application cannot assume that these answers are trustworthy, unless the
+application is certain that local data (such the /etc/hosts file) is also trustworthy.
 If this information is modified during a DHCP lookup, for example, the client
 system should ensure that the DHCP server is a trusted source, and that the
 communication path between the DHCP server and the client system is secured. 
@@ -989,7 +987,7 @@ whereby an attacker can poison the configuration system and an application using
 this API may trust the result.  </t>
 
 <t> Applications will consider data from provably unsecure zones to be trusted.
-The same effect is noticed if a VAL_FLAGS_DONT_VALIDATE flag is passed to
+The same effect is observed if a VAL_FLAGS_DONT_VALIDATE flag is passed to
 the val_resolve_and_check() function. Not performing validation and having a 
 zone that has DNSSEC intentionally turned off is no worse than the current 
 situation of DNSSEC-unaware applications not being able to detect the integrity
@@ -1005,7 +1003,7 @@ if the client system uses DHCP, it must ensure that the DHCP server
 is a trusted source, and that the communication path between the DHCP server
 and the client system is secured.  </t>
 
-<t> The validator configuration information needs to be protected similarly
+<t> The validator configuration information needs to be protected 
 so that it cannot be overwritten by unauthorized users or processes. Access to 
 the val_set_policy_definition() function must similarly be controlled to 
 prevent malicious changes to the validator policy.  Configuration for the 
