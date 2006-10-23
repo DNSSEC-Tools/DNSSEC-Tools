@@ -348,8 +348,88 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
     return VAL_A_WAIT_FOR_TRUST;
 }
 
-static          u_int16_t
-is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key)
+static int
+find_trust_point(val_context_t * ctx, u_int8_t * zone_n, u_int8_t **matched_zone) {
+
+    struct trust_anchor_policy *ta_pol, *ta_cur, *ta_tmphead;
+    int             name_len;
+    u_int8_t       *zp = zone_n;
+
+    /*
+     * This function should never be called with a NULL zone_n, but still... 
+     */
+    if ((zone_n == NULL) || (matched_zone == NULL))
+        return VAL_BAD_ARGUMENT;
+    
+    *matched_zone = NULL;
+    
+    name_len = wire_name_length(zp);
+    ta_pol =
+        RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);
+    if (ta_pol == NULL) { 
+        return VAL_NO_ERROR;
+    }
+
+    /*
+     * skip longer names 
+     */
+    for (ta_cur = ta_pol;
+         ta_cur && (wire_name_length(ta_cur->zone_n) > name_len);
+         ta_cur = ta_cur->next);
+
+    /*
+     * for the remaining nodes, if the length of the zones are 
+     * the same, look for an exact match 
+     */
+    for (; ta_cur &&
+         (wire_name_length(ta_cur->zone_n) == name_len);
+         ta_cur = ta_cur->next) {
+
+        if (!namecmp(ta_cur->zone_n, zp)) {
+            *matched_zone = (u_int8_t *) MALLOC (wire_name_length(zp) * sizeof(u_int8_t));
+            if (*matched_zone == NULL) {
+                return VAL_OUT_OF_MEMORY;
+            }
+            memcpy(*matched_zone, zp, wire_name_length(zp));
+            return VAL_NO_ERROR;
+        }
+    }
+
+    /*
+     * for the remaining nodes, see if there is any hope 
+     */
+    ta_tmphead = ta_cur;
+    while ((zp != NULL) && zp[0]) {
+        /*
+         * trim the top label from our candidate zone 
+         */
+        zp += (int) zp[0] + 1;
+        for (ta_cur = ta_tmphead; ta_cur; ta_cur = ta_cur->next) {
+            if (wire_name_length(zp) < wire_name_length(ta_cur->zone_n))
+                /** next time look from this point */
+                ta_tmphead = ta_cur->next;
+
+            if (namecmp(ta_cur->zone_n, zp) == 0) {
+                /** We have hope */
+                *matched_zone = (u_int8_t *) MALLOC (wire_name_length(zp) * sizeof(u_int8_t));
+                if (*matched_zone == NULL) {
+                    return VAL_OUT_OF_MEMORY;
+                }
+                memcpy(*matched_zone, zp, wire_name_length(zp));
+                return VAL_NO_ERROR;
+            }
+        }
+    }
+
+    val_log(ctx, LOG_DEBUG,
+            "Cannot find a good trust anchor for the chain of trust above %s",
+            zp);
+    return VAL_NO_ERROR;
+}
+
+static          int
+is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
+        val_astatus_t *status)
 {
     struct trust_anchor_policy *ta_pol, *ta_cur, *ta_tmphead;
     int             name_len;
@@ -360,14 +440,19 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key)
     /*
      * This function should never be called with a NULL zone_n, but still... 
      */
-    if (zone_n == NULL)
-        return VAL_A_NO_TRUST_ANCHOR;
-
+    if ((zone_n == NULL) || (status == NULL))
+        return VAL_BAD_ARGUMENT;
+    
+    /* Default value, will change */
+    *status = VAL_A_NO_TRUST_ANCHOR;
+    
     name_len = wire_name_length(zp);
     ta_pol =
         RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);
-    if (ta_pol == NULL)
-        return VAL_A_NO_TRUST_ANCHOR;
+    if (ta_pol == NULL) { 
+        *status = VAL_A_NO_TRUST_ANCHOR;
+        return VAL_NO_ERROR;
+    }
 
     /*
      * skip longer names 
@@ -403,7 +488,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key)
                         FREE(dnskey.public_key);
                     curkey->rr_status = VAL_A_VERIFIED_LINK;
                     val_log(ctx, LOG_DEBUG, "key %s is trusted", name_p);
-                    return VAL_A_TRUST_KEY;
+                    *status = VAL_A_TRUST_KEY;
+                    return VAL_NO_ERROR;
                 }
                 if (dnskey.public_key != NULL)
                     FREE(dnskey.public_key);
@@ -427,8 +513,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key)
                 ta_tmphead = ta_cur->next;
 
             if (namecmp(ta_cur->zone_n, zp) == 0) {
-                /** We have hope */
-                return VAL_A_WAIT_FOR_TRUST;
+                *status = VAL_A_WAIT_FOR_TRUST;
+                return VAL_NO_ERROR;
             }
         }
     }
@@ -436,7 +522,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key)
     val_log(ctx, LOG_DEBUG,
             "Cannot find a good trust anchor for the chain of trust above %s",
             zp);
-    return VAL_A_NO_TRUST_ANCHOR;
+    *status = VAL_A_NO_TRUST_ANCHOR;
+    return VAL_NO_ERROR;
 }
 
 
@@ -751,10 +838,10 @@ build_pending_query(val_context_t * context,
      * Check if this is a DNSKEY and it is trusted
      */
     if (as->_as.ac_data->rrs.val_rrset_type_h == ns_t_dnskey) {
-
-        as->val_ac_status =
-            is_trusted_key(context, as->_as.ac_data->rrs.val_rrset_name_n,
-                           as->_as.ac_data->rrs.val_rrset_data);
+        if (VAL_NO_ERROR != (retval = is_trusted_key(context, as->_as.ac_data->rrs.val_rrset_name_n,
+                           as->_as.ac_data->rrs.val_rrset_data, &as->val_ac_status))) {
+            return retval;
+        }
         if (as->val_ac_status != VAL_A_WAIT_FOR_TRUST)
             return VAL_NO_ERROR;
     }
@@ -2268,6 +2355,7 @@ verify_provably_unsecure(val_context_t * context,
                          struct val_digested_auth_chain *as)
 {
     struct val_result_chain *results = NULL;
+    u_int8_t *matched_zone1, *matched_zone2;
     char            name_p[NS_MAXDNAME];
     char            name_p_orig[NS_MAXDNAME];
 
@@ -2303,7 +2391,7 @@ verify_provably_unsecure(val_context_t * context,
 
         if ((top_q->qc_type_h == ns_t_ds) &&
             !namecmp(top_q->qc_name_n, rrset->rrs.val_rrset_name_n) &&
-            (as->val_ac_status == VAL_A_RRSIG_MISSING) &&
+            (as->val_ac_status == VAL_A_NEGATIVE_PROOF) &&
             (rrset->rrs_ans_kind == SR_ANS_NACK_SOA)) {
 
             if (-1 ==
@@ -2334,6 +2422,32 @@ verify_provably_unsecure(val_context_t * context,
         if (-1 == ns_name_ntop(zonecut_n, name_p, sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
 
+        if (VAL_NO_ERROR != (find_trust_point(context, top_q->qc_name_n,
+                           &matched_zone1))) {
+            return 0;
+        }
+        if (VAL_NO_ERROR != (find_trust_point(context, zonecut_n,
+                           &matched_zone2))) {
+            return 0;
+        }
+
+        /* if the trust anchor at the level of the query
+         * and the trust anchor at the level of the zonecut are different
+         * then this is a problem
+         * Also if the trust point is same as the query name, that's also bad 
+         */
+        if (!matched_zone1 || !matched_zone2 || 
+            namecmp(matched_zone1, matched_zone2) || 
+            namecmp(matched_zone1, top_q->qc_name_n)) {
+
+            val_log(context, LOG_DEBUG, "Found a bad zonecut");
+            if (matched_zone1)
+                FREE(matched_zone1);
+            if (matched_zone2)
+                FREE(matched_zone2);
+            return 0;
+        }
+        
         val_log(context, LOG_DEBUG,
                 "About to check if %s is provably unsecure.", name_p);
 
@@ -3656,33 +3770,6 @@ val_resolve_and_check(val_context_t * ctx,
 }
 
 /*
- * Function: val_isauthentic
- *
- * Purpose:   Tells whether the given validation status code represents an
- *            authentic response from the validator
- *
- * Parameter: val_status -- a validation status code returned by the validator
- *
- * Returns:   1 if the validation status represents an authentic response
- *            0 if the validation status does not represent an authentic response
- *
- * See also: val_istrusted()
- */
-int
-val_isauthentic(val_status_t val_status)
-{
-    switch (val_status) {
-    case VAL_SUCCESS:
-    case VAL_NONEXISTENT_NAME:
-    case VAL_NONEXISTENT_TYPE:
-        return 1;
-
-    default:
-        return 0;
-    }
-}
-
-/*
  * Function: val_istrusted
  *
  * Purpose:   Tells whether the given validation status code represents an
@@ -3695,14 +3782,20 @@ val_isauthentic(val_status_t val_status)
  * Returns:   1 if the validation status represents a trusted response
  *            0 if the validation status does not represent a trusted response
  *
- * See also: val_isauthentic()
  */
 int
 val_istrusted(val_status_t val_status)
 {
-    if ((val_status == VAL_LOCAL_ANSWER) || val_isauthentic(val_status)) {
+    switch (val_status) {
+    case VAL_SUCCESS:
+    case VAL_NONEXISTENT_NAME:
+    case VAL_NONEXISTENT_TYPE:
+    case VAL_PROVABLY_UNSECURE:
+    case VAL_LOCAL_ANSWER: 
         return 1;
-    } else {
+
+    default:
         return 0;
     }
 }
+
