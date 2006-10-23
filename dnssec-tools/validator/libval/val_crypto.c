@@ -69,11 +69,12 @@ static int dsasha1_parse_public_key (const unsigned char *buf,
 	return VAL_NO_ERROR; /* success */
 }
 
-int dsasha1_sigverify (val_context_t *ctx,
+void dsasha1_sigverify (val_context_t *ctx,
 				const unsigned char *data,
 		       int data_len,
 		       const val_dnskey_rdata_t dnskey,
 		       const val_rrsig_rdata_t rrsig,
+               val_astatus_t *key_status,
                val_astatus_t *sig_status)
 {
 	char buf[1028];
@@ -84,14 +85,16 @@ int dsasha1_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): parsing the public key...\n");
 	if ((dsa = DSA_new()) == NULL) {
 		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify could not allocate dsa structure.\n");
-		return VAL_OUT_OF_MEMORY;
+        *key_status = VAL_A_INVALID_KEY;
+        return;
 	};
 	
 	if (dsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
 				     dsa) != VAL_NO_ERROR) {
-		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
+		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): Error in parsing public key.\n");
 		DSA_free(dsa);
-		return VAL_INTERNAL_ERROR;
+        *key_status = VAL_A_INVALID_KEY;
+		return;
 	}
 	
 	bzero(sha1_hash, SHA_DIGEST_LENGTH);
@@ -106,14 +109,13 @@ int dsasha1_sigverify (val_context_t *ctx,
 		val_log(ctx, LOG_DEBUG, "DSA_verify returned SUCCESS\n");
 		DSA_free(dsa);
         *sig_status = VAL_A_RRSIG_VERIFIED;
-        return VAL_NO_ERROR;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "DSA_verify returned FAILURE\n");
 		DSA_free(dsa);
         *sig_status = VAL_A_RRSIG_VERIFY_FAILED;
-        return VAL_NO_ERROR;
 	}   
+    return;
 }
 
 /* Returns VAL_NO_ERROR on success, other values on failure */
@@ -200,12 +202,13 @@ u_int16_t rsamd5_keytag (const unsigned char *pubkey,
 	return keytag;
 }
 
-int rsamd5_sigverify (val_context_t *ctx,
-			const unsigned char *data,
-		      int data_len,
-		      const val_dnskey_rdata_t dnskey,
-		      const val_rrsig_rdata_t rrsig,
-              val_astatus_t *sig_status)
+void rsamd5_sigverify (val_context_t *ctx,
+			   const unsigned char *data,
+		       int data_len,
+		       const val_dnskey_rdata_t dnskey,
+		       const val_rrsig_rdata_t rrsig,
+               val_astatus_t *sig_status,
+               val_astatus_t *key_status)
 {
 	char buf[1028];
 	int buflen = 1024;
@@ -215,14 +218,16 @@ int rsamd5_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): parsing the public key...\n");
 	if ((rsa = RSA_new()) == NULL) {
 		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify could not allocate rsa structure.\n");
-		return VAL_OUT_OF_MEMORY;
+        *key_status = VAL_A_INVALID_KEY;
+		return;
 	};
 	
 	if (rsamd5_parse_public_key(dnskey.public_key, dnskey.public_key_len,
 				    rsa) != VAL_NO_ERROR) {
-		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
+		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): Error in parsing public key.\n");
 		RSA_free(rsa);
-		return VAL_INTERNAL_ERROR;
+        *key_status = VAL_A_INVALID_KEY;
+		return;
 	}
 	
 	bzero(md5_hash, MD5_DIGEST_LENGTH);
@@ -237,14 +242,13 @@ int rsamd5_sigverify (val_context_t *ctx,
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
 		RSA_free(rsa);
         *sig_status = VAL_A_RRSIG_VERIFIED;
-        return VAL_NO_ERROR;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
 		RSA_free(rsa);
         *sig_status = VAL_A_RRSIG_VERIFY_FAILED;
-        return VAL_NO_ERROR;
 	}   
+    return;
 }
 /* Returns VAL_NO_ERROR on success, other values on failure */
 static int rsasha1_parse_public_key (const unsigned char *buf,
@@ -285,12 +289,13 @@ static int rsasha1_parse_public_key (const unsigned char *buf,
 	return VAL_NO_ERROR; /* success */
 }
 
-int rsasha1_sigverify (val_context_t *ctx,
-				const unsigned char *data,
+void rsasha1_sigverify (val_context_t *ctx,
+			   const unsigned char *data,
 		       int data_len,
 		       const val_dnskey_rdata_t dnskey,
 		       const val_rrsig_rdata_t rrsig,
-               val_astatus_t *sig_status)
+               val_astatus_t *sig_status,
+               val_astatus_t *key_status)
 {
 	char buf[1028];
 	int buflen = 1024;
@@ -300,14 +305,16 @@ int rsasha1_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "rsasha1_sigverify(): parsing the public key...\n");
 	if ((rsa = RSA_new()) == NULL) {
 		val_log(ctx, LOG_DEBUG, "rsasha1_sigverify could not allocate rsa structure.\n");
-		return VAL_OUT_OF_MEMORY;
+        *key_status = VAL_A_INVALID_KEY;
+		return;
 	};
 	
 	if (rsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
 				     rsa) != VAL_NO_ERROR) {
-		val_log(ctx, LOG_DEBUG, "rsasha1_sigverify(): Error in parsing public key.  Returning INDETERMINATE\n");
+		val_log(ctx, LOG_DEBUG, "rsasha1_sigverify(): Error in parsing public key.\n");
 		RSA_free(rsa);
-		return VAL_INTERNAL_ERROR;
+        *key_status = VAL_A_INVALID_KEY;
+		return;
 	}
 	
 	bzero(sha1_hash, SHA_DIGEST_LENGTH);
@@ -322,14 +329,13 @@ int rsasha1_sigverify (val_context_t *ctx,
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
 		RSA_free(rsa);
         *sig_status = VAL_A_RRSIG_VERIFIED;
-        return VAL_NO_ERROR;
 	}
 	else {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
 		RSA_free(rsa);
         *sig_status = VAL_A_RRSIG_VERIFY_FAILED;
-        return VAL_NO_ERROR;
 	}
+    return;
 }
 
 int
