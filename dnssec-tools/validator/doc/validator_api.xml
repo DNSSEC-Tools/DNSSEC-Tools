@@ -380,6 +380,24 @@ returns the value of anslen on success and -1 on failure.  </t>
       </figure>
     </section>
 
+    <section title="val_istrusted" anchor="val-istrusted">
+      <figure>
+      <artwork>
+int val_istrusted(val_status_t status);
+      </artwork>
+      <postamble>
+      <t>
+The val_istrusted() function returns a single boolean value 
+representing the trustworthyness of information returned by
+the validator. The return value is greater than 0 if the validation
+status is one of VAL_SUCCESS, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_TYPE,
+VAL_PROVABLY_UNSECURE and VAL_LOCAL_ANSWER, and is equal to 0 for other
+status values. 
+      </t>
+      </postamble>
+      </figure>
+    </section>
+
     <section title="p_val_error" anchor="p-val-error">
       <figure>
       <artwork>
@@ -714,6 +732,9 @@ returned if the RRSIG's inception time was in the future.  </t>
 <t hangText="VAL_A_RRSIG_EXPIRED:">
 returned if the RRSIG had expired.  </t>
 <t> </t>
+<t hangText="VAL_A_INVALID_RRSIG:">
+returned if the RRSIG could not be parsed.  </t>
+<t> </t>
 <t hangText="VAL_A_ALGO_NOT_SUPPORTED:">
 returned if the RRSIG algorithm was not supported.  </t>
 <t> </t>
@@ -933,11 +954,11 @@ signatures for other DNS data and cannot themselves be validated.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_NAME:">
 returned if the proof for denial of existence for a domain name
-was validated successfully.  </t>
+was either validated successfully or was considered trustworthy.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_TYPE:">
 returned if the proof for denial of existence for the resource record type for the
-name queried was validate successfully.  </t>
+name queried was either validated successfully or was considered trustworthy.  </t>
 <t> </t>
 <t hangText="VAL_ERROR:">
 returned if the an error was encountered while validating the authentication chain.  </t>
@@ -959,7 +980,7 @@ returned if all available components in the authentication chain were successful
 but there was no trust anchor available.  </t>
 <t> </t>
 <t hangText="VAL_SUCCESS:">
-returned if the response was verified and validated.  </t>
+returned if the response was either verified and validated, or was considered trustworthy.  </t>
         </list> </t>
 
 <t> In cases where a DNS error is returned for the initial query, the 
