@@ -1311,6 +1311,7 @@ read_res_config_file(val_context_t * ctx)
             serv_addr.sin_port = htons(DNS_PORT);       // short, network byte order
             serv_addr.sin_addr = address;
           
+            ns->ns_address = NULL;
             CREATE_NSADDR_ARRAY(ns->ns_address, 1);
             if(ns->ns_address == NULL) {
                 FREE (ns);

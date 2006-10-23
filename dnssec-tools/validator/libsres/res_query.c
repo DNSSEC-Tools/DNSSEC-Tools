@@ -292,8 +292,9 @@ clone_ns(struct name_server **cloned_ns, struct name_server *ns)
     (*cloned_ns)->ns_retrans = ns->ns_retrans;
     (*cloned_ns)->ns_retry = ns->ns_retry;
 
+    (*cloned_ns)->ns_address = NULL;
     CREATE_NSADDR_ARRAY((*cloned_ns)->ns_address, ns->ns_number_of_addresses);
-    if((*cloned_ns)->ns_address == NULL) {
+    if((ns->ns_number_of_addresses > 0) && (*cloned_ns)->ns_address == NULL) {
         FREE (*cloned_ns);
         *cloned_ns = NULL;
         return SR_MEMORY_ERROR;
