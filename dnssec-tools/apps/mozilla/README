@@ -5,88 +5,110 @@
 			Is your domain secure?
 
 This directory contains a patch to apply to the mozilla code for
-enabling DNSSEC checking of URL DNS names.  It is in alpha/beta form
-with a lot of debugging but should be usable in testing environments.
+enabling DNSSEC checking of URL DNS names.  It is in beta form with a
+lot of debugging but should be usable in testing environments.
 
-**********************************************************************
-**********************************************************************
-********** These patches should not be used currently. ***************
-********** They need to be fixed to use the newer validator API ******
-********** New patches to be released soon ***************************
-**********************************************************************
-**********************************************************************
+Needed Files depending on what is being built:
 
-Contents of this directory:
+  +----------------------+-----------+--------------+--------------+
+  |                      |Firefox RPM|Firefox source|Mozilla Source|
+  +----------------------+-----------+--------------+--------------+
+  |dnssec-firefox.patch  |X          |X             |              |
+  |dnssec-both.patch     |X          |X             |X             |
+  |dnssec-mozconfig.patch|X          |              |              |
+  |firefox.spec          |X          |              |              |
+  +----------------------+-----------+--------------+--------------+
+
+######################################################################
+# PREREQUISITES
+
+  All of the following instructions assume you have the dnssec-tools
+  package already install (specifically, libval and libsres).
+
+######################################################################
+# FIREFOX RPM
+#
+
+  To build the firefox linux RPM on Fedora Core (5):
+
+  First, get a copy of the firefox source from http://www.mozilla.org/firefox/ 
+
+    cp firefox.spec /usr/src/redhat/SPECS/
+    cp dnssec-firefox.patch dnssec-both.patch dnssec-mozconfig.patch /usr/src/redhat/SOURCES
+    cp firefox-1.5.0.7-source.tar.bz2 /usr/src/redhat/SOURCES
+    cd /usr/src/redhat/SPECS
+    rpmbuild -ba firefox.spec
+
+######################################################################
+# FIREFOX FROM SOURCE
+#
+
+  The following summarizes what you need to do in order to build
+  firefox from a source tree including the DNSSEC support.  It is
+  probably best to follow an example from your distribution when
+  creating a .mozconfig file.  The DNSSEC support should be
+  automatically detected by configure and turned on if you have
+  dnssec-tools installed.
+
+
+  tar xjf firefox-1.5.0.7-source.tar.bz2
+  cd mozilla
+  patch -p1 < ../dnssec-firefox.patch
+  patch -p1 < ../dnssec-both.patch
+
+  # create a .mozconfig file; this is a stripped down version of what
+  # gets put into the fedora RPMs but should work everywhere???:
+  cat >> .mozconfig << EOF
+. $topsrcdir/browser/config/mozconfig
+
+ac_add_options --disable-tests
+ac_add_options --disable-debug
+ac_add_options --with-pthreads
+ac_add_options --enable-default-toolkit=gtk2
+ac_add_options --enable-pango
+ac_add_options --enable-svg
+ac_add_options --enable-canvas
+
+EOF
+
+  # finally build it all:
+  make -f client.mk build
+
+
+######################################################################
+######################################################################
+More Details on the contents of this directory:
 
 #######################################################################
-# Files:
-#   firefox-dnssec-rpm.patch
-#   firefox.spec
-#   
-# Description:
-#   This patch and the spec file combine to make a firefox with DNSSEC
-#   lookups enabled.  The enabled/disable pull down menu for dnssec
-#   support can be found in the preferences dialog under "contents".
-#
-# Version:
-#   This is known to work with firefox 1.5
-#
-
-Building:
-
-  1) get the fedora 5 source RPM for firefox and install the source
-     RPM.
-  2) cp the firefox.spec file to /usr/src/redhat/SPECS/
-  3) cp the firefox-dnssec-rpm.patch to /usr/src/redhat/SOURCES/
-  4) cd /usr/src/redhat/SPECS/ && rpmbuild -ba firefox.spec
-  5) rpm -U --nodeps /usr/src/redhat/RPMS/i386/firefox-1.5-dnssec.1.i386.rpm
-
-Notes:
-
-  DNSSEC must currently be "on" or "off".  More complex policy
-  decisions are coming in the future.
-
-  The patch currently may not apply against non-RPMed sources since
-  it's applied *after* the fedora RPM patches and is almost certainly
-  dependent on some of those patches being in place first.
+  File:
+    dnssec-both.patch
+    
+  Description:
+    This file contains patches that apply to both firefox and the more
+    generic mozilla suite.
+ 
+  Version:
+    This is known to work with firefox 1.5.0.7
 
 #######################################################################
-# Files:
-#   dnssec-enable.patch:
-#
-# Description:
-#   A patch to MOZILLA to turn on dnssec security.  known to work with
-#   the 1.7.10 or so code base.  This patch is outdated from the current
-#   mozilla build environment, so use the one above instead.
-#
-# Version:
-#   This is known to work with mozilla 1.7.10
+  File:
+    dnssec-firefox.patch
+    
+  Description:
+    This file contains patches that apply to just firefox.
+ 
+  Version:
+    This is known to work with firefox 1.5.0.7
 
-  This patch will likely break the mozilla source if you don't turn on
-  the dnssec functionality when you compile.  It has not been well
-  tested for the optionality flags.
-
-  1) Install the dnssec-tools package first (we need a library)
-
-  2) Apply the patch found in this directory to the mozilla source tree
-     (1.7.10 is the last tested).  The configure portion of the patch
-     will probably fail, so run 'autoconf' (version 2.13 or so, not
-     2.5x) after you apply the patch.
-
-     [Note: if building on a Fedora Core or other system, you might
-     consider starting with something like a source RPM which is known
-     to compile and adding the DNSSEC patch to that if you can not get a
-     normal mozilla tar ball to build by itself.  EG, This is what the
-     author of the DNSSEC patch had to resort to after mozilla no longer
-     compiled cleanly on a FC4 system even without the DNSSEC patch.]
-
-  3) Build mozilla adding in the --with-system-val flag to their
-     configure script.  If you're using a ~/.mozconfig file then add
-     this line to it:
-
-       ac_add_options --with-system-val
-
-     After which the following builds firefox with the dnssec patch applied:
-
-       make -f client.mk build
-
+#######################################################################
+  File:
+    dnssec-mozconfig.patch
+    
+  Description:
+    This file contains patches that apply to the .mozconfig file
+    produced by the fedora RPM build system.  It is only useful for
+    building an RPM and should be ignored if you're building firefox
+    directly from the source.
+ 
+  Version:
+    This is known to work with firefox 1.5.0.7 and the Fedora Core 5 RPM
