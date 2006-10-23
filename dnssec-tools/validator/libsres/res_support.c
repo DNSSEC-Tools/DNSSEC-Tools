@@ -179,9 +179,15 @@ wire_to_ascii_name(char *name, u_int8_t * wire, int name_length)
 void
 free_name_server(struct name_server **ns)
 {
+    int i;
+
     if (ns && *ns) {
         if ((*ns)->ns_tsig)
             FREE((*ns)->ns_tsig);
+        for(i=0; i<(*ns)->ns_number_of_addresses; i++) {
+            FREE((*ns)->ns_address[i]);
+        }
+        FREE((*ns)->ns_address);
         FREE(*ns);
         *ns = NULL;
     }
