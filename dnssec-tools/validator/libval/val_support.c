@@ -686,9 +686,8 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
     new_set->rrs.val_rrset_data = NULL;
     new_set->rrs.val_rrset_sig = NULL;
 
-    if (respondent_server == NULL) {
-        new_set->rrs.val_rrset_server = NULL;
-    } else {
+    if ((respondent_server) && 
+        (respondent_server->ns_number_of_addresses > 0)){
         new_set->rrs.val_rrset_server = 
             (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
         if (new_set->rrs.val_rrset_server == NULL) { 
@@ -697,8 +696,10 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
             return VAL_OUT_OF_MEMORY;
         }
         memcpy(new_set->rrs.val_rrset_server,
-               respondent_server->ns_address,
+               respondent_server->ns_address[0],
                sizeof(struct sockaddr_storage));
+    } else {
+        new_set->rrs.val_rrset_server = NULL;
     }
  
     new_set->rrs_next = NULL;
