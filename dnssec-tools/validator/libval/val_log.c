@@ -92,22 +92,32 @@ get_rr_string(struct rr_rec *rr, char *buf, int buflen)
 }
 
 void
-val_log_rrset(val_context_t * ctx, int level, struct rrset_rec *rrset)
+val_log_val_rrset(const val_context_t * ctx, int level,
+                  struct val_rrset *val_rrset)
 {
     char            buf1[2049], buf2[2049];
+    char            name_p[NS_MAXDNAME];
+
+    if (ns_name_ntop(val_rrset->val_rrset_name_n, name_p, sizeof(name_p)) == -1)
+        snprintf(name_p, sizeof(name_p), "ERROR");
+    val_log(ctx, level,"rrs->val_rrset_name=%s rrs->val_rrset_type=%s "
+            "rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d "
+            "rrs->val_rrset_section=%s\nrrs->val_rrset_data=%s\n"
+            "rrs->val_rrset_sig=%s", name_p,
+            p_type(val_rrset->val_rrset_type_h),
+            p_class(val_rrset->val_rrset_class_h),
+            val_rrset->val_rrset_ttl_h,
+            p_section(val_rrset->val_rrset_section - 1, !ns_o_update),
+            get_rr_string(val_rrset->val_rrset_data, buf1, 2048),
+            get_rr_string(val_rrset->val_rrset_sig, buf2, 2048));
+}
+
+void
+val_log_rrset(const val_context_t * ctx, int level, struct rrset_rec *rrset)
+{
     while (rrset) {
 
-        val_log(ctx, level,
-                "rrs->val_rrset_name=%s rrs->val_rrset_type=%s rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d"
-                "rrs->val_rrset_section=%s rrs->val_rrset_data=%s rrs->val_rrset_sig=%s",
-                rrset->rrs.val_rrset_name_n,
-                p_type(rrset->rrs.val_rrset_type_h),
-                p_class(rrset->rrs.val_rrset_class_h),
-                rrset->rrs.val_rrset_ttl_h,
-                p_section(rrset->rrs.val_rrset_section - 1, !ns_o_update),
-                get_rr_string(rrset->rrs.val_rrset_data, buf1, 2048),
-                get_rr_string(rrset->rrs.val_rrset_sig, buf2, 2048));
-
+        val_log_val_rrset(ctx, level, &rrset->rrs);
         rrset = rrset->rrs_next;
     }
 }
@@ -152,7 +162,7 @@ get_algorithm_string(u_int8_t algo)
 }
 
 void
-val_log_rrsig_rdata(val_context_t * ctx, int level, const char *prefix,
+val_log_rrsig_rdata(const val_context_t * ctx, int level, const char *prefix,
                     val_rrsig_rdata_t * rdata)
 {
     char            ctime_buf1[1028], ctime_buf2[1028];
@@ -212,9 +222,9 @@ get_ns_string(struct sockaddr *serv)
 }
 
 void
-val_log_assertion(const val_context_t * ctx, int level,
-                  const u_char * name_n,
-                  struct val_authentication_chain *next_as)
+val_log_assertion_pfx(const val_context_t * ctx, int level,
+                      const char* prefix, const u_char * name_n,
+                      struct val_authentication_chain *next_as)
 {
     char            name[NS_MAXDNAME];
     const char     *name_pr, *serv_pr;
@@ -229,6 +239,9 @@ val_log_assertion(const val_context_t * ctx, int level,
     struct sockaddr *serv = next_as->val_ac_rrset->val_rrset_server;
     val_astatus_t status = next_as->val_ac_status;
     
+    if (NULL == prefix)
+        prefix = "";
+
     if (ns_name_ntop(name_n, name, sizeof(name)) != -1)
         name_pr = name;
     else
@@ -260,13 +273,13 @@ val_log_assertion(const val_context_t * ctx, int level,
     }
     if (tag != 0) {
         val_log(ctx, level,
-                "name=%s class=%s type=%s[tag=%d] from-server=%s status=%s:%d",
-                name_pr, p_class(class_h), p_type(type_h), tag, serv_pr,
-                p_as_error(status), status);
+                "%sname=%s class=%s type=%s[tag=%d] from-server=%s "
+                "status=%s:%d", prefix, name_pr, p_class(class_h),
+                p_type(type_h), tag, serv_pr, p_as_error(status), status);
     } else {
         val_log(ctx, level,
-                "name=%s class=%s type=%s from-server=%s status=%s:%d",
-                name_pr, p_class(class_h), p_type(type_h), serv_pr,
+                "%sname=%s class=%s type=%s from-server=%s status=%s:%d",
+                prefix, name_pr, p_class(class_h), p_type(type_h), serv_pr,
                 p_as_error(status), status);
     }
 #if 0
@@ -279,6 +292,14 @@ val_log_assertion(const val_context_t * ctx, int level,
         val_log(ctx, level, "    sig_status=%s:%d", p_as_error(rr->rr_status), rr->rr_status);
     }
 #endif
+}
+
+void
+val_log_assertion(const val_context_t * ctx, int level,
+                  const u_char * name_n,
+                  struct val_authentication_chain *next_as)
+{
+    val_log_assertion_pfx(ctx, level, NULL, name_n, next_as);
 }
 
 void
