@@ -37,7 +37,7 @@ extern char *ctime_r(const time_t *, char *);
  * Pass in a context, to give acceptable time skew 
  */
 // xxx-audit: recommend passing structs by reference
-static          int
+static          void
 val_sigverify(val_context_t * ctx,
               const unsigned char *data,
               int data_len,
@@ -51,7 +51,8 @@ val_sigverify(val_context_t * ctx,
 
     if ((data == NULL) && (data_len != 0)) {
         /* assertion status should be VAL_A_DATA_MISSING */
-        return VAL_NO_ERROR; 
+        *sig_status = VAL_A_INVALID_RRSIG;
+        return; 
     }
 
     /*
@@ -60,7 +61,7 @@ val_sigverify(val_context_t * ctx,
     if ((dnskey.flags & ZONE_KEY_FLAG) == 0) {
         val_log(ctx, LOG_DEBUG, "DNSKEY not a zone signing key");
         *dnskey_status = VAL_A_INVALID_KEY;
-        return VAL_NO_ERROR; 
+        return; 
     }
 
     /*
@@ -71,7 +72,7 @@ val_sigverify(val_context_t * ctx,
                 "Invalid protocol field in DNSKEY record: %d",
                 dnskey.protocol);
         *dnskey_status = VAL_A_UNKNOWN_DNSKEY_PROTO;
-        return VAL_NO_ERROR; 
+        return; 
     }
 
     /*
@@ -82,7 +83,7 @@ val_sigverify(val_context_t * ctx,
                 "Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.",
                 dnskey.algorithm, rrsig.algorithm);
         *sig_status = VAL_A_RRSIG_ALGO_MISMATCH;
-        return VAL_NO_ERROR; 
+        return; 
     }
 
     /*
@@ -108,7 +109,7 @@ val_sigverify(val_context_t * ctx,
                 "Signature not yet valid. Current time (%s) is less than signature inception time (%s).",
                 currTime, incpTime);
             *sig_status = VAL_A_RRSIG_NOTYETACTIVE;
-            return VAL_NO_ERROR; 
+            return; 
         } else {
             val_log(ctx, LOG_WARNING, "Signature not yet valid, but within acceptable skew.");
         }
@@ -134,7 +135,7 @@ val_sigverify(val_context_t * ctx,
                 "Signature expired. Current time (%s) is greater than signature expiration time (%s).",
                 currTime, exprTime);
             *sig_status = VAL_A_RRSIG_EXPIRED;
-            return VAL_NO_ERROR; 
+            return; 
         } else {
             val_log(ctx, LOG_WARNING, "Signature expired, but within acceptable skew.");
         }
@@ -143,19 +144,22 @@ val_sigverify(val_context_t * ctx,
     switch (rrsig.algorithm) {
 
     case ALG_RSAMD5:
-        return rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig, sig_status);
+        rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig, dnskey_status, sig_status);
+        return;
 
 #ifdef LIBVAL_NSEC3
     case ALG_NSEC3_DSASHA1:
 #endif
     case ALG_DSASHA1:
-        return dsasha1_sigverify(ctx, data, data_len, dnskey, rrsig, sig_status);
+        dsasha1_sigverify(ctx, data, data_len, dnskey, rrsig, dnskey_status, sig_status);
+        return;
 
 #ifdef LIBVAL_NSEC3
     case ALG_NSEC3_RSASHA1:
 #endif
     case ALG_RSASHA1:
-        return rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig, sig_status);
+        rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig, dnskey_status, sig_status);
+        return;
 
     case ALG_DH:
         val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.",
@@ -170,8 +174,6 @@ val_sigverify(val_context_t * ctx,
         *dnskey_status = VAL_A_UNKNOWN_ALGO;
         break;
     }
-
-    return VAL_NO_ERROR; 
 }
 
 #if 0                           /* never used, so why compile it in? */
@@ -565,7 +567,7 @@ find_key_for_tag(struct rr_rec *keyrr, u_int16_t * tag_n,
 
 
 
-static int
+static void
 do_verify(val_context_t * ctx,
           val_astatus_t * dnskey_status,
           val_astatus_t * sig_status,
@@ -584,9 +586,8 @@ do_verify(val_context_t * ctx,
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
 
-    if ((sig_status == NULL) || (the_set == NULL) || (the_key == NULL) ||
-        (the_sig == NULL))
-        return VAL_INTERNAL_ERROR;
+    *dnskey_status = VAL_A_UNSET;
+    *sig_status = VAL_A_UNSET;
 
     /*
      * Wildcard expansions for DNSKEYs and DSs are not permitted
@@ -595,12 +596,14 @@ do_verify(val_context_t * ctx,
         ((the_set->rrs.val_rrset_type_h == ns_t_ds) || 
          (the_set->rrs.val_rrset_type_h == ns_t_dnskey))) {
         *dnskey_status = VAL_A_INVALID_KEY;
-        return VAL_NO_ERROR;
+        return;
     }
     
     if ((ret_val = make_sigfield(&ver_field, &ver_length, the_set, the_sig,
-                                 is_a_wildcard)) != VAL_NO_ERROR)
-        return ret_val;
+                                 is_a_wildcard)) != VAL_NO_ERROR) {
+        *sig_status = VAL_A_INVALID_RRSIG;
+        return;
+    }
 
     /*
      * Find the signature - no memory is malloc'ed for this operation  
@@ -615,7 +618,8 @@ do_verify(val_context_t * ctx,
     /*
      * Perform the verification 
      */
-    val_sigverify(ctx, ver_field, ver_length, *the_key, rrsig_rdata, dnskey_status, sig_status);
+    val_sigverify(ctx, ver_field, ver_length, *the_key, 
+                  rrsig_rdata, dnskey_status, sig_status);
 
     if (rrsig_rdata.signature != NULL) {
         FREE(rrsig_rdata.signature);
@@ -623,7 +627,7 @@ do_verify(val_context_t * ctx,
     }
 
     FREE(ver_field);
-    return VAL_NO_ERROR;
+    return;
 }
 
 static int
@@ -660,19 +664,17 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
         /* Any success is good */\
 		if (newstatus == VAL_A_RRSIG_VERIFIED) \
             savedstatus = VAL_A_VERIFIED;\
+        else if (newstatus == VAL_A_WCARD_VERIFIED)\
+            savedstatus = VAL_A_WCARD_VERIFIED;\
+        /* we don't already have success and what we receive is bad */ \
         else if ((savedstatus != VAL_A_VERIFIED) && \
                  (savedstatus != VAL_A_WCARD_VERIFIED) &&\
-                /* success values for DNSKEYS */\
-                 (savedstatus != VAL_A_SIGNING_KEY) && \
-                 (savedstatus != VAL_A_UNKNOWN_ALGO_LINK) && \
-                 (savedstatus != VAL_A_VERIFIED_LINK)){\
-                /* dont have success */\
-                if ((savedstatus != newstatus) &&  \
-                    (newstatus != VAL_A_UNSET))\
-                    /* different errors */\
-                    savedstatus = VAL_A_NOT_VERIFIED; \
-                else\
-                    savedstatus = newstatus;\
+                 (newstatus != VAL_A_UNSET) &&\
+                 /* success values for DNSKEYS are not relevant */\
+                 (newstatus != VAL_A_SIGNING_KEY) && \
+                 (newstatus != VAL_A_UNKNOWN_ALGO_LINK) && \
+                 (newstatus != VAL_A_VERIFIED_LINK)){\
+            savedstatus = VAL_A_NOT_VERIFIED; \
         }\
         /* else leave savedstatus untouched */\
 	} while (0)
@@ -764,21 +766,12 @@ verify_next_assertion(val_context_t * ctx,
         /*
          * and check the signature 
          */
-        if (VAL_NO_ERROR !=
-            (retval =
-             do_verify(ctx, 
-                       &matching_dnskey_rr->rr_status, 
-                       &the_sig->rr_status, 
-                       the_set, the_sig, &dnskey, is_a_wildcard))) {
-            if ((the_sig->rr_status == VAL_A_RRSIG_VERIFIED) && (is_a_wildcard))
-                the_sig->rr_status = VAL_A_WCARD_VERIFIED;
-            SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
-            SET_STATUS(as->val_ac_status, matching_dnskey_rr, matching_dnskey_rr->rr_status);
-            FREE(dnskey.public_key);
-            dnskey.public_key = NULL;
-            continue;
-        }
+        do_verify(ctx, &matching_dnskey_rr->rr_status, 
+                  &the_sig->rr_status, 
+                  the_set, the_sig, &dnskey, is_a_wildcard);
 
+        if ((the_sig->rr_status == VAL_A_RRSIG_VERIFIED) && (is_a_wildcard))
+            the_sig->rr_status = VAL_A_WCARD_VERIFIED;
         SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
         SET_STATUS(as->val_ac_status, matching_dnskey_rr, matching_dnskey_rr->rr_status);
         FREE(dnskey.public_key);
@@ -847,8 +840,6 @@ verify_next_assertion(val_context_t * ctx,
                 if (!dsrec)
                     SET_STATUS(as->val_ac_status, the_sig, VAL_A_SECURITY_LAME);
             }
-        } else
-            SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
-
+        } 
     }
 }
