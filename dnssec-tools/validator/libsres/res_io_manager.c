@@ -209,7 +209,7 @@ res_io_send(struct expected_arrival *shipit)
         if ((shipit->ea_socket = socket(PF_INET, socket_type, 0)) == -1)
             return SR_IO_SOCKET_ERROR;
 
-        if (connect(shipit->ea_socket, (struct sockaddr *)&shipit->ea_ns->ns_address[i],
+        if (connect(shipit->ea_socket, (struct sockaddr *)shipit->ea_ns->ns_address[i],
                     sizeof(struct sockaddr)) == -1) {
             close(shipit->ea_socket);
             shipit->ea_socket = -1;
@@ -539,8 +539,8 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_int8_t ** answer,
                 return retval; 
             /* fix the actual server */
             (*respondent)->ns_number_of_addresses = 1;
-            memcpy((*respondent)->ns_address,
-                   &ea_list->ea_ns->ns_address[ea_list->ea_which_address], 
+            memcpy(*((*respondent)->ns_address),
+                   ea_list->ea_ns->ns_address[ea_list->ea_which_address], 
                    sizeof (struct sockaddr_storage));             
             ea_list->ea_response = NULL;
             ea_list->ea_response_length = 0;
@@ -615,7 +615,7 @@ res_io_read_udp(struct expected_arrival *arrival)
         return SR_IO_INTERNAL_ERROR;
 
     arr_in = (struct sockaddr_in *)
-        &arrival->ea_ns->ns_address[arrival->ea_which_address];
+        arrival->ea_ns->ns_address[arrival->ea_which_address];
 
     if (ioctl(arrival->ea_socket, FIONREAD, &bytes_waiting) == -1) {
         close(arrival->ea_socket);
@@ -885,7 +885,7 @@ res_print_ea(struct expected_arrival *ea)
 {
     int             i = ea->ea_which_address;
     struct sockaddr_in *s =
-        (struct sockaddr_in *) (&(ea->ea_ns->ns_address[i]));
+        (struct sockaddr_in *) ((ea->ea_ns->ns_address[i]));
 
     if (res_io_debug) {
         printf("Socket: %d ", ea->ea_socket);
