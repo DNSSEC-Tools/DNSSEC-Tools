@@ -88,18 +88,19 @@
 #define VAL_A_DNSKEY_NOMATCH (VAL_A_FAIL_BASE+2)        /*RRSIG was created by a DNSKEY that does not exist in the apex keyset. */
 #define VAL_A_WRONG_LABEL_COUNT (VAL_A_FAIL_BASE+3)     /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA. */
 #define VAL_A_SECURITY_LAME (VAL_A_FAIL_BASE+4) /*RRSIG created by a key that does not exist in the parent DS record set. */
-#define VAL_A_INVALID_KEY (VAL_A_FAIL_BASE+5)        /*The key used to verify the RRSIG is not a zone key, but some other key such as the public key used for TSIG. */
-#define VAL_A_RRSIG_NOTYETACTIVE (VAL_A_FAIL_BASE+6)    /*The RRSIG's inception time is in the future. */
-#define VAL_A_RRSIG_EXPIRED	(VAL_A_FAIL_BASE+7)     /*The RRSIG has expired. */
-#define VAL_A_ALGO_NOT_SUPPORTED (VAL_A_FAIL_BASE+8)    /* Algorithm in DNSKEY or RRSIG or DS is not supported. */
-#define VAL_A_UNKNOWN_ALGO (VAL_A_FAIL_BASE+9)  /* Unknown DNSKEY or RRSIG or DS algorithm */
-#define VAL_A_RRSIG_VERIFY_FAILED (VAL_A_FAIL_BASE+10)  /*The RRSIG did not verify. */
-#define VAL_A_KEY_TOO_LARGE (VAL_A_FAIL_BASE+11)        /*The zone is using a key size that is too large as per local policy. */
-#define VAL_A_KEY_TOO_SMALL (VAL_A_FAIL_BASE+12)        /*The zone is using a key size that is too small as per local policy */
-#define VAL_A_KEY_NOT_AUTHORIZED (VAL_A_FAIL_BASE+13)   /*The zone is using a key that is not authorized as per local policy. */
-#define VAL_A_ALGO_REFUSED (VAL_A_FAIL_BASE+14) /*Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy */
-#define VAL_A_NO_PREFERRED_SEP (VAL_A_FAIL_BASE+17)     /*There is no DNSKEY in the parent DS set that our local policy allows us to traverse */
-#define VAL_A_RRSIG_ALGO_MISMATCH (VAL_A_FAIL_BASE+18)  /* The DNSKEY and RRSIG pair have a mismatch in their algorithm. */
+#define VAL_A_INVALID_KEY (VAL_A_FAIL_BASE+5)        /*The key used to verify the RRSIG is not a zone key, or could not be parsed etc. */ 
+#define VAL_A_INVALID_RRSIG (VAL_A_FAIL_BASE+6)        /*The rrsig could not be parsed etc. */ 
+#define VAL_A_RRSIG_NOTYETACTIVE (VAL_A_FAIL_BASE+7)    /*The RRSIG's inception time is in the future. */
+#define VAL_A_RRSIG_EXPIRED	(VAL_A_FAIL_BASE+8)     /*The RRSIG has expired. */
+#define VAL_A_ALGO_NOT_SUPPORTED (VAL_A_FAIL_BASE+9)    /* Algorithm in DNSKEY or RRSIG or DS is not supported. */
+#define VAL_A_UNKNOWN_ALGO (VAL_A_FAIL_BASE+10)  /* Unknown DNSKEY or RRSIG or DS algorithm */
+#define VAL_A_RRSIG_VERIFY_FAILED (VAL_A_FAIL_BASE+11)  /*The RRSIG did not verify. */
+#define VAL_A_KEY_TOO_LARGE (VAL_A_FAIL_BASE+12)        /*The zone is using a key size that is too large as per local policy. */
+#define VAL_A_KEY_TOO_SMALL (VAL_A_FAIL_BASE+13)        /*The zone is using a key size that is too small as per local policy */
+#define VAL_A_KEY_NOT_AUTHORIZED (VAL_A_FAIL_BASE+14)   /*The zone is using a key that is not authorized as per local policy. */
+#define VAL_A_ALGO_REFUSED (VAL_A_FAIL_BASE+15) /*Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy */
+#define VAL_A_NO_PREFERRED_SEP (VAL_A_FAIL_BASE+16)     /*There is no DNSKEY in the parent DS set that our local policy allows us to traverse */
+#define VAL_A_RRSIG_ALGO_MISMATCH (VAL_A_FAIL_BASE+17)  /* The DNSKEY and RRSIG pair have a mismatch in their algorithm. */
 #define VAL_A_LAST_FAILURE (VAL_A_FAIL_BASE+30) /* 80 */
 
 /*
