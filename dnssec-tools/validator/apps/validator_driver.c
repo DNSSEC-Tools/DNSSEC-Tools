@@ -845,7 +845,7 @@ usage(char *progname)
 int
 self_test(int tcs, int tce, char *label_str)
 {
-    int             rc, failed = 0, cnt = 0, i, tc_count, ret_val;
+    int             rc, failed = 0, run_cnt = 0, i, tc_count, ret_val;
     val_context_t  *context;
     u_char          name_n[NS_MAXCDNAME];
 
@@ -880,7 +880,7 @@ self_test(int tcs, int tce, char *label_str)
     context = NULL;
 #endif
     for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
-        ++cnt;
+        ++run_cnt;
         if (ns_name_pton(testcases[i].qn, name_n, NS_MAXCDNAME) == -1) {
             fprintf(stderr, "Cannot convert %s to wire format\n",
                     testcases[i].qn);
@@ -896,7 +896,7 @@ self_test(int tcs, int tce, char *label_str)
     }
     if (context)
         val_free_context(context);
-    fprintf(stderr, " Final results: %d/%d tests failed\n", failed, i);
+    fprintf(stderr, " Final results: %d/%d tests failed\n", failed, run_cnt);
 
     free_validator_cache();
 
