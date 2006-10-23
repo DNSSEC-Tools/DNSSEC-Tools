@@ -49,11 +49,11 @@ typedef struct val_log {
 
 char           *get_hex_string(const unsigned char *data, int datalen,
                                char *buf, int buflen);
-void            val_log_rrset(val_context_t * ctx, int level,
+void            val_log_rrset(const val_context_t * ctx, int level,
                               struct rrset_rec *rrset);
 void            val_log_base64(val_context_t * ctx, int level,
                                unsigned char *message, int message_len);
-void            val_log_rrsig_rdata(val_context_t * ctx, int level,
+void            val_log_rrsig_rdata(const val_context_t * ctx, int level,
                                     const char *prefix,
                                     val_rrsig_rdata_t * rdata);
 void            val_log_dnskey_rdata(val_context_t * ctx, int level,
