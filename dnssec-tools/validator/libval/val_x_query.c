@@ -80,14 +80,14 @@ int encode_response_rrset(struct val_rrset *rrset,
         cp = *anbuf + *anbufindex;
         bufindex = anbufindex;
         count = ancount;
-        if (!val_isauthentic(val_rc_status)) {
+        if (!val_istrusted(val_rc_status)) {
             *an_auth = 0;
         }
     } else if (rrset->val_rrset_section == VAL_FROM_AUTHORITY) {
         cp = *nsbuf + *nsbufindex;
         bufindex = nsbufindex;
         count = nscount;
-        if (!val_isauthentic(val_rc_status)) {
+        if (!val_istrusted(val_rc_status)) {
             *ns_auth = 0;
         }
     } else { /* VAL_FROM_ADDITIONAL */
