@@ -1310,8 +1310,16 @@ read_res_config_file(val_context_t * ctx)
             serv_addr.sin_family = AF_INET;     // host byte order
             serv_addr.sin_port = htons(DNS_PORT);       // short, network byte order
             serv_addr.sin_addr = address;
-            
-            memcpy(ns->ns_address, &serv_addr, sizeof(struct sockaddr_in));
+          
+            CREATE_NSADDR_ARRAY(ns->ns_address, 1);
+            if(ns->ns_address == NULL) {
+                FREE (ns);
+                ns = NULL;
+                return SR_MEMORY_ERROR;
+            }
+            ns->ns_number_of_addresses = 1;
+
+            memcpy(ns->ns_address[0], &serv_addr, sizeof(struct sockaddr_in));
             ns->ns_number_of_addresses = 1;
 
             if (ns_tail == NULL) {

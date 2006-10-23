@@ -150,85 +150,34 @@ deregister_queries(struct query_list **q)
     }
 }
 
-
-/*
- * pseudo-implementation of realloc
- *
- * allocate new memory, copy old data to new block, and free old block.
- * Old block is not released if the new allocation fails.
- *
- * Parameters
- *              old:  ptr to old memory
- *         new_size: size to allocate for new ptr
- *
- * returns new memory block, or NULL on failure
- */
-static void    *
-weird_al_realloc(void *old, size_t old_size, size_t new_size)
-{
-    void           *newp = NULL;
-
-
-    if (new_size > 0) {
-        /*
-         * don't reallocate for smaller size 
-         */
-        if ((old != NULL) && (new_size < old_size)) {
-            memset(&((char *) old)[new_size], 0, old_size - new_size);
-            return old;
-        }
-
-        newp = MALLOC(new_size);
-        if (newp == NULL)
-            return NULL;
-        memset(&((char *) newp)[old_size], 0, new_size - old_size);
-        if (old)
-            memcpy(newp, old, old_size);
-    }
-    if (old)
-        FREE(old);
-
-    return newp;
-}
-
 int
 extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
 {
     struct sockaddr_in *sock_in;
-    size_t          new_ns_size;
 
     if ((ns == NULL) || (*ns == NULL))
         return VAL_BAD_ARGUMENT;
 
     while (addr_rr) {
-        if ((*ns)->ns_number_of_addresses > 0) {
-            struct name_server *new_ns;
+        int i;
+        struct sockaddr_storage **new_addr = NULL;
 
-            /*
-             * Have to grow the ns structure 
-             * Determine the new size 
-             */
-            new_ns_size = sizeof(struct name_server)
-                + ((*ns)->ns_number_of_addresses
-                   * sizeof(struct sockaddr_storage));
-
-            /*
-             * Realloc the ns's structure to be able to
-             * add a struct sockaddr_storage
-             */
-            new_ns = (struct name_server *)
-                weird_al_realloc(*ns,
-                                 new_ns_size - sizeof(struct sockaddr_storage),
-                                 new_ns_size);
-
-            if (new_ns == NULL)
-                return VAL_OUT_OF_MEMORY;
-            (*ns) = new_ns;
-
+        CREATE_NSADDR_ARRAY(new_addr, (*ns)->ns_number_of_addresses+1);
+        if (new_addr == NULL) {
+            return VAL_OUT_OF_MEMORY;
         }
+            
+        for(i=0; i< (*ns)->ns_number_of_addresses; i++) {
+            memcpy(new_addr[i], (*ns)->ns_address[i], sizeof(struct sockaddr_storage)); 
+        }
+        for(i=0; i<(*ns)->ns_number_of_addresses; i++) {
+            FREE((*ns)->ns_address[i]);
+        }
+        FREE((*ns)->ns_address);
+        (*ns)->ns_address = new_addr;
 
         sock_in = (struct sockaddr_in *)
-            &(*ns)->ns_address[(*ns)->ns_number_of_addresses];
+            (*ns)->ns_address[(*ns)->ns_number_of_addresses];
 
         sock_in->sin_family = AF_INET;
         sock_in->sin_port = htons(DNS_PORT);
@@ -1167,7 +1116,7 @@ val_resquery_send(val_context_t * context,
     val_log(context, LOG_DEBUG, "Sending query for %s to:", name_p);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
         struct sockaddr_in *s =
-            (struct sockaddr_in *) (tempns->ns_address);
+            (struct sockaddr_in *) (tempns->ns_address[0]);
         val_log(context, LOG_DEBUG, "    %s", inet_ntoa(s->sin_addr));
     }
     val_log(context, LOG_DEBUG, "End of Sending query for %s", name_p);
@@ -1207,7 +1156,6 @@ val_resquery_rcv(val_context_t * context,
         return VAL_NO_ERROR;
 
     matched_q->qc_respondent_server = server;
-    server = NULL;
 
     if (ret_val != SR_UNSET) {
         if (response_data)

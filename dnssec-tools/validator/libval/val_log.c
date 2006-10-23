@@ -307,9 +307,10 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 		    name_pr = name_p;
 	    else
 		    name_pr = "ERR_NAME";
-	    if(top_q->qc_respondent_server)
+	    if((top_q->qc_respondent_server) && 
+           (top_q->qc_respondent_server->ns_number_of_addresses > 0))
 		    serv_pr = ((serv_pr = get_ns_string(
-                            (struct sockaddr *)top_q->qc_respondent_server->ns_address)) == NULL)?
+                            (struct sockaddr *)top_q->qc_respondent_server->ns_address[0])) == NULL)?
                 "VAL_CACHE":serv_pr;
 	    else
 		    serv_pr = "NULL";
