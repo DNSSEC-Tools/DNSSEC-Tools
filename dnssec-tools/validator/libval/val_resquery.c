@@ -173,7 +173,8 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
         for(i=0; i<(*ns)->ns_number_of_addresses; i++) {
             FREE((*ns)->ns_address[i]);
         }
-        FREE((*ns)->ns_address);
+        if ((*ns)->ns_address)
+            FREE((*ns)->ns_address);
         (*ns)->ns_address = new_addr;
 
         sock_in = (struct sockaddr_in *)
@@ -360,6 +361,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
                     temp_ns->ns_options = RES_DEFAULT;
 
                     temp_ns->ns_next = NULL;
+                    temp_ns->ns_address = NULL;
                     temp_ns->ns_number_of_addresses = 0;
                     /*
                      * Add the name server record to the list 

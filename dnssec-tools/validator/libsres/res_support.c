@@ -187,7 +187,8 @@ free_name_server(struct name_server **ns)
         for(i=0; i<(*ns)->ns_number_of_addresses; i++) {
             FREE((*ns)->ns_address[i]);
         }
-        FREE((*ns)->ns_address);
+        if ((*ns)->ns_address)
+            FREE((*ns)->ns_address);
         FREE(*ns);
         *ns = NULL;
     }

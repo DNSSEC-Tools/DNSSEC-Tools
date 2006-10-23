@@ -539,7 +539,7 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_int8_t ** answer,
                 return retval; 
             /* fix the actual server */
             (*respondent)->ns_number_of_addresses = 1;
-            memcpy(*((*respondent)->ns_address),
+            memcpy(((*respondent)->ns_address[0]),
                    ea_list->ea_ns->ns_address[ea_list->ea_which_address], 
                    sizeof (struct sockaddr_storage));             
             ea_list->ea_response = NULL;
