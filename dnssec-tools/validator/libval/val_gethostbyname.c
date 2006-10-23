@@ -694,7 +694,7 @@ val_gethostbyname2_r(val_context_t * ctx,
             if (results) {
                 *val_status = results->val_rc_status;
             } else {
-                *val_status = VAL_INDETERMINATE; 
+                *val_status = VAL_ERROR; 
             }
         }
 
