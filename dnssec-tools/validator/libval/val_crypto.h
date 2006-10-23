@@ -11,29 +11,32 @@
 
 #include <val_parse.h>
 
-int dsasha1_sigverify (val_context_t *ctx,
+void dsasha1_sigverify (val_context_t *ctx,
 				const unsigned char *data,
 		       int data_len,
 		       const val_dnskey_rdata_t dnskey,
 		       const val_rrsig_rdata_t rrsig,
-               val_astatus_t *sig_status);
+               val_astatus_t *sig_status,
+               val_astatus_t *key_status);
 
-int rsamd5_sigverify (val_context_t *ctx,
-				const unsigned char *data,
-		      int data_len,
-		      const val_dnskey_rdata_t dnskey,
-		      const val_rrsig_rdata_t rrsig,
-              val_astatus_t *sig_status);
+void rsamd5_sigverify (val_context_t *ctx,
+			   const unsigned char *data,
+		       int data_len,
+		       const val_dnskey_rdata_t dnskey,
+		       const val_rrsig_rdata_t rrsig,
+               val_astatus_t *sig_status,
+               val_astatus_t *key_status);
 
 u_int16_t rsamd5_keytag (const unsigned char *pubkey,
 			 int pubkey_len);
 
-int rsasha1_sigverify (val_context_t *ctx,
+void rsasha1_sigverify (val_context_t *ctx,
 				const unsigned char *data,
 		       int data_len,
 		       const val_dnskey_rdata_t dnskey,
 		       const val_rrsig_rdata_t rrsig,
-               val_astatus_t *sig_status);
+               val_astatus_t *sig_status,
+               val_astatus_t *key_status);
 
 int ds_sha_hash_is_equal(u_int8_t * name_n, 
                      u_int8_t *rrdata, 
