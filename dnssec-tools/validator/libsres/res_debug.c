@@ -400,9 +400,13 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
  * so this is the same structure but with const char* pointers.
  *
  * Unfortuantely, on OS X, __p_class_sym is a macro, and exported with the
- * original res_sym type. So if the macro exists, we don't use this hack.
- */
-#ifdef __p_class_syms
+ * original res_sym type. And on FreeBSD, the extern declares in the header
+ * conflict with the redefinition. So in these cases, we don't use this hack.
+ *
+ * And, for once, solaris has a better header than the rest, and has const
+ * char ptrs in res_sym.
+  */
+#if (defined(__p_class_syms) || defined(sun) || defined(__FreeBSD__))
 #define RES_SYM_TYPE res_sym
 #else
 #define RES_SYM_TYPE res_sym_const
