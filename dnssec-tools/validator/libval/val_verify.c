@@ -16,9 +16,6 @@
 #include <sys/time.h>
 #include <time.h>
 #include <ctype.h>
-#if defined(sun) && !defined(__EXTENSIONS__)
-extern char *ctime_r(const time_t *, char *);
-#endif
 
 #include <resolver.h>
 #include <validator.h>
@@ -97,11 +94,19 @@ val_sigverify(val_context_t * ctx,
             int             len;
             bzero(currTime, 1028);
             bzero(incpTime, 1028);
+#ifndef sun
             ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
+#else
+            ctime_r((const time_t *) (&(tv.tv_sec)), currTime, sizeof(currTime));
+#endif
             len = strlen(currTime);
             if (len > 0)
                 currTime[len-1] = 0;
+#ifndef sun
             ctime_r((const time_t *) (&(rrsig.sig_incp)), incpTime);
+#else
+            ctime_r((const time_t *) (&(tv.tv_sec)), incpTime, sizeof(incpTime));
+#endif
             len = strlen(incpTime);
             if (len > 0)
                 incpTime[len-1] = 0;
@@ -123,11 +128,19 @@ val_sigverify(val_context_t * ctx,
             int             len;
             bzero(currTime, 1028);
             bzero(exprTime, 1028);
+#ifndef sun
             ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
+#else
+            ctime_r((const time_t *) (&(tv.tv_sec)), currTime, sizeof(currTime));
+#endif
             len = strlen(currTime);
             if (len > 0)
                 currTime[len-1] = 0;
+#ifndef sun
             ctime_r((const time_t *) (&(rrsig.sig_expr)), exprTime);
+#else
+            ctime_r((const time_t *) (&(tv.tv_sec)), exprTime, sizeof(exprTime));
+#endif
             len = strlen(exprTime);
             if (len > 0)
                 exprTime[len-1] = 0;
