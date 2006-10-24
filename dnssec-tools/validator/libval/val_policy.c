@@ -18,9 +18,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
-#if defined(sun) && !defined(__EXTENSIONS__)
-extern char    *strtok_r(char *, const char *, char **);
-#endif
 #include <ctype.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
