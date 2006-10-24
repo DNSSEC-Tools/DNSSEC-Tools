@@ -15,11 +15,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <resolv.h>
-#if defined(sun) && !defined(__EXTENSIONS__)
-extern char *ctime_r(const time_t *, char *);
-#else
 #include <time.h>
-#endif
 
 #include <resolver.h>
 #include <validator.h>
@@ -92,18 +88,18 @@ get_rr_string(struct rr_rec *rr, char *buf, int buflen)
 }
 
 void
-val_log_val_rrset(const val_context_t * ctx, int level,
-                  struct val_rrset *val_rrset)
+val_log_val_rrset_pfx(const val_context_t * ctx, int level, const char *pfx,
+                      struct val_rrset *val_rrset)
 {
     char            buf1[2049], buf2[2049];
     char            name_p[NS_MAXDNAME];
 
     if (ns_name_ntop(val_rrset->val_rrset_name_n, name_p, sizeof(name_p)) == -1)
         snprintf(name_p, sizeof(name_p), "ERROR");
-    val_log(ctx, level,"rrs->val_rrset_name=%s rrs->val_rrset_type=%s "
+    val_log(ctx, level,"%srrs->val_rrset_name=%s rrs->val_rrset_type=%s "
             "rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d "
             "rrs->val_rrset_section=%s\nrrs->val_rrset_data=%s\n"
-            "rrs->val_rrset_sig=%s", name_p,
+            "rrs->val_rrset_sig=%s", pfx ? pfx : "", name_p,
             p_type(val_rrset->val_rrset_type_h),
             p_class(val_rrset->val_rrset_class_h),
             val_rrset->val_rrset_ttl_h,
@@ -117,7 +113,7 @@ val_log_rrset(const val_context_t * ctx, int level, struct rrset_rec *rrset)
 {
     while (rrset) {
 
-        val_log_val_rrset(ctx, level, &rrset->rrs);
+        val_log_val_rrset_pfx(ctx, level, NULL, &rrset->rrs);
         rrset = rrset->rrs_next;
     }
 }
@@ -175,8 +171,13 @@ val_log_rrsig_rdata(const val_context_t * ctx, int level, const char *prefix,
                 prefix, rdata->algorithm,
                 get_algorithm_string(rdata->algorithm), rdata->labels,
                 rdata->orig_ttl,
+#ifndef sun
                 ctime_r((const time_t *) (&(rdata->sig_expr)), ctime_buf1),
                 ctime_r((const time_t *) (&(rdata->sig_incp)), ctime_buf2),
+#else
+                ctime_r((const time_t *) (&(rdata->sig_expr)), ctime_buf1, sizeof(ctime_buf1)),
+                ctime_r((const time_t *) (&(rdata->sig_incp)), ctime_buf2, sizeof(ctime_buf2)),
+#endif
                 rdata->key_tag, rdata->key_tag, rdata->signer_name,
                 get_base64_string(rdata->signature, rdata->signature_len,
                                   buf, 1024));
@@ -335,17 +336,20 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                 "VAL_CACHE":serv_pr;
 	    else
 		    serv_pr = "NULL";
-	    val_log(ctx, level, "name=%s class=%s type=%s from-server=%s, Query-status=%s:%d",
-		        name_pr, p_class(class_h), p_type(type_h), serv_pr, 
-                p_query_error(top_q->qc_state), top_q->qc_state);
+	    val_log(ctx, level, "Original query: name=%s class=%s type=%s "
+                    "from-server=%s, Query-status=%s:%d",
+                    name_pr, p_class(class_h), p_type(type_h), serv_pr, 
+                    p_query_error(top_q->qc_state), top_q->qc_state);
     }
+    else
+        val_log(ctx, level, "Original query: UNKNOWN?");
 
     for (next_result = results; next_result;
          next_result = next_result->val_rc_next) {
         struct val_authentication_chain *next_as;
         int i;
 
-        val_log(ctx, level, "Next Result: %s:%d", 
+        val_log(ctx, level, "  Result: %s:%d",
                 p_val_error(next_result->val_rc_status), 
                 next_result->val_rc_status);
 
@@ -353,7 +357,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
              next_as = next_as->val_ac_trust) {
 
             if (next_as->val_ac_rrset == NULL) {
-                val_log(ctx, level, "Assertion status = %s:%d",
+                val_log(ctx, level, "    Assertion status = %s:%d",
                         p_as_error(next_as->val_ac_status),
                         next_as->val_ac_status);
             } else {
@@ -363,19 +367,21 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                 else
                     t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
 
-                val_log_assertion(ctx, level, t_name_n, next_as);
+                val_log_assertion_pfx(ctx, level, "    ", t_name_n, next_as);
+//                val_log_val_rrset_pfx(ctx, level, "     ",
+//                                  next_as->val_ac_rrset);
             }
         }
 
         if (next_result->val_rc_proof_count > 0) {
-            val_log(ctx, level, "Associated Proofs Follow:");
+            val_log(ctx, level, "    Associated Proofs Follow:");
         }
         for (i=0; i<next_result->val_rc_proof_count; i++) {
             for (next_as = next_result->val_rc_proofs[i]; next_as;
                 next_as = next_as->val_ac_trust) {
 
                 if (next_as->val_ac_rrset == NULL) {
-                    val_log(ctx, level, "Assertion status = %s:%d",
+                    val_log(ctx, level, "      Assertion status = %s:%d",
                             p_as_error(next_as->val_ac_status),
                             next_as->val_ac_status);
                 } else {
@@ -385,7 +391,8 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                     else
                         t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
 
-                    val_log_assertion(ctx, level, t_name_n, next_as);
+                    val_log_assertion_pfx(ctx, level, "      ", t_name_n,
+                                          next_as);
                 }
             }
         }
