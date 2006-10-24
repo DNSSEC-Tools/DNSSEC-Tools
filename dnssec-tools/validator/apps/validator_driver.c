@@ -42,6 +42,7 @@
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_log.h"
+#include "val_x_query.h"
 
 #include "res_debug.h"
 
@@ -762,12 +763,36 @@ check_results(val_context_t * context, const char *desc, u_char * name_n,
     return err;
 }
 
+void
+print_val_response(struct val_response *resp)
+{
+    struct val_response *cur;
+
+    if (resp == NULL) {
+        printf("No answers returned. \n");
+        return;
+    }
+
+    for (cur = resp; cur; cur = cur->vr_next) {
+        printf("DNSSEC status: %s [%d]\n",
+               p_val_error(cur->vr_val_status), cur->vr_val_status);
+        if (cur->vr_val_status == VAL_SUCCESS) {
+            printf("Validated response:\n");
+        } else {
+            printf("Non-validated response:\n");
+        }
+        print_response(cur->vr_response, cur->vr_length);
+        printf("\n");
+    }
+}
+
 // A wrapper function to send a query and print the output onto stderr
 //
 int
 sendquery(val_context_t * context, const char *desc, u_char * name_n,
           const u_int16_t class, const u_int16_t type,
-          const int *result_ar, int trusted_only)
+          const int *result_ar, int trusted_only,
+          struct val_response **resp)
 {
     int             ret_val;
     struct val_result_chain *results = NULL;
@@ -783,6 +808,10 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
 
     if (ret_val == VAL_NO_ERROR) {
 
+        if (resp)
+            ret_val = compose_answer(name_n, type, class, results, resp,
+                                     0);
+
         if (result_ar)
             err =
                 check_results(context, desc, name_n, class, type,
@@ -796,6 +825,12 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
         fprintf(stderr, "%s: \t", desc);
         fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %d\n",
                 ret_val);
+    }
+
+    if (resp) {
+        fprintf(stderr, "%s: ****RESPONSE**** \n", desc);
+        print_val_response(*resp);
+        val_free_response(*resp);
     }
 
     /*
@@ -843,11 +878,12 @@ usage(char *progname)
 }
 
 int
-self_test(int tcs, int tce, char *label_str)
+self_test(int tcs, int tce, char *label_str, int doprint)
 {
     int             rc, failed = 0, run_cnt = 0, i, tc_count, ret_val;
     val_context_t  *context;
     u_char          name_n[NS_MAXCDNAME];
+    struct val_response *resp, **resp_p;
 
     /*
      * Count the number of testcase entries 
@@ -879,6 +915,12 @@ self_test(int tcs, int tce, char *label_str)
 #else
     context = NULL;
 #endif
+
+    if (doprint)
+        resp_p = &resp;
+    else
+        resp_p = NULL;
+
     for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
         ++run_cnt;
         if (ns_name_pton(testcases[i].qn, name_n, NS_MAXCDNAME) == -1) {
@@ -889,7 +931,7 @@ self_test(int tcs, int tce, char *label_str)
         }
         rc = sendquery(context, testcases[i].desc,
                        name_n, testcases[i].qc,
-                       testcases[i].qt, testcases[i].qr, 0);
+                       testcases[i].qt, testcases[i].qr, 0, resp_p);
         if (rc)
             ++failed;
         fprintf(stderr, "\n");
@@ -959,13 +1001,6 @@ wait_for_packet(void)
 
     return rc;
 }
-
-extern int
-compose_answer(const u_char * name_n,
-               const u_int16_t type_h,
-               const u_int16_t class_h,
-               struct val_result_chain *results,
-               struct val_response **resp, u_int8_t flags);
 
 static int
 get_results(val_context_t * context, const char *desc, u_char *name_n,
@@ -1191,6 +1226,7 @@ main(int argc, char *argv[])
     char           *label_str = NULL, *nextarg = NULL;
     u_char          name_n[NS_MAXCDNAME];
     val_log_t      *logp;
+    struct val_response *resp, **resp_p;
 
     if (argc == 1)
         return 0;
@@ -1309,7 +1345,7 @@ main(int argc, char *argv[])
                 tcs = 0;
                 tce = -1;
             }
-            rc = self_test(tcs, tce, label_str);
+            rc = self_test(tcs, tce, label_str, doprint);
         }
         return rc;
     }
@@ -1324,38 +1360,18 @@ main(int argc, char *argv[])
         fprintf(stderr, "Cannot create context: %d\n", ret_val);
         return 1;
     }
-    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1);
+    if (doprint)
+        resp_p = &resp;
+    else
+        resp_p = NULL;
+    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, resp_p);
     val_free_context(context);
     fprintf(stderr, "\n");
 
     // If the print option is present, perform query and validation
     // again for printing the result
     if (doprint) {
-        int             retval = 0;
-        struct val_response *resp, *cur;
-        retval =
-            val_query(NULL, domain_name, class_h, type_h, flags, &resp);
-        if (retval != VAL_NO_ERROR) {
-            printf("val_query() returned error %d\n", retval);
-            return 1;
-        }
-
-        if (resp == NULL) {
-            printf("No answers returned. \n");
-        }
-
-        for (cur = resp; cur; cur = cur->vr_next) {
-            printf("DNSSEC status: %s [%d]\n",
-                   p_val_error(cur->vr_val_status), cur->vr_val_status);
-            if (cur->vr_val_status == VAL_SUCCESS) {
-                printf("Validated response:\n");
-            } else {
-                printf("Non-validated response:\n");
-            }
-            print_response(cur->vr_response, cur->vr_length);
-            printf("\n");
-        }
-
+        print_val_response(resp);
         val_free_response(resp);
     }
 
