@@ -14,4 +14,10 @@ int             val_query(val_context_t * ctx,
 
 int             val_free_response(struct val_response *resp);
 
+int             compose_answer(const u_char * name_n,
+                               const u_int16_t type_h,
+                               const u_int16_t class_h,
+                               struct val_result_chain *results,
+                               struct val_response **f_resp, u_int8_t flags);
+
 #endif
