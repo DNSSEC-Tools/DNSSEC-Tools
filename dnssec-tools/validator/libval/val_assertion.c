@@ -2767,9 +2767,6 @@ verify_and_validate(val_context_t * context,
                 if (pc->qc_state == Q_WAIT_FOR_GLUE) {
                     merge_glue_in_referral(pc, queries);
                 }
-                if (pc->qc_state > Q_ERROR_BASE)
-                    next_as->val_ac_status =
-                        VAL_A_DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
 
                 if (!(flags & VAL_FLAGS_DONT_VALIDATE)) {
                     /*
@@ -2781,6 +2778,14 @@ verify_and_validate(val_context_t * context,
                                               next_as)))
                         return retval;
                 }
+
+                /* 
+                 * If we have an error and the assertion status does not reflect that as yet, 
+                 * store the DNS error value 
+                 */
+                if ((next_as->val_ac_status <= VAL_A_INIT) && (pc->qc_state > Q_ERROR_BASE))
+                    next_as->val_ac_status =
+                        VAL_A_DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
             }
 
             /*
