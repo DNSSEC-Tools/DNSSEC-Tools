@@ -514,6 +514,8 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
      */
     int             i, max_sock;
 
+    max_sock = -1;
+
     if (read_descriptors == NULL)
         return SR_IO_INTERNAL_ERROR;
 
@@ -537,11 +539,13 @@ res_io_get_a_response(struct expected_arrival *ea_list, u_int8_t ** answer,
             *answer_length = ea_list->ea_response_length;
             if (SR_UNSET != (retval = clone_ns(respondent, ea_list->ea_ns))) 
                 return retval; 
-            /* fix the actual server */
-            (*respondent)->ns_number_of_addresses = 1;
-            memcpy(((*respondent)->ns_address[0]),
+            if ((*respondent)->ns_number_of_addresses > 0) {
+                /* fix the actual server */
+                (*respondent)->ns_number_of_addresses = 1;
+                memcpy(((*respondent)->ns_address[0]),
                    ea_list->ea_ns->ns_address[ea_list->ea_which_address], 
                    sizeof (struct sockaddr_storage));             
+            }
             ea_list->ea_response = NULL;
             ea_list->ea_response_length = 0;
             return SR_IO_GOT_ANSWER;
