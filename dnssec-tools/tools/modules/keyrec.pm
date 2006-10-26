@@ -32,6 +32,7 @@
 #			endtime		"+2592000"   # Zone expires in 30 days.
 #
 #		set "Kexample.com.+005+26000"
+#			zonename	"example.com"
 #			keys		"Kexample.com.+005+87654 Kexample.com.+005+55555
 #
 #		key "Kexample.com.+005+26000"
@@ -102,8 +103,11 @@ my @ZONEFIELDS = (
 # Fields in a set keyrec.
 #
 my @SETFIELDS = (
+			'keyrec_type',		# Internal only.  Usually.
 			'keys',
-		        'sets',
+		        'zonename',
+			'keyrec_setsecs',
+			'keyrec_setdate',
 		 );
 
 #
@@ -631,13 +635,9 @@ sub keyrec_add
 			}
 
 			#
-			# If this field isn't defined for the keyrec,
-			# don't add it in.
+			# Only add fields defined for the keyrec's type.
 			#
-			if(!defined($fields{$fn}))
-			{
-				next;
-			}
+			next if(!defined($fields{$fn}));
 
 			#
 			# Handle KSK-specific fields.
@@ -749,13 +749,9 @@ sub keyrec_del
 	{
 		$krtype = "set";
 	}
-	elsif($keyrec{'keyrec_type'} eq "key")
-	{
-		$krtype = "key";
-	}
 	else
 	{
-		return(-1);
+		$krtype = "key";
 	}
 
 	#
@@ -938,7 +934,8 @@ sub keyrec_keyfields
 #
 sub keyrec_signset_new
 {
-	my $name  = shift;		# Name of keyrec we're modifying.
+	my $zone  = shift;		# Signing Set's zone.
+	my $name  = shift;		# Signing Set name we're creating.
 
 	my $val;			# New value for the keyrec's subfield.
 	my $ret;			# Return code from keyrec_setval().
@@ -961,6 +958,8 @@ sub keyrec_signset_new
 	#
 	# Add the set of keys and away we go!
 	#
+	$ret = keyrec_setval('set',$name,'zonename',$zone);
+	return($ret) if($ret != 0);
 	$ret = keyrec_setval('set',$name,'keys',$val);
 	return($ret);
 }
@@ -980,11 +979,17 @@ sub keyrec_signset_addkey
 	my $ret;			# Return code from keyrec_setval().
 
 	#
-	# Return failure if the named keyrec doesn't exist or if it
-	# isn't a Signing Set keyrec.
+	# Return failure if the named keyrec doesn't exist.
 	#
-	if(!exists($keyrecs{$name})	||
-	   ($keyrecs{$name}{'keyrec_type'} ne 'set'))
+	if(!exists($keyrecs{$name}))
+	{
+		return(0) if(keyrec_add('set',$name) < 0);
+	}
+
+	#
+	# Return failure if it isn't a Signing Set keyrec.
+	#
+	if($keyrecs{$name}{'keyrec_type'} ne 'set')
 	{
 		return(0) if(keyrec_add('set',$name) < 0);
 	}
@@ -1029,13 +1034,19 @@ sub keyrec_signset_delkey
 	my $ret;			# Return code from keyrec_setval().
 
 	#
-	# Return failure if the named keyrec doesn't exist or if it
-	# isn't a Signing Set keyrec.
+	# Return failure if the named keyrec doesn't exist.
 	#
-	if(!exists($keyrecs{$name})	||
-	   ($keyrecs{$name}{'keyrec_type'} ne 'set'))
+	if(!exists($keyrecs{$name}))
 	{
-		return(0);
+		return(0) if(keyrec_add('set',$name) < 0);
+	}
+
+	#
+	# Return failure if it isn't a Signing Set keyrec.
+	#
+	if($keyrecs{$name}{'keyrec_type'} ne 'set')
+	{
+		return(0) if(keyrec_add('set',$name) < 0);
 	}
 
 	#
@@ -1082,13 +1093,19 @@ sub keyrec_signset_clear
 	my $ret;			# Return code from keyrec_setval().
 
 	#
-	# Return failure if the named keyrec doesn't exist or if it
-	# isn't a Signing Set keyrec.
+	# Return failure if the named keyrec doesn't exist.
 	#
-	if(!exists($keyrecs{$name})	||
-	   ($keyrecs{$name}{'keyrec_type'} ne 'set'))
+	if(!exists($keyrecs{$name}))
 	{
-		return(0);
+		return(0) if(keyrec_add('set',$name) < 0);
+	}
+
+	#
+	# Return failure if it isn't a Signing Set keyrec.
+	#
+	if($keyrecs{$name}{'keyrec_type'} ne 'set')
+	{
+		return(0) if(keyrec_add('set',$name) < 0);
 	}
 
 	#
@@ -1328,7 +1345,7 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   keyrec_setval("zone","example.com","zonefile","db.example.com");
 
-  keyrec_signset_new("example-keys");
+  keyrec_signset_new("zone","example-keys");
 
   keyrec_signset_addkey("example-keys","Kexample.com+005+12345",
  					 "Kexample.com+005+54321");
@@ -1580,28 +1597,28 @@ way key names are handled, the names in a Signing Set must not contain spaces.
 
 The Signing-Set-specific interfaces are given below.
 
-=head2 B<keyrec_signsets_new(signing_set_name)>
+=head2 B<keyrec_signset_new(signing_set_name)>
 
-I<keyrec_signsets_new()> creates the Signing Set named by I<signing_set_name>.
+I<keyrec_signset_new()> creates the Signing Set named by I<signing_set_name>.
 It returns 1 if the call is successful; 0 if it is not.
 
-=head2 B<keyrec_signsets_addkey(signing_set_name,key_list)>
+=head2 B<keyrec_signset_addkey(signing_set_name,key_list)>
 
-I<keyrec_signsets_addkey()> adds the keys listed in I<key_list> to the Signing
+I<keyrec_signset_addkey()> adds the keys listed in I<key_list> to the Signing
 Set named by I<signing_set_name>.  I<key_list> may either be an array or a set
 or arguments to the routine.  The I<keyrec> is created if it does not already
 exist.
 It returns 1 if the call is successful; 0 if it is not.
 
-=head2 B<keyrec_signsets_delkey(signing_set_name,key_name)>
+=head2 B<keyrec_signset_delkey(signing_set_name,key_name)>
 
-I<keyrec_signsets_delkey()> deletes the key given in I<key_name> to the
+I<keyrec_signset_delkey()> deletes the key given in I<key_name> to the
 Signing Set named by I<signing_set_name>.
 It returns 1 if the call is successful; 0 if it is not.
 
-=head2 B<keyrec_signsets_clear(keyrec_name)>
+=head2 B<keyrec_signset_clear(keyrec_name)>
 
-I<keyrec_signsets_clear()> clears the entire signing set from the I<keyrec>
+I<keyrec_signset_clear()> clears the entire signing set from the I<keyrec>
 named by I<keyrec_name>.
 It returns 1 if the call is successful; 0 if it is not.
 
