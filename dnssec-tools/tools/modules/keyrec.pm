@@ -332,8 +332,8 @@ sub keyrec_names
 #
 sub keyrec_fullrec
 {
-	my $name = shift;
-	my $krec = $keyrecs{$name};
+	my $name = shift;			# The record to retrieve.
+	my $krec = $keyrecs{$name};		# The retrieved record.
 
 	return($krec);
 }
@@ -346,9 +346,9 @@ sub keyrec_fullrec
 #
 sub keyrec_recval
 {
-	my $name = shift;
-	my $field = shift;
-	my $val = $keyrecs{$name}{$field};
+	my $name = shift;			# The record to retrieve.
+	my $field = shift;			# The field to retrieve.
+	my $val = $keyrecs{$name}{$field};	# The retrieved field.
 
 	return($val);
 }
