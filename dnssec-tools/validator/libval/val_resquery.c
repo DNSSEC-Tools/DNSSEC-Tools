@@ -604,6 +604,8 @@ do_referral(val_context_t * context,
         (learned_zones == NULL) || (queries == NULL))
         return VAL_BAD_ARGUMENT;
 
+    ref_ns_list = NULL;
+    
     /*
      * Register the request name and zone with our referral monitor 
      */
@@ -941,10 +943,15 @@ digest_response(val_context_t * context,
                             set_type_h, class_h, ttl_h, hptr, rdata, 
                             rdata_len_h, from_section, authoritive, 
                             rrs_zonecut_n);
-        } else if ((nothing_other_than_cname || (answer == 0)) 
+        } else if ((answer == 0) 
                    && ((set_type_h == ns_t_ns) 
                        || ((set_type_h == ns_t_a) 
                            && (from_section == VAL_FROM_ADDITIONAL)))) {
+            /*
+             * XXX although we could get a referral if this was a CNAME
+             * XXX dont case the alias information for now
+             * XXX nothing_other_than_cname would be 1 here 
+             */
             
             /*
              * This is a referral 
