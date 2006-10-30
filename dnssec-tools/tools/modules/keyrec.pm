@@ -80,7 +80,9 @@ my @ZONEFIELDS = (
 			'kskdirectory',
 			'kskkey',
 			'kskpath',
+			'lastset',
 			'signedzone',
+			'zskcount',
 			'zskcur',
 			'zskcurpath',
 			'zskdirectory',
@@ -120,7 +122,6 @@ my @KEYFIELDS = (
 			'keypath',		# Only set for obsolete ZSKs.
 			'ksklength',
 			'ksklife',
-			'zskcount',
 			'zsklength',
 			'zsklife',
 			'kgopts',
@@ -276,7 +277,9 @@ sub keyrec_read
 		# new record.  We'll save the name of the keyrec, as well
 		# as the record type, and then proceed on to the next line.  
 		#
-		if(($keyword =~ /^key$/i) || ($keyword =~ /^zone$/i))
+		if(($keyword =~ /^zone$/i)	||
+		   ($keyword =~ /^set$/i)	||
+		   ($keyword =~ /^key$/i))
 		{
 			$name = $value;
 
