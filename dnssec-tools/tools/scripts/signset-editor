@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC-Tools:  signset-editor
@@ -20,17 +20,17 @@
 #
 #
 #	Keyboard Accelerators:
-#		Ctrl-D  Delete Signing Set
-#		Ctrl-E  Display Extended Data / Do Not Display Extended Data
-#		Ctrl-H  Help
-#		Ctrl-M  Modify Signing Set
-#		Ctrl-N  New Signing Set
-#		Ctrl-O  Open
-#		Ctrl-Q  Quit
-#		Ctrl-S  Save
-#		Ctrl-U  Undo Changes
-#		Ctrl-V  View Signing Sets / View Keyrecs
-#		Ctrl-W  Close Window (New Signing Set, Modify Signing Set, Help)
+#		Ctrl-d  Delete Signing Set
+#		Ctrl-e  Display Extended Data / Do Not Display Extended Data
+#		Ctrl-h  Help
+#		Ctrl-m  Modify Signing Set
+#		Ctrl-n  New Signing Set
+#		Ctrl-o  Open
+#		Ctrl-q  Quit
+#		Ctrl-s  Save
+#		Ctrl-u  Undo Changes
+#		Ctrl-v  View Signing Sets / View Keyrecs
+#		Ctrl-w  Close Window (New Signing Set, Modify Signing Set, Help)
 #
 #
 #	To Be Done:
@@ -129,7 +129,7 @@ my $cm_create;					# Create signing set item.
 my $cm_delete;					# Delete signing set item.
 my $cm_modify;					# Modify signing set item.
 
-my $dm_togl;					# View signstes/keyrecs item.
+my $dm_togl;					# View signsets/keyrecs item.
 my $dm_extd;					# Toggle extended data item.
 
 my $hm_help;					# Help item.
@@ -199,7 +199,6 @@ sub main
 #
 sub buildmainwind
 {
-
 	my $file;					# File menu.
 	my $edit;					# Edit menu.
 	my $cmds;					# Commands menu.
@@ -275,11 +274,8 @@ sub buildmainwind
 			          -underline => 0);
 	$file->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-O>',\&file_open);
 	$wm->bind('<Control-Key-o>',\&file_open);
-	$wm->bind('<Control-Key-S>',\&file_save);
 	$wm->bind('<Control-Key-s>',\&file_save);
-	$wm->bind('<Control-Key-Q>',\&file_quit);
 	$wm->bind('<Control-Key-q>',\&file_quit);
 
 	##################################################
@@ -293,7 +289,6 @@ sub buildmainwind
 				  -underline	=> 0);
 	$edit->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-U>',\&edit_undo);
 	$wm->bind('<Control-Key-u>',\&edit_undo);
 
 	##################################################
@@ -314,11 +309,8 @@ sub buildmainwind
 				    -underline => 0);
 	$cmds->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-N>',\&cmds_create);
 	$wm->bind('<Control-Key-n>',\&cmds_create);
-	$wm->bind('<Control-Key-D>',\&cmds_delete);
 	$wm->bind('<Control-Key-d>',\&cmds_delete);
-	$wm->bind('<Control-Key-M>',\&cmds_modify);
 	$wm->bind('<Control-Key-m>',\&cmds_modify);
 
 	##################################################
@@ -335,9 +327,7 @@ sub buildmainwind
 			          -underline => 19);
 	$dspy->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-V>',\&display_toggle);
 	$wm->bind('<Control-Key-v>',\&display_toggle);
-	$wm->bind('<Control-Key-E>',\&display_extdata);
 	$wm->bind('<Control-Key-e>',\&display_extdata);
 
 	##################################################
@@ -350,7 +340,6 @@ sub buildmainwind
 			          -underline => 0);
 	$help->pack(-side => 'right');
 
-	$wm->bind('<Control-Key-H>',\&help_help);
 	$wm->bind('<Control-Key-h>',\&help_help);
 
 	##################################################
@@ -463,9 +452,6 @@ sub file_save
 	#
 	$em_undo->configure(-state => 'disabled');
 	@undo_stack = ();
-
-#	$modified = 0;
-#	settitle($curnode);
 }
 
 #---------------------------------------------------------------------------
@@ -571,10 +557,10 @@ sub edit_undo
 		#
 		# Delete the signing set name from each keyrec in the set.
 		#
-		@signset = keyrec_signset_byname($field);
+		@signset = keyrec_signsets($field);
 		foreach my $kr (@signset)
 		{
-			signsets_del($kr,$field);
+			keyrec_signset_delkey($field,$kr);
 		}
 
 		#
@@ -605,10 +591,10 @@ sub edit_undo
 			#
 			# Add the signing set name to each keyrec in the set.
 			#
-			@signset = split /, /, $value;
+			@signset = split / /, $value;
 			foreach my $kr (sort(@signset))
 			{
-				signsets_add($kr,$field);
+				keyrec_signset_addkey($field,$kr);
 			}
 
 			#
@@ -622,10 +608,10 @@ sub edit_undo
 			#
 			# Add each signing set name to the keyrec.
 			#
-			@signset = split /, /, $value;
+			@signset = split / /, $value;
 			foreach my $ssn (@signset)
 			{
-				signsets_add($field,$ssn);
+				keyrec_signset_addkey($ssn,$field);
 			}
 
 			#
@@ -649,19 +635,19 @@ sub edit_undo
 		#
 		# Delete the signing set name from each add-list keyrec.
 		#
-		@addlist = split /, /, @nlists[0];
+		@addlist = split / /, @nlists[0];
 		foreach my $kr (@addlist)
 		{
-			signsets_del($kr,$field);
+			keyrec_signset_delkey($field,$kr);
 		}
 
 		#
 		# Add the signing set name to each delete-list keyrec.
 		#
-		@dellist = split /, /, @nlists[1];
+		@dellist = split / /, @nlists[1];
 		foreach my $kr (@dellist)
 		{
-			signsets_add($kr,$field);
+			keyrec_signset_addkey($field,$kr);
 		}
 	}
 
@@ -726,7 +712,7 @@ sub cmds_create
 	#
 	if($insubwind)
 	{
-		error("You are already in the middle of a command");
+		error($subwin,"You are already in the middle of a command");
 		return;
 	}
 	$insubwind = 1;
@@ -739,10 +725,8 @@ sub cmds_create
 				  -title  => 'Signing Set Creation',
 				  -takefocus => 1,
 				  -borderwidth => 1);
-	$subwin->bind('<Control-Key-Q>',\&file_quit);
 	$subwin->bind('<Control-Key-q>',\&file_quit);
 #	$subwin->bind('<Enter-Key>',\&creator);
-	$subwin->bind('<Control-Key-W>',\&cancelit);
 	$subwin->bind('<Control-Key-w>',\&cancelit);
 
 	#
@@ -818,7 +802,7 @@ sub cmds_delete
 	#
 	if($bodylist->curselection eq '')
 	{
-		error("This operation requires a selection to have been made, but nothing was selected");
+		error($wm,"This operation requires a selection to have been made, but nothing was selected");
 		return;
 	}
 	@lsel = $bodylist->curselection;
@@ -841,19 +825,16 @@ sub cmds_delete
 
 		#
 		# Get the selected signing set's name and the list of
-		# keyrecs which include that set.
+		# keyrecs which include that set.  (We only need the
+		# keyrecs for the undo record.)
 		#
 		$name = $sign_sets[$lsel];
 		$nlist = $sign_sets{$name};
-		@krlist = split /, /, $nlist;
 
 		#
-		# Delete this signing set from each keyrec that has it listed.
+		# Delete this signing set's keyrec.
 		#
-		foreach my $kr (@krlist)
-		{
-			signsets_del($kr,$name);
-		}
+		keyrec_del($name);
 
 		#
 		# Add an undo record.
@@ -888,7 +869,22 @@ sub cmds_delete
 		# Zap the signing set for the selected keyrec.
 		#
 		$key_lists{$name} = '';
-		signsets_clear($name);
+		foreach my $ssn (keyrec_signsets())
+		{
+			keyrec_signset_delkey($ssn,$name);
+		}
+
+		#
+		# Delete the key name from our list of keys.
+		#
+		for(my $ind=0; $ind < @krnames; $ind++)
+		{
+			if($krnames[$ind] eq $name)
+			{
+				splice @krnames, $ind, 1;
+				last;
+			}
+		}
 	}
 
 	#
@@ -929,27 +925,27 @@ sub cmds_modify
 	#
 	if($insubwind)
 	{
-		error("You are already in the middle of a command");
+		error($subwin,"You are already in the middle of a command");
 		return;
 	}
-	$insubwind = 1;
 
 	#
 	# Make sure the signing sets are being displayed.
 	#
 	if(!$showing_sets)
 	{
-		error("This command is only available from the signing-set view\n");
-		$insubwind = 0;
+		error($wm,"This command is only available from the signing-set view\n");
 		return;
 	}
+
+	$insubwind = 1;
 
 	#
 	# Get the user's selection.
 	#
 	if($bodylist->curselection eq '')
 	{
-		error("This operation requires a selection to have been made, but nothing was selected");
+		error($wm,"This operation requires a selection to have been made, but nothing was selected");
 		$insubwind = 0;
 		return;
 	}
@@ -969,9 +965,7 @@ sub cmds_modify
 	$subwin = MainWindow->new(-relief => 'raised',
 				  -title  => 'Signing Set Modification',
 				  -borderwidth => 1);
-	$subwin->bind('<Control-Key-Q>',\&file_quit);
 	$subwin->bind('<Control-Key-q>',\&file_quit);
-	$subwin->bind('<Control-Key-W>',\&cancelit);
 	$subwin->bind('<Control-Key-w>',\&cancelit);
 
 	#
@@ -1011,7 +1005,7 @@ sub cmds_modify
 	#
 	# Select the checkboxes for each keyrecs in the signing set.
 	#
-	@boxen = split /, /, @sign_sets{$name};
+	@boxen = split / /, $sign_sets{$name};
 	foreach my $kr (@boxen)
 	{
 		$keyrecbox{$kr}->select();
@@ -1081,18 +1075,12 @@ sub readkrf
 	@names = keyrec_names();
 
 	#
-	# Strip out the zone keyrecs.
+	# Get the names of the key keyrecs.
 	#
 	foreach my $kn (sort(@names))
 	{
-		my $keyrec;				# Keyrec.
-		my $krt;				# Keyrec's type.
-
-		$keyrec = keyrec_fullrec($kn);
-		$krt = $keyrec->{'keyrec_type'};
-		next if($krt eq "zone");
-
-		push @krnames, $kn;
+		my $ktype = keyrec_recval($kn,'keyrec_type');
+		push @krnames, $kn if($ktype =~ /^zsk/);
 	}
 
 	#
@@ -1111,11 +1099,13 @@ sub display_toggle
 	{
 		$dm_togl->configure(-label => 'View Signing Sets');
 		$whichwind = "Keyrecs Display";
+		$showing_sets = 0;
 	}
 	else
 	{
 		$dm_togl->configure(-label => 'View Keyrecs');
 		$whichwind = "Signing Sets Display";
+		$showing_sets = 1;
 	}
 
 	updatewindow();
@@ -1143,6 +1133,8 @@ sub display_extdata
 #---------------------------------------------------------------------------
 # Routine:	updatewindow()
 #
+# Purpose:	Repaint the window based on the type of data we're displaying.
+#
 sub updatewindow
 {
 	if($showing_sets)
@@ -1157,6 +1149,9 @@ sub updatewindow
 
 #---------------------------------------------------------------------------
 # Routine:	keyrecs()
+#
+# Purpose:	Build a list of the keyrecs and all the signing sets
+#		they're in.
 #
 sub keyrecs
 {
@@ -1180,26 +1175,39 @@ sub keyrecs
 	$showing_sets = 0;
 
 	#
-	# Add the non-zone keyrecs to our listbox, sorted by name.
+	# Add the key keyrecs to our listbox, sorted by name.
 	#
 	foreach my $kr (sort(@krnames))
 	{
 		my $keyrec;				# Keyrec entry.
+		my $keytype;				# Keyrec's type.
 		my $krstr;				# Listbox text.
 		my $kss;				# Keyrec's signing sets.
 		my @kss;				# Signing set array.
 
 		#
-		# Get the complete keyrec and skip any zone keyrecs.
+		# Get the complete keyrec and skip any non-ZSK keyrecs.
 		#
-		$keyrec = keyrec_fullrec($kr);
-		next if($keyrec->{'keyrec_type'} eq "zone");
+		$keytype = keyrec_recval($kr,'keyrec_type');
+		next if($keytype !~ /^zsk/);
+
+		#
+		# Collect the signing sets that include this key.
+		#
+		foreach my $ss (@ssnames)
+		{
+			my $keylist = keyrec_recval($ss,'keys');
+			my @keylist = split / /, $keylist;
+
+			foreach my $kn (@keylist)
+			{
+				push @kss, $ss if($kn eq $kr);
+			}
+		}
 
 		#
 		# Put the keyrec's signing sets into a nicely formatted string.
 		#
-		$kss = $keyrec->{'signing_set'};
-		@kss = signsets_list2array($kss);
 		$kss = join(', ',sort(@kss));
 
 		#
@@ -1217,11 +1225,13 @@ sub keyrecs
 	# Pack 'er up.
 	#
 	$bodylist->pack(-fill => 'x');
-
 }
 
 #---------------------------------------------------------------------------
 # Routine:	signingsets()
+#
+# Purpose:	Build a list of the signing sets and all the keyrecs
+#		they contain.
 #
 sub signingsets
 {
@@ -1250,11 +1260,12 @@ sub signingsets
 	foreach my $sset (sort(@ssnames))
 	{
 		my $outstr;				# List string.
-		my @siggies;
+		my $signlist;				# Signing set's keys.
+		my @signlist;				# Signing set's keys.
 
-		@siggies = keyrec_signset_byname($sset);
-
-		my $signlist = join(', ',sort(@siggies));
+		$signlist = keyrec_recval($sset,'keys');
+		@signlist = split / /, $signlist;
+		$signlist = join  ' ', sort @signlist;
 
 		if($showing_extended) { $outstr = "$sset:    $signlist"; }
 		else		      { $outstr = "$sset"; }
@@ -1274,6 +1285,9 @@ sub signingsets
 #---------------------------------------------------------------------------
 # Routine:	creator()
 #
+# Purpose:	Create a new signing set.  Each selected key is added to
+#		the new set.
+#
 sub creator
 {
 	my @krlist = ();			# Keyrecs for signset.
@@ -1284,7 +1298,8 @@ sub creator
 	#
 	if($newset eq '')
 	{
-		error("The new signing set must be named");
+		error($subwin,"The new signing set must be named");
+		$subwin->raise();
 		return;
 	}
 
@@ -1293,7 +1308,8 @@ sub creator
 	#
 	if($newset =~ /[ \t\n]/)
 	{
-		error("Whitespace is not allowed in a signing set name");
+		error($subwin,"Whitespace is not allowed in a signing set name");
+		$subwin->raise();
 		return;
 	}
 
@@ -1304,7 +1320,8 @@ sub creator
 	{
 		if($ssn eq $newset)
 		{
-			error("\"$newset\" is already assigned to a signing set");
+			error($subwin,"\"$newset\" is already a signing set");
+#			$subwin->raise();
 			return;
 		}
 	}
@@ -1318,7 +1335,7 @@ sub creator
 
 		if($cbh->{'Value'} == 1)
 		{
-			signsets_add($krn,$newset);
+			keyrec_signset_addkey($newset,$krn);
 
 			$undoarg .= "$krn, ";
 		}
@@ -1349,11 +1366,13 @@ sub creator
 	$subwin->destroy();
 	updatewindow();
 	$insubwind = 0;
-
 }
 
 #---------------------------------------------------------------------------
 # Routine:	modifier()
+#
+# Purpose:	Modify an existing signing set.  Selected keys are added,
+#		unselected keys are deleted.
 #
 sub modifier
 {
@@ -1381,8 +1400,11 @@ sub modifier
 		#
 		# Break the keyrec's signing set string out into an array.
 		#
-		$sset = $kr->{'signing_set'};
-		@ssns = signsets_list2array($sset);
+		foreach my $ss (@ssnames)
+		{
+			my $keylist = keyrec_recval($ss,'keys');
+			push @ssns, $ss if($keylist =~ /$krn/);
+		}
 
 		#
 		# Set a flag if this keyrec contains the selected signing set.
@@ -1402,7 +1424,7 @@ sub modifier
 		{
 			if(!$found)
 			{
-				signsets_add($krn,$modset);
+				keyrec_signset_addkey($modset,$krn);
 				$addlist .= ", $krn";
 			}
 		}
@@ -1410,11 +1432,10 @@ sub modifier
 		{
 			if($found)
 			{
-				signsets_del($krn,$modset);
+				keyrec_signset_delkey($modset,$krn);
 				$dellist .= ", $krn";
 			}
 		}
-
 	}
 
 	#
@@ -1443,6 +1464,8 @@ sub modifier
 #---------------------------------------------------------------------------
 # Routine:	keyrecbox_setall()
 #
+# Purpose:	Set all the fields in a collection of checkboxen.
+#
 sub keyrecbox_setall
 {
 	my $cbh;					# Checkbox hash.
@@ -1456,6 +1479,8 @@ sub keyrecbox_setall
 
 #---------------------------------------------------------------------------
 # Routine:	keyrecbox_setnone()
+#
+# Purpose:	Unset all the fields in a collection of checkboxen.
 #
 sub keyrecbox_setnone
 {
@@ -1474,6 +1499,8 @@ sub keyrecbox_setnone
 #---------------------------------------------------------------------------
 # Routine:	getnode()
 #
+# Purpose:	Get the node of a pathname.
+#
 sub getnode
 {
 	my @pathelts;					# Path elements.
@@ -1488,6 +1515,8 @@ sub getnode
 #---------------------------------------------------------------------------
 # Routine:	cancelit()
 #
+# Purpose:	Destroy a subwindow.
+#
 sub cancelit
 {
 	$subwin->destroy();
@@ -1499,6 +1528,8 @@ sub cancelit
 #---------------------------------------------------------------------------
 # Routine:	helpbegone()
 #
+# Purpose:	Destroy a help window.
+#
 sub helpbegone
 {
 	$helpwin->destroy();
@@ -1508,20 +1539,25 @@ sub helpbegone
 #---------------------------------------------------------------------------
 # Routine:	error()
 #
+# Purpose:	Display an error dialog box.
+#
 sub error
 {
-	my $msg = shift;			# Warning message.
+	my $wind = shift;			# Parent window.
+	my $msg  = shift;			# Warning message.
 	my $dlg;				# Warning dialog widget.
 
-	$dlg = $wm->Dialog(-title => "$NAME Warning",
-			   -text  => $msg,
-			   -default_button => "Okay",
-			   -buttons => ["Okay"]);
+	$dlg = $wind->Dialog(-title => "$NAME Warning",
+			     -text  => $msg,
+			     -default_button => "Okay",
+			     -buttons => ["Okay"]);
 	$dlg->Show();
 }
 
 #---------------------------------------------------------------------------
 # Routine:	help_help()
+#
+# Purpose:	Display a help window.
 #
 sub help_help
 {
@@ -1576,7 +1612,7 @@ without the potential visual clutter of the rest of the keyrec entries.
 	#
 	if($inhelpwind)
 	{
-		error("Multiple help windows cannot be created\n");
+		error($helpwin,"Multiple help windows cannot be created\n");
 		return;
 	}
 	$inhelpwind = 1;
@@ -1588,9 +1624,7 @@ without the potential visual clutter of the rest of the keyrec entries.
 	$helpwin = MainWindow->new(-relief => 'raised',
 				  -title  => 'Help!',
 				  -borderwidth => 1);
-	$helpwin->bind('<Control-Key-Q>',\&file_quit);
 	$helpwin->bind('<Control-Key-q>',\&file_quit);
-	$helpwin->bind('<Control-Key-W>',\&helpbegone);
 	$helpwin->bind('<Control-Key-w>',\&helpbegone);
 
 	#
