@@ -1985,6 +1985,8 @@ sub usage
 	print STDERR "\t\t\t-usepub\n";
 	print STDERR "\t\t\t-ksklife lifespan\n";
 	print STDERR "\t\t\t-zsklife lifespan\n";
+	print STDERR "\t\t\t-zskcount count\n";
+	print STDERR "\t\t\t-signset set-name\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-help\n";
@@ -2008,6 +2010,10 @@ sub usage
 	print STDERR "\t\t\t-szopts dnssec-signzone-options\n";
 	print STDERR "\n";
 
+	#
+	# This is a debugging line.  Uncomment it if you need to know
+	# from whence usage() was called.
+	#
 #	print "\ncalled from $whence\n" if($verbose && ($whence > 0));
 
 	exit(1);
