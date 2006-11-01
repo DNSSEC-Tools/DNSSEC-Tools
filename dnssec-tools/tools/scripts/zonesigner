@@ -2037,37 +2037,26 @@ zonesigner - Generates encryption keys and signs a DNS zone.
   # get started immediately examples:
 
   # first run on a zone for example.com:
-  zonesigner -genkeys -endtime +2678400 -zone example.com \
-     db-example.com.signed
+  zonesigner -genkeys -endtime +2678400 -zone example.com
 
   # future runs before expiration time (reuses the same keys):
-  zonesigner -endtime +2678400 -zone example.com out.example.signed
+  zonesigner -endtime +2678400 example.com
 
 =head1 DESCRIPTION
 
 This script combines into a single command many actions that are required to
 sign a DNS zone.  It generates the required KSK and ZSK keys, adds the key
 data to a zone record file, signs the zone file, and runs checks to ensure
-that everything worked properly.
+that everything worked properly.  It also keeps records about the keys and
+how the zone was signed in order to facilitate re-signing of the zone in the
+future.
 
-Using I<keyrec> files, defined and maintained by DNSSEC-Tools,
-I<zonesigner> can automatically gather many of the options used to previously
-sign and generate a zone and its keys.  This allows the zone to be maintained
-using the same key lengths and expiration times, for example, without an
-administrator needing to manually track these fields.
-
-=head1 KEYREC FILES
-
-I<keyrec> files retain information about previous key-generation and
-zone-signing operations.  If a I<keyrec> file is not specified (by way of the
-I<-krfile> option), then a default I<keyrec> file is used.  If this default
-in not specified in the system's DNSSEC-Tools configuration file, the
-filename will be the zone name appended with B<.krf>.  If the I<-nokrfile>
-option is given, then no I<keyrec> file will be consulted or saved.
-
-I<keyrec> files contain two types of entries:  zone I<keyrec>s and key
-I<keyrec>s.  Each I<keyrec> contains a set of "key/value" entries, one per
-line.  Example 4 below contains the contents of a sample I<keyrec> file.
+The B<zonesigner>-specific zone-signing records are kept in I<keyrec> files.
+Using I<keyrec> files, defined and maintained by DNSSEC-Tools, I<zonesigner>
+can automatically gather many of the options used to previously sign and
+generate a zone and its keys.  This allows the zone to be maintained using the
+same key lengths and expiration times, for example, without an administrator
+needing to manually track these fields.
 
 =head1 USING ZONESIGNER
 
@@ -2102,6 +2091,27 @@ result in the signed zone being stored in I<example.com.signed>.
 Unless the I<-genkeys>, I<-genksk>, or I<-genzsk> options are specified, the
 last keys generated for a particular zone will be used in subsequent
 I<zonesigner> executions.
+
+=head1 KEYREC FILES
+
+I<keyrec> files retain information about previous key-generation and
+zone-signing operations.  If a I<keyrec> file is not specified (by way of the
+I<-krfile> option), then a default I<keyrec> file is used.  If this default
+is not specified in the system's DNSSEC-Tools configuration file, the
+filename will be the zone name appended with B<.krf>.  If the I<-nokrfile>
+option is given, then no I<keyrec> file will be consulted or saved.
+
+I<keyrec> files contain three types of entries:  zone I<keyrec>s, set
+I<keyrec>s, and key I<keyrec>s.  Zone I<keyrec>s contain information
+specifically about the zone, such as number of ZSKs used to sign the zone,
+end-time for the zone, and key signing set names (names of set I<keyrecs>.)
+Set I<keyrec>s contain lists of keys names used for a specific purpose, such
+as the current ZSK keys or the published ZSK keys.  Key I<keyrec>s contain
+information about the generated keys themselves, such as encryption algorithm,
+key length, and key lifetime.
+
+Each I<keyrec> contains a set of "key/value" entries, one per line.  Example 4
+below contains the contents of a sample I<keyrec> file.
 
 =head1 ENTROPY
 
@@ -2201,6 +2211,21 @@ The time between KSK roll-overs.  This is measured in seconds.
 =item -zsklife
 
 The time between ZSK roll-overs.  This is measured in seconds.
+
+=item -zskcount
+
+The number of ZSK keys to generate and with which to sign the zone.  The
+default is to use a single ZSK key.
+
+=item -signset
+
+The name of the ZSK signing set to use.  If the signing set does not exist,
+then this must be used in conjunction with either I<-genkeys> or I<-genzsk>.
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+
+The default signing set name is "signing-set-I<N>", where I<N> is a number.
+If I<-signset> is not specified, then B<zonesigner> will use the default and
+increment the number for subsequent signing sets.
 
 =item -forceroll
 
@@ -2398,24 +2423,34 @@ The command executed is:
 
     # zonesigner example.com db.example.com
 
-The generated I<keyrec> file contains three I<keyrec>s:  a zone I<keyrec>,
-one KSK I<keyrec>, and two ZSK I<keyrec>s.  
+The generated I<keyrec> file contains six I<keyrec>s:  a zone I<keyrec>,
+two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.  
 
     zone	"example.com"
-	zskpubpath	"./Kexample.com.+005+13531.key"
-	zskpub		"Kexample.com.+005+13531"
-	zskdirectory	"."
-	zskcurpath	"./Kexample.com.+005+53135.key"
-	zskcur		"Kexample.com.+005+53135"
-	signedfile	"db.example.com.signed"
+	zonefile	"db.example.com"
+	signedzone	"db.example.com.signed"
+	endtime		"+2592000"
 	kskpath		"./Kexample.com.+005+24082.key"
 	kskkey		"Kexample.com.+005+24082"
 	kskdirectory	"."
-	endtime		"+2592000"
-	zonefile	"db.example.com"
+	zskcur		"signing-set-42"
+	zskpub		"signing-set-43"
+	zskdirectory	"."
 	keyrec_type	"zone"
 	keyrec_signsecs	"1115166642"
 	keyrec_signdate	"Wed May  4 00:30:42 2005"
+
+    set		"signing-set-42"
+	zonename	"example.com"
+	keys		"Kexample.com.+005+53135"
+	keyrec_setsecs	"1115166640"
+	keyrec_setdate	"Wed May  4 00:30:40 2005"
+
+    set		"signing-set-43"
+	zonename	"example.com"
+	keys		"Kexample.com.+005+13531"
+	keyrec_setsecs	"1115166641"
+	keyrec_setdate	"Wed May  4 00:30:41 2005"
 
     key		"Kexample.com.+005+24082"
 	zonename	"example.com"
