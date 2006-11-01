@@ -67,7 +67,7 @@ our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_names
 		 keyrec_write keyrec_saveas
 		 keyrec_defkrf keyrec_dump_hash keyrec_dump_array
 		 keyrec_signset_new keyrec_signset_addkey keyrec_signset_delkey
-		 keyrec_signsets );
+		 keyrec_signset_haskey keyrec_signset_clear keyrec_signsets );
 
 #
 # Fields in a zone keyrec.
@@ -955,7 +955,7 @@ sub keyrec_signset_new
 	# Bloodge together the remaining arguments into a single string.
 	# We'll use this for the signing set's set of keys.
 	#
-	$val = join ' ', @_;
+	$val = join ' ', sort @_;
 	$val =~ s/^ //g;
 
 	#
@@ -978,6 +978,7 @@ sub keyrec_signset_addkey
 	my $name = shift;		# Keyrec to modify.
 
 	my $keys;			# Keyrec's signing set.
+	my @keys;			# Keyrec's signing set array.
 	my $newkeys;			# New keys to add.
 	my $ret;			# Return code from keyrec_setval().
 
@@ -1003,7 +1004,7 @@ sub keyrec_signset_addkey
 	$newkeys = join ' ', @_;
 
 	#
-	# Get the keyrec's signing set and add the new key.
+	# Get the keyrec's signing set and add the new keys.
 	#
 	$keys = $keyrecs{$name}{'keys'};
 	$keys = "$keys $newkeys";
@@ -1013,6 +1014,13 @@ sub keyrec_signset_addkey
 	#
 	$keys =~ s/^[ ]*//;
 	$keys =~ s/[ ]+/ /g;
+
+	#
+	# Sort the keyrecs names.
+	# (This isn't essential, but makes things nice and tidy.)
+	#
+	@keys = split / /, $keys;
+	$keys = join ' ',  sort(@keys);
 
 	#
 	# Add the set of keys and away we go!
@@ -1085,9 +1093,57 @@ sub keyrec_signset_delkey
 
 #--------------------------------------------------------------------------
 #
+# Routine:	keyrec_signset_haskey()
+#
+# Purpose:	Check if a Signing Set contains the specified keyrec.
+#
+#		Returns 1 if the set holds the key.
+#		Returns 0 if the set doesn't hold the key.
+#
+sub keyrec_signset_haskey
+{
+	my $name = shift;		# Keyrec to modify.
+	my $key = shift;		# Signing Set name to delete.
+
+	my $keys;			# Keyrec's signing set as a string.
+	my @keys;			# Keyrec's signing set as an array.
+	my $ret;			# Return code from keyrec_setval().
+
+	#
+	# Return failure if the named keyrec doesn't exist.
+	#
+	return(0) if(!exists($keyrecs{$name}));
+
+	#
+	# Return failure if it isn't a Signing Set keyrec.
+	#
+	if($keyrecs{$name}{'keyrec_type'} ne 'set')
+	{
+		return(0);
+	}
+
+	#
+	# Get the keyrec's Signing Set into an array of names.
+	#
+	$keys = $keyrecs{$name}{'keys'};
+	@keys = split / /, $keys;
+
+	#
+	# Return success if the specified name is in the signing-set array.
+	#
+	for(my $ind = 0;$ind < @keys; $ind++)
+	{
+		return(1) if($keys[$ind] eq $key);
+	}
+
+	return(0);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	keyrec_signset_clear()
 #
-# Purpose:	Clear the Signing Set for the specified keyrec.
+# Purpose:	Delete all keys for the specified Signing Set.
 #
 sub keyrec_signset_clear
 {
@@ -1356,6 +1412,8 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   keyrec_signset_delkey("example-keys","Kexample.com+005+12345");
 
+  $flag = keyrec_signset_haskey("example-keys","Kexample.com+005+12345");
+
   keyrec_signset_clear("example-keys","Kexample.com+005+12345");
 
   @signset = keyrec_signsets();
@@ -1618,6 +1676,13 @@ It returns 1 if the call is successful; 0 if it is not.
 I<keyrec_signset_delkey()> deletes the key given in I<key_name> to the
 Signing Set named by I<signing_set_name>.
 It returns 1 if the call is successful; 0 if it is not.
+
+=head2 B<keyrec_signset_haskey(signing_set_name,key_name)>
+
+I<keyrec_signset_delkey()> returns a flag indicating if the key specified
+in I<key_name> is one of the keys in the Signing Set named by
+I<signing_set_name>.
+It returns 1 if the signing set has the key; 0 if it does not.
 
 =head2 B<keyrec_signset_clear(keyrec_name)>
 
