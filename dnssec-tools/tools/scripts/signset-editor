@@ -135,9 +135,11 @@ my $dm_extd;					# Toggle extended data item.
 my $hm_help;					# Help item.
 
 #
-# Data for the New Signing Set and Modify Signing Set commands.
+# Data for the New Signing Set and Modify commands.
 #
 my %keyrecbox = ();				# Checkbuttons for keyrecs.
+my %signsetbox = ();				# Checkbuttons for signing sets.
+my $modkey = '';				# Name of modified key.
 my $modset = '';				# Name of modified signing set.
 my $newset = '';				# Name of new signing set.
 
@@ -904,20 +906,16 @@ sub cmds_delete
 #
 sub cmds_modify
 {
-	my $nameframe;					# Frame for ssname.
-	my $ssframe;					# Frame for keyrecs.
-	my $btnframe;					# Frame for buttons.
-
-	my $wdgt;					# General widget.
-	my $krbox;					# Keyrec checkboxen.
-
-	my @lsel;					# Listbox selections.
-	my $lsel;					# Selected element.
-
-	my $name;					# Name of signing set.
-	my @boxen;					# Keyrecs in set.
-
 # print "cmds_modify:  down in Modify Signing Set\n";
+
+	#
+	# Get the user's selection.
+	#
+	if($bodylist->curselection eq '')
+	{
+		error($wm,"This operation requires a selection to have been made, but nothing was selected");
+		return;
+	}
 
 	#
 	# If we're mid-operation already, we'll give an error and return.
@@ -929,103 +927,19 @@ sub cmds_modify
 		return;
 	}
 
-	#
-	# Make sure the signing sets are being displayed.
-	#
-	if(!$showing_sets)
-	{
-		error($wm,"This command is only available from the signing-set view\n");
-		return;
-	}
-
 	$insubwind = 1;
 
 	#
-	# Get the user's selection.
+	# Make sure the signing sets are being displayed.
 	#
-	if($bodylist->curselection eq '')
+	if($showing_sets)
 	{
-		error($wm,"This operation requires a selection to have been made, but nothing was selected");
-		$insubwind = 0;
-		return;
+		modify_signset();
 	}
-
-	#
-	# Get the name of the selected signing set.
-	#
-	@lsel = $bodylist->curselection;
-	$lsel = $lsel[0];
-	$name = $sign_sets[$lsel];
-	$modset = $name;
-
-	#
-	# Create a new window to hold our modification shtuff.  Bind up some
-	# key accelerators, too.
-	#
-	$subwin = MainWindow->new(-relief => 'raised',
-				  -title  => 'Signing Set Modification',
-				  -borderwidth => 1);
-	$subwin->bind('<Control-Key-q>',\&file_quit);
-	$subwin->bind('<Control-Key-w>',\&cancelit);
-
-	#
-	# Now make the containers for the window.
-	#
-	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
-	$ssframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
-	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
-
-	$nameframe->pack(-fill => 'x');
-	$ssframe->pack(-fill => 'x');
-	$btnframe->pack(-fill => 'x');
-
-	#
-	# Add some fields to the name stripe.
-	#
-	$wdgt = $nameframe->Label(-text => "Modifying signing set:  $name");
-	$wdgt->pack(-side => 'left');
-
-	#
-	# Start building the body of the window.
-	#
-	$wdgt = $ssframe->Label(-text => 'Check to include keyrecs, uncheck to exclude keyrecs');
-	$wdgt->pack(-side => 'top');
-
-	#
-	# Build a collection of keyrec checkboxen.
-	#
-
-	%keyrecbox = ();
-	foreach my $kr (@krnames)
+	else
 	{
-		$keyrecbox{$kr} = $ssframe->Checkbutton(-text => $kr);
-		$keyrecbox{$kr}->pack(-side => 'top');
+		modify_key();
 	}
-
-	#
-	# Select the checkboxes for each keyrecs in the signing set.
-	#
-	@boxen = split / /, $sign_sets{$name};
-	foreach my $kr (@boxen)
-	{
-		$keyrecbox{$kr}->select();
-	}
-
-	#
-	# Create a set of buttons to accept or cancel this operation.
-	#
-	$wdgt = $btnframe->Button(-text => 'Modify Signing Set',
-				  -command => \&modifier);
-	$wdgt->pack(-side => 'left');
-	$wdgt = $btnframe->Button(-text => 'Cancel',
-				  -command => \&cancelit);
-	$wdgt->pack(-side => 'left');
-	$wdgt = $btnframe->Button(-text => 'Select All',
-				  -command => \&keyrecbox_setall);
-	$wdgt->pack(-side => 'left');
-	$wdgt = $btnframe->Button(-text => 'Clear All',
-				  -command => \&keyrecbox_setnone);
-	$wdgt->pack(-side => 'left');
 }
 
 ##############################################################################
@@ -1369,12 +1283,198 @@ sub creator
 }
 
 #---------------------------------------------------------------------------
-# Routine:	modifier()
+# Routine:	modify_signset()
+#
+# Purpose:	Build a window to allow modification of a signing set.
+#
+sub modify_signset
+{
+	my $nameframe;					# Frame for ssname.
+	my $ssframe;					# Frame for keyrecs.
+	my $btnframe;					# Frame for buttons.
+
+	my $wdgt;					# General widget.
+	my $krbox;					# Keyrec checkboxen.
+
+	my @lsel;					# Listbox selections.
+	my $lsel;					# Selected element.
+
+	my $name;					# Name of signing set.
+	my @boxen;					# Keyrecs in set.
+
+	#
+	# Get the name of the selected signing set.
+	#
+	@lsel = $bodylist->curselection;
+	$lsel = $lsel[0];
+	$name = $sign_sets[$lsel];
+	$modset = $name;
+
+	#
+	# Create a new window to hold our modification shtuff.  Bind up some
+	# key accelerators, too.
+	#
+	$subwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Signing Set Modification',
+				  -borderwidth => 1);
+	$subwin->bind('<Control-Key-q>',\&file_quit);
+	$subwin->bind('<Control-Key-w>',\&cancelit);
+
+	#
+	# Now make the containers for the window.
+	#
+	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$ssframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$nameframe->pack(-fill => 'x');
+	$ssframe->pack(-fill => 'x');
+	$btnframe->pack(-fill => 'x');
+
+	#
+	# Add some fields to the name stripe.
+	#
+	$wdgt = $nameframe->Label(-text => "Modifying signing set:  $name");
+	$wdgt->pack(-side => 'left');
+
+	#
+	# Start building the body of the window.
+	#
+	$wdgt = $ssframe->Label(-text => 'Check to include keyrecs, uncheck to exclude keyrecs');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Build a collection of keyrec checkboxen.
+	#
+	%keyrecbox = ();
+	foreach my $kr (@krnames)
+	{
+		$keyrecbox{$kr} = $ssframe->Checkbutton(-text => $kr);
+		$keyrecbox{$kr}->pack(-side => 'top');
+	}
+
+	#
+	# Select the checkboxes for each keyrec in the signing set.
+	#
+	@boxen = split / /, $sign_sets{$name};
+	foreach my $kr (@boxen)
+	{
+		$keyrecbox{$kr}->select();
+	}
+
+	#
+	# Create a set of buttons to accept or cancel this operation.
+	#
+	$wdgt = $btnframe->Button(-text => 'Modify Signing Set',
+				  -command => \&modifier_signset);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Cancel',
+				  -command => \&cancelit);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Select All',
+				  -command => \&keyrecbox_setall);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Clear All',
+				  -command => \&keyrecbox_setnone);
+	$wdgt->pack(-side => 'left');
+}
+
+#---------------------------------------------------------------------------
+# Routine:	modify_key()
+#
+# Purpose:	Build a window to allow modification of a key.
+#
+sub modify_key
+{
+	my $nameframe;					# Frame for ssname.
+	my $ssframe;					# Frame for ssets.
+	my $btnframe;					# Frame for buttons.
+
+	my $wdgt;					# General widget.
+	my $krbox;					# Keyrec checkboxen.
+
+	my @lsel;					# Listbox selections.
+	my $lsel;					# Selected element.
+
+	my $name;					# Name of key.
+	my @boxen;					# Key's signing sets.
+
+	#
+	# Get the name of the selected key.
+	#
+	@lsel = $bodylist->curselection;
+	$lsel = $lsel[0];
+	$name = $key_lists[$lsel];
+	$modkey = $name;
+
+	#
+	# Create a new window to hold our modification shtuff.  Bind up some
+	# key accelerators, too.
+	#
+	$subwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Key Use Modification',
+				  -borderwidth => 1);
+	$subwin->bind('<Control-Key-q>',\&file_quit);
+	$subwin->bind('<Control-Key-w>',\&cancelit);
+
+	#
+	# Now make the containers for the window.
+	#
+	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$ssframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$nameframe->pack(-fill => 'x');
+	$ssframe->pack(-fill => 'x');
+	$btnframe->pack(-fill => 'x');
+
+	#
+	# Add some fields to the name stripe.
+	#
+	$wdgt = $nameframe->Label(-text => "Modifying keyrec:  $name");
+	$wdgt->pack(-side => 'left');
+
+	#
+	# Start building the body of the window.
+	#
+	$wdgt = $ssframe->Label(-text => 'Check to include signing sets, uncheck to exclude signing sets');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Build a collection of signing set checkboxen.
+	#
+	%signsetbox = ();
+	foreach my $sset (sort(@ssnames))
+	{
+		$signsetbox{$sset} = $ssframe->Checkbutton(-text => $sset);
+		$signsetbox{$sset}->select() if(keyrec_signset_haskey($sset,$modkey));
+		$signsetbox{$sset}->pack(-side => 'top');
+	}
+
+	#
+	# Create a set of buttons to accept or cancel this operation.
+	#
+	$wdgt = $btnframe->Button(-text => 'Modify Key',
+				  -command => \&modifier_key);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Cancel',
+				  -command => \&cancelit);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Select All',
+				  -command => \&signsetbox_setall);
+	$wdgt->pack(-side => 'left');
+	$wdgt = $btnframe->Button(-text => 'Clear All',
+				  -command => \&signsetbox_setnone);
+	$wdgt->pack(-side => 'left');
+}
+
+#---------------------------------------------------------------------------
+# Routine:	modifier_signset()
 #
 # Purpose:	Modify an existing signing set.  Selected keys are added,
 #		unselected keys are deleted.
 #
-sub modifier
+sub modifier_signset
 {
 	my $addlist = "";			# Added keyrecs.
 	my $dellist = "";			# Deleted keyrecs.
@@ -1392,18 +1492,18 @@ sub modifier
 		my $found = 0;				# Found flag.
 
 		#
-		# Get this keyrec and skip any zone keyrecs.
+		# Get this keyrec and skip any zone and set keyrecs.
 		#
 		$kr = keyrec_fullrec($krn);
-		next if($kr->{'keyrec_type'} eq "zone");
+		next if(($kr->{'keyrec_type'} eq "zone") ||
+			($kr->{'keyrec_type'} eq "set"));
 
 		#
-		# Break the keyrec's signing set string out into an array.
+		# Build a list of signing sets that contain this key.
 		#
 		foreach my $ss (@ssnames)
 		{
-			my $keylist = keyrec_recval($ss,'keys');
-			push @ssns, $ss if($keylist =~ /$krn/);
+			push @ssns, $ss if(keyrec_signset_haskey($ss,$krn));
 		}
 
 		#
@@ -1462,6 +1562,77 @@ sub modifier
 }
 
 #---------------------------------------------------------------------------
+# Routine:	modifier_key()
+#
+# Purpose:	Modify the signing sets so that the chosen key is added to
+#		selected signing sets and deleted from unselected signing sets.
+#
+sub modifier_key
+{
+	my $addlist = "";			# Added signing sets.
+	my $dellist = "";			# Deleted signing sets.
+	my $nlist;				# Combined signing set list.
+
+	#
+	# Modify the signing sets so that the key is in selected sets and
+	# not in unselected sets.
+	#
+	foreach my $sset (sort(keyrec_signsets()))
+	{
+		#
+		# If the user checked this keyrec, we'll be sure the keyrec's
+		# signing set contains the selected signing set.
+		# Otherwise, we'll make sure it isn't in the keyrec's signing
+		# set.
+		#
+		if($signsetbox{$sset}->{'Value'} == 1)
+		{
+			if(keyrec_signset_haskey($sset,$modkey))
+			{
+				$addlist .= ", $sset";
+			}
+			else
+			{
+				keyrec_signset_addkey($sset,$modkey);
+			}
+		}
+		else
+		{
+			if(keyrec_signset_haskey($sset,$modkey))
+			{
+				keyrec_signset_delkey($sset,$modkey);
+			}
+			else
+			{
+				$dellist .= ", $sset";
+			}
+		}
+	}
+
+	#
+	# Add an undo record.
+	#
+	$addlist =~ s/^, //;
+	$dellist =~ s/^, //;
+	$nlist = "$addlist; $dellist";
+	undo_add("keyrec", "modify", $modkey, $nlist);
+
+	#
+	# Set the file-modified flag and reset the modified keyrec's name.
+	#
+	$modkey = '';
+	$modified++;
+	settitle($curnode);
+
+	#
+	# Destroy our modification window and update the main window.
+	#
+	$subwin->destroy();
+	updatewindow();
+	$insubwind = 0;
+}
+
+#---------------------------------------------------------------------------
 # Routine:	keyrecbox_setall()
 #
 # Purpose:	Set all the fields in a collection of checkboxen.
@@ -1492,6 +1663,41 @@ sub keyrecbox_setnone
 	foreach my $krn (sort(keys(%keyrecbox)))
 	{
 		$cbh = $keyrecbox{$krn};
+		$cbh->{'Value'} = 0;
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	signsetbox_setall()
+#
+# Purpose:	Set all the fields in a collection of checkboxen.
+#
+sub signsetbox_setall
+{
+	my $cbh;					# Checkbox hash.
+
+	foreach my $krn (sort(keys(%signsetbox)))
+	{
+		$cbh = $signsetbox{$krn};
+		$cbh->{'Value'} = 1;
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	signsetbox_setnone()
+#
+# Purpose:	Unset all the fields in a collection of checkboxen.
+#
+sub signsetbox_setnone
+{
+	my $cbh;					# Checkbox hash.
+
+	#
+	# Add the signing set to the selected keyrecs.
+	#
+	foreach my $krn (sort(keys(%signsetbox)))
+	{
+		$cbh = $signsetbox{$krn};
 		$cbh->{'Value'} = 0;
 	}
 }
