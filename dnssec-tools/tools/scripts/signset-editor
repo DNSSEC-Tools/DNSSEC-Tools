@@ -804,7 +804,10 @@ sub cmds_delete
 	#
 	if($bodylist->curselection eq '')
 	{
-		error($wm,"This operation requires a selection to have been made, but nothing was selected");
+		my $thing = "keyrec";			# Thing to select.
+
+		$thing = "signing set" if($showing_sets);
+		error($wm,"Please select a $thing to delete");
 		return;
 	}
 	@lsel = $bodylist->curselection;
@@ -913,7 +916,10 @@ sub cmds_modify
 	#
 	if($bodylist->curselection eq '')
 	{
-		error($wm,"This operation requires a selection to have been made, but nothing was selected");
+		my $thing = "keyrec";			# Thing to select.
+
+		$thing = "signing set" if($showing_sets);
+		error($wm,"Please select a $thing to modify");
 		return;
 	}
 
