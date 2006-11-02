@@ -1025,6 +1025,7 @@ sub keyrec_signset_addkey
 	# Add the set of keys and away we go!
 	#
 	$ret = keyrec_setval('set',$name,'keys',$keys);
+	keyrec_settime('set',$name);
 	return($ret);
 }
 
@@ -1087,6 +1088,7 @@ sub keyrec_signset_delkey
 	# Delete the key.
 	#
 	$ret = keyrec_setval('set',$name,'keys',$keys);
+	keyrec_settime('set',$name);
 	return($ret);
 }
 
@@ -1418,6 +1420,7 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   @signset = keyrec_signsets();
 
   keyrec_settime("zone","example.com");
+  keyrec_settime("set","signing-set-42");
   keyrec_settime("key","Kexample.com.+005+76543");
 
   @keyfields = keyrec_keyfields();
