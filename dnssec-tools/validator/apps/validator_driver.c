@@ -827,11 +827,6 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
                 ret_val);
     }
 
-    if (resp) {
-        fprintf(stderr, "%s: ****RESPONSE**** \n", desc);
-        print_val_response(*resp);
-        val_free_response(*resp);
-    }
 
     /*
      * XXX De-register pending queries 
@@ -883,7 +878,7 @@ self_test(int tcs, int tce, char *label_str, int doprint)
     int             rc, failed = 0, run_cnt = 0, i, tc_count, ret_val;
     val_context_t  *context;
     u_char          name_n[NS_MAXCDNAME];
-    struct val_response *resp, **resp_p;
+    struct val_response *resp;
 
     /*
      * Count the number of testcase entries 
@@ -916,11 +911,7 @@ self_test(int tcs, int tce, char *label_str, int doprint)
     context = NULL;
 #endif
 
-    if (doprint)
-        resp_p = &resp;
-    else
-        resp_p = NULL;
-
+    resp = NULL;
     for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
         ++run_cnt;
         if (ns_name_pton(testcases[i].qn, name_n, NS_MAXCDNAME) == -1) {
@@ -931,7 +922,17 @@ self_test(int tcs, int tce, char *label_str, int doprint)
         }
         rc = sendquery(context, testcases[i].desc,
                        name_n, testcases[i].qc,
-                       testcases[i].qt, testcases[i].qr, 0, resp_p);
+                       testcases[i].qt, testcases[i].qr, 0, &resp);
+        if (doprint) {
+            fprintf(stderr, "%s: ****RESPONSE**** \n", testcases[i].desc);
+            print_val_response(resp);
+        }
+
+        if (resp) {
+            val_free_response(resp);
+            resp = NULL;
+        }
+
         if (rc)
             ++failed;
         fprintf(stderr, "\n");
@@ -1226,7 +1227,7 @@ main(int argc, char *argv[])
     char           *label_str = NULL, *nextarg = NULL;
     u_char          name_n[NS_MAXCDNAME];
     val_log_t      *logp;
-    struct val_response *resp, **resp_p;
+    struct val_response *resp;
 
     if (argc == 1)
         return 0;
@@ -1360,11 +1361,8 @@ main(int argc, char *argv[])
         fprintf(stderr, "Cannot create context: %d\n", ret_val);
         return 1;
     }
-    if (doprint)
-        resp_p = &resp;
-    else
-        resp_p = NULL;
-    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, resp_p);
+
+    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, &resp);
     val_free_context(context);
     fprintf(stderr, "\n");
 
@@ -1372,7 +1370,11 @@ main(int argc, char *argv[])
     // again for printing the result
     if (doprint) {
         print_val_response(resp);
+    }
+
+    if (resp) {
         val_free_response(resp);
+        resp = NULL;
     }
 
     free_validator_cache();
