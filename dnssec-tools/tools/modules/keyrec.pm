@@ -655,12 +655,11 @@ sub keyrec_add
 			}
 
 			#
-			# Handle ZSK-specific fields.
+			# Handle ZSK-specific key fields.
 			#
 			if($fields{'keyrec_type'} !~ /^zsk/)
 			{
-				if(($fn eq 'zskcount')		||
-				   ($fn eq 'zsklength')		||
+				if(($fn eq 'zsklength')		||
 				   ($fn eq 'zsklife'))
 				{
 					next;
