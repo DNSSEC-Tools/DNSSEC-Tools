@@ -1078,9 +1078,9 @@ sub keyrecs
 	my $llen = $bodylist->size();			# Listbox length.
 
 	#
-	# Disable the "Modify signing set" menu item.
+	# Change the "Modify" menu item's label.
 	#
-	$cm_modify->configure(-state => 'disabled');
+	$cm_modify->configure(-label => 'Modify Keyrec...');
 
 	#
 	# Delete any existing entries in the listbox.
@@ -1158,9 +1158,9 @@ sub signingsets
 	my $llen = $bodylist->size();			# Listbox length.
 
 	#
-	# Enable the "Modify signing set" menu item.
+	# Change the "Modify" menu item's label.
 	#
-	$cm_modify->configure(-state => 'normal');
+	$cm_modify->configure(-label => 'Modify Signing Set...');
 
 	#
 	# Delete any existing entries in the listbox.
