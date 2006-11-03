@@ -557,23 +557,31 @@ sub edit_undo
 		my @signset;			# Signing set's keyrecs.
 
 		#
-		# Delete the signing set name from each keyrec in the set.
+		# Since we can only create signing sets, that's the only
+		# create operation we'll be able to undo.
 		#
-		@signset = keyrec_signsets($field);
-		foreach my $kr (@signset)
+		if($type eq "signing_set")
 		{
-			keyrec_signset_delkey($field,$kr);
-		}
-
-		#
-		# Delete the signing set name from our list of names.
-		#
-		for(my $ind=0; $ind < @ssnames; $ind++)
-		{
-			if($ssnames[$ind] eq $field)
+			#
+			# Delete the signing set name from each keyrec
+			# in the set.
+			#
+			@signset = keyrec_signsets($field);
+			foreach my $kr (@signset)
 			{
-				splice @ssnames, $ind, 1;
-				last;
+				keyrec_signset_delkey($field,$kr);
+			}
+
+			#
+			# Delete the signing set name from our list of names.
+			#
+			for(my $ind=0; $ind < @ssnames; $ind++)
+			{
+				if($ssnames[$ind] eq $field)
+				{
+					splice @ssnames, $ind, 1;
+					last;
+				}
 			}
 		}
 
@@ -605,12 +613,13 @@ sub edit_undo
 			push @ssnames, $field;
 			@ssnames = sort(@ssnames);
 		}
-		else
+		elsif($type eq "keyrec")
 		{
 			#
 			# Add each signing set name to the keyrec.
 			#
 			@signset = split / /, $value;
+
 			foreach my $ssn (@signset)
 			{
 				keyrec_signset_addkey($ssn,$field);
@@ -620,6 +629,8 @@ sub edit_undo
 			# Add the keyrec's set list back to the keyrec list.
 			#
 			$key_lists{$field} = $value;
+			push @krnames, $field;
+			@krnames = sort(@krnames);
 		}
 
 	}
@@ -634,22 +645,79 @@ sub edit_undo
 		# set-deleted list.
 		@nlists = split /; /, $value;
 
-		#
-		# Delete the signing set name from each add-list keyrec.
-		#
-		@addlist = split / /, @nlists[0];
-		foreach my $kr (@addlist)
+		if($type eq "signing_set")
 		{
-			keyrec_signset_delkey($field,$kr);
-		}
+			#
+			# Delete the signing set name from each add-list keyrec.
+			#
+			@addlist = split / /, @nlists[0];
+			foreach my $key (@addlist)
+			{
+				keyrec_signset_delkey($field,$key);
+			}
 
-		#
-		# Add the signing set name to each delete-list keyrec.
-		#
-		@dellist = split / /, @nlists[1];
-		foreach my $kr (@dellist)
+			#
+			# Add the signing set name to each delete-list keyrec.
+			#
+			@dellist = split / /, @nlists[1];
+			foreach my $key (@dellist)
+			{
+				keyrec_signset_addkey($field,$key);
+			}
+		}
+		elsif($type eq "keyrec")
 		{
-			keyrec_signset_addkey($field,$kr);
+			my $kk = $field;		# Key we're undoing.
+
+			#
+			# Go through all the signing sets to see which need
+			# an undo operation.
+			#
+			foreach my $set (keyrec_signsets())
+			{
+				my $kfound;		# Key-found flag.
+				my $sfound = 0;		# Set-found flag.
+				my @undosets = split / /, @nlists[0];
+
+				#
+				# Figure out if this set holds this key.
+				#
+				$kfound = keyrec_signset_haskey($set,$kk);
+
+				#
+				# Go through the undo set to see if it
+				# contains this set.
+				#
+				foreach my $sset (@undosets)
+				{
+					if($set eq $sset)
+					{
+						$sfound = 1;
+						last;
+					}
+				}
+
+				#
+				# If the set is in the undo set and it doesn't
+				# have the key, add it back in.
+				# If the set is not in the undo set and it has
+				# the key, take it back out.
+				#
+				if($sfound)
+				{
+					if(!$kfound)
+					{
+						keyrec_signset_addkey($set,$kk);
+					}
+				}
+				else
+				{
+					if($kfound)
+					{
+						keyrec_signset_delkey($set,$kk);
+					}
+				}
+			}
 		}
 	}
 
@@ -1128,7 +1196,7 @@ sub keyrecs
 		#
 		# Put the keyrec's signing sets into a nicely formatted string.
 		#
-		$kss = join(', ',sort(@kss));
+		$kss = join(' ',sort(@kss));
 
 		#
 		# Add this keyrec to the listbox.
@@ -1531,7 +1599,7 @@ sub modifier_signset
 			if(!$found)
 			{
 				keyrec_signset_addkey($modset,$krn);
-				$addlist .= ", $krn";
+				$addlist .= " $krn";
 			}
 		}
 		else
@@ -1539,7 +1607,7 @@ sub modifier_signset
 			if($found)
 			{
 				keyrec_signset_delkey($modset,$krn);
-				$dellist .= ", $krn";
+				$dellist .= " $krn";
 			}
 		}
 	}
@@ -1575,9 +1643,21 @@ sub modifier_signset
 #
 sub modifier_key
 {
-	my $addlist = "";			# Added signing sets.
-	my $dellist = "";			# Deleted signing sets.
-	my $nlist;				# Combined signing set list.
+	my $origlist;				# Combined signing set list.
+	my @origlist = ();			# Combined signing set list.
+
+# print "modifier_key:  down in\n";
+
+	#
+	# Modify the signing sets so that the key is in selected sets and
+	# not in unselected sets.
+	#
+	foreach my $sset (sort(keyrec_signsets()))
+	{
+		push @origlist, $sset if(keyrec_signset_haskey($sset,$modkey));
+	}
+	$origlist = join ' ', @origlist;
+
 
 	#
 	# Modify the signing sets so that the key is in selected sets and
@@ -1593,11 +1673,7 @@ sub modifier_key
 		#
 		if($signsetbox{$sset}->{'Value'} == 1)
 		{
-			if(keyrec_signset_haskey($sset,$modkey))
-			{
-				$addlist .= ", $sset";
-			}
-			else
+			if(!keyrec_signset_haskey($sset,$modkey))
 			{
 				keyrec_signset_addkey($sset,$modkey);
 			}
@@ -1608,20 +1684,13 @@ sub modifier_key
 			{
 				keyrec_signset_delkey($sset,$modkey);
 			}
-			else
-			{
-				$dellist .= ", $sset";
-			}
 		}
 	}
 
 	#
 	# Add an undo record.
 	#
-	$addlist =~ s/^, //;
-	$dellist =~ s/^, //;
-	$nlist = "$addlist; $dellist";
-	undo_add("keyrec", "modify", $modkey, $nlist);
+	undo_add("keyrec", "modify", $modkey, $origlist);
 
 	#
 	# Set the file-modified flag and reset the modified keyrec's name.
