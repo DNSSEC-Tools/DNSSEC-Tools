@@ -99,6 +99,7 @@ my $zskcnt;				# Number of current ZSKs.
 my $zsize;				# Size of ZSK.
 my $genzsk;				# Generate a new ZSK.
 my $signset;				# Signing set.
+my $lastset;				# Zone's last signing set.
 
 my $zskcursetname;			# Name of current ZSK signing set.
 my $zskpubsetname;			# Name of published ZSK signing set.
@@ -667,14 +668,21 @@ sub genzsks
 			exit(1);
 		}
 
-		$zskcursetname = newsignset();
-		$zskpubsetname = newsignset($signset);
+		$zskpubsetname = $signset;
+		$zskcursetname = keyrec_signset_newname($zone);
 	}
 	else
 	{
-		$zskcursetname = newsignset();
-		$zskpubsetname = newsignset();
+		$zskcursetname = keyrec_signset_newname($zone);
+		$zskpubsetname = keyrec_signset_newname($zone);
 	}
+
+	#
+	# Create the new signing sets.
+	#
+	keyrec_signset_new($zone,$zskcursetname);
+	keyrec_signset_new($zone,$zskpubsetname);
+	$lastset = keyrec_recval($zone,'lastset');
 
 	#
 	# Generate a set of current ZSKs and save their names.
@@ -1226,6 +1234,7 @@ sub updzonerec
 	$opts{'szopts'}		= $szopts if($szopts ne "");
 	$opts{'zskcur'}		= $zskcursetname;
 	$opts{'zskpub'}		= $zskpubsetname;
+	$opts{'lastset'}	= $lastset;
 
 	#
 	# Save the zone end time and delete the option prefix.
@@ -1702,7 +1711,8 @@ sub forceroll
 	#
 	# Generate and save a new signing set name.
 	#
-	$zskcursetname = newsignset();
+	$zskcursetname = keyrec_signset_newname($zone);
+	keyrec_signset_new($zone,$zskcursetname);
 	$opts{'zskcur'} = $zskcursetname;
 	keyrec_setval('zone',$zone,'zskcur',$zskcursetname);
 
@@ -1757,7 +1767,7 @@ sub forceroll
 		#
 		# Add the new set to the keyrecs 
 		#
-		$zskpubsetname = newsignset();
+		$zskpubsetname = keyrec_signset_newname($zone);
 		$opts{'zskpub'} = $zskpubsetname;
 		keyrec_setval('zone',$zone,'zskpub',$zskpubsetname);
 	}
@@ -1779,65 +1789,10 @@ sub forceroll
 	#
 	# Add the new set to the keyrecs.
 	#
-	$zskpubsetname = newsignset();
+	$zskpubsetname = keyrec_signset_newname($zone);
+	keyrec_signset_new($zone,$zskpubsetname);
 	$opts{'zskpub'} = $zskpubsetname;
 	keyrec_setval('zone',$zone,'zskpub',$zskpubsetname);
-}
-
-#----------------------------------------------------------------------
-# Routine:	newsignset()
-#
-# Purpose:	Create a new signing set name based on the last name
-#		used for the zone.
-#
-sub newsignset
-{
-	my $setname;				# Name of zone's last set.
-	my $oldind;				# Old index of zone's last set.
-	my $newind;				# New index of zone's last set.
-
-	#
-	# If a set name was specified, we'll use that and continue onwards.
-	#
-	if(@_ > 0)
-	{
-		$setname = shift;
-		keyrec_signset_new($zone,$setname);
-		$opts{'lastset'} = $setname;
-		return($setname);
-	}
-
-	#
-	# Get the zone's last signing set.
-	#
-	$setname = $opts{'lastset'};
-	$setname = "signing-set-0" if(!defined($opts{'lastset'}));
-
-	#
-	# Get the first number in the set name.  If there isn't a number
-	# in the set name, we'll append a zero.
-	#
-	$setname =~ /(\d+)/;
-	$oldind = $1;
-	if($oldind eq '')
-	{
-		$setname = $setname . "0";
-		$oldind = 0;
-	}
-
-	#
-	# We'll increment the old index and use that as our new index.
-	# The set name in our pile o' options will be changed to the new name.
-	#
-	$newind = int($oldind) + 1;
-	$setname =~ s/$oldind/$newind/;
-	$opts{'lastset'} = $setname;
-
-	#
-	# Create the new signing set and return the generated name.
-	#
-	keyrec_signset_new($zone,$setname);
-	return($setname);
 }
 
 #----------------------------------------------------------------------
