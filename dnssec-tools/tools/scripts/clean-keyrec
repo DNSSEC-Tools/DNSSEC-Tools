@@ -263,6 +263,10 @@ sub keychecks
 		}
 	}
 
+	#
+	# Save the modified keyrec file -- iff we're not just listing.
+	#
+	keyrec_write() if(!$list);
 }
 
 #-----------------------------------------------------------------------------
