@@ -49,6 +49,7 @@ use strict;
 use Tk;
 use Tk::Dialog;
 use Tk::FileSelect;
+use Tk::Pane;
 
 use Net::DNS::SEC::Tools::keyrec;
 
@@ -804,11 +805,15 @@ sub cmds_create
 	# Now make the containers for the window.
 	#
 	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
-	$krframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$krframe   = $subwin->Scrolled("Frame",
+					-relief      => 'raised',
+					-borderwidth => 1,
+					-height => 245,
+					-scrollbars  => 'e');
 	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
 
 	$nameframe->pack(-fill => 'x');
-	$krframe->pack(-fill => 'x');
+	$krframe->pack(-fill => 'both');
 	$btnframe->pack(-fill => 'x');
 
 	#
@@ -825,7 +830,7 @@ sub cmds_create
 	#
 	# Start building the body of the window.
 	#
-	$wdgt = $krframe->Label(-text => 'Select keyrecs for new signing set');
+	$wdgt = $krframe->Label(-text => 'Check to include keyrecs, uncheck to exclude keyrecs');
 	$wdgt->pack(-side => 'top');
 
 	#
@@ -835,8 +840,9 @@ sub cmds_create
 	foreach my $kr (@krnames)
 	{
 		$keyrecbox{$kr} = $krframe->Checkbutton(-text => $kr);
-		$keyrecbox{$kr}->pack(-side => 'top');
+		$keyrecbox{$kr}->pack(-side => 'top', -fill => 'both');
 	}
+	$krframe->pack(-fill => 'x');
 
 	#
 	# Create a set of buttons to accept or cancel this operation.
@@ -1288,7 +1294,6 @@ sub creator
 	if($newset eq '')
 	{
 		error($subwin,"The new signing set must be named");
-		$subwin->raise();
 		return;
 	}
 
@@ -1298,7 +1303,6 @@ sub creator
 	if($newset =~ /[ \t\n]/)
 	{
 		error($subwin,"Whitespace is not allowed in a signing set name");
-		$subwin->raise();
 		return;
 	}
 
@@ -1310,7 +1314,6 @@ sub creator
 		if($ssn eq $newset)
 		{
 			error($subwin,"\"$newset\" is already a signing set");
-#			$subwin->raise();
 			return;
 		}
 	}
@@ -1325,7 +1328,6 @@ sub creator
 		if($cbh->{'Value'} == 1)
 		{
 			keyrec_signset_addkey($newset,$krn);
-
 			$undoarg .= "$krn, ";
 		}
 	}
@@ -1399,7 +1401,11 @@ sub modify_signset
 	# Now make the containers for the window.
 	#
 	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
-	$ssframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$ssframe   = $subwin->Scrolled("Frame",
+					-relief      => 'raised',
+					-borderwidth => 1,
+					-height => 245,
+					-scrollbars  => 'e');
 	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
 
 	$nameframe->pack(-fill => 'x');
@@ -1496,7 +1502,11 @@ sub modify_key
 	# Now make the containers for the window.
 	#
 	$nameframe = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
-	$ssframe   = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$ssframe   = $subwin->Scrolled("Frame",
+					-relief      => 'raised',
+					-borderwidth => 1,
+					-height => 245,
+					-scrollbars  => 'e');
 	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
 
 	$nameframe->pack(-fill => 'x');
