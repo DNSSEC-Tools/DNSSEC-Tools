@@ -12,6 +12,7 @@
 #	Problems include:
 #
 #		- no zones defined
+#		- no sets defined
 #		- no keys defined
 #		- unknown zone keyrecs  (key keyrec points to a non-existent
 #					 zone keyrec)
@@ -21,11 +22,15 @@
 #		- invalid zone data values
 #			- existence of zone file
 #			- existence of KSK file
-#			- existence of ZSK file
 #			- endtime > 1 day
+#			- seconds count and date string match
+#		- invalid set data values
+#			- listed sets exist
+#			- listed keys don't exist
 #			- seconds count and date string match
 #		- invalid key data values
 #			- bad encryption algorithm
+#			- existence of ZSK file
 #			- out-of-range bit values
 #			- non-existent random device
 #			- seconds count and date string match
@@ -100,28 +105,31 @@ my %length_high =
 my $count   = 0;			# Error-count flag.
 my $quiet   = 0;			# Quiet flag.
 my $verbose = 0;			# Verbose flag.
-my $version = 0;			# Display the version number.
 my $keychk  = 0;			# Keys-only flag.
+my $setchk  = 0;			# Sets-only flag.
 my $zonechk = 0;			# Zones-only flag.
 my %options = ();			# Filled option array.
 my @opts =
 (
+	"zone",				# Only check zone keyrecs.
+	"set",				# Only check set keyrecs.
+	"key",				# Only check key keyrecs.
 	"count+",			# Give final error count.
 	"quiet+",			# Don't give any output.
 	"verbose+",			# Give lotsa output.
-	"help",				# Give a usage message and exit.
-	"zone",				# Only check zone keyrecs.
 	"Version",			# Display the version number.
-	"key",				# Only check key keyrecs.
+	"help",				# Give a usage message and exit.
 );
 
 
 my $zoneerrs = 0;			# Count of errors in zones.
+my $seterrs = 0;			# Count of errors in sets.
 my $keyerrs = 0;			# Count of errors in keys.
 
 my @krnames;				# List of keyrecs in the file.
 
 my %zones = ();				# Names of zone keyrecs.
+my %sets = ();				# Names of set keyrecs.
 my %kskkeys = ();			# Names of KSK keyrecs.
 my %zskkeys = ();			# Names of ZSK keyrecs.
 
@@ -133,7 +141,6 @@ $ret = main();
 exit($ret);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
 #
 sub main()
@@ -149,17 +156,21 @@ sub main()
 	$quiet	 = $options{'quiet'};
 	$verbose = $options{'verbose'};
 	$keychk	 = $options{'key'};
+	$setchk	 = $options{'set'};
 	$zonechk = $options{'zone'};
-	$version = $options{'Version'};
 
-	version() if($options{'Version'});
+	#
+	# Check a few immediate-handle options.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
 
-	if(defined($options{'help'}))
-	{
-		usage();
-	}
-
-	if($keychk && $zonechk)
+	#
+	# Check that exclusive options really are exclusive.
+	# 
+	if(($keychk && $zonechk)	||
+	   ($keychk && $setchk)		||
+	   ($setchk && $zonechk))
 	{
 		usage();
 	}
@@ -167,11 +178,7 @@ sub main()
 	#
 	# Ensure we were given a keyrec file to check.
 	#
-	if($argc == 0)
-	{
-		print STDERR "usage:  keyrec-check [-q] [-v] <keyrec_file>\n";
-		exit(1);
-	}
+	usage() if($argc == 0);
 
 	#
 	# Read the keyrec file.
@@ -186,30 +193,30 @@ sub main()
 	#
 	# Run the zone checks.
 	#
-	if(!$keychk)
-	{
-		zonechecks();
-	}
+	zonechecks() if($zonechk);
+
+	#
+	# Run the set checks.
+	#
+	setchecks() if($setchk);
 
 	#
 	# Run the key checks.
 	#
-	if(!$zonechk)
-	{
-		keychecks();
-	}
+	keychecks() if($keychk);
 
-	$errors = $zoneerrs + $keyerrs;
-	if($count)
-	{
-		print("$errors errors\n");
-	}
+	#
+	# Calculate and report the number of errors we found.
+	#
+	$errors = $zoneerrs + $seterrs + $keyerrs;
+	print("$errors errors\n") if($count);
 	return($errors);
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zonechecks()
+#
+# Purpose:	Run some checks on the zones.
 #
 sub zonechecks
 {
@@ -247,8 +254,49 @@ sub zonechecks
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	setchecks()
 #
+# Purpose:	Run some checks on the signing sets.
+#
+sub setchecks
+{
+	my $skr;				# Set keyrec reference.
+	my %setrec;				# Set keyrec.
+
+	my $setname;				# Set name for looping.
+	my $keyname;				# Key name.
+
+	my @sets = keyrec_signsets();		# Valid signing sets.
+
+	#
+	# Make sure the keyrec file as some set keyrecs.
+	#
+	if(length(%sets) == 0)
+	{
+		vprint("no set keyrecs defined\n");
+		$seterrs++;
+		return;
+	}
+
+	#
+	# Go through the sets and verify that each sets keys exist
+	# and that the set timestamp is valid.
+	#
+	foreach my $setname (sort(keys(%sets)))
+	{
+		vprint("checking set $setname\n");
+
+		setdata($setname);
+
+	}
+
+	vprint("\n");
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	keychecks()
+#
+# Purpose:	Run some checks on the KSKs and ZSKs.
 #
 sub keychecks
 {
@@ -257,12 +305,10 @@ sub keychecks
 
 	my @fields = keyrec_zonefields();	# Valid zone fields.
 
-	if(length(%kskkeys) == 0)
-	{
-		vprint("no KSK keys defined\n");
-		$keyerrs++;
-	}
-	else
+	#
+	# Run several checks on the KSKs.
+	#
+	if(length(%kskkeys) > 0)
 	{
 		foreach my $keyname (sort(keys(%kskkeys)))
 		{
@@ -282,14 +328,17 @@ sub keychecks
 			crosshkeys("KSK","zone",$keyname,$kr,@fields);
 		}
 	}
-	vprint("\n");
-
-	if(length(%zskkeys) == 0)
+	else
 	{
-		vprint("no ZSK keys defined\n");
+		vprint("no KSK keys defined\n");
 		$keyerrs++;
 	}
-	else
+	vprint("\n");
+
+	#
+	# Run several checks on the ZSKs.
+	#
+	if(length(%zskkeys) > 0)
 	{
 		foreach my $keyname (sort(keys(%zskkeys)))
 		{
@@ -309,35 +358,54 @@ sub keychecks
 			crosshkeys("ZSK","zone",$keyname,$kr,@fields);
 		}
 	}
+	else
+	{
+		vprint("no ZSK keys defined\n");
+		$keyerrs++;
+	}
 
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	getkeyrecs()
+#
+# Purpose:	Load the keyrec file contents.  The keyrecs are segregated
+#		according to type.
 #
 sub getkeyrecs
 {
 	my $krfile = shift;			# Keyrec file.
 
+	#
+	# Read the specified keyrec file.
+	#
 	keyrec_read($krfile);
-
 	@krnames = keyrec_names();
 
+	#
+	# Add the keyrec to one of our global type hashes.
+	#
 	foreach my $krn (sort(@krnames))
 	{
 		my $kr;				# Reference to keyrec.
-		my %keyrec;			# Keyrec.
 		my $type;			# Keyrec's type.
 
+		#
+		# Get the keyrec and its type.
+		#
 		$kr = keyrec_fullrec($krn);
-		%keyrec = %$kr;
+		$type = keyrec_recval($krn,'keyrec_type');
 
-		$type = $keyrec{'keyrec_type'};
-
+		#
+		# Add the keyrec to the appropriate hash.
+		#
 		if($type eq 'zone')
 		{
 			$zones{$krn} = $kr;
+		}
+		elsif($type eq 'set')
+		{
+			$sets{$krn} = $kr;
 		}
 		elsif($type eq 'ksk')
 		{
@@ -358,16 +426,18 @@ sub getkeyrecs
 ##############################################################################
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zonekeys()
+#
+# Purpose:	Verify the KSK and signing sets.
 #
 sub zonekeys
 {
-	my $zonename = shift;			# Zone name for looping.
+	my $zonename = shift;			# Zone name.
 	my $zkr	     = shift;			# Zone keyrec reference.
 	my %zonerec  = %$zkr;			# Zone keyrec.
 
 	my $keyname;				# Key name.
+	my $setname;				# Set name.
 
 	#
 	# Ensure that the zone's KSK key is present and exists.
@@ -385,47 +455,42 @@ sub zonekeys
 	}
 
 	#
-	# Ensure that the zone's current ZSK is present and exists.
+	# Ensure that the zone's current ZSK signing set is present and exists.
 	#
-	$keyname = $zonerec{'zskcur'};
-	if(!defined($keyname))
+	$setname = $zonerec{'zskcur'};
+	if(!defined($setname))
 	{
-		qprint("missing key:  current ZSK (zone $zonename)\n");
+		qprint("missing set:  ZSKCUR set $setname (zone $zonename)\n");
 		$zoneerrs++;
 	}
-	elsif(!defined($zskkeys{$keyname}))
+	elsif(!defined($sets{$setname}))
 	{
-		qprint("no such key:  current ZSK key $keyname (zone $zonename)\n");
-		$zoneerrs++;
-	}
-
-	#
-	# We aren't checking the zone for a new ZSK, as that's only present
-	# in a roll-over situation.
-	#
-
-	#
-	# Ensure that the zone's published ZSK is present and exists.
-	#
-	$keyname = $zonerec{'zskpub'};
-	if(!defined($keyname))
-	{
-		qprint("missing key:  published ZSK (zone $zonename)\n");
-		$zoneerrs++;
-	}
-	elsif(!defined($zskkeys{$keyname}))
-	{
-		qprint("no such key:  published ZSK key $keyname (zone $zonename)\n");
+		qprint("no such set:  ZSKCUR set $setname (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
-	vprint("\n");
+	#
+	# Ensure that the zone's published ZSK signing set is present
+	# and exists.
+	#
+	$setname = $zonerec{'zskpub'};
+	if(!defined($setname))
+	{
+		qprint("missing set:  ZSKPUB set $setname (zone $zonename)\n");
+		$zoneerrs++;
+	}
+	elsif(!defined($sets{$setname}))
+	{
+		qprint("no such set:  ZSKPUB set $setname (zone $zonename)\n");
+		$zoneerrs++;
+	}
 
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	expiredzones()
+#
+# Purpose:	Check for expired zones.
 #
 sub expiredzones
 {
@@ -441,8 +506,9 @@ sub expiredzones
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	zonedata()
+#
+# Purpose:	Check the data in the zone keyrec.
 #
 sub zonedata
 {
@@ -455,9 +521,6 @@ sub zonedata
 	my $kskdir   = $keyrec{'kskdirectory'};
 	my $kskfile  = $keyrec{'kskpath'};
 	my $zskdir   = $keyrec{'zskdirectory'};
-	my $zskcfile = $keyrec{'zskcur'};
-	my $zsknfile = $keyrec{'zsknew'};
-	my $zskpfile = $keyrec{'zskpub'};
 	my $endtime  = $keyrec{'endtime'};
 	my $signsecs = $keyrec{'keyrec_signsecs'};
 	my $signdate = $keyrec{'keyrec_signdate'};
@@ -488,33 +551,6 @@ sub zonedata
 	if(defined($kskdir) && (! -e $kskdir))
 	{
 		qprint("missing directory:  KSK $kskdir (zone $zonename)\n");
-		$zoneerrs++;
-	}
-
-	#
-	# Check the existence of the current ZSK key file.
-	#
-	if(defined($zskcfile) && (! -e ($zskcfile . ".key")))
-	{
-		qprint("missing file:  current ZSK $zskcfile (zone $zonename)\n");
-		$zoneerrs++;
-	}
-
-	#
-	# Check the existence of the new ZSK key file.
-	#
-	if(defined($zsknfile) && (! -e ($zsknfile . ".key")))
-	{
-		qprint("missing file:  new ZSK $zsknfile (zone $zonename)\n");
-		$zoneerrs++;
-	}
-
-	#
-	# Check the existence of the published ZSK key file.
-	#
-	if(defined($zskpfile) && (! -e ($zskpfile . ".key")))
-	{
-		qprint("missing file:  published ZSK $zskpfile (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
@@ -553,7 +589,100 @@ sub zonedata
 		qprint("mismatched timestamps:  $signsecs invalid for \"$signdate\" (zone $zonename)\n");
 		$zoneerrs++;
 	}
+}
 
+##############################################################################
+#									     #
+# 				Set checks				     #
+#									     #
+##############################################################################
+
+#-----------------------------------------------------------------------------
+# Routine:	setdata()
+#
+# Purpose:	Check the data in the set keyrec.
+#
+sub setdata
+{
+	my $setname = shift;				# Set to check.
+	my $keys;					# Set's key list.
+	my @keys;					# Set's key array.
+	my $dateerr = 0;				# Date error flag.
+	my $datestr;					# Date string.
+	my $setsecs;					# Set's seconds count.
+	my $setdate;					# Set's date string.
+	my $zone;					# Set's owner zone.
+
+	#
+	# Verify the set's zone.
+	#
+	$zone = keyrec_recval($setname,'zonename');
+	if(!defined($zone))
+	{
+		qprint("no zone defined for set $setname\n");
+		$seterrs++;
+	}
+	elsif(!defined($zones{$zone}))
+	{
+		qprint("no such zone keyrec:  set $setname does not have a valid zone ($zone)\n");
+		$seterrs++;
+	}
+
+	#
+	# Get the set's list of keys.
+	#
+	$keys = keyrec_recval($setname,'keys');
+	@keys = split / /, $keys;
+
+	if(!defined $keys)
+	{
+		qprint("no keys defined for set $setname\n");
+		$seterrs++;
+	}
+
+	#
+	# Make sure all of the set's keys have a key keyrec.
+	#
+	foreach my $key (sort(@keys))
+	{
+		if(!defined($zskkeys{$key}))
+		{
+			qprint("no such key keyrec:  ZSK key $key (set $setname)\n");
+			$seterrs++;
+		}
+	}
+
+	#
+	# Get the set's timestamp data.
+	#
+	$setsecs = keyrec_recval($setname,'keyrec_setsecs');
+	$setdate = keyrec_recval($setname,'keyrec_setdate');
+	if(!defined($setsecs))
+	{
+		$dateerr = 1;
+		qprint("no keyrec_setsecs defined for set $setname\n");
+		$seterrs++;
+	}
+	if(!defined($setdate))
+	{
+		$dateerr = 1;
+		qprint("no keyrec_setdate defined for set $setname\n");
+		$seterrs++;
+	}
+
+	#
+	# Ensure that the set's seconds count converts into the date
+	# stored in its date string.
+	#
+	if($dateerr == 0)
+	{
+		$datestr = gmtime($setsecs);
+		if(defined($setdate) && ($datestr ne $setdate))
+		{
+			qprint("mismatched timestamps:  $setsecs invalid for \"$setdate\" (set $setname)\n");
+			$seterrs++;
+		}
+	}
 }
 
 ##############################################################################
@@ -563,8 +692,9 @@ sub zonedata
 ##############################################################################
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	keydata()
+#
+# Purpose:	Check the data in the key keyrec.
 #
 sub keydata
 {
@@ -577,6 +707,7 @@ sub keydata
 	my $length;				# Key length.
 
 	my $algorithm	= lc($keyrec{'algorithm'});
+	my $keypath	= $keyrec{'keypath'};
 	my $random	= $keyrec{'random'};
 	my $gensecs	= $keyrec{'keyrec_gensecs'};
 	my $gendate	= $keyrec{'keyrec_gendate'};
@@ -636,6 +767,15 @@ sub keydata
 			qprint("invalid key length:  length ($length) > maximum ($lowval) for $algorithm ($keytype key $keyname)\n");
 			$keyerrs++;
 		}
+
+		#
+		# Check the existence of the ZSK key file.
+		#
+		if(defined($keypath) && (! -e $keypath))
+		{
+			qprint("missing file:  ZSK $keypath\n");
+			$keyerrs++;
+		}
 	}
 
 	#
@@ -664,8 +804,9 @@ sub keydata
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	keyzones()
+#
+# Purpose:	Reverse check the key's zone.
 #
 sub keyzones
 {
@@ -693,108 +834,138 @@ sub keyzones
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	orphankeys()
+#
+# Purpose:	Look for orphaned keys -- keys which don't belong to any zone.
 #
 sub orphankeys
 {
 	my $keytype = shift;			# Keyrec's type.
 	my $keyname = shift;			# Keyrec's name.
 
-	my $zkr;				# Zone reference.
-	my %keyrec;				# Key table.
-
 	my $found = 0;				# Key-found flag.
 
 	#
-	# Look through the zone list to ensure the key is referenced somewhere.
+	# Look through the zone list to ensure this key is someone's KSK.
 	#
-	foreach my $zonename (sort(keys(%zones)))
+	if($keytype eq 'KSK')
 	{
-		$zkr = $zones{$zonename};
-		%keyrec = %$zkr;
 
-		#
-		# If the key is in this zone, we'll mark that we've found
-		# it.  Once we've found it, we'll drop out.
-		#
-		if(($keyrec{'kskkey'} eq $keyname)	||
-		   ($keyrec{'zskcur'} eq $keyname)	||
-		   ($keyrec{'zsknew'} eq $keyname)	||
-		   ($keyrec{'zskpub'} eq $keyname))
+		foreach my $zonename (sort(keys(%zones)))
 		{
-			$found = 1;
-			last;
+			if($zones{$zonename}{'kskkey'} eq $keyname)
+			{
+				$found = 1;
+				last;
+			}
 		}
+
+		#
+		# Register an error if no zone holds the key.
+		#
+		if(!$found)
+		{
+			qprint("orphaned key:  $keytype key $keyname\n");
+			$keyerrs++;
+			return;
+		}
+
+	}
+	else
+	{
+		my $ktype;				# Key's actual type.
+		my $set;				# Signing set.
+		my $zonename;				# Zone name.
+
+		#
+		# Gather our needed data.
+		#
+		$zonename = $zskkeys{$keyname}{'zonename'};
+		$ktype = $zskkeys{$keyname}{'keyrec_type'};
+		$set = $zones{$zonename}{$ktype};
+
+		#
+		# Go through our signing sets to see if one holds the key.
+		#
+		foreach my $set (keyrec_signsets())
+		{
+			if(keyrec_signset_haskey($set,$keyname))
+			{
+				$found = 1;
+				last;
+			}
+
+		}
+
+		#
+		# Register an error if no signing set holds the key.
+		#
+		if(!$found)
+		{
+			qprint("orphaned key:  $ktype key $keyname\n");
+			$keyerrs++;
+		}
+
 	}
 
-	#
-	# Give an error message if we didn't find it.
-	#
-	if(!$found)
-	{
-		qprint("orphaned key:  $keytype key $keyname\n");
-	}
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	keytypes()
+#
+# Purpose:	Ensure that keys have the right types.
 #
 sub keytypes
 {
 	my $keytype = shift;			# Keyrec's type.
 	my $keyname = shift;			# Keyrec's name.
 
-	my $zkr;				# Zone reference.
-	my %keyrec;				# Key table.
-
-	my $badtype = 0;			# Bad-type flag.
-	my $foundtype;				# Bad type we found.
+	my $zonename;				# Key's zone's name.
 
 	#
 	# Look through the zone list to ensure the key and the zone agree
 	# about the key's type.
 	#
-	foreach my $zonename (sort(keys(%zones)))
+	if($keytype eq "KSK")
 	{
-		$zkr = $zones{$zonename};
-		%keyrec = %$zkr;
+		my $kskname;				# KSK's name.
 
 		#
-		# If the key is in this zone, we'll check if this key's
-		# type matches the way the zone thinks about it.
+		# Gather our needed data.
 		#
-		if($keyrec{'kskkey'} eq $keyname)
-		{
-			if($keytype eq "ZSK")
-			{
-				$badtype = 1;
-				$foundtype = "ZSK";
-			}
-		}
-		elsif(($keyrec{'zskcur'} eq $keyname) ||
-		      ($keyrec{'zsknew'} eq $keyname) ||
-		      ($keyrec{'zskpub'} eq $keyname))
-		{
-			if($keytype eq "KSK")
-			{
-				$badtype = 1;
-				$foundtype = "KSK";
-			}
-		}
+		$zonename = $kskkeys{$keyname}{'zonename'};
+		$kskname  = $zones{$zonename}{'kskkey'};
 
+		#
+		# Register an error if this key isn't zone's KSK.
+		#
+		if($keyname ne $kskname)
+		{
+			qprint("mislabeled key type:  KSK key $keyname\n");
+			$keyerrs++;
+		}
 	}
-
-	#
-	# Give an error message if the key and zone have mismatched ideas
-	# about the key's type.
-	#
-	if($badtype)
+	else
 	{
-		qprint("mislabeled key type:  $keytype key $keyname\n");
-	}
+		my $ktype;				# Key's actual type.
+		my $set;				# Signing set.
 
+		#
+		# Gather our needed data.
+		#
+		$zonename = $zskkeys{$keyname}{'zonename'};
+		$ktype = $zskkeys{$keyname}{'keyrec_type'};
+		$set = $zones{$zonename}{$ktype};
+
+		#
+		# Register an error if this signing set doesn't have the key.
+		#
+		if(!keyrec_signset_haskey($set,$keyname))
+		{
+			qprint("mislabeled key type:  $ktype key $keyname\n");
+			$keyerrs++;
+		}
+	}
 }
 
 ##############################################################################
@@ -804,7 +975,6 @@ sub keytypes
 ##############################################################################
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	checkexpire()
 #
 sub checkexpire
@@ -879,16 +1049,18 @@ sub checkexpire
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	crosshkeys()
+#
+# Purpose:	Ensure that all the keyrec's fields are valid for that
+#		type of keyrec.
 #
 sub crosshkeys
 {
-	my $krtype   = shift;			# Type of keyrec.
-	my $fldtype   = shift;			# Type of @fields' keys.
-	my $krname   = shift;			# Keyrec's name.
-	my $kr	   = shift;			# Reference to keyrec.
-	my @fields = shift;			# Hash keys to check for.
+	my $krtype  = shift;			# Type of keyrec.
+	my $fldtype = shift;			# Type of @fields' keys.
+	my $krname  = shift;			# Keyrec's name.
+	my $kr	    = shift;			# Reference to keyrec.
+	my @fields  = shift;			# Hash keys to check for.
 
 	my %keyrec = %$kr;			# Caller's keyrec.
 	my $errs   = 0;				# Error count.
@@ -914,15 +1086,10 @@ sub crosshkeys
 		}
 	}
 
-	if($errs == 0)
-	{
-		qprint("hash entry:  all hash-keys valid  ($krtype $krname)\n");
-	}
 	return($errs);
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	dumpdata()
 #
 sub dumpdata
@@ -930,10 +1097,7 @@ sub dumpdata
 	my $keyname;				# Key name for looping.
 	my $zonename;				# Zone name for looping.
 
-	if(!$verbose)
-	{
-		return;
-	}
+	return if(!$verbose);
 
 	print "zones:\n";
 	foreach $zonename (sort(keys(%zones)))
@@ -958,7 +1122,6 @@ sub dumpdata
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	qprint()
 #
 sub qprint
@@ -972,7 +1135,6 @@ sub qprint
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	vprint()
 #
 sub vprint
@@ -986,7 +1148,6 @@ sub vprint
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -1000,12 +1161,20 @@ sub version
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
 #
 sub usage
 {
-	print STDERR "usage:  keyrec-check [-c] [-q] [-verbose] [-h] [-Version]\n";
+	print STDERR "usage:  keyrec-check [options] <keyrec-file>\n";
+	print STDERR "             options:\n";
+	print STDERR "                  -zone      only check zone keyrecs\n";
+	print STDERR "                  -set       only check set keyrecs\n";
+	print STDERR "                  -key       only check key keyrecs\n";
+	print STDERR "                  -count     display an error count\n";
+	print STDERR "                  -quiet     give no output\n";
+	print STDERR "                  -verbose   give verbose output\n";
+	print STDERR "                  -Version   print version numbers\n";
+	print STDERR "                  -help      print this message\n";
 	exit(0);
 }
 
@@ -1023,7 +1192,8 @@ inconsistencies.
 
 =head1 SYNOPSIS
 
-  keyrec-check [-z | -k] [-c] [-q] [-verbose] [-h] keyrec-file
+  keyrec-check [-zone | -set | -key] [-count] [-quiet]
+	       [-verbose] [-Version] [-help] keyrec-file
 
 =head1 DESCRIPTION
 
@@ -1038,17 +1208,25 @@ Recognized problems include:
 
 The I<keyrec> file does not contain any zone I<keyrec>s.
 
+=item * no sets defined
+
+The I<keyrec> file does not contain any set I<keyrec>s.
+
 =item * no keys defined
 
 The I<keyrec> file does not contain any key I<keyrec>s.
 
 =item * unknown zone I<keyrec>s
 
-A key I<keyrec> references a non-existent zone I<keyrec>.
+A set I<keyrec> or a key I<keyrec> references a non-existent zone I<keyrec>.
 
 =item * missing key from zone I<keyrec>
 
 A zone I<keyrec> does not have both a KSK key and a ZSK key.
+
+=item * missing key from set I<keyrec>
+
+A key listed in a set I<keyrec> does not have a key I<keyrec>.
 
 =item * expired zone I<keyrec>s
 
@@ -1063,8 +1241,8 @@ opposite.
 
 A zone's I<keyrec> data are checked to ensure that they are valid.  The
 following conditions are checked:  existence of the zone file, existence of
-the KSK file, existence of the ZSK file, the end-time is greater than one
-day, and the seconds-count and date string match.
+the KSK file, existence of the KSK and ZSK directories, the end-time is
+greater than one day, and the seconds-count and date string match.
 
 =item * invalid key data values
 
@@ -1089,7 +1267,7 @@ A zone's recorded signing date is later than the current system clock.
 
 =item * orphaned keys
 
-A key I<keyrec> is unreferenced by any zone I<keyrec>.
+A key I<keyrec> is unreferenced by any set I<keyrec>.
 
 =item * missing key directories
 
@@ -1112,27 +1290,44 @@ extensibility, I<keyrec-check> does not check for undefined I<keyrec> fields.
 A key I<keyrec> contains zone-specific entries.  To allow for site-specific
 extensibility, I<keyrec-check> does not check for undefined I<keyrec> fields.
 
+=item * mismatched zone timestamp
+
+A zone's seconds-count timestamp does not match its textual timestamp.
+
+=item * mismatched set timestamp
+
+A set's seconds-count timestamp does not match its textual timestamp.
+
+=item * mismatched key timestamp
+
+A key's seconds-count timestamp does not match its textual timestamp.
+
 =back
 
 =head1 OPTIONS
 
 =over 4
 
-=item -k
-
-Only perform checks of key I<keyrec>s.  This option may not be combined with
-the B<-z> option.
-
-=item -z
+=item -zone
 
 Only perform checks of zone I<keyrec>s.  This option may not be combined with
-the B<-k> option.
+the B<-set> or B<-key> options.
 
-=item -c
+=item -set
+
+Only perform checks of set I<keyrec>s.  This option may not be combined with
+the B<-zone> or B<-key> options.
+
+=item -key
+
+Only perform checks of key I<keyrec>s.  This option may not be combined with
+the B<-set> or B<-zone> options.
+
+=item -count
 
 Display a final count of errors.
 
-=item -q
+=item -quiet
 
 Do not display messages.  This option supersedes the setting of the I<-v>
 option.
@@ -1141,7 +1336,11 @@ option.
 
 Display many messages.  This option is subordinate to the I<-q> option.
 
-=item -h
+=item -Version
+
+Display the B<keyrec-check> version number and exit.
+
+=item -help
 
 Display a usage message.
 
