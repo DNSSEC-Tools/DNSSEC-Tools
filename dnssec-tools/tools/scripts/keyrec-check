@@ -176,6 +176,16 @@ sub main()
 	}
 
 	#
+	# If no record-specific options weren't given, we'll do everything.
+	# 
+	if(!$zonechk && !$setchk && !$keychk)
+	{
+		$zonechk = 1;
+		$setchk	 = 1;
+		$keychk	 = 1;
+	}
+
+	#
 	# Ensure we were given a keyrec file to check.
 	#
 	usage() if($argc == 0);
