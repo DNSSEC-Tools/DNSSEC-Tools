@@ -238,6 +238,9 @@ sub zonechecks
 
 	my @fields = keyrec_keyfields();	# Valid key fields.
 
+	#
+	# Make sure some zones were defined.
+	#
 	if(length(%zones) == 0)
 	{
 		vprint("no zones defined\n");
@@ -245,6 +248,9 @@ sub zonechecks
 		return;
 	}
 
+	#
+	# Run a bunch of checks on the zones.
+	#
 	foreach my $zonename (sort(keys(%zones)))
 	{
 		vprint("checking zone $zonename\n");
@@ -511,6 +517,24 @@ sub expiredzones
 	my $endtime  = $zonerec{'endtime'};		# Zone's endtime.
 	my $signsecs = $zonerec{'keyrec_signsecs'};	# Zone's sign date.
 
+	my $errflag = 0;				# Error flag.
+
+	if(!defined($signsecs))
+	{
+		qprint("missing keyrec_signsecs; unable to verify expiration time for zone $zonename\n");
+		$errflag = 1;
+		$zoneerrs++;
+	}
+
+	if(!defined($endtime))
+	{
+		qprint("missing endtime; unable to verify expiration time for zone $zonename\n");
+		$errflag = 1;
+		$zoneerrs++;
+	}
+
+	return if($errflag);
+
 	$ret = checkexpire('zone',$zonename,$endtime,$signsecs);
 	$zoneerrs += $ret;
 }
@@ -536,6 +560,7 @@ sub zonedata
 	my $signdate = $keyrec{'keyrec_signdate'};
 
 	my $datestr;				# Converted keyrec_signsecs.
+	my $dateerr = 0;			# Date error flag.
 
 	#
 	# Check the existence of the zone file.
@@ -560,7 +585,7 @@ sub zonedata
 	#
 	if(defined($kskdir) && (! -e $kskdir))
 	{
-		qprint("missing directory:  KSK $kskdir (zone $zonename)\n");
+		qprint("missing KSK directory:  $kskdir (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
@@ -569,7 +594,7 @@ sub zonedata
 	#
 	if(defined($zskdir) && (! -e $zskdir))
 	{
-		qprint("missing directory:  ZSK $zskdir (zone $zonename)\n");
+		qprint("missing ZSK directory:  $zskdir (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
@@ -590,14 +615,33 @@ sub zonedata
 	}
 
 	#
+	# Verify that the zone's timestamp data exists.
+	#
+	if(!defined($signsecs))
+	{
+		$dateerr = 1;
+		qprint("no keyrec_signsecs defined for zone $zonename\n");
+		$zoneerrs++;
+	}
+	if(!defined($signdate))
+	{
+		$dateerr = 1;
+		qprint("no keyrec_signdate defined for zone $zonename\n");
+		$zoneerrs++;
+	}
+
+	#
 	# Ensure that the zone's seconds count converts into the date
 	# stored in its date string.
 	#
-	$datestr = gmtime($signsecs);
-	if(defined($signdate) && ($datestr ne $signdate))
+	if(!$dateerr)
 	{
-		qprint("mismatched timestamps:  $signsecs invalid for \"$signdate\" (zone $zonename)\n");
-		$zoneerrs++;
+		$datestr = gmtime($signsecs);
+		if(defined($signdate) && ($datestr ne $signdate))
+		{
+			qprint("mismatched timestamps:  $signsecs invalid for \"$signdate\" (zone $zonename)\n");
+			$zoneerrs++;
+		}
 	}
 }
 
@@ -723,6 +767,7 @@ sub keydata
 	my $gendate	= $keyrec{'keyrec_gendate'};
 
 	my $datestr;				# Converted keyrec_gensecs.
+	my $dateerr = 0;			# Date error flag.
 
 	#
 	# Get the key's length.
@@ -798,6 +843,22 @@ sub keydata
 			qprint("missing file:  random generator $random ($keytype key $keyname)\n");
 			$keyerrs++;
 		}
+	}
+
+	#
+	# Verify that the key's timestamp data exists.
+	#
+	if(!defined($gensecs))
+	{
+		$dateerr = 1;
+		qprint("no keyrec_gensecs defined for key $keyname\n");
+		$keyerrs++;
+	}
+	if(!defined($gendate))
+	{
+		$dateerr = 1;
+		qprint("no keyrec_gendate defined for key $keyname\n");
+		$keyerrs++;
 	}
 
 	#
@@ -1102,6 +1163,8 @@ sub crosshkeys
 #-----------------------------------------------------------------------------
 # Routine:	dumpdata()
 #
+# Purpose:	Display a bunch of data.  This is only for debugging.
+#
 sub dumpdata
 {
 	my $keyname;				# Key name for looping.
@@ -1134,6 +1197,8 @@ sub dumpdata
 #-----------------------------------------------------------------------------
 # Routine:	qprint()
 #
+# Purpose:	Only print if -quiet wasn't given.
+#
 sub qprint
 {
 	my $line = shift;
@@ -1146,6 +1211,8 @@ sub qprint
 
 #-----------------------------------------------------------------------------
 # Routine:	vprint()
+#
+# Purpose:	Only print if -verbose was given.
 #
 sub vprint
 {
