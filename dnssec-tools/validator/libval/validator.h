@@ -174,9 +174,9 @@ extern          "C" {
 #define P_TRUST_ANCHOR              0
 #define P_PREFERRED_SEP             1
 #define P_MUST_VERIFY_COUNT         2
-#define P_PREFERRED_ALGO_DATA       3
-#define P_PREFERRED_ALGO_KEYS       4
-#define P_PREFERRED_ALGO_DS         5
+#define P_PREFERRED_ALGORITHM_DATA  3
+#define P_PREFERRED_ALGORITHM_KEYS  4
+#define P_PREFERRED_ALGORITHM_DS    5
 #define P_CLOCK_SKEW                6
 #define P_EXPIRED_SIGS              7
 #define P_USE_TCP                   8
@@ -184,16 +184,16 @@ extern          "C" {
 #define MAX_POL_TOKEN               10
 
 #ifdef LIBVAL_NSEC3
-#define P_NSEC3_MAX_ITER            10
+#define P_NSEC3_MAX_ITER            MAX_POL_TOKEN 
 #undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               11
+#define MAX_POL_TOKEN               P_NSEC3_MAX_ITER+1 
 #endif
 
 #ifdef DLV
-#define P_DLV_TRUST_POINTS          10
-#define P_DLV_MAX_VALIDATION_LINKS  11
+#define P_DLV_TRUST_POINTS          MAX_POL_TOKEN 
+#define P_DLV_MAX_VALIDATION_LINKS  MAX_POL_TOKEN+1 
 #undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               12
+#define MAX_POL_TOKEN               P_DLV_MAX_VALIDATION_LINKS+1 
 #endif
 
 #define RETRIEVE_POLICY(ctx, index, type)      \
@@ -489,9 +489,9 @@ extern          "C" {
                                                  struct val_query_chain
                                                  *queries, struct val_result_chain
                                                  *results);
-    const char     *p_query_error(int err);
-    const char     *p_as_error(val_astatus_t valerrno);
-    const char     *p_val_error(val_status_t err);
+    const char     *p_query_status(int err);
+    const char     *p_ac_status(val_astatus_t valerrno);
+    const char     *p_val_status(val_status_t err);
 
     /*
      * from val_x_query.c 
@@ -565,6 +565,9 @@ extern          "C" {
 
 /* for backwards compatibility*/
 #define free_val_addrinfo   val_freeaddrinfo    
+#define p_val_error p_val_status
+#define p_as_error p_as_status
+#define p_query_error p_query_status
 
 /***********************************************************/
 #if 0
