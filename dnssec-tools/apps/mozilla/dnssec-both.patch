@@ -1708,7 +1708,7 @@
 +dnssec_check_policy(int val_status, int policytype) 
 +{
 +  DNSSECFUNDEBUG((stderr, "input: policy=%d, status=%d = %s\n",
-+                  policytype, val_status, p_val_error(val_status)));
++                  policytype, val_status, p_val_status(val_status)));
 +  /*
 +   * POLICY: ignore errors
 +   */

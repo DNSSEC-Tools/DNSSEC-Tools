@@ -378,7 +378,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
 +
 +		if ( spfhook->debug )
 +			SPF_debugf( "val_query returned %d, dnssec_status = %s",
-+				    dns_len, p_val_error( dnssec_status ) );
++				    dns_len, p_val_status( dnssec_status ) );
 +	}
 +	else {
 +		dns_len = - (abs(retval));
