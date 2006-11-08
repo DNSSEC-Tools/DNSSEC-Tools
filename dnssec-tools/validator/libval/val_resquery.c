@@ -252,7 +252,8 @@ merge_glue_in_referral(struct val_query_chain *pc,
         }
     }
 
-    if (glueptr->qc_state > Q_ERROR_BASE) {
+    if (((glueptr->qc_state == Q_ANSWERED) && (glueptr->qc_ans == NULL)) ||
+          glueptr->qc_state > Q_ERROR_BASE) {
 
         /*
          * look for next ns to send our glue request to 
@@ -1029,7 +1030,8 @@ digest_response(val_context_t * context,
          */ 
         if ((VAL_AC_WAIT_FOR_TRUST == is_trusted_zone(context, matched_q->qc_name_n)) &&
             matched_q->qc_respondent_server && 
-            !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+            !(matched_q->qc_flags & VAL_FLAGS_DONT_VALIDATE) &&
+            !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) { 
 
             free_name_server(&matched_q->qc_respondent_server);
             matched_q->qc_respondent_server = NULL;
