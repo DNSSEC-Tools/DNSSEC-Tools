@@ -45,6 +45,7 @@ my @opts =
 	"help",				# Give a usage message and exit.
 );
 
+my $orphsets	= 0;			# Total count of orphaned sets.
 my $orphans	= 0;			# Total count of orphaned keys.
 my $obsoletes	= 0;			# Total count of obsolete keys.
 
@@ -52,13 +53,13 @@ my $obsoletes	= 0;			# Total count of obsolete keys.
 my @krnames;				# List of keyrecs in the file.
 
 my %zones = ();				# Names of zone keyrecs.
-my %keys = ();				# Names of ZSK keyrecs.
+my %sets = ();				# Names of set keyrecs.
+my %keys = ();				# Names of key keyrecs.
 
 main();
 exit($orphans);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
 #
 # Purpose:	This is the top-level processing routine for the command.
@@ -84,7 +85,12 @@ sub main
 		getkeyrecs($ARGV[0]);
 
 		#
-		# Check for orphaned keys.
+		# Check for orphaned signing sets.
+		#
+		setchecks();
+
+		#
+		# Check for orphaned and obsolete keys.
 		#
 		keychecks();
 
@@ -96,44 +102,36 @@ sub main
 	}
 
 	#
+	# Save the modified keyrec file -- iff we're not just listing.
+	#
+	keyrec_write() if(!$list);
+
+	#
 	# If -count was given, give the counts of orphaned and obsolete keys.
 	#
 	if($count)
 	{
 		#
+		# Check for orphaned sets.
+		#
+		if($orphsets == 1) { print("1 orphaned set\n"); }
+		else		   { print("$orphsets orphaned sets\n"); }
+
+		#
 		# Check for orphaned keys.
 		#
-		if($orphans > 0)
-		{
-			if($orphans == 1)
-			{
-				print("1 orphan\n");
-			}
-			else
-			{
-				print("$orphans orphans\n");
-			}
-		}
+		if($orphans == 1) { print("1 orphaned key\n"); }
+		else		  { print("$orphans orphaned keys\n"); }
 
 		#
 		# Check for obsolete keys.
 		#
-		if($obsoletes > 0)
-		{
-			if($obsoletes == 1)
-			{
-				print("1 obsolete keys\n");
-			}
-			else
-			{
-				print("$obsoletes obsoletes\n");
-			}
-		}
+		if($obsoletes == 1) { print("1 obsolete keys\n"); }
+		else		    { print("$obsoletes obsolete keys\n"); }
 	}
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	optsandargs()
 #
 # Purpose:	This routine processes the command's options and arguments.
@@ -164,7 +162,6 @@ sub optsandargs
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	getkeyrecs()
 #
 # Purpose:	This routine reads a keyrec file and puts each keyrec into
@@ -198,6 +195,10 @@ sub getkeyrecs
 		{
 			$zones{$krn} = $kr;
 		}
+		elsif($type eq 'set')
+		{
+			$sets{$krn} = $kr;
+		}
 		else
 		{
 			$keys{$krn} = $kr;
@@ -206,7 +207,71 @@ sub getkeyrecs
 }
 
 #-----------------------------------------------------------------------------
+# Routine:      setchecks()
 #
+# Purpose:      This routine searches the list of signing sets in a keyrec
+#               file for orphaned sets.  If found, the orphans are deleted,
+#		unless the -list option was specified.
+#
+sub setchecks
+{
+	#
+	# If there are no signing sets, we have nothing here to do.
+	#
+	if(length(%sets) == 0)
+	{
+		vprint("no signing sets defined\n");
+		return;
+	}
+
+	#
+	# Check each key to see if it is an orphan.  If so, we'll delete it,
+	# unless the user just wants a list of orphans.
+	#
+	foreach my $setname (sort(keys(%sets)))
+	{
+		my $zone = $sets{$setname}{'zonename'};		# Set's zone.
+		my $err = 0;					# Set error.
+
+		#
+		# Handle two error conditions:
+		#	- the set's zone doesn't exist
+		#	- the set isn't a current set in its zone
+		#
+		if(!defined($zones{$zone}))
+		{
+			qprint("warning:  $setname references $zone, but $zone does not exist\n");
+			$err = 1;
+			$orphsets++;
+		}
+		elsif(($zones{$zone}{'zskcur'} ne $setname)	&&
+		      ($zones{$zone}{'zskpub'} ne $setname)	&&
+		      ($zones{$zone}{'zsknew'} ne $setname))
+		{
+			qprint("warning:  $setname references $zone, but is not referenced by $zone\n");
+			$orphsets++;
+
+		}
+		else
+		{
+			vprint("referenced set:  $setname  ($zone)\n");
+		}
+
+		#
+		# Go to the next set if we're just listing or if this
+		# one is okay.
+		#
+		next if(($list) || !$err);
+
+		#
+		# Delete the set.
+		#
+		keyrec_del($setname);
+		delete $sets{$setname};
+	}
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	keychecks()
 #
 # Purpose:	This routine searches the list of keys in a keyrec file for
@@ -222,21 +287,6 @@ sub keychecks
 	{
 		vprint("no keys defined\n");
 		return;
-	}
-
-	#
-	# Check each key to see if it is an orphan.  If so, we'll delete it,
-	# unless the user just wants a list of orphans.
-	#
-	foreach my $keyname (sort(keys(%keys)))
-	{
-		if(orphankey($keyname))
-		{
-			next if($list);
-			rmkey($keyname) if($remove);
-			keyrec_del($keyname);
-			delete $keys{$keyname};
-		}
 	}
 
 	#
@@ -256,28 +306,40 @@ sub keychecks
 
 		if($keyrec{'keyrec_type'} eq "zskobs")
 		{
+			qprint("obsolete key:  $keyname\n");
+			$obsoletes++;
+
 			next if($list);
+
 			rmkey($keyname) if($remove);
 			keyrec_del($keyname);
-			$obsoletes++;
+			delete $keys{$keyname};
 		}
 	}
 
 	#
-	# Save the modified keyrec file -- iff we're not just listing.
+	# Check each key to see if it is an orphan.  If so, we'll delete it,
+	# unless the user just wants a list of orphans.
 	#
-	keyrec_write() if(!$list);
+	foreach my $keyname (sort(keys(%keys)))
+	{
+		if(orphankey($keyname))
+		{
+			next if($list);
+
+			rmkey($keyname) if($remove);
+			keyrec_del($keyname);
+			delete $keys{$keyname};
+		}
+	}
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	orphankey()
 #
 # Purpose:	This routine checks if a given key is an orphan or if it's
-#		referenced by a zone.  A warning is printed if the specified
-#		key is referenced by a zone that is different from the zone 
-#		referenced by the key itself.  The orphan count is incremented
-#		when an orphan is found.
+#		referenced by a zone (KSK) or a signing set (ZSK.)
+#		The orphan count is incremented when an orphan is found.
 #
 # Return Values:
 #		0 - referenced key
@@ -290,64 +352,80 @@ sub orphankey
 	my %keyrec;				# Key's keyrec.
 	my $keyzone;				# Key's zone's name.
 
-	my $zonename;				# Zone name.
-	my $zkr;				# Zone reference.
-	my %zkeyrec;				# Zone's keyrec.
-
 	#
 	# Get the key's keyrec and save the its zone name.
 	#
 	$kr = $keys{$keyname};
 	%keyrec = %$kr;
-	$keyzone = $keyrec{'zonename'};
 
 	#
-	# Check the zones to see if one references this key.
+	# If the key is a KSK, we'll check in its zone.  Otherwise, we'll
+	# look at the signing sets.
 	#
-	foreach $zonename (sort(keys(%zones)))
+	if($keyrec{'keyrec_type'} eq "ksk")
 	{
-		$zkr = $zones{$zonename};
-		%zkeyrec = %$zkr;
+		my $zone = $keyrec{'zonename'};		# Key's zone.
 
-		#
-		# If the key is referenced by this zone, we'll report it as
-		# in use.  If it isn't in its claimed zone, but in another
-		# zone, we'll give a warning.
-		#
-		if(($keyname eq $zkeyrec{'kskkey'})	||
-		   ($keyname eq $zkeyrec{'zskcur'})	||
-		   ($keyname eq $zkeyrec{'zsknew'})	||
-		   ($keyname eq $zkeyrec{'zskpub'}))
+		if($zones{$zone}{'kskkey'} eq $keyname)
 		{
-			if($zonename eq $keyzone)
-			{
-				vprint("referenced key:  $keyname $zonename\n");
-			}
-			else
-			{
-				qprint("warning:  $keyname references $keyzone, but is only referenced by $zonename\n");
-			}
-
+			vprint("referenced key:  KSK $keyname $zone\n");
 			return(0);
 		}
+		else
+		{
+			qprint("orphaned key:  $keyname references $zone, but is not referenced by $zone\n");
+		}
+	}
+	else
+	{
+		my $setname;				# Set name.
+		my @keysets = ();			# Set list.
+		my $found = 0;				# Found flag.
 
+		#
+		# Check the zones to see if one references this key.
+		#
+		foreach $setname (sort(keys(%sets)))
+		{
+			if(keyrec_signset_haskey($setname,$keyname))
+			{
+				push @keysets, $setname;
+				$found = 1;
+			}
+		}
+
+		#
+		# Give an appropriate message.  If the key was found, we'll
+		# report all the sets it belongs to.
+		#
+		if($found)
+		{
+			my $setlist;			# All of key's sets.
+
+			$setlist = join ' ', @keysets;
+			vprint("referenced key:  $keyname $setlist\n");
+			return(0);
+		}
+		else
+		{
+			qprint("orphaned key:  $keyname\n");
+		}
 	}
 
 	#
 	# This key isn't referenced by any of our zones, so it's an orphan.
-	# Bump our counter, give an error message, and return positive.
+	# Bump our counter and give an error message.
 	#
-	$orphans++;
 	qprint("orphaned key:  $keyname\n");
+	$orphans++;
 	return(1);
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rmkey()
 #
 # Purpose:	This routine deletes the .key and .private file associated
-#		with key specified by the caller.
+#		with the key specified by the caller.
 #
 sub rmkey
 {
@@ -356,22 +434,27 @@ sub rmkey
 	my $fname;				# Name of key to be deleted.
 
 	#
-	# Get the key's keyrec and save the its zone name.
+	# Get the key's keyrec and save its pathname.
 	#
 	$keyrec = $keys{$keyname};
 	$fname	= $keyrec->{'keypath'};
-
 	return if($fname eq "");
 
+	#
+	# Delete the public half of the key.
+	#
 	print "\tunlinking $fname\n" if($verbose);
 	unlink($fname);
+
+	#
+	# Delete the private half of the key.
+	#
 	$fname =~ s/key$/private/;
 	print "\tunlinking $fname\n" if($verbose);
 	unlink($fname);
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	qprint()
 #
 # Purpose:	Print the given output iff -quiet wasn't specified.
@@ -380,14 +463,10 @@ sub qprint
 {
 	my $line = shift;
 
-	if(!$quiet)
-	{
-		print $line;
-	}
+	print $line if(!$quiet);
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	vprint()
 #
 # Purpose:	Print the given output iff -verbose was specified.
@@ -396,14 +475,10 @@ sub vprint
 {
 	my $line = shift;
 
-	if($verbose)
-	{
-		print $line;
-	}
+	print $line if($verbose);
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -417,18 +492,17 @@ sub version
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
 #
 sub usage
 {
-	print STDERR "usage:  keyrec-clean [options] <keyrec files>\n";
+	print STDERR "usage:  cleankrf [options] <keyrec files>\n";
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-count    -  give count of orphan keys\n";
 	print STDERR "\t\t-list     -  only list orphaned keys\n";
 	print STDERR "\t\t-rm       -  delete orphaned keys\n";
 	print STDERR "\t\t-quiet    -  don't give any output\n";
-	print STDERR "\t\t-verbose  -  give lotsa output\n";
+	print STDERR "\t\t-verbose  -  give much output\n";
 	print STDERR "\t\t-Version  -  show the version number\n";
 	print STDERR "\t\t-help     -  give a usage message and exit\n";
 
@@ -444,28 +518,29 @@ sub usage
 
 =head1 NAME
 
-keyrec-clean - Clean a DNSSEC-Tools I<keyrec> file of orphaned keys.
+cleankrf - Clean a DNSSEC-Tools I<keyrec> files of old data.
 
 =head1 SYNOPSIS
 
-  keyrec-clean [options] <keyrec-files>
+  cleankrf [options] <keyrec-files>
 
     options:
-	-count    -  give count of orphan keys
-	-list     -  only list orphaned keys
+	-count    -  give count of old keyrecs
+	-list     -  only list old keyrecs
 	-rm	  -  remove key files
 	-quiet    -  don't give any output
-	-verbose  -  give lotsa output
+	-verbose  -  give a lot of output
 	-help     -  give a usage message and exit
 
 =head1 DESCRIPTION
 
-This script cleans the orphaned I<keyrec>s from a set of DNSSEC-Tools
-I<keyrec> files.  Orphaned keys are those keys which are not referenced
-by a zone.  A warning is given if a key is found that is referenced by a
-different zone I<keyrec> than the one referenced by the key's I<keyrec>.
-
-I<keyrec-clean>'s exit code is the count of orphaned keys found.
+This script cleans old data out of a set of DNSSEC-Tools I<keyrec> files.
+The old data are orphaned signing sets, orphaned keys, and obsolete keys.
+Orphaned signing sets are set I<keyrec>s unreferenced by a zone I<keyrec>.
+Orphaned keys are KSK key I<keyrec>s unreferenced by a zone I<keyrec> and
+ZSK key I<keyrec>s unreferenced by any set I<keyrec>s.  Obsolete keys are
+ZSK key I<keyrec>s with a I<keyrec_type> of B<zskobs>.  I<cleankrf>'s exit
+code is the count of orphaned and obsolete I<keyrec>s found.
 
 =head1 OPTIONS
 
@@ -473,17 +548,17 @@ I<keyrec-clean>'s exit code is the count of orphaned keys found.
 
 =item -count
 
-Display a final count of orphaned keys.  This option allows the count to be
-displayed even if the I<-quiet> option is given.
+Display a final count of old I<keyrec>s found in the I<keyrec> files.  This
+option allows the count to be displayed even if the I<-quiet> option is given.
 
 =item -list
 
-The key I<keyrec>s are checked for orphans, but are not removed from the
-I<keyrec> file.  The names of the orphaned I<keyrec>s are displayed.
+The key I<keyrec>s are checked for old I<keyrec>s, but they are not removed
+from the I<keyrec> file.  The names of the old I<keyrec>s are displayed.
 
 =item -rm
 
-Delete each the key files, both I<.key> and I<.private>, from orphaned and
+Delete the key files, both I<.key> and I<.private>, from orphaned and
 expired I<keyrec>s.
 
 =item -quiet
@@ -492,7 +567,7 @@ Display no output.
 
 =item -verbose
 
-Display output about referenced keys as well as unreferenced keys.
+Display output about referenced keys and unreferenced keys.
 
 =item -help
 
@@ -510,6 +585,8 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
+
+B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>
 
