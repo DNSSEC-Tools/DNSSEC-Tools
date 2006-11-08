@@ -56,10 +56,10 @@ GetOptions(\%opts, "h=s", "p=s", "f=s", "g=s", "r=i", "s", "d");
 my %dtconf = parseconfig();
 
 $gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
-$gv->add_node('Validator');
 $count = 0;
 $changed = 1;
-
+$newnode = "";
+$curnode = "";
 $giffile = $opts{'g'};
 $htmlfile = $opts{'f'};
 $refresh = $opts{'r'};
@@ -74,6 +74,7 @@ print $htmlfh "<html>\n<head>\n".
 	"<body> <img src=\"$giffile\" alt=\"Validator Status\"> </body>\n".
 	"</html>";
 $htmlfh->close;
+
 
 # check if socket operation is desired
 if($opts{'s'} == 1) {
@@ -92,6 +93,7 @@ if($opts{'s'} == 1) {
 	# Never reached
 	close($socket);
 }
+
 
 # Read from stdin
 while ($_=<STDIN>) {
@@ -130,15 +132,29 @@ sub update_image {
 	}
 	
 	$changed = 0;
-	
-	# Look for only messages of the following type
-	if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*(status)=(\S+):/) {
-		$log[$count] =  "$1 $2 $3 $4 $6" ;
-	}
-	else {
-		# received data that this utility has no use for
-		return;
-	}
+
+    if (/\s*Result:\s*(\S+):/) {
+        $newnode = "$1";
+        $curnode = "$1";
+        $status = "$1";
+		$log[$count] =  "$1" ;
+    }
+    elsif ($curnode eq "") {
+       return;
+    }
+    else { 
+    	# Look for only messages of the following type
+        if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+):/) {
+		    $log[$count] =  "$1 $2 $3 $4 $5" ;
+	    }
+	    else {
+		    # received data that this utility has no use for
+		    return;
+	    }
+	    ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
+	    $edge_str = $name . ":" . $class . ":" . $type . ":" . "$status" ;
+        $newnode = $dest;
+    }
 
 	# remove duplicates from the array so that 
 	# all edges on the graph are different
@@ -154,10 +170,13 @@ sub update_image {
 	$count = $#log + 1;
 
 	# add the node and an edge from the Validator
-	($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $6); 
-	$gv->add_node($dest);
-	$edge_str = $name . ":" . $class . ":" . $type . ":" . "$status" ;
-	$gv->add_edge('Validator', $dest, label => $edge_str, decorateP => '1', getlineattr($status));
+	$gv->add_node($newnode);
+    if ($curnode ne $newnode) { 
+        $gv->add_edge($curnode, $newnode, label => $edge_str, decorateP => '1', getlineattr($status));
+    }
+    else {
+        $gv->add_edge('Validator', $newnode, label => $edge_str, decorateP => '1', getlineattr($status));
+    }
 }
 
 
@@ -174,50 +193,41 @@ sub getlineattr {
 	$prop{'dir'} = 'back';
 
 	if (($val_status eq "VAL_SUCCESS") ||
-			($val_status eq "VAL_NONEXISTENT_NAME")||
-			($val_status eq "VAL_NONEXISTENT_TYPE")) { 
+		($val_status eq "VAL_NONEXISTENT_NAME")||
+		($val_status eq "VAL_NONEXISTENT_TYPE")||
+		($val_status eq "VAL_LOCAL_ANSWER")||
+		($val_status eq "VAL_BARE_RRSIG")) {
 		$prop{'color'} =  "green";
+		$prop{'fillcolor'} =  "green";
 		$prop{'style'} = 'bold';
 	} 
-	elsif ($val_status eq "VAL_A_VERIFIED") { 
+    elsif (($val_status eq "VAL_PROVABLY_UNSECURE")) {
 		$prop{'color'} =  "green";
-	} 
-	elsif ($val_status eq "VAL_A_TRUST_KEY") { 
-		$prop{'color'} =  "black";
+		$prop{'fillcolor'} =  "green";
+    }
+	elsif (($val_status eq "VAL_NOTRUST")) {
+		$prop{'color'} =  "brown";
+		$prop{'fillcolor'} =  "brown";
 		$prop{'style'} = 'bold';
 	} 
 	elsif (($val_status eq "VAL_ERROR") || 
-			($val_status eq "SR_REFERRAL_ERROR") || 
-			($val_status eq "VAL_BOGUS") || 
-			($val_status eq "VAL_A_SECURITY_LAME")) {
+			($val_status eq "VAL_BOGUS")) {
 		$prop{'color'} = "red";
+		$prop{'fillcolor'} =  "red";
 		$prop{'style'} = 'bold';
 	} 
-	elsif (($val_status eq "VAL_A_RRSIG_EXPIRED") ||
-			($val_status eq "VAL_A_RRSIG_NOTYETACTIVE") ||
-			($val_status eq "VAL_A_RRSIG_VERIFY_FAILED")) {
-		$prop{'color'} =  "red";
-	} 
-	elsif (($val_status eq "VAL_A_DNS_ERROR") ||
-			($val_status eq "SR_SERVFAIL") ||
-			($val_status eq "VAL_A_RRSIG_MISSING")) { 
-		$prop{'color'} =  "red";
-		$prop{'style'} = 'dashed';
-	} 
-	elsif ($val_status eq "VAL_A_NO_TRUST_ANCHOR") { 
-		$prop{'color'} =  "brown";
-		$prop{'style'} = 'bold';
-	} 
-	elsif (($val_status eq "UNEVALUATED") ||
+	elsif (($val_status eq "Unevaluated") ||
 			($val_status eq "VAL_INDETERMINATE")) {
 		$prop{'color'} =  "yellow";
-		$prop{'style'} = 'dashed';
+		$prop{'fillcolor'} =  "yellow";
 	} 
 	else {
-		# unknown error is shown in yellow
+		# unknown error is shown in yellow dashed
 		$prop{'color'} =  "yellow";
+		$prop{'fillcolor'} =  "yellow";
+		$prop{'style'} = 'dashed';
 		# display the error if we don't know how to display the status
-		print "$val_status \n";
+        #print "$val_status \n";
 	}
 
 	return %prop;
