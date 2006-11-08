@@ -78,8 +78,8 @@ val_log_t      *val_log_add_optarg(char *args, int use_stderr);
 int             val_log_debug_level(void);
 void            val_log_set_debug_level(int);
 
-const char     *p_query_error(int err);
-const char     *p_as_error(val_astatus_t valerrno);
-const char     *p_val_error(val_status_t err);
+const char     *p_query_status(int err);
+const char     *p_ac_status(val_astatus_t valerrno);
+const char     *p_val_status(val_status_t err);
 
 #endif
