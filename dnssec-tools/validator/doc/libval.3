@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-08-02" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-11-08" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_resolve_and_check, 
 val_free_result_chain \- query and validate answers from a DNS name server
@@ -145,7 +145,7 @@ resolver_config_get,
 root_hints_get, 
 dnsval_conf_get  \- set/get current location for the validator configuration files.
 .PP
-p_as_error, p_val_error \- display validator status information
+p_ac_status, p_val_status \- display validator status information
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 #include <validator.h>
@@ -179,9 +179,9 @@ char *dnsval_conf_get(void);
 .PP
 int dnsval_conf_set(const char *name);
 .PP
-char *p_as_error(val_astatus_t valerrno);
+char *p_ac_status(val_astatus_t valerrno);
 .PP
-char *p_val_error(val_status_t valerrno);
+char *p_val_status(val_status_t valerrno);
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 The \fB\f(BIval_resolve_and_check()\fB\fR function can be used to query a set of name
@@ -218,7 +218,7 @@ that can be used to easily identify if a given validator status value
 corresponds to one of the authenticated and/or trusted data codes.
 Validator status values returned in the val_result_chain and val_authentication_chain
 linked lists can be displayed in a user understandable format using the functions
-\&\fB\f(BIp_val_error()\fB\fR and \fB\f(BIp_as_error()\fB\fR respectively.
+\&\fB\f(BIp_val_status()\fB\fR and \fB\f(BIp_ac_status()\fB\fR respectively.
 .PP
 The libval library internally allocates memory for *\fIresults\fR 
 and this must be freed by the invoking application 
@@ -329,7 +329,7 @@ The validation status for a given RRset. This can be one of the following:
 .Ve
 .Sp
 Error values in val_status_t returned by the validator can be displayed 
-in a more user friendly format using the \fB\f(BIp_val_error()\fB\fR function.
+in a more user friendly format using the \fB\f(BIp_val_status()\fB\fR function.
 .RE
 .RS 4
 .RE
@@ -350,141 +350,114 @@ or success code for \s-1DNSSEC\s0 validation over the current authentication cha
 field may contain the following values:
 .Sp
 .Vb 2
-\&        VAL_A_DNSKEY_NOMATCH
+\&        VAL_AC_DNSKEY_NOMATCH
 \&                RRSIG was created by a DNSKEY that does not exist in the apex keyset.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_A_WRONG_LABEL_COUNT
+\&        VAL_AC_WRONG_LABEL_COUNT
 \&                The number of labels on the signature is greater than the the count given in
 \&                the RRSIG RDATA.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_SECURITY_LAME
+\&        VAL_AC_BAD_DELEGATION
 \&                RRSIG created by a key that does not exist in the parent DS record set.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_A_NOT_A_ZONE_KEY
+\&        VAL_AC_NOT_A_ZONE_KEY
 \&                The key used to verify the RRSIG is not a zone key, but some other key such as
 \&                the public key used for TSIG.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_RRSIG_NOTYETACTIVE
+\&        VAL_AC_RRSIG_NOTYETACTIVE
 \&                The RRSIG's inception time is in the future.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_RRSIG_EXPIRED
+\&        VAL_AC_RRSIG_EXPIRED
 \&                The RRSIG has expired.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_ALGO_NOT_SUPPORTED
+\&        VAL_AC_ALGORITHM_NOT_SUPPORTED
 \&                Algorithm in DNSKEY or RRSIG or DS is not supported.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_UNKNOWN_ALGO
+\&        VAL_AC_UNKNOWN_ALGORITHM
 \&                Unknown DNSKEY or RRSIG or DS algorithm
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_RRSIG_VERIFIED
+\&        VAL_AC_RRSIG_VERIFIED
 \&                The RRSIG verified successfully.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_RRSIG_VERIFY_FAILED
+\&        VAL_AC_RRSIG_VERIFY_FAILED
 \&                The RRSIG did not verify.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_NOT_VERIFIED
+\&        VAL_AC_NOT_VERIFIED
 \&                Different RRSIGs failed for different reasons
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_KEY_TOO_LARGE
+\&        VAL_AC_KEY_TOO_LARGE
 \&                The zone is using a key size that is too large as per local policy.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_KEY_TOO_SMALL
+\&        VAL_AC_KEY_TOO_SMALL
 \&                The zone is using a key size that is too small as per local policy
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_KEY_NOT_AUTHORIZED
+\&        VAL_AC_KEY_NOT_AUTHORIZED
 \&                The zone is using a key that is not authorized as per local policy.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_ALGO_REFUSED
+\&        VAL_AC_ALGORITHM_REFUSED
 \&                Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_CLOCK_SKEW
-\&                Verified but with clock skew taken into accoun
-.Ve
-.Sp
-.Vb 2
-\&        VAL_A_DUPLICATE_KEYTAG
-\&                Two DNSKEYs have the same keytag
-.Ve
-.Sp
-.Vb 3
-\&        VAL_A_NO_PREFERRED_SEP
-\&                There is no DNSKEY in the parent DS set that our local policy allows us to
-\&                traverse
-.Ve
-.Sp
-.Vb 3
-\&        VAL_A_WRONG_RRSIG_OWNER
-\&                The RRSIG and the data that it purportedly covers have differing notions of
-\&                owner name
-.Ve
-.Sp
-.Vb 2
-\&        VAL_A_RRSIG_ALGO_MISMATCH
+\&        VAL_AC_RRSIG_ALGORITHM_MISMATCH
 \&                 The DNSKEY and RRSIG pair have a mismatch in their algorithm.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_KEYTAG_MISMATCH
-\&                 The DNSKEY and RRSIG pair have a mismatch in the key tags.
-.Ve
-.Sp
-.Vb 2
-\&        VAL_A_VERIFIED
+\&        VAL_AC_VERIFIED
 \&                The signature verified OK.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_LOCAL_ANSWER
+\&        VAL_AC_LOCAL_ANSWER
 \&                Answer was obtained locally.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_TRUST_KEY
+\&        VAL_AC_TRUST_KEY
 \&                The key present in this authentication chain element is trusted.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_PROVABLY_UNSECURE
+\&        VAL_AC_PROVABLY_UNSECURE
 \&                The zone containing this name is "provably unsecure"
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_TRUST_ZONE
+\&        VAL_AC_TRUST_ZONE
 \&                The zone in this authentication chain element is trusted.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_BARE_RRSIG
+\&        VAL_AC_BARE_RRSIG
 \&                Query was for an RRSIG.
 .Ve
 .Sp
@@ -493,67 +466,51 @@ In cases where data is insufficient to generate a validation result,
 validation result in val_status_t in such circumstances is \s-1VAL_ERROR\s0.
 .Sp
 .Vb 3
-\&        VAL_A_DATA_MISSING
+\&        VAL_AC_DATA_MISSING
 \&                No data was returned in the response. Based on what data was queried
 \&                for this also covers cases where the DNSKEY or DS are missing.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_RRSIG_MISSING
+\&        VAL_AC_RRSIG_MISSING
 \&                Could not find an RRSIG that matched the query type.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_DNSKEY_MISSING
+\&        VAL_AC_DNSKEY_MISSING
 \&                Could not find a DNSKEY for verifying the RRSIG over a resource record.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_DS_MISSING
+\&        VAL_AC_DS_MISSING
 \&                Could not find a DS for verifying a given DNSKEY.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_A_NO_TRUST_ANCHOR
+\&        VAL_AC_NO_TRUST_ANCHOR
 \&                No trust anchor at current level and no possiblity
 \&                for finding any up this tree.
 .Ve
 .Sp
 .Vb 2
-\&        VAL_A_UNTRUSTED_ZONE
+\&        VAL_AC_UNTRUSTED_ZONE
 \&                The zone has been configured as un-trusted.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_A_IRRELEVANT_PROOF
+\&        VAL_AC_IRRELEVANT_PROOF
 \&                An NSEC received does not contribute towards proving
 \&                non-existence.
 .Ve
 .Sp
-.Vb 2
-\&        VAL_A_DNSSEC_VERSION_ERROR
-\&                DNSSEC version error. Not implemented.
-.Ve
-.Sp
 .Vb 3
-\&        VAL_A_TOO_MANY_LINKS
-\&                Too many links were traversed in going up the chain-of-trust. 
-\&                Not implemented.
-.Ve
-.Sp
-.Vb 2
-\&        VAL_A_UNKNOWN_DNSKEY_PROTO
-\&                The protocol field in the DNSKEY is not set to 3 (DNSSEC).
-.Ve
-.Sp
-.Vb 3
-\&        VAL_A_FLOOD_ATTACK_DETECTED
+\&        VAL_AC_FLOOD_ATTACK_DETECTED
 \&                Detected multiple (conflicting) answers for the same query. 
 \&                Possible spoofing attack. Not implemented.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_A_DNS_ERROR_BASE < x < VAL_A_DNS_ERROR_LAST
+\&        VAL_AC_DNS_ERROR_BASE < x < VAL_AC_DNS_ERROR_LAST
 \&                where x is one of the error values returned by the resolver as 
 \&                described in libsres(3) including the following:
 .Ve
@@ -640,7 +597,7 @@ The \s-1RDATA\s0 bytes.
 .IX Item "rr_status"
 The verification status of the \s-1RRSIG\s0. In addition to any of the
 assertion status values pertaining to signature verification, this
-field can also have the value \s-1VAL_A_VERIFIED_LINK\s0 for some \s-1DNSKEY\s0 
+field can also have the value \s-1VAL_AC_VERIFIED_LINK\s0 for some \s-1DNSKEY\s0 
 resource records to signify that it is a part of the chain of trust.
 .IP "\fIrr_next\fR" 4
 .IX Item "rr_next"
