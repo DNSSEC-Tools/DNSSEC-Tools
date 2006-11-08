@@ -2438,7 +2438,7 @@ verify_provably_unsecure(val_context_t * context,
          */
         if (!matched_zone1 || !matched_zone2 || 
             namecmp(matched_zone1, matched_zone2) || 
-            namecmp(matched_zone1, top_q->qc_name_n)) {
+            !namecmp(matched_zone1, top_q->qc_name_n)) {
 
             val_log(context, LOG_DEBUG, "Found a bad zonecut");
             if (matched_zone1)
