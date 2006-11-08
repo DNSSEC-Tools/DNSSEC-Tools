@@ -158,14 +158,13 @@
 #define SR_DNS_GENERIC_ERROR      7    /*Look at RCODE */
 #define SR_EDNS_VERSION_ERROR     8
 #define SR_UNSUPP_EDNS0_LABEL     9
-#define SR_SUSPICIOUS_BIT         10
-#define SR_NAME_EXPANSION_FAILURE 11
+#define SR_NAME_EXPANSION_FAILURE 10
 
-#define SR_NXDOMAIN               12    /*RCODE set to NXDOMAIN w/o appropriate records */
-#define SR_FORMERR                13    /*RCODE set to FORMERR */
-#define SR_SERVFAIL               14    /*RCODE set to SERVFAIL */
-#define SR_NOTIMPL                15    /*RCODE set to NOTIMPL */
-#define SR_REFUSED                16    /*RCODE set to REFUSED */
+#define SR_NXDOMAIN               11    /*RCODE set to NXDOMAIN w/o appropriate records */
+#define SR_FORMERR                12    /*RCODE set to FORMERR */
+#define SR_SERVFAIL               13    /*RCODE set to SERVFAIL */
+#define SR_NOTIMPL                14    /*RCODE set to NOTIMPL */
+#define SR_REFUSED                15    /*RCODE set to REFUSED */
 #define SR_LAST_ERROR             22
 
 struct name_server {
