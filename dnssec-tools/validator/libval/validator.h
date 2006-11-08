@@ -343,6 +343,7 @@ extern          "C" {
         u_int16_t       qc_type_h;
         u_int16_t       qc_class_h;
         u_int16_t       qc_state;       /* DOS, TIMED_OUT, etc */
+        int             qc_flags;
         struct name_server *qc_ns_list;
         struct name_server *qc_respondent_server;
         u_int8_t       *qc_zonecut_n;

@@ -223,6 +223,7 @@ add_to_query_chain(struct val_query_chain **queries, u_char * name_n,
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
     temp->qc_state = Q_INIT;
+    temp->qc_flags = 0;
     temp->qc_zonecut_n = NULL;
     temp->qc_ans = NULL;
     temp->qc_proof = NULL;
@@ -3648,6 +3649,7 @@ val_resolve_and_check(val_context_t * ctx,
         goto err;
 
     top_q = context->q_list;
+    top_q->qc_flags = flags;
     if (top_q == NULL)
         return VAL_INTERNAL_ERROR;
 
