@@ -540,7 +540,7 @@ get_addrinfo_from_result(const val_context_t *ctx,
 
     val_log(ctx, LOG_DEBUG,
             "get_addrinfo_from_result called with val_status = %d [%s]",
-            val_status, p_val_error(val_status));
+            val_status, p_val_status(val_status));
 
     if (!results) {
         val_log(ctx, LOG_DEBUG, "rrset is null");
