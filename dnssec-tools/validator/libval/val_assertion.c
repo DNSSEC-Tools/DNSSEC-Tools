@@ -328,15 +328,15 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
                 if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
                     val_log(ctx, LOG_DEBUG, "zone %s is not trusted",
                             name_p);
-                    return VAL_A_UNTRUSTED_ZONE;
+                    return VAL_AC_UNTRUSTED_ZONE;
                 } else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
                     val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
-                    return VAL_A_WAIT_FOR_TRUST;
+                    return VAL_AC_WAIT_FOR_TRUST;
                 } else {
                     /** ZONE_SE_IGNORE */
                     val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for  %s",
                             name_p);
-                    return VAL_A_TRUST_ZONE;
+                    return VAL_AC_TRUST_ZONE;
                 }
             }
         }
@@ -345,7 +345,7 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
         snprintf(name_p, sizeof(name_p), "unknown/error");
     val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
 
-    return VAL_A_WAIT_FOR_TRUST;
+    return VAL_AC_WAIT_FOR_TRUST;
 }
 
 static int
@@ -444,13 +444,13 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
         return VAL_BAD_ARGUMENT;
     
     /* Default value, will change */
-    *status = VAL_A_NO_TRUST_ANCHOR;
+    *status = VAL_AC_NO_TRUST_ANCHOR;
     
     name_len = wire_name_length(zp);
     ta_pol =
         RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);
     if (ta_pol == NULL) { 
-        *status = VAL_A_NO_TRUST_ANCHOR;
+        *status = VAL_AC_NO_TRUST_ANCHOR;
         return VAL_NO_ERROR;
     }
 
@@ -486,9 +486,9 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                         snprintf(name_p, sizeof(name_p), "unknown/error");
                     if (dnskey.public_key != NULL)
                         FREE(dnskey.public_key);
-                    curkey->rr_status = VAL_A_VERIFIED_LINK;
+                    curkey->rr_status = VAL_AC_VERIFIED_LINK;
                     val_log(ctx, LOG_DEBUG, "key %s is trusted", name_p);
-                    *status = VAL_A_TRUST_KEY;
+                    *status = VAL_AC_TRUST_KEY;
                     return VAL_NO_ERROR;
                 }
                 if (dnskey.public_key != NULL)
@@ -513,7 +513,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                 ta_tmphead = ta_cur->next;
 
             if (namecmp(ta_cur->zone_n, zp) == 0) {
-                *status = VAL_A_WAIT_FOR_TRUST;
+                *status = VAL_AC_WAIT_FOR_TRUST;
                 return VAL_NO_ERROR;
             }
         }
@@ -522,7 +522,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
     val_log(ctx, LOG_DEBUG,
             "Cannot find a good trust anchor for the chain of trust above %s",
             zp);
-    *status = VAL_A_NO_TRUST_ANCHOR;
+    *status = VAL_AC_NO_TRUST_ANCHOR;
     return VAL_NO_ERROR;
 }
 
@@ -627,7 +627,7 @@ set_ans_kind(u_int8_t * qc_name_n,
     }
 
     the_set->rrs_ans_kind = SR_ANS_UNSET;
-    *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+    *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
 
     return VAL_NO_ERROR;
 }
@@ -671,12 +671,12 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     int             data_present;
 
     if ((NULL == the_set) || (NULL == q_names_n) || (NULL == status)) {
-        *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+        *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
         return TRUE;
     }
 
     /* If this is already a wrong answer return */
-    if (*status == (VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER))
+    if (*status == (VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER))
         return TRUE;
 
     name_present = name_in_q_names(q_names_n, the_set);
@@ -691,7 +691,7 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     }
     
     if (!data_present) {
-        *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+        *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
         return TRUE;
     }
 
@@ -709,7 +709,7 @@ fails_to_answer_query(struct qname_chain *q_names_n,
 #endif
           the_set->rrs_ans_kind == SR_ANS_NACK_SOA))
         ) {
-        *status = VAL_A_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+        *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
         return TRUE;
     }
 
@@ -750,7 +750,7 @@ add_to_authentication_chain(struct val_digested_auth_chain **assertions,
         new_as->_as.val_ac_rrset_next = NULL;
         new_as->_as.val_ac_next = NULL;
         new_as->_as.ac_pending_query = NULL;
-        new_as->val_ac_status = VAL_A_INIT;
+        new_as->val_ac_status = VAL_AC_INIT;
         if (first_as != NULL) {
             /*
              * keep the first assertion constant 
@@ -810,17 +810,17 @@ build_pending_query(val_context_t * context,
         return VAL_BAD_ARGUMENT;
 
     if (as->_as.ac_data == NULL) {
-        as->val_ac_status = VAL_A_DATA_MISSING;
+        as->val_ac_status = VAL_AC_DATA_MISSING;
         return VAL_NO_ERROR;
     }
 
     if (as->_as.ac_data->rrs_ans_kind == SR_ANS_BARE_RRSIG) {
-        as->val_ac_status = VAL_A_BARE_RRSIG;
+        as->val_ac_status = VAL_AC_BARE_RRSIG;
         return VAL_NO_ERROR;
     }
 
     if (as->_as.ac_data->rrs.val_rrset_data == NULL) {
-        as->val_ac_status = VAL_A_DATA_MISSING;
+        as->val_ac_status = VAL_AC_DATA_MISSING;
         return VAL_NO_ERROR;
     }
 
@@ -829,7 +829,7 @@ build_pending_query(val_context_t * context,
      */
     tzonestatus =
         is_trusted_zone(context, as->_as.ac_data->rrs.val_rrset_name_n);
-    if (tzonestatus != VAL_A_WAIT_FOR_TRUST) {
+    if (tzonestatus != VAL_AC_WAIT_FOR_TRUST) {
         as->val_ac_status = tzonestatus;
         return VAL_NO_ERROR;
     }
@@ -842,12 +842,12 @@ build_pending_query(val_context_t * context,
                            as->_as.ac_data->rrs.val_rrset_data, &as->val_ac_status))) {
             return retval;
         }
-        if (as->val_ac_status != VAL_A_WAIT_FOR_TRUST)
+        if (as->val_ac_status != VAL_AC_WAIT_FOR_TRUST)
             return VAL_NO_ERROR;
     }
 
     if (as->_as.ac_data->rrs.val_rrset_sig == NULL) {
-        as->val_ac_status = VAL_A_WAIT_FOR_RRSIG;
+        as->val_ac_status = VAL_AC_WAIT_FOR_RRSIG;
         /*
          * create a query and link it as the pending query for this assertion 
          */
@@ -902,7 +902,7 @@ build_pending_query(val_context_t * context,
              add_to_query_chain(queries, signby_name_n, ns_t_dnskey,
                                 as->_as.ac_data->rrs.val_rrset_class_h)))
             return retval;
-        as->val_ac_status = VAL_A_WAIT_FOR_TRUST;
+        as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
     }
 
     as->_as.ac_pending_query = *queries;        /* The first value in the list is the most recent element */
@@ -1016,7 +1016,7 @@ check_conflicting_answers(val_context_t * context,
         }
 
         if (flags & VAL_FLAGS_DONT_VALIDATE)
-            as->val_ac_status = VAL_A_DONT_VALIDATE;
+            as->val_ac_status = VAL_AC_DONT_VALIDATE;
         else if (!matched_q->qc_glue_request) {
             if (VAL_NO_ERROR !=
                 (retval = build_pending_query(context, queries, as)))
@@ -1464,11 +1464,11 @@ prove_nsec_span_chk(val_context_t * ctx,
          * if the label count in the RRSIG equals the labels
          * in the nsec owner name, wildcard absence is also proved
          * If a wildcard was used, the status would be 
-         * VAL_A_WCARD_VERIFIED instead of VAL_A_RRSIG_VERIFIED
+         * VAL_AC_WCARD_VERIFIED instead of VAL_AC_RRSIG_VERIFIED
          * proofs should not be expanded from wildcards
          */
         for (sig = the_set->rrs.val_rrset_sig; sig; sig = sig->rr_next) {
-            if (sig->rr_status == VAL_A_RRSIG_VERIFIED) { 
+            if (sig->rr_status == VAL_AC_RRSIG_VERIFIED) { 
                 *wcard_chk = 1;
                 return;
             }
@@ -1795,12 +1795,12 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                      * if the label count in the RRSIG equals the labels
                      * in the nsec owner name, wildcard absence is also proved
                      * If a wildcard was used, the status would be 
-                     * VAL_A_WCARD_VERIFIED instead of VAL_A_RRSIG_VERIFIED
+                     * VAL_AC_WCARD_VERIFIED instead of VAL_AC_RRSIG_VERIFIED
                      * Proofs sould not be expanded from wildcards
                      */
                     for (sig = the_set->rrs.val_rrset_sig; sig;
                          sig = sig->rr_next) {
-                        if (sig->rr_status == VAL_A_RRSIG_VERIFIED){
+                        if (sig->rr_status == VAL_AC_RRSIG_VERIFIED){
                             /*
                              * proof complete 
                              */
@@ -2391,7 +2391,7 @@ verify_provably_unsecure(val_context_t * context,
 
         if ((top_q->qc_type_h == ns_t_ds) &&
             !namecmp(top_q->qc_name_n, rrset->rrs.val_rrset_name_n) &&
-            (as->val_ac_status == VAL_A_NEGATIVE_PROOF) &&
+            (as->val_ac_status == VAL_AC_NEGATIVE_PROOF) &&
             (rrset->rrs_ans_kind == SR_ANS_NACK_SOA)) {
 
             if (-1 ==
@@ -2510,7 +2510,7 @@ verify_provably_unsecure(val_context_t * context,
         val_log(context, LOG_DEBUG, "Zone %s is provably unsecure",
                 name_p_orig);
         val_free_result_chain(results);
-        as->val_ac_status = VAL_A_PROVABLY_UNSECURE;
+        as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
         return 1;
     }
 #ifdef LIBVAL_NSEC3
@@ -2518,7 +2518,7 @@ verify_provably_unsecure(val_context_t * context,
         val_log(context, LOG_DEBUG, "Zone %s is optout provably unsecure",
                 name_p_orig);
         val_free_result_chain(results);
-        as->val_ac_status = VAL_A_PROVABLY_UNSECURE;
+        as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
         return 1;
     }
 #endif
@@ -2562,22 +2562,22 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
         return VAL_BAD_ARGUMENT;
 
     if (pc->qc_state > Q_ERROR_BASE) {
-        if (next_as->val_ac_status == VAL_A_WAIT_FOR_RRSIG)
-            next_as->val_ac_status = VAL_A_RRSIG_MISSING;
-        else if (next_as->val_ac_status == VAL_A_WAIT_FOR_TRUST) {
+        if (next_as->val_ac_status == VAL_AC_WAIT_FOR_RRSIG)
+            next_as->val_ac_status = VAL_AC_RRSIG_MISSING;
+        else if (next_as->val_ac_status == VAL_AC_WAIT_FOR_TRUST) {
             /*
              * We're either waiting for DNSKEY or DS 
              */
             if (pc->qc_type_h == ns_t_ds)
-                next_as->val_ac_status = VAL_A_DS_MISSING;
+                next_as->val_ac_status = VAL_AC_DS_MISSING;
             else if (pc->qc_type_h == ns_t_dnskey)
-                next_as->val_ac_status = VAL_A_DNSKEY_MISSING;
+                next_as->val_ac_status = VAL_AC_DNSKEY_MISSING;
         }
     }
 
     if (pc->qc_state == Q_ANSWERED) {
 
-        if (next_as->val_ac_status == VAL_A_WAIT_FOR_RRSIG) {
+        if (next_as->val_ac_status == VAL_AC_WAIT_FOR_RRSIG) {
 
             for (pending_as = pc->qc_ans; pending_as;
                  pending_as = pending_as->_as.val_ac_rrset_next) {
@@ -2593,7 +2593,7 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                 /*
                  * Check if what we got was an RRSIG 
                  */
-                if (pending_as->val_ac_status == VAL_A_BARE_RRSIG) {
+                if (pending_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                     /*
                      * Find the RRSIG that matches the type 
                      * Check if type is in the RRSIG 
@@ -2613,7 +2613,7 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                                         val_rrset_type_h,
                                         pending_rrset->rrs.val_rrset_sig,
                                         0);
-                        next_as->val_ac_status = VAL_A_WAIT_FOR_TRUST;
+                        next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
                         /*
                          * create a pending query for the trust portion 
                          */
@@ -2630,9 +2630,9 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                 /*
                  * Could not find any RRSIG matching query type
                  */
-                next_as->val_ac_status = VAL_A_RRSIG_MISSING;
+                next_as->val_ac_status = VAL_AC_RRSIG_MISSING;
             }
-        } else if (next_as->val_ac_status == VAL_A_WAIT_FOR_TRUST) {
+        } else if (next_as->val_ac_status == VAL_AC_WAIT_FOR_TRUST) {
 
             // xxx-audit: ptr deref w/out NULL check (pending_as->_as.ac_data)
             if (pc->qc_ans) {
@@ -2643,7 +2643,7 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                  * if the pending assertion contains a straight answer, 
                  * trust is useful for verification 
                  */
-                next_as->val_ac_status = VAL_A_CAN_VERIFY;
+                next_as->val_ac_status = VAL_AC_CAN_VERIFY;
                 pending_as = pc->qc_ans;
                 /* we don't really care for what is in pc->qc_proof */
 
@@ -2651,14 +2651,14 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
                 /*
                  * proof of non-existence should follow 
                  */
-                next_as->val_ac_status = VAL_A_NEGATIVE_PROOF;
+                next_as->val_ac_status = VAL_AC_NEGATIVE_PROOF;
                 pending_as = pc->qc_proof;
 
             } else {
                 if (pc->qc_type_h == ns_t_ds)
-                    next_as->val_ac_status = VAL_A_DS_MISSING;
+                    next_as->val_ac_status = VAL_AC_DS_MISSING;
                 else if (pc->qc_type_h == ns_t_dnskey)
-                    next_as->val_ac_status = VAL_A_DNSKEY_MISSING;
+                    next_as->val_ac_status = VAL_AC_DNSKEY_MISSING;
                 return VAL_NO_ERROR;
             }
             next_as->val_ac_trust = pending_as;
@@ -2666,7 +2666,7 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
         }
     }
 
-    if (next_as->val_ac_status == VAL_A_CAN_VERIFY) {
+    if (next_as->val_ac_status == VAL_AC_CAN_VERIFY) {
         val_log(context, LOG_DEBUG, "verifying next assertion");
         verify_next_assertion(context, next_as);
     }
@@ -2759,7 +2759,7 @@ verify_and_validate(val_context_t * context,
          */
         for (next_as = as_more; next_as; next_as = next_as->val_ac_trust) {
 
-            if (next_as->val_ac_status <= VAL_A_INIT) {
+            if (next_as->val_ac_status <= VAL_AC_INIT) {
 
                 struct val_query_chain *pc;
                 pc = next_as->_as.ac_pending_query;
@@ -2783,9 +2783,9 @@ verify_and_validate(val_context_t * context,
                  * If we have an error and the assertion status does not reflect that as yet, 
                  * store the DNS error value 
                  */
-                if ((next_as->val_ac_status <= VAL_A_INIT) && (pc->qc_state > Q_ERROR_BASE))
+                if ((next_as->val_ac_status <= VAL_AC_INIT) && (pc->qc_state > Q_ERROR_BASE))
                     next_as->val_ac_status =
-                        VAL_A_DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
+                        VAL_AC_DNS_ERROR_BASE + pc->qc_state - Q_ERROR_BASE;
             }
 
             /*
@@ -2805,21 +2805,21 @@ verify_and_validate(val_context_t * context,
             /*
              * Check initial states 
              */
-            if (next_as->val_ac_status <= VAL_A_INIT) {
+            if (next_as->val_ac_status <= VAL_AC_INIT) {
                 /*
                  * still need more data to validate this assertion 
                  */
                 *done = 0;
                 thisdone = 0;
-            } else if (next_as->val_ac_status == VAL_A_DONT_VALIDATE) {
+            } else if (next_as->val_ac_status == VAL_AC_DONT_VALIDATE) {
                 break;
-            } else if ((next_as->val_ac_status == VAL_A_TRUST_KEY) ||
-                       (next_as->val_ac_status == VAL_A_TRUST_ZONE) ||
+            } else if ((next_as->val_ac_status == VAL_AC_TRUST_KEY) ||
+                       (next_as->val_ac_status == VAL_AC_TRUST_ZONE) ||
                        (next_as->val_ac_status ==
-                        VAL_A_PROVABLY_UNSECURE)) {
+                        VAL_AC_PROVABLY_UNSECURE)) {
                 SET_RESULT_TRUSTED(res->val_rc_status);
                 break;
-            } else if (next_as->val_ac_status == VAL_A_NEGATIVE_PROOF) {
+            } else if (next_as->val_ac_status == VAL_AC_NEGATIVE_PROOF) {
                 /*
                  * This means that the trust point has a proof of non-existence 
                  */
@@ -2887,7 +2887,7 @@ verify_and_validate(val_context_t * context,
                         /*
                          * send query to root 
                          */
-                        next_as->val_ac_status = VAL_A_WAIT_FOR_TRUST;
+                        next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
                         if (VAL_NO_ERROR !=
                             (retval =
                              build_pending_query(context, queries,
@@ -2913,18 +2913,18 @@ verify_and_validate(val_context_t * context,
             /*
              * Check error conditions 
              */
-            else if (next_as->val_ac_status <= VAL_A_LAST_ERROR) {
+            else if (next_as->val_ac_status <= VAL_AC_LAST_ERROR) {
                 if (verify_provably_unsecure(context, top_q, next_as)) {
                     res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
                     SET_RESULT_TRUSTED(res->val_rc_status);
                 } else
                     res->val_rc_status = VAL_ERROR;
                 break;
-            } else if (next_as->val_ac_status <= VAL_A_LAST_BAD) {
+            } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
 
                 res->val_rc_status = VAL_ERROR;
                 break;
-            } else if (next_as->val_ac_status <= VAL_A_LAST_FAILURE) {
+            } else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
                 /*
                  * double failures are errors 
                  */
@@ -2948,24 +2948,24 @@ verify_and_validate(val_context_t * context,
                 /*
                  * Success condition 
                  */
-                if ((next_as->val_ac_status == VAL_A_VERIFIED) ||
-                    (next_as->val_ac_status == VAL_A_WCARD_VERIFIED)) { 
+                if ((next_as->val_ac_status == VAL_AC_VERIFIED) ||
+                    (next_as->val_ac_status == VAL_AC_WCARD_VERIFIED)) { 
                     SET_MASKED_STATUS(res->val_rc_status,
                                       VAL_R_VERIFIED_CHAIN);
                     continue;
-                } else if ((next_as->val_ac_status == VAL_A_LOCAL_ANSWER)
-                           || (next_as->val_ac_status == VAL_A_TRUST_KEY)
-                           || (next_as->val_ac_status == VAL_A_TRUST_ZONE)) {
+                } else if ((next_as->val_ac_status == VAL_AC_LOCAL_ANSWER)
+                           || (next_as->val_ac_status == VAL_AC_TRUST_KEY)
+                           || (next_as->val_ac_status == VAL_AC_TRUST_ZONE)) {
                     res->val_rc_status = VAL_LOCAL_ANSWER;
                     break;
-                } else if (next_as->val_ac_status == VAL_A_BARE_RRSIG) {
+                } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                     res->val_rc_status = VAL_BARE_RRSIG;
                     break;
                 }
                 /*
                  * unknown result 
                  */
-                else if (next_as->val_ac_status == VAL_A_NO_TRUST_ANCHOR) {
+                else if (next_as->val_ac_status == VAL_AC_NO_TRUST_ANCHOR) {
                     /*
                      * verified but no trust 
                      */
@@ -3191,7 +3191,7 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                         !(next_q->qc_ns_list->ns_options & RES_USE_DNSSEC)) { 
                     if (!(flags & VAL_FLAGS_DONT_VALIDATE) &&
                         (is_trusted_zone(context, test_n) ==
-                        VAL_A_WAIT_FOR_TRUST)) {
+                        VAL_AC_WAIT_FOR_TRUST)) {
 
                         val_log(context, LOG_DEBUG,
                                 "Setting D0 bit and using EDNS0");
@@ -3368,7 +3368,7 @@ check_wildcard_sanity(val_context_t * context,
         if ((res->val_rc_status == VAL_SUCCESS) &&
             (res->val_rc_rrset) && 
             (!res->val_rc_consumed) &&
-            (res->val_rc_rrset->val_ac_status == VAL_A_WCARD_VERIFIED)) {
+            (res->val_rc_rrset->val_ac_status == VAL_AC_WCARD_VERIFIED)) {
 
             /* Any proofs that have been wildcard expanded are bogus */
             if (res->val_rc_is_proof) {
@@ -3406,8 +3406,8 @@ check_wildcard_sanity(val_context_t * context,
                         goto err; 
                     target_res->val_rc_status = status; 
                     if ((status == VAL_SUCCESS) && (target_res->val_rc_answer)) {
-                        /* Change from VAL_A_WCARD_VERIFIED to VAL_A_VERIFIED */
-                        target_res->val_rc_answer->val_ac_status = VAL_A_VERIFIED;
+                        /* Change from VAL_AC_WCARD_VERIFIED to VAL_AC_VERIFIED */
+                        target_res->val_rc_answer->val_ac_status = VAL_AC_VERIFIED;
                     }
                 } else {
                     /* Can't prove wildcard */
@@ -3470,11 +3470,11 @@ perform_sanity_checks(val_context_t * context,
             for (as = top_as; as; as = as->val_ac_trust) {
                 if ((as->val_ac_rrset) &&
                     (as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey)) {
-                    if (as->val_ac_status == VAL_A_NOT_VERIFIED) {
+                    if (as->val_ac_status == VAL_AC_NOT_VERIFIED) {
                         /* see if one of the DNSKEYs links up */
                         struct rr_rec  *drr;
                         for (drr = as->val_ac_rrset->val_rrset_data; drr; drr=drr->rr_next) {
-                            if(drr->rr_status == VAL_A_UNKNOWN_ALGO_LINK) {
+                            if(drr->rr_status == VAL_AC_UNKNOWN_ALGORITHM_LINK) {
                                 res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
                                 SET_RESULT_TRUSTED(res->val_rc_status);
                                 break;
