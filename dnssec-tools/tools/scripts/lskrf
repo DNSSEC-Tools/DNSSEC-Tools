@@ -33,6 +33,7 @@ my @opts =
 (
 	"all",				# List all keyrecs.
 	"zones",			# List zone keyrecs.
+	"sets",				# List set keyrecs.
 	"keys",				# List key keyrecs.
 	"ksk",				# List KSK keyrecs.
 	"zsk",				# List ZSK keyrecs.
@@ -72,6 +73,7 @@ my @opts =
 #
 my $allflag;
 my $zonesflag;
+my $setsflag;
 my $keysflag;
 my $kskflag;
 my $zskflag;
@@ -90,7 +92,7 @@ my $nodateflag;
 my $terse;
 my $long;
 
-my $count   = 0;			# Record-match count.
+my $count	= 0;			# Record-match count.
 my $version	= 0;			# Display the version number.
 
 #########################################
@@ -103,6 +105,11 @@ my $z_label;				# Print a leading label for zones.
 my $z_expdate;				# Print the zone's expiration date.
 my $z_signdate;				# Print the zone's signing date.
 my $z_zonefile;				# Print the zone's zone file.
+
+my $s_keys;				# Print the set's key list.
+my $s_label = 0;			# Print a leading label for sets.
+my $s_setdate;				# Print the set's last mod date.
+my $s_zone;				# Print the set's zone.
 
 my $k_algorithm = 0;			# Key's algorithm
 my $k_enddate = 0;			# Key's end date.
@@ -118,6 +125,7 @@ my $k_zonename = 0;			# Key's owning zone.
 my @krnames;				# List of keyrecs in the file.
 
 my %zones    = ();			# Names of zone keyrecs.
+my %sets     = ();			# Names of set keyrecs.
 my %allkeys  = ();			# Names of all keyrecs.
 my %kskkeys  = ();			# Names of KSK keyrecs.
 my %zskkeys  = ();			# Names of ZSK keyrecs.
@@ -132,7 +140,6 @@ $ret = main();
 exit($ret);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
 #
 sub main()
@@ -159,7 +166,8 @@ sub main()
 	# Give the output.
 	#
 	showzones()	if($zonesflag);
-	showkeys();
+	showsets()	if($setsflag);
+	showkeys()	if($keysflag);
 
 	#
 	# If the matching-record count should be given, give the count in
@@ -183,7 +191,6 @@ sub main()
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	doopts()
 #
 # Purpose:	This routine shakes and bakes our command line options.
@@ -201,28 +208,25 @@ sub doopts
 	#
 	GetOptions(\%options,@opts);
 
-	version() if(defined($options{'Version'}));
 
 	#
-	# Give a usage flag if asked.
+	# Handle a few immediate flags.
 	#
-	usage() if(defined($options{'help'}));
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
 
 	#
 	# Ensure we were given a keyrec file to check.
 	#
 	$argc = @ARGV;
-	if($argc == 0)
-	{
-		usage();
-		exit(1);
-	}
+	usage() if($argc == 0);
 
 	#
 	# Set our option variables based on the parsed options.
 	#
 	$allflag	= $options{'all'}	|| 0;
 	$zonesflag	= $options{'zones'}	|| 0;
+	$setsflag	= $options{'sets'}	|| 0;
 	$keysflag	= $options{'keys'}	|| 0;
 	$kskflag	= $options{'ksk'}	|| 0;
 	$zskflag	= $options{'zsk'}	|| 0;
@@ -260,23 +264,28 @@ sub doopts
 		$zonesflag = 1;
 	}
 
-	#
-	# If the referenced-keys option or the unreferenced-keys option was
-	# given, but none of the key specifiers were, then we'll assume
-	# they want all the keys listed.
-	#
-	if(($refflag || $unrefflag)				&&
-	   (!$keysflag && !$kskflag  && !$zskflag &&
-	    !$zcurflag && !$znewflag && !$zpubflag && !$zobsflag))
-	{
-		$keysflag = 1;
-	}
-
 	#############################################################
 	#
 	# WARNING:  Code order beyond this point is critical.  Do *NOT* modify
 	#	    anything in the rest of this routine if you are an idiot.
 	#
+
+	#
+	# If none of the normal record selection flags were given but
+	# either the referenced or unreferenced record flags were given,
+	# then we'll assume the user wants all the referenced sets and keys.
+	#
+	if(!$allflag && !$zonesflag && !$setsflag && !$keysflag &&
+	   !$kskflag && !$zcurflag  && !$znewflag && !$zpubflag && !$zobsflag)
+	{
+		if($refflag || $unrefflag)
+		{
+			$setsflag = 1;
+			$keysflag = 1;
+		}
+
+		$zobsflag = 1 if($unrefflag);
+	}
 
 	#
 	# Select all records if the "-all" option was given.  This option
@@ -285,6 +294,7 @@ sub doopts
 	if($allflag)
 	{
 		$zonesflag  = 1;
+		$setsflag  = 1;
 		$keysflag   = 1;
 
 		$refflag     = 0;
@@ -352,6 +362,39 @@ sub doopts
 	}
 
 	#
+	# Set up some set output flags.
+	#
+	if($setsflag)
+	{
+		#
+		# Set our defaults.
+		#
+		$s_label   = 1;
+		$s_keys	   = 1;
+		$s_setdate = 0;
+		$s_zone    = 0;
+
+		#
+		# Set the non-defaults for -long.
+		#
+		if($long)
+		{
+			$s_setdate = 1;
+			$s_zone	   = 1;
+		}
+
+		#
+		# Set the non-defaults for -terse.
+		#
+		if($terse)
+		{
+			$s_label = 0;
+			$s_keys	 = 0;
+		}
+
+	}
+
+	#
 	# Set up some key output flags.
 	#
 	if($kskflag || $zcurflag || $znewflag || $zpubflag)
@@ -402,7 +445,6 @@ sub doopts
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	getkeyrecs()
 #
 # Purpose:	This routine reads the specified keyrec file and puts each
@@ -432,6 +474,10 @@ sub getkeyrecs
 		if($type eq 'zone')
 		{
 			$zones{$krn} = $kr;
+		}
+		elsif($type eq 'set')
+		{
+			$sets{$krn} = $kr;
 		}
 		elsif($type eq 'ksk')
 		{
@@ -465,7 +511,6 @@ sub getkeyrecs
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	showzones()
 #
 # Purpose:	This routine displays zone data.  It has three output formats:
@@ -550,7 +595,107 @@ sub showzones
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	showsets()
 #
+# Purpose:	This routine displays set data.  It has three output formats:
+#
+#			normal	A label, the set name, and the set's keys are
+#				displayed.
+#
+#			terse	The set name is displayed.
+#
+#			long	A label, the set name, the set's keys, the
+#				set's zone, the zone's last modification
+#				date are displayed.
+#
+sub showsets
+{
+	my $outstr = "";			# Output string to build.
+
+	my $keylist;				# Zone's key list.
+	my $moddate;				# Zone's signing date.
+	my $zone;				# Zone's zonefile.
+
+	my $endtime;				# Calculated expiration date.
+	my $setsecs;				# Signing date in seconds.
+
+	#
+	# Loop through the zone list and give data on the desired zones.
+	#
+	foreach my $sk (sort(keys(%sets)))
+	{
+		my $krr = $sets{$sk};		# Reference to set's keyrec.
+		my %kr = %$krr;			# Set's keyrec.
+		my $ref = 0;			# Referenced-set flag.
+		my $zkr;			# Ref. to set's zone keyrec.
+
+		#
+		# Get a bunch of data from the zone keyrec.
+		#
+		$keylist = $kr{'keys'};
+		$moddate = $kr{'keyrec_setdate'};
+		$zone	 = $kr{'zonename'};
+
+		#
+		# Check the zone-validity flags against the zone to see if
+		# the record should be displayed.
+		#
+
+		#
+		# If the set's zone exists, we'll check to see if 
+		# the zone uses this set as one of its own.
+		#
+		$zkr = $zones{$zone};
+		if(defined($zkr))
+		{
+			if(($zkr->{'zskcur'} eq $sk)	||
+			   ($zkr->{'zskpub'} eq $sk)	||
+			   ($zkr->{'zsknew'} eq $sk))
+			{
+				$ref = 1;
+			}
+		}
+
+		#
+		# If either of the referenced or unreferenced flags were set, 
+		# we'll only give the the appropriate sets.
+		#
+		# (I'm sure the logic could have been reduced, but this
+		# version is nice and clear.)
+		#
+		if($refflag || $unrefflag)
+		{
+			if((!$ref && $refflag)		||
+			   ( $ref && $unrefflag))
+			{
+				next;
+			}
+		}
+
+		#
+		# Bump the matching-records count.
+		#
+		$count++;
+
+		#
+		# Stay cloaked if only the count of matching records
+		# should be given.
+		#
+		next if($cntflag);
+
+		#
+		# Build and print the output string.
+		#
+		$outstr  = $s_label ? "set $sk" : $sk;
+		$outstr .= "\t$zone"		if($s_zone);
+		$outstr .= "\t$keylist"		if($s_keys);
+		$outstr .= "\t\"$moddate\""	if($s_setdate);
+		print "$outstr\n";
+
+	}
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	showkeys()
 #
 # Purpose:	This routine goes through the key-related hashes and prints
@@ -624,7 +769,6 @@ sub showkeys
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	expiredzone()
 #
 # Purpose:	This routine determines if a specified zone has expired or
@@ -686,16 +830,15 @@ sub expiredzone
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	refdkey()
 #
 # Purpose:	This routine determines if a named key is referenced by any
-#		zones.  This doesn't distinguish between KSKs and any of the
-#		ZSKs.
+#		zones.  KSKs are referenced in the key's zone.  ZSKs are
+#		referenced in signing sets.
 #
 # Return Values:
-#		 1 - the key is referenced in a zone
-#		 0 - the key is not referenced in a zone
+#		 1 - the key is referenced
+#		 0 - the key is not referenced
 #
 sub refdkey
 {
@@ -712,16 +855,19 @@ sub refdkey
 		$zkrref = $zones{$zn};
 		%zkr = %$zkrref;
 
-		if(($zkr{'kskkey'} eq $kn) ||
-		   ($zkr{'zskcur'} eq $kn) ||
-		   ($zkr{'zsknew'} eq $kn) ||
-		   ($zkr{'zskpub'} eq $kn) ||
-		   ($zkr{'zskobs'} eq $kn))
+		#
+		# Simple case if the key is a KSK.
+		#	We just look in the zone's keyrec.
+		#
+		return(1) if($zkr{'kskkey'} eq $kn);
+
+		#
+		# Somewhat more difficult case if the key is a ZSK.
+		#	Go through each signing set to see if it holds this key.
+		#
+		foreach my $set (keys(%sets))
 		{
-			#
-			# Found it!  Return success.
-			#
-			return(1);
+			return(1) if(keyrec_signset_haskey($set,$kn));
 		}
 	}
 
@@ -732,7 +878,6 @@ sub refdkey
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	outkey()
 #
 # Purpose:	This routine performs the actual output operations for key
@@ -826,7 +971,6 @@ sub outkey
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -841,7 +985,6 @@ sub version
 
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
 #
 sub usage
@@ -931,6 +1074,10 @@ This option displays all the records in a I<keyrec> file.
 
 This option displays the zones in a I<keyrec> file.
 
+=item -set
+
+This option displays the signing sets in a I<keyrec> file.
+
 =item -keys
 
 This option displays the keys in a I<keyrec> file.
@@ -983,15 +1130,47 @@ It implies the I<-zones> option.
 
 =item -ref
 
-This option displays the referenced key I<keyrec>s in a I<keyrec> file.
-If no record-selection options were specified, then the I<-keys> option will
-be set.
+This option displays the referenced signing set I<keyrec>s or the referenced
+key I<keyrec>s in a I<keyrec> file, depending upon other selected options.
+
+Referenced state depends on the following:
+
+  * Signing sets are considered to be referenced if they
+    are listed in a zone keyrec.
+
+  * KSKs are considered to be referenced if they are listed
+    in a zone keyrec.
+
+  * ZSKs are considered to be referenced if they are listed
+    in a set keyrec.
+
+This option may be used with either the I<-sets> or I<-keys> options.  If it
+isn't used with any record-selection options, then it is assumed that both
+I<-sets> and I<-keys> have been specified.
 
 =item -unref
 
-This option displays the unreferenced key I<keyrec>s in a I<keyrec> file.
-If no record-selection options were specified, then the I<-keys> option will
-be set.
+This option displays the unreferenced signing set I<keyrec>s or the
+unreferenced key I<keyrec>s in a I<keyrec> file, depending upon other
+selected options.
+
+Unreferenced state depends on the following:
+
+  * Signing sets are considered to be unreferenced if they
+    are not listed in a zone keyrec.
+
+  * KSKs are considered to be unreferenced if they are not
+    listed in a zone keyrec.
+
+  * ZSKs are considered to be unreferenced if they are not
+    listed in a set keyrec.
+
+  * Obsolete ZSKs are checked, whether or not the -obs flag
+    was specified.
+
+This option may be used with either the I<-sets> or I<-keys> options.  If it
+isn't used with any record-selection options, then it is assumed that both
+I<-sets> and I<-keys> have been specified.
 
 =back
 
