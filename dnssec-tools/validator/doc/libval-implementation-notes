@@ -159,57 +159,52 @@ Q_INIT ----------> Q_SENT --------> (Q_ERROR_BASE + SR_<error_condition>)
 Assertion states transition as follows:
 
 
-VAL_A_INIT 
-|  |      |---> VAL_A_DATA_MISSING
-|  |      |---> VAL_A_BARE_RRSIG
-|  |      |---> VAL_A_TRUST_ZONE
-|  |      |---> VAL_A_TRUST_KEY
-|  |      |---> VAL_A_UNTRUSTED_ZONE
-|  |      |---> VAL_A_IRRELEVANT_PROOF
-|  |      |---> VAL_A_LOCAL_ANSWER
-|  |      +---> VAL_A_DNS_ERROR_BASE+SR_<error_condition>
+VAL_AC_INIT 
+|  |      |---> VAL_AC_DATA_MISSING
+|  |      |---> VAL_AC_BARE_RRSIG
+|  |      |---> VAL_AC_TRUST_ZONE
+|  |      |---> VAL_AC_TRUST_KEY
+|  |      |---> VAL_AC_UNTRUSTED_ZONE
+|  |      |---> VAL_AC_IRRELEVANT_PROOF
+|  |      |---> VAL_AC_LOCAL_ANSWER
+|  |      +---> VAL_AC_DNS_ERROR_BASE+SR_<error_condition>
 |  |
 |  v
-|  VAL_A_WAIT_FOR_TRUST
-|  |  ^   |---> VAL_A_NO_TRUST_ANCHOR
-|  |  |   |---> VAL_A_TRUST_ZONE
-|  |  |   |---> VAL_A_TRUST_KEY
-|  |  |   |---> VAL_A_LOCAL_ANSWER
-|  |  |   |---> VAL_A_UNTRUSTED_ZONE
-|  |  |   |---> VAL_A_DNSKEY_MISSING
-|  |  |   |---> VAL_A_DS_MISSING
-|  |  |   |---> VAL_A_IRRELEVANT_PROOF
-|  |  |   |---> VAL_A_NEGATIVE_PROOF 
+|  VAL_AC_WAIT_FOR_TRUST
+|  |  ^   |---> VAL_AC_NO_TRUST_ANCHOR
+|  |  |   |---> VAL_AC_TRUST_ZONE
+|  |  |   |---> VAL_AC_TRUST_KEY
+|  |  |   |---> VAL_AC_LOCAL_ANSWER
+|  |  |   |---> VAL_AC_UNTRUSTED_ZONE
+|  |  |   |---> VAL_AC_DNSKEY_MISSING
+|  |  |   |---> VAL_AC_DS_MISSING
+|  |  |   |---> VAL_AC_IRRELEVANT_PROOF
+|  |  |   |---> VAL_AC_NEGATIVE_PROOF 
 |  |  |   |
 |  |  |   |
-|  |  |   +---> VAL_A_CAN_VERIFY 
+|  |  |   +---> VAL_AC_CAN_VERIFY 
 |  |  |         |
-|  |  |         |---> VAL_A_RRSIG_VERIFIED ) ----------> VAL_A_VERIFIED
-|  |  |         |---> VAL_A_CLOCK_SKEW     )
+|  |  |         |---> VAL_AC_RRSIG_VERIFIED ) ----------> VAL_AC_VERIFIED
 |  |  |         |                            ----)
-|  |  |         |---> VAL_A_SECURITY_LAME        )
-|  |  |         |---> VAL_A_NOT_A_ZONE_KEY       )
-|  |  |         |---> VAL_A_UNKNOWN_DNSKEY_PROTO )
-|  |  |         |---> VAL_A_RRSIG_NOTYETACTIVE   ) 
-|  |  |         |---> VAL_A_RRSIG_EXPIRED        ) 
-|  |  |         |---> VAL_A_RRSIG_ALGO_MISMATCH  +-----> VAL_A_NOT_VERIFIED
-|  |  |         |---> VAL_A_KEYTAG_MISMATCH      ) 
-|  |  |         |---> VAL_A_RRSIG_VERIFY_FAILED  ) 
-|  |  |         |---> VAL_A_KEY_TOO_LARGE        )
-|  |  |         |---> VAL_A_KEY_TOO_SMALL        )
-|  |  |         |---> VAL_A_KEY_NOT_AUTHORIZED   )
-|  |  |         |---> VAL_A_ALGO_NOT_SUPPORTED   )
-|  |  |         |---> VAL_A_ALGO_REFUSED         )
-|  |  |         |---> VAL_A_UNKNOWN_ALGO         )
-|  |  |         |---> VAL_A_DNSKEY_NOMATCH       )
-|  |  |         |---> VAL_A_DUPLICATE_KEYTAG     )
-|  |  |         |---> VAL_A_NO_PREFERRED_SEP     )
-|  |  |         |---> VAL_A_WRONG_RRSIG_OWNER    )
-|  |  |         +---> VAL_A_WRONG_LABEL_COUNT    )
+|  |  |         |---> VAL_AC_BAD_DELEGATION        )
+|  |  |         |---> VAL_AC_NOT_A_ZONE_KEY       )
+|  |  |         |---> VAL_AC_UNKNOWN_DNSKEY_PROTOCOL )
+|  |  |         |---> VAL_AC_RRSIG_NOTYETACTIVE   ) 
+|  |  |         |---> VAL_AC_RRSIG_EXPIRED        ) 
+|  |  |         |---> VAL_AC_RRSIG_ALGORITHM_MISMATCH  +-----> VAL_AC_NOT_VERIFIED
+|  |  |         |---> VAL_AC_RRSIG_VERIFY_FAILED  ) 
+|  |  |         |---> VAL_AC_KEY_TOO_LARGE        )
+|  |  |         |---> VAL_AC_KEY_TOO_SMALL        )
+|  |  |         |---> VAL_AC_KEY_NOT_AUTHORIZED   )
+|  |  |         |---> VAL_AC_ALGORITHM_NOT_SUPPORTED   )
+|  |  |         |---> VAL_AC_ALGORITHM_REFUSED         )
+|  |  |         |---> VAL_AC_UNKNOWN_ALGORITHM    )
+|  |  |         |---> VAL_AC_DNSKEY_NOMATCH       )
+|  |  |         +---> VAL_AC_WRONG_LABEL_COUNT    )
 |  |  |                                      ----)
 v  v  |
-VAL_A_WAIT_FOR_RRSIG 
-                |---> VAL_A_BARE_RRSIG
+VAL_AC_WAIT_FOR_RRSIG 
+                |---> VAL_AC_BARE_RRSIG
                 +---> VAL_RRSIG_MISSING
 
 
@@ -220,10 +215,10 @@ are derived from the authentication chain states in the following manner:
 
 top authentication chain element status       final result status
 ==================================================================
- VAL_A_TRUST_KEY                              VAL_LOCAL_ANSWER 
- VAL_A_TRUST_ZONE                             VAL_LOCAL_ANSWER 
- VAL_A_LOCAL_ANSWER                           VAL_LOCAL_ANSWER
- VAL_A_BARE_RRSIG                             VAL_BARE_RRSIG
+ VAL_AC_TRUST_KEY                              VAL_LOCAL_ANSWER 
+ VAL_AC_TRUST_ZONE                             VAL_LOCAL_ANSWER 
+ VAL_AC_LOCAL_ANSWER                           VAL_LOCAL_ANSWER
+ VAL_AC_BARE_RRSIG                             VAL_BARE_RRSIG
 
 trust    any auth.chain.elem    intermediate result      final result
 anchor   status                 status                   status
@@ -235,11 +230,11 @@ anchor   status                 status                   status
  NO     > FAIL_BASE,             VAL_R_BOGUS_UNPROVABLE  VAL_BOGUS 
         <=LAST_FAILURE
 
- --     > VAL_A_ERROR_BASE,      ---                     VAL_ERROR 
-        <=VAL_A_LAST_ERROR
+ --     > VAL_AC_ERROR_BASE,      ---                     VAL_ERROR 
+        <=VAL_AC_LAST_ERROR
 
- --     > VAL_A_DNS_ERROR_BASE   ---                     error between 
-        <=VAL_A_DNS_ERROR_LAST                           VAL_DNS_ERROR_BASE and
+ --     > VAL_AC_DNS_ERROR_BASE   ---                     error between 
+        <=VAL_AC_DNS_ERROR_LAST                           VAL_DNS_ERROR_BASE and
                                                          VAL_DNS_ERROR_LAST
 
 
