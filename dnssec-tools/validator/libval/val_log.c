@@ -257,8 +257,8 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     if (type_h == ns_t_dnskey) {
         struct rr_rec  *curkey;
         for (curkey = data; curkey; curkey = curkey->rr_next) {
-            if ((curkey->rr_status == VAL_A_VERIFIED_LINK) ||
-                   (curkey->rr_status == VAL_A_UNKNOWN_ALGO_LINK)) {
+            if ((curkey->rr_status == VAL_AC_VERIFIED_LINK) ||
+                   (curkey->rr_status == VAL_AC_UNKNOWN_ALGORITHM_LINK)) {
                 /*
                  * Extract the key tag 
                  */
@@ -276,21 +276,21 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
         val_log(ctx, level,
                 "%sname=%s class=%s type=%s[tag=%d] from-server=%s "
                 "status=%s:%d", prefix, name_pr, p_class(class_h),
-                p_type(type_h), tag, serv_pr, p_as_error(status), status);
+                p_type(type_h), tag, serv_pr, p_ac_status(status), status);
     } else {
         val_log(ctx, level,
                 "%sname=%s class=%s type=%s from-server=%s status=%s:%d",
                 prefix, name_pr, p_class(class_h), p_type(type_h), serv_pr,
-                p_as_error(status), status);
+                p_ac_status(status), status);
     }
 #if 0
     struct rr_rec *rr;
     struct rr_rec *sig = next_as->val_ac_rrset->val_rrset_sig;
     for (rr=data; rr; rr=rr->rr_next) {
-        val_log(ctx, level, "    data_status=%s:%d", p_as_error(rr->rr_status), rr->rr_status);
+        val_log(ctx, level, "    data_status=%s:%d", p_ac_status(rr->rr_status), rr->rr_status);
     }
     for (rr=sig; rr; rr=rr->rr_next) {
-        val_log(ctx, level, "    sig_status=%s:%d", p_as_error(rr->rr_status), rr->rr_status);
+        val_log(ctx, level, "    sig_status=%s:%d", p_ac_status(rr->rr_status), rr->rr_status);
     }
 #endif
 }
@@ -339,7 +339,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 	    val_log(ctx, level, "Original query: name=%s class=%s type=%s "
                     "from-server=%s, Query-status=%s:%d",
                     name_pr, p_class(class_h), p_type(type_h), serv_pr, 
-                    p_query_error(top_q->qc_state), top_q->qc_state);
+                    p_query_status(top_q->qc_state), top_q->qc_state);
     }
     else
         val_log(ctx, level, "Original query: UNKNOWN?");
@@ -350,7 +350,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
         int i;
 
         val_log(ctx, level, "  Result: %s:%d",
-                p_val_error(next_result->val_rc_status), 
+                p_val_status(next_result->val_rc_status), 
                 next_result->val_rc_status);
 
         for (next_as = next_result->val_rc_answer; next_as;
@@ -358,7 +358,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 
             if (next_as->val_ac_rrset == NULL) {
                 val_log(ctx, level, "    Assertion status = %s:%d",
-                        p_as_error(next_as->val_ac_status),
+                        p_ac_status(next_as->val_ac_status),
                         next_as->val_ac_status);
             } else {
                 const u_char   *t_name_n;
@@ -382,7 +382,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 
                 if (next_as->val_ac_rrset == NULL) {
                     val_log(ctx, level, "      Assertion status = %s:%d",
-                            p_as_error(next_as->val_ac_status),
+                            p_ac_status(next_as->val_ac_status),
                             next_as->val_ac_status);
                 } else {
                     const u_char   *t_name_n;
@@ -400,7 +400,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 }
 
 const char     *
-p_query_error(int err)
+p_query_status(int err)
 {
     if (err < Q_ERROR_BASE) {
         switch (err) {
@@ -444,8 +444,6 @@ p_query_error(int err)
             return "SR_EDNS_VERSION_ERROR";
         case SR_UNSUPP_EDNS0_LABEL:
             return "SR_UNSUPP_EDNS0_LABEL";
-        case SR_SUSPICIOUS_BIT:
-            return "SR_SUSPICIOUS_BIT";
         case SR_NAME_EXPANSION_FAILURE:
             return "SR_NAME_EXPANSION_FAILURE";
         case SR_REFERRAL_ERROR:
@@ -463,147 +461,131 @@ p_query_error(int err)
 }
 
 const char     *
-p_as_error(val_astatus_t err)
+p_ac_status(val_astatus_t err)
 {
     switch (err) {
-    case VAL_A_DATA_MISSING:
-        return "VAL_A_DATA_MISSING";
+    case VAL_AC_DATA_MISSING:
+        return "VAL_AC_DATA_MISSING";
         break;
-    case VAL_A_RRSIG_MISSING:
-        return "VAL_A_RRSIG_MISSING";
+    case VAL_AC_RRSIG_MISSING:
+        return "VAL_AC_RRSIG_MISSING";
         break;
-    case VAL_A_DNSKEY_MISSING:
-        return "VAL_A_DNSKEY_MISSING";
+    case VAL_AC_DNSKEY_MISSING:
+        return "VAL_AC_DNSKEY_MISSING";
         break;
-    case VAL_A_DS_MISSING:
-        return "VAL_A_DS_MISSING";
+    case VAL_AC_DS_MISSING:
+        return "VAL_AC_DS_MISSING";
         break;
-    case VAL_A_NO_TRUST_ANCHOR:
-        return "VAL_A_NO_TRUST_ANCHOR";
+    case VAL_AC_NO_TRUST_ANCHOR:
+        return "VAL_AC_NO_TRUST_ANCHOR";
         break;
-    case VAL_A_UNTRUSTED_ZONE:
-        return "VAL_A_UNTRUSTED_ZONE";
+    case VAL_AC_UNTRUSTED_ZONE:
+        return "VAL_AC_UNTRUSTED_ZONE";
         break;
-    case VAL_A_DNSSEC_VERSION_ERROR:
-        return "VAL_A_DNSSEC_VERSION_ERROR";
+    case VAL_AC_UNKNOWN_DNSKEY_PROTOCOL:
+        return "VAL_AC_UNKNOWN_DNSKEY_PROTOCOL";
         break;
-    case VAL_A_TOO_MANY_LINKS:
-        return "VAL_A_TOO_MANY_LINKS";
+    case VAL_AC_DNSKEY_NOMATCH:
+        return "VAL_AC_DNSKEY_NOMATCH";
         break;
-    case VAL_A_UNKNOWN_DNSKEY_PROTO:
-        return "VAL_A_UNKNOWN_DNSKEY_PROTO";
+    case VAL_AC_WRONG_LABEL_COUNT:
+        return "VAL_AC_WRONG_LABEL_COUNT";
         break;
-    case VAL_A_FLOOD_ATTACK_DETECTED:
-        return "VAL_A_FLOOD_ATTACK_DETECTED";
+    case VAL_AC_BAD_DELEGATION:
+        return "VAL_AC_BAD_DELEGATION";
         break;
-
-    case VAL_A_DNSKEY_NOMATCH:
-        return "VAL_A_DNSKEY_NOMATCH";
+    case VAL_AC_INVALID_KEY:
+        return "VAL_AC_INVALID_KEY";
         break;
-    case VAL_A_WRONG_LABEL_COUNT:
-        return "VAL_A_WRONG_LABEL_COUNT";
+    case VAL_AC_INVALID_RRSIG:
+        return "VAL_AC_INVALID_RRSIG";
         break;
-    case VAL_A_SECURITY_LAME:
-        return "VAL_A_SECURITY_LAME";
+    case VAL_AC_RRSIG_NOTYETACTIVE:
+        return "VAL_AC_RRSIG_NOTYETACTIVE";
         break;
-    case VAL_A_INVALID_KEY:
-        return "VAL_A_INVALID_KEY";
+    case VAL_AC_RRSIG_EXPIRED:
+        return "VAL_AC_RRSIG_EXPIRED";
         break;
-    case VAL_A_RRSIG_NOTYETACTIVE:
-        return "VAL_A_RRSIG_NOTYETACTIVE";
+    case VAL_AC_ALGORITHM_NOT_SUPPORTED:
+        return "VAL_AC_ALGORITHM_NOT_SUPPORTED";
         break;
-    case VAL_A_RRSIG_EXPIRED:
-        return "VAL_A_RRSIG_EXPIRED";
+    case VAL_AC_UNKNOWN_ALGORITHM:
+        return "VAL_AC_UNKNOWN_ALGORITHM";
         break;
-    case VAL_A_ALGO_NOT_SUPPORTED:
-        return "VAL_A_ALGO_NOT_SUPPORTED";
+    case VAL_AC_RRSIG_VERIFIED:
+        return "VAL_AC_RRSIG_VERIFIED";
         break;
-    case VAL_A_UNKNOWN_ALGO:
-        return "VAL_A_UNKNOWN_ALGO";
+    case VAL_AC_RRSIG_VERIFY_FAILED:
+        return "VAL_AC_RRSIG_VERIFY_FAILED";
         break;
-    case VAL_A_RRSIG_VERIFIED:
-        return "VAL_A_RRSIG_VERIFIED";
+    case VAL_AC_NOT_VERIFIED:
+        return "VAL_AC_NOT_VERIFIED";
         break;
-    case VAL_A_RRSIG_VERIFY_FAILED:
-        return "VAL_A_RRSIG_VERIFY_FAILED";
+    case VAL_AC_KEY_TOO_LARGE:
+        return "VAL_AC_KEY_TOO_LARGE";
         break;
-    case VAL_A_NOT_VERIFIED:
-        return "VAL_A_NOT_VERIFIED";
+    case VAL_AC_KEY_TOO_SMALL:
+        return "VAL_AC_KEY_TOO_SMALL";
         break;
-    case VAL_A_KEY_TOO_LARGE:
-        return "VAL_A_KEY_TOO_LARGE";
+    case VAL_AC_KEY_NOT_AUTHORIZED:
+        return "VAL_AC_KEY_NOT_AUTHORIZED";
         break;
-    case VAL_A_KEY_TOO_SMALL:
-        return "VAL_A_KEY_TOO_SMALL";
+    case VAL_AC_ALGORITHM_REFUSED:
+        return "VAL_AC_ALGORITHM_REFUSED";
         break;
-    case VAL_A_KEY_NOT_AUTHORIZED:
-        return "VAL_A_KEY_NOT_AUTHORIZED";
+    case VAL_AC_RRSIG_ALGORITHM_MISMATCH:
+        return "VAL_AC_RRSIG_ALGORITHM_MISMATCH";
         break;
-    case VAL_A_ALGO_REFUSED:
-        return "VAL_A_ALGO_REFUSED";
+    case VAL_AC_VERIFIED:
+        return "VAL_AC_VERIFIED";
         break;
-    case VAL_A_NO_PREFERRED_SEP:
-        return "VAL_A_NO_PREFERRED_SEP";
+    case VAL_AC_VERIFIED_LINK:
+        return "VAL_AC_VERIFIED_LINK";
         break;
-    case VAL_A_RRSIG_ALGO_MISMATCH:
-        return "VAL_A_RRSIG_ALGO_MISMATCH";
+    case VAL_AC_UNKNOWN_ALGORITHM_LINK:
+        return "VAL_AC_UNKNOWN_ALGORITHM_LINK";
         break;
-    case VAL_A_VERIFIED:
-        return "VAL_A_VERIFIED";
+    case VAL_AC_LOCAL_ANSWER:
+        return "VAL_AC_LOCAL_ANSWER";
         break;
-    case VAL_A_VERIFIED_LINK:
-        return "VAL_A_VERIFIED_LINK";
+    case VAL_AC_SIGNING_KEY:
+        return "VAL_AC_SIGNING_KEY";
         break;
-    case VAL_A_UNKNOWN_ALGO_LINK:
-        return "VAL_A_UNKNOWN_ALGO_LINK";
+    case VAL_AC_TRUST_KEY:
+        return "VAL_AC_TRUST_KEY";
         break;
-    case VAL_A_LOCAL_ANSWER:
-        return "VAL_A_LOCAL_ANSWER";
+    case VAL_AC_TRUST_ZONE:
+        return "VAL_AC_TRUST_ZONE";
         break;
-    case VAL_A_SIGNING_KEY:
-        return "VAL_A_SIGNING_KEY";
+    case VAL_AC_PROVABLY_UNSECURE:
+        return "VAL_AC_PROVABLY_UNSECURE";
         break;
-    case VAL_A_TRUST_KEY:
-        return "VAL_A_TRUST_KEY";
-        break;
-    case VAL_A_TRUST_ZONE:
-        return "VAL_A_TRUST_ZONE";
-        break;
-    case VAL_A_PROVABLY_UNSECURE:
-        return "VAL_A_PROVABLY_UNSECURE";
-        break;
-    case VAL_A_BARE_RRSIG:
-        return "VAL_A_BARE_RRSIG";
+    case VAL_AC_BARE_RRSIG:
+        return "VAL_AC_BARE_RRSIG";
         break;
 
 
-    case VAL_A_DONT_VALIDATE:
-        return "VAL_A_DONT_VALIDATE";
+    case VAL_AC_DONT_VALIDATE:
+        return "VAL_AC_DONT_VALIDATE";
         break;
 
-    case VAL_A_UNSET:
-        return "VAL_A_UNSET";
+    case VAL_AC_UNSET:
+        return "VAL_AC_UNSET";
         break;
 
-        /*
-         * case VAL_A_UNAUTHORIZED_SIGNER: return "UNAUTHORIZED_SIGNER"; break;
-         * case VAL_A_CONFLICTING_PROOFS: return "CONFLICTING_PROOFS"; break;
-         * case VAL_A_OVERREACHING_NSEC: return "OVERREACHING_NSEC"; break;
-         * case VAL_A_DNSSEC_VERSION_ERROR: return "VAL_A_DNSSEC_VERSION_ERROR"; break;
-         */
     default:
-        if ((err >= VAL_A_DNS_ERROR_BASE) && (err < VAL_A_DNS_ERROR_LAST)) {
-            int             errbase = VAL_A_DNS_ERROR_BASE;
+        if ((err >= VAL_AC_DNS_ERROR_BASE) && (err < VAL_AC_DNS_ERROR_LAST)) {
+            int             errbase = VAL_AC_DNS_ERROR_BASE;
             int             dnserr = err - errbase + Q_ERROR_BASE;
-            return p_query_error(dnserr);
-        } else if (err < VAL_A_LAST_STATE)
+            return p_query_status(dnserr);
+        } else if (err < VAL_AC_LAST_STATE)
             return "UNEVALUATED";
         return "Unknown Error Value";
     }
 }
 
 const char     *
-p_val_error(val_status_t err)
+p_val_status(val_status_t err)
 {
     switch (err) {
 
@@ -653,7 +635,7 @@ p_val_error(val_status_t err)
         if ((err >= VAL_DNS_ERROR_BASE) && (err < VAL_DNS_ERROR_LAST)) {
             int             errbase = VAL_DNS_ERROR_BASE;
             int             dnserr = err - errbase + Q_ERROR_BASE;
-            return p_query_error(dnserr);
+            return p_query_status(dnserr);
         }
         return "Unknown Error Value";
     }
