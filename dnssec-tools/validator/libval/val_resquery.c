@@ -1027,7 +1027,7 @@ digest_response(val_context_t * context,
          * child zone, or if one of the name servers reached while 
          * following referrals is also recursive
          */ 
-        if ((VAL_A_WAIT_FOR_TRUST == is_trusted_zone(context, matched_q->qc_name_n)) &&
+        if ((VAL_AC_WAIT_FOR_TRUST == is_trusted_zone(context, matched_q->qc_name_n)) &&
             matched_q->qc_respondent_server && 
             !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
 
