@@ -40,37 +40,19 @@ my @OPTS =
 	"Version",			# Display the version number.
 );
 
-#
-# Keys in a zone that we'll check.
-#
-my @ZONEKEYS =
-(
-	"kskpath",
-	"zskcurpath",
-	"zskpubpath",
-	"zsknewpath"
-);
-
 my $krfile = "";			# Keyrec file to check.
 my @dirs = ();				# Directories that may hold key files.
-
-my %missing = ();			# Names of keyrecs with missing keys.
 
 my @krnames;				# List of keyrecs in the file.
 
 my $errors = 0;				# Count of missing key files.
 
-my %zones = ();				# Names of zone keyrecs.
-my %keys = ();				# Names of ZSK keyrecs.
-
-my $USELOC = 1;				# Show location is usage().
-my $version	= 0;			# Display the version number.
+my $USELOC = 0;				# Show location is usage().
 
 main();
 exit(0);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
 #
 # Purpose:	This is the top-level processing routine for the command.
@@ -104,27 +86,19 @@ sub main
 		$kr = keyrec_fullrec($krn);
 
 		#
-		# If this keyrec is a zone, we'll have to check a bunch
-		# of keyrecs.  If it's a key keyrec, we only have to
-		# check a single keyrec.
+		# If this keyrec is a zone, we only have to check the KSK.
+		# If it's a key, we only have to check the keyrec itself.
 		#
 		if($kr->{'keyrec_type'} eq "zone")
 		{
 			print "zone $krn\n" if($verbose);
-
+			checkkey('zone',$krn,'kskpath',$kr->{'kskpath'});
+		}
+		elsif($kr->{'keyrec_type'} eq "set")
+		{
 			#
-			# Go through each type of key in the zone and
-			# check its existence.
+			# Don't do anything for sets.
 			#
-			foreach my $key (@ZONEKEYS)
-			{
-				my $keyfile;		# Key's path.
-
-				$keyfile = $kr->{$key};
-				next if($keyfile eq "");
-
-				checkkey('zone',$krn,$key,$keyfile);
-			}
 		}
 		else
 		{
@@ -143,7 +117,6 @@ sub main
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	optsandargs()
 #
 # Purpose:	This routine processes the command's options and arguments.
@@ -158,10 +131,9 @@ sub optsandargs
 	GetOptions(\%options,@OPTS);
 	$list	 = $options{'list'};
 	$verbose = $options{'verbose'};
-	$version = $options{'Version'};
 
 	version() if(defined($options{'Version'}));
-	usage(1) if(defined($options{'help'}));
+	usage(1)  if(defined($options{'help'}));
 
 	#
 	# Ensure we were given a keyrec file to check and directories in
@@ -177,7 +149,6 @@ sub optsandargs
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	checkkey()
 #
 # Purpose:	
@@ -257,7 +228,6 @@ sub checkkey
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -271,7 +241,6 @@ sub version
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
 #
 sub usage
