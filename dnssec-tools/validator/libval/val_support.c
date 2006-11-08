@@ -579,7 +579,7 @@ add_to_set(struct rrset_rec *rr_set, u_int16_t rdata_len_h,
      */
     rr->rr_rdata_length_h = rdata_len_h;
     memcpy(rr->rr_rdata, rdata, rdata_len_h);
-    rr->rr_status = VAL_A_UNSET;
+    rr->rr_status = VAL_AC_UNSET;
     rr->rr_next = NULL;
 
     return VAL_NO_ERROR;
@@ -626,7 +626,7 @@ add_as_sig(struct rrset_rec *rr_set, u_int16_t rdata_len_h,
      */
     rr->rr_rdata_length_h = rdata_len_h;
     memcpy(rr->rr_rdata, rdata, rdata_len_h);
-    rr->rr_status = VAL_A_UNSET;
+    rr->rr_status = VAL_AC_UNSET;
     rr->rr_next = NULL;
 
     return VAL_NO_ERROR;
