@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_query 3"
-.TH val_query 3 "2006-06-21" "perl v5.8.6" "Programmer's Manual"
+.TH val_query 3 "2006-11-07" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_query \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
@@ -190,7 +190,7 @@ If \s-1DNSSEC\s0 validation succeeds for a given RRSet, a value of
 \&\fB\s-1VAL_SUCCESS\s0\fR is returned in the \fIvr_val_status\fR field of the
 \&\fIval_response\fR structure for that RRSet. Other values are returned in case
 of errors.  See \fBval_errors.h\fR for a listing of possible error codes.  The
-\&\fB\f(BIp_val_error()\fB\fR function can be used to return a brief string description
+\&\fB\f(BIp_val_status()\fB\fR function can be used to return a brief string description
 of the error code.  The \fB\f(BIval_istrusted()\fB\fR function can be used to determine
 if the error code represents a value which indicates that the response can
 be trusted (see \fB\f(BIlibval\fB\|(3)\fR for further information).
@@ -264,7 +264,7 @@ success and \-1 on failure.
 \&          if (retval == 0) {
 \&                  for (iter=resp; iter; iter=iter->vr_next) {
 \&                          printf("Validation Status = %d [%s]\en", iter->vr_val_status,
-\&                                 p_val_error(iter->vr_val_status));
+\&                                 p_val_status(iter->vr_val_status));
 \&                  }
 \&          }
 .Ve

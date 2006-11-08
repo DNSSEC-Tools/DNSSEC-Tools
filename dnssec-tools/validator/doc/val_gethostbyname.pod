@@ -76,7 +76,7 @@ B<gethostbyname(3)> for more details about these parameters.
 
 The I<val_status> parameter is used to return the validator error code.  
 The B<val_istrusted()> function can be used to determine whether this 
-validation status represents a trusted value and the B<p_val_error()> 
+validation status represents a trusted value and the B<p_val_status()> 
 function can be used to display this value to the user in a useful 
 manner (See B<libval(3)> more for information). I<val_status> must not 
 be B<NULL>.
@@ -114,7 +114,7 @@ validation), and a non-zero error-code on failure.
                  hstrerror(h_errno));
           if (h) {
                   printf("Validation Status = %d [%s]\n", val_status,
-                         p_val_error(val_status));
+                         p_val_status(val_status));
           }
 
           return 0;

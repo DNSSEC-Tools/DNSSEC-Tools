@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_gethostbyname 3"
-.TH val_gethostbyname 3 "2006-10-18" "perl v5.8.6" "Programmer's Manual"
+.TH val_gethostbyname 3 "2006-11-07" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_gethostbyname, val_gethostbyname2, val_gethostbyname_r,
 val_gethostbyname2_r \- get DNSSEC\-validated network host entry
@@ -213,7 +213,7 @@ the same meaning and syntax as the corresponding parameters for the original
 .PP
 The \fIval_status\fR parameter is used to return the validator error code.  
 The \fB\f(BIval_istrusted()\fB\fR function can be used to determine whether this 
-validation status represents a trusted value and the \fB\f(BIp_val_error()\fB\fR 
+validation status represents a trusted value and the \fB\f(BIp_val_status()\fB\fR 
 function can be used to display this value to the user in a useful 
 manner (See \fB\f(BIlibval\fB\|(3)\fR more for information). \fIval_status\fR must not 
 be \fB\s-1NULL\s0\fR.
@@ -256,7 +256,7 @@ validation), and a non-zero error-code on failure.
 \&                 hstrerror(h_errno));
 \&          if (h) {
 \&                  printf("Validation Status = %d [%s]\en", val_status,
-\&                         p_val_error(val_status));
+\&                         p_val_status(val_status));
 \&          }
 .Ve
 .PP

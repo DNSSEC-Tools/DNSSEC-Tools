@@ -40,7 +40,7 @@ The I<val_addrinfo> structure is similar to the I<addrinfo> structure (see
 B<getaddrinfo(3)>), and has an additional field I<ai_val_status> that represents
 the validation status for that particular record.  The B<val_istrusted()>
 function can be used to determine whether this validation status represents a
-trusted value and the B<p_val_error()> function can be used to display this
+trusted value and the B<p_val_status()> function can be used to display this
 value to the user in a useful manner (See B<libval(3)> more for information).
 
 The I<ctx> parameter of type I<val_context> represents the validation context,
@@ -88,7 +88,7 @@ B<val_freeaddrinfo()> function.
 
                   printf("Validation Status = %d [%s]\n",
                          ainfo->ai_val_status,
-                         p_val_error(ainfo->ai_val_status));
+                         p_val_status(ainfo->ai_val_status));
 
                   val_freeaddrinfo(ainfo);
           }
