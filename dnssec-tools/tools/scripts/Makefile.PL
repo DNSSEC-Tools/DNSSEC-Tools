@@ -21,7 +21,7 @@ use ExtUtils::MakeMaker;
 				fixkrf
 				genkrf
 				getdnskeys
-				keyrec-check
+				krfcheck
 				lskrf
 				lsroll
 				rollchk
