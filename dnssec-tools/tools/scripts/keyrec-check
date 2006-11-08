@@ -4,7 +4,7 @@
 # file distributed with this software for details
 #
 #
-# keyrec-check
+# krfcheck
 #
 #	This script checks a keyrec file for problems, potential problems,
 #	and inconsistencies.
@@ -59,7 +59,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 #
 # Version information.
 #
-my $NAME   = "keyrec-check";
+my $NAME   = "krfcheck";
 my $VERS   = "$NAME version: 0.9.1";
 my $DTVERS = "DNSSEC-Tools Version: 0.9.1";
 
@@ -1242,7 +1242,7 @@ sub version
 #
 sub usage
 {
-	print STDERR "usage:  keyrec-check [options] <keyrec-file>\n";
+	print STDERR "usage:  krfcheck [options] <keyrec-file>\n";
 	print STDERR "             options:\n";
 	print STDERR "                  -zone      only check zone keyrecs\n";
 	print STDERR "                  -set       only check set keyrecs\n";
@@ -1264,13 +1264,13 @@ sub usage
 
 =head1 NAME
 
-keyrec-check - Check a DNSSEC-Tools I<keyrec> file for problems and
+krfcheck - Check a DNSSEC-Tools I<keyrec> file for problems and
 inconsistencies.
 
 =head1 SYNOPSIS
 
-  keyrec-check [-zone | -set | -key] [-count] [-quiet]
-	       [-verbose] [-Version] [-help] keyrec-file
+  krfcheck [-zone | -set | -key] [-count] [-quiet]
+	   [-verbose] [-Version] [-help] keyrec-file
 
 =head1 DESCRIPTION
 
@@ -1360,12 +1360,12 @@ Recognized inconsistencies include:
 =item * key-specific fields in a zone I<keyrec>
 
 A zone I<keyrec> contains key-specific entries.  To allow for site-specific
-extensibility, I<keyrec-check> does not check for undefined I<keyrec> fields.
+extensibility, I<krfcheck> does not check for undefined I<keyrec> fields.
 
 =item * zone-specific fields in a key I<keyrec>
 
 A key I<keyrec> contains zone-specific entries.  To allow for site-specific
-extensibility, I<keyrec-check> does not check for undefined I<keyrec> fields.
+extensibility, I<krfcheck> does not check for undefined I<keyrec> fields.
 
 =item * mismatched zone timestamp
 
@@ -1415,7 +1415,7 @@ Display many messages.  This option is subordinate to the I<-q> option.
 
 =item -Version
 
-Display the B<keyrec-check> version number and exit.
+Display the B<krfcheck> version number and exit.
 
 =item -help
 
