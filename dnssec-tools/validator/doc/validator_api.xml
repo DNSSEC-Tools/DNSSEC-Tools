@@ -429,7 +429,7 @@ validator API are summarized below. </t>
       <figure>
       <artwork>
 int val_resolve_and_check( const val_context_t        *context, 
-                           const char                 *domain_name,
+                           u_char                     *domain_name_n,
                            const u_int16_t            class,
                            const u_int16_t            type, 
                            const u_int8_t             flags,
@@ -438,6 +438,14 @@ int val_resolve_and_check( const val_context_t        *context,
 void val_free_result_chain( struct val_result_chain *results );
 
 char *p_ac_status(val_astatus_t err);
+
+int ns_name_pton(const char   *src,
+                 u_char       *dst,
+                 int          dstsize);
+
+int ns_name_pton(const u_char *src,
+                 char         *dst,
+                 int          dstsize);
 
 #define MAX_PROOFS 4
 
@@ -481,10 +489,12 @@ struct rr_rec {
       </artwork>
       <postamble>
 <t> The val_resolve_and_check() function queries a set of name servers
-for the &lt;domain_name, class, type&gt; tuple and then verifies and validates
-the responses received. The verification step checks the RRSIGs and the
+for the &lt;domain_name_n, class, type&gt; tuple and then verifies and validates
+the responses received. domain_name_n must be in the DNS wire format. 
+The verification step checks the RRSIGs and the
 validation step performs verification down the authentication chain from a trust
-anchor.  All the information necessary for inspecting the authentication chain 
+anchor.  domain_name_n must be in the DNS wire format. 
+All the information necessary for inspecting the authentication chain 
 is available through the results parameter. The context parameter points 
 to the validator context. An application may explicitly create a 
 context using the val_create_context() function described in 
@@ -493,6 +503,12 @@ one internally by specifying the value of NULL for this parameter.
 Only the VAL_FLAGS_DONT_VALIDATE flag is currently defined. This flag has
 the effect of turning off validation -- no authentication chain is constructed
 for this response. </t>
+
+<t> Names can be converted from a normal string representation to the DNS wire format and 
+vice-versa using the ns_name_pton and ns_name_ntop functions repectively. src contains the
+data to be converted and dst contains the converted value. dstsize must be large enough 
+to hold the converted value.  These function return the number 
+of bytes written to dst on success or -1 on failure. </t> 
 
 <t> val_resolve_and_check() returns 0 on success and an error code from 
 <xref target="val-return-values"/> on failure. The val_resolve_and_check() 
@@ -543,7 +559,8 @@ received (in the val_msg_header field with length given by the
 val_msg_headerlen field) and the DNS response "envelope"
 comprising of the name, class, type and time-to-live tuple (in the 
 val_rrset_name_n, val_rrset_class_h, val_rrset_type_h and val_rrset_ttl_h 
-fields respectively). The name servers from where these RRsets were
+fields respectively). The val_rrset_name_n is stored in the DNS wire format.
+The name servers from where these RRsets were
 received is stored in the val_rrset_server field.</t>
 
 <t> The response RDATA is stored within val_rrset_data. Any RRSIGs that are 
