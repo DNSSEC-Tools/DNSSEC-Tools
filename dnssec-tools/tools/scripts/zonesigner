@@ -581,11 +581,41 @@ sub genkeys
 #
 sub genzsks
 {
+	my $setname;				# Name of signing set.
+	my $keyset;				# Keys in signing set.
+
 	#
-	# Generate the ZSK keys.
+	# Handle a key rollover.
 	#
 	if($forceroll)
 	{
+		#
+		# Get the current ZSK list.
+		#
+		$setname = $opts{'zskcur'};
+		$keyset  = keyrec_recval($setname,'keys');
+		$zskcursetname = $setname;
+		@zskcurlist = split / /, $keyset;
+
+		#
+		# Get the published ZSK list.
+		#
+		$setname = $opts{'zskpub'};
+		$keyset  = keyrec_recval($setname,'keys');
+		$zskpubsetname = $setname;
+		@zskpublist = split / /, $keyset;
+
+		#
+		# Get the new ZSK list.
+		#
+		$setname = $opts{'zsknew'};
+		$keyset  = keyrec_recval($setname,'keys');
+		$zsknewsetname = $setname;
+		@zsknewlist = split / /, $keyset;
+
+		#
+		# Do the rollover.
+		#
 		forceroll();
 		vmed_print("\n");
 		return;
@@ -1600,6 +1630,7 @@ sub forceroll
 	my $krref;				# Reference to key's keyrec.
 	my $zoneref;				# Reference to zone's keyrec.
 	my $publife;				# Published ZSK's lifespan.
+	my $setlist;				# List of key names.
 
 	vprint("forcing a ZSK roll-over\n");
 
@@ -1683,15 +1714,15 @@ sub forceroll
 		my $me;						# Key name.
 
 		#
-		# Get the key's keyrec.
+		# Get the key's keyrec and name.
 		#
 		$krref = keyrec_fullrec($k);
 		$me = $krref->{'keyrec_name'};
 
 		#
-		# Set the keyrec's type to ZSK published.
+		# Set the keyrec's type to ZSK current.
 		#
-		$krref = keyrec_fullrec($opts{'zskpub'});
+#		$krref = keyrec_fullrec($opts{'zskpub'});
 		$krref->{'keyrec_type'} = 'zskcur';
 		keyrec_setval("key",$me,"keyrec_type","zskcur");
 
@@ -1715,6 +1746,12 @@ sub forceroll
 	keyrec_signset_new($zone,$zskcursetname);
 	$opts{'zskcur'} = $zskcursetname;
 	keyrec_setval('zone',$zone,'zskcur',$zskcursetname);
+
+	#
+	# Save the current ZSK list in the signing sets.
+	#
+	$setlist = join ' ', @zskcurlist;
+	keyrec_setval("set",$zskcursetname,"keys",$setlist);
 
 	@zskpublist = ();
 
@@ -1759,8 +1796,21 @@ sub forceroll
 		#
 		for(my $ind=0; $ind < $zskcnt; $ind++)
 		{
+			my $krref;			# Keyrec reference.
+
+			#
+			# Create a new key and save its name.
+			#
 			$zskpub = genzsk("pub");
 			push @zskpublist, $zskpub;
+
+			#
+			# Set the new key's lifetime.
+			#
+			$krref = keyrec_fullrec($zskpub);
+			keyrec_setval("key",$zskpub,"zsklife",$publife);
+			$opts{'zsklife'} = $publife;
+
 			vmed_print("published ZSK ($zskpub) created\n");
 		}
 
@@ -1782,6 +1832,7 @@ sub forceroll
 
 		keyrec_setval("key",$zsknew,"zonename",$zone);
 		keyrec_setval("key",$zsknew,"zsklife",$publife);
+		$opts{'zsklife'} = $publife;
 
 		vmed_print("new ZSK ($zsknew) created\n");
 	}
