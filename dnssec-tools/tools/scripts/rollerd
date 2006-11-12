@@ -176,7 +176,7 @@ sub main
 	rollmgr_channel(1);
 
 	#
-	# Main event loop.  If the roll rec file is okay, we'll read it,
+	# Main event loop.  If the rollrec file is okay, we'll read it,
 	# check its zones -- rolling 'em if need be -- and saving its state.
 	# We'll always check for user commands and then sleep a bit.
 	#
@@ -264,6 +264,7 @@ sub zsk_check
 		#
 		# Get the rollrec for this name.  If it doesn't have one,
 		# whinge and continue to the next.
+		# (This should never happen, but...)
 		#
 		$rrr = rollrec_fullrec($rname);
 		if(!defined($rrr))
@@ -294,7 +295,7 @@ sub zsk_check
 		#
 		# If this zone's current ZSK has expired, we'll get it rolling.
 		# 
-		if(expired($rname,$rrr,"zskcur"))
+		if(zsk_expired($rname,$rrr,"zskcur"))
 		{
 			rollmgr_log(LOG_CURPHASE,$rname,"current ZSK has expired\n") if($rr{'curphase'} == 0);
 
@@ -351,6 +352,9 @@ sub zsk_phasewait
 
 	my %rr;					# Rollrec hash.
 
+	#
+	# Get the rollrec.
+	#
 	$rrr = rollrec_fullrec($rname);
 	%rr = %$rrr;
 
@@ -385,15 +389,13 @@ sub zsk_phase2
 	my $rname = shift;		# Name of rollrec.
 	my $rrr = shift;		# Reference to rollrec.
 
-	my %rr;				# Rollrec hash.
+	my %rr = %$rrr;			# Rollrec hash.
 
 	my $krf;			# Rollrec's keyrec name.
 	my %krf;			# Keyrec hash.
 	my $krr;			# Keyrec reference.
 
 	my $ret;			# Result from command executions.
-
-	%rr = %$rrr;
 
 	#
 	# Get the rollrec's associated keyrec file and ensure that it
@@ -464,15 +466,13 @@ sub zsk_phase4
 	my $rname = shift;		# Name of rollrec.
 	my $rrr = shift;		# Reference to rollrec.
 
-	my %rr;				# Rollrec hash.
+	my %rr = %$rrr;			# Rollrec hash.
 
 	my $krf;			# Rollrec's keyrec name.
 	my %krf;			# Keyrec hash.
 	my $krr;			# Keyrec reference.
 
 	my $ret;			# Result from command executions.
-
-	%rr = %$rrr;
 
 	#
 	# Get the rollrec's associated keyrec file and ensure that it
@@ -534,22 +534,23 @@ sub zsk_phase4
 ###############################################################################
 
 #-----------------------------------------------------------------------------
-# Routine:	expired()
+# Routine:	zsk_expired()
 #
 # Purpose:	This routine returns a boolean indicating if the specified
-#		zone has an expired key of the given type.
+#		zone has an expired ZSK key of the given type.
 #
 #		The zone's keyrec file name is taken from the given rollrec
 #		entry.  The keyrec file is read and the zone's entry found.
-#		The key keyrec of the specified key type ("zskcur" or "ksk") 
-#		is pulled from the keyrec file.
+#		The key keyrec of the specified key type (currently, just
+#		"zskcur") is pulled from the keyrec file.  Each key in the
+#		named signing set will be checked.
 #		
 #		Key expiration is determined by comparing the key keyrec's
 #		gensecs field to the current time.  The key hasn't expired
 #		if the current time is less than the gensecs; the key has
 #		expired if the current time is greater than the gensecs.
 #
-sub expired
+sub zsk_expired
 {
 	my $rname = shift;			# Name of rollrec rec.
 	my $rrr = shift;			# Reference to rollrec.
@@ -559,23 +560,15 @@ sub expired
 
 	my $krname;				# Name of keyrec.
 	my $krec;				# Keyrec reference.
-	my %kh;					# Keyrec hash.
+	my %set;				# Keyrec hash.
 
-	my $life;				# Name of keylife field.
-	my $cronus;				# Current time.
-	my $gentime;				# Key's generation date.
-	my $exptime;				# Key's lifespan.
-	my $krsecs;				# Key's expiration date.
+	my @signset;				# Key's signing set.
 
-	my $waitsecs;				# Time to expiration.
-	my $chronostr;				# Textual expiration time.
+	my $expired = 0;			# Expired-zone flag.
 
 	#
 	# If this zone is in the middle of roll-over processing, we'll
 	# immediately assume the key has expired.
-	#
-	#	NOTE:	THIS IS LIKELY TO CHANGE A BIT WHEN WE START
-	#		LOOKING AT KSKs.
 	#
 	%rr = %$rrr;
 	return(1) if($rr{'curphase'} > 0);
@@ -590,62 +583,106 @@ sub expired
 		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
 		return(0);
 	}
-	%kh   = %$krec;
+	%set   = %$krec;
 
 	#
-	# Ensure that required keyrec fields exist.
+	# Make sure we've got an actual set keyrec and keys.
 	#
-	if(!defined($kh{"keyrec_gensecs"}))
+	if($set{'keyrec_type'} ne 'set')
 	{
-		rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
+		rollmgr_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
 		return(0);
 	}
-	$life = $kh{"keyrec_type"};
-	$life = substr($life,0,3) . "life";
-	if(!defined($kh{$life}))
+	if(!defined($set{'keys'}) || ($set{'keys'} eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a $life record");
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
 		return(0);
 	}
 
 	#
-	# Get the key's generation time and the current time.
+	# Check each key in the signing set to see if one has expired.
+	# If any have, we'll start rollover.
 	#
-	$gentime = $kh{"keyrec_gensecs"};
-	$cronus	 = time;
-
-	#
-	# Calculate the key's expiration time.
-	#
-	$exptime = $kh{$life};
-	$krsecs = $gentime + $exptime;
-
-	#
-	# Calculate the log message we should give.
-	#
-	$waitsecs = $krsecs - $cronus;
-	if($waitsecs >= 0)
+	@signset = split / /, $set{'keys'};
+	foreach my $keyname (@signset)
 	{
-		$chronostr = timetrans($waitsecs);
-		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
-		display("expiration $rname 0 $waitsecs");
-	}
-	else
-	{
-		$waitsecs = $cronus - $krsecs;
-		$chronostr = timetrans($waitsecs);
-		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
-		display("phase $rname 0");
+		my $khr;				# Ref to key's hash.
+		my %kh;					# Key's hash.
+
+		my $life;				# Name of keylife field.
+		my $cronus;				# Current time.
+		my $gentime;				# Key's generation date.
+		my $exptime;				# Key's lifespan.
+		my $krsecs;				# Key's expiration date.
+		my $waitsecs;				# Time to expiration.
+		my $chronostr;				# Text expiration time.
+
+		#
+		# Get the key's keyrec hash.
+		#
+		$khr = keyrec_fullrec($keyname);
+		%kh = %$khr;
+
+		#
+		# Ensure that required keyrec fields exist.
+		#
+		if(!defined($kh{"keyrec_gensecs"}))
+		{
+			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
+			return(0);
+		}
+		$life = $kh{"keyrec_type"};
+		$life = substr($life,0,3) . "life";
+		if(!defined($kh{$life}))
+		{
+			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a $life record");
+			return(0);
+		}
+
+		#
+		# Get the key's generation time and the current time.
+		#
+		$gentime = $kh{"keyrec_gensecs"};
+		$cronus	 = time;
+
+		#
+		# Calculate the key's expiration time.
+		#
+		$exptime = $kh{$life};
+		$krsecs = $gentime + $exptime;
+
+		#
+		# Calculate the log message we should give.
+		#
+		$waitsecs = $krsecs - $cronus;
+		if($waitsecs >= 0)
+		{
+			$chronostr = timetrans($waitsecs);
+			rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
+			display("expiration $rname 0 $waitsecs");
+		}
+		else
+		{
+			$waitsecs = $cronus - $krsecs;
+			$chronostr = timetrans($waitsecs);
+			rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
+			display("phase $rname 0");
+		}
+
+		#
+		# The key has expired if the current time has passed the
+		# key's lifespan.
+		# The key has not expired if the key's lifespan has yet
+		# to reach the current time.
+		#
+		$expired = 1 if($cronus > $krsecs);
+
 	}
 
 	#
-	# Return success (expired) if the current time has passed the
-	# key's lifespan.
-	# Return failure (not expired) if the key's lifespan has yet
-	# to reach the current time.
+	# Return the success/failure indication.
 	#
-	return(1) if($cronus > $krsecs);
-	return(0);
+	return($expired);
 }
 
 #-----------------------------------------------------------------------------
@@ -812,6 +849,9 @@ sub newphase
 	my $krname;					# Name of key's rollrec.
 	my $krec;					# Key's keyrec.
 
+	my $setrec;					# Set's keyrec.
+	my $setlist;					# Set's key list.
+
 	my $exptime;					# Key's time to expiry.
 	my $chronostr;					# Pretty roll-over time.
 
@@ -836,26 +876,51 @@ sub newphase
 	#
 	# If we're at the start of a roll-over, we'll log the expiration time.
 	#
-	if($phase == 0)
-	{
-		#
-		# Get the rollin' key's keyrec for our zone.
-		#
-		$krname = $rr{'keyrec'};
-		$krec = zonekeykr($rname,$krname,"zskcur");
-		if($krec == 0)
-		{
-			rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for \"zskcur\" in \"$krname\"");
-			return(0);
-		}
+	return if($phase != 0);
 
-		#
-		# Tell the log when the zone will expire, based on the lifespan.
-		#
-		$exptime  = $krec->{'zsklife'};
-		$chronostr = timetrans($exptime);
-		rollmgr_log(LOG_INFO,$rname,"    expiration in $chronostr\n");
+	#
+	# Get the rollin' key's keyrec for our zone.
+	#
+	$krname = $rr{'keyrec'};
+	$setrec = zonekeykr($rname,$krname,"zskcur");
+	if($setrec == 0)
+	{
+		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for the zskcur signing set in \"$krname\"");
+		return(0);
 	}
+
+	#
+	# Make sure we've got an actual set keyrec and keys.
+	#
+	if($setrec->{'keyrec_type'} ne 'set')
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to phase $phase");
+		return(0);
+	}
+	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to phase $phase");
+		return(0);
+	}
+
+	#
+	# Find the key with the shortest lifetime.
+	#
+	$setlist = $setrec->{'keys'};
+	foreach my $key (split / /, $setlist)
+	{
+		my $lifetime = keyrec_recval($key,'zsklife');
+		if(($exptime == 0) || ($lifetime < $exptime))
+		{
+			$exptime = $lifetime;
+		}
+	}
+
+	#
+	# Tell the log when the zone will expire, based on the lifespan.
+	#
+	$chronostr = timetrans($exptime);
+	rollmgr_log(LOG_INFO,$rname,"    expiration in $chronostr\n");
 }
 
 #-----------------------------------------------------------------------------
@@ -893,6 +958,7 @@ sub signer
 	#
 	$cmdstr = "zonesigner $zsflag $zonefile $zonesigned";
 	rollmgr_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
+
 	$ret = `$cmdstr`;
 
 	return($ret);
@@ -901,9 +967,9 @@ sub signer
 #-----------------------------------------------------------------------------
 # Routine:	zonekeykr()
 #
-# Purpose:	This routine returns the specified key's keyrec from specified
-#		zone from the specified keyrec file.  This routine is big on
-#		specified things.
+# Purpose:	This routine returns the specified key's keyrec from the
+#		specified zone from the specified keyrec file.
+#		This routine is big on specified things.
 #
 sub zonekeykr
 {
@@ -925,7 +991,7 @@ sub zonekeykr
 	$krec = keyrec_fullrec($rname);
 	if(!defined($krec))
 	{
-		rollmgr_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for zone");
+		rollmgr_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for zone \"$rname\"");
 		return(0);
 	}
 	%kh   = %$krec;
@@ -1909,7 +1975,7 @@ sub cmd_zonestatus
 	{
 		rollrec_unlock();
 		rollmgr_sendresp(ROLLCMD_RC_RRFOPEN,"unable to open rollrec file $rollrecfile");
-		rollmgr_log(LOG_ALWAYS,"<command>","unable to open rollrec fiile $rollrecfile\n");
+		rollmgr_log(LOG_ALWAYS,"<command>","unable to open rollrec file $rollrecfile\n");
 		return;
 	}
 
@@ -2462,18 +2528,18 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-Net::DNS::SEC::Tools::conf.pm(3),
-Net::DNS::SEC::Tools::defaults.pm(3),
-Net::DNS::SEC::Tools::keyrec.pm(3),
-Net::DNS::SEC::Tools::rollmgr.pm(3),
-Net::DNS::SEC::Tools::rollrec.pm(3)
+B<blinkenlights(8)>,
+B<named(8)>,
+B<rndc(8)>,
+B<rollchk(8)>,
+B<rollctl(8)>,
+B<rollinit(8)>,
+B<zonesigner(8)>
 
-blinkenlights(8),
-named(8),
-rndc(8),
-rollchk(8),
-rollctl(8),
-rollinit(8),
-zonesigner(8)
+B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::defaults.pm(3)>,
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
+B<Net::DNS::SEC::Tools::rollmgr.pm(3)>,
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
 =cut
