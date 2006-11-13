@@ -13,6 +13,7 @@
 #		- non-positive maxttl
 #		- non-existent zone file
 #		- non-existent keyrec file
+#		- invalid display value
 #		- in roll-over, but without a phasestart
 #
 
@@ -74,8 +75,11 @@ $ret = main();
 exit($ret);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
+#
+# Purpose:	This routine does everything -- checks options, parses the
+#		rollrec file, runs checks, and gives the results.  Of course,
+#		it has a little help from its friends.
 #
 sub main()
 {
@@ -128,7 +132,6 @@ sub main()
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	getrollrecs()
 #
 # Purpose:	This routine reads a rollrec file and copies the rollrec
@@ -191,7 +194,6 @@ sub getrollrecs
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	runchecks()
 #
 # Purpose:	This routine runs a number of checks on the roll and skip
@@ -238,7 +240,6 @@ sub runchecks
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	rollrec_validate()
 #
 # Purpose:	This routine checks the validity of a rollrec.
@@ -246,6 +247,7 @@ sub runchecks
 #			- invalid roll-over phase
 #			- non-positive maxttl
 #			- non-existent rollrec file
+#			- invalid display value
 #			- zone file checks:
 #				- file exists
 #				- file is a regular file
@@ -264,6 +266,7 @@ sub rollrec_validate
 	my $errs = 0;				# Error count.
 
 	my $curphase;				# Rollrec's current phase.
+	my $dispflag;				# Rollrec's display flag.
 	my $krfile;				# Rollrec's keyrec file.
 	my $maxttl;				# Rollrec's maximum TTL.
 	my $zonefile;				# Rollrec's zonefile.
@@ -272,6 +275,7 @@ sub rollrec_validate
 	# Get the rollrec data.
 	#
 	$curphase = $rr{'curphase'};
+	$dispflag = $rr{'display'};
 	$krfile	  = $rr{'keyrec'};
 	$maxttl	  = $rr{'maxttl'};
 	$zonefile = $rr{'zonefile'};
@@ -292,6 +296,18 @@ sub rollrec_validate
 	{
 		qprint("$rrname:  invalid maxttl \"$curphase\"\n");
 		$errs++;
+	}
+
+	#
+	# Make sure we've got a valid current phase.
+	#
+	if(defined($dispflag))
+	{
+		if(($dispflag != 0) && ($dispflag != 1))
+		{
+			qprint("$rrname:  invalid display flag \"$dispflag\"\n");
+			$errs++;
+		}
 	}
 
 	#
@@ -316,8 +332,15 @@ sub rollrec_validate
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	checkfile()
+#
+# Purpose:	Check a file for validity.  This is defined as:
+#
+#			- the file exists
+#			- the file is a regular file
+#			- the file isn't empty
+#
+#		A boolean indicates if the file is valid (1) or not (0).
 #
 sub checkfile
 {
@@ -359,10 +382,11 @@ sub checkfile
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	dumpdata()
 #
 # Purpose:	Show the records we found in the rollrec file.
+#
+#		This routine is only used during debugging.
 #
 sub dumpdata
 {
@@ -387,8 +411,9 @@ sub dumpdata
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	qprint()
+#
+# Purpose:	Print a line of text iff the -quiet option wasn't given.
 #
 sub qprint
 {
@@ -398,8 +423,10 @@ sub qprint
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	vprint()
+#
+# Purpose:	Print a line of text iff the -quiet option wasn't given and
+#		the -verbose option was.
 #
 sub vprint
 {
@@ -409,7 +436,6 @@ sub vprint
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -424,7 +450,6 @@ sub version
 
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
 #
 sub usage
@@ -477,6 +502,11 @@ No zones are defined in the specified I<rollrec> file.
 =item * invalid roll-over phase
 
 A zone has an invalid roll-over phase.  These phases may be 0, 1, 2, 3, or 4;
+any other value is invalid.
+
+=item * invalid display flag
+
+A zone has an invalid display flag.  This flag may be 0 or 1;
 any other value is invalid.
 
 =item * non-positive maxttl
@@ -539,10 +569,12 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-B<Net::DNS::SEC::Tools::rollrec.pm(3)>
-
 B<lsroll(8)>,
 B<rollerd(8)>,
 B<rollinit(8)>
+
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
+
+B<Net::DNS::SEC::Tools::file-rollrec(3)>
 
 =cut
