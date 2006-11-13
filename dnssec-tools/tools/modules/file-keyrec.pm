@@ -76,6 +76,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<lskrf(1)>,
+B<signset-editor(8)>,
 B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::keyrec(3)>
