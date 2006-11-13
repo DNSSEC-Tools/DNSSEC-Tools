@@ -94,7 +94,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 =head1 SEE ALSO
 
 B<blinkenlights(8)>,
-B<lsrrf(1)>,
+B<lsroll(1)>,
 B<rollerd(8)>,
 B<zonesigner(8)>
 
