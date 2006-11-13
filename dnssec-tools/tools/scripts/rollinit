@@ -43,10 +43,10 @@ my @opts =
 # Flag values for the various options.  Variable/option connection should
 # be obvious.
 #
-my $zoneopt;
-my $kropt;
-my $outfile;
-my $skipopt = 0;
+my $zoneopt;				# Zone name option value.
+my $kropt;				# Keyrec file option value.
+my $outfile;				# Output file option value.
+my $skipopt = 0;			# Roll/skip record flag.
 my $version = 0;			# Display the version number.
 
 my $argc;				# Number of command line arguments.
@@ -60,12 +60,12 @@ $ret = main();
 exit($ret);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
+#
+# Purpose:	Main controller program.
 #
 sub main()
 {
-
 	#
 	# Check our options.
 	#
@@ -89,7 +89,6 @@ sub main()
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	doopts()
 #
 # Purpose:	This routine shakes and bakes our command line options.
@@ -113,6 +112,9 @@ sub doopts
 	$skipopt = $options{'skip'}	|| 0;
 	$version = $options{'Version'};
 
+	#
+	# Set a flag if neither -zone nor -keyrec were given.
+	#
 	if(($zoneopt eq "") && ($kropt eq ""))
 	{
 		$noopts = 1;
@@ -137,7 +139,6 @@ sub doopts
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	setout()
 #
 # Purpose:	Set up the output file descriptor.  If the -out option wasn't
@@ -151,7 +152,6 @@ sub setout
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	newrollrec()
 #
 # Purpose:	This generates and prints a rollrec record.  It figures out
@@ -208,14 +208,14 @@ sub newrollrec
 	print OUT "$rectype	\"$zone\"\n";
 	print OUT "	zonefile	\"$zonefile\"\n";
 	print OUT "	keyrec		\"$krfile\"\n";
-	print OUT "	curphase	\"-1\"\n";
+	print OUT "	curphase	\"0\"\n";
 	print OUT "	maxttl		\"0\"\n";
+	print OUT "	display		\"1\"\n";
 	print OUT "	phasestart	\"new\"\n";
 	print OUT "\n";
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -230,7 +230,6 @@ sub version
 
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
 #
 sub usage
@@ -254,7 +253,7 @@ sub usage
 
 =head1 NAME
 
-rollinit - List the I<rollrec>s in a DNSSEC-Tools I<rollrec> file.
+rollinit - Create new I<rollrec> records for a DNSSEC-Tools I<rollrec> file.
 
 =head1 SYNOPSIS
 
@@ -262,8 +261,8 @@ rollinit - List the I<rollrec>s in a DNSSEC-Tools I<rollrec> file.
 
 =head1 DESCRIPTION
 
-I<rollinit> creates new I<rollrec> entries for a I<rollrec> file.  This
-I<rollrec> file will be used by I<rollerd> to manage key roll-over for
+B<rollinit> creates new I<rollrec> entries for a I<rollrec> file.  This
+I<rollrec> file will be used by B<rollerd> to manage key roll-over for
 the named domains.
 
 A I<rollrec> entry has this format:
@@ -271,17 +270,20 @@ A I<rollrec> entry has this format:
     roll "example.com"
 	zonefile	"example.com.signed"
 	keyrec		"example.com.krf"
-	curphase	"1"
-	maxttl		"3600"
+	curphase	"0"
+	maxttl		"604800"
+	display		"1"
 	phasestart	"Mon Jan 9 16:00:00 2006"
 
 The I<zonefile> and I<keyrec> fields are set according to command-line options
 and arguments.  The manner of generating the I<rollrec>'s actual values is a
-little complex and is described in the ZONEFILE AND KEYREC FIELDS section below.
-The I<curphase> field is set to -1 to indicate that the entry is now.
-The I<maxttl> and I<phasestart> fields are set to dummy values.
+little complex and is described in the ZONEFILE AND KEYREC FIELDS section
+below.  The I<curphase> field is set to 0 to indicate that the zone is in
+normal operation (non-rollover.)  The I<display> field is set to indicate that
+B<blinkenlights> should display the record.  The I<maxttl> and I<phasestart>
+fields are set to dummy values.
 
-The keywords B<roll> and B<skip> indicate whether I<rollerd> should process
+The keywords B<roll> and B<skip> indicate whether B<rollerd> should process
 or ignore a particular I<rollrec> entry.  B<roll> records are created by
 default; B<skip> entries are created if the I<-skip> option is specified.
 
@@ -297,7 +299,7 @@ The default values use the I<rollrec>'s zone name, taken from the command
 line, as a base.  B<.signed> is appended to the domain name for the zone file;
 B<.krf> is appended to the domain name for the I<keyrec> file.
 
-If I<-zone> or I<-keyrec> are specified, then the options values given are
+If I<-zone> or I<-keyrec> are specified, then the options values are
 used in one of two ways:
 
 =over 4
@@ -316,11 +318,11 @@ is being created.
 
 =back
 
-See the EXAMPLES section for examples of how options are used by I<rollinit>.
+See the EXAMPLES section for examples of how options are used by B<rollinit>.
 
 =head1 OPTIONS
 
-I<rollinit> may be given the following options:
+B<rollinit> may be given the following options:
 
 =over 4
 
@@ -336,8 +338,8 @@ See the ZONEFILE AND KEYREC FIELDS and EXAMPLES sections for more details.
 
 =item  I<-skip>
 
-By default, I<roll> records are generated.  If this option is given, then
-I<skip> records will be generated instead.
+By default, B<roll> records are generated.  If this option is given, then
+B<skip> records will be generated instead.
 
 =item  I<-out E<lt>output-fileE<gt>>
 
@@ -355,27 +357,28 @@ Display a usage message.
 
 =head1 EXAMPLES
 
-The following options should make clear how I<rollinit> deals with options and
+The following options should make clear how B<rollinit> deals with options and
 the new I<rollrec>s.  Example 1 will show the complete new I<rollrec> record.
 For the sake of brevity, the remaining examples will only show the newly
 created I<zonefile> and I<keyrec> records.
 
 =head2 Example 1.  One domain, no options
 
-This example shows the I<rollrec> generated by giving I<rollinit> a single
+This example shows the I<rollrec> generated by giving B<rollinit> a single
 domain, without any options.
 
     $ rollinit example.com
 	roll    "example.com"
 	    zonefile        "example.com.signed"
 	    keyrec          "example.com.krf"
-	    curphase        "-1"
+	    curphase        "0"
 	    maxttl          "0"
+	    display	    "1"
 	    phasestart      "new"
 
 =head2 Example 2.  One domain, -zone option
 
-This example shows the I<rollrec> generated by giving I<rollinit> a single
+This example shows the I<rollrec> generated by giving B<rollinit> a single
 domain, with the I<-zone> option.
 
     $ rollinit -zone signed-example example.com
@@ -385,27 +388,27 @@ domain, with the I<-zone> option.
 
 =head2 Example 3.  One domain, -keyrec option
 
-This example shows the I<rollrec> generated by giving I<rollinit> a single
+This example shows the I<rollrec> generated by giving B<rollinit> a single
 domain, with the I<-keyrec> option.
 
-    $ rollinit -keyrec example.com
+    $ rollinit -keyrec x-rrf example.com
 	roll    "example.com"
 	    zonefile        "example.com.signed"
-	    keyrec          "xkrf"
+	    keyrec          "x-rrf"
 
 =head2 Example 4.  One domain, -zone and -keyrec options
 
-This example shows the I<rollrec> generated by giving I<rollinit> a single
+This example shows the I<rollrec> generated by giving B<rollinit> a single
 domain, with the I<-zone> and I<-keyrec> options.
 
-    $ rollinit -zone signed-example -keyrec example.com
+    $ rollinit -zone signed-example -keyrec example.rrf example.com
 	roll    "example.com"
 	    zonefile        "signed-example"
 	    keyrec          "xkrf"
 
 =head2 Example 5.  One domain, -skip option
 
-This example shows the I<rollrec> generated by giving I<rollinit> a single
+This example shows the I<rollrec> generated by giving B<rollinit> a single
 domain, with the I<-zone> and I<-keyrec> options.
 
     $ rollinit -skip example.com
@@ -415,7 +418,7 @@ domain, with the I<-zone> and I<-keyrec> options.
 
 =head2 Example 6.  Multiple domains, no options
 
-This example shows the I<rollrec>s generated by giving I<rollinit> several
+This example shows the I<rollrec>s generated by giving B<rollinit> several
 domains, without any options.
 
     $ rollinit example1.com example2.com
@@ -429,7 +432,7 @@ domains, without any options.
 
 =head2 Example 7.  Multiple domains, -zone option
 
-This example shows the I<rollrec>s generated by giving I<rollinit> several
+This example shows the I<rollrec>s generated by giving B<rollinit> several
 domains, with the I<-zone> option.
 
     $ rollinit -zone =-signed example1.com example2.com
@@ -443,7 +446,7 @@ domains, with the I<-zone> option.
 
 =head2 Example 8.  Multiple domains, -keyrec option
 
-This example shows the I<rollrec>s generated by giving I<rollinit> several
+This example shows the I<rollrec>s generated by giving B<rollinit> several
 domains, with the I<-keyrec> option.
 
     $ rollinit -keyrec zone-=-keyrec example1.com example2.com
@@ -457,7 +460,7 @@ domains, with the I<-keyrec> option.
 
 =head2 Example 9.  Multiple domains, -zone and -keyrec options
 
-This example shows the I<rollrec>s generated by giving I<rollinit> several
+This example shows the I<rollrec>s generated by giving B<rollinit> several
 domains, with the I<-zone> and I<-keyrec> options.
 
     $ rollinit -zone Z-= -keyrec =K example1.com example2.com
@@ -471,7 +474,7 @@ domains, with the I<-zone> and I<-keyrec> options.
 
 =head2 Example 10.  Single domain, -zone and -keyrec options with template
 
-This example shows the I<rollrec>s generated by giving I<rollinit> a single
+This example shows the I<rollrec> generated by giving B<rollinit> a single
 domain, with the I<-zone> and I<-keyrec> options.  The options use the
 multi-domain B<=> template.
 
@@ -485,20 +488,20 @@ I<keyrec> field values containing the B<=>.
 
 =head2 Example 11.  Multiple domains, -zone and -keyrec options without template
 
-This example shows the I<rollrec>s generated by giving I<rollinit> several
+This example shows the I<rollrec>s generated by giving B<rollinit> several
 domains, with the I<-zone> and I<-keyrec> options.  The options do not use the
 multi-domain B<=> template.
 
-    $ rollinit example1.com example2.com
+    $ rollinit -zone ex.zone -keyrec ex.krf example1.com example2.com
 	roll    "example1.com"
-		zonefile        "exzone"
-		keyrec          "exkr"
+		zonefile        "ex.zone"
+		keyrec          "ex.krf"
 
 	roll    "example2.com"
-		zonefile        "exzone"
-		keyrec          "exkr"
+		zonefile        "ex.zone"
+		keyrec          "ex.krf"
 
-This is may not be what is wanted, since it results in the same I<zonefile>
+This may not be what is wanted, since it results in the same I<zonefile>
 and I<keyrec> fields values for each I<rollrec>.
 
 =head1 COPYRIGHT
@@ -512,9 +515,15 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<lsroll(1)>,
+B<rollerd(8)>,
+B<rollchk(8)>,
+B<zonesigner(8)>
+
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
-B<lsroll(8)>, B<rollerd(8)>, B<rollchk(8)>
+B<Net::DNS::SEC::Tools::file-keyrec.pm(5)>,
+B<Net::DNS::SEC::Tools::file-rollrec.pm(5)>
 
 =cut
