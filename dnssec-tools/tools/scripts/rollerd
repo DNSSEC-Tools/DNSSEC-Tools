@@ -1577,9 +1577,9 @@ sub cmd_logmsg
 	rollmgr_log(LOG_TMI,"<command>","logmsg command received");
 
 	#
-	# Check the validity of the caller's log level.  If it's invalid,
+	# Dig the log level and message out of our argument.
 	#
-	$logstr =~ /^\((\w+)\)(.*)$/;
+	$logstr =~ /^\((\-\w+)\)(.*)$/;
 	$loglvl = $1;
 	$logmsg = $2;
 
