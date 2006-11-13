@@ -51,7 +51,7 @@ my $version	= 0;			# Display the version number.
 #######################################################################
 
 #
-# blinkenlight's configuration file.
+# blinkenlights' configuration file.
 #
 my $CONFFILE	= "blinkenlights.conf";
 my $DEMOCONFIG	= "./rc.blinkenlights";
@@ -370,7 +370,7 @@ sub buildmainwind
 				  -underline => 0);
 	$zdsp = $mbar->Menubutton(-text	     => 'Zone Display',
 				  -tearoff   => 1,
-				  -underline => 0);
+				  -underline => 5);
 	$help = $mbar->Menubutton(-text      => 'Help',
 				  -tearoff   => 0,
 				  -underline => 0);
@@ -774,9 +774,10 @@ sub zdisp_select
 	#
 	# Create a new dialog box to hold our help info.
 	#
-	$subwin = $wm->Dialog(-title => "Help!",
-			   -default_button => "Okay",
-			   -buttons => ["Okay", "Cancel"]);
+	$subwin = $wm->Dialog(-title => "Zone Display Selection",
+			      -default_button => "Okay",
+			      -height => "10",
+			      -buttons => ["Okay", "Cancel"]);
 
 	#
 	# Put a label in the label stripe.
@@ -787,12 +788,11 @@ sub zdisp_select
 	#
 	# Now make the containers for the window.
 	#
-	$znframe = $subwin->Scrolled("Frame",
-				     -relief      => 'raised',
-				     -borderwidth => 1,
-				     -height	  => 245,
-				     -scrollbars  => 'e');
-	$znframe->pack(-fill => 'both');
+	$znframe = $subwin->Scrolled("Frame", -scrollbars => 'oe');
+	$znframe->pack(-anchor	=> 'w',
+		       -side	=> 'top',
+		       -fill	=> 'both',
+		       -expand	=> 1);
 
 	#
 	# Add the zone names to the scrolled box.
@@ -800,24 +800,20 @@ sub zdisp_select
 	%zonebox = ();
 	foreach my $zn (sort(keys(%display)))
 	{
-		$zonebox{$zn} = $znframe->Checkbutton(-text => $zn);
-		$zonebox{$zn}->select() if($display{$zn});
+		$zonebox{$zn} = $znframe->Checkbutton(-text => $zn,
+						    -variable => \$display{$zn},
+						    -anchor => 'nw',
+						);
 		$zonebox{$zn}->pack(-side => 'top', -fill => 'x', -expand => 1);
 	}
-	$znframe->pack(-fill => 'x', -expand => 1);
+
+	$znframe->pack(-anchor => 'n', -side => 'top',
+		       -fill => 'both', -expand => 1);
 
 	#
 	# Display our modal dialog.
 	# 
 	return if($subwin->Show() eq "Cancel");
-
-	#
-	# Adjust the display hash according to what the user selected.
-	# 
-	foreach my $zn (sort(keys(%zonebox)))
-	{
-		$display{$zn} = $zonebox{$zn}{'Value'};
-	}
 
 	#
 	# Lock and load the rollrec file.
@@ -830,7 +826,7 @@ sub zdisp_select
 	#
 	foreach my $zn (rollrec_names())
 	{
-		rollrec_setval($zn,'display',$zonebox{$zn}{'Value'});
+		rollrec_setval($zn,'display',$display{$zn});
 	}
 
 	#
@@ -2116,6 +2112,11 @@ display for that zone.  Skipped zones, zones listed in the rollrec file but
 which are not in rollover or normal operation, are displayed but have very
 little useful information to display.
 
+The user may also select a set of zones to hide from the display.  These
+zones, if in the rolling state, will continue to roll; however, their zone
+information will not be displayed.  Display state for each zone will persist
+across blinkenlights executions.
+
 Menu commands are available for controlling rollerd.  The commands which
 operate on a single zone may be executed by keyboard shortcuts.  The zone
 may be selected either by clicking in its \"zone stripe\" or by choosing from
@@ -2332,6 +2333,30 @@ and to send commands to rollerd.  These commands are discusses in this section.
 		  rollerd's execution is halted.  As a result, blinkenlights'
 		  execution will also be halted.
 
+	Zone Display Menu
+
+		The commands in this menu are GUI interfaces for displaying or
+		hiding zone stripes.  The commands allow all, some, or none of
+		the zone stripes to be displayed.  Undisplayed rolling zones
+		will continue to roll, but they will do so without the
+		blinkenlights window indicating this.
+
+		* Zone Selection
+
+	          A dialog box is created that holds a list of the zones
+	          currently managed by rollerd.  The user may select which
+	          zones should be displayed by clicking on the zone's checkbox.
+	          Zones with a selected checkbox will be displayed; zones
+	          without a selected checkbox will not be displayed.
+
+		* Display All Zones
+
+		  All zones will be displayed in the blinkenlights window.
+
+		* Hide All Zones
+
+		  No zones will be displayed in the blinkenlights window.
+
 	Help Menu
 
 		The commands in this menu provide assistance to the user.
@@ -2513,6 +2538,11 @@ I<rollrec> file.) As a zone's rollover status changes, B<blinkenlights> will
 update its display for that zone.  Skipped zones, zones listed in the
 I<rollrec> file but which are not in rollover or normal operation, are
 displayed but have very little useful information to display.
+
+The user may also select a set of zones to hide from the display.  These
+zones, if in the rolling state, will continue to roll; however, their zone
+information will not be displayed.  Display state for each zone will persist
+across B<blinkenlights> executions.
 
 Menu commands are available for controlling B<rollerd>.  The commands which
 operate on a single zone may be executed by keyboard shortcuts.  The zone may
@@ -2768,6 +2798,38 @@ Halt Rollerd
 
 B<rollerd>'s execution is halted.  As a result, B<blinkenlights>' execution
 will also be halted.
+
+=back
+
+=head2 Zone Display Menu
+
+The commands in this menu are GUI interfaces for displaying or hiding zone
+stripes.  The commands allow all, some, or none of the zone stripes to be
+displayed.  Undisplayed rolling zones will continue to roll, but they will
+do so without the B<blinkenlights> window indicating this.
+
+=over 4
+
+=item *
+
+Zone Selection
+
+A dialog box is created that holds a list of the zones currently managed by
+B<rollerd>.  The user may select which zones should be displayed by clicking
+on the zone's checkbox.  Zones with a selected checkbox will be displayed;
+zones without a selected checkbox will not be displayed.
+
+=item *
+
+Display All Zones
+
+All zones will be displayed in the B<blinkenlights> window.
+
+=item *
+
+Hide All Zones
+
+No zones will be displayed in the B<blinkenlights> window.
 
 =back
 
