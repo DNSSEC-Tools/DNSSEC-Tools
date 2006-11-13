@@ -19,6 +19,7 @@ use Getopt::Long;
 
 use Tk;
 use Tk::Dialog;
+use Tk::Pane;
 use Tk::Table;
 
 use Net::DNS::SEC::Tools::conf;
@@ -142,6 +143,7 @@ my $null;						# Empty frame.
 my $file;						# File menu.
 my $disp;						# Edit menu.
 my $cmds;						# Commands menu.
+my $zdsp;						# Display menu.
 my $help;						# Help menu.
 
 #
@@ -207,6 +209,7 @@ my %zonerows = ();				# Zones' starting-row indices.
 my @zonenames = ();				# Screen-order list of zones.
 my $zonecnt = 1;				# Count of zones we're watching.
 my %keyrecs = ();				# Zones' keyrec filenames.
+my %display = ();				# Zones' display flag.
 
 #
 # Saved zone data, needed for repaints.
@@ -332,7 +335,6 @@ sub buildmainwind
 	my $curfile;					# Current keyrec.
 	my $nulline;					# Empty line.
 
-	my $zn_entry;					# Zone menu entry.
 	my $colormsg;					# Color menu message.
 	my $modmsg;					# Modify menu message.
 	my $skipmsg;					# Skip menu message.
@@ -364,6 +366,9 @@ sub buildmainwind
 				  -tearoff   => 0,
 				  -underline => 0);
 	$cmds = $mbar->Menubutton(-text	     => 'Zone Control',
+				  -tearoff   => 1,
+				  -underline => 0);
+	$zdsp = $mbar->Menubutton(-text	     => 'Zone Display',
 				  -tearoff   => 1,
 				  -underline => 0);
 	$help = $mbar->Menubutton(-text      => 'Help',
@@ -430,24 +435,24 @@ sub buildmainwind
 	#
 	# Add the Zone Control menu entries.
 	#
-	$zn_entry = $cmds->command(-label => 'Roll Selected Zone',
-				   -command => [\&zone_rollcmd, "rollzone"],
-			           -accelerator => 'Ctrl+R');
-	$zn_entry = $cmds->command(-label => 'Roll All Zones',
-				   -command => [\&zone_rollcmd, "rollall"]);
-	$zn_entry = $cmds->command(-label => 'Run the Queue',
-				   -command => [\&zone_rollcmd, "runqueue"]);
+	$cmds->command(-label => 'Roll Selected Zone',
+		       -command => [\&zone_rollcmd, "rollzone"],
+		       -accelerator => 'Ctrl+R');
+	$cmds->command(-label => 'Roll All Zones',
+		       -command => [\&zone_rollcmd, "rollall"]);
+	$cmds->command(-label => 'Run the Queue',
+		       -command => [\&zone_rollcmd, "runqueue"]);
 	$cmds->separator();
 
-	$zn_entry = $cmds->command(-label => 'Skip Selected Zone',
-				   -command => [\&zone_rollcmd, "skipzone"],
-			           -accelerator => 'Ctrl+S');
-	$zn_entry = $cmds->command(-label => 'Skip All Zones',
-				   -command => [\&zone_rollcmd, "skipall"]);
+	$cmds->command(-label => 'Skip Selected Zone',
+		       -command => [\&zone_rollcmd, "skipzone"],
+		       -accelerator => 'Ctrl+S');
+	$cmds->command(-label => 'Skip All Zones',
+		       -command => [\&zone_rollcmd, "skipall"]);
 	$cmds->separator();
 
-	$zn_entry = $cmds->command(-label => 'Halt Rollerd',
-				   -command => [\&zone_rollcmd, "halt"]);
+	$cmds->command(-label => 'Halt Rollerd',
+		       -command => [\&zone_rollcmd, "halt"]);
 
 	$cmds->pack(-side => 'left');
 
@@ -458,6 +463,18 @@ sub buildmainwind
 	{
 		$cmds->configure(-state => 'disabled');
 	}
+
+	##################################################
+	#
+	# Add the Zone Display menu entries.
+	#
+	$zdsp->command(-label	=> 'Zone Selection...',
+		       -command => \&zdisp_select);
+	$zdsp->command(-label	=> 'Display All Zones',
+		       -command => [\&zdisp_setter, 1]);
+	$zdsp->command(-label	=> 'Hide All Zones',
+		       -command => [\&zdisp_setter, 0]);
+	$zdsp->pack(-side => 'left');
 
 	##################################################
 	#
@@ -694,6 +711,141 @@ sub zone_rollcmd
 	}
 }
 
+#---------------------------------------------------------------------------
+# Routine:	zdisp_setter()
+#
+# Purpose:	Handle the Display All/None menu choices.
+#
+sub zdisp_setter
+{
+	my $dispstate = shift;				# Display state.
+
+# print "zdisp_setter:  down in\n";
+
+	#
+	# Set the internal display state for all zones.
+	#
+	foreach my $zone (keys(%display))
+	{
+		$display{$zone} = $dispstate;
+	}
+
+	#
+	# Lock and load the rollrec file.
+	#
+	rollrec_lock();
+	rollrec_read($rrfile);
+
+	#
+	# Set the display state in the rollrec file.
+	#
+	foreach my $rname (rollrec_names())
+	{
+		rollrec_setval($rname,'display',$dispstate);
+	}
+
+	#
+	# Let others use the rollrec file.
+	#
+	rollrec_close();
+	rollrec_unlock();
+
+	#
+	# Update the screen.
+	#
+	calcrows();
+	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	zdisp_select()
+#
+# Purpose:	Display the zone-display window and let the user select
+#		which zones to display or hide.
+#
+sub zdisp_select
+{
+	my $subwin;					# Display dialog.
+	my $znframe;					# Scrolled frame.
+	my $wdgt;					# Widget for window.
+
+	my %zonebox;					# Zone checkboxes.
+
+	#
+	# Create a new dialog box to hold our help info.
+	#
+	$subwin = $wm->Dialog(-title => "Help!",
+			   -default_button => "Okay",
+			   -buttons => ["Okay", "Cancel"]);
+
+	#
+	# Put a label in the label stripe.
+	#
+	$wdgt = $subwin->Label(-text => 'Checked zones will be displayed');
+	$wdgt->pack();
+
+	#
+	# Now make the containers for the window.
+	#
+	$znframe = $subwin->Scrolled("Frame",
+				     -relief      => 'raised',
+				     -borderwidth => 1,
+				     -height	  => 245,
+				     -scrollbars  => 'e');
+	$znframe->pack(-fill => 'both');
+
+	#
+	# Add the zone names to the scrolled box.
+	#
+	%zonebox = ();
+	foreach my $zn (sort(keys(%display)))
+	{
+		$zonebox{$zn} = $znframe->Checkbutton(-text => $zn);
+		$zonebox{$zn}->select() if($display{$zn});
+		$zonebox{$zn}->pack(-side => 'top', -fill => 'x', -expand => 1);
+	}
+	$znframe->pack(-fill => 'x', -expand => 1);
+
+	#
+	# Display our modal dialog.
+	# 
+	return if($subwin->Show() eq "Cancel");
+
+	#
+	# Adjust the display hash according to what the user selected.
+	# 
+	foreach my $zn (sort(keys(%zonebox)))
+	{
+		$display{$zn} = $zonebox{$zn}{'Value'};
+	}
+
+	#
+	# Lock and load the rollrec file.
+	#
+	rollrec_lock();
+	rollrec_read($rrfile);
+
+	#
+	# Set the display state in the rollrec file.
+	#
+	foreach my $zn (rollrec_names())
+	{
+		rollrec_setval($zn,'display',$zonebox{$zn}{'Value'});
+	}
+
+	#
+	# Let others use the rollrec file.
+	#
+	rollrec_close();
+	rollrec_unlock();
+
+	#
+	# Update the screen.
+	#
+	calcrows();
+	repaint();
+}
+
 ##############################################################################
 #
 # Screen-drawing routines
@@ -785,6 +937,8 @@ sub readrrf
 	my $timeflag = shift;			# Flag for using current time.
 	my $rr;					# Rollrec reference.
 
+# print "readrrf:  down in\n";
+
 	#
 	# Initialize some data.
 	#
@@ -834,6 +988,18 @@ sub readrrf
 		#
 		$krf = $rr->{'keyrec'};
 		$keyrecs{$zone} = $krf;
+
+		#
+		# Don't add this zone if it shouldn't be displayed.
+		# If there isn't a display entry in the zone's rollrec,
+		# we'll assume it should be displayed.
+		#
+		$display{$zone} = 1;
+		if(defined($rr->{'display'}) && ($rr->{'display'} == 0))
+		{
+			$display{$zone} = 0;
+		}
+		next if($display{$zone} == 0);
 
 		#
 		# Figure out where each zone's stripe starts.
@@ -971,6 +1137,11 @@ sub zonestripe
 	my $blank;					# Blank label.
 	my $lab;					# Non-blank label.
 	my $zonetxt;					# Zone name.
+
+	#
+	# Don't account for this zone if it shouldn't be displayed.
+	#
+	return if($display{$zone} == 0);
 
 	#
 	# Get this zone's row group and row indices.
@@ -1147,6 +1318,14 @@ sub repaint
 {
 	foreach my $zone (sort(@zonenames))
 	{
+		#
+		# Don't account for this zone if it shouldn't be displayed.
+		#
+		next if($display{$zone} == 0);
+
+		#
+		# Add in a stripe for this zone.
+		#
 		zonestripe($zone,$zonephase{$zone},$zonechron{$zone});
 	}
 }
@@ -1437,9 +1616,10 @@ sub calcrows
 	%zonecolors = ();
 
 	#
-	# Reset the color index.
+	# Reset the color index and initialize the last-row index.
 	#
 	$colorind = 0;
+	$lastrow = $STARTROW;			# Final row index.
 
 	#
 	# Sort the zone-names list and set the zone row index table
@@ -1453,9 +1633,11 @@ sub calcrows
 		$zonerows{$zn} = $row;
 
 		#
-		# Skip this zone if we aren't showing skipped zones.
+		# Don't account for this zone if it shouldn't be displayed
+		# or is a skipped zone.
 		#
-		if($noskip && ($rollers{$zn} == 0))
+		if(($noskip && ($rollers{$zn} == 0)) ||
+		   ($display{$zn} == 0))
 		{
 			$zonerows{$zn} = 0;
 			next;
@@ -1889,6 +2071,7 @@ sub settitle
 # Utility-window routines.
 #
 ##############################################################################
+
 
 #---------------------------------------------------------------------------
 # Routine:	help_help()
