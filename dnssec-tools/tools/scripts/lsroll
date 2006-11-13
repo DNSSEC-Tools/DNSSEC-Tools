@@ -40,6 +40,7 @@ my @opts =
 	"keyrec",			# List keyrec files.
 	"phase",			# List roll-over phases.
 	"ttl",				# List maximum TTL.
+	"display",			# List display flag.
 	"phstart",			# List phase start.
 
 	"count",			# Only give a count of matching keyrecs.
@@ -63,6 +64,7 @@ my $zoneflag;
 my $keyrecflag;
 my $phaseflag;
 my $ttlflag;
+my $dispflag;
 my $phstartflag;
 
 my $cntflag;
@@ -85,8 +87,9 @@ $ret = main();
 exit($ret);
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	main()
+#
+# Purpose:	Main controller routine for lsroll.
 #
 sub main()
 {
@@ -209,6 +212,7 @@ sub doopts
 	$keyrecflag	= 1;
 	$phaseflag	= 1;
 	$ttlflag	= 0;
+	$dispflag	= 0;
 	$phstartflag	= 0;
 
 	#
@@ -234,6 +238,7 @@ sub doopts
 		$keyrecflag	= 1;
 		$phaseflag	= 1;
 		$ttlflag	= 1;
+		$dispflag	= 1;
 		$phstartflag	= 1;
 	}
 	elsif($terse)
@@ -243,6 +248,7 @@ sub doopts
 		$keyrecflag	= 0;
 		$phaseflag	= 0;
 		$ttlflag	= 0;
+		$dispflag	= 0;
 		$phstartflag	= 0;
 	}
 
@@ -254,6 +260,7 @@ sub doopts
 	$keyrecflag	= 1 if($options{'keyrec'});
 	$phaseflag	= 1 if($options{'phase'});
 	$ttlflag	= 1 if($options{'ttl'});
+	$dispflag	= 1 if($options{'display'});
 	$phstartflag	= 1 if($options{'phstart'});
 
 }
@@ -301,6 +308,7 @@ sub showrollrecs
 	my $keyrec;				# Keyrec file in rollrec.
 	my $phase;				# Current phase in rollrec.
 	my $ttl;				# Maximum TTL in rollrec.
+	my $disp;				# Blinkenlights display flag.
 	my $phstart;				# Phase start in rollrec.
 	my $type;				# Rollrec's type.
 
@@ -350,12 +358,14 @@ sub showrollrecs
 		{
 			$phase	  = $rr{'curphase'};
 			$ttl	  = $rr{'maxttl'};
+			$disp	  = $rr{'display'};
 			$phstart  = $rr{'phasestart'};
 		}
 		else
 		{
 			$phase	  = "---";
 			$ttl	  = "---";
+			$disp	  = "---";
 			$phstart  = "---";
 		}
 
@@ -368,6 +378,7 @@ sub showrollrecs
 		$outstr .= "\t$keyrec"		if($keyrecflag);
 		$outstr .= "\t$phase"		if($phaseflag);
 		$outstr .= "\t$ttl"		if($long || $ttlflag);
+		$outstr .= "\t$disp"		if($long || $dispflag);
 		$outstr .= "\t\"$phstart\""	if($long || $phstartflag);
 
 		#
@@ -410,6 +421,7 @@ sub usage
 	print STDERR "\t\t-keyrec\t	list keyrec file\n";
 	print STDERR "\t\t-phase\t	list roll-over phase\n";
 	print STDERR "\t\t-ttl		list zone TTL\n";
+	print STDERR "\t\t-display	list display flag\n";
 	print STDERR "\t\t-phstart	list start of roll-over phase\n";
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
@@ -504,6 +516,10 @@ the default output.
 
 The record's TTL value is included in the output.
 
+=item I<-display>
+
+The record's display flag, used by B<blinkenlights>, is included in the output.
+
 =item I<-phstart>
 
 The record's roll-over phase is included in the output.
@@ -546,11 +562,14 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<blinkenlights(8)>,
+B<rollchk(8)>,
+B<rollinit(8)>,
+B<rollerd(8)>
+
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
-B<rollchk(8)>,
-B<rollerd(8)>,
-B<rollinit(8)>
+B<Net::DNS::SEC::Tools::file-rollrec(5)>
 
 =cut
 
