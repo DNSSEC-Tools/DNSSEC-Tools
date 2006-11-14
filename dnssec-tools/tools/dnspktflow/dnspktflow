@@ -29,8 +29,8 @@ LocalGetOptions(\%opts,
 
 		["GUI:screen", "Input Packet Selection:"],
 		["GUI:guionly", { type => 'label', text => 'DNS Name Filters:'}],
-		['i|ignore-hosts=s',"A regular expression of host names to ignore"],
-		['r|only-hosts=s',"A regular expression of host names to analyze"],
+		['i|ignore-hosts=s',"A regular expression of host names to ignore in the query/response fields"],
+		['r|only-hosts=s',"A regular expression of host names to analyze in the query/response fields"],
 		['f|show-frame-num',"Display the packet frame numbers"],
 		['b|begin-frame=i',"Begin at packet frame NUMBER"],
 
@@ -420,15 +420,21 @@ dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file
 
 =head1 DESCRIPTION
 
-Analyze and draw DNS flow diagrams from a I<tcpdump> file.
-The flow diagram will be made in the PNG format.
+The I<dnspktflow> application takes a tcpdump network traffic dump
+file, passes it through the tshark application and then displays the
+resulting DNS packet flows in a "flow-diagram" image.  I<dnspktflow>
+can output a single image or a series of images which can then been
+shown in sequence as an animiation.
+
+I<dnspktflow> was written as a debugging utility to help trace DNS
+queries and repsonses, especially as they apply to DNSSEC enabled lookups.
 
 =head1 REQUIREMENTS
 
 This application requires the following Perl modules and software
 components to work:
 
-  I<graphviz>                  (http://www.graphviz.org/)
+  B<graphviz>                  (http://www.graphviz.org/)
   B<GraphViz>                  (Perl module)
   B<tshark>                    (http://www.wireshark.org/)
 
@@ -443,41 +449,181 @@ If the following modules are installed, it will enable a GUI interface:
 
 =head1 OPTIONS
 
-  --i=STRING
-  --ignore-hosts=STRING  A regular expression of host names to ignore
-  --r=STRING
-  --only-hosts=STRING    A regular expression of host names to analyze
+=head2 Input Packet Selection:
 
-  --o=STRING
-  --output-file=STRING   Output PNG image file name (default: out.png)
-  --O=STRING
-  --tshark-out=STRING Save tshark output to this file
-  --T
-  --input-is-tshark-out The input file is already processed by tshark     
+=over
 
-  --t
-  --show-type            Shows message type in result image
-  --q
-  --show-queries         Shows query questions in result image
-  --a
-  --show-answers         Shows query answers in result image
-  --A
-  --show-authoritative   Shows authoritative information in result image
-  --x
-  --show-additional      Shows additional information in result image
-  --l
-  --show-label-lines     Shows lines attaching labels to lines
+=item  -i STRING
 
-  --f
-  --show-frame-num       Shows the packet frame numbers
-  --b=INTEGER
-  --begin-frame=INTEGER  Begin at frame NUMBER
 
-  --fontsize             Font Size
-  --d
-  --dump-pkts            Dump data collected from the packets
-  --h
-  --help                 Show help for command line options
+
+=item  --ignore-hosts=STRING
+
+A regular expression of host names to ignore in the query/response fields
+
+=item  -r STRING
+
+
+
+=item  --only-hosts=STRING
+
+A regular expression of host names to analyze in the query/response fields
+
+=item  -f
+
+
+
+=item  --show-frame-num
+
+Display the packet frame numbers
+
+=item  -b INTEGER
+
+
+
+=item  --begin-frame=INTEGER
+
+Begin at packet frame NUMBER
+
+=head2 Output File Options:
+
+=item  -o STRING
+
+
+
+=item  --output-file=STRING
+
+Output file name (default: out%03d.png as png format)
+
+=item  --fig
+
+Output format should be fig
+
+=item  -O STRING
+
+
+
+=item  --tshark-out=STRING
+
+Save tshark output to this file
+
+=item  -m
+
+
+
+=item  --multiple-outputs
+
+One picture per request (use %03d in the filename)
+
+=item  -M STRING
+
+
+
+=item  --magic-point=STRING
+
+Saves a Magic Point presentation for the output
+
+=head2 Output Vizualization Options:
+
+=item  -L
+
+
+
+=item  --last-line-labels-only
+
+Only show data on the last line drawn.
+
+=item  -z INTEGER
+
+
+
+=item  --most-lines=INTEGER
+
+Only show at most INTEGER connections.
+
+
+=item  -T
+
+
+
+=item  --input-is-tshark-out
+
+The input file is already processed by tshark
+
+=head2 Graphical Options:
+
+=item  -t
+
+
+
+=item  --show-type
+
+Shows message type in result image
+
+=item  -q
+
+
+
+=item  --show-queries
+
+Shows query questions in result image
+
+=item  -a
+
+
+
+=item  --show-answers
+
+Shows query answers in result image
+
+=item  -A
+
+
+
+=item  --show-authoritative
+
+Shows authoritative information in result image
+
+=item  -x
+
+
+
+=item  --show-additional
+
+Shows additional information in result image
+
+=item  -l
+
+
+
+=item  --show-label-lines
+
+Shows lines attaching labels to lines
+
+=item  --fontsize=INTEGER
+
+Font Size
+
+=head2 Debugging:
+
+=item  -d
+
+
+
+=item  --dump-pkts
+
+Dump data collected from the packets
+
+=item  -h
+
+
+
+=item  --help
+
+Show help for command line options
+
+=back
+
 
 =head1 COPYRIGHT
 
