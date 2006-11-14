@@ -15,23 +15,18 @@ validate - Query the Domain Name System and display results of the
 
 B<validate> is a diagnostic tool built on top of the DNSSEC validator.
 It takes a I<DOMAIN_NAME> as an argument and queries the DNS
-for that domain name.  It outputs the series of queries that were
-sent to the DNS and the DNSSEC validation results for each query on
-I<stderr>.  An examination of the queries and validation results
+for that domain name.  It outputs the series of responses that were
+received from the DNS and the DNSSEC validation results for each of them.  
+An examination of the queries and validation results
 can help an administrator uncover errors in DNSSEC configuration
 of DNS zones.
 
 If no options are specified and no I<DOMAIN_NAME> argument is present,
 B<validate> will perform a series of pre-defined test queries against
-the I<test.dnssec-tools.org> zone.  This essentially serves as a
+the I<test.dnssec-tools.org> zone.  This serves as a
 test-suite for the validator.  If any options are specified (e.g.
 configuration file locations), I<-s> or I<--selftest> must be specified
 to run the test-suite.
-
-B<validate> can be used in conjunction with the B<drawvalmap> tool
-to display the query-sequence and validation results graphically:
-
-  bash$ validate <DOMAIN_NAME> 2>&1 | drawvalmap -d
 
 =head1 OPTIONS
 
@@ -57,7 +52,7 @@ sense only when used with the I<-p> option.
 =item -p, --print
 
 Print the answer(s) and validation result(s).  By default, B<validate>
-just outputs a series of queries and their validation results on
+just outputs a series of responses and their validation results on
 I<stderr>.  When the I<-p> option is used, B<validate> will also output
 the final result on I<stdout>.
 
@@ -92,14 +87,20 @@ nameservers configured in the system resolv.conf do not support DNSSEC,
 use the I<-r> and I<-i> options to enable 
 B<validate> to use it's own internal recursive resolver.
 
-  bash$ validate -s -r /dev/null -i /etc/named/root.hints
+=item -T<testcase number>
+
+This option can be used to run a sepecific test from the testsuite.
+
+=item -o, --output=<debug-level>:<dest-type>[:<dest-options>]
+
+<debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG
+<dest-type> is one of file, net, syslog, stderr, stdout
+<dest-options> depends on <dest-type>
+    file:<file-name>   (opened in append mode)
+    net[:<host-name>:<host-port>] (127.0.0.1:1053
+    syslog[:facility] (0-23 (default 1 USER))
 
 =back
-
-=head1 NOTES
-
-This is an initial version of the B<validate> tool. In future, this
-tool will be extended to provide more features.
 
 =head1 PRE-REQUISITES
 
@@ -112,7 +113,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHORS
 
-Abhijit Hayatnagarkar, Suresh Krishnaswamy
+Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story
 
 =head1 SEE ALSO
 

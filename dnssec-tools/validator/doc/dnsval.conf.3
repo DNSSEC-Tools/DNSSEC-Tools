@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2006-06-09" "perl v5.8.6" "Programmer's Manual"
+.TH dnsval.conf 3 "2006-11-14" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 /etc/resolv.conf
 .PP
@@ -162,13 +162,12 @@ The /etc/dnsval.conf file contains a sequence of the following \*(L"policy\-frag
 .Sp
 <label> <\s-1KEYWORD\s0> <additional\-data>; 
 .Sp
-label is the context to which this policy applies
+label identifies the policy fragment 
 and \s-1KEYWORD\s0 is the specific policy component that is 
-being configured. The format of additional-data depends on the 
+configured. The format of additional-data depends on the 
 keyword specified.
 .Sp
-Policy fragments are indexed by the label and keyword. If multiple
-policy fragments are defined for the same label and keyword combination
+If multiple policy fragments are defined for the same label and keyword combination
 then the last definition in the file is used.  
 .Sp
 Currently two different keywords are specified:
@@ -192,8 +191,8 @@ The /etc/dnsval.conf configuration file might appear as follows:
 .IX Item "mozilla trust-anchor"
 .RS 4
 .PD 0
-.IP "fruits.netsec.tislabs.com." 4
-.IX Item "fruits.netsec.tislabs.com."
+.IP "dnssec\-tools.org." 4
+.IX Item "dnssec-tools.org."
 .RS 4
 .ie n .IP """257 3 5 AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr qOA3lw==""" 4
 .el .IP "``257 3 5 AQO8XS4y9r77X9SHBmrxMoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 EfGPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHkoDNCAlr qOA3lw==''" 4

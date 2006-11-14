@@ -74,16 +74,16 @@ I<struct name_server> is defined in B<resolver.h> as follows.
 
   struct name_server
   {
-        u_int8_t *ns_name_n;
+        u_int8_t ns_name_n[NS_MAXCDNAME];
         void *ns_tsig;
         u_int32_t ns_security_options;
         u_int32_t ns_status;
+        u_long  ns_options;
+        int ns_retry;
+        int ns_retrans;
         struct name_server *ns_next;
         int ns_number_of_addresses;
-        struct sockaddr ns_address[1];
-        u_long  ns_options;
-        int ns_retrans;
-        int ns_retry;
+        struct sockaddr_storage **ns_address;
   };
 
 
@@ -109,20 +109,6 @@ The status of the zone.  This field indicates how the zone information was obtai
 The invoker must set this value to SR_ZI_STATUS_UNSET. Zone information that was
 obtained through referrals have a value of SR_ZI_STATUS_LEARNED for this field. 
 
-=item I<ns_next>
-
-The address of the next name server in the list.
-
-=item I<ns_number_of_addresses>
-
-The number of elements in the array I<ns_addresses>.  This field is
-currently unused.
-
-=item I<ns_addresses>
-
-The IP address of the name server.  Currently, only IPv4 addresses can be
-stored.
-
 =item I<ns_options>
 
 Specifies additional resolver flags. Currently defined flags are RES_RECURSE, which sets the 'Recursion
@@ -138,14 +124,28 @@ Specifies the retransmission interval in seconds for queries sent to un-responsi
 Specifies the maximum number of attempts that must be made to obtain a name from an un-responsive name
 server before giving up. 
 
+
+=item I<ns_next>
+
+The address of the next name server in the list.
+
+=item I<ns_number_of_addresses>
+
+The number of elements in the array I<ns_addresses>.  This field is
+currently unused.
+
+=item I<ns_addresses>
+
+The IP address of the name server.  
+
 =back
 
 =head1 OTHER SYMBOLS EXPORTED
 
 The I<libsres> library also exports the following BIND functions, documentation for which can be found in
 the BIND sources and documentation manuals:
-nametoclass
-nametotype
+res_nametoclass
+res_nametotype
 ns_name_ntop
 ns_name_pton
 ns_name_unpack
@@ -167,9 +167,13 @@ No error.
 An invalid parameter was passed to B<get()>, B<query_send()>, or
 B<response_recv()>.
 
-=item SR_MEMORY_ERROR
+=item SR_INTERNAL_ERROR
 
-Memory allocation failed.
+The resolver encountered some internal error.
+
+=item SR_TSIG_ERROR
+
+The resolver encountered some TSIG-related error. This is currently not implemented.
 
 =item SR_NO_ANSWER
 
@@ -178,21 +182,6 @@ No answers were received from any name server.
 =item SR_NO_ANSWER_YET
 
 No answer currently available; the query is still active.
-
-=item SR_MKQUERY_INTERNAL_ERROR
-
-An internal error was encountered while trying to construct a
-query message.
-
-=item SR_SEND_INTERNAL_ERROR
-
-An internal error was encountered while trying to send the
-message to the name server(s).
-
-=item SR_RCV_INTERNAL_ERROR
-
-An internal error was encountered while trying to receive
-responses from a name server.
 
 =item SR_WRONG_ANSWER
 
@@ -222,10 +211,18 @@ A particular functionality is not yet implemented.
 
 The name server refused to answer this query.
 
-=item SR_GENERIC_FAILURE
+=item SR_DNS_GENERIC_FAILURE
 
 Other failure returned by the name server and reflected in the
 returned message RCODE.
+
+=item SR_EDNS_VERSION_ERROR
+
+The EDNS version was not recognized
+
+=item SR_NAME_EXPANSION_FAILURE
+
+A failure was encountered while trying to expand a compressed domain name.
 
 =back
 

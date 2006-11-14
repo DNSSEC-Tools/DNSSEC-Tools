@@ -35,8 +35,6 @@ int val_istrusted(val_status_t val_status);
 
 int val_create_context(const char *label, val_context_t **newcontext);
 
-int val_switch_policy_scope(val_context_t *ctx, const char *label);
-
 void val_free_context(val_context_t *context);
 
 char *resolver_config_get(void);
@@ -72,9 +70,7 @@ Answers returned by B<val_resolve_and_check()> are made available
 in the *I<results> array.  Each answer is a 
 distinct RRset; multiple RRs within the RRset are
 treated as the same answer. Multiple answers are possible when
-I<type> is C<ns_t_any> or when a proof of non-existence is 
-returned in which case RRsets of type C<ns_t_nsec> and 
-C<ns_t_soa> are also returned. 
+I<type> is C<ns_t_any> 
 
 Individual elements in *I<results> point to the authentication chain
 contained within the val_authentication_chain linked list. The authentication chain elements contain
@@ -91,7 +87,7 @@ to validation failure if any. B<val_istrusted()> is a helper function
 that can be used to easily identify if a given validator status value
 corresponds to one of the authenticated and/or trusted data codes.
 Validator status values returned in the val_result_chain and val_authentication_chain
-linked lists can be displayed in a user understandable format using the functions
+linked lists can be can be converted into ASCII format using the functions
 B<p_val_status()> and B<p_ac_status()> respectively.
 
 The libval library internally allocates memory for *I<results> 
@@ -114,21 +110,20 @@ The corresponding "get" interfaces, namely, B<dnsval_conf_get>,
 B<resolver_config_get> and B<root_hints_get> can be used to return the 
 current location from where these configuration files are read. 
 
-Validator policy is applied hierarchically based on the name used to 
-identify a particular policy fragment. 
-As an example, C<browser> and C<mozilla.browser> form a 
-hierarchical ordering of policy, where the configuration 
-under the identifier of C<mozilla.browser> may be used to override 
-generic browser policy with mozilla-specific options. Applications may
-switch their default policy to a policy that lies below (C<mozilla:browser> 
-lies below C<browser>) the originally defined label using the 
-B<val_switch_policy_scope()> function. In both of the B<val_resolve_n_check()> 
-and B<val_switch_policy_scope()>, the I<label> parameter is a simple string that
-must match another string which appears as the policy definition
-identifier in the validator configuration file. It is a simple text string
-with the C<:> character used as the delimiter between two levels in the
-hierarchy. The C<:> label by itself refers to the default policy in the 
-configuration file. 
+
+Applications can use local policy to influence the validation outcome.
+Examples of local policy elements include trust anchors for
+different zones and untrusted algorithms for cryptographic keys and hashes.
+Local policy may be different for different applications and operating scenarios. 
+
+Local policy for the validator is stored in the configuration file, /etc/dnsval.conf.
+Policies are identified by simple text strings called labels, which must be
+unique within the configuration system. As an example, "browser" could be used  
+as the label that defines the validator policy for all web-browsers in a
+system.  A label value of ":" identifies the "default" policy, or the
+policy that is used when a NULL context is specified as the ctx parameter
+for functions such as B<val_resolve_and_check>, B<val_getaddrinfo> and B<val_gethostbyname>.  
+The default policy is unique within the configuraion system.
 
 
 =head1 DATA STRUCTURES
@@ -137,16 +132,17 @@ configuration file.
 
 =item I<struct val_result_chain> { 
 
-    val_status_t val_rc_status;
-    struct val_authentication_chain *val_rc_trust;
-    struct val_result_chain *val_rc_next;
+    val_status_t                    val_rc_status;
+    struct val_authentication_chain *val_rc_answer;
+    int                             val_rc_proof_count;
+    struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
+    struct val_result_chain         *val_rc_next;
 };
-
 
 =over 4
 
 
-=item I<val_rc_trust> 
+=item I<val_rc_answer> 
 
 The authentication chain for a given RRset. 
 
@@ -154,7 +150,15 @@ The authentication chain for a given RRset.
 
 Points to the next RRset in the set of answers returned for a query.
 
-=item I<status> 
+=item I<val_rc_proofs> 
+
+Points to any proofs that were returned for the query. 
+
+=item I<val_rc_proof_count> 
+
+Contains the number of proof elements stored in val_rc_proofs
+
+=item I<val_rc_status> 
 
 The validation status for a given RRset. This can be one of the following:
 
@@ -187,6 +191,10 @@ The validation status for a given RRset. This can be one of the following:
 		All available components in the authentication chain verified
 		properly, but there was no trust anchor available.	
 
+    VAL_PROVABLY_UNSECURE
+        the record or some ancestor of the record in the authentication chain
+        towards the trust anchor was known to be provably unsecure.
+
 	VAL_SUCCESS
 		Answer received and validated successfully.
 
@@ -216,117 +224,66 @@ of the B<val_resolve_n_check()> call this field will contain the error
 or success code for DNSSEC validation over the current authentication chain element. This
 field may contain the following values:
 
-	VAL_AC_DNSKEY_NOMATCH
-		RRSIG was created by a DNSKEY that does not exist in the apex keyset.
+      VAL_AC_UNSET:  returned if the status was not set.
 
-	VAL_AC_WRONG_LABEL_COUNT
-		The number of labels on the signature is greater than the the count given in
-		the RRSIG RDATA.
+      VAL_AC_DATA_MISSING:  returned if there was no data returned for a
+         query and the DNS did not indicate an error.
 
-	VAL_AC_BAD_DELEGATION
-		RRSIG created by a key that does not exist in the parent DS record set.
+      VAL_AC_RRSIG_MISSING:  returned if RRSIG data could not be
+         retrieved for a resource record.
 
-	VAL_AC_NOT_A_ZONE_KEY
-		The key used to verify the RRSIG is not a zone key, but some other key such as
-		the public key used for TSIG.
+      VAL_AC_DNSKEY_MISSING:  returned if the DNSKEY for an RRSIG
+         covering a resource record could not be retrieved.
 
-	VAL_AC_RRSIG_NOTYETACTIVE
-		The RRSIG's inception time is in the future.
+      VAL_AC_DS_MISSING:  returned if the DS record covering a DNSKEY
+         record was not available.
 
-	VAL_AC_RRSIG_EXPIRED
-		The RRSIG has expired.		
+      VAL_AC_UNTRUSTED_ZONE:  returned if local policy defined a given
+         zone as untrusted, with no further validation being deemed
+         necessary.
 
-	VAL_AC_ALGORITHM_NOT_SUPPORTED
-		Algorithm in DNSKEY or RRSIG or DS is not supported.
+      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL:  returned if the DNSKEY protocol
+         number was unrecognized.
 
-	VAL_AC_UNKNOWN_ALGORITHM
-		Unknown DNSKEY or RRSIG or DS algorithm
-	
-	VAL_AC_RRSIG_VERIFIED
-		The RRSIG verified successfully.
+      VAL_AC_NOT_VERIFIED:  returned if all RRSIGs covering the an RRset
+         could not be verified.
 
-	VAL_AC_RRSIG_VERIFY_FAILED
-		The RRSIG did not verify.
-	
-	VAL_AC_NOT_VERIFIED
-		Different RRSIGs failed for different reasons
+      VAL_AC_VERIFIED:  returned if at least one RRSIG covering a
+         resource record had a status of VAL_AC_RRSIG_VERIFIED.
 
-	VAL_AC_KEY_TOO_LARGE
-		The zone is using a key size that is too large as per local policy.
+      VAL_AC_LOCAL_ANSWER:  returned if the answer was obtained locally
+         (for example, a file such as /etc/hosts) and validation was not
+         performed on the results.
 
-	VAL_AC_KEY_TOO_SMALL
-		The zone is using a key size that is too small as per local policy
+      VAL_AC_TRUST_KEY:  returned if a given DNSKEY or a DS record was
+         locally defined to be a trust anchor.
 
-	VAL_AC_KEY_NOT_AUTHORIZED
-		The zone is using a key that is not authorized as per local policy.
-	
-	VAL_AC_ALGORITHM_REFUSED
-		Algorithm in DNSKEY or RRSIG or DS is not allowed as per local policy
+      VAL_AC_TRUST_ZONE:  returned if local policy defined a given zone
+         as trusted, with no further validation being deemed necessary.
 
-	VAL_AC_RRSIG_ALGORITHM_MISMATCH
-		 The DNSKEY and RRSIG pair have a mismatch in their algorithm.
+      VAL_AC_PROVABLY_UNSECURE:  returned if the authentication chain
+         from a trust anchor to a given zone could not be constructed
+         due to the provable absence of a DS record for this zone in the
+         parent.
 
-	VAL_AC_VERIFIED
-		The signature verified OK.
+      VAL_AC_BARE_RRSIG:  returned if the response was for a query of
+         type RRSIG.  RRSIGs contain the cryptographic signatures for
+         other DNS data and cannot themselves be validated.
 
-	VAL_AC_LOCAL_ANSWER
-		Answer was obtained locally. 
+      VAL_AC_NO_TRUST_ANCHOR:  returned if there was no trust anchor
+         configured for a given authentication chain.
 
-	VAL_AC_TRUST_KEY
-		The key present in this authentication chain element is trusted.
+	  VAL_AC_DNS_ERROR_BASE < x < VAL_AC_DNS_ERROR_LAST
+		 where x is one of the error values returned by the resolver as 
+		 described in libsres(3) including the following:
 
-	VAL_AC_PROVABLY_UNSECURE
-		The zone containing this name is "provably unsecure"	
-
-	VAL_AC_TRUST_ZONE
-		The zone in this authentication chain element is trusted.
-
-	VAL_AC_BARE_RRSIG
-		Query was for an RRSIG.
-
-In cases where data is insufficient to generate a validation result, 
-I<val_ac_status> may also contain the following status values. The final 
-validation result in val_status_t in such circumstances is VAL_ERROR.
-
-	VAL_AC_DATA_MISSING
-		No data was returned in the response. Based on what data was queried
-		for this also covers cases where the DNSKEY or DS are missing.
-	
-	VAL_AC_RRSIG_MISSING
-		Could not find an RRSIG that matched the query type.
-
-	VAL_AC_DNSKEY_MISSING
-		Could not find a DNSKEY for verifying the RRSIG over a resource record.
-
-	VAL_AC_DS_MISSING
-		Could not find a DS for verifying a given DNSKEY. 
-
-	VAL_AC_NO_TRUST_ANCHOR
-		No trust anchor at current level and no possiblity
-		for finding any up this tree.
-
-	VAL_AC_UNTRUSTED_ZONE
-		The zone has been configured as un-trusted.
-	
-	VAL_AC_IRRELEVANT_PROOF
-		An NSEC received does not contribute towards proving
-		non-existence.
-
-	VAL_AC_FLOOD_ATTACK_DETECTED
-		Detected multiple (conflicting) answers for the same query. 
-		Possible spoofing attack. Not implemented.
-
-	VAL_AC_DNS_ERROR_BASE < x < VAL_AC_DNS_ERROR_LAST
-		where x is one of the error values returned by the resolver as 
-		described in libsres(3) including the following:
-
-		SR_CONFLICTING_ANSWERS	
+		 SR_CONFLICTING_ANSWERS	
 			Multiple answers received for a query which conflict.
 
-		SR_REFERRAL_ERROR
+		 SR_REFERRAL_ERROR
 			Some error encountered while following referrals.
 
-		SR_MISSING_GLUE
+		 SR_MISSING_GLUE
 			Glue was missing
 
 =item I<val_ac_rrset> 
@@ -348,10 +305,9 @@ anchor.
 =over 4
 
 =item I<struct val_rrset> {
+
     u_int8_t  *val_msg_header; 
     u_int16_t val_msg_headerlen;
-    u_int8_t  *val_queryset_data;
-    u_int16_t val_queryset_datalen;
     u_int8_t  *val_rrset_name_n; 
     u_int16_t val_rrset_class_h;
     u_int16_t val_rrset_type_h;
@@ -371,14 +327,6 @@ The header of the DNS response in which the RRset was received
 
 The length of the header information in I<val_msg_header>.
 
-=item I<val_queryset_data> 
-
-The query section of the DNS response in which the RRset was received.
-
-=item I<val_queryset_datalen> 
-
-The length of the query section in I<val_queryset_data>.
-
 =item I<val_rrset_name_n> 
 
 The owner name of the RRset represented in on-the-wire format.
@@ -397,7 +345,7 @@ The TTL of the RRset.
 
 =item I<val_rrset_section> 
 
-The section in which the RRset was received -- VAL_FROM_ANS, VAL_FROM_AUT or VAL_FROM_ADD.
+The section in which the RRset was received -- VAL_FROM_ANSWER, VAL_FROM_AUTHORITY or VAL_FROM_ADDITIONAL.
 
 =item I<val_rrset_data> 
 
@@ -413,6 +361,7 @@ Any associated RRSIGs for the RDATA returned in I<val_rrset_data>.
 =over 4
 
 =item I<struct rr_rec> {
+
 	u_int16_t       rr_rdata_length_h;  
     u_int8_t        *rr_rdata;      
     val_astatus_t    rr_status;
@@ -431,10 +380,86 @@ The RDATA bytes.
 
 =item I<rr_status> 
 
-The verification status of the RRSIG. In addition to any of the
-assertion status values pertaining to signature verification, this
-field can also have the value VAL_AC_VERIFIED_LINK for some DNSKEY 
-resource records to signify that it is a part of the chain of trust.
+For each signature rr_rec member within the authentication chain
+val_ac_rrset, the validation status stored in the variable
+rr_status can return one of the following values:
+
+      VAL_AC_RRSIG_VERIFIED:  returned if the RRSIG verified
+         successfully.
+
+      VAL_AC_WCARD_VERIFIED:  returned if a given RRSIG covering a
+         resource record shows that the record was wildcard expanded.
+
+      VAL_AC_RRSIG_VERIFY_FAILED:  returned if a given RRSIG covering an
+         RRset was bogus.
+
+      VAL_AC_DNSKEY_NOMATCH:  returned if an RRSIG was created by a
+         DNSKEY that did not exist in the apex keyset.
+
+      VAL_AC_RRSIG_ALGORITHM_MISMATCH:  returned if the keytag
+         referenced in the RRSIG matched a DNSKEY but the algorithms
+         were different.
+
+      VAL_AC_WRONG_LABEL_COUNT:  returned if the number of labels on the
+         signature was greater than the the count given in the RRSIG
+         RDATA.
+
+      VAL_AC_BAD_DELEGATION:  returned if an RRSIG was created with a
+         key that did not exist in the parent DS record set.
+
+      VAL_AC_RRSIG_NOTYETACTIVE:  returned if the RRSIG's inception time
+         was in the future.
+
+      VAL_AC_RRSIG_EXPIRED:  returned if the RRSIG had expired.
+
+      VAL_AC_INVALID_RRSIG:  returned if the RRSIG could not be parsed.
+
+      VAL_AC_ALGORITHM_NOT_SUPPORTED:  returned if the RRSIG algorithm
+         was not supported.
+
+      VAL_AC_UNKNOWN_ALGORITHM:  returned if the RRSIG algorithm was
+         unknown.
+
+      VAL_AC_ALGORITHM_REFUSED:  returned if the RRSIG algorithm was not
+         allowed as per local policy.
+
+For each rr_rec member of type DNSKEY (or DS where relevant)
+within the authentication chain val_ac_rrset, the validation
+status is stored in the variable rr_status can return one of the
+following values:
+
+     VAL_AC_SIGNING_KEY:  returned if this DNSKEY was used to create an
+         RRSIG for the resource record set.
+
+      VAL_AC_VERIFIED_LINK:  returned if this DNSKEY provided the link
+         in the authentication chain from the trust anchor to the signed
+         record.
+
+      VAL_AC_UNKOWN_ALGORITHM_LINK:  returned if this DNSKEY provided
+         the link in the authentication chain from the trust anchor to
+         the signed record, but the DNSKEY algorithm was unknown.
+
+      VAL_AC_INVALID_KEY:  returned if the key used to verify the RRSIG
+         was not valid DNSKEY.
+
+      VAL_AC_KEY_TOO_LARGE:  returned if local policy defined the DNSKEY
+         size as being too large.
+
+      VAL_AC_KEY_TOO_SMALL:  returned if local policy defined the DNSKEY
+         size as being too small.
+
+      VAL_AC_KEY_NOT_AUTHORIZED:  returned if local policy defined the
+         DNSKEY to be unauthorized for validation.
+
+      VAL_AC_ALGORITHM_NOT_SUPPORTED:  returned if the DNSKEY or DS
+         algorithm was not supported.
+
+      VAL_AC_UNKNOWN_ALGORITHM:  returned if the DNSKEY or DS algorithm
+         was unknown.
+
+      VAL_AC_ALGORITHM_REFUSED:  returned if the DNSKEY or DS algorithm
+         was not allowed as per local policy.
+
 
 =item I<rr_next> 
 
@@ -463,10 +488,6 @@ Generic error encountered.
 
 Functionality not yet implemented. 
 
-=item VAL_OUT_OF_MEMORY 
-
-Could not allocate memory.
-
 =item VAL_BAD_ARGUMENT
 
 Bad arguments passed as parameters.
@@ -485,9 +506,6 @@ Some resource (crypto possibly) was unavailable. Currently not implemented.
 
 =back
 
-=back
-
-=over 4
 
 =item B<val_create_context()> can return one of the following values:
 
@@ -497,7 +515,7 @@ Some resource (crypto possibly) was unavailable. Currently not implemented.
 
 No error was encountered.
 
-=item VAL_OUT_OF_MEMORY 
+=item VAL_RESOURC_UNAVAILABLE 
 
 Could not allocate memory.
 
@@ -508,28 +526,6 @@ Error in parsing some configuration file.
 =item VAL_CONF_NOT_FOUND 
 
 A configuration file was not available.
-
-=back
-
-=back
-
-=over 4
-
-=item B<val_switch_policy_scope()> can return one of the following values:
-
-=over 4
-
-=item VAL_NO_ERROR
-
-No error was encountered.
-
-=item VAL_OUT_OF_MEMORY 
-
-Could not allocate memory.
-
-=item VAL_NO_POLICY 
-
-A policy with the specified label (identifier) was not found.
 
 =back
 
@@ -564,8 +560,6 @@ See the COPYING file included with the dnssec-tools package for details.
 B<dnsval.conf(3)>
 
 B<libsres(3)>
-
-B<val_x_query(3)>
 
 http://dnssec-tools.sourceforge.net
 
