@@ -591,7 +591,7 @@ the RRset was present in the additional section of the DNS response.  </t>
 
     </section>
 
-    <section title="Assertion Status Codes" anchor="val-astatus">
+    <section title="Authentication Chain Status Codes" anchor="val-astatus">
 
       <t> <list style="symbols">
         <t> The verification status value stored in the val_ac_status member 
@@ -925,6 +925,9 @@ identical to their predecessors. </t>
 and context-management APIs. </t>
 
         <t> <list style="hanging">
+<t hangText="VAL_NOERROR:">
+returned if the call was successful.  </t>
+<t> </t>
 <t hangText="VAL_NOT_IMPLEMENTED:">
 returned if the implementation did not support a particular feature.  </t>
 <t> </t>

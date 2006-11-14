@@ -39,13 +39,12 @@ The /etc/dnsval.conf file contains a sequence of the following "policy-fragments
 
 <label> <KEYWORD> <additional-data>; 
 
-label is the context to which this policy applies
+label identifies the policy fragment 
 and KEYWORD is the specific policy component that is 
-being configured. The format of additional-data depends on the 
+configured. The format of additional-data depends on the 
 keyword specified.
 
-Policy fragments are indexed by the label and keyword. If multiple
-policy fragments are defined for the same label and keyword combination
+If multiple policy fragments are defined for the same label and keyword combination
 then the last definition in the file is used.  
 
 Currently two different keywords are specified:
@@ -76,7 +75,7 @@ The /etc/dnsval.conf configuration file might appear as follows:
 
 =over 4
 
-=item fruits.netsec.tislabs.com.   
+=item dnssec-tools.org.   
 
 =over 4
 
