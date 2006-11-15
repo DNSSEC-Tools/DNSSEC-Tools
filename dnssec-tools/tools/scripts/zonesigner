@@ -64,6 +64,11 @@ my $UPD_KSK	= 2;				# Only update KSK keyrec.
 my $UPD_ZSK	= 3;				# Only update ZSK keyrec.
 
 #
+# Debug flags.  These must be turned on here.
+#
+my $DEBUG_ZONETMP = 0;			# Saves the zone tempfile before delete.
+
+#
 # Options fields.
 #
 my $alg;				# Encryption algorithm.
@@ -158,7 +163,6 @@ exit($status);
 #
 sub main
 {
-	my $statlen;				# Length of stat() buffer.
 	my $status;				# Status of zone-signing.
 
 	#
@@ -198,35 +202,7 @@ sub main
 	#
 	# Ensure the zone file is okay before proceeding.
 	#
-	vprint("initial zone verification\n");
-	$status = system("$checkzone -q $zone $zonefile");
-	if($status != 0)
-	{
-		$status = system("$checkzone $zone $zonefile");
-		exit($status);
-	}
-	system("$checkzone $zone $zonefile") if($verbose > $VERBOSE_LOW);
-	vmed_print("zone verified\n\n");
-
-	#
-	# Ensure that the zone file exists and open it.
-	#
-	$statlen = @zonestat = stat($zonefile);
-	if($statlen == 0)
-	{
-		print STDERR "zone file $zonefile does not exist\n";
-		exit(1);
-	}
-	open(ZF,"+< $zonefile") or die "unable to open zone file $zonefile";
-
-	#
-	# Ensure that the zone file has not been signed yet.
-	#
-	if(presigned())
-	{
-		print STDERR "zone file $zonefile already signed\n";
-		exit(1);
-	}
+	verify_zonefile();
 
 	#
 	# Generate the KSK and ZSK key files.
@@ -519,6 +495,51 @@ sub optsandargs()
 }
 
 #----------------------------------------------------------------------
+# Routine:	verify_zonefile()
+#
+# Purpose:	Ensure that the specified zone file is valid.  The BIND
+#		dnssec-checkzone program is run to verify it, the length and
+#		non-nullity are checked, and then a check is made to ensure
+#		it hasn't been signed already.
+#		If this routine returns, the zone file is fine.
+#
+sub verify_zonefile
+{
+	my $statlen;				# Length of stat() buffer.
+	my $status;				# Status of zone checking.
+
+	vprint("initial zone verification\n");
+	$status = system("$checkzone -q $zone $zonefile");
+	if($status != 0)
+	{
+		$status = system("$checkzone $zone $zonefile");
+		exit($status);
+	}
+	system("$checkzone $zone $zonefile") if($verbose > $VERBOSE_LOW);
+	vmed_print("zone verified\n\n");
+
+	#
+	# Ensure that the zone file exists and open it.
+	#
+	$statlen = @zonestat = stat($zonefile);
+	if($statlen == 0)
+	{
+		print STDERR "zone file $zonefile does not exist\n";
+		exit(1);
+	}
+	open(ZF,"+< $zonefile") or die "unable to open zone file $zonefile";
+
+	#
+	# Ensure that the zone file has not been signed yet.
+	#
+	if(presigned())
+	{
+		print STDERR "zone file $zonefile already signed\n";
+		exit(1);
+	}
+}
+
+#----------------------------------------------------------------------
 # Routine:	presigned()
 #
 # Purpose:	Ensure that the specified zone file is not a signed zone file.
@@ -643,8 +664,8 @@ sub genzsks
 		#
 		# Get the current ZSKs.
 		#
-		$setname = $opts{'zskcur'};
-		$keyset  = keyrec_recval($setname,'keys');
+		$zskcursetname = $opts{'zskcur'};
+		$keyset  = keyrec_recval($zskcursetname,'keys');
 		@zskcurlist = split / /, $keyset;
 
 		#
@@ -653,29 +674,29 @@ sub genzsks
 		#
 		if($signset)
 		{
-			$setname = $signset;
+			$zskpubsetname = $signset;
 			$pubstr = "Signing Set $setname";
 		}
 		else
 		{
-			$setname = $opts{'zskpub'};
+			$zskpubsetname = $opts{'zskpub'};
 			$pubstr  = 'pub ZSK';
 		}
 
 		#
 		# Ensure that we've got a published ZSK set.
 		#
-		if(!keyrec_fullrec($setname))
+		if(!keyrec_fullrec($zskpubsetname))
 		{
 			print STDERR "\n$pubstr does not exist;\nunable to re-use non-existent $pubstr\n";
 			exit(1);
 		}
-		vprint("reusing existing pub ZSK - $zskpub\n");
+		vprint("reusing existing pub ZSK - $zskpubsetname\n");
 
 		#
 		# Get the published ZSKs.
 		#
-		$keyset  = keyrec_recval($setname,'keys');
+		$keyset  = keyrec_recval($zskpubsetname,'keys');
 		@zskpublist = split / /, $keyset;
 
 		return;
@@ -1215,10 +1236,18 @@ sub zonesign
 
 	#
 	# If the intermediate zone file wasn't specified, we'll delete
-	# the temporary zone file.
+	# the temporary zone file.  If a debug flag is set, we'll copy
+	# the zone temporary file before deleting it.
 	#
 	if(!$zftmp)
 	{
+		if($DEBUG_ZONETMP)
+		{
+			my $now = time();
+			my $newzftmp = "$zoneftmp.$now";
+			system("/bin/cp $zoneftmp $newzftmp");
+		}
+
 		system("$RM $zoneftmp");
 	}
 
@@ -1250,6 +1279,12 @@ sub updzonerec
 	}
 
 	#
+	# Generate some signing set names if we need them.
+	#
+	$zskcursetname = keyrec_signset_newname($zone) if($zskcursetname eq "");
+	$zskpubsetname = keyrec_signset_newname($zone) if($zskpubsetname eq "");
+
+	#
 	# Set some fields we've got to have -- in case they aren't
 	# set in the options.
 	#
@@ -1264,7 +1299,7 @@ sub updzonerec
 	$opts{'szopts'}		= $szopts if($szopts ne "");
 	$opts{'zskcur'}		= $zskcursetname;
 	$opts{'zskpub'}		= $zskpubsetname;
-	$opts{'lastset'}	= $lastset;
+	$opts{'lastset'}	= keyrec_recval($zone,'lastset');
 
 	#
 	# Save the zone end time and delete the option prefix.
@@ -1625,8 +1660,6 @@ EOF
 #
 sub forceroll
 {
-	my $zsknew;				# Name of new ZSK key.
-	my $zskkey;				# ZSK key.
 	my $krref;				# Reference to key's keyrec.
 	my $zoneref;				# Reference to zone's keyrec.
 	my $publife;				# Published ZSK's lifespan.
@@ -1722,7 +1755,6 @@ sub forceroll
 		#
 		# Set the keyrec's type to ZSK current.
 		#
-#		$krref = keyrec_fullrec($opts{'zskpub'});
 		$krref->{'keyrec_type'} = 'zskcur';
 		keyrec_setval("key",$me,"keyrec_type","zskcur");
 
@@ -1742,7 +1774,7 @@ sub forceroll
 	#
 	# Generate and save a new signing set name.
 	#
-	$zskcursetname = keyrec_signset_newname($zone);
+	$zskcursetname = $zskpubsetname;
 	keyrec_signset_new($zone,$zskcursetname);
 	$opts{'zskcur'} = $zskcursetname;
 	keyrec_setval('zone',$zone,'zskcur',$zskcursetname);
@@ -1751,7 +1783,7 @@ sub forceroll
 	# Save the current ZSK list in the signing sets.
 	#
 	$setlist = join ' ', @zskcurlist;
-	keyrec_setval("set",$zskcursetname,"keys",$setlist);
+	keyrec_setval('set',$zskcursetname,"keys",$setlist);
 
 	@zskpublist = ();
 
@@ -1761,12 +1793,13 @@ sub forceroll
 	#
 	if(defined($opts{'zsknew'}))
 	{
-		my $zsknewstr = $opts{'zsknew'};
+		$zsknewsetname = $opts{'zsknew'};
+		@zsknewlist = keyrec_recval($zsknewsetname,'keys');
 
 		#
 		# Convert the new ZSKs into published ZSKs.
 		#
-		foreach my $k (split / /,$zsknewstr)
+		foreach my $k (@zsknewlist)
 		{
 			my $me;					# Key name.
 
@@ -1788,6 +1821,14 @@ sub forceroll
 			push @zskpublist, $k;
 			vmed_print("new ZSK ($me) now published\n");
 		}
+
+		#
+		# Add the new set to the keyrecs and zap the old new list.
+		#
+		$zskpubsetname = $zsknewsetname;
+		$zsknewsetname = "";
+		@zsknewlist = ();
+
 	}
 	else
 	{
@@ -1815,12 +1856,16 @@ sub forceroll
 		}
 
 		#
-		# Add the new set to the keyrecs 
+		# Add the new set to the keyrecs.
 		#
 		$zskpubsetname = keyrec_signset_newname($zone);
-		$opts{'zskpub'} = $zskpubsetname;
-		keyrec_setval('zone',$zone,'zskpub',$zskpubsetname);
 	}
+
+	#
+	# Save the published ZSK name info.
+	#
+	$opts{'zskpub'} = $zskpubsetname;
+	keyrec_setval('zone',$zone,'zskpub',$zskpubsetname);
 
 	#
 	# Create a set of new ZSK keys.
@@ -1840,10 +1885,12 @@ sub forceroll
 	#
 	# Add the new set to the keyrecs.
 	#
-	$zskpubsetname = keyrec_signset_newname($zone);
-	keyrec_signset_new($zone,$zskpubsetname);
-	$opts{'zskpub'} = $zskpubsetname;
-	keyrec_setval('zone',$zone,'zskpub',$zskpubsetname);
+	$zsknewsetname = keyrec_signset_newname($zone);
+	keyrec_signset_new($zone,$zsknewsetname);
+	$opts{'zsknew'} = $zsknewsetname;
+	keyrec_setval('zone',$zone,'zsknew',$zsknewsetname);
+	$setlist = join ' ', @zsknewlist;
+	keyrec_setval('set',$zsknewsetname,'keys',$setlist);
 }
 
 #----------------------------------------------------------------------
