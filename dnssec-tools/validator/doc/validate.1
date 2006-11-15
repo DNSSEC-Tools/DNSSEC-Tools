@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "VALIDATE 1"
-.TH VALIDATE 1 "2006-11-14" "perl v5.8.6" "User Commands"
+.TH VALIDATE 1 "2006-11-15" "perl v5.8.6" "User Commands"
 .SH "NAME"
 validate \- Query the Domain Name System and display results of the
            DNSSEC validation process
@@ -177,7 +177,7 @@ sense only when used with the \fI\-p\fR option.
 .IP "\-p, \-\-print" 4
 .IX Item "-p, --print"
 Print the answer(s) and validation result(s).  By default, \fBvalidate\fR
-just outputs a series of queries and their validation results on
+just outputs a series of responses and their validation results on
 \&\fIstderr\fR.  When the \fI\-p\fR option is used, \fBvalidate\fR will also output
 the final result on \fIstdout\fR.
 .IP "\-t \fI\s-1TYPE\s0\fR, \-\-type=\fI\s-1TYPE\s0\fR" 4
@@ -206,14 +206,17 @@ its test-suite against the \fIdnssec\-tools.org\fR test domain. If the
 nameservers configured in the system resolv.conf do not support \s-1DNSSEC\s0,
 use the \fI\-r\fR and \fI\-i\fR options to enable 
 \&\fBvalidate\fR to use it's own internal recursive resolver.
-.Sp
-.Vb 1
-\&  bash$ validate -s -r /dev/null -i /etc/named/root.hints
-.Ve
-.SH "NOTES"
-.IX Header "NOTES"
-This is an initial version of the \fBvalidate\fR tool. In future, this
-tool will be extended to provide more features.
+.IP "\-T <testcase number>" 4
+.IX Item "-T <testcase number>"
+This option can be used to run a sepecific test from the testsuite.
+.IP "\-o, \-\-output=<debug\-level>:<dest\-type>[:<dest\-options>]" 4
+.IX Item "-o, --output=<debug-level>:<dest-type>[:<dest-options>]"
+<debug\-level> is 1\-7, corresponding to syslog levels ALERT-DEBUG
+<dest\-type> is one of file, net, syslog, stderr, stdout
+<dest\-options> depends on <dest\-type>
+    file:<file\-name>   (opened in append mode)
+    net[:<host\-name>:<host\-port>] (127.0.0.1:1053
+    syslog[:facility] (0\-23 (default 1 \s-1USER\s0))
 .SH "PRE-REQUISITES"
 .IX Header "PRE-REQUISITES"
 libval
