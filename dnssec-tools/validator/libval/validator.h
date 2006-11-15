@@ -538,6 +538,11 @@ extern          "C" {
 
 
     /*
+     * from val_cache.h 
+     */
+    int             free_validator_cache(void);
+
+    /*
      * from val_policy.h 
      */
     char           *resolver_config_get(void);
@@ -547,6 +552,11 @@ extern          "C" {
     char           *dnsval_conf_get(void);
     int             dnsval_conf_set(const char *name);
 
+    /*
+     * from val_support.h 
+     */
+    u_int16_t       wire_name_length(const u_int8_t * field);
+    
     /*
      * from val_x_query.c 
      */
