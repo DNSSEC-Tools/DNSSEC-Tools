@@ -1793,8 +1793,11 @@ sub forceroll
 	#
 	if(defined($opts{'zsknew'}))
 	{
+		my $keylist;					# List of keys.
+
 		$zsknewsetname = $opts{'zsknew'};
-		@zsknewlist = keyrec_recval($zsknewsetname,'keys');
+		$keylist = keyrec_recval($zsknewsetname,'keys');
+		@zsknewlist = split ' ', $keylist;
 
 		#
 		# Convert the new ZSKs into published ZSKs.
