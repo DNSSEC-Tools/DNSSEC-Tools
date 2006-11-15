@@ -64,7 +64,6 @@ extern          "C" {
 #define NS_PUT32 PUTLONG
 #endif
 
-
 #ifdef MEMORY_DEBUGGING
 #define MALLOC(s) my_malloc(s, __FILE__, __LINE__)
 #define FREE(p) my_free(p,__FILE__,__LINE__)
@@ -460,6 +459,18 @@ extern          "C" {
     } val_nsec3_rdata_t;
 #endif
 
+    struct val_addrinfo {
+        int             ai_flags;
+        int             ai_family;
+        int             ai_socktype;
+        int             ai_protocol;
+        size_t          ai_addrlen;
+        struct sockaddr *ai_addr;
+        char           *ai_canonname;
+        struct val_addrinfo *ai_next;
+        val_status_t    ai_val_status;
+    };
+
     /* 
      * Logging-related definitions 
      */
@@ -558,7 +569,7 @@ extern          "C" {
                                             char *label);
 
     /*
-     * from val_policy.c 
+     * from val_policy.h 
      */
     char           *resolver_config_get(void);
     int             resolver_config_set(const char *name);
@@ -580,7 +591,11 @@ extern          "C" {
     int             val_res_query(val_context_t * ctx, const char *dname,
                                   int q_class, int type, u_char * answer,
                                   int anslen, val_status_t * val_status);
-
+    int             compose_answer(const u_char * name_n,
+                                   const u_int16_t type_h,
+                                   const u_int16_t class_h,
+                                   struct val_result_chain *results,
+                                   struct val_response **f_resp, u_int8_t flags);
     /*
      * from val_gethostbyname.c 
      */
@@ -617,18 +632,6 @@ extern          "C" {
     /*
      * from val_getaddrinfo.c 
      */
-    struct val_addrinfo {
-        int             ai_flags;
-        int             ai_family;
-        int             ai_socktype;
-        int             ai_protocol;
-        size_t          ai_addrlen;
-        struct sockaddr *ai_addr;
-        char           *ai_canonname;
-        struct val_addrinfo *ai_next;
-        val_status_t    ai_val_status;
-    };
-
     int             val_getaddrinfo(val_context_t * ctx,
                                     const char *nodename,
                                     const char *servname,
