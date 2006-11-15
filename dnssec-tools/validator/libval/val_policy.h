@@ -40,12 +40,39 @@
 #define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
 #endif
 
+#define P_TRUST_ANCHOR              0
+#define P_PREFERRED_SEP             1
+#define P_MUST_VERIFY_COUNT         2
+#define P_PREFERRED_ALGORITHM_DATA  3
+#define P_PREFERRED_ALGORITHM_KEYS  4
+#define P_PREFERRED_ALGORITHM_DS    5
+#define P_CLOCK_SKEW                6
+#define P_EXPIRED_SIGS              7
+#define P_USE_TCP                   8
+#define P_ZONE_SECURITY_EXPECTATION 9
+#define MAX_POL_TOKEN               10
+#ifdef LIBVAL_NSEC3
+#define P_NSEC3_MAX_ITER            MAX_POL_TOKEN 
+#undef  MAX_POL_TOKEN
+#define MAX_POL_TOKEN               P_NSEC3_MAX_ITER+1 
+#endif
+#ifdef DLV
+#define P_DLV_TRUST_POINTS          MAX_POL_TOKEN 
+#define P_DLV_MAX_VALIDATION_LINKS  MAX_POL_TOKEN+1 
+#undef  MAX_POL_TOKEN
+#define MAX_POL_TOKEN               P_DLV_MAX_VALIDATION_LINKS+1 
+#endif
+
 #define ZONE_SE_IGNORE_MSG     "ignore"
 #define ZONE_SE_DO_VAL_MSG     "validate"
 #define ZONE_SE_UNTRUSTED_MSG  "untrusted"
 #define ZONE_SE_IGNORE 1
 #define ZONE_SE_DO_VAL 2
 #define ZONE_SE_UNTRUSTED 3
+
+#define RETRIEVE_POLICY(ctx, index, type)      \
+    (ctx == NULL) ? NULL :                                              \
+    (!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
 
 char           *resolver_config_get(void);
 int             resolver_config_set(const char *name);

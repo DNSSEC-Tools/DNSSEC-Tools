@@ -185,38 +185,6 @@ extern          "C" {
 #define VAL_FLAGS_DONT_VALIDATE 0x00000001
 #define VAL_QUERY_MERGE_RRSETS 0x00000002
 
-    /*
-     * policies are defined for the following
-     */
-
-#define P_TRUST_ANCHOR              0
-#define P_PREFERRED_SEP             1
-#define P_MUST_VERIFY_COUNT         2
-#define P_PREFERRED_ALGORITHM_DATA  3
-#define P_PREFERRED_ALGORITHM_KEYS  4
-#define P_PREFERRED_ALGORITHM_DS    5
-#define P_CLOCK_SKEW                6
-#define P_EXPIRED_SIGS              7
-#define P_USE_TCP                   8
-#define P_ZONE_SECURITY_EXPECTATION 9
-#define MAX_POL_TOKEN               10
-
-#ifdef LIBVAL_NSEC3
-#define P_NSEC3_MAX_ITER            MAX_POL_TOKEN 
-#undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               P_NSEC3_MAX_ITER+1 
-#endif
-
-#ifdef DLV
-#define P_DLV_TRUST_POINTS          MAX_POL_TOKEN 
-#define P_DLV_MAX_VALIDATION_LINKS  MAX_POL_TOKEN+1 
-#undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               P_DLV_MAX_VALIDATION_LINKS+1 
-#endif
-
-#define RETRIEVE_POLICY(ctx, index, type)      \
-    (ctx == NULL) ? NULL :                                              \
-    (!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
 #define VAL_R_TRUST_FLAG 0x80
 #define SET_RESULT_TRUSTED(status)         status |= VAL_R_TRUST_FLAG
 #define SET_MASKED_STATUS(st, new_val)     st = (st & VAL_R_TRUST_FLAG) | new_val
@@ -306,7 +274,7 @@ extern          "C" {
         /*
          * validator policy 
          */
-        policy_entry_t  e_pol[MAX_POL_TOKEN];
+        policy_entry_t  *e_pol;
         struct policy_overrides *pol_overrides;
         struct policy_overrides *cur_override;
 
@@ -567,6 +535,7 @@ extern          "C" {
     void            val_free_context(val_context_t * context);
     int             val_switch_policy_scope(val_context_t * ctx,
                                             char *label);
+
 
     /*
      * from val_policy.h 
