@@ -260,7 +260,7 @@ theres_something_wrong_with_header(u_int8_t * response,
 int
 clone_ns(struct name_server **cloned_ns, struct name_server *ns)
 {
-    int i;
+    int i, j;
 
     if (ns == NULL) {
         *cloned_ns = NULL;
@@ -292,8 +292,22 @@ clone_ns(struct name_server **cloned_ns, struct name_server *ns)
     (*cloned_ns)->ns_retrans = ns->ns_retrans;
     (*cloned_ns)->ns_retry = ns->ns_retry;
 
-    (*cloned_ns)->ns_address = NULL;
-    CREATE_NSADDR_ARRAY((*cloned_ns)->ns_address, ns->ns_number_of_addresses);
+    (*cloned_ns)->ns_address = (struct sockaddr_storage **) 
+        MALLOC (ns->ns_number_of_addresses * sizeof(struct sockaddr_storage *));
+    if((*cloned_ns)->ns_address == NULL) {
+        return SR_MEMORY_ERROR;
+    }
+    for(i=0; i< ns->ns_number_of_addresses; i++) {
+        (*cloned_ns)->ns_address[i] = (struct sockaddr_storage *) MALLOC (sizeof(struct sockaddr_storage));
+        if ((*cloned_ns)->ns_address[i] == NULL) {
+            for(j=0; j<i; j++) {
+                FREE((*cloned_ns)->ns_address[i]);
+            }
+            FREE((*cloned_ns)->ns_address);
+            (*cloned_ns)->ns_address = NULL;
+        }
+    }
+    
     if((ns->ns_number_of_addresses > 0) && (*cloned_ns)->ns_address == NULL) {
         FREE (*cloned_ns);
         *cloned_ns = NULL;
