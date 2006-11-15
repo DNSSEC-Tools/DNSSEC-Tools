@@ -25,10 +25,6 @@
 #include "val_log.h"
 #include "val_crypto.h"
 
-#ifndef HAVE_DECL_P_SECTION
-#include "res_debug.h"
-#endif
-
 static int      debug_level = LOG_INFO;
 static val_log_t *log_head = NULL;
 
