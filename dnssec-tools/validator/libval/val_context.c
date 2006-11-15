@@ -55,6 +55,16 @@ val_create_context(char *label, val_context_t ** newcontext)
     /*
      * Read the validator configuration file 
      */
+    (*newcontext)->e_pol = 
+           (policy_entry_t *) MALLOC (MAX_POL_TOKEN * 
+                                      sizeof(policy_entry_t));
+    if ((*newcontext)->e_pol == NULL) {
+        destroy_respol(*newcontext);
+        FREE(*newcontext);
+        *newcontext = NULL;
+        return VAL_OUT_OF_MEMORY;      
+    }
+
     memset((*newcontext)->e_pol, 0,
            MAX_POL_TOKEN * sizeof(policy_entry_t));
     (*newcontext)->pol_overrides = NULL;
@@ -88,6 +98,7 @@ val_free_context(val_context_t * context)
 
     destroy_respol(context);
     destroy_valpol(context);
+    FREE(context->e_pol);
 
     free_query_chain(context->q_list);
     free_authentication_chain(context->a_list);
