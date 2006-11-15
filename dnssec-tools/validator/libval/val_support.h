@@ -30,6 +30,43 @@
 #define FALSE   0
 #endif
 
+#define VAL_GET16(s, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (s) = ((u_int16_t)t_cp[0] << 8) \
+            | ((u_int16_t)t_cp[1]) \
+            ; \
+        (cp) += NS_INT16SZ; \
+} while (0)
+
+#define VAL_GET32(l, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (l) = ((u_int32_t)t_cp[0] << 24) \
+            | ((u_int32_t)t_cp[1] << 16) \
+            | ((u_int32_t)t_cp[2] << 8) \
+            | ((u_int32_t)t_cp[3]) \
+            ; \
+        (cp) += NS_INT32SZ; \
+} while (0)
+
+#define CREATE_NSADDR_ARRAY(ns_address, len) do {\
+    int i, j;\
+    ns_address = (struct sockaddr_storage **) \
+        MALLOC (len * sizeof(struct sockaddr_storage *));\
+    if(ns_address == NULL) {\
+        return SR_MEMORY_ERROR;\
+    }\
+    for(i=0; i< len; i++) {\
+        ns_address[i] = (struct sockaddr_storage *) MALLOC (sizeof(struct sockaddr_storage));\
+        if (ns_address[i] == NULL) {\
+            for(j=0; j<i; j++) {\
+                FREE(ns_address[i]);\
+            }\
+            FREE(ns_address);\
+            ns_address = NULL;\
+        }\
+    }\
+}while(0)
+
 void            my_free(void *p, char *filename, int lineno);
 void           *my_malloc(size_t t, char *filename, int lineno);
 char           *my_strdup(const char *str, char *filename, int lineno);
