@@ -1085,7 +1085,7 @@ process_packet(val_context_t *context)
     u_int16_t       q_type, q_class;
 
     struct sockaddr from;
-    size_t          from_len;
+    socklen_t       from_len;
 
     u_char          query[4096], response[4096];
     int             query_size, response_size;

@@ -188,7 +188,7 @@ compose_answer(const u_char * name_n,
     int             ns_auth = 1;
     unsigned char  *rp = NULL;
     int             resp_len = 0;
-    HEADER         *hp;
+    HEADER         *hp = NULL;
     int             len;
 
     struct val_response *head_resp = NULL; 
