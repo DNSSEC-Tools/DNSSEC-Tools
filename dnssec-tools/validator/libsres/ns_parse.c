@@ -25,6 +25,7 @@
 #include <resolv.h>
 
 #include "resolver.h"
+#include "ns_parse.h"
 
 #ifndef STRUCT___NS_MSG_HAS__MSG_PTR
 #   ifdef STRUCT___NS_MSG_HAS__PTR
