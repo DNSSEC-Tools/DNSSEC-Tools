@@ -109,6 +109,7 @@
 #include <netinet/in.h>
 #include <resolv.h>
 #include "resolver.h"
+#include "ns_parse.h"
 #include "res_support.h"
 
 const char     *_libsres_opcodes[] = {

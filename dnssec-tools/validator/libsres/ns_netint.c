@@ -20,6 +20,7 @@
 #include <arpa/nameser.h>
 
 #include "resolver.h"
+#include "ns_parse.h"
 
 /*
  * Public. 
