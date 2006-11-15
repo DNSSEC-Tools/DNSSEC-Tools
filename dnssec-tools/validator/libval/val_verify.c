@@ -22,7 +22,6 @@
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_verify.h"
-#include "val_log.h"
 #include "val_crypto.h"
 
 

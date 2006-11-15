@@ -27,8 +27,6 @@
 #include <resolver.h>
 #include <validator.h>
 
-#include "val_log.h"
-
 #ifdef HAVE_GETOPT_LONG
 // Program options
 static struct option prog_options[] = {

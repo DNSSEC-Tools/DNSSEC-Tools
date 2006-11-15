@@ -36,9 +36,8 @@
 #include <arpa/inet.h>
 #include <resolv.h>
 
-#include "resolver.h"
-#include "validator.h"
-#include "val_log.h"
+#include <resolver.h>
+#include <validator.h>
 
 #define MAX_RESULTS 10
 #define BUFLEN 16000
