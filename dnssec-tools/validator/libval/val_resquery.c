@@ -48,7 +48,6 @@
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_assertion.h"
-#include "val_log.h"
 
 #define ITS_BEEN_DONE   0
 #define IT_HASNT        1

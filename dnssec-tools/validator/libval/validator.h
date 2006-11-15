@@ -11,11 +11,11 @@ extern          "C" {
 #endif
 
 #include <syslog.h>
+#include <stdarg.h>
 #include <val_errors.h>
 
 #include <arpa/nameser.h>
 #include <netdb.h>
-
 
 #if !defined(NS_INT16SZ) && defined(INT16SZ)
 #define NS_INT16SZ INT16SZ
@@ -230,6 +230,7 @@ extern          "C" {
 
     struct val_query_chain;     /* forward declaration */
     struct val_digested_auth_chain;    /* forward declaration */
+    struct val_log; /* forward declaration */
 
 
 #define policy_entry_t void*
@@ -459,10 +460,78 @@ extern          "C" {
     } val_nsec3_rdata_t;
 #endif
 
+    /* 
+     * Logging-related definitions 
+     */
+    typedef void  (*val_log_logger_t) (struct val_log * logp,
+                                       const val_context_t * ctx, 
+                                       int level, 
+                                       const char *template, 
+                                       va_list ap);
+
+    typedef struct val_log {
+        val_log_logger_t logf;      /* log function ptr */
+        unsigned char   level;      /* 0 - 9, corresponds w/sylog severities */
+        unsigned char   lflags;     /* generic log flags */
+        const char     *str;        /* logger dependent */
+        union {
+            struct {
+                int             sock;
+                struct sockaddr_in server;
+            } udp;
+            struct {
+                char           *name;
+                FILE           *fp;
+            } file;
+            struct {
+                int             facility;
+            } syslog;
+            struct {
+                void           *my_ptr;
+            } user;
+        } opt;
+        struct val_log *next;
+    } val_log_t;
+
+    char        *get_hex_string(const unsigned char *data, int datalen,
+                                char *buf, int buflen);
+    void        val_log_rrset(const val_context_t * ctx, int level,
+                              struct rrset_rec *rrset);
+    void        val_log_base64(val_context_t * ctx, int level,
+                               unsigned char *message, int message_len);
+    void        val_log_rrsig_rdata(const val_context_t * ctx, int level,
+                                    const char *prefix,
+                                    val_rrsig_rdata_t * rdata);
+    void        val_log_dnskey_rdata(val_context_t * ctx, int level,
+                                     const char *prefix,
+                                     val_dnskey_rdata_t * rdata);
+    void        val_log_authentication_chain(const val_context_t * ctx,
+                                             int level, u_char * name_n,
+                                             u_int16_t class_h,
+                                             u_int16_t type_h,
+                                             struct val_query_chain
+                                             *queries, struct val_result_chain
+                                             *results);
+    void        val_log(const val_context_t * ctx, int level,
+                        const char *template, ...);
+
+    val_log_t   *val_log_add_filep(int level, FILE * p);
+    val_log_t   *val_log_add_file(int level, const char *filen);
+    val_log_t   *val_log_add_syslog(int level, int facility);
+    val_log_t   *val_log_add_network(int level, char *host, int port);
+    val_log_t   *val_log_add_optarg(char *args, int use_stderr);
+
+    int         val_log_debug_level(void);
+    void        val_log_set_debug_level(int);
+
+    const char  *p_query_status(int err);
+    const char  *p_ac_status(val_astatus_t valerrno);
+    const char  *p_val_status(val_status_t err);
+
     /*
-     **********************************
-     * APIs exported by the validator
-     **********************************
+     *******************************************
+     * Other functions exported by the validator
+     *******************************************
      */
     /*
      * from val_assertion.h 
@@ -497,21 +566,6 @@ extern          "C" {
     int             root_hints_set(const char *name);
     char           *dnsval_conf_get(void);
     int             dnsval_conf_set(const char *name);
-
-    /*
-     * from val_log.h 
-     */
-    void            val_log_authentication_chain(const val_context_t * ctx,
-                                                 int level,
-                                                 u_char * name_n,
-                                                 u_int16_t class_h,
-                                                 u_int16_t type_h,
-                                                 struct val_query_chain
-                                                 *queries, struct val_result_chain
-                                                 *results);
-    const char     *p_query_status(int err);
-    const char     *p_ac_status(val_astatus_t valerrno);
-    const char     *p_val_status(val_status_t err);
 
     /*
      * from val_x_query.c 
@@ -588,36 +642,6 @@ extern          "C" {
 #define p_val_error p_val_status
 #define p_as_error p_as_status
 #define p_query_error p_query_status
-
-/***********************************************************/
-#if 0
-    struct hostent *val_gethostbyaddr(const val_context_t * ctx,
-                                      const char *addr,
-                                      int len,
-                                      int type, val_status_t * val_status);
-
-    int             val_gethostbyaddr_r(const val_context_t * ctx,
-                                        const char *addr,
-                                        int len,
-                                        int type,
-                                        struct hostent *ret,
-                                        char *buf,
-                                        int buflen,
-                                        struct hostent **result,
-                                        int *h_errnop,
-                                        val_status_t * val_status);
-
-    int             val_getnameinfo(const val_context_t * ctx,
-                                    const struct sockaddr *sa,
-                                    socklen_t salen,
-                                    char *host,
-                                    size_t hostlen,
-                                    char *serv,
-                                    size_t servlen,
-                                    int flags, val_status_t * val_status);
-
-#endif
-/***********************************************************/
 
 #ifdef __cplusplus
 }                               /* extern "C" */
