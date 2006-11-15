@@ -214,4 +214,11 @@ int             ns_name_pton(const char *src, u_char * dst, size_t dstsiz);
 int             ns_parse_ttl(const char *src, u_long * dst);
 #endif
 
+u_int16_t       res_nametoclass(const char *buf, int *successp);
+u_int16_t       res_nametotype(const char *buf, int *successp);
+
+#ifndef HAVE_DECL_P_SECTION
+const char     *p_section(int section, int opcode);
+#endif
+
 #endif                          /* RESOLVER_H */

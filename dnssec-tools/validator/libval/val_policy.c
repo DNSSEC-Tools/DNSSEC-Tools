@@ -26,13 +26,13 @@
 #include <sys/file.h>
 #include <resolv.h>
 
+#include <resolver.h>
 #include <validator.h>
 #include "val_policy.h"
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_resquery.h"
 #include "val_log.h"
-#include "res_debug.h"
 
 
 /*
