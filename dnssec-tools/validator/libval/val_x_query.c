@@ -26,7 +26,6 @@
 
 #include "val_cache.h"
 #include "val_support.h"
-#include "val_x_query.h"
 #include "val_assertion.h"
 
 #define OUTER_HEADER_LEN (sizeof(HEADER) + wire_name_length(name_n) + sizeof(u_int16_t) + sizeof(u_int16_t))
