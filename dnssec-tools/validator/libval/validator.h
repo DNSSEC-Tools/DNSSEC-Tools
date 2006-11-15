@@ -22,6 +22,24 @@ extern          "C" {
 #define NS_INT32SZ INT32SZ
 #endif
 
+#define VAL_GET16(s, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (s) = ((u_int16_t)t_cp[0] << 8) \
+            | ((u_int16_t)t_cp[1]) \
+            ; \
+        (cp) += NS_INT16SZ; \
+} while (0)
+
+#define VAL_GET32(l, cp) do { \
+        register const u_char *t_cp = (const u_char *)(cp); \
+        (l) = ((u_int32_t)t_cp[0] << 24) \
+            | ((u_int32_t)t_cp[1] << 16) \
+            | ((u_int32_t)t_cp[2] << 8) \
+            | ((u_int32_t)t_cp[3]) \
+            ; \
+        (cp) += NS_INT32SZ; \
+} while (0)
+
 #if !defined(NS_PUT16) && defined(PUTSHORT)
 #define NS_PUT16 PUTSHORT
 #define NS_PUT32 PUTLONG
