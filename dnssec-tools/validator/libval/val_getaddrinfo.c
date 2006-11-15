@@ -825,27 +825,35 @@ get_addrinfo_from_dns(val_context_t *ctx,
 
 }                               /* get_addrinfo_from_dns() */
 
-
-/*
- * Function: val_getaddrinfo
- *
- * Purpose: A DNSSEC-aware version of the getaddrinfo() function.
+/**
+ * val_getaddrinfo: A validating getaddrinfo function.
+ *                  Based on getaddrinfo() as defined in RFC3493.
  *
  * Parameters:
- *              ctx -- The validator context. Can be NULL for default value.
- *         nodename -- The name of the node or its IP address.  Can be NULL, or
- *                     a domain name, or an IPv4 or IPv6 address string.
- *         servname -- The name of the service.  Can be NULL.
- *            hints -- Hints to influence the result value.  Can be NULL.
- *              res -- A pointer to a variable of type (struct val_addrinfo*) to
- *                     hold the result.  The caller must free this return value
- *                     using val_freeaddrinfo().
+ *     Note: All the parameters, except the val_status parameter,
+ *     ----  are similar to the getaddrinfo function.
  *
- *         Note that at least one of nodename or servname must be a non-NULL value.
+ *     [IN]  ctx: The validation context. Can be NULL for default value.
+ *     [IN]  nodename: Specifies either a numerical network address (dotted-
+ *                decimal format for IPv4, hexadecimal format for IPv6)
+ *                or a network hostname, whose network addresses are
+ *                looked up and resolved.
+ *                node or service parameter, but not both, may be NULL.
+ *     [IN]  servname: Used to set the port number in the network address
+ *                of each socket structure returned.  If service is NULL
+ *                the  port  number will be left uninitialized.
+ *     [IN]  hints: Specifies  the  preferred socket type, or protocol.
+ *                A NULL hints specifies that any network address or
+ *                protocol is acceptable.
+ *     [OUT] res: Points to a dynamically-allocated link list of val_addrinfo
+ *                structures. The caller must free this return value
+ *                using val_freeaddrinfo().
  *
- * Returns: 0 if successful, a non-zero error code on error.
+ *     Note that at least one of nodename or servname must be a non-NULL value.
  *
- * See also: getaddrinfo(3), val_freeaddrinfo()
+ * Return value: This function returns 0 if it succeeds, or one of the
+ *               non-zero error codes if it fails.  See man getaddrinfo(3)
+ *               for more details.
  */
 int
 val_getaddrinfo(val_context_t * ctx,
