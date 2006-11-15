@@ -38,13 +38,7 @@
 
 #include "resolver.h"
 #include "validator.h"
-
-#include "val_support.h"
-#include "val_cache.h"
 #include "val_log.h"
-#include "val_x_query.h"
-
-#include "res_debug.h"
 
 #define MAX_RESULTS 10
 #define BUFLEN 16000
