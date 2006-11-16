@@ -195,12 +195,12 @@ sub print_description {
 
 =head1 DESCRIPTION
 
-This class wraps around a rule definition which is used by the I<donuts>
+This class wraps around a rule definition which is used by the B<donuts>
 DNS zone file checker.  It stores the data that implements a given rule.
 
-Rules are defined in I<donuts> rule configuration files using the
-following syntax.  See the I<donuts> manual page for details on where to
-place those files and how to get them loaded.
+Rules are defined in B<donuts> rule configuration files using the
+following syntax.  See the B<donuts> manual page for details on where to
+place those files and how to load them.
 
 =head1 RULE FILE FORMAT
 
@@ -218,7 +218,7 @@ with it.  The rule file format follows this example:
   </test>
 
 Further details about each section can be found below.  Besides the
-tokens below, other rule-specific data can be stored in also tokens
+tokens below, other rule-specific data can be stored in tokens
 and each rule is a hash of the above tokens as keys and their
 associated data.  However, there are a few exceptions where special
 tokens imply special meanings.  These special tokens include I<test>,
@@ -240,7 +240,7 @@ By convention, all names should be specified using capital letters and
 '_' characters between the words.  The leftmost word should give an
 indication of a global category of test, such as "DNSSEC".  The
 better-named the rules, the more power the user will have for
-selecting certain types of rules via I<donuts -i> and other flags.
+selecting certain types of rules via B<donuts -i> and other flags.
 
 Example:
 
@@ -248,10 +248,10 @@ Example:
 
 =item I<level>
 
-The rule's execution level, as recognized by I<donuts>.  Only those
-rules at or above I<donuts>' current execution level will be run by
-I<donuts>.  The execution level is specified by the I<-l> option to
-I<donuts>; if not given, then the default execution level is 5.
+The rule's execution level, as recognized by B<donuts>.  B<donuts> will
+run only those rules at or above B<donuts>' current execution level.
+The execution level is specified by the I<-l> option to
+B<donuts>; if not given, then the default execution level is 5.
 
 The default I<level> of every rule is 5.
 
@@ -272,8 +272,8 @@ rule.  It defaults to "I<Error>", and the only other value that should
 be used is "I<Warning>".
 
 This value is displayed to the user.  Technically, any value could be
-specified, but using anything other than I<Error>/I<Warning> convention
-could break portability in future versions.
+specified, but using anything other than the I<Error>/I<Warning>
+convention could break portability in future versions.
 
 Example:
   name: DNSSEC_TEST_SOME_SECURE_FEATURE
@@ -316,8 +316,8 @@ boot-strap code to be performed only at start-up, rather than
 at every rule-test invocation.  For example, "use MODULE;"
 type statements should be used in I<init> sections.
 
-I<init> sections contain are wrapped in an xml-like syntax which
-specifies the start and end of the init section of code:
+I<init> sections are wrapped in an XML-like syntax which
+specifies the start and end of the I<init> section of code.
 
 Example:
 
@@ -328,23 +328,23 @@ Example:
 
 =item I<test>
 
-A block of code that defining the test for each record or name.  The
+A block of code defining the test for each record or name.  The
 test statement follows the same multi-line code specification
 described in the I<init> clause above.  Specifically, all the lines
 between the <test> and </test> braces are considered part of the test
 code.
 
 The end result must be a subroutine reference which will be called by
-the I<donuts> program.  When the code is evaluated, if it does not
+the B<donuts> program.  When the code is evaluated, if it does not
 begin with "sub {" then a "sub {" prefix and "}" suffix will be
 automatically added to the code to turn the code-snippet into a
-perl subroutine.
+Perl subroutine.
 
 If the test fails, it should return an error string which will be displayed
 for the user.  The text will be line-wrapped before display (and thus should
-be unformatted text.)  If the test is testing for multiple problems, a
-reference to an array of error strings may be returned.  A reference to an
-empty array being returned also indicates no error.
+be unformatted text.)  If the test is checking for multiple problems, a
+reference to an array of error strings may be returned.  A return value of a
+reference to an empty array also indicates no error.
 
 There are two types of tests (currently), and the code snippet is
 called with arguments which depend on the I<ruletype> clause above.
@@ -372,11 +372,11 @@ It is called with three arguments:
   1) a hash reference to all the record types associated
      with that name (e.g., 'A', 'MX', ...) and each value of
      the hash will contain an array of all the records for
-     that type (i.e., for names containing multiple 'A'
-     records then more than one entry in the array reference
-     will exist).
+     that type.  (I.e., more than one entry in the array
+     reference will exist for names containing multiple 'A'
+     records.)
 
-  2) The rule definition
+  2) The rule definition.
 
   3) The record name being checked (the name associated with
      the data from 1) above).
@@ -412,20 +412,20 @@ keyword was specified using the I<--features> flag.
 =item I<desc:> B<DESCRIPTION>
 
 A short description of what the rule tests that will be printed to the
-user in help output or in the error summary when donuts outputs the
+user in help output or in the error summary when B<donuts> outputs the
 results.
 
 =item I<help:> B<TOKEN:> B<TOKEN-HELP>
 
-If the rule is configurable via the user's .donuts.conf file, this
+If the rule is configurable via the user's B<.donuts.conf> file, this
 describes the configuration tokens for the user when they request
-configuration help via the -H or --help-config flags.  Tokens may be
+configuration help via the I<-H> or I<--help-config> flags.  Tokens may be
 used within rules by accessing them within the rule argument passed to
-the code (the second argument).
+the code (the second argument.)
 
 Example:
 
-  1) in the rule file (this is an incomplete definition):
+  1) In the rule file (this is an incomplete definition):
 
      name:           SOME_TEST
      myconfig:       40
@@ -448,13 +448,14 @@ Example:
 
 =item I<nowrap: 1>
 
-Normally I<donuts> will line-wrap the error summary produced by a rule
+Normally B<donuts> will line-wrap the error summary produced by a rule
 to enable automatic pretty printing of error results.  Sometimes,
 however, rules may not want this.  The I<nowrap> option indicates to
-donuts that the output is pre-formatted but should still be indented
-to align with the output of the rest of the error text (current about
-15 spaces).  The I<noindent> tag, however, says don't do either
-wrapping or indenting and just print the error as is.
+B<donuts> that the output is pre-formatted but should still be indented
+to align with the output of the rest of the error text (currently about
+15 spaces).  The I<noindent> tag, however, indicates that neither
+wrapping nor indenting should be performed, but that the error should
+be printed as is.
 
 =back
 
