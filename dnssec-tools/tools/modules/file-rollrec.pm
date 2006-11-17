@@ -26,9 +26,12 @@ type or I<skip> type.  Zone I<rollrec>s record information about currently
 rolling zones.  Skip I<rollrec>s record information about zones that are not
 being rolled.  A I<rollrec> consists of a set of keyword/value entries.
 
-The DNSSEC-Tools B<rollrec> module manipulates the contents of a I<rollrec>
+The DNSSEC-Tools B<rollrec.pm> module manipulates the contents of a I<rollrec>
 file.  Module interfaces exist for looking up I<rollrec> records, creating
 new records, and modifying existing records.
+
+Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
+Comment lines start with either a '#' character or a ';' character.
 
 =head1 FIELDS
 
