@@ -113,7 +113,7 @@
 
 #define VAL_AC_LOCAL_ANSWER (VAL_AC_LAST_FAILURE+7)       /* Answer obtained locally */
 #define VAL_AC_TRUST_KEY (VAL_AC_LAST_FAILURE+8)  /* key is trusted */
-#define VAL_AC_TRUST_ZONE (VAL_AC_LAST_FAILURE+9) /* zone is trusted */
+#define VAL_AC_IGNORE_VALIDATION (VAL_AC_LAST_FAILURE+9) /* zone is trusted */
 #define VAL_AC_PROVABLY_UNSECURE (VAL_AC_LAST_FAILURE+10)
 #define VAL_AC_BARE_RRSIG (VAL_AC_LAST_FAILURE+11) /* No DNSSEC validation possible, query was for a RRSIG. */
 #define VAL_AC_NO_TRUST_ANCHOR (VAL_AC_LAST_FAILURE+12)    /* No trust anchor available, but components were verified */
@@ -138,7 +138,8 @@
 #define VAL_R_VERIFIED_CHAIN 3  /* All components were verified */
 #define VAL_R_VALIDATED_CHAIN (VAL_R_VERIFIED_CHAIN | VAL_R_TRUST_FLAG)
 #define VAL_R_PROVABLY_UNSECURE 4
-#define VAL_R_LAST 5
+#define VAL_R_IGNORE_VALIDATION 5
+#define VAL_R_LAST 6
 
 /*
  *************************************************** 
@@ -166,6 +167,7 @@
 #define VAL_INDETERMINATE VAL_R_INDETERMINATE
 #define VAL_BOGUS VAL_R_BOGUS
 #define VAL_PROVABLY_UNSECURE (VAL_R_PROVABLY_UNSECURE | VAL_R_TRUST_FLAG)
+#define VAL_IGNORE_VALIDATION (VAL_R_IGNORE_VALIDATION | VAL_R_TRUST_FLAG)
 #define VAL_NOTRUST VAL_R_VERIFIED_CHAIN
 #define VAL_SUCCESS VAL_R_VALIDATED_CHAIN
 

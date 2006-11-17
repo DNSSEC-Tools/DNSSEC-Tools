@@ -549,8 +549,8 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_TRUST_KEY:
         return "VAL_AC_TRUST_KEY";
         break;
-    case VAL_AC_TRUST_ZONE:
-        return "VAL_AC_TRUST_ZONE";
+    case VAL_AC_IGNORE_VALIDATION:
+        return "VAL_AC_IGNORE_VALIDATION";
         break;
     case VAL_AC_PROVABLY_UNSECURE:
         return "VAL_AC_PROVABLY_UNSECURE";
@@ -618,6 +618,9 @@ p_val_status(val_status_t err)
         break;
     case VAL_PROVABLY_UNSECURE:
         return "VAL_PROVABLY_UNSECURE";
+        break;
+    case VAL_IGNORE_VALIDATION:
+        return "VAL_IGNORE_VALIDATION";
         break;
     case VAL_NOTRUST:
         return "VAL_NOTRUST";
