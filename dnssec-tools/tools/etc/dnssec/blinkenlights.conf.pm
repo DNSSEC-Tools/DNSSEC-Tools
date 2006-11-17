@@ -60,8 +60,6 @@ If this is not specified, the default font size is 18.
 
 =item modify
 
-allow modification commands (toggle)
-
 Toggle indicating whether or not to allow access to B<blinkenlights>'
 zone-modification commands.  These commands are the GUI's front-end to
 some of B<rollerd>'s commands.
@@ -69,8 +67,6 @@ If on, the commands are enabled.
 If off, the commands are disabled.
 
 =item shading
-
-shade the status columns (toggle)
 
 Toggle indicating whether or not to use color shading in B<blinkenlights>'
 status column.
