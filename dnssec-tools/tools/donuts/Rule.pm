@@ -123,7 +123,7 @@ sub test_record {
 	return (1,0);
     }
 
-    # rule will never be run with current settings (and no errors).
+    # rule will never be run with current settings (and no errors.)
     return (0,0);
 }
 
@@ -232,13 +232,13 @@ Lines beginning with the '#' character will be discarded as a comment.
 
 =item I<name>
 
-The name of the rule.  This is mandatory, as the user may need to be
-able to refer to names in the future for use with the I<-i> flag,
+The name of the rule.  This is mandatory, as the user may need to
+refer to names in the future for use with the I<-i> flag,
 specifying behavior in configuration files, and for other uses.
 
 By convention, all names should be specified using capital letters and
 '_' characters between the words.  The leftmost word should give an
-indication of a global category of test, such as "DNSSEC".  The
+indication of a global test category, such as "DNSSEC".  The
 better-named the rules, the more power the user will have for
 selecting certain types of rules via B<donuts -i> and other flags.
 
@@ -282,7 +282,7 @@ Example:
 =item I<ruletype>
 
 Rules fall into one of two types (currently): I<record> or I<name>.
-I<record> rules have their test evaluated for each record being in
+I<record> rules have their test evaluated for each record in
 a zone file.  I<name> rules, on the other hand, get called once per
 name stored in the database.  See the I<test> description below for
 further details on the arguments passed to each rule type.
@@ -297,7 +297,7 @@ Example:
 =item I<type>
 
 Rules that test a particular type of record should specify the
-I<type> field with the type of record it wants to test.  The rule
+I<type> field with the type of record it will test.  The rule
 will only be executed for records of that type.  This will result
 in less error checking for the user in the I<test> section.
 
@@ -379,7 +379,7 @@ It is called with three arguments:
   2) The rule definition.
 
   3) The record name being checked (the name associated with
-     the data from 1) above).
+     the data from 1) above.)
 
 =back
 
@@ -395,12 +395,12 @@ Examples:
   </test>
 
   # local policy to mandate that anything with an A record
-  # must have a HINFO record too
+  # must have an HINFO record too
   name: DNS_MX_MUST_HAVE_A
   level: 8
   type: name
   <test>
-    return "A records must have a HINFO record too"
+    return "A records must have an HINFO record too"
       if (exists($_[0]{'A'}) && !exists($_[0]{'HINFO'}));
   </test>
 
@@ -449,11 +449,11 @@ Example:
 =item I<nowrap: 1>
 
 Normally B<donuts> will line-wrap the error summary produced by a rule
-to enable automatic pretty printing of error results.  Sometimes,
+to enable automatic pretty-printing of error results.  Sometimes,
 however, rules may not want this.  The I<nowrap> option indicates to
 B<donuts> that the output is pre-formatted but should still be indented
 to align with the output of the rest of the error text (currently about
-15 spaces).  The I<noindent> tag, however, indicates that neither
+15 spaces.)  The I<noindent> tag, however, indicates that neither
 wrapping nor indenting should be performed, but that the error should
 be printed as is.
 
