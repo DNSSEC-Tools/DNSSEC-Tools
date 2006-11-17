@@ -221,8 +221,8 @@ Further details about each section can be found below.  Besides the
 tokens below, other rule-specific data can be stored in tokens
 and each rule is a hash of the above tokens as keys and their
 associated data.  However, there are a few exceptions where special
-tokens imply special meanings.  These special tokens include I<test>,
-I<init>.  See below for details.
+tokens imply special meanings.  These special tokens include I<test>
+and I<init>.  See below for details.
 
 Each rule definition within a file should be separated using a blank line.
 
@@ -313,7 +313,7 @@ Example:
 
 A block of code to be executed immediately. This is useful for
 boot-strap code to be performed only at start-up, rather than
-at every rule-test invocation.  For example, "use MODULE;"
+at every rule-test invocation.  For example, "I<use MODULE;>"
 type statements should be used in I<init> sections.
 
 I<init> sections are wrapped in an XML-like syntax which
