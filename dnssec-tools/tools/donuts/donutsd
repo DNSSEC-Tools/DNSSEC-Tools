@@ -240,7 +240,8 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
-  DoNutSD - Run the donuts syntax checker periodically and email the results
+B<donutsd> - Run the B<donuts> syntax checker periodically and report the
+results to an administrator
 
 =head1 SYNOPSIS
 
@@ -249,12 +250,12 @@ sub LocalOptionsMap {
 
 =head1 DESCRIPTION
 
-I<donutsd> runs I<donuts> on a set of zone files every so often (the
+B<donutsd> runs B<donuts> on a set of zone files every so often (the
 frequency is specified by the I<-z> flag which defaults to 24 hours) and
 watches for changes in the results.  These changes may be due to the
 time-sensitive nature of DNSSEC-related records (e.g., RRSIG validity
 periods) or because parent/child relationships have changed.  If any
-changes have occurred in the output since the last run of I<donuts> on a
+changes have occurred in the output since the last run of B<donuts> on a
 particular zone file, the results are emailed to the specified zone
 administrator's email address.
 
@@ -272,16 +273,16 @@ Run once and quit, as opposed to sleeping or re-running forever.
 
 =item -a ARGUMENTS
 
-Passes arguments to command line arguments of I<donuts> runs.
+Passes arguments to command line arguments of B<donuts> runs.
 
 =item -z TIME
 
-Sleeps TIME seconds between calls to I<donuts>.
+Sleeps TIME seconds between calls to B<donuts>.
 
 =item -e ADDRESS
 
 Mail ADDRESS with a summary of the results from all the files.
-These are the last few lines of the I<donuts> output for each zone that
+These are the last few lines of the B<donuts> output for each zone that
 details the number of errors found.
 
 =item -s SMTPSERVER
@@ -295,7 +296,7 @@ When sending mail, use FROMADDR for the From: address.
 
 =item -x
 
-Send the I<diff> output in the email message as well as the I<donuts> output.
+Send the I<diff> output in the email message as well as the B<donuts> output.
 
 =item -t TMPDIR
 
@@ -303,34 +304,34 @@ Store temporary files in TMPDIR.
 
 =item -i INPUTZONES
 
-[see the next section details]
+See the next section details.
 
 =back
 
 =head1 ZONE ARGUMENTS
 
-The rest of the arguments to I<donutsd> should be triplets of the
+The rest of the arguments to B<donutsd> should be triplets of the
 following information:
 
 =over
 
 =item ZONEFILE
 
-The zone file to examine
+The zone file to examine.
 
 =item ZONENAME
 
-The zonename that file is supposed to be defining
+The zonename that file is supposed to be defining.
 
 =item ZONECONTACT
 
 An email address of the zone administrator (or a comma-separated
-list of addresses).  The results will be sent to this email address.
+list of addresses.)  The results will be sent to this email address.
 
 =back
 
 Additionally, instead of listing all the zones you wish to monitor on
-the command line, you can instead use the I<-i> flag which specifies a
+the command line, you can use the I<-i> flag which specifies a
 file to be read listing the TRIPLES instead.  Each line in this file
 should contain one triple with white-space separating the arguments.
 
@@ -339,10 +340,10 @@ Example:
    db.zonefile1.com   zone1.com   admin@zone1.com
    db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com
 
-For even more control you can specify an XML file (which must end in
-B<.xml> and you must have the B<XML::Smart> Perl module installed) that
-describes the same information but also allows for per-zone
-customization of the I<donuts> arguments:
+For even more control, you can specify an XML file (whose name must end in
+B<.xml>) that describes the same information.  This also allows for per-zone
+customization of the B<donuts> arguments.  The B<XML::Smart> Perl module must
+be installed in order to use this feature.
 
  <donutsd>
    <zones>
@@ -357,8 +358,8 @@ customization of the I<donuts> arguments:
    </zones>
  </donutsd>
 
-The I<donutsd> tree can also contain a I<configs> section where command
-line flags can be specified as well:
+The B<donutsd> tree may also contain a I<configs> section where
+command-line flags can be specified:
 
  <donutsd>
   <configs>
