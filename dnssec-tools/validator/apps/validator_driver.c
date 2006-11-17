@@ -85,7 +85,7 @@ struct testcase_st {
 
 // A set of pre-defined test cases
 static const struct testcase_st testcases[] = {
-
+    
 #if 0
     {"Test Case 1", "www.n0.n0.ws.nsec3.org", ns_c_in, ns_t_a,
      {VAL_PROVABLY_UNSECURE, 0}},
@@ -358,19 +358,19 @@ static const struct testcase_st testcases[] = {
     {"Test Case 66", "nosig-cname-to-pastdate-AAAA.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_ERROR, VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 67", "baddata-cname-to-good-AAAA.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 68", "baddata-cname-to-badsign-AAAA.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 69", "baddata-cname-to-nosig-AAAA.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_ERROR, 0}},
     {"Test Case 70", "baddata-cname-to-baddata-AAAA.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 71",
      "baddata-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in,
-     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 72",
      "baddata-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in,
-     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 73", "futuredate-cname-to-good-AAAA.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 74",
@@ -435,27 +435,27 @@ static const struct testcase_st testcases[] = {
     {"Test Case 99", "good-A.badsign-ns.test.dnssec-tools.org", ns_c_in,
      ns_t_a, {VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 100", "badsign-A.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_a, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_a, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 101", "nosig-A.badsign-ns.test.dnssec-tools.org", ns_c_in,
      ns_t_a, {VAL_ERROR, 0}},
     {"Test Case 102", "baddata-A.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_a, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_a, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 103", "futuredate-A.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_a, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_a, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 104", "pastdate-A.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_a, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_a, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 105", "good-AAAA.badsign-ns.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
     {"Test Case 106", "badsign-AAAA.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 107", "nosig-AAAA.badsign-ns.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_ERROR, 0}},
     {"Test Case 108", "baddata-AAAA.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 109", "futuredate-AAAA.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 110", "pastdate-AAAA.badsign-ns.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_UNPROVABLE, 0}},
     {"Test Case 111", "addedlater-A.badsign-ns.test.dnssec-tools.org",
      ns_c_in, ns_t_a, {VAL_R_BOGUS_PROOF, 0}},
     {"Test Case 112", "addedlater-AAAA.badsign-ns.test.dnssec-tools.org",
@@ -1216,7 +1216,7 @@ main(int argc, char *argv[])
     int             daemon = 0;
     u_int8_t        flags = (u_int8_t) 0;
     int             retvals[] = { 0 };
-    int             tcs = -1, tce;
+    int             tcs = -1, tce = -1;
     char           *label_str = NULL, *nextarg = NULL;
     u_char          name_n[NS_MAXCDNAME];
     val_log_t      *logp;
