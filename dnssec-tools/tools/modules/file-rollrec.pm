@@ -55,30 +55,30 @@ The following is an example of a skip I<rollrec>:
 The fields in a I<rollrec> record are:
 
 
- * curphase	"0"
+ * curphase
 
 The zone's current rollover phase.  A value of zero indicates that the zone
 is not in rollover, but is in normal operation.  A value of 1, 2, 3, 4
 indicates that the zone is in that rollover phase.
 
- * display	"1"
+ * display
 
 This boolean field indicates whether or not the zone should be displayed by
 the B<blinkenlights> program.
 
- * keyrec	"test.com.krf"
+ * keyrec
 
 The zone's I<keyrec> file.
 
- * maxttl	"60"
+ * maxttl
 
 The maximum time-to-live for the zone.  This is measured in seconds.
 
- * phasestart	"Mon Nov 13 19:31:50 2006"
+ * phasestart
 
 The time-stamp of the beginning of the zone's current phase.
 
- * zonefile	"test.com.signed"
+ * zonefile
 
 The zone's zone file.
 
