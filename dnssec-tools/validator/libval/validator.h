@@ -167,9 +167,10 @@ extern          "C" {
 #define VAL_QUERY_MERGE_RRSETS 0x00000002
 
 #define VAL_R_TRUST_FLAG 0x80
+#define VAL_R_MASKED_TRUST_FLAG 0x7f
 #define SET_RESULT_TRUSTED(status)         status |= VAL_R_TRUST_FLAG
 #define SET_MASKED_STATUS(st, new_val)     st = (st & VAL_R_TRUST_FLAG) | new_val
-#define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_TRUST_FLAG) == chk_val)
+#define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_MASKED_TRUST_FLAG) == chk_val)
 
 #define SIG_ACCEPT_WINDOW   (86400*1) /** 1 days **/
     
