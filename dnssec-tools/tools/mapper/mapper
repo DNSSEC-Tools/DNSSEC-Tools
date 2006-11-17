@@ -482,7 +482,7 @@ problem spots.
 
 =item -h
 
-Help summary.
+Prints a help summary.
 
 =item -o OUTFILE.png
 
@@ -491,13 +491,15 @@ will be saved to B<map.png>.
 
 =item -r
 
-Lists resources records assigned to each node within the map.
+Lists resource records assigned to each node within the map.
 
 =item -t TYPE,TYPE...
 
 Adds the data portion of a resource record to the displayed node
-information.  Data types passed will be automatically upper-cased for
-ease of use.  Example usage: I<-t A> will add IPv4 addresses to
+information.  Data types passed will be automatically converted to
+upper-case for ease of use.
+
+Example usage: I<-t A> will add IPv4 addresses to
 all displayed nodes that have A records.
 
 =item -L
@@ -506,8 +508,8 @@ Adds a legend to the map.
 
 =item -l (neato|dot|twopi|circo|fdp)
 
-Selects a layout format.  The default is I<neato> which is circular in
-pattern.  See the documentation on the I<graphviz> package and the
+Selects a layout format.  The default is I<neato>, which is circular in
+pattern.  See the documentation on the B<GraphViz> package and the
 B<GraphViz> Perl module for further details.
 
 =item -a
@@ -518,48 +520,48 @@ large zones will be difficult to decipher if this option is not used.
 
 =item -e WEIGHT
 
-Assigns an edge weight to edges.  In theory >1 means shorter, <1 means
-longer although I don't believe as implemented it will have any
-effect.  Should work better in the future.
+Assigns an edge weight to edges.  In theory, >1 means shorter and <1 means
+longer, although, it may not have any effect as implemented.
+This should work better in the future.
 
 =item -f INTEGER
 
 Uses the INTEGER value for the font size to print node names with.
-Defaults to 10.
+The default value is 10.
 
 =item -w WARNTIME
 
-How far in advance that warnings are turned on for signed
-resource records that are about to expire.  The default is 7 days.
-The warning time is measured in seconds.
+Specifies how far in advance expiration warnings are enabled for signed 
+resource records.  The default is 7 days.  The warning time is measured
+in seconds.
 
 =item -i REGEX
 
-Ignore record types matching a I<REGEX> regular expression.
+Ignores record types matching a I<REGEX> regular expression.
 
 =item -s TYPE,TYPE...
 
-Skips a list of record types from being analyzed or displayed in the map.
-By default, this is set to NSEC and CNAME in order to reduce clutter.
-Setting it to "" will display these results again.
+Specifies a list of record types that will not be analyzed or displayed
+in the map.  By default, this is set to NSEC and CNAME in order to reduce
+clutter.  Setting it to "" will display these results again.
 
 =item -T TYPE,TYPE...
 
-Only process record types of type I<TYPE>.  This is the converse of the
-I<-s> option.  It is not meaningful to use both I<-s> and I<-t> in the same
-invocation.  They will both work at once, however, so if I<-T> specifies a
-type which I<-s> excludes, it will not be shown.
+Restrict record types that will be processed to those of type I<TYPE>.
+This is the converse of the I<-s> option.  It is not meaningful to use both
+I<-s> and I<-t> in the same invocation.  They will both work at once, however,
+so if I<-T> specifies a type which I<-s> excludes, it will not be shown.
 
 =item -g
 
 Attempts to cluster nodes around the domain name.  For 'dot' layouts,
 this actually means drawing a box around the cluster.  For the other
-types, it makes very little, if any, difference.
+types, it makes very little difference, if any.
 
 =item -q
 
-Don't output warnings or errors about records that have DNSSEC signatures
-that are near or beyond their signature lifetimes.
+Prevents output of warnings or errors about records that have DNSSEC
+signatures that are near or beyond their signature lifetimes.
 
 =back
 
@@ -571,19 +573,19 @@ that are near or beyond their signature lifetimes.
 
 Writes to the default file (B<map.png>) of a I<zone.com> zone
 stored in I<zonefile>.  It excludes any hosts with a name containing
-I<dhcp> and ignores any record of type I<CNAME> or I<NSEC>.  It also
-includes a legend in the output.
+I<dhcp> and ignores any record of type I<CNAME> or I<NSEC>.  A legend
+is included in the output.
 
 =item I<mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...>
 
-Removes a lot of records from the display in order to display mostly a
-map of a zone hierarchy.
+Removes a lot of records from the display in order to primarily display
+a map of a zone hierarchy.
 
 =item I<mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...>
 
-The same thing, but draws a more vertical tree-style graph of the
-zone.  This works well for fairly deep but narrow hierarchies.  Tree-style
-diagrams rarely look as nice for full zones.
+As the previous example, but this command draws a more vertical tree-style
+graph of the zone.  This works well for fairly deep but narrow hierarchies.
+Tree-style diagrams rarely look as nice for full zones.
 
 =back
 
