@@ -146,7 +146,7 @@ foreach my $file (@ARGV) {
 	$data->{'udpsize'} = $1 if (/UDP payload size: (\d+)/);
 
 	# mark if ...
-	if (/(0|1).*(Truncaded)/) {
+	if (/(0|1).*(Truncated)/) {
 	    $data->{'flags'}{$2} = $1;
 	}
 
