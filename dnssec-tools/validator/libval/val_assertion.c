@@ -336,7 +336,7 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
                     /** ZONE_SE_IGNORE */
                     val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for  %s",
                             name_p);
-                    return VAL_AC_TRUST_ZONE;
+                    return VAL_AC_IGNORE_VALIDATION;
                 }
             }
         }
@@ -1242,7 +1242,7 @@ transform_single_result(struct val_internal_result *w_res,
     struct val_authentication_chain **aptr;
     struct val_result_chain *prev_res;
 
-    if ((results == NULL) || (mod_res == NULL) || (w_res == NULL))
+    if ((results == NULL) || (mod_res == NULL)) 
         return VAL_BAD_ARGUMENT;
     
     /* get a pointer to the last result */    
@@ -1253,7 +1253,7 @@ transform_single_result(struct val_internal_result *w_res,
 
     *mod_res = NULL;
     aptr = NULL;
-    if (w_res->val_rc_is_proof) {
+    if (w_res && w_res->val_rc_is_proof) {
         if (proof_res) {
             if (proof_res->val_rc_proof_count == MAX_PROOFS) {
                 proof_res->val_rc_status = VAL_R_BOGUS_PROOF;
@@ -1274,9 +1274,12 @@ transform_single_result(struct val_internal_result *w_res,
         *mod_res = proof_res;
     }
     *aptr = NULL;
-    w_res->val_rc_consumed = 1;
-  
-    return transform_authentication_chain(w_res->val_rc_rrset, aptr);
+    if (w_res) {
+        w_res->val_rc_consumed = 1;
+        return transform_authentication_chain(w_res->val_rc_rrset, aptr);
+    } 
+
+    return VAL_NO_ERROR;
 }
 
 /*
@@ -2073,11 +2076,13 @@ prove_nonexistence( val_context_t * ctx,
                     struct val_internal_result *w_results,
                     struct val_result_chain **proof_res,
                     struct val_result_chain **results,
-                    struct val_query_chain *top_q,
+                    u_char *qc_name_n,
+                    u_int16_t qc_type_h,
+                    u_int16_t qc_class_h,
+                    struct val_digested_auth_chain *qc_proof,
                     val_status_t *status)
 {
     struct val_internal_result *res;
-    int             provably_unsecure = 0;
     u_int8_t       *soa_name_n = NULL;
     char            name_p[NS_MAXDNAME];
     int retval;
@@ -2094,10 +2099,10 @@ prove_nonexistence( val_context_t * ctx,
     *proof_res = NULL;
     *status = VAL_R_DONT_KNOW;
 
-    if (-1 == ns_name_ntop(top_q->qc_name_n, name_p, sizeof(name_p)))
+    if (-1 == ns_name_ntop(qc_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
     val_log(ctx, LOG_DEBUG, "proving non-existence for {%s, %d, %d}",
-            name_p, top_q->qc_class_h, top_q->qc_type_h);
+            name_p, qc_class_h, qc_type_h);
 
     /*
      * Check if this is the whole proof and nothing but the proof
@@ -2121,23 +2126,22 @@ prove_nonexistence( val_context_t * ctx,
             *proof_res = new_res;
 
             soa_name_n = the_set->rrs.val_rrset_name_n;
-            if (res->val_rc_status == VAL_PROVABLY_UNSECURE)
-                provably_unsecure = 1;
             break;
         }
     }
-    if (soa_name_n == NULL)
+    if (res == NULL)
         *status = VAL_R_INCOMPLETE_PROOF;
-    else if (provably_unsecure) {
+    else if ((res->val_rc_status == VAL_PROVABLY_UNSECURE) || 
+             (res->val_rc_status == VAL_IGNORE_VALIDATION)) {
         /*
          * use the error code as status 
          */
-        if (top_q->qc_proof &&
-            top_q->qc_proof->val_ac_rrset &&
-            top_q->qc_proof->val_ac_rrset->val_msg_header) {
+        if (qc_proof &&
+            qc_proof->val_ac_rrset &&
+            qc_proof->val_ac_rrset->val_msg_header) {
 
             HEADER         *hp =
-                (HEADER *) top_q->qc_proof->val_ac_rrset->val_msg_header;
+                (HEADER *) qc_proof->val_ac_rrset->val_msg_header;
             if (hp->rcode == ns_r_noerror) {
                 *status = VAL_NONEXISTENT_TYPE;
             } else if (hp->rcode == ns_r_nxdomain) {
@@ -2187,7 +2191,7 @@ prove_nonexistence( val_context_t * ctx,
          * only nsec records 
          */
         if(VAL_NO_ERROR != (retval = nsec_proof_chk(ctx, w_results, proof_res, results, 
-                            top_q->qc_name_n, top_q->qc_type_h, soa_name_n, status)))
+                            qc_name_n, qc_type_h, soa_name_n, status)))
             goto err;
         }
 #ifdef LIBVAL_NSEC3
@@ -2196,7 +2200,7 @@ prove_nonexistence( val_context_t * ctx,
          * only nsec3 records 
          */
         if(VAL_NO_ERROR != (retval = nsec3_proof_chk(ctx, w_results, proof_res, results, 
-                            top_q->qc_name_n, top_q->qc_type_h, soa_name_n, status)))
+                            qc_name_n, qc_type_h, soa_name_n, status)))
             goto err;
             
     }
@@ -2748,7 +2752,11 @@ verify_and_validate(val_context_t * context,
             res->val_rc_is_proof = is_proof; 
             res->val_rc_consumed = 0;
             res->val_rc_rrset = as_more;
-            res->val_rc_status = VAL_R_DONT_KNOW;
+            if (flags & VAL_FLAGS_DONT_VALIDATE) {
+                res->val_rc_status = VAL_IGNORE_VALIDATION;
+            } else {
+                res->val_rc_status = VAL_R_DONT_KNOW;
+            }
             res->val_rc_next = *results;
             *results = res;
         }
@@ -2768,14 +2776,13 @@ verify_and_validate(val_context_t * context,
                     merge_glue_in_referral(pc, queries);
                 }
 
-                if (!(flags & VAL_FLAGS_DONT_VALIDATE)) {
+                if (res->val_rc_status != VAL_IGNORE_VALIDATION) {
                     /*
                      * Go up the chain of trust 
                      */
                     if (VAL_NO_ERROR !=
-                        (retval =
-                         try_verify_assertion(context, pc, queries,
-                                              next_as)))
+                        (retval = try_verify_assertion(context, pc, queries,
+                                                       next_as)))
                         return retval;
                 }
 
@@ -2812,12 +2819,6 @@ verify_and_validate(val_context_t * context,
                 *done = 0;
                 thisdone = 0;
             } else if (next_as->val_ac_status == VAL_AC_DONT_VALIDATE) {
-                break;
-            } else if ((next_as->val_ac_status == VAL_AC_TRUST_KEY) ||
-                       (next_as->val_ac_status == VAL_AC_TRUST_ZONE) ||
-                       (next_as->val_ac_status ==
-                        VAL_AC_PROVABLY_UNSECURE)) {
-                SET_RESULT_TRUSTED(res->val_rc_status);
                 break;
             } else if (next_as->val_ac_status == VAL_AC_NEGATIVE_PROOF) {
                 /*
@@ -2857,8 +2858,7 @@ verify_and_validate(val_context_t * context,
                     }
                     if (asked_the_parent) {
                         if (verify_provably_unsecure(context, top_q, as)) {
-                            res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
-                            SET_RESULT_TRUSTED(res->val_rc_status);
+                            res->val_rc_status = VAL_PROVABLY_UNSECURE;
                         }
                         break;
                     }
@@ -2903,8 +2903,7 @@ verify_and_validate(val_context_t * context,
 #endif
                 } else {
                     if (verify_provably_unsecure(context, top_q, next_as)) {
-                        res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
-                        SET_RESULT_TRUSTED(res->val_rc_status);
+                        res->val_rc_status = VAL_PROVABLY_UNSECURE;
                     }
                     break;
                 }
@@ -2915,8 +2914,7 @@ verify_and_validate(val_context_t * context,
              */
             else if (next_as->val_ac_status <= VAL_AC_LAST_ERROR) {
                 if (verify_provably_unsecure(context, top_q, next_as)) {
-                    res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
-                    SET_RESULT_TRUSTED(res->val_rc_status);
+                    res->val_rc_status = VAL_PROVABLY_UNSECURE;
                 } else
                     res->val_rc_status = VAL_ERROR;
                 break;
@@ -2931,31 +2929,37 @@ verify_and_validate(val_context_t * context,
                 if (CHECK_MASKED_STATUS
                     (res->val_rc_status, VAL_R_BOGUS_UNPROVABLE)) {
                     if (verify_provably_unsecure(context, top_q, next_as)) {
-                        res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
-                        SET_RESULT_TRUSTED(res->val_rc_status);
+                        res->val_rc_status = VAL_PROVABLY_UNSECURE;
                     } else
-                        res->val_rc_status = VAL_ERROR;
+                        res->val_rc_status = VAL_R_BOGUS_UNPROVABLE;
                     break;
                 } else {
                     SET_MASKED_STATUS(res->val_rc_status,
                                       VAL_R_BOGUS_UNPROVABLE);
                     continue;
                 }
-            } else if (CHECK_MASKED_STATUS
-                    (res->val_rc_status, VAL_R_VERIFIED_CHAIN)
+            } else if (CHECK_MASKED_STATUS(res->val_rc_status, VAL_R_VERIFIED_CHAIN)
                     || (res->val_rc_status == VAL_R_DONT_KNOW)) {
 
                 /*
-                 * Success condition 
+                 * Success condition : all elements in the chain are valid
                  */
                 if ((next_as->val_ac_status == VAL_AC_VERIFIED) ||
                     (next_as->val_ac_status == VAL_AC_WCARD_VERIFIED)) { 
                     SET_MASKED_STATUS(res->val_rc_status,
                                       VAL_R_VERIFIED_CHAIN);
                     continue;
-                } else if ((next_as->val_ac_status == VAL_AC_LOCAL_ANSWER)
-                           || (next_as->val_ac_status == VAL_AC_TRUST_KEY)
-                           || (next_as->val_ac_status == VAL_AC_TRUST_ZONE)) {
+                } else if (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) {
+                    res->val_rc_status = VAL_IGNORE_VALIDATION;
+                    break;
+                } else if (next_as->val_ac_status == VAL_AC_PROVABLY_UNSECURE) {
+                    res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                    break;
+                } else if (next_as->val_ac_status == VAL_AC_TRUST_KEY) { 
+                    SET_RESULT_TRUSTED(res->val_rc_status);
+                    break;
+                }
+                else if (next_as->val_ac_status == VAL_AC_LOCAL_ANSWER) {
                     res->val_rc_status = VAL_LOCAL_ANSWER;
                     break;
                 } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
@@ -2972,6 +2976,15 @@ verify_and_validate(val_context_t * context,
                     res->val_rc_status = VAL_R_VERIFIED_CHAIN;
                     break;
                 }
+            } else if ((next_as->val_ac_status == VAL_AC_TRUST_KEY) ||
+                       (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) ||
+                       (next_as->val_ac_status == VAL_AC_PROVABLY_UNSECURE)) {
+
+                /*
+                 * Reached a trust point but there was some error in between 
+                 */
+                SET_RESULT_TRUSTED(res->val_rc_status);
+                break; 
             }
         }
         if (!thisdone)
@@ -3314,7 +3327,10 @@ check_proof_sanity( val_context_t * context,
     val_status_t status = VAL_R_DONT_KNOW;
     int retval = VAL_NO_ERROR;
 
-    if ((top_q != NULL) && (top_q->qc_type_h == ns_t_ds)) {
+    if (top_q == NULL)
+        return VAL_BAD_ARGUMENT;
+    
+    if (top_q->qc_type_h == ns_t_ds) {
         /*
          * If we've asked for a DS and the soa has the same 
          * name, we've actually asked the child zone
@@ -3337,7 +3353,10 @@ check_proof_sanity( val_context_t * context,
 
     if (status == VAL_R_DONT_KNOW) {
         if( VAL_NO_ERROR != 
-                (retval = prove_nonexistence(context, w_results, &proof_res, results, top_q, &status)))
+                (retval = prove_nonexistence(context, w_results, &proof_res, results,
+                                             top_q->qc_name_n, top_q->qc_type_h, 
+                                             top_q->qc_class_h, top_q->qc_proof, 
+                                             &status)))
             return retval;
     }
 
@@ -3365,6 +3384,9 @@ check_wildcard_sanity(val_context_t * context,
     target_res = NULL; 
 
     for (res = w_results; res; res = res->val_rc_next) {
+        if (res->val_rc_status == VAL_IGNORE_VALIDATION)
+            continue;
+        
         if ((res->val_rc_status == VAL_SUCCESS) &&
             (res->val_rc_rrset) && 
             (!res->val_rc_consumed) &&
@@ -3427,6 +3449,123 @@ err:
 
 }
 
+static int
+check_alias_sanity(val_context_t * context,
+                   struct val_internal_result *w_results,
+                   struct val_result_chain **results,
+                   struct val_query_chain *top_q)
+{
+    struct val_internal_result *res;
+    struct val_result_chain    *new_res = NULL;
+    int                        done = 0;
+    int                        cname_seen = 0;
+    u_int8_t                   *qname_n = NULL;
+    int                        retval;
+
+    if (top_q == NULL)
+        return VAL_BAD_ARGUMENT;
+    
+    qname_n = top_q->qc_name_n; 
+    while (!done && qname_n) {
+        done = 1;
+        new_res = NULL;
+        for (res = w_results; res; res = res->val_rc_next) {
+            /* try constructing a cname chain */ 
+            if (res->val_rc_rrset && 
+                res->val_rc_rrset->_as.ac_data &&
+                !namecmp(qname_n, 
+                        res->val_rc_rrset->_as.ac_data->rrs.val_rrset_name_n)) {
+
+                if (res->val_rc_rrset->_as.ac_data->rrs_ans_kind == SR_ANS_CNAME) {
+                    /* found the next element */
+                    done = 0;
+                    cname_seen = 1;
+                } else if ((top_q->qc_type_h != 
+                            res->val_rc_rrset->_as.ac_data->rrs.val_rrset_type_h) || 
+                           (top_q->qc_class_h != 
+                            res->val_rc_rrset->_as.ac_data->rrs.val_rrset_class_h)) {
+                    continue;
+                }
+                
+                if ((res->val_rc_consumed) && results) {
+                    /* search for existing result structure */
+                    for(new_res = *results; new_res; new_res = new_res->val_rc_next) {
+                        if (new_res->val_rc_answer && new_res->val_rc_answer->val_ac_rrset) {
+                            if (!namecmp(qname_n, 
+                                     new_res->val_rc_answer->val_ac_rrset->val_rrset_name_n)) {
+                                break;
+                            }
+                        }
+                    }
+                } 
+
+                if (new_res == NULL) {
+                    if (VAL_NO_ERROR !=
+                            (retval = transform_single_result(res, results,
+                                            NULL, &new_res))) {
+                        goto err;
+                    }
+                }
+
+                /* find the next link in the cname chain */
+                if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
+                    qname_n = res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data->rr_rdata;
+                    new_res->val_rc_status = res->val_rc_status;
+                }
+                else {
+                    qname_n = NULL;
+                    new_res->val_rc_status = VAL_BOGUS;
+                }
+                    
+                break;
+            }
+        }
+    }
+
+    if (cname_seen) {
+        if ((new_res == NULL) && qname_n) {
+            /* 
+             * the last element in the chain was a cname,
+             * therefore we must check for a proof of non-existence 
+             */
+            val_status_t status = VAL_R_DONT_KNOW;
+            struct val_result_chain *proof_res = NULL;
+            if( VAL_NO_ERROR != 
+                    (retval = prove_nonexistence(context, w_results, &proof_res, results,
+                                                 qname_n, top_q->qc_type_h, 
+                                                 top_q->qc_class_h, top_q->qc_proof, 
+                                                 &status))) {
+                goto err;
+            }
+
+            if (proof_res) {
+                proof_res->val_rc_status = status;
+            } else {
+                /* create a new result element */
+                if (VAL_NO_ERROR != (retval = transform_single_result(NULL, results, NULL, &new_res))) {
+                    goto err;
+                }
+                new_res->val_rc_status = VAL_R_INCOMPLETE_PROOF;
+            }
+        }
+        
+        /* All other cnames and answers are bogus */
+        for (res = w_results; res; res = res->val_rc_next) {
+            if (!res->val_rc_consumed) {
+                res->val_rc_status = VAL_BOGUS;
+            } 
+        }
+    }
+
+    return VAL_NO_ERROR;
+
+err:
+    /* free actual results */
+    val_free_result_chain(*results);
+    *results = NULL;
+    return retval;
+}
+
 /* 
  * Identify if there is anything that must be proved
  */
@@ -3434,16 +3573,13 @@ static int
 perform_sanity_checks(val_context_t * context,
                       struct val_internal_result *w_results,
                       struct val_result_chain **results,
-                      struct val_query_chain *top_q,
-                      const u_int8_t flags)
+                      struct val_query_chain *top_q)
 {
     struct val_internal_result *res;
     int             partially_wrong = 0;
     int             negative_proof = 1;
     int retval;
 
-    if (flags & VAL_FLAGS_DONT_VALIDATE)
-        return VAL_NO_ERROR;
 
     /*
      * Fix validation results 
@@ -3475,8 +3611,7 @@ perform_sanity_checks(val_context_t * context,
                         struct rr_rec  *drr;
                         for (drr = as->val_ac_rrset->val_rrset_data; drr; drr=drr->rr_next) {
                             if(drr->rr_status == VAL_AC_UNKNOWN_ALGORITHM_LINK) {
-                                res->val_rc_status = VAL_R_PROVABLY_UNSECURE;
-                                SET_RESULT_TRUSTED(res->val_rc_status);
+                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
                                 break;
                             }
                         }
@@ -3496,7 +3631,8 @@ perform_sanity_checks(val_context_t * context,
             negative_proof = 0;
             
         if ((res->val_rc_status != VAL_SUCCESS) &&
-            (res->val_rc_status != VAL_PROVABLY_UNSECURE)) {
+            (res->val_rc_status != VAL_PROVABLY_UNSECURE) &&
+            (res->val_rc_status != VAL_IGNORE_VALIDATION)) {
             /*
              * All components were not validated success
              */
@@ -3533,9 +3669,12 @@ perform_sanity_checks(val_context_t * context,
      */ 
     if (VAL_NO_ERROR != (retval = check_wildcard_sanity(context, w_results, results, top_q)))
         return retval;
-   
-    //check_cname_sanity(context, w_results, results, top_q);
-    //check_dname_sanity(context, w_results, results, top_q);
+ 
+    /*
+     * Check cname sanity
+     */
+    if (VAL_NO_ERROR != (retval = check_alias_sanity(context, w_results, results, top_q)))
+        return retval;
 
     return VAL_NO_ERROR;
 }
@@ -3749,7 +3888,7 @@ val_resolve_and_check(val_context_t * ctx,
 
     if (w_results) {
 
-        retval = perform_sanity_checks(context, w_results, results, top_q, flags);
+        retval = perform_sanity_checks(context, w_results, results, top_q);
 
         if (retval == VAL_NO_ERROR) 
             retval = transform_outstanding_results(w_results, results, flags);
@@ -3797,6 +3936,7 @@ val_istrusted(val_status_t val_status)
     case VAL_NONEXISTENT_NAME:
     case VAL_NONEXISTENT_TYPE:
     case VAL_PROVABLY_UNSECURE:
+    case VAL_IGNORE_VALIDATION:
     case VAL_LOCAL_ANSWER: 
         return 1;
 
