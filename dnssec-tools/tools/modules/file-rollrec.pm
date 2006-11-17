@@ -30,30 +30,9 @@ The DNSSEC-Tools B<rollrec> module manipulates the contents of a I<rollrec>
 file.  Module interfaces exist for looking up I<rollrec> records, creating
 new records, and modifying existing records.
 
-The following is an example of a roll I<rollrec>:
-
-    roll "example.com"
-	    zonefile	"example.com.signed"
-	    keyrec	"example.com.krf"
-	    curphase	"1"
-	    maxttl	"60"
-	    display	"1"
-	    phasestart	"Mon Nov 13 19:31:26 2006"
-
-The following is an example of a skip I<rollrec>:
-
-    skip "test.com"
-	    zonefile	"test.com.signed"
-	    keyrec	"test.com.krf"
-	    curphase	"0"
-	    maxttl	"60"
-	    display	"1"
-	    phasestart	"Mon Nov 13 19:31:50 2006"
-
 =head1 FIELDS
 
 The fields in a I<rollrec> record are:
-
 
  * curphase
 
@@ -81,6 +60,28 @@ The time-stamp of the beginning of the zone's current phase.
  * zonefile
 
 The zone's zone file.
+
+=head1 EXAMPLES
+
+The following is an example of a roll I<rollrec>:
+
+    roll "example.com"
+	    zonefile	"example.com.signed"
+	    keyrec	"example.com.krf"
+	    curphase	"1"
+	    maxttl	"60"
+	    display	"1"
+	    phasestart	"Mon Nov 13 19:31:26 2006"
+
+The following is an example of a skip I<rollrec>:
+
+    skip "test.com"
+	    zonefile	"test.com.signed"
+	    keyrec	"test.com.krf"
+	    curphase	"0"
+	    maxttl	"60"
+	    display	"1"
+	    phasestart	"Mon Nov 13 19:31:50 2006"
 
 =head1 COPYRIGHT
                  

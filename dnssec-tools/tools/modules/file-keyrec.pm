@@ -31,6 +31,127 @@ The DNSSEC-Tools B<keyrec> module manipulates the contents of a I<keyrec>
 file.  Module interfaces exist for looking up I<keyrec> records, creating
 new records, and modifying existing records.
 
+=head1 FIELDS
+
+The fields in a I<keyrec> record are described in this section.  The fields
+in each type of record (zone, set, key) are described in their own subsection.
+
+=head2 Zone Keyrec Fields
+
+ * zonefile
+
+The name of the zone file for this zone.
+
+ * signedfile
+
+The name of the signed zone file for this zone.
+
+ * endtime
+
+The time when the zone's SIG records expire.  This field is passed to
+B<dnssec-signzone> as the argument to the I<-e> option.
+
+ * kskkey
+
+The name of the zone's KSK key.  This is used as the name of the KSK key's
+I<keyrec> field.
+
+ * kskpath         "keydir/Kexample.com.+005+33333"
+
+The path to the zone's KSK key.  This may be an absolute or relative path,
+but it should be one which B<zonesigner> may use (in conjunction with other
+I<keyrec> fields to find the key.
+
+ * kskdirectory    "keydir"
+
+The directory that holds the KSK key.
+
+ * zskcur          "signing-set-42"
+
+The name of the signing set for the current ZSK keys.
+This is the name of the signing set's set I<keyrec>.
+
+ * zskpub          "signing-set-43"
+
+The name of the signing set for the current ZSK keys.
+This is the name of the signing set's set I<keyrec>.
+
+ * zsknew          "signing-set-44"
+
+The name of the signing set for the current ZSK keys.
+This is the name of the signing set's set I<keyrec>.
+
+ * keyrec_signsecs
+
+The numeric timestamp of the zone I<keyrec>'s last update.
+This is measured in seconds since the epoch.
+
+ * keyrec_signdate
+
+The textual timestamp of the zone I<keyrec>'s last update.
+This is a translation of the I<keyrec_signsecs> field.
+
+=head2 Set Keyrec Fields
+
+ * zonename        "example.com"
+
+The name of the zone for which this signing set was generated.
+
+ * keys            "Kexample.com.+005+88888"
+
+The list of keys in this signing set.  Each key listed should have a
+corresponding key I<keyrec> whose name matches the key name.
+
+ * keyrec_setsecs
+
+The numeric timestamp of the signing set's creation.
+This is measured in seconds since the epoch.
+
+ * keyrec_setdate
+
+The textual timestamp of the signing set's creation.
+This is a translation of the I<keyrec_setsecs> field.
+
+=head2 Key Keyrec Fields
+
+ * zonename
+
+The name of the zone for which this key was generated.
+
+ * algorithm
+
+The encryption algorithm used to generate this key.
+
+ * random
+
+The random number generator used to generate this key.
+
+ * keypath
+
+The path to the key.  This may be an absolute or relative path, but it should
+be one which B<zonesigner> may use (in conjunction with other I<keyrec>
+fields to find the key.
+
+ * ksklength
+
+The length of a KSK key.  This is only included in I<keyrec>s for KSK keys.
+
+ * zsklength
+
+The length of a ZSK key.  This is only included in I<keyrec>s for ZSK keys.
+
+ * keyrec_gensecs
+
+The numeric timestamp of the key's creation.  This is measured in seconds
+since the epoch.
+
+ * keyrec_gendate
+
+The textual timestamp of the key's creation.  This is a translation of
+the I<keyrec_gensecs> field.
+
+=head1 EXAMPLES
+
 The following is an example of a zone I<keyrec>:
 
     zone        "example.com"
