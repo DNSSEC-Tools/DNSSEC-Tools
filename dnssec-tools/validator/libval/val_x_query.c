@@ -553,6 +553,7 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     /* only return success if you have some answer */
     if ((*val_status != VAL_SUCCESS ) &&
         (*val_status != VAL_PROVABLY_UNSECURE) && 
+        (*val_status != VAL_IGNORE_VALIDATION) && 
         (*val_status != VAL_LOCAL_ANSWER)) {
 
         switch (*val_status) {
