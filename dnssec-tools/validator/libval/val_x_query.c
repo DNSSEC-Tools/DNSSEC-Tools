@@ -13,6 +13,7 @@
 #include <ctype.h>
 #include <netinet/in.h>
 #include <resolv.h>
+#include <errno.h>
 
 #include <resolver.h>
 #include <validator.h>
@@ -29,6 +30,10 @@
 #include "val_assertion.h"
 
 #define OUTER_HEADER_LEN (sizeof(HEADER) + wire_name_length(name_n) + sizeof(u_int16_t) + sizeof(u_int16_t))
+        
+#ifndef h_errno                 /* can be a macro */
+extern int      h_errno;
+#endif
 
 /*
  * Calculate rrset length 
@@ -523,27 +528,51 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
 {
     struct val_response *resp;
     int             retval = -1;
+    int             bytestocopy = 0;
 
-    if (val_status == NULL)
+    if (val_status == NULL) {
+        h_errno = NETDB_INTERNAL;
+        errno = EINVAL;
         return -1;
+    }
 
     if (VAL_NO_ERROR !=
         (retval =
          val_query(ctx, dname, class_h, type, VAL_QUERY_MERGE_RRSETS,
                    &resp))) {
+        h_errno = NETDB_INTERNAL;
+        errno = EBADMSG;
         return -1;
     }
 
-    if (resp->vr_length > anslen)
-        goto err;
-
-    memcpy(answer, resp->vr_response, resp->vr_length);
-    *val_status = resp->vr_val_status;
     retval = resp->vr_length;
+    bytestocopy = (resp->vr_length > anslen)? anslen: resp->vr_length;
+    memcpy(answer, resp->vr_response, bytestocopy);
+    *val_status = resp->vr_val_status;
 
-  err:
-    if (VAL_NO_ERROR != (retval = val_free_response(resp))) {
-        return -1;
+    /* only return success if you have some answer */
+    if ((*val_status != VAL_SUCCESS ) &&
+        (*val_status != VAL_PROVABLY_UNSECURE) && 
+        (*val_status != VAL_LOCAL_ANSWER)) {
+
+        switch (*val_status) {
+            case VAL_NONEXISTENT_NAME:
+                h_errno = HOST_NOT_FOUND;
+                return -1;
+
+            case VAL_NONEXISTENT_TYPE:
+                h_errno = NO_DATA;
+                return -1;
+
+            case VAL_DNS_ERROR_BASE+SR_SERVFAIL:
+                h_errno = TRY_AGAIN;
+                return -1;
+
+            default:
+                h_errno = NO_RECOVERY;
+                return -1;
+        }
     }
+
     return retval;
 }
