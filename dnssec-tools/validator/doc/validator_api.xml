@@ -393,7 +393,7 @@ The val_istrusted() function returns a single boolean value
 representing the trustworthyness of information returned by
 the validator. The return value is greater than 0 if the validation
 status is one of VAL_SUCCESS, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_TYPE,
-VAL_PROVABLY_UNSECURE and VAL_LOCAL_ANSWER, and is equal to 0 for other
+VAL_PROVABLY_UNSECURE, VAL_IGNORE_VALIDATION and VAL_LOCAL_ANSWER, and is equal to 0 for other
 status values. 
       </t>
       </postamble>
@@ -633,9 +633,8 @@ validation was not performed on the results.  </t>
 <t hangText="VAL_AC_TRUST_KEY:">
 returned if a given DNSKEY or a DS record was locally defined to be a trust anchor.  </t>
 <t> </t>
-<t hangText="VAL_AC_TRUST_ZONE:">
-returned if local policy defined a given zone as trusted, with no further validation 
-being deemed necessary.  </t>
+<t hangText="VAL_AC_IGNORE_VALIDATION:">
+returned if local policy is configured to ignore validation for this zone. </t>
 <t> </t>
 <t hangText="VAL_AC_PROVABLY_UNSECURE:">
 returned if the authentication chain from a trust anchor to a given zone could not be constructed
@@ -990,6 +989,10 @@ failures or inability to verify proofs.  </t>
 returned if the record or some ancestor of the record in the authentication chain 
 towards the trust anchor was known to be provably unsecure. This condition 
 is treated as equivalent to a trust point being reached.  </t>
+<t> </t>
+<t hangText="VAL_IGNORE_VALIDATION:">
+returned if local policy was configured to ignore validation for the zone from which this
+data was received. </t>
 <t> </t>
 <t hangText="VAL_NOTRUST:">
 returned if all available components in the authentication chain were successfully verified
