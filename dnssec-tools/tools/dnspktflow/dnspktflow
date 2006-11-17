@@ -48,7 +48,7 @@ LocalGetOptions(\%opts,
 		['M|magic-point=s',
 		 "Saves a Magic Point presentation for the output"],
 
-		["GUI:screen", "Output Vizualization Options:"],
+		["GUI:screen", "Output Visualization Options:"],
 		['L|last-line-labels-only',
 		 "Only show data on the last line drawn."],
 		['z|most-lines=i', "Only show at most INTEGER connections."],
@@ -223,7 +223,7 @@ if ($opts{'m'}) {
 my $gv;
 
 # either display everything at once, or if multiple files are
-# requested: save a series of cascading images to create an animitaion
+# requested: save a series of cascading images to create an animation
 # with each new packet adding to the previous screen's data.
 for (my $m = ($opts{'m'} ? 0 : $#dnspkts); $m <= $#dnspkts; $m++) {
     $gv = GraphViz->new(rankdir => 1,
@@ -420,14 +420,14 @@ dnspktflow - Analyze and draw DNS flow diagrams from a tcpdump file
 
 =head1 DESCRIPTION
 
-The I<dnspktflow> application takes a tcpdump network traffic dump
-file, passes it through the tshark application and then displays the
-resulting DNS packet flows in a "flow-diagram" image.  I<dnspktflow>
-can output a single image or a series of images which can then been
-shown in sequence as an animiation.
+The B<dnspktflow> application takes a B<tcpdump> network traffic dump
+file, passes it through the B<tshark> application and then displays the
+resulting DNS packet flows in a "flow-diagram" image.  B<dnspktflow>
+can output a single image or a series of images which can then be
+shown in sequence as an animation.
 
-I<dnspktflow> was written as a debugging utility to help trace DNS
-queries and repsonses, especially as they apply to DNSSEC enabled lookups.
+B<dnspktflow> was written as a debugging utility to help trace DNS
+queries and responses, especially as they apply to DNSSEC-enabled lookups.
 
 =head1 REQUIREMENTS
 
@@ -442,92 +442,94 @@ The following is required for outputting screen presentations:
 
   MagicPoint                   (http://member.wide.ad.jp/wg/mgp/)
 
-If the following modules are installed, it will enable a GUI interface:
+If the following modules are installed, a GUI interface will be enabled for
+communication with B<dnspktflow>:
 
   B<QWizard>                   (Perl module)
   B<Getopt::GUI::Long>         (Perl module)
 
 =head1 OPTIONS
 
-=head2 Input Packet Selection:
+B<dnspktflow> takes a wide variety of command-line options.  These options
+are described below in the following functional groups:  input packet
+selection, output file options, output visualization options, graphical
+options, and debugging.
+
+=head2 Input Packet Selection
+
+These options determine the packets that will be selected by B<dnspktflow>.
 
 =over
 
 =item  -i STRING
 
-
-
 =item  --ignore-hosts=STRING
 
-A regular expression of host names to ignore in the query/response fields
+A regular expression of host names to ignore in the query/response fields.
 
 =item  -r STRING
 
-
-
 =item  --only-hosts=STRING
 
-A regular expression of host names to analyze in the query/response fields
+A regular expression of host names to analyze in the query/response fields.
 
 =item  -f
 
-
-
 =item  --show-frame-num
 
-Display the packet frame numbers
+Display the packet frame numbers.
 
 =item  -b INTEGER
 
-
-
 =item  --begin-frame=INTEGER
 
-Begin at packet frame NUMBER
+Begin at packet frame NUMBER.
 
-=head2 Output File Options:
+=back
+
+=head2 Output File Options
+
+These options determine the type and location of B<dnspktflow>'s output.
+
+=over
 
 =item  -o STRING
 
-
-
 =item  --output-file=STRING
 
-Output file name (default: out%03d.png as png format)
+Output file name (default: out%03d.png as PNG format.)
 
 =item  --fig
 
-Output format should be fig
+Output format should be fig.
 
 =item  -O STRING
 
-
-
 =item  --tshark-out=STRING
 
-Save tshark output to this file
+Save B<tshark> output to this file.
 
 =item  -m
 
-
-
 =item  --multiple-outputs
 
-One picture per request (use %03d in the filename)
+One picture per request (use %03d in the filename.)
 
 =item  -M STRING
 
-
-
 =item  --magic-point=STRING
 
-Saves a Magic Point presentation for the output
+Saves a MagicPoint presentation for the output.
 
-=head2 Output Vizualization Options:
+=back
+
+=head2 Output Visualization Options:
+
+These options determine specifics of B<dnspktflow>'s output.
+
+=over
 
 =item  -L
-
-
 
 =item  --last-line-labels-only
 
@@ -535,95 +537,85 @@ Only show data on the last line drawn.
 
 =item  -z INTEGER
 
-
-
 =item  --most-lines=INTEGER
 
 Only show at most INTEGER connections.
 
-
 =item  -T
-
-
 
 =item  --input-is-tshark-out
 
-The input file is already processed by tshark
+The input file is already processed by B<tshark>.
+
+=back
 
 =head2 Graphical Options:
 
+These options determine fields included in B<dnspktflow>'s output.
+
+=over
+
 =item  -t
-
-
 
 =item  --show-type
 
-Shows message type in result image
+Shows message type in result image.
 
 =item  -q
 
-
-
 =item  --show-queries
 
-Shows query questions in result image
+Shows query questions in result image.
 
 =item  -a
 
-
-
 =item  --show-answers
 
-Shows query answers in result image
+Shows query answers in result image.
 
 =item  -A
 
-
-
 =item  --show-authoritative
 
-Shows authoritative information in result image
+Shows authoritative information in result image.
 
 =item  -x
 
-
-
 =item  --show-additional
 
-Shows additional information in result image
+Shows additional information in result image.
 
 =item  -l
 
-
-
 =item  --show-label-lines
 
-Shows lines attaching labels to lines
+Shows lines attaching labels to lines.
 
 =item  --fontsize=INTEGER
 
 Font Size
 
+=back
+
 =head2 Debugging:
+
+These options may assist in debugging B<dnspktflow>.
+
+=over
 
 =item  -d
 
-
-
 =item  --dump-pkts
 
-Dump data collected from the packets
+Dump data collected from the packets.
 
 =item  -h
 
-
-
 =item  --help
 
-Show help for command line options
+Show help for command line options.
 
 =back
-
 
 =head1 COPYRIGHT
 
