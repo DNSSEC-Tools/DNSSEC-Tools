@@ -277,7 +277,7 @@ A I<rollrec> entry has this format:
 
 The I<zonefile> and I<keyrec> fields are set according to command-line options
 and arguments.  The manner of generating the I<rollrec>'s actual values is a
-little complex and is described in the ZONEFILE AND KEYREC FIELDS section
+little complex and is described in the ZONEFILE And KEYREC FIELDS section
 below.  The I<curphase> field is set to 0 to indicate that the zone is in
 normal operation (non-rollover.)  The I<display> field is set to indicate that
 B<blinkenlights> should display the record.  The I<maxttl> and I<phasestart>
@@ -290,7 +290,7 @@ default; B<skip> entries are created if the I<-skip> option is specified.
 The newly generated I<rollrec> entries are written to standard output,
 unless the I<-out> option is specified.
 
-=head1 ZONEFILE AND KEYREC FIELDS
+=head1 ZONEFILE And KEYREC FIELDS
 
 The I<zonefile> and I<keyrec> fields may be given by using the I<-zone>
 and I<-keyrec> options, or default values may be used.
@@ -329,12 +329,12 @@ B<rollinit> may be given the following options:
 =item I<-zone zonefile>
 
 This specifies the value of the I<zonefile> field.
-See the ZONEFILE AND KEYREC FIELDS and EXAMPLES sections for more details.
+See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 
 =item I<-keyrec keyrec-file>
 
 This specifies the value of the I<keyrec> field.
-See the ZONEFILE AND KEYREC FIELDS and EXAMPLES sections for more details.
+See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 
 =item I<-skip>
 
