@@ -89,7 +89,7 @@ my $savekeys = 0;			# Flag for saving old keys.
 
 my $ksk;				# KSK we've generated.
 my $kskdir;				# Directory to hold KSK.
-my $ksklife;				# Time between KSK roll-overs.
+my $ksklife;				# Time between KSK rollovers.
 my $kskpath;				# Path to the KSK.
 my $ksize;				# Size of KSK.
 my $genksk;				# Generate a new KSK.
@@ -99,7 +99,7 @@ my $zskpub;				# Published ZSK.
 my $zskcurpath;				# Path to the published KSK.
 my $zskpubpath;				# Path to the current KSK.
 my $zskdir;				# Directory to hold ZSK.
-my $zsklife;				# Time between ZSK roll-overs.
+my $zsklife;				# Time between ZSK rollovers.
 my $zskcnt;				# Number of current ZSKs.
 my $zsize;				# Size of ZSK.
 my $genzsk;				# Generate a new ZSK.
@@ -138,12 +138,12 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool-specific options:'],
-	       ["forceroll",		'Force the roll-over of zone keys.'],
+	       ["forceroll",		'Force the rollover of zone keys.'],
 	       ["usepub",		'Use Published ZSK for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	     );
 
-my $forceroll = 0;			# Force-a-roll-over flag.
+my $forceroll = 0;			# Force-a-rollover flag.
 my $usepub = 0;				# Use-published-ZSK flag.
 
 #
@@ -324,7 +324,7 @@ sub optsandargs()
 	}
 
 	#
-	# Check for the key roll-over flag.
+	# Check for the key rollover flag.
 	#
 	$forceroll = 0;
 	$forceroll = 1 if(defined($opts{'forceroll'}));
@@ -1650,7 +1650,7 @@ EOF
 #----------------------------------------------------------------------
 # Routine:	forceroll()
 #
-# Purpose:	Force a roll-over of the ZSK keys.  The current ZSK is
+# Purpose:	Force a rollover of the ZSK keys.  The current ZSK is
 #		marked as obsolete.  The published ZSK is moved to being
 #		the current ZSK.  If the zone has a new ZSK, it is
 #		moved to being the published ZSK; if not, a new published
@@ -1665,14 +1665,14 @@ sub forceroll
 	my $publife;				# Published ZSK's lifespan.
 	my $setlist;				# List of key names.
 
-	vprint("forcing a ZSK roll-over\n");
+	vprint("forcing a ZSK rollover\n");
 
 	#
-	# Ensure that a roll-over makes sense.
+	# Ensure that a rollover makes sense.
 	#
 	if($opts{'zskpub'} eq "")
 	{
-		print STDERR "zone $zone has no published ZSK to roll-over to a current ZSK\n";
+		print STDERR "zone $zone has no published ZSK to rollover to a current ZSK\n";
 		exit(1);
 	}
 
@@ -2108,15 +2108,41 @@ how the zone was signed in order to facilitate re-signing of the zone in the
 future.
 
 The B<zonesigner>-specific zone-signing records are kept in I<keyrec> files.
-Using I<keyrec> files, defined and maintained by DNSSEC-Tools, I<zonesigner>
+Using I<keyrec> files, defined and maintained by DNSSEC-Tools, B<zonesigner>
 can automatically gather many of the options used to previously sign and
 generate a zone and its keys.  This allows the zone to be maintained using the
 same key lengths and expiration times, for example, without an administrator
 needing to manually track these fields.
 
+=head1 QUICK START
+
+The following are examples that will allow a quick start on using
+B<zonesigner>:
+
+=over 4
+
+=item first run on example.com
+
+The following command will generate keys and sign the zone file for
+example.com, giving an expiration date 31 days in the future.  The
+zone file is named B<example.com> and the signed zone file will be
+named B<example.com.signed>.
+
+    zonesigner -genkeys -endtime +2678400 example.com
+
+=item subsequent runs on example.com
+
+The following command will re-sign example.com's zone file, but will not
+generate new keys.  The files and all key-generation and zone-signing
+arguments will remain the same.
+
+    zonesigner example.com
+
+=back
+
 =head1 USING ZONESIGNER
 
-I<zonesigner> is used in this way:
+B<zonesigner> is used in this way:
 
     zonesigner [options] <zone-file> <signed-zone>
 
@@ -2140,13 +2166,13 @@ Several $INCLUDE lines will be added at the end of the file and the SOA serial
 number will be incremented.
 
 I<signed-zone> is the name of the signed zone file.  If it is not given on
-the command line, the default signed zone filename is the <zone-file>
-appended with ".signed".  Thus, exeucting I<zonesigner example.com> will
+the command line, the default signed zone filename is the I<zone-file>
+appended with ".signed".  Thus, executing B<zonesigner example.com> will
 result in the signed zone being stored in I<example.com.signed>.
 
 Unless the I<-genkeys>, I<-genksk>, or I<-genzsk> options are specified, the
 last keys generated for a particular zone will be used in subsequent
-I<zonesigner> executions.
+B<zonesigner> executions.
 
 =head1 KEYREC FILES
 
@@ -2159,12 +2185,12 @@ option is given, then no I<keyrec> file will be consulted or saved.
 
 I<keyrec> files contain three types of entries:  zone I<keyrec>s, set
 I<keyrec>s, and key I<keyrec>s.  Zone I<keyrec>s contain information
-specifically about the zone, such as number of ZSKs used to sign the zone,
-end-time for the zone, and key signing set names (names of set I<keyrecs>.)
-Set I<keyrec>s contain lists of keys names used for a specific purpose, such
-as the current ZSK keys or the published ZSK keys.  Key I<keyrec>s contain
-information about the generated keys themselves, such as encryption algorithm,
-key length, and key lifetime.
+specifically about the zone, such as the number of ZSKs used to sign the zone,
+the end-time for the zone, and the key signing set names (names of set
+I<keyrecs>.) Set I<keyrec>s contain lists of keys names used for a specific
+purpose, such as the current ZSK keys or the published ZSK keys.  Key
+I<keyrec>s contain information about the generated keys themselves, such as
+encryption algorithm, key length, and key lifetime.
 
 Each I<keyrec> contains a set of "key/value" entries, one per line.  Example 4
 below contains the contents of a sample I<keyrec> file.
@@ -2173,14 +2199,14 @@ below contains the contents of a sample I<keyrec> file.
 
 On some systems, the implementation of the pseudo-random number generator
 requires keyboard activity.  This keyboard activity is used to fill a buffer
-in the system's random number generator.  If zonesigner appears hung, you may
-have to add entropy to the random number generator by randomly striking keys
-until the program completes.  Display of this message is controlled by the
-B<entropy_msg> configuration file parameter.
+in the system's random number generator.  If B<zonesigner> appears hung, you
+may have to add entropy to the random number generator by randomly striking
+keys until the program completes.  Display of this message is controlled by
+the B<entropy_msg> configuration file parameter.
 
 =head1 DETERMINING OPTION VALUES
 
-I<zonesigner> checks four places in order to determine option values.  
+B<zonesigner> checks four places in order to determine option values.  
 In descending order of precedence, these places are:
 
     command line options
@@ -2192,7 +2218,7 @@ In descending order of precedence, these places are:
     zonesigner defaults
 
 Each is checked until a value is found.  That value is then used for that
-I<zonesigner> execution and the value is stored in the I<keyrec> file.
+B<zonesigner> execution and the value is stored in the I<keyrec> file.
 
 =head2 Example
 
@@ -2226,10 +2252,10 @@ length will be 512.
 =head1 OPTIONS
 
 Three types of options may be given, based on the command for which they are
-intended.  These commands are  I<dnssec-keygen>, I<dnssec-signzone>, and
-I<zonesigner>.
+intended.  These commands are  B<dnssec-keygen>, B<dnssec-signzone>, and
+B<zonesigner>.
 
-=head2 I<zonesigner>-specific Options
+=head2 B<zonesigner>-specific Options
 
 =over 4
 
@@ -2240,7 +2266,7 @@ No I<keyrec> file will be consulted or created.
 =item -krfile
 
 I<keyrec> file to use in processing options.  See the man page for
-B<Net::DNS::SEC::Tools::tooloptions> for more details about this file.
+B<Net::DNS::SEC::Tools::tooloptions.pm> for more details about this file.
 
 =item -genkeys
 
@@ -2262,11 +2288,11 @@ Use the existing Published ZSK to sign the zone.
 
 =item -ksklife
 
-The time between KSK roll-overs.  This is measured in seconds.
+The time between KSK rollovers.  This is measured in seconds.
 
 =item -zsklife
 
-The time between ZSK roll-overs.  This is measured in seconds.
+The time between ZSK rollovers.  This is measured in seconds.
 
 =item -zskcount
 
@@ -2285,7 +2311,7 @@ increment the number for subsequent signing sets.
 
 =item -forceroll
 
-Force a roll-over of the ZSK keys.  The I<keyrec>s of the ZSK keys are
+Force a rollover of the ZSK keys.  The I<keyrec>s of the ZSK keys are
 adjusted as follows:
 
     The current ZSK key is marked as obsolete.
@@ -2335,15 +2361,15 @@ I<-verbose> will get the output from the first and second levels of output.
 
 =back
 
-=head2 I<dnssec-keygen>-specific Options
+=head2 B<dnssec-keygen>-specific Options
 
 =over 4
 
 =item -algorithm
 
 Cryptographic algorithm used to generate the zone's keys.  The default value
-is RSASHA1.  The option value is passed to I<dnssec-keygen> as the the I<-a>
-flag.  Consult I<dnssec-keygen>'s manual page for to determine legal values.
+is RSASHA1.  The option value is passed to B<dnssec-keygen> as the the I<-a>
+flag.  Consult B<dnssec-keygen>'s manual page for to determine legal values.
 
 =item -ksklength
 
@@ -2361,35 +2387,35 @@ The default is 512.
 
 =item -kgopts
 
-Additional options for I<dnssec-keygen> may be specified using this option.
+Additional options for B<dnssec-keygen> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the I<-kgopts> option.
 
 =back
 
-=head2 I<dnssec-signzone>-specific Options
+=head2 B<dnssec-signzone>-specific Options
 
 =over 4
 
 =item -endtime
 
 Time that the zone expires, measured in seconds.  See the man page for
-I<dnssec-signzone> for the valid format of this field.
+B<dnssec-signzone> for the valid format of this field.
 The default value is 2592000 seconds (30 days.)
 
 =item -gends
 
-Force I<dnssec-signzone> to generate DS records for the zone.  This option is
-translated into I<-g> when passed to I<dnssec-signzone>.
+Force B<dnssec-signzone> to generate DS records for the zone.  This option is
+translated into I<-g> when passed to B<dnssec-signzone>.
 
 =item -ksdir
 
-Specify a directory for storing keysets.  This is passed to I<dnssec-signzone>
+Specify a directory for storing keysets.  This is passed to B<dnssec-signzone>
 as the I<-d> option.
 
 =item -szopts
 
-Additional options for I<dnssec-signzone> may be specified using this option.
+Additional options for B<dnssec-signzone> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the I<-szopts> option.
 
@@ -2473,7 +2499,7 @@ The signed zone file is created in:
 
 Example 4.
 
-This example shows a I<keyrec> file generated by I<zonesigner>.
+This example shows a I<keyrec> file generated by B<zonesigner>.
 
 The command executed is:
 
@@ -2563,6 +2589,9 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
+
+B<dnssec-keygen(8)>,
+B<dnssec-signzone(8)>
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>,
