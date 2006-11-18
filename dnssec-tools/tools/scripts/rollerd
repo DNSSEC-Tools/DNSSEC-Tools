@@ -6,10 +6,10 @@
 #
 # rollerd
 #
-#	This script manages the key roll-over process.
+#	This script manages the key rollover process.
 #
-#	ZSK roll-over takes place in four phases:
-#		- wait until it's time to perform a ZSK roll-over
+#	ZSK rollover takes place in four phases:
+#		- wait until it's time to perform a ZSK rollover
 #		- sign the zone with the KSK and Published ZSK
 #		- wait for old zone data to expire from caches
 #		- sign the zone with the new Current ZSK key
@@ -318,7 +318,7 @@ sub zsk_phaser
 	my $rrr = shift;		# Reference to rollrec.
 
 	my %rr;				# Rollrec hash.
-	my $phase;			# Zone's current roll-over phase.
+	my $phase;			# Zone's current rollover phase.
 
 	#
 	# Get this rollrec record's current phase.
@@ -347,7 +347,7 @@ sub zsk_phasewait
 {
 	my $rname = shift;			# Name of rollrec.
 	my $rrr	  = shift;			# Reference to rollrec.
-	my $phase = shift;			# Roll-over phase.
+	my $phase = shift;			# Rollover phase.
 
 	my %rr;					# Rollrec hash.
 
@@ -358,7 +358,7 @@ sub zsk_phasewait
 	%rr = %$rrr;
 
 	#
-	# Check if we can go to the next roll-over phase.  If not, we'll
+	# Check if we can go to the next rollover phase.  If not, we'll
 	# go to the next rollrec entry and return to this later.
 	#
 	if(!ttlexpire($rname,$rrr,$phase))
@@ -377,7 +377,7 @@ sub zsk_phasewait
 #-----------------------------------------------------------------------------
 # Routine:	zsk_phase2()
 #
-# Purpose:	Perform the phase 2 steps of the roll-over.  These are:
+# Purpose:	Perform the phase 2 steps of the rollover.  These are:
 #
 #			- sign the zone with the KSK and published ZSK
 #			- reload the zone
@@ -453,7 +453,7 @@ sub zsk_phase2
 #-----------------------------------------------------------------------------
 # Routine:	zsk_phase4()
 #
-# Purpose:	Perform the phase 4 steps of the roll-over.  These are:
+# Purpose:	Perform the phase 4 steps of the rollover.  These are:
 #
 #			- juggle the ZSKs in the zone's keyrec
 #			- sign the zone with the KSK and new current ZSK
@@ -566,7 +566,7 @@ sub zsk_expired
 	my $expired = 0;			# Expired-zone flag.
 
 	#
-	# If this zone is in the middle of roll-over processing, we'll
+	# If this zone is in the middle of rollover processing, we'll
 	# immediately assume the key has expired.
 	#
 	%rr = %$rrr;
@@ -744,11 +744,11 @@ sub maxttl
 # Routine:	ttlexpire()
 #
 # Purpose:	Returns a boolean indicating if we can move to the next phase
-#		of roll-over.  This is calculated by adding twice the TTL
+#		of rollover.  This is calculated by adding twice the TTL
 #		length to the time we entered this phase.  If this is greater
 #		than the current time, then we must wait a bit longer.  If
 #		this is less than the current time, then we can proceed to
-#		the next roll-over phase.
+#		the next rollover phase.
 #
 # Return Values:
 #		0 - Zone's expiry date has not passed.
@@ -810,7 +810,7 @@ sub ttlexpire
 		$endtime = ctime($endtempus);
 		chomp $endtime;
 
-		rollmgr_log(LOG_TMI,$rname,"roll-over TTL check");
+		rollmgr_log(LOG_TMI,$rname,"rollover TTL check");
 		rollmgr_log(LOG_TMI,$rname,"endtime\t$endtime");
 		rollmgr_log(LOG_TMI,$rname,"curtime\t$curtime");
 	}
@@ -852,11 +852,11 @@ sub newphase
 	my $setlist;					# Set's key list.
 
 	my $exptime;					# Key's time to expiry.
-	my $chronostr;					# Pretty roll-over time.
+	my $chronostr;					# Pretty rollover time.
 
 	if($phase == 1)
 	{
-		rollmgr_log(LOG_TMI,$rname,"starting roll-over");
+		rollmgr_log(LOG_TMI,$rname,"starting rollover");
 	}
 	else
 	{
@@ -873,7 +873,7 @@ sub newphase
 	display("phase $rname $phase");
 
 	#
-	# If we're at the start of a roll-over, we'll log the expiration time.
+	# If we're at the start of a rollover, we'll log the expiration time.
 	#
 	return if($phase != 0);
 
@@ -1607,9 +1607,9 @@ sub cmd_logmsg
 # Routine:	cmd_rollall()
 #
 # Purpose:	This command moves all the zones in the rollrec file into
-#		immediate roll-over.  rollnow() is called for each zone, in
-#		order to start roll-over.  We'll also keep track of the
-#		zones we were and weren't able to put in roll-over, and
+#		immediate rollover.  rollnow() is called for each zone, in
+#		order to start rollover.  We'll also keep track of the
+#		zones we were and weren't able to put in rollover, and
 #		report them to the caller.
 #
 sub cmd_rollall
@@ -1624,7 +1624,7 @@ sub cmd_rollall
 	rollmgr_log(LOG_TMI,"<command>","rollall command received");
 
 	#
-	# Each zone in the rollrec file will be put in the roll-over process,
+	# Each zone in the rollrec file will be put in the rollover process,
 	# starting after that initial wait period.  We'll keep track of the
 	# zones that were rolled and those that weren't in order to provide
 	# an appropriate response message.
@@ -1634,7 +1634,7 @@ sub cmd_rollall
 		$cnt++;
 
 		#
-		# If the roll-over worked, increment the good count and add
+		# If the rollover worked, increment the good count and add
 		# the domain name to the list of good zones.  If it didn't
 		# work, do the same for the bad count and bad-zone list.
 		#
@@ -1670,12 +1670,12 @@ sub cmd_rollall
 		$resp = "zones not in rollrec file $rollrecfile:  $bad\n";
 
 		#
-		# If there were any zones that were put into roll-over,
+		# If there were any zones that were put into rollover,
 		# we'll add them to the message as well.
 		#
 		if($gcnt > 0)
 		{
-			$resp .= "zones now in roll-over:  $good\n";
+			$resp .= "zones now in rollover:  $good\n";
 		}
 
 		rollmgr_sendresp(ROLLCMD_RC_BADZONE,$resp);
@@ -1719,8 +1719,8 @@ sub cmd_rollrec
 #-----------------------------------------------------------------------------
 # Routine:	cmd_rollzone()
 #
-# Purpose:	This command moves a zone into immediate roll-over.  It
-#		calls rollnow() to move the zone into immediate roll-over.
+# Purpose:	This command moves a zone into immediate rollover.  It
+#		calls rollnow() to move the zone into immediate rollover.
 #
 sub cmd_rollzone
 {
@@ -1730,7 +1730,7 @@ sub cmd_rollzone
 
 	if(rollnow($zone) == 1)
 	{
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone roll-over started");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover started");
 	}
 	else
 	{
@@ -1771,11 +1771,11 @@ sub cmd_shutdown
 #-----------------------------------------------------------------------------
 # Routine:	cmd_skipall()
 #
-# Purpose:	This command stops roll-over for all the zones in the rollrec
+# Purpose:	This command stops rollover for all the zones in the rollrec
 #		file.  The zones' rollrec records are marked as being "skip"
 #		records, which will cause rollerd to ignore them.  This change
 #		is reflected in the rollrec file.  skipnow() is called for each
-#		zone, in order to stop roll-over.  We'll also keep track of the
+#		zone, in order to stop rollover.  We'll also keep track of the
 #		zones we were and weren't able to stop and report them to the
 #		caller.
 #
@@ -1791,7 +1791,7 @@ sub cmd_skipall
 	rollmgr_log(LOG_TMI,"<command>","skipall command received");
 
 	#
-	# Each zone in the rollrec file will be removed from the roll-over
+	# Each zone in the rollrec file will be removed from the rollover
 	# process.  We'll keep track of the zones that were skipped and those
 	# that weren't in order to provide an appropriate response message.
 	#
@@ -1836,7 +1836,7 @@ sub cmd_skipall
 		$resp = "zones not in rollrec file $rollrecfile:  $bad\n";
 
 		#
-		# If there were any zones that were removed from roll-over,
+		# If there were any zones that were removed from rollover,
 		# we'll add them to the message as well.
 		#
 		if($gcnt > 0)
@@ -1851,7 +1851,7 @@ sub cmd_skipall
 #-----------------------------------------------------------------------------
 # Routine:	cmd_skipzone()
 #
-# Purpose:	This command removes a zone from roll-over processing. 
+# Purpose:	This command removes a zone from rollover processing. 
 #
 sub cmd_skipzone
 {
@@ -1861,7 +1861,7 @@ sub cmd_skipzone
 
 	if(skipnow($zone) == 1)
 	{
-		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone roll-over stopped");
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"$zone rollover stopped");
 	}
 	else
 	{
@@ -2031,9 +2031,9 @@ sub cmd_zonestatus
 #-----------------------------------------------------------------------------
 # Routine:	rollnow()
 #
-# Purpose:	This command moves a zone into immediate roll-over.  It
+# Purpose:	This command moves a zone into immediate rollover.  It
 #		doesn't sit in the initial waiting period, but starts
-#		right off into roll-over phase 2.
+#		right off into rollover phase 2.
 #
 sub rollnow
 {
@@ -2063,9 +2063,9 @@ sub rollnow
 	}
 
 	#
-	# Change the zone's phase to roll-over phase 2.  This bypasses the
-	# initial roll-over waiting period and gets right to the nitty gritty
-	# of doing a roll-over.
+	# Change the zone's phase to rollover phase 2.  This bypasses the
+	# initial rollover waiting period and gets right to the nitty gritty
+	# of doing a rollover.
 	#
 	newphase($zone,$rrr,2);
 
@@ -2073,7 +2073,7 @@ sub rollnow
 	# Setting the sleep values such that the queue will be run.
 	#
 	$sleepcnt = $sleeptime;
-	rollmgr_log(LOG_INFO,"<command>","forcing a roll-over for zone $zone");
+	rollmgr_log(LOG_INFO,"<command>","forcing a rollover for zone $zone");
 	display("startroll $zone 0");
 	return(1);
 }
@@ -2151,7 +2151,7 @@ sub controllers
 #
 sub intcmd_handler
 {
-	rollmgr_log(LOG_ALWAYS,"<command>","roll-over manager:  got a command interrupt\n");
+	rollmgr_log(LOG_ALWAYS,"<command>","rollover manager:  got a command interrupt\n");
 
 	controllers(0);
 	commander();
@@ -2167,7 +2167,7 @@ sub halt_handler
 {
 	display("halt woof 0");
 
-	rollmgr_log(LOG_ALWAYS,"","roll-over manager shutting down...\n");
+	rollmgr_log(LOG_ALWAYS,"","rollover manager shutting down...\n");
 	rollmgr_rmid();
 	exit(0);
 }
@@ -2286,7 +2286,7 @@ sub usage
 
 =head1 NAME
 
-rollerd - DNSSEC-Tools daemon to manage DNSSEC key roll-over.
+rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover.
 
 =head1 SYNOPSIS
 
@@ -2294,17 +2294,17 @@ rollerd - DNSSEC-Tools daemon to manage DNSSEC key roll-over.
 
 =head1 DESCRIPTION
 
-The I<rollerd> daemon manages key roll-over for zones.  The Pre-Publish Method
-of key roll-over is used for ZSK key roll-overs.  (Currently, I<rollerd> only
-handles ZSK roll-over.) This method has four phases that are entered when it
-is time to perform the ZSK roll-over:
+The I<rollerd> daemon manages key rollover for zones.  The Pre-Publish Method
+of key rollover is used for ZSK key rollovers.  (Currently, I<rollerd> only
+handles ZSK rollover.) This method has four phases that are entered when it
+is time to perform the ZSK rollover:
 
     1. wait for old zone data to expire from caches
     2. sign the zone with the KSK and Published ZSK
     3. wait for old zone data to expire from caches
     4. adjust keys in keyrec and sign the zone with new Current ZSK
 
-The Pre-Publish Method of key roll-over is defined in the Step-by-Step DNS
+The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
 Security Operator Guidance Document.  See that document for more detailed
 information.
 
@@ -2322,9 +2322,9 @@ Below is a sample I<rollrec> entry:
 The first line gives the I<rollrec> entry's name.  The "roll" keyword
 indicates that I<rollerd> should include the zone in its roll queue.  Using
 "skip" in place of "roll" allows a zone to be stored in the I<rollrec> file,
-but it will not be included in roll-over processing.  The first three fields
+but it will not be included in rollover processing.  The first three fields
 tell I<rollerd> where to find example.com's signed zone file and I<keyrec>
-file and the zone's current roll-over phase.  The last two are for reference
+file and the zone's current rollover phase.  The last two are for reference
 by the user.  The I<maxttl> field is derived from the signed zone file.
 
 If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
@@ -2382,16 +2382,16 @@ If non-standard parameters are desired to always be used, the appropriate
 fields in the DNSSEC-Tools configuration file may be modified to use these
 values.
 
-=item 3. install the roll-over configuration
+=item 3. install the rollover configuration
 
-The complete roll-over configuration -- I<rollerd>, I<rollrec> file,
+The complete rollover configuration -- I<rollerd>, I<rollrec> file,
 DNSSEC-Tools configuration file values, zone files -- should be installed.  
 The appropriate places for these locations are both installation-dependent
 and operating system-dependent.
 
-=item 4. test the roll-over configuration
+=item 4. test the rollover configuration
 
-The complete roll-over configuration should be tested.  
+The complete rollover configuration should be tested.  
 
 Edit the zone files so that their zones have short TTL values.  A minute TTL
 should be sufficient.
