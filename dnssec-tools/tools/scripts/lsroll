@@ -38,7 +38,7 @@ my @opts =
 	"type",				# Give the record type.
 	"zone",				# List zone files.
 	"keyrec",			# List keyrec files.
-	"phase",			# List roll-over phases.
+	"phase",			# List rollover phases.
 	"ttl",				# List maximum TTL.
 	"display",			# List display flag.
 	"phstart",			# List phase start.
@@ -419,10 +419,10 @@ sub usage
 	print STDERR "\t\t-type\t	list record type\n";
 	print STDERR "\t\t-zone\t	list zonefile\n";
 	print STDERR "\t\t-keyrec\t	list keyrec file\n";
-	print STDERR "\t\t-phase\t	list roll-over phase\n";
+	print STDERR "\t\t-phase\t	list rollover phase\n";
 	print STDERR "\t\t-ttl		list zone TTL\n";
 	print STDERR "\t\t-display	list display flag\n";
-	print STDERR "\t\t-phstart	list start of roll-over phase\n";
+	print STDERR "\t\t-phstart	list start of rollover phase\n";
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-terse\t	terse output\n";
@@ -461,13 +461,13 @@ depends on the options selected.
 
 =head1 OPTIONS
 
-There are three types of options recognized by I<lsroll>:  record-selection
+There are three types of options recognized by B<lsroll>:  record-selection
 options, attribute-selection options, and output-format options.  Each type
 is described in the sections below.
 
 =head2 Record-selection Options
 
-These options select the records that will be displayed by I<lsroll>.
+These options select the records that will be displayed by B<lsroll>.
 
 =over 4
 
@@ -488,7 +488,7 @@ List all "skip" records in the I<rollrec> file.
 =head2 Attribute-selection Options
 
 These options select the attributes of the records that will be displayed
-by I<lsroll>.
+by B<lsroll>.
 
 =over 4
 
@@ -509,7 +509,7 @@ the default output.
 
 =item I<-phase>
 
-The record's roll-over phase is included in the output.  This field is part of
+The record's rollover phase is included in the output.  This field is part of
 the default output.
 
 =item I<-ttl>
@@ -522,7 +522,7 @@ The record's display flag, used by B<blinkenlights>, is included in the output.
 
 =item I<-phstart>
 
-The record's roll-over phase is included in the output.
+The record's rollover phase is included in the output.
 
 =back
 
