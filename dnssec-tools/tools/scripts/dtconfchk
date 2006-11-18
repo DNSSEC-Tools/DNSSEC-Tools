@@ -863,15 +863,15 @@ sub usage
 
 =head1 NAME
 
-confchk - Check a DNSSEC-Tools configuration file for sanity.
+dtconfchk - Check a DNSSEC-Tools configuration file for sanity.
 
 =head1 SYNOPSIS
 
-  confchk [options] [config_file]
+  dtconfchk [options] [config_file]
 
 =head1 DESCRIPTION
 
-I<confchk> checks a DNSSEC-Tools configuration file to determine if the
+I<dtconfchk> checks a DNSSEC-Tools configuration file to determine if the
 entries are valid.
 
 The I<default_keyrec> configuration entry is not checked.  This entry
@@ -887,12 +887,12 @@ The following key-related checks are performed:
 =item I<algorithm>
 
 Ensure the I<algorithm> field is valid.  The acceptable values may be found
-in the I<dnssec-keygen> man page.
+in the B<dnssec-keygen> man page.
 
 =item I<ksklength>
 
 Ensure the I<ksklength> field is valid.  The acceptable values may be found
-in the I<dnssec-keygen> man page.
+in the B<dnssec-keygen> man page.
 
 =item I<ksklife>
 
@@ -930,7 +930,7 @@ The following zone-related checks are performed:
 
 Ensure the I<endtime> field is valid.  This value is assumed to be in the
 "+NNNNNN" format.  There is a lower limit of two hours.  (This is an
-artificial limit under which it may not make sense to have an endtime.)
+artificial limit under which it I<may> not make sense to have an end-time.)
 
 =back
 
@@ -964,18 +964,18 @@ the file must be a regular executable file.
 
 =head2 Roll-over Daemon Checks
 
-The following checks are performed for I<rollerd> values:
+The following checks are performed for B<rollerd> values:
 
 =over 8
 
 =item I<roll_logfile>
 
-Ensure that the log file for the roll-over daemon is valid.  If the file
+Ensure that the log file for the B<rollerd> is valid.  If the file
 exists, it must be a regular file.
 
 =item I<roll_loglevel>
 
-Ensure that the logging level for the roll-over daemon is reasonable.  The
+Ensure that the logging level for the B<rollerd> is reasonable.  The
 log level must be one of the following text or numeric values:
 
     tmi        1       (Overly verbose informational messages.)
@@ -989,8 +989,8 @@ value to also be displayed.
 
 =item I<roll_sleeptime>
 
-Ensure that the roll-over daemon's sleep-time is reasonable.
-The daemon's sleep-time must be at least one minute.
+Ensure that the B<rollerd>'s sleep-time is reasonable.
+B<rollerd>'s sleep-time must be at least one minute.
 
 =back
 
@@ -1024,28 +1024,28 @@ Ensure that the I<usegui> flag is either 0 or 1.
 
 =over 4
 
-=item -expert
+=item I<-expert>
 
 Only non-expert checks will be performed.  Currently, this option will prevent
 the key lifespan checks from being run.
 
-=item -quiet
+=item I<-quiet>
 
 No output will be given.
 The number of errors will be used as the exit code.
 
-=item -summary
+=item I<-summary>
 
 A final summary of success or failure will be printed.
 The number of errors will be used as the exit code.
 
-=item -verbose
+=item I<-verbose>
 
 Success or failure status of each check will be given.
 A B<+> or B<-> prefix will be given for each valid and invalid entry.
 The number of errors will be used as the exit code.
 
-=item -help
+=item I<-help>
 
 Display a usage message.
 
@@ -1062,11 +1062,14 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<dtdefs(8)>,
+B<dtinitconf(8)>,
+B<rollerd(8)>,
+B<zonesigner(8)>
+
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>
 
-B<dtdefs(8)>,
-B<rollerd(8)>,
-B<zonesigner(8)>
+B<dnssec-tools.conf(5)>
 
 =cut
