@@ -262,7 +262,7 @@ rollinit - Create new I<rollrec> records for a DNSSEC-Tools I<rollrec> file.
 =head1 DESCRIPTION
 
 B<rollinit> creates new I<rollrec> entries for a I<rollrec> file.  This
-I<rollrec> file will be used by B<rollerd> to manage key roll-over for
+I<rollrec> file will be used by B<rollerd> to manage key rollover for
 the named domains.
 
 A I<rollrec> entry has this format:
@@ -326,30 +326,30 @@ B<rollinit> may be given the following options:
 
 =over 4
 
-=item  I<-zone E<lt>zonefileE<gt>>
+=item I<-zone zonefile>
 
 This specifies the value of the I<zonefile> field.
 See the ZONEFILE AND KEYREC FIELDS and EXAMPLES sections for more details.
 
-=item  I<-keyrec E<lt>keyrec-fileE<gt>>
+=item I<-keyrec keyrec-file>
 
 This specifies the value of the I<keyrec> field.
 See the ZONEFILE AND KEYREC FIELDS and EXAMPLES sections for more details.
 
-=item  I<-skip>
+=item I<-skip>
 
 By default, B<roll> records are generated.  If this option is given, then
 B<skip> records will be generated instead.
 
-=item  I<-out E<lt>output-fileE<gt>>
+=item I<-out output-file>
 
-The new I<rollrec> entries will be appended to I<E<lt>output-fileE<gt>>.
+The new I<rollrec> entries will be appended to I<output-file>.
 The file will be created if it does not exist.
 
 If this option is not given, the new I<rollrec> entries will be written
 to standard output.
 
-=item -help
+=item I<-help>
 
 Display a usage message.
 
