@@ -695,7 +695,7 @@ sub usage
 =head1 NAME
 
 genkrf - Generate a I<keyrec> file from Key Signing Key (KSK)
-         and/or Zone Signing Key (ZSK) files.
+and/or Zone Signing Key (ZSK) files.
 
 =head1 SYNOPSIS
 
@@ -705,23 +705,22 @@ genkrf - Generate a I<keyrec> file from Key Signing Key (KSK)
 
 =head1 DESCRIPTION
 
-The I<genkrf> script generates a I<keyrec> file from KSK and/or ZSK files.  It
-generates new KSK and/or ZSK keys if needed.
+B<genkrf> generates a I<keyrec> file from KSK and/or ZSK files.  It
+generates new KSK and ZSK keys if needed.
 
 The name of the I<keyrec> file to be generated is given by the I<-krfile>
-option.  If this option is not specified, B<E<lt>zone-nameE<gt>.krf> is used
-as the
-name of the I<keyrec> file.  If the I<keyrec> file already exists, it will be
+option.  If this option is not specified, B<zone-name.krf> is used as the name
+of the I<keyrec> file.  If the I<keyrec> file already exists, it will be
 overwritten with new I<keyrec> definitions.
 
 The I<zone-file> argument is required.  It specifies the name of the zone file
 from which the signed zone file was created.  The optional I<signed-zone-file>
 argument specifies the name of the signed zone file.  If it is not given, then
-it defaults to B<E<lt>zone-fileE<gt>.signed>.
+it defaults to B<zone-file.signed>.
 
 =head1 OPTIONS
 
-I<genkrf> has a number of options that assist in creation of the I<keyrec>
+B<genkrf> has a number of options that assist in creation of the I<keyrec>
 file.  These options will be set to the first value found from this search
 path:
 
@@ -746,7 +745,7 @@ I<zone-file> will be used as the name of the zone.
 =item -krfile I<keyrec-file>
 
 This option specifies the name of the I<keyrec> file to be generated.
-If it is not given, then B<E<lt>zone-nameE<gt>.krf> will be used.
+If it is not given, then B<zone-name.krf> will be used.
 
 =item -algorithm I<algorithm>
 
@@ -760,7 +759,7 @@ measured in seconds.
 =item -random I<random-device>
 
 Source of randomness used to generate the zone's keys. See the man
-page for I<dnssec-signzone> for the valid format of this field.
+page for B<dnssec-signzone> for the valid format of this field.
 
 =item -verbose
 
@@ -851,9 +850,9 @@ Abhijit Hayatnagarkar
 
 =head1 SEE ALSO
 
-I<dnssec-keygen(8)>,
-I<dnssec-signzone(8)>,
-I<zonesigner(8)>
+B<dnssec-keygen(8)>,
+B<dnssec-signzone(8)>,
+B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>,
