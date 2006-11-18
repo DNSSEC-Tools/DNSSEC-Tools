@@ -274,14 +274,9 @@ been moved.
 
   fixkrf [options] <keyrec-file> <dir 1> ... <dir N>
 
-    options:
-	-list	  -  only give output, don't fix the keyrec file
-	-verbose  -  give lots of output
-	-help     -  give a usage message and exit
-
 =head1 DESCRIPTION
 
-This script checks a specified I<keyrec> file to ensure that the referenced
+B<fixkrf> checks a specified I<keyrec> file to ensure that the referenced
 encryption key files exist where listed.  If a key is not where the I<keyrec>
 specifies it should be, then I<fixkrf> will search the given directories for
 those keys and adjust the I<keyrec> to match reality.  If a key of a
@@ -317,6 +312,13 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<cleankrf(8)>,
+B<genkrf(8)>,
+B<lskrf(8)>,
+B<zonesigner(8)>
+
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>
+
+B<file-keyrec.pm(5)>
 
 =cut
