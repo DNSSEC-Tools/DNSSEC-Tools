@@ -524,23 +524,20 @@ cleankrf - Clean a DNSSEC-Tools I<keyrec> files of old data.
 
   cleankrf [options] <keyrec-files>
 
-    options:
-	-count    -  give count of old keyrecs
-	-list     -  only list old keyrecs
-	-rm	  -  remove key files
-	-quiet    -  don't give any output
-	-verbose  -  give a lot of output
-	-help     -  give a usage message and exit
-
 =head1 DESCRIPTION
 
-This script cleans old data out of a set of DNSSEC-Tools I<keyrec> files.
+B<cleankrf> cleans old data out of a set of DNSSEC-Tools I<keyrec> files.
 The old data are orphaned signing sets, orphaned keys, and obsolete keys.
+
 Orphaned signing sets are set I<keyrec>s unreferenced by a zone I<keyrec>.
+
 Orphaned keys are KSK key I<keyrec>s unreferenced by a zone I<keyrec> and
-ZSK key I<keyrec>s unreferenced by any set I<keyrec>s.  Obsolete keys are
-ZSK key I<keyrec>s with a I<keyrec_type> of B<zskobs>.  I<cleankrf>'s exit
-code is the count of orphaned and obsolete I<keyrec>s found.
+ZSK key I<keyrec>s unreferenced by any set I<keyrec>s.
+
+Obsolete keys are ZSK key I<keyrec>s with a I<keyrec_type> of B<zskobs>.
+
+I<cleankrf>'s exit code is the count of orphaned and obsolete I<keyrec>s
+found.
 
 =head1 OPTIONS
 
@@ -558,7 +555,7 @@ from the I<keyrec> file.  The names of the old I<keyrec>s are displayed.
 
 =item -rm
 
-Delete the key files, both I<.key> and I<.private>, from orphaned and
+Delete the key files, both B<.key> and B<.private>, from orphaned and
 expired I<keyrec>s.
 
 =item -quiet
@@ -586,8 +583,12 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
+B<fixkrf(8)>,
+B<lskrf(8)>,
 B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>
+
+B<file-keyrec.pm(5)>
 
 =cut
