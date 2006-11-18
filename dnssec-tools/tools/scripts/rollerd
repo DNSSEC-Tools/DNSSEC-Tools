@@ -2424,35 +2424,35 @@ The following options are recognized:
 
 =over 4
 
-=item I<-rrfile E<lt>rollrec_fileE<gt>>
+=item I<-rrfile rollrec_file>
 
 Name of the I<rollrec> file to be processed.  This is the only required
 "option".
 
-=item I<-directory E<lt>dirE<gt>>
+=item I<-directory dir>
 
 Sets the I<rollerd> execution directory.  This must be a valid directory.
 
-=item I<-logfile E<lt>log_fileE<gt>>
+=item I<-logfile log_file>
 
 Sets the I<rollerd> log file to I<log_file>.
 This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout> or B</dev/tty>.
 
-=item I<-loglevel E<lt>levelE<gt>>
+=item I<-loglevel level>
 
 Sets I<rollerd>'s logging level to I<level>.  The valid logging levels are
 defined in B<rollmgr.pm(3)>.
 
-=item I<-sleep E<lt>sleeptimeE<gt>>
+=item I<-sleep sleeptime>
 
 Sets I<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
 of time I<rollerd> waits between processing its I<rollrec>-based queue.
 
 =item I<-parameters>
 
-Prints a set of I<rollerd> parameters and then exit.
+Prints a set of I<rollerd> parameters and then exits.
 
 =item I<-display>
 
@@ -2483,19 +2483,12 @@ The following problems (or potential problems) are known:
 
 =item -
 
-Only deals with ZSKs.
+Only deals with ZSK rollover.
 
 =item -
 
-Rollrec files should be locked while in use.
-
-=item -
-
-Anyone can send commands to I<rollerd>.  This is probably not a Good Thing.
-
-=item -
-
-No response is sent to I<rollctl>.
+Anyone who can write to the rollover socket can send commands to I<rollerd>.
+This is probably not a Good Thing.
 
 =item -
 
@@ -2516,7 +2509,7 @@ take place, rather than a simple seconds count.
 
 =item -
 
-It'd be nice to allow a each I<rollrec> entry to specify its own logging
+It'd be nice to allow each I<rollrec> entry to specify its own logging
 level.
 
 =back

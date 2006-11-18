@@ -6,7 +6,7 @@
 #
 # rollctl
 #
-#	This script controls the roll-over daemon.
+#	This script controls the rollover daemon.
 #	See the pod for more details.
 #
 
@@ -173,7 +173,7 @@ sub main()
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
-			print "all zones now in roll-over:  $resp\n";
+			print "all zones now in rollover:  $resp\n";
 		}
 		else
 		{
@@ -205,7 +205,7 @@ sub main()
 		}
 		else
 		{
-			print STDERR "unable to force roll-over process for $rollzoneflag:  $resp\n";
+			print STDERR "unable to force rollover process for $rollzoneflag:  $resp\n";
 		}
 	}
 	if($runqueueflag)
@@ -232,7 +232,7 @@ sub main()
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
-			print "roll-over stopped for all zones:  $resp\n";
+			print "rollover stopped for all zones:  $resp\n";
 		}
 		else
 		{
@@ -246,11 +246,11 @@ sub main()
 		($ret, $resp) = rollmgr_getresp();
 		if($ret == ROLLCMD_RC_OKAY)
 		{
-			print "roll-over stopped for zone $skipzoneflag\n";
+			print "rollover stopped for zone $skipzoneflag\n";
 		}
 		else
 		{
-			print STDERR "unable to stop roll-over for zone $skipzoneflag:  \"$resp\"\n";
+			print STDERR "unable to stop rollover for zone $skipzoneflag:  \"$resp\"\n";
 		}
 	}
 	if($sleeptimeflag)
@@ -434,7 +434,7 @@ sub usage
 
 =head1 NAME
 
-rollctl - Send commands to the DNSSEC-Tools roll-over daemon.
+rollctl - Send commands to the DNSSEC-Tools rollover daemon.
 
 =head1 SYNOPSIS
 
@@ -442,7 +442,7 @@ rollctl - Send commands to the DNSSEC-Tools roll-over daemon.
 
 =head1 DESCRIPTION
 
-The I<rollctl> command sends commands to the DNSSEC-Tools roll-over daemon,
+The I<rollctl> command sends commands to the DNSSEC-Tools rollover daemon,
 I<rollerd>.  Multiple options may be specified on a single command line and
 they will be executed in I<alphabetical> order.  The exception to this
 ordering is that the I<-shutdown> command will always be executed last.
@@ -460,29 +460,29 @@ The following options are handled by I<rollctl>.
 
 Cleanly halts I<rollerd> execution.
 
-=item I<-logfile E<lt>logfileE<gt>>
+=item I<-logfile logfile>
 
 Sets the I<rollerd> log file to I<logfile>.
 This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout> or B</dev/tty>.
 
-=item I<-loglevel E<lt>loglevelE<gt>>
+=item I<-loglevel loglevel>
 
 Sets the I<rollerd> logging level to I<loglevel>.
 This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
 
 =item I<-rollall>
 
-Initiates roll-over for all the zones defined in the current I<rollrec> file.
+Initiates rollover for all the zones defined in the current I<rollrec> file.
 
-=item I<-rollrec E<lt>rollrec_fileE<gt>>
+=item I<-rollrec rollrec_file>
 
 Sets the I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
 
-=item I<-rollzone E<lt>zoneE<gt>>
+=item I<-rollzone zone>
 
-Initiates roll-over for the zone named by I<zone>.
+Initiates rollover for the zone named by I<zone>.
 
 =item I<-runqueue>
 
@@ -494,13 +494,13 @@ Synonym for I<-halt>.
 
 =item I<-skipall>
 
-Stops roll-over for all zones in the current I<rollrec> file.
+Stops rollover for all zones in the current I<rollrec> file.
 
-=item I<-skipzone E<lt>zoneE<gt>>
+=item I<-skipzone zone>
 
-Stops roll-over for the zone named by I<zone>.
+Stops rollover for the zone named by I<zone>.
 
-=item I<-sleeptime E<lt>sleeptimeE<gt>>
+=item I<-sleeptime sleeptime>
 
 Sets I<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
 at least as large as the B<$MIN_SLEEP> value in I<rollerd>.
@@ -518,7 +518,7 @@ I<rollerd> log file.  The status is also reported to I<rollctl>, which prints
 it to the screen.
 
 For each zone in the I<rollrec> file, the zone name, the record type ("skip"
-or "roll", and the current roll-over phase are given.
+or "roll"), and the current rollover phase are given.
 
 =item I<-quiet>
 
