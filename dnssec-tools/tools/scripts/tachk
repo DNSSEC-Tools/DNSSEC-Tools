@@ -397,15 +397,15 @@ tachk - Check the validity of the trust anchors in a B<named.conf> file.
 
 =head1 DESCRIPTION
 
-[NOTE: this script may be removed in future releases]
+B<tachk> checks the validity of the trust anchors in the specified
+B<named.conf> file.  The output given depends on the options selected.
 
-This script checks the validity of the trust anchors in the specified
-B<named.conf> file. The output given depends on the options selected.
+Note:  This script may be removed in future releases.
 
 =head1 OPTIONS
 
-B<tachk> has two types of options it can take: record-attribute options,
-and output-style options. These option sets are detailed below.
+B<tachk> takes two types of options:  record-attribute options
+and output-style options.  These option sets are detailed below.
 
 =head2 Record-Attribute Options
 
@@ -424,7 +424,6 @@ This option displays the invalid trust anchors in a B<named.conf> file.
 =head2 Output-Format Options
 
 These options define how the trust anchor information will be displayed.
-
 Without any of these options, the zone name and key tag will be displayed
 for each trust anchor.
 
@@ -437,12 +436,12 @@ will not be.
 
 =item -long
 
-The long form of output will be given: the zone name and key tag will be
+The long form of output will be given.  The zone name and key tag will be
 displayed for each trust anchor.
 
 =item -terse
 
-This options displays only the name of the zones selected by other options.
+This option displays only the name of the zones selected by other options.
 
 =item -help
 
