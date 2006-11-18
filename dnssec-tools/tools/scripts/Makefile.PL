@@ -28,6 +28,7 @@ use ExtUtils::MakeMaker;
 				rollctl
 				rollerd
 				rollinit
+				rolllog
 				signset-editor
 				tachk
 				timetrans
