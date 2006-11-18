@@ -870,7 +870,7 @@ dtinitconf - Creates a DNSSEC-Tools configuration file
 
 =head1 DESCRIPTION
 
-The I<dtinitconf> program initializes the DNSSEC-Tools configuration file.
+The B<dtinitconf> program initializes the DNSSEC-Tools configuration file.
 By default, the actual configuration file will be created, though the created
 file can be specified by the user.  Existing files, whether the default or one
 specified by the user, will not be overwritten unless specifically directed
@@ -878,7 +878,7 @@ by the user.
 
 Each configuration field can be individually specified on the command line.
 The user will also be prompted for the fields, with default values taken from
-the DNSSEC-Tools I<defaults.pm> module.  If the I<-noprompt> option is given,
+the DNSSEC-Tools B<defaults.pm> module.  If the I<-noprompt> option is given,
 then a default configuration file (modulo command-line arguments) will be
 created.
 
@@ -899,7 +899,7 @@ group exists.
 
 =head1 OPTIONS
 
-I<dtinitconf> takes options that control the contents of the newly generated
+B<dtinitconf> takes options that control the contents of the newly generated
 DNSSEC-Tools configuration file.  Each configuration file entry has a
 corresponding command-line option.  The options, described below, are ordered
 in logical groups.
@@ -911,16 +911,16 @@ encryption keys.
 
 =over 4
 
-=item I<-algorithm E<lt>algorithmE<gt>>
+=item I<-algorithm algorithm>
 
 Selects the cryptographic algorithm. The value of algorithm must be one that
-is recognized by I<dnssec-keygen>.
+is recognized by B<dnssec-keygen>.
 
-=item I<-ksklength E<lt>keylenE<gt>>
+=item I<-ksklength keylen>
 
-The default KSK key length to be passed to I<dnssec-keygen>.
+The default KSK key length to be passed to B<dnssec-keygen>.
 
-=item I<-ksklife E<lt>lifespanE<gt>>
+=item I<-ksklife lifespan>
 
 The default length of time between KSK roll-overs.  This is measured in   
 seconds.
@@ -928,15 +928,15 @@ seconds.
 This value is B<only> used for key roll-over.  Keys do not have a life-time
 in any other sense.
 
-=item I<-zskcount E<lt>ZSK-countE<gt>>
+=item I<-zskcount ZSK-count>
 
 The default number of ZSK keys that will be created for a zone.
 
-=item I<-zsklength E<lt>keylenE<gt>>
+=item I<-zsklength keylen>
 
 The default ZSK key length to be passed to I<dnssec-keygen>.
 
-=item I<-zsklife E<lt>lifespanE<gt>>
+=item I<-zsklife lifespan>
 
 The default length of time between ZSK roll-overs.  This is measured in   
 seconds.
@@ -944,9 +944,9 @@ seconds.
 This value is B<only> used for key roll-over.  Keys do not have a life-time
 in any other sense.
 
-=item I<-random E<lt>randomdevE<gt>>
+=item I<-random randomdev>
 
-The random device generator to be passed to I<dnssec-keygen>.
+The random device generator to be passed to B<dnssec-keygen>.
 
 =back
 
@@ -956,9 +956,9 @@ These options deal with different aspects of zone signing.
 
 =over 4
 
-=item I<-endtime E<lt>endtimeE<gt>>
+=item I<-endtime endtime>
 
-The zone default expiration time to be passed to I<dnssec-signzone>.
+The zone default expiration time to be passed to B<dnssec-signzone>.
 
 =back
 
@@ -968,38 +968,38 @@ These options deal specifically with functionality provided by DNSSEC-Tools.
 
 =over 4
 
-=item I<-archivedir E<lt>directoryE<gt>>
+=item I<-archivedir directory>
 
 B<directory> is the archived-key directory.  Old encryption keys are moved to
 this directory, but only if they are to be saved and not deleted.
 
-=item I<-binddir E<lt>directoryE<gt>>
+=item I<-binddir directory>
 
 B<directory> is the directory holding the BIND programs.
 
 =item I<-entropy_msg>
 
-A flag indicating that I<zonesigner> should display a message about entropy
+A flag indicating that B<zonesigner> should display a message about entropy
 generation.  This is primarily dependent on the implementation of a system's
 random number generation.
 
 =item I<-noentropy_msg>
 
-A flag indicating that I<zonesigner> should not display a message about
+A flag indicating that B<zonesigner> should not display a message about
 entropy generation.  This is primarily dependent on the implementation of
 a system's random number generation.
 
-=item I<-roll-logfile E<lt>logfileE<gt>>
+=item I<-roll-logfile logfile>
 
-B<logfile> is the logfile for the I<rollerd> daemon.
+B<logfile> is the logfile for the B<rollerd> daemon.
 
-=item I<-roll-loglevel E<lt>loglevelE<gt>>
+=item I<-roll-loglevel loglevel>
 
-B<loglevel> is the logging level for the I<rollerd> daemon.
+B<loglevel> is the logging level for the B<rollerd> daemon.
 
-=item I<-roll-sleep E<lt>sleep-timeE<gt>>
+=item I<-roll-sleep sleep-time>
 
-B<sleep-time> is the sleep-time for the I<rollerd> daemon.
+B<sleep-time> is the sleep-time for the B<rollerd> daemon.
 
 =item I<-savekeys>
 
@@ -1022,22 +1022,20 @@ used.
 
 =head2 dtinitconf Options
 
-These options deal specifically with I<dtinitconf>.
+These options deal specifically with B<dtinitconf>.
 
-=over
+=over 4
 
-=item 4
+=item I<-outfile conffile>
 
-=item I<-outfile E<lt>conffileE<gt>>
-
-The configuration file will be written to B<conffile>.  If this is not given,
-then the default configuration file (as returned by
+The configuration file will be written to B<conffile>.  If this is
+not given, then the default configuration file (as returned by
 I<Net::DNS::SEC::Tools::conf::getconffile()>) will be used.
 
 =item I<-overwrite>
 
 If I<-overwrite> is specified, existing output files may be overwritten.
-Without I<-overwrite>, if the output file is found to exist then I<dtinitconf>
+Without I<-overwrite>, if the output file is found to exist then B<dtinitconf>
 will give an error message and exit.
 
 =item I<-noprompt>
