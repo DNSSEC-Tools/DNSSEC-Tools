@@ -2294,8 +2294,8 @@ rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover.
 
 =head1 DESCRIPTION
 
-The I<rollerd> daemon manages key rollover for zones.  The Pre-Publish Method
-of key rollover is used for ZSK key rollovers.  (Currently, I<rollerd> only
+The B<rollerd> daemon manages key rollover for zones.  The Pre-Publish Method
+of key rollover is used for ZSK key rollovers.  (Currently, B<rollerd> only
 handles ZSK rollover.) This method has four phases that are entered when it
 is time to perform the ZSK rollover:
 
@@ -2308,8 +2308,8 @@ The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
 Security Operator Guidance Document.  See that document for more detailed
 information.
 
-The zones to be managed by I<rollerd> are defined in a I<rollrec> file.  Each
-zone's entry contains data needed by I<rollerd> and some data useful to a user.
+The zones to be managed by B<rollerd> are defined in a I<rollrec> file.  Each
+zone's entry contains data needed by B<rollerd> and some data useful to a user.
 Below is a sample I<rollrec> entry:
 
 	roll "example.com"
@@ -2320,10 +2320,10 @@ Below is a sample I<rollrec> entry:
 		phasestart      "Thu May  4 19:19:21 2006"
 
 The first line gives the I<rollrec> entry's name.  The "roll" keyword
-indicates that I<rollerd> should include the zone in its roll queue.  Using
+indicates that B<rollerd> should include the zone in its roll queue.  Using
 "skip" in place of "roll" allows a zone to be stored in the I<rollrec> file,
 but it will not be included in rollover processing.  The first three fields
-tell I<rollerd> where to find example.com's signed zone file and I<keyrec>
+tell B<rollerd> where to find example.com's signed zone file and I<keyrec>
 file and the zone's current rollover phase.  The last two are for reference
 by the user.  The I<maxttl> field is derived from the signed zone file.
 
@@ -2333,13 +2333,13 @@ processed.
 
 =head2 A Note About Files and Filenames
 
-There are a number of files and filenames used by I<rollerd> and
-I<zonesigner>.  The user must be aware of the files used by these programs,
+There are a number of files and filenames used by B<rollerd> and
+B<zonesigner>.  The user must be aware of the files used by these programs,
 where the files are located, and where the programs are executed.
 
-By default, I<rollerd> will change directory to the DNSSEC-Tools directory,
+By default, B<rollerd> will change directory to the DNSSEC-Tools directory,
 though this may be changed by the I<-directory> option.  Any programs started
-by I<rollerd>, most importantly I<zonesigner>, will run in this same
+by B<rollerd>, most importantly B<zonesigner>, will run in this same
 directory.  If files and directories referenced by these programs are named
 with relative paths, those paths must be relative to this directory.
 
@@ -2354,7 +2354,7 @@ files, and key files in a single directory.
 
 =head1 INITIALIZATION AND USAGE
 
-The following steps must be taken to initialize and use I<rollerd>.  This
+The following steps must be taken to initialize and use B<rollerd>.  This
 assumes that zone files have been created, and that BIND and DNSSEC-Tools
 have been installed.
 
@@ -2362,20 +2362,20 @@ have been installed.
 
 =item 0. sign zones
 
-The zones to be managed by I<rollerd> must be signed.  Use I<zonesigner> to
-create the signed zone files and the I<keyrec> files needed by I<rollerd>.
+The zones to be managed by B<rollerd> must be signed.  Use B<zonesigner> to
+create the signed zone files and the I<keyrec> files needed by B<rollerd>.
 The I<rollrec> file created in the next step B<must> use the I<keyrec> file
 names and the signed zone file names created here.
 
 =item 1. create I<rollrec> file
 
-Before I<rollerd> may be used, a I<rollrec> file must first be created.
-While this file may be built by hand, the I<rollinit> command was
+Before B<rollerd> may be used, a I<rollrec> file must first be created.
+While this file may be built by hand, the B<rollinit> command was
 written specifically to build the file.
 
 =item 2. select operational parameters
 
-A number of I<rollerd>'s operational parameters are taken from the
+A number of B<rollerd>'s operational parameters are taken from the
 DNSSEC-Tools configuration file.  However, these may be overridden
 by command-line options.  See the OPTIONS section below for more details.
 If non-standard parameters are desired to always be used, the appropriate
@@ -2384,7 +2384,7 @@ values.
 
 =item 3. install the rollover configuration
 
-The complete rollover configuration -- I<rollerd>, I<rollrec> file,
+The complete rollover configuration -- B<rollerd>, I<rollrec> file,
 DNSSEC-Tools configuration file values, zone files -- should be installed.  
 The appropriate places for these locations are both installation-dependent
 and operating system-dependent.
@@ -2405,16 +2405,16 @@ a fair amount of log messages to the terminal, and checks its queue every 60
 seconds.  Follow the messages to ensure that the appropriate actions, as
 required by the Pre-Publish Method, are taking place.
 
-=item 5. set I<rollerd> to start at boot
+=item 5. set B<rollerd> to start at boot
 
-Once the configuration is found to work, I<rollerd> should be set to start
+Once the configuration is found to work, B<rollerd> should be set to start
 at system boot.  The actual operations required for this step are operating
 system-dependent.
 
 =item 6. reboot and verify
 
-The system should be rebooted and the I<rollerd> logfile checked to ensure
-that I<rollerd> is operating properly.
+The system should be rebooted and the B<rollerd> logfile checked to ensure
+that B<rollerd> is operating properly.
 
 =back
 
@@ -2431,33 +2431,33 @@ Name of the I<rollrec> file to be processed.  This is the only required
 
 =item I<-directory dir>
 
-Sets the I<rollerd> execution directory.  This must be a valid directory.
+Sets the B<rollerd> execution directory.  This must be a valid directory.
 
 =item I<-logfile log_file>
 
-Sets the I<rollerd> log file to I<log_file>.
+Sets the B<rollerd> log file to I<log_file>.
 This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout> or B</dev/tty>.
 
 =item I<-loglevel level>
 
-Sets I<rollerd>'s logging level to I<level>.  The valid logging levels are
+Sets B<rollerd>'s logging level to I<level>.  The valid logging levels are
 defined in B<rollmgr.pm(3)>.
 
 =item I<-sleep sleeptime>
 
-Sets I<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
-of time I<rollerd> waits between processing its I<rollrec>-based queue.
+Sets B<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
+of time B<rollerd> waits between processing its I<rollrec>-based queue.
 
 =item I<-parameters>
 
-Prints a set of I<rollerd> parameters and then exits.
+Prints a set of B<rollerd> parameters and then exits.
 
 =item I<-display>
 
-Starts the I<blinkenlights> graphical display program to show the status of
-zones managed by I<rollerd>.
+Starts the B<blinkenlights> graphical display program to show the status of
+zones managed by B<rollerd>.
 
 =item -help
 
@@ -2471,8 +2471,8 @@ Verbose output will be given.
 
 =head1 ASSUMPTIONS
 
-I<rollover-manager> uses the I<rndc> command to communicate with the BIND
-I<named> daemon.  Therefore, it assumes that appropriate measure have been
+B<rollerd> uses the B<rndc> command to communicate with the BIND
+B<named> daemon.  Therefore, it assumes that appropriate measure have been
 taken so that this communication is possible.
 
 =head1 KNOWN PROBLEMS
@@ -2487,8 +2487,8 @@ Only deals with ZSK rollover.
 
 =item -
 
-Anyone who can write to the rollover socket can send commands to I<rollerd>.
-This is probably not a Good Thing.
+Any process that can write to the rollover socket can send commands to
+B<rollerd>.  This is probably not a Good Thing.
 
 =item -
 
@@ -2504,7 +2504,7 @@ The following potential enhancements may be made:
 
 =item -
 
-It'd be good to base I<rollerd>'s sleep time on when the next operation must
+It'd be good to base B<rollerd>'s sleep time on when the next operation must
 take place, rather than a simple seconds count.
 
 =item -
