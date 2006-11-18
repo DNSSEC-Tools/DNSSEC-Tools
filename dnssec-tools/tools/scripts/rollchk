@@ -9,12 +9,12 @@
 #	This script checks a rollrec file for problems and inconsistencies.
 #
 #	Problems include:
-#		- invalid roll-over phase
+#		- invalid rollover phase
 #		- non-positive maxttl
 #		- non-existent zone file
 #		- non-existent keyrec file
 #		- invalid display value
-#		- in roll-over, but without a phasestart
+#		- in rollover, but without a phasestart
 #
 
 use strict;
@@ -244,7 +244,7 @@ sub runchecks
 #
 # Purpose:	This routine checks the validity of a rollrec.
 #		These checks are:
-#			- invalid roll-over phase
+#			- invalid rollover phase
 #			- non-positive maxttl
 #			- non-existent rollrec file
 #			- invalid display value
@@ -484,7 +484,7 @@ inconsistencies.
 
 =head1 DESCRIPTION
 
-This script checks the I<rollrec> file specified by B<rollrec-file> for
+This script checks the I<rollrec> file specified by I<rollrec-file> for
 problems and inconsistencies.
 
 Recognized problems include:
@@ -499,9 +499,9 @@ The specified I<rollrec> file does not exist.
 
 No zones are defined in the specified I<rollrec> file.
 
-=item * invalid roll-over phase
+=item * invalid rollover phase
 
-A zone has an invalid roll-over phase.  These phases may be 0, 1, 2, 3, or 4;
+A zone has an invalid rollover phase.  These phases may be 0, 1, 2, 3, or 4;
 any other value is invalid.
 
 =item * invalid display flag
@@ -575,6 +575,6 @@ B<rollinit(8)>
 
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
-B<Net::DNS::SEC::Tools::file-rollrec(3)>
+B<file-rollrec(5)>
 
 =cut
