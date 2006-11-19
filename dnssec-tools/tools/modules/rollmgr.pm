@@ -4,7 +4,7 @@
 #
 # DNSSEC Tools
 #
-# rollmgr.pm -	Roll-over manager functions.
+# rollmgr.pm -	Rollover manager functions.
 #
 #	The routines in this module provide a means to communicate with
 #	rollerd.
@@ -12,7 +12,7 @@
 #
 #	Introduction
 #		This module provides interfaces for communicating with the
-#		DNSSEC-Tools' roll-over manager.  The top-level interfaces
+#		DNSSEC-Tools' rollover manager.  The top-level interfaces
 #		are independent of the host Operating System, but the actual
 #		operations are dependent upon the host O/S.
 #
@@ -1067,7 +1067,7 @@ sub unix_rmid
 	}
 
 	#
-	# Ensure that this process is the One True Roll-over Manager.
+	# Ensure that this process is the One True Rollover Manager.
 	#
 	if($rdpid != $ego)
 	{
@@ -1799,7 +1799,7 @@ sub rollmgr_getresp
 # Routine:	rollmgr_verifycmd()
 #
 # Purpose:	This routine returns a boolean indicating if the specified
-#		command is a valid command for the roll-over daemon.
+#		command is a valid command for the rollover daemon.
 #
 sub rollmgr_verifycmd
 {
@@ -1823,7 +1823,7 @@ sub rollmgr_verifycmd
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::rollmgr - Communicate with the DNSSEC-Tools roll-over
+Net::DNS::SEC::Tools::rollmgr - Communicate with the DNSSEC-Tools rollover
 manager.
 
 =head1 SYNOPSIS
@@ -1870,24 +1870,24 @@ manager.
 
 The B<Net::DNS::SEC::Tools::rollmgr> module provides standard,
 platform-independent methods for a program to communicate with DNSSEC-Tools'
-I<rollerd> roll-over manager.  There are three interface classes described
+B<rollerd> rollover manager.  There are three interface classes described
 here:  general interfaces, logging interfaces, and communications interfaces.
 
 =head1 GENERAL INTERFACES
 
 The interfaces to the B<Net::DNS::SEC::Tools::rollmgr> module are given below.
 
-=head2 B<rollmgr_dir()>
+=head2 I<rollmgr_dir()>
 
-This routine returns I<rollerd>'s directory.
+This routine returns B<rollerd>'s directory.
 
-=head2 B<rollmgr_idfile()>
+=head2 I<rollmgr_idfile()>
 
-This routine returns I<rollerd>'s id file.
+This routine returns B<rollerd>'s id file.
 
-=head2 B<rollmgr_getid()>
+=head2 I<rollmgr_getid()>
 
-This routine returns I<rollerd>'s process id.  If a non-zero value
+This routine returns B<rollerd>'s process id.  If a non-zero value
 is passed as an argument, the id file will be left open and accessible through
 the PIDFILE file handle.  See the WARNINGS section below.
 
@@ -1897,9 +1897,9 @@ Return Values:
         characters) is returned.
     -1 is returned if the id file does not exist.
 
-=head2 B<rollmgr_dropid()>
+=head2 I<rollmgr_dropid()>
 
-This interface ensures that another instance of I<rollerd> is not
+This interface ensures that another instance of B<rollerd> is not
 running and then creates a id file for future reference.
 
 Return Values:
@@ -1907,9 +1907,9 @@ Return Values:
     1 - the id file was successfully created for this process
     0 - another process is already acting as rollerd
 
-=head2 B<rollmgr_rmid()>
+=head2 I<rollmgr_rmid()>
 
-This interface deletes I<rollerd>'s id file.
+This interface deletes B<rollerd>'s id file.
 
 Return Values:
 
@@ -1918,9 +1918,9 @@ Return Values:
     -1 - the calling process is not rollerd
     -2 - unable to delete the id file
 
-=head2 B<rollmgr_cmdint()>
+=head2 I<rollmgr_cmdint()>
 
-This routine informs I<rollerd> that a command has been sent via
+This routine informs B<rollerd> that a command has been sent via
 I<rollmgr_sendcmd()>.
 
 Return Values:
@@ -1929,9 +1929,9 @@ Return Values:
     Anything else indicates the number of processes that were signaled.
     (This should only ever be 1.)
 
-=head2 B<rollmgr_halt()>
+=head2 I<rollmgr_halt()>
 
-This routine informs I<rollerd> to shut down.
+This routine informs B<rollerd> to shut down.
 
 In the current implementation, the return code from the B<kill()> command is
 returned.
@@ -1942,9 +1942,9 @@ returned.
 
 =head1 LOGGING INTERFACES
 
-=head2 B<rollmgr_loglevel(newlevel,useflag)>
+=head2 I<rollmgr_loglevel(newlevel,useflag)>
 
-This routine sets and retrieves the logging level for I<rollerd>.
+This routine sets and retrieves the logging level for B<rollerd>.
 The I<newlevel> argument specifies the new logging level to be set.  The
 valid levels are:
 
@@ -1953,7 +1953,7 @@ valid levels are:
     tmi           1     The highest level -- all log messages are saved.
     expire        3     A verbose countdown of zone expiration is given.
     info          4     Many informational messages are recorded.
-    curphase      6     Each zone's current roll-over phase is given.
+    curphase      6     Each zone's current rollover phase is given.
     err        	  8     Errors are recorded.
     fatal         9     Fatal errors are saved.
 
@@ -1970,9 +1970,9 @@ If given with no arguments, the current logging level is returned.  In fact,
 the current level is always returned unless an error is found.  -1 is returned
 on error.
 
-=head2 B<rollmgr_logfile(newfile,useflag)>
+=head2 I<rollmgr_logfile(newfile,useflag)>
 
-This routine sets and retrieves the log file for I<rollerd>.
+This routine sets and retrieves the log file for B<rollerd>.
 The I<newfile> argument specifies the new log file to be set.  If I<newfile>
 exists, it must be a regular file.
 
@@ -1981,7 +1981,7 @@ descriptive message if an invalid logging level is given.  If I<useflag> is
 true, the message is given and the process exits; if false, no message is
 given.  For any error condition, an empty string is returned.
 
-=head2 B<rollmgr_logstr(loglevel)>
+=head2 I<rollmgr_logstr(loglevel)>
 
 This routine translates a log level (given in I<loglevel>) into the associated
 text log level.  The text log level is returned to the caller.
@@ -1992,7 +1992,7 @@ level.  Case is irrelevant when checking I<loglevel>.
 If I<loglevel> is numeric, it is must be in the valid range of log levels.
 I<undef> is returned if I<loglevel> is invalid.
 
-=head2 B<rollmgr_log(level,group,message)>
+=head2 I<rollmgr_log(level,group,message)>
 
 The I<rollmgr_log()> interface writes a message to the log file.  Log
 messages have this format:
@@ -2004,36 +2004,36 @@ to the log file if the current log level is numerically equal to or less than
 I<level>.
 
 I<group> allows messages to be associated together.  It is currently used by
-I<rollerd> to group messages by the zone to which the message applies.
+B<rollerd> to group messages by the zone to which the message applies.
 
 The I<message> argument is the log message itself.  Trailing newlines are
 removed.
 
 =head1 ROLLERD COMMUNICATIONS INTERFACES
 
-=head2 B<rollmgr_channel(serverflag)>
+=head2 I<rollmgr_channel(serverflag)>
 
-This interface sets up a persistent channel for communications with I<rollerd>.
+This interface sets up a persistent channel for communications with B<rollerd>.
 If I<serverflag> is true, then the server's side of the channel is created.
 If I<serverflag> is false, then the client's side of the channel is created.
 
 Currently, the connection may only be made to the localhost.  This may be
 changed to allow remote connections, if this is found to be needed.
 
-=head2 B<rollmgr_getcmd()>
+=head2 I<rollmgr_getcmd()>
 
-I<rollmgr_getcmd()> retrieves a command sent over I<rollerd>'s communications
+I<rollmgr_getcmd()> retrieves a command sent over B<rollerd>'s communications
 channel by a client program.  The command and the command's data are sent in
 each message.
 
 The command and the command's data are returned to the caller.
 
-=head2 B<rollmgr_sendcmd(closeflag,cmd,data)>
+=head2 I<rollmgr_sendcmd(closeflag,cmd,data)>
 
-I<rollmgr_sendcmd()> sends a command to I<rollerd>.  The command must be one
+I<rollmgr_sendcmd()> sends a command to B<rollerd>.  The command must be one
 of the commands from the table below.  This interface creates a communications
-channel to I<rollerd> and sends the message.  The channel is not closed, in
-case the caller wants to receive a response from I<rollerd>.
+channel to B<rollerd> and sends the message.  The channel is not closed, in
+case the caller wants to receive a response from B<rollerd>.
 
 The available commands and their required data are:
 
@@ -2042,44 +2042,44 @@ The available commands and their required data are:
    ROLLCMD_DISPLAY	1/0		start/stop rollerd's graphical display
    ROLLCMD_LOGFILE	log-file	set rollerd's log filename
    ROLLCMD_LOGLEVEL	log-level	set rollerd's logging level
-   ROLLCMD_ROLLALL	none		force all zones to start roll-over
+   ROLLCMD_ROLLALL	none		force all zones to start rollover
    ROLLCMD_ROLLREC	rollrec-name	change rollerd's rollrec file
-   ROLLCMD_ROLLZONE	zone-name	force a zone to start roll-over
+   ROLLCMD_ROLLZONE	zone-name	force a zone to start rollover
    ROLLCMD_RUNQUEUE	none		rollerd runs through its queue
    ROLLCMD_SHUTDOWN	none		stop rollerd
    ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
    ROLLCMD_STATUS	none		get rollerd's status
 
 The data aren't checked for validity by I<rollmgr_sendcmd()>; validity
-checking is a responsibility of I<rollerd>.
+checking is a responsibility of B<rollerd>.
 
-If the caller does not need a response from I<rollerd>, then I<closeflag>
+If the caller does not need a response from B<rollerd>, then I<closeflag>
 should be set to B<CHANNEL_CLOSE>; if a response is required then
 I<closeflag> should be B<CHANNEL_WAIT>.  These values are boolean values,
 and the constants aren't required.
 
 On success, 1 is returned.  If an invalid command is given, 0 is returned.
 
-=head2 B<rollmgr_getresp()>
+=head2 I<rollmgr_getresp()>
 
-After executing a client command sent via I<rollmgr_sendcmd()>, I<rollerd>
+After executing a client command sent via I<rollmgr_sendcmd()>, B<rollerd>
 will send a response to the client.  I<rollmgr_getresp()> allows
 the client to retrieve the response.
 
 A return code and a response string are returned, in that order.  Both are
 specific to the command sent.
 
-=head2 B<rollmgr_verifycmd(cmd)>
+=head2 I<rollmgr_verifycmd(cmd)>
 
-I<rollmgr_verifycmd()> verifies that I<cmd> is a valid command for I<rollerd>.
+I<rollmgr_verifycmd()> verifies that I<cmd> is a valid command for B<rollerd>.
 1 is returned for a valid command; 0 is returned for an invalid command.
 
 =head1 WARNINGS
 
-1.  B<rollmgr_getid()> attempts to exclusively lock the id file.
+1.  I<rollmgr_getid()> attempts to exclusively lock the id file.
 Set a timer if this matters to you.
 
-2.  B<rollmgr_getid()> has a nice little race condition.  We should lock
+2.  I<rollmgr_getid()> has a nice little race condition.  We should lock
 the file prior to opening it, but we can't do so without it being open.
 
 =head1 COPYRIGHT
