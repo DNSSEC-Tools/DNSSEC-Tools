@@ -130,23 +130,23 @@ Net::DNS::SEC::Tools::QWPrimitives - QWizard primitives for DNSSEC-Tools
   use Net::DNS::SEC::Tools::QWPrimitives;
   use Getopt::Long::GUI;
 
-  GetOptions(...,
-	     ['GUI:nootherargs',1],
-             ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
-  	     ['GUI:submodules','getzonefiles','getzonenames'],
+  GetOptions(  ...,
+	       ['GUI:nootherargs',1],
+               ['GUI:otherprimaries',dnssec_tools_get_qwprimitives()],
+  	       ['GUI:submodules','getzonefiles','getzonenames'],
             );
 
 =head1 DESCRIPTION
 
 B<QWizard> is a dynamic GUI-construction kit.  It displays a series of
-questions, and then retrieves and acts upon the answers.  This module
+questions, then retrieves and acts upon the answers.  This module
 provides access to B<QWizard> for DNSSEC-Tools software.
 
-In particular the dnssec_tools_get_qwprimitives() returns a set of
+In particular, the I<dnssec_tools_get_qwprimitives()> returns a set of
 primary screens for requesting a set of zone files followed by a set
 of domain names for those zone files.  These are then pushed into the
-__otherargs qwparam variable, which is what Getopt::GUI::Long uses to
-generate the @ARGV list.
+I<__otherargs> I<qwparam> variable, which is used by B<Getopt::GUI::Long>
+to generate the I<@ARGV> list.
 
 =head1 COPYRIGHT
 
@@ -159,9 +159,9 @@ Wes Hardaker <hardaker@users.sourceforge.net>
 
 =head1 SEE ALSO
 
-B<Net::DNS>
-
-B<QWizard>
+B<Getopt::GUI::Long(3)>,
+B<Net::DNS(3)>,
+B<QWizard(3)>
 
 http://www.dnssec-tools.org
 

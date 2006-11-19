@@ -7,7 +7,7 @@
 #	DNSSEC-Tools configuration routines.
 #
 #	The routines in this module perform configuration operations.
-#	Some routines access the DNSSEC-Tools cconfiguration file, while
+#	Some routines access the DNSSEC-Tools configuration file, while
 #	others validate the execution environment.
 #
 #	Entries in the configuration file are of the "key value" format.
@@ -250,7 +250,7 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
 =head1 DESCRIPTION
 
 The routines in this module perform configuration operations.
-Some routines access the DNSSEC-Tools cconfiguration file, while others
+Some routines access the DNSSEC-Tools configuration file, while others
 validate the execution environment.
 
 The DNSSEC tools have a configuration file for commonly used values.
@@ -282,7 +282,7 @@ An example configuration file follows:
     algorithm       rsasha1     # Encryption algorithm.
     ksk_length      1024        ; KSK key length.
 
-=head1 CONFIGURATION INTERFACES
+=head1 INTERFACES
 
 =over 4
 
@@ -330,10 +330,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
-
-B<zonesigner(8)>
-
-B<Net::DNS::SEC::Tools::keyrec(3)>
 
 B<dnssec-tools.conf(5)>
 

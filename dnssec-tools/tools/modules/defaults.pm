@@ -178,12 +178,12 @@ message.
 
 =item B<ksklength>
 
-This default holds the default length of the KSK key.
+This default holds the default length of a KSK key.
 
 =item B<ksklife>
 
-This default holds the default lifespan of the KSK key.  This is only used
-for determining when to roll-over the KSK key.  Keys otherwise have no
+This default holds the default lifespan of a KSK key.  This is only used
+for determining when to rollover the KSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
 
 =item B<random>
@@ -215,7 +215,7 @@ This default holds the default length of the ZSK key.
 =item B<zsklife>
 
 This default holds the default lifespan of the ZSK key.  This is only used
-for determining when to roll-over the ZSK key.  Keys otherwise have no
+for determining when to rollover the ZSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
 
 =back
@@ -231,7 +231,6 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-B<genkrf(8)>,
-B<zonesigner(8)>
+B<file-conf(5)>
 
 =cut
