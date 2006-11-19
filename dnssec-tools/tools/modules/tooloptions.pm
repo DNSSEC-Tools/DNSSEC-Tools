@@ -985,7 +985,7 @@ Name of the I<keyrec> file to be searched.
 
 =item I<$keyrec_name>
 
-Name of the I<keyrec> that is being sought
+Name of the I<keyrec> that is being sought.
 
 =item I<@csopts>
 
@@ -1005,7 +1005,7 @@ included in the final option hash.  The I<@csopts> array may be passed
 directly to several interfaces or it may be saved in a call to
 B<opts_setcsopts()>.
 
-=head1 TOOLOPTION INTERFACES
+=head1 TOOLOPTIONS INTERFACES
 
 =over 4
 
@@ -1120,7 +1120,7 @@ modified by the calling program itself.
 =item B<opts_gui()>
 
 Set an internal flag so that command arguments may be specified with a GUI.
-GUI usage requires that Getopt::Long::GUI is available.  If it isn't, then 
+GUI usage requires that B<Getopt::Long::GUI> is available.  If it isn't, then 
 Getopt::Long will be used.
 
 =item B<opts_nogui()>
