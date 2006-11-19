@@ -83,26 +83,26 @@ Net::DNS::SEC::Tools::BootStrap - Optional loading of Perl modules
 
 =head1 DESCRIPTION
 
-Since the DNSSEC-Tools package requires a number of Perl modules
-that are only needed by some of the tools, this module helps determine
-at run-time rather than at installation time if the right tools are
-available on the system.  If any module fails to load,
-I<dnssec_tools_load_mods()> will display an error message describing how to
-install a module via CPAN and then it will call I<exit()>.
+The DNSSEC-Tools package requires a number of Perl modules that are only
+needed by some of the tools.  This module helps determine at run-time, rather
+than at installation time, if the right tools are available on the system.
+If any module fails to load, I<dnssec_tools_load_mods()> will display an
+error message and calls I<exit()>.  The error message describes how to
+install a module via CPAN.
 
-The arguments to I<dnssec_tools_load_mods()> are given in pairs.  Each pair
-is a module to try to load (and import) and an optional supplemental
-error message.  The supplemental error message will be displayed, in addition
-to the installation-via-CPAN message.  If the error message consists of
-the string 'noerror', then no error will be displayed before the function
-will exits.
+The arguments to I<dnssec_tools_load_mods()> are given in pairs.  Each pair is
+a module to try to load (and import) and an supplemental error message.  If
+the module fails to load, the supplemental error message will be displayed
+along with the installation-via-CPAN message.  If the error   message consists
+of the string "noerror", then no error message will be displayed before the
+function exits.
 
 =head1 CAVEATS
 
-The module will try and import any exported subroutines from the
-module into the I<main> namespace.  This means that the BootStrap
+The module will try to import any exported subroutines from the
+module into the I<main> namespace.  This means that the I<BootStrap.pm>
 module is likely not useful for importing symbols into other modules.
-Work arounds for this are:
+Work-arounds for this are:
 
 =over
 
