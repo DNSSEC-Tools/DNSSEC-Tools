@@ -1520,11 +1520,12 @@ B<keyrec_del()> interface.
 If the I<keyrec> file has been modified, it must be explicitly written or the
 changes are not saved.  B<keyrec_write()> saves the new contents to disk.
 B<keyrec_saveas()> saves the in-memory I<keyrec> contents to the specified
-file name, without affecting the original file.  B<keyrec_close()> saves the
-file and close the Perl file handle to the I<keyrec> file.  If a I<keyrec>
-file is no longer wanted to be open, yet the contents should not be saved,
-B<keyrec_discard()> gets rid of the data, and closes the file handle
-B<without> saving any modified data.
+file name, without affecting the original file.
+
+B<keyrec_close()> saves the file and close the Perl file handle to the
+I<keyrec> file.  If a I<keyrec> file is no longer wanted to be open, yet the
+contents should not be saved, B<keyrec_discard()> gets rid of the data, and
+closes the file handle B<without> saving any modified data.
 
 =head1 KEYREC INTERFACES
 
@@ -1827,6 +1828,8 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-B<Net::DNS::SEC::Tools::keyrec(5)>
+B<Net::DNS::SEC::Tools::keyrec(3)>
+
+B<file-keyrec(5)>
 
 =cut
