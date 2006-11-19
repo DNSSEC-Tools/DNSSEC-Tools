@@ -1877,15 +1877,17 @@ here:  general interfaces, logging interfaces, and communications interfaces.
 
 The interfaces to the B<Net::DNS::SEC::Tools::rollmgr> module are given below.
 
-=head2 I<rollmgr_dir()>
+=over 4
+
+=item I<rollmgr_dir()>
 
 This routine returns B<rollerd>'s directory.
 
-=head2 I<rollmgr_idfile()>
+=item I<rollmgr_idfile()>
 
 This routine returns B<rollerd>'s id file.
 
-=head2 I<rollmgr_getid()>
+=item I<rollmgr_getid()>
 
 This routine returns B<rollerd>'s process id.  If a non-zero value
 is passed as an argument, the id file will be left open and accessible through
@@ -1897,7 +1899,7 @@ Return Values:
         characters) is returned.
     -1 is returned if the id file does not exist.
 
-=head2 I<rollmgr_dropid()>
+=item I<rollmgr_dropid()>
 
 This interface ensures that another instance of B<rollerd> is not
 running and then creates a id file for future reference.
@@ -1907,7 +1909,7 @@ Return Values:
     1 - the id file was successfully created for this process
     0 - another process is already acting as rollerd
 
-=head2 I<rollmgr_rmid()>
+=item I<rollmgr_rmid()>
 
 This interface deletes B<rollerd>'s id file.
 
@@ -1918,7 +1920,7 @@ Return Values:
     -1 - the calling process is not rollerd
     -2 - unable to delete the id file
 
-=head2 I<rollmgr_cmdint()>
+=item I<rollmgr_cmdint()>
 
 This routine informs B<rollerd> that a command has been sent via
 I<rollmgr_sendcmd()>.
@@ -1929,7 +1931,7 @@ Return Values:
     Anything else indicates the number of processes that were signaled.
     (This should only ever be 1.)
 
-=head2 I<rollmgr_halt()>
+=item I<rollmgr_halt()>
 
 This routine informs B<rollerd> to shut down.
 
@@ -1940,9 +1942,13 @@ returned.
     Anything else indicates the number of processes that were signaled.
     (This should only ever be 1.)
 
+=back
+
 =head1 LOGGING INTERFACES
 
-=head2 I<rollmgr_loglevel(newlevel,useflag)>
+=over 4
+
+=item I<rollmgr_loglevel(newlevel,useflag)>
 
 This routine sets and retrieves the logging level for B<rollerd>.
 The I<newlevel> argument specifies the new logging level to be set.  The
@@ -1970,7 +1976,7 @@ If given with no arguments, the current logging level is returned.  In fact,
 the current level is always returned unless an error is found.  -1 is returned
 on error.
 
-=head2 I<rollmgr_logfile(newfile,useflag)>
+=item I<rollmgr_logfile(newfile,useflag)>
 
 This routine sets and retrieves the log file for B<rollerd>.
 The I<newfile> argument specifies the new log file to be set.  If I<newfile>
@@ -1981,7 +1987,7 @@ descriptive message if an invalid logging level is given.  If I<useflag> is
 true, the message is given and the process exits; if false, no message is
 given.  For any error condition, an empty string is returned.
 
-=head2 I<rollmgr_logstr(loglevel)>
+=item I<rollmgr_logstr(loglevel)>
 
 This routine translates a log level (given in I<loglevel>) into the associated
 text log level.  The text log level is returned to the caller.
@@ -1992,7 +1998,7 @@ level.  Case is irrelevant when checking I<loglevel>.
 If I<loglevel> is numeric, it is must be in the valid range of log levels.
 I<undef> is returned if I<loglevel> is invalid.
 
-=head2 I<rollmgr_log(level,group,message)>
+=item I<rollmgr_log(level,group,message)>
 
 The I<rollmgr_log()> interface writes a message to the log file.  Log
 messages have this format:
@@ -2009,9 +2015,13 @@ B<rollerd> to group messages by the zone to which the message applies.
 The I<message> argument is the log message itself.  Trailing newlines are
 removed.
 
+=back
+
 =head1 ROLLERD COMMUNICATIONS INTERFACES
 
-=head2 I<rollmgr_channel(serverflag)>
+=over 4
+
+=item I<rollmgr_channel(serverflag)>
 
 This interface sets up a persistent channel for communications with B<rollerd>.
 If I<serverflag> is true, then the server's side of the channel is created.
@@ -2020,7 +2030,7 @@ If I<serverflag> is false, then the client's side of the channel is created.
 Currently, the connection may only be made to the localhost.  This may be
 changed to allow remote connections, if this is found to be needed.
 
-=head2 I<rollmgr_getcmd()>
+=item I<rollmgr_getcmd()>
 
 I<rollmgr_getcmd()> retrieves a command sent over B<rollerd>'s communications
 channel by a client program.  The command and the command's data are sent in
@@ -2028,7 +2038,7 @@ each message.
 
 The command and the command's data are returned to the caller.
 
-=head2 I<rollmgr_sendcmd(closeflag,cmd,data)>
+=item I<rollmgr_sendcmd(closeflag,cmd,data)>
 
 I<rollmgr_sendcmd()> sends a command to B<rollerd>.  The command must be one
 of the commands from the table below.  This interface creates a communications
@@ -2060,7 +2070,7 @@ and the constants aren't required.
 
 On success, 1 is returned.  If an invalid command is given, 0 is returned.
 
-=head2 I<rollmgr_getresp()>
+=item I<rollmgr_getresp()>
 
 After executing a client command sent via I<rollmgr_sendcmd()>, B<rollerd>
 will send a response to the client.  I<rollmgr_getresp()> allows
@@ -2069,10 +2079,12 @@ the client to retrieve the response.
 A return code and a response string are returned, in that order.  Both are
 specific to the command sent.
 
-=head2 I<rollmgr_verifycmd(cmd)>
+=item I<rollmgr_verifycmd(cmd)>
 
 I<rollmgr_verifycmd()> verifies that I<cmd> is a valid command for B<rollerd>.
 1 is returned for a valid command; 0 is returned for an invalid command.
+
+=back
 
 =head1 WARNINGS
 
