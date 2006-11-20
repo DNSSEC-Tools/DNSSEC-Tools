@@ -312,7 +312,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
      * Search for the "main" query 
      */
     for (top_q = queries; top_q; top_q = top_q->qc_next) {
-        if (!namecmp(top_q->qc_name_n, name_n) &&
+        if (!namecmp(top_q->qc_original_name, name_n) &&
             (top_q->qc_class_h == class_h) && (top_q->qc_type_h == type_h))
             break;
     }
