@@ -172,7 +172,7 @@ extern          "C" {
 #define SET_MASKED_STATUS(st, new_val)     st = (st & VAL_R_TRUST_FLAG) | new_val
 #define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_MASKED_TRUST_FLAG) == chk_val)
 
-#define SIG_ACCEPT_WINDOW   (86400*1) /** 1 days **/
+#define SIG_ACCEPT_WINDOW   (86400*0) /** 1 days **/
     
     typedef u_int8_t val_status_t;
     typedef u_int16_t val_astatus_t;
@@ -303,12 +303,14 @@ extern          "C" {
     struct delegation_info {
         struct query_list *queries;
         struct qname_chain *qnames;
+        struct rrset_rec *answers;
         struct name_server *pending_glue_ns;
         struct val_query_chain *glueptr;
     };
 
     struct val_query_chain {
         u_char          qc_name_n[NS_MAXCDNAME];
+        u_char          qc_original_name[NS_MAXCDNAME];
         u_int16_t       qc_type_h;
         u_int16_t       qc_class_h;
         u_int16_t       qc_state;       /* DOS, TIMED_OUT, etc */
