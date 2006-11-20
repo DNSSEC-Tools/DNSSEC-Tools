@@ -20,6 +20,9 @@ int             extract_glue_from_rdata(struct rr_rec *addr_rr,
                                         struct name_server **ns);
 void            merge_glue_in_referral(struct val_query_chain *pc,
                                        struct val_query_chain **queries);
+int             find_nslist_for_query(val_context_t * context, 
+                                      struct val_query_chain *next_q,
+                                      struct val_query_chain **queries); 
 int             val_resquery_send(val_context_t * context,
                                   struct val_query_chain *matched_q);
 int             val_resquery_rcv(val_context_t * context,
