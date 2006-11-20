@@ -43,6 +43,14 @@ static int      rwlock_init = -1;
 
 static struct name_server *root_ns = NULL;
 
+struct zone_ns_map_t {
+    u_int8_t zone_n[NS_MAXCDNAME];
+    struct name_server *nslist;
+    struct zone_ns_map_t *next;
+};
+
+struct zone_ns_map_t *zone_ns_map = NULL;
+
 #define LOCK_INIT() do{				\
 	if(0 != rwlock_init) {\
 		if(0 != pthread_rwlock_init(&rwlock, NULL))\
@@ -375,22 +383,66 @@ get_root_ns(struct name_server **ns)
     return VAL_NO_ERROR;
 }
 
+/*
+ * Maintain a mapping between the zone and the name server that answered 
+ * data for it 
+ */
+int
+store_ns_for_zone(u_int8_t *zonecut_n, struct name_server *resp_server) 
+{
+    struct zone_ns_map_t *map_e;
+
+    if (!zonecut_n || !resp_server)
+        return VAL_NO_ERROR;
+    
+    LOCK_INIT();
+    LOCK_EX();
+
+    for (map_e=zone_ns_map; map_e; map_e=map_e->next) {
+
+        if (!namecmp(map_e->zone_n, zonecut_n)) {
+            /* store more recent */
+            free_name_servers(&map_e->nslist);
+            clone_ns_list(&map_e->nslist, resp_server);
+            break;
+        }
+    } 
+    
+    if (!map_e) {
+        map_e = (struct zone_ns_map_t *) MALLOC (sizeof (struct zone_ns_map_t));
+        if (map_e == NULL)
+            return VAL_OUT_OF_MEMORY;
+
+        clone_ns_list(&map_e->nslist, resp_server);
+        memcpy(map_e->zone_n, zonecut_n, wire_name_length(zonecut_n));
+        map_e->next = NULL;
+        
+        if (zone_ns_map != NULL)
+            map_e->next = zone_ns_map;
+        zone_ns_map = map_e;
+    }
+
+    UNLOCK();
+
+    return VAL_NO_ERROR;
+}
 
 int
-get_matching_nslist(struct val_query_chain *matched_q,
-                    struct val_query_chain **queries,
-                    struct name_server **ref_ns_list)
+get_nslist_from_cache(struct val_query_chain *matched_q,
+                      struct val_query_chain **queries,
+                      struct name_server **ref_ns_list)
 {
     /*
      * find closest matching name zone_n 
      */
     struct rrset_rec *nsrrset;
     u_int8_t       *name_n = NULL;
-    u_int8_t       *qname_n = NULL;
     u_int8_t       *tname_n = NULL;
     u_int8_t       *p;
     u_int16_t       qtype;
-
+    u_int8_t       *qname_n;
+    struct zone_ns_map_t *map_e, *saved_map;
+    
     qname_n = matched_q->qc_name_n;
     qtype = matched_q->qc_type_h;
 
@@ -400,6 +452,28 @@ get_matching_nslist(struct val_query_chain *matched_q,
     //     which modifies the list.. should an EX lock should be used, not SH?
     LOCK_SH();
 
+    /*
+     * Check mapping table between zone and nameserver to see if 
+     * NS information is available here 
+     */
+    saved_map = NULL;
+    for (map_e=zone_ns_map; map_e; map_e=map_e->next) {
+
+        /* check if zone is within query */
+        if (NULL != (p = (u_int8_t *) strstr((char *)map_e->zone_n, 
+                                             (char *)qname_n))) {
+            if (!saved_map || (namecmp(p, saved_map->zone_n) > 0)) {
+                saved_map = map_e;
+            }
+        }
+    } 
+
+    if (saved_map) {
+            clone_ns_list(ref_ns_list, saved_map->nslist);
+            UNLOCK();
+            return VAL_NO_ERROR;
+    }
+    
     for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
 
         if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {
