@@ -1,102 +1,99 @@
 =pod
-                                                                                
+
 =head1 NAME
 
-val_resolve_and_check, 
-val_free_result_chain - query and validate answers from a DNS name server
+val_resolve_and_check(), val_free_result_chain() - query and validate answers
+from a DNS name server
 
-val_istrusted - check if status value corresponds to that of a trust-worthy answer.
+val_istrusted() - check if status value corresponds to that of a trust-worthy
+answer.
 
-val_create_context, val_free_context, val_switch_policy_scope - manage validator context
+val_create_context(), val_free_context(), val_switch_policy_scope() - manage
+validator context
 
-resolver_config_set, 
-root_hints_set, 
-dnsval_conf_set,
-resolver_config_get, 
-root_hints_get, 
-dnsval_conf_get  - set/get current location for the validator configuration files.
+dnsval_conf_get(), dnsval_conf_set(), resolver_config_get(),
+resolver_config_set(), root_hints_get(), root_hints_set() - set/get current
+location for the validator configuration files.
 
-p_ac_status, p_val_status - display validator status information
+p_ac_status(), p_val_status() - display validator status information
 
 =head1 SYNOPSIS
 
-#include <validator.h>
+  #include <validator.h>
 
-int val_resolve_and_check( val_context_t          *context,
-                     u_char                 *domain_name_n,
-                     const u_int16_t        type,
-                     const u_int16_t        class,
-                     const u_int8_t         flags,
-                     struct val_result_chain      **results);
+  int val_resolve_and_check(val_context_t            *context,
+                            u_char                   *domain_name_n,
+                            const u_int16_t          type,
+                            const u_int16_t          class,
+                            const u_int8_t           flags,
+                            struct val_result_chain  **results);
 
-void val_free_result_chain(struct val_result *results);
+  void val_free_result_chain(struct val_result *results);
 
-int val_istrusted(val_status_t val_status);
+  int val_istrusted(val_status_t val_status);
 
-int val_create_context(const char *label, val_context_t **newcontext);
+  int val_create_context(const char *label, val_context_t **newcontext);
 
-void val_free_context(val_context_t *context);
+  void val_free_context(val_context_t *context);
 
-char *resolver_config_get(void);
+  char *resolver_config_get(void);
 
-int resolver_config_set(const char *name);
+  int resolver_config_set(const char *name);
 
-char *root_hints_get(void);
+  char *root_hints_get(void);
 
-int root_hints_set(const char *name);
+  int root_hints_set(const char *name);
 
-char *dnsval_conf_get(void);
+  char *dnsval_conf_get(void);
 
-int dnsval_conf_set(const char *name);
+  int dnsval_conf_set(const char *name);
 
-char *p_ac_status(val_astatus_t valerrno);
+  char *p_ac_status(val_astatus_t valerrno);
 
-char *p_val_status(val_status_t valerrno);
-
+  char *p_val_status(val_status_t valerrno);
 
 =head1 DESCRIPTION
 
-The B<val_resolve_and_check()> function can be used to query a set of name
-servers for the <I<domain_name_n>, I<type>, I<class>> tuple and 
+The I<val_resolve_and_check()> function can be used to query a set of name
+servers for the I<<domain_name_n, type, class>> tuple and 
 to verify and validate the response. Verification is the step of 
 checking the RRSIGs and validation includes performing 
 verification up the chain of trust all the way to a trust 
 anchor. The I<domain_name_n> parameter is the queried name in 
 DNS wire format. The conversion from host format to DNS wire format 
-can be done using the  B<ns_name_pton()> function exported by 
-the B<libsres(3)> library.
+can be done using the  I<ns_name_pton()> function exported by 
+the I<libsres(3)> library.
 
-Answers returned by B<val_resolve_and_check()> are made available 
+Answers returned by I<val_resolve_and_check()> are made available 
 in the *I<results> array.  Each answer is a 
 distinct RRset; multiple RRs within the RRset are
 treated as the same answer. Multiple answers are possible when
-I<type> is C<ns_t_any> 
+I<type> is I<ns_t_any>.
 
 Individual elements in *I<results> point to the authentication chain
-contained within the val_authentication_chain linked list. The authentication chain elements contain
-the actual RRsets returned by the name server in response to the
-query. 
+contained within the I<val_authentication_chain> linked list. The
+authentication chain elements contain the actual RRsets returned by the name
+server in response to the query.
 
-Most applications would only require the status value within 
-*I<results> since this provides a 
-single error code for representing the authenticity of returned 
-data. Other more intrusive applications such as a DNSSEC 
-troubleshooting utility may look at the individual authentication chain element 
-to identify what particular component in the chain-of-trust led 
-to validation failure if any. B<val_istrusted()> is a helper function
-that can be used to easily identify if a given validator status value
-corresponds to one of the authenticated and/or trusted data codes.
-Validator status values returned in the val_result_chain and val_authentication_chain
-linked lists can be can be converted into ASCII format using the functions
-B<p_val_status()> and B<p_ac_status()> respectively.
+Most applications would only require the status value within *I<results> since
+this provides a single error code for representing the authenticity of
+returned data. Other more intrusive applications such as a DNSSEC
+troubleshooting utility may look at the individual authentication chain
+element to identify what particular component in the chain-of-trust led to
+validation failure if any. I<val_istrusted()> is a helper function that can be
+used to easily identify if a given validator status value corresponds to one
+of the authenticated and/or trusted data codes.  Validator status values
+returned in the I<val_result_chain> and I<val_authentication_chain> linked
+lists can be can be converted into ASCII format using the functions
+I<p_val_status()> and I<p_ac_status()> respectively.
 
 The libval library internally allocates memory for *I<results> 
 and this must be freed by the invoking application 
-using the B<free_result_chain()> interface.
+using the I<free_result_chain()> interface.
 
-The first parameter to B<val_resolve_n_check()> is the validator context. 
+The first parameter to I<val_resolve_n_check()> is the validator context. 
 Applications can create a new validator context using the
-B<val_create_context()> function. This function parses the resolver and validator 
+I<val_create_context()> function. This function parses the resolver and validator 
 configuration files and creates the handle I<newcontext> to this parsed 
 information. Information stored as part of validator context includes 
 the validation policy and resolver policy. 
@@ -104,40 +101,41 @@ Validator and resolver policy are read by default from
 the B</etc/dnsval.conf> and B</etc/resolv.conf> files. "Root hints"
 that allows the library to bootstrap its lookup process when functioning 
 as a full resolver is read from B</etc/root.hints>. The locations of each
-of these files may be changed using the interfaces B<dnsval_conf_set>, 
-B<resolver_config_set> and B<root_hints_set> respectively. 
-The corresponding "get" interfaces, namely, B<dnsval_conf_get>, 
-B<resolver_config_get> and B<root_hints_get> can be used to return the 
+of these files may be changed using the interfaces I<dnsval_conf_set()>, 
+I<resolver_config_set()> and I<root_hints_set()> respectively. 
+The corresponding "get" interfaces, namely, I<dnsval_conf_get()>, 
+I<resolver_config_get()> and I<root_hints_get()> can be used to return the 
 current location from where these configuration files are read. 
 
-
 Applications can use local policy to influence the validation outcome.
-Examples of local policy elements include trust anchors for
-different zones and untrusted algorithms for cryptographic keys and hashes.
-Local policy may be different for different applications and operating scenarios. 
+Examples of local policy elements include trust anchors for different zones
+and untrusted algorithms for cryptographic keys and hashes.  Local policy may
+be different for different applications and operating scenarios.
 
-Local policy for the validator is stored in the configuration file, /etc/dnsval.conf.
-Policies are identified by simple text strings called labels, which must be
-unique within the configuration system. As an example, "browser" could be used  
-as the label that defines the validator policy for all web-browsers in a
-system.  A label value of ":" identifies the "default" policy, or the
-policy that is used when a NULL context is specified as the ctx parameter
-for functions such as B<val_resolve_and_check>, B<val_getaddrinfo> and B<val_gethostbyname>.  
-The default policy is unique within the configuraion system.
-
+Local policy for the validator is stored in the configuration file,
+B</etc/dnsval.conf>.  Policies are identified by simple text strings called
+labels, which must be unique within the configuration system. As an example,
+"browser" could be used as the label that defines the validator policy for all
+web-browsers in a system.  A label value of ":" identifies the "default"
+policy, or the policy that is used when a NULL context is specified as the
+I<ctx> parameter for interfaces such as I<val_resolve_and_check()>,
+I<val_getaddrinfo()> and I<val_gethostbyname()>.  The default policy is unique
+within the configuraion system.
 
 =head1 DATA STRUCTURES
 
 =over 4
 
-=item I<struct val_result_chain> { 
+=item I<struct val_result_chain>
 
-    val_status_t                    val_rc_status;
-    struct val_authentication_chain *val_rc_answer;
-    int                             val_rc_proof_count;
-    struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
-    struct val_result_chain         *val_rc_next;
-};
+  struct val_result_chain
+  { 
+      val_status_t                    val_rc_status;
+      struct val_authentication_chain *val_rc_answer;
+      int                             val_rc_proof_count;
+      struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
+      struct val_result_chain         *val_rc_next;
+  };
 
 =over 4
 
@@ -208,12 +206,14 @@ in a more user friendly format using the B<p_val_status()> function.
 
 =over 4
 
-=item I<struct val_authentication_chain> {
+=item I<struct val_authentication_chain>
 
-    val_astatus_t val_ac_status;
-    struct val_rrset *val_ac_rrset;
-    struct val_authentication_chain *val_ac_trust;
-};
+  struct val_authentication_chain
+  {
+      val_astatus_t val_ac_status;
+      struct val_rrset *val_ac_rrset;
+      struct val_authentication_chain *val_ac_trust;
+  };
 
 =over 4
 
@@ -304,18 +304,19 @@ anchor.
 
 =over 4
 
-=item I<struct val_rrset> {
+=item I<struct val_rrset>
 
-    u_int8_t  *val_msg_header; 
-    u_int16_t val_msg_headerlen;
-    u_int8_t  *val_rrset_name_n; 
-    u_int16_t val_rrset_class_h;
-    u_int16_t val_rrset_type_h;
-    u_int32_t val_rrset_ttl_h;
-    u_int8_t  val_rrset_section;
-    struct rr_rec *val_rrset_data;
-    struct rr_rec *val_rrset_sig;
-};
+  struct val_rrset
+      u_int8_t  *val_msg_header; 
+      u_int16_t val_msg_headerlen;
+      u_int8_t  *val_rrset_name_n; 
+      u_int16_t val_rrset_class_h;
+      u_int16_t val_rrset_type_h;
+      u_int32_t val_rrset_ttl_h;
+      u_int8_t  val_rrset_section;
+      struct rr_rec *val_rrset_data;
+      struct rr_rec *val_rrset_sig;
+  };
 
 =over 4
 
@@ -360,13 +361,15 @@ Any associated RRSIGs for the RDATA returned in I<val_rrset_data>.
 
 =over 4
 
-=item I<struct rr_rec> {
+=item I<struct rr_rec>
 
-	u_int16_t       rr_rdata_length_h;  
-    u_int8_t        *rr_rdata;      
-    val_astatus_t    rr_status;
-    struct rr_rec   *rr_next;
-};
+  struct rr_rec
+  {
+      u_int16_t       rr_rdata_length_h;  
+      u_int8_t        *rr_rdata;      
+      val_astatus_t    rr_status;
+      struct rr_rec   *rr_next;
+  };
 
 =over 4
 
@@ -557,9 +560,9 @@ See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO
 
-B<dnsval.conf(3)>
+I<libsres(3)>
 
-B<libsres(3)>
+B<dnsval.conf(5)>
 
 http://dnssec-tools.sourceforge.net
 
