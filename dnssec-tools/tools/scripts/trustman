@@ -1,0 +1,729 @@
+#!/usr/bin/perl
+#
+# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+
+#use strict;
+
+use Net::DNS;
+use Net::DNS::SEC;
+use Net::DNS::SEC::Tools::conf;
+use Net::SMTP;
+use Getopt::Long;
+use Sys::Syslog;
+use IO::File;
+use Date::Parse;
+use POSIX;
+
+########################################################
+# Defaults
+
+my %opts = (
+        t => 3600, # default to one hour
+        v => 1,
+        c => 0
+);
+
+my $daemon = 1; # default is to run as a daemon
+
+########################################################
+# main
+
+# Parse command-line options
+GetOptions(\%opts,
+             'd|domain=s',
+             't|sleeptime=i',
+             'v|verbose',
+             'f|foreground|fg',
+             'c|config',
+             'o|outfile=s',
+             's|smtp_server=s',
+             'n|named_conf_file=s',
+             'k|dnsval_conf_file=s',
+# need to modify parseconfig somehow to handle this new config line
+#             'a|anchor_data_file=s',
+             'L|syslog',
+             'p|print',
+             'N|no_error',
+             'm|mail_contact_addr=s');
+
+# Parse the dnssec-tools.conf file
+my %dtconf = parseconfig();
+
+# then $dtconf{'name_of_option_in_dnssec-tools.conf'}
+# contains the value of that option as set in the conf file
+
+# TODO
+# hardcoding until I get parseconfig to do the right thing.
+# because I'm too lazy to always give the flag....
+my $tafile = '/home/lindy/tafile';
+my $tafile = $opts{'a'} ? $opts{'a'} 
+                        : $dtconf{'tafile'};
+                     
+
+my $ncfile = $opts{'n'} ? $opts{'n'}
+                        : $dtconf{'tanamedconffile'};
+
+my $dvfile = $opts{'k'} ? $opts{'k'}
+                        : $dtconf{'tadnsvalconffile'};
+
+my $contactaddr = $opts{'m'} ? $opts{'m'}
+                             : $dtconf{'tacontact'};
+
+my $smtpserver =  $opts{'s'} ? $opts{'s'}
+                             : $dtconf{'tasmtpserver'};
+
+my $sleeptime = $opts{'t'} ? $opts{'t'}
+                           : $dtconf{'tasleeptime'};
+
+my @domains;
+push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
+
+my %keystorage;
+
+my %addkeys;
+my %zones;
+my %active_refresh_times;
+my %rrsigdata;
+my %zone_configfile_map;
+
+if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
+    usage();
+}
+
+if ($opts{'f'}) {
+    $daemon = 0;
+    &checkkeys();
+} elsif ($opts{'c'}) {
+    my $conffile = getconffile();
+    my $didnconf = 0;
+    my $didvconf = 0;
+    my $didtime = 0;
+    my $didcontact = 0;
+    my $didsmtp = 0;
+    open(CONF,$conffile) or die "unable to open \"$conffile\".";
+    usage () unless $opts{'o'};
+    open(OUT,">$opts{'o'}") or die "unable to open \"$opts{'o'}\" for writing.";
+    while(<CONF>) {
+        next if (/^tasleeptime/ && ($opts{'t'}));
+        next if (/^tasmtpserver/ && ($opts{'s'}));
+        next if (/^tacontact/ && ($opts{'m'}));
+        next if (/^tanamedconffile/ && ($opts{'n'}));
+        next if (/^tadnsvalconffile/ && ($opts{'k'}));
+        print OUT $_;
+    }
+    if ($opts{'t'}) {
+        print OUT "tasleeptime\t" . $sleeptime . "\n";
+    }
+    if ($opts{'s'}) {
+        print OUT "tasmtpserver\t" . $smtpserver . "\n";
+    }
+    if ($opts{'m'}) {
+        print OUT "tacontact\t" . $contactaddr . "\n";
+    }
+    if ($opts{'n'}) {
+        print OUT "tanamedconffile\t" . $ncfile . "\n";
+    }
+    if ($opts{'k'}) {
+        print OUT "tadnsvalconffile\t" . $dvfile . "\n";
+    }
+    close (OUT);
+    close (CONF);
+
+} else {
+    get_domains_keys(\%keystorage);
+    &daemonize;
+    while (1) {
+        my $newsleeptime = &checkkeys($sleeptime);
+        sleep($newsleeptime);
+    }
+} 
+
+sub usage {
+    print "TrustMan [-d domain] [-L] [-f] [-c -o] [-v]\n";
+    print "additional documentation coming soon\n";
+#    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
+#    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
+    print "\tuse the -f option to run in the foreground.\n";
+    print "\tUse -L to log to syslog; this can be in addition to mail.\n";
+    print "\tIf a domain is not specified, all domains in the key_containing_files will be checked.\n";
+    print "\tIf no key_containing_files are specified, dnssec-tools.conf will be
+parsed for appropriate files.\n";
+    print "\tWhen running the configure option (-c or --config), you MUST specify an output file (-o).\n";
+    exit(1);
+}
+
+sub checkkeys {
+    my $sleep = shift;
+    my @baddomains;
+    my @gooddomains;
+
+    push @domains, $opts{'d'} if ($opts{'d'});
+
+    foreach my $d (@domains) {
+        my $query;
+        $query = query_authserver($d);
+
+# check the RRSIG over the DNKSEY
+        if ($query) {
+            foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
+                 
+                 my $orgttl = $rrsigrec->orgttl;
+                 my $sigexp = $rrsigrec->sigexpiration;
+                 my $sigstart = $rrsigrec->siginception;
+                 # $refresh_domain is when to check this domain again
+                 my $refresh_time = compute_sleeptime($orgttl, $sigexp);
+                 push @{$rrsigdata{$d}},
+                     { orgttl => $orgttl,
+                       sigexp => $sigexp,
+                       sigstart => $sigstart,
+#                      record => $rrsigrec,
+                       refresh_time => $refresh_time,
+                     }; 
+                 last; # only need one sleep time per domain
+            }
+            foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer) {
+                next if (!($keyrec->flags & 1));
+                my $ttl = $keyrec->ttl;
+                my $key = $keyrec->key;
+                $key =~ s/\s+//g; # remove all spaces   
+                my $nonmatch;
+                $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
+                if ($nonmatch) {
+                # may be a new key, remember it.
+
+                # the line below could also be written as these three lines:
+                # my $arr = $rrsigdata{$d};
+                # my $href = $arr->[$#{$arr}];
+                # my $ttlexp = $href->{'orgttl'};
+                #   my $ttlexp = $rrsigdata{$d}->[$#{$rrsigdata{$d}}]{"orgttl"};
+
+                # use the ttl from the DNSKEY record
+                    $add_holddown_time = compute_add_holddown($ttl);
+                    push @{$addkeys->{$d}},
+                          { key => $key,
+                            flags => $keyrec->flags,
+                            protocol => $keyrec->protocol,
+                            algorithm => $keyrec->algorithm,
+                            add_holddown_time => $add_holddown_time };
+                    
+                # using  baddomains for warning when not doing auto roll
+                    push @baddomains, $d;
+                } else {
+# %keystorage contains all keys/domains from config files
+                    push @gooddomains, $d;
+# need to verify that ALL keys in %keystorage were matched
+# if a known key disappears, need to deal with that.
+                }
+            }
+            
+        } else {
+# TODO see notes under Active Refresh for how to handle query failure
+            print "query failed for domain " . $d . ": " . $query->errorstring . "\n";
+        }
+# compare all new refresh_domains 
+# sort keys %domains_being_checked, take the shortest,
+# set $sleep to this value.
+    }
+    if (@baddomains) {
+        if ($contactaddr) { # mail it
+            mailcontact(0,$smtpserver,$contactaddr,@baddomains);
+        }
+        foreach my $d (@baddomains) {
+            if ($opts{'L'}) { # log it to syslog
+                openlog('TrustMan','pid','user') || warn "could not open syslog";
+                syslog('warning', "%s", "DNSKEY mismatch for zone $d");
+                closelog();
+            }
+            if ($opts{'p'}) {
+                # write to stdout
+                print "DNSKEY mismatch for zone $d\n";
+            }
+        }
+    } elsif ($opts{'N'}) {
+        if ($contactaddr) { # mail it
+            mailcontact(1,$smtpserver,$contactaddr,@domains);
+        }
+        foreach my $d (@gooddomains) {
+            if ($opts{'L'}) { # log it to syslog
+                openlog('TrustMan','pid','user') || warn "could not open syslog";
+                syslog('warning'," %s", "DNSKEY okay for zone $d");
+                closelog();
+            }
+            if ($opts{'p'}) {
+                # write to stdout
+                print "DNSKEY okay for zone $d\n";
+            }
+        }
+    }
+    return $sleep;
+        
+} # end checkkeys
+
+sub get_domains_keys() {
+#    my ($storage) = @_;
+# using globals %keystorage and @domains, is this evil?
+
+    my $named_conf_pat = "trusted-keys";
+    my $dnsval_conf_pat = "trust-anchor";
+
+    read_conf_file($named_conf_pat, \%keystorage, $ncfile, \%zone_configfile_map) if ($ncfile);
+    read_conf_file($dnsval_conf_pat, \%keystorage, $dvfile, \%zone_configfile_map) if ($dvfile);
+
+# if a domain is specified on the command line, we will only
+# check that domain. Otherwise, check all domains found in config files.
+    if (!exists ($domains[0])) {
+        foreach my $k (keys(%keystorage)) {
+            push @domains, $k;
+        }
+    }
+    
+    if (!@domains) {
+        print "No domains to check, exiting....\n";
+        exit(1);
+    }
+
+# now write all the known domain data to our trust anchor file
+    open (FH, ">$tafile") or die "Can't create trust anchor file";
+    print FH "# This file is created and accessed programmatically.\n";
+    print FH "# It is not meant to be particularly human-readable\n";
+    print FH "# and should not be hand-editted\n";
+    print FH "# (unless you really know what you're doing).\n";
+
+    foreach $d (@domains) {
+        print FH "zone " . $d . "\n";
+
+        my $query;
+        my $orgttl;
+        my $refresh_time;
+        $query = query_authserver($d);
+        if ($query) {
+            foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
+                $orgttl = $rrsigrec->orgttl;
+                my $sigexp = $rrsigrec->sigexpiration;
+                $refresh_time = compute_sleeptime($orgttl,$sigexp);
+                last; # all rrsigs should have the same data
+            }
+        }
+
+	print FH "art " . $refresh_time . "\n";
+        my @keyarr;
+        @keyarr = @{$keystorage{$d}};
+        for (my $i = 0; $i <= $#keyarr; $i++) {
+            print FH "key " . $orgttl . " IN DNSKEY " 
+                            . $keyarr[$i]{'flags'} . " "
+                            . $keyarr[$i]{'protocol'} . " " 
+                            . $keyarr[$i]{'algorithm'} . " " 
+                            . "( " . $keyarr[$i]{'key'} . " )" 
+                            . "\n";
+        }
+    }
+    close (FH);
+}
+
+#########################################################
+#
+# query_authserver
+# called by checkkeys, queries a zone to get authoritative
+# servers to get the DNSKEY record
+# 
+
+sub query_authserver {
+    my ($d) = @_;
+    my $res = Net::DNS::Resolver->new;
+    my $setdnssec = $res->dnssec(1);
+    my $nsquery = $res->query($d,"NS");
+    my @authNS;
+    foreach my $ns ($nsquery->answer()) {
+        push @authNS, $ns->nsdname;
+    }
+    my @authNSAddrs;
+    foreach my $addrs (grep { $_->type eq 'A' } $nsquery->additional) {
+        push @authNSAddrs, $addrs->address;
+    }
+
+    my $authres;
+    my $query;
+    foreach my $nsaddr (@authNSAddrs) {
+        $authres = Net::DNS::Resolver->new(nameservers => [$nsaddr],
+                                           debug => 1,);
+        my $setdnssec = $authres->dnssec(1);
+        $query = $authres->query($d,"DNSKEY");
+        last if $query;
+    }
+    if (!$query) { # try the names
+        foreach my $ns (@authNS) {
+            $authres = Net::DNS::Resolver->new(nameservers => [$ns],
+                                           debug => 1,);
+            my $setdnssec = $authres->dnssec(1);
+            $query = $authres->query($d,"DNSKEY");
+            last if $query;
+        }    
+    }
+# if all fail, treat this as a failed query and go on from there
+# TODO -- failed query
+
+    return($authres->query($d,"DNSKEY"));
+}
+
+#######################################################################
+# read_conf_file()
+#
+# reads in a config file pointed to by $file
+# looks for trust anchors using $pat and stores key
+# information in $storage
+#
+sub read_conf_file {
+    my ($pat, $storage, $file, $configmap) = @_;
+    Verbose("reading and parsing trust keys from $file\n");
+    # regexp pulled from Fast.pm
+    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+
+    my $fh = new IO::File;
+    if (!$fh->open("<$file")) {
+	print STDERR "Could not open named configuration file: $file\n";
+	exit (1);
+    }
+    while (<$fh>) {
+	if (/$pat {/) {
+	    while (<$fh>) {
+		last if (/^\s*};/);
+		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
+
+# TODO: need to remember where these keys came from....
+                    $configmap->{$1} = $file;
+
+		    push @{$storage->{$1}},
+		      { flags => $2,
+			protocol => $3,
+			algorithm => $4,
+			key => $5 };
+		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		}
+	    }
+	}
+    }
+    $fh->close;
+}
+
+#######################################################################
+# read_named_conf_file()
+#
+# reads in a named.conf file pointed to by $file and stores key
+# information in $storage
+#
+sub read_named_conf_file {
+    my ($storage, $file) = @_;
+    Verbose("reading and parsing trust keys from $file\n");
+    # regexp pulled from Fast.pm
+    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+
+    my $fh = new IO::File;
+    if (!$fh->open("<$file")) {
+	print STDERR "Could not open named configuration file: $file\n";
+	exit (1);
+    }
+    while (<$fh>) {
+	if (/trusted-keys {/) {
+	    while (<$fh>) {
+		last if (/^\s*};/);
+		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
+		    push @{$storage->{$1}},
+		      { flags => $2,
+			protocol => $3,
+			algorithm => $4,
+			key => $5 };
+		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		}
+	    }
+	}
+    }
+    $fh->close;
+}
+
+#######################################################################
+# read_dnsval_conf_file()
+#
+# reads in a dnsval.conf file pointed to by $file and stores key
+# information in $storage
+#
+sub read_dnsval_conf_file {
+    my ($storage, $file) = @_;
+    Verbose("reading and parsing trust keys from $file\n");
+    # regexp pulled from Fast.pm
+    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
+
+    my $fh = new IO::File;
+    if (!$fh->open("<$file")) {
+	print STDERR "Could not open dnsval configuration file: $file\n";
+	exit (1);
+    }
+    while (<$fh>) {
+	if (/trust-anchor/) {
+	    while (<$fh>) {
+		if (/\s*($pat_maybefullname)\s+\"(256|257)\s+(\d+)\s+(\d+)\s+(.+)\"\s*/) {
+		    push @{$storage->{$1}},
+		      { flags => $2,
+			protocol => $3,
+			algorithm => $4,
+			key => $5 };
+		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		}
+	    }
+	}
+    }
+    $fh->close;
+}
+
+sub compute_add_holddown {
+    my $ttl = shift;
+    if ($ttl > 2592000) {
+        return $ttl;
+    }
+    return 2592000;
+}
+
+sub compute_sleeptime {
+# min(expiration interval [sigexpiration - now],1/2 * ottl, 15 days)
+    my ($ottl,$sexp) = @_;
+    $sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
+    my $sigexp = str2time($sexp);
+    my $fifteendays = 129600;
+    my $halfottl = $ottl / 2;
+    my $now = localtime();
+    my $nowsecs = str2time($now);
+    my $expinterval = $sigexp - $nowsecs;
+    my $actrefsecs;
+    if ($halfottl < $expinterval) {
+        if ($halfottl < $fifteendays) {
+            $actrefsecs = $halfottl;
+        } else {
+            $actrefsecs = $fifteendays;
+        }
+    } else {
+        if ($expinterval < $fifteendays) {
+            $actrefsecs = $expinterval;
+        } else {
+            $actrefsecs = $fifteendays
+        }
+    }
+    
+# return date to refresh as secs since the epoch
+    my $actreftime = $nowsecs + $actrefsecs;
+
+    return ($actreftime);
+}
+
+######################################################################
+# mailcontact()
+#  - emails a contact address with the error output
+sub mailcontact {
+    my ($ok,$smtp,$contact,@domains) = @_;
+    my $fromaddr = 'TrustMan@localhost';
+
+    # set up the SMTP object and required data
+    my $message = Net::SMTP->new($smtp) || die "failed to create smtp message";
+    $message->mail($fromaddr);
+    $message->to(split(/,\s*/,$contact));
+    $message->data();
+
+    # create headers
+    $message->datasend("To: " . $contact . "\n");
+    $message->datasend("From: " . $fromaddr . "\n");
+
+    # create the body of the message: the warning
+    if ($ok) {
+        $message->datasend("Subject: TrustMan all clear\n\n");
+        $message->datasend("TrustMan detected no DNSKEY mismatches for the following zones: \n\n");
+    } else {
+        $message->datasend("Subject: TrustMan warning -- DNSKEY mismatches\n\n");
+        $message->datasend("TrustMan has detected DNSKEY mismatches for the following zones: \n\n");
+    }
+    foreach my $d (@domains) {
+        $message->datasend("\t" . $d . "\n");
+    }
+    if (!$ok) {
+        $message->datasend("\n\nYou should verify mismatched keys manually.\n\n");
+    }
+
+    # finish and send the message
+    $message->dataend();
+    $message->quit;
+}
+
+#######################################################################
+# compare_keys()
+#
+# compares the contents of two keys to see if the new one ($domain,
+# $rec, and $keyin) matches the cached one previously remembered (in
+# $storage->{$domain} )
+#
+sub compare_keys {
+    my ($storage, $domain, $rec, $keyin) = @_;
+    if (!exists($storage->{$domain})) {
+# What would nonexistence of this really mean?
+#	print STDERR "  Found a key for $domain; previously we had none cached\n";
+    }
+    my $keys = $storage->{$domain};
+    foreach my $key (@$keys) {
+	if ($key->{'flags'} eq $rec->flags &&
+	    $key->{'protocol'} eq $rec->protocol &&
+	    $key->{'algorithm'} eq $rec->algorithm &&
+	    $key->{'key'} eq $keyin) {
+	    # the key exactly matches a stored key
+	    # $key->{'found'} = 1;
+	    return 0;
+	}
+    }
+    return 1;
+}
+
+#######################################################################
+# Verbose()
+#
+# prints something(s) to STDERR only if -v was specified.
+#
+sub Verbose {
+    print STDERR @_ if ($opts{'v'});
+}
+
+####################################################################
+# daemonize
+# 
+# run as a daemon
+
+sub daemonize {
+  chdir '/' or die "Can't chdir to /: $!";
+  open STDIN, '/dev/null' or die "Can't read /dev/null: $!";
+#open STDOUT, '>/dev/null' or die "Can't write to /dev/null: $!";
+  open STDERR, '>/dev/null' or die "Can't write to /dev/null: $!";
+  defined(my $pid = fork()) or die "Can't fork: $!";
+  exit if $pid;
+  POSIX::setsid() or die "Can't start a new session: $!";
+  umask 0;
+}
+
+#######################################################################
+# Getopt::GUI::Long portability
+#
+# will be used in a near-future version
+
+sub LocalGetOptions {
+    if (eval {require Getopt::GUI::Long;}) {
+	require Getopt::Long;
+	import Getopt::GUI::Long;
+	Getopt::GUI::Long::Configure(qw(display_help no_ignore_case));
+	return GetOptions(@_);
+    }
+    require Getopt::Long;
+    import Getopt::Long;
+    Getopt::Long::Configure(qw(auto_help no_ignore_case));
+    GetOptions(LocalOptionsMap(@_));
+}
+
+sub LocalOptionsMap {
+    my ($st, $cb, @opts) = ((ref($_[0]) eq 'HASH') 
+			    ? (1, 1, $_[0]) : (0, 2));
+    for (my $i = $st; $i <= $#_; $i += $cb) {
+	if ($_[$i]) {
+	    next if (ref($_[$i]) eq 'ARRAY' && $_[$i][0] =~ /^GUI:/);
+	    push @opts, ((ref($_[$i]) eq 'ARRAY') ? $_[$i][0] : $_[$i]);
+	    push @opts, $_[$i+1] if ($cb == 2);
+	}
+    }
+    return @opts;
+}
+
+=head1 NAME
+
+TrustMan - manage keys used as trust anchors
+
+=head1 SYNOPSIS
+
+TrustMan [options]
+
+=head1 DESCRIPTION
+
+TrustMan runs by default as a daemon to verify if keys stored locally
+in configuration files like named.conf still match the same keys
+as fetched from the zone where they are defined. If mismatches
+are detected, the daemon notifies the contact person defined in
+the config file or on the command line by mail.
+
+This script can also be run in the foreground (-f) to run this same check once
+manually.
+
+This script can also be used to set up configuration data in the file
+dnssec-tools.conf for later use by the daemon, making fewer command
+line arguments necessary. Configuration data is stored in dnssec-tools.conf.
+The current version requires you to edit dnssec-tools.conf by hand and
+supply values for the contact person email address (tacontact) and the
+SMTP server (tasmtpserver). Also edit the location of named.conf and
+dnsval.conf in that file if necessary.
+
+=head1 OPTIONS
+
+=over #indent
+
+=item -f
+
+Run in the foreground
+
+=item -c
+
+Create a configure file for TrustMan from the command line options given.
+
+=item -o
+
+Output file for configuration
+
+=item -k 
+
+A dnsval.conf file to read
+
+=item -n 
+
+A named.conf file to read
+
+=item -d
+
+The domain to check (supersedes configuration file)
+
+=item -t
+
+The number of seconds to sleep between checks. Default is 3600 (one hour)
+
+=item -m
+
+Mail address for the contact person to whom reports should be sent
+
+=item -p
+
+Log messages to stdout.
+
+=item -L
+
+Log messages to syslog.
+
+=item -s
+
+SMTP server TrustMan should use to send reports
+
+=item -N
+
+Send report when there are no errors.
+
+=item -v
+
+Verbose.
+
+=back #unindent
+=head1 PRE-REQUISITES
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=cut
