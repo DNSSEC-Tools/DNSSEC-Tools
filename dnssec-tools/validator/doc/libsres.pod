@@ -2,13 +2,13 @@
 
 =head1 NAME
 
-query_send, response_rcv, get - 
+I<query_send()>, I<response_rcv()>, get()> - 
 send queries and receive responses from a DNS name server.
 
-clone_ns, clone_ns_list, free_name_server, free_name_servers -
+I<clone_ns()>, I<clone_ns_list()>, I<free_name_server()>, I<free_name_servers()> -
 Manage name servers
 
-print_response - Display answers returned from the name server
+I<print_response()> - Display answers returned from the name server
 
 =head1 SYNOPSIS
 
@@ -35,7 +35,8 @@ print_response - Display answers returned from the name server
 
   int clone_ns(struct name_server **cloned_ns, struct name_server *ns);
 
-  int clone_ns_list(struct name_server **ns_list, struct name_server *orig_ns_list);
+  int clone_ns_list(struct name_server **ns_list,
+		    struct name_server *orig_ns_list);
 
   void free_name_server(struct name_server **ns);
 
@@ -45,29 +46,30 @@ print_response - Display answers returned from the name server
 
 =head1 DESCRIPTION
 
-The B<query_send()> function can be used to send a query comprised of the
-<I<name, class, type>> tuple to the name servers specified in I<nslist>.
+The I<query_send()> function sends a query to the name servers specified in
+I<nslist>.  The query is comprised of the <I<name, class, type>> tuple and
 I<trans_id> provides a handle to this transaction within the I<libsres> library.
 
-The B<response_recv()> function returns the answers, if available, from the
+The I<response_recv()> function returns the answers, if available, from the
 name server that responds for the query identified by I<trans_id>.
 The response is available in I<response> and the responding name server is
 returned in I<respondent>.  The length of the response in bytes is returned
 in I<response_length>.
 
-The B<get()> function provides a wrapper around the B<query_send()> and
-B<response_recv()> functions.  It blocks until a response is received
-from some name server or until the request times out.  The I<libsres> library does
-not automatically follow referrals; responses containing referrals are 
-treated as valid responses.
+The I<get()> function provides a wrapper around the I<query_send()> and
+I<response_recv()> functions.  After sending a request, it blocks until
+a response is received from some name server or until the request times out.
+The I<libsres> library does not automatically follow referrals; responses
+containing referrals are treated as valid responses.
 
-The memory pointed to by I<*respondent> is internally allocated by the I<libsres> library
-and this must be freed by the invoker using B<free_name_server()>.
-An entire list of name servers can be freed using B<free_name_servers()>.
-A copy of the name server can be created using B<clone_ns> and a copy of a name server list
-can be made using B<clone_ns_list>.
+The memory pointed to by I<*respondent> is internally allocated by the
+I<libsres> library and must be freed by the invoker using
+I<free_name_server()>.  An entire list of name servers can be freed using
+I<free_name_servers()>.  A copy of the name server can be created using
+I<clone_ns()> and a copy of a name server list can be made using
+I<clone_ns_list()>.
 
-B<print_response()> provides a convenient way to display answers returned
+I<print_response()> provides a convenient way to display answers returned
 in I<response> by the name server.
 
 I<struct name_server> is defined in B<resolver.h> as follows.
@@ -100,30 +102,31 @@ server.  This field is currently unused and must be set to NULL.
 
 =item I<ns_security_options>
 
-The security options for the zone.  This field is currently unused and must be set to
-ZONE_USE_NOTHING.
+The security options for the zone.  This field is currently unused and must be
+set to B<ZONE_USE_NOTHING>.
 
 =item I<ns_status>
 
-The status of the zone.  This field indicates how the zone information was obtained. 
-The invoker must set this value to SR_ZI_STATUS_UNSET. Zone information that was
-obtained through referrals have a value of SR_ZI_STATUS_LEARNED for this field. 
+The status of the zone.  This field indicates how the zone information was
+obtained.  The invoker must set this value to B<SR_ZI_STATUS_UNSET>. Zone
+information obtained through referrals have a value of
+B<SR_ZI_STATUS_LEARNED> for this field.
 
 =item I<ns_options>
 
-Specifies additional resolver flags. Currently defined flags are RES_RECURSE, which sets the 'Recursion
-Desired' flag; RES_USE_DNSSEC, which sets the DNSSEC OK' bit in the EDNS0 header and RES_DEBUG, which
-enables debugging.  
-
-=item I<ns_retrans>
-
-Specifies the retransmission interval in seconds for queries sent to un-responsive name servers. 
+Specifies additional resolver flags. Currently defined flags are RES_RECURSE,
+which sets the "Recursion Desired" flag; RES_USE_DNSSEC, which sets the
+"DNSSEC OK" bit in the EDNS0 header; and RES_DEBUG, which enables debugging.
 
 =item I<ns_retry>
 
-Specifies the maximum number of attempts that must be made to obtain a name from an un-responsive name
-server before giving up. 
+Specifies the maximum number of attempts that must be made to obtain a name
+from an unresponsive name server before giving up.
 
+=item I<ns_retrans>
+
+Specifies the retransmission interval in seconds for queries sent to
+unresponsive name servers.
 
 =item I<ns_next>
 
@@ -142,85 +145,88 @@ The IP address of the name server.
 
 =head1 OTHER SYMBOLS EXPORTED
 
-The I<libsres> library also exports the following BIND functions, documentation for which can be found in
-the BIND sources and documentation manuals:
-res_nametoclass
-res_nametotype
-ns_name_ntop
-ns_name_pton
-ns_name_unpack
-ns_parse_ttl
-p_class
-p_section
-p_type
+The I<libsres> library also exports the following BIND functions,
+documentation for which can be found in the BIND sources and documentation
+manuals:
+
+  res_nametoclass
+  res_nametotype
+  ns_name_ntop
+  ns_name_pton
+  ns_name_unpack
+  ns_parse_ttl
+  p_class
+  p_section
+  p_type
 
 =head1 RETURN VALUES
 
 =over 4
 
-=item SR_UNSET
+=item B<SR_UNSET>
 
 No error.
 
-=item SR_CALL_ERROR
+=item B<SR_CALL_ERROR>
 
-An invalid parameter was passed to B<get()>, B<query_send()>, or
-B<response_recv()>.
+An invalid parameter was passed to I<get()>, I<query_send()>, or
+I<response_recv()>.
 
-=item SR_INTERNAL_ERROR
+=item B<SR_INTERNAL_ERROR>
 
 The resolver encountered some internal error.
 
-=item SR_TSIG_ERROR
+=item B<SR_TSIG_ERROR>
 
-The resolver encountered some TSIG-related error. This is currently not implemented.
+The resolver encountered some TSIG-related error.  This is currently
+not implemented.
 
-=item SR_NO_ANSWER
+=item B<SR_NO_ANSWER>
 
 No answers were received from any name server.
 
-=item SR_NO_ANSWER_YET
+=item B<SR_NO_ANSWER_YET>
 
 No answer currently available; the query is still active.
 
-=item SR_WRONG_ANSWER
+=item B<SR_WRONG_ANSWER>
 
 The header bits did not correctly identify the message as a response.
 
-=item SR_HEADER_BADSIZE
+=item B<SR_HEADER_BADSIZE>
 
 The length and count of records in the header were incorrect.
 
-=item SR_NXDOMAIN
+=item B<SR_NXDOMAIN>
 
 The queried name did not exist.
 
-=item SR_FORMERR
+=item B<SR_FORMERR>
 
 The name server was not able to parse the query message.
 
-=item SR_SERVFAIL
+=item B<SR_SERVFAIL>
 
 The name server was not reachable.
 
-=item SR_NOTIMPL
+=item B<SR_NOTIMPL>
 
 A particular functionality is not yet implemented.
 
-=item SR_REFUSED
+=item B<SR_REFUSED>
 
 The name server refused to answer this query.
 
-=item SR_DNS_GENERIC_FAILURE
+=item B<SR_DNS_GENERIC_FAILURE>
 
 Other failure returned by the name server and reflected in the
-returned message RCODE.
+returned message B<RCODE>.
 
-=item SR_EDNS_VERSION_ERROR
+=item B<SR_EDNS_VERSION_ERROR>
 
 The EDNS version was not recognized
 
-=item SR_NAME_EXPANSION_FAILURE
+=item B<SR_NAME_EXPANSION_FAILURE>
 
 A failure was encountered while trying to expand a compressed domain name.
 
@@ -240,7 +246,7 @@ See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO
 
-B<libval(3)>
+I<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 
