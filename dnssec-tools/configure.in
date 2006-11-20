@@ -5,6 +5,17 @@ dnl provide it a file to simply check for its existence.
 AC_INIT([dnssec-tools], [0.9.1], [dnssec-tools-users@lists.sourceforge.net])
 AC_PREREQ([2.59])
 
+dnl ----------------------------------------------------------------------
+dnl catch mis-typed options as early as possible
+dnl
+AC_ARG_WITH(out-validator,,
+         AC_MSG_ERROR([ Invalid option. Use --with-validator/--without-validator instead ]) )
+AC_ARG_ENABLE(validator,,
+         AC_MSG_ERROR([ Invalid option. Use --with-validator/--without-validator instead ]) )
+
+dnl ----------------------------------------------------------------------
+dnl check for programs
+dnl
 AC_PATH_PROG([PERLPROG],perl)
 AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(RM, rm)
@@ -21,16 +32,20 @@ dnl ----------------------------------------------------------------------
 dnl perl specific arguments
 dnl
 AC_ARG_WITH(perl-build-args,
-[--with-perl-perl-args=ARGS           Add ARGS to building perl Makefiles.],
+[  --with-perl-perl-args=ARGS Add ARGS to building perl Makefiles.],
 	PERLARGS="$withval"
 )
 AC_SUBST(PERLARGS)
 
 dnl ----------------------------------------------------------------------
+AC_ARG_WITH(validator,
+[  --with-validator       Build libsres, libval and apps.])
 
-#if test "$package_foo_enabled" = yes; then
+if test "x$with_validator" != "xno"; then
   AC_CONFIG_SUBDIRS(validator)
-#fi
+  DNSSEC_SUBDIRS="validator"
+fi
+AC_SUBST(DNSSEC_SUBDIRS)
 
 dnl ----------------------------------------------------------------------
 
