@@ -49,6 +49,11 @@
     }\
 }while(0)
 
+#define ITS_BEEN_DONE   0
+#define IT_HASNT        1
+#define IT_WONT         (-1)
+
+
 void            my_free(void *p, char *filename, int lineno);
 void           *my_malloc(size_t t, char *filename, int lineno);
 char           *my_strdup(const char *str, char *filename, int lineno);
@@ -130,5 +135,9 @@ struct rr_rec *copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr,
                                 int dolower);
 int             link_rr(struct rr_rec **cs, struct rr_rec *cr);
 struct rrset_rec *copy_rrset_rec(struct rrset_rec *rr_set);
+int register_query(struct query_list **q, u_int8_t * name_n, u_int32_t type_h,
+               u_int8_t * zone_n);
+void deregister_queries(struct query_list **q);
+void merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info);
 
 #endif                          /* VAL_SUPPORT_H */

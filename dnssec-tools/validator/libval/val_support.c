@@ -1660,3 +1660,158 @@ err:
 	res_sq_free_rrset_recs(&copy_set);
 	return NULL;
 }
+
+/*
+ *
+ * returns
+ *         ITS_BEEN_DONE
+ *         IT_HASNT
+ *         IT_WONT
+ */
+int
+register_query(struct query_list **q, u_int8_t * name_n, u_int32_t type_h,
+               u_int8_t * zone_n)
+{
+    if ((q == NULL) || (name_n == NULL))
+        return IT_WONT;
+
+    if (*q == NULL) {
+        *q = (struct query_list *) MALLOC(sizeof(struct query_list));
+        if (*q == NULL) {
+            return IT_WONT;     /* Out of memory */
+        }
+        memcpy((*q)->ql_name_n, name_n, wire_name_length(name_n));
+        if (zone_n)
+            memcpy((*q)->ql_zone_n, zone_n, wire_name_length(zone_n));
+        else
+            memset((*q)->ql_zone_n, 0, sizeof((*q)->ql_zone_n));
+        (*q)->ql_type_h = type_h;
+        (*q)->ql_next = NULL;
+    } else {
+        struct query_list *cur_q = (*q);
+
+        while (cur_q->ql_next != NULL) {
+            if ((!zone_n || namecmp(cur_q->ql_zone_n, zone_n) == 0)
+                && namecmp(cur_q->ql_name_n, name_n) == 0)
+                return ITS_BEEN_DONE;
+            cur_q = cur_q->ql_next;
+        }
+        if ((!zone_n || namecmp(cur_q->ql_zone_n, zone_n) == 0)
+            && namecmp(cur_q->ql_name_n, name_n) == 0)
+            return ITS_BEEN_DONE;
+        cur_q->ql_next =
+            (struct query_list *) MALLOC(sizeof(struct query_list));
+        if (cur_q->ql_next == NULL) {
+            return IT_WONT;     /* Out of memory */
+        }
+        cur_q = cur_q->ql_next;
+        memcpy(cur_q->ql_name_n, name_n, wire_name_length(name_n));
+        if (zone_n)
+            memcpy(cur_q->ql_zone_n, zone_n, wire_name_length(zone_n));
+        else
+            memset(cur_q->ql_zone_n, 0, sizeof((*q)->ql_zone_n));
+        cur_q->ql_type_h = type_h;
+        cur_q->ql_next = NULL;
+    }
+    return IT_HASNT;
+}
+
+void
+deregister_queries(struct query_list **q)
+{
+    struct query_list *p;
+
+    if (q == NULL)
+        return;
+
+    while (*q) {
+        p = *q;
+        *q = (*q)->ql_next;
+        FREE(p);
+    }
+}
+
+void
+merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info)
+{
+    struct rrset_rec *new_rr, *prev;
+    struct rrset_rec *old;
+    struct rrset_rec *trail_new;
+    struct rr_rec  *rr_exchange;
+
+    if (new_info == NULL)
+        return; 
+
+    /*
+     * Tie the two together 
+     */
+    prev = NULL;
+    old = *dest;
+    while (old) {
+
+        /*
+         * Look for duplicates 
+         */
+        new_rr = new_info;
+        trail_new = NULL;
+        while (new_rr) {
+            if (old->rrs.val_rrset_type_h == new_rr->rrs.val_rrset_type_h
+                && old->rrs.val_rrset_class_h ==
+                new_rr->rrs.val_rrset_class_h
+                && namecmp(old->rrs.val_rrset_name_n,
+                           new_rr->rrs.val_rrset_name_n) == 0) {        
+
+                /*
+                 * old and new are competitors 
+                 */
+                if (!(old->rrs_cred < new_rr->rrs_cred ||
+                      (old->rrs_cred == new_rr->rrs_cred &&
+                       old->rrs.val_rrset_section <=
+                       new_rr->rrs.val_rrset_section))) {
+                    /*
+                     * exchange the two -
+                     * copy from new to old: cred, status, section, ans_kind
+                     * exchange: data, sig
+                     */
+                    old->rrs_cred = new_rr->rrs_cred;
+                    old->rrs.val_rrset_section =
+                        new_rr->rrs.val_rrset_section;
+                    old->rrs_ans_kind = new_rr->rrs_ans_kind;
+                    rr_exchange = old->rrs.val_rrset_data;
+                    old->rrs.val_rrset_data = new_rr->rrs.val_rrset_data;
+                    new_rr->rrs.val_rrset_data = rr_exchange;
+                    rr_exchange = old->rrs.val_rrset_sig;
+                    old->rrs.val_rrset_sig = new_rr->rrs.val_rrset_sig;
+                    new_rr->rrs.val_rrset_sig = rr_exchange;
+                }
+
+                /*
+                 * delete new 
+                 */
+                if (trail_new == NULL) {
+                    new_info = new_rr->rrs_next;
+                    if (new_info == NULL) {
+                        res_sq_free_rrset_recs(&new_rr);
+                        return; 
+                    }
+                } else
+                    trail_new->rrs_next = new_rr->rrs_next;
+                new_rr->rrs_next = NULL;
+                res_sq_free_rrset_recs(&new_rr);
+
+                break;
+            } else {
+                trail_new = new_rr;
+                new_rr = new_rr->rrs_next;
+            }
+        }
+        prev = old;
+        old = old->rrs_next;
+    }
+    if (prev == NULL)
+        *dest = new_info;
+    else
+        prev->rrs_next = new_info;
+
+    return; 
+}
