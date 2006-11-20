@@ -193,7 +193,8 @@ add_to_query_chain(struct val_query_chain **queries, u_char * name_n,
     temp = *queries;
     prev = temp;
     while (temp) {
-        if ((namecmp(temp->qc_name_n, name_n) == 0)
+        if (((namecmp(temp->qc_name_n, name_n) == 0)
+               || (namecmp(temp->qc_original_name, name_n) == 0))
             && (temp->qc_type_h == type_h)
             && (temp->qc_class_h == class_h))
             break;
@@ -219,6 +220,7 @@ add_to_query_chain(struct val_query_chain **queries, u_char * name_n,
         return VAL_OUT_OF_MEMORY;
 
     memcpy(temp->qc_name_n, name_n, wire_name_length(name_n));
+    memcpy(temp->qc_original_name, name_n, wire_name_length(name_n));
     temp->qc_type_h = type_h;
     temp->qc_class_h = class_h;
     temp->qc_state = Q_INIT;
@@ -528,7 +530,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
 
 
 static int
-set_ans_kind(u_int8_t * qc_name_n,
+set_ans_kind(u_int8_t * qname_n,
              const u_int16_t q_type_h,
              const u_int16_t q_class_h,
              struct rrset_rec *the_set, u_int16_t * status)
@@ -550,7 +552,7 @@ set_ans_kind(u_int8_t * qc_name_n,
      * Answer is a NACK_NSEC if... 
      */
     if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) == 0 &&
+        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_nsec))
             /*
              * We asked for it 
@@ -566,7 +568,7 @@ set_ans_kind(u_int8_t * qc_name_n,
      * Answer is a NACK_NSEC3 if... 
      */
     if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) == 0 &&
+        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_nsec3))
             /*
              * We asked for it 
@@ -584,7 +586,7 @@ set_ans_kind(u_int8_t * qc_name_n,
      */
 
     if (the_set->rrs.val_rrset_type_h == ns_t_soa) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) == 0 &&
+        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_soa))
             /*
              * We asked for it 
@@ -601,7 +603,7 @@ set_ans_kind(u_int8_t * qc_name_n,
      */
 
     if (the_set->rrs.val_rrset_type_h == ns_t_cname) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) == 0 &&
+        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
             (q_type_h == ns_t_any || q_type_h == ns_t_cname))
             /*
              * We asked for it 
@@ -616,7 +618,7 @@ set_ans_kind(u_int8_t * qc_name_n,
     /*
      * Answer is an ANSWER if... 
      */
-    if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) == 0 &&
+    if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
         (q_type_h == ns_t_any
          || q_type_h == the_set->rrs.val_rrset_type_h)) {
         /*
@@ -1418,15 +1420,15 @@ prove_nsec_wildcard_check(val_context_t * ctx,
 
 static void
 prove_nsec_span_chk(val_context_t * ctx,
-               struct rrset_rec *the_set, u_int8_t * qc_name_n,
-               u_int16_t qc_type_h, u_int8_t * soa_name_n, int *span_chk,
+               struct rrset_rec *the_set, u_int8_t * qname_n,
+               u_int16_t qtype_h, u_int8_t * soa_name_n, int *span_chk,
                int *wcard_chk, struct rrset_rec **wcard_proof,
                u_int8_t ** closest_encounter, val_status_t * status)
 {
 
     int             nsec_bit_field;
 
-    if (!namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)) {
+    if (!namecmp(the_set->rrs.val_rrset_name_n, qname_n)) {
         struct rr_rec  *sig;
 
         /*
@@ -1437,7 +1439,7 @@ prove_nsec_span_chk(val_context_t * ctx,
         if (is_type_set
             ((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])),
              the_set->rrs.val_rrset_data->rr_rdata_length_h -
-             nsec_bit_field, qc_type_h)) {
+             nsec_bit_field, qtype_h)) {
             val_log(ctx, LOG_DEBUG,
                     "NSEC error: Type exists at NSEC record");
             *status = VAL_R_BOGUS_PROOF;
@@ -1476,7 +1478,7 @@ prove_nsec_span_chk(val_context_t * ctx,
                 return;
             }
         }
-    } else if (namecmp(the_set->rrs.val_rrset_name_n, qc_name_n) > 0) {
+    } else if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) > 0) {
         /*
          * query name comes after the NSEC owner 
          */
@@ -1496,7 +1498,7 @@ prove_nsec_span_chk(val_context_t * ctx,
     u_int8_t       *nxtname = the_set->rrs.val_rrset_data ?
         the_set->rrs.val_rrset_data->rr_rdata : NULL;
 
-    if (namecmp(qc_name_n, nxtname) > 0) {
+    if (namecmp(qname_n, nxtname) > 0) {
         /*
          * check if the next name wraps around 
          */
@@ -1521,10 +1523,10 @@ prove_nsec_span_chk(val_context_t * ctx,
      * The closest encounter is the longest label match between 
      * * this NSEC's owner name and the query name
      */
-    int             maxoffset = wire_name_length(qc_name_n);
-    int             offset = qc_name_n[0] + 1;
+    int             maxoffset = wire_name_length(qname_n);
+    int             offset = qname_n[0] + 1;
     while (offset < maxoffset) {
-        u_int8_t       *cur_name_n = &qc_name_n[offset];
+        u_int8_t       *cur_name_n = &qname_n[offset];
         int             cmp;
         if ((cmp =
              namecmp(cur_name_n, the_set->rrs.val_rrset_name_n)) == 0) {
@@ -1549,7 +1551,7 @@ prove_nsec_span_chk(val_context_t * ctx,
 
 #ifdef LIBVAL_NSEC3
 u_int8_t       *
-compute_nsec3_hash(val_context_t * ctx, u_int8_t * qc_name_n,
+compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
                    u_int8_t * soa_name_n, u_int8_t alg, u_int16_t iter,
                    u_int8_t saltlen, u_int8_t * salt,
                    u_int8_t * b32_hashlen, u_int8_t ** b32_hash)
@@ -1617,7 +1619,7 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qc_name_n,
         }
     }
 
-    if(NULL == nsec3_sha_hash_compute(qc_name_n, salt, saltlen, iter, &hash, &hashlen))
+    if(NULL == nsec3_sha_hash_compute(qname_n, salt, saltlen, iter, &hash, &hashlen))
         return NULL;
 
     base32hex_encode(hash, hashlen, b32_hash, b32_hashlen);
@@ -1629,7 +1631,7 @@ static int
 nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 struct val_result_chain **proof_res,
                 struct val_result_chain **results,
-                u_int8_t * qc_name_n, u_int16_t qc_type_h,
+                u_int8_t * qname_n, u_int16_t qtype_h,
                 u_int8_t * soa_name_n, val_status_t * status)
 {
 
@@ -1649,7 +1651,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     struct val_internal_result *cpe_res = NULL;
     int retval;
 
-    cp = qc_name_n;
+    cp = qname_n;
 
     while ((namecmp(cp, soa_name_n) >= 0) && !cpe) {
 
@@ -1745,7 +1747,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 /*
                  * hashes match 
                  */
-                if (cp == qc_name_n) {
+                if (cp == qname_n) {
                     /*
                      * this is the query name 
                      * make sure that type is missing 
@@ -1754,7 +1756,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                         ((&
                           (the_set->rrs.val_rrset_data->
                            rr_rdata[nd.bit_field])), nsec3_bm_len,
-                         qc_type_h)) {
+                         qtype_h)) {
                         val_log(ctx, LOG_DEBUG,
                                 "NSEC3 error: Type exists at NSEC3 record");
                         *status = VAL_R_BOGUS_PROOF;
@@ -1947,7 +1949,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                       (the_set->rrs.val_rrset_data->
                        rr_rdata[nd.bit_field])),
                      the_set->rrs.val_rrset_data->rr_rdata_length_h -
-                     nd.bit_field, qc_type_h)) {
+                     nd.bit_field, qtype_h)) {
                     val_log(ctx, LOG_DEBUG,
                             "NSEC3 error: wildcard proof does not prove non-existence");
                     *status = VAL_R_BOGUS_PROOF;
@@ -2018,7 +2020,7 @@ static int
 nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 struct val_result_chain **proof_res,
                 struct val_result_chain **results,
-                u_int8_t * qc_name_n, u_int16_t qc_type_h,
+                u_int8_t * qname_n, u_int16_t qtype_h,
                 u_int8_t * soa_name_n, val_status_t * status)
 {
     struct val_internal_result *res;
@@ -2033,8 +2035,8 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         if (!res->val_rc_is_proof) 
             continue;
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        prove_nsec_span_chk(ctx, the_set, qc_name_n,
-                       qc_type_h, soa_name_n, &span_chk,
+        prove_nsec_span_chk(ctx, the_set, qname_n,
+                       qtype_h, soa_name_n, &span_chk,
                        &wcard_chk, &wcard_proof,
                        &closest_encounter, status);
         if (*status != VAL_R_DONT_KNOW) {
@@ -2055,7 +2057,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         if (!closest_encounter)
             *status = VAL_R_INCOMPLETE_PROOF;
         else {
-            prove_nsec_wildcard_check(ctx, qc_type_h,
+            prove_nsec_wildcard_check(ctx, qtype_h,
                                       wcard_proof,
                                       closest_encounter, status);
         }
@@ -2076,8 +2078,8 @@ prove_nonexistence( val_context_t * ctx,
                     struct val_internal_result *w_results,
                     struct val_result_chain **proof_res,
                     struct val_result_chain **results,
-                    u_char *qc_name_n,
-                    u_int16_t qc_type_h,
+                    u_char *qname_n,
+                    u_int16_t qtype_h,
                     u_int16_t qc_class_h,
                     struct val_digested_auth_chain *qc_proof,
                     val_status_t *status)
@@ -2099,10 +2101,10 @@ prove_nonexistence( val_context_t * ctx,
     *proof_res = NULL;
     *status = VAL_R_DONT_KNOW;
 
-    if (-1 == ns_name_ntop(qc_name_n, name_p, sizeof(name_p)))
+    if (-1 == ns_name_ntop(qname_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
     val_log(ctx, LOG_DEBUG, "proving non-existence for {%s, %d, %d}",
-            name_p, qc_class_h, qc_type_h);
+            name_p, qc_class_h, qtype_h);
 
     /*
      * Check if this is the whole proof and nothing but the proof
@@ -2191,7 +2193,7 @@ prove_nonexistence( val_context_t * ctx,
          * only nsec records 
          */
         if(VAL_NO_ERROR != (retval = nsec_proof_chk(ctx, w_results, proof_res, results, 
-                            qc_name_n, qc_type_h, soa_name_n, status)))
+                            qname_n, qtype_h, soa_name_n, status)))
             goto err;
         }
 #ifdef LIBVAL_NSEC3
@@ -2200,7 +2202,7 @@ prove_nonexistence( val_context_t * ctx,
          * only nsec3 records 
          */
         if(VAL_NO_ERROR != (retval = nsec3_proof_chk(ctx, w_results, proof_res, results, 
-                            qc_name_n, qc_type_h, soa_name_n, status)))
+                            qname_n, qtype_h, soa_name_n, status)))
             goto err;
             
     }
@@ -2224,8 +2226,8 @@ err:
 
 static int
 prove_existence(val_context_t *context, 
-                u_int8_t *qc_name_n, 
-                u_int16_t qc_type_h, 
+                u_int8_t *qname_n, 
+                u_int16_t qtype_h, 
                 u_int8_t * soa_name_n,
                 struct val_internal_result *w_results, 
                 struct val_result_chain **proof_res, 
@@ -2255,7 +2257,7 @@ prove_existence(val_context_t *context,
             
         if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC) {
 
-            if (!namecmp(the_set->rrs.val_rrset_name_n, qc_name_n)) {
+            if (!namecmp(the_set->rrs.val_rrset_name_n, qname_n)) {
                 /*
                  * NSEC owner = query name & q_type not in list 
                  */
@@ -2264,7 +2266,7 @@ prove_existence(val_context_t *context,
                 if (is_type_set
                     ((&(the_set->rrs.val_rrset_data->rr_rdata[nsec_bit_field])),
                     the_set->rrs.val_rrset_data->rr_rdata_length_h -
-                    nsec_bit_field, qc_type_h)) {
+                    nsec_bit_field, qtype_h)) {
                         val_log(context, LOG_DEBUG,
                             "Wildcard expansion: Type exists at NSEC record");
                         *status = VAL_SUCCESS;
@@ -2316,7 +2318,7 @@ prove_existence(val_context_t *context,
                 if (is_type_set
                     ((&(the_set->rrs.val_rrset_data->
                            rr_rdata[nd.bit_field])), nsec3_bm_len,
-                         qc_type_h)) {
+                         qtype_h)) {
                    val_log(context, LOG_DEBUG,
                             "Wildcard expansion: Type exists at NSEC3 record");
                    *status = VAL_SUCCESS;
@@ -3136,8 +3138,8 @@ ask_resolver(val_context_t * context, u_int8_t flags,
 
         for (next_q = *queries; next_q; next_q = next_q->qc_next) {
             if (next_q->qc_state == Q_INIT) {
-                struct name_server *ns;
                 u_int8_t       *test_n;
+                struct name_server *ns;
 
                 need_data = 1;
                 if (-1 ==
@@ -3149,42 +3151,9 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                         name_p, next_q->qc_class_h, next_q->qc_type_h);
 
                 if (next_q->qc_ns_list == NULL) {
-
-                    /*
-                     * See if we can get an answer from a closer NS (from cache) 
-                     */
-                    struct name_server *ref_ns_list;
-                    int             ret_val;
-                    ret_val =
-                        get_matching_nslist(next_q, queries, &ref_ns_list);
-                    if ((ret_val == VAL_NO_ERROR) && (ref_ns_list != NULL)) {
-                        next_q->qc_ns_list = ref_ns_list;
-                    } else if (context->nslist != NULL) {
-                        clone_ns_list(&(next_q->qc_ns_list),
-                                      context->nslist);
-                        for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
-                            ns->ns_options |= RES_RECURSE;
-                    } else {
-                        /*
-                         * work downward from root 
-                         */
-                        struct name_server *root_ns = NULL;
-                        get_root_ns(&root_ns);
-                        if (root_ns == NULL) {
-                            /*
-                             * No root hints; should not happen here 
-                             */
-                            return VAL_INTERNAL_ERROR;
-                            // xxx-check: log message?
-                        }
-                        next_q->qc_ns_list = root_ns;
-                        if (next_q->qc_zonecut_n)
-                            FREE(next_q->qc_zonecut_n);
-                        next_q->qc_zonecut_n = 
-                            (u_int8_t *) MALLOC(sizeof(u_int8_t));
-                        if(next_q->qc_zonecut_n == NULL) 
-                            return VAL_OUT_OF_MEMORY;
-                        *(next_q->qc_zonecut_n) = (u_int8_t)'\0';
+                    if (VAL_NO_ERROR != (retval = 
+                                find_nslist_for_query(context, next_q, queries))) {
+                        return retval;
                     }
                 }
 
@@ -3460,15 +3429,18 @@ check_alias_sanity(val_context_t * context,
     int                        done = 0;
     int                        cname_seen = 0;
     u_int8_t                   *qname_n = NULL;
+    struct query_list          *ql = NULL;
+    int                        loop = 0;
     int                        retval;
 
     if (top_q == NULL)
         return VAL_BAD_ARGUMENT;
     
-    qname_n = top_q->qc_name_n; 
+    qname_n = top_q->qc_original_name; 
     while (!done && qname_n) {
         done = 1;
         new_res = NULL;
+
         for (res = w_results; res; res = res->val_rc_next) {
             /* try constructing a cname chain */ 
             if (res->val_rc_rrset && 
@@ -3520,10 +3492,19 @@ check_alias_sanity(val_context_t * context,
                 break;
             }
         }
+
+        if (IT_HASNT != register_query(&ql, qname_n, top_q->qc_type_h, top_q->qc_zonecut_n)) {
+            loop = 1;
+            val_log(context, LOG_DEBUG, "Loop in alias chain detected");
+            if (new_res) {
+                new_res->val_rc_status = VAL_BOGUS;
+            }
+            break;
+        }
     }
 
     if (cname_seen) {
-        if ((new_res == NULL) && qname_n) {
+        if ((new_res == NULL) && qname_n && !loop) {
             /* 
              * the last element in the chain was a cname,
              * therefore we must check for a proof of non-existence 
@@ -3549,7 +3530,9 @@ check_alias_sanity(val_context_t * context,
             }
         }
         
-        /* All other cnames and answers are bogus */
+        /* 
+         * All other cnames and answers are bogus 
+         */
         for (res = w_results; res; res = res->val_rc_next) {
             if (!res->val_rc_consumed) {
                 res->val_rc_status = VAL_BOGUS;
@@ -3557,9 +3540,12 @@ check_alias_sanity(val_context_t * context,
         }
     }
 
+    deregister_queries(&ql);
+    
     return VAL_NO_ERROR;
 
 err:
+    deregister_queries(&ql);
     /* free actual results */
     val_free_result_chain(*results);
     *results = NULL;
