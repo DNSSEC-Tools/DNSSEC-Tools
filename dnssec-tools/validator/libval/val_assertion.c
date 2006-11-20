@@ -3441,6 +3441,15 @@ check_alias_sanity(val_context_t * context,
         done = 1;
         new_res = NULL;
 
+        if (IT_HASNT != register_query(&ql, qname_n, top_q->qc_type_h, top_q->qc_zonecut_n)) {
+            loop = 1;
+            val_log(context, LOG_DEBUG, "Loop in alias chain detected");
+            if (new_res) {
+                new_res->val_rc_status = VAL_BOGUS;
+            }
+            break;
+        }
+
         for (res = w_results; res; res = res->val_rc_next) {
             /* try constructing a cname chain */ 
             if (res->val_rc_rrset && 
@@ -3452,6 +3461,14 @@ check_alias_sanity(val_context_t * context,
                     /* found the next element */
                     done = 0;
                     cname_seen = 1;
+                    /* find the next link in the cname chain */
+                    if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
+                        qname_n = res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data->rr_rdata;
+                    }
+                    else {
+                        qname_n = NULL;
+                        res->val_rc_status = VAL_BOGUS;
+                    }
                 } else if ((top_q->qc_type_h != 
                             res->val_rc_rrset->_as.ac_data->rrs.val_rrset_type_h) || 
                            (top_q->qc_class_h != 
@@ -3471,6 +3488,7 @@ check_alias_sanity(val_context_t * context,
                     }
                 } 
 
+                /* or create a new one */
                 if (new_res == NULL) {
                     if (VAL_NO_ERROR !=
                             (retval = transform_single_result(res, results,
@@ -3479,27 +3497,10 @@ check_alias_sanity(val_context_t * context,
                     }
                 }
 
-                /* find the next link in the cname chain */
-                if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
-                    qname_n = res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data->rr_rdata;
-                    new_res->val_rc_status = res->val_rc_status;
-                }
-                else {
-                    qname_n = NULL;
-                    new_res->val_rc_status = VAL_BOGUS;
-                }
+                new_res->val_rc_status = res->val_rc_status;
                     
                 break;
             }
-        }
-
-        if (IT_HASNT != register_query(&ql, qname_n, top_q->qc_type_h, top_q->qc_zonecut_n)) {
-            loop = 1;
-            val_log(context, LOG_DEBUG, "Loop in alias chain detected");
-            if (new_res) {
-                new_res->val_rc_status = VAL_BOGUS;
-            }
-            break;
         }
     }
 
