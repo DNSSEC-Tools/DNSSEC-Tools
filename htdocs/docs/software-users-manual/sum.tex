@@ -9,18 +9,20 @@
 %
 % Macros for specific types of entities.
 %
-\newcommand{\cmd}[1]{{\em #1}}
+\newcommand{\cmd}[1]{{\bf #1}}
 \newcommand{\const}[1]{{\bf #1}}
-\newcommand{\func}[1]{{\bf #1}}
+\newcommand{\func}[1]{{\em #1}}
 \newcommand{\lib}[1]{{\em #1}}
 \newcommand{\perlmod}[1]{{\bf #1}}
 \newcommand{\path}[1]{{\bf #1}}
-\newcommand{\sys}[1]{{\bf #1}}
+\newcommand{\struct}[1]{{\em #1}}
+\newcommand{\sys}[1]{{\em #1}}
 \newcommand{\url}[1]{{\bf #1}}
 \newcommand{\var}[1]{{\em #1}}
 \newcommand{\xqt}[1]{{\bf #1}}
 
-\textheight=8.50in
+% \textheight=8.50in
+\textheight=9.50in
 \voffset=-.55in
 \voffset=-.75in
 
@@ -28,15 +30,21 @@
 \setlength{\oddsidemargin}{0in}
 
 \setcounter{secnumdepth}{4}
-\setcounter{tocdepth}{2}
+\setcounter{tocdepth}{3}
 
 \parindent0em
 \parskip0.65em
 
+\hyphenation{DNS-KEY}
+\hyphenation{RR-SIG}
+\hyphenation{RSA-SHA}
 \hyphenation{dns-sec DNS-SEC}
 \hyphenation{dns-sec--tools}
 \hyphenation{key-rec}
+\hyphenation{set-time}
 \hyphenation{log-watch}
+\hyphenation{tool-options}
+\hyphenation{get-host-by-name}
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -67,7 +75,7 @@ Manual Pages
 
 CDRL A006}\\
 }
-31 August 2005
+27 November 2006
 \end{center}
 
 \vspace{.5in}
@@ -76,7 +84,7 @@ CDRL A006}\\
 
 SUBMITTED BY
 
-Sparta, Inc\\
+SPARTA, Inc.\\
 7075 Samuel Morse Dr.\\
 Columbia, MD 21046-3401
 \vspace{0.25in}
@@ -115,22 +123,57 @@ Is your domain secure?}}
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
 \section{About This Document}
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
-\label{about}
+\label{sect-about}
 
 The goal of the DNSSEC-Tools project is to create a set of tools, patches,
 applications, wrappers, extensions, and plugins that will help ease the
-deployment of DNSSEC-related technologies. This document contains manual
-pages for the commands, libraries, and data files that are part of the
-DNSSEC-Tools distribution.
+deployment of DNSSEC-related technologies. This document contains manual pages
+for the commands, libraries, Perl modules, and data files that are part of the
+DNSSEC-Tools distribution.  The document organization is described below.
+
+\begin{description}
+
+\item
+Section~\ref{sect-about} describes the DNSSEC-Tools Software User Manual.
+
+\item
+Section~\ref{sect-commands} describes the DNSSEC-Tools commands.  These
+commands include programs to analyze and manipulate zone files, maintain the
+DNSSEC-Tools environment, and to assist with zone signing and key rollover.
+The commands are divided into functional groups:
+DNSSEC-Tools maintenance commands (Section~\ref{ssect-cmds-maint}),
+DNS zone file commands (Section~\ref{ssect-cmds-zone}),
+zone-signing commands (Section~\ref{ssect-cmds-sign}), and
+zone-rollover commands (Section~\ref{ssect-cmds-roll}).
+
+\item
+Section~\ref{sect-libraries} describes two libraries developed for
+DNSSEC-Tools.  The \lib{libsres} library provides secure address resolution
+for applications.  The \lib{libval} library provides DNSSEC Resource Record
+validation.
+
+\item
+Section~\ref{sect-modules} describes a number of Perl modules that were
+written to support the DNSSEC-Tools commands.  These modules may be used in
+development of additional commands to work with the existing DNSSEC-Tools.
+
+\item
+Section~\ref{sect-files} describes data files used by the DNSSEC-Tools
+commands, libraries, and modules.
+
+\end{description}
 
 For more information about this project and the tools that are being developed
-and provided, please see the project web page at:
+and provided, please see one of the project web pages at:
 
-\url{http://www.dnssec-tools.org}
+\url{http://www.dnssec-tools.org}  \\
+\url{http://dnssec-tools.sourceforge.net}
 
-\vspace{.25in}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\subsection{Conventions}
+\clearpage
+
+\subsection{\bf Conventions}
 
 The following typographical conventions are used in this document.
 
@@ -158,7 +201,7 @@ In most cases, output will not be displayed for given command sequences.
 
 \vspace{.25in}
 
-\subsection{Comments}
+\subsection{\bf Comments}
 
 Please send any comments and corrections to developers@dnssec-tools.org.
 
@@ -167,20 +210,9 @@ Please send any comments and corrections to developers@dnssec-tools.org.
 \clearpage
 
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
-\section{DNSSEC Library Routines}
+\section{DNSSEC-Tools Commands}
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
-\label{libroutines}
-
-\input{man-libs}
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-\clearpage
-
-\markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
-\section{DNSSEC Perl Utilities}
-\markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
-\label{perlutils}
+\label{sect-commands}
 
 \input{man-cmds}
 
@@ -189,9 +221,20 @@ Please send any comments and corrections to developers@dnssec-tools.org.
 \clearpage
 
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
+\section{DNSSEC Library Routines}
+\markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
+\label{sect-libraries}
+
+\input{man-libs}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\clearpage
+
+\markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
 \section{Supporting Modules}
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
-\label{supportingmodules}
+\label{sect-modules}
 
 \input{man-modules}
 
@@ -202,11 +245,10 @@ Please send any comments and corrections to developers@dnssec-tools.org.
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
 \section{Data Files}
 \markboth{DNSSEC-Tools Software User Manual -- Manual Pages}{DNSSEC-Tools Software User Manual -- Manual Pages}
-\label{datafiles}
+\label{sect-files}
 
 \input{man-files}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \end{document}
-

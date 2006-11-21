@@ -1,5 +1,5 @@
 
-A few data files are used by the DNSSEC-Tools components.
+Several data files are used by the DNSSEC-Tools components.
 
 These DNSSEC-Tools files are:
 
@@ -7,8 +7,15 @@ These DNSSEC-Tools files are:
 
 \item{\path{dnssec-tools.conf}} - Configuration file for DNSSEC-Tools programs
 
+\item{\path{dnsval.conf}} - Configuration file for ...
+
 \item{\path{keyrec}} - Key and zone configuration files for DNSSEC-Tools
 programs
+
+\item{\path{rollrec}} - Rollover configuration files for DNSSEC-Tools programs
+
+\item{\cmd{blinkenlights} rules} - Rule definition files for
+\cmd{blinkenlights}.
 
 \item{\cmd{donuts} rules} - Rule definition files for \cmd{donuts}.
 
@@ -16,6 +23,9 @@ programs
 
 This section contains man pages describing these commands.
 
-\input{manpages/tools::etc::dnssec::dnssec-tools.conf.tex}
-\input{manpages/tools::modules::file-keyrec.tex}
-\input{manpages/tools::donuts::donuts::Rule.tex}
+\input{manpages/file::dnssec-tools.conf.tex}
+\input{manpages/file::dnsval.conf.tex}
+\input{manpages/file::keyrec.tex}
+\input{manpages/file::rollrec.tex}
+\input{manpages/file::blinkenlights.conf.tex}
+\input{manpages/file::donuts-rule.tex}
