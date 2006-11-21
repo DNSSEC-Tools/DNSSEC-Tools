@@ -203,7 +203,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<lskrf(1)>
 
-B<dnssec-signzone(1)>,
+B<dnssec-signzone(8)>,
 B<signset-editor(8)>,
 B<zonesigner(8)>
 
