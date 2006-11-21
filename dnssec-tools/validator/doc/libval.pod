@@ -167,11 +167,20 @@ Validation status for a given RRset.  This can be one of the following:
 		for an RRSIG.
 
 	VAL_NONEXISTENT_NAME        
-		No name present, trusted, and proof present.
+		No name was present and a valid proof of
+		non-existence confirming the missing name
+		(NSEC or NSEC3 span) was returned.  The proof
+		was verified and the authentication chains
+		for each component in the proof led to a
+		trust anchor.
 
 	VAL_NONEXISTENT_TYPE
-		No type exists for name, trusted, and
-		proof present.
+		No type exists for the name and a valid
+		proof of non-existence confirming the
+		missing name (NSEC or NSEC3 span) was
+		returned.  The proof was verified and the
+		authentication chains for each component
+		in the proof led to a trust anchor.
 
 	VAL_ERROR
 		Did not have sufficient or relevant data to
