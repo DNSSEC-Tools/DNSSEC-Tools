@@ -129,15 +129,15 @@
 .\" ========================================================================
 .\"
 .IX Title "libsres 3"
-.TH libsres 3 "2006-11-14" "perl v5.8.6" "Programmer's Manual"
+.TH libsres 3 "2006-11-20" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
-query_send, response_rcv, get \- 
+\&\fIquery_send()\fR, \fIresponse_rcv()\fR, get()> \- 
 send queries and receive responses from a DNS name server.
 .PP
-clone_ns, clone_ns_list, free_name_server, free_name_servers \-
-Manage name servers
+\&\fIclone_ns()\fR, \fIclone_ns_list()\fR, \fIfree_name_server()\fR,
+\&\fIfree_name_servers()\fR \- Manage name server lists
 .PP
-print_response \- Display answers returned from the name server
+\&\fIprint_response()\fR \- Display answers returned from the name server
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .Vb 1
@@ -173,8 +173,9 @@ print_response \- Display answers returned from the name server
 \&  int clone_ns(struct name_server **cloned_ns, struct name_server *ns);
 .Ve
 .PP
-.Vb 1
-\&  int clone_ns_list(struct name_server **ns_list, struct name_server *orig_ns_list);
+.Vb 2
+\&  int clone_ns_list(struct name_server **ns_list,
+\&                    struct name_server *orig_ns_list);
 .Ve
 .PP
 .Vb 1
@@ -190,29 +191,30 @@ print_response \- Display answers returned from the name server
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIquery_send()\fB\fR function can be used to send a query comprised of the
-<\fIname, class, type\fR> tuple to the name servers specified in \fInslist\fR.
+The \fI\fIquery_send()\fI\fR function sends a query to the name servers specified in
+\&\fInslist\fR.  The query is comprised of the <\fIname, class, type\fR> tuple and
 \&\fItrans_id\fR provides a handle to this transaction within the \fIlibsres\fR library.
 .PP
-The \fB\f(BIresponse_recv()\fB\fR function returns the answers, if available, from the
+The \fI\fIresponse_recv()\fI\fR function returns the answers, if available, from the
 name server that responds for the query identified by \fItrans_id\fR.
 The response is available in \fIresponse\fR and the responding name server is
 returned in \fIrespondent\fR.  The length of the response in bytes is returned
 in \fIresponse_length\fR.
 .PP
-The \fB\f(BIget()\fB\fR function provides a wrapper around the \fB\f(BIquery_send()\fB\fR and
-\&\fB\f(BIresponse_recv()\fB\fR functions.  It blocks until a response is received
-from some name server or until the request times out.  The \fIlibsres\fR library does
-not automatically follow referrals; responses containing referrals are 
-treated as valid responses.
+The \fI\fIget()\fI\fR function provides a wrapper around the \fI\fIquery_send()\fI\fR and
+\&\fI\fIresponse_recv()\fI\fR functions.  After sending a request, it blocks until
+a response is received from some name server or until the request times out.
+The \fIlibsres\fR library does not automatically follow referrals; responses
+containing referrals are treated as valid responses.
 .PP
-The memory pointed to by \fI*respondent\fR is internally allocated by the \fIlibsres\fR library
-and this must be freed by the invoker using \fB\f(BIfree_name_server()\fB\fR.
-An entire list of name servers can be freed using \fB\f(BIfree_name_servers()\fB\fR.
-A copy of the name server can be created using \fBclone_ns\fR and a copy of a name server list
-can be made using \fBclone_ns_list\fR.
+The memory pointed to by \fI*respondent\fR is internally allocated by the
+\&\fIlibsres\fR library and must be freed by the invoker using
+\&\fI\fIfree_name_server()\fI\fR.  An entire list of name servers can be freed using
+\&\fI\fIfree_name_servers()\fI\fR.  A copy of the name server can be created using
+\&\fI\fIclone_ns()\fI\fR and a copy of a name server list can be made using
+\&\fI\fIclone_ns_list()\fI\fR.
 .PP
-\&\fB\f(BIprint_response()\fB\fR provides a convenient way to display answers returned
+\&\fI\fIprint_response()\fI\fR provides a convenient way to display answers returned
 in \fIresponse\fR by the name server.
 .PP
 \&\fIstruct name_server\fR is defined in \fBresolver.h\fR as follows.
@@ -241,25 +243,27 @@ The \fItsig\fR key that should be used to protect messages sent to this name
 server.  This field is currently unused and must be set to \s-1NULL\s0.
 .IP "\fIns_security_options\fR" 4
 .IX Item "ns_security_options"
-The security options for the zone.  This field is currently unused and must be set to
-\&\s-1ZONE_USE_NOTHING\s0.
+The security options for the zone.  This field is currently unused and must be
+set to \fB\s-1ZONE_USE_NOTHING\s0\fR.
 .IP "\fIns_status\fR" 4
 .IX Item "ns_status"
-The status of the zone.  This field indicates how the zone information was obtained. 
-The invoker must set this value to \s-1SR_ZI_STATUS_UNSET\s0. Zone information that was
-obtained through referrals have a value of \s-1SR_ZI_STATUS_LEARNED\s0 for this field. 
+The status of the zone.  This field indicates how the zone information was
+obtained.  The invoker must set this value to \fB\s-1SR_ZI_STATUS_UNSET\s0\fR. Zone
+information obtained through referrals have a value of
+\&\fB\s-1SR_ZI_STATUS_LEARNED\s0\fR for this field.
 .IP "\fIns_options\fR" 4
 .IX Item "ns_options"
-Specifies additional resolver flags. Currently defined flags are \s-1RES_RECURSE\s0, which sets the 'Recursion
-Desired' flag; \s-1RES_USE_DNSSEC\s0, which sets the \s-1DNSSEC\s0 \s-1OK\s0' bit in the \s-1EDNS0\s0 header and \s-1RES_DEBUG\s0, which
-enables debugging.  
-.IP "\fIns_retrans\fR" 4
-.IX Item "ns_retrans"
-Specifies the retransmission interval in seconds for queries sent to un-responsive name servers. 
+Specifies additional resolver flags. Currently defined flags are \s-1RES_RECURSE\s0,
+which sets the \*(L"Recursion Desired\*(R" flag; \s-1RES_USE_DNSSEC\s0, which sets the
+\&\*(L"\s-1DNSSEC\s0 \s-1OK\s0\*(R" bit in the \s-1EDNS0\s0 header; and \s-1RES_DEBUG\s0, which enables debugging.
 .IP "\fIns_retry\fR" 4
 .IX Item "ns_retry"
-Specifies the maximum number of attempts that must be made to obtain a name from an un-responsive name
-server before giving up. 
+Specifies the maximum number of attempts that must be made to obtain a name
+from an unresponsive name server before giving up.
+.IP "\fIns_retrans\fR" 4
+.IX Item "ns_retrans"
+Specifies the retransmission interval in seconds for queries sent to
+unresponsive name servers.
 .IP "\fIns_next\fR" 4
 .IX Item "ns_next"
 The address of the next name server in the list.
@@ -272,67 +276,72 @@ currently unused.
 The \s-1IP\s0 address of the name server.  
 .SH "OTHER SYMBOLS EXPORTED"
 .IX Header "OTHER SYMBOLS EXPORTED"
-The \fIlibsres\fR library also exports the following \s-1BIND\s0 functions, documentation for which can be found in
-the \s-1BIND\s0 sources and documentation manuals:
-res_nametoclass
-res_nametotype
-ns_name_ntop
-ns_name_pton
-ns_name_unpack
-ns_parse_ttl
-p_class
-p_section
-p_type
+The \fIlibsres\fR library also exports the following \s-1BIND\s0 functions,
+documentation for which can be found in the \s-1BIND\s0 sources and documentation
+manuals:
+.PP
+.Vb 9
+\&  res_nametoclass
+\&  res_nametotype
+\&  ns_name_ntop
+\&  ns_name_pton
+\&  ns_name_unpack
+\&  ns_parse_ttl
+\&  p_class
+\&  p_section
+\&  p_type
+.Ve
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-.IP "\s-1SR_UNSET\s0" 4
+.IP "\fB\s-1SR_UNSET\s0\fR" 4
 .IX Item "SR_UNSET"
 No error.
-.IP "\s-1SR_CALL_ERROR\s0" 4
+.IP "\fB\s-1SR_CALL_ERROR\s0\fR" 4
 .IX Item "SR_CALL_ERROR"
-An invalid parameter was passed to \fB\f(BIget()\fB\fR, \fB\f(BIquery_send()\fB\fR, or
-\&\fB\f(BIresponse_recv()\fB\fR.
-.IP "\s-1SR_INTERNAL_ERROR\s0" 4
+An invalid parameter was passed to \fI\fIget()\fI\fR, \fI\fIquery_send()\fI\fR, or
+\&\fI\fIresponse_recv()\fI\fR.
+.IP "\fB\s-1SR_INTERNAL_ERROR\s0\fR" 4
 .IX Item "SR_INTERNAL_ERROR"
 The resolver encountered some internal error.
-.IP "\s-1SR_TSIG_ERROR\s0" 4
+.IP "\fB\s-1SR_TSIG_ERROR\s0\fR" 4
 .IX Item "SR_TSIG_ERROR"
-The resolver encountered some TSIG-related error. This is currently not implemented.
-.IP "\s-1SR_NO_ANSWER\s0" 4
+The resolver encountered some TSIG-related error.  This is currently
+not implemented.
+.IP "\fB\s-1SR_NO_ANSWER\s0\fR" 4
 .IX Item "SR_NO_ANSWER"
 No answers were received from any name server.
-.IP "\s-1SR_NO_ANSWER_YET\s0" 4
+.IP "\fB\s-1SR_NO_ANSWER_YET\s0\fR" 4
 .IX Item "SR_NO_ANSWER_YET"
 No answer currently available; the query is still active.
-.IP "\s-1SR_WRONG_ANSWER\s0" 4
+.IP "\fB\s-1SR_WRONG_ANSWER\s0\fR" 4
 .IX Item "SR_WRONG_ANSWER"
 The header bits did not correctly identify the message as a response.
-.IP "\s-1SR_HEADER_BADSIZE\s0" 4
+.IP "\fB\s-1SR_HEADER_BADSIZE\s0\fR" 4
 .IX Item "SR_HEADER_BADSIZE"
 The length and count of records in the header were incorrect.
-.IP "\s-1SR_NXDOMAIN\s0" 4
+.IP "\fB\s-1SR_NXDOMAIN\s0\fR" 4
 .IX Item "SR_NXDOMAIN"
 The queried name did not exist.
-.IP "\s-1SR_FORMERR\s0" 4
+.IP "\fB\s-1SR_FORMERR\s0\fR" 4
 .IX Item "SR_FORMERR"
 The name server was not able to parse the query message.
-.IP "\s-1SR_SERVFAIL\s0" 4
+.IP "\fB\s-1SR_SERVFAIL\s0\fR" 4
 .IX Item "SR_SERVFAIL"
 The name server was not reachable.
-.IP "\s-1SR_NOTIMPL\s0" 4
+.IP "\fB\s-1SR_NOTIMPL\s0\fR" 4
 .IX Item "SR_NOTIMPL"
 A particular functionality is not yet implemented.
-.IP "\s-1SR_REFUSED\s0" 4
+.IP "\fB\s-1SR_REFUSED\s0\fR" 4
 .IX Item "SR_REFUSED"
 The name server refused to answer this query.
-.IP "\s-1SR_DNS_GENERIC_FAILURE\s0" 4
+.IP "\fB\s-1SR_DNS_GENERIC_FAILURE\s0\fR" 4
 .IX Item "SR_DNS_GENERIC_FAILURE"
 Other failure returned by the name server and reflected in the
-returned message \s-1RCODE\s0.
-.IP "\s-1SR_EDNS_VERSION_ERROR\s0" 4
+returned message \fB\s-1RCODE\s0\fR.
+.IP "\fB\s-1SR_EDNS_VERSION_ERROR\s0\fR" 4
 .IX Item "SR_EDNS_VERSION_ERROR"
 The \s-1EDNS\s0 version was not recognized
-.IP "\s-1SR_NAME_EXPANSION_FAILURE\s0" 4
+.IP "\fB\s-1SR_NAME_EXPANSION_FAILURE\s0\fR" 4
 .IX Item "SR_NAME_EXPANSION_FAILURE"
 A failure was encountered while trying to expand a compressed domain name.
 .SH "CURRENT STATUS"
@@ -347,6 +356,6 @@ Copyright 2004\-2006 \s-1SPARTA\s0, Inc.  All rights reserved.
 See the \s-1COPYING\s0 file included with the dnssec-tools package for details.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fB\f(BIlibval\fB\|(3)\fR
+\&\fI\fIlibval\fI\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net

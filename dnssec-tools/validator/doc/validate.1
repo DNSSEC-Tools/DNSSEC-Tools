@@ -129,10 +129,9 @@
 .\" ========================================================================
 .\"
 .IX Title "VALIDATE 1"
-.TH VALIDATE 1 "2006-11-15" "perl v5.8.6" "User Commands"
+.TH VALIDATE 1 "2006-11-21" "perl v5.8.6" "User Commands"
 .SH "NAME"
-validate \- Query the Domain Name System and display results of the
-           DNSSEC validation process
+validate \- Query the Domain Name System and display results of the DNSSEC validation process
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .Vb 1
@@ -144,15 +143,14 @@ validate \- Query the Domain Name System and display results of the
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\fBvalidate\fR is a diagnostic tool built on top of the \s-1DNSSEC\s0 validator.
-It takes a \fI\s-1DOMAIN_NAME\s0\fR as an argument and queries the \s-1DNS\s0
-for that domain name.  It outputs the series of responses that were
-received from the \s-1DNS\s0 and the \s-1DNSSEC\s0 validation results for each of them.  
-An examination of the queries and validation results
-can help an administrator uncover errors in \s-1DNSSEC\s0 configuration
-of \s-1DNS\s0 zones.
+\&\fBvalidate\fR is a diagnostic tool built on top of the \s-1DNSSEC\s0 validator.  It
+takes \fI\s-1DOMAIN_NAME\s0\fR as an argument and queries the \s-1DNS\s0 for that domain name.
+It outputs the series of responses that were received from the \s-1DNS\s0 and the
+\&\s-1DNSSEC\s0 validation results for each domain name.  An examination of the queries
+and validation results can help an administrator uncover errors in \s-1DNSSEC\s0
+configuration of \s-1DNS\s0 zones.
 .PP
-If no options are specified and no \fI\s-1DOMAIN_NAME\s0\fR argument is present,
+If no options are specified and no \fI\s-1DOMAIN_NAME\s0\fR argument is given,
 \&\fBvalidate\fR will perform a series of pre-defined test queries against
 the \fItest.dnssec\-tools.org\fR zone.  This serves as a
 test-suite for the validator.  If any options are specified (e.g.
@@ -176,7 +174,7 @@ each RRset is output as a separate response.  This option makes
 sense only when used with the \fI\-p\fR option.
 .IP "\-p, \-\-print" 4
 .IX Item "-p, --print"
-Print the answer(s) and validation result(s).  By default, \fBvalidate\fR
+Print the answers and validation results.  By default, \fBvalidate\fR
 just outputs a series of responses and their validation results on
 \&\fIstderr\fR.  When the \fI\-p\fR option is used, \fBvalidate\fR will also output
 the final result on \fIstdout\fR.
@@ -191,24 +189,24 @@ This option can be used to specify the location of the dnsval.conf
 configuration file.
 .IP "\-r \fI\s-1FILE\s0\fR, \-\-resolv\-conf=\fI\s-1FILE\s0\fR" 4
 .IX Item "-r FILE, --resolv-conf=FILE"
-This option can be used to specify the location of the resolv.conf
-configuration file containing the namservers to use for lookups.
+This option can be used to specify the location of the \fBresolv.conf\fR
+configuration file containing the name servers to use for lookups.
 .IP "\-i \fI\s-1FILE\s0\fR, \-\-root\-hints=\fI\s-1FILE\s0\fR" 4
 .IX Item "-i FILE, --root-hints=FILE"
 This option can be used to specify the location of the root.hints
-configuration file, containing the root nameservers. This is only
-used when no nameserver is found, and \fBvalidate\fR must do recursive
+configuration file, containing the root name servers.  This is only
+used when no name server is found, and \fBvalidate\fR must do recursive
 lookups itself.
 .IP "\-s, \-\-selftest" 4
 .IX Item "-s, --selftest"
-This option can be used to specify that the application should perform
-its test-suite against the \fIdnssec\-tools.org\fR test domain. If the
-nameservers configured in the system resolv.conf do not support \s-1DNSSEC\s0,
-use the \fI\-r\fR and \fI\-i\fR options to enable 
-\&\fBvalidate\fR to use it's own internal recursive resolver.
+This option can be used to specify that the application should perform its
+test-suite against the \fIdnssec\-tools.org\fR test domain.  If the name servers
+configured in the system \fBresolv.conf\fR do not support \s-1DNSSEC\s0, use the \fI\-r\fR
+and \fI\-i\fR options to enable \fBvalidate\fR to use its own internal recursive
+resolver.
 .IP "\-T <testcase number>" 4
 .IX Item "-T <testcase number>"
-This option can be used to run a sepecific test from the testsuite.
+This option can be used to run a specific test from the testsuite.
 .IP "\-o, \-\-output=<debug\-level>:<dest\-type>[:<dest\-options>]" 4
 .IX Item "-o, --output=<debug-level>:<dest-type>[:<dest-options>]"
 <debug\-level> is 1\-7, corresponding to syslog levels ALERT-DEBUG
