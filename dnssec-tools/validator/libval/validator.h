@@ -605,6 +605,40 @@ extern          "C" {
 
     void            val_freeaddrinfo(struct val_addrinfo *ainfo);
 
+    int             val_getnameinfo(val_context_t         *ctx,
+                                    const struct sockaddr *sa,
+                                    socklen_t              salen,
+                                    char                  *host,
+                                    size_t                 hostlen,
+                                    char                  *serv,
+                                    size_t                 servlen,
+                                    int                    flags, 
+                                    val_status_t          *val_status);
+
+/*
+ * A thread-safe, re-entrant version of val_gethostbyaddr 
+ */
+    int             val_gethostbyaddr_r(val_context_t   *ctx,
+                                        const char      *addr,
+                                        int              len,
+                                        int              type,
+                                        struct hostent  *ret,
+                                        char            *buf,
+                                        int              buflen,
+                                        struct hostent **result,
+                                        int             *h_errnop,
+                                        val_status_t    *val_status);
+
+/*
+ * A old version of gethostbyaddr for use with validator
+ */
+struct hostent *val_gethostbyaddr(val_context_t   *ctx,
+                                  const char      *addr,
+                                  int              len,
+                                  int              type,
+                                  val_status_t    *val_status);
+
+
 /* for backwards compatibility*/
 #define free_val_addrinfo   val_freeaddrinfo    
 #define p_val_error p_val_status
