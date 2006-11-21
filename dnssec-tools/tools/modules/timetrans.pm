@@ -304,33 +304,33 @@ Return Values:
 
 =head1 EXAMPLES
 
-B<timetrans(400)> returns I<6 minutes, 40 seconds>
+I<timetrans(400)> returns 6 minutes, 40 seconds
 
-B<timetrans(420)> returns I<7 minutes>
+I<timetrans(420)> returns 7 minutes
 
-B<timetrans(888)> returns I<14 minutes, 48 seconds>
+I<timetrans(888)> returns 14 minutes, 48 seconds
 
-B<timetrans(86400)> returns I<1 day>
+I<timetrans(86400)> returns 1 day
 
-B<timetrans(86488)> returns I<1 day, 28 seconds>
+I<timetrans(86488)> returns 1 day, 28 seconds
 
-B<timetrans(715000)> returns I<1 week, 1 day, 6 hours, 36 minutes, 40 second>
+I<timetrans(715000)> returns 1 week, 1 day, 6 hours, 36 minutes, 40 second
 
-B<timetrans(720000)> returns I<1 week, 1 day, 8 hours>
+I<timetrans(720000)> returns 1 week, 1 day, 8 hours
 
-B<fuzzytimetrans(400)> returns I<6.7 minutes>
+I<fuzzytimetrans(400)> returns 6.7 minutes
 
-B<fuzzytimetrans(420)> returns I<7.0 minutes>
+I<fuzzytimetrans(420)> returns 7.0 minutes
 
-B<fuzzytimetrans(888)> returns I<14.8 minutes>
+I<fuzzytimetrans(888)> returns 14.8 minutes
 
-B<fuzzytimetrans(86400)> returns I<1.0 day>
+I<fuzzytimetrans(86400)> returns 1.0 day
 
-B<fuzzytimetrans(86488)> returns I<1.0 day>
+I<fuzzytimetrans(86488)> returns 1.0 day
 
-B<fuzzytimetrans(715000)> returns I<1.2 weeks>
+I<fuzzytimetrans(715000)> returns 1.2 weeks
 
-B<fuzzytimetrans(720000)> returns I<1.2 weeks>
+I<fuzzytimetrans(720000)> returns 1.2 weeks
 
 =head1 COPYRIGHT
 
