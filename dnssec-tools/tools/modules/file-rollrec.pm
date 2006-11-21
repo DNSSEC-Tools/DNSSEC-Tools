@@ -95,6 +95,10 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 Wayne Morrison, tewok@users.sourceforge.net
 
+=head1 FILES
+
+B<file-keyrec(5)>
+
 =head1 SEE ALSO
 
 B<blinkenlights(8)>,
@@ -104,7 +108,5 @@ B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::keyrec(3)>,
 B<Net::DNS::SEC::Tools::rollrec(3)>
-
-B<Net::DNS::SEC::Tools::file-keyrec(5)>
 
 =cut
