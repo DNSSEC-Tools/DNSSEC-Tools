@@ -475,16 +475,16 @@ from the zone where they are defined.  If mismatches are detected, the daemon
 notifies the contact person defined in the config file or on the command line
 by mail.
 
-This script can also be run in the foreground (I<-f>) to run this same
-check once manually.
+B<TrustMan> can also be run in the foreground (I<-f>) to run this check a
+single time.
 
-This script can also be used to set up configuration data in the file
+B<TrustMan> can also be used to set up configuration data in the file
 B<dnssec-tools.conf> for later use by the daemon, making fewer command line
-arguments necessary. Configuration data is stored in B<dnssec-tools.conf>.
-The current version requires you to edit B<dnssec-tools.conf> by hand and
-supply values for the contact person's email address (I<tacontact>) and the
-SMTP server (I<tasmtpserver>).  Also, edit the location of B<named.conf>
-and B<dnsval.conf> in that file, if necessary.
+arguments necessary. Configuration data are stored in B<dnssec-tools.conf>.
+The current version requires the B<dnssec-tools.conf> file to be edited by
+hand to add values for the contact person's email address (I<tacontact>) and the
+SMTP server (I<tasmtpserver>).  Also, the location of B<named.conf>
+and B<dnsval.conf> must also be added to that file, if necessary.
 
 =head1 OPTIONS
 
