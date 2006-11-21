@@ -1,29 +1,34 @@
 
-Several Perl modules have been developed for DNSSEC-Tools to assist in
+A number of Perl modules have been developed for DNSSEC-Tools to assist in
 maintaining DNSSEC-secured domains.  These routines manipulate DNSSEC-Tools
 files, provide GUI interfaces, and manipulate common command options.
 
-These DNSSEC-Tools interfaces are:
+These DNSSEC-Tools Perl modules are:
 
-\begin{description}
-
-\item{\perlmod{QWPrimitives.pm.tex}} - \perlmod{QWizard} primitives
-
-\item{\perlmod{conf.pm.tex}} - DNSSEC-Tools configuration file routines
-
-\item{\perlmod{keyrec.pm.tex}} - Routines to manipulate \path{keyrec} files
-
-\item{\perlmod{timetrans.pm.tex}} - Interfaces to convert an integer seconds
-count into text units
-
-\item{\perlmod{tooloptions.pm.tex}} - DNSSEC-Tools common option routines
-
-\end{description}
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ll}
+\perlmod{BootStrap.pm}	  & optionally load Perl modules		\\
+\perlmod{QWPrimitives.pm} & \perlmod{QWizard} primitives		\\
+\perlmod{conf.pm}	  & DNSSEC-Tools configuration file routines	\\
+\perlmod{defaults.pm}	  & DNSSEC-Tools defaults routines		\\
+\perlmod{keyrec.pm}	  & {\it keyrec} file manipulation routines	\\
+\perlmod{rollmgr.pm}	  & \cmd{rollerd} interfaces			\\
+\perlmod{rollrec.pm}	  & {\it rollrec} file manipulation routines	\\
+\perlmod{timetrans.pm}	  & time/text conversion routines		\\
+\perlmod{tooloptions.pm}  & DNSSEC-Tools common option routines		\\
+\end{tabular} 
+\end{center}
+\end{table}
 
 This section contains man pages describing these modules.
 
+\input{manpages/tools::modules::BootStrap.pm.tex}
 \input{manpages/tools::modules::QWPrimitives.pm.tex}
 \input{manpages/tools::modules::conf.pm.tex}
+\input{manpages/tools::modules::defaults.pm.tex}
 \input{manpages/tools::modules::keyrec.pm.tex}
+\input{manpages/tools::modules::rollmgr.pm.tex}
+\input{manpages/tools::modules::rollrec.pm.tex}
 \input{manpages/tools::modules::timetrans.pm.tex}
 \input{manpages/tools::modules::tooloptions.pm.tex}

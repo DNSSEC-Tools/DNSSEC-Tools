@@ -1,51 +1,140 @@
 
 A number of commands have been developed to assist in maintaining
 DNSSEC-secured domains.  These commands check zone files for errors,
-assist in key generation and zone signing, and provide graphic
-information about zones.
+assist in key generation and zone signing, perform key rollover, and
+provide graphic information about zones.
 
-These DNSSEC-Tools utilities are:
+The DNSSEC-Tools commands are divided in four functional groups:
 
-\begin{description}
+\begin{itemize}
 
-\item{\cmd{dnspktflow}} - analyzes and draw DNS flow diagrams
+\item DNSSEC-Tools Maintenance Commands
 
-\item{\cmd{donuts}} - analyzes DNS zone files for errors
+\item DNS Zone-File Commands
 
-\item{\cmd{donutsd}} - daemon to periodically run \cmd{donuts}
+\item Zone-Signing Commands
 
-\item{\cmd{mapper}} - creates maps of DNS zone data
+\item Key-Rollover Commands
 
-\item{\cmd{clean-keyrec}} - cleans a {\it keyrec} file of orphaned keys
+\end{itemize}
 
-\item{\cmd{confchk}} - checks a {\bf dnssec-tools} configuration file for errors
+The commands in each functional group are described in the following
+subsections.
 
-\item{\cmd{expchk}} -  checks a {\bf dnssec-tools} configuration file for expired
-zones
+\clearpage
+\subsection{\bf DNSSEC-Tools Maintenance Commands}
+\label{ssect-cmds-maint}
 
-\item{\cmd{fixkrf}} - fixes a {\it keyrec} file for missing keys
+The commands in this group primarily deal with DNSSEC-Tools configuration
+file.  There is also a tool for time conversions, which may assist in
+determining fields for zone.  The maintenance commands are:
 
-\item{\cmd{keyrec-check}} - checks a {\it keyrec} file for errors
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ll}
+\cmd{dtinitconf} & create a new DNSSEC-Tools configuration file		\\
+\cmd{dtdefs}	 & print the DNSSEC-Tools configuration values		\\
+\cmd{dtconfchk}	 & checks a DNSSEC-Tools configuration file for errors	\\
+\cmd{timetrans}	 & converts time units					\\
+\end{tabular} 
+\end{center}
+\end{table}
 
-\item{\cmd{lskrf}} - lists the {\it keyrec}s in a {\it keyrec} file
+\input{manpages/tools::scripts::dtinitconf.tex}
+\input{manpages/tools::scripts::dtdefs.tex}
+\input{manpages/tools::scripts::dtconfchk.tex}
+\input{manpages/tools::scripts::timetrans.tex}
 
-\item{\cmd{timetrans}} - converts time units
+\clearpage
+\subsection{\bf DNS Zone File Commands}
+\label{ssect-cmds-zone}
 
-\item{\cmd{zonesigner}} - generates encryption keys and signs a DNS zone
+The DNS zone file commands provide analytical and visualization tools for DNS
+zone files.  These commands are:
 
-\end{description}
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ll}
+\cmd{dnspktflow} & analyzes and draw DNS flow diagrams			\\
+\cmd{donuts}	 & analyzes DNS zone files for errors			\\
+\cmd{donutsd}	 & daemon to periodically run \cmd{donuts}		\\
+\cmd{getdnskeys} & manage lists of DNSKEYs from DNS zones		\\
+\cmd{mapper}	 & creates maps of DNS zone data			\\
+\cmd{TrustMan}	 & manage keys used as trust anchors			\\
+\cmd{tachk}	 & verifies trust anchors in a \path{named.conf} file	\\
+\cmd{validate}	 & query the Domain Name System 			\\
+\end{tabular} 
+\end{center}
+\end{table}
 
-This section contains man pages describing these commands.
+\input{manpages/tools::dnspktflow::dnspktflow.tex}
+\input{manpages/tools::donuts::donuts.tex}
+\input{manpages/tools::donuts::donutsd.tex}
+\input{manpages/tools::scripts::getdnskeys.tex}
+\input{manpages/tools::mapper::mapper.tex}
+\input{manpages/tools::scripts::TrustMan.tex}
+\input{manpages/tools::scripts::tachk.tex}
+\input{manpages/lib::libval::validate.tex}
 
-\input{manpages/tools::dnspktflow::dnspktflow}
-\input{manpages/tools::donuts::donuts}
-\input{manpages/tools::donuts::donutsd}
-\input{manpages/tools::mapper::mapper}
-\input{manpages/tools::scripts::clean-keyrec}
-\input{manpages/tools::scripts::confchk}
-\input{manpages/tools::scripts::expchk}
-\input{manpages/tools::scripts::fixkrf}
-\input{manpages/tools::scripts::keyrec-check}
-\input{manpages/tools::scripts::lskrf}
-\input{manpages/tools::scripts::timetrans}
-\input{manpages/tools::scripts::zonesigner}
+
+\clearpage
+\subsection{\bf Zone-Signing Commands}
+\label{ssect-cmds-sign}
+
+The zone-signing commands provide tools to assist in the signing DNS zone
+files and keeping records about those signed zones.  These commands are:
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ll}
+\cmd{zonesigner}	& generates encryption keys and signs a DNS zone \\
+\cmd{genkrf}		& creates a new {\it keyrec} file		 \\
+\cmd{krfcheck}		& checks a {\it keyrec} file for errors		 \\
+\cmd{lskrf}		& lists the contents of a {\it keyrec} file	 \\
+\cmd{expchk}		& checks a {\it keyrec} file for expired zones	 \\
+\cmd{fixkrf}		& fixes a {\it keyrec} file for missing keys	 \\
+\cmd{cleankrf}		& cleans a {\it keyrec} file of orphaned keys	 \\
+\cmd{signset-editor}	& GUI editor for signing sets in a {\it keyrec} file \\
+\end{tabular} 
+\end{center}
+\end{table}
+
+\input{manpages/tools::scripts::zonesigner.tex}
+\input{manpages/tools::scripts::genkrf.tex}
+\input{manpages/tools::scripts::krfcheck.tex}
+\input{manpages/tools::scripts::lskrf.tex}
+\input{manpages/tools::scripts::expchk.tex}
+\input{manpages/tools::scripts::fixkrf.tex}
+\input{manpages/tools::scripts::cleankrf.tex}
+\input{manpages/tools::scripts::signset-editor.tex}
+
+\clearpage
+\subsection{\bf Zone-Rollover Commands}
+\label{ssect-cmds-roll}
+
+The zone-rollover commands provide tools to assist in DNSSEC zone
+rollover and keeping records about those zones' rollover status.  The
+commands in this group with together with the Zone-Signing Commands
+(see Section~\ref{ssect-cmds-sign}.)  These commands are:
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{ll}
+\cmd{rollerd}	& the DNSSEC-Tools key rollover daemon			      \\
+\cmd{rollinit}	& create a new {\it rollrec} file			      \\
+\cmd{rollchk}	& verify the validity of the contents of a {\it rollrec} file \\
+\cmd{lsroll}	& list the contents of a {\it rollrec} file		      \\
+\cmd{rollctl}	& communicate with the \cmd{rollerd} rollover daemon	      \\
+\cmd{rolllog}	& write a message to the rollover log file		      \\
+\cmd{blinkenlights} & GUI tool for monitoring and controlling \cmd{rollerd}   \\
+\end{tabular} 
+\end{center}
+\end{table}
+
+\input{manpages/tools::scripts::rollerd.tex}
+\input{manpages/tools::scripts::rollinit.tex}
+\input{manpages/tools::scripts::rollchk.tex}
+\input{manpages/tools::scripts::lsroll.tex}
+\input{manpages/tools::scripts::rollctl.tex}
+\input{manpages/tools::scripts::rolllog.tex}
+\input{manpages/tools::scripts::blinkenlights.tex}
