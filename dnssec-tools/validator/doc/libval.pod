@@ -1,3 +1,4 @@
+
 =pod
 
 =head1 NAME
@@ -150,7 +151,7 @@ Pointer to any proofs that were returned for the query.
 
 =item I<val_rc_proof_count> 
 
-Number of proof elements stored in I<val_rc_proofs>
+Number of proof elements stored in I<val_rc_proofs>.
 
 =item I<val_rc_status> 
 
@@ -211,8 +212,8 @@ Validation status for a given RRset.  This can be one of the following:
 		anchor was known to be provably unsecure.
 
 
-Error values in val_status_t returned by the validator can be displayed 
-in a more user friendly format using I<p_val_status()>.
+Error values in I<val_status_t> returned by the validator can be displayed 
+in a more user-friendly format using I<p_val_status()>.
 
 =back
 
@@ -233,8 +234,8 @@ in a more user friendly format using I<p_val_status()>.
 
 =item I<val_ac_status> 
 
-Validation state of the authentication chain element.  This field will contain
-the error or success code for DNSSEC validation over the current
+Validation state of the authentication chain element.  This field will
+contain the error or success code for DNSSEC validation over the current
 authentication chain element upon completion of I<val_resolve_n_check()>.
 This field may contain the following values:
 
@@ -419,9 +420,9 @@ RDATA bytes.
 
 =item I<rr_status> 
 
-For each signature rr_rec member within the authentication chain
-val_ac_rrset, the validation status stored in the variable
-rr_status can return one of the following values:
+For each signature I<rr_rec> member within the authentication chain
+I<val_ac_rrset>, the validation status stored in the variable
+I<rr_status> can return one of the following values:
 
       VAL_AC_RRSIG_VERIFIED - The RRSIG verified
 		successfully.
@@ -503,11 +504,14 @@ variable I<rr_status> and can return one of the following values:
       VAL_AC_ALGORITHM_REFUSED - The DNSKEY or DS algorithm
 		was not allowed as per local policy.
 
+=back
+
 =item I<rr_next> 
 
 Points to the next resource record in the RRset.
 
 =back
+
 =back
 
 =head1 RETURN VALUES
