@@ -1895,8 +1895,8 @@ the PIDFILE file handle.  See the WARNINGS section below.
 
 Return Values:
 
-    On success, the first portion of the file contents (up to 80
-        characters) is returned.
+    On success, the first portion of the file contents
+	(up to 80 characters) is returned.
     -1 is returned if the id file does not exist.
 
 =item I<rollmgr_dropid()>

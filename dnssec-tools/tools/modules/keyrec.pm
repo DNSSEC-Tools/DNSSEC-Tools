@@ -1771,16 +1771,16 @@ file.  These names are returned in an array.
 =head1 KEYREC INTERNAL INTERFACES
 
 The interfaces described in this section are intended for internal use by the
-B<Net::DNS::SEC::Tools::keyrec> module.  However, there are situations where
-external entities may have need of them.  Use with caution, as misuse may
-result in damaged or lost I<keyrec> files.
+B<keyrec.pm> module.  However, there are situations where external entities
+may have need of them.  Use with caution, as misuse may result in damaged or
+lost I<keyrec> files.
 
 =head2 I<keyrec_init()>
 
 This routine initializes the internal I<keyrec> data.  Pending changes will
 be lost.  An open I<keyrec> file handle will remain open, though the data are
 no longer held internally.  A new I<keyrec> file must be read in order to use
-the B<Net::DNS::SEC::Tools::keyrec> interfaces again.
+the B<keyrec.pm> interfaces again.
 
 =head2 I<keyrec_newkeyrec(kr_name,kr_type)>
 

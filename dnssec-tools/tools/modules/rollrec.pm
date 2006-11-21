@@ -1084,9 +1084,9 @@ by the B<Net::DNS::SEC::Tools::rollrec> routines) and in an array (for
 preserving formatting and comments.)
 
 After the file has been read, the contents are referenced using
-I<rollrec_fullrec()> and I<rollrec_recval()>.  The contents are
-modified using I<rollrec_add()>, I<rollrec_setval()>, and
-I<rollrec_settime()>.
+I<rollrec_fullrec()> and I<rollrec_recval()>.  The I<rollrec_add()>,
+I<rollrec_setval()>, and I<rollrec_settime()> interfaces are used
+to modify the contents of a {\it rollrec} record.
 
 If the I<rollrec> file has been modified, it must be explicitly written or
 the changes will not saved.  I<rollrec_write()> saves the new contents to disk.
