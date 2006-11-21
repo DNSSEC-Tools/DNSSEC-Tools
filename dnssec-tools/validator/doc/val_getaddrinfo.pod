@@ -19,8 +19,10 @@ and service translation
 
 =head1 DESCRIPTION
 
-B<val_getaddrinfo()> is a DNSSEC-aware function intended as a replacement
-for B<getaddrinfo(3)>.  It performs DNSSEC validation of DNS queries.  It
+I<val_getaddrinfo()> performs DNSSEC validation of DNS queries.  It
+is intended to be a DNSSEC-aware replacement for I<getaddrinfo(3)>.  It
+I<val_getaddrinfo()> is a DNSSEC-aware function intended as a replacement
+for I<getaddrinfo(3)>.  It performs DNSSEC validation of DNS queries.  It
 returns a network address value of type I<struct val_addrinfo> in the I<res>
 parameter.
 
@@ -33,38 +35,38 @@ parameter.
           struct sockaddr *ai_addr;
           char * ai_canonname;
           struct val_addrinfo *ai_next;
-          val_status_t ai_val_status;
+          val_status_t         ai_val_status;
   };
 
 The I<val_addrinfo> structure is similar to the I<addrinfo> structure (see
-B<getaddrinfo(3)>), and has an additional field I<ai_val_status> that represents
-the validation status for that particular record.  The B<val_istrusted()>
-function can be used to determine whether this validation status represents a
-trusted value and the B<p_val_status()> function can be used to display this
-value to the user in a useful manner (See B<libval(3)> more for information).
+I<getaddrinfo(3)>).  I<val_addrinfo> has an additional field I<ai_val_status>
+that represents the validation status for that particular record.
+I<val_istrusted()> determines whether this validation status represents a
+trusted value and I<p_val_status()> displays this value to the user in a
+useful manner.  (See I<libval(3)> for more information).
 
 The I<ctx> parameter of type I<val_context> represents the validation context,
-which can be NULL for default value. The caller can use this parameter to
+which can be NULL for default value.  The caller can use this parameter to
 control the resolver and validator policies used during validation.
-(See B<libval(3)> for information on creating a validation context.)
+(See I<libval(3)> for information on creating a validation context.)
 
-The I<nodename>, I<servname> and I<hints> parameters are similar in
+The I<nodename>, I<servname>, and I<hints> parameters are similar in
 meaning and syntax as the corresponding parameters for the original
-B<getaddrinfo()> function.  The I<res> parameter is similar to the
-I<res> parameter for B<getaddrinfo()>, except that it is of type
-I<struct val_addrinfo> instead of I<struct addrinfo>. Please see the manual
-page for B<getaddrinfo(3)> for more details about these parameters. 
+I<getaddrinfo()> function.  The I<res> parameter is similar to the
+I<res> parameter for I<getaddrinfo()>, except that it is of type
+I<struct val_addrinfo> instead of I<struct addrinfo>.  Please see the manual
+page for I<getaddrinfo(3)> for more details about these parameters.
 
-B<val_freeaddrinfo()> frees the memory allocated for a I<val_addrinfo> linked
+I<val_freeaddrinfo()> frees the memory allocated for a I<val_addrinfo> linked
 list.
 
 =head1 RETURN VALUES
 
-The B<val_getaddrinfo()> function returns 0 on success and a non-zero error
+The I<val_getaddrinfo()> function returns 0 on success and a non-zero error
 code on failure.  I<*res> will point to a dynamically allocated linked list
-of I<val_addrinfo> structures on success, and will be B<NULL> on error.  The
-memory for the value returned in I<*res> can be released using the
-B<val_freeaddrinfo()> function.
+of I<val_addrinfo> structures on success and will be NULL on error.
+The memory for the value returned in I<*res> can be released using
+I<val_freeaddrinfo()>.
 
 =head1 EXAMPLE
 
@@ -107,11 +109,11 @@ Abhijit Hayatnagarkar
 
 =head1 SEE ALSO
 
-B<getaddrinfo(3)>
+I<getaddrinfo(3)>
 
-B<val_gethostbyname(3)>, B<val_query(3)>
+I<val_gethostbyname(3)>, I<val_query(3)>
 
-B<libval(3)>
+I<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 
