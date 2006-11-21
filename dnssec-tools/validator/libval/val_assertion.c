@@ -616,6 +616,24 @@ set_ans_kind(u_int8_t * qname_n,
     }
 
     /*
+     * Answer is a DNAME if... 
+     */
+
+    if (the_set->rrs.val_rrset_type_h == ns_t_dname) {
+        if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
+            (q_type_h == ns_t_any || q_type_h == ns_t_dname))
+            /*
+             * We asked for it 
+             */
+            the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
+        else
+            the_set->rrs_ans_kind = SR_ANS_DNAME;
+
+        return VAL_NO_ERROR;
+    }
+    
+
+    /*
      * Answer is an ANSWER if... 
      */
     if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
@@ -683,9 +701,10 @@ fails_to_answer_query(struct qname_chain *q_names_n,
 
     name_present = name_in_q_names(q_names_n, the_set);
     type_match = (the_set->rrs.val_rrset_type_h == q_type_h) 
-        || (q_type_h == ns_t_any);
+        || ((q_type_h == ns_t_any) && (name_present == TOP_OF_QNAMES));
     class_match = (the_set->rrs.val_rrset_class_h == q_class_h)
         || (q_class_h == ns_c_any);
+    
     if (q_type_h != ns_t_rrsig) {
         data_present = the_set->rrs.val_rrset_data != NULL;
     } else {
@@ -704,6 +723,8 @@ fails_to_answer_query(struct qname_chain *q_names_n,
          the_set->rrs_ans_kind == SR_ANS_STRAIGHT) ||
         (name_present != MID_OF_QNAMES && !type_match &&
          the_set->rrs_ans_kind == SR_ANS_CNAME) ||
+        (name_present != MID_OF_QNAMES && !type_match &&
+         the_set->rrs_ans_kind == SR_ANS_DNAME) ||
         (name_present == MID_OF_QNAMES && !type_match &&
          (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC ||
 #ifdef LIBVAL_NSEC3
@@ -731,14 +752,14 @@ static int
 add_to_authentication_chain(struct val_digested_auth_chain **assertions,
                             struct rrset_rec *rrset)
 {
-    struct val_digested_auth_chain *new_as, *first_as, *prev_as;
+    struct val_digested_auth_chain *new_as, *first_as, *last_as;
     struct rrset_rec *next_rr;
 
     if (NULL == assertions)
         return VAL_BAD_ARGUMENT;
 
     first_as = NULL;
-    prev_as = NULL;
+    last_as = NULL;
 
     next_rr = rrset;
     while (next_rr) {
@@ -753,21 +774,18 @@ add_to_authentication_chain(struct val_digested_auth_chain **assertions,
         new_as->_as.val_ac_next = NULL;
         new_as->_as.ac_pending_query = NULL;
         new_as->val_ac_status = VAL_AC_INIT;
-        if (first_as != NULL) {
-            /*
-             * keep the first assertion constant 
-             */
-            new_as->_as.val_ac_next = first_as->_as.val_ac_next;
-            first_as->_as.val_ac_next = new_as;
-            prev_as->_as.val_ac_rrset_next = new_as;
-
+        if (last_as != NULL) {
+            last_as->_as.val_ac_rrset_next = new_as;
+            last_as->_as.val_ac_next = new_as;
         } else {
             first_as = new_as;
-            new_as->_as.val_ac_next = *assertions;
-            *assertions = new_as;
-        }
-        prev_as = new_as;
+        } 
+        last_as = new_as;
         next_rr = next_rr->rrs_next;
+    }
+    if (first_as) {
+        last_as->_as.val_ac_next = *assertions;
+        *assertions = first_as;
     }
 
     return VAL_NO_ERROR;
@@ -947,11 +965,12 @@ check_conflicting_answers(val_context_t * context,
         else {
             switch (kind) {
                 /*
-                 * STRAIGHT and CNAME are OK 
+                 * STRAIGHT and CNAME/DNAME are OK 
                  */
             case SR_ANS_STRAIGHT:
                 if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME)) {
+                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME) && 
+                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_DNAME)) {
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                 }
@@ -959,6 +978,16 @@ check_conflicting_answers(val_context_t * context,
 
             case SR_ANS_CNAME:
                 if (as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) {
+                    matched_q->qc_state =
+                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                }
+                break;
+
+            case SR_ANS_DNAME:
+                if (as->_as.ac_data->rrs_ans_kind == SR_ANS_CNAME) {
+                    /* don't validate the synthesized cname */
+                    as->val_ac_status = VAL_AC_DONT_VALIDATE; 
+                } else if (as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) {
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                 }
@@ -1019,12 +1048,13 @@ check_conflicting_answers(val_context_t * context,
 
         if (flags & VAL_FLAGS_DONT_VALIDATE)
             as->val_ac_status = VAL_AC_DONT_VALIDATE;
-        else if (!matched_q->qc_glue_request) {
+        
+        if ((as->val_ac_status != VAL_AC_DONT_VALIDATE) && 
+                (!matched_q->qc_glue_request)) {
             if (VAL_NO_ERROR !=
                 (retval = build_pending_query(context, queries, as)))
                 return retval;
         }
-
     }
     return VAL_NO_ERROR;
 }
@@ -2035,6 +2065,8 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         if (!res->val_rc_is_proof) 
             continue;
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
+        if (the_set->rrs_ans_kind != SR_ANS_NACK_NSEC)
+            continue;
         prove_nsec_span_chk(ctx, the_set, qname_n,
                        qtype_h, soa_name_n, &span_chk,
                        &wcard_chk, &wcard_proof,
@@ -2698,7 +2730,7 @@ verify_and_validate(val_context_t * context,
     struct val_digested_auth_chain *as_more;
     struct val_digested_auth_chain *top_as;
     struct val_internal_result *res;
-    struct val_internal_result *cur_res, *temp_res;
+    struct val_internal_result *cur_res, *tail_res, *temp_res;
 
     if ((top_q == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
@@ -2712,6 +2744,11 @@ verify_and_validate(val_context_t * context,
     else {
         top_as = top_q->qc_ans;
     }
+
+    for (tail_res=*results; 
+         tail_res && tail_res->val_rc_next; 
+         tail_res=tail_res->val_rc_next)
+        ;
     
     /*
      * Look at every answer that was returned 
@@ -2754,13 +2791,19 @@ verify_and_validate(val_context_t * context,
             res->val_rc_is_proof = is_proof; 
             res->val_rc_consumed = 0;
             res->val_rc_rrset = as_more;
-            if (flags & VAL_FLAGS_DONT_VALIDATE) {
+            res->val_rc_next = NULL;
+            if ((flags & VAL_FLAGS_DONT_VALIDATE) || 
+                (as_more->val_ac_status == VAL_AC_DONT_VALIDATE)) {
                 res->val_rc_status = VAL_IGNORE_VALIDATION;
             } else {
                 res->val_rc_status = VAL_R_DONT_KNOW;
             }
-            res->val_rc_next = *results;
-            *results = res;
+            if (tail_res)
+                tail_res->val_rc_next = res;
+            else {
+                *results = res;
+            }
+            tail_res = res;
         }
 
         /*
@@ -3428,10 +3471,14 @@ check_alias_sanity(val_context_t * context,
     struct val_result_chain    *new_res = NULL;
     int                        done = 0;
     int                        cname_seen = 0;
+    int                        dname_seen = 0;
     u_int8_t                   *qname_n = NULL;
     struct query_list          *ql = NULL;
     int                        loop = 0;
     int                        retval;
+    u_int8_t                   *p;
+    int                        is_same_name;
+    u_int8_t                   temp_name[NS_MAXCDNAME];
 
     if (top_q == NULL)
         return VAL_BAD_ARGUMENT;
@@ -3451,63 +3498,92 @@ check_alias_sanity(val_context_t * context,
         }
 
         for (res = w_results; res; res = res->val_rc_next) {
-            /* try constructing a cname chain */ 
-            if (res->val_rc_rrset && 
-                res->val_rc_rrset->_as.ac_data &&
-                !namecmp(qname_n, 
-                        res->val_rc_rrset->_as.ac_data->rrs.val_rrset_name_n)) {
+            /* try constructing a cname/dname chain */ 
+            
+            if (!res->val_rc_rrset || 
+                !res->val_rc_rrset->_as.ac_data)
+               continue;
 
-                if (res->val_rc_rrset->_as.ac_data->rrs_ans_kind == SR_ANS_CNAME) {
-                    /* found the next element */
-                    done = 0;
-                    cname_seen = 1;
-                    /* find the next link in the cname chain */
-                    if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
-                        qname_n = res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data->rr_rdata;
-                    }
-                    else {
+            is_same_name = (0 == namecmp(qname_n, res->val_rc_rrset->_as.ac_data->rrs.val_rrset_name_n));
+
+            if((is_same_name) && 
+               (res->val_rc_rrset->_as.ac_data->rrs_ans_kind == SR_ANS_CNAME)) {
+                /* found the next element */
+                done = 0;
+                cname_seen = 1;
+                /* find the next link in the cname chain */
+                if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
+                    qname_n = res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data->rr_rdata;
+                }
+                else {
+                    qname_n = NULL;
+                    res->val_rc_status = VAL_BOGUS;
+                }
+            } else if ((res->val_rc_rrset->_as.ac_data->rrs_ans_kind == SR_ANS_DNAME) &&
+                           (NULL != (p = (u_int8_t *)strstr(qname_n,
+                                     res->val_rc_rrset->_as.ac_data->rrs.val_rrset_name_n)))){ 
+                /* found the next dname element */
+                done = 0;
+                dname_seen = 1;
+
+                /* find the next link in the dname chain */
+                if (res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data) {
+                    int len1 = p - qname_n;
+                    int len2 =
+                        wire_name_length(res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data->rr_rdata);
+                    if (len1 + len2 > sizeof(temp_name)) {
                         qname_n = NULL;
                         res->val_rc_status = VAL_BOGUS;
+                    } else {
+                        memcpy(temp_name, qname_n, len1);
+                        memcpy(&temp_name[len1],
+                            res->val_rc_rrset->_as.ac_data->rrs.val_rrset_data->rr_rdata, len2);
+                        qname_n = temp_name;
                     }
-                } else if ((top_q->qc_type_h != 
-                            res->val_rc_rrset->_as.ac_data->rrs.val_rrset_type_h) || 
-                           (top_q->qc_class_h != 
-                            res->val_rc_rrset->_as.ac_data->rrs.val_rrset_class_h)) {
-                    continue;
+                } else {
+                   qname_n = NULL;
+                   res->val_rc_status = VAL_BOGUS;
                 }
+            
+            } else if (!is_same_name || 
+                       (top_q->qc_type_h != 
+                            res->val_rc_rrset->_as.ac_data->rrs.val_rrset_type_h) || 
+                       (top_q->qc_class_h != 
+                            res->val_rc_rrset->_as.ac_data->rrs.val_rrset_class_h)) {
+                continue;
+            }
                 
-                if ((res->val_rc_consumed) && results) {
-                    /* search for existing result structure */
-                    for(new_res = *results; new_res; new_res = new_res->val_rc_next) {
-                        if (new_res->val_rc_answer && new_res->val_rc_answer->val_ac_rrset) {
-                            if (!namecmp(qname_n, 
+            if ((res->val_rc_consumed) && results) {
+                /* search for existing result structure */
+                for(new_res = *results; new_res; new_res = new_res->val_rc_next) {
+                    if (new_res->val_rc_answer && new_res->val_rc_answer->val_ac_rrset) {
+                        if (!namecmp(qname_n, 
                                      new_res->val_rc_answer->val_ac_rrset->val_rrset_name_n)) {
-                                break;
-                            }
+                            break;
                         }
                     }
-                } 
-
-                /* or create a new one */
-                if (new_res == NULL) {
-                    if (VAL_NO_ERROR !=
-                            (retval = transform_single_result(res, results,
-                                            NULL, &new_res))) {
-                        goto err;
-                    }
                 }
+            } 
 
-                new_res->val_rc_status = res->val_rc_status;
-                    
-                break;
+            /* or create a new one */
+            if (new_res == NULL) {
+                if (VAL_NO_ERROR !=
+                    (retval = transform_single_result(res, results,
+                                            NULL, &new_res))) {
+                    goto err;
+                }
             }
+
+            new_res->val_rc_status = res->val_rc_status;
+                    
+            break;
         }
     }
 
-    if (cname_seen) {
+    if (cname_seen || dname_seen) {
         if ((new_res == NULL) && qname_n && !loop) {
             /* 
-             * the last element in the chain was a cname,
+             * the last element in the chain was a cname or dname,
              * therefore we must check for a proof of non-existence 
              */
             val_status_t status = VAL_R_DONT_KNOW;
@@ -3532,10 +3608,10 @@ check_alias_sanity(val_context_t * context,
         }
         
         /* 
-         * All other cnames and answers are bogus 
+         * All other cnames(unless they are synthesized), dnames and answers are bogus 
          */
         for (res = w_results; res; res = res->val_rc_next) {
-            if (!res->val_rc_consumed) {
+            if ((!res->val_rc_consumed) && (res->val_rc_status != VAL_IGNORE_VALIDATION)) {
                 res->val_rc_status = VAL_BOGUS;
             } 
         }
@@ -3658,7 +3734,7 @@ perform_sanity_checks(val_context_t * context,
         return retval;
  
     /*
-     * Check cname sanity
+     * Check cname/dname sanity
      */
     if (VAL_NO_ERROR != (retval = check_alias_sanity(context, w_results, results, top_q)))
         return retval;
