@@ -1830,6 +1830,6 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<Net::DNS::SEC::Tools::keyrec(3)>
 
-B<file-keyrec(5)>
+B<keyrec(5)>
 
 =cut
