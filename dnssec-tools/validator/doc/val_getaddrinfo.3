@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_getaddrinfo 3"
-.TH val_getaddrinfo 3 "2006-11-07" "perl v5.8.6" "Programmer's Manual"
+.TH val_getaddrinfo 3 "2006-11-21" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_getaddrinfo, val_freeaddrinfo \- get DNSSEC\-validated network address
 and service translation
@@ -152,8 +152,10 @@ and service translation
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-\&\fB\f(BIval_getaddrinfo()\fB\fR is a DNSSEC-aware function intended as a replacement
-for \fB\f(BIgetaddrinfo\fB\|(3)\fR.  It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.  It
+\&\fI\fIval_getaddrinfo()\fI\fR performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.  It
+is intended to be a DNSSEC-aware replacement for \fI\fIgetaddrinfo\fI\|(3)\fR.  It
+\&\fI\fIval_getaddrinfo()\fI\fR is a DNSSEC-aware function intended as a replacement
+for \fI\fIgetaddrinfo\fI\|(3)\fR.  It performs \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.  It
 returns a network address value of type \fIstruct val_addrinfo\fR in the \fIres\fR
 parameter.
 .PP
@@ -167,38 +169,38 @@ parameter.
 \&          struct sockaddr *ai_addr;
 \&          char * ai_canonname;
 \&          struct val_addrinfo *ai_next;
-\&          val_status_t ai_val_status;
+\&          val_status_t         ai_val_status;
 \&  };
 .Ve
 .PP
 The \fIval_addrinfo\fR structure is similar to the \fIaddrinfo\fR structure (see
-\&\fB\f(BIgetaddrinfo\fB\|(3)\fR), and has an additional field \fIai_val_status\fR that represents
-the validation status for that particular record.  The \fB\f(BIval_istrusted()\fB\fR
-function can be used to determine whether this validation status represents a
-trusted value and the \fB\f(BIp_val_status()\fB\fR function can be used to display this
-value to the user in a useful manner (See \fB\f(BIlibval\fB\|(3)\fR more for information).
+\&\fI\fIgetaddrinfo\fI\|(3)\fR).  \fIval_addrinfo\fR has an additional field \fIai_val_status\fR
+that represents the validation status for that particular record.
+\&\fI\fIval_istrusted()\fI\fR determines whether this validation status represents a
+trusted value and \fI\fIp_val_status()\fI\fR displays this value to the user in a
+useful manner.  (See \fI\fIlibval\fI\|(3)\fR for more information).
 .PP
 The \fIctx\fR parameter of type \fIval_context\fR represents the validation context,
-which can be \s-1NULL\s0 for default value. The caller can use this parameter to
+which can be \s-1NULL\s0 for default value.  The caller can use this parameter to
 control the resolver and validator policies used during validation.
-(See \fB\f(BIlibval\fB\|(3)\fR for information on creating a validation context.)
+(See \fI\fIlibval\fI\|(3)\fR for information on creating a validation context.)
 .PP
-The \fInodename\fR, \fIservname\fR and \fIhints\fR parameters are similar in
+The \fInodename\fR, \fIservname\fR, and \fIhints\fR parameters are similar in
 meaning and syntax as the corresponding parameters for the original
-\&\fB\f(BIgetaddrinfo()\fB\fR function.  The \fIres\fR parameter is similar to the
-\&\fIres\fR parameter for \fB\f(BIgetaddrinfo()\fB\fR, except that it is of type
-\&\fIstruct val_addrinfo\fR instead of \fIstruct addrinfo\fR. Please see the manual
-page for \fB\f(BIgetaddrinfo\fB\|(3)\fR for more details about these parameters. 
+\&\fI\fIgetaddrinfo()\fI\fR function.  The \fIres\fR parameter is similar to the
+\&\fIres\fR parameter for \fI\fIgetaddrinfo()\fI\fR, except that it is of type
+\&\fIstruct val_addrinfo\fR instead of \fIstruct addrinfo\fR.  Please see the manual
+page for \fI\fIgetaddrinfo\fI\|(3)\fR for more details about these parameters.
 .PP
-\&\fB\f(BIval_freeaddrinfo()\fB\fR frees the memory allocated for a \fIval_addrinfo\fR linked
+\&\fI\fIval_freeaddrinfo()\fI\fR frees the memory allocated for a \fIval_addrinfo\fR linked
 list.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-The \fB\f(BIval_getaddrinfo()\fB\fR function returns 0 on success and a non-zero error
+The \fI\fIval_getaddrinfo()\fI\fR function returns 0 on success and a non-zero error
 code on failure.  \fI*res\fR will point to a dynamically allocated linked list
-of \fIval_addrinfo\fR structures on success, and will be \fB\s-1NULL\s0\fR on error.  The
-memory for the value returned in \fI*res\fR can be released using the
-\&\fB\f(BIval_freeaddrinfo()\fB\fR function.
+of \fIval_addrinfo\fR structures on success and will be \s-1NULL\s0 on error.
+The memory for the value returned in \fI*res\fR can be released using
+\&\fI\fIval_freeaddrinfo()\fI\fR.
 .SH "EXAMPLE"
 .IX Header "EXAMPLE"
 .Vb 3
@@ -253,10 +255,10 @@ See the \s-1COPYING\s0 file included with the DNSSEC-Tools package for details.
 Abhijit Hayatnagarkar
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fB\f(BIgetaddrinfo\fB\|(3)\fR
+\&\fI\fIgetaddrinfo\fI\|(3)\fR
 .PP
-\&\fB\f(BIval_gethostbyname\fB\|(3)\fR, \fB\f(BIval_query\fB\|(3)\fR
+\&\fI\fIval_gethostbyname\fI\|(3)\fR, \fI\fIval_query\fI\|(3)\fR
 .PP
-\&\fB\f(BIlibval\fB\|(3)\fR
+\&\fI\fIlibval\fI\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net

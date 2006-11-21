@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_gethostbyname 3"
-.TH val_gethostbyname 3 "2006-11-07" "perl v5.8.6" "Programmer's Manual"
+.TH val_gethostbyname 3 "2006-11-21" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_gethostbyname, val_gethostbyname2, val_gethostbyname_r,
 val_gethostbyname2_r \- get DNSSEC\-validated network host entry
@@ -177,55 +177,53 @@ val_gethostbyname2_r \- get DNSSEC\-validated network host entry
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIval_gethostbyname()\fB\fR, \fB\f(BIval_gethostbyname2()\fB\fR, \fB\f(BIval_gethostbyname_r()\fB\fR
-and \fB\f(BIval_gethostbyname2_r()\fB\fR functions are DNSSEC-aware versions of the
-\&\fB\f(BIgethostbyname\fB\|(3)\fR, \fB\f(BIgethostbyname2\fB\|(3)\fR, \fBgethostbyname_r\fR and
-\&\fBgethostbyname2_r\fR functions respectively.  They perform \s-1DNSSEC\s0 validation
-of \s-1DNS\s0 queries.  They return a network host entry value of type
-\&\fIstruct hostent\fR.  (See \fB\f(BIgethostbyname\fB\|(3)\fR for more information on type
-\&\fIstruct hostent\fR).
+The \fI\fIval_gethostbyname()\fI\fR, \fI\fIval_gethostbyname2()\fI\fR, \fI\fIval_gethostbyname_r()\fI\fR
+and \fI\fIval_gethostbyname2_r()\fI\fR functions perform \s-1DNSSEC\s0 validation of \s-1DNS\s0
+queries.  They return a network host entry value of type \fIstruct hostent\fR and
+are DNSSEC-aware versions of the \fI\fIgethostbyname\fI\|(3)\fR, \fI\fIgethostbyname2\fI\|(3)\fR,
+\&\fI\fIgethostbyname_r()\fI\fR and \fI\fIgethostbyname2_r()\fI\fR functions respectively.  (See
+\&\fI\fIgethostbyname\fI\|(3)\fR for more information on type \fIstruct hostent\fR).
 .PP
-The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_gethostbyname_r()\fB\fR functions support only
-IPv4 addresses, whereas \fB\f(BIval_gethostbyname2()\fB\fR and \fBval_gethostbyname2_r\fR
-support both IPv4 and IPv6 addresses.
+\&\fI\fIval_gethostbyname()\fI\fR and \fI\fIval_gethostbyname_r()\fI\fR support only
+IPv4 addresses.  IPv4 and IPv6 addresses are supported by
+\&\fI\fIval_gethostbyname2()\fI\fR and \fI\fIval_gethostbyname2_r()\fI\fR.
 .PP
-The \fB\f(BIval_gethostbyname_r()\fB\fR and \fB\f(BIval_gethostbyname2_r()\fB\fR are reentrant
-versions, and can be safely used in multi-threaded applications.
+The \fI\fIval_gethostbyname_r()\fI\fR and \fI\fIval_gethostbyname2_r()\fI\fR are reentrant
+versions and can be safely used in multi-threaded applications.
 .PP
-The \fIctx\fR parameter specifies the validation context which can be set to \s-1NULL\s0
-for default values.  The caller can use it to control the resolver and
-validator policies.  Using a non-NULL validator context over multiple calls
-can also provide some optimization.  (See \fB\f(BIlibval\fB\|(3)\fR for information on
+The \fIctx\fR parameter specifies the validation context, which can be set to \s-1NULL\s0
+for default values.  The caller can use \fIctx\fR to control the resolver and
+validator policies.  Using a non-NULL validator over multiple calls
+can also provide some optimization.  (See \fI\fIlibval\fI\|(3)\fR for information on
 creating a validation context.)
 .PP
-The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_gethostbyname2()\fB\fR functions set the
-global h_errno variable to return the resolver error code.  The reentrant
-versions \fB\f(BIval_gethostbyname_r()\fB\fR and \fB\f(BIval_gethostbyname2_r()\fB\fR use the
+\&\fI\fIval_gethostbyname()\fI\fR and \fI\fIval_gethostbyname2()\fI\fR set the
+global \fIh_errno\fR variable to return the resolver error code.  The reentrant
+versions \fI\fIval_gethostbyname_r()\fI\fR and \fI\fIval_gethostbyname2_r()\fI\fR use the
 \&\fIh_errnop\fR parameter to return this value.  This ensures
 thread safety, by avoiding the global \fIh_errno\fR variable.  \fIh_errnop\fR must
-not be \fB\s-1NULL\s0\fR.  (See the man page for \fB\f(BIgethostbyname\fB\|(3)\fR for possible values
+not be \s-1NULL\s0.  (See the man page for \fI\fIgethostbyname\fI\|(3)\fR for possible values
 of \fIh_errno\fR.)
 .PP
-The \fIname\fR, \fIaf\fR, \fIret\fR, \fIbuf\fR, \fIbuflen\fR and \fIresult\fR parameters have
+The \fIname\fR, \fIaf\fR, \fIret\fR, \fIbuf\fR, \fIbuflen\fR, and \fIresult\fR parameters have
 the same meaning and syntax as the corresponding parameters for the original
-\&\fBgethostbyname*()\fR functions.  Please see the manual page for
-\&\fB\f(BIgethostbyname\fB\|(3)\fR for more details about these parameters.
+\&\fIgethostbyname*()\fR functions.  See the manual page for \fI\fIgethostbyname\fI\|(3)\fR
+for more details about these parameters.
 .PP
-The \fIval_status\fR parameter is used to return the validator error code.  
-The \fB\f(BIval_istrusted()\fB\fR function can be used to determine whether this 
-validation status represents a trusted value and the \fB\f(BIp_val_status()\fB\fR 
-function can be used to display this value to the user in a useful 
-manner (See \fB\f(BIlibval\fB\|(3)\fR more for information). \fIval_status\fR must not 
-be \fB\s-1NULL\s0\fR.
+The \fIval_status\fR parameter is used to return the validator error code.
+\&\fI\fIval_istrusted()\fI\fR determines whether this validation status represents a
+trusted value and \fI\fIp_val_status()\fI\fR displays this value to the user in a
+useful manner (See \fI\fIlibval\fI\|(3)\fR more for information).  \fIval_status\fR must
+not be \s-1NULL\s0.
 .SH "RETURN VALUE"
 .IX Header "RETURN VALUE"
-The \fB\f(BIval_gethostbyname()\fB\fR and \fB\f(BIval_gethostbyname2()\fB\fR functions return a
+The \fI\fIval_gethostbyname()\fI\fR and \fI\fIval_gethostbyname2()\fI\fR functions return a
 pointer to a \fIhostent\fR structure when they can resolve the given host name
-(with or without \s-1DNSSEC\s0 validation), and \fB\s-1NULL\s0\fR on error.  The memory for
-the returned value is may be statically allocated by these two functions.
+(with or without \s-1DNSSEC\s0 validation), and \s-1NULL\s0 on error.  The memory for
+the returned value may be statically allocated by these two functions.
 Hence, the caller must not free the memory for the returned value.
 .PP
-The \fB\f(BIval_gethostbyname_r()\fB\fR and \fB\f(BIval_gethostbyname2_r()\fB\fR functions return
+The \fI\fIval_gethostbyname_r()\fI\fR and \fI\fIval_gethostbyname2_r()\fI\fR functions return
 0 when they can resolve the given host name (with or without \s-1DNSSEC\s0
 validation), and a non-zero error-code on failure.
 .SH "EXAMPLE"
@@ -268,7 +266,7 @@ validation), and a non-zero error-code on failure.
 .IX Header "NOTES"
 The current versions of these functions do not read the order-of-look-up from
 \&\fB/etc/hosts.conf\fR.  This functionality will be provided in future versions. 
-At present, the default order is set to consult the \fB/etc/hosts\fR file first,
+At present, the default order is set to consult the \fB/etc/hosts\fR file first
 and then query \s-1DNS\s0.
 .PP
 The current versions of these functions do not support \s-1NIS\s0 lookups.
@@ -281,12 +279,12 @@ See the \s-1COPYING\s0 file included with the DNSSEC-Tools package for details.
 Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fB\f(BIgethostbyname\fB\|(3)\fR, \fB\f(BIgethostbyname2\fB\|(3)\fR, \fB\f(BIgethostbyname_r\fB\|(3)\fR,
-\&\fB\f(BIgethostbyname2_r\fB\|(3)\fR
+\&\fI\fIgethostbyname\fI\|(3)\fR, \fI\fIgethostbyname2\fI\|(3)\fR, \fI\fIgethostbyname_r\fI\|(3)\fR,
+\&\fI\fIgethostbyname2_r\fI\|(3)\fR
 .PP
-\&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_getaddrinfo\fB\|(3)\fR, \fB\f(BIval_freeaddrinfo\fB\|(3)\fR,
-\&\fB\f(BIval_query\fB\|(3)\fR 
+\&\fI\fIget_context\fI\|(3)\fR, \fI\fIval_getaddrinfo\fI\|(3)\fR, \fI\fIval_freeaddrinfo\fI\|(3)\fR,
+\&\fI\fIval_query\fI\|(3)\fR 
 .PP
-\&\fB\f(BIlibval\fB\|(3)\fR
+\&\fI\fIlibval\fI\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net

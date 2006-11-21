@@ -129,9 +129,9 @@
 .\" ========================================================================
 .\"
 .IX Title "val_query 3"
-.TH val_query 3 "2006-11-07" "perl v5.8.6" "Programmer's Manual"
+.TH val_query 3 "2006-11-21" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
-val_query \- DNSSEC\-validated resolution of DNS queries
+\&\fIval_query()\fR \- DNSSEC\-validated resolution of DNS queries
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .Vb 1
@@ -151,24 +151,29 @@ val_query \- DNSSEC\-validated resolution of DNS queries
 \&  int val_free_response(struct val_response *resp);
 .Ve
 .PP
-.Vb 2
-\&  int val_res_query(const val_context_t *ctx, const char *dname, int class, int type,
-\&        u_char *answer, int anslen, val_status_t *val_status);
+.Vb 7
+\&  int val_res_query(const val_context_t *ctx,
+\&                    const char *dname,
+\&                    int class,
+\&                    int type,
+\&                    u_char *answer,
+\&                    int anslen,
+\&                    val_status_t *val_status);
 .Ve
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
-The \fB\f(BIval_query()\fB\fR and \fB\f(BIval_res_query()\fB\fR functions are DNSSEC-aware substitutes for \fB\f(BIres_query\fB\|(3)\fR.
-They perform \s-1DNSSEC\s0 validation of \s-1DNS\s0 queries.
+The \fI\fIval_query()\fI\fR and \fI\fIval_res_query()\fI\fR functions perform \s-1DNSSEC\s0 validation
+of \s-1DNS\s0 queries.  They are DNSSEC-aware substitutes for \fI\fIres_query\fI\|(3)\fR.
 .PP
 The \fIctx\fR parameter is the validator context and can be set to \s-1NULL\s0 for
 default settings.  More information about this field can be found in
-\&\fB\f(BIlibval\fB\|(3)\fR.
+\&\fI\fIlibval\fI\|(3)\fR.
 .PP
 The \fIdname\fR parameter specifies the domain name, \fIclass\fR specifies the
 \&\s-1DNS\s0 class and \fItype\fR specifies the \s-1DNS\s0 type.
 .PP
-The \fB\f(BIval_query()\fB\fR function returns results in the \fIresp\fR linked-list which
-encapsultes the results into the following structure:
+The \fI\fIval_query()\fI\fR function returns results in the \fIresp\fR linked-list which
+encapsulates the results into the following structure:
 .PP
 .Vb 6
 \&  struct val_response {
@@ -179,51 +184,47 @@ encapsultes the results into the following structure:
 \&  };
 .Ve
 .PP
-\&\fIvr_response\fR and \fIvr_length\fR fields are functionally similar to the
-\&\fIanswer\fR and \fIanslen\fR parameters in \fB\f(BIres_query\fB\|(3)\fR.  Memory for the 
+The \fIvr_response\fR and \fIvr_length\fR fields are functionally similar to the
+\&\fIanswer\fR and \fIanslen\fR parameters in \fI\fIres_query\fI\|(3)\fR.  Memory for the 
 \&\fIresp\fR linked-list is internally allocated and must be released after
-a successful invocation of the function using the \fIval_free_response()\fR function. 
-Each element in the \fIresp\fR linked-list
+a successful invocation of the function using the \fI\fIval_free_response()\fI\fR
+function. Each element in the \fIresp\fR linked list
 will contain an answer corresponding to a single RRSet in the \s-1DNS\s0 reply.
 .PP
-If \s-1DNSSEC\s0 validation succeeds for a given RRSet, a value of
-\&\fB\s-1VAL_SUCCESS\s0\fR is returned in the \fIvr_val_status\fR field of the
-\&\fIval_response\fR structure for that RRSet. Other values are returned in case
-of errors.  See \fBval_errors.h\fR for a listing of possible error codes.  The
-\&\fB\f(BIp_val_status()\fB\fR function can be used to return a brief string description
-of the error code.  The \fB\f(BIval_istrusted()\fB\fR function can be used to determine
-if the error code represents a value which indicates that the response can
-be trusted (see \fB\f(BIlibval\fB\|(3)\fR for further information).
+If \s-1DNSSEC\s0 validation succeeds for a given RRSet, a value of \fB\s-1VAL_SUCCESS\s0\fR is
+returned in the \fIvr_val_status\fR field of the \fIval_response\fR structure for
+that RRSet. Other values are returned in case of errors.  (See \fBval_errors.h\fR
+for a listing of possible error codes.)
 .PP
-The \fIflags\fR parameter controls the scope of validation and name
-resolution, and the output format.  At present only one flag is
-defined: \fB\s-1VAL_QUERY_MERGE_RRSETS\s0\fR.  This flag has been provided for
-legacy applications that already use \fB\f(BIres_query\fB\|(3)\fR and want to
-transition to \fB\f(BIval_query()\fB\fR with minimal change.  When this flag is
-specified, all RRsets in the answer are merged into a single response
-and returned in the first element of the \fIresp\fR array.  The response
-field of this element will have a format similar to the answer
-returned by \fB\f(BIres_query\fB\|(3)\fR.  The validation status will be
-\&\fB\s-1VAL_SUCCESS\s0\fR only if all the individual RRsets have been
-successfully validated.  Otherwise, the validation status will be one
-of the other error codes.  Note that if a value other than
-\&\fB\s-1VAL_SUCCESS\s0\fR is returned and if multiple RRsets are present in
-the answer, it is not possible to know which RRset resulted in the
-error status, if this flag is used.
+\&\fI\fIp_val_status()\fI\fR returns a brief string description of the error code.
+\&\fI\fIval_istrusted()\fI\fR determines if the error code indicates that the response
+can be trusted.  (See \fI\fIlibval\fI\|(3)\fR for further information).
 .PP
-The \fB\f(BIval_res_query()\fB\fR function is provided as a closer substitute
-for \fIres_query\fR\|(3). It calls \fIval_query()\fR internally with the 
-\&\s-1VAL_QUERY_MERGE_RRSETS\s0 flag and returns the answers in the field 
-answer with length of anslen. The validation status is returned in the
-field val_status. 
+The \fIflags\fR parameter controls the scope of validation and name resolution,
+and the output format.  At present only th \fB\s-1VAL_QUERY_MERGE_RRSETS\s0\fR flag is
+defined.  This flag is provided for legacy applications that already use
+\&\fI\fIres_query\fI\|(3)\fR and want to transition to \fI\fIval_query()\fI\fR with minimal change.
+When this flag is specified, all RRsets in the answer are merged into a single
+response and returned in the first element of the \fIresp\fR array.  The response
+field of this element will have a format similar to the answer returned by
+\&\fI\fIres_query\fI\|(3)\fR.  The validation status will be \fB\s-1VAL_SUCCESS\s0\fR only if all the
+individual RRsets have been successfully validated.  Otherwise, the validation
+status will be one of the other error codes.  If a value other than
+\&\fB\s-1VAL_SUCCESS\s0\fR is returned and if multiple RRsets are present in the answer,
+it is not possible to know which RRset resulted in the error status, if this
+flag is used.
+.PP
+\&\fI\fIval_res_query()\fI\fR is provided as a closer substitute for \fI\fIres_query\fI\|(3)\fR. It
+calls \fI\fIval_query()\fI\fR internally with the \fB\s-1VAL_QUERY_MERGE_RRSETS\s0\fR flag and
+returns the answers in the field answer with length of \fIanslen\fR. The
+validation status is returned in the field \fIval_status\fR.
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-The \fB\f(BIval_query()\fB\fR function returns 0 on success.  
-This function internally invokes \fB\f(BIresolve_n_check()\fB\fR, 
-and errors from this function may be returned.
+The \fI\fIval_query()\fI\fR function returns 0 on success.  This function internally
+invokes \fI\fIresolve_n_check()\fI\fR and errors from this function may be returned.
 .PP
-The \fB\f(BIval_res_query()\fB\fR function returns the number of bytes received on 
-success and \-1 on failure. 
+The \fI\fIval_res_query()\fI\fR function returns the number of bytes received on
+success and \-1 on failure.
 .SH "EXAMPLES"
 .IX Header "EXAMPLES"
 .Vb 5
@@ -286,10 +287,10 @@ See the \s-1COPYING\s0 file included with the DNSSEC-Tools package for details.
 Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fB\f(BIres_query\fB\|(3)\fR
+\&\fI\fIres_query\fI\|(3)\fR
 .PP
-\&\fB\f(BIget_context\fB\|(3)\fR, \fB\f(BIval_getaddrinfo\fB\|(3)\fR, \fB\f(BIval_gethostbyname\fB\|(3)\fR
+\&\fI\fIget_context\fI\|(3)\fR, \fI\fIval_getaddrinfo\fI\|(3)\fR, \fI\fIval_gethostbyname\fI\|(3)\fR
 .PP
-\&\fB\f(BIlibval\fB\|(3)\fR
+\&\fI\fIlibval\fI\|(3)\fR
 .PP
 http://dnssec\-tools.sourceforge.net
