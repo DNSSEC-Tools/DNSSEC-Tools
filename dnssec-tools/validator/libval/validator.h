@@ -97,12 +97,13 @@ extern          "C" {
 #define SR_ANS_UNSET             0
 #define SR_ANS_STRAIGHT          1
 #define SR_ANS_CNAME             2
-#define SR_ANS_NACK_NSEC         3
-#ifdef LIBVAL_NSEC3
-#define SR_ANS_NACK_NSEC3        4
-#endif
+#define SR_ANS_DNAME             3
+#define SR_ANS_NACK_NSEC         4
 #define SR_ANS_NACK_SOA          5
 #define SR_ANS_BARE_RRSIG        6
+#ifdef LIBVAL_NSEC3
+#define SR_ANS_NACK_NSEC3        7
+#endif
 
     /*
      * Policies associated with Keys 
@@ -173,6 +174,7 @@ extern          "C" {
 #define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_R_MASKED_TRUST_FLAG) == chk_val)
 
 #define SIG_ACCEPT_WINDOW   (86400*0) /** 1 days **/
+#define MAX_ALIAS_CHAIN_LENGTH 10 /* max length of cname/dname chain */
     
     typedef u_int8_t val_status_t;
     typedef u_int16_t val_astatus_t;

@@ -572,7 +572,7 @@ bootstrap_referral(u_int8_t * referral_zone_n,
 
 static int
 follow_referral_or_alias_link(val_context_t * context,
-            int cname_chain,
+            int alias_chain,
             u_int8_t * referral_zone_n,
             struct val_query_chain *matched_q,
             struct rrset_rec **answers,
@@ -582,9 +582,7 @@ follow_referral_or_alias_link(val_context_t * context,
     int             ret_val;
     struct name_server *ref_ns_list;
     int             len;
-    struct rrset_rec *ref_rrset;
-    u_int8_t *qname_n;
-    int done;
+    struct qname_chain *cur_qname;
 
     if ((matched_q == NULL) || (answers == NULL) || (qnames == NULL) ||
         (learned_zones == NULL) || (queries == NULL))
@@ -597,51 +595,31 @@ follow_referral_or_alias_link(val_context_t * context,
     }
 
     /*
-     * Update the qname chain 
+     * Register aliases for this query
      */
-    qname_n = matched_q->qc_name_n;
-
-    done = 0;
-    while(!done) {
-        done = 1;
-        ref_rrset = *answers;
-        while (ref_rrset) {
-            if (ref_rrset->rrs.val_rrset_type_h == ns_t_cname
-                && namecmp(qname_n,
-                       ref_rrset->rrs.val_rrset_name_n) == 0) {
-                if ((ret_val =
-                    add_to_qname_chain(qnames,
-                                    ref_rrset->rrs.val_rrset_data->
-                                    rr_rdata)) != VAL_NO_ERROR) {
-                    free_qname_chain(qnames);
-                    return ret_val;
+    if (*qnames) {
+        if ((*qnames)->qnc_next) {
+            for(cur_qname=(*qnames)->qnc_next; cur_qname; cur_qname=cur_qname->qnc_next) {
+                if (register_query(&matched_q->qc_referral->queries, 
+                           cur_qname->qnc_name_n, 
+                           matched_q->qc_type_h, 
+                           matched_q->qc_zonecut_n) == ITS_BEEN_DONE) {
+                   /*
+                    * If this request has already been made then Referral Error 
+                    */
+                   matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                   goto query_err;
                 }
-                if (register_query
-                    (&matched_q->qc_referral->queries, qname_n, 
-                    matched_q->qc_type_h, matched_q->qc_zonecut_n) == ITS_BEEN_DONE) {
-                    /*
-                     * If this request has already been made then Referral Error 
-                     */
-                    matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
-                    goto query_err;
-                } 
-                qname_n = ref_rrset->rrs.val_rrset_data->rr_rdata; 
-                done = 0;
-                break;
             }
-            ref_rrset = ref_rrset->rrs_next;
-        }
-    }
-    
-    /* 
-     * Consume answers 
-     */
-    merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
-    *answers = NULL;
+        } 
 
-    /*
-     * save qnames to the val_query_chain structure 
-     */
+        if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n))
+            /* Keep the current query name as the last name in the chain */
+            memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n, 
+                wire_name_length((*qnames)->qnc_name_n));
+    }
+
+    /* Consume qnames */
     if (matched_q->qc_referral->qnames == NULL)
         matched_q->qc_referral->qnames = *qnames;
     else if (*qnames) {
@@ -650,16 +628,17 @@ follow_referral_or_alias_link(val_context_t * context,
         t_q->qnc_next = matched_q->qc_referral->qnames;
         matched_q->qc_referral->qnames = *qnames;
     }
-
-    /* Consume qnames */
     *qnames = NULL;
 
-    if (namecmp(matched_q->qc_name_n, qname_n))
-        /* Keep the current query name as the last name in the chain */
-        memcpy(matched_q->qc_name_n, qname_n, wire_name_length(qname_n));
+    /* 
+     * Consume answers 
+     */
+    merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
+    *answers = NULL;
 
-    if (cname_chain && !referral_zone_n) {
-        /* we don't have a referral for the cname */
+
+    if (alias_chain && !referral_zone_n) {
+        /* we don't have a referral for the cname/dname */
         /* find the referral_zone_n and ref_ns_list */
         if (VAL_NO_ERROR != find_nslist_for_query(context, matched_q, queries)) {
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
@@ -701,33 +680,31 @@ follow_referral_or_alias_link(val_context_t * context,
     }
 
 
-
     {
         char            debug_name1[NS_MAXDNAME];
         char            debug_name2[NS_MAXDNAME];
         memset(debug_name1, 0, 1024);
         memset(debug_name2, 0, 1024);
-        ns_name_ntop(qname_n, debug_name1,
+        ns_name_ntop(matched_q->qc_name_n, debug_name1,
                      sizeof(debug_name1));
         ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
         val_log(context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)",
                 debug_name1, debug_name2);
     }
-    
+
     /*
-     * Register the request name and zone with our referral monitor 
+     * Register the request name and zone with our referral monitor
      */
     if (register_query
-        (&matched_q->qc_referral->queries, qname_n, 
+        (&matched_q->qc_referral->queries, matched_q->qc_name_n, 
          matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
         /*
-         * If this request has already been made then Referral Error 
+         * If this request has already been made then Referral Error
          */
         matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
         goto query_err;
-    } 
-
-
+    }
+    
 query_err:
     if (matched_q->qc_respondent_server) {
         free_name_server(&matched_q->qc_respondent_server);
@@ -821,7 +798,7 @@ digest_response(val_context_t * context,
     u_int8_t       *rdata;
     u_int8_t       *hptr;
     int             ret_val;
-    int             nothing_other_than_cname;
+    int             nothing_other_than_alias;
     int             from_section;
     struct rrset_rec *learned_zones = NULL;
     struct rrset_rec *learned_keys = NULL;
@@ -838,6 +815,8 @@ digest_response(val_context_t * context,
     u_int8_t       *end;
     int             qnamelen, tot;
     struct name_server *ns = NULL;
+    u_int8_t        temp_name[NS_MAXCDNAME];
+    u_int8_t        *p;
 
     struct rrset_rec **proofs;
     struct rrset_rec **answers;
@@ -866,7 +845,7 @@ digest_response(val_context_t * context,
     answer = ntohs(header->ancount);
     authority = ntohs(header->nscount);
     additional = ntohs(header->arcount);
-    nothing_other_than_cname = 1; 
+    nothing_other_than_alias = 1; 
 
     /*
      *  Skip question section 
@@ -954,17 +933,20 @@ digest_response(val_context_t * context,
         }
 
         /* 
-         * Check if the only RRsets in the answer section are CNAMEs
+         * Check if the only RRsets in the answer section are CNAMEs/DNAMEs
          */
-        if (nothing_other_than_cname && (i < answer)) {
-            nothing_other_than_cname = (set_type_h == ns_t_cname);
-            /* check if we had explicitly asked for this cname */
-            if (nothing_other_than_cname) {
-                if (((query_type_h == ns_t_cname) ||
-                     (query_type_h == ns_t_any) ||
+        if (nothing_other_than_alias && (i < answer)) {
+            nothing_other_than_alias = 
+                ((set_type_h == ns_t_cname) || 
+                 (set_type_h == ns_t_dname));
+            /* check if we had explicitly asked for this alias */
+            if (nothing_other_than_alias) {
+                if ((((query_type_h == ns_t_cname) && (set_type_h == ns_t_cname)) ||
+                     ((query_type_h == ns_t_dname) && (set_type_h == ns_t_dname)) ||
+                     (query_type_h == ns_t_any) || 
                      (query_type_h == ns_t_rrsig)) && 
-                        (!namecmp(name_n, query_name_n))) 
-                    nothing_other_than_cname = 0;
+                    (!namecmp(name_n, (*qnames)->qnc_name_n))) 
+                        nothing_other_than_alias = 0;
             }
         }
 
@@ -977,17 +959,47 @@ digest_response(val_context_t * context,
 
         /* if you have a proof of non-existence then don't fetch canonical names */
         if (auth_nack)
-            nothing_other_than_cname = 0;
+            nothing_other_than_alias = 0;
         
         if (from_section == VAL_FROM_ANSWER) {
 
-            if (type_h == ns_t_cname &&
+           if (type_h == ns_t_cname &&
                 query_type_h != ns_t_cname &&
                 query_type_h != ns_t_any &&
-                namecmp((*qnames)->qnc_name_n, name_n) == 0)
+                namecmp((*qnames)->qnc_name_n, name_n) == 0) {
+               
+                /* add the target */
                 if ((ret_val =
                      add_to_qname_chain(qnames, rdata)) != VAL_NO_ERROR)
-                    goto done; 
+                    goto done;
+           }
+
+            if (type_h == ns_t_dname &&
+                query_type_h != ns_t_dname &&
+                (query_type_h != ns_t_any || 
+                 namecmp((*qnames)->qnc_name_n, name_n) != 0) &&
+                NULL != (p = (u_int8_t *)strstr((*qnames)->qnc_name_n, name_n))) {
+
+                int len1 = p - (*qnames)->qnc_name_n;
+                int len2 = wire_name_length(rdata);
+                if (len1 + len2 > sizeof(temp_name)) {
+                    matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                    ret_val = VAL_NO_ERROR;
+                    goto done;
+                } 
+                if (len1 > 0) {
+                    /* add the DNAME owner name */
+                    if ((ret_val = add_to_qname_chain(qnames, name_n)) != VAL_NO_ERROR) {
+                        goto done;
+                    }
+                }
+                /* add the target */
+                memcpy(temp_name, name_n, len1);
+                memcpy(&temp_name[len1], rdata, len2);
+                if ((ret_val = add_to_qname_chain(qnames, temp_name)) != VAL_NO_ERROR) {
+                    goto done;
+                }
+            }
         }
 
         if (from_section == VAL_FROM_ANSWER) {
@@ -1000,7 +1012,7 @@ digest_response(val_context_t * context,
                             set_type_h, class_h, ttl_h, hptr, rdata, 
                             rdata_len_h, from_section, authoritive, 
                             rrs_zonecut_n);
-        } else if (((answer == 0) || (nothing_other_than_cname)) 
+        } else if (((answer == 0) || (nothing_other_than_alias)) 
                    && ((set_type_h == ns_t_ns) 
                        || ((set_type_h == ns_t_a) 
                            && (from_section == VAL_FROM_ADDITIONAL)))) {
@@ -1049,9 +1061,9 @@ digest_response(val_context_t * context,
         rdata = NULL;
     }
 
-    if (referral_seen || nothing_other_than_cname) {
+    if (referral_seen || nothing_other_than_alias) {
         ret_val = follow_referral_or_alias_link(
-                              context, nothing_other_than_cname, 
+                              context, nothing_other_than_alias, 
                               referral_zone_n, matched_q,
                               answers, &learned_zones, qnames, queries);
         /*

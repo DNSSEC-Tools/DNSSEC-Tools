@@ -999,6 +999,7 @@ decompress(u_int8_t ** rdata,
          */
     case ns_t_ns:
     case ns_t_cname:
+    case ns_t_dname: 
     case ns_t_mb:
     case ns_t_mg:
     case ns_t_mr:
@@ -1327,6 +1328,7 @@ lower(u_int16_t type_h, u_int8_t * rdata, int len)
 
     case ns_t_ns:
     case ns_t_cname:
+    case ns_t_dname:
     case ns_t_mb:
     case ns_t_mg:
     case ns_t_mr:
@@ -1689,12 +1691,14 @@ register_query(struct query_list **q, u_int8_t * name_n, u_int32_t type_h,
         (*q)->ql_next = NULL;
     } else {
         struct query_list *cur_q = (*q);
-
+        int count = 0;
         while (cur_q->ql_next != NULL) {
             if ((!zone_n || namecmp(cur_q->ql_zone_n, zone_n) == 0)
                 && namecmp(cur_q->ql_name_n, name_n) == 0)
                 return ITS_BEEN_DONE;
             cur_q = cur_q->ql_next;
+            if (++count > MAX_ALIAS_CHAIN_LENGTH)
+                return IT_WONT;
         }
         if ((!zone_n || namecmp(cur_q->ql_zone_n, zone_n) == 0)
             && namecmp(cur_q->ql_name_n, name_n) == 0)
