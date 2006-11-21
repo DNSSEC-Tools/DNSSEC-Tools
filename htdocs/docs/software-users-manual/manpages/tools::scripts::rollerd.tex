@@ -1,0 +1,252 @@
+\clearpage
+
+\subsubsection{\bf rollerd}
+
+{\bf NAME}
+
+\cmd{rollerd} - DNSSEC-Tools daemon to manage DNSSEC key rollover.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    rollerd [-options] -rrfile <rollrec_file>
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+The \cmd{rollerd} daemon manages key rollover for zones.  The Pre-Publish
+Method of key rollover is used for ZSK key rollovers.  (Currently,
+\cmd{rollerd} only handles ZSK rollover.) This method has four phases that are
+entered when it is time to perform the ZSK rollover:
+
+\begin{enumerate}
+\item wait for old zone data to expire from caches
+\item sign the zone with the KSK and Published ZSK
+\item wait for old zone data to expire from caches
+\item adjust keys in keyrec and sign the zone with new Current ZSK
+\end{enumerate}
+
+The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
+Security Operator Guidance Document.  See that document for more detailed
+information.
+
+The zones to be managed by \cmd{rollerd} are defined in a {\it rollrec} file.
+Each zone's entry contains data needed by \cmd{rollerd} and some data useful
+to a user.  Below is a sample {\it rollrec} entry:
+
+\begin{verbatim}
+        roll "example.com"
+                zonefile        "example.com.signed"
+                keyrec          "example.com.krf"
+                curphase        "3"
+                maxttl          "2400"
+                phasestart      "Thu May  4 19:19:21 2006"
+\end{verbatim}
+
+The first line gives the {\it rollrec} entry's name.  The ``roll'' keyword
+indicates that \cmd{rollerd} should include the zone in its roll queue.  Using
+``skip'' in place of ``roll'' allows a zone to be stored in the {\it rollrec}
+file, but it will not be included in rollover processing.  The first three
+fields tell \cmd{rollerd} where to find example.com's signed zone file and
+{\it keyrec} file and the zone's current rollover phase.  The last two are
+for reference by the user.  The {\it maxttl} field is derived from the signed
+zone file.
+
+If either of the {\it zonefile} or {\it keyrec} files do not exist, then a
+``roll'' {\it rollrec} will be changed into a ``skip'' {\it rollrec}.  That
+record will not be processed.
+
+\clearpage
+{\bf A Note About Files and Filenames}
+
+There are a number of files and filenames used by \cmd{rollerd} and
+\cmd{zonesigner}.  The user must be aware of the files used by these programs,
+where the files are located, and where the programs are executed.
+
+By default, \cmd{rollerd} will change directory to the DNSSEC-Tools directory,
+though this may be changed by the {\it -directory} option.  Any programs
+started by \cmd{rollerd}, most importantly \cmd{zonesigner}, will run in this
+same directory.  If files and directories referenced by these programs are
+named with relative paths, those paths must be relative to this directory.
+
+The {\it rollrec} entry name is used as a key to the {\it rollrec} file and to
+the zone's {\it keyrec} file.  This entry does not have to be the name of the
+entry's domain, but it is a very good idea to make it so.  Whatever is used
+for this entry name, the same name {\bf must} be used for the zone
+{\it keyrec} in that zone's {\it keyrec} file.
+
+It is probably easiest to store {\it rollrec} files, {\it keyrec} files, zone
+files, and key files in a single directory.
+
+{\bf INITIALIZATION AND USAGE}
+
+The following steps must be taken to initialize and use \cmd{rollerd}.  This
+assumes that zone files have been created, and that BIND and DNSSEC-Tools
+have been installed.
+
+\begin{enumerate}
+
+\item sign zones\verb" "
+
+The zones to be managed by \cmd{rollerd} must be signed.  Use \cmd{zonesigner}
+to create the signed zone files and the {\it keyrec} files needed by
+\cmd{rollerd}.  The {\it rollrec} file created in the next step {\bf must} use
+the {\it keyrec} file names and the signed zone file names created here.
+
+\item create {\it rollrec} file\verb" "
+
+Before \cmd{rollerd} may be used, a {\it rollrec} file must first be created.
+While this file may be built by hand, the \cmd{rollinit} command was
+written specifically to build the file.
+
+\item select operational parameters\verb" "
+
+A number of \cmd{rollerd}'s operational parameters are taken from the
+DNSSEC-Tools configuration file.  However, these may be overridden
+by command-line options.  See the {\bf OPTIONS} section below for more details.
+If non-standard parameters are desired to always be used, the appropriate
+fields in the DNSSEC-Tools configuration file may be modified to use these
+values.
+
+\item install the rollover configuration\verb" "
+
+The complete rollover configuration -- \cmd{rollerd}, {\it rollrec} file,
+DNSSEC-Tools configuration file values, zone files -- should be installed.  
+The appropriate places for these locations are both installation-dependent
+and operating system-dependent.
+
+\item test the rollover configuration\verb" "
+
+The complete rollover configuration should be tested.  
+
+Edit the zone files so that their zones have short TTL values.  A one-minute
+TTL should be sufficient.
+
+Run the following command:
+
+\begin{verbatim}
+    rollerd -rrfile test.rollrec -logfile - -loglevel info -sleep 60
+\end{verbatim}
+
+This command assumes the test {\it rollrec} file is \path{test.rollrec}.  It
+writes a fair amount of log messages to the terminal, and checks its queue
+every 60 seconds.  Follow the messages to ensure that the appropriate actions,
+as required by the Pre-Publish Method, are taking place.
+
+\item set \cmd{rollerd} to start at boot\verb" "
+
+Once the configuration is found to work, \cmd{rollerd} should be set to start
+at system boot.  The actual operations required for this step are operating
+system-dependent.
+
+\item reboot and verify\verb" "
+
+The system should be rebooted and the \cmd{rollerd} logfile checked to ensure
+that \cmd{rollerd} is operating properly.
+
+\end{enumerate}
+
+{\bf OPTIONS}
+
+The following options are recognized:
+
+\begin{description}
+
+\item {\it -rrfile rollrec\_file}\verb" "
+
+Name of the {\it rollrec} file to be processed.  This is the only required
+``option''.
+
+\item {\it -directory dir}\verb" "
+
+Sets the \cmd{rollerd} execution directory.  This must be a valid directory.
+
+\item {\it -logfile log\_file}\verb" "
+
+Sets the \cmd{rollerd} log file to {\it log\_file}.  This must be a valid
+logging file, meaning that if {\it logfile} already exists, it must be a
+regular file.  The only exceptions to this are if {\it logfile} is
+\path{/dev/stdout} or \path{/dev/tty}.
+
+\item {\it -loglevel level}\verb" "
+
+Sets \cmd{rollerd}'s logging level to {\it level}.  \perlmod{rollmgr.pm(3)}
+contains a list of valid logging levels.
+
+\item {\it -sleep sleeptime}\verb" "
+
+Sets \cmd{rollerd}'s sleep time to {\it sleeptime}.  The sleep time is the
+amount of time \cmd{rollerd} waits between processing its {\it rollrec}-based
+queue.
+
+\item {\it -parameters}\verb" "
+
+Prints a set of \cmd{rollerd} parameters and then exits.
+
+\item {\it -display}\verb" "
+
+Starts the \cmd{blinkenlights} graphical display program to show the status of
+zones managed by \cmd{rollerd}.
+
+\item -{\it help}\verb" "
+
+Display a usage message.
+
+\item {\it -verbose}\verb" "
+
+Verbose output will be given.
+
+\end{description}
+
+{\bf ASSUMPTIONS}
+
+\cmd{rollerd} uses the \cmd{rndc} command to communicate with the BIND
+\cmd{named} daemon.  Therefore, it assumes that appropriate measure have been
+taken so that this communication is possible.
+
+{\bf KNOWN PROBLEMS}
+
+The following problems (or potential problems) are known:
+
+\begin{description}
+
+\item - Only deals with ZSK rollover.
+
+\item - Any process that can write to the rollover socket can send commands to
+\cmd{rollerd}.  This is probably not a Good Thing.
+
+\item - No testing with zone files and key files not in the process' directory.
+
+\end{description}
+
+{\bf POSSIBLE ENHANCEMENTS}
+
+The following potential enhancements may be made:
+
+\begin{description}
+
+\item - It'd be good to base \cmd{rollerd}'s sleep time on when the next
+operation must take place, rather than a simple seconds count.
+
+\item - It'd be nice to allow each {\it rollrec} entry to specify its own
+logging level.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\cmd{blinkenlights(8)},
+\cmd{named(8)},
+\cmd{rndc(8)},
+\cmd{rollchk(8)},
+\cmd{rollctl(8)},	\\
+\cmd{rollinit(8)},
+\cmd{zonesigner(8)}
+
+\perlmod{Net::DNS::SEC::Tools::conf.pm(3)},
+\perlmod{Net::DNS::SEC::Tools::defaults.pm(3)}, \\
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)},
+\perlmod{Net::DNS::SEC::Tools::rollmgr.pm(3)}, \\
+\perlmod{Net::DNS::SEC::Tools::rollrec.pm(3)}
+
+\path{rollrec(5)}

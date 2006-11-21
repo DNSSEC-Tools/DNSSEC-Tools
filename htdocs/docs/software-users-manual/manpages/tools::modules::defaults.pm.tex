@@ -1,0 +1,125 @@
+\clearpage
+
+\subsection{\bf defaults.pm Module}
+
+{\bf NAME}
+
+\perlmod{Net::DNS::SEC::Tools::defaults.pm} - DNSSEC-Tools default values.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    use Net::DNS::SEC::Tools::defaults;
+
+    $defalg = dnssec_tools_defaults("algorithm");
+
+    $cz_path = dnssec_tools_defaults("bind_checkzone");
+
+    $ksklife = dnssec_tools_defaults("ksklife");
+
+    @default_names = dnssec_tools_defnames();
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This module maintains a set of default values used by DNSSEC-Tools
+programs.  This allows these defaults to be centralized in a single
+place and prevents them from being spread around multiple programs.
+
+{\bf INTERFACES}
+
+\begin{description}
+
+\item \func{dnssec\_tools\_defaults(default)}\verb" "
+
+This interface returns the value of a DNSSEC-Tools default.  The interface
+is passed {\it default}, which is the name of a default to look up.  The value
+of this default is returned to the caller.
+
+\item \func{dnssec\_tools\_defnames()}\verb" "
+
+This interface returns the names of all the DNSSEC-Tools defaults.
+No default values are returned, but the default names returned by
+\func{dnssec\_tools\_defnames()} may then be passed to
+\func{dnssec\_tools\_defaults()}.
+
+\end{description}
+
+{\bf DEFAULT FIELDS}
+
+The following are the defaults defined for DNSSEC-Tools.
+
+\begin{description}
+
+\item {\it algorithm}\verb" "
+
+This default holds the default encryption algorithm.
+
+\item {\it bind\_checkzone}\verb" "
+
+This default holds the path to the \cmd{named-checkzone} BIND program.
+
+\item {\it bind\_keygen}\verb" "
+
+This default holds the path to the \cmd{dnssec-keygen} BIND program.
+
+\item {\it bind\_signzone}\verb" "
+
+This default holds the path to the \cmd{dnssec-signzone} BIND program.
+
+\item {\it enddate}\verb" "
+
+This default holds the default zone life, in seconds.
+
+\item {\it entropy\_msg}\verb" "
+
+This default indicates whether or not \cmd{zonesigner} should display an
+entropy message.
+
+\item {\it ksklength}\verb" "
+
+This default holds the default length of a KSK key.
+
+\item {\it ksklife}\verb" "
+
+This default holds the default lifespan of a KSK key.  This is only used
+for determining when to rollover the KSK key.  Keys otherwise have no
+concept of a lifespan.  This is measured in seconds.
+
+\item {\it random}\verb" "
+
+This default holds the default random number generator device.
+
+\item {\it savekeys}\verb" "
+
+This default indicates whether or not keys should be deleted when they are no
+longer in use.
+
+\item {\it usegui}\verb" "
+
+This default indicates whether or not the DNSSEC-Tools GUI should be used for
+option entry.
+
+\item {\it viewimage}\verb" "
+
+This default holds the default image viewer.
+
+\item {\it zskcount}\verb" "
+
+This default holds the default number of ZSK keys to generate for a zone.
+
+\item {\it zsklength}\verb" "
+
+This default holds the default length of the ZSK key.
+
+\item {\it zsklife}\verb" "
+
+This default holds the default lifespan of the ZSK key.  This is only used
+for determining when to rollover the ZSK key.  Keys otherwise have no
+concept of a lifespan.  This is measured in seconds.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\path{conf(5)}

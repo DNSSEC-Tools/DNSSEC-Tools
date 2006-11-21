@@ -1,0 +1,359 @@
+\clearpage
+
+\subsection{\bf rollrec.pm Module}
+
+{\bf NAME}
+
+\perlmod{}Net::DNS::SEC::Tools::rollrec.pm - Manipulate a DNSSEC-Tools rollrec file.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    use Net::DNS::SEC::Tools::rollrec;
+
+    rollrec_lock();
+    rollrec_read("localhost.rollrec");
+
+    @rrnames = rollrec_names();
+
+    $rrec = rollrec_fullrec("example.com");
+    %rrhash = %$rrec;
+    $zname = $rrhash{"maxttl"};
+
+    $val = rollrec_recval("example.com","zonefile");
+
+    rollrec_add("roll","example.com",\%rollfields);
+    rollrec_add("skip","example.com",\%rollfields);
+
+    rollrec_del("example.com");
+
+    rollrec_type("example.com","skip");
+    rollrec_type("example.com","roll");
+
+    rollrec_setval("example.com","zonefile","db.example.com");
+
+    rollrec_settime("example.com");
+
+    @rollrecfields = rollrec_fields();
+
+    $default_file = rollrec_default();
+
+    rollrec_write();
+    rollrec_close();
+    rollrec_discard();
+
+    rollrec_unlock();
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+\perlmod{\bf Net::DNS::SEC::Tools::rollrec} module manipulates the contents of
+a DNSSEC-Tools {\it rollrec} file.  {\it rollrec} files describe the status of
+a zone rollover process, as performed by the DNSSEC-Tools programs.  Module
+interfaces exist for looking up {\it rollrec} records, creating new records,
+and modifying existing records.
+
+A {\it rollrec} file is organized in sets of {\it rollrec} records.  {\it
+rollrec}s describe the state of a rollover operation.  A {\it rollrec}
+consists of a set of keyword/value entries.  The following is an example
+of a {\it rollrec}:
+
+\begin{verbatim}
+    roll "example.com"
+        zonefile              "/usr/etc/dnssec/zones/db.example.com"
+        keyrec                "/usr/etc/dnssec/keyrec/example.keyrec"
+        curphase              "2"
+        maxttl                "86400"
+        phasestart            "Wed Mar 09 21:49:22 2005"
+        display               "0"
+        rollrec_rollsecs      "1115923362"
+        rollrec_rolldate      "Tue Mar 09 19:12:54 2005"
+\end{verbatim}
+
+The first step in using this module must be to read the {\it rollrec} file.
+The \func{rollrec\_read()} interface reads the file and parses it into an
+internal format.  The file's records are copied into a hash table (for easy
+reference by the \perlmod{Net::DNS::SEC::Tools::rollrec} routines) and in an
+array (for preserving formatting and comments.)
+
+After the file has been read, the contents are referenced using
+\func{rollrec\_fullrec()} and \func{rollrec\_recval()}.  The
+\func{rollrec\_add()}, \func{rollrec\_setval()}, and \func{rollrec\_settime()}
+interfaces
+are used to modify the contents of a {\it rollrec} record.
+
+If the {\it rollrec} file has been modified, it must be explicitly written or
+the changes will not saved.  \func{rollrec\_write()} saves the new contents to
+disk.  \func{rollrec\_close()} saves the file and close the Perl file handle to
+the {\it rollrec} file.  If a {\it rollrec} file is no longer wanted to be
+open, yet the contents should not be saved, \func{rollrec\_discard()} gets rid
+of the data closes and the file handle {\bf without} saving any modified data.
+
+{\bf ROLLREC LOCKING}
+
+This module includes interfaces for synchronizing access to the {\it rollrec}
+files.  This synchronization is very simple and relies upon locking and
+unlocking a single lock file for all {\it rollrec} files.
+
+{\it rollrec} locking is not required before using this module, but it is
+recommended.  The expected use of these facilities follows:
+
+\begin{verbatim}
+    rollrec_lock() || die "unable to lock rollrec file\n";
+    rollrec_read();
+    ... perform other rollrec operations ...
+    rollrec_close();
+    rollrec_unlock();
+\end{verbatim}
+
+Synchronization is performed in this manner due to the way the module's
+functionality is implemented, as well as providing flexibility to users
+of the module.  It also provides a clear delineation in callers' code as
+to where and when {\it rollrec} locking is performed.
+
+This synchronization method has the disadvantage of having a single lockfile
+as a bottleneck to all {\it rollrec} file access.  However, it reduces
+complexity in the locking interfaces and cuts back on the potential number of
+required lockfiles.
+
+Using a single synchronization file may not be practical in large
+installations.  If that is found to be the case, then this will be reworked.
+
+{\bf ROLLREC INTERFACES}
+
+The interfaces to the \perlmod{Net::DNS::SEC::Tools::rollrec} module are given
+below.
+
+\begin{description}
+
+\item \func{rollrec\_add(rollrec\_type,rollrec\_name,fields)}\verb" "
+
+This routine adds a new {\it rollrec} to the {\it rollrec} file and the
+internal representation of the file contents.  The {\it rollrec} is added to
+both the {\it \%rollrecs} hash table and the {\it \@rollreclines} array.
+Entries are only added if they are defined for {\it rollrec}s.
+
+{\it rollrec\_type} is the type of the {\it rollrec}.  This must be either
+``roll'' or ``skip''.  {\it rollrec\_name} is the name of the {\it rollrec}.
+{\it fields} is a reference to a hash table that contains the name/value {\it
+rollrec} fields.  The keys of the hash table are always converted to
+lowercase, but the entry values are left as given.
+
+Timestamp fields are added at the end of the {\it rollrec}.  These fields have
+the key values {\it rollrec\_gensecs} and {\it rollrec\_gendate}.
+
+A blank line is added after the final line of the new {\it rollrec}.  After
+adding all new {\it rollrec} entries, the {\it rollrec} file is written but
+it is not closed.
+
+\item \func{rollrec\_del(rollrec\_name)}\verb" "
+
+This routine deletes a {\it rollrec} from the {\it rollrec} file and the
+internal representation of the file contents.  The {\it rollrec} is deleted
+from both the {\it \%rollrecs} hash table and the {\it \@rollreclines} array.
+
+Only the {\it rollrec} itself is deleted from the file.  Any associated
+comments and blank lines surrounding it are left intact.
+
+Return values are:
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{cl}
+0 & successful rollrec deletion \\
+-1 & unknown name \\
+\end{tabular} 
+\end{center}
+\end{table}
+
+\item \func{rollrec\_close()}\verb" "
+
+This interface saves the internal version of the {\it rollrec} file (opened
+with \func{rollrec\_read()}) and closes the file handle.
+
+\item \func{rollrec\_discard()}\verb" "
+
+This routine removes a {\it rollrec} file from use by a program.  The internally
+stored data are deleted and the {\it rollrec} file handle is closed.  However,
+modified data are not saved prior to closing the file handle.  Thus, modified
+and new data will be lost.
+
+\item \func{rollrec\_fullrec(rollrec\_name)}\verb" "
+
+\func{rollrec\_fullrec()} returns a reference to the {\it rollrec} specified in
+{\it rollrec\_name}.
+
+\item \func{rollrec\_lock()}\verb" "
+
+\func{rollrec\_lock()} locks the {\it rollrec} lockfile.  An exclusive lock is
+requested, so the execution will suspend until the lock is available.  If the
+{\it rollrec} synchronization file does not exist, it will be created.  If the
+process can't create the synchronization file, an error will be returned.
+Success or failure is returned.
+
+\item \func{rollrec\_names()}\verb" "
+
+This routine returns a list of the {\it rollrec} names from the file.
+
+\item \func{rollrec\_read(rollrec\_file)}\verb" "
+
+This interface reads the specified {\it rollrec} file and parses it into a
+{\it rollrec} hash table and a file contents array.  \func{rollrec\_read()}
+{\bf must} be called prior to any of the other
+\perlmod{Net::DNS::SEC::Tools::rollrec} calls.  If another {\it rollrec} is
+already open, then it is saved and closed prior to opening the new
+{\it rollrec}.
+
+Upon success, \func{rollrec\_read()} returns the number of {\it rollrec}s read
+from the file.
+
+Failure return values:
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{cl}
+-1 & specified rollrec file doesn't exit	\\
+-2 & unable to open rollrec file		\\
+-3 & duplicate rollrec names in file		\\
+\end{tabular} 
+\end{center}
+\end{table}
+
+\item \func{rollrec\_recval(rollrec\_name,rollrec\_field)}\verb" "
+
+This routine returns the value of a specified field in a given {\it rollrec}.
+{\it rollrec\_name} is the name of the particular {\it rollrec} to consult.
+{\it rollrec\_field} is the field name within that {\it rollrec}.
+
+For example, the current {\it rollrec} file contains the following {\it
+rollrec}.
+
+\begin{verbatim}
+    roll        "example.com"
+        zonefile        "db.example.com"
+\end{verbatim}
+
+The call:
+
+\begin{verbatim}
+    rollrec_recval("example.com","zonefile")
+\end{verbatim}
+
+will return the value ``db.example.com''.
+
+\item \func{rollrec\_rectype(rollrec\_name,rectype)}\verb" "
+
+Set the type of the specified {\it rollrec} record.  The file is {\bf not}
+written after updating the value, but the internal file-modified flag is set.
+The value is saved in both {\it \%rollrecs} and in {\it \@rollreclines}.
+
+{\it rollrec\_name} is the name of the {\it rollrec} that will be modified.
+{\it rectype} is the new type of the {\it rollrec}, which must be either
+``roll'' or ``skip''.
+
+Return values:
+
+\begin{table}[ht]
+\begin{center}
+\begin{tabular}{cl}
+0 & failure (invalid record type or rollrec not found)	\\
+1 & success						\\
+\end{tabular} 
+\end{center}
+\end{table}
+
+\item \func{rollrec\_setval(rollrec\_name,field,value)}\verb" "
+
+Set the value of a name/field pair in a specified {\it rollrec}.  The file is
+{\bf not} written after updating the value, but the internal file-modified
+flag is set.  The value is saved in both {\it \%rollrecs} and in {\it
+\@rollreclines}.
+
+{\it rollrec\_name} is the name of the {\it rollrec} that will be modified.  If
+the named {\it rollrec} does not exist, it will be created as a ``roll''-type
+{\it rollrec}.  {\it field} is the {\it rollrec} field which will be modified.
+{\it value} is the new value for the field.
+
+\item \func{rollrec\_settime(rollrec\_name)}\verb" "
+
+Set the timestamp in the {\it rollrec} specified by {\it rollrec\_name}.
+The file is {\bf not} written after updating the value.
+
+\item \func{rollrec\_unlock()}\verb" "
+
+\func{rollrec\_unlock()} unlocks the {\it rollrec} synchronization file.
+
+\item \func{rollrec\_write()}\verb" "
+
+This interface saves the internal version of the {\it rollrec} file (opened
+with \func{rollrec\_read()}).  It does not close the file handle.  As an
+efficiency measure, an internal modification flag is checked prior to writing
+the file.  If the program has not modified the contents of the {\it rollrec}
+file, it is not rewritten.
+
+\end{description}
+
+{\bf ROLLREC INTERNAL INTERFACES}
+
+The \perlmod{Net::DNS::SEC::Tools::rollrec} module has a number of interfaces,
+described in this section, that are intended for internal use only.  However,
+there are situations where external entities may have need of them.  Use with
+caution, as misuse may result in damaged or lost {\it rollrec} files.
+
+\begin{description}
+
+\item \func{rollrec\_init()}\verb" "
+
+This routine initializes the internal {\it rollrec} data.  Pending changes
+will be lost.  An open {\it rollrec} file handle will remain open, though the
+data are no longer held internally.  A new {\it rollrec} file must be read in
+order to use the \perlmod{Net::DNS::SEC::Tools::rollrec} interfaces again.
+
+\item \func{rollrec\_newrec(type,name)}\verb" "
+
+This interface creates a new {\it rollrec}.  The {\it rollrec\_name} field in
+the {\it rollrec} is set to the values of the {\it name} parameter.  The {\it
+type} parameter must be either ``roll'' or ``skip''.
+
+\item \func{rollrec\_default()}\verb" "
+
+This routine returns the name of the default {\it rollrec} file.
+
+\end{description}
+
+{\bf ROLLREC DEBUGGING INTERFACES}
+
+The following interfaces display information about the currently parsed {\it
+rollrec} file.  They are intended to be used for debugging and testing, but
+may be useful at other times.
+
+\begin{description}
+
+\item \func{rollrec\_dump\_hash()}\verb" "
+
+This routine prints the {\it rollrec} file as it is stored internally in a
+hash table.  The {\it rollrec}s are printed in alphabetical order, with the
+fields alphabetized for each {\it rollrec}.  New {\it rollrec}s and {\it
+rollrec} fields are alphabetized along with current {\it rollrec}s and fields.
+Comments from the {\it rollrec} file are not included with the hash table.
+
+\item \func{rollrec\_dump\_array()}\verb" "
+
+This routine prints the {\it rollrec} file as it is stored internally in an
+array.  The {\it rollrec}s are printed in the order given in the file, with
+the fields ordered in the same manner.  New {\it rollrec}s are appended to the
+end of the array.  {\it rollrec} fields added to existing {\it rollrec}s are
+added at the beginning of the {\it rollrec} entry.  Comments and vertical
+whitespace are preserved as given in the {\it rollrec} file.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\cmd{lsroll(1)},
+\cmd{rollchk(8)},
+\cmd{rollinit(8)}
+
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
+
+\perlmod{Net::DNS::SEC::Tools::keyrec(5)}

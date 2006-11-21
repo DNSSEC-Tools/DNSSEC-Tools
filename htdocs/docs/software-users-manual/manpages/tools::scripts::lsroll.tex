@@ -1,0 +1,124 @@
+\clearpage
+
+\subsubsection{\bf lsroll}
+
+{\bf NAME}
+
+\cmd{lsroll} - List the {\it rollrec}s in a DNSSEC-Tools {\it rollrec} file.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    lsroll [options] <rollrec-files>
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This script lists the contents of the specified {\it rollrec} files.  All
+{\it rollrec} files are loaded before the output is displayed.  If any
+{\it rollrec}s have duplicated names, whether within one file or across
+multiple files, the later {\it rollrec} will be the one whose data are
+displayed.
+
+Each record's name is always included in the output.  Additional output
+depends on the options selected.
+
+{\bf OPTIONS}
+
+There are three types of options recognized by \cmd{lsroll}:  record-selection
+options, attribute-selection options, and output-format options.  Each type
+is described in the sections below.
+
+{\bf Record-selection Options}
+
+These options select the records that will be displayed by \cmd{lsroll}.
+
+\begin{description}
+
+\item {\it -all}\verb" "
+
+List all records in the {\it rollrec} file.
+
+\item {\it -roll}\verb" "
+
+List all ``roll'' records in the {\it rollrec} file.
+
+\item {\it -skip}\verb" "
+
+List all ``skip'' records in the {\it rollrec} file.
+
+\end{description}
+
+{\bf Attribute-selection Options}
+
+These options select the attributes of the records that will be displayed
+by \cmd{lsroll}.
+
+\begin{description}
+
+\item {\it -type}\verb" "
+
+Include each {\it rollrec} record's type in the output.  The type will be
+either ``roll'' or ``skip''.  The type is given parenthetically.
+
+\item {\it -zone}\verb" "
+
+The record's zonefile is included in the output.  This field is part
+of the default output.
+
+\item {\it -keyrec}\verb" "
+
+The record's {\it keyrec} file is included in the output.  This field is part
+of the default output.
+
+\item {\it -phase}\verb" "
+
+The record's rollover phase is included in the output.  This field is part of
+the default output.
+
+\item {\it -ttl}\verb" "
+
+The record's TTL value is included in the output.
+
+\item {\it -display}\verb" "
+
+The record's display flag, used by \cmd{blinkenlights}, is included in the
+output.
+
+\item {\it -phstart}\verb" "
+
+The record's rollover phase is included in the output.
+
+\end{description}
+
+{\bf Output-format Options}
+
+These options select the type of output that will be given by \cmd{lsroll}.
+
+\begin{description}
+
+\item {\it -count}\verb" "
+
+Only a count of matching keyrecs in the {\it rollrec} file is given.
+
+\item {\it -terse}\verb" "
+
+Terse output is given.  Only the record name and any other fields specifically
+selected are included in the output.
+
+\item -help\verb" "
+
+Display a usage message.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\cmd{blinkenlights(8)},
+\cmd{rollchk(8)},
+\cmd{rollinit(8)},
+\cmd{rollerd(8)}
+
+\perlmod{Net::DNS::SEC::Tools::rollrec.pm(3)}
+
+\path{rollrec(5)}
