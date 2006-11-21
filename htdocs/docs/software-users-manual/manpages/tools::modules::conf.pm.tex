@@ -1,46 +1,55 @@
 \clearpage
 
-\subsection{\perlmod{conf.pm}}
-
+\subsection{\bf conf.pm Module}
 
 {\bf NAME}
 
-Net::DNS::SEC::Tools::conf - DNSSEC tools configuration file routines.
+\perlmod{Net::DNS::SEC::Tools::conf.pm} - DNSSEC-Tools configuration routines.
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-  use Net::DNS::SEC::Tools::conf;
+    use Net::DNS::SEC::Tools::conf;
 
-  %dtconf = parseconfig();
-  %dtconf = parseconfig("localzone.keyrec");
+    %dtconf = parseconfig();
+
+    %dtconf = parseconfig("localzone.keyrec");
+
+    bindcheck(\%options_hashref);
+
+    $confdir = getconfdir();
+
+    $conffile = getconffile();
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-The DNSSEC tools have a configuration file for commonly used values.
-These values are the defaults for a variety of things, such as
-encryption algorithm and encryption key length.
+The routines in this module perform configuration operations.  Some routines
+access the DNSSEC-Tools configuration file, while others validate the
+execution environment.
 
-{\bf /usr/local/etc/dnssec/dnssec-tools.conf} is the path for the DNSSEC tools
-configuration file.  The {\bf Net::DNS::SEC::Tools::conf} module provides
-methods for accessing the configuration data in this file.
+The DNSSEC tools have a configuration file for commonly used values.  These
+values are the defaults for a variety of things, such as encryption algorithm
+and encryption key length.
 
-The DNSSEC tools configuration file consists of a set of configuration
-value entries, with only one entry per line.  Each entry has the
-``keyword value'' format.  During parsing, the line is broken into
-tokens, with tokens being separated by spaces and tabs.  The first
-token in a line is taken to be the keyword.  All other tokens in that
-line are concatenated into a single string, with a space separating
-each token.  The untokenized string is added to a hash table, with the
-keyword as the value's key.
+\path{/usr/local/etc/dnssec/dnssec-tools.conf} is the path for the DNSSEC
+tools configuration file.  The \perlmod{Net::DNS::SEC::Tools::conf} module
+provides methods for accessing the configuration data in this file.
 
-Comments may be included by prefacing them with the `\#' or `;'
-comment characters.  These comments can encompass an entire line or may
-follow a configuration entry.  If a comment shares a line with an entry,
-value tokenization stops just prior to the comment character.
+The DNSSEC tools configuration file consists of a set of configuration value
+entries, with only one entry per line.  Each entry has the ``keyword value''
+format.  During parsing, the line is broken into tokens, with tokens being
+separated by spaces and tabs.  The first token in a line is taken to be the
+keyword.  All other tokens in that line are concatenated into a single string,
+with a space separating each token.  The untokenized string is added to a hash
+table, with the keyword as the value's key.
 
-An example configuration file follows:
+Comments may be included by prefacing them with the `\#' or `;' comment
+characters.  These comments can encompass an entire line or may follow a
+configuration entry.  If a comment shares a line with an entry, value
+tokenization stops just prior to the comment character.
+
+An example fragment of a configuration file follows:
 
 \begin{verbatim}
     # Sample configuration entries.
@@ -49,29 +58,44 @@ An example configuration file follows:
     ksk_length      1024        ; KSK key length.
 \end{verbatim}
 
-{\bf CONFIGURATION INTERFACES}
+{\bf INTERFACES}
 
 \begin{description}
 
-\item [{\bf parseconfig()}]\verb" "
+\item {\it parseconfig()}\verb" "
 
 This routine reads and parses the system's DNSSEC tools configuration file.
 The parsed contents are put into a hash table, which is returned to the caller.
 
-\item [{\bf parseconfig(conffile)}]\verb" "
+\item {\it parseconfig(conffile)}\verb" "
 
 This routine reads and parses a caller-specified DNSSEC tools configuration
 file.  The parsed contents are put into a hash table, which is returned to
 the caller.  The routine quietly returns if the configuration file does not
 exist. 
 
+\item {\it bindcheck(\%options\_hashref)}\verb" "
+
+This routine ensures that the needed BIND commands are available and
+executable.  If any of the commands either don't exist or aren't executable,
+then an error message will be given and the process will exit.  If all is
+well, everything will proceed quietly onwards.
+
+The BIND commands currently checked are {\it checkzone}, {\it keygen}, and
+{\it signzone}.  The pathnames for these commands are found in the given
+options hash referenced by {\it \%options\_hashref}.  If the hash doesn't
+contain an entry for one of those commands, it is not checked.
+
+\item {\it getconfdir()}\verb" "
+
+This routine returns the name of the DNSSEC-Tools configuration directory.
+
+\item {\it getconffile()}\verb" "
+
+This routine returns the name of the DNSSEC-Tools configuration file.
+
 \end{description}
 
 {\bf SEE ALSO}
 
-{\it zonesigner(1)}
-
-{\bf Net::DNS::SEC::Tools::keyrec(3)}
-
-{\bf dnssec-tools.conf(5)}
-
+\path{dnssec-tools.conf(5)}

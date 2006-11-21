@@ -1,15 +1,16 @@
 \clearpage
 
-\subsection{{\it timetrans}}
-
+\subsubsection{\bf timetrans}
 
 {\bf NAME}
 
-timetrans - Converts time into time.
+\cmd{timetrans} - Converts time into time.
 
 {\bf SYNOPSIS}
 
-\begin{verbatim}  timetrans [units-options] [-count]\end{verbatim}
+\begin{verbatim}
+    timetrans [units-options] [-count]
+\end{verbatim}
 
 {\bf DESCRIPTION}
 
@@ -21,7 +22,7 @@ of weeks, days, hours, minutes, and seconds.  The converted result is printed
 out.  Units options cannot be specified in the same execution as the count
 option, and vice versa.
 
-{\it timetrans} is intended for use with the DNSSEC tools, for calculating
+{\it timetrans} is intended for use with DNSSEC-Tools, for calculating
 a zone's expiration time.
 
 {\bf OPTIONS}
@@ -33,23 +34,23 @@ These options may be shortened to their first letter.
 
 \begin{description}
 
-\item [-seconds {\it seconds}]\verb" "
+\item {\it -seconds seconds}\verb" "
 
 Count of seconds to convert to seconds.
 
-\item [-minutes {\it minutes}]\verb" "
+\item {\it -minutes minutes}\verb" "
 
 Count of minutes to convert to seconds.
 
-\item [-hours {\it hours}]\verb" "
+\item {\it -hours hours}\verb" "
 
 Count of hours to convert to seconds.
 
-\item [-days {\it days}]\verb" "
+\item {\it -days days}\verb" "
 
 Count of days to convert to seconds.
 
-\item [-weeks {\it weeks}]\verb" "
+\item {\it -weeks weeks}\verb" "
 
 Count of weeks to convert to seconds.
 
@@ -63,7 +64,7 @@ letter.
 
 \begin{description}
 
-\item [-count {\it seconds}]\verb" "
+\item {\it -count seconds}\verb" "
 
 Count of seconds to convert to the appropriate set of units.
 
@@ -127,9 +128,9 @@ Example 8:  Converting 8888888 seconds into time units
     14 weeks, 4 days, 21 hours, 8 minutes, 8 seconds
 \end{verbatim}
 
+
 {\bf SEE ALSO}
 
-\perlmod{zonesigner(8)}
+\cmd{zonesigner(8)}
 
 \perlmod{Net::DNS::SEC::Tools::timetrans.pm(3)}
-

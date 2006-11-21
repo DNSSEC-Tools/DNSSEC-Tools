@@ -1,15 +1,16 @@
 \clearpage
 
-\subsection{\it mapper}
-
+\subsubsection{\bf mapper}
 
 {\bf NAME}
 
-mapper - Create graphical maps of DNS zone data
+\cmd{mapper} - Create graphical maps of DNS zone data.
 
 {\bf SYNOPSIS}
 
-\begin{verbatim}  mapper [options] zonefile1 ... zonefileN\end{verbatim}
+\begin{verbatim}
+    mapper options zonefile1 ... zonefileN
+\end{verbatim}
 
 {\bf DESCRIPTION}
 
@@ -24,86 +25,89 @@ problem spots.
 
 \begin{description}
 
-\item [-h]
+\item {\it -h}\verb" "
 
-Help summary.
+Prints a help summary.
 
-\item [-o OUTFILE.png]\verb" "
+\item {\it -o OUTFILE.png}\verb" "
 
 Saves the results to a given filename.  If this option is not given, the map
 will be saved to {\bf map.png}.
 
-\item [-r]
+\item {\it -r}\verb" "
 
-Lists resources records assigned to each node within the map.
+Lists resource records assigned to each node within the map.
 
-\item [-t TYPE,TYPE...]\verb" "
+\item {\it -t TYPE,TYPE...}\verb" "
 
 Adds the data portion of a resource record to the displayed node
-information.  Data types passed will be automatically upper-cased for
-ease of use.  Example usage: {\it -t A} will add IPv4 addresses to
+information.  Data types passed will be automatically converted to
+upper-case for ease of use.
+
+Example usage: {\it -t A} will add IPv4 addresses to
 all displayed nodes that have A records.
 
-\item [-L]
+\item {\it -L}\verb" "
 
 Adds a legend to the map.
 
-\item [-l (neato|dot|twopi|circo|fdp)]\verb" "
+\item {\it -l (neato|dot|twopi|circo|fdp)}\verb" "
 
-Selects a layout format.  The default is {\it neato} which is circular in
-pattern.  See the documentation on the {\it graphviz} package and the
-{\bf GraphViz} Perl module for further details.
+Selects a layout format.  The default is {\it neato}, which is circular in
+pattern.  See the documentation on the \perlmod{GraphViz} package and the
+\perlmod{GraphViz} Perl module for further details.
 
-\item [-a]
+\item {\it -a}\verb" "
 
 Allows overlapping of nodes.  This makes much tighter maps with the
 downside being that they are somewhat cluttered.  Maps of extremely
 large zones will be difficult to decipher if this option is not used.
 
-\item [-e WEIGHT]\verb" "
+\item {\it -e WEIGHT}\verb" "
 
-Assigns an edge weight to edges.  In theory $>$1 means shorter, $<$1 means
-longer although I don't believe as implemented it will have any
-effect.  Should work better in the future.
+Assigns an edge weight to edges.  In theory, $>$1 means shorter and $<$1 means
+longer although, it may not have any effect as implemented.
+This should work better in the future.
 
-\item [-f INTEGER]\verb" "
+\item {\it -f INTEGER}\verb" "
 
 Uses the INTEGER value for the font size to print node names with.
-Defaults to 10.
+The default value is 10.
 
-\item [-w WARNTIME]\verb" "
+\item {\it -w WARNTIME}\verb" "
 
-How far in advance that warnings are turned on for signed
-resource records that are about to expire.  The default is 7 days.
-The warning time is measured in seconds.
+Specifies how far in advance expiration warnings are enabled for signed
+resource records.  The default is 7 days.  The warning time is measured
+in seconds.
 
-\item [-i REGEX]\verb" "
+\item {\it -i REGEX}\verb" "
 
-Ignore record types matching a {\it REGEX} regular expression.
+Ignores record types matching a {\it REGEX} regular expression.
 
-\item [-s TYPE,TYPE...]\verb" "
+\item {\it -s TYPE,TYPE...}\verb" "
 
-Skips a list of record types from being analyzed or displayed in the map.
-By default, this is set to NSEC and CNAME in order to reduce clutter.
-Setting it to ``'' will display these results again.
+Specifies a list of record types that will not be analyzed or displayed
+in the map.  By default, this is set to NSEC and CNAME in order to reduce
+clutter.  Setting it to ``'' will display these results again.
 
-\item [-T TYPE,TYPE...]\verb" "
+\item {\it -T TYPE,TYPE...}\verb" "
 
-Only process record types of type {\it TYPE}.  This is the converse of the
-{\it -s} option.  It is not meaningful to use both {\it -s} and {\it -t}
-in the same invocation.  They will both work at once, however, so if
-{\it -T} specifies a type which {\it -s} excludes, it will not be shown.
+Restricts record types that will be processed to those of type {\it TYPE}.
+This is the converse of the {\it -s} option.  It is not meaningful to use both
+{\it -s} and {\it -t} in the same invocation.  They will both work at once,
+however, so if {\it -T} specifies a type which {\it -s} excludes, it will not
+be shown.
 
-\item [-g]
+\item {\it -g}\verb" "
 
-Attempts to cluster nodes around the domain name.  For `dot' layouts,
+Attempts to cluster nodes around the domain name.  For 'dot' layouts,
 this actually means drawing a box around the cluster.  For the other
-types, it makes very little, if any, difference.
+types, it makes very little difference, if any.
 
-\item [-q]
+\item {\it -q}\verb" "
 
-Don't output warnings or errors about records that have DNSSEC signatures
-that are near or beyond their signature lifetimes.
+Prevents output of warnings or errors about records that have DNSSEC
+signatures that are near or beyond their signature lifetimes.
 
 \end{description}
 
@@ -111,29 +115,26 @@ that are near or beyond their signature lifetimes.
 
 \begin{description}
 
-\item [{\it mapper -s cname,nsec -i dhcp -L zonefile zone.com}]\verb" "
+\item {\it mapper -s cname,nsec -i dhcp -L zonefile zone.com}\verb" "
 
 Writes to the default file ({\bf map.png}) of a {\it zone.com} zone
 stored in {\it zonefile}.  It excludes any hosts with a name containing
-{\it dhcp} and ignores any record of type {\it CNAME} or {\it NSEC}.  It also
-includes a legend in the output.
+{\it dhcp} and ignores any record of type {\it CNAME} or {\it NSEC}.
+A legend is included in the output.
 
-\item [{\it mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...}]\verb" "
+\item {\it mapper -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...}\verb" "
 
-Removes a lot of records from the display in order to display mostly a
-map of a zone hierarchy.
+Removes a lot of records from the display in order to primarily
+display a map of a zone hierarchy.
 
-\item [{\it mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile zone.com zonefile2 sub.zone.com ...}]\verb" "
+\item {\it mapper -l dot -s txt,hinfo,cname,nsec,a,aaaa,mx,rrsig -L zonefile \\ zone.com zonefile2 sub.zone.com ...}\verb" "
 
-The same thing, but draws a more vertical tree-style graph of the
-zone.  This works well for fairly deep but narrow hierarchies.  Tree-style
-diagrams rarely look as nice for full zones.
+As the previous example, but this command draws a more vertical tree-style
+graph of the zone.  This works well for fairly deep but narrow hierarchies.
+Tree-style diagrams rarely look as nice for full zones.
 
 \end{description}
 
 {\bf SEE ALSO}
 
-\perlmod{Net::DNS}
-
-\url{http://dnssec-tools.sourceforge.net}
-
+{\bf Net::DNS}

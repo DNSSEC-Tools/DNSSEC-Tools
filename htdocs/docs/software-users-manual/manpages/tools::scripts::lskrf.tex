@@ -1,19 +1,20 @@
 \clearpage
 
-\subsection{{\it lskrf}}
-
+\subsubsection{\bf lskrf}
 
 {\bf NAME}
 
-lskrf - List the {\it keyrec}s in a DNSSEC-Tools {\it keyrec} file.
+\cmd{lskrf} - List the {\it keyrec}s in a DNSSEC-Tools {\it keyrec} file.
 
 {\bf SYNOPSIS}
 
-\begin{verbatim}  lskrf [options] <keyrec-files>\end{verbatim}
+\begin{verbatim}
+    lskrf [options] <keyrec-files>
+\end{verbatim}
 
 {\bf DESCRIPTION}
 
-This script lists the contents of the specified {\it keyrec} files.  All {\it
+\cmd{lskrf} lists the contents of the specified {\it keyrec} files.  All {\it
 keyrec} files are loaded before the output is displayed.  If any {\it keyrec}s
 have duplicated names, whether within one file or across multiple files, the
 later {\it keyrec} will be the one whose data are displayed.  The output given
@@ -21,9 +22,9 @@ depends on the options selected.
 
 {\bf OPTIONS}
 
-{\bf lskrf} has three types of options it can take:  record-selection options,
-record-attribute options, and output-style options.  These option sets are
-detailed below.
+\cmd{lskrf} takes three types of options:  record-selection options,
+record-attribute options, and output-style options.  These option sets
+are detailed below.
 
 {\bf Record-Selection Options}
 
@@ -31,44 +32,48 @@ These options select the types of {\it keyrec} that will be displayed.
 
 \begin{description}
 
-\item [-all]\verb" "
+\item {\it -all}\verb" "
 
 This option displays all the records in a {\it keyrec} file.
 
-\item [-zones]\verb" "
+\item {\it -zones}\verb" "
 
 This option displays the zones in a {\it keyrec} file.
 
-\item [-keys]\verb" "
+\item {\it -set}\verb" "
+
+This option displays the signing sets in a {\it keyrec} file.
+
+\item {\it -keys}\verb" "
 
 This option displays the keys in a {\it keyrec} file.
 
-\item [-ksk]\verb" "
+\item {\it -ksk}\verb" "
 
 This option displays the KSK keys in a {\it keyrec} file.
 
-\item [-zsk]\verb" "
+\item {\it -zsk}\verb" "
 
 This option displays the ZSK keys in a {\it keyrec} file.  It does not include
 obsolete ZSK keys; the {\it -obs} option must be specified to display obsolete
 keys.
 
-\item [-cur]\verb" "
+\item {\it -cur}\verb" "
 
 This option displays the current ZSK keys in a {\it keyrec} file.
 
-\item [-new]\verb" "
+\item {\it -new}\verb" "
 
 This option displays the new ZSK keys in a {\it keyrec} file.
 
-\item [-pub]\verb" "
+\item {\it -pub}\verb" "
 
 This option displays the published ZSK keys in a {\it keyrec} file.
 
-\item [-obs]\verb" "
+\item {\it -obs}\verb" "
 
-This option displays the obsolete ZSK keys in a {\it keyrec} file.  This option
-must be give if obsolete ZSK keys are to be displayed.
+This option displays the obsolete ZSK keys in a {\it keyrec} file.
+This option must be give if obsolete ZSK keys are to be displayed.
 
 \end{description}
 
@@ -79,27 +84,64 @@ record-selection options.
 
 \begin{description}
 
-\item [-valid]\verb" "
+\item {\it -valid}\verb" "
 
 This option displays the valid zones in a {\it keyrec} file.
 It implies the {\it -zones} option.
 
-\item [-expired]\verb" "
+\item {\it -expired}\verb" "
 
 This option displays the expired zones in a {\it keyrec} file.
 It implies the {\it -zones} option.
 
-\item [-ref]\verb" "
+\item {\it -ref}\verb" "
 
-This option displays the referenced key {\it keyrec}s in a {\it keyrec} file.
-If no record-selection options were specified, then the {\it -keys} option will
-be set.
+This option displays the referenced signing set {\it keyrec}s or the
+referenced key {\it keyrec}s in a {\it keyrec} file, depending upon other
+selected options.
 
-\item [-unref]\verb" "
+Referenced state depends on the following:
 
-This option displays the unreferenced key {\it keyrec}s in a {\it keyrec} file.
-If no record-selection options were specified, then the {\it -keys} option will
-be set.
+\begin{itemize}
+\item Signing sets are considered to be referenced if they are listed in a
+zone keyrec.
+
+\item KSKs are considered to be referenced if they are listed in a zone
+keyrec.
+
+\item ZSKs are considered to be referenced if they are listed in a set keyrec.
+
+\end{itemize}
+
+This option may be used with either the {\it -sets} or {\it -keys} options.
+If it isn't used with any record-selection options, then it is assumed that
+both {\it -sets} and {\it -keys} have been specified.
+
+\item {\it -unref}\verb" "
+
+This option displays the unreferenced signing set {\it keyrec}s or the
+unreferenced key {\it keyrec}s in a {\it keyrec} file, depending upon other
+selected options.
+
+Unreferenced state depends on the following:
+
+\begin{itemize}
+\item Signing sets are considered to be unreferenced if they are not listed in
+a zone keyrec.
+
+\item KSKs are considered to be unreferenced if they are not listed in a zone
+keyrec.
+
+\item ZSKs are considered to be unreferenced if they are not listed in a set
+keyrec.
+
+\item Obsolete ZSKs are checked, whether or not the -obs flag was specified.
+
+\end{itemize}
+
+This option may be used with either the {\it -sets} or {\it -keys} options.
+If it isn't used with any record-selection options, then it is assumed that
+both {\it -sets} and {\it -keys} have been specified.
 
 \end{description}
 
@@ -114,16 +156,16 @@ options aren't given.
 
 \begin{description}
 
-\item [-count]\verb" "
+\item {\it -count}\verb" "
 
 The count of matching records will be displayed, but the matching records
 will not be.
 
-\item [-nodate]\verb" "
+\item {\it -nodate}\verb" "
 
 The key's generation date will not be printed if this flag is given.
 
-\item [-long]\verb" "
+\item {\it -long}\verb" "
 
 The long form of output will be given.  For zones, the zone name, the zone
 file, the zone's signing date, the zone's expiration date, and a label will
@@ -131,18 +173,80 @@ be displayed.  For keys, the key name, the key's zone, the key's encryption
 algorithm, the key's length, the key's generation date, and a label are
 given.
 
-\item [-terse]\verb" "
+\item {\it -terse}\verb" "
 
 This options displays only the name of the zones or keys selected by other
 options.
 
-\item [-help]\verb" "
+\item {\it -help}\verb" "
 
 Display a usage message.
 
 \end{description}
 
+{\bf Key-Attribute Options}
+
+These options allow specific key fields to be included in the output.  If
+combined with the {\it -terse} option, only those fields specifically desired
+will be printed.
+
+\begin{description}
+
+\item {\it -k-algorithm}\verb" "
+
+Display the key's encryption algorithm.
+
+\item {\it -k-enddate}\verb" "
+
+Display the key's end-date, calculated by adding the key's lifespan to its
+signing date.
+
+\item {\it -k-length}\verb" "
+
+Display the key's length.
+
+\item {\it -k-lifespan}\verb" "
+
+Display the key's lifespan (in seconds.) This lifespan is {\bf only} related
+to the time between key roll-over.  There is no other lifespan associated with
+a key.
+
+\item {\it -k-signdate}\verb" "
+
+Display the key's signing date.
+
+\item {\it -k-zone}\verb" "
+
+Display the key's zonefile.
+
+\end{description}
+
+{\bf Zone-Attribute Options}
+
+These options allow specific zone fields to be included in the output.  If
+combined with the {\it -terse} option, only those fields specifically desired
+will be printed.
+
+\begin{description}
+
+\item {\it z-expdate}\verb" "
+
+Display the zone's expiration date.
+
+\item {\it z-signdate}\verb" "
+
+Display the zone's signing date.
+
+\item {\it z-zonefile}\verb" "
+
+Display the zone's zonefile.
+
+\end{description}
+
 {\bf SEE ALSO}
+
+\cmd{zonesigner(8)}
 
 \perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
 
+\path{keyrec(5)}

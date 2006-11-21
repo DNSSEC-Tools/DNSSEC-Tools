@@ -1,41 +1,42 @@
 \clearpage
 
-\subsection{{\it fixkrf}}
+\subsubsection{\bf fixkrf}
 
 
 {\bf NAME}
 
-fixkrf - Fixes DNSSEC-Tools {\it keyrec} files whose encryption key files
-have been moved
+\cmd{fixkrf} - Fixes DNSSEC-Tools {\it keyrec} files whose encryption
+key files have been moved.
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-  fixkrf [options] <keyrec-file> <dir 1> ... <dir N>
+    fixkrf [options] <keyrec-file> <dir 1> ... <dir N>
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-This script checks a specified {\it keyrec} file to ensure that the referenced
-encryption key files exist where listed.  If a key is not where the {\it keyrec}
-specifies it should be, then {\it fixkrf} will search the given directories for
-those keys and adjust the {\it keyrec} to match reality.  If a key of a
-particular filename is found in multiple places, a warning will be printed
-and the {\it keyrec} file will not be changed for that key.
+\cmd{fixkrf} checks a specified {\it keyrec} file to ensure that the
+referenced encryption key files exist where listed.  If a key is not
+where the {\it keyrec} specifies it should be, then {\it fixkrf} will
+search the given directories for those keys and adjust the {\it keyrec}
+to match reality.  If a key of a particular filename is found in multiple
+places, a warning will be printed and the {\it keyrec} file will not be
+changed for that key.
 
 {\bf OPTIONS}
 
 \begin{description}
 
-\item [-list]\verb" "
+\item {\it -list}\verb" "
 
 Display output about missing keys, but don't fix the {\it keyrec} file.
 
-\item [-verbose]\verb" "
+\item {\it -verbose}\verb" "
 
 Display output about found keys as well as missing keys.
 
-\item [-help]\verb" "
+\item {\it -help}\verb" "
 
 Display a usage message.
 
@@ -43,5 +44,11 @@ Display a usage message.
 
 {\bf SEE ALSO}
 
+\cmd{cleankrf(8)},
+\cmd{genkrf(8)},
+\cmd{lskrf(1)},
+\cmd{zonesigner(8)}
+
 \perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
 
+\path{keyrec(5)}

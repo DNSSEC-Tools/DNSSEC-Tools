@@ -1,59 +1,69 @@
 \clearpage
 
-\subsection{{\it keyrec-check}}
-
+\subsubsection{\bf krfcheck}
 
 {\bf NAME}
 
-keyrec-check - Check a DNSSEC-Tools {\it keyrec} file for problems and
+\cmd{krfcheck} - Check a DNSSEC-Tools {\it keyrec} file for problems and
 inconsistencies.
 
 {\bf SYNOPSIS}
 
-\begin{verbatim}  keyrec-check [-z | -k] [-c] [-q] [-v] [-h] keyre-file\end{verbatim}
+\begin{verbatim}
+    krfcheck [options] keyrec-file
+\end{verbatim}
 
 {\bf DESCRIPTION}
 
-This script checks a {\it keyrec} file for problems, potential problems,
+\cmd{krfcheck} checks a {\it keyrec} file for problems, potential problems,
 and inconsistencies.
 
 Recognized problems include:
 
 \begin{description}
 
-\item [no zones defined]\verb" "
+\item {\it no zones defined}\verb" "
 
 The {\it keyrec} file does not contain any zone {\it keyrec}s.
 
-\item [no keys defined]\verb" "
+\item {\it no sets defined}\verb" "
+
+The {\it keyrec} file does not contain any set {\it keyrec}s.
+
+\item {\it no keys defined}\verb" "
 
 The {\it keyrec} file does not contain any key {\it keyrec}s.
 
-\item [unknown zone {\it keyrec}s]\verb" "
+\item {\it unknown zone {\it keyrec}s}\verb" "
 
-A key {\it keyrec} references a non-existent zone {\it keyrec}.
+A set {\it keyrec} or a key {\it keyrec} references a non-existent zone
+{\it keyrec}.
 
-\item [missing key from zone {\it keyrec}]\verb" "
+\item {\it missing key from zone {\it keyrec}}\verb" "
 
 A zone {\it keyrec} does not have both a KSK key and a ZSK key.
 
-\item [expired zone {\it keyrec}s]\verb" "
+\item {\it missing key from set {\it keyrec}}\verb" "
+
+A key listed in a set {\it keyrec} does not have a key {\it keyrec}.
+
+\item {\it expired zone {\it keyrec}s}\verb" "
 
 A zone has expired.
 
-\item [mislabeled key]\verb" "
+\item {\it mislabeled key}\verb" "
 
 A key is labeled as a KSK (or ZSK) and its owner zone has it labeled as the
 opposite.
 
-\item [invalid zone data values]\verb" "
+\item {\it invalid zone data values}\verb" "
 
 A zone's {\it keyrec} data are checked to ensure that they are valid.  The
 following conditions are checked:  existence of the zone file, existence of
-the KSK file, existence of the ZSK file, the end-time is greater than one
-day, and the seconds-count and date string match.
+the KSK file, existence of the KSK and ZSK directories, the end-time is
+greater than one day, and the seconds-count and date string match.
 
-\item [invalid key data values]\verb" "
+\item {\it invalid key data values}\verb" "
 
 A key's {\it keyrec} data are checked to ensure that they are valid.  The
 following conditions are checked:  valid encryption algorithm, key length
@@ -66,19 +76,19 @@ Recognized potential problems include:
 
 \begin{description}
 
-\item [imminent zone expiration]\verb" "
+\item {\it imminent zone expiration}\verb" "
 
 A zone will expire within one week. 
 
-\item [odd zone-signing date]\verb" "
+\item {\it odd zone-signing date}\verb" "
 
 A zone's recorded signing date is later than the current system clock.
 
-\item [orphaned keys]\verb" "
+\item {\it orphaned keys}\verb" "
 
-A key {\it keyrec} is unreferenced by any zone {\it keyrec}.
+A key {\it keyrec} is unreferenced by any set {\it keyrec}.
 
-\item [missing key directories]\verb" "
+\item {\it missing key directories}\verb" "
 
 A zone {\it keyrec}'s key directories ({\it kskdirectory} or {\it zskdirectory}) does
 not exist.
@@ -89,15 +99,27 @@ Recognized inconsistencies include:
 
 \begin{description}
 
-\item [key-specific fields in a zone {\it keyrec}]\verb" "
+\item {\it key-specific fields in a zone {\it keyrec}}\verb" "
 
 A zone {\it keyrec} contains key-specific entries.  To allow for site-specific
-extensibility, {\it keyrec-check} does not check for undefined {\it keyrec} fields.
+extensibility, \cmd{krfcheck} does not check for undefined {\it keyrec} fields.
 
-\item [zone-specific fields in a key {\it keyrec}]\verb" "
+\item {\it zone-specific fields in a key {\it keyrec}}\verb" "
 
 A key {\it keyrec} contains zone-specific entries.  To allow for site-specific
-extensibility, {\it keyrec-check} does not check for undefined {\it keyrec} fields.
+extensibility, \cmd{krfcheck} does not check for undefined {\it keyrec} fields.
+
+\item {\it mismatched zone timestamp}\verb" "
+
+A zone's seconds-count timestamp does not match its textual timestamp.
+
+\item {\it mismatched set timestamp}\verb" "
+
+A set's seconds-count timestamp does not match its textual timestamp.
+
+\item {\it mismatched key timestamp}\verb" "
+
+A key's seconds-count timestamp does not match its textual timestamp.
 
 \end{description}
 
@@ -105,25 +127,51 @@ extensibility, {\it keyrec-check} does not check for undefined {\it keyrec} fiel
 
 \begin{description}
 
-\item [-k] Only perform checks of key {\it keyrec}s.  This option may
-not be combined with the {\bf -z} option.
+\item {\it -zone}\verb" "
 
-\item [-z] Only perform checks of zone {\it keyrec}s.  This option may
-not be combined with the {\bf -k} option.
+Only perform checks of zone {\it keyrec}s.  This option may not be combined
+with the {\bf -set} or {\bf -key} options.
 
-\item [-c] Display a final count of errors.
+\item {\it -set}\verb" "
 
-\item [-q] Do not display messages.  This option supersedes the setting
-of the {\it -v} option.
+Only perform checks of set {\it keyrec}s.  This option may not be combined
+with the {\bf -zone} or {\bf -key} options.
 
-\item [-v] Display many messages.  This option is subordinate to the
-{\it -q} option.
+\item {\it -key}\verb" "
 
-\item [-h] Display a usage message.
+Only perform checks of key {\it keyrec}s.  This option may not be combined
+with the {\bf -set} or {\bf -zone} options.
+
+\item {\it -count}\verb" "
+
+Display a final count of errors.
+
+\item {\it -quiet}\verb" "
+
+Do not display messages.  This option supersedes the setting of the {\it -v}
+option.
+
+\item {\it -verbose}\verb" "
+
+Display many messages.  This option is subordinate to the {\it -q} option.
+
+\item {\it -Version}\verb" "
+
+Display the \cmd{krfcheck} version number and exit.
+
+\item {\it -help}\verb" "
+
+Display a usage message.
 
 \end{description}
 
 {\bf SEE ALSO}
 
+\cmd{cleankrf(8)},
+\cmd{fixkrf(8)},
+\cmd{lskrf(1)},
+\cmd{zonesigner(8)}
+
 \perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
 
+\path{keyrec(5)}
