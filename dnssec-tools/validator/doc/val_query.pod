@@ -2,7 +2,7 @@
 
 =head1 NAME
 
-val_query - DNSSEC-validated resolution of DNS queries
+I<val_query()> - DNSSEC-validated resolution of DNS queries
 
 =head1 SYNOPSIS
 
@@ -17,23 +17,28 @@ val_query - DNSSEC-validated resolution of DNS queries
 
   int val_free_response(struct val_response *resp);
 
-  int val_res_query(const val_context_t *ctx, const char *dname, int class, int type,
-        u_char *answer, int anslen, val_status_t *val_status);
+  int val_res_query(const val_context_t *ctx,
+		    const char *dname,
+		    int class,
+		    int type,
+		    u_char *answer,
+		    int anslen,
+		    val_status_t *val_status);
 
 =head1 DESCRIPTION
 
-The B<val_query()> and B<val_res_query()> functions are DNSSEC-aware substitutes for B<res_query(3)>.
-They perform DNSSEC validation of DNS queries.
+The I<val_query()> and I<val_res_query()> functions perform DNSSEC validation
+of DNS queries.  They are DNSSEC-aware substitutes for I<res_query(3)>.
 
 The I<ctx> parameter is the validator context and can be set to NULL for
 default settings.  More information about this field can be found in
-B<libval(3)>.
+I<libval(3)>.
 
 The I<dname> parameter specifies the domain name, I<class> specifies the
 DNS class and I<type> specifies the DNS type.
 
-The B<val_query()> function returns results in the I<resp> linked-list which
-encapsultes the results into the following structure:
+The I<val_query()> function returns results in the I<resp> linked-list which
+encapsulates the results into the following structure:
 
   struct val_response {
         unsigned char *vr_response;
@@ -42,56 +47,52 @@ encapsultes the results into the following structure:
 		struct val_response *vr_next;
   }; 
 
-I<vr_response> and I<vr_length> fields are functionally similar to the
-I<answer> and I<anslen> parameters in B<res_query(3)>.  Memory for the 
+The I<vr_response> and I<vr_length> fields are functionally similar to the
+I<answer> and I<anslen> parameters in I<res_query(3)>.  Memory for the 
 I<resp> linked-list is internally allocated and must be released after
-a successful invocation of the function using the val_free_response() function. 
-Each element in the I<resp> linked-list
+a successful invocation of the function using the I<val_free_response()>
+function. Each element in the I<resp> linked list
 will contain an answer corresponding to a single RRSet in the DNS reply.
 
-If DNSSEC validation succeeds for a given RRSet, a value of
-B<VAL_SUCCESS> is returned in the I<vr_val_status> field of the
-I<val_response> structure for that RRSet. Other values are returned in case
-of errors.  See B<val_errors.h> for a listing of possible error codes.  The
-B<p_val_status()> function can be used to return a brief string description
-of the error code.  The B<val_istrusted()> function can be used to determine
-if the error code represents a value which indicates that the response can
-be trusted (see B<libval(3)> for further information).
+If DNSSEC validation succeeds for a given RRSet, a value of B<VAL_SUCCESS> is
+returned in the I<vr_val_status> field of the I<val_response> structure for
+that RRSet. Other values are returned in case of errors.  (See B<val_errors.h>
+for a listing of possible error codes.)
 
-The I<flags> parameter controls the scope of validation and name
-resolution, and the output format.  At present only one flag is
-defined: B<VAL_QUERY_MERGE_RRSETS>.  This flag has been provided for
-legacy applications that already use B<res_query(3)> and want to
-transition to B<val_query()> with minimal change.  When this flag is
-specified, all RRsets in the answer are merged into a single response
-and returned in the first element of the I<resp> array.  The response
-field of this element will have a format similar to the answer
-returned by B<res_query(3)>.  The validation status will be
-B<VAL_SUCCESS> only if all the individual RRsets have been
-successfully validated.  Otherwise, the validation status will be one
-of the other error codes.  Note that if a value other than
-B<VAL_SUCCESS> is returned and if multiple RRsets are present in
-the answer, it is not possible to know which RRset resulted in the
-error status, if this flag is used.
+I<p_val_status()> returns a brief string description of the error code.
+I<val_istrusted()> determines if the error code indicates that the response
+can be trusted.  (See I<libval(3)> for further information).
 
-The B<val_res_query()> function is provided as a closer substitute
-for res_query(3). It calls val_query() internally with the 
-VAL_QUERY_MERGE_RRSETS flag and returns the answers in the field 
-answer with length of anslen. The validation status is returned in the
-field val_status. 
+The I<flags> parameter controls the scope of validation and name resolution,
+and the output format.  At present only th B<VAL_QUERY_MERGE_RRSETS> flag is
+defined.  This flag is provided for legacy applications that already use
+I<res_query(3)> and want to transition to I<val_query()> with minimal change.
+When this flag is specified, all RRsets in the answer are merged into a single
+response and returned in the first element of the I<resp> array.  The response
+field of this element will have a format similar to the answer returned by
+I<res_query(3)>.  The validation status will be B<VAL_SUCCESS> only if all the
+individual RRsets have been successfully validated.  Otherwise, the validation
+status will be one of the other error codes.  If a value other than
+B<VAL_SUCCESS> is returned and if multiple RRsets are present in the answer,
+it is not possible to know which RRset resulted in the error status, if this
+flag is used.
+
+I<val_res_query()> is provided as a closer substitute for I<res_query(3)>. It
+calls I<val_query()> internally with the B<VAL_QUERY_MERGE_RRSETS> flag and
+returns the answers in the field answer with length of I<anslen>. The
+validation status is returned in the field I<val_status>.
 
 =head1 RETURN VALUES
 
-The B<val_query()> function returns 0 on success.  
-This function internally invokes B<resolve_n_check()>, 
-and errors from this function may be returned.
+The I<val_query()> function returns 0 on success.  This function internally
+invokes I<resolve_n_check()> and errors from this function may be returned.
 
-The B<val_res_query()> function returns the number of bytes received on 
-success and -1 on failure. 
+The I<val_res_query()> function returns the number of bytes received on
+success and -1 on failure.
 
 
 =head1 EXAMPLES
- 
+
  #include <stdio.h>
  #include <stdlib.h>
  #include <strings.h>
@@ -139,11 +140,11 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 
 =head1 SEE ALSO
 
-B<res_query(3)>
+I<res_query(3)>
 
-B<get_context(3)>, B<val_getaddrinfo(3)>, B<val_gethostbyname(3)>
+I<get_context(3)>, I<val_getaddrinfo(3)>, I<val_gethostbyname(3)>
 
-B<libval(3)>
+I<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 
