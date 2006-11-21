@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_getaddrinfo 3"
-.TH val_getaddrinfo 3 "2006-11-20" "perl v5.8.6" "Programmer's Manual"
+.TH val_getaddrinfo 3 "2006-11-21" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_getaddrinfo, val_freeaddrinfo \- get DNSSEC\-validated network address
 and service translation
@@ -173,12 +173,12 @@ parameter.
 \&  };
 .Ve
 .PP
-The \fIval_addrinfo\fR structure is similar to the \fIaddrinfo\fR structure (see
-\&\fI\fIgetaddrinfo\fI\|(3)\fR).  \fIval_addrinfo\fR has an additional field \fIai_val_status\fR
-that represents the validation status for that particular record.
-\&\fI\fIval_istrusted()\fI\fR determines whether this validation status represents a
-trusted value and \fI\fIp_val_status()\fI\fR displays this value to the user in a
-useful manner.  (See \fI\fIlibval\fI\|(3)\fR for more information).
+The \fIval_addrinfo\fR structure is similar to the \fIaddrinfo\fR structure
+(described in \fI\fIgetaddrinfo\fI\|(3)\fR).  \fIval_addrinfo\fR has an additional field
+\&\fIai_val_status\fR that represents the validation status for that particular
+record.  \fI\fIval_istrusted()\fI\fR determines whether this validation status
+represents a trusted value and \fI\fIp_val_status()\fI\fR displays this value to the
+user in a useful manner.  (See \fI\fIlibval\fI\|(3)\fR for more information).
 .PP
 The \fIctx\fR parameter of type \fIval_context\fR represents the validation context,
 which can be \s-1NULL\s0 for default value.  The caller can use this parameter to
