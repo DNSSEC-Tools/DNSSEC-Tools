@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "val_gethostbyname 3"
-.TH val_gethostbyname 3 "2006-11-20" "perl v5.8.6" "Programmer's Manual"
+.TH val_gethostbyname 3 "2006-11-21" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 val_gethostbyname, val_gethostbyname2, val_gethostbyname_r,
 val_gethostbyname2_r \- get DNSSEC\-validated network host entry
@@ -264,8 +264,8 @@ validation), and a non-zero error-code on failure.
 .Ve
 .SH "NOTES"
 .IX Header "NOTES"
-The current versions of these functions do not read the order-of-look-up from
-\&\fB/etc/hosts.conf\fR.  This functionality will be provided in future versions. 
+These functions do not currently read the order of lookup from
+\&\fB/etc/hosts.conf\fR.  This functionality will be provided in future versions.
 At present, the default order is set to consult the \fB/etc/hosts\fR file first
 and then query \s-1DNS\s0.
 .PP
