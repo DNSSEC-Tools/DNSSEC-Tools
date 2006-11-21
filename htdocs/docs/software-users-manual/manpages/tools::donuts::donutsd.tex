@@ -1,150 +1,160 @@
 \clearpage
 
-\subsection{\it donutsd}
+\subsubsection{\bf donutsd}
+
 
 {\bf NAME}
 
-\begin{verbatim}  DoNutSD - Run the donuts syntax checker periodically and email the results\end{verbatim}
+\cmd{donutsd} - Run the \cmd{donuts} syntax checker periodically and report the
+results to an administrator
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-  donutsd [-z FREQ] [-t TMPDIR] [-f FROM] [-s SMTPSERVER] [-a DONUTSARGS]
-          [-x] [-v] [-i zonelistfile] [ZONEFILE ZONENAME ZONECONTACT]
+    donutsd -z FREQ -t TMPDIR -f FROM -s SMTPSERVER -a DONUTSARGS -x -v
+            -i zonelistfile ZONEFILE ZONENAME ZONECONTACT
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-{\it donutsd} runs {\it donuts} on a set of zone files every so often (the
+\cmd{donutsd} runs \cmd{donuts} on a set of zone files every so often (the
 frequency is specified by the {\it -z} flag which defaults to 24 hours) and
 watches for changes in the results.  These changes may be due to the
-time-sensitive nature of DNSSEC-related records (e.g., RRSIG validity
-periods) or because parent/child relationships have changed.  If any
-changes have occurred in the output since the last run of {\it donuts} on a
-particular zone file, the results are emailed to the specified zone
-administrator's email address.
+time-sensitive nature of DNSSEC-related records (e.g., RRSIG validity periods)
+or because parent/child relationships have changed.  If any changes have
+occurred in the output since the last run of \cmd{donuts} on a particular zone
+file, the results are emailed to the specified zone administrator's email
+address.
 
 {\bf OPTIONS}
 
 \begin{description}
 
-\item [-v] Turns on more verbose output.
+\item {\it -v}\verb" "
 
-\item [-o] Run once and quit, as opposed to sleeping or re-running forever.
+Turns on more verbose output.
 
-\item [-a ARGUMENTS]\verb" "
+\item {\it -o}\verb" "
 
-Passes arguments to command line arguments of {\it donuts} runs.
+Run once and quit, as opposed to sleeping or re-running forever.
 
-\item [-z TIME]\verb" "
+\item {\it -a ARGUMENTS}\verb" "
 
-Sleeps TIME seconds between calls to {\it donuts}.
+Passes arguments to command line arguments of \cmd{donuts} runs.
 
-\item [-e ADDRESS]\verb" "
+\item {\it -z TIME}\verb" "
+
+Sleeps TIME seconds between calls to \cmd{donuts}.
+
+\item {\it -e ADDRESS}\verb" "
 
 Mail ADDRESS with a summary of the results from all the files.
-These are the last few lines of the {\it donuts} output for each zone that
+These are the last few lines of the \cmd{donuts} output for each zone that
 details the number of errors found.
 
-\item [-s SMTPSERVER]\verb" "
+\item {\it -s SMTPSERVER}\verb" "
 
 When sending mail, send it to the SMTPSERVER specified.  The default
 is {\it localhost}.
 
-\item [-f FROMADDR]\verb" "
+\item {\it -f FROMADDR}\verb" "
 
 When sending mail, use FROMADDR for the From: address.
 
-\item [-x] Send the {\it diff} output in the email message as well as
-the {\it donuts} output.
+\item {\it -x}\verb" "
 
-\item [-t TMPDIR]\verb" "
+Send the {\it diff} output in the email message as well as the
+\cmd{donuts} output.
+
+\item {\it -t TMPDIR}\verb" "
 
 Store temporary files in TMPDIR.
 
-\item [-i INPUTZONES]\verb" "
+\item {\it -i INPUTZONES}\verb" "
 
-See the next section for details.
+See the next section details.
 
 \end{description}
 
 {\bf ZONE ARGUMENTS}
 
-The rest of the arguments to {\it donutsd} should be triplets of the
+The rest of the arguments to \cmd{donutsd} should be triplets of the
 following information:
 
 \begin{description}
 
-\item [ZONEFILE] The zone file to examine
+\item {\it ZONEFILE}\verb" "
 
-\item [ZONENAME] The zonename that file is supposed to be defining
+The zone file to examine.
 
-\item [ZONECONTACT] An email address of the zone administrator (or a
-comma-separated list of addresses).  The results will be sent to this
-email address.
+\item {\it ZONENAME}\verb" "
+
+The zonename that file is supposed to be defining.
+
+\item {\it ZONECONTACT}\verb" "
+
+An email address of the zone administrator (or a comma-separated
+list of addresses.)  The results will be sent to this email address.
 
 \end{description}
 
 Additionally, instead of listing all the zones you wish to monitor on
-the command line, you can instead use the {\it -i} flag which specifies a
+the command line, you can use the {\it -i} flag which specifies a
 file to be read listing the TRIPLES instead.  Each line in this file
 should contain one triple with white-space separating the arguments.
 
 Example:
 
 \begin{verbatim}
-   db.zonefile1.com   zone1.com   admin@zone1.com
-   db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com
+    db.zonefile1.com   zone1.com   admin@zone1.com
+    db.zonefile2.com   zone2.com   admin@zone2.com,admin2@zone2.com
 \end{verbatim}
 
-For even more control you can specify an XML file (which must end in
-{\bf .xml} and you must have the {\bf XML::Smart} Perl module installed) that
-describes the same information but also allows for per-zone
-customization of the {\it donuts} arguments:
+For even more control, you can specify an XML file (whose name must end in
+{\bf .xml}) that describes the same information.  This also allows for per-zone
+customization of the \cmd{donuts} arguments.  The \perlmod{XML::Smart} Perl
+module must be installed in order to use this feature.
 
 \begin{verbatim}
- <donutsd>
-   <zones>
-    <zone>
-      <file>db.example.com</file>
-      <name>example.com</name>
-      <contact>admin@example.com</contact>
-      <!-- this is not a signed zone therefore we'll
-           add these args so we don't display DNSSEC errors -->
-      <donutsargs>-i DNSSEC</donutsargs>
-    </zone>
-   </zones>
- </donutsd>
+    <donutsd>
+        <zones>
+            <zone>
+                <file>db.example.com</file>
+                <name>example.com</name>
+                <contact>admin@example.com</contact>
+                <!-- this is not a signed zone therefore we'll
+                     add these args so we don't display DNSSEC errors -->
+                <donutsargs>-i DNSSEC</donutsargs>
+            </zone>
+        </zones>
+    </donutsd>
 \end{verbatim}
 
-The {\it donutsd} tree can also contain a {\it configs} section where command
-line flags can be specified as well:
+The \cmd{donutsd} tree may also contain a {\it configs} section where
+command-line flags can be specified:
 
 \begin{verbatim}
- <donutsd>
-  <configs>
-   <config><flag>a</flag><value>--live --level 8</value></config>
-   <config><flag>e</flag><value>wes@example.com</value></config>
-  </configs>
-  <zones>
-   ...
-  </zones>
- </donutsd>
+    <donutsd>
+        <configs>
+            <config><flag>a</flag><value>--live --level 8</value></config>
+            <config><flag>e</flag><value>wes@example.com</value></config>
+        </configs>
+        <zones>
+            ...
+        </zones>
+    </donutsd>
 \end{verbatim}
 
-Real command line flags will be used in preference to those specified
+Real command-line flags will be used in preference to those specified
 in the {\bf .xml} file, however.
 
 {\bf EXAMPLE}
 
 \begin{verbatim}
-  donutsd -a "--live --level 8" -f root@somewhere.com \
-     db.example.com example.com admin@example.com
+    donutsd -a "--live --level 8" -f root@somewhere.com \\
+         db.example.com example.com admin@example.com
 \end{verbatim}
 
 {\bf SEE ALSO}
 
 {\bf donuts(8)}
-
-\url{http://dnssec-tools.sourceforge.net}
-

@@ -1,6 +1,6 @@
 \clearpage
 
-\subsection{\cmd{dnspktflow}}
+\subsubsection{\cmd{dnspktflow}}
 
 {\bf NAME}
 
@@ -9,83 +9,181 @@
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-  dnspktflow -o output.png file.tcpdump
+    dnspktflow -o output.png file.tcpdump
 
-  dnspktflow -o output.png -x -a -t -q file.tcpdump
+    dnspktflow -o output.png -x -a -t -q file.tcpdump
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-Analyze and draw DNS flow diagrams from a {\it tcpdump} file.
-The flow diagram will be made in the PNG format.
+The \cmd{dnspktflow} application takes a tcpdump network traffic dump
+file, passes it through the \cmd{tshark} application and then displays the
+resulting DNS packet flows in a ``flow-diagram'' image.  \cmd{dnspktflow}
+can output a single image or a series of images which can then be
+shown in sequence as an animation.
+
+\cmd{dnspktflow} was written as a debugging utility to help trace DNS
+queries and responses, especially as they apply to DNSSEC-enabled lookups.
 
 {\bf REQUIREMENTS}
 
 This application requires the following Perl modules and software
 components to work:
 
-\begin{verbatim}
-  I<graphviz>                  (http://www.graphviz.org/)
-  B<GraphViz>                  (Perl module)
-  B<tethereal>                 (http://www.ethereal.org/)
-\end{verbatim}
+\begin{itemize}
+\item \cmd{graphviz} - \url{http://www.graphviz.org}
+\item \perlmod{GraphViz} - Perl module
+\item \cmd{tshark}   - \url{http://www.wireshark.org}
+\end{itemize}
 
 The following is required for outputting screen presentations:
 
-\begin{verbatim}
-  MagicPoint                   (http://member.wide.ad.jp/wg/mgp/)
-\end{verbatim}
+\begin{itemize}
+\item \perlmod{MagicPoint} - \url{http://member.wide.ad.jp/wg/mgp}
+\end{itemize}
 
-If the following modules are installed, it will enable a GUI interface:
+If the following modules are installed, a GUI interface will be enabled for
+communication with \cmd{dnspktflow}:
 
-\begin{verbatim}
-  B<QWizard>                   (Perl module)
-  B<Getopt::GUI::Long>         (Perl module)
-\end{verbatim}
+\begin{itemize}
+\item \perlmod{QWizard} - Perl module
+\item \perlmod{Getopt::GUI::Long} - Perl module
+\end{itemize}
 
 {\bf OPTIONS}
 
-\begin{verbatim}
-  --i=STRING
-  --ignore-hosts=STRING  A regular expression of host names to ignore
-  --r=STRING
-  --only-hosts=STRING    A regular expression of host names to analyze
+\cmd{dnspktflow} takes a wide variety of command-line options.  These options   
+are described below in the following functional groups:  input packet 
+selection, output file options, output visualization options, graphical 
+options, and debugging.
 
-  --o=STRING
-  --output-file=STRING   Output PNG image file name (default: out.png)
-  --O=STRING
-  --tethereal-out=STRING Save tethereal output to this file
-  --T
-  --input-is-tethereal-out The input file is already processed by tethereal
+{\bf Input Packet Selection}
 
-  --t
-  --show-type            Shows message type in result image
-  --q
-  --show-queries         Shows query questions in result image
-  --a
-  --show-answers         Shows query answers in result image
-  --A
-  --show-authoritative   Shows authoritative information in result image
-  --x
-  --show-additional      Shows additional information in result image
-  --l
-  --show-label-lines     Shows lines attaching labels to lines
+These options determine the packets that will be selected by
+\cmd{dnspktflow}.
 
-  --f
-  --show-frame-num       Shows the packet frame numbers
-  --b=INTEGER
-  --begin-frame=INTEGER  Begin at frame NUMBER
+\begin{description}
 
-  --fontsize             Font Size
-  --d
-  --dump-pkts            Dump data collected from the packets
-  --h
-  --help                 Show help for command line options
-\end{verbatim}
+\item {\it -i STRING $|$ --ignore-hosts=STRING}\verb" "
+
+A regular expression of host names to ignore in the query/response fields.
+
+\item {\it -r STRING $|$ --only-hosts=STRING}\verb" "
+
+A regular expression of host names to analyze in the query/response fields.
+
+\item {\it -f $|$ --show-frame-num}\verb" "
+
+Display the packet frame numbers.
+
+\item {\it -b INTEGER $|$ --begin-frame=INTEGER}\verb" "
+
+Begin at packet frame NUMBER.
+
+\end{description}
+
+{\bf Output File Options}
+
+These options determine the type and location of \cmd{dnspktflow}'s output.
+
+\begin{description}
+
+\item {\it -o STRING $|$ --output-file=STRING}\verb" "
+
+Output file name (default: out\%03d.png as PNG format.)
+
+\item {\it --fig}\verb" "
+
+Output format should be fig.
+
+\item {\it -O STRING $|$ --tshark-out=STRING}\verb" "
+
+Save \cmd{tshark} output to this file.
+
+\item {\it -m $|$ --multiple-outputs}\verb" "
+
+One picture per request (use \%03d in the filename).
+
+\item {\it -M STRING $|$ --magic-point=STRING}\verb" "
+
+Saves a MagicPoint presentation for the output.
+
+\end{description}
+
+{\bf Output Visualization Options:}
+
+These options determine specifics of \cmd{dnspktflow}'s output.
+
+\begin{description}
+
+\item {\it -L $|$ --last-line-labels-only}\verb" "
+
+Only show data on the last line drawn.
+
+\item {\it -z INTEGER $|$ --most-lines=INTEGER}\verb" "
+
+Only show at most INTEGER connections.
+
+\item {\it -T $|$ --input-is-tshark-out}\verb" "
+
+The input file is already processed by \cmd{tshark}.
+
+\end{description}
+
+{\bf Graphical Options:}
+
+These options determine fields included in \cmd{dnspktflow}'s output.
+
+\begin{description}
+
+\item {\it -t $|$ --show-type}\verb" "
+
+Shows message type in result image.
+
+\item {\it -q $|$ --show-queries}\verb" "
+
+Shows query questions in result image.
+
+\item {\it -a $|$ --show-answers}\verb" "
+
+Shows query answers in result image.
+
+\item {\it -A $|$ --show-authoritative}\verb" "
+
+Shows authoritative information in result image.
+
+\item {\it -x $|$ --show-additional}\verb" "
+
+Shows additional information in result image.
+
+\item {\it -l $|$ --show-label-lines}\verb" "
+
+Shows lines attaching labels to lines.
+
+\item {\it --fontsize=INTEGER}\verb" "
+
+Font Size
+
+\end{description}
+
+{\bf Debugging:}
+
+These options may assist in debugging \cmd{dnspktflow}.
+
+\begin{description}
+
+\item {\it -d $|$ --dump-pkts}\verb" "
+
+Dump data collected from the packets.
+
+\item {\it -h $|$ --help}\verb" "
+
+Show help for command line options.
+
+\end{description}
 
 {\bf SEE ALSO}
 
-\perlmod{Net::DNS}
-
-\url{http://dnssec-tools.sourceforge.net}
-
+\perlmod{Getopt::GUI::Long(3)},
+\perlmod{Net::DNS(3)},
+\perlmod{QWizard.pm(3)}

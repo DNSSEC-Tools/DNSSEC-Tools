@@ -1,55 +1,63 @@
 \clearpage
 
-\subsection{{\it clean-keyrec}}
-
+\subsubsection{\bf cleankrf}
 
 {\bf NAME}
 
-keyrec-clean - Clean a DNSSEC-Tools {\it keyrec} file of orphaned keys.
+\cmd{cleankrf} - Clean a DNSSEC-Tools {\it keyrec} files of old data.
 
 {\bf SYNOPSIS}
 
 \begin{verbatim}
-  keyrec-clean [options] <keyrec-files>
+    cleankrf [options] <keyrec-files>
 \end{verbatim}
 
 {\bf DESCRIPTION}
 
-This script cleans the orphaned {\it keyrec}s from a set of DNSSEC-Tools
-{\it keyrec} files.  Orphaned keys are those keys which are not referenced
-by a zone.  A warning is given if a key is found that is referenced by a
-different zone {\it keyrec} than the one referenced by the key's {\it keyrec}.
+\cmd{cleankrf} cleans old data out of a set of DNSSEC-Tools {\it keyrec} files.
+The old data are orphaned signing sets, orphaned keys, and obsolete keys.
 
-{\it keyrec-clean}'s exit code is the count of orphaned keys found.
+Orphaned signing sets are set {\it keyrec}s unreferenced by a zone {\it keyrec}.
+
+Orphaned keys are KSK key {\it keyrec}s unreferenced by a zone {\it keyrec}
+and ZSK key {\it keyrec}s unreferenced by any set {\it keyrec}s.
+
+Obsolete keys are ZSK key {\it keyrec}s with a {\it keyrec\_type} of {\bf
+zskobs}.
+
+\cmd{cleankrf}'s exit code is the count of orphaned and obsolete {\it keyrec}s
+found.
 
 {\bf OPTIONS}
 
 \begin{description}
 
-\item [-count]\verb" "
+\item {\it -count}\verb" "
 
-Display a final count of orphaned keys.  This option allows the count to be
-displayed even if the {\it -quiet} option is given.
+Display a final count of old {\it keyrec}s found in the {\it keyrec} files.
+This option allows the count to be displayed even if the {\it -quiet} option
+is given.
 
-\item [-list]\verb" "
+\item {\it -list}\verb" "
 
-The key {\it keyrec}s are checked for orphans, but are not removed from the
-{\it keyrec} file.  The names of the orphaned {\it keyrec}s are displayed.
+The key {\it keyrec}s are checked for old {\it keyrec}s, but they are not
+removed from the {\it keyrec} file.  The names of the old {\it keyrec}s are
+displayed.
 
-\item [-rm]\verb" "
+\item {\it -rm}\verb" "
 
-Delete each the key files, both {\it .key} and {\it .private}, from orphaned and
+Delete the key files, both {\bf .key} and {\bf .private}, from orphaned and
 expired {\it keyrec}s.
 
-\item [-quiet]\verb" "
+\item {\it -quiet}\verb" "
 
 Display no output.
 
-\item [-verbose]\verb" "
+\item {\it -verbose}\verb" "
 
-Display output about referenced keys as well as unreferenced keys.
+Display output about referenced keys and unreferenced keys.
 
-\item [-help]\verb" "
+\item {\it -help}\verb" "
 
 Display a usage message.
 
@@ -57,5 +65,10 @@ Display a usage message.
 
 {\bf SEE ALSO}
 
+\cmd{fixkrf(8)},
+\cmd{lskrf(8)},
+\cmd{zonesigner(8)}
+
 \perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)}
 
+\path{keyrec(5)}
