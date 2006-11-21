@@ -298,7 +298,7 @@ Pointer to the next RRset in the set of answers returned for a query.
 Pointer to any proofs that were returned for the query.
 .IP "\fIval_rc_proof_count\fR" 4
 .IX Item "val_rc_proof_count"
-Number of proof elements stored in \fIval_rc_proofs\fR
+Number of proof elements stored in \fIval_rc_proofs\fR.
 .IP "\fIval_rc_status\fR" 4
 .IX Item "val_rc_status"
 Validation status for a given RRset.  This can be one of the following:
@@ -381,8 +381,8 @@ Validation status for a given RRset.  This can be one of the following:
 \&                anchor was known to be provably unsecure.
 .Ve
 .Sp
-Error values in val_status_t returned by the validator can be displayed 
-in a more user friendly format using \fI\fIp_val_status()\fI\fR.
+Error values in \fIval_status_t\fR returned by the validator can be displayed 
+in a more user-friendly format using \fI\fIp_val_status()\fI\fR.
 .RE
 .RS 4
 .RE
@@ -399,8 +399,8 @@ in a more user friendly format using \fI\fIp_val_status()\fI\fR.
 .RS 4
 .IP "\fIval_ac_status\fR" 4
 .IX Item "val_ac_status"
-Validation state of the authentication chain element.  This field will contain
-the error or success code for \s-1DNSSEC\s0 validation over the current
+Validation state of the authentication chain element.  This field will
+contain the error or success code for \s-1DNSSEC\s0 validation over the current
 authentication chain element upon completion of \fI\fIval_resolve_n_check()\fI\fR.
 This field may contain the following values:
 .Sp
@@ -605,9 +605,9 @@ Length of data stored in \fIrr_rdata\fR.
 \&\s-1RDATA\s0 bytes.
 .IP "\fIrr_status\fR" 4
 .IX Item "rr_status"
-For each signature rr_rec member within the authentication chain
-val_ac_rrset, the validation status stored in the variable
-rr_status can return one of the following values:
+For each signature \fIrr_rec\fR member within the authentication chain
+\&\fIval_ac_rrset\fR, the validation status stored in the variable
+\&\fIrr_status\fR can return one of the following values:
 .Sp
 .Vb 2
 \&      VAL_AC_RRSIG_VERIFIED - The RRSIG verified
@@ -734,11 +734,15 @@ variable \fIrr_status\fR and can return one of the following values:
 \&      VAL_AC_ALGORITHM_REFUSED - The DNSKEY or DS algorithm
 \&                was not allowed as per local policy.
 .Ve
+.RE
+.RS 4
+.RE
 .IP "\fIrr_next\fR" 4
 .IX Item "rr_next"
 Points to the next resource record in the RRset.
 .RE
 .RS 4
+.RE
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
 Return values for \fI\fIval_resolve_n_check()\fI\fR and \fI\fIval_create_context()\fI\fR are
@@ -792,28 +796,26 @@ A configuration file was not available.
 .RE
 .RS 4
 .RE
-.RE
-.RS 4
 .SH "FILES"
 .IX Header "FILES"
 The validator library reads configuration information from two separate files,
 \&\fB/etc/resolv.conf\fR and \fB/etc/dnsval.conf\fR.
-.Sp
+.PP
 Only the \*(L"nameserver\*(R" option is supported in the \fBresolv.conf\fR file.  This
 option is used to specify the \s-1IP\s0 address of the name server to which queries
 must be sent by default.  For example,
-.Sp
+.PP
 .Vb 1
 \&    nameserver 10.0.0.1
 .Ve
-.Sp
+.PP
 See \fB\f(BIdnsval.conf\fB\|(5)\fR for a description of the validator configuration file.
 .SH "CURRENT STATUS"
 .IX Header "CURRENT STATUS"
 There is currently no support for IPv6.
-.Sp
+.PP
 The caching functionality is very basic and no timeout logic currently exists.
-.Sp
+.PP
 There are a number of feature enhancements that still remain to be done.
 .SH "COPYRIGHT"
 .IX Header "COPYRIGHT"
@@ -822,7 +824,7 @@ See the \s-1COPYING\s0 file included with the dnssec-tools package for details.
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
 \&\fI\fIlibsres\fI\|(3)\fR
-.Sp
+.PP
 \&\fB\f(BIdnsval.conf\fB\|(5)\fR
-.Sp
+.PP
 http://dnssec\-tools.sourceforge.net
