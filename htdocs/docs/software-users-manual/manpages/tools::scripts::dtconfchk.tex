@@ -171,8 +171,23 @@ Ensure that the {\it usegui} flag is either 0 or 1.
 
 \item {\it -expert}\verb" "
 
-Only non-expert checks will be performed.  Currently, this option will prevent
-the key lifespan checks from being run.
+This option will bypass the following checks:
+
+\begin{itemize}
+
+\item KSK has a longer lifespan than the configuration file's default minimum
+lifespan
+
+\item KSK has a shorter lifespan than the configuration file's default maximum
+lifespan
+
+\item ZSKs have a longer lifespan than the configuration file's default minimum
+lifespan
+
+\item ZSKs have a shorter lifespan than the configuration file's default maximum
+lifespan
+
+\end{itemize}
 
 \item {\it -quiet}\verb" "
 
