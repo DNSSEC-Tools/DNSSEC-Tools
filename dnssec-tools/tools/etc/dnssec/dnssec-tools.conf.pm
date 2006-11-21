@@ -178,8 +178,9 @@ The following is an example B<dnssec-tools.conf> configuration file.
     # Settings for dnssec-signzone.
     #
     endtime		+2592000	# RRSIGs good for 30 days.
-    
-    # Life-times for keys.  These defauluts indicate how long a key has
+
+    #
+    # Life-times for keys.  These defaults indicate how long a key has
     # between roll-overs.  The values are measured in seconds.
     # 
     ksklife         15768000		# Half-year.
