@@ -1,0 +1,221 @@
+\clearpage
+
+\subsubsection{\bf dtinitconf}
+
+{\bf NAME}
+
+\cmd{dtinitconf} - Creates a DNSSEC-Tools configuration file.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    dtinitconf [options]
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+The \cmd{dtinitconf} program initializes the DNSSEC-Tools configuration file.
+By default, the actual configuration file will be created, though the created
+file can be specified by the user.  Existing files, whether the default or one
+specified by the user, will not be overwritten unless specifically directed
+by the user.
+
+Each configuration field can be individually specified on the command line.
+The user will also be prompted for the fields, with default values taken from
+the DNSSEC-Tools \perlmod{defaults.pm} module.  If the {\it -noprompt} option is
+given, then a default configuration file (modulo command-line arguments) will
+be created.
+
+Configuration entries are created for several BIND programs.  Several
+locations on the system are searched to find the locations of these programs. 
+First, the directories in the path environment variable are checked; the
+names of any directories that contain the BIND programs are saved.  Next,
+several common locations for BIND programs are checked; again, the names of
+directories that contain the BIND programs are saved.  After collecting these
+directories, the user is presented with this list and may choose to use
+whichever set is desired.  If no directories are found that contain the BIND
+programs, the user is prompted for the proper location.
+
+If the configuration file's parent directory does not exist, then an attempt
+is made to create the directory.  The new directory's ownership will be set to
+{\it root} for the owner and {\it dnssec} for the group, assuming the {\it
+dnssec} group exists.
+
+{\bf OPTIONS}
+
+\cmd{dtinitconf} takes options that control the contents of the newly generated
+DNSSEC-Tools configuration file.  Each configuration file entry has a
+corresponding command-line option.  The options, described below, are ordered
+in logical groups.
+
+{\bf Key-related Options}
+
+These options deal with different aspects of creating and managing
+encryption keys.
+
+\begin{description}
+
+\item {\it -algorithm algorithm}\verb" "
+
+Selects the cryptographic algorithm. The value of algorithm must be one that
+is recognized by \cmd{dnssec-keygen}.
+
+\item {\it -ksklength keylen}\verb" "
+
+The default KSK key length to be passed to \cmd{dnssec-keygen}.
+
+\item {\it -ksklife lifespan}\verb" "
+
+The default length of time between KSK roll-overs.  This is measured in   
+seconds.
+
+This value is {\bf only} used for key roll-over.  Keys do not have a life-time
+in any other sense.
+
+\item {\it -zskcount ZSK-count}\verb" "
+
+The default number of ZSK keys that will be created for a zone.
+
+\item {\it -zsklength keylen}\verb" "
+
+The default ZSK key length to be passed to {\it dnssec-keygen}.
+
+\item {\it -zsklife lifespan}\verb" "
+
+The default length of time between ZSK roll-overs.  This is measured in   
+seconds.
+
+This value is {\bf only} used for key roll-over.  Keys do not have a life-time
+in any other sense.
+
+\item {\it -random randomdev}\verb" "
+
+The random device generator to be passed to \cmd{dnssec-keygen}.
+
+\end{description}
+
+{\bf Zone-related Options}
+
+These options deal with different aspects of zone signing.
+
+\begin{description}
+
+\item {\it -endtime endtime}\verb" "
+
+The zone default expiration time to be passed to \cmd{dnssec-signzone}.
+
+\end{description}
+
+{\bf DNSSEC-Tools Options}
+
+These options deal specifically with functionality provided by DNSSEC-Tools.
+
+\begin{description}
+
+\item {\it -archivedir directory}\verb" "
+
+{\it directory} is the archived-key directory.  Old encryption keys are moved
+to this directory, but only if they are to be saved and not deleted.
+
+\item {\it -binddir directory}\verb" "
+
+{\it directory} is the directory holding the BIND programs.
+
+\item {\it -entropy\_msg}\verb" "
+
+A flag indicating that \cmd{zonesigner} should display a message about entropy
+generation.  This is primarily dependent on the implementation of a system's
+random number generation.
+
+\item {\it -noentropy\_msg}\verb" "
+
+A flag indicating that \cmd{zonesigner} should not display a message about
+entropy generation.  This is primarily dependent on the implementation of
+a system's random number generation.
+
+\item {\it -roll-logfile logfile}\verb" "
+
+{\it logfile} is the logfile for the \cmd{rollerd} daemon.
+
+\item {\it -roll-loglevel loglevel}\verb" "
+
+{\it loglevel} is the logging level for the \cmd{rollerd} daemon.
+
+\item {\it -roll-sleep sleep-time}\verb" "
+
+{\it sleep-time} is the sleep-time for the \cmd{rollerd} daemon.
+
+\item {\it -savekeys}\verb" "
+
+A flag indicating that old keys should be moved to the archive directory.
+
+\item {\it -nosavekeys}\verb" "
+
+A flag indicating that old keys should not be moved to the archive directory.
+
+\item {\it -usegui}\verb" "
+
+A flag indicating that the GUI for specifying command options may be used.
+
+\item {\it -nousegui}\verb" "
+
+A flag indicating that the GUI for specifying command options should not be
+used.
+
+\end{description}
+
+{\bf \cmd{dtinitconf} Options}
+
+These options deal specifically with \cmd{dtinitconf}.
+
+\begin{description}
+
+\item {\it -outfile conffile}\verb" "
+
+The configuration file will be written to {\it conffile}.  If this
+is not given, then the default configuration file (as returned by
+\func{Net::DNS::SEC::Tools::conf::getconffile()}) will be used.
+
+\item {\it -overwrite}\verb" "
+
+If {\it -overwrite} is specified, existing output files may be overwritten.
+Without {\it -overwrite}, if the output file is found to exist then
+\cmd{dtinitconf} will give an error message and exit.
+
+\item {\it -noprompt}\verb" "
+
+If {\it -noprompt} is specified, the user will not be prompted for any input.
+The configuration file will be created from command-line options and
+DNSSEC-Tools defaults.
+
+\item {\it -edit}\verb" "
+
+If {\it -edit} is specified, the output file will be edited after it has been
+created.  The EDITOR environment variable is consulted for the editor to
+use.  If the EDITOR environment variable isn't defined, then the \cmd{vi}
+editor will be used.
+
+\item {\it -verbose}\verb" "
+
+Provide verbose output.
+
+\item {\it -help}\verb" "
+
+Display a usage message and exit.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\cmd{dnssec-keygen(8)},
+\cmd{dnssec-signzone(8)},
+\cmd{named-checkzone(8)}, \\
+\cmd{rollerd(8)},
+\cmd{zonesigner(8)}
+
+\perlmod{Net::DNS::SEC::Tools::conf.pm(3)},
+\perlmod{Net::DNS::SEC::Tools::defaults.pm(3)}, \\
+\perlmod{Net::DNS::SEC::Tools::tooloptions.pm(3)},
+\perlmod{QWizard.pm(3)}
+
+\path{dnssec-tools.conf(5)}

@@ -1,0 +1,68 @@
+\clearpage
+
+\subsubsection{\bf tachk}
+
+{\bf NAME}
+
+\cmd{tachk} - Check the validity of the trust anchors in a \path{named.conf}
+file.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    tachk [options] named.conf
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+\cmd{tachk} checks the validity of the trust anchors in the specified
+{\bf named.conf} file.  The output given depends on the options selected.
+
+Note:  \cmd{tachk} may be removed in future releases.
+
+{\bf OPTIONS}
+
+{\bf tachk} takes two types of options:  record-attribute options
+and output-style options.  These option sets are detailed below.
+
+{\bf Record-Attribute Options}
+
+\begin{description}
+
+\item {\it -valid}\verb" "
+
+This option displays the valid trust anchors in a {\bf named.conf} file.
+
+\item {\it -invalid}\verb" "
+
+This option displays the invalid trust anchors in a {\bf named.conf} file.
+
+\end{description}
+
+{\bf Output-Format Options}
+
+These options define how the trust anchor information will be displayed.
+Without any of these options, the zone name and key tag will be displayed
+for each trust anchor.
+
+\begin{description}
+
+\item {\it -count}\verb" "
+
+The count of matching records will be displayed, but the matching records
+will not be.
+
+\item {\it -long}\verb" "
+
+The long form of output will be given:  the zone name and key tag will be
+displayed for each trust anchor.
+
+\item {\it -terse}\verb" "
+
+This option displays only the name of the zones selected by other options.
+
+\item {\it -help}\verb" "
+
+Display a usage message.
+
+\end{description}

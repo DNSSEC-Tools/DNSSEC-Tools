@@ -1,0 +1,101 @@
+\clearpage
+
+\subsubsection{\bf rollchk}
+
+{\bf NAME}
+
+\cmd{rollchk} - Check a DNSSEC-Tools {\it rollrec} file for problems and
+inconsistencies.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    rollchk [-roll|-skip] [-count] [-quiet] [-verbose] [-help] rollrec-file
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+This script checks the {\it rollrec} file specified by {\it rollrec-file} for
+problems and inconsistencies.
+
+Recognized problems include:
+
+\begin{description}
+
+\item {\it non-existent rollrec file}\verb" "
+
+The specified {\it rollrec} file does not exist.
+
+\item {\it no zones defined}\verb" "
+
+No zones are defined in the specified {\it rollrec} file.
+
+\item {\it invalid rollover phase}\verb" "
+
+A zone has an invalid rollover phase.  These phases may be 0, 1, 2, 3, or 4;
+any other value is invalid.
+
+\item {\it invalid display flag}\verb" "
+
+A zone has an invalid display flag.  This flag may be 0 or 1;
+any other value is invalid.
+
+\item {\it non-positive maxttl}\verb" "
+
+The maximum TTL value must be greater than zero.
+
+\item {\it zone file checks}\verb" "
+
+Several checks are made for a zone's zone file.  The zone file must exist, it
+must be a regular file, and it must not be of zero length.
+
+\item {\it keyrec file checks}\verb" "
+
+Several checks are made for a zone's {\it keyrec} file.  The {\it keyrec} file
+must exist, it must be a regular file, and it must not be of zero length.
+
+\end{description}
+
+{\bf OPTIONS}
+
+\begin{description}
+
+\item {\it -roll}\verb" "
+
+Only display {\it rollrec}s that are active (``roll'') records.
+This option is mutually exclusive of the {\it -skip} option.
+
+\item {\it -skip}\verb" "
+
+Only display {\it rollrec}s that are inactive (``skip'') records.
+This option is mutually exclusive of the {\it -roll} option.
+
+\item {\it -count}\verb" "
+
+Display a final count of errors.
+
+\item {\it -quiet}\verb" "
+
+Do not display messages.  This option supersedes the setting of the {\it -v}
+option.
+
+\item {\it -verbose}\verb" "
+
+Display many messages.  This option is subordinate to the {\it -q} option.
+
+\item {\it -help}\verb" "
+
+Display a usage message.
+
+\end{description}
+
+
+{\bf SEE ALSO}
+
+\cmd{lsroll(8)},
+\cmd{rollerd(8)},
+\cmd{rollinit(8)}
+
+\perlmod{Net::DNS::SEC::Tools::rollrec.pm(3)}
+
+\path{rollrec(5)}

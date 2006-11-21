@@ -1,0 +1,123 @@
+\clearpage
+
+\subsubsection{\bf rollctl}
+
+{\bf NAME}
+
+\cmd{rollctl} - Send commands to the DNSSEC-Tools rollover daemon.
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    rollctl [options]
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+The \cmd{rollctl} command sends commands to the DNSSEC-Tools rollover daemon,
+\cmd{rollerd}.  Multiple options may be specified on a single command line and
+they will be executed in {\it alphabetical} order.  The exception to this
+ordering is that the {\it -shutdown} command will always be executed last.
+
+In most cases, \cmd{rollerd} will send a response to \cmd{rollctl}.
+\cmd{rollctl} will print a success or failure message, as appropriate.
+
+{\bf OPTIONS}
+
+The following options are handled by \cmd{rollctl}.
+
+\begin{description}
+
+\item {\it -halt}\verb" "
+
+Cleanly halts \cmd{rollerd} execution.
+
+\item {\it -logfile logfile}\verb" "
+
+Sets the \cmd{rollerd} log file to {\it logfile}.  This must be a valid
+logging file, meaning that if {\it logfile} already exists, it must be a
+regular file.  The only exceptions to this are if {\it logfile} is
+\path{/dev/stdout} or \path{/dev/tty}.
+
+\item {\it -loglevel loglevel}\verb" "
+
+Sets the \cmd{rollerd} logging level to {\it loglevel}.  This must be one of
+the valid logging levels defined in \perlmod{rollmgr.pm(3)}.
+
+\item {\it -rollall}\verb" "
+
+Initiates rollover for all the zones defined in the current \cmd{rollrec}
+file.
+
+\item {\it -rollrec rollrec\_file}\verb" "
+
+Sets the \cmd{rollrec} file to be processed by \cmd{rollerd} to
+{\it rollrec\_file}.
+
+\item {\it -rollzone zone}\verb" "
+
+Initiates rollover for the zone named by {\it zone}.
+
+\item {\it -runqueue}\verb" "
+
+Wakes up \cmd{rollerd} and has it run its queue of {\it rollrec} entries.
+
+\item {\it -shutdown}\verb" "
+
+Synonym for {\it -halt}.
+
+\item {\it -skipall}\verb" "
+
+Stops rollover for all zones in the current {\it rollrec} file.
+
+\item {\it -skipzone zone}\verb" "
+
+Stops rollover for the zone named by {\it zone}.
+
+\item {\it -sleeptime sleeptime}\verb" "
+
+Sets \cmd{rollerd}'s sleep time to {\it sleeptime}.  {\it sleeptime} must be
+an integer at least as large as the {\bf \$MIN\_SLEEP} value in \cmd{rollerd}.
+
+\item {\it -status}\verb" "
+
+Retrieves and prints several of \cmd{rollerd}'s operational parameters.
+The parameters are also written to the log file.
+
+\item {\it -zonestatus}\verb" "
+
+Retrieves and prints the status of the zones managed by \cmd{rollerd}.
+Status is also written to the log file.
+
+For each zone in the {\it rollrec} file, the zone name, the record type
+(``skip'' or ``roll''), and the current rollover phase are given.
+
+\item {\it -quiet}\verb" "
+
+Prevents output from being given.  Both error and non-error output is stopped.
+
+\item {\it -help}\verb" "
+
+Displays a usage message.
+
+\end{description}
+
+{\bf FUTURE}
+
+The following modifications may be made in the future:
+
+\begin{description}
+
+\item {\it command execution order}\verb" "
+
+The commands will be executed in the order given on the command line rather
+than in alphabetical order.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\cmd{rollerd(8)}
+
+\perlmod{Net::DNS::SEC::Tools::rollmgr.pm(3)},
+\perlmod{Net::DNS::SEC::Tools::rollrec.pm(3)}

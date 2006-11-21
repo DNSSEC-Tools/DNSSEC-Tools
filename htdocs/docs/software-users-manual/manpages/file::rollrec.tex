@@ -1,0 +1,99 @@
+\clearpage
+
+\subsection{\bf rollrec}
+
+{\bf NAME}
+
+\path{rollrec} - Rollover-related zone data used by DNSSEC-Tools programs.
+
+{\bf DESCRIPTION}
+
+{\it rollrec} files contain data used by the DNSSEC-Tools to manage key
+rollover.  A {\it rollrec} file is organized in sets of {\it rollrec} records.
+Each {\it rollrec} describes the rollover state of a single zone and must be
+either of {\it roll} type or {\it skip} type.  Zone {\it rollrec}s record
+information about currently rolling zones.  Skip {\it rollrec}s record
+information about zones that are not being rolled.  A {\it rollrec} consists
+of a set of keyword/value entries.
+
+The DNSSEC-Tools {\bf rollrec.pm} module manipulates the contents of a {\it
+rollrec} file.  Module interfaces exist for looking up {\it rollrec} records,
+creating new records, and modifying existing records.
+
+Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
+Comment lines start with either a `\#' character or a `$;$' character.
+
+{\bf FIELDS}
+
+The fields in a {\it rollrec} record are:
+
+\begin{itemize}
+
+\item {\it curphase}
+
+The zone's current rollover phase.  A value of zero indicates that the zone
+is not in rollover, but is in normal operation.  A value of 1, 2, 3, 4
+indicates that the zone is in that rollover phase.
+
+\item {\it display}
+
+This boolean field indicates whether or not the zone should be displayed by
+the \cmd{blinkenlights} program.
+
+\item {\it keyrec}
+
+The zone's {\it keyrec} file.
+
+\item {\it maxttl}
+
+The maximum time-to-live for the zone.  This is measured in seconds.
+
+\item {\it phasestart}
+
+The time-stamp of the beginning of the zone's current phase.
+
+\item {\it zonefile}
+
+The zone's zone file.
+
+\end{itemize}
+
+\clearpage
+{\bf EXAMPLES}
+
+The following is an example of a roll {\it rollrec}:
+
+\begin{verbatim}
+    roll "example.com"
+            zonefile      "example.com.signed"
+            keyrec        "example.com.krf"
+            curphase      "1"
+            maxttl        "60"
+            display       "1"
+            phasestart    "Mon Nov 13 19:31:26 2006"
+\end{verbatim}
+
+The following is an example of a skip {\it rollrec}:
+
+\begin{verbatim}
+    skip "test.com"
+            zonefile      "test.com.signed"
+            keyrec        "test.com.krf"
+            curphase      "0"
+            maxttl        "60"
+            display       "1"
+            phasestart    "Mon Nov 13 19:31:50 2006"
+\end{verbatim}
+
+{\bf SEE ALSO}
+
+\cmd{lsroll(1)}
+
+\cmd{blinkenlights(8)},
+\cmd{rollerd(8)},
+\cmd{zonesigner(8)}
+
+\perlmod{Net::DNS::SEC::Tools::keyrec.pm(3)},
+\perlmod{Net::DNS::SEC::Tools::rollrec.pm(3)}
+
+\path{keyrec(5)}

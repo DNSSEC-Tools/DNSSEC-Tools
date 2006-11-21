@@ -1,0 +1,98 @@
+\clearpage
+
+\subsubsection{\bf TrustMan}
+
+{\bf NAME}
+
+\cmd{TrustMan} - manage keys used as trust anchors
+
+{\bf SYNOPSIS}
+
+\begin{verbatim}
+    TrustMan [options]
+\end{verbatim}
+
+{\bf DESCRIPTION}
+
+\cmd{TrustMan} runs by default as a daemon to verify if keys stored locally in
+configuration files like \path{named.conf} still match the same keys as fetched
+from the zone where they are defined.  If mismatches are detected, the daemon
+notifies via email the contact person defined in the DNSSEC-Tools
+configuration file or on the command line.
+
+\cmd{TrustMan} can also be run in the foreground ({\it -f}) to run this check
+a single time.
+
+\cmd{TrustMan} can also be used to set up configuration data in the file
+\path{dnssec-tools.conf} for later use by the daemon, making fewer command
+line arguments necessary.  Configuration data are stored in
+\path{dnssec-tools.conf}.  The current version requires the
+\path{dnssec-tools.conf} file to be edited by hand to add values for the
+contact person's email address ({\it tacontact}) and the SMTP server ({\it
+tasmtpserver}).  Also, the location of \path{named.conf} and
+\path{dnsval.conf} must also be added to that file, if necessary.
+
+{\bf OPTIONS}
+
+\begin{description}
+
+\item -f\verb" "
+
+Run in the foreground.
+
+\item -c\verb" "
+
+Create a configure file for \cmd{TrustMan} from the command line options given.
+
+\item -o\verb" "
+
+Output file for configuration.
+
+\item -k \verb" "
+
+A \path{dnsval.conf} file to read.
+
+\item -n \verb" "
+
+A \path{named.conf} file to read.
+
+\item -d\verb" "
+
+The domain to check (supersedes configuration file.)
+
+\item -t\verb" "
+
+The number of seconds to sleep between checks.  Default is 3600 (one hour.)
+
+\item -m\verb" "
+
+Mail address for the contact person to whom reports should be sent.
+
+\item -p\verb" "
+
+Log messages to {\it stdout}.
+
+\item -L\verb" "
+
+Log messages to {\bf syslog}.
+
+\item -s\verb" "
+
+SMTP server \cmd{TrustMan} should use to send reports.
+
+\item -N\verb" "
+
+Send report when there are no errors.
+
+\item -v\verb" "
+
+Verbose.
+
+\end{description}
+
+{\bf SEE ALSO}
+
+\path{dnssec-tools.conf(5)},
+\path{dnsval.conf(5)},
+\path{named.conf(5)}
+
