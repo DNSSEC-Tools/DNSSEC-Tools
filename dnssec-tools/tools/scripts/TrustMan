@@ -465,26 +465,26 @@ TrustMan - manage keys used as trust anchors
 
 =head1 SYNOPSIS
 
-TrustMan [options]
+  TrustMan [options]
 
 =head1 DESCRIPTION
 
-TrustMan runs by default as a daemon to verify if keys stored locally
-in configuration files like named.conf still match the same keys
-as fetched from the zone where they are defined. If mismatches
-are detected, the daemon notifies the contact person defined in
-the config file or on the command line by mail.
+B<TrustMan> runs by default as a daemon to verify if keys stored locally in
+configuration files like B<named.conf> still match the same keys as fetched
+from the zone where they are defined.  If mismatches are detected, the daemon
+notifies the contact person defined in the config file or on the command line
+by mail.
 
-This script can also be run in the foreground (-f) to run this same check once
-manually.
+This script can also be run in the foreground (I<-f>) to run this same
+check once manually.
 
 This script can also be used to set up configuration data in the file
-dnssec-tools.conf for later use by the daemon, making fewer command
-line arguments necessary. Configuration data is stored in dnssec-tools.conf.
-The current version requires you to edit dnssec-tools.conf by hand and
-supply values for the contact person email address (tacontact) and the
-SMTP server (tasmtpserver). Also edit the location of named.conf and
-dnsval.conf in that file if necessary.
+B<dnssec-tools.conf> for later use by the daemon, making fewer command line
+arguments necessary. Configuration data is stored in B<dnssec-tools.conf>.
+The current version requires you to edit B<dnssec-tools.conf> by hand and
+supply values for the contact person's email address (I<tacontact>) and the
+SMTP server (I<tasmtpserver>).  Also, edit the location of B<named.conf>
+and B<dnsval.conf> in that file, if necessary.
 
 =head1 OPTIONS
 
@@ -492,47 +492,47 @@ dnsval.conf in that file if necessary.
 
 =item -f
 
-Run in the foreground
+Run in the foreground.
 
 =item -c
 
-Create a configure file for TrustMan from the command line options given.
+Create a configure file for B<TrustMan> from the command line options given.
 
 =item -o
 
-Output file for configuration
+Output file for configuration.
 
 =item -k 
 
-A dnsval.conf file to read
+A B<dnsval.conf> file to read.
 
 =item -n 
 
-A named.conf file to read
+A B<named.conf> file to read.
 
 =item -d
 
-The domain to check (supersedes configuration file)
+The domain to check (supersedes configuration file.)
 
 =item -t
 
-The number of seconds to sleep between checks. Default is 3600 (one hour)
+The number of seconds to sleep between checks.  Default is 3600 (one hour.)
 
 =item -m
 
-Mail address for the contact person to whom reports should be sent
+Mail address for the contact person to whom reports should be sent.
 
 =item -p
 
-Log messages to stdout.
+Log messages to I<stdout>.
 
 =item -L
 
-Log messages to syslog.
+Log messages to B<syslog>.
 
 =item -s
 
-SMTP server TrustMan should use to send reports
+SMTP server B<TrustMan> should use to send reports.
 
 =item -N
 
@@ -549,5 +549,11 @@ Verbose.
 
 Copyright 2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 SEE ALSO
+
+B<dnssec-tools.conf(5)>,
+B<dnsval.conf(5)>,
+B<named.conf(5)>
 
 =cut
