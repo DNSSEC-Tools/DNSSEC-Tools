@@ -986,7 +986,7 @@ check_conflicting_answers(val_context_t * context,
             case SR_ANS_DNAME:
                 if (as->_as.ac_data->rrs_ans_kind == SR_ANS_CNAME) {
                     /* don't validate the synthesized cname */
-                    as->val_ac_status = VAL_AC_DONT_VALIDATE; 
+                    as->val_ac_status = VAL_AC_IGNORE_VALIDATION; 
                 } else if (as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) {
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
@@ -1047,9 +1047,9 @@ check_conflicting_answers(val_context_t * context,
         }
 
         if (flags & VAL_FLAGS_DONT_VALIDATE)
-            as->val_ac_status = VAL_AC_DONT_VALIDATE;
+            as->val_ac_status = VAL_AC_IGNORE_VALIDATION;
         
-        if ((as->val_ac_status != VAL_AC_DONT_VALIDATE) && 
+        if ((as->val_ac_status != VAL_AC_IGNORE_VALIDATION) && 
                 (!matched_q->qc_glue_request)) {
             if (VAL_NO_ERROR !=
                 (retval = build_pending_query(context, queries, as)))
@@ -2793,7 +2793,7 @@ verify_and_validate(val_context_t * context,
             res->val_rc_rrset = as_more;
             res->val_rc_next = NULL;
             if ((flags & VAL_FLAGS_DONT_VALIDATE) || 
-                (as_more->val_ac_status == VAL_AC_DONT_VALIDATE)) {
+                (as_more->val_ac_status == VAL_AC_IGNORE_VALIDATION)) {
                 res->val_rc_status = VAL_IGNORE_VALIDATION;
             } else {
                 res->val_rc_status = VAL_R_DONT_KNOW;
@@ -2863,7 +2863,7 @@ verify_and_validate(val_context_t * context,
                  */
                 *done = 0;
                 thisdone = 0;
-            } else if (next_as->val_ac_status == VAL_AC_DONT_VALIDATE) {
+            } else if (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) {
                 break;
             } else if (next_as->val_ac_status == VAL_AC_NEGATIVE_PROOF) {
                 /*

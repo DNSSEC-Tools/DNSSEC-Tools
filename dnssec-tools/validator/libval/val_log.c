@@ -559,11 +559,6 @@ p_ac_status(val_astatus_t err)
         return "VAL_AC_BARE_RRSIG";
         break;
 
-
-    case VAL_AC_DONT_VALIDATE:
-        return "VAL_AC_DONT_VALIDATE";
-        break;
-
     case VAL_AC_UNSET:
         return "VAL_AC_UNSET";
         break;
