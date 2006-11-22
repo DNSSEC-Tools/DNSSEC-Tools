@@ -154,7 +154,7 @@ my %destroyFunctions =
    # future expiration date = 1 year (365 days) -> 1 year + 30 days
    '^(futuredate[-\w]+).*IN\s+(A+|CNAME)\s+' =>
    [\&make_new_date, 365*24*60*60, 395*24*60*60],
-   '^(futuredate[-\w]+).*IN\s+NS\s+' =>
+   '^(futuredate[-\w]+).*IN\s+DS\s+' =>
    [\&make_new_date, 'DS', 365*24*60*60, 395*24*60*60],
 
    # past date: 30 days ago to 5 minutes ago
@@ -206,7 +206,7 @@ my %LegendInformation =
 #
 my %zonesigner_domain_opts =
   (
-   'rollzsk-ns.' . $opts{'d'} => '-forceroll',
+   'rollzsk-ns.' . $opts{'d'} => ($opts{'a'} =~ /-gen/ ? '' : '-forceroll'),
    'newzsk-ns.' . $opts{'d'} => '-genzsk',
    'newksk-ns.' . $opts{'d'} => '-genksk',
    'newkeys-ns.' . $opts{'d'} => '-genkeys',
@@ -297,7 +297,8 @@ sub generate_records {
     generate_top($domain);
 
     # bogus address to replace bad cname data and point to this:
-    print_record("bogus", "1D IN", 'A', $addrs{'A'});
+    print_record("bogus-a", "1D IN", 'A', $addrs{'A'});
+    print_record("bogus-aaaa", "1D IN", 'AAAA', $addrs{'AAAA'});
 
     #
     # for each address, generate records
@@ -565,7 +566,9 @@ sub modify_records {
     while ($_) {
 	my $found;
 	foreach my $type (keys(%destroyFunctions)) {
-	    if (@matches = /$type/) {
+	    my $matchtype = $type;
+	    $matchtype =~ s/CURRENTDOMAIN/$domain/;
+	    if (@matches = /$matchtype/) {
 		my @args;
 		my $func = $destroyFunctions{$type};
 		if (ref($func) eq 'ARRAY') {
@@ -642,7 +645,7 @@ sub modify_cname {
     my ($name, $type, $data) = @_;
     Verbose("  modifying data of $name:$type");
 # modifies CNAME
-    $_ =~ s/([-\w\.]+)$/bogus.$topdomain./;
+    $_ =~ s/([-\w]+)(-a+)\.([-\w\.]+)$/bogus$2.$topdomain./;
     print $fh $_;
     $_ = <I>;
 }
@@ -874,9 +877,231 @@ see how the data in them has been tampered with to be invalid.
 zonesigner from the dnssec-tools project
 bind software 9.3.1 or greater
 
+=head1 GETTING STARTED
+
+To get started creating a new zone, you'll need to tell zonesigner to
+create new keys for all of the new zones that B<maketestzone> creates.
+Thus, the first run of B<maketestzone> should look like:
+
+=over
+
+=item First Time:
+
+maketestzone -k [OTHER DESIRED OPTIONS]
+
+=back
+
+After that, the generated zone files can be loaded and served in a
+test server.
+
+Once every 30 days (by default via zonesigner) the script will need to
+be rerun to recreate the records and resign the data so the signature
+date stamps remain valid (or in some cases invalid).
+
+=over
+
+=item Every 30 days:
+
+maketestzone [OTHER DESIRED OPTIONS]
+
+=back
+
+=head1 OPTIONS
+
+Below are thoe options that are accepted by the B<maketestzone> tool.
+
+=over
+
+=head2 Output File Naming:
+
+=item  -o STRING
+
+=item  --output-file-prefix=STRING
+
+Output prefix to use for zone files (default = db.)
+
+=item  -O STRING
+
+=item  --output-suffix-signed-file=STRING
+
+Output suffix to be given to zonesigner (default = .zs)
+
+=item  -M STRING
+
+=item  --output-modified-file=STRING
+
+Output suffix for the modified zone file (default = .modified)
+
+=item  -D
+
+=item  --run-donuts
+
+Run donuts on the results
+
+=item  --donuts-output-suffix=STRING
+
+The file suffix to use for donuts output (default = .donuts)
+
+=head2 Output Zone Information:
+
+=item  -d STRING
+
+=item  --domain=STRING
+
+domain name to generate records for
+
+=item  --ns=STRING
+
+=item  --name-servers=STRING
+
+=item  -n STRING
+
+Comma separated name=addr name-server records
+
+=item  --a-addr=STRING
+
+=item  --a-record-address=STRING
+
+A record (IPv4) address to use in data
+
+=item  --aaaa-addr=STRING
+
+=item  --a-record-address=STRING
+
+AAAA record (IPv6) address to use in data
+
+=head2 Output Data Type Selection:
+
+=item  -p STRING
+
+=item  --record-prefixes=STRING
+
+Comma separated list of record prefixes to use
+
+=item  -P STRING
+
+=item  --ns-prefixes=STRING
+
+Comma separated list of NS record prefixes to use
+
+=item  -c
+
+=item  --no-cname-records
+
+Don't create CNAME records
+
+=item  -s
+
+=item  --no-ns-records
+
+Don't create sub-zone records
+
+=head2 Task Selection:
+
+=item  -g
+
+=item  --dont-generate-zone
+
+Do not generate the zone; use the existing and sign/modify it
+
+=item  -z
+
+=item  --dont-run-zonesigner
+
+Do not run zonesigner to sign the records
+
+=item  -Z
+
+=item  --dont-destroy
+
+Do not destroy the records and leave them properly signed
+
+=item  --bind-config=STRING
+
+Generate a bind configuration file snippit to load the DB sets
+
+=item  --html-out=STRING
+
+Generate a HTML page containing a list of record names
+
+=item  --apache-out=STRING
+
+Generate a Apache config snippit for configuring apache for each zone record
+
+=item  --sh-test-out=STRING
+
+Generate a test script for running dig commands
+
+=item  -v
+
+=item  --verbose
+
+Verbose output
+
+=head2 Zonesigner Configuration:
+
+=item  -a STRING
+
+=item  --zonesigner-arguments=STRING
+
+Arguments to pass to zonesigner
+
+=item  -k
+
+=item  --generate-keys
+
+Have zonesigner generate needed keys
+
+=head2 Bind Configuration Options
+
+=item  --bind-db-dir=STRING
+
+The base directory where the bind DB files will be placed
+
+=head2 HTML Output Configuration
+
+=item  --html-out-add-links
+
+Make each html record name a http link to that address
+
+=item  --html-out-add-db-links
+
+Add a link to each of the generated DB files.
+
+=item  --html-out-add-donuts-links
+
+Add a link to each of the generated donuts error list files.
+
+=head2 SH Test Script Configuration Options
+
+=item  --sh-test-resolver=STRING
+
+The resolver address to force
+
+=head2 Help Options
+
+=item -h
+
+Display a help summary (short flags preferred)
+
+=item --help
+
+Display a help summary (long flags preferred)
+
+=item --help-full
+
+Display all help options (both short and long)
+
+=item --version
+
+Display the script version number.
+
+=back
+
 =head1 ADDING NEW OUTPUT
 
-... XXX: a high level description needed about development guides
+The following section discusses how to extend the B<maketestzone> tool
+with new output modifications.
 
 =head2 ADDING LEGEND INFORMATION
 
