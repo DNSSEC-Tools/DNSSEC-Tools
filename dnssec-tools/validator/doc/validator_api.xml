@@ -634,7 +634,8 @@ validation was not performed on the results.  </t>
 returned if a given DNSKEY or a DS record was locally defined to be a trust anchor.  </t>
 <t> </t>
 <t hangText="VAL_AC_IGNORE_VALIDATION:">
-returned if local policy is configured to ignore validation for this zone. </t>
+returned if validation for the given resource record was ignored, either because 
+of some local policy directive or because of some protocol-specific behaviour. </t>
 <t> </t>
 <t hangText="VAL_AC_PROVABLY_UNSECURE:">
 returned if the authentication chain from a trust anchor to a given zone could not be constructed
@@ -987,8 +988,7 @@ failures or inability to verify proofs.  </t>
 <t> </t>
 <t hangText="VAL_PROVABLY_UNSECURE:">
 returned if the record or some ancestor of the record in the authentication chain 
-towards the trust anchor was known to be provably unsecure. This condition 
-is treated as equivalent to a trust point being reached.  </t>
+towards the trust anchor was known to be provably unsecure. </t>
 <t> </t>
 <t hangText="VAL_IGNORE_VALIDATION:">
 returned if local policy was configured to ignore validation for the zone from which this
@@ -999,7 +999,7 @@ returned if all available components in the authentication chain were successful
 but there was no trust anchor available.  </t>
 <t> </t>
 <t hangText="VAL_SUCCESS:">
-returned if the response was either verified and validated, or was considered trustworthy.  </t>
+returned if the response was successfully verified and validated.  </t>
         </list> </t>
 
 <t> In cases where a DNS error is returned for the initial query, the 
