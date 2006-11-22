@@ -13,8 +13,8 @@
     <title>Check for Randomness</title>
 
     <para>Key generation and zone signing require random data to create strong
-    cryptographic material. The <command>zonesigner</command> command defaults
-    to using random data from <filename>/dev/random</filename>. Use this test
+    cryptographic material.  The <command>zonesigner</command> command defaults
+    to using random data from <filename>/dev/random</filename>.  Use this test
     to verify that <filename>/dev/random</filename> will provide data when
     requested:</para>
 
@@ -22,31 +22,46 @@
     <option>bs=2</option> <option>count=10</option></command> | <command>od
     <option>-x</option></command> <userinput>[ENTER]</userinput></para>
 
-    <para>The above command checks if /dev/random is able to provide random
-    data when queried; it does not check to see that the data provided is
-    truly random.</para>
+    <para>The above command checks if <filename>/dev/random</filename> is able
+    to provide data when queried; it does not check to see that the data
+    provided is truly random.</para>
 
-    <para>If this command provides data immediately, the
-    <filename>/dev/random</filename> will provide the data you need. If it
-    hangs, then <command>zonesigner</command> won't be able to retrieve random
-    data from <filename>/dev/random</filename>.</para>
+    <para>If this command provides data immediately,
+    <filename>/dev/random</filename> will provide the data you need.  If it
+    hangs, then <command>zonesigner</command> won't be able to retrieve data,
+    random or otherwise, from <filename>/dev/random</filename>.</para>
 
     <para>If this check for randomness fails, pseudorandom numbers can be used
-    instead. However, using pseudorandom numbers significantly affects the
-    quality of the crypto material. A more appropriate measure would be to run
-    <command>zonesigner</command> on a different system that has
+    instead.  However, using pseudorandom numbers significantly affects the
+    quality of the cryptographic material.  A more appropriate measure would
+    be to run <command>zonesigner</command> on a different system that has
     <filename>/dev/random</filename> and the ability to generate good random
     data.</para>
   </section>
 
   <section id="configure-edit-configuration-file">
-    <title>Edit the Configuration File</title>
+    <title>Create the DNSSEC-Tools Configuration File</title>
 
-    <para>The default location for the DNSSEC-Tools configuration file is
-    <filename>/usr/local/etc/dnssec/dnssec-tools.conf</filename>.</para>
+    <para>The DNSSEC-Tools configuration file contains many settings for
+    customizing the DNSSEC-Tools suite of programs.  The setting include
+    things such as default encryption algorithm, directory for archived
+    encryption keys, paths to various helper programs, and lengths of
+    encryption keys.  Configuration entries are in a
+    <emphasis>keyword/value</emphasis> format.  The keyword is a character
+    string and the value is data associated with that keyword.
+    <filename>/usr/local/etc/dnssec/dnssec-tools.conf</filename> is the
+    default location for the configuration file.</para>
 
-    <para>The set of options that you may consider modifying are outlined
-    below. For each option, a recommended setting is provided.</para>
+    <para>The <command>dtinitconf</command> command will create a new
+    DNSSEC-Tools configuration file.  Command options will allow for automatic
+    customization of the file.  It is a plain text file, so any normal text
+    editor (e.g., <command>vi</command> or <command>emacs</command>) may be
+    used to modify the configuration file.</para>
+
+    <para>Several example option settings are given below.  The man page for
+    <filename>dnssec-tools.conf</filename> should be consulted for a complete
+    list of possible options.  Each option has a recommended setting, but that
+    setting should not be considered a universally correct setting.</para>
 
     <table colsep="0" frame="none" rowsep="0">
       <title>DNSSEC-Tools Configuration Options</title>
@@ -64,37 +79,19 @@
 
         <tbody>
           <row>
-            <entry>kskdirectory</entry>
-
-            <entry>Directory where the KSK keys are stored.</entry>
-
-            <entry><filename>keys</filename></entry>
-          </row>
-
-          <row>
-            <entry>zskdirectory</entry>
-
-            <entry>Directory where the ZSK keys are stored.</entry>
-
-            <entry><filename>keys</filename></entry>
-          </row>
-
-          <row>
-            <entry>ksdir</entry>
-
-            <entry>Directory where the <filename>keyset-</filename> and
-            <filename>dsset-</filename> files for both the current zone and
-            any children are stored.</entry>
-
-            <entry><filename>sets</filename></entry>
-          </row>
-
-          <row>
             <entry>algorithm</entry>
 
             <entry>The cryptographic algorithm to use for the keys.</entry>
 
             <entry>rsasha1</entry>
+          </row>
+
+          <row>
+            <entry>endtime</entry>
+
+            <entry>The lifetime of the signatures.</entry>
+
+            <entry>+2592000 (30 days)</entry>
           </row>
 
           <row>
@@ -113,27 +110,6 @@
             <entry>1024</entry>
           </row>
 
-          <row>
-            <entry>random</entry>
-
-            <entry>This specifies the random device to use.</entry>
-
-            <entry>If the random device was determined to work fine in <xref
-            linkend="configure-check-randomness" />, then this should be set
-            to <filename>/dev/random</filename>. If there was a problem with
-            the device, then this can be set to
-            <filename>/dev/urandom</filename>, but it should be understood
-            that pseudorandom numbers significantly affect the quality of the
-            crypto material.</entry>
-          </row>
-
-          <row>
-            <entry>endtime</entry>
-
-            <entry>The lifetime of the signatures.</entry>
-
-            <entry>+2592000 (30 days)</entry>
-          </row>
         </tbody>
       </tgroup>
     </table>
