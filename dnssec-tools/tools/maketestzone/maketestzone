@@ -39,6 +39,7 @@ my %opts =
 # nsec says type shouldn't be used
 # sig doesn't cover type
     'p' => 'good,badsign,nosig,baddata,futuredate,pastdate,reverseddates',
+    'cname-extra-prefixes' => 'cnametodne',
 # XXX:
 #   newksk: doesn't work because zonesigner requires generation of zsks too
     'P' => 'insecure,good,badsign,nosig,nods,futuredate,pastdate,reverseddates,rollzsk,newzsk,newkeys,rsamd5keys',
@@ -70,6 +71,8 @@ LocalGetOptions(\%opts,
 		 'Comma separated list of record prefixes to use'],
 		['P|ns-prefixes=s',
 		 'Comma separated list of NS record prefixes to use'],
+		['cname-extra-prefixes=s',
+		 'Comma separated list of extra prefixes to use for cnames'],
 		['c|no-cname-records','Don\'t create CNAME records'],
 		['s|no-ns-records','Don\'t create sub-zone records'],
 		'',
@@ -143,6 +146,7 @@ my %destroyFunctions =
    # changes the address/cname record in the data
    '^(baddata[-\w]+).*IN\s+(A+)\s+(.*)' => \&modify_address,
    '^(baddata[-\w]+).*IN\s+(CNAME)\s+(.*)' => \&modify_cname,
+   '^(cnametodne[-\w]+).*IN\s+(CNAME)\s+(.*)' => \&modify_cnametodne,
 
    # removes the rrsig record
    '^(nosig[-\w]+).*IN\s+(CNAME|A+)\s+' => [\&delete_signature, 'RRSIG'],
@@ -176,7 +180,9 @@ my %LegendInformation =
 
  # modification types
  addedlater => 'The record was added after signing took place and contain no RRSIG records properly signing them.',
- baddata => 'The data in the record was modified after signing and thus the signature should not validate the record data.',
+ baddata => 'The data in the record was modified after signing and thus the signature should not validate the record data.  Note: modified CNAME records will point to a otherwise valid domain name within the zone (see cnametodne)',
+ cnametodne =>
+ 'The CNAME record has been modified to point to a record that never existed in the signed zone.',
  badsign => 'The RRSIG signature data was modified after signing so the signature should no longer be a valid signature.',
  futuredate => 'The record and signature are valid but the inception date of the RRSIG is in the future and should not be valid yet.',
  pastdate => 'The expiration date of the RRSIG covering the record has expired.',
@@ -220,6 +226,7 @@ my %zonesigner_domain_opts =
 my $name;
 my @prefixes = split(/,\s*/,$opts{p});
 my @nsprefixes = split(/,\s*/,$opts{P});
+my @cnameextraprefixes = split(/,\s*/,$opts{'cname-extra-prefixes'});
 
 # output information
 my (@resultfiles, @outdomains);
@@ -297,8 +304,8 @@ sub generate_records {
     generate_top($domain);
 
     # bogus address to replace bad cname data and point to this:
-    print_record("bogus-a", "1D IN", 'A', $addrs{'A'});
-    print_record("bogus-aaaa", "1D IN", 'AAAA', $addrs{'AAAA'});
+    print_record("other-a", "1D IN", 'A', $addrs{'A'});
+    print_record("other-aaaa", "1D IN", 'AAAA', $addrs{'AAAA'});
 
     #
     # for each address, generate records
@@ -315,7 +322,7 @@ sub generate_records {
 	# generate address records
 	if (!$nocnames) {
 	    print_comment("CNAMEs to $addr records");
-	    foreach my $cnameprefix (@prefixes) {
+	    foreach my $cnameprefix (@prefixes, @cnameextraprefixes) {
 		foreach my $addrprefix (@prefixes) {
 		    print_record("${cnameprefix}-cname-to-${addrprefix}-${addr}",
 				 "CNAME",
@@ -644,7 +651,16 @@ sub modify_cname {
     my ($name, $type, $data) = @_;
     Verbose("  modifying data of $name:$type");
 # modifies CNAME
-    $_ =~ s/([-\w]+)(-a+)\.([-\w\.]+)$/bogus$2.$topdomain./;
+    $_ =~ s/([-\w]+)(-a+)\.([-\w\.]+)$/other$2.$topdomain./;
+    print $fh $_;
+    $_ = <I>;
+}
+
+sub modify_cnametodne {
+    my ($name, $type, $data) = @_;
+    Verbose("  modifying data of $name:$type");
+# modifies CNAME
+    $_ =~ s/([-\w]+)(-a+)\.([-\w\.]+)$/addedlater-nosig$2.$topdomain./;
     print $fh $_;
     $_ = <I>;
 }
