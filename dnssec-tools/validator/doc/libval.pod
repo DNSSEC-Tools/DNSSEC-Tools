@@ -173,17 +173,14 @@ Validation status for a given RRset.  This can be one of the following:
 		No name was present and a valid proof of
 		non-existence confirming the missing name
 		(NSEC or NSEC3 span) was returned.  The proof
-		was verified and the authentication chains
-		for each component in the proof led to a
-		trust anchor.
+		was also identified to be trustworthy. 
 
 	VAL_NONEXISTENT_TYPE
 		No type exists for the name and a valid
 		proof of non-existence confirming the
 		missing name (NSEC or NSEC3 span) was
-		returned.  The proof was verified and the
-		authentication chains for each component
-		in the proof led to a trust anchor.
+		returned.  The proof was also identified 
+		to be trustworthy. 
 
 	VAL_ERROR
 		Did not have sufficient or relevant data to
@@ -292,9 +289,10 @@ This field may contain the following values:
 		defined to be a trust anchor.
 
       VAL_AC_IGNORE_VALIDATION
-		Local policy defined a given zone as trusted,
-		with no further validation being deemed
-		necessary.
+		Validation for the given resource record
+		was ignored, either because of some
+		local policy directive or because of
+		some protocol-specific behaviour.
 
       VAL_AC_PROVABLY_UNSECURE
 		The authentication chain from a trust anchor
