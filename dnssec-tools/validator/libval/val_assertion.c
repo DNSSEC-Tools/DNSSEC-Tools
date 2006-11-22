@@ -331,7 +331,11 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
                     val_log(ctx, LOG_DEBUG, "zone %s is not trusted",
                             name_p);
                     return VAL_AC_UNTRUSTED_ZONE;
-                } else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
+                }  else if (zse_cur->trusted == ZONE_SE_TRUSTED) {
+                    val_log(ctx, LOG_DEBUG, "zone %s is trusted", name_p);
+                    return VAL_AC_TRUSTED_ZONE;
+                }
+                else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
                     val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
                     return VAL_AC_WAIT_FOR_TRUST;
                 } else {
@@ -1050,6 +1054,7 @@ check_conflicting_answers(val_context_t * context,
             as->val_ac_status = VAL_AC_IGNORE_VALIDATION;
         
         if ((as->val_ac_status != VAL_AC_IGNORE_VALIDATION) && 
+            (as->val_ac_status != VAL_AC_TRUSTED_ZONE) &&
                 (!matched_q->qc_glue_request)) {
             if (VAL_NO_ERROR !=
                 (retval = build_pending_query(context, queries, as)))
@@ -2803,6 +2808,8 @@ verify_and_validate(val_context_t * context,
             if ((flags & VAL_FLAGS_DONT_VALIDATE) || 
                 (as_more->val_ac_status == VAL_AC_IGNORE_VALIDATION)) {
                 res->val_rc_status = VAL_IGNORE_VALIDATION;
+            } else if (as_more->val_ac_status == VAL_AC_TRUSTED_ZONE) {
+                res->val_rc_status = VAL_TRUSTED_ZONE;
             } else {
                 res->val_rc_status = VAL_R_DONT_KNOW;
             }
@@ -2829,7 +2836,8 @@ verify_and_validate(val_context_t * context,
                     merge_glue_in_referral(pc, queries);
                 }
 
-                if (res->val_rc_status != VAL_IGNORE_VALIDATION) {
+                if ((res->val_rc_status != VAL_IGNORE_VALIDATION) &&
+                       (res->val_rc_status != VAL_TRUSTED_ZONE)) {
                     /*
                      * Go up the chain of trust 
                      */
@@ -2871,7 +2879,8 @@ verify_and_validate(val_context_t * context,
                  */
                 *done = 0;
                 thisdone = 0;
-            } else if (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) {
+            } else if ((next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) ||
+                       (next_as->val_ac_status == VAL_AC_TRUSTED_ZONE)) {
                 break;
             } else if (next_as->val_ac_status == VAL_AC_NEGATIVE_PROOF) {
                 /*
@@ -3005,6 +3014,9 @@ verify_and_validate(val_context_t * context,
                 } else if (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) {
                     res->val_rc_status = VAL_IGNORE_VALIDATION;
                     break;
+                } else if (next_as->val_ac_status == VAL_AC_TRUSTED_ZONE) {
+                    res->val_rc_status = VAL_TRUSTED_ZONE;
+                    break;
                 } else if (next_as->val_ac_status == VAL_AC_PROVABLY_UNSECURE) {
                     res->val_rc_status = VAL_PROVABLY_UNSECURE;
                     break;
@@ -3031,6 +3043,7 @@ verify_and_validate(val_context_t * context,
                 }
             } else if ((next_as->val_ac_status == VAL_AC_TRUST_KEY) ||
                        (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) ||
+                       (next_as->val_ac_status == VAL_AC_TRUSTED_ZONE) ||
                        (next_as->val_ac_status == VAL_AC_PROVABLY_UNSECURE)) {
 
                 /*
@@ -3404,7 +3417,8 @@ check_wildcard_sanity(val_context_t * context,
     target_res = NULL; 
 
     for (res = w_results; res; res = res->val_rc_next) {
-        if (res->val_rc_status == VAL_IGNORE_VALIDATION)
+        if ((res->val_rc_status == VAL_IGNORE_VALIDATION) ||
+             (res->val_rc_status == VAL_TRUSTED_ZONE))
             continue;
         
         if ((res->val_rc_status == VAL_SUCCESS) &&
@@ -3619,7 +3633,8 @@ check_alias_sanity(val_context_t * context,
          * All other cnames(unless they are synthesized), dnames and answers are bogus 
          */
         for (res = w_results; res; res = res->val_rc_next) {
-            if ((!res->val_rc_consumed) && (res->val_rc_status != VAL_IGNORE_VALIDATION)) {
+            if ((!res->val_rc_consumed) && 
+                (res->val_rc_status != VAL_IGNORE_VALIDATION)) { 
                 res->val_rc_status = VAL_BOGUS;
             } 
         }
@@ -3703,7 +3718,8 @@ perform_sanity_checks(val_context_t * context,
             
         if ((res->val_rc_status != VAL_SUCCESS) &&
             (res->val_rc_status != VAL_PROVABLY_UNSECURE) &&
-            (res->val_rc_status != VAL_IGNORE_VALIDATION)) {
+            (res->val_rc_status != VAL_IGNORE_VALIDATION) &&
+            (res->val_rc_status != VAL_TRUSTED_ZONE)) {
             /*
              * All components were not validated success
              */
@@ -4011,6 +4027,7 @@ val_istrusted(val_status_t val_status)
     case VAL_NONEXISTENT_TYPE:
     case VAL_PROVABLY_UNSECURE:
     case VAL_IGNORE_VALIDATION:
+    case VAL_TRUSTED_ZONE:
     case VAL_LOCAL_ANSWER: 
         return 1;
 

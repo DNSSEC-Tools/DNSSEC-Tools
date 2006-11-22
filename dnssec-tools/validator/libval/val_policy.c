@@ -503,6 +503,8 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
         }
         if (!strcmp(token, ZONE_SE_IGNORE_MSG))
             zone_status = ZONE_SE_IGNORE;
+        else if (!strcmp(token, ZONE_SE_TRUSTED_MSG))
+            zone_status = ZONE_SE_TRUSTED;
         else if (!strcmp(token, ZONE_SE_DO_VAL_MSG))
             zone_status = ZONE_SE_DO_VAL;
         else if (!strcmp(token, ZONE_SE_UNTRUSTED_MSG))
