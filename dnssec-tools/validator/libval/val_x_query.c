@@ -373,6 +373,11 @@ compose_answer(const u_char * name_n,
         if (res->val_rc_status == VAL_NONEXISTENT_NAME) {
             hp->rcode = ns_r_nxdomain; 
         }
+#ifdef LIBVAL_NSEC3
+        if (res->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) {
+            hp->rcode = ns_r_nxdomain; 
+        }
+#endif
 
         if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
             FREE(anbuf);
@@ -558,6 +563,9 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
 
         switch (*val_status) {
             case VAL_NONEXISTENT_NAME:
+#ifdef LIBVAL_NSEC3
+            case VAL_NONEXISTENT_NAME_OPTOUT:
+#endif
                 h_errno = HOST_NOT_FOUND;
                 return -1;
 
