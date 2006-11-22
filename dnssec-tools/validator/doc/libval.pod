@@ -214,7 +214,7 @@ Validation status for a given RRset.  This can be one of the following:
 		 validation for the zone from which this data 
 		 was received.
 
-    VAL_PROVABLY_UNSECURE
+	VAL_PROVABLY_UNSECURE
 		The record or some ancestor of the record in
 		the authentication chain towards the trust
 		anchor was known to be provably unsecure.
@@ -478,7 +478,7 @@ For each I<rr_rec> member of type DNSKEY (or DS, where relevant) within the
 authentication chain I<val_ac_rrset>, the validation status is stored in the
 variable I<rr_status> and can return one of the following values:
 
-     VAL_AC_SIGNING_KEY - This DNSKEY was used to
+      VAL_AC_SIGNING_KEY - This DNSKEY was used to
 		create an RRSIG for the resource
 		record set.
 
