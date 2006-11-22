@@ -515,7 +515,6 @@ sub run_zonesigner {
     #
     # Run zonesigner to sign the thing
     #
-    print "here: $zonesigner_domain_opts{$domain} $domain\n";
     if ($zonesigner_domain_opts{$domain} eq 'NOSIGN') {
 	# we don't actually want to sign this zone; just copy it
 	Verbose("copying $infile to produce (unsigned) $outfile.signed");
