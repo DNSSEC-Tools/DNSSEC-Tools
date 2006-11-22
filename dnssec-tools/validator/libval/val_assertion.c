@@ -2174,8 +2174,7 @@ prove_nonexistence( val_context_t * ctx,
     }
     if (res == NULL)
         *status = VAL_R_INCOMPLETE_PROOF;
-    else if ((res->val_rc_status == VAL_PROVABLY_UNSECURE) || 
-             (res->val_rc_status == VAL_IGNORE_VALIDATION)) {
+    else if (val_istrusted(res->val_rc_status)) {
         /*
          * use the error code as status 
          */
@@ -2568,7 +2567,7 @@ verify_provably_unsecure(val_context_t * context,
         as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
         return 1;
     }
-#endif
+#endif    
 
     val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure.",
             name_p_orig);
@@ -4006,6 +4005,9 @@ val_istrusted(val_status_t val_status)
     switch (val_status) {
     case VAL_SUCCESS:
     case VAL_NONEXISTENT_NAME:
+#ifdef LIBVAL_NSEC3
+    case VAL_NONEXISTENT_NAME_OPTOUT:
+#endif
     case VAL_NONEXISTENT_TYPE:
     case VAL_PROVABLY_UNSECURE:
     case VAL_IGNORE_VALIDATION:
