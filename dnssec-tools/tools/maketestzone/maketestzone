@@ -426,7 +426,7 @@ h1,h2 {
 	}
 	
 	my %done;
-	foreach my $prefix (@prefixes, @nsprefixes) {
+	foreach my $prefix (@prefixes, @nsprefixes, @cnameextraprefixes) {
 	    next if ($done{$prefix});
 	    $done{$prefix} = 1;
 	    print $htmlfh "<tr><td>Manipulation</td><td>$prefix</td><td>$LegendInformation{$prefix}</td></tr>\n";
