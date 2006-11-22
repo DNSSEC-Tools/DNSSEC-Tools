@@ -321,24 +321,21 @@ Validation status for a given RRset.  This can be one of the following:
 \&                for an RRSIG.
 .Ve
 .Sp
-.Vb 7
+.Vb 5
 \&        VAL_NONEXISTENT_NAME        
 \&                No name was present and a valid proof of
 \&                non-existence confirming the missing name
 \&                (NSEC or NSEC3 span) was returned.  The proof
-\&                was verified and the authentication chains
-\&                for each component in the proof led to a
-\&                trust anchor.
+\&                was also identified to be trustworthy.
 .Ve
 .Sp
-.Vb 7
+.Vb 6
 \&        VAL_NONEXISTENT_TYPE
 \&                No type exists for the name and a valid
 \&                proof of non-existence confirming the
 \&                missing name (NSEC or NSEC3 span) was
-\&                returned.  The proof was verified and the
-\&                authentication chains for each component
-\&                in the proof led to a trust anchor.
+\&                returned.  The proof was also identified 
+\&                to be trustworthy.
 .Ve
 .Sp
 .Vb 3
@@ -385,7 +382,7 @@ Validation status for a given RRset.  This can be one of the following:
 .Ve
 .Sp
 .Vb 4
-\&    VAL_PROVABLY_UNSECURE
+\&        VAL_PROVABLY_UNSECURE
 \&                The record or some ancestor of the record in
 \&                the authentication chain towards the trust
 \&                anchor was known to be provably unsecure.
@@ -480,11 +477,12 @@ This field may contain the following values:
 \&                defined to be a trust anchor.
 .Ve
 .Sp
-.Vb 4
+.Vb 5
 \&      VAL_AC_IGNORE_VALIDATION
-\&                Local policy defined a given zone as trusted,
-\&                with no further validation being deemed
-\&                necessary.
+\&                Validation for the given resource record
+\&                was ignored, either because of some
+\&                local policy directive or because of
+\&                some protocol-specific behaviour.
 .Ve
 .Sp
 .Vb 5
@@ -692,7 +690,7 @@ authentication chain \fIval_ac_rrset\fR, the validation status is stored in the
 variable \fIrr_status\fR and can return one of the following values:
 .Sp
 .Vb 3
-\&     VAL_AC_SIGNING_KEY - This DNSKEY was used to
+\&      VAL_AC_SIGNING_KEY - This DNSKEY was used to
 \&                create an RRSIG for the resource
 \&                record set.
 .Ve
