@@ -1517,10 +1517,6 @@ prove_nsec_span_chk(val_context_t * ctx,
         return;
     }
 
-    /*
-     * else 
-     */
-    *status = VAL_NONEXISTENT_NAME; /** This can change later on if wildcard checks fail **/
 
     /*
      * Find the next name 
@@ -1542,6 +1538,10 @@ prove_nsec_span_chk(val_context_t * ctx,
         }
     }
 
+    /*
+     * else 
+     */
+    *status = VAL_NONEXISTENT_NAME; /** This can change later on if wildcard checks fail **/
     *span_chk = 1;
     /*
      * The same NSEC may prove wildcard absence also 
@@ -2013,6 +2013,14 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 /*
                  * proved 
                  */
+                    
+                /* This proof is relevant */
+                if (VAL_NO_ERROR != (retval = transform_single_result(res, results, 
+                                *proof_res, &new_res))) {
+                    goto err;
+                }
+                *proof_res = new_res;
+
                 FREE(nd.nexthash);
                 FREE(hash);
                 if (optout) {
@@ -2071,7 +2079,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                        qtype_h, soa_name_n, &span_chk,
                        &wcard_chk, &wcard_proof,
                        &closest_encounter, status);
-        if (*status != VAL_R_DONT_KNOW) {
+        if (*status != VAL_R_DONT_KNOW || wcard_proof == the_set) {
             /* This proof is relevant */
             if (VAL_NO_ERROR != 
                         (retval = transform_single_result(res, results, 
@@ -2079,7 +2087,8 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                     goto err;
             }
             *proof_res = new_res;
-            break;
+            if (*status != VAL_R_DONT_KNOW)
+                break;
         }
     }
 
