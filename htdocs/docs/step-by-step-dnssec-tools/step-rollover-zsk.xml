@@ -1,7 +1,297 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="step-rollover-zsk">
-  <title>"Current" ZSK Roll-over (Pre-publish Scheme)</title>
+    <title>"Current" ZSK Rollover (Pre-publish Scheme)</title>
 
-    <para>This section will be written when the key rollover tool is
-    completed.</para>
+    <section id="step-rollover-zsk-intro">
+        <title>Pre-publish Rollover Scheme</title>
+
+        <para>This section gives the steps necessary for the Pre-publish
+        Rollover Scheme for ZSK rollover. The alternative, the
+        double-signature method, is used for rolling over KSKs. Double
+        signatures for records signed by the ZSK can increase the size of the
+        zone many times. The Pre-publish Rollover Scheme, although requiring
+        more steps for the rollover, does not suffer from this problem. The
+        size argument does not apply during KSK rollover since the DNSKEY
+        RRset is the only record doubly signed by the KSK.</para>
+
+        <para>In the Pre-publish Rollover Scheme, multiple ZSK keys are
+        simultaneously maintained for a zone. These ZSKs are labelled the
+        Current ZSK, the Published ZSK, and the New ZSK. The Current and
+        Published ZSKs are used to sign the zone, while the New ZSK will be
+        used in the future. When the Current ZSK expires, the following steps
+        will be taken:</para>
+
+        <orderedlist>
+            <listitem>
+                <para>The Current ZSK becomes obsolete.</para>
+            </listitem>
+
+            <listitem>
+                <para>The Published ZSK becomes the Current ZSK.</para>
+            </listitem>
+
+            <listitem>
+                <para>The New ZSK becomes the Published ZSK.</para>
+            </listitem>
+
+            <listitem>
+                <para>A new New ZSK is generated.</para>
+            </listitem>
+        </orderedlist>
+
+        <para>A lot of record-keeping is required for managing a zone using
+        the Pre-publish Rollover Scheme. The DNSSEC-Tools utilities that
+        automate ZSK rollover are described in Section 2. The actual steps
+        taken in this rollover scheme are described in Section 3.</para>
+    </section>
+
+    <section id="step-rollover-zsk-tools">
+        <title>ZSK Rollover Using DNSSEC-Tools</title>
+
+        <para>must do an initial zone signing</para>
+
+        <para>must set up rollrec file</para>
+
+        <para>run rollerd</para>
+
+        <para>use rollctl to control rollover process</para>
+    </section>
+
+    <section id="step-rollover-zsk-manual">
+        <title>Manual ZSK Rollover</title>
+
+	<para>
+
+	The steps for performing a manual ZSK rollover are given below.
+
+	</para>
+
+        <section id="step-rollover-zsk-manual-1">
+            <title>Ensure that Sufficient Time has Elapsed Since the Last
+            Rollover</title>
+            <para>
+	    The time between rollovers has to be at least twice the maximum
+	    zone TTL period.  This is the largest TTL in the entire zone file
+	    multiplied by two.
+	    </para>
+        </section>
+
+        <section id="step-rollover-zsk-manual-2">
+            <title>Sign Zone with the KSK and Published ZSK</title>
+        </section>
+	    <para>
+	    Follow steps ??? - ???
+	    if the zone does no delegation.
+	    Follow steps ??? - ???
+	    if the zone does delegation.
+	    The ZSK used in the signing process in
+	    Section ??? or ??? must
+	    be the key that is marked as the Published key (P) in the key-tag
+	    table. The KSK used as input to <command>dnssec-signzone</command>
+	    does not change, so the keyset does not change and does not have
+	    to be re-sent to the parent.
+	    </para>
+
+	    <para>
+	    Record the signature expiry date in the key-tag table.
+	    </para>
+
+        <table colsep="1" frame="all" rowsep="1">
+            <tgroup align="center" cols="10">
+                <tbody>
+                    <row>
+                        <entry>Zone</entry>
+                        <entry>ZSKs</entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry>KSKs</entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry>Exp</entry>
+                    </row>
+                    <row>
+                        <entry> </entry>
+                        <entry>Tag</entry>
+                        <entry>Size</entry>
+                        <entry>Creat</entry>
+                        <entry>S</entry>
+                        <entry>Tag</entry>
+                        <entry>Size</entry>
+                        <entry>Creat</entry>
+                        <entry>S</entry>
+                        <entry> </entry>
+                    </row>
+                    <row>
+                        <entry><emphasis>zone-name</emphasis></entry>
+                        <entry><emphasis role="underline">zsktag-cur</emphasis></entry>
+                        <entry>1024</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                        <entry>C</entry>
+                        <entry><emphasis role="underline">ksktag</emphasis></entry>
+                        <entry>2048</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                        <entry>C</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                    </row>
+                    <row>
+                        <entry><emphasis>zone-name</emphasis></entry>
+                        <entry><emphasis role="underline">zsktag-cur</emphasis></entry>
+                        <entry>1024</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                        <entry>P</entry>
+                        <entry><emphasis role="underline"> </emphasis></entry>
+                        <entry> </entry>
+                        <entry><emphasis role="underline"> </emphasis></entry>
+                        <entry> </entry>
+                        <entry><emphasis role="underline"> </emphasis></entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+
+        <section id="step-rollover-zsk-manual-3">
+            <title>Reload the Zone</title>
+	    <para>
+	    The <command>rndc</command> will reload the name server
+	    configuration files and the zone contents.  The name server
+	    process is assumed to be already running.
+	    </para>
+
+	    <para>
+	    <prompt>$</prompt> <command>rndc <option>reload zone-name</option></command> <userinput>[ENTER]</userinput>
+	    </para>
+
+	    <para>
+	    <prompt>$</prompt>
+	    </para>
+
+        </section>
+
+        <section id="step-rollover-zsk-manual-4">
+            <title>Wait for Old Zone Data to Expire from Caches</title>
+	    <para>
+	    Wait at least twice the maximum zone TTL period for the old zone
+	    data to expire from name server caches.  This is the largest TTL
+	    in the entire zone file multiplied by two.  This will also allow
+	    the new data to propagate.
+	    </para>
+        </section>
+
+        <section id="step-rollover-zsk-manual-5">
+            <title>Generate a New ZSK</title>
+	    <para>
+	    Generate a new ZSK as described in Section ???.  Update the
+	    Key-Tag Table with the new ZSK and set its status to New (N).
+	    </para>
+
+        <table colsep="1" frame="all" rowsep="1">
+            <tgroup align="center" cols="10">
+                <tbody>
+                    <row>
+                        <entry>Zone</entry>
+                        <entry>ZSKs</entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry>KSKs</entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry> </entry>
+                        <entry>Exp</entry>
+                    </row>
+                    <row>
+                        <entry> </entry>
+                        <entry>Tag</entry>
+                        <entry>Size</entry>
+                        <entry>Creat</entry>
+                        <entry>S</entry>
+                        <entry>Tag</entry>
+                        <entry>Size</entry>
+                        <entry>Creat</entry>
+                        <entry>S</entry>
+                        <entry> </entry>
+                    </row>
+                    <row>
+                        <entry><emphasis>zone-name</emphasis></entry>
+                        <entry><emphasis role="underline">zsktag-cur</emphasis></entry>
+                        <entry>1024</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                        <entry>C</entry>
+                        <entry><emphasis role="underline">ksktag</emphasis></entry>
+                        <entry>2048</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                        <entry>C</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                    </row>
+                    <row>
+                        <entry><emphasis>zone-name</emphasis></entry>
+                        <entry><emphasis role="underline">zsktag-pub</emphasis></entry>
+                        <entry>1024</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                        <entry>P</entry>
+                        <entry><emphasis role="underline"> </emphasis></entry>
+                        <entry> </entry>
+                        <entry><emphasis role="underline"> </emphasis></entry>
+                        <entry> </entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                    </row>
+                    <row>
+                        <entry><emphasis>zone-name</emphasis></entry>
+                        <entry><emphasis role="underline">zsktag-new</emphasis></entry>
+                        <entry>1024</entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                        <entry>N</entry>
+                        <entry><emphasis role="underline"> </emphasis></entry>
+                        <entry> </entry>
+                        <entry><emphasis role="underline"> </emphasis></entry>
+                        <entry> </entry>
+                        <entry><emphasis role="underline">date</emphasis></entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+
+        </section>
+
+        <section id="step-rollover-zsk-manual-6">
+            <title>Modify the Zone File</title>
+	    <para>
+	    The zone file must be modified to account for the key changes.
+	    The Current ZSK must be deleted and the New ZSK must be added.
+	    Also, the SOA serial number must be changed so that the zone
+	    file's new contents will be recognized.
+	    </para>
+        </section>
+
+        <section id="step-rollover-zsk-manual-7">
+            <title>Update the Key-Tags Table</title>
+	    <para>
+	    z
+	    </para>
+        </section>
+
+        <section id="step-rollover-zsk-manual-8">
+            <title>Sign the Zone with the KSK and Current ZSK</title>
+	    <para>
+	    z
+	    </para>
+        </section>
+
+        <section id="step-rollover-zsk-manual-9">
+            <title>Reload the Zone</title>
+	    <para>
+	    z
+	    </para>
+        </section>
+
+        <section id="step-rollover-zsk-manual-10">
+            <title>Dispose of the Old Zone Key</title>
+            <para>
+	    Delete the old ZSKs <emphasis>.private</emphasis> and
+            <emphasis>.key</emphasis> files.
+	    </para>
+        </section>
+    </section>
 </chapter>
