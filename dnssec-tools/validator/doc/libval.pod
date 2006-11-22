@@ -211,6 +211,10 @@ Validation status for a given RRset.  This can be one of the following:
 		 validation for the zone from which this data 
 		 was received.
 
+	VAL_TRUSTED_ZONE
+		 Local policy was configured to trust 
+		 any data received from the given zone. 
+
 	VAL_PROVABLY_UNSECURE
 		The record or some ancestor of the record in
 		the authentication chain towards the trust
@@ -293,6 +297,11 @@ This field may contain the following values:
 		was ignored, either because of some
 		local policy directive or because of
 		some protocol-specific behaviour.
+
+      VAL_AC_TRUSTED_ZONE
+		Local policy defined a given zone as
+		trusted, with no further validation
+		being deemed necessary.
 
       VAL_AC_PROVABLY_UNSECURE
 		The authentication chain from a trust anchor
