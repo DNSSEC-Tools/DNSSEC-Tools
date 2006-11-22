@@ -603,6 +603,13 @@ p_val_status(val_status_t err)
     case VAL_R_TRUST_FLAG | VAL_NONEXISTENT_NAME:
         return "VAL_NONEXISTENT_NAME";
         break;
+#ifdef LIBVAL_NSEC3
+    case VAL_NONEXISTENT_NAME_OPTOUT:
+    case VAL_R_TRUST_FLAG | VAL_NONEXISTENT_NAME_OPTOUT:
+        return "VAL_NONEXISTENT_NAME";
+        break;
+#endif
+        
     case VAL_NONEXISTENT_TYPE:
     case VAL_R_TRUST_FLAG | VAL_NONEXISTENT_TYPE:
         return "VAL_NONEXISTENT_TYPE";
