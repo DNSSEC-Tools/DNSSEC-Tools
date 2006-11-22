@@ -64,11 +64,13 @@
 #endif
 
 #define ZONE_SE_IGNORE_MSG     "ignore"
+#define ZONE_SE_TRUSTED_MSG    "trusted"
 #define ZONE_SE_DO_VAL_MSG     "validate"
 #define ZONE_SE_UNTRUSTED_MSG  "untrusted"
 #define ZONE_SE_IGNORE 1
-#define ZONE_SE_DO_VAL 2
-#define ZONE_SE_UNTRUSTED 3
+#define ZONE_SE_TRUSTED 2
+#define ZONE_SE_DO_VAL 3
+#define ZONE_SE_UNTRUSTED 4
 
 #define RETRIEVE_POLICY(ctx, index, type)      \
     (ctx == NULL) ? NULL :                                              \
