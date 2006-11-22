@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-11-21" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-11-22" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_resolve_and_check()\fR, \fIval_free_result_chain()\fR \- query and validate
 answers from a DNS name server
@@ -351,11 +351,12 @@ Validation status for a given RRset.  This can be one of the following:
 \&        VAL_DNS_ERROR_BASE + SR_error
 .Ve
 .Sp
-.Vb 4
-\&        This value contains a resolver error from libsres.
-\&        The libsres error is added to VAL_DNS_ERROR_BASE,
-\&        so this value will lie between VAL_DNS_ERROR_BASE
-\&        and VAL_DNS_ERROR_LAST.
+.Vb 5
+\&                This value contains a resolver error from 
+\&                libsres. The libsres error is added to 
+\&                VAL_DNS_ERROR_BASE, so this value will lie 
+\&                between VAL_DNS_ERROR_BASE and 
+\&                VAL_DNS_ERROR_LAST.
 .Ve
 .Sp
 .Vb 3
@@ -377,7 +378,14 @@ Validation status for a given RRset.  This can be one of the following:
 .Ve
 .Sp
 .Vb 4
-\&        VAL_PROVABLY_UNSECURE
+\&        VAL_IGNORE_VALIDATION
+\&                 Local policy was configured to ignore 
+\&                 validation for the zone from which this data 
+\&                 was received.
+.Ve
+.Sp
+.Vb 4
+\&    VAL_PROVABLY_UNSECURE
 \&                The record or some ancestor of the record in
 \&                the authentication chain towards the trust
 \&                anchor was known to be provably unsecure.
@@ -473,7 +481,7 @@ This field may contain the following values:
 .Ve
 .Sp
 .Vb 4
-\&      VAL_AC_TRUST_ZONE
+\&      VAL_AC_IGNORE_VALIDATION
 \&                Local policy defined a given zone as trusted,
 \&                with no further validation being deemed
 \&                necessary.
@@ -795,6 +803,9 @@ Error in parsing some configuration file.
 .IP "\s-1VAL_CONF_NOT_FOUND\s0" 4
 .IX Item "VAL_CONF_NOT_FOUND"
 A configuration file was not available.
+.IP "\s-1VAL_NO_POLICY\s0" 4
+.IX Item "VAL_NO_POLICY"
+The policy identifier being referenced was invalid.
 .RE
 .RS 4
 .RE
