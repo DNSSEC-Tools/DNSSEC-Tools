@@ -37,7 +37,7 @@ install:
 	done
 	for i in $(MAN3PAGES_SYMLINKS) ; do		\
 	  rm -f $(man3dir)/$$i ;	\
-	  echo ".so $(man3dir)/$(LIBVAL_MAN)" > $(man3dir)/$$i  ;	\
+	  echo ".so $(LIBVAL_MAN)" > $(man3dir)/$$i  ;	\
 	done
 	
 
