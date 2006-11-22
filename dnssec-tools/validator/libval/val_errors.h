@@ -38,7 +38,7 @@
 #define VAL_AC_WAIT_FOR_RRSIG 3
 #define VAL_AC_INIT 4
 #define VAL_AC_NEGATIVE_PROOF 5
-#define VAL_AC_DONT_VALIDATE 6
+#define VAL_AC_IGNORE_VALIDATION 6
 #define VAL_AC_LAST_STATE  10    /* Closest round number above A_NEGATIVE_PROOF */
 
 /*
@@ -113,10 +113,9 @@
 
 #define VAL_AC_LOCAL_ANSWER (VAL_AC_LAST_FAILURE+7)       /* Answer obtained locally */
 #define VAL_AC_TRUST_KEY (VAL_AC_LAST_FAILURE+8)  /* key is trusted */
-#define VAL_AC_IGNORE_VALIDATION (VAL_AC_LAST_FAILURE+9) /* zone is trusted */
-#define VAL_AC_PROVABLY_UNSECURE (VAL_AC_LAST_FAILURE+10)
-#define VAL_AC_BARE_RRSIG (VAL_AC_LAST_FAILURE+11) /* No DNSSEC validation possible, query was for a RRSIG. */
-#define VAL_AC_NO_TRUST_ANCHOR (VAL_AC_LAST_FAILURE+12)    /* No trust anchor available, but components were verified */
+#define VAL_AC_PROVABLY_UNSECURE (VAL_AC_LAST_FAILURE+9)
+#define VAL_AC_BARE_RRSIG (VAL_AC_LAST_FAILURE+10) /* No DNSSEC validation possible, query was for a RRSIG. */
+#define VAL_AC_NO_TRUST_ANCHOR (VAL_AC_LAST_FAILURE+11)    /* No trust anchor available, but components were verified */
 
 /*
  *************************************************** 
