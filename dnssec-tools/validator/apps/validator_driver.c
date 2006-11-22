@@ -85,6 +85,7 @@ struct testcase_st {
 
 // A set of pre-defined test cases
 static const struct testcase_st testcases[] = {
+
     
 #if 0
     {"Test Case 1", "www.n0.n0.ws.nsec3.org", ns_c_in, ns_t_a,
@@ -360,17 +361,17 @@ static const struct testcase_st testcases[] = {
     {"Test Case 67", "baddata-cname-to-good-AAAA.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 68", "baddata-cname-to-badsign-AAAA.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 69", "baddata-cname-to-nosig-AAAA.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_ERROR, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 70", "baddata-cname-to-baddata-AAAA.test.dnssec-tools.org",
-     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
+     ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 71",
      "baddata-cname-to-futuredate-AAAA.test.dnssec-tools.org", ns_c_in,
-     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
+     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 72",
      "baddata-cname-to-pastdate-AAAA.test.dnssec-tools.org", ns_c_in,
-     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_R_BOGUS_PROVABLE, 0}},
+     ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 73", "futuredate-cname-to-good-AAAA.test.dnssec-tools.org",
      ns_c_in, ns_t_aaaa, {VAL_R_BOGUS_PROVABLE, VAL_SUCCESS, 0}},
     {"Test Case 74",
@@ -820,10 +821,6 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
                 ret_val);
     }
 
-
-    /*
-     * XXX De-register pending queries 
-     */
     val_free_result_chain(results);
     results = NULL;
     fprintf(stderr, "%s: ****END**** \n", desc);
