@@ -2179,7 +2179,11 @@ prove_nonexistence( val_context_t * ctx,
     }
     if (res == NULL)
         *status = VAL_R_INCOMPLETE_PROOF;
-    else if (val_istrusted(res->val_rc_status)) {
+    /* check if trusted and complete */
+    else if (val_istrusted(res->val_rc_status) && 
+                (res->val_rc_status == VAL_IGNORE_VALIDATION ||
+                 res->val_rc_status == VAL_PROVABLY_UNSECURE ||
+                 res->val_rc_status == VAL_TRUSTED_ZONE)) {
         /*
          * use the error code as status 
          */
