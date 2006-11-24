@@ -9,8 +9,13 @@
 #include <resolver.h>
 #include <validator.h>
 
-#define VAL_NO_ERROR 0
+#define VAL_FLAG_CHAIN_COMPLETE 0x80
+#define VAL_MASKED_FLAG_CHAIN_COMPLETE 0x7f
+#define SET_CHAIN_COMPLETE(status)         status |= VAL_FLAG_CHAIN_COMPLETE
+#define SET_MASKED_STATUS(st, new_val)     st = (st & VAL_FLAG_CHAIN_COMPLETE) | new_val
+#define CHECK_MASKED_STATUS(st, chk_val) ((st & VAL_MASKED_FLAG_CHAIN_COMPLETE) == chk_val)
 
+#define VAL_NO_ERROR 0
 
 /*
  *************************************************** 
@@ -29,18 +34,26 @@
 
 /*
  *************************************************** 
- * Assertion initial states 
+ * Assertion states 
  *************************************************** 
  */
-#define VAL_AC_UNSET 0
-#define VAL_AC_CAN_VERIFY 1
-#define VAL_AC_WAIT_FOR_TRUST 2
-#define VAL_AC_WAIT_FOR_RRSIG 3
-#define VAL_AC_INIT 4
-#define VAL_AC_NEGATIVE_PROOF 5
-#define VAL_AC_IGNORE_VALIDATION 6
-#define VAL_AC_TRUSTED_ZONE 7
-#define VAL_AC_LAST_STATE  10    /* Closest round number above A_NEGATIVE_PROOF */
+#define VAL_AC_UNSET                0
+#define VAL_AC_CAN_VERIFY           1
+#define VAL_AC_WAIT_FOR_TRUST       2
+#define VAL_AC_WAIT_FOR_RRSIG       3
+#define VAL_AC_INIT                 4
+#define VAL_AC_NEGATIVE_PROOF       5
+
+#define VAL_AC_DONT_GO_FURTHER      6 
+#define VAL_AC_IGNORE_VALIDATION    (VAL_AC_DONT_GO_FURTHER+0) 
+#define VAL_AC_TRUSTED_ZONE         (VAL_AC_DONT_GO_FURTHER+1)
+#define VAL_AC_UNTRUSTED_ZONE       (VAL_AC_DONT_GO_FURTHER+2)
+#define VAL_AC_LOCAL_ANSWER         (VAL_AC_DONT_GO_FURTHER+3) /* Answer obtained locally */
+#define VAL_AC_TRUST_KEY            (VAL_AC_DONT_GO_FURTHER+4)  /* key is trusted */
+#define VAL_AC_PROVABLY_UNSECURE    (VAL_AC_DONT_GO_FURTHER+5) 
+#define VAL_AC_BARE_RRSIG           (VAL_AC_DONT_GO_FURTHER+6) /* No DNSSEC validation possible, query was for a RRSIG. */
+#define VAL_AC_NO_TRUST_ANCHOR      (VAL_AC_DONT_GO_FURTHER+7)    /* No trust anchor available, but components were verified */
+#define VAL_AC_LAST_STATE           VAL_AC_NO_TRUST_ANCHOR    
 
 /*
  *************************************************** 
@@ -49,22 +62,21 @@
  */
 
 /*
- * "Cannot do anything further" states, but should check proof of non existence 
+ * Cannot do anything further, but should check proof of non existence 
  */
-#define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE       /* 10 */
+#define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE       /* 13 */
 #define VAL_AC_DATA_MISSING (VAL_AC_ERROR_BASE+1)
 #define VAL_AC_RRSIG_MISSING (VAL_AC_ERROR_BASE+2)
 #define VAL_AC_DNSKEY_MISSING (VAL_AC_ERROR_BASE+3)
 #define VAL_AC_DS_MISSING (VAL_AC_ERROR_BASE+4)
-#define VAL_AC_UNTRUSTED_ZONE (VAL_AC_ERROR_BASE+5)
-#define VAL_AC_LAST_ERROR VAL_AC_UNTRUSTED_ZONE
+#define VAL_AC_LAST_ERROR VAL_AC_DS_MISSING
 
 /*
- * error and dont want to check if provably unsecure either 
+ * Cannot do anything further and should not check proof of non existence 
  */
-#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR /* 15 */
+#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR /* 17 */
 #define VAL_AC_UNKNOWN_DNSKEY_PROTOCOL (VAL_AC_BAD_BASE+1)
-#define VAL_AC_DNS_ERROR_BASE (VAL_AC_BAD_BASE+10) /* 25 */
+#define VAL_AC_DNS_ERROR_BASE (VAL_AC_BAD_BASE+8) /* 25 */
 /*
  * DNS errors lie within this range, 
  * there are SR_LAST_ERROR (22) of them in total
@@ -77,12 +89,11 @@
 #define VAL_AC_LAST_BAD VAL_AC_DNS_ERROR_LAST     /* 50 */
 
 /*
- * "Error, but can prove the chain-of-trust above this" states 
+ * DNSSEC Error, but can prove the chain-of-trust above this 
  */
 #define VAL_AC_FAIL_BASE VAL_AC_LAST_BAD  /* 50 */
 #define VAL_AC_NOT_VERIFIED (VAL_AC_FAIL_BASE+1) /*Different RRSIGs failed for different reasons */
 
-/* The signature status contains the following value */
 #define VAL_AC_DNSKEY_NOMATCH (VAL_AC_FAIL_BASE+2)        /*RRSIG was created by a DNSKEY that does not exist in the apex keyset. */
 #define VAL_AC_WRONG_LABEL_COUNT (VAL_AC_FAIL_BASE+3)     /*The number of labels on the signature is greater than the the count given in the RRSIG RDATA. */
 #define VAL_AC_BAD_DELEGATION (VAL_AC_FAIL_BASE+4) /*RRSIG created by a key that does not exist in the parent DS record set.*/
@@ -101,7 +112,7 @@
 #define VAL_AC_LAST_FAILURE (VAL_AC_FAIL_BASE+30) /* 80 */
 
 /*
- * success or unknown result conditions 
+ * success conditions, but must continue with validation 
  */
 #define VAL_AC_VERIFIED (VAL_AC_LAST_FAILURE+1)   /* This is a transient state, it will settle at
                                                  * VALIDATED_SUCCESS if the */
@@ -112,65 +123,51 @@
 #define VAL_AC_VERIFIED_LINK (VAL_AC_LAST_FAILURE+5)      /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
 #define VAL_AC_UNKNOWN_ALGORITHM_LINK (VAL_AC_LAST_FAILURE+6)      /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
 
-#define VAL_AC_LOCAL_ANSWER (VAL_AC_LAST_FAILURE+7)       /* Answer obtained locally */
-#define VAL_AC_TRUST_KEY (VAL_AC_LAST_FAILURE+8)  /* key is trusted */
-#define VAL_AC_PROVABLY_UNSECURE (VAL_AC_LAST_FAILURE+9)
-#define VAL_AC_BARE_RRSIG (VAL_AC_LAST_FAILURE+10) /* No DNSSEC validation possible, query was for a RRSIG. */
-#define VAL_AC_NO_TRUST_ANCHOR (VAL_AC_LAST_FAILURE+11)    /* No trust anchor available, but components were verified */
 
 /*
  *************************************************** 
- * Result  codes (ephemeral) 
+ * Result  codes 
  *************************************************** 
  */
 
-#define VAL_R_DONT_KNOW	0
+#define VAL_DONT_KNOW	0
 
-#define VAL_R_INDETERMINATE 1
-#define VAL_R_INDETERMINATE_DS VAL_R_INDETERMINATE      /* Can't prove that the DS is trusted */
-#define VAL_R_INDETERMINATE_PROOF  VAL_R_INDETERMINATE  /* Some intermediate Proof of non-existence obtained - dont know if answer exists and proof is bogus or answer is bogus.  */
-#define VAL_R_BOGUS 2
-#define VAL_R_BOGUS_PROOF VAL_R_BOGUS   /* proof cannot be validated */
-#define VAL_R_INCOMPLETE_PROOF VAL_R_BOGUS      /* Proof does not have all required components */
-#define VAL_R_IRRELEVANT_PROOF VAL_R_BOGUS      /* Proof is not relevant */
-#define VAL_R_BOGUS_UNPROVABLE VAL_R_BOGUS      /* Bogus result */
-#define VAL_R_BOGUS_PROVABLE (VAL_R_BOGUS | VAL_R_TRUST_FLAG)
-#define VAL_R_VERIFIED_CHAIN 3  /* All components were verified */
-#define VAL_R_VALIDATED_CHAIN (VAL_R_VERIFIED_CHAIN | VAL_R_TRUST_FLAG)
-#define VAL_R_PROVABLY_UNSECURE 4
-#define VAL_R_IGNORE_VALIDATION 5
-#define VAL_R_TRUSTED_ZONE 6
-#define VAL_R_LAST 7
+#define VAL_INDETERMINATE 1
+#define VAL_INDETERMINATE_DS VAL_INDETERMINATE      /* Can't prove that the DS is trusted */
+#define VAL_INDETERMINATE_PROOF  VAL_INDETERMINATE  /* Some intermediate Proof of non-existence obtained - dont know if answer exists and proof is bogus or answer is bogus.  */
 
-/*
- *************************************************** 
- * Result  codes (final) 
- *************************************************** 
- */
+#define VAL_BOGUS 2
+#define VAL_BOGUS_PROOF VAL_BOGUS   /* proof cannot be validated */
+#define VAL_INCOMPLETE_PROOF VAL_BOGUS      /* Proof does not have all required components */
+#define VAL_IRRELEVANT_PROOF VAL_BOGUS      /* Proof is not relevant */
+#define VAL_BOGUS_UNPROVABLE VAL_BOGUS      /* Bogus result */
 
-#define VAL_LOCAL_ANSWER (VAL_R_LAST+1)
-#define VAL_BARE_RRSIG (VAL_R_LAST+2)
-#define VAL_NONEXISTENT_NAME (VAL_R_LAST+3)
-#define VAL_NONEXISTENT_TYPE (VAL_R_LAST+4)
-#define VAL_ERROR (VAL_R_LAST+5)
-#ifdef LIBVAL_NSEC3
-#define VAL_NONEXISTENT_NAME_OPTOUT (VAL_R_LAST+6)
-#define VAL_DNS_ERROR_BASE (VAL_R_LAST+7)
-#else
-#define VAL_DNS_ERROR_BASE (VAL_R_LAST+6)
-#endif
+#define VAL_VERIFIED_CHAIN 3  /* All components were verified */
+#define VAL_NOTRUST VAL_VERIFIED_CHAIN
 
+#define VAL_DNS_ERROR_BASE   4 
 /*
  * DNS errors lie within this range, 
  */
 #define VAL_DNS_ERROR_LAST (VAL_DNS_ERROR_BASE + SR_CONFLICTING_ANSWERS)
 
-#define VAL_INDETERMINATE VAL_R_INDETERMINATE
-#define VAL_BOGUS VAL_R_BOGUS
-#define VAL_PROVABLY_UNSECURE (VAL_R_PROVABLY_UNSECURE | VAL_R_TRUST_FLAG)
-#define VAL_IGNORE_VALIDATION (VAL_R_IGNORE_VALIDATION | VAL_R_TRUST_FLAG)
-#define VAL_TRUSTED_ZONE (VAL_R_TRUSTED_ZONE | VAL_R_TRUST_FLAG)
-#define VAL_NOTRUST VAL_R_VERIFIED_CHAIN
-#define VAL_SUCCESS VAL_R_VALIDATED_CHAIN
+#define VAL_ERROR (VAL_DNS_ERROR_LAST+1) 
+
+#define VAL_DONT_GO_FURTHER   (VAL_DONT_KNOW | VAL_FLAG_CHAIN_COMPLETE)
+
+#define VAL_SUCCESS           (VAL_VERIFIED_CHAIN | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_BOGUS_PROVABLE    (VAL_BOGUS | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_PROVABLY_UNSECURE ((VAL_ERROR+1) | VAL_FLAG_CHAIN_COMPLETE) 
+#define VAL_IGNORE_VALIDATION ((VAL_ERROR+2) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_TRUSTED_ZONE      ((VAL_ERROR+3) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_UNTRUSTED_ZONE    ((VAL_ERROR+4) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_LOCAL_ANSWER      ((VAL_ERROR+5) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_BARE_RRSIG        ((VAL_ERROR+6) | VAL_FLAG_CHAIN_COMPLETE)
+#define VAL_NONEXISTENT_NAME  ((VAL_ERROR+7) | VAL_FLAG_CHAIN_COMPLETE) 
+#define VAL_NONEXISTENT_TYPE  ((VAL_ERROR+8) | VAL_FLAG_CHAIN_COMPLETE)
+#ifdef LIBVAL_NSEC3
+#define VAL_NONEXISTENT_NAME_OPTOUT ((VAL_ERROR+9) | VAL_FLAG_CHAIN_COMPLETE) 
+#endif
+
 
 #endif                          /* VAL_ERRORS_H */
