@@ -556,32 +556,29 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     *val_status = resp->vr_val_status;
 
     /* only return success if you have some answer */
-    if ((*val_status != VAL_SUCCESS ) &&
-        (*val_status != VAL_PROVABLY_UNSECURE) && 
-        (*val_status != VAL_IGNORE_VALIDATION) && 
-        (*val_status != VAL_TRUSTED_ZONE) && 
-        (*val_status != VAL_LOCAL_ANSWER)) {
-
-        switch (*val_status) {
-            case VAL_NONEXISTENT_NAME:
+    switch (*val_status) {
+        case VAL_NONEXISTENT_NAME:
 #ifdef LIBVAL_NSEC3
-            case VAL_NONEXISTENT_NAME_OPTOUT:
+        case VAL_NONEXISTENT_NAME_OPTOUT:
 #endif
-                h_errno = HOST_NOT_FOUND;
-                return -1;
+            h_errno = HOST_NOT_FOUND;
+            return -1;
 
-            case VAL_NONEXISTENT_TYPE:
-                h_errno = NO_DATA;
-                return -1;
+        case VAL_NONEXISTENT_TYPE:
+            h_errno = NO_DATA;
+            return -1;
 
-            case VAL_DNS_ERROR_BASE+SR_SERVFAIL:
-                h_errno = TRY_AGAIN;
-                return -1;
+        case VAL_DNS_ERROR_BASE+SR_SERVFAIL:
+            h_errno = TRY_AGAIN;
+            return -1;
 
-            default:
+        default:
+            if (!val_istrusted(*val_status)) {
+                /* Not a success condition */
                 h_errno = NO_RECOVERY;
                 return -1;
-        }
+            }
+            break;
     }
 
     return retval;
