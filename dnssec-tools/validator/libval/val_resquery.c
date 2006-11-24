@@ -582,7 +582,6 @@ follow_referral_or_alias_link(val_context_t * context,
     int             ret_val;
     struct name_server *ref_ns_list;
     int             len;
-    struct qname_chain *cur_qname;
 
     if ((matched_q == NULL) || (answers == NULL) || (qnames == NULL) ||
         (learned_zones == NULL) || (queries == NULL))
@@ -598,20 +597,6 @@ follow_referral_or_alias_link(val_context_t * context,
      * Register aliases for this query
      */
     if (*qnames) {
-        if ((*qnames)->qnc_next) {
-            for(cur_qname=(*qnames)->qnc_next; cur_qname; cur_qname=cur_qname->qnc_next) {
-                if (register_query(&matched_q->qc_referral->queries, 
-                           cur_qname->qnc_name_n, 
-                           matched_q->qc_type_h, 
-                           matched_q->qc_zonecut_n) == ITS_BEEN_DONE) {
-                   /*
-                    * If this request has already been made then Referral Error 
-                    */
-                   matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
-                   goto query_err;
-                }
-            }
-        } 
 
         if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n))
             /* Keep the current query name as the last name in the chain */
@@ -635,7 +620,6 @@ follow_referral_or_alias_link(val_context_t * context,
      */
     merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
     *answers = NULL;
-
 
     if (alias_chain && !referral_zone_n) {
         /* we don't have a referral for the cname/dname */
@@ -697,13 +681,14 @@ follow_referral_or_alias_link(val_context_t * context,
      */
     if (register_query
         (&matched_q->qc_referral->queries, matched_q->qc_name_n, 
-         matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
+        matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
         /*
          * If this request has already been made then Referral Error
          */
         matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
         goto query_err;
     }
+
     
 query_err:
     if (matched_q->qc_respondent_server) {
@@ -969,9 +954,18 @@ digest_response(val_context_t * context,
                 namecmp((*qnames)->qnc_name_n, name_n) == 0) {
                
                 /* add the target */
-                if ((ret_val =
-                     add_to_qname_chain(qnames, rdata)) != VAL_NO_ERROR)
+                if ((ret_val = add_to_qname_chain(qnames, rdata)) != VAL_NO_ERROR)
                     goto done;
+                if (register_query(&matched_q->qc_referral->queries, 
+                          rdata, 
+                          matched_q->qc_type_h, 
+                          matched_q->qc_zonecut_n) == ITS_BEEN_DONE) {
+                    /*
+                     * If this request has already been made then Referral Error
+                     */
+                    matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                    goto done;
+                }
            }
 
             if (type_h == ns_t_dname &&
@@ -980,7 +974,8 @@ digest_response(val_context_t * context,
                  namecmp((*qnames)->qnc_name_n, name_n) != 0) &&
                 NULL != (p = (u_int8_t *)strstr((*qnames)->qnc_name_n, name_n))) {
 
-                int len1 = p - (*qnames)->qnc_name_n;
+                u_int8_t *qname_n = (*qnames)->qnc_name_n; 
+                int len1 = p - qname_n; 
                 int len2 = wire_name_length(rdata);
                 if (len1 + len2 > sizeof(temp_name)) {
                     matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
@@ -989,12 +984,21 @@ digest_response(val_context_t * context,
                 } 
                 if (len1 > 0) {
                     /* add the DNAME owner name */
-                    if ((ret_val = add_to_qname_chain(qnames, name_n)) != VAL_NO_ERROR) {
+                    if ((ret_val = add_to_qname_chain(qnames, name_n)) != VAL_NO_ERROR) 
+                        goto done;
+                    if (register_query(&matched_q->qc_referral->queries, 
+                                      name_n, 
+                                      matched_q->qc_type_h, 
+                                      matched_q->qc_zonecut_n) == ITS_BEEN_DONE) {
+                        /*
+                         * If this request has already been made then Referral Error
+                         */
+                        matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
                         goto done;
                     }
                 }
                 /* add the target */
-                memcpy(temp_name, name_n, len1);
+                memcpy(temp_name, qname_n, len1);
                 memcpy(&temp_name[len1], rdata, len2);
                 if ((ret_val = add_to_qname_chain(qnames, temp_name)) != VAL_NO_ERROR) {
                     goto done;
