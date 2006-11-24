@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-11-22" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-11-23" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_resolve_and_check()\fR, \fIval_free_result_chain()\fR \- query and validate
 answers from a DNS name server
@@ -384,6 +384,12 @@ Validation status for a given RRset.  This can be one of the following:
 .Vb 3
 \&        VAL_TRUSTED_ZONE
 \&                 Local policy was configured to trust 
+\&                 any data received from the given zone.
+.Ve
+.Sp
+.Vb 3
+\&        VAL_UNTRUSTED_ZONE
+\&                 Local policy was configured to reject 
 \&                 any data received from the given zone.
 .Ve
 .Sp
