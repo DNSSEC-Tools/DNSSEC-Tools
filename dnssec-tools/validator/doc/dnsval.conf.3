@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2006-11-17" "perl v5.8.6" "Programmer's Manual"
+.TH dnsval.conf 3 "2006-11-23" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 /etc/dnsval.conf \- Configuration policy for the DNSSEC validator library libval(3).
 .PP
@@ -191,7 +191,7 @@ quoted string containing the \s-1RDATA\s0 portion for the trust anchor's
 .IX Item "zone-security-expectation"
 Specifies the local security expectation for a zone.  The additional
 data portion for this keyword is a sequence of the zone name and 
-its trust status \- ignore, validate or untrusted.
+its trust status \- ignore, validate, trusted or untrusted.
 .RE
 .RS 4
 .RE
