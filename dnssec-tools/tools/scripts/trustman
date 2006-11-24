@@ -82,7 +82,8 @@ push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
 
 my %keystorage;
 
-my %addkeys;
+my %newkeys;
+my %keyholds;
 my %zones;
 my %active_refresh_times;
 my %rrsigdata;
@@ -195,25 +196,23 @@ sub checkkeys {
                 $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
                 if ($nonmatch) {
                 # may be a new key, remember it.
-
-                # the line below could also be written as these three lines:
-                # my $arr = $rrsigdata{$d};
-                # my $href = $arr->[$#{$arr}];
-                # my $ttlexp = $href->{'orgttl'};
-                #   my $ttlexp = $rrsigdata{$d}->[$#{$rrsigdata{$d}}]{"orgttl"};
-
-                # use the ttl from the DNSKEY record
-         # check if this new key is already in %addkeys
-                
-                    $add_holddown_time = compute_add_holddown($ttl);
-                    push @{$addkeys{$d}},
-                          { key => $key,
-                            flags => $keyrec->flags,
-                            protocol => $keyrec->protocol,
-                            algorithm => $keyrec->algorithm,
-                            add_holddown_time => $add_holddown_time };
+            
+                # check if this key is already in %newkeys
+                # later, will also check in file
+                    if (!($newkeys{$d} eq $key)) {
+                    
+                        $add_holddown_time = compute_add_holddown($ttl);
+                        $newkeys{$d} = $key;
+                        $keyholds{$key} = $add_holddown_time;
+#                    push @{$addkeys{$d}},
+#                          { key => $key,
+#                            flags => $keyrec->flags,
+#                            protocol => $keyrec->protocol,
+#                            algorithm => $keyrec->algorithm,
+#                            add_holddown_time => $add_holddown_time };
                     
                 # using  baddomains for warning when not doing auto roll
+                    }
                     push @baddomains, $d;
                 } else {
 # %keystorage contains all keys/domains from config files
@@ -226,6 +225,22 @@ sub checkkeys {
         } else {
 # TODO see notes under Active Refresh for how to handle query failure
             print "query failed for domain " . $d . ": " . $query->errorstring . "\n";
+        }
+    }
+    if (%newkeys) {
+        my @newkeydomains;
+        # if add_holddown_time has been reached, notify
+        my $now = localtime();
+        my $nowsecs = str2time($now);
+
+        foreach my $d (keys %newkeys) {
+            if ($nowsecs >= $keyholds{$newkeys{$d}}) {
+                # notify about this key
+                push @newkeydomains, $d;
+            }
+        }
+        if (($contactaddr) && (@newkeydomains)) { # mail it
+            mailcontact(0,$smtpserver,$contactaddr,@newkeydomains);
         }
     }
     if (@baddomains) {
@@ -487,10 +502,18 @@ sub read_dnsval_conf_file {
 
 sub compute_add_holddown {
     my $ttl = shift;
-    if ($ttl > 2592000) {
-        return $ttl;
+    my $holddown;
+    my $default = 2592000;
+    my $now = localtime();
+    my $nowsecs = str2time($now);
+
+# return secs since the epoch as the time to release this holddown
+    if ($ttl > $default) { # 30 days unless ttl is less
+        $holddown = $nowsecs + $ttl;
+    } else {
+        $holddown = $nowsecs + $default;
     }
-    return 2592000;
+    return $holddown;
 }
 
 sub compute_sleeptime {
@@ -574,14 +597,15 @@ sub mailcontact {
         $message->datasend("Subject: TrustMan all clear\n\n");
         $message->datasend("TrustMan detected no DNSKEY mismatches for the following zones: \n\n");
     } else {
-        $message->datasend("Subject: TrustMan warning -- DNSKEY mismatches\n\n");
-        $message->datasend("TrustMan has detected DNSKEY mismatches for the following zones: \n\n");
+        $message->datasend("Subject: TrustMan: new key detected \n\n");
+        $message->datasend("TrustMan has detected new keys for the following zones: \n\n");
     }
     foreach my $d (@domains) {
         $message->datasend("\t" . $d . "\n");
     }
     if (!$ok) {
-        $message->datasend("\n\nYou should verify mismatched keys manually.\n\n");
+        $message->datasend("\n\nThese keys have passed the add holddown time\n");
+        $message->datasend("\n\nand can now be added manually.\n\n");
     }
 
     # finish and send the message
