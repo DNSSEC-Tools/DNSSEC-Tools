@@ -1118,12 +1118,6 @@ sub optsandargs
 	}
 
 	#
-	# Set the logging level and file.
-	#
-	rollmgr_loglevel($loglevel,1);
-	rollmgr_logfile($logfile,1);
-
-	#
 	# If the user only wants the parameters, print 'em and exit.
 	#
 	if($opts{$OPT_PARAMS})
@@ -1136,6 +1130,12 @@ sub optsandargs
 		print "	sleeptime	\"$sleeptime\"\n";
 		exit(0)
 	}
+
+	#
+	# Set the logging level and file.
+	#
+	rollmgr_loglevel($loglevel,1);
+	rollmgr_logfile($logfile,1);
 
 	#
 	# Start up our display program if -display was given.
@@ -2264,7 +2264,7 @@ sub version
 #
 sub usage
 {
-	print STDERR "usage:  rollerd [options] <zone>\n";
+	print STDERR "usage:  rollerd [options] -rrfile <rollrec-file>\n";
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-directory <dir>\n";
 	print STDERR "\t\t-logfile <logfile>\n";
