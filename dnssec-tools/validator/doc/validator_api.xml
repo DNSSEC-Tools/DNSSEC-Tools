@@ -833,11 +833,14 @@ The configuration system must flag an error if some other label contains the
 
 <t> Policy definitions have the following structure.  </t> 
 <t> &lt;label&gt; &lt;attribute&gt; &lt;additional-data&gt;; </t>
-<t> Currently the only defined value for &lt;attribute&gt; is "trust-anchor". 
-The value for &lt;additional-data&gt; depends on the type of attribute 
-specified.  For the "trust-anchor" attribute this is a sequence of the 
+<t> Possible values for &lt;attribute&gt; are "trust-anchor" and
+"zone-security-expectation".  The value for &lt;additional-data&gt; 
+depends on the type of attribute specified.  </t>
+
+<t><list style="symbols">
+<t>For the "trust-anchor" attribute additional-data is a sequence of the 
 zone name and a quoted string containing the RDATA portion for the 
-trust anchor's DNSKEY. An example is given below. </t>
+trust anchor's DNSKEY. An example is given below. 
     <figure>
     <artwork>
 browser trust-anchor example.com   "257 3 5 AQO8XS4y9r77X9SHBmrx \
@@ -849,6 +852,38 @@ browser trust-anchor example.com   "257 3 5 AQO8XS4y9r77X9SHBmrx \
     <postamble>
     </postamble>
     </figure>
+</t></list> </t>
+
+<t><list style="symbols">
+<t>For the "zone-security-expectation" attribute additional-data 
+is a sequence of the zone name and a value representing the 
+security expectation for the zones as defined below.</t> 
+</list> 
+        <t><t><t><list style="hanging">
+            <t hangText="ignore:">
+            Ignore validation for names under this domain.  </t>
+            <t hangText="trusted:">
+            Trust all answers under this domain.  </t>
+            <t hangText="validate:">
+            Perform validation for all data under this domain.  </t>
+            <t hangText="untrusted:">
+            Reject all answers under this domain.  </t>
+        </list></t></t></t> 
+        <t> <t> This policy construct makes it possible to define 
+        various islands of trust for DNSSEC-enabled zones and to 
+        ignore or trust data from selected zones. An example is given below. </t> </t>
+    <figure>
+    <artwork>
+browser zone-security-expectation  example.com  validate       \
+                                   somebogusname.com untrusted \
+                                   . ignore; 
+    </artwork>
+    <postamble>
+    <t> In this example, DNSSEC validation is only performed for names 
+    under the example.com domain; validation for other names is ignored. </t>
+    </postamble>
+    </figure>
+</t>
 
     <section title="val_create_context, val_free_context">
       <figure>
