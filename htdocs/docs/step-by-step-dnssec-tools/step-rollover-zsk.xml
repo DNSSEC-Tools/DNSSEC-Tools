@@ -48,104 +48,411 @@
     <section id="step-rollover-zsk-tools">
         <title>ZSK Rollover Using DNSSEC-Tools</title>
 
-        <para>must do an initial zone signing</para>
+        <para>The DNSSEC-Tools rollover commands simplify rollover to a great
+        extent. A small amount of set-up is required, after which rollover
+        happens automatically.</para>
 
-        <para>must set up rollrec file</para>
+        <para> <emphasis role="bold">WARNING</emphasis>: All rollrec files,
+        keyrec files, zone files, and encryption keys <emphasis
+        role="bold">MUST</emphasis> be properly protected. If these files are
+        not protected, then the security of the zone files may be
+        compromised.</para>
 
-        <para>run rollerd</para>
+        <section>
+            <title>Gather Zone Data</title>
 
-        <para>use rollctl to control rollover process</para>
+            <para>The DNSSEC-Tools rollover commands can manage rollover of
+            multiple zones. Zone files for these domains should be gathered
+            into a single directory.</para>
+
+            <para>A number of zone parameters must be selected as well. These
+            include such things as encryption key length, number of ZSK keys
+            to generate, and encryption algorithm. More information may be
+            found in the man page for <emphasis
+            role="bold">zonesigner</emphasis>. If these parameters will be
+            used for every zone managed on this host, the DNSSEC-Tools
+            configuration may be edited to have these values as the
+            defaults.</para>
+        </section>
+
+        <section>
+            <title>Initial Signing of Zones</title>
+
+            <para>Using the <emphasis role="bold">zonesigner</emphasis>
+            command, sign each zone with the parameters chosen for that zone.
+            The resulting files should be left in place.</para>
+
+            <para>The following example command will generate keys for the
+            zone <emphasis role="bold">example.com</emphasis>, where the ZSK
+            keys have a length of 1024, and then sign the zone with those
+            keys.</para>
+
+            <para><prompt> $</prompt> <command>zonesigner <option>-genkeys
+            -zsklength 1024 example.com</option></command>
+            <userinput>[ENTER]</userinput></para>
+        </section>
+
+        <section>
+            <title>Create the Rollrec File</title>
+
+            <para>A <emphasis>rollrec</emphasis> file is gives information to
+            the DNSSEC-Tools rollover daemon about the zones it is managing.
+            The <emphasis role="bold">rollinit</emphasis> command may be used
+            to create a <emphasis>rollrec</emphasis> file for a number of
+            zones at once, though the zones entries will all have the same
+            type of data.</para>
+
+            <para>The following command will generate a
+            <emphasis>rollrec</emphasis> file for two zones.</para>
+
+            <simplelist>
+                <member><prompt>$</prompt> <command>rollinit -o examples.rrf
+                example1.com example2.com</command></member>
+
+                <member><prompt>$</prompt> <command>cat
+                examples.rrf</command></member>
+
+                <member>roll "example1.com"</member>
+
+                <member>zonefile "example1.com.signed"</member>
+
+                <member>keyrec "example1.com.krf"</member>
+
+                <member>curphase "0"</member>
+
+                <member>maxttl "0"</member>
+
+                <member>display "1"</member>
+
+                <member>phasestart "new"</member>
+
+                <member>roll "example2.com"</member>
+
+                <member>zonefile "example2.com.signed"</member>
+
+                <member>keyrec "example2.com.krf"</member>
+
+                <member>curphase "0"</member>
+
+                <member>maxttl "0"</member>
+
+                <member>display "1"</member>
+
+                <member>phasestart "new"</member>
+
+                <member><userinput>$</userinput></member>
+            </simplelist>
+
+            <para>If different values are needed for different zones,
+            <emphasis role="bold">rollinit</emphasis> may be used to generate
+            entries for zones individually. The following commands will
+            generate a <emphasis>rollrec</emphasis> file for two zones. The
+            first <emphasis role="bold">rollinit</emphasis> command will use
+            the default name for the signed zone file, while the second
+            <emphasis role="bold">rollinit</emphasis> command will specify a
+            non-default location for the signed zone file.</para>
+
+            <simplelist>
+                <member><prompt>$</prompt> <command>rollinit example1.com
+                example2.com &gt; examples.rrf</command></member>
+
+                <member><prompt>$</prompt> <command>rollinit -zone
+                signed-example2.com &gt;&gt; examples.rrf</command></member>
+
+                <member><prompt>$</prompt> <command>cat
+                examples.rrf</command></member>
+
+                <member>roll "example1.com"</member>
+
+                <member>zonefile "example1.com.signed"</member>
+
+                <member>keyrec "example1.com.krf"</member>
+
+                <member>curphase "0"</member>
+
+                <member>maxttl "0"</member>
+
+                <member>display "1"</member>
+
+                <member>phasestart "new"</member>
+
+                <member>roll "example2.com"</member>
+
+                <member>zonefile "signed-example2.com"</member>
+
+                <member>keyrec "example2.com.krf"</member>
+
+                <member>curphase "0"</member>
+
+                <member>maxttl "0"</member>
+
+                <member>display "1"</member>
+
+                <member>phasestart "new"</member>
+
+                <member><userinput>$</userinput></member>
+            </simplelist>
+        </section>
+
+        <section>
+            <title>Run the DNSSEC-Tools Rollover Daemon</title>
+
+            <para>The DNSSEC-Tools rollover daemon is named <emphasis
+            role="bold">rollerd</emphasis>. Using the
+            <emphasis>rollrec</emphasis> file created in the previous step,
+            <emphasis role="bold">rollerd</emphasis> will manage the rollover
+            of a set of zones. This section describes how to manually start
+            <emphasis role="bold">rollerd</emphasis>.</para>
+
+            <para>The following command will manually start
+            <emphasis>rollerd</emphasis>. It is assumed that <emphasis
+            role="bold">rollerd</emphasis> is started in the same directory
+            that holds the <emphasis>rollrec</emphasis> file,
+            <emphasis>keyrec</emphasis> files, zone files, and encryption keys
+            created in previous steps. <emphasis
+            role="bold">rollerd</emphasis> should be run as root.</para>
+
+            <simplelist>
+                <member><prompt>#</prompt> <command>rollerd -dir . -logfile
+                log-rollerd -loglevel info -rrf examples.rrf
+                </command></member>
+
+                <member><prompt>#</prompt></member>
+            </simplelist>
+
+            <para>See the <emphasis role="bold">rollerd</emphasis> man page
+            for more information on <emphasis role="bold">rollerd</emphasis>'s
+            options and execution.</para>
+
+            <para>Arranging for automatic execution of <emphasis
+            role="bold">rollerd</emphasis> is operating system-dependent; as
+            such, it is beyond the scope of this document.</para>
+        </section>
+
+        <section>
+            <title>Controlling the Rollover Process</title>
+
+            <para>The <emphasis role="bold">rollerd</emphasis> daemon can be
+            controlled using the <emphasis role="bold">rollctl</emphasis>
+            command. This command has a number of options that will modify
+            <emphasis role="bold">rollerd</emphasis>'s operating parameters,
+            such as the zones being managed (by changing the
+            <emphasis>rollrec</emphasis> file), log level, and log file. It
+            may also be used to start or stop a GUI interface to <emphasis
+            role="bold">rollerd</emphasis> and to halt <emphasis
+            role="bold">rollerd</emphasis>'s execution.</para>
+
+            <para>The following <emphasis role="bold">rollctl</emphasis>
+            command retrieves status on each zone managed by <emphasis
+            role="bold">rollerd</emphasis>. The zone name, roll/skip status,
+            and rollover phase are displayed for each zone.</para>
+
+            <simplelist>
+                <member><prompt>#</prompt> <command>rollctl -zonestatus
+                </command></member>
+
+                <member>example1.com roll 0</member>
+
+                <member>example2.com roll 3</member>
+
+                <member><prompt>#</prompt></member>
+            </simplelist>
+
+            <para>The following <emphasis role="bold">rollctl</emphasis>
+            command starts a GUI interface to <emphasis
+            role="bold">rollerd</emphasis>.</para>
+
+            <simplelist>
+                <member><prompt>#</prompt> <command>rollctl -display
+                </command></member>
+
+                <member>rollerd display started</member>
+
+                <member><prompt>#</prompt></member>
+            </simplelist>
+
+            <para>The following <emphasis role="bold">rollctl</emphasis>
+            command sets <emphasis role="bold">rollerd</emphasis>'s logging
+            status to only record errors and fatal problems.</para>
+
+            <simplelist>
+                <member><prompt>#</prompt> <command>rollctl -loglevel error
+                </command></member>
+
+                <member>rollerd log level set to error</member>
+
+                <member><prompt>#</prompt></member>
+            </simplelist>
+
+            <para>The following <emphasis role="bold">rollctl</emphasis>
+            command changes the <emphasis>rollrec</emphasis> file in use by
+            <emphasis role="bold">rollerd</emphasis>.</para>
+
+            <simplelist>
+                <member><prompt>#</prompt> <command>rollctl -rollrec new.rrf
+                </command></member>
+
+                <member>rollerd now using rollrec file new.rrf</member>
+
+                <member><prompt>#</prompt></member>
+            </simplelist>
+
+            <para>The following <emphasis role="bold">rollctl</emphasis>
+            command causes <emphasis role="bold">rollerd</emphasis> to stop
+            execution.</para>
+
+            <simplelist>
+                <member><prompt>#</prompt> <command>rollctl -halt
+                </command></member>
+
+                <member>rollerd shutting down</member>
+
+                <member><prompt>#</prompt></member>
+            </simplelist>
+        </section>
     </section>
 
     <section id="step-rollover-zsk-manual">
         <title>Manual ZSK Rollover</title>
 
-	<para>
-
-	The steps for performing a manual ZSK rollover are given below.
-
-	</para>
+        <para>The steps for performing a manual ZSK rollover are given
+        below.</para>
 
         <section id="step-rollover-zsk-manual-1">
             <title>Ensure that Sufficient Time has Elapsed Since the Last
             Rollover</title>
-            <para>
-	    The time between rollovers has to be at least twice the maximum
-	    zone TTL period.  This is the largest TTL in the entire zone file
-	    multiplied by two.
-	    </para>
+
+            <para>The time between rollovers has to be at least twice the
+            maximum zone TTL period. This is the largest TTL in the entire
+            zone file multiplied by two.</para>
         </section>
 
         <section id="step-rollover-zsk-manual-2">
             <title>Sign Zone with the KSK and Published ZSK</title>
         </section>
-	    <para>
-	    Follow steps ??? - ???
-	    if the zone does no delegation.
-	    Follow steps ??? - ???
-	    if the zone does delegation.
-	    The ZSK used in the signing process in
-	    Section ??? or ??? must
-	    be the key that is marked as the Published key (P) in the key-tag
-	    table. The KSK used as input to <command>dnssec-signzone</command>
-	    does not change, so the keyset does not change and does not have
-	    to be re-sent to the parent.
-	    </para>
 
-	    <para>
-	    Record the signature expiry date in the key-tag table.
-	    </para>
+        <para>Follow steps ??? - ??? if the zone does no delegation. Follow
+        steps ??? - ??? if the zone does delegation. The ZSK used in the
+        signing process in Section ??? or ??? must be the key that is marked
+        as the Published key (P) in the key-tag table. The KSK used as input
+        to <command>dnssec-signzone</command> does not change, so the keyset
+        does not change and does not have to be re-sent to the parent.</para>
+
+        <para>Record the signature expiry date in the key-tag table.</para>
 
         <table colsep="1" frame="all" rowsep="1">
             <tgroup align="center" cols="10">
                 <tbody>
                     <row>
                         <entry>Zone</entry>
+
                         <entry>ZSKs</entry>
-                        <entry> </entry>
-                        <entry> </entry>
-                        <entry> </entry>
+
+                        <entry />
+
+                        <entry />
+
+                        <entry />
+
                         <entry>KSKs</entry>
-                        <entry> </entry>
-                        <entry> </entry>
-                        <entry> </entry>
+
+                        <entry />
+
+                        <entry />
+
+                        <entry />
+
                         <entry>Exp</entry>
                     </row>
+
                     <row>
-                        <entry> </entry>
+                        <entry />
+
                         <entry>Tag</entry>
+
                         <entry>Size</entry>
+
                         <entry>Creat</entry>
+
                         <entry>S</entry>
+
                         <entry>Tag</entry>
+
                         <entry>Size</entry>
+
                         <entry>Creat</entry>
+
                         <entry>S</entry>
-                        <entry> </entry>
+
+                        <entry />
                     </row>
+
                     <row>
-                        <entry><emphasis>zone-name</emphasis></entry>
-                        <entry><emphasis role="underline">zsktag-cur</emphasis></entry>
+                        <entry>
+                            <emphasis>zone-name</emphasis>
+                        </entry>
+
+                        <entry>
+                            <emphasis role="underline">zsktag-cur</emphasis>
+                        </entry>
+
                         <entry>1024</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+                        </entry>
+
                         <entry>C</entry>
-                        <entry><emphasis role="underline">ksktag</emphasis></entry>
+
+                        <entry>
+                            <emphasis role="underline">ksktag</emphasis>
+                        </entry>
+
                         <entry>2048</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+                        </entry>
+
                         <entry>C</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+                        </entry>
                     </row>
+
                     <row>
-                        <entry><emphasis>zone-name</emphasis></entry>
-                        <entry><emphasis role="underline">zsktag-cur</emphasis></entry>
+                        <entry>
+                            <emphasis>zone-name</emphasis>
+                        </entry>
+
+                        <entry>
+                            <emphasis role="underline">zsktag-cur</emphasis>
+                        </entry>
+
                         <entry>1024</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+                        </entry>
+
                         <entry>P</entry>
-                        <entry><emphasis role="underline"> </emphasis></entry>
-                        <entry> </entry>
-                        <entry><emphasis role="underline"> </emphasis></entry>
-                        <entry> </entry>
-                        <entry><emphasis role="underline"> </emphasis></entry>
+
+                        <entry>
+                            <emphasis role="underline" />
+                        </entry>
+
+                        <entry />
+
+                        <entry>
+                            <emphasis role="underline" />
+                        </entry>
+
+                        <entry />
+
+                        <entry>
+                            <emphasis role="underline" />
+                        </entry>
                     </row>
                 </tbody>
             </tgroup>
@@ -153,145 +460,225 @@
 
         <section id="step-rollover-zsk-manual-3">
             <title>Reload the Zone</title>
-	    <para>
-	    The <command>rndc</command> will reload the name server
-	    configuration files and the zone contents.  The name server
-	    process is assumed to be already running.
-	    </para>
 
-	    <para>
-	    <prompt>$</prompt> <command>rndc <option>reload zone-name</option></command> <userinput>[ENTER]</userinput>
-	    </para>
+            <para>The <command>rndc</command> will reload the name server
+            configuration files and the zone contents. The name server process
+            is assumed to be already running.</para>
 
-	    <para>
-	    <prompt>$</prompt>
-	    </para>
+            <para>
+                <prompt>$</prompt>
 
+                <command>rndc <option>reload zone-name</option></command>
+
+                <userinput>[ENTER]</userinput>
+            </para>
+
+            <para>
+                <prompt>$</prompt>
+            </para>
         </section>
 
         <section id="step-rollover-zsk-manual-4">
             <title>Wait for Old Zone Data to Expire from Caches</title>
-	    <para>
-	    Wait at least twice the maximum zone TTL period for the old zone
-	    data to expire from name server caches.  This is the largest TTL
-	    in the entire zone file multiplied by two.  This will also allow
-	    the new data to propagate.
-	    </para>
+
+            <para>Wait at least twice the maximum zone TTL period for the old
+            zone data to expire from name server caches. This is the largest
+            TTL in the entire zone file multiplied by two. This will also
+            allow the new data to propagate.</para>
         </section>
 
         <section id="step-rollover-zsk-manual-5">
             <title>Generate a New ZSK</title>
-	    <para>
-	    Generate a new ZSK as described in Section ???.  Update the
-	    Key-Tag Table with the new ZSK and set its status to New (N).
-	    </para>
 
-        <table colsep="1" frame="all" rowsep="1">
-            <tgroup align="center" cols="10">
-                <tbody>
-                    <row>
-                        <entry>Zone</entry>
-                        <entry>ZSKs</entry>
-                        <entry> </entry>
-                        <entry> </entry>
-                        <entry> </entry>
-                        <entry>KSKs</entry>
-                        <entry> </entry>
-                        <entry> </entry>
-                        <entry> </entry>
-                        <entry>Exp</entry>
-                    </row>
-                    <row>
-                        <entry> </entry>
-                        <entry>Tag</entry>
-                        <entry>Size</entry>
-                        <entry>Creat</entry>
-                        <entry>S</entry>
-                        <entry>Tag</entry>
-                        <entry>Size</entry>
-                        <entry>Creat</entry>
-                        <entry>S</entry>
-                        <entry> </entry>
-                    </row>
-                    <row>
-                        <entry><emphasis>zone-name</emphasis></entry>
-                        <entry><emphasis role="underline">zsktag-cur</emphasis></entry>
-                        <entry>1024</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
-                        <entry>C</entry>
-                        <entry><emphasis role="underline">ksktag</emphasis></entry>
-                        <entry>2048</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
-                        <entry>C</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
-                    </row>
-                    <row>
-                        <entry><emphasis>zone-name</emphasis></entry>
-                        <entry><emphasis role="underline">zsktag-pub</emphasis></entry>
-                        <entry>1024</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
-                        <entry>P</entry>
-                        <entry><emphasis role="underline"> </emphasis></entry>
-                        <entry> </entry>
-                        <entry><emphasis role="underline"> </emphasis></entry>
-                        <entry> </entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
-                    </row>
-                    <row>
-                        <entry><emphasis>zone-name</emphasis></entry>
-                        <entry><emphasis role="underline">zsktag-new</emphasis></entry>
-                        <entry>1024</entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
-                        <entry>N</entry>
-                        <entry><emphasis role="underline"> </emphasis></entry>
-                        <entry> </entry>
-                        <entry><emphasis role="underline"> </emphasis></entry>
-                        <entry> </entry>
-                        <entry><emphasis role="underline">date</emphasis></entry>
-                    </row>
-                </tbody>
-            </tgroup>
-        </table>
+            <para>Generate a new ZSK as described in Section ???. Update the
+            Key-Tag Table with the new ZSK and set its status to New
+            (N).</para>
 
+            <table colsep="1" frame="all" rowsep="1">
+                <tgroup align="center" cols="10">
+                    <tbody>
+                        <row>
+                            <entry>Zone</entry>
+
+                            <entry>ZSKs</entry>
+
+                            <entry />
+
+                            <entry />
+
+                            <entry />
+
+                            <entry>KSKs</entry>
+
+                            <entry />
+
+                            <entry />
+
+                            <entry />
+
+                            <entry>Exp</entry>
+                        </row>
+
+                        <row>
+                            <entry />
+
+                            <entry>Tag</entry>
+
+                            <entry>Size</entry>
+
+                            <entry>Creat</entry>
+
+                            <entry>S</entry>
+
+                            <entry>Tag</entry>
+
+                            <entry>Size</entry>
+
+                            <entry>Creat</entry>
+
+                            <entry>S</entry>
+
+                            <entry />
+                        </row>
+
+                        <row>
+                            <entry>
+                                <emphasis>zone-name</emphasis>
+                            </entry>
+
+                            <entry>
+                                <emphasis role="underline">zsktag-cur</emphasis>
+                            </entry>
+
+                            <entry>1024</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>C</entry>
+
+                            <entry>
+                                <emphasis role="underline">ksktag</emphasis>
+                            </entry>
+
+                            <entry>2048</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>C</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>
+                                <emphasis>zone-name</emphasis>
+                            </entry>
+
+                            <entry>
+                                <emphasis role="underline">zsktag-pub</emphasis>
+                            </entry>
+
+                            <entry>1024</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>P</entry>
+
+                            <entry>
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry />
+
+                            <entry>
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry />
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>
+                                <emphasis>zone-name</emphasis>
+                            </entry>
+
+                            <entry>
+                                <emphasis role="underline">zsktag-new</emphasis>
+                            </entry>
+
+                            <entry>1024</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>N</entry>
+
+                            <entry>
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry />
+
+                            <entry>
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry />
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
         </section>
 
         <section id="step-rollover-zsk-manual-6">
             <title>Modify the Zone File</title>
-	    <para>
-	    The zone file must be modified to account for the key changes.
-	    The Current ZSK must be deleted and the New ZSK must be added.
-	    Also, the SOA serial number must be changed so that the zone
-	    file's new contents will be recognized.
-	    </para>
+
+            <para>The zone file must be modified to account for the key
+            changes. The Current ZSK must be deleted and the New ZSK must be
+            added. Also, the SOA serial number must be changed so that the
+            zone file's new contents will be recognized.</para>
         </section>
 
         <section id="step-rollover-zsk-manual-7">
             <title>Update the Key-Tags Table</title>
-	    <para>
-	    z
-	    </para>
+
+            <para>z</para>
         </section>
 
         <section id="step-rollover-zsk-manual-8">
             <title>Sign the Zone with the KSK and Current ZSK</title>
-	    <para>
-	    z
-	    </para>
+
+            <para>z</para>
         </section>
 
         <section id="step-rollover-zsk-manual-9">
             <title>Reload the Zone</title>
-	    <para>
-	    z
-	    </para>
+
+            <para>z</para>
         </section>
 
         <section id="step-rollover-zsk-manual-10">
             <title>Dispose of the Old Zone Key</title>
-            <para>
-	    Delete the old ZSKs <emphasis>.private</emphasis> and
-            <emphasis>.key</emphasis> files.
-	    </para>
+
+            <para>Delete the old ZSKs <emphasis>.private</emphasis> and
+            <emphasis>.key</emphasis> files.</para>
         </section>
     </section>
 </chapter>
