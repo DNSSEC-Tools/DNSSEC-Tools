@@ -582,43 +582,35 @@ p_val_status(val_status_t err)
 {
     switch (err) {
 
-    case VAL_R_DONT_KNOW:
-    case VAL_R_TRUST_FLAG | VAL_R_DONT_KNOW:
+    case VAL_DONT_KNOW:
         return "Uninitialized";
         break;
     case VAL_INDETERMINATE:
-    case VAL_R_TRUST_FLAG | VAL_INDETERMINATE:
         return "VAL_INDETERMINATE";
         break;
-    case VAL_BOGUS:
-    case VAL_R_TRUST_FLAG | VAL_BOGUS:
+    case VAL_BOGUS_UNPROVABLE:
+    case VAL_BOGUS_PROVABLE: 
         return "VAL_BOGUS";
         break;
     case VAL_LOCAL_ANSWER:
-    case VAL_R_TRUST_FLAG | VAL_LOCAL_ANSWER:
         return "VAL_LOCAL_ANSWER";
         break;
     case VAL_BARE_RRSIG:
-    case VAL_R_TRUST_FLAG | VAL_BARE_RRSIG:
         return "VAL_BARE_RRSIG";
         break;
     case VAL_NONEXISTENT_NAME:
-    case VAL_R_TRUST_FLAG | VAL_NONEXISTENT_NAME:
         return "VAL_NONEXISTENT_NAME";
         break;
 #ifdef LIBVAL_NSEC3
     case VAL_NONEXISTENT_NAME_OPTOUT:
-    case VAL_R_TRUST_FLAG | VAL_NONEXISTENT_NAME_OPTOUT:
         return "VAL_NONEXISTENT_NAME";
         break;
 #endif
         
     case VAL_NONEXISTENT_TYPE:
-    case VAL_R_TRUST_FLAG | VAL_NONEXISTENT_TYPE:
         return "VAL_NONEXISTENT_TYPE";
         break;
     case VAL_ERROR:
-    case VAL_R_TRUST_FLAG | VAL_ERROR:
         return "VAL_ERROR";
         break;
     case VAL_PROVABLY_UNSECURE:
@@ -629,6 +621,9 @@ p_val_status(val_status_t err)
         break;
     case VAL_TRUSTED_ZONE:
         return "VAL_TRUSTED_ZONE";
+        break;
+    case VAL_UNTRUSTED_ZONE:
+        return "VAL_UNTRUSTED_ZONE";
         break;
     case VAL_NOTRUST:
         return "VAL_NOTRUST";
