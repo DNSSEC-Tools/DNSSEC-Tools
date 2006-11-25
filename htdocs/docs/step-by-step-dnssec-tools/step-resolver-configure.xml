@@ -1,122 +1,119 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter>
-  <title>Configure a Secure Resolver</title>
+    <title>Configure a Secure Resolver</title>
 
-  <section>
-    <title>Introduction</title>
+    <section>
+        <title>Introduction</title>
 
-    <para>This document has described how to configure and maintain a secure
-    nameserver which supplies signed zones and delegations. All the signed
-    zones and delegations within the scope of the server form an island of
-    security from which nameserver data can be retrieved in a authenticated
-    and verifiable way by a security aware resolver.</para>
+        <para>This document has described how to configure and maintain a
+        secure nameserver which supplies signed zones and delegations. All the
+        signed zones and delegations within the scope of the server form an
+        island of security from which nameserver data can be retrieved in a
+        authenticated and verifiable way by a security aware resolver.</para>
 
-    <para>But there are times operationally when a recursing secure name
-    server may need to refer to, and retrieve, data from servers outside this
-    island of security. If the referral is to a non-secure name server there
-    is no secure recourse and the chain of authentication is broken and this
-    data can not then be trusted.</para>
+        <para>But there are times operationally when a recursing secure name
+        server may need to refer to, and retrieve, data from servers outside
+        this island of security. If the referral is to a non-secure name
+        server there is no secure recourse and the chain of authentication is
+        broken and this data can not then be trusted.</para>
 
-    <para>To extend the scope of security, a secure nameserver may be
-    configured with public key data from other remote secure zones so that the
-    chain of trust is expanded. The <option>trusted-keys</option> directive in
-    the <filename>named.conf</filename> configuration file provides this
-    capability.</para>
+        <para>To extend the scope of security, a secure nameserver may be
+        configured with public key data from other remote secure zones so that
+        the chain of trust is expanded. The <option>trusted-keys</option>
+        directive in the <filename>named.conf</filename> configuration file
+        provides this capability.</para>
 
-    <para>The mechanism described below for extending the chain of trust
-    should be used judiciously and comes with the added operational burden of
-    verifying and maintaining key validity and timeliness.</para>
+        <para>The mechanism described below for extending the chain of trust
+        should be used judiciously and comes with the added operational burden
+        of verifying and maintaining key validity and timeliness.</para>
 
-    <para>The following is an example of a <option>trusted-keys</option>
-    directive in a <filename>named.conf</filename> which provides verification
-    of data retrieved from the <literal>se.</literal> and
-    <literal>dnssec-tools.org.</literal> zones. Note: key data may be
-    different from that shown and should be obtained as described
-    below.</para>
+        <para>The following is an example of a <option>trusted-keys</option>
+        directive in a <filename>named.conf</filename> which provides
+        verification of data retrieved from the <literal>se.</literal> and
+        <literal>dnssec-tools.org.</literal> zones.</para>
 
-    <para><computeroutput>trusted-keys {</computeroutput></para>
+        <para>Note: Key data may be different from that shown and should be
+        obtained as described below.</para>
 
-    <para><computeroutput>se. 257 3 5
-    "AwEAAaxPMcR2x0HbQV4WeZB6oEDX+r0QM65KbhTjrW1ZaARmPhEZZe3Y
-    9ifgEuq7vZ/zGZUdEGNWy+JZzus0lUptwgjGwhUS1558Hb4JKUbbOTcM
-    8pwXlj0EiX3oDFVmjHO444gLkBOUKUf/mC7HvfwYH/Be22GnClrinKJp
-    1Og4ywzO9WglMk7jbfW33gUKvirTHr25GL7STQUzBb5Usxt8lgnyTUHs
-    1t3JwCY5hKZ6CqFxmAVZP20igTixin/1LcrgX/KMEGd/buvF4qJCydui
-    eHukuY3H4XMAcR+xia2nIUPvm/oyWR8BW/hWdzOvnSCThlHf3xiYleDb
-    t/o1OTQ09A0=";</computeroutput></para>
+        <para><computeroutput>trusted-keys {</computeroutput></para>
 
-    <para><computeroutput>dnssec-tools.org. 257 3 5
-    "AQOoEFn3VnV1qDwnNX9GlukAsbL7buCk6Wmt3VG9BOVae84VVc/yWghg
-    tFM/WKw/5243XoBEeNyaahRIrlAJEnErLUWlKO/YuWkasRN4jkS2dDjS
-    MWgjdGxzux+e0UV2UZfpjyygYvaD9U8xTwwzLYLDkamr1SCaHWCWUOO+
-    QMa/WY//r3ObbOFOYCvyqvsLRwofSFnQnsbihKbcP9HQSDQ4iRqbCTMV
-    B+yq5NXiFoZT05Sqm/ijOrjLznZkUqIal9EXqyhNT0dTa9Gdn8+tfn+l
-    YApwK91NA2YG/3t8ZKTYjDLe1YlwKg8OBTTN4ARap+265EtE87BhE6ZK
-    fp+DUx4N";</computeroutput></para>
+        <para><computeroutput>se. 257 3 5
+        "AwEAAaxPMcR2x0HbQV4WeZB6oEDX+r0QM65KbhTjrW1ZaARmPhEZZe3Y
+        9ifgEuq7vZ/zGZUdEGNWy+JZzus0lUptwgjGwhUS1558Hb4JKUbbOTcM
+        8pwXlj0EiX3oDFVmjHO444gLkBOUKUf/mC7HvfwYH/Be22GnClrinKJp
+        1Og4ywzO9WglMk7jbfW33gUKvirTHr25GL7STQUzBb5Usxt8lgnyTUHs
+        1t3JwCY5hKZ6CqFxmAVZP20igTixin/1LcrgX/KMEGd/buvF4qJCydui
+        eHukuY3H4XMAcR+xia2nIUPvm/oyWR8BW/hWdzOvnSCThlHf3xiYleDb
+        t/o1OTQ09A0=";</computeroutput></para>
 
-    <para><computeroutput>};</computeroutput></para>
+        <para><computeroutput>dnssec-tools.org. 257 3 5
+        "AQOoEFn3VnV1qDwnNX9GlukAsbL7buCk6Wmt3VG9BOVae84VVc/yWghg
+        tFM/WKw/5243XoBEeNyaahRIrlAJEnErLUWlKO/YuWkasRN4jkS2dDjS
+        MWgjdGxzux+e0UV2UZfpjyygYvaD9U8xTwwzLYLDkamr1SCaHWCWUOO+
+        QMa/WY//r3ObbOFOYCvyqvsLRwofSFnQnsbihKbcP9HQSDQ4iRqbCTMV
+        B+yq5NXiFoZT05Sqm/ijOrjLznZkUqIal9EXqyhNT0dTa9Gdn8+tfn+l
+        YApwK91NA2YG/3t8ZKTYjDLe1YlwKg8OBTTN4ARap+265EtE87BhE6ZK
+        fp+DUx4N";</computeroutput></para>
 
-    <para>The format of the directive is:</para>
+        <para><computeroutput>};</computeroutput></para>
 
-    <para><option>trusted-keys { <parameter>&lt;zone&gt;</parameter>
-    <parameter>&lt;flags&gt;</parameter>
-    <parameter>&lt;protocol&gt;</parameter>
-    <parameter>&lt;algorithm&gt;</parameter>
-    <parameter>&lt;quoted-key-string&gt;</parameter>; };</option></para>
+        <para>The format of the directive is:</para>
 
-    <para>The <parameter>flags</parameter>, <parameter>protocol</parameter>,
-    <parameter>algorithm</parameter> and
-    <parameter>quoted-key-string</parameter> data may be obtained using the
-    following <command>dig</command> command, but the content of the string
-    should be verified in a secure out-of-band way to ensure its
-    validity.</para>
+        <para><option>trusted-keys { <parameter>&lt;zone&gt;</parameter>
+        <parameter>&lt;flags&gt;</parameter>
+        <parameter>&lt;protocol&gt;</parameter>
+        <parameter>&lt;algorithm&gt;</parameter>
+        <parameter>&lt;quoted-key-string&gt;</parameter>; };</option></para>
 
-    <para><prompt>$</prompt> <command>dig <option>se.</option>
-    <option>DNSKEY</option></command></para>
+        <para>The <parameter>flags</parameter>,
+        <parameter>protocol</parameter>, <parameter>algorithm</parameter> and
+        <parameter>quoted-key-string</parameter> data may be obtained using
+        the following <command>dig</command> command, but the content of the
+        string should be verified in a secure out-of-band way to ensure its
+        validity.</para>
 
-    <para><computeroutput>;; Truncated, retrying in TCP mode. ;
-    &lt;&lt;&gt;&gt; DiG 9.3.1 &lt;&lt;&gt;&gt; se. DNSKEY ;; global options:
-    printcmd ;; Got answer: ;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status:
-    NOERROR, id: 31166 ;; flags: qr rd ra; QUERY: 1, ANSWER: 4, AUTHORITY: 8,
-    ADDITIONAL: 0 ;; QUESTION SECTION: ;se. IN DNSKEY ;; ANSWER SECTION: se.
-    3600 IN DNSKEY 257 3 5
-    AwEAAaxPMcR2x0HbQV4WeZB6oEDX+r0QM65KbhTjrW1ZaARmPhEZZe3Y
-    9ifgEuq7vZ/zGZUdEGNWy+JZzus0lUptwgjGwhUS1558Hb4JKUbbOTcM
-    8pwXlj0EiX3oDFVmjHO444gLkBOUKUf/mC7HvfwYH/Be22GnClrinKJp
-    1Og4ywzO9WglMk7jbfW33gUKvirTHr25GL7STQUzBb5Usxt8lgnyTUHs
-    1t3JwCY5hKZ6CqFxmAVZP20igTixin/1LcrgX/KMEGd/buvF4qJCydui
-    eHukuY3H4XMAcR+xia2nIUPvm/oyWR8BW/hWdzOvnSCThlHf3xiYleDb t/o1OTQ09A0=
-    ...</computeroutput></para>
+        <para><command># dig se. DNSKEY</command></para>
 
-    <para>Note: from the output select the DNSKEY whose flags have the zone
-    signing key bit set (257).</para>
+        <para><computeroutput>;; Truncated, retrying in TCP mode. ;
+        &lt;&lt;&gt;&gt; DiG 9.3.1 &lt;&lt;&gt;&gt; se. DNSKEY ;; global
+        options: printcmd ;; Got answer: ;; -&gt;&gt;HEADER&lt;&lt;- opcode:
+        QUERY, status: NOERROR, id: 31166 ;; flags: qr rd ra; QUERY: 1,
+        ANSWER: 4, AUTHORITY: 8, ADDITIONAL: 0 ;; QUESTION SECTION: ;se. IN
+        DNSKEY ;; ANSWER SECTION: se. 3600 IN DNSKEY 257 3 5
+        AwEAAaxPMcR2x0HbQV4WeZB6oEDX+r0QM65KbhTjrW1ZaARmPhEZZe3Y
+        9ifgEuq7vZ/zGZUdEGNWy+JZzus0lUptwgjGwhUS1558Hb4JKUbbOTcM
+        8pwXlj0EiX3oDFVmjHO444gLkBOUKUf/mC7HvfwYH/Be22GnClrinKJp
+        1Og4ywzO9WglMk7jbfW33gUKvirTHr25GL7STQUzBb5Usxt8lgnyTUHs
+        1t3JwCY5hKZ6CqFxmAVZP20igTixin/1LcrgX/KMEGd/buvF4qJCydui
+        eHukuY3H4XMAcR+xia2nIUPvm/oyWR8BW/hWdzOvnSCThlHf3xiYleDb t/o1OTQ09A0=
+        ...</computeroutput></para>
 
-    <para>Once the 'named.conf' is edited as above, the configuration can be
-    reloaded with:</para>
+        <para>Note: from the output select the DNSKEY whose flags have the
+        zone signing key bit set (257).</para>
 
-    <para><prompt>$</prompt> <command>rndc
-    <option>reload</option></command></para>
+        <para>Once the 'named.conf' is edited as above, the configuration can
+        be reloaded with:</para>
 
-    <para>It may also be necessary to flush the cache data before retrieving
-    authenticated results:</para>
+        <para><command># rndc reload</command></para>
 
-    <para><prompt>$</prompt> <command>rndc
-    <option>flush</option></command></para>
+        <para>It may also be necessary to flush the cache data before
+        retrieving authenticated results:</para>
 
-    <para>To verify that the <option>trusted-keys</option> directive is
-    working properly perform a secure <command>dig</command> at the configured
-    server for the remote signed zone data and observe that the
-    <option>ad</option> flag is set in the response. For example:</para>
+        <para><command># rndc flush</command></para>
 
-    <para><prompt>$</prompt> <command>dig <option>@localhost</option>
-    <option>se.</option> <option>ANY</option>
-    <option>+dnssec</option></command></para>
+        <para>To verify that the <option>trusted-keys</option> directive is
+        working properly perform a secure <command>dig</command> at the
+        configured server for the remote signed zone data and observe that the
+        <option>ad</option> flag is set in the response. For example:</para>
 
-    <para><computeroutput>;; Truncated, retrying in TCP mode. ;; Connection to
-    ::1#53(::1) for se. failed: connection refused. ; &lt;&lt;&gt;&gt; DiG
-    9.3.1 &lt;&lt;&gt;&gt; @localhost ANY se. +dnssec ; (2 servers found) ;;
-    global options: printcmd ;; Got answer: ;; -&gt;&gt;HEADER&lt;&lt;-
-    opcode: QUERY, status: NOERROR, id: 56473 ;; flags: qr rd ra ad; QUERY: 1,
-    ANSWER: 23, AUTHORITY: 9, ADDITIONAL: 1 ...</computeroutput></para>
-  </section>
+        <para><command># dig @localhost se. ANY +dnssec</command></para>
+
+        <para><computeroutput>;; Truncated, retrying in TCP mode. ;;
+        Connection to ::1#53(::1) for se. failed: connection refused. ;
+        &lt;&lt;&gt;&gt; DiG 9.3.1 &lt;&lt;&gt;&gt; @localhost ANY se. +dnssec
+        ; (2 servers found) ;; global options: printcmd ;; Got answer: ;;
+        -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 56473 ;;
+        flags: qr rd ra ad; QUERY: 1, ANSWER: 23, AUTHORITY: 9, ADDITIONAL: 1
+        ...</computeroutput></para>
+    </section>
 </chapter>

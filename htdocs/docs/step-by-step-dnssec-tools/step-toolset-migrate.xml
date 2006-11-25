@@ -1,104 +1,103 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter>
-  <title>Migrate to the Toolset</title>
+    <title>Migrate to the Toolset</title>
 
-  <para>The zonesigner tool simplifies the maintenance of a signed zone. It
-  automates many of the routine tasks required for signing a zone. Given this,
-  an operator already using BIND tools to maintain a signed zone may want to
-  transition over to zonesigner, while still retaining existing keys that are
-  being used to sign a zone.</para>
+    <para>The <emphasis role="bold">zonesigner</emphasis> tool simplifies the
+    maintenance of a signed zone. It automates many of the routine tasks
+    required for signing a zone. Given this, an operator already using BIND
+    tools to maintain a signed zone may want to transition to <emphasis
+    role="bold">zonesigner</emphasis>, while still retaining existing keys
+    that are being used to sign a zone.</para>
 
-  <para>This section provides step-by-step instructions to transition from
-  using BIND tools for maintaining a signed zone to using zonesigner. In the
-  examples given below, the zone example.com is currently signed, signed zone
-  file is maintained using <command>dnssec-signzone</command> command from
-  BIND 9.3.1, and the following files are present:</para>
+    <para>This section provides step-by-step instructions to transition from
+    using BIND tools for maintaining a signed zone to using <emphasis
+    role="bold">zonesigner</emphasis>. In the examples given below, the zone
+    example.com is currently signed, signed zone file is maintained using
+    <command>dnssec-signzone</command> command from BIND 9.3.1, and the
+    following files are present:</para>
 
-  <table colsep="0" frame="none" rowsep="0">
-    <title>Example Files</title>
+    <table colsep="0" frame="none" rowsep="0">
+        <title>Example Files</title>
 
-    <tgroup cols="2">
-      <thead>
-        <row>
-          <entry>File</entry>
+        <tgroup cols="2">
+            <thead>
+                <row>
+                    <entry>File</entry>
 
-          <entry>Description</entry>
-        </row>
-      </thead>
+                    <entry>Description</entry>
+                </row>
+            </thead>
 
-      <tbody>
-        <row>
-          <entry>db-in.example.com.</entry>
+            <tbody>
+                <row>
+                    <entry>db-in.example.com.</entry>
 
-          <entry>Unsigned zone file</entry>
-        </row>
+                    <entry>Unsigned zone file</entry>
+                </row>
 
-        <row>
-          <entry>db-in.example.com..signed</entry>
+                <row>
+                    <entry>db-in.example.com..signed</entry>
 
-          <entry>Signed zone file</entry>
-        </row>
+                    <entry>Signed zone file</entry>
+                </row>
 
-        <row>
-          <entry>Kexample.com.+005+47670</entry>
+                <row>
+                    <entry>Kexample.com.+005+47670</entry>
 
-          <entry>KSK files prefix</entry>
-        </row>
+                    <entry>KSK files prefix</entry>
+                </row>
 
-        <row>
-          <entry>Kexample.com.+005+48926</entry>
+                <row>
+                    <entry>Kexample.com.+005+48926</entry>
 
-          <entry>ZSK files prefix</entry>
-        </row>
-      </tbody>
-    </tgroup>
-  </table>
+                    <entry>ZSK files prefix</entry>
+                </row>
+            </tbody>
+        </tgroup>
+    </table>
 
-  <section>
-    <title>Generate the keyrec file</title>
+    <section>
+        <title>Generate the Keyrec File</title>
 
-    <para><prompt>$</prompt> <command>genkrf
-    <option>-zone=<option>example.com</option></option>
-    <option>-ksk=<option>Kexample.com.+005+47670</option></option>
-    <option>-zskcur=<option>Kexample.com.+005+48926</option></option><filename>db-in.example.com.</filename>
-    <filename>db-in.example.com..signed</filename></command></para>
+        <para><command># genkrf -zone=example.com -ksk=Kexample.com.+005+47670
+        -zskcur=Kexample.com.+005+48926db-in.example.com.
+        db-in.example.com..signed</command></para>
 
-    <para>The <command>genkrf</command> command generates a keyrec file from
-    existing key files. It also generates any additional keys that zonesigner
-    uses. In the above example, <command>genkrf</command> will generate a new
-    key <option>zskpub</option> along with the keyrec file named
-    <filename>example.com.krf</filename>. It will display the following
-    message if successful:</para>
+        <para>The <command>genkrf</command> command generates a keyrec file
+        from existing key files. It also generates any additional keys that
+        <emphasis role="bold">zonesigner</emphasis> uses. In the above
+        example, <command>genkrf</command> will generate a new key
+        <option>zskpub</option> along with the keyrec file named
+        <filename>example.com.krf</filename>. It will display the following
+        message if successful:</para>
 
-    <para><computeroutput>genkrf: file example.com.krf created
-    successfully.</computeroutput></para>
-  </section>
+        <para><computeroutput>genkrf: file example.com.krf created
+        successfully.</computeroutput></para>
+    </section>
 
-  <section>
-    <title>Verify the keyrec file</title>
+    <section>
+        <title>Verify the Keyrec File</title>
 
-    <para>Examine the contents of the keyrec file and ensure that the original
-    KSK and ZSK files are being used.</para>
+        <para>Examine the contents of the keyrec file and ensure that the
+        original KSK and ZSK files are being used.</para>
 
-    <para><prompt>$</prompt> <command>grep
-    <option>Kexample.com.+005+47670</option>
-    <filename>example.com.krf</filename></command> <userinput>[ENTER]</userinput></para>
+        <para><command># grep Kexample.com.+005+47670
+        example.com.krf</command> <userinput>[ENTER]</userinput></para>
 
-    <para><computeroutput>kskdir
-    "Kexample.com.+005+47670"</computeroutput></para>
+        <para><computeroutput>kskdir
+        "Kexample.com.+005+47670"</computeroutput></para>
 
-    <para><prompt>$</prompt> <command>grep
-    <option>Kexample.com.+005+48296</option>
-    <filename>example.com.krf</filename></command> <userinput>[ENTER]</userinput></para>
+        <para><command># grep Kexample.com.+005+48296
+        example.com.krf</command> <userinput>[ENTER]</userinput></para>
 
-    <para><computeroutput>zskcur
-    "Kexample.com.+005+48296"</computeroutput></para>
-  </section>
+        <para><computeroutput>zskcur
+        "Kexample.com.+005+48296"</computeroutput></para>
+    </section>
 
-  <section>
-    <title>Resign the zone with zonesigner</title>
+    <section>
+        <title>Resign the Zone with zonesigner</title>
 
-    <para>See <xref linkend="step-zone-resign" /> for how to resign the
-    zone.</para>
-  </section>
+        <para>See <xref linkend="step-zone-resign" /> for how to resign the
+        zone.</para>
+    </section>
 </chapter>

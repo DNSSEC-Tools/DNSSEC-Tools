@@ -19,8 +19,7 @@
     <para>The owner name for the DNSKEY record in the received keyset must
     correspond to a valid delegation.</para>
 
-    <para><prompt>$</prompt> <command>cat
-    <filename>keyset-child-zone-file</filename></command>
+    <para><command># cat keyset-child-zone-file</command>
     <userinput>[ENTER]</userinput></para>
 
     <para><computeroutput>child-zone-name. 3600 IN DNSKEY 256 3 5 ( ... ); key
@@ -29,8 +28,7 @@
     <para><computeroutput>child-zone-name</computeroutput> must exist in the
     parent zone-file as a valid delegation.</para>
 
-    <para><prompt>$</prompt> <command>cat
-    <filename>zone-file</filename></command>
+    <para><command># cat zone-file</command>
     <userinput>[ENTER]</userinput></para>
 
     <para><computeroutput>... child-zone-name NS server A ...
