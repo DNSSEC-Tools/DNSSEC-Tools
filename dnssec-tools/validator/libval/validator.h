@@ -497,6 +497,7 @@ extern          "C" {
      * from val_assertion.h 
      */
     int             val_istrusted(val_status_t val_status);
+    int             val_isvalidated(val_status_t val_status);
     void            val_free_result_chain(struct val_result_chain
                                           *results);
     int             val_resolve_and_check(val_context_t * context,
