@@ -17,7 +17,7 @@
     configuration file. For the zone whose name is
     <literal>zone-name</literal>, do the following:</para>
 
-    <para><prompt>$</prompt> <command>vi <filename>named.conf</filename>
+    <para><command># vi named.conf
     </command> <userinput>[ENTER]</userinput></para>
 
     <para><computeroutput>... zone "zone-name." { type master; file
@@ -30,8 +30,7 @@
     <para>Add the <literal>dnssec-enable yes;</literal> option to the
     <filename>named.conf</filename> file.</para>
 
-    <para><prompt>$</prompt> <command>vi <filename>named.conf</filename>
-    </command><userinput>[ENTER]</userinput></para>
+    <para><command># vi named.conf</command><userinput>[ENTER]</userinput></para>
 
     <para><computeroutput>... options { ... dnssec-enable yes; };
     ...</computeroutput></para>
@@ -45,8 +44,7 @@
     perform this verification. No output indicates that all is well with the
     zone.</para>
 
-    <para><prompt>$</prompt> <command>named-checkconf
-    <filename>named.conf</filename></command>
+    <para><command># named-checkconf named.conf</command>
     <userinput>[ENTER]</userinput></para>
   </section>
 
@@ -59,8 +57,7 @@
     <para>Confirm that the SOA serial number of the zone corresponds to the
     most recent value.</para>
 
-    <para><prompt>$</prompt> <command>dig <option>@server-IP-address</option>
-    <option>SOA</option> <option>zone-name</option></command>
+    <para><command># dig @server-IP-address SOA zone-name</command>
     <userinput>[ENTER]</userinput></para>
 
     <para><computeroutput>; &lt;&lt;&gt;&gt; DiG 9.3.0 &lt;&lt;&gt;&gt; ...

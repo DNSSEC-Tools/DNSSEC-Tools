@@ -19,9 +19,7 @@
         <filename>/dev/random</filename> will provide data when
         requested:</para>
 
-        <para><prompt>$</prompt> <command>dd <option>if=/dev/random</option>
-        <option>bs=2</option> <option>count=10</option></command> |
-        <command>od <option>-x</option></command>
+        <para><command># dd if=/dev/random bs=2 count=10 | od -x</command>
         <userinput>[ENTER]</userinput></para>
 
         <para>The above command checks if <filename>/dev/random</filename> is
