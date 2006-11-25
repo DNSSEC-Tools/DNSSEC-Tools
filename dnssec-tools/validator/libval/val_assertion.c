@@ -4009,3 +4009,35 @@ val_istrusted(val_status_t val_status)
     }
 }
 
+/*
+ * Function: val_isvalidated
+ *
+ * Purpose:   Tells whether the given validation status code represents an
+ *            answer that was cryptographically validated up to a configured
+ *            trust anchor. This is independent of whether or not the status
+ *            is 'trusted', since trust is a policy decision.
+ *
+ * Parameter: val_status -- a validation status code returned by the validator
+ *
+ * Returns:   1 if the validation status represents a validated response
+ *            0 if the validation status does not represent a validated response
+ *
+ */
+int
+val_isvalidated(val_status_t val_status)
+{
+    switch (val_status) {
+    case VAL_SUCCESS:
+    case VAL_NONEXISTENT_NAME:
+#ifdef LIBVAL_NSEC3
+    case VAL_NONEXISTENT_NAME_OPTOUT:
+#endif
+    case VAL_NONEXISTENT_TYPE:
+    case VAL_PROVABLY_UNSECURE:
+        return 1;
+
+    default:
+        return 0;
+    }
+}
+
