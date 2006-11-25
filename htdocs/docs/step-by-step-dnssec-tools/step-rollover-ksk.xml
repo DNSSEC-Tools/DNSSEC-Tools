@@ -1,7 +1,554 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="step-rollover-ksk">
-  <title>KSK Rollover (Double Signature Scheme)</title>
+    <title>KSK Rollover (Double-Signature Scheme)</title>
 
-    <para>This section will be written when the key rollover tool is
-    completed.</para>
+    <para>This section gives the steps necessary for the double-signature
+    scheme for KSK rollover. The alternative, the pre-publish method, is used
+    for rolling over ZSKs. Double signatures for records signed by the ZSK can
+    increase the size of the zone many times. The pre-publish scheme, although
+    requiring more steps for the rollover, does not suffer from this problem.
+    The size argument does not apply during KSK rollover since the DNSKEY
+    RRset is the only record doubly signed by the KSK.</para>
+
+    <para>The DNSSEC-Tools utilities do not currently handle KSK rollover. The
+    steps given below detail the double-signature scheme used for KSK
+    rollover.</para>
+
+    <section id="step-rollover-ksk-manual">
+        <title>Manual KSK Rollover</title>
+
+        <para>The steps for performing a manual KSK rollover are given
+        below.</para>
+
+        <section id="step-rollover-ksk-manual-1">
+            <title>Ensure that Sufficient Time has Elapsed Since the Last
+            Rollover</title>
+
+            <para>The time between rollovers has to be at least twice the
+            maximum zone TTL period. This is the largest TTL in the entire
+            zone file multiplied by two.</para>
+        </section>
+
+        <section id="step-rollover-ksk-manual-2">
+            <title>Generate a New KSK</title>
+        </section>
+
+        <para>Generate a new KSK as described in Section ???.</para>
+
+        <table colsep="1" frame="all" rowsep="1">
+            <tgroup align="center" cols="10">
+                <colspec align="center" colname="_2" colnum="2" />
+
+                <colspec align="center" colname="_3" />
+
+                <colspec colname="_4" />
+
+                <colspec colname="_5" />
+
+                <colspec colname="_6" />
+
+                <colspec colname="_7" />
+
+                <colspec colname="_8" />
+
+                <colspec colname="_9" />
+
+                <tbody>
+                    <row>
+                        <entry morerows="1">
+                            <emphasis role="bold">Zone</emphasis>
+                        </entry>
+
+                        <entry nameend="_5" namest="_2">
+                            <emphasis role="bold">ZSKs</emphasis>
+                        </entry>
+
+                        <entry nameend="_9" namest="_6">
+                            <emphasis role="bold">KSKs</emphasis>
+                        </entry>
+
+                        <entry morerows="1">
+                            <emphasis role="bold">Exp</emphasis>
+                        </entry>
+                    </row>
+
+                    <row>
+                        <entry>Tag</entry>
+
+                        <entry>Size</entry>
+
+                        <entry>Creat</entry>
+
+                        <entry>S</entry>
+
+                        <entry>Tag</entry>
+
+                        <entry>Size</entry>
+
+                        <entry>Creat</entry>
+
+                        <entry>S</entry>
+                    </row>
+
+                    <row>
+                        <entry morerows="1">
+                            <emphasis>zone-name</emphasis>
+                        </entry>
+
+                        <entry>
+                            <emphasis role="underline">zsktag-cur</emphasis>
+                        </entry>
+
+                        <entry>1024</entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+                        </entry>
+
+                        <entry>C</entry>
+
+                        <entry>
+                            <emphasis role="underline">ksktag</emphasis>
+
+                            <emphasis role="underline" />
+                        </entry>
+
+                        <entry>2048</entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+
+                            <emphasis role="underline" />
+                        </entry>
+
+                        <entry>C</entry>
+
+                        <entry morerows="1">
+                            <emphasis role="underline">date</emphasis>
+
+                            <emphasis role="underline" />
+
+                            <emphasis role="underline" />
+                        </entry>
+                    </row>
+
+                    <row>
+                        <entry>
+                            <emphasis role="underline">zsktag-pub</emphasis>
+                        </entry>
+
+                        <entry>1024</entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+                        </entry>
+
+                        <entry>P</entry>
+
+                        <entry>
+                            <emphasis role="underline">ksktag</emphasis>
+                        </entry>
+
+                        <entry>2048</entry>
+
+                        <entry>
+                            <emphasis role="underline">date</emphasis>
+                        </entry>
+
+                        <entry>P</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+
+        <section id="step-rollover-ksk-manual-6">
+            <title>Modify the Zone File</title>
+
+            <para>The zone file must be modified to account for the new KSK.
+            Also, the SOA serial number must be incremented so that the zone
+            file's new contents will be recognized.</para>
+
+            <para>The required key changes are made by adding a new <emphasis
+            role="bold">$INCLUDE</emphasis> lines for the new KSK.</para>
+        </section>
+
+        <section id="step-rollover-ksk-manual-7">
+            <title>Re-Sign the Zone DNSKEY RRset with the Current and
+            Published KSKs</title>
+
+            <para>ZSKs sign the zone data, whereas KSKs sign the RRset for all
+            DNSKEYs recognized by the zone. There is no direct way to create
+            the signed DNSKEY RRset for the zone; it is only formed as a
+            by-product of the <emphasis role="bold">dnssec-signzone</emphasis>
+            operation.</para>
+
+            <para>Follow steps ??? -- ??? if the zone does no delegation.
+            Follow steps ??? -- ??? if the zone does delegation. The ZSK used
+            in the signing process in Section ??? or ??? must be the key that
+            is marked as the Current key (C) in the Key-Tag table. Both the
+            Current KSK and the Published KSK must be simultaneously included
+            in the <emphasis role="bold">dnssec-signzone</emphasis> operation
+            (by using two <emphasis>-k</emphasis> options).</para>
+
+            <para>Update the Key-Tags table to record the signature expiration
+            date.</para>
+
+            <table colsep="1" frame="all" rowsep="1">
+                <tgroup align="center" cols="10">
+                    <colspec align="center" colname="_2" colnum="2" />
+
+                    <colspec align="center" colname="_3" />
+
+                    <colspec colname="_4" />
+
+                    <colspec colname="_5" />
+
+                    <colspec colname="_6" />
+
+                    <colspec colname="_7" />
+
+                    <colspec colname="_8" />
+
+                    <colspec colname="_9" />
+
+                    <tbody>
+                        <row>
+                            <entry morerows="1">
+                                <emphasis role="bold">Zone</emphasis>
+                            </entry>
+
+                            <entry nameend="_5" namest="_2">
+                                <emphasis role="bold">ZSKs</emphasis>
+                            </entry>
+
+                            <entry nameend="_9" namest="_6">
+                                <emphasis role="bold">KSKs</emphasis>
+                            </entry>
+
+                            <entry morerows="1">
+                                <emphasis role="bold">Exp</emphasis>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>Tag</entry>
+
+                            <entry>Size</entry>
+
+                            <entry>Creat</entry>
+
+                            <entry>S</entry>
+
+                            <entry>Tag</entry>
+
+                            <entry>Size</entry>
+
+                            <entry>Creat</entry>
+
+                            <entry>S</entry>
+                        </row>
+
+                        <row>
+                            <entry morerows="1">
+                                <emphasis>zone-name</emphasis>
+                            </entry>
+
+                            <entry>
+                                <emphasis role="underline">zsktag-cur</emphasis>
+                            </entry>
+
+                            <entry>1024</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>C</entry>
+
+                            <entry>
+                                <emphasis role="underline">ksktag</emphasis>
+
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry>2048</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry>C</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+
+                                <emphasis role="underline" />
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>
+                                <emphasis role="underline">zsktag-pub</emphasis>
+                            </entry>
+
+                            <entry>1024</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>P</entry>
+
+                            <entry>
+                                <emphasis role="underline">ksktag</emphasis>
+                            </entry>
+
+                            <entry>2048</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>P</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+
+        <para>Although the keyset has changed, it <emphasis role="bold">must
+        not</emphasis> be sent to the parent yet.</para>
+
+        <section id="step-rollover-ksk-manual-9">
+            <title>Reload the Zone</title>
+
+            <para>The <command>rndc</command> will reload the name server
+            configuration files and the zone contents. The name server process
+            is assumed to be already running.</para>
+
+            <simplelist>
+                <member>
+                    <command># rndc reload zone-name</command>
+                </member>
+
+                <member>
+                    <command>#</command>
+                </member>
+            </simplelist>
+        </section>
+
+        <section id="step-rollover-ksk-manual-1">
+            <title>Wait for Old DNSKEY RRset to Expire from Caches</title>
+
+            <para>Wait at least twice the maximum zone TTL period for the old
+            DNSKEY RRset to expire from name server caches. This is the
+            largest TTL in the entire zone file multiplied by two. This will
+            also allow the new data to propagate.</para>
+        </section>
+
+        <section id="step-rollover-ksk-manual-6">
+            <title>Modify the Zone File</title>
+
+            <para>The zone file must be modified to delete the Current KSK.
+            The SOA serial number must be incremented so that the zone file's
+            new contents will be recognized.</para>
+
+            <para>The required key changes are made by deleting the <emphasis
+            role="bold">$INCLUDE</emphasis> line for the Current KSK. The
+            Published KSK, by default, becomes the Current KSK.</para>
+        </section>
+
+        <section id="step-rollover-ksk-manual-7">
+            <title>Re-Sign the Zone DNSKEY RRset with the New Current
+            KSK</title>
+
+            <para>The RRset for all DNSKEYs is signed by the Current (only
+            remaining) KSK. There is no direct way to create the signed DNSKEY
+            RRset for the zone; it is only formed as a by-product of the
+            <emphasis role="bold">dnssec-signzone</emphasis> operation.</para>
+
+            <para>Follow steps ??? -- ??? if the zone does no delegation.
+            Follow steps ??? -- ??? if the zone does delegation.</para>
+        </section>
+
+        <section id="step-rollover-ksk-manual-88">
+            <title>Update the Key-Tags Table with the Latest KSK</title>
+
+            <para>Delete the Current KSK and change the status of the new KSK
+            from Published (P) to Current (C). Record the signature expiry
+            date in the Key-Tags table.</para>
+
+            <table colsep="1" frame="all" rowsep="1">
+                <tgroup align="center" cols="10">
+                    <colspec align="center" colname="_2" colnum="2" />
+
+                    <colspec align="center" colname="_3" />
+
+                    <colspec colname="_4" />
+
+                    <colspec colname="_5" />
+
+                    <colspec colname="_6" />
+
+                    <colspec colname="_7" />
+
+                    <colspec colname="_8" />
+
+                    <colspec colname="_9" />
+
+                    <tbody>
+                        <row>
+                            <entry morerows="1">
+                                <emphasis role="bold">Zone</emphasis>
+                            </entry>
+
+                            <entry nameend="_5" namest="_2">
+                                <emphasis role="bold">ZSKs</emphasis>
+                            </entry>
+
+                            <entry nameend="_9" namest="_6">
+                                <emphasis role="bold">KSKs</emphasis>
+                            </entry>
+
+                            <entry morerows="1">
+                                <emphasis role="bold">Exp</emphasis>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>Tag</entry>
+
+                            <entry>Size</entry>
+
+                            <entry>Creat</entry>
+
+                            <entry>S</entry>
+
+                            <entry>Tag</entry>
+
+                            <entry>Size</entry>
+
+                            <entry>Creat</entry>
+
+                            <entry>S</entry>
+                        </row>
+
+                        <row>
+                            <entry morerows="2">
+                                <emphasis>zone-name</emphasis>
+                            </entry>
+
+                            <entry>
+                                <emphasis role="underline">zsktag-cur</emphasis>
+                            </entry>
+
+                            <entry>1024</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry>C</entry>
+
+                            <entry>
+                                <emphasis role="underline">ksktag</emphasis>
+
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry>2048</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+
+                                <emphasis role="underline" />
+                            </entry>
+
+                            <entry>C</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+
+                                <emphasis role="underline" />
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry morerows="1">
+                                <emphasis role="underline">zsktag-pub</emphasis>
+                            </entry>
+
+                            <entry morerows="1">1024</entry>
+
+                            <entry morerows="1">
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry morerows="1">P</entry>
+
+                            <entry morerows="1">
+                                <emphasis role="underline">ksktag</emphasis>
+                            </entry>
+
+                            <entry morerows="1">2048</entry>
+
+                            <entry morerows="1">
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+
+                            <entry morerows="1">P C</entry>
+
+                            <entry>
+                                <emphasis role="underline">date</emphasis>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry />
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
+        </section>
+
+        <section id="step-rollover-ksk-manual-89">
+            <title>Perform Steps in Section ??? if this Zone is a Secure
+            Delegation from Another Zone</title>
+
+            <para>The keyset generated in Section ??? contains only the new
+            KSK. This keyset must be sent to the parent in order to complete
+            the secure delegation.</para>
+        </section>
+
+        <section id="step-rollover-ksk-manual-9">
+            <title>Reload the Zone</title>
+
+            <para>The <command>rndc</command> will reload the name server
+            configuration files and the zone contents. The name server process
+            is assumed to be already running.</para>
+
+            <simplelist>
+                <member>
+                    <command># rndc reload zone-name</command>
+                </member>
+
+                <member>
+                    <command>#</command>
+                </member>
+            </simplelist>
+        </section>
+
+        <section id="step-rollover-ksk-manual-10">
+            <title>Dispose of the Old KSK</title>
+
+            <para>Delete the old ZSK's <emphasis>.private</emphasis> and
+            <emphasis>.key</emphasis> files.</para>
+        </section>
+    </section>
 </chapter>
