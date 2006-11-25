@@ -37,7 +37,7 @@
       </address>
     </author>
 
-    <date month="October" year="2006" />
+    <date month="November" year="2006" />
     <workgroup> DNS Extensions </workgroup>
     <keyword>Internet-Draft</keyword>
 
@@ -148,6 +148,8 @@ for the ctx parameter. </t>
     <section title="val_gethostbyname, val_gethostbyname_r, val_gethostbyaddr, val_gethostbyaddr_r">
     <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 struct hostent *val_gethostbyname( const val_context_t *ctx,
                                    const char          *name,
                                    val_status_t        *val_status );
@@ -238,6 +240,8 @@ string using the p_val_status() function as described in
     <section title="val_getaddrinfo, val_getnameinfo, val_freeaddrinfo" anchor="hl_getaddrinfo">
     <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 int val_getaddrinfo( const val_context_t   *ctx, 
                      const char            *nodename,
                      const char            *servname,
@@ -310,6 +314,8 @@ a non-zero value on error.  </t>
     <section title="val_query, val_res_query">
       <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 int val_query( const val_context_t *ctx, 
                const char          *domain_name,
                const u_int16_t     class, 
@@ -385,6 +391,8 @@ returns the value of anslen on success and -1 on failure.  </t>
     <section title="val_istrusted" anchor="val-istrusted">
       <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 int val_istrusted(val_status_t status);
       </artwork>
       <postamble>
@@ -403,6 +411,8 @@ status values.
     <section title="p_val_status" anchor="p-val-error">
       <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 char *p_val_status(val_status_t err);
       </artwork>
       <postamble>
@@ -428,6 +438,8 @@ validator API are summarized below. </t>
     <section title="val_resolve_and_check, val_free_result_chain, p_ac_status">
       <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 int val_resolve_and_check( const val_context_t        *context, 
                            u_char                     *domain_name_n,
                            const u_int16_t            class,
@@ -436,6 +448,10 @@ int val_resolve_and_check( const val_context_t        *context,
                            struct val_result_chain    **results);
 
 void val_free_result_chain( struct val_result_chain *results );
+      </artwork>
+      </figure>
+      <figure>
+      <artwork>
 
 char *p_ac_status(val_astatus_t err);
 
@@ -462,10 +478,7 @@ struct val_authentication_chain {
     struct val_rrset                *val_ac_rrset;
     struct val_authentication_chain *val_ac_trust;
 };
-      </artwork>
-      </figure>
-      <figure>
-      <artwork>
+
 struct val_rrset {
     u_int8_t        *val_msg_header;
     u_int16_t       val_msg_headerlen;
@@ -843,11 +856,12 @@ zone name and a quoted string containing the RDATA portion for the
 trust anchor's DNSKEY. An example is given below. 
     <figure>
     <artwork>
-browser trust-anchor example.com   "257 3 5 AQO8XS4y9r77X9SHBmrx \
-                MoJf1Pf9AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2XEm6mp6 \
-                mit4tzpB/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6/Ha0 Ef \
-                GPNSqnY 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVyQPeEVHk \
-                oDNCAlr qOA3lw==" ;
+    browser trust-anchor 
+        example.com   "257 3 5 AQO8XS4y9r77X 9SHBmrx MoJf1Pf9\
+            AT9Mr/L5BBGtO9/e9f/zl4FFgM2l B6M2 XEm6mp6 mit4tzp\
+            B/sAEQw1McYz6bJdKkTiqtuWTCfDmgQhI6 /Ha0 Ef GPNSqn\
+            Y 99FmbSeWNIRaa4fgSCVFhvbrYq1nXkNVy QPeEVHk oDNCA\
+            lr qOA3lw==" ;
     </artwork>
     <postamble>
     </postamble>
@@ -874,14 +888,15 @@ This zone-security-expectation policy construct makes it possible to define
 various islands of trust for DNSSEC-enabled zones and to 
 ignore or trust data from selected zones. 
 In the following example, DNSSEC validation is only performed for names 
-under the example.com domain; validation for other names is ignored. 
-
+under the example.com domain; names under the somebogus.org domain are always
+considered to be untrused and validation for other domain names is ignored. 
 </t> </list> </t> 
     <figure>
     <artwork>
-browser zone-security-expectation  example.com  validate       \
-                                   somebogusname.com untrusted \
-                                   . ignore; 
+    browser zone-security-expectation           
+        example.com  validate       
+        somebogusname.org untrusted 
+        . ignore; 
     </artwork>
     <postamble>
     </postamble>
@@ -890,6 +905,8 @@ browser zone-security-expectation  example.com  validate       \
     <section title="val_create_context, val_free_context">
       <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 int val_create_context( const char    *scope,
                      val_context_t **newcontext );
 
@@ -922,6 +939,8 @@ using the val_free_context() function when no longer needed. </t>
     <section title="val_get_policy_definition, val_set_policy_definition">
       <figure>
       <artwork>
+#include &lt;validator.h&gt;
+
 int val_get_policy_definition(char        *label,
                               char        **pol_def ); 
 
