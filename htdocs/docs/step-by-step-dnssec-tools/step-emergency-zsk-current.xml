@@ -2,8 +2,8 @@
 <chapter id="step-emergency-current-zsk">
     <title>Emergency ZSK Rollover (Current ZSK Compromise)</title>
 
-    <para>If the KSK is also compromised, perform the emergency KSK rollover
-    first.</para>
+    <para><emphasis role="bold">If the KSK is also compromised, perform the
+    emergency KSK rollover first.</emphasis></para>
 
     <para>As long as there is a valid KSK signature over the ZSK, the KSK can
     continue to be used to inject false zone data. If both keys are
@@ -26,14 +26,14 @@
     If only the Published key is compromised follow the steps in Section
     ???.</para>
 
-    <section id="step-rollover-zsk-emergency">
-        <title>Manual Emergency ZSK Rollover</title>
+    <section id="step-rollover-zsk-emergency-current">
+        <title>Manual Emergency Current ZSK Rollover</title>
 
         <para>The DNSSEC-Tools utilities do not currently handle emergency ZSK
         rollover. The steps given below detail the double-signature scheme
         used for KSK rollover.</para>
 
-        <section id="step-rollover-zsk-emergency-5">
+        <section id="step-rollover-zsk-emergency-current-1">
             <title>Generate a New ZSK</title>
 
             <para>Generate a new ZSK as described in Section ???. Update the
@@ -177,12 +177,12 @@
             </table>
         </section>
 
-        <section id="step-rollover-zsk-emergency-6">
+        <section id="step-rollover-zsk-emergency-current-2">
             <title>Modify the Zone File</title>
 
             <para>The zone file must be modified to account for the key
             changes. The Current ZSK must be deleted and the New ZSK must be
-            added. Also, the SOA serial number must be changed so that the
+            added. Also, the SOA serial number must be incremented so that the
             zone file's new contents will be recognized.</para>
 
             <para>The required key changes are made by modifying the <emphasis
@@ -192,7 +192,7 @@
             for the New ZSK must be added.</para>
         </section>
 
-        <section id="step-rollover-zsk-emergency-8">
+        <section id="step-rollover-zsk-emergency-current-3">
             <title>Sign the Zone with the Published ZSK Only</title>
 
             <para>Follow the steps in sections ??? - ??? if the zone does no
@@ -205,7 +205,7 @@
             parent.</para>
         </section>
 
-        <section id="step-rollover-zsk-emergency-9">
+        <section id="step-rollover-zsk-emergency-current-4">
             <title>Reload the Zone</title>
 
             <para>The <command>rndc</command> will reload the name server
@@ -219,7 +219,7 @@
             </simplelist>
         </section>
 
-        <section id="step-rollover-zsk-emergency-7">
+        <section id="step-rollover-zsk-emergency-current-5">
             <title>Update the Key-Tags Table</title>
 
             <para>Update the Key-Tags table to reflect the changed key status.
@@ -373,7 +373,7 @@
             </table>
         </section>
 
-        <section id="step-rollover-zsk-emergency-10">
+        <section id="step-rollover-zsk-emergency-current-6">
             <title>Dispose of the Old Zone Key</title>
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
@@ -381,4 +381,3 @@
         </section>
     </section>
 </chapter>
-

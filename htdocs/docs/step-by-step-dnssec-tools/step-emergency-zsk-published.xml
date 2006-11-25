@@ -23,14 +23,14 @@
     will be a period (up to twice the maximum zone TTL) where the cached zone
     data may not validate against the new ZSK.</para>
 
-    <section id="step-rollover-zsk-emergency">
+    <section id="step-rollover-zsk-emergency-published">
         <title>Manual Emergency Published ZSK Rollover</title>
 
         <para>The DNSSEC-Tools utilities do not currently handle emergency ZSK
         rollover. The steps given below detail the double-signature scheme
         used for KSK rollover.</para>
 
-        <section id="step-rollover-zsk-emergency-5">
+        <section id="step-rollover-zsk-emergency-published-1">
             <title>Generate a New ZSK</title>
 
             <para>Generate a new ZSK as described in Section ???. Update the
@@ -174,7 +174,7 @@
             </table>
         </section>
 
-        <section id="step-rollover-zsk-emergency-6">
+        <section id="step-rollover-zsk-emergency-published-2">
             <title>Modify the Zone File</title>
 
             <para>The zone file must be modified to account for the key
@@ -189,7 +189,7 @@
             line for the New ZSK must be added.</para>
         </section>
 
-        <section id="step-rollover-zsk-emergency-8">
+        <section id="step-rollover-zsk-emergency-published-3">
             <title>Sign the Zone with the KSK and Current ZSK Only</title>
 
             <para>Follow the steps in sections ??? - ??? if the zone does no
@@ -202,7 +202,7 @@
             parent.</para>
         </section>
 
-        <section id="step-rollover-zsk-emergency-9">
+        <section id="step-rollover-zsk-emergency-published-4">
             <title>Reload the Zone</title>
 
             <para>The <command>rndc</command> will reload the name server
@@ -216,7 +216,7 @@
             </simplelist>
         </section>
 
-        <section id="step-rollover-zsk-emergency-7">
+        <section id="step-rollover-zsk-emergency-published-5">
             <title>Update the Key-Tags Table</title>
 
             <para>Update the Key-Tags table to reflect the changed key status.
@@ -370,7 +370,7 @@
             </table>
         </section>
 
-        <section id="step-rollover-zsk-emergency-10">
+        <section id="step-rollover-zsk-emergency-published-6">
             <title>Dispose of the Old Zone Key</title>
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
