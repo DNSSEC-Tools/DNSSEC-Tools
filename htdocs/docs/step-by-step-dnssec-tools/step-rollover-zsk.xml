@@ -87,8 +87,8 @@
             keys have a length of 1024, and then sign the zone with those
             keys.</para>
 
-            <para><command># zonesigner <option>-genkeys
-            -zsklength 1024 example.com</option></command>
+            <para><command># zonesigner <option>-genkeys -zsklength 1024
+            example.com</option></command>
             <userinput>[ENTER]</userinput></para>
         </section>
 
@@ -106,8 +106,8 @@
             <emphasis>rollrec</emphasis> file for two zones.</para>
 
             <simplelist>
-                <member><command># rollinit -o examples.rrf
-                example1.com example2.com</command></member>
+                <member><command># rollinit -o examples.rrf example1.com
+                example2.com</command></member>
 
                 <member><command># cat examples.rrf</command></member>
 
@@ -152,11 +152,11 @@
             non-default location for the signed zone file.</para>
 
             <simplelist>
-                <member><command># rollinit example1.com
-                example2.com &gt; examples.rrf</command></member>
+                <member><command># rollinit example1.com example2.com &gt;
+                examples.rrf</command></member>
 
-                <member><command># rollinit -zone
-                signed-example2.com &gt;&gt; examples.rrf</command></member>
+                <member><command># rollinit -zone signed-example2.com &gt;&gt;
+                examples.rrf</command></member>
 
                 <member><command># cat examples.rrf</command></member>
 
@@ -211,9 +211,8 @@
             role="bold">rollerd</emphasis> should be run as root.</para>
 
             <simplelist>
-                <member><command># rollerd -dir . -logfile
-                log-rollerd -loglevel info -rrf examples.rrf
-                </command></member>
+                <member><command># rollerd -dir . -logfile log-rollerd
+                -loglevel info -rrf examples.rrf </command></member>
 
                 <member><command>#</command></member>
             </simplelist>
@@ -246,8 +245,7 @@
             and rollover phase are displayed for each zone.</para>
 
             <simplelist>
-                <member><command># rollctl -zonestatus
-                </command></member>
+                <member><command># rollctl -zonestatus </command></member>
 
                 <member>example1.com roll 0</member>
 
@@ -595,7 +593,7 @@
                             <entry>P</entry>
 
                             <entry>
-                                <emphasis role="underline">date</emphasis>
+                                <emphasis role="underline" />
                             </entry>
                         </row>
 
@@ -613,7 +611,7 @@
                             <entry>N</entry>
 
                             <entry>
-                                <emphasis role="underline">date</emphasis>
+                                <emphasis role="underline" />
                             </entry>
                         </row>
                     </tbody>
@@ -757,7 +755,11 @@
                                 <emphasis role="underline">date</emphasis>
                             </entry>
 
-                            <entry morerows="1">P C</entry>
+                            <entry morerows="1">
+                                <para>P</para>
+
+                                <para>C</para>
+                            </entry>
                         </row>
 
                         <row>
@@ -775,7 +777,11 @@
                                 <emphasis role="underline">date</emphasis>
                             </entry>
 
-                            <entry morerows="1">NP</entry>
+                            <entry morerows="1">
+                                <para>N</para>
+
+                                <para>P</para>
+                            </entry>
 
                             <entry>
                                 <emphasis role="underline" />
@@ -944,4 +950,3 @@
         </section>
     </section>
 </chapter>
-
