@@ -161,7 +161,7 @@
             </tgroup>
         </table>
 
-        <section id="step-rollover-ksk-manual-6">
+        <section id="step-rollover-ksk-manual-3">
             <title>Modify the Zone File</title>
 
             <para>The zone file must be modified to account for the new KSK.
@@ -172,7 +172,7 @@
             role="bold">$INCLUDE</emphasis> lines for the new KSK.</para>
         </section>
 
-        <section id="step-rollover-ksk-manual-7">
+        <section id="step-rollover-ksk-manual-4">
             <title>Re-Sign the Zone DNSKEY RRset with the Current and
             Published KSKs</title>
 
@@ -325,7 +325,7 @@
         <para>Although the keyset has changed, it <emphasis role="bold">must
         not</emphasis> be sent to the parent yet.</para>
 
-        <section id="step-rollover-ksk-manual-9">
+        <section id="step-rollover-ksk-manual-5">
             <title>Reload the Zone</title>
 
             <para>The <command>rndc</command> will reload the name server
@@ -343,7 +343,7 @@
             </simplelist>
         </section>
 
-        <section id="step-rollover-ksk-manual-1">
+        <section id="step-rollover-ksk-manual-6">
             <title>Wait for Old DNSKEY RRset to Expire from Caches</title>
 
             <para>Wait at least twice the maximum zone TTL period for the old
@@ -352,7 +352,7 @@
             also allow the new data to propagate.</para>
         </section>
 
-        <section id="step-rollover-ksk-manual-6">
+        <section id="step-rollover-ksk-manual-7">
             <title>Modify the Zone File</title>
 
             <para>The zone file must be modified to delete the Current KSK.
@@ -364,7 +364,7 @@
             Published KSK, by default, becomes the Current KSK.</para>
         </section>
 
-        <section id="step-rollover-ksk-manual-7">
+        <section id="step-rollover-ksk-manual-8">
             <title>Re-Sign the Zone DNSKEY RRset with the New Current
             KSK</title>
 
@@ -377,7 +377,7 @@
             Follow steps ??? -- ??? if the zone does delegation.</para>
         </section>
 
-        <section id="step-rollover-ksk-manual-88">
+        <section id="step-rollover-ksk-manual-8">
             <title>Update the Key-Tags Table with the Latest KSK</title>
 
             <para>Delete the Current KSK and change the status of the new KSK
@@ -517,7 +517,7 @@
             </table>
         </section>
 
-        <section id="step-rollover-ksk-manual-89">
+        <section id="step-rollover-ksk-manual-9">
             <title>Perform Steps in Section ??? if this Zone is a Secure
             Delegation from Another Zone</title>
 
@@ -526,7 +526,7 @@
             the secure delegation.</para>
         </section>
 
-        <section id="step-rollover-ksk-manual-9">
+        <section id="step-rollover-ksk-manual-10">
             <title>Reload the Zone</title>
 
             <para>The <command>rndc</command> will reload the name server
@@ -544,7 +544,7 @@
             </simplelist>
         </section>
 
-        <section id="step-rollover-ksk-manual-10">
+        <section id="step-rollover-ksk-manual-11">
             <title>Dispose of the Old KSK</title>
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
