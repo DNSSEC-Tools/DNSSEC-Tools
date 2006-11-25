@@ -15,7 +15,7 @@
         RRset is the only record doubly signed by the KSK.</para>
 
         <para>In the Pre-publish Rollover Scheme, multiple ZSK keys are
-        simultaneously maintained for a zone. These ZSKs are labelled the
+        simultaneously maintained for a zone. These ZSKs are labeled the
         Current ZSK, the Published ZSK, and the New ZSK. The Current and
         Published ZSKs are used to sign the zone, while the New ZSK will be
         used in the future. When the Current ZSK expires, the following steps
@@ -87,7 +87,7 @@
             keys have a length of 1024, and then sign the zone with those
             keys.</para>
 
-            <para><prompt> $</prompt> <command>zonesigner <option>-genkeys
+            <para><command># zonesigner <option>-genkeys
             -zsklength 1024 example.com</option></command>
             <userinput>[ENTER]</userinput></para>
         </section>
@@ -106,11 +106,10 @@
             <emphasis>rollrec</emphasis> file for two zones.</para>
 
             <simplelist>
-                <member><prompt>$</prompt> <command>rollinit -o examples.rrf
+                <member><command># rollinit -o examples.rrf
                 example1.com example2.com</command></member>
 
-                <member><prompt>$</prompt> <command>cat
-                examples.rrf</command></member>
+                <member><command># cat examples.rrf</command></member>
 
                 <member>roll "example1.com"</member>
 
@@ -140,7 +139,7 @@
 
                 <member>phasestart "new"</member>
 
-                <member><userinput>$</userinput></member>
+                <member><command># </command></member>
             </simplelist>
 
             <para>If different values are needed for different zones,
@@ -153,14 +152,13 @@
             non-default location for the signed zone file.</para>
 
             <simplelist>
-                <member><prompt>$</prompt> <command>rollinit example1.com
+                <member><command># rollinit example1.com
                 example2.com &gt; examples.rrf</command></member>
 
-                <member><prompt>$</prompt> <command>rollinit -zone
+                <member><command># rollinit -zone
                 signed-example2.com &gt;&gt; examples.rrf</command></member>
 
-                <member><prompt>$</prompt> <command>cat
-                examples.rrf</command></member>
+                <member><command># cat examples.rrf</command></member>
 
                 <member>roll "example1.com"</member>
 
@@ -190,7 +188,7 @@
 
                 <member>phasestart "new"</member>
 
-                <member><userinput>$</userinput></member>
+                <member><command># </command></member>
             </simplelist>
         </section>
 
@@ -213,11 +211,11 @@
             role="bold">rollerd</emphasis> should be run as root.</para>
 
             <simplelist>
-                <member><prompt>#</prompt> <command>rollerd -dir . -logfile
+                <member><command># rollerd -dir . -logfile
                 log-rollerd -loglevel info -rrf examples.rrf
                 </command></member>
 
-                <member><prompt>#</prompt></member>
+                <member><command>#</command></member>
             </simplelist>
 
             <para>See the <emphasis role="bold">rollerd</emphasis> man page
@@ -248,14 +246,14 @@
             and rollover phase are displayed for each zone.</para>
 
             <simplelist>
-                <member><prompt>#</prompt> <command>rollctl -zonestatus
+                <member><command># rollctl -zonestatus
                 </command></member>
 
                 <member>example1.com roll 0</member>
 
                 <member>example2.com roll 3</member>
 
-                <member><prompt>#</prompt></member>
+                <member><command>#</command></member>
             </simplelist>
 
             <para>The following <emphasis role="bold">rollctl</emphasis>
@@ -263,12 +261,11 @@
             role="bold">rollerd</emphasis>.</para>
 
             <simplelist>
-                <member><prompt>#</prompt> <command>rollctl -display
-                </command></member>
+                <member><command># rollctl -display</command></member>
 
                 <member>rollerd display started</member>
 
-                <member><prompt>#</prompt></member>
+                <member><command>#</command></member>
             </simplelist>
 
             <para>The following <emphasis role="bold">rollctl</emphasis>
@@ -276,12 +273,11 @@
             status to only record errors and fatal problems.</para>
 
             <simplelist>
-                <member><prompt>#</prompt> <command>rollctl -loglevel error
-                </command></member>
+                <member><command># rollctl -loglevel error</command></member>
 
                 <member>rollerd log level set to error</member>
 
-                <member><prompt>#</prompt></member>
+                <member><command>#</command></member>
             </simplelist>
 
             <para>The following <emphasis role="bold">rollctl</emphasis>
@@ -289,12 +285,11 @@
             <emphasis role="bold">rollerd</emphasis>.</para>
 
             <simplelist>
-                <member><prompt>#</prompt> <command>rollctl -rollrec new.rrf
-                </command></member>
+                <member><command># rollctl -rollrec new.rrf</command></member>
 
                 <member>rollerd now using rollrec file new.rrf</member>
 
-                <member><prompt>#</prompt></member>
+                <member><command>#</command></member>
             </simplelist>
 
             <para>The following <emphasis role="bold">rollctl</emphasis>
@@ -302,12 +297,11 @@
             execution.</para>
 
             <simplelist>
-                <member><prompt>#</prompt> <command>rollctl -halt
-                </command></member>
+                <member><command># rollctl -halt</command></member>
 
                 <member>rollerd shutting down</member>
 
-                <member><prompt>#</prompt></member>
+                <member><command>#</command></member>
             </simplelist>
         </section>
     </section>
@@ -461,13 +455,11 @@
 
             <simplelist>
                 <member>
-                    <prompt># </prompt>
-
-                    <command>rndc reload zone-name</command>
+                    <command># rndc reload zone-name</command>
                 </member>
 
                 <member>
-                    <prompt>#</prompt>
+                    <command>#</command>
                 </member>
             </simplelist>
         </section>
@@ -935,13 +927,11 @@
 
             <simplelist>
                 <member>
-                    <prompt>#</prompt>
-
-                    <command> rndc reload zone-name</command>
+                    <command># rndc reload zone-name</command>
                 </member>
 
                 <member>
-                    <prompt>#</prompt>
+                    <command>#</command>
                 </member>
             </simplelist>
         </section>
@@ -954,3 +944,4 @@
         </section>
     </section>
 </chapter>
+
