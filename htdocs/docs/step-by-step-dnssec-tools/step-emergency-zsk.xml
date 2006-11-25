@@ -25,7 +25,7 @@
         emergency ZSK rollover when using DNSSEC-Tools to assist in
         rollover.</para>
 
-        <section>
+        <section id="step-rollover-zsk-emergency-zsks-1">
             <title>Stop Automatic Zone Rollover</title>
 
             <para>The <emphasis role="bold">rollerd</emphasis> command must
@@ -39,7 +39,7 @@
             </simplelist>
         </section>
 
-        <section>
+        <section id="step-rollover-zsk-emergency-zsks-2">
             <title>Generate New Current and Published Keys</title>
 
             <para>Creating new Current and Published ZSKs may be done with a
@@ -54,7 +54,7 @@
             </simplelist>
         </section>
 
-        <section>
+        <section id="step-rollover-zsk-emergency-zsks-3">
             <title>Fix the Keyrec File</title>
 
             <para>The <emphasis role="bold">zonesigner</emphasis> command in
@@ -149,7 +149,7 @@
             </orderedlist>
         </section>
 
-        <section id="step-rollover-ksk-emergency-8">
+        <section id="step-rollover-zsk-emergency-zsks-4">
             <title>Reload the Zone</title>
 
             <para>The <command>rndc</command> will reload the name server
@@ -164,7 +164,7 @@
             </simplelist>
         </section>
 
-        <section id="step-rollover-ksk-emergency-9">
+        <section id="step-rollover-zsk-emergency-zsks-5">
             <title>Dispose of the Old Zone Key</title>
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
@@ -186,7 +186,7 @@
         <para>The steps given below detail the actions needed for emergency
         rollover of the Current and Published ZSKs.</para>
 
-        <section id="step-rollover-zsk-emergency-zsks-5">
+        <section id="step-rollover-zsk-emergency-zsks-6">
             <title>Generate New Current and Published ZSKs</title>
 
             <para>Follow the steps in Section ??? in order to generate two
@@ -348,7 +348,7 @@
             </table>
         </section>
 
-        <section id="step-rollover-zsk-emergency-zsks-6">
+        <section id="step-rollover-zsk-emergency-zsks-7">
             <title>Modify the Zone File</title>
 
             <para>The zone file must be modified to account for the key

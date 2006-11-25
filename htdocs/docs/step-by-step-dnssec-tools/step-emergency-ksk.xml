@@ -21,14 +21,14 @@
         emergency KSK rollover when using DNSSEC-Tools to assist in
         rollover.</para>
 
-        <section id="step-rollover-ksk-emergency-1">
+        <section id="step-rollover-ksk-emergency-auto-1">
             <title>Inform Parent about the KSK Compromise</title>
 
             <para>This communication between parent and child must be done
             securely using out-of-band mechanisms.</para>
         </section>
 
-        <section id="step-rollover-ksk-emergency-2">
+        <section id="step-rollover-ksk-emergency-auto-2">
             <title>Wait for the Parent to Remove the Zone's DS Record</title>
 
             <para>Before proceeding, wait for the parent zone to remove the DS
@@ -213,7 +213,7 @@
 
         </section>
 
-        <section id="step-rollover-ksk-emergency-7">
+        <section id="step-rollover-ksk-emergency-auto-3">
             <title>Perform Steps in Section ??? if this Zone is a Secure
             Delegation from Another Zone</title>
 
@@ -222,7 +222,7 @@
             delegation.</para>
         </section>
 
-        <section id="step-rollover-ksk-emergency-8">
+        <section id="step-rollover-ksk-emergency-auto-4">
             <title>Reload the Zone</title>
 
             <para>The <command>rndc</command> will reload the name server
@@ -237,7 +237,7 @@
             </simplelist>
         </section>
 
-        <section id="step-rollover-ksk-emergency-9">
+        <section id="step-rollover-ksk-emergency-auto-5">
             <title>Dispose of the Old Zone Key</title>
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
