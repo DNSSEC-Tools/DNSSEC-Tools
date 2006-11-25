@@ -542,42 +542,6 @@ identify_key_from_sig(struct rr_rec *sig, u_int8_t ** name_n,
            sizeof(u_int16_t));
 }
 
-static int
-find_key_for_tag(struct rr_rec *keyrr, u_int16_t * tag_n,
-                 val_dnskey_rdata_t * new_dnskey_rdata,
-                 struct rr_rec **matching_rr)
-{
-    struct rr_rec  *nextrr;
-    u_int16_t       tag_h;
-
-    if ((tag_n == NULL) || (matching_rr == NULL) || (new_dnskey_rdata == NULL))
-        return VAL_BAD_ARGUMENT;
-
-    tag_h = ntohs(*tag_n);
-    *matching_rr = NULL;
-    for (nextrr = keyrr; nextrr; nextrr = nextrr->rr_next) {
-
-        if (-1 == val_parse_dnskey_rdata(nextrr->rr_rdata,
-                                         nextrr->rr_rdata_length_h,
-                                         new_dnskey_rdata))
-            continue;
-
-        new_dnskey_rdata->next = NULL;
-
-        if (new_dnskey_rdata->key_tag == tag_h) {
-            *matching_rr = nextrr;
-            return VAL_NO_ERROR;
-        }
-        else if (new_dnskey_rdata->public_key != NULL) {
-            FREE(new_dnskey_rdata->public_key);
-            new_dnskey_rdata->public_key = NULL;
-        }
-    }
-
-    return VAL_AC_DNSKEY_NOMATCH;
-}
-
-
 
 static void
 do_verify(val_context_t * ctx,
@@ -697,16 +661,17 @@ verify_next_assertion(val_context_t * ctx,
 {
     struct rrset_rec *the_set;
     struct rr_rec  *the_sig;
-    struct rr_rec  *matching_dnskey_rr;
     u_int8_t       *signby_name_n;
     u_int16_t       signby_footprint_n;
     val_dnskey_rdata_t dnskey;
     int             is_a_wildcard;
     struct val_digested_auth_chain *the_trust;
-    int             retval;
+    struct rr_rec  *nextrr;
+    struct rr_rec  *keyrr;
+    u_int16_t       tag_h;
 
-    if ((as == NULL) || (as->_as.ac_data == NULL) ||
-        (as->val_ac_trust == NULL))
+
+    if ((as == NULL) || (as->_as.ac_data == NULL) || (as->val_ac_trust == NULL))
         return;
 
     as->val_ac_status = VAL_AC_UNSET;
@@ -718,6 +683,16 @@ verify_next_assertion(val_context_t * ctx,
          the_sig; the_sig = the_sig->rr_next) {
 
         /*
+         * do wildcard processing 
+         */
+        if (check_label_count(the_set, the_sig, &is_a_wildcard) !=
+            VAL_NO_ERROR) {
+            SET_STATUS(as->val_ac_status, the_sig,
+                       VAL_AC_WRONG_LABEL_COUNT);
+            continue;
+        }
+
+        /*
          * for each sig, identify key, 
          */
         identify_key_from_sig(the_sig, &signby_name_n,
@@ -727,67 +702,74 @@ verify_next_assertion(val_context_t * ctx,
             /*
              * trust path contains the key 
              */
-            if ((the_trust->_as.ac_data == NULL) ||
-                (VAL_NO_ERROR != (retval =
-                                  find_key_for_tag(the_trust->_as.ac_data->
-                                                   rrs.val_rrset_data,
-                                                   &signby_footprint_n,
-                                                   &dnskey,
-                                                   &matching_dnskey_rr))))
-            {
+            if (the_trust->_as.ac_data == NULL) {
                 SET_STATUS(as->val_ac_status, the_sig,
                            VAL_AC_DNSKEY_NOMATCH);
-                if (dnskey.public_key != NULL) {
-                    FREE(dnskey.public_key);
-                    dnskey.public_key = NULL;
-                }
                 continue;
             }
+            keyrr = the_trust->_as.ac_data->rrs.val_rrset_data;
         } else {
             /*
              * data itself contains the key 
              */
-            if (VAL_NO_ERROR !=
-                (retval = find_key_for_tag(the_set->rrs.val_rrset_data,
-                                           &signby_footprint_n, &dnskey,
-                                           &matching_dnskey_rr))) {
+            if (the_set->rrs.val_rrset_data == NULL) {
                 SET_STATUS(as->val_ac_status, the_sig,
                            VAL_AC_DNSKEY_NOMATCH);
+                continue;
+            }
+            keyrr = the_set->rrs.val_rrset_data;
+        }
+
+        tag_h = ntohs(signby_footprint_n);
+        for (nextrr = keyrr; nextrr; nextrr = nextrr->rr_next) {
+            if (-1 == val_parse_dnskey_rdata(nextrr->rr_rdata,
+                                             nextrr->rr_rdata_length_h,
+                                             &dnskey))
+                continue;
+
+            dnskey.next = NULL;
+            if (dnskey.key_tag != tag_h) {
                 if (dnskey.public_key != NULL) {
                     FREE(dnskey.public_key);
                     dnskey.public_key = NULL;
                 }
                 continue;
             }
-        }
 
-        SET_STATUS(as->val_ac_status, matching_dnskey_rr, VAL_AC_SIGNING_KEY);
+            /*
+             * check the signature 
+             */
+            do_verify(ctx, &nextrr->rr_status, 
+                      &the_sig->rr_status, 
+                      the_set, the_sig, &dnskey, is_a_wildcard);
 
-        /*
-         * do wildcard processing 
-         */
-        if (check_label_count(the_set, the_sig, &is_a_wildcard) !=
-            VAL_NO_ERROR) {
-            SET_STATUS(as->val_ac_status, the_sig,
-                       VAL_AC_WRONG_LABEL_COUNT);
-            FREE(dnskey.public_key);
+
+            if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED) {
+                SET_STATUS(as->val_ac_status, nextrr, VAL_AC_SIGNING_KEY);
+                if (is_a_wildcard)
+                    the_sig->rr_status = VAL_AC_WCARD_VERIFIED;
+                
+                SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
+                SET_STATUS(as->val_ac_status, nextrr, nextrr->rr_status);
+                break;
+            } 
+            
+            /* 
+             * There might be multiple keys with the same key tag; set this as
+             * the signing key only if we dont have other status for this key
+             */
+            if (as->val_ac_status == VAL_AC_UNSET) {
+                SET_STATUS(as->val_ac_status, nextrr, VAL_AC_SIGNING_KEY);
+            }
+
+            SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
+            SET_STATUS(as->val_ac_status, nextrr, nextrr->rr_status);
+
+            if (dnskey.public_key != NULL) {
+                FREE(dnskey.public_key);
+            }
             dnskey.public_key = NULL;
-            continue;
         }
-
-        /*
-         * and check the signature 
-         */
-        do_verify(ctx, &matching_dnskey_rr->rr_status, 
-                  &the_sig->rr_status, 
-                  the_set, the_sig, &dnskey, is_a_wildcard);
-
-        if ((the_sig->rr_status == VAL_AC_RRSIG_VERIFIED) && (is_a_wildcard))
-            the_sig->rr_status = VAL_AC_WCARD_VERIFIED;
-        SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
-        SET_STATUS(as->val_ac_status, matching_dnskey_rr, matching_dnskey_rr->rr_status);
-        FREE(dnskey.public_key);
-        dnskey.public_key = NULL;
 
         /*
          * If this record contains a DNSKEY, check if the DS record contains this key 
@@ -796,63 +778,59 @@ verify_next_assertion(val_context_t * ctx,
          * Create the link even if the DNSKEY algorithm is unknown since this 
          * may be the provably unsecure case
          */
-        if ((the_sig->rr_status == VAL_AC_RRSIG_VERIFIED) ||
-            (the_sig->rr_status == VAL_AC_UNKNOWN_ALGORITHM)) {
-            if (the_set->rrs.val_rrset_type_h == ns_t_dnskey) {
-                /*
-                 * follow the trust path 
-                 */
-                struct rr_rec  *dsrec =
-                    the_trust->_as.ac_data->rrs.val_rrset_data;
-                while (dsrec) {
-                    val_ds_rdata_t  ds;
-                    val_parse_ds_rdata(dsrec->rr_rdata,
-                                       dsrec->rr_rdata_length_h, &ds);
-                    u_int16_t       ds_keytag_n = htons(ds.d_keytag);
-                    if (VAL_NO_ERROR !=
-                        (retval =
-                         find_key_for_tag(the_set->rrs.val_rrset_data,
-                                          &ds_keytag_n, &dnskey,
-                                          &matching_dnskey_rr))) {
-                        dsrec = dsrec->rr_next;
-                        if (dnskey.public_key != NULL) {
-                            FREE(dnskey.public_key);
-                            dnskey.public_key = NULL;
-                        }
-                        FREE(ds.d_hash);
-                        continue;
-                    }
+        if (nextrr &&  /* also means that there is a valid dnskey */
+            the_set->rrs.val_rrset_type_h == ns_t_dnskey &&
+            (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED || 
+             the_sig->rr_status == VAL_AC_UNKNOWN_ALGORITHM)) {
+            /*
+             * follow the trust path 
+             */
+            struct rr_rec  *dsrec = the_trust->_as.ac_data->rrs.val_rrset_data;
+            keyrr = nextrr;
+                
+            while (dsrec) {
+                val_ds_rdata_t  ds;
+                val_parse_ds_rdata(dsrec->rr_rdata,
+                                   dsrec->rr_rdata_length_h, &ds);
 
-                    /*
-                     * XXX There should be a loop to account for the case of multiple 
-                     * XXX DNSKEYs with colliding keytags
-                     */
-                    if ((ds.d_keytag == dnskey.key_tag)
-                        && (ds.d_algo == dnskey.algorithm)
-                        && (ds_hash_is_equal(ds.d_type,
-                                             ds.d_hash, ds.d_hash_len,
-                                             the_set->rrs.val_rrset_name_n,
-                                             matching_dnskey_rr, &dsrec->rr_status))) {
-                        FREE(dnskey.public_key);
-                        dnskey.public_key = NULL;
-                        FREE(ds.d_hash);
-                        if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED)
-                            SET_STATUS(as->val_ac_status, matching_dnskey_rr, VAL_AC_VERIFIED_LINK);
-                        else 
-                            SET_STATUS(as->val_ac_status, matching_dnskey_rr, 
-                                    VAL_AC_UNKNOWN_ALGORITHM_LINK);
+                if (dnskey.key_tag == ds.d_keytag &&
+                    ds.d_algo == dnskey.algorithm &&
+                    ds_hash_is_equal(ds.d_type,
+                                     ds.d_hash, ds.d_hash_len,
+                                     the_set->rrs.val_rrset_name_n,
+                                     nextrr, &dsrec->rr_status)) { 
+
+                    if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED)
+                        SET_STATUS(as->val_ac_status, nextrr, VAL_AC_VERIFIED_LINK);
+                    else 
+                        SET_STATUS(as->val_ac_status, nextrr, VAL_AC_UNKNOWN_ALGORITHM_LINK);
                             
-                        break;
-                    }
-
-                    SET_STATUS(as->val_ac_status, dsrec, dsrec->rr_status);
                     FREE(ds.d_hash);
-                    dsrec = dsrec->rr_next;
+                    if (dnskey.public_key) {
+                        FREE(dnskey.public_key);
+                    }
+                    /* the first match is enough */
+                    return;
                 }
 
-                if (!dsrec)
-                    SET_STATUS(as->val_ac_status, the_sig, VAL_AC_BAD_DELEGATION);
+                SET_STATUS(as->val_ac_status, dsrec, dsrec->rr_status);
+                FREE(ds.d_hash);
+                ds.d_hash = NULL;
+                dsrec = dsrec->rr_next;
             }
-        } 
+
+            if (dnskey.public_key) {
+                FREE(dnskey.public_key);
+            }
+            dnskey.public_key = NULL;
+        }
+    }
+
+    /* Didn't find a valid entry in the DS record set */
+    if (the_set->rrs.val_rrset_type_h == ns_t_dnskey) {
+        for (the_sig = the_set->rrs.val_rrset_sig;
+                the_sig; the_sig = the_sig->rr_next) {
+            SET_STATUS(as->val_ac_status, the_sig, VAL_AC_BAD_DELEGATION);
+        }
     }
 }
