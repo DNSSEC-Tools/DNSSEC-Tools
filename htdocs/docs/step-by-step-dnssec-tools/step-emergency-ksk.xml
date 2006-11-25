@@ -10,12 +10,254 @@
     possible to build an "authentication chain" from the zone data to the new
     KSK.</para>
 
-    <section id="step-rollover-ksk-emergency">
-        <title>Manual Emergency Current ZSK Rollover</title>
+    <para>The DNSSEC-Tools utilities do not currently handle emergency KSK
+    rollover. However, the utilities may be used to automate
+    <emphasis>some</emphasis> of the steps required.</para>
 
-        <para>The DNSSEC-Tools utilities do not currently handle emergency KSK
-        rollover. The steps given below detail the manual steps that must be
-        taken during emergency KSK rollover.</para>
+    <section>
+        <title>Emergency Current KSK Rollover Using DNSSEC-Tools</title>
+
+        <para>The steps given below detail the steps that must be taken during
+        emergency KSK rollover when using DNSSEC-Tools to assist in
+        rollover.</para>
+
+        <section id="step-rollover-ksk-emergency-1">
+            <title>Inform Parent about the KSK Compromise</title>
+
+            <para>This communication between parent and child must be done
+            securely using out-of-band mechanisms.</para>
+        </section>
+
+        <section id="step-rollover-ksk-emergency-2">
+            <title>Wait for the Parent to Remove the Zone's DS Record</title>
+
+            <para>Before proceeding, wait for the parent zone to remove the DS
+            record. This may be determined by using the <command>dig</command>
+            command to retrieve the parent's DS record.</para>
+
+            <para><command># dig @<emphasis
+            role="bold">parent-IP-address</emphasis> DS <emphasis
+            role="bold">zone.name</emphasis></command>
+            <userinput>[ENTER]</userinput></para>
+
+            <para><computeroutput>...</computeroutput></para>
+
+            <para><computeroutput> :: flags: qr aa rd: QUERY: 1, ANSWER: 0,
+            AUTHORITY: 1, ADDITIONAL : 0 </computeroutput></para>
+
+            <para><computeroutput>...</computeroutput></para>
+
+            <para><command>#</command></para>
+        </section>
+
+        <section>
+            <title>Stop Automatic Zone Rollover</title>
+
+            <para>The <emphasis role="bold">rollerd</emphasis> command must
+            not be executing during this procedure.</para>
+
+            <simplelist>
+                <member><command># rollctl -halt</command>
+                <userinput>[ENTER]</userinput></member>
+
+                <member><command>#</command></member>
+            </simplelist>
+        </section>
+
+        <section>
+            <title>Generate New Keys </title>
+
+            <para>Since the KSK has been compromised it must be regenerated.
+            In addition, the ZSKs can no longer be trusted so they too must be
+            regenerated. This may be done with a single <emphasis
+            role="bold">zonesigner</emphasis> execution.</para>
+
+            <simplelist>
+                <member><command># zonesigner -genkeys zone.name</command>
+                <userinput>[ENTER]</userinput></member>
+
+                <member><command>#</command></member>
+            </simplelist>
+        </section>
+
+        <section>
+            <title>Fix the Keyrec File</title>
+
+            <para>The <emphasis role="bold">zonesigner</emphasis> command in
+            the previous step will have left the compromised zone's keyrec
+            file in an inconsistent state. Consequently, the keyrec file must
+            be edited to return it to a valid state.</para>
+
+            <para>The steps below should be followed to fix the keyrec file
+            for the KSK keys.</para>
+
+            <orderedlist>
+                <listitem>
+                    <para>Find the name of the zone's keyrec file.  This may
+		    be done with the following command:</para>
+
+	            <simplelist>
+       	         	<member>
+			<command># lsroll -keyrec -terse rollrec-file</command>
+       	       		  <userinput>[ENTER]</userinput></member>
+       	  	       <member><command>#</command></member>
+       	            </simplelist>
+                </listitem>
+
+                <listitem>
+                    <para>Find the name of the zone's Current KSK.
+		    Look for the <emphasis>zone</emphasis> keyrec entry for
+		    the compromised zone, and find its
+                    <emphasis>ksk</emphasis> entry.  This holds the name
+		    of the KSK.
+		    </para>
+                </listitem>
+
+                <listitem>
+                    <para>Edit the keyrec file and search for all
+                    <emphasis>key</emphasis> keyrec entries with a
+                    <emphasis>keyrec_type</emphasis> of "<emphasis
+                    role="bold">ksk</emphasis>". Any keys with this type
+                    that are not the Current KSK should be given
+                    the type "<emphasis role="bold">kskobs</emphasis>".</para>
+                </listitem>
+            </orderedlist>
+
+            <para>The steps below should be followed to fix the keyrec file
+            for the Current ZSK keys.</para>
+
+            <orderedlist>
+                <listitem>
+                    <para>Find the name of the zone's keyrec file.  This may
+		    be done with the following command:</para>
+
+	            <simplelist>
+       	         	<member>
+			<command># lsroll -keyrec -terse rollrec-file</command>
+       	       		  <userinput>[ENTER]</userinput></member>
+       	  	       <member><command>#</command></member>
+       	            </simplelist>
+                </listitem>
+
+                <listitem>
+                    <para>Find the name of the zone's Current ZSK signing set.
+		    Look for the <emphasis>zone</emphasis> keyrec entry for
+		    the compromised zone, and find its
+                    <emphasis>zskcur</emphasis> entry.  This holds the name
+		    of the Current ZSK signing set.
+		    </para>
+                </listitem>
+
+                <listitem>
+                    <para>Get the names of the keys in the Current ZSK signing
+                    set.  Look for the <emphasis>set</emphasis> keyrec entry for
+		    the Current ZSK signing set.  The keys listed in that
+		    set's <emphasis>keys</emphasis> entry are the ZSK keys in
+		    the Current ZSK signing set.
+		    </para>
+                </listitem>
+
+                <listitem>
+                    <para>Edit the keyrec file and search for all
+                    <emphasis>key</emphasis> keyrec entries with a
+                    <emphasis>keyrec_type</emphasis> of "<emphasis
+                    role="bold">zskcur</emphasis>". Any keys with this type
+                    that are not in the Current signing set should be given
+                    the type "<emphasis role="bold">zskobs</emphasis>".</para>
+                </listitem>
+            </orderedlist>
+
+            <para>The steps below should be followed to fix the keyrec file
+            for the Published KSK keys.</para>
+
+            <orderedlist>
+                <listitem>
+                    <para>Find the name of the zone's keyrec file.  This may
+		    be done with the following command:</para>
+
+	            <simplelist>
+       	         	<member>
+			<command># lsroll -keyrec -terse rollrec-file</command>
+       	       		  <userinput>[ENTER]</userinput></member>
+       	  	       <member><command>#</command></member>
+       	            </simplelist>
+                </listitem>
+
+                <listitem>
+                    <para>Find the name of the zone's Published signing set.
+		    Look for the <emphasis>zone</emphasis> keyrec entry for
+		    the compromised zone, and find its
+                    <emphasis>zskpub</emphasis> entry.  This holds the name
+		    of the Published ZSK signing set.
+		    </para>
+                </listitem>
+
+                <listitem>
+                    <para>Get the names of the keys in the Published signing
+                    set.  Look for the <emphasis>set</emphasis> keyrec entry for
+		    the Published ZSK signing set.  The keys listed in that
+		    set's <emphasis>keys</emphasis> entry are the ZSK keys in
+		    the Published ZSK signing set.
+		    </para>
+                </listitem>
+
+                <listitem>
+                    <para>Edit the keyrec file and search for all
+                    <emphasis>key</emphasis> keyrec entries with a
+                    <emphasis>keyrec_type</emphasis> of "<emphasis
+                    role="bold">zskpub</emphasis>". Any keys with this type
+                    that are not in the Published signing set should be given
+                    the type "<emphasis role="bold">zskobs</emphasis>".</para>
+                </listitem>
+            </orderedlist>
+
+        </section>
+
+        <section id="step-rollover-ksk-emergency-7">
+            <title>Perform Steps in Section ??? if this Zone is a Secure
+            Delegation from Another Zone</title>
+
+            <para>Send the keyset generated from the zone-signing process in
+            Section ??? to the parent in order to complete the secure
+            delegation.</para>
+        </section>
+
+        <section id="step-rollover-ksk-emergency-8">
+            <title>Reload the Zone</title>
+
+            <para>The <command>rndc</command> will reload the name server
+            configuration files and the zone contents. The name server process
+            is assumed to be already running.</para>
+
+            <simplelist>
+                <member><command># rndc reload zone-name</command>
+                <userinput>[ENTER]</userinput></member>
+
+                <member><command>#</command></member>
+            </simplelist>
+        </section>
+
+        <section id="step-rollover-ksk-emergency-9">
+            <title>Dispose of the Old Zone Key</title>
+
+            <para>Delete the old ZSK's <emphasis>.private</emphasis> and
+            <emphasis>.key</emphasis> files.</para>
+        </section>
+
+        <section>
+            <title>Restart Automatic Zone Rollover</title>
+
+            <para>Automatic rollover may be restarted by executing the
+            <emphasis role="bold">rollerd</emphasis> command. It should be
+            given the same options as when it was originally started. </para>
+        </section>
+    </section>
+
+    <section id="step-rollover-ksk-emergency">
+        <title>Manual Emergency Current KSK Rollover</title>
+
+        <para>The steps given below detail the manual steps that must be taken
+        during emergency KSK rollover.</para>
 
         <section id="step-rollover-ksk-emergency-1">
             <title>Inform Parent about the KSK Compromise</title>
@@ -242,8 +484,7 @@
 
             <simplelist>
                 <member><command># rndc reload zone-name</command>
-	            <userinput>[ENTER]</userinput>
-		</member>
+                <userinput>[ENTER]</userinput></member>
 
                 <member><command>#</command></member>
             </simplelist>
@@ -255,5 +496,6 @@
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
             <emphasis>.key</emphasis> files.</para>
         </section>
+
     </section>
 </chapter>
