@@ -601,15 +601,20 @@ p_val_status(val_status_t err)
     case VAL_NONEXISTENT_NAME:
         return "VAL_NONEXISTENT_NAME";
         break;
+    case VAL_NONEXISTENT_TYPE:
+        return "VAL_NONEXISTENT_TYPE";
+        break;
+    case VAL_NONEXISTENT_NAME_NOCHAIN:
+        return "VAL_NONEXISTENT_NAME_NOCHAIN";
+        break;
+    case VAL_NONEXISTENT_TYPE_NOCHAIN:
+        return "VAL_NONEXISTENT_TYPE_NOCHAIN";
+        break;
 #ifdef LIBVAL_NSEC3
     case VAL_NONEXISTENT_NAME_OPTOUT:
         return "VAL_NONEXISTENT_NAME";
         break;
 #endif
-        
-    case VAL_NONEXISTENT_TYPE:
-        return "VAL_NONEXISTENT_TYPE";
-        break;
     case VAL_ERROR:
         return "VAL_ERROR";
         break;

@@ -370,7 +370,8 @@ compose_answer(const u_char * name_n,
             hp->ad = 0;
 
         head_resp->vr_val_status = res->val_rc_status;
-        if (res->val_rc_status == VAL_NONEXISTENT_NAME) {
+        if ((res->val_rc_status == VAL_NONEXISTENT_NAME) ||
+               (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
             hp->rcode = ns_r_nxdomain; 
         }
 #ifdef LIBVAL_NSEC3
@@ -558,6 +559,7 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     /* only return success if you have some answer */
     switch (*val_status) {
         case VAL_NONEXISTENT_NAME:
+        case VAL_NONEXISTENT_NAME_NOCHAIN:
 #ifdef LIBVAL_NSEC3
         case VAL_NONEXISTENT_NAME_OPTOUT:
 #endif
@@ -565,6 +567,7 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
             return -1;
 
         case VAL_NONEXISTENT_TYPE:
+        case VAL_NONEXISTENT_TYPE_NOCHAIN:
             h_errno = NO_DATA;
             return -1;
 
