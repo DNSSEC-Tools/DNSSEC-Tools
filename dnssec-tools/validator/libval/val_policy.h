@@ -13,12 +13,19 @@
 #define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
 
+extern const struct policy_conf_element conf_elem_array[];
+
 #define OVERRIDE_POLICY(ctx, override)   do {		\
 	struct policy_list *c;							\
 	if ((ctx) && override) {							\
 		(ctx)->cur_override = override;				\
-		for (c = override->plist; c; c = c->next)	\
+		for (c = override->plist; c; c = c->next){	\
+            if ((ctx)->e_pol[c->index])\
+                val_log(ctx, LOG_WARNING, \
+                    "Duplicate policy definition for [%s%s] ; using latest", \
+                    override->label, conf_elem_array[c->index].keyword);\
 			(ctx)->e_pol[c->index] = c->pol;			\
+        }\
 	}												\
 } while (0)
 
