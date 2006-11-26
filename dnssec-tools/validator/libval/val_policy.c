@@ -178,7 +178,7 @@ dnsval_conf_set(const char *name)
  * file
  **************************************************************
  */
-static const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
+const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
     {POL_TRUST_ANCHOR_STR, parse_trust_anchor, free_trust_anchor},
     {POL_PREFERRED_SEP_STR, parse_preferred_sep, free_preferred_sep},
     {POL_MUST_VERIFY_COUNT_STR, parse_must_verify_count,
@@ -1043,7 +1043,15 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
           (strcmp(cur->label, (*pfrag)->label) < 0));
          prev = cur, cur = cur->next);
 
-    if ((cur == NULL) || (strcmp(cur->label, (*pfrag)->label) > 0)) {
+    if ((cur != NULL) && (!strcmp(cur->label, (*pfrag)->label))) {
+        /*
+         * exact match 
+         */
+        newp = cur;
+        FREE((*pfrag)->label);
+
+    } else {
+    
         newp = (struct policy_overrides *)
             MALLOC(sizeof(struct policy_overrides));
         if (newp == NULL)
@@ -1060,12 +1068,6 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
             newp->next = cur;
             ctx->pol_overrides = newp;
         }
-    } else {
-        /*
-         * exact match 
-         */
-        newp = cur;
-        FREE((*pfrag)->label);
     }
 
     /*
