@@ -388,22 +388,30 @@ returns the value of anslen on success and -1 on failure.  </t>
       </figure>
     </section>
 
-    <section title="val_istrusted" anchor="val-istrusted">
+    <section title="val_istrusted, val_isvalidated" anchor="val-istrusted">
       <figure>
       <artwork>
 #include &lt;validator.h&gt;
 
 int val_istrusted(val_status_t status);
+
+int val_isvalidated(val_status_t status);
       </artwork>
       <postamble>
-      <t>
-The val_istrusted() function returns a single boolean value 
+      <t> The val_istrusted() function returns a single boolean value 
 representing the trustworthyness of information returned by
 the validator. The return value is greater than 0 if the validation
 status is one of VAL_SUCCESS, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_TYPE,
-VAL_PROVABLY_UNSECURE, VAL_IGNORE_VALIDATION, VAL_TRUSTED_ZONE, and VAL_LOCAL_ANSWER, and is equal to 0 for other
-status values. 
-      </t>
+VAL_NONEXISTENT_NAME_NOCHAIN, VAL_NONEXISTENT_TYPE_NOCHAIN,
+VAL_PROVABLY_UNSECURE, VAL_IGNORE_VALIDATION, VAL_TRUSTED_ZONE, or 
+VAL_LOCAL_ANSWER, and is equal to 0 for other status values.  </t>
+
+      <t> The val_isvalidated() function returns a single boolean value
+that indicates if the answer was cryptographically validated up to a configured
+trust anchor.  The return value is greater than 0 if the validation
+status is one of VAL_SUCCESS, VAL_NONEXISTENT_NAME, VAL_NONEXISTENT_TYPE,
+or VAL_PROVABLY_UNSECURE and is equal to 0 for other status values.  </t>
+
       </postamble>
       </figure>
     </section>
@@ -1030,11 +1038,21 @@ signatures for other DNS data and cannot themselves be validated.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_NAME:">
 returned if the proof for denial of existence for a domain name
-was either validated successfully or was considered trustworthy.  </t>
+was validated successfully.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_TYPE:">
 returned if the proof for denial of existence for the resource record type for the
-name queried was either validated successfully or was considered trustworthy.  </t>
+name queried was validated successfully.  </t>
+<t> </t>
+<t hangText="VAL_NONEXISTENT_NAME_NOCHAIN:">
+returned if the proof for denial of existence for a domain name
+was considered trustworthy, but the authentication chain(s) for the different 
+components of the proof were not themselves validated. 
+<t> </t>
+<t hangText="VAL_NONEXISTENT_TYPE_NOCHAIN:">
+returned if the proof for denial of existence for the resource record type for the
+name queried was considered trustworthy, but the authentication chain(s) for the different 
+components of the proof were not themselves validated.  </t>
 <t> </t>
 <t hangText="VAL_ERROR:">
 returned if the an error was encountered while validating the authentication chain.  </t>
