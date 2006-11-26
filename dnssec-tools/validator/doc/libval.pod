@@ -9,6 +9,10 @@ answers from a DNS name server
 I<val_istrusted()> - check if status value corresponds to that of a
 trustworthy answer
 
+I<val_isvalidated()> - check if status value represents an
+answer that was cryptographically validated up to a configured
+trust anchor.
+
 I<val_create_context()>, I<val_free_context()>, I<val_switch_policy_scope()> -
 manage validator context
 
@@ -172,15 +176,32 @@ Validation status for a given RRset.  This can be one of the following:
 	VAL_NONEXISTENT_NAME        
 		No name was present and a valid proof of
 		non-existence confirming the missing name
-		(NSEC or NSEC3 span) was returned.  The proof
-		was also identified to be trustworthy. 
+		(NSEC or NSEC3 span) was returned. The 
+        components of the proof were also 
+        individually validated. 
 
 	VAL_NONEXISTENT_TYPE
 		No type exists for the name and a valid
 		proof of non-existence confirming the
 		missing name (NSEC or NSEC3 span) was
-		returned.  The proof was also identified 
-		to be trustworthy. 
+		returned.  The components of the proof 
+        were also individually validated. 
+
+	VAL_NONEXISTENT_NAME_NOCHAIN
+		No name was present and a valid proof of
+		non-existence confirming the missing name
+		(NSEC or NSEC3 span) was returned. The 
+        components of the proof were also 
+        identified to be trustworthy, but they 
+        were not individually validated.
+
+	VAL_NONEXISTENT_TYPE_NOCHAIN
+		No type exists for the name and a valid
+		proof of non-existence confirming the
+		missing name (NSEC or NSEC3 span) was
+		returned.  The components of the proof 
+        were also identified to be trustworthy, 
+        but they were not individually validated. 
 
 	VAL_ERROR
 		Did not have sufficient or relevant data to

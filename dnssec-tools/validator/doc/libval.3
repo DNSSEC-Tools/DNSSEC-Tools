@@ -129,13 +129,17 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-11-23" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-11-26" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_resolve_and_check()\fR, \fIval_free_result_chain()\fR \- query and validate
 answers from a DNS name server
 .PP
 \&\fIval_istrusted()\fR \- check if status value corresponds to that of a
 trustworthy answer
+.PP
+\&\fIval_isvalidated()\fR \- check if status value represents an
+answer that was cryptographically validated up to a configured
+trust anchor.
 .PP
 \&\fIval_create_context()\fR, \fIval_free_context()\fR, \fIval_switch_policy_scope()\fR \-
 manage validator context
@@ -321,12 +325,13 @@ Validation status for a given RRset.  This can be one of the following:
 \&                for an RRSIG.
 .Ve
 .Sp
-.Vb 5
+.Vb 6
 \&        VAL_NONEXISTENT_NAME        
 \&                No name was present and a valid proof of
 \&                non-existence confirming the missing name
-\&                (NSEC or NSEC3 span) was returned.  The proof
-\&                was also identified to be trustworthy.
+\&                (NSEC or NSEC3 span) was returned. The 
+\&        components of the proof were also 
+\&        individually validated.
 .Ve
 .Sp
 .Vb 6
@@ -334,8 +339,28 @@ Validation status for a given RRset.  This can be one of the following:
 \&                No type exists for the name and a valid
 \&                proof of non-existence confirming the
 \&                missing name (NSEC or NSEC3 span) was
-\&                returned.  The proof was also identified 
-\&                to be trustworthy.
+\&                returned.  The components of the proof 
+\&        were also individually validated.
+.Ve
+.Sp
+.Vb 7
+\&        VAL_NONEXISTENT_NAME_NOCHAIN
+\&                No name was present and a valid proof of
+\&                non-existence confirming the missing name
+\&                (NSEC or NSEC3 span) was returned. The 
+\&        components of the proof were also 
+\&        identified to be trustworthy, but they 
+\&        were not individually validated.
+.Ve
+.Sp
+.Vb 7
+\&        VAL_NONEXISTENT_TYPE_NOCHAIN
+\&                No type exists for the name and a valid
+\&                proof of non-existence confirming the
+\&                missing name (NSEC or NSEC3 span) was
+\&                returned.  The components of the proof 
+\&        were also identified to be trustworthy, 
+\&        but they were not individually validated.
 .Ve
 .Sp
 .Vb 3
