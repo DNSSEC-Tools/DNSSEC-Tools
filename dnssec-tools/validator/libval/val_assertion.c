@@ -1326,16 +1326,17 @@ transform_single_result(struct val_internal_result *w_res,
  */
 static int
 transform_outstanding_results(struct val_internal_result *w_results, 
-                  struct val_result_chain **results, const u_int8_t flags)
+                              struct val_result_chain **results, 
+                              struct val_result_chain *proof_res, 
+                              val_status_t proof_status)
 {
     struct val_internal_result *w_res;
-    struct val_result_chain *new_res, *proof_res;
+    struct val_result_chain *new_res;
     int retval;
 
     if (results == NULL)
         return VAL_BAD_ARGUMENT;
     
-    proof_res = NULL;
     w_res = w_results;
     /* for each remaining internal result */
     while(w_res) {
@@ -1347,12 +1348,7 @@ transform_outstanding_results(struct val_internal_result *w_results,
             
             if (w_res->val_rc_is_proof) {
                 proof_res = new_res;
-                if (flags & VAL_FLAGS_DONT_VALIDATE) {
-                    proof_res->val_rc_status = w_res->val_rc_status;
-                } else {
-                    /* remaining proofs are irrelevent */
-                    proof_res->val_rc_status = VAL_IRRELEVANT_PROOF;
-                }
+                proof_res->val_rc_status = proof_status;
             } else {
                 /* Update the result */
                 new_res->val_rc_status = w_res->val_rc_status;
@@ -1529,7 +1525,7 @@ prove_nsec_span_chk(val_context_t * ctx,
     u_int8_t       *nxtname = the_set->rrs.val_rrset_data ?
         the_set->rrs.val_rrset_data->rr_rdata : NULL;
 
-    if (namecmp(qname_n, nxtname) > 0) {
+    if (namecmp(qname_n, nxtname) >= 0) {
         /*
          * check if the next name wraps around 
          */
@@ -2181,9 +2177,7 @@ prove_nonexistence( val_context_t * ctx,
         *status = VAL_INCOMPLETE_PROOF;
     /* check if trusted and complete */
     else if (val_istrusted(res->val_rc_status) && 
-                (res->val_rc_status == VAL_IGNORE_VALIDATION ||
-                 res->val_rc_status == VAL_PROVABLY_UNSECURE ||
-                 res->val_rc_status == VAL_TRUSTED_ZONE)) { 
+             !val_isvalidated(res->val_rc_status)) { 
         /*
          * use the error code as status 
          */
@@ -2194,14 +2188,18 @@ prove_nonexistence( val_context_t * ctx,
             HEADER         *hp =
                 (HEADER *) qc_proof->val_ac_rrset->val_msg_header;
             if (hp->rcode == ns_r_noerror) {
-                *status = VAL_NONEXISTENT_TYPE;
+                *status = VAL_NONEXISTENT_TYPE_NOCHAIN;
             } else if (hp->rcode == ns_r_nxdomain) {
-                *status = VAL_NONEXISTENT_NAME;
+                *status = VAL_NONEXISTENT_NAME_NOCHAIN;
             } else
                 *status = VAL_ERROR;
         } else {
             *status = VAL_ERROR;
         }
+        /* Collect all other proofs */
+        retval = transform_outstanding_results(
+                    w_results, results, *proof_res, *status);
+        
         return VAL_NO_ERROR;
     } 
 
@@ -3951,7 +3949,7 @@ val_resolve_and_check(val_context_t * ctx,
         retval = perform_sanity_checks(context, w_results, results, top_q);
 
         if (retval == VAL_NO_ERROR) 
-            retval = transform_outstanding_results(w_results, results, flags);
+            retval = transform_outstanding_results(w_results, results, NULL, VAL_IRRELEVANT_PROOF);
         /* 
          *  The val_internal_result structure only has a reference to 
          *  the authentication chain. The actual authentication chain
@@ -3994,10 +3992,12 @@ val_istrusted(val_status_t val_status)
     switch (val_status) {
     case VAL_SUCCESS:
     case VAL_NONEXISTENT_NAME:
+    case VAL_NONEXISTENT_TYPE:
+    case VAL_NONEXISTENT_NAME_NOCHAIN:
+    case VAL_NONEXISTENT_TYPE_NOCHAIN:
 #ifdef LIBVAL_NSEC3
     case VAL_NONEXISTENT_NAME_OPTOUT:
 #endif
-    case VAL_NONEXISTENT_TYPE:
     case VAL_PROVABLY_UNSECURE:
     case VAL_IGNORE_VALIDATION:
     case VAL_TRUSTED_ZONE:
@@ -4029,9 +4029,6 @@ val_isvalidated(val_status_t val_status)
     switch (val_status) {
     case VAL_SUCCESS:
     case VAL_NONEXISTENT_NAME:
-#ifdef LIBVAL_NSEC3
-    case VAL_NONEXISTENT_NAME_OPTOUT:
-#endif
     case VAL_NONEXISTENT_TYPE:
     case VAL_PROVABLY_UNSECURE:
         return 1;
