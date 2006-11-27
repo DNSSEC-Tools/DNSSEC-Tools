@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-11-26" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2006-11-27" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_resolve_and_check()\fR, \fIval_free_result_chain()\fR \- query and validate
 answers from a DNS name server
@@ -217,7 +217,7 @@ the current location for the validator configuration files
 .IX Header "DESCRIPTION"
 The \fI\fIval_resolve_and_check()\fI\fR function queries a set of name servers for
 the \fI<domain_name_n, type, class\fR> tuple and to verifies and validates the
-response.  Verification is involves checking the RRSIGs, and validation is
+response.  Verification involves checking the RRSIGs, and validation is
 verification up the chain-of-trust to a trust anchor.  The \fIdomain_name_n\fR
 parameter is the queried name in \s-1DNS\s0 wire format.  The conversion from host
 format to \s-1DNS\s0 wire format can be done using the  \fI\fIns_name_pton()\fI\fR function
@@ -258,9 +258,9 @@ read by default from the \fB/etc/dnsval.conf\fR and \fB/etc/resolv.conf\fR files
 \&\*(L"Root hints\*(R" that allows the library to bootstrap its lookup process when
 functioning as a full resolver is read from \fB/etc/root.hints\fR.  The locations
 of each of these files may be changed using the interfaces
-\&\fI\fIdnsval_conf_set()\fI\fR, \fI\fIresolver_config_set()\fI\fR and \fI\fIroot_hints_set()\fI\fR
+\&\fI\fIdnsval_conf_set()\fI\fR, \fI\fIresolver_config_set()\fI\fR, and \fI\fIroot_hints_set()\fI\fR,
 respectively.  The corresponding \*(L"get\*(R" interfaces (namely
-\&\fI\fIdnsval_conf_get()\fI\fR, \fI\fIresolver_config_get()\fI\fR and \fI\fIroot_hints_get()\fI\fR) can be
+\&\fI\fIdnsval_conf_get()\fI\fR, \fI\fIresolver_config_get()\fI\fR, and \fI\fIroot_hints_get()\fI\fR) can be
 used to return the current location from where these configuration files are
 read.
 .PP
@@ -519,7 +519,7 @@ This field may contain the following values:
 \&                Validation for the given resource record
 \&                was ignored, either because of some
 \&                local policy directive or because of
-\&                some protocol-specific behaviour.
+\&                some protocol-specific behavior.
 .Ve
 .Sp
 .Vb 4
@@ -566,8 +566,8 @@ This field may contain the following values:
 .Sp
 .Vb 3
 \&                    SR_CONFLICTING_ANSWERS      
-\&                        Multiple answers received for a
-\&                        query which conflict.
+\&                        Multiple conflicting answers
+\&                        received for a query.
 .Ve
 .Sp
 .Vb 3
@@ -593,8 +593,9 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
 .RE
 .IP "\fIstruct val_rrset\fR" 4
 .IX Item "struct val_rrset"
-.Vb 11
+.Vb 12
 \&  struct val_rrset
+\&  {
 \&      u_int8_t      *val_msg_header; 
 \&      u_int16_t      val_msg_headerlen;
 \&      u_int8_t      *val_rrset_name_n; 
@@ -853,7 +854,7 @@ The policy identifier being referenced was invalid.
 .RE
 .SH "FILES"
 .IX Header "FILES"
-The validator library reads configuration information from two separate files,
+The validator library reads configuration information from two files,
 \&\fB/etc/resolv.conf\fR and \fB/etc/dnsval.conf\fR.
 .PP
 Only the \*(L"nameserver\*(R" option is supported in the \fBresolv.conf\fR file.  This
