@@ -63,7 +63,7 @@ I<p_ac_status()>, I<p_val_status()> - display validator status information
 
 The I<val_resolve_and_check()> function queries a set of name servers for
 the I<<domain_name_n, type, class>> tuple and to verifies and validates the
-response.  Verification is involves checking the RRSIGs, and validation is
+response.  Verification involves checking the RRSIGs, and validation is
 verification up the chain-of-trust to a trust anchor.  The I<domain_name_n>
 parameter is the queried name in DNS wire format.  The conversion from host
 format to DNS wire format can be done using the  I<ns_name_pton()> function
@@ -104,9 +104,9 @@ read by default from the B</etc/dnsval.conf> and B</etc/resolv.conf> files.
 "Root hints" that allows the library to bootstrap its lookup process when
 functioning as a full resolver is read from B</etc/root.hints>.  The locations
 of each of these files may be changed using the interfaces
-I<dnsval_conf_set()>, I<resolver_config_set()> and I<root_hints_set()>
+I<dnsval_conf_set()>, I<resolver_config_set()>, and I<root_hints_set()>,
 respectively.  The corresponding "get" interfaces (namely
-I<dnsval_conf_get()>, I<resolver_config_get()> and I<root_hints_get()>) can be
+I<dnsval_conf_get()>, I<resolver_config_get()>, and I<root_hints_get()>) can be
 used to return the current location from where these configuration files are
 read.
 
@@ -321,7 +321,7 @@ This field may contain the following values:
 		Validation for the given resource record
 		was ignored, either because of some
 		local policy directive or because of
-		some protocol-specific behaviour.
+		some protocol-specific behavior.
 
       VAL_AC_TRUSTED_ZONE
 		Local policy defined a given zone as
@@ -354,8 +354,8 @@ This field may contain the following values:
 		the following:
 
 		    SR_CONFLICTING_ANSWERS	
-			Multiple answers received for a
-			query which conflict.
+			Multiple conflicting answers
+			received for a query.
 
 		    SR_REFERRAL_ERROR
 			Some error encountered while
@@ -383,6 +383,7 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
 =item I<struct val_rrset>
 
   struct val_rrset
+  {
       u_int8_t      *val_msg_header; 
       u_int16_t      val_msg_headerlen;
       u_int8_t      *val_rrset_name_n; 
@@ -625,7 +626,7 @@ The policy identifier being referenced was invalid.
 
 =head1 FILES
 
-The validator library reads configuration information from two separate files,
+The validator library reads configuration information from two files,
 B</etc/resolv.conf> and B</etc/dnsval.conf>.
 
 Only the "nameserver" option is supported in the B<resolv.conf> file.  This
@@ -645,7 +646,7 @@ The caching functionality is very basic and no timeout logic currently exists.
 There are a number of feature enhancements that still remain to be done.
 
 =head1 COPYRIGHT
-                                                                                
+
 Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
