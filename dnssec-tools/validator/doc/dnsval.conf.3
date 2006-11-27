@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "dnsval.conf 3"
-.TH dnsval.conf 3 "2006-11-23" "perl v5.8.6" "Programmer's Manual"
+.TH dnsval.conf 3 "2006-11-27" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 /etc/dnsval.conf \- Configuration policy for the DNSSEC validator library libval(3).
 .PP
@@ -176,8 +176,8 @@ and \fI\s-1KEYWORD\s0\fR is the specific policy component that is
 configured.  The format of additional-data depends on the 
 keyword specified.
 .Sp
-If multiple policy fragments are defined for the same label and keyword combination
-then the last definition in the file is used.
+If multiple policy fragments are defined for the same label and keyword
+combination then the last definition in the file is used.
 .Sp
 Currently two different keywords are specified:
 .RS 4
@@ -191,13 +191,13 @@ quoted string containing the \s-1RDATA\s0 portion for the trust anchor's
 .IX Item "zone-security-expectation"
 Specifies the local security expectation for a zone.  The additional
 data portion for this keyword is a sequence of the zone name and 
-its trust status \- ignore, validate, trusted or untrusted.
+its trust status \- ignore, validate, trusted, or untrusted.
 .RE
 .RS 4
 .RE
 .SH "EXAMPLE"
 .IX Header "EXAMPLE"
-The /etc/dnsval.conf configuration file might appear as follows:
+The \fB/etc/dnsval.conf\fR configuration file might appear as follows:
 .IP "mozilla trust-anchor" 4
 .IX Item "mozilla trust-anchor"
 .RS 4
