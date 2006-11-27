@@ -13,8 +13,6 @@
 #define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
 
-extern const struct policy_conf_element conf_elem_array[];
-
 #define OVERRIDE_POLICY(ctx, override)   do {\
     struct policy_list *c;\
     if ((ctx) && override) {\
@@ -151,6 +149,8 @@ struct policy_conf_element {
     int             (*parse) (FILE *, policy_entry_t *, int *);
     int             (*free) (policy_entry_t *);
 };
+
+extern const struct policy_conf_element conf_elem_array[];
 
 struct trust_anchor_policy {
     u_int8_t        zone_n[NS_MAXCDNAME];
