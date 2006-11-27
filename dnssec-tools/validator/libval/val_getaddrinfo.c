@@ -871,6 +871,8 @@ val_getaddrinfo(val_context_t * ctx,
     const char     *localhost6 = "::1";
     const char     *nname = nodename;
     val_context_t  *context = NULL;
+    struct addrinfo default_hints;
+    struct addrinfo *cur_hints;
 
     if (res == NULL)
         return 0;
@@ -889,11 +891,19 @@ val_getaddrinfo(val_context_t * ctx,
             servname == NULL ? "(null)" : servname);
 
     /*
-     * Check if hints is non-NULL and that at least one of nodename
-       or servname is non-NULL
+     * use a default hints structure if one is not available.
      */
-    if ( (NULL == nodename && NULL == servname) ||
-         (NULL == hints) )  {
+    if (hints == NULL) {
+        cur_hints = &default_hints;
+        memset(cur_hints, 0, sizeof(struct addrinfo));
+    } else {
+        cur_hints = (struct addrinfo *) hints;
+    }
+
+    /*
+     * Check that at least one of nodename or servname is non-NULL
+     */
+    if ( NULL == nodename && NULL == servname)  {
         retval = EAI_NONAME;
         goto done;
     }
@@ -906,8 +916,8 @@ val_getaddrinfo(val_context_t * ctx,
      * use IPv4 localhost 
      */
     if (NULL == nodename &&
-        ( AF_INET   == hints->ai_family || 
-          AF_UNSPEC == hints->ai_family )
+        ( AF_INET   == cur_hints->ai_family || 
+          AF_UNSPEC == cur_hints->ai_family )
         ) {
         nname = localhost4;
     }
@@ -946,7 +956,7 @@ val_getaddrinfo(val_context_t * ctx,
         ainfo4->ai_val_status = VAL_LOCAL_ANSWER;
 
         if (process_service_and_hints(ainfo4->ai_val_status, servname, 
-                                      hints, &ainfo4)
+                                      cur_hints, &ainfo4)
             == EAI_SERVICE) {
             val_freeaddrinfo(ainfo4);
             retval = EAI_SERVICE;
@@ -962,8 +972,8 @@ val_getaddrinfo(val_context_t * ctx,
      * use IPv6 localhost 
      */
     if (NULL == nodename &&
-        ( AF_INET6  == hints->ai_family || 
-          AF_UNSPEC == hints->ai_family )
+        ( AF_INET6  == cur_hints->ai_family || 
+          AF_UNSPEC == cur_hints->ai_family )
         ) {
         nname = localhost6;
     }
@@ -1002,7 +1012,7 @@ val_getaddrinfo(val_context_t * ctx,
         ainfo6->ai_val_status = VAL_LOCAL_ANSWER;
 
         if (process_service_and_hints(ainfo6->ai_val_status, servname, 
-                                      hints, &ainfo6) 
+                                      cur_hints, &ainfo6) 
             == EAI_SERVICE) {
             val_freeaddrinfo(ainfo6);
             retval = EAI_SERVICE;
@@ -1028,7 +1038,7 @@ val_getaddrinfo(val_context_t * ctx,
          * * XXX: TODO check the order in the ETC_HOST_CONF file
          */
         if (get_addrinfo_from_etc_hosts(context, nodename, servname, 
-                                        hints, res) 
+                                        cur_hints, res) 
             == EAI_SERVICE) {
             retval = EAI_SERVICE;
         } else if (*res != NULL) {
@@ -1039,7 +1049,7 @@ val_getaddrinfo(val_context_t * ctx,
          * Try DNS
          */
         else if (get_addrinfo_from_dns(context, nodename, servname, 
-                                       hints, res) 
+                                       cur_hints, res) 
                  == EAI_SERVICE) {
             retval = EAI_SERVICE;
         } else if (*res != NULL) {
