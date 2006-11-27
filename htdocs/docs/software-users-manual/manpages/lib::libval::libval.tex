@@ -10,6 +10,10 @@ and validate answers from a DNS name server
 \func{val\_istrusted()} - check if status value corresponds to that of a
 trustworthy answer
 
+\func{val\_isvalidated()} - check if status value represents an
+answer that was cryptographically validated up to a configured
+trust anchor
+
 \func{val\_create\_context()}, \func{val\_free\_context()},
 \func{val\_switch\_policy\_scope()} - manage validator context
 
@@ -29,12 +33,12 @@ information
 \begin{verbatim}
     #include <validator.h>
 
-    int val_resolve_and_check(val_context_t               *context,
-                              u_char                      *domain_name_n,
-                              const u_int16_t             type,
-                              const u_int16_t             class,
-                              const u_int8_t              flags,
-                              struct val_result_chain     **results);
+    int val_resolve_and_check(val_context_t            *context,
+                              u_char                   *domain_name_n,
+                              const u_int16_t          type,
+                              const u_int16_t          class,
+                              const u_int8_t           flags,
+                              struct val_result_chain  **results);
 
     void val_free_result_chain(struct val_result *results);
 
@@ -76,9 +80,11 @@ the \var{*results} array.  Each answer is a distinct RRset; multiple RRs
 within the RRset are treated as the same answer.  Multiple answers are
 possible when \var{type} is \var{ns\_t\_any}.
 
-Individual elements in \var{*results} point to the authentication chain linked
-list.  The authentication chain elements contain the actual RRsets returned by
-the name server in response to the query.
+Individual elements in \var{*results} point to the authentication chain
+contained within the \\
+\func{val\_authentication\_chain} linked list.  The
+authentication chain elements contain the actual RRsets returned by the name
+server in response to the query.
 
 Most applications only require the status value within \var{*results} since
 this provides a single error code for representing the authenticity of
@@ -106,10 +112,10 @@ read by default from the \path{/etc/dnsval.conf} and \path{/etc/resolv.conf}
 files.  ``Root hints'' that allows the library to bootstrap its lookup process
 when functioning as a full resolver is read from \path{/etc/root.hints}.  The
 locations of each of these files may be changed using the
-\func{dnsval\_conf\_set}, \func{resolver\_config\_set} and
-\func{root\_hints\_set} interfaces.  The corresponding ``get'' interfaces,
-(namely, \func{dnsval\_conf\_get}, \func{resolver\_config\_get} and
-\func{root\_hints\_get}) can be used to return the current location from where
+interfaces \func{dnsval\_conf\_set()}, \func{resolver\_config\_set()}, and
+\func{root\_hints\_set()}, respectively.  The corresponding ``get'' interfaces
+(namely {\it dnsval\_conf\_get()}, {\it resolver\_config\_get()}, and {\it
+root\_hints\_get()}) can be used to return the current location from where
 these configuration files are read.
 
 Applications can use local policy to influence the validation outcome.
@@ -135,14 +141,14 @@ configuration system.
 \item \struct{struct val\_result\_chain}\verb" "
 
 \begin{verbatim}
-  struct val_result_chain}
-  {
-      val_status_t                     val_rc_status;
-      struct val_authentication_chain *val_rc_answer;
-      int                              val_rc_proof_count;
-      struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
-      struct val_result_chain         *val_rc_next;
-  };
+    struct val_result_chain
+    {
+        val_status_t                     val_rc_status;
+        struct val_authentication_chain *val_rc_answer;
+        int                              val_rc_proof_count;
+        struct val_authentication_chain *val_rc_proofs[MAX_PROOFS];
+        struct val_result_chain         *val_rc_next;
+    };
 \end{verbatim}
 
 \begin{description}
@@ -184,22 +190,34 @@ No DNSSEC validation possible, query was for an RRSIG.
 \item \const{VAL\_NONEXISTENT\_NAME}\verb" "
 
 No name was present and a valid proof of non-existence confirming the missing
-name (NSEC or NSEC3 span) was returned.  The proof was verified and the
-authentication chains for each component in the proof led to a trust anchor.
+name (NSEC or NSEC3 span) was returned. The components of the proof were also
+individually validated.
 
 \item \const{VAL\_NONEXISTENT\_TYPE}\verb" "
 
 No type exists for the name and a valid proof of non-existence confirming the
-missing name (NSEC or NSEC3 span) was returned.  The proof was verified and
-the authentication chains for each component in the proof led to a trust
-anchor.
+missing name (NSEC or NSEC3 span) was returned.  The components of the proof
+were also individually validated.
+
+\item \const{VAL\_NONEXISTENT\_NAME\_NOCHAIN}\verb" "
+
+No name was present and a valid proof of non-existence confirming the missing
+name (NSEC or NSEC3 span) was returned. The components of the proof were also
+identified to be trustworthy, but they were not individually validated.
+
+\item \const{VAL\_NONEXISTENT\_TYPE\_NOCHAIN}\verb" "
+
+No type exists for the name and a valid proof of non-existence confirming the
+missing name (NSEC or NSEC3 span) was returned.  The components of the proof
+were also identified to be trustworthy, but they were not individually
+validated.
 
 \item \const{VAL\_ERROR}\verb" "
 
 Did not have sufficient or relevant data to complete validation, or
 encountered a DNS error.
 
-\item \const{VAL\_DNS\_ERROR\_BASE} $+$ \const{SR\_}error\verb" "
+\item \const{VAL\_DNS\_ERROR\_BASE} $+$ \const{SR\_}{\it error}\verb" "
 
 This value contains a resolver error from \lib{libsres}.  The \lib{libsres}
 error is \\
@@ -218,6 +236,19 @@ Validation failure condition.
 
 All available components in the authentication chain verified properly, but
 there was no trust anchor available.
+
+\item \const{VAL\_IGNORE\_VALIDATION}\verb" "
+
+Local policy was configured to ignore validation for the zone from which this
+data was received.
+
+\item \const{VAL\_TRUSTED\_ZONE}\verb" "
+
+Local policy was configured to trust any data received from the given zone.
+
+\item \const{VAL\_UNTRUSTED\_ZONE}\verb" "
+
+Local policy was configured to reject any data received from the given zone.
 
 \item \const{VAL\_PROVABLY\_UNSECURE}\verb" "
 
@@ -251,7 +282,7 @@ the error or success code for DNSSEC validation over the current authentication
 chain element upon completion of \func{val\_resolve\_n\_check()}.  This field
 may contain the following values:
 
-\begin{itemize}
+\begin{description}
 
 \item \const{VAL\_AC\_UNSET}\verb" "
 
@@ -288,8 +319,8 @@ All RRSIGs covering the RRset could not be verified.
 
 \item \const{VAL\_AC\_VERIFIED}\verb" "
 
-A status of \const{VAL\_AC\_RRSIG\_VERIFIED} was found for at least one RRSIG
-covering a resource record.
+At least one RRSIG covering a resource record had a status of \\
+\const{VAL\_AC\_RRSIG\_VERIFIED}.
 
 \item \const{VAL\_AC\_LOCAL\_ANSWER}\verb" "
 
@@ -300,7 +331,12 @@ was not performed on the results.
 
 A given DNSKEY or a DS record was locally defined to be a trust anchor.
 
-\item \const{VAL\_AC\_TRUST\_ZONE}\verb" "
+\item \const{VAL\_AC\_IGNORE\_VALIDATION}\verb" "
+
+Validation for the given resource record was ignored, either because of some
+local policy directive or because of some protocol-specific behavior.
+
+\item \const{VAL\_AC\_TRUSTED\_ZONE}\verb" "
 
 Local policy defined a given zone as trusted, with no further validation being
 deemed necessary.
@@ -320,7 +356,7 @@ signatures for other DNS data and cannot themselves be validated.
 
 There was no trust anchor configured for a given authentication chain.
 
-\item \const{VAL\_DNS\_ERROR\_BASE} $+$ \const{SR\_}error\verb" "
+\item \const{VAL\_DNS\_ERROR\_BASE} $+$ \const{SR\_}{\it error}\verb" "
 
 This value contains a resolver error from \lib{libsres}.  The \lib{libsres}
 error is added \\
@@ -340,11 +376,11 @@ referrals.
 
 \end{itemize}
 
-\end{itemize}
+\end{description}
 
 \item \var{val\_ac\_rrset}\verb" "
 
-Pointer to an RRset of type \var{struct val\_rrset} obtained from the DNS
+Pointer to an RRset of type \struct{struct val\_rrset} obtained from the DNS
 response.
 
 \item \var{val\_ac\_trust}\verb" "
@@ -422,8 +458,8 @@ Any associated RRSIGs for the RDATA returned in \var{val\_rrset\_data}.
 \begin{verbatim}
     struct rr_rec
     {
-        u_int16_t        rr_rdata_length_h;
-        u_int8_t        *rr_rdata;
+        u_int16_t        rr_rdata_length_h;  
+        u_int8_t        *rr_rdata;      
         val_astatus_t    rr_status;
         struct rr_rec   *rr_next;
     };
@@ -555,6 +591,8 @@ The DNSKEY or DS algorithm was not allowed as per local policy.
 
 \end{itemize}
 
+% \end{description}
+
 \item \var{rr\_next}\verb" "
 
 Points to the next resource record in the RRset.
@@ -604,6 +642,9 @@ unavailable.  Currently not implemented.
 file.
 
 \item \const{VAL\_CONF\_NOT\_FOUND} - A configuration file was not available.
+
+\item \const{VAL\_NO\_POLICY} - The policy identifier being referenced was
+invalid.
 
 \end{description}
 
