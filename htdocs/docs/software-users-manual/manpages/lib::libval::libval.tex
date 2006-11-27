@@ -59,7 +59,6 @@ information
     char *p_ac_status(val_astatus_t valerrno);
 
     char *p_val_status(val_status_t valerrno);
-
 \end{verbatim}
 
 {\bf DESCRIPTION}
@@ -235,12 +234,12 @@ in a more user-friendly format using \func{p\_val\_status()}.
 \item \struct{struct val\_authentication\_chain}\verb" "
 
 \begin{verbatim}
-  struct val_authentication_chain
-  {
-      val_astatus_t                    val_ac_status;
-      struct val_rrset                *val_ac_rrset;
-      struct val_authentication_chain *val_ac_trust;
-  };
+    struct val_authentication_chain
+    {
+        val_astatus_t                    val_ac_status;
+        struct val_rrset                *val_ac_rrset;
+        struct val_authentication_chain *val_ac_trust;
+    };
 \end{verbatim}
 
 \begin{description}
@@ -434,7 +433,7 @@ Any associated RRSIGs for the RDATA returned in \var{val\_rrset\_data}.
 
 \item \var{rr\_rdata\_length\_h}\verb" "
 
-Length of data stored in {\it rr\_rdata}.
+Length of data stored in \var{rr\_rdata}.
 
 \item \var{rr\_rdata}\verb" "
 
