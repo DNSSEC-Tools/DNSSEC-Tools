@@ -440,6 +440,10 @@ sub doopts
 		$k_life      = 1 if(defined($options{'k-lifespan'}));
 		$k_zonename  = 1 if(defined($options{'k-zone'}));
 
+		#
+		# $keysflag isn't used any more for output selection, so we'll
+		# set it to indicate that osme keys should be printed.
+		$keysflag = 1;
 	}
 
 }
