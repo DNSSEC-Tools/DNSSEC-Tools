@@ -1,62 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="step-zone-resign">
-  <title>Resigning a Zone</title>
+    <title>Resigning a Zone</title>
 
-  <para>A zone needs to be re-signed when <emphasis>any</emphasis> change is
-  made to it.</para>
+    <para>A zone needs to be re-signed when <emphasis>any</emphasis> change is
+    made to it.</para>
 
-  <section id="resign-zonesigner">
-    <title>Resign the Zone with <command>zonesigner</command></title>
+    <section id="resign-zonesigner">
+        <title>Resign the Zone with <command>zonesigner</command></title>
 
-    <para><command># zonesigner -gends -zone zone-name zone-file output-file
-    </command><userinput>[ENTER]</userinput></para>
+        <para><command># zonesigner -gends -zone zone-name zone-file
+        output-file </command><userinput>[ENTER]</userinput></para>
 
-    <para>Signing may take a few minutes to complete depending on the size of
-    the zone file. If the above operation appears to be unresponsive for an
-    unreasonable time frame, use pseudorandom numbers (see <xref
-    linkend="step-toolset-configure" /> for more information).</para>
+        <para>Signing may take a few minutes to complete depending on the size
+        of the zone file. This operation may appear to be unresponsive for a
+        period of time, depending on the operating system's random number
+        generator device. (See <xref linkend="step-toolset-configure" /> for
+        more information on random number generators and DNSSEC-Tools.)</para>
 
-    <para>The output is a set of files outlined below.</para>
+        <para>The output is a set of files outlined below.</para>
 
-    <table colsep="0" frame="none" rowsep="0">
-      <title><command>zonesigner</command> Output Files</title>
+        <table colsep="0" frame="none" rowsep="0">
+            <title><command>zonesigner</command> Output Files</title>
 
-      <tgroup cols="2">
-        <thead>
-          <row>
-            <entry>File</entry>
+            <tgroup cols="2">
+                <thead>
+                    <row>
+                        <entry>File</entry>
 
-            <entry>Description</entry>
-          </row>
-        </thead>
+                        <entry>Description</entry>
+                    </row>
+                </thead>
 
-        <tbody>
-          <row>
-            <entry><filename>output-file.signed</filename></entry>
+                <tbody>
+                    <row>
+                        <entry><filename>output-file.signed</filename></entry>
 
-            <entry>The signed zone file. The .signed is added by
-            <command>zonesigner</command>.</entry>
-          </row>
+                        <entry>The signed zone file. The .signed is added by
+                        <command>zonesigner</command>.</entry>
+                    </row>
 
-          <row>
-            <entry><filename>keyset-zone-name</filename></entry>
+                    <row>
+                        <entry><filename>keyset-zone-name</filename></entry>
 
-            <entry>The keyset for the zone. This is stored in the directory
-            specified by the configuration file and may have to be sent to the
-            parent zone - see <xref
-            linkend="step-delegation-child" />.</entry>
-          </row>
+                        <entry>The keyset for the zone. This is stored in the
+                        directory specified by the configuration file and may
+                        have to be sent to the parent zone - see <xref
+                        linkend="step-delegation-child" />.</entry>
+                    </row>
 
-          <row>
-            <entry><filename>dsset-zone-name</filename></entry>
+                    <row>
+                        <entry><filename>dsset-zone-name</filename></entry>
 
-            <entry>The dsset for the zone. This is stored in the directory
-            specified by the configuration file and may have to be sent to the
-            parent zone - see <xref
-            linkend="step-delegation-child" />.</entry>
-          </row>
-        </tbody>
-      </tgroup>
-    </table>
-  </section>
+                        <entry>The dsset for the zone. This is stored in the
+                        directory specified by the configuration file and may
+                        have to be sent to the parent zone - see <xref
+                        linkend="step-delegation-child" />.</entry>
+                    </row>
+                </tbody>
+            </tgroup>
+        </table>
+    </section>
 </chapter>
