@@ -17,10 +17,11 @@
         output-file</command> <userinput>[ENTER]</userinput></para>
 
         <para>Key generation and signing may take a few minutes to complete
-        depending on the size of the zone file and size of the keys. If the
-        above operation appears to be unresponsive for an unreasonable time
-        frame, use pseudorandom numbers (see <xref
-        linkend="step-toolset-configure" /> for more information).</para>
+        depending on the size of the zone file and size of the keys. This
+        operation may appear to be unresponsive for a period of time,
+        depending on the operating system's random number generator device.
+        (See <xref linkend="step-toolset-configure" /> for more information on
+        random number generators and DNSSEC-Tools.)</para>
 
         <para>The output is a set of files outlined below.</para>
 
@@ -71,29 +72,23 @@
                     </row>
 
                     <row>
-                        <entry><filename>Kzone-name.+005+keytag.private</filename></entry>
+                        <entry><filename>Kzone-name.+<emphasis>algid</emphasis>+keytag.private</filename></entry>
 
                         <entry>The private key file. This is stored in the
                         directory specified by the configuration file. The
                         <filename>keytag</filename> is a unique identifier for
-                        this key. This document uses
-                        <literal>RSASHA1</literal> as the cryptographic
-                        algorithm, which is represented by the
-                        <filename>005</filename> in the key name's algorithm
-                        field.</entry>
+                        this key. The <emphasis>algid</emphasis> is the
+                        numeric encryption algorithm identifier.</entry>
                     </row>
 
                     <row>
-                        <entry><filename>Kzone-name.+005+keytag.key</filename></entry>
+                        <entry><filename>Kzone-name.+<emphasis>algid</emphasis>+keytag.key</filename></entry>
 
                         <entry>The public key file. This is stored in the
                         directory specified by the configuration file. The
                         <filename>keytag</filename> is a unique identifier for
-                        this key. This document uses
-                        <literal>RSASHA1</literal> as the cryptographic
-                        algorithm, which is represented by the
-                        <filename>005</filename> in the key name's algorithm
-                        field.</entry>
+                        this key. The <emphasis>algid</emphasis> is the
+                        numeric encryption algorithm identifier.</entry>
                     </row>
                 </tbody>
             </tgroup>
