@@ -872,7 +872,7 @@ val_getaddrinfo(val_context_t * ctx,
     const char     *nname = nodename;
     val_context_t  *context = NULL;
     struct addrinfo default_hints;
-    struct addrinfo *cur_hints;
+    const struct addrinfo *cur_hints;
 
     if (res == NULL)
         return 0;
@@ -894,10 +894,10 @@ val_getaddrinfo(val_context_t * ctx,
      * use a default hints structure if one is not available.
      */
     if (hints == NULL) {
+        memset(&default_hints, 0, sizeof(default_hints));
         cur_hints = &default_hints;
-        memset(cur_hints, 0, sizeof(struct addrinfo));
     } else {
-        cur_hints = (struct addrinfo *) hints;
+        cur_hints = hints;
     }
 
     /*
