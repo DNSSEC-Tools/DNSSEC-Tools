@@ -79,6 +79,7 @@ my $sleeptime = $opts{'t'} ? $opts{'t'}
 
 my @domains;
 push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
+my %revdomains;
 
 my %keystorage;
 
@@ -298,7 +299,11 @@ sub get_domains_keys() {
 # check that domain. Otherwise, check all domains found in config files.
     if (!exists ($domains[0])) {
         foreach my $k (keys(%keystorage)) {
-            push @domains, $k;
+#            push @domains, $k;
+              if (!(exists $revdomains{$k})) {
+                 $domains[$#domains + 1] = $k;
+                 $revdomains{$k} = $#domains +1;
+             }
         }
     }
     
@@ -418,75 +423,6 @@ sub read_conf_file {
 # TODO: need to remember where these keys came from....
                     $configmap->{$1} = $file;
 
-		    push @{$storage->{$1}},
-		      { flags => $2,
-			protocol => $3,
-			algorithm => $4,
-			key => $5 };
-		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
-		}
-	    }
-	}
-    }
-    $fh->close;
-}
-
-#######################################################################
-# read_named_conf_file()
-#
-# reads in a named.conf file pointed to by $file and stores key
-# information in $storage
-#
-sub read_named_conf_file {
-    my ($storage, $file) = @_;
-    Verbose("reading and parsing trust keys from $file\n");
-    # regexp pulled from Fast.pm
-    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
-
-    my $fh = new IO::File;
-    if (!$fh->open("<$file")) {
-	print STDERR "Could not open named configuration file: $file\n";
-	exit (1);
-    }
-    while (<$fh>) {
-	if (/trusted-keys {/) {
-	    while (<$fh>) {
-		last if (/^\s*};/);
-		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
-		    push @{$storage->{$1}},
-		      { flags => $2,
-			protocol => $3,
-			algorithm => $4,
-			key => $5 };
-		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
-		}
-	    }
-	}
-    }
-    $fh->close;
-}
-
-#######################################################################
-# read_dnsval_conf_file()
-#
-# reads in a dnsval.conf file pointed to by $file and stores key
-# information in $storage
-#
-sub read_dnsval_conf_file {
-    my ($storage, $file) = @_;
-    Verbose("reading and parsing trust keys from $file\n");
-    # regexp pulled from Fast.pm
-    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
-
-    my $fh = new IO::File;
-    if (!$fh->open("<$file")) {
-	print STDERR "Could not open dnsval configuration file: $file\n";
-	exit (1);
-    }
-    while (<$fh>) {
-	if (/trust-anchor/) {
-	    while (<$fh>) {
-		if (/\s*($pat_maybefullname)\s+\"(256|257)\s+(\d+)\s+(\d+)\s+(.+)\"\s*/) {
 		    push @{$storage->{$1}},
 		      { flags => $2,
 			protocol => $3,
