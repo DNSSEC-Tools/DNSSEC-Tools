@@ -76,14 +76,23 @@
             command, sign each zone with the parameters chosen for that zone.
             The resulting files should be left in place.</para>
 
-            <para>The following example command will generate keys for the
-            zone <emphasis role="bold">example.com</emphasis>, where the ZSK
-            keys have a length of 1024, and then sign the zone with those
+            <para>If the zone does no delegation, the following example
+            command could be used. It will generate keys for the zone
+            <emphasis role="bold">example.com</emphasis>, where the ZSK keys
+            have a length of 1024, and then sign the zone with those
             keys.</para>
 
-            <para><command># zonesigner <option>-genkeys -zsklength 1024
-            example.com</option></command>
-            <userinput>[ENTER]</userinput></para>
+            <para><command># zonesigner -genkeys -zsklength 1024
+            example.com</command> <userinput>[ENTER]</userinput></para>
+
+            <para>If the zone does delegation, the following example command
+            could be used. It will generate keys for the zone <emphasis
+            role="bold">example.com</emphasis>, where the ZSK keys have a
+            length of 1024, and then sign the zone with those keys and
+            generate DS records.</para>
+
+            <para><command># zonesigner -gends -genkeys -zsklength 1024
+            example.com</command> <userinput>[ENTER]</userinput></para>
         </section>
 
         <section>
