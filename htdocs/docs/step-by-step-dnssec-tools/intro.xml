@@ -35,76 +35,57 @@
 
         <para>This guide contains the following sections.</para>
 
-	    <para>Chapter 1.  Introduction to the Step-By-Step Guide.
-	    </para>
+        <para>Chapter 1. Introduction to the Step-By-Step Guide.</para>
 
-	    <para>Chapter 2.  Describes the configuration required before the
-	    DNSSEC-Tools utilities may be used.
-	    </para>
+        <para>Chapter 2. Describes the configuration required before the
+        DNSSEC-Tools utilities may be used.</para>
 
-	    <para>Chapter 3.  Describes how to perform an initial signing of
-	    a zone.
-	    </para>
+        <para>Chapter 3. Describes how to perform an initial signing of a
+        zone.</para>
 
-	    <para>Chapter 4.  Provides the steps required to configure a name
-	    server to serve a signed zone.
-	    </para>
+        <para>Chapter 4. Provides the steps required to configure a name
+        server to serve a signed zone.</para>
 
-	    <para>Chapter 5.  Gives information on checking for expiration of
-	    a zone's signatures.
-	    </para>
+        <para>Chapter 5. Gives information on checking for expiration of a
+        zone's signatures.</para>
 
-	    <para>Chapter 6.  Describes how to re-sign a previously signed
-	    zone.
-	    </para>
+        <para>Chapter 6. Describes how to re-sign a previously signed
+        zone.</para>
 
-	    <para>Chapter 7.  Provides the commands required for a child zone
-	    to create a signed delegation.
-	    </para>
+        <para>Chapter 7. Provides the commands required for a child zone to
+        create a signed delegation.</para>
 
-	    <para>Chapter 8.  Gives the commands required for a parent zone to
-	    create a signed delegation.
-	    </para>
+        <para>Chapter 8. Gives the commands required for a parent zone to
+        create a signed delegation.</para>
 
-	    <para>Chapter 9.  Describes the Pre-Publish Scheme, which is used
-	    in rollover operations of ZSK keys.
-	    </para>
+        <para>Chapter 9. Describes the Pre-Publish Scheme, which is used in
+        rollover operations of ZSK keys.</para>
 
-	    <para>Chapter 10.  Provides the Double-Signature Scheme, which is
-	    used in rollover operations of KSK keys.
-	    </para>
+        <para>Chapter 10. Provides the Double-Signature Scheme, which is used
+        in rollover operations of KSK keys.</para>
 
-	    <para>Chapter 11.  Gives the emergency rollover procedures to take
-	    in the event of a ZSK key compromise.
-	    </para>
+        <para>Chapter 11. Gives the emergency rollover procedures to take in
+        the event of a ZSK key compromise.</para>
 
-	    <para>Chapter 12.  Describes the emergency rollover procedures to
-	    take in the event of a Published ZSK key compromise.
-	    </para>
+        <para>Chapter 12. Describes the emergency rollover procedures to take
+        in the event of a Published ZSK key compromise.</para>
 
-	    <para>Chapter 13.  Provides the emergency rollover procedures to
-	    take in the event that both the Published and Current ZSK keys
-	    are compromised.
-	    </para>
+        <para>Chapter 13. Provides the emergency rollover procedures to take
+        in the event that both the Published and Current ZSK keys are
+        compromised.</para>
 
-	    <para>Chapter 14.  Gives the emergency rollover procedures to
-	    take if the KSK key is compromised.
-	    </para>
+        <para>Chapter 14. Gives the emergency rollover procedures to take if
+        the KSK key is compromised.</para>
 
-	    <para>Chapter 15. Describes the actions a parent zone must take
-	    when a child zone's KSK key is compromised.
-	    </para>
+        <para>Chapter 15. Describes the actions a parent zone must take when a
+        child zone's KSK key is compromised.</para>
 
-	    <para>Chapter 16.  Provides a migration path for moving to using
-	    the DNSSEC-Tools toolset.
-	    </para>
+        <para>Chapter 16. Provides a migration path for moving to using the
+        DNSSEC-Tools toolset.</para>
 
-	    <para>Chapter 17.  Gives information on configuring a secure
-	    resolver.
-	    </para>
-
+        <para>Chapter 17. Gives information on configuring a secure
+        resolver.</para>
     </section>
-
 
     <section>
         <title>Key Concepts</title>
@@ -117,6 +98,18 @@
 
             <para>Zones and Encryption Keys are essential for understanding
             this document, but they are also beyond its scope.</para>
+        </section>
+
+        <section>
+            <title>Zone Rollover</title>
+
+            <para>As zone signatures expire, the zone must be re-signed with
+            new encryption keys. The process of generating new encryption keys
+            and re-signing the zone is called <emphasis>zone
+            rollover</emphasis>. There are several rollover schemes (e.g.,
+            Double-Signature Scheme and Pre-Publish Scheme) that are used for
+            various purposes. These schemes are described in Sections ??? and
+            ???.</para>
         </section>
 
         <section>
