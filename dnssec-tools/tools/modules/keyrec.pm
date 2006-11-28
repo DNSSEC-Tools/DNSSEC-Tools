@@ -93,6 +93,7 @@ my @ZONEFIELDS = (
 			'zsknewpath',
 			'serial',
 			'signing_set',
+			'gends',
 			'szopts',
 			'rollphase',
 			'rollstart',
