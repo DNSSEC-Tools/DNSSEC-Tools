@@ -33,8 +33,78 @@
     <section id="intro-organization">
         <title>Organization of this Document</title>
 
-        <para>The following operations are described in this document:</para>
+        <para>This guide contains the following sections.</para>
+
+	    <para>Chapter 1.  Introduction to the Step-By-Step Guide.
+	    </para>
+
+	    <para>Chapter 2.  Describes the configuration required before the
+	    DNSSEC-Tools utilities may be used.
+	    </para>
+
+	    <para>Chapter 3.  Describes how to perform an initial signing of
+	    a zone.
+	    </para>
+
+	    <para>Chapter 4.  Provides the steps required to configure a name
+	    server to serve a signed zone.
+	    </para>
+
+	    <para>Chapter 5.  Gives information on checking for expiration of
+	    a zone's signatures.
+	    </para>
+
+	    <para>Chapter 6.  Describes how to re-sign a previously signed
+	    zone.
+	    </para>
+
+	    <para>Chapter 7.  Provides the commands required for a child zone
+	    to create a signed delegation.
+	    </para>
+
+	    <para>Chapter 8.  Gives the commands required for a parent zone to
+	    create a signed delegation.
+	    </para>
+
+	    <para>Chapter 9.  Describes the Pre-Publish Scheme, which is used
+	    in rollover operations of ZSK keys.
+	    </para>
+
+	    <para>Chapter 10.  Provides the Double-Signature Scheme, which is
+	    used in rollover operations of KSK keys.
+	    </para>
+
+	    <para>Chapter 11.  Gives the emergency rollover procedures to take
+	    in the event of a ZSK key compromise.
+	    </para>
+
+	    <para>Chapter 12.  Describes the emergency rollover procedures to
+	    take in the event of a Published ZSK key compromise.
+	    </para>
+
+	    <para>Chapter 13.  Provides the emergency rollover procedures to
+	    take in the event that both the Published and Current ZSK keys
+	    are compromised.
+	    </para>
+
+	    <para>Chapter 14.  Gives the emergency rollover procedures to
+	    take if the KSK key is compromised.
+	    </para>
+
+	    <para>Chapter 15. Describes the actions a parent zone must take
+	    when a child zone's KSK key is compromised.
+	    </para>
+
+	    <para>Chapter 16.  Provides a migration path for moving to using
+	    the DNSSEC-Tools toolset.
+	    </para>
+
+	    <para>Chapter 17.  Gives information on configuring a secure
+	    resolver.
+	    </para>
+
     </section>
+
 
     <section>
         <title>Key Concepts</title>
@@ -47,38 +117,32 @@
 
             <para>Zones and Encryption Keys are essential for understanding
             this document, but they are also beyond its scope.</para>
-
         </section>
 
         <section>
             <title>Key-Tag Tables</title>
 
-            <para>The Key-Tag Table mentioned in several steps is a record of
-            zones, the zone's keys, attributes of the keys, and expiration
-            dates. This may be kept in any usable form -- computer file,
-            notebook, old paper napkin, or whatever</para>
+            <para>The Key-Tag Table is a record of zones, the zone's keys,
+            attributes of the keys, and expiration dates. This may be kept in
+            any usable form -- computer file, notebook, old paper napkin, or
+            whatever</para>
         </section>
 
         <section>
             <title>Keyrec Files</title>
 
-            <para>
-	    Keyrec files function as Key-Tag Tables for DNSSEC-Tools
-	    utilities.  They can be hand-edited, but the DNSSEC-Tools
-	    update them automatically.
-	    </para>
-	</section>
+            <para>Keyrec files function as Key-Tag Tables for DNSSEC-Tools
+            utilities. They can be hand-edited, but the DNSSEC-Tools update
+            them automatically.</para>
+        </section>
 
         <section>
             <title>Rollrec Files</title>
 
-            <para>
-	    Rollrec files contain information needed by the DNSSEC-Tools
-	    key rollovers.  They can be hand-edited, but the DNSSEC-Tools
-	    update them automatically.
-	    </para>
-	</section>
-
+            <para>Rollrec files contain information needed by the DNSSEC-Tools
+            key rollovers. They can be hand-edited, but the DNSSEC-Tools
+            update them automatically.</para>
+        </section>
     </section>
 
     <section id="intro-conventions">
@@ -146,7 +210,7 @@
             <userinput>[ENTER]</userinput></member>
 
             <member><command># ls</command>
-            <userinput>[ENTER]</userinput></member>
+            <userinput>[ENTER]ijc</userinput></member>
 
             <member><command># rm -fr *</command>
             <userinput>[ENTER]</userinput></member>
@@ -169,6 +233,6 @@
         <title>Comments</title>
 
         <para>Please send any comments and corrections to
-        developers@dnssec-tools.org.</para>
+        sparta-dnssec@tislabs.com.</para>
     </section>
 </chapter>
