@@ -121,7 +121,11 @@ ns_initparse(const u_char * msg, int msglen, ns_msg * handle)
     int             i;
 
     if ((NULL == msg) || (0 == msglen))
+#ifdef ENODATA
         RETERR(ENODATA);
+#else
+        RETERR(EINVAL);
+#endif
     memset(handle, 0x5e, sizeof(*handle));
     handle->_msg = msg;
     handle->_eom = eom;
