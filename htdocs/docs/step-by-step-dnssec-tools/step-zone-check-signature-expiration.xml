@@ -1,19 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="step-zone-check-signature-expiration">
-  <title>Checking Signature Expiration</title>
+    <title>Checking Signature Expiration</title>
 
-  <para>It is important to regularly check your zone for signatures that are
-  nearing expiration. If the signatures are close to expiring, or already have
-  expired, see <xref linkend="step-zone-resign" /> for how to resign the
-  zone.</para>
+    <para>It is important to regularly check your zone for signatures that are
+    nearing expiration. If the signatures are close to expiring, or already
+    have expired, see <xref linkend="step-zone-resign" /> for how to resign
+    the zone.</para>
 
-  <section id="expiration-check-signatures">
-    <title>Check the Zone for Expiring Signatures</title>
+    <section id="expiration-check-signatures">
+        <title>Check the Zone for Expiring Signatures</title>
 
-    <para><command># expchk -all -warn 10 keyrec-file</command>
-    <userinput>[ENTER]</userinput></para>
+        <para><command># expchk -all -warn 10 keyrec-file</command>
+        <userinput>[ENTER]</userinput></para>
 
-    <para>This checks the keyrec file to see if the zone has signatures
-    expiring in the next 10 days.</para>
-  </section>
+        <para>This checks the keyrec file to see if the zone has signatures
+        expiring in the next 10 days.</para>
+
+        <para>It would be good to run this command regularly. The <emphasis
+        role="bold">cron</emphasis> command can be set to execute <emphasis
+        role="bold">expchk</emphasis> at regular intervals.</para>
+    </section>
 </chapter>
