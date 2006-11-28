@@ -375,16 +375,16 @@ sub query_authserver {
     my $authres;
     my $query;
     foreach my $nsaddr (@authNSAddrs) {
-        $authres = Net::DNS::Resolver->new(nameservers => [$nsaddr],
-                                           debug => 1,);
+        $authres = Net::DNS::Resolver->new(nameservers => [$nsaddr],);
+#                                           debug => 1,);
         my $setdnssec = $authres->dnssec(1);
         $query = $authres->query($d,"DNSKEY");
         last if $query;
     }
     if (!$query) { # try the names
         foreach my $ns (@authNS) {
-            $authres = Net::DNS::Resolver->new(nameservers => [$ns],
-                                           debug => 1,);
+            $authres = Net::DNS::Resolver->new(nameservers => [$ns],);
+#                                           debug => 1,);
             my $setdnssec = $authres->dnssec(1);
             $query = $authres->query($d,"DNSKEY");
             last if $query;
