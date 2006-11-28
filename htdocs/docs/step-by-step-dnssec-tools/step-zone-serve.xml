@@ -1,69 +1,77 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="step-zone-serve">
-  <title>Configuring and Serving a Signed Zone</title>
+    <title>Configuring and Serving a Signed Zone</title>
 
-  <para>Several configuration files must be modified in order to serve a
-  signed zone. Follow the steps below to configure your name server and have
-  it start serving your signed zone.</para>
+    <para>Several configuration files must be modified in order to serve a
+    signed zone. Follow the steps below to configure your name server and have
+    it start serving your signed zone.</para>
 
-  <para><filename>named.conf</filename> is the name of the configuration file
-  used in these examples. The configuration file may vary according to the
-  needs of the administrator.</para>
+    <para><filename>named.conf</filename> is the name of the configuration
+    file used in these examples. The configuration file may vary according to
+    the needs of the administrator.</para>
 
-  <section id="serve-add-zone">
-    <title>Add the Signed Zone to the Name Server Configuration File</title>
+    <section id="serve-add-zone">
+        <title>Add the Signed Zone to the Name Server Configuration
+        File</title>
 
-    <para>The name of the signed zone file must be added to the name server's
-    configuration file. For the zone whose name is
-    <literal>zone-name</literal>, do the following:</para>
+        <para>The name of the signed zone file must be included in the name
+        server's configuration file. If you are signing an existing zone, the
+        current zone file in the configuration file must be replaced with the
+        signed zone file. If you are signing a new zone, the new signed zone
+        file must be added.</para>
 
-    <para><command># vi named.conf
-    </command> <userinput>[ENTER]</userinput></para>
+        <para>For the zone whose name is <literal>zone-name</literal>, do the
+        following:</para>
 
-    <para><computeroutput>... zone "zone-name." { type master; file
-    "zone-file.signed"; }; ...</computeroutput></para>
-  </section>
+        <para><command># vi named.conf </command>
+        <userinput>[ENTER]</userinput></para>
 
-  <section id="serve-enable-dnssec">
-    <title>Enable DNSSEC</title>
+        <para><computeroutput>... zone "zone-name." { type master; file
+        "zone-file.signed"; }; ...</computeroutput></para>
+    </section>
 
-    <para>Add the <literal>dnssec-enable yes;</literal> option to the
-    <filename>named.conf</filename> file.</para>
+    <section id="serve-enable-dnssec">
+        <title>Enable DNSSEC</title>
 
-    <para><command># vi named.conf</command><userinput>[ENTER]</userinput></para>
+        <para>Add the <literal>dnssec-enable yes;</literal> option to the
+        <filename>named.conf</filename> file.</para>
 
-    <para><computeroutput>... options { ... dnssec-enable yes; };
-    ...</computeroutput></para>
-  </section>
+        <para><command># vi
+        named.conf</command><userinput>[ENTER]</userinput></para>
 
-  <section id="serve-check-configuration-file">
-    <title>Check the Name Server Configuration File for Errors</title>
+        <para><computeroutput>... options { ... dnssec-enable yes; };
+        ...</computeroutput></para>
+    </section>
 
-    <para>You must ensure that the configuration file modifications were
-    performed correctly. The <command>named-checkconf</command> command will
-    perform this verification. No output indicates that all is well with the
-    zone.</para>
+    <section id="serve-check-configuration-file">
+        <title>Check the Name Server Configuration File for Errors</title>
 
-    <para><command># named-checkconf named.conf</command>
-    <userinput>[ENTER]</userinput></para>
-  </section>
+        <para>You must ensure that the configuration file modifications were
+        performed correctly. The <command>named-checkconf</command> command
+        will perform this verification. No output indicates that all is well
+        with the zone.</para>
 
-  <xi:include href="reload-zone.xml"
-              xmlns:xi="http://www.w3.org/2001/XInclude" />
+        <para><command># named-checkconf named.conf</command>
+        <userinput>[ENTER]</userinput></para>
+    </section>
 
-  <section id="server-check-zone-load">
-    <title>Check that the Zone Loaded Properly</title>
+    <xi:include href="reload-zone.xml"
+                xmlns:xi="http://www.w3.org/2001/XInclude" />
 
-    <para>Confirm that the SOA serial number of the zone corresponds to the
-    most recent value.</para>
+    <section id="server-check-zone-load">
+        <title>Check that the Zone Loaded Properly</title>
 
-    <para><command># dig @server-IP-address SOA zone-name</command>
-    <userinput>[ENTER]</userinput></para>
+        <para>Confirm that the SOA serial number of the zone corresponds to
+        the most recent value.</para>
 
-    <para><computeroutput>; &lt;&lt;&gt;&gt; DiG 9.3.0 &lt;&lt;&gt;&gt; ...
-    ... ;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 1, ADDITIONAL: 0
-    ... ;; ANSWER SECTION zone-name 3600 IN SOA servername contact (
-    2005092101 ; This should be the most recent value. ; This value will most
-    likely be different in your zone file. ... ) ...</computeroutput></para>
-  </section>
+        <para><command># dig @server-IP-address SOA zone-name</command>
+        <userinput>[ENTER]</userinput></para>
+
+        <para><computeroutput>; &lt;&lt;&gt;&gt; DiG 9.3.0 &lt;&lt;&gt;&gt;
+        ... ... ;; flags: qr aa rd; QUERY: 1, ANSWER: 1, AUTHORITY: 1,
+        ADDITIONAL: 0 ... ;; ANSWER SECTION zone-name 3600 IN SOA servername
+        contact ( 2005092101 ; This should be the most recent value. ; This
+        value will most likely be different in your zone file. ... )
+        ...</computeroutput></para>
+    </section>
 </chapter>
