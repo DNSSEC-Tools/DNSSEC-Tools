@@ -1,20 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="step-rollover-zsk">
-    <title>Current ZSK Rollover (Pre-publish Scheme)</title>
+    <title>Current ZSK Rollover (Pre-Publish Scheme)</title>
 
     <section id="step-rollover-zsk-intro">
         <title>Pre-publish Rollover Scheme</title>
 
-        <para>This section gives the steps necessary for the Pre-publish
+        <para>This section gives the steps necessary for the Pre-Publish
         Rollover Scheme for ZSK rollover. The alternative, the
         double-signature method, is used for rolling over KSKs. Double
         signatures for records signed by the ZSK can increase the size of the
-        zone many times. The Pre-publish Rollover Scheme, although requiring
+        zone many times. The Pre-Publish Rollover Scheme, although requiring
         more steps for the rollover, does not suffer from this problem. The
         size argument does not apply during KSK rollover since the DNSKEY
         RRset is the only record doubly signed by the KSK.</para>
 
-        <para>In the Pre-publish Rollover Scheme, multiple ZSK keys are
+        <para>In the Pre-Publish Rollover Scheme, multiple ZSK keys are
         simultaneously maintained for a zone. These ZSKs are labeled the
         Current ZSK, the Published ZSK, and the New ZSK. The Current and
         Published ZSKs are used to sign the zone, while the New ZSK will be
@@ -40,7 +40,7 @@
         </orderedlist>
 
         <para>A lot of record-keeping is required for managing a zone using
-        the Pre-publish Rollover Scheme. The DNSSEC-Tools utilities that
+        the Pre-Publish Rollover Scheme. The DNSSEC-Tools utilities that
         automate ZSK rollover are described in Section 2. The actual steps
         taken in this rollover scheme are described in Section 3.</para>
     </section>
