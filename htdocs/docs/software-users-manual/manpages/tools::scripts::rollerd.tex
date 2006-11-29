@@ -229,6 +229,9 @@ The following problems (or potential problems) are known:
 \item - Any process that can write to the rollover socket can send commands to
 \cmd{rollerd}.  This is probably not a Good Thing.
 
+\item - {\it rollrec} files do not have zone state updated when the zones start
+or stop rollover as a result of \cmd{rollctl} commands.
+
 \item - No testing with zone files and key files not in the process' directory.
 
 \end{description}
