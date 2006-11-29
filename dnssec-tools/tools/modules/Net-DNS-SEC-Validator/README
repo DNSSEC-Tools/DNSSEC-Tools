@@ -1,0 +1,90 @@
+		  The Perl Net::DNS::SEC::Validator Extension Module
+
+
+Contents:
+   Introduction:
+   Availability:
+   Contact:
+   Release Notes:
+   Installation:
+   Operational Description:
+   Copyright:
+
+Introduction:
+
+   This Perl module is designed to implement and export data objects,
+   constants and utility functions related to the security aware
+   validating DNS resolver provided by libval(3).
+
+Availability:
+
+   The most recent release of this module can be found bundled with
+   the latest DNSSEC-Tools distribution available from:
+
+	http://www.dnssec-tools.org/resources/download.html
+
+   This module should also be available through CPAN
+
+	http://www.cpan.org
+
+Contact:
+
+   The following mailing list should be consider the primary support
+   mechanism for this module:
+
+	     dnssec-tools-users@lists.sourceforge.net mail list
+
+   For bugs use:
+
+	     dnssec-tools-bugs@lists.sourceforge.net mail list
+
+Release Notes:
+
+   The initial beta release of this extension module has been
+   developed against perl-5.8.8.
+
+   Only high level API functions are provided. Lower level API
+   functions will be provided in a future release.
+
+KNOWN BUGS:
+
+   No *known* bugs.
+
+Installation:
+
+   Libval(3) and related dnssec-tools headers and configuration files
+   should first be installed.
+
+   perl Makefile.PL
+   make
+   make test			(must have access to DNS)
+   make install			(requires root privilege)
+
+
+Operational Description:
+
+   use Net::DNS::SEC::Validator;
+   my $validator = new Net::DNS::SEC::Validator(context => ":");
+   my $r = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+
+Trouble Shooting:
+
+   Check that 'make test' succeeds.
+
+   Check that DNS connectivity is available.
+
+   If you cannot resolve the problem you can email
+   dnssec-tools-users@lists.sourceforge.net.
+
+   Please give sufficient information to analyze the problem (OS type,
+   versions for OS/perl/compiler, complete error output, etc.)
+
+Copyright:
+
+   Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
+
+   Copyright (c) 2006 SPARTA, Inc.  All Rights Reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
