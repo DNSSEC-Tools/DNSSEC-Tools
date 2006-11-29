@@ -26,6 +26,10 @@ entered when it is time to perform the ZSK rollover:
 \item adjust keys in keyrec and sign the zone with new Current ZSK
 \end{enumerate}
 
+\cmd{rollerd} uses the \cmd{zonesigner} command during rollover phases 2 and 4.
+\cmd{zonesigner} will generate keys as required and sign the zone during these
+two phases.
+
 The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
 Security Operator Guidance Document.  See that document for more detailed
 information.
@@ -55,6 +59,13 @@ zone file.
 If either of the {\it zonefile} or {\it keyrec} files do not exist, then a
 ``roll'' {\it rollrec} will be changed into a ``skip'' {\it rollrec}.  That
 record will not be processed.
+
+The \cmd{rollctl} command is used to control the behavior of \cmd{rollerd}.
+A number of commands are available, such as starting or stopping rollover for
+a selected zone or all zones, turning on or off a GUI rollover display, and
+halting \cmd{rollerd} execution.  The communications path between
+\cmd{rollerd} and \cmd{rollctl} is operating system-dependent.  On Unix-like
+systems, it is a Unix pipe that should {\bf only} be writable by root.
 
 \clearpage
 {\bf A Note About Files and Filenames}
@@ -120,7 +131,8 @@ and operating system-dependent.
 The complete rollover configuration should be tested.  
 
 Edit the zone files so that their zones have short TTL values.  A one-minute
-TTL should be sufficient.
+TTL should be sufficient.  Test rollovers of this speed should {\bf only} be
+done in a test environment without the real signed zone.
 
 Run the following command:
 
@@ -166,7 +178,10 @@ Sets the \cmd{rollerd} execution directory.  This must be a valid directory.
 Sets the \cmd{rollerd} log file to {\it log\_file}.  This must be a valid
 logging file, meaning that if {\it logfile} already exists, it must be a
 regular file.  The only exceptions to this are if {\it logfile} is
-\path{/dev/stdout} or \path{/dev/tty}.
+\path{/dev/stdout}, \path{/dev/tty}, and \path{-}.
+Of these three, using a {\it logfile} of \path{-} is preferable since Perl
+will properly convert the \path{-} to the process' standard output.
+
 
 \item {\it -loglevel level}\verb" "
 
