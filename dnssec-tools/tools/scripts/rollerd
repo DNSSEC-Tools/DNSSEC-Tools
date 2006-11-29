@@ -2304,6 +2304,10 @@ is time to perform the ZSK rollover:
     3. wait for old zone data to expire from caches
     4. adjust keys in keyrec and sign the zone with new Current ZSK
 
+B<rollerd> uses the B<zonesigner> command during rollover phases 2 and 4.
+B<zonesigner> will generate keys as required and sign the zone during these
+two phases.
+
 The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
 Security Operator Guidance Document.  See that document for more detailed
 information.
@@ -2330,6 +2334,13 @@ by the user.  The I<maxttl> field is derived from the signed zone file.
 If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
 I<rollrec> will be changed into a "skip" I<rollrec>.  That record will not be
 processed.
+
+The B<rollctl> command is used to control the behavior of B<rollerd>.
+A number of commands are available, such as starting or stopping rollover for
+a selected zone or all zones, turning on or off a GUI rollover display, and
+halting B<rollerd> execution.  The communications path between
+B<rollerd> and B<rollctl> is operating system-dependent.  On Unix-like
+systems, it is a Unix pipe that should B<only> be writable by root.
 
 =head2 A Note About Files and Filenames
 
@@ -2394,7 +2405,8 @@ and operating system-dependent.
 The complete rollover configuration should be tested.  
 
 Edit the zone files so that their zones have short TTL values.  A minute TTL
-should be sufficient.
+should be sufficient.  Test rollovers of this speed should B<only> be done
+in a test environment without the real signed zone.
 
 Run the following command:
 
@@ -2438,7 +2450,9 @@ Sets the B<rollerd> execution directory.  This must be a valid directory.
 Sets the B<rollerd> log file to I<log_file>.
 This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
-I<logfile> is B</dev/stdout> or B</dev/tty>.
+I<logfile> is B</dev/stdout>, B</dev/tty>, B<->.  Of these three, using a
+I<log_file> of B<-> is preferable since Perl will properly convert the B<->
+to the process' standard output.
 
 =item I<-loglevel level>
 
