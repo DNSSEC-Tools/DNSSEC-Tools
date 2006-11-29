@@ -97,7 +97,8 @@ val_parse_dname(const unsigned char *buf, int buflen, int offset,
 
 /*
  * Parse rdata portion of a DNSKEY Resource Record.
- * Returns the number of bytes in the DNSKEY rdata portion that were parsed.
+ * Returns the number of bytes in the DNSKEY rdata portion that were parsed on success. 
+ * Returns -1 on failure.
  */
 int
 val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
@@ -128,7 +129,7 @@ val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
         rdata->public_key =
             (u_char *) MALLOC(rdata->public_key_len * sizeof(u_char));
         if (rdata->public_key == NULL)
-            return -1;          /* xxx-check: should we return bytes parsed so far? */
+            return -1;  
         memcpy(rdata->public_key, buf + index, rdata->public_key_len);
         index += rdata->public_key_len;
     } else
@@ -325,7 +326,7 @@ val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
         rdata->signature =
             (u_char *) MALLOC(rdata->signature_len * sizeof(u_char));
         if (rdata->signature == NULL)
-            return -1;          /* xxx-check: should we return bytes parsed so far? */
+            return -1;   
         memcpy(rdata->signature, buf + index, rdata->signature_len);
         index += rdata->signature_len;
     } else
