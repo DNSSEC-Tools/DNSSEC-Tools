@@ -144,7 +144,7 @@ if ($opts{'f'}) {
 } 
 
 sub usage {
-    print "TrustMan [-d domain] [-L] [-f] [-c -o] [-v]\n";
+    print "trustman [-d domain] [-L] [-f] [-c -o] [-v]\n";
     print "additional documentation coming soon\n";
 #    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
 #    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
@@ -159,10 +159,11 @@ parsed for appropriate files.\n";
 
 sub checkkeys {
     my $sleep = shift;
-    my @baddomains;
-    my @gooddomains;
+#    my @baddomains;
+#    my @gooddomains;
 
-    push @domains, $opts{'d'} if ($opts{'d'});
+# hmm, I think this is redundant here....
+#    push @domains, $opts{'d'} if ($opts{'d'});
 
     foreach my $d (@domains) {
         my $query;
@@ -214,10 +215,10 @@ sub checkkeys {
                     
                 # using  baddomains for warning when not doing auto roll
                     }
-                    push @baddomains, $d;
+#                    push @baddomains, $d;
                 } else {
 # %keystorage contains all keys/domains from config files
-                    push @gooddomains, $d;
+#                    push @gooddomains, $d;
 # need to verify that ALL keys in %keystorage were matched
 # if a known key disappears, need to deal with that.
                 }
@@ -244,37 +245,37 @@ sub checkkeys {
             mailcontact(0,$smtpserver,$contactaddr,@newkeydomains);
         }
     }
-    if (@baddomains) {
-        if ($contactaddr) { # mail it
-            mailcontact(0,$smtpserver,$contactaddr,@baddomains);
-        }
-        foreach my $d (@baddomains) {
-            if ($opts{'L'}) { # log it to syslog
-                openlog('TrustMan','pid','user') || warn "could not open syslog";
-                syslog('warning', "%s", "DNSKEY mismatch for zone $d");
-                closelog();
-            }
-            if ($opts{'p'}) {
-                # write to stdout
-                print "DNSKEY mismatch for zone $d\n";
-            }
-        }
-    } elsif ($opts{'N'}) {
-        if ($contactaddr) { # mail it
-            mailcontact(1,$smtpserver,$contactaddr,@domains);
-        }
-        foreach my $d (@gooddomains) {
-            if ($opts{'L'}) { # log it to syslog
-                openlog('TrustMan','pid','user') || warn "could not open syslog";
-                syslog('warning'," %s", "DNSKEY okay for zone $d");
-                closelog();
-            }
-            if ($opts{'p'}) {
-                # write to stdout
-                print "DNSKEY okay for zone $d\n";
-            }
-        }
-    }
+#    if (@baddomains) {
+#        if ($contactaddr) { # mail it
+#            mailcontact(0,$smtpserver,$contactaddr,@baddomains);
+#        }
+#        foreach my $d (@baddomains) {
+#            if ($opts{'L'}) { # log it to syslog
+#                openlog('trustman','pid','user') || warn "could not open syslog";
+#                syslog('warning', "%s", "DNSKEY mismatch for zone $d");
+#                closelog();
+#            }
+#            if ($opts{'p'}) {
+#                # write to stdout
+#                print "DNSKEY mismatch for zone $d\n";
+#            }
+#        }
+#    } elsif ($opts{'N'}) {
+#        if ($contactaddr) { # mail it
+#            mailcontact(1,$smtpserver,$contactaddr,@domains);
+#        }
+#        foreach my $d (@gooddomains) {
+#            if ($opts{'L'}) { # log it to syslog
+#                openlog('trustman','pid','user') || warn "could not open syslog";
+#                syslog('warning'," %s", "DNSKEY okay for zone $d");
+#                closelog();
+#            }
+#            if ($opts{'p'}) {
+#                # write to stdout
+#                print "DNSKEY okay for zone $d\n";
+#            }
+#        }
+#    }
     foreach my $d (keys %sleeptimes) {
         if ($sleep > $sleeptimes{$d}) {
             $sleep = $sleeptimes{$d};
@@ -444,7 +445,7 @@ sub compute_add_holddown {
     my $nowsecs = str2time($now);
 
 # return secs since the epoch as the time to release this holddown
-    if ($ttl > $default) { # 30 days unless ttl is less
+    if ($ttl < $default) { # 30 days unless ttl is less
         $holddown = $nowsecs + $ttl;
     } else {
         $holddown = $nowsecs + $default;
@@ -516,7 +517,7 @@ sub compute_sleepsecs {
 #  - emails a contact address with the error output
 sub mailcontact {
     my ($ok,$smtp,$contact,@domains) = @_;
-    my $fromaddr = 'TrustMan@localhost';
+    my $fromaddr = 'trustman@localhost';
 
     # set up the SMTP object and required data
     my $message = Net::SMTP->new($smtp) || die "failed to create smtp message";
@@ -530,18 +531,20 @@ sub mailcontact {
 
     # create the body of the message: the warning
     if ($ok) {
-        $message->datasend("Subject: TrustMan all clear\n\n");
-        $message->datasend("TrustMan detected no DNSKEY mismatches for the following zones: \n\n");
+        $message->datasend("Subject: trustman all clear\n\n");
+        $message->datasend("trustman detected no DNSKEY mismatches for the following zones: \n\n");
     } else {
-        $message->datasend("Subject: TrustMan: new key detected \n\n");
-        $message->datasend("TrustMan has detected new keys for the following zones: \n\n");
+        $message->datasend("Subject: trustman: new key detected \n\n");
+        $message->datasend("trustman has detected new keys for the following zones: \n\n");
     }
     foreach my $d (@domains) {
         $message->datasend("\t" . $d . "\n");
+        $message->datasend("Key found: \n");
+        $message->datasend($newkeys{$d} . "\n\n");
     }
     if (!$ok) {
         $message->datasend("\n\nThese keys have passed the add holddown time\n");
-        $message->datasend("\n\nand can now be added manually.\n\n");
+        $message->datasend("and can now be added manually.\n\n");
     }
 
     # finish and send the message
@@ -558,22 +561,25 @@ sub mailcontact {
 #
 sub compare_keys {
     my ($storage, $domain, $rec, $keyin) = @_;
+    my $newkey = 1;
     if (!exists($storage->{$domain})) {
 # What would nonexistence of this really mean?
-#	print STDERR "  Found a key for $domain; previously we had none cached\n";
     }
-    my $keys = $storage->{$domain};
+    my @keys;
+    $keys = $storage->{$domain};
     foreach my $key (@$keys) {
 	if ($key->{'flags'} eq $rec->flags &&
 	    $key->{'protocol'} eq $rec->protocol &&
 	    $key->{'algorithm'} eq $rec->algorithm &&
 	    $key->{'key'} eq $keyin) {
 	    # the key exactly matches a stored key
-	    # $key->{'found'} = 1;
-	    return 0;
-	}
+	    $newkey = 0;
+            last;
+	} else {
+            $newkey = 1;
+        }
     }
-    return 1;
+    return $newkey;
 }
 
 #######################################################################
@@ -634,15 +640,15 @@ sub LocalOptionsMap {
 
 =head1 NAME
 
-TrustMan - manage keys used as trust anchors
+trustman - manage keys used as trust anchors
 
 =head1 SYNOPSIS
 
-TrustMan [options]
+trustman [options]
 
 =head1 DESCRIPTION
 
-TrustMan runs by default as a daemon to verify if keys stored locally
+trustman runs by default as a daemon to verify if keys stored locally
 in configuration files like named.conf still match the same keys
 as fetched from the zone where they are defined. If mismatches
 are detected, the daemon notifies the contact person defined in
@@ -669,7 +675,7 @@ Run in the foreground
 
 =item -c
 
-Create a configure file for TrustMan from the command line options given.
+Create a configure file for trustman from the command line options given.
 
 =item -o
 
@@ -705,7 +711,7 @@ Log messages to syslog.
 
 =item -s
 
-SMTP server TrustMan should use to send reports
+SMTP server trustman should use to send reports
 
 =item -N
 
