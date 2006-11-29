@@ -142,9 +142,9 @@ lowercase, but the entry values are left as given.
 Timestamp fields are added at the end of the {\it rollrec}.  These fields have
 the key values {\it rollrec\_gensecs} and {\it rollrec\_gendate}.
 
-A blank line is added after the final line of the new {\it rollrec}.  After
-adding all new {\it rollrec} entries, the {\it rollrec} file is written but
-it is not closed.
+A blank line is added after the final line of the new {\it rollrec}.
+The {\it rollrec} file is not written after \func{rollrec\_add()}, though
+it is marked as having been modified.
 
 \item \func{rollrec\_del(rollrec\_name)}\verb" "
 
@@ -154,6 +154,8 @@ from both the {\it \%rollrecs} hash table and the {\it \@rollreclines} array.
 
 Only the {\it rollrec} itself is deleted from the file.  Any associated
 comments and blank lines surrounding it are left intact.
+The {\it rollrec} file is not written after \func{rollrec\_del()}, though
+it is marked as having been modified.
 
 Return values are:
 
