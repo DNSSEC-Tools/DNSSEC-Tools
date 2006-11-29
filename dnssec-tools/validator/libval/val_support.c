@@ -1417,10 +1417,6 @@ copy_rr_rec(u_int16_t type_h, struct rr_rec *r, int dolower)
     the_copy->rr_status = r->rr_status;
     the_copy->rr_next = NULL;
 
-    //
-    // xxx-audit: uninitialized member in structure
-    //     appropriate value (or 0?) for rr_status
-    //
     return the_copy;
 }
 
