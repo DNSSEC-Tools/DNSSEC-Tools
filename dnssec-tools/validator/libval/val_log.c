@@ -208,7 +208,6 @@ get_ns_string(struct sockaddr *serv)
 
     server = (struct sockaddr_storage *) serv;
     
-    /* XXX Need to support IPv6 */
     switch (server->ss_family) {
       case AF_INET:
             sin = (struct sockaddr_in *)server;
