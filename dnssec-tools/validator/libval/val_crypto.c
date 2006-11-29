@@ -71,8 +71,8 @@ static int dsasha1_parse_public_key (const unsigned char *buf,
 void dsasha1_sigverify (val_context_t *ctx,
 				const unsigned char *data,
 		       int data_len,
-		       const val_dnskey_rdata_t dnskey,
-		       const val_rrsig_rdata_t rrsig,
+		       const val_dnskey_rdata_t *dnskey,
+		       const val_rrsig_rdata_t *rrsig,
                val_astatus_t *key_status,
                val_astatus_t *sig_status)
 {
@@ -88,7 +88,7 @@ void dsasha1_sigverify (val_context_t *ctx,
         return;
 	};
 	
-	if (dsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
+	if (dsasha1_parse_public_key(dnskey->public_key, dnskey->public_key_len,
 				     dsa) != VAL_NO_ERROR) {
 		val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): Error in parsing public key.\n");
 		DSA_free(dsa);
@@ -104,7 +104,7 @@ void dsasha1_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "dsasha1_sigverify(): verifying DSA signature...\n");
 	
 	if (DSA_verify(NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
-		       rrsig.signature, rrsig.signature_len, dsa)) {
+		       rrsig->signature, rrsig->signature_len, dsa)) {
 		val_log(ctx, LOG_DEBUG, "DSA_verify returned SUCCESS\n");
 		DSA_free(dsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
@@ -204,8 +204,8 @@ u_int16_t rsamd5_keytag (const unsigned char *pubkey,
 void rsamd5_sigverify (val_context_t *ctx,
 			   const unsigned char *data,
 		       int data_len,
-		       const val_dnskey_rdata_t dnskey,
-		       const val_rrsig_rdata_t rrsig,
+		       const val_dnskey_rdata_t *dnskey,
+		       const val_rrsig_rdata_t *rrsig,
                val_astatus_t *key_status,
                val_astatus_t *sig_status)
 {
@@ -221,7 +221,7 @@ void rsamd5_sigverify (val_context_t *ctx,
 		return;
 	};
 	
-	if (rsamd5_parse_public_key(dnskey.public_key, dnskey.public_key_len,
+	if (rsamd5_parse_public_key(dnskey->public_key, dnskey->public_key_len,
 				    rsa) != VAL_NO_ERROR) {
 		val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): Error in parsing public key.\n");
 		RSA_free(rsa);
@@ -237,7 +237,7 @@ void rsamd5_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "rsamd5_sigverify(): verifying RSA signature...\n");
 	
 	if (RSA_verify(NID_md5, (unsigned char *) md5_hash, MD5_DIGEST_LENGTH,
-		       rrsig.signature, rrsig.signature_len, rsa)) {
+		       rrsig->signature, rrsig->signature_len, rsa)) {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
 		RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
@@ -291,8 +291,8 @@ static int rsasha1_parse_public_key (const unsigned char *buf,
 void rsasha1_sigverify (val_context_t *ctx,
 			   const unsigned char *data,
 		       int data_len,
-		       const val_dnskey_rdata_t dnskey,
-		       const val_rrsig_rdata_t rrsig,
+		       const val_dnskey_rdata_t *dnskey,
+		       const val_rrsig_rdata_t *rrsig,
                val_astatus_t *key_status,
                val_astatus_t *sig_status)
 {
@@ -308,7 +308,7 @@ void rsasha1_sigverify (val_context_t *ctx,
 		return;
 	};
 	
-	if (rsasha1_parse_public_key(dnskey.public_key, dnskey.public_key_len,
+	if (rsasha1_parse_public_key(dnskey->public_key, dnskey->public_key_len,
 				     rsa) != VAL_NO_ERROR) {
 		val_log(ctx, LOG_DEBUG, "rsasha1_sigverify(): Error in parsing public key.\n");
 		RSA_free(rsa);
@@ -324,7 +324,7 @@ void rsasha1_sigverify (val_context_t *ctx,
 	val_log(ctx, LOG_DEBUG, "rsasha1_sigverify(): verifying RSA signature...\n");
 	
 	if (RSA_verify(NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
-		       rrsig.signature, rrsig.signature_len, rsa)) {
+		       rrsig->signature, rrsig->signature_len, rsa)) {
 		val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
 		RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
