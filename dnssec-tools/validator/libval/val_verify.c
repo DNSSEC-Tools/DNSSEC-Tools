@@ -32,19 +32,28 @@
  * Verify a signature, given the data and the dnskey 
  * Pass in a context, to give acceptable time skew 
  */
-// xxx-audit: recommend passing structs by reference
 static          void
 val_sigverify(val_context_t * ctx,
               const unsigned char *data,
               int data_len,
-              const val_dnskey_rdata_t dnskey,
-              const val_rrsig_rdata_t rrsig,
+              const val_dnskey_rdata_t *dnskey,
+              const val_rrsig_rdata_t *rrsig,
               val_astatus_t *dnskey_status,
               val_astatus_t *sig_status)
 {
     struct timeval  tv;
     struct timezone tz;
 
+    if (dnskey == NULL) {
+        *dnskey_status = VAL_AC_INVALID_KEY;
+        return; 
+    }
+
+    if (rrsig == NULL) {
+        *sig_status = VAL_AC_INVALID_RRSIG;
+        return; 
+    }
+    
     if ((data == NULL) && (data_len != 0)) {
         /* assertion status should be VAL_AC_DATA_MISSING */
         *sig_status = VAL_AC_INVALID_RRSIG;
@@ -54,7 +63,7 @@ val_sigverify(val_context_t * ctx,
     /*
      * Check if the dnskey is a zone key 
      */
-    if ((dnskey.flags & ZONE_KEY_FLAG) == 0) {
+    if ((dnskey->flags & ZONE_KEY_FLAG) == 0) {
         val_log(ctx, LOG_DEBUG, "DNSKEY not a zone signing key");
         *dnskey_status = VAL_AC_INVALID_KEY;
         return; 
@@ -63,10 +72,10 @@ val_sigverify(val_context_t * ctx,
     /*
      * Check dnskey protocol value 
      */
-    if (dnskey.protocol != 3) {
+    if (dnskey->protocol != 3) {
         val_log(ctx, LOG_DEBUG,
                 "Invalid protocol field in DNSKEY record: %d",
-                dnskey.protocol);
+                dnskey->protocol);
         *dnskey_status = VAL_AC_UNKNOWN_DNSKEY_PROTOCOL;
         return; 
     }
@@ -74,10 +83,10 @@ val_sigverify(val_context_t * ctx,
     /*
      * Match dnskey and rrsig algorithms 
      */
-    if (dnskey.algorithm != rrsig.algorithm) {
+    if (dnskey->algorithm != rrsig->algorithm) {
         val_log(ctx, LOG_DEBUG,
                 "Algorithm mismatch between DNSKEY (%d) and RRSIG (%d) records.",
-                dnskey.algorithm, rrsig.algorithm);
+                dnskey->algorithm, rrsig->algorithm);
         *sig_status = VAL_AC_RRSIG_ALGORITHM_MISMATCH;
         return; 
     }
@@ -86,8 +95,8 @@ val_sigverify(val_context_t * ctx,
      * Check signature inception and expiration times 
      */
     gettimeofday(&tv, &tz);
-    if (tv.tv_sec < rrsig.sig_incp) {
-        if (tv.tv_sec < rrsig.sig_incp-SIG_ACCEPT_WINDOW) {
+    if (tv.tv_sec < rrsig->sig_incp) {
+        if (tv.tv_sec < rrsig->sig_incp-SIG_ACCEPT_WINDOW) {
             char            currTime[1028];
             char            incpTime[1028];
             int             len;
@@ -102,7 +111,7 @@ val_sigverify(val_context_t * ctx,
             if (len > 0)
                 currTime[len-1] = 0;
 #ifndef sun
-            ctime_r((const time_t *) (&(rrsig.sig_incp)), incpTime);
+            ctime_r((const time_t *) (&(rrsig->sig_incp)), incpTime);
 #else
             ctime_r((const time_t *) (&(tv.tv_sec)), incpTime, sizeof(incpTime));
 #endif
@@ -120,8 +129,8 @@ val_sigverify(val_context_t * ctx,
         
     }
 
-    if (tv.tv_sec > rrsig.sig_expr) {
-        if (tv.tv_sec > rrsig.sig_expr+SIG_ACCEPT_WINDOW) {
+    if (tv.tv_sec > rrsig->sig_expr) {
+        if (tv.tv_sec > rrsig->sig_expr+SIG_ACCEPT_WINDOW) {
             char            currTime[1028];
             char            exprTime[1028];
             int             len;
@@ -136,7 +145,7 @@ val_sigverify(val_context_t * ctx,
             if (len > 0)
                 currTime[len-1] = 0;
 #ifndef sun
-            ctime_r((const time_t *) (&(rrsig.sig_expr)), exprTime);
+            ctime_r((const time_t *) (&(rrsig->sig_expr)), exprTime);
 #else
             ctime_r((const time_t *) (&(tv.tv_sec)), exprTime, sizeof(exprTime));
 #endif
@@ -153,7 +162,7 @@ val_sigverify(val_context_t * ctx,
         }
     }
 
-    switch (rrsig.algorithm) {
+    switch (rrsig->algorithm) {
 
     case ALG_RSAMD5:
         rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig, dnskey_status, sig_status);
@@ -175,13 +184,13 @@ val_sigverify(val_context_t * ctx,
 
     case ALG_DH:
         val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.",
-                rrsig.algorithm);
+                rrsig->algorithm);
         *sig_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
         *dnskey_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
         break;
 
     default:
-        val_log(ctx, LOG_DEBUG, "Unknown algorithm %d.", rrsig.algorithm);
+        val_log(ctx, LOG_DEBUG, "Unknown algorithm %d.", rrsig->algorithm);
         *sig_status = VAL_AC_UNKNOWN_ALGORITHM;
         *dnskey_status = VAL_AC_UNKNOWN_ALGORITHM;
         break;
@@ -594,8 +603,8 @@ do_verify(val_context_t * ctx,
     /*
      * Perform the verification 
      */
-    val_sigverify(ctx, ver_field, ver_length, *the_key, 
-                  rrsig_rdata, dnskey_status, sig_status);
+    val_sigverify(ctx, ver_field, ver_length, the_key, 
+                  &rrsig_rdata, dnskey_status, sig_status);
 
     if (rrsig_rdata.signature != NULL) {
         FREE(rrsig_rdata.signature);
