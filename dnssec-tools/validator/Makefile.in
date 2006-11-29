@@ -7,7 +7,15 @@ libs: subdirmake
 
 makeit: subdirmake
 
-install: makedirectories subdirinstall
+nextstepinstructions:
+	@echo ""
+	@echo "**********************************************************************"
+	@echo "** Not automatically installing resolv.conf and dnsval.conf" 
+	@echo "** Please copy these files from validator/etc to /etc"
+	@echo "**********************************************************************"
+	@echo ""
+    
+install: makedirectories subdirinstall nextstepinstructions
 
 clean: subdirclean
 
