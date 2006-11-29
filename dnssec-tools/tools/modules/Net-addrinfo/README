@@ -1,0 +1,103 @@
+		  The Perl  Net::addrinfo Extension Module
+
+
+Contents:
+   Introduction:
+   Availability:
+   Contact:
+   Release Notes:
+   Installation:
+   Operational Description:
+   Copyright:
+
+Introduction:
+
+   This Perl module is designed to implement and export data objects,
+   constants and utility functions related to the POSIX getaddrinfo()
+   system call. (see: man 3 getaddrinfo)
+
+Availability:
+
+   The most recent release of this module can be found bundled with
+   the latest DNSSEC-Tools distribution available from:
+
+	http://www.dnssec-tools.org/resources/download.html
+
+   This module should also be available through CPAN
+
+	http://www.cpan.org
+
+   (NOTE: it is proposed that this module be included in perl core release)
+
+Contact:
+
+   The following mailing list should be consider the primary support
+   mechanism for this module:
+
+	     dnssec-tools-users@lists.sourceforge.net mail list
+
+   For bugs use:
+
+	     dnssec-tools-bugs@lists.sourceforge.net mail list
+
+Release Notes:
+
+   The initial beta release of this extension module has been
+   developed against perl-5.8.8.
+
+   This module is modeled after 'Net::hostent' but has some
+   additional features and does not rely on Class::Struct.
+
+
+KNOWN BUGS:
+
+   No *known* bugs.
+
+Installation:
+
+   perl Makefile.PL
+   make
+   make test			(must have access to DNS)
+   make install			(requires root privilege)
+
+Operational Description:
+
+   use Net::addrinfo;
+   my $ainfo = getaddrinfo("www.marzot.net");
+
+   use Socket qw(:all);
+   my $hint = new Net::addrinfo(flags => AI_CANONNAME,
+                                family => AF_INET, 
+                                socktype => SOCK_DGRAM);
+   $ainfo = getaddrinfo("www.marzot.net", "http", $hint);
+
+   if (ref($ainfo) eq 'ARRAY') {
+      $ainfo = $ainfo->[0];
+      print $ainfo->canonname, "\n";
+   ...
+      connect(SH, $ainfo->addr);
+   } else {
+      print "Error($ainfo):", gai_strerror($ainfo), "\n";
+   }
+
+Trouble Shooting:
+
+   Check that 'make test' succeeds.
+
+   Check that DNS connectivity is available.
+
+   If you cannot resolve the problem you can email
+   dnssec-tools-users@lists.sourceforge.net.
+
+   Please give sufficient information to analyze the problem (OS type,
+   versions for OS/perl/compiler, complete error output, etc.)
+
+Copyright:
+
+   Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
+
+   Copyright (c) 2006 SPARTA, Inc.  All Rights Reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
