@@ -691,10 +691,9 @@ sub rollrec_add
 	$rollreclen++;
 
 	#
-	# Sync the rollrec file.
+	# Mark the rollrec file as having been modified.
 	#
 	$modified = 1;
-	rollrec_write();
 	return(0);
 }
 
@@ -788,11 +787,9 @@ sub rollrec_del
 	$rollreclen -= $len;
 
 	#
-	# Tell the world (or at least the module) that the file has
-	# been modified.
+	# Mark that the file has been modified.
 	#
 	$modified = 1;
-	rollrec_write();
 	return(0);
 }
 
@@ -1038,8 +1035,8 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
 
   rollrec_del("example.com");
 
-  rollrec_type("example.com","skip");
   rollrec_type("example.com","roll");
+  rollrec_type("example.com","skip");
 
   rollrec_setval("example.com","zonefile","db.example.com");
 
@@ -1145,8 +1142,9 @@ are left as given.
 Timestamp fields are added at the end of the I<rollrec>.  These fields have
 the key values I<rollrec_gensecs> and I<rollrec_gendate>.
 
-A blank line is added after the final line of the new I<rollrec>.  After adding
-all new I<rollrec> entries, the I<rollrec> file is written but it is not closed.
+A blank line is added after the final line of the new I<rollrec>.
+The I<rollrec> file is not written after I<rollrec_add()>, though
+it is internally marked as having been modified.
 
 =item I<rollrec_del(rollrec_name)>
 
@@ -1155,7 +1153,9 @@ representation of the file contents.  The I<rollrec> is deleted from both
 the I<%rollrecs> hash table and the I<@rollreclines> array.
 
 Only the I<rollrec> itself is deleted from the file.  Any associated comments
-and blank lines surrounding it are left intact.
+and blank lines surrounding it are left intact.  The I<rollrec> file is not
+written after I<rollrec_del()>, though it is internally marked as having been
+modified.
 
 Return values are:
 
