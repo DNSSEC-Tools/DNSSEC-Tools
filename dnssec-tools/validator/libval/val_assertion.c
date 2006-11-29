@@ -76,8 +76,10 @@ is_type_set(u_int8_t * field, int field_len, u_int16_t type)
 #define CLONE_NAME_LEN(oldb, oldlen, newb, newlen) do {\
         if (oldlen) {                                                   \
             newb =	(u_int8_t *) MALLOC (oldlen * sizeof(u_int8_t)); \
-            if (newb == NULL)                                           \
-                return VAL_OUT_OF_MEMORY;                               \
+            if (newb == NULL) {                                         \
+                retval = VAL_OUT_OF_MEMORY;                             \
+                goto err;                                               \
+            }                                                           \
             memcpy(newb, oldb, oldlen);                                 \
         }                                                               \
         else                                                            \
@@ -95,6 +97,22 @@ is_type_set(u_int8_t * field, int field_len, u_int16_t type)
                     ((nsec3_order_cmp(hash, hashlen, range2, range2len) < 0)||\
                      (nsec3_order_cmp(hash, hashlen, range1, range1len) > 0))))
 #endif
+
+void
+free_val_rrset_members(struct val_rrset *r)
+{
+    if (r == NULL)
+        return;
+
+    if (r->val_msg_header)
+        FREE(r->val_msg_header);
+    if (r->val_rrset_name_n)
+        FREE(r->val_rrset_name_n);
+    if (r->val_rrset_data != NULL)
+        res_sq_free_rr_recs(&r->val_rrset_data);
+    if (r->val_rrset_sig != NULL)
+        res_sq_free_rr_recs(&r->val_rrset_sig);
+}
 
 /*
  * Create a "result" list whose elements point to assertions and also have their
@@ -119,17 +137,7 @@ val_free_result_chain(struct val_result_chain *results)
             prev->val_rc_answer = trust->val_ac_trust;
 
             if (trust->val_ac_rrset != NULL) {
-                if (trust->val_ac_rrset->val_msg_header)
-                    FREE(trust->val_ac_rrset->val_msg_header);
-                if (trust->val_ac_rrset->val_rrset_name_n)
-                    FREE(trust->val_ac_rrset->val_rrset_name_n);
-                if (trust->val_ac_rrset->val_rrset_data != NULL)
-                    res_sq_free_rr_recs(&trust->val_ac_rrset->
-                                        val_rrset_data);
-                if (trust->val_ac_rrset->val_rrset_sig != NULL)
-                    res_sq_free_rr_recs(&trust->val_ac_rrset->
-                                        val_rrset_sig);
-
+                free_val_rrset_members(trust->val_ac_rrset);
                 FREE(trust->val_ac_rrset);
             }
 
@@ -275,7 +283,7 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
 {
     struct zone_se_policy *zse_pol, *zse_cur;
     int             name_len;
-    u_int8_t       *p, *q;
+    u_int8_t       *p;
     char            name_p[NS_MAXDNAME];
 
     /*
@@ -300,8 +308,6 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
         /*
          * for all zones which are shorter or as long, do a strstr 
          */
-        // XXX We will probably need to use namecmp() instead so that
-        // XXX casing and endien order are accounted for 
         /*
          * Because of the ordering, the longest match is found first 
          */
@@ -314,17 +320,15 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
                  * Find the last occurrence of zse_cur->zone_n in name_n 
                  */
                 p = name_n;
-                q = (u_int8_t *) strstr((char *) p,
-                                        (char *) zse_cur->zone_n);
-                while (q != NULL) {
-                    p = q;
-                    q = (u_int8_t *) strstr((char *) q + 1,
-                                            (char *) zse_cur->zone_n);
+                while (p && (*p != '\0')) {
+                    if (!namecmp (p, zse_cur->zone_n))
+                        break;
+                    p = p + *p + 1;
                 }
             }
 
             if (root_zone
-                || (!strcmp((char *) p, (char *) zse_cur->zone_n))) {
+                || (!namecmp(p, zse_cur->zone_n))) {
                 if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
                     snprintf(name_p, sizeof(name_p), "unknown/error");
                 if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
@@ -805,10 +809,6 @@ free_authentication_chain(struct val_digested_auth_chain *assertions)
     if (assertions == NULL)
         return;
 
-    // xxx-audit: opportunity for disaster
-    //            having a free function for a structure w/a union w/
-    //            differing characteristics gives me the heebeejeebees.
-    //            this blindly assumes that _as is the right union memeber.
     if (assertions->_as.val_ac_next)
         free_authentication_chain(assertions->_as.val_ac_next);
 
@@ -891,12 +891,11 @@ build_pending_query(val_context_t * context,
     /*
      * Identify the DNSKEY that created the RRSIG:
      */
-
-    // xxx-audit: ptr deref w/out NULL check
-    // if ((NULL == as->_as.ac_data->rrs.val_rrset_sig) ||
-    //     (NULL == as->_as.ac_data->rrs.val_rrset_sig->rr_rdata))
-    //     return VAL_???
-
+    if (as->_as.ac_data->rrs.val_rrset_sig->rr_rdata == NULL) {
+        as->val_ac_status = VAL_AC_DATA_MISSING;
+        return VAL_NO_ERROR;
+    }
+    
     /*
      * First identify the signer name from the RRSIG 
      */
@@ -1150,11 +1149,89 @@ assimilate_answers(val_context_t * context,
 }
 
 static int
+clone_val_rrset(struct val_rrset *old_rrset, struct val_rrset **new_rrset)
+{
+    int retval;
+
+    if (new_rrset == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *new_rrset = NULL;    
+    if (old_rrset != NULL) {
+        int             len;
+
+        *new_rrset = (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
+        if (*new_rrset == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        memset(*new_rrset, 0, sizeof(struct val_rrset));
+
+        CLONE_NAME_LEN(old_rrset->val_msg_header,
+                       old_rrset->val_msg_headerlen,
+                       (*new_rrset)->val_msg_header,
+                       (*new_rrset)->val_msg_headerlen);
+
+        len = wire_name_length(old_rrset->val_rrset_name_n);
+        (*new_rrset)->val_rrset_name_n =
+                (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+        if ((*new_rrset)->val_rrset_name_n == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+
+        memcpy((*new_rrset)->val_rrset_name_n,
+               old_rrset->val_rrset_name_n, len);
+
+        (*new_rrset)->val_rrset_class_h =
+                old_rrset->val_rrset_class_h;
+        (*new_rrset)->val_rrset_type_h =
+                old_rrset->val_rrset_type_h;
+        (*new_rrset)->val_rrset_ttl_h =
+                old_rrset->val_rrset_ttl_h;
+        (*new_rrset)->val_rrset_ttl_x =
+                old_rrset->val_rrset_ttl_x;
+        (*new_rrset)->val_rrset_section =
+                old_rrset->val_rrset_section;
+        (*new_rrset)->val_rrset_data =
+                copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
+                                 old_rrset->val_rrset_data, 0);
+        (*new_rrset)->val_rrset_sig =
+                copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
+                                 old_rrset->val_rrset_sig, 0);
+        (*new_rrset)->val_rrset_server = 
+                    (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
+
+        if (old_rrset->val_rrset_server) {
+            if ((*new_rrset)->val_rrset_server == NULL) {
+                retval = VAL_OUT_OF_MEMORY;
+                goto err;
+            }
+            memcpy((*new_rrset)->val_rrset_server, 
+                   old_rrset->val_rrset_server,
+                   sizeof(struct sockaddr_storage));
+        } else {
+            (*new_rrset)->val_rrset_server = NULL;
+        }
+    }
+
+    return VAL_NO_ERROR;
+
+err:
+    if (*new_rrset) {
+        free_val_rrset_members(*new_rrset);
+        FREE(*new_rrset);
+        *new_rrset = NULL;
+    }
+    return retval;
+}
+
+static int
 transform_authentication_chain(struct val_digested_auth_chain *top_as, 
                                struct val_authentication_chain **a_chain)
 {
     struct val_authentication_chain *n_ac, *prev_ac;
     struct val_digested_auth_chain *o_ac;
+    int retval;
 
     if (a_chain == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1166,73 +1243,16 @@ transform_authentication_chain(struct val_digested_auth_chain *top_as,
         n_ac = (struct val_authentication_chain *)
             MALLOC(sizeof(struct val_authentication_chain));
         if (n_ac == NULL){
-            return VAL_OUT_OF_MEMORY;
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
         }
         memset(n_ac, 0, sizeof(struct val_authentication_chain));
         n_ac->val_ac_status = o_ac->val_ac_status;
         n_ac->val_ac_trust = NULL;
 
-        if (o_ac->val_ac_rrset != NULL) {
-            int             len;
-
-            n_ac->val_ac_rrset =
-                (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
-            if (n_ac->val_ac_rrset == NULL) {
-                return VAL_OUT_OF_MEMORY;
-            }
-            memset(n_ac->val_ac_rrset, 0, sizeof(struct val_rrset));
-
-            // xxx- bug 1537734: potential memory leak
-            //     not just in this loop iteration, but previous as well.
-            //     iterate over head_ac & preforms frees?
-            CLONE_NAME_LEN(o_ac->val_ac_rrset->val_msg_header,
-                           o_ac->val_ac_rrset->val_msg_headerlen,
-                           n_ac->val_ac_rrset->val_msg_header,
-                           n_ac->val_ac_rrset->val_msg_headerlen);
-
-            len = wire_name_length(o_ac->val_ac_rrset->val_rrset_name_n);
-            n_ac->val_ac_rrset->val_rrset_name_n =
-                (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-            // xxx-audit: memory leak, no release of prior allocs before return
-            //     not just in this loop iteration, but previous as well.
-            //     iterate over head_ac & preforms frees?
-            if (n_ac->val_ac_rrset->val_rrset_name_n == NULL)
-                return VAL_OUT_OF_MEMORY;
-            memcpy(n_ac->val_ac_rrset->val_rrset_name_n,
-                   o_ac->val_ac_rrset->val_rrset_name_n, len);
-
-            n_ac->val_ac_rrset->val_rrset_class_h =
-                o_ac->val_ac_rrset->val_rrset_class_h;
-            n_ac->val_ac_rrset->val_rrset_type_h =
-                o_ac->val_ac_rrset->val_rrset_type_h;
-            n_ac->val_ac_rrset->val_rrset_ttl_h =
-                o_ac->val_ac_rrset->val_rrset_ttl_h;
-            n_ac->val_ac_rrset->val_rrset_ttl_x =
-                o_ac->val_ac_rrset->val_rrset_ttl_x;
-            n_ac->val_ac_rrset->val_rrset_section =
-                o_ac->val_ac_rrset->val_rrset_section;
-            n_ac->val_ac_rrset->val_rrset_data =
-                copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
-                                 o_ac->val_ac_rrset->val_rrset_data, 0);
-            n_ac->val_ac_rrset->val_rrset_sig =
-                copy_rr_rec_list(n_ac->val_ac_rrset->val_rrset_type_h,
-                                 o_ac->val_ac_rrset->val_rrset_sig, 0);
-            n_ac->val_ac_rrset->val_rrset_server = 
-                    (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
-
-            if (o_ac->val_ac_rrset->val_rrset_server) {
-                if (n_ac->val_ac_rrset->val_rrset_server == NULL) {
-                    // xxx-audit: memory leak, no release of prior allocs before return
-                    //     not just in this loop iteration, but previous as well.
-                    //     iterate over head_ac & preforms frees?
-                    return VAL_OUT_OF_MEMORY;
-                }
-                memcpy(n_ac->val_ac_rrset->val_rrset_server, 
-                    o_ac->val_ac_rrset->val_rrset_server,
-                    sizeof(struct sockaddr_storage));
-            } else {
-                n_ac->val_ac_rrset->val_rrset_server = NULL;
-            }
+        if ( VAL_NO_ERROR != 
+                (retval = clone_val_rrset(o_ac->val_ac_rrset, &n_ac->val_ac_rrset))) {
+            goto err;
         }
 
         if ((*a_chain) == NULL) {
@@ -1244,6 +1264,74 @@ transform_authentication_chain(struct val_digested_auth_chain *top_as,
     }
 
     return VAL_NO_ERROR;
+
+err:
+    /* clean up a_chain */ 
+    while(*a_chain) {
+        n_ac = *a_chain;
+        *a_chain = (*a_chain)->val_ac_trust;
+        if (n_ac->val_ac_rrset) {
+            free_val_rrset_members(n_ac->val_ac_rrset);
+            FREE(n_ac->val_ac_rrset);
+        }
+        FREE(n_ac);
+    }
+    return retval;
+    
+}
+
+static int
+transform_authentication_chain_inverse(struct val_authentication_chain *top_as, 
+                                       struct val_digested_auth_chain **a_chain)
+{
+    struct val_digested_auth_chain *n_ac, *prev_ac;
+    struct val_authentication_chain *o_ac;
+    int retval;
+
+    if (a_chain == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    (*a_chain) = NULL;
+    prev_ac = NULL;
+    for (o_ac = top_as; o_ac; o_ac = o_ac->val_ac_trust) {
+
+        n_ac = (struct val_digested_auth_chain *)
+            MALLOC(sizeof(struct val_digested_auth_chain));
+        if (n_ac == NULL){
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        memset(n_ac, 0, sizeof(struct val_digested_auth_chain));
+        n_ac->val_ac_status = o_ac->val_ac_status;
+        n_ac->val_ac_trust = NULL;
+
+        if ( VAL_NO_ERROR != 
+                (retval = clone_val_rrset(o_ac->val_ac_rrset, &n_ac->val_ac_rrset))) {
+            goto err;
+        }
+
+        if ((*a_chain) == NULL) {
+            (*a_chain) = n_ac;
+        } else {
+            prev_ac->val_ac_trust = n_ac;
+        }
+        prev_ac = n_ac;
+    }
+
+    return VAL_NO_ERROR;
+
+err:
+    while(*a_chain) {
+        n_ac = *a_chain;
+        *a_chain = (*a_chain)->val_ac_trust;
+        if (n_ac->val_ac_rrset) {
+            free_val_rrset_members(n_ac->val_ac_rrset);
+            FREE(n_ac->val_ac_rrset);
+        }
+        FREE(n_ac);
+    }
+
+    return retval;
     
 }
 
@@ -1589,7 +1677,7 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
 {
     int             name_len;
     struct nsec3_max_iter_policy *pol, *cur;
-    u_int8_t       *p, *q;
+    u_int8_t       *p;
     char            name_p[NS_MAXDNAME];
     u_int8_t        hashlen;
     u_int8_t       *hash;
@@ -1617,8 +1705,6 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
         /*
          * for all zones which are shorter or as long, do a strstr 
          */
-        // XXX We will probably need to use namecmp() instead so that
-        // XXX casing and endien order are accounted for 
         /*
          * Because of the ordering, the longest match is found first 
          */
@@ -1631,15 +1717,14 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
                  * Find the last occurrence of cur->zone_n in soa_name_n 
                  */
                 p = soa_name_n;
-                q = (u_int8_t *) strstr((char *) p, (char *) cur->zone_n);
-                while (q != NULL) {
-                    p = q;
-                    q = (u_int8_t *) strstr((char *) q + 1,
-                                            (char *) cur->zone_n);
+                while (p && (*p != '\0')) {
+                    if (!namecmp (p, cur->zone_n))
+                        break;
+                    p = p + *p + 1;
                 }
             }
 
-            if (root_zone || (!strcmp((char *) p, (char *) cur->zone_n))) {
+            if (root_zone || (!namecmp(p, cur->zone_n))) {
                 if (-1 == ns_name_ntop(soa_name_n, name_p, sizeof(name_p)))
                     snprintf(name_p, sizeof(name_p), "unknown/error");
 
@@ -1754,8 +1839,8 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                  */
                 /*
                  * XXX The NSEC3 that proves that a DS record for a delegation is absent
-                 * * XXX is an exact match for that delegation owner name. The NS bit will be
-                 * * XXX set but the SOA will not. So there is some confusion here.
+                 * XXX is an exact match for that delegation owner name. The NS bit will be
+                 * XXX set but the SOA will not. So there is some confusion here.
                  */
                 if ((is_type_set
                      ((&
@@ -2156,7 +2241,6 @@ prove_nonexistence( val_context_t * ctx,
     /*
      * inspect the SOA record first 
      */
-    // XXX Can we assume that the SOA record is always present?
     for (res = w_results; res; res = res->val_rc_next) {
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
         if ((the_set) && (the_set->rrs_ans_kind == SR_ANS_NACK_SOA)) {
@@ -2415,6 +2499,7 @@ verify_provably_unsecure(val_context_t * context,
     u_int8_t       *curzone_n = NULL;
     u_int8_t       *zonecut_n = NULL;
 
+    struct val_digested_auth_chain *aptr; 
     struct rrset_rec *rrset;
     int             error = 1;
 
@@ -2545,21 +2630,8 @@ verify_provably_unsecure(val_context_t * context,
     if (curzone_n)
         FREE(curzone_n);
 
-    // xxx-check: sanity check
-    //     I just find it odd that we had to go and get some results to
-    //     determine if the zone is provably unsecure or not, but we
-    //     don't save that information anywhere for the caller/user to
-    //     inspect. Maybe this function is only called from other high
-    //     level routines?
-
-    if (results->val_rc_status == VAL_SUCCESS) {
-        val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure.",
-                name_p_orig);
-        val_free_result_chain(results);
-        return 0;
-    }
-
-    if (results->val_rc_status == VAL_NONEXISTENT_TYPE) {
+    if ((results->val_rc_status == VAL_NONEXISTENT_TYPE) ||
+           (results->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
         val_log(context, LOG_DEBUG, "Zone %s is provably unsecure",
                 name_p_orig);
         val_free_result_chain(results);
@@ -2575,6 +2647,16 @@ verify_provably_unsecure(val_context_t * context,
         return 1;
     }
 #endif    
+
+    /* 
+     * Copy the entire chain of trust for DS to make it follow the current 
+     * authentication chain element
+     */
+    if (as->val_ac_trust == NULL) {
+        aptr = NULL;
+        transform_authentication_chain_inverse(results->val_rc_answer, &aptr); 
+        as->val_ac_trust = aptr;
+    }
 
     val_log(context, LOG_DEBUG, "Zone %s is not provably unsecure.",
             name_p_orig);
@@ -2632,62 +2714,66 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
 
         if (next_as->val_ac_status == VAL_AC_WAIT_FOR_RRSIG) {
 
-            for (pending_as = pc->qc_ans; pending_as;
-                 pending_as = pending_as->_as.val_ac_rrset_next) {
-                /*
-                 * We were waiting for the RRSIG 
-                 */
-                // xxx-audit: ptr deref w/out NULL check.
-                //     the memcpy a few lines down dereferences
-                //     pending_rrset w/out a NULL check. probably
-                //     easier to handler here than there...
-                pending_rrset = pending_as->_as.ac_data;
-
-                /*
-                 * Check if what we got was an RRSIG 
-                 */
-                if (pending_as->val_ac_status == VAL_AC_BARE_RRSIG) {
+            if (next_as->_as.ac_data == NULL) {
+                /* if no data exists, why are we waiting for an RRSIG again? */
+                next_as->val_ac_status = VAL_AC_DATA_MISSING;
+            } else {
+                for (pending_as = pc->qc_ans; pending_as;
+                    pending_as = pending_as->_as.val_ac_rrset_next) {
                     /*
-                     * Find the RRSIG that matches the type 
-                     * Check if type is in the RRSIG 
+                     * We were waiting for the RRSIG 
                      */
-                    u_int16_t       rrsig_type_n;
-                    memcpy(&rrsig_type_n,
-                           pending_rrset->rrs.val_rrset_sig->rr_rdata,
-                           sizeof(u_int16_t));
-                    // xxx-audit: ptr deref w/out NULL check (next_as->_as.ac_data)
-                    if (next_as->_as.ac_data->rrs.val_rrset_type_h ==
-                        ntohs(rrsig_type_n)) {
+                    pending_rrset = pending_as->_as.ac_data;
+                    if ((pending_rrset == NULL) || 
+                        (pending_rrset->rrs.val_rrset_sig == NULL) ||
+                        (pending_rrset->rrs.val_rrset_sig->rr_rdata == NULL)) {
+                        continue;
+                    }
+                    
+                    /*
+                     * Check if what we got was an RRSIG 
+                     */
+                    if (pending_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                         /*
-                         * store the RRSIG in the assertion 
+                         * Find the RRSIG that matches the type 
+                         * Check if type is in the RRSIG 
                          */
-                        next_as->_as.ac_data->rrs.val_rrset_sig =
-                            copy_rr_rec_list(pending_rrset->rrs.
-                                        val_rrset_type_h,
-                                        pending_rrset->rrs.val_rrset_sig,
-                                        0);
-                        next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
-                        /*
-                         * create a pending query for the trust portion 
-                         */
-                        if (VAL_NO_ERROR !=
-                            (retval =
-                             build_pending_query(context, queries,
-                                                 next_as)))
-                            return retval;
-                        break;
+                        u_int16_t       rrsig_type_n;
+                        memcpy(&rrsig_type_n,
+                               pending_rrset->rrs.val_rrset_sig->rr_rdata,
+                               sizeof(u_int16_t));
+                        if (next_as->_as.ac_data->rrs.val_rrset_type_h ==
+                            ntohs(rrsig_type_n)) {
+                            /*
+                             * store the RRSIG in the assertion 
+                             */
+                            next_as->_as.ac_data->rrs.val_rrset_sig =
+                                copy_rr_rec_list(pending_rrset->rrs.
+                                                val_rrset_type_h,
+                                                pending_rrset->rrs.val_rrset_sig,
+                                                0);
+                            next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
+                            /*
+                             * create a pending query for the trust portion 
+                             */
+                            if (VAL_NO_ERROR !=
+                                (retval =
+                                build_pending_query(context, queries,
+                                                   next_as)))
+                                return retval;
+                            break;
+                        }
                     }
                 }
-            }
-            if (pending_as == NULL) {
-                /*
-                 * Could not find any RRSIG matching query type
-                 */
-                next_as->val_ac_status = VAL_AC_RRSIG_MISSING;
+                if (pending_as == NULL) {
+                    /*
+                     * Could not find any RRSIG matching query type
+                     */
+                    next_as->val_ac_status = VAL_AC_RRSIG_MISSING;
+                }
             }
         } else if (next_as->val_ac_status == VAL_AC_WAIT_FOR_TRUST) {
 
-            // xxx-audit: ptr deref w/out NULL check (pending_as->_as.ac_data)
             if (pc->qc_ans) {
                 /*
                  * XXX what if this is an SR_ANS_CNAME? Can DS or DNSKEY return a CNAME? 
@@ -3203,9 +3289,6 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                  * Only set the CD and EDS0 options if we feel the server 
                  * is capable of handling DNSSEC
                  */
-                // xxx-note: the above comment isn't quite correct.
-                //     this code actually checks if the zone should be
-                //     trusted, not if the server can handle DNSSEC.
                 if (next_q->qc_zonecut_n != NULL)
                     test_n = next_q->qc_zonecut_n;
                 else
@@ -4030,7 +4113,6 @@ val_isvalidated(val_status_t val_status)
     case VAL_SUCCESS:
     case VAL_NONEXISTENT_NAME:
     case VAL_NONEXISTENT_TYPE:
-    case VAL_PROVABLY_UNSECURE:
         return 1;
 
     default:
