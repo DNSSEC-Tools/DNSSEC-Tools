@@ -88,7 +88,8 @@ print_response(u_int8_t * ans, int resplen)
      * the query's structure 
      */
     //fp_nquery(ans, resplen, stdout);
-    libsres_pquery(ans, resplen, stdout);
+    if (ans && (resplen > 0))
+        libsres_pquery(ans, resplen, stdout);
 }
 
 void
