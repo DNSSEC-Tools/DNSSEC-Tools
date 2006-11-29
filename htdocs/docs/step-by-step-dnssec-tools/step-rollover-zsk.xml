@@ -154,11 +154,11 @@
             non-default location for the signed zone file.</para>
 
             <simplelist>
-                <member><command># rollinit example1.com example2.com &gt;
+                <member><command># rollinit example1.com &gt;
                 examples.rrf</command></member>
 
-                <member><command># rollinit -zone signed-example2.com &gt;&gt;
-                examples.rrf</command></member>
+                <member><command># rollinit -zone signed-example2.com
+                example2.com &gt;&gt; examples.rrf</command></member>
 
                 <member><command># cat examples.rrf</command></member>
 
