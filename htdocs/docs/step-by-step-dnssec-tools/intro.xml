@@ -8,7 +8,7 @@
     to protecting the domain's zone data.</para>
 
     <para>This Step-by-Step DNSSEC-Tools Operator Guidance Document is
-    intended for operations using the DNSSEC-Tools v0.2 distribution. It will
+    intended for operations using the DNSSEC-Tools v1.0 distribution. It will
     assist operators in gaining operational experience with DNSSEC. Some basic
     understanding of DNSSEC terms and concepts is required. It follows the
     format laid out by <xref linkend="dnssec-operators-guide" />.</para>
@@ -94,17 +94,18 @@
         document.</para>
 
         <section>
-            <title>Zones and Encryption Keys</title>
+            <title>Zones and Authentication Keys</title>
 
-            <para>Zones and Encryption Keys are essential for understanding
-            this document, but they are also beyond its scope.</para>
+            <para>Zones and Authentication Keys are essential for
+            understanding this document, but they are also beyond its
+            scope.</para>
         </section>
 
         <section>
             <title>Zone Rollover</title>
 
             <para>As zone signatures expire, the zone must be re-signed with
-            new encryption keys. The process of generating new encryption keys
+            new keys. The process of generating new keys
             and re-signing the zone is called <emphasis>zone
             rollover</emphasis>. There are several rollover schemes (e.g.,
             Double-Signature Scheme and Pre-Publish Scheme) that are used for
@@ -117,8 +118,8 @@
 
             <para>The Key-Tag Table is a record of zones, the zone's keys,
             attributes of the keys, and expiration dates. This may be kept in
-            any usable form -- computer file, notebook, old paper napkin, or
-            whatever</para>
+            any usable form -- computer file, notebook, etc.
+            </para>
         </section>
 
         <section>
@@ -136,7 +137,6 @@
             key rollovers. They can be hand-edited, but the DNSSEC-Tools
             update them automatically.</para>
         </section>
-
     </section>
 
     <section id="intro-conventions">

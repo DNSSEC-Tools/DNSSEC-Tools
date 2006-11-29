@@ -45,9 +45,9 @@
 
         <para>The DNSSEC-Tools configuration file contains many settings for
         customizing the DNSSEC-Tools suite of programs. The setting include
-        things such as default encryption algorithm, directory for archived
-        encryption keys, paths to various helper programs, and lengths of
-        encryption keys. Configuration entries are in a
+        things such as default authentication algorithm, directory for
+        archived authentication keys, paths to various helper programs, and
+        lengths of authentication keys. Configuration entries are in a
         <emphasis>keyword/value</emphasis> format. The keyword is a character
         string and the value is data associated with that keyword.
         <filename>/usr/local/etc/dnssec/dnssec-tools.conf</filename> is the
@@ -121,22 +121,29 @@
     <section id="configure-edit-named">
         <title>BIND Name Server Execution</title>
 
-        <para>
-	This document assumes that the BIND name server is executing.
-	The specific command arguments are site-specific, so the BIND
-	Administrator's Guide should be consulted.
-        </para>
-
+        <para>This document assumes that the BIND name server is executing.
+        The specific command arguments are site-specific, so the BIND
+        Administrator's Guide should be consulted.</para>
     </section>
 
     <section id="configure-protect-files">
         <title>Protect Your Files!</title>
 
-	<para>All rollrec files, keyrec files, zone files, and encryption keys
-	<emphasis role="bold">MUST</emphasis> be properly protected. If these
-	files are not protected, then the security of the zone files may be
-	compromised.</para>
+        <para>All rollrec files, keyrec files, zone files, and authentication
+        keys <emphasis role="bold">MUST</emphasis> be properly protected. If
+        these files are not protected, then the security of the zone files may
+        be compromised.</para>
 
+        <itemizedlist>
+            <listitem>
+                <para>The <filename>.private</filename> portions of key files
+                must only be readable or writable by the root user.</para>
+            </listitem>
+
+            <listitem>
+                <para>The DNSSEC-Tools files must only be writable by the root
+                user.</para>
+            </listitem>
+        </itemizedlist>
     </section>
-
 </section>

@@ -60,13 +60,12 @@
             into a single directory.</para>
 
             <para>A number of zone parameters must be selected as well. These
-            include such things as encryption key length, number of ZSK keys
-            to generate, and encryption algorithm. More information may be
-            found in the man page for <emphasis
-            role="bold">zonesigner</emphasis>. If these parameters will be
-            used for every zone managed on this host, the DNSSEC-Tools
-            configuration may be edited to have these values as the
-            defaults.</para>
+            include such things as key length, number of ZSK keys to generate,
+            and authentication algorithm. More information may be found in the
+            man page for <emphasis role="bold">zonesigner</emphasis>. If these
+            parameters will be used for every zone managed on this host, the
+            DNSSEC-Tools configuration may be edited to have these values as
+            the defaults.</para>
         </section>
 
         <section>
@@ -98,12 +97,12 @@
         <section>
             <title>Create the Rollrec File</title>
 
-            <para>A <emphasis>rollrec</emphasis> file is gives information to
-            the DNSSEC-Tools rollover daemon about the zones it is managing.
-            The <emphasis role="bold">rollinit</emphasis> command may be used
-            to create a <emphasis>rollrec</emphasis> file for a number of
-            zones at once, though the zones entries will all have the same
-            type of data.</para>
+            <para>A <emphasis>rollrec</emphasis> file gives information to the
+            DNSSEC-Tools rollover daemon about the zones it is managing. The
+            <emphasis role="bold">rollinit</emphasis> command may be used to
+            create a <emphasis>rollrec</emphasis> file for a number of zones
+            at once, though the zones entries will all have the same type of
+            data.</para>
 
             <para>The following command will generate a
             <emphasis>rollrec</emphasis> file for two zones.</para>
@@ -209,8 +208,8 @@
             <emphasis>rollerd</emphasis>. It is assumed that <emphasis
             role="bold">rollerd</emphasis> is started in the same directory
             that holds the <emphasis>rollrec</emphasis> file,
-            <emphasis>keyrec</emphasis> files, zone files, and encryption keys
-            created in previous steps. <emphasis
+            <emphasis>keyrec</emphasis> files, zone files, and authentication
+            keys created in previous steps. <emphasis
             role="bold">rollerd</emphasis> should be run as root.</para>
 
             <simplelist>
