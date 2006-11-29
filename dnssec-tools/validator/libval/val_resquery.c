@@ -1444,15 +1444,26 @@ find_next_zonecut(val_context_t *ctx, struct rrset_rec *rrset,
         }
 
         if (rrset->rrs_zonecut_n != NULL) {
-            int             len = wire_name_length(rrset->rrs_zonecut_n);
-            *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-            if (*name_n == NULL)
-                return VAL_OUT_OF_MEMORY;
-            memcpy(*name_n, rrset->rrs_zonecut_n, len);
-            return VAL_NO_ERROR;
-        }
+            if ((rrset->rrs.val_rrset_type_h == ns_t_ds) &&
+                (!namecmp(rrset->rrs_zonecut_n, 
+                          rrset->rrs.val_rrset_name_n))) {
+                /* 
+                 * for the DS, zonecut cannot be the same as the qname
+                 * Obviously some name server returned something bad
+                 */  
+                FREE(rrset->rrs_zonecut_n);
+                rrset->rrs_zonecut_n = NULL;
+                STRIP_LABEL(rrset->rrs.val_rrset_name_n, qname);
+            } else { 
+                int             len = wire_name_length(rrset->rrs_zonecut_n);
+                *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+                if (*name_n == NULL)
+                    return VAL_OUT_OF_MEMORY;
+                memcpy(*name_n, rrset->rrs_zonecut_n, len);
+                return VAL_NO_ERROR;
+            }
 
-        if (rrset->rrs.val_rrset_type_h == ns_t_ds) {
+        } else if (rrset->rrs.val_rrset_type_h == ns_t_ds) {
             STRIP_LABEL(rrset->rrs.val_rrset_name_n, qname);
         }
     } else if (curzone_n != NULL) {
