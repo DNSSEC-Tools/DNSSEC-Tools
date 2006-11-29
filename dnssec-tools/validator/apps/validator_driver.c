@@ -86,7 +86,6 @@ struct testcase_st {
 // A set of pre-defined test cases
 static const struct testcase_st testcases[] = {
 
-    
 #if 0
     {"Test Case 1", "www.n0.n0.ws.nsec3.org", ns_c_in, ns_t_a,
      {VAL_PROVABLY_UNSECURE, 0}},
@@ -770,10 +769,10 @@ print_val_response(struct val_response *resp)
     for (cur = resp; cur; cur = cur->vr_next) {
         printf("DNSSEC status: %s [%d]\n",
                p_val_error(cur->vr_val_status), cur->vr_val_status);
-        if (cur->vr_val_status == VAL_SUCCESS) {
-            printf("Validated response:\n");
+        if (val_istrusted(cur->vr_val_status)) {
+            printf("Trusted response:\n");
         } else {
-            printf("Non-validated response:\n");
+            printf("Untrusted response:\n");
         }
         print_response(cur->vr_response, cur->vr_length);
         printf("\n");
@@ -792,7 +791,7 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
     struct val_result_chain *results = NULL;
     int             err = 0;
 
-    if ((NULL == desc) || (NULL == name_n) || (NULL == result_ar))
+    if ((NULL == desc) || (NULL == name_n) || (NULL == result_ar) || (resp ==NULL))
         return -1;
 
     fprintf(stderr, "%s: ****START**** \n", desc);
@@ -800,6 +799,7 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
     ret_val =
         val_resolve_and_check(context, name_n, class, type, 0, &results);
 
+    *resp = NULL;
     if (ret_val == VAL_NO_ERROR) {
 
         if (resp)
