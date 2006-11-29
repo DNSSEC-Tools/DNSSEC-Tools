@@ -32,6 +32,13 @@ use Net::DNS::SEC::Tools::timetrans;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
+# Version information.
+#
+my $NAME   = "zonesigner";
+my $VERS   = "$NAME version: 1.0";
+my $DTVERS = "DNSSEC-Tools Version: 1.0";
+
+#
 # Verbose values.
 #
 my $VERBOSE_LOW	   = 1;			# Lowest verbosity level.
@@ -2015,8 +2022,8 @@ sub helpchk
 #
 sub version
 {
-	print STDERR "Version: 0.9.1\n";
-	print STDERR "DNSSEC-Tools Version: 0.9.1\n";
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
 	exit(1);
 }
 
