@@ -1,4 +1,6 @@
 package Net::DNS::SEC::Validator;
+require Net::addrinfo; # return type from getaddrinfo
+require Net::hostent; # return type from gethost*
 use Net::DNS; # to interpret DNS classes and types
 use Carp;
 
@@ -94,6 +96,11 @@ sub new {
     $self->{_ctx_ptr} = 
 	Net::DNS::SEC::Validator::_create_context($self->{policy});
 
+    $self->{error} = 0;
+    $self->{errorStr} = "";
+    $self->{valStatus} = 0;
+    $self->{valStatusStr} = "";
+
     bless($self, $class);
     return $self;
 }
@@ -131,20 +138,15 @@ sub getaddrinfo
 {
     my $self = shift;
 
-    my $result = Net::DNS::SEC::Validator::_getaddrinfo($self->{_ctx_ptr},@_);
-    
-    if ($result =~ /^\d+$/) {
-	$self->{Error} = $result;
-	$self->{ErrorStr} = Net::DNS::SEC::Validator::_gai_strerror($result);
-	$result = [];
-    }
+    my $result = Net::DNS::SEC::Validator::_getaddrinfo($self,@_);
 
-    return (ref $result eq 'ARRAY' ? @{$result} : ());
+    $result = [] unless ref $result eq 'ARRAY';
+
+    return (wantarray ? @{$result} : pop(@{$result}));
 }
 
 sub res_query {
     my $self = shift;
-    my $ctx = $self->{_ctx_ptr};
     my $dname = shift;
     my $class = shift;
     my $type = shift;
@@ -152,19 +154,26 @@ sub res_query {
     $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
     $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
     
-    return Net::DNS::SEC::Validator::_res_query($ctx, $dname, $class, $type);
+    return Net::DNS::SEC::Validator::_res_query($self, $dname, $class, $type);
 }
 
 sub gethostbyname {
     my $self = shift;
-    my $ctx = $self->{_ctx_ptr};
     my $name = shift;
     
-    my $result = Net::DNS::SEC::Validator::_gethostbyname($ctx, $name);
+    my $result = Net::DNS::SEC::Validator::_gethostbyname($self, $name);
 
     return $result;
 }
 
+sub istrusted {
+    my $self = shift;
+    my $status = shift;
+
+    $status = $self->{valStatus} unless defined $status;
+
+    return Net::DNS::SEC::Validator::_istrusted($status);
+}
 
 sub DESTROY {
     my $self = shift;
