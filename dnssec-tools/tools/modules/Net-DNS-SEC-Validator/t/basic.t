@@ -13,6 +13,7 @@ BEGIN { $n = 23; plan tests => $n }
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
+use Net::hostent;
 use Net::addrinfo;
 
 ok(Net::DNS::SEC::Validator::VAL_SUCCESS);
@@ -65,16 +66,16 @@ ok($r);
 ok(not $err);
 
 $r = $validator->gethostbyname("good-A.good-ns.test.dnssec-tools.org");
-ok($r==0);
+ok(ref $r eq 'Net::hostent');
 
 $r = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org");
-ok($r!=0);
+ok(not defined $r);
 
 $r = $validator->gethostbyname("good-A.test.dnssec-tools.org");
-ok($r==0);
+ok(ref $r eq 'Net::hostent');
 
 $r = $validator->gethostbyname("www.marzot.net");
-ok($r==0);
+ok(ref $r eq 'Net::hostent');
 
 
 

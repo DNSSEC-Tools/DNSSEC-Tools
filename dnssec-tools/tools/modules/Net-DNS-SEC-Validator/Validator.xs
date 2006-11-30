@@ -212,6 +212,55 @@ SV *ainfo_c2sv(struct val_addrinfo *ainfo_ptr)
 }
 
 
+SV *hostent_c2sv(struct hostent *hent_ptr)
+{
+  AV *hent_av;
+  SV *hent_av_ref;
+  AV *hent_aliases_av;
+  SV *hent_aliases_av_ref;
+  AV *hent_addrs_av;
+  SV *hent_addrs_av_ref;
+  int i;
+
+  if (hent_ptr == NULL) return &PL_sv_undef;
+  
+  hent_av = newAV();
+  hent_av_ref = newRV_noinc((SV*)hent_av);
+  
+
+  sv_bless(hent_av_ref, gv_stashpv("Net::hostent",0));
+
+  av_push(hent_av, newSVpv(hent_ptr->h_name,0));
+
+  hent_aliases_av = newAV();
+  hent_aliases_av_ref = newRV_noinc((SV*)hent_aliases_av);
+
+  av_push(hent_av, hent_aliases_av_ref);
+
+  if (hent_ptr->h_aliases) {
+    for (i = 0; hent_ptr->h_aliases[i] != 0; i++) {
+      av_push(hent_aliases_av, newSVpv(hent_ptr->h_aliases[i],0));
+    }
+  }
+
+  av_push(hent_av, newSViv(hent_ptr->h_addrtype));
+
+  av_push(hent_av, newSViv(hent_ptr->h_length));
+
+  hent_addrs_av = newAV();
+  hent_addrs_av_ref = newRV_noinc((SV*)hent_addrs_av);
+
+  av_push(hent_av, hent_addrs_av_ref);
+
+  for (i = 0; hent_ptr->h_addr_list[i] != 0; i++) {
+    av_push(hent_addrs_av, newSVpvn(hent_ptr->h_addr_list[i],
+				    hent_ptr->h_length));
+  }
+
+  return hent_av_ref;
+}
+
+
 #include "const-c.inc"
 
 MODULE = Net::DNS::SEC::Validator	PACKAGE = Net::DNS::SEC::Validator	PREFIX = pval
@@ -227,14 +276,15 @@ pval_create_context(context=":")
 
 	int result = val_create_context(context, &vc_ptr);
 
-	RETVAL = (result == 0 ? vc_ptr : NULL);
+	RETVAL = (result ? NULL : vc_ptr);
 	}
 	OUTPUT:
 	RETVAL
 
 int
 pval_switch_policy(ctx=NULL,scope=":")
-	ValContext * ctx = (SvROK($arg) ? (ValContext*)SvIV((SV*)SvRV($arg)) : NULL);
+	ValContext * ctx = (SvROK($arg) ? \
+			    (ValContext*)SvIV((SV*)SvRV($arg)) : NULL);
 	char * scope
 	CODE:
 	{
@@ -245,26 +295,49 @@ pval_switch_policy(ctx=NULL,scope=":")
 	RETVAL
 
 SV *
-pval_getaddrinfo(ctx=NULL,node=NULL,service=NULL,hints_ref=NULL)
-	ValContext * ctx = (SvROK($arg) ? (ValContext*)SvIV((SV*)SvRV($arg)) : NULL);
+pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
+	SV *	self
         char *	node = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
 	char *	service = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
 	SV *	hints_ref = (SvOK($arg) ? $arg : NULL);
 	CODE:
 	{
-	struct addrinfo hints;
-	struct addrinfo *hints_ptr = NULL;
-	struct val_addrinfo *vainfo_ptr = NULL;
+	ValContext *		ctx;
+	SV **			ctx_ref;
+	SV **			error_svp;
+        SV **			error_str_svp;
+        SV **			val_status_svp;
+	SV **			val_status_str_svp;
+	struct addrinfo		hints;
+	struct addrinfo *	hints_ptr = NULL;
+	struct val_addrinfo *	vainfo_ptr = NULL;
 	int res;
+
+	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+	ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+	error_svp = hv_fetch((HV*)SvRV(self), "error", 5, 1);
+        error_str_svp = hv_fetch((HV*)SvRV(self), "errorStr", 8, 1);
+	val_status_svp = hv_fetch((HV*)SvRV(self), "valStatus", 9, 1);
+        val_status_str_svp = hv_fetch((HV*)SvRV(self), "valStatusStr", 12, 1);
+        
+        sv_setiv(*error_svp, 0);
+        sv_setpv(*error_str_svp, "");
+        sv_setiv(*val_status_svp, 0);
+        sv_setpv(*val_status_str_svp, "");
 
 	hints_ptr = ainfo_sv2c(hints_ref, &hints);
 
 	res = val_getaddrinfo(ctx, node, service, hints_ptr, &vainfo_ptr);
 
+	//no val_status to return because its in each addrinfo struct
+
 	if (res == 0) {
 	  RETVAL = ainfo_c2sv(vainfo_ptr);
 	} else {
-	  RETVAL = newSViv(res);
+	  sv_setiv(*error_svp, res);
+	  sv_setpv(*error_str_svp, gai_strerror(res));
+	  RETVAL = &PL_sv_undef;
 	}
 
 	val_freeaddrinfo(vainfo_ptr);
@@ -273,90 +346,105 @@ pval_getaddrinfo(ctx=NULL,node=NULL,service=NULL,hints_ref=NULL)
 	RETVAL
 
 
-
-char *
-pval_gai_strerror(err)
-	int err
-	CODE:
-	{
-	  RETVAL = (char*)gai_strerror(err);
-	}
-	OUTPUT:
-	RETVAL
-
-int
-pval_gethostbyname(ctx=NULL,name="localhost")
-	ValContext * ctx = (SvROK($arg) ? (ValContext*)SvIV((SV*)SvRV($arg)) : NULL);
+SV *
+pval_gethostbyname(self,name="localhost",af=AF_INET)
+	SV *	self
 	char *	name
+	int	af
 	CODE:
 	{
-	struct hostent  hentry;
-	char	    buf[PVAL_BUFSIZE];
-	char	    str_buf[PVAL_BUFSIZE];
+	ValContext     *ctx;
+	SV **		ctx_ref;
+	SV **			error_svp;
+        SV **			error_str_svp;
+        SV **			val_status_svp;
+	SV **			val_status_str_svp;
+	char	        buf[PVAL_BUFSIZE];
 	struct hostent *result = NULL;
+	struct hostent  hentry;
 	int             herrno = 0;
 	val_status_t    val_status;
-	int		i, res;
+	int		res;
 
 	bzero(&hentry, sizeof(struct hostent));
 	bzero(buf, PVAL_BUFSIZE);
 
-	res = val_gethostbyname_r(ctx, name, &hentry, buf, PVAL_BUFSIZE,
-                                      &result, &herrno, &val_status);
+	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+	ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
 
-	RETVAL = res = (result == NULL ? -1 : 0);
-	
-	if (result != NULL) {
-	  fprintf(stderr,"\n\th_name = %s\n", result->h_name);
-	  if (result->h_aliases) {
-            fprintf(stderr,"\th_aliases = \n");
-            for (i = 0; result->h_aliases[i] != 0; i++) {
-	      fprintf(stderr,"\t\t[%d] = %s\n", i, result->h_aliases[i]);
-            }
-	  } else
-            fprintf(stderr,"\th_aliases = NULL\n");
-	  if (result->h_addrtype == AF_INET) {
-            fprintf(stderr,"\th_addrtype = AF_INET\n");
-	  } else if (result->h_addrtype == AF_INET6) {
-            fprintf(stderr,"\th_addrtype = AF_INET6\n");
-	  } else {
-            fprintf(stderr,"\th_addrtype = %d\n", result->h_addrtype);
-	  }
-	  fprintf(stderr,"\th_length = %d\n", result->h_length);
-	  fprintf(stderr,"\th_addr_list = \n");
-	  for (i = 0; result->h_addr_list[i] != 0; i++) {
-            bzero(str_buf, INET6_ADDRSTRLEN);
-            fprintf(stderr,"\t\t[%d] = %s\n", i,
-		    inet_ntop(result->h_addrtype,
-			      result->h_addr_list[i],
-			      str_buf, INET6_ADDRSTRLEN));
-	  }
+	error_svp = hv_fetch((HV*)SvRV(self), "error", 5, 1);
+        error_str_svp = hv_fetch((HV*)SvRV(self), "errorStr", 8, 1);
+	val_status_svp = hv_fetch((HV*)SvRV(self), "valStatus", 9, 1);
+        val_status_str_svp = hv_fetch((HV*)SvRV(self), "valStatusStr", 12, 1);
+        
+        sv_setiv(*error_svp, 0);
+        sv_setpv(*error_str_svp, "");
+        sv_setiv(*val_status_svp, 0);
+        sv_setpv(*val_status_str_svp, "");
+
+	res = val_gethostbyname2_r(ctx, name, af, &hentry, buf, PVAL_BUFSIZE,
+				  &result, &herrno, &val_status);
+
+	sv_setiv(*val_status_svp, val_status);
+	sv_setpv(*val_status_str_svp, p_val_status(val_status));
+
+	if (res) {
+	   RETVAL = &PL_sv_undef;
+	   sv_setiv(*error_svp, herrno);
+	   sv_setpv(*error_str_svp, hstrerror(herrno));
 	} else {
-	  RETVAL = val_status;
+	   RETVAL = hostent_c2sv(result);
 	}
 	}
 	OUTPUT:
 	RETVAL
 
 SV *
-pval_res_query(ctx=NULL,dname,class,type)
-	ValContext * ctx = (SvROK($arg) ? (ValContext*)SvIV((SV*)SvRV($arg)) : NULL);
+pval_res_query(self,dname,class,type)
+	SV *	self
 	char *	dname
 	int	class
 	int	type
 	CODE:
 	{
-	int res;
-	unsigned char buf[PVAL_BUFSIZE];
-	val_status_t val_status;
+	ValContext     *ctx;
+	SV **		error_svp;
+        SV **		error_str_svp;
+        SV **		val_status_svp;
+	SV **		val_status_str_svp;
+	SV **		ctx_ref;
+	int		res;
+	unsigned char	buf[PVAL_BUFSIZE];
+	val_status_t	val_status;
 
 	bzero(buf, PVAL_BUFSIZE);
+
+	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+	ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+	error_svp = hv_fetch((HV*)SvRV(self), "error", 5, 1);
+        error_str_svp = hv_fetch((HV*)SvRV(self), "errorStr", 8, 1);
+	val_status_svp = hv_fetch((HV*)SvRV(self), "valStatus", 9, 1);
+        val_status_str_svp = hv_fetch((HV*)SvRV(self), "valStatusStr", 12, 1);
+        
+        sv_setiv(*error_svp, 0);
+        sv_setpv(*error_str_svp, "");
+        sv_setiv(*val_status_svp, 0);
+        sv_setpv(*val_status_str_svp, "");
+
 	res = val_res_query(ctx, dname, class, type, buf, PVAL_BUFSIZE,
                             &val_status);
+        
+	sv_setiv(*val_status_svp, val_status);
+        sv_setpv(*val_status_str_svp, p_val_status(val_status));
+
 	if (res == -1) {
-	  res = sprintf(buf,"%s(%d)",p_val_error(val_status),val_status);
+	  RETVAL = &PL_sv_undef;
+	  sv_setiv(*error_svp, h_errno); // this is not thread safe
+          sv_setpv(*error_str_svp, hstrerror(h_errno));
+	} else {
+	  RETVAL =newSVpvn((char*)buf, res);
 	}
-	RETVAL = newSVpvn(buf,res);
 	}
 	OUTPUT:
 	RETVAL
@@ -387,6 +475,17 @@ pval_istrusted(err)
 	CODE:
 	{
 	  RETVAL = val_istrusted(err);
+	}
+	OUTPUT:
+	RETVAL
+
+
+char *
+pval_gai_strerror(err)
+	int err
+	CODE:
+	{
+	  RETVAL = (char*)gai_strerror(err);
 	}
 	OUTPUT:
 	RETVAL
