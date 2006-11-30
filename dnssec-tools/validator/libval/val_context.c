@@ -76,15 +76,6 @@ val_create_context(char *label, val_context_t ** newcontext)
         *newcontext = NULL;
         return retval;
     }
-    /*
-     * Switch to correct policy 
-     */
-    if (VAL_NO_ERROR !=
-        (retval = val_switch_policy_scope(*newcontext, label))) {
-        val_free_context(*newcontext);
-        *newcontext = NULL;
-        return retval;
-    }
 
     return VAL_NO_ERROR;
 }
@@ -106,46 +97,3 @@ val_free_context(val_context_t * context)
     FREE(context);
 }
 
-/*
- * At this point, the override list should have a sorted list 
- * of labels. When doing the override, we must use all policy
- * fragments that are "relevant"
- */
-int
-val_switch_policy_scope(val_context_t * ctx, char *label)
-{
-    struct policy_overrides *t;
-    int             retval;
-
-    if (ctx) {
-
-        if (label == NULL) {
-            /*
-             * switch to first override 
-             */
-            memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
-            OVERRIDE_POLICY(ctx, ctx->pol_overrides);
-            return VAL_NO_ERROR;
-        }
-
-        /*
-         * cur is the exact match 
-         */
-        memset(ctx->e_pol, 0, MAX_POL_TOKEN * sizeof(policy_entry_t));
-        for (t = ctx->pol_overrides; t != NULL; t = t->next) {
-            /*
-             * Override only if this is relevant 
-             */
-            int             relevant, label_count;
-            if (VAL_NO_ERROR !=
-                (retval =
-                 (check_relevance
-                  (label, t->label, &label_count, &relevant))))
-                return retval;
-            if (relevant)
-                OVERRIDE_POLICY(ctx, t);
-        }
-        return VAL_NO_ERROR;
-    }
-    return VAL_NO_POLICY;
-}
