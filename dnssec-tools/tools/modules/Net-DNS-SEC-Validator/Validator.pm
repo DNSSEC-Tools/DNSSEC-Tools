@@ -160,8 +160,9 @@ sub res_query {
 sub gethostbyname {
     my $self = shift;
     my $name = shift;
+    my $af = shift;
     
-    my $result = Net::DNS::SEC::Validator::_gethostbyname($self, $name);
+    my $result = Net::DNS::SEC::Validator::_gethostbyname($self, $name, $af);
 
     return $result;
 }

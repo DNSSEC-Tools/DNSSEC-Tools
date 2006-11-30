@@ -9,12 +9,13 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 23; plan tests => $n }
+BEGIN { $n = 24; plan tests => $n }
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
 use Net::hostent;
 use Net::addrinfo;
+use Socket qw(:all);
 
 ok(Net::DNS::SEC::Validator::VAL_SUCCESS);
 
@@ -70,6 +71,10 @@ ok(ref $r eq 'Net::hostent');
 
 $r = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org");
 ok(not defined $r);
+
+$r = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org", AF_INET6);
+print STDERR "$validator->{errorStr}:$validator->{valStatusStr}\n",
+ok(ref $r eq 'Net::hostent');
 
 $r = $validator->gethostbyname("good-A.test.dnssec-tools.org");
 ok(ref $r eq 'Net::hostent');

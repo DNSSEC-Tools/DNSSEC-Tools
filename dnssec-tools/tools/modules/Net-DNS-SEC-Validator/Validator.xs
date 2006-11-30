@@ -347,10 +347,10 @@ pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 
 
 SV *
-pval_gethostbyname(self,name="localhost",af=AF_INET)
+pval_gethostbyname(self,name,af=AF_INET)
 	SV *	self
-	char *	name
-	int	af
+	char *	name = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : "localhost");
+	int	af = (SvOK($arg) ? SvIV($arg) : AF_INET);
 	CODE:
 	{
 	ValContext     *ctx;
