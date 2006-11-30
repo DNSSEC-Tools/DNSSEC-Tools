@@ -1,0 +1,1066 @@
+
+
+
+
+DNS Operations                                           S. Krishnaswamy
+Internet-Draft                                               SPARTA Inc.
+Expires: September 4, 2006                                 March 3, 2006
+
+
+                Split-View DNSSEC Operational Practices
+           draft-krishnaswamy-dnsop-dnssec-split-view-02.txt
+
+Status of this Memo
+
+   By submitting this Internet-Draft, each author represents that any
+   applicable patent or other IPR claims of which he or she is aware
+   have been or will be disclosed, and any of which he or she becomes
+   aware will be disclosed, in accordance with Section 6 of BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on September 4, 2006.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2006).
+
+Abstract
+
+   The security extensions to the Domain Name System (DNSSEC) allow for
+   integrity protection, whereby it is possible to make a determination
+   of the verity of data returned from the Domain Name System in
+   response to a query.  Current operation of the Domain Name System
+   also allows for the creation of multiple views of data, where the
+   answer returned in response to a query is dependent on the origin of
+   the query.  Data integrity and the ability to return possibly
+   conflicting values as in split-views may be construed to be mutually
+   conflicting goals; but this apparent dichotomy is resolvable in
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 1]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   practice through proper configuration.  This document provides
+   recommendations for correctly configuring the split-view DNSSEC
+   environment in a typical enterprise network.
+
+
+Table of Contents
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Split-View DNS . . . . . . . . . . . . . . . . . . . . . . . .  4
+     2.1.  Background . . . . . . . . . . . . . . . . . . . . . . . .  4
+     2.2.  Query Channeling . . . . . . . . . . . . . . . . . . . . .  5
+     2.3.  Controlling Errant Queries . . . . . . . . . . . . . . . .  7
+     2.4.  Name Server Requirements . . . . . . . . . . . . . . . . .  7
+       2.4.1.  Internal Recursive Forwarder . . . . . . . . . . . . .  7
+       2.4.2.  Second-Level Recursive Name Server . . . . . . . . . .  7
+       2.4.3.  Authoritative Internal and External-View Name
+               Servers  . . . . . . . . . . . . . . . . . . . . . . .  7
+   3.  Split-View DNSSEC  . . . . . . . . . . . . . . . . . . . . . .  7
+     3.1.  No Internal Validation . . . . . . . . . . . . . . . . . .  8
+     3.2.  Same Key Signing . . . . . . . . . . . . . . . . . . . . .  9
+     3.3.  Complete Decoupling of Authentication Chains . . . . . . . 10
+     3.4.  Partial Decoupling of Authentication Chains  . . . . . . . 11
+     3.5.  Multiple DS Records  . . . . . . . . . . . . . . . . . . . 12
+     3.6.  Name Server Requirements . . . . . . . . . . . . . . . . . 13
+   4.  Packet Filtering Considerations  . . . . . . . . . . . . . . . 13
+     4.1.  Inner Packet Filter  . . . . . . . . . . . . . . . . . . . 13
+     4.2.  Outer Packet Filter  . . . . . . . . . . . . . . . . . . . 14
+   5.  Summary  . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+   6.  IANA Considerations  . . . . . . . . . . . . . . . . . . . . . 16
+   7.  Security Considerations  . . . . . . . . . . . . . . . . . . . 16
+   8.  Acknowledgements . . . . . . . . . . . . . . . . . . . . . . . 16
+   9.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+     9.1.  Normative References . . . . . . . . . . . . . . . . . . . 17
+     9.2.  Informative References . . . . . . . . . . . . . . . . . . 17
+   Author's Address . . . . . . . . . . . . . . . . . . . . . . . . . 18
+   Intellectual Property and Copyright Statements . . . . . . . . . . 19
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 2]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+1.  Introduction
+
+   Split-view DNS is the term used to describe the scenario where the
+   DNS returns different answers for the same question depending on who
+   asked the question and from where.  Split-views help contain DNS
+   names to only those portions of the network that need to see these
+   names.  Although primarily meant to be a network management
+   technique, the tailoring of the DNS to create an internal separation
+   of names is also seen by some as improving their organization's
+   security posture, by preventing the exposure of internal host names,
+   knowledge of whose existence is deemed to be sensitive.
+
+   Relying solely on split-view DNS to protect sensitive hosts from
+   attacks has proven to be less than adequate in the past and is not
+   recommended.  Attack vectors in Internet exploits have been able to
+   successfully infect hosts with or without their IP addresses being
+   published in the DNS.  Conversely, publishing the IP addresses of
+   hosts that are otherwise secured does not necessarily increase their
+   vulnerability to these attacks.  Name hiding through split-view DNS
+   is primarily useful as part of a more comprehensive defense-in-depth
+   strategy to provide one line of defense against name-based attacks.
+
+   The security extensions to DNS [1] provide for origin authenticity
+   and data integrity.  These properties are determined by validating
+   the authentication chain from some trust anchor configured at the end
+   resolver to the signed record.  In the case of split-view DNS every
+   authentication chain in every view must validate properly.  Some
+   names may be common between multiple views but contain different
+   data.  Cache pollution is a possibility when data from the wrong view
+   is returned in response to a query.  Building an authentication chain
+   from a trust anchor above the zone that has split views, to data in
+   the internal view of a zone can be especially problematic, caching
+   problems notwithstanding.
+
+   The objective of this document is to describe approaches for
+   configuring split-view DNSSEC environments with the additional
+   requirement that no server be both authoritative and recursive at the
+   same time.  Separation of authoritative and recursive name servers
+   not only provides simple role separation, but is also a well
+   recognized security measure in DNS for protecting authoritative name
+   servers against compromised caches.
+
+   In cases where the different views of DNS information correspond to
+   different physical networks, the name servers authoritative for the
+   internal and external views of data are often separated by a
+   firewall.  Among some of the frequently observed DNS resolution
+   misbehaviour [3] is the problem of resolvers aggressively
+   retransmitting queries from behind misconfigured firewalls that allow
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 3]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   queries out, but drop all returned responses.  This problem is
+   exacerbated by a handful of errant queries that are sent by only a
+   subset of internal resolvers, which makes problem isolation extremely
+   difficult.  This document provides recommendations for reducing the
+   impact of errant queries in the split-view DNS setup and also makes
+   recommedations for DNS-related packet filtering rules required to
+   support the proper operation of the suggested configuration.
+
+   Section 2 describes the general approach for configuring split-view
+   DNS, which by itself, is independent of DNSSEC.  Considerations for
+   DNSSEC appear in Section 3.
+
+
+2.  Split-View DNS
+
+2.1.  Background
+
+   Different views of the DNS can be created by a process of "query
+   channeling".  Here, different servers are authoritative for the
+   different views of the DNS information and queries are channeled to
+   these name servers based upon their origination address.
+
+   It is also possible to use a single machine as the authoritative name
+   server for both views of data by running multiple instances of the
+   name server process on a machine with multiple network interfaces and
+   answering differently based on the query source.  Some name server
+   implementations also directly support split-view DNS.  Variants
+   include the view-based approach and the data tagging approach.  In
+   the former, the name server loads multiple zone databases and makes
+   available answers from a particular zone based on the origin of the
+   query.  The second approach tags the data in the database itself as
+   either being internally, externally or globally available.
+
+   Split-view DNS is not recommended for hiding DNS names.  A much
+   better alternative to protect a namespace of sensitive hosts is to
+   have that entire namespace reside within a private delegation.  By
+   doing so, it is possible to have the protection given to the name
+   server that serves these names commensurate with the protection given
+   to the hosts themselves.  Since hosts in the private branch are
+   explicitly marked as such by virtue of their domain name, this method
+   also allows the network administrator to better classify hosts as
+   being public or private and lessens the opportunity for sensitive
+   hosts to be inadvertantly placed in public domains.  Private
+   delegations are useful when name hiding is the only reason for
+   namespace separation.  They do not, however, allow for transparency
+   during name resolution; queries have to be made for specific names in
+   specific views.
+
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 4]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   This document describes a generic configuration for split-view DNS
+   without relying on any special capablities from any machine or name
+   server implementation.  The architecture is modeled around a typical
+   enterprise structure: the two views are for the internal and external
+   portions of the network, with the external portion residing within
+   the boundary network.  The two networks are separated by a packet
+   filtering firewall.  A packet filtering firewall also separates the
+   boundary network from the external Internet.  Name hiding is not an
+   objective of this split-view setup, but avoiding cache pollution is.
+   Although the two concepts are related, split-views is not recommended
+   for hiding sensitive names because of the ease with which names can
+   be leaked out.  Again, if name hiding is the main objective, the
+   approach of using a private delegation for sensitive names is
+   strongly encouraged.
+
+   The suggested configuration uses a combination of multiple name
+   servers and query forwarding.  One name server answers queries for
+   the internal view and forwards all requests for external data to a
+   second name server.  The second name server recursively answers
+   queries but only if asked by the first.  Other name servers are
+   configured in such a way so as to decouple the roles of the
+   authoritative and recursive name servers.
+
+2.2.  Query Channeling
+
+   Query channeling is the process of carefully controlling how the
+   queries are sent to different name servers so as to avoid cache
+   pollution.
+
+   Resolving outer data is straightforward since queries follow their
+   normative paths.  For the internal view, a two-level recursive server
+   scheme is recommended.  One server functions as a recursive forwarder
+   and is responsible for answering all internal queries.  This server
+   forwards all queries for internal data to their respective
+   authoritative name servers while recursively obtaining external
+   answers from a second-level name server.  The authoritative name
+   servers do not perform any recursion themselves.  The second-level
+   name server is a simple caching name server that asks questions from
+   the outside, but only if asked by the recursive forwarder.  The
+   recursive forwarder and the name servers authoritative for the
+   internal data reside in the internal network; the second-level
+   recursive name server that is used for returning external answers
+   resides in the boundary network.
+
+   The two-level recursive scheme controls which name servers the
+   queries are directed to.  Since queries for internal data are sent to
+   authoritative name servers which are not also recursive, this scheme
+   also controls where data is received from.  In this way internal data
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 5]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   is kept totally separate from external data, thus preventing cache
+   pollution.  Figure 1 illustrates the above setup.
+
+       ^                    root, TLD servers etc
+       |                           ^ (queries)       EXTERNAL NAMESERVERS
+    [Outside]                      |                    ^ (responses)
+       |                           |                    |
+       v                           |                    |
+   ------------[O u t e r----P a c k e t---F i l t e r]-------------------
+       ^                           |                    |
+       |                           |                    v (queries)
+       |                           |            AUTHORITATIVE EXT-VIEW SERV
+       |                           v (responses)
+     [Boundary]            RECURSIVE NAMESERVER
+       Net                       ^ (queries from the
+       |               CLIENTS   | recursive forwarder
+       |       (responses ^      | protected by TSIG)
+       |     for internal |      |
+       v            data) |      |
+   ------------[I n n e r----P a c k e t---F i l t e r]-------------------
+       ^                  |      |
+       |         (queries)|      |
+       |                  v      v (external data)
+       |            RECURSIVE FORWARDER <---------> INTERNAL
+   [Internal]            ^ (internal data)   (query/   CLIENT
+       |                 |                  response)
+       |                 |
+       |                 v
+       |         AUTHORITATIVE INT-VIEW SERV
+       v
+
+   Figure 1
+
+   It is useful to note that the internal recursive forwarder must not
+   attempt to recursively answer queries if the authoritative name
+   server for internal-view data fails to respond.  If it did so,
+   external data could be returned in such circumstances and lead to
+   cache pollution.  Since neither the server authoritative for a
+   forwarded zone nor the server doing the forwarding can recursively
+   answer queries for delegations from that zone, the internal recursive
+   forwarder must explicitly forward queries for every internal
+   delegation to its respective authoritative name server.  This rule
+   can be relaxed while forwarding queries to name servers that are
+   simultaneously authoritative for the child as well as the parent
+   zone.
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 6]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+2.3.  Controlling Errant Queries
+
+   DNS queries that are sent from the internal recursive forwarder to
+   the outside should only be directed towards the second-level
+   recursive name server.  Since the second-level name server has no
+   knowledge of internal-view data, internal resolvers must not use it
+   directly for resolving queries.  Only properly configured internal
+   recursive forwarders that are approved to send queries to this name
+   server must do so, and that too solely for the purpose of resolving
+   external answers.  TSIG is the recommended method for controlling
+   which recursive forwarders are approved for sending queries to the
+   second-level name server.  Having these rules alternatively
+   configured in the packet filter is also possible, but using TSIG for
+   performing this authorization eases packet filter administration for
+   DNS.
+
+2.4.  Name Server Requirements
+
+   This section summarizes the list of requirements for the various name
+   servers involved in the split-view configuration.
+
+2.4.1.  Internal Recursive Forwarder
+
+   o  Ability to forward queries to specific name servers.
+   o  Ability to control forwarding behaviour such that the recursive
+      option is not tried, even if the name server that queries are
+      normally forwarded to fails to respond.
+   o  Ability to recursively answer queries.
+   o  Ability to protect the integrity of messages using TSIG for
+      selected destinations.
+
+2.4.2.  Second-Level Recursive Name Server
+
+   o  Ability to recursively answer queries.
+   o  Ability to verify TSIG protection on messages.
+   o  Ability to filter incoming queries based on the TSIG key used to
+      protect the message.
+
+2.4.3.  Authoritative Internal and External-View Name Servers
+
+   o  Ability to authoritatively answer queries for a zone.
+   o  Ability to disable all recursive behaviour.
+
+
+3.  Split-View DNSSEC
+
+   Any data in any view that is likely to be spoofed has to be signed.
+   The DNSSEC concern for split-view is ensuring that the internal and
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 7]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   external authentication chains validate properly.  This concern is
+   addressed by making an appropriate choice of trust anchors and Secure
+   Entry Point (SEP) keys.
+
+   While validating external data is relatively straightforward, there
+   are multiple approaches that can be used for validating internal
+   data.  The method of choice depends on what the threat environment
+   for the internal view is perceived to be, the amount of end-resolver
+   configuration overhead that is needed, the ease of debugging and the
+   ability to have administrative separation between the two split-
+   views.  The configuration overhead at end resolvers is mainly
+   associated with the task of defining trust anchors at different
+   validating resolvers.  Having fewer keys is desirable in that it
+   makes key management easier.  It is also desirable to reduce the
+   amount of reconfiguration required for clients that move between the
+   two views of data, while still being able to tie an answer to a
+   particular view.  Often two views of a split zone are administered
+   separately, so having different zone signing keys for the different
+   views is also desirable.
+
+   The different options for internal data validation are further
+   outlined below.  In each of these options, the zone that is split is
+   assumed to be a delegation under example.com. and validation of
+   internal data occurs at the recursive forwarder.
+
+3.1.  No Internal Validation
+
+          (No trust anchors)        example.com.  (trusted)
+                                          ^
+                                          |
+                                          |
+            split.example.com.      split.example.com.
+              (internal)               (external)
+                                          ^
+                                          |
+                                          |
+          sub.split.example.com.    sub.split.example.com.
+              (internal)               (external)
+
+   Figure 2
+
+   This is an option if the security requirements for the internal zone
+   are more relaxed than the external zone.  The threat environment for
+   the internal zone in this scenario does not include DNS compromise
+   and validation results returned from the internal recursive forwarder
+   is not important.  The internal recursive forwarder does not have any
+   trust anchor configured and does not perform any validation.
+
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 8]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+3.2.  Same Key Signing
+
+                        -----------> example.com. (trusted)
+                       /       ^          ^
+                      /        |          |
+                     /       (same key)-->|
+                    /                     |
+            split.example.com.      split.example.com.
+              (internal)               (external)
+                  ^                       ^
+                  |                       |
+                  |                       |
+         sub.split.example.com.    sub.split.example.com.
+              (internal)               (external)
+
+   Figure 3
+
+   In this scenario, a single private key is used to sign both the
+   internal and the external zone data.  The glue DS and NS records at
+   example.com. all correspond to the external view data.  If the trust
+   anchor is configured at or below the level of split.example.com.,
+   queries sent for validating internal data are never sent to the outer
+   view.  If not, queries for the data from the trust anchor to the DS
+   record covering the split in example.com. are sent to the outer zone,
+   while queries for others data are sent to the internal zone.  Since
+   the key referenced in the DS record at example.com. is present in the
+   apex key-set of both views, the authentication chain can always be
+   completed.
+
+   This approach allows flexibility in choosing the level at which the
+   trust anchor is configured, with the possibility of using the same
+   trust anchor for validating answers in both views.
+
+   Although easy to setup, this approach can be difficult to
+   troubleshoot.  There is no easy way to identify if the record
+   obtained for a query corresponds to the internal view or the external
+   view.  Using the same key also makes administrative separation of the
+   two views of data difficult.
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006               [Page 9]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+3.3.  Complete Decoupling of Authentication Chains
+
+                                    example.com.  (trusted)
+                                          ^
+                                          |
+   (trusted) split.example.com.      split.example.com.
+              (internal)               (external)
+                  ^                       ^
+                  |                       |
+                  |                       |
+         sub.split.example.com.    sub.split.example.com.
+              (internal)               (external)
+
+   Figure 4
+
+   With the DS record in example.com. always pointing to a key in the
+   outer view, the construction of the authentication chain is a problem
+   when the keys used to sign data in the two views of the split are
+   different.  The trust anchor cannot be configured above the level of
+   split.example.com. since there would be no way of linking the DS
+   record in example.com. to the apex DNSKEY set in the internal view of
+   the split zone.
+
+   A simple solution is to configure the trust anchor for the internal
+   view at the level of split.example.com. so that the authentication
+   chains for the internal and external zones share no common records
+   that may cause any ambiguity.
+
+   Having separate keys for the two views of data is useful for
+   troubleshooting and in determining which view a given record belongs
+   to.  This configuration however involves more configuration overhead
+   since trust anchors need to be configured for every zone that is
+   split.  This problem is more pronounced when dealing with validating
+   stub resolvers on mobile nodes, where moving between the internal and
+   external views would involve constant reconfiguration of its trust
+   anchors.  Multiple trust anchors, one for each view, may also be
+   configured at the end resolver but doing so would not allow cache
+   pollution to be automatically detected by way of validation failures.
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 10]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+3.4.  Partial Decoupling of Authentication Chains
+
+                             com.
+                              ^
+                              | (common key)
+                          +--------+
+                         /          \
+   (trusted) example.com.            example.com. (trusted)
+              (internal)              (external)
+                  ^                       ^
+                  |                       |
+                  |                       |
+          split.example.com.       split.example.com.
+              (internal)              (external)
+                  ^                       ^
+                  |                       |
+                  |                       |
+         sub.split.example.com.   sub.split.example.com.
+              (internal)              (external)
+
+   Figure 5
+
+   One problem with the approach described in Section 3.3 is that trust
+   anchors need to be configured for every zone that is split under the
+   example.com..  An option to circumvent this while still retaining the
+   advantages of the earlier setup is to split example.com. also, and
+   configure the trust anchor at the level of example.com. or higher.
+   The apex keyset in example.com. is the same for both views, but the
+   glue and DS information for delegations is different across views.
+   An internal name server is configured as the authoritative server for
+   the internal view of the split example.com. zone and the internal
+   recursive forwarder is modified to forward all internal queries for
+   this zone to it.
+
+   This option reduces the number of trust anchors at the end resolver.
+   However, since a new example.com. zone is created, records that were
+   previously common in both views would now need to be duplicated
+   between the two zones.  The number of such records is typically not
+   very large, but the overhead and complexity in maintaining duplicate
+   records can still be a burden in some cases.  Also, since this
+   approach uses a common trust anchor for both views, cache pollution
+   cannot be automatically detected.
+
+
+
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 11]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+3.5.  Multiple DS Records
+
+                        -----------> example.com. (trusted)
+                       /    (DS1)         ^
+                      /                   |
+                     /                    | (DS2)
+                    /                     |
+            split.example.com.     split.example.com.
+              (internal)               (external)
+                  ^                       ^
+                  |                       |
+                  |                       |
+          sub.split.example.com.   sub.split.example.com.
+              (internal)               (external)
+
+   Figure 6
+
+   In this approach, example.com. is not split; however, DS records
+   corresponding to each of the two different views of
+   split.example.com. are published at the delegation point.  The glue
+   and NS records at the delegation point still corresponds to the
+   external view of split.example.com. but this information is never
+   used by the internal zone.  As in Section 3.4, the trust anchor is
+   configured at the level of example.com. or higher.  The
+   authentication chain from this trust anchor to data in either zone is
+   constructed by using one of the two DS records, which ever is
+   applicable at that view.
+
+   Since some coordination between split.example.com. and its parent,
+   example.com, is required to publish multiple DS records, this
+   approach is most suitable when the split is made at a level lower
+   than the organization apex.  This approach lends itself to using
+   different keys in different views while still allowing for minimal
+   configuration at validating stub resolvers; trust anchors need not be
+   changed even if the nodes are mobile across the two views.  This
+   approach has the advantage that administrative separation of the two
+   views of the split can be maintained while still having a single key
+   configured at the end resolvers.  Identifying which view a given
+   record belongs to can be done by tracing the keys used to form the
+   authentication chain; however, cache pollution cannot be
+   automatically detected.
+
+   While most of the internal zone contents can be kept private to the
+   internal view, the DS record must still be exposed.  Since data
+   hiding is not an objective of the split-view setup this is not really
+   a problem.  An attendent problem with multiple DS records is that
+   since the validation algorithm iteratively verifies parent DS records
+   while trying to complete the authentication chain, there is some
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 12]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   added computational overhead, which increases as the number of DS
+   records in the delegation point grows.  In some circumstances there
+   may not be sufficient flexibility to introduce multiple DS records in
+   the parent, especially if the child is a part of a different
+   organization.
+
+3.6.  Name Server Requirements
+
+   All name servers listed below must conform to the specifications
+   given in [2].  Additionally, the Internal Recursive Forwarder must
+   support the following:
+
+   o  Ability to validate DNSSEC responses.
+   o  Support for configurable DNSSEC trust anchors.  It should be
+      possible to configure more than one trust anchor.
+
+
+4.  Packet Filtering Considerations
+
+   The following subsections define the rules that must be configured in
+   the two packet filters depicted in Figure 1 in order to support the
+   split-view configuration.
+
+4.1.  Inner Packet Filter
+
+   In order to allow the above configuration to work, any packet
+   filtering system between the internal network and the boundary
+   network must allow all of the following types of packets.
+
+   o  DNS queries from any internal address to the second-level
+      recursive name server (finer level access control is done by
+      TSIG):
+
+
+    Proto  SrcIP       SrcPort     DestIP          DstPort    AckBit
+    UDP    internal    >1023       rec.srv           53         N/A
+    UDP    internal    53          rec.srv           53         N/A
+    TCP    internal    >1023       rec.srv           53         Any
+
+
+   o  Responses to the above queries from the second-level recursive
+      name server to any internal address:
+
+
+    Proto  SrcIP          SrcPort     DestIP          DstPort    AckBit
+    UDP    rec.srv        53          internal        >1023      N/A
+    UDP    rec.srv        53          internal        53         N/A
+    TCP    rec.srv        53          internal        >1023      Set
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 13]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   o  Queries from clients in the boundary network to any internal name
+      server:
+
+
+    Proto  SrcIP       SrcPort     DestIP          DstPort    AckBit
+    UDP    client      >1023       internal        53         N/A
+    TCP    client      >1023       internal        53         Any
+
+
+   o  Responses to the above queries from the (any) recursive forwarder
+      to clients in the boundary network:
+
+
+    Proto  SrcIP       SrcPort     DestIP          DstPort    AckBit
+    UDP    internal    53          client          >1023      N/A
+    TCP    internal    53          client          >1023      Set
+
+
+4.2.  Outer Packet Filter
+
+   Any packet filtering system configured between the boundary network
+   and the external network needs to allow the following.
+
+   o  Queries from the recursive name server in the boundary network to
+      the outside network:
+
+
+    Proto  SrcIP           SrcPort     DestIP          DstPort    AckBit
+    UDP    rec.srv         >1023       outside        53         N/A
+    UDP    rec.srv         53          outside        53         N/A
+    TCP    rec.srv         >1023       outside        53         Any
+
+
+   o  Responses to the above queries from the outside to the boundary
+      network recursive name server:
+
+
+    Proto  SrcIP      SrcPort     DestIP          DstPort    AckBit
+    UDP    outside    53          rec.srv         >1023      N/A
+    UDP    outside    53          rec.srv         53         N/A
+    TCP    outside    53          rec.srv         >1023      Set
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 14]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+   o  Queries from outside clients to the external-view authoritative
+      servers:
+
+
+    Proto  SrcIP      SrcPort    DestIP                DstPort    AckBit
+    UDP    outside    >1023      auth.serv(ext view)   53         N/A
+    UDP    outside    53         auth.serv(ext view)   53         N/A
+    TCP    outside    >1023      auth.serv(ext view)   53         Any
+
+
+   o  Responses to the above queries from the external-view
+      authoritative server to the outside:
+
+
+    Proto  SrcIP                  SrcPort     DestIP          DstPort    AckBit
+    UDP    auth.serv(ext view)    53          outside        >1023      N/A
+    UDP    auth.serv(ext view)    53          outside        53         N/A
+    TCP    auth.serv(ext view)    53          outside        >1023      Set
+
+
+
+5.  Summary
+
+   This document describes an approach for configuring split-view
+   DNSSEC.  The approach uses a two-level recursive scheme where an
+   internal recursive forwarder resolves inside answers and marshalls
+   all outside queries to a second-level recursive name server.  TSIG
+   between the internal and the second-level name servers protects
+   against errant queries.
+
+   The recommended configuration has been shown to be adjustable for
+   various needs and security consideration levels.  Differences in
+   these approaches make trade-offs between configuration overhead and
+   validation overhead.  Trading-off in favour of minimal operator
+   overhead is useful for overall maintainability of the system,
+   especially when split-view DNS is considered in the context of nodes
+   that are mobile across the two views.
+
+   Although split-view DNSSEC is possible using the recommended setup,
+   it still involves significant effort: for configuring the various
+   name servers, for setting up zone forwarding, for configuring and
+   distributing shared keys for TSIG, and, depending on the
+   configuration, for performing DS (or keyset) exchanges for every view
+   of a split zone.  Some configurations may also require multiple trust
+   anchors in end resolvers which may change between views.  Proper care
+   must be taken to ensure that correct split-view behavior is
+   consistently maintained.
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 15]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+6.  IANA Considerations
+
+   This document has no actions for IANA.
+
+
+7.  Security Considerations
+
+   The configuration suggested in this document tries to minimize cache
+   pollution, but misconfigurations are still easily possible.  Any
+   misconfigurations in the three different types of name servers or the
+   two packet filters can result in cache pollution and cause incorrect
+   results to be returned between views.  The resolver may or may not
+   detect this depending on the manner in which secure entry points to
+   split zones are defined and which trust anchors are configured in the
+   resolver.  Leakage of information in this context is not an issue
+   since split-views by itself is not meant to provide confidentiality
+   of data.
+
+   An improperly configured packet filter that allows errant DNS traffic
+   through or denies legitimate responses can lead to aggressive
+   retransmission of queries by resolvers to name servers, leading to
+   increased query load at such name servers.
+
+   Each of the validation options outlined in Section 3 also introduce
+   their own security considerations.  Not using DNSSEC in the internal
+   view creates the possibility of a malicious entity supplying bogus
+   information in response to queries, without detection.  Using a
+   common key between both views of the split does not allow one to
+   differentiate between internal and external data and troubleshooting
+   is greatly encumbered.  On the other hand, using a multitude of keys
+   at end resolvers only increases the operator overhead and thus the
+   chances for configuration errors.  All approaches that use a common
+   key for validating internal and external data are unable to
+   automatically detect cache pollution so they may escape the attention
+   of a system administration until the time they are specifically being
+   troubleshooted.  Approaches using a common trust anchor are also
+   susceptible to an insider attack where data from one view injected in
+   response to queries for the other can corrupt the cache.
+
+
+8.  Acknowledgements
+
+   The contributions, suggestions and remarks of the following persons
+   to this draft are particularly acknowledged: Wes Griffin, John
+   Kelley, Ed Lewis, Russ Mundy, Scott Rose and Mike StJohns.  The two-
+   level name server scheme described in this document builds upon work
+   that was originally performed by Ed Lewis.
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 16]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+9.  References
+
+9.1.  Normative References
+
+   [1]  Arends, R., Austein, R., Larson, M., Massey, D., and S. Rose,
+        "DNS Security Introduction and Requirements", RFC 4033,
+        March 2005.
+
+   [2]  Arends, R., Austein, R., Larson, M., Massey, D., and S. Rose,
+        "Protocol Modifications for the DNS Security  Extensions",
+        RFC 4035, March 2005.
+
+9.2.  Informative References
+
+   [3]  Larson, M. and P. Barber, "Observed DNS Resolution Misbehavior",
+        Work in Progress ietf-dnsop-bad-dns-res, July 2005.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 17]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+Author's Address
+
+   Suresh Krishnaswamy
+   SPARTA Inc.
+   7075 Samuel Morse Dr.
+   Columbia, MD  21046
+   US
+
+   Email: suresh AT sparta DOT com
+   URI:   http://www.sparta.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 18]
+
+Internet-Draft   Split-View DNSSEC Operational Practices      March 2006
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2006).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Krishnaswamy            Expires September 4, 2006              [Page 19]
+
+

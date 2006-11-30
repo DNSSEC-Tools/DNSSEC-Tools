@@ -1,0 +1,313 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>dtinitconf - Creates a DNSSEC-Tools configuration file</title>
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<li><a href="#options">OPTIONS</a></li>
+	<ul>
+
+		<li><a href="#keyrelated_options">Key-related Options</a></li>
+		<li><a href="#zonerelated_options">Zone-related Options</a></li>
+		<li><a href="#dnssectools_options">DNSSEC-Tools Options</a></li>
+		<li><a href="#dtinitconf_options">dtinitconf Options</a></li>
+	</ul>
+
+	<li><a href="#copyright">COPYRIGHT</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#see_also">SEE ALSO</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<hr />
+<h1><a name="name">NAME</a></h1>
+<p>dtinitconf - Creates a DNSSEC-Tools configuration file</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+  dtinitconf [options]</pre>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>The <em>dtinitconf</em> program initializes the DNSSEC-Tools configuration file.
+By default, the actual configuration file will be created, though the created
+file can be specified by the user.  Existing files, whether the default or one
+specified by the user, will not be overwritten unless specifically directed
+by the user.</p>
+<p>Each configuration field can be individually specified on the command line.
+The user will also be prompted for the fields, with default values taken from
+the DNSSEC-Tools <em>defaults.pm</em> module.  If the <em>-noprompt</em> option is given,
+then a default configuration file (modulo command-line arguments) will be
+created.</p>
+<p>Configuration entries are created for several BIND programs.  Several
+locations on the system are searched to find the locations of these programs. 
+First, the directories in the path environment variable are checked; the
+names of any directories that contain the BIND programs are saved.  Next,
+several common locations for BIND programs are checked; again, the names of
+directories that contain the BIND programs are saved.  After collecting these
+directories, the user is presented with this list and may choose to use
+whichever set is desired.  If no directories are found that contain the BIND
+programs, the user is prompted for the proper location.</p>
+<p>If the configuration file's parent directory does not exist, then an attempt
+is made to create the directory.  The new directory's ownership will be set
+to <em>root</em> for the owner and <em>dnssec</em> for the group, assuming the <em>dnssec</em>
+group exists.</p>
+<p>
+</p>
+<hr />
+<h1><a name="options">OPTIONS</a></h1>
+<p><em>dtinitconf</em> takes options that control the contents of the newly generated
+DNSSEC-Tools configuration file.  Each configuration file entry has a
+corresponding command-line option.  The options, described below, are ordered
+in logical groups.</p>
+<p>
+</p>
+<h2><a name="keyrelated_options">Key-related Options</a></h2>
+<p>These options deal with different aspects of creating and managing
+encryption keys.</p>
+<dl>
+<dt><strong><a name="item__2dalgorithm__3calgorithm_3e"><em>-algorithm &lt;algorithm&gt;</em></a></strong>
+
+<dd>
+<p>Selects the cryptographic algorithm. The value of algorithm must be one that
+is recognized by <em>dnssec-keygen</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dksklength__3ckeylen_3e"><em>-ksklength &lt;keylen&gt;</em></a></strong>
+
+<dd>
+<p>The default KSK key length to be passed to <em>dnssec-keygen</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dksklife__3clifespan_3e"><em>-ksklife &lt;lifespan&gt;</em></a></strong>
+
+<dd>
+<p>The default length of time between KSK roll-overs.  This is measured in   
+seconds.</p>
+</dd>
+<dd>
+<p>This value is <strong>only</strong> used for key roll-over.  Keys do not have a life-time
+in any other sense.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzskcount__3czsk_2dcount_3e"><em>-zskcount &lt;ZSK-count&gt;</em></a></strong>
+
+<dd>
+<p>The default number of ZSK keys that will be created for a zone.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzsklength__3ckeylen_3e"><em>-zsklength &lt;keylen&gt;</em></a></strong>
+
+<dd>
+<p>The default ZSK key length to be passed to <em>dnssec-keygen</em>.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dzsklife__3clifespan_3e"><em>-zsklife &lt;lifespan&gt;</em></a></strong>
+
+<dd>
+<p>The default length of time between ZSK roll-overs.  This is measured in   
+seconds.</p>
+</dd>
+<dd>
+<p>This value is <strong>only</strong> used for key roll-over.  Keys do not have a life-time
+in any other sense.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2drandom__3crandomdev_3e"><em>-random &lt;randomdev&gt;</em></a></strong>
+
+<dd>
+<p>The random device generator to be passed to <em>dnssec-keygen</em>.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="zonerelated_options">Zone-related Options</a></h2>
+<p>These options deal with different aspects of zone signing.</p>
+<dl>
+<dt><strong><a name="item__2dendtime__3cendtime_3e"><em>-endtime &lt;endtime&gt;</em></a></strong>
+
+<dd>
+<p>The zone default expiration time to be passed to <em>dnssec-signzone</em>.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="dnssectools_options">DNSSEC-Tools Options</a></h2>
+<p>These options deal specifically with functionality provided by DNSSEC-Tools.</p>
+<dl>
+<dt><strong><a name="item__2darchivedir__3cdirectory_3e"><em>-archivedir &lt;directory&gt;</em></a></strong>
+
+<dd>
+<p><strong>directory</strong> is the archived-key directory.  Old encryption keys are moved to
+this directory, but only if they are to be saved and not deleted.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dbinddir__3cdirectory_3e"><em>-binddir &lt;directory&gt;</em></a></strong>
+
+<dd>
+<p><strong>directory</strong> is the directory holding the BIND programs.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dentropy_msg"><em>-entropy_msg</em></a></strong>
+
+<dd>
+<p>A flag indicating that <em>zonesigner</em> should display a message about entropy
+generation.  This is primarily dependent on the implementation of a system's
+random number generation.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dnoentropy_msg"><em>-noentropy_msg</em></a></strong>
+
+<dd>
+<p>A flag indicating that <em>zonesigner</em> should not display a message about
+entropy generation.  This is primarily dependent on the implementation of
+a system's random number generation.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2droll_2dlogfile__3clogfile_3e"><em>-roll-logfile &lt;logfile&gt;</em></a></strong>
+
+<dd>
+<p><strong>logfile</strong> is the logfile for the <em>rollerd</em> daemon.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2droll_2dloglevel__3cloglevel_3e"><em>-roll-loglevel &lt;loglevel&gt;</em></a></strong>
+
+<dd>
+<p><strong>loglevel</strong> is the logging level for the <em>rollerd</em> daemon.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2droll_2dsleep__3csleep_2dtime_3e"><em>-roll-sleep &lt;sleep-time&gt;</em></a></strong>
+
+<dd>
+<p><strong>sleep-time</strong> is the sleep-time for the <em>rollerd</em> daemon.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dsavekeys"><em>-savekeys</em></a></strong>
+
+<dd>
+<p>A flag indicating that old keys should be moved to the archive directory.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dnosavekeys"><em>-nosavekeys</em></a></strong>
+
+<dd>
+<p>A flag indicating that old keys should not be moved to the archive directory.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dusegui"><em>-usegui</em></a></strong>
+
+<dd>
+<p>A flag indicating that the GUI for specifying command options may be used.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dnousegui"><em>-nousegui</em></a></strong>
+
+<dd>
+<p>A flag indicating that the GUI for specifying command options should not be
+used.</p>
+</dd>
+</li>
+</dl>
+<p>
+</p>
+<h2><a name="dtinitconf_options">dtinitconf Options</a></h2>
+<p>These options deal specifically with <em>dtinitconf</em>.</p>
+<ol>
+<li>
+<dt><strong><a name="item__2doutfile__3cconffile_3e"><em>-outfile &lt;conffile&gt;</em></a></strong>
+
+<dd>
+<p>The configuration file will be written to <strong>conffile</strong>.  If this is not given,
+then the default configuration file (as returned by
+<em>Net::DNS::SEC::Tools::conf::getconffile()</em>) will be used.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2doverwrite"><em>-overwrite</em></a></strong>
+
+<dd>
+<p>If <em>-overwrite</em> is specified, existing output files may be overwritten.
+Without <em>-overwrite</em>, if the output file is found to exist then <em>dtinitconf</em>
+will give an error message and exit.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dnoprompt"><em>-noprompt</em></a></strong>
+
+<dd>
+<p>If <em>-noprompt</em> is specified, the user will not be prompted for any input.
+The configuration file will be created from command-line options and
+DNSSEC-Tools defaults.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dedit"><em>-edit</em></a></strong>
+
+<dd>
+<p>If <em>-edit</em> is specified, the output file will be edited after it has been
+created.  The EDITOR environment variable is consulted for the editor to
+use.  If the EDITOR environment variable isn't defined, then the <strong>vi</strong>
+editor will be used.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dverbose"><em>-verbose</em></a></strong>
+
+<dd>
+<p>Provide verbose output.</p>
+</dd>
+</li>
+<dt><strong><a name="item__2dhelp"><em>-help</em></a></strong>
+
+<dd>
+<p>Display a usage message and exit.</p>
+</dd>
+</li>
+</ol>
+<p>
+</p>
+<hr />
+<h1><a name="copyright">COPYRIGHT</a></h1>
+<p>Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING file
+included with the DNSSEC-Tools package for details.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Wayne Morrison, <a href="mailto:tewok@users.sourceforge.net">tewok@users.sourceforge.net</a></p>
+<p>
+</p>
+<hr />
+<h1><a name="see_also">SEE ALSO</a></h1>
+<p><strong>dnssec-keygen(8)</strong>,
+<strong>dnssec-signzone(8)</strong>,
+<strong>named-checkzone(8)</strong>,
+<strong>rollerd(8)</strong>,
+<strong>zonesigner(8)</strong></p>
+<p><strong>Net::DNS::SEC::Tools::conf.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::defaults.pm(3)</strong>,
+<strong>Net::DNS::SEC::Tools::tooloptions.pm(3)</strong>,
+<strong>QWizard.pm(3)</strong></p>
+<p><strong>dnssec-tools.conf(5)</strong></p>
+
+<!--#include virtual="/page-bottom.html" -->
+</body>
+
+</html>
