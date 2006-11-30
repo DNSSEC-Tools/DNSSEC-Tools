@@ -850,7 +850,9 @@ for functions in <xref target="low_level_api"/> and <xref target="high_level_api
 The default policy is unique within the configuraion system.
 Furthermore, the ':' character is only allowed in the default policy label.
 The configuration system must flag an error if some other label contains the 
-':' character.</t>
+':' character. If the policy identified by the ':' label does not exist in the
+configuration system, the first policy in the configuration system is used
+as the default policy.</t>
 
 <t> Policy definitions have the following structure.  </t> 
 <t> &lt;label&gt; &lt;attribute&gt; &lt;additional-data&gt;; </t>
@@ -926,12 +928,14 @@ The scope parameter identifies the particular policy to be used as the
 active policy for the context during validation.  Policy scopes have a 
 hierarchical organization, with each member in the hierarchy identifying 
 a policy label in the configuration system and separated 
-by the ':' character. The default policy implicitly forms the base of this hierarchy. 
+by the ':' character. 
 The validator forms an effective policy by cumulatively applying the policies
 for each member in the hierarchy. For example, for the policy scope 
 "mozilla:browser", the effective policy is computed by applying policies 
-for the default ":", "browser" and "mozilla" policies, in that order. 
-A NULL scope creates a context with the default base policy . </t>
+for the "browser" and "mozilla" policies, in that order. A trailing ':' character
+in the policy scope may also be used to indicate that the default policy is to
+be used as the base of the policy hierarchy.
+A NULL scope creates a context with just the default base policy . </t>
 
 <t>The val_create_context() function returns 0 on success, 
 and an error code from <xref target="val-return-values"/> on failure. 
