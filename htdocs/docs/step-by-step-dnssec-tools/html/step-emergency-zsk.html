@@ -1,5 +1,129 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 13. Emergency ZSK Roll-over (Published and Current ZSK
-  Compromise)</title><meta name="generator" content="DocBook XSL Stylesheets V1.68.1"><link rel="start" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="up" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="prev" href="step-emergency-zsk-published.html" title="Chapter 12. Emergency ZSK Roll-over (Published ZSK Compromise)"><link rel="next" href="step-emergency-ksk.html" title="Chapter 14. Emergency KSK Roll-over (KSK Compromise)"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 13. Emergency ZSK Roll-over (Published and Current ZSK
-  Compromise)</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="step-emergency-zsk-published.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="step-emergency-ksk.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="step-emergency-zsk"></a>Chapter 13. Emergency ZSK Roll-over (Published and Current ZSK
-  Compromise)</h2></div></div></div><p>This section will be written when the key rollover tool is
-    completed.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="step-emergency-zsk-published.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="step-emergency-ksk.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Chapter 12. Emergency ZSK Roll-over (Published ZSK Compromise) </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Chapter 14. Emergency KSK Roll-over (KSK Compromise)</td></tr></table></div></body></html>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Emergency ZSK Rollover (Published and Current ZSK
+    Compromise)</title><meta name="generator" content="DocBook XSL Stylesheets V1.70.1"><link rel="start" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="up" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="prev" href="step-emergency-zsk-published.html" title="Emergency ZSK Rollover (Published ZSK Compromise)"><link rel="next" href="step-emergency-ksk.html" title="Emergency KSK Rollover (KSK Compromise)"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Emergency ZSK Rollover (Published and Current ZSK
+    Compromise)</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="step-emergency-zsk-published.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="step-emergency-ksk.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="step-emergency-zsk"></a>Emergency ZSK Rollover (Published and Current ZSK
+    Compromise)</h2></div></div></div><p><span class="bold"><strong>If the KSK is also compromised, perform the
+    emergency KSK rollover first.</strong></span></p><p>The emergency procedures described for key rollover use the
+    rationale that injection of valid but false data (which can be generated
+    using the compromised key) is more serious than discontinuity in our
+    ability to validate true data. Thus, during emergency ZSK rollover, there
+    will be a period (up to twice the maximum zone TTL) where the cached zone
+    data may not validate against the new ZSK.</p><p>The DNSSEC-Tools utilities do not currently handle emergency KSK
+    rollover. However, the utilities may be used to automate
+    <span class="emphasis"><em>some</em></span> of the steps required.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id934268"></a>Emergency Current and Published ZSK Rollover Using
+        DNSSEC-Tools</h3></div></div></div><p>The steps given below detail the steps that must be taken during
+        emergency ZSK rollover when using DNSSEC-Tools to assist in
+        rollover.</p><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-1"></a>Stop Automatic Zone Rollover</h4></div></div></div><p>The <span class="bold"><strong>rollerd</strong></span> command must
+            not be executing during this procedure.</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># rollctl -halt</strong></span>
+                <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-2"></a>Generate New Current and Published Keys</h4></div></div></div><p>Creating new Current and Published ZSKs may be done with a
+            single <span class="bold"><strong>zonesigner</strong></span>
+            execution.</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># zonesigner -genzsk zone.name</strong></span>
+                <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-3"></a>Fix the Keyrec File</h4></div></div></div><p>The <span class="bold"><strong>zonesigner</strong></span> command in
+            the previous step will have left the compromised zone's keyrec
+            file in an inconsistent state. Consequently, the keyrec file must
+            be edited to return it to a valid state.</p><p>The steps below should be followed to fix the keyrec file
+            for the Current ZSK keys.</p><div class="orderedlist"><ol type="1"><li><p>Find the name of the zone's keyrec file. This may be
+                    done with the following command:</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># lsroll -keyrec -terse
+                        rollrec-file</strong></span>
+                        <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></li><li><p>Find the name of the zone's Current ZSK signing set.
+                    Look for the <span class="emphasis"><em>zone</em></span> keyrec entry for
+                    the compromised zone, and find its
+                    <span class="emphasis"><em>zskcur</em></span> entry. This holds the name of
+                    the Current ZSK signing set.</p></li><li><p>Get the names of the keys in the Current ZSK signing
+                    set. Look for the <span class="emphasis"><em>set</em></span> keyrec entry
+                    for the Current ZSK signing set. The keys listed in that
+                    set's <span class="emphasis"><em>keys</em></span> entry are the ZSK keys in
+                    the Current ZSK signing set.</p></li><li><p>Edit the keyrec file and search for all
+                    <span class="emphasis"><em>key</em></span> keyrec entries with a
+                    <span class="emphasis"><em>keyrec_type</em></span> of "<span class="bold"><strong>zskcur</strong></span>". Any keys with this type
+                    that are not in the Current signing set should be given
+                    the type "<span class="bold"><strong>zskobs</strong></span>".</p></li></ol></div><p>The steps below should be followed to fix the keyrec file
+            for the Published KSK keys.</p><div class="orderedlist"><ol type="1"><li><p>Find the name of the zone's keyrec file. This may be
+                    done with the following command:</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># lsroll -keyrec -terse
+                        rollrec-file</strong></span>
+                        <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></li><li><p>Find the name of the zone's Published signing set.
+                    Look for the <span class="emphasis"><em>zone</em></span> keyrec entry for
+                    the compromised zone, and find its
+                    <span class="emphasis"><em>zskpub</em></span> entry. This holds the name of
+                    the Published ZSK signing set.</p></li><li><p>Get the names of the keys in the Published signing
+                    set. Look for the <span class="emphasis"><em>set</em></span> keyrec entry
+                    for the Published ZSK signing set. The keys listed in that
+                    set's <span class="emphasis"><em>keys</em></span> entry are the ZSK keys in
+                    the Published ZSK signing set.</p></li><li><p>Edit the keyrec file and search for all
+                    <span class="emphasis"><em>key</em></span> keyrec entries with a
+                    <span class="emphasis"><em>keyrec_type</em></span> of "<span class="bold"><strong>zskpub</strong></span>". Any keys with this type
+                    that are not in the Published signing set should be given
+                    the type "<span class="bold"><strong>zskobs</strong></span>".</p></li></ol></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-4"></a>Reload the Zone</h4></div></div></div><p>The <span><strong class="command">rndc</strong></span> will reload the name server
+            configuration files and the zone contents. The name server process
+            is assumed to be already running.</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># rndc reload zone-name</strong></span>
+                <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-5"></a>Dispose of the Old Zone Key</h4></div></div></div><p>Delete the old ZSK's <span class="emphasis"><em>.private</em></span> and
+            <span class="emphasis"><em>.key</em></span> files.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id934692"></a>Restart Automatic Zone Rollover</h4></div></div></div><p>Automatic rollover may be restarted by executing the
+            <span class="bold"><strong>rollerd</strong></span> command. It should be
+            given the same options as when it was originally started.</p></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="step-rollover-zsk-emergency-zsks"></a>Manual Emergency Rollover of Current and Published ZSKs</h3></div></div></div><p>The steps given below detail the actions needed for emergency
+        rollover of the Current and Published ZSKs.</p><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-6"></a>Generate New Current and Published ZSKs</h4></div></div></div><p>Follow the steps in Section ??? in order to generate two
+            ZSK. Update the Key-Tag Table with the new ZSKs; replace the
+            existing set of ZSKs with the new values.</p><div class="table"><a name="id934745"></a><p class="title"><b>Table 17. </b></p><div class="table-contents"><table border="1"><colgroup><col><col align="center"><col align="center"><col align="center"><col align="center"><col align="center"><col align="center"><col align="center"><col align="center"><col></colgroup><tbody><tr><td rowspan="2" align="center">
+                                <span class="bold"><strong>Zone</strong></span>
+                            </td><td colspan="4" align="center">
+                                <span class="bold"><strong>ZSKs</strong></span>
+                            </td><td colspan="4" align="center">
+                                <span class="bold"><strong>KSKs</strong></span>
+                            </td><td rowspan="2" align="center">
+                                <span class="bold"><strong>Exp</strong></span>
+                            </td></tr><tr><td align="center">Tag</td><td align="center">Size</td><td align="center">Creat</td><td align="center">S</td><td align="center">Tag</td><td align="center">Size</td><td align="center">Creat</td><td align="center">S</td></tr><tr><td rowspan="4" align="center">
+                                <span class="emphasis"><em>zone-name</em></span>
+
+                                <span class="emphasis"><em></em></span>
+
+                                <span class="emphasis"><em></em></span>
+                            </td><td align="center">
+                                <span class="underline">zsktag-cur</span>
+                            </td><td align="center">1024</td><td align="center">
+                                <span class="underline">date</span>
+                            </td><td align="center">C</td><td rowspan="4" align="center">
+                                <span class="underline">ksktag</span>
+
+                                <span class="underline"></span>
+
+                                <span class="underline"></span>
+                            </td><td rowspan="4" align="center">2048</td><td rowspan="4" align="center">
+                                <span class="underline">date</span>
+
+                                <span class="underline"></span>
+
+                                <span class="underline"></span>
+                            </td><td rowspan="4" align="center">C</td><td rowspan="2" align="center">
+                                <span class="underline">date</span>
+
+                                <span class="underline"></span>
+
+                                <span class="underline"></span>
+                            </td></tr><tr><td align="center">
+                                <span class="underline">zsktag-pub</span>
+                            </td><td align="center">1024</td><td align="center">
+                                <span class="underline">date</span>
+                            </td><td align="center">P</td></tr><tr><td align="center">
+                                <span class="underline">zsktag-cur</span>
+                            </td><td align="center">1024</td><td align="center">
+                                <span class="underline">date</span>
+                            </td><td align="center">C</td><td rowspan="2" align="center">
+                                <span class="underline">date</span>
+                            </td></tr><tr><td align="center">
+                                <span class="underline">zsktag-pub</span>
+                            </td><td align="center">1024</td><td align="center">
+                                <span class="underline">date</span>
+                            </td><td align="center">P</td></tr></tbody></table></div></div><br class="table-break"></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-7"></a>Modify the Zone File</h4></div></div></div><p>The zone file must be modified to account for the key
+            changes. The Current and Published ZSKs must be replaced with the
+            new keys. Also, the SOA serial number must be incremented so that
+            the zone file's new contents will be recognized.</p><p>The required key changes are made by modifying the <span class="bold"><strong>$INCLUDE</strong></span> lines at the end of the file. The
+            <span class="bold"><strong>$INCLUDE</strong></span> line for the Current and
+            Published ZSKs must be deleted and replaced with <span class="bold"><strong>$INCLUDE</strong></span> lines for the new ZSKs.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-8"></a>Sign the Zone with the KSK and Current ZSK</h4></div></div></div><p>Follow the steps in sections ??? - ??? if the zone does no
+            delegation. Follow the steps in sections ??? - ??? if the zone
+            does delegation. The ZSK used in the signing process in ??? or ???
+            must be the key that is marked as the Current key (C) in the
+            Key-Tag table. The KSK used as input to <span class="bold"><strong>dnssec-signzone</strong></span> does not change, so the
+            keyset does not change and does not have to be re-sent to the
+            parent.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-9"></a>Reload the Zone</h4></div></div></div><p>The <span><strong class="command">rndc</strong></span> will reload the name server
+            configuration files and the zone contents. The name server process
+            is assumed to be already running.</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># rndc reload zone-name</strong></span>
+                <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="step-rollover-zsk-emergency-zsks-10"></a>Dispose of the Old Zone Key</h4></div></div></div><p>Delete the old ZSK's <span class="emphasis"><em>.private</em></span> and
+            <span class="emphasis"><em>.key</em></span> files.</p></div></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="step-emergency-zsk-published.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="step-emergency-ksk.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Emergency ZSK Rollover (Published ZSK Compromise) </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Emergency KSK Rollover (KSK Compromise)</td></tr></table></div></body></html>
