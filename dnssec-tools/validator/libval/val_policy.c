@@ -870,21 +870,17 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
 
     *relevant = 1;
 
-    /*
-     * a "default" label is always relevant 
-     */
-    if (!strcmp(label, LVL_DELIM)) 
-        *label_count = 0;
-    else
-        *label_count = 1;
-
     c = scope;
+    *label_count = 1;
     
     /*
-     * a NULL scope is always relevant and so is an exact match 
+     * a NULL scope is always relevant 
      */
-    if ((c == NULL) || (!strcmp(c, label))) 
+    if (c == NULL) { 
+        if (!strcmp(label, LVL_DELIM)) 
+            *label_count = 0;
         return VAL_NO_ERROR;
+    }
     
     e = c + strlen(scope);
 
@@ -892,17 +888,19 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
      * Check if this is relevant 
      */
     while ((c < e) && (NULL != (p = strstr(c, LVL_DELIM)))) {
-        /* Check for trailing : character */
-        if (!strcmp(p, LVL_DELIM)) {
-            *label_count = 0;
+        
+        if ((!strcmp(p, LVL_DELIM)) || 
+            (!strncmp(label, c, p-c) && (p != c)) ||
+            ((p == c) && (!strcmp(label, LVL_DELIM))))
             return VAL_NO_ERROR;
-        }
 
-        if (!strncmp(label, c, p-c))
-            return VAL_NO_ERROR;
         (*label_count)++;
         c = p+1;
     }
+
+    /* See if the remaining string is an exact match */
+    if (!strcmp(label, c))
+        return VAL_NO_ERROR;
     
     *relevant = 0;
     return VAL_NO_ERROR;
