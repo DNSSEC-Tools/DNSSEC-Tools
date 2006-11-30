@@ -1,0 +1,336 @@
+
+
+
+Network Working Group                                          S. Weiler
+Internet-Draft                                               SPARTA, Inc
+Updates: [-records] [-protocol]                            March 7, 2005
+(if approved)
+Expires: September 8, 2005
+
+
+         Clarifications and Implementation Notes for DNSSECbis
+               draft-weiler-dnsext-dnssec-bis-updates-00
+
+Status of this Memo
+
+   This document is an Internet-Draft and is subject to all provisions
+   of Section 3 of RFC 3667.  By submitting this Internet-Draft, each
+   author represents that any applicable patent or other IPR claims of
+   which he or she is aware have been or will be disclosed, and any of
+   which he or she become aware will be disclosed, in accordance with
+   RFC 3668.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+   This Internet-Draft will expire on September 8, 2005.
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2005).
+
+Abstract
+
+   This document is a collection of minor technical clarifications to
+   the DNSSECbis document set.  It is meant to serve as a resource to
+   implementors as well as an interim repository of possible DNSSECbis
+   errata.
+
+
+
+
+Weiler                  Expires September 8, 2005               [Page 1]
+
+Internet-Draft       DNSSECbis Implementation Notes           March 2005
+
+
+1.  Introduction and Terminology
+
+   This document lists some minor clarifications and corrections to
+   DNSSECbis, as described in [1], [2], and [3].
+
+   It is intended to serve as a resource for implementors and as a
+   repository of items that need to be addressed when advancing the
+   DNSSECbis documents from Proposed Standard to Draft Standard.
+
+   In this version (-00), feedback is particularly solicited on the
+   structure of the document and about what query type(s) should be used
+   to find delegation points (see Section 4).
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in RFC 2119 [4].
+
+2.  Unknown DS Message Digest Algorithms
+
+   Section 5.2 of -protocol includes rules for how to handle delegations
+   to zones that are signed with entirely unsupported algorithms, as
+   indicated by the algorithms shown in those zone's DS RRsets.  It does
+   not explicitly address how to handle DS records that use unsupported
+   message digest algorithms.  In brief, DS records using unknown or
+   unsupported message digest algorithms MUST be treated the same way as
+   DS records referring to DNSKEY RRs of unknown or unsupported
+   algorithms.
+
+   The existing text says:
+
+         If the validator does not support any of the algorithms listed
+         in an authenticated DS RRset, then the resolver has no supported
+         authentication path leading from the parent to the child.  The
+         resolver should treat this case as it would the case of an
+         authenticated NSEC RRset proving that no DS RRset exists, as
+         described above.
+
+   To paraphrase the above, when determining the security status of a
+   zone, a resolver discards (for this purpose only) any DS records
+   listing unknown or unsupported algorithms.  If none are left, the
+   zone is treated as if it were unsigned.
+
+   Modified to consider DS message digest algorithms, that text becomes:
+   a resolver discards any DS records listing unknown or unsupported
+   algorithms or using unknown or unsupported message digest algorithms.
+
+
+
+
+
+
+Weiler                  Expires September 8, 2005               [Page 2]
+
+Internet-Draft       DNSSECbis Implementation Notes           March 2005
+
+
+3.  Private Algorithms
+
+   As discussed above, section 5.2 of -protocol requires that validators
+   make decisions about the security status of zones based on the public
+   key algorithms shown in the DS records for those zones.  In the case
+   of private algorithms, as described in -records Appendix A.1.1, the
+   eight-bit algorithm field in the DS RR is not conclusive about what
+   algorithm(s) is actually in use.
+
+   If no private algorithms appear in the DS set or if any supported
+   algorithm appears in the DS set, no special processing will be
+   needed.  In the remaining cases, the security status of the zone
+   depends on whether or not the resolver supports any of the private
+   algorithms in use (provided that these DS records use supported hash
+   functions, as discussed in Section 2).  In these cases, the resolver
+   MUST retrieve the corresponding DNSKEY for each private algorithm DS
+   record and examine the public key field to determine the algorithm in
+   use.  The security-aware resolver MUST ensure that the hash of the
+   DNSKEY RR's owner name and RDATA matches the digest in the DS RR.  If
+   they do not match, and no other DS establishes that the zone is
+   secure, the referral should be considered BAD data, as discussed in
+   -protocol.
+
+   This clarification facilitates the broader use of private algorithms,
+   as suggested by [5] .
+
+4.  Finding Zone Cuts
+
+   As explained in Section 3.1.4.1 of -protocol, security-aware name
+   servers need to apply special processing rules to handle the DS RR,
+   and in some situations the resolver may also need to apply special
+   rules to locate the name servers for the parent zone if the resolver
+   does not already have the parent's NS RRset.
+
+   Section 4.2 of -protocol suggests using NS queries for this purpose.
+   Appendix C.8 of -protocol suggests using DS queries.
+
+   *** Which is correct?  Does it matter?
+
+5.  Clarifications on DNSKEY Usage
+
+   Questions of the form "can I use a different DNSKEY for signing the
+   X" have occasionally arisen.
+
+   The short answer is "yes, absolutely".  You can even use a different
+   DNSKEY for each RRset in a zone, subject only to practical limits on
+   the size of the DNSKEY RRset.  However, be aware that there is no way
+   to tell resolvers what a particularly DNSKEY is supposed to be used
+
+
+
+Weiler                  Expires September 8, 2005               [Page 3]
+
+Internet-Draft       DNSSECbis Implementation Notes           March 2005
+
+
+   for -- any DNSKEY in the zone's signed DNSKEY RRset may be used to
+   authenticate any RRset in the zone.  For example, if a weaker or less
+   trusted DNSKEY is being used to authenticate NSEC RRsets or all
+   dynamically updated records, that same DNSKEY can also be used to
+   sign any other RRsets from the zone.
+
+   Futhermore, note that the SEP bit setting has no effect on how a
+   DNSKEY may be used -- the validation process is specifically
+   prohibitted from using that bit by -records section 2.1.2.  It
+   possible to use a DNSKEY without the SEP bit set as the sole secure
+   entry point to the zone, yet use a DNSKEY with the SEP bit set to
+   sign all RRsets in the zone (other than the DNSKEY RRset).  It's also
+   possible to use a single DNSKEY, with or without the SEP bit set, to
+   sign the entire zone, including the DNSKEY RRset itself.
+
+6.  IANA Considerations
+
+   This document specifies no IANA Actions.
+
+7.  Security Considerations
+
+
+8.  References
+
+8.1  Normative References
+
+   [1]  Arends, R., Austein, R., Massey, D., Larson, M. and S. Rose,
+        "DNS Security Introduction and Requirements",
+        Internet-Draft draft-ietf-dnsext-dnssec-intro-13, October 2004.
+
+   [2]  Arends, R., "Resource Records for the DNS Security Extensions",
+        Internet-Draft draft-ietf-dnsext-dnssec-records-11, October
+        2004.
+
+   [3]  Arends, R., "Protocol Modifications for the DNS Security
+        Extensions",
+        Internet-Draft draft-ietf-dnsext-dnssec-protocol-09, October
+        2004.
+
+   [4]  Bradner, S., "Key words for use in RFCs to Indicate Requirement
+        Levels", BCP 14, RFC 2119, March 1997.
+
+8.2  Informative References
+
+   [5]  Blacka, D., "DNSSEC Experiments",
+        Internet-Draft draft-blacka-dnssec-experiments-00, December
+        2004.
+
+
+
+
+Weiler                  Expires September 8, 2005               [Page 4]
+
+Internet-Draft       DNSSECbis Implementation Notes           March 2005
+
+
+Author's Address
+
+   Samuel Weiler
+   SPARTA, Inc
+   7075 Samuel Morse Drive
+   Columbia, Maryland  21046
+   US
+
+   Email: weiler@tislabs.com
+
+Appendix A.  Acknowledgments
+
+   The lack of specificity about handling private algorithms, as
+   described in Section 3, was discovered by David Blacka.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Weiler                  Expires September 8, 2005               [Page 5]
+
+Internet-Draft       DNSSECbis Implementation Notes           March 2005
+
+
+Intellectual Property Statement
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+Disclaimer of Validity
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+Copyright Statement
+
+   Copyright (C) The Internet Society (2005).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+Acknowledgment
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+Weiler                  Expires September 8, 2005               [Page 6]
+
