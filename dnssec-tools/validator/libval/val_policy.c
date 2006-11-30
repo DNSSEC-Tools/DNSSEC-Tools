@@ -860,8 +860,7 @@ get_token(FILE * conf_ptr,
 int
 check_relevance(char *label, char *scope, int *label_count, int *relevant)
 {
-    int             label_len;
-    char           *c, *p;
+    char           *c, *p, *e;
 
     /*
      * sanity check; NULL scope is OK 
@@ -874,43 +873,38 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
     /*
      * a "default" label is always relevant 
      */
-    if (!strcmp(label, LVL_DELIM)) {
+    if (!strcmp(label, LVL_DELIM)) 
         *label_count = 0;
-        return VAL_NO_ERROR;
-    }
+    else
+        *label_count = 1;
 
-    *label_count = 1;
-    c = label;
+    c = scope;
+    
+    /*
+     * a NULL scope is always relevant and so is an exact match 
+     */
+    if ((c == NULL) || (!strcmp(c, label))) 
+        return VAL_NO_ERROR;
+    
+    e = c + strlen(scope);
 
     /*
-     * Check if this level is relevant 
+     * Check if this is relevant 
      */
-    if (scope != NULL) {
-        label_len = strlen(label);
-        while (strcmp(c, scope)) {
-            /*
-             * read ahead past the next delimiter 
-             */
-            if (NULL == (p = strstr(c, LVL_DELIM))) {
-                *relevant = 0;
-                break;
-            }
-            if (!strcmp(p, scope))
-                break;
-            c = p + 1;
-            (*label_count)++;
+    while ((c < e) && (NULL != (p = strstr(c, LVL_DELIM)))) {
+        /* Check for trailing : character */
+        if (!strcmp(p, LVL_DELIM)) {
+            *label_count = 0;
+            return VAL_NO_ERROR;
         }
 
-    } else {
-        /*
-         * A NULL scope is always relevant 
-         * count the number of levels in the label 
-         */
-        while (strstr(c, LVL_DELIM)) {
-            (*label_count)++;
-            c++;
-        }
+        if (!strncmp(label, c, p-c))
+            return VAL_NO_ERROR;
+        (*label_count)++;
+        c = p+1;
     }
+    
+    *relevant = 0;
     return VAL_NO_ERROR;
 }
 
@@ -961,6 +955,15 @@ get_next_policy_fragment(FILE * fp, char *scope,
             return VAL_OUT_OF_MEMORY;
         strcpy(label, token);
 
+        /* 
+         * The : character can only appear in the label 
+         * if this is the default policy 
+         */
+        if (strstr(label, LVL_DELIM) && strcmp(label, LVL_DELIM)) {
+            FREE(label);
+            return VAL_CONF_PARSE_ERROR; 
+        }
+            
         /*
          * read the keyword 
          */
@@ -1025,10 +1028,10 @@ get_next_policy_fragment(FILE * fp, char *scope,
  * so "mozilla" < "sendmail" < "browser:mozilla"
  */
 static int
-store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
+store_policy_overrides(val_context_t *ctx, struct policy_fragment **pfrag)
 {
     struct policy_overrides *cur, *prev, *newp;
-    struct policy_list *entry;
+    struct policy_list *e;
 
     if ((ctx == NULL) || (pfrag == NULL) || (*pfrag == NULL))
         return VAL_BAD_ARGUMENT;
@@ -1037,18 +1040,17 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
      * search for a node with this label 
      */
     cur = prev = NULL;
+    
     for (cur = ctx->pol_overrides;
-         (cur &&
-          (cur->label_count <= (*pfrag)->label_count) &&
-          (strcmp(cur->label, (*pfrag)->label) < 0));
+         cur && (cur->label_count < (*pfrag)->label_count);
          prev = cur, cur = cur->next);
 
     if ((cur != NULL) && (!strcmp(cur->label, (*pfrag)->label))) {
         /*
-         * exact match 
+         * exact match; 
          */
         newp = cur;
-        FREE((*pfrag)->label);
+        (*pfrag)->label = NULL;
 
     } else {
     
@@ -1073,15 +1075,25 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
     /*
      * Add this entry to the list 
      */
-    entry = (struct policy_list *) MALLOC(sizeof(struct policy_list));
-    if (entry == NULL)
-        return VAL_OUT_OF_MEMORY;
-    entry->index = (*pfrag)->index;
-    entry->pol = (*pfrag)->pol;
-    entry->next = newp->plist;
-    newp->plist = entry;
+    for (e=newp->plist; e; e=e->next) {
+        if(e->index == (*pfrag)->index) {
+            val_log(ctx, LOG_WARNING, "Duplicate policy definition; using last definition");
+            conf_elem_array[e->index].free(&e->pol);
+            break;
+        }
+    }
+   
+    if (!e) { 
+        e = (struct policy_list *) MALLOC(sizeof(struct policy_list));
+        if (e== NULL)
+            return VAL_OUT_OF_MEMORY;
+    }
 
-    (*pfrag)->label = NULL;
+    e->index = (*pfrag)->index;
+    e->pol = (*pfrag)->pol;
+    e->next = newp->plist;
+    newp->plist = e;
+
     (*pfrag)->pol = NULL;
     FREE(*pfrag);
 
@@ -1100,12 +1112,15 @@ destroy_valpol(val_context_t * ctx)
     for (i = 0; i < MAX_POL_TOKEN; i++)
         ctx->e_pol[i] = NULL;
 
-    prev = NULL;
-    for (cur = ctx->pol_overrides; cur; prev = cur, cur = cur->next) {
+    cur = ctx->pol_overrides;
+    while (cur) {
         struct policy_list *plist, *plist_next;
 
-        FREE(cur->label);
-        for (plist = cur->plist; plist; plist = plist_next) {
+        prev = cur;
+        cur=cur->next;
+
+        FREE(prev->label);
+        for (plist = prev->plist; plist; plist = plist_next) {
             plist_next = plist->next;
             if ((plist->pol != NULL) &&
                 (plist->index < MAX_POL_TOKEN))
@@ -1113,11 +1128,9 @@ destroy_valpol(val_context_t * ctx)
                     free(&(plist->pol));
             FREE(plist);
         }
-        if (prev != NULL)
-            FREE(prev);
-    }
-    if (prev != NULL)
         FREE(prev);
+    }
+
     ctx->pol_overrides = NULL;
     ctx->cur_override = NULL;
 
@@ -1136,6 +1149,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
     struct policy_fragment *pol_frag = NULL;
     int             retval;
     int             line_number = 1;
+    struct policy_overrides *cur, *prev;
 
     dnsval_conf = dnsval_conf_get();
     if (NULL == dnsval_conf)
@@ -1145,6 +1159,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
      * free up existing policies 
      */
     destroy_valpol(ctx);
+    ctx->pol_overrides = NULL;
 
     val_log(ctx, LOG_DEBUG, "Reading validator policy from %s",
             dnsval_conf);
@@ -1170,20 +1185,49 @@ read_val_config_file(val_context_t * ctx, char *scope)
             get_next_policy_fragment(fp, scope, &pol_frag,
                                      &line_number))) {
         if (feof(fp)) {
-            fcntl(fd, F_SETLKW, &fl);
-            fclose(fp);
-            return VAL_NO_ERROR;
+            retval = VAL_NO_ERROR;
+            break;
         }
         /*
          * Store this fragment as an override, consume pol_frag 
          */
         store_policy_overrides(ctx, &pol_frag);
     }
-
-    val_log(ctx, LOG_ERR, "Error in line %d of file %s", line_number,
-            dnsval_conf);
+    
     fcntl(fd, F_SETLKW, &fl);
     fclose(fp);
+
+    if (retval != VAL_NO_ERROR) {
+        val_log(ctx, LOG_ERR, "Error in line %d of file %s", line_number,
+                dnsval_conf);
+    } else {
+        if (scope == NULL) {
+            /* Use the first policy as the default (only) policy */
+            if (ctx->pol_overrides) {
+                cur = ctx->pol_overrides->next;
+                while (cur) {
+                    struct policy_list *plist, *plist_next;
+
+                    prev = cur;
+                    cur=cur->next;
+
+                    FREE(prev->label);
+                    for (plist = prev->plist; plist; plist = plist_next) {
+                        plist_next = plist->next;
+                        if ((plist->pol != NULL) &&
+                            (plist->index < MAX_POL_TOKEN))
+                            conf_elem_array[plist->index].free(&(plist->pol));
+                        FREE(plist);
+                    }
+                    FREE(prev);
+                }
+                ctx->pol_overrides->next = NULL;
+            }
+        }
+        
+        OVERRIDE_POLICY(ctx);
+    }
+     
     return retval;
 }
 
