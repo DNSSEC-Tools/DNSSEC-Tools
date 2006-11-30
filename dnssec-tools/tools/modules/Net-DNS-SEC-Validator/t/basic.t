@@ -73,7 +73,6 @@ $r = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org");
 ok(not defined $r);
 
 $r = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org", AF_INET6);
-print STDERR "$validator->{errorStr}:$validator->{valStatusStr}\n",
 ok(ref $r eq 'Net::hostent');
 
 $r = $validator->gethostbyname("good-A.test.dnssec-tools.org");
