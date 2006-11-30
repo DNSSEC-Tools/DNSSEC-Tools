@@ -646,20 +646,21 @@ val_gethostbyname2_r(val_context_t * ctx,
 
         if (ctx == NULL) {
             if (VAL_NO_ERROR !=
-                (retval = val_create_context(NULL, &context)))
-                return retval;
+                (retval = val_create_context(NULL, &context))) {
+	      *h_errnop = NETDB_INTERNAL;
+	      if (!errno)
+		errno = ENOMEM;
+	      return errno;
+	    }
         } else
-            context = (val_context_t *) ctx;
-
-        *result = NULL;
-
-        /*
+	  context = (val_context_t *) ctx;
+	/*
          * First check the ETC_HOSTS file
          * XXX: TODO check the order in the ETC_HOST_CONF file
          */
         *result =
-            get_hostent_from_etc_hosts(context, name, af, ret, buf, buflen,
-                                       &offset);
+	  get_hostent_from_etc_hosts(context, name, af, ret, buf, buflen,
+				     &offset);
 
         if (*result != NULL) {
             *val_status = VAL_LOCAL_ANSWER;
@@ -697,17 +698,20 @@ val_gethostbyname2_r(val_context_t * ctx,
             }
         }
 
-        if (*result == NULL)
-            *h_errnop = HOST_NOT_FOUND;
-        else
-            *h_errnop = NETDB_SUCCESS;
-
-        val_free_result_chain(results);
-
         if ((ctx == NULL) && context)
             val_free_context(context);
 
-        // XXX what if error?
+        if (*result == NULL) {
+	  if (!*h_errnop)
+	    *h_errnop = NETDB_INTERNAL;
+	  if (!errno)
+	    errno = EBADMSG;
+	   return errno;
+        } else {
+	  val_free_result_chain(results);
+	  *h_errnop = NETDB_SUCCESS;
+	}
+
         return 0;
     }
 }
