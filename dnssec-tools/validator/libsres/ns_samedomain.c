@@ -178,7 +178,7 @@ ns_makecanon(const char *src, char *dst, size_t dstsize)
 {
     size_t          n = strlen(src);
 
-    if (n + sizeof(".") > dstsize) {     /* Note: sizeof == 2 */
+    if (n + sizeof(".") > dstsize) {    /* Note: sizeof == 2 */
         errno = EMSGSIZE;
         return (-1);
     }
