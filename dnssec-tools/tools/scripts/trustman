@@ -32,6 +32,7 @@ my $daemon = 1; # default is to run as a daemon
 
 # Parse command-line options
 GetOptions(\%opts,
+             'h|help',
              'd|domain=s',
              't|sleeptime=i',
              'v|verbose',
@@ -47,6 +48,10 @@ GetOptions(\%opts,
              'p|print',
              'N|no_error',
              'm|mail_contact_addr=s');
+
+if ($opts{'h'}) {
+    usage();
+}
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
