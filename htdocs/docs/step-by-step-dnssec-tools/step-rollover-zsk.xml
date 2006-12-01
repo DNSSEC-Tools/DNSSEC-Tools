@@ -310,8 +310,8 @@
         <title>Manual ZSK Rollover</title>
 
         <para>The steps for performing a manual ZSK rollover are given
-        below.</para>
-
+            Section 3.4 of <xref linkend="dnssec-operators-guide" />.</para>
+    <!--
         <section id="step-rollover-zsk-manual-1">
             <title>Ensure that Sufficient Time has Elapsed Since the Last
             Rollover</title>
@@ -325,9 +325,11 @@
             <title>Sign Zone with the KSK and Published ZSK</title>
         </section>
 
-        <para>Follow steps ??? - ??? if the zone does no delegation. Follow
-        steps ??? - ??? if the zone does delegation. The ZSK used in the
-        signing process in Section ??? or ??? must be the key that is marked
+        <para>Follow Section 5.1 of <xref linkend="dnssec-operators-guide" />
+            if the zone does no delegation. Follow Section 5.2 of
+            <xref linkend="dnssec-operators-guide" /> if the zone does 
+            delegation. The ZSK used in the
+        signing process in Section 5.1 or 5.2 must be the key that is marked
         as the Published key (P) in the key-tag table. The KSK used as input
         to <command>dnssec-signzone</command> does not change, so the keyset
         does not change and does not have to be re-sent to the parent.</para>
@@ -335,6 +337,7 @@
         <para>Record the signature expiry date in the key-tag table.</para>
 
         <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
             <tgroup align="center" cols="10">
                 <colspec align="center" colname="_2" colnum="2" />
 
@@ -481,6 +484,7 @@
             (N).</para>
 
             <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
                 <tgroup align="center" cols="10">
                     <colspec colname="_2" colnum="2" />
 
@@ -644,6 +648,7 @@
             to Current. Change the status of the New ZSK to Published.</para>
 
             <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
                 <tgroup align="center" cols="10">
                     <colspec colname="_2" colnum="2" />
 
@@ -814,6 +819,7 @@
             table.</para>
 
             <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
                 <tgroup align="center" cols="10">
                     <colspec align="center" colname="_2" colnum="2" />
 
@@ -949,6 +955,7 @@
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
             <emphasis>.key</emphasis> files.</para>
-        </section>
+    </section>
+    -->
     </section>
 </chapter>

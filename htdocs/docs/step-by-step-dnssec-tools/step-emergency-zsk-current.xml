@@ -22,17 +22,18 @@
     where the cached zone data may not validate against the new ZSK. Also, the
     steps below are only useful if the Published and Current keys are kept
     separate from each other and if the Published ZSK has not also been
-    compromised. If both ZSKs are compromised follow the steps in Section ???
-    If only the Published key is compromised follow the steps in Section
-    ???.</para>
+    compromised. If both ZSKs are compromised follow the steps in
+    <xref linkend="step-emergency-zsk" />
+    If only the Published key is compromised follow the steps in
+    <xref linkend="step-emergency-zsk-published" />.</para>
 
     <section id="step-rollover-zsk-emergency-current">
         <title>Manual Emergency Current ZSK Rollover</title>
 
         <para>The DNSSEC-Tools utilities do not currently handle emergency ZSK
-        rollover. The steps given below detail the double-signature scheme
-        used for KSK rollover.</para>
-
+            rollover. Section 6.2 of <xref linkend="dnssec-operators-guide" />
+            detail the pre-publish scheme used for ZSK rollover.</para>
+    <!-- 
         <section id="step-rollover-zsk-emergency-current-1">
             <title>Generate a New ZSK</title>
 
@@ -40,7 +41,8 @@
             Key-Tag Table with the new ZSK and set its status to New
             (N).</para>
 
-            <table colsep="1" frame="all" rowsep="1">
+        <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
                 <tgroup align="center" cols="10">
                     <colspec colname="_2" colnum="2" />
 
@@ -229,6 +231,7 @@
             to Current. Change the status of the New ZSK to Published.</para>
 
             <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
                 <tgroup align="center" cols="10">
                     <colspec colname="_2" colnum="2" />
 
@@ -380,6 +383,7 @@
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
             <emphasis>.key</emphasis> files.</para>
-        </section>
+    </section>
+    -->
     </section>
 </chapter>
