@@ -18,8 +18,8 @@
         <title>Manual KSK Rollover</title>
 
         <para>The steps for performing a manual KSK rollover are given
-        below.</para>
-
+            in Section 3.5 of <xref linkend="dnssec-operators-guide" />.</para>
+    <!--
         <section id="step-rollover-ksk-manual-1">
             <title>Ensure that Sufficient Time has Elapsed Since the Last
             Rollover</title>
@@ -36,6 +36,7 @@
         <para>Generate a new KSK as described in Section ???.</para>
 
         <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
             <tgroup align="center" cols="10">
                 <colspec align="center" colname="_2" colnum="2" />
 
@@ -182,8 +183,8 @@
             by-product of the <emphasis role="bold">dnssec-signzone</emphasis>
             operation.</para>
 
-            <para>Follow steps ??? -- ??? if the zone does no delegation.
-            Follow steps ??? -- ??? if the zone does delegation. The ZSK used
+            <para>Follow steps ???  ??? if the zone does no delegation.
+            Follow steps ???  ??? if the zone does delegation. The ZSK used
             in the signing process in Section ??? or ??? must be the key that
             is marked as the Current key (C) in the Key-Tag table. Both the
             Current KSK and the Published KSK must be simultaneously included
@@ -193,7 +194,8 @@
             <para>Update the Key-Tags table to record the signature expiration
             date.</para>
 
-            <table colsep="1" frame="all" rowsep="1">
+        <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
                 <tgroup align="center" cols="10">
                     <colspec align="center" colname="_2" colnum="2" />
 
@@ -374,8 +376,8 @@
             RRset for the zone; it is only formed as a by-product of the
             <emphasis role="bold">dnssec-signzone</emphasis> operation.</para>
 
-            <para>Follow steps ??? -- ??? if the zone does no delegation.
-            Follow steps ??? -- ??? if the zone does delegation.</para>
+            <para>Follow steps ???  ??? if the zone does no delegation.
+            Follow steps ???  ??? if the zone does delegation.</para>
         </section>
 
         <section id="step-rollover-ksk-manual-9">
@@ -385,7 +387,8 @@
             from Published (P) to Current (C). Record the signature expiry
             date in the Key-Tags table.</para>
 
-            <table colsep="1" frame="all" rowsep="1">
+        <table colsep="1" frame="all" rowsep="1">
+            <title>Key-Tag Table</title>
                 <tgroup align="center" cols="10">
                     <colspec align="center" colname="_2" colnum="2" />
 
@@ -550,6 +553,7 @@
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
             <emphasis>.key</emphasis> files.</para>
-        </section>
+    </section>
+    -->
     </section>
 </chapter>
