@@ -119,12 +119,18 @@ $r = $validator->gethostbyname("www.marzot.net");
 ok(ref $r eq 'Net::hostent');
 
 
-# this crashes w/ mail.marzot.net??
 $r = $validator->res_query("marzot.net", "IN", "MX");
 ok($r);
 
 ($pkt, $err) = new Net::DNS::Packet(\$r);
 ok(not $err);
+
+# this crashes
+#$r = $validator->res_query("mail.marzot.net", "IN", "MX");
+#ok($r);
+#print STDERR length($r),":",$validator->{valStatusStr},"\n";
+#($pkt, $err) = new Net::DNS::Packet(\$r);
+#ok(not $err);
 
 
 

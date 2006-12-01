@@ -3,7 +3,6 @@
 
      written by G. S. Marzot (marz@users.sourceforge.net)
 
-
      Copyright (c) 2006 SPARTA, Inc.  All rights reserved.
 
      Copyright (c) 2006 G. S. Marzot. All rights reserved.
@@ -281,18 +280,6 @@ pval_create_context(context=":")
 	OUTPUT:
 	RETVAL
 
-int
-pval_switch_policy(ctx=NULL,scope=":")
-	ValContext * ctx = (SvROK($arg) ? \
-			    (ValContext*)SvIV((SV*)SvRV($arg)) : NULL);
-	char * scope
-	CODE:
-	{
-	int result = val_switch_policy_scope(ctx, scope);
-	RETVAL = result;
-	}
-	OUTPUT:
-	RETVAL
 
 SV *
 pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
@@ -431,11 +418,13 @@ pval_res_query(self,dname,class,type)
         sv_setpv(*error_str_svp, "");
         sv_setiv(*val_status_svp, 0);
         sv_setpv(*val_status_str_svp, "");
+	
+	//	fprintf(stderr,"before:%p:%s:%d:%d:%d:%d\n",ctx,dname,class,type,res,val_status);
 
 	res = val_res_query(ctx, dname, class, type, buf, PVAL_BUFSIZE,
                             &val_status);
 
-	// fprintf(stderr,"%p:%s:%d:%d:%d:%d\n",ctx,dname,class,type,res,val_status);
+	//	fprintf(stderr,"after:%p:%s:%d:%d:%d:%d:%d:%s\n",ctx,dname,class,type,res,val_status,h_errno,hstrerror(h_errno));
         
 	sv_setiv(*val_status_svp, val_status);
         sv_setpv(*val_status_str_svp, p_val_status(val_status));

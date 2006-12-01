@@ -1,3 +1,14 @@
+#     Validator.pm -- Perl 5 interface to the Dnssec-Tools validating resolver
+#
+#     written by G. S. Marzot (marz@users.sourceforge.net)
+#
+#     Copyright (c) 2006 SPARTA, Inc.  All rights reserved.
+#
+#     Copyright (c) 2006 G. S. Marzot. All rights reserved.
+#
+#     This program is free software; you can redistribute it and/or
+#     modify it under the same terms as Perl itself.
+#
 package Net::DNS::SEC::Validator;
 require Net::addrinfo; # return type from getaddrinfo
 require Net::hostent; # return type from gethost*
@@ -116,7 +127,8 @@ sub switch_policy {
 	if (not defined $ctx_ptr) {
 	    return $self->policy($label);
 	} else {
-	    Net::DNS::SEC::Validator::_switch_policy($ctx_ptr, $label);
+	    $self->{_ctx_ptr} = 
+		Net::DNS::SEC::Validator::_create_context($label);
 	    $self->{policy} = $label;
         }
     }
@@ -151,6 +163,9 @@ sub res_query {
     my $dname = shift;
     my $class = shift;
     my $type = shift;
+
+    $class ||= "IN";
+    $type ||= "A";
 
     $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
     $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
@@ -196,85 +211,161 @@ __END__
 
 =head1 NAME
 
-Net::addrinfo - interface to POSIX getaddrinfo(3) and related
+Net::DNS::SEC::Validator - interface to lival(3) and related
 constants, structures and functions.
 
 =head1 SYNOPSIS
 
- use Net::addrinfo;
- my $ainfo = getaddrinfo("www.marzot.net");
+use Net::DNS::SEC::Validator;
+use Net::DNS::Packet;
+use Net::hostent;
+use Net::addrinfo;
+use Socket qw(:all);
+
+my $validator = new Net::DNS::SEC::Validator(policy => ":");
+my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+my $r = $validator->res_query("marzot.net", "IN", "MX");
+my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",AF_INET6);
 
 =head1 DESCRIPTION
 
-This module exports getaddrinfo() and related functions. Where
-appropriate the functions return "Net::addrinfo" objects.  This object
-has methods that return the similarly named structure field name from
-the C's addrinfo structure from F<netdb.h>; namely (flags, family,
-protocol, addrlen, addr, canonname).
+This Perl module is designed to implement and export functionality
+provided by the validating DNS resolver library, libval(3). The
+functions are provided through an easy-to-use object oriented
+interface. The interface is designed for the higher level user, hiding
+some of the complexity of validating resolvers. Nevertheless,
+application interface behavior can be customized through configuration
+files provided by libval(3) and extensive error codes returned.
 
-You may also import all the structure fields directly into your namespace
-as regular variables using the :FIELDS import tag.  (Note that this still
-overrides your core functions.)  Access these fields as variables named
-with a preceding C<h_>.  Thus, C<$host_obj-E<gt>name()> corresponds to
-$h_name if you import the fields.  Array references are available as
-regular array variables, so for example C<@{ $host_obj-E<gt>aliases()
-}> would be simply @h_aliases.
+Details of DNSSEC and associated resolver behavior may be found in the
+core DNSSEC RFCs (4033-4035).
 
-The gethost() function is a simple front-end that forwards a numeric
-argument to gethostbyaddr() by way of Socket::inet_aton, and the rest
-to gethostbyname().
+=head1 INTERFACE:
 
-To access this functionality without the core overrides,
-pass the C<use> an empty import list, and then access
-function functions with their full qualified names.
-On the other hand, the built-ins are still available
-via the C<CORE::> pseudo-package.
+Contructor:
 
+To create a validator object use the Net::DNS::SEC::Validator->new()
+method. This method optionally takes a policy label (policy =>
+'label'), or default to using the default label in the libval(3)
+dnsval.conf file.
+
+Data Fields:
+
+$validator->{error}		=> the latest method error code
+$validator->{errorStr}		=> the latest method error string
+$validator->{valStatus}		=> the val_status of last call (if single)
+$validator->{valStatusStr}	=> the val_status string of last call
+
+
+Methods:
+
+$validator->getaddrinfo(<name>[,<service>[,<hints>]])
+   where
+      <name> 	=> is the node name or numeric address being queried
+      <service> => is the name or number represting the service
+		   (note: <name> or <service> may be undef, but not both)
+      <hint>	=> a Net::addrinfo object specying flags, family, etc.
+
+   returns:
+      	an array of Net::addrinfo objects (augmented with a 'val_status'
+	field). On error, returns an empty array. in scalar context
+	returns first Net::addrinfo object, or undef on error.
+                  
+$validator->gethostbyname(<name>[,<family>])
+   where
+      <name> 	=> is the node name or numeric address being queried
+      <family> 	=> the address family of returned entry (default: AF_INET)
+
+   returns:
+      	A Net::hostent object. Validator valStatus/valStatusStr fields
+	will be updated. On error, undef is returned and validator object
+	error/errorStr fields are updated.
+                  
+$validator->res_query(<name>[,<class>[,<type>]])
+   where
+      <name> 	=> is the node name or numeric address being queried
+      <class> 	=> is the DNS class of the record being queried (default: IN)
+      <type>	=> is the DNS record type being queried (defailt A)
+
+   returns:
+	A packed DNS query result is returned on success. This object is
+	suitable to be passed to the Net::DNS::Packet(\$result)
+	interface for parsing. Validator valStatus/valStatusStr fields
+	will be updated. On error, undef is returned and validator
+	object error/errorStr fields are updated.
+
+$validator->policy([<label>])
+   where
+      <label> 	=> the policy label to use (old context is destroyed)
+			(default: ":" dnsval.conf default policy)
+
+   returns:
+      	the policy label currently (after change) being used.
+                  
+$validator->istrusted([<val_status>])
+   where
+      <val_status> => numeric vaildator status code
+		   	(default: $validator->{valStatus})
+
+   returns:
+      	A boolean positive value if <val_status> is a trusted result.
+                  
+$validator->valStatusStr([<val_status>])
+   where
+      <val_status> => numeric vaildator status code
+		   	(default: $validator->{valStatus})
+
+   returns:
+      	A string representation of the given <val_status>.
+                  
+                         
 =head1 EXAMPLES
 
- use Net::addrinfo;
- use Socket;
+use Net::DNS::SEC::Validator;
+use Net::DNS::Packet;
+use Net::hostent;
+use Net::addrinfo;
+use Socket qw(:all);
 
- @ARGV = ('netscape.com') unless @ARGV;
+# construct object
+my $validator = new Net::DNS::SEC::Validator(policy => ":");
 
- for $host ( @ARGV ) {
+# change validation policy
+$validator->policy("validate_tools:");
 
-    unless ($h = gethost($host)) {
-	warn "$0: no such host: $host\n";
-	next;
-    }
+# fetch array of Net::addrinfo objects
+my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+foreach $a (@r) {
+    print $a->stringify, " is trusted\n"
+	if $validator->istrusted($a->val_status));
+}
 
-    printf "\n%s is %s%s\n", 
-	    $host, 
-	    lc($h->name) eq lc($host) ? "" : "*really* ",
-	    $h->name;
+# query an MX record
+my $r = $validator->res_query("marzot.net", "IN", "MX");
+my ($pkt, $err) = new Net::DNS::Packet(\$r);
+print ($validator->istrusted ? 
+	"result is trusted\n" : 
+	"result is NOT trusted\n");
 
-    print "\taliases are ", join(", ", @{$h->aliases}), "\n"
-		if @{$h->aliases};     
+my $h = $validator->gethostbyname("good-A.test.dnssec-tools.org");
+if ( @{$h->addr_list}) { 
+my $i;
+   for $addr ( @{$h->addr_list} ) {
+	printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
+   } 
+}
 
-    if ( @{$h->addr_list} > 1 ) { 
-	my $i;
-	for $addr ( @{$h->addr_list} ) {
-	    printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
-	} 
-    } else {
-	printf "\taddress is [%s]\n", inet_ntoa($h->addr);
-    } 
 
-    if ($h = gethostbyaddr($h->addr)) {
-	if (lc($h->name) ne lc($host)) {
-	    printf "\tThat addr reverses to host %s!\n", $h->name;
-	    $host = $h->name;
-	    redo;
-	} 
-    }
- }
+=head1 COPYRIGHT
 
-=head1 NOTE
+   Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
 
-While this class is currently implemented using the Class::Struct
-module to build a struct-like class, you shouldn't rely upon this.
+   Copyright (c) 2006 SPARTA, Inc.  All Rights Reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
 
 =head1 AUTHOR
 
-G. S. Marzot
+G. S. Marzot (marz@users.sourceforge.net)
