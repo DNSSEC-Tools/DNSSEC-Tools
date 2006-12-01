@@ -9,7 +9,7 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 9; plan tests => $n }
+BEGIN { $n = 12; plan tests => $n }
 
 use Net::addrinfo;
 use Socket;
@@ -20,78 +20,43 @@ my $addrinfo = new Net::addrinfo(flags => AI_CANONNAME, family => AF_INET,
 			     pack_sockaddr_in(53,inet_aton("www.marzot.net")));
 ok(defined($addrinfo));
 
-print STDERR $addrinfo->stringify();
 
-my $aref = getaddrinfo("mail.marzot.net");
-ok(defined($aref) and ref($aref) eq 'ARRAY');
+my (@ainfo_arr) = getaddrinfo("mail.marzot.net");
+ok(@ainfo_arr > 1);
 
-foreach my $ainfo (@$aref) {
-    print STDERR $ainfo->stringify();
-    print STDERR "-----------------------\n";
+foreach my $ainfo (@ainfo_arr) {
+    ok(ref $ainfo eq 'Net::addrinfo');
 }
 
 my $hint = new Net::addrinfo(flags => AI_CANONNAME, protocol => IPPROTO_IP);
 
-$aref = getaddrinfo("mail.marzot.net", undef, $hint);
-ok(defined($aref) and ref($aref) eq 'ARRAY');
-
-foreach my $ainfo (@$aref) {
-    print STDERR $ainfo->stringify();
-    print STDERR "-----------------------\n";
-}
+$ainfo = getaddrinfo("mail.marzot.net", undef, $hint);
+ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 
 $hint = new Net::addrinfo(flags => AI_CANONNAME);
 
-$aref = getaddrinfo("mail.marzot.net", "mail", $hint);
-ok(defined($aref) and ref($aref) eq 'ARRAY');
-
-foreach my $ainfo (@$aref) {
-    print STDERR $ainfo->stringify();
-    print STDERR "-----------------------\n";
-}
+$ainfo = getaddrinfo("mail.marzot.net", "mail", $hint);
+ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 
 $hint = new Net::addrinfo(flags => AI_NUMERICHOST);
 
-$aref = getaddrinfo("127.0.0.1", undef, $hint);
-ok(defined($aref) and ref($aref) eq 'ARRAY');
-
-foreach my $ainfo (@$aref) {
-    print STDERR $ainfo->stringify();
-    print STDERR "-----------------------\n";
-}
+$ainfo = getaddrinfo("127.0.0.1", undef, $hint);
+ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 
 $hint = new Net::addrinfo(flags => AI_CANONNAME);
 
-$aref = getaddrinfo("good-A.test.dnssec-tools.org", "domain", $hint);
-ok(defined($aref) and ref($aref) eq 'ARRAY');
-
-foreach my $ainfo (@$aref) {
-    print STDERR $ainfo->stringify();
-    print STDERR "-----------------------\n";
-}
+$ainfo = getaddrinfo("good-A.test.dnssec-tools.org", "domain", $hint);
+ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 
 $hint = new Net::addrinfo(flags => AI_PASSIVE);
 
-$aref = getaddrinfo(undef, "domain", $hint);
-ok(defined($aref) and ref($aref) eq 'ARRAY');
+$ainfo = getaddrinfo(undef, "domain", $hint);
+ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 
-foreach my $ainfo (@$aref) {
-    print STDERR $ainfo->stringify();
-    print STDERR "-----------------------\n";
-}
-
-$aref = getaddrinfo(undef, "domain");
-ok(defined($aref) and ref($aref) eq 'ARRAY');
-
-foreach my $ainfo (@$aref) {
-    print STDERR $ainfo->stringify();
-    print STDERR "-----------------------\n";
-}
+$ainfo = getaddrinfo(undef, "domain");
+ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 
 $hint = new Net::addrinfo(flags => AI_CANONNAME);
 
-$aref = getaddrinfo(undef, "domain", $hint);
-ok(defined($aref) and not ref($aref));
-
-
-print STDERR "Testing bad flags:$aref:", gai_strerror($aref), ":", IPPROTO_UDP, "\n";
+$ainfo = getaddrinfo(undef, "domain", $hint);
+ok(defined($ainfo) and not ref($ainfo) and $ainfo == EAI_BADFLAGS);

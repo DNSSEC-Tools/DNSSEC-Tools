@@ -65,7 +65,7 @@ static struct addrinfo *ainfo_sv2c(SV *ainfo_ref, struct addrinfo *ainfo_ptr)
     ainfo_ptr->ai_protocol = (SvOK(*protocol_svp) ? SvIV(*protocol_svp) : 0);
     if (SvOK(*addr_svp)) {
       ainfo_ptr->ai_addr = (struct sockaddr *) SvPV(*addr_svp,na); // borrowed
-      ainfo_ptr->ai_addrlen = SvLEN(*addr_svp);
+      ainfo_ptr->ai_addrlen = SvLEN(*addr_svp); // ignore hash field addrlen?
     } else {
       ainfo_ptr->ai_addr = NULL;
       ainfo_ptr->ai_addrlen = 0;
@@ -113,6 +113,8 @@ SV *ainfo_c2sv(struct addrinfo *ainfo_ptr)
     hv_store(ainfo_hv, "addr", strlen("addr"), 
 	     newSVpv((char*)ainfo_ptr->ai_addr, 
 		     ainfo_ptr->ai_addrlen), 0);
+    hv_store(ainfo_hv, "addrlen", strlen("addrlen"), 
+	     newSViv(ainfo_ptr->ai_addrlen), 0);
     hv_store(ainfo_hv, "canonname", strlen("canonname"), 
 	     (ainfo_ptr->ai_canonname ?
 	      newSVpv(ainfo_ptr->ai_canonname, 

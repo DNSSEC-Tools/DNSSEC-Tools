@@ -47,7 +47,7 @@ bootstrap Net::addrinfo;
 
 sub new {
     my $type = shift;
-    my $self = {flags=>0, family=>0, socktype=>0, protocol=>0, 
+    my $self = {flags=>0, family=>0, socktype=>0, protocol=>0, addrlen=>0,
 		addr=>undef, cannonname=>undef};
     my %params = @_;
     @$self{keys %params} = values %params;
@@ -89,6 +89,16 @@ sub protocol {
 	$self->{protocol} = int(shift);
     }
     return $self->{protocol};
+}
+
+sub addrlen {
+    my $self = shift;
+
+    if (@_) {
+	$self->{addrlen} = int(shift);
+    }
+
+    return $self->{addrlen};
 }
 
 sub addr {
@@ -143,7 +153,7 @@ sub stringify {
 		 (($protocol == IPPROTO_TCP) ? "IPPROTO_TCP" :
 		  (($protocol == IPPROTO_IP()) ? "IPPROTO_IP" : "Unknown")));
     $dstr .= "\tai_protocol = $protocol\n";
-    my $addrlen = length($self->addr);
+    my $addrlen = $self->addrlen || length($self->addr);
     $dstr .= "\tai_addrlen = $addrlen\n";
     my $addr;
     if ($self->addr) {
@@ -152,6 +162,7 @@ sub stringify {
 	    $addr = "($port, " . inet_ntoa($iaddr) . ")";
 #	} elsif ($self->family == AF_INET6) {
 #	    
+# XXX needs implementation
 	} else {
 	    $addr = "0x" . unpack("H*",$self->addr);
 	}
@@ -170,10 +181,12 @@ sub stringify {
 
 
 sub getaddrinfo { 
-    my $addrinfo = Net::addrinfo::_getaddrinfo(@_); 
-
-    return $addrinfo;
-} 
+    my $result = Net::addrinfo::_getaddrinfo(@_); 
+    
+    $result = [$result] unless ref $result eq 'ARRAY';
+    
+    return (wantarray ? @$result : shift(@$result)); 
+}
 
 sub gai_strerror {
     my $errstr = Net::addrinfo::_gai_strerror(@_);
@@ -200,69 +213,65 @@ constants, structures and functions.
 
 =head1 DESCRIPTION
 
-This module exports getaddrinfo() and related functions. Where
-appropriate the functions return "Net::addrinfo" objects.  This object
-has methods that return the similarly named structure field name from
-the C's addrinfo structure from F<netdb.h>; namely (flags, family,
-protocol, addrlen, addr, canonname).
+This Perl module is designed to implement and export functionality
+related to the POSIX getaddrinfo(3) system call. The Net::addrinfo
+data object is provided with field name accsessor functions, similarly
+named to the the C data structure definition in F<netdb.h>;. The
+getaddrinfo(3), gai_strerror(3) calls, and related constants are
+exported.
 
-You may also import all the structure fields directly into your namespace
-as regular variables using the :FIELDS import tag.  (Note that this still
-overrides your core functions.)  Access these fields as variables named
-with a preceding C<h_>.  Thus, C<$host_obj-E<gt>name()> corresponds to
-$h_name if you import the fields.  Array references are available as
-regular array variables, so for example C<@{ $host_obj-E<gt>aliases()
-}> would be simply @h_aliases.
+The getaddrinfo() routine mimics the POSIX documented funtion (see
+system man page getaddrinfo(3)). 
 
-The gethost() function is a simple front-end that forwards a numeric
-argument to gethostbyaddr() by way of Socket::inet_aton, and the rest
-to gethostbyname().
+On success the getaddrinfo() function will return an array of
+Net::addrinfo data objects, or a numeric error code.
 
-To access this functionality without the core overrides,
-pass the C<use> an empty import list, and then access
-function functions with their full qualified names.
-On the other hand, the built-ins are still available
-via the C<CORE::> pseudo-package.
+In scalar context getaddrinfo() will return the first element from the
+Net::addrinfo array or the error code: 
+
+The error code may be passed to gai_strerror() to get a string
+representation of the error.
+
+New Net::addrinfo objects may be created with the package constructor
+and any number (or none) of the fields may be specified. 
+
+   flags => scalar integer
+   family => scalar integer (e.g., AF_INET,m AF_INET6, etc.)
+   socktype => scalar integer (e.g., SOCK_DGRAM, SOCK_STREAM, etc.)
+   protocol => scalar integer (e.g., IPPROTO_UDP, IPPROTO_TCP, etc.)
+   addrlen => scalar integer (can be computed by length($self->addr))
+   addr => packed bytes (e.g., $self->addr(inet_aton("192.168.1.1")); )
+
+Flags may be set in the structure so that it may be used as a 'hint'
+parameter to the getaddrinfo() function. See exported @AI_FLAGS for
+list of acceptable constants.
+
+(Note: a special scalar integer field, 'val_status', is provided in
+support of DNSSEC aware addrinfo results (see Net::DNS::SEC::Valaidator))
+
 
 =head1 EXAMPLES
 
  use Net::addrinfo;
  use Socket;
 
- @ARGV = ('netscape.com') unless @ARGV;
+   use Socket qw(:all);
+   my $hint = new Net::addrinfo(flags => AI_CANONNAME,
+                                family => AF_INET, 
+                                socktype => SOCK_DGRAM);
 
- for $host ( @ARGV ) {
+   my (@ainfo) = getaddrinfo("www.marzot.net", "http", $hint);
 
-    unless ($h = gethost($host)) {
-	warn "$0: no such host: $host\n";
-	next;
-    }
-
-    printf "\n%s is %s%s\n", 
-	    $host, 
-	    lc($h->name) eq lc($host) ? "" : "*really* ",
-	    $h->name;
-
-    print "\taliases are ", join(", ", @{$h->aliases}), "\n"
-		if @{$h->aliases};     
-
-    if ( @{$h->addr_list} > 1 ) { 
-	my $i;
-	for $addr ( @{$h->addr_list} ) {
-	    printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
-	} 
-    } else {
-	printf "\taddress is [%s]\n", inet_ntoa($h->addr);
-    } 
-
-    if ($h = gethostbyaddr($h->addr)) {
-	if (lc($h->name) ne lc($host)) {
-	    printf "\tThat addr reverses to host %s!\n", $h->name;
-	    $host = $h->name;
-	    redo;
-	} 
-    }
- }
+   foreach $ainfo (@ainfo) {
+      if (ref $ainfo eq 'Net::addrinfo') {
+	print $ainfo->stringify(), "\n";
+	print "addr = ", inet_ntoa($ainfo->addr), "\n";
+	...
+        connect(SH, $ainfo->addr);
+      } else {
+         print "Error($ainfo):", gai_strerror($ainfo), "\n";
+      }
+   }
 
 =head1 NOTE
 

@@ -15,7 +15,6 @@ constant(sv)
 	SV *		sv;
         const char *	s = SvPV(sv, len);
     PPCODE:
-	fprintf(stderr, "constant:%s\n",s);
         /* Change this to constant(aTHX_ s, len, &iv, &nv);
            if you need to return both NVs and IVs */
 	type = constant(aTHX_ s, len, &iv);
