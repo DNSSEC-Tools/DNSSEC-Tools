@@ -432,10 +432,19 @@ find_nslist_for_query(val_context_t * context,
     struct name_server *ns;
 
     ref_ns_list = NULL;
+    if (next_q->qc_zonecut_n)
+        FREE(next_q->qc_zonecut_n);
+    next_q->qc_zonecut_n = NULL;
 
     ret_val = get_nslist_from_cache(next_q, queries, &ref_ns_list);
     if ((ret_val == VAL_NO_ERROR) && (ref_ns_list != NULL)) {
         next_q->qc_ns_list = ref_ns_list;
+        next_q->qc_zonecut_n = (u_int8_t *) 
+            MALLOC(sizeof(u_int8_t) * wire_name_length(ref_ns_list->ns_name_n));
+        if(next_q->qc_zonecut_n == NULL)
+            return VAL_OUT_OF_MEMORY;
+        memcpy(next_q->qc_zonecut_n, ref_ns_list->ns_name_n,
+                wire_name_length(ref_ns_list->ns_name_n));
     } else if (context->nslist != NULL) {
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
         for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
@@ -454,8 +463,6 @@ find_nslist_for_query(val_context_t * context,
             return VAL_CONF_NOT_FOUND;
         }
         next_q->qc_ns_list = root_ns;
-        if (next_q->qc_zonecut_n)
-            FREE(next_q->qc_zonecut_n);
         next_q->qc_zonecut_n = (u_int8_t *) MALLOC(sizeof(u_int8_t));
         if(next_q->qc_zonecut_n == NULL)
             return VAL_OUT_OF_MEMORY;
@@ -566,7 +573,7 @@ bootstrap_referral(u_int8_t * referral_zone_n,
 static int
 follow_referral_or_alias_link(val_context_t * context,
             int alias_chain,
-            u_int8_t * referral_zone_n,
+            u_int8_t * zone_n,
             struct val_query_chain *matched_q,
             struct rrset_rec **answers,
             struct rrset_rec **learned_zones,
@@ -575,13 +582,15 @@ follow_referral_or_alias_link(val_context_t * context,
     int             ret_val;
     struct name_server *ref_ns_list;
     int             len;
-
+    u_int8_t * referral_zone_n;
+    
     if ((matched_q == NULL) || (answers == NULL) || (qnames == NULL) ||
         (learned_zones == NULL) || (queries == NULL))
         return VAL_BAD_ARGUMENT;
 
     ref_ns_list = NULL;
-
+    referral_zone_n = zone_n;
+    
     if (matched_q->qc_referral == NULL) {
         ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
     }
@@ -614,13 +623,14 @@ follow_referral_or_alias_link(val_context_t * context,
     merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
     *answers = NULL;
 
-    if (alias_chain && !referral_zone_n) {
+    if (alias_chain) {
         /* we don't have a referral for the cname/dname */
         /* find the referral_zone_n and ref_ns_list */
         if (VAL_NO_ERROR != find_nslist_for_query(context, matched_q, queries)) {
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
             goto query_err;
         }
+
         referral_zone_n = matched_q->qc_zonecut_n;
         matched_q->qc_state = Q_INIT;
 
@@ -845,7 +855,10 @@ digest_response(val_context_t * context,
     answer = ntohs(header->ancount);
     authority = ntohs(header->nscount);
     additional = ntohs(header->arcount);
-    nothing_other_than_alias = 1; 
+    if (answer == 0)
+        nothing_other_than_alias = 0;
+    else
+        nothing_other_than_alias = 1; 
 
     /*
      *  Skip question section 
