@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section id="step-rollover-ksk">
+<chapter id="step-rollover-ksk">
     <title>KSK Rollover (Double-Signature Scheme)</title>
 
     <para>This section gives the steps necessary for the double-signature
@@ -378,7 +378,7 @@
             Follow steps ??? -- ??? if the zone does delegation.</para>
         </section>
 
-        <section id="step-rollover-ksk-manual-8">
+        <section id="step-rollover-ksk-manual-9">
             <title>Update the Key-Tags Table with the Latest KSK</title>
 
             <para>Delete the Current KSK and change the status of the new KSK
@@ -503,7 +503,7 @@
                                 <emphasis role="underline">date</emphasis>
                             </entry>
 
-                            <entry morerows="1"><para>P<para></para>C</para></entry>
+                            <entry morerows="1">P C</entry>
 
                             <entry>
                                 <emphasis role="underline">date</emphasis>
@@ -518,7 +518,7 @@
             </table>
         </section>
 
-        <section id="step-rollover-ksk-manual-9">
+        <section id="step-rollover-ksk-manual-10">
             <title>Perform Steps in Section ??? if this Zone is a Secure
             Delegation from Another Zone</title>
 
@@ -527,7 +527,7 @@
             the secure delegation.</para>
         </section>
 
-        <section id="step-rollover-ksk-manual-10">
+        <section id="step-rollover-ksk-manual-11">
             <title>Reload the Zone</title>
 
             <para>The <command>rndc</command> will reload the name server
@@ -545,11 +545,11 @@
             </simplelist>
         </section>
 
-        <section id="step-rollover-ksk-manual-11">
+        <section id="step-rollover-ksk-manual-12">
             <title>Dispose of the Old KSK</title>
 
             <para>Delete the old ZSK's <emphasis>.private</emphasis> and
             <emphasis>.key</emphasis> files.</para>
         </section>
     </section>
-</section>
+</chapter>

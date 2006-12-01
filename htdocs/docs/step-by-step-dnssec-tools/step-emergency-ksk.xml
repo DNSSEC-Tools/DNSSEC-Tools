@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section id="step-emergency-ksk">
+<chapter id="step-emergency-ksk">
     <title>Emergency KSK Rollover (KSK Compromise)</title>
 
     <para>The emergency procedures described for key roll-over use the
@@ -14,7 +14,7 @@
     rollover. However, the utilities may be used to automate
     <emphasis>some</emphasis> of the steps required.</para>
 
-    <section>
+    <section id="step-emergency-ksk-dnssec-tools">
         <title>Emergency Current KSK Rollover Using DNSSEC-Tools</title>
 
         <para>The steps given below detail the steps that must be taken during
@@ -35,9 +35,7 @@
             record. This may be determined by using the <command>dig</command>
             command to retrieve the parent's DS record.</para>
 
-            <para><command># dig @<emphasis
-            role="bold">parent-IP-address</emphasis> DS <emphasis
-            role="bold">zone.name</emphasis></command>
+            <para><command># dig @parent-IP-address DS zone.name</command>
             <userinput>[ENTER]</userinput></para>
 
             <para><computeroutput>...</computeroutput></para>
@@ -273,9 +271,7 @@
             record. This may be determined by using the <command>dig</command>
             command to retrieve the parent's DS record.</para>
 
-            <para><command># dig @<emphasis
-            role="bold">parent-IP-address</emphasis> DS <emphasis
-            role="bold">zone.name</emphasis></command>
+            <para><command># dig @parent-IP-address DS zone.name></command>
             <userinput>[ENTER]</userinput></para>
 
             <para><computeroutput>...</computeroutput></para>
@@ -498,4 +494,4 @@
         </section>
 
     </section>
-</section>
+</chapter>
