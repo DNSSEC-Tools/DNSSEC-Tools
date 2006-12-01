@@ -355,10 +355,10 @@ pval_gethostbyname(self,name,af=AF_INET)
 	{
 	ValContext     *ctx;
 	SV **		ctx_ref;
-	SV **			error_svp;
-        SV **			error_str_svp;
-        SV **			val_status_svp;
-	SV **			val_status_str_svp;
+	SV **		error_svp;
+        SV **		error_str_svp;
+        SV **		val_status_svp;
+	SV **		val_status_str_svp;
 	char	        buf[PVAL_BUFSIZE];
 	struct hostent *result = NULL;
 	struct hostent  hentry;
@@ -434,6 +434,8 @@ pval_res_query(self,dname,class,type)
 
 	res = val_res_query(ctx, dname, class, type, buf, PVAL_BUFSIZE,
                             &val_status);
+
+	// fprintf(stderr,"%p:%s:%d:%d:%d:%d\n",ctx,dname,class,type,res,val_status);
         
 	sv_setiv(*val_status_svp, val_status);
         sv_setpv(*val_status_str_svp, p_val_status(val_status));

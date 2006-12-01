@@ -9,7 +9,7 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 24; plan tests => $n }
+BEGIN { $n = 44; plan tests => $n }
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
@@ -17,23 +17,26 @@ use Net::hostent;
 use Net::addrinfo;
 use Socket qw(:all);
 
-ok(Net::DNS::SEC::Validator::VAL_SUCCESS);
+sub isnum {
+    my $n = shift;
+    return $n =~ /^\d+$/;
+}
 
-ok(Net::DNS::SEC::Validator::VAL_AC_VERIFIED);
+ok(isnum(Net::DNS::SEC::Validator::VAL_SUCCESS));
 
-ok(Net::DNS::SEC::Validator::SR_NOANSWER);
+ok(isnum(Net::DNS::SEC::Validator::VAL_AC_VERIFIED));
 
-ok(Net::DNS::SEC::Validator::SR_NXDOMAIN);
+ok(isnum(Net::DNS::SEC::Validator::SR_DNS_GENERIC_ERROR));
 
-use Net::DNS::SEC::Validator qw( !/VAL_/ !/SR_/ );
+ok(isnum(Net::DNS::SEC::Validator::SR_NXDOMAIN));
 
-ok(VAL_SUCCESS);
+ok(isnum(VAL_SUCCESS));
 
-ok(VAL_AC_VERIFIED);
+ok(isnum(VAL_AC_VERIFIED));
 
-ok(SR_NOANSWER);
+ok(isnum(SR_DNS_GENERIC_ERROR));
 
-ok(SR_NXDOMAIN);
+ok(isnum(SR_NXDOMAIN));
 
 $validator = new Net::DNS::SEC::Validator(policy => ":");
 ok(defined($validator));
@@ -46,7 +49,34 @@ ok($r);
 
 @r = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
 ok(@r);
-ok(ref($r[0]) eq 'Net::addrinfo');
+ok(defined $r[0] and ref($r[0]) eq 'Net::addrinfo');
+# there are 3 of these
+foreach $a (@r) {
+    ok($validator->istrusted($a->val_status));
+}
+
+$r =$validator->getaddrinfo("pastdate-AAAA.pastdate-ns.test.dnssec-tools.org");
+ok(not $validator->istrusted($r->val_status));
+
+$r = $validator->getaddrinfo("nosig-A.futuredate-ns.test.dnssec-tools.org");
+ok(not $validator->istrusted($r->val_status));
+
+$r = $validator->getaddrinfo("pastdate-A.futuredate-ns.test.dnssec-tools.org");
+ok(not $validator->istrusted($r->val_status));
+
+$r = $validator->getaddrinfo("good-A.pastdate-ns.test.dnssec-tools.org");
+ok(not $validator->istrusted($r->val_status));
+
+@r = $validator->getaddrinfo("good-cname-to-good-A.test.dnssec-tools.org");
+ok(@r);
+foreach $a (@r) {
+    ok($validator->istrusted($a->val_status));
+}
+
+@r = $validator->getaddrinfo("good-cname-to-badsign-A.test.dnssec-tools.org");
+ok(@r);
+ok($r[0]->val_status == VAL_BOGUS_PROVABLE);
+
 
 $r = $validator->res_query("good-AAAA.test.dnssec-tools.org", "IN", "AAAA");
 ok($r);
@@ -66,6 +96,13 @@ ok($r);
 ($pkt, $err) = new Net::DNS::Packet(\$r);
 ok(not $err);
 
+$r = $validator->res_query("good-A.test.dnssec-tools.org", "IN", "AAAA");
+ok(not defined $r);
+ok($validator->{error});
+ok($validator->{errorStr});
+ok($validator->{valStatus});
+ok($validator->{valStatusStr});
+
 $r = $validator->gethostbyname("good-A.good-ns.test.dnssec-tools.org");
 ok(ref $r eq 'Net::hostent');
 
@@ -81,6 +118,13 @@ ok(ref $r eq 'Net::hostent');
 $r = $validator->gethostbyname("www.marzot.net");
 ok(ref $r eq 'Net::hostent');
 
+
+# this crashes w/ mail.marzot.net??
+$r = $validator->res_query("marzot.net", "IN", "MX");
+ok($r);
+
+($pkt, $err) = new Net::DNS::Packet(\$r);
+ok(not $err);
 
 
 
