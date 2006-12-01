@@ -161,7 +161,7 @@ sub stringify {
     $dstr .= "\tai_canonname = $canonname\n";
     if (exists $self->{val_status}) {
 	my $val_status = $self->val_status;
-	$dstr .= "\tai_canonname = $val_status\n";
+	$dstr .= "\tai_val_status = $val_status\n";
     }
     $dstr .= "}\n";
     
