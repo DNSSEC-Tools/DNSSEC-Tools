@@ -91,18 +91,19 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
         return VAL_BAD_ARGUMENT;
 
     while (addr_rr) {
-        int i;
+        int             i;
         struct sockaddr_storage **new_addr = NULL;
 
-        CREATE_NSADDR_ARRAY(new_addr, (*ns)->ns_number_of_addresses+1);
+        CREATE_NSADDR_ARRAY(new_addr, (*ns)->ns_number_of_addresses + 1);
         if (new_addr == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
-            
-        for(i=0; i< (*ns)->ns_number_of_addresses; i++) {
-            memcpy(new_addr[i], (*ns)->ns_address[i], sizeof(struct sockaddr_storage)); 
+
+        for (i = 0; i < (*ns)->ns_number_of_addresses; i++) {
+            memcpy(new_addr[i], (*ns)->ns_address[i],
+                   sizeof(struct sockaddr_storage));
         }
-        for(i=0; i<(*ns)->ns_number_of_addresses; i++) {
+        for (i = 0; i < (*ns)->ns_number_of_addresses; i++) {
             FREE((*ns)->ns_address[i]);
         }
         if ((*ns)->ns_address)
@@ -132,7 +133,9 @@ merge_glue_in_referral(struct val_query_chain *pc,
     struct val_query_chain *glueptr;
     struct name_server *pending_ns;
 
-    /* check if we have data to work with */
+    /*
+     * check if we have data to work with 
+     */
     if ((queries == NULL) || (pc == NULL) || (pc->qc_referral == NULL) ||
         (pc->qc_referral->glueptr == NULL))
         return;                 // xxx-check: log message?
@@ -186,7 +189,7 @@ merge_glue_in_referral(struct val_query_chain *pc,
     }
 
     if (((glueptr->qc_state == Q_ANSWERED) && (glueptr->qc_ans == NULL)) ||
-          glueptr->qc_state > Q_ERROR_BASE) {
+        glueptr->qc_state > Q_ERROR_BASE) {
 
         /*
          * look for next ns to send our glue request to 
@@ -422,7 +425,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
 int
 find_nslist_for_query(val_context_t * context,
                       struct val_query_chain *next_q,
-                      struct val_query_chain **queries) 
+                      struct val_query_chain **queries)
 {
     /*
      * See if we can get an answer from a closer NS (from cache) 
@@ -439,12 +442,13 @@ find_nslist_for_query(val_context_t * context,
     ret_val = get_nslist_from_cache(next_q, queries, &ref_ns_list);
     if ((ret_val == VAL_NO_ERROR) && (ref_ns_list != NULL)) {
         next_q->qc_ns_list = ref_ns_list;
-        next_q->qc_zonecut_n = (u_int8_t *) 
-            MALLOC(sizeof(u_int8_t) * wire_name_length(ref_ns_list->ns_name_n));
-        if(next_q->qc_zonecut_n == NULL)
+        next_q->qc_zonecut_n = (u_int8_t *)
+            MALLOC(sizeof(u_int8_t) *
+                   wire_name_length(ref_ns_list->ns_name_n));
+        if (next_q->qc_zonecut_n == NULL)
             return VAL_OUT_OF_MEMORY;
         memcpy(next_q->qc_zonecut_n, ref_ns_list->ns_name_n,
-                wire_name_length(ref_ns_list->ns_name_n));
+               wire_name_length(ref_ns_list->ns_name_n));
     } else if (context->nslist != NULL) {
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
         for (ns = next_q->qc_ns_list; ns; ns = ns->ns_next)
@@ -464,9 +468,9 @@ find_nslist_for_query(val_context_t * context,
         }
         next_q->qc_ns_list = root_ns;
         next_q->qc_zonecut_n = (u_int8_t *) MALLOC(sizeof(u_int8_t));
-        if(next_q->qc_zonecut_n == NULL)
+        if (next_q->qc_zonecut_n == NULL)
             return VAL_OUT_OF_MEMORY;
-        *(next_q->qc_zonecut_n) = (u_int8_t)'\0';
+        *(next_q->qc_zonecut_n) = (u_int8_t) '\0';
     }
     return VAL_NO_ERROR;
 }
@@ -572,25 +576,26 @@ bootstrap_referral(u_int8_t * referral_zone_n,
 
 static int
 follow_referral_or_alias_link(val_context_t * context,
-            int alias_chain,
-            u_int8_t * zone_n,
-            struct val_query_chain *matched_q,
-            struct rrset_rec **answers,
-            struct rrset_rec **learned_zones,
-            struct qname_chain **qnames, struct val_query_chain **queries)
+                              int alias_chain,
+                              u_int8_t * zone_n,
+                              struct val_query_chain *matched_q,
+                              struct rrset_rec **answers,
+                              struct rrset_rec **learned_zones,
+                              struct qname_chain **qnames,
+                              struct val_query_chain **queries)
 {
     int             ret_val;
     struct name_server *ref_ns_list;
     int             len;
-    u_int8_t * referral_zone_n;
-    
+    u_int8_t       *referral_zone_n;
+
     if ((matched_q == NULL) || (answers == NULL) || (qnames == NULL) ||
         (learned_zones == NULL) || (queries == NULL))
         return VAL_BAD_ARGUMENT;
 
     ref_ns_list = NULL;
     referral_zone_n = zone_n;
-    
+
     if (matched_q->qc_referral == NULL) {
         ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
     }
@@ -601,12 +606,16 @@ follow_referral_or_alias_link(val_context_t * context,
     if (*qnames) {
 
         if (namecmp(matched_q->qc_name_n, (*qnames)->qnc_name_n))
-            /* Keep the current query name as the last name in the chain */
-            memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n, 
-                wire_name_length((*qnames)->qnc_name_n));
+            /*
+             * Keep the current query name as the last name in the chain 
+             */
+            memcpy(matched_q->qc_name_n, (*qnames)->qnc_name_n,
+                   wire_name_length((*qnames)->qnc_name_n));
     }
 
-    /* Consume qnames */
+    /*
+     * Consume qnames 
+     */
     if (matched_q->qc_referral->qnames == NULL)
         matched_q->qc_referral->qnames = *qnames;
     else if (*qnames) {
@@ -617,16 +626,21 @@ follow_referral_or_alias_link(val_context_t * context,
     }
     *qnames = NULL;
 
-    /* 
+    /*
      * Consume answers 
      */
     merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
     *answers = NULL;
 
     if (alias_chain) {
-        /* we don't have a referral for the cname/dname */
-        /* find the referral_zone_n and ref_ns_list */
-        if (VAL_NO_ERROR != find_nslist_for_query(context, matched_q, queries)) {
+        /*
+         * we don't have a referral for the cname/dname 
+         */
+        /*
+         * find the referral_zone_n and ref_ns_list 
+         */
+        if (VAL_NO_ERROR !=
+            find_nslist_for_query(context, matched_q, queries)) {
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
             goto query_err;
         }
@@ -634,12 +648,12 @@ follow_referral_or_alias_link(val_context_t * context,
         referral_zone_n = matched_q->qc_zonecut_n;
         matched_q->qc_state = Q_INIT;
 
-    } else { 
+    } else {
 
-        /* 
+        /*
          *  If we received a referral for the root, use our 
          *  pre-parsed root.hints information 
-         */  
+         */
         if (!namecmp(referral_zone_n, "\0")) {
             struct name_server *root_ns = NULL;
             get_root_ns(&root_ns);
@@ -652,16 +666,18 @@ follow_referral_or_alias_link(val_context_t * context,
             }
             ref_ns_list = root_ns;
             matched_q->qc_state = Q_INIT;
-            /* forget about learned zones */
+            /*
+             * forget about learned zones 
+             */
             res_sq_free_rrset_recs(learned_zones);
             *learned_zones = NULL;
         } else {
-            if (VAL_NO_ERROR != (ret_val = 
-                    bootstrap_referral(referral_zone_n,
-                                       learned_zones,
-                                       matched_q,
-                                       queries,
-                                       &ref_ns_list)))
+            if (VAL_NO_ERROR != (ret_val =
+                                 bootstrap_referral(referral_zone_n,
+                                                    learned_zones,
+                                                    matched_q,
+                                                    queries,
+                                                    &ref_ns_list)))
                 return ret_val;
         }
     }
@@ -683,8 +699,8 @@ follow_referral_or_alias_link(val_context_t * context,
      * Register the request name and zone with our referral monitor
      */
     if (register_query
-        (&matched_q->qc_referral->queries, matched_q->qc_name_n, 
-        matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
+        (&matched_q->qc_referral->queries, matched_q->qc_name_n,
+         matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
         /*
          * If this request has already been made then Referral Error
          */
@@ -692,8 +708,8 @@ follow_referral_or_alias_link(val_context_t * context,
         goto query_err;
     }
 
-    
-query_err:
+
+  query_err:
     if (matched_q->qc_respondent_server) {
         free_name_server(&matched_q->qc_respondent_server);
         matched_q->qc_respondent_server = NULL;
@@ -824,13 +840,13 @@ digest_response(val_context_t * context,
     int             qnamelen, tot;
     struct name_server *ns = NULL;
     u_int8_t        temp_name[NS_MAXCDNAME];
-    u_int8_t        *p;
+    u_int8_t       *p;
 
     struct rrset_rec **proofs;
     struct rrset_rec **answers;
     struct qname_chain **qnames;
 
-    int zonecut_was_modified = 0;
+    int             zonecut_was_modified = 0;
 
     if ((matched_q == NULL) ||
         (queries == NULL) ||
@@ -858,7 +874,7 @@ digest_response(val_context_t * context,
     if (answer == 0)
         nothing_other_than_alias = 0;
     else
-        nothing_other_than_alias = 1; 
+        nothing_other_than_alias = 1;
 
     /*
      *  Skip question section 
@@ -870,9 +886,9 @@ digest_response(val_context_t * context,
         qnamelen = wire_name_length(&response_data[sizeof(HEADER)]);
         tot = sizeof(HEADER) + qnamelen + sizeof(u_int32_t);
         if (tot <= response_length) {
-            hptr = response_data;	
+            hptr = response_data;
             response_index = tot;
-        } else 
+        } else
             response_index = 0;
     }
 
@@ -927,7 +943,8 @@ digest_response(val_context_t * context,
         if ((ret_val =
              extract_from_rr(response_data, &response_index, end, name_n,
                              &type_h, &set_type_h, &class_h, &ttl_h,
-                             &rdata_len_h, &rdata_index)) != VAL_NO_ERROR) {
+                             &rdata_len_h,
+                             &rdata_index)) != VAL_NO_ERROR) {
             goto done;
         }
 
@@ -942,41 +959,46 @@ digest_response(val_context_t * context,
         if ((ret_val =
              decompress(&rdata, response_data, rdata_index, end, type_h,
                         &rdata_len_h)) != VAL_NO_ERROR) {
-            goto done; 
+            goto done;
         }
 
-        /* 
+        /*
          * Check if the only RRsets in the answer section are CNAMEs/DNAMEs
          */
         if (nothing_other_than_alias && (i < answer)) {
-            nothing_other_than_alias = 
-                ((set_type_h == ns_t_cname) || 
-                 (set_type_h == ns_t_dname));
-            /* check if we had explicitly asked for this alias */
+            nothing_other_than_alias =
+                ((set_type_h == ns_t_cname) || (set_type_h == ns_t_dname));
+            /*
+             * check if we had explicitly asked for this alias 
+             */
             if (nothing_other_than_alias) {
-                if ((((query_type_h == ns_t_cname) && (set_type_h == ns_t_cname)) ||
-                     ((query_type_h == ns_t_dname) && (set_type_h == ns_t_dname)) ||
-                     (query_type_h == ns_t_any) || 
-                     (query_type_h == ns_t_rrsig)) && 
-                    (!namecmp(name_n, (*qnames)->qnc_name_n))) 
-                        nothing_other_than_alias = 0;
+                if ((((query_type_h == ns_t_cname)
+                      && (set_type_h == ns_t_cname))
+                     || ((query_type_h == ns_t_dname)
+                         && (set_type_h == ns_t_dname))
+                     || (query_type_h == ns_t_any)
+                     || (query_type_h == ns_t_rrsig))
+                    && (!namecmp(name_n, (*qnames)->qnc_name_n)))
+                    nothing_other_than_alias = 0;
             }
         }
 
         auth_nack = (from_section == VAL_FROM_AUTHORITY)
-                    && ((set_type_h == ns_t_nsec)
+            && ((set_type_h == ns_t_nsec)
 #ifdef LIBVAL_NSEC3
-                        || (set_type_h == ns_t_nsec3)
+                || (set_type_h == ns_t_nsec3)
 #endif
-                        || (set_type_h == ns_t_soa));
+                || (set_type_h == ns_t_soa));
 
-        
-        /* if you have a proof of non-existence then don't fetch canonical names */
+
+        /*
+         * if you have a proof of non-existence then don't fetch canonical names 
+         */
         if (auth_nack)
             nothing_other_than_alias = 0;
 
         if (set_type_h == ns_t_soa) {
-            /* 
+            /*
              * If there is an SOA RRset, use its owner name as the zone-cut 
              */
             if (zonecut_was_modified) {
@@ -984,87 +1006,109 @@ digest_response(val_context_t * context,
                     /*
                      * Multiple NS records;
                      */
-                    matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                    matched_q->qc_state =
+                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                     ret_val = VAL_NO_ERROR;
                     goto done;
                 }
             } else {
                 zonecut_was_modified = 1;
                 rrs_zonecut_n = name_n;
-                /* 
+                /*
                  * go back to all the rrsets that we created 
                  * and fix the zonecut info 
                  */
-                FIX_ZONECUT(*answers, rrs_zonecut_n, ret_val); 
-                if (ret_val != VAL_NO_ERROR) goto done;
+                FIX_ZONECUT(*answers, rrs_zonecut_n, ret_val);
+                if (ret_val != VAL_NO_ERROR)
+                    goto done;
                 FIX_ZONECUT(*proofs, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR) goto done;
+                if (ret_val != VAL_NO_ERROR)
+                    goto done;
                 FIX_ZONECUT(learned_zones, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR) goto done;
+                if (ret_val != VAL_NO_ERROR)
+                    goto done;
                 FIX_ZONECUT(learned_keys, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR) goto done;
+                if (ret_val != VAL_NO_ERROR)
+                    goto done;
                 FIX_ZONECUT(learned_ds, rrs_zonecut_n, ret_val);
-                if (ret_val != VAL_NO_ERROR) goto done;
+                if (ret_val != VAL_NO_ERROR)
+                    goto done;
             }
         }
 
-        proof_seen = (proof_seen)? 1 : auth_nack; /* save the auth_nack status */
-        
+        proof_seen = (proof_seen) ? 1 : auth_nack;      /* save the auth_nack status */
+
         if (from_section == VAL_FROM_ANSWER) {
 
-           if (type_h == ns_t_cname &&
+            if (type_h == ns_t_cname &&
                 query_type_h != ns_t_cname &&
                 query_type_h != ns_t_any &&
                 namecmp((*qnames)->qnc_name_n, name_n) == 0) {
-               
-                /* add the target */
-                if ((ret_val = add_to_qname_chain(qnames, rdata)) != VAL_NO_ERROR)
+
+                /*
+                 * add the target 
+                 */
+                if ((ret_val =
+                     add_to_qname_chain(qnames, rdata)) != VAL_NO_ERROR)
                     goto done;
-                if (register_query(&matched_q->qc_referral->queries, 
-                          rdata, 
-                          matched_q->qc_type_h, 
-                          matched_q->qc_zonecut_n) == ITS_BEEN_DONE) {
+                if (register_query(&matched_q->qc_referral->queries,
+                                   rdata,
+                                   matched_q->qc_type_h,
+                                   matched_q->qc_zonecut_n) ==
+                    ITS_BEEN_DONE) {
                     /*
                      * If this request has already been made then Referral Error
                      */
                     matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
                     goto done;
                 }
-           }
+            }
 
             if (type_h == ns_t_dname &&
                 query_type_h != ns_t_dname &&
-                (query_type_h != ns_t_any || 
+                (query_type_h != ns_t_any ||
                  namecmp((*qnames)->qnc_name_n, name_n) != 0) &&
-                NULL != (p = (u_int8_t *)strstr((*qnames)->qnc_name_n, name_n))) {
+                NULL != (p =
+                         (u_int8_t *) strstr((*qnames)->qnc_name_n,
+                                             name_n))) {
 
-                u_int8_t *qname_n = (*qnames)->qnc_name_n; 
-                int len1 = p - qname_n; 
-                int len2 = wire_name_length(rdata);
+                u_int8_t       *qname_n = (*qnames)->qnc_name_n;
+                int             len1 = p - qname_n;
+                int             len2 = wire_name_length(rdata);
                 if (len1 + len2 > sizeof(temp_name)) {
                     matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
                     ret_val = VAL_NO_ERROR;
                     goto done;
-                } 
+                }
                 if (len1 > 0) {
-                    /* add the DNAME owner name */
-                    if ((ret_val = add_to_qname_chain(qnames, name_n)) != VAL_NO_ERROR) 
+                    /*
+                     * add the DNAME owner name 
+                     */
+                    if ((ret_val =
+                         add_to_qname_chain(qnames,
+                                            name_n)) != VAL_NO_ERROR)
                         goto done;
-                    if (register_query(&matched_q->qc_referral->queries, 
-                                      name_n, 
-                                      matched_q->qc_type_h, 
-                                      matched_q->qc_zonecut_n) == ITS_BEEN_DONE) {
+                    if (register_query(&matched_q->qc_referral->queries,
+                                       name_n,
+                                       matched_q->qc_type_h,
+                                       matched_q->qc_zonecut_n) ==
+                        ITS_BEEN_DONE) {
                         /*
                          * If this request has already been made then Referral Error
                          */
-                        matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                        matched_q->qc_state =
+                            Q_ERROR_BASE + SR_REFERRAL_ERROR;
                         goto done;
                     }
                 }
-                /* add the target */
+                /*
+                 * add the target 
+                 */
                 memcpy(temp_name, qname_n, len1);
                 memcpy(&temp_name[len1], rdata, len2);
-                if ((ret_val = add_to_qname_chain(qnames, temp_name)) != VAL_NO_ERROR) {
+                if ((ret_val =
+                     add_to_qname_chain(qnames,
+                                        temp_name)) != VAL_NO_ERROR) {
                     goto done;
                 }
             }
@@ -1072,21 +1116,22 @@ digest_response(val_context_t * context,
 
         if (from_section == VAL_FROM_ANSWER) {
             SAVE_RR_TO_LIST(respondent_server, answers, name_n, type_h,
-                            set_type_h, class_h, ttl_h, hptr, rdata, 
-                            rdata_len_h, from_section, authoritive, 
+                            set_type_h, class_h, ttl_h, hptr, rdata,
+                            rdata_len_h, from_section, authoritive,
                             rrs_zonecut_n);
         } else if (auth_nack) {
             SAVE_RR_TO_LIST(respondent_server, proofs, name_n, type_h,
-                            set_type_h, class_h, ttl_h, hptr, rdata, 
-                            rdata_len_h, from_section, authoritive, 
+                            set_type_h, class_h, ttl_h, hptr, rdata,
+                            rdata_len_h, from_section, authoritive,
                             rrs_zonecut_n);
-        } 
-        
-        if ((set_type_h == ns_t_ns) || 
-            ((set_type_h == ns_t_a) && (from_section == VAL_FROM_ADDITIONAL))) {
+        }
+
+        if ((set_type_h == ns_t_ns) ||
+            ((set_type_h == ns_t_a)
+             && (from_section == VAL_FROM_ADDITIONAL))) {
 
             if (set_type_h == ns_t_ns) {
-                if (((answer == 0) || (nothing_other_than_alias)) && 
+                if (((answer == 0) || (nothing_other_than_alias)) &&
                     (!proof_seen) &&
                     (from_section == VAL_FROM_AUTHORITY)) {
 
@@ -1094,19 +1139,21 @@ digest_response(val_context_t * context,
                      * This is a referral 
                      */
                     if (referral_seen == FALSE) {
-                        memcpy(referral_zone_n, name_n, wire_name_length(name_n));
+                        memcpy(referral_zone_n, name_n,
+                               wire_name_length(name_n));
                         referral_seen = TRUE;
                     } else if (namecmp(referral_zone_n, name_n) != 0) {
                         /*
                          * Multiple NS records; Malformed referral notice 
                          */
-                        matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                        matched_q->qc_state =
+                            Q_ERROR_BASE + SR_REFERRAL_ERROR;
                         ret_val = VAL_NO_ERROR;
                         goto done;
                     }
-                } else if ((answer != 0) || 
+                } else if ((answer != 0) ||
                            (proof_seen && !nothing_other_than_alias)) {
-                    /* 
+                    /*
                      * If there is an NS RRset, use its owner name as the zone-cut 
                      */
                     if (zonecut_was_modified) {
@@ -1114,27 +1161,33 @@ digest_response(val_context_t * context,
                             /*
                              * Multiple NS records;
                              */
-                            matched_q->qc_state = Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                            matched_q->qc_state =
+                                Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                             ret_val = VAL_NO_ERROR;
                             goto done;
                         }
                     } else {
                         zonecut_was_modified = 1;
                         rrs_zonecut_n = name_n;
-                        /* 
+                        /*
                          * go back to all the rrsets that we created 
                          * and fix the zonecut info 
                          */
-                        FIX_ZONECUT(*answers, rrs_zonecut_n, ret_val); 
-                        if (ret_val != VAL_NO_ERROR) goto done;
+                        FIX_ZONECUT(*answers, rrs_zonecut_n, ret_val);
+                        if (ret_val != VAL_NO_ERROR)
+                            goto done;
                         FIX_ZONECUT(*proofs, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR) goto done;
+                        if (ret_val != VAL_NO_ERROR)
+                            goto done;
                         FIX_ZONECUT(learned_zones, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR) goto done;
+                        if (ret_val != VAL_NO_ERROR)
+                            goto done;
                         FIX_ZONECUT(learned_keys, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR) goto done;
+                        if (ret_val != VAL_NO_ERROR)
+                            goto done;
                         FIX_ZONECUT(learned_ds, rrs_zonecut_n, ret_val);
-                        if (ret_val != VAL_NO_ERROR) goto done;
+                        if (ret_val != VAL_NO_ERROR)
+                            goto done;
                     }
                 }
             }
@@ -1143,36 +1196,38 @@ digest_response(val_context_t * context,
              */
             SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
                             type_h, set_type_h, class_h, ttl_h, hptr,
-                            rdata, rdata_len_h, from_section, 
+                            rdata, rdata_len_h, from_section,
                             authoritive, rrs_zonecut_n);
         }
 
         if (set_type_h == ns_t_dnskey) {
             SAVE_RR_TO_LIST(respondent_server, &learned_keys, name_n,
-                            type_h, set_type_h, class_h, ttl_h, hptr, 
-                            rdata, rdata_len_h, from_section, 
+                            type_h, set_type_h, class_h, ttl_h, hptr,
+                            rdata, rdata_len_h, from_section,
                             authoritive, rrs_zonecut_n);
         } else if (set_type_h == ns_t_ds) {
             SAVE_RR_TO_LIST(respondent_server, &learned_ds, name_n, type_h,
-                            set_type_h, class_h, ttl_h, hptr, rdata, 
-                            rdata_len_h, from_section, authoritive, 
+                            set_type_h, class_h, ttl_h, hptr, rdata,
+                            rdata_len_h, from_section, authoritive,
                             rrs_zonecut_n);
-        } 
-            
+        }
+
         FREE(rdata);
         rdata = NULL;
     }
 
     if (referral_seen || nothing_other_than_alias) {
-        ret_val = follow_referral_or_alias_link(
-                              context, nothing_other_than_alias, 
-                              referral_zone_n, matched_q,
-                              answers, &learned_zones, qnames, queries);
+        ret_val =
+            follow_referral_or_alias_link(context,
+                                          nothing_other_than_alias,
+                                          referral_zone_n, matched_q,
+                                          answers, &learned_zones, qnames,
+                                          queries);
         /*
          * stow zones only if we actually followed referrals 
          */
         if (VAL_NO_ERROR != (ret_val = stow_zone_info(learned_zones))) {
-            goto done; 
+            goto done;
         }
         learned_zones = NULL;
     }
@@ -1188,24 +1243,27 @@ digest_response(val_context_t * context,
          * authoritative for the parent zone as well as the 
          * child zone, or if one of the name servers reached while 
          * following referrals is also recursive
-         */ 
-        if ((VAL_AC_WAIT_FOR_TRUST == is_trusted_zone(context, matched_q->qc_name_n)) &&
-            matched_q->qc_respondent_server && 
-            !(matched_q->qc_flags & VAL_FLAGS_DONT_VALIDATE) &&
-            !(matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) { 
+         */
+        if ((VAL_AC_WAIT_FOR_TRUST ==
+             is_trusted_zone(context, matched_q->qc_name_n))
+            && matched_q->qc_respondent_server
+            && !(matched_q->qc_flags & VAL_FLAGS_DONT_VALIDATE)
+            && !(matched_q->qc_respondent_server->
+                 ns_options & RES_USE_DNSSEC)) {
 
             free_name_server(&matched_q->qc_respondent_server);
             matched_q->qc_respondent_server = NULL;
-            matched_q->qc_trans_id = -1; 
-            matched_q->qc_state = Q_INIT; 
-            val_log(context, LOG_DEBUG, "EDNS0 was not used but it should have been");
+            matched_q->qc_trans_id = -1;
+            matched_q->qc_state = Q_INIT;
+            val_log(context, LOG_DEBUG,
+                    "EDNS0 was not used but it should have been");
             val_log(context, LOG_DEBUG, "Setting D0 bit and using EDNS0");
             for (ns = matched_q->qc_ns_list; ns; ns = ns->ns_next)
-                ns->ns_options |= RES_USE_DNSSEC; 
+                ns->ns_options |= RES_USE_DNSSEC;
             ret_val = VAL_NO_ERROR;
             goto done;
         }
-        
+
         if (matched_q->qc_referral != NULL) {
 
             /*
@@ -1213,7 +1271,7 @@ digest_response(val_context_t * context,
              */
             merge_rrset_recs(answers, matched_q->qc_referral->answers);
             matched_q->qc_referral->answers = NULL;
-            
+
             /*
              * Consume qnames
              */
@@ -1231,13 +1289,13 @@ digest_response(val_context_t * context,
              */
             free_referral_members(matched_q->qc_referral);
         } else {
-            /* 
+            /*
              * Store knowledge of NS from where this data was
              * received
              */
-            if (VAL_NO_ERROR != (ret_val = 
-                        store_ns_for_zone(matched_q->qc_zonecut_n, 
-                                          respondent_server))) {
+            if (VAL_NO_ERROR != (ret_val =
+                                 store_ns_for_zone(matched_q->qc_zonecut_n,
+                                                   respondent_server))) {
                 goto done;
             }
         }
@@ -1258,16 +1316,16 @@ digest_response(val_context_t * context,
     }
 
     if (VAL_NO_ERROR != (ret_val = stow_key_info(learned_keys))) {
-        goto done; 
+        goto done;
     }
 
     if (VAL_NO_ERROR != (ret_val = stow_ds_info(learned_ds))) {
-        goto done; 
+        goto done;
     }
 
     return ret_val;
 
-done:
+  done:
     if (rdata)
         FREE(rdata);
     res_sq_free_rrset_recs(&learned_zones);
@@ -1397,8 +1455,8 @@ val_resquery_rcv(val_context_t * context,
     if (matched_q->qc_state > Q_ERROR_BASE)
         (*response)->di_res_error = matched_q->qc_state;
     else
-        (*response)->di_res_error = SR_UNSET;  
-        
+        (*response)->di_res_error = SR_UNSET;
+
 
     FREE(response_data);
     /*
@@ -1416,16 +1474,16 @@ val_resquery_rcv(val_context_t * context,
  * find the zonecut for this name and type 
  */
 int
-find_next_zonecut(val_context_t *ctx, struct rrset_rec *rrset,
+find_next_zonecut(val_context_t * ctx, struct rrset_rec *rrset,
                   u_int8_t * curzone_n, u_int8_t ** name_n)
 {
     u_int8_t       *qname;
     int             retval;
     struct val_result_chain *results;
-    val_context_t *context = NULL;
-    int            len;
+    val_context_t  *context = NULL;
+    int             len;
     struct val_rrset *soa_rrset = NULL;
-    
+
     if (name_n == NULL)
         return VAL_BAD_ARGUMENT;
 
@@ -1445,7 +1503,9 @@ find_next_zonecut(val_context_t *ctx, struct rrset_rec *rrset,
             memcpy(*name_n, rrset->rrs.val_rrset_name_n, len);
             return VAL_NO_ERROR;
         } else if (rrset->rrs.val_rrset_sig != NULL) {
-            /* the signer name is the zone cut */
+            /*
+             * the signer name is the zone cut 
+             */
             u_int8_t       *signby_name_n;
             signby_name_n = &rrset->rrs.val_rrset_sig->rr_rdata[SIGNBY];
             int             len = wire_name_length(signby_name_n);
@@ -1458,17 +1518,18 @@ find_next_zonecut(val_context_t *ctx, struct rrset_rec *rrset,
 
         if (rrset->rrs_zonecut_n != NULL) {
             if ((rrset->rrs.val_rrset_type_h == ns_t_ds) &&
-                (!namecmp(rrset->rrs_zonecut_n, 
+                (!namecmp(rrset->rrs_zonecut_n,
                           rrset->rrs.val_rrset_name_n))) {
-                /* 
+                /*
                  * for the DS, zonecut cannot be the same as the qname
                  * Obviously some name server returned something bad
-                 */  
+                 */
                 FREE(rrset->rrs_zonecut_n);
                 rrset->rrs_zonecut_n = NULL;
                 STRIP_LABEL(rrset->rrs.val_rrset_name_n, qname);
-            } else { 
-                int             len = wire_name_length(rrset->rrs_zonecut_n);
+            } else {
+                int             len =
+                    wire_name_length(rrset->rrs_zonecut_n);
                 *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
                 if (*name_n == NULL)
                     return VAL_OUT_OF_MEMORY;
@@ -1505,25 +1566,26 @@ find_next_zonecut(val_context_t *ctx, struct rrset_rec *rrset,
 
         struct val_result_chain *res;
         for (res = results; res; res = res->val_rc_next) {
-            int i;
-            if((res->val_rc_answer == NULL) || (res->val_rc_answer->val_ac_rrset == NULL)) {
+            int             i;
+            if ((res->val_rc_answer == NULL)
+                || (res->val_rc_answer->val_ac_rrset == NULL)) {
                 if (res->val_rc_proof_count == 0)
                     continue;
-                for (i=0; i< res->val_rc_proof_count; i++) { 
-                    if (res->val_rc_proofs[i]->val_ac_rrset->val_rrset_type_h == ns_t_soa) {
+                for (i = 0; i < res->val_rc_proof_count; i++) {
+                    if (res->val_rc_proofs[i]->val_ac_rrset->
+                        val_rrset_type_h == ns_t_soa) {
                         break;
                     }
                 }
                 if (i == res->val_rc_proof_count)
                     continue;
-                soa_rrset = res->val_rc_proofs[i]->val_ac_rrset; 
+                soa_rrset = res->val_rc_proofs[i]->val_ac_rrset;
+            } else if (res->val_rc_answer->val_ac_rrset->
+                       val_rrset_type_h == ns_t_soa) {
+                soa_rrset = res->val_rc_answer->val_ac_rrset;
             }
-            else if (res->val_rc_answer->val_ac_rrset->val_rrset_type_h ==
-                ns_t_soa) {
-                soa_rrset = res->val_rc_answer->val_ac_rrset; 
-            }
-           
-            if (soa_rrset) { 
+
+            if (soa_rrset) {
                 /*
                  * Store zonecut information in the rrset 
                  */
@@ -1546,6 +1608,6 @@ find_next_zonecut(val_context_t *ctx, struct rrset_rec *rrset,
 
     if ((ctx == NULL) && context)
         val_free_context(context);
-    
+
     return retval;
 }

@@ -83,15 +83,16 @@ get_rr_string(struct rr_rec *rr, char *buf, int buflen)
 }
 
 void
-val_log_val_rrset_pfx(const val_context_t * ctx, int level, const char *pfx,
-                      struct val_rrset *val_rrset)
+val_log_val_rrset_pfx(const val_context_t * ctx, int level,
+                      const char *pfx, struct val_rrset *val_rrset)
 {
     char            buf1[2049], buf2[2049];
     char            name_p[NS_MAXDNAME];
 
-    if (ns_name_ntop(val_rrset->val_rrset_name_n, name_p, sizeof(name_p)) == -1)
+    if (ns_name_ntop(val_rrset->val_rrset_name_n, name_p, sizeof(name_p))
+        == -1)
         snprintf(name_p, sizeof(name_p), "ERROR");
-    val_log(ctx, level,"%srrs->val_rrset_name=%s rrs->val_rrset_type=%s "
+    val_log(ctx, level, "%srrs->val_rrset_name=%s rrs->val_rrset_type=%s "
             "rrs->val_rrset_class=%s rrs->val_rrset_ttl=%d "
             "rrs->val_rrset_section=%s\nrrs->val_rrset_data=%s\n"
             "rrs->val_rrset_sig=%s", pfx ? pfx : "", name_p,
@@ -104,7 +105,8 @@ val_log_val_rrset_pfx(const val_context_t * ctx, int level, const char *pfx,
 }
 
 void
-val_log_rrset(const val_context_t * ctx, int level, struct rrset_rec *rrset)
+val_log_rrset(const val_context_t * ctx, int level,
+              struct rrset_rec *rrset)
 {
     while (rrset) {
 
@@ -153,8 +155,8 @@ get_algorithm_string(u_int8_t algo)
 }
 
 void
-val_log_rrsig_rdata(const val_context_t * ctx, int level, const char *prefix,
-                    val_rrsig_rdata_t * rdata)
+val_log_rrsig_rdata(const val_context_t * ctx, int level,
+                    const char *prefix, val_rrsig_rdata_t * rdata)
 {
     char            ctime_buf1[1028], ctime_buf2[1028];
     char            buf[1028];
@@ -170,8 +172,10 @@ val_log_rrsig_rdata(const val_context_t * ctx, int level, const char *prefix,
                 ctime_r((const time_t *) (&(rdata->sig_expr)), ctime_buf1),
                 ctime_r((const time_t *) (&(rdata->sig_incp)), ctime_buf2),
 #else
-                ctime_r((const time_t *) (&(rdata->sig_expr)), ctime_buf1, sizeof(ctime_buf1)),
-                ctime_r((const time_t *) (&(rdata->sig_incp)), ctime_buf2, sizeof(ctime_buf2)),
+                ctime_r((const time_t *) (&(rdata->sig_expr)), ctime_buf1,
+                        sizeof(ctime_buf1)),
+                ctime_r((const time_t *) (&(rdata->sig_incp)), ctime_buf2,
+                        sizeof(ctime_buf2)),
 #endif
                 rdata->key_tag, rdata->key_tag, rdata->signer_name,
                 get_base64_string(rdata->signature, rdata->signature_len,
@@ -202,23 +206,23 @@ get_ns_string(struct sockaddr *serv)
 {
     struct sockaddr_in *sin;
     struct sockaddr_storage *server;
-    
-    if (serv == NULL) 
+
+    if (serv == NULL)
         return NULL;
 
     server = (struct sockaddr_storage *) serv;
-    
+
     switch (server->ss_family) {
-      case AF_INET:
-            sin = (struct sockaddr_in *)server;
-            return inet_ntoa(sin->sin_addr);
+    case AF_INET:
+        sin = (struct sockaddr_in *) server;
+        return inet_ntoa(sin->sin_addr);
     }
     return NULL;
 }
 
 void
 val_log_assertion_pfx(const val_context_t * ctx, int level,
-                      const char* prefix, const u_char * name_n,
+                      const char *prefix, const u_char * name_n,
                       struct val_authentication_chain *next_as)
 {
     char            name[NS_MAXDNAME];
@@ -227,13 +231,13 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
 
     if (next_as == NULL)
         return;
-    
-    u_int16_t class_h = next_as->val_ac_rrset->val_rrset_class_h;
-    u_int16_t type_h = next_as->val_ac_rrset->val_rrset_type_h; 
-    struct rr_rec *data = next_as->val_ac_rrset->val_rrset_data;
+
+    u_int16_t       class_h = next_as->val_ac_rrset->val_rrset_class_h;
+    u_int16_t       type_h = next_as->val_ac_rrset->val_rrset_type_h;
+    struct rr_rec  *data = next_as->val_ac_rrset->val_rrset_data;
     struct sockaddr *serv = next_as->val_ac_rrset->val_rrset_server;
-    val_astatus_t status = next_as->val_ac_status;
-    
+    val_astatus_t   status = next_as->val_ac_status;
+
     if (NULL == prefix)
         prefix = "";
 
@@ -252,7 +256,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
         struct rr_rec  *curkey;
         for (curkey = data; curkey; curkey = curkey->rr_next) {
             if ((curkey->rr_status == VAL_AC_VERIFIED_LINK) ||
-                   (curkey->rr_status == VAL_AC_UNKNOWN_ALGORITHM_LINK)) {
+                (curkey->rr_status == VAL_AC_UNKNOWN_ALGORITHM_LINK)) {
                 /*
                  * Extract the key tag 
                  */
@@ -278,13 +282,15 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
                 p_ac_status(status), status);
     }
 #if 0
-    struct rr_rec *rr;
-    struct rr_rec *sig = next_as->val_ac_rrset->val_rrset_sig;
-    for (rr=data; rr; rr=rr->rr_next) {
-        val_log(ctx, level, "    data_status=%s:%d", p_ac_status(rr->rr_status), rr->rr_status);
+    struct rr_rec  *rr;
+    struct rr_rec  *sig = next_as->val_ac_rrset->val_rrset_sig;
+    for (rr = data; rr; rr = rr->rr_next) {
+        val_log(ctx, level, "    data_status=%s:%d",
+                p_ac_status(rr->rr_status), rr->rr_status);
     }
-    for (rr=sig; rr; rr=rr->rr_next) {
-        val_log(ctx, level, "    sig_status=%s:%d", p_ac_status(rr->rr_status), rr->rr_status);
+    for (rr = sig; rr; rr = rr->rr_next) {
+        val_log(ctx, level, "    sig_status=%s:%d",
+                p_ac_status(rr->rr_status), rr->rr_status);
     }
 #endif
 }
@@ -317,34 +323,34 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
     }
 
     if (top_q != NULL) {
-	    char name_p[NS_MAXDNAME]; 
-	    const char *name_pr, *serv_pr;
-	    if(ns_name_ntop(name_n, name_p, sizeof(name_p)) != -1) 
-		    name_pr = name_p;
-	    else
-		    name_pr = "ERR_NAME";
-	    if((top_q->qc_respondent_server) && 
-           (top_q->qc_respondent_server->ns_number_of_addresses > 0))
-		    serv_pr = ((serv_pr = get_ns_string(
-                            (struct sockaddr *)top_q->qc_respondent_server->ns_address[0])) == NULL)?
-                "VAL_CACHE":serv_pr;
-	    else
-		    serv_pr = "NULL";
-	    val_log(ctx, level, "Original query: name=%s class=%s type=%s "
-                    "from-server=%s, Query-status=%s:%d",
-                    name_pr, p_class(class_h), p_type(type_h), serv_pr, 
-                    p_query_status(top_q->qc_state), top_q->qc_state);
-    }
-    else
+        char            name_p[NS_MAXDNAME];
+        const char     *name_pr, *serv_pr;
+        if (ns_name_ntop(name_n, name_p, sizeof(name_p)) != -1)
+            name_pr = name_p;
+        else
+            name_pr = "ERR_NAME";
+        if ((top_q->qc_respondent_server) &&
+            (top_q->qc_respondent_server->ns_number_of_addresses > 0))
+            serv_pr = ((serv_pr = get_ns_string((struct sockaddr *) top_q->
+                                                qc_respondent_server->
+                                                ns_address[0])) ==
+                       NULL) ? "VAL_CACHE" : serv_pr;
+        else
+            serv_pr = "NULL";
+        val_log(ctx, level, "Original query: name=%s class=%s type=%s "
+                "from-server=%s, Query-status=%s:%d",
+                name_pr, p_class(class_h), p_type(type_h), serv_pr,
+                p_query_status(top_q->qc_state), top_q->qc_state);
+    } else
         val_log(ctx, level, "Original query: UNKNOWN?");
 
     for (next_result = results; next_result;
          next_result = next_result->val_rc_next) {
         struct val_authentication_chain *next_as;
-        int i;
+        int             i;
 
         val_log(ctx, level, "  Result: %s:%d",
-                p_val_status(next_result->val_rc_status), 
+                p_val_status(next_result->val_rc_status),
                 next_result->val_rc_status);
 
         for (next_as = next_result->val_rc_answer; next_as;
@@ -361,18 +367,19 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                 else
                     t_name_n = next_as->val_ac_rrset->val_rrset_name_n;
 
-                val_log_assertion_pfx(ctx, level, "    ", t_name_n, next_as);
-//                val_log_val_rrset_pfx(ctx, level, "     ",
-//                                  next_as->val_ac_rrset);
+                val_log_assertion_pfx(ctx, level, "    ", t_name_n,
+                                      next_as);
+                //                val_log_val_rrset_pfx(ctx, level, "     ",
+                //                                  next_as->val_ac_rrset);
             }
         }
 
         if (next_result->val_rc_proof_count > 0) {
             val_log(ctx, level, "    Associated Proofs Follow:");
         }
-        for (i=0; i<next_result->val_rc_proof_count; i++) {
+        for (i = 0; i < next_result->val_rc_proof_count; i++) {
             for (next_as = next_result->val_rc_proofs[i]; next_as;
-                next_as = next_as->val_ac_trust) {
+                 next_as = next_as->val_ac_trust) {
 
                 if (next_as->val_ac_rrset == NULL) {
                     val_log(ctx, level, "      Assertion status = %s:%d",
@@ -566,7 +573,8 @@ p_ac_status(val_astatus_t err)
         break;
 
     default:
-        if ((err >= VAL_AC_DNS_ERROR_BASE) && (err < VAL_AC_DNS_ERROR_LAST)) {
+        if ((err >= VAL_AC_DNS_ERROR_BASE)
+            && (err < VAL_AC_DNS_ERROR_LAST)) {
             int             errbase = VAL_AC_DNS_ERROR_BASE;
             int             dnserr = err - errbase + Q_ERROR_BASE;
             return p_query_status(dnserr);
@@ -588,7 +596,7 @@ p_val_status(val_status_t err)
         return "VAL_INDETERMINATE";
         break;
     case VAL_BOGUS_UNPROVABLE:
-    case VAL_BOGUS_PROVABLE: 
+    case VAL_BOGUS_PROVABLE:
         return "VAL_BOGUS";
         break;
     case VAL_LOCAL_ANSWER:
@@ -677,9 +685,9 @@ val_log_udp(val_log_t * logp, const val_context_t * ctx, int level,
     /** We allocated extra space  */
     vsnprintf(buf, sizeof(buf) - 2, template, ap);
     strcat(buf, "\n");
-    
-    sendto(logp->opt.udp.sock, buf, strlen(buf),0,
-           (struct sockaddr *)&logp->opt.udp.server,length);
+
+    sendto(logp->opt.udp.sock, buf, strlen(buf), 0,
+           (struct sockaddr *) &logp->opt.udp.server, length);
 
     return;
 }

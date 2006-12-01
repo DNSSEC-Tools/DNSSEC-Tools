@@ -54,7 +54,7 @@ static char    *dnsval_conf = NULL;
 
 static int      atexit_reg = 0;
 
-static void 
+static void
 policy_cleanup(void)
 {
     if (NULL != resolver_config)
@@ -872,36 +872,38 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
 
     c = scope;
     *label_count = 1;
-    
+
     /*
      * a NULL scope is always relevant 
      */
-    if (c == NULL) { 
-        if (!strcmp(label, LVL_DELIM)) 
+    if (c == NULL) {
+        if (!strcmp(label, LVL_DELIM))
             *label_count = 0;
         return VAL_NO_ERROR;
     }
-    
+
     e = c + strlen(scope);
 
     /*
      * Check if this is relevant 
      */
     while ((c < e) && (NULL != (p = strstr(c, LVL_DELIM)))) {
-        
-        if ((!strcmp(p, LVL_DELIM)) || 
-            (!strncmp(label, c, p-c) && (p != c)) ||
+
+        if ((!strcmp(p, LVL_DELIM)) ||
+            (!strncmp(label, c, p - c) && (p != c)) ||
             ((p == c) && (!strcmp(label, LVL_DELIM))))
             return VAL_NO_ERROR;
 
         (*label_count)++;
-        c = p+1;
+        c = p + 1;
     }
 
-    /* See if the remaining string is an exact match */
+    /*
+     * See if the remaining string is an exact match 
+     */
     if (!strcmp(label, c))
         return VAL_NO_ERROR;
-    
+
     *relevant = 0;
     return VAL_NO_ERROR;
 }
@@ -953,15 +955,15 @@ get_next_policy_fragment(FILE * fp, char *scope,
             return VAL_OUT_OF_MEMORY;
         strcpy(label, token);
 
-        /* 
+        /*
          * The : character can only appear in the label 
          * if this is the default policy 
          */
         if (strstr(label, LVL_DELIM) && strcmp(label, LVL_DELIM)) {
             FREE(label);
-            return VAL_CONF_PARSE_ERROR; 
+            return VAL_CONF_PARSE_ERROR;
         }
-            
+
         /*
          * read the keyword 
          */
@@ -1026,7 +1028,7 @@ get_next_policy_fragment(FILE * fp, char *scope,
  * so "mozilla" < "sendmail" < "browser:mozilla"
  */
 static int
-store_policy_overrides(val_context_t *ctx, struct policy_fragment **pfrag)
+store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
 {
     struct policy_overrides *cur, *prev, *newp;
     struct policy_list *e;
@@ -1038,7 +1040,7 @@ store_policy_overrides(val_context_t *ctx, struct policy_fragment **pfrag)
      * search for a node with this label 
      */
     cur = prev = NULL;
-    
+
     for (cur = ctx->pol_overrides;
          cur && (cur->label_count < (*pfrag)->label_count);
          prev = cur, cur = cur->next);
@@ -1051,7 +1053,7 @@ store_policy_overrides(val_context_t *ctx, struct policy_fragment **pfrag)
         (*pfrag)->label = NULL;
 
     } else {
-    
+
         newp = (struct policy_overrides *)
             MALLOC(sizeof(struct policy_overrides));
         if (newp == NULL)
@@ -1073,17 +1075,18 @@ store_policy_overrides(val_context_t *ctx, struct policy_fragment **pfrag)
     /*
      * Add this entry to the list 
      */
-    for (e=newp->plist; e; e=e->next) {
-        if(e->index == (*pfrag)->index) {
-            val_log(ctx, LOG_WARNING, "Duplicate policy definition; using last definition");
+    for (e = newp->plist; e; e = e->next) {
+        if (e->index == (*pfrag)->index) {
+            val_log(ctx, LOG_WARNING,
+                    "Duplicate policy definition; using last definition");
             conf_elem_array[e->index].free(&e->pol);
             break;
         }
     }
-   
-    if (!e) { 
+
+    if (!e) {
         e = (struct policy_list *) MALLOC(sizeof(struct policy_list));
-        if (e== NULL)
+        if (e == NULL)
             return VAL_OUT_OF_MEMORY;
     }
 
@@ -1115,15 +1118,13 @@ destroy_valpol(val_context_t * ctx)
         struct policy_list *plist, *plist_next;
 
         prev = cur;
-        cur=cur->next;
+        cur = cur->next;
 
         FREE(prev->label);
         for (plist = prev->plist; plist; plist = plist_next) {
             plist_next = plist->next;
-            if ((plist->pol != NULL) &&
-                (plist->index < MAX_POL_TOKEN))
-                conf_elem_array[plist->index].
-                    free(&(plist->pol));
+            if ((plist->pol != NULL) && (plist->index < MAX_POL_TOKEN))
+                conf_elem_array[plist->index].free(&(plist->pol));
             FREE(plist);
         }
         FREE(prev);
@@ -1191,7 +1192,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
          */
         store_policy_overrides(ctx, &pol_frag);
     }
-    
+
     fcntl(fd, F_SETLKW, &fl);
     fclose(fp);
 
@@ -1200,21 +1201,24 @@ read_val_config_file(val_context_t * ctx, char *scope)
                 dnsval_conf);
     } else {
         if (scope == NULL) {
-            /* Use the first policy as the default (only) policy */
+            /*
+             * Use the first policy as the default (only) policy 
+             */
             if (ctx->pol_overrides) {
                 cur = ctx->pol_overrides->next;
                 while (cur) {
                     struct policy_list *plist, *plist_next;
 
                     prev = cur;
-                    cur=cur->next;
+                    cur = cur->next;
 
                     FREE(prev->label);
                     for (plist = prev->plist; plist; plist = plist_next) {
                         plist_next = plist->next;
                         if ((plist->pol != NULL) &&
                             (plist->index < MAX_POL_TOKEN))
-                            conf_elem_array[plist->index].free(&(plist->pol));
+                            conf_elem_array[plist->index].
+                                free(&(plist->pol));
                         FREE(plist);
                     }
                     FREE(prev);
@@ -1222,10 +1226,10 @@ read_val_config_file(val_context_t * ctx, char *scope)
                 ctx->pol_overrides->next = NULL;
             }
         }
-        
+
         OVERRIDE_POLICY(ctx);
     }
-     
+
     return retval;
 }
 
@@ -1352,17 +1356,18 @@ read_res_config_file(val_context_t * ctx)
             serv_addr.sin_family = AF_INET;     // host byte order
             serv_addr.sin_port = htons(DNS_PORT);       // short, network byte order
             serv_addr.sin_addr = address;
-          
+
             ns->ns_address = NULL;
             CREATE_NSADDR_ARRAY(ns->ns_address, 1);
-            if(ns->ns_address == NULL) {
-                FREE (ns);
+            if (ns->ns_address == NULL) {
+                FREE(ns);
                 ns = NULL;
                 return SR_MEMORY_ERROR;
             }
             ns->ns_number_of_addresses = 1;
 
-            memcpy(ns->ns_address[0], &serv_addr, sizeof(struct sockaddr_in));
+            memcpy(ns->ns_address[0], &serv_addr,
+                   sizeof(struct sockaddr_in));
             ns->ns_number_of_addresses = 1;
 
             if (ns_tail == NULL) {
@@ -1432,8 +1437,8 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
     int             retval;
     u_int16_t       rdata_len_h;
     struct rrset_rec *rr_set;
-    static int been_there_done_that = 0;
-    
+    static int      been_there_done_that = 0;
+
     if (been_there_done_that)
         return VAL_NO_ERROR;
     else
@@ -1532,31 +1537,30 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
         } else
             continue;
 
-//        SAVE_RR_TO_LIST(NULL, &root_info, zone_n, type_h, type_h, ns_c_in,
-//                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0,
-//                        zone_n);
-        rr_set = find_rr_set (NULL, &root_info, zone_n, type_h, type_h,
-                              ns_c_in, ttl_h, NULL, rdata_n, VAL_FROM_UNSET, 0,
-                              zone_n);
-        if (rr_set==NULL) {
+        //        SAVE_RR_TO_LIST(NULL, &root_info, zone_n, type_h, type_h, ns_c_in,
+        //                        ttl_h, NULL, rdata_n, rdata_len_h, VAL_FROM_UNSET, 0,
+        //                        zone_n);
+        rr_set = find_rr_set(NULL, &root_info, zone_n, type_h, type_h,
+                             ns_c_in, ttl_h, NULL, rdata_n, VAL_FROM_UNSET,
+                             0, zone_n);
+        if (rr_set == NULL) {
             fclose(fp);
             res_sq_free_rrset_recs(&root_info);
             return VAL_OUT_OF_MEMORY;
         }
         if (type_h != ns_t_rrsig) {
             /** Add this record to its chain of rr_rec's. */
-            retval = add_to_set(rr_set,rdata_len_h,rdata_n);
-        }
-        else {
+            retval = add_to_set(rr_set, rdata_len_h, rdata_n);
+        } else {
             /** Add this record to the sig of rrset_rec. */
-            retval = add_as_sig(rr_set,rdata_len_h,rdata_n);
+            retval = add_as_sig(rr_set, rdata_len_h, rdata_n);
         }
         if (retval != VAL_NO_ERROR) {
             fclose(fp);
             res_sq_free_rrset_recs(&root_info);
             return retval;
         }
-// end save_rr_to_list
+        // end save_rr_to_list
 
         /*
          * name 

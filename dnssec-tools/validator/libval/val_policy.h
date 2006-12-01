@@ -56,15 +56,15 @@
 #define P_ZONE_SECURITY_EXPECTATION 9
 #define MAX_POL_TOKEN               10
 #ifdef LIBVAL_NSEC3
-#define P_NSEC3_MAX_ITER            MAX_POL_TOKEN 
+#define P_NSEC3_MAX_ITER            MAX_POL_TOKEN
 #undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               P_NSEC3_MAX_ITER+1 
+#define MAX_POL_TOKEN               P_NSEC3_MAX_ITER+1
 #endif
 #ifdef DLV
-#define P_DLV_TRUST_POINTS          MAX_POL_TOKEN 
-#define P_DLV_MAX_VALIDATION_LINKS  MAX_POL_TOKEN+1 
+#define P_DLV_TRUST_POINTS          MAX_POL_TOKEN
+#define P_DLV_MAX_VALIDATION_LINKS  MAX_POL_TOKEN+1
 #undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               P_DLV_MAX_VALIDATION_LINKS+1 
+#define MAX_POL_TOKEN               P_DLV_MAX_VALIDATION_LINKS+1
 #endif
 
 #define ZONE_SE_IGNORE_MSG     "ignore"

@@ -11,45 +11,47 @@
 
 #include <val_parse.h>
 
-void dsasha1_sigverify (val_context_t *ctx,
-				const unsigned char *data,
-		       int data_len,
-		       const val_dnskey_rdata_t *dnskey,
-		       const val_rrsig_rdata_t *rrsig,
-               val_astatus_t *key_status,
-               val_astatus_t *sig_status);
+void            dsasha1_sigverify(val_context_t * ctx,
+                                  const unsigned char *data,
+                                  int data_len,
+                                  const val_dnskey_rdata_t * dnskey,
+                                  const val_rrsig_rdata_t * rrsig,
+                                  val_astatus_t * key_status,
+                                  val_astatus_t * sig_status);
 
-void rsamd5_sigverify (val_context_t *ctx,
-			   const unsigned char *data,
-		       int data_len,
-		       const val_dnskey_rdata_t *dnskey,
-		       const val_rrsig_rdata_t *rrsig,
-               val_astatus_t *key_status,
-               val_astatus_t *sig_status);
+void            rsamd5_sigverify(val_context_t * ctx,
+                                 const unsigned char *data,
+                                 int data_len,
+                                 const val_dnskey_rdata_t * dnskey,
+                                 const val_rrsig_rdata_t * rrsig,
+                                 val_astatus_t * key_status,
+                                 val_astatus_t * sig_status);
 
-u_int16_t rsamd5_keytag (const unsigned char *pubkey,
-			 int pubkey_len);
+u_int16_t       rsamd5_keytag(const unsigned char *pubkey, int pubkey_len);
 
-void rsasha1_sigverify (val_context_t *ctx,
-				const unsigned char *data,
-		       int data_len,
-		       const val_dnskey_rdata_t *dnskey,
-		       const val_rrsig_rdata_t *rrsig,
-               val_astatus_t *key_status,
-               val_astatus_t *sig_status);
+void            rsasha1_sigverify(val_context_t * ctx,
+                                  const unsigned char *data,
+                                  int data_len,
+                                  const val_dnskey_rdata_t * dnskey,
+                                  const val_rrsig_rdata_t * rrsig,
+                                  val_astatus_t * key_status,
+                                  val_astatus_t * sig_status);
 
-int ds_sha_hash_is_equal(u_int8_t * name_n, 
-                     u_int8_t *rrdata, 
-                     u_int16_t  rrdatalen,
-                     u_int8_t * ds_hash);
-#ifdef LIBVAL_NSEC3 
-u_int8_t * nsec3_sha_hash_compute( u_int8_t *qc_name_n, u_int8_t *salt, u_int8_t saltlen,
-        u_int16_t iter, u_int8_t **hash, u_int8_t *hashlen);
+int             ds_sha_hash_is_equal(u_int8_t * name_n,
+                                     u_int8_t * rrdata,
+                                     u_int16_t rrdatalen,
+                                     u_int8_t * ds_hash);
+#ifdef LIBVAL_NSEC3
+u_int8_t       *nsec3_sha_hash_compute(u_int8_t * qc_name_n,
+                                       u_int8_t * salt, u_int8_t saltlen,
+                                       u_int16_t iter, u_int8_t ** hash,
+                                       u_int8_t * hashlen);
 #endif
 
-char    * get_base64_string(unsigned char *message, int message_len, char *buf,
-                  int bufsize);
+char           *get_base64_string(unsigned char *message, int message_len,
+                                  char *buf, int bufsize);
 
-int decode_base64_key(char *keyptr, u_char *public_key, int keysize);
+int             decode_base64_key(char *keyptr, u_char * public_key,
+                                  int keysize);
 
 #endif

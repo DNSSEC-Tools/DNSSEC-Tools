@@ -42,9 +42,9 @@ static struct val_addrinfo *
 append_val_addrinfo(struct val_addrinfo *a1, struct val_addrinfo *a2)
 {
     struct val_addrinfo *a;
-    if (a1 == NULL)  
+    if (a1 == NULL)
         return a2;
-    if (a2 == NULL)  
+    if (a2 == NULL)
         return a1;
 
     a = a1;
@@ -75,11 +75,11 @@ dup_val_addrinfo(const struct val_addrinfo *a)
 {
     struct val_addrinfo *new_a = NULL;
 
-    if (a == NULL)  
+    if (a == NULL)
         return NULL;
 
     new_a = (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
-    if (new_a == NULL)  
+    if (new_a == NULL)
         return NULL;
 
     memset(new_a, 0, sizeof(struct val_addrinfo));
@@ -172,31 +172,34 @@ val_freeaddrinfo(struct val_addrinfo *ainfo)
 void
 val_setport(struct sockaddr *saddr, const char *serv, const char *proto)
 {
-  struct servent *sent    = NULL;
-  int             portnum = 0;
-  
-  /* figure out the port number */
-  if (NULL == serv) {
-      portnum = 0;
-  }
-  else if ( atoi(serv) && 
-            (NULL != (sent = getservbyport(atoi(serv), proto)))
-          )  {
-      portnum = sent->s_port;
-  }
-  else if ( NULL != (sent = getservbyname(serv, proto)) )  {
-      portnum = sent->s_port;
-  }
+    struct servent *sent = NULL;
+    int             portnum = 0;
 
-  /* set port number depending on address family*/
-  /* note: s_port above is already in network byte order */
-  if (PF_INET == saddr->sa_family) {
-      ((struct sockaddr_in *)saddr)->sin_port = portnum;
-  }
-  else if (PF_INET6 == saddr->sa_family)  {
-      ((struct sockaddr_in6 *)saddr)->sin6_port = portnum;
-  }
-} /* val_setport */
+    /*
+     * figure out the port number 
+     */
+    if (NULL == serv) {
+        portnum = 0;
+    } else if (atoi(serv) &&
+               (NULL != (sent = getservbyport(atoi(serv), proto)))
+        ) {
+        portnum = sent->s_port;
+    } else if (NULL != (sent = getservbyname(serv, proto))) {
+        portnum = sent->s_port;
+    }
+
+    /*
+     * set port number depending on address family
+     */
+    /*
+     * note: s_port above is already in network byte order 
+     */
+    if (PF_INET == saddr->sa_family) {
+        ((struct sockaddr_in *) saddr)->sin_port = portnum;
+    } else if (PF_INET6 == saddr->sa_family) {
+        ((struct sockaddr_in6 *) saddr)->sin6_port = portnum;
+    }
+}                               /* val_setport */
 
 
 /*
@@ -218,23 +221,23 @@ val_setport(struct sockaddr *saddr, const char *serv, const char *proto)
  * Returns: 0 if successful, a non-zero value if failure.
  */
 static int
-process_service_and_hints(val_status_t           val_status,
-                          const char            *servname,
+process_service_and_hints(val_status_t val_status,
+                          const char *servname,
                           const struct addrinfo *hints,
-                          struct val_addrinfo   **res)
+                          struct val_addrinfo **res)
 {
-    struct val_addrinfo  *a1 = NULL;
-    struct val_addrinfo  *a2 = NULL;
-    int proto_found          = 0;
-    int created_locally      = 0;
+    struct val_addrinfo *a1 = NULL;
+    struct val_addrinfo *a2 = NULL;
+    int             proto_found = 0;
+    int             created_locally = 0;
 
-    if (res == NULL)  
+    if (res == NULL)
         return EAI_SERVICE;
-   
+
     if (*res == NULL) {
         created_locally = 1;
         a1 = (struct val_addrinfo *) malloc(sizeof(struct val_addrinfo));
-        if (a1 == NULL)  
+        if (a1 == NULL)
             return EAI_MEMORY;
         memset(a1, 0, sizeof(struct val_addrinfo));
 
@@ -246,9 +249,11 @@ process_service_and_hints(val_status_t           val_status,
     if (!a1)
         return 0;
 
-    /* check for sockaddr... memory allocation */
+    /*
+     * check for sockaddr... memory allocation 
+     */
     if (NULL == a1->ai_addr) {
-        a1->ai_addr = (struct sockaddr *) 
+        a1->ai_addr = (struct sockaddr *)
             malloc(sizeof(struct sockaddr_storage));
         memset(a1->ai_addr, 0, sizeof(struct sockaddr_storage));
     }
@@ -274,9 +279,9 @@ process_service_and_hints(val_status_t           val_status,
 
     /*
      * Check if we have to return val_addrinfo structures for the
-       SOCK_STREAM socktype
+     SOCK_STREAM socktype
      */
-    if (hints == NULL || hints->ai_socktype == 0 
+    if (hints == NULL || hints->ai_socktype == 0
         || hints->ai_socktype == SOCK_STREAM) {
 
         a1->ai_socktype = SOCK_STREAM;
@@ -288,15 +293,15 @@ process_service_and_hints(val_status_t           val_status,
 
     /*
      * Check if we have to return val_addrinfo structures for the
-       SOCK_DGRAM socktype
+     SOCK_DGRAM socktype
      */
-    if ( (hints == NULL || hints->ai_socktype == 0
-          || hints->ai_socktype == SOCK_DGRAM) ) {
+    if ((hints == NULL || hints->ai_socktype == 0
+         || hints->ai_socktype == SOCK_DGRAM)) {
 
         if (proto_found) {
             a2 = dup_val_addrinfo(a1);
-            if (a2 == NULL) 
-              return EAI_MEMORY;
+            if (a2 == NULL)
+                return EAI_MEMORY;
             a1->ai_next = a2;
             a1 = a2;
         }
@@ -308,10 +313,10 @@ process_service_and_hints(val_status_t           val_status,
 
     /*
      * Check if we have to return val_addrinfo structures for the
-       SOCK_RAW socktype
+     SOCK_RAW socktype
      */
-    if ( (hints == NULL || hints->ai_socktype == 0
-          || hints->ai_socktype == SOCK_RAW) )  {
+    if ((hints == NULL || hints->ai_socktype == 0
+         || hints->ai_socktype == SOCK_RAW)) {
 
         if (proto_found) {
             a2 = dup_val_addrinfo(a1);
@@ -340,7 +345,9 @@ process_service_and_hints(val_status_t           val_status,
         //     about possibly nuking the caller's ptr and freeing their
         //     memory. Maybe there needs to be a better separation
         //     between memory allocated here and caller's memory.
-        /* if top memory allocated locally, delete */
+        /*
+         * if top memory allocated locally, delete 
+         */
         if (created_locally) {
             *res = NULL;
             val_freeaddrinfo(a1);
@@ -370,7 +377,7 @@ process_service_and_hints(val_status_t           val_status,
  * See also: get_addrinfo_from_dns(), val_getaddrinfo()
  */
 static int
-get_addrinfo_from_etc_hosts(const val_context_t *ctx,
+get_addrinfo_from_etc_hosts(const val_context_t * ctx,
                             const char *nodename,
                             const char *servname,
                             const struct addrinfo *hints,
@@ -417,7 +424,7 @@ get_addrinfo_from_etc_hosts(const val_context_t *ctx,
 
         val_log(ctx, LOG_DEBUG, "}");
 
-        memset(ainfo,     0, sizeof(struct val_addrinfo));
+        memset(ainfo, 0, sizeof(struct val_addrinfo));
         memset(&ip4_addr, 0, sizeof(struct in_addr));
         memset(&ip6_addr, 0, sizeof(struct in6_addr));
 
@@ -522,7 +529,7 @@ get_addrinfo_from_etc_hosts(const val_context_t *ctx,
  * See also: get_addrinfo_from_etc_hosts(), val_addrinfo()
  */
 static int
-get_addrinfo_from_result(const val_context_t *ctx,
+get_addrinfo_from_result(const val_context_t * ctx,
                          struct val_result_chain *results,
                          int val_status,
                          const char *servname,
@@ -532,7 +539,7 @@ get_addrinfo_from_result(const val_context_t *ctx,
     struct val_addrinfo *ainfo_head = NULL;
     struct val_addrinfo *ainfo_tail = NULL;
     struct val_result_chain *result = NULL;
-    char *canonname                 = NULL;
+    char           *canonname = NULL;
 
     if (res == NULL)
         return 0;
@@ -649,8 +656,8 @@ get_addrinfo_from_result(const val_context_t *ctx,
                 /*
                  * Expand the results based on servname and hints 
                  */
-                if (process_service_and_hints(val_status, servname, 
-                                              hints, &ainfo) 
+                if (process_service_and_hints(val_status, servname,
+                                              hints, &ainfo)
                     == EAI_SERVICE) {
                     val_freeaddrinfo(ainfo_head);
                     val_freeaddrinfo(ainfo);
@@ -702,17 +709,17 @@ get_addrinfo_from_result(const val_context_t *ctx,
  * See also: val_getaddrinfo()
  */
 static int
-get_addrinfo_from_dns(val_context_t *ctx,
+get_addrinfo_from_dns(val_context_t * ctx,
                       const char *nodename,
                       const char *servname,
                       const struct addrinfo *hints,
                       struct val_addrinfo **res)
 {
     struct val_result_chain *results = NULL;
-    struct val_addrinfo *ainfo       = NULL;
-    u_char name_n[NS_MAXCDNAME];
-    int retval                       = 0;
-    int ret                          = 0;
+    struct val_addrinfo *ainfo = NULL;
+    u_char          name_n[NS_MAXCDNAME];
+    int             retval = 0;
+    int             ret = 0;
 
     if (res == NULL)
         return 0;
@@ -903,7 +910,7 @@ val_getaddrinfo(val_context_t * ctx,
     /*
      * Check that at least one of nodename or servname is non-NULL
      */
-    if ( NULL == nodename && NULL == servname)  {
+    if (NULL == nodename && NULL == servname) {
         retval = EAI_NONAME;
         goto done;
     }
@@ -916,8 +923,8 @@ val_getaddrinfo(val_context_t * ctx,
      * use IPv4 localhost 
      */
     if (NULL == nodename &&
-        ( AF_INET   == cur_hints->ai_family || 
-          AF_UNSPEC == cur_hints->ai_family )
+        (AF_INET == cur_hints->ai_family ||
+         AF_UNSPEC == cur_hints->ai_family)
         ) {
         nname = localhost4;
     }
@@ -946,16 +953,16 @@ val_getaddrinfo(val_context_t * ctx,
         memset(ainfo4, 0, sizeof(struct val_addrinfo));
         memset(saddr4, 0, sizeof(struct sockaddr_in));
 
-        saddr4->sin_family    = AF_INET;
-        ainfo4->ai_family     = AF_INET;
+        saddr4->sin_family = AF_INET;
+        ainfo4->ai_family = AF_INET;
         memcpy(&(saddr4->sin_addr), &ip4_addr, sizeof(struct in_addr));
-        ainfo4->ai_addr       = (struct sockaddr *) saddr4;
-        saddr4                = NULL;
-        ainfo4->ai_addrlen    = sizeof(struct sockaddr_in);
-        ainfo4->ai_canonname  = NULL;
+        ainfo4->ai_addr = (struct sockaddr *) saddr4;
+        saddr4 = NULL;
+        ainfo4->ai_addrlen = sizeof(struct sockaddr_in);
+        ainfo4->ai_canonname = NULL;
         ainfo4->ai_val_status = VAL_LOCAL_ANSWER;
 
-        if (process_service_and_hints(ainfo4->ai_val_status, servname, 
+        if (process_service_and_hints(ainfo4->ai_val_status, servname,
                                       cur_hints, &ainfo4)
             == EAI_SERVICE) {
             val_freeaddrinfo(ainfo4);
@@ -972,8 +979,8 @@ val_getaddrinfo(val_context_t * ctx,
      * use IPv6 localhost 
      */
     if (NULL == nodename &&
-        ( AF_INET6  == cur_hints->ai_family || 
-          AF_UNSPEC == cur_hints->ai_family )
+        (AF_INET6 == cur_hints->ai_family ||
+         AF_UNSPEC == cur_hints->ai_family)
         ) {
         nname = localhost6;
     }
@@ -1002,17 +1009,17 @@ val_getaddrinfo(val_context_t * ctx,
         memset(ainfo6, 0, sizeof(struct val_addrinfo));
         memset(saddr6, 0, sizeof(struct sockaddr_in6));
 
-        saddr6->sin6_family   = AF_INET6;
-        ainfo6->ai_family     = AF_INET6;
+        saddr6->sin6_family = AF_INET6;
+        ainfo6->ai_family = AF_INET6;
         memcpy(&(saddr6->sin6_addr), &ip6_addr, sizeof(struct in6_addr));
-        ainfo6->ai_addr       = (struct sockaddr *) saddr6;
-        saddr6                = NULL;
-        ainfo6->ai_addrlen    = sizeof(struct sockaddr_in6);
-        ainfo6->ai_canonname  = NULL;
+        ainfo6->ai_addr = (struct sockaddr *) saddr6;
+        saddr6 = NULL;
+        ainfo6->ai_addrlen = sizeof(struct sockaddr_in6);
+        ainfo6->ai_canonname = NULL;
         ainfo6->ai_val_status = VAL_LOCAL_ANSWER;
 
-        if (process_service_and_hints(ainfo6->ai_val_status, servname, 
-                                      cur_hints, &ainfo6) 
+        if (process_service_and_hints(ainfo6->ai_val_status, servname,
+                                      cur_hints, &ainfo6)
             == EAI_SERVICE) {
             val_freeaddrinfo(ainfo6);
             retval = EAI_SERVICE;
@@ -1037,8 +1044,8 @@ val_getaddrinfo(val_context_t * ctx,
          * First check ETC_HOSTS file
          * * XXX: TODO check the order in the ETC_HOST_CONF file
          */
-        if (get_addrinfo_from_etc_hosts(context, nodename, servname, 
-                                        cur_hints, res) 
+        if (get_addrinfo_from_etc_hosts(context, nodename, servname,
+                                        cur_hints, res)
             == EAI_SERVICE) {
             retval = EAI_SERVICE;
         } else if (*res != NULL) {
@@ -1048,8 +1055,8 @@ val_getaddrinfo(val_context_t * ctx,
         /*
          * Try DNS
          */
-        else if (get_addrinfo_from_dns(context, nodename, servname, 
-                                       cur_hints, res) 
+        else if (get_addrinfo_from_dns(context, nodename, servname,
+                                       cur_hints, res)
                  == EAI_SERVICE) {
             retval = EAI_SERVICE;
         } else if (*res != NULL) {
@@ -1060,307 +1067,342 @@ val_getaddrinfo(val_context_t * ctx,
     }
 
   done:
-    if ( (ctx == NULL) && context )
+    if ((ctx == NULL) && context)
         val_free_context(context);
     return retval;
 
 }                               /* val_getaddrinfo() */
 
 
-/* address_to_reverse_domain converts a sockaddr address for IPv4 or
-   IPv6 to a reverse domain adress string 'dadd'.
-
-   For reverse IPv6, the domain address string is a minimum of 74
-   octets in length.
-
-   For reverse IPv4, the domain address string is a minimum of 30
-   octets in length.
-
-   returns 0 on success, 1 on failure. */
+/*
+ * address_to_reverse_domain converts a sockaddr address for IPv4 or
+ * IPv6 to a reverse domain adress string 'dadd'.
+ * 
+ * For reverse IPv6, the domain address string is a minimum of 74
+ * octets in length.
+ * 
+ * For reverse IPv4, the domain address string is a minimum of 30
+ * octets in length.
+ * 
+ * returns 0 on success, 1 on failure. 
+ */
 int
 address_to_reverse_domain(const char *saddr, int family,
-                                char *dadd,  int dlen) {
-  
+                          char *dadd, int dlen)
+{
+
     if (AF_INET == family) {
         if (dlen < 30)
             return (EAI_FAIL);
-        snprintf(dadd, dlen, "%d.%d.%d.%d.in-addr.arpa.", 
-                *(saddr+3),*(saddr+2),*(saddr+1),*(saddr));
-    }
-    else if (AF_INET6 == family) {
+        snprintf(dadd, dlen, "%d.%d.%d.%d.in-addr.arpa.",
+                 *(saddr + 3), *(saddr + 2), *(saddr + 1), *(saddr));
+    } else if (AF_INET6 == family) {
         if (dlen < 74)
             return (EAI_FAIL);
-        snprintf(dadd, dlen, "%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.ip6.arpa.", 
-                (*(saddr+15) & 0x0F), (*(saddr+15)>>4),
-                (*(saddr+14) & 0x0F), (*(saddr+14)>>4),
-                (*(saddr+13) & 0x0F), (*(saddr+13)>>4),
-                (*(saddr+12) & 0x0F), (*(saddr+12)>>4),
-                (*(saddr+11) & 0x0F), (*(saddr+11)>>4),
-                (*(saddr+10) & 0x0F), (*(saddr+10)>>4),
-                (*(saddr+9)  & 0x0F), (*(saddr+9)>>4),
-                (*(saddr+8)  & 0x0F), (*(saddr+8)>>4),
-                (*(saddr+7)  & 0x0F), (*(saddr+7)>>4),
-                (*(saddr+6)  & 0x0F), (*(saddr+6)>>4),
-                (*(saddr+5)  & 0x0F), (*(saddr+5)>>4),
-                (*(saddr+4)  & 0x0F), (*(saddr+4)>>4),
-                (*(saddr+3)  & 0x0F), (*(saddr+3)>>4),
-                (*(saddr+2)  & 0x0F), (*(saddr+2)>>4),
-                (*(saddr+1)  & 0x0F), (*(saddr+1)>>4),
-                (*(saddr)    & 0x0F), (*(saddr)>>4));
-    }
-    else {
-        val_log((val_context_t *)NULL, LOG_DEBUG, 
+        snprintf(dadd, dlen,
+                 "%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.%X.ip6.arpa.",
+                 (*(saddr + 15) & 0x0F), (*(saddr + 15) >> 4),
+                 (*(saddr + 14) & 0x0F), (*(saddr + 14) >> 4),
+                 (*(saddr + 13) & 0x0F), (*(saddr + 13) >> 4),
+                 (*(saddr + 12) & 0x0F), (*(saddr + 12) >> 4),
+                 (*(saddr + 11) & 0x0F), (*(saddr + 11) >> 4),
+                 (*(saddr + 10) & 0x0F), (*(saddr + 10) >> 4),
+                 (*(saddr + 9) & 0x0F), (*(saddr + 9) >> 4),
+                 (*(saddr + 8) & 0x0F), (*(saddr + 8) >> 4),
+                 (*(saddr + 7) & 0x0F), (*(saddr + 7) >> 4),
+                 (*(saddr + 6) & 0x0F), (*(saddr + 6) >> 4),
+                 (*(saddr + 5) & 0x0F), (*(saddr + 5) >> 4),
+                 (*(saddr + 4) & 0x0F), (*(saddr + 4) >> 4),
+                 (*(saddr + 3) & 0x0F), (*(saddr + 3) >> 4),
+                 (*(saddr + 2) & 0x0F), (*(saddr + 2) >> 4),
+                 (*(saddr + 1) & 0x0F), (*(saddr + 1) >> 4),
+                 (*(saddr) & 0x0F), (*(saddr) >> 4));
+    } else {
+        val_log((val_context_t *) NULL, LOG_DEBUG,
                 "Error: address_to_reverse_domain: unsupported family : \'%d\'",
                 family);
         return (EAI_FAMILY);
     }
 
-    /*  ns_name_pton(dadd, wadd, wlen); */
+    /*
+     * ns_name_pton(dadd, wadd, wlen); 
+     */
 
-    val_log((val_context_t *)NULL, LOG_DEBUG,
+    val_log((val_context_t *) NULL, LOG_DEBUG,
             "address_to_reverse_domain: reverse domain address \'%s\'",
             dadd);
 
-    return(0);
-} /* address_to_reverse_domain */
+    return (0);
+}                               /* address_to_reverse_domain */
 
 
-/* address_to_string converts a sockaddr address for IPv4 or IPv6
-   to a string address 'nadd'
-
-   For IPv6, the string address should be at least 74 characters in
-   length.
-
-   For IPv4, the string address should be at least 30 characeters in
-   length.
-
-   returns 0 on success, 1 on failure. */
+/*
+ * address_to_string converts a sockaddr address for IPv4 or IPv6
+ * to a string address 'nadd'
+ * 
+ * For IPv6, the string address should be at least 74 characters in
+ * length.
+ * 
+ * For IPv4, the string address should be at least 30 characeters in
+ * length.
+ * 
+ * returns 0 on success, 1 on failure. 
+ */
 int
-address_to_string(const char *saddr, int family,
-                        char *nadd,  int nlen) {
-  
+address_to_string(const char *saddr, int family, char *nadd, int nlen)
+{
+
     if (AF_INET == family) {
         if (nlen < 30)
             return (EAI_FAIL);
-        snprintf(nadd, nlen, "%d.%d.%d.%d", 
-                *(saddr),*(saddr+1),*(saddr+2),*(saddr+3));
-    }
-    else if (AF_INET6 == family) {
+        snprintf(nadd, nlen, "%d.%d.%d.%d",
+                 *(saddr), *(saddr + 1), *(saddr + 2), *(saddr + 3));
+    } else if (AF_INET6 == family) {
         if (nlen < 74)
             return (EAI_FAIL);
-        snprintf(nadd, nlen, "%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X", 
-                (*(saddr)   >>4), (*(saddr)   & 0x0F),
-                (*(saddr+1) >>4), (*(saddr+1) & 0x0F),
-                (*(saddr+2) >>4), (*(saddr+2) & 0x0F),
-                (*(saddr+3) >>4), (*(saddr+3) & 0x0F),
-                (*(saddr+4) >>4), (*(saddr+4) & 0x0F),
-                (*(saddr+5) >>4), (*(saddr+5) & 0x0F),
-                (*(saddr+6) >>4), (*(saddr+6) & 0x0F),
-                (*(saddr+7) >>4), (*(saddr+7) & 0x0F),
-                (*(saddr+8) >>4), (*(saddr+8) & 0x0F),
-                (*(saddr+9) >>4), (*(saddr+9) & 0x0F),
-                (*(saddr+10)>>4), (*(saddr+10) & 0x0F),
-                (*(saddr+11)>>4), (*(saddr+11) & 0x0F),
-                (*(saddr+12)>>4), (*(saddr+12) & 0x0F),
-                (*(saddr+13)>>4), (*(saddr+13) & 0x0F),
-                (*(saddr+14)>>4), (*(saddr+14) & 0x0F),
-                (*(saddr+15)>>4), (*(saddr+15) & 0x0F));
-    }
-    else {
-        val_log((val_context_t *)NULL, LOG_DEBUG, 
+        snprintf(nadd, nlen,
+                 "%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X:%X%X%X%X",
+                 (*(saddr) >> 4), (*(saddr) & 0x0F), (*(saddr + 1) >> 4),
+                 (*(saddr + 1) & 0x0F), (*(saddr + 2) >> 4),
+                 (*(saddr + 2) & 0x0F), (*(saddr + 3) >> 4),
+                 (*(saddr + 3) & 0x0F), (*(saddr + 4) >> 4),
+                 (*(saddr + 4) & 0x0F), (*(saddr + 5) >> 4),
+                 (*(saddr + 5) & 0x0F), (*(saddr + 6) >> 4),
+                 (*(saddr + 6) & 0x0F), (*(saddr + 7) >> 4),
+                 (*(saddr + 7) & 0x0F), (*(saddr + 8) >> 4),
+                 (*(saddr + 8) & 0x0F), (*(saddr + 9) >> 4),
+                 (*(saddr + 9) & 0x0F), (*(saddr + 10) >> 4),
+                 (*(saddr + 10) & 0x0F), (*(saddr + 11) >> 4),
+                 (*(saddr + 11) & 0x0F), (*(saddr + 12) >> 4),
+                 (*(saddr + 12) & 0x0F), (*(saddr + 13) >> 4),
+                 (*(saddr + 13) & 0x0F), (*(saddr + 14) >> 4),
+                 (*(saddr + 14) & 0x0F), (*(saddr + 15) >> 4),
+                 (*(saddr + 15) & 0x0F));
+    } else {
+        val_log((val_context_t *) NULL, LOG_DEBUG,
                 "Error: address_to_string: unsupported family : \'%d\'",
                 family);
         return (EAI_FAMILY);
     }
 
-    val_log((val_context_t *)NULL, LOG_DEBUG,
+    val_log((val_context_t *) NULL, LOG_DEBUG,
             "address_to_string: numeric address \'%s\'", nadd);
 
-    return(0);
-} /* address_to_string */
+    return (0);
+}                               /* address_to_string */
 
 
 int
-val_getnameinfo(val_context_t         *ctx,
+val_getnameinfo(val_context_t * ctx,
                 const struct sockaddr *sa,
-                socklen_t              salen,
-                char                  *host,
-                size_t                 hostlen,
-                char                  *serv,
-                size_t                 servlen,
-                int                    flags, 
-                val_status_t          *val_status) {
+                socklen_t salen,
+                char *host,
+                size_t hostlen,
+                char *serv,
+                size_t servlen, int flags, val_status_t * val_status)
+{
 
     const int       addr_size = 100;
-    char            domain_string[addr_size], number_string[addr_size], 
-                    wire_addr[addr_size];
-    const char *theAddress = NULL;
+    char            domain_string[addr_size], number_string[addr_size],
+        wire_addr[addr_size];
+    const char     *theAddress = NULL;
     int             val_rnc_status = 0, ret_status = 0;
 
     struct val_result_chain *val_res = NULL;
 
-    /* no need to check context, val_resolve_and_check will check and
-       create if necessary */
+    /*
+     * no need to check context, val_resolve_and_check will check and
+     * create if necessary 
+     */
 
-    /* check misc parameters, there should be at least one of host or
-       server, check if flags indicate host is required */
-    if ( !val_status || !sa || (!host && !serv) ||
-         (!host && hostlen > 0) || (!serv && servlen > 0) ||
-         (hostlen <= 0 && (flags & NI_NAMEREQD)) )
+    /*
+     * check misc parameters, there should be at least one of host or
+     * server, check if flags indicate host is required 
+     */
+    if (!val_status || !sa || (!host && !serv) ||
+        (!host && hostlen > 0) || (!serv && servlen > 0) ||
+        (hostlen <= 0 && (flags & NI_NAMEREQD)))
         return EAI_FAIL;
 
-    /* get the address values, only support IPv4 and IPv6 */
-    if ( AF_INET == sa->sa_family && salen >= sizeof(struct sockaddr_in) ) {
-        theAddress = (const char *) &((const struct sockaddr_in *)sa)->sin_addr;
-    }
-    else if ( AF_INET6 == sa->sa_family && 
-              salen >= sizeof(struct sockaddr_in6) ) {
-        theAddress = (const char *) &((const struct sockaddr_in6 *)sa)->sin6_addr;
-    }
-    else 
+    /*
+     * get the address values, only support IPv4 and IPv6 
+     */
+    if (AF_INET == sa->sa_family && salen >= sizeof(struct sockaddr_in)) {
+        theAddress =
+            (const char *) &((const struct sockaddr_in *) sa)->sin_addr;
+    } else if (AF_INET6 == sa->sa_family
+               && salen >= sizeof(struct sockaddr_in6)) {
+        theAddress =
+            (const char *) &((const struct sockaddr_in6 *) sa)->sin6_addr;
+    } else
         return (EAI_FAMILY);
 
-    /* should the host be looked up */
+    /*
+     * should the host be looked up 
+     */
     if (host && hostlen > 0) {
-        /* get string values: address string, reverse domain string, on
-           the wire reverse domain string */
+        /*
+         * get string values: address string, reverse domain string, on
+         * the wire reverse domain string 
+         */
         memset(number_string, 0, sizeof(char) * addr_size);
         memset(domain_string, 0, sizeof(char) * addr_size);
-        memset(wire_addr,     0, sizeof(char) * addr_size);
+        memset(wire_addr, 0, sizeof(char) * addr_size);
 
-        if ( (0 != (ret_status = 
-                    address_to_string(theAddress, sa->sa_family,
-                                      number_string, addr_size)))
-             ||
-             (0 != (ret_status = 
-                    address_to_reverse_domain(theAddress, sa->sa_family,
-                                              domain_string, addr_size)))
+        if ((0 != (ret_status =
+                   address_to_string(theAddress, sa->sa_family,
+                                     number_string, addr_size)))
+            ||
+            (0 != (ret_status =
+                   address_to_reverse_domain(theAddress, sa->sa_family,
+                                             domain_string, addr_size)))
             ) {
             return ret_status;
         }
 
         ns_name_pton(domain_string, wire_addr, addr_size);
 
-        /* check flags */
+        /*
+         * check flags 
+         */
         if (flags & NI_NUMERICHOST) {
             strncpy(host, number_string, hostlen);
-        }
-        else {
-            if ( 0 != 
-                 (val_rnc_status = 
-                  val_resolve_and_check(ctx,       /*val_context_t*  */
-                                        wire_addr, /*u_char *wire_domain_name*/
-                                        ns_c_in,   /*const u_int16_t q_class*/
-                                        ns_t_ptr,  /*const u_int16_t type */
-                                        0,         /*const u_int8_t flags */
-                                        /* struct val_result_chain **results */
-                                        &val_res)) )
+        } else {
+            if (0 != (val_rnc_status = val_resolve_and_check(ctx,       /*val_context_t*  */
+                                                             wire_addr, /*u_char *wire_domain_name */
+                                                             ns_c_in,   /*const u_int16_t q_class */
+                                                             ns_t_ptr,  /*const u_int16_t type */
+                                                             0, /*const u_int8_t flags */
+                                                             /*
+                                                              * struct val_result_chain **results 
+                                                              */
+                                                             &val_res)))
                 return EAI_NONAME;
 
-            if (!val_res)  return EAI_MEMORY;
+            if (!val_res)
+                return EAI_MEMORY;
 
             *val_status = val_res->val_rc_status;
 
-            if ( val_res->val_rc_answer && 
-                 val_res->val_rc_answer->val_ac_rrset && 
-                 val_res->val_rc_answer->val_ac_rrset->val_rrset_data &&
-                 val_res->val_rc_answer->val_ac_rrset->val_rrset_data->rr_rdata &&
-                 ns_c_in == val_res->val_rc_answer->val_ac_rrset->val_rrset_class_h
-                 &&
-                 ns_t_ptr == val_res->val_rc_answer->val_ac_rrset->val_rrset_type_h
-                )  {
-                ns_name_ntop((char*)val_res->val_rc_answer->val_ac_rrset->val_rrset_data->rr_rdata,
-                             host, hostlen);
-            }
-            else {
+            if (val_res->val_rc_answer &&
+                val_res->val_rc_answer->val_ac_rrset &&
+                val_res->val_rc_answer->val_ac_rrset->val_rrset_data &&
+                val_res->val_rc_answer->val_ac_rrset->val_rrset_data->
+                rr_rdata
+                && ns_c_in ==
+                val_res->val_rc_answer->val_ac_rrset->val_rrset_class_h
+                && ns_t_ptr ==
+                val_res->val_rc_answer->val_ac_rrset->val_rrset_type_h) {
+                ns_name_ntop((char *) val_res->val_rc_answer->
+                             val_ac_rrset->val_rrset_data->rr_rdata, host,
+                             hostlen);
+            } else {
                 strncpy(host, domain_string, hostlen);
             }
 
-            val_log(ctx, LOG_DEBUG, 
+            val_log(ctx, LOG_DEBUG,
                     "val_getnameinfo: val_resolve_and_check for host %s, returned %s with lookup status %d : %s and validator status %d : %s",
-                    domain_string, host, 
+                    domain_string, host,
                     val_rnc_status, p_query_error(val_rnc_status),
                     *val_status, p_val_error(*val_status));
-  
+
             val_free_result_chain(val_res);
         }
-    } /* end of checking host info */
+    }
 
-    /* should the services be looked up */
+    /*
+     * end of checking host info 
+     */
+    /*
+     * should the services be looked up 
+     */
     if (serv && servlen > 0) {
         struct servent *sent;
-        if (flags & NI_DGRAM) sent = getservbyname(serv, "UDP");
-        else                  sent = getservbyname(serv, "TCP");
-      
-        if (!sent) return EAI_FAIL;
+        if (flags & NI_DGRAM)
+            sent = getservbyname(serv, "UDP");
+        else
+            sent = getservbyname(serv, "TCP");
 
-        if (flags & NI_NUMERICSERV) snprintf(serv, servlen, "%d", sent->s_port);
-        else                        strncpy(serv, sent->s_name, servlen);
-      
-        val_log(ctx, LOG_DEBUG, "val_getnameinfo: service is %s : %s ", 
+        if (!sent)
+            return EAI_FAIL;
+
+        if (flags & NI_NUMERICSERV)
+            snprintf(serv, servlen, "%d", sent->s_port);
+        else
+            strncpy(serv, sent->s_name, servlen);
+
+        val_log(ctx, LOG_DEBUG, "val_getnameinfo: service is %s : %s ",
                 serv, sent->s_proto);
-    } /* end of service lookup */
-    
+    }
 
+    /*
+     * end of service lookup 
+     */
     return val_rnc_status;
 
-} // val_getnameinfo
+}                               // val_getnameinfo
 
 
 /*
  * A thread-safe, re-entrant version of val_gethostbyaddr 
  */
-int             
-val_gethostbyaddr_r(val_context_t   *ctx,
-                    const char      *addr,
-                    int              len,
-                    int              type,
-                    struct hostent  *ret,
-                    char            *buf,
-                    int              buflen,
+int
+val_gethostbyaddr_r(val_context_t * ctx,
+                    const char *addr,
+                    int len,
+                    int type,
+                    struct hostent *ret,
+                    char *buf,
+                    int buflen,
                     struct hostent **result,
-                    int             *h_errnop,
-                    val_status_t    *val_status) {
-  
+                    int *h_errnop, val_status_t * val_status)
+{
+
     const int       addr_size = 100;
     char            domain_string[addr_size], wire_addr[addr_size];
-    int  ret_status = 0, val_rnc_status = 0, bufused = 0;
+    int             ret_status = 0, val_rnc_status = 0, bufused = 0;
     struct val_result_chain *val_res = NULL;
 
-    /* no need to check context, val_resolve_and_check will check and
-       create if necessary */
+    /*
+     * no need to check context, val_resolve_and_check will check and
+     * create if necessary 
+     */
 
-    /* check misc parameters exist */
-    if ( !addr || !ret || !buf || (buflen <= 0) ||  
-         !result || !h_errnop || !val_status )
+    /*
+     * check misc parameters exist 
+     */
+    if (!addr || !ret || !buf || (buflen <= 0) ||
+        !result || !h_errnop || !val_status)
         return EAI_FAIL;
 
-    /* default the input parameters */
+    /*
+     * default the input parameters 
+     */
     *result = NULL;
     ret->h_name = NULL;
     ret->h_aliases = NULL;
     ret->h_addr_list = NULL;
 
-    /* get the address values, only support IPv4 and IPv6 */
-    if ( AF_INET == type && len >= sizeof(struct in_addr) ) {
+    /*
+     * get the address values, only support IPv4 and IPv6 
+     */
+    if (AF_INET == type && len >= sizeof(struct in_addr)) {
         ret->h_addrtype = type;
-        ret->h_length   = sizeof(struct in_addr);
-    }
-    else if ( AF_INET6 == type && len >= sizeof(struct in6_addr) ) {
+        ret->h_length = sizeof(struct in_addr);
+    } else if (AF_INET6 == type && len >= sizeof(struct in6_addr)) {
         ret->h_addrtype = type;
-        ret->h_length   = sizeof(struct in6_addr);
-    }
-    else {
+        ret->h_length = sizeof(struct in6_addr);
+    } else {
         *h_errnop = NO_RECOVERY;
         return (NO_RECOVERY);
     }
 
     memset(domain_string, 0, sizeof(char) * addr_size);
-    memset(wire_addr,     0, sizeof(char) * addr_size);
+    memset(wire_addr, 0, sizeof(char) * addr_size);
 
-    if ( 0 != 
-         (ret_status = address_to_reverse_domain(addr, type,
-                                                 domain_string, addr_size))
+    if (0 !=
+        (ret_status = address_to_reverse_domain(addr, type,
+                                                domain_string, addr_size))
         ) {
         *h_errnop = ret_status;
         return ret_status;
@@ -1368,159 +1410,194 @@ val_gethostbyaddr_r(val_context_t   *ctx,
 
     ns_name_pton(domain_string, wire_addr, addr_size);
 
-    /* if there is memory, add the address to hostent's address list */
-    if ( (buflen - bufused)  >= (ret->h_length + (sizeof(char *) * 2)) ) {
+    /*
+     * if there is memory, add the address to hostent's address list 
+     */
+    if ((buflen - bufused) >= (ret->h_length + (sizeof(char *) * 2))) {
         ret->h_addr_list = (char **) (buf + bufused);
         bufused = bufused + (sizeof(char *) * 2);
         ret->h_addr_list[0] = buf + bufused;
         ret->h_addr_list[1] = NULL;
         bufused = bufused + ret->h_length;
         memcpy(ret->h_addr_list[0], addr, ret->h_length);
-    }
-    else { /* no memory, fail */
+    } else {                    /* no memory, fail */
         *h_errnop = ERANGE;
         return ERANGE;
     }
-    
-    if ( 0 != 
-         (val_rnc_status = 
-          val_resolve_and_check(      ctx,  /* val_context_t *  */
-                                wire_addr,  /* u_char * wire_domain_name */
-                                ns_c_in,    /* const u_int16_t q_class */
-                                ns_t_ptr,   /* const u_int16_t type */
-                                0,          /* const u_int8_t flags */
-                                /* struct val_result_chain **results */
-                                &val_res)) ) {
+
+    if (0 != (val_rnc_status = val_resolve_and_check(ctx,       /* val_context_t *  */
+                                                     wire_addr, /* u_char * wire_domain_name */
+                                                     ns_c_in,   /* const u_int16_t q_class */
+                                                     ns_t_ptr,  /* const u_int16_t type */
+                                                     0, /* const u_int8_t flags */
+                                                     /*
+                                                      * struct val_result_chain **results 
+                                                      */
+                                                     &val_res))) {
         *h_errnop = val_rnc_status;
         return NO_RECOVERY;
     }
 
-    if (!val_res)  {
+    if (!val_res) {
         *h_errnop = NO_RECOVERY;
         return NO_RECOVERY;
     }
-  
-    /* assign global status */
+
+    /*
+     * assign global status 
+     */
     *val_status = val_res->val_rc_status;
 
-    /* get the rrset info returne */
-    if ( val_res->val_rc_answer && 
-         val_res->val_rc_answer->val_ac_rrset && 
-         val_res->val_rc_answer->val_ac_rrset->val_rrset_data &&
-         val_res->val_rc_answer->val_ac_rrset->val_rrset_data->rr_rdata &&
-         ns_c_in == val_res->val_rc_answer->val_ac_rrset->val_rrset_class_h
-         &&
-         ns_t_ptr == val_res->val_rc_answer->val_ac_rrset->val_rrset_type_h
-        )  {
+    /*
+     * get the rrset info returne 
+     */
+    if (val_res->val_rc_answer &&
+        val_res->val_rc_answer->val_ac_rrset &&
+        val_res->val_rc_answer->val_ac_rrset->val_rrset_data &&
+        val_res->val_rc_answer->val_ac_rrset->val_rrset_data->rr_rdata &&
+        ns_c_in == val_res->val_rc_answer->val_ac_rrset->val_rrset_class_h
+        &&
+        ns_t_ptr ==
+        val_res->val_rc_answer->val_ac_rrset->val_rrset_type_h) {
 
         struct val_rrset *rrset = val_res->val_rc_answer->val_ac_rrset;
-        struct rr_rec       *rr = rrset->val_rrset_data, *rr_it = NULL;
-        int count = 0, aliases_sz = 0;
+        struct rr_rec  *rr = rrset->val_rrset_data, *rr_it = NULL;
+        int             count = 0, aliases_sz = 0;
 
-        /* if the buffer has enough room add the first host address */
-        if ( (1 + rr->rr_rdata_length_h) < (buflen - bufused) ) {
-            /* setup hostent */
+        /*
+         * if the buffer has enough room add the first host address 
+         */
+        if ((1 + rr->rr_rdata_length_h) < (buflen - bufused)) {
+            /*
+             * setup hostent 
+             */
             ret->h_name = buf + bufused;
-            ns_name_ntop((char*)rr->rr_rdata, ret->h_name, (buflen - bufused));
+            ns_name_ntop((char *) rr->rr_rdata, ret->h_name,
+                         (buflen - bufused));
             bufused = bufused + strlen(ret->h_name) + 1;
 
             rr_it = rr->rr_next;
-            /* are there other hostnames? */
-            if ( rr_it ) {
-                /* calculate the amount of memory we need for aliases. */
-                do { 
-                    count++; 
+            /*
+             * are there other hostnames? 
+             */
+            if (rr_it) {
+                /*
+                 * calculate the amount of memory we need for aliases. 
+                 */
+                do {
+                    count++;
                     aliases_sz = aliases_sz + rr_it->rr_rdata_length_h + 1;
-                } while ( NULL != (rr_it = rr_it->rr_next) );
+                } while (NULL != (rr_it = rr_it->rr_next));
 
-                /* check that we have the space in the buffer */
-                if ( buflen >= 
-                     (bufused + (sizeof(char *) * (count + 1)) + aliases_sz) ) {
-                    /* assign the string pointer array */
+                /*
+                 * check that we have the space in the buffer 
+                 */
+                if (buflen >=
+                    (bufused + (sizeof(char *) * (count + 1)) +
+                     aliases_sz)) {
+                    /*
+                     * assign the string pointer array 
+                     */
                     ret->h_aliases = (char **) (buf + bufused);
                     bufused = bufused + (sizeof(char *) * (count + 1));
-          
-                    /* assign the strings */
+
+                    /*
+                     * assign the strings 
+                     */
                     rr_it = rr->rr_next;
                     count = 0;
                     do {
                         ret->h_aliases[count] = buf + bufused;
-                        ns_name_ntop((char*)rr_it->rr_rdata, 
-                                     ret->h_aliases[count], (buflen - bufused));
-                        bufused = bufused + strlen(ret->h_aliases[count]) +1;
+                        ns_name_ntop((char *) rr_it->rr_rdata,
+                                     ret->h_aliases[count],
+                                     (buflen - bufused));
+                        bufused =
+                            bufused + strlen(ret->h_aliases[count]) + 1;
                         count++;
-                    } while ( NULL != (rr_it = rr_it->rr_next) );
-                    /* mark end of array */
+                    } while (NULL != (rr_it = rr_it->rr_next));
+                    /*
+                     * mark end of array 
+                     */
                     ret->h_aliases[count] = NULL;
-                } 
-                /* else we didn't have enough memory for the aliases.  They
-                   will be ignored with only one hostname returned */
-            } /* else there are no other hostnames/aliases */
-        }
-        else { /* else there is not enough room for even one host name, fail */
+                }
+                /*
+                 * else we didn't have enough memory for the aliases.  They
+                 * will be ignored with only one hostname returned 
+                 */
+            }                   /* else there are no other hostnames/aliases */
+        } else {                /* else there is not enough room for even one host name, fail */
             ret->h_name = NULL;
             *h_errnop = ERANGE;
             return ERANGE;
         }
-    }
-    else { /* no rrset, but a succesful return from the query?, fail */
+    } else {                    /* no rrset, but a succesful return from the query?, fail */
         ret->h_name = NULL;
         *h_errnop = NO_RECOVERY;
         return NO_RECOVERY;
     }
 
-    /* no error, set result */
-    *result   = ret;
+    /*
+     * no error, set result 
+     */
+    *result = ret;
     *h_errnop = 0;
-    return 0;  
+    return 0;
 
-} /* val_getthostbyaddr_r */
+}                               /* val_getthostbyaddr_r */
 
 
 /*
  * A old version of gethostbyaddr for use with validator
  */
-struct hostent             
-*val_gethostbyaddr(val_context_t   *ctx,
-                   const char      *addr,
-                   int              len,
-                   int              type,
-                   val_status_t    *val_status) {
-/* static buffer size for hostent is set to 512 */
-    const   int buflen = 512;
-    static char buffer[512]; /* compiler doesn't consider a const, constant */
+struct hostent
+               *
+val_gethostbyaddr(val_context_t * ctx,
+                  const char *addr,
+                  int len, int type, val_status_t * val_status)
+{
+    /*
+     * static buffer size for hostent is set to 512 
+     */
+    const int       buflen = 512;
+    static char     buffer[512];        /* compiler doesn't consider a const, constant */
     static struct hostent ret_hostent;
 
     struct hostent *result_hostent = NULL;
-    int errnum = 0;
+    int             errnum = 0;
 
-/* set defaults for static values */
+    /*
+     * set defaults for static values 
+     */
     memset(buffer, 0, sizeof(char) * buflen);
-    ret_hostent.h_name      = NULL;
-    ret_hostent.h_aliases   = NULL;
-    ret_hostent.h_addrtype  = 0;
-    ret_hostent.h_length    = 0;
+    ret_hostent.h_name = NULL;
+    ret_hostent.h_aliases = NULL;
+    ret_hostent.h_addrtype = 0;
+    ret_hostent.h_length = 0;
     ret_hostent.h_addr_list = NULL;
-    
-    int response = val_gethostbyaddr_r(ctx,
-                                       addr, len, type,
-                                       &ret_hostent,
-                                       buffer, buflen,
-                                       &result_hostent,
-                                       &errnum,
-                                       val_status);
+
+    int             response = val_gethostbyaddr_r(ctx,
+                                                   addr, len, type,
+                                                   &ret_hostent,
+                                                   buffer, buflen,
+                                                   &result_hostent,
+                                                   &errnum,
+                                                   val_status);
 
     if (response != 0) {
         h_errno = response;
         return NULL;
     }
-/* should have succeeded, if memory doesn't match, fail. */
+    /*
+     * should have succeeded, if memory doesn't match, fail. 
+     */
     else if (&ret_hostent != result_hostent) {
         h_errno = NO_RECOVERY;
         return NULL;
     }
 
-    /* success */
+    /*
+     * success 
+     */
     h_errno = 0;
     return &ret_hostent;
-} /* val_gethostbyaddr */
+}                               /* val_gethostbyaddr */
