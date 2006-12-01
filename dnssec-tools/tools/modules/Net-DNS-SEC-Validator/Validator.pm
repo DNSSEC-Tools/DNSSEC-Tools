@@ -211,21 +211,21 @@ __END__
 
 =head1 NAME
 
-Net::DNS::SEC::Validator - interface to lival(3) and related
-constants, structures and functions.
+    Net::DNS::SEC::Validator - interface to libval(3) and related constants, structures and functions.
 
 =head1 SYNOPSIS
 
-use Net::DNS::SEC::Validator;
-use Net::DNS::Packet;
-use Net::hostent;
-use Net::addrinfo;
-use Socket qw(:all);
+ use Net::DNS::SEC::Validator;
+ use Net::DNS::Packet;
+ use Net::hostent;
+ use Net::addrinfo;
+ use Socket qw(:all);
 
-my $validator = new Net::DNS::SEC::Validator(policy => ":");
-my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
-my $r = $validator->res_query("marzot.net", "IN", "MX");
-my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",AF_INET6);
+ my $validator = new Net::DNS::SEC::Validator(policy => ":");
+ my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+ my $r = $validator->res_query("marzot.net", "IN", "MX");
+ my $h = $validator->gethostbyname("good-AAAA.test.dnssec-tools.org",
+    AF_INET6);
 
 =head1 DESCRIPTION
 
@@ -241,120 +241,146 @@ Details of DNSSEC and associated resolver behavior may be found in the
 core DNSSEC RFCs (4033-4035).
 
 =head1 INTERFACE:
+ 
+A description of the API follows:
 
-Contructor:
+=head2 Contructor:
 
 To create a validator object use the Net::DNS::SEC::Validator->new()
 method. This method optionally takes a policy label (policy =>
 'label'), or default to using the default label in the libval(3)
 dnsval.conf file.
 
-Data Fields:
+=head2 Data Fields:
 
-$validator->{error}		=> the latest method error code
-$validator->{errorStr}		=> the latest method error string
-$validator->{valStatus}		=> the val_status of last call (if single)
-$validator->{valStatusStr}	=> the val_status string of last call
+ $validator->{error} =>The latest method error code
+ $validator->{errorStr} => the latest method error string
+ $validator->{valStatus} => the val_status of last call (if single)
+ $validator->{valStatusStr} => the val_status string of last call
 
 
-Methods:
+=head2 Methods:
 
-$validator->getaddrinfo(<name>[,<service>[,<hints>]])
-   where
-      <name> 	=> is the node name or numeric address being queried
-      <service> => is the name or number represting the service
-		   (note: <name> or <service> may be undef, but not both)
-      <hint>	=> a Net::addrinfo object specying flags, family, etc.
 
-   returns:
-      	an array of Net::addrinfo objects (augmented with a 'val_status'
-	field). On error, returns an empty array. in scalar context
-	returns first Net::addrinfo object, or undef on error.
+=head2 $validator->getaddrinfo(<name>[,<service>[,<hints>]])
+
+=head3   where:
+
+    <name> => is the node name or numeric address being queried
+    <service> => is the name or number represting the service
+    (note: <name> or <service> may be undef, but not both)
+    <hint> => a Net::addrinfo object specying flags, family, etc.
+
+=head3   returns:
+
+    An array of Net::addrinfo objects (augmented with a 'val_status'
+    field). On error, returns an empty array. in scalar context
+    returns first Net::addrinfo object, or undef on error.
                   
-$validator->gethostbyname(<name>[,<family>])
-   where
-      <name> 	=> is the node name or numeric address being queried
-      <family> 	=> the address family of returned entry (default: AF_INET)
 
-   returns:
-      	A Net::hostent object. Validator valStatus/valStatusStr fields
-	will be updated. On error, undef is returned and validator object
-	error/errorStr fields are updated.
+=head2 $validator->gethostbyname(<name>[,<family>])
+
+=head3   where:
+
+    <name> => is the node name or numeric address being queried
+    <family> => the address family of returned entry (default: AF_INET)
+
+=head3   returns:
+
+    A Net::hostent object. Validator valStatus/valStatusStr fields
+    will be updated. On error, undef is returned and validator object
+    error/errorStr fields are updated.
+
                   
-$validator->res_query(<name>[,<class>[,<type>]])
-   where
-      <name> 	=> is the node name or numeric address being queried
-      <class> 	=> is the DNS class of the record being queried (default: IN)
-      <type>	=> is the DNS record type being queried (defailt A)
+=head2 $validator->res_query(<name>[,<class>[,<type>]])
 
-   returns:
-	A packed DNS query result is returned on success. This object is
-	suitable to be passed to the Net::DNS::Packet(\$result)
-	interface for parsing. Validator valStatus/valStatusStr fields
-	will be updated. On error, undef is returned and validator
-	object error/errorStr fields are updated.
+=head3   where:
 
-$validator->policy([<label>])
-   where
-      <label> 	=> the policy label to use (old context is destroyed)
-			(default: ":" dnsval.conf default policy)
+    <name> 	=> is the node name or numeric address being queried
+    <class> 	=> is the DNS class of the record being queried (default: IN)
+    <type>	=> is the DNS record type being queried (defailt A)
 
-   returns:
-      	the policy label currently (after change) being used.
+=head3   returns:
+
+    A packed DNS query result is returned on success. This object is
+    suitable to be passed to the Net::DNS::Packet(\$result)
+    interface for parsing. Validator valStatus/valStatusStr fields
+    will be updated. On error, undef is returned and validator
+    object error/errorStr fields are updated.
+
+
+=head2 $validator->policy([<label>])
+
+=head3   where:
+
+    <label> 	=> the policy label to use (old context is destroyed)
+    (default: ":" dnsval.conf default policy)
+
+=head3   returns:
+
+    the policy label currently (after change) being used.
                   
-$validator->istrusted([<val_status>])
-   where
-      <val_status> => numeric vaildator status code
-		   	(default: $validator->{valStatus})
 
-   returns:
-      	A boolean positive value if <val_status> is a trusted result.
-                  
-$validator->valStatusStr([<val_status>])
-   where
-      <val_status> => numeric vaildator status code
-		   	(default: $validator->{valStatus})
+=head2 $validator->istrusted([<val_status>])
 
-   returns:
-      	A string representation of the given <val_status>.
+=head3   where:
+
+    <val_status> => numeric vaildator status code
+    (default: $validator->{valStatus})
+
+=head3   returns:
+
+    A boolean positive value if <val_status> is a trusted result.
                   
-                         
+
+=head2 $validator->valStatusStr([<val_status>])
+
+=head3   where:
+
+    <val_status> => numeric vaildator status code
+    (default: $validator->{valStatus})
+
+=head3   returns:
+
+    A string representation of the given <val_status>.
+                  
+
 =head1 EXAMPLES
 
-use Net::DNS::SEC::Validator;
-use Net::DNS::Packet;
-use Net::hostent;
-use Net::addrinfo;
-use Socket qw(:all);
 
-# construct object
-my $validator = new Net::DNS::SEC::Validator(policy => ":");
-
-# change validation policy
-$validator->policy("validate_tools:");
-
-# fetch array of Net::addrinfo objects
-my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
-foreach $a (@r) {
-    print $a->stringify, " is trusted\n"
-	if $validator->istrusted($a->val_status));
-}
-
-# query an MX record
-my $r = $validator->res_query("marzot.net", "IN", "MX");
-my ($pkt, $err) = new Net::DNS::Packet(\$r);
-print ($validator->istrusted ? 
-	"result is trusted\n" : 
-	"result is NOT trusted\n");
-
-my $h = $validator->gethostbyname("good-A.test.dnssec-tools.org");
-if ( @{$h->addr_list}) { 
-my $i;
-   for $addr ( @{$h->addr_list} ) {
-	printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
-   } 
-}
-
+  use Net::DNS::SEC::Validator;
+  use Net::DNS::Packet;
+  use Net::hostent;
+  use Net::addrinfo;
+  use Socket qw(:all);
+ 
+  # construct object
+  my $validator = new Net::DNS::SEC::Validator(policy => ":");
+ 
+  # change validation policy
+  $validator->policy("validate_tools:");
+ 
+  # fetch array of Net::addrinfo objects
+  my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+  foreach $a (@r) {
+     print $a->stringify, " is trusted\n"
+ 	if $validator->istrusted($a->val_status));
+  }
+ 
+  # query an MX record
+  my $r = $validator->res_query("marzot.net", "IN", "MX");
+  my ($pkt, $err) = new Net::DNS::Packet(\$r);
+  print ($validator->istrusted ? 
+ 	"result is trusted\n" : 
+ 	"result is NOT trusted\n");
+ 
+  my $h = $validator->gethostbyname("good-A.test.dnssec-tools.org");
+  if ( @{$h->addr_list}) { 
+  my $i;
+    for $addr ( @{$h->addr_list} ) {
+ 	printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
+    } 
+ }
 
 =head1 COPYRIGHT
 
@@ -368,4 +394,6 @@ my $i;
 
 =head1 AUTHOR
 
-G. S. Marzot (marz@users.sourceforge.net)
+ G. S. Marzot (marz@users.sourceforge.net)
+
+=cut

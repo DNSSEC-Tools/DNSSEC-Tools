@@ -126,11 +126,11 @@ ok($r);
 ok(not $err);
 
 # this crashes
-#$r = $validator->res_query("mail.marzot.net", "IN", "MX");
-#ok($r);
-#print STDERR length($r),":",$validator->{valStatusStr},"\n";
-#($pkt, $err) = new Net::DNS::Packet(\$r);
-#ok(not $err);
+$r = $validator->res_query("mail.marzot.net", "IN", "MX");
+ok($r);
+print STDERR length($r),":",$validator->{valStatusStr},"\n";
+($pkt, $err) = new Net::DNS::Packet(\$r);
+ok(not $err);
 
 
 
