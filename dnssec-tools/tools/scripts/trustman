@@ -47,6 +47,7 @@ GetOptions(\%opts,
              'L|syslog',
              'p|print',
              'N|no_error',
+             'V|version',
              'm|mail_contact_addr=s');
 
 if ($opts{'h'}) {
@@ -148,8 +149,14 @@ if ($opts{'f'}) {
     }
 } 
 
+sub show_version {
+    print STDERR "Version: 0.7\n";
+    print STDERR "DNSSEC-Tools Version: 1.0\n";
+    exit(1);
+}
+
 sub usage {
-    print "trustman [-d domain] [-L] [-f] [-c -o] [-v]\n";
+    print "trustman [-d domain] [-L] [-f] [-c -o] [-v] [-V]\n";
     print "additional documentation coming soon\n";
 #    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
 #    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
@@ -725,6 +732,10 @@ Send report when there are no errors.
 =item -v
 
 Verbose.
+
+=item -V
+
+Version.
 
 =back #unindent
 =head1 PRE-REQUISITES
