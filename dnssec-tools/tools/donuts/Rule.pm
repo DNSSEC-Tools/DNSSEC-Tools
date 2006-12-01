@@ -8,7 +8,7 @@ package Net::DNS::SEC::Tools::Donuts::Rule;
 use strict;
 use Net::DNS;
 my $have_textwrap = eval { require Text::Wrap };
-our $VERSION="0.1";
+our $VERSION="1.0";
 
 sub new {
     my ($class, $ref) = @_;
