@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Introduction</title><meta name="generator" content="DocBook XSL Stylesheets V1.70.1"><link rel="start" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="up" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="prev" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="next" href="step-toolset-configure.html" title="Configure DNSSEC-Tools"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Introduction</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="index.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="step-toolset-configure.html">Next</a></td></tr></table><hr></div><div class="section" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="intro"></a>Introduction</h2></div></div></div><p>DNS Security (DNSSEC) helps protect against DNS-spoofing attacks by
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 1. Introduction</title><meta name="generator" content="DocBook XSL Stylesheets V1.70.1"><link rel="start" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="up" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="prev" href="index.html" title="Step-by-Step DNSSEC-Tools Operator Guidance Document"><link rel="next" href="intro-organization.html" title="Organization of this Document"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 1. Introduction</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="index.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> <a accesskey="n" href="intro-organization.html">Next</a></td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="intro"></a>Chapter 1. Introduction</h2></div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><span class="section"><a href="intro-organization.html">Organization of this Document</a></span></dt><dt><span class="section"><a href="intro-key-concepts.html">Key Concepts</a></span></dt><dd><dl><dt><span class="section"><a href="intro-key-concepts.html#id935374">Zones and Authentication Keys</a></span></dt><dt><span class="section"><a href="intro-key-concepts.html#id935386">Zone Rollover</a></span></dt><dt><span class="section"><a href="intro-key-concepts.html#id935406">Key-Tag Tables</a></span></dt><dt><span class="section"><a href="intro-key-concepts.html#id935420">Keyrec Files</a></span></dt><dt><span class="section"><a href="intro-key-concepts.html#id935433">Rollrec Files</a></span></dt></dl></dd><dt><span class="section"><a href="intro-conventions.html">Conventions Used in this Document</a></span></dt><dt><span class="section"><a href="intro-acknowledgments.html">Acknowledgments</a></span></dt><dt><span class="section"><a href="intro-comments.html">Comments</a></span></dt></dl></div><p>DNS Security (DNSSEC) helps protect against DNS-spoofing attacks by
     providing origin authentication and integrity protection of DNS
     information. Proper maintenance of a DNSSEC-enhanced DNS zone is essential
     to protecting the domain's zone data.</p><p>This Step-by-Step DNSSEC-Tools Operator Guidance Document is
@@ -17,59 +17,4 @@
     ease the deployment of DNSSEC-related technologies. For more information
     about this project and the tools that are being developed and provided,
     please see the DNSSEC-Tools project web page at:
-    <code class="uri">http://www.dnssec-tools.org</code>.</p><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="intro-organization"></a>Organization of this Document</h3></div></div></div><p>This guide contains the following sections.</p><p>Section 1. Introduction to the Step-By-Step Guide.</p><p>Section 2. Describes the configuration required before the
-        DNSSEC-Tools utilities may be used.</p><p>Section 3. Describes how to perform an initial signing of a
-        zone.</p><p>Section 4. Provides the steps required to configure a name
-        server to serve a signed zone.</p><p>Section 5. Gives information on checking for expiration of a
-        zone's signatures.</p><p>Section 6. Describes how to re-sign a previously signed
-        zone.</p><p>Section 7. Provides the commands required for a child zone to
-        create a signed delegation.</p><p>Section 8. Gives the commands required for a parent zone to
-        create a signed delegation.</p><p>Section 9. Describes the Pre-Publish Scheme, which is used in
-        rollover operations of ZSK keys.</p><p>Section 10. Provides the Double-Signature Scheme, which is used
-        in rollover operations of KSK keys.</p><p>Section 11. Gives the emergency rollover procedures to take in
-        the event of a ZSK key compromise.</p><p>Section 12. Describes the emergency rollover procedures to take
-        in the event of a Published ZSK key compromise.</p><p>Section 13. Provides the emergency rollover procedures to take
-        in the event that both the Published and Current ZSK keys are
-        compromised.</p><p>Section 14. Gives the emergency rollover procedures to take if
-        the KSK key is compromised.</p><p>Section 15. Describes the actions a parent zone must take when a
-        child zone's KSK key is compromised.</p><p>Section 16. Provides a migration path for moving to using the
-        DNSSEC-Tools toolset.</p><p>Section 17. Gives information on configuring a secure
-        resolver.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id902184"></a>Key Concepts</h3></div></div></div><p>A number of concepts must be known in order to understand this
-        document.</p><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id902194"></a>Zones and Authentication Keys</h4></div></div></div><p>Zones and Authentication Keys are essential for
-            understanding this document, but they are also beyond its
-            scope.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id902206"></a>Zone Rollover</h4></div></div></div><p>As zone signatures expire, the zone must be re-signed with
-            new keys. The process of generating new keys
-            and re-signing the zone is called <span class="emphasis"><em>zone
-            rollover</em></span>. There are several rollover schemes (e.g.,
-            Double-Signature Scheme and Pre-Publish Scheme) that are used for
-            various purposes. These schemes are described in Sections ??? and
-            ???.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id902227"></a>Key-Tag Tables</h4></div></div></div><p>The Key-Tag Table is a record of zones, the zone's keys,
-            attributes of the keys, and expiration dates. This may be kept in
-            any usable form -- computer file, notebook, etc.
-            </p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id902240"></a>Keyrec Files</h4></div></div></div><p>Keyrec files function as Key-Tag Tables for DNSSEC-Tools
-            utilities. They can be hand-edited, but the DNSSEC-Tools update
-            them automatically.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h4 class="title"><a name="id902253"></a>Rollrec Files</h4></div></div></div><p>Rollrec files contain information needed by the DNSSEC-Tools
-            key rollovers. They can be hand-edited, but the DNSSEC-Tools
-            update them automatically.</p></div></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="intro-conventions"></a>Conventions Used in this Document</h3></div></div></div><p>One of the goals of this document is to self-contain DNS
-        Security operations within sections and prevent constant
-        cross-referencing between sections. Consequently, certain parts of the
-        text are repeated throughout the document.</p><p>Text marked in bold represents text or commands entered by users
-        within a given procedural step.</p><p>Underlined text, which can also be bold, is a place-holder for
-        actual run-time values. These values are either automatically
-        generated or are values that are known to the user from some other
-        step.</p><p>Additionally, the following typographical conventions are used
-        in this document.</p><div class="table"><a name="id902302"></a><p class="title"><b>Table 2. </b></p><div class="table-contents"><table border="0"><colgroup><col><col></colgroup><tbody><tr><td>
-                            <span class="application">command</span>
-                        </td><td>Command names</td></tr><tr><td>
-                            <code class="filename">filename</code>
-                        </td><td>File and path names</td></tr><tr><td>
-                            <code class="uri">URL</code>
-                        </td><td>Web URLs</td></tr><tr><td>
-                            <span><strong class="command">execution</strong></span>
-                        </td><td>Simple command executions</td></tr></tbody></table></div></div><br class="table-break"><p>Longer sets of command sequences are given in this
-        format:</p><table class="simplelist" border="0" summary="Simple list"><tr><td><span><strong class="command"># cd /tmp</strong></span>
-            <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command"># ls</strong></span>
-            <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command"># rm -fr *</strong></span>
-            <strong class="userinput"><code>[ENTER]</code></strong></td></tr><tr><td><span><strong class="command">#</strong></span></td></tr></table><p>In most cases, output will not be displayed for given command
-        sequences.</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="intro-acknowledgments"></a>Acknowledgments</h3></div></div></div><p>This document builds upon the procedures laid out in [<a href="references.html#dnssec-operators-guide" title="[dnssec-operators-guide]">dnssec-operators-guide</a>].</p></div><div class="section" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="intro-comments"></a>Comments</h3></div></div></div><p>Please send any comments and corrections to
-        sparta-dnssec@tislabs.com.</p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="index.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="step-toolset-configure.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Step-by-Step DNSSEC-Tools Operator Guidance Document </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Configure DNSSEC-Tools</td></tr></table></div></body></html>
+    <code class="uri">http://www.dnssec-tools.org</code>.</p></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="index.html">Prev</a> </td><td width="20%" align="center"> </td><td width="40%" align="right"> <a accesskey="n" href="intro-organization.html">Next</a></td></tr><tr><td width="40%" align="left" valign="top">Step-by-Step DNSSEC-Tools Operator Guidance Document </td><td width="20%" align="center"><a accesskey="h" href="index.html">Home</a></td><td width="40%" align="right" valign="top"> Organization of this Document</td></tr></table></div></body></html>

@@ -6,10 +6,10 @@
 #
 
 # NOTE: This needs to point to the DocBook XSL Stylesheet directory
-DOCBOOK_XSL="/Applications/xxe-std-30/XMLEditor.app/Contents/Resources/addon/config/docbook/xsl"
+DOCBOOK_XSL="/Applications/xxe-std-3_5_0/XMLEditor.app/Contents/Resources/addon/config/docbook/xsl"
 
 # NOTE: This may need to be adjusted to point to your libxslt installation
-XSLTPROC=/usr/bin/xsltproc
+XSLTPROC=/opt/local/bin/xsltproc
 
 # NOTE: These may need to be adjusted to point to your FOP installation
 FOP=/opt/fop/fop.sh
