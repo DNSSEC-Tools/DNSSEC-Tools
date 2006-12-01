@@ -50,10 +50,10 @@
 #endif
 
 #ifndef NS_MAXDNAME
-#define NS_MAXDNAME 1025    /* maximum domain name */
+#define NS_MAXDNAME 1025        /* maximum domain name */
 #endif
 #ifndef NS_MAXCDNAME
-#define NS_MAXCDNAME    255 /* maximum compressed domain name */
+#define NS_MAXCDNAME    255     /* maximum compressed domain name */
 #endif
 
 /** START:some missing macros on OpenBSD 3.9 */
@@ -91,9 +91,9 @@
 #define ns_t_nsec     47
 #endif
 
-#ifdef LIBVAL_NSEC3 
+#ifdef LIBVAL_NSEC3
 #ifndef ns_t_nsec3
-#define ns_t_nsec3   65324 
+#define ns_t_nsec3   65324
 #endif
 #endif
 
@@ -107,19 +107,19 @@
 #define SR_UNSET    0
 
 #define SR_INTERNAL_ERROR         1
-#define SR_CALL_ERROR             SR_INTERNAL_ERROR 
-#define SR_MEMORY_ERROR           SR_INTERNAL_ERROR 
-#define SR_MKQUERY_INTERNAL_ERROR SR_INTERNAL_ERROR 
-#define SR_TSIG_INTERNAL_ERROR    SR_INTERNAL_ERROR 
-#define SR_SEND_INTERNAL_ERROR    SR_INTERNAL_ERROR 
-#define SR_RCV_INTERNAL_ERROR     SR_INTERNAL_ERROR 
+#define SR_CALL_ERROR             SR_INTERNAL_ERROR
+#define SR_MEMORY_ERROR           SR_INTERNAL_ERROR
+#define SR_MKQUERY_INTERNAL_ERROR SR_INTERNAL_ERROR
+#define SR_TSIG_INTERNAL_ERROR    SR_INTERNAL_ERROR
+#define SR_SEND_INTERNAL_ERROR    SR_INTERNAL_ERROR
+#define SR_RCV_INTERNAL_ERROR     SR_INTERNAL_ERROR
 
 #define SR_TSIG_ERROR             2
 #define SR_NO_ANSWER              3     /* No answer received */
 #define SR_NO_ANSWER_YET          4     /* No answer as yet, but this value will change */
-#define SR_WRONG_ANSWER           5    /*Message is not a response to a query */
-#define SR_HEADER_BADSIZE         6    /*Message size not consistent with record counts */
-#define SR_DNS_GENERIC_ERROR      7    /*Look at RCODE */
+#define SR_WRONG_ANSWER           5     /*Message is not a response to a query */
+#define SR_HEADER_BADSIZE         6     /*Message size not consistent with record counts */
+#define SR_DNS_GENERIC_ERROR      7     /*Look at RCODE */
 #define SR_EDNS_VERSION_ERROR     8
 #define SR_UNSUPP_EDNS0_LABEL     9
 #define SR_NAME_EXPANSION_FAILURE 10
@@ -132,7 +132,7 @@
 #define SR_LAST_ERROR             22
 
 struct name_server {
-    u_int8_t       ns_name_n[NS_MAXCDNAME];
+    u_int8_t        ns_name_n[NS_MAXCDNAME];
     void           *ns_tsig;
     u_int32_t       ns_security_options;
     u_int32_t       ns_status;

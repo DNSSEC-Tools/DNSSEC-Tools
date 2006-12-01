@@ -17,10 +17,9 @@
  * OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-u_int
-inet_nsap_addr(const char *ascii, u_char * binary, int maxlen);
+u_int inet_nsap_addr(const char *ascii, u_char * binary, int maxlen);
 
-char           *
-inet_nsap_ntoa(int binlen, const u_char * binary, char *ascii);
+char           *inet_nsap_ntoa(int binlen, const u_char * binary,
+                               char *ascii);
 
-#endif                          /*NSAP_ADDR_H*/
+#endif                          /*NSAP_ADDR_H */

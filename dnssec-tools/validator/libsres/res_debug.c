@@ -405,15 +405,15 @@ p_fqname(const u_char * cp, const u_char * msg, FILE * file)
  *
  * And, for once, solaris has a better header than the rest, and has const
  * char ptrs in res_sym.
-  */
+ */
 #if (defined(__p_class_syms) || defined(sun) || defined(__FreeBSD__))
 #define RES_SYM_TYPE res_sym
 #else
 #define RES_SYM_TYPE res_sym_const
 struct res_sym_const {
-    int     number;         /* Identifying number, like T_MX */
-    const char *  name;           /* Its symbolic name, like "MX" */
-    const char *  humanname;      /* Its fun name, like "mail exchanger" */
+    int             number;     /* Identifying number, like T_MX */
+    const char     *name;       /* Its symbolic name, like "MX" */
+    const char     *humanname;  /* Its fun name, like "mail exchanger" */
 };
 #endif
 
@@ -528,7 +528,7 @@ const struct RES_SYM_TYPE __p_type_syms[] = {
     {ns_t_dnskey, "DNSKEY", "DNS keys"},
     {ns_t_rrsig, "RRSIG", "signatures"},
     {ns_t_nsec, "NSEC", "next record"},
-#ifdef LIBVAL_NSEC3 
+#ifdef LIBVAL_NSEC3
     {ns_t_nsec3, "NSEC3", "NSEC3 next record"},
 #endif
     {ns_t_ds, "DS", "delegation signer"},
@@ -620,7 +620,8 @@ p_type(int type)
     const char     *result;
     static char     typebuf[20];
 
-    result = sym_ntos((const struct res_sym*)__p_type_syms, type, &success);
+    result =
+        sym_ntos((const struct res_sym *) __p_type_syms, type, &success);
     if (success)
         return (result);
     if (type < 0 || type > 0xfff)
@@ -639,10 +640,10 @@ p_section(int section, int opcode)
 
     switch (opcode) {
     case ns_o_update:
-        symbols = (const struct res_sym*)__p_update_section_syms;
+        symbols = (const struct res_sym *) __p_update_section_syms;
         break;
     default:
-        symbols = (const struct res_sym*)__p_default_section_syms;
+        symbols = (const struct res_sym *) __p_default_section_syms;
         break;
     }
     return (sym_ntos(symbols, section, (int *) 0));
@@ -658,7 +659,8 @@ p_class(int class)
     const char     *result;
     static char     classbuf[20];
 
-    result = sym_ntos((const struct res_sym*)__p_class_syms, class, &success);
+    result =
+        sym_ntos((const struct res_sym *) __p_class_syms, class, &success);
     if (success)
         return (result);
     if (class < 0 || class > 0xfff)
@@ -752,7 +754,8 @@ p_time(u_int32_t value)
 const char     *
 p_rcode(int rcode)
 {
-    return (sym_ntos((const struct res_sym*)__p_rcode_syms, rcode, (int *) 0));
+    return (sym_ntos
+            ((const struct res_sym *) __p_rcode_syms, rcode, (int *) 0));
 }
 
 /*
@@ -801,7 +804,7 @@ static const unsigned int poweroften[10] =
 static const char *
 precsize_ntoa(u_int8_t prec)
 {
-    static char     retbuf[sizeof("90000000.00")];       /* XXX nonreentrant */
+    static char     retbuf[sizeof("90000000.00")];      /* XXX nonreentrant */
     unsigned long   val;
     int             mantissa, exponent;
 
@@ -1257,7 +1260,8 @@ res_nametoclass(const char *buf, int *successp)
     char           *endptr;
     int             success;
 
-    result = sym_ston((const struct res_sym*)__p_class_syms, buf, &success);
+    result =
+        sym_ston((const struct res_sym *) __p_class_syms, buf, &success);
     if (success)
         goto done;
 
@@ -1281,7 +1285,8 @@ res_nametotype(const char *buf, int *successp)
     char           *endptr;
     int             success;
 
-    result = sym_ston((const struct res_sym*)__p_type_syms, buf, &success);
+    result =
+        sym_ston((const struct res_sym *) __p_type_syms, buf, &success);
     if (success)
         goto done;
 

@@ -219,7 +219,8 @@ theres_something_wrong_with_header(u_int8_t * response,
                 type_h = retrieve_type(&response[auth_index]);
 
 #ifdef LIBVAL_NSEC3
-                if (type_h == ns_t_soa || type_h == ns_t_nsec || type_h == ns_t_nsec3)
+                if (type_h == ns_t_soa || type_h == ns_t_nsec
+                    || type_h == ns_t_nsec3)
                     return SR_UNSET;
 #else
                 if (type_h == ns_t_soa || type_h == ns_t_nsec)
@@ -260,7 +261,7 @@ theres_something_wrong_with_header(u_int8_t * response,
 int
 clone_ns(struct name_server **cloned_ns, struct name_server *ns)
 {
-    int i, j;
+    int             i, j;
 
     if (ns == NULL) {
         *cloned_ns = NULL;
@@ -292,32 +293,36 @@ clone_ns(struct name_server **cloned_ns, struct name_server *ns)
     (*cloned_ns)->ns_retrans = ns->ns_retrans;
     (*cloned_ns)->ns_retry = ns->ns_retry;
 
-    (*cloned_ns)->ns_address = (struct sockaddr_storage **) 
-        MALLOC (ns->ns_number_of_addresses * sizeof(struct sockaddr_storage *));
-    if((*cloned_ns)->ns_address == NULL) {
+    (*cloned_ns)->ns_address = (struct sockaddr_storage **)
+        MALLOC(ns->ns_number_of_addresses *
+               sizeof(struct sockaddr_storage *));
+    if ((*cloned_ns)->ns_address == NULL) {
         return SR_MEMORY_ERROR;
     }
-    for(i=0; i< ns->ns_number_of_addresses; i++) {
-        (*cloned_ns)->ns_address[i] = (struct sockaddr_storage *) MALLOC (sizeof(struct sockaddr_storage));
+    for (i = 0; i < ns->ns_number_of_addresses; i++) {
+        (*cloned_ns)->ns_address[i] =
+            (struct sockaddr_storage *)
+            MALLOC(sizeof(struct sockaddr_storage));
         if ((*cloned_ns)->ns_address[i] == NULL) {
-            for(j=0; j<i; j++) {
+            for (j = 0; j < i; j++) {
                 FREE((*cloned_ns)->ns_address[i]);
             }
             FREE((*cloned_ns)->ns_address);
             (*cloned_ns)->ns_address = NULL;
         }
     }
-    
-    if((ns->ns_number_of_addresses > 0) && (*cloned_ns)->ns_address == NULL) {
-        FREE (*cloned_ns);
+
+    if ((ns->ns_number_of_addresses > 0)
+        && (*cloned_ns)->ns_address == NULL) {
+        FREE(*cloned_ns);
         *cloned_ns = NULL;
         return SR_MEMORY_ERROR;
     }
-    (*cloned_ns)->ns_number_of_addresses = ns->ns_number_of_addresses; 
+    (*cloned_ns)->ns_number_of_addresses = ns->ns_number_of_addresses;
     (*cloned_ns)->ns_next = NULL;
-    for (i=0; i<ns->ns_number_of_addresses; i++) {
+    for (i = 0; i < ns->ns_number_of_addresses; i++) {
         memcpy((*cloned_ns)->ns_address[i], (ns)->ns_address[i],
-           sizeof(struct sockaddr_storage));
+               sizeof(struct sockaddr_storage));
     }
 
     return SR_UNSET;
