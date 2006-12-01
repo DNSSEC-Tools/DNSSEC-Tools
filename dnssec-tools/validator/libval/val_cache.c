@@ -44,7 +44,7 @@ static int      rwlock_init = -1;
 static struct name_server *root_ns = NULL;
 
 struct zone_ns_map_t {
-    u_int8_t zone_n[NS_MAXCDNAME];
+    u_int8_t        zone_n[NS_MAXCDNAME];
     struct name_server *nslist;
     struct zone_ns_map_t *next;
 };
@@ -196,7 +196,7 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
                  u_int16_t type_h, struct rrset_rec **cloned_answer)
 {
     struct rrset_rec *next_answer, *prev;
-    struct timeval    tv;
+    struct timeval  tv;
 
     LOCK_INIT();
 
@@ -223,19 +223,20 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
         break;
     }
 
-    /* XXX get_cached_rrset should return a domain_info structure
+    /*
+     * XXX get_cached_rrset should return a domain_info structure
      * XXX This is to allow a CNAME chain to be returned
      * XXX In such cases, the qname_chain will also have to be tweaked 
      * XXX appropriately
      * XXX Look for a cached CNAME
-     */  
+     */
     prev = NULL;
     while (next_answer) {
 
         if ((next_answer->rrs.val_rrset_type_h == type_h) &&
             (next_answer->rrs.val_rrset_class_h == class_h) &&
             (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0) &&
-            (tv.tv_sec > next_answer->rrs.val_rrset_ttl_x )) {
+            (tv.tv_sec > next_answer->rrs.val_rrset_ttl_x)) {
             if (next_answer->rrs.val_rrset_data != NULL) {
                 *cloned_answer = copy_rrset_rec(next_answer);
                 break;
@@ -388,35 +389,38 @@ get_root_ns(struct name_server **ns)
  * data for it 
  */
 int
-store_ns_for_zone(u_int8_t *zonecut_n, struct name_server *resp_server) 
+store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
 {
     struct zone_ns_map_t *map_e;
 
     if (!zonecut_n || !resp_server)
         return VAL_NO_ERROR;
-    
+
     LOCK_INIT();
     LOCK_EX();
 
-    for (map_e=zone_ns_map; map_e; map_e=map_e->next) {
+    for (map_e = zone_ns_map; map_e; map_e = map_e->next) {
 
         if (!namecmp(map_e->zone_n, zonecut_n)) {
-            /* store more recent */
+            /*
+             * store more recent 
+             */
             free_name_servers(&map_e->nslist);
             clone_ns_list(&map_e->nslist, resp_server);
             break;
         }
-    } 
-    
+    }
+
     if (!map_e) {
-        map_e = (struct zone_ns_map_t *) MALLOC (sizeof (struct zone_ns_map_t));
+        map_e =
+            (struct zone_ns_map_t *) MALLOC(sizeof(struct zone_ns_map_t));
         if (map_e == NULL)
             return VAL_OUT_OF_MEMORY;
 
         clone_ns_list(&map_e->nslist, resp_server);
         memcpy(map_e->zone_n, zonecut_n, wire_name_length(zonecut_n));
         map_e->next = NULL;
-        
+
         if (zone_ns_map != NULL)
             map_e->next = zone_ns_map;
         zone_ns_map = map_e;
@@ -442,7 +446,7 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
     u_int16_t       qtype;
     u_int8_t       *qname_n;
     struct zone_ns_map_t *map_e, *saved_map;
-    
+
     qname_n = matched_q->qc_name_n;
     qtype = matched_q->qc_type_h;
 
@@ -457,23 +461,25 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
      * NS information is available here 
      */
     saved_map = NULL;
-    for (map_e=zone_ns_map; map_e; map_e=map_e->next) {
+    for (map_e = zone_ns_map; map_e; map_e = map_e->next) {
 
-        /* check if zone is within query */
-        if (NULL != (p = (u_int8_t *) strstr((char *)map_e->zone_n, 
-                                             (char *)qname_n))) {
+        /*
+         * check if zone is within query 
+         */
+        if (NULL != (p = (u_int8_t *) strstr((char *) map_e->zone_n,
+                                             (char *) qname_n))) {
             if (!saved_map || (namecmp(p, saved_map->zone_n) > 0)) {
                 saved_map = map_e;
             }
         }
-    } 
+    }
 
     if (saved_map) {
-            clone_ns_list(ref_ns_list, saved_map->nslist);
-            UNLOCK();
-            return VAL_NO_ERROR;
+        clone_ns_list(ref_ns_list, saved_map->nslist);
+        UNLOCK();
+        return VAL_NO_ERROR;
     }
-    
+
     for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
 
         if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {

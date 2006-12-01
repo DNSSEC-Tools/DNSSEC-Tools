@@ -129,7 +129,7 @@ val_parse_dnskey_rdata(const unsigned char *buf, int buflen,
         rdata->public_key =
             (u_char *) MALLOC(rdata->public_key_len * sizeof(u_char));
         if (rdata->public_key == NULL)
-            return -1;  
+            return -1;
         memcpy(rdata->public_key, buf + index, rdata->public_key_len);
         index += rdata->public_key_len;
     } else
@@ -225,8 +225,11 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
     /*
      * decode the base64 public key 
      */
-    if(((*dnskey_rdata)->public_key_len = decode_base64_key(keyptr, 
-                    (*dnskey_rdata)->public_key, bufsize)) <= 0) {
+    if (((*dnskey_rdata)->public_key_len = decode_base64_key(keyptr,
+                                                             (*dnskey_rdata)->
+                                                             public_key,
+                                                             bufsize)) <=
+        0) {
 
         FREE((*dnskey_rdata)->public_key);
         FREE(*dnskey_rdata);
@@ -326,7 +329,7 @@ val_parse_rrsig_rdata(const unsigned char *buf, int buflen,
         rdata->signature =
             (u_char *) MALLOC(rdata->signature_len * sizeof(u_char));
         if (rdata->signature == NULL)
-            return -1;   
+            return -1;
         memcpy(rdata->signature, buf + index, rdata->signature_len);
         index += rdata->signature_len;
     } else

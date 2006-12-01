@@ -87,8 +87,8 @@ int             add_as_sig(struct rrset_rec *rr_set, u_int16_t rdata_len_h,
 int             init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
                             u_int16_t type_h, u_int16_t set_type_h,
                             u_int16_t class_h, u_int32_t ttl_h,
-                            u_int8_t * hptr, int from_section, 
-                            int authoritive_answer, 
+                            u_int8_t * hptr, int from_section,
+                            int authoritive_answer,
                             struct name_server *respondent_server);
 
 struct rrset_rec *find_rr_set(struct name_server *respondent_server,
@@ -131,13 +131,14 @@ void            lower_name(u_int8_t rdata[], size_t * index);
 void            lower(u_int16_t type_h, u_int8_t * rdata, int len);
 struct rr_rec  *copy_rr_rec(u_int16_t type_h, struct rr_rec *r,
                             int dolower);
-struct rr_rec *copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr,
-                                int dolower);
+struct rr_rec  *copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr,
+                                 int dolower);
 int             link_rr(struct rr_rec **cs, struct rr_rec *cr);
 struct rrset_rec *copy_rrset_rec(struct rrset_rec *rr_set);
-int register_query(struct query_list **q, u_int8_t * name_n, u_int32_t type_h,
-               u_int8_t * zone_n);
-void deregister_queries(struct query_list **q);
-void merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info);
+int             register_query(struct query_list **q, u_int8_t * name_n,
+                               u_int32_t type_h, u_int8_t * zone_n);
+void            deregister_queries(struct query_list **q);
+void            merge_rrset_recs(struct rrset_rec **dest,
+                                 struct rrset_rec *new_info);
 
 #endif                          /* VAL_SUPPORT_H */

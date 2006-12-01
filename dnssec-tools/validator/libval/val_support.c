@@ -33,7 +33,7 @@
 #else
 #include "arpa/header.h"
 #endif
-#endif /* NAMESER_HAS_HEADER */
+#endif                          /* NAMESER_HAS_HEADER */
 
 #include <resolver.h>
 #include <validator.h>
@@ -405,7 +405,7 @@ res_sq_free_rrset_recs(struct rrset_rec **set)
     if (*set) {
         if ((*set)->rrs_zonecut_n)
             FREE((*set)->rrs_zonecut_n);
-        if ((*set)->rrs.val_msg_header) 
+        if ((*set)->rrs.val_msg_header)
             FREE((*set)->rrs.val_msg_header);
         if ((*set)->rrs.val_rrset_name_n)
             FREE((*set)->rrs.val_rrset_name_n);
@@ -633,12 +633,11 @@ add_as_sig(struct rrset_rec *rr_set, u_int16_t rdata_len_h,
 }
 
 int
-init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n, 
-            u_int16_t type_h, u_int16_t set_type_h, 
-            u_int16_t class_h, u_int32_t ttl_h, 
-            u_int8_t * hptr, int from_section, 
-            int authoritive_answer,
-            struct name_server *respondent_server)
+init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
+            u_int16_t type_h, u_int16_t set_type_h,
+            u_int16_t class_h, u_int32_t ttl_h,
+            u_int8_t * hptr, int from_section,
+            int authoritive_answer, struct name_server *respondent_server)
 {
     int             name_len = wire_name_length(name_n);
     struct timeval  tv;
@@ -655,44 +654,44 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
     /*
      * Initialize it 
      */
-    new_set->rrs.val_rrset_name_n = (u_int8_t *) MALLOC(name_len * sizeof(u_int8_t));
+    new_set->rrs.val_rrset_name_n =
+        (u_int8_t *) MALLOC(name_len * sizeof(u_int8_t));
     if (new_set->rrs.val_rrset_name_n == NULL)
         return VAL_OUT_OF_MEMORY;
 
-	if (hptr) {
-		new_set->rrs.val_msg_header = (u_int8_t *)MALLOC(sizeof(HEADER) * sizeof(u_int8_t)); 
-		if (new_set->rrs.val_msg_header == NULL) {
-			FREE(new_set->rrs.val_rrset_name_n);
-			new_set->rrs.val_rrset_name_n = NULL;
-			return VAL_OUT_OF_MEMORY;
-		}
-		memcpy(new_set->rrs.val_msg_header, hptr, sizeof(HEADER));
-		new_set->rrs.val_msg_headerlen = sizeof(HEADER); 
-	}
-	else {
-		new_set->rrs.val_msg_header = NULL;
-		new_set->rrs.val_msg_headerlen = 0;
-	}
-                                                                                                                          
+    if (hptr) {
+        new_set->rrs.val_msg_header =
+            (u_int8_t *) MALLOC(sizeof(HEADER) * sizeof(u_int8_t));
+        if (new_set->rrs.val_msg_header == NULL) {
+            FREE(new_set->rrs.val_rrset_name_n);
+            new_set->rrs.val_rrset_name_n = NULL;
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy(new_set->rrs.val_msg_header, hptr, sizeof(HEADER));
+        new_set->rrs.val_msg_headerlen = sizeof(HEADER);
+    } else {
+        new_set->rrs.val_msg_header = NULL;
+        new_set->rrs.val_msg_headerlen = 0;
+    }
+
     memcpy(new_set->rrs.val_rrset_name_n, name_n, name_len);
     new_set->rrs.val_rrset_type_h = set_type_h;
     new_set->rrs.val_rrset_class_h = class_h;
     new_set->rrs.val_rrset_ttl_h = ttl_h;
-    if (0 == gettimeofday(&tv,NULL)) {
+    if (0 == gettimeofday(&tv, NULL)) {
         new_set->rrs.val_rrset_ttl_x = tv.tv_sec + ttl_h;
-    }
-    else
+    } else
         new_set->rrs.val_rrset_ttl_x = 0;
     new_set->rrs.val_rrset_data = NULL;
     new_set->rrs.val_rrset_sig = NULL;
 
-    if ((respondent_server) && 
-        (respondent_server->ns_number_of_addresses > 0)){
-        new_set->rrs.val_rrset_server = 
-            (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
-        if (new_set->rrs.val_rrset_server == NULL) { 
-			FREE(new_set->rrs.val_rrset_name_n);
-			new_set->rrs.val_rrset_name_n = NULL;
+    if ((respondent_server) &&
+        (respondent_server->ns_number_of_addresses > 0)) {
+        new_set->rrs.val_rrset_server =
+            (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
+        if (new_set->rrs.val_rrset_server == NULL) {
+            FREE(new_set->rrs.val_rrset_name_n);
+            new_set->rrs.val_rrset_name_n = NULL;
             return VAL_OUT_OF_MEMORY;
         }
         memcpy(new_set->rrs.val_rrset_server,
@@ -701,7 +700,7 @@ init_rr_set(struct rrset_rec *new_set, u_int8_t * name_n,
     } else {
         new_set->rrs.val_rrset_server = NULL;
     }
- 
+
     new_set->rrs_next = NULL;
 
     /*
@@ -877,7 +876,7 @@ check_label_count(struct rrset_rec *the_set,
     sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
 
     if (sig_labels > owner_labels)
-        return VAL_BAD_ARGUMENT; 
+        return VAL_BAD_ARGUMENT;
 
     *is_a_wildcard = (owner_labels - sig_labels);
 
@@ -999,7 +998,7 @@ decompress(u_int8_t ** rdata,
          */
     case ns_t_ns:
     case ns_t_cname:
-    case ns_t_dname: 
+    case ns_t_dname:
     case ns_t_mb:
     case ns_t_mg:
     case ns_t_mr:
@@ -1087,7 +1086,8 @@ decompress(u_int8_t ** rdata,
             working_increment = ns_name_unpack(response, end,
                                                &response[working_index],
                                                other_expanded_name,
-                                               sizeof(other_expanded_name));
+                                               sizeof
+                                               (other_expanded_name));
             if (working_increment < 0)
                 return VAL_INTERNAL_ERROR;
 
@@ -1219,7 +1219,7 @@ extract_from_rr(u_int8_t * response,
      */
     memcpy(&net_int, &response[*response_index], sizeof(u_int32_t));
     *ttl_h = ntohl(net_int);
-    *response_index += sizeof(u_int32_t);    
+    *response_index += sizeof(u_int32_t);
 
     /*
      * Extract the rdata length, and save it in host format 
@@ -1425,10 +1425,10 @@ copy_rr_rec(u_int16_t type_h, struct rr_rec *r, int dolower)
  *
  * see copy_rr_rec() to copy a single rr_rec
  */
-struct rr_rec *
+struct rr_rec  *
 copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr, int dolower)
 {
-    struct rr_rec *n_rr, *n_head;
+    struct rr_rec  *n_rr, *n_head;
 
     if (NULL == o_rr)
         return NULL;
@@ -1447,7 +1447,7 @@ copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr, int dolower)
         n_rr->rr_next = copy_rr_rec(type_h, o_rr->rr_next, dolower);
         if (NULL == n_rr->rr_next)
             break;
-        
+
         o_rr = o_rr->rr_next;
         n_rr = n_rr->rr_next;
     }
@@ -1556,47 +1556,54 @@ copy_rrset_rec(struct rrset_rec *rr_set)
     copy_set = (struct rrset_rec *) MALLOC(sizeof(struct rrset_rec));
     if (copy_set == NULL)
         return NULL;
-	memset(copy_set, 0, sizeof(struct rrset_rec));
+    memset(copy_set, 0, sizeof(struct rrset_rec));
 
-	if (rr_set->rrs_zonecut_n != NULL) {
-		int len = wire_name_length(rr_set->rrs_zonecut_n);
-		copy_set->rrs_zonecut_n = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
-		if (copy_set->rrs_zonecut_n == NULL) {
-			FREE(copy_set);
-			return NULL;
-		}
-		memcpy(copy_set->rrs_zonecut_n, rr_set->rrs_zonecut_n, len);
-	}
+    if (rr_set->rrs_zonecut_n != NULL) {
+        int             len = wire_name_length(rr_set->rrs_zonecut_n);
+        copy_set->rrs_zonecut_n =
+            (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+        if (copy_set->rrs_zonecut_n == NULL) {
+            FREE(copy_set);
+            return NULL;
+        }
+        memcpy(copy_set->rrs_zonecut_n, rr_set->rrs_zonecut_n, len);
+    }
 
     copy_set->rrs_cred = SR_CRED_UNSET;
     copy_set->rrs_ans_kind = SR_ANS_UNSET;
     copy_set->rrs_next = NULL;
 
-	/* Copy the val_rrset members */
-	if (rr_set->rrs.val_msg_header) {
-		copy_set->rrs.val_msg_headerlen = rr_set->rrs.val_msg_headerlen;
-		copy_set->rrs.val_msg_header = (u_int8_t *) MALLOC (rr_set->rrs.val_msg_headerlen * sizeof(u_int8_t));
-		if (copy_set->rrs.val_msg_header == NULL) {
-			goto err;
-		}
-		memcpy(copy_set->rrs.val_msg_header, rr_set->rrs.val_msg_header, rr_set->rrs.val_msg_headerlen);
-	}
+    /*
+     * Copy the val_rrset members 
+     */
+    if (rr_set->rrs.val_msg_header) {
+        copy_set->rrs.val_msg_headerlen = rr_set->rrs.val_msg_headerlen;
+        copy_set->rrs.val_msg_header =
+            (u_int8_t *) MALLOC(rr_set->rrs.val_msg_headerlen *
+                                sizeof(u_int8_t));
+        if (copy_set->rrs.val_msg_header == NULL) {
+            goto err;
+        }
+        memcpy(copy_set->rrs.val_msg_header, rr_set->rrs.val_msg_header,
+               rr_set->rrs.val_msg_headerlen);
+    }
 
-	if (rr_set->rrs.val_rrset_name_n) {
-    	o_length = wire_name_length (rr_set->rrs.val_rrset_name_n);
-		copy_set->rrs.val_rrset_name_n = (u_int8_t *) MALLOC (o_length);
-		if (copy_set->rrs.val_rrset_name_n == NULL) {
-			goto err;
-		}
-		memcpy(copy_set->rrs.val_rrset_name_n, rr_set->rrs.val_rrset_name_n, o_length);
-	}
+    if (rr_set->rrs.val_rrset_name_n) {
+        o_length = wire_name_length(rr_set->rrs.val_rrset_name_n);
+        copy_set->rrs.val_rrset_name_n = (u_int8_t *) MALLOC(o_length);
+        if (copy_set->rrs.val_rrset_name_n == NULL) {
+            goto err;
+        }
+        memcpy(copy_set->rrs.val_rrset_name_n,
+               rr_set->rrs.val_rrset_name_n, o_length);
+    }
 
-	copy_set->rrs.val_rrset_class_h = rr_set->rrs.val_rrset_class_h;
-	copy_set->rrs.val_rrset_type_h = rr_set->rrs.val_rrset_type_h;
-	copy_set->rrs.val_rrset_ttl_h = rr_set->rrs.val_rrset_ttl_h;
-	copy_set->rrs.val_rrset_ttl_x = rr_set->rrs.val_rrset_ttl_x;
-	copy_set->rrs.val_rrset_section = rr_set->rrs.val_rrset_section;
-	
+    copy_set->rrs.val_rrset_class_h = rr_set->rrs.val_rrset_class_h;
+    copy_set->rrs.val_rrset_type_h = rr_set->rrs.val_rrset_type_h;
+    copy_set->rrs.val_rrset_ttl_h = rr_set->rrs.val_rrset_ttl_h;
+    copy_set->rrs.val_rrset_ttl_x = rr_set->rrs.val_rrset_ttl_x;
+    copy_set->rrs.val_rrset_section = rr_set->rrs.val_rrset_section;
+
     copy_set->rrs.val_rrset_data = NULL;
     copy_set->rrs.val_rrset_sig = NULL;
     /*
@@ -1643,20 +1650,22 @@ copy_rrset_rec(struct rrset_rec *rr_set)
         link_rr(&copy_set->rrs.val_rrset_sig, copy_rr);
     }
 
-    /* Copy respondent server information */
-    copy_set->rrs.val_rrset_server = 
-        (struct sockaddr *) MALLOC (sizeof (struct sockaddr_storage));
+    /*
+     * Copy respondent server information 
+     */
+    copy_set->rrs.val_rrset_server =
+        (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
     if (copy_set->rrs.val_rrset_server == NULL) {
         goto err;
     }
     memcpy(copy_set->rrs.val_rrset_server, rr_set->rrs.val_rrset_server,
-            sizeof(struct sockaddr_storage)); 
- 
+           sizeof(struct sockaddr_storage));
+
     return copy_set;
 
-err:
-	res_sq_free_rrset_recs(&copy_set);
-	return NULL;
+  err:
+    res_sq_free_rrset_recs(&copy_set);
+    return NULL;
 }
 
 /*
@@ -1687,7 +1696,7 @@ register_query(struct query_list **q, u_int8_t * name_n, u_int32_t type_h,
         (*q)->ql_next = NULL;
     } else {
         struct query_list *cur_q = (*q);
-        int count = 0;
+        int             count = 0;
         while (cur_q->ql_next != NULL) {
             if ((!zone_n || namecmp(cur_q->ql_zone_n, zone_n) == 0)
                 && namecmp(cur_q->ql_name_n, name_n) == 0)
@@ -1740,7 +1749,7 @@ merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info)
     struct rr_rec  *rr_exchange;
 
     if (new_info == NULL)
-        return; 
+        return;
 
     /*
      * Tie the two together 
@@ -1759,7 +1768,7 @@ merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info)
                 && old->rrs.val_rrset_class_h ==
                 new_rr->rrs.val_rrset_class_h
                 && namecmp(old->rrs.val_rrset_name_n,
-                           new_rr->rrs.val_rrset_name_n) == 0) {        
+                           new_rr->rrs.val_rrset_name_n) == 0) {
 
                 /*
                  * old and new are competitors 
@@ -1792,7 +1801,7 @@ merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info)
                     new_info = new_rr->rrs_next;
                     if (new_info == NULL) {
                         res_sq_free_rrset_recs(&new_rr);
-                        return; 
+                        return;
                     }
                 } else
                     trail_new->rrs_next = new_rr->rrs_next;
@@ -1813,5 +1822,5 @@ merge_rrset_recs(struct rrset_rec **dest, struct rrset_rec *new_info)
     else
         prev->rrs_next = new_info;
 
-    return; 
+    return;
 }

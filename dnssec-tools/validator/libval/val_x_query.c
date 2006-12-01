@@ -30,7 +30,7 @@
 #include "val_assertion.h"
 
 #define OUTER_HEADER_LEN (sizeof(HEADER) + wire_name_length(name_n) + sizeof(u_int16_t) + sizeof(u_int16_t))
-        
+
 #ifndef h_errno                 /* can be a macro */
 extern int      h_errno;
 #endif
@@ -58,26 +58,25 @@ find_rrset_len(struct val_rrset *rrset)
     return resp_len;
 }
 
-int encode_response_rrset(struct val_rrset *rrset,
-                           val_status_t     val_rc_status,
-                           int resp_len,
-                           unsigned char  **anbuf,
-                           int             *anbufindex,
-                           int             *ancount,
-                           unsigned char  **nsbuf,
-                           int             *nsbufindex,
-                           int             *nscount,
-                           unsigned char  **arbuf,
-                           int             *arbufindex,
-                           int             *arcount,
-                           int             *an_auth,
-                           int             *ns_auth) 
+int
+encode_response_rrset(struct val_rrset *rrset,
+                      val_status_t val_rc_status,
+                      int resp_len,
+                      unsigned char **anbuf,
+                      int *anbufindex,
+                      int *ancount,
+                      unsigned char **nsbuf,
+                      int *nsbufindex,
+                      int *nscount,
+                      unsigned char **arbuf,
+                      int *arbufindex,
+                      int *arcount, int *an_auth, int *ns_auth)
 {
     unsigned char  *cp;
     int            *bufindex = NULL;
     struct rr_rec  *rr;
     int             rrset_name_n_len;
-    int *count;
+    int            *count;
 
     if (rrset->val_rrset_section == VAL_FROM_ANSWER) {
         cp = *anbuf + *anbufindex;
@@ -93,7 +92,7 @@ int encode_response_rrset(struct val_rrset *rrset,
         if (!val_istrusted(val_rc_status)) {
             *ns_auth = 0;
         }
-    } else { /* VAL_FROM_ADDITIONAL */
+    } else {                    /* VAL_FROM_ADDITIONAL */
         cp = *arbuf + *arbufindex;
         bufindex = arbufindex;
         count = arcount;
@@ -106,13 +105,13 @@ int encode_response_rrset(struct val_rrset *rrset,
     for (rr = rrset->val_rrset_data; rr; rr = rr->rr_next) {
 
         if ((*bufindex + rrset_name_n_len + 10 +
-            rr->rr_rdata_length_h) > resp_len) {
+             rr->rr_rdata_length_h) > resp_len) {
             /** log error message?  */
-            return -1; 
+            return -1;
         }
 
         (*count)++;
-        
+
         memcpy(cp, rrset->val_rrset_name_n, rrset_name_n_len);
         cp += rrset_name_n_len;
         NS_PUT16(rrset->val_rrset_type_h, cp);
@@ -122,30 +121,30 @@ int encode_response_rrset(struct val_rrset *rrset,
         memcpy(cp, rr->rr_rdata, rr->rr_rdata_length_h);
         cp += rr->rr_rdata_length_h;
 
-    }                       // end for each rr
+    }                           // end for each rr
 
     *bufindex += find_rrset_len(rrset);
     if (*bufindex > resp_len) {
         /** log error message?  */
-        return -1; 
+        return -1;
     }
 
     return 0;
 }
 
-static int determine_size (struct val_result_chain *res) 
+static int
+determine_size(struct val_result_chain *res)
 {
-    int resp_len = 0;
+    int             resp_len = 0;
 
     if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
-        resp_len +=
-                find_rrset_len(res->val_rc_answer->val_ac_rrset);
-    } 
+        resp_len += find_rrset_len(res->val_rc_answer->val_ac_rrset);
+    }
     if (res->val_rc_proof_count) {
-        int i;
+        int             i;
         for (i = 0; i < res->val_rc_proof_count; i++) {
             resp_len +=
-                    find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
+                find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
         }
     }
     return resp_len;
@@ -194,18 +193,25 @@ compose_answer(const u_char * name_n,
     HEADER         *hp = NULL;
     int             len;
 
-    struct val_response *head_resp = NULL; 
-    struct val_response *cur_resp = NULL; 
+    struct val_response *head_resp = NULL;
+    struct val_response *cur_resp = NULL;
     struct val_rrset *rrset;
 
-    ancount = 0; nscount = 0; arcount = 0;
-    anbufindex = 0; nsbufindex = 0; arbufindex = 0;
-    anbuf = NULL; nsbuf = NULL; arbuf = NULL;
-    an_auth = 1; ns_auth = 1;
+    ancount = 0;
+    nscount = 0;
+    arcount = 0;
+    anbufindex = 0;
+    nsbufindex = 0;
+    arbufindex = 0;
+    anbuf = NULL;
+    nsbuf = NULL;
+    arbuf = NULL;
+    an_auth = 1;
+    ns_auth = 1;
 
     rp = NULL;
     resp_len = 0;
-    
+
     if ((f_resp == NULL) || (name_n == NULL))
         return VAL_BAD_ARGUMENT;
 
@@ -216,12 +222,13 @@ compose_answer(const u_char * name_n,
         /*
          * Allocate a single element of the val_response array to hold the result 
          */
-        head_resp = (struct val_response *) MALLOC(sizeof(struct val_response));
+        head_resp =
+            (struct val_response *) MALLOC(sizeof(struct val_response));
         if (head_resp == NULL)
             return VAL_OUT_OF_MEMORY;
         head_resp->vr_response =
             (unsigned char *) MALLOC((resp_len + OUTER_HEADER_LEN) *
-                                 sizeof(unsigned char));
+                                     sizeof(unsigned char));
         if (head_resp->vr_response == NULL) {
             FREE(head_resp);
             head_resp = NULL;
@@ -230,7 +237,7 @@ compose_answer(const u_char * name_n,
         head_resp->vr_length = (resp_len + OUTER_HEADER_LEN);
         head_resp->vr_val_status = VAL_SUCCESS;
         head_resp->vr_next = NULL;
-    
+
         /*
          * temporary buffers for different sections 
          */
@@ -238,9 +245,12 @@ compose_answer(const u_char * name_n,
         nsbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
         arbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
         if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
-            if (anbuf) FREE(anbuf);
-            if (nsbuf) FREE(nsbuf);
-            if (arbuf) FREE(arbuf);
+            if (anbuf)
+                FREE(anbuf);
+            if (nsbuf)
+                FREE(nsbuf);
+            if (arbuf)
+                FREE(arbuf);
             return VAL_OUT_OF_MEMORY;
         }
         /*
@@ -260,26 +270,35 @@ compose_answer(const u_char * name_n,
         NS_PUT16(type_h, rp);
         NS_PUT16(class_h, rp);
         hp->qdcount = htons(1);
-    } 
+    }
 
     for (res = results; res; res = res->val_rc_next) {
 
         if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
-            ancount = 0; nscount = 0; arcount = 0;
-            anbufindex = 0; nsbufindex = 0; arbufindex = 0;
-            anbuf = NULL; nsbuf = NULL; arbuf = NULL;
-            an_auth = 1; ns_auth = 1;
+            ancount = 0;
+            nscount = 0;
+            arcount = 0;
+            anbufindex = 0;
+            nsbufindex = 0;
+            arbufindex = 0;
+            anbuf = NULL;
+            nsbuf = NULL;
+            arbuf = NULL;
+            an_auth = 1;
+            ns_auth = 1;
 
             rp = NULL;
             resp_len = 0;
-    
-            resp_len = determine_size(res); 
-            cur_resp = (struct val_response *) MALLOC(sizeof(struct val_response));
+
+            resp_len = determine_size(res);
+            cur_resp =
+                (struct val_response *)
+                MALLOC(sizeof(struct val_response));
             if (cur_resp == NULL)
-                goto err; 
+                goto err;
             cur_resp->vr_response =
                 (unsigned char *) MALLOC((resp_len + OUTER_HEADER_LEN) *
-                                 sizeof(unsigned char));
+                                         sizeof(unsigned char));
             if (cur_resp->vr_response == NULL) {
                 FREE(cur_resp);
                 goto err;
@@ -293,13 +312,19 @@ compose_answer(const u_char * name_n,
             /*
              * temporary buffers for different sections 
              */
-            anbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-            nsbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
-            arbuf = (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
+            anbuf =
+                (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
+            nsbuf =
+                (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
+            arbuf =
+                (unsigned char *) MALLOC(resp_len * sizeof(unsigned char));
             if ((anbuf == NULL) || (nsbuf == NULL) || (arbuf == NULL)) {
-                if (anbuf) FREE(anbuf);
-                if (nsbuf) FREE(nsbuf);
-                if (arbuf) FREE(arbuf);
+                if (anbuf)
+                    FREE(anbuf);
+                if (nsbuf)
+                    FREE(nsbuf);
+                if (arbuf)
+                    FREE(arbuf);
                 goto err;
             }
             /*
@@ -323,21 +348,23 @@ compose_answer(const u_char * name_n,
 
         if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
             rrset = res->val_rc_answer->val_ac_rrset;
-            if (-1 == encode_response_rrset(rrset, res->val_rc_status, resp_len,
-                            &anbuf, &anbufindex, &ancount, 
-                            &nsbuf, &nsbufindex, &nscount,
-                            &arbuf, &arbufindex, &arcount,
-                            &an_auth, &ns_auth))
+            if (-1 ==
+                encode_response_rrset(rrset, res->val_rc_status, resp_len,
+                                      &anbuf, &anbufindex, &ancount,
+                                      &nsbuf, &nsbufindex, &nscount,
+                                      &arbuf, &arbufindex, &arcount,
+                                      &an_auth, &ns_auth))
                 goto err;
         } else if (res->val_rc_proof_count) {
-            int i;
-            for (i=0; i<res->val_rc_proof_count; i++) {
+            int             i;
+            for (i = 0; i < res->val_rc_proof_count; i++) {
                 rrset = res->val_rc_proofs[i]->val_ac_rrset;
-                if (-1 == encode_response_rrset(rrset, res->val_rc_status, resp_len,
-                            &anbuf, &anbufindex, &ancount, 
-                            &nsbuf, &nsbufindex, &nscount,
-                            &arbuf, &arbufindex, &arcount,
-                            &an_auth, &ns_auth))
+                if (-1 ==
+                    encode_response_rrset(rrset, res->val_rc_status,
+                                          resp_len, &anbuf, &anbufindex,
+                                          &ancount, &nsbuf, &nsbufindex,
+                                          &nscount, &arbuf, &arbufindex,
+                                          &arcount, &an_auth, &ns_auth))
                     goto err;
             }
         }
@@ -371,12 +398,12 @@ compose_answer(const u_char * name_n,
 
         head_resp->vr_val_status = res->val_rc_status;
         if ((res->val_rc_status == VAL_NONEXISTENT_NAME) ||
-               (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
-            hp->rcode = ns_r_nxdomain; 
+            (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
+            hp->rcode = ns_r_nxdomain;
         }
 #ifdef LIBVAL_NSEC3
         if (res->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) {
-            hp->rcode = ns_r_nxdomain; 
+            hp->rcode = ns_r_nxdomain;
         }
 #endif
 
@@ -386,7 +413,7 @@ compose_answer(const u_char * name_n,
             FREE(arbuf);
         }
     }
-    
+
     if (flags & VAL_QUERY_MERGE_RRSETS) {
         FREE(anbuf);
         FREE(nsbuf);
@@ -397,7 +424,7 @@ compose_answer(const u_char * name_n,
     return VAL_NO_ERROR;
 
   err:
-    while( NULL != (cur_resp = head_resp)) {
+    while (NULL != (cur_resp = head_resp)) {
         head_resp = head_resp->vr_next;
         FREE(cur_resp->vr_response);
         FREE(cur_resp);
@@ -406,7 +433,7 @@ compose_answer(const u_char * name_n,
     *f_resp = NULL;
     return VAL_OUT_OF_MEMORY;
 
-}                               
+}
 
 
 /*
@@ -552,36 +579,40 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     }
 
     retval = resp->vr_length;
-    bytestocopy = (resp->vr_length > anslen)? anslen: resp->vr_length;
+    bytestocopy = (resp->vr_length > anslen) ? anslen : resp->vr_length;
     memcpy(answer, resp->vr_response, bytestocopy);
     *val_status = resp->vr_val_status;
 
-    /* only return success if you have some answer */
+    /*
+     * only return success if you have some answer 
+     */
     switch (*val_status) {
-        case VAL_NONEXISTENT_NAME:
-        case VAL_NONEXISTENT_NAME_NOCHAIN:
+    case VAL_NONEXISTENT_NAME:
+    case VAL_NONEXISTENT_NAME_NOCHAIN:
 #ifdef LIBVAL_NSEC3
-        case VAL_NONEXISTENT_NAME_OPTOUT:
+    case VAL_NONEXISTENT_NAME_OPTOUT:
 #endif
-            h_errno = HOST_NOT_FOUND;
-            return -1;
+        h_errno = HOST_NOT_FOUND;
+        return -1;
 
-        case VAL_NONEXISTENT_TYPE:
-        case VAL_NONEXISTENT_TYPE_NOCHAIN:
-            h_errno = NO_DATA;
-            return -1;
+    case VAL_NONEXISTENT_TYPE:
+    case VAL_NONEXISTENT_TYPE_NOCHAIN:
+        h_errno = NO_DATA;
+        return -1;
 
-        case VAL_DNS_ERROR_BASE+SR_SERVFAIL:
-            h_errno = TRY_AGAIN;
-            return -1;
+    case VAL_DNS_ERROR_BASE + SR_SERVFAIL:
+        h_errno = TRY_AGAIN;
+        return -1;
 
-        default:
-            if (!val_istrusted(*val_status)) {
-                /* Not a success condition */
-                h_errno = NO_RECOVERY;
-                return -1;
-            }
-            break;
+    default:
+        if (!val_istrusted(*val_status)) {
+            /*
+             * Not a success condition 
+             */
+            h_errno = NO_RECOVERY;
+            return -1;
+        }
+        break;
     }
 
     return retval;

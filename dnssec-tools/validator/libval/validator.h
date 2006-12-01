@@ -169,14 +169,14 @@ extern          "C" {
 
 
 #define SIG_ACCEPT_WINDOW   (86400*0) /** 1 days **/
-#define MAX_ALIAS_CHAIN_LENGTH 10 /* max length of cname/dname chain */
-    
+#define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
+
     typedef u_int8_t val_status_t;
     typedef u_int16_t val_astatus_t;
 
     struct val_query_chain;     /* forward declaration */
-    struct val_digested_auth_chain;    /* forward declaration */
-    struct val_log; /* forward declaration */
+    struct val_digested_auth_chain;     /* forward declaration */
+    struct val_log;             /* forward declaration */
 
 
 #define policy_entry_t void*
@@ -211,7 +211,7 @@ extern          "C" {
         u_int32_t       val_rrset_ttl_h;        /* Received ttl */
         u_int32_t       val_rrset_ttl_x;        /* ttl expire time */
         u_int8_t        val_rrset_section;      /* VAL_FROM_... */
-        struct sockaddr *val_rrset_server; /* respondent server */
+        struct sockaddr *val_rrset_server;      /* respondent server */
         struct rr_rec  *val_rrset_data; /* All data RR's */
         struct rr_rec  *val_rrset_sig;  /* All signatures */
     };
@@ -253,7 +253,7 @@ extern          "C" {
         /*
          * validator policy 
          */
-        policy_entry_t  *e_pol;
+        policy_entry_t *e_pol;
         struct policy_overrides *pol_overrides;
         struct policy_overrides *cur_override;
 
@@ -357,8 +357,8 @@ extern          "C" {
 
     struct val_internal_result {
         val_status_t    val_rc_status;
-        int val_rc_is_proof;
-        int val_rc_consumed;
+        int             val_rc_is_proof;
+        int             val_rc_consumed;
         struct val_digested_auth_chain *val_rc_rrset;
         struct val_internal_result *val_rc_next;
     };
@@ -420,20 +420,19 @@ extern          "C" {
         val_status_t    ai_val_status;
     };
 
-    /* 
+    /*
      * Logging-related definitions 
      */
-    typedef void  (*val_log_logger_t) (struct val_log * logp,
-                                       const val_context_t * ctx, 
-                                       int level, 
-                                       const char *template, 
-                                       va_list ap);
+    typedef void    (*val_log_logger_t) (struct val_log * logp,
+                                         const val_context_t * ctx,
+                                         int level,
+                                         const char *template, va_list ap);
 
     typedef struct val_log {
-        val_log_logger_t logf;      /* log function ptr */
-        unsigned char   level;      /* 0 - 9, corresponds w/sylog severities */
-        unsigned char   lflags;     /* generic log flags */
-        const char     *str;        /* logger dependent */
+        val_log_logger_t logf;  /* log function ptr */
+        unsigned char   level;  /* 0 - 9, corresponds w/sylog severities */
+        unsigned char   lflags; /* generic log flags */
+        const char     *str;    /* logger dependent */
         union {
             struct {
                 int             sock;
@@ -453,40 +452,42 @@ extern          "C" {
         struct val_log *next;
     } val_log_t;
 
-    char        *get_hex_string(const unsigned char *data, int datalen,
-                                char *buf, int buflen);
-    void        val_log_rrset(const val_context_t * ctx, int level,
-                              struct rrset_rec *rrset);
-    void        val_log_base64(val_context_t * ctx, int level,
-                               unsigned char *message, int message_len);
-    void        val_log_rrsig_rdata(const val_context_t * ctx, int level,
-                                    const char *prefix,
-                                    val_rrsig_rdata_t * rdata);
-    void        val_log_dnskey_rdata(val_context_t * ctx, int level,
-                                     const char *prefix,
-                                     val_dnskey_rdata_t * rdata);
-    void        val_log_authentication_chain(const val_context_t * ctx,
-                                             int level, u_char * name_n,
-                                             u_int16_t class_h,
-                                             u_int16_t type_h,
-                                             struct val_query_chain
-                                             *queries, struct val_result_chain
-                                             *results);
-    void        val_log(const val_context_t * ctx, int level,
-                        const char *template, ...);
+    char           *get_hex_string(const unsigned char *data, int datalen,
+                                   char *buf, int buflen);
+    void            val_log_rrset(const val_context_t * ctx, int level,
+                                  struct rrset_rec *rrset);
+    void            val_log_base64(val_context_t * ctx, int level,
+                                   unsigned char *message,
+                                   int message_len);
+    void            val_log_rrsig_rdata(const val_context_t * ctx,
+                                        int level, const char *prefix,
+                                        val_rrsig_rdata_t * rdata);
+    void            val_log_dnskey_rdata(val_context_t * ctx, int level,
+                                         const char *prefix,
+                                         val_dnskey_rdata_t * rdata);
+    void            val_log_authentication_chain(const val_context_t * ctx,
+                                                 int level,
+                                                 u_char * name_n,
+                                                 u_int16_t class_h,
+                                                 u_int16_t type_h,
+                                                 struct val_query_chain
+                                                 *queries, struct val_result_chain
+                                                 *results);
+    void            val_log(const val_context_t * ctx, int level,
+                            const char *template, ...);
 
-    val_log_t   *val_log_add_filep(int level, FILE * p);
-    val_log_t   *val_log_add_file(int level, const char *filen);
-    val_log_t   *val_log_add_syslog(int level, int facility);
-    val_log_t   *val_log_add_network(int level, char *host, int port);
-    val_log_t   *val_log_add_optarg(char *args, int use_stderr);
+    val_log_t      *val_log_add_filep(int level, FILE * p);
+    val_log_t      *val_log_add_file(int level, const char *filen);
+    val_log_t      *val_log_add_syslog(int level, int facility);
+    val_log_t      *val_log_add_network(int level, char *host, int port);
+    val_log_t      *val_log_add_optarg(char *args, int use_stderr);
 
-    int         val_log_debug_level(void);
-    void        val_log_set_debug_level(int);
+    int             val_log_debug_level(void);
+    void            val_log_set_debug_level(int);
 
-    const char  *p_query_status(int err);
-    const char  *p_ac_status(val_astatus_t valerrno);
-    const char  *p_val_status(val_status_t err);
+    const char     *p_query_status(int err);
+    const char     *p_ac_status(val_astatus_t valerrno);
+    const char     *p_val_status(val_status_t err);
 
     /*
      *******************************************
@@ -536,7 +537,7 @@ extern          "C" {
      * from val_support.h 
      */
     u_int16_t       wire_name_length(const u_int8_t * field);
-    
+
     /*
      * from val_x_query.c 
      */
@@ -554,7 +555,8 @@ extern          "C" {
                                    const u_int16_t type_h,
                                    const u_int16_t class_h,
                                    struct val_result_chain *results,
-                                   struct val_response **f_resp, u_int8_t flags);
+                                   struct val_response **f_resp,
+                                   u_int8_t flags);
     /*
      * from val_gethostbyname.c 
      */
@@ -599,42 +601,42 @@ extern          "C" {
 
     void            val_freeaddrinfo(struct val_addrinfo *ainfo);
 
-    int             val_getnameinfo(val_context_t         *ctx,
+    int             val_getnameinfo(val_context_t * ctx,
                                     const struct sockaddr *sa,
-                                    socklen_t              salen,
-                                    char                  *host,
-                                    size_t                 hostlen,
-                                    char                  *serv,
-                                    size_t                 servlen,
-                                    int                    flags, 
-                                    val_status_t          *val_status);
+                                    socklen_t salen,
+                                    char *host,
+                                    size_t hostlen,
+                                    char *serv,
+                                    size_t servlen,
+                                    int flags, val_status_t * val_status);
 
-/*
- * A thread-safe, re-entrant version of val_gethostbyaddr 
- */
-    int             val_gethostbyaddr_r(val_context_t   *ctx,
-                                        const char      *addr,
-                                        int              len,
-                                        int              type,
-                                        struct hostent  *ret,
-                                        char            *buf,
-                                        int              buflen,
+    /*
+     * A thread-safe, re-entrant version of val_gethostbyaddr 
+     */
+    int             val_gethostbyaddr_r(val_context_t * ctx,
+                                        const char *addr,
+                                        int len,
+                                        int type,
+                                        struct hostent *ret,
+                                        char *buf,
+                                        int buflen,
                                         struct hostent **result,
-                                        int             *h_errnop,
-                                        val_status_t    *val_status);
+                                        int *h_errnop,
+                                        val_status_t * val_status);
 
-/*
- * A old version of gethostbyaddr for use with validator
- */
-struct hostent *val_gethostbyaddr(val_context_t   *ctx,
-                                  const char      *addr,
-                                  int              len,
-                                  int              type,
-                                  val_status_t    *val_status);
+    /*
+     * A old version of gethostbyaddr for use with validator
+     */
+    struct hostent *val_gethostbyaddr(val_context_t * ctx,
+                                      const char *addr,
+                                      int len,
+                                      int type, val_status_t * val_status);
 
 
-/* for backwards compatibility*/
-#define free_val_addrinfo   val_freeaddrinfo    
+    /*
+     * for backwards compatibility
+     */
+#define free_val_addrinfo   val_freeaddrinfo
 #define p_val_error p_val_status
 #define p_as_error p_as_status
 #define p_query_error p_query_status
