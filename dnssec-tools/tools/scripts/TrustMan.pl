@@ -57,6 +57,7 @@ LocalGetOptions(\%opts,
 		['GUI:separator',        'EMail output options:'],
 		['m|mail_contact_addr=s', 'E-Mail results to address'],
 		['s|smtp_server=s',     'The SMTP server to send mail through'],
+                ['V|version', 'Version'],
 		);
 
 # Parse the dnssec-tools.conf file
@@ -128,8 +129,14 @@ if ($opts{'f'}) {
     }
 } 
 
+sub show_version {
+    print STDERR "Version: 0.7\n";
+    print STDERR "DNSSEC-Tools Version: 1.0\n";
+    exit(1);
+}
+
 sub usage {
-    print "TrustMan [-d domain] [-L] [-f] [-c] [-v]\n";
+    print "TrustMan [-d domain] [-L] [-f] [-c] [-v] [-V]\n";
     print "\t[-o outfile] [-m mailcontact] [-s smtpserver]\n";
     print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]\n";
     print "\tuse the -f option to run in the foreground.\n";
@@ -541,6 +548,10 @@ Send report when there are no errors.
 =item -v
 
 Verbose.
+
+=item -V
+
+Version.
 
 =back #unindent
 =head1 PRE-REQUISITES
