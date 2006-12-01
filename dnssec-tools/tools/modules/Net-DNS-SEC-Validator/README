@@ -12,9 +12,16 @@ Contents:
 
 Introduction:
 
-   This Perl module is designed to implement and export data objects,
-   constants and utility functions related to the security aware
-   validating DNS resolver provided by libval(3).
+This Perl module is designed to implement and export functionality
+provided by the validating DNS resolver library, libval(3). The
+functions are provided through an easy-to-use object oriented
+interface. The interface is designed for the higher level user, hiding
+some of the complexity of validating resolvers. Nevertheless,
+application interface behavior can be customized through configuration
+files provided by libval(3) and extensive error codes returned.
+
+Details of DNSSEC and associated resolver behavior may be found in the
+core DNSSEC RFCs (4033-4035).
 
 Availability:
 
@@ -52,8 +59,9 @@ KNOWN BUGS:
 
 Installation:
 
-   Libval(3) and related dnssec-tools headers and configuration files
-   should first be installed.
+Libval(3) and related dnssec-tools headers and configuration files
+should first be installed. Also Net::addrinfo and Net::DNS modules
+should be installed.
 
    perl Makefile.PL
    make
@@ -63,21 +71,132 @@ Installation:
 
 Operational Description:
 
-   use Net::DNS::SEC::Validator;
-   my $validator = new Net::DNS::SEC::Validator(context => ":");
-   my $r = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+Contructor:
+
+To create a validator object use the Net::DNS::SEC::Validator->new()
+method. This method optionally takes a policy label (policy =>
+'label'), or default to using the default label in the libval(3)
+dnsval.conf file.
+
+Data Fields:
+
+$validator->{error}		=> the latest method error code
+$validator->{errorStr}		=> the latest method error string
+$validator->{valStatus}		=> the val_status of last call (if single)
+$validator->{valStatusStr}	=> the val_status string of last call
+
+
+Methods:
+
+$validator->getaddrinfo(<name>[,<service>[,<hints>]])
+   where
+      <name> 	=> is the node name or numeric address being queried
+      <service> => is the name or number represting the service
+		   (note: <name> or <service> may be undef, but not both)
+      <hint>	=> a Net::addrinfo object specying flags, family, etc.
+
+   returns:
+      	an array of Net::addrinfo objects (augmented with a 'val_status'
+	field). On error, returns an empty array. in scalar context
+	returns first Net::addrinfo object, or undef on error.
+                  
+$validator->gethostbyname(<name>[,<family>])
+   where
+      <name> 	=> is the node name or numeric address being queried
+      <family> 	=> the address family of returned entry (default: AF_INET)
+
+   returns:
+      	A Net::hostent object. Validator valStatus/valStatusStr fields
+	will be updated. On error, undef is returned and validator object
+	error/errorStr fields are updated.
+                  
+$validator->res_query(<name>[,<class>[,<type>]])
+   where
+      <name> 	=> is the node name or numeric address being queried
+      <class> 	=> is the DNS class of the record being queried (default: IN)
+      <type>	=> is the DNS record type being queried (defailt A)
+
+   returns:
+	A packed DNS query result is returned on success. This object is
+	suitable to be passed to the Net::DNS::Packet(\$result)
+	interface for parsing. Validator valStatus/valStatusStr fields
+	will be updated. On error, undef is returned and validator
+	object error/errorStr fields are updated.
+
+$validator->policy([<label>])
+   where
+      <label> 	=> the policy label to use (old context is destroyed)
+			(default: ":" dnsval.conf default policy)
+
+   returns:
+      	the policy label currently (after change) being used.
+                  
+$validator->istrusted([<val_status>])
+   where
+      <val_status> => numeric vaildator status code
+		   	(default: $validator->{valStatus})
+
+   returns:
+      	A boolean positive value if <val_status> is a trusted result.
+                  
+$validator->valStatusStr([<val_status>])
+   where
+      <val_status> => numeric vaildator status code
+		   	(default: $validator->{valStatus})
+
+   returns:
+      	A string representation of the given <val_status>.
+                  
+                         
+Examples
+
+use Net::DNS::SEC::Validator;
+use Net::DNS::Packet;
+use Net::hostent;
+use Net::addrinfo;
+use Socket qw(:all);
+
+# construct object
+my $validator = new Net::DNS::SEC::Validator(policy => ":");
+
+# change validation policy
+$validator->policy("validate_tools:");
+
+# fetch array of Net::addrinfo objects
+my (@r) = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
+foreach $a (@r) {
+    print $a->stringify, " is trusted\n"
+	if $validator->istrusted($a->val_status));
+}
+
+# query an MX record
+my $r = $validator->res_query("marzot.net", "IN", "MX");
+my ($pkt, $err) = new Net::DNS::Packet(\$r);
+print ($validator->istrusted ? 
+	"result is trusted\n" : 
+	"result is NOT trusted\n");
+
+my $h = $validator->gethostbyname("good-A.test.dnssec-tools.org");
+if ( @{$h->addr_list}) { 
+my $i;
+   for $addr ( @{$h->addr_list} ) {
+	printf "\taddr #%d is [%s]\n", $i++, inet_ntoa($addr);
+   } 
+}
+
 
 Trouble Shooting:
 
-   Check that 'make test' succeeds.
+Check that 'make test' succeeds.
 
-   Check that DNS connectivity is available.
+Check that DNS connectivity is available and that there is a clear
+path of security-aware servers involved with the query.
 
-   If you cannot resolve the problem you can email
-   dnssec-tools-users@lists.sourceforge.net.
+If you cannot resolve the problem you can email
+dnssec-tools-users@lists.sourceforge.net.
 
-   Please give sufficient information to analyze the problem (OS type,
-   versions for OS/perl/compiler, complete error output, etc.)
+Please give sufficient information to analyze the problem (OS type,
+versions for OS/perl/compiler, complete error output, etc.)
 
 Copyright:
 
