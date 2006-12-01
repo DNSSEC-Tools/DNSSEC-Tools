@@ -275,9 +275,8 @@ support of DNSSEC aware addrinfo results (see Net::DNS::SEC::Valaidator))
 
 =head1 NOTE
 
-While this class is currently implemented using the Class::Struct
-module to build a struct-like class, you shouldn't rely upon this.
+One should not rely on the internal representation of this class.
 
 =head1 AUTHOR
 
-G. S. Marzot
+G. S. Marzot (marz@users.sourceforge.net)
