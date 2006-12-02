@@ -53,7 +53,7 @@ use Fcntl qw(:DEFAULT :flock);
 
 use Net::DNS::SEC::Tools::conf;
 
-our $VERSION = "0.01";
+our $VERSION = "0.9";
 
 our @ISA = qw(Exporter);
 

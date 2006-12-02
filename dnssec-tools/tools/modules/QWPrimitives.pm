@@ -9,7 +9,7 @@ package Net::DNS::SEC::Tools::QWPrimitives;
 use strict;
 require Exporter;
 
-our $VERSION = "0.01";
+our $VERSION = "1.0";
 
 our @ISA = qw(Exporter);
 
