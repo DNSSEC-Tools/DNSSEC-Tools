@@ -187,17 +187,6 @@ sub main
 	bindcheck(\%opts);
 
 	#
-	# Maybe display the warning about potential entropy hangs.
-	# We'll also force output to be flushed at write-time.
-	#
-	$| = 1;
-	if($entropymsg)
-	{
-		print "\n\tif zonesigner appears hung, strike keys until the program completes\n";
-		print "\t(see the \"Entropy\" section in the man page for details)\n\n";
-	}
-
-	#
 	# Ensure that the required data were specified.
 	#
 	if(($zone eq "") || ($zonefile eq "") || ($zoneout eq ""))
@@ -210,6 +199,17 @@ sub main
 	# Ensure the zone file is okay before proceeding.
 	#
 	verify_zonefile();
+
+	#
+	# Maybe display the warning about potential entropy hangs.
+	# We'll also force output to be flushed at write-time.
+	#
+	$| = 1;
+	if($entropymsg)
+	{
+		print "\n\tif zonesigner appears hung, strike keys until the program completes\n";
+		print "\t(see the \"Entropy\" section in the man page for details)\n\n";
+	}
 
 	#
 	# Generate the KSK and ZSK key files.
@@ -515,6 +515,13 @@ sub verify_zonefile
 	my $statlen;				# Length of stat() buffer.
 	my $status;				# Status of zone checking.
 
+	vprint("check existence of zone file\n");
+	if(! -f $zonefile)
+	{
+		print STDERR "zone file \"$zonefile\" does not exist\n";
+		exit(1);
+	}
+
 	vprint("initial zone verification\n");
 	$status = system("$checkzone -q $zone $zonefile");
 	if($status != 0)
@@ -526,12 +533,12 @@ sub verify_zonefile
 	vmed_print("zone verified\n\n");
 
 	#
-	# Ensure that the zone file exists and open it.
+	# Ensure that the zone file isn't empty and open it.
 	#
 	$statlen = @zonestat = stat($zonefile);
 	if($statlen == 0)
 	{
-		print STDERR "zone file $zonefile does not exist\n";
+		print STDERR "zone file $zonefile is empty\n";
 		exit(1);
 	}
 	open(ZF,"+< $zonefile") or die "unable to open zone file $zonefile";
@@ -1161,14 +1168,8 @@ sub zonesign
 	# Normally, we'll use the current ZSKs; however, we'll use the
 	# published ZSKs if the user gives -usepub.
 	#
-	if($usepub)
-	{
-		@usekeys = @zskpublist;
-	}
-	else
-	{
-		@usekeys = @zskcurlist;
-	}
+	@usekeys = @zskcurlist;
+	@usekeys = @zskpublist if($usepub);
 
 	#
 	# Sign the zone with the new keys.
