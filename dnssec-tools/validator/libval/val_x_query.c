@@ -368,20 +368,22 @@ compose_answer(const u_char * name_n,
                     goto err;
             }
         }
+        if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
 
-        if (anbuf) {
+	  if (anbuf) {
             memcpy(rp, anbuf, anbufindex);
             rp += anbufindex;
-        }
+	  }
 
-        if (nsbuf) {
+	  if (nsbuf) {
             memcpy(rp, nsbuf, nsbufindex);
             rp += nsbufindex;
-        }
+	  }
 
-        if (arbuf) {
+	  if (arbuf) {
             memcpy(rp, arbuf, arbufindex);
             rp += arbufindex;
+	  }
         }
 
         hp->ancount = htons(ancount);
@@ -415,9 +417,23 @@ compose_answer(const u_char * name_n,
     }
 
     if (flags & VAL_QUERY_MERGE_RRSETS) {
-        FREE(anbuf);
-        FREE(nsbuf);
-        FREE(arbuf);
+      if (anbuf) {
+	memcpy(rp, anbuf, anbufindex);
+	rp += anbufindex;
+      }
+
+      if (nsbuf) {
+	memcpy(rp, nsbuf, nsbufindex);
+	rp += nsbufindex;
+      }
+
+      if (arbuf) {
+	memcpy(rp, arbuf, arbufindex);
+	rp += arbufindex;
+      }
+      FREE(anbuf);
+      FREE(nsbuf);
+      FREE(arbuf);
     }
 
     *f_resp = head_resp;
