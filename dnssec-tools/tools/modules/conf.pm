@@ -31,8 +31,8 @@ our @EXPORT = qw(bindcheck getconfdir getconffile parseconfig);
 
 our @BIND_COMMANDS = qw(checkzone keygen signzone);
 
-our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
-our $VERSION = "0.01";
+our $CONFFILE = "/etc/dnssec/dnssec-tools.conf"; # Configuration file.
+our $VERSION = "0.9";
 
 #--------------------------------------------------------------------------
 #

@@ -20,7 +20,7 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(dnssec_tools_defaults dnssec_tools_defnames);
 
 our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
-our $VERSION = "0.01";
+our $VERSION = "1.0";
 
 my %defaults =
 (
