@@ -9,7 +9,7 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 44; plan tests => $n }
+BEGIN { $n = 46; plan tests => $n }
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
@@ -127,9 +127,10 @@ ok(not $err);
 
 # this crashes
 $r = $validator->res_query("mail.marzot.net", "IN", "MX");
-ok($r);
-($pkt, $err) = new Net::DNS::Packet(\$r);
-ok(not $err);
+ok(!$r);
+ok($validator->{valStatus} == VAL_NONEXISTENT_TYPE_NOCHAIN);
+
+
 
 
 
