@@ -1146,6 +1146,7 @@ sub zonesign
 	my $chron;			# Today's date.
 	my $keytag;			# Tag value from keys.
 	my $szone;			# Result from dnssec-signzone execution.
+	my @usekeys;			# Keys to use in zone-signing.
 	my $cmdopts;			# Options for dnssec-signzone.
 	my $status;			# Execution return code.
 
@@ -1157,12 +1158,25 @@ sub zonesign
 	$cmdopts = "$szopts $gends $ksdir -k $kskpath -o $zone $enddate -f $zoneout";
 
 	#
+	# Normally, we'll use the current ZSKs; however, we'll use the
+	# published ZSKs if the user gives -usepub.
+	#
+	if($usepub)
+	{
+		@usekeys = @zskpublist;
+	}
+	else
+	{
+		@usekeys = @zskcurlist;
+	}
+
+	#
 	# Sign the zone with the new keys.
 	#
 	vprint("signing zone\n");
+	vhigh_print("$signzone $cmdopts $zoneftmp @usekeys\n");
 
-	vhigh_print("$signzone $cmdopts $zoneftmp @zskpublist\n");
-	$szone = `$signzone $cmdopts $zoneftmp @zskpublist`;
+	$szone = `$signzone $cmdopts $zoneftmp @usekeys`;
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
