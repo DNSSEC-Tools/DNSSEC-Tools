@@ -33,7 +33,7 @@ use ExtUtils::MakeMaker;
 				tachk
 				timetrans
 				zonesigner
-				TrustMan
+				TrustMan.pl
 			)]
 	);
 
