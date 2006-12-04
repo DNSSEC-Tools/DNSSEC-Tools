@@ -22,11 +22,7 @@ sub InitMakeParams {
 		  XSPROTOARG   => '-noprototypes', 	# XXX remove later?
 		  VERSION_FROM => 'Validator.pm',
 		  );
-                                    
-    if (not -r '/usr/local/lib/libsres.so' or 
-	not -r '/usr/local/lib/libval.so') {
-	die "error: must install dnssec-tools validator libraries first.";
-    }
+    # should test for dnssec-tools being installed
 
     $Params{'LIBS'} = "-lnsl -lcrypto -L/usr/local/lib -lsres -lval ";
     $Params{'CCFLAGS'} = "-I/usr/local/include ";
