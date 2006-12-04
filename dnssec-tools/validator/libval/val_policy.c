@@ -1050,7 +1050,8 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
          * exact match; 
          */
         newp = cur;
-        (*pfrag)->label = NULL;
+        FREE((*pfrag)->label);
+         (*pfrag)->label = NULL;
 
     } else {
 
@@ -1088,13 +1089,12 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
         e = (struct policy_list *) MALLOC(sizeof(struct policy_list));
         if (e == NULL)
             return VAL_OUT_OF_MEMORY;
+        e->index = (*pfrag)->index;
+        e->next = newp->plist;
+        newp->plist = e;
     }
 
-    e->index = (*pfrag)->index;
     e->pol = (*pfrag)->pol;
-    e->next = newp->plist;
-    newp->plist = e;
-
     (*pfrag)->pol = NULL;
     FREE(*pfrag);
 
