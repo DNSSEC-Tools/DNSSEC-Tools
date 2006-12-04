@@ -9,7 +9,7 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 12; plan tests => $n }
+BEGIN { $n = 10; plan tests => $n }
 
 use Net::addrinfo;
 use Socket;
@@ -22,11 +22,10 @@ ok(defined($addrinfo));
 
 
 my (@ainfo_arr) = getaddrinfo("mail.marzot.net");
-ok(@ainfo_arr > 1);
+ok(@ainfo_arr);
 
-foreach my $ainfo (@ainfo_arr) {
-    ok(ref $ainfo eq 'Net::addrinfo');
-}
+my $ainfo = shift(@ainfo_arr);
+ok(ref $ainfo eq 'Net::addrinfo');
 
 my $hint = new Net::addrinfo(flags => AI_CANONNAME, protocol => IPPROTO_IP);
 
