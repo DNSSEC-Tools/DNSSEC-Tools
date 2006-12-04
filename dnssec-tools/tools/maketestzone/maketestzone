@@ -42,7 +42,7 @@ my %opts =
     'cname-extra-prefixes' => 'cnametodne',
 # XXX:
 #   newksk: doesn't work because zonesigner requires generation of zsks too
-    'P' => 'insecure,good,badsign,nosig,nods,futuredate,pastdate,reverseddates,rollzsk,newzsk,newkeys,rsamd5keys',
+    'P' => 'insecure-ns,good-ns,badsign-ns,nosig-ns,nods-ns,futuredate-ds,pastdate-ds,reverseddates-ns,rollzsk-ns,newzsk-ns,newkeys-ns,rsamd5keys-ns',
   );
 
 LocalGetOptions(\%opts,
@@ -155,16 +155,18 @@ my %destroyFunctions =
    # removes the DS record
    '^(nods[-\w]+).*IN\s+NS\s+' => [\&delete_signature, '', 'DS'],
 
-   # future expiration date = 1 year (365 days) -> 1 year + 30 days
-   '^(futuredate[-\w]+).*IN\s+(A+|CNAME)\s+' =>
-   [\&make_new_date, 365*24*60*60, 395*24*60*60],
-   '^(futuredate[-\w]+).*IN\s+DS\s+' =>
-   [\&make_new_date, 'DS', 365*24*60*60, 395*24*60*60],
+   # future expiration date = 60 days from now -> 90 days from now
+   # warning: make_new_date expects $2 to be the type
+   '^(futuredate[-\.\w]+).*IN\s+(A+|CNAME)\s+' =>
+   [\&make_new_date, 60*24*60*60, 90*24*60*60],
+   '^(futuredate[-\.\w]+).*IN\s+NS\s+' =>
+   [\&make_new_date, 'DS', 60*24*60*60, 90*24*60*60],
 
    # past date: 30 days ago to 5 minutes ago
-   '^(pastdate[-\w]+).*IN\s+(A+|CNAME)\s+' =>
+   # warning: make_new_date expects $2 to be the type
+   '^(pastdate[-\.\w]+).*IN\s+(A+|CNAME)\s+' =>
    [\&make_new_date, -(30*24*60*60), -300],
-   '^(pastdate[-\w]+).*IN\s+NS\s+' =>
+   '^(pastdate[-\.\w]+).*IN\s+NS\s+' =>
    [\&make_new_date, 'DS', -(30*24*60*60), -300],
 
    # reverse dates
@@ -338,9 +340,9 @@ sub generate_records {
 	print_comment("NS records to sub zones");
 	foreach my $nsprefix (@nsprefixes) {
 	    my $savefh = $fh;
-	    generate_zone("${nsprefix}-ns.$domain", 1, 1);
+	    generate_zone("${nsprefix}.$domain", 1, 1);
 	    $fh = $savefh;
-	    print_record("${nsprefix}-ns",
+	    print_record("${nsprefix}",
 			 "1D IN", "NS",
 			 lc("ns1.${nsprefix}.$domain."));
 	}
@@ -680,17 +682,25 @@ sub delete_signature {
 
 sub make_new_date {
     my ($name, $type, $sigin_mod, $sigex_mod) = @_;
+    $type = $2 if (!$type);
     Verbose("  changing time in signatures of $_[0]");
 
     # print and save the current rr set
     print $fh $_;
-    my $currentrr = $_;
+    my $currentrr = $_ if ($type ne 'DS');
 
     # delete the old signature
     my $inrec = 0;
+    my $slurp = 0;
     my ($keyid, $keyname);
     while (<I>) {
 	last if /^\w/;
+	if ($type eq 'DS' && /\d+\s+DS\s+\d+/) {
+	    $slurp=1;
+	    $currentrr = $name . " " . $_;
+	} elsif ($slurp) {
+	    $currentrr .= $_;
+	}
 	if ($inrec == 1) {
 	    # get the key id from the current line after the RRSIG line
 	    # Note: depends heavily on format of dnssec-signzone output
@@ -699,10 +709,11 @@ sub make_new_date {
 	    # keyid from that for better flexible parsing.
 	    ($keyid, $keyname) = /^\s*\d+\s+(\d+)\s+([-\.\w]+)/;
 	    $inrec = 2;
+	} elsif (/RRSIG\s+$type/) {
+	    $inrec = 1;
 	}
-	$inrec = 1 if (/RRSIG\s+$type/);
-	print $fh $_ if (!$inrec);
-	$inrec = 0 if (/\)/);
+	print $fh $_ if (!$inrec && !$slurp);
+	$inrec = $slurp = 0 if (/\)/);
     }
 
     #
@@ -728,6 +739,7 @@ sub make_new_date {
     $keypaths{$currentdomain} = $keypath;
 
     # create the new record
+    print $fh $rec->string,"\n" if ($type eq 'DS');
     my $sigrr = Net::DNS::RR::RRSIG->create([$rec], $keypath,
 					    sigin => make_date($sigin_mod),
 					    sigex => make_date($sigex_mod),
