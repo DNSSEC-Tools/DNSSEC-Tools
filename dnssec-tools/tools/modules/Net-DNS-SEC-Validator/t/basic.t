@@ -55,16 +55,16 @@ foreach $a (@r) {
     ok($validator->istrusted($a->val_status));
 }
 
-$r =$validator->getaddrinfo("pastdate-AAAA.pastdate-ns.test.dnssec-tools.org");
+$r =$validator->getaddrinfo("pastdate-AAAA.pastdate-ds.test.dnssec-tools.org");
 ok(not $validator->istrusted($r->val_status));
 
-$r = $validator->getaddrinfo("nosig-A.futuredate-ns.test.dnssec-tools.org");
+$r = $validator->getaddrinfo("nosig-A.futuredate-ds.test.dnssec-tools.org");
 ok(not $validator->istrusted($r->val_status));
 
-$r = $validator->getaddrinfo("pastdate-A.futuredate-ns.test.dnssec-tools.org");
+$r = $validator->getaddrinfo("pastdate-A.futuredate-ds.test.dnssec-tools.org");
 ok(not $validator->istrusted($r->val_status));
 
-$r = $validator->getaddrinfo("good-A.pastdate-ns.test.dnssec-tools.org");
+$r = $validator->getaddrinfo("good-A.pastdate-ds.test.dnssec-tools.org");
 ok(not $validator->istrusted($r->val_status));
 
 @r = $validator->getaddrinfo("good-cname-to-good-A.test.dnssec-tools.org");
