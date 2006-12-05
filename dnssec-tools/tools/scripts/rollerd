@@ -2053,21 +2053,41 @@ sub rollnow
 	%rr = %$rrr;
 
 	#
-	# A skip record is changed to a regular rollrec.
+	# Re-read the rollrec file and change the record's type.  We'll
+	# also move the zone to phase 2 of rollover.
 	#
-	if($rr{'rollrec_type'} eq "skip")
+	rollrec_lock();
+	if(rollrec_read($rollrecfile) > 0)
 	{
-		rollmgr_log(LOG_INFO,"<command>","$zone skip rollrec changed to a roll rollrec");
-		rollrec_rectype($zone,"roll");
-		$rrr = rollrec_fullrec($zone);
+
+		#
+		# A skip record is changed to a regular rollrec.
+		#
+		if($rr{'rollrec_type'} eq "skip")
+		{
+			rollmgr_log(LOG_INFO,"<command>","$zone skip rollrec changed to a roll rollrec");
+			rollrec_rectype($zone,"roll");
+			$rrr = rollrec_fullrec($zone);
+		}
+
+		#
+		# Change the zone's phase to rollover phase 2.  This bypasses
+		# the initial rollover waiting period and gets right to the
+		# nitty gritty of doing a rollover.
+		#
+		newphase($zone,$rrr,2);
+
+		#
+		# Write the rollrec file.
+		#
+		rollrec_write();
 	}
 
 	#
-	# Change the zone's phase to rollover phase 2.  This bypasses the
-	# initial rollover waiting period and gets right to the nitty gritty
-	# of doing a rollover.
+	# Unlock the rollrec file.
 	#
-	newphase($zone,$rrr,2);
+	rollrec_close();
+	rollrec_unlock();
 
 	#
 	# Setting the sleep values such that the queue will be run.
@@ -2102,21 +2122,47 @@ sub skipnow
 	%rr = %$rrr;
 
 	#
-	# A roll record is changed to a skip rollrec and its phase set to 0.
+	# Re-read the rollrec file and change the record's type.  We'll
+	# also move the zone to phase 0 of rollover.
 	#
-	if($rr{'rollrec_type'} eq "roll")
+	rollrec_lock();
+	if(rollrec_read($rollrecfile) > 0)
 	{
-		rollmgr_log(LOG_INFO,"<command>","$zone roll rollrec changed to a skip rollrec");
 
+		#
+		# A roll record is changed to a skip rollrec and its
+		# phase set to 0.
+		#
+		if($rr{'rollrec_type'} eq "roll")
+		{
+			rollmgr_log(LOG_INFO,"<command>","$zone roll rollrec changed to a skip rollrec");
+
+			rollrec_rectype($zone,"skip");
+			display("stoproll $zone 0");
+		}
+
+		#
+		# Move the zone to rollover phase 0.
+		#
 		rollrec_setval($zone,"curphase",0);
-		rollrec_rectype($zone,"skip");
+
+		#
+		# Write the rollrec file.
+		#
 		rollrec_write();
-		display("stoproll $zone 0");
+
 	}
-	else
-	{
-		rollmgr_log(LOG_INFO,"<command>","zone $zone already a skip rollrec");
-	}
+
+	#
+	# Unlock the rollrec file.
+	#
+	rollrec_close();
+	rollrec_unlock();
+
+	#
+	# Log the event and return success.
+	#
+	rollmgr_log(LOG_INFO,"<command>","forcing a skiproll for zone $zone");
 	return(1);
 }
 
@@ -2503,11 +2549,6 @@ Only deals with ZSK rollover.
 
 Any process that can write to the rollover socket can send commands to
 B<rollerd>.  This is probably not a Good Thing.
-
-=item -
-
-I<rollrec> files do not have zone state updated when the
-zones start or stop rollover as a result of B<rollctl> commands.
 
 =item -
 
