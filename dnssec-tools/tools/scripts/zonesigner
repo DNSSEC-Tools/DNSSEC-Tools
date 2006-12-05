@@ -673,7 +673,7 @@ sub genzsks
 			print STDERR "\ncur ZSK does not exist; unable to re-use non-existent cur ZSK\n";
 			exit(1);
 		}
-		vprint("reusing existing cur ZSK - $zskcur\n");
+		vprint("reusing existing cur ZSK set - $zskcursetname\n");
 
 		#
 		# Get the current ZSKs.
@@ -705,7 +705,7 @@ sub genzsks
 			print STDERR "\n$pubstr does not exist;\nunable to re-use non-existent $pubstr\n";
 			exit(1);
 		}
-		vprint("reusing existing pub ZSK - $zskpubsetname\n");
+		vprint("reusing existing pub ZSK set - $zskpubsetname\n");
 
 		#
 		# Get the published ZSKs.
