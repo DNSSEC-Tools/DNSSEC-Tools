@@ -481,8 +481,8 @@ sub rollrec_setval
 		#
 		# Dig out the line's keyword and value.
 		#
-		$line =~ /^\s*roll|skip\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
-		$rrname = $1;
+		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
+		$rrname = $2;
 
 		#
 		# If this line has the rollrec's name and is the start of a
