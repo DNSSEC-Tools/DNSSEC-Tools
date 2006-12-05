@@ -450,13 +450,15 @@ decode_base64_key(char *keyptr, u_char * public_key, int keysize)
 {
     BIO            *b64;
     BIO            *mem;
+    BIO            *bio;
     int             len;
 
     b64 = BIO_new(BIO_f_base64());
-    mem = BIO_new_mem_buf(keyptr, -1);
     BIO_set_flags(b64, BIO_FLAGS_BASE64_NO_NL);
-    mem = BIO_push(b64, mem);
-    len = BIO_read(mem, public_key, keysize);
-    BIO_free_all(mem);
+    mem = BIO_new_mem_buf(keyptr, -1);
+    bio = BIO_push(b64, mem);
+    len = BIO_read(bio, public_key, keysize);
+    BIO_free(mem);
+    BIO_free(b64);
     return len;
 }
