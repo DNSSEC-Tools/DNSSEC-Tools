@@ -13,8 +13,13 @@ use Net::SMTP;
 use Getopt::Long;
 use Sys::Syslog;
 use IO::File;
-use Date::Parse;
 use POSIX;
+
+#
+# Detect required Perl modules.
+#
+use Net::DNS::SEC::Tools::BootStrap;
+dnssec_tools_load_mods('Date::Parse'	=> "",);
 
 ########################################################
 # Defaults
