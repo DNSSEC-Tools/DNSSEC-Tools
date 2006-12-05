@@ -46,12 +46,18 @@
 
 use strict;
 
-use Tk;
-use Tk::Dialog;
-use Tk::FileSelect;
-use Tk::Pane;
-
 use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::BootStrap;
+
+######################################################################
+# detect needed perl module requirements
+#
+dnssec_tools_load_mods(
+		       'Tk' => "",
+		       'Tk::Dialog' => "",
+		       'Tk::Pane' => "",
+		       'Tk::Table' => "",
+		      );
 
 #
 # Version information.
@@ -194,7 +200,7 @@ sub main
 	#
 	# Start the whole shebang rollin'.
 	#
-	MainLoop;
+	MainLoop();
 }
 
 #---------------------------------------------------------------------------
