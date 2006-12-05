@@ -374,6 +374,8 @@ sub rollrec_rectype
 	my $name    = shift;		# Name of rollrec we're modifying.
 	my $rectype = shift;		# Rollrec's new type.
 
+# print STDERR "rollrec_rectype:  <$name> <$rectype>\n";
+
 	#
 	# Make sure we've got a valid record type.
 	#
@@ -405,7 +407,6 @@ sub rollrec_rectype
 		if(lc($rrname) eq lc($name))
 		{
 			$rollrecs{$name}{'rollrec_type'} = $rectype;
-
 			$line =~ s/$rtype/$rectype/;
 			$rollreclines[$rrind] = $line;
 			$modified = 1;
@@ -480,7 +481,7 @@ sub rollrec_setval
 		#
 		# Dig out the line's keyword and value.
 		#
-		$line =~ /^\s*roll\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
+		$line =~ /^\s*roll|skip\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
 		$rrname = $1;
 
 		#
@@ -929,7 +930,7 @@ sub rollrec_write
 	my $rrc = "";		# Concatenated rollrec file contents.
 	my $ofh;		# Old file handle.
 
-# print "rollrec_write:  down in\n";
+# print STDERR "rollrec_write:  down in\n";
 
 	#
 	# If the file hasn't changed, we'll skip writing.
@@ -956,6 +957,7 @@ sub rollrec_write
 	#
 	$ofh = select ROLLREC;
 	$| = 1;
+
 	select $ofh;
 }
 
