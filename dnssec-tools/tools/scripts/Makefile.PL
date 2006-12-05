@@ -30,6 +30,7 @@ use ExtUtils::MakeMaker;
 			    rollerd
 			    rollinit
 			    rolllog
+			    rollset
 			    signset-editor
 			    tachk
 			    timetrans
