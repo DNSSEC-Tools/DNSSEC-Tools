@@ -1313,6 +1313,10 @@ digest_response(val_context_t * context,
                 goto done;
             }
         }
+
+        /* we no longer need learned_zones */
+        res_sq_free_rrset_recs(&learned_zones);
+        learned_zones = NULL;
     }
 
     if (VAL_NO_ERROR != (ret_val = stow_key_info(learned_keys))) {

@@ -409,6 +409,8 @@ res_sq_free_rrset_recs(struct rrset_rec **set)
             FREE((*set)->rrs.val_msg_header);
         if ((*set)->rrs.val_rrset_name_n)
             FREE((*set)->rrs.val_rrset_name_n);
+        if ((*set)->rrs.val_rrset_server)
+            FREE((*set)->rrs.val_rrset_server);
         if ((*set)->rrs.val_rrset_data)
             res_sq_free_rr_recs(&((*set)->rrs.val_rrset_data));
         if ((*set)->rrs.val_rrset_sig)

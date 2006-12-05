@@ -49,7 +49,7 @@ struct zone_ns_map_t {
     struct zone_ns_map_t *next;
 };
 
-struct zone_ns_map_t *zone_ns_map = NULL;
+static struct zone_ns_map_t *zone_ns_map = NULL;
 
 #define LOCK_INIT() do{				\
 	if(0 != rwlock_init) {\
@@ -223,12 +223,13 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
         break;
     }
 
-    /*
+    /* XXX 
+     * XXX Look for a cached CNAME/DNAME
      * XXX get_cached_rrset should return a domain_info structure
-     * XXX This is to allow a CNAME chain to be returned
+     * XXX This is to allow a CNAME/DNAME chains to be returned
      * XXX In such cases, the qname_chain will also have to be tweaked 
      * XXX appropriately
-     * XXX Look for a cached CNAME
+     * XXX
      */
     prev = NULL;
     while (next_answer) {
@@ -348,26 +349,6 @@ stow_root_info(struct rrset_rec *root_info)
 }
 
 int
-free_validator_cache(void)
-{
-    LOCK_INIT();
-    LOCK_EX();
-    res_sq_free_rrset_recs(&unchecked_key_info);
-    unchecked_key_info = NULL;
-    res_sq_free_rrset_recs(&unchecked_ds_info);
-    unchecked_ds_info = NULL;
-    res_sq_free_rrset_recs(&unchecked_ns_info);
-    unchecked_ns_info = NULL;
-    res_sq_free_rrset_recs(&unchecked_answers);
-    unchecked_answers = NULL;
-    free_name_servers(&root_ns);
-    root_ns = NULL;
-    UNLOCK();
-
-    return VAL_NO_ERROR;
-}
-
-int
 get_root_ns(struct name_server **ns)
 {
     LOCK_INIT();
@@ -427,6 +408,23 @@ store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
     }
 
     UNLOCK();
+
+    return VAL_NO_ERROR;
+}
+
+static int
+free_zone_nslist()
+{
+    struct zone_ns_map_t *map_e;
+
+    while (zone_ns_map) {
+        map_e = zone_ns_map;
+        zone_ns_map = zone_ns_map->next;
+
+        if (map_e->nslist)
+            free_name_servers(&map_e->nslist);
+        FREE(map_e);
+    }
 
     return VAL_NO_ERROR;
 }
@@ -521,3 +519,25 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
 
     return VAL_NO_ERROR;
 }
+
+int
+free_validator_cache(void)
+{
+    LOCK_INIT();
+    LOCK_EX();
+    res_sq_free_rrset_recs(&unchecked_key_info);
+    unchecked_key_info = NULL;
+    res_sq_free_rrset_recs(&unchecked_ds_info);
+    unchecked_ds_info = NULL;
+    res_sq_free_rrset_recs(&unchecked_ns_info);
+    unchecked_ns_info = NULL;
+    res_sq_free_rrset_recs(&unchecked_answers);
+    unchecked_answers = NULL;
+    free_name_servers(&root_ns);
+    root_ns = NULL;
+    free_zone_nslist();
+    UNLOCK();
+
+    return VAL_NO_ERROR;
+}
+

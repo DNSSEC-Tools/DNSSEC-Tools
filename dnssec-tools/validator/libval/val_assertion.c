@@ -108,10 +108,13 @@ free_val_rrset_members(struct val_rrset *r)
         FREE(r->val_msg_header);
     if (r->val_rrset_name_n)
         FREE(r->val_rrset_name_n);
+    if (r->val_rrset_server)
+        FREE(r->val_rrset_server);
     if (r->val_rrset_data != NULL)
         res_sq_free_rr_recs(&r->val_rrset_data);
     if (r->val_rrset_sig != NULL)
         res_sq_free_rr_recs(&r->val_rrset_sig);
+            
 }
 
 /*
@@ -156,6 +159,8 @@ val_free_result_chain(struct val_result_chain *results)
                         FREE(trust->val_ac_rrset->val_msg_header);
                     if (trust->val_ac_rrset->val_rrset_name_n)
                         FREE(trust->val_ac_rrset->val_rrset_name_n);
+                    if (trust->val_ac_rrset->val_rrset_server)
+                        FREE(trust->val_ac_rrset->val_rrset_server);
                     if (trust->val_ac_rrset->val_rrset_data != NULL)
                         res_sq_free_rr_recs(&trust->val_ac_rrset->
                                             val_rrset_data);
@@ -1173,74 +1178,66 @@ assimilate_answers(val_context_t * context,
 }
 
 static int
-clone_val_rrset(struct val_rrset *old_rrset, struct val_rrset **new_rrset)
+clone_val_rrset(struct val_rrset *old_rrset, struct val_rrset *new_rrset)
 {
     int             retval;
 
     if (new_rrset == NULL)
         return VAL_BAD_ARGUMENT;
 
-    *new_rrset = NULL;
+    memset(new_rrset, 0, sizeof(struct val_rrset));
+
     if (old_rrset != NULL) {
         int             len;
 
-        *new_rrset = (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
-        if (*new_rrset == NULL) {
-            return VAL_OUT_OF_MEMORY;
-        }
-        memset(*new_rrset, 0, sizeof(struct val_rrset));
-
         CLONE_NAME_LEN(old_rrset->val_msg_header,
                        old_rrset->val_msg_headerlen,
-                       (*new_rrset)->val_msg_header,
-                       (*new_rrset)->val_msg_headerlen);
+                       new_rrset->val_msg_header,
+                       new_rrset->val_msg_headerlen);
 
         len = wire_name_length(old_rrset->val_rrset_name_n);
-        (*new_rrset)->val_rrset_name_n =
+        new_rrset->val_rrset_name_n =
             (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-        if ((*new_rrset)->val_rrset_name_n == NULL) {
+        if (new_rrset->val_rrset_name_n == NULL) {
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
 
-        memcpy((*new_rrset)->val_rrset_name_n,
+        memcpy(new_rrset->val_rrset_name_n,
                old_rrset->val_rrset_name_n, len);
 
-        (*new_rrset)->val_rrset_class_h = old_rrset->val_rrset_class_h;
-        (*new_rrset)->val_rrset_type_h = old_rrset->val_rrset_type_h;
-        (*new_rrset)->val_rrset_ttl_h = old_rrset->val_rrset_ttl_h;
-        (*new_rrset)->val_rrset_ttl_x = old_rrset->val_rrset_ttl_x;
-        (*new_rrset)->val_rrset_section = old_rrset->val_rrset_section;
-        (*new_rrset)->val_rrset_data =
-            copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
+        new_rrset->val_rrset_class_h = old_rrset->val_rrset_class_h;
+        new_rrset->val_rrset_type_h = old_rrset->val_rrset_type_h;
+        new_rrset->val_rrset_ttl_h = old_rrset->val_rrset_ttl_h;
+        new_rrset->val_rrset_ttl_x = old_rrset->val_rrset_ttl_x;
+        new_rrset->val_rrset_section = old_rrset->val_rrset_section;
+        new_rrset->val_rrset_data =
+            copy_rr_rec_list(new_rrset->val_rrset_type_h,
                              old_rrset->val_rrset_data, 0);
-        (*new_rrset)->val_rrset_sig =
-            copy_rr_rec_list((*new_rrset)->val_rrset_type_h,
+        new_rrset->val_rrset_sig =
+            copy_rr_rec_list(new_rrset->val_rrset_type_h,
                              old_rrset->val_rrset_sig, 0);
-        (*new_rrset)->val_rrset_server =
-            (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
 
         if (old_rrset->val_rrset_server) {
-            if ((*new_rrset)->val_rrset_server == NULL) {
+            new_rrset->val_rrset_server =
+                (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
+            if (new_rrset->val_rrset_server == NULL) {
                 retval = VAL_OUT_OF_MEMORY;
                 goto err;
             }
-            memcpy((*new_rrset)->val_rrset_server,
+            memcpy(new_rrset->val_rrset_server,
                    old_rrset->val_rrset_server,
                    sizeof(struct sockaddr_storage));
         } else {
-            (*new_rrset)->val_rrset_server = NULL;
+            new_rrset->val_rrset_server = NULL;
         }
     }
 
     return VAL_NO_ERROR;
 
   err:
-    if (*new_rrset) {
-        free_val_rrset_members(*new_rrset);
-        FREE(*new_rrset);
-        *new_rrset = NULL;
-    }
+    free_val_rrset_members(new_rrset);
+    memset(new_rrset, 0, sizeof(struct val_rrset));
     return retval;
 }
 
@@ -1268,10 +1265,18 @@ transform_authentication_chain(struct val_digested_auth_chain *top_as,
         memset(n_ac, 0, sizeof(struct val_authentication_chain));
         n_ac->val_ac_status = o_ac->val_ac_status;
         n_ac->val_ac_trust = NULL;
+        n_ac->val_ac_rrset = (struct val_rrset *) MALLOC(sizeof(struct val_rrset));
+        if (n_ac->val_ac_rrset == NULL) {
+            FREE(n_ac);
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
 
         if (VAL_NO_ERROR !=
             (retval =
-             clone_val_rrset(o_ac->val_ac_rrset, &n_ac->val_ac_rrset))) {
+             clone_val_rrset(o_ac->val_ac_rrset, n_ac->val_ac_rrset))) {
+            FREE(n_ac->val_ac_rrset);
+            FREE(n_ac);
             goto err;
         }
 
@@ -1303,7 +1308,8 @@ transform_authentication_chain(struct val_digested_auth_chain *top_as,
 }
 
 static int
-transform_authentication_chain_inverse(struct val_authentication_chain
+transform_authentication_chain_inverse(val_context_t *ctx,
+                                       struct val_authentication_chain
                                        *top_as,
                                        struct val_digested_auth_chain
                                        **a_chain)
@@ -1312,7 +1318,7 @@ transform_authentication_chain_inverse(struct val_authentication_chain
     struct val_authentication_chain *o_ac;
     int             retval;
 
-    if (a_chain == NULL)
+    if (a_chain == NULL || ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
     (*a_chain) = NULL;
@@ -1328,10 +1334,19 @@ transform_authentication_chain_inverse(struct val_authentication_chain
         memset(n_ac, 0, sizeof(struct val_digested_auth_chain));
         n_ac->val_ac_status = o_ac->val_ac_status;
         n_ac->val_ac_trust = NULL;
+        n_ac->_as.ac_data = (struct rrset_rec *) MALLOC(sizeof(struct rrset_rec));
+        if (n_ac->val_ac_rrset == NULL) {
+            FREE(n_ac);
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        memset(n_ac->_as.ac_data, 0, sizeof(struct rrset_rec));
 
         if (VAL_NO_ERROR !=
             (retval =
-             clone_val_rrset(o_ac->val_ac_rrset, &n_ac->val_ac_rrset))) {
+             clone_val_rrset(o_ac->val_ac_rrset, &n_ac->_as.ac_data->rrs))) {
+            FREE(n_ac->_as.ac_data);
+            FREE(n_ac);
             goto err;
         }
 
@@ -1339,8 +1354,15 @@ transform_authentication_chain_inverse(struct val_authentication_chain
             (*a_chain) = n_ac;
         } else {
             prev_ac->val_ac_trust = n_ac;
+            prev_ac->_as.val_ac_next = n_ac;
         }
         prev_ac = n_ac;
+    }
+
+    /* add new authentication elements to the main assertion list */
+    if (prev_ac) {
+        prev_ac->_as.val_ac_next = ctx->a_list;
+        ctx->a_list = *a_chain;
     }
 
     return VAL_NO_ERROR;
@@ -1349,9 +1371,9 @@ transform_authentication_chain_inverse(struct val_authentication_chain
     while (*a_chain) {
         n_ac = *a_chain;
         *a_chain = (*a_chain)->val_ac_trust;
-        if (n_ac->val_ac_rrset) {
-            free_val_rrset_members(n_ac->val_ac_rrset);
-            FREE(n_ac->val_ac_rrset);
+        if (n_ac->_as.ac_data) {
+            free_val_rrset_members(&n_ac->_as.ac_data->rrs);
+            FREE(n_ac->_as.ac_data);
         }
         FREE(n_ac);
     }
@@ -2677,8 +2699,13 @@ verify_provably_unsecure(val_context_t * context,
                 FREE(matched_zone1);
             if (matched_zone2)
                 FREE(matched_zone2);
+            FREE(zonecut_n);
             return 0;
         }
+        if (matched_zone1)
+            FREE(matched_zone1);
+        if (matched_zone2)
+            FREE(matched_zone2);
 
         val_log(context, LOG_DEBUG,
                 "About to check if %s is provably unsecure.", name_p);
@@ -2690,6 +2717,7 @@ verify_provably_unsecure(val_context_t * context,
 
             val_log(context, LOG_DEBUG,
                     "Zone %s is not provably unsecure.", name_p);
+            FREE(zonecut_n);
             return 0;
         }
 
@@ -2748,7 +2776,8 @@ verify_provably_unsecure(val_context_t * context,
      */
     if (as->val_ac_trust == NULL) {
         aptr = NULL;
-        transform_authentication_chain_inverse(results->val_rc_answer,
+        transform_authentication_chain_inverse(context,
+                                               results->val_rc_answer,
                                                &aptr);
         as->val_ac_trust = aptr;
     }

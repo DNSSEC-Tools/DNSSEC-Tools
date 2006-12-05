@@ -843,10 +843,10 @@ verify_next_assertion(val_context_t * ctx,
                 ds.d_hash = NULL;
                 dsrec = dsrec->rr_next;
             }
+        }
 
-            if (dnskey.public_key) {
-                FREE(dnskey.public_key);
-            }
+        if (dnskey.public_key != NULL) {
+            FREE(dnskey.public_key);
             dnskey.public_key = NULL;
         }
     }
