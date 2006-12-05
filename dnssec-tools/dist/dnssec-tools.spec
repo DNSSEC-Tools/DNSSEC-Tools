@@ -1,7 +1,7 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 0.9.2
-Release: 4%{?dist}
+Version: 1.0
+Release: 1%{?dist}
 License: BSD
 Group: System Environment
 URL: http://www.dnssec-tools.org/
@@ -14,12 +14,8 @@ BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: perl-Net-DNS, dnssec-tools-perlmods, bind
 Requires:  perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 BuildRequires: openssl-devel
-Patch1: dnssec-tools-runtime-perlloading.patch
-Patch2: dnssec-tools-zonefilefast.ssh.patch
-Patch3: dnssec-tools-conf-install-dir.patch
 Patch4: dnssec-tools-linux-conf-paths.patch
 Patch5: dnssec-tools-conf-file-location.patch
-Patch6: dnssec-tools-donuts-rules-destdir.patch
 
 %description
 
@@ -63,12 +59,8 @@ debugging symbols for dnssec-tools libraries.
 %prep
 %setup -q
 
-%patch1 -p0
-%patch2 -p0
-%patch3 -p0
 %patch4 -p0
 %patch5 -p0
-%patch6 -p0
 
 %build
 %configure --with-perl-build-args="INSTALLDIRS=vendor"
@@ -226,6 +218,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.h
 %{_prefix}/src/debug/%{name}-%{version}/validator/libval/crypto/*.c
 %changelog
+
+* Mon Dec 04 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.0
+- updated to 1.0
 
 * Mon Jun 19 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 0.9.2-4
 - updated to 0.9.2
