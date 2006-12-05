@@ -1751,10 +1751,26 @@ sub forceroll
 				}
 			}
 
+			#
+			# If the archive directory exists, we'll move each of
+			# this key's files into the directory.  We'll also add
+			# a timestamp to the end of the filename, to prevent
+			# potential collisions.
+			#
 			if($error == 0)
 			{
+				my $kronos = time;		# Timestamp.
+
 				vhigh_print("moving $me to $archdir\n\n");
-				system("$MV $me.* $archdir");
+
+				foreach my $archfn (glob("$me.*"))
+				{
+					my $newname;		# New key name.
+
+					$newname = "$archdir/$archfn.$kronos";
+
+					system("$MV $archfn $newname");
+				}
 			}
 		}
 
@@ -2062,6 +2078,7 @@ sub usage
 	print STDERR "\t\t\t-genksk\n";
 	print STDERR "\t\t\t-genzsk\n";
 	print STDERR "\t\t\t-usepub\n";
+	print STDERR "\t\t\t-archivedir directory\n";
 	print STDERR "\t\t\t-savekeys\n";
 	print STDERR "\t\t\t-ksklife lifespan\n";
 	print STDERR "\t\t\t-zsklife lifespan\n";
@@ -2309,6 +2326,10 @@ zone will be used.
 =item -usepub
 
 Use the existing Published ZSK to sign the zone.
+
+=item -archivedir
+
+The key archive directory.
 
 =item -savekeys
 
