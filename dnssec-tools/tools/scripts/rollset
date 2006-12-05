@@ -1,0 +1,445 @@
+#!/usr/bin/perl
+#
+# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# rollset
+#
+#	This script sets some values in a rollrec file.
+#
+
+use strict;
+
+use Getopt::Long;
+
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "rollset";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.0";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+my $verbose = 0;			# Verbose flag.
+my $check   = 0;			# Check-rollrec flag.
+my $doall   = 0;			# Edit all rollrec entries flag.
+
+#
+# Flag variables for options.
+#
+my $zonename	= "";
+my $zonefile	= "";
+my $keyrec	= "";
+my $roll	= 0;
+my $skip	= 0;
+my $display	= 0;
+my $nodisplay	= 0;
+my $phase	= -1;
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"zone=s",			# Zone to edit.
+	"roll",				# Make record a roll record.
+	"skip",				# Make record a skip record.
+	"file=s",			# New zonefile value.
+	"keyrec=s",			# New keyrec value.
+	"phase=i",			# New current-phase value.
+	"display",			# Turn on display flag.
+	"nodisplay",			# Turn off display flag.
+
+	"check",			# Run rollchk after edits.
+	"verbose",			# Give lotsa output.
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+
+my $rrf;				# Rollrec we're editing.
+
+my $ret;				# Return code from main().
+
+$ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	This routine controls everything.
+#
+sub main()
+{
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Edit the rollrec file.
+	#
+	editrrf();
+
+	#
+	# Maybe check the rollrec file for validity.
+	#
+	system("rollchk $rrf") if($check);
+
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine gets the options from the command line and does
+#		a bit of validity checking.
+#
+sub doopts
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	GetOptions(\%options,@opts);
+
+	#
+	# Set some flags based on the command line.
+	#
+	$zonename  = $options{'zone'};
+	$zonefile  = $options{'file'};
+	$keyrec	   = $options{'keyrec'};
+	$roll	   = $options{'roll'};
+	$skip	   = $options{'skip'};
+	$display   = $options{'display'};
+	$nodisplay = $options{'nodisplay'};
+	$phase	   = $options{'phase'}	if(defined($options{'phase'}));
+
+	$check	   = $options{'check'};
+	$verbose   = $options{'verbose'};
+
+	#
+	# Show the version number or help info if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
+	# Ensure we're not being asked to do the impossible.
+	# (The stupid, actually.)
+	#
+	if($roll && $skip)
+	{
+		print STDERR "-roll and -skip are mutually exclusive\n";
+		exit(1);
+	}
+	if($display && $nodisplay)
+	{
+		print STDERR "-display and -nodisplay are mutually exclusive\n";
+		exit(1);
+	}
+	if(($phase < -1) || ($phase > 4))
+	{
+		print STDERR "phase $phase invalid; phase must be between 0 and 4, inclusive\n";
+		exit(2);
+	}
+
+	#
+	# If a zone name wasn't specified, we'll apply the fix to every
+	# rollrec in the file.
+	#
+	$doall = 1 if(! $zonename);
+
+	#
+	# Ensure that we were actually given something to do.
+	#
+	if(($zonefile  eq "")	&&
+	   ($keyrec    eq "")	&&
+	   ($roll      == 0)	&&
+	   ($skip      == 0)	&&
+	   ($display   == 0)	&&
+	   ($nodisplay == 0)	&&
+	   ($phase     == -1))
+	{
+		print STDERR "you must specify something to be changed\n";
+		exit(3);
+	}
+
+	#
+	# Ensure we were given a rollrec file to check.
+	#
+	usage() if($argc == 0);
+
+	#
+	# Save the name of the rollrec file.
+	#
+	$rrf = $ARGV[0];
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	editrrf()
+#
+# Purpose:	This routine reads a rollrec file and copies the rollrec
+#		records into either the roll hash or the skip hash,
+#		depending on each record's type.  Any unrecognized rollrec
+#		entries are reported. 
+#
+sub editrrf
+{
+	#
+	# Lock and load the rollrec file.
+	#
+	rollrec_lock();
+	if(rollrec_read($rrf) < 0)
+	{
+		rollrec_unlock();
+		print STDERR "unable to read rollrec file \"$rrf\"\n";
+		exit(-1);
+	}
+
+	foreach my $name (rollrec_names())
+	{
+		#
+		# Go to the next record if we aren't doing everything or if
+		# this isn't the specified record.
+		#
+		next if(!$doall && ($name ne $zonename));
+
+		#
+		# Set the rollrec record's type as requested by the user.
+		#
+		typer($roll,$name,'roll');
+		typer($skip,$name,'skip');
+
+		#
+		# Set the rollrec fields as requested by the user.
+		#
+		changer($zonefile,$name,'zonefile',$zonefile);
+		changer($keyrec,$name,'keyrec',$keyrec);
+		changer($display,$name,'display',1);
+		changer($nodisplay,$name,'display',0);
+		changer($phase,$name,'curphase',$phase) if($phase > -1);
+	}
+
+	#
+	# Close, write, and unlock the rollrec file.
+	#
+	rollrec_close();
+	rollrec_unlock();
+}
+
+#----------------------------------------------------------------------
+# Routine:	typer()
+#
+# Purpose:	Change a rollrec record's type to roll or skip.
+#
+sub typer
+{
+	my $flag    = shift;				# Flag value.
+	my $name    = shift;				# Zone name.
+	my $rectype = shift;				# New record type.
+
+	#
+	# Do nothing if this record type shouldn't be changed.
+	#
+	return if(!$flag);
+
+	#
+	# If the verbose flag was given, we'll give a message.
+	#
+	print "$name:  changing record type to \"$rectype\"\n" if($verbose);
+
+	#
+	# Change the rollrec record's type.
+	#
+	rollrec_rectype($name,$rectype);
+}
+
+#----------------------------------------------------------------------
+# Routine:	changer()
+#
+# Purpose:	Change a rollrec field value and maybe give verbose messages.
+#
+sub changer
+{
+	my $flag  = shift;				# Flag value.
+	my $name  = shift;				# Zone name.
+	my $field = shift;				# Field to change.
+	my $val	  = shift;				# Field's new value.
+
+	#
+	# Do nothing if this field shouldn't be changed.
+	#
+	return if(!$flag);
+
+	#
+	# If the verbose flag was given, we'll show the old value and
+	# the new value.
+	#
+	if($verbose)
+	{
+		my $oldval;				# Old value.
+
+		$oldval = rollrec_recval($name,$field);
+		print "$name:  changing $field \"$oldval\" to \"$val\"\n";
+	}
+
+	#
+	# Change the rollrec field's value.
+	#
+	rollrec_setval($name,$field,$val);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(1);
+}
+
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  rollset [options] <rollrec-file>\n";
+	print STDERR "	options:\n";
+
+	print STDERR "		-zone zonename\n";
+	print STDERR "		-roll\n";
+	print STDERR "		-skip\n";
+	print STDERR "		-file zone-file\n";
+	print STDERR "		-keyrec keyrec-file\n";
+	print STDERR "		-phase phase-number\n";
+	print STDERR "		-display\n";
+	print STDERR "		-nodisplay\n";
+
+	print STDERR "		-check\n";
+	print STDERR "		-verbose\n";
+	print STDERR "		-Version\n";
+	print STDERR "		-help\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+rollset - Modifies entries in a DNSSEC-Tools I<rollrec> file.
+
+=head1 SYNOPSIS
+
+  rollset [options] rollrec-file
+
+=head1 DESCRIPTION
+
+B<rollset> modifies fields in the I<rollrec> file specified by
+I<rollrec-file>.  Multiple options may be combined in a single B<rollset>
+execution.  B<rollset> operates quietly unless it is given the I<-verbose>
+option.
+
+All records in the specified I<rollrec> file will be modified, unless the
+I<-zone> option is given.  In that case, only the named zone will be modified.
+
+=head1 OPTIONS
+
+=over 4
+
+=item -zone zonename
+
+The zone I<zonename> is selected as the only zone whose I<rollrec> record
+will be modified.  If this is not given, then all I<rollrec> records will
+be modified.
+
+=item -file zone-file
+
+The zone file in the selected I<rollrec> records is modified to be
+I<zone-file>.
+
+=item -keyrec keyrec-file
+
+The keyrec file in the selected I<rollrec> records is modified to be
+I<keyrec-file>.
+
+=item -phase phase-number
+
+The phase number of the selected I<rollrec> records is modified to be
+I<phase-number>.  The I<phase-number> may only be 0, 1, 2, 3, or 4.
+
+=item -display
+
+Turn on the GUI display of the zones in the selected I<rollrec>s.
+This option is mutually exclusive of the I<-nodisplay> option.
+
+=item -nodisplay
+
+Turn off the GUI display of the zones in the selected I<rollrec>s.
+This option is mutually exclusive of the I<-display> option.
+
+=item -roll
+
+Convert the selected I<rollrec>s to be active ("roll") records.
+This option is mutually exclusive of the I<-skip> option.
+
+=item -skip
+
+Convert the selected I<rollrec>s to be inactive ("skip") records.
+This option is mutually exclusive of the I<-roll> option.
+
+=item -check
+
+If this option is given, the B<rollchk> command will be run on the modified
+I<rollrec> file.
+
+=item -verbose
+
+Display information about every modification made to the I<rollrec> file.
+
+=item -Version
+
+Display the current B<rollset> and DNSSEC-Tools versions.
+
+=item -help
+
+Display a usage message.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2006 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<lsroll(8)>,
+B<rollchk(8)>,
+B<rollerd(8)>,
+B<rollinit(8)>
+
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
+
+B<file-rollrec(5)>
+
+=cut
