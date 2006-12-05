@@ -93,15 +93,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/expchk
 %{_bindir}/genkrf
 %{_bindir}/getdnskeys
-%{_bindir}/keyrec-check
 %{_bindir}/lskrf
 %{_bindir}/maketestzone
 %{_bindir}/mapper
 %{_bindir}/zonesigner
 %{_datadir}/donuts/rules/*
 
-# newer
-%{_bindir}/clean-keyrec
 %{_bindir}/dtconfchk
 %{_bindir}/dtdefs
 %{_bindir}/dtinitconf
@@ -109,8 +106,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/tachk
 %{_bindir}/timetrans
 
-# 0.9.1
-%{_bindir}/TrustMan
 %{_bindir}/lsroll
 %{_bindir}/rollchk
 %{_bindir}/rollctl
@@ -119,6 +114,15 @@ rm -rf $RPM_BUILD_ROOT
 
 %{_bindir}/validate
 
+%{_bindir}/TrustMan.pl
+%{_bindir}/trustman
+%{_bindir}/blinkenlights
+%{_bindir}/cleankrf
+%{_bindir}/krfcheck
+%{_bindir}/rolllog
+%{_bindir}/signset-editor
+
+
 %{_mandir}/man1/dnspktflow.1.gz
 %{_mandir}/man1/donuts.1.gz
 %{_mandir}/man1/donutsd.1.gz
@@ -126,15 +130,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/expchk.1.gz
 %{_mandir}/man1/genkrf.1.gz
 %{_mandir}/man1/getdnskeys.1.gz
-%{_mandir}/man1/keyrec-check.1.gz
 %{_mandir}/man1/lskrf.1.gz
 %{_mandir}/man1/maketestzone.1.gz
 %{_mandir}/man1/mapper.1.gz
 %{_mandir}/man1/validate.1.gz
 %{_mandir}/man1/zonesigner.1.gz
 
-# newer
-%{_mandir}/man1/clean-keyrec.1.gz
 %{_mandir}/man1/dtconfchk.1.gz
 %{_mandir}/man1/dtdefs.1.gz
 %{_mandir}/man1/dtinitconf.1.gz
@@ -142,15 +143,22 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/tachk.1.gz
 %{_mandir}/man1/timetrans.1.gz
 
-# 0.9.1
-%{_mandir}/man1/TrustMan.1.gz
 %{_mandir}/man1/lsroll.1.gz
 %{_mandir}/man1/rollchk.1.gz
 %{_mandir}/man1/rollctl.1.gz
 %{_mandir}/man1/rollerd.1.gz
 %{_mandir}/man1/rollinit.1.gz
+%{_mandir}/man1/TrustMan.pl.1.gz
+%{_mandir}/man1/blinkenlights.1.gz
+%{_mandir}/man1/cleankrf.1.gz
+%{_mandir}/man1/krfcheck.1.gz
+%{_mandir}/man1/rolllog.1.gz
+%{_mandir}/man1/signset-editor.1.gz
+%{_mandir}/man1/trustman.1.gz
 
-##%{_mandir}/man*/*
+%{_mandir}/man3/TrustMan.3pm.gz
+%{_mandir}/man3/p_ac_status.3.gz
+%{_mandir}/man3/p_val_status.3.gz
 
 %files perlmods
 %defattr(-,root,root)
@@ -160,12 +168,15 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Net/DNS/SEC/Tools/BootStrap.pm
 %{perl_vendorlib}/Net/DNS/SEC/Tools/conf.pm
 %{perl_vendorlib}/Net/DNS/SEC/Tools/keyrec.pm
+%{perl_vendorlib}/Net/DNS/SEC/Tools/keyrec.pod
 %{perl_vendorlib}/Net/DNS/SEC/Tools/rollmgr.pm
 %{perl_vendorlib}/Net/DNS/SEC/Tools/rollrec.pm
+%{perl_vendorlib}/Net/DNS/SEC/Tools/rollrec.pod
 %{perl_vendorlib}/Net/DNS/SEC/Tools/defaults.pm
 %{perl_vendorlib}/Net/DNS/SEC/Tools/timetrans.pm
 %{perl_vendorlib}/Net/DNS/SEC/Tools/tooloptions.pm
 %{perl_vendorlib}/Net/DNS/ZoneFile/Fast.pm
+%{perl_vendorlib}/TrustMan.pl
 
 %{_mandir}/man3/Net::DNS::SEC::Tools::Donuts::Rule.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::QWPrimitives.3pm.gz
@@ -197,8 +208,6 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/dnsval_conf_get.3.gz
 %{_mandir}/man3/dnsval_conf_set.3.gz
 %{_mandir}/man3/libsres.3.gz
-%{_mandir}/man3/p_as_error.3.gz
-%{_mandir}/man3/p_val_error.3.gz
 %{_mandir}/man3/resolver_config_get.3.gz
 %{_mandir}/man3/resolver_config_set.3.gz
 %{_mandir}/man3/root_hints_get.3.gz
@@ -208,15 +217,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/val_free_result_chain.3.gz
 %{_mandir}/man3/val_istrusted.3.gz
 %{_mandir}/man3/val_resolve_and_check.3.gz
-%{_mandir}/man3/val_switch_policy_scope.3.gz
 
 %files libs-debug
 %{_libdir}/debug/%{_bindir}/validate.debug
-%{_libdir}/debug/%{_libdir}/libsres.so.1.0.0.debug
-%{_libdir}/debug/%{_libdir}/libval.so.1.0.0.debug
+%{_libdir}/debug/%{_libdir}/libsres.so.2.0.0.debug
+%{_libdir}/debug/%{_libdir}/libval.so.2.0.0.debug
 %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.c
 %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.h
-%{_prefix}/src/debug/%{name}-%{version}/validator/libval/crypto/*.c
 %changelog
 
 * Mon Dec 04 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.0
