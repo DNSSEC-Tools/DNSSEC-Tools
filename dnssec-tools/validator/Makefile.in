@@ -5,6 +5,16 @@ all: subdirmake
 
 libs: subdirmake
 
+help:
+	@echo ""
+	@echo "make (all|libs|test|leakchecks|install|clean)"
+
+test: subdirmake
+	apps/validate -o 6:stderr -r /dev/null -v etc/dnsval.conf -i etc/root.hints -s
+
+leakchecks: subdirmake
+	valgrind --tool=memcheck --leak-check=full --show-reachable=yes apps/validate -o 6:stderr -r /dev/null -i etc/root.hints -s
+
 makeit: subdirmake
 
 nextstepinstructions:
