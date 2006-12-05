@@ -6,35 +6,37 @@ use ExtUtils::MakeMaker;
 
 %opts = (
 	 'NAME'		=> 'dnssec-tools',
-	 'PREREQ_PM'    => { Net::DNS::SEC::Tools::conf => '0.01',
-			     Net::DNS::SEC::Tools::keyrec => '0.01',
-			     Net::DNS::SEC::Tools::tooloptions => '0.01',
+	 'PREREQ_PM'    => { 
+			    Net::DNS::SEC::Tools::conf => '0.01',
+			    Net::DNS::SEC::Tools::keyrec => '0.01',
+			    Net::DNS::SEC::Tools::tooloptions => '0.01',
 			   },
 #	 'VERSION_FROM'	=> 'zonesigner', # finds $VERSION
 	 'EXE_FILES' => [qw(
-				blinkenlights
-				cleankrf
-				dtconfchk
-				dtdefs
-				dtinitconf
-				expchk
-				fixkrf
-				genkrf
-				getdnskeys
-				krfcheck
-				lskrf
-				lsroll
-				rollchk
-				rollctl
-				rollerd
-				rollinit
-				rolllog
-				signset-editor
-				tachk
-				timetrans
-				zonesigner
-				TrustMan.pl
-			)]
+			    blinkenlights
+			    cleankrf
+			    dtconfchk
+			    dtdefs
+			    dtinitconf
+			    expchk
+			    fixkrf
+			    genkrf
+			    getdnskeys
+			    krfcheck
+			    lskrf
+			    lsroll
+			    rollchk
+			    rollctl
+			    rollerd
+			    rollinit
+			    rolllog
+			    signset-editor
+			    tachk
+			    timetrans
+			    zonesigner
+			    TrustMan.pl
+			    trustman
+			   )]
 	);
 
 WriteMakefile(%opts);
