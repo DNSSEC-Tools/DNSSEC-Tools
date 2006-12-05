@@ -2,7 +2,7 @@ dnl Process this file with autoconf to produce a configure script.
 dnl
 
 dnl provide it a file to simply check for its existence.
-AC_INIT([dnssec-tools], [0.9.1], [dnssec-tools-users@lists.sourceforge.net])
+AC_INIT([dnssec-tools], [1.0], [dnssec-tools-users@lists.sourceforge.net])
 AC_PREREQ([2.59])
 
 dnl ----------------------------------------------------------------------
@@ -39,7 +39,9 @@ AC_SUBST(PERLARGS)
 
 dnl ----------------------------------------------------------------------
 AC_ARG_WITH(validator,
-[  --with-validator       Build libsres, libval and apps.])
+[  --without-validator     Build without libsres, libval and binary apps
+                          (Disable if they fail to build on your platform).]
+)
 
 if test "x$with_validator" != "xno"; then
   AC_CONFIG_SUBDIRS(validator)

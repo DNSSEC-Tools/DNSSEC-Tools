@@ -14,7 +14,7 @@ TABLE OF CONTENTS
 INSTRUCTIONS
 ==================
 
-  1) Get and install the following perl modules:
+  1) Get and install the following required perl modules:
 
       Net::DNS
       Net::DNS::SEC
@@ -25,22 +25,22 @@ INSTRUCTIONS
        [...]
 
      cpan>  install Net::DNS
-       [ CPAN will install it here ]
+       [ CPAN will start the install process and hopefully install it ]
 
      cpan>  install Net::DNS::SEC
        [...]
-       [... continue with other modules ...]
+       [... optionally continue with other perl modules in step 2 below ...]
 
   2) Install the optional software and perl modules
 
       Software needed if you want to sign zones using zonesigner:
          bind 9.3.1 or later.  ( http://www.isc.org/sw/bind/ )
 
-      Perl modules needed for the zone file checker (donuts):
+      Extra perl modules needed for various tools:
          Text::Wrap
          Date::Parse
 
-      Software for displaying zone maps:
+      Software for displaying zone maps, tcpdump traces, validator traces:
          graphviz                  [ http://www.graphviz.org/ ]
 
       Perl modules needed for displaying zone maps:
@@ -55,13 +55,17 @@ INSTRUCTIONS
   3) Run ./configure
      (type "./configure --help" for a quick usage summary.)
      (--prefix=PATH will change the default /usr/local installation path.)
+     (--without-validator will turn off the C-code library and
+      applications if they're not needed or don't compile and you
+      still want to install the rest of the useful scripts)
 
   4) make
 
   5) make install                 [as root]
 
   6) install the logwatch extensions for parsing DNSSEC related
-     reports from syslog messages
+     reports from syslog messages (note: these patches are included in
+     recent versions of logwatch, so you only need to enable them)
  
         See tools/logwatch/README
 
