@@ -1,83 +1,90 @@
-This file contains a list of major changes per release.
+This file contains a list of major changes per release.  See the
+ChangeLog file for a complete set of changes and their details
+details.
 
 1.0
 
+  - zonesigner 
+        - Support for simultaneous signing with multiple keys
+        
+  - Key Rollover Tools
+        - Support for automated/manual ZSK rollover operations
+        
+  - trustman (different from TrustMan.pl)
+        - Initial support of the IETF "Timers" draft for
+          automated monitoring of DNSSEC keys used as trust
+          anchors.
+
+  - Added more test case resource records to the test zone at 
+    test.dnssec-tools.org (see http://www.dnssec-tools.org/testzone/ )
+        
+  - An improved validator library (dnssec-tools/validator)
+        - The apps/validate utility provides many more features for
+          controlling logging levels and redirection of its output
+        - Supports ability to selectively trust and not trust specific 
+          zones during the validation process
+        - Support for NSEC3
+        - Ported to many more platforms, including Solaris
+        - Added support for checking expiration time on cached rrsets
+        - Many bug and memory-leak fixes
+        
+  - A perl module (Net::DNS::SEC::Validator) for DNSSEC-aware query resolution
+        - Binds with the validator library above and exports 
+          DNSSEC-aware query resolution functions such as 
+          val_gethostbyname, val_res_query, etc. 
+
   - Updated RPMs for DNSSEC-enabled Firefox 
 
-  - An improved validator library (dnssec-tools/validator)
-                - The apps/validate utility provides many more features for
-                  controlling logging levels and redirection of its output
-                - Supports ability to selectively trust and not trust specific 
-                  zones during the validation process
-                - Support for NSEC3
-                - Ported to many more platforms, including Solaris
-                - Added support for checking expiration time on cached rrsets
-                - Many bug and memory-leak fixes
-                
-  - A perl module for DNSSEC-aware query resolution
-                - Binds with the validator library above and exports 
-                  DNSSEC-aware query resolution functions such as 
-                  val_gethostbyname, val_res_query, etc. 
-
-  - trustman (different from TrustMan.pl)
-                - Initial support of the "Timers" draft
-
-  - zonesigner 
-                - Support for simultaneous signing with multiple keys
-                
-  - Key Rollover Tools
-                - Support for automated/manual ZSK rollover operations
-                
-  - Added more test case resource records to the test zone at 
-    test.dnssec-tools.org
-                
   - Updated Operator Guides
-                - Step by Step Guide for zone maintenance operations using 
-                  the utilities from DNSSEC-Tools
-                - Step by Step Guide for zone maintenance operations using 
-                  the utilities provided with the BIND distribution.
-                - Developers guide for DNSSEC-aware application development
-                - DNSSEC Troubleshooting guide 
+        - Step by Step Guide for zone maintenance operations using 
+          the utilities from DNSSEC-Tools
+        - Step by Step Guide for zone maintenance operations using 
+          the utilities provided with the BIND distribution.
+        - Developers guide for DNSSEC-aware application development
+        - DNSSEC Troubleshooting Guide 
+
+  - Miscellaneous:
+        - Many other bug fixes.  See the ChangeLog file for full details.
 
 0.9.1:
   - validator library (dnssec-tools/validator):
-                - code has been re-structured within the following 
-                  sub-directories: 
-                  libsres/ libval/ doc/ etc/ apps/ and include/
-                - configures and builds cleanly on the following systems: 
-                  Fedora, MacOSX, FreeBSD
-                  (should configure and build on Solaris -- not actually tested)   
-                - includes support for tuning "off" DNSSEC using the
-                  "zone-security-expectation" policy construct. 
-                - APIs modified to comply with (upcoming version of) 
-                  draft-draft-hayatnagarkar-dnsext-validator-api
+        - code has been re-structured within the following 
+          sub-directories: 
+          libsres/ libval/ doc/ etc/ apps/ and include/
+        - configures and builds cleanly on the following systems: 
+          Fedora, MacOSX, FreeBSD
+          (should configure and build on Solaris -- not actually tested)   
+        - includes support for tuning "off" DNSSEC using the
+          "zone-security-expectation" policy construct. 
+        - APIs modified to comply with (upcoming version of) 
+          draft-draft-hayatnagarkar-dnsext-validator-api
  
   - dtinitconf, dtconfchk, dtdefs:
-                - these tools are used to create, check and consult the 
-                  file dnssec-tools.conf which is used by many of the
-                  dnssec tools. dtconfchk was previously known as confchk.
-                 
-                - modules/defaults.pm was also added to provide defaults
-                  for the above tools.
+        - these tools are used to create, check and consult the 
+          file dnssec-tools.conf which is used by many of the
+          dnssec tools. dtconfchk was previously known as confchk.
+         
+        - modules/defaults.pm was also added to provide defaults
+          for the above tools.
 
   - rollinit, rollctl, rollchk, rollerd, lsroll:
-                - these tools are used to create, check, and list the roll
-                  rec files to be used by rollerd and rollctl.
+        - these tools are used to create, check, and list the roll
+          rec files to be used by rollerd and rollctl.
 
-                - rollerd is a daemon to manage DNSSEC key roll-over.
+        - rollerd is a daemon to manage DNSSEC key roll-over.
 
-                - rollctl is used to send commands to a rollerd daemon.
+        - rollctl is used to send commands to a rollerd daemon.
 
   - TrustMan:
-                - manages keys used as trust anchors in named.conf and
-                  dnsval.conf
-                - can be run as a daemon or as a one-time check
-                - configuration is placed in dnssec-tools.conf
+        - manages keys used as trust anchors in named.conf and
+          dnsval.conf
+        - can be run as a daemon or as a one-time check
+        - configuration is placed in dnssec-tools.conf
 
   - donuts:
-		- supports a --show-gui flag to display a graphical
-		  error browser (requires perl QWizard and Gtk2 modules).
-		- A better (optional) GUI interface for new users
+        - supports a --show-gui flag to display a graphical
+          error browser (requires perl QWizard and Gtk2 modules).
+        - A better (optional) GUI interface for new users
 
   - Most tools should report a --version flag. 
 

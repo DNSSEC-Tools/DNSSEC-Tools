@@ -40,83 +40,96 @@ CONTENTS DESCRIPTION
   should be considered more well-tested, robust and less likely to
   change.
 
-        apps/libspf2-1.x.y_dnssec
-                Patches to libspf2 to provide DNSSEC validation of DNS
-                queries.
+  Libraries:
 
-        apps/mozilla
-                Patches to mozilla 1.7.10 to enable DNSSEC name
-                checking validation on visited URLs.
+    validator/libsres
+        A library that is capable of sending queries to, and
+        receiving answers from a DNSSEC-aware name server.
 
-        apps/sendmail
-                Patches to sendmail and spfmilter to provide DNSSEC
-                validation of DNS queries.
+    validator/libval
+        A library that provides DNSSEC resource-record
+        validation functionality.
 
-        apps/thunderbird
-                A thunderbird extension to display the x-dnssec field
-                in the Received-SPF header.
+  Application Patches and DNSSEC Support:
 
-        validator/libsres
-                A library that is capable of sending queries to, and
-                receiving answers from a DNSSEC-aware name server.
+    apps/libspf2-1.x.y_dnssec
+        Patches to libspf2 to provide DNSSEC validation of DNS
+        queries.
 
-        validator/libval
-                A library that provides DNSSEC resource-record
-                validation functionality.
+    apps/mozilla
+        Patches to mozilla 1.7.10 to enable DNSSEC name
+        checking validation on visited URLs.
 
-	validator/apps/validate
-		A tool which can display the sequence of queries and
-		their results used to validate a DNS query.  The
-		stderr output of this command can serve as input to
-		the drawvalmap tool described below.
+    apps/sendmail
+        Patches to sendmail and spfmilter to provide DNSSEC
+        validation of DNS queries.
 
-        tools/dnspktflow
-                A tool which can produce visual diagrams of DNS
-                traffic flows which have been captured using tcpdump.
+    apps/thunderbird
+        A thunderbird extension to display the x-dnssec field
+        in the Received-SPF header.
 
-        tools/donuts
-                A dnssec aware zone file checker / lint-like application.
+  Tools:
 
-        tools/donutsd
-                Runs donuts on zone files on a regular bases (eg,
-                daily) and emails the results.  Useful for knowing
-                when zone data breaks due to DNSSEC signatures
-                expiring or other data consistency issues).
+    tools/scripts
+        Perl scripts for signing DNSSEC zones and maintaining
+        those signed zones.  See the tools/scripts/README file
+        for details.  The vast majority of the useful
+        DNSSEC-Tools scripts (like zonesigner) are contained
+        in this directory.
 
-	tools/drawvalmap
-		A variation of dnspktflow which can produce visual
-		diagrams of DNS queries sent by the validator
-		while performing DNSSEC validation.  The input for
-		this command can come from the validate tool described
-		above.
+    validator/apps/validate
+        A tool which can display the sequence of queries and
+        their results used to validate a DNS query.  The
+        stderr output of this command can serve as input to
+        the drawvalmap tool described below.
 
-        tools/etc       
-                Data required by DNSSEC-Tools programs.
+    tools/donuts
+        A dnssec aware zone file checker / lint-like application.
 
-        tools/linux/ifup-dyn-dns
-                This is a script which can be used to securely
-                auto-update a DNS entry when an IP address is assigned
-                to an interface.
+    tools/donutsd
+        Runs donuts on zone files on a regular bases (eg,
+        daily) and emails the results.  Useful for knowing
+        when zone data breaks due to DNSSEC signatures
+        expiring or other data consistency issues).
 
-        tools/logwatch
-                Patches to logwatch configuration files and scripts to
-                manage log files for BIND security function.  These
-                patches are now included in the recent releases of
-                logwatch and may not be needed if you have a recent
-                release.
+    tools/logwatch
+        Patches to logwatch configuration files and scripts to
+        manage log files for BIND security function.  These
+        patches are now included in the recent releases of
+        logwatch and may not be needed if you have a recent
+        release.
 
-        tools/mapper
-                A tool that can generate graphical maps of DNS zones,
-                including color coding of DNSSEC related data.
+    tools/dnspktflow
+        A tool which can produce visual diagrams of DNS
+        traffic flows which have been captured using tcpdump.
 
-        tools/modules
-                DNSSEC-Tools Perl modules.  These modules provide interfaces
-                for such things as reading configuration files and manipulating
-                DNSSEC-Tools-specific data.
+    tools/mapper
+        A tool that can generate graphical maps of DNS zones,
+        including color coding of DNSSEC related data.
 
-        tools/patches
-                Patch files to be applied to existing programs.
+    tools/modules
+        DNSSEC-Tools Perl modules.  These modules provide interfaces
+        for such things as reading configuration files and manipulating
+        DNSSEC-Tools-specific data.
 
-        tools/scripts
-                Perl scripts for signing DNSSEC zones and maintaining those
-                signed zones.  See the tools/scripts/README file for details.
+    tools/modules/Net-DNS-SEC-Validator
+        A perl module wrapper around the libval library.
+
+    tools/drawvalmap
+        A variation of dnspktflow which can produce visual
+        diagrams of DNS queries sent by the validator
+        while performing DNSSEC validation.  The input for
+        this command can come from the validate tool described
+        above.
+
+    tools/etc       
+        Data required by DNSSEC-Tools programs.
+
+    tools/linux/ifup-dyn-dns
+        This is a script which can be used to securely
+        auto-update a DNS entry when an IP address is assigned
+        to an interface.
+
+    tools/patches
+        Patch files to be applied to existing programs.
+
