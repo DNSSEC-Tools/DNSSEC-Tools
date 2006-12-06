@@ -14,7 +14,7 @@ package Net::addrinfo;
 use Socket qw(:all);
 use Carp;
 
-our $VERSION = '0.10a';   # current release version number
+our $VERSION = '1.0b1';   # current release version number
 
 use Exporter;
 use DynaLoader;
