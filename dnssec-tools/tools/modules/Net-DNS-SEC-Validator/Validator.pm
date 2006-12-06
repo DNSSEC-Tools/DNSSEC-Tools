@@ -155,7 +155,7 @@ sub getaddrinfo
 
     $result = [] unless ref $result eq 'ARRAY';
 
-    return (wantarray ? @{$result} : pop(@{$result}));
+    return (wantarray ? @{$result} : shift(@{$result}));
 }
 
 sub res_query {
