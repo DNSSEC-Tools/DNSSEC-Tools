@@ -9,10 +9,10 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 10; plan tests => $n }
+BEGIN { $n = 11; plan tests => $n }
 
 use Net::addrinfo;
-use Socket;
+use Socket qw(:all);
 
 
 my $addrinfo = new Net::addrinfo(flags => AI_CANONNAME, family => AF_INET, 
@@ -55,7 +55,13 @@ ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 $ainfo = getaddrinfo(undef, "domain");
 ok(defined($ainfo) and ref $ainfo eq 'Net::addrinfo');
 
-$hint = new Net::addrinfo(flags => AI_CANONNAME);
+$hint = new Net::addrinfo(flags => AI_CANONNAME, 
+			  socktype => SOCK_DGRAM, 
+			  protocol => IPPROTO_TCP);
 
-$ainfo = getaddrinfo(undef, "domain", $hint);
+$ainfo = getaddrinfo("www.marzot.net", "domain", $hint);
+ok(defined($ainfo) and not ref($ainfo) and $ainfo == EAI_SOCKTYPE);
+
+$hint = new Net::addrinfo(flags => AI_CANONNAME);
+$ainfo = getaddrinfo(undef, "www", $hint);
 ok(defined($ainfo) and not ref($ainfo) and $ainfo == EAI_BADFLAGS);
