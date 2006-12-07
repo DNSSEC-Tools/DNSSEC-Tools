@@ -2660,13 +2660,12 @@ verify_provably_unsecure(val_context_t * context,
              find_next_zonecut(context, rrset, curzone_n, &zonecut_n))
             || (zonecut_n == NULL)) {
 
-            if (curzone_n == NULL)
-                val_log(context, LOG_DEBUG, "SOA not returned");
-            else if (-1 == ns_name_ntop(curzone_n, name_p, sizeof(name_p))) {
+            if ((curzone_n == NULL) ||
+                (-1 == ns_name_ntop(curzone_n, name_p, sizeof(name_p)))) {
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-                val_log(context, LOG_DEBUG, "Cannot find zone cut for %s",
-                        name_p);
-            }
+            } 
+
+            val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
 
             return 0;
         }
@@ -2734,8 +2733,7 @@ verify_provably_unsecure(val_context_t * context,
                  * query wasn't answered 
                  */
 
-                error = 1;
-                rrset = NULL;
+                break; 
             }
         }
 
@@ -3132,13 +3130,16 @@ verify_and_validate(val_context_t * context,
                             break;
                         }
                     }
+
                     if (asked_the_parent) {
                         if (verify_provably_unsecure(context, top_q, as)) {
                             res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                        } else {
+                            res->val_rc_status = VAL_INDETERMINATE_PROOF;
                         }
                         break;
-                    }
-
+                    } 
+                    /* else */
                     /*
                      * We could only be asking the child if our default name server is 
                      * the child, so ty again starting from root; state will be WAIT_FOR_TRUST 
