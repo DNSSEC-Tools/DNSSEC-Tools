@@ -918,6 +918,7 @@ prepare_empty_nxdomain(struct rrset_rec **answers,
     (*answers)->rrs.val_rrset_ttl_h = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
     (*answers)->rrs.val_rrset_section = VAL_FROM_UNSET;
+    (*answers)->rrs.val_rrset_server = NULL;
     (*answers)->rrs.val_rrset_data = NULL;
     (*answers)->rrs.val_rrset_sig = NULL;
     (*answers)->rrs_next = NULL;
