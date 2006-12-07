@@ -1022,7 +1022,7 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
     if (ret_val == VAL_NO_ERROR) {
 
         ret_val = compose_answer(name_n, type_h, class_h, results, &resp,
-                                 0);
+                                 VAL_QUERY_MERGE_RRSETS);
 
         if (VAL_NO_ERROR != ret_val) {
             fprintf(stderr, "%s: \t", desc);
