@@ -59,9 +59,9 @@ my $RM		= "/bin/rm";
 # Default arguments to zonesigner.
 #
 my $DEF_ENTROPYMSG	= 1;			# Display of entropy message.
-my $DEF_SAVEKEYS	= 0;			# Archive keys.
+my $DEF_SAVEKEYS	= 1;			# Archive keys.
 my $DEF_REUSEKSK	= 0;			# Re-use KSK.
-my $DEF_REUSEZSK	= 0;			# Re-use ZSK.
+my $DEF_REUSEZSK	= 0;			# Re-use ZSKs.
 
 #
 # Arguments for updzonerec().
@@ -92,7 +92,7 @@ my $szopts;				# Additional dnssec-signzone options.
 my $verbose = 0;			# Turn off verbosity.
 
 my $archdir;				# Archive directory for old keys.
-my $savekeys = 0;			# Flag for saving old keys.
+my $savekeys = 1;			# Flag for saving old keys.
 
 my $ksk;				# KSK we've generated.
 my $kskdir;				# Directory to hold KSK.
@@ -148,6 +148,7 @@ my @zsopts = ( '',
 	       ["forceroll",		'Force the rollover of zone keys.'],
 	       ["usepub",		'Use Published ZSK for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
+	       ["nosave",		'Do not save old keys.'],
 	     );
 
 my $forceroll = 0;			# Force-a-rollover flag.
@@ -314,7 +315,9 @@ sub optsandargs()
 	$random   = $opts{'random'}	|| dnssec_tools_defaults("random");
 	$kgopts   = $opts{'kgopts'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
-	$savekeys = $opts{'savekeys'}	|| $DEF_SAVEKEYS;
+	$savekeys = $DEF_SAVEKEYS;
+	$savekeys = 0 if(defined($opts{'nosave'}));
+#	$savekeys = $opts{'savekeys'}	|| $DEF_SAVEKEYS;
 	$signset  = $opts{'signset'}	|| "";
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
@@ -387,15 +390,37 @@ sub optsandargs()
 
 	#
 	# Ensure that the ZSK archive directory is a real directory,
-	# if it already exists.
+	# if it already exists.  This is only checked if -forceroll was
+	# given, since the only time the archive directory is used is
+	# when zonesigner is doing a rollover.
 	#
-	if($archdir ne "")
+	if($forceroll)
 	{
-		if((-e $archdir) && (! -d $archdir))
+		if($archdir ne "")
 		{
-			print STDERR "ZSK archive directory $archdir is not a directory\n";
-			exit(1);
+			if((-e $archdir) && (! -d $archdir))
+			{
+				print STDERR "ZSK archive directory $archdir is not a directory\n";
+				exit(1);
+			}
 		}
+		else
+		{
+			if($savekeys)
+			{
+				print STDERR "no ZSK archive directory specified\n";
+				exit(1);
+			}
+		}
+	}
+
+	#
+	# Ensure that we weren't told to both save and not save old keys.
+	#
+	if(defined($opts{'nosave'}) && defined($opts{'savekeys'}))
+	{
+		print STDERR "-savekeys and -nosave are mutually exclusive\n";
+		exit(1);
 	}
 
 	#
@@ -415,9 +440,9 @@ sub optsandargs()
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$checkzone  = $opts{'checkzone'} || dnssec_tools_defaults("bind_checkzone");
-	$keygen	    = $opts{'keygen'}	 || dnssec_tools_defaults("bind_keygen");
-	$signzone   = $opts{'signzone'}	 || dnssec_tools_defaults("bind_signzone");
+	$checkzone = $opts{'checkzone'} || dnssec_tools_defaults("bind_checkzone");
+	$keygen	   = $opts{'keygen'}	|| dnssec_tools_defaults("bind_keygen");
+	$signzone  = $opts{'signzone'}	|| dnssec_tools_defaults("bind_signzone");
 
 	#
 	# Ensure that we were given the zone file and the zone output file.
@@ -1767,7 +1792,7 @@ sub forceroll
 				{
 					my $newname;		# New key name.
 
-					$newname = "$archdir/$archfn.$kronos";
+					$newname = "$archdir/$kronos.$archfn";
 
 					system("$MV $archfn $newname");
 				}
@@ -2079,7 +2104,7 @@ sub usage
 	print STDERR "\t\t\t-genzsk\n";
 	print STDERR "\t\t\t-usepub\n";
 	print STDERR "\t\t\t-archivedir directory\n";
-	print STDERR "\t\t\t-savekeys\n";
+	print STDERR "\t\t\t-nosave\n";
 	print STDERR "\t\t\t-ksklife lifespan\n";
 	print STDERR "\t\t\t-zsklife lifespan\n";
 	print STDERR "\t\t\t-zskcount count\n";
@@ -2329,11 +2354,19 @@ Use the existing Published ZSK to sign the zone.
 
 =item -archivedir
 
-The key archive directory.
+The key archive directory.  If a key archive directory hasn't been specified
+(on the command line or in the DNSSEC-Tools configuration file) and the
+I<-nosave> option was B<not> given, an error message will be displayed and 
+B<zonesigner> will exit.
 
-=item -savekeys
+When the files are saved into the archive directory, the existing file names
+are prepended with a timestamp.  The timestamp indicates when the files are
+archived.
 
-Save obsolete keys to the key archive directory.
+=item -nosave
+
+Do not save obsolete keys to the key archive directory.  The default behavior
+is to save obsolete keys.
 
 =item -ksklife
 
@@ -2363,12 +2396,13 @@ increment the number for subsequent signing sets.
 Force a rollover of the ZSK keys.  The I<keyrec>s of the ZSK keys are
 adjusted as follows:
 
-    The current ZSK key is marked as obsolete.
-    The published ZSK key is marked as current.
-    The new ZSK key, if it exists, is marked as published.
-    A new ZSK key is generated.
-    The published ZSK key's zsklife field is copied to the
-    new ZSK key's keyrec.
+    The current ZSK keys are marked as obsolete.
+    The published ZSK keys are marked as current.
+    The new ZSK keys, if they exist, are marked as published.
+    New ZSK keys are generated.
+    The published ZSK keys' zsklife field is copied to the
+    new ZSK keys' keyrecs.
+    The obsolete ZSK keys are moved to the archive directory.
 
 This should only be used if you know what you're doing.
 
