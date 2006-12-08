@@ -180,10 +180,13 @@ val_setport(struct sockaddr *saddr, const char *serv, const char *proto)
      */
     if (NULL == serv) {
         portnum = 0;
-    } else if (atoi(serv) &&
-               (NULL != (sent = getservbyport(atoi(serv), proto)))
-        ) {
-        portnum = sent->s_port;
+    } else if (atoi(serv)) {
+        u_int16_t tmp = htons(atoi(serv));
+        sent = getservbyport(tmp, proto);
+        if (sent)
+            portnum = sent->s_port;
+        else
+            portnum = tmp;
     } else if (NULL != (sent = getservbyname(serv, proto))) {
         portnum = sent->s_port;
     }
