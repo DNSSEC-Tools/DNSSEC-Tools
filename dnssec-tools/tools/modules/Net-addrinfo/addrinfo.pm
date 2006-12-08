@@ -216,18 +216,20 @@ constants, structures and functions.
 This Perl module is designed to implement and export functionality
 related to the POSIX getaddrinfo(3) system call. The Net::addrinfo
 data object is provided with field name accsessor functions, similarly
-named to the the C data structure definition in F<netdb.h>;. The
+named to the the C data structure definition in F<netdb.h>. The
 getaddrinfo(3), gai_strerror(3) calls, and related constants are
 exported.
 
 The getaddrinfo() routine mimics the POSIX documented funtion (see
 system man page getaddrinfo(3)). 
 
-On success the getaddrinfo() function will return an array of
-Net::addrinfo data objects, or a numeric error code.
+On success the getaddrinfo() will return an array of Net::addrinfo
+data objects.
 
 In scalar context getaddrinfo() will return the first element from the
-Net::addrinfo array or the error code: 
+Net::addrinfo array. 
+
+In case of error, a numeric error code is returned.
 
 The error code may be passed to gai_strerror() to get a string
 representation of the error.
@@ -247,31 +249,30 @@ parameter to the getaddrinfo() function. See exported @AI_FLAGS for
 list of acceptable constants.
 
 (Note: a special scalar integer field, 'val_status', is provided in
-support of DNSSEC aware addrinfo results (see Net::DNS::SEC::Valaidator))
+support of DNSSEC aware addrinfo results (see Net::DNS::SEC::Validator))
 
 
 =head1 EXAMPLES
 
  use Net::addrinfo;
- use Socket;
+ use Socket qw(:all);
 
-   use Socket qw(:all);
-   my $hint = new Net::addrinfo(flags => AI_CANONNAME,
-                                family => AF_INET, 
-                                socktype => SOCK_DGRAM);
+ my $hint = new Net::addrinfo(flags => AI_CANONNAME,
+                              family => AF_INET, 
+                              socktype => SOCK_DGRAM);
 
-   my (@ainfo) = getaddrinfo("www.marzot.net", "http", $hint);
+ my (@ainfo) = getaddrinfo("www.marzot.net", "http", $hint);
 
-   foreach $ainfo (@ainfo) {
-      if (ref $ainfo eq 'Net::addrinfo') {
-	print $ainfo->stringify(), "\n";
-	print "addr = ", inet_ntoa($ainfo->addr), "\n";
-	...
-        connect(SH, $ainfo->addr);
-      } else {
-         print "Error($ainfo):", gai_strerror($ainfo), "\n";
-      }
-   }
+ foreach $ainfo (@ainfo) {
+    if (ref $ainfo eq 'Net::addrinfo') {
+       print $ainfo->stringify(), "\n";
+       print "addr = ", inet_ntoa($ainfo->addr), "\n";
+       ...
+       connect(SH, $ainfo->addr);
+     } else {
+        print "Error($ainfo):", gai_strerror($ainfo), "\n";
+     }
+ }
 
 =head1 NOTE
 
@@ -280,3 +281,13 @@ One should not rely on the internal representation of this class.
 =head1 AUTHOR
 
 G. S. Marzot (marz@users.sourceforge.net)
+
+=head1 COPYRIGHT AND LICENSE
+
+   Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
+
+   Copyright (c) 2006 SPARTA, Inc.  All Rights Reserved.  This program
+   is free software; you can redistribute it and/or modify it under
+   the same terms as Perl itself.
