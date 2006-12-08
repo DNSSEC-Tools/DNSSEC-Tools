@@ -1,23 +1,11 @@
 		  The Perl  Net::addrinfo Extension Module
 
-
-Contents:
-   Introduction:
-   Availability:
-   Contact:
-   Release Notes:
-   Installation:
-   Operational Description:
-   Copyright:
-
 Introduction:
 
 This Perl module is designed to implement and export functionality
 related to the POSIX getaddrinfo(3) system call. The Net::addrinfo
 data object is provided with field name accsessor functions, similarly
-named to the the C data structure definition in F<netdb.h>;. The
-getaddrinfo(3), gai_strerror(3) calls, and related constants are
-exported.
+named to the the C data structure definition in netdb.h. 
 
 Availability:
 
@@ -63,82 +51,7 @@ Installation:
    make test			(must have access to DNS)
    make install			(requires root privilege)
 
-Operational Description:
+Documentation:
 
-The getaddrinfo() routine mimics the POSIX documented funtion (see
-system man page getaddrinfo(3)). 
+   perldoc Net::addrinfo
 
-On success the getaddrinfo() function will return an array of
-Net::addrinfo data objects, or a numeric error code.
-
-In scalar context getaddrinfo() will return the first element from the
-Net::addrinfo array or the error code: 
-
-The error code may be passed to gai_strerror() to get a string
-representation of the error.
-
-New Net::addrinfo objects may be created with the package constructor
-and any number (or none) of the fields may be specified. 
-
-   flags => scalar integer
-   family => scalar integer (e.g., AF_INET,m AF_INET6, etc.)
-   socktype => scalar integer (e.g., SOCK_DGRAM, SOCK_STREAM, etc.)
-   protocol => scalar integer (e.g., IPPROTO_UDP, IPPROTO_TCP, etc.)
-   addrlen => scalar integer (can be computed by length($self->addr))
-   addr => packed bytes (e.g., $self->addr(inet_aton("192.168.1.1")); )
-
-Flags may be set in the structure so that it may be used as a 'hint'
-parameter to the getaddrinfo() function. See exported @AI_FLAGS for
-list of acceptable constants.
-
-(Note: a special scalar integer field, 'val_status', is provided in
-support of DNSSEC aware addrinfo results (see Net::DNS::SEC::Valaidator))
-
-
-Example:
-
-   use Net::addrinfo;
-   my $ainfo = getaddrinfo("www.marzot.net");
-   print $ainfo->stringify(), "\n";
-
-or
-
-   use Socket qw(:all);
-   my $hint = new Net::addrinfo(flags => AI_CANONNAME,
-                                family => AF_INET, 
-                                socktype => SOCK_DGRAM);
-
-   my (@ainfo) = getaddrinfo("www.marzot.net", "http", $hint);
-
-   foreach $ainfo (@ainfo) {
-      if (ref $ainfo eq 'Net::addrinfo') {
-	print $ainfo->stringify(), "\n";
-	print "addr = ", inet_ntoa($ainfo->addr), "\n";
-	...
-        connect(SH, $ainfo->addr);
-      } else {
-         print "Error($ainfo):", gai_strerror($ainfo), "\n";
-      }
-   }
-
-Trouble Shooting:
-
-   Check that 'make test' succeeds.
-
-   Check that DNS connectivity is available.
-
-   If you cannot resolve the problem you can email
-   dnssec-tools-users@lists.sourceforge.net.
-
-   Please give sufficient information to analyze the problem (OS type,
-   versions for OS/perl/compiler, complete error output, etc.)
-
-Copyright:
-
-   Copyright (c) 2006 G. S. Marzot. All rights reserved.  This program
-   is free software; you can redistribute it and/or modify it under
-   the same terms as Perl itself.
-
-   Copyright (c) 2006 SPARTA, Inc.  All Rights Reserved.  This program
-   is free software; you can redistribute it and/or modify it under
-   the same terms as Perl itself.
