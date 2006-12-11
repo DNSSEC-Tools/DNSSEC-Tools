@@ -889,9 +889,8 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
      */
     while ((c < e) && (NULL != (p = strstr(c, LVL_DELIM)))) {
 
-        if ((!strcmp(p, LVL_DELIM)) ||
-            (!strncmp(label, c, p - c) && (p != c)) ||
-            ((p == c) && (!strcmp(label, LVL_DELIM))))
+        if (((p != c) && (!strncmp(label, c, p - c))) ||
+            (!strcmp(label, LVL_DELIM)))
             return VAL_NO_ERROR;
 
         (*label_count)++;
@@ -1040,20 +1039,25 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
      * search for a node with this label 
      */
     cur = prev = NULL;
+    newp = NULL;
 
     for (cur = ctx->pol_overrides;
-         cur && (cur->label_count < (*pfrag)->label_count);
-         prev = cur, cur = cur->next);
+         cur && (cur->label_count <= (*pfrag)->label_count);
+         cur = cur->next) {
 
-    if ((cur != NULL) && (!strcmp(cur->label, (*pfrag)->label))) {
-        /*
-         * exact match; 
-         */
-        newp = cur;
-        FREE((*pfrag)->label);
-         (*pfrag)->label = NULL;
+        if (!strcmp(cur->label, (*pfrag)->label)) {
+            /*
+             * exact match; 
+             */
+            newp = cur;
+            FREE((*pfrag)->label);
+            (*pfrag)->label = NULL;
+            break;
+        }
+        prev = cur;
+    }
 
-    } else {
+    if (newp == NULL) {
 
         newp = (struct policy_overrides *)
             MALLOC(sizeof(struct policy_overrides));
@@ -1079,7 +1083,7 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
     for (e = newp->plist; e; e = e->next) {
         if (e->index == (*pfrag)->index) {
             val_log(ctx, LOG_WARNING,
-                    "Duplicate policy definition; using last definition");
+                    "Duplicate policy definition; using latest");
             conf_elem_array[e->index].free(&e->pol);
             break;
         }
