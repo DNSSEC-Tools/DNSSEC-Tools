@@ -110,6 +110,7 @@ our @EXPORT = qw(
 		 rollmgr_log
 		 rollmgr_logfile
 		 rollmgr_loglevel
+		 rollmgr_lognum
 		 rollmgr_logstr
 			 LOG_NEVER
 			 LOG_TMI
@@ -172,6 +173,9 @@ my $LOG_CURPHASE =  6;			# Give current state of zone.
 my $LOG_ERR	 =  8;			# Non-fatal error message.
 my $LOG_FATAL	 =  9;			# Fatal error.
 my $LOG_ALWAYS	 = 10;			# Messages that should always be given.
+
+my $LOG_MIN	 =  $LOG_NEVER;		# Minimum log level.
+my $LOG_MAX	 =  $LOG_ALWAYS;	# Maximum log level.
 
 my $DEFAULT_LOGLEVEL = $LOG_INFO;	# Default log level.
 
@@ -1240,62 +1244,20 @@ sub rollmgr_loglevel
 	return($loglevel) if(!defined($newlevel));
 
 	#
-	# If a non-numeric log level was given, translate it into the
-	# appropriate numeric value.
+	# Translate the logging level to its numeric form.
 	#
-	if($newlevel !~ /^[0-9]+$/)
-	{
-		if($newlevel =~ /tmi/i)
-		{
-			$loglevel = LOG_TMI;
-		}
-		elsif($newlevel =~ /expire/i)
-		{
-			$loglevel = LOG_EXPIRE;
-		}
-		elsif($newlevel =~ /info/i)
-		{
-			$loglevel = LOG_INFO;
-		}
-		elsif($newlevel =~ /curphase/i)
-		{
-			$loglevel = LOG_CURPHASE;
-		}
-		elsif($newlevel =~ /err/i)
-		{
-			$loglevel = LOG_ERR;
-		}
-		elsif($newlevel =~ /fatal/i)
-		{
-			$loglevel = LOG_FATAL;
-		}
-		else
-		{
-			$err = 1;
-		}
-
-	}
-	else
-	{
-		#
-		# If a valid log level was given, make it the current level.
-		#
-		if(($newlevel < 0) || !defined($logstrs[$newlevel]))
-		{
-			$err = 1;
-		}
-		else
-		{
-			$loglevel = $newlevel;
-		}
-	}
+	$loglevel = rollmgr_lognum($newlevel);
 
 	#
 	# If there was a problem, give usage messages and exit.
 	#
-	if($err)
+	if($loglevel == -1)
 	{
-		return(-1) if(!$useflag);
+		if(!$useflag)
+		{
+			$loglevel = $oldlevel;
+			return(-1);
+		}
 
 		print STDERR "unknown logging level \"$newlevel\"\n";
 		print STDERR "valid logging levels (text and numeric forms):\n";
@@ -1344,6 +1306,68 @@ sub rollmgr_logstr
 	return(undef) if(!defined($level));
 	return(undef) if(($level < $LOG_NEVER) || ($level > $LOG_ALWAYS));
 	return($logstrs[$level]);
+}
+
+#-----------------------------------------------------------------------------
+#
+# Routine:	rollmgr_lognum()
+#
+# Purpose:	Translate a logging level to its numeric form.  The level
+#		is also validated along the way.
+#
+sub rollmgr_lognum
+{
+	my $newlevel = shift;				# New logging level.
+	my $llev = -1;					# Level to return.
+
+	#
+	# If a non-numeric log level was given, translate it into the
+	# appropriate numeric value.
+	#
+	if($newlevel !~ /^[0-9]+$/)
+	{
+		if($newlevel =~ /tmi/i)
+		{
+			$llev = LOG_TMI;
+		}
+		elsif($newlevel =~ /expire/i)
+		{
+			$llev = LOG_EXPIRE;
+		}
+		elsif($newlevel =~ /info/i)
+		{
+			$llev = LOG_INFO;
+		}
+		elsif($newlevel =~ /curphase/i)
+		{
+			$llev = LOG_CURPHASE;
+		}
+		elsif($newlevel =~ /err/i)
+		{
+			$llev = LOG_ERR;
+		}
+		elsif($newlevel =~ /fatal/i)
+		{
+			$llev = LOG_FATAL;
+		}
+	}
+	else
+	{
+		#
+		# If a valid log level was given, make it the current level.
+		#
+		if(($newlevel >= $LOG_MIN) &&
+		   ($newlevel <= $LOG_MAX) &&
+		   defined($logstrs[$newlevel]))
+		{
+			$llev = $newlevel;
+		}
+	}
+
+	#
+	# Return the translated logging level.  Or an error.
+	#
+	return($llev);
 }
 
 #-----------------------------------------------------------------------------
@@ -1855,6 +1879,8 @@ manager.
   $loglevelstr = rollmgr_logstr(8)
   $loglevelstr = rollmgr_logstr("info")
 
+  $ret = rollmgr_lognum("info");
+
   rollmgr_log(LOG_INFO,"example.com","zone is valid");
 
   rollmgr_channel(1);
@@ -1986,6 +2012,13 @@ The I<useflag> argument is a boolean that indicates whether or not to give a
 descriptive message if an invalid logging level is given.  If I<useflag> is
 true, the message is given and the process exits; if false, no message is
 given.  For any error condition, an empty string is returned.
+
+=item I<rollmgr_lognum(loglevel)>
+
+This routine translates a text log level (given in I<loglevel>) into the
+associated numeric log level.  The numeric log level is returned to the caller.
+
+If I<loglevel> is an invalid log level, -1 is returned.
 
 =item I<rollmgr_logstr(loglevel)>
 
