@@ -95,6 +95,7 @@ my @opts =
 #
 my $logfile;				# Log file.
 my $loglevel;				# Logging level.
+my $loglevel_save;			# Saved logging level.
 my $sleeptime;				# Sleep interval in seconds.
 my $sleepcnt;				# Time we've slept so far.
 my $verbose = 0;			# Verbose option.
@@ -261,6 +262,11 @@ sub zsk_check
 		my $phase;		# Rollrec's phase.
 
 		#
+		# Ensure the logging level is set correctly.
+		#
+		$loglevel = $loglevel_save;
+
+		#
 		# Get the rollrec for this name.  If it doesn't have one,
 		# whinge and continue to the next.
 		# (This should never happen, but...)
@@ -272,6 +278,27 @@ sub zsk_check
 			next;
 		}
 		%rr = %$rrr;
+
+		#
+		# Set the logging level to the rollrec entry's level (if it
+		# has one) for the duration of processing this zone.
+		#
+		$loglevel_save = $loglevel;
+		if(defined($rr{'loglevel'}))
+		{
+			my $llev;			# Logging level.
+
+			$llev = rollmgr_lognum($rr{'loglevel'});
+			if($llev != -1)
+			{
+				$loglevel = $llev;
+				rollmgr_loglevel($loglevel,0);
+			}
+			else
+			{
+				rollmgr_log(LOG_ERR,$rname,"invalid rollrec logging level \"$rr{'loglevel'}\"");
+			}
+		}
 
 		#
 		# Don't do anything with skip records.
@@ -305,6 +332,12 @@ sub zsk_check
 			rollmgr_log(LOG_TMI,$rname,"current ZSK still valid");
 		}
 	}
+
+	#
+	# Ensure the logging level is set correctly.
+	#
+	$loglevel = $loglevel_save;
+	rollmgr_loglevel($loglevel,0);
 }
 
 #-----------------------------------------------------------------------------
@@ -1134,6 +1167,7 @@ sub optsandargs
 	#
 	# Set the logging level and file.
 	#
+	$loglevel_save = $loglevel;
 	rollmgr_loglevel($loglevel,1);
 	rollmgr_logfile($logfile,1);
 
@@ -1548,6 +1582,9 @@ sub cmd_loglevel
 
 		rollmgr_log(LOG_INFO,"<command>","loglevel changed from $oldstr to $newstr");
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"loglevel changed from \"$oldstr\" to \"$newstr\"");
+
+		$loglevel	= $newlvl;
+		$loglevel_save	= $newlvl;
 	}
 	else
 	{
