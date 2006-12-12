@@ -101,6 +101,20 @@ This is measured in seconds.
 
 The random device generator to be passed to I<dnssec-keygen>.
 
+=item roll_logfile
+
+The log file used by B<rollerd>.
+
+=item roll_loglevel
+
+The default logging level used by B<rollerd>.  The valid levels are described
+in I<rollmgr.pm(3)>.
+
+=item roll_sleeptime
+
+The number of seconds B<rollerd> must wait at the end of each zone-checking
+cycle.
+
 =item savekeys
 
 A true/false flag indicating if old keys should be moved to the
@@ -205,7 +219,6 @@ The following is an example B<dnssec-tools.conf> configuration file.
     roll_loglevel   info
     roll_sleeptime  60
 
-
     #
     # GUI-usage flag.
     #
@@ -229,5 +242,6 @@ B<zonesigner(8)>
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>
+B<Net::DNS::SEC::Tools::rollmgr.pm(3)>
 
 =cut
