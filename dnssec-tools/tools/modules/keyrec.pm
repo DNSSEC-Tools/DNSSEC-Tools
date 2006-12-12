@@ -1320,6 +1320,7 @@ sub keyrec_close
 sub keyrec_write
 {
 	my $krc = "";			# Concatenated keyrec file contents.
+	my $ofh;			# Old file handle.
 
 	#
 	# If the file hasn't changed, we'll skip writing.
@@ -1340,6 +1341,13 @@ sub keyrec_write
 	seek(KEYREC,0,0);
 	truncate(KEYREC,0);
 	print KEYREC $krc;
+
+	#
+	# Flush the KEYREC buffer.
+	#
+	$ofh = select KEYREC;
+	$| = 1;
+	select $ofh;
 }
 
 #--------------------------------------------------------------------------
