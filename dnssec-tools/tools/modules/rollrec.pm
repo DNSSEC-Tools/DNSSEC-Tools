@@ -35,6 +35,7 @@
 #		curphase	"1"
 #		maxttl		"100000"
 #		display		"1"
+#		loglevel	"info"
 #		phasestart	"Sun Jan 01 16:00:00 2005"
 #
 #
@@ -99,6 +100,7 @@ my @ROLLFIELDS = (
 			'maxttl',
 			'phasestart',
 			'display',
+			'loglevel',
 			'rollrec_signdate',
 			'rollrec_signsecs',
 		  );
@@ -1073,6 +1075,7 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
 	maxttl			"86400"
 	phasestart		"Wed Mar 09 21:49:22 2005"
 	display			"0"
+	loglevel		"info"
 	rollrec_rollsecs	"1115923362"
 	rollrec_rolldate	"Tue Mar 09 19:12:54 2005"
 
