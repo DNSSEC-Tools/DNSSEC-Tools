@@ -147,11 +147,10 @@ sub parseconfig
 #
 # Routine:	bindcheck()
 #
-# Purpose:	Ensure that the needed BIND commands are available and
-#		executable.  If any of the commands either don't exist
-#		or aren't executable, then an error message will be
-#		given and the process will exit.  If all is well,
-#		everything will proceed quietly onwards.
+# Purpose:	Ensure that the BIND commands are available and executable.
+#		If any of the commands either don't exist or aren't executable,
+#		then an error message will be given and the process will exit.
+#		If all is well, everything will proceed quietly onwards.
 #
 #		Things that make you go "hmmm....":
 #			Is it *really* a good idea for a library routine
