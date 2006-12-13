@@ -46,6 +46,7 @@ my @opts =
 	"skipzone=s",			# Stop the specified zone from rolling.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
+	"zonelog=s",			# Set a zone's logging level.
 	"zonestatus",			# Get status of zones.
 
 	"Version",			# Display the version number.
@@ -69,6 +70,7 @@ my $skipallflag;
 my $skipzoneflag;
 my $sleeptimeflag;
 my $statusflag;
+my $zonelogflag;
 my $zonestatflag;
 
 my $quiet;
@@ -292,6 +294,20 @@ sub main()
 			print STDERR "shutdown failed:  \"$resp\"\n";
 		}
 	}
+	if($zonelogflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONELOG,$zonelogflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd logging changed for $zonelogflag\n";
+		}
+		else
+		{
+			print STDERR "zonelog failed:  $resp\n";
+		}
+	}
 	if($zonestatflag)
 	{
 		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_ZONESTATUS);
@@ -350,6 +366,7 @@ sub doopts
 	$skipzoneflag	= $options{'skipzone'}	 || 0;
 	$sleeptimeflag	= $options{'sleeptime'}	 || 0;
 	$statusflag	= $options{'status'}	 || 0;
+	$zonelogflag	= $options{'zonelog'}	 || 0;
 	$zonestatflag	= $options{'zonestatus'} || 0;
 	$version        = $options{'Version'}    || 0;
 
@@ -416,6 +433,7 @@ sub usage
 	print STDERR "\t-skipzone <zone>		skip named zone\n";
 	print STDERR "\t-sleeptime <sleeptime>		set sleep time\n";
 	print STDERR "\t-status				get rollerd's status\n";
+	print STDERR "\t-zonelog			set a zone's log level\n";
 	print STDERR "\t-zonestatus			get status of zones\n";
 	print STDERR "\t-Version			display version number\n";
 	print STDERR "\t-quiet				don't give any output\n";
@@ -440,34 +458,34 @@ rollctl - Send commands to the DNSSEC-Tools rollover daemon.
 
 =head1 DESCRIPTION
 
-The I<rollctl> command sends commands to the DNSSEC-Tools rollover daemon,
-I<rollerd>.  Multiple options may be specified on a single command line and
+The B<rollctl> command sends commands to the DNSSEC-Tools rollover daemon,
+B<rollerd>.  Multiple options may be specified on a single command line and
 they will be executed in I<alphabetical> order.  The exception to this
 ordering is that the I<-shutdown> command will always be executed last.
 
-In most cases, I<rollerd> will send a response to I<rollctl>.  I<rollctl> will
+In most cases, B<rollerd> will send a response to B<rollctl>.  B<rollctl> will
 print a success or failure message, as appropriate.
 
 =head1 OPTIONS
 
-The following options are handled by I<rollctl>.
+The following options are handled by B<rollctl>.
 
 =over 4
 
 =item I<-halt>
 
-Cleanly halts I<rollerd> execution.
+Cleanly halts B<rollerd> execution.
 
 =item I<-logfile logfile>
 
-Sets the I<rollerd> log file to I<logfile>.
+Sets the B<rollerd> log file to I<logfile>.
 This must be a valid logging file, meaning that if I<logfile> already
 exists, it must be a regular file.  The only exceptions to this are if
 I<logfile> is B</dev/stdout> or B</dev/tty>.
 
 =item I<-loglevel loglevel>
 
-Sets the I<rollerd> logging level to I<loglevel>.
+Sets the B<rollerd> logging level to I<loglevel>.
 This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
 
 =item I<-rollall>
@@ -476,7 +494,7 @@ Initiates rollover for all the zones defined in the current I<rollrec> file.
 
 =item I<-rollrec rollrec_file>
 
-Sets the I<rollrec> file to be processed by I<rollerd> to I<rollrec_file>.
+Sets the I<rollrec> file to be processed by B<rollerd> to I<rollrec_file>.
 
 =item I<-rollzone zone>
 
@@ -484,7 +502,7 @@ Initiates rollover for the zone named by I<zone>.
 
 =item I<-runqueue>
 
-Wakes up I<rollerd> and has it run its queue of I<rollrec> entries.
+Wakes up B<rollerd> and has it run its queue of I<rollrec> entries.
 
 =item I<-shutdown>
 
@@ -500,23 +518,26 @@ Stops rollover for the zone named by I<zone>.
 
 =item I<-sleeptime sleeptime>
 
-Sets I<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
-at least as large as the B<$MIN_SLEEP> value in I<rollerd>.
+Sets B<rollerd>'s sleep time to I<sleeptime>.  I<sleeptime> must be an integer
+at least as large as the B<$MIN_SLEEP> value in B<rollerd>.
 
 =item I<-status>
 
-Has I<rollerd> write several of its operational parameters to its log file.
-The parameters are also reported to I<rollctl>, which prints them to the
+Has B<rollerd> write several of its operational parameters to its log file.
+The parameters are also reported to B<rollctl>, which prints them to the
 screen.
+
+=item I<-zonelog>
+
+Set the logging level for the specified zone.  The new logging level is only
+for the current execution of B<rollerd> and is not saved to the active
+I<rollrec> file.
 
 =item I<-zonestatus>
 
-Has I<rollerd> give the status of zones in the current I<rollrec> file to the
-I<rollerd> log file.  The status is also reported to I<rollctl>, which prints
+Has B<rollerd> give the status of zones in the current I<rollrec> file to the
+B<rollerd> log file.  The status is also reported to B<rollctl>, which prints
 it to the screen.
-
-For each zone in the I<rollrec> file, the zone name, the record type ("skip"
-or "roll"), and the current rollover phase are given.
 
 =item I<-quiet>
 
