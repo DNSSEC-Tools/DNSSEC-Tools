@@ -14,6 +14,7 @@ use strict;
 use Getopt::Long;
 
 use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
@@ -43,6 +44,7 @@ my $skip	= 0;
 my $display	= 0;
 my $nodisplay	= 0;
 my $phase	= -1;
+my $loglvl	= -1;
 
 my %options = ();			# Filled option array.
 my @opts =
@@ -53,6 +55,7 @@ my @opts =
 	"file=s",			# New zonefile value.
 	"keyrec=s",			# New keyrec value.
 	"phase=i",			# New current-phase value.
+	"loglevel=s",			# New logging level value.
 	"display",			# Turn on display flag.
 	"nodisplay",			# Turn off display flag.
 
@@ -117,7 +120,8 @@ sub doopts
 	$skip	   = $options{'skip'};
 	$display   = $options{'display'};
 	$nodisplay = $options{'nodisplay'};
-	$phase	   = $options{'phase'}	if(defined($options{'phase'}));
+	$phase	   = $options{'phase'}	    if(defined($options{'phase'}));
+	$loglvl	   = $options{'loglevel'}   if(defined($options{'loglevel'}));
 
 	$check	   = $options{'check'};
 	$verbose   = $options{'verbose'};
@@ -142,10 +146,30 @@ sub doopts
 		print STDERR "-display and -nodisplay are mutually exclusive\n";
 		exit(1);
 	}
+
+	#
+	# Ensure the phase is valid.
+	#
 	if(($phase < -1) || ($phase > 4))
 	{
 		print STDERR "phase $phase invalid; phase must be between 0 and 4, inclusive\n";
 		exit(2);
+	}
+
+	#
+	# Ensure the logging level is valid.
+	#
+	if($loglvl > -1)
+	{
+		my $logtmp;				# Temporary log level.
+
+		$logtmp = rollmgr_lognum($loglvl);
+		if($logtmp == -1)
+		{
+			print STDERR "loglevel $loglvl invalid\n";
+			exit(3);
+		}
+		$loglvl = rollmgr_logstr($logtmp);
 	}
 
 	#
@@ -163,10 +187,11 @@ sub doopts
 	   ($skip      == 0)	&&
 	   ($display   == 0)	&&
 	   ($nodisplay == 0)	&&
-	   ($phase     == -1))
+	   ($phase     == -1)	&&
+	   ($loglvl    == -1))
 	{
 		print STDERR "you must specify something to be changed\n";
-		exit(3);
+		exit(4);
 	}
 
 	#
@@ -223,6 +248,7 @@ sub editrrf
 		changer($display,$name,'display',1);
 		changer($nodisplay,$name,'display',0);
 		changer($phase,$name,'curphase',$phase) if($phase > -1);
+		changer($loglvl,$name,'loglevel',$loglvl) if($loglvl > -1);
 	}
 
 	#
@@ -322,6 +348,7 @@ sub usage
 	print STDERR "		-file zone-file\n";
 	print STDERR "		-keyrec keyrec-file\n";
 	print STDERR "		-phase phase-number\n";
+	print STDERR "		-loglevel logging-level\n";
 	print STDERR "		-display\n";
 	print STDERR "		-nodisplay\n";
 
@@ -383,6 +410,11 @@ I<keyrec-file>.
 The phase number of the selected I<rollrec> records is modified to be
 I<phase-number>.  The I<phase-number> may only be 0, 1, 2, 3, or 4.
 
+=item -loglevel logging-level
+
+The logging level of the selected I<rollrec> records is set to
+I<logging-level>.  The valid logging levels are defined in I<rollmgr.pm(3)>.
+
 =item -display
 
 Turn on the GUI display of the zones in the selected I<rollrec>s.
@@ -438,6 +470,7 @@ B<rollchk(8)>,
 B<rollerd(8)>,
 B<rollinit(8)>
 
+B<Net::DNS::SEC::Tools::rollmgr.pm(3)>,
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
 B<file-rollrec(5)>
