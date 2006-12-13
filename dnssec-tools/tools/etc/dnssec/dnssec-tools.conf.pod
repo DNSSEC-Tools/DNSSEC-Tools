@@ -45,6 +45,10 @@ Not every DNSSEC-Tools program requires each of these records.
 
 =over 4
 
+=item admin-email
+
+The email address for the DNSSEC-Tools administrator.
+
 =item algorithm
 
 The default encryption algorithm to be passed to I<dnssec-keygen>.
@@ -165,6 +169,11 @@ convenient reference for several common times, as measured in seconds.
 =head1 Example File
 
 The following is an example B<dnssec-tools.conf> configuration file.
+
+    #
+    # Settings for DNSSEC-Tools administration.
+    #
+    admin-email     tewok@squirrelking.net
 
     #
     # Paths to required programs.  These may need adjusting for
