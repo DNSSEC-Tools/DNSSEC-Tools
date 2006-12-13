@@ -1457,6 +1457,10 @@ sub commander
 		{
 			cmd_status($data);
 		}
+		elsif($cmd eq ROLLCMD_ZONELOG())
+		{
+			cmd_zonelog($data);
+		}
 		elsif($cmd eq ROLLCMD_ZONESTATUS())
 		{
 			cmd_zonestatus($data);
@@ -1989,6 +1993,92 @@ sub cmd_status
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	cmd_zonelog()
+#
+# Purpose:	Set the logging level for a zone.
+#
+sub cmd_zonelog
+{
+	my $data = shift;				# Command's data.
+
+	my $rrr;					# Reference to rollrec.
+	my %rr;						# Rollrec hash.
+
+	my $zone;					# User's zone.
+	my $llev;					# User's logging level.
+	my $llevstr;					# String of log level.
+
+	rollmgr_log(LOG_TMI,"<command>","zonelog command received");
+
+	#
+	# Get the zone and logging level from the command data.
+	#
+	$data =~ /^(.*):(.*)$/;
+	$zone = $1;
+	$llev = $2;
+
+print STDERR "\n\nzonelog:  <$llev> - <" . rollmgr_lognum($llev) . ">\n\n";
+
+	#
+	# Convert the user's logging level to its numeric form.
+	#
+	$llev = rollmgr_lognum($llev);
+
+	#
+	# Ensure that the logging level is valid.
+	#
+	if($llev == -1)
+	{
+		rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid logging level \"$llev\"");
+		rollmgr_log(LOG_ALWAYS,"<command>","invalid logging level \"$llev\" specified for zone \"$zone\"\n");
+		return;
+	}
+
+	#
+	# Read the rollrec file.  Complain and return if we couldn't.
+	#
+	rollrec_lock();
+	if(rollrec_read($rollrecfile) <= 0)
+	{
+		rollrec_unlock();
+		rollmgr_sendresp(ROLLCMD_RC_RRFOPEN,"unable to open rollrec file $rollrecfile");
+		rollmgr_log(LOG_ALWAYS,"<command>","unable to open rollrec file $rollrecfile\n");
+		return;
+	}
+
+	#
+	# Get the specified zone's roll record.
+	#
+	$rrr = rollrec_fullrec($zone);
+	if(!defined($rrr))
+	{
+		rollrec_unlock();
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"invalid zone \"$zone\" specified");
+		rollmgr_log(LOG_ALWAYS,"<command>","invalid zone \"$zone\" specified for zonelog command\n");
+		return;
+	}
+	%rr = %$rrr;
+
+	#
+	# Set the zone's logging level.
+	#
+	rollrec_setval($zone,"loglevel",$llev);
+
+	#
+	# Write and unlock the rollrec file.
+	#
+	rollrec_close();
+	rollrec_unlock();
+
+	#
+	# Report the command and return.
+	#
+	$llevstr = rollmgr_logstr($llev);
+	rollmgr_log(LOG_INFO,"<command>","set the logging level for zone $zone to $llevstr");
+	return(1);
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	cmd_zonestatus()
 #
 # Purpose:	Return zone status to the control program.
@@ -2096,7 +2186,6 @@ sub rollnow
 	rollrec_lock();
 	if(rollrec_read($rollrecfile) > 0)
 	{
-
 		#
 		# A skip record is changed to a regular rollrec.
 		#
@@ -2127,7 +2216,7 @@ sub rollnow
 	rollrec_unlock();
 
 	#
-	# Setting the sleep values such that the queue will be run.
+	# Set the sleep values such that the queue will be run.
 	#
 	$sleepcnt = $sleeptime;
 	rollmgr_log(LOG_INFO,"<command>","forcing a rollover for zone $zone");
@@ -2165,7 +2254,6 @@ sub skipnow
 	rollrec_lock();
 	if(rollrec_read($rollrecfile) > 0)
 	{
-
 		#
 		# A roll record is changed to a skip rollrec and its
 		# phase set to 0.
