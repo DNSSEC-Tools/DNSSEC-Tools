@@ -143,6 +143,7 @@ our @EXPORT = qw(
 			 ROLLCMD_SKIPZONE
 			 ROLLCMD_SLEEPTIME
 			 ROLLCMD_STATUS
+			 ROLLCMD_ZONELOG
 			 ROLLCMD_ZONESTATUS
 
 			 ROLLCMD_RC_OKAY
@@ -271,6 +272,7 @@ my $ROLLCMD_SKIPALL	= "rollcmd_skipall";
 my $ROLLCMD_SKIPZONE	= "rollcmd_skipzone";
 my $ROLLCMD_SLEEPTIME	= "rollcmd_sleeptime";
 my $ROLLCMD_STATUS	= "rollcmd_status";
+my $ROLLCMD_ZONELOG	= "rollcmd_zonelog";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
 
 sub ROLLCMD_DISPLAY		{ return($ROLLCMD_DISPLAY);	};
@@ -287,6 +289,7 @@ sub ROLLCMD_SKIPALL		{ return($ROLLCMD_SKIPALL);	};
 sub ROLLCMD_SKIPZONE		{ return($ROLLCMD_SKIPZONE);	};
 sub ROLLCMD_SLEEPTIME		{ return($ROLLCMD_SLEEPTIME);	};
 sub ROLLCMD_STATUS		{ return($ROLLCMD_STATUS);	};
+sub ROLLCMD_ZONELOG		{ return($ROLLCMD_ZONELOG);	};
 sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
 
 my %roll_commands =
@@ -306,6 +309,7 @@ my %roll_commands =
 	rollcmd_skipzone	=> 1,
 	rollcmd_sleeptime	=> 1,
 	rollcmd_status		=> 1,
+	rollcmd_zonelog		=> 1,
 	rollcmd_zonestatus	=> 1,
 );
 
