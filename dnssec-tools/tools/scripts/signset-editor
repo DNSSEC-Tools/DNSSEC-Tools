@@ -50,13 +50,14 @@ use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::BootStrap;
 
 ######################################################################
-# detect needed perl module requirements
+#
+# Detect required Perl modules.
 #
 dnssec_tools_load_mods(
-		       'Tk' => "",
-		       'Tk::Dialog' => "",
-		       'Tk::Pane' => "",
-		       'Tk::Table' => "",
+			'Tk'		=> "",
+			'Tk::Dialog'	=> "",
+			'Tk::Pane'	=> "",
+			'Tk::Table'	=> "",
 		      );
 
 #
