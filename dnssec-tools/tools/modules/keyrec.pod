@@ -60,12 +60,6 @@ B<dnssec-signzone> as the argument to the I<-e> option.
 The name of the zone's KSK key.  This is used as the name of the KSK key's
 I<keyrec> field.
 
- * kskpath
-
-The path to the zone's KSK key.  This may be an absolute or relative path,
-but it should be one which B<zonesigner> may use (in conjunction with other
-I<keyrec> fields to find the key.
-
  * kskdirectory
 
 The directory that holds the KSK key.
@@ -163,7 +157,6 @@ The following is an example of a zone I<keyrec>:
             signedfile      "db.example.com.signed"
             endtime         "+604800"
             kskkey          "Kexample.com.+005+33333"
-            kskpath         "keydir/Kexample.com.+005+33333"
             kskdirectory    "keydir"
             zskcur          "signing-set-42"
             zskpub          "signing-set-43"
