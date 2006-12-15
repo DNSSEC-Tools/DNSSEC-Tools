@@ -32,6 +32,7 @@ my %defaults =
 
 	"algorithm"	 => "rsasha1",		# Encryption algorithm.
 	"enddate"	 => "+2592000",		# Zone life, in seconds.
+	"kskcount"	 => 1,			# Number of KSK keys.
 	"ksklength"	 => 2048,		# Length of KSK key.
 	"ksklife"	 => 15768000,		# Lifespan of KSK key.
 	"random"	 => "/dev/urandom",	# Random no. generator device.
@@ -56,6 +57,7 @@ my @defnames =
 	"bind_signzone",
 	"enddate",
 	"entropy_msg",
+	"kskcount",
 	"ksklength",
 	"ksklife",
 	"random",
@@ -175,6 +177,10 @@ This default holds the default zone life, in seconds.
 
 This default indicates whether or not I<zonesigner> should display an entropy
 message.
+
+=item B<kskcount>
+
+This default holds the default number of KSK keys to generate for a zone.
 
 =item B<ksklength>
 
