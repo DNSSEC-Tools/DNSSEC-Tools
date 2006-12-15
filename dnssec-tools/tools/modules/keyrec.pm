@@ -26,7 +26,6 @@
 #
 #		zone "example.com"
 #			zonefile	"db.example.com"
-#			kskpath		"Kexample.com.+005+26000"
 #			zskcur		"Kexample.com.+005+52000"
 #			zskpub		"Kexample.com.+005+52001"
 #			endtime		"+2592000"   # Zone expires in 30 days.
@@ -78,9 +77,9 @@ my @ZONEFIELDS = (
 			'keyrec_type',		# Internal only.  Usually.
 			'endtime',
 			'ksdir',
+			'kskcount',
 			'kskdirectory',
 			'kskkey',
-			'kskpath',
 			'lastset',
 			'signedzone',
 			'zskcount',
