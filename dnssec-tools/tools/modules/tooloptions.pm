@@ -69,10 +69,10 @@ my @stdopts =
 	['GUI:separator',	'Key-signing Key Options:'],
 		["genksk",		"Generate KSK"],
 		["kskkey=s",		"KSK key"],
+		["kskcount=i",		"Number of KSKs to generate"],
 		["kskdirectory=s",	"Directory for KSK keys"],
 		["ksklength=i",		"Length of KSK"],
 		["ksklife=i",		"Life-span of KSK"],
-		["kskpath=s",		"Path to KSK"],
 		["ksdir=s",		"Directory for keyset files"],
 
 	'',
