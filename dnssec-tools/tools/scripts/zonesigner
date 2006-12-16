@@ -1765,7 +1765,7 @@ EOF
 	#
 	# Add the KSKs.
 	#
-	foreach my $ksk (@ksklist)
+	foreach my $ksk (sort(@ksklist))
 	{
 		my $path = keyrec_recval($ksk,'keypath');
 		$incstr .= "\$INCLUDE \"$path\"\n";
@@ -1778,7 +1778,7 @@ EOF
 	{
 		$incstr .= "\n;; Current ZSKs\n";
 
-		foreach my $zsk (@zskcurlist)
+		foreach my $zsk (sort(@zskcurlist))
 		{
 			my $path = keyrec_recval($zsk,'keypath');
 			$incstr .= "\$INCLUDE \"$path\"\n";
@@ -1790,7 +1790,7 @@ EOF
 	#
 	# Add the published ZSKs.
 	#
-	foreach my $zsk (@zskpublist)
+	foreach my $zsk (sort(@zskpublist))
 	{
 		my $path = keyrec_recval($zsk,'keypath');
 		$incstr .= "\$INCLUDE \"$path\"\n";
