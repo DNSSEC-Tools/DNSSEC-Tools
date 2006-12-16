@@ -66,9 +66,9 @@ my $DEF_REUSEZSK	= 0;			# Re-use ZSKs.
 #
 # Arguments for updzonerec().
 #
-my $UPD_ALLKEYS	= 1;				# Update all keyrecs.
-my $UPD_KSK	= 2;				# Only update KSK keyrec.
-my $UPD_ZSK	= 3;				# Only update ZSK keyrec.
+my $UPD_KSKS	= 0x01;				# Only update KSK keyrecs.
+my $UPD_ZSKS	= 0x10;				# Only update ZSK keyrecs.
+my $UPD_ALLKEYS	= 0x11;				# Update all keyrecs.
 
 #
 # Debug flags.  These must be turned on here.
@@ -94,12 +94,12 @@ my $verbose = 0;			# Turn off verbosity.
 my $archdir;				# Archive directory for old keys.
 my $savekeys = 1;			# Flag for saving old keys.
 
-my $ksk;				# KSK we've generated.
+my $kskcnt;				# Number of KSKs.
 my $kskdir;				# Directory to hold KSK.
 my $ksklife;				# Time between KSK rollovers.
-my $kskpath;				# Path to the KSK.
 my $ksize;				# Size of KSK.
 my $genksk;				# Generate a new KSK.
+my $ksignset;				# KSK signing set.
 
 my $zskcur;				# Current ZSK.
 my $zskpub;				# Published ZSK.
@@ -110,9 +110,11 @@ my $zsklife;				# Time between ZSK rollovers.
 my $zskcnt;				# Number of current ZSKs.
 my $zsize;				# Size of ZSK.
 my $genzsk;				# Generate a new ZSK.
-my $signset;				# Signing set.
+my $signset;				# ZSK signing set.
 my $lastset;				# Zone's last signing set.
 
+my $ksksetname;				# Name of KSK signing set.
+my @ksklist = ();			# New KSKs.
 my $zskcursetname;			# Name of current ZSK signing set.
 my $zskpubsetname;			# Name of published ZSK signing set.
 my $zsknewsetname;			# Name of new ZSK signing set.
@@ -224,11 +226,6 @@ sub main
 	keydirs();
 
 	#
-	# Set some short-hand variables.
-	#
-	$kskpath    = "$kskdir/$ksk.key";
-
-	#
 	# Create the unsigned zone file and add include lines for the key files.
 	#
 	zoneincludes();
@@ -297,10 +294,12 @@ sub optsandargs()
 	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_defaults("zsklife");
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
-	$kskpath  = $opts{'kskpath'}	  || "";
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
 	$usepub	  = $opts{'usepub'}	  || 0;
+
+	if(defined($opts{'kskcount'}))	{ $kskcnt = $opts{'kskcount'}; }
+	else				{ $kskcnt = 1; }
 
 	if(defined($opts{'zskcount'}))	{ $zskcnt = $opts{'zskcount'}; }
 	else				{ $zskcnt = 1; }
@@ -318,6 +317,7 @@ sub optsandargs()
 	$savekeys = $DEF_SAVEKEYS;
 	$savekeys = 0 if(defined($opts{'nosave'}));
 #	$savekeys = $opts{'savekeys'}	|| $DEF_SAVEKEYS;
+	$ksignset = $opts{'ksignset'}	|| "";
 	$signset  = $opts{'signset'}	|| "";
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
@@ -354,6 +354,13 @@ sub optsandargs()
 		$opts{'zsklength'} = $zsize;
 		$zsize = "-b $zsize";
 	}
+
+	if($kskcnt < 1)
+	{
+		print STDERR "KSK count ($zskcnt) must be positive\n";
+		exit(1);
+	}
+	$opts{'kskcount'} = $kskcnt;
 
 	if($zskcnt < 1)
 	{
@@ -628,9 +635,9 @@ sub genkeys
 	genzsks();
 
 	#
-	# Generate the KSK key.
+	# Generate the set of KSK keys.
 	#
-	genksk();
+	genksks();
 }
 
 #----------------------------------------------------------------------
@@ -698,12 +705,16 @@ sub genzsks
 			print STDERR "\ncur ZSK does not exist; unable to re-use non-existent cur ZSK\n";
 			exit(1);
 		}
+
+		#
+		# Get the current ZSK set name.
+		#
+		$zskcursetname = $opts{'zskcur'};
 		vprint("reusing existing cur ZSK set - $zskcursetname\n");
 
 		#
 		# Get the current ZSKs.
 		#
-		$zskcursetname = $opts{'zskcur'};
 		$keyset  = keyrec_recval($zskcursetname,'keys');
 		@zskcurlist = split / /, $keyset;
 
@@ -795,7 +806,92 @@ sub genzsks
 	#
 	# Save the keyrec file.
 	#
-	updzonerec($UPD_ZSK);
+	updzonerec($UPD_ZSKS);
+	vmed_print("\n");
+}
+
+#----------------------------------------------------------------------
+# Routine:	genksks()
+#
+# Purpose:	Generate the set of KSK keys.  New keyrecs for the new keys
+#		are added to the keyrec file.
+#
+sub genksks
+{
+	my $setname;				# Name of signing set.
+	my $keyset;				# Keys in signing set.
+
+	#
+	# If we're reusing the KSKs, ensure they're already defined and return.
+	#
+	if($genksk == 0)
+	{
+		my $keyset;			# Keys in signing set.
+		my $setname;			# Name of signing set.
+
+		#
+		# Ensure that we've got a KSK set.
+		#
+		if($opts{'kskkey'} eq "")
+		{
+			print STDERR "\nKSK does not exist; unable to re-use non-existent KSK\n";
+			exit(1);
+		}
+
+		#
+		# Get the KSK set name.
+		#
+		$ksksetname = $opts{'kskkey'};
+		vprint("reusing existing KSK set - $ksksetname\n");
+
+		#
+		# Get the KSKs.
+		#
+		$keyset  = keyrec_recval($ksksetname,'keys');
+		@ksklist = split / /, $keyset;
+
+		return;
+	}
+
+	#
+	# Get the name of the KSK set -- either from the -ksignset command
+	# line option or from the keyrec file itself.
+	#
+	if($ksignset)
+	{
+		$ksksetname = $ksignset;
+	}
+	else
+	{
+		if(defined($opts{'kskkey'}))
+		{
+			$ksksetname = $opts{'kskkey'};
+		}
+		else
+		{
+			$ksksetname = keyrec_signset_newname($zone)
+		}
+	}
+
+	#
+	# Create the new signing sets.
+	#
+	keyrec_signset_new($zone,$ksksetname);
+	$lastset = keyrec_recval($zone,'lastset');
+
+	#
+	# Generate a set of KSKs and save their names.
+	#
+	for(my $ind=0; $ind < $kskcnt; $ind++)
+	{
+		my $key = genksk();			# Generate new key.
+		push @ksklist, $key;
+	}
+
+	#
+	# Save the keyrec file.
+	#
+	updzonerec($UPD_KSKS);
 	vmed_print("\n");
 }
 
@@ -806,8 +902,9 @@ sub genzsks
 #
 sub genksk
 {
-	my $cmdopts;			# Options for dnssec-keygen.
-	my $zskdir;			# ZSK directory for saving.
+	my $ksk;				# KSK name.
+	my $cmdopts;				# Options for dnssec-keygen.
+	my $zskdir;				# ZSK directory for saving.
 
 	#
 	# If we're reusing the KSK, ensure it's been created and return.
@@ -866,7 +963,8 @@ sub genksk
 	#
 	# Save the keyrec file.
 	#
-	updzonerec($UPD_KSK);
+	updzonerec($UPD_KSKS);
+	return($ksk);
 }
 
 #----------------------------------------------------------------------
@@ -970,7 +1068,11 @@ sub keydirs
 			print STDERR "KSK repository ($kskdir) is not a directory\n";
 			exit(3);
 		}
-		system("$MV $ksk.* $kskdir");
+
+		foreach my $ksk (@ksklist)
+		{
+			system("$MV $ksk.* $kskdir");
+		}
 	}
 
 	#
@@ -1045,10 +1147,9 @@ sub zoneincludes
 		# then add our own.
 		#
 		#
-		if($file =~ /manipulated by dnssec-tools./s)
+		if($file =~ /manipulated by DNSSEC-Tools./si)
 		{
 			$newfile = $` . $&;
-			$tail = $';
 		}
 		else
 		{
@@ -1076,47 +1177,20 @@ sub zoneincludes
 			}
 
 			#
-			# Append our include lines to the very end of the
-			# zone file.
+			# The new file is the old file, minus include lines.
 			#
 			$newfile = $file;
-			$tail = getincl();
 		}
 
 		#
-		# Adjust the KSK key.
+		# Generate our include lines.
 		#
-		$tail =~ /ksk\n/m;
-		$newfile .= $` . $&;
-		$tail =~ s/\$INCLUDE ".*?"/\$INCLUDE "$kskpath"/;
-
-		#
-		# Adjust the current ZSK key.
-		#
-		if(!$usepub)
-		{
-			$tail =~ /Current ZSKs\n/m;
-			$newfile .= $` . $&;
-
-			foreach my $zsk (@zskcurlist)
-			{
-				my $path = keyrec_recval($zsk,'keypath');
-				$tail .= "\$INCLUDE \"$path\"\n";
-			}
-		}
-
-		$tail .= "\n;; Published ZSKs\n";
-		foreach my $zsk (@zskpublist)
-		{
-			my $path = keyrec_recval($zsk,'keypath');
-			$tail .= "\$INCLUDE \"$path\"\n";
-		}
-		$tail .= "\n";
+		$tail = getincl();
 
 		#
 		# ... and add the modified end of the file to our saved end.
 		#
-		$newfile .= $tail;
+		$newfile .= $tail . "\n";
 
 		#
 		# If the new file has a length of zero, we've got a problem,
@@ -1178,16 +1252,24 @@ sub zonesign
 	my $chron;			# Today's date.
 	my $keytag;			# Tag value from keys.
 	my $szone;			# Result from dnssec-signzone execution.
+	my $useksks;			# KSKs to use in zone-signing.
 	my @usekeys;			# Keys to use in zone-signing.
 	my $cmdopts;			# Options for dnssec-signzone.
 	my $status;			# Execution return code.
+
+	#
+	# Build the collection of KSKs.
+	#
+	$useksks = join " -k ", @ksklist;
+	$useksks = "-k $useksks";
 
 	#
 	# Build a set of options for dnssec-signzone.  This isn't strictly
 	# necessary, but it does keep the dnssec-signzone execution a bit
 	# cleaner than it would be otherwise.
 	#
-	$cmdopts = "$szopts $gends $ksdir -k $kskpath -o $zone $enddate -f $zoneout";
+#	$cmdopts = "$szopts $gends $ksdir -k $kskpath -o $zone $enddate -f $zoneout";
+	$cmdopts = "$szopts $gends $ksdir $useksks -o $zone $enddate -f $zoneout";
 
 	#
 	# Normally, we'll use the current ZSKs; however, we'll use the
@@ -1239,11 +1321,14 @@ sub zonesign
 	print "${zone}:\n";
 
 	#
-	# Get the KSK tag value.
+	# Get the KSK tag values.
 	#
-	$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
-	$keytag = $1;
-	print "\tKSK       $keytag  $ksize  $chron\n";
+	foreach my $ksk (sort(@ksklist))
+	{
+		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
+		$keytag = $1;
+		print "\tKSK       $keytag  $ksize  $chron\n";
+	}
 
 	#
 	# Get the current ZSK tag values.
@@ -1318,18 +1403,24 @@ sub updzonerec
 
 	if($verbose > $VERBOSE_LOW)
 	{
-		if(($verbose == $VERBOSE_HIGH)	||
-		   ($updflag == $UPD_ALLKEYS))
+		if(($verbose == $VERBOSE_HIGH) || ($updflag == $UPD_ALLKEYS))
 		{
 			print "\tupdating the keyrec file for the zone\n";
 		}
 	}
 
 	#
-	# Generate some signing set names if we need them.
+	# Generate some signing-set names if we need them.
 	#
-	$zskcursetname = keyrec_signset_newname($zone) if($zskcursetname eq "");
-	$zskpubsetname = keyrec_signset_newname($zone) if($zskpubsetname eq "");
+	if((($updflag & $UPD_KSKS) == $UPD_KSKS) && ($ksksetname eq ""))
+	{
+		$ksksetname = keyrec_signset_newname($zone);
+	}
+	if(($updflag & $UPD_ZSKS) == $UPD_ZSKS)
+	{
+		$zskcursetname = keyrec_signset_newname($zone) if($zskcursetname eq "");
+		$zskpubsetname = keyrec_signset_newname($zone) if($zskpubsetname eq "");
+	}
 
 	#
 	# Set some fields we've got to have -- in case they aren't
@@ -1339,8 +1430,7 @@ sub updzonerec
 	else	    { $opts{'zonefile'} = $zoneftmp; }
 	$opts{'signedzone'}	= $zoneout;
 	$opts{'kskdirectory'}	= $kskdir;
-	$opts{'kskkey'}		= $ksk if(defined($ksk));
-	$opts{'kskpath'}	= $kskpath;
+	$opts{'kskkey'}		= $ksksetname if(defined($ksksetname));
 	$opts{'zskcount'}	= $zskcnt;
 	$opts{'zskdirectory'}	= $zskdir;
 	$opts{'szopts'}		= $szopts if($szopts ne "");
@@ -1388,25 +1478,29 @@ sub updzonerec
 	keyrec_setval('zone',$zone,'keyrec_signdate',$chronostr);
 
 	#
-	# Save the signing set names.
+	# Save the signing-set names and set the zone owners for KSKs.
 	#
-	if($updflag != $UPD_KSK)
+	if(($updflag & $UPD_KSKS) == $UPD_KSKS)
+	{
+		$setnames = join ' ', @ksklist;
+		keyrec_setval('set',$ksksetname,'keys',$setnames);
+
+		foreach my $ksk (@ksklist)
+		{
+			keyrec_setval('key',$ksk,'zonename',$zone)
+		}
+	}
+
+	#
+	# Save the signing-set names and set the zone owners for ZSKs.
+	#
+	if(($updflag & $UPD_ZSKS) == $UPD_ZSKS)
 	{
 		$setnames = join ' ', @zskcurlist;
 		keyrec_setval('set',$zskcursetname,'keys',$setnames);
 		$setnames = join ' ', @zskpublist;
 		keyrec_setval('set',$zskpubsetname,'keys',$setnames);
-	}
 
-	#
-	# Set the zone name in the keyrecs of our keys.
-	#
-	if($updflag != $UPD_ZSK)
-	{
-		keyrec_setval('key',$ksk,'zonename',$zone)
-	}
-	if($updflag != $UPD_KSK)
-	{
 		foreach my $zsk (@zskcurlist)
 		{
 			keyrec_setval('key',$zsk,'zonename',$zone)
@@ -1662,23 +1756,35 @@ sub getincl
 ;;
 ;; DO NOT DIRECTLY MODIFY ANYTHING BELOW THIS LINE.
 ;;
-;;	All subsequent lines are added and manipulated by dnssec-tools.
+;;	All subsequent lines are added and manipulated by DNSSEC-Tools.
 ;;
 
-;; KSK
-\$INCLUDE \"$kskpath\"
-
-;; Current ZSKs
+;; KSKs
 EOF
+
+	#
+	# Add the KSKs.
+	#
+	foreach my $ksk (@ksklist)
+	{
+		my $path = keyrec_recval($ksk,'keypath');
+		$incstr .= "\$INCLUDE \"$path\"\n";
+	}
 
 	#
 	# Add the current ZSKs.
 	#
-	foreach my $zsk (@zskcurlist)
+	if(!$usepub)
 	{
-		my $path = keyrec_recval($zsk,'keypath');
-		$incstr .= "\$INCLUDE \"$path\"\n";
+		$incstr .= "\n;; Current ZSKs\n";
+
+		foreach my $zsk (@zskcurlist)
+		{
+			my $path = keyrec_recval($zsk,'keypath');
+			$incstr .= "\$INCLUDE \"$path\"\n";
+		}
 	}
+
 	$incstr .= "\n;; Published ZSKs\n";
 
 	#
@@ -1990,6 +2096,7 @@ sub printopts
 	print "\t\talgorithm	- <$alg>\n";
 	print "\t\trandom		- <$random>\n";
 	print "\t\tksize		- <$ksize>\n";
+	print "\t\tkskcount     	- <$kskcnt>\n";
 	print "\t\tkskdir		- <$kskdir>\n";
 	print "\t\tksklife		- <$ksklife>\n";
 	print "\t\tgenksk		- <$genksk>\n";
@@ -2105,10 +2212,12 @@ sub usage
 	print STDERR "\t\t\t-usepub\n";
 	print STDERR "\t\t\t-archivedir directory\n";
 	print STDERR "\t\t\t-nosave\n";
+	print STDERR "\t\t\t-kskcount count\n";
 	print STDERR "\t\t\t-ksklife lifespan\n";
+	print STDERR "\t\t\t-ksignset KSK-set-name\n";
 	print STDERR "\t\t\t-zsklife lifespan\n";
 	print STDERR "\t\t\t-zskcount count\n";
-	print STDERR "\t\t\t-signset set-name\n";
+	print STDERR "\t\t\t-signset ZSK-set-name\n";
 	print STDERR "\t\t\t-intermediate tmp-zone-file\n";
 	print STDERR "\t\t\t-zone zone-name\n";
 	print STDERR "\t\t\t-help\n";
@@ -2368,9 +2477,24 @@ archived.
 Do not save obsolete keys to the key archive directory.  The default behavior
 is to save obsolete keys.
 
+=item -kskcount
+
+The number of KSK keys to generate and with which to sign the zone.  The
+default is to use a single KSK key.
+
 =item -ksklife
 
 The time between KSK rollovers.  This is measured in seconds.
+
+=item -ksignset
+
+The name of the KSK signing set to use.  If the signing set does not exist,
+then this must be used in conjunction with either I<-genkeys> or I<-genksk>.
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+
+The default signing set name is "signing-set-I<N>", where I<N> is a number.
+If I<-signset> is not specified, then B<zonesigner> will use the default and
+increment the number for subsequent signing sets.
 
 =item -zsklife
 
@@ -2595,7 +2719,6 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	zonefile	"db.example.com"
 	signedzone	"db.example.com.signed"
 	endtime		"+2592000"
-	kskpath		"./Kexample.com.+005+24082.key"
 	kskkey		"Kexample.com.+005+24082"
 	kskdirectory	"."
 	zskcur		"signing-set-42"
