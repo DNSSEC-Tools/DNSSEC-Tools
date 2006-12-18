@@ -382,7 +382,7 @@ sub query_authserver {
     my $setdnssec = $res->dnssec(1);
     my $nsquery = $res->query($d,"NS");
     my @authNS;
-    foreach my $ns ($nsquery->answer()) {
+    foreach my $ns (grep { $_->type eq 'NS' } $nsquery->answer()) {
         push @authNS, $ns->nsdname;
     }
     my @authNSAddrs;
