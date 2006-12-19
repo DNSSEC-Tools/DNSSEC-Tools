@@ -108,6 +108,7 @@ if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
 
 if ($opts{'f'}) {
     $daemon = 0;
+    get_domains_keys(\%keystorage);
     &checkkeys();
 } elsif ($opts{'c'}) {
     my $conffile = getconffile();
@@ -439,14 +440,17 @@ sub read_conf_file {
 		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
 
 # TODO: need to remember where these keys came from....
-                    $configmap->{$1} = $file;
+                    my $domainname = $1;
+                    $domainname =~ s/\.$//;
 
-		    push @{$storage->{$1}},
+                    $configmap->{$domainname} = $file;
+
+		    push @{$storage->{$domainname}},
 		      { flags => $2,
 			protocol => $3,
 			algorithm => $4,
 			key => $5 };
-		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		    $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
 		}
 	    }
 	}
