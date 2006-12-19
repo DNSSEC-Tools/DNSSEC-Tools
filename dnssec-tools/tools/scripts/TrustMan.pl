@@ -268,12 +268,14 @@ sub read_conf_file {
 	    while (<$fh>) {
 		last if (/^\s*};/);
 		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
-		    push @{$storage->{$1}},
+                    my $domainname = $1;
+                    $domainname =~ s/\.$//;
+		    push @{$storage->{$domainname}},
 		      { flags => $2,
 			protocol => $3,
 			algorithm => $4,
 			key => $5 };
-		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
+		    $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
 		}
 	    }
 	}
