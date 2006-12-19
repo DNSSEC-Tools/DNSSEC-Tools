@@ -152,10 +152,15 @@ sub checkkeys {
     my %keystorage;
     my @baddomains;
     my @gooddomains;
+    my @maybe_dotted_domains;
     my @domains;
     my $named_conf_pat = "trusted-keys";
     my $dnsval_conf_pat = "trust-anchor";
-    push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
+    push @maybe_dotted_domains, split(/,/,$opts{'d'}) if ($opts{'d'});
+    foreach my $d (@maybe_dotted_domains) {
+        $d =~ s/\.$//;
+        push @domains, $d;
+    }
     my $res = Net::DNS::Resolver->new;
     # needed to ensure that +dnssec is used on subsequent queries
     my $setdnssec = $res->dnssec(1);
@@ -263,75 +268,6 @@ sub read_conf_file {
 	    while (<$fh>) {
 		last if (/^\s*};/);
 		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
-		    push @{$storage->{$1}},
-		      { flags => $2,
-			protocol => $3,
-			algorithm => $4,
-			key => $5 };
-		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
-		}
-	    }
-	}
-    }
-    $fh->close;
-}
-
-#######################################################################
-# read_named_conf_file()
-#
-# reads in a named.conf file pointed to by $file and stores key
-# information in $storage
-#
-sub read_named_conf_file {
-    my ($storage, $file) = @_;
-    Verbose("reading and parsing trust keys from $file\n");
-    # regexp pulled from Fast.pm
-    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
-
-    my $fh = new IO::File;
-    if (!$fh->open("<$file")) {
-	print STDERR "Could not open named configuration file: $file\n";
-	exit (1);
-    }
-    while (<$fh>) {
-	if (/trusted-keys {/) {
-	    while (<$fh>) {
-		last if (/^\s*};/);
-		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
-		    push @{$storage->{$1}},
-		      { flags => $2,
-			protocol => $3,
-			algorithm => $4,
-			key => $5 };
-		    $storage->{$1}[$#{$storage->{$1}}]{key} =~ s/\s+//g;
-		}
-	    }
-	}
-    }
-    $fh->close;
-}
-
-#######################################################################
-# read_dnsval_conf_file()
-#
-# reads in a dnsval.conf file pointed to by $file and stores key
-# information in $storage
-#
-sub read_dnsval_conf_file {
-    my ($storage, $file) = @_;
-    Verbose("reading and parsing trust keys from $file\n");
-    # regexp pulled from Fast.pm
-    my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
-
-    my $fh = new IO::File;
-    if (!$fh->open("<$file")) {
-	print STDERR "Could not open dnsval configuration file: $file\n";
-	exit (1);
-    }
-    while (<$fh>) {
-	if (/trust-anchor/) {
-	    while (<$fh>) {
-		if (/\s*($pat_maybefullname)\s+\"(256|257)\s+(\d+)\s+(\d+)\s+(.+)\"\s*/) {
 		    push @{$storage->{$1}},
 		      { flags => $2,
 			protocol => $3,
