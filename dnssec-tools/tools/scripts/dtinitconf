@@ -225,31 +225,31 @@ sub optsandargs
 	# Get the option values.  If these weren't given on the command
 	# line, they'll be taken the DNSSEC-Tools defaults.
 	#
-	$ksklen    = $opts{'ksklength'} || dnssec_tools_defaults("ksklength");
-	$ksklife   = $opts{'ksklife'}   || dnssec_tools_defaults("ksklife");
-	$zskcnt	   = $opts{'zskcount'}  || dnssec_tools_defaults("zskcount");
-	$zsklen    = $opts{'zsklength'} || dnssec_tools_defaults("zsklength");
-	$zsklife   = $opts{'zsklife'}   || dnssec_tools_defaults("zsklife");
+	$ksklen    = $opts{'ksklength'} || dnssec_tools_default("ksklength");
+	$ksklife   = $opts{'ksklife'}   || dnssec_tools_default("ksklife");
+	$zskcnt	   = $opts{'zskcount'}  || dnssec_tools_default("zskcount");
+	$zsklen    = $opts{'zsklength'} || dnssec_tools_default("zsklength");
+	$zsklife   = $opts{'zsklife'}   || dnssec_tools_default("zsklife");
 
-	$alg	   = $opts{'algorithm'}	|| dnssec_tools_defaults("algorithm");
-	$endtime   = $opts{'endtime'}	|| dnssec_tools_defaults("enddate");
-	$random	   = $opts{'random'}	|| dnssec_tools_defaults("random");
+	$alg	   = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
+	$endtime   = $opts{'endtime'}	|| dnssec_tools_default("enddate");
+	$random	   = $opts{'random'}	|| dnssec_tools_default("random");
 
 	$keyarch   = $opts{'archivedir'};
-	$savekeys  = $opts{'savekeys'}	  || dnssec_tools_defaults("savekeys");
-	$usegui	   = $opts{'usegui'}	  || dnssec_tools_defaults("usegui");
-	$entmsg	   = $opts{'entropy_msg'} || dnssec_tools_defaults("entropy_msg");
+	$savekeys  = $opts{'savekeys'}	  || dnssec_tools_default("savekeys");
+	$usegui	   = $opts{'usegui'}	  || dnssec_tools_default("usegui");
+	$entmsg	   = $opts{'entropy_msg'} || dnssec_tools_default("entropy_msg");
 
-	$rlogfile  = $opts{'roll_logfile'}  || dnssec_tools_defaults("roll_logfile");
-	$rloglevel = $opts{'roll_loglevel'} || dnssec_tools_defaults("roll_loglevel");
-	$rsleep	   = $opts{'roll_sleep'}    || dnssec_tools_defaults("roll_sleeptime");
+	$rlogfile  = $opts{'roll_logfile'}  || dnssec_tools_default("roll_logfile");
+	$rloglevel = $opts{'roll_loglevel'} || dnssec_tools_default("roll_loglevel");
+	$rsleep	   = $opts{'roll_sleep'}    || dnssec_tools_default("roll_sleeptime");
 
 	$entmsg	   = 0  if(defined($opts{'noentropy_msg'}));
 	$savekeys  = 0  if(defined($opts{'nosavekeys'}));
 	$usegui	   = 0  if(defined($opts{'nousegui'}));
 
 	$binddir   = $opts{'binddir'};
-	$viewimg   = $opts{'viewimage'} || dnssec_tools_defaults("viewimage");
+	$viewimg   = $opts{'viewimage'} || dnssec_tools_default("viewimage");
 
 	$outfile   = $opts{'outfile'}	|| getconffile();
 	$overwrite = $opts{'overwrite'};
@@ -759,13 +759,13 @@ sub findbind()
 	#
 	# Look for the BIND tools in our defaults.
 	#
-	$pbg = dnssec_tools_defaults("bind_keygen");
+	$pbg = dnssec_tools_default("bind_keygen");
 	$pbg =~ s/\/dnssec-keygen$//;
 	$hfound{$pbg} = 1;
-	$pbg = dnssec_tools_defaults("bind_signzone");
+	$pbg = dnssec_tools_default("bind_signzone");
 	$pbg =~ s/\/dnssec-signzone$//;
 	$hfound{$pbg} = 1;
-	$pbg = dnssec_tools_defaults("bind_checkzone");
+	$pbg = dnssec_tools_default("bind_checkzone");
 	$pbg =~ s/\/named-checkzone$//;
 	$hfound{$pbg} = 1;
 

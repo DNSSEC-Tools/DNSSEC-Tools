@@ -80,7 +80,7 @@ sub main
 		my $dv;				# Default's value.
 		my $newname;			# Default name w/ blanks.
 
-		$dv = dnssec_tools_defaults($dn);
+		$dv = dnssec_tools_default($dn);
 		$dn .= $blanks;
 
 		$newname = substr($dn,0,$maxlen);

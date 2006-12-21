@@ -322,17 +322,17 @@ sub optsandargs
 	$zskcur	  = $opts{'zskcur'};
 	$zskpub	  = $opts{'zskpub'};
 
-	$ksklife  = $opts{'ksklife'}	|| dnssec_tools_defaults("ksklife");
-	$ksksize  = $opts{'ksklength'}	|| dnssec_tools_defaults("ksklength");
-	$zskcount = $opts{'zskcount'}	|| dnssec_tools_defaults("zskcount");
-	$zsklife  = $opts{'zsklife'}	|| dnssec_tools_defaults("zsklife");
-	$zsksize  = $opts{'zsklength'}	|| dnssec_tools_defaults("zsklength");
+	$ksklife  = $opts{'ksklife'}	|| dnssec_tools_default("ksklife");
+	$ksksize  = $opts{'ksklength'}	|| dnssec_tools_default("ksklength");
+	$zskcount = $opts{'zskcount'}	|| dnssec_tools_default("zskcount");
+	$zsklife  = $opts{'zsklife'}	|| dnssec_tools_default("zsklife");
+	$zsksize  = $opts{'zsklength'}	|| dnssec_tools_default("zsklength");
 
-	$algo	  = $opts{'algorithm'}	|| dnssec_tools_defaults("algorithm");
-	$endtime  = $opts{'endtime'}	|| dnssec_tools_defaults("enddate");
-	$random	  = $opts{'random'}	|| dnssec_tools_defaults("random");
+	$algo	  = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
+	$endtime  = $opts{'endtime'}	|| dnssec_tools_default("enddate");
+	$random	  = $opts{'random'}	|| dnssec_tools_default("random");
 
-	$keygen	  = $opts{'keygen'}	|| dnssec_tools_defaults("bind-keygen");
+	$keygen	  = $opts{'keygen'}	|| dnssec_tools_default("bind-keygen");
 
 	$verbose  = $opts{'verbose'};
 
