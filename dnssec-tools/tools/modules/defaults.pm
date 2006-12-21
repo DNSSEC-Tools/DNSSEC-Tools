@@ -17,9 +17,8 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(dnssec_tools_defaults dnssec_tools_defnames);
+our @EXPORT = qw(dnssec_tools_default dnssec_tools_defnames);
 
-our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "1.0";
 
 my %defaults =
@@ -76,11 +75,11 @@ my @defnames =
 
 #--------------------------------------------------------------------------
 #
-# Routine:	dnssec_tools_defaults()
+# Routine:	dnssec_tools_default()
 #
 # Purpose:	Look up a DNSSEC-Tools default and return its value.
 #
-sub dnssec_tools_defaults
+sub dnssec_tools_default
 {
 	my $defvar = shift;			# Default field to be returned.
 	my $defval;				# Default field's value.
@@ -114,11 +113,11 @@ Net::DNS::SEC::Tools::defaults - DNSSEC-Tools default values.
 
   use Net::DNS::SEC::Tools::defaults;
 
-  $defalg = dnssec_tools_defaults("algorithm");
+  $defalg = dnssec_tools_default("algorithm");
 
-  $cz_path = dnssec_tools_defaults("bind_checkzone");
+  $cz_path = dnssec_tools_default("bind_checkzone");
 
-  $ksklife = dnssec_tools_defaults("ksklife");
+  $ksklife = dnssec_tools_default("ksklife");
 
   @default_names = dnssec_tools_defnames();
 
@@ -132,7 +131,7 @@ place and prevents them from being spread around multiple programs.
 
 =over 4
 
-=item I<dnssec_tools_defaults(default)>
+=item I<dnssec_tools_default(default)>
 
 This interface returns the value of a DNSSEC-Tools default.  The interface
 is passed I<default>, which is the name of a default to look up.  The value
@@ -142,7 +141,7 @@ of this default is returned to the caller.
 
 This interface returns the names of all the DNSSEC-Tools defaults.
 No default values are returned, but the default names returned by
-I<dnssec_tools_defnames()> may then be passed to I<dnssec_tools_defaults()>.
+I<dnssec_tools_defnames()> may then be passed to I<dnssec_tools_default()>.
 
 =back
 
