@@ -216,8 +216,8 @@ sub key_checks
 	my $lifemax;				# Max. key life.
 	my $lifemin;				# Min. key life.
 
-	$lifemax = dnssec_tools_defaults('lifespan-max') || 0;
-	$lifemin = dnssec_tools_defaults('lifespan-min') || 0;
+	$lifemax = dnssec_tools_default('lifespan-max') || 0;
+	$lifemin = dnssec_tools_default('lifespan-min') || 0;
 
 	#
 	# Get the key-related config entries.

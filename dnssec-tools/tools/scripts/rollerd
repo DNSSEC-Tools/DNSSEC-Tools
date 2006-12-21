@@ -1189,8 +1189,8 @@ sub getprogs
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$rndc 	= $dtconf{'rndc'}	 || dnssec_tools_defaults("bind_rndc");
-	$rrchk	= $dtconf{'rollrec_chk'} || dnssec_tools_defaults("rollrec_check");
+	$rndc 	= $dtconf{'rndc'}	 || dnssec_tools_default("bind_rndc");
+	$rrchk	= $dtconf{'rollrec_chk'} || dnssec_tools_default("rollrec_check");
 }
 
 #-----------------------------------------------------------------------------
