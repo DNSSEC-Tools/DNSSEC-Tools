@@ -78,8 +78,7 @@ my @defnames =
 #
 # Routine:	dnssec_tools_defaults()
 #
-# Purpose:	Read a configuration file and parse it into pieces.  The
-#		lines are tokenized and then stored in the config hash table.
+# Purpose:	Look up a DNSSEC-Tools default and return its value.
 #
 sub dnssec_tools_defaults
 {
