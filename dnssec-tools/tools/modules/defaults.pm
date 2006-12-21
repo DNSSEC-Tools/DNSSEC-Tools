@@ -17,7 +17,11 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(dnssec_tools_default dnssec_tools_defnames);
+our @EXPORT = qw(
+		   dnssec_tools_alldefaults
+		   dnssec_tools_default
+		   dnssec_tools_defnames
+		);
 
 our $VERSION = "1.0";
 
@@ -75,6 +79,20 @@ my @defnames =
 
 #--------------------------------------------------------------------------
 #
+# Routine:	dnssec_tools_alldefaults()
+#
+# Purpose:	Return a copy of the DNSSEC-Tools defaults.
+#
+sub dnssec_tools_alldefaults
+{
+	my %defcopy;					# Copy of default hash.
+
+	%defcopy = %defaults;
+	return(%defcopy);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	dnssec_tools_default()
 #
 # Purpose:	Look up a DNSSEC-Tools default and return its value.
@@ -113,6 +131,8 @@ Net::DNS::SEC::Tools::defaults - DNSSEC-Tools default values.
 
   use Net::DNS::SEC::Tools::defaults;
 
+  %defs = dnssec_tools_alldefaults();
+
   $defalg = dnssec_tools_default("algorithm");
 
   $cz_path = dnssec_tools_default("bind_checkzone");
@@ -130,6 +150,10 @@ place and prevents them from being spread around multiple programs.
 =head1 INTERFACES
 
 =over 4
+
+=item I<dnssec_tools_alldefaults()>
+
+This interface returns a copy of all the DNSSEC-Tools defaults in a hash table.
 
 =item I<dnssec_tools_default(default)>
 
@@ -232,9 +256,5 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 =head1 AUTHOR
 
 Wayne Morrison, tewok@users.sourceforge.net
-
-=head1 SEE ALSO
-
-B<file-conf(5)>
 
 =cut
