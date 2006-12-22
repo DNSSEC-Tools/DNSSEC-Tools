@@ -288,10 +288,10 @@ sub optsandargs()
 	#
 	# Get the KSK- and ZSK-related arguments.
 	#
-	$ksize	  = $opts{'ksklength'}	  || dnssec_tools_defaults("ksklength");
-	$zsize	  = $opts{'zsklength'}	  || dnssec_tools_defaults("zsklength");
-	$ksklife  = $opts{'ksklife'}	  || dnssec_tools_defaults("ksklife");
-	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_defaults("zsklife");
+	$ksize	  = $opts{'ksklength'}	  || dnssec_tools_default("ksklength");
+	$zsize	  = $opts{'zsklength'}	  || dnssec_tools_default("zsklength");
+	$ksklife  = $opts{'ksklife'}	  || dnssec_tools_default("ksklife");
+	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_default("zsklife");
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
@@ -307,11 +307,11 @@ sub optsandargs()
 	#
 	# Get the rest of the options.
 	#
-	$alg	  = $opts{'algorithm'}	|| dnssec_tools_defaults("algorithm");
+	$alg	  = $opts{'algorithm'}	|| dnssec_tools_default("algorithm");
 	$archdir  = $opts{'archivedir'}	|| "";
-	$enddate  = $opts{'endtime'}	|| dnssec_tools_defaults("enddate");
+	$enddate  = $opts{'endtime'}	|| dnssec_tools_default("enddate");
 	$gends	  = $opts{'gends'}	|| "";
-	$random   = $opts{'random'}	|| dnssec_tools_defaults("random");
+	$random   = $opts{'random'}	|| dnssec_tools_default("random");
 	$kgopts   = $opts{'kgopts'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
 	$savekeys = $DEF_SAVEKEYS;
@@ -447,9 +447,9 @@ sub optsandargs()
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$checkzone = $opts{'checkzone'} || dnssec_tools_defaults("bind_checkzone");
-	$keygen	   = $opts{'keygen'}	|| dnssec_tools_defaults("bind_keygen");
-	$signzone  = $opts{'signzone'}	|| dnssec_tools_defaults("bind_signzone");
+	$checkzone = $opts{'checkzone'} || dnssec_tools_default("bind_checkzone");
+	$keygen	   = $opts{'keygen'}	|| dnssec_tools_default("bind_keygen");
+	$signzone  = $opts{'signzone'}	|| dnssec_tools_default("bind_signzone");
 
 	#
 	# Ensure that we were given the zone file and the zone output file.
