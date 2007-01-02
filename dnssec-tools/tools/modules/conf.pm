@@ -179,7 +179,7 @@ sub bindcheck
 		#
 		if(! -e $cmd)
 		{
-			print STDERR "BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n";
+			print STDERR "BIND command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n";
 			exit(3);
 		}
 
