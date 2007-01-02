@@ -147,13 +147,13 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool-specific options:'],
-	       ["forceroll",		'Force the rollover of zone keys.'],
+	       ["forceroll",		'Force the rollover of ZSK keys.'],
 	       ["usepub",		'Use Published ZSK for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	       ["nosave",		'Do not save old keys.'],
 	     );
 
-my $forceroll = 0;			# Force-a-rollover flag.
+my $forceroll = 0;			# Force-a-ZSK-rollover flag.
 my $usepub = 0;				# Use-published-ZSK flag.
 
 #
@@ -270,7 +270,7 @@ sub optsandargs()
 	#
 	opts_setcsopts(@zsopts);
 	opts_createkrf();
-	$ropts = opts_zonekr();
+	$ropts = opts_zonekr("","");
 	if($ropts == undef)
 	{
 		$zonefile = $ARGV[0];
@@ -334,7 +334,7 @@ sub optsandargs()
 	}
 
 	#
-	# Check for the key rollover flag.
+	# Check for the ZSK rollover flag.
 	#
 	$forceroll = 0;
 	$forceroll = 1 if(defined($opts{'forceroll'}));
@@ -652,7 +652,7 @@ sub genzsks
 	my $keyset;				# Keys in signing set.
 
 	#
-	# Handle a key rollover.
+	# Handle a ZSK rollover.
 	#
 	if($forceroll)
 	{
@@ -1803,11 +1803,11 @@ EOF
 #----------------------------------------------------------------------
 # Routine:	forceroll()
 #
-# Purpose:	Force a rollover of the ZSK keys.  The current ZSK is
-#		marked as obsolete.  The published ZSK is moved to being
-#		the current ZSK.  If the zone has a new ZSK, it is
-#		moved to being the published ZSK; if not, a new published
-#		ZSK is generated.  Finally, a new ZSK is generated.
+# Purpose:	Force a rollover of the ZSK keys.  The Current ZSKs are marked
+#		as obsolete.  The Published ZSKs are moved to being the Current
+#		ZSKs.  If the zone has New ZSKs, they are moved to being the
+#		Published ZSKs; if not, a new set of Published ZSKs are created.
+#		Finally, a new set of New ZSKs are generated.
 #
 #		This should only be used if you know what you're doing.
 #
@@ -2517,18 +2517,33 @@ increment the number for subsequent signing sets.
 
 =item -forceroll
 
-Force a rollover of the ZSK keys.  The I<keyrec>s of the ZSK keys are
-adjusted as follows:
+Force a rollover of the ZSK keys using the Pre-Publish Key Rollover method.
+The rollover process adjusts the keys used to sign the specified zone,
+generates new keys, signs the zone with the appropriate keys, and updates the
+I<keyrec> file.  The Pre-Publish Key Rollover process is described in the
+DNSSEC Operational Practices document.
 
-    The current ZSK keys are marked as obsolete.
-    The published ZSK keys are marked as current.
-    The new ZSK keys, if they exist, are marked as published.
-    New ZSK keys are generated.
-    The published ZSK keys' zsklife field is copied to the
-    new ZSK keys' keyrecs.
+Three sets of ZSK keys are used in the rollover process:  Current, Published,
+and New.  Current ZSKs are those which are used to sign the zone.  Published
+ZSKs are available in the zone data, and therefore in cached zone data, but
+are not yet used to sign the zone.  New ZSKs are not available in zone data
+nor yet used to sign the zone, but are waiting in the wings for future use.
+
+The I<keyrec>s of the ZSK keys are adjusted as follows:
+
+    The Current ZSK keys are marked as obsolete.
+    The Published ZSK keys are marked as Current.
+    The New ZSK keys, if they exist, are marked as Published.
+    Another set of ZSK keys are generated, which will be
+        marked as the New ZSK keys.
+    The Published ZSK keys' zsklife field is copied to the
+        new ZSK keys' keyrecs.
     The obsolete ZSK keys are moved to the archive directory.
 
-This should only be used if you know what you're doing.
+B<Warning>:  The timing of key-rolling is critical.  Great care must be taken
+when using this option.  B<rollerd> automatees the rollover process and may be
+used to safely take care of this aspect of DNSSEC management.  Using the
+I<-forceroll> option should only be used if you know what you're doing.
 
 =item -intermediate
 
