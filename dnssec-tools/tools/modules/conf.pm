@@ -175,11 +175,20 @@ sub bindcheck
 		$cmd = $opts{$bcmd};
 
 		#
+		# Check command name's existence.
+		#
+		if($cmd eq "")
+		{
+			print STDERR "BIND command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n";
+			exit(3);
+		}
+
+		#
 		# Check command's existence.
 		#
 		if(! -e $cmd)
 		{
-			print STDERR "BIND command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n";
+			print STDERR "BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n";
 			exit(3);
 		}
 
