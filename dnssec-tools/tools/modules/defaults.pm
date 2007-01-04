@@ -223,6 +223,28 @@ This default holds the default random number generator device.
 This default indicates whether or not keys should be deleted when they are no
 longer in use.
 
+=item B<tanamedconffile>
+
+This default specifies the name of the named configuration file.
+
+=item B<tadnsvalconffile>
+
+This default specifies the name of the dnsval configuration file.
+
+=item B<tasleeptime>
+
+This default holds the default value for how long the daemon should sleep.
+
+=item B<tacontact>
+
+This is merely a placeholder for the contact information. There is no useful
+default value for this.
+
+=item B<tasmtpserver>
+
+This is merely a placeholder for the name of the smtpserver. There is no useful
+default value for this.
+
 =item B<usegui>
 
 This default indicates whether or not the DNSSEC-Tools GUI should be used for
