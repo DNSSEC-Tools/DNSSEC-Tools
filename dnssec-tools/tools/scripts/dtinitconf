@@ -218,7 +218,7 @@ sub optsandargs
 	#
 	# Slurp up the options.
 	#
-	$ropts = tooloptions("","",@opts);
+	$ropts = opts_cmdopts(@opts);
 	%opts = %$ropts 	if($ropts != undef);
 
 	#
