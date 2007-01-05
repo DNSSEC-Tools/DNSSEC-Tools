@@ -311,7 +311,7 @@ sub optsandargs
 	#
 	# Slurp up the options.
 	#
-	$ropts = tooloptions("","",@opts);
+	$ropts = opts_cmdopts(@opts);
 	%opts = %$ropts 	if($ropts != undef);
 
 	#
@@ -524,7 +524,7 @@ sub genksk
 	my $cmdopts = "-r $random -a $algo -b $ksksize";
 	my $ksk;
 
-print "genksk:  <$keygen $cmdopts -n zone -f KSK $zone>\n";;
+# print "genksk:  <$keygen $cmdopts -n zone -f KSK $zone>\n";;
 
 	#
 	# Generate a new key.
@@ -558,7 +558,7 @@ sub genzsk
 	#
 	# Generate a new key.
 	#
-print "genzsk:  <$keygen $cmdopts -n zone $zone>\n";;
+# print "genzsk:  <$keygen $cmdopts -n zone $zone>\n";;
 	$zsk = `$keygen $cmdopts -n zone $zone`;
 	chomp $zsk;
 
