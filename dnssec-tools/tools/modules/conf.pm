@@ -29,7 +29,7 @@ use strict;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(bindcheck getconfdir getconffile parseconfig);
 
-our @BIND_COMMANDS = qw(checkzone keygen signzone);
+our @BIND_COMMANDS = qw(bind_checkzone bind_keygen bind_signzone);
 
 our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "0.9";
