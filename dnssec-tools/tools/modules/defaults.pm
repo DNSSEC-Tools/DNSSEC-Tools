@@ -50,6 +50,8 @@ my %defaults =
         "tanamedconffile"  => "/usr/local/etc/named/named.conf",
         "tadnsvalconffile" => "/usr/local/etc/dnssec/dnsval.conf",
         "tasleeptime"      => 3600,
+        "tacontact" 	   => "",
+        "tasmtpserver"     => "",
 );
 
 my @defnames =
