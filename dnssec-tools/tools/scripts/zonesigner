@@ -270,20 +270,8 @@ sub optsandargs()
 	#
 	opts_setcsopts(@zsopts);
 	opts_createkrf();
-	$ropts = opts_zonekr("","");
-	if($ropts == undef)
-	{
-		$zonefile = $ARGV[0];
-		$ropts = opts_zonekr("",$zonefile);
-		if($ropts == undef)
-		{
-			$ropts = tooloptions("","");
-		}
-	}
-	if($ropts != undef)
-	{
-		%opts = %$ropts;
-	}
+	$ropts = opts_zonekr();
+	%opts = %$ropts    if($ropts != undef);
 
 	#
 	# Get the KSK- and ZSK-related arguments.
@@ -1731,12 +1719,23 @@ sub chkkrf
 	return if(-s $krfile);
 
 	#
-	# Set the basic zone keyrec fields and add the keyrec.
+	# Set the basic zone keyrec fields for a zone.
 	#
 	$zoneopts{'keyrec_type'} = "zone";
 	$zoneopts{'zonefile'}	 = $zonefile;
 
+	#
+	# Write the new zone keyrec into the keyrec file.
+	#
+	keyrec_open($krfile);
 	keyrec_add('zone',$zone,\%zoneopts);
+	keyrec_write();
+	keyrec_close();
+
+	#
+	# Read in the keyrec file once more.
+	#
+	keyrec_read($krfile);
 
 	vprint("using keyrec file $krfile\n");
 }
