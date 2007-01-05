@@ -2544,6 +2544,15 @@ when using this option.  B<rollerd> automatees the rollover process and may be
 used to safely take care of this aspect of DNSSEC management.  Using the
 I<-forceroll> option should only be used if you know what you're doing.
 
+The quick summary of proper ZSK rolling (which rollerd does for you if
+you use it):
+
+  - wait 2*max(TTL in zone)
+  - run zonesigner using -usepub
+  - wait 2*max(TTL in zone)
+  - run zonesigner using -forceroll
+  - wait 2*max(TTL in zone)
+
 =item -intermediate
 
 Filename to use for the temporary zone file.  The zone file will be copied to
