@@ -46,6 +46,8 @@ AC_ARG_WITH(validator,
 if test "x$with_validator" != "xno"; then
   AC_CONFIG_SUBDIRS(validator)
   DNSSEC_SUBDIRS="validator"
+else
+  DNSSEC_SUBDIRS="none"
 fi
 AC_SUBST(DNSSEC_SUBDIRS)
 
