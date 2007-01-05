@@ -158,9 +158,14 @@ sub main
 	if(-e $outfile)
 	{
 		#
+		# Convert an output file of "-" to the terminal.
+		#
+		$outfile = "/dev/tty" if($outfile eq "-");
+
+		#
 		# Only overwrite an existing config file if the user wants it.
 		#
-		if(!$overwrite)
+		if((-f $outfile) && !$overwrite)
 		{
 			print STDERR "config file \"$outfile\" already exists;\n";
 			print STDERR " use -overwrite to overwrite it\n";
@@ -1032,6 +1037,11 @@ These options deal specifically with B<dtinitconf>.
 The configuration file will be written to B<conffile>.  If this is
 not given, then the default configuration file (as returned by
 I<Net::DNS::SEC::Tools::conf::getconffile()>) will be used.
+
+If B<conffile> is given as B<->, then the new configuration file will be
+written to the standard output.
+
+B<conffile> must be writable.
 
 =item I<-overwrite>
 
