@@ -148,13 +148,15 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool-specific options:'],
 	       ["forceroll",		'Force the rollover of ZSK keys.'],
+	       ["useboth",		'Use Current and Published ZSK for signing.'],
 	       ["usepub",		'Use Published ZSK for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	       ["nosave",		'Do not save old keys.'],
 	     );
 
-my $forceroll = 0;			# Force-a-ZSK-rollover flag.
-my $usepub = 0;				# Use-published-ZSK flag.
+my $forceroll	= 0;			# Force-a-ZSK-rollover flag.
+my $useboth	= 0;			# Use-current-and-published-ZSK flag.
+my $usepub	= 0;			# Use-published-ZSK flag.
 
 #
 # Do our work.
@@ -284,6 +286,7 @@ sub optsandargs()
 	$zskdir	  = $opts{'zskdirectory'} || '.';
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
+	$useboth  = $opts{'useboth'}	  || 0;
 	$usepub	  = $opts{'usepub'}	  || 0;
 
 	if(defined($opts{'kskcount'}))	{ $kskcnt = $opts{'kskcount'}; }
@@ -438,6 +441,11 @@ sub optsandargs()
 	$keygen	   = $opts{'keygen'}    || dnssec_tools_default("keygen");
 	$zonecheck = $opts{'zonecheck'} || dnssec_tools_default("zonecheck");
 	$zonesign  = $opts{'zonesign'}  || dnssec_tools_default("zonesign");
+
+	#
+	# Turn off the usepub flag if -useboth was given.
+	#
+	$usepub = 0	if($useboth);
 
 	#
 	# Ensure that we were given the zone file and the zone output file.
@@ -1259,11 +1267,13 @@ sub zonesign
 	$cmdopts = "$szopts $gends $ksdir $useksks -o $zone $enddate -f $zoneout";
 
 	#
-	# Normally, we'll use the current ZSKs; however, we'll use the
-	# published ZSKs if the user gives -usepub.
+	# Normally, we'll use the Current ZSKs; however, we'll use the
+	# Published ZSKs if the user gave -usepub.  We'll use both
+	# Current and Published ZSKs if the user gave -useboth.
 	#
-	@usekeys = @zskcurlist;
-	@usekeys = @zskpublist if($usepub);
+	@usekeys = sort(@zskcurlist);
+	@usekeys = sort(@zskpublist)	 if($usepub);
+	push @usekeys, sort(@zskpublist) if($useboth);
 
 	#
 	# Sign the zone with the new keys.
@@ -2099,6 +2109,7 @@ sub printopts
 	print "\t\tksklife		- <$ksklife>\n";
 	print "\t\tgenksk		- <$genksk>\n";
 	print "\t\tsignset		- <$signset>\n";
+	print "\t\tuseboth		- <$useboth>\n";
 	print "\t\tusepub		- <$usepub>\n";
 	print "\t\tzsize		- <$zsize>\n";
 	print "\t\tzskcount     	- <$zskcnt>\n";
@@ -2207,6 +2218,7 @@ sub usage
 	print STDERR "\t\t\t-genkeys\n";
 	print STDERR "\t\t\t-genksk\n";
 	print STDERR "\t\t\t-genzsk\n";
+	print STDERR "\t\t\t-useboth\n";
 	print STDERR "\t\t\t-usepub\n";
 	print STDERR "\t\t\t-archivedir directory\n";
 	print STDERR "\t\t\t-nosave\n";
@@ -2443,21 +2455,25 @@ B<Net::DNS::SEC::Tools::tooloptions.pm> for more details about this file.
 
 =item -genkeys
 
-Generate a new KSK and ZSK for the zone.
+Generate a new KSKs and ZSKs for the zone.
 
 =item -genksk
 
-Generate a new KSK for the zone.  By default, the last KSK generated for this
+Generate new KSKs for the zone.  By default, the last KSKs generated for this
 zone will be used.
 
 =item -genzsk
 
-Generate a new ZSK for the zone.  By default, the last ZSK generated for this
+Generate new ZSKs for the zone.  By default, the last ZSKs generated for this
 zone will be used.
+
+=item -useboth
+
+Use the existing Current B<and> Published ZSKs to sign the zone.
 
 =item -usepub
 
-Use the existing Published ZSK to sign the zone.
+Use the existing Published ZSKs to sign the zone.
 
 =item -archivedir
 
