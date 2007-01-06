@@ -40,6 +40,9 @@ INSTALL=@INSTALL@
 DOCINSTALL=$(INSTALL) -m 644
 MKPATH=$(top_srcdir)/mkinstalldirs
 
+# suffix, if any (eg '-threads')
+LIBVAL_SUFFIX=@LIBVAL_SUFFIX@
+
 # use libtool versioning the way they recommend.
 # The (slightly clarified) rules stolen from Net-SNMP:
 #

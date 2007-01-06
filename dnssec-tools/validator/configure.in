@@ -108,16 +108,19 @@ dnl ----------------------------------------------------------------------
 AC_ARG_WITH(threads,
 [  --without-threads       Don't use threads.])
 
+LIBVAL_SUFFIX=""
 AH_TEMPLATE([VAL_NO_THREADS],
             [Define if you do not want to use threads.])
 if test "x$with_threads" = "xno"; then
     AC_DEFINE(VAL_NO_THREADS, 1)
 else
-    dnl        LIBS="$LIBS -lpthread"
 
-    AC_CHECK_LIB(pthread, pthread_rwlock_init,,
+    AC_CHECK_LIB(pthread, pthread_rwlock_init,
+        LIBS="$LIBS -lpthread"
+        LIBVAL_SUFFIX="-threads",
         AC_DEFINE(VAL_NO_THREADS, 1))
 fi
+AC_SUBST(LIBVAL_SUFFIX)
 
 dnl ----------------------------------------------------------------------
 AC_SUBST(LIBS)
