@@ -100,8 +100,8 @@ my @stdopts =
 
 		'',
 
-		["kgopts=s",		"Additional options for dnssec-keygen"],
-		["szopts=s",		"Additional dnssec-signzone options"],
+		["kgopts=s",		"Additional key-generation options"],
+		["szopts=s",		"Additional zone-signing options"],
 
 	'',
 

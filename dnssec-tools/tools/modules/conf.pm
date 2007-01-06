@@ -1,5 +1,5 @@
 #
-# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -27,9 +27,9 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(bindcheck getconfdir getconffile parseconfig);
+our @EXPORT = qw(cmdcheck getconfdir getconffile parseconfig);
 
-our @BIND_COMMANDS = qw(bind_checkzone bind_keygen bind_signzone);
+our @COMMANDS = qw(zonecheck keygen zonesign);
 
 our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "0.9";
@@ -145,9 +145,9 @@ sub parseconfig
 
 #######################################################################
 #
-# Routine:	bindcheck()
+# Routine:	cmdcheck()
 #
-# Purpose:	Ensure that the BIND commands are available and executable.
+# Purpose:	Ensure that the needed commands are available and executable.
 #		If any of the commands either don't exist or aren't executable,
 #		then an error message will be given and the process will exit.
 #		If all is well, everything will proceed quietly onwards.
@@ -157,16 +157,16 @@ sub parseconfig
 #			to exit on error, rather than just giving an
 #			error return?
 #
-sub bindcheck
+sub cmdcheck
 {
 	my $ropts = shift;			# Options hash reference.
 	my %opts = %$ropts;			# Options hash.
-	my $cmd;				# BIND command path.
+	my $cmd;				# Command path.
 
 	#
-	# Check each of these BIND commands for existence and executability.
+	# Check each of these commands for existence and executability.
 	#
-	foreach my $bcmd (@BIND_COMMANDS)
+	foreach my $bcmd (@COMMANDS)
 	{
 		#
 		# Only check the defined commands.
@@ -179,7 +179,7 @@ sub bindcheck
 		#
 		if($cmd eq "")
 		{
-			print STDERR "BIND command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n";
+			print STDERR "command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n";
 			exit(3);
 		}
 
@@ -249,7 +249,7 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
 
   %dtconf = parseconfig("localzone.keyrec");
 
-  bindcheck(\%options_hashref);
+  cmdcheck(\%options_hashref);
 
   $confdir = getconfdir();
 
@@ -306,15 +306,15 @@ file.  The parsed contents are put into a hash table, which is returned to
 the caller.  The routine quietly returns if the configuration file does not
 exist. 
 
-=item B<bindcheck(\%options_hashref)>
+=item B<cmdcheck(\%options_hashref)>
 
-This routine ensures that the needed BIND commands are available and
+This routine ensures that the needed commands are available and
 executable.  If any of the commands either don't exist or aren't executable,
 then an error message will be given and the process will exit.  If all is
 well, everything will proceed quietly onwards.
 
-The BIND commands currently checked are I<checkzone>, I<keygen>, and
-I<signzone>.  The pathnames for these commands are found in the given options
+The commands keys currently checked are I<zonecheck>, I<keygen>, and
+I<zonesign>.  The pathnames for these commands are found in the given options
 hash referenced by I<%options_hashref>.  If the hash doesn't contain an entry
 for one of those commands, it is not checked.
 
@@ -330,7 +330,7 @@ This routine returns the name of the DNSSEC-Tools configuration file.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR

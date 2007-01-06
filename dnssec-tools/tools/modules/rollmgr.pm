@@ -913,7 +913,7 @@ sub unix_loadzone
 	#
 	# Get the path to the name server control program.
 	#
-	$rndc = dnssec_tools_default("bind_signzone") if($rndc eq "");
+	$rndc = dnssec_tools_default("bind_rndc") if($rndc eq "");
 	return(0) if($rndc eq "");
 
 	#
