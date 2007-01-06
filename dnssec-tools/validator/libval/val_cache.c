@@ -26,7 +26,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/time.h>
+#ifndef VAL_NO_THREADS
 #include <pthread.h>
+#endif
 
 #include <resolver.h>
 #include <validator.h>
@@ -38,8 +40,10 @@ static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
+#ifndef VAL_NO_THREADS
 static pthread_rwlock_t rwlock;
 static int      rwlock_init = -1;
+#endif
 
 static struct name_server *root_ns = NULL;
 
@@ -51,6 +55,7 @@ struct zone_ns_map_t {
 
 static struct zone_ns_map_t *zone_ns_map = NULL;
 
+#ifndef VAL_NO_THREADS
 #define LOCK_INIT() do{				\
 	if(0 != rwlock_init) {\
 		if(0 != pthread_rwlock_init(&rwlock, NULL))\
@@ -89,6 +94,15 @@ static struct zone_ns_map_t *zone_ns_map = NULL;
 	if (0 != pthread_rwlock_unlock(&rwlock)) \
 		return VAL_INTERNAL_ERROR;	\
 } while(0)
+
+#else
+#define LOCK_INIT()
+#define LOCK_SH()
+#define LOCK_EX()
+#define LOCK_UPGRADE()
+#define LOCK_DOWNGRADE()
+#define UNLOCK()
+#endif
 
 /*
  * NOTE: This assumes a read lock is alread held by the caller.

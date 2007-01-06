@@ -33,7 +33,9 @@
 #include <sys/filio.h>
 #endif
 #include <errno.h>
+#ifndef VAL_NO_THREADS
 #include <pthread.h>
+#endif
 #include "resolver.h"
 #include "res_support.h"
 #include "res_io_manager.h"
@@ -110,7 +112,12 @@ static struct expected_arrival *transactions[MAX_TRANSACTIONS] = {
 };
 
 static int      next_transaction = 0;
+#ifdef VAL_NO_THREADS
+#define pthread_mutex_lock(x)
+#define pthread_mutex_unlock(x)
+#else
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 long
 res_timeout(struct name_server *ns)
