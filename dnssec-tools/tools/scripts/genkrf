@@ -119,7 +119,7 @@ sub main()
 	my $curkey;			# Path to current ZSK.
 	my $pubkey;			# Path to published ZSK.
 
-print "\n\n\t\tMUST ALLOW FOR MULTIPLE ZSKS\n\n";
+# print "\n\n\t\tMUST ALLOW FOR MULTIPLE ZSKS\n\n";
 
 	#
 	# Parse the command line options.
@@ -154,7 +154,7 @@ print "\n\n\t\tMUST ALLOW FOR MULTIPLE ZSKS\n\n";
 				     'kskdirectory'	=> $kskdir,
 				     'kskpath'		=> "$kskdir/$ksk.key",
 				     'kskkey'		=> $ksk,
-				     'zskcount'		=> 1,
+				     'zskcount'		=> $zskcount,
 				     'zskdirectory'	=> $zskdir,
 				     'zskcur'		=> 'signing-set-1',
 				     'zskpub'		=> 'signing-set-2',
