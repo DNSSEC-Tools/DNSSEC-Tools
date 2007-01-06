@@ -57,7 +57,7 @@ The default encryption algorithm to be passed to I<dnssec-keygen>.
 
 The pathname to the archived-key directory.
 
-=item checkzone
+=item zonecheck
 
 The path to the I<named-checkzone> command.
 
@@ -128,7 +128,7 @@ cycle.
 A true/false flag indicating if old keys should be moved to the
 archive directory.
 
-=item signzone
+=item zonesign
 
 The path to the I<dnssec-signzone> command.
 
@@ -183,11 +183,11 @@ The following is an example B<dnssec-tools.conf> configuration file.
     # Paths to required programs.  These may need adjusting for
     # individual hosts.
     #
-    checkzone       /usr/local/sbin/named-checkzone
     keygen          /usr/local/sbin/dnssec-keygen
     rndc            /usr/local/sbin/rndc
-    signzone        /usr/local/sbin/dnssec-signzone
     viewimage       /usr/X11R6/bin/xview
+    zonecheck       /usr/local/sbin/named-checkzone
+    zonesign        /usr/local/sbin/dnssec-signzone
 
     rollrec-chk     /usr/bin/rollrec-check
     zonesigner      /usr/bin/zonesigner
