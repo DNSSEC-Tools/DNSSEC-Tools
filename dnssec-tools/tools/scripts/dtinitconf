@@ -97,9 +97,9 @@ my $rsleep;				# Sleep-time for rollerd.
 # Program paths.
 #
 my $binddir;				# BIND directory.
-my $checkzone;				# BIND's zone-checking program.
+my $zonecheck;				# BIND's zone-checking program.
 my $keygen;				# BIND's key-generation program.
-my $signzone;				# BIND's zone-signing program.
+my $zonesign;				# BIND's zone-signing program.
 my $viewimg;				# Image viewer.
 
 
@@ -327,9 +327,9 @@ sub writeconf()
 		print "\troll-loglevel         - \"$rloglevel\"\n";
 		print "\troll-sleep            - \"$rsleep\n\n";
 
-		print "\tcheckzone  - \"$checkzone\"\n";
+		print "\tzonecheck  - \"$zonecheck\"\n";
 		print "\tkeygen     - \"$keygen\"\n";
-		print "\tsignzone   - \"$signzone\"\n";
+		print "\tzonesign   - \"$zonesign\"\n";
 		print "\tviewimage  - \"$viewimg\"\n\n";
 	}
 
@@ -347,10 +347,10 @@ sub writeconf()
 #
 # Paths to needed programs.  These may need adjusting for individual hosts.
 #
-checkzone	$checkzone
 keygen		$keygen
-signzone	$signzone
 viewimage	$viewimg
+zonecheck	$zonecheck
+zonesign	$zonesign
 zonesigner	/usr/bin/zonesigner
 
 #
@@ -449,9 +449,6 @@ sub get_paths()
 {
 	my @binddirs;				# BIND directories.
 
-	my $def_cz;				# Default named_checkzone.
-	my $def_kg;				# Default dnssec_keygen.
-	my $def_sz;				# Default dnssec_signzone.
 	my $pcret  = 0;				# pathchk() return value.
 
 	print "Path-related Options:\n";
@@ -499,9 +496,9 @@ sub get_paths()
 	#
 	# Build paths for the BIND programs.
 	#
-	$checkzone = "$binddir/named-checkzone";
 	$keygen	   = "$binddir/dnssec-keygen";
-	$signzone  = "$binddir/dnssec-signzone";
+	$zonecheck = "$binddir/named-checkzone";
+	$zonesign  = "$binddir/dnssec-signzone";
 
 	#
 	# Get the path for an image viewer.
@@ -513,9 +510,9 @@ sub get_paths()
 	#
 	print "\n\tChecking validity of paths:\n";
 	$pcret += pathchk("BIND directory",$binddir);
-	$pcret += pathchk("BIND's named_checkzone",$checkzone);
+	$pcret += pathchk("BIND's named_checkzone",$zonecheck);
 	$pcret += pathchk("BIND's dnssec_keygen",$keygen);
-	$pcret += pathchk("BIND's dnssec_signzone",$signzone);
+	$pcret += pathchk("BIND's dnssec_signzone",$zonesign);
 	$pcret += pathchk("Image display program",$viewimg);
 
 	#
@@ -764,14 +761,14 @@ sub findbind()
 	#
 	# Look for the BIND tools in our defaults.
 	#
-	$pbg = dnssec_tools_default("bind_keygen");
+	$pbg = dnssec_tools_default("keygen");
 	$pbg =~ s/\/dnssec-keygen$//;
 	$hfound{$pbg} = 1;
-	$pbg = dnssec_tools_default("bind_signzone");
-	$pbg =~ s/\/dnssec-signzone$//;
-	$hfound{$pbg} = 1;
-	$pbg = dnssec_tools_default("bind_checkzone");
+	$pbg = dnssec_tools_default("zonecheck");
 	$pbg =~ s/\/named-checkzone$//;
+	$hfound{$pbg} = 1;
+	$pbg = dnssec_tools_default("zonesign");
+	$pbg =~ s/\/dnssec-signzone$//;
 	$hfound{$pbg} = 1;
 
 	#

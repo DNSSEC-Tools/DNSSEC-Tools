@@ -135,9 +135,9 @@ my @zonestat;				# stat() buffer for zone file.
 #
 # Some path variables to be set from the config file.
 #
-my $checkzone;
 my $keygen;
-my $signzone;
+my $zonecheck;
+my $zonesign;
 
 my %opts;				# Options.
 our @saveargs = @ARGV;			# Copy of argument vector.
@@ -187,7 +187,7 @@ sub main
 	#
 	optsandargs();
 	printopts();
-	bindcheck(\%opts);
+	cmdcheck(\%opts);
 
 	#
 	# Ensure that the required data were specified.
@@ -435,9 +435,9 @@ sub optsandargs()
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$checkzone = $opts{'checkzone'} || dnssec_tools_default("bind_checkzone");
-	$keygen	   = $opts{'keygen'}	|| dnssec_tools_default("bind_keygen");
-	$signzone  = $opts{'signzone'}	|| dnssec_tools_default("bind_signzone");
+	$keygen	   = $opts{'keygen'}    || dnssec_tools_default("keygen");
+	$zonecheck = $opts{'zonecheck'} || dnssec_tools_default("zonecheck");
+	$zonesign  = $opts{'zonesign'}  || dnssec_tools_default("zonesign");
 
 	#
 	# Ensure that we were given the zone file and the zone output file.
@@ -543,13 +543,13 @@ sub verify_zonefile
 	}
 
 	vprint("initial zone verification\n");
-	$status = system("$checkzone -q $zone $zonefile");
+	$status = system("$zonecheck -q $zone $zonefile");
 	if($status != 0)
 	{
-		$status = system("$checkzone $zone $zonefile");
+		$status = system("$zonecheck $zone $zonefile");
 		exit($status);
 	}
-	system("$checkzone $zone $zonefile") if($verbose > $VERBOSE_LOW);
+	system("$zonecheck $zone $zonefile") if($verbose > $VERBOSE_LOW);
 	vmed_print("zone verified\n\n");
 
 	#
@@ -1256,7 +1256,6 @@ sub zonesign
 	# necessary, but it does keep the dnssec-signzone execution a bit
 	# cleaner than it would be otherwise.
 	#
-#	$cmdopts = "$szopts $gends $ksdir -k $kskpath -o $zone $enddate -f $zoneout";
 	$cmdopts = "$szopts $gends $ksdir $useksks -o $zone $enddate -f $zoneout";
 
 	#
@@ -1270,9 +1269,9 @@ sub zonesign
 	# Sign the zone with the new keys.
 	#
 	vprint("signing zone\n");
-	vhigh_print("$signzone $cmdopts $zoneftmp @usekeys\n");
+	vhigh_print("$zonesign $cmdopts $zoneftmp @usekeys\n");
 
-	$szone = `$signzone $cmdopts $zoneftmp @usekeys`;
+	$szone = `$zonesign $cmdopts $zoneftmp @usekeys`;
 	if($szone eq "")
 	{
 		print STDERR "unable to sign zone\n";
@@ -1283,11 +1282,11 @@ sub zonesign
 	# Ensure the signing succeeded.
 	#
 	vprint("checking zone\n");
-	$status = system("$checkzone -q $zone $szone");
+	$status = system("$zonecheck -q $zone $szone");
 	if($status != 0)
 	{
 		print STDERR "problems with zone signing\n";
-		system("$checkzone $zone $szone");
+		system("$zonecheck $zone $szone");
 		return($status);
 	}
 
@@ -2117,9 +2116,9 @@ sub printopts
 	print "\n";
 
 	print "\texternal commands:\n";
-	print "\t\tcheckzone	- <$checkzone>\n";
 	print "\t\tkeygen		- <$keygen>\n";
-	print "\t\tsignzone	- <$signzone>\n";
+	print "\t\tzonecheck	- <$zonecheck>\n";
+	print "\t\tzonesign	- <$zonesign>\n";
 	print "\n";
 }
 
@@ -2539,19 +2538,19 @@ The I<keyrec>s of the ZSK keys are adjusted as follows:
         new ZSK keys' keyrecs.
     The obsolete ZSK keys are moved to the archive directory.
 
+The quick summary of proper ZSK rolling (which rollerd does for you if
+you use it):
+
+    - wait 2 * max(TTL in zone)
+    - run zonesigner using -usepub
+    - wait 2 * max(TTL in zone)
+    - run zonesigner using -forceroll
+    - wait 2 * max(TTL in zone)
+
 B<Warning>:  The timing of key-rolling is critical.  Great care must be taken
 when using this option.  B<rollerd> automatees the rollover process and may be
 used to safely take care of this aspect of DNSSEC management.  Using the
 I<-forceroll> option should only be used if you know what you're doing.
-
-The quick summary of proper ZSK rolling (which rollerd does for you if
-you use it):
-
-  - wait 2*max(TTL in zone)
-  - run zonesigner using -usepub
-  - wait 2*max(TTL in zone)
-  - run zonesigner using -forceroll
-  - wait 2*max(TTL in zone)
 
 =item -intermediate
 
