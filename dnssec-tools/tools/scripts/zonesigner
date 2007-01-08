@@ -691,21 +691,33 @@ sub genzsks
 	{
 		my $keyset;			# Keys in signing set.
 		my $setname;			# Name of signing set.
-		my $pubstr;			# Name of published ZSK hashkey.
+		my $curstr;			# Name of current ZSK hashkey.
+
+		#
+		# Get the name of the current ZSK set -- either from the
+		# -signset command line option or from the keyrec file itself.
+		#
+		if($signset)
+		{
+			$zskcursetname = $signset;
+			$curstr = "Signing Set $zskcursetname";
+			$opts{'lastset'} = $zskcursetname;
+			keyrec_setval('zone',$zone,'lastset',$zskcursetname);
+		}
+		else
+		{
+			$zskcursetname = $opts{'zskcur'};
+			$curstr  = 'cur ZSK';
+		}
 
 		#
 		# Ensure that we've got a current ZSK set.
 		#
-		if($opts{'zskcur'} eq "")
+		if(!keyrec_fullrec($zskcursetname))
 		{
-			print STDERR "\ncur ZSK does not exist; unable to re-use non-existent cur ZSK\n";
+			print STDERR "\n$curstr does not exist;\nunable to re-use non-existent $curstr\n";
 			exit(1);
 		}
-
-		#
-		# Get the current ZSK set name.
-		#
-		$zskcursetname = $opts{'zskcur'};
 		vprint("reusing existing cur ZSK set - $zskcursetname\n");
 
 		#
@@ -715,28 +727,18 @@ sub genzsks
 		@zskcurlist = split / /, $keyset;
 
 		#
-		# Get the name of the published ZSK set -- either from the
-		# -signset command line option or from the keyrec file itself.
+		# Ensure that we've got a published ZSK set.
 		#
-		if($signset)
+		if($opts{'zskpub'} eq "")
 		{
-			$zskpubsetname = $signset;
-			$pubstr = "Signing Set $setname";
-		}
-		else
-		{
-			$zskpubsetname = $opts{'zskpub'};
-			$pubstr  = 'pub ZSK';
+			print STDERR "\npub ZSK does not exist; unable to re-use non-existent pub ZSK\n";
+			exit(1);
 		}
 
 		#
-		# Ensure that we've got a published ZSK set.
+		# Get the published ZSK set name.
 		#
-		if(!keyrec_fullrec($zskpubsetname))
-		{
-			print STDERR "\n$pubstr does not exist;\nunable to re-use non-existent $pubstr\n";
-			exit(1);
-		}
+		$zskpubsetname = $opts{'zskpub'};
 		vprint("reusing existing pub ZSK set - $zskpubsetname\n");
 
 		#
@@ -1776,6 +1778,7 @@ EOF
 	foreach my $ksk (sort(@ksklist))
 	{
 		my $path = keyrec_recval($ksk,'keypath');
+		$path = "$path.key" if($path !~ /\.key$/);
 		$incstr .= "\$INCLUDE \"$path\"\n";
 	}
 
@@ -1789,6 +1792,7 @@ EOF
 		foreach my $zsk (sort(@zskcurlist))
 		{
 			my $path = keyrec_recval($zsk,'keypath');
+			$path = "$path.key" if($path !~ /\.key$/);
 			$incstr .= "\$INCLUDE \"$path\"\n";
 		}
 	}
@@ -1801,6 +1805,7 @@ EOF
 	foreach my $zsk (sort(@zskpublist))
 	{
 		my $path = keyrec_recval($zsk,'keypath');
+		$path = "$path.key" if($path !~ /\.key$/);
 		$incstr .= "\$INCLUDE \"$path\"\n";
 	}
 	$incstr .= "\n";
@@ -2521,10 +2526,12 @@ default is to use a single ZSK key.
 
 =item -signset
 
-The name of the ZSK signing set to use.  If the signing set does not exist,
-then this must be used in conjunction with either I<-genkeys> or I<-genzsk>.
-The name may contain alphanumerics, underscores, hyphens, periods, and commas.
+The name of the ZSK signing set to use as the Current ZSK signing set.  The
+zone is signed and the given signing set becomes the zone's new Current ZSK
+signing set.  If the signing set does not exist, then this must be used in
+conjunction with either I<-genkeys> or I<-genzsk>.
 
+The name may contain alphanumerics, underscores, hyphens, periods, and commas.
 The default signing set name is "signing-set-I<N>", where I<N> is a number.
 If I<-signset> is not specified, then B<zonesigner> will use the default and
 increment the number for subsequent signing sets.
