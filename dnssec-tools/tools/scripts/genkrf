@@ -63,6 +63,7 @@ my $zskcur;				# Name of current ZSK.
 my $zskpub;				# Name of published ZSK.
 my $zonefile;				# Name of the zone file.
 my $signedfile;				# Name of the signed zone file.
+my $kskcount;				# Count of KSKs to generate.
 my $kskdir;				# Directory where the KSK resides.
 my $zskdir;				# Directory where the ZSKs reside.
 my $endtime;				# Endtime of signature validity.
@@ -73,7 +74,7 @@ my $zsklife;				# Lifespan of the ZSK.
 my $algo;				# The encryption algorithm.
 my $ksksize;				# The KSK size.
 my $zsksize;				# The ZSK size.
-my $zskcount;				# The ZSK size.
+my $zskcount;				# Count of ZSKs to generate.
 
 my $verbose;				# Verbose-output flag.
 
@@ -93,8 +94,9 @@ my @opts = (
 my $keygen;					# The key-generation program.
 
 #
-# Lists of ZSKs.
+# Lists of KSKs and ZSKs.
 #
+my @ksklist = ();		# List of current KSKs.
 my @curlist = ();		# List of current ZSKs.
 my @publist = ();		# List of published ZSKs.
 
@@ -119,23 +121,10 @@ sub main()
 	my $curkey;			# Path to current ZSK.
 	my $pubkey;			# Path to published ZSK.
 
-# print "\n\n\t\tMUST ALLOW FOR MULTIPLE ZSKS\n\n";
-
 	#
 	# Parse the command line options.
 	#
 	optsandargs();
-
-	#
-	# Generate the KSK, if it isn't present.  We're doing this here so
-	# we can use the KSK name in the zone keyrec and not fix it later.
-	#
-	$ksk = genksk($kskdir) if (!$ksk);
-	if(!$ksk)
-	{
-		print STDERR "unable to generate KSK.  Please check the $DEF_TOOLSCONF file for correctness\n";
-		exit(1);
-	}
 
 	#
 	# Generate the keyrec file.
@@ -151,20 +140,20 @@ sub main()
 				     'zonefile'		=> $zonefile,
 				     'signedzone'	=> $signedfile,
 				     'endtime'		=> $endtime,
+				     'kskkey'		=> 'signing-set-1',
+				     'kskcount'		=> $kskcount,
 				     'kskdirectory'	=> $kskdir,
-				     'kskpath'		=> "$kskdir/$ksk.key",
-				     'kskkey'		=> $ksk,
 				     'zskcount'		=> $zskcount,
 				     'zskdirectory'	=> $zskdir,
-				     'zskcur'		=> 'signing-set-1',
-				     'zskpub'		=> 'signing-set-2',
-				     'lastset'		=> 'signing-set-2',
+				     'zskcur'		=> 'signing-set-2',
+				     'zskpub'		=> 'signing-set-3',
+				     'lastset'		=> 'signing-set-3',
 				     'keyrec_signdate'	=> "",
 				     'keyrec_signsecs'	=> "",
 				  });
 
 	#
-	# Add the ZSKCUR set keyrec.
+	# Add the KSK set keyrec.
 	#
 	keyrec_add('set', 'signing-set-1',
 				{
@@ -175,7 +164,7 @@ sub main()
 				});
 
 	#
-	# Add the ZSKPUB set keyrec.
+	# Add the ZSKCUR set keyrec.
 	#
 	keyrec_add('set', 'signing-set-2',
 				{
@@ -186,19 +175,54 @@ sub main()
 				});
 
 	#
-	# Add the KSK keyrec.
+	# Add the ZSKPUB set keyrec.
 	#
-	keyrec_add('key', $ksk, {
-				 'zonename'	  => $zone,
-				 'keyrec_type'	  => "ksk",
-				 'algorithm'	  => getkeyalgo($ksk),
-				 'random'	  => $random,
-				 'ksklength'	  => getkeysize('ksk', $ksk, $kskdir),
-				 'ksklife'	  => $ksklife,
-				 'keypath'	  => "$kskdir/$ksk.key",
-				 'keyrec_gendate' => "",
-				 'keyrec_gensecs' => "",
-				 });
+	keyrec_add('set', 'signing-set-3',
+				{
+				   'zonename'		=> $zone,
+				   'keys'		=> "",
+				   'keyrec_setdate'	=> "",
+				   'keyrec_setsecs'	=> "",
+				});
+
+	#
+	# Build all our KSKs and add them to the keyrec file.
+	#
+	if($ksk)
+	{
+		#
+		# Create the key and save its name.
+		#
+		addksk($ksk);
+		push @ksklist, $ksk;
+	}
+	else
+	{
+		for(my $ind=0; $ind < $kskcount ; $ind++)
+		{
+			my $ksk;				# Name of KSK.
+
+			#
+			# Generate our KSK.
+			#
+			$ksk = genksk($kskdir);
+			if(!$ksk)
+			{
+				print STDERR "unable to generate KSK.\nPlease check the $DEF_TOOLSCONF file for correctness\n";
+				exit(1);
+			}
+
+			#
+			# Add this KSK's keyrec to the keyrec file.
+			#
+			addksk($ksk);
+
+			#
+			# Save the name of this key.
+			#
+			push @ksklist, $ksk;
+		}
+	}
 
 	#
 	# Build all our current ZSKs and add them to the keyrec file.
@@ -279,13 +303,17 @@ sub main()
 	#
 	# Add all the keys to their respective signing sets.
 	#
-	foreach my $key (@curlist)
+	foreach my $key (@ksklist)
 	{
 		keyrec_signset_addkey('signing-set-1',$key);
 	}
-	foreach my $key (@publist)
+	foreach my $key (@curlist)
 	{
 		keyrec_signset_addkey('signing-set-2',$key);
+	}
+	foreach my $key (@publist)
+	{
+		keyrec_signset_addkey('signing-set-3',$key);
 	}
 
 	#
@@ -322,6 +350,7 @@ sub optsandargs
 	$zskcur	  = $opts{'zskcur'};
 	$zskpub	  = $opts{'zskpub'};
 
+	$kskcount = $opts{'kskcount'}	|| dnssec_tools_default("kskcount");
 	$ksklife  = $opts{'ksklife'}	|| dnssec_tools_default("ksklife");
 	$ksksize  = $opts{'ksklength'}	|| dnssec_tools_default("ksklength");
 	$zskcount = $opts{'zskcount'}	|| dnssec_tools_default("zskcount");
@@ -376,8 +405,22 @@ sub optsandargs
 	$zskdir = "." if(!$zskdir);
 
 	#
+	# Ensure the KSK count is valid.
+	#
+	if($kskcount < 1)
+	{
+		print STDERR "invalid KSK count:  \"$kskcount\"\n";
+		exit(10);
+	}
+
+	#
 	# Ensure the ZSK count is valid.
 	#
+	if($zskcount < 1)
+	{
+		print STDERR "invalid ZSK count:  \"$zskcount\"\n";
+		exit(10);
+	}
 
 	#
 	# If the verbose flag was given, show all the values.
@@ -524,10 +567,9 @@ sub genksk
 	my $cmdopts = "-r $random -a $algo -b $ksksize";
 	my $ksk;
 
-# print "genksk:  <$keygen $cmdopts -n zone -f KSK $zone>\n";;
-
 	#
 	# Generate a new key.
+# print "genksk:  <$keygen $cmdopts -n zone -f KSK $zone>\n";
 	$ksk = `$keygen $cmdopts -n zone -f KSK $zone`;
 	chomp $ksk;
 
@@ -538,8 +580,6 @@ sub genksk
 	{
 		`mkdir -p $kskdir && mv $ksk* $kskdir`;
 	}
-
-	$ksksize = -1;
 
 	return($ksk || "");
 }
@@ -558,7 +598,7 @@ sub genzsk
 	#
 	# Generate a new key.
 	#
-# print "genzsk:  <$keygen $cmdopts -n zone $zone>\n";;
+# print "genzsk:  <$keygen $cmdopts -n zone $zone>\n";
 	$zsk = `$keygen $cmdopts -n zone $zone`;
 	chomp $zsk;
 
@@ -570,10 +610,42 @@ sub genzsk
 		`mkdir -p $zskdir && mv $zsk* $zskdir`;
 	}
 
-#	$zsksize = -1;
-
 	return($zsk || "");
 }
+
+#----------------------------------------------------------------------
+# Routine:	addksk()
+#
+# Purpose:	Add the KSK's keyrec to the keyrec file.
+#
+sub addksk
+{
+	my $keyname = shift;				# KSK's name.
+
+	my $keypath;					# Path to KSK.
+	my $alg = getkeyalgo($keyname);			# Key algorithm.
+	my $len = getkeysize('ksk',$keyname,$kskdir);	# Key length.
+
+	#
+	# Build the path to the KSK.
+	#
+	$keypath = "$kskdir/$keyname.key";
+
+	#
+	# Add the KSK keyrec.
+	#
+	keyrec_add('key', $keyname, {
+				      'zonename'	=> $zone,
+				      'keyrec_type'	=> "ksk",
+				      'algorithm'	=> $alg,
+				      'random'		=> $random,
+				      'ksklength'	=> $len,
+				      'ksklife'		=> $ksklife,
+				      'keypath'		=> "$keyname",
+				      'keyrec_gendate'	=> "",
+				      'keyrec_gensecs'	=> "",
+				    });
+};
 
 #----------------------------------------------------------------------
 # Routine:	addzsk()
@@ -667,6 +739,7 @@ sub usage
 	print STDERR "\t\t-random RANDOMDEV       source of randomness\n\n";
 
 	print STDERR "\t\t-ksk KSK                name of the KSK\n";
+	print STDERR "\t\t-kskcount COUNT         count of KSKs\n";
 	print STDERR "\t\t-kskdir PATH            KSK directory\n";
 	print STDERR "\t\t-ksklength KEYLEN       KSK length\n";
 	print STDERR "\t\t-ksklife LIFESPAN       KSK lifespan\n\n";
@@ -783,6 +856,12 @@ Display a usage message.
 This option specifies the KSK's key file being used to sign the zone.  If this
 option is not given, a new KSK will be created.
 
+=item -kskcount I<KSK-count>
+
+This option specifies the number of KSK keys that will be generated.  If this
+option is not given, the default given in the DNSSEC-Tools configuration file
+will be used.
+
 =item -kskdir I<KSK-directory>
 
 This option specifies the absolute or relative path of the directory
@@ -846,7 +925,7 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
-Abhijit Hayatnagarkar
+Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
