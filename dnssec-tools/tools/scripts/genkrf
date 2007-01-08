@@ -706,14 +706,18 @@ sub verbose
 	print "signedfile  - \"$signedfile\"\n";
 	print "zone        - \"$zone\"\n";
 	print "keyrec file - \"$krfile\"\n\n";
+
 	print "algorithm   - \"$algo\"\n";
 	print "endtime     - \"$endtime\"\n";
 	print "random      - \"$random\"\n\n";
-	print "ksk         - \"$ksk\"\n";
+
+	print "ksk         - \"$ksk\"\n" if($ksk ne "");
+	print "kskcount    - \"$kskcount\"\n";
 	print "ksksize     - \"$ksksize\"\n";
 	print "ksklife     - \"$ksklife\"\n\n";
-	print "zskcur      - \"$zskcur\"\n";
-	print "zskpub      - \"$zskpub\"\n";
+
+	print "zskcur      - \"$zskcur\"\n" if($zskcur ne "");
+	print "zskpub      - \"$zskpub\"\n" if($zskpub ne "");
 	print "zskcount    - \"$zskcount\"\n";
 	print "zsksize     - \"$zsksize\"\n";
 	print "zsklife     - \"$zsklife\"\n\n";
