@@ -699,10 +699,12 @@ sub genzsks
 		#
 		if($signset)
 		{
-			$zskcursetname = $signset;
-			$curstr = "Signing Set $zskcursetname";
+			$zskcursetname	 = $signset;
+			$opts{'zskcur'}  = $zskcursetname;
 			$opts{'lastset'} = $zskcursetname;
 			keyrec_setval('zone',$zone,'lastset',$zskcursetname);
+
+			$curstr = "Signing Set $zskcursetname";
 		}
 		else
 		{
