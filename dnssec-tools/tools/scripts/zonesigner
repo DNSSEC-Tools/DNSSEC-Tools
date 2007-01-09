@@ -711,38 +711,37 @@ sub genzsks
 		}
 
 		#
-		# Ensure that we've got a current ZSK set.
+		# Ensure that we've got a Current ZSK set.
 		#
-		if(!keyrec_fullrec($zskcursetname))
+		if($opts{'zskcur'} eq "")
 		{
-			print STDERR "\n$curstr does not exist;\nunable to re-use non-existent $curstr\n";
-			exit(1);
+			$zskcursetname = keyrec_signset_newname($zone);
+			$opts{'zskcur'} = $zskcursetname;
 		}
-		vprint("reusing existing cur ZSK set - $zskcursetname\n");
 
 		#
-		# Get the current ZSKs.
+		# Get the Current ZSKs.
 		#
 		$keyset  = keyrec_recval($zskcursetname,'keys');
 		@zskcurlist = split / /, $keyset;
 
 		#
-		# Ensure that we've got a published ZSK set.
+		# Ensure that we've got a Current ZSK set.
 		#
 		if($opts{'zskpub'} eq "")
 		{
-			print STDERR "\npub ZSK does not exist; unable to re-use non-existent pub ZSK\n";
-			exit(1);
+			$zskpubsetname = keyrec_signset_newname($zone);
+			$opts{'zskpub'} = $zskpubsetname;
 		}
 
 		#
-		# Get the published ZSK set name.
+		# Get the Published ZSK set name.
 		#
 		$zskpubsetname = $opts{'zskpub'};
 		vprint("reusing existing pub ZSK set - $zskpubsetname\n");
 
 		#
-		# Get the published ZSKs.
+		# Get the Published ZSKs.
 		#
 		$keyset  = keyrec_recval($zskpubsetname,'keys');
 		@zskpublist = split / /, $keyset;
@@ -832,8 +831,7 @@ sub genksks
 		#
 		if($opts{'kskkey'} eq "")
 		{
-			print STDERR "\nKSK does not exist; unable to re-use non-existent KSK\n";
-			exit(1);
+			$opts{'kskkey'} = keyrec_signset_newname($zone);
 		}
 
 		#
