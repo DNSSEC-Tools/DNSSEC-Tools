@@ -306,8 +306,9 @@ sub opts_zonekr
 	# Get the keyrec file (from command line options) and keyrec name
 	# (from command line args) values if the caller didn't give them.
 	#
-	$krfile = $cmdopts{'krfile'} if($krfile eq "");
-	$krname = $ARGV[0] if($krname eq "");
+	$krfile = $cmdopts{'krfile'}	if($krfile eq "");
+	$krname = $ARGV[0]		if($krname eq "");
+	$krname = $cmdopts{'zone'}	if(defined($cmdopts{'zone'}));
 
 	#
 	# Initialize and read the keyrec file and the specified zone.
