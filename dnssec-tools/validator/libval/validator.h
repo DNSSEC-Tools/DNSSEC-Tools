@@ -480,7 +480,7 @@ extern          "C" {
     val_log_t      *val_log_add_file(int level, const char *filen);
     val_log_t      *val_log_add_syslog(int level, int facility);
     val_log_t      *val_log_add_network(int level, char *host, int port);
-    val_log_t      *val_log_add_optarg(char *args, int use_stderr);
+    val_log_t      *val_log_add_optarg(const char *args, int use_stderr);
 
     int             val_log_debug_level(void);
     void            val_log_set_debug_level(int);
@@ -638,7 +638,7 @@ extern          "C" {
      */
 #define free_val_addrinfo   val_freeaddrinfo
 #define p_val_error p_val_status
-#define p_as_error p_as_status
+#define p_as_error p_ac_status
 #define p_query_error p_query_status
 
 #ifdef __cplusplus
