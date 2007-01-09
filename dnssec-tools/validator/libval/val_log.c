@@ -831,24 +831,23 @@ val_log_add_syslog(int level, int facility)
 }
 
 val_log_t      *
-val_log_add_optarg(char *str, int use_stderr)
+val_log_add_optarg(const char *str_in, int use_stderr)
 {
-    val_log_t      *logp;
-    char           *l;
-                /** assume we can write to string */
+    val_log_t      *logp = NULL;
+    char           *l, *copy, *str;
     int             level;
 
-    if (NULL == str)
+    if ((NULL == str_in) || (NULL == (copy = strdup(str_in))))
         return NULL;
 
-    l = strchr(str, ':');
+    l = strchr(copy, ':');
     if ((NULL == l) || (0 == l[1])) {
         if (use_stderr)
             fprintf(stderr, "unknown output format string\n");
-        return NULL;
+        goto err;
     }
     *l++ = 0;
-    level = atoi(str);
+    level = atoi(copy);
     str = l;
 
     switch (*str) {
@@ -858,7 +857,7 @@ val_log_add_optarg(char *str, int use_stderr)
         if ((NULL == l) || (0 == l[1])) {
             if (use_stderr)
                 fprintf(stderr, "file requires a filename parameter\n");
-            return NULL;
+            goto err;
         }
         str = ++l;
         logp = val_log_add_file(level, str);
@@ -881,7 +880,7 @@ val_log_add_optarg(char *str, int use_stderr)
         } else {
             if (use_stderr)
                 fprintf(stderr, "unknown output format string\n");
-            return NULL;
+            goto err;
         }
         break;
 
@@ -892,9 +891,7 @@ val_log_add_optarg(char *str, int use_stderr)
 
             l = strchr(str, ':');
             if ((NULL == l) || (0 == l[1])) {
-                if (use_stderr)
-                    fprintf(stderr, "net requires a host parameter\n");
-                return NULL;
+                goto err;
             }
             host = str = ++l;
 
@@ -902,7 +899,7 @@ val_log_add_optarg(char *str, int use_stderr)
             if ((NULL == l) || (0 == l[1])) {
                 if (use_stderr)
                     fprintf(stderr, "net requires a port parameter\n");
-                return NULL;
+                goto err;
             }
             *l++ = 0;
             port = atoi(str);
@@ -913,10 +910,13 @@ val_log_add_optarg(char *str, int use_stderr)
 
     default:
         fprintf(stderr, "unknown output format type\n");
-        return NULL;
+        break;
     }
 
+err:
+    free(copy);
     return logp;
+
 }
 
 void
