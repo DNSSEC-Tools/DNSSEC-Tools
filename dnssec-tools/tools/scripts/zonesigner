@@ -715,8 +715,8 @@ sub genzsks
 		#
 		if($opts{'zskcur'} eq "")
 		{
-			$zskcursetname = keyrec_signset_newname($zone);
-			$opts{'zskcur'} = $zskcursetname;
+			print STDERR "\n$curstr does not exist; unable to re-use non-existent cur ZSK\n";
+			exit(1);
 		}
 
 		#
@@ -728,10 +728,10 @@ sub genzsks
 		#
 		# Ensure that we've got a Current ZSK set.
 		#
-		if($opts{'zskpub'} eq "")
+		if($opts{'zskcur'} eq "")
 		{
-			$zskpubsetname = keyrec_signset_newname($zone);
-			$opts{'zskpub'} = $zskpubsetname;
+			print STDERR "\npub ZSK does not exist; unable to re-use non-existent pub ZSK\n";
+			exit(1);
 		}
 
 		#
@@ -831,7 +831,8 @@ sub genksks
 		#
 		if($opts{'kskkey'} eq "")
 		{
-			$opts{'kskkey'} = keyrec_signset_newname($zone);
+			print STDERR "\nKSK does not exist; unable to re-use non-existent KSK\n";
+			exit(1);
 		}
 
 		#
