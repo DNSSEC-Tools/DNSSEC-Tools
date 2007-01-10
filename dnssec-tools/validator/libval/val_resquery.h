@@ -16,6 +16,12 @@ int             bootstrap_referral(u_int8_t * referral_zone_n,
                                    struct val_query_chain *matched_q,
                                    struct val_query_chain **queries,
                                    struct name_server **ref_ns_list);
+int             process_cname_dname_responses(u_int8_t *name_n, 
+                              u_int16_t type_h, 
+                              u_int8_t *rdata, 
+                              struct val_query_chain *matched_q,
+                              struct qname_chain **qnames,
+                              int *referral_error);
 int             extract_glue_from_rdata(struct rr_rec *addr_rr,
                                         struct name_server **ns);
 void            merge_glue_in_referral(struct val_query_chain *pc,
