@@ -699,6 +699,12 @@ verify_next_assertion(val_context_t * ctx,
     the_set = as->_as.ac_data;
     the_trust = as->val_ac_trust;
     dnskey.public_key = NULL;
+
+    if (the_set->rrs.val_rrset_sig == NULL) {
+        as->val_ac_status = VAL_AC_RRSIG_MISSING;
+        return;
+    }
+
     for (the_sig = the_set->rrs.val_rrset_sig;
          the_sig; the_sig = the_sig->rr_next) {
 
@@ -744,8 +750,10 @@ verify_next_assertion(val_context_t * ctx,
         for (nextrr = keyrr; nextrr; nextrr = nextrr->rr_next) {
             if (-1 == val_parse_dnskey_rdata(nextrr->rr_rdata,
                                              nextrr->rr_rdata_length_h,
-                                             &dnskey))
+                                             &dnskey)) {
+                SET_STATUS(as->val_ac_status, nextrr, VAL_AC_INVALID_KEY);
                 continue;
+            }
 
             dnskey.next = NULL;
             if (dnskey.key_tag != tag_h) {
