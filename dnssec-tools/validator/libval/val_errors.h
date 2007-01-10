@@ -23,13 +23,25 @@
  *************************************************** 
  */
 #define VAL_NOT_IMPLEMENTED	-1      /* Functionality not yet implemented */
+#define VAL_ENOSYS VAL_NOT_IMPLEMENTED
+
 #define VAL_RESOURCE_UNAVAILABLE -2     /*Some resource (crypto or memory possibly) was unavailable. */
 #define VAL_OUT_OF_MEMORY VAL_RESOURCE_UNAVAILABLE      /*Could not allocate memory. */
+#define VAL_ENOMEM VAL_RESOURCE_UNAVAILABLE
+
 #define VAL_BAD_ARGUMENT -3     /*Bad arguments passed as parameters. */
+#define VAL_EINVAL VAL_BAD_ARGUMENT
+
 #define VAL_INTERNAL_ERROR -4   /*Encountered some internal error. */
+
 #define VAL_NO_PERMISSION	-5      /*No permission to perform operation. */
+#define VAL_EACCESS VAL_NO_PERMISSION
+
 #define VAL_CONF_PARSE_ERROR -6 /*Error in parsing some configuration file. */
+
 #define VAL_CONF_NOT_FOUND -7   /*Could not find one or both of the configuration files */
+#define VAL_ENOENT VAL_CONF_NOT_FOUND
+
 #define VAL_NO_POLICY -8        /*Could not identify the policy to which we need to switch. */
 
 /*
