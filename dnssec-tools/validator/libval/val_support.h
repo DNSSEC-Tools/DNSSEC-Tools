@@ -30,6 +30,18 @@
 #define FALSE   0
 #endif
 
+#define ALLOCATE_REFERRAL_BLOCK(ref) do{ \
+		ref = (struct delegation_info *) MALLOC (sizeof(struct delegation_info)); \
+		if (ref == NULL) \
+			return VAL_OUT_OF_MEMORY; \
+		ref->queries = NULL; \
+		ref->answers = NULL; \
+		ref->qnames = NULL; \
+		ref->pending_glue_ns = NULL; \
+		ref->glueptr = NULL; \
+} while(0)
+
+
 #define CREATE_NSADDR_ARRAY(ns_address, len) do {\
     int i, j;\
     ns_address = (struct sockaddr_storage **) \
@@ -53,13 +65,13 @@
 #define IT_HASNT        1
 #define IT_WONT         (-1)
 
-
 void            my_free(void *p, char *filename, int lineno);
 void           *my_malloc(size_t t, char *filename, int lineno);
 char           *my_strdup(const char *str, char *filename, int lineno);
 
 int             labelcmp(const u_int8_t * name1, const u_int8_t * name2);
 int             namecmp(const u_int8_t * name1, const u_int8_t * name2);
+u_int8_t *      namename(u_int8_t * big_name, u_int8_t * little_name);
 #ifdef LIBVAL_NSEC3
 void            base32hex_encode(u_int8_t * in, u_int8_t inlen,
                                  u_int8_t ** out, u_int8_t * outlen);
@@ -135,6 +147,7 @@ struct rr_rec  *copy_rr_rec_list(u_int16_t type_h, struct rr_rec *o_rr,
                                  int dolower);
 int             link_rr(struct rr_rec **cs, struct rr_rec *cr);
 struct rrset_rec *copy_rrset_rec(struct rrset_rec *rr_set);
+struct rrset_rec *copy_rrset_rec_list(struct rrset_rec *rr_set);
 int             register_query(struct query_list **q, u_int8_t * name_n,
                                u_int32_t type_h, u_int8_t * zone_n);
 void            deregister_queries(struct query_list **q);
