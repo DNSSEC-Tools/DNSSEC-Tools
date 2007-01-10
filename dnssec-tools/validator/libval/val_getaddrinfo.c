@@ -1206,8 +1206,8 @@ val_getnameinfo(val_context_t * ctx,
 {
 
     const int       addr_size = 100;
-    char            domain_string[addr_size], number_string[addr_size],
-        wire_addr[addr_size];
+    char            domain_string[addr_size], number_string[addr_size];
+    u_int8_t        wire_addr[addr_size];
     const char     *theAddress = NULL;
     int             val_rnc_status = 0, ret_status = 0;
 
@@ -1250,7 +1250,7 @@ val_getnameinfo(val_context_t * ctx,
          */
         memset(number_string, 0, sizeof(char) * addr_size);
         memset(domain_string, 0, sizeof(char) * addr_size);
-        memset(wire_addr, 0, sizeof(char) * addr_size);
+        memset(wire_addr, 0, sizeof(u_int8_t) * addr_size);
 
         if ((0 != (ret_status =
                    address_to_string(theAddress, sa->sa_family,
@@ -1296,7 +1296,7 @@ val_getnameinfo(val_context_t * ctx,
                 val_res->val_rc_answer->val_ac_rrset->val_rrset_class_h
                 && ns_t_ptr ==
                 val_res->val_rc_answer->val_ac_rrset->val_rrset_type_h) {
-                ns_name_ntop((char *) val_res->val_rc_answer->
+                ns_name_ntop(val_res->val_rc_answer->
                              val_ac_rrset->val_rrset_data->rr_rdata, host,
                              hostlen);
             } else {
@@ -1362,7 +1362,8 @@ val_gethostbyaddr_r(val_context_t * ctx,
 {
 
     const int       addr_size = 100;
-    char            domain_string[addr_size], wire_addr[addr_size];
+    char            domain_string[addr_size];
+    u_int8_t        wire_addr[addr_size];
     int             ret_status = 0, val_rnc_status = 0, bufused = 0;
     struct val_result_chain *val_res = NULL;
 
@@ -1401,7 +1402,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
     }
 
     memset(domain_string, 0, sizeof(char) * addr_size);
-    memset(wire_addr, 0, sizeof(char) * addr_size);
+    memset(wire_addr, 0, sizeof(u_int8_t) * addr_size);
 
     if (0 !=
         (ret_status = address_to_reverse_domain(addr, type,
@@ -1475,7 +1476,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
              * setup hostent 
              */
             ret->h_name = buf + bufused;
-            ns_name_ntop((char *) rr->rr_rdata, ret->h_name,
+            ns_name_ntop(rr->rr_rdata, ret->h_name,
                          (buflen - bufused));
             bufused = bufused + strlen(ret->h_name) + 1;
 
@@ -1511,7 +1512,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
                     count = 0;
                     do {
                         ret->h_aliases[count] = buf + bufused;
-                        ns_name_ntop((char *) rr_it->rr_rdata,
+                        ns_name_ntop(rr_it->rr_rdata,
                                      ret->h_aliases[count],
                                      (buflen - bufused));
                         bufused =
