@@ -41,6 +41,7 @@ static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 #ifndef VAL_NO_THREADS
+static struct rrset_rec *unchecked_proofs = NULL;
 static pthread_rwlock_t rwlock;
 static int      rwlock_init = -1;
 #endif
@@ -104,11 +105,16 @@ static struct zone_ns_map_t *zone_ns_map = NULL;
 #define UNLOCK()
 #endif
 
+#define IN_BAILIWICK(name, q) \
+    ((q) &&\
+     (q->qc_zonecut_n? (NULL != namename(name, q->qc_zonecut_n)) :\
+      (NULL != namename(q->qc_name_n, name))))
+
 /*
  * NOTE: This assumes a read lock is alread held by the caller.
  */
 static int
-stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
+stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     struct rrset_rec *new_rr, *prev;
     struct rrset_rec *old;
@@ -131,7 +137,27 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
         new_rr = new_info;
         trail_new = NULL;
         while (new_rr) {
-            if (old->rrs.val_rrset_type_h == new_rr->rrs.val_rrset_type_h
+
+            if (!IN_BAILIWICK(new_rr->rrs.val_rrset_name_n, matched_q)) {
+                /*
+                 * delete new 
+                 */
+                LOCK_UPGRADE();
+                if (trail_new == NULL) {
+                    new_info = new_rr->rrs_next;
+                    if (new_info == NULL) {
+                        res_sq_free_rrset_recs(&new_rr);
+                        LOCK_DOWNGRADE();
+                        return VAL_NO_ERROR;
+                    }
+                } else
+                    trail_new->rrs_next = new_rr->rrs_next;
+                new_rr->rrs_next = NULL;
+                res_sq_free_rrset_recs(&new_rr);
+                LOCK_DOWNGRADE();
+                break;
+
+            } else if (old->rrs.val_rrset_type_h == new_rr->rrs.val_rrset_type_h
                 && old->rrs.val_rrset_class_h ==
                 new_rr->rrs.val_rrset_class_h
                 && namecmp(old->rrs.val_rrset_name_n,
@@ -206,15 +232,26 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info)
 }
 
 int
-get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
-                 u_int16_t type_h, struct rrset_rec **cloned_answer)
+get_cached_rrset(struct val_query_chain *matched_q, 
+                 struct domain_info **response)
 {
-    struct rrset_rec *next_answer, *prev;
+    struct rrset_rec *next_answer, *prev, *new_answer;
     struct timeval  tv;
+
+    u_int16_t type_h;
+    u_int16_t class_h;
+    u_int8_t *name_n;
+
+    if (!matched_q || !response)
+        return VAL_BAD_ARGUMENT;
+
+    *response = NULL;
+    name_n = matched_q->qc_name_n;
+    type_h = matched_q->qc_type_h;
+    class_h = matched_q->qc_class_h;
 
     LOCK_INIT();
 
-    *cloned_answer = NULL;
     gettimeofday(&tv, NULL);
 
     LOCK_SH();
@@ -237,85 +274,161 @@ get_cached_rrset(u_int8_t * name_n, u_int16_t class_h,
         break;
     }
 
-    /* XXX 
-     * XXX Look for a cached CNAME/DNAME
-     * XXX get_cached_rrset should return a domain_info structure
-     * XXX This is to allow a CNAME/DNAME chains to be returned
-     * XXX In such cases, the qname_chain will also have to be tweaked 
-     * XXX appropriately
-     * XXX
-     */
     prev = NULL;
+    new_answer = NULL;
     while (next_answer) {
 
-        if ((next_answer->rrs.val_rrset_type_h == type_h) &&
-            (next_answer->rrs.val_rrset_class_h == class_h) &&
-            (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0) &&
-            (tv.tv_sec > next_answer->rrs.val_rrset_ttl_x)) {
-            if (next_answer->rrs.val_rrset_data != NULL) {
-                *cloned_answer = copy_rrset_rec(next_answer);
-                break;
-            }
+        if ((tv.tv_sec < next_answer->rrs.val_rrset_ttl_x) &&
+            (next_answer->rrs.val_rrset_class_h == class_h)) {
+
+                /* straight answer */
+            if (((next_answer->rrs.val_rrset_type_h == type_h ||
+                /* or cname */
+                 (next_answer->rrs.val_rrset_type_h == ns_t_cname &&
+                  type_h != ns_t_any)) &&
+                (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0)) ||
+                /* or DNAME */
+                ((next_answer->rrs.val_rrset_type_h == ns_t_dname) &&
+                 (NULL != (u_int8_t *) namename(name_n, 
+                                    next_answer->rrs.val_rrset_name_n)))) {
+
+                if (next_answer->rrs.val_rrset_data != NULL) {
+                    new_answer = copy_rrset_rec(next_answer);
+                    break;
+                }
+            } 
         }
 
         prev = next_answer;
         next_answer = next_answer->rrs_next;
     }
+
     UNLOCK();
+
+    /* Construct the response */
+    if (new_answer) {
+        char *name_p;
+        name_p = (char *) MALLOC (NS_MAXDNAME * sizeof(char));
+        if (name_p == NULL)
+            return VAL_OUT_OF_MEMORY;
+
+        /*
+         * Construct a response 
+         */
+        *response = (struct domain_info *) MALLOC(sizeof(struct domain_info));
+        if (*response == NULL) {
+            res_sq_free_rrset_recs(&new_answer);
+            return VAL_OUT_OF_MEMORY;
+        }
+
+        (*response)->di_requested_name_h = name_p;
+        (*response)->di_answers = new_answer;
+        (*response)->di_proofs = NULL;
+        (*response)->di_qnames = 
+            (struct qname_chain *) MALLOC(sizeof(struct qname_chain));
+        if ((*response)->di_qnames == NULL) {
+            free_domain_info_ptrs(*response);
+            FREE(*response);
+            *response = NULL;
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy((*response)->di_qnames->qnc_name_n, name_n,
+               wire_name_length(name_n));
+        (*response)->di_qnames->qnc_next = NULL;
+
+        if (ns_name_ntop(name_n, name_p, NS_MAXCDNAME) == -1) {
+            matched_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
+            free_domain_info_ptrs(*response);
+            FREE(*response);
+            *response = NULL;
+            return VAL_NO_ERROR;
+        }
+        (*response)->di_requested_type_h = matched_q->qc_type_h;
+        (*response)->di_requested_class_h = matched_q->qc_class_h;
+        (*response)->di_res_error = SR_UNSET;
+        matched_q->qc_state = Q_ANSWERED;
+
+        return process_cname_dname_responses( 
+                        new_answer->rrs.val_rrset_name_n, 
+                        new_answer->rrs.val_rrset_type_h, 
+                        new_answer->rrs.val_rrset_data->rr_rdata, 
+                        matched_q, &(*response)->di_qnames, 
+                        NULL);
+
+
+    }
+
     return VAL_NO_ERROR;
 }
 
 int
-stow_zone_info(struct rrset_rec *new_info)
+stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
     LOCK_INIT();
     LOCK_SH();
-    rc = stow_info(&unchecked_ns_info, new_info);
+    rc = stow_info(&unchecked_ns_info, new_info, matched_q);
     UNLOCK();
 
     return rc;
 }
 
 int
-stow_key_info(struct rrset_rec *new_info)
+stow_key_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
     LOCK_INIT();
     LOCK_SH();
-    rc = stow_info(&unchecked_key_info, new_info);
+    rc = stow_info(&unchecked_key_info, new_info, matched_q);
     UNLOCK();
 
     return rc;
 }
 
 int
-stow_ds_info(struct rrset_rec *new_info)
+stow_ds_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
     LOCK_INIT();
     LOCK_SH();
-    rc = stow_info(&unchecked_ds_info, new_info);
+    rc = stow_info(&unchecked_ds_info, new_info, matched_q);
     UNLOCK();
 
     return rc;
 }
 
 int
-stow_answer(struct rrset_rec *new_info)
+stow_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
     LOCK_INIT();
     LOCK_SH();
-    rc = stow_info(&unchecked_answers, new_info);
+    rc = stow_info(&unchecked_answers, new_info, matched_q);
     UNLOCK();
 
     return rc;
 }
 
+int
+stow_negative_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q)
+{
+    int             rc;
+
+    LOCK_INIT();
+    LOCK_SH();
+    rc = stow_info(&unchecked_proofs, new_info, matched_q);
+    UNLOCK();
+
+    return rc;
+}
+
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 int
 stow_root_info(struct rrset_rec *root_info)
 {
@@ -350,6 +463,18 @@ stow_root_info(struct rrset_rec *root_info)
      * We are not interested in fetching glue for the root 
      */
     free_name_servers(&pending_glue);
+
+
+#if 0
+    {
+    struct name_server *tempns;
+    for(tempns = ns_list; tempns; tempns= tempns->ns_next) {
+	    printf ("Root name servers for %s :\n", tempns->ns_name_n);
+        struct sockaddr_in  *s=(struct sockaddr_in*)(tempns->ns_address[0]);
+        printf("%s\n", inet_ntoa(s->sin_addr));	
+    }
+    }
+#endif
 
     LOCK_UPGRADE();
     root_ns = ns_list;
@@ -397,11 +522,13 @@ store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
     for (map_e = zone_ns_map; map_e; map_e = map_e->next) {
 
         if (!namecmp(map_e->zone_n, zonecut_n)) {
+            struct name_server *nslist = NULL;
             /*
-             * store more recent 
+             * add blindly to the list 
              */
-            free_name_servers(&map_e->nslist);
-            clone_ns_list(&map_e->nslist, resp_server);
+            clone_ns_list(&nslist, resp_server);
+            nslist->ns_next = map_e->nslist;
+            map_e->nslist = nslist;
             break;
         }
     }
@@ -427,7 +554,7 @@ store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
 }
 
 static int
-free_zone_nslist()
+free_zone_nslist(void)
 {
     struct zone_ns_map_t *map_e;
 
@@ -444,9 +571,11 @@ free_zone_nslist()
 }
 
 int
-get_nslist_from_cache(struct val_query_chain *matched_q,
+get_nslist_from_cache(val_context_t *ctx,
+                      struct val_query_chain *matched_q,
                       struct val_query_chain **queries,
-                      struct name_server **ref_ns_list)
+                      struct name_server **ref_ns_list,
+                      u_int8_t **zonecut_n)
 {
     /*
      * find closest matching name zone_n 
@@ -458,10 +587,13 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
     u_int16_t       qtype;
     u_int8_t       *qname_n;
     struct zone_ns_map_t *map_e, *saved_map;
+    u_int8_t       *tmp_zonecut_n = NULL;
 
     qname_n = matched_q->qc_name_n;
     qtype = matched_q->qc_type_h;
 
+    *zonecut_n = NULL;
+    
     LOCK_INIT();
     // xxx-audit: insufficient lock?
     //     bootstrap_referral passes unchecked_ns_info to res_zi_unverified_ns_list,
@@ -478,8 +610,7 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
         /*
          * check if zone is within query 
          */
-        if (NULL != (p = (u_int8_t *) strstr((char *) map_e->zone_n,
-                                             (char *) qname_n))) {
+        if (NULL != (p = (u_int8_t *) namename(map_e->zone_n, qname_n))) {
             if (!saved_map || (namecmp(p, saved_map->zone_n) > 0)) {
                 saved_map = map_e;
             }
@@ -488,10 +619,18 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
 
     if (saved_map) {
         clone_ns_list(ref_ns_list, saved_map->nslist);
+        *zonecut_n = (u_int8_t *) MALLOC (wire_name_length(saved_map->zone_n) * sizeof (u_int8_t));
+        if (*zonecut_n == NULL) {
+            UNLOCK();
+            return VAL_OUT_OF_MEMORY;
+        } 
+
+        memcpy(*zonecut_n, saved_map->zone_n, wire_name_length(saved_map->zone_n));
         UNLOCK();
         return VAL_NO_ERROR;
     }
 
+    tmp_zonecut_n = NULL;
     for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
 
         if (nsrrset->rrs.val_rrset_type_h == ns_t_ns) {
@@ -502,8 +641,7 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
              */
             if (NULL !=
                 (p =
-                 (u_int8_t *) strstr((char *) qname_n,
-                                     (char *) tname_n))) {
+                 (u_int8_t *) namename(qname_n, tname_n))) {
 
                 if ((!name_n) ||
                     (wire_name_length(tname_n) >
@@ -521,11 +659,21 @@ get_nslist_from_cache(struct val_query_chain *matched_q,
                      * New name is longer than old name 
                      */
                     name_n = tname_n;
+                    tmp_zonecut_n = nsrrset->rrs_zonecut_n;
                 }
             }
         }
     }
 
+    if (tmp_zonecut_n) {
+        *zonecut_n = (u_int8_t *) MALLOC (wire_name_length(tmp_zonecut_n) * sizeof (u_int8_t));
+        if (*zonecut_n == NULL) {
+            UNLOCK();
+            return VAL_OUT_OF_MEMORY;
+        } 
+        memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
+    }
+    
     bootstrap_referral(name_n, &unchecked_ns_info, matched_q, queries,
                        ref_ns_list);
 
@@ -547,6 +695,8 @@ free_validator_cache(void)
     unchecked_ns_info = NULL;
     res_sq_free_rrset_recs(&unchecked_answers);
     unchecked_answers = NULL;
+    res_sq_free_rrset_recs(&unchecked_proofs);
+    unchecked_proofs = NULL;
     free_name_servers(&root_ns);
     root_ns = NULL;
     free_zone_nslist();
