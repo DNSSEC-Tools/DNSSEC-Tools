@@ -1253,13 +1253,77 @@ destroy_respol(val_context_t * ctx)
     }
 }
 
+static int
+parse_name_server(val_context_t *ctx, char *cp, struct name_server **ns)
+{ 
+    struct sockaddr_in serv_addr;
+    struct in_addr  address;
+
+    if (cp ==  NULL || ns == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *ns = (struct name_server *) MALLOC(sizeof(struct name_server));
+    if (*ns == NULL)
+        return VAL_OUT_OF_MEMORY; 
+
+    if (ns_name_pton(DEFAULT_ZONE, (*ns)->ns_name_n, 
+                sizeof((*ns)->ns_name_n)) == -1) {
+        FREE(*ns);
+        *ns = NULL;
+        return VAL_CONF_PARSE_ERROR; 
+    }
+
+    /*
+     * Initialize the rest of the fields 
+     */
+    (*ns)->ns_tsig = NULL;
+    (*ns)->ns_security_options = ZONE_USE_NOTHING;
+    (*ns)->ns_status = 0;
+
+    (*ns)->ns_retrans = RES_TIMEOUT;
+    (*ns)->ns_retry = RES_RETRY;
+    (*ns)->ns_options = RES_DEFAULT | RES_RECURSE | RES_DEBUG;
+
+    (*ns)->ns_next = NULL;
+    (*ns)->ns_number_of_addresses = 0;
+
+    if (inet_pton(AF_INET, cp, &address) != 1) {
+        /*
+         * drop ipv6 addresses and keep parsing 
+         */
+        if (inet_pton(AF_INET6, cp, &address) == 1) {
+            val_log(ctx, LOG_WARNING,
+                    "Parse warning: IPv6 nameserver addresses not handled yet, skipping.");
+            FREE(*ns);
+            *ns = NULL;
+            return VAL_NO_ERROR;
+        } else
+            return VAL_CONF_PARSE_ERROR; 
+    }
+
+    bzero(&serv_addr, sizeof(struct sockaddr_in));
+    serv_addr.sin_family = AF_INET;     // host byte order
+    serv_addr.sin_port = htons(DNS_PORT);       // short, network byte order
+    serv_addr.sin_addr = address;
+
+    (*ns)->ns_address = NULL;
+    CREATE_NSADDR_ARRAY((*ns)->ns_address, 1);
+    if ((*ns)->ns_address == NULL) {
+        FREE(*ns);
+        *ns = NULL;
+        return VAL_OUT_OF_MEMORY;
+    }
+    (*ns)->ns_number_of_addresses = 1;
+
+    memcpy((*ns)->ns_address[0], &serv_addr,
+           sizeof(struct sockaddr_in));
+    (*ns)->ns_number_of_addresses = 1;
+    return VAL_NO_ERROR;
+}
 
 int
 read_res_config_file(val_context_t * ctx)
 {
-    struct sockaddr_in serv_addr;
-    struct in_addr  address;
-    char            auth_zone_info_p[NS_MAXDNAME];
     char           *resolv_conf;
     FILE           *fp;
     int             fd;
@@ -1268,13 +1332,12 @@ read_res_config_file(val_context_t * ctx)
     struct name_server *ns_head = NULL;
     struct name_server *ns_tail = NULL;
     struct name_server *ns = NULL;
+    u_int8_t zone_n[NS_MAXCDNAME];
 
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
     ctx->nslist = NULL;
-
-    strcpy(auth_zone_info_p, DEFAULT_ZONE);
 
     resolv_conf = resolver_config_get();
     if (NULL == resolv_conf)
@@ -1310,88 +1373,36 @@ read_res_config_file(val_context_t * ctx)
             if (cp == NULL) {
                 goto err;
             }
-
-            ns = (struct name_server *) MALLOC(sizeof(struct name_server));
-            if (ns == NULL)
+            
+            ns = NULL;
+            if (VAL_NO_ERROR != parse_name_server(ctx, cp, &ns))
                 goto err;
-
-            /*
-             * Convert auth_zone_info_p to its on-the-wire format 
-             */
-
-            if (ns_name_pton
-                (auth_zone_info_p, ns->ns_name_n,
-                 sizeof(ns->ns_name_n)) == -1) {
-                FREE(ns);
-                ns = NULL;
-                goto err;
+            if (ns != NULL) {
+                if (ns_tail == NULL) {
+                    ns_head = ns;
+                    ns_tail = ns;
+                } else {
+                    ns_tail->ns_next = ns;
+                    ns_tail = ns;
+                }
             }
-
-            /*
-             * Initialize the rest of the fields 
-             */
-            ns->ns_tsig = NULL;
-            ns->ns_security_options = ZONE_USE_NOTHING;
-            ns->ns_status = 0;
-
-            ns->ns_retrans = RES_TIMEOUT;
-            ns->ns_retry = RES_RETRY;
-            ns->ns_options = RES_DEFAULT | RES_RECURSE | RES_DEBUG;
-
-            ns->ns_next = NULL;
-            ns->ns_number_of_addresses = 0;
-
-            if (inet_pton(AF_INET, cp, &address) != 1) {
-                /*
-                 * drop ipv6 addresses and keep parsing 
-                 */
-                if (inet_pton(AF_INET6, cp, &address) == 1) {
-                    val_log(ctx, LOG_WARNING,
-                            "Parse warning in file %s: IPv6 nameserver addresses not handled yet, skipping.",
-                            resolv_conf);
-                    FREE(ns);
-                    ns = NULL;
-                    break;
-                } else
-                    goto err;
-            }
-
-            bzero(&serv_addr, sizeof(struct sockaddr_in));
-            serv_addr.sin_family = AF_INET;     // host byte order
-            serv_addr.sin_port = htons(DNS_PORT);       // short, network byte order
-            serv_addr.sin_addr = address;
-
-            ns->ns_address = NULL;
-            CREATE_NSADDR_ARRAY(ns->ns_address, 1);
-            if (ns->ns_address == NULL) {
-                FREE(ns);
-                ns = NULL;
-                return SR_MEMORY_ERROR;
-            }
-            ns->ns_number_of_addresses = 1;
-
-            memcpy(ns->ns_address[0], &serv_addr,
-                   sizeof(struct sockaddr_in));
-            ns->ns_number_of_addresses = 1;
-
-            if (ns_tail == NULL) {
-                ns_head = ns;
-                ns_tail = ns;
-            } else {
-                ns_tail->ns_next = ns;
-                ns_tail = ns;
-            }
-        } else if (strncmp(line, "zone", strlen("zone")) == 0) {
-            if (ns == NULL)
-                goto err;
+        } else if (strncmp(line, "forward", strlen("forward")) == 0) { 
             strtok_r(line, white, &buf);
             cp = strtok_r(NULL, white, &buf);
-            if (cp == NULL) {
+            if (cp == NULL) 
                 goto err;
+            if (ns_name_pton(cp, zone_n, sizeof(zone_n)) == -1)
+                goto err;
+                
+            cp = strtok_r(NULL, white, &buf);
+            if (cp == NULL) 
+                goto err;
+            ns = NULL;
+            if (VAL_NO_ERROR != parse_name_server(ctx, cp, &ns))
+                goto err;
+            if (ns != NULL) {
+                store_ns_for_zone(zone_n, ns);
             }
-            if (ns_name_pton(cp, ns->ns_name_n, sizeof(ns->ns_name_n)) ==
-                -1)
-                goto err;
         }
     }
 
