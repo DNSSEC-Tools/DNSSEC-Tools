@@ -98,6 +98,7 @@ is_type_set(u_int8_t * field, int field_len, u_int16_t type)
                      (nsec3_order_cmp(hash, hashlen, range1, range1len) > 0))))
 #endif
 
+    
 void
 free_val_rrset_members(struct val_rrset *r)
 {
@@ -676,20 +677,20 @@ set_ans_kind(u_int8_t * qname_n,
 #define NOT_IN_QNAMES   2
 
 static int
-name_in_q_names(struct qname_chain *q_names_n, struct rrset_rec *the_set)
+name_in_q_names(struct qname_chain *q_names_n, u_int8_t *name_n)
 {
     struct qname_chain *temp_qc;
 
-    if ((the_set == NULL) || (q_names_n == NULL))
+    if ((name_n == NULL) || (q_names_n == NULL))
         return NOT_IN_QNAMES;
 
-    if (namecmp(the_set->rrs.val_rrset_name_n, q_names_n->qnc_name_n) == 0)
+    if (namecmp(name_n, q_names_n->qnc_name_n) == 0)
         return TOP_OF_QNAMES;
 
     temp_qc = q_names_n->qnc_next;
 
     while (temp_qc) {
-        if (namecmp(the_set->rrs.val_rrset_name_n, temp_qc->qnc_name_n) ==
+        if (namecmp(name_n, temp_qc->qnc_name_n) ==
             0)
             return MID_OF_QNAMES;
         temp_qc = temp_qc->qnc_next;
@@ -720,7 +721,7 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     if (*status == (VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER))
         return TRUE;
 
-    name_present = name_in_q_names(q_names_n, the_set);
+    name_present = name_in_q_names(q_names_n, the_set->rrs.val_rrset_name_n);
     type_match = (the_set->rrs.val_rrset_type_h == q_type_h)
         || ((q_type_h == ns_t_any) && (name_present == TOP_OF_QNAMES));
     class_match = (the_set->rrs.val_rrset_class_h == q_class_h)
@@ -753,6 +754,18 @@ fails_to_answer_query(struct qname_chain *q_names_n,
 #endif
           the_set->rrs_ans_kind == SR_ANS_NACK_SOA))
         ) {
+
+        if (the_set->rrs_ans_kind == SR_ANS_CNAME &&
+            type_match &&
+            class_match &&
+            the_set->rrs.val_rrset_data &&
+            name_in_q_names(q_names_n, the_set->rrs.val_rrset_data->rr_rdata) == MID_OF_QNAMES) {
+            /* synthesized CNAME */
+            *status = VAL_AC_IGNORE_VALIDATION;
+            return FALSE;
+        }
+
+        
         *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
         return TRUE;
     }
@@ -842,6 +855,7 @@ build_pending_query(val_context_t * context,
     u_int8_t       *signby_name_n;
     u_int16_t       tzonestatus;
     int             retval;
+    struct rr_rec  *cur_rr;
 
     if ((NULL == queries) || (NULL == as))
         return VAL_BAD_ARGUMENT;
@@ -904,19 +918,33 @@ build_pending_query(val_context_t * context,
         return VAL_NO_ERROR;
     }
 
-    /*
-     * Identify the DNSKEY that created the RRSIG:
-     */
-    if (as->_as.ac_data->rrs.val_rrset_sig->rr_rdata == NULL) {
-        as->val_ac_status = VAL_AC_DATA_MISSING;
-        return VAL_NO_ERROR;
+    cur_rr = as->_as.ac_data->rrs.val_rrset_sig;
+    while (cur_rr) {
+        /*
+         * Identify the DNSKEY that created the RRSIG:
+         */
+        if (cur_rr->rr_rdata == NULL) {
+            cur_rr->rr_status = VAL_AC_DATA_MISSING;
+        } else { 
+            /*
+             * First identify the signer name from the RRSIG 
+             */
+            signby_name_n = &cur_rr->rr_rdata[SIGNBY];
+            /* The signer name has to be within the zone */
+            if (namename(as->_as.ac_data->rrs.val_rrset_name_n, 
+                 signby_name_n) == NULL) {
+                cur_rr->rr_status = VAL_AC_INVALID_RRSIG;
+            } else {
+                break;
+            }
+        }
+        cur_rr = cur_rr->rr_next;
     }
 
-    /*
-     * First identify the signer name from the RRSIG 
-     */
-    signby_name_n = &as->_as.ac_data->rrs.val_rrset_sig->rr_rdata[SIGNBY];
-    //XXX The signer name has to be within the zone
+    if (!cur_rr) {
+        as->val_ac_status = VAL_AC_RRSIG_MISSING;
+        return VAL_NO_ERROR;
+    }
 
     /*
      * Then look for  {signby_name_n, DNSKEY/DS, type} 
@@ -987,29 +1015,11 @@ check_conflicting_answers(val_context_t * context,
                  * STRAIGHT and CNAME/DNAME are OK 
                  */
             case SR_ANS_STRAIGHT:
+            case SR_ANS_CNAME:
+            case SR_ANS_DNAME:
                 if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
                     (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME) &&
                     (as->_as.ac_data->rrs_ans_kind != SR_ANS_DNAME)) {
-                    matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
-                }
-                break;
-
-            case SR_ANS_CNAME:
-                if (as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) {
-                    matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
-                }
-                break;
-
-            case SR_ANS_DNAME:
-                if (as->_as.ac_data->rrs_ans_kind == SR_ANS_CNAME) {
-                    /*
-                     * don't validate the synthesized cname 
-                     */
-                    as->val_ac_status = VAL_AC_IGNORE_VALIDATION;
-                } else if (as->_as.ac_data->rrs_ans_kind !=
-                           SR_ANS_STRAIGHT) {
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                 }
@@ -2899,10 +2909,9 @@ try_verify_assertion(val_context_t * context, struct val_query_chain *pc,
             }
         } else if (next_as->val_ac_status == VAL_AC_WAIT_FOR_TRUST) {
 
-            if (pc->qc_ans) {
-                /*
-                 * XXX what if this is an SR_ANS_CNAME? Can DS or DNSKEY return a CNAME? 
-                 */
+            if ((pc->qc_ans) && 
+                (pc->qc_ans->_as.ac_data) && 
+                (pc->qc_ans->_as.ac_data->rrs_ans_kind == SR_ANS_STRAIGHT)) {
                 /*
                  * if the pending assertion contains a straight answer, 
                  * trust is useful for verification 
@@ -3044,7 +3053,14 @@ verify_and_validate(val_context_t * context,
 
                 struct val_query_chain *pc;
                 pc = next_as->_as.ac_pending_query;
-                // xxx-audit: ptr deref w/out NULL check (pc)
+                if (pc == NULL) {
+                    /* Should never reach this condition */
+                    val_log(context, LOG_ERR, 
+                            "pending query was NULL when it should not have been"); 
+                    res->val_rc_status = VAL_ERROR;
+                    break;
+                }
+                
                 if (pc->qc_state == Q_WAIT_FOR_GLUE) {
                     merge_glue_in_referral(pc, queries);
                 }
@@ -3100,7 +3116,7 @@ verify_and_validate(val_context_t * context,
                  */
 
                 if (next_as->val_ac_trust == NULL) {
-                    res->val_rc_status = VAL_INDETERMINATE_PROOF;
+                    res->val_rc_status = VAL_ERROR;
                     break;
                 }
 
@@ -3144,13 +3160,6 @@ verify_and_validate(val_context_t * context,
                      * We could only be asking the child if our default name server is 
                      * the child, so ty again starting from root; state will be WAIT_FOR_TRUST 
                      */
-                    /*
-                     * XXX There is an opportunity for an infinite loop here: 
-                     * XXX If some nameserver actually sends a referral for the DS record
-                     * XXX to the child (faulty/malicious NS) we'll keep recursing from root
-                     * XXX Need to detect this case
-                     */
-#if 0
                     struct name_server *root_ns = NULL;
                     get_root_ns(&root_ns);
                     if (root_ns == NULL) {
@@ -3158,7 +3167,8 @@ verify_and_validate(val_context_t * context,
                          * No root hints configured 
                          */
                         res->val_rc_status = VAL_INDETERMINATE_PROOF;
-                        // xxx-check: log message?
+                        val_log(context, LOG_WARNING, 
+                                "response for DS from child; INDETERMINATE: no root.hints configured");
                         break;
                     } else {
                         /*
@@ -3170,14 +3180,19 @@ verify_and_validate(val_context_t * context,
                              build_pending_query(context, queries,
                                                  next_as)))
                             return retval;
+                        if ((*queries)->qc_referral != NULL) {
+                            /*
+                             * There is an opportunity for an infinite loop here: 
+                             * If some nameserver actually sends a referral for the DS record
+                             * to the child (faulty/malicious NS) we'll keep recursing from root
+                             */
+                            res->val_rc_status = VAL_INDETERMINATE_PROOF;
+                            break;
+                        }
                         (*queries)->qc_ns_list = root_ns;
                         *done = 0;
                         thisdone = 0;
                     }
-#else
-                    res->val_rc_status = VAL_INDETERMINATE_PROOF;
-                    break;
-#endif
                 } else {
                     if (verify_provably_unsecure(context, top_q, next_as)) {
                         res->val_rc_status = VAL_PROVABLY_UNSECURE;
@@ -3234,7 +3249,7 @@ verify_and_validate(val_context_t * context,
                 if (verify_provably_unsecure(context, top_q, next_as)) {
                     res->val_rc_status = VAL_PROVABLY_UNSECURE;
                 } else
-                    res->val_rc_status = VAL_ERROR;
+                    res->val_rc_status = VAL_INDETERMINATE;
                 break;
             } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
                 res->val_rc_status = VAL_ERROR;
@@ -3276,9 +3291,10 @@ ask_cache(val_context_t * context, u_int8_t flags,
           struct val_digested_auth_chain **assertions, int *data_received)
 {
     struct val_query_chain *next_q, *top_q;
-    struct rrset_rec *next_answer;
-    int             retval;
-    char            name_p[NS_MAXDNAME];
+    int    retval;
+    char   name_p[NS_MAXDNAME];
+    struct domain_info *response = NULL;
+    int more_data = 0;
 
     if ((queries == NULL) || (assertions == NULL)
         || (data_received == NULL))
@@ -3286,32 +3302,22 @@ ask_cache(val_context_t * context, u_int8_t flags,
 
     top_q = *queries;
 
-    for (next_q = *queries; next_q && next_q != end_q;
-         next_q = next_q->qc_next) {
+    for (next_q = *queries; next_q; next_q = next_q->qc_next) {
         if (next_q->qc_state == Q_INIT) {
 
-            if (-1 ==
-                ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p)))
+            if (-1 == ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
+
             val_log(context, LOG_DEBUG,
                     "ask_cache(): looking for {%s %s(%d) %s(%d)}", name_p,
                     p_class(next_q->qc_class_h), next_q->qc_class_h,
                     p_type(next_q->qc_type_h), next_q->qc_type_h);
+
             if (VAL_NO_ERROR !=
-                (retval =
-                 get_cached_rrset(next_q->qc_name_n, next_q->qc_class_h,
-                                  next_q->qc_type_h, &next_answer)))
-                /*
-                 * XXX get_cached_rrset should return a domain_info structure
-                 * XXX This is to allow a CNAME chain to be returned
-                 * XXX In such cases, the qname_chain will also have to be tweaked 
-                 * XXX appropriately
-                 */
+                (retval = get_cached_rrset(next_q, &response)))
                 return retval;
 
-            if (next_answer) {
-                struct domain_info *response;
-
+            if (response) {
                 val_log(context, LOG_DEBUG,
                         "ask_cache(): found data for {%s %d %d}", name_p,
                         next_q->qc_class_h, next_q->qc_type_h);
@@ -3322,58 +3328,72 @@ ask_cache(val_context_t * context, u_int8_t flags,
                 if (!next_q->qc_glue_request)
                     *data_received = 1;
 
-                next_q->qc_state = Q_ANSWERED;
-                /*
-                 * Construct a dummy response 
-                 */
-                response = (struct domain_info *)
-                    MALLOC(sizeof(struct domain_info));
-                if (response == NULL) {
-                    res_sq_free_rrset_recs(&next_answer);
-                    return VAL_OUT_OF_MEMORY;
+                if (next_q->qc_state == Q_ANSWERED) {
+
+                    /* merge any answer from the referral (alias) portion */
+
+                    if (next_q->qc_referral) {
+                        merge_rrset_recs(&next_q->qc_referral->answers, response->di_answers);
+                        response->di_answers = next_q->qc_referral->answers;
+                        next_q->qc_referral->answers = NULL;
+
+                        /*
+                         * Consume qnames
+                         */
+                        if (response->di_qnames == NULL)
+                            response->di_qnames = next_q->qc_referral->qnames;
+                        else if (next_q->qc_referral->qnames) {
+                            struct qname_chain *t_q;
+                            for (t_q = response->di_qnames; t_q->qnc_next; t_q = t_q->qnc_next);
+                            t_q->qnc_next = next_q->qc_referral->qnames;
+                        }
+                        next_q->qc_referral->qnames = NULL;
+        
+                        /*
+                         * Note that we don't free qc_referral here 
+                         */
+                        free_referral_members(next_q->qc_referral);
+                    }
+
+                    if (VAL_NO_ERROR != (retval = assimilate_answers(context, queries,
+                                                response, next_q, assertions,
+                                                flags))) {
+
+                        free_domain_info_ptrs(response);
+                        FREE(response);
+                        return retval;
+                    }
+
+                } else {
+                    /* got some response, but need to get more info (cname/dname) */
+                    more_data = 1;
+
+                    if (next_q->qc_referral == NULL) {
+                        ALLOCATE_REFERRAL_BLOCK(next_q->qc_referral);
+                    }
+                    /*
+                     * Consume qnames 
+                     */
+                    if (next_q->qc_referral->qnames == NULL)
+                        next_q->qc_referral->qnames = response->di_qnames;
+                    else if (response->di_qnames) {
+                        struct qname_chain *t_q;
+                        for (t_q = response->di_qnames; t_q->qnc_next; t_q = t_q->qnc_next);
+                        t_q->qnc_next = next_q->qc_referral->qnames;
+                        next_q->qc_referral->qnames = response->di_qnames;
+                    }
+                    response->di_qnames = NULL;
                 }
 
-                response->di_answers = next_answer;
-                response->di_proofs = NULL;
-                response->di_qnames = (struct qname_chain *)
-                    MALLOC(sizeof(struct qname_chain));
-                if (response->di_qnames == NULL) {
-                    free_domain_info_ptrs(response);
-                    FREE(response);
-                    return VAL_OUT_OF_MEMORY;
-                }
-                memcpy(response->di_qnames->qnc_name_n, next_q->qc_name_n,
-                       wire_name_length(next_q->qc_name_n));
-                response->di_qnames->qnc_next = NULL;
-
-                if (ns_name_ntop(next_q->qc_name_n, name_p, sizeof(name_p))
-                    == -1) {
-                    next_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
-                    free_domain_info_ptrs(response);
-                    FREE(response);
-                    continue;
-                }
-                response->di_requested_name_h = name_p;
-                response->di_requested_type_h = next_q->qc_type_h;
-                response->di_requested_class_h = next_q->qc_class_h;
-                response->di_res_error = SR_UNSET;
-
-                retval = assimilate_answers(context, queries,
-                                            response, next_q, assertions,
-                                            flags);
-                response->di_requested_name_h = NULL;
                 free_domain_info_ptrs(response);
                 FREE(response);
-                if (VAL_NO_ERROR != retval) {
-                    return retval;
-                }
 
                 break;
             }
         }
     }
 
-    if (top_q != *queries)
+    if ((top_q != *queries) || more_data)
         /*
          * more queries have been added, do this again 
          */
@@ -3496,25 +3516,6 @@ ask_resolver(val_context_t * context, u_int8_t flags,
                             return retval;
                         }
 
-                        /*
-                         * Save new responses in the cache 
-                         */
-                        if (VAL_NO_ERROR !=
-                            (retval = stow_answer(response->di_answers))) {
-                            free_domain_info_ptrs(response);
-                            FREE(response);
-                            return retval;
-                        }
-
-                        if (VAL_NO_ERROR !=
-                            (retval = stow_answer(response->di_proofs))) {
-                            free_domain_info_ptrs(response);
-                            FREE(response);
-                            return retval;
-                        }
-
-                        response->di_answers = NULL;
-                        response->di_proofs = NULL;
                         free_domain_info_ptrs(response);
                         FREE(response);
                         answered = 1;
@@ -3789,7 +3790,7 @@ check_alias_sanity(val_context_t * context,
                      SR_ANS_DNAME)
                     && (NULL !=
                         (p =
-                         (u_int8_t *) strstr(qname_n,
+                         (u_int8_t *) namename(qname_n,
                                              res->val_rc_rrset->_as.
                                              ac_data->rrs.
                                              val_rrset_name_n)))) {
@@ -3901,7 +3902,7 @@ check_alias_sanity(val_context_t * context,
         }
 
         /*
-         * All other cnames(unless they are synthesized), dnames and answers are bogus 
+         * All other cnames, dnames and answers are bogus 
          */
         for (res = w_results; res; res = res->val_rc_next) {
             if ((!res->val_rc_consumed) &&
