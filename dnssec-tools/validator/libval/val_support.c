@@ -181,6 +181,24 @@ namecmp(const u_int8_t * name1, const u_int8_t * name2)
     return labels1 - labels2;
 }
 
+u_int8_t * 
+namename(u_int8_t * big_name, u_int8_t * little_name)
+{
+    u_int8_t *p = big_name;
+    
+    if (!big_name || !little_name)
+        return NULL;
+
+    while (p && namecmp(p, little_name) && (*p != '\0')) {
+        p = p + p[0] + 1;
+    }
+
+    if (!namecmp(p, little_name))
+        return p;
+    return NULL;
+}
+
+
 #ifdef LIBVAL_NSEC3
 
 /*
@@ -1545,6 +1563,7 @@ link_rr(struct rr_rec **cs, struct rr_rec *cr)
     }
 }
 
+
 struct rrset_rec *
 copy_rrset_rec(struct rrset_rec *rr_set)
 {
@@ -1669,6 +1688,29 @@ copy_rrset_rec(struct rrset_rec *rr_set)
   err:
     res_sq_free_rrset_recs(&copy_set);
     return NULL;
+}
+
+struct rrset_rec *
+copy_rrset_rec_list(struct rrset_rec *rr_set) 
+{
+    struct rrset_rec *copy_set, *cur_set, *prev_set, *new_set;
+
+    copy_set = cur_set = prev_set = new_set = NULL;
+
+    for (cur_set = rr_set; cur_set; cur_set=cur_set->rrs_next) {
+        new_set = copy_rrset_rec(cur_set);
+        if (!new_set) {
+            res_sq_free_rrset_recs(&copy_set);
+            return NULL;
+        }    
+        if (prev_set) {
+            prev_set->rrs_next = new_set;
+        } else {
+            copy_set = new_set;
+        }
+        prev_set = new_set;
+    }
+    return copy_set;
 }
 
 /*
