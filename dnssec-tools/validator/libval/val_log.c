@@ -341,7 +341,7 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                 "from-server=%s, Query-status=%s:%d",
                 name_pr, p_class(class_h), p_type(type_h), serv_pr,
                 p_query_status(top_q->qc_state), top_q->qc_state);
-    } else
+    } else if (queries != NULL)
         val_log(ctx, level, "Original query: UNKNOWN?");
 
     for (next_result = results; next_result;
