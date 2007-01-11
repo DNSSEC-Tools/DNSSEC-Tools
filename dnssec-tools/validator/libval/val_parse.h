@@ -11,7 +11,7 @@
 #ifndef VAL_PARSE_H
 #define VAL_PARSE_H
 
-#include <resolver.h>
+#include <validator/resolver.h>
 
 
 /*

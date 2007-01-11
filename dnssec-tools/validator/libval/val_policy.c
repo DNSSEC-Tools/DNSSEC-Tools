@@ -26,8 +26,8 @@
 #include <sys/file.h>
 #include <resolv.h>
 
-#include <resolver.h>
-#include <validator.h>
+#include <validator/resolver.h>
+#include <validator/validator.h>
 #include "val_policy.h"
 #include "val_support.h"
 #include "val_cache.h"

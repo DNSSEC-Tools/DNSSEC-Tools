@@ -27,7 +27,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 
-#include <validator.h>
+#include <validator/validator.h>
 #include "val_crypto.h"
 #include "val_support.h"
 
