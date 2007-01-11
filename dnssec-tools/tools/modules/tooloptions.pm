@@ -604,7 +604,7 @@ sub opts_int_zonecopy
 	#
 	# Copy the data from the KSK and Current ZSK keyrecs.
 	#
-	foreach my $ktype ('kskkey', 'zskcur')
+	foreach my $ktype ('kskcur', 'zskcur')
 	{
 		my $setname;			# Name of the signing set.
 		my $setkeys;			# Keys in the signing set.
