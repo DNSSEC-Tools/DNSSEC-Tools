@@ -29,7 +29,7 @@ my %opts = (l => 5,
 	    c => $ENV{'HOME'} . "/.donuts.conf",
 	    T => 'port 53 || ip[6:2] & 0x1fff != 0',
 	    o => '%d.%t.pcap',
-	    r => $Config{'siteprefix'} . "/share/donuts/rules/*");
+	    r => "/usr/local/share/donuts/rules/*");
 
 my (@rules, %rules, $rf, $current_zone_file, %nrecs,
     @ignorelist, $netdns, $netdns_error, %outstructure, $current_domain,
