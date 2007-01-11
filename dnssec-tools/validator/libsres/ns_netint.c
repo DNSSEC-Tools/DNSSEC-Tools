@@ -19,7 +19,7 @@
 #include <sys/types.h>
 #include <arpa/nameser.h>
 
-#include "resolver.h"
+#include "validator/resolver.h"
 #include "res_support.h"
 
 /*

@@ -83,7 +83,7 @@
 #include "arpa/header.h"
 #endif
 
-#include "resolver.h"
+#include "validator/resolver.h"
 #include "res_mkquery.h"
 
 /*

@@ -21,7 +21,7 @@
 #include <string.h>
 #include <arpa/nameser.h>
 
-#include "resolver.h"
+#include "validator/resolver.h"
 
 /*
  * int

@@ -29,7 +29,7 @@
 
 #include <arpa/nameser.h>
 
-#include "resolver.h"
+#include "validator/resolver.h"
 
 extern void     libsres_pquery(const u_char * msg, int len, FILE * file);
 

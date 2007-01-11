@@ -24,7 +24,7 @@
 #include <netinet/in.h>
 #include <resolv.h>
 
-#include "resolver.h"
+#include "validator/resolver.h"
 #include "res_support.h"
 
 #ifndef STRUCT___NS_MSG_HAS__MSG_PTR

@@ -25,7 +25,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "resolver.h"
+#include "validator/resolver.h"
 #include "res_mkquery.h"
 #include "res_support.h"
 #include "res_tsig.h"

@@ -78,7 +78,7 @@
 #include <arpa/nameser.h>
 #include <netinet/in.h>
 #include <resolv.h>
-#include "resolver.h"
+#include "validator/resolver.h"
 
 /*
  * Expand compressed domain name 'src' to full domain name.
