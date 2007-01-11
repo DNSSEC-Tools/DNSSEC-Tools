@@ -20,8 +20,8 @@
 #include <strings.h>
 #include <resolv.h>
 
-#include <validator.h>
-#include <resolver.h>
+#include <validator/validator.h>
+#include <validator/resolver.h>
 #include "val_policy.h"
 #include <errno.h>
 

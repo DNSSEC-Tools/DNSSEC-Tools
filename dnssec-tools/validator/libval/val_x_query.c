@@ -15,8 +15,8 @@
 #include <resolv.h>
 #include <errno.h>
 
-#include <resolver.h>
-#include <validator.h>
+#include <validator/resolver.h>
+#include <validator/validator.h>
 #ifndef NAMESER_HAS_HEADER
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
 #include <arpa/nameser_compat.h>

@@ -19,8 +19,8 @@
 #include <strings.h>
 #include <errno.h>
 
-#include <validator.h>
-#include <resolver.h>
+#include <validator/validator.h>
+#include <validator/resolver.h>
 #include "val_policy.h"
 
 #define ETC_HOSTS_CONF "/etc/host.conf"

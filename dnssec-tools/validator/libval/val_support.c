@@ -35,8 +35,8 @@
 #endif
 #endif                          /* NAMESER_HAS_HEADER */
 
-#include <resolver.h>
-#include <validator.h>
+#include <validator/resolver.h>
+#include <validator/validator.h>
 #include "val_support.h"
 
 int

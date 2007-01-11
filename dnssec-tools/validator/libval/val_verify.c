@@ -17,8 +17,8 @@
 #include <time.h>
 #include <ctype.h>
 
-#include <resolver.h>
-#include <validator.h>
+#include <validator/resolver.h>
+#include <validator/validator.h>
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_verify.h"
