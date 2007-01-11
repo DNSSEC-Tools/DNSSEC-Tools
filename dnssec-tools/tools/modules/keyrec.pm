@@ -79,7 +79,7 @@ my @ZONEFIELDS = (
 			'ksdir',
 			'kskcount',
 			'kskdirectory',
-			'kskkey',
+			'kskcur',
 			'lastset',
 			'signedzone',
 			'zskcount',
