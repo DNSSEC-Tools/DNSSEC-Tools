@@ -60,7 +60,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_names
 		 keyrec_fullrec keyrec_recval keyrec_setval keyrec_settime
-		 keyrec_add keyrec_del keyrec_newkeyrec
+		 keyrec_add keyrec_del keyrec_newkeyrec keyrec_exists
 		 keyrec_zonefields keyrec_setfields keyrec_keyfields
 		 keyrec_init keyrec_discard keyrec_close
 		 keyrec_write keyrec_saveas
@@ -330,6 +330,20 @@ sub keyrec_names
 	}
 
 	return(@names);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_exists()
+#
+# Purpose:	Smoosh the keyrec names into an array and return the array.
+#
+sub keyrec_exists
+{
+	my $name = shift;			# The name to check.
+
+	return(1) if(exists($keyrecs{$name}));
+	return(0);
 }
 
 #--------------------------------------------------------------------------
@@ -1450,6 +1464,8 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
 
   $val = keyrec_recval("example.com","zonefile");
 
+  $exists = keyrec_exists("example.com");
+
   keyrec_add("zone","example.com",\%zone_krfields);
   keyrec_add("key","Kexample.com.+005+12345",\%keydata);
 
@@ -1608,6 +1624,11 @@ This routine removes a I<keyrec> file from use by a program.  The internally
 stored data are deleted and the I<keyrec> file handle is closed.  However,
 modified data are not saved prior to closing the file handle.  Thus, modified
 and new data will be lost.
+
+=head2 I<keyrec_exists(keyrec_name)>
+
+B<keyrec_exists()> returns a boolean indicating if a I<keyrec> exists that
+has the specified I<keyrec_name>.
 
 =head2 I<keyrec_fullrec(keyrec_name)>
 
