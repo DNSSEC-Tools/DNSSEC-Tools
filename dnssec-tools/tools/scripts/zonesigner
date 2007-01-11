@@ -699,6 +699,15 @@ sub genzsks
 		#
 		if($signset)
 		{
+			#
+			# Ensure that this is a valid signing set.
+			#
+			if(!keyrec_exists($signset))
+			{
+				print STDERR "signing set \"$signset\" does not exist\n";
+				exit(2);
+			}
+
 			$zskcursetname	 = $signset;
 			$opts{'zskcur'}  = $zskcursetname;
 			$opts{'lastset'} = $zskcursetname;
@@ -841,6 +850,12 @@ sub genksks
 		# Get the KSK set name.
 		#
 		$ksksetname = $opts{'kskkey'};
+		if(!keyrec_exists($ksksetname))
+		{
+			print STDERR "\nKSK keyrec \"$ksksetname\" does not exist; unable to re-use non-existent KSK\n";
+			exit(1);
+		}
+
 		vprint("reusing existing KSK set - $ksksetname\n");
 
 		#
@@ -858,7 +873,15 @@ sub genksks
 	#
 	if($ksignset)
 	{
+		#
+		# Get the KSK set name and ensure it exists.
+		#
 		$ksksetname = $ksignset;
+		if(!keyrec_exists($ksksetname))
+		{
+			print STDERR "\nKSK signing set \"$ksksetname\" does not exist; unable to re-use non-existent KSK\n";
+			exit(1);
+		}
 	}
 	else
 	{
