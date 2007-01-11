@@ -423,7 +423,7 @@ sub getkeyrecs
 		{
 			$sets{$krn} = $kr;
 		}
-		elsif($type eq 'ksk')
+		elsif($type eq 'kskcur')
 		{
 			$kskkeys{$krn} = $kr;
 		}
@@ -458,7 +458,7 @@ sub zonekeys
 	#
 	# Ensure that the zone's KSK key is present and exists.
 	#
-	$keyname = $zonerec{'kskkey'};
+	$keyname = $zonerec{'kskcur'};
 	if(!defined($keyname))
 	{
 		qprint("missing key:  KSK (zone $zonename)\n");
@@ -924,7 +924,7 @@ sub orphankeys
 
 		foreach my $zonename (sort(keys(%zones)))
 		{
-			if($zones{$zonename}{'kskkey'} eq $keyname)
+			if($zones{$zonename}{'kskcur'} eq $keyname)
 			{
 				$found = 1;
 				last;
@@ -1005,7 +1005,7 @@ sub keytypes
 		# Gather our needed data.
 		#
 		$zonename = $kskkeys{$keyname}{'zonename'};
-		$kskname  = $zones{$zonename}{'kskkey'};
+		$kskname  = $zones{$zonename}{'kskcur'};
 
 		#
 		# Register an error if this key isn't zone's KSK.
