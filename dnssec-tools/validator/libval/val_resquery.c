@@ -440,8 +440,11 @@ find_nslist_for_query(val_context_t * context,
             return VAL_NO_ERROR;
         } 
     } 
-    
-    if (context->nslist != NULL) {
+   
+    if (next_q->qc_ns_list != NULL) { 
+        return VAL_NO_ERROR;
+    }
+    else if (context->nslist != NULL) {
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
     } else {
         /*
@@ -664,11 +667,11 @@ follow_referral_or_alias_link(val_context_t * context,
         memset(debug_name2, 0, 1024);
         ns_name_ntop(matched_q->qc_name_n, debug_name1,
                      sizeof(debug_name1));
-        ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
         if (alias_chain) {
             val_log(context, LOG_DEBUG, "QUERYING: canonical name '%s.'",
-                debug_name1, debug_name2);
+                debug_name1);
         } else {
+            ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
             val_log(context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)",
                 debug_name1, debug_name2);
         }
