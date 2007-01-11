@@ -36,7 +36,7 @@
 #ifndef VAL_NO_THREADS
 #include <pthread.h>
 #endif
-#include "resolver.h"
+#include "validator/resolver.h"
 #include "res_support.h"
 #include "res_io_manager.h"
 

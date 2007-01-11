@@ -28,7 +28,7 @@
 #include <ctype.h>
 
 #include "nsap_addr.h"
-#include "resolver.h"
+#include "validator/resolver.h"
 
 #ifdef SPRINTF_CHAR
 # define SPRINTF(x) strlen(sprintf/**/x)

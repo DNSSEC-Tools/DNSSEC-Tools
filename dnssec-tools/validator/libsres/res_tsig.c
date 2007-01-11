@@ -20,7 +20,7 @@
 #include <string.h>
 #include <sys/types.h>
 #include <arpa/nameser.h>
-#include "resolver.h"
+#include "validator/resolver.h"
 #include "res_tsig.h"
 #include "res_support.h"
 

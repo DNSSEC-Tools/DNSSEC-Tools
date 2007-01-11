@@ -51,7 +51,7 @@
 #include <netinet/in.h>
 #include <resolv.h>
 
-#include "resolver.h"
+#include "validator/resolver.h"
 
 #define Assert(Cond) if (!(Cond)) abort()
 
