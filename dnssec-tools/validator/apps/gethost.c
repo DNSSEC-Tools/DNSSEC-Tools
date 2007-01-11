@@ -11,7 +11,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <strings.h>
-#include <validator.h>
+#include <validator/validator.h>
 #ifdef HAVE_GETOPT_H
 #include <getopt.h>
 #endif

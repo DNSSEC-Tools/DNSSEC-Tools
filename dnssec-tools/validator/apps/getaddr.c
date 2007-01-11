@@ -24,8 +24,8 @@
 #endif
 
 #include <arpa/nameser.h>
-#include <resolver.h>
-#include <validator.h>
+#include <validator/resolver.h>
+#include <validator/validator.h>
 
 #ifdef HAVE_GETOPT_LONG
 // Program options
