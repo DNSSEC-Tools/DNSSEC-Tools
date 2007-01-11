@@ -12,7 +12,7 @@ extern          "C" {
 
 #include <syslog.h>
 #include <stdarg.h>
-#include <val_errors.h>
+#include <validator/val_errors.h>
 
 #include <arpa/nameser.h>
 #include <netdb.h>
