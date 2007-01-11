@@ -366,7 +366,7 @@ sub orphankey
 	{
 		my $zone = $keyrec{'zonename'};		# Key's zone.
 
-		if($zones{$zone}{'kskkey'} eq $keyname)
+		if($zones{$zone}{'kskcur'} eq $keyname)
 		{
 			vprint("referenced key:  KSK $keyname $zone\n");
 			return(0);

@@ -840,7 +840,7 @@ sub genksks
 		#
 		# Ensure that we've got a KSK set.
 		#
-		if($opts{'kskkey'} eq "")
+		if($opts{'kskcur'} eq "")
 		{
 			print STDERR "\nKSK does not exist; unable to re-use non-existent KSK\n";
 			exit(1);
@@ -849,7 +849,7 @@ sub genksks
 		#
 		# Get the KSK set name.
 		#
-		$ksksetname = $opts{'kskkey'};
+		$ksksetname = $opts{'kskcur'};
 		if(!keyrec_exists($ksksetname))
 		{
 			print STDERR "\nKSK keyrec \"$ksksetname\" does not exist; unable to re-use non-existent KSK\n";
@@ -885,9 +885,9 @@ sub genksks
 	}
 	else
 	{
-		if(defined($opts{'kskkey'}))
+		if(defined($opts{'kskcur'}))
 		{
-			$ksksetname = $opts{'kskkey'};
+			$ksksetname = $opts{'kskcur'};
 		}
 		else
 		{
@@ -933,13 +933,13 @@ sub genksk
 	#
 	if($genksk == 0)
 	{
-		if($opts{'kskkey'} eq "")
+		if($opts{'kskcur'} eq "")
 		{
 			print STDERR "\nunable to re-use a non-existent KSK for zone \"$opts{'zone'}\"\n";
 			exit(1);
 		}
 
-		$ksk = $opts{'kskkey'};
+		$ksk = $opts{'kskcur'};
 		vprint("reusing existing KSK - $ksk\n");
 
 		return;
@@ -1453,7 +1453,7 @@ sub updzonerec
 	else	    { $opts{'zonefile'} = $zoneftmp; }
 	$opts{'signedzone'}	= $zoneout;
 	$opts{'kskdirectory'}	= $kskdir;
-	$opts{'kskkey'}		= $ksksetname if(defined($ksksetname));
+	$opts{'kskcur'}		= $ksksetname if(defined($ksksetname));
 	$opts{'zskcount'}	= $zskcnt;
 	$opts{'zskdirectory'}	= $zskdir;
 	$opts{'szopts'}		= $szopts if($szopts ne "");
@@ -2788,7 +2788,7 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	zonefile	"db.example.com"
 	signedzone	"db.example.com.signed"
 	endtime		"+2592000"
-	kskkey		"Kexample.com.+005+24082"
+	kskcur		"Kexample.com.+005+24082"
 	kskdirectory	"."
 	zskcur		"signing-set-42"
 	zskpub		"signing-set-43"

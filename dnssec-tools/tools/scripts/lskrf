@@ -863,7 +863,7 @@ sub refdkey
 		# Simple case if the key is a KSK.
 		#	We just look in the zone's keyrec.
 		#
-		return(1) if($zkr{'kskkey'} eq $kn);
+		return(1) if($zkr{'kskcur'} eq $kn);
 
 		#
 		# Somewhat more difficult case if the key is a ZSK.
