@@ -20,7 +20,8 @@ sub MY::postamble {
     return '
 
 RULESDIR=$(DESTDIR)/$(SITEPREFIX)/share/donuts/rules
-INSTALL=$(PERLRUN) "-MExtUtils::Command" -e cp
+RULESDIR=/usr/local/share/donuts/rules
+INSTALL=$(PERL) "-MExtUtils::Command" -e cp
 
 install:: installrulefiles
 
