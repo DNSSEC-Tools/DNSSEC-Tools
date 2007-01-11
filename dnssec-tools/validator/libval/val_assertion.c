@@ -2676,6 +2676,8 @@ verify_provably_unsecure(val_context_t * context,
             } 
 
             val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
+            if (zonecut_n)
+                FREE(zonecut_n);
 
             return 0;
         }
