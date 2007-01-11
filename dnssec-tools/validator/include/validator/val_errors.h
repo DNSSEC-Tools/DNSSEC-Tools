@@ -6,8 +6,8 @@
 #ifndef VAL_ERRORS_H
 #define VAL_ERRORS_H
 
-#include <resolver.h>
-#include <validator.h>
+#include <validator/resolver.h>
+#include <validator/validator.h>
 
 #define VAL_FLAG_CHAIN_COMPLETE 0x80
 #define VAL_MASKED_FLAG_CHAIN_COMPLETE 0x7f
