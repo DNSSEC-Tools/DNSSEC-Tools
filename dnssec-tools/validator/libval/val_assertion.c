@@ -4159,7 +4159,7 @@ val_resolve_and_check(val_context_t * ctx,
     if (top_q == NULL)
         return VAL_INTERNAL_ERROR;
 
-    while (!ans_done || !proof_done) {
+    while (!ans_done || !proof_done || !w_results) {
 
         struct val_query_chain *last_q;
 
@@ -4233,7 +4233,7 @@ val_resolve_and_check(val_context_t * ctx,
         data_received = 0;
 
         /*
-         * We have sufficient data to at least perform some validation --
+         * We may have sufficient data to perform validation --
          * validate what ever is possible. 
          */
 
