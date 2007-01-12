@@ -435,6 +435,9 @@ find_nslist_for_query(val_context_t * context,
     if (next_q->qc_zonecut_n)
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
+    if (next_q->qc_ns_list != NULL) 
+        free_name_servers(&next_q->qc_ns_list);
+    next_q->qc_ns_list = NULL;
 
     ret_val = get_nslist_from_cache(context, next_q, queries, &ref_ns_list, &next_q->qc_zonecut_n);
     
@@ -447,11 +450,8 @@ find_nslist_for_query(val_context_t * context,
             return VAL_NO_ERROR;
         } 
     } 
-   
-    if (next_q->qc_ns_list != NULL) { 
-        return VAL_NO_ERROR;
-    }
-    else if (context->nslist != NULL) {
+
+    if (context->nslist != NULL) {
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
     } else {
         /*
@@ -555,6 +555,7 @@ bootstrap_referral(u_int8_t * referral_zone_n,
             add_to_query_chain(queries, pending_glue->ns_name_n, ns_t_a,
                                ns_c_in);
             matched_q->qc_referral->glueptr = *queries;
+            matched_q->qc_referral->glueptr->qc_flags &= VAL_FLAGS_DONT_VALIDATE;
             matched_q->qc_referral->glueptr->qc_glue_request = 1;
             matched_q->qc_state = Q_WAIT_FOR_GLUE;
         } else {
@@ -664,39 +665,39 @@ follow_referral_or_alias_link(val_context_t * context,
                                                     &ref_ns_list)))
                 return ret_val;
         }
-    }
 
 
-    {
-        char            debug_name1[NS_MAXDNAME];
-        char            debug_name2[NS_MAXDNAME];
-        memset(debug_name1, 0, 1024);
-        memset(debug_name2, 0, 1024);
-        ns_name_ntop(matched_q->qc_name_n, debug_name1,
+        {
+            char            debug_name1[NS_MAXDNAME];
+            char            debug_name2[NS_MAXDNAME];
+            memset(debug_name1, 0, 1024);
+            memset(debug_name2, 0, 1024);
+            ns_name_ntop(matched_q->qc_name_n, debug_name1,
                      sizeof(debug_name1));
-        if (alias_chain) {
-            val_log(context, LOG_DEBUG, "QUERYING: canonical name '%s.'",
-                debug_name1);
-        } else {
-            ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
-            val_log(context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)",
-                debug_name1, debug_name2);
+            if (alias_chain) {
+                val_log(context, LOG_DEBUG, "QUERYING: canonical name '%s.'",
+                    debug_name1);
+            } else {
+                ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
+                val_log(context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)",
+                    debug_name1, debug_name2);
+            }
         }
-    }
 
-    /*
-     * Register the request name and zone with our referral monitor
-     */
-    if (register_query
-        (&matched_q->qc_referral->queries, matched_q->qc_name_n,
-         matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
         /*
-         * If this request has already been made then Referral Error
+         * Register the request name and zone with our referral monitor
          */
-        matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
-        goto query_err;
-    }
+        if (register_query
+            (&matched_q->qc_referral->queries, matched_q->qc_name_n,
+            matched_q->qc_type_h, referral_zone_n) == ITS_BEEN_DONE) {
+            /*
+             * If this request has already been made then Referral Error
+             */
+            matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            goto query_err;
+        }
 
+    }
 
   query_err:
     if (matched_q->qc_respondent_server) {
@@ -1308,7 +1309,7 @@ digest_response(val_context_t * context,
          * following referrals is also recursive
          */
         if ((VAL_AC_WAIT_FOR_TRUST ==
-             is_trusted_zone(context, matched_q->qc_name_n))
+                is_trusted_zone(context, matched_q->qc_name_n))
             && matched_q->qc_respondent_server
             && !(matched_q->qc_flags & VAL_FLAGS_DONT_VALIDATE)
             && !(matched_q->qc_respondent_server->
