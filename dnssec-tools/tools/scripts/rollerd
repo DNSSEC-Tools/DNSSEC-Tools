@@ -532,7 +532,7 @@ sub zsk_phase4
 	#
 	# Adjust ZSKs in the zone's keyrec.
 	#
-	$ret = signer($rname,"-forceroll",$krr);
+	$ret = signer($rname,"-rollzsk",$krr);
 	if($ret eq "")
 	{
 		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to adjust ZSK keyrec");
