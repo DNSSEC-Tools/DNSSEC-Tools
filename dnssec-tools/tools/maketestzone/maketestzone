@@ -214,7 +214,7 @@ my %LegendInformation =
 #
 my %zonesigner_domain_opts =
   (
-   'rollzsk-ns.' . $opts{'d'} => ($opts{'a'} =~ /-gen/ ? '' : '-forceroll'),
+   'rollzsk-ns.' . $opts{'d'} => ($opts{'a'} =~ /-gen/ ? '' : '-rollzsk'),
    'newzsk-ns.' . $opts{'d'} => '-genzsk',
    'newksk-ns.' . $opts{'d'} => '-genksk',
    'newkeys-ns.' . $opts{'d'} => '-genkeys',
@@ -1142,7 +1142,7 @@ how zonesigner is called for various sub-domains.  Thus you can create
 additional sub-zones with different zonesigner optionns to test other
 operational parameters between parent and child.  For example:
 
-   'rollzsk-ns.' . $opts{'d'} => '-forceroll',
+   'rollzsk-ns.' . $opts{'d'} => '-rollzsk',
 
 Forces the rollzsk-ns test sub-zone to roll it's zsk when the zone is
 signed.
