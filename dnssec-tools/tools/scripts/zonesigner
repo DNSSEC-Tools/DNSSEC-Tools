@@ -147,14 +147,14 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool-specific options:'],
-	       ["forceroll",		'Force the rollover of ZSK keys.'],
+	       ["rollzsk",		'Force the rollover of ZSK keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
 	       ["usepub",		'Use Published ZSK for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	       ["nosave",		'Do not save old keys.'],
 	     );
 
-my $forceroll	= 0;			# Force-a-ZSK-rollover flag.
+my $rollzsk	= 0;			# Force-a-ZSK-rollover flag.
 my $useboth	= 0;			# Use-current-and-published-ZSK flag.
 my $usepub	= 0;			# Use-published-ZSK flag.
 
@@ -327,8 +327,8 @@ sub optsandargs()
 	#
 	# Check for the ZSK rollover flag.
 	#
-	$forceroll = 0;
-	$forceroll = 1 if(defined($opts{'forceroll'}));
+	$rollzsk = 0;
+	$rollzsk = 1 if(defined($opts{'rollzsk'}));
 
 	#
 	# Set up options and values, saving to global scalars and also
@@ -388,11 +388,11 @@ sub optsandargs()
 
 	#
 	# Ensure that the ZSK archive directory is a real directory,
-	# if it already exists.  This is only checked if -forceroll was
+	# if it already exists.  This is only checked if -rollzsk was
 	# given, since the only time the archive directory is used is
 	# when zonesigner is doing a rollover.
 	#
-	if($forceroll)
+	if($rollzsk)
 	{
 		if($archdir ne "")
 		{
@@ -650,7 +650,7 @@ sub genzsks
 	#
 	# Handle a ZSK rollover.
 	#
-	if($forceroll)
+	if($rollzsk)
 	{
 		#
 		# Get the current ZSK list.
@@ -679,7 +679,7 @@ sub genzsks
 		#
 		# Do the rollover.
 		#
-		forceroll();
+		rollzsk();
 		vmed_print("\n");
 		return;
 	}
@@ -1838,7 +1838,7 @@ EOF
 }
 
 #----------------------------------------------------------------------
-# Routine:	forceroll()
+# Routine:	rollzsk()
 #
 # Purpose:	Force a rollover of the ZSK keys.  The Current ZSKs are marked
 #		as obsolete.  The Published ZSKs are moved to being the Current
@@ -1848,7 +1848,7 @@ EOF
 #
 #		This should only be used if you know what you're doing.
 #
-sub forceroll
+sub rollzsk
 {
 	my $krref;				# Reference to key's keyrec.
 	my $zoneref;				# Reference to zone's keyrec.
@@ -2560,7 +2560,7 @@ The default signing set name is "signing-set-I<N>", where I<N> is a number.
 If I<-signset> is not specified, then B<zonesigner> will use the default and
 increment the number for subsequent signing sets.
 
-=item -forceroll
+=item -rollzsk
 
 Force a rollover of the ZSK keys using the Pre-Publish Key Rollover method.
 The rollover process adjusts the keys used to sign the specified zone,
@@ -2591,13 +2591,13 @@ you use it):
     - wait 2 * max(TTL in zone)
     - run zonesigner using -usepub
     - wait 2 * max(TTL in zone)
-    - run zonesigner using -forceroll
+    - run zonesigner using -rollzsk
     - wait 2 * max(TTL in zone)
 
 B<Warning>:  The timing of key-rolling is critical.  Great care must be taken
 when using this option.  B<rollerd> automatees the rollover process and may be
 used to safely take care of this aspect of DNSSEC management.  Using the
-I<-forceroll> option should only be used if you know what you're doing.
+I<-rollzsk> option should only be used if you know what you're doing.
 
 =item -intermediate
 
