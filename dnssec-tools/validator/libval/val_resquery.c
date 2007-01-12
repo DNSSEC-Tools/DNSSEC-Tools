@@ -134,14 +134,21 @@ merge_glue_in_referral(struct val_query_chain *pc,
      * Check if glue was obtained 
      */
     if ((glueptr->qc_state == Q_ANSWERED) &&
-        (glueptr->qc_ans != NULL) &&
-        (glueptr->qc_ans->_as.ac_data != NULL)) {
+        (glueptr->qc_ans != NULL)) {
+        struct val_digested_auth_chain *as;
 
-        if (glueptr->qc_ans->_as.ac_data->rrs.val_rrset_type_h != ns_t_a) {
+        // This could be a cname or dname alias; search for the A record
+        // Need to support IPv6
+        for (as=glueptr->qc_ans; as; as=as->_as.val_ac_rrset_next) {
+            if (as->_as.ac_data && as->_as.ac_data->rrs.val_rrset_type_h == ns_t_a)
+                break;
+        }
+        
+        if (!as) {
             pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
         } else if (VAL_NO_ERROR !=
                    (retval =
-                    extract_glue_from_rdata(glueptr->qc_ans->_as.ac_data->
+                    extract_glue_from_rdata(as->_as.ac_data->
                                             rrs.val_rrset_data,
                                             &pc->qc_referral->
                                             pending_glue_ns))) {
