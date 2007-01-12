@@ -725,6 +725,13 @@ sub maybe_output_to_web {
     }
 }
 
+# this is merely a convience function for rule authors to place into
+# rules so a break point can be put on the function to stop in a
+# particular location within a rule definition.
+sub break_here {
+    my $x = 1;
+}
+
 #######################################################################
 # Getopt::GUI::Long safe calling in case it doesn't exist on the system
 #
