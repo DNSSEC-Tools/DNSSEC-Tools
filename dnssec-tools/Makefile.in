@@ -97,7 +97,7 @@ perlmakefiles:
 
 perlinstall:
 	$(QUIET)for i in $(PERLDIRS) ; do \
-	  (cd $$i ; make install ) ; \
+	  (cd $$i ; make install INSTALLSCRIPT=$(exec_prefix)) ; \
 	  if test $$? != 0 ; then \
 	     exit 1 ; \
 	  fi  \
