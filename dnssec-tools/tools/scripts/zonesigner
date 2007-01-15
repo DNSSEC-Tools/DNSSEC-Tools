@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC-Tools:  zonesigner
@@ -2788,7 +2788,7 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	zonefile	"db.example.com"
 	signedzone	"db.example.com.signed"
 	endtime		"+2592000"
-	kskcur		"Kexample.com.+005+24082"
+	kskcur		"signing-set-24"
 	kskdirectory	"."
 	zskcur		"signing-set-42"
 	zskpub		"signing-set-43"
@@ -2796,6 +2796,12 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 	keyrec_type	"zone"
 	keyrec_signsecs	"1115166642"
 	keyrec_signdate	"Wed May  4 00:30:42 2005"
+
+    set		"signing-set-24"
+	zonename	"example.com"
+	keys		"Kexample.com.+005+24082"
+	keyrec_setsecs	"1110000042"
+	keyrec_setdate	"Sat Mar  5 05:20:42 2005"
 
     set		"signing-set-42"
 	zonename	"example.com"
@@ -2811,14 +2817,14 @@ two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.
 
     key		"Kexample.com.+005+24082"
 	zonename	"example.com"
-	keyrec_type	"ksk"
+	keyrec_type	"kskcur"
 	algorithm	"rsasha1"
 	random		"/dev/urandom"
 	keypath		"./Kexample.com.+005+24082.key"
 	ksklength	"1024"
 	ksklife		"15768000"
-	keyrec_gensecs	"1115166638"
-	keyrec_gendate	"Wed May  4 00:30:38 2005"
+	keyrec_gensecs	"1110000042"
+	keyrec_gendate	"Sat Mar  5 05:20:42 2005"
 
     key		"Kexample.com.+005+53135"
 	zonename	"example.com"
@@ -2856,7 +2862,7 @@ plans are to allow for more flexible serial number manipulation.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
