@@ -971,7 +971,7 @@ sub genksk
 	#
 	# Add the KSK's keyrec to the keyrec file.
 	#
-	$opts{'keyrec_type'} = "ksk";
+	$opts{'keyrec_type'} = 'kskcur';
 	$opts{'keypath'}     = "$kskdir/$ksk.key";
 	$opts{'kgopts'}      = $kgopts if($kgopts ne "");
 	keyrec_add('key',$ksk,\%opts);
