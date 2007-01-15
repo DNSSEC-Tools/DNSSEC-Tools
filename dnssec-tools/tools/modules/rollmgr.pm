@@ -1,5 +1,5 @@
 #
-# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -2133,7 +2133,7 @@ the file prior to opening it, but we can't do so without it being open.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
