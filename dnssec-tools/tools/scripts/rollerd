@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -2322,7 +2322,7 @@ sub controllers
 #
 sub intcmd_handler
 {
-	rollmgr_log(LOG_ALWAYS,"<command>","rollover manager:  got a command interrupt\n");
+	rollmgr_log(LOG_TMI,"<command>","rollover manager:  got a command interrupt\n");
 
 	controllers(0);
 	commander();
@@ -2698,6 +2698,11 @@ It'd be nice to allow each I<rollrec> entry to specify its own logging
 level.
 
 =back
+
+=head1 COPYRIGHT
+
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
 
