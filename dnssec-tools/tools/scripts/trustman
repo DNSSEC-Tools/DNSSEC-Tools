@@ -85,6 +85,10 @@ my $contactaddr = $opts{'m'} ? $opts{'m'}
 my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
 
+if (!$smtpserver) {
+    print "smtpserver is undefined\n";
+}
+
 my $sleeptime = $opts{'t'} ? $opts{'t'}
                            : $dtconf{'tasleeptime'};
 
@@ -312,7 +316,7 @@ sub get_domains_keys() {
     my $dnsval_conf_pat = "trust-anchor";
 
     read_conf_file($named_conf_pat, \%keystorage, $ncfile, \%zone_configfile_map) if ($ncfile);
-    read_conf_file($dnsval_conf_pat, \%keystorage, $dvfile, \%zone_configfile_map) if ($dvfile);
+    read_dnsval_file($dnsval_conf_pat, \%keystorage, $dvfile, \%zone_configfile_map) if ($dvfile);
 
 # if a domain is specified on the command line, we will only
 # check that domain. Otherwise, check all domains found in config files.
@@ -434,9 +438,9 @@ sub read_conf_file {
 	exit (1);
     }
     while (<$fh>) {
-	if (/$pat {/) {
+	if (/$pat/) {
 	    while (<$fh>) {
-		last if (/^\s*};/);
+		last if (/^\s*\};/);
 		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
 
 # TODO: need to remember where these keys came from....
@@ -452,6 +456,52 @@ sub read_conf_file {
 			key => $5 };
 		    $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
 		}
+	    }
+	}
+    }
+    $fh->close;
+}
+
+#######################################################################
+# read_dnsval_file()
+#
+# reads in a config file pointed to by $file
+# looks for trust anchors using $pat and stores key
+# information in $storage
+#
+sub read_dnsval_file {
+    my ($pat, $storage, $file, $configmap) = @_;
+    Verbose("reading and parsing trust keys from $file\n");
+
+    my $fh = new IO::File;
+    if (!$fh->open("<$file")) {
+	print STDERR "Could not open named configuration file: $file\n";
+	exit (1);
+    }
+    # set separator to semicolon in order to get whole chunk
+    $/ = ";";
+    while (<$fh>) {
+        s/\s;\s*$//;
+        s/[\n\r]//g;
+        if (s/^\s*(\S*)\s*$pat\s*//) {
+            my $trustanchor_type = $1;
+            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
+                my ($domainname, $value) = ($1, $2);
+                $value =~ s/[\n\r]//g;
+                my ($flags, $proto, $algo, $key) = $value =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+
+
+                # strip the trailing dot
+                $domainname =~ s/\.$//;
+
+                $configmap->{$domainname} = $file;
+
+                push @{$storage->{$domainname}},
+		      { flags => $flags,
+			protocol => $proto,
+			algorithm => $algo,
+			key => $key };
+	        $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
 	    }
 	}
     }
