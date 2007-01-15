@@ -1,5 +1,5 @@
 #
-# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -156,11 +156,12 @@ The following is an example of a zone I<keyrec>:
             zonefile        "db.example.com"
             signedfile      "db.example.com.signed"
             endtime         "+604800"
-            kskcur          "Kexample.com.+005+33333"
+            kskcur          "signing-set-41"
             kskdirectory    "keydir"
             zskcur          "signing-set-42"
             zskpub          "signing-set-43"
             zsknew          "signing-set-44"
+	    lastset	    "signing-set-44"
             keyrec_signsecs "1123771721"
             keyrec_signdate "Thu Aug 11 14:48:41 2005"
 
@@ -176,6 +177,7 @@ The following is an example of a key I<keyrec>:
 
     key        "Kexample.com.+005+88888"
             zonename        "example.com"
+	    keyrec_type	    "kskcur"
             algorithm       "rsasha1"
             random          "/dev/urandom"
             keypath         "./Kexample.com.+005+88888.key"
@@ -185,7 +187,7 @@ The following is an example of a key I<keyrec>:
 
 =head1 COPYRIGHT
                  
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR

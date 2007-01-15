@@ -26,17 +26,17 @@
 #
 #		zone "example.com"
 #			zonefile	"db.example.com"
-#			zskcur		"Kexample.com.+005+52000"
-#			zskpub		"Kexample.com.+005+52001"
+#			zskcur		"signing-set-42"
+#			zskpub		"signing-set-43"
 #			endtime		"+2592000"   # Zone expires in 30 days.
 #
-#		set "Kexample.com.+005+26000"
+#		set "signing-set-42"
 #			zonename	"example.com"
 #			keys		"Kexample.com.+005+87654 Kexample.com.+005+55555
 #
 #		key "Kexample.com.+005+26000"
 #			zonename	"example.com"
-#			keyrec_type	"ksk"
+#			keyrec_type	"kskcur"
 #			algorithm	"rsasha1"
 #			length		"1024"
 #			ksklife		"15768000"
@@ -58,7 +58,7 @@ our $VERSION = "0.9";
 
 our @ISA = qw(Exporter);
 
-our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_names
+our @EXPORT = qw(keyrec_creat keyrec_open keyrec_read keyrec_fmtchk keyrec_names
 		 keyrec_fullrec keyrec_recval keyrec_setval keyrec_settime
 		 keyrec_add keyrec_del keyrec_newkeyrec keyrec_exists
 		 keyrec_zonefields keyrec_setfields keyrec_keyfields
@@ -203,6 +203,15 @@ sub keyrec_read
 	my @sbuf;			# Buffer for stat().
 
 	#
+	# Make sure a keyrec file was specified.
+	#
+	if($krf eq "")
+	{
+		print STDERR "no keyrec file specified\n";
+		return(-1);
+	}
+
+	#
 	# Make sure the keyrec file exists.
 	#
 	if(! -e $krf)
@@ -307,10 +316,234 @@ sub keyrec_read
 	}
 
 	#
+	# Ensure the keyrec file is in the current format.
+	#
+	keyrec_fmtchk($krf);
+
+	#
 	# Return the number of keyrecs we found.
 	#
 	$krcnt = keys(%keyrecs);
 	return($krcnt);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	keyrec_fmtchk()
+#
+# Purpose:	Ensure the keyrec file is in the current format.
+#
+#			zone keyrecs:
+#				- kskkey:
+#					Delete the entry if a kskcur entry
+#					exists.  If a kskcur entry doesn't
+#					exist, the kskkey key will be moved
+#					into a new kskcur entry.
+#				- keys:
+#					Ensure that each key in the zone is
+#					really pointing to a signing set.  if
+#					not, a new set is created and the key
+#					inserted in it.
+#
+#			set keyrecs:
+#				Nothing.
+#
+#			key keyrecs:
+#				- ksk:
+#					Change to a kskcur, kskpub, or kskobs.
+#
+sub keyrec_fmtchk()
+{
+	my $krf = shift;			# Name of keyrec file.
+	my $krn;				# Name of keyrec.
+	my $krec;				# Ref to the keyrec's hash.
+	my %krec;				# The keyrec's hash.
+
+	my $changes = 0;			# Count of changes made.
+
+# print "keyrec_fmtchk:  down in\n";
+
+	#
+	# Check zone keyrecs for problems:
+	#	- existence of kskkey fields
+	#	- key fields that don't point to set keyrecs
+	#
+	foreach $krn (keyrec_names())
+	{
+		#
+		# Get the keyrec hash.
+		#
+		$krec = $keyrecs{$krn};
+		%krec = %$krec;
+
+		#
+		# Only look at zones right now.
+		#
+		next if($krec{'keyrec_type'} ne 'zone');
+
+		#
+		# Check for the old 'kskkey' keyrec field.  If we find
+		# one, we'll make it the new 'kskcur' field if there's
+		# no 'kskcur'.  In either case, we'll delete the field.
+		#
+		if(exists($krec{'kskkey'}))
+		{
+			#
+			# Create a signing set for the new kskcur.
+			#
+			if(!exists($krec{'kskcur'}))
+			{
+				my $set;	# Signing set name.
+
+				$set = keyrec_signset_newname($krn);
+				keyrec_setval('zone',$krn,'kskcur',$set);
+				keyrec_signset_addkey($set,$krec{'kskkey'});
+			}
+
+			#
+			# Delete the old kskkey keyrec.
+			#
+			keyrec_delval($krn,'kskkey');
+			$changes++;
+		}
+
+		#
+		# Ensure that each of the valid key types is actually
+		# pointing to a signing set.  If not, create a new
+		# set and move the key there.
+		#
+		foreach my $key (qw /kskcur kskpub zskcur zskpub zsknew/)
+		{
+			my $keyname;		# Key's name.
+			my $set;		# Signing set name.
+			my $skr;		# Sub-keyrec.
+
+			#
+			# Skip the key if it isn't in the keyrec.
+			#
+			next if(!exists($krec{$key}));
+
+			#
+			# Get the keyrec type of this key's keyrec.
+			#
+			$keyname = $krec{$key};
+			$skr = $keyrecs{$keyname}{'keyrec_type'};
+
+			#
+			# Skip the key if it's already a signing set.
+			#
+			next if($skr eq 'set');
+
+			#
+			# Make a new signing set for this key.
+			#
+			$set = keyrec_signset_newname($krn);
+			keyrec_setval('zone',$krn,$key,$set);
+			keyrec_signset_addkey($set,$krec{$key});
+			$changes++;
+		}
+	}
+
+	#
+	# Check set keyrecs for problems:
+	#
+	#	- Nothing to check in set keyrecs.
+	#
+	foreach $krn (keyrec_names())
+	{
+		#
+		# Get the keyrec hash.
+		#
+		$krec = $keyrecs{$krn};
+		%krec = %$krec;
+
+		#
+		# Only look at sets right now...
+		#
+		next if($krec{'keyrec_type'} ne 'set');
+
+		#
+		# ... but we have nothing in sets to update.
+		#
+	}
+
+	#
+	# Check key keyrecs for problems:
+	#	- Change ksk type keyrecs to kskcur, kskpub, or kskobs.
+	#
+	foreach $krn (keyrec_names())
+	{
+		my $zone;			# Key's owner zone.
+		my $krt;			# Keyrec's type.
+
+		#
+		# Get the keyrec hash.
+		#
+		$krec = $keyrecs{$krn};
+		%krec = %$krec;
+
+		#
+		# Only look at keys right now.
+		#
+		next if(($krec{'keyrec_type'} eq 'zone')	||
+			($krec{'keyrec_type'} eq 'set'));
+
+		#
+		# Get the keyrec's type.
+		#
+		$krt = $krec{'keyrec_type'};
+
+		#
+		# Convert a ksk keyrec into either a kskcur, kskpub,
+		# or kskobs keyrec.
+		#
+		if($krt eq 'ksk')
+		{
+			my $key;		# Key type.
+			my $set;		# Key's signing set.
+			my $found = "";		# Found-key flag.
+
+			#
+			# Check the key's zone to find if it's used in
+			# any of the zone's key sets.
+			#
+			$zone = $krec{'zonename'};
+			foreach my $key (qw /kskcur kskpub/)
+			{
+				$set = $keyrecs{$zone}{$key};
+				if(keyrec_signset_haskey($set,$krn))
+				{
+					$found = $key;
+					last;
+				}
+			}
+
+			#
+			# If this key is used in the zone, we'll set its
+			# type appropriately.  If not, we'll set it to
+			# being an obsolete key.
+			#
+			if($found ne "")
+			{
+				keyrec_setval('key',$krn,'keyrec_type',$found);
+			}
+			else
+			{
+				keyrec_setval('key',$krn,'keyrec_type','kskobs');
+			}
+			$changes++;
+		}
+	}
+
+	#
+	# If any problems were found and fixed, write and re-read the file.
+	#
+	if($changes)
+	{
+		keyrec_write();
+		keyrec_close();
+		keyrec_read($krf);
+	}
 }
 
 #--------------------------------------------------------------------------
@@ -569,6 +802,129 @@ sub keyrec_setval
 
 #--------------------------------------------------------------------------
 #
+# Routine:	keyrec_delval()
+#
+# Purpose:	Delete a name/subfield pair from a keyrec.  The value is
+#		removed from both %keyrecs and in @keyreclines.  The $modified
+#		file-modified flag is updated, along with the length $keyreclen.
+#
+sub keyrec_delval
+{
+	my $name   = shift;		# Name of keyrec we're modifying.
+	my $field  = shift;		# Keyrec's subfield to be changed.
+
+	my $fldind;			# Loop index.
+	my $krind;			# Loop index for finding keyrec.
+	my $lastfld = 0;		# Last found field in @keyreclines.
+
+	#
+	# Return if a keyrec of the specified name doesn't exist.
+	#
+	return(1) if(!exists($keyrecs{$name}));
+
+	#
+	# Find the appropriate entry to delete from @keyreclines.  If
+	# the given field isn't set in $name's keyrec, we'll return.
+	#
+	for($krind=0;$krind<$keyreclen;$krind++)
+	{
+		my $line = $keyreclines[$krind];	# Line in keyrec file.
+		my $krtype;				# Keyrec type.
+		my $krname;				# Keyrec name.
+
+		#
+		# Dig out the line's keyword and value.
+		#
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$krtype = $1;
+		$krname = $2;
+
+		#
+		# If this line has the keyrec's name and is the start of a
+		# new keyrec, then we've found our man.
+		#
+		# IMPORTANT NOTE:  We will *always* find the keyrec we're
+		#		   looking for.  The exists() check above
+		#		   ensures that there will be a keyrec with
+		#		   the name we want.
+		#
+		if((lc($krname) eq lc($name)) &&
+		   ((lc($krtype) eq "zone")	||
+		    (lc($krtype) eq "set")	||
+		    (lc($krtype) eq "key")))
+		{
+			last;
+		}
+	}
+
+	#
+	# Find the specified field's entry in the keyrec's lines in
+	# @keyreclines.  We'll skip over lines that don't have a keyword
+	# and dquotes-enclosed value.  If we hit the next keyrec (marked
+	# by a zone or key line) then we'll stop looking and add a new
+	# entry at the end of the keyrec's fields.
+	#
+	for($fldind=$krind+1;$fldind<$keyreclen;$fldind++)
+	{
+		my $line = $keyreclines[$fldind];	# Line in keyrec file.
+		my $lkw;				# Line's keyword.
+		my $lval;				# Line's value.
+
+		#
+		# Get the line's keyword and value.
+		#
+		$line =~ /^[ \t]*([a-zA-Z_]+)[ \t]+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$lkw = $1;
+		$lval = $2;
+
+		#
+		# Skip empty lines.
+		#
+		next if($lkw eq "");
+
+		#
+		# If we hit the beginning of the next keyrec without
+		# finding the field, drop out and insert it.
+		#
+		if((lc($lkw) eq "zone")	||
+		   (lc($lkw) eq "set")	||
+		   (lc($lkw) eq "key"))
+		{
+			last;
+		}
+
+		#
+		# Save the index of the last field we've looked at that
+		# belongs to the keyrec.
+		#
+		$lastfld = $fldind;
+
+		#
+		# If we found the field, set the found flag, delete it and
+		# tell the world (or at least the module) that the file has
+		# been modified.
+		#
+		if(lc($lkw) eq lc($field))
+		{
+			#
+			# Delete the field from %keyrecs and @keyreclines.
+			#
+			delete $keyrecs{$name}{$field};
+			splice @keyreclines, $fldind, 1;
+
+			$modified = 1;
+			return(1);
+		}
+	}
+
+	#
+	# We didn't find the entry.
+	#
+	return(0);
+}
+
+#--------------------------------------------------------------------------
+#
 # Routine:	keyrec_add()
 #
 # Purpose:	Adds a new keyrec and fields to %keyrecs and $keyreclines.
@@ -660,7 +1016,7 @@ sub keyrec_add
 			#
 			# Handle KSK-specific fields.
 			#
-			if($fields{'keyrec_type'} ne 'ksk')
+			if($fields{'keyrec_type'} !~ /^ksk/)
 			{
 				if(($fn eq 'ksklength')		||
 				   ($fn eq 'ksklife'))
@@ -973,7 +1329,8 @@ sub keyrec_signset_newname
 	#
 	$newind = int($oldind) + 1;
 	$setname =~ s/$oldind/$newind/;
-	$keyrecs{$zone}{'lastset'} = $setname;
+#	$keyrecs{$zone}{'lastset'} = $setname;
+	keyrec_setval('zone',$zone,'lastset',$setname);
 
 	#
 	# Return the generated signing set name.
@@ -1162,7 +1519,7 @@ sub keyrec_signset_delkey
 #
 sub keyrec_signset_haskey
 {
-	my $name = shift;		# Keyrec to modify.
+	my $name = shift;		# Keyrec to check.
 	my $key = shift;		# Signing Set name to delete.
 
 	my $keys;			# Keyrec's signing set as a string.
@@ -1518,7 +1875,7 @@ following is an example of a key I<keyrec>:
 
     key     "Kexample.com.+005+30485"
           zonename        "example.com"
-          keyrec_type     "ksk"
+          keyrec_type     "kskcur"
           algorithm       "rsasha1"
           random          "/dev/urandom"
           ksklength       "512"
@@ -1568,7 +1925,7 @@ hash table are always converted to lowercase, but the entry values are left
 as given.
 
 The I<ksklength> entry is only added if the value of the I<keyrec_type>
-field is "ksk".
+field is "kskcur".
 
 The I<zsklength> entry is only added if the value of the I<keyrec_type>
 field is "zsk", "zskcur", "zskpub", or "zsknew".
