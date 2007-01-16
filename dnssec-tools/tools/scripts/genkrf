@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -58,7 +58,7 @@ our %algofields = (
 # Data required for command line options.
 #
 my $zone;				# Name of the zone.
-my $ksk;				# Name of KSK.
+my $kskcur;				# Name of current KSK.
 my $zskcur;				# Name of current ZSK.
 my $zskpub;				# Name of published ZSK.
 my $zonefile;				# Name of the zone file.
@@ -82,7 +82,7 @@ my $verbose;				# Verbose-output flag.
 # Command-line options specifically for this program.
 #
 my @opts = (
-		"ksk=s",			# Specify the KSK.
+		"kskcur=s",			# Specify the current KSK.
 		"zskcur=s",			# Specify the current ZSK.
 		"zskpub=s",			# Specify the published ZSK.
 		"Version",			# Display the version number.
@@ -188,13 +188,13 @@ sub main()
 	#
 	# Build all our KSKs and add them to the keyrec file.
 	#
-	if($ksk)
+	if($kskcur)
 	{
 		#
 		# Create the key and save its name.
 		#
-		addksk($ksk);
-		push @ksklist, $ksk;
+		addksk($kskcur);
+		push @ksklist, $kskcur;
 	}
 	else
 	{
@@ -346,7 +346,7 @@ sub optsandargs
 	# Get the option values.  If these weren't given on the command
 	# line, they'll be taken from the config file or the defaults.
 	#
-	$ksk	  = $opts{'ksk'};
+	$kskcur	  = $opts{'kskcur'};
 	$zskcur	  = $opts{'zskcur'};
 	$zskpub	  = $opts{'zskpub'};
 
@@ -478,7 +478,7 @@ sub getkeysize
 	# If the key's size field is set, we'll use it instead of
 	# calculating things.
 	#
-	if($keytype eq "ksk")
+	if($keytype eq "kskcur")
 	{
 		return($ksksize) if($ksksize > -1);
 	}
@@ -622,9 +622,9 @@ sub addksk
 {
 	my $keyname = shift;				# KSK's name.
 
-	my $keypath;					# Path to KSK.
-	my $alg = getkeyalgo($keyname);			# Key algorithm.
-	my $len = getkeysize('ksk',$keyname,$kskdir);	# Key length.
+	my $keypath;						# Path to KSK.
+	my $alg = getkeyalgo($keyname);				# Key algorithm.
+	my $len = getkeysize('kskcur',$keyname,$kskdir);	# Key length.
 
 	#
 	# Build the path to the KSK.
@@ -636,7 +636,7 @@ sub addksk
 	#
 	keyrec_add('key', $keyname, {
 				      'zonename'	=> $zone,
-				      'keyrec_type'	=> "ksk",
+				      'keyrec_type'	=> "kskcur",
 				      'algorithm'	=> $alg,
 				      'random'		=> $random,
 				      'ksklength'	=> $len,
@@ -711,7 +711,7 @@ sub verbose
 	print "endtime     - \"$endtime\"\n";
 	print "random      - \"$random\"\n\n";
 
-	print "ksk         - \"$ksk\"\n" if($ksk ne "");
+	print "kskcur      - \"$kskcur\"\n" if($kskcur ne "");
 	print "kskcount    - \"$kskcount\"\n";
 	print "ksksize     - \"$ksksize\"\n";
 	print "ksklife     - \"$ksklife\"\n\n";
@@ -742,7 +742,7 @@ sub usage
 	print STDERR "\t\t-endtime ENDTIME        end time of signature\n";
 	print STDERR "\t\t-random RANDOMDEV       source of randomness\n\n";
 
-	print STDERR "\t\t-ksk KSK                name of the KSK\n";
+	print STDERR "\t\t-kskcur KSK             name of the KSK\n";
 	print STDERR "\t\t-kskcount COUNT         count of KSKs\n";
 	print STDERR "\t\t-kskdir PATH            KSK directory\n";
 	print STDERR "\t\t-ksklength KEYLEN       KSK length\n";
@@ -855,10 +855,10 @@ Display a usage message.
 
 =over 4
 
-=item -ksk I<KSK-name>
+=item -kskcur I<KSK-name>
 
-This option specifies the KSK's key file being used to sign the zone.  If this
-option is not given, a new KSK will be created.
+This option specifies the Current KSK's key file being used to sign the zone.
+If this option is not given, a new KSK will be created.
 
 =item -kskcount I<KSK-count>
 
@@ -924,7 +924,7 @@ the ZSK must be rolled over.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
