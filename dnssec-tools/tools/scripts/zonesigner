@@ -898,6 +898,32 @@ sub genksks
 	}
 
 	#
+	# If we get here, -genksk was given.
+	#
+
+	#
+	# Obsolete any Current KSKs we have.
+	#
+	if(defined($opts{'kskcur'}))
+	{
+		my $keys;				# Current KSK keys.
+
+		#
+		# Get the Current KSK signing set and its keys.
+		#
+		$kskcursetname = $opts{'kskcur'};
+		$keys = keyrec_recval($kskcursetname,'keys');
+
+		#
+		# Change the keyrec's type to obsolete KSK.
+		#
+		foreach my $key (split / /,$keys)
+		{
+			keyrec_setval("key",$key,"keyrec_type","kskobs");
+		}
+	}
+
+	#
 	# Get the name of the KSK set -- either from the -ksignset command
 	# line option or from the keyrec file itself.
 	#
@@ -915,14 +941,7 @@ sub genksks
 	}
 	else
 	{
-		if(defined($opts{'kskcur'}))
-		{
-			$kskcursetname = $opts{'kskcur'};
-		}
-		else
-		{
-			$kskcursetname = keyrec_signset_newname($zone)
-		}
+		$kskcursetname = keyrec_signset_newname($zone)
 	}
 
 	#
@@ -936,7 +955,7 @@ sub genksks
 	#
 	for(my $ind=0; $ind < $kskcnt; $ind++)
 	{
-		my $key = genksk();			# Generate new key.
+		my $key = genksk('kskcur');		# Generate new key.
 		push @kskcurlist, $key;
 	}
 
@@ -2658,7 +2677,7 @@ Generate a new KSKs and ZSKs for the zone.
 =item -genksk
 
 Generate new KSKs for the zone.  By default, the last KSKs generated for this
-zone will be used.
+zone will be used.  Any existing Current KSKs will be marked as obsolete.
 
 =item -genzsk
 
