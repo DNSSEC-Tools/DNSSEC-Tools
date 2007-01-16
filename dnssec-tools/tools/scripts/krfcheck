@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -259,7 +259,7 @@ sub zonechecks
 
 		zonedata($zonename,$zkr);
 
-		zonekeys($zonename,$zkr);
+		zonesets($zonename,$zkr);
 
 		expiredzones($zonename,$zkr);
 
@@ -285,7 +285,7 @@ sub setchecks
 	my @sets = keyrec_signsets();		# Valid signing sets.
 
 	#
-	# Make sure the keyrec file as some set keyrecs.
+	# Make sure the keyrec file has some set keyrecs.
 	#
 	if(length(%sets) == 0)
 	{
@@ -295,7 +295,7 @@ sub setchecks
 	}
 
 	#
-	# Go through the sets and verify that each sets keys exist
+	# Go through the sets and verify that each set's keys exist
 	# and that the set timestamp is valid.
 	#
 	foreach my $setname (sort(keys(%sets)))
@@ -423,15 +423,19 @@ sub getkeyrecs
 		{
 			$sets{$krn} = $kr;
 		}
-		elsif($type eq 'kskcur')
+		elsif(($type eq 'kskcur') || ($type eq 'kskobs'))
 		{
 			$kskkeys{$krn} = $kr;
 		}
 		elsif(($type eq 'zskcur') || ($type eq 'zsknew') ||
-		      ($type eq 'zskpub'))
+		      ($type eq 'zskpub') || ($type eq 'zskobs'))
 		{
 			$zskkeys{$krn} = $kr;
 		}
+else
+{
+print "getkeyrecs:  $krn has unknown type - <$type>\n";
+}
 	}
 }
 
@@ -442,36 +446,35 @@ sub getkeyrecs
 ##############################################################################
 
 #-----------------------------------------------------------------------------
-# Routine:	zonekeys()
+# Routine:	zonesets()
 #
-# Purpose:	Verify the KSK and signing sets.
+# Purpose:	Verify that the signing sets of the KSKs and ZSKs exist.
 #
-sub zonekeys
+sub zonesets
 {
 	my $zonename = shift;			# Zone name.
 	my $zkr	     = shift;			# Zone keyrec reference.
 	my %zonerec  = %$zkr;			# Zone keyrec.
 
-	my $keyname;				# Key name.
 	my $setname;				# Set name.
 
 	#
-	# Ensure that the zone's KSK key is present and exists.
+	# Ensure that the zone's Current KSK signing set is present and exists.
 	#
-	$keyname = $zonerec{'kskcur'};
-	if(!defined($keyname))
+	$setname = $zonerec{'kskcur'};
+	if(!defined($setname))
 	{
-		qprint("missing key:  KSK (zone $zonename)\n");
+		qprint("missing set:  KSKCUR (zone $zonename)\n");
 		$zoneerrs++;
 	}
-	elsif(!defined($kskkeys{$keyname}))
+	elsif(!defined($sets{$setname}))
 	{
-		qprint("no such key:  KSK key $keyname (zone $zonename)\n");
+		qprint("no such key:  KSKCUR set $setname (zone $zonename)\n");
 		$zoneerrs++;
 	}
 
 	#
-	# Ensure that the zone's current ZSK signing set is present and exists.
+	# Ensure that the zone's Current ZSK signing set is present and exists.
 	#
 	$setname = $zonerec{'zskcur'};
 	if(!defined($setname))
@@ -486,7 +489,7 @@ sub zonekeys
 	}
 
 	#
-	# Ensure that the zone's published ZSK signing set is present
+	# Ensure that the zone's Published ZSK signing set is present
 	# and exists.
 	#
 	$setname = $zonerec{'zskpub'};
@@ -500,7 +503,6 @@ sub zonekeys
 		qprint("no such set:  ZSKPUB set $setname (zone $zonename)\n");
 		$zoneerrs++;
 	}
-
 }
 
 #-----------------------------------------------------------------------------
@@ -699,9 +701,9 @@ sub setdata
 	#
 	foreach my $key (sort(@keys))
 	{
-		if(!defined($zskkeys{$key}))
+		if(!defined($kskkeys{$key}) && !defined($zskkeys{$key}))
 		{
-			qprint("no such key keyrec:  ZSK key $key (set $setname)\n");
+			qprint("no such key keyrec:  key $key (set $setname)\n");
 			$seterrs++;
 		}
 	}
@@ -828,8 +830,11 @@ sub keydata
 		#
 		if(defined($keypath) && (! -e $keypath))
 		{
-			qprint("missing file:  ZSK $keypath\n");
-			$keyerrs++;
+			if($keyrec{'keyrec_type'} ne 'zskobs')
+			{
+				qprint("missing file:  ZSK $keypath\n");
+				$keyerrs++;
+			}
 		}
 	}
 
@@ -907,7 +912,8 @@ sub keyzones
 #-----------------------------------------------------------------------------
 # Routine:	orphankeys()
 #
-# Purpose:	Look for orphaned keys -- keys which don't belong to any zone.
+# Purpose:	Look for orphaned keys -- keys which don't belong to any
+#		signing set.
 #
 sub orphankeys
 {
@@ -917,66 +923,25 @@ sub orphankeys
 	my $found = 0;				# Key-found flag.
 
 	#
-	# Look through the zone list to ensure this key is someone's KSK.
+	# Go through our signing sets to see if one holds the key.
 	#
-	if($keytype eq 'KSK')
+	foreach my $set (keyrec_signsets())
 	{
-
-		foreach my $zonename (sort(keys(%zones)))
+		if(keyrec_signset_haskey($set,$keyname))
 		{
-			if($zones{$zonename}{'kskcur'} eq $keyname)
-			{
-				$found = 1;
-				last;
-			}
+			$found = 1;
+			last;
 		}
-
-		#
-		# Register an error if no zone holds the key.
-		#
-		if(!$found)
-		{
-			qprint("orphaned key:  $keytype key $keyname\n");
-			$keyerrs++;
-			return;
-		}
-
 	}
-	else
+
+	#
+	# Register an error if no signing set holds the key.
+	#
+	if(!$found)
 	{
-		my $ktype;				# Key's actual type.
-		my $set;				# Signing set.
-		my $zonename;				# Zone name.
-
-		#
-		# Gather our needed data.
-		#
-		$zonename = $zskkeys{$keyname}{'zonename'};
-		$ktype = $zskkeys{$keyname}{'keyrec_type'};
-		$set = $zones{$zonename}{$ktype};
-
-		#
-		# Go through our signing sets to see if one holds the key.
-		#
-		foreach my $set (keyrec_signsets())
-		{
-			if(keyrec_signset_haskey($set,$keyname))
-			{
-				$found = 1;
-				last;
-			}
-
-		}
-
-		#
-		# Register an error if no signing set holds the key.
-		#
-		if(!$found)
-		{
-			qprint("orphaned key:  $ktype key $keyname\n");
-			$keyerrs++;
-		}
-
+		qprint("orphaned key:  $keytype key $keyname\n");
+		$keyerrs++;
+		return;
 	}
 
 }
@@ -991,6 +956,9 @@ sub keytypes
 	my $keytype = shift;			# Keyrec's type.
 	my $keyname = shift;			# Keyrec's name.
 
+	my $set;				# Signing set.
+	my $ktype;				# Key's actual type.
+
 	my $zonename;				# Key's zone's name.
 
 	#
@@ -999,43 +967,35 @@ sub keytypes
 	#
 	if($keytype eq "KSK")
 	{
-		my $kskname;				# KSK's name.
-
 		#
 		# Gather our needed data.
 		#
 		$zonename = $kskkeys{$keyname}{'zonename'};
-		$kskname  = $zones{$zonename}{'kskcur'};
-
-		#
-		# Register an error if this key isn't zone's KSK.
-		#
-		if($keyname ne $kskname)
-		{
-			qprint("mislabeled key type:  KSK key $keyname\n");
-			$keyerrs++;
-		}
+		$ktype	  = $kskkeys{$keyname}{'keyrec_type'};
+		$set	  = $zones{$zonename}{$ktype};
 	}
 	else
 	{
-		my $ktype;				# Key's actual type.
-		my $set;				# Signing set.
-
 		#
 		# Gather our needed data.
 		#
 		$zonename = $zskkeys{$keyname}{'zonename'};
-		$ktype = $zskkeys{$keyname}{'keyrec_type'};
-		$set = $zones{$zonename}{$ktype};
+		$ktype	  = $zskkeys{$keyname}{'keyrec_type'};
+		$set	  = $zones{$zonename}{$ktype};
+	}
 
-		#
-		# Register an error if this signing set doesn't have the key.
-		#
-		if(!keyrec_signset_haskey($set,$keyname))
-		{
-			qprint("mislabeled key type:  $ktype key $keyname\n");
-			$keyerrs++;
-		}
+	#
+	# Obsolete keys aren't listed in the zone keyrec.
+	#
+	return if(($ktype eq "zskobs") || ($ktype eq "kskobs"));
+
+	#
+	# Register an error if the key isn't in the appropriate signing set.
+	#
+	if(!keyrec_signset_haskey($set,$keyname))
+	{
+		qprint("mislabeled key type:  $keytype key $keyname not in set $set\n");
+		$keyerrs++;
 	}
 }
 
@@ -1425,7 +1385,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
