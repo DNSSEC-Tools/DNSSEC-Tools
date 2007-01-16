@@ -113,11 +113,12 @@ my $genzsk;				# Generate a new ZSK.
 my $signset;				# ZSK signing set.
 my $lastset;				# Zone's last signing set.
 
-my $ksksetname;				# Name of KSK signing set.
-my @ksklist = ();			# New KSKs.
-my $zskcursetname;			# Name of current ZSK signing set.
-my $zskpubsetname;			# Name of published ZSK signing set.
-my $zsknewsetname;			# Name of new ZSK signing set.
+my $kskcursetname;			# Name of Current KSK signing set.
+my @kskcurlist	= ();			# Current KSKs.
+
+my $zskcursetname;			# Name of Current ZSK signing set.
+my $zskpubsetname;			# Name of Published ZSK signing set.
+my $zsknewsetname;			# Name of New ZSK signing set.
 my @zskcurlist = ();			# Current ZSKs.
 my @zskpublist = ();			# Published ZSKs.
 my @zsknewlist = ();			# New ZSKs.
@@ -147,6 +148,7 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool-specific options:'],
+	       ["rollksk",		'Force the rollover of KSK keys.'],
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
 	       ["usepub",		'Use Published ZSK for signing.'],
@@ -154,6 +156,7 @@ my @zsopts = ( '',
 	       ["nosave",		'Do not save old keys.'],
 	     );
 
+my $rollksk	= 0;			# Force-a-KSK-rollover flag.
 my $rollzsk	= 0;			# Force-a-ZSK-rollover flag.
 my $useboth	= 0;			# Use-current-and-published-ZSK flag.
 my $usepub	= 0;			# Use-published-ZSK flag.
@@ -325,6 +328,12 @@ sub optsandargs()
 	}
 
 	#
+	# Check for the KSK rollover flag.
+	#
+	$rollksk = 0;
+	$rollksk = 1 if(defined($opts{'rollksk'}));
+
+	#
 	# Check for the ZSK rollover flag.
 	#
 	$rollzsk = 0;
@@ -387,18 +396,18 @@ sub optsandargs()
 	$gends	 = "-g"		 if($gends ne "");
 
 	#
-	# Ensure that the ZSK archive directory is a real directory,
-	# if it already exists.  This is only checked if -rollzsk was
-	# given, since the only time the archive directory is used is
-	# when zonesigner is doing a rollover.
+	# Ensure that the archive directory is a real directory, if it already
+	# exists.  This is only checked if -rollksk or -rollzsk was given,
+	# since the only time the archive directory is used is when zonesigner
+	# is doing a rollover.
 	#
-	if($rollzsk)
+	if($rollksk || $rollzsk)
 	{
 		if($archdir ne "")
 		{
 			if((-e $archdir) && (! -d $archdir))
 			{
-				print STDERR "ZSK archive directory $archdir is not a directory\n";
+				print STDERR "key archive directory $archdir is not a directory\n";
 				exit(1);
 			}
 		}
@@ -406,7 +415,7 @@ sub optsandargs()
 		{
 			if($savekeys)
 			{
-				print STDERR "no ZSK archive directory specified\n";
+				print STDERR "no key archive directory specified\n";
 				exit(1);
 			}
 		}
@@ -830,6 +839,27 @@ sub genksks
 	my $keyset;				# Keys in signing set.
 
 	#
+	# Handle a KSK rollover.
+	#
+	if($rollksk)
+	{
+		#
+		# Get the current KSK list.
+		#
+		$setname = $opts{'kskcur'};
+		$keyset  = keyrec_recval($setname,'keys');
+		$kskcursetname = $setname;
+		@kskcurlist = split / /, $keyset;
+
+		#
+		# Do the rollover.
+		#
+		rollksk();
+		vmed_print("\n");
+		return;
+	}
+
+	#
 	# If we're reusing the KSKs, ensure they're already defined and return.
 	#
 	if($genksk == 0)
@@ -849,20 +879,20 @@ sub genksks
 		#
 		# Get the KSK set name.
 		#
-		$ksksetname = $opts{'kskcur'};
-		if(!keyrec_exists($ksksetname))
+		$kskcursetname = $opts{'kskcur'};
+		if(!keyrec_exists($kskcursetname))
 		{
-			print STDERR "\nKSK keyrec \"$ksksetname\" does not exist; unable to re-use non-existent KSK\n";
+			print STDERR "\nKSK keyrec \"$kskcursetname\" does not exist; unable to re-use non-existent KSK\n";
 			exit(1);
 		}
 
-		vprint("reusing existing KSK set - $ksksetname\n");
+		vprint("reusing existing KSK set - $kskcursetname\n");
 
 		#
 		# Get the KSKs.
 		#
-		$keyset  = keyrec_recval($ksksetname,'keys');
-		@ksklist = split / /, $keyset;
+		$keyset  = keyrec_recval($kskcursetname,'keys');
+		@kskcurlist = split / /, $keyset;
 
 		return;
 	}
@@ -876,10 +906,10 @@ sub genksks
 		#
 		# Get the KSK set name and ensure it exists.
 		#
-		$ksksetname = $ksignset;
-		if(!keyrec_exists($ksksetname))
+		$kskcursetname = $ksignset;
+		if(!keyrec_exists($kskcursetname))
 		{
-			print STDERR "\nKSK signing set \"$ksksetname\" does not exist; unable to re-use non-existent KSK\n";
+			print STDERR "\nKSK signing set \"$kskcursetname\" does not exist; unable to re-use non-existent KSK\n";
 			exit(1);
 		}
 	}
@@ -887,18 +917,18 @@ sub genksks
 	{
 		if(defined($opts{'kskcur'}))
 		{
-			$ksksetname = $opts{'kskcur'};
+			$kskcursetname = $opts{'kskcur'};
 		}
 		else
 		{
-			$ksksetname = keyrec_signset_newname($zone)
+			$kskcursetname = keyrec_signset_newname($zone)
 		}
 	}
 
 	#
 	# Create the new signing sets.
 	#
-	keyrec_signset_new($zone,$ksksetname);
+	keyrec_signset_new($zone,$kskcursetname);
 	$lastset = keyrec_recval($zone,'lastset');
 
 	#
@@ -907,7 +937,7 @@ sub genksks
 	for(my $ind=0; $ind < $kskcnt; $ind++)
 	{
 		my $key = genksk();			# Generate new key.
-		push @ksklist, $key;
+		push @kskcurlist, $key;
 	}
 
 	#
@@ -1091,7 +1121,7 @@ sub keydirs
 			exit(3);
 		}
 
-		foreach my $ksk (@ksklist)
+		foreach my $ksk (@kskcurlist)
 		{
 			system("$MV $ksk.* $kskdir");
 		}
@@ -1282,7 +1312,7 @@ sub zonesign
 	#
 	# Build the collection of KSKs.
 	#
-	$useksks = join " -k ", @ksklist;
+	$useksks = join " -k ", @kskcurlist;
 	$useksks = "-k $useksks";
 
 	#
@@ -1346,7 +1376,7 @@ sub zonesign
 	#
 	# Get the KSK tag values.
 	#
-	foreach my $ksk (sort(@ksklist))
+	foreach my $ksk (sort(@kskcurlist))
 	{
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
@@ -1435,9 +1465,9 @@ sub updzonerec
 	#
 	# Generate some signing-set names if we need them.
 	#
-	if((($updflag & $UPD_KSKS) == $UPD_KSKS) && ($ksksetname eq ""))
+	if((($updflag & $UPD_KSKS) == $UPD_KSKS) && ($kskcursetname eq ""))
 	{
-		$ksksetname = keyrec_signset_newname($zone);
+		$kskcursetname = keyrec_signset_newname($zone);
 	}
 	if(($updflag & $UPD_ZSKS) == $UPD_ZSKS)
 	{
@@ -1453,7 +1483,7 @@ sub updzonerec
 	else	    { $opts{'zonefile'} = $zoneftmp; }
 	$opts{'signedzone'}	= $zoneout;
 	$opts{'kskdirectory'}	= $kskdir;
-	$opts{'kskcur'}		= $ksksetname if(defined($ksksetname));
+	$opts{'kskcur'}		= $kskcursetname if(defined($kskcursetname));
 	$opts{'zskcount'}	= $zskcnt;
 	$opts{'zskdirectory'}	= $zskdir;
 	$opts{'szopts'}		= $szopts if($szopts ne "");
@@ -1505,10 +1535,10 @@ sub updzonerec
 	#
 	if(($updflag & $UPD_KSKS) == $UPD_KSKS)
 	{
-		$setnames = join ' ', @ksklist;
-		keyrec_setval('set',$ksksetname,'keys',$setnames);
+		$setnames = join ' ', @kskcurlist;
+		keyrec_setval('set',$kskcursetname,'keys',$setnames);
 
-		foreach my $ksk (@ksklist)
+		foreach my $ksk (@kskcurlist)
 		{
 			keyrec_setval('key',$ksk,'zonename',$zone)
 		}
@@ -1799,7 +1829,7 @@ EOF
 	#
 	# Add the KSKs.
 	#
-	foreach my $ksk (sort(@ksklist))
+	foreach my $ksk (sort(@kskcurlist))
 	{
 		my $path = keyrec_recval($ksk,'keypath');
 		$path = "$path.key" if($path !~ /\.key$/);
@@ -1835,6 +1865,143 @@ EOF
 	$incstr .= "\n";
 
 	return($incstr);
+}
+#----------------------------------------------------------------------
+# Routine:	rollksk()
+#
+# Purpose:	Force a rollover of the KSK keys.  The Current KSKs are marked
+#		as obsolete and a new set of KSKs are generated.
+#
+#		This should only be used if you know what you're doing.
+#
+sub rollksk
+{
+	my $krref;				# Reference to key's keyrec.
+	my $zoneref;				# Reference to zone's keyrec.
+	my $setlist;				# List of key names.
+	my $publife;				# Key life.
+
+	vprint("forcing a KSK rollover\n");
+
+	#
+	# We're rolling KSKs, so make sure they'll be generated.
+	#
+	$genksk = 1;
+
+	#
+	# Get the zone's keyrec.
+	#
+	$zoneref = keyrec_fullrec($zone);
+
+	#
+	# Render the current KSKs obsolete.  Their keyrecs will be marked
+	# as kskobs and the keys may be moved to the archive directory.
+	#
+	foreach my $k (@kskcurlist)
+	{
+		my $me;						# Key name.
+
+		$krref = keyrec_fullrec($k);
+		$me = $krref->{'keyrec_name'};
+		$publife = $krref->{'ksklife'};
+
+		#
+		# Change the keyrec's type to obsolete KSK.
+		#
+		$krref->{'keyrec_type'}	= "kskobs";
+		keyrec_setval("key",$me,"keyrec_type","kskobs");
+
+		#
+		# If we're supposed to archive the keys, we'll move the
+		# obsolete key off to the archive directory.
+		#
+		if($savekeys)
+		{
+			my $error = 0;				# Error flag.
+
+			#
+			# Make sure the archive directory exists and is
+			# actually a directory.
+			#
+			if(! -e $archdir)
+			{
+				vmed_print("creating key archive directory $archdir\n\n");
+				system("$MKDIR -p -m 0700 $archdir");
+			}
+			else
+			{
+				if(! -d $archdir)
+				{
+					print STDERR "key archive directory $archdir is not a directory; not archiving old KSK key\n";
+					$error = 1;
+				}
+			}
+
+			#
+			# If the archive directory exists, we'll move each of
+			# this key's files into the directory.  We'll also add
+			# a timestamp to the end of the filename, to prevent
+			# potential collisions.
+			#
+			if($error == 0)
+			{
+				my $kronos = time;		# Timestamp.
+
+				vhigh_print("moving $me to $archdir\n\n");
+
+				foreach my $archfn (glob("$me.*"))
+				{
+					my $newname;		# New key name.
+
+					$newname = "$archdir/$kronos.$archfn";
+
+					system("$MV $archfn $newname");
+				}
+			}
+		}
+
+		vmed_print("Current KSK ($me) now obsolete\n");
+	}
+	@kskcurlist = ();
+
+	#
+	# Generate and save a new signing set.
+	#
+	$kskcursetname = keyrec_signset_newname($zone);
+	$opts{'kskcur'} = $kskcursetname;
+	keyrec_setval('zone',$zone,'kskcur',$kskcursetname);
+	keyrec_signset_new($zone,$kskcursetname);
+
+	#
+	# Create a new set of Current KSK keys.
+	#
+	for(my $ind=0; $ind < $kskcnt; $ind++)
+	{
+		my $kskcur;				# New Current KSK.
+		my $krref;				# Keyrec reference.
+
+		#
+		# Create a new key and save its name.
+		#
+		$kskcur = genksk("cur");
+		push @kskcurlist, $kskcur;
+
+		#
+		# Set the new key's lifetime.
+		#
+		$krref = keyrec_fullrec($kskcur);
+		keyrec_setval("key",$kskcur,"ksklife",$publife);
+		$opts{'ksklife'} = $publife;
+
+		vmed_print("Current KSK ($kskcur) created\n");
+	}
+
+	#
+	# Save the Current KSK list in the signing sets.
+	#
+	$setlist = join ' ', @kskcurlist;
+	keyrec_setval('set',$kskcursetname,"keys",$setlist);
+
 }
 
 #----------------------------------------------------------------------
@@ -2247,6 +2414,8 @@ sub usage
 	print STDERR "\t\t\t-genkeys\n";
 	print STDERR "\t\t\t-genksk\n";
 	print STDERR "\t\t\t-genzsk\n";
+	print STDERR "\t\t\t-rollksk\n";
+	print STDERR "\t\t\t-rollzsk\n";
 	print STDERR "\t\t\t-useboth\n";
 	print STDERR "\t\t\t-usepub\n";
 	print STDERR "\t\t\t-archivedir directory\n";
@@ -2560,6 +2729,31 @@ The default signing set name is "signing-set-I<N>", where I<N> is a number.
 If I<-signset> is not specified, then B<zonesigner> will use the default and
 increment the number for subsequent signing sets.
 
+=item -rollksk
+
+Force a rollover of the KSK keys.  The Current KSK keys are marked as
+Obsolete and a new set of KSK keys are created.  These newly created KSK keys
+are marked as the Current KSK keys and the zone is signed with them.
+The zone's I<keyrec> file is updated to show the new key state.
+
+B<Warning>:  This is a I<temporary> method of KSK rollover.  It is B<not>
+intended to be a long-term solution for KSK rollover.
+
+The I<keyrec>s of the KSK keys are adjusted as follows:
+
+    The Current KSK keys are marked as obsolete.
+    Another set of KSK keys are generated, which will be
+        marked as the Current KSK keys.
+    The obsolete KSK keys are moved to the archive directory.
+
+B<Warning>:  The timing of key-rolling is critical.  Great care must be taken
+when using this option.  In the future, B<rollerd> will automate the KSK
+rollover process and may be
+used to safely take care of this aspect of DNSSEC management.
+
+B<Warning>:  Using the I<-rollksk> option should only be used if you know
+what you're doing.
+
 =item -rollzsk
 
 Force a rollover of the ZSK keys using the Pre-Publish Key Rollover method.
@@ -2595,7 +2789,7 @@ you use it):
     - wait 2 * max(TTL in zone)
 
 B<Warning>:  The timing of key-rolling is critical.  Great care must be taken
-when using this option.  B<rollerd> automatees the rollover process and may be
+when using this option.  B<rollerd> automates the rollover process and may be
 used to safely take care of this aspect of DNSSEC management.  Using the
 I<-rollzsk> option should only be used if you know what you're doing.
 
