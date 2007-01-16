@@ -36,11 +36,13 @@ my @opts =
 	"sets",				# List set keyrecs.
 	"keys",				# List key keyrecs.
 	"ksk",				# List KSK keyrecs.
+		"kcur",			# List current KSK key keyrecs.
+		"kobs",			# List obsolete KSK key keyrecs.
 	"zsk",				# List ZSK keyrecs.
-	"cur",				# List current key keyrecs.
-	"new",				# List new key keyrecs.
-	"pub",				# List published key keyrecs.
-	"obs",				# List obsolete key keyrecs.
+		"cur",			# List current ZSK key keyrecs.
+		"new",			# List new ZSK key keyrecs.
+		"pub",			# List published ZSK key keyrecs.
+		"obs",			# List obsolete ZSK key keyrecs.
 
 	"ref",				# List referenced key keyrecs.
 	"unref",			# List unreferenced key keyrecs.
@@ -76,6 +78,8 @@ my $zonesflag;
 my $setsflag;
 my $keysflag;
 my $kskflag;
+my $kcurflag;
+my $kobsflag;
 my $zskflag;
 my $zcurflag;
 my $znewflag;
@@ -129,10 +133,12 @@ my %sets     = ();			# Names of set keyrecs.
 my %allkeys  = ();			# Names of all keyrecs.
 my %kskkeys  = ();			# Names of KSK keyrecs.
 my %zskkeys  = ();			# Names of ZSK keyrecs.
-my %zcurkeys = ();			# Names of current ZSK keyrecs.
-my %znewkeys = ();			# Names of new ZSK keyrecs.
-my %zpubkeys = ();			# Names of published ZSK keyrecs.
-my %zobskeys = ();			# Names of obsolete ZSK keyrecs.
+my %kcurkeys = ();			# Names of Current KSK keyrecs.
+my %kobskeys = ();			# Names of Obsolete KSK keyrecs.
+my %zcurkeys = ();			# Names of Current ZSK keyrecs.
+my %znewkeys = ();			# Names of New ZSK keyrecs.
+my %zpubkeys = ();			# Names of Published ZSK keyrecs.
+my %zobskeys = ();			# Names of Obsolete ZSK keyrecs.
 
 my $ret;				# Return code from main().
 
@@ -229,6 +235,8 @@ sub doopts
 	$setsflag	= $options{'sets'}	|| 0;
 	$keysflag	= $options{'keys'}	|| 0;
 	$kskflag	= $options{'ksk'}	|| 0;
+	$kcurflag	= $options{'kcur'}	|| 0;
+	$kobsflag	= $options{'kobs'}	|| 0;
 	$zskflag	= $options{'zsk'}	|| 0;
 	$zcurflag	= $options{'cur'}	|| 0;
 	$znewflag	= $options{'new'}	|| 0;
@@ -276,7 +284,8 @@ sub doopts
 	# then we'll assume the user wants all the referenced sets and keys.
 	#
 	if(!$allflag && !$zonesflag && !$setsflag && !$keysflag &&
-	   !$kskflag && !$zcurflag  && !$znewflag && !$zpubflag && !$zobsflag)
+	   !$kskflag && !$kcurflag  && !$kobsflag &&
+	   !$zskflag && !$zcurflag  && !$znewflag && !$zpubflag && !$zobsflag)
 	{
 		if($refflag || $unrefflag)
 		{
@@ -294,7 +303,7 @@ sub doopts
 	if($allflag)
 	{
 		$zonesflag  = 1;
-		$setsflag  = 1;
+		$setsflag   = 1;
 		$keysflag   = 1;
 
 		$refflag     = 0;
@@ -312,6 +321,11 @@ sub doopts
 	{
 		$kskflag = 1;
 		$zskflag = 1;
+	}
+
+	if($kskflag)
+	{
+		$kcurflag = 1;
 	}
 
 	if($zskflag)
@@ -397,7 +411,8 @@ sub doopts
 	#
 	# Set up some key output flags.
 	#
-	if($kskflag || $zcurflag || $znewflag || $zpubflag)
+	if($kcurflag || 
+	   $kskflag || $zcurflag || $znewflag || $zpubflag)
 	{
 		#
 		# Set our defaults.
@@ -442,7 +457,7 @@ sub doopts
 
 		#
 		# $keysflag isn't used any more for output selection, so we'll
-		# set it to indicate that osme keys should be printed.
+		# set it to indicate that some keys should be printed.
 		$keysflag = 1;
 	}
 
@@ -453,8 +468,9 @@ sub doopts
 #
 # Purpose:	This routine reads the specified keyrec file and puts each
 #		keyrec into the appropriate keyrec hash table.  There are
-#		hashes for zones, KSK keys, ZSK keys, current ZSKs, new ZSKs,
-#		published ZSKs, obsolete ZSKs, and all keys.
+#		hashes for zones, KSK keys, ZSK keys, current KSKs, obsolete
+#		KSKs, and all keys.  current ZSKs, new ZSKs, published ZSKs,
+#		obsolete ZSKs, and all keys.
 #
 sub getkeyrecs
 {
@@ -486,6 +502,12 @@ sub getkeyrecs
 		elsif($type eq 'kskcur')
 		{
 			$allkeys{$krn}	= $kr;
+			$kcurkeys{$krn}	= $kr;
+			$kskkeys{$krn}	= $kr;
+		}
+		elsif($type eq 'kskobs')
+		{
+			$kobskeys{$krn}	= $kr;
 			$kskkeys{$krn}	= $kr;
 		}
 		elsif($type eq 'zskcur')
@@ -711,19 +733,31 @@ sub showkeys
 	my $krr;			# Reference to a key's keyrec.
 
 	#
-	# Print the information about the KSK keys.
+	# Print the information about the Current KSK keys.
 	#
-	if($kskflag)
+	if($kcurflag)
 	{
-		foreach my $k (sort(keys(%kskkeys)))
+		foreach my $k (sort(keys(%kcurkeys)))
 		{
-			$krr = $kskkeys{$k};
-			outkey($k,$krr,"KSK");
+			$krr = $kcurkeys{$k};
+			outkey($k,$krr,"KSK-cur");
 		}
 	}
 
 	#
-	# Print the information about the current ZSK keys.
+	# Print the information about the obsolete KSK keys.
+	#
+	if($kobsflag)
+	{
+		foreach my $k (sort(keys(%kobskeys)))
+		{
+			$krr = $kobskeys{$k};
+			outkey($k,$krr,"KSK-obs");
+		}
+	}
+
+	#
+	# Print the information about the Current ZSK keys.
 	#
 	if($zcurflag)
 	{
@@ -735,7 +769,7 @@ sub showkeys
 	}
 
 	#
-	# Print the information about the published ZSK keys.
+	# Print the information about the Published ZSK keys.
 	#
 	if($zpubflag)
 	{
@@ -747,7 +781,7 @@ sub showkeys
 	}
 
 	#
-	# Print the information about the new ZSK keys.
+	# Print the information about the New ZSK keys.
 	#
 	if($znewflag)
 	{
@@ -1000,10 +1034,13 @@ sub usage
 	print STDERR "\t\t-sets		list all signing sets\n";
 	print STDERR "\t\t-keys		list all keys\n";
 	print STDERR "\t\t-ksk		list KSK keys\n";
+	print STDERR "\t\t  -cur		list current KSK keys\n";
+	print STDERR "\t\t  -obs		list obsolete KSK keys\n";
 	print STDERR "\t\t-zsk		list ZSK keys\n";
-	print STDERR "\t\t-cur		list current ZSK keys\n";
-	print STDERR "\t\t-pub		list published ZSK keys\n";
-	print STDERR "\t\t-obs		list obsolete ZSK keys\n";
+	print STDERR "\t\t  -cur		list current ZSK keys\n";
+	print STDERR "\t\t  -pub		list published ZSK keys\n";
+	print STDERR "\t\t  -new		list new ZSK keys\n";
+	print STDERR "\t\t  -obs		list obsolete ZSK keys\n";
 
 	print STDERR "\trecord-attribute options:\n";
 	print STDERR "\t\t-valid\t	show keyrecs of unexpired zones\n";
@@ -1091,6 +1128,15 @@ This option displays the keys in a I<keyrec> file.
 
 This option displays the KSK keys in a I<keyrec> file.
 
+=item -kcur
+
+This option displays the Current KSK keys in a I<keyrec> file.
+
+=item -kobs
+
+This option displays the obsolete KSK keys in a I<keyrec> file.  This option
+must be give if obsolete KSK keys are to be displayed.
+
 =item -zsk
 
 This option displays the ZSK keys in a I<keyrec> file.  It does not include
@@ -1099,15 +1145,15 @@ keys.
 
 =item -cur
 
-This option displays the current ZSK keys in a I<keyrec> file.
+This option displays the Current ZSK keys in a I<keyrec> file.
 
 =item -new
 
-This option displays the new ZSK keys in a I<keyrec> file.
+This option displays the New ZSK keys in a I<keyrec> file.
 
 =item -pub
 
-This option displays the published ZSK keys in a I<keyrec> file.
+This option displays the Published ZSK keys in a I<keyrec> file.
 
 =item -obs
 
