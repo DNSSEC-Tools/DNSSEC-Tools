@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -483,7 +483,7 @@ sub getkeyrecs
 		{
 			$sets{$krn} = $kr;
 		}
-		elsif($type eq 'ksk')
+		elsif($type eq 'kskcur')
 		{
 			$allkeys{$krn}	= $kr;
 			$kskkeys{$krn}	= $kr;
@@ -943,7 +943,7 @@ sub outkey
 	#
 	# Set some key-type-specific values.
 	#
-	if($kr{'keyrec_type'} eq "ksk")
+	if($kr{'keyrec_type'} eq 'kskcur')
 	{
 		$lbl	.= "\t" if($long);
 		$length	 = $kr{'ksklength'};
@@ -1279,7 +1279,7 @@ Display the zone's zonefile.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
