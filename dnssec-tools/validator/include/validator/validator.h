@@ -597,7 +597,8 @@ extern          "C" {
                                     const char *nodename,
                                     const char *servname,
                                     const struct addrinfo *hints,
-                                    struct val_addrinfo **res);
+                                    struct val_addrinfo **res,
+                                    val_status_t * val_status);
 
     void            val_freeaddrinfo(struct val_addrinfo *ainfo);
 
