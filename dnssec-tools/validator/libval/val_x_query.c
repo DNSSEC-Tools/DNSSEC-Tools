@@ -196,6 +196,8 @@ compose_answer(const u_char * name_n,
     struct val_response *head_resp = NULL;
     struct val_response *cur_resp = NULL;
     struct val_rrset *rrset;
+    int validated = 1;
+    int trusted = 1;
 
     ancount = 0;
     nscount = 0;
@@ -235,7 +237,7 @@ compose_answer(const u_char * name_n,
             return VAL_OUT_OF_MEMORY;
         }
         head_resp->vr_length = (resp_len + OUTER_HEADER_LEN);
-        head_resp->vr_val_status = VAL_SUCCESS;
+        head_resp->vr_val_status = VAL_DONT_KNOW;
         head_resp->vr_next = NULL;
 
         /*
@@ -274,6 +276,13 @@ compose_answer(const u_char * name_n,
 
     for (res = results; res; res = res->val_rc_next) {
 
+        /* set the value of merged trusted and validated status values */
+        if (!(validated && val_isvalidated(res->val_rc_status))) {
+            validated = 0;
+            if (!(trusted && val_istrusted(res->val_rc_status))) 
+                trusted = 0;
+        } 
+            
         if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
             ancount = 0;
             nscount = 0;
@@ -303,8 +312,10 @@ compose_answer(const u_char * name_n,
                 FREE(cur_resp);
                 goto err;
             }
+
             cur_resp->vr_length = (resp_len + OUTER_HEADER_LEN);
-            cur_resp->vr_val_status = VAL_SUCCESS;
+            cur_resp->vr_val_status = res->val_rc_status;
+
             cur_resp->vr_next = NULL;
             if (head_resp != NULL)
                 cur_resp->vr_next = head_resp;
@@ -368,46 +379,57 @@ compose_answer(const u_char * name_n,
                     goto err;
             }
         }
+
         if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
-
-	  if (anbuf) {
-            memcpy(rp, anbuf, anbufindex);
-            rp += anbufindex;
-	  }
-
-	  if (nsbuf) {
-            memcpy(rp, nsbuf, nsbufindex);
-            rp += nsbufindex;
-	  }
-
-	  if (arbuf) {
-            memcpy(rp, arbuf, arbufindex);
-            rp += arbufindex;
-	  }
+            if (anbuf) {
+                memcpy(rp, anbuf, anbufindex);
+                rp += anbufindex;
+            }
+            if (nsbuf) {
+                memcpy(rp, nsbuf, nsbufindex);
+                rp += nsbufindex;
+            }
+            if (arbuf) {
+                memcpy(rp, arbuf, arbufindex);
+                rp += arbufindex;
+            }
+           
+            hp->ad = val_istrusted(res->val_rc_status)? 1:0; 
+        } else {
+            hp->ad = trusted ? 1:0; 
         }
 
         hp->ancount = htons(ancount);
         hp->nscount = htons(nscount);
         hp->arcount = htons(arcount);
 
-        /*
-         * Set the AD bit if all RRSets in the Answer and Authority sections are authentic 
-         */
-        if (an_auth && ns_auth && ((ancount != 0) || (nscount != 0)))
-            hp->ad = 1;
-        else
-            hp->ad = 0;
+        switch (res->val_rc_status) {
+            case VAL_NONEXISTENT_TYPE:
+            case VAL_NONEXISTENT_TYPE_NOCHAIN: 
+                hp->rcode = ns_r_noerror;
+                break;
 
-        head_resp->vr_val_status = res->val_rc_status;
-        if ((res->val_rc_status == VAL_NONEXISTENT_NAME) ||
-            (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
-            hp->rcode = ns_r_nxdomain;
-        }
+            case VAL_NONEXISTENT_NAME:
 #ifdef LIBVAL_NSEC3
-        if (res->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) {
-            hp->rcode = ns_r_nxdomain;
-        }
+            case VAL_NONEXISTENT_NAME_OPTOUT:
 #endif
+            case VAL_NONEXISTENT_NAME_NOCHAIN: 
+                hp->rcode = ns_r_nxdomain;
+                break;
+
+            case VAL_DNS_ERROR_BASE + SR_SERVFAIL:
+                hp->rcode = ns_r_servfail;
+                break;
+       
+            /* XXX Need to do thorough error translation */ 
+            default:
+                if (hp->ancount > 0) {
+                    hp->rcode = ns_r_noerror;
+                } else {
+                    hp->rcode = ns_r_servfail;
+                }
+                break;
+        }
 
         if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
             FREE(anbuf);
@@ -417,23 +439,34 @@ compose_answer(const u_char * name_n,
     }
 
     if (flags & VAL_QUERY_MERGE_RRSETS) {
-      if (anbuf) {
-	memcpy(rp, anbuf, anbufindex);
-	rp += anbufindex;
-      }
+        if (anbuf) {
+            memcpy(rp, anbuf, anbufindex);
+            rp += anbufindex;
+        }
 
-      if (nsbuf) {
-	memcpy(rp, nsbuf, nsbufindex);
-	rp += nsbufindex;
-      }
+        if (nsbuf) {
+            memcpy(rp, nsbuf, nsbufindex);
+            rp += nsbufindex;
+        }
 
-      if (arbuf) {
-	memcpy(rp, arbuf, arbufindex);
-	rp += arbufindex;
-      }
-      FREE(anbuf);
-      FREE(nsbuf);
-      FREE(arbuf);
+        if (arbuf) {
+            memcpy(rp, arbuf, arbufindex);
+            rp += arbufindex;
+        }
+        FREE(anbuf);
+        FREE(nsbuf);
+        FREE(arbuf);
+
+        if (results) {
+            if (validated)
+                head_resp->vr_val_status = VAL_VALIDATED_ANSWER;
+            else if (trusted)
+                head_resp->vr_val_status = VAL_TRUSTED_ANSWER;
+            else
+                head_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
+        } else {
+            head_resp->vr_val_status = VAL_UNTRUSTED_ANSWER;
+        }
     }
 
     *f_resp = head_resp;
@@ -578,6 +611,7 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     struct val_response *resp;
     int             retval = -1;
     int             bytestocopy = 0;
+    HEADER *hp = NULL;
 
     if (val_status == NULL) {
         h_errno = NETDB_INTERNAL;
@@ -595,41 +629,31 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     }
 
     retval = resp->vr_length;
+
     bytestocopy = (resp->vr_length > anslen) ? anslen : resp->vr_length;
     memcpy(answer, resp->vr_response, bytestocopy);
     *val_status = resp->vr_val_status;
+    hp = (HEADER *) resp->vr_response;
 
-    /*
-     * only return success if you have some answer 
-     */
-    switch (*val_status) {
-    case VAL_NONEXISTENT_NAME:
-    case VAL_NONEXISTENT_NAME_NOCHAIN:
-#ifdef LIBVAL_NSEC3
-    case VAL_NONEXISTENT_NAME_OPTOUT:
-#endif
-        h_errno = HOST_NOT_FOUND;
-        return -1;
-
-    case VAL_NONEXISTENT_TYPE:
-    case VAL_NONEXISTENT_TYPE_NOCHAIN:
-        h_errno = NO_DATA;
-        return -1;
-
-    case VAL_DNS_ERROR_BASE + SR_SERVFAIL:
-        h_errno = TRY_AGAIN;
-        return -1;
-
-    default:
-        if (!val_istrusted(*val_status)) {
+    if (hp) {
+        if (hp->rcode == ns_r_servfail) {
+            h_errno = TRY_AGAIN;
+            return -1;
+        } else if (hp->rcode == ns_r_nxdomain) {
+            h_errno = HOST_NOT_FOUND;
+            return -1;
+        } else if (hp->rcode != ns_r_noerror) {
             /*
              * Not a success condition 
              */
             h_errno = NO_RECOVERY;
             return -1;
+        } else if (hp->ancount > 0) {
+            h_errno = NETDB_SUCCESS;
+            return 0;
         }
-        break;
     }
 
-    return retval;
+    h_errno = NO_DATA;
+    return -1;
 }

@@ -289,7 +289,8 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
 static struct hostent *
 get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
                           struct val_result_chain *results, int *h_errnop,
-                          char *buf, int buflen, int *offset)
+                          char *buf, int buflen, int *offset, 
+                          val_status_t * val_status)
 {
     int             alias_count = 0;
     int             alias_index = 0;
@@ -298,14 +299,19 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     int             orig_offset = 0;
     char            dname[NS_MAXDNAME];
     struct val_result_chain *res;
+    int validated = 1;
+    int trusted = 1;
 
     /*
      * Check parameter sanity 
      */
-    if (!results || !h_errnop || !buf || !offset || !ret) {
+    if (!results || !h_errnop || !buf || !offset || !ret || !val_status) {
         return NULL;
     }
 
+    *val_status = VAL_DONT_KNOW;
+    *h_errnop = 0;
+    
     orig_offset = *offset;
     bzero(ret, sizeof(struct hostent));
 
@@ -373,8 +379,28 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     for (res = results; res != NULL; res = res->val_rc_next) {
         struct val_rrset *rrset;
 
-        if (res->val_rc_answer == NULL)
+        if (!(validated && val_isvalidated(res->val_rc_status))) 
+            validated = 0;
+        else if (!(trusted && val_istrusted(res->val_rc_status)))
+            trusted = 0;
+
+        /* save the non-existence state */
+        if (res->val_rc_proof_count) {
+            if (res->val_rc_status == VAL_NONEXISTENT_NAME ||
+#ifdef LIBVAL_NSEC3
+                res->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT ||
+#endif
+                res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
+
+                *h_errnop = HOST_NOT_FOUND;
+                break;
+            } else if (res->val_rc_status == VAL_NONEXISTENT_TYPE ||
+                       res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN) {
+                *h_errnop = NO_DATA;
+                break;
+            }
             continue;
+        }
 
         rrset = res->val_rc_answer->val_ac_rrset;
 
@@ -476,18 +502,35 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
         }
     }
 
+    if (results == NULL) {
+        *val_status = VAL_UNTRUSTED_ANSWER;
+        *h_errnop = HOST_NOT_FOUND; 
+        return NULL;
+    } 
+   
+    if (validated)
+        *val_status = VAL_VALIDATED_ANSWER;
+    else if (trusted)
+        *val_status = VAL_TRUSTED_ANSWER;
+    else 
+        *val_status = VAL_UNTRUSTED_ANSWER; 
+   
+
     if (addr_count > 0) {
         *h_errnop = NETDB_SUCCESS;
-        return ret;
-    } else if (alias_count > 0) {
-        *h_errnop = NO_DATA;
-        return ret;
     } else {
-        *offset = orig_offset;
-        *h_errnop = HOST_NOT_FOUND;
-        return NULL;
-    }
+        if (*h_errnop == 0)   {
+            /* missing a proof of non-existence */
+            *val_status = VAL_UNTRUSTED_ANSWER;
+            *h_errnop = NO_DATA;
+        }
+        if (alias_count == 0) {
+            *offset = orig_offset;
+            return NULL;
+        }
+    } 
 
+    return ret;
 }                               /* get_hostent_from_response() */
 
 
@@ -545,6 +588,7 @@ val_gethostbyname2_r(val_context_t * ctx,
         return EINVAL;
     }
 
+    *val_status = VAL_DONT_KNOW;
     bzero(&ip4_addr, sizeof(struct in_addr));
     bzero(&ip6_addr, sizeof(struct in6_addr));
 
@@ -586,7 +630,7 @@ val_gethostbyname2_r(val_context_t * ctx,
         memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
         ret->h_addr_list[1] = 0;
 
-        *val_status = VAL_LOCAL_ANSWER;
+        *val_status = VAL_TRUSTED_ANSWER;
         *h_errnop = NETDB_SUCCESS;
         *result = ret;
 
@@ -632,7 +676,7 @@ val_gethostbyname2_r(val_context_t * ctx,
         memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
         ret->h_addr_list[1] = 0;
 
-        *val_status = VAL_LOCAL_ANSWER;
+        *val_status = VAL_TRUSTED_ANSWER;
         *h_errnop = NETDB_SUCCESS;
         *result = ret;
 
@@ -663,7 +707,7 @@ val_gethostbyname2_r(val_context_t * ctx,
                                        &offset);
 
         if (*result != NULL) {
-            *val_status = VAL_LOCAL_ANSWER;
+            *val_status = VAL_TRUSTED_ANSWER;
             *h_errnop = NETDB_SUCCESS;
             if ((ctx == NULL) && context)
                 val_free_context(context);
@@ -689,13 +733,8 @@ val_gethostbyname2_r(val_context_t * ctx,
              */
             *result =
                 get_hostent_from_response(context, af, ret, results,
-                                          h_errnop, buf, buflen, &offset);
+                                          h_errnop, buf, buflen, &offset, val_status);
 
-            if (results) {
-                *val_status = results->val_rc_status;
-            } else {
-                *val_status = VAL_ERROR;
-            }
         }
 
         if ((ctx == NULL) && context)
