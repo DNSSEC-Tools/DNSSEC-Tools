@@ -443,7 +443,7 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_dns_resolv.c libspf2-1.2.5/src/l
  							domain, rr_type, should_cache);
  		}
 +#ifdef SUPPORT_DNSSEC
-+		if ( spfhook->dodnssec && ( dnssec_status != VAL_SUCCESS ) ) {
++		if ( spfhook->dodnssec && ( !val_istrusted(dnssec_status) ) ) {
 +			if ( h_errno == NETDB_SUCCESS ) {
 +				h_errno = DNSSEC_FAILURE;
 +			}
@@ -460,7 +460,7 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_dns_resolv.c libspf2-1.2.5/src/l
       * initialize stuff
       */
 +#ifdef SUPPORT_DNSSEC
-+	if ( spfhook->dodnssec && ( dnssec_status != VAL_SUCCESS ) ) {
++	if ( spfhook->dodnssec && ( !val_istrusted(dnssec_status) ) ) {
 +		if ( h_errno == NETDB_SUCCESS ) {
 +			h_errno = DNSSEC_FAILURE;
 +		}
@@ -481,7 +481,7 @@ diff -U 5 -r libspf2-1.2.5.orig/src/libspf2/spf_dns_resolv.c libspf2-1.2.5/src/l
  		spfrr->herrno = NO_DATA;
  
 +#ifdef SUPPORT_DNSSEC
-+    if ( spfhook->dodnssec && ( dnssec_status != VAL_SUCCESS ) ) {
++    if ( spfhook->dodnssec && ( !val_istrusted(dnssec_status) ) ) {
 +	    if ( spfrr->herrno == NETDB_SUCCESS ) {
 +		    spfrr->herrno = DNSSEC_FAILURE;
 +	    }

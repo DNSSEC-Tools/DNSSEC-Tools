@@ -311,7 +311,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/domain.c sendmail-8.13.6/sendmail/d
 +
 +			if (RequireDNSSEC)
 +			{
-+				if (dnssec_status == VAL_SUCCESS)
++				if (val_istrusted(dnssec_status))
 +				{
 +					if (tTd(8, 2))
 +						sm_dprintf("getmxrr: DNSSEC validation of MX record of %s succeeded.\n", dname);
@@ -400,7 +400,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/domain.c sendmail-8.13.6/sendmail/d
 +	
 +				if (RequireDNSSEC)
 +				{
-+					if (dnssec_status == VAL_SUCCESS)
++					if (val_istrusted(dnssec_status))
 +					{
 +						if (tTd(8, 2))
 +							sm_dprintf("DNSSEC validation of %s succeeded.\n", dname);
@@ -569,7 +569,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/sm_resolve.c sendmail-8.13.6/sendma
 +
 +			if (RequireDNSSEC)
 +			{
-+				if (dnssec_status == VAL_SUCCESS)
++				if (val_istrusted(dnssec_status))
 +				{
 +					if (tTd(8, 2))
 +						sm_dprintf("\t\tdnssec validation of %s succeeded.\n", domain);
