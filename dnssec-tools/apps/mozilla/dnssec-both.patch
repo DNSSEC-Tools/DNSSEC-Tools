@@ -1730,7 +1730,7 @@
 +   *    -- IE, require all lookups to return only secure results
 +   */
 +  
-+  if (val_status == VAL_SUCCESS)
++  if (val_isvalidated(val_status))
 +      DNSSECFUNRETURN(DNSSEC_SUCCESS);
 +  DNSSECFUNRETURN(DNSSEC_FAILURE);
 +}
