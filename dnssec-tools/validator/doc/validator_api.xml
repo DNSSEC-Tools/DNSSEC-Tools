@@ -224,8 +224,7 @@ return the error ERANGE.  </t>
 
 <t> The val_status parameter contains the status of DNSSEC
 validation. Possible values for this type are VAL_TRUSTED_ANSWER, 
-VAL_VALIDATED_ANSWER, VAL_UNTRUSTED_ANSWER, and any of the non-existence 
-status codes defined in <xref target="val-status"/>.  
+VAL_VALIDATED_ANSWER and VAL_UNTRUSTED_ANSWER.  
 A validation status of VAL_TRUSTED_ANSWER or VAL_VALIDATED_ANSWER is 
 returned only if the validation status values for the address, and canonical name(s) within the 
 hostent structure, if present, are themselves of the type VAL_TRUSTED_ANSWER or VAL_VALIDATED_ANSWER
@@ -304,8 +303,7 @@ val_getnameinfo() are identical to that specified in
 <xref target="refs.RFC3493"/>.  </t>
 
 <t> Possible values for val_status and ai_val_status are 
-VAL_TRUSTED_ANSWER, VAL_VALIDATED_ANSWER, VAL_UNTRUSTED_ANSWER, 
-and any of the non-existence status codes defined in <xref target="val-status"/>.  
+VAL_TRUSTED_ANSWER, VAL_VALIDATED_ANSWER and VAL_UNTRUSTED_ANSWER. 
 A validation status of VAL_TRUSTED_ANSWER or VAL_VALIDATED_ANSWER is                  
 returned in val_status only if all the ai_val_status values in the val_addrinfo list 
 are themselves VAL_TRUSTED_ANSWER or VAL_VALIDATED_ANSWER respectively.
@@ -388,8 +386,7 @@ element of the resp linked list. The vr_response field of this element
 will have a format similar to the answer returned by res_query(). 
 Possible values for the validation status when the VAL_QUERY_MERGE_RRSETS 
 flag is used are VAL_TRUSTED_ANSWER, 
-VAL_VALIDATED_ANSWER, VAL_UNTRUSTED_ANSWER, and any of the non-existence
-status codes defined in <xref target="val-status"/>.  
+VAL_VALIDATED_ANSWER and VAL_UNTRUSTED_ANSWER.
 A validation status of VAL_TRUSTED_ANSWER or VAL_VALIDATED_ANSWER is                  
 returned only if all the individual RRsets are themselves trusted or validated successfully, respectively. 
 When the VAL_QUERY_MERGE_RRSETS flag is used, the validation status values for all RRsets are
