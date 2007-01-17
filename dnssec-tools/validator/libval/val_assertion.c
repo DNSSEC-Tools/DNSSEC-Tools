@@ -4314,6 +4314,8 @@ val_istrusted(val_status_t val_status)
 #ifdef LIBVAL_NSEC3
     case VAL_NONEXISTENT_NAME_OPTOUT:
 #endif
+    case VAL_VALIDATED_ANSWER:
+    case VAL_TRUSTED_ANSWER:
     case VAL_PROVABLY_UNSECURE:
     case VAL_IGNORE_VALIDATION:
     case VAL_TRUSTED_ZONE:
@@ -4346,6 +4348,7 @@ val_isvalidated(val_status_t val_status)
     case VAL_SUCCESS:
     case VAL_NONEXISTENT_NAME:
     case VAL_NONEXISTENT_TYPE:
+    case VAL_VALIDATED_ANSWER:
         return 1;
 
     default:
