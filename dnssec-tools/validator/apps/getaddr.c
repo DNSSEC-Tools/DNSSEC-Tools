@@ -149,6 +149,7 @@ main(int argc, char *argv[])
     int             getcanonname = 0;
     int             portspecified = 0;
     val_log_t      *logp;
+    val_status_t val_status;
 
     // Parse the command line
     validate = 1;
@@ -213,7 +214,7 @@ main(int argc, char *argv[])
     }
 
     if (validate) {
-        retval = val_getaddrinfo(NULL, node, service, &hints, &val_ainfo);
+        retval = val_getaddrinfo(NULL, node, service, &hints, &val_ainfo, &val_status);
 
         if (retval != 0) {
             printf("Error in val_getaddrinfo(): %s\n",
