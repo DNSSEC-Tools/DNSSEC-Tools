@@ -2678,6 +2678,8 @@ verify_provably_unsecure(val_context_t * context,
             val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
             if (zonecut_n)
                 FREE(zonecut_n);
+            if (curzone_n)
+                FREE(curzone_n);
 
             return 0;
         }
@@ -2687,10 +2689,18 @@ verify_provably_unsecure(val_context_t * context,
 
         if (VAL_NO_ERROR != (find_trust_point(context, top_q->qc_name_n,
                                               &matched_zone1))) {
+            if (zonecut_n)
+                FREE(zonecut_n);
+            if (curzone_n)
+                FREE(curzone_n);
             return 0;
         }
         if (VAL_NO_ERROR != (find_trust_point(context, zonecut_n,
                                               &matched_zone2))) {
+            if (zonecut_n)
+                FREE(zonecut_n);
+            if (curzone_n)
+                FREE(curzone_n);
             return 0;
         }
 
@@ -2710,7 +2720,10 @@ verify_provably_unsecure(val_context_t * context,
                 FREE(matched_zone1);
             if (matched_zone2)
                 FREE(matched_zone2);
-            FREE(zonecut_n);
+            if (zonecut_n)
+                FREE(zonecut_n);
+            if (curzone_n)
+                FREE(curzone_n);
             return 0;
         }
         if (matched_zone1)
@@ -2728,7 +2741,10 @@ verify_provably_unsecure(val_context_t * context,
 
             val_log(context, LOG_DEBUG,
                     "Zone %s is not provably unsecure.", name_p);
-            FREE(zonecut_n);
+            if (zonecut_n)
+                FREE(zonecut_n);
+            if (curzone_n)
+                FREE(curzone_n);
             return 0;
         }
 
@@ -2759,6 +2775,8 @@ verify_provably_unsecure(val_context_t * context,
     /*
      * free the saved name 
      */
+    if (zonecut_n)
+        FREE(zonecut_n);
     if (curzone_n)
         FREE(curzone_n);
 
