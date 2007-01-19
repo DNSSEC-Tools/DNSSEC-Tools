@@ -643,6 +643,15 @@ p_val_status(val_status_t err)
     case VAL_SUCCESS:
         return "VAL_SUCCESS";
         break;
+    case VAL_TRUSTED_ANSWER:
+        return "VAL_TRUSTED_ANSWER";
+        break;
+    case VAL_VALIDATED_ANSWER:
+        return "VAL_VALIDATED_ANSWER";
+        break;
+    case VAL_UNTRUSTED_ANSWER:
+        return "VAL_UNTRUSTED_ANSWER";
+        break;
 
     default:
         if ((err >= VAL_DNS_ERROR_BASE) && (err < VAL_DNS_ERROR_LAST)) {
