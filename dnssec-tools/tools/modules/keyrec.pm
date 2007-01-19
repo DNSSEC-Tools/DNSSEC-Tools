@@ -80,6 +80,7 @@ my @ZONEFIELDS = (
 			'kskcount',
 			'kskdirectory',
 			'kskcur',
+			'ksknew',
 			'lastset',
 			'signedzone',
 			'zskcount',
@@ -350,7 +351,7 @@ sub keyrec_read
 #
 #			key keyrecs:
 #				- ksk:
-#					Change to a kskcur, kskpub, or kskobs.
+#					Change to a kskcur, ksknew, or kskobs.
 #
 sub keyrec_fmtchk()
 {
@@ -412,7 +413,7 @@ sub keyrec_fmtchk()
 		# pointing to a signing set.  If not, create a new
 		# set and move the key there.
 		#
-		foreach my $key (qw /kskcur kskpub zskcur zskpub zsknew/)
+		foreach my $key (qw /kskcur ksknew zskcur zskpub zsknew/)
 		{
 			my $keyname;		# Key's name.
 			my $set;		# Signing set name.
@@ -469,7 +470,7 @@ sub keyrec_fmtchk()
 
 	#
 	# Check key keyrecs for problems:
-	#	- Change ksk type keyrecs to kskcur, kskpub, or kskobs.
+	#	- Change ksk type keyrecs to kskcur, ksknew, or kskobs.
 	#
 	foreach $krn (keyrec_names())
 	{
@@ -494,7 +495,7 @@ sub keyrec_fmtchk()
 		$krt = $krec{'keyrec_type'};
 
 		#
-		# Convert a ksk keyrec into either a kskcur, kskpub,
+		# Convert a ksk keyrec into either a kskcur, ksknew,
 		# or kskobs keyrec.
 		#
 		if($krt eq 'ksk')
@@ -508,7 +509,7 @@ sub keyrec_fmtchk()
 			# any of the zone's key sets.
 			#
 			$zone = $krec{'zonename'};
-			foreach my $key (qw /kskcur kskpub/)
+			foreach my $key (qw /kskcur ksknew/)
 			{
 				$set = $keyrecs{$zone}{$key};
 				if(keyrec_signset_haskey($set,$krn))
