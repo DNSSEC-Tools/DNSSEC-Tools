@@ -602,7 +602,7 @@ sub opts_int_zonecopy
 	}
 
 	#
-	# Copy the data from the KSK and Current ZSK keyrecs.
+	# Copy the data from the Current KSK and Current ZSK keyrecs.
 	#
 	foreach my $ktype ('kskcur', 'zskcur')
 	{
