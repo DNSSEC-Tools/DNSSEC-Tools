@@ -40,8 +40,8 @@ static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
-#ifndef VAL_NO_THREADS
 static struct rrset_rec *unchecked_proofs = NULL;
+#ifndef VAL_NO_THREADS
 static pthread_rwlock_t rwlock;
 static int      rwlock_init = -1;
 #endif
