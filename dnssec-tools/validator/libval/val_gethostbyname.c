@@ -379,10 +379,11 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
     for (res = results; res != NULL; res = res->val_rc_next) {
         struct val_rrset *rrset;
 
-        if (!(validated && val_isvalidated(res->val_rc_status))) 
+        if (!(validated && val_isvalidated(res->val_rc_status))) { 
             validated = 0;
-        else if (!(trusted && val_istrusted(res->val_rc_status)))
-            trusted = 0;
+            if (!(trusted && val_istrusted(res->val_rc_status)))
+                trusted = 0;
+        }
 
         /* save the non-existence state */
         if (res->val_rc_proof_count) {
