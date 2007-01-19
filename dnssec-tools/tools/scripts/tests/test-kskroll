@@ -1,0 +1,629 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# DNSSEC-Tools:  test-rollksk
+#
+#	This script tests zonesigner's KSK generation and rolling options
+#	work as expected.  A simple method of rolling KSKs is a tested. 
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+#
+# Version information.
+#
+my $NAME   = "test-kskroll";
+my $VERS   = "$NAME version: 1.1.pre1";
+my $DTVERS = "DNSSEC-Tools Version: 1.1.pre1";
+
+#######################################################################
+#
+# Data required for command line options.
+#
+my %options = ();				# Filled option array.
+my @opts =
+(
+	"zone=s",				# Zone to check.
+	"zfile=s",				# Zonefile to check.
+	"int=s",				# Intermediate zonefile to use.
+	"krf=s",				# Keyrec file to use.
+	"sigfile=s",				# Signed zon file to use.
+
+	"fullout",				# Give full zonesigner output.
+	"quiet",				# Minimal-output flag.
+	"final",				# Final-result-output flag.
+	"clean",				# File clean-up flag.
+	"Version",				# Display the version number.
+	"help",					# Give a usage message and exit.
+);
+
+#
+# Option fields.
+#
+my $cleaner;					# Post-processing clean-up flag.
+my $fullout;					# Full zonesigner-output flag.
+my $quiet;					# Minimal-output flag.
+my $final;					# Final-result-output flag.
+my $zone;					# Zone to sign.
+my $zfl;					# Zone file.
+my $krf;					# Keyrec file.
+my $int;					# Intermediate zone file.
+my $sig;					# Signed zone file.
+
+#
+# Default name prefix for the zone name and all the files we'll use.
+#
+my $DEFNAME = "example";
+
+
+#
+# A few data fields we'll need later.
+#
+my @ksklist  = ();				# KSKs from zonesigner.
+my $error    = 0;				# Error flag.
+my $testfail = 0;				# Test-fail flag.
+my %failed   = ();				# Failed tests.
+
+#
+# Run everything.
+#
+my $ret = main();
+exit($ret);
+
+#--------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Do everything.
+#
+sub main
+{
+	my $opts;					# zonesigner options.
+	my $ret;					# Return code.
+
+	#
+	# Start things fresh.
+	#
+	cleaner();
+
+	#
+	# Parse the command line and build our command options.
+	#
+	$opts = optsandargs();
+
+	#
+	# Run our tests.
+	#
+	runner(1,"1.  initial zone signing - sign with Cur KSK","zonesigner -genkeys $opts");
+
+	runner(2,"2.  re-sign with Cur KSK","zonesigner $opts");
+
+	runner(3,"3.  generate New KSK - sign with Cur and New KSKs","zonesigner -newksk $opts");
+
+	runner(4,"4.  re-sign with Cur and New KSKs","zonesigner $opts");
+
+	runner(5,"5.  roll KSKs - sign with New KSK","zonesigner -rollksk $opts");
+
+	runner(6,"6.  re-sign with New KSK","zonesigner $opts");
+
+	#
+	# Give our final results.
+	#
+	if($testfail)
+	{
+		print "KSK rollover test failed:\n";
+		$ret = 1;
+
+		foreach my $tnum (sort(keys(%failed)))
+		{
+			print "test $tnum\n";
+		}
+	}
+	else
+	{
+		print "KSK rollover test succeeded.\n";
+		$ret = 0;
+	}
+
+	#
+	# Clean up our files if the user wants.
+	#
+	cleaner() if($cleaner);
+	return($ret);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	Command-line parsing.
+#
+sub optsandargs
+{
+	my $opts;				# zonesigner options.
+	my $opttotal;				# Option exclusivity var.
+
+	#
+	# Parse the options.
+	# 
+	GetOptions(\%options,@opts);
+
+	#
+	# Handle a few immediate flags.
+	#
+	usage()   if(defined($options{'help'}));
+	version() if(defined($options{'Version'}));
+
+	#
+	# Set our option variables based on the parsed options.
+	#
+	$cleaner = $options{'clean'}	|| 0;
+	$fullout = $options{'fullout'}	|| 0;
+	$quiet	 = $options{'quiet'}	|| 0;
+	$final	 = $options{'final'}	|| 0;
+	$zone	 = $options{'zone'}	|| "$DEFNAME.com";
+	$krf	 = $options{'krf'}	|| "$DEFNAME.krf";
+	$int	 = $options{'int'}	|| "$DEFNAME.int";
+	$sig	 = $options{'sigfile'}	|| "$DEFNAME.signed";
+
+	#
+	# Ensure that our exclusive output options weren't combined.
+	#
+	$opttotal = $fullout + $quiet + $final;
+	if($opttotal > 1)
+	{
+		print STDERR "-fullout, -quiet, and -final are mutually exclusive.\n";
+		exit(1);
+	}
+
+	#
+	# Set the zone file name.  If one isn't given on the command
+	# line, we'll use the domain name.
+	#
+	$zfl = $zone;
+	$zfl = $ARGV[0] if($ARGV[0]);
+
+	#
+	# Build our zonesigner options and return them to the caller.
+	#
+	$opts = "-showsigncmd -krf $krf -interm $int -zone $zone $zfl $sig";
+	return($opts);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	runner()
+#
+# Purpose:	Execute a test.  The command will be executed.
+#
+#		If -fullout was given, then the command output and KSK lines
+#		from the zone's intermediate file will be printed; the run
+#		will *not* be verified.
+#
+#		If -fullout was not given, then the command output and KSK
+#		lines from the zone's intermediate file will be examined to
+#		to determine if the execution worked as expected.
+#
+sub runner
+{
+	my $tnum  = shift;			# Test number.
+	my $descr = shift;			# Description of this run.
+	my $cmd	  = shift;			# Command to execute.
+
+	my $cmdline;				# Command line from zonesigner.
+	my $sep	  = "-" x 80;			# Visual run separator.
+
+	my $cnt = 0;				# Count of matching keys.
+
+	#
+	# Initialize data.
+	#
+	@ksklist = ();
+	$error = 0;
+
+	#
+	# If full command output is wanted, we'll run the command and print
+	# the intermediate file's KSK lines, and return.
+	#
+	if($fullout)
+	{
+		print("$sep\n\n");
+		print("$descr\n\n");
+		print "\t$cmd\n\n";
+		system($cmd);
+		print "\n";
+		chkinterm();
+		return;
+	}
+
+	#
+	# Maybe print the execution header.
+	#
+	nqprint("$sep\n\n");
+	nfprint("$descr\n\n");
+
+	#
+	# Run the zonesigner command.
+	#
+	open(OUT,"$cmd|");
+
+	#
+	# Save the actual zone-signing command and the zone's KSK's from
+	# the zonesigner output.
+	#
+	while(<OUT>)
+	{
+		#
+		# Get the dnssec-signzone cmmand
+		$cmdline = $_ if(/dnssec-signzone/);
+
+		#
+		# Save the KSK lines in an array.
+		#
+		if(/KSK/)
+		{
+			my @outargs = split;
+			push @ksklist, "\\+$outargs[2]";
+		}
+	}
+	close(OUT);
+
+	#
+	# Count how many of the KSKs were listed in the command line.
+	#
+	foreach my $ksk (@ksklist)
+	{
+		$cnt++ if($cmdline =~ /$ksk/);
+	}
+
+	#
+	# Write a message about the KSKs in the command line.
+	#
+	if($cnt == @ksklist)
+	{
+		nqprint("\tfound all KSK keys in command line\n");
+	}
+	else
+	{
+		my $all = @ksklist;
+		nqprint("\tonly found $cnt of $all KSK keys in command line\n");
+		$error++;
+	}
+
+	#
+	# Check the KSKs included in the intermediate zone file.
+	#
+	chkinterm();
+
+	#
+	# Write a message indicating whether this command worked as expected.
+	#
+	if($error)
+	{
+		nfprint("\tKSK generation and usage didn't occur as expected\n\n");
+		$testfail++;
+		$failed{$tnum} = $tnum;
+	}
+	else
+	{
+		nfprint("\tKSK generation and usage occurred as expected\n\n");
+	}
+}
+
+#--------------------------------------------------------------------------
+# Routine:	chkinterm()
+#
+# Purpose:	Examine the intermediate zone file.
+#
+#		If -fullout was given, then the KSK lines from the zone's
+#		intermediate file will be printed.
+#
+#		If -fullout was not given, then the KSK lines from the zone's
+#		intermediate file will be examined to determine if the
+#		execution worked as expected.
+#
+sub chkinterm
+{
+	my $cnt = 0;				# Count of matching keys.
+	my $line;				# Line from intermediate file.
+
+	open(INT,"<$int") || die "unable to open $int";
+
+	#
+	# Find the KSK includes.
+	#
+	while(<INT>)
+	{
+		$line = $_;
+		last if($line =~ /^;; KSK/);
+	}
+
+	#
+	# If the user wants to look at all the output, print the KSK
+	# includes and return.
+	#
+	if($fullout)
+	{
+		while(<INT>)
+		{
+			$line = $_;
+			last if($line =~ /^;; Current ZSK/);
+			print $line;
+		}
+		close(INT);
+		return;
+	}
+
+	#
+	# Count the KSKs found in the intermediate file.
+	#
+	while(<INT>)
+	{
+		$line = $_;
+		chomp $line;
+		last if($line =~ /^;; Current ZSK/);
+
+		if($line =~ /INCLUDE/)
+		{
+			my $found = 0;
+			foreach my $ksk (@ksklist)
+			{
+				$found = 1 if($line =~ /$ksk/);
+			}
+
+			$cnt++ if($found);
+		}
+	}
+
+	#
+	# Write a message about the KSKs in the command line.
+	#
+	if($cnt == @ksklist)
+	{
+		nqprint("\tfound all KSK keys in intermediate file\n\n");
+	}
+	else
+	{
+		my $all = @ksklist;
+		nqprint("\tonly found $cnt of $all KSK keys in intermediate file\n\n");
+		$error++;
+	}
+
+	close(INT);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	nqprint()
+#
+# Purpose:	Only print if -quiet was not given.
+#
+sub nqprint
+{
+	my $str = shift;				# String to print.
+
+	print "$str" if(!$quiet && !$final);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	nfprint()
+#
+# Purpose:	Only print if -quiet was not given.
+#
+sub nfprint
+{
+	my $str = shift;				# String to print.
+
+	print "$str" if(!$final);
+}
+
+#--------------------------------------------------------------------------
+# Routine:	cleaner()
+#
+# Purpose:	Delete a number of files this test uses.  These are all
+#		constructed by zonesigner, so leaving them around *could*
+#		influence the test.
+#
+sub cleaner
+{
+	my $keyglob = "K$zone";				# Key format.
+
+	system("rm -f $krf $int $sig");
+	system("rm -f $keyglob*") if(glob("$keyglob*"));
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(1);
+}
+
+#----------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:	Give usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  test-kskroll [options] <zone-name>\n";
+	print STDERR "\n";
+
+	print STDERR "\t\t-zone <zone>\n";
+	print STDERR "\t\t-zfile <zone-file>\n";
+	print STDERR "\t\t-int <intermediate-zone-file>\n";
+	print STDERR "\t\t-krf <keyrec-file>\n";
+	print STDERR "\t\t-sigfile <signed-zone-file>\n\n";
+
+	print STDERR "\t\t-clean\n";
+	print STDERR "\t\t-fullout\n";
+	print STDERR "\t\t-Version\n";
+	print STDERR "\t\t-help\n";
+
+	exit(1);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+test-kskroll - Tests that B<zonesigner>'s KSK generation and rolling options
+work as expected.
+
+=head1 SYNOPSIS
+
+  test-kskroll [options] <zone-name>
+
+=head1 DESCRIPTION
+
+This script tests B<zonesigner>'s KSK generation and rolling options
+work as expected.  A simple method of rolling KSKs is a tested. 
+
+A set of six zone-signing steps are taken, and the results are either
+printed or verified as they go.  These steps are described below purely in
+terms of KSKs; ZSKs are generated and the zone signed with them, but they
+are not discussed.
+
+=over 4
+
+=item 1. initial zone signing
+
+The I<-genkeys> option is given to B<zonesigner>.
+A set of Current KSKs is generated and the zone signed with them.
+
+=item 2. re-sign with Current KSK
+
+The zone is signed with the existing Current KSK set.
+No additional keys are generated.
+
+=item 3. generate New KSK - sign with Current and New KSKs
+
+The I<-newksk> option is given to B<zonesigner>.
+A set of New KSKs is generated.
+The zone is signed with the Current and New KSKs.
+
+=item 4. re-sign with Current and New KSKs
+
+The zone is signed with the existing Current and New KSK sets.
+No additional keys are generated.
+
+=item 5. roll KSKs - sign with new Current KSKs
+
+The I<-rollksk> option is given to B<zonesigner>.
+The set of Current KSKs is marked as obsolete.
+The set of New KSKs is marked as Current.
+The zone is signed with the new set of Current KSKs.
+
+=item 6. re-sign with new Current KSK
+
+The zone is signed with the new set of Current KSK sets.
+No additional keys are generated.
+
+=back
+
+A zone name and zone file must be provided.  B<test-kskroll> does not
+create its own zone file.
+
+=head1 OPTIONS
+
+The following options may be given to B<test-kskroll>.
+
+=over 4
+
+=item -zone
+
+Name of the zone that will be used in the B<zonesigner> tests.
+If this option is not given, it will be assumed to be the same as the zone
+file name.
+
+=item -zfile
+
+Name of the zone file that will be used in the B<zonesigner> tests.
+If this option is not given, it will be built by combining the default name
+(defined in B<test-kskroll> with ".com".
+
+=item -int
+
+Name of the intermediate zone file that will be used in the B<zonesigner> tests.
+If this option is not given, it will be built by combining the default name
+(defined in B<test-kskroll> with ".int".
+
+=item -krf
+
+Name of the I<keyrec> file that will be used in the B<zonesigner> tests.
+If this option is not given, it will be built by combining the default name
+(defined in B<test-kskroll> with ".krf".
+
+=item -sigfile
+
+Name of the signed zone file that will be used in the B<zonesigner> tests.
+If this option is not given, it will be built by combining the default name
+(defined in B<test-kskroll> with ".sig".
+
+=item -fullout
+
+This option causes all of B<zonesigner>'s output to be printed, along with
+the KSK lines from the zone's intermediate file.
+
+If this option is not given, then B<test-kskroll> will not print the
+B<zonesigner> output not the KSK lines from the intermediate file.  However,
+it will check each of these to ensure that the proper KSK keys were generated
+and the zone was signed with the correct set of KSK keys at each step.
+
+I<-fullout>, I<-quiet>, and I<-final> are mutually exclusive.
+
+=item -quiet
+
+This option only prints the name of each test execution and its result.
+
+I<-fullout>, I<-quiet>, and I<-final> are mutually exclusive.
+
+=item -final
+
+This option prints the only result of the entire set of B<zonesigner>
+executions.
+
+I<-fullout>, I<-quiet>, and I<-final> are mutually exclusive.
+
+=item -clean
+
+Delete the key files, the signed zone file, the keyrec file, and the
+intermediate zone file.
+
+=item -help
+
+Display a usage message.
+
+=item -Version
+
+Display the version information for B<test-kskroll> and the DNSSEC-Tools
+package.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<dnssec-keygen(8)>,
+B<dnssec-signzone(8)>,
+B<zonesigner(8)>
+
+=cut
