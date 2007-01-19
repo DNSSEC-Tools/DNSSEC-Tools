@@ -277,11 +277,10 @@ compose_answer(const u_char * name_n,
     for (res = results; res; res = res->val_rc_next) {
 
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(res->val_rc_status))) {
+        if (!(validated && val_isvalidated(res->val_rc_status))) 
             validated = 0;
-            if (!(trusted && val_istrusted(res->val_rc_status))) 
-                trusted = 0;
-        } 
+        if (!(trusted && val_istrusted(res->val_rc_status))) 
+            trusted = 0;
             
         if (!(flags & VAL_QUERY_MERGE_RRSETS)) {
             ancount = 0;

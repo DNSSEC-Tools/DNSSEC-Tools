@@ -482,11 +482,10 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
         ainfo->ai_val_status = VAL_LOCAL_ANSWER;
 
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(ainfo->ai_val_status))) {
+        if (!(validated && val_isvalidated(ainfo->ai_val_status))) 
             validated = 0;
-            if (!(trusted && val_istrusted(ainfo->ai_val_status)))
+        if (!(trusted && val_istrusted(ainfo->ai_val_status)))
                 trusted = 0;
-        }        
 
         /*
          * Expand the results based on servname and hints 
@@ -579,11 +578,10 @@ get_addrinfo_from_result(const val_context_t * ctx,
         struct val_rrset *rrset;
 
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(result->val_rc_status))) {
+        if (!(validated && val_isvalidated(result->val_rc_status))) 
             validated = 0;
-            if (!(trusted && val_istrusted(result->val_rc_status)))
-                trusted = 0;
-        }        
+        if (!(trusted && val_istrusted(result->val_rc_status)))
+            trusted = 0;
 
         if (result->val_rc_answer && 
             NULL != (rrset = result->val_rc_answer->val_ac_rrset)) {
@@ -1022,11 +1020,10 @@ val_getaddrinfo(val_context_t * ctx,
 
         *res = ainfo4;
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(ainfo4->ai_val_status))) {
+        if (!(validated && val_isvalidated(ainfo4->ai_val_status))) 
             validated = 0;
-            if (!(trusted && val_istrusted(ainfo4->ai_val_status)))
-                trusted = 0;
-        }        
+        if (!(trusted && val_istrusted(ainfo4->ai_val_status)))
+            trusted = 0;
         retval = 0;
     }
 
@@ -1083,11 +1080,10 @@ val_getaddrinfo(val_context_t * ctx,
         }
 
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(ainfo6->ai_val_status))) {
+        if (!(validated && val_isvalidated(ainfo6->ai_val_status))) 
             validated = 0;
-            if (!(trusted && val_istrusted(ainfo6->ai_val_status)))
-                trusted = 0;
-        }        
+        if (!(trusted && val_istrusted(ainfo6->ai_val_status)))
+            trusted = 0;
 
         if (NULL != *res) {
             *res = append_val_addrinfo(*res, ainfo6);
@@ -1365,11 +1361,10 @@ val_getnameinfo(val_context_t * ctx,
             for (res = val_res; res; res=res->val_rc_next) {
 
                 /* set the value of merged trusted and validated status values */
-                if (!(validated && val_isvalidated(res->val_rc_status))) {
+                if (!(validated && val_isvalidated(res->val_rc_status))) 
                     validated = 0;
-                    if (!(trusted && val_istrusted(res->val_rc_status)))
-                        trusted = 0;
-                }
+                if (!(trusted && val_istrusted(res->val_rc_status)))
+                    trusted = 0;
                 if (res->val_rc_answer &&
                     res->val_rc_answer->val_ac_rrset &&
                     res->val_rc_answer->val_ac_rrset->val_rrset_data &&
@@ -1559,11 +1554,10 @@ val_gethostbyaddr_r(val_context_t * ctx,
 
     for (res = val_res; res; res=res->val_rc_next) {
         /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(res->val_rc_status))) {
+        if (!(validated && val_isvalidated(res->val_rc_status))) 
             validated = 0;
-            if (!(trusted && val_istrusted(res->val_rc_status)))
-                trusted = 0;
-        }
+        if (!(trusted && val_istrusted(res->val_rc_status)))
+            trusted = 0;
         if (res->val_rc_answer &&
             res->val_rc_answer->val_ac_rrset &&
             res->val_rc_answer->val_ac_rrset->val_rrset_data &&
