@@ -29,9 +29,7 @@ my @opts =
 (
 	"zone=s",				# Zone to check.
 	"zfile=s",				# Zonefile to check.
-	"int=s",				# Intermediate zonefile to use.
 	"krf=s",				# Keyrec file to use.
-	"sigfile=s",				# Signed zon file to use.
 
 	"fullout",				# Give full zonesigner output.
 	"quiet",				# Minimal-output flag.
@@ -53,12 +51,6 @@ my $zfl;					# Zone file.
 my $krf;					# Keyrec file.
 my $int;					# Intermediate zone file.
 my $sig;					# Signed zone file.
-
-#
-# Default name prefix for the zone name and all the files we'll use.
-#
-my $DEFNAME = "example";
-
 
 #
 # A few data fields we'll need later.
@@ -163,10 +155,6 @@ sub optsandargs
 	$fullout = $options{'fullout'}	|| 0;
 	$quiet	 = $options{'quiet'}	|| 0;
 	$final	 = $options{'final'}	|| 0;
-	$zone	 = $options{'zone'}	|| "$DEFNAME.com";
-	$krf	 = $options{'krf'}	|| "$DEFNAME.krf";
-	$int	 = $options{'int'}	|| "$DEFNAME.int";
-	$sig	 = $options{'sigfile'}	|| "$DEFNAME.signed";
 
 	#
 	# Ensure that our exclusive output options weren't combined.
@@ -179,11 +167,40 @@ sub optsandargs
 	}
 
 	#
-	# Set the zone file name.  If one isn't given on the command
-	# line, we'll use the domain name.
+	# Get the zone name.
+	#
+	$zone = $ARGV[0];
+	if(defined($options{'zone'}))
+	{
+		$zone = $options{'zone'};
+	}
+	$zone = "example.com" if($zone eq "");
+
+	#
+	# Get the zone file name.  If one isn't given on the command
+	# line, we'll use the zone name.
 	#
 	$zfl = $zone;
-	$zfl = $ARGV[0] if($ARGV[0]);
+	if(defined($options{'zfile'}))
+	{
+		$zfl = $options{'zfile'};
+	}
+
+	#
+	# Get the keyrec file name.  If one isn't given on the command
+	# line, we'll build it from the zone name.
+	#
+	$krf = "$zone.krf";
+	if(defined($options{'krf'}))
+	{
+		$krf = $options{'krf'};
+	}
+
+	#
+	# Get our additional file names.
+	#
+	$int	 = "$zone.int";
+	$sig	 = "$zone.signed";
 
 	#
 	# Build our zonesigner options and return them to the caller.
@@ -451,14 +468,12 @@ sub version
 #
 sub usage
 {
-	print STDERR "usage:  test-kskroll [options] <zone-name>\n";
+	print STDERR "usage:  test-kskroll [options] [zone-name]\n";
 	print STDERR "\n";
 
 	print STDERR "\t\t-zone <zone>\n";
 	print STDERR "\t\t-zfile <zone-file>\n";
-	print STDERR "\t\t-int <intermediate-zone-file>\n";
 	print STDERR "\t\t-krf <keyrec-file>\n";
-	print STDERR "\t\t-sigfile <signed-zone-file>\n\n";
 
 	print STDERR "\t\t-clean\n";
 	print STDERR "\t\t-fullout\n";
@@ -482,7 +497,7 @@ work as expected.
 
 =head1 SYNOPSIS
 
-  test-kskroll [options] <zone-name>
+  test-kskroll [options] [zone-name]
 
 =head1 DESCRIPTION
 
@@ -531,8 +546,10 @@ No additional keys are generated.
 
 =back
 
-A zone name and zone file must be provided.  B<test-kskroll> does not
-create its own zone file.
+At the minimum, a zone name must be provided.  If this is provided, the zone
+file will have the same name as the zone and several auxilliary files will be
+built from the zone name.  If no zone name is given, then I<example.com> will
+be used.
 
 =head1 OPTIONS
 
@@ -552,23 +569,11 @@ Name of the zone file that will be used in the B<zonesigner> tests.
 If this option is not given, it will be built by combining the default name
 (defined in B<test-kskroll> with ".com".
 
-=item -int
-
-Name of the intermediate zone file that will be used in the B<zonesigner> tests.
-If this option is not given, it will be built by combining the default name
-(defined in B<test-kskroll> with ".int".
-
 =item -krf
 
 Name of the I<keyrec> file that will be used in the B<zonesigner> tests.
 If this option is not given, it will be built by combining the default name
 (defined in B<test-kskroll> with ".krf".
-
-=item -sigfile
-
-Name of the signed zone file that will be used in the B<zonesigner> tests.
-If this option is not given, it will be built by combining the default name
-(defined in B<test-kskroll> with ".sig".
 
 =item -fullout
 
