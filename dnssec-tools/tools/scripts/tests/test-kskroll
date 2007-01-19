@@ -566,14 +566,13 @@ file name.
 =item -zfile
 
 Name of the zone file that will be used in the B<zonesigner> tests.
-If this option is not given, it will be built by combining the default name
-(defined in B<test-kskroll> with ".com".
+If this option is not given, it will be set to the zone name.
 
 =item -krf
 
 Name of the I<keyrec> file that will be used in the B<zonesigner> tests.
-If this option is not given, it will be built by combining the default name
-(defined in B<test-kskroll> with ".krf".
+If this option is not given, it will be built by appending ".krf" to the
+zone name.
 
 =item -fullout
 
