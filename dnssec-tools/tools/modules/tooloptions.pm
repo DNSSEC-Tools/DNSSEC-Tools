@@ -624,6 +624,7 @@ sub opts_int_zonecopy
 			# Get the key's keyrec values.
 			#
 			$krec = keyrec_fullrec($keyname);
+			next if($krec eq '');
 			%keyrec = %$krec;
 
 			#
