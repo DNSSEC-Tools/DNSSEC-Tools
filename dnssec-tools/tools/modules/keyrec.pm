@@ -440,7 +440,7 @@ sub keyrec_fmtchk()
 			#
 			$set = keyrec_signset_newname($krn);
 			keyrec_setval('zone',$krn,$key,$set);
-			keyrec_signset_addkey($set,$krec{$key});
+			keyrec_signset_addkey($set,$keyname);
 			$changes++;
 		}
 	}
@@ -1305,6 +1305,8 @@ sub keyrec_signset_newname
 	my $setname;				# Name of zone's last set.
 	my $oldind;				# Old index of zone's last set.
 	my $newind;				# New index of zone's last set.
+
+# print "keyrec_signset_newname($zone):  down in\n";
 
 	#
 	# Get the zone's last signing set.
