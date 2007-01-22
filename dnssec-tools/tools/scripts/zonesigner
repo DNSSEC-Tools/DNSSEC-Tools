@@ -1543,7 +1543,7 @@ sub zonesign
 	{
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tKSK (cur) $keytag  $zsize  $chron\n";
+		print "\t\tKSK (cur) $keytag  $zsize  $chron\t($kskcursetname)\n";
 	}
 
 	#
@@ -1553,7 +1553,7 @@ sub zonesign
 	{
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tKSK (new) $keytag  $zsize  $chron\n";
+		print "\t\tKSK (new) $keytag  $zsize  $chron\t($ksknewsetname)\n";
 	}
 
 	#
@@ -1563,7 +1563,7 @@ sub zonesign
 	{
 		$zskcur =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tZSK (cur) $keytag  $zsize  $chron\n";
+		print "\t\tZSK (cur) $keytag  $zsize  $chron\t($zskcursetname)\n";
 	}
 
 	#
@@ -1573,7 +1573,7 @@ sub zonesign
 	{
 		$zskpub =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\tZSK (pub) $keytag  $zsize  $chron\n";
+		print "\t\tZSK (pub) $keytag  $zsize  $chron\t($zskpubsetname)\n";
 	}
 
 	#
