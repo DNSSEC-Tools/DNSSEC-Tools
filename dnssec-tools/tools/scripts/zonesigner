@@ -346,6 +346,15 @@ sub optsandargs
 	$rollksk = 1 if(defined($opts{'rollksk'}));
 
 	#
+	# Ensure that we have sufficient KSK keyrecs for a KSK rollover.
+	#
+	if($rollksk)
+	{
+		chksset('KSK','Current','kskcur');
+		chksset('KSK','New','ksknew');
+	}
+
+	#
 	# Check for the ZSK rollover flag.
 	#
 	$rollzsk = 0;
@@ -943,7 +952,7 @@ sub genksks
 		}
 		else
 		{
-			$kskcursetname = keyrec_signset_newname($zone)
+			$kskcursetname = keyrec_signset_newname($zone);
 		}
 
 		#
@@ -2407,6 +2416,92 @@ sub rollzsk
 }
 
 #----------------------------------------------------------------------
+# Routine:	chksset()
+#
+# Purpose:	Check a signing set for validity.  The following validity
+#		tests are made:
+#			- the zone keyrec holds the specified signing set
+#				- the signing set keyrec exists
+#				- the signing set keyrec is a set keyrec
+#				- the signing set keyrec has a set of keys
+#				- the set's keys' keyrecs exist
+#				- the set's keys' keyrec are the expected type
+#
+#		If the signing set is invalid, an error message is given
+#		and zonesigner exits.
+#
+sub chksset
+{
+	my $keytype = shift;				# Type of key to check.
+	my $keyphase = shift;				# Key phase.
+	my $kf = shift;					# Zone's keyrec field.
+
+	my $setname;					# Signing set to check.
+	my $keylist;					# Signing set's keys.
+
+	#
+	# Ensure the signing set is defined in the zone's keyrec.
+	#
+	if(!defined($opts{$kf}))
+	{
+		print STDERR "no $keyphase $keytype defined for zone $zone; unable to roll $keytype\n";
+		exit(1);
+	}
+
+	#
+	# Ensure the signing set exists.
+	#
+	$setname = $opts{$kf};
+	if(!keyrec_exists($setname))
+	{
+		print STDERR "no keyrec exists for the signing set \"$setname\"; unable to roll KSKs\n";
+		exit(1);
+	}
+
+	#
+	# Ensure the signing set is a signing set.
+	#
+	$setname = $opts{$kf};
+	if(keyrec_recval($setname,'keyrec_type') ne 'set')
+	{
+		print STDERR "error in keyrec file -- $keyphase $keytype $setname keyrec is not a set keyrec; unable to roll KSKs\n";
+		exit(1);
+	}
+
+	#
+	# Ensure the signing set has keys.
+	#
+	$keylist = keyrec_recval($setname,'keys');
+	if($keylist eq '')
+	{
+		print STDERR "$keyphase $keytype $setname does not contain any keys; unable to roll KSKs\n";
+		exit(1);
+	}
+
+	#
+	# Ensure the signing set has keys.
+	#
+	foreach my $key (sort(split / /, $keylist))
+	{
+		#
+		# Ensure the key exists.
+		#
+		if(!keyrec_exists($key))
+		{
+			print STDERR "no keyrec exists for the key \"$key\"; unable to roll KSKs\n";
+			exit(1);
+		}
+
+		if(keyrec_recval($key,'keyrec_type') ne $kf)
+		{
+			print STDERR "key $key is not a $kf key; unable to roll KSKs\n";
+			exit(1);
+		}
+
+	}
+}
+
+#----------------------------------------------------------------------
 # Routine:	printopts()
 #
 # Purpose:	Display the value of our options.
@@ -2878,8 +2973,10 @@ increment the number for subsequent signing sets.
 
 Force a rollover of the KSK keys.  The Current KSK keys are marked as Obsolete
 and the New KSK keys are marked as Current.  The zone is then signed with the
-new set of Current KSK keys.  The zone's I<keyrec> file is updated to show the
-new key state.
+new set of Current KSK keys.  If the zone's I<keyrec> does not list a Current
+or New KSK, an error message is printed and B<zonesigner> stops execution.
+
+The zone's I<keyrec> file is updated to show the new key state.
 
 The I<keyrec>s of the KSK keys are adjusted as follows:
 
