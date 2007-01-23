@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -14,6 +14,7 @@ use strict;
 
 use Getopt::Long qw(:config no_ignore_case_always);
 
+use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
@@ -61,6 +62,8 @@ sub main
 {
 	my $kr;					# Reference to a keyrec.
 	my $krn;				# Name of a keyrec.
+
+	erraction(ERR_EXIT);
 
 	#
 	# Check our options.
@@ -303,7 +306,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
