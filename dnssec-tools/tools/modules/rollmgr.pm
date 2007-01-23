@@ -789,8 +789,7 @@ sub uninit_saveid
 #
 sub unknown_action
 {
-	print STDERR "rollmgr.pm has not been ported to your system yet; cannot continue until this has been done.\n";
-	exit(42);
+	err("rollmgr.pm has not been ported to your system yet; cannot continue until this has been done.\n",42);
 }
 
 #--------------------------------------------------------------------------
@@ -1136,7 +1135,7 @@ sub unix_getpid
 	close(PIDFILE);
 	if(open(PIDFILE,"+< $UNIX_ROLLMGR_PIDFILE") == 0)
 	{
-#		print STDERR "unix_getpid:  unable to open \"$UNIX_ROLLMGR_PIDFILE\"\n";
+#		err("unix_getpid:  unable to open \"$UNIX_ROLLMGR_PIDFILE\"\n",-1);
 		return(-1);
 	}
 	flock(PIDFILE,LOCK_EX);
@@ -1263,15 +1262,15 @@ sub rollmgr_loglevel
 			return(-1);
 		}
 
-		print STDERR "unknown logging level \"$newlevel\"\n";
-		print STDERR "valid logging levels (text and numeric forms):\n";
-		print STDERR "\ttmi		 1\n";
-		print STDERR "\texpire		 3\n";
-		print STDERR "\tinfo		 4\n";
-		print STDERR "\tcurphase	 6\n";
-		print STDERR "\terr		 8\n";
-		print STDERR "\tfatal		 9\n";
-		exit(1);
+		err("unknown logging level \"$newlevel\"\n"		.
+		    "valid logging levels (text and numeric forms):\n"	.
+			"\ttmi		 1\n"				.
+			"\texpire		 3\n"			.
+			"\tinfo		 4\n"				.
+			"\tcurphase	 6\n"				.
+			"\terr		 8\n"				.
+			"\tfatal		 9\n",-1);
+		return(-1);
 	}
 
 	#
@@ -1407,7 +1406,7 @@ sub rollmgr_logfile
 		$newlogfile = "/dev/stdout";
 		if(! -e $newlogfile)
 		{
-			print STDERR "logfile \"$newlogfile\" does not exist\n" if($useflag);
+			err("logfile \"$newlogfile\" does not exist\n",-1) if($useflag);
 			return("");
 		}
 	}
@@ -1423,12 +1422,12 @@ sub rollmgr_logfile
 		   (($newlogfile ne "/dev/stdout")	&&
 		    ($newlogfile ne "/dev/tty")))
 		{
-			print STDERR "logfile \"$newlogfile\" is not a regular file\n" if($useflag);
+			err("logfile \"$newlogfile\" is not a regular file\n",-1) if($useflag);
 			return("");
 		}
 		if(! -w $newlogfile)
 		{
-			print STDERR "logfile \"$newlogfile\" is not writable\n" if($useflag);
+			err("logfile \"$newlogfile\" is not writable\n",-1) if($useflag);
 			return("");
 		}
 	}
