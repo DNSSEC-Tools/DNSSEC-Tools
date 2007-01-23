@@ -27,12 +27,37 @@ require Exporter;
 use strict;
 
 our @ISA = qw(Exporter);
-our @EXPORT = qw(cmdcheck getconfdir getconffile parseconfig);
+our @EXPORT = qw(
+			cmdcheck
+			getconfdir
+			getconffile
+			parseconfig
+
+			erraction
+			err
+			ERR_EXIT
+			ERR_MSG 
+			ERR_SILENT
+		);
 
 our @COMMANDS = qw(zonecheck keygen zonesign);
 
 our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "0.9";
+
+###############################################################################
+#
+# Error actions this is intended for use by DNSSEC-Tools library routines.
+#
+my $ERR_SILENT	= 1;				# Don't do anything on error.
+my $ERR_MSG	= 2;				# Print a message on error.
+my $ERR_EXIT	= 3;				# Print a message and exit.
+
+my $erraction = $ERR_SILENT;			# Action to take on errors.
+
+sub ERR_EXIT	{ return($ERR_EXIT);	};
+sub ERR_MSG 	{ return($ERR_MSG);	};
+sub ERR_SILENT 	{ return($ERR_SILENT);	};
 
 #--------------------------------------------------------------------------
 #
@@ -75,7 +100,7 @@ sub parseconfig
 	#
 	if(open(CONF,"< $conffile") == 0)
 	{
-		print STDERR "unable to open $conffile\n";
+		err("unable to open $conffile\n",-1);
 		return;
 	}
 
@@ -179,8 +204,8 @@ sub cmdcheck
 		#
 		if($cmd eq "")
 		{
-			print STDERR "command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n";
-			exit(3);
+			err("command \"$bcmd\" does not exist; please install BIND (9.3.1 or later)\n",3);
+			return(0);
 		}
 
 		#
@@ -188,8 +213,8 @@ sub cmdcheck
 		#
 		if(! -e $cmd)
 		{
-			print STDERR "BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n";
-			exit(3);
+			err("BIND command \"$cmd\" does not exist; please install BIND (9.3.1 or later)\n",3);
+			return(0);
 		}
 
 		#
@@ -197,11 +222,12 @@ sub cmdcheck
 		#
 		if(! -x $cmd)
 		{
-			print STDERR "$cmd not executable\n";
-			exit(3);
+			err("$cmd not executable\n",3);
+			return(0);
 		}
-
 	}
+
+	return(1);
 }
 
 #######################################################################
@@ -231,6 +257,57 @@ sub getconffile
 	return($CONFFILE);
 }
 
+
+#######################################################################
+#
+# Routine:	erraction()
+#
+# Purpose:	Set the action to take on error.
+#
+sub erraction
+{
+	my $newact = shift;			# Action to take on error.
+	my $curact;				# Current error action.
+
+	#
+	# Save the current error action.
+	#
+	$curact = $erraction;
+
+	#
+	# If this is a valid error action, we'll set the action.
+	#
+	if(($newact == $ERR_SILENT)	||
+	   ($newact == $ERR_MSG)	||
+	   ($newact == $ERR_EXIT))
+	{
+		$erraction = $newact;
+	}
+
+	#
+	# Return the saved action.
+	#
+	return($curact);
+}
+
+#######################################################################
+#
+# Routine:	err()
+#
+# Purpose:	Report an error.  Maybe.
+#
+sub err
+{
+	my $errstr = shift;			# Error message.
+	my $errret = shift;			# Error return code.
+
+	return if($erraction == $ERR_SILENT);
+
+	print STDERR "$errstr";
+
+	exit($errret) if(($erraction == $ERR_EXIT) && ($errret >= 0));
+}
+
 1;
 
 #############################################################################
@@ -254,6 +331,9 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
   $confdir = getconfdir();
 
   $conffile = getconffile();
+
+  erraction(ERR_MSG);
+  err("unable to open keyrec file",1);
 
 =head1 DESCRIPTION
 
@@ -290,6 +370,12 @@ An example configuration file follows:
     algorithm       rsasha1     # Encryption algorithm.
     ksk_length      1024        ; KSK key length.
 
+Another aspect of DNSSEC-Tools configuration is the error action used by the
+DNSSEC-Tools Perl modules.  The action dictates whether an error condition
+will only give an error return, print an error message to STDERR, or print an
+error message and exit.  The I<erraction()> and I<err()> interfaces are used
+for these operations.
+
 =head1 INTERFACES
 
 =over 4
@@ -325,6 +411,30 @@ This routine returns the name of the DNSSEC-Tools configuration directory.
 =item B<getconffile()>
 
 This routine returns the name of the DNSSEC-Tools configuration file.
+
+=item B<erraction(error_action)>
+
+This interface sets the error action for DNSSEC-Tools Perl modules.
+The valid actions are:
+
+    ERR_SILENT		Do not print an error message, do not exit.
+    ERR_MSG		Print an error message, do not exit.
+    ERR_EXIT		Print an error message, exit.
+
+ERR_SILENT is the default action.
+
+The previously set error action is returned.
+
+=item B<err("error message",exit_code>
+
+The B<err()> interface is used by the DNSSEC-Tools Perl modules to report
+an error and exit, depending on the error action.
+
+The first argument is an error message to print -- if the error action allows
+error messages to be printed.
+
+The second argument is an exit code -- if the error action requires that the
+process exit.
 
 =back
 
