@@ -53,6 +53,7 @@ use strict;
 
 use Getopt::Long qw(:config no_ignore_case_always);
 
+use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
@@ -147,6 +148,8 @@ sub main()
 {
 	my $argc = @ARGV;		# Number of command line arguments.
 	my $errors = 0;			# Total error count.
+
+	erraction(ERR_EXIT);
 
 	#
 	# Check our options.

@@ -140,8 +140,9 @@ exit($ret);
 sub main
 {
 	my $argc;			# Number of command line arguments.
-
 	my $errors = 0;			# Total error count.
+
+	erraction(ERR_MSG);
 
 	#
 	# Check our options and arguments.

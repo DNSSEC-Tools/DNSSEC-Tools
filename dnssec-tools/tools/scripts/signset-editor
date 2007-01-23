@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC-Tools:  signset-editor
@@ -46,6 +46,7 @@
 
 use strict;
 
+use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::BootStrap;
 
@@ -162,6 +163,8 @@ exit(0);
 sub main
 {
 	my $argc = @ARGV;
+
+	erraction(ERR_EXIT);
 
 	#
 	# Check for the -V option and usage on other options.
@@ -2184,7 +2187,7 @@ installed on your system.
 
 =head1 COPYRIGHT
 
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
