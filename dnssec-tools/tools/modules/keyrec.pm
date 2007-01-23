@@ -208,7 +208,7 @@ sub keyrec_read
 	#
 	if($krf eq "")
 	{
-		print STDERR "no keyrec file specified\n";
+		err("no keyrec file specified\n",-1);
 		return(-1);
 	}
 
@@ -217,7 +217,7 @@ sub keyrec_read
 	#
 	if(! -e $krf)
 	{
-		print STDERR "$krf does not exist\n";
+		err("$krf does not exist\n",-1);
 		return(-1);
 	}
 
@@ -236,7 +236,7 @@ sub keyrec_read
 	#
 	if(keyrec_open($krf) == 0)
 	{
-		print STDERR "unable to open $krf\n";
+		err("unable to open $krf\n",-1);
 		return(-2);
 	}
 
@@ -301,9 +301,8 @@ sub keyrec_read
 			#
 			if(exists($keyrecs{$name}))
 			{
-				print STDERR "keyrec_read:  duplicate record name \"$name\"; aborting...\n";
-
 				keyrec_discard();
+				err("keyrec_read:  duplicate record name \"$name\"; aborting...\n",-1);
 				return(-3);
 			}
 			keyrec_newkeyrec($name,$keyword);

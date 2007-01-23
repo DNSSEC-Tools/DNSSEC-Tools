@@ -150,7 +150,7 @@ sub rollrec_lock
 	#
 	if(!sysopen(RRLOCK,$lockfile,O_RDONLY|O_CREAT))
 	{
-#		print STDERR "unable to open lock file \"$lockfile\"; not locking...\n";
+#		err("unable to open lock file \"$lockfile\"; not locking...\n",-1);
 		return(0);
 	}
 
@@ -205,7 +205,7 @@ sub rollrec_read
 	#
 	if(! -e $rrf)
 	{
-		print STDERR "$rrf does not exist\n";
+		err("$rrf does not exist\n",-1);
 		return(-1);
 	}
 
@@ -221,7 +221,7 @@ sub rollrec_read
 	#
 	if(open(ROLLREC,"+< $rrf") == 0)
 	{
-		print STDERR "unable to open $rrf\n";
+		err("unable to open $rrf\n",-1);
 		return(-2);
 	}
 
@@ -283,9 +283,8 @@ sub rollrec_read
 			#
 			if(exists($rollrecs{$name}))
 			{
-				print STDERR "rollrec_read:  duplicate record name; aborting...\n";
-
 				rollrec_discard();
+				err("rollrec_read:  duplicate record name; aborting...\n",-1);
 				return(-3);
 			}
 			rollrec_newrec($keyword,$name);
