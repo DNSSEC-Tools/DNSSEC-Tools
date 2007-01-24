@@ -1197,8 +1197,7 @@ sub genzsk
 #----------------------------------------------------------------------
 # Routine:	setkeytype()
 #
-# Purpose:	Set the key type of the keys in a signing set to a given
-#		value.
+# Purpose:	Set the key type of the keys in a signing set to a given value.
 #
 sub setkeytype
 {
@@ -1206,13 +1205,15 @@ sub setkeytype
 	my $newtype = shift;			# New key type.
 	my $saver   = shift;			# Save-keys flag.
 
-	my $keys;				# Current KSK keys.
+	my $keys;				# Keys we're modifying.
+	my @keylist;				# Keys inna list.
 
 	#
 	# Change the type of the given signing set to the specified type.
 	#
 	$keys = keyrec_recval($signset,'keys');
-	foreach my $key (split / /,$keys)
+	@keylist = split / /, $keys;
+	foreach my $key (@keylist)
 	{
 		keyrec_setval('key',$key,'keyrec_type',$newtype);
 		vmed_print("$key now has type $newtype\n");
@@ -1245,12 +1246,15 @@ sub setkeytype
 
 	#
 	# Move each key into the archive directory.  The timestamp will be
-	# prepended to the new node name.
+	# prepended to the new node name.  We'll also set the timestamp in
+	# the key's keyrec.
 	#
-	foreach my $key (split / /,$keys)
+	foreach my $key (@keylist)
 	{
 		my $kronos = time;				# Timestamp.
 		my $newname;					# New key path.
+
+		keyrec_settime('key',$key);
 
 		foreach my $archfn (glob("$key.*"))
 		{
@@ -1700,7 +1704,7 @@ sub updzonerec
 		#
 		foreach my $field (keyrec_zonefields())
 		{
-			if(defined($opts{$field}))
+			if(defined($opts{$field}) && ($opts{$field} ne ''))
 			{
 				keyrec_setval('zone',$zone,$field,$opts{$field});
 			}
@@ -1723,9 +1727,9 @@ sub updzonerec
 		$setnames = join ' ', @kskcurlist;
 		keyrec_setval('set',$kskcursetname,'keys',$setnames);
 
-		$setnames = join ' ', @ksknewlist;
 		if($ksknewsetname ne '')
 		{
+			$setnames = join ' ', @ksknewlist;
 			keyrec_setval('set',$ksknewsetname,'keys',$setnames);
 		}
 
@@ -2176,7 +2180,7 @@ sub rollzsk
 	#
 	if($opts{'zskpub'} eq "")
 	{
-		print STDERR "zone $zone has no published ZSK to rollover to a current ZSK\n";
+		print STDERR "zone $zone has no Published ZSK to rollover to a Current ZSK\n";
 		exit(1);
 	}
 
@@ -2191,105 +2195,21 @@ sub rollzsk
 	$zoneref = keyrec_fullrec($zone);
 
 	#
-	# Render the current ZSKs obsolete.  Their keyrecs will be marked as
+	# Render the Current ZSKs obsolete.  Their keyrecs will be marked as
 	# zskobs and the keys will (may) be moved to the archive directory.
 	#
-	foreach my $k (@zskcurlist)
-	{
-		my $me;						# Key name.
-
-		$krref = keyrec_fullrec($k);
-		$me = $krref->{'keyrec_name'};
-
-		#
-		# Change the keyrec's type to obsolete ZSK.
-		#
-		$krref->{'keyrec_type'}	= "zskobs";
-		keyrec_setval("key",$me,"keyrec_type","zskobs");
-
-		#
-		# If we're supposed to archive the keys, we'll move the obsolete
-		# key off to the archive directory.
-		#
-		if($savekeys)
-		{
-			my $error = 0;				# Error flag.
-
-			#
-			# Make sure the archive directory exists and is
-			# actually a directory.
-			#
-			if(! -e $archdir)
-			{
-				vmed_print("creating ZSK archive directory $archdir\n\n");
-				system("$MKDIR -p -m 0700 $archdir");
-			}
-			else
-			{
-				if(! -d $archdir)
-				{
-					print STDERR "ZSK archive directory $archdir is not a directory; not archiving old ZSK key\n";
-					$error = 1;
-				}
-			}
-
-			#
-			# If the archive directory exists, we'll move each of
-			# this key's files into the directory.  We'll also add
-			# a timestamp to the end of the filename, to prevent
-			# potential collisions.
-			#
-			if($error == 0)
-			{
-				my $kronos = time;		# Timestamp.
-
-				vhigh_print("moving $me to $archdir\n\n");
-
-				foreach my $archfn (glob("$me.*"))
-				{
-					my $newname;		# New key name.
-
-					$newname = "$archdir/$kronos.$archfn";
-
-					system("$MV $archfn $newname");
-				}
-			}
-		}
-
-		vmed_print("current ZSK ($me) now obsolete\n");
-	}
+	setkeytype($zskcursetname,'zskobs',1);
 	@zskcurlist = ();
 
 	#
-	# Convert the published ZSKs into current ZSKs.
+	# Convert the Published ZSKs into Current ZSKs.  We'll also save the
+	# key to the list of Current ZSKs.
 	#
+	setkeytype($zskpubsetname,'zskcur',0);
 	foreach my $k (@zskpublist)
 	{
-		my $me;						# Key name.
-
-		#
-		# Get the key's keyrec and name.
-		#
-		$krref = keyrec_fullrec($k);
-		$me = $krref->{'keyrec_name'};
-
-		#
-		# Set the keyrec's type to ZSK current.
-		#
-		$krref->{'keyrec_type'} = 'zskcur';
-		keyrec_setval("key",$me,"keyrec_type","zskcur");
-
-		#
-		# Set the time for this key.
-		#
-		$publife = $krref->{'zsklife'};
-		keyrec_settime("key",$me);
-
-		#
-		# Save the key to the list of current ZSK.
-		#
 		push @zskcurlist, $k;
-		vmed_print("published ZSK ($me) now current\n");
+		vmed_print("Published ZSK ($k) now Current\n");
 	}
 
 	#
@@ -2301,63 +2221,49 @@ sub rollzsk
 	keyrec_setval('zone',$zone,'zskcur',$zskcursetname);
 
 	#
-	# Save the current ZSK list in the signing sets.
+	# Save the current ZSK list in the signing sets and zap the
+	# Published ZSK list.
 	#
 	$setlist = join ' ', @zskcurlist;
 	keyrec_setval('set',$zskcursetname,"keys",$setlist);
-
 	@zskpublist = ();
 
 	#
-	# If we have any new ZSKs, we'll make them the current published ZSKs.
-	# If not, we'll generate a published ZSK.
+	# If we have any New ZSKs, we'll make them the current Published ZSKs.
+	# If not, we'll generate a Published ZSK.
 	#
 	if(defined($opts{'zsknew'}))
 	{
 		my $keylist;					# List of keys.
 
+		#
+		# Mark the New ZSKs as Published.
+		#
 		$zsknewsetname = $opts{'zsknew'};
+		setkeytype($zsknewsetname,'zskpub',0);
+
+		#
+		# Build the new Published ZSK list.
+		#
 		$keylist = keyrec_recval($zsknewsetname,'keys');
 		@zsknewlist = split ' ', $keylist;
-
-		#
-		# Convert the new ZSKs into published ZSKs.
-		#
 		foreach my $k (@zsknewlist)
 		{
-			my $me;					# Key name.
-
-			#
-			# Get the key's keyrec.
-			#
-			$krref = keyrec_fullrec($k);
-			$me = $krref->{'keyrec_name'};
-
-			#
-			# Move the keyrec to published.
-			#
-			$krref->{'keyrec_type'} = "zskpub";
-			keyrec_setval("key",$me,"keyrec_type","zskpub");
-
-			#
-			# Save the key to the list of current ZSK.
-			#
 			push @zskpublist, $k;
-			vmed_print("new ZSK ($me) now published\n");
+			vmed_print("New ZSK ($k) now Published\n");
 		}
 
 		#
-		# Add the new set to the keyrecs and zap the old new list.
+		# Adjust the New and Published ZSKs and zap the old New list.
 		#
 		$zskpubsetname = $zsknewsetname;
 		$zsknewsetname = "";
 		@zsknewlist = ();
-
 	}
 	else
 	{
 		#
-		# Create a set of published keys.
+		# Create a set of Published keys.
 		#
 		for(my $ind=0; $ind < $zskcnt; $ind++)
 		{
@@ -2376,23 +2282,24 @@ sub rollzsk
 			keyrec_setval("key",$zskpub,"zsklife",$publife);
 			$opts{'zsklife'} = $publife;
 
-			vmed_print("published ZSK ($zskpub) created\n");
+			vmed_print("Published ZSK ($zskpub) created\n");
 		}
 
 		#
-		# Add the new set to the keyrecs.
+		# Add the Published ZSKs to the keyrecs.
 		#
 		$zskpubsetname = keyrec_signset_newname($zone);
+		keyrec_signset_new($zone,$zskpubsetname);
 	}
 
 	#
-	# Save the published ZSK name info.
+	# Save the Published ZSK name info.
 	#
 	$opts{'zskpub'} = $zskpubsetname;
 	keyrec_setval('zone',$zone,'zskpub',$zskpubsetname);
 
 	#
-	# Create a set of new ZSK keys.
+	# Create a set of New ZSK keys.
 	#
 	for(my $ind=0; $ind < $zskcnt; $ind++)
 	{
@@ -2403,11 +2310,11 @@ sub rollzsk
 		keyrec_setval("key",$zsknew,"zsklife",$publife);
 		$opts{'zsklife'} = $publife;
 
-		vmed_print("new ZSK ($zsknew) created\n");
+		vmed_print("New ZSK ($zsknew) created\n");
 	}
 
 	#
-	# Add the new set to the keyrecs.
+	# Add the New ZSKs to the keyrecs.
 	#
 	$zsknewsetname = keyrec_signset_newname($zone);
 	keyrec_signset_new($zone,$zsknewsetname);
