@@ -435,6 +435,11 @@ sub keyrec_fmtchk()
 			next if($skr eq 'set');
 
 			#
+			# Skip the key if it's empty.
+			#
+			next if($krec{$key} eq '');
+
+			#
 			# Make a new signing set for this key.
 			#
 			$set = keyrec_signset_newname($krn);
