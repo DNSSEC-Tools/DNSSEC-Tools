@@ -908,7 +908,7 @@ sub genksks
 			push @ksknewlist, $key;
 		}
 
-		$keyset = join ' ', @kskcurlist;
+		$keyset = join ' ', @ksknewlist;
 		keyrec_setval('set',$ksknewsetname,'keys',$keyset);
 
 		vmed_print("\n");
