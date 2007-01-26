@@ -610,6 +610,7 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     struct val_response *resp;
     int             retval = -1;
     int             bytestocopy = 0;
+    int             totalbytes = 0;
     HEADER *hp = NULL;
 
     if (val_status == NULL) {
@@ -627,12 +628,13 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
         return -1;
     }
 
-    retval = resp->vr_length;
+    totalbytes = resp->vr_length;
 
     bytestocopy = (resp->vr_length > anslen) ? anslen : resp->vr_length;
     memcpy(answer, resp->vr_response, bytestocopy);
     *val_status = resp->vr_val_status;
-    hp = (HEADER *) resp->vr_response;
+    val_free_response(resp);
+    hp = (HEADER *) answer;
 
     if (hp) {
         if (hp->rcode == ns_r_servfail) {
@@ -649,7 +651,7 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
             return -1;
         } else if (hp->ancount > 0) {
             h_errno = NETDB_SUCCESS;
-            return 0;
+            return totalbytes;
         }
     }
 
