@@ -93,7 +93,7 @@ sub main
 
 	runner(2,"2.  re-sign with Cur KSK","zonesigner $opts");
 
-	runner(3,"3.  generate New KSK - sign with Cur and New KSKs","zonesigner -newksk $opts");
+	runner(3,"3.  generate New KSK - sign with Cur and New KSKs","zonesigner -pubksk $opts");
 
 	runner(4,"4.  re-sign with Cur and New KSKs","zonesigner $opts");
 
@@ -476,6 +476,7 @@ sub usage
 	print STDERR "\t\t-krf <keyrec-file>\n";
 
 	print STDERR "\t\t-clean\n";
+	print STDERR "\t\t-final\n";
 	print STDERR "\t\t-fullout\n";
 	print STDERR "\t\t-quiet\n";
 	print STDERR "\t\t-Version\n";
