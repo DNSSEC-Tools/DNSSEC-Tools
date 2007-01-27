@@ -60,7 +60,7 @@ my $RM		= "/bin/rm";
 #
 my $DEF_ENTROPYMSG	= 1;			# Display of entropy message.
 my $DEF_SAVEKEYS	= 1;			# Archive keys.
-my $DEF_REUSEKSK	= 0;			# Re-use KSK.
+my $DEF_REUSEKSK	= 0;			# Re-use KSKs.
 my $DEF_REUSEZSK	= 0;			# Re-use ZSKs.
 
 #
@@ -95,10 +95,10 @@ my $archdir;				# Archive directory for old keys.
 my $savekeys = 1;			# Flag for saving old keys.
 
 my $kskcnt;				# Number of KSKs.
-my $kskdir;				# Directory to hold KSK.
+my $kskdir;				# Directory to hold KSKs.
 my $ksklife;				# Time between KSK rollovers.
-my $ksize;				# Size of KSK.
-my $genksk;				# Generate a new KSK.
+my $ksize;				# Size of KSKs.
+my $genksk;				# Generate new KSKs.
 my $ksignset;				# KSK signing set.
 
 my $zskcur;				# Current ZSK.
@@ -114,9 +114,9 @@ my $signset;				# ZSK signing set.
 my $lastset;				# Zone's last signing set.
 
 my $kskcursetname;			# Name of Current KSK signing set.
-my $ksknewsetname;			# Name of New KSK signing set.
+my $kskpubsetname;			# Name of Published KSK signing set.
 my @kskcurlist	= ();			# Current KSKs.
-my @ksknewlist	= ();			# New KSKs.
+my @kskpublist	= ();			# Published KSKs.
 
 my $zskcursetname;			# Name of Current ZSK signing set.
 my $zskpubsetname;			# Name of Published ZSK signing set.
@@ -150,7 +150,7 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool-specific options:'],
-	       ["newksk",		'Create a set of New KSK keys.'],
+	       ["pubksk",		'Create a set of Published KSK keys.'],
 	       ["rollksk",		'Force the rollover of KSK keys.'],
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
@@ -161,7 +161,7 @@ my @zsopts = ( '',
 	       ["showkeycmd",		'Show the key-generation command.'],
 	     );
 
-my $newksk	= 0;			# Create-new-KSKs flag.
+my $pubksk	= 0;			# Create-pusblished-KSKs flag.
 my $rollksk	= 0;			# Force-a-KSK-rollover flag.
 my $rollzsk	= 0;			# Force-a-ZSK-rollover flag.
 my $useboth	= 0;			# Use-current-and-published-ZSK flag.
@@ -298,7 +298,7 @@ sub optsandargs
 	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_default("zsklife");
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
-	$newksk	  = $opts{'newksk'}	  || 0;
+	$pubksk	  = $opts{'pubksk'}	  || 0;
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
 	$useboth  = $opts{'useboth'}	  || 0;
@@ -353,7 +353,7 @@ sub optsandargs
 	if($rollksk)
 	{
 		chksset('KSK','Current','kskcur');
-		chksset('KSK','New','ksknew');
+		chksset('KSK','Published','kskpub');
 	}
 
 	#
@@ -853,7 +853,7 @@ sub genzsks
 #----------------------------------------------------------------------
 # Routine:	genksks()
 #
-# Purpose:	Generate the set of KSK keys.  New keyrecs for the new keys
+# Purpose:	Generate the needed of KSK keys.  New keyrecs for the new keys
 #		are added to the keyrec file.
 #
 sub genksks
@@ -862,9 +862,9 @@ sub genksks
 	my $keyset;				# Keys in signing set.
 
 	#
-	# Create a set of New KSKs.
+	# Create a set of Published KSKs.
 	#
-	if($newksk)
+	if($pubksk)
 	{
 		#
 		# Get the Current KSK signing set name.
@@ -879,24 +879,24 @@ sub genksks
 		vprint("reusing existing Current KSK set - $kskcursetname\n");
 
 		#
-		# Get the KSKs.
+		# Get the Current KSKs.
 		#
 		$keyset  = keyrec_recval($kskcursetname,'keys');
 		@kskcurlist = split / /, $keyset;
 
 		#
-		# Any existing New KSKs are marked as obsolete.
+		# Any existing Published KSKs are marked as obsolete.
 		#
-		if(defined($opts{'ksknew'}))
+		if(defined($opts{'kskpub'}))
 		{
-			setkeytype($opts{'ksknew'},'kskobs',1);
+			setkeytype($opts{'kskpub'},'kskobs',1);
 		}
 
 		#
-		# Make a new New KSK signing set.
+		# Make a new Published KSK signing set.
 		#
-		$ksknewsetname = keyrec_signset_newname($zone);
-		keyrec_signset_new($zone,$ksknewsetname);
+		$kskpubsetname = keyrec_signset_newname($zone);
+		keyrec_signset_new($zone,$kskpubsetname);
 		$lastset = keyrec_recval($zone,'lastset');
 
 		#
@@ -904,12 +904,12 @@ sub genksks
 		#
 		for(my $ind=0; $ind < $kskcnt; $ind++)
 		{
-			my $key = genksk('ksknew');
-			push @ksknewlist, $key;
+			my $key = genksk('kskpub');
+			push @kskpublist, $key;
 		}
 
-		$keyset = join ' ', @ksknewlist;
-		keyrec_setval('set',$ksknewsetname,'keys',$keyset);
+		$keyset = join ' ', @kskpublist;
+		keyrec_setval('set',$kskpubsetname,'keys',$keyset);
 
 		vmed_print("\n");
 		updzonerec($UPD_KSKS);
@@ -1017,26 +1017,26 @@ sub genksks
 		@kskcurlist = split / /, $keyset;
 
 		#
-		# Get the New KSK signing set name -- if it exists.
+		# Get the Published KSK signing set name -- if it exists.
 		#
-		$ksknewsetname = "";
-		@ksknewlist = ();
-		if(defined($opts{'ksknew'}))
+		$kskpubsetname = "";
+		@kskpublist = ();
+		if(defined($opts{'kskpub'}))
 		{
-			$ksknewsetname = $opts{'ksknew'};
-			if(!keyrec_exists($ksknewsetname))
+			$kskpubsetname = $opts{'kskpub'};
+			if(!keyrec_exists($kskpubsetname))
 			{
-				print STDERR "\nNew KSK keyrec \"$ksknewsetname\" does not exist; unable to re-use non-existent KSK\n";
+				print STDERR "\nPublished KSK keyrec \"$kskpubsetname\" does not exist; unable to re-use non-existent KSK\n";
 				exit(1);
 			}
 
-			vprint("reusing existing New KSK set - $ksknewsetname\n");
+			vprint("reusing existing Published KSK set - $kskpubsetname\n");
 
 			#
 			# Get the KSKs.
 			#
-			$keyset  = keyrec_recval($ksknewsetname,'keys');
-			@ksknewlist = split / /, $keyset;
+			$keyset  = keyrec_recval($kskpubsetname,'keys');
+			@kskpublist = split / /, $keyset;
 		}
 
 		return;
@@ -1485,7 +1485,7 @@ sub zonesign
 	#
 	# Build the collection of KSKs.
 	#
-	$useksks = join " -k ", @kskcurlist, @ksknewlist;
+	$useksks = join " -k ", @kskcurlist, @kskpublist;
 	$useksks = "-k $useksks";
 
 	#
@@ -1505,7 +1505,7 @@ sub zonesign
 	push @usekeys, sort(@zskpublist) if($useboth);
 
 	#
-	# Sign the zone with the new keys.
+	# Build the zone-signing command.
 	#
 	$zscmd = "$zonesign $cmdopts $zoneftmp @usekeys";
 	vprint("signing zone\n");
@@ -1513,7 +1513,7 @@ sub zonesign
 	else			{ vhigh_print("$zscmd\n"); }
 
 	#
-	# Sign the zone with the new keys.
+	# Sign the zone.
 	#
 	$szone = `$zscmd`;
 	if($szone eq "")
@@ -1562,13 +1562,13 @@ sub zonesign
 	}
 
 	#
-	# Get the New KSK tag values.
+	# Get the Published KSK tag values.
 	#
-	foreach my $ksk (sort(@ksknewlist))
+	foreach my $ksk (sort(@kskpublist))
 	{
 		$ksk =~ /.*\+.*\+([0-9][0-9]*)/;
 		$keytag = $1;
-		print "\t\tKSK (new) $keytag  $zsize  $chron\t($ksknewsetname)\n";
+		print "\t\tKSK (pub) $keytag  $zsize  $chron\t($kskpubsetname)\n";
 	}
 
 	#
@@ -1672,7 +1672,7 @@ sub updzonerec
 	$opts{'signedzone'}	= $zoneout;
 	$opts{'kskdirectory'}	= $kskdir;
 	$opts{'kskcur'}		= $kskcursetname;
-	$opts{'ksknew'}		= $ksknewsetname;
+	$opts{'kskpub'}		= $kskpubsetname;
 	$opts{'zskcount'}	= $zskcnt;
 	$opts{'zskdirectory'}	= $zskdir;
 	$opts{'szopts'}		= $szopts if($szopts ne "");
@@ -1727,10 +1727,10 @@ sub updzonerec
 		$setnames = join ' ', @kskcurlist;
 		keyrec_setval('set',$kskcursetname,'keys',$setnames);
 
-		if($ksknewsetname ne '')
+		if($kskpubsetname ne '')
 		{
-			$setnames = join ' ', @ksknewlist;
-			keyrec_setval('set',$ksknewsetname,'keys',$setnames);
+			$setnames = join ' ', @kskpublist;
+			keyrec_setval('set',$kskpubsetname,'keys',$setnames);
 		}
 
 		foreach my $ksk (@kskcurlist)
@@ -1738,7 +1738,7 @@ sub updzonerec
 			keyrec_setval('key',$ksk,'zonename',$zone)
 		}
 
-		foreach my $ksk (@ksknewlist)
+		foreach my $ksk (@kskpublist)
 		{
 			keyrec_setval('key',$ksk,'zonename',$zone)
 		}
@@ -2037,9 +2037,9 @@ EOF
 	}
 
 	#
-	# Add the New KSKs.
+	# Add the Published KSKs.
 	#
-	foreach my $ksk (sort(@ksknewlist))
+	foreach my $ksk (sort(@kskpublist))
 	{
 		my $path = keyrec_recval($ksk,'keypath');
 		$path = "$path.key" if($path !~ /\.key$/);
@@ -2080,7 +2080,7 @@ EOF
 # Routine:	rollksk()
 #
 # Purpose:	Force a rollover of the KSK keys.  The Current KSKs are marked
-#		as obsolete and the New KSKs are marked as Current.
+#		as obsolete and the Published KSKs are marked as Current.
 #
 #		This should only be used if you know what you're doing.
 #
@@ -2094,11 +2094,11 @@ sub rollksk
 	vprint("forcing a KSK rollover\n");
 
 	#
-	# Ensure we have some New KSKs.
+	# Ensure we have some Published KSKs.
 	#
-	if(!defined($opts{'ksknew'}))
+	if(!defined($opts{'kskpub'}))
 	{
-		print STDERR "unable to roll KSKs since no New KSKs have been created\n";
+		print STDERR "unable to roll KSKs since no Published KSKs have been created\n";
 		exit(1);
 	}
 
@@ -2110,11 +2110,11 @@ sub rollksk
 	@kskcurlist = split / /, $keyset;
 
 	#
-	# Get the New KSK list.
+	# Get the Published KSK list.
 	#
-	$ksknewsetname = $opts{'ksknew'};
-	$keyset  = keyrec_recval($ksknewsetname,'keys');
-	@ksknewlist = split / /, $keyset;
+	$kskpubsetname = $opts{'kskpub'};
+	$keyset  = keyrec_recval($kskpubsetname,'keys');
+	@kskpublist = split / /, $keyset;
 
 	#
 	# Render the Current KSKs obsolete.  Their keyrecs will be marked
@@ -2123,34 +2123,34 @@ sub rollksk
 	setkeytype($kskcursetname,'kskobs',1);
 
 	#
-	# Transmogrify the New KSKs into being the Current KSKs.
+	# Transmogrify the Published KSKs into being the Current KSKs.
 	#
-	setkeytype($ksknewsetname,'kskcur',0);
+	setkeytype($kskpubsetname,'kskcur',0);
 
 	#
-	# Copy the New KSK data into the Current KSK data.
+	# Copy the Published KSK data into the Current KSK data.
 	#
-	$kskcursetname	= $ksknewsetname;
-	@kskcurlist	= @ksknewlist;
+	$kskcursetname	= $kskpubsetname;
+	@kskcurlist	= @kskpublist;
 
 	#
-	# Zap the old New KSK data.
+	# Zap the old Published KSK data.
 	#
-	$ksknewsetname	= '';
-	@ksknewlist	= ();
+	$kskpubsetname	= '';
+	@kskpublist	= ();
 
 	#
 	# Save the Current KSK list in the signing sets.
 	#
 	$opts{'kskcur'} = $kskcursetname;
-	$opts{'ksknew'} = '';
+	$opts{'kskpub'} = '';
 	$setlist = join ' ', @kskcurlist;
 
 	#
 	# Update the keyrecs.
 	#
 	keyrec_setval('zone',$zone,'kskcur',$kskcursetname);
-	keyrec_setval('zone',$zone,'ksknew','');
+	keyrec_setval('zone',$zone,'kskpub','');
 #	keyrec_setval('set',$kskcursetname,'keys',$setlist);
 
 }
@@ -2555,7 +2555,7 @@ sub usage
 	print STDERR "\t\t\t-nokrfile\n";
 	print STDERR "\t\t\t-genkeys\n";
 	print STDERR "\t\t\t-genksk\n";
-	print STDERR "\t\t\t-newksk\n";
+	print STDERR "\t\t\t-pubksk\n";
 	print STDERR "\t\t\t-genzsk\n";
 	print STDERR "\t\t\t-rollksk\n";
 	print STDERR "\t\t\t-rollzsk\n";
@@ -2696,7 +2696,7 @@ the command line, the default signed zone filename is the I<zone-file>
 appended with ".signed".  Thus, executing B<zonesigner example.com> will
 result in the signed zone being stored in I<example.com.signed>.
 
-Unless the I<-genkeys>, I<-genksk>, I<-genzsk>, or I<-newksk> options are
+Unless the I<-genkeys>, I<-genksk>, I<-genzsk>, or I<-pubksk> options are
 specified, the last keys generated for a particular zone will be used in
 subsequent B<zonesigner> executions.
 
@@ -2809,10 +2809,10 @@ this zone will be used.
 Generate new ZSKs for the zone.  By default, the last ZSKs generated for this
 zone will be used.
 
-=item -newksk
+=item -pubksk
 
-Generate new New KSKs for the zone.  Any existing New KSKs will be marked as
-obsolete.
+Generate new Published KSKs for the zone.  Any existing Published KSKs will
+be marked as obsolete.
 
 =item -useboth
 
@@ -2881,16 +2881,17 @@ increment the number for subsequent signing sets.
 =item -rollksk
 
 Force a rollover of the KSK keys.  The Current KSK keys are marked as Obsolete
-and the New KSK keys are marked as Current.  The zone is then signed with the
-new set of Current KSK keys.  If the zone's I<keyrec> does not list a Current
-or New KSK, an error message is printed and B<zonesigner> stops execution.
+and the Published KSK keys are marked as Current.  The zone is then signed
+with the new set of Current KSK keys.  If the zone's I<keyrec> does not list a
+Current or Published KSK, an error message is printed and B<zonesigner> stops
+execution.
 
 The zone's I<keyrec> file is updated to show the new key state.
 
 The I<keyrec>s of the KSK keys are adjusted as follows:
 
     The Current KSK keys are marked as Obsolete.
-    The New KSK keys are marked as Current.
+    The Published KSK keys are marked as Current.
     The obsolete KSK keys are moved to the archive directory.
 
 B<Warning>:  The timing of key-rolling is critical.  Great care must be taken
