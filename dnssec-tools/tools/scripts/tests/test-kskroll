@@ -106,7 +106,7 @@ sub main
 	#
 	if($testfail)
 	{
-		print "KSK rollover test failed:\n";
+		print "KSK rollover test for zone $zone failed:\n";
 		$ret = 1;
 
 		foreach my $tnum (sort(keys(%failed)))
@@ -116,7 +116,7 @@ sub main
 	}
 	else
 	{
-		print "KSK rollover test succeeded.\n";
+		print "KSK rollover test for zone $zone succeeded.\n";
 		$ret = 0;
 	}
 
