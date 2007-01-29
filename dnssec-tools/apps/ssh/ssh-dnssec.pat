@@ -1,3 +1,4 @@
+? README.dnssec
 ? fb6-build
 ? patch
 ? patch.1
@@ -8,8 +9,8 @@ RCS file: /cvs/openssh/configure.ac,v
 retrieving revision 1.370
 diff -u -p -r1.370 configure.ac
 --- configure.ac	6 Oct 2006 23:07:21 -0000	1.370
-+++ configure.ac	22 Dec 2006 12:35:02 -0000
-@@ -3070,6 +3070,41 @@ AC_ARG_WITH(sectok,
++++ configure.ac	29 Jan 2007 20:41:58 -0000
+@@ -3070,6 +3070,79 @@ AC_ARG_WITH(sectok,
  	]
  )
  
@@ -17,41 +18,122 @@ diff -u -p -r1.370 configure.ac
 +# Check whether user wants DNSSEC local validation support
 +AC_ARG_WITH(local-dnssec-validation,
 +	[  --with-local-dnssec-validation Enable local DNSSEC validation using libval],
-+	[
-+		if test "x$withval" != "xno" ; then
-+			if test "x$withval" != "xyes" ; then
-+				CPPFLAGS="$CPPFLAGS -I${withval}"
-+				LDFLAGS="$LDFLAGS -L${withval}"
-+				if test ! -z "$need_dash_r" ; then
-+					LDFLAGS="$LDFLAGS -R${withval}"
-+				fi
-+				if test ! -z "$blibpath" ; then
-+					blibpath="$blibpath:${withval}"
-+				fi
++	[ if test "x$withval" != "xno" ; then
++		if test "x$withval" != "xyes" ; then
++			CPPFLAGS="$CPPFLAGS -I${withval}"
++			LDFLAGS="$LDFLAGS -L${withval}"
++			if test ! -z "$need_dash_r" ; then
++				LDFLAGS="$LDFLAGS -R${withval}"
 +			fi
-+			AC_CHECK_HEADERS(validator.h)
-+			if test "$ac_cv_header_validator_h" != yes; then
-+				AC_MSG_ERROR(Can't find validator.h)
++			if test ! -z "$blibpath" ; then
++				blibpath="$blibpath:${withval}"
 +			fi
-+			AC_CHECK_LIB(sres, query_send)
-+			if test "$ac_cv_lib_sres_query_send" != yes; then
-+				AC_MSG_ERROR(Can't find libsres)
-+			fi
-+			AC_CHECK_LIB(val, p_val_status)
-+			if test "$ac_cv_lib_val_p_val_status" != yes; then
-+				AC_MSG_ERROR(Can't find libval)
-+			fi
-+			AC_DEFINE(LOCAL_DNSSEC_VALIDATION, 1,
-+				[Define if you want local DNSSEC validation support])
-+			LIBVAL_MSG="yes"
 +		fi
-+	]
++		AC_CHECK_HEADERS(validator/validator.h)
++		if test "$ac_cv_header_validator_validator_h" != yes; then
++			AC_MSG_ERROR(Can't find validator.h)
++		fi
++		AC_CHECK_LIB(sres, query_send)
++		if test "$ac_cv_lib_sres_query_send" != yes; then
++			AC_MSG_ERROR(Can't find libsres)
++		fi
++		LIBVAL_SUFFIX=""
++		AC_CHECK_LIB(val, p_val_status,LIBS="$LIBS -lval",
++			[ AC_CHECK_LIB(val-threads, p_val_status,
++				[ LIBS="$LIBS -lval-threads -lpthread"
++				  LIBVAL_SUFFIX="-threads"],
++				AC_MSG_ERROR(Can't find libval or libval-threads))
++			])
++		AC_DEFINE(LOCAL_DNSSEC_VALIDATION, 1,
++			[Define if you want local DNSSEC validation support])
++		LIBVAL_MSG="yes, libval${LIBVAL_SUFFIX}"
++	else
++		# Check libraries needed by DNS fingerprint support
++		AC_SEARCH_LIBS(getrrsetbyname, resolv,
++			[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
++				[Define if getrrsetbyname() exists])],
++			[
++				# Needed by our getrrsetbyname()
++				AC_SEARCH_LIBS(res_query, resolv)
++				AC_SEARCH_LIBS(dn_expand, resolv)
++				AC_MSG_CHECKING(if res_query will link)
++				AC_TRY_LINK_FUNC(res_query, AC_MSG_RESULT(yes),
++				   [AC_MSG_RESULT(no)
++				    saved_LIBS="$LIBS"
++				    LIBS="$LIBS -lresolv"
++				    AC_MSG_CHECKING(for res_query in -lresolv)
++				    AC_LINK_IFELSE([
++#include <resolv.h>
++int main()
++{
++	res_query (0, 0, 0, 0, 0);
++	return 0;
++}
++					],
++					[LIBS="$LIBS -lresolv"
++					 AC_MSG_RESULT(yes)],
++					[LIBS="$saved_LIBS"
++					 AC_MSG_RESULT(no)])
++				    ])
++				AC_CHECK_FUNCS(_getshort _getlong)
++				AC_CHECK_DECLS([_getshort, _getlong], , ,
++				    [#include <sys/types.h>
++				    #include <arpa/nameser.h>])
++				AC_CHECK_MEMBER(HEADER.ad,
++					[AC_DEFINE(HAVE_HEADER_AD, 1,
++					    [Define if HEADER.ad exists in arpa/nameser.h])],,
++					[#include <arpa/nameser.h>])
++			])
++	 fi]
 +)
 +
  # Check whether user wants OpenSC support
  OPENSC_CONFIG="no"
  AC_ARG_WITH(opensc,
-@@ -3972,6 +4007,7 @@ echo "              TCP Wrappers support
+@@ -3096,42 +3169,6 @@ AC_ARG_WITH(opensc,
+ 	]
+ )
+ 
+-# Check libraries needed by DNS fingerprint support
+-AC_SEARCH_LIBS(getrrsetbyname, resolv,
+-	[AC_DEFINE(HAVE_GETRRSETBYNAME, 1,
+-		[Define if getrrsetbyname() exists])],
+-	[
+-		# Needed by our getrrsetbyname()
+-		AC_SEARCH_LIBS(res_query, resolv)
+-		AC_SEARCH_LIBS(dn_expand, resolv)
+-		AC_MSG_CHECKING(if res_query will link)
+-		AC_TRY_LINK_FUNC(res_query, AC_MSG_RESULT(yes),
+-		   [AC_MSG_RESULT(no)
+-		    saved_LIBS="$LIBS"
+-		    LIBS="$LIBS -lresolv"
+-		    AC_MSG_CHECKING(for res_query in -lresolv)
+-		    AC_LINK_IFELSE([
+-#include <resolv.h>
+-int main()
+-{
+-	res_query (0, 0, 0, 0, 0);
+-	return 0;
+-}
+-			],
+-			[LIBS="$LIBS -lresolv"
+-			 AC_MSG_RESULT(yes)],
+-			[LIBS="$saved_LIBS"
+-			 AC_MSG_RESULT(no)])
+-		    ])
+-		AC_CHECK_FUNCS(_getshort _getlong)
+-		AC_CHECK_DECLS([_getshort, _getlong], , ,
+-		    [#include <sys/types.h>
+-		    #include <arpa/nameser.h>])
+-		AC_CHECK_MEMBER(HEADER.ad,
+-			[AC_DEFINE(HAVE_HEADER_AD, 1,
+-			    [Define if HEADER.ad exists in arpa/nameser.h])],,
+-			[#include <arpa/nameser.h>])
+-	])
+ 
+ # Check whether user wants SELinux support
+ SELINUX_MSG="no"
+@@ -3972,6 +4009,7 @@ echo "              TCP Wrappers support
  echo "              MD5 password support: $MD5_MSG"
  echo "                   libedit support: $LIBEDIT_MSG"
  echo "  Solaris process contract support: $SPC_MSG"
@@ -65,7 +147,7 @@ RCS file: /cvs/openssh/dns.c,v
 retrieving revision 1.25
 diff -u -p -r1.25 dns.c
 --- dns.c	1 Sep 2006 05:38:36 -0000	1.25
-+++ dns.c	22 Dec 2006 12:35:02 -0000
++++ dns.c	29 Jan 2007 20:41:59 -0000
 @@ -35,6 +35,10 @@
  #include <stdio.h>
  #include <string.h>
@@ -115,7 +197,7 @@ diff -u -p -r1.25 dns.c
  		debug("found %d secure fingerprints in DNS",
  		    fingerprints->rri_nrdatas);
  	} else {
-@@ -246,6 +257,96 @@ verify_host_key_dns(const char *hostname
+@@ -246,6 +257,91 @@ verify_host_key_dns(const char *hostname
  
  	xfree(hostkey_digest); /* from key_fingerprint_raw() */
  	freerrset(fingerprints);
@@ -127,11 +209,6 @@ diff -u -p -r1.25 dns.c
 +		verbose("DNS lookup error: %s", p_ac_status(val_results->val_rc_status));
 +		return -1;
 +	}
-+	//if ((result != VAL_NO_ERROR) ||
-+	//    !val_istrusted(val_results->val_rc_status)) {
-+	//	verbose("DNS lookup error: %s", p_ac_status(val_results->val_rc_status));
-+		//return -1;
-+	//}
 +
 +	/* Initialize host key parameters */
 +	if (!dns_read_key(&hostkey_algorithm, &hostkey_digest_type,
@@ -218,7 +295,7 @@ RCS file: /cvs/openssh/dns.h,v
 retrieving revision 1.8
 diff -u -p -r1.8 dns.h
 --- dns.h	5 Aug 2006 02:39:40 -0000	1.8
-+++ dns.h	22 Dec 2006 12:35:02 -0000
++++ dns.h	29 Jan 2007 20:41:59 -0000
 @@ -45,6 +45,7 @@ enum sshfp_hashes {
  #define DNS_VERIFY_FOUND	0x00000001
  #define DNS_VERIFY_MATCH	0x00000002
@@ -233,7 +310,7 @@ RCS file: /cvs/openssh/readconf.c,v
 retrieving revision 1.136
 diff -u -p -r1.136 readconf.c
 --- readconf.c	1 Sep 2006 05:38:37 -0000	1.136
-+++ readconf.c	22 Dec 2006 12:35:03 -0000
++++ readconf.c	29 Jan 2007 20:42:00 -0000
 @@ -130,6 +130,7 @@ typedef enum {
  	oServerAliveInterval, oServerAliveCountMax, oIdentitiesOnly,
  	oSendEnv, oControlPath, oControlMaster, oHashKnownHosts,
@@ -288,7 +365,7 @@ RCS file: /cvs/openssh/readconf.h,v
 retrieving revision 1.63
 diff -u -p -r1.63 readconf.h
 --- readconf.h	5 Aug 2006 02:39:40 -0000	1.63
-+++ readconf.h	22 Dec 2006 12:35:03 -0000
++++ readconf.h	29 Jan 2007 20:42:00 -0000
 @@ -121,6 +121,8 @@ typedef struct {
  	char	*local_command;
  	int	permit_local_command;
@@ -304,7 +381,7 @@ RCS file: /cvs/openssh/sshconnect.c,v
 retrieving revision 1.171
 diff -u -p -r1.171 sshconnect.c
 --- sshconnect.c	23 Oct 2006 17:02:24 -0000	1.171
-+++ sshconnect.c	22 Dec 2006 12:35:04 -0000
++++ sshconnect.c	29 Jan 2007 20:42:01 -0000
 @@ -26,6 +26,13 @@
  #include <netinet/in.h>
  #include <arpa/inet.h>
@@ -319,39 +396,15 @@ diff -u -p -r1.171 sshconnect.c
  #include <ctype.h>
  #include <errno.h>
  #include <netdb.h>
-@@ -77,6 +84,31 @@ extern pid_t proxy_command_pid;
+@@ -76,6 +83,7 @@ extern pid_t proxy_command_pid;
+ 
  static int show_other_keys(const char *, Key *);
  static void warn_changed_key(Key *);
++static int confirm(const char *prompt);
  
-+/* defaults to 'no' */
-+static int
-+confirm(const char *prompt)
-+{
-+	const char *msg, *again = "Please type 'yes' or 'no': ";
-+	char *p;
-+	int ret = -1;
-+
-+	if (options.batch_mode)
-+		return 0;
-+	for (msg = prompt;;msg = again) {
-+		p = read_passphrase(msg, RP_ECHO);
-+		if (p == NULL ||
-+		    (p[0] == '\0') || (p[0] == '\n') ||
-+		    strncasecmp(p, "no", 2) == 0)
-+			ret = 0;
-+		if (p && strncasecmp(p, "yes", 3) == 0)
-+			ret = 1;
-+		if (p)
-+			xfree(p);
-+		if (ret != -1)
-+			return ret;
-+	}
-+}
-+
  /*
   * Connect to the given ssh server using a proxy command.
-  */
-@@ -167,7 +199,7 @@ ssh_proxy_connect(const char *host, u_sh
+@@ -167,7 +175,7 @@ ssh_proxy_connect(const char *host, u_sh
   * Creates a (possibly privileged) socket for use as the ssh connection.
   */
  static int
@@ -360,17 +413,20 @@ diff -u -p -r1.171 sshconnect.c
  {
  	int sock, gaierr;
  	struct addrinfo hints, *res;
-@@ -305,7 +337,8 @@ ssh_connect(const char *host, struct soc
+@@ -305,7 +313,11 @@ ssh_connect(const char *host, struct soc
  	int on = 1;
  	int sock = -1, attempt;
  	char ntop[NI_MAXHOST], strport[NI_MAXSERV];
 -	struct addrinfo hints, *ai, *aitop;
 +	struct addrinfo hints;
 +	ADDRINFO_TYPE *ai, *aitop = NULL;
++#ifdef LOCAL_DNSSEC_VALIDATION
++	val_status_t val_status;
++#endif
  
  	debug2("ssh_connect: needpriv %d", needpriv);
  
-@@ -319,9 +352,44 @@ ssh_connect(const char *host, struct soc
+@@ -319,9 +331,45 @@ ssh_connect(const char *host, struct soc
  	hints.ai_family = family;
  	hints.ai_socktype = SOCK_STREAM;
  	snprintf(strport, sizeof strport, "%u", port);
@@ -380,7 +436,8 @@ diff -u -p -r1.171 sshconnect.c
 -		    gai_strerror(gaierr));
 +		fatal("%s: %.100s: %s", __progname, host, gai_strerror(gaierr));
 +#else
-+	if ((gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop)) != 0)
++	if ((gaierr = val_getaddrinfo(NULL, host, strport, &hints, &aitop,
++             &val_status)) != 0)
 +		fatal("%s: %.100s: %s", __progname, host, gai_strerror(gaierr));
 +	debug("ValStatus: %s", p_val_status(aitop->ai_val_status));
 +	if (!val_istrusted(aitop->ai_val_status)) {
@@ -417,7 +474,7 @@ diff -u -p -r1.171 sshconnect.c
  
  	for (attempt = 0; attempt < connection_attempts; attempt++) {
  		if (attempt > 0) {
-@@ -366,8 +434,12 @@ ssh_connect(const char *host, struct soc
+@@ -366,8 +414,12 @@ ssh_connect(const char *host, struct soc
  		if (sock != -1)
  			break;	/* Successful connection. */
  	}
@@ -431,39 +488,7 @@ diff -u -p -r1.171 sshconnect.c
  
  	/* Return failure if we didn't get a successful connection. */
  	if (sock == -1) {
-@@ -496,31 +568,6 @@ ssh_exchange_identification(void)
- 	debug("Local version string %.100s", client_version_string);
- }
- 
--/* defaults to 'no' */
--static int
--confirm(const char *prompt)
--{
--	const char *msg, *again = "Please type 'yes' or 'no': ";
--	char *p;
--	int ret = -1;
--
--	if (options.batch_mode)
--		return 0;
--	for (msg = prompt;;msg = again) {
--		p = read_passphrase(msg, RP_ECHO);
--		if (p == NULL ||
--		    (p[0] == '\0') || (p[0] == '\n') ||
--		    strncasecmp(p, "no", 2) == 0)
--			ret = 0;
--		if (p && strncasecmp(p, "yes", 3) == 0)
--			ret = 1;
--		if (p)
--			xfree(p);
--		if (ret != -1)
--			return ret;
--	}
--}
--
- /*
-  * check whether the supplied host key is valid, return -1 if the key
-  * is not valid. the user_hostfile will not be updated if 'readonly' is true.
-@@ -905,6 +952,20 @@ verify_host_key(char *host, struct socka
+@@ -905,6 +957,20 @@ verify_host_key(char *host, struct socka
  	if (options.verify_host_key_dns &&
  	    verify_host_key_dns(host, hostaddr, host_key, &flags) == 0) {
  
