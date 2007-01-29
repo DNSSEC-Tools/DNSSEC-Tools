@@ -45,7 +45,7 @@ diff -U 5 -r libspf2-1.0.4.orig/config.h.in libspf2-1.0.4/config.h.in
  /* Define to 1 if the system has the type `u_int8_t'. */
  #undef HAVE_U_INT8_T
  
-+/* Define to 1 if you have the <validator.h> header file. */
++/* Define to 1 if you have the <validator/validator.h> header file. */
 +#undef HAVE_VALIDATOR_H
 +
  /* Define to 1 if you have the `vfork' function. */
@@ -115,7 +115,7 @@ diff -U 5 -r libspf2-1.0.4.orig/configure.ac libspf2-1.0.4/configure.ac
 +   AC_MSG_RESULT(yes)
 +
 +   dnl Check DNSSEC Validator library header
-+   AC_CHECK_HEADERS([validator.h])
++   AC_CHECK_HEADERS([validator/validator.h])
 +
 +   dnl Check the openssl crypto library
 +   AC_CHECK_LIB(crypto, RSA_verify, , [
@@ -304,7 +304,7 @@ diff -U 5 -r libspf2-1.0.4.orig/src/libspf2/spf_dns_resolv.c libspf2-1.0.4/src/l
  #endif
  
 +#ifdef SUPPORT_DNSSEC
-+#include <validator.h>
++#include <validator/validator.h>
 +#endif
 +
  #include "spf.h"

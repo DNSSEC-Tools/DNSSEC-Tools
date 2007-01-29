@@ -34,7 +34,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/libmilter/sm_gethost.c sendmail-8.13.6/libmi
  #include "libmilter.h"
  
 +#if SUPPORT_DNSSEC
-+# include <validator.h>
++# include <validator/validator.h>
 +#endif /* SUPPORT_DNSSEC */
 +
 +/*
@@ -133,7 +133,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/conf.c sendmail-8.13.6/sendmail/con
  #endif /* NEEDSTRSTR */
 +
 +#if SUPPORT_DNSSEC
-+# include <validator.h>
++# include <validator/validator.h>
 +#endif /* SUPPORT_DNSSEC */
 +
 +/*
@@ -267,7 +267,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/domain.c sendmail-8.13.6/sendmail/d
  # include <arpa/inet.h>
  
 +# if SUPPORT_DNSSEC
-+#  include <validator.h>
++#  include <validator/validator.h>
 +# endif /* SUPPORT_DNSSEC */
  
  /*
@@ -521,7 +521,7 @@ diff -U 5 -Nar sendmail-8.13.6.orig/sendmail/sm_resolve.c sendmail-8.13.6/sendma
  };
  
 +#  if SUPPORT_DNSSEC
-+#   include <validator.h>
++#   include <validator/validator.h>
 +#  endif /* SUPPORT_DNSSEC */
 +
  static DNS_REPLY_T *parse_dns_reply __P((unsigned char *, int));
