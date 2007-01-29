@@ -93,7 +93,7 @@ sub main
 
 	runner(2,"2.  re-sign with Cur KSK","zonesigner $opts");
 
-	runner(3,"3.  generate New KSK - sign with Cur and New KSKs","zonesigner -pubksk $opts");
+	runner(3,"3.  generate New KSK - sign with Cur and New KSKs","zonesigner -newpubksk $opts");
 
 	runner(4,"4.  re-sign with Cur and New KSKs","zonesigner $opts");
 
