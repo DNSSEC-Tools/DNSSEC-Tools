@@ -1561,7 +1561,7 @@
  #include <string.h>
  
 +#ifdef MOZ_DNSSEC
-+#include <validator.h>
++#include <validator/validator.h>
 +#endif
 +
  /*
@@ -1692,8 +1692,8 @@
 +    DNSSECDEBUG((stderr,
 +                 "  val_gethostbyname returned %d,val_st=%d,errno=%d,ptr=%x\n",
 +                 dnssec_status, val_status, h_errno, (unsigned int) hentryp));
-+    if (!hentryp)
-+        val_status = VAL_INDETERMINATE;
++    //if (!hentryp)
++    //    val_status = VAL_INDETERMINATE;
 +
 +    DNSSECDEBUG((stderr, "  val_gethostbyname's dnssec status was %d\n",
 +                 dnssec_status));
