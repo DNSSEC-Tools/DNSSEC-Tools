@@ -444,9 +444,13 @@ sub nfprint
 sub cleaner
 {
 	my $keyglob = "K$zone";				# Key format.
+	my $ksglob  = "keyset-$zone";			# Keyset format.
+	my $dsglob  = "dsset-$zone";			# DSset format.
 
 	system("rm -f $krf $int $sig");
 	system("rm -f $keyglob*") if(glob("$keyglob*"));
+	system("rm -f $ksglob*")  if(glob("$ksglob*"));
+	system("rm -f $dsglob*")  if(glob("$dsglob*"));
 }
 
 #----------------------------------------------------------------------
