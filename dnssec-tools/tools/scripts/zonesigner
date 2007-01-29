@@ -59,7 +59,6 @@ my $RM		= "/bin/rm";
 # Default arguments to zonesigner.
 #
 my $DEF_ENTROPYMSG	= 1;			# Display of entropy message.
-my $DEF_SAVEKEYS	= 1;			# Archive keys.
 my $DEF_REUSEKSK	= 0;			# Re-use KSKs.
 my $DEF_REUSEZSK	= 0;			# Re-use ZSKs.
 
@@ -320,8 +319,6 @@ sub optsandargs
 	$random   = $opts{'random'}	|| dnssec_tools_default("random");
 	$kgopts   = $opts{'kgopts'}	|| "";
 	$ksdir	  = $opts{'ksdir'}	|| "";
-	$savekeys = $DEF_SAVEKEYS;
-	$savekeys = 0 if(defined($opts{'nosave'}));
 	$ksignset = $opts{'ksignset'}	|| "";
 	$signset  = $opts{'signset'}	|| "";
 	$szopts   = $opts{'szopts'}	|| "";
@@ -339,6 +336,19 @@ sub optsandargs
 	{
 		$genksk = 1;
 		$genzsk = 1;
+	}
+
+	#
+	# Set the savekeys flag.  If -nosave was given, then we'll turn
+	# off key archiving.  If -nosave wasn't given, we'll use the value
+	# of the savekeys field from the DNSSEC-Tools config file.
+	#
+	$savekeys = dnssec_tools_default("savekeys");
+	$savekeys = $opts{'savekeys'} if(defined($opts{'savekeys'}));
+	if(defined($opts{'nosave'}))
+	{
+		$savekeys = 0;
+		delete $opts{'savekeys'};
 	}
 
 	#
@@ -419,12 +429,11 @@ sub optsandargs
 	$gends	 = "-g"		 if($gends ne "");
 
 	#
-	# Ensure that the archive directory is a real directory, if it already
-	# exists.  This is only checked if -rollksk or -rollzsk was given,
-	# since the only time the archive directory is used is when zonesigner
-	# is doing a rollover.
+	# Run some verification if we're supposed to archive keys.  Ensure
+	# the archive directory is a real directory, if it already exists.
+	# We also won't allow / to be the archive directory.
 	#
-	if($rollksk || $rollzsk)
+	if($savekeys)
 	{
 		if($archdir ne "")
 		{
@@ -433,14 +442,16 @@ sub optsandargs
 				print STDERR "key archive directory $archdir is not a directory\n";
 				exit(1);
 			}
+			if($archdir eq '/')
+			{
+				print STDERR "key archive directory must not be /\n";
+				exit(1);
+			}
 		}
 		else
 		{
-			if($savekeys)
-			{
-				print STDERR "no key archive directory specified\n";
-				exit(1);
-			}
+			print STDERR "no key archive directory specified\n";
+			exit(1);
 		}
 	}
 
@@ -2832,6 +2843,8 @@ B<zonesigner> will exit.
 When the files are saved into the archive directory, the existing file names
 are prepended with a timestamp.  The timestamp indicates when the files are
 archived.
+
+This directory B<may not> be the root directory.
 
 =item -nosave
 
