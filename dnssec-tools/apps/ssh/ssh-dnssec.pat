@@ -71,7 +71,7 @@ diff -u -p -r1.25 dns.c
  #include <string.h>
  
 +#ifdef LOCAL_DNSSEC_VALIDATION
-+# include <validator.h>
++# include <validator/validator.h>
 +#endif
 +
  #include "xmalloc.h"
@@ -310,7 +310,7 @@ diff -u -p -r1.171 sshconnect.c
  #include <arpa/inet.h>
  
 +#ifdef LOCAL_DNSSEC_VALIDATION
-+# include <validator.h>
++# include <validator/validator.h>
 +# define ADDRINFO_TYPE struct val_addrinfo
 +#else
 +#define ADDRINFO_TYPE struct addrinfo
