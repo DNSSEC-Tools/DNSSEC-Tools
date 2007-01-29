@@ -149,7 +149,7 @@ our @saveargs = @ARGV;			# Copy of argument vector.
 #
 my @zsopts = ( '',
 	       ['GUI:separator',	'Tool-specific options:'],
-	       ["pubksk",		'Create a set of Published KSK keys.'],
+	       ["newpubksk",		'Create a set of Published KSK keys.'],
 	       ["rollksk",		'Force the rollover of KSK keys.'],
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
@@ -297,7 +297,7 @@ sub optsandargs
 	$zsklife  = $opts{'zsklife'}	  || dnssec_tools_default("zsklife");
 	$kskdir	  = $opts{'kskdirectory'} || '.';
 	$zskdir	  = $opts{'zskdirectory'} || '.';
-	$pubksk	  = $opts{'pubksk'}	  || 0;
+	$pubksk	  = $opts{'newpubksk'}	  || 0;
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
 	$useboth  = $opts{'useboth'}	  || 0;
@@ -2566,7 +2566,7 @@ sub usage
 	print STDERR "\t\t\t-nokrfile\n";
 	print STDERR "\t\t\t-genkeys\n";
 	print STDERR "\t\t\t-genksk\n";
-	print STDERR "\t\t\t-pubksk\n";
+	print STDERR "\t\t\t-newpubksk\n";
 	print STDERR "\t\t\t-genzsk\n";
 	print STDERR "\t\t\t-rollksk\n";
 	print STDERR "\t\t\t-rollzsk\n";
@@ -2707,7 +2707,7 @@ the command line, the default signed zone filename is the I<zone-file>
 appended with ".signed".  Thus, executing B<zonesigner example.com> will
 result in the signed zone being stored in I<example.com.signed>.
 
-Unless the I<-genkeys>, I<-genksk>, I<-genzsk>, or I<-pubksk> options are
+Unless the I<-genkeys>, I<-genksk>, I<-genzsk>, or I<-newpubksk> options are
 specified, the last keys generated for a particular zone will be used in
 subsequent B<zonesigner> executions.
 
@@ -2820,7 +2820,7 @@ this zone will be used.
 Generate new ZSKs for the zone.  By default, the last ZSKs generated for this
 zone will be used.
 
-=item -pubksk
+=item -newpubksk
 
 Generate new Published KSKs for the zone.  Any existing Published KSKs will
 be marked as obsolete.
