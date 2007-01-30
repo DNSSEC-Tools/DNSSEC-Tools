@@ -413,7 +413,7 @@ sub zsk_phasewait
 #
 # Purpose:	Perform the phase 2 steps of the rollover.  These are:
 #
-#			- sign the zone with the KSK and published ZSK
+#			- sign the zone with the KSK and Published ZSK
 #			- reload the zone
 #			- wait for old zone data to expire
 #
@@ -453,12 +453,12 @@ sub zsk_phase2
 	%krf = %$krr;
 
 	#
-	# Sign the zone with the published ZSK.
+	# Sign the zone with the Published ZSK.
 	#
-	$ret = signer($rname,"-usepub",$krr);
+	$ret = signer($rname,"-usezskpub",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 2:  unable to sign zone with the published ZSK");
+		rollmgr_log(LOG_ERR,$rname,"phase 2:  unable to sign zone with the Published ZSK");
 	}
 
 	#

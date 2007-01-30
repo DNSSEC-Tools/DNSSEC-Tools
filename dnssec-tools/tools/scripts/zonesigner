@@ -153,18 +153,18 @@ my @zsopts = ( '',
 	       ["rollksk",		'Force the rollover of KSK keys.'],
 	       ["rollzsk",		'Force the rollover of ZSK keys.'],
 	       ["useboth",		'Use Current and Published ZSK for signing.'],
-	       ["usepub",		'Use Published ZSK for signing.'],
+	       ["usezskpub",		'Use Published ZSK for signing.'],
 	       ["intermediate=s",	'Intermediate zone file.'],
 	       ["nosave",		'Do not save old keys.'],
 	       ["showsigncmd",		'Show the zone-signing command.'],
 	       ["showkeycmd",		'Show the key-generation command.'],
 	     );
 
-my $pubksk	= 0;			# Create-pusblished-KSKs flag.
+my $pubksk	= 0;			# Create-Published-KSKs flag.
 my $rollksk	= 0;			# Force-a-KSK-rollover flag.
 my $rollzsk	= 0;			# Force-a-ZSK-rollover flag.
-my $useboth	= 0;			# Use-current-and-published-ZSK flag.
-my $usepub	= 0;			# Use-published-ZSK flag.
+my $useboth	= 0;			# Use-Current-and-Published-ZSK flag.
+my $usezskpub	= 0;			# Use-Published-ZSK flag.
 
 my $showsigncmd	= 0;			# Show-zone-sign-command flag.
 my $showkeycmd	= 0;			# Show-key-generation-command flag.
@@ -292,7 +292,7 @@ sub optsandargs
 	$genksk	  = $opts{'genksk'}	  || $DEF_REUSEKSK;
 	$genzsk	  = $opts{'genzsk'}	  || $DEF_REUSEZSK;
 	$useboth  = $opts{'useboth'}	  || 0;
-	$usepub	  = $opts{'usepub'}	  || 0;
+	$usezskpub = $opts{'usezskpub'}	  || 0;
 
 	if(defined($opts{'kskcount'}))	{ $kskcnt = $opts{'kskcount'}; }
 	else				{ $kskcnt = 1; }
@@ -468,9 +468,9 @@ sub optsandargs
 	$zonesign  = $opts{'zonesign'}  || dnssec_tools_default("zonesign");
 
 	#
-	# Turn off the usepub flag if -useboth was given.
+	# Turn off the usezskpub flag if -useboth was given.
 	#
-	$usepub = 0	if($useboth);
+	$usezskpub = 0	if($useboth);
 
 	#
 	# Ensure that we were given the zone file and the zone output file.
@@ -1499,11 +1499,11 @@ sub zonesign
 
 	#
 	# Normally, we'll use the Current ZSKs; however, we'll use the
-	# Published ZSKs if the user gave -usepub.  We'll use both
+	# Published ZSKs if the user gave -usezskpub.  We'll use both
 	# Current and Published ZSKs if the user gave -useboth.
 	#
 	@usekeys = sort(@zskcurlist);
-	@usekeys = sort(@zskpublist)	 if($usepub);
+	@usekeys = sort(@zskpublist)	 if($usezskpub);
 	push @usekeys, sort(@zskpublist) if($useboth);
 
 	#
@@ -2051,7 +2051,7 @@ EOF
 	#
 	# Add the Current ZSKs.
 	#
-	if(!$usepub)
+	if(!$usezskpub)
 	{
 		$incstr .= "\n;; Current ZSKs\n";
 
@@ -2450,7 +2450,7 @@ sub printopts
 	print "\t\tgenksk		- <$genksk>\n";
 	print "\t\tsignset		- <$signset>\n";
 	print "\t\tuseboth		- <$useboth>\n";
-	print "\t\tusepub		- <$usepub>\n";
+	print "\t\tusezskpub		- <$usezskpub>\n";
 	print "\t\tzsize		- <$zsize>\n";
 	print "\t\tzskcount     	- <$zskcnt>\n";
 	print "\t\tzskdir		- <$zskdir>\n";
@@ -2562,7 +2562,7 @@ sub usage
 	print STDERR "\t\t\t-rollksk\n";
 	print STDERR "\t\t\t-rollzsk\n";
 	print STDERR "\t\t\t-useboth\n";
-	print STDERR "\t\t\t-usepub\n";
+	print STDERR "\t\t\t-usezskpub\n";
 	print STDERR "\t\t\t-archivedir directory\n";
 	print STDERR "\t\t\t-nosave\n";
 	print STDERR "\t\t\t-kskcount count\n";
@@ -2820,7 +2820,7 @@ be marked as obsolete.
 
 Use the existing Current B<and> Published ZSKs to sign the zone.
 
-=item -usepub
+=item -usezskpub
 
 Use the existing Published ZSKs to sign the zone.
 
@@ -2938,7 +2938,7 @@ The quick summary of proper ZSK rolling (which rollerd does for you if
 you use it):
 
     - wait 2 * max(TTL in zone)
-    - run zonesigner using -usepub
+    - run zonesigner using -usezskpub
     - wait 2 * max(TTL in zone)
     - run zonesigner using -rollzsk
     - wait 2 * max(TTL in zone)
