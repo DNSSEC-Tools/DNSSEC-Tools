@@ -271,17 +271,8 @@ sub optsandargs
 	usage(3) if($argc == 0 && !(eval {require Getopt::GUI::Long;}));
 
 	#
-	# Set the options, try to use the config file, the command line
-	# options and a keyrec file.  We'll take the following steps in
-	# trying to get a good set of options.
-	#
-	#  1. Set options from config file, command line, and a keyrec.
-	#     Look in the options for -krfile and -keyrec to find the keyrec.
-	#  2. Set options from config file, command line, and a keyrec.
-	#     Use our first argument is a zone name, and assume there's
-	#     a -krfile.  (Previous step showed there isn't a -keyrec.)
-	#  3. Set options from the config file and command line.  No keyrec
-	#     will be used.
+	# Set the options, using the DNSSEC-Tools defaults, the DNSSEC-Tools
+	# config file, a keyrec file, and the command line options.
 	#
 	opts_setcsopts(@zsopts);
 	opts_createkrf();
