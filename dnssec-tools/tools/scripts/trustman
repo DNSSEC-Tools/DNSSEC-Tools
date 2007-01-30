@@ -241,9 +241,9 @@ sub checkkeys {
                 add_ta_namedconf($d, $newkeys{$d});
             }
 # not quite ready for primetime....
-#            if ($zone_configfile_map{$d} eq $dvfile) {
-#                add_ta_dnsvalconf($d, $newkeys{$d});
-#            }
+            if ($zone_configfile_map{$d} eq $dvfile) {
+                add_ta_dnsvalconf($d, $newkeys{$d});
+            }
         }
         if (($contactaddr) && (@newkeydomains)) { # mail it
             mailcontact(0,$smtpserver,$contactaddr,@newkeydomains);
@@ -286,25 +286,38 @@ sub add_ta_namedconf  {
 
 sub add_ta_dnsvalconf  {
     my ($domain, $key) = @_;
+    my $newkeyentry = $domain . " " . $key . "\n";
+    my $pat = "trust-anchor";
 
 # blatantly cheating here with the flags, proto and algo until
 # I fix up the storage/passing of this data.
 # since all examples seen are 257 3 5, using that
     open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
     open (CONF,$dvfile) or die "unable to read named.conf file.";
+    $/ = ";";
     while (<CONF>) {
-        $_ =~ s/\;//;
-        print TMP $_;
-        if (/trust-anchor/) {
-            print TMP "\n\n";
-            my $newkey = $domain . ". \"257 3 5 " . $key . "\"\n\n";
-            print TMP $newkey;
+        s/\s;\s*$//;
+        s/[\n\r]//g;
+        if (s/^\s*(\S*)\s*$pat\s*("*[^;]+")//) {
+            print TMP $1 . " $pat\n\n";
+            print TMP $newkeyentry;
+            print TMP $2;
+            print TMP "\n;\n";
+        } else {
+            print TMP $_;
         }
+#        $_ =~ s/\;//;
+#        print TMP $_;
+#        if (/trust-anchor/) {
+#            print TMP "\n\n";
+#            my $newkey = $domain . ". \"257 3 5 " . $key . "\"\n\n";
+#            print TMP $newkey;
+#        }
     }
     close (CONF);
     close (TMP);
-# rename TMP to $ncfile
-    my $origname = $ncfile . ".orig";
+# rename TMP to $dvfile
+    my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
 
