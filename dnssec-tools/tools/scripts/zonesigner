@@ -349,15 +349,6 @@ sub optsandargs
 	$rollksk = 1 if(defined($opts{'rollksk'}));
 
 	#
-	# Ensure that we have sufficient KSK keyrecs for a KSK rollover.
-	#
-	if($rollksk)
-	{
-		chksset('KSK','Current','kskcur');
-		chksset('KSK','Published','kskpub');
-	}
-
-	#
 	# Check for the ZSK rollover flag.
 	#
 	$rollzsk = 0;
@@ -551,6 +542,15 @@ sub optsandargs
 	# the zone.
 	#
 	chkkrf();
+
+	#
+	# Ensure that we have sufficient KSK keyrecs for a KSK rollover.
+	#
+	if($rollksk)
+	{
+		chksset('KSK','Current','kskcur');
+		chksset('KSK','Published','kskpub');
+	}
 
 	#
 	# Ensure that two mutually exclusive keyrec file options aren't given.
