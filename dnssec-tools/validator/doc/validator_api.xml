@@ -394,12 +394,15 @@ reduced to a single value. Hence, with this flag, it is no longer possible to kn
 validation status value for a given RRset in the response. </t>
 
 <t> The val_res_query() function is semantically closer to the res_query(3) 
-function than val_query(). It internally invokes the val_query() function 
-supplying it with the VAL_QUERY_MERGE_RRSETS flag and returns the final 
-response in the answer field and the combined validation status value in the
-val_status field. The number of bytes available in the 
-answer field is returned in the anslen field.  The val_res_query() function 
-returns the value of anslen on success and -1 on failure.  </t> 
+function than val_query(). It internally invokes the val_query() function,
+supplying it with the VAL_QUERY_MERGE_RRSETS flag.  On success, the response
+will be copied to answer, not to exceed the length specified in anslen. The
+combined validation status value is returned in the val_status field.
+The val_res_query() function returns the size of the response packet on
+success and -1 on failure. Note that it is the callers responsibility to check
+that the returned packet size is not greater than the buffer provided (anslen),
+indicating an incomplete response in answer. If the returned size is greater,
+the caller should allocate a larger buffer and call the function again. </t> 
       </postamble>
       </figure>
     </section>
