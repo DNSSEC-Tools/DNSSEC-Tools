@@ -131,7 +131,7 @@ if ($opts{'f'}) {
 
 sub show_version {
     print STDERR "Version: 0.7\n";
-    print STDERR "DNSSEC-Tools Version: 1.0\n";
+    print STDERR "DNSSEC-Tools Version: NEWVERSION\n";
     exit(1);
 }
 
