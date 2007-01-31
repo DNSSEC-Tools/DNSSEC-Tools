@@ -2,6 +2,23 @@ This file contains a list of major changes per release.  See the
 ChangeLog file for a complete set of changes and their details
 details.
 
+1.1
+
+  - zonesigner
+        - Support for one method of KSK rollover (double signing period)
+
+  - trustman
+    ???
+
+  - libval
+    - A threaded or non-threaded version can now be created
+         (--without-threads)
+    - Added support for anti-pollution rules; libval no longer caches out- 
+      of-bailiwick answers
+    - Made return values for validation status consistent across all
+      high-level API functions. It is now possible to detect in
+      val_getaddrinfo() if an RRset is provably missing
+
 1.0
 
   - zonesigner 
