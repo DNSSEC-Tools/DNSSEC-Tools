@@ -349,6 +349,7 @@ ruletype: name
       push @err, "Can not find a matching DNSKEY for RRSIG #$count for $_[2]";
       next;
     }
+    break_here();
     if (! $sig->verify($_[0]->{$sig->typecovered}, $dhkey)) {
        push @err, "RRSIG on name: $_[2] type: " . $sig->typecovered . 
                   " failed to verify: $sig->{vrfyerrstr}";
