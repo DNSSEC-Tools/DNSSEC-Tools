@@ -1093,7 +1093,7 @@ val_getaddrinfo(val_context_t * ctx,
         retval = 0;
     }
 
-    if (res) {
+    if (*res) {
         if (validated)
             *val_status = VAL_VALIDATED_ANSWER;
         else if (trusted)
