@@ -1282,7 +1282,7 @@ main(int argc, char *argv[])
             break;
 
         case 'r':
-            resolver_config_set(optarg);
+            resolv_conf_set(optarg);
             break;
 
         case 't':
