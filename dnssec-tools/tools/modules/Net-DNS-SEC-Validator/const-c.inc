@@ -1207,7 +1207,7 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
      VAL_AC_INVALID_KEY VAL_AC_SIGNING_KEY VAL_BOGUS_PROVABLE
      VAL_CONF_NOT_FOUND VAL_DNS_ERROR_BASE VAL_DNS_ERROR_LAST
      VAL_FROM_AUTHORITY VAL_INTERNAL_ERROR VAL_UNTRUSTED_ZONE
-     VAL_VERIFIED_CHAIN */
+     VAL_VERIFIED_CHAIN VAL_TRUSTED_ANSWER*/
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case 'C':
@@ -1305,7 +1305,17 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
 #else
       return PERL_constant_NOTDEF;
 #endif
-    }
+    } 
+    if (memEQ(name, "VAL_TRUSTED_ANSWER", 18)) {
+    /*                      ^                 */
+#ifdef VAL_TRUSTED_ANSWER
+      *iv_return = VAL_TRUSTED_ANSWER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    } 
+
     break;
   case 'T':
     if (memEQ(name, "SR_ZI_STATUS_UNSET", 18)) {
@@ -1493,9 +1503,20 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
      VAL_AC_RRSIG_EXPIRED VAL_AC_RRSIG_MISSING VAL_AC_VERIFIED_LINK
      VAL_BOGUS_UNPROVABLE VAL_CONF_PARSE_ERROR VAL_INCOMPLETE_PROOF
      VAL_INDETERMINATE_DS VAL_IRRELEVANT_PROOF VAL_NONEXISTENT_NAME
-     VAL_NONEXISTENT_TYPE */
+     VAL_NONEXISTENT_TYPE VAL_VALIDATED_ANSWER VAL_UNTRUSTED_ANSWER */
   /* Offset 9 gives the best switch position.  */
   switch (name[9]) {
+  case 'A':
+    if (memEQ(name, "VAL_VALIDATED_ANSWER", 20)) {
+    /*                        ^                 */
+#ifdef VAL_VALIDATED_ANSWER
+      *iv_return = VAL_VALIDATED_ANSWER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'E':
     if (memEQ(name, "VAL_INDETERMINATE_DS", 20)) {
     /*                        ^                 */
@@ -1603,6 +1624,15 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
     /*                        ^                 */
 #ifdef VAL_AC_RRSIG_MISSING
       *iv_return = VAL_AC_RRSIG_MISSING;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_UNTRUSTED_ANSWER", 20)) {
+    /*                        ^                 */
+#ifdef VAL_UNTRUSTED_ANSWER
+      *iv_return = VAL_UNTRUSTED_ANSWER;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;

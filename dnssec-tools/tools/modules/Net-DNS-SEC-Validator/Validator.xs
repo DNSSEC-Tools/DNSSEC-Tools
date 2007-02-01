@@ -14,8 +14,6 @@
 #include "perl.h"
 #include "XSUB.h"
 
-#include <validator.h> 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -29,8 +27,8 @@
 #include <resolv.h>
 
 #include <arpa/nameser.h>
-#include <resolver.h>
-#include <validator.h>
+#include <validator/resolver.h>
+#include <validator/validator.h>
 
 
 #define PVAL_BUFSIZE	(16*1024)
@@ -267,7 +265,7 @@ MODULE = Net::DNS::SEC::Validator	PACKAGE = Net::DNS::SEC::Validator	PREFIX = pv
 INCLUDE: const-xs.inc
 
 ValContext *
-pval_create_context(context=":")
+pval_create_context(context)
 	char * context
 	CODE:
 	{
@@ -298,6 +296,7 @@ pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 	struct addrinfo		hints;
 	struct addrinfo *	hints_ptr = NULL;
 	struct val_addrinfo *	vainfo_ptr = NULL;
+	val_status_t            val_status;
 	int res;
 
 	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
@@ -315,9 +314,11 @@ pval_getaddrinfo(self,node=NULL,service=NULL,hints_ref=NULL)
 
 	hints_ptr = ainfo_sv2c(hints_ref, &hints);
 
-	res = val_getaddrinfo(ctx, node, service, hints_ptr, &vainfo_ptr);
+	res = val_getaddrinfo(ctx, node, service, hints_ptr, 
+			      &vainfo_ptr, &val_status);
 
-	//no val_status to return because its in each addrinfo struct
+	sv_setiv(*val_status_svp, val_status);
+	sv_setpv(*val_status_str_svp, p_val_status(val_status));
 
 	if (res == 0) {
 	  RETVAL = ainfo_c2sv(vainfo_ptr);
@@ -424,7 +425,7 @@ pval_res_query(self,dname,class,type)
 	res = val_res_query(ctx, dname, class, type, buf, PVAL_BUFSIZE,
                             &val_status);
 
-	//	fprintf(stderr,"after:%p:%s:%d:%d:%d:%d:%d:%s\n",ctx,dname,class,type,res,val_status,h_errno,hstrerror(h_errno));
+         fprintf(stderr,"after:%p:%s:%d:%d:%d:%d:%d:%s\n",ctx,dname,class,type,res,val_status,h_errno,hstrerror(h_errno));
         
 	sv_setiv(*val_status_svp, val_status);
         sv_setpv(*val_status_str_svp, p_val_status(val_status));
@@ -471,12 +472,80 @@ pval_istrusted(err)
 	RETVAL
 
 
+int
+pval_isvalidated(err)
+	int err
+	CODE:
+	{
+	  RETVAL = val_isvalidated(err);
+	}
+	OUTPUT:
+	RETVAL
+
+
 char *
 pval_gai_strerror(err)
 	int err
 	CODE:
 	{
 	  RETVAL = (char*)gai_strerror(err);
+	}
+	OUTPUT:
+	RETVAL
+
+char *
+pval_resolv_conf_get()
+	CODE:
+	{
+	  RETVAL = resolv_conf_get();
+	}
+	OUTPUT:
+	RETVAL
+
+int
+pval_resolv_conf_set(file)
+	char *file
+	CODE:
+	{
+	  RETVAL = resolv_conf_set(file);
+	}
+	OUTPUT:
+	RETVAL
+
+char *
+pval_root_hints_get()
+	CODE:
+	{
+	  RETVAL = root_hints_get();
+	}
+	OUTPUT:
+	RETVAL
+
+int
+pval_root_hints_set(file)
+	char *file
+	CODE:
+	{
+	  RETVAL = root_hints_set(file);
+	}
+	OUTPUT:
+	RETVAL
+
+char *
+pval_dnsval_conf_get()
+	CODE:
+	{
+	  RETVAL = dnsval_conf_get();
+	}
+	OUTPUT:
+	RETVAL
+
+int
+pval_dnsval_conf_set(file)
+	char *file
+	CODE:
+	{
+	  RETVAL = dnsval_conf_set(file);
 	}
 	OUTPUT:
 	RETVAL
