@@ -22,9 +22,19 @@ sub InitMakeParams {
 		  XSPROTOARG   => '-noprototypes', 	# XXX remove later?
 		  VERSION_FROM => 'Validator.pm',
 		  );
-    # should test for dnssec-tools being installed
-
-    $Params{'LIBS'} = "-lnsl -lcrypto -L/usr/local/lib -lsres -lval ";
+    # test for libval install - XXX this is not portable or complete
+    my $ldflags;
+    if (-e "/usr/lib/libval-threads.so") {
+	$ldflags = "-L/usr/lib -lsres -lval-threads";
+    } elsif (-e "/usr/lib/libval.so") {
+	$ldflags = "-L/usr/lib -lsres -lval";
+    } elsif (-e "/usr/local/lib/libval-threads.so") {
+	$ldflags = "-L/usr/local/lib -lsres -lval-threads";
+    } elsif (-e "/usr/lib/local/libval.so") {
+	$ldflags = "-L/usr/local/lib -lsres -lval";
+    }
+	
+    $Params{'LIBS'} = "-lnsl -lcrypto $ldflags ";
     $Params{'CCFLAGS'} = "-I/usr/local/include ";
     return(%Params);
 }

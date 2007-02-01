@@ -15,7 +15,7 @@ require Net::hostent; # return type from gethost*
 use Net::DNS; # to interpret DNS classes and types
 use Carp;
 
-our $VERSION = '1.0b1';   # current release version number
+our $VERSION = '1.01';   # current release version number
 
 use Exporter;
 use DynaLoader;
@@ -104,16 +104,23 @@ sub new {
     my %params = @_;
 
     @$self{keys %params} = values %params;
-    
+
+    $self->{policy} ||= ":";
+
     $self->{_ctx_ptr} = 
 	Net::DNS::SEC::Validator::_create_context($self->{policy});
-
+    
     $self->{error} = 0;
     $self->{errorStr} = "";
     $self->{valStatus} = 0;
     $self->{valStatusStr} = "";
 
     bless($self, $class);
+
+    $self->dnsval_conf($self->{dnsval_conf});
+    $self->root_hints($self->{root_hints});
+    $self->resolv_conf($self->{resolv_conf});
+
     return $self;
 }
 
@@ -190,6 +197,57 @@ sub istrusted {
     $status = $self->{valStatus} unless defined $status;
 
     return Net::DNS::SEC::Validator::_istrusted($status);
+}
+
+sub isvalidated {
+    my $self = shift;
+    my $status = shift;
+
+    $status = $self->{valStatus} unless defined $status;
+
+    return Net::DNS::SEC::Validator::_isvalidated($status);
+}
+
+sub dnsval_conf {
+    my $self = shift;
+    my $file = shift;
+    my $res;
+
+    my $old = Net::DNS::SEC::Validator::_dnsval_conf_get();
+
+    if ($file) {
+	$res = Net::DNS::SEC::Validator::_dnsval_conf_set($file);
+	undef $old if $res; # error case
+    }
+    return $old;
+}
+
+sub root_hints {
+    my $self = shift;
+    my $file = shift;
+    my $res;
+
+    my $old = Net::DNS::SEC::Validator::_root_hints_get();
+
+    if ($file) {
+	$res = Net::DNS::SEC::Validator::_root_hints_set($file);
+	undef $old if $res; # error case
+    }
+    return $old;
+}
+
+sub resolv_conf {
+    my $self = shift;
+    my $file = shift;
+    my $res;
+
+    my $old = Net::DNS::SEC::Validator::_resolv_conf_get();
+
+    if ($file) {
+	$res = Net::DNS::SEC::Validator::_resolv_conf_set($file);
+	undef $old if $res; # error case
+    }
+    return $old;
 }
 
 sub valStatusStr {

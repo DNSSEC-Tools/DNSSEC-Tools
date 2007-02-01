@@ -9,7 +9,7 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 46; plan tests => $n }
+BEGIN { $n = 53; plan tests => $n }
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
@@ -38,7 +38,14 @@ ok(isnum(SR_DNS_GENERIC_ERROR));
 
 ok(isnum(SR_NXDOMAIN));
 
-$validator = new Net::DNS::SEC::Validator(policy => ":");
+$validator = new Net::DNS::SEC::Validator();
+ok(defined($validator));
+
+$validator = new Net::DNS::SEC::Validator(policy => ":", 
+					  dnsval_conf=>'/etc/dnsval.conf',
+					  root_hints=>'/etc/root.hints',
+					  resolv_conf=>'/etc/resolv.conf',
+					  );
 ok(defined($validator));
 
 $r = $validator->policy(":");
@@ -47,12 +54,23 @@ ok($r);
 $r = $validator->policy("validate_tools:");
 ok($r);
 
+$r = $validator->dnsval_conf();
+ok($r eq "/etc/dnsval.conf");
+
+$r = $validator->root_hints();
+ok($r eq "/etc/root.hints");
+
+$r = $validator->resolv_conf();
+ok($r eq "/etc/resolv.conf");
+
 @r = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
 ok(@r);
+
 ok(defined $r[0] and ref($r[0]) eq 'Net::addrinfo');
-# there are 3 of these
+# there are 3x2 of these
 foreach $a (@r) {
     ok($validator->istrusted($a->val_status));
+    ok($validator->isvalidated($a->val_status));
 }
 
 $r =$validator->getaddrinfo("pastdate-AAAA.pastdate-ds.test.dnssec-tools.org");
@@ -92,11 +110,11 @@ ok(not $err);
 
 $r = $validator->res_query("good-A.good-ns.test.dnssec-tools.org", "IN", "A");
 ok($r);
-
 ($pkt, $err) = new Net::DNS::Packet(\$r);
 ok(not $err);
 
 $r = $validator->res_query("good-A.test.dnssec-tools.org", "IN", "AAAA");
+print STDERR "good-A.test.dnssec-tools.org:$validator->{error}:$validator->{errorStr}:$validator->{valStatus}:$validator->{valStatusStr}\n";
 ok(not defined $r);
 ok($validator->{error});
 ok($validator->{errorStr});
