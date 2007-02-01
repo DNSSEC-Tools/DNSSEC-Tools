@@ -48,7 +48,7 @@ static int      get_token(FILE * conf_ptr,
  * configuration and root.hints files.
  ***************************************************************
  */
-static char    *resolver_config = NULL;
+static char    *resolv_conf = NULL;
 static char    *root_hints = NULL;
 static char    *dnsval_conf = NULL;
 
@@ -57,8 +57,8 @@ static int      atexit_reg = 0;
 static void
 policy_cleanup(void)
 {
-    if (NULL != resolver_config)
-        free(resolver_config);
+    if (NULL != resolv_conf)
+        free(resolv_conf);
 
     if (NULL != root_hints)
         free(root_hints);
@@ -69,34 +69,34 @@ policy_cleanup(void)
 
 
 char           *
-resolver_config_get(void)
+resolv_conf_get(void)
 {
-    if (NULL == resolver_config) {
+    if (NULL == resolv_conf) {
         if (0 == atexit_reg) {
             atexit_reg = 1;
             atexit(policy_cleanup);
         }
-        resolver_config = strdup(RESOLV_CONF);
+        resolv_conf = strdup(RESOLV_CONF);
     }
 
-    return resolver_config;
+    return strdup(resolv_conf);
 }
 
 int
-resolver_config_set(const char *name)
+resolv_conf_set(const char *name)
 {
     char           *new_name = strdup(name);
 
     if (NULL == new_name)
         return 1;
 
-    if (NULL != resolver_config)
-        free(resolver_config);
+    if (NULL != resolv_conf)
+        free(resolv_conf);
     else if (0 == atexit_reg) {
         atexit_reg = 1;
         atexit(policy_cleanup);
     }
-    resolver_config = new_name;
+    resolv_conf = new_name;
 
     return 0;
 }
@@ -113,7 +113,7 @@ root_hints_get(void)
         root_hints = strdup(ROOT_HINTS);
     }
 
-    return root_hints;
+    return strdup(root_hints);
 }
 
 int
@@ -142,7 +142,7 @@ dnsval_conf_get(void)
     if (NULL == dnsval_conf)
         dnsval_conf = strdup(VAL_CONFIGURATION_FILE);
 
-    return dnsval_conf;
+    return strdup(dnsval_conf);
 }
 
 int
@@ -1324,7 +1324,7 @@ parse_name_server(val_context_t *ctx, char *cp, struct name_server **ns)
 int
 read_res_config_file(val_context_t * ctx)
 {
-    char           *resolv_conf;
+    char           *resolv_config;
     FILE           *fp;
     int             fd;
     struct flock    fl;
@@ -1339,13 +1339,13 @@ read_res_config_file(val_context_t * ctx)
 
     ctx->nslist = NULL;
 
-    resolv_conf = resolver_config_get();
+    resolv_config = resolv_conf_get();
     if (NULL == resolv_conf)
         return VAL_INTERNAL_ERROR;
 
     val_log(ctx, LOG_DEBUG, "Reading resolver policy from %s",
-            resolv_conf);
-    fd = open(resolv_conf, O_RDONLY);
+            resolv_config);
+    fd = open(resolv_config, O_RDONLY);
     if (fd == -1) {
         return VAL_CONF_NOT_FOUND;
     }
@@ -1424,7 +1424,7 @@ read_res_config_file(val_context_t * ctx)
     return VAL_NO_ERROR;
 
   err:
-    val_log(ctx, LOG_ERR, "Parse error in file %s", resolv_conf);
+    val_log(ctx, LOG_ERR, "Parse error in file %s", resolv_config);
     free_name_servers(&ns_head);
 
     fcntl(fd, F_SETLKW, &fl);

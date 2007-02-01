@@ -526,8 +526,8 @@ extern          "C" {
     /*
      * from val_policy.h 
      */
-    char           *resolver_config_get(void);
-    int             resolver_config_set(const char *name);
+    char           *resolv_conf_get(void);
+    int             resolv_conf_set(const char *name);
     char           *root_hints_get(void);
     int             root_hints_set(const char *name);
     char           *dnsval_conf_get(void);
