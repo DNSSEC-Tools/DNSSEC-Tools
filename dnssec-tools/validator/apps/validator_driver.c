@@ -64,6 +64,7 @@ static struct option prog_options[] = {
     {"resolv-conf", 1, 0, 'r'},
     {"dnsval-conf", 1, 0, 'v'},
     {"root-hints", 1, 0, 'i'},
+    {"wait", 1, 0, 'w'},
     {"merge", 0, 0, 'm'},
     {0, 0, 0, 0}
 };
@@ -845,6 +846,7 @@ usage(char *progname)
     printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
     printf("        -r, --resolv-conf=<file> Specifies a resolv.conf to search for nameservers\n");
     printf("        -i, --root-hints=<file> Specifies a root.hints to search for root nameservers\n");
+    printf("        -w, --wait=<secs> Run tests in a loop, sleeping for specifed seconds between runs\n");
     printf("        -l, --label=<label-string> Specifies the policy to use during validation\n");
     printf("        -o, --output=<debug-level>:<dest-type>[:<dest-options>]\n");
     printf("              <debug-level> is 1-7, corresponding to syslog levels ALERT-DEBUG\n");
@@ -862,10 +864,9 @@ usage(char *progname)
 }
 
 int
-self_test(int tcs, int tce, char *label_str, int doprint)
+self_test(val_context_t *context, int tcs, int tce, char *label_str, int doprint)
 {
-    int             rc, failed = 0, run_cnt = 0, i, tc_count, ret_val;
-    val_context_t  *context;
+    int             rc, failed = 0, run_cnt = 0, i, tc_count;
     u_char          name_n[NS_MAXCDNAME];
     struct val_response *resp;
 
@@ -884,21 +885,6 @@ self_test(int tcs, int tce, char *label_str, int doprint)
                 "Invalid test case number (must be 0-%d)\n", tc_count);
         return 1;
     }
-
-    /*
-     * comment out this define to have each test case use a temporary
-     * context (useful for checking for memory leaks).
-     */
-#define ONE_CTX 1
-#ifdef ONE_CTX
-    if (VAL_NO_ERROR !=
-        (ret_val = val_create_context(label_str, &context))) {
-        fprintf(stderr, "Cannot create context: %d\n", ret_val);
-        return 1;
-    }
-#else
-    context = NULL;
-#endif
 
     resp = NULL;
     for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
@@ -926,11 +912,7 @@ self_test(int tcs, int tce, char *label_str, int doprint)
             ++failed;
         fprintf(stderr, "\n");
     }
-    if (context)
-        val_free_context(context);
     fprintf(stderr, " Final results: %d/%d tests failed\n", failed, run_cnt);
-
-    free_validator_cache();
 
     return 0;
 }
@@ -1197,13 +1179,13 @@ endless_loop(void)
 int
 main(int argc, char *argv[])
 {
-    val_context_t  *context;
+    val_context_t  *context = NULL;
     int             ret_val;
 
     // Parse the command line for a query and resolve+validate it
     int             c;
     char           *domain_name = NULL;
-    const char     *args = "c:dhi:l:mo:pr:st:T:v:";
+    const char     *args = "c:dhi:l:w:mo:pr:st:T:v:";
     u_int16_t       class_h = ns_c_in;
     u_int16_t       type_h = ns_t_a;
     int             success = 0;
@@ -1213,10 +1195,12 @@ main(int argc, char *argv[])
     u_int8_t        flags = (u_int8_t) 0;
     int             retvals[] = { 0 };
     int             tcs = -1, tce = -1;
+    int             wait = 0;
     char           *label_str = NULL, *nextarg = NULL;
     u_char          name_n[NS_MAXCDNAME];
     val_log_t      *logp;
     struct val_response *resp;
+    int             rc;
 
     if (argc == 1)
         return 0;
@@ -1285,6 +1269,10 @@ main(int argc, char *argv[])
             resolv_conf_set(optarg);
             break;
 
+        case 'w':
+            wait = strtol(optarg, &nextarg, 10);
+            break; 
+
         case 't':
             type_h = res_nametotype(optarg, &success);
             if (!success) {
@@ -1322,9 +1310,24 @@ main(int argc, char *argv[])
         endless_loop();
         return 0;
     }
+
+    /*
+     * comment out this define to have each test case use a temporary
+     * context (useful for checking for memory leaks).
+     */
+#define ONE_CTX 1
+#ifdef ONE_CTX
+    if (VAL_NO_ERROR !=
+        (ret_val = val_create_context(label_str, &context))) {
+        fprintf(stderr, "Cannot create context: %d\n", ret_val);
+        return 1;
+    }
+#else
+    context = NULL;
+#endif
+
     // optind is a global variable.  See man page for getopt_long(3)
     if (optind >= argc) {
-        int             rc;
         if (!selftest && (tcs == -1)) {
             fprintf(stderr, "Please specify domain name\n");
             usage(argv[0]);
@@ -1335,9 +1338,16 @@ main(int argc, char *argv[])
                 tcs = 0;
                 tce = -1;
             }
-            rc = self_test(tcs, tce, label_str, doprint);
+
+            do { /* endless loop */ 
+                rc = self_test(context, tcs, tce, label_str, doprint);
+                if (wait)
+                    sleep(wait);
+            } while (wait);
         }
-        return rc;
+
+        rc = 0;
+        goto done;
     }
 
     domain_name = argv[optind++];
@@ -1345,28 +1355,32 @@ main(int argc, char *argv[])
         fprintf(stderr, "Cannot convert name to wire format\n");
         return 1;
     }
-    if (VAL_NO_ERROR !=
-        (ret_val = val_create_context(label_str, &context))) {
-        fprintf(stderr, "Cannot create context: %d\n", ret_val);
-        return 1;
-    }
 
-    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, &resp);
-    val_free_context(context);
-    fprintf(stderr, "\n");
+    do { /* endless loop */
+        sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, &resp);
+        fprintf(stderr, "\n");
 
-    // If the print option is present, perform query and validation
-    // again for printing the result
-    if (doprint) {
-        print_val_response(resp);
-    }
+        // If the print option is present, perform query and validation
+        // again for printing the result
+        if (doprint) {
+            print_val_response(resp);
+        }
 
-    if (resp) {
-        val_free_response(resp);
-        resp = NULL;
-    }
+        if (resp) {
+            val_free_response(resp);
+            resp = NULL;
+        }
 
+        if (wait)
+            sleep(wait);
+    } while (wait);
+
+    rc = 0;
+
+done:
+    if (context)
+        val_free_context(context);
     free_validator_cache();
 
-    return 0;
+    return rc;
 }
