@@ -207,8 +207,7 @@ add_to_query_chain(struct val_query_chain **queries, u_char * name_n,
     temp = *queries;
     prev = temp;
     while (temp) {
-        if (((namecmp(temp->qc_name_n, name_n) == 0)
-             || (namecmp(temp->qc_original_name, name_n) == 0))
+        if ((namecmp(temp->qc_original_name, name_n) == 0)
             && (temp->qc_type_h == type_h)
             && (temp->qc_class_h == class_h))
             break;
