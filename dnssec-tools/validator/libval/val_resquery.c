@@ -457,16 +457,14 @@ find_nslist_for_query(val_context_t * context,
         /*
          * work downward from root 
          */
-        struct name_server *root_ns = NULL;
-        get_root_ns(&root_ns);
-        if (root_ns == NULL) {
+        if (context->root_ns == NULL) {
             /*
              * No root hints; should not happen here 
              */
             val_log(context, LOG_WARNING, "No root hints file found.");
             return VAL_CONF_NOT_FOUND;
         }
-        next_q->qc_ns_list = root_ns;
+        clone_ns_list(&next_q->qc_ns_list, context->root_ns);
         next_q->qc_zonecut_n = (u_int8_t *) MALLOC(sizeof(u_int8_t));
         if (next_q->qc_zonecut_n == NULL)
             return VAL_OUT_OF_MEMORY;
@@ -640,16 +638,14 @@ follow_referral_or_alias_link(val_context_t * context,
          *  pre-parsed root.hints information 
          */
         if (!namecmp(referral_zone_n, (u_int8_t *)"\0")) {
-            struct name_server *root_ns = NULL;
-            get_root_ns(&root_ns);
-            if (root_ns == NULL) {
+            if (context->root_ns == NULL) {
                 /*
                  * No root hints; should not happen here 
                  */
                 val_log(context, LOG_WARNING, "No root hints file found.");
                 return VAL_CONF_NOT_FOUND;
             }
-            ref_ns_list = root_ns;
+            clone_ns_list(&ref_ns_list, context->root_ns);
             matched_q->qc_state = Q_INIT;
             /*
              * forget about learned zones 
