@@ -4118,7 +4118,7 @@ create_error_result(struct val_query_chain *top_q,
 }
 
 #define GET_LATEST_TIMESTAMP(ctx, file, cur_ts, new_ts) do { \
-    memset(&new_ts.st_mtimespec, 0, sizeof(struct timespec));\
+    memset(&new_ts, 0, sizeof(struct stat));\
     if (!file) {\
         if (cur_ts != 0) {\
             val_log(ctx, LOG_WARNING, "%s disappeared; continuing to use old", file);\
@@ -4177,16 +4177,16 @@ val_resolve_and_check(val_context_t * ctx,
         GET_LATEST_TIMESTAMP(ctx, ctx->resolv_conf, ctx->r_timestamp, rsb);
         GET_LATEST_TIMESTAMP(ctx, ctx->root_conf, ctx->h_timestamp, hsb);
 
-        if (vsb.st_mtimespec.tv_sec != 0 && 
-                vsb.st_mtimespec.tv_sec != ctx->v_timestamp)
+        if (vsb.st_mtime != 0 && 
+                vsb.st_mtime != ctx->v_timestamp)
             val_refresh_validator_policy(ctx);
 
-        if (rsb.st_mtimespec.tv_sec != 0 && 
-                rsb.st_mtimespec.tv_sec != ctx->r_timestamp)
+        if (rsb.st_mtime != 0 && 
+                rsb.st_mtime != ctx->r_timestamp)
             val_refresh_resolver_policy(ctx);
 
-        if (hsb.st_mtimespec.tv_sec != 0 && 
-                hsb.st_mtimespec.tv_sec != ctx->h_timestamp)
+        if (hsb.st_mtime != 0 && 
+                hsb.st_mtime != ctx->h_timestamp)
             val_refresh_root_hints(ctx);
         
         context = (val_context_t *) ctx;
