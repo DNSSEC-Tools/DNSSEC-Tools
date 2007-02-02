@@ -420,12 +420,12 @@ pval_res_query(self,dname,class,type)
         sv_setiv(*val_status_svp, 0);
         sv_setpv(*val_status_str_svp, "");
 	
-	//	fprintf(stderr,"before:%p:%s:%d:%d:%d:%d\n",ctx,dname,class,type,res,val_status);
+	//  fprintf(stderr,"before:%p:%s:%d:%d:%d:%d\n",ctx,dname,class,type,res,val_status);
 
 	res = val_res_query(ctx, dname, class, type, buf, PVAL_BUFSIZE,
                             &val_status);
 
-         fprintf(stderr,"after:%p:%s:%d:%d:%d:%d:%d:%s\n",ctx,dname,class,type,res,val_status,h_errno,hstrerror(h_errno));
+	//  fprintf(stderr,"after:%p:%s:%d:%d:%d:%d:%d:%s\n",ctx,dname,class,type,res,val_status,h_errno,hstrerror(h_errno));
         
 	sv_setiv(*val_status_svp, val_status);
         sv_setpv(*val_status_str_svp, p_val_status(val_status));

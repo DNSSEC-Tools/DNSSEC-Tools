@@ -9,7 +9,7 @@ BEGIN {
 
 use Test;
 
-BEGIN { $n = 53; plan tests => $n }
+BEGIN { $n = 55; plan tests => $n }
 
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
@@ -114,7 +114,6 @@ ok($r);
 ok(not $err);
 
 $r = $validator->res_query("good-A.test.dnssec-tools.org", "IN", "AAAA");
-print STDERR "good-A.test.dnssec-tools.org:$validator->{error}:$validator->{errorStr}:$validator->{valStatus}:$validator->{valStatusStr}\n";
 ok(not defined $r);
 ok($validator->{error});
 ok($validator->{errorStr});
@@ -145,8 +144,13 @@ ok(not $err);
 
 # this crashes
 $r = $validator->res_query("mail.marzot.net", "IN", "MX");
-ok(!$r);
-ok($validator->{valStatus} == VAL_NONEXISTENT_TYPE_NOCHAIN);
+ok($r);
+ok($validator->{valStatus} == VAL_TRUSTED_ANSWER);
+ok($validator->istrusted());
+ok(!$validator->isvalidated());
+
+
+
 
 
 
