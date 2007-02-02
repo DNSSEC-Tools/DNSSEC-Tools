@@ -19,8 +19,10 @@ WriteMakefile(%opts);
 sub MY::postamble {
     return '
 
-RULESDIR=$(DESTDIR)/$(SITEPREFIX)/share/donuts/rules
+# we have to hard code the path in donuts anyway, so this doesn't work:
+#RULESDIR=$(DESTDIR)/$(PREFIX)/share/donuts/rules
 RULESDIR=/usr/local/share/donuts/rules
+
 INSTALL=$(PERL) "-MExtUtils::Command" -e cp
 
 install:: installrulefiles
@@ -28,6 +30,5 @@ install:: installrulefiles
 installrulefiles:
 	$(MKPATH) $(RULESDIR)
 	$(INSTALL) rules/*.txt $(RULESDIR)
-
 ';
 }
