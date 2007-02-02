@@ -155,7 +155,6 @@ dnsval_conf_set(const char *name)
 
     if (NULL != dnsval_conf)
         free(dnsval_conf);
-
     dnsval_conf = new_name;
 
     return 0;
@@ -1027,12 +1026,14 @@ get_next_policy_fragment(FILE * fp, char *scope,
  * so "mozilla" < "sendmail" < "browser:mozilla"
  */
 static int
-store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
+store_policy_overrides(val_context_t * ctx, 
+                       struct policy_overrides **overrides, 
+                       struct policy_fragment **pfrag)
 {
     struct policy_overrides *cur, *prev, *newp;
     struct policy_list *e;
 
-    if ((ctx == NULL) || (pfrag == NULL) || (*pfrag == NULL))
+    if ((ctx == NULL) || (overrides == NULL) || (pfrag == NULL) || (*pfrag == NULL))
         return VAL_BAD_ARGUMENT;
 
     /*
@@ -1041,7 +1042,7 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
     cur = prev = NULL;
     newp = NULL;
 
-    for (cur = ctx->pol_overrides;
+    for (cur = *overrides;
          cur && (cur->label_count <= (*pfrag)->label_count);
          cur = cur->next) {
 
@@ -1073,7 +1074,7 @@ store_policy_overrides(val_context_t * ctx, struct policy_fragment **pfrag)
             prev->next = newp;
         } else {
             newp->next = cur;
-            ctx->pol_overrides = newp;
+            *overrides = newp;
         }
     }
 
@@ -1139,6 +1140,8 @@ destroy_valpol(val_context_t * ctx)
 
 }
 
+
+
 /*
  * Make sense of the validator configuration file
  */
@@ -1152,19 +1155,23 @@ read_val_config_file(val_context_t * ctx, char *scope)
     struct policy_fragment *pol_frag = NULL;
     int             retval;
     int             line_number = 1;
+    struct policy_overrides *overrides = NULL;
     struct policy_overrides *cur, *prev;
-
-    dnsval_conf = dnsval_conf_get();
+    struct stat sb;
+   
+    if (ctx == NULL)
+        return VAL_BAD_ARGUMENT;
+    
+    dnsval_conf = ctx->dnsval_conf;
     if (NULL == dnsval_conf)
         return VAL_INTERNAL_ERROR;
 
-    /*
-     * free up existing policies 
-     */
-    destroy_valpol(ctx);
-    ctx->pol_overrides = NULL;
+    if (0 != stat(dnsval_conf, &sb)) 
+        return VAL_CONF_NOT_FOUND;
 
-    val_log(ctx, LOG_DEBUG, "Reading validator policy from %s",
+    ctx->v_timestamp = sb.st_mtimespec.tv_sec;
+    
+    val_log(ctx, LOG_NOTICE, "Reading validator policy from %s",
             dnsval_conf);
     fd = open(dnsval_conf, O_RDONLY);
     if (fd == -1) {
@@ -1194,7 +1201,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
         /*
          * Store this fragment as an override, consume pol_frag 
          */
-        store_policy_overrides(ctx, &pol_frag);
+        store_policy_overrides(ctx, &overrides, &pol_frag);
     }
 
     fcntl(fd, F_SETLKW, &fl);
@@ -1208,8 +1215,8 @@ read_val_config_file(val_context_t * ctx, char *scope)
             /*
              * Use the first policy as the default (only) policy 
              */
-            if (ctx->pol_overrides) {
-                cur = ctx->pol_overrides->next;
+            if (overrides) {
+                cur = overrides->next;
                 while (cur) {
                     struct policy_list *plist, *plist_next;
 
@@ -1227,12 +1234,17 @@ read_val_config_file(val_context_t * ctx, char *scope)
                     }
                     FREE(prev);
                 }
-                ctx->pol_overrides->next = NULL;
+                overrides->next = NULL;
             }
         }
 
-        OVERRIDE_POLICY(ctx);
     }
+
+    /*
+     * free up existing policies 
+     */
+    destroy_valpol(ctx);
+    ctx->pol_overrides = overrides;
 
     return retval;
 }
@@ -1250,6 +1262,7 @@ destroy_respol(val_context_t * ctx)
 {
     if ((ctx != NULL) && (ctx->nslist != NULL)) {
         free_name_servers(&ctx->nslist);
+        ctx->nslist = NULL;
     }
 }
 
@@ -1333,17 +1346,21 @@ read_res_config_file(val_context_t * ctx)
     struct name_server *ns_tail = NULL;
     struct name_server *ns = NULL;
     u_int8_t zone_n[NS_MAXCDNAME];
+    struct stat sb;
 
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
 
-    ctx->nslist = NULL;
-
-    resolv_config = resolv_conf_get();
-    if (NULL == resolv_conf)
+    resolv_config = ctx->resolv_conf;
+    if (NULL == resolv_config)
         return VAL_INTERNAL_ERROR;
 
-    val_log(ctx, LOG_DEBUG, "Reading resolver policy from %s",
+    if (0 != stat(resolv_config, &sb)) 
+        return VAL_CONF_NOT_FOUND;
+
+    ctx->r_timestamp = sb.st_mtimespec.tv_sec;
+
+    val_log(ctx, LOG_NOTICE, "Reading resolver policy from %s",
             resolv_config);
     fd = open(resolv_config, O_RDONLY);
     if (fd == -1) {
@@ -1409,17 +1426,16 @@ read_res_config_file(val_context_t * ctx)
     fcntl(fd, F_SETLKW, &fl);
     fclose(fp);
 
-    ctx->nslist = ns_head;
-
     /*
      * Check if we have root hints 
      */
     if (ns_head == NULL) {
-        get_root_ns(&ns_head);
-        if (ns_head == NULL)
+        if (!ctx->root_ns)
             return VAL_CONF_NOT_FOUND;
-        free_name_servers(&ns_head);
-    }
+    } 
+
+    destroy_respol(ctx);
+    ctx->nslist = ns_head;
 
     return VAL_NO_ERROR;
 
@@ -1436,7 +1452,7 @@ read_res_config_file(val_context_t * ctx)
  * parse the contents of the root.hints file into resource records 
  */
 int
-read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused parameter?
+read_root_hints_file(val_context_t * ctx)
 {
     struct rrset_rec *root_info = NULL;
     FILE           *fp;
@@ -1444,6 +1460,7 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
     char           *root_hints;
     u_char          zone_n[NS_MAXCDNAME];
     u_char          rdata_n[NS_MAXCDNAME];
+    u_char          root_zone_n[NS_MAXCDNAME];
     int             endst = 0;
     int             line_number = 0;
     u_int16_t       type_h, class_h;
@@ -1452,17 +1469,23 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
     int             retval;
     u_int16_t       rdata_len_h;
     struct rrset_rec *rr_set;
-    static int      been_there_done_that = 0;
+    struct name_server *ns_list = NULL;
+    struct name_server *pending_glue = NULL;    
+    struct stat sb;
 
-    if (been_there_done_that)
-        return VAL_NO_ERROR;
-    else
-        ++been_there_done_that;
-
-    root_hints = root_hints_get();
+    if (ctx == NULL)
+        return VAL_BAD_ARGUMENT;
+    
+    root_hints = ctx->root_conf;
     if (NULL == root_hints)
         return VAL_INTERNAL_ERROR;
+    if (0 != stat(root_hints, &sb)) 
+        return VAL_CONF_NOT_FOUND;
 
+    ctx->h_timestamp = sb.st_mtimespec.tv_sec;
+
+    val_log(ctx, LOG_NOTICE, "Reading root hints from %s",
+            root_hints);
     fp = fopen(root_hints, "r");
     if (fp == NULL) {
         return VAL_NO_ERROR;
@@ -1591,7 +1614,37 @@ read_root_hints_file(val_context_t * ctx)       // xxx-audit: why the unused par
 
     fclose(fp);
 
-    retval = stow_root_info(root_info);
+    memset(root_zone_n, 0, sizeof(root_zone_n)); /** on-the-wire encoding for root zone **/
+
+    if (VAL_NO_ERROR !=
+        (retval =
+         res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info,
+                                   &pending_glue))) {
+
+        res_sq_free_rrset_recs(&root_info);
+        return retval;
+    }
+
+    /*
+     * We are not interested in fetching glue for the root 
+     */
+    free_name_servers(&pending_glue);
+
+#if 0
+    {
+    struct name_server *tempns;
+    for(tempns = ns_list; tempns; tempns= tempns->ns_next) {
+        printf ("Root name servers for %s :\n", tempns->ns_name_n);
+        struct sockaddr_in  *s=(struct sockaddr_in*)(tempns->ns_address[0]);
+        printf("%s\n", inet_ntoa(s->sin_addr)); 
+    }
+    }
+#endif
+
+    if (ctx->root_ns)
+        free_name_servers(&ctx->root_ns);
+    ctx->root_ns = ns_list;
+
     res_sq_free_rrset_recs(&root_info);
 
     return retval;
