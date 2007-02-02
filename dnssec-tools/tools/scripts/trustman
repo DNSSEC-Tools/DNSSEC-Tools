@@ -286,7 +286,7 @@ sub add_ta_namedconf  {
 
 sub add_ta_dnsvalconf  {
     my ($domain, $key) = @_;
-    my $newkeyentry = $domain . " " . $key . "\n";
+    my $newkeyentry = $domain . ". \"257 3 5 " . $key . "\"\n";
     my $pat = "trust-anchor";
 
 # blatantly cheating here with the flags, proto and algo until
@@ -296,23 +296,30 @@ sub add_ta_dnsvalconf  {
     open (CONF,$dvfile) or die "unable to read named.conf file.";
     $/ = ";";
     while (<CONF>) {
+        my $domainfound;
         s/\s;\s*$//;
-        s/[\n\r]//g;
-        if (s/^\s*(\S*)\s*$pat\s*("*[^;]+")//) {
+        s/[\n\r]/ /g;
+#        if (s/^\s*(\S*)\s*$pat\s*("*[^;]+")//) {
+        if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
-            print TMP $newkeyentry;
-            print TMP $2;
+            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
+                my ($d, $val) = ($1, $2);
+                $val =~ s/[\n\r]//g;
+                if ($d eq $domain) {
+                    $domainfound = 1;
+                }
+                print TMP $d . " " . $val . "\n\n";
+            }
+            if ($domainfound) {
+                print TMP $newkeyentry;
+            }
+        
+    #        print TMP $newkeyentry;
+    #        print TMP $2;
             print TMP "\n;\n";
         } else {
             print TMP $_;
         }
-#        $_ =~ s/\;//;
-#        print TMP $_;
-#        if (/trust-anchor/) {
-#            print TMP "\n\n";
-#            my $newkey = $domain . ". \"257 3 5 " . $key . "\"\n\n";
-#            print TMP $newkey;
-#        }
     }
     close (CONF);
     close (TMP);
