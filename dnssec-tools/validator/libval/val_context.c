@@ -55,10 +55,9 @@ val_create_context_with_conf(char *label,
     (*newcontext)->dnsval_conf = dnsval_conf? strdup(dnsval_conf) : dnsval_conf_get(); 
     (*newcontext)->resolv_conf = resolv_conf? strdup(resolv_conf) : resolv_conf_get(); 
     (*newcontext)->root_conf = root_conf? strdup(root_conf) : root_hints_get(); 
-
-    memset(&(*newcontext)->r_timestamp, 0, sizeof(struct timespec));
-    memset(&(*newcontext)->v_timestamp, 0, sizeof(struct timespec));
-    memset(&(*newcontext)->h_timestamp, 0, sizeof(struct timespec));
+    (*newcontext)->r_timestamp = 0;
+    (*newcontext)->v_timestamp = 0;
+    (*newcontext)->h_timestamp = 0;
 
     (*newcontext)->root_ns = NULL; 
 

@@ -1169,7 +1169,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
     if (0 != stat(dnsval_conf, &sb)) 
         return VAL_CONF_NOT_FOUND;
 
-    ctx->v_timestamp = sb.st_mtimespec.tv_sec;
+    ctx->v_timestamp = sb.st_mtime;
     
     val_log(ctx, LOG_NOTICE, "Reading validator policy from %s",
             dnsval_conf);
@@ -1358,7 +1358,7 @@ read_res_config_file(val_context_t * ctx)
     if (0 != stat(resolv_config, &sb)) 
         return VAL_CONF_NOT_FOUND;
 
-    ctx->r_timestamp = sb.st_mtimespec.tv_sec;
+    ctx->r_timestamp = sb.st_mtime;
 
     val_log(ctx, LOG_NOTICE, "Reading resolver policy from %s",
             resolv_config);
@@ -1482,7 +1482,7 @@ read_root_hints_file(val_context_t * ctx)
     if (0 != stat(root_hints, &sb)) 
         return VAL_CONF_NOT_FOUND;
 
-    ctx->h_timestamp = sb.st_mtimespec.tv_sec;
+    ctx->h_timestamp = sb.st_mtime;
 
     val_log(ctx, LOG_NOTICE, "Reading root hints from %s",
             root_hints);
