@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2006-11-30" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2007-02-01" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_resolve_and_check()\fR, \fIval_free_result_chain()\fR \- query and validate
 answers from a DNS name server
@@ -144,10 +144,10 @@ trust anchor.
 \&\fIval_create_context()\fR, \fIval_free_context()\fR \-
 manage validator context
 .PP
-\&\fIdnsval_conf_get()\fR, \fIresolver_config_get()\fR, \fIroot_hints_get()\fR \- get
+\&\fIdnsval_conf_get()\fR, \fIresolv_conf_get()\fR, \fIroot_hints_get()\fR \- get
 the current location for the validator configuration files
 .PP
-\&\fIdnsval_conf_set()\fR, \fIresolver_config_set()\fR, \fIroot_hints_set()\fR \- set
+\&\fIdnsval_conf_set()\fR, \fIresolv_conf_set()\fR, \fIroot_hints_set()\fR \- set
 the current location for the validator configuration files
 .PP
 \&\fIp_ac_status()\fR, \fIp_val_status()\fR \- display validator status information
@@ -183,11 +183,11 @@ the current location for the validator configuration files
 .Ve
 .PP
 .Vb 1
-\&  char *resolver_config_get(void);
+\&  char *resolv_conf_get(void);
 .Ve
 .PP
 .Vb 1
-\&  int resolver_config_set(const char *name);
+\&  int resolv_conf_set(const char *name);
 .Ve
 .PP
 .Vb 1
@@ -258,9 +258,9 @@ read by default from the \fB/etc/dnsval.conf\fR and \fB/etc/resolv.conf\fR files
 \&\*(L"Root hints\*(R" that allows the library to bootstrap its lookup process when
 functioning as a full resolver is read from \fB/etc/root.hints\fR.  The locations
 of each of these files may be changed using the interfaces
-\&\fI\fIdnsval_conf_set()\fI\fR, \fI\fIresolver_config_set()\fI\fR, and \fI\fIroot_hints_set()\fI\fR,
+\&\fI\fIdnsval_conf_set()\fI\fR, \fI\fIresolv_conf_set()\fI\fR, and \fI\fIroot_hints_set()\fI\fR,
 respectively.  The corresponding \*(L"get\*(R" interfaces (namely
-\&\fI\fIdnsval_conf_get()\fI\fR, \fI\fIresolver_config_get()\fI\fR, and \fI\fIroot_hints_get()\fI\fR) can be
+\&\fI\fIdnsval_conf_get()\fI\fR, \fI\fIresolv_conf_get()\fI\fR, and \fI\fIroot_hints_get()\fI\fR) can be
 used to return the current location from where these configuration files are
 read.
 .PP
