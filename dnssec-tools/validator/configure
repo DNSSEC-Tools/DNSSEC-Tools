@@ -464,7 +464,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE target target_cpu target_vendor target_os PERLARGS LIBVAL_SUFFIX DEVFLAGS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE target target_cpu target_vendor target_os CONFIGURE_OPTIONS PERLARGS LIBVAL_SUFFIX DEVFLAGS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -19211,6 +19211,17 @@ test -n "$target_alias" &&
     NONENONEs,x,x, &&
   program_prefix=${target_alias}-
 
+#
+# save the configure arguments
+#
+
+cat >>confdefs.h <<_ACEOF
+#define LIBVAL_CONFIGURE_OPTIONS "$ac_configure_args"
+_ACEOF
+
+CONFIGURE_OPTIONS="\"$ac_configure_args"\"
+
+
 
 # Check whether --with-cflags or --without-cflags was given.
 if test "${with_cflags+set}" = set; then
@@ -23523,7 +23534,7 @@ _ACEOF
 esac
 
 
-                                                  ac_config_files="$ac_config_files Makefile:Makefile.top:Makefile.in libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot"
+                                                            ac_config_files="$ac_config_files Makefile:Makefile.top:Makefile.in libval-config:libval-config.in libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot"
 
           ac_config_commands="$ac_config_commands default"
 
@@ -24056,6 +24067,7 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile:Makefile.top:Makefile.in" ;;
+  "libval-config" ) CONFIG_FILES="$CONFIG_FILES libval-config:libval-config.in" ;;
   "libsres/Makefile" ) CONFIG_FILES="$CONFIG_FILES libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot" ;;
   "libval/Makefile" ) CONFIG_FILES="$CONFIG_FILES libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot" ;;
@@ -24190,6 +24202,7 @@ s,@target@,$target,;t t
 s,@target_cpu@,$target_cpu,;t t
 s,@target_vendor@,$target_vendor,;t t
 s,@target_os@,$target_os,;t t
+s,@CONFIGURE_OPTIONS@,$CONFIGURE_OPTIONS,;t t
 s,@PERLARGS@,$PERLARGS,;t t
 s,@LIBVAL_SUFFIX@,$LIBVAL_SUFFIX,;t t
 s,@DEVFLAGS@,$DEVFLAGS,;t t
