@@ -19,7 +19,7 @@ WriteMakefile(%opts);
 sub MY::postamble {
     return '
 
-# we have to hard code the path in donuts anyway, so this doesn't work:
+# we have to hard code the path in donuts anyway, so this does not work:
 #RULESDIR=$(DESTDIR)/$(PREFIX)/share/donuts/rules
 RULESDIR=/usr/local/share/donuts/rules
 
