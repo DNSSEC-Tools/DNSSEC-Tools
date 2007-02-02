@@ -16,6 +16,8 @@ extern          "C" {
 
 #include <arpa/nameser.h>
 #include <netdb.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 
 #if !defined(NS_INT16SZ) && defined(INT16SZ)
 #define NS_INT16SZ INT16SZ
@@ -244,6 +246,21 @@ extern          "C" {
     typedef struct val_context {
 
         char            id[VAL_CTX_IDLEN];
+        char            *label;
+        char            *dnsval_conf;
+        char            *resolv_conf;
+        char            *root_conf;
+
+        time_t r_timestamp;
+        time_t v_timestamp;
+        time_t h_timestamp;
+
+        policy_entry_t *e_pol;
+
+        /*
+         * root_hints
+         */
+        struct name_server *root_ns;
 
         /*
          * resolver policy 
@@ -253,7 +270,6 @@ extern          "C" {
         /*
          * validator policy 
          */
-        policy_entry_t *e_pol;
         struct policy_overrides *pol_overrides;
         struct policy_overrides *cur_override;
 
@@ -513,9 +529,17 @@ extern          "C" {
     /*
      * from val_context.h 
      */
+    int             val_create_context_with_conf(char *label,
+                                                 char *dnsval_conf,
+                                                 char *resolv_conf,
+                                                 char *root_conf,
+                                                 val_context_t ** newcontext);
     int             val_create_context(char *label,
                                        val_context_t ** newcontext);
     void            val_free_context(val_context_t * context);
+    void            val_refresh_resolver_policy(val_context_t * context);
+    void            val_refresh_validator_policy(val_context_t * context);
+    void            val_refresh_root_hints(val_context_t * context);
 
 
     /*
