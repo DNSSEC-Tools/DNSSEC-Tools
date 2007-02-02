@@ -125,7 +125,7 @@ val_create_context(char *label,
 void
 val_free_context(val_context_t * context)
 {
-    if ((context == NULL) || (context == the_default_context))
+    if (context == NULL)
         return;
 
     if (context->label)
@@ -156,7 +156,7 @@ val_free_context(val_context_t * context)
 void 
 val_refresh_resolver_policy(val_context_t * context)
 {
-    if ((context == NULL) || (context == the_default_context))
+    if (context == NULL) 
         return;
 
     if (read_res_config_file(context) != VAL_NO_ERROR) {
@@ -169,7 +169,7 @@ val_refresh_resolver_policy(val_context_t * context)
 void 
 val_refresh_validator_policy(val_context_t * context)
 {
-    if ((context == NULL) || (context == the_default_context))
+    if (context == NULL) 
         return;
 
     if (read_val_config_file(context, context->label) != VAL_NO_ERROR) {
@@ -192,7 +192,7 @@ val_refresh_validator_policy(val_context_t * context)
 void 
 val_refresh_root_hints(val_context_t * context)
 {
-    if ((context == NULL) || (context == the_default_context))
+    if (context == NULL)
         return;
 
     if (read_root_hints_file(context) != VAL_NO_ERROR) {
