@@ -46,8 +46,6 @@ static pthread_rwlock_t rwlock;
 static int      rwlock_init = -1;
 #endif
 
-static struct name_server *root_ns = NULL;
-
 struct zone_ns_map_t {
     u_int8_t        zone_n[NS_MAXCDNAME];
     struct name_server *nslist;
@@ -425,85 +423,6 @@ stow_negative_answers(struct rrset_rec *new_info, struct val_query_chain *matche
     return rc;
 }
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
-int
-stow_root_info(struct rrset_rec *root_info)
-{
-    struct name_server *ns_list = NULL;
-    struct name_server *pending_glue = NULL;
-    int             retval;
-    u_char          root_zone_n[NS_MAXCDNAME];
-    const char     *root_zone = ".";
-
-    LOCK_INIT();
-
-    LOCK_SH();
-    if (NULL != root_ns) {
-        UNLOCK();
-        return VAL_NO_ERROR;
-    }
-
-    if (ns_name_pton(root_zone, root_zone_n, sizeof(root_zone_n)) == -1) {
-        UNLOCK();
-        return VAL_CONF_PARSE_ERROR;
-    }
-
-    if (VAL_NO_ERROR !=
-        (retval =
-         res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info,
-                                   &pending_glue))) {
-        UNLOCK();
-        return retval;
-    }
-
-    /*
-     * We are not interested in fetching glue for the root 
-     */
-    free_name_servers(&pending_glue);
-
-
-#if 0
-    {
-    struct name_server *tempns;
-    for(tempns = ns_list; tempns; tempns= tempns->ns_next) {
-	    printf ("Root name servers for %s :\n", tempns->ns_name_n);
-        struct sockaddr_in  *s=(struct sockaddr_in*)(tempns->ns_address[0]);
-        printf("%s\n", inet_ntoa(s->sin_addr));	
-    }
-    }
-#endif
-
-    LOCK_UPGRADE();
-    root_ns = ns_list;
-    UNLOCK();
-
-    /*
-     * Don't store the records in the cache 
-     */
-
-    return VAL_NO_ERROR;
-}
-
-int
-get_root_ns(struct name_server **ns)
-{
-    LOCK_INIT();
-    LOCK_SH();
-
-    *ns = NULL;
-    /*
-     * return a cloned copy 
-     */
-    clone_ns_list(ns, root_ns);
-
-    UNLOCK();
-
-    return VAL_NO_ERROR;
-}
-
 /*
  * Maintain a mapping between the zone and the name server that answered 
  * data for it 
@@ -697,8 +616,6 @@ free_validator_cache(void)
     unchecked_answers = NULL;
     res_sq_free_rrset_recs(&unchecked_proofs);
     unchecked_proofs = NULL;
-    free_name_servers(&root_ns);
-    root_ns = NULL;
     free_zone_nslist();
     UNLOCK();
 
