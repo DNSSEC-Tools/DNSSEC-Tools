@@ -1,0 +1,136 @@
+#!/bin/sh
+#
+srcdir=@srcdir@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+bindir=@bindir@
+sbindir=@sbindir@
+libdir=@libdir@
+datadir=@datadir@
+includedir=@includedir@/validator
+mandir=@mandir@
+
+lvc_PREFIX=$prefix
+lvc_EXEC_PREFIX=$exec_prefix
+lvc_INCLUDEDIR=$includedir
+lvc_DEVCFLAGS="@DEVFLAGS@"
+lvc_CFLAGS="@CFLAGS@"
+lvc_CPPFLAGS="@CPPFLAGS@"
+lvc_LDFLAGS="@LDFLAGS@"
+lvc_LIBS="@LIBS@"
+LIBVAL_SUFFIX=@LIBVAL_SUFFIX@
+
+
+if test "x$1" = "x"; then
+  usage="yes"
+else
+  while test "x$done" = "x" -a "x$1" != "x" -a "x$usage" != "xyes"; do
+  case "$1" in
+    -*=*) optarg=`echo "$1" | sed 's/[-_a-zA-Z0-9]*=//'` ;;
+    *) optarg= ;;
+  esac
+
+  case $1 in
+    --prefix=*)
+      prefix=$optarg
+      lvc_PREFIX=${prefix}
+      lvc_INCLUDEDIR=${prefix}/include
+      lvc_LIBDIR=-L${prefix}/lib
+      ;;
+
+    --exec-prefix=*)
+      exec_prefix=$optarg
+      lvc_EXEC_PREFIX=${exec_prefix}
+      lvc_LIBDIR=-L${exec_prefix}/lib
+      ;;
+
+    --configure-options|--con*)
+      echo @CONFIGURE_OPTIONS@
+      ;;
+    #################################################### compile
+    --base-cflags)
+      echo ${lvc_CFLAGS} ${lvc_CPPFLAGS} -I${lvc_INCLUDEDIR}
+      ;;
+    --cflags|--cf*)
+      echo ${lvc_CFLAGS} ${lvc_DEVFLAGS} ${lvc_CPPFLAGS} -I. -I${lvc_INCLUDEDIR}
+      ;;
+    --srcdir)
+      echo $lvc_SRCDIR
+      ;;
+    #################################################### linking
+    --libdir|--lib-dir)
+      echo $lvc_LIBDIR
+      ;;
+    --ldflags|--ld*)
+      echo $lvc_LDFLAGS
+      ;;
+    #################################################### client lib
+    --libs)
+      # use this one == --libval-libs + --external-libs
+      echo $lvc_LDFLAGS $lvc_LIBDIR -lval${LIBVAL_SUFFIX} $lvc_LIBS
+      ;;
+    --libval-libs)
+      echo $lvc_LIBDIR -lval${LIBVAL_SUFFIX}
+      ;;
+    --external-libs)
+      echo $lvc_LDFLAGS $lvc_LIBS
+      ;;
+    ####################################################
+    --version|--ver*)
+      echo @VERSION@
+      ;;
+    --help)
+      usage="yes"
+      ;;
+    --prefix|--pre*)
+      echo $lvc_PREFIX
+      ;;
+    --exec-prefix)
+      echo $lvc_EXEC_PREFIX
+      ;;
+    *)
+      echo "unknown option $1"
+      usage="yes"
+      ;;
+  esac
+  shift
+  done
+fi
+
+if test "x$usage" = "xyes"; then
+  echo ""
+  echo "Usage:"
+  echo "  libval-config [--cflags] [--agent-libs] [--libs] [--version]"
+  echo "                  ... [see below for complete flag list]"
+  echo ""
+  echo "    --version         displays the libval version number"
+  echo ""
+  echo "  These options produce the various compilation flags needed when"
+  echo "  building external SNMP applications:"
+  echo ""
+  echo "    --base-cflags     lists additional compilation flags needed"
+  echo "    --cflags          lists additional compilation flags needed"
+  echo "                      (includes -I. and extra developer warning flags)"
+  echo ""
+  echo "  These options produce the various link flags needed when"
+  echo "  building external SNMP applications:"
+  echo ""
+  echo "    --libs            lists libraries needed for building applications"
+  echo ""
+  echo "  These options produce various link flags broken down into parts."
+  echo "  (Most of the time the simple options above should be used.)"
+  echo ""
+  echo "    --libdir              path to libval"
+  echo ""
+  echo "    --libval-libs         libval (with path)"
+  echo ""
+  echo "    --ldflags             link flags for external libraries"
+  echo "    --external-libs       external libraries needed by libval"
+  echo ""
+  echo "  Details on how the libval package was compiled:"
+  echo ""
+  echo "    --configure-options   display original configure arguments"
+  echo "    --prefix              display the installation prefix"
+  echo ""
+  exit
+fi  
