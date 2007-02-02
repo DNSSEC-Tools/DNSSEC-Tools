@@ -12,6 +12,7 @@
 #include <ctype.h>
 
 #include <sys/types.h>
+#include <sys/stat.h>
 
 #include <arpa/nameser.h>
 #ifdef HAVE_ARPA_NAMESER_COMPAT_H
@@ -3179,9 +3180,7 @@ verify_and_validate(val_context_t * context,
                      * We could only be asking the child if our default name server is 
                      * the child, so ty again starting from root; state will be WAIT_FOR_TRUST 
                      */
-                    struct name_server *root_ns = NULL;
-                    get_root_ns(&root_ns);
-                    if (root_ns == NULL) {
+                    if (context->root_ns == NULL) {
                         /*
                          * No root hints configured 
                          */
@@ -3208,7 +3207,8 @@ verify_and_validate(val_context_t * context,
                             res->val_rc_status = VAL_INDETERMINATE_PROOF;
                             break;
                         }
-                        (*queries)->qc_ns_list = root_ns;
+                        clone_ns_list(&(*queries)->qc_ns_list,
+                                      context->root_ns);
                         *done = 0;
                         thisdone = 0;
                     }
@@ -4117,6 +4117,19 @@ create_error_result(struct val_query_chain *top_q,
     return VAL_NO_ERROR;
 }
 
+#define GET_LATEST_TIMESTAMP(ctx, file, cur_ts, new_ts) do { \
+    memset(&new_ts.st_mtimespec, 0, sizeof(struct timespec));\
+    if (!file) {\
+        if (cur_ts != 0) {\
+            val_log(ctx, LOG_WARNING, "%s disappeared; continuing to use old", file);\
+        }\
+    } else {\
+        if(0 != stat(file, &new_ts)) {\
+            val_log(ctx, LOG_WARNING, "%s disappeared; continuing to use old", file);\
+        }\
+    }\
+}while (0)
+
 /*
  * Look inside the cache, ask the resolver for missing data.
  * Then try and validate what ever is possible.
@@ -4144,7 +4157,7 @@ val_resolve_and_check(val_context_t * ctx,
     val_context_t  *context = NULL;
     struct val_internal_result *w_results = NULL;
     struct val_internal_result *w_res = NULL;
-
+    
     if ((results == NULL) || (domain_name_n == NULL))
         return VAL_BAD_ARGUMENT;
 
@@ -4156,9 +4169,29 @@ val_resolve_and_check(val_context_t * ctx,
     if (ctx == NULL) {
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
             return retval;
-    } else
-        context = (val_context_t *) ctx;
+    } else {
+        /* Check if the configuration file has changed since the last time we read it */
+        struct stat rsb, vsb, hsb;
 
+        GET_LATEST_TIMESTAMP(ctx, ctx->dnsval_conf, ctx->v_timestamp, vsb);
+        GET_LATEST_TIMESTAMP(ctx, ctx->resolv_conf, ctx->r_timestamp, rsb);
+        GET_LATEST_TIMESTAMP(ctx, ctx->root_conf, ctx->h_timestamp, hsb);
+
+        if (vsb.st_mtimespec.tv_sec != 0 && 
+                vsb.st_mtimespec.tv_sec != ctx->v_timestamp)
+            val_refresh_validator_policy(ctx);
+
+        if (rsb.st_mtimespec.tv_sec != 0 && 
+                rsb.st_mtimespec.tv_sec != ctx->r_timestamp)
+            val_refresh_resolver_policy(ctx);
+
+        if (hsb.st_mtimespec.tv_sec != 0 && 
+                hsb.st_mtimespec.tv_sec != ctx->h_timestamp)
+            val_refresh_root_hints(ctx);
+        
+        context = (val_context_t *) ctx;
+    }
+    
     if (-1 == ns_name_ntop(domain_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
     val_log(context, LOG_DEBUG,
