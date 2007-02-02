@@ -21,7 +21,7 @@ sub MY::postamble {
 
 # we have to hard code the path in donuts anyway, so this does not work:
 #RULESDIR=$(DESTDIR)/$(PREFIX)/share/donuts/rules
-RULESDIR=/usr/local/share/donuts/rules
+RULESDIR=$(DESTDIR)/usr/local/share/donuts/rules
 
 INSTALL=$(PERL) "-MExtUtils::Command" -e cp
 
