@@ -16,10 +16,10 @@ trust anchor.
 I<val_create_context()>, I<val_free_context()> -
 manage validator context
 
-I<dnsval_conf_get()>, I<resolver_config_get()>, I<root_hints_get()> - get
+I<dnsval_conf_get()>, I<resolv_conf_get()>, I<root_hints_get()> - get
 the current location for the validator configuration files
 
-I<dnsval_conf_set()>, I<resolver_config_set()>, I<root_hints_set()> - set
+I<dnsval_conf_set()>, I<resolv_conf_set()>, I<root_hints_set()> - set
 the current location for the validator configuration files
 
 I<p_ac_status()>, I<p_val_status()> - display validator status information
@@ -43,9 +43,9 @@ I<p_ac_status()>, I<p_val_status()> - display validator status information
 
   void val_free_context(val_context_t *context);
 
-  char *resolver_config_get(void);
+  char *resolv_conf_get(void);
 
-  int resolver_config_set(const char *name);
+  int resolv_conf_set(const char *name);
 
   char *root_hints_get(void);
 
@@ -104,9 +104,9 @@ read by default from the B</etc/dnsval.conf> and B</etc/resolv.conf> files.
 "Root hints" that allows the library to bootstrap its lookup process when
 functioning as a full resolver is read from B</etc/root.hints>.  The locations
 of each of these files may be changed using the interfaces
-I<dnsval_conf_set()>, I<resolver_config_set()>, and I<root_hints_set()>,
+I<dnsval_conf_set()>, I<resolv_conf_set()>, and I<root_hints_set()>,
 respectively.  The corresponding "get" interfaces (namely
-I<dnsval_conf_get()>, I<resolver_config_get()>, and I<root_hints_get()>) can be
+I<dnsval_conf_get()>, I<resolv_conf_get()>, and I<root_hints_get()>) can be
 used to return the current location from where these configuration files are
 read.
 
