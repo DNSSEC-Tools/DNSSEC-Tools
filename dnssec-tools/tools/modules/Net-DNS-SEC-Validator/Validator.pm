@@ -109,19 +109,18 @@ sub new {
     $self->{policy} ||= ":";
 
     $self->{_ctx_ptr} = 
-	Net::DNS::SEC::Validator::_create_context($self->{policy});
-    
+	Net::DNS::SEC::Validator::_create_context_with_conf(
+	   $self->{policy},
+	   $self->{dnsval_conf},
+	   $self->{resolv_conf},
+    	   $self->{root_hints});
+
     $self->{error} = 0;
     $self->{errorStr} = "";
     $self->{valStatus} = 0;
     $self->{valStatusStr} = "";
 
     bless($self, $class);
-
-    $self->dnsval_conf($self->{dnsval_conf});
-    $self->root_hints($self->{root_hints});
-    $self->resolv_conf($self->{resolv_conf});
-
     return $self;
 }
 
@@ -136,7 +135,7 @@ sub switch_policy {
 	    return $self->policy($label);
 	} else {
 	    $self->{_ctx_ptr} = 
-		Net::DNS::SEC::Validator::_create_context($label);
+		Net::DNS::SEC::Validator::_create_context_with_conf($label);
 	    $self->{policy} = $label;
         }
     }
