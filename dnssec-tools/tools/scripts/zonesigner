@@ -996,8 +996,15 @@ sub genksks
 		#
 		if($opts{'kskcur'} eq "")
 		{
-			print STDERR "\nKSKs do not exist; unable to re-use non-existent KSKs\n";
-			exit(1);
+			$kskcursetname = keyrec_recval($zone,'kskcur');
+			if($kskcursetname eq "")
+			{
+
+				print STDERR "\nKSKs do not exist; unable to re-use non-existent KSKs\n";
+				exit(1);
+			}
+
+			$opts{'kskcur'} = $kskcursetname;
 		}
 
 		#
