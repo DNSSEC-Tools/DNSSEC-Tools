@@ -265,13 +265,34 @@ MODULE = Net::DNS::SEC::Validator	PACKAGE = Net::DNS::SEC::Validator	PREFIX = pv
 INCLUDE: const-xs.inc
 
 ValContext *
-pval_create_context(context)
-	char * context
+pval_create_context(policy)
+	char * policy
 	CODE:
 	{
 	ValContext *vc_ptr=NULL;
 
-	int result = val_create_context(context, &vc_ptr);
+	int result = val_create_context(policy, &vc_ptr);
+
+	RETVAL = (result ? NULL : vc_ptr);
+	}
+	OUTPUT:
+	RETVAL
+
+ValContext *
+pval_create_context_with_conf(policy,dnsval_conf,resolv_conf,root_hints)
+	char * policy
+        char *	dnsval_conf = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
+	char *	resolv_conf = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
+	char *	root_hints = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
+	CODE:
+	{
+	ValContext *vc_ptr=NULL;
+
+	int result = val_create_context_with_conf(policy, 
+						  dnsval_conf,
+						  resolv_conf,
+						  root_hints,
+						  &vc_ptr);
 
 	RETVAL = (result ? NULL : vc_ptr);
 	}
