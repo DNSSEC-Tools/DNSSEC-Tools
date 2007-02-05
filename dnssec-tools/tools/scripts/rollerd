@@ -216,11 +216,11 @@ sub main
 				# ZSKs.
 				#
 				$kronos1 = time;
-				zsk_check();
+				rollkeys();
 				$kronos2 = time;
 				$kronodiff = $kronos2 - $kronos1;
 				$kronos = timetrans($kronodiff);
-				rollmgr_log(LOG_TMI,"<timer>","ZSKs checked in $kronos");
+				rollmgr_log(LOG_TMI,"<timer>","keys checked in $kronos");
 
 				#
 				# Save the current rollrec file state.
@@ -244,15 +244,13 @@ sub main
 	}
 }
 
-###############################################################################
-
 #-----------------------------------------------------------------------------
-# Routine:	zsk_check()
+# Routine:	rollkeys()
 #
 # Purpose:	Go through the zones in the rollrec file and start rolling
-#		those which have expired.
+#		the ZSKs and KSKs for those which have expired.
 #
-sub zsk_check
+sub rollkeys
 {
 	my @rrfstats;			# Stats for rollrec file.
 
@@ -260,7 +258,6 @@ sub zsk_check
 	{
 		my $rrr;		# Reference to rollrec.
 		my %rr;			# Rollrec hash.
-#		my $zphase;		# Rollrec's ZSK rollover phase.
 
 		#
 		# Ensure the logging level is set correctly.
@@ -311,12 +308,12 @@ sub zsk_check
 		}
 
 		#
-		# Do basic set-up for brand new records.
+		# Do basic set-up for records without a ZSK phase.
 		#
 		if($rr{'curphase'} == -1)
 		{
-			rollmgr_log(LOG_CURPHASE,$rname,"new rollrec");
-			newphase($rname,$rrr,0)
+			rollmgr_log(LOG_PHASE,$rname,"new curphase entry");
+			zskphase($rname,$rrr,0)
 		}
 
 		#
@@ -324,7 +321,7 @@ sub zsk_check
 		# 
 		if(zsk_expired($rname,$rrr,"zskcur"))
 		{
-			rollmgr_log(LOG_CURPHASE,$rname,"current ZSK has expired\n") if($rr{'curphase'} == 0);
+			rollmgr_log(LOG_PHASE,$rname,"current ZSK has expired\n") if($rr{'curphase'} == 0);
 
 			zsk_phaser($rname,$rrr);
 		}
@@ -332,6 +329,30 @@ sub zsk_check
 		{
 			rollmgr_log(LOG_TMI,$rname,"current ZSK still valid");
 		}
+
+		#
+		# Do basic set-up for records without a KSK phase.
+		#
+		if($rr{'kskphase'} == -1)
+		{
+			rollmgr_log(LOG_PHASE,$rname,"new kskphase entry");
+			kskphase($rname,$rrr,0)
+		}
+
+		#
+		# If this zone's current KSK has expired, we'll get it rolling.
+		# 
+		if(ksk_expired($rname,$rrr,"kskcur"))
+		{
+			rollmgr_log(LOG_PHASE,$rname,"current KSK has expired\n") if($rr{'curphase'} == 0);
+
+			ksk_phaser($rname,$rrr);
+		}
+		else
+		{
+			rollmgr_log(LOG_TMI,$rname,"current KSK still valid");
+		}
+
 	}
 
 	#
@@ -339,229 +360,6 @@ sub zsk_check
 	#
 	$loglevel = $loglevel_save;
 	rollmgr_loglevel($loglevel,0);
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	zsk_phaser()
-#
-# Purpose:	Move the specified zone through the appropriate phases.
-#
-sub zsk_phaser
-{
-	my $rname = shift;		# Zone name.
-	my $rrr = shift;		# Reference to rollrec.
-
-	my %rr;				# Rollrec hash.
-	my $phase;			# Zone's current rollover phase.
-
-	#
-	# Get this rollrec record's current phase.
-	#
-	%rr = %$rrr;
-	$phase = $rr{'curphase'};
-
-	#
-	# Work on this rollrec's phase.
-	#
-	$phase = newphase($rname,$rrr,1)	if($phase == 0);
-	$phase = zsk_phasewait($rname,$rrr,1)	if($phase == 1);
-	$phase = zsk_phase2($rname,$rrr)     	if($phase == 2);
-	$phase = zsk_phasewait($rname,$rrr,3)	if($phase == 3);
-	$phase = zsk_phase4($rname,$rrr)     	if($phase == 4);
-
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	zsk_phasewait()
-#
-# Purpose:	Check if this zone's rollover-wait phase is over.
-#		The zone's phase number -- current or new -- is returned.
-#
-sub zsk_phasewait
-{
-	my $rname = shift;			# Name of rollrec.
-	my $rrr	  = shift;			# Reference to rollrec.
-	my $phase = shift;			# Rollover phase.
-
-	my %rr;					# Rollrec hash.
-
-	#
-	# Get the rollrec.
-	#
-	$rrr = rollrec_fullrec($rname);
-	%rr = %$rrr;
-
-	#
-	# Check if we can go to the next rollover phase.  If not, we'll
-	# go to the next rollrec entry and return to this later.
-	#
-	if(!ttlexpire($rname,$rrr,$phase))
-	{
-		return($phase);
-	}
-
-	#
-	# Bump this rollrec's phase number and return the new phase.
-	#
-	$phase++;
-	newphase($rname,$rrr,$phase);
-	return($phase);
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	zsk_phase2()
-#
-# Purpose:	Perform the phase 2 steps of the rollover.  These are:
-#
-#			- sign the zone with the KSK and Published ZSK
-#			- reload the zone
-#			- wait for old zone data to expire
-#
-sub zsk_phase2
-{
-	my $rname = shift;		# Name of rollrec.
-	my $rrr = shift;		# Reference to rollrec.
-
-	my %rr = %$rrr;			# Rollrec hash.
-
-	my $krf;			# Rollrec's keyrec name.
-	my %krf;			# Keyrec hash.
-	my $krr;			# Keyrec reference.
-
-	my $ret;			# Result from command executions.
-
-	#
-	# Get the rollrec's associated keyrec file and ensure that it
-	# exists.
-	#
-	$krf = $rr{'keyrec'};
-	if(!$krf  || ($krf eq ""))
-	{
-		rollmgr_log(LOG_ERR,$rname,"phase 2:  no keyrec for zone specified");
-		return;
-	}
-	if(! -e $krf)
-	{
-		rollmgr_log(LOG_ERR,$rname,"phase 2:  keyrec \"$krf\" for zone does not exist");
-		return;
-	}
-
-	#
-	# Get the keyrec.
-	#
-	$krr = opts_zonekr($krf,$rname);
-	%krf = %$krr;
-
-	#
-	# Sign the zone with the Published ZSK.
-	#
-	$ret = signer($rname,"-usezskpub",$krr);
-	if($ret eq "")
-	{
-		rollmgr_log(LOG_ERR,$rname,"phase 2:  unable to sign zone with the Published ZSK");
-	}
-
-	#
-	# Update the timestamp in the zone's keyrec.
-	#
-	keyrec_settime("zone",$rname);
-	keyrec_write();
-
-	#
-	# Reload the zone.
-	#
-	$ret = rollmgr_loadzone($rndc,$rname);
-	if($ret != 0)
-	{
-#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
-	}
-
-	#
-	# Bump this rollrec's phase number and return the new phase.
-	#
-	newphase($rname,$rrr,3);
-	return(3);
-
-}
-
-#-----------------------------------------------------------------------------
-# Routine:	zsk_phase4()
-#
-# Purpose:	Perform the phase 4 steps of the rollover.  These are:
-#
-#			- juggle the ZSKs in the zone's keyrec
-#			- sign the zone with the KSK and new current ZSK
-#			- reload the zone
-#			- return the zone to the pre-rollover state
-#
-sub zsk_phase4
-{
-	my $rname = shift;		# Name of rollrec.
-	my $rrr = shift;		# Reference to rollrec.
-
-	my %rr = %$rrr;			# Rollrec hash.
-
-	my $krf;			# Rollrec's keyrec name.
-	my %krf;			# Keyrec hash.
-	my $krr;			# Keyrec reference.
-
-	my $ret;			# Result from command executions.
-
-	#
-	# Get the rollrec's associated keyrec file and ensure that it
-	# exists.
-	#
-	$krf = $rr{'keyrec'};
-	if(!$krf  || ($krf eq ""))
-	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  no keyrec for zone specified");
-		return;
-	}
-	if(! -e $krf)
-	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  keyrec \"$krf\" for zone does not exist");
-		return;
-	}
-
-	#
-	# Get the keyrec.
-	#
-	rollmgr_log(LOG_TMI,$rname,"keyrec file is $krf");
-	$krr = opts_zonekr($krf,$rname);
-	%krf = %$krr;
-
-	#
-	# Adjust ZSKs in the zone's keyrec.
-	#
-	$ret = signer($rname,"-rollzsk",$krr);
-	if($ret eq "")
-	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to adjust ZSK keyrec");
-	}
-
-	#
-	# Sign the zone with the current ZSK.
-	#
-	$ret = signer($rname,"",$krr);
-	if($ret eq "")
-	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to sign zone with the current ZSK");
-	}
-
-	#
-	# Reload the zone.
-	#
-	$ret = rollmgr_loadzone($rndc,$rname);
-	if($ret != 0)
-	{
-#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
-	}
-
-	#
-	# Put ourselves back in the pre-roll state.
-	#
-	newphase($rname,$rrr,0);
-	return(0);
 }
 
 ###############################################################################
@@ -719,6 +517,494 @@ sub zsk_expired
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	zsk_phaser()
+#
+# Purpose:	Move the specified zone's ZSKs through the appropriate phases.
+#
+sub zsk_phaser
+{
+	my $rname = shift;		# Zone name.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr;				# Rollrec hash.
+	my $phase;			# Zone's current rollover phase.
+
+	#
+	# Get this rollrec record's current phase.
+	#
+	%rr = %$rrr;
+	$phase = $rr{'curphase'};
+
+	#
+	# Work on this rollrec's phase.
+	#
+	$phase = zskphase($rname,$rrr,1)	if($phase == 0);
+	$phase = zsk_phasewait($rname,$rrr,1)	if($phase == 1);
+	$phase = zsk_phase2($rname,$rrr)     	if($phase == 2);
+	$phase = zsk_phasewait($rname,$rrr,3)	if($phase == 3);
+	$phase = zsk_phase4($rname,$rrr)     	if($phase == 4);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	zsk_phasewait()
+#
+# Purpose:	Check if this zone's rollover-wait phase is over.
+#		The zone's phase number -- current or new -- is returned.
+#
+sub zsk_phasewait
+{
+	my $rname = shift;			# Name of rollrec.
+	my $rrr	  = shift;			# Reference to rollrec.
+	my $phase = shift;			# Rollover phase.
+
+	my %rr;					# Rollrec hash.
+
+	#
+	# Get the rollrec.
+	#
+	$rrr = rollrec_fullrec($rname);
+	%rr = %$rrr;
+
+	#
+	# Check if we can go to the next rollover phase.  If not, we'll
+	# go to the next rollrec entry and return to this later.
+	#
+	if(!ttlexpire($rname,$rrr,$phase))
+	{
+		return($phase);
+	}
+
+	#
+	# Bump this rollrec's phase number and return the new phase.
+	#
+	$phase++;
+	zskphase($rname,$rrr,$phase);
+	return($phase);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	zsk_phase2()
+#
+# Purpose:	Perform the phase 2 steps of the ZSK rollover.  These are:
+#
+#			- sign the zone with the KSK and Published ZSK
+#			- reload the zone
+#			- wait for old zone data to expire
+#
+sub zsk_phase2
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr = %$rrr;			# Rollrec hash.
+
+	my $krf;			# Rollrec's keyrec name.
+	my %krf;			# Keyrec hash.
+	my $krr;			# Keyrec reference.
+
+	my $ret;			# Result from command executions.
+
+	#
+	# Get the rollrec's associated keyrec file and ensure that it
+	# exists.
+	#
+	$krf = $rr{'keyrec'};
+	if(!$krf  || ($krf eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 2:  no keyrec for zone specified");
+		return;
+	}
+	if(! -e $krf)
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 2:  keyrec \"$krf\" for zone does not exist");
+		return;
+	}
+
+	#
+	# Get the keyrec.
+	#
+	$krr = opts_zonekr($krf,$rname);
+	%krf = %$krr;
+
+	#
+	# Sign the zone with the Published ZSK.
+	#
+	$ret = signer($rname,"-usezskpub",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 2:  unable to sign zone with the Published ZSK");
+	}
+
+	#
+	# Update the timestamp in the zone's keyrec.
+	#
+	keyrec_settime("zone",$rname);
+	keyrec_write();
+
+	#
+	# Reload the zone.
+	#
+	$ret = rollmgr_loadzone($rndc,$rname);
+	if($ret != 0)
+	{
+#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
+	}
+
+	#
+	# Bump this rollrec's phase number and return the new phase.
+	#
+	zskphase($rname,$rrr,3);
+	return(3);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	zsk_phase4()
+#
+# Purpose:	Perform the phase 4 steps of the rollover.  These are:
+#
+#			- juggle the ZSKs in the zone's keyrec
+#			- sign the zone with the KSK and new current ZSK
+#			- reload the zone
+#			- return the zone to the pre-rollover state
+#
+sub zsk_phase4
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr = %$rrr;			# Rollrec hash.
+
+	my $krf;			# Rollrec's keyrec name.
+	my %krf;			# Keyrec hash.
+	my $krr;			# Keyrec reference.
+
+	my $ret;			# Result from command executions.
+
+	#
+	# Get the rollrec's associated keyrec file and ensure that it
+	# exists.
+	#
+	$krf = $rr{'keyrec'};
+	if(!$krf  || ($krf eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  no keyrec for zone specified");
+		return;
+	}
+	if(! -e $krf)
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  keyrec \"$krf\" for zone does not exist");
+		return;
+	}
+
+	#
+	# Get the keyrec.
+	#
+	rollmgr_log(LOG_TMI,$rname,"keyrec file is $krf");
+	$krr = opts_zonekr($krf,$rname);
+	%krf = %$krr;
+
+	#
+	# Adjust ZSKs in the zone's keyrec.
+	#
+	$ret = signer($rname,"-rollzsk",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to adjust ZSK keyrec");
+	}
+
+	#
+	# Sign the zone with the current ZSK.
+	#
+	$ret = signer($rname,"",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to sign zone with the current ZSK");
+	}
+
+	#
+	# Reload the zone.
+	#
+	$ret = rollmgr_loadzone($rndc,$rname);
+	if($ret != 0)
+	{
+#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
+	}
+
+	#
+	# Put ourselves back in the pre-roll state.
+	#
+	zskphase($rname,$rrr,0);
+	return(0);
+}
+
+###############################################################################
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_expired()
+#
+# Purpose:	This routine returns a boolean indicating if the specified
+#		zone has an expired ZSK key of the given type.
+#
+#		The zone's keyrec file name is taken from the given rollrec
+#		entry.  The keyrec file is read and the zone's entry found.
+#		The key keyrec of the specified key type (currently, just
+#		"zskcur") is pulled from the keyrec file.  Each key in the
+#		named signing set will be checked.
+#		
+#		Key expiration is determined by comparing the key keyrec's
+#		gensecs field to the current time.  The key hasn't expired
+#		if the current time is less than the gensecs; the key has
+#		expired if the current time is greater than the gensecs.
+#
+sub ksk_expired
+{
+	my $rname = shift;			# Name of rollrec rec.
+	my $rrr = shift;			# Reference to rollrec.
+	my $key = shift;			# Key to check.
+
+	my %rr;					# Rollrec hash.
+
+	my $krname;				# Name of keyrec.
+	my $krec;				# Keyrec reference.
+	my %set;				# Keyrec hash.
+
+	my @signset;				# Key's signing set.
+
+	my $expired = 0;			# Expired-zone flag.
+
+return(0);
+
+	#
+	# If this zone is in the middle of rollover processing, we'll
+	# immediately assume the key has expired.
+	#
+	%rr = %$rrr;
+	return(1) if($rr{'curphase'} > 0);
+
+	#
+	# Get the rollin' key's keyrec for our zone.
+	#
+	$krname = $rr{'keyrec'};
+	$krec = zonekeykr($rname,$krname,$key);
+	if($krec == 0)
+	{
+		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
+		return(0);
+	}
+	%set   = %$krec;
+
+	#
+	# Make sure we've got an actual set keyrec and keys.
+	#
+	if($set{'keyrec_type'} ne 'set')
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
+		return(0);
+	}
+	if(!defined($set{'keys'}) || ($set{'keys'} eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		return(0);
+	}
+
+	#
+	# Check each key in the signing set to see if one has expired.
+	# If any have, we'll start rollover.
+	#
+	@signset = split / /, $set{'keys'};
+	foreach my $keyname (@signset)
+	{
+		my $khr;				# Ref to key's hash.
+		my %kh;					# Key's hash.
+
+		my $life;				# Name of keylife field.
+		my $cronus;				# Current time.
+		my $gentime;				# Key's generation date.
+		my $exptime;				# Key's lifespan.
+		my $krsecs;				# Key's expiration date.
+		my $waitsecs;				# Time to expiration.
+		my $chronostr;				# Text expiration time.
+
+		#
+		# Get the key's keyrec hash.
+		#
+		$khr = keyrec_fullrec($keyname);
+		%kh = %$khr;
+
+		#
+		# Ensure that required keyrec fields exist.
+		#
+		if(!defined($kh{"keyrec_gensecs"}))
+		{
+			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
+			return(0);
+		}
+		$life = $kh{"keyrec_type"};
+		$life = substr($life,0,3) . "life";
+		if(!defined($kh{$life}))
+		{
+			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a $life record");
+			return(0);
+		}
+
+		#
+		# Get the key's generation time and the current time.
+		#
+		$gentime = $kh{"keyrec_gensecs"};
+		$cronus	 = time;
+
+		#
+		# Calculate the key's expiration time.
+		#
+		$exptime = $kh{$life};
+		$krsecs = $gentime + $exptime;
+
+		#
+		# Calculate the log message we should give.
+		#
+		$waitsecs = $krsecs - $cronus;
+		if($waitsecs >= 0)
+		{
+			$chronostr = timetrans($waitsecs);
+			rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
+			display("expiration $rname 0 $waitsecs");
+		}
+		else
+		{
+			$waitsecs = $cronus - $krsecs;
+			$chronostr = timetrans($waitsecs);
+			rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
+			display("phase $rname 0");
+		}
+
+		#
+		# The key has expired if the current time has passed the
+		# key's lifespan.
+		# The key has not expired if the key's lifespan has yet
+		# to reach the current time.
+		#
+		$expired = 1 if($cronus > $krsecs);
+
+	}
+
+	#
+	# Return the success/failure indication.
+	#
+	return($expired);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_phaser()
+#
+# Purpose:	Move the specified zone's KSKs through the appropriate phases.
+#
+sub ksk_phaser
+{
+	my $rname = shift;		# Zone name.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr;				# Rollrec hash.
+	my $phase;			# Zone's current rollover phase.
+
+return;
+	#
+	# Get this rollrec record's current phase.
+	#
+	%rr = %$rrr;
+	$phase = $rr{'kskphase'};
+
+	#
+	# Work on this rollrec's phase.
+	#
+	$phase = kskphase($rname,$rrr,1)	if($phase == 0);
+	$phase = ksk_phasewait($rname,$rrr,1)	if($phase == 1);
+	$phase = ksk_phase2($rname,$rrr)     	if($phase == 2);
+	$phase = ksk_phasewait($rname,$rrr,3)	if($phase == 3);
+	$phase = ksk_phase4($rname,$rrr)     	if($phase == 4);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_phasewait()
+#
+# Purpose:	Check if this zone's KSK rollover-wait phase is over.
+#		The zone's KSK phase number -- current or new -- is returned.
+#
+sub ksk_phasewait
+{
+	my $rname = shift;			# Name of rollrec.
+	my $rrr	  = shift;			# Reference to rollrec.
+	my $phase = shift;			# Rollover phase.
+
+	my %rr;					# Rollrec hash.
+
+	#
+	# Get the rollrec.
+	#
+	$rrr = rollrec_fullrec($rname);
+	%rr = %$rrr;
+
+	#
+	# Check if we can go to the next rollover phase.  If not, we'll
+	# go to the next rollrec entry and return to this later.
+	#
+	return($phase) if(!ttlexpire($rname,$rrr,$phase));
+
+	#
+	# Bump this rollrec's KSK phase number and return the new phase.
+	#
+	$phase++;
+	kskphase($rname,$rrr,$phase);
+	return($phase);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_phase2()
+#
+# Purpose:	Perform the phase 2 steps of the KSK rollover.  These are:
+#
+#
+sub ksk_phase2
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr = %$rrr;			# Rollrec hash.
+
+	my $krf;			# Rollrec's keyrec name.
+	my %krf;			# Keyrec hash.
+	my $krr;			# Keyrec reference.
+
+	my $ret;			# Result from command executions.
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_phase4()
+#
+# Purpose:	Perform the phase 4 steps of the KSK rollover.  These are:
+#
+#
+sub ksk_phase4
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr = %$rrr;			# Rollrec hash.
+
+	my $krf;			# Rollrec's keyrec name.
+	my %krf;			# Keyrec hash.
+	my $krr;			# Keyrec reference.
+
+	my $ret;			# Result from command executions.
+
+}
+
+###############################################################################
+
+#-----------------------------------------------------------------------------
 # Routine:	maxttl()
 #
 # Purpose:	Calculate the zone's maximum TTL value, based on the largest
@@ -866,12 +1152,12 @@ sub ttlexpire
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	newphase()
+# Routine:	zskphase()
 #
-# Purpose:	Moves a rollrec into the next phase, setting both the
+# Purpose:	Moves a rollrec into the next ZSK phase, setting both the
 #		phase number and the phase start time.
 #
-sub newphase
+sub zskphase
 {
 	my $rname = shift;				# Name of rollrec.
 	my $rrr	  = shift;				# Rollrec reference.
@@ -890,14 +1176,14 @@ sub newphase
 
 	if($phase == 1)
 	{
-		rollmgr_log(LOG_TMI,$rname,"starting rollover");
+		rollmgr_log(LOG_TMI,$rname,"starting ZSK rollover");
 	}
 	else
 	{
-		rollmgr_log(LOG_TMI,$rname,"moving to phase $phase");
+		rollmgr_log(LOG_TMI,$rname,"moving to ZSK phase $phase");
 	}
 
-	rollmgr_log(LOG_CURPHASE,$rname,"phase $phase");
+	rollmgr_log(LOG_PHASE,$rname,"ZSK phase $phase");
 
 	$rr{'curphase'} = $phase;
 	rollrec_setval($rname,"curphase",$phase);
@@ -927,12 +1213,12 @@ sub newphase
 	#
 	if($setrec->{'keyrec_type'} ne 'set')
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to phase $phase");
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to ZSK phase $phase");
 		return(0);
 	}
 	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to phase $phase");
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to ZSK phase $phase");
 		return(0);
 	}
 
@@ -953,7 +1239,98 @@ sub newphase
 	# Tell the log when the zone will expire, based on the lifespan.
 	#
 	$chronostr = timetrans($exptime);
-	rollmgr_log(LOG_INFO,$rname,"    expiration in $chronostr\n");
+	rollmgr_log(LOG_INFO,$rname,"    ZSK expiration in $chronostr\n");
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	kskphase()
+#
+# Purpose:	Moves a rollrec into the next phase of KSK rollover, setting
+#		both the phase number and the phase start time.
+#
+sub kskphase
+{
+	my $rname = shift;				# Name of rollrec.
+	my $rrr	  = shift;				# Rollrec reference.
+	my $phase = shift;				# New phase.
+
+	my %rr = %$rrr;					# Rollrec hash.
+
+	my $krname;					# Name of key's rollrec.
+	my $krec;					# Key's keyrec.
+
+	my $setrec;					# Set's keyrec.
+	my $setlist;					# Set's key list.
+
+	my $exptime;					# Key's time to expiry.
+	my $chronostr;					# Pretty rollover time.
+
+	if($phase == 1)
+	{
+		rollmgr_log(LOG_TMI,$rname,"starting KSK rollover");
+	}
+	else
+	{
+		rollmgr_log(LOG_TMI,$rname,"moving to KSK phase $phase");
+	}
+
+	rollmgr_log(LOG_PHASE,$rname,"KSK phase $phase");
+
+	$rr{'kskphase'} = $phase;
+	rollrec_setval($rname,"kskphase",$phase);
+	rollrec_settime($rname);
+	rollrec_write();
+
+#	display("kskphase $rname $phase");
+
+	#
+	# If we're at the start of a rollover, we'll log the expiration time.
+	#
+	return if($phase != 0);
+
+	#
+	# Get the rollin' KSK's keyrec for our zone.
+	#
+	$krname = $rr{'keyrec'};
+	$setrec = zonekeykr($rname,$krname,"kskcur");
+	if($setrec == 0)
+	{
+		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for the kskcur signing set in \"$krname\"");
+		return(0);
+	}
+
+	#
+	# Make sure we've got an actual set keyrec and keys.
+	#
+	if($setrec->{'keyrec_type'} ne 'set')
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to KSK phase $phase");
+		return(0);
+	}
+	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to KSK phase $phase");
+		return(0);
+	}
+
+	#
+	# Find the key with the shortest lifetime.
+	#
+	$setlist = $setrec->{'keys'};
+	foreach my $key (split / /, $setlist)
+	{
+		my $lifetime = keyrec_recval($key,'ksklife');
+		if(($exptime == 0) || ($lifetime < $exptime))
+		{
+			$exptime = $lifetime;
+		}
+	}
+
+	#
+	# Tell the log when the zone will expire, based on the lifespan.
+	#
+	$chronostr = timetrans($exptime);
+	rollmgr_log(LOG_INFO,$rname,"    KSK expiration in $chronostr\n");
 }
 
 #-----------------------------------------------------------------------------
@@ -2202,7 +2579,7 @@ sub rollnow
 		# the initial rollover waiting period and gets right to the
 		# nitty gritty of doing a rollover.
 		#
-		newphase($zone,$rrr,2);
+		zskphase($zone,$rrr,2);
 
 		#
 		# Write the rollrec file.
