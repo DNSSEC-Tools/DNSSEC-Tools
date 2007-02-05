@@ -9,6 +9,8 @@
 use Net::DNS;
 use Net::DNS::SEC;
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Validator;
+use Net::DNS::Packet;
 use Net::SMTP;
 use Getopt::Long qw(:config no_ignore_case_always);
 use Sys::Syslog;
@@ -30,8 +32,6 @@ my %opts = (
         c => 0
 );
 
-my $daemon = 1; # default is to run as a daemon
-
 ########################################################
 # main
 
@@ -40,11 +40,14 @@ GetOptions(\%opts,
              'h|help',
              'd|domain=s',
              't|sleeptime=i',
+             'w|hold_time=s',
              'v|verbose',
              'f|foreground|fg',
+             'S|single_run',
              'c|config',
              'o|outfile=s',
              's|smtp_server=s',
+             'r|resolv_conf_file=s',
              'n|named_conf_file=s',
              'k|dnsval_conf_file=s',
              'a|anchor_data_file=s',
@@ -67,6 +70,9 @@ my %dtconf = parseconfig();
 my $tafile = $opts{'a'} ? $opts{'a'} 
                         : $dtconf{'taanchorfile'};
                      
+my $resfile = $opts{'r'} ? $opts{'r'}
+                        : $dtconf{'taresolvconffile'};
+
 my $ncfile = $opts{'n'} ? $opts{'n'}
                         : $dtconf{'tanamedconffile'};
 
@@ -86,6 +92,9 @@ if (!$smtpserver) {
 my $sleeptime = $opts{'t'} ? $opts{'t'}
                            : $dtconf{'tasleeptime'};
 
+my $holdtime = $opts{'w'} ? $opts{'w'}
+                           : $dtconf{'taholdtime'};
+
 my @domains;
 push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
 my %revdomains;
@@ -99,15 +108,21 @@ my %active_refresh_times;
 my %rrsigdata;
 my %sleeptimes;
 my %zone_configfile_map;
+my $once;
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
 }
 
 if ($opts{'f'}) {
-    $daemon = 0;
+    $once = $opts{'S'};
     get_domains_keys(\%keystorage);
-    &checkkeys();
+    do {
+        my $newsleeptime = &checkkeys($sleeptime);
+        if (!$once) {
+            sleep($newsleeptime);
+        }
+    } while (!$once);
 } elsif ($opts{'c'}) {
     my $conffile = getconffile();
     my $didnconf = 0;
@@ -120,8 +135,10 @@ if ($opts{'f'}) {
     open(OUT,">$opts{'o'}") or die "unable to open \"$opts{'o'}\" for writing.";
     while(<CONF>) {
         next if (/^tasleeptime/ && ($opts{'t'}));
+        next if (/^tasholdime/ && ($opts{'w'}));
         next if (/^tasmtpserver/ && ($opts{'s'}));
         next if (/^tacontact/ && ($opts{'m'}));
+        next if (/^taresolvconffile/ && ($opts{'r'}));
         next if (/^tanamedconffile/ && ($opts{'n'}));
         next if (/^tadnsvalconffile/ && ($opts{'k'}));
         print OUT $_;
@@ -129,11 +146,17 @@ if ($opts{'f'}) {
     if ($opts{'t'}) {
         print OUT "tasleeptime\t" . $sleeptime . "\n";
     }
+    if ($opts{'w'}) {
+        print OUT "taholdtime\t" . $holdtime . "\n";
+    }
     if ($opts{'s'}) {
         print OUT "tasmtpserver\t" . $smtpserver . "\n";
     }
     if ($opts{'m'}) {
         print OUT "tacontact\t" . $contactaddr . "\n";
+    }
+    if ($opts{'r'}) {
+        print OUT "taresolvconffile\t" . $resfile . "\n";
     }
     if ($opts{'n'}) {
         print OUT "tanamedconffile\t" . $ncfile . "\n";
@@ -145,12 +168,15 @@ if ($opts{'f'}) {
     close (CONF);
 
 } else {
+    $once = $opts{'S'};
     get_domains_keys(\%keystorage);
     &daemonize;
-    while (1) {
+    do {
         my $newsleeptime = &checkkeys($sleeptime);
-        sleep($newsleeptime);
-    }
+        if (!$once) { 
+            sleep($newsleeptime);
+        }
+    } while (!$once);
 } 
 
 sub show_version {
@@ -177,7 +203,7 @@ sub checkkeys {
 
     foreach my $d (@domains) {
         my $query;
-        $query = query_authserver($d);
+        $query = resolve_and_check_dnskey($d);
 
 # check the RRSIG over the DNKSEY
         if ($query) {
@@ -205,7 +231,13 @@ sub checkkeys {
                 # later, will also check in file
                     if (!($newkeys{$d} eq $key)) {
                     
-                        $add_holddown_time = compute_add_holddown($ttl);
+                        if ($holdtime) {
+                            $add_holddown_time = $holdtime;
+                        } else {
+                            $add_holddown_time = compute_add_holddown($ttl);
+                        }
+#SK: What if there are multiple new keys added for a zone?
+
                 # %newkeys really need to contain the flags, proto, and algo
                         $newkeys{$d} = $key;
                         $keyholds{$key} = $add_holddown_time;
@@ -218,7 +250,7 @@ sub checkkeys {
             
         } else {
 # TODO see notes under Active Refresh for how to handle query failure
-            print "query failed for domain " . $d . ": " . $query->errorstring . "\n";
+            print "query failed for domain " . $d . "\n";
         }
     }
     if (%newkeys) {
@@ -231,6 +263,7 @@ sub checkkeys {
             if ($nowsecs >= $keyholds{$newkeys{$d}}) {
                 # notify about this key
                 push @newkeydomains, $d;
+# SK: need to remove this element from newkeys?
             }
         }
         foreach my $d (@newkeydomains) {
@@ -293,30 +326,13 @@ sub add_ta_dnsvalconf  {
 # I fix up the storage/passing of this data.
 # since all examples seen are 257 3 5, using that
     open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
-    open (CONF,$dvfile) or die "unable to read named.conf file.";
+    open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
     $/ = ";";
     while (<CONF>) {
-        my $domainfound;
-        s/\s;\s*$//;
-        s/[\n\r]/ /g;
-#        if (s/^\s*(\S*)\s*$pat\s*("*[^;]+")//) {
-        if (s/^\s*(\S*)\s*$pat\s*//) {
-            print TMP $1 . " $pat\n\n";
-            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-                my ($d, $val) = ($1, $2);
-                $val =~ s/[\n\r]//g;
-                if ($d eq $domain) {
-                    $domainfound = 1;
-                }
-                print TMP $d . " " . $val . "\n\n";
-            }
-            if ($domainfound) {
-                print TMP $newkeyentry;
-            }
-        
-    #        print TMP $newkeyentry;
-    #        print TMP $2;
-            print TMP "\n;\n";
+        if (/^(\s*\S*\s*)$pat(\s*)("*[^;]+")/) {
+            print TMP $1 . $pat . $2;
+            print TMP $newkeyentry . $2;
+            print TMP $3 . ";";
         } else {
             print TMP $_;
         }
@@ -329,6 +345,7 @@ sub add_ta_dnsvalconf  {
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
 
 }
+
 
 sub get_domains_keys {
 # using globals %keystorage and @domains, is this evil?
@@ -365,7 +382,7 @@ sub get_domains_keys {
         my $query;
         my $orgttl;
         my $refresh_time;
-        $query = query_authserver($d);
+        $query = resolve_and_check_dnskey($d);
         if ($query) {
             foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
                 $orgttl = $rrsigrec->orgttl;
@@ -390,6 +407,26 @@ sub get_domains_keys {
     }
     close (FH);
 }
+
+#########################################################
+#
+# resolve_and_check_dnskey
+# called by checkkeys, queries a zone to get the 
+# DNSKEY record; returns an answer only if it was validated
+# 
+sub resolve_and_check_dnskey {
+    my ($d) = @_;
+    my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
+                                                 dnsval_conf => $dvfile);
+    my $r = $validator->res_query($d, "IN", "DNSKEY");
+    if ($r && $validator->isvalidated) {
+        my ($pkt, $err) = new Net::DNS::Packet(\$r);
+        if (!$err) {
+            return $pkt;
+        }
+    }
+}
+
 
 #########################################################
 #
@@ -746,8 +783,7 @@ as fetched from the zone where they are defined. If mismatches
 are detected, the daemon notifies the contact person defined in
 the config file or on the command line by mail.
 
-This script can also be run in the foreground (-f) to run this same check once
-manually.
+The same check can be run once manually (-1) and in the foreground (-f). 
 
 This script can also be used to set up configuration data in the file
 dnssec-tools.conf for later use by the daemon, making fewer command
@@ -765,6 +801,10 @@ dnsval.conf in that file if necessary.
 
 Run in the foreground
 
+=item -S
+
+Run only once 
+
 =item -c
 
 Create a configure file for trustman from the command line options given.
@@ -772,6 +812,10 @@ Create a configure file for trustman from the command line options given.
 =item -o
 
 Output file for configuration
+
+=item -r 
+
+A resolv.conf file to read
 
 =item -k 
 
@@ -788,6 +832,10 @@ The domain to check (supersedes configuration file)
 =item -t
 
 The number of seconds to sleep between checks. Default is 3600 (one hour)
+
+=item -w
+
+The value of the hold down timer
 
 =item -m
 
