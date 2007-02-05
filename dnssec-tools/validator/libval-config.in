@@ -20,6 +20,9 @@ lvc_LDFLAGS="@LDFLAGS@"
 lvc_LIBS="@LIBS@"
 LIBVAL_SUFFIX=@LIBVAL_SUFFIX@
 
+lvc_RESOLV_CONF="@VAL_RESOLV_CONF@"
+lvc_ROOT_HINTS="@VAL_ROOT_HINTS@"
+lvc_DNSVAL="@VAL_CONFIGURATION_FILE@"
 
 if test "x$1" = "x"; then
   usage="yes"
@@ -75,6 +78,16 @@ else
     --external-libs)
       echo $lvc_LDFLAGS $lvc_LIBS
       ;;
+    ####################################################
+    --resolver-config|--res*)
+        echo $lvc_RESOLV_CONF
+        ;;
+    --root-hints|--roo*)
+        echo $lvc_ROOT_HINTS
+        ;;
+    --dnsval-config|--dns*)
+        echo $lvc_DNSVAL
+        ;;
     ####################################################
     --version|--ver*)
       echo @VERSION@
@@ -132,5 +145,8 @@ if test "x$usage" = "xyes"; then
   echo "    --configure-options   display original configure arguments"
   echo "    --prefix              display the installation prefix"
   echo ""
+  echo "    --resolver-config     display path to resolver configuration"
+  echo "    --root-hints          display path to root hints file"
+  echo "    --dnsval-config       display path to dnsval configuration"
   exit
 fi  

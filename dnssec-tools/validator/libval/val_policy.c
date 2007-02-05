@@ -76,7 +76,7 @@ resolv_conf_get(void)
             atexit_reg = 1;
             atexit(policy_cleanup);
         }
-        resolv_conf = strdup(RESOLV_CONF);
+        resolv_conf = strdup(VAL_RESOLV_CONF);
     }
 
     return strdup(resolv_conf);
@@ -110,7 +110,7 @@ root_hints_get(void)
             atexit(policy_cleanup);
         }
 
-        root_hints = strdup(ROOT_HINTS);
+        root_hints = strdup(VAL_ROOT_HINTS);
     }
 
     return strdup(root_hints);

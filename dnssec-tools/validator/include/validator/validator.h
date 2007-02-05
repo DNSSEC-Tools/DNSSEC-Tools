@@ -58,9 +58,6 @@ extern          "C" {
 #endif
 
 #define DNS_PORT                53
-#define VAL_CONFIGURATION_FILE  "/etc/dnsval.conf"
-#define RESOLV_CONF             "/etc/resolv.conf"
-#define ROOT_HINTS              "/etc/root.hints"
 #define VAL_LOG_OPTIONS LOG_PID
 
 #define VALIDATOR_LOG_PORT 1053
