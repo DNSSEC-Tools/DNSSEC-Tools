@@ -33,21 +33,21 @@ dnl ----------------------------------------------------------------------
 dnl
 VAL_RESOLV_CONF=/etc/resolv.conf
 AC_ARG_WITH(resolv-conf,
-[  --with-resolv-conf=FILE    resolver config file (/etc/resolv.conf).],
+[  --with-resolv-conf=FILE resolver config file (/etc/resolv.conf).],
     [VAL_RESOLV_CONF=$with_resolv_conf])
 AC_DEFINE_UNQUOTED(VAL_RESOLV_CONF,"$VAL_RESOLV_CONF", [resolver config file])
 AC_SUBST(VAL_RESOLV_CONF)
 
 VAL_ROOT_HINTS=/etc/root.hints
 AC_ARG_WITH(root-hints,
-[  --with-root-hints=FILE    root.hints config file (/etc/root.hints).],
+[  --with-root-hints=FILE  root.hints config file (/etc/root.hints).],
     [VAL_ROOT_HINTS=$with_root_hints])
 AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS", ["root hints file"])
 AC_SUBST(VAL_ROOT_HINTS)
 
 VAL_CONFIGURATION_FILE=/etc/dnsval.conf
 AC_ARG_WITH(dnsval-conf,
-[  --with-dnsval-conf=FILE    dnsval config file (/etc/dnsval.conf).],
+[  --with-dnsval-conf=FILE dnsval config file (/etc/dnsval.conf).],
     [VAL_CONFIGURATION_FILE=$with_dnsval_conf])
 AC_DEFINE_UNQUOTED(VAL_CONFIGURATION_FILE,"$VAL_CONFIGURATION_FILE", [dnsval configuration file])
 AC_SUBST(VAL_CONFIGURATION_FILE)
