@@ -347,11 +347,11 @@ dnl ----------------------------------------------------------------------
 
 AC_CONFIG_FILES([
  Makefile:Makefile.top:Makefile.in
- libval-config:libval-config.in
  libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot
  libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot
  doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot
  apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot
 ])
+AC_CONFIG_FILES([libval-config:libval-config.in], [chmod +x libval-config])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT

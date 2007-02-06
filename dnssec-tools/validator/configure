@@ -23579,7 +23579,9 @@ _ACEOF
 esac
 
 
-                                                            ac_config_files="$ac_config_files Makefile:Makefile.top:Makefile.in libval-config:libval-config.in libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot"
+                                                  ac_config_files="$ac_config_files Makefile:Makefile.top:Makefile.in libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot"
+
+          ac_config_files="$ac_config_files libval-config:libval-config.in"
 
           ac_config_commands="$ac_config_commands default"
 
@@ -24112,11 +24114,11 @@ do
   case "$ac_config_target" in
   # Handling of arguments.
   "Makefile" ) CONFIG_FILES="$CONFIG_FILES Makefile:Makefile.top:Makefile.in" ;;
-  "libval-config" ) CONFIG_FILES="$CONFIG_FILES libval-config:libval-config.in" ;;
   "libsres/Makefile" ) CONFIG_FILES="$CONFIG_FILES libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot" ;;
   "libval/Makefile" ) CONFIG_FILES="$CONFIG_FILES libval/Makefile:Makefile.top:libval/Makefile.in:Makefile.bot" ;;
   "doc/Makefile" ) CONFIG_FILES="$CONFIG_FILES doc/Makefile:Makefile.top:doc/Makefile.in:Makefile.bot" ;;
   "apps/Makefile" ) CONFIG_FILES="$CONFIG_FILES apps/Makefile:Makefile.top:apps/Makefile.in:Makefile.bot" ;;
+  "libval-config" ) CONFIG_FILES="$CONFIG_FILES libval-config:libval-config.in" ;;
   "default" ) CONFIG_COMMANDS="$CONFIG_COMMANDS default" ;;
   "include/validator-config.h" ) CONFIG_HEADERS="$CONFIG_HEADERS include/validator-config.h" ;;
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
@@ -24492,6 +24494,10 @@ s,@INSTALL@,$ac_INSTALL,;t t
     rm -f $tmp/out
   fi
 
+  # Run the commands associated with the file.
+  case $ac_file in
+    libval-config ) chmod +x libval-config ;;
+  esac
 done
 _ACEOF
 cat >>$CONFIG_STATUS <<\_ACEOF
