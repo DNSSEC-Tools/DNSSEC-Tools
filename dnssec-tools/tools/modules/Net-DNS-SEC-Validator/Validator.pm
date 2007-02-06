@@ -135,7 +135,11 @@ sub switch_policy {
 	    return $self->policy($label);
 	} else {
 	    $self->{_ctx_ptr} = 
-		Net::DNS::SEC::Validator::_create_context_with_conf($label);
+		Net::DNS::SEC::Validator::_create_context_with_conf(
+	           $self->{policy},
+	           $self->{dnsval_conf},
+	           $self->{resolv_conf},
+    	           $self->{root_hints});
 	    $self->{policy} = $label;
         }
     }
@@ -148,7 +152,13 @@ sub policy {
 
     if (defined $label and $label ne $self->{policy}) {
 	# will discard old context and create new one with given label
-	$self->{_ctx_ptr} = Net::DNS::SEC::Validator::_create_context($label);
+	$self->{_ctx_ptr} = 
+	    Net::DNS::SEC::Validator::_create_context_with_conf(
+               $self->{policy},
+	       $self->{dnsval_conf},
+	       $self->{resolv_conf},
+    	       $self->{root_hints});
+
 	$self->{policy} = $label;    
     }
     return $self->{policy};
