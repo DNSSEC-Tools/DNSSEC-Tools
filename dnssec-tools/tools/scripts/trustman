@@ -255,6 +255,9 @@ sub checkkeys {
     }
     if (%newkeys) {
         my @newkeydomains;
+        my $flags = "257";
+        my $proto = "3";
+        my $algo = "5";
         # if add_holddown_time has been reached, notify
         my $now = localtime();
         my $nowsecs = str2time($now);
@@ -263,7 +266,6 @@ sub checkkeys {
             if ($nowsecs >= $keyholds{$newkeys{$d}}) {
                 # notify about this key
                 push @newkeydomains, $d;
-# SK: need to remove this element from newkeys?
             }
         }
         foreach my $d (@newkeydomains) {
@@ -275,12 +277,22 @@ sub checkkeys {
             }
 # not quite ready for primetime....
             if ($zone_configfile_map{$d} eq $dvfile) {
-                add_ta_dnsvalconf($d, $newkeys{$d});
+                add_ta_dnsvalconf($d, $flags, $proto, $algo, $newkeys{$d});
             }
         }
         if (($contactaddr) && (@newkeydomains)) { # mail it
             mailcontact(0,$smtpserver,$contactaddr,@newkeydomains);
         }
+        foreach my $d (@newkeydomains) {
+            push @{$keystorage{$d}},
+		                        { flags => $flags,
+			                      protocol => $proto,
+			                      algorithm => $algo,
+			                      key => $newkeys{$d}};
+            delete $keyholds{$newkeys{$d}};
+            delete $newkeys{$d}; 
+        }
+        
     }
     foreach my $d (keys %sleeptimes) {
         if ($sleep > $sleeptimes{$d}) {
@@ -318,8 +330,8 @@ sub add_ta_namedconf  {
 }
 
 sub add_ta_dnsvalconf  {
-    my ($domain, $key) = @_;
-    my $newkeyentry = $domain . ". \"257 3 5 " . $key . "\"\n";
+    my ($domain, $flags, $proto, $algo, $key) = @_;
+    my $newkeyentry = $domain . ". \"$flags $proto $algo " . $key . "\"\n";
     my $pat = "trust-anchor";
 
 # blatantly cheating here with the flags, proto and algo until
@@ -343,7 +355,8 @@ sub add_ta_dnsvalconf  {
     my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
-
+    print "Added following key to $dvfile:\n";
+    print $newkeyentry . "\n";
 }
 
 
@@ -425,6 +438,7 @@ sub resolve_and_check_dnskey {
             return $pkt;
         }
     }
+    return undef;
 }
 
 
@@ -783,7 +797,7 @@ as fetched from the zone where they are defined. If mismatches
 are detected, the daemon notifies the contact person defined in
 the config file or on the command line by mail.
 
-The same check can be run once manually (-1) and in the foreground (-f). 
+The same check can be run once manually (-S) and in the foreground (-f). 
 
 This script can also be used to set up configuration data in the file
 dnssec-tools.conf for later use by the daemon, making fewer command
