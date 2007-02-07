@@ -1,4 +1,5 @@
 SUBDIRS=libsres libval apps doc
+
 INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
 
 all: subdirmake
@@ -25,7 +26,7 @@ nextstepinstructions:
 	@echo "**********************************************************************"
 	@echo ""
     
-install: makedirectories subdirinstall nextstepinstructions
+install: makedirectories localinstall subdirinstall nextstepinstructions
 
 clean: subdirclean
 
@@ -57,6 +58,9 @@ subdirinstall:
 	     exit 1 ; \
 	  fi  \
          done
+
+localinstall:
+	$(INSTALL) libval-config $(bindir)
 
 subdirclean:
 	@for i in $(SUBDIRS) ; do \

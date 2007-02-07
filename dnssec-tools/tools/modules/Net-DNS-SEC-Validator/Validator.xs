@@ -287,12 +287,13 @@ pval_create_context_with_conf(policy,dnsval_conf,resolv_conf,root_hints)
 	CODE:
 	{
 	ValContext *vc_ptr=NULL;
-
+	//	fprintf(stderr,"pval_create_context_with_conf:%s:%s:%s\n",dnsval_conf,resolv_conf,root_hints);
 	int result = val_create_context_with_conf(policy, 
 						  dnsval_conf,
 						  resolv_conf,
 						  root_hints,
 						  &vc_ptr);
+	//	fprintf(stderr,"pval_create_context_with_conf:%lx\n",vc_ptr);
 
 	RETVAL = (result ? NULL : vc_ptr);
 	}
