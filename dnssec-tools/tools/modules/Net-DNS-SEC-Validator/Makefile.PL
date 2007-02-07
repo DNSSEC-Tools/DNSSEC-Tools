@@ -22,19 +22,16 @@ sub InitMakeParams {
 		  XSPROTOARG   => '-noprototypes', 	# XXX remove later?
 		  VERSION_FROM => 'Validator.pm',
 		  );
-    # test for libval install - XXX this is not portable or complete
-    my $ldflags;
-    if (-e "/usr/lib/libval-threads.so") {
-	$ldflags = "-L/usr/lib -lsres -lval-threads";
-    } elsif (-e "/usr/lib/libval.so") {
-	$ldflags = "-L/usr/lib -lsres -lval";
-    } elsif (-e "/usr/local/lib/libval-threads.so") {
-	$ldflags = "-L/usr/local/lib -lsres -lval-threads";
-    } elsif (-e "/usr/lib/local/libval.so") {
-	$ldflags = "-L/usr/local/lib -lsres -lval";
-    }
+    # test for libval install and get link/compile info
+    my $ldflags = `libval-config --libs`;
+    die "error: unable to determine link flags (check validator install)" 
+	if $? or not $ldflags;
 	
-    $Params{'LIBS'} = "-lnsl -lcrypto $ldflags ";
-    $Params{'CCFLAGS'} = "-I/usr/local/include ";
+    my $cflags = `libval-config --cflags`;
+    die "error: unable to determine complile flags (check validator install)" 
+	if $? or not $ldflags;
+	
+    $Params{'LIBS'} = $ldflags;
+    $Params{'CCFLAGS'} = $cflags;
     return(%Params);
 }
