@@ -54,18 +54,21 @@
 #define P_EXPIRED_SIGS              7
 #define P_USE_TCP                   8
 #define P_ZONE_SECURITY_EXPECTATION 9
-#define MAX_POL_TOKEN               10
+#define P_BASE_LAST                 P_ZONE_SECURITY_EXPECTATION
 #ifdef LIBVAL_NSEC3
-#define P_NSEC3_MAX_ITER            MAX_POL_TOKEN
-#undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               P_NSEC3_MAX_ITER+1
+#define P_NSEC3_MAX_ITER            (P_BASE_LAST+1)
+#define NSEC3_POL_COUNT             1
+#else
+#define NSEC3_POL_COUNT             0
 #endif
 #ifdef DLV
-#define P_DLV_TRUST_POINTS          MAX_POL_TOKEN
-#define P_DLV_MAX_VALIDATION_LINKS  MAX_POL_TOKEN+1
-#undef  MAX_POL_TOKEN
-#define MAX_POL_TOKEN               P_DLV_MAX_VALIDATION_LINKS+1
+#define P_DLV_TRUST_POINTS          (P_BASE_LAST+NSEC3_POL_COUNT+1) 
+#define P_DLV_MAX_VALIDATION_LINKS  (P_BASE_LAST+NSEC3_POL_COUNT+2) 
+#define DLV_POL_COUNT               2
+#else
+#define DLV_POL_COUNT               0
 #endif
+#define MAX_POL_TOKEN               (P_BASE_LAST+NSEC3_POL_COUNT+DLV_POL_COUNT+1) 
 
 #define ZONE_SE_IGNORE_MSG     "ignore"
 #define ZONE_SE_TRUSTED_MSG    "trusted"
