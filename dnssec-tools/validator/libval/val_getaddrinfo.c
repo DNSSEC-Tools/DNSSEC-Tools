@@ -703,9 +703,6 @@ get_addrinfo_from_result(const val_context_t * ctx,
             }
         } else if (result->val_rc_proof_count) {
             if (result->val_rc_status == VAL_NONEXISTENT_NAME ||
-#ifdef LIBVAL_NSEC3
-                result->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT ||
-#endif
                 result->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
 
                     retval = EAI_NONAME;
@@ -1379,9 +1376,6 @@ val_getnameinfo(val_context_t * ctx,
                         (res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
                         val_rnc_status = EAI_NODATA;
                     } else if ((res->val_rc_status == VAL_NONEXISTENT_NAME) ||
-#ifdef LIBVAL_NSEC3
-                               (res->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) ||
-#endif
                                (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
                         val_rnc_status = EAI_NONAME;
                     }
@@ -1644,9 +1638,6 @@ val_gethostbyaddr_r(val_context_t * ctx,
                 (res->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
                     val_rnc_status = NO_DATA;
             } else if ((res->val_rc_status == VAL_NONEXISTENT_NAME) ||
-#ifdef LIBVAL_NSEC3
-                       (res->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) ||
-#endif
                        (res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN)) {
                    val_rnc_status = HOST_NOT_FOUND;
             }

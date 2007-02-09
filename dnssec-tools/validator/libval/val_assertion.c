@@ -2302,6 +2302,22 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     return retval;
 }
 
+#define GET_HEADER_STATUS_CODE(qc_proof, status_code) do {\
+    if (qc_proof &&\
+        qc_proof->val_ac_rrset &&\
+        qc_proof->val_ac_rrset->val_msg_header) {\
+        HEADER *hp = (HEADER *) qc_proof->val_ac_rrset->val_msg_header;\
+        if (hp->rcode == ns_r_noerror) {\
+            status_code = VAL_NONEXISTENT_TYPE_NOCHAIN;\
+        } else if (hp->rcode == ns_r_nxdomain) {\
+            status_code = VAL_NONEXISTENT_NAME_NOCHAIN;\
+        } else\
+            status_code = VAL_ERROR;\
+    } else { \
+        status_code = VAL_ERROR;\
+    }\
+}while (0)
+
 
 static int
 prove_nonexistence(val_context_t * ctx,
@@ -2373,21 +2389,7 @@ prove_nonexistence(val_context_t * ctx,
         /*
          * use the error code as status 
          */
-        if (qc_proof &&
-            qc_proof->val_ac_rrset &&
-            qc_proof->val_ac_rrset->val_msg_header) {
-
-            HEADER         *hp =
-                (HEADER *) qc_proof->val_ac_rrset->val_msg_header;
-            if (hp->rcode == ns_r_noerror) {
-                *status = VAL_NONEXISTENT_TYPE_NOCHAIN;
-            } else if (hp->rcode == ns_r_nxdomain) {
-                *status = VAL_NONEXISTENT_NAME_NOCHAIN;
-            } else
-                *status = VAL_ERROR;
-        } else {
-            *status = VAL_ERROR;
-        }
+        GET_HEADER_STATUS_CODE(qc_proof, *status);
         /*
          * Collect all other proofs 
          */
@@ -2451,6 +2453,12 @@ prove_nonexistence(val_context_t * ctx,
                              qtype_h, soa_name_n, status)))
             goto err;
 
+        /*
+         * If this is opt-out use the error code as status 
+         */
+        if (*status == VAL_NONEXISTENT_NAME_OPTOUT) {
+            GET_HEADER_STATUS_CODE(qc_proof, *status);
+        }
     }
 #endif
 

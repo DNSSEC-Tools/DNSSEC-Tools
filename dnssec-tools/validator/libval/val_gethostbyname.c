@@ -387,9 +387,6 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
         /* save the non-existence state */
         if (res->val_rc_proof_count) {
             if (res->val_rc_status == VAL_NONEXISTENT_NAME ||
-#ifdef LIBVAL_NSEC3
-                res->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT ||
-#endif
                 res->val_rc_status == VAL_NONEXISTENT_NAME_NOCHAIN) {
 
                 *h_errnop = HOST_NOT_FOUND;
