@@ -619,7 +619,7 @@ p_val_status(val_status_t err)
         break;
 #ifdef LIBVAL_NSEC3
     case VAL_NONEXISTENT_NAME_OPTOUT:
-        return "VAL_NONEXISTENT_NAME";
+        return "VAL_NONEXISTENT_NAME_OPTOUT";
         break;
 #endif
     case VAL_ERROR:

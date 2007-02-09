@@ -409,9 +409,6 @@ compose_answer(const u_char * name_n,
                 break;
 
             case VAL_NONEXISTENT_NAME:
-#ifdef LIBVAL_NSEC3
-            case VAL_NONEXISTENT_NAME_OPTOUT:
-#endif
             case VAL_NONEXISTENT_NAME_NOCHAIN: 
                 hp->rcode = ns_r_nxdomain;
                 break;
