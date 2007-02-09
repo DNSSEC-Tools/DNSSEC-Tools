@@ -84,11 +84,11 @@ sub dt_adminmail
 
 =head1 NAME
 
-Net::DNS::SEC::Tools::dnssec-tools - General routines for the DNSSEC-Tools package.
+Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools package.
 
 =head1 SYNOPSIS
 
-  use Net::DNS::SEC::Tools::dnssec-tools;
+  use Net::DNS::SEC::Tools::dnssectools;
 
   dt_adminmail($subject,$msgbody);
 
@@ -101,7 +101,7 @@ here:  general interfaces, logging interfaces, and communications interfaces.
 
 =head1 GENERAL INTERFACES
 
-The interfaces to the B<Net::DNS::SEC::Tools::dnssec-tools> module are given
+The interfaces to the B<Net::DNS::SEC::Tools::dnssectools> module are given
 below.
 
 =over 4
