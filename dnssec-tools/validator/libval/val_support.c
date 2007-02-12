@@ -907,7 +907,8 @@ check_label_count(struct rrset_rec *the_set,
 int
 prepare_empty_nxdomain(struct rrset_rec **answers,
                        const u_int8_t * query_name_n,
-                       u_int16_t query_type_h, u_int16_t query_class_h)
+                       u_int16_t query_type_h, u_int16_t query_class_h,
+                       u_int8_t       *hptr)
 {
     size_t          length = wire_name_length(query_name_n);
 
@@ -931,6 +932,21 @@ prepare_empty_nxdomain(struct rrset_rec **answers,
     }
 
     memcpy((*answers)->rrs.val_rrset_name_n, query_name_n, length);
+    if (hptr) {
+        (*answers)->rrs.val_msg_header =
+            (u_int8_t *) MALLOC(sizeof(HEADER) * sizeof(u_int8_t));
+        if ((*answers)->rrs.val_msg_header == NULL) {
+            FREE((*answers)->rrs.val_rrset_name_n);
+            FREE(*answers);
+            *answers = NULL;
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy((*answers)->rrs.val_msg_header, hptr, sizeof(HEADER));
+        (*answers)->rrs.val_msg_headerlen = sizeof(HEADER);
+    } else {
+        (*answers)->rrs.val_msg_header = NULL;
+        (*answers)->rrs.val_msg_headerlen = 0;
+    }
     (*answers)->rrs.val_rrset_type_h = query_type_h;
     (*answers)->rrs.val_rrset_class_h = query_class_h;
     (*answers)->rrs.val_rrset_ttl_h = 0;
@@ -1598,7 +1614,7 @@ copy_rrset_rec(struct rrset_rec *rr_set)
     /*
      * Copy the val_rrset members 
      */
-    if (rr_set->rrs.val_msg_header) {
+    if (rr_set->rrs.val_msg_header && rr_set->rrs.val_msg_headerlen) {
         copy_set->rrs.val_msg_headerlen = rr_set->rrs.val_msg_headerlen;
         copy_set->rrs.val_msg_header =
             (u_int8_t *) MALLOC(rr_set->rrs.val_msg_headerlen *

@@ -122,7 +122,8 @@ int             check_label_count(struct rrset_rec *the_set,
 int             prepare_empty_nxdomain(struct rrset_rec **answers,
                                        const u_int8_t * query_name_n,
                                        u_int16_t query_type_h,
-                                       u_int16_t query_class_h);
+                                       u_int16_t query_class_h,
+                                       u_int8_t       *hptr);
 int             decompress(u_int8_t ** rdata,
                            u_int8_t * response,
                            int rdata_index,
