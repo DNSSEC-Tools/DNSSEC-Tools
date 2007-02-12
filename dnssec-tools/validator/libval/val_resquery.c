@@ -1007,7 +1007,7 @@ digest_response(val_context_t * context,
          * Create a dummy answer record to handle this.  
          */
         return prepare_empty_nxdomain(&di_response->di_answers, query_name_n, query_type_h,
-                                      query_class_h);
+                                      query_class_h, hptr);
     }
 
     /*
