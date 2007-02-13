@@ -10,11 +10,16 @@ SRC=  	val_resquery.c \
 	crypto/val_dsasha1.c
 
 # can't use gmake conventions to translate SRC -> OBJ for portability
-OBJ=  	validator_driver.o \
+VAL_OBJ= validator_driver.o \
+	validator_selftest.o 
+VAL_LOBJ= validator_driver.lo \
+	validator_selftest.lo
+
+ALL_OBJ= $(VAL_OBJ) \
 	getaddr.o \
 	gethost.o
 
-LOBJ=   validator_driver.lo \
+ALL_LOBJ= $(VAL_LOBJ) \
 	getaddr.lo \
 	gethost.lo
 
@@ -25,10 +30,10 @@ GETADDR=getaddr
 all: $(VALIDATOR) $(GETHOST) $(GETADDR)
 
 clean:
-	$(RM) -f $(LOBJ) $(OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR)
+	$(RM) -f $(ALL_LOBJ) $(ALL_OBJ) $(VALIDATOR) $(GETHOST) $(GETADDR)
 
-$(VALIDATOR): validator_driver.lo $(LOCALLIBS)
-	$(LIBTOOLLD) -o $@ validator_driver.lo $(LDFLAGS) $(LIBS)
+$(VALIDATOR): $(VAL_OBJ) $(LOCALLIBS)
+	$(LIBTOOLLD) -o $@ $(VAL_OBJ) $(LDFLAGS) $(LIBS)
 
 $(GETHOST): gethost.lo $(LOCALLIBS)
 	$(LIBTOOLLD) -o $@ gethost.lo $(LDFLAGS) $(LIBS)
