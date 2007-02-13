@@ -53,7 +53,11 @@ AC_ARG_WITH(dnsval-conf,
 AC_DEFINE_UNQUOTED(VAL_CONFIGURATION_FILE,"$VAL_CONFIGURATION_FILE", [dnsval configuration file])
 AC_SUBST(VAL_CONFIGURATION_FILE)
 
-VALIDATOR_TESTCASES=$prefix/etc/dnssec/validator-testcases
+if test "x$prefix" = "xNONE" ; then
+   VALIDATOR_TESTCASES=$ac_default_prefix/etc/dnssec/validator-testcases
+else
+   VALIDATOR_TESTCASES=$prefix/etc/dnssec/validator-testcases
+fi
 AC_DEFINE_UNQUOTED(VALIDATOR_TESTCASES,"$VALIDATOR_TESTCASES", [validator testcases configuration file])
 AC_SUBST(VALIDATOR_TESTCASES)
 
