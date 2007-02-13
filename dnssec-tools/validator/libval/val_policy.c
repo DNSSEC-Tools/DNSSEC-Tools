@@ -37,7 +37,7 @@
 /*
  * forward declaration 
  */
-static int      get_token(FILE * conf_ptr,
+int      val_get_token(FILE * conf_ptr,
                           int *line_number,
                           char *conf_token,
                           int conf_limit,
@@ -228,7 +228,7 @@ parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT))) {
             goto err;
         }
@@ -254,7 +254,7 @@ parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (feof(fp) && !endst) {
@@ -473,7 +473,7 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (endst && (strlen(token) == 1))
@@ -493,7 +493,7 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (feof(fp) && !endst) {
@@ -603,7 +603,7 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (endst && (strlen(token) == 1))
@@ -622,7 +622,7 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             goto err;
         if (feof(fp) && !endst) {
@@ -752,8 +752,8 @@ free_dlv_max_links(policy_entry_t * pol_entry)
 	(*line_number)++;\
 } while(0)
 
-static int
-get_token(FILE * conf_ptr,
+int
+val_get_token(FILE * conf_ptr,
           int *line_number,
           char *conf_token,
           int conf_limit, int *endst, char comment_c, char endstmt_c)
@@ -779,6 +779,8 @@ get_token(FILE * conf_ptr,
                 (*line_number)++;
             }
         }
+        if (c == EOF)
+            return VAL_NO_ERROR;
 
         conf_token[i++] = c;
         /*
@@ -939,7 +941,7 @@ get_next_policy_fragment(FILE * fp, char *scope,
 
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT)))
             return retval;
         if (feof(fp))
@@ -967,7 +969,7 @@ get_next_policy_fragment(FILE * fp, char *scope,
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, line_number, token, sizeof(token), &endst,
+             val_get_token(fp, line_number, token, sizeof(token), &endst,
                        CONF_COMMENT, CONF_END_STMT))) {
             FREE(label);
             return retval;
@@ -1106,19 +1108,15 @@ store_policy_overrides(val_context_t * ctx,
     return VAL_NO_ERROR;
 }
 
-void
-destroy_valpol(val_context_t * ctx)
+static void
+destroy_valpolovr(struct policy_overrides **po)
 {
-    int             i;
     struct policy_overrides *cur, *prev;
 
-    if (ctx == NULL)
+    if ((NULL == po) || (NULL == *po))
         return;
 
-    for (i = 0; i < MAX_POL_TOKEN; i++)
-        ctx->e_pol[i] = NULL;
-
-    cur = ctx->pol_overrides;
+    cur = *po;
     while (cur) {
         struct policy_list *plist, *plist_next;
 
@@ -1134,8 +1132,22 @@ destroy_valpol(val_context_t * ctx)
         }
         FREE(prev);
     }
+    *po = NULL;
+}
 
-    ctx->pol_overrides = NULL;
+void
+destroy_valpol(val_context_t * ctx)
+{
+    int             i;
+
+    if (ctx == NULL)
+        return;
+
+    for (i = 0; i < MAX_POL_TOKEN; i++)
+        ctx->e_pol[i] = NULL;
+
+    destroy_valpolovr(&ctx->pol_overrides);
+
     ctx->cur_override = NULL;
 
 }
@@ -1156,7 +1168,6 @@ read_val_config_file(val_context_t * ctx, char *scope)
     int             retval;
     int             line_number = 1;
     struct policy_overrides *overrides = NULL;
-    struct policy_overrides *cur, *prev;
     struct stat sb;
    
     if (ctx == NULL)
@@ -1215,29 +1226,9 @@ read_val_config_file(val_context_t * ctx, char *scope)
             /*
              * Use the first policy as the default (only) policy 
              */
-            if (overrides) {
-                cur = overrides->next;
-                while (cur) {
-                    struct policy_list *plist, *plist_next;
-
-                    prev = cur;
-                    cur = cur->next;
-
-                    FREE(prev->label);
-                    for (plist = prev->plist; plist; plist = plist_next) {
-                        plist_next = plist->next;
-                        if ((plist->pol != NULL) &&
-                            (plist->index < MAX_POL_TOKEN))
-                            conf_elem_array[plist->index].
-                                free(&(plist->pol));
-                        FREE(plist);
-                    }
-                    FREE(prev);
-                }
-                overrides->next = NULL;
-            }
+            if (overrides)
+                destroy_valpolovr(&overrides->next);
         }
-
     }
 
     /*
@@ -1496,7 +1487,7 @@ read_root_hints_file(val_context_t * ctx)
      */
     if (VAL_NO_ERROR !=
         (retval =
-         get_token(fp, &line_number, token, sizeof(token), &endst,
+         val_get_token(fp, &line_number, token, sizeof(token), &endst,
                    ZONE_COMMENT, ZONE_END_STMT))) {
         fclose(fp);
         return retval;
@@ -1513,7 +1504,7 @@ read_root_hints_file(val_context_t * ctx)
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, sizeof(token), &endst,
+             val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1528,7 +1519,7 @@ read_root_hints_file(val_context_t * ctx)
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, sizeof(token), &endst,
+             val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1544,7 +1535,7 @@ read_root_hints_file(val_context_t * ctx)
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, sizeof(token), &endst,
+             val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1557,7 +1548,7 @@ read_root_hints_file(val_context_t * ctx)
             goto err;
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, sizeof(token), &endst,
+             val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
@@ -1605,7 +1596,7 @@ read_root_hints_file(val_context_t * ctx)
          */
         if (VAL_NO_ERROR !=
             (retval =
-             get_token(fp, &line_number, token, sizeof(token), &endst,
+             val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
             fclose(fp);
             return retval;
