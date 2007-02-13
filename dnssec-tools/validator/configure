@@ -19306,7 +19306,11 @@ _ACEOF
 
 
 
-VALIDATOR_TESTCASES=$prefix/etc/dnssec/validator-testcases
+if test "x$prefix" = "xNONE" ; then
+   VALIDATOR_TESTCASES=$ac_default_prefix/etc/dnssec/validator-testcases
+else
+   VALIDATOR_TESTCASES=$prefix/etc/dnssec/validator-testcases
+fi
 
 cat >>confdefs.h <<_ACEOF
 #define VALIDATOR_TESTCASES "$VALIDATOR_TESTCASES"
