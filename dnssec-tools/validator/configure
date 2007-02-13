@@ -464,7 +464,7 @@ ac_includes_default="\
 # include <unistd.h>
 #endif"
 
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE target target_cpu target_vendor target_os CONFIGURE_OPTIONS VAL_RESOLV_CONF VAL_ROOT_HINTS VAL_CONFIGURATION_FILE PERLARGS LIBVAL_SUFFIX DEVFLAGS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE target target_cpu target_vendor target_os CONFIGURE_OPTIONS VAL_RESOLV_CONF VAL_ROOT_HINTS VAL_CONFIGURATION_FILE VALIDATOR_TESTCASES PERLARGS LIBVAL_SUFFIX DEVFLAGS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -19267,6 +19267,14 @@ _ACEOF
 
 
 
+VALIDATOR_TESTCASES=$prefix/etc/dnssec/validator-testcases
+
+cat >>confdefs.h <<_ACEOF
+#define VALIDATOR_TESTCASES "$VALIDATOR_TESTCASES"
+_ACEOF
+
+
+
 
 # Check whether --with-cflags or --without-cflags was given.
 if test "${with_cflags+set}" = set; then
@@ -24253,6 +24261,7 @@ s,@CONFIGURE_OPTIONS@,$CONFIGURE_OPTIONS,;t t
 s,@VAL_RESOLV_CONF@,$VAL_RESOLV_CONF,;t t
 s,@VAL_ROOT_HINTS@,$VAL_ROOT_HINTS,;t t
 s,@VAL_CONFIGURATION_FILE@,$VAL_CONFIGURATION_FILE,;t t
+s,@VALIDATOR_TESTCASES@,$VALIDATOR_TESTCASES,;t t
 s,@PERLARGS@,$PERLARGS,;t t
 s,@LIBVAL_SUFFIX@,$LIBVAL_SUFFIX,;t t
 s,@DEVFLAGS@,$DEVFLAGS,;t t
