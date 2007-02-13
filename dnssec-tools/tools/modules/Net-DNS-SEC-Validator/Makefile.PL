@@ -4,10 +4,14 @@ use Config;
 use Getopt::Long;
 my $lib_version;
 my %MakeParams = ();
-my $opts;
+my %opts;
 
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
+
+# determine if we are in larger build and prepend libval-config path 
+GetOptions(\%opts, 'topdir=s');
+$ENV{PATH} = "$opts{topdir}/validator:$ENV{PATH}" if exists $opts{topdir};
 
 %MakeParams = InitMakeParams();
 
