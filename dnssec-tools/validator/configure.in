@@ -293,6 +293,8 @@ AC_CHECK_TYPES([int16_t, uint16_t, u_int16_t])
 AC_CHECK_TYPES([int32_t, uint32_t, u_int32_t])
 
 AH_BOTTOM([
+#define MAX_TEST_RESULTS 10
+
 #ifdef HAVE_INTTYPES_H
 #include <inttypes.h>
 #endif
