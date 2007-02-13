@@ -388,7 +388,7 @@ self_test(val_context_t *context, int tcs, int tce, char *label_str, int doprint
     int             rc, failed = 0, run_cnt = 0, i, tc_count;
     u_char          name_n[NS_MAXCDNAME];
     struct val_response *resp;
-    testcase        *curr_test = testcases;
+    testcase        *curr_test;
 
     if (NULL == testcases)
         read_val_testcase_file(VALIDATOR_TESTCASES);
@@ -397,6 +397,7 @@ self_test(val_context_t *context, int tcs, int tce, char *label_str, int doprint
      * Count the number of testcase entries 
      */
     tc_count = 0;
+    curr_test = testcases;
     for (i = 0; curr_test != NULL; i++, curr_test = curr_test->next)
         tc_count++;
     curr_test = testcases;
