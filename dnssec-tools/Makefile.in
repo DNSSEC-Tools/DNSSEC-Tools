@@ -10,7 +10,7 @@ mandir=@mandir@
 #man3dir=@man3dir@
 #man5dir=@man5dir@
 #man8dir=@man8dir@
-
+BUILDDIR=@abs_top_builddir@
 PERLDIRS=tools/modules tools/donuts tools/mapper tools/scripts \
          tools/dnspktflow tools/maketestzone tools/etc tools/drawvalmap
 PERLARGS=@PERLARGS@
@@ -91,7 +91,7 @@ perlmake:
 perlmakefiles:
 	$(QUIET)for i in $(PERLDIRS) ; do \
 	  if test ! -f $$i/Makefile ; then \
-	    (cd $$i ; perl Makefile.PL $(PERLARGS)) ; \
+	    (cd $$i ; perl Makefile.PL $(PERLARGS) --topdir $(BUILDDIR)) ; \
           fi ; \
          done
 
