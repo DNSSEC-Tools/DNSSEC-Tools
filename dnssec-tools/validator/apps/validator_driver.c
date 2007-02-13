@@ -38,8 +38,8 @@
 
 #include <validator/resolver.h>
 #include <validator/validator.h>
+#include "validator_driver.h"
 
-#define MAX_RESULTS 10
 #define BUFLEN 16000
 
 int             MAX_RESPCOUNT = 10;
@@ -75,7 +75,7 @@ static struct option prog_options[] = {
  * TEST CASE DATA
  *
  *===========================================================================*/
-
+#if 0
 struct testcase_st {
     const char     *desc;
     const char     *qn;
@@ -660,6 +660,7 @@ static const struct testcase_st testcases[] = {
 
     {NULL, NULL, 0, 0, {0}},
 };
+#endif
 
 /*============================================================================
  *
@@ -679,7 +680,7 @@ check_results(val_context_t * context, const char *desc, u_char * name_n,
               const int *result_ar, struct val_result_chain *results,
               int trusted_only)
 {
-    int             result_array[MAX_RESULTS];
+    int             result_array[MAX_TEST_RESULTS];
     int             err = 0, i;
     struct val_result_chain *res;
 
@@ -861,60 +862,6 @@ usage(char *progname)
     printf("The DOMAIN_NAME parameter is required if one of -p, -c or -t options is given.\n");
     printf("If no arguments are given, this program runs a set of predefined test queries.\n");
     /* *INDENT-ON* */
-}
-
-int
-self_test(val_context_t *context, int tcs, int tce, char *label_str, int doprint)
-{
-    int             rc, failed = 0, run_cnt = 0, i, tc_count;
-    u_char          name_n[NS_MAXCDNAME];
-    struct val_response *resp;
-
-    /*
-     * Count the number of testcase entries 
-     */
-    tc_count = 0;
-    for (i = 0; testcases[i].desc != NULL; i++)
-        tc_count++;
-
-    if (-1 == tce)
-        tce = tc_count - 1;
-
-    if ((tce >= tc_count) || (tcs >= tc_count)) {
-        fprintf(stderr,
-                "Invalid test case number (must be 0-%d)\n", tc_count);
-        return 1;
-    }
-
-    resp = NULL;
-    for (i = tcs; testcases[i].desc != NULL && i <= tce; i++) {
-        ++run_cnt;
-        if (ns_name_pton(testcases[i].qn, name_n, NS_MAXCDNAME) == -1) {
-            fprintf(stderr, "Cannot convert %s to wire format\n",
-                    testcases[i].qn);
-            ++failed;
-            continue;
-        }
-        rc = sendquery(context, testcases[i].desc,
-                       name_n, testcases[i].qc,
-                       testcases[i].qt, testcases[i].qr, 0, &resp);
-        if (doprint) {
-            fprintf(stderr, "%s: ****RESPONSE**** \n", testcases[i].desc);
-            print_val_response(resp);
-        }
-
-        if (resp) {
-            val_free_response(resp);
-            resp = NULL;
-        }
-
-        if (rc)
-            ++failed;
-        fprintf(stderr, "\n");
-    }
-    fprintf(stderr, " Final results: %d/%d tests failed\n", failed, run_cnt);
-
-    return 0;
 }
 
 /*============================================================================
