@@ -21,10 +21,10 @@
 #include <stdarg.h>
 #include <errno.h>
 #include <ctype.h>
-#ifdef HAVE_GETOPT_H
-#include <getopt.h>
-#endif
 #include <sys/file.h>
+
+#include <arpa/inet.h>
+#include <resolv.h>
 
 #include <validator/resolver.h>
 #include <validator/val_errors.h>
