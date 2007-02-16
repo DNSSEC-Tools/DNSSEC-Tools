@@ -93,7 +93,7 @@ main(int argc, char *argv[])
         switch (c) {
         case 'h':
             usage(argv[0]);
-            return 0;
+            return -1;
         case 'n':
             dovalidate = 0;
             break;
@@ -106,7 +106,7 @@ main(int argc, char *argv[])
             } else {
                 fprintf(stderr, "Invalid family %s\n", optarg);
                 usage(argv[0]);
-                return 1;
+                return -1;
             }
             break;
         case 'r':
@@ -115,7 +115,7 @@ main(int argc, char *argv[])
         default:
             fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);
             usage(argv[0]);
-            return 1;
+            return -1;
         }
     }
 
@@ -125,7 +125,7 @@ main(int argc, char *argv[])
     } else {
         fprintf(stderr, "Error: name not specified\n");
         usage(argv[0]);
-        return 1;
+        return -1;
     }
 
     if (dovalidate) {
@@ -212,6 +212,13 @@ main(int argc, char *argv[])
 #else
         printf("h_errno = %d\n", h_errno);
 #endif
+    }
+
+    if (dovalidate) {
+        if (val_isvalidated(val_status))
+            return 2;
+        if (val_istrusted(val_status))
+            return 1;
     }
 
     return 0;
