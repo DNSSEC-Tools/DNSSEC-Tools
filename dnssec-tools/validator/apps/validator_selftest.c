@@ -424,29 +424,25 @@ read_val_testcase_file(const char *filename)
 }
 
 int
-self_test(val_context_t *context, int tcs, int tce, char *suite, int doprint)
+run_test_suite(val_context_t *context, int tcs, int tce, testsuite *suite,
+               int doprint)
 {
     int             rc, failed = 0, run_cnt = 0, i, tc_count;
     u_char          name_n[NS_MAXCDNAME];
     struct val_response *resp;
-    testsuite       *curr_suite;
     testcase        *curr_test;
 
-    if (NULL == testsuite_head)
-        read_val_testcase_file(VALIDATOR_TESTCASES);
-
-    curr_suite = find_suite(suite);
-    if (NULL == curr_suite)
+    if (NULL == suite)
         return 1;
     
     /*
      * Count the number of testcase entries 
      */
     tc_count = 0;
-    curr_test = curr_suite->head;
+    curr_test = suite->head;
     for (i = 0; curr_test != NULL; i++, curr_test = curr_test->next)
         tc_count++;
-    curr_test = curr_suite->head;
+    curr_test = suite->head;
 
     if (-1 == tce)
         tce = tc_count - 1;
@@ -457,12 +453,14 @@ self_test(val_context_t *context, int tcs, int tce, char *suite, int doprint)
         return 1;
     }
 
+    fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
     resp = NULL;
     for (i = tcs;
          curr_test != NULL && curr_test->desc != NULL && i <= tce;
-         i++, curr_test = curr_test->next) {
+         curr_test = curr_test->next) {
 
         ++run_cnt;
+        fprintf(stderr, "%d: ", ++i);
         if (ns_name_pton(curr_test->qn, name_n, NS_MAXCDNAME) == -1) {
             fprintf(stderr, "Cannot convert %s to wire format\n",
                     curr_test->qn);
@@ -486,7 +484,53 @@ self_test(val_context_t *context, int tcs, int tce, char *suite, int doprint)
             ++failed;
         fprintf(stderr, "\n");
     }
-    fprintf(stderr, " Final results: %d/%d tests failed\n", failed, run_cnt);
+    fprintf(stderr, "Suite '%s': Final results: %d/%d tests failed\n",
+            suite->name, failed, run_cnt);
+
+    return 0;
+}
+
+int
+self_test(val_context_t *context, int tcs, int tce, const char *suites,
+          int doprint)
+{
+    testsuite *suite;
+    int rc;
+
+    if (NULL == testsuite_head)
+        read_val_testcase_file(VALIDATOR_TESTCASES);
+
+    suite = testsuite_head;
+
+    if (NULL == suites) {
+
+        while(NULL != suite) {
+            rc = run_test_suite(context, tcs, tce, suite, doprint);
+            /** does rc mean anything? */
+            suite = suite->next;
+        }
+    }
+    else {
+        char *next, *name;
+        name = strdup(suites);
+        while(name && *name) {
+            
+            next = strchr(name, ':');
+            if (NULL != next)
+                *next++ = 0;
+
+
+            suite = find_suite(name);
+            if (NULL == suite)
+                fprintf(stderr, "unknown suite %s\n", name);
+            else {
+                rc = run_test_suite(context, tcs, tce, suite, doprint);
+                /** does rc mean anything? */
+            }
+            
+            name = next;
+        }
+    }
 
     return 0;
 }
