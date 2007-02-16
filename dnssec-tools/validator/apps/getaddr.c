@@ -174,7 +174,7 @@ main(int argc, char *argv[])
         switch (c) {
         case 'h':
             usage(argv[0]);
-            return 0;
+            return -1;
         case 'n':
             validate = 0;
             break;
@@ -182,7 +182,7 @@ main(int argc, char *argv[])
             logp = val_log_add_optarg(optarg, 1);
             if (NULL == logp) { /* err msg already logged */
                 usage(argv[0]);
-                return 1;
+                return -1;
             }
             break;
 
@@ -196,7 +196,7 @@ main(int argc, char *argv[])
         default:
             fprintf(stderr, "Invalid option %s\n", argv[optind - 1]);
             usage(argv[0]);
-            return 1;
+            return -1;
         }
     }
 
@@ -205,7 +205,7 @@ main(int argc, char *argv[])
     } else {
         fprintf(stderr, "Error: node name not specified\n");
         usage(argv[0]);
-        return 1;
+        return -1;
     }
 
     bzero(&hints, sizeof(struct addrinfo));
@@ -219,7 +219,7 @@ main(int argc, char *argv[])
         if (retval != 0) {
             printf("Error in val_getaddrinfo(): %s\n",
                    gai_strerror(retval));
-            exit(1);
+            return -1;
         } else {
             print_addrinfo(VAL_ADDRINFO_TYPE, val_ainfo);
         }
@@ -228,11 +228,18 @@ main(int argc, char *argv[])
          * cleanup 
          */
         val_freeaddrinfo(val_ainfo);
+        if (val_isvalidated(val_status)) {
+            return 2; 
+        } 
+        if (val_istrusted(val_status)) {
+            return 1; 
+        } 
+        
     } else {
         retval = getaddrinfo(node, service, &hints, &ainfo);
         if (retval != 0) {
             printf("Error in getaddrinfo(): %s\n", gai_strerror(retval));
-            exit(1);
+            return -1;
         } else {
             print_addrinfo(ADDRINFO_TYPE, ainfo);
         }
