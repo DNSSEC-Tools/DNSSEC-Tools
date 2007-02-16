@@ -71,10 +71,10 @@ else
     #################################################### client lib
     --libs)
       # use this one == --libval-libs + --external-libs
-      echo $lvc_LDFLAGS $lvc_LIBDIR -lval${LIBVAL_SUFFIX} $lvc_LIBS
+      echo $lvc_LDFLAGS $lvc_LIBDIR -lsres -lval${LIBVAL_SUFFIX} $lvc_LIBS
       ;;
     --libval-libs)
-      echo $lvc_LIBDIR -lval${LIBVAL_SUFFIX}
+      echo $lvc_LIBDIR -lsres -lval${LIBVAL_SUFFIX}
       ;;
     --external-libs)
       echo $lvc_LDFLAGS $lvc_LIBS
