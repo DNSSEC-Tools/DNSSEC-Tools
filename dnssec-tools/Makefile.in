@@ -71,7 +71,7 @@ subdirinstall:
 
 subdirclean:
 	$(QUIET)if test "x$(SUBDIRS)" != "xnone" ; then \
-	  $(QUIET)for i in $(SUBDIRS) ; do \
+	  for i in $(SUBDIRS) ; do \
 	    (cd $$i ; make clean ) ; \
           done \
 	fi
