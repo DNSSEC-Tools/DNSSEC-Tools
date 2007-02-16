@@ -11,7 +11,7 @@ int sendquery(val_context_t * context, const char *desc, u_char * name_n,
               const int *result_ar, int trusted_only,
               struct val_response **resp);
 
-int self_test(val_context_t *context, int tcs, int tce, char *label_str,
+int self_test(val_context_t *context, int tcs, int tce, const char *suites,
               int doprint);
 
 
