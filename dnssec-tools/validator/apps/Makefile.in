@@ -43,6 +43,8 @@ $(GETADDR): getaddr.lo $(LOCALLIBS)
 
 install:
 	$(MKPATH) $(bindir)
-	$(LIBTOOLIN) validate $(bindir)	
+	$(LIBTOOLIN) $(VALIDATOR) $(bindir)	
+	$(LIBTOOLIN) $(GETHOST) $(bindir)	
+	$(LIBTOOLIN) $(GETADDR) $(bindir)	
 	$(MKPATH) $(prefix)/etc/dnssec
 	$(CP) selftests.dist @VALIDATOR_TESTCASES@
