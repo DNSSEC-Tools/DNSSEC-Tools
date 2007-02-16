@@ -41,12 +41,11 @@ typedef struct testcase_st {
 
 typedef struct testsuite_st {
     char                *name;
-    struct testcase     *head;
+    testcase            *head;
     struct testsuite_st *next;
 } testsuite;
 
-//static testsuite * testsuite_head = NULL;
-testcase *testcases = NULL;
+static testsuite * testsuite_head = NULL;
 
 extern int
 val_get_token(FILE * conf_ptr,
@@ -191,6 +190,18 @@ vtc_parse_result(const char *result)
     return 0;
 }
 
+static testsuite *
+find_suite(const char *name)
+{
+    testsuite      *curr_suite = testsuite_head;
+
+    for(; NULL != curr_suite; curr_suite = curr_suite->next)
+        if (0 == strcmp(name, curr_suite->name))
+            return curr_suite;
+    
+    return NULL;
+}
+
 /*
  * Make sense of the validator testcase configuration file
  */
@@ -203,7 +214,7 @@ read_val_testcase_file(const char *filename)
     int             retval = VAL_NO_ERROR, endst = 0;
     char            token[1025];
     int             line_number = 1;
-//    testsuite      *curr_suite = NULL;
+    testsuite      *curr_suite = NULL;
     testcase       *tmp_case = NULL, *tail = NULL;
    
     fd = open(filename, O_RDONLY);
@@ -222,6 +233,16 @@ read_val_testcase_file(const char *filename)
         return VAL_INTERNAL_ERROR;
     }
 
+    testsuite_head = calloc(1, sizeof(*curr_suite));
+    if (NULL == testsuite_head) {
+        fcntl(fd, F_SETLKW, &fl);
+        fclose(fp);
+        return VAL_OUT_OF_MEMORY;
+    }
+    testsuite_head->name = "";
+    tail = testsuite_head->head;
+    curr_suite = testsuite_head;
+
     for (; !feof(fp) && (VAL_NO_ERROR == retval); ++line_number) {
         char * pos;
         int i;
@@ -236,8 +257,29 @@ read_val_testcase_file(const char *filename)
         }
 
         pos = strchr(token, ':');
-        if (NULL != pos) {
-            /** xxx-todo read suite  */
+        /** suites end with ':' */
+        if ((NULL != pos) && (0 == pos[1])) {
+            *pos = 0;
+
+            curr_suite = find_suite(token);
+            if (NULL == curr_suite) {
+                /** new suite */
+                curr_suite = calloc(1, sizeof(*curr_suite));
+                if (NULL == curr_suite) {
+                    retval = VAL_OUT_OF_MEMORY;
+                    break;
+                }
+                curr_suite->name = strdup(token);
+                tail = NULL;
+                curr_suite->next = testsuite_head;
+                testsuite_head = curr_suite;
+            }
+            else {
+                /** find tail of existing suite */
+                tail = curr_suite->head;
+                while(tail && tail->next)
+                    tail = tail->next;
+            }
 
             retval = val_get_token(fp, &line_number, token, sizeof(token),
                                    &endst, '#', ';');
@@ -337,9 +379,8 @@ read_val_testcase_file(const char *filename)
         if (VAL_NO_ERROR != retval)
             break;
 
-        if (NULL == testcases) {
-            testcases = tmp_case;
-            tail = testcases;
+        if (NULL == tail) {
+            tail = curr_suite->head = tmp_case;
         }
         else {
             tail->next = tmp_case;
@@ -383,24 +424,29 @@ read_val_testcase_file(const char *filename)
 }
 
 int
-self_test(val_context_t *context, int tcs, int tce, char *label_str, int doprint)
+self_test(val_context_t *context, int tcs, int tce, char *suite, int doprint)
 {
     int             rc, failed = 0, run_cnt = 0, i, tc_count;
     u_char          name_n[NS_MAXCDNAME];
     struct val_response *resp;
+    testsuite       *curr_suite;
     testcase        *curr_test;
 
-    if (NULL == testcases)
+    if (NULL == testsuite_head)
         read_val_testcase_file(VALIDATOR_TESTCASES);
 
+    curr_suite = find_suite(suite);
+    if (NULL == curr_suite)
+        return 1;
+    
     /*
      * Count the number of testcase entries 
      */
     tc_count = 0;
-    curr_test = testcases;
+    curr_test = curr_suite->head;
     for (i = 0; curr_test != NULL; i++, curr_test = curr_test->next)
         tc_count++;
-    curr_test = testcases;
+    curr_test = curr_suite->head;
 
     if (-1 == tce)
         tce = tc_count - 1;
