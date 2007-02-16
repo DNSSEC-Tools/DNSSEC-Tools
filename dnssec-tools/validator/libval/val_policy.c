@@ -1468,10 +1468,14 @@ read_root_hints_file(val_context_t * ctx)
         return VAL_BAD_ARGUMENT;
     
     root_hints = ctx->root_conf;
+    /* 
+     *  Root hints are not necessary. Only needed if our resolv.conf is empty. 
+     * Flag the error at that time
+     */
     if (NULL == root_hints)
-        return VAL_INTERNAL_ERROR;
+        return VAL_NO_ERROR;
     if (0 != stat(root_hints, &sb)) 
-        return VAL_CONF_NOT_FOUND;
+        return VAL_NO_ERROR;
 
     ctx->h_timestamp = sb.st_mtime;
 
