@@ -1,5 +1,203 @@
 #
 #
+no.ws:
+"Test Case 1" www.n0.n0.ws.nsec3.org ns_c_in ns_t_a
+     VAL_PROVABLY_UNSECURE;
+"Test Case 2" www.n0.n1u.ws.nsec3.org ns_c_in ns_t_a
+     VAL_PROVABLY_UNSECURE;
+"Test Case 3" www.n3.n1s.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 4" www.n0.n3u.ws.nsec3.org ns_c_in ns_t_a
+     VAL_PROVABLY_UNSECURE;
+"Test Case 5" www.n0.n3o.ws.nsec3.org ns_c_in ns_t_a
+     VAL_PROVABLY_UNSECURE;
+"Test Case 6" www.n1.n3s.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 7" www.n3.n3s.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+
+roll.ws:
+"Test Case 1" www.roll.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 2" www.n0.roll.ws.nsec3.org ns_c_in ns_t_a
+     VAL_PROVABLY_UNSECURE;
+"Test Case 3" www.n1.roll.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 4" www.n3.roll.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 5" www.nx.roll.ws.nsec3.org ns_c_in ns_t_a
+     VAL_NONEXISTENT_NAME;
+
+b.ws:
+"Test Case 1" a1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 2" a2.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 3" a3.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 4" a4.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 5" a5.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 6" a6.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 7" a7.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 8" a8.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 9" b1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 10" b2.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 11" b3.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 12" b4.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 13" c1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 14" c2.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 15" c3.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 16" c4.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 17" c5.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 18" c6.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 19" c7.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 20" c8.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 21" d1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 22" d2.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 23" d3.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 24" d4.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 25" ref.e1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 26" ref.e2.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 27" oo.f1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 28" oo.f2.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 29" oo.f3.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 30" oo.f4.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 31" g1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 32" h1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 33" h2.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 34" h3.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 35" i1.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 36" i2.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 37" i3.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 38" 1.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 39" 2.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 40" 3.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 41" 4.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 42" 5.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 43" 6.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 44" 7.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 45" 8.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 46" 9.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 47" 10.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 48" 11.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+"Test Case 49" 12.a.j.b.ws.nsec3.org ns_c_in ns_t_a
+     VAL_SUCCESS;
+
+#
+# Test for resolution error (ensure no "search" in resolv.conf) 
+#
+name-failure:
+"Checking name failure" dns ns_c_in ns_t_a
+  VAL_SUCCESS;
+#     DNS_ERROR_BASE + SR_SERVFAIL;
+
+
+#
+# Test for non-existence 
+#
+non-existence:
+"Checking non-existence proofs"
+     dns1.wesh.fruits.netsec.tislabs.com. ns_c_in ns_t_a
+     VAL_NONEXISTENT_NAME;
+
+#
+# Test for validation without recursion + CNAME 
+#
+cname:
+"Testing CNAME and same-level validation"
+     apple.fruits.netsec.tislabs.com. ns_c_in ns_t_a VAL_SUCCESS
+                                                           VAL_SUCCESS;
+
+#
+# Test for validation with recursion 
+#
+recursion:
+"Testing validation up the chain"
+     dns.wesh.fruits.netsec.tislabs.com. ns_c_in ns_t_a VAL_SUCCESS;
+
+#
+# Test for multiple answers 
+#
+multiple-answers:
+"Checking validation of multiple answers returned with ANY"
+     fruits.netsec.tislabs.com. ns_c_in ns_t_any VAL_SUCCESS
+                                                       VAL_SUCCESS
+                                                       VAL_SUCCESS
+                                                       VAL_SUCCESS
+                                                       VAL_SUCCESS
+                                                       VAL_SUCCESS;
+
+#
+# Wild-card test 
+# Wild-card non-existent type 
+#
+wildcard:
+"Checking validation with a wildcard match"
+     jackfruit.fruits.netsec.tislabs.com. ns_c_in ns_t_a VAL_SUCCESS;
+"Checking if wildcard with a different type matches"
+     jackfruit.fruits.netsec.tislabs.com. ns_c_in ns_t_cname
+  val_success;
+#     DNS_ERROR_BASE + SR_NO_ANSWER;
+
+#
+# Test for bad class 
+#
+bad-class:
+"Testing bad class" dns.wesh.fruits.netsec.tislabs.com. 15
+     ns_t_a
+ val_success;
+# DNS_ERROR_BASE + SR_NO_ANSWER;
+
+
+#
+# Defaults
+#
+:
 "Test Case 1" good-A.test.dnssec-tools.org ns_c_in ns_t_a
         VAL_SUCCESS;
 "Test Case 2" badsign-A.test.dnssec-tools.org ns_c_in ns_t_a
