@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -219,7 +219,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     # Settings that will be noticed by zonesigner.
     #
-    archivedir          /usr/local/etc/dnssec/KEY-SAFE
+    archivedir          /usr/local/etc/dnssec-tools/KEY-SAFE
     default_keyrec	default.krf
     entropy_msg		0
     savekeys            1
@@ -228,7 +228,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     #
     # Settings for rollover-manager.
     #
-    roll_logfile    /usr/local/etc/dnssec/log-rollerd
+    roll_logfile    /usr/local/etc/dnssec-tools/log-rollerd
     roll_loglevel   info
     roll_sleeptime  60
 
@@ -239,7 +239,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
