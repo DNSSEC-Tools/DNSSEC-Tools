@@ -1,6 +1,6 @@
 SUBDIRS=libsres libval apps doc
 
-INSTALLDIRS=$(prefix) $(exec_prefix) $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
+INSTALLDIRS=$(prefix) $(exec_prefix) $(prefix)/etc/dnssec-tools $(bindir) $(sbindir) $(libdir) $(datadir) $(includedir) $(mandir) $(man1dir) $(man3dir) $(man5dir) $(man8dir)		
 
 all: subdirmake
 
@@ -21,8 +21,14 @@ makeit: subdirmake
 nextstepinstructions:
 	@echo ""
 	@echo "**********************************************************************"
-	@echo "** Not automatically installing resolv.conf and dnsval.conf" 
-	@echo "** Please copy these files from validator/etc to /etc"
+	@echo "** Not automatically installing dnsval.conf" 
+	@echo "** Please copy this file from validator/etc to $(VAL_CONFIGURATION_FILE)"
+	@echo "**********************************************************************"
+	@echo "** Not automatically installing resolv.conf" 
+	@echo "** If needed, please copy this file from validator/etc to $(VAL_RESOLV_CONF)"
+	@echo "**********************************************************************"
+	@echo "** Not automatically installing root.hints" 
+	@echo "** If needed, please copy this file from validator/etc to $(VAL_ROOT_HINTS)"
 	@echo "**********************************************************************"
 	@echo ""
     
@@ -35,8 +41,8 @@ distclean: clean configclean
 makedirectories:
 	@for i in $(INSTALLDIRS) ; do \
 		if test ! -d $$i ; then \
-			echo "creating directory $$i/" \
-			$(MKPATH) $$I ; \
+			echo "creating directory $$i/" ; \
+			$(MKPATH) $$i ; \
 		fi \
 	done
 #
