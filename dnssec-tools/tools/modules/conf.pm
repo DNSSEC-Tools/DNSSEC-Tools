@@ -42,7 +42,7 @@ our @EXPORT = qw(
 
 our @COMMANDS = qw(zonecheck keygen zonesign);
 
-our $CONFFILE = "/usr/local/etc/dnssec/dnssec-tools.conf"; # Configuration file.
+our $CONFFILE = "/usr/local/etc/dnssec-tools/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "0.9";
 
 ###############################################################################
@@ -345,8 +345,8 @@ The DNSSEC tools have a configuration file for commonly used values.
 These values are the defaults for a variety of things, such as
 encryption algorithm and encryption key length.
 
-B</usr/local/etc/dnssec/dnssec-tools.conf> is the path for the DNSSEC tools
-configuration file.  The B<Net::DNS::SEC::Tools::conf> module provides
+B</usr/local/etc/dnssec-tools/dnssec-tools.conf> is the path for the DNSSEC
+tools configuration file.  The B<Net::DNS::SEC::Tools::conf> module provides
 methods for accessing the configuration data in this file.
 
 The DNSSEC tools configuration file consists of a set of configuration

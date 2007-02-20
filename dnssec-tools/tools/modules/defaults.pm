@@ -48,7 +48,7 @@ my %defaults =
 	"usegui"	=> 0,			# Use GUI for option entry flag.
 
         "tanamedconffile"  => "/usr/local/etc/named/named.conf",
-        "tadnsvalconffile" => "/usr/local/etc/dnssec/dnsval.conf",
+        "tadnsvalconffile" => "/usr/local/etc/dnssec-tools/dnsval.conf",
         "tasleeptime"      => 3600,
         "tacontact" 	   => "",
         "tasmtpserver"     => "",
