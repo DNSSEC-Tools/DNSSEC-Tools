@@ -14,7 +14,7 @@ use ExtUtils::MakeMaker;
 sub MY::postamble {
     return '
 
-CONFDIR=$(PREFIX)/etc/dnssec
+CONFDIR=$(PREFIX)/etc/dnssec-tools
 DESTCONFDIR=$(DESTDIR)$(CONFDIR)
 INSTALL=$(PERLRUN) "-MExtUtils::Command" -e cp
 
