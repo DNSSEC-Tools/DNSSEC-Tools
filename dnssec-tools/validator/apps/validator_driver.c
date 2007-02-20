@@ -60,6 +60,7 @@ static struct option prog_options[] = {
     {"class", 1, 0, 'c'},
     {"type", 1, 0, 't'},
     {"testcase", 1, 0, 'T'},
+    {"testcase-conf", 1, 0, 'F'},
     {"label", 1, 0, 'l'},
     {"output", 1, 0, 'o'},
     {"resolv-conf", 1, 0, 'r'},
@@ -252,6 +253,7 @@ usage(char *progname)
     printf("        -S, --test-suite=<suite>[:<suite>] Run specified internal sefltest suite(s)\n");
     printf("        -T, --testcase=<number>[:<number>\n");
     printf("                               Specifies the test case number/range \n");
+    printf("        -F, --testcase-conf=<file> Specifies the file containing the test cases\n");
     printf("        -c, --class=<CLASS>    Specifies the class (default IN)\n");
     printf("        -t, --type=<TYPE>      Specifies the type (default A)\n");
     printf("        -v, --dnsval-conf=<file> Specifies a dnsval.conf\n");
@@ -542,7 +544,7 @@ main(int argc, char *argv[])
     // Parse the command line for a query and resolve+validate it
     int             c;
     char           *domain_name = NULL;
-    const char     *args = "c:dhi:l:w:mo:pr:S:st:T:v:";
+    const char     *args = "c:dF:hi:l:w:mo:pr:S:st:T:v:";
     u_int16_t       class_h = ns_c_in;
     u_int16_t       type_h = ns_t_a;
     int             success = 0;
@@ -554,7 +556,7 @@ main(int argc, char *argv[])
     int             tcs = -1, tce = -1;
     int             wait = 0;
     char           *label_str = NULL, *nextarg = NULL;
-    char           *suite = NULL;
+    char           *suite = NULL, *testcase_config = NULL;
     u_char          name_n[NS_MAXCDNAME];
     val_log_t      *logp;
     struct val_response *resp;
@@ -584,18 +586,41 @@ main(int argc, char *argv[])
             usage(argv[0]);
             return (0);
 
+        case 'F':
+            testcase_config = optarg;
+            break;
+
         case 'd':
             daemon = 1;
             break;
 
         case 's':
             selftest = 1;
-            suite = NULL; /* == all suites */
+            if (NULL != suite) {
+                fprintf(stderr,
+                        "Warning: -s runs all tests.\n"
+                        "         ignoring previous suite(s).\n");
+                suite = NULL; /* == all suites */
+            }
             break;
 
         case 'S':
-            selftest = 1;
-            suite = optarg;
+            if (selftest) {
+                if (NULL == suite)
+                    fprintf(stderr,
+                            "Warning: -s runs all tests.\n"
+                            "         ignoring specified suite.\n");
+                else {
+                    fprintf(stderr,
+                            "Warning: -S may only be specified once.\n"
+                            "         ignoring previous suite.\n");
+                    suite = optarg;
+                }
+            }
+            else {
+                selftest = 1;
+                suite = optarg;
+            }
             break;
 
         case 'p':
@@ -704,7 +729,8 @@ main(int argc, char *argv[])
             }
 
             do { /* endless loop */ 
-                rc = self_test(context, tcs, tce, suite, doprint);
+                rc = self_test(context, tcs, tce, testcase_config, suite,
+                               doprint);
                 if (wait)
                     sleep(wait);
             } while (wait);

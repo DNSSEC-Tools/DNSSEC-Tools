@@ -491,14 +491,17 @@ run_test_suite(val_context_t *context, int tcs, int tce, testsuite *suite,
 }
 
 int
-self_test(val_context_t *context, int tcs, int tce, const char *suites,
-          int doprint)
+self_test(val_context_t *context, int tcs, int tce, const char *tests_file,
+          const char *suites, int doprint)
 {
     testsuite *suite;
     int rc;
 
-    if (NULL == testsuite_head)
-        read_val_testcase_file(VALIDATOR_TESTCASES);
+    if (NULL == testsuite_head) {
+        if (NULL == tests_file)
+            tests_file = VALIDATOR_TESTCASES;
+        read_val_testcase_file(tests_file);
+    }
 
     suite = testsuite_head;
 
