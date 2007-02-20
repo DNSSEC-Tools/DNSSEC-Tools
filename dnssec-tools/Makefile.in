@@ -34,15 +34,15 @@ nextstepinstructions:
 	$(QUIET)echo ""
 	$(QUIET)echo "**********************************************************************"
 	$(QUIET)echo "** NEXT: Please run 'dtinitconf' in order to set up the required"
-	$(QUIET)echo "**       $(prefix)/etc/dnssec/dnssec-tools.conf file"
+	$(QUIET)echo "**       $(prefix)/etc/dnssec-tools/dnssec-tools.conf file"
 	$(QUIET)echo "**********************************************************************"
 	$(QUIET)echo ""
 
 makedirectories:
 	$(QUIET)for i in $(INSTALLDIRS) ; do \
 		if test ! -d $$i ; then \
-			echo "creating directory $$i/" \
-			$(MKPATH) $$I ; \
+			echo "creating directory $$i/" ;\
+			$(MKPATH) $$i ; \
 		fi \
 	done
 #
