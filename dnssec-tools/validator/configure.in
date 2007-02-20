@@ -7,6 +7,8 @@ AC_PREREQ([2.59])
 
 AC_CONFIG_HEADER(include/validator-config.h)
 
+AC_MSG_CACHE_INIT()
+
 AC_PATH_PROG([PERLPROG],perl)
 AC_PATH_PROG(AR, ar)
 AC_PATH_PROG(RM, rm)
@@ -32,34 +34,52 @@ AC_SUBST(CONFIGURE_OPTIONS)
 
 dnl ----------------------------------------------------------------------
 dnl
-VAL_RESOLV_CONF=/etc/resolv.conf
+if test "x$prefix" = "xNONE" ; then
+   val_prefix=$ac_default_prefix
+else
+   val_prefix=$prefix
+fi
+
 AC_ARG_WITH(resolv-conf,
-[  --with-resolv-conf=FILE resolver config file (/etc/resolv.conf).],
-    [VAL_RESOLV_CONF=$with_resolv_conf])
-AC_DEFINE_UNQUOTED(VAL_RESOLV_CONF,"$VAL_RESOLV_CONF", [resolver config file])
-AC_SUBST(VAL_RESOLV_CONF)
+[  --with-resolv-conf=FILE resolver config file (PREFIX/etc/resolv.conf).],
+    [ac_cv_user_prompt_VAL_RESOLV_CONF=$with_resolv_conf])
 
-VAL_ROOT_HINTS=/etc/root.hints
 AC_ARG_WITH(root-hints,
-[  --with-root-hints=FILE  root.hints config file (/etc/root.hints).],
-    [VAL_ROOT_HINTS=$with_root_hints])
-AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS", ["root hints file"])
-AC_SUBST(VAL_ROOT_HINTS)
+[  --with-root-hints=FILE  root.hints config file.],
+    [ac_cv_user_prompt_VAL_ROOT_HINTS=$with_root_hints])
 
-VAL_CONFIGURATION_FILE=/etc/dnsval.conf
+VAL_CONFIGURATION_FILE=$val_prefix/etc/dnssec-tools/dnsval.conf
 AC_ARG_WITH(dnsval-conf,
-[  --with-dnsval-conf=FILE dnsval config file (/etc/dnsval.conf).],
+[  --with-dnsval-conf=FILE dnsval config file (PREFIX/etc/dnssec-tools/dnsval.conf).],
     [VAL_CONFIGURATION_FILE=$with_dnsval_conf])
 AC_DEFINE_UNQUOTED(VAL_CONFIGURATION_FILE,"$VAL_CONFIGURATION_FILE", [dnsval configuration file])
 AC_SUBST(VAL_CONFIGURATION_FILE)
+AC_MSG_CACHE_ADD(DNSSEC-Tools configuration file: $VAL_CONFIGURATION_FILE)
 
-if test "x$prefix" = "xNONE" ; then
-   VALIDATOR_TESTCASES=$ac_default_prefix/etc/dnssec/validator-testcases
-else
-   VALIDATOR_TESTCASES=$prefix/etc/dnssec/validator-testcases
-fi
+VALIDATOR_TESTCASES=$val_prefix/etc/dnssec/validator-testcases
 AC_DEFINE_UNQUOTED(VALIDATOR_TESTCASES,"$VALIDATOR_TESTCASES", [validator testcases configuration file])
 AC_SUBST(VALIDATOR_TESTCASES)
+
+dnl ----------------------------------------------------------------------
+dnl
+#
+# otherwise prompted information
+#
+AC_ARG_WITH(defaults,
+[
+Miscellaneous:
+  --with-defaults         Use defaults for prompted values.],
+    defaults="yes",defaults="no")
+AC_ARG_ENABLE(defaults,,
+        AC_MSG_ERROR([ Invalid option. Use --with-defaults/--without-defaults instead ]) )
+if test "$defaults" = "yes" ; then
+   if test "${with_resolv_conf+set}" != set; then
+      unset ac_cv_user_prompt_VAL_RESOLV_CONF
+   fi
+   if test "${with_root_hints+set}" != set; then
+      unset ac_cv_user_prompt_VAL_ROOT_HINTS
+   fi
+fi
 
 dnl ----------------------------------------------------------------------
 dnl
@@ -152,12 +172,15 @@ AH_TEMPLATE([VAL_NO_THREADS],
             [Define if you do not want to use threads.])
 if test "x$with_threads" = "xno"; then
     AC_DEFINE(VAL_NO_THREADS, 1)
+    AC_MSG_CACHE_ADD(Thread support                 : No)
 else
 
     AC_CHECK_LIB(pthread, pthread_rwlock_init,
-        LIBS="$LIBS -lpthread"
-        LIBVAL_SUFFIX="-threads",
-        AC_DEFINE(VAL_NO_THREADS, 1))
+        [LIBS="$LIBS -lpthread"
+        LIBVAL_SUFFIX="-threads"
+         AC_MSG_CACHE_ADD(Thread support                 : Yes)],
+        [AC_DEFINE(VAL_NO_THREADS, 1)
+         AC_MSG_CACHE_ADD(Thread support                 : No)])
 fi
 AC_SUBST(LIBVAL_SUFFIX)
 
@@ -180,6 +203,7 @@ if test -d $srcdir/.svn; then
 fi
 AC_MSG_RESULT($DEVFLAGS)
 AC_SUBST(DEVFLAGS)
+AC_MSG_CACHE_ADD(Developer flags                : $DEVFLAGS)
 
 dnl ----------------------------------------------------------------------
 AC_CHECK_HEADERS(sys/filio.h getopt.h netinet/in.h)
@@ -356,6 +380,101 @@ esac
 
 dnl ----------------------------------------------------------------------
 
+if test "x$ac_cv_user_prompt_VAL_RESOLV_CONF" = "x" -o "x$ac_cv_user_prompt_VAL_ROOT_HINTS" = "x" ; then
+   AC_CACHE_CHECK(if you have run configure before, ac_cv_have_warned,
+   [
+   if test "x$defaults" = "xno"; then
+cat << EOF
+
+         ************** Configuration Section **************
+
+        You are about to be prompted with a series of questions.  Answer
+them carefully, as they determine how the validator library and related
+applications are to function.
+
+        After the configure script finishes, you can browse the newly
+created include/validator-config.h file for further - less important - parameters
+to modify.  Be careful if you re-run configure though, since the file
+will be overwritten.
+
+-Press return to continue-
+EOF
+
+      read tmpinput
+      ac_cv_have_warned="yes"
+      echo $ECHO_N "disabling above prompt for future runs...  $ECHO_C"
+   else
+     ac_cv_have_warned="no"
+   fi
+   ])
+else
+  ac_cv_have_warned="yes"
+fi
+
+AC_PROMPT_USER(VAL_RESOLV_CONF,[
+
+***  Resolver configuration location:
+
+    Enter the location for the resolver configuration file. If your
+existing resolver configuration (typically /etc/resolv.conf) contains
+DNSSEC-aware resolvers, you may specify that file. This has the benefit
+of only having to remember to update a single file if your resolver
+configuration changes.
+
+    If you do not wish to modify your default resolver configuration
+for any reason (e.g. you are using fast/close non-dnssec aware resolvers
+and don't want to impact existing applications), you may use the default,
+DNSSEC-Tools specific, location.
+
+    Providing a file via the --with-resolv-conf argument to configure will
+avoid this prompt.
+
+Location to read resolver configuration],$val_prefix/etc/dnssec-tools/resolv.conf,quoted)
+VAL_RESOLV_CONF=$ac_cv_user_prompt_VAL_RESOLV_CONF
+AC_SUBST(VAL_RESOLV_CONF)
+AC_MSG_CACHE_ADD(libval resolver configuration  : $VAL_RESOLV_CONF)
+
+default_hints="$prefix/etc/dnssec-tools/root.hints"
+if test "x$defaults" != "xyes" ; then
+   search_dirs="$prefix/etc/dnssec-tools $prefix/var/named $prefix/var/named/etc/named $prefix/etc/named $prefix/etc"
+   if test "x$prefix" != "x" ; then
+      search_dirs="$search_dirs /var/named /var/named/etc/named /etc/named /etc"
+   fi
+   for dir in $search_dirs ;
+   do
+      for file in named.ca named.root named.cache db.cache root.hints ;
+      do
+         if test -r "$dir/$file" ; then
+            default_hints="$dir/$file"
+            break 2
+         fi
+      done
+   done
+fi
+AC_PROMPT_USER_NO_DEFINE(VAL_ROOT_HINTS,[
+
+*** Root hints location:
+
+    Enter the location of the root hints file, or 'none' to install
+and use the copy provided with DNSSEC-Tool (see validator/etc/root.hints).
+
+    Providing a file via the --with-root-hints argument to configure will
+avoid this prompt.
+
+Location to read root hints configuration],$default_hints)
+eval ac_cv_user_prompt_VAL_ROOT_HINTS=$VAL_ROOT_HINTS
+echo $ECHO_N "setting $MSG_CHECK to...  $ECHO_C" >&AC_FD_MSG
+if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
+   ac_cv_user_prompt_VAL_ROOT_HINTS="$prefix/etc/dnssec-tools/root.hints"
+fi
+VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
+AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS")
+AC_SUBST(VAL_ROOT_HINTS)
+AC_MSG_CACHE_ADD(libval root hints              : $VAL_ROOT_HINTS)
+  
+
+dnl ----------------------------------------------------------------------
+
 AC_CONFIG_FILES([
  Makefile:Makefile.top:Makefile.in
  libsres/Makefile:Makefile.top:libsres/Makefile.in:Makefile.bot
@@ -366,3 +485,4 @@ AC_CONFIG_FILES([
 AC_CONFIG_FILES([libval-config:libval-config.in], [chmod +x libval-config])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT
+AC_MSG_CACHE_DISPLAY()
