@@ -221,7 +221,11 @@ sub checkkeys {
                 next if (!($keyrec->flags & 1));
                 my $ttl = $keyrec->ttl;
                 my $key = $keyrec->key;
+                my $flags = $keyrec->flags;
+                my $proto = $keyrec->protocol;
+                my $algo = $keyrec->algorithm;
                 $key =~ s/\s+//g; # remove all spaces   
+                my $keydata = $flags . " " . $proto . " " . $algo . " " . $key;
                 my $nonmatch;
                 $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
                 if ($nonmatch) {
@@ -229,7 +233,7 @@ sub checkkeys {
             
                 # check if this key is already in %newkeys
                 # later, will also check in file
-                    if (!($newkeys{$d} eq $key)) {
+                    if (!($newkeys{$d} eq $keydata)) {
                     
                         if ($holdtime) {
                             $add_holddown_time = $holdtime;
@@ -239,7 +243,7 @@ sub checkkeys {
 #SK: What if there are multiple new keys added for a zone?
 
                 # %newkeys really need to contain the flags, proto, and algo
-                        $newkeys{$d} = $key;
+                        $newkeys{$d} = $keydata;
                         $keyholds{$key} = $add_holddown_time;
                     }
                 } else {
@@ -263,7 +267,8 @@ sub checkkeys {
         my $nowsecs = str2time($now);
 
         foreach my $d (keys %newkeys) {
-            if ($nowsecs >= $keyholds{$newkeys{$d}}) {
+            my ($f,$p,$a,$k) = split($newkeys{$d});
+            if ($nowsecs >= $keyholds{$k}) {
                 # notify about this key
                 push @newkeydomains, $d;
             }
@@ -305,18 +310,16 @@ sub checkkeys {
 } # end checkkeys
 
 sub add_ta_namedconf  {
-    my ($domain, $key) = @_;
-
-# blatantly cheating here with the flags, proto and algo until
-# I fix up the storage/passing of this data.
-# since all examples seen are 257 3 5, using that
+    my ($domain, $keydata) = @_;
+    my ($flags, $proto, $algo, $key) = split($keydata);
     open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
     open (CONF,$ncfile) or die "unable to read named.conf file.";
     while (<CONF>) {
         print TMP $_;
         if (/^trusted-keys/) {
             print TMP "\n\n";
-            my $newkey = $domain . ". 257 3 5 \"" . $key . "\";\n\n";
+            my $newkey = $domain . " " . $flags . " " . $proto . " " . $algo . " \"" . $key . "\";\n\n";
+#            my $newkey = $domain . ". 257 3 5 \"" . $key . "\";\n\n";
             print TMP $newkey;
         }
     }
@@ -330,13 +333,12 @@ sub add_ta_namedconf  {
 }
 
 sub add_ta_dnsvalconf  {
-    my ($domain, $flags, $proto, $algo, $key) = @_;
-    my $newkeyentry = $domain . ". \"$flags $proto $algo " . $key . "\"\n";
+    my ($domain, $keydata) = @_;
+    my ($flags, $proto, $algo, $key) = split($keydata);
+    my $newkeyentry = $domain . ". \"" . $flags . " " . $proto . " " .  $algo . " " . $key . "\"\n";
+
     my $pat = "trust-anchor";
 
-# blatantly cheating here with the flags, proto and algo until
-# I fix up the storage/passing of this data.
-# since all examples seen are 257 3 5, using that
     open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
     $/ = ";";
