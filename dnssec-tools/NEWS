@@ -4,9 +4,16 @@ details.
 
 1.2
 
+  - New default path for configuration files: $(prefix)/etc/dnssec-tools/
+
   - libval
     - paths/names of resolv.conf, root.hints and dnsval.conf now configurable
+    - configure will search for an existing root.hints file and use it.
     - new libval-config script for finding configuration/compile/link options
+
+  - validate
+    - selftest testcases now read from configuration file
+    - ability to configure/run 'suites' of testcases
 
 1.1
 
