@@ -1,5 +1,6 @@
 prefix=@prefix@
 exec_prefix=@exec_prefix@
+sysconfdir=@sysconfdir@
 bindir=@bindir@
 sbindir=@sbindir@
 libdir=@libdir@
@@ -34,7 +35,7 @@ nextstepinstructions:
 	$(QUIET)echo ""
 	$(QUIET)echo "**********************************************************************"
 	$(QUIET)echo "** NEXT: Please run 'dtinitconf' in order to set up the required"
-	$(QUIET)echo "**       $(prefix)/etc/dnssec-tools/dnssec-tools.conf file"
+	$(QUIET)echo "**       $(sysconfdir)/dnssec-tools/dnssec-tools.conf file"
 	$(QUIET)echo "**********************************************************************"
 	$(QUIET)echo ""
 

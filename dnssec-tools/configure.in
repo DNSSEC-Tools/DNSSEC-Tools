@@ -52,9 +52,12 @@ fi
 AC_SUBST(DNSSEC_SUBDIRS)
 
 dnl ----------------------------------------------------------------------
+expanded_sysconfdir=`eval echo $sysconfdir`
+AC_SUBST(expanded_sysconfdir)
 
 AC_CONFIG_FILES([
  Makefile:Makefile.in
+ tools/modules/conf.pm:tools/modules/conf.pm.in
 ])
 AC_CONFIG_COMMANDS([default], echo timestamp > stamp-h)
 AC_OUTPUT

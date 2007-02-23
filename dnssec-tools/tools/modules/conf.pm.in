@@ -29,6 +29,7 @@ use strict;
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
 			cmdcheck
+			getprefixdir
 			getconfdir
 			getconffile
 			parseconfig
@@ -42,7 +43,9 @@ our @EXPORT = qw(
 
 our @COMMANDS = qw(zonecheck keygen zonesign);
 
-our $CONFFILE = "/usr/local/etc/dnssec-tools/dnssec-tools.conf"; # Configuration file.
+our $prefixdir = "@prefix@";
+our $sysconfdir = "@expanded_sysconfdir@";
+our $CONFFILE = "${sysconfdir}/dnssec-tools/dnssec-tools.conf"; # Configuration file.
 our $VERSION = "0.9";
 
 ###############################################################################
@@ -345,7 +348,7 @@ The DNSSEC tools have a configuration file for commonly used values.
 These values are the defaults for a variety of things, such as
 encryption algorithm and encryption key length.
 
-B</usr/local/etc/dnssec-tools/dnssec-tools.conf> is the path for the DNSSEC
+B<@expanded_sysconfdir@/dnssec-tools/dnssec-tools.conf> is the path for the DNSSEC
 tools configuration file.  The B<Net::DNS::SEC::Tools::conf> module provides
 methods for accessing the configuration data in this file.
 
@@ -437,6 +440,14 @@ The second argument is an exit code -- if the error action requires that the
 process exit.
 
 =back
+
+=head1 DIRECTORIES
+
+The default directory for this installation are:
+
+  prefix           : @prefix@
+  sysconf          : @expanded_sysconfdir@
+  DNSSEC-Tools conf: @expanded_sysconfdir@/dnssec-tools
 
 =head1 COPYRIGHT
 
