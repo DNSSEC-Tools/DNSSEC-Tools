@@ -33,30 +33,26 @@ CONFIGURE_OPTIONS="\"$ac_configure_args\""
 AC_SUBST(CONFIGURE_OPTIONS)
 
 dnl ----------------------------------------------------------------------
-dnl
-if test "x$prefix" = "xNONE" ; then
-   val_prefix=$ac_default_prefix
-else
-   val_prefix=$prefix
-fi
+val_sysconfdir=`eval echo $sysconfdir`
+AC_MSG_CACHE_ADD(system configuration directory : $val_sysconfdir)
 
 AC_ARG_WITH(resolv-conf,
-[  --with-resolv-conf=FILE resolver config file (PREFIX/etc/resolv.conf).],
+[  --with-resolv-conf=FILE resolver config file (SYSCONFDIR/resolv.conf).],
     [ac_cv_user_prompt_VAL_RESOLV_CONF=$with_resolv_conf])
 
 AC_ARG_WITH(root-hints,
 [  --with-root-hints=FILE  root.hints config file.],
     [ac_cv_user_prompt_VAL_ROOT_HINTS=$with_root_hints])
 
-VAL_CONFIGURATION_FILE=$val_prefix/etc/dnssec-tools/dnsval.conf
+VAL_CONFIGURATION_FILE=$val_sysconfdir/dnssec-tools/dnsval.conf
 AC_ARG_WITH(dnsval-conf,
-[  --with-dnsval-conf=FILE dnsval config file (PREFIX/etc/dnssec-tools/dnsval.conf).],
+[  --with-dnsval-conf=FILE dnsval config file (SYSCONFDIR/dnssec-tools/dnsval.conf).],
     [VAL_CONFIGURATION_FILE=$with_dnsval_conf])
 AC_DEFINE_UNQUOTED(VAL_CONFIGURATION_FILE,"$VAL_CONFIGURATION_FILE", [dnsval configuration file])
 AC_SUBST(VAL_CONFIGURATION_FILE)
 AC_MSG_CACHE_ADD(DNSSEC-Tools configuration file: $VAL_CONFIGURATION_FILE)
 
-VALIDATOR_TESTCASES=$val_prefix/etc/dnssec/validator-testcases
+VALIDATOR_TESTCASES=$val_sysconfdir/dnssec-tools/validator-testcases
 AC_DEFINE_UNQUOTED(VALIDATOR_TESTCASES,"$VALIDATOR_TESTCASES", [validator testcases configuration file])
 AC_SUBST(VALIDATOR_TESTCASES)
 
@@ -429,14 +425,14 @@ DNSSEC-Tools specific, location.
     Providing a file via the --with-resolv-conf argument to configure will
 avoid this prompt.
 
-Location to read resolver configuration],$val_prefix/etc/dnssec-tools/resolv.conf,quoted)
+Location to read resolver configuration],$val_sysconfdir/dnssec-tools/resolv.conf,quoted)
 VAL_RESOLV_CONF=$ac_cv_user_prompt_VAL_RESOLV_CONF
 AC_SUBST(VAL_RESOLV_CONF)
 AC_MSG_CACHE_ADD(libval resolver configuration  : $VAL_RESOLV_CONF)
 
-default_hints="$prefix/etc/dnssec-tools/root.hints"
+default_hints="$val_sysconfdir/dnssec-tools/root.hints"
 if test "x$defaults" != "xyes" ; then
-   search_dirs="$prefix/etc/dnssec-tools $prefix/var/named $prefix/var/named/etc/named $prefix/etc/named $prefix/etc"
+   search_dirs="$val_sysconfdir/dnssec-tools $prefix/var/named $prefix/var/named/etc/named $val_sysconfdir/named $val_sysconfdir"
    if test "x$prefix" != "x" ; then
       search_dirs="$search_dirs /var/named /var/named/etc/named /etc/named /etc"
    fi
@@ -465,7 +461,7 @@ Location to read root hints configuration],$default_hints)
 eval ac_cv_user_prompt_VAL_ROOT_HINTS=$VAL_ROOT_HINTS
 echo $ECHO_N "setting $MSG_CHECK to...  $ECHO_C" >&AC_FD_MSG
 if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
-   ac_cv_user_prompt_VAL_ROOT_HINTS="$prefix/etc/dnssec-tools/root.hints"
+   ac_cv_user_prompt_VAL_ROOT_HINTS="$val_sysconfdir/dnssec-tools/root.hints"
 fi
 VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
 AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS")

@@ -1039,9 +1039,9 @@ Optional Packages:
                           both]
   --with-tags[=TAGS]
                           include additional configurations [automatic]
-  --with-resolv-conf=FILE resolver config file (PREFIX/etc/resolv.conf).
+  --with-resolv-conf=FILE resolver config file (SYSCONFDIR/resolv.conf).
   --with-root-hints=FILE  root.hints config file.
-  --with-dnsval-conf=FILE dnsval config file (PREFIX/etc/dnssec-tools/dnsval.conf).
+  --with-dnsval-conf=FILE dnsval config file (SYSCONFDIR/dnssec-tools/dnsval.conf).
 
 Miscellaneous:
   --with-defaults         Use defaults for prompted values.
@@ -18234,11 +18234,13 @@ _ACEOF
 CONFIGURE_OPTIONS="\"$ac_configure_args\""
 
 
-if test "x$prefix" = "xNONE" ; then
-   val_prefix=$ac_default_prefix
-else
-   val_prefix=$prefix
-fi
+val_sysconfdir=`eval echo $sysconfdir`
+
+  cat >> configure-summary << EOF
+  system configuration directory : $val_sysconfdir
+EOF
+
+
 
 # Check whether --with-resolv-conf or --without-resolv-conf was given.
 if test "${with_resolv_conf+set}" = set; then
@@ -18253,7 +18255,7 @@ if test "${with_root_hints+set}" = set; then
   ac_cv_user_prompt_VAL_ROOT_HINTS=$with_root_hints
 fi;
 
-VAL_CONFIGURATION_FILE=$val_prefix/etc/dnssec-tools/dnsval.conf
+VAL_CONFIGURATION_FILE=$val_sysconfdir/dnssec-tools/dnsval.conf
 
 # Check whether --with-dnsval-conf or --without-dnsval-conf was given.
 if test "${with_dnsval_conf+set}" = set; then
@@ -18272,7 +18274,7 @@ _ACEOF
 EOF
 
 
-VALIDATOR_TESTCASES=$val_prefix/etc/dnssec/validator-testcases
+VALIDATOR_TESTCASES=$val_sysconfdir/dnssec-tools/validator-testcases
 
 cat >>confdefs.h <<_ACEOF
 #define VALIDATOR_TESTCASES "$VALIDATOR_TESTCASES"
@@ -22723,14 +22725,14 @@ DNSSEC-Tools specific, location.
     Providing a file via the --with-resolv-conf argument to configure will
 avoid this prompt.
 
-Location to read resolver configuration ($val_prefix/etc/dnssec-tools/resolv.conf): $ECHO_C"
+Location to read resolver configuration ($val_sysconfdir/dnssec-tools/resolv.conf): $ECHO_C"
 read tmpinput
-if test "$tmpinput" = "" -a "$val_prefix/etc/dnssec-tools/resolv.conf" != ""; then
-  tmpinput="$val_prefix/etc/dnssec-tools/resolv.conf"
+if test "$tmpinput" = "" -a "$val_sysconfdir/dnssec-tools/resolv.conf" != ""; then
+  tmpinput="$val_sysconfdir/dnssec-tools/resolv.conf"
 fi
 eval VAL_RESOLV_CONF=\"$tmpinput\"
 else
-tmpinput="$val_prefix/etc/dnssec-tools/resolv.conf"
+tmpinput="$val_sysconfdir/dnssec-tools/resolv.conf"
 eval VAL_RESOLV_CONF=\"$tmpinput\"
 fi
 
@@ -22763,9 +22765,9 @@ VAL_RESOLV_CONF=$ac_cv_user_prompt_VAL_RESOLV_CONF
 EOF
 
 
-default_hints="$prefix/etc/dnssec-tools/root.hints"
+default_hints="$val_sysconfdir/dnssec-tools/root.hints"
 if test "x$defaults" != "xyes" ; then
-   search_dirs="$prefix/etc/dnssec-tools $prefix/var/named $prefix/var/named/etc/named $prefix/etc/named $prefix/etc"
+   search_dirs="$val_sysconfdir/dnssec-tools $prefix/var/named $prefix/var/named/etc/named $val_sysconfdir/named $val_sysconfdir"
    if test "x$prefix" != "x" ; then
       search_dirs="$search_dirs /var/named /var/named/etc/named /etc/named /etc"
    fi
@@ -22807,7 +22809,7 @@ fi
 eval ac_cv_user_prompt_VAL_ROOT_HINTS=$VAL_ROOT_HINTS
 echo $ECHO_N "setting $MSG_CHECK to...  $ECHO_C" >&6
 if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
-   ac_cv_user_prompt_VAL_ROOT_HINTS="$prefix/etc/dnssec-tools/root.hints"
+   ac_cv_user_prompt_VAL_ROOT_HINTS="$val_sysconfdir/dnssec-tools/root.hints"
 fi
 VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
 cat >>confdefs.h <<_ACEOF
