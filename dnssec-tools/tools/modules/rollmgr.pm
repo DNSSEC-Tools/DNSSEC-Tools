@@ -391,7 +391,8 @@ my %port_archs =
 # Unix-related constants.
 # 
 
-my $UNIX_ROLLMGR_DIR	    = "/usr/local/etc/dnssec/";
+#my $UNIX_ROLLMGR_DIR	    = "/usr/local/etc/dnssec-tools/";
+my $UNIX_ROLLMGR_DIR	    = getconfdir();
 my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "rollmgr.pid");
 
 ##############################################################################
