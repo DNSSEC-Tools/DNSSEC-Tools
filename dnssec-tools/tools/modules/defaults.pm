@@ -16,6 +16,8 @@ package Net::DNS::SEC::Tools::defaults;
 require Exporter;
 use strict;
 
+use Net::DNS::SEC::Tools::conf;
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
 		   dnssec_tools_alldefaults
@@ -27,9 +29,9 @@ our $VERSION = "1.0";
 
 my %defaults =
 (
-	"keygen"	=> "/usr/local/sbin/dnssec-keygen",
-	"zonecheck"	=> "/usr/local/sbin/named-checkzone",
-	"zonesign"	=> "/usr/local/sbin/dnssec-signzone",
+	"keygen"	=> getprefixdir() . "/sbin/dnssec-keygen",
+	"zonecheck"	=> getprefixdir() . "/sbin/named-checkzone",
+	"zonesign"	=> getprefixdir() . "/sbin/dnssec-signzone",
 
 	"viewimage"	=> "/usr/X11R6/bin/viewimage",
 
@@ -48,7 +50,7 @@ my %defaults =
 	"usegui"	=> 0,			# Use GUI for option entry flag.
 
         "tanamedconffile"  => "/usr/local/etc/named/named.conf",
-        "tadnsvalconffile" => "/usr/local/etc/dnssec-tools/dnsval.conf",
+        "tadnsvalconffile" => getconfdir . "/dnsval.conf",
         "tasleeptime"      => 3600,
         "tacontact" 	   => "",
         "tasmtpserver"     => "",
