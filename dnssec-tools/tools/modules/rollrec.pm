@@ -22,16 +22,16 @@
 #	An example rollrec file follows:
 #
 #	    roll "example.com"
-#		zonefile	"/usr/etc/dnssec/zones/db.example.com"
-#		keyrec		"/usr/etc/dnssec/keyrec/example.keyrec"
+#		zonefile	"/usr/local/etc/dnssec-tools/zones/db.example.com"
+#		keyrec		"/usr/local/etc/dnssec-tools/keyrec/example.keyrec"
 #		curphase	"2"
 #		maxttl		"86400"
 #		display		"0"
 #		phasestart	"Wed Mar 09 21:49:22 2005"
 #
 #	    roll "triharpskel.com"
-#		zonefile	"/usr/etc/dnssec/zone/db.triharpskel.com"
-#		keyrec		"/usr/etc/dnssec/keyrec/triharpskel.keyrec"
+#		zonefile	"/usr/local/etc/dnssec-tools/zone/db.triharpskel.com"
+#		keyrec		"/usr/local/etc/dnssec-tools/keyrec/triharpskel.keyrec"
 #		curphase	"1"
 #		maxttl		"100000"
 #		display		"1"
@@ -86,7 +86,8 @@ our @EXPORT = qw(
 #
 # Default file names.
 #
-my $DEFAULT_DNSSECTOOLS_DIR = "/usr/local/etc/dnssec";
+#my $DEFAULT_DNSSECTOOLS_DIR = "/usr/local/etc/dnssec-tools";
+my $DEFAULT_DNSSECTOOLS_DIR = getconfdir();
 my $DEFAULT_ROLLREC = "dnssec-tools.rollrec";
 my $LOCKNAME = "rollrec.lock";
 
@@ -1068,8 +1069,8 @@ describe the state of a rollover operation.  A I<rollrec> consists of a set
 of keyword/value entries.  The following is an example of a I<rollrec>:
 
     roll "example.com"
-	zonefile		"/usr/etc/dnssec/zones/db.example.com"
-	keyrec			"/usr/etc/dnssec/keyrec/example.keyrec"
+	zonefile		"/usr/local/etc/dnssec-tools/zones/db.example.com"
+	keyrec			"/usr/local/etc/dnssec-tools/keyrec/example.keyrec"
 	curphase		"2"
 	maxttl			"86400"
 	phasestart		"Wed Mar 09 21:49:22 2005"
