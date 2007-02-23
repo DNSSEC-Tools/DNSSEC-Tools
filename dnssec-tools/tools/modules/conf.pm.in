@@ -235,6 +235,21 @@ sub cmdcheck
 
 #######################################################################
 #
+# Routine:	getprefixdir()
+#
+# Purpose:	Return the prefix directory name.
+#
+sub getprefixdir
+{
+	my $dir;			# DNSSEC-Tools prefix directory.
+
+	$dir = $prefixdir;
+
+	return($dir);
+}
+
+#######################################################################
+#
 # Routine:	getconfdir()
 #
 # Purpose:	Return the configuration directory name.
