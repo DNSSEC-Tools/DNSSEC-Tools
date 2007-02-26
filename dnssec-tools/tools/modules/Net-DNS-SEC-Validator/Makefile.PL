@@ -10,7 +10,7 @@ my %opts;
 # the contents of the Makefile that is written.
 
 # determine if we are in larger build and prepend libval-config path 
-GetOptions(\%opts, 'topdir=s');
+GetOptions(\%opts, 'topdir=s', 'sysconfdir=s');
 $ENV{PATH} = "$opts{topdir}/validator:$ENV{PATH}" if exists $opts{topdir};
 
 %MakeParams = InitMakeParams();
