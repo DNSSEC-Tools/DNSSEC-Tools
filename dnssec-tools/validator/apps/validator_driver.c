@@ -539,7 +539,6 @@ int
 main(int argc, char *argv[])
 {
     val_context_t  *context = NULL;
-    int             ret_val;
 
     // Parse the command line for a query and resolve+validate it
     int             c;
@@ -584,7 +583,7 @@ main(int argc, char *argv[])
         switch (c) {
         case 'h':
             usage(argv[0]);
-            return (0);
+            return (-1);
 
         case 'F':
             testcase_config = optarg;
@@ -633,7 +632,7 @@ main(int argc, char *argv[])
             if (!success) {
                 fprintf(stderr, "Cannot parse class %s\n", optarg);
                 usage(argv[0]);
-                return 1;
+                return -1;
             }
             break;
 
@@ -641,7 +640,7 @@ main(int argc, char *argv[])
             logp = val_log_add_optarg(optarg, 1);
             if (NULL == logp) { /* err msg already logged */
                 usage(argv[0]);
-                return 1;
+                return -1;
             }
             break;
 
@@ -667,7 +666,7 @@ main(int argc, char *argv[])
             if (!success) {
                 fprintf(stderr, "Cannot parse type %s\n", optarg);
                 usage(argv[0]);
-                return 1;
+                return -1;
             }
             break;
 
@@ -690,7 +689,7 @@ main(int argc, char *argv[])
             fprintf(stderr, "Unknown option %s (c = %d [%c])\n",
                     argv[optind - 1], c, (char) c);
             usage(argv[0]);
-            return 1;
+            return -1;
 
         }                       // end switch
     }
@@ -706,21 +705,24 @@ main(int argc, char *argv[])
      */
 #define ONE_CTX 1
 #ifdef ONE_CTX
+    int             ret_val;
     if (VAL_NO_ERROR !=
         (ret_val = val_create_context(label_str, &context))) {
         fprintf(stderr, "Cannot create context: %d\n", ret_val);
-        return 1;
+        return -1;
     }
 #else
     context = NULL;
 #endif
 
+    rc = 0;
     // optind is a global variable.  See man page for getopt_long(3)
     if (optind >= argc) {
         if (!selftest && (tcs == -1)) {
             fprintf(stderr, "Please specify domain name\n");
             usage(argv[0]);
-            rc = 1;
+            rc = -1;
+            goto done;
         } else {
             if (selftest) {
                 /** run all the tests */
@@ -733,17 +735,17 @@ main(int argc, char *argv[])
                                doprint);
                 if (wait)
                     sleep(wait);
-            } while (wait);
+            } while (wait && !rc);
         }
 
-        rc = 0;
         goto done;
     }
 
     domain_name = argv[optind++];
     if (ns_name_pton(domain_name, name_n, NS_MAXCDNAME) == -1) {
         fprintf(stderr, "Cannot convert name to wire format\n");
-        return 1;
+        rc = -1;
+        goto done;
     }
 
     do { /* endless loop */
@@ -765,7 +767,6 @@ main(int argc, char *argv[])
             sleep(wait);
     } while (wait);
 
-    rc = 0;
 
 done:
     if (context)
