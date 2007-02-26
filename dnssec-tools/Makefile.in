@@ -92,7 +92,7 @@ perlmake:
 perlmakefiles:
 	$(QUIET)for i in $(PERLDIRS) ; do \
 	  if test ! -f $$i/Makefile ; then \
-	    (cd $$i ; perl Makefile.PL $(PERLARGS) --topdir $(BUILDDIR)) ; \
+	    (cd $$i ; perl Makefile.PL $(PERLARGS) --topdir $(BUILDDIR) --sysconfdir $(sysconfdir)); \
           fi ; \
          done
 
