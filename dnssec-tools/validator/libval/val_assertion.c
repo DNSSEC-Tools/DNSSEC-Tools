@@ -1914,20 +1914,14 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                  */
                 cpe = cp;
                 cpe_res = res;
-#if 0
                 /*
                  * NS can only be set if the SOA bit is set 
                  */
-                /*
-                 * XXX The NSEC3 that proves that a DS record for a delegation is absent
-                 * XXX is an exact match for that delegation owner name. The NS bit will be
-                 * XXX set but the SOA will not. So there is some confusion here.
-                 */
-                if ((is_type_set
+                if (qtype_h == ns_t_ds &&
+                    (is_type_set
                      ((&
                        (the_set->rrs.val_rrset_data->
-                        rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_ns))
-                    &&
+                        rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_ns)) &&
                     (!is_type_set
                      ((&
                        (the_set->rrs.val_rrset_data->
@@ -1940,7 +1934,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                     FREE(hash);
                     return VAL_NO_ERROR;
                 }
-#endif
                 /*
                  * hashes match 
                  */
@@ -2032,7 +2025,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                  hash, hashlen)) {
                 ncn = cp;
                 ncn_res = res;
-                if (nd.optout) {
+                if (nd.flags & NSEC3_FLAG_OPTOUT) {
                     optout = 1;
                 } else {
                     optout = 0;

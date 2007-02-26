@@ -411,14 +411,17 @@ extern          "C" {
 #ifdef LIBVAL_NSEC3
     typedef struct val_nsec3_rdata {
         u_int8_t        alg;
-        u_int8_t        optout;
-        u_int32_t       iterations;
+        u_int8_t        flags;
+        u_int16_t       iterations;
         u_int8_t        saltlen;
         u_int8_t       *salt;
         u_int8_t        nexthashlen;
         u_int8_t       *nexthash;
         u_int16_t       bit_field;
     } val_nsec3_rdata_t;
+
+#define NSEC3_FLAG_OPTOUT 0x01
+
 #endif
 
     struct val_addrinfo {
