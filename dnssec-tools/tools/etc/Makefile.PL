@@ -3,6 +3,11 @@
 # file distributed with this software for details
 
 use ExtUtils::MakeMaker;
+require 5;
+use Getopt::Long;
+my %cmdopts;
+# determine if we are in larger build and prepend libval-config path 
+GetOptions(\%cmdopts, 'sysconfdir=s', 'topdir=s');
 
 %opts = (
 	 'NAME' => 'etc',
@@ -14,7 +19,8 @@ use ExtUtils::MakeMaker;
 sub MY::postamble {
     return '
 
-CONFDIR=$(PREFIX)/etc/dnssec-tools
+SYSCONFDIR=' . "$cmdopts{sysconfdir}" . '
+CONFDIR=$(SYSCONFDIR)/dnssec-tools
 DESTCONFDIR=$(DESTDIR)$(CONFDIR)
 INSTALL=$(PERLRUN) "-MExtUtils::Command" -e cp
 
