@@ -428,11 +428,11 @@ val_parse_nsec3_rdata(u_int8_t * rr_rdata, u_int16_t rdatalen,
         return NULL;
     }
     nd->alg = *cp;
-    memcpy(&nd->iterations, cp, 4 * sizeof(u_int8_t));
-    nd->optout = (nd->iterations & 0x00800000) ? 1 : 0;
-    nd->iterations &= 0x007fffff;
-    cp += 4;
-
+    cp += 1;
+    nd->flags = *cp;
+    cp += 1;
+    memcpy(&nd->iterations, cp, sizeof(u_int16_t));
+    cp += sizeof(u_int16_t);
     nd->saltlen = *cp;
     cp += 1;
     if ((cp - rr_rdata) >= rdatalen)
