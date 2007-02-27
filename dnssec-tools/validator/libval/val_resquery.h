@@ -11,10 +11,11 @@ int             res_zi_unverified_ns_list(struct name_server **ns_list,
                                           struct rrset_rec
                                           *unchecked_zone_info, struct name_server
                                           **pending_glue);
-int             bootstrap_referral(u_int8_t * referral_zone_n,
+int             bootstrap_referral(val_context_t *context,
+                                   u_int8_t * referral_zone_n,
                                    struct rrset_rec **learned_zones,
                                    struct val_query_chain *matched_q,
-                                   struct val_query_chain **queries,
+                                   struct queries_for_query **queries,
                                    struct name_server **ref_ns_list);
 int             process_cname_dname_responses(u_int8_t *name_n, 
                               u_int16_t type_h, 
@@ -24,21 +25,24 @@ int             process_cname_dname_responses(u_int8_t *name_n,
                               int *referral_error);
 int             extract_glue_from_rdata(struct rr_rec *addr_rr,
                                         struct name_server **ns);
-void            merge_glue_in_referral(struct val_query_chain *pc,
-                                       struct val_query_chain **queries);
+int             merge_glue_in_referral(val_context_t *context,
+                                       struct val_query_chain *pc,
+                                       struct queries_for_query **queries);
 int             find_nslist_for_query(val_context_t * context,
                                       struct val_query_chain *next_q,
-                                      struct val_query_chain **queries);
+                                      struct queries_for_query **queries);
 int             val_resquery_send(val_context_t * context,
                                   struct val_query_chain *matched_q);
 int             val_resquery_rcv(val_context_t * context,
                                  struct val_query_chain *matched_q,
                                  struct domain_info **response,
-                                 struct val_query_chain **queries);
+                                 struct queries_for_query **queries);
 
 int             find_next_zonecut(val_context_t * context,
+                                  struct queries_for_query **queries,
                                   struct rrset_rec *rrset,
                                   u_int8_t * curzone_n,
+                                  int *done,
                                   u_int8_t ** name_n);
 
 #endif                          /* VAL_RESQUERY_H */
