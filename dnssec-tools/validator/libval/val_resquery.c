@@ -43,11 +43,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#ifndef VAL_NO_THREADS
+#include <pthread.h>
+#endif
 
 #include "val_resquery.h"
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_assertion.h"
+#include "val_context.h"
 
 #define MERGE_RR(old_rr, new_rr) do{ \
 	if (old_rr == NULL) \
@@ -113,12 +117,14 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
     return VAL_NO_ERROR;
 }
 
-void
-merge_glue_in_referral(struct val_query_chain *pc,
-                       struct val_query_chain **queries)
+int
+merge_glue_in_referral(val_context_t *context,
+                       struct val_query_chain *pc,
+                       struct queries_for_query **queries)
 {
     int             retval;
     struct val_query_chain *glueptr;
+    struct queries_for_query *added_q;
     struct name_server *pending_ns;
 
     /*
@@ -126,7 +132,7 @@ merge_glue_in_referral(struct val_query_chain *pc,
      */
     if ((queries == NULL) || (pc == NULL) || (pc->qc_referral == NULL) ||
         (pc->qc_referral->glueptr == NULL))
-        return;                 
+        return VAL_BAD_ARGUMENT; 
 
     glueptr = pc->qc_referral->glueptr;
 
@@ -199,12 +205,17 @@ merge_glue_in_referral(struct val_query_chain *pc,
         if (pending_ns == NULL) {
             pc->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
         } else {
-            add_to_query_chain(queries, pending_ns->ns_name_n, ns_t_a,
-                               ns_c_in);
-            pc->qc_referral->glueptr = *queries;
+            if(VAL_NO_ERROR != 
+                (retval = add_to_qfq_chain(context, 
+                                           queries, pending_ns->ns_name_n, ns_t_a,
+                                           ns_c_in, pc->qc_flags, &added_q)))
+                return retval;
+            pc->qc_referral->glueptr = added_q->qfq_query;
             pc->qc_referral->glueptr->qc_glue_request = 1;
         }
     }
+
+    return VAL_NO_ERROR;
 }
 
 int
@@ -239,15 +250,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
         if (unchecked_set->rrs.val_rrset_type_h == ns_t_ns &&
             (namecmp(zone_name, unchecked_set->rrs.val_rrset_name_n) == 0))
         {
-            if ((*ns_list != NULL) && (trailer != NULL)) {
-                /*
-                 * We've hit a duplicate, remove it from the list 
-                 */
-                trailer->rrs_next = unchecked_set->rrs_next;
-                unchecked_set->rrs_next = NULL;
-                res_sq_free_rrset_recs(&unchecked_set);
-                unchecked_set = trailer;
-            } else {
+            if ((*ns_list == NULL) || (trailer == NULL)) {
                 ns_rr = unchecked_set->rrs.val_rrset_data;
                 while (ns_rr) {
                     /*
@@ -423,7 +426,7 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
 int
 find_nslist_for_query(val_context_t * context,
                       struct val_query_chain *next_q,
-                      struct val_query_chain **queries)
+                      struct queries_for_query **queries)
 {
     /*
      * See if we can get an answer from a closer NS (from cache) 
@@ -466,8 +469,9 @@ find_nslist_for_query(val_context_t * context,
         }
         clone_ns_list(&next_q->qc_ns_list, context->root_ns);
         next_q->qc_zonecut_n = (u_int8_t *) MALLOC(sizeof(u_int8_t));
-        if (next_q->qc_zonecut_n == NULL)
+        if (next_q->qc_zonecut_n == NULL) {
             return VAL_OUT_OF_MEMORY;
+        }
         *(next_q->qc_zonecut_n) = (u_int8_t) '\0';
     }
     return VAL_NO_ERROR;
@@ -500,16 +504,18 @@ free_referral_members(struct delegation_info *del)
 }
 
 int
-bootstrap_referral(u_int8_t * referral_zone_n,
+bootstrap_referral(val_context_t *context,
+                   u_int8_t * referral_zone_n,
                    struct rrset_rec **learned_zones,
                    struct val_query_chain *matched_q,
-                   struct val_query_chain **queries,
+                   struct queries_for_query **queries,
                    struct name_server **ref_ns_list)
 {
     struct name_server *pending_glue;
     int             ret_val;
+    struct queries_for_query *added_q;
 
-    if ((learned_zones == NULL) || (matched_q == NULL) ||
+    if ((context == NULL) || (learned_zones == NULL) || (matched_q == NULL) ||
         (queries == NULL) || (ref_ns_list == NULL))
         return VAL_BAD_ARGUMENT;
 
@@ -550,9 +556,11 @@ bootstrap_referral(u_int8_t * referral_zone_n,
              * Create a query for glue for pending_ns 
              */
             matched_q->qc_referral->pending_glue_ns = pending_glue;
-            add_to_query_chain(queries, pending_glue->ns_name_n, ns_t_a,
-                               ns_c_in);
-            matched_q->qc_referral->glueptr = *queries;
+            if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
+                                       queries, pending_glue->ns_name_n, ns_t_a,
+                                       ns_c_in, matched_q->qc_flags, &added_q)))
+                    return ret_val;
+            matched_q->qc_referral->glueptr = added_q->qfq_query;
             matched_q->qc_referral->glueptr->qc_flags &= VAL_FLAGS_DONT_VALIDATE;
             matched_q->qc_referral->glueptr->qc_glue_request = 1;
             matched_q->qc_state = Q_WAIT_FOR_GLUE;
@@ -580,7 +588,7 @@ follow_referral_or_alias_link(val_context_t * context,
                               struct val_query_chain *matched_q,
                               struct rrset_rec **learned_zones,
                               struct qname_chain **qnames,
-                              struct val_query_chain **queries,
+                              struct queries_for_query **queries,
                               struct rrset_rec **answers)
 {
     int             ret_val;
@@ -654,7 +662,8 @@ follow_referral_or_alias_link(val_context_t * context,
             *learned_zones = NULL;
         } else {
             if (VAL_NO_ERROR != (ret_val =
-                                 bootstrap_referral(referral_zone_n,
+                                 bootstrap_referral(context,
+                                                    referral_zone_n,
                                                     learned_zones,
                                                     matched_q,
                                                     queries,
@@ -902,7 +911,7 @@ static int
 digest_response(val_context_t * context,
                 struct val_query_chain *matched_q,
                 struct name_server *respondent_server,
-                struct val_query_chain **queries,
+                struct queries_for_query **queries,
                 u_int8_t * response_data,
                 u_int32_t response_length, struct domain_info *di_response)
 {
@@ -1453,7 +1462,7 @@ int
 val_resquery_rcv(val_context_t * context,
                  struct val_query_chain *matched_q,
                  struct domain_info **response,
-                 struct val_query_chain **queries)
+                 struct queries_for_query **queries)
 {
     struct name_server *server = NULL;
     u_int8_t       *response_data = NULL;
@@ -1544,22 +1553,23 @@ val_resquery_rcv(val_context_t * context,
  * find the zonecut for this name and type 
  */
 int
-find_next_zonecut(val_context_t * ctx, struct rrset_rec *rrset,
-                  u_int8_t * curzone_n, u_int8_t ** name_n)
+find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
+                  struct rrset_rec *rrset, u_int8_t * curzone_n, int *done, 
+                  u_int8_t ** name_n)
 {
     u_int8_t       *qname;
     int             retval;
-    struct val_result_chain *results;
-    val_context_t  *context = NULL;
+    struct val_result_chain *results = NULL;
     int             len;
     struct val_rrset *soa_rrset = NULL;
 
-    if (name_n == NULL)
+    if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
 
     *name_n = NULL;
     qname = NULL;
-
+    *done = 1;
+    
     if (rrset != NULL) {
         qname = rrset->rrs.val_rrset_name_n;
 
@@ -1620,19 +1630,13 @@ find_next_zonecut(val_context_t * ctx, struct rrset_rec *rrset,
     if (qname == NULL)
         return VAL_NO_ERROR;
 
-    /*
-     * query for the SOA and return the zone cut.
-     * create a context if we don't already have one.
-     */
-    if (ctx == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
-            return EAI_FAIL;
-    } else
-        context = (val_context_t *) ctx;
+    if (VAL_NO_ERROR != 
+            (retval = try_chase_query(context, qname, ns_c_in,
+                                      ns_t_soa, VAL_FLAGS_DONT_VALIDATE, 
+                                      queries, &results, done)))
+        return retval;
 
-    retval = val_resolve_and_check(context, qname, ns_c_in, ns_t_soa,
-                                   VAL_FLAGS_DONT_VALIDATE, &results);
-    if (VAL_NO_ERROR == retval) {
+    if (*done) {
 
         struct val_result_chain *res;
         for (res = results; res; res = res->val_rc_next) {
@@ -1666,7 +1670,16 @@ find_next_zonecut(val_context_t * ctx, struct rrset_rec *rrset,
                     goto done;
                 }
                 memcpy(*name_n, soa_rrset->val_rrset_name_n, len);
-
+                if (rrset->rrs_zonecut_n) {
+                    FREE(rrset->rrs_zonecut_n);
+                }
+                rrset->rrs_zonecut_n = *name_n; 
+                *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+                if (*name_n == NULL) {
+                    retval = VAL_OUT_OF_MEMORY;
+                    goto done;
+                }
+                memcpy(*name_n, soa_rrset->val_rrset_name_n, len);
                 retval = VAL_NO_ERROR;
                 break;
             }
@@ -1675,9 +1688,6 @@ find_next_zonecut(val_context_t * ctx, struct rrset_rec *rrset,
 
   done:
     val_free_result_chain(results);
-
-    if ((ctx == NULL) && context)
-        val_free_context(context);
 
     return retval;
 }
