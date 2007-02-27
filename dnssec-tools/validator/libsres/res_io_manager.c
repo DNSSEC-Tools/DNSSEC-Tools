@@ -522,6 +522,8 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
      * Perform the select call 
      */
     int             i, max_sock;
+    struct timeval zero_time;
+    memset (&zero_time, 0, sizeof(struct timeval));
 
     max_sock = -1;
 
@@ -532,7 +534,16 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
         if (FD_ISSET(i, read_descriptors))
             max_sock = i;
 
-    return select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
+    /** Never block **/
+    //return select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
+    /*
+     * Blocking during this call will create multithreading problems 
+     * for the validator. In any case, a better interface between the 
+     * resolver and validator is to have the resolver signal the 
+     * validator when it is ready with some data.
+     * For now, the validator has to constantly poll for results
+     */
+    return select(max_sock + 1, read_descriptors, NULL, NULL, &zero_time);
 }
 
 int
