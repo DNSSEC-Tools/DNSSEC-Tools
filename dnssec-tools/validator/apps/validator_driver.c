@@ -549,7 +549,7 @@ main(int argc, char *argv[])
     int             daemon = 0;
     u_int8_t        flags = (u_int8_t) 0;
     int             retvals[] = { 0 };
-    int             tcs = -1, tce = -1;
+    int             tcs = 0, tce = -1;
     int             wait = 0;
     char           *label_str = NULL, *nextarg = NULL;
     char           *suite = NULL, *testcase_config = NULL;
@@ -721,11 +721,6 @@ main(int argc, char *argv[])
             rc = -1;
             goto done;
         } else {
-            if (selftest) {
-                /** run all the tests */
-                tcs = 0;
-                tce = -1;
-            }
 
             do { /* endless loop */ 
                 rc = self_test(context, tcs, tce, testcase_config, suite,
