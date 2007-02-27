@@ -52,6 +52,9 @@ fi
 AC_SUBST(DNSSEC_SUBDIRS)
 
 dnl ----------------------------------------------------------------------
+if test "x$prefix" = "xNONE" ; then
+   prefix=$ac_default_prefix
+fi
 expanded_sysconfdir=`eval echo $sysconfdir`
 AC_SUBST(expanded_sysconfdir)
 
