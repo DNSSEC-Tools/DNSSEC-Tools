@@ -22,17 +22,19 @@
 #	An example rollrec file follows:
 #
 #	    roll "example.com"
-#		zonefile	"/usr/local/etc/dnssec-tools/zones/db.example.com"
-#		keyrec		"/usr/local/etc/dnssec-tools/keyrec/example.keyrec"
-#		curphase	"2"
+#		zonefile	"/usr/etc/dnssec-tools/zones/db.example.com"
+#		keyrec		"/usr/etc/dnssec-tools/keyrec/example.keyrec"
+#		zskphase	"2"
+#		kskphase	"0"
 #		maxttl		"86400"
 #		display		"0"
 #		phasestart	"Wed Mar 09 21:49:22 2005"
 #
-#	    roll "triharpskel.com"
-#		zonefile	"/usr/local/etc/dnssec-tools/zone/db.triharpskel.com"
-#		keyrec		"/usr/local/etc/dnssec-tools/keyrec/triharpskel.keyrec"
-#		curphase	"1"
+#	    roll "example2.com"
+#		zonefile	"/usr/etc/dnssec-tools/zone/db.example2.com"
+#		keyrec		"/usr/etc/dnssec-tools/keyrec/example2.keyrec"
+#		kskphase	"1"
+#		zskphase	"0"
 #		maxttl		"100000"
 #		display		"1"
 #		loglevel	"info"
@@ -86,7 +88,6 @@ our @EXPORT = qw(
 #
 # Default file names.
 #
-#my $DEFAULT_DNSSECTOOLS_DIR = "/usr/local/etc/dnssec-tools";
 my $DEFAULT_DNSSECTOOLS_DIR = getconfdir();
 my $DEFAULT_ROLLREC = "dnssec-tools.rollrec";
 my $LOCKNAME = "rollrec.lock";
@@ -97,11 +98,17 @@ my $LOCKNAME = "rollrec.lock";
 my @ROLLFIELDS = (
 			'zonefile',
 			'keyrec',
-			'curphase',
 			'maxttl',
+			'administrator',
 			'phasestart',
 			'display',
 			'loglevel',
+			'kskphase',
+			'zskphase',
+			'ksk_rollsecs',
+			'ksk_rolldate',
+			'zsk_rollsecs',
+			'zsk_rolldate',
 			'rollrec_signdate',
 			'rollrec_signsecs',
 		  );
@@ -263,7 +270,7 @@ sub rollrec_read
 		# and a number of punctuation characters.  The value *must*
 		# be enclosed in double quotes.
 		#
-		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$keyword = $1;
 		$value = $2;
 #		print "rollrec_read:  keyword <$keyword>\t\t<$value>\n";
@@ -513,7 +520,7 @@ sub rollrec_setval
 		#
 		# Get the line's keyword and value.
 		#
-		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/;
+		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
 		$lkw = $1;
 		$lval = $2;
 
@@ -527,7 +534,7 @@ sub rollrec_setval
 		# If we hit the beginning of the next rollrec without
 		# finding the field, drop out and insert it.
 		#
-		last if(lc($lkw) eq "roll");
+		last if((lc($lkw) eq "roll") || (lc($lkw) eq "skip"));
 
 		#
 		# Save the index of the last field we've looked at that
@@ -552,7 +559,7 @@ sub rollrec_setval
 	#
 	if($found)
 	{
-		$rollreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]+)"/"$val"/;
+		$rollreclines[$fldind] =~ s/"([a-zA-Z0-9\/\-+_.,: \t]*)"/"$val"/;
 	}
 	else
 	{
@@ -1069,10 +1076,12 @@ describe the state of a rollover operation.  A I<rollrec> consists of a set
 of keyword/value entries.  The following is an example of a I<rollrec>:
 
     roll "example.com"
-	zonefile		"/usr/local/etc/dnssec-tools/zones/db.example.com"
-	keyrec			"/usr/local/etc/dnssec-tools/keyrec/example.keyrec"
-	curphase		"2"
+	zonefile		"/usr/etc/dnssec-tools/zones/db.example.com"
+	keyrec			"/usr/etc/dnssec-tools/keyrec/example.keyrec"
+	kskphase		"0"
+	zskphase		"2"
 	maxttl			"86400"
+	administrator		"bob@bobhost.example.com"
 	phasestart		"Wed Mar 09 21:49:22 2005"
 	display			"0"
 	loglevel		"info"
