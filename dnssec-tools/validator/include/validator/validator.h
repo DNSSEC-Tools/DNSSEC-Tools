@@ -166,6 +166,13 @@ extern          "C" {
 #define VAL_FLAGS_DONT_VALIDATE 0x00000001
 #define VAL_QUERY_MERGE_RRSETS 0x00000002
 
+/* 
+ * This flag will be an OR of all the flags that affect 
+ * how cached data is retrieved. Currently only the
+ * VAL_FLAGS_DONT_VALIDATE flag is relevant
+ */
+#define VAL_MASK_AFFECTS_CACHING (VAL_FLAGS_DONT_VALIDATE)
+
 
 #define SIG_ACCEPT_WINDOW   (86400*0) /** 1 days **/
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
@@ -242,44 +249,52 @@ extern          "C" {
 
     typedef struct val_context {
 
+#ifndef VAL_NO_THREADS
+        /*
+         * The read-write locks ensure that validator
+         * policy is modified only when there is no
+         * "active" val_resolve_and_check() call
+         */
+        pthread_rwlock_t respol_rwlock;
+        pthread_rwlock_t valpol_rwlock;
+        /*
+         * The mutex lock ensures that changes to the 
+         * context cache can only be made by one thread
+         * at any given time
+         */
+        pthread_mutex_t ac_lock;
+#endif
+        
         char            id[VAL_CTX_IDLEN];
         char            *label;
         char            *dnsval_conf;
         char            *resolv_conf;
         char            *root_conf;
 
-        time_t r_timestamp;
-        time_t v_timestamp;
-        time_t h_timestamp;
-
-        policy_entry_t *e_pol;
-
         /*
          * root_hints
          */
+        time_t h_timestamp;
         struct name_server *root_ns;
 
         /*
-         * resolver policy 
+         * default name server 
          */
+        time_t r_timestamp;
         struct name_server *nslist;
-
+        
         /*
          * validator policy 
          */
+        time_t v_timestamp;
+        policy_entry_t *e_pol;
         struct policy_overrides *pol_overrides;
         struct policy_overrides *cur_override;
-
-        /*
-         * caches 
-         */
+        
+        /* Query and authentication chain caches */
         struct val_digested_auth_chain *a_list;
         struct val_query_chain *q_list;
-
-        //XXX Needs a lock variable here
-
-    } val_context_t;
-
+    } val_context_t; 
 
     struct val_rrset_digested {
         struct rrset_rec *ac_data;
@@ -294,6 +309,7 @@ extern          "C" {
             struct val_rrset *val_ac_rrset;
             struct val_rrset_digested _as;
         };
+        struct val_query_chain *val_ac_query;
         struct val_digested_auth_chain *val_ac_trust;
     };
 
@@ -319,12 +335,20 @@ extern          "C" {
     };
 
     struct val_query_chain {
+#ifndef VAL_NO_THREADS
+        /*
+         * The read-write lock ensures that
+         * queries are not deleted from the cache while
+         * they are still being accessed by some thread 
+         */
+        pthread_rwlock_t qc_rwlock;
+#endif
         u_char          qc_name_n[NS_MAXCDNAME];
         u_char          qc_original_name[NS_MAXCDNAME];
         u_int16_t       qc_type_h;
         u_int16_t       qc_class_h;
         u_int16_t       qc_state;       /* DOS, TIMED_OUT, etc */
-        int             qc_flags;
+        u_int8_t        qc_flags;
         struct name_server *qc_ns_list;
         struct name_server *qc_respondent_server;
         u_int8_t       *qc_zonecut_n;
@@ -334,6 +358,11 @@ extern          "C" {
         struct val_digested_auth_chain *qc_proof;
         int             qc_glue_request;
         struct val_query_chain *qc_next;
+    };
+
+    struct queries_for_query {
+        struct val_query_chain *qfq_query;
+        struct queries_for_query *qfq_next;
     };
 
     struct val_response {
@@ -486,8 +515,7 @@ extern          "C" {
                                                  u_char * name_n,
                                                  u_int16_t class_h,
                                                  u_int16_t type_h,
-                                                 struct val_query_chain
-                                                 *queries, struct val_result_chain
+                                                 struct val_result_chain
                                                  *results);
     void            val_log(const val_context_t * ctx, int level,
                             const char *template, ...);
