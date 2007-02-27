@@ -41,10 +41,6 @@ static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_ns_info = NULL;
 static struct rrset_rec *unchecked_answers = NULL;
 static struct rrset_rec *unchecked_proofs = NULL;
-#ifndef VAL_NO_THREADS
-static pthread_rwlock_t rwlock;
-static int      rwlock_init = -1;
-#endif
 
 struct zone_ns_map_t {
     u_int8_t        zone_n[NS_MAXCDNAME];
@@ -55,52 +51,48 @@ struct zone_ns_map_t {
 static struct zone_ns_map_t *zone_ns_map = NULL;
 
 #ifndef VAL_NO_THREADS
-#define LOCK_INIT() do{				\
-	if(0 != rwlock_init) {\
-		if(0 != pthread_rwlock_init(&rwlock, NULL))\
+
+static pthread_rwlock_t key_rwlock;
+static int key_rwlock_init = -1;
+static pthread_rwlock_t ds_rwlock;
+static int ds_rwlock_init = -1;
+static pthread_rwlock_t ns_rwlock;
+static int ns_rwlock_init = -1;
+static pthread_rwlock_t ans_rwlock;
+static int ans_rwlock_init = -1;
+static pthread_rwlock_t proof_rwlock;
+static int proof_rwlock_init = -1;
+static pthread_rwlock_t map_rwlock;
+static int map_rwlock_init = -1;
+
+#define LOCK_INIT(lk, initvar) do {\
+    if (0 != initvar) {\
+        if (0 != pthread_rwlock_init(lk, NULL))\
+	        return VAL_INTERNAL_ERROR; \
+        initvar = 0;\
+    }\
+} while(0)
+
+#define LOCK_SH(lk) do{				\
+	if(0 != pthread_rwlock_rdlock(lk))\
 		return VAL_INTERNAL_ERROR; \
-	}\
 } while(0)
 
-#define LOCK_SH() do{				\
-	if(0 != pthread_rwlock_rdlock(&rwlock))\
-		return VAL_INTERNAL_ERROR; \
-} while(0)
-
-#define LOCK_EX() do{				\
-	if(0 != pthread_rwlock_wrlock(&rwlock))\
+#define LOCK_EX(lk) do{				\
+	if(0 != pthread_rwlock_wrlock(lk))\
 		return VAL_INTERNAL_ERROR;	\
 } while(0)
 
-/*
- * pthreads doesn't have a way to upgrade a lock, so we have to
- * release the shared lock and hope we get the write lock w/out
- * another process running inbetween. :-/
- */
-#define LOCK_UPGRADE() do{				\
-	if((0 != pthread_rwlock_unlock(&rwlock)) ||	\
-	   (0 != pthread_rwlock_wrlock(&rwlock)))	\
-		return VAL_INTERNAL_ERROR;	\
-} while(0)
-
-#define LOCK_DOWNGRADE() do{				\
-	if((0 != pthread_rwlock_unlock(&rwlock)) ||	\
-	   (0 != pthread_rwlock_rdlock(&rwlock)))	\
-		return VAL_INTERNAL_ERROR;	\
-} while(0)
-
-#define UNLOCK() do{				\
-	if (0 != pthread_rwlock_unlock(&rwlock)) \
+#define UNLOCK(lk) do{				\
+	if (0 != pthread_rwlock_unlock(lk)) \
 		return VAL_INTERNAL_ERROR;	\
 } while(0)
 
 #else
-#define LOCK_INIT()
-#define LOCK_SH()
-#define LOCK_EX()
-#define LOCK_UPGRADE()
-#define LOCK_DOWNGRADE()
-#define UNLOCK()
+#define LOCK_INIT(lk, initvar)
+#define LOCK_SH(lk)
+#define LOCK_EX(lk)
+#define UNLOCK(lk)
 #endif
 
 #define IN_BAILIWICK(name, q) \
@@ -140,19 +132,16 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
                 /*
                  * delete new 
                  */
-                LOCK_UPGRADE();
                 if (trail_new == NULL) {
                     new_info = new_rr->rrs_next;
                     if (new_info == NULL) {
                         res_sq_free_rrset_recs(&new_rr);
-                        LOCK_DOWNGRADE();
                         return VAL_NO_ERROR;
                     }
                 } else
                     trail_new->rrs_next = new_rr->rrs_next;
                 new_rr->rrs_next = NULL;
                 res_sq_free_rrset_recs(&new_rr);
-                LOCK_DOWNGRADE();
                 break;
 
             } else if (old->rrs.val_rrset_type_h == new_rr->rrs.val_rrset_type_h
@@ -160,15 +149,6 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
                 new_rr->rrs.val_rrset_class_h
                 && namecmp(old->rrs.val_rrset_name_n,
                            new_rr->rrs.val_rrset_name_n) == 0) {
-
-
-                // xxx-audit: dangerous locking
-                //     there is a window here. recommend just getting
-                //     and exclusive lock all the time...
-                /*
-                 * caller has a read lock, now we need a write lock...
-                 */
-                LOCK_UPGRADE();
 
                 /*
                  * old and new are competitors 
@@ -201,7 +181,6 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
                     new_info = new_rr->rrs_next;
                     if (new_info == NULL) {
                         res_sq_free_rrset_recs(&new_rr);
-                        LOCK_DOWNGRADE();
                         return VAL_NO_ERROR;
                     }
                 } else
@@ -209,7 +188,6 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
                 new_rr->rrs_next = NULL;
                 res_sq_free_rrset_recs(&new_rr);
 
-                LOCK_DOWNGRADE();
 
                 break;
             } else {
@@ -235,6 +213,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
 {
     struct rrset_rec *next_answer, *prev, *new_answer;
     struct timeval  tv;
+    pthread_rwlock_t *lk;
 
     u_int16_t type_h;
     u_int16_t class_h;
@@ -248,26 +227,36 @@ get_cached_rrset(struct val_query_chain *matched_q,
     type_h = matched_q->qc_type_h;
     class_h = matched_q->qc_class_h;
 
-    LOCK_INIT();
 
     gettimeofday(&tv, NULL);
 
-    LOCK_SH();
     switch (type_h) {
 
     case ns_t_ds:
+        lk = &ds_rwlock;
+        LOCK_INIT(lk, ds_rwlock_init);
+        LOCK_SH(lk);
         next_answer = unchecked_ds_info;
         break;
 
     case ns_t_dnskey:
+        lk = &key_rwlock;
+        LOCK_INIT(lk, key_rwlock_init);
+        LOCK_SH(lk);
         next_answer = unchecked_key_info;
         break;
 
     case ns_t_ns:
+        lk = &ns_rwlock;
+        LOCK_INIT(lk, ns_rwlock_init);
+        LOCK_SH(lk);
         next_answer = unchecked_ns_info;
         break;
 
     default:
+        lk = &ans_rwlock;
+        LOCK_INIT(lk, ans_rwlock_init);
+        LOCK_SH(lk);
         next_answer = unchecked_answers;
         break;
     }
@@ -301,7 +290,7 @@ get_cached_rrset(struct val_query_chain *matched_q,
         next_answer = next_answer->rrs_next;
     }
 
-    UNLOCK();
+    UNLOCK(lk);
 
     /* Construct the response */
     if (new_answer) {
@@ -363,10 +352,11 @@ int
 stow_zone_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
-    LOCK_INIT();
-    LOCK_SH();
+    
+    LOCK_INIT(&ns_rwlock, ns_rwlock_init);
+    LOCK_EX(&ns_rwlock);
     rc = stow_info(&unchecked_ns_info, new_info, matched_q);
-    UNLOCK();
+    UNLOCK(&ns_rwlock);
 
     return rc;
 }
@@ -376,10 +366,10 @@ stow_key_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
-    LOCK_INIT();
-    LOCK_SH();
+    LOCK_INIT(&key_rwlock, key_rwlock_init);
+    LOCK_EX(&key_rwlock);
     rc = stow_info(&unchecked_key_info, new_info, matched_q);
-    UNLOCK();
+    UNLOCK(&key_rwlock);
 
     return rc;
 }
@@ -389,10 +379,10 @@ stow_ds_info(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
-    LOCK_INIT();
-    LOCK_SH();
+    LOCK_INIT(&ds_rwlock, ds_rwlock_init);
+    LOCK_EX(&ds_rwlock);
     rc = stow_info(&unchecked_ds_info, new_info, matched_q);
-    UNLOCK();
+    UNLOCK(&ds_rwlock);
 
     return rc;
 }
@@ -402,10 +392,10 @@ stow_answers(struct rrset_rec *new_info, struct val_query_chain *matched_q)
 {
     int             rc;
 
-    LOCK_INIT();
-    LOCK_SH();
+    LOCK_INIT(&ans_rwlock, ans_rwlock_init);
+    LOCK_EX(&ans_rwlock);
     rc = stow_info(&unchecked_answers, new_info, matched_q);
-    UNLOCK();
+    UNLOCK(&ans_rwlock);
 
     return rc;
 }
@@ -415,10 +405,10 @@ stow_negative_answers(struct rrset_rec *new_info, struct val_query_chain *matche
 {
     int             rc;
 
-    LOCK_INIT();
-    LOCK_SH();
+    LOCK_INIT(&proof_rwlock, proof_rwlock_init);
+    LOCK_EX(&proof_rwlock);
     rc = stow_info(&unchecked_proofs, new_info, matched_q);
-    UNLOCK();
+    UNLOCK(&proof_rwlock);
 
     return rc;
 }
@@ -435,8 +425,8 @@ store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
     if (!zonecut_n || !resp_server)
         return VAL_NO_ERROR;
 
-    LOCK_INIT();
-    LOCK_EX();
+    LOCK_INIT(&map_rwlock, proof_rwlock_init);
+    LOCK_EX(&map_rwlock);
 
     for (map_e = zone_ns_map; map_e; map_e = map_e->next) {
 
@@ -455,8 +445,10 @@ store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
     if (!map_e) {
         map_e =
             (struct zone_ns_map_t *) MALLOC(sizeof(struct zone_ns_map_t));
-        if (map_e == NULL)
+        if (map_e == NULL) {
+            UNLOCK(&map_rwlock);
             return VAL_OUT_OF_MEMORY;
+        }
 
         clone_ns_list(&map_e->nslist, resp_server);
         memcpy(map_e->zone_n, zonecut_n, wire_name_length(zonecut_n));
@@ -467,7 +459,7 @@ store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
         zone_ns_map = map_e;
     }
 
-    UNLOCK();
+    UNLOCK(&map_rwlock);
 
     return VAL_NO_ERROR;
 }
@@ -477,6 +469,8 @@ free_zone_nslist(void)
 {
     struct zone_ns_map_t *map_e;
 
+    LOCK_INIT(&map_rwlock, map_rwlock_init);
+    LOCK_EX(&map_rwlock);
     while (zone_ns_map) {
         map_e = zone_ns_map;
         zone_ns_map = zone_ns_map->next;
@@ -485,6 +479,7 @@ free_zone_nslist(void)
             free_name_servers(&map_e->nslist);
         FREE(map_e);
     }
+    UNLOCK(&map_rwlock);
 
     return VAL_NO_ERROR;
 }
@@ -492,7 +487,7 @@ free_zone_nslist(void)
 int
 get_nslist_from_cache(val_context_t *ctx,
                       struct val_query_chain *matched_q,
-                      struct val_query_chain **queries,
+                      struct queries_for_query **queries,
                       struct name_server **ref_ns_list,
                       u_int8_t **zonecut_n)
 {
@@ -513,11 +508,8 @@ get_nslist_from_cache(val_context_t *ctx,
 
     *zonecut_n = NULL;
     
-    LOCK_INIT();
-    // xxx-audit: insufficient lock?
-    //     bootstrap_referral passes unchecked_ns_info to res_zi_unverified_ns_list,
-    //     which modifies the list.. should an EX lock should be used, not SH?
-    LOCK_SH();
+    LOCK_INIT(&map_rwlock, map_rwlock_init);
+    LOCK_SH(&map_rwlock);
 
     /*
      * Check mapping table between zone and nameserver to see if 
@@ -540,14 +532,19 @@ get_nslist_from_cache(val_context_t *ctx,
         clone_ns_list(ref_ns_list, saved_map->nslist);
         *zonecut_n = (u_int8_t *) MALLOC (wire_name_length(saved_map->zone_n) * sizeof (u_int8_t));
         if (*zonecut_n == NULL) {
-            UNLOCK();
+            UNLOCK(&map_rwlock);
             return VAL_OUT_OF_MEMORY;
         } 
 
         memcpy(*zonecut_n, saved_map->zone_n, wire_name_length(saved_map->zone_n));
-        UNLOCK();
+        UNLOCK(&map_rwlock);
         return VAL_NO_ERROR;
     }
+
+    UNLOCK(&map_rwlock);
+
+    LOCK_INIT(&ns_rwlock, ns_rwlock_init);
+    LOCK_SH(&ns_rwlock);
 
     tmp_zonecut_n = NULL;
     for (nsrrset = unchecked_ns_info; nsrrset; nsrrset = nsrrset->rrs_next) {
@@ -587,16 +584,16 @@ get_nslist_from_cache(val_context_t *ctx,
     if (tmp_zonecut_n) {
         *zonecut_n = (u_int8_t *) MALLOC (wire_name_length(tmp_zonecut_n) * sizeof (u_int8_t));
         if (*zonecut_n == NULL) {
-            UNLOCK();
+            UNLOCK(&ns_rwlock);
             return VAL_OUT_OF_MEMORY;
         } 
         memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
     }
     
-    bootstrap_referral(name_n, &unchecked_ns_info, matched_q, queries,
+    bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_q, queries,
                        ref_ns_list);
 
-    UNLOCK();
+    UNLOCK(&ns_rwlock);
 
     return VAL_NO_ERROR;
 }
@@ -604,20 +601,37 @@ get_nslist_from_cache(val_context_t *ctx,
 int
 free_validator_cache(void)
 {
-    LOCK_INIT();
-    LOCK_EX();
+    LOCK_INIT(&key_rwlock, key_rwlock_init);
+    LOCK_EX(&key_rwlock);
     res_sq_free_rrset_recs(&unchecked_key_info);
     unchecked_key_info = NULL;
+    UNLOCK(&key_rwlock);
+    
+    LOCK_INIT(&ds_rwlock, ds_rwlock_init);
+    LOCK_EX(&ds_rwlock);
     res_sq_free_rrset_recs(&unchecked_ds_info);
     unchecked_ds_info = NULL;
+    UNLOCK(&ds_rwlock);
+    
+    LOCK_INIT(&ns_rwlock, ns_rwlock_init);
+    LOCK_EX(&ns_rwlock);
     res_sq_free_rrset_recs(&unchecked_ns_info);
     unchecked_ns_info = NULL;
+    UNLOCK(&ns_rwlock);
+    
+    LOCK_INIT(&ans_rwlock, ans_rwlock_init);
+    LOCK_EX(&ans_rwlock);
     res_sq_free_rrset_recs(&unchecked_answers);
     unchecked_answers = NULL;
+    UNLOCK(&ans_rwlock);
+    
+    LOCK_INIT(&proof_rwlock, proof_rwlock_init);
+    LOCK_EX(&proof_rwlock);
     res_sq_free_rrset_recs(&unchecked_proofs);
     unchecked_proofs = NULL;
+    UNLOCK(&proof_rwlock);
+
     free_zone_nslist();
-    UNLOCK();
 
     return VAL_NO_ERROR;
 }
