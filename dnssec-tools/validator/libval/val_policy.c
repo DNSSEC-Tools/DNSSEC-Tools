@@ -25,6 +25,9 @@
 #include <fcntl.h>
 #include <sys/file.h>
 #include <resolv.h>
+#ifndef VAL_NO_THREADS
+#include <pthread.h>
+#endif
 
 #include <validator/resolver.h>
 #include <validator/validator.h>
@@ -32,6 +35,8 @@
 #include "val_support.h"
 #include "val_cache.h"
 #include "val_resquery.h"
+#include "val_context.h"
+#include "val_assertion.h"
 
 
 /*
@@ -1231,11 +1236,21 @@ read_val_config_file(val_context_t * ctx, char *scope)
         }
     }
 
-    /*
-     * free up existing policies 
-     */
+    CTX_LOCK_VALPOL_EX(ctx);
     destroy_valpol(ctx);
     ctx->pol_overrides = overrides;
+    OVERRIDE_POLICY(ctx);
+
+    /* 
+     * Re-initialize caches 
+     */
+    free_query_chain(ctx->q_list);
+    free_authentication_chain(ctx->a_list);
+
+    ctx->q_list = NULL;
+    ctx->a_list = NULL;
+
+    CTX_UNLOCK_VALPOL(ctx);
 
     return retval;
 }
@@ -1425,8 +1440,10 @@ read_res_config_file(val_context_t * ctx)
             return VAL_CONF_NOT_FOUND;
     } 
 
+    CTX_LOCK_RESPOL_EX(ctx);
     destroy_respol(ctx);
     ctx->nslist = ns_head;
+    CTX_UNLOCK_RESPOL(ctx);
 
     return VAL_NO_ERROR;
 
@@ -1636,9 +1653,11 @@ read_root_hints_file(val_context_t * ctx)
     }
 #endif
 
+    CTX_LOCK_RESPOL_EX(ctx);
     if (ctx->root_ns)
         free_name_servers(&ctx->root_ns);
     ctx->root_ns = ns_list;
+    CTX_UNLOCK_RESPOL(ctx);
 
     res_sq_free_rrset_recs(&root_info);
 
