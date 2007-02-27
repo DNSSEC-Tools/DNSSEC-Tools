@@ -307,42 +307,9 @@ void
 val_log_authentication_chain(const val_context_t * ctx, int level,
                              u_char * name_n, u_int16_t class_h,
                              u_int16_t type_h,
-                             struct val_query_chain *queries,
                              struct val_result_chain *results)
 {
     struct val_result_chain *next_result;
-    struct val_query_chain *top_q = NULL;
-
-    /*
-     * Search for the "main" query 
-     */
-    for (top_q = queries; top_q; top_q = top_q->qc_next) {
-        if (!namecmp(top_q->qc_original_name, name_n) &&
-            (top_q->qc_class_h == class_h) && (top_q->qc_type_h == type_h))
-            break;
-    }
-
-    if (top_q != NULL) {
-        char            name_p[NS_MAXDNAME];
-        const char     *name_pr, *serv_pr;
-        if (ns_name_ntop(name_n, name_p, sizeof(name_p)) != -1)
-            name_pr = name_p;
-        else
-            name_pr = "ERR_NAME";
-        if ((top_q->qc_respondent_server) &&
-            (top_q->qc_respondent_server->ns_number_of_addresses > 0))
-            serv_pr = ((serv_pr = get_ns_string((struct sockaddr *) top_q->
-                                                qc_respondent_server->
-                                                ns_address[0])) ==
-                       NULL) ? "VAL_CACHE" : serv_pr;
-        else
-            serv_pr = "NULL";
-        val_log(ctx, level, "Original query: name=%s class=%s type=%s "
-                "from-server=%s, Query-status=%s:%d",
-                name_pr, p_class(class_h), p_type(type_h), serv_pr,
-                p_query_status(top_q->qc_state), top_q->qc_state);
-    } else if (queries != NULL)
-        val_log(ctx, level, "Original query: UNKNOWN?");
 
     for (next_result = results; next_result;
          next_result = next_result->val_rc_next) {
@@ -409,6 +376,8 @@ p_query_status(int err)
             return "Q_INIT";
         case Q_SENT:
             return "Q_SENT";
+        case Q_WAIT_FOR_GLUE:
+            return "Q_WAIT_FOR_GLUE";
         case Q_ANSWERED:
             return "Q_ANSWERED";
         default:
