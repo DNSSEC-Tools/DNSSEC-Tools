@@ -53,6 +53,26 @@ val_get_token(FILE * conf_ptr,
           char *conf_token,
           int conf_limit, int *endst, char comment_c, char endstmt_c);
 
+static void
+selftest_cleanup(void)
+{
+    testsuite *tmp_s;
+    testcase  *tmp_c;
+
+    while (NULL != testsuite_head) {
+        tmp_s = testsuite_head;
+        FREE(tmp_s->name);
+        while (NULL != (tmp_c = tmp_s->head)) {
+            FREE(tmp_c->desc);
+            FREE(tmp_c->qn);
+            tmp_s->head = tmp_c->next;
+            FREE(tmp_c);
+        }
+        testsuite_head = tmp_s->next;
+        FREE(tmp_s);
+    }
+}
+
 
 /*
  * parse dns class
@@ -239,7 +259,7 @@ read_val_testcase_file(const char *filename)
         fclose(fp);
         return VAL_OUT_OF_MEMORY;
     }
-    testsuite_head->name = "";
+    testsuite_head->name = strdup("");
     tail = testsuite_head->head;
     curr_suite = testsuite_head;
 
@@ -501,6 +521,7 @@ self_test(val_context_t *context, int tcs, int tce, const char *tests_file,
         if (NULL == tests_file)
             tests_file = VALIDATOR_TESTCASES;
         read_val_testcase_file(tests_file);
+        atexit(selftest_cleanup);
     }
 
     suite = testsuite_head;
@@ -514,8 +535,8 @@ self_test(val_context_t *context, int tcs, int tce, const char *tests_file,
         }
     }
     else {
-        char *next, *name;
-        name = strdup(suites);
+        char *next, *name, *name_save;
+        name = name_save = strdup(suites);
         while(name && *name) {
             
             next = strchr(name, ':');
@@ -533,6 +554,7 @@ self_test(val_context_t *context, int tcs, int tce, const char *tests_file,
             
             name = next;
         }
+        free(name_save);
     }
 
     return 0;
