@@ -562,8 +562,7 @@ val_query(val_context_t * ctx,
             compose_answer(name_n, type, class_h, results, resp, flags);
     }
 
-    val_log_authentication_chain(context, LOG_DEBUG, name_n, class_h, type,
-                                 context->q_list, results);
+    val_log_authentication_chain(context, LOG_DEBUG, name_n, class_h, type, results);
 
     val_free_result_chain(results);
 
