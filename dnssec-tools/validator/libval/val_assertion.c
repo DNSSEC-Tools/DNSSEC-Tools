@@ -3683,7 +3683,7 @@ ask_resolver(val_context_t * context,
                 if (next_q->qfq_query->qc_state > Q_SENT) 
                     *data_received = 1;
 
-                if (next_q->qfq_query->qc_state < Q_SENT) 
+                if (next_q->qfq_query->qc_state < Q_ANSWERED) 
                     *data_missing = 1;
             }
         }
