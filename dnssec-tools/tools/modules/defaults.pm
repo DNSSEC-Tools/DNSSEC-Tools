@@ -35,6 +35,8 @@ my %defaults =
 
 	"viewimage"	=> "/usr/X11R6/bin/viewimage",
 
+	"admin"		=> "root",		# Administrator's email address.
+
 	"algorithm"	=> "rsasha1",		# Encryption algorithm.
 	"enddate"	=> "+2592000",		# Zone life, in seconds.
 	"kskcount"	=> 1,			# Number of KSK keys.
