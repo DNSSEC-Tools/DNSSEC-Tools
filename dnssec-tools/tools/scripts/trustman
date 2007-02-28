@@ -99,14 +99,15 @@ my @domains;
 push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
 my %revdomains;
 
+# TODO: need to modify keystorage to hold multiple keys from same
+# zone a la newkeys
 my %keystorage;
 
 my %newkeys;
-my %keyholds;
-my %zones;
-my %active_refresh_times;
-my %rrsigdata;
 my %sleeptimes;
+
+# TODO: need to modify zone_configfile_map to be a hash of
+# arrays: zonename [multiple configfiles]
 my %zone_configfile_map;
 my $once;
 
@@ -221,30 +222,33 @@ sub checkkeys {
                 next if (!($keyrec->flags & 1));
                 my $ttl = $keyrec->ttl;
                 my $key = $keyrec->key;
-                my $flags = $keyrec->flags;
-                my $proto = $keyrec->protocol;
-                my $algo = $keyrec->algorithm;
                 $key =~ s/\s+//g; # remove all spaces   
-                my $keydata = $flags . " " . $proto . " " . $algo . " " . $key;
                 my $nonmatch;
                 $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
                 if ($nonmatch) {
                 # may be a new key, remember it.
-            
                 # check if this key is already in %newkeys
                 # later, will also check in file
-                    if (!($newkeys{$d} eq $keydata)) {
+                    my $notnewkey = 0;
+                    for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
+                        if ($newkeys{$d}[$i]{key} eq $key) {
+                            $notnewkey = 1;
+                        }
+                    }
+                    if (!$notnewkey) {
                     
                         if ($holdtime) {
                             $add_holddown_time = $holdtime;
                         } else {
                             $add_holddown_time = compute_add_holddown($ttl);
                         }
-#SK: What if there are multiple new keys added for a zone?
-
-                # %newkeys really need to contain the flags, proto, and algo
-                        $newkeys{$d} = $keydata;
-                        $keyholds{$key} = $add_holddown_time;
+                        my $newkeyobj = { flags => $keyrec->flags,
+                                          protocol => $keyrec->protocol,
+                                          algorithm => $keyrec->algorithm,
+                                          key => $key,
+                                          holdtime => $add_holddown_time,
+                                        };
+                        push(@{$newkeys{$d}},$newkeyobj);
                     }
                 } else {
 # need to verify that ALL keys in %keystorage were matched
@@ -259,18 +263,18 @@ sub checkkeys {
     }
     if (%newkeys) {
         my @newkeydomains;
-        my $flags = "257";
-        my $proto = "3";
-        my $algo = "5";
+
         # if add_holddown_time has been reached, notify
+
         my $now = localtime();
         my $nowsecs = str2time($now);
 
         foreach my $d (keys %newkeys) {
-            my ($f,$p,$a,$k) = split($newkeys{$d});
-            if ($nowsecs >= $keyholds{$k}) {
-                # notify about this key
-                push @newkeydomains, $d;
+            for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
+                if ($nowsecs >= $newkeys{$d}[$i]{holdtime}) {
+                    # notify about this key
+                    push @newkeydomains, $d;
+                }
             }
         }
         foreach my $d (@newkeydomains) {
@@ -278,25 +282,28 @@ sub checkkeys {
         # add holddown time. add these keys as new trust anchors
         # to the appropriate config files
             if ($zone_configfile_map{$d} eq $ncfile) {
-                add_ta_namedconf($d, $newkeys{$d});
+                add_ta_namedconf($d);
             }
 # not quite ready for primetime....
             if ($zone_configfile_map{$d} eq $dvfile) {
-                add_ta_dnsvalconf($d, $flags, $proto, $algo, $newkeys{$d});
+                add_ta_dnsvalconf($d);
+            }
+        # now that this key has been added to the appropriate
+        # config file(s), put it in keystorage and remove it
+        # from newkeys
+            for (my $i =0; $i <= $#{$newkeys{$domain}}; $i++) {
+                push @{$keystorage{$d}},
+	                   { flags => $newkeys{$d}[$i]{flags},
+	                     protocol => $newkeys{$d}[$i]{protocol},
+                             algorithm => $newkeys{$d}[$i]{algorithm},
+			     key => $newkeys{$d}[$i]{key},
+                           };
+                delete $newkeys{$d}[$i]; 
             }
         }
-        if (($contactaddr) && (@newkeydomains)) { # mail it
-            mailcontact(0,$smtpserver,$contactaddr,@newkeydomains);
-        }
-        foreach my $d (@newkeydomains) {
-            push @{$keystorage{$d}},
-		                        { flags => $flags,
-			                      protocol => $proto,
-			                      algorithm => $algo,
-			                      key => $newkeys{$d}};
-            delete $keyholds{$newkeys{$d}};
-            delete $newkeys{$d}; 
-        }
+#        if (($contactaddr) && (@newkeydomains)) { # mail it
+#            mailcontact(0,$smtpserver,$contactaddr,@newkeydomains);
+#        }
         
     }
     foreach my $d (keys %sleeptimes) {
@@ -310,17 +317,21 @@ sub checkkeys {
 } # end checkkeys
 
 sub add_ta_namedconf  {
-    my ($domain, $keydata) = @_;
-    my ($flags, $proto, $algo, $key) = split($keydata);
+    my $domain = @_;
     open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
     open (CONF,$ncfile) or die "unable to read named.conf file.";
     while (<CONF>) {
         print TMP $_;
         if (/^trusted-keys/) {
             print TMP "\n\n";
-            my $newkey = $domain . " " . $flags . " " . $proto . " " . $algo . " \"" . $key . "\";\n\n";
-#            my $newkey = $domain . ". 257 3 5 \"" . $key . "\";\n\n";
-            print TMP $newkey;
+            for (my $i =0; $i <= $#{$newkeys{$domain}}; $i++) {
+                my $newkey = $domain . " " . 
+                             $newkeys{$domain}[$i]{flags} . " " .
+                             $newkeys{$domain}[$i]{protocol} . " " .
+                             $newkeys{$domain}[$i]{algorithm} . " " .
+                             $newkeys{$domain}[$i]{key} . "\";\n\n";
+                print TMP $newkey;
+            }
         }
     }
     close (CONF);
@@ -333,9 +344,7 @@ sub add_ta_namedconf  {
 }
 
 sub add_ta_dnsvalconf  {
-    my ($domain, $keydata) = @_;
-    my ($flags, $proto, $algo, $key) = split($keydata);
-    my $newkeyentry = $domain . ". \"" . $flags . " " . $proto . " " .  $algo . " " . $key . "\"\n";
+    my ($domain) = @_;
 
     my $pat = "trust-anchor";
 
@@ -343,10 +352,36 @@ sub add_ta_dnsvalconf  {
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
     $/ = ";";
     while (<CONF>) {
-        if (/^(\s*\S*\s*)$pat(\s*)("*[^;]+")/) {
-            print TMP $1 . $pat . $2;
-            print TMP $newkeyentry . $2;
-            print TMP $3 . ";";
+        my $domainfound = 0;
+        s/\s;\s*$//;
+# below takes out CR, maybe don't want to do this
+#        s/[\n\r]/ /g;
+#        if (/^(\s*\S*\s*)$pat(\s*)("*[^;]+")/) {
+        if (s/^\s*(\S*)\s*$pat\s*//) {
+            print TMP $1 . " $pat\n\n";
+            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
+                my ($d, $val) = ($1, $2);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $val =~ s/[\n\r]//g;
+                if ($d eq $domain) {
+                    $domainfound = 1;
+                }
+                # add the trailing dot when printing domainname
+                print TMP $d . ". " . $val . "\n\n";
+            }
+
+            for (my $i =0; $i <= $#{$newkeys{$domain}}; $i++) {
+                my $newkeyentry = $domain . ". \"" . 
+                             $newkeys{$domain}[$i]{flags} . " " .
+                             $newkeys{$domain}[$i]{protocol} . " " .
+                             $newkeys{$domain}[$i]{algorithm} . " " .
+                             $newkeys{$domain}[$i]{key} . "\"\n";
+                if ($domainfound) {
+                    print TMP $newkeyentry . $2;
+                }
+            }
+            print TMP "\n;\n";
         } else {
             print TMP $_;
         }
