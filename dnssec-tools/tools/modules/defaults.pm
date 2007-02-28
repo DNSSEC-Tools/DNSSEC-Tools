@@ -46,14 +46,14 @@ my %defaults =
 	"zsklife"	=> 604800,		# Lifespan of ZSK key.
 
 	"entropy_msg"	=> 1,			# Display entropy message flag.
-        "savekeys"	=> 1,			# Save/delete old keys flag.
+	"savekeys"	=> 1,			# Save/delete old keys flag.
 	"usegui"	=> 0,			# Use GUI for option entry flag.
 
-        "tanamedconffile"  => "/usr/local/etc/named/named.conf",
-        "tadnsvalconffile" => getconfdir . "/dnsval.conf",
-        "tasleeptime"      => 3600,
-        "tacontact" 	   => "",
-        "tasmtpserver"     => "",
+	"tanamedconffile"  => "/usr/local/etc/named/named.conf",
+	"tadnsvalconffile" => getconfdir() . "/dnsval.conf",
+	"tasleeptime"      => 3600,
+	"tacontact" 	   => "",
+	"tasmtpserver"     => "",
 );
 
 my @defnames =
