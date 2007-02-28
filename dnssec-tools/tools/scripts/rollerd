@@ -8,11 +8,24 @@
 #
 #	This script manages the key rollover process.
 #
-#	ZSK rollover takes place in four phases:
+#	ZSK rollover uses the Pre-Publish Method of rollover and takes
+#	place in four phases:
 #		- wait until it's time to perform a ZSK rollover
 #		- sign the zone with the KSK and Published ZSK
 #		- wait for old zone data to expire from caches
 #		- sign the zone with the new Current ZSK key
+#
+#	KSK rollover uses the Double Signature Method of rollover and takes
+#	place in seven phases:
+#		- wait for cache data to expire
+#		- generate a new (published) KSK
+#		- wait for the old DNSKEY RRset to expire from caches
+#		- roll the KSKs
+#		- transfer new keyset to the parent
+#			(currently, this is done manually)
+#		- wait for parent to publish the new DS record
+#			(currently, this is done manually)
+#		- reload the zone
 #
 
 use strict;
@@ -20,6 +33,7 @@ use strict;
 use Cwd;
 use Getopt::Long qw(:config no_ignore_case_always);
 
+use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
@@ -54,8 +68,21 @@ my $DEFAULT_NAP	= 60;
 
 ##########################################
 #
+# Method selected for calculating rollover times.
+#
+
+my $RM_ENDROLL	  = 1;		# Calculate from end of last roll.
+my $RM_KEYGEN	  = 2;		# Calculate from last key generation.
+my $RM_STARTROLL = 3;		# Calculate from start of last roll.  (NYI)
+
+my $krollmethod = $RM_ENDROLL;	# Rollover calculation to use for KSKs.
+my $zrollmethod = $RM_ENDROLL;	# Rollover calculation to use for ZSKs.
+
+##########################################
+#
 # Data required for command line options.
 #
+
 my $rollrecfile;			# Rollrec file to be managed.
 
 my %dtconf;				# DNSSEC-Tools config file.
@@ -97,6 +124,7 @@ my $logfile;				# Log file.
 my $loglevel;				# Logging level.
 my $loglevel_save;			# Saved logging level.
 my $sleeptime;				# Sleep interval in seconds.
+my $sleep_override = 0;			# Sleep-override flag.
 my $sleepcnt;				# Time we've slept so far.
 my $verbose = 0;			# Verbose option.
 
@@ -191,6 +219,7 @@ sub main
 		# while we're running the queue.
 		#
 		controllers(0);
+		$sleep_override = 0;
 
 		#
 		# If we have a valid rollrec file, we'll read its contents
@@ -205,7 +234,7 @@ sub main
 
 			#
 			# Get the contents of the rollrec file and check
-			# for expired ZSKs.
+			# for expired KSKs and ZSKs.
 			#
 			rollrec_lock();
 			if(rollrec_read($rollrecfile) > 0)
@@ -236,7 +265,7 @@ sub main
 		commander();
 
 		#
-		# Turn our signal handlers and then take a nap.
+		# Turn on our signal handlers and then take a nap.
 		#
 		controllers(1);
 		sleeper($sleeptime);
@@ -308,35 +337,17 @@ sub rollkeys
 		}
 
 		#
-		# Do basic set-up for records without a ZSK phase.
-		#
-		if($rr{'curphase'} == -1)
-		{
-			rollmgr_log(LOG_PHASE,$rname,"new curphase entry");
-			zskphase($rname,$rrr,0)
-		}
-
-		#
-		# If this zone's current ZSK has expired, we'll get it rolling.
-		# 
-		if(zsk_expired($rname,$rrr,"zskcur"))
-		{
-			rollmgr_log(LOG_PHASE,$rname,"current ZSK has expired\n") if($rr{'curphase'} == 0);
-
-			zsk_phaser($rname,$rrr);
-		}
-		else
-		{
-			rollmgr_log(LOG_TMI,$rname,"current ZSK still valid");
-		}
-
-		#
-		# Do basic set-up for records without a KSK phase.
+		# Ensure the record has the KSK and ZSK phases.
 		#
 		if($rr{'kskphase'} == -1)
 		{
-			rollmgr_log(LOG_PHASE,$rname,"new kskphase entry");
+			rollmgr_log(LOG_TMI,$rname,"new kskphase entry");
 			kskphase($rname,$rrr,0)
+		}
+		if($rr{'zskphase'} == -1)
+		{
+			rollmgr_log(LOG_TMI,$rname,"new zskphase entry");
+			zskphase($rname,$rrr,0)
 		}
 
 		#
@@ -344,13 +355,27 @@ sub rollkeys
 		# 
 		if(ksk_expired($rname,$rrr,"kskcur"))
 		{
-			rollmgr_log(LOG_PHASE,$rname,"current KSK has expired\n") if($rr{'curphase'} == 0);
+			rollmgr_log(LOG_TMI,$rname,"current KSK has expired\n") if($rr{'zskphase'} == 0);
 
 			ksk_phaser($rname,$rrr);
 		}
 		else
 		{
 			rollmgr_log(LOG_TMI,$rname,"current KSK still valid");
+		}
+
+		#
+		# If this zone's current ZSK has expired, we'll get it rolling.
+		# 
+		if(zsk_expired($rname,$rrr,"zskcur"))
+		{
+			rollmgr_log(LOG_INFO,$rname,"current ZSK has expired\n") if($rr{'zskphase'} == 0);
+
+			zsk_phaser($rname,$rrr);
+		}
+		else
+		{
+			rollmgr_log(LOG_TMI,$rname,"current ZSK still valid");
 		}
 
 	}
@@ -393,16 +418,41 @@ sub zsk_expired
 	my $krec;				# Keyrec reference.
 	my %set;				# Keyrec hash.
 
+	my $khr;				# Ref to key's hash.
+	my %kh;					# Key's hash.
+
 	my @signset;				# Key's signing set.
 
+	my $chronostr;				# Text expiration time.
+	my $cronus;				# Current time.
 	my $expired = 0;			# Expired-zone flag.
+	my $krsecs;				# Key's expiration date.
+	my $minlife = -1;			# Minimum ZSK life.
+	my $minhr;				# Ref to min-key's keyrec.
+	my $rolltime;				# Time roll should occur.
+	my $starter;				# Time 0 for calc'ing rolltime.
+	my $waitsecs;				# Time to expiration.
+
+	#
+	# Get the rollrec's hash.
+	#
+	%rr = %$rrr;
+
+	#
+	# If this zone is in the middle of KSK rollover, we'll stop
+	# working on ZSK rollover.
+	#
+	if($rr{'kskphase'} > 0)
+	{
+		rollmgr_log(LOG_TMI,$rname,"in KSK rollover (phase $rr{'kskphase'}); not attempting ZSK rollover");
+		return(0);
+	}
 
 	#
 	# If this zone is in the middle of rollover processing, we'll
 	# immediately assume the key has expired.
 	#
-	%rr = %$rrr;
-	return(1) if($rr{'curphase'} > 0);
+	return(1) if($rr{'zskphase'} > 0);
 
 	#
 	# Get the rollin' key's keyrec for our zone.
@@ -431,22 +481,22 @@ sub zsk_expired
 	}
 
 	#
-	# Check each key in the signing set to see if one has expired.
-	# If any have, we'll start rollover.
+	# Ensure that there's a signing set.
 	#
 	@signset = split / /, $set{'keys'};
+	if(@signset == 0)
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		return(0);
+	}
+
+	#
+	# Check each key in the signing set to find the one with the shortest
+	# lifespan.  We'll calculate rollover times based on that.
+	#
 	foreach my $keyname (@signset)
 	{
-		my $khr;				# Ref to key's hash.
-		my %kh;					# Key's hash.
-
-		my $life;				# Name of keylife field.
-		my $cronus;				# Current time.
-		my $gentime;				# Key's generation date.
-		my $exptime;				# Key's lifespan.
-		my $krsecs;				# Key's expiration date.
-		my $waitsecs;				# Time to expiration.
-		my $chronostr;				# Text expiration time.
+		my $keylife;			# Key's life value.
 
 		#
 		# Get the key's keyrec hash.
@@ -455,60 +505,108 @@ sub zsk_expired
 		%kh = %$khr;
 
 		#
-		# Ensure that required keyrec fields exist.
+		# Ensure that required keyrec field exists.
 		#
-		if(!defined($kh{"keyrec_gensecs"}))
+		if(!defined($kh{"zsklife"}))
+		{
+			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a zsklife record");
+			return(0);
+		}
+
+		#
+		# If this key's life is shorter than any we've seen, it
+		# becomes the new minimum.  If this is the first key we're
+		# looking at, we'll save it as the minimum.
+		#
+		$keylife = $kh{'zsklife'};
+		if($minlife == -1)
+		{
+			$minlife = $keylife;
+			$minhr	 = $khr;
+		}
+		else
+		{
+			if($keylife < $minlife)
+			{
+				$minlife = $keylife;
+				$minhr	 = $khr;
+			}
+		}
+	}
+
+	#
+	# Get the minimum key's keyrec hash.
+	#
+	%kh = %$minhr;
+
+	#
+	# Get the start time on which the expiration time is based.
+	#
+	if($zrollmethod == $RM_ENDROLL)
+	{
+		#
+		# Ensure that required rollrec field exists.
+		#
+		if(!defined($rr{'zsk_rollsecs'}))
+		{
+			rollmgr_log(LOG_INFO,$rname,"creating new zsk_rollsecs record and forcing ZSK rollover");
+			rollstamp($rname,'zsk');
+			return(1);
+		}
+		$starter = $rr{'zsk_rollsecs'};
+	}
+	elsif($zrollmethod == $RM_KEYGEN)
+	{
+		#
+		# Ensure that required keyrec field exists.
+		#
+		if(!defined($kh{'keyrec_gensecs'}))
 		{
 			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
 			return(0);
 		}
-		$life = $kh{"keyrec_type"};
-		$life = substr($life,0,3) . "life";
-		if(!defined($kh{$life}))
-		{
-			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a $life record");
-			return(0);
-		}
-
-		#
-		# Get the key's generation time and the current time.
-		#
-		$gentime = $kh{"keyrec_gensecs"};
-		$cronus	 = time;
-
-		#
-		# Calculate the key's expiration time.
-		#
-		$exptime = $kh{$life};
-		$krsecs = $gentime + $exptime;
-
-		#
-		# Calculate the log message we should give.
-		#
-		$waitsecs = $krsecs - $cronus;
-		if($waitsecs >= 0)
-		{
-			$chronostr = timetrans($waitsecs);
-			rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
-			display("expiration $rname 0 $waitsecs");
-		}
-		else
-		{
-			$waitsecs = $cronus - $krsecs;
-			$chronostr = timetrans($waitsecs);
-			rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
-			display("phase $rname 0");
-		}
-
-		#
-		# The key has expired if the current time has passed the
-		# key's lifespan.
-		# The key has not expired if the key's lifespan has yet
-		# to reach the current time.
-		#
-		$expired = 1 if($cronus > $krsecs);
-
+		$starter = $kh{'keyrec_gensecs'};
 	}
+	elsif($zrollmethod == $RM_STARTROLL)
+	{
+		rollmgr_log(LOG_ERR,$rname,"RM_STARTROLL not yet implemented");
+		return(0);
+	}
+
+	#
+	# Get the key's expiration time.
+	#
+	$rolltime = $starter + $minlife;
+
+	#
+	# Get the current time.
+	#
+	$cronus	 = time;
+
+	#
+	# Figure out the log message we should give.
+	#
+	$waitsecs = $rolltime - $cronus;
+	if($waitsecs >= 0)
+	{
+		$chronostr = timetrans($waitsecs);
+		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
+		display("expiration $rname 0 $waitsecs");
+	}
+	else
+	{
+		$waitsecs = $cronus - $krsecs;
+		$chronostr = timetrans($waitsecs);
+		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
+		display("phase $rname 0");
+	}
+
+	#
+	# The key has expired if the current time has passed the key's lifespan.
+	# The key has not expired if the key's lifespan has yet to reach the
+	# current time.
+	#
+	$expired = 1 if($cronus > $krsecs);
 
 	#
 	# Return the success/failure indication.
@@ -533,7 +631,7 @@ sub zsk_phaser
 	# Get this rollrec record's current phase.
 	#
 	%rr = %$rrr;
-	$phase = $rr{'curphase'};
+	$phase = $rr{'zskphase'};
 
 	#
 	# Work on this rollrec's phase.
@@ -543,7 +641,6 @@ sub zsk_phaser
 	$phase = zsk_phase2($rname,$rrr)     	if($phase == 2);
 	$phase = zsk_phasewait($rname,$rrr,3)	if($phase == 3);
 	$phase = zsk_phase4($rname,$rrr)     	if($phase == 4);
-
 }
 
 #-----------------------------------------------------------------------------
@@ -570,7 +667,7 @@ sub zsk_phasewait
 	# Check if we can go to the next rollover phase.  If not, we'll
 	# go to the next rollrec entry and return to this later.
 	#
-	if(!ttlexpire($rname,$rrr,$phase))
+	if(!ttlexpire($rname,$rrr,$phase,'ZSK'))
 	{
 		return($phase);
 	}
@@ -606,18 +703,17 @@ sub zsk_phase2
 	my $ret;			# Result from command executions.
 
 	#
-	# Get the rollrec's associated keyrec file and ensure that it
-	# exists.
+	# Get the rollrec's associated keyrec file and ensure that it exists.
 	#
 	$krf = $rr{'keyrec'};
 	if(!$krf  || ($krf eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 2:  no keyrec for zone specified");
+		rollmgr_log(LOG_ERR,$rname,"ZSK phase 2:  no keyrec for zone specified");
 		return;
 	}
 	if(! -e $krf)
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 2:  keyrec \"$krf\" for zone does not exist");
+		rollmgr_log(LOG_ERR,$rname,"ZSK phase 2:  keyrec \"$krf\" for zone does not exist");
 		return;
 	}
 
@@ -633,7 +729,7 @@ sub zsk_phase2
 	$ret = signer($rname,"-usezskpub",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 2:  unable to sign zone with the Published ZSK");
+		rollmgr_log(LOG_ERR,$rname,"ZSK phase 2:  unable to sign zone with the Published ZSK");
 	}
 
 	#
@@ -648,7 +744,7 @@ sub zsk_phase2
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
+#		rollmgr_log(LOG_ERR,$zone,"ZSK phase 2:  unable to reload zone, rc - $ret");
 	}
 
 	#
@@ -689,12 +785,12 @@ sub zsk_phase4
 	$krf = $rr{'keyrec'};
 	if(!$krf  || ($krf eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  no keyrec for zone specified");
+		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  no keyrec for zone specified");
 		return;
 	}
 	if(! -e $krf)
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  keyrec \"$krf\" for zone does not exist");
+		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  keyrec \"$krf\" for zone does not exist");
 		return;
 	}
 
@@ -711,7 +807,7 @@ sub zsk_phase4
 	$ret = signer($rname,"-rollzsk",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to adjust ZSK keyrec");
+		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  unable to adjust ZSK keyrec");
 	}
 
 	#
@@ -720,7 +816,7 @@ sub zsk_phase4
 	$ret = signer($rname,"",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"phase 4:  unable to sign zone with the current ZSK");
+		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the current ZSK");
 	}
 
 	#
@@ -729,13 +825,18 @@ sub zsk_phase4
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rollmgr_log(LOG_ERR,$zone,"unable to reload zone, rc - $ret");
+#		rollmgr_log(LOG_ERR,$zone,"ZSK phase 4:  unable to reload zone, rc - $ret");
 	}
 
 	#
 	# Put ourselves back in the pre-roll state.
 	#
 	zskphase($rname,$rrr,0);
+
+	#
+	# Set a timestamp for the completion of the ZSK roll.
+	#
+	rollstamp($rname,'zsk');
 	return(0);
 }
 
@@ -744,15 +845,16 @@ sub zsk_phase4
 #-----------------------------------------------------------------------------
 # Routine:	ksk_expired()
 #
-# Purpose:	This routine returns a boolean indicating if the specified
-#		zone has an expired ZSK key of the given type.
+# Purpose:	This routine determines if the specified zone has an expired
+#		KSK and returns a boolean indicating this.  The given KSK
+#		type is checked for expiration.
 #
 #		The zone's keyrec file name is taken from the given rollrec
 #		entry.  The keyrec file is read and the zone's entry found.
 #		The key keyrec of the specified key type (currently, just
-#		"zskcur") is pulled from the keyrec file.  Each key in the
+#		"kskcur") is pulled from the keyrec file.  Each key in the
 #		named signing set will be checked.
-#		
+#
 #		Key expiration is determined by comparing the key keyrec's
 #		gensecs field to the current time.  The key hasn't expired
 #		if the current time is less than the gensecs; the key has
@@ -770,18 +872,41 @@ sub ksk_expired
 	my $krec;				# Keyrec reference.
 	my %set;				# Keyrec hash.
 
+	my $khr;				# Ref to key's hash.
+	my %kh;					# Key's hash.
+
 	my @signset;				# Key's signing set.
 
+	my $chronostr;				# Text expiration time.
+	my $cronus;				# Current time.
 	my $expired = 0;			# Expired-zone flag.
+	my $krsecs;				# Key's expiration date.
+	my $minlife = -1;			# Minimum KSK life.
+	my $minhr;				# Ref to min-key's keyrec.
+	my $rolltime;				# Time roll should occur.
+	my $starter;				# Time 0 for calc'ing rolltime.
+	my $waitsecs;				# Time to expiration.
 
-return(0);
+	#
+	# Get the rollrec's hash.
+	#
+	%rr = %$rrr;
+
+	#
+	# If this zone is in the middle of ZSK rollover, we'll stop
+	# working on KSK rollover.
+	#
+	if($rr{'zskphase'} > 0)
+	{
+		rollmgr_log(LOG_TMI,$rname,"in ZSK rollover (phase $rr{'zskphase'}); not attempting KSK rollover");
+		return(0);
+	}
 
 	#
 	# If this zone is in the middle of rollover processing, we'll
 	# immediately assume the key has expired.
 	#
-	%rr = %$rrr;
-	return(1) if($rr{'curphase'} > 0);
+	return(1) if($rr{'kskphase'} > 0);
 
 	#
 	# Get the rollin' key's keyrec for our zone.
@@ -810,22 +935,22 @@ return(0);
 	}
 
 	#
-	# Check each key in the signing set to see if one has expired.
-	# If any have, we'll start rollover.
+	# Ensure that there's a signing set.
 	#
 	@signset = split / /, $set{'keys'};
+	if(@signset == 0)
+	{
+		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		return(0);
+	}
+
+	#
+	# Check each key in the signing set to find the one with the shortest
+	# lifespan.  We'll calculate rollover times based on that.
+	#
 	foreach my $keyname (@signset)
 	{
-		my $khr;				# Ref to key's hash.
-		my %kh;					# Key's hash.
-
-		my $life;				# Name of keylife field.
-		my $cronus;				# Current time.
-		my $gentime;				# Key's generation date.
-		my $exptime;				# Key's lifespan.
-		my $krsecs;				# Key's expiration date.
-		my $waitsecs;				# Time to expiration.
-		my $chronostr;				# Text expiration time.
+		my $keylife;			# Key's life value.
 
 		#
 		# Get the key's keyrec hash.
@@ -834,60 +959,108 @@ return(0);
 		%kh = %$khr;
 
 		#
-		# Ensure that required keyrec fields exist.
+		# Ensure that required keyrec field exists.
 		#
-		if(!defined($kh{"keyrec_gensecs"}))
+		if(!defined($kh{"ksklife"}))
+		{
+			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a ksklife record");
+			return(0);
+		}
+
+		#
+		# If this key's life is shorter than any we've seen, it
+		# becomes the new minimum.  If this is the first key we're
+		# looking at, we'll save it as the minimum.
+		#
+		$keylife = $kh{'ksklife'};
+		if($minlife == -1)
+		{
+			$minlife = $keylife;
+			$minhr	 = $khr;
+		}
+		else
+		{
+			if($keylife < $minlife)
+			{
+				$minlife = $keylife;
+				$minhr	 = $khr;
+			}
+		}
+	}
+
+	#
+	# Get the minimum key's keyrec hash.
+	#
+	%kh = %$minhr;
+
+	#
+	# Get the start time on which the expiration time is based.
+	#
+	if($krollmethod == $RM_ENDROLL)
+	{
+		#
+		# Ensure that required rollrec field exists.
+		#
+		if(!defined($rr{'ksk_rollsecs'}))
+		{
+			rollmgr_log(LOG_INFO,$rname,"creating new ksk_rollsecs record and forcing KSK rollover");
+			rollstamp($rname,'ksk');
+			return(1);
+		}
+		$starter = $rr{'ksk_rollsecs'};
+	}
+	elsif($krollmethod == $RM_KEYGEN)
+	{
+		#
+		# Ensure that required keyrec field exists.
+		#
+		if(!defined($kh{'keyrec_gensecs'}))
 		{
 			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
 			return(0);
 		}
-		$life = $kh{"keyrec_type"};
-		$life = substr($life,0,3) . "life";
-		if(!defined($kh{$life}))
-		{
-			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a $life record");
-			return(0);
-		}
-
-		#
-		# Get the key's generation time and the current time.
-		#
-		$gentime = $kh{"keyrec_gensecs"};
-		$cronus	 = time;
-
-		#
-		# Calculate the key's expiration time.
-		#
-		$exptime = $kh{$life};
-		$krsecs = $gentime + $exptime;
-
-		#
-		# Calculate the log message we should give.
-		#
-		$waitsecs = $krsecs - $cronus;
-		if($waitsecs >= 0)
-		{
-			$chronostr = timetrans($waitsecs);
-			rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
-			display("expiration $rname 0 $waitsecs");
-		}
-		else
-		{
-			$waitsecs = $cronus - $krsecs;
-			$chronostr = timetrans($waitsecs);
-			rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
-			display("phase $rname 0");
-		}
-
-		#
-		# The key has expired if the current time has passed the
-		# key's lifespan.
-		# The key has not expired if the key's lifespan has yet
-		# to reach the current time.
-		#
-		$expired = 1 if($cronus > $krsecs);
-
+		$starter = $kh{'keyrec_gensecs'};
 	}
+	elsif($krollmethod == $RM_STARTROLL)
+	{
+		rollmgr_log(LOG_ERR,$rname,"RM_STARTROLL not yet implemented");
+		return(0);
+	}
+
+	#
+	# Get the key's expiration time.
+	#
+	$rolltime = $starter + $minlife;
+
+	#
+	# Get the current time.
+	#
+	$cronus	 = time;
+
+	#
+	# Figure out the log message we should give.
+	#
+	$waitsecs = $rolltime - $cronus;
+	if($waitsecs >= 0)
+	{
+		$chronostr = timetrans($waitsecs);
+		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
+		display("expiration $rname 0 $waitsecs");
+	}
+	else
+	{
+		$waitsecs = $cronus - $krsecs;
+		$chronostr = timetrans($waitsecs);
+		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
+		display("phase $rname 0");
+	}
+
+	#
+	# The key has expired if the current time has passed the key's lifespan.
+	# The key has not expired if the key's lifespan has yet to reach the
+	# current time.
+	#
+	$expired = 1 if($cronus > $krsecs);
 
 	#
 	# Return the success/failure indication.
@@ -900,6 +1073,15 @@ return(0);
 #
 # Purpose:	Move the specified zone's KSKs through the appropriate phases.
 #
+#		Phases:
+#			1 - wait for cache data to expire
+#			2 - generate a new (published) KSK
+#			3 - wait for the old DNSKEY RRset to expire from caches
+#			4 - roll the KSKs
+#			5 - transfer new keyset to the parent
+#			6 - wait for parent to publish the new DS record
+#			7 - reload the zone
+#
 sub ksk_phaser
 {
 	my $rname = shift;		# Zone name.
@@ -908,7 +1090,6 @@ sub ksk_phaser
 	my %rr;				# Rollrec hash.
 	my $phase;			# Zone's current rollover phase.
 
-return;
 	#
 	# Get this rollrec record's current phase.
 	#
@@ -923,6 +1104,9 @@ return;
 	$phase = ksk_phase2($rname,$rrr)     	if($phase == 2);
 	$phase = ksk_phasewait($rname,$rrr,3)	if($phase == 3);
 	$phase = ksk_phase4($rname,$rrr)     	if($phase == 4);
+	$phase = ksk_phase5($rname,$rrr)     	if($phase == 5);
+	$phase = ksk_phase6($rname,$rrr)     	if($phase == 6);
+	$phase = ksk_phase7($rname,$rrr)     	if($phase == 7);
 
 }
 
@@ -950,7 +1134,7 @@ sub ksk_phasewait
 	# Check if we can go to the next rollover phase.  If not, we'll
 	# go to the next rollrec entry and return to this later.
 	#
-	return($phase) if(!ttlexpire($rname,$rrr,$phase));
+	return($phase) if(!ttlexpire($rname,$rrr,$phase,'KSK'));
 
 	#
 	# Bump this rollrec's KSK phase number and return the new phase.
@@ -964,7 +1148,12 @@ sub ksk_phasewait
 # Routine:	ksk_phase2()
 #
 # Purpose:	Perform the phase 2 steps of the KSK rollover.  These are:
-#
+#			- generate a new KSK to be the Published KSK
+#			- add the new Published KSK to the zone file
+#			- re-sign the zone file with the Current KSK, the (new)
+#			  Published KSK, and the Current ZSK
+#			- reload the zone file
+#		The first three steps are handled by zonesigner.
 #
 sub ksk_phase2
 {
@@ -979,13 +1168,57 @@ sub ksk_phase2
 
 	my $ret;			# Result from command executions.
 
+	#
+	# Get the rollrec's associated keyrec file and ensure that it exists.
+	#
+	$krf = $rr{'keyrec'};
+	if(!$krf  || ($krf eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  no keyrec for zone specified");
+		return;
+	}
+	if(! -e $krf)
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  keyrec \"$krf\" for zone does not exist");
+		return;
+	}
+
+	#
+	# Get the keyrec.
+	#
+	$krr = opts_zonekr($krf,$rname);
+	%krf = %$krr;
+
+	#
+	# Sign the zone with a new Published KSK.
+	#
+	$ret = signer($rname,"-newpubksk",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published ZSK");
+	}
+
+	#
+	# Reload the zone.
+	#
+	$ret = rollmgr_loadzone($rndc,$rname);
+	if($ret != 0)
+	{
+#		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
+	}
+
+	kskphase($rname,$rrr,3);
+	return(3);
 }
 
 #-----------------------------------------------------------------------------
 # Routine:	ksk_phase4()
 #
 # Purpose:	Perform the phase 4 steps of the KSK rollover.  These are:
-#
+#			- delete the Current KSK from the zone file
+#			- move the Published KSK to be the Current KSK
+#			- sign the zone file with the (new) Current KSK
+#		These steps are handled by zonesigner.
 #
 sub ksk_phase4
 {
@@ -1000,6 +1233,177 @@ sub ksk_phase4
 
 	my $ret;			# Result from command executions.
 
+	#
+	# Get the rollrec's associated keyrec file and ensure that it exists.
+	#
+	$krf = $rr{'keyrec'};
+	if(!$krf  || ($krf eq ""))
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 4:  no keyrec for zone specified");
+		return;
+	}
+	if(! -e $krf)
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 4:  keyrec \"$krf\" for zone does not exist");
+		return;
+	}
+
+	#
+	# Get the keyrec.
+	#
+	$krr = opts_zonekr($krf,$rname);
+	%krf = %$krr;
+
+	#
+	# Roll the Published KSK to the Current KSK.
+	#
+	$ret = signer($rname,"-rollksk",$krr);
+	if($ret eq "")
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 4:  unable to sign zone with the Published ZSK");
+	}
+
+	kskphase($rname,$rrr,5);
+	return(5);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_phase5()
+#
+# Purpose:	Perform the phase 5 steps of the KSK rollover.  These are:
+#			- notify the admin that the new keyset should be
+#			  transferred to the parent zone
+#
+#		This is currently handled by telling the admin to transfer
+#		the keyset.  It would be nice to have an automated method
+#		of keyset transfer; one may be added in future.
+#
+#
+sub ksk_phase5
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my $ret;			# Return code from mail
+	my $auto = 0;			# Automatic-transfer flag.
+
+	if($auto)
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 5:  automatic keyset transfer not yet supported");
+		return;
+	}
+	else
+	{
+		my $subject;			# Subject for email to admin.
+		my $msg;			# Message to admin.
+		my $admin;			# Zone's administrator.
+
+		$subject = "assistance needed with KSK rollover of zone $rname";
+		$msg = "
+The zone \"$rname\" is in the middle of KSK rollover.  In order for rollover
+to continue, its keyset must be transferred to its parent.";
+
+		#
+		# If this zone has its own administrator listed, we won't use
+		# the default.
+		#
+		if(exists($rrr->{'administrator'}))
+		{
+			$admin = $rrr->{'administrator'};
+			$ret = dt_adminmail($subject,$msg,$admin);
+		}
+		else
+		{
+			$ret = dt_adminmail($subject,$msg);
+		}
+
+		if($ret == 1)
+		{
+			rollmgr_log(LOG_INFO,$rname,"KSK phase 5:  admin notified to transfer keyset");
+		}
+		else
+		{
+			rollmgr_log(LOG_INFO,$rname,"KSK phase 5:  admin must transfer keyset");
+			rollmgr_log(LOG_ERR,$rname,"KSK phase 5:  invalid admin; unable to notify about transferring keyset");
+		}
+	}
+
+	kskphase($rname,$rrr,6);
+	return(6);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_phase6()
+#
+# Purpose:	Perform the phase 6 steps of the KSK rollover.  These are:
+#			- wait for the parent to publish the DS record
+#
+#		This is currently handled by the admin telling us that the
+#		DS record has been published.  It would be nice to have an
+#		automated method of determining this; one may be added in
+#		future.
+#
+sub ksk_phase6
+{
+	my $rname = shift;		# Name of rollrec.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my $auto = 0;			# Automatic-transfer flag.
+
+	if($auto)
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 6:  automatic DS-record determination not yet supported");
+		return;
+	}
+	else
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 6:  waiting for parental publication of DS record");
+	}
+
+	return(6);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	ksk_phase7()
+#
+# Purpose:	Perform the phase 7 steps of the KSK rollover.  These are:
+#
+#
+sub ksk_phase7
+{
+	my $rname = shift;		# Name of rolling zone.
+	my $rrr = shift;		# Reference to rollrec.
+
+	my %rr = %$rrr;			# Rollrec hash.
+
+	my $krf;			# Rollrec's keyrec name.
+	my %krf;			# Keyrec hash.
+	my $krr;			# Keyrec reference.
+
+	my $ret;			# Result from command executions.
+
+	#
+	# Reload the zone.
+	#
+	$ret = rollmgr_loadzone($rndc,$rname);
+	if($ret != 0)
+	{
+#		rollmgr_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
+	}
+
+rollmgr_log(LOG_ALWAYS,$rname,"KSK phase 7:  NEED TO ARCHIVE OLD KSKS!!!");
+
+	#
+	# Move the rollrec back to phase 0.
+	#
+	kskphase($rname,$rrr,0);
+
+	#
+	# Set a timestamp for the completion of the KSK roll.
+	#
+	rollstamp($rname,'ksk');
+
+	return(0);
 }
 
 ###############################################################################
@@ -1076,9 +1480,10 @@ sub maxttl
 #
 sub ttlexpire
 {
-	my $rname = shift;			# Name of rollrec.
-	my $rrr	  = shift;			# Reference to rollrec.
-	my $phase = shift;			# Zone's current phase.
+	my $rname   = shift;			# Name of rollrec.
+	my $rrr	    = shift;			# Reference to rollrec.
+	my $phase   = shift;			# Zone's current phase.
+	my $keytype = shift;			# Type of key.
 
 	my %rr;					# Rollrec hash.
 
@@ -1130,9 +1535,9 @@ sub ttlexpire
 		$endtime = ctime($endtempus);
 		chomp $endtime;
 
-		rollmgr_log(LOG_TMI,$rname,"rollover TTL check");
-		rollmgr_log(LOG_TMI,$rname,"endtime\t$endtime");
-		rollmgr_log(LOG_TMI,$rname,"curtime\t$curtime");
+		rollmgr_log(LOG_TMI,$rname,"$keytype phase $phase rollover TTL check");
+		rollmgr_log(LOG_TMI,$rname,"$keytype phase $phase endtime\t$endtime");
+		rollmgr_log(LOG_TMI,$rname,"$keytype phase $phase curtime\t$curtime");
 	}
 
 	#
@@ -1140,15 +1545,52 @@ sub ttlexpire
 	# Return failure (not expired) if the zone's adjusted end-date
 	# is in the future.
 	#
-# rollmgr_log(LOG_INFO,$rname,"phase $phase; pre-return ($curtempus) ($endtempus)");
+# rollmgr_log(LOG_INFO,$rname,"$keytype phase $phase; pre-return ($curtempus) ($endtempus)");
 	return(1) if($curtempus >= $endtempus);
 
 	$timediff = $endtempus - $curtempus;
 	$tdstr = timetrans($timediff);
-	rollmgr_log(LOG_INFO,$rname,"phase $phase; cache expires in $tdstr");
+	rollmgr_log(LOG_INFO,$rname,"$keytype phase $phase; cache expires in $tdstr");
 	display("expiration $rname $phase $timediff");
 
 	return(0)
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	rollstamp()
+#
+# Purpose:	This routine sets the timestamp records for a KSK or
+#		ZSK roll in the rollrec file.
+#
+sub rollstamp
+{
+	my $rname  = shift;			# Rollrec name.
+	my $prefix = shift;			# Key-type prefix.
+
+	my $date;				# Date key.
+	my $secs;				# Seconds key.
+
+	my $timesecs;				# Current-time seconds count.
+	my $timestr;				# Current-time string.
+
+	#
+	# Build the rollrec keys we'll be using.
+	#
+	$date = $prefix . "_rolldate";
+	$secs = $prefix . "_rollsecs";
+
+	#
+	# Get the timestamps.
+	#
+	$timesecs = time();
+	$timestr  = gmtime($timesecs);
+
+	#
+	# Set the rollrec records to now and write the file.
+	#
+	rollrec_setval($rname,$date,$timestr);
+	rollrec_setval($rname,$secs,$timesecs);
+	rollrec_write();
 }
 
 #-----------------------------------------------------------------------------
@@ -1185,8 +1627,8 @@ sub zskphase
 
 	rollmgr_log(LOG_PHASE,$rname,"ZSK phase $phase");
 
-	$rr{'curphase'} = $phase;
-	rollrec_setval($rname,"curphase",$phase);
+	$rrr->{'zskphase'} = $phase;
+	rollrec_setval($rname,"zskphase",$phase);
 	rollrec_settime($rname);
 	rollrec_write();
 
@@ -1276,10 +1718,14 @@ sub kskphase
 
 	rollmgr_log(LOG_PHASE,$rname,"KSK phase $phase");
 
-	$rr{'kskphase'} = $phase;
+	rollrec_close();
+	rollrec_read($rollrecfile);
+	$rrr->{'kskphase'} = $phase;
 	rollrec_setval($rname,"kskphase",$phase);
 	rollrec_settime($rname);
 	rollrec_write();
+	rollrec_close();
+	rollrec_read($rollrecfile);
 
 #	display("kskphase $rname $phase");
 
@@ -1737,10 +2183,13 @@ sub rrfokay
 #
 # Purpose:	Sleep for a specific amount of time.  This will take into
 #		account interrupts we've taken from rollctl.
+#		We may be overridden by a rollctl command.
 #
 sub sleeper
 {
 	my $nap;				# Time left to sleep.
+
+	return if($sleep_override);
 
 	rollmgr_log(LOG_TMI,"","sleeping for $sleeptime seconds");
 
@@ -1752,6 +2201,28 @@ sub sleeper
 
 		$sleepcnt += sleep($nap);
 	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	sleeper_awake()
+#
+# Purpose:	This routine forces rollerd to run its queue.  It does this
+#		by setting the elapsed-sleep-time equal to the time-to-sleep.
+#
+sub sleeper_awake
+{
+	$sleepcnt = $sleeptime;
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	sleeper_override()
+#
+# Purpose:	This routine forces rollerd to run its queue.  It does this
+#		by setting the elapsed-sleep-time equal to the time-to-sleep.
+#
+sub sleeper_override
+{
+	$sleep_override = 1;
 }
 
 #-----------------------------------------------------------------------------
@@ -1784,6 +2255,10 @@ sub commander
 		{
 			cmd_display($data);
 		}
+		elsif($cmd eq ROLLCMD_DSPUB())
+		{
+			cmd_dspub($data);
+		}
 		elsif($cmd eq ROLLCMD_LOGFILE())
 		{
 			cmd_logfile($data);
@@ -1799,6 +2274,10 @@ sub commander
 		elsif($cmd eq ROLLCMD_ROLLALL())
 		{
 			cmd_rollall();
+		}
+		elsif($cmd eq ROLLCMD_ROLLKSK())
+		{
+			cmd_rollksk();
 		}
 		elsif($cmd eq ROLLCMD_ROLLREC())
 		{
@@ -1896,6 +2375,71 @@ sub cmd_display
 		displayer(0);
 		rollmgr_log(LOG_INFO,"<command>","rollerd display stopped");
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd display stopped");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_dspub()
+#
+# Purpose:	
+#
+sub cmd_dspub
+{
+	my $zone = shift;				# Command's data.
+
+	my $rrr;					# Reference to rollrec.
+	my $phase;					# Zone's phase.
+
+	rollmgr_log(LOG_TMI,"<command>","dspub command received; zone - \"$zone\"");
+
+	#
+	# Ensure we're in the proper KSK-rollover phase to do this command.
+	#
+	$phase = rollrec_recval($zone,'kskphase');
+	if($phase != 6)
+	{
+		rollmgr_log(LOG_INFO,"<command>","zone not in KSK-rollover phase 6");
+		return;
+	}
+
+	#
+	# Get the rollrec for this name.
+	#
+	$rrr = rollrec_fullrec($zone);
+	if(!defined($rrr))
+	{
+		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+	}
+
+	#
+	# Change the zone's rollover phase to phase 7 (the final phase) and
+	# re-run the queue now.
+	#
+	kskphase($zone,$rrr,7);
+	sleeper_override();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_logfile()
+#
+# Purpose:	Set the logfile to the user's specified file.  Nothing is done
+#		if the user requests the same log file as is currently in use.
+#
+sub cmd_logfile
+{
+	my $newlog = shift;				# New log file.
+	my $oldlog;					# Old log file.
+
+	rollmgr_log(LOG_TMI,"<command>","logfile command received; new log file - \"$newlog\"");
+
+	#
+	# Do nothing if the new logfile is the same as the current logfile.
+	#
+	$oldlog = rollmgr_logfile();
+	if($oldlog eq $newlog)
+	{
+		rollmgr_log(LOG_INFO,"<command>","new logfile ($newlog) same as the old logfile");
+		return;
 	}
 }
 
@@ -2171,7 +2715,7 @@ sub cmd_runqueue
 
 	rollmgr_log(LOG_INFO,"<command>","checking rollrec queue");
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd checking rollrec queue");
-	$sleepcnt = $sleeptime;
+	sleeper_awake();
 }
 
 #-----------------------------------------------------------------------------
@@ -2352,7 +2896,6 @@ sub cmd_status
 	$outbuf .= "logfile:            $lfile\n";
 	$outbuf .= "loglevel:           $lvl\n";
 	$outbuf .= "sleeptime:          $sleeptime\n";
-#	$outbuf .= "elapsed sleeptime:  $sleepcnt\n";
 
 
 	rollmgr_log(LOG_TMI,"<command>","status command received");
@@ -2365,7 +2908,6 @@ sub cmd_status
 	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvlstr");
 
 	rollmgr_log(LOG_ALWAYS,"<command>","\tsleeptime         - $sleeptime");
-#	rollmgr_log(LOG_ALWAYS,"<command>","\telapsed sleeptime - $sleepcnt");
 
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
 }
@@ -2394,8 +2936,6 @@ sub cmd_zonelog
 	$data =~ /^(.*):(.*)$/;
 	$zone = $1;
 	$llev = $2;
-
-print STDERR "\n\nzonelog:  <$llev> - <" . rollmgr_lognum($llev) . ">\n\n";
 
 	#
 	# Convert the user's logging level to its numeric form.
@@ -2506,7 +3046,7 @@ sub cmd_zonestatus
 		#
 		# Get the data we're interested in.
 		#
-		$phase = $rr{'curphase'};
+		$phase = $rr{'zskphase'};
 		$rtype = $rr{'rollrec_type'};
 
 		#
@@ -2596,7 +3136,7 @@ sub rollnow
 	#
 	# Set the sleep values such that the queue will be run.
 	#
-	$sleepcnt = $sleeptime;
+	sleeper_awake();
 	rollmgr_log(LOG_INFO,"<command>","forcing a rollover for zone $zone");
 	display("startroll $zone 0");
 	return(1);
@@ -2647,7 +3187,7 @@ sub skipnow
 		#
 		# Move the zone to rollover phase 0.
 		#
-		rollrec_setval($zone,"curphase",0);
+		rollrec_setval($zone,"zskphase",0);
 
 		#
 		# Write the rollrec file.
@@ -2843,17 +3383,26 @@ rollerd - DNSSEC-Tools daemon to manage DNSSEC key rollover.
 
 =head1 DESCRIPTION
 
-The B<rollerd> daemon manages key rollover for zones.  The Pre-Publish Method
-of key rollover is used for ZSK key rollovers.  (Currently, B<rollerd> only
-handles ZSK rollover.) This method has four phases that are entered when it
-is time to perform the ZSK rollover:
+The B<rollerd> daemon manages key rollover for zones.  B<rollerd> handles
+both KSK and ZSK rollover, though only one rollover may take place at a time.
+Initiation of KSK rollovers takes precedence over the initiation of ZSK
+rollovers.  The Pre-Publish Method of key rollover is used for ZSK key
+rollovers.  The Double Signature Method of key rollover is used for KSK
+rollovers.  B<rollerd> maintains zone rollover state in files called
+I<rollrec> files.  The administrator may control B<rollerd> with the
+B<rollctl> command.  These are described in their own sections below.
+
+=head2 ZSK Rollover Using the Pre-Publish Method
+
+The Pre-Publish Method has four phases that are entered when it is time to
+perform ZSK rollover:
 
     1. wait for old zone data to expire from caches
     2. sign the zone with the KSK and Published ZSK
     3. wait for old zone data to expire from caches
     4. adjust keys in keyrec and sign the zone with new Current ZSK
 
-B<rollerd> uses the B<zonesigner> command during rollover phases 2 and 4.
+B<rollerd> uses the B<zonesigner> command during ZSK rollover phases 2 and 4.
 B<zonesigner> will generate keys as required and sign the zone during these
 two phases.
 
@@ -2861,28 +3410,62 @@ The Pre-Publish Method of key rollover is defined in the Step-by-Step DNS
 Security Operator Guidance Document.  See that document for more detailed
 information.
 
-The zones to be managed by B<rollerd> are defined in a I<rollrec> file.  Each
-zone's entry contains data needed by B<rollerd> and some data useful to a user.
-Below is a sample I<rollrec> entry:
+=head2 KSK Rollover Using the Double Signature Method
+
+The Double Signature Method has seven phases that are entered when it is time
+to perform ZSK rollover:
+
+    1. wait for old zone data to expire from caches
+    2. generate a new (published) KSK
+    3. wait for the old DNSKEY RRset to expire from caches
+    4. roll the KSKs
+    5. transfer new keyset to the parent
+    6. wait for parent to publish the new DS record
+    7. reload the zone
+
+B<rollerd> uses the B<zonesigner> command during KSK rollover phases 2 and 4.
+B<zonesigner> will generate keys as required and sign the zone during these
+two phases.
+
+Currently, steps 5 and 6 are handled manually.  In step 5, B<rollerd> informs
+the administrator that the zone's keyset must be transferred to its parent
+in order for rollover to continue.  In step 6, after the parent has published
+a new DS record, the administrator uses B<rollctl> to inform B<rollerd> that
+the DS record has been published and rollover may continue.
+
+The Double Signature Method of key rollover is defined in the Step-by-Step
+DNS Security Operator Guidance Document.  See that document for more detailed
+information.
+
+=head2 I<rollrec> Files
+
+The zones to be managed by B<rollerd> are described in a I<rollrec> file.
+Each zone's entry contains data needed by B<rollerd> and some data useful to a
+user.  Below is a sample I<rollrec> entry:
 
 	roll "example.com"
 		zonefile        "example.com.signed"
 		keyrec          "example.com.krf"
-		curphase        "3"
-		maxttl          "2400"
-		phasestart      "Thu May  4 19:19:21 2006"
+		kskphase        "0"
+		zskphase        "3"
+		ksk_rollsecs    "1172614842"
+		ksk_rolldate    "Tue Feb 27 22:20:42 2007"
+		zsk_rollsecs    "1172615087"
+		zsk_rolldate    "Tue Feb 27 22:24:47 2007"
+		maxttl          "60"
+		display         "1"
+		phasestart      "Tue Feb 27 22:25:07 2007"
 
-The first line gives the I<rollrec> entry's name.  The "roll" keyword
-indicates that B<rollerd> should include the zone in its roll queue.  Using
-"skip" in place of "roll" allows a zone to be stored in the I<rollrec> file,
-but it will not be included in rollover processing.  The first three fields
-tell B<rollerd> where to find example.com's signed zone file and I<keyrec>
-file and the zone's current rollover phase.  The last two are for reference
-by the user.  The I<maxttl> field is derived from the signed zone file.
+The first line gives the I<rollrec> entry's name.  The lines then give the
+zone's signed zone file, I<keyrec> file, the current rollover phases, the
+rollover timestamps, and other information.  A more detailed explanation may
+be found in I<rollrec(5)>.
 
 If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
 I<rollrec> will be changed into a "skip" I<rollrec>.  That record will not be
 processed.
+
+=head2 Controlling B<rollerd> with B<rollctl>
 
 The B<rollctl> command is used to control the behavior of B<rollerd>.
 A number of commands are available, such as starting or stopping rollover for
@@ -2890,6 +3473,7 @@ a selected zone or all zones, turning on or off a GUI rollover display, and
 halting B<rollerd> execution.  The communications path between
 B<rollerd> and B<rollctl> is operating system-dependent.  On Unix-like
 systems, it is a Unix pipe that should B<only> be writable by root.
+A more detailed explanation of B<rollctl> may be found in I<rollctl(8)>.
 
 =head2 A Note About Files and Filenames
 
@@ -3043,10 +3627,6 @@ taken so that this communication is possible.
 The following problems (or potential problems) are known:
 
 =over 4
-
-=item -
-
-Only deals with ZSK rollover.
 
 =item -
 
