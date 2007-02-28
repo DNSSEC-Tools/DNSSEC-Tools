@@ -181,6 +181,11 @@ The following are the defaults defined for DNSSEC-Tools.
 
 =over 4
 
+=item B<admin>
+
+This default holds the default email address for the DNSSEC-Tools
+administrator.
+
 =item B<algorithm>
 
 This default holds the default encryption algorithm.
