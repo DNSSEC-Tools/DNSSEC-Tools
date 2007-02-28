@@ -51,6 +51,8 @@ my %defaults =
 	"savekeys"	=> 1,			# Save/delete old keys flag.
 	"usegui"	=> 0,			# Use GUI for option entry flag.
 
+	"roll_sleeptime"   => 3600,		# Rollover daemon's sleep time.
+
 	"tanamedconffile"  => "/usr/local/etc/named/named.conf",
 	"tadnsvalconffile" => getconfdir() . "/dnsval.conf",
 	"tasleeptime"      => 3600,
@@ -220,6 +222,11 @@ concept of a lifespan.  This is measured in seconds.
 =item B<random>
 
 This default holds the default random number generator device.
+
+=item B<roll_sleeptime>
+
+This default holds the default sleep time used by the B<rollerd> rollover
+daemon.
 
 =item B<savekeys>
 
