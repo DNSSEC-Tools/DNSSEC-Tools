@@ -1,5 +1,5 @@
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -33,15 +33,17 @@ new records, and modifying existing records.
 Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
 Comment lines start with either a '#' character or a ';' character.
 
+
+=head1 TEMPORARY FIELDS
+
 =head1 FIELDS
 
 The fields in a I<rollrec> record are:
 
- * curphase
+ * administrator
 
-The zone's current rollover phase.  A value of zero indicates that the zone
-is not in rollover, but is in normal operation.  A value of 1, 2, 3, 4
-indicates that the zone is in that rollover phase.
+This is the email address for the zone's administrative user.  If it is not
+set, the default from the DNSSEC-Tools configuration file will be used.
 
  * display
 
@@ -52,6 +54,25 @@ the B<blinkenlights> program.
 
 The zone's I<keyrec> file.
 
+ * kskphase
+
+The zone's current KSK rollover phase.  A value of zero indicates that the
+zone is not in rollover, but is in normal operation.  A numeric value of 1-7
+indicates that the zone is in that phase of KSK rollover.
+
+ * ksk_rolldate
+
+The time at which the zone's last KSK rollover completed.  This is only used
+to provide a human-readable format of the timestamp.  It is derived from the
+I<ksk_rollsecs> field.
+
+ * ksk_rollsecs
+
+The time at which the zone's last KSK rollover completed.  This value is used
+to derive the I<ksk_rolldate> field.
+
+ * loglevel
+
  * maxttl
 
 The maximum time-to-live for the zone.  This is measured in seconds.
@@ -60,35 +81,74 @@ The maximum time-to-live for the zone.  This is measured in seconds.
 
 The time-stamp of the beginning of the zone's current phase.
 
+ * rollrec_signdate
+
+(Is this used?)
+
+ * rollrec_signsecs
+
+(Is this used?)
+
  * zonefile
 
 The zone's zone file.
+
+ * zskphase
+
+The zone's current ZSK rollover phase.  A value of zero indicates that the zone
+is not in rollover, but is in normal operation.  A value of 1, 2, 3, 4
+indicates that the zone is in that phase of ZSK rollover.
+
+ * zsk_rolldate
+
+The time at which the zone's last ZSK rollover completed.  This is only used
+to provide a human-readable format of the timestamp.  It is derived from the
+I<ksk_rollsecs> field.
+
+ * zsk_rollsecs
+
+The time at which the zone's last ZSK rollover completed.  This value is used
+to derive the I<ksk_rolldate> field.
 
 =head1 EXAMPLES
 
 The following is an example of a roll I<rollrec>:
 
     roll "example.com"
-	    zonefile	"example.com.signed"
-	    keyrec	"example.com.krf"
-	    curphase	"1"
-	    maxttl	"60"
-	    display	"1"
-	    phasestart	"Mon Nov 13 19:31:26 2006"
+	    zonefile        "example.signed"
+	    keyrec          "example.krf"
+	    kskphase        "1"
+	    zskphase        "0"
+	    administrator   "bob@bobbox.example.com"
+	    loglevel	    "info"
+	    maxttl          "60"
+	    display         "1"
+	    ksk_rollsecs    "1172614842"
+	    ksk_rolldate    "Tue Feb 27 22:20:42 2007"
+	    zsk_rollsecs    "1172615087"
+	    zsk_rolldate    "Tue Feb 27 22:24:47 2007"
+	    phasestart	    "Mon Feb 20 12:34:56 2007"
 
 The following is an example of a skip I<rollrec>:
 
     skip "test.com"
-	    zonefile	"test.com.signed"
-	    keyrec	"test.com.krf"
-	    curphase	"0"
-	    maxttl	"60"
-	    display	"1"
-	    phasestart	"Mon Nov 13 19:31:50 2006"
+	    zonefile        "test.com.signed"
+	    keyrec          "test.com.krf"
+	    kskphase        "0"
+	    zskphase        "2"
+	    administrator   "tess@test.com"
+	    loglevel	    "info"
+	    maxttl          "60"
+	    display         "1"
+	    ksk_rollsecs    "1172614800"
+	    ksk_rolldate    "Tue Feb 27 22:20:00 2007"
+	    zsk_rollsecs    "1172615070"
+	    zsk_rolldate    "Tue Feb 27 22:24:30 2007"
+	    phasestart	    "Mon Feb 20 12:34:56 2007"
 
 =head1 COPYRIGHT
                  
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
