@@ -3446,7 +3446,8 @@ verify_and_validate(val_context_t * context,
 static int
 ask_cache(val_context_t * context, 
           struct queries_for_query **queries,
-          int *data_received)
+          int *data_received,
+          int *data_missing)
 {
     struct queries_for_query *next_q, *top_q;
     int    retval;
@@ -3454,7 +3455,7 @@ ask_cache(val_context_t * context,
     struct domain_info *response = NULL;
     int more_data = 0;
 
-    if (context == NULL || queries == NULL || data_received == NULL)
+    if (context == NULL || queries == NULL || data_received == NULL || data_missing == NULL)
         return VAL_BAD_ARGUMENT;
 
     top_q = *queries;
@@ -3517,6 +3518,7 @@ ask_cache(val_context_t * context,
                 } else {
                     /* got some response, but need to get more info (cname/dname) */
                     more_data = 1;
+                    *data_missing = 1;
 
                     if (next_q->qfq_query->qc_referral == NULL) {
                         ALLOCATE_REFERRAL_BLOCK(next_q->qfq_query->qc_referral);
@@ -3548,7 +3550,7 @@ ask_cache(val_context_t * context,
         /*
          * more queries have been added, do this again 
          */
-        return ask_cache(context, queries, data_received);
+        return ask_cache(context, queries, data_received, data_missing);
 
 
     return VAL_NO_ERROR;
@@ -3557,7 +3559,8 @@ ask_cache(val_context_t * context,
 static int
 ask_resolver(val_context_t * context, 
              struct queries_for_query **queries,
-             int *data_received)
+             int *data_received,
+             int *data_missing)
              
 {
     struct queries_for_query *next_q;
@@ -3566,11 +3569,10 @@ ask_resolver(val_context_t * context,
     int             need_data = 0;
     char            name_p[NS_MAXDNAME];
 
-    if ((context == NULL) || (queries == NULL) || (data_received == NULL)) 
+    if ((context == NULL) || (queries == NULL) || (data_received == NULL) || (data_missing == NULL)) 
         return VAL_BAD_ARGUMENT;
 
     response = NULL;
-
 
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
         if (next_q->qfq_query->qc_state == Q_INIT) {
@@ -3631,7 +3633,6 @@ ask_resolver(val_context_t * context,
     }
 
     if (need_data) {
-
         for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
             if (next_q->qfq_query->qc_state == Q_SENT) {
                 if ((retval =
@@ -3681,6 +3682,9 @@ ask_resolver(val_context_t * context,
 
                 if (next_q->qfq_query->qc_state > Q_SENT) 
                     *data_received = 1;
+
+                if (next_q->qfq_query->qc_state < Q_SENT) 
+                    *data_missing = 1;
             }
         }
     } 
@@ -4394,6 +4398,7 @@ val_resolve_and_check(val_context_t * ctx,
     struct queries_for_query *queries = NULL;
     int done = 0;
     int data_received = 0;
+    int data_missing = 0;
 
     val_context_t  *context = NULL;
     
@@ -4441,7 +4446,7 @@ val_resolve_and_check(val_context_t * ctx,
             CTX_LOCK_VALPOL_SH(context);
         }
     }
-   
+  
     if (-1 == ns_name_ntop(domain_name_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
     val_log(context, LOG_DEBUG,
@@ -4472,7 +4477,7 @@ val_resolve_and_check(val_context_t * ctx,
          * XXX by-pass this functionality through flags if needed 
          */
         if (VAL_NO_ERROR !=
-            (retval = ask_cache(context, &queries, &data_received)))
+            (retval = ask_cache(context, &queries, &data_received, &data_missing)))
             goto err;
 
         /*
@@ -4482,7 +4487,7 @@ val_resolve_and_check(val_context_t * ctx,
          * XXX by-pass this functionality through flags if needed 
          */
         if (VAL_NO_ERROR !=
-            (retval = ask_resolver(context, &queries, &data_received)))
+            (retval = ask_resolver(context, &queries, &data_received, &data_missing)))
             goto err;
 
         /*
@@ -4496,7 +4501,7 @@ val_resolve_and_check(val_context_t * ctx,
             continue;
         }
 
-        if (data_received) {
+        if (data_received || !data_missing) {
 
             if (VAL_NO_ERROR != (retval = 
                     construct_authentication_chain(context, 
@@ -4508,6 +4513,7 @@ val_resolve_and_check(val_context_t * ctx,
                 goto err;
 
             data_received = 0;
+            data_missing = 0;
         }
 
         if (!done) {
