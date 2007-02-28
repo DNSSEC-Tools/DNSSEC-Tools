@@ -116,7 +116,7 @@ our @EXPORT = qw(
 			 LOG_TMI
 			 LOG_EXPIRE
 			 LOG_INFO
-			 LOG_CURPHASE
+			 LOG_PHASE
 			 LOG_ERR
 			 LOG_FATAL
 			 LOG_ALWAYS
@@ -130,11 +130,13 @@ our @EXPORT = qw(
 		 rollmgr_sendresp
 		 rollmgr_verifycmd
 			 ROLLCMD_DISPLAY
+			 ROLLCMD_DSPUB
 			 ROLLCMD_GETSTATUS
 			 ROLLCMD_LOGFILE
 			 ROLLCMD_LOGLEVEL
 			 ROLLCMD_LOGMSG
 			 ROLLCMD_ROLLALL
+			 ROLLCMD_ROLLKSK
 			 ROLLCMD_ROLLREC
 			 ROLLCMD_ROLLZONE
 			 ROLLCMD_RUNQUEUE
@@ -170,7 +172,7 @@ my $LOG_NEVER	 =  0;			# Do not log this message.
 my $LOG_TMI	 =  1;			# Overly verbose informational message.
 my $LOG_EXPIRE	 =  3;			# Time-to-expiration given.
 my $LOG_INFO	 =  4;			# Informational message.
-my $LOG_CURPHASE =  6;			# Give current state of zone.
+my $LOG_PHASE	 =  6;			# Give current state of zone.
 my $LOG_ERR	 =  8;			# Non-fatal error message.
 my $LOG_FATAL	 =  9;			# Fatal error.
 my $LOG_ALWAYS	 = 10;			# Messages that should always be given.
@@ -184,7 +186,7 @@ sub LOG_NEVER		{ return($LOG_NEVER); };
 sub LOG_TMI		{ return($LOG_TMI); };
 sub LOG_EXPIRE		{ return($LOG_EXPIRE); };
 sub LOG_INFO		{ return($LOG_INFO); };
-sub LOG_CURPHASE	{ return($LOG_CURPHASE); };
+sub LOG_PHASE		{ return($LOG_PHASE); };
 sub LOG_ERR		{ return($LOG_ERR); };
 sub LOG_FATAL		{ return($LOG_FATAL); };
 sub LOG_ALWAYS		{ return($LOG_ALWAYS); };
@@ -259,11 +261,13 @@ sub ROLLCMD_RC_DISPLAY		{ return($ROLLCMD_RC_DISPLAY);		};
 # recognized by rollerd.  %roll_commands is a hash table of valid commands.
 #
 my $ROLLCMD_DISPLAY	= "rollcmd_display";
+my $ROLLCMD_DSPUB	= "rollcmd_dspub";
 my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
 my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
 my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
+my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
 my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
 my $ROLLCMD_ROLLZONE	= "rollcmd_rollzone";
 my $ROLLCMD_RUNQUEUE	= "rollcmd_runqueue";
@@ -276,11 +280,13 @@ my $ROLLCMD_ZONELOG	= "rollcmd_zonelog";
 my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
 
 sub ROLLCMD_DISPLAY		{ return($ROLLCMD_DISPLAY);	};
+sub ROLLCMD_DSPUB		{ return($ROLLCMD_DSPUB);	};
 sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
 sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
 sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
 sub ROLLCMD_LOGMSG		{ return($ROLLCMD_LOGMSG);	};
 sub ROLLCMD_ROLLALL		{ return($ROLLCMD_ROLLALL);	};
+sub ROLLCMD_ROLLKSK		{ return($ROLLCMD_ROLLKSK);	};
 sub ROLLCMD_ROLLREC		{ return($ROLLCMD_ROLLREC);	};
 sub ROLLCMD_ROLLZONE		{ return($ROLLCMD_ROLLZONE);	};
 sub ROLLCMD_RUNQUEUE		{ return($ROLLCMD_RUNQUEUE);	};
@@ -295,12 +301,14 @@ sub ROLLCMD_ZONESTATUS		{ return($ROLLCMD_ZONESTATUS);	};
 my %roll_commands =
 (
 	rollcmd_display		=> 1,
+	rollcmd_dspub		=> 1,
 	rollcmd_getstatus	=> 1,
 	rollcmd_logfile		=> 1,
 	rollcmd_loglevel	=> 1,
 	rollcmd_logmsg		=> 1,
 	rollcmd_nodisplay	=> 1,
 	rollcmd_rollall		=> 1,
+	rollcmd_rollksk		=> 1,
 	rollcmd_rollrec		=> 1,
 	rollcmd_rollzone	=> 1,
 	rollcmd_runqueue	=> 1,
@@ -391,9 +399,8 @@ my %port_archs =
 # Unix-related constants.
 # 
 
-#my $UNIX_ROLLMGR_DIR	    = "/usr/local/etc/dnssec-tools/";
 my $UNIX_ROLLMGR_DIR	    = getconfdir();
-my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "rollmgr.pid");
+my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/rollmgr.pid");
 
 ##############################################################################
 #
@@ -1344,7 +1351,7 @@ sub rollmgr_lognum
 		}
 		elsif($newlevel =~ /curphase/i)
 		{
-			$llev = LOG_CURPHASE;
+			$llev = LOG_PHASE;
 		}
 		elsif($newlevel =~ /err/i)
 		{
@@ -2087,11 +2094,13 @@ The available commands and their required data are:
    command		data		purpose
    -------		----		-------
    ROLLCMD_DISPLAY	1/0		start/stop rollerd's graphical display
+   ROLLCMD_DSPUB	zone-name	a DS record has been published
    ROLLCMD_LOGFILE	log-file	set rollerd's log filename
    ROLLCMD_LOGLEVEL	log-level	set rollerd's logging level
-   ROLLCMD_ROLLALL	none		force all zones to start rollover
+   ROLLCMD_ROLLALL	none		force all zones to start ZSK rollover
+   ROLLCMD_ROLLKSK	zone-name	force a zone to start KSK rollover
    ROLLCMD_ROLLREC	rollrec-name	change rollerd's rollrec file
-   ROLLCMD_ROLLZONE	zone-name	force a zone to start rollover
+   ROLLCMD_ROLLZONE	zone-name	force a zone to start ZSK rollover
    ROLLCMD_RUNQUEUE	none		rollerd runs through its queue
    ROLLCMD_SHUTDOWN	none		stop rollerd
    ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
