@@ -1,5 +1,5 @@
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 # DNSSEC Tools
@@ -39,18 +39,29 @@ sub dt_adminmail
 	my $subject = shift;			# Message subject.
 	my $msgbody = shift;			# Message body.
 
+	my $sendto = "";			# Message recipient.
 	my $msg;				# Message object.
 	my $mh;					# Mail handler.
 
 	my %dtconf;				# DNSSEC-Tools config file.
-	my $sendto;				# Local admin.
 
 	#
-	# Get the local DNSEEC-Tools administrative contact.
+	# Get the message recipient.  If the caller didn't specify one,
+	# we'll use the default recipient from the config file.
 	#
-	%dtconf = parseconfig();
-	return(0) if(!defined($dtconf{'admin-email'}));
-	$sendto = $dtconf{'admin-email'};
+	if(@_)
+	{
+		$sendto = shift;
+	}
+	else
+	{
+		#
+		# Get the default DNSEEC-Tools administrative contact.
+		#
+		%dtconf = parseconfig();
+		return(0) if(!defined($dtconf{'admin-email'}));
+		$sendto = $dtconf{'admin-email'};
+	}
 
 	#
 	# Create the message object.
@@ -90,7 +101,7 @@ Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools packag
 
   use Net::DNS::SEC::Tools::dnssectools;
 
-  dt_adminmail($subject,$msgbody);
+  dt_adminmail($subject,$msgbody,$recipient);
 
 =head1 DESCRIPTION
 
@@ -106,14 +117,18 @@ below.
 
 =over 4
 
-=item I<dt_adminmail(subject,msgbody)>
+=item I<dt_adminmail(subject,msgbody,recipient)>
 
 This routine emails a message to the administrative user
 listed in the DNSSEC-Tools configuration file.
 
-I<dt_adminmail()> takes two parameters, both scalars.
+I<dt_adminmail()> requires two parameters, both scalars.
 The I<subject> parameter is the subject for the mail message.
 The I<msgbody> parameter is the body of the mail message.
+
+A third parameter, I<recipient>, may be given to specify the message's
+recipient.  If this is not given, then the recipient will be taken from
+the I<admin-email> record of the DNSSEC-Tools configuration file.
 
 Return values:
 
@@ -124,7 +139,7 @@ Return values:
 
 =head1 COPYRIGHT
 
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
