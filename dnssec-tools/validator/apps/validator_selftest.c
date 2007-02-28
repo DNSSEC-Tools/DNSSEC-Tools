@@ -473,6 +473,9 @@ run_test_suite(val_context_t *context, int tcs, int tce, testsuite *suite,
         return 1;
     }
 
+    /* Find the start test case */
+    for (i = 0; curr_test != NULL, i < tcs; i++, curr_test = curr_test->next);
+
     fprintf(stderr, "Suite '%s': Running %d tests\n", suite->name, tc_count);
     resp = NULL;
     for (i = tcs;
