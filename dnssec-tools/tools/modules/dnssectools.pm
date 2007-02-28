@@ -64,6 +64,11 @@ sub dt_adminmail
 	}
 
 	#
+	# Ensure we really have a recipient.
+	#
+	return(0) if($sendto eq "");
+
+	#
 	# Create the message object.
 	#
 	$msg = new Mail::Send;
@@ -133,7 +138,7 @@ the I<admin-email> record of the DNSSEC-Tools configuration file.
 Return values:
 
 	1 - the message was created and sent.
-	0 - the data for the message could not be created
+	0 - an invalid recipient was specified. 
 
 =back
 
