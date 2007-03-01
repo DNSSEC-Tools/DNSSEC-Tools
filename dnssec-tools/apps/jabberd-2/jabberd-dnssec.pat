@@ -4,7 +4,7 @@ RCS file: /home/cvs/jabberd2/configure.in,v
 retrieving revision 1.95
 diff -u -p -r1.95 configure.in
 --- configure.in	21 Aug 2005 10:06:06 -0000	1.95
-+++ configure.in	29 Jan 2007 19:54:56 -0000
++++ configure.in	1 Mar 2007 15:28:33 -0000
 @@ -63,6 +63,10 @@ for libpath in $split_libs ; do
      LDFLAGS="-L$libpath $LDFLAGS"
  done
@@ -16,7 +16,7 @@ diff -u -p -r1.95 configure.in
  dnl
  dnl header checks
  dnl
-@@ -132,7 +136,38 @@ if test "$ac_cv_lib_nsl_gethostbyname" =
+@@ -132,7 +136,39 @@ if test "$ac_cv_lib_nsl_gethostbyname" =
  fi
  
  dnl res_query has been seen in libc, libbind and libresolv
@@ -44,7 +44,8 @@ diff -u -p -r1.95 configure.in
 +    AC_CHECK_LIB(val, p_val_status,
 +                 LIBS="$LIBS -lval"
 +                 have_val_res_query=yes,
-+                 [ AC_CHECK_LIB(val-threads, p_val_status,
++                 [ AC_CHECK_LIB(pthread, pthread_rwlock_init)
++		   AC_CHECK_LIB(val-threads, p_val_status,
 +                   have_val_res_query=yes
 +                   LIBS="$LIBS -lval-threads -lpthread"
 +                   LIBVAL_SUFFIX="-threads",
@@ -56,7 +57,7 @@ diff -u -p -r1.95 configure.in
      AC_CHECK_FUNCS(res_query)
      if test "x-$ac_cv_func_res_query" = "x-yes" ; then
          have_res_query=yes
-@@ -174,7 +209,9 @@ if test "x-$ac_cv_header_windns_h" = "x-
+@@ -174,7 +210,9 @@ if test "x-$ac_cv_header_windns_h" = "x-
                      LIBS="$save_libs"])
  fi
  
@@ -67,13 +68,35 @@ diff -u -p -r1.95 configure.in
      AC_DEFINE(HAVE_RES_QUERY,1,[Define to 1 if you have the 'res_query' function.])
  elif test "x-$have_dnsquery" = "x-yes" ; then
      AC_DEFINE(HAVE_DNSQUERY,1,[Define to 1 if you have the 'DnsQuery' function.])
+Index: etc/resolver.xml.dist.in
+===================================================================
+RCS file: /home/cvs/jabberd2/etc/resolver.xml.dist.in,v
+retrieving revision 1.12
+diff -u -p -r1.12 resolver.xml.dist.in
+--- etc/resolver.xml.dist.in	29 Oct 2003 23:30:06 -0000	1.12
++++ etc/resolver.xml.dist.in	1 Mar 2007 15:28:34 -0000
+@@ -78,4 +78,14 @@
+   <ipv6/>
+   -->
+ 
++  <dnssec>
++    <!-- Log level for DNSSEC validation. -->
++    <log_level>5<log_level/>
++
++    <!-- If this is enabled, the resolver drop untrusted DNS responses. -->
++    <!--
++    <drop_untrusted/>
++    -->
++  </dnssec>
++
+ </resolver>
 Index: resolver/dns.c
 ===================================================================
 RCS file: /home/cvs/jabberd2/resolver/dns.c,v
 retrieving revision 1.8
 diff -u -p -r1.8 dns.c
 --- resolver/dns.c	15 Dec 2004 11:09:13 -0000	1.8
-+++ resolver/dns.c	29 Jan 2007 19:54:57 -0000
++++ resolver/dns.c	1 Mar 2007 15:28:34 -0000
 @@ -48,6 +48,9 @@
  #ifdef HAVE_WINDNS_H
  # include <windns.h>
@@ -111,7 +134,7 @@ diff -u -p -r1.8 dns.c
  
      if(zone == NULL || *zone == '\0')
          return NULL;
-@@ -186,8 +192,34 @@ dns_host_t dns_resolve(const char *zone,
+@@ -186,8 +192,37 @@ dns_host_t dns_resolve(const char *zone,
      }
  
      /* do the actual query */
@@ -136,6 +159,9 @@ diff -u -p -r1.8 dns.c
 +    
 +    if(len == -1) {
 +        return NULL;
++    } else if (r->drop_untrusted && !val_istrusted(val_status)) {
++        log_write(r->log, LOG_NOTICE, "dropping untrusted response for %s",zone);
++        return NULL;
 +    } else if ((len < sizeof(HEADER)) || (len > MAX_PACKET)) {
 +        log_write(r->log, LOG_NOTICE, "packet size err resolving %s",zone);
 +        return NULL;
@@ -146,7 +172,7 @@ diff -u -p -r1.8 dns.c
  
      /* we got a valid result, containing two types of records - packet
       * and answer .. we have to skip over the packet records */
-@@ -246,6 +278,9 @@ dns_host_t dns_resolve(const char *zone,
+@@ -246,6 +281,9 @@ dns_host_t dns_resolve(const char *zone,
          reply[an]->type = type;
          reply[an]->class = class;
          reply[an]->ttl = ttl;
@@ -162,7 +188,7 @@ RCS file: /home/cvs/jabberd2/resolver/dns.h,v
 retrieving revision 1.6
 diff -u -p -r1.6 dns.h
 --- resolver/dns.h	26 Apr 2004 05:05:47 -0000	1.6
-+++ resolver/dns.h	29 Jan 2007 19:54:57 -0000
++++ resolver/dns.h	1 Mar 2007 15:28:34 -0000
 @@ -37,6 +37,9 @@ typedef struct dns_host_st {
      unsigned int        ttl;
  
@@ -190,19 +216,45 @@ RCS file: /home/cvs/jabberd2/resolver/resolver.c,v
 retrieving revision 1.50
 diff -u -p -r1.50 resolver.c
 --- resolver/resolver.c	8 Aug 2005 02:15:17 -0000	1.50
-+++ resolver/resolver.c	29 Jan 2007 19:54:58 -0000
-@@ -20,6 +20,10 @@
++++ resolver/resolver.c	1 Mar 2007 15:28:35 -0000
+@@ -20,6 +20,24 @@
  
  #include "resolver.h"
  
 +#ifdef DNSSEC_LOCAL_VALIDATION
 +# include <validator/validator.h>
++
++//     typedef void    (*val_log_cb_t) (struct val_log *logp, int level,
++//                                      const char *buf);
++
++void _resolver_log(struct val_log *logp, int level, const char *str)
++{
++    resolver_t r;
++
++    if ((NULL == logp) || (NULL == str))
++        return;
++
++    r = (resolver_t) logp->a_void;
++    log_write(r->log, LOG_NOTICE, str);
++}
 +#endif
 +
  static sig_atomic_t resolver_shutdown = 0;
  static sig_atomic_t resolver_lost_router = 0;
  static sig_atomic_t resolver_logrotate = 0;
-@@ -323,17 +327,28 @@ static int _resolver_sx_callback(sx_t s,
+@@ -116,6 +134,11 @@ static void _resolver_config_expand(reso
+     }
+ 
+     r->resolve_aaaa = config_count(r->config, "ipv6") ? 1 : 0;
++
++#ifdef DNSSEC_LOCAL_VALIDATION
++    r->drop_untrusted = config_count(r->config, "dnssec.drop_untrusted") ? 1 : 0;
++    r->dnssec_log_level = j_atoi(config_get_one(r->config, "dnssec.log_level", 0), 5347);
++#endif
+ }
+ 
+ static int _resolver_sx_callback(sx_t s, sx_event_t e, void *data, void *arg) {
+@@ -323,17 +346,28 @@ static int _resolver_sx_callback(sx_t s,
  
                  log_debug(ZONE, "trying srv lookup for %s", zone);
              
@@ -234,7 +286,7 @@ diff -u -p -r1.50 resolver.c
  
                              eip = nad_insert_elem(nad, 1, NAD_ENS(nad, 1), "ip", (char *) ascan->rr);
  
-@@ -354,10 +369,22 @@ static int _resolver_sx_callback(sx_t s,
+@@ -354,10 +388,22 @@ static int _resolver_sx_callback(sx_t s,
                          for(srvscan = srvs; srvscan != NULL; srvscan = srvscan->next) {
                              log_debug(ZONE, "%s has srv %s, doing AAAA lookup", zone, ((dns_srv_t) srvscan->rr)->name);
  
@@ -259,7 +311,7 @@ diff -u -p -r1.50 resolver.c
  
                                  eip = nad_insert_elem(nad, 1, NAD_ENS(nad, 1), "ip", (char *)ascan->rr);
  
-@@ -387,10 +414,19 @@ static int _resolver_sx_callback(sx_t s,
+@@ -387,10 +433,19 @@ static int _resolver_sx_callback(sx_t s,
                  /* A lookup */
                  log_debug(ZONE, "doing A lookup for %s", zone);
  
@@ -282,7 +334,7 @@ diff -u -p -r1.50 resolver.c
                      eip = nad_insert_elem(nad, 1, NAD_ENS(nad, 1), "ip", (char *) ascan->rr);
  
                      nad_set_attr(nad, eip, -1, "port", "5269", 4);
-@@ -407,11 +443,20 @@ static int _resolver_sx_callback(sx_t s,
+@@ -407,11 +462,20 @@ static int _resolver_sx_callback(sx_t s,
                  if(r->resolve_aaaa) {
                      log_debug(ZONE, "doing AAAA lookup for %s", zone);
  
@@ -306,3 +358,40 @@ diff -u -p -r1.50 resolver.c
                          eip = nad_insert_elem(nad, 1, NAD_ENS(nad, 1), "ip", (char *)ascan->rr);
  
                          nad_set_attr(nad, eip, -1, "port", "5269", 4);
+@@ -596,6 +660,15 @@ int main(int argc, char **argv)
+ 
+     r->sx_env = sx_env_new();
+ 
++#ifdef DNSSEC_LOCAL_VALIDATION
++    {
++        val_log_t * vallog;
++        vallog = val_log_add_cb(r->dnssec_log_level , &_resolver_log);
++        if (vallog)
++            vallog->a_void = r;
++    }
++#endif
++
+ #ifdef HAVE_SSL
+     if(r->router_pemfile != NULL) {
+         r->sx_ssl = sx_env_plugin(r->sx_env, sx_ssl_init, r->router_pemfile, NULL);
+Index: resolver/resolver.h
+===================================================================
+RCS file: /home/cvs/jabberd2/resolver/resolver.h,v
+retrieving revision 1.14
+diff -u -p -r1.14 resolver.h
+--- resolver/resolver.h	26 Apr 2004 05:05:48 -0000	1.14
++++ resolver/resolver.h	1 Mar 2007 15:28:35 -0000
+@@ -88,5 +88,13 @@ typedef struct resolver_st {
+ 
+     /** true if we're currently bound in the router */
+     int                 online;
++
++#ifdef DNSSEC_LOCAL_VALIDATION
++    /** DNSSEC library log level    */
++    int                 dnssec_log_level;
++
++    /** DNSSEC policy; true if we want to drop untrusted responses */
++    int                 drop_untrusted;
++#endif
+ } *resolver_t;
+ 
