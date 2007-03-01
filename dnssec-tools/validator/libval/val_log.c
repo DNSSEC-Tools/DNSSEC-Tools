@@ -632,6 +632,12 @@ p_val_status(val_status_t err)
     }
 }
 
+/* *********************************************************************
+ *
+ * Logging output
+ *
+ * *********************************************************************/
+
 static void
 val_log_insert(val_log_t * logp)
 {
@@ -647,6 +653,24 @@ val_log_insert(val_log_t * logp)
         log_head = logp;
     else
         tmp_log->next = logp;
+}
+
+void
+val_log_callback(val_log_t * logp, const val_context_t * ctx, int level,
+            const char *template, va_list ap)
+{
+    /** Needs to be at least two characters larger than message size */
+    char            buf[1028];
+
+    if (NULL == logp)
+        return;
+
+    /** We allocated extra space  */
+    vsnprintf(buf, sizeof(buf) - 2, template, ap);
+
+    (*(logp->opt.cb.func))(logp, level, buf);
+
+    return;
 }
 
 void
@@ -749,6 +773,29 @@ val_log_add_udp(int level, char *host, int port)
         FREE(logp);
         logp = NULL;
     }
+
+    logp->logf = val_log_udp;
+    val_log_insert(logp);
+
+    return logp;
+}
+
+val_log_t      *
+val_log_add_cb(int level, val_log_cb_t func)
+{
+    val_log_t      *logp;
+
+    if (NULL == func)
+        return NULL;
+
+    logp = val_log_create_logp(level);
+    if (NULL == logp)
+        return NULL;
+
+    logp->opt.cb.func = func;
+    logp->logf = val_log_callback;
+
+    val_log_insert(logp);
 
     return logp;
 }
