@@ -6,8 +6,7 @@
 #
 # dtconfchk
 #
-#	This script performs sanity checks on a DNSSEC-Tools
-#	configuration file.
+#	This script performs sanity checks on a DNSSEC-Tools configuration file.
 #
 
 use strict;
@@ -109,7 +108,7 @@ sub main()
 	}
 	else
 	{
-		$conffile = "/usr/local/etc/dnssec/dnssec-tools.conf";
+		$conffile = getconffile();
 	}
 
 	#
@@ -519,12 +518,12 @@ sub check_rollerd
 		}
 		else
 		{
-			prt(1,"existing roll-over logfile ($logfile) acceptable");
+			prt(1,"existing rollover logfile ($logfile) acceptable");
 		}
 	}
 	else
 	{
-		prt(1,"nonexistent roll-over logfile ($logfile) acceptable");
+		prt(1,"nonexistent rollover logfile ($logfile) acceptable");
 	}
 
 	#
@@ -533,15 +532,15 @@ sub check_rollerd
 	#
 	if(($loglevel =~ /^tmi$/i)	|| ($loglevel == 1)	||
 	   ($loglevel =~ /^info$/i)	|| ($loglevel == 3)	||
-	   ($loglevel =~ /^curphase$/i)	|| ($loglevel == 5)	||
+	   ($loglevel =~ /^zskphase$/i)	|| ($loglevel == 5)	||
 	   ($loglevel =~ /^err$/i)	|| ($loglevel == 7)	||
 	   ($loglevel =~ /^fatal$/i)	|| ($loglevel == 9))
 	{
-		prt(1,"roll-over loglevel ($loglevel) acceptable");
+		prt(1,"rollover loglevel ($loglevel) acceptable");
 	}
 	else
 	{
-		prt(0,"invalid roll-over loglevel ($loglevel)");
+		prt(0,"invalid rollover loglevel ($loglevel)");
 		$errs++;
 	}
 
@@ -551,12 +550,12 @@ sub check_rollerd
 	#
 	if($sleep < $MINSLEEP)
 	{
-		prt(0,"roll-over sleeptime ($sleep) < minimum realistic sleeptime ($MINSLEEP)");
+		prt(0,"rollover sleeptime ($sleep) < minimum realistic sleeptime ($MINSLEEP)");
 		$errs++;
 	}
 	else
 	{
-		prt(1,"roll-over sleeptime ($sleep) acceptable");
+		prt(1,"rollover sleeptime ($sleep) acceptable");
 	}
 
 }
@@ -584,7 +583,8 @@ sub check_files
 #
 sub check_misc
 {
-	my $savekeys;					# Save-old-keys flag.
+	my $admin;				# Administrator's email address.
+	my $savekeys;				# Save-old-keys flag.
 
 	#
 	# Check some boolean flags.
@@ -592,6 +592,28 @@ sub check_misc
 	bool_check('entropy_msg');
 	bool_check('savekeys');
 	bool_check('usegui');
+
+	#
+	# Check if there's an admin-email field.
+	#
+	if(!defined($dtconf{'admin-email'}))
+	{
+		prt(0,"admin-email is not defined");
+		$errs++;
+	}
+	else
+	{
+		$admin = $dtconf{'admin-email'};
+		if($admin eq "")
+		{
+			prt(0,"admin-email is defined but is null");
+			$errs++;
+		}
+		else
+		{
+			prt(1,"admin-email is defined and non-null");
+		}
+	}
 
 	#
 	# If savekeys is on, check that archdir is set to a directory.
@@ -871,8 +893,18 @@ dtconfchk - Check a DNSSEC-Tools configuration file for sanity.
 
 =head1 DESCRIPTION
 
-I<dtconfchk> checks a DNSSEC-Tools configuration file to determine if the
-entries are valid.
+B<dtconfchk> checks a DNSSEC-Tools configuration file to determine if the
+entries are valid.  If a configuration file isn't specified, the system
+configuration file will be verified.
+
+Without any display options, B<dtconfchk> displays error messages for problems
+found, followed by a summary line.  Display options will increase or decrease
+the amount of detail about the configuration file's sanity.  In all cases,
+the exit code is the count of errors found in the file.
+
+The tests are divided into five groups: key-related checks, zone-related
+checks, path checks, rollover checks, and miscellaneous checks.  The checks
+in each of these self-explanatory groups are described below.
 
 The I<default_keyrec> configuration entry is not checked.  This entry
 specifies the default I<keyrec> file name and isn't necessarily expected
@@ -962,7 +994,7 @@ the file must be a regular executable file.
 
 =back
 
-=head2 Roll-over Daemon Checks
+=head2 Rollover Daemon Checks
 
 The following checks are performed for B<rollerd> values:
 
@@ -999,6 +1031,11 @@ B<rollerd>'s sleep-time must be at least one minute.
 The following miscellaneous checks are performed:
 
 =over 8
+
+=item I<admin-email>
+
+Ensure that the I<admin-email> field is defined and has a value.  
+B<dtconfchk> does not try to validate the email address itself.
 
 =item I<archivedir>
 
