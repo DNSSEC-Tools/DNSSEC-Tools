@@ -1,0 +1,10 @@
+pref("extensions.drill.use_drill", true);
+pref("extensions.drill.drill_executable", "/usr/local/bin/drill");
+pref("extensions.drill.chase", true);
+pref("extensions.drill.usenameserver", false);
+pref("extensions.drill.nameserver", "127.0.0.1");
+pref("extensions.drill.keydir", "~/dnssec/keys/");
+pref("extensions.drill.debug", false);
+pref("browser.dom.window.dump.enabled", false);
+pref("extensions.drill.use_libval", false);
+pref("extensions.drill.libval_executable", "/usr/local/bin/getaddr");
