@@ -538,7 +538,7 @@ val_query(val_context_t * ctx,
     } else
         context = (val_context_t *) ctx;
 
-    val_log(context, LOG_DEBUG,
+    val_log(context, LOG_INFO,
             "val_query called with dname=%s, class=%s, type=%s",
             domain_name, p_class(class_h), p_type(type));
 
@@ -562,7 +562,7 @@ val_query(val_context_t * ctx,
             compose_answer(name_n, type, class_h, results, resp, flags);
     }
 
-    val_log_authentication_chain(context, LOG_DEBUG, name_n, class_h, type, results);
+    val_log_authentication_chain(context, LOG_INFO, name_n, class_h, type, results);
 
     val_free_result_chain(results);
 
