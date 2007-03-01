@@ -1187,10 +1187,10 @@ read_val_config_file(val_context_t * ctx, char *scope)
 
     ctx->v_timestamp = sb.st_mtime;
     
-    val_log(ctx, LOG_NOTICE, "Reading validator policy from %s",
-            dnsval_conf);
     fd = open(dnsval_conf, O_RDONLY);
     if (fd == -1) {
+        val_log(ctx, LOG_ERR, "Could not open validator conf file for reading: %s",
+                dnsval_conf);
         return VAL_CONF_NOT_FOUND;
     }
     memset(&fl, 0, sizeof(fl));
@@ -1202,9 +1202,13 @@ read_val_config_file(val_context_t * ctx, char *scope)
     if (fp == NULL) {
         fcntl(fd, F_SETLKW, &fl);
         close(fd);
+        val_log(ctx, LOG_ERR, "Could not open validator conf file for reading: %s",
+                dnsval_conf);
         return VAL_INTERNAL_ERROR;
     }
 
+    val_log(ctx, LOG_NOTICE, "Reading validator policy from %s",
+            dnsval_conf);
     val_log(ctx, LOG_DEBUG, "Reading next policy fragment");
     while (VAL_NO_ERROR ==
            (retval =
@@ -1251,6 +1255,8 @@ read_val_config_file(val_context_t * ctx, char *scope)
     ctx->a_list = NULL;
 
     CTX_UNLOCK_VALPOL(ctx);
+
+    val_log(ctx, LOG_DEBUG, "Done reading validator configuration");
 
     return retval;
 }
@@ -1366,10 +1372,10 @@ read_res_config_file(val_context_t * ctx)
 
     ctx->r_timestamp = sb.st_mtime;
 
-    val_log(ctx, LOG_NOTICE, "Reading resolver policy from %s",
-            resolv_config);
     fd = open(resolv_config, O_RDONLY);
     if (fd == -1) {
+        val_log(ctx, LOG_ERR, "Could not open resolver conf file for reading: %s",
+                resolv_conf);
         return VAL_CONF_NOT_FOUND;
     }
     fl.l_type = F_RDLCK;
@@ -1380,8 +1386,12 @@ read_res_config_file(val_context_t * ctx)
     if (fp == NULL) {
         fcntl(fd, F_SETLKW, &fl);
         close(fd);
+        val_log(ctx, LOG_ERR, "Could not open resolver conf file for reading: %s",
+                resolv_conf);
         return VAL_INTERNAL_ERROR;
     }
+
+    val_log(ctx, LOG_NOTICE, "Reading resolver policy from %s", resolv_config);
 
     while (NULL != fgets(line, MAX_LINE_SIZE, fp)) {
 
@@ -1436,8 +1446,10 @@ read_res_config_file(val_context_t * ctx)
      * Check if we have root hints 
      */
     if (ns_head == NULL) {
-        if (!ctx->root_ns)
+        if (!ctx->root_ns) {
+            val_log(ctx, LOG_ERR, "Resolver configuration is empty, but root-hints was not found");
             return VAL_CONF_NOT_FOUND;
+        }
     } 
 
     CTX_LOCK_RESPOL_EX(ctx);
@@ -1445,10 +1457,11 @@ read_res_config_file(val_context_t * ctx)
     ctx->nslist = ns_head;
     CTX_UNLOCK_RESPOL(ctx);
 
+    val_log(ctx, LOG_DEBUG, "Done reading resolver configuration");
     return VAL_NO_ERROR;
 
   err:
-    val_log(ctx, LOG_ERR, "Parse error in file %s", resolv_config);
+    val_log(ctx, LOG_ERR, "Error encountered while reading file %s", resolv_config);
     free_name_servers(&ns_head);
 
     fcntl(fd, F_SETLKW, &fl);
@@ -1496,13 +1509,15 @@ read_root_hints_file(val_context_t * ctx)
 
     ctx->h_timestamp = sb.st_mtime;
 
-    val_log(ctx, LOG_NOTICE, "Reading root hints from %s",
-            root_hints);
     fp = fopen(root_hints, "r");
     if (fp == NULL) {
+        val_log(ctx, LOG_ERR, "Could not open root hints file for reading: %s",
+            root_hints);
         return VAL_NO_ERROR;
     }
 
+    val_log(ctx, LOG_NOTICE, "Reading root hints from %s",
+            root_hints);
     /*
      * name 
      */
@@ -1511,78 +1526,95 @@ read_root_hints_file(val_context_t * ctx)
          val_get_token(fp, &line_number, token, sizeof(token), &endst,
                    ZONE_COMMENT, ZONE_END_STMT))) {
         fclose(fp);
-        return retval;
+        goto err;
     }
 
     while (!feof(fp)) {
-        if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1)
+        if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1) {
+            retval = VAL_CONF_PARSE_ERROR;
             goto err;
+        }
 
         /*
          * ttl 
          */
-        if (feof(fp))
+        if (feof(fp)) {
+            retval = VAL_CONF_PARSE_ERROR;
             goto err;
+        }
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
-            fclose(fp);
-            return retval;
-        }
-        if (-1 == ns_parse_ttl(token, &ttl_h))
             goto err;
+            
+        }
+        if (-1 == ns_parse_ttl(token, &ttl_h)) {
+            retval = VAL_CONF_PARSE_ERROR;
+            goto err;
+        }
 
         /*
          * class 
          */
-        if (feof(fp))
+        if (feof(fp)) {
+            retval = VAL_CONF_PARSE_ERROR;
             goto err;
+        }
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
-            fclose(fp);
-            return retval;
+            goto err;
         }
         class_h = res_nametoclass(token, &success);
-        if (!success)
+        if (!success) {
+            retval = VAL_CONF_PARSE_ERROR;
             goto err;
+        }
 
         /*
          * type 
          */
-        if (feof(fp))
+        if (feof(fp)) {
+            retval = VAL_CONF_PARSE_ERROR;
             goto err;
+        }
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
-            fclose(fp);
-            return retval;
+            goto err;
         }
         type_h = res_nametotype(token, &success);
-        if (!success)
+        if (!success) {
+            retval = VAL_CONF_PARSE_ERROR;
             goto err;
+        }
 
-        if (feof(fp))
+        if (feof(fp)) {
+            retval = VAL_CONF_PARSE_ERROR;
             goto err;
+        }
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
-            fclose(fp);
-            return retval;
+            goto err;
         }
         if (type_h == ns_t_a) {
             struct in_addr  address;
-            if (inet_pton(AF_INET, token, &address) != 1)
+            if (inet_pton(AF_INET, token, &address) != 1) {
+                retval = VAL_CONF_PARSE_ERROR;
                 goto err;
+            }
             rdata_len_h = sizeof(struct in_addr);
             memcpy(rdata_n, &address, rdata_len_h);
         } else if (type_h == ns_t_ns) {
-            if (ns_name_pton(token, rdata_n, sizeof(rdata_n)) == -1)
+            if (ns_name_pton(token, rdata_n, sizeof(rdata_n)) == -1) {
+                retval = VAL_CONF_PARSE_ERROR;
                 goto err;
+            }
             rdata_len_h = wire_name_length(rdata_n);
         } else
             continue;
@@ -1594,9 +1626,8 @@ read_root_hints_file(val_context_t * ctx)
                              ns_c_in, ttl_h, NULL, rdata_n, VAL_FROM_UNSET,
                              0, zone_n);
         if (rr_set == NULL) {
-            fclose(fp);
-            res_sq_free_rrset_recs(&root_info);
-            return VAL_OUT_OF_MEMORY;
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
         }
         if (type_h != ns_t_rrsig) {
             /** Add this record to its chain of rr_rec's. */
@@ -1606,9 +1637,7 @@ read_root_hints_file(val_context_t * ctx)
             retval = add_as_sig(rr_set, rdata_len_h, rdata_n);
         }
         if (retval != VAL_NO_ERROR) {
-            fclose(fp);
-            res_sq_free_rrset_recs(&root_info);
-            return retval;
+            goto err;
         }
         // end save_rr_to_list
 
@@ -1619,12 +1648,10 @@ read_root_hints_file(val_context_t * ctx)
             (retval =
              val_get_token(fp, &line_number, token, sizeof(token), &endst,
                        ZONE_COMMENT, ZONE_END_STMT))) {
-            fclose(fp);
-            return retval;
+            goto err;
         }
     }
 
-    fclose(fp);
 
     memset(root_zone_n, 0, sizeof(root_zone_n)); /** on-the-wire encoding for root zone **/
 
@@ -1633,8 +1660,7 @@ read_root_hints_file(val_context_t * ctx)
          res_zi_unverified_ns_list(&ns_list, root_zone_n, root_info,
                                    &pending_glue))) {
 
-        res_sq_free_rrset_recs(&root_info);
-        return retval;
+        goto err;
     }
 
     /*
@@ -1661,13 +1687,17 @@ read_root_hints_file(val_context_t * ctx)
 
     res_sq_free_rrset_recs(&root_info);
 
+    val_log(ctx, LOG_DEBUG, "Done reading root hints");
+    fclose(fp);
+
     return retval;
 
   err:
 
     fclose(fp);
     res_sq_free_rrset_recs(&root_info);
-    return VAL_CONF_PARSE_ERROR;
+    val_log(ctx, LOG_ERR, "Error encountered while reading file %s", root_hints);
+    return retval;
 }
 
 /*
