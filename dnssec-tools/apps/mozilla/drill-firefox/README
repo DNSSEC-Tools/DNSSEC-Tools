@@ -1,0 +1,42 @@
+This firefox extension contains modifications to the Drill Extension for Firefox available from:
+http://www.nlnetlabs.nl/dnssec/drill_extension.html
+
+These modifications allow validation to be performed with the libval-related command-line utilities for
+doing hostname validation, namely "getaddrinfo".
+
+Note: The current extension is not compatible with Firefox 2.0+ 
+
+Building:
+========
+make clean
+make
+
+The extension has the name drill-0.6.xpi 
+
+Installation
+============
+
+Open the Firefox Browser
+Open File: 
+    Select drill-0.6.xpi
+Follow directions to complete the installation.
+
+Operation
+=========
+
+1. Ensure that libval has been configured and installed on the system
+
+2. The extension can be configured by clicking on the icon that appears on the right bottom corner of the
+Firefox window.
+    a) Select the "Use libval to perform validation" option
+    b) Specify the location for the "Libval hostname validating utility", aka getaddr. 
+       The default location for this file is /usr/local/bin/getaddr
+  
+3. For sites that are VALIDATED, a green check mark icon appears on the right bottom corner
+
+4. For sites that are BOGUS/INDETERMINATE, a red cross mark icon appears on the right bottom corner
+
+5. For sites that are TRUSTED but NOT VALIDATED, the Drill icon is cleared.
+
+6. Moving the mouse pointer over the Drill icon gives the validation status for the DNS name specified in the address bar.
+

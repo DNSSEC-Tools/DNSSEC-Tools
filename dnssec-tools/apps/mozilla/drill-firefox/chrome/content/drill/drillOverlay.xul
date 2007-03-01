@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+
+<overlay id="drillOverlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<script type="application/x-javascript" src="chrome://drill/content/drillOverlay.js" />
+<script type="application/x-javascript" src="chrome://drill/content/prefs.js" />
+
+<script type="application/x-javascript">
+	<![CDATA[
+        function pageload() {
+            window._content.addEventListener('load', drill_init, true);
+        }
+        function pageunload() {
+            window._content.addEventListener('unload', drill_init, true);
+        }
+        function pageshow() {
+            window._content.addEventListener('show', drill_init, true);
+        }
+        window.addEventListener('load', pageload, true);
+        window.addEventListener('load', pageunload, true);
+        window.addEventListener('load', pageshow, true);
+	]]>
+</script>
+
+<!--
+<popup id="contentAreaContextMenu">
+	<menuitem 
+		id="drill_contextmenu"
+		label="drill"
+		insertafter="context-stop"
+		oncommand="drill_contextmenu_action();"
+	/>
+</popup>
+
+
+<menupopup id="menu_ToolsPopup">
+	<menuitem 
+		id="drill_toolsmenu"
+		insertafter="devToolsSeparator"
+		label="drill"
+		oncommand="drill_toolsmenu_action();" 
+	/>
+</menupopup>
+-->
+
+<statusbar id="status-bar">
+	<statusbarpanel id="drill-status" insertafter="livemark-button">
+		<image
+			id="drill-status-image"
+			width="16"
+			height="16"
+			src="chrome://drill/skin/drill_icon_status.png"
+			onclick="drill_statusbar_action();"
+			tooltiptext="drill"
+		/>
+	</statusbarpanel>
+</statusbar>
+
+</overlay>
