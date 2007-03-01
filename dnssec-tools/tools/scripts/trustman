@@ -204,7 +204,7 @@ sub checkkeys {
 
     foreach my $d (@domains) {
         my $query;
-        $query = resolve_and_check_dnskey($d);
+        $query = resolve_and_check_dnskey($d,$dvfile);
 
 # check the RRSIG over the DNKSEY
         if ($query) {
@@ -432,7 +432,7 @@ sub get_domains_keys {
         my $query;
         my $orgttl;
         my $refresh_time;
-        $query = resolve_and_check_dnskey($d);
+        $query = resolve_and_check_dnskey($d,$dvfile);
         if ($query) {
             foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
                 $orgttl = $rrsigrec->orgttl;
@@ -465,9 +465,9 @@ sub get_domains_keys {
 # DNSKEY record; returns an answer only if it was validated
 # 
 sub resolve_and_check_dnskey {
-    my ($d) = @_;
+    my ($d,$file) = @_;
     my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
-                                                 dnsval_conf => $dvfile);
+                                                 dnsval_conf => $file);
     my $r = $validator->res_query($d, "IN", "DNSKEY");
     if ($r && $validator->isvalidated) {
         my ($pkt, $err) = new Net::DNS::Packet(\$r);
