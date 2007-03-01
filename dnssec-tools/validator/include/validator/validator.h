@@ -472,12 +472,16 @@ extern          "C" {
                                          const val_context_t * ctx,
                                          int level,
                                          const char *template, va_list ap);
+    typedef void    (*val_log_cb_t) (struct val_log *logp, int level,
+                                     const char *buf);
 
     typedef struct val_log {
         val_log_logger_t logf;  /* log function ptr */
         unsigned char   level;  /* 0 - 9, corresponds w/sylog severities */
         unsigned char   lflags; /* generic log flags */
-        const char     *str;    /* logger dependent */
+
+        void           *a_void; /* logger dependent */
+
         union {
             struct {
                 int             sock;
@@ -490,6 +494,9 @@ extern          "C" {
             struct {
                 int             facility;
             } syslog;
+            struct {
+                val_log_cb_t    func;
+            } cb;
             struct {
                 void           *my_ptr;
             } user;
@@ -520,6 +527,7 @@ extern          "C" {
     void            val_log(const val_context_t * ctx, int level,
                             const char *template, ...);
 
+    val_log_t      *val_log_add_cb(int level, val_log_cb_t func);
     val_log_t      *val_log_add_filep(int level, FILE * p);
     val_log_t      *val_log_add_file(int level, const char *filen);
     val_log_t      *val_log_add_syslog(int level, int facility);
