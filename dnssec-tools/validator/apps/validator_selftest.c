@@ -174,6 +174,7 @@ vtc_parse_result(const char *result)
         {"INDETERMINATE", VAL_INDETERMINATE},
         {"INDETERMINATE_DS", VAL_INDETERMINATE},
         {"INDETERMINATE_PROOF",  VAL_INDETERMINATE},
+        {"ERROR", VAL_ERROR},
         {"BOGUS", VAL_BOGUS},
         {"BOGUS_PROOF", VAL_BOGUS},
         {"INCOMPLETE_PROOF", VAL_BOGUS},
