@@ -63,6 +63,8 @@ ok($r eq "/etc/root.hints");
 $r = $validator->resolv_conf();
 ok($r eq "/etc/resolv.conf");
 
+$validator = new Net::DNS::SEC::Validator( );
+
 @r = $validator->getaddrinfo("good-A.test.dnssec-tools.org");
 ok(@r);
 
