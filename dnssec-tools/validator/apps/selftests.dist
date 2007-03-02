@@ -133,7 +133,7 @@ b.ws:
 #
 name-failure:
 "Checking name failure" dns ns_c_in ns_t_a
-  VAL_SUCCESS;
+  VAL_NONEXISTENT_NAME_NOCHAIN;
 #     DNS_ERROR_BASE + SR_SERVFAIL;
 
 
@@ -154,9 +154,9 @@ cname:
                                                            VAL_SUCCESS;
 
 #
-# Test for validation with recursion 
+# Test for validation two levels up the chain 
 #
-recursion:
+two-level:
 "Testing validation up the chain"
      dns.wesh.fruits.netsec.tislabs.com. ns_c_in ns_t_a VAL_SUCCESS;
 
@@ -188,11 +188,8 @@ wildcard:
 # Test for bad class 
 #
 bad-class:
-"Testing bad class" dns.wesh.fruits.netsec.tislabs.com. 15
-     ns_t_a
- val_success;
-# DNS_ERROR_BASE + SR_NO_ANSWER;
-
+"Testing bad class" 
+    dns.wesh.fruits.netsec.tislabs.com. 15 ns_t_a VAL_ERROR;
 
 #
 # Defaults
