@@ -1493,6 +1493,10 @@ read_root_hints_file(val_context_t * ctx)
     struct name_server *ns_list = NULL;
     struct name_server *pending_glue = NULL;    
     struct stat sb;
+    int have_type;
+
+    class_h = 0;
+    have_type = 0;
 
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1569,23 +1573,30 @@ read_root_hints_file(val_context_t * ctx)
         }
         class_h = res_nametoclass(token, &success);
         if (!success) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
+            if(class_h == 0) {
+                retval = VAL_CONF_PARSE_ERROR;
+                goto err;
+            }
+            have_type = 1;
+        }
+        
+        if (!have_type) {
+            /*
+             * type 
+             */
+            if (feof(fp)) {
+                retval = VAL_CONF_PARSE_ERROR;
+                goto err;
+            }
+            if (VAL_NO_ERROR !=
+                (retval =
+                val_get_token(fp, &line_number, token, sizeof(token), &endst,
+                       ZONE_COMMENT, ZONE_END_STMT))) {
+                goto err;
+            }
         }
 
-        /*
-         * type 
-         */
-        if (feof(fp)) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-        if (VAL_NO_ERROR !=
-            (retval =
-             val_get_token(fp, &line_number, token, sizeof(token), &endst,
-                       ZONE_COMMENT, ZONE_END_STMT))) {
-            goto err;
-        }
+        have_type = 0;
         type_h = res_nametotype(token, &success);
         if (!success) {
             retval = VAL_CONF_PARSE_ERROR;
