@@ -676,7 +676,8 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
 
 void
 verify_next_assertion(val_context_t * ctx,
-                      struct val_digested_auth_chain *as)
+                      struct val_digested_auth_chain *as,
+                      struct val_digested_auth_chain *the_trust)
 {
     struct rrset_rec *the_set;
     struct rr_rec  *the_sig;
@@ -684,20 +685,15 @@ verify_next_assertion(val_context_t * ctx,
     u_int16_t       signby_footprint_n;
     val_dnskey_rdata_t dnskey;
     int             is_a_wildcard;
-    struct val_digested_auth_chain *the_trust;
     struct rr_rec  *nextrr;
     struct rr_rec  *keyrr;
     u_int16_t       tag_h;
 
-
-    if ((as == NULL) || (as->_as.ac_data == NULL)
-        || (as->val_ac_trust == NULL))
+    if ((as == NULL) || (as->_as.ac_data == NULL) || (the_trust == NULL))
         return;
 
     as->val_ac_status = VAL_AC_UNSET;
-
     the_set = as->_as.ac_data;
-    the_trust = as->val_ac_trust;
     dnskey.public_key = NULL;
 
     if (the_set->rrs.val_rrset_sig == NULL) {
