@@ -1192,7 +1192,6 @@ digest_response(val_context_t * context,
                         memcpy(referral_zone_n, name_n,
                                wire_name_length(name_n));
                         referral_seen = TRUE;
-                        rrs_zonecut_n = name_n;
                     } else if (namecmp(referral_zone_n, name_n) != 0) {
                         /*
                          * Multiple NS records; Malformed referral notice 
@@ -1268,10 +1267,14 @@ digest_response(val_context_t * context,
                 }
             }
 
+            /* 
+             * The zonecut information for name servers is 
+             * their respective owner name 
+             */
             SAVE_RR_TO_LIST(respondent_server, &learned_zones, name_n,
                             type_h, set_type_h, class_h, ttl_h, hptr,
                             rdata, rdata_len_h, from_section,
-                            authoritive, rrs_zonecut_n);
+                            authoritive, name_n);
         }
 
         FREE(rdata);
