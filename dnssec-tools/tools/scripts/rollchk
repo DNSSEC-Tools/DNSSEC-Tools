@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -9,12 +9,20 @@
 #	This script checks a rollrec file for problems and inconsistencies.
 #
 #	Problems include:
-#		- invalid rollover phase
-#		- non-positive maxttl
 #		- non-existent zone file
 #		- non-existent keyrec file
+#		- non-positive maxttl
 #		- invalid display value
 #		- in rollover, but without a phasestart
+#		- KSK checks:
+#			- invalid KSK phase
+#			- mismatched rollover timestamps
+#		- ZSK checks:
+#			- invalid ZSK phase
+#			- mismatched rollover timestamps
+#		- contemporaneous KSK rollover and ZSK rollover
+#		- empty administrator field
+#		- invalid logging level
 #
 
 use strict;
@@ -22,6 +30,7 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case_always);
 
 use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
@@ -244,18 +253,26 @@ sub runchecks
 #
 # Purpose:	This routine checks the validity of a rollrec.
 #		These checks are:
-#			- invalid rollover phase
+#			- KSK checks:
+#				- invalid rollover phase
+#				- mismatched rollover timestamps
+#			- ZSK checks:
+#				- invalid rollover phase
+#				- mismatched rollover timestamps
+#			- contemporaneous KSK and ZSK rolls
+#			- empty administrator field
+#			- invalid logging level
 #			- non-positive maxttl
 #			- non-existent rollrec file
 #			- invalid display value
 #			- zone file checks:
-#				- file exists
-#				- file is a regular file
-#				- file isn't zero-length
+#				- file doesn't exist
+#				- file is not a regular file
+#				- file is zero-length
 #			- keyrec file checks:
-#				- file exists
-#				- file is a regular file
-#				- file isn't zero-length
+#				- file doesn't exist
+#				- file is not a regular file
+#				- file is zero-length
 #
 sub rollrec_validate
 {
@@ -265,27 +282,104 @@ sub rollrec_validate
 	my %rr = %$rr;				# The rollrec itself.
 	my $errs = 0;				# Error count.
 
-	my $curphase;				# Rollrec's current phase.
-	my $dispflag;				# Rollrec's display flag.
-	my $krfile;				# Rollrec's keyrec file.
-	my $maxttl;				# Rollrec's maximum TTL.
-	my $zonefile;				# Rollrec's zonefile.
+	my $admin;				# Administrator email address.
+	my $dispflag;				# Display flag.
+	my $krfile;				# Keyrec file.
+	my $kskphase;				# Current KSK phase.
+	my $kskdate;				# KSK roll date string.
+	my $kskrsecs;				# KSK roll timestamp.
+	my $loglevel;				# Logging level.
+	my $maxttl;				# Maximum TTL.
+	my $zonefile;				# Zonefile.
+	my $zskphase;				# Current ZSK phase.
+	my $zskdate;				# ZSK roll date string.
+	my $zskrsecs;				# ZSK roll timestamp.
 
 	#
 	# Get the rollrec data.
 	#
-	$curphase = $rr{'curphase'};
+	$admin	  = $rr{'administrator'};
 	$dispflag = $rr{'display'};
 	$krfile	  = $rr{'keyrec'};
+	$kskdate  = $rr{'ksk_rolldate'};
+	$kskphase = $rr{'kskphase'};
+	$kskrsecs = $rr{'ksk_rollsecs'};
+	$loglevel = $rr{'loglevel'};
 	$maxttl	  = $rr{'maxttl'};
 	$zonefile = $rr{'zonefile'};
+	$zskdate  = $rr{'zsk_rolldate'};
+	$zskphase = $rr{'zskphase'};
+	$zskrsecs = $rr{'zsk_rollsecs'};
 
 	#
-	# Make sure we've got a valid current phase.
+	# Make sure we've got a valid current KSK phase.
 	#
-	if(($curphase < 0) || ($curphase > 4))
+	if(($kskphase < 0) || ($kskphase > 7))
 	{
-		qprint("$rrname:  invalid curphase \"$curphase\"\n");
+		qprint("$rrname:  invalid kskphase \"$kskphase\"\n");
+		$errs++;
+	}
+
+	#
+	# Ensure our KSK time fields make sense.
+	#
+	if($kskrsecs > 0)
+	{
+		my $tempus;			# ksk_rollsecs translation.
+
+		$tempus = gmtime($kskrsecs);
+		if($tempus ne $kskdate)
+		{
+			qprint("$rrname:  ksk_rolldate does not match ksk_rollsecs\n");
+			$errs++;
+		}
+	}
+
+	#
+	# Make sure we've got a valid current ZSK phase.
+	#
+	if(($zskphase < 0) || ($zskphase > 4))
+	{
+		qprint("$rrname:  invalid zskphase \"$zskphase\"\n");
+		$errs++;
+	}
+
+	#
+	# Ensure our ZSK time fields make sense.
+	#
+	if($zskrsecs > 0)
+	{
+		my $tempus;			# zsk_rollsecs translation.
+
+		$tempus = gmtime($zskrsecs);
+		if($tempus ne $zskdate)
+		{
+			qprint("$rrname:  zsk_rolldate does not match zsk_rollsecs\n");
+			$errs++;
+		}
+	}
+
+	#
+	# Make sure we aren't rolling KSKs and ZSKs at the same time.
+	#
+	if(($kskphase > 0) && ($zskphase > 0))
+	{
+		qprint("$rrname:  invalid contemporaneous rollover (kskphase \"$kskphase\", zskphase \"$zskphase\")\n");
+		$errs++;
+	}
+
+	#
+	# Make sure we've got a positive maximum TTL.
+	#
+	if(defined($rr{'administrator'}) && ($admin eq ""))
+	{
+		qprint("$rrname:  empty administrator\n");
+		$errs++;
+	}
+
+	if(defined($rr{'loglevel'}) && (rollmgr_loglevel($loglevel,0) < 0))
+	{
+		qprint("$rrname:  invalid loglevel \"$loglevel\"\n");
 		$errs++;
 	}
 
@@ -294,7 +388,7 @@ sub rollrec_validate
 	#
 	if($maxttl < 1)
 	{
-		qprint("$rrname:  invalid maxttl \"$curphase\"\n");
+		qprint("$rrname:  invalid maxttl \"$zskphase\"\n");
 		$errs++;
 	}
 
@@ -319,11 +413,11 @@ sub rollrec_validate
 	#
 	# If we're rolling, ensure there's a phasestart.
 	#
-	if($curphase > 0)
+	if($zskphase > 0)
 	{
 		if(!defined($rr{'phasestart'}))
 		{
-			qprint("$rrname:  no phasestart listed for curphase $curphase\n");
+			qprint("$rrname:  no phasestart listed for zskphase $zskphase\n");
 			$errs++;
 		}
 	}
@@ -499,10 +593,40 @@ The specified I<rollrec> file does not exist.
 
 No zones are defined in the specified I<rollrec> file.
 
-=item * invalid rollover phase
+=item * invalid KSK rollover phase
 
-A zone has an invalid rollover phase.  These phases may be 0, 1, 2, 3, or 4;
-any other value is invalid.
+A zone has an invalid KSK rollover phase.  These phases may be
+0, 1, 2, 3, 4, 5, 6, or 7; any other value is invalid.
+
+=item * mismatch in KSK timestamp data
+
+A zone's KSK roll-seconds timestamp does not translate into the date stored
+in its roll-date string.
+
+=item * invalid ZSK rollover phase
+
+A zone has an invalid ZSK rollover phase.  These phases may be
+0, 1, 2, 3, or 4; any other value is invalid.
+
+=item * mismatch in ZSK timestamp data
+
+A zone's ZSK roll-seconds timestamp does not translate into the date stored
+in its roll-date string.
+
+=item * contemporaneous KSK and ZSK rollovers
+
+A zone has a KSK rollover occurring at the same time as a ZSK rollover.
+A zone may only have one rollover phase be non-zero at a time.
+
+=item * in rollover without a phasestart
+
+A zone is currently in rollover, but there its I<rollrec> record does
+not have a I<phasestart> field.
+
+=item * empty administrator
+
+A zone has an empty administrator field.  This field must contain an
+email address.
 
 =item * invalid display flag
 
@@ -560,7 +684,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
