@@ -72,6 +72,9 @@ extern          "C" {
 #define Q_ANSWERED      4
 #define Q_ERROR_BASE    5
 
+#define QUERY_BAD_CACHE_THRESHOLD 5
+#define QUERY_BAD_CACHE_TTL 3600
+
     /*
      * Credibility values of an RRset - from DNSIND-Clarify 
      */
@@ -298,7 +301,6 @@ extern          "C" {
 
     struct val_rrset_digested {
         struct rrset_rec *ac_data;
-        struct val_query_chain *ac_pending_query;
         struct val_digested_auth_chain *val_ac_rrset_next;
         struct val_digested_auth_chain *val_ac_next;
     };
@@ -310,7 +312,6 @@ extern          "C" {
             struct val_rrset_digested _as;
         };
         struct val_query_chain *val_ac_query;
-        struct val_digested_auth_chain *val_ac_trust;
     };
 
 
@@ -349,6 +350,8 @@ extern          "C" {
         u_int16_t       qc_class_h;
         u_int16_t       qc_state;       /* DOS, TIMED_OUT, etc */
         u_int8_t        qc_flags;
+        u_int32_t       qc_ttl_x;    /* ttl expiry time */
+        int             qc_bad; /* contains "bad" data */
         struct name_server *qc_ns_list;
         struct name_server *qc_respondent_server;
         u_int8_t       *qc_zonecut_n;
