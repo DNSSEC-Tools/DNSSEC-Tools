@@ -223,7 +223,8 @@ sub dnsval_conf {
     my $file = shift;
     my $res;
 
-    my $old = Net::DNS::SEC::Validator::_dnsval_conf_get();
+    my $old = $self->{dnsval_conf} ||
+	Net::DNS::SEC::Validator::_dnsval_conf_get();
 
     if ($file) {
 	$res = Net::DNS::SEC::Validator::_dnsval_conf_set($file);
@@ -237,7 +238,8 @@ sub root_hints {
     my $file = shift;
     my $res;
 
-    my $old = Net::DNS::SEC::Validator::_root_hints_get();
+    my $old =  $self->{root_hints} ||
+	Net::DNS::SEC::Validator::_root_hints_get();
 
     if ($file) {
 	$res = Net::DNS::SEC::Validator::_root_hints_set($file);
@@ -251,7 +253,8 @@ sub resolv_conf {
     my $file = shift;
     my $res;
 
-    my $old = Net::DNS::SEC::Validator::_resolv_conf_get();
+    my $old =  $self->{resolv_conf} ||
+	Net::DNS::SEC::Validator::_resolv_conf_get();
 
     if ($file) {
 	$res = Net::DNS::SEC::Validator::_resolv_conf_set($file);

@@ -166,6 +166,11 @@ static struct addrinfo *ainfo_sv2c(SV *ainfo_ref, struct addrinfo *ainfo_ptr)
   return ainfo_ptr;
 }
 
+SV *rc_c2sv(struct val_result_chain *rc_ptr)
+{
+  return NULL;
+}
+
 SV *ainfo_c2sv(struct val_addrinfo *ainfo_ptr)
 {
   AV *ainfo_av = newAV();
@@ -459,6 +464,58 @@ pval_res_query(self,dname,class,type)
 	} else {
 	  RETVAL =newSVpvn((char*)buf, res);
 	}
+	}
+	OUTPUT:
+	RETVAL
+
+
+SV *
+pval_resolve_and_check(self,domain,type,class,flags)
+	SV * self
+	char * domain
+        int type
+        int class
+        int flags
+	CODE:
+	{
+	ValContext *		ctx;
+	SV **			ctx_ref;
+	SV **			error_svp;
+        SV **			error_str_svp;
+        SV **			val_status_svp;
+	SV **			val_status_str_svp;
+	struct val_result_chain * val_rc_ptr = NULL;
+	int res;
+
+	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
+	ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
+
+	error_svp = hv_fetch((HV*)SvRV(self), "error", 5, 1);
+        error_str_svp = hv_fetch((HV*)SvRV(self), "errorStr", 8, 1);
+	val_status_svp = hv_fetch((HV*)SvRV(self), "valStatus", 9, 1);
+        val_status_str_svp = hv_fetch((HV*)SvRV(self), "valStatusStr", 12, 1);
+        
+        sv_setiv(*error_svp, 0);
+        sv_setpv(*error_str_svp, "");
+        sv_setiv(*val_status_svp, 0);
+        sv_setpv(*val_status_str_svp, "");
+
+
+	res = val_resolve_and_check(ctx, (u_char*) domain, 
+				    (u_int16_t) type, 
+				    (u_int16_t) class, 
+				    (u_int8_t) flags, 
+				    &val_rc_ptr);
+
+	if (res == 0) {
+	  RETVAL = rc_c2sv(val_rc_ptr);
+	} else {
+	  sv_setiv(*error_svp, res);
+	  sv_setpv(*error_str_svp, gai_strerror(res));
+	  RETVAL = &PL_sv_undef;
+	}
+
+	val_free_result_chain(val_rc_ptr);
 	}
 	OUTPUT:
 	RETVAL

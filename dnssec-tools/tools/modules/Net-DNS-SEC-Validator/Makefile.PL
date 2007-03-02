@@ -31,11 +31,21 @@ sub InitMakeParams {
     die "error: unable to determine link flags (check validator install)" 
 	if $? or not $ldflags;
 	
+    $Params{'LIBS'} = $ldflags;
+
     my $cflags = `libval-config --cflags`;
     die "error: unable to determine complile flags (check validator install)" 
-	if $? or not $ldflags;
-	
-    $Params{'LIBS'} = $ldflags;
+	if $? or not $cflags;
+
     $Params{'CCFLAGS'} = $cflags;
+
+    if (defined $opts{topdir}) {
+	$Params{'INC'} = "-I$opts{topdir}/validator/include";
+	$Params{'LIBS'} = "-L$opts{topdir}/validator/libval/.libs " .
+	    "-L$opts{topdir}/validator/libsres/.libs " .
+	    $Params{'LIBS'};
+	$Params{'INC'} = "-I$opts{topdir}/validator/include";
+    }
+	
     return(%Params);
 }
