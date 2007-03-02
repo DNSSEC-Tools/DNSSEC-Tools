@@ -29,60 +29,35 @@ our $VERSION = "1.0";
 
 my %defaults =
 (
-	"keygen"	=> getprefixdir() . "/sbin/dnssec-keygen",
-	"zonecheck"	=> getprefixdir() . "/sbin/named-checkzone",
-	"zonesign"	=> getprefixdir() . "/sbin/dnssec-signzone",
-
-	"viewimage"	=> "/usr/X11R6/bin/viewimage",
-
-	"admin"		=> "root",		# Administrator's email address.
-
+	"admin-email"	=> "root",		# Administrator's email address.
 	"algorithm"	=> "rsasha1",		# Encryption algorithm.
 	"enddate"	=> "+2592000",		# Zone life, in seconds.
+	"entropy_msg"	=> 1,			# Display entropy message flag.
+	"keygen"	=> getprefixdir() . "/sbin/dnssec-keygen",
 	"kskcount"	=> 1,			# Number of KSK keys.
 	"ksklength"	=> 2048,		# Length of KSK key.
 	"ksklife"	=> 15768000,		# Lifespan of KSK key.
+	"lifespan-max"	=> 94608000,		# Max lifespan (two years.)
+	"lifespan-min"	=> 3600,		# Min lifespan (one hour.)
 	"random"	=> "/dev/urandom",	# Random no. generator device.
+	"rndc"		=> getprefixdir() . "/sbin/rndc",
+	"roll_logfile"	=> getconfdir() . "/log.rollerd",
+	"roll_loglevel"	=> "curphase",		# Rollerd's logging level.
+	"roll_sleeptime"   => 3600,		# Rollerd's sleep time.
+	"savekeys"	=> 1,			# Save/delete old keys flag.
+	"tacontact" 	   => "",
+	"tadnsvalconffile" => getconfdir() . "/dnsval.conf",
+	"tanamedconffile"  => "/usr/local/etc/named/named.conf",
+	"tasleeptime"      => 3600,
+	"tasmtpserver"     => "",
+	"usegui"	=> 0,			# Use GUI for option entry flag.
+	"viewimage"	=> "/usr/X11R6/bin/viewimage",
+	"zonecheck"	=> getprefixdir() . "/sbin/named-checkzone",
+	"zonesign"	=> getprefixdir() . "/sbin/dnssec-signzone",
+	"zonesigner"	=> "/usr/bin/zonesigner",	# Zonesigner program.
 	"zskcount"	=> 1,			# Number of Current ZSK keys.
 	"zsklength"	=> 1024,		# Length of ZSK key.
 	"zsklife"	=> 604800,		# Lifespan of ZSK key.
-
-	"entropy_msg"	=> 1,			# Display entropy message flag.
-	"savekeys"	=> 1,			# Save/delete old keys flag.
-	"usegui"	=> 0,			# Use GUI for option entry flag.
-
-	"roll_sleeptime"   => 3600,		# Rollover daemon's sleep time.
-
-	"tanamedconffile"  => "/usr/local/etc/named/named.conf",
-	"tadnsvalconffile" => getconfdir() . "/dnsval.conf",
-	"tasleeptime"      => 3600,
-	"tacontact" 	   => "",
-	"tasmtpserver"     => "",
-);
-
-my @defnames =
-(
-	"algorithm",
-	"enddate",
-	"entropy_msg",
-	"keygen",
-	"kskcount",
-	"ksklength",
-	"ksklife",
-	"random",
-	"savekeys",
-	"tacontact",
-	"tadnsvalconffile",
-	"tanamedconffile",
-	"tasleeptime",
-	"tasmtpserver",
-	"usegui",
-	"viewimage",
-	"zonecheck",
-	"zonesign",
-	"zskcount",
-	"zsklength",
-	"zsklife",
 );
 
 #--------------------------------------------------------------------------
@@ -122,6 +97,8 @@ sub dnssec_tools_default
 #
 sub dnssec_tools_defnames
 {
+	my @defnames = sort(keys(%defaults));
+
 	return(@defnames);
 }
 
@@ -183,7 +160,7 @@ The following are the defaults defined for DNSSEC-Tools.
 
 =over 4
 
-=item B<admin>
+=item B<admin-email>
 
 This default holds the default email address for the DNSSEC-Tools
 administrator.
@@ -219,9 +196,29 @@ This default holds the default lifespan of a KSK key.  This is only used
 for determining when to rollover the KSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
 
+=item B<lifespan-max>
+
+This default is the maximum lifespan of a key.
+
+=item B<lifespan-min>
+
+This default is the minimum lifespan of a key.
+
 =item B<random>
 
 This default holds the default random number generator device.
+
+=item B<rndc>
+
+This default is the default path of the BIND B<rndc> program.
+
+=item B<roll_logfile>
+
+This default is the path to B<rollerd>'s log file.
+
+=item B<roll_loglevel>
+
+This default is the default logging level for B<rollerd>.
 
 =item B<roll_sleeptime>
 
@@ -271,6 +268,10 @@ This default holds the path to the zone-verification program.
 =item B<zonesign>
 
 This default holds the path to the zone-signing program.
+
+=item B<zonesigner>
+
+This default is the path to the B<zonesigner> program.
 
 =item B<zskcount>
 
