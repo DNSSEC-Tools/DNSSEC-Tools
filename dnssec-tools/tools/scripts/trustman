@@ -16,6 +16,10 @@ use Getopt::Long qw(:config no_ignore_case_always);
 use Sys::Syslog;
 use IO::File;
 use POSIX;
+use Data::Dumper;
+$Data::Dumper::Purity = 1;
+# TODO: don't hardcode storage file name
+$newkeyfile = "/usr/local/etc/dnssec-tools/newkey.perldata";
 
 #
 # Detect required Perl modules.
@@ -104,6 +108,14 @@ my %revdomains;
 my %keystorage;
 
 my %newkeys;
+# load in the newkeys info if available
+#do $newkeyfile or warn "can't recreate newkeys: $! $@";
+open (FILE, "< $newkeyfile") or warn "can't open newkey file: $!";
+undef $/;
+eval <FILE>;
+warn "can't recreate newkey data from file: $@" if $@;
+close FILE;
+
 my %sleeptimes;
 
 # TODO: need to modify zone_configfile_map to be a hash of
@@ -249,6 +261,12 @@ sub checkkeys {
                                           holdtime => $add_holddown_time,
                                         };
                         push(@{$newkeys{$d}},$newkeyobj);
+                        # whenever newkeys is modified, write it out
+                        open (FILE, "> $newkeyfile") 
+                            or warn "can't open newkeys file: $!";
+                        print FILE 
+                            Data::Dumper->Dump([\%newkeys], ['*newkeys']);
+                        close FILE or die "can't close newkeys file: $!";
                     }
                 } else {
 # need to verify that ALL keys in %keystorage were matched
@@ -299,6 +317,12 @@ sub checkkeys {
 			     key => $newkeys{$d}[$i]{key},
                            };
                 delete $newkeys{$d}[$i]; 
+                # whenever newkeys is modified, write it out
+                open (FILE, "> $newkeyfile") 
+                    or die "can't open newkeys: $!";
+                print FILE 
+                    Data::Dumper->Dump([\%newkeys], ['*newkeys']);
+                close FILE or die "can't close newkeys file: $!";
             }
         }
 #        if (($contactaddr) && (@newkeydomains)) { # mail it
