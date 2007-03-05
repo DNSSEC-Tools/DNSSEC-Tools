@@ -43,6 +43,7 @@ my $roll	= 0;
 my $skip	= 0;
 my $display	= 0;
 my $nodisplay	= 0;
+my $kskphase	= -1;
 my $zskphase	= -1;
 my $loglvl	= -1;
 
@@ -54,6 +55,7 @@ my @opts =
 	"skip",				# Make record a skip record.
 	"file=s",			# New zonefile value.
 	"keyrec=s",			# New keyrec value.
+	"kskphase=i",			# New ZSK-phase value.
 	"zskphase=i",			# New ZSK-phase value.
 	"loglevel=s",			# New logging level value.
 	"display",			# Turn on display flag.
@@ -120,6 +122,7 @@ sub doopts
 	$skip	   = $options{'skip'};
 	$display   = $options{'display'};
 	$nodisplay = $options{'nodisplay'};
+	$kskphase  = $options{'kskphase'}   if(defined($options{'kskphase'}));
 	$zskphase  = $options{'zskphase'}   if(defined($options{'zskphase'}));
 	$loglvl	   = $options{'loglevel'}   if(defined($options{'loglevel'}));
 
@@ -148,11 +151,20 @@ sub doopts
 	}
 
 	#
-	# Ensure the phase is valid.
+	# Ensure the KSK phase is valid.
 	#
-	if(($zskphase < -1) || ($zskphase > 4))
+	if(defined($options{'kskphase'}) && (chkphase($kskphase,7) == 0))
 	{
-		print STDERR "zskphase $zskphase invalid; zskphase must be between 0 and 4, inclusive\n";
+		print STDERR "kskphase $kskphase invalid; kskphase must be an integer between 0 and 7, inclusive\n";
+		exit(2);
+	}
+
+	#
+	# Ensure the ZSK phase is valid.
+	#
+	if(defined($options{'zskphase'}) && (chkphase($zskphase,4) == 0))
+	{
+		print STDERR "zskphase $zskphase invalid; zskphase must be an integer between 0 and 4, inclusive\n";
 		exit(2);
 	}
 
@@ -187,6 +199,7 @@ sub doopts
 	   ($skip      == 0)	&&
 	   ($display   == 0)	&&
 	   ($nodisplay == 0)	&&
+	   ($kskphase  == -1)	&&
 	   ($zskphase  == -1)	&&
 	   ($loglvl    == -1))
 	{
@@ -203,6 +216,39 @@ sub doopts
 	# Save the name of the rollrec file.
 	#
 	$rrf = $ARGV[0];
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	chkphase()
+#
+# Purpose:	This routine verifies a rollover phase number.  The phase
+#		must be numeric and in the given range.
+#
+# Return Values:
+#		1 is returned on valid phase number.
+#		0 is returned on invalid phase number.
+#
+sub chkphase
+{
+	my $phase = shift;			# Phase to check.
+	my $max   = shift;			# Phase's upper bound.
+
+	my $ind;
+	my $pcopy;				# Copy of phase.
+
+	#
+	# Check if the phase falls into the 0-to-$max range, returning
+	# success if it does.
+	#
+	for(my $ind = 0; $ind <= $max; $ind++)
+	{
+		return(1) if($phase == $ind);
+	}
+
+	#
+	# Return failure.
+	#
+	return(0);
 }
 
 #-----------------------------------------------------------------------------
@@ -247,6 +293,7 @@ sub editrrf
 		changer($keyrec,$name,'keyrec',$keyrec);
 		changer($display,$name,'display',1);
 		changer($nodisplay,$name,'display',0);
+		changer($kskphase,$name,'kskphase',$kskphase)if($kskphase > -1);
 		changer($zskphase,$name,'zskphase',$zskphase)if($zskphase > -1);
 		changer($loglvl,$name,'loglevel',$loglvl)    if($loglvl > -1);
 	}
@@ -404,6 +451,11 @@ I<zone-file>.
 
 The keyrec file in the selected I<rollrec> records is modified to be
 I<keyrec-file>.
+
+=item -kskphase phase-number
+
+The KSK phase number of the selected I<rollrec> records is modified to be
+I<phase-number>.  The I<phase-number> may only be 0, 1, 2, 3, 4, 5, 6, or 7.
 
 =item -zskphase phase-number
 
