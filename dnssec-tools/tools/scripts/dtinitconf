@@ -660,7 +660,7 @@ sub get_dt_opts()
 	print "\n";
 
 	$rlogfile  = getval("Roll-over Manager's Logfile",$rlogfile,"");
-	$rloglevel = getval("Roll-over Manager's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, curphase, err, fatal)");
+	$rloglevel = getval("Roll-over Manager's Logging Level",$rloglevel,"", "(valid values:  tmi, expire, info, phase, err, fatal)");
 	$rsleep	   = getval("Roll-over Manager's Sleep-time",$rsleep,"");
 
 	print "\n";
