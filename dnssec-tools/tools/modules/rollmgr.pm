@@ -1337,27 +1337,27 @@ sub rollmgr_lognum
 	#
 	if($newlevel !~ /^[0-9]+$/)
 	{
-		if($newlevel =~ /tmi/i)
+		if($newlevel =~ /^tmi$/i)
 		{
 			$llev = LOG_TMI;
 		}
-		elsif($newlevel =~ /expire/i)
+		elsif($newlevel =~ /^expire$/i)
 		{
 			$llev = LOG_EXPIRE;
 		}
-		elsif($newlevel =~ /info/i)
+		elsif($newlevel =~ /^info$/i)
 		{
 			$llev = LOG_INFO;
 		}
-		elsif($newlevel =~ /phase/i)
+		elsif($newlevel =~ /^phase$/i)
 		{
 			$llev = LOG_PHASE;
 		}
-		elsif($newlevel =~ /err/i)
+		elsif($newlevel =~ /^err$/i)
 		{
 			$llev = LOG_ERR;
 		}
-		elsif($newlevel =~ /fatal/i)
+		elsif($newlevel =~ /^fatal$/i)
 		{
 			$llev = LOG_FATAL;
 		}
