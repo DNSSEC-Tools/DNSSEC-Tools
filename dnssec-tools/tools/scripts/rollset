@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -43,7 +43,7 @@ my $roll	= 0;
 my $skip	= 0;
 my $display	= 0;
 my $nodisplay	= 0;
-my $phase	= -1;
+my $zskphase	= -1;
 my $loglvl	= -1;
 
 my %options = ();			# Filled option array.
@@ -54,7 +54,7 @@ my @opts =
 	"skip",				# Make record a skip record.
 	"file=s",			# New zonefile value.
 	"keyrec=s",			# New keyrec value.
-	"phase=i",			# New current-phase value.
+	"zskphase=i",			# New ZSK-phase value.
 	"loglevel=s",			# New logging level value.
 	"display",			# Turn on display flag.
 	"nodisplay",			# Turn off display flag.
@@ -120,7 +120,7 @@ sub doopts
 	$skip	   = $options{'skip'};
 	$display   = $options{'display'};
 	$nodisplay = $options{'nodisplay'};
-	$phase	   = $options{'phase'}	    if(defined($options{'phase'}));
+	$zskphase  = $options{'zskphase'}   if(defined($options{'zskphase'}));
 	$loglvl	   = $options{'loglevel'}   if(defined($options{'loglevel'}));
 
 	$check	   = $options{'check'};
@@ -150,9 +150,9 @@ sub doopts
 	#
 	# Ensure the phase is valid.
 	#
-	if(($phase < -1) || ($phase > 4))
+	if(($zskphase < -1) || ($zskphase > 4))
 	{
-		print STDERR "phase $phase invalid; phase must be between 0 and 4, inclusive\n";
+		print STDERR "zskphase $zskphase invalid; zskphase must be between 0 and 4, inclusive\n";
 		exit(2);
 	}
 
@@ -187,7 +187,7 @@ sub doopts
 	   ($skip      == 0)	&&
 	   ($display   == 0)	&&
 	   ($nodisplay == 0)	&&
-	   ($phase     == -1)	&&
+	   ($zskphase  == -1)	&&
 	   ($loglvl    == -1))
 	{
 		print STDERR "you must specify something to be changed\n";
@@ -247,8 +247,8 @@ sub editrrf
 		changer($keyrec,$name,'keyrec',$keyrec);
 		changer($display,$name,'display',1);
 		changer($nodisplay,$name,'display',0);
-		changer($phase,$name,'curphase',$phase) if($phase > -1);
-		changer($loglvl,$name,'loglevel',$loglvl) if($loglvl > -1);
+		changer($zskphase,$name,'zskphase',$zskphase)if($zskphase > -1);
+		changer($loglvl,$name,'loglevel',$loglvl)    if($loglvl > -1);
 	}
 
 	#
@@ -347,7 +347,7 @@ sub usage
 	print STDERR "		-skip\n";
 	print STDERR "		-file zone-file\n";
 	print STDERR "		-keyrec keyrec-file\n";
-	print STDERR "		-phase phase-number\n";
+	print STDERR "		-zskphase ZSK-phase-number\n";
 	print STDERR "		-loglevel logging-level\n";
 	print STDERR "		-display\n";
 	print STDERR "		-nodisplay\n";
@@ -405,9 +405,9 @@ I<zone-file>.
 The keyrec file in the selected I<rollrec> records is modified to be
 I<keyrec-file>.
 
-=item -phase phase-number
+=item -zskphase phase-number
 
-The phase number of the selected I<rollrec> records is modified to be
+The ZSK phase number of the selected I<rollrec> records is modified to be
 I<phase-number>.  The I<phase-number> may only be 0, 1, 2, 3, or 4.
 
 =item -loglevel logging-level
@@ -456,7 +456,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
