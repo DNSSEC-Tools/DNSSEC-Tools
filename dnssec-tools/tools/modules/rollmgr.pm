@@ -202,7 +202,7 @@ my @logstrs =					# Valid strings for levels.
 	"expire",
 	"info",
 		undef,
-	"curphase",
+	"phase",
 		undef,
 	"err",
 	"fatal",
@@ -1275,7 +1275,7 @@ sub rollmgr_loglevel
 			"\ttmi		 1\n"				.
 			"\texpire		 3\n"			.
 			"\tinfo		 4\n"				.
-			"\tcurphase	 6\n"				.
+			"\tphase	 6\n"				.
 			"\terr		 8\n"				.
 			"\tfatal		 9\n",-1);
 		return(-1);
@@ -1349,7 +1349,7 @@ sub rollmgr_lognum
 		{
 			$llev = LOG_INFO;
 		}
-		elsif($newlevel =~ /curphase/i)
+		elsif($newlevel =~ /phase/i)
 		{
 			$llev = LOG_PHASE;
 		}
@@ -1996,13 +1996,13 @@ valid levels are:
     tmi           1     The highest level -- all log messages are saved.
     expire        3     A verbose countdown of zone expiration is given.
     info          4     Many informational messages are recorded.
-    curphase      6     Each zone's current rollover phase is given.
+    phase         6     Each zone's current rollover phase is given.
     err        	  8     Errors are recorded.
     fatal         9     Fatal errors are saved.
 
 I<newlevel> may be given in either text or numeric form.  The levels include
 all numerically higher levels.  For example, if the log level is set to
-B<curphase>, then B<err> and B<fatal> messages will also be recorded.
+B<phase>, then B<err> and B<fatal> messages will also be recorded.
 
 The I<useflag> argument is a boolean that indicates whether or not to give a
 descriptive message and exit if an invalid logging level is given.  If
