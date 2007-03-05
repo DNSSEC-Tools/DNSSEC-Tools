@@ -532,7 +532,7 @@ sub check_rollerd
 	#
 	if(($loglevel =~ /^tmi$/i)	|| ($loglevel == 1)	||
 	   ($loglevel =~ /^info$/i)	|| ($loglevel == 3)	||
-	   ($loglevel =~ /^curphase$/i)	|| ($loglevel == 5)	||
+	   ($loglevel =~ /^phase$/i)	|| ($loglevel == 6)	||
 	   ($loglevel =~ /^err$/i)	|| ($loglevel == 7)	||
 	   ($loglevel =~ /^fatal$/i)	|| ($loglevel == 9))
 	{
@@ -1012,7 +1012,7 @@ log level must be one of the following text or numeric values:
 
     tmi        1       (Overly verbose informational messages.)
     info       3       (Informational messages.)
-    curphase   5       (Current state of zone.)
+    phase      6       (Current state of zone.)
     err        7       (Error messages.)
     fatal      9       (Fatal errors.)
 
