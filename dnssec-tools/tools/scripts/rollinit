@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -14,6 +14,7 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case_always);
 
 use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
@@ -33,8 +34,11 @@ my @opts =
 (
 	"zone=s",			# Zone file.
 	"keyrec=s",			# Keyrec file.
-	"out=s",			# Output file.
+	"admin=s",			# Administrator.
+	"loglevel=s",			# Logging level.
 	"skip",				# Skip record flag.
+
+	"out=s",			# Output file.
 	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
 );
@@ -45,8 +49,11 @@ my @opts =
 #
 my $zoneopt;				# Zone name option value.
 my $kropt;				# Keyrec file option value.
-my $outfile;				# Output file option value.
+my $adminopt;				# Administrator option value.
+my $logopt;				# Logging level option value.
 my $skipopt = 0;			# Roll/skip record flag.
+
+my $outfile;				# Output file option value.
 my $version = 0;			# Display the version number.
 
 my $argc;				# Number of command line arguments.
@@ -106,22 +113,37 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$zoneopt = $options{'zone'}	|| "";
-	$kropt	 = $options{'keyrec'}	|| "";
-	$outfile = $options{'out'}	|| "";
-	$skipopt = $options{'skip'}	|| 0;
-	$version = $options{'Version'};
+	$zoneopt  = $options{'zone'}	 || "";
+	$kropt	  = $options{'keyrec'}	 || "";
+	$adminopt = $options{'admin'}	 || "";
+	$logopt	  = $options{'loglevel'} || "";
+	$skipopt  = $options{'skip'}	 || 0;
+
+	$outfile  = $options{'out'}	 || "";
+	$version  = $options{'Version'};
 
 	#
-	# Set a flag if neither -zone nor -keyrec were given.
+	# Set a flag if neither -zone, -keyrec, nor -admin were given.
 	#
-	if(($zoneopt eq "") && ($kropt eq ""))
+	if(($zoneopt eq "") && ($kropt eq "") && ($adminopt eq ""))
 	{
 		$noopts = 1;
 	}
 
 	#
-	# Show the version number if requested
+	# Ensure the logging level (if given) is valid.
+	#
+	if($logopt ne "")
+	{
+		if(rollmgr_loglevel($logopt,0) < 0)
+		{
+			print STDERR "invalid logging level \"$logopt\"\n";
+			exit(1);
+		}
+	}
+
+	#
+	# Show the version number if requested.
 	#
 	version() if(defined($options{'Version'}));
 
@@ -166,6 +188,7 @@ sub newrollrec
 	my $rectype  = "roll";				# Record's type.
 	my $zonefile = "$zone.signed";			# Zone file.
 	my $krfile   = "$zone.krf";			# Keyrec file.
+	my $admin;					# Administrator.
 
 	#
 	# Make a skip record if -skip was given.
@@ -197,18 +220,32 @@ sub newrollrec
 				$krfile = $kropt;
 				$krfile =~ s/=/$zone/;
 			}
+
+			if($adminopt)
+			{
+				$admin = $adminopt;
+				$admin =~ s/=/$zone/;
+			}
 		}
 		else
 		{
-			$zonefile = $zoneopt if($zoneopt);
-			$krfile	  = $kropt   if($kropt);
+			$zonefile = $zoneopt  if($zoneopt);
+			$krfile	  = $kropt    if($kropt);
+			$admin	  = $adminopt if($adminopt);
 		}
 	}
 
 	print OUT "$rectype	\"$zone\"\n";
 	print OUT "	zonefile	\"$zonefile\"\n";
 	print OUT "	keyrec		\"$krfile\"\n";
-	print OUT "	curphase	\"0\"\n";
+	print OUT "	administrator	\"$admin\"\n"	 if($admin ne "");
+	print OUT "	loglevel	\"$logopt\"\n"	 if($logopt ne "");
+	print OUT "	kskphase	\"0\"\n";
+	print OUT "	zskphase	\"0\"\n";
+	print OUT "	ksk_rolldate	\" \"\n";
+	print OUT "	ksk_rollsecs	\"0\"\n";
+	print OUT "	zsk_rolldate	\" \"\n";
+	print OUT "	zsk_rollsecs	\"0\"\n";
 	print OUT "	maxttl		\"0\"\n";
 	print OUT "	display		\"1\"\n";
 	print OUT "	phasestart	\"new\"\n";
@@ -237,6 +274,8 @@ sub usage
 	print STDERR "usage:  rollinit [options] <zonename1> ... <zonenameN>\n";
 	print STDERR "\t-zone		zone file\n";
 	print STDERR "\t-keyrec		keyrec file\n";
+	print STDERR "\t-admin		administrator\n";
+	print STDERR "\t-loglevel	logging level\n";
 	print STDERR "\t-skip		skip records\n";
 	print STDERR "\t-out		output file\n";
 	print STDERR "\t-Version	display version number\n";
@@ -270,7 +309,14 @@ A I<rollrec> entry has this format:
     roll "example.com"
 	zonefile	"example.com.signed"
 	keyrec		"example.com.krf"
-	curphase	"0"
+	kskphase	"0"
+	zskphase	"0"
+	administrator	"bob@bobhost.example.com"
+	loglevel	"phase"
+	ksk_rolldate	" "
+	ksk_rollsecs	"0"
+	zsk_rolldate	" "
+	zsk_rollsecs	"0"
 	maxttl		"604800"
 	display		"1"
 	phasestart	"Mon Jan 9 16:00:00 2006"
@@ -278,10 +324,28 @@ A I<rollrec> entry has this format:
 The I<zonefile> and I<keyrec> fields are set according to command-line options
 and arguments.  The manner of generating the I<rollrec>'s actual values is a
 little complex and is described in the ZONEFILE And KEYREC FIELDS section
-below.  The I<curphase> field is set to 0 to indicate that the zone is in
-normal operation (non-rollover.)  The I<display> field is set to indicate that
-B<blinkenlights> should display the record.  The I<maxttl> and I<phasestart>
-fields are set to dummy values.
+below.
+
+The I<administrator> field is set to "bob@bobhost.example.com" to indicate
+that the email messages to the zone's administrator should be sent to
+"bob@bobhost.example.com".
+
+The I<loglevel> field is set to "phase" to indicate that B<rollerd> should
+only log phase-level (and greater) log messages for this zone.
+
+The I<kskphase> field is set to 0 to indicate that the zone is in
+normal operation (non-rollover) for KSK keys.
+The I<zskphase> field is set to 0 to indicate that the zone is in
+normal operation (non-rollover) for ZSK keys.
+
+The I<ksk_rolldate> and I<ksk_rollsecs> fields are set to indicate that the
+zone has not yet undergone KSK rollover.
+
+The I<zsk_rolldate> and I<zsk_rollsecs> fields are set to indicate that the
+zone has not yet undergone ZSK rollover.
+
+The I<display> field is set to indicate that B<blinkenlights> should display
+the record.  The I<maxttl> and I<phasestart> fields are set to dummy values.
 
 The keywords B<roll> and B<skip> indicate whether B<rollerd> should process
 or ignore a particular I<rollrec> entry.  B<roll> records are created by
@@ -336,6 +400,16 @@ See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 This specifies the value of the I<keyrec> field.
 See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 
+=item I<-admin>
+
+This specifies the value of the I<administrator> field.  If it is not given,
+an I<administrator> field will not be included for the record.
+
+=item I<-loglevel>
+
+This specifies the value of the I<loglevel> field.  If it is not given, a
+I<loglevel> field will not be included for the record.
+
 =item I<-skip>
 
 By default, B<roll> records are generated.  If this option is given, then
@@ -371,7 +445,14 @@ domain, without any options.
 	roll    "example.com"
 	    zonefile        "example.com.signed"
 	    keyrec          "example.com.krf"
-	    curphase        "0"
+	    kskphase        "0"
+	    zskphase        "0"
+	    administrator   "bob@bobshost.example.com"
+	    loglevel        "phase"
+	    ksk_rolldate    " "
+	    ksk_rollsecs    "0"
+	    zsk_rolldate    " "
+	    zsk_rollsecs    "0"
 	    maxttl          "0"
 	    display	    "1"
 	    phasestart      "new"
@@ -506,7 +587,7 @@ and I<keyrec> fields values for each I<rollrec>.
 
 =head1 COPYRIGHT
 
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
