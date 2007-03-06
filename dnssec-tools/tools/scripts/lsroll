@@ -417,36 +417,30 @@ sub showrollrecs
 		#
 		$zonefile = $rr{'zonefile'};
 		$keyrec	  = $rr{'keyrec'};
-		if($type eq "roll")
+		$kskphase = $rr{'kskphase'};
+		$zskphase = $rr{'zskphase'};
+		$phases	  = "$kskphase/$zskphase";
+		$ttl	  = $rr{'maxttl'};
+		$disp	  = $rr{'display'};
+		$phstart  = $rr{'phasestart'};
+		$admin	  = $rr{'administrator'} || "(defadmin)";
+
+		#
+		# Convert the loglevel into its textual form.
+		#
+		$loglevel = "(deflog)";
+		if(defined($rr{'loglevel'}))
 		{
-			$kskphase = $rr{'kskphase'};
-			$zskphase = $rr{'zskphase'};
-			$phases	  = "$kskphase/$zskphase";
-			$ttl	  = $rr{'maxttl'};
-			$disp	  = $rr{'display'};
-			$phstart  = $rr{'phasestart'};
-
-			$admin	  = $rr{'administrator'} || "(defadmin)";
-
-			#
-			# Convert the loglevel into its textual form.
-			#
-			$loglevel = "(deflog)";
-			if(defined($rr{'loglevel'}))
-			{
-				$loglevel = rollmgr_logstr($rr{'loglevel'});
-				$loglevel = "(unknownlog)" if($loglevel eq "");
-			}
+			$loglevel = rollmgr_logstr($rr{'loglevel'});
+			$loglevel = "(unknownlog)" if($loglevel eq "");
 		}
-		else
+
+		if($type eq "skip")
 		{
 			$kskphase = "---";
 			$zskphase = "---";
 			$phases	  = "-/-";
-			$admin	  = "---";
 			$loglevel = "---";
-			$ttl	  = "---";
-			$disp	  = "---";
 			$phstart  = "---";
 		}
 
@@ -545,14 +539,49 @@ I<rollrec>s have duplicated names, whether within one file or across
 multiple files, the later I<rollrec> will be the one whose data are
 displayed.
 
-Each record's name is always included in the output.  Additional output
-depends on the options selected.
+=head1 OUTPUT FORMATS
+
+The output displayed for each zone in a I<rollrec> file depends on the
+selected records, the selected attributes, and the selected output format.
+Each option in these option groups is described in detail in the next section.
+The three base output formats, along with the defaul I<-skip> format, are
+described here.
+
+The I<-terse> option indicates that a minimal amount of output is desired;
+the I<-long> option indicates that a great deal of output is desired.  The
+record-selection and attribute-selection options may be used in conjunction
+with I<-terse> to display exactly the set of I<rollrec> fields needed.
+
+The default output format is that used when neither I<-terse> nor <-long>
+is given, and is a middle ground between terse and long output.
+
+If the I<-skip> option is given, then the default output format is a little
+more restricted than the normal default.  Some I<rollrec> fields don't make
+sense in the context of a skip records, and so are given as "---".  These
+fields are the KSK rollover phase, the ZSK rollover phase, the TTL value, and
+the phase start.
+
+The table below shows the fields displayed for each output format.
+
+    rollrec field        default        terse        long       skip
+    -------------        -------        -----        ----       ----
+    rollrec name           yes           yes         yes        yes
+    rollrec type           no            no          yes        no
+    zone name              yes           no          yes        yes
+    keyrec file            yes           no          yes        yes
+    KSK phase              yes           no          yes        no
+    ZSK phase              yes           no          yes        no
+    administrator          no            no          yes        no
+    logging level          no            no          yes        no
+    TTL value              no            no          yes        no
+    display flag           no            no          yes        no
+    phase start            no            no          yes        no
 
 =head1 OPTIONS
 
 There are three types of options recognized by B<lsroll>:  record-selection
 options, attribute-selection options, and output-format options.  Each type
-is described in the sections below.
+is described in the subsections below.
 
 =head2 Record-selection Options
 
