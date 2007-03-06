@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2005-2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2005-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -38,7 +38,9 @@ my @opts =
 	"type",				# Give the record type.
 	"zone",				# List zone files.
 	"keyrec",			# List keyrec files.
-	"phase",			# List rollover phases.
+	"kskphase",			# List KSK rollover phases.
+	"zskphase",			# List ZSK rollover phases.
+	"phases",			# List KSK and ZSK rollover phases.
 	"ttl",				# List maximum TTL.
 	"display",			# List display flag.
 	"phstart",			# List phase start.
@@ -62,7 +64,9 @@ my $skipflag;
 my $typeflag;
 my $zoneflag;
 my $keyrecflag;
-my $phaseflag;
+my $kphaseflag;
+my $zphaseflag;
+my $phasesflag;
 my $ttlflag;
 my $dispflag;
 my $phstartflag;
@@ -210,7 +214,8 @@ sub doopts
 	$typeflag	= 0;
 	$zoneflag	= 1;
 	$keyrecflag	= 1;
-	$phaseflag	= 1;
+	$kphaseflag	= 1;
+	$zphaseflag	= 1;
 	$ttlflag	= 0;
 	$dispflag	= 0;
 	$phstartflag	= 0;
@@ -223,7 +228,8 @@ sub doopts
 		$typeflag	= 0;
 		$zoneflag	= 1;
 		$keyrecflag	= 1;
-		$phaseflag	= 0;
+		$kphaseflag	= 0;
+		$zphaseflag	= 0;
 		$ttlflag	= 0;
 		$phstartflag	= 0;
 	}
@@ -236,7 +242,8 @@ sub doopts
 		$typeflag	= 1;
 		$zoneflag	= 1;
 		$keyrecflag	= 1;
-		$phaseflag	= 1;
+		$kphaseflag	= 1;
+		$zphaseflag	= 1;
 		$ttlflag	= 1;
 		$dispflag	= 1;
 		$phstartflag	= 1;
@@ -246,7 +253,8 @@ sub doopts
 		$typeflag	= 0;
 		$zoneflag	= 0;
 		$keyrecflag	= 0;
-		$phaseflag	= 0;
+		$kphaseflag	= 0;
+		$zphaseflag	= 0;
 		$ttlflag	= 0;
 		$dispflag	= 0;
 		$phstartflag	= 0;
@@ -258,10 +266,43 @@ sub doopts
 	$typeflag	= 1 if($options{'type'});
 	$zoneflag	= 1 if($options{'zone'});
 	$keyrecflag	= 1 if($options{'keyrec'});
-	$phaseflag	= 1 if($options{'phase'});
+	$phasesflag	= 1 if($options{'phases'});
 	$ttlflag	= 1 if($options{'ttl'});
 	$dispflag	= 1 if($options{'display'});
 	$phstartflag	= 1 if($options{'phstart'});
+
+	#
+	# Adjust the phase-related flags to ensure that The Right Thing
+	# is done.
+	#
+	if($options{'kskphase'} && !$options{'zskphase'})
+	{
+		$kphaseflag	= 1;
+		$zphaseflag	= 0;
+	}
+	elsif($options{'zskphase'} && !$options{'kskphase'})
+	{
+		$kphaseflag	= 0;
+		$zphaseflag	= 1;
+	}
+
+	if($phasesflag)
+	{
+		$kphaseflag = 0;
+		$zphaseflag = 0;
+	}
+	elsif($kphaseflag && $zphaseflag)
+	{
+		$kphaseflag = 0;
+		$zphaseflag = 0;
+		$phasesflag = 1;
+	}
+	elsif($kphaseflag && $zphaseflag)
+	{
+		$kphaseflag = 0;
+		$zphaseflag = 0;
+		$phasesflag = 1;
+	}
 
 }
 
@@ -306,7 +347,9 @@ sub showrollrecs
 	my $outstr;				# Output string.
 	my $zonefile;				# Zone file in rollrec.
 	my $keyrec;				# Keyrec file in rollrec.
-	my $phase;				# Current phase in rollrec.
+	my $kskphase;				# Current KSK phase in rollrec.
+	my $zskphase;				# Current ZSK phase in rollrec.
+	my $phases;				# Current KSK and ZSK phases.
 	my $ttl;				# Maximum TTL in rollrec.
 	my $disp;				# blinkenlights display flag.
 	my $phstart;				# Phase start in rollrec.
@@ -350,20 +393,24 @@ sub showrollrecs
 
 		#
 		# Set fields from the rollrec.  If this is a skip record,
-		# we won't get the phase, ttl, or phase start.
+		# we won't get the phases, ttl, or phase start.
 		#
 		$zonefile = $rr{'zonefile'};
 		$keyrec	  = $rr{'keyrec'};
 		if($type eq "roll")
 		{
-			$phase	  = $rr{'curphase'};
+			$kskphase = $rr{'kskphase'};
+			$zskphase = $rr{'zskphase'};
+			$phases	  = "$kskphase/$zskphase";
 			$ttl	  = $rr{'maxttl'};
 			$disp	  = $rr{'display'};
 			$phstart  = $rr{'phasestart'};
 		}
 		else
 		{
-			$phase	  = "---";
+			$kskphase = "---";
+			$zskphase = "---";
+			$phases	  = "-/-";
 			$ttl	  = "---";
 			$disp	  = "---";
 			$phstart  = "---";
@@ -376,7 +423,9 @@ sub showrollrecs
 		$outstr .= " ($type)"		if($typeflag);
 		$outstr .= "\t$zonefile"	if($zoneflag);
 		$outstr .= "\t$keyrec"		if($keyrecflag);
-		$outstr .= "\t$phase"		if($phaseflag);
+		$outstr .= "\t$phases"		if($phasesflag);
+		$outstr .= "\t$kskphase"	if($kphaseflag);
+		$outstr .= "\t$zskphase"	if($zphaseflag);
 		$outstr .= "\t$ttl"		if($long || $ttlflag);
 		$outstr .= "\t$disp"		if($long || $dispflag);
 		$outstr .= "\t\"$phstart\""	if($long || $phstartflag);
@@ -504,13 +553,34 @@ of the default output.
 
 =item I<-keyrec>
 
-The record's I<keyrec> file is included in the output.  This field is part of
-the default output.
+The record's I<keyrec> file is included in the output.
+This field is part of the default output.
 
-=item I<-phase>
+=item I<-kskphase>
 
-The record's rollover phase is included in the output.  This field is part of
-the default output.
+The record's KSK rollover phase are included in the output.
+If this option is given with the I<-zskphase> option, then the output will
+follow the format described for the I<-phases> option.
+This field is part of the default output.
+
+=item I<-zskphase>
+
+The record's ZSK rollover phase are included in the output.
+If this option is given with the I<-kskphase> option, then the output will
+follow the format described for the I<-phases> option.
+This field is part of the default output.
+
+=item I<-phases>
+
+The record's KSK and ZSK rollover phases are included in the output.
+The listing is given with the KSK phase first, followed by the ZSK phase.
+
+Examples of output from this option are:
+
+    KSK phase	ZSK phase	output
+        0           0            0/0
+        3           0            3/0
+        0           5            0/5
 
 =item I<-ttl>
 
@@ -553,7 +623,7 @@ Display a usage message.
 
 =head1 COPYRIGHT
 
-Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
