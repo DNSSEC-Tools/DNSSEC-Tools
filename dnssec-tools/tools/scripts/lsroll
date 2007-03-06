@@ -41,6 +41,7 @@ my @opts =
 	"kskphase",			# List KSK rollover phases.
 	"zskphase",			# List ZSK rollover phases.
 	"phases",			# List KSK and ZSK rollover phases.
+	"admin",			# List zone administrator's email.
 	"ttl",				# List maximum TTL.
 	"display",			# List display flag.
 	"phstart",			# List phase start.
@@ -67,6 +68,7 @@ my $keyrecflag;
 my $kphaseflag;
 my $zphaseflag;
 my $phasesflag;
+my $adminflag;
 my $ttlflag;
 my $dispflag;
 my $phstartflag;
@@ -216,6 +218,7 @@ sub doopts
 	$keyrecflag	= 1;
 	$kphaseflag	= 1;
 	$zphaseflag	= 1;
+	$adminflag	= 0;
 	$ttlflag	= 0;
 	$dispflag	= 0;
 	$phstartflag	= 0;
@@ -230,6 +233,7 @@ sub doopts
 		$keyrecflag	= 1;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
+		$adminflag	= 0;
 		$ttlflag	= 0;
 		$phstartflag	= 0;
 	}
@@ -244,6 +248,7 @@ sub doopts
 		$keyrecflag	= 1;
 		$kphaseflag	= 1;
 		$zphaseflag	= 1;
+		$adminflag	= 1;
 		$ttlflag	= 1;
 		$dispflag	= 1;
 		$phstartflag	= 1;
@@ -255,6 +260,7 @@ sub doopts
 		$keyrecflag	= 0;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
+		$adminflag	= 0;
 		$ttlflag	= 0;
 		$dispflag	= 0;
 		$phstartflag	= 0;
@@ -267,6 +273,7 @@ sub doopts
 	$zoneflag	= 1 if($options{'zone'});
 	$keyrecflag	= 1 if($options{'keyrec'});
 	$phasesflag	= 1 if($options{'phases'});
+	$adminflag	= 1 if($options{'admin'});
 	$ttlflag	= 1 if($options{'ttl'});
 	$dispflag	= 1 if($options{'display'});
 	$phstartflag	= 1 if($options{'phstart'});
@@ -350,6 +357,7 @@ sub showrollrecs
 	my $kskphase;				# Current KSK phase in rollrec.
 	my $zskphase;				# Current ZSK phase in rollrec.
 	my $phases;				# Current KSK and ZSK phases.
+	my $admin;				# Zone administrator's email.
 	my $ttl;				# Maximum TTL in rollrec.
 	my $disp;				# blinkenlights display flag.
 	my $phstart;				# Phase start in rollrec.
@@ -402,6 +410,7 @@ sub showrollrecs
 			$kskphase = $rr{'kskphase'};
 			$zskphase = $rr{'zskphase'};
 			$phases	  = "$kskphase/$zskphase";
+			$admin	  = $rr{'administrator'} || "(unlisted)";
 			$ttl	  = $rr{'maxttl'};
 			$disp	  = $rr{'display'};
 			$phstart  = $rr{'phasestart'};
@@ -411,6 +420,7 @@ sub showrollrecs
 			$kskphase = "---";
 			$zskphase = "---";
 			$phases	  = "-/-";
+			$admin	  = "---";
 			$ttl	  = "---";
 			$disp	  = "---";
 			$phstart  = "---";
@@ -426,6 +436,7 @@ sub showrollrecs
 		$outstr .= "\t$phases"		if($phasesflag);
 		$outstr .= "\t$kskphase"	if($kphaseflag);
 		$outstr .= "\t$zskphase"	if($zphaseflag);
+		$outstr .= "\t$admin"		if($long || $adminflag);
 		$outstr .= "\t$ttl"		if($long || $ttlflag);
 		$outstr .= "\t$disp"		if($long || $dispflag);
 		$outstr .= "\t\"$phstart\""	if($long || $phstartflag);
@@ -461,17 +472,20 @@ sub usage
 {
 	print STDERR "usage:  lsroll [options] <rollrec-file>\n";
 	print STDERR "\trecord-selection options:\n";
-	print STDERR "\t\t-all		list all records\n";
-	print STDERR "\t\t-roll		list roll records\n";
-	print STDERR "\t\t-skip		list skip records\n";
+	print STDERR "\t\t-all		all records\n";
+	print STDERR "\t\t-roll		roll records\n";
+	print STDERR "\t\t-skip		skip records\n";
 	print STDERR "\tattribute-selection options:\n";
-	print STDERR "\t\t-type\t	list record type\n";
-	print STDERR "\t\t-zone\t	list zonefile\n";
-	print STDERR "\t\t-keyrec\t	list keyrec file\n";
-	print STDERR "\t\t-phase\t	list rollover phase\n";
-	print STDERR "\t\t-ttl		list zone TTL\n";
-	print STDERR "\t\t-display	list display flag\n";
-	print STDERR "\t\t-phstart	list start of rollover phase\n";
+	print STDERR "\t\t-type\t	record type\n";
+	print STDERR "\t\t-zone\t	zonefile\n";
+	print STDERR "\t\t-keyrec\t	keyrec file\n";
+	print STDERR "\t\t-kskphase	KSK rollover phase\n";
+	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
+	print STDERR "\t\t-phases\t	KSK and ZSK rollover phases\n";
+	print STDERR "\t\t-admin\t	zone adminstrator's email\n";
+	print STDERR "\t\t-ttl		zone TTL\n";
+	print STDERR "\t\t-display	display flag\n";
+	print STDERR "\t\t-phstart	start of rollover phase\n";
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-terse\t	terse output\n";
@@ -581,6 +595,12 @@ Examples of output from this option are:
         0           0            0/0
         3           0            3/0
         0           5            0/5
+
+=item I<-admin>
+
+The record's administrator value is included in the output.
+If an administrator value is not included in a I<rollrec>, then the value
+"(unlisted)" will be given.
 
 =item I<-ttl>
 
