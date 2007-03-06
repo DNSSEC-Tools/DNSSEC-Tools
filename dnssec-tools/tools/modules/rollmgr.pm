@@ -25,7 +25,9 @@
 #		This module has been ported to:
 #
 #			O/S name	O/S class
+#			--------	---------
 #			FreeBSD		Unix
+#			Mac OSX		Unix
 #
 #		When extending the interface or porting this module to another
 #		O/S, the following entities must be modified as described
