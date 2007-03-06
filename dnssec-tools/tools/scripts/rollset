@@ -43,6 +43,7 @@ my $roll	= 0;
 my $skip	= 0;
 my $display	= 0;
 my $nodisplay	= 0;
+my $admin	= 0;
 my $kskphase	= -1;
 my $zskphase	= -1;
 my $loglvl	= -1;
@@ -57,6 +58,7 @@ my @opts =
 	"keyrec=s",			# New keyrec value.
 	"kskphase=i",			# New ZSK-phase value.
 	"zskphase=i",			# New ZSK-phase value.
+	"admin=s",			# New administrator email address.
 	"loglevel=s",			# New logging level value.
 	"display",			# Turn on display flag.
 	"nodisplay",			# Turn off display flag.
@@ -118,6 +120,7 @@ sub doopts
 	$zonename  = $options{'zone'};
 	$zonefile  = $options{'file'};
 	$keyrec	   = $options{'keyrec'};
+	$admin	   = $options{'admin'};
 	$roll	   = $options{'roll'};
 	$skip	   = $options{'skip'};
 	$display   = $options{'display'};
@@ -195,6 +198,7 @@ sub doopts
 	#
 	if(($zonefile  eq "")	&&
 	   ($keyrec    eq "")	&&
+	   ($admin     eq "")	&&
 	   ($roll      == 0)	&&
 	   ($skip      == 0)	&&
 	   ($display   == 0)	&&
@@ -291,6 +295,7 @@ sub editrrf
 		#
 		changer($zonefile,$name,'zonefile',$zonefile);
 		changer($keyrec,$name,'keyrec',$keyrec);
+		changer($admin,$name,'administrator',$admin);
 		changer($display,$name,'display',1);
 		changer($nodisplay,$name,'display',0);
 		changer($kskphase,$name,'kskphase',$kskphase)if($kskphase > -1);
@@ -451,6 +456,10 @@ I<zone-file>.
 
 The keyrec file in the selected I<rollrec> records is modified to be
 I<keyrec-file>.
+
+=item -admin addr
+
+The zone administrator's email address is set to I<addr>.
 
 =item -kskphase phase-number
 
