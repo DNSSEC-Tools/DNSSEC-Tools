@@ -14,6 +14,7 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case_always);
 
 use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 
 #
@@ -31,25 +32,29 @@ my $DTVERS = "DNSSEC-Tools Version: 1.1";
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"all",				# List all keyrecs.
-	"roll",				# Only show "active" rollrecs.
-	"skip",				# Only show skipped rollrecs.
+	# Records to select:
+		"all",			# All keyrecs.
+		"roll",			# "Active" rollrecs.
+		"skip",			# Skipped rollrecs.
 
-	"type",				# Give the record type.
-	"zone",				# List zone files.
-	"keyrec",			# List keyrec files.
-	"kskphase",			# List KSK rollover phases.
-	"zskphase",			# List ZSK rollover phases.
-	"phases",			# List KSK and ZSK rollover phases.
-	"admin",			# List zone administrator's email.
-	"ttl",				# List maximum TTL.
-	"display",			# List display flag.
-	"phstart",			# List phase start.
+	# Data to display:
+		"type",			# Record type.
+		"zone",			# Zone files.
+		"keyrec",		# Keyrec files.
+		"kskphase",		# KSK rollover phases.
+		"zskphase",		# ZSK rollover phases.
+		"phases",		# KSK and ZSK rollover phases.
+		"admin",		# Zone administrator's email.
+		"loglevel",		# Zone administrator's email.
+		"ttl",			# Maximum TTL.
+		"display",		# Display flag.
+		"phstart",		# Phase start.
 
-	"count",			# Only give a count of matching keyrecs.
-	"terse",			# Give terse output.
-	"long",				# Give long output.
-	"Version",			# Display the version number.
+	# Output format:
+		"count",		# Only give count of matching keyrecs.
+		"terse",		# Give terse output.
+		"long",			# Give long output.
+		"Version",		# Display the version number.
 
 	"help",				# Give a usage message and exit.
 );
@@ -69,6 +74,7 @@ my $kphaseflag;
 my $zphaseflag;
 my $phasesflag;
 my $adminflag;
+my $logflag;
 my $ttlflag;
 my $dispflag;
 my $phstartflag;
@@ -219,6 +225,7 @@ sub doopts
 	$kphaseflag	= 1;
 	$zphaseflag	= 1;
 	$adminflag	= 0;
+	$logflag	= 0;
 	$ttlflag	= 0;
 	$dispflag	= 0;
 	$phstartflag	= 0;
@@ -234,6 +241,7 @@ sub doopts
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
 		$adminflag	= 0;
+		$logflag	= 0;
 		$ttlflag	= 0;
 		$phstartflag	= 0;
 	}
@@ -249,6 +257,7 @@ sub doopts
 		$kphaseflag	= 1;
 		$zphaseflag	= 1;
 		$adminflag	= 1;
+		$logflag	= 1;
 		$ttlflag	= 1;
 		$dispflag	= 1;
 		$phstartflag	= 1;
@@ -261,6 +270,7 @@ sub doopts
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
 		$adminflag	= 0;
+		$logflag	= 0;
 		$ttlflag	= 0;
 		$dispflag	= 0;
 		$phstartflag	= 0;
@@ -274,6 +284,7 @@ sub doopts
 	$keyrecflag	= 1 if($options{'keyrec'});
 	$phasesflag	= 1 if($options{'phases'});
 	$adminflag	= 1 if($options{'admin'});
+	$logflag	= 1 if($options{'loglevel'});
 	$ttlflag	= 1 if($options{'ttl'});
 	$dispflag	= 1 if($options{'display'});
 	$phstartflag	= 1 if($options{'phstart'});
@@ -358,6 +369,7 @@ sub showrollrecs
 	my $zskphase;				# Current ZSK phase in rollrec.
 	my $phases;				# Current KSK and ZSK phases.
 	my $admin;				# Zone administrator's email.
+	my $loglevel;				# Logging level.
 	my $ttl;				# Maximum TTL in rollrec.
 	my $disp;				# blinkenlights display flag.
 	my $phstart;				# Phase start in rollrec.
@@ -410,10 +422,21 @@ sub showrollrecs
 			$kskphase = $rr{'kskphase'};
 			$zskphase = $rr{'zskphase'};
 			$phases	  = "$kskphase/$zskphase";
-			$admin	  = $rr{'administrator'} || "(unlisted)";
 			$ttl	  = $rr{'maxttl'};
 			$disp	  = $rr{'display'};
 			$phstart  = $rr{'phasestart'};
+
+			$admin	  = $rr{'administrator'} || "(defadmin)";
+
+			#
+			# Convert the loglevel into its textual form.
+			#
+			$loglevel = "(deflog)";
+			if(defined($rr{'loglevel'}))
+			{
+				$loglevel = rollmgr_logstr($rr{'loglevel'});
+				$loglevel = "(unknownlog)" if($loglevel eq "");
+			}
 		}
 		else
 		{
@@ -421,6 +444,7 @@ sub showrollrecs
 			$zskphase = "---";
 			$phases	  = "-/-";
 			$admin	  = "---";
+			$loglevel = "---";
 			$ttl	  = "---";
 			$disp	  = "---";
 			$phstart  = "---";
@@ -437,6 +461,7 @@ sub showrollrecs
 		$outstr .= "\t$kskphase"	if($kphaseflag);
 		$outstr .= "\t$zskphase"	if($zphaseflag);
 		$outstr .= "\t$admin"		if($long || $adminflag);
+		$outstr .= "\t$loglevel"	if($long || $logflag);
 		$outstr .= "\t$ttl"		if($long || $ttlflag);
 		$outstr .= "\t$disp"		if($long || $dispflag);
 		$outstr .= "\t\"$phstart\""	if($long || $phstartflag);
@@ -483,6 +508,7 @@ sub usage
 	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
 	print STDERR "\t\t-phases\t	KSK and ZSK rollover phases\n";
 	print STDERR "\t\t-admin\t	zone adminstrator's email\n";
+	print STDERR "\t\t-loglevel	rollover logging level\n";
 	print STDERR "\t\t-ttl		zone TTL\n";
 	print STDERR "\t\t-display	display flag\n";
 	print STDERR "\t\t-phstart	start of rollover phase\n";
@@ -600,7 +626,17 @@ Examples of output from this option are:
 
 The record's administrator value is included in the output.
 If an administrator value is not included in a I<rollrec>, then the value
-"(unlisted)" will be given.
+"(defadmin)" will be given.
+
+=item I<-loglevel>
+
+The B<rollerd> logging level for this zone.  This value may be given in
+the I<rollrec> file in either the textual or numeric form.  The textual form
+of the logging level will be displayed, not the numeric.
+If a logging level value is not included in a I<rollrec>, then the value
+"(deflog)" will be given.
+If an undefined logging level value is included in a I<rollrec>, then the
+value "(unknownlog)" will be given.
 
 =item I<-ttl>
 
