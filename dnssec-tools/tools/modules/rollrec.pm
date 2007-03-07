@@ -811,13 +811,23 @@ sub rollrec_del
 #
 sub rollrec_settime
 {
+	my $cnt	 = @_;			# Number of arguments.
 	my $name = shift;		# Name of rollrec we're creating.
+	my $val  = shift;		# Optional argument.
+
 	my $chronos;			# Timestamp for the record.
 
 # print "rollrec_settime:  down in\n";
 
-	$chronos = gmtime();
-	$chronos =~ s/\n$//;
+	if(($cnt == 2) && ($val == 0))
+	{
+		$chronos = "";
+	}
+	else
+	{
+		$chronos = gmtime();
+		$chronos =~ s/\n$//;
+	}
 
 	rollrec_setval($name,"phasestart",$chronos);
 }
@@ -1052,6 +1062,7 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
   rollrec_setval("example.com","zonefile","db.example.com");
 
   rollrec_settime("example.com");
+  rollrec_settime("example.com",0);
 
   @rollrecfields = rollrec_fields();
 
@@ -1270,9 +1281,12 @@ I<rollrec>.
 I<field> is the I<rollrec> field which will be modified.
 I<value> is the new value for the field.
 
-=item I<rollrec_settime(rollrec_name)>
+=item I<rollrec_settime(rollrec_name,val)>
 
-Set the timestamp in the I<rollrec> specified by I<rollrec_name>.
+Set the phase-start timestamp in the I<rollrec> specified by I<rollrec_name>
+to the current time.  If the optional I<val> parameter is given and it is
+zero, then the phase-start timestamp is set to a null value.
+
 The file is B<not> written after updating the value.
 
 =item I<rollrec_unlock()>
