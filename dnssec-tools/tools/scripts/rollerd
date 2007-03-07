@@ -1631,6 +1631,8 @@ sub zskphase
 	rollrec_setval($rname,"zskphase",$phase);
 	rollrec_settime($rname);
 	rollrec_write();
+	rollrec_close();
+	rollrec_read($rollrecfile);
 
 	display("phase $rname $phase");
 
@@ -1682,6 +1684,14 @@ sub zskphase
 	#
 	$chronostr = timetrans($exptime);
 	rollmgr_log(LOG_INFO,$rname,"    ZSK expiration in $chronostr\n");
+
+	#
+	# Reset the phasestart field.
+	#
+	rollrec_settime($rname,0);
+	rollrec_write();
+	rollrec_close();
+	rollrec_read($rollrecfile);
 }
 
 #-----------------------------------------------------------------------------
@@ -1777,6 +1787,14 @@ sub kskphase
 	#
 	$chronostr = timetrans($exptime);
 	rollmgr_log(LOG_INFO,$rname,"    KSK expiration in $chronostr\n");
+
+	#
+	# Reset the phasestart field.
+	#
+	rollrec_settime($rname,0);
+	rollrec_write();
+	rollrec_close();
+	rollrec_read($rollrecfile);
 }
 
 #-----------------------------------------------------------------------------
