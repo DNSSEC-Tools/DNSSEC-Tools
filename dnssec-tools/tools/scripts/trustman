@@ -440,43 +440,6 @@ sub get_domains_keys {
         exit(1);
     }
 
-# now write all the known domain data to our trust anchor file
-    open (FH, ">$tafile") or die "Can't create trust anchor file";
-    print FH "# This file is created and accessed programmatically.\n";
-    print FH "# It is not meant to be particularly human-readable\n";
-    print FH "# and should not be hand-editted\n";
-    print FH "# (unless you really know what you're doing).\n";
-
-    foreach $d (@domains) {
-        print FH "zone " . $d . "\n";
-
-        my $query;
-        my $orgttl;
-        my $refresh_time;
-        $query = resolve_and_check_dnskey($d,$dvfile);
-        if ($query) {
-            foreach my $rrsigrec (grep { $_->type eq 'RRSIG' } $query->answer) {
-                $orgttl = $rrsigrec->orgttl;
-                my $sigexp = $rrsigrec->sigexpiration;
-                $refresh_time = compute_sleeptime($orgttl,$sigexp);
-                last; # all rrsigs should have the same data
-            }
-        }
-
-	print FH "art " . $refresh_time . "\n";
-        my @keyarr;
-        @keyarr = @{$keystorage{$d}};
-        for (my $i = 0; $i <= $#keyarr; $i++) {
-            print FH "key " . $orgttl . " IN DNSKEY " 
-                            . $keyarr[$i]{'flags'} . " "
-                            . $keyarr[$i]{'protocol'} . " " 
-                            . $keyarr[$i]{'algorithm'} . " " 
-                            . "( " . $keyarr[$i]{'key'} . " )" 
-                            . "\n";
-        }
-        print FH "\n";
-    }
-    close (FH);
 }
 
 #########################################################
