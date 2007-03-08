@@ -60,6 +60,27 @@
 
 #endif /*VAL_NO_THREADS*/
 
+#define STRIP_LABEL(name, newname) do {\
+    int label_len;\
+    label_len = name[0];\
+    if (label_len != 0) {\
+        newname = name + label_len + 1;\
+    }\
+} while(0)
+
+#define ADD_LABEL(q_zonecut_n, curzone_n, qname) do {\
+    u_int8_t *endptr = (qname == NULL)? curzone_n : qname;\
+    u_int8_t *stptr = q_zonecut_n;\
+    u_int8_t *prevptr = NULL;\
+    while (!namecmp(stptr, endptr) && (prevptr != stptr)) {\
+        prevptr = stptr;\
+        STRIP_LABEL(prevptr, stptr);\
+    }\
+    if (prevptr)\
+        qname = prevptr;\
+    else\
+        qname = stptr;\
+} while (0)
 
 /*
  * Identify if the type is present in the bitmap
@@ -2720,6 +2741,157 @@ prove_nonexistence(val_context_t * ctx,
     return retval;
 }
 
+/*
+ * find the soa for this name and type 
+ */
+static int
+find_next_soa(val_context_t * context, struct queries_for_query **queries,
+              u_int8_t * qname, int *done, u_int8_t ** name_n)
+{
+    int             retval;
+    struct val_result_chain *results = NULL;
+    struct val_rrset *soa_rrset = NULL;
+
+    if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *name_n = NULL;
+    *done = 1;
+
+    if (qname == NULL)
+        return VAL_NO_ERROR;
+
+    if (VAL_NO_ERROR !=
+            (retval = try_chase_query(context, qname, ns_c_in,
+                                      ns_t_soa, VAL_FLAGS_DONT_VALIDATE,
+                                      queries, &results, done)))
+        return retval;
+
+    if (*done) {
+
+        struct val_result_chain *res;
+        for (res = results; res; res = res->val_rc_next) {
+            int             i;
+            if ((res->val_rc_answer == NULL)
+                || (res->val_rc_answer->val_ac_rrset == NULL)) {
+                if (res->val_rc_proof_count == 0)
+                    continue;
+                for (i = 0; i < res->val_rc_proof_count; i++) {
+                    if (res->val_rc_proofs[i]->val_ac_rrset->
+                        val_rrset_type_h == ns_t_soa) {
+                        break;
+                    }
+                }
+                if (i == res->val_rc_proof_count)
+                    continue;
+                soa_rrset = res->val_rc_proofs[i]->val_ac_rrset;
+            } else if (res->val_rc_answer->val_ac_rrset->
+                       val_rrset_type_h == ns_t_soa) {
+                soa_rrset = res->val_rc_answer->val_ac_rrset;
+            }
+            if (soa_rrset) {
+                int len = wire_name_length(soa_rrset->val_rrset_name_n);
+                *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+                if (*name_n == NULL) {
+                    return VAL_OUT_OF_MEMORY;
+                }
+                memcpy(*name_n, soa_rrset->val_rrset_name_n, len);
+                break;
+            }
+        }
+    }
+
+    val_free_result_chain(results);
+    return retval;
+}
+
+
+/*
+ * find the zonecut for this name and type 
+ */
+static int
+find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
+                  struct rrset_rec *rrset, int *done, u_int8_t ** name_n)
+{
+    u_int8_t       *qname;
+    int             retval;
+    int             len;
+
+    if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    *name_n = NULL;
+    qname = NULL;
+    *done = 1;
+
+    if (rrset != NULL) {
+        qname = rrset->rrs.val_rrset_name_n;
+
+        if ((rrset->rrs.val_rrset_type_h == ns_t_soa)
+            || (rrset->rrs.val_rrset_type_h == ns_t_dnskey)) {
+            len = wire_name_length(rrset->rrs.val_rrset_name_n);
+            *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+            if (*name_n == NULL)
+                return VAL_OUT_OF_MEMORY;
+            memcpy(*name_n, rrset->rrs.val_rrset_name_n, len);
+            return VAL_NO_ERROR;
+        } else if (rrset->rrs.val_rrset_sig != NULL) {
+            /*
+             * the signer name is the zone cut 
+             */
+            u_int8_t       *signby_name_n;
+            signby_name_n = &rrset->rrs.val_rrset_sig->rr_rdata[SIGNBY];
+            len = wire_name_length(signby_name_n);
+            *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+            if (*name_n == NULL)
+                return VAL_OUT_OF_MEMORY;
+            memcpy(*name_n, signby_name_n, len);
+            return VAL_NO_ERROR;
+        }
+
+        if (rrset->rrs_zonecut_n != NULL) {
+            if ((rrset->rrs.val_rrset_type_h == ns_t_ds) &&
+                (!namecmp(rrset->rrs_zonecut_n,
+                          rrset->rrs.val_rrset_name_n))) {
+                /*
+                 * for the DS, zonecut cannot be the same as the qname
+                 * Obviously some name server returned something bad
+                 */
+                FREE(rrset->rrs_zonecut_n);
+                rrset->rrs_zonecut_n = NULL;
+                STRIP_LABEL(rrset->rrs.val_rrset_name_n, qname);
+            } else {
+                len = wire_name_length(rrset->rrs_zonecut_n);
+                *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+                if (*name_n == NULL)
+                    return VAL_OUT_OF_MEMORY;
+                memcpy(*name_n, rrset->rrs_zonecut_n, len);
+                return VAL_NO_ERROR;
+            }
+        }
+    }
+
+    if ((VAL_NO_ERROR != (retval = find_next_soa(context, queries, qname, done, name_n))
+         || (*done && *name_n == NULL))) {
+        return retval;
+    }
+
+    if (rrset) {
+        if (rrset->rrs_zonecut_n) {
+            FREE(rrset->rrs_zonecut_n);
+        }
+        rrset->rrs_zonecut_n = *name_n; 
+        len = wire_name_length(*name_n);
+        *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+        if (*name_n == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy(*name_n, rrset->rrs_zonecut_n, len);
+    }
+
+    return VAL_NO_ERROR;
+}
+
 static int
 prove_existence(val_context_t * context,
                 u_int8_t * qname_n,
@@ -2859,6 +3031,11 @@ prove_existence(val_context_t * context,
     return retval;
 }
 
+#if 0
+/*
+ * This function does the provably unsecure check in a
+ * bottom-up fashion
+ */
 static int
 verify_provably_unsecure(val_context_t * context,
                          struct queries_for_query **queries,
@@ -2927,7 +3104,7 @@ verify_provably_unsecure(val_context_t * context,
             }
         } else {
             if ((VAL_NO_ERROR !=
-                find_next_zonecut(context, queries, rrset, curzone_n, done, &zonecut_n))
+                find_next_zonecut(context, queries, rrset, done, &zonecut_n))
                 || (*done && zonecut_n == NULL)) {
 
                 if ((curzone_n == NULL) ||
@@ -3077,6 +3254,167 @@ err:
         FREE(curzone_n);
     *is_punsecure = 0;
     return retval;
+}
+#endif
+
+/*
+ * This function does the provably unsecure check in a
+ * top-down fashion
+ */
+static int
+verify_provably_unsecure(val_context_t * context,
+                         struct queries_for_query **queries,
+                         struct val_digested_auth_chain *as,
+                         int *done,
+                         int *is_punsecure)
+{
+    struct val_result_chain *results = NULL;
+    char            name_p[NS_MAXDNAME];
+    char            tempname_p[NS_MAXDNAME];
+
+    u_int8_t       *curzone_n = NULL;
+    u_int8_t       *q_zonecut_n = NULL;
+    u_int8_t       *zonecut_n = NULL;
+    u_int8_t       *qname = NULL;
+
+    struct rrset_rec *rrset;
+    int             retval;
+    u_int8_t flags;
+    struct val_query_chain *top_q = NULL;
+
+    if ((NULL == as) || (NULL == as->_as.ac_data) || 
+        (as->val_ac_query == NULL) || (queries == NULL) || 
+        (done == NULL) || (is_punsecure == NULL)) {
+
+        return VAL_BAD_ARGUMENT;
+    }
+
+    top_q = as->val_ac_query;
+    rrset = as->_as.ac_data;
+    *done = 1;
+    flags = top_q->qc_flags;
+    retval = VAL_NO_ERROR;
+    
+    if (-1 == ns_name_ntop(rrset->rrs.val_rrset_name_n, name_p, 
+                sizeof(name_p)))
+        snprintf(name_p, sizeof(name_p), "unknown/error");
+       
+    if (VAL_NO_ERROR != (find_trust_point(context, rrset->rrs.val_rrset_name_n,
+                                          &curzone_n))) {
+        val_log(context, LOG_DEBUG, "Cannot find trust anchor for %s", name_p);
+        goto err;
+    }
+
+    /* find the zonecut for the query */
+    if ((VAL_NO_ERROR != find_next_zonecut(context, queries, rrset, done, &q_zonecut_n))
+                || (*done && q_zonecut_n == NULL)) {
+
+        val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
+        goto err;
+    }
+
+    if (*done == 0) {
+        /* Need more data */
+        *is_punsecure = 0;
+        goto donefornow;
+    }
+
+    qname = NULL;
+    /* while  we've not reached the zonecut for the query */
+    while(namecmp(q_zonecut_n, curzone_n)) {
+
+        /* Add another label to curzone_n */
+        ADD_LABEL(q_zonecut_n, curzone_n, qname);
+
+        /* find next zone cut going down from the trust anchor */
+        if ((VAL_NO_ERROR !=
+                find_next_soa(context, queries, qname, done, &zonecut_n))
+                || (*done && zonecut_n == NULL)) {
+
+            if ((curzone_n == NULL) ||
+                    (-1 == ns_name_ntop(curzone_n, tempname_p, sizeof(tempname_p)))) {
+                snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
+            } 
+
+            val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", tempname_p);
+            goto err;
+        }
+
+        if (*done == 0) {
+            /* Need more data */
+            *is_punsecure = 0;
+            goto donefornow;
+        }
+
+        /* if the zonecut is same as before, try again */
+        if (!namecmp(zonecut_n,  curzone_n)) {
+            FREE(zonecut_n);
+            zonecut_n = NULL;
+            continue;
+        }
+
+        /* try validating the DS */
+        if (VAL_NO_ERROR != (retval = 
+                    try_chase_query(context, zonecut_n, ns_c_in, 
+                                    ns_t_ds, flags, queries, &results, done)))
+             goto err;
+
+        if (*done == 0) {
+            /* Need more data */
+            *is_punsecure = 0;
+            goto donefornow;
+        }
+
+        /* if done,  inspect the results */
+        if (results == NULL) {
+            goto err;
+        }
+
+        /* If result is not trustworthy, not provably unsecure */
+        if (!val_isvalidated(results->val_rc_status)) {
+            goto err; 
+        }
+
+        /* if non-existent set as provably unsecure and break */
+        if ((results->val_rc_status == VAL_NONEXISTENT_TYPE) ||
+            (results->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
+            val_log(context, LOG_DEBUG, "%s is provably unsecure", name_p);
+            *is_punsecure = 1;
+            goto donefornow;
+        }
+#ifdef LIBVAL_NSEC3
+        else if (results->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) {
+            val_log(context, LOG_DEBUG, "%s is optout provably unsecure", name_p);
+            *is_punsecure = 1;
+            goto donefornow;
+        }
+#endif
+
+        /* validated DS; look for next zonecut */ 
+        if (curzone_n) {
+            FREE(curzone_n);
+        }
+        curzone_n = zonecut_n;
+        zonecut_n = NULL;
+    }
+
+err:
+    val_log(context, LOG_DEBUG,
+            "Cannot show that %s is provably unsecure.", name_p);
+    *is_punsecure = 0;
+
+donefornow:
+    if (q_zonecut_n)
+        FREE(q_zonecut_n);
+    if (curzone_n)
+        FREE(curzone_n);
+    if (results != NULL) {
+        val_free_result_chain(results);
+        results = NULL;
+    }
+    return retval;
+
+
 }
 
 /*
@@ -3487,7 +3825,7 @@ verify_and_validate(val_context_t * context,
                          */
                         res->val_rc_status = VAL_BOGUS_PROOF;
                         val_log(context, LOG_WARNING, 
-                                "response for DS from child; INDETERMINATE: no root.hints configured");
+                                "response for DS from child; VAL_BOGUS_PROOF: no root.hints configured");
                         break;
                     } else {
                         /*
@@ -3593,7 +3931,7 @@ verify_and_validate(val_context_t * context,
                         next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                         res->val_rc_status = VAL_PROVABLY_UNSECURE;
                     } else {
-                        res->val_rc_status = VAL_INDETERMINATE;
+                        res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                     }
                     break;
                 } else {
