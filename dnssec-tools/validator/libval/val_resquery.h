@@ -38,11 +38,4 @@ int             val_resquery_rcv(val_context_t * context,
                                  struct domain_info **response,
                                  struct queries_for_query **queries);
 
-int             find_next_zonecut(val_context_t * context,
-                                  struct queries_for_query **queries,
-                                  struct rrset_rec *rrset,
-                                  u_int8_t * curzone_n,
-                                  int *done,
-                                  u_int8_t ** name_n);
-
 #endif                          /* VAL_RESQUERY_H */
