@@ -515,8 +515,10 @@ int free_qfq_chain(struct queries_for_query *queries)
     return VAL_NO_ERROR;
 }
 
-u_int16_t
-is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
+
+
+int
+is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status)
 {
     struct zone_se_policy *zse_pol, *zse_cur;
     int             name_len;
@@ -570,18 +572,22 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
                 if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
                     val_log(ctx, LOG_DEBUG, "zone %s is not trusted",
                             name_p);
-                    return VAL_AC_UNTRUSTED_ZONE;
+                    *status = VAL_AC_UNTRUSTED_ZONE;
+                    return VAL_NO_ERROR;
                 } else if (zse_cur->trusted == ZONE_SE_TRUSTED) {
                     val_log(ctx, LOG_DEBUG, "zone %s is trusted", name_p);
-                    return VAL_AC_TRUSTED_ZONE;
+                    *status = VAL_AC_TRUSTED_ZONE;
+                    return VAL_NO_ERROR;
                 } else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
                     val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
-                    return VAL_AC_WAIT_FOR_TRUST;
+                    *status = VAL_AC_WAIT_FOR_TRUST;
+                    return VAL_NO_ERROR;
                 } else {
                     /** ZONE_SE_IGNORE */
                     val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for  %s",
                             name_p);
-                    return VAL_AC_IGNORE_VALIDATION;
+                    *status = VAL_AC_IGNORE_VALIDATION;
+                    return VAL_NO_ERROR;
                 }
             }
         }
@@ -590,7 +596,8 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n)
         snprintf(name_p, sizeof(name_p), "unknown/error");
     val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
 
-    return VAL_AC_WAIT_FOR_TRUST;
+    *status = VAL_AC_WAIT_FOR_TRUST;
+    return VAL_NO_ERROR;
 }
 
 static int
@@ -1121,8 +1128,11 @@ build_pending_query(val_context_t *context,
     /*
      * Check if this zone is locally trusted/untrusted 
      */
-    tzonestatus =
-        is_trusted_zone(context, as->_as.ac_data->rrs.val_rrset_name_n);
+    if (VAL_NO_ERROR != (retval = 
+        is_trusted_zone(context, as->_as.ac_data->rrs.val_rrset_name_n, &tzonestatus))) {
+        return retval;
+    }
+
     if (tzonestatus != VAL_AC_WAIT_FOR_TRUST) {
         as->val_ac_status = tzonestatus;
         return VAL_NO_ERROR;
@@ -3417,6 +3427,64 @@ donefornow:
 
 }
 
+static int
+is_pu_trusted(val_context_t *ctx, u_int8_t *name_n)
+{
+    struct prov_unsecure_policy *pu_pol, *pu_cur;
+    u_int8_t       *p;
+    char            name_p[NS_MAXDNAME];
+    int             name_len;
+
+    pu_pol = RETRIEVE_POLICY(ctx, P_PROV_UNSECURE,
+                    struct prov_unsecure_policy *);
+    if (pu_pol) {
+
+        name_len = wire_name_length(name_n);
+        
+        for (pu_cur = pu_pol;
+             pu_cur && (wire_name_length(pu_cur->zone_n) > name_len);
+             pu_cur = pu_cur->next);
+
+        /*
+         * for all zones which are shorter or as long, do a strstr 
+         */
+        /*
+         * Because of the ordering, the longest match is found first 
+         */
+        for (; pu_cur; pu_cur = pu_cur->next) {
+            int             root_zone = 0;
+            if (!namecmp(pu_cur->zone_n, (const u_int8_t *) ""))
+                root_zone = 1;
+            else {
+                /*
+                 * Find the last occurrence of zse_cur->zone_n in name_n 
+                 */
+                p = name_n;
+                while (p && (*p != '\0')) {
+                    if (!namecmp(p, pu_cur->zone_n))
+                        break;
+                    p = p + *p + 1;
+                }
+            }
+
+            if (root_zone || (!namecmp(p, pu_cur->zone_n))) {
+                if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
+                    snprintf(name_p, sizeof(name_p), "unknown/error");
+                if (pu_cur->trusted == ZONE_PU_UNTRUSTED) {
+                    val_log(ctx, LOG_DEBUG, "zone %s provable unsecure status is not trusted",
+                            name_p);
+                    return 0;
+                } else { 
+                    val_log(ctx, LOG_DEBUG, "zone %s provably unsecure status is trusted", name_p);
+                    return 1;
+                }
+            }
+        }
+    }
+    return 1; /* trust provably unsecure state by default */
+}
+
+
 /*
  * Verify an assertion if possible. Complete assertions are those for which 
  * you have data, rrsigs and key information. 
@@ -3742,8 +3810,7 @@ verify_and_validate(val_context_t * context,
              */
             if ((next_as->_as.ac_data != NULL) &&
                 (next_as == as_trust)) {
-                res->val_rc_status = VAL_BOGUS_PROOF;
-                thisdone = 1;
+                next_as->val_ac_status = VAL_AC_DNSKEY_MISSING;
                 break;
             }
 
@@ -3806,7 +3873,11 @@ verify_and_validate(val_context_t * context,
                         if (thisdone) {
                             if (is_punsecure) {
                                 next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
-                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                                if (is_pu_trusted(context, 
+                                        next_as->val_ac_rrset->val_rrset_name_n))
+                                    res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                                else
+                                    res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                             } else {
                                 res->val_rc_status = VAL_BOGUS_PROOF;
                             }
@@ -3862,7 +3933,11 @@ verify_and_validate(val_context_t * context,
                     if (thisdone) {
                         if (is_punsecure) {
                             next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
-                            res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                            if (is_pu_trusted(context, 
+                                    next_as->val_ac_rrset->val_rrset_name_n))
+                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                            else
+                                res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                         } else {
                             res->val_rc_status = VAL_BOGUS_PROOF;
                         }
@@ -3893,7 +3968,11 @@ verify_and_validate(val_context_t * context,
                         res->val_rc_status = VAL_LOCAL_ANSWER;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_PROVABLY_UNSECURE) {
-                        res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                        if (is_pu_trusted(context, 
+                                    next_as->val_ac_rrset->val_rrset_name_n))
+                            res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                        else
+                            res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                     } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                         res->val_rc_status = VAL_BARE_RRSIG;
                     } else if (next_as->val_ac_status ==
@@ -3929,7 +4008,11 @@ verify_and_validate(val_context_t * context,
                 if (thisdone) {
                     if (is_punsecure) {
                         next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
-                        res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                        if (is_pu_trusted(context, 
+                                next_as->val_ac_rrset->val_rrset_name_n))
+                            res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                        else
+                            res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                     } else {
                         res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                     }
@@ -3958,7 +4041,11 @@ verify_and_validate(val_context_t * context,
                     if (thisdone) {
                         if (is_punsecure) {
                             next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
-                            res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                            if (is_pu_trusted(context, 
+                                            next_as->val_ac_rrset->val_rrset_name_n))
+                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                            else
+                                res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                         } else {
                             res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                         }
@@ -4110,6 +4197,7 @@ ask_resolver(val_context_t * context,
     int             retval;
     int             need_data = 0;
     char            name_p[NS_MAXDNAME];
+    u_int16_t       tzonestatus;
 
     if ((context == NULL) || (queries == NULL) || (data_received == NULL) || (data_missing == NULL)) 
         return VAL_BAD_ARGUMENT;
@@ -4150,15 +4238,21 @@ ask_resolver(val_context_t * context,
 
             if (next_q->qfq_query->qc_ns_list &&
                 !(next_q->qfq_query->qc_ns_list->ns_options & RES_USE_DNSSEC)) {
-                if (!(next_q->qfq_query->qc_flags & VAL_FLAGS_DONT_VALIDATE) &&
-                    (is_trusted_zone(context, test_n) ==
-                     VAL_AC_WAIT_FOR_TRUST)) {
+                if (!(next_q->qfq_query->qc_flags & VAL_FLAGS_DONT_VALIDATE)) {
+                    
+                    if (VAL_NO_ERROR != (retval = 
+                        is_trusted_zone(context, test_n, &tzonestatus))) {
+                        return retval;
+                    }
 
-                    val_log(context, LOG_DEBUG,
+                    if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
+                        val_log(context, LOG_DEBUG,
                             "Setting D0 bit and using EDNS0");
 
-                    for (ns = next_q->qfq_query->qc_ns_list; ns; ns = ns->ns_next)
-                        ns->ns_options |= RES_USE_DNSSEC;
+                        for (ns = next_q->qfq_query->qc_ns_list; ns; ns = ns->ns_next)
+                            ns->ns_options |= RES_USE_DNSSEC;
+                    }
+
                 } else {
                     val_log(context, LOG_DEBUG,
                             "Not setting D0 bit nor using EDNS0");
@@ -4669,7 +4763,11 @@ perform_sanity_checks(val_context_t * context,
                              drr = drr->rr_next) {
                             if (drr->rr_status ==
                                 VAL_AC_UNKNOWN_ALGORITHM_LINK) {
-                                res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                                if (is_pu_trusted(context, 
+                                            as->val_ac_rrset->val_rrset_name_n))
+                                    res->val_rc_status = VAL_PROVABLY_UNSECURE;
+                                else
+                                    res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                                 break;
                             }
                         }
@@ -5133,6 +5231,7 @@ val_resolve_and_check(val_context_t * ctx,
 int
 val_istrusted(val_status_t val_status)
 {
+    
     switch (val_status) {
     case VAL_SUCCESS:
     case VAL_NONEXISTENT_NAME:
@@ -5150,6 +5249,7 @@ val_istrusted(val_status_t val_status)
     case VAL_LOCAL_ANSWER:
         return 1;
 
+        
     default:
         return 0;
     }
