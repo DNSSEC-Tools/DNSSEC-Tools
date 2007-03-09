@@ -23,9 +23,9 @@ level: 1
 type: NS
 <test>
   if ($_[0]->name eq $current_domain) {
-    $DONUTS::DNSSEC::NS{$_[0]->nsdname} = 2;
-  } elsif ($DONUTS::DNSSEC::NS{$_[0]->nsdname} != 2) {
-    $DONUTS::DNSSEC::NS{$_[0]->nsdname} = 1;
+    $DONUTS::DNSSEC::NS{lc($_[0]->nsdname)} = 2;
+  } elsif ($DONUTS::DNSSEC::NS{lc($_[0]->nsdname)} != 2) {
+    $DONUTS::DNSSEC::NS{lc($_[0]->nsdname)} = 1;
   }
   return;
 </test>
@@ -40,7 +40,7 @@ ruletype: name
 <test>
   "name $_[2] does not have an NSEC record, which is required for secure domains."
     if (!exists($_[0]->{'NSEC'}) &&
-        !exists($DONUTS::DNSSEC::NS{$_[2]}));
+        !exists($DONUTS::DNSSEC::NS{lc($_[2])}));
 </test>
 
 #
@@ -53,7 +53,7 @@ ruletype: name
 <test>
   "name $_[2] does not have a RRSIG record, which is required for secure domains."
     if (!exists($_[0]->{'RRSIG'}) &&
-        !exists($DONUTS::DNSSEC::NS{$_[2]}));
+        !exists($DONUTS::DNSSEC::NS{lc($_[2])}));
 </test>
 
 #
@@ -82,8 +82,8 @@ desc: Checks to see if an NS record exists with glue data but also a RRSIG cover
     if (exists($_[0]->{'RRSIG'}) &&
         $current_domain ne $_[2] &&
 	$current_domain ne $suffix &&
-        exists($DONUTS::DNSSEC::NS{$_[2]}) &&
-        $DONUTS::DNSSEC::NS{$_[2]} != 2);
+        exists($DONUTS::DNSSEC::NS{lc($_[2])}) &&
+        $DONUTS::DNSSEC::NS{lc($_[2])} != 2);
 </test>
 
 #
@@ -98,9 +98,9 @@ ruletype: name
   $suffix =~ s/^[^\.]+\.//;
   "name $_[2] is pointed to by an NS record and thus should be a glue record.  But it also has an NSEC record which should not be present for glue records."
     if (exists($_[0]->{'NSEC'}) &&
-        exists($DONUTS::DNSSEC::NS{$_[2]}) &&
+        exists($DONUTS::DNSSEC::NS{lc($_[2])}) &&
 	$current_domain ne $suffix &&
-        $DONUTS::DNSSEC::NS{$_[2]} != 2);
+        $DONUTS::DNSSEC::NS{lc($_[2])} != 2);
 </test>
 
 #
