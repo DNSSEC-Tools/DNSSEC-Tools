@@ -21,7 +21,7 @@ void            free_authentication_chain(struct val_digested_auth_chain
 void            free_query_chain(struct val_query_chain *queries);
 int             val_istrusted(val_status_t val_status);
 int             val_isvalidated(val_status_t val_status);
-u_int16_t       is_trusted_zone(val_context_t * ctx, u_int8_t * name_n);
+int             is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *tzonestatus);
 void            val_free_result_chain(struct val_result_chain *results);
 int             try_chase_query(val_context_t * context,
                                 u_char * domain_name_n,
