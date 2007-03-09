@@ -38,6 +38,62 @@
 #include "val_context.h"
 #include "val_assertion.h"
 
+#define READ_ZONE_AND_VALUE(fp, line_number, endst, nodata, retval, err, zone_n, token)  do {\
+    /*\
+     * Read the zone for which this trust anchor applies \
+     */\
+    nodata = 0;\
+    if (VAL_NO_ERROR != (retval = \
+         val_get_token(fp, line_number, token, sizeof(token), &endst,\
+                       CONF_COMMENT, CONF_END_STMT))) {\
+        goto err;\
+    }\
+    if (endst && (strlen(token) == 1)) {\
+        nodata = 1;\
+        break;\
+    }\
+    if (feof(fp)) {\
+        retval = VAL_CONF_PARSE_ERROR;\
+        goto err;\
+    }\
+    if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1) {\
+        retval = VAL_CONF_PARSE_ERROR;\
+        goto err;\
+    }\
+    /*\
+     * Read the corresponding value \
+     */\
+    if (VAL_NO_ERROR != (retval =\
+         val_get_token(fp, line_number, token, sizeof(token), &endst,\
+                       CONF_COMMENT, CONF_END_STMT)))\
+        goto err;\
+    if (feof(fp) && !endst) {\
+        retval = VAL_CONF_PARSE_ERROR;\
+        goto err;\
+    }\
+} while (0)
+
+#define STORE_POLICY_FOR_ZONE(zone_n, name_len, pol, head, cur, prev) do {\
+    /*\
+     * Store trust anchors in decreasing zone name length \
+     */\
+    prev = NULL;\
+    for (cur = head; cur;\
+         prev = cur, cur = cur->next)\
+         if (wire_name_length(cur->zone_n) <= name_len)\
+             break;\
+    if (prev) {\
+        /*\
+         * store after prev \
+         */\
+        pol->next = prev->next;\
+        prev->next = pol;\
+    } else {\
+        pol->next = head;\
+        head = pol;\
+    }\
+} while (0)
+
 
 /*
  * forward declaration 
@@ -196,6 +252,8 @@ const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
     {POL_CLOCK_SKEW_STR, parse_clock_skew, free_clock_skew},
     {POL_EXPIRED_SIGS_STR, parse_expired_sigs, free_expired_sigs},
     {POL_USE_TCP_STR, parse_use_tcp, free_use_tcp},
+    {POL_PROV_UNSEC_STR, parse_prov_unsecure_status, 
+     free_prov_unsecure_status},
     {POL_ZONE_SE_STR, parse_zone_security_expectation,
      free_zone_security_expectation},
 #ifdef LIBVAL_NSEC3
@@ -212,12 +270,14 @@ const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
 int
 parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
 {
-    char            token[TOKEN_MAX];
     u_char          zone_n[NS_MAXCDNAME];
+    char            ta_token[TOKEN_MAX];\
     struct trust_anchor_policy *ta_pol, *ta_head, *ta_cur, *ta_prev;
     int             retval;
     int             name_len;
     int             endst = 0;
+    int             nodata = 0;
+
 
     if ((fp == NULL) || (pol_entry == NULL) || (line_number == NULL))
         return VAL_BAD_ARGUMENT;
@@ -228,55 +288,25 @@ parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
         char           *pkstr;
         val_dnskey_rdata_t *dnskey_rdata;
 
-        /*
-         * Read the zone for which this trust anchor applies 
-         */
-        if (VAL_NO_ERROR !=
-            (retval =
-             val_get_token(fp, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT))) {
-            goto err;
-        }
-        if (endst && (strlen(token) == 1))
+        READ_ZONE_AND_VALUE(fp, line_number, endst, nodata, retval, err, zone_n, ta_token);
+        if (nodata) 
             break;
-        if (feof(fp)) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-
-        if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-
+        
         /*
          * XXX We may want to have another token that specifies if 
          * XXX this is a DS or a DNSKEY
          * XXX Assume public key for now
          */
         /*
-         * Read the public key 
-         */
-        if (VAL_NO_ERROR !=
-            (retval =
-             val_get_token(fp, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT)))
-            goto err;
-        if (feof(fp) && !endst) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-        /*
          * Remove leading and trailing quotation marks 
          */
-        if ((token[0] != '\"') ||
-            (strlen(token) <= 1) || token[strlen(token) - 1] != '\"') {
+        if ((ta_token[0] != '\"') ||
+            (strlen(ta_token) <= 1) || ta_token[strlen(ta_token) - 1] != '\"') {
             retval = VAL_CONF_PARSE_ERROR;
             goto err;
         }
-        token[strlen(token) - 1] = '\0';
-        pkstr = &token[1];
-
+        ta_token[strlen(ta_token) - 1] = '\0';
+        pkstr = &ta_token[1];
 
         // Parse the public key
         if (VAL_NO_ERROR !=
@@ -294,24 +324,7 @@ parse_trust_anchor(FILE * fp, policy_entry_t * pol_entry, int *line_number)
         memcpy(ta_pol->zone_n, zone_n, name_len);
         ta_pol->publickey = dnskey_rdata;
 
-        /*
-         * Store trust anchors in decreasing zone name length 
-         */
-        ta_prev = NULL;
-        for (ta_cur = ta_head; ta_cur;
-             ta_prev = ta_cur, ta_cur = ta_cur->next)
-            if (wire_name_length(ta_cur->zone_n) <= name_len)
-                break;
-        if (ta_prev) {
-            /*
-             * store after ta_prev 
-             */
-            ta_pol->next = ta_prev->next;
-            ta_prev->next = ta_pol;
-        } else {
-            ta_pol->next = ta_head;
-            ta_head = ta_pol;
-        }
+        STORE_POLICY_FOR_ZONE(zone_n, name_len, ta_pol, ta_head, ta_cur, ta_prev);
     }
 
     *pol_entry = (policy_entry_t) (ta_head);
@@ -455,15 +468,94 @@ free_use_tcp(policy_entry_t * pol_entry)
 }
 
 int
+parse_prov_unsecure_status(FILE * fp, policy_entry_t * pol_entry,
+                                int *line_number)
+{
+    char            pu_token[TOKEN_MAX];
+    u_char          zone_n[NS_MAXCDNAME];
+    struct prov_unsecure_policy *pu_pol, *pu_head, *pu_cur, *pu_prev;
+    int             retval;
+    int             name_len;
+    int             endst = 0;
+    int             nodata = 0;
+    int             zone_status;
+
+    if ((fp == NULL) || (pol_entry == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    pu_head = NULL;
+
+    while (!endst) {
+
+        READ_ZONE_AND_VALUE(fp, line_number, endst, nodata, retval, err, zone_n, pu_token);
+        if (nodata) 
+            break;
+
+        if (!strcmp(pu_token, ZONE_PU_TRUSTED_MSG))
+            zone_status = ZONE_PU_TRUSTED;
+        else if (!strcmp(pu_token, ZONE_PU_UNTRUSTED_MSG))
+            zone_status = ZONE_PU_UNTRUSTED;
+        else {
+            retval = VAL_CONF_PARSE_ERROR;
+            goto err;
+        }
+
+        pu_pol = (struct prov_unsecure_policy *)
+            MALLOC(sizeof(struct prov_unsecure_policy));
+        if (pu_pol == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        name_len = wire_name_length(zone_n);
+        memcpy(pu_pol->zone_n, zone_n, name_len);
+        pu_pol->trusted = zone_status;
+
+        STORE_POLICY_FOR_ZONE(zone_n, name_len, pu_pol, pu_head, pu_cur, pu_prev);
+    }
+
+    *pol_entry = (policy_entry_t) (pu_head);
+
+    return VAL_NO_ERROR;
+
+  err:
+    while ((pu_prev = pu_head)) {     /* double parens keep compiler happy */
+        pu_head = pu_head->next;
+        FREE(pu_prev);
+    }
+
+    return retval;
+}
+
+int
+free_prov_unsecure_status(policy_entry_t * pol_entry)
+{
+    struct zone_se_policy *zse_cur, *zse_next;
+
+    if ((pol_entry == NULL) || (*pol_entry == NULL))
+        return VAL_NO_ERROR;
+
+    zse_cur = (struct zone_se_policy *) (*pol_entry);
+    while (zse_cur) {
+        zse_next = zse_cur->next;
+        FREE(zse_cur);
+        zse_cur = zse_next;
+    }
+
+    (*pol_entry) = NULL;
+
+    return VAL_NO_ERROR;
+}
+int
 parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
                                 int *line_number)
 {
-    char            token[TOKEN_MAX];
+    char            se_token[TOKEN_MAX];
     u_char          zone_n[NS_MAXCDNAME];
     struct zone_se_policy *zse_pol, *zse_head, *zse_cur, *zse_prev;
     int             retval;
     int             name_len;
     int             endst = 0;
+    int             nodata = 0;
     int             zone_status;
 
     if ((fp == NULL) || (pol_entry == NULL) || (line_number == NULL))
@@ -473,45 +565,17 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
 
     while (!endst) {
 
-        /*
-         * Read the zone for which this trust anchor applies 
-         */
-        if (VAL_NO_ERROR !=
-            (retval =
-             val_get_token(fp, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT)))
-            goto err;
-        if (endst && (strlen(token) == 1))
+        READ_ZONE_AND_VALUE(fp, line_number, endst, nodata, retval, err, zone_n, se_token);
+        if (nodata) 
             break;
-        if (feof(fp)) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
 
-        if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-
-        /*
-         * Read the zone status 
-         */
-        if (VAL_NO_ERROR !=
-            (retval =
-             val_get_token(fp, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT)))
-            goto err;
-        if (feof(fp) && !endst) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-        if (!strcmp(token, ZONE_SE_IGNORE_MSG))
+        if (!strcmp(se_token, ZONE_SE_IGNORE_MSG))
             zone_status = ZONE_SE_IGNORE;
-        else if (!strcmp(token, ZONE_SE_TRUSTED_MSG))
+        else if (!strcmp(se_token, ZONE_SE_TRUSTED_MSG))
             zone_status = ZONE_SE_TRUSTED;
-        else if (!strcmp(token, ZONE_SE_DO_VAL_MSG))
+        else if (!strcmp(se_token, ZONE_SE_DO_VAL_MSG))
             zone_status = ZONE_SE_DO_VAL;
-        else if (!strcmp(token, ZONE_SE_UNTRUSTED_MSG))
+        else if (!strcmp(se_token, ZONE_SE_UNTRUSTED_MSG))
             zone_status = ZONE_SE_UNTRUSTED;
         else {
             retval = VAL_CONF_PARSE_ERROR;
@@ -528,24 +592,7 @@ parse_zone_security_expectation(FILE * fp, policy_entry_t * pol_entry,
         memcpy(zse_pol->zone_n, zone_n, name_len);
         zse_pol->trusted = zone_status;
 
-        /*
-         * Store trust anchors in decreasing zone name length 
-         */
-        zse_prev = NULL;
-        for (zse_cur = zse_head; zse_cur;
-             zse_prev = zse_cur, zse_cur = zse_cur->next)
-            if (wire_name_length(zse_cur->zone_n) <= name_len)
-                break;
-        if (zse_prev) {
-            /*
-             * store after zse_prev 
-             */
-            zse_pol->next = zse_prev->next;
-            zse_prev->next = zse_pol;
-        } else {
-            zse_pol->next = zse_head;
-            zse_head = zse_pol;
-        }
+        STORE_POLICY_FOR_ZONE(zone_n, name_len, zse_pol, zse_head, zse_cur, zse_prev);
     }
 
     *pol_entry = (policy_entry_t) (zse_head);
@@ -590,8 +637,9 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
     struct nsec3_max_iter_policy *pol, *head, *cur, *prev;
     int             retval;
     int             endst = 0;
+    int             nodata = 0;
 
-    char            token[TOKEN_MAX];
+    char            iter_token[TOKEN_MAX];
     u_char          zone_n[NS_MAXCDNAME];
     int             nsec3_iter;
     int             name_len;
@@ -603,39 +651,11 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
 
     while (!endst) {
 
-        /*
-         * Read the zone for which this trust anchor applies 
-         */
-        if (VAL_NO_ERROR !=
-            (retval =
-             val_get_token(fp, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT)))
-            goto err;
-        if (endst && (strlen(token) == 1))
+        READ_ZONE_AND_VALUE(fp, line_number, endst, nodata, retval, err, zone_n, iter_token);
+        if (nodata) 
             break;
-        if (feof(fp)) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-        if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
 
-        /*
-         * Read the corresponding value 
-         */
-        if (VAL_NO_ERROR !=
-            (retval =
-             val_get_token(fp, line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, CONF_END_STMT)))
-            goto err;
-        if (feof(fp) && !endst) {
-            retval = VAL_CONF_PARSE_ERROR;
-            goto err;
-        }
-
-        nsec3_iter = atoi(token);
+        nsec3_iter = atoi(iter_token);
 
         pol = (struct nsec3_max_iter_policy *)
             MALLOC(sizeof(struct nsec3_max_iter_policy));
@@ -647,23 +667,7 @@ parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
         memcpy(pol->zone_n, zone_n, name_len);
         pol->iter = nsec3_iter;
 
-        /*
-         * Store trust anchors in decreasing zone name length 
-         */
-        prev = NULL;
-        for (cur = head; cur; prev = cur, cur = cur->next)
-            if (wire_name_length(cur->zone_n) <= name_len)
-                break;
-        if (prev) {
-            /*
-             * store after prev 
-             */
-            pol->next = prev->next;
-            prev->next = pol;
-        } else {
-            pol->next = head;
-            head = pol;
-        }
+        STORE_POLICY_FOR_ZONE(zone_n, name_len, pol, head, cur, prev);
     }
 
     *pol_entry = (policy_entry_t) (head);
