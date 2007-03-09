@@ -595,6 +595,7 @@ p_val_status(val_status_t err)
         return "VAL_ERROR";
         break;
     case VAL_PROVABLY_UNSECURE:
+    case VAL_BAD_PROVABLY_UNSECURE:
         return "VAL_PROVABLY_UNSECURE";
         break;
     case VAL_IGNORE_VALIDATION:
