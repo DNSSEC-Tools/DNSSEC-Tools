@@ -932,6 +932,7 @@ digest_response(val_context_t * context,
     const u_int8_t *query_name_n;
     u_int16_t       query_type_h;
     u_int16_t       query_class_h;
+    u_int16_t       tzonestatus;
     u_int8_t       *rrs_zonecut_n = NULL;
     int             referral_seen = FALSE;
     u_int8_t        referral_zone_n[NS_MAXCDNAME];
@@ -1138,7 +1139,16 @@ digest_response(val_context_t * context,
                 }
             } else {
                 zonecut_was_modified = 1;
-                rrs_zonecut_n = name_n;
+                /* update the zonecut information */
+                if (matched_q->qc_zonecut_n)
+                    FREE(matched_q->qc_zonecut_n);
+                len = wire_name_length(name_n);
+                matched_q->qc_zonecut_n = 
+                    (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+                if (matched_q->qc_zonecut_n == NULL)
+                    goto done;    
+                memcpy (matched_q->qc_zonecut_n, name_n, len);
+                rrs_zonecut_n = matched_q->qc_zonecut_n;
                 /*
                  * go back to all the rrsets that we created 
                  * and fix the zonecut info 
@@ -1217,7 +1227,16 @@ digest_response(val_context_t * context,
                             goto done;
                         }
                     } else {
-                        rrs_zonecut_n = name_n;
+                        /* update the zonecut information */
+                        if (matched_q->qc_zonecut_n)
+                            FREE(matched_q->qc_zonecut_n);
+                        len = wire_name_length(name_n);
+                        matched_q->qc_zonecut_n = 
+                            (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+                        if (matched_q->qc_zonecut_n == NULL)
+                            goto done;    
+                        memcpy (matched_q->qc_zonecut_n, name_n, len);
+                        rrs_zonecut_n = matched_q->qc_zonecut_n;
                         zonecut_was_modified = 1;
                         /*
                          * go back to all the rrsets that we created 
@@ -1245,14 +1264,6 @@ digest_response(val_context_t * context,
                         FIX_ZONECUT(learned_ds, rrs_zonecut_n, ret_val);
                         if (ret_val != VAL_NO_ERROR)
                             goto done;
-                        if (matched_q->qc_zonecut_n)
-                           FREE(matched_q->qc_zonecut_n);
-                        len = wire_name_length(rrs_zonecut_n);
-                        matched_q->qc_zonecut_n =
-                            (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-                        if (matched_q->qc_zonecut_n == NULL)
-                            goto done; 
-                        memcpy(matched_q->qc_zonecut_n, rrs_zonecut_n, len);
                     }
 
                 }
@@ -1307,8 +1318,14 @@ digest_response(val_context_t * context,
          * child zone, or if one of the name servers reached while 
          * following referrals is also recursive
          */
-        if ((VAL_AC_WAIT_FOR_TRUST ==
-                is_trusted_zone(context, matched_q->qc_name_n))
+        
+        if (VAL_NO_ERROR != (ret_val =
+                is_trusted_zone(context, matched_q->qc_name_n, &tzonestatus))) { 
+            goto done;
+        }
+                    
+        
+        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST
             && matched_q->qc_respondent_server
             && !(matched_q->qc_flags & VAL_FLAGS_DONT_VALIDATE)
             && !(matched_q->qc_respondent_server->
