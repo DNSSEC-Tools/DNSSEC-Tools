@@ -35,6 +35,7 @@
 #define POL_CLOCK_SKEW_STR "clock-skew"
 #define POL_EXPIRED_SIGS_STR "expired-sigs"
 #define POL_USE_TCP_STR "use-tcp"
+#define POL_PROV_UNSEC_STR "provably-unsecure-status"
 #define POL_ZONE_SE_STR "zone-security-expectation"
 #ifdef DLV
 #define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
@@ -53,7 +54,8 @@
 #define P_CLOCK_SKEW                6
 #define P_EXPIRED_SIGS              7
 #define P_USE_TCP                   8
-#define P_ZONE_SECURITY_EXPECTATION 9
+#define P_PROV_UNSECURE             9
+#define P_ZONE_SECURITY_EXPECTATION 10
 #define P_BASE_LAST                 P_ZONE_SECURITY_EXPECTATION
 #ifdef LIBVAL_NSEC3
 #define P_NSEC3_MAX_ITER            (P_BASE_LAST+1)
@@ -69,6 +71,11 @@
 #define DLV_POL_COUNT               0
 #endif
 #define MAX_POL_TOKEN               (P_BASE_LAST+NSEC3_POL_COUNT+DLV_POL_COUNT+1) 
+
+#define ZONE_PU_TRUSTED_MSG "trusted"
+#define ZONE_PU_UNTRUSTED_MSG "untrusted"
+#define ZONE_PU_TRUSTED 1
+#define ZONE_PU_UNTRUSTED 2
 
 #define ZONE_SE_IGNORE_MSG     "ignore"
 #define ZONE_SE_TRUSTED_MSG    "trusted"
@@ -118,6 +125,8 @@ int             parse_expired_sigs(FILE *, policy_entry_t *, int *);
 int             free_expired_sigs(policy_entry_t *);
 int             parse_use_tcp(FILE *, policy_entry_t *, int *);
 int             free_use_tcp(policy_entry_t *);
+int             parse_prov_unsecure_status(FILE *, policy_entry_t *, int *);
+int             free_prov_unsecure_status(policy_entry_t *);
 int             parse_zone_security_expectation(FILE *, policy_entry_t *,
                                                 int *);
 int             free_zone_security_expectation(policy_entry_t *);
@@ -158,6 +167,12 @@ struct trust_anchor_policy {
     u_int8_t        zone_n[NS_MAXCDNAME];
     val_dnskey_rdata_t *publickey;
     struct trust_anchor_policy *next;
+};
+
+struct prov_unsecure_policy {
+    u_int8_t        zone_n[NS_MAXCDNAME];
+    int             trusted;
+    struct prov_unsecure_policy *next;
 };
 
 struct zone_se_policy {
