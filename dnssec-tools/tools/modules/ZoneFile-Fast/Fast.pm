@@ -475,7 +475,7 @@ sub parse_line
 			   type    => "NS",
 			   ttl     => $ttl,
 			   class   => "IN",
-			   nsdname => $name,
+			   nsdname => lc($name),
 			  };
 	  } elsif (/\G\@$pat_skip$/gc) {
 	      my $name = $origin;
@@ -487,7 +487,7 @@ sub parse_line
 			   type    => "NS",
 			   ttl     => $ttl,
 			   class   => "IN",
-			   nsdname => $name,
+			   nsdname => lc($name),
 			  };
 	  } else {
 	      error("bad name in NS");
@@ -824,8 +824,10 @@ sub parse_soa_name
 	  }
       }
       if ($soa->{nextkey} eq "mname") {
+	  $soa->{mname} = lc($soa->{mname});
 	  $soa->{nextkey} = "rname";
       } elsif ($soa->{nextkey} eq "rname") {
+	  $soa->{rname} = lc($soa->{rname});
 	  $soa->{nextkey} = "serial";
 	  $parse = \&parse_soa_number;
       } else {
