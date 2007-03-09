@@ -724,7 +724,7 @@ sub parse_line
 		 class     => "IN",
 		 ttl       => $ttl,
 		 type      => "NSEC",
-		 nxtdname  => lc($1),
+		 nxtdname  => $1,
 		 typelist  => $2,
 		 typebm    =>
 		 Net::DNS::RR::NSEC::_typearray2typebm(split(/\s+/,$2)),
