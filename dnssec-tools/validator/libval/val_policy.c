@@ -434,13 +434,73 @@ free_preferred_algo_ds(policy_entry_t * pol_entry)
 int
 parse_clock_skew(FILE * fp, policy_entry_t * pol_entry, int *line_number)
 {
-    return VAL_NOT_IMPLEMENTED;
+    char            cs_token[TOKEN_MAX];
+    u_char          zone_n[NS_MAXCDNAME];
+    struct clock_skew_policy *cs_pol, *cs_head, *cs_cur, *cs_prev;
+    int             retval;
+    int             name_len;
+    int             endst = 0;
+    int             nodata = 0;
+    int             clock_skew;
+
+    if ((fp == NULL) || (pol_entry == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    cs_head = NULL;
+
+    while (!endst) {
+
+        READ_ZONE_AND_VALUE(fp, line_number, endst, nodata, retval, err,
+                zone_n, cs_token);
+        if (nodata) 
+            break;
+
+        clock_skew = atoi(cs_token); 
+
+        cs_pol = (struct clock_skew_policy *)
+            MALLOC(sizeof(struct clock_skew_policy));
+        if (cs_pol == NULL) {
+            retval = VAL_OUT_OF_MEMORY;
+            goto err;
+        }
+        name_len = wire_name_length(zone_n);
+        memcpy(cs_pol->zone_n, zone_n, name_len);
+        cs_pol->clock_skew = clock_skew;
+
+        STORE_POLICY_FOR_ZONE(zone_n, name_len, cs_pol, cs_head, cs_cur, cs_prev);
+    }
+
+    *pol_entry = (policy_entry_t) (cs_head);
+
+    return VAL_NO_ERROR;
+
+  err:
+    while ((cs_prev = cs_head)) {     /* double parens keep compiler happy */
+        cs_head = cs_head->next;
+        FREE(cs_prev);
+    }
+
+    return retval;
 }
 
 int
 free_clock_skew(policy_entry_t * pol_entry)
 {
-    return VAL_NOT_IMPLEMENTED;
+    struct clock_skew_policy *cs_cur, *cs_next;
+
+    if ((pol_entry == NULL) || (*pol_entry == NULL))
+        return VAL_NO_ERROR;
+
+    cs_cur = (struct clock_skew_policy *) (*pol_entry);
+    while (cs_cur) {
+        cs_next = cs_cur->next;
+        FREE(cs_cur);
+        cs_cur = cs_next;
+    }
+
+    (*pol_entry) = NULL;
+
+    return VAL_NO_ERROR;
 }
 
 int
@@ -529,16 +589,16 @@ parse_prov_unsecure_status(FILE * fp, policy_entry_t * pol_entry,
 int
 free_prov_unsecure_status(policy_entry_t * pol_entry)
 {
-    struct zone_se_policy *zse_cur, *zse_next;
+    struct prov_unsecure_policy *pu_cur, *pu_next;
 
     if ((pol_entry == NULL) || (*pol_entry == NULL))
         return VAL_NO_ERROR;
 
-    zse_cur = (struct zone_se_policy *) (*pol_entry);
-    while (zse_cur) {
-        zse_next = zse_cur->next;
-        FREE(zse_cur);
-        zse_cur = zse_next;
+    pu_cur = (struct prov_unsecure_policy *) (*pol_entry);
+    while (pu_cur) {
+        pu_next = pu_cur->next;
+        FREE(pu_cur);
+        pu_cur = pu_next;
     }
 
     (*pol_entry) = NULL;
