@@ -133,9 +133,14 @@
  */
 #define VAL_AC_RRSIG_VERIFIED (VAL_AC_LAST_FAILURE+2)   /* The RRSIG verified successfully. */
 #define VAL_AC_WCARD_VERIFIED (VAL_AC_LAST_FAILURE+3)   /* The RRSIG verified successfully after wildcard expansion. */
-#define VAL_AC_SIGNING_KEY (VAL_AC_LAST_FAILURE+4)
-#define VAL_AC_VERIFIED_LINK (VAL_AC_LAST_FAILURE+5)    /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
-#define VAL_AC_UNKNOWN_ALGORITHM_LINK (VAL_AC_LAST_FAILURE+6)   /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
+#define VAL_AC_RRSIG_VERIFIED_SKEW (VAL_AC_LAST_FAILURE+4)   /* The RRSIG verified successfully, but after
+                                                                applying some clock skew considerations. */
+#define VAL_AC_WCARD_VERIFIED_SKEW (VAL_AC_LAST_FAILURE+5)   /* The RRSIG verified successfully after wildcard
+                                                                expansion, but some clock skew considerations were
+                                                                applied */
+#define VAL_AC_SIGNING_KEY (VAL_AC_LAST_FAILURE+6)
+#define VAL_AC_VERIFIED_LINK (VAL_AC_LAST_FAILURE+7)    /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
+#define VAL_AC_UNKNOWN_ALGORITHM_LINK (VAL_AC_LAST_FAILURE+8)   /* This is a transient state, it will settle at VALIDATED_SUCCESS if the chain of trust can be completed */
 
 
 /*
