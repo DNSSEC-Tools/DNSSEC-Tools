@@ -23,10 +23,58 @@
 #include "val_cache.h"
 #include "val_verify.h"
 #include "val_crypto.h"
+#include "val_policy.h"
 
 
 #define ZONE_KEY_FLAG 0x0100    /* Zone Key Flag, RFC 4034 */
 #define BUFLEN 8192
+
+
+static int
+get_clock_skew(val_context_t *ctx,
+               u_int8_t *name_n)
+{
+    struct clock_skew_policy *cs_pol, *cs_cur;
+    u_int8_t       *p;
+    int             name_len;
+
+    cs_pol = RETRIEVE_POLICY(ctx, P_CLOCK_SKEW,
+                    struct clock_skew_policy *);
+    if (cs_pol) {
+
+        name_len = wire_name_length(name_n);
+
+        for (cs_cur = cs_pol;
+             cs_cur && (wire_name_length(cs_cur->zone_n) > name_len);
+             cs_cur = cs_cur->next);
+        /*
+         * for all zones which are shorter or as long, do a strstr 
+         */
+        /*
+         * Because of the ordering, the longest match is found first 
+         */
+        for (; cs_cur; cs_cur = cs_cur->next) {
+            int             root_zone = 0;
+            if (!namecmp(cs_cur->zone_n, (const u_int8_t *) ""))
+                root_zone = 1;
+            else {
+                /*
+                 * Find the last occurrence of cs_cur->zone_n in name_n 
+                 */
+                p = name_n;
+                while (p && (*p != '\0')) {
+                    if (!namecmp(p, cs_cur->zone_n))
+                        break;
+                    p = p + *p + 1;
+                }
+            }
+            if (root_zone || (!namecmp(p, cs_cur->zone_n))) {
+                return cs_cur->clock_skew;
+            }
+        }
+    }
+    return 0; /* no clock skew by default */
+}
 
 /*
  * Verify a signature, given the data and the dnskey 
@@ -34,6 +82,8 @@
  */
 static void
 val_sigverify(val_context_t * ctx,
+              int is_a_wildcard,
+              u_int8_t *zone_n,
               const unsigned char *data,
               int data_len,
               const val_dnskey_rdata_t * dnskey,
@@ -42,6 +92,7 @@ val_sigverify(val_context_t * ctx,
 {
     struct timeval  tv;
     struct timezone tz;
+    int clock_skew;
 
     if (dnskey == NULL) {
         *dnskey_status = VAL_AC_INVALID_KEY;
@@ -92,81 +143,89 @@ val_sigverify(val_context_t * ctx,
         return;
     }
 
-    /*
-     * Check signature inception and expiration times 
-     */
-    gettimeofday(&tv, &tz);
-    if (tv.tv_sec < rrsig->sig_incp) {
-        if (tv.tv_sec < rrsig->sig_incp - SIG_ACCEPT_WINDOW) {
-            char            currTime[1028];
-            char            incpTime[1028];
-            int             len;
-            bzero(currTime, 1028);
-            bzero(incpTime, 1028);
-#ifndef sun
-            ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
-#else
-            ctime_r((const time_t *) (&(tv.tv_sec)), currTime,
-                    sizeof(currTime));
-#endif
-            len = strlen(currTime);
-            if (len > 0)
-                currTime[len - 1] = 0;
-#ifndef sun
-            ctime_r((const time_t *) (&(rrsig->sig_incp)), incpTime);
-#else
-            ctime_r((const time_t *) (&(tv.tv_sec)), incpTime,
-                    sizeof(incpTime));
-#endif
-            len = strlen(incpTime);
-            if (len > 0)
-                incpTime[len - 1] = 0;
-            val_log(ctx, LOG_DEBUG,
-                    "Signature not yet valid. Current time (%s) is less than signature inception time (%s).",
-                    currTime, incpTime);
-            *sig_status = VAL_AC_RRSIG_NOTYETACTIVE;
-            return;
-        } else {
-            val_log(ctx, LOG_WARNING,
-                    "Signature not yet valid, but within acceptable skew.");
-        }
+    clock_skew = get_clock_skew(ctx, zone_n);
 
-    }
-
-    if (tv.tv_sec > rrsig->sig_expr) {
-        if (tv.tv_sec > rrsig->sig_expr + SIG_ACCEPT_WINDOW) {
-            char            currTime[1028];
-            char            exprTime[1028];
-            int             len;
-            bzero(currTime, 1028);
-            bzero(exprTime, 1028);
-#ifndef sun
-            ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
-#else
-            ctime_r((const time_t *) (&(tv.tv_sec)), currTime,
-                    sizeof(currTime));
-#endif
-            len = strlen(currTime);
-            if (len > 0)
-                currTime[len - 1] = 0;
-#ifndef sun
-            ctime_r((const time_t *) (&(rrsig->sig_expr)), exprTime);
-#else
-            ctime_r((const time_t *) (&(tv.tv_sec)), exprTime,
-                    sizeof(exprTime));
-#endif
-            len = strlen(exprTime);
-            if (len > 0)
-                exprTime[len - 1] = 0;
-            val_log(ctx, LOG_DEBUG,
-                    "Signature expired. Current time (%s) is greater than signature expiration time (%s).",
-                    currTime, exprTime);
-            *sig_status = VAL_AC_RRSIG_EXPIRED;
-            return;
-        } else {
-            val_log(ctx, LOG_WARNING,
-                    "Signature expired, but within acceptable skew.");
+    if (clock_skew >= 0) {
+        
+        /*
+         * Check signature inception and expiration times 
+         */
+        gettimeofday(&tv, &tz);
+        if (tv.tv_sec < rrsig->sig_incp) {
+            if (tv.tv_sec < rrsig->sig_incp - clock_skew) {
+                char            currTime[1028];
+                char            incpTime[1028];
+                int             len;
+                bzero(currTime, 1028);
+                bzero(incpTime, 1028);
+    #ifndef sun
+                ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
+    #else
+                ctime_r((const time_t *) (&(tv.tv_sec)), currTime,
+                        sizeof(currTime));
+    #endif
+                len = strlen(currTime);
+                if (len > 0)
+                    currTime[len - 1] = 0;
+    #ifndef sun
+                ctime_r((const time_t *) (&(rrsig->sig_incp)), incpTime);
+    #else
+                ctime_r((const time_t *) (&(tv.tv_sec)), incpTime,
+                        sizeof(incpTime));
+    #endif
+                len = strlen(incpTime);
+                if (len > 0)
+                    incpTime[len - 1] = 0;
+                val_log(ctx, LOG_DEBUG,
+                        "Signature not yet valid. Current time (%s) is less than signature inception time (%s).",
+                        currTime, incpTime);
+                *sig_status = VAL_AC_RRSIG_NOTYETACTIVE;
+                return;
+            } else {
+                val_log(ctx, LOG_NOTICE,
+                        "Signature not yet valid, but within acceptable skew.");
+            }
+    
         }
+    
+        if (tv.tv_sec > rrsig->sig_expr) {
+            if (tv.tv_sec > rrsig->sig_expr + clock_skew) {
+                char            currTime[1028];
+                char            exprTime[1028];
+                int             len;
+                bzero(currTime, 1028);
+                bzero(exprTime, 1028);
+    #ifndef sun
+                ctime_r((const time_t *) (&(tv.tv_sec)), currTime);
+    #else
+                ctime_r((const time_t *) (&(tv.tv_sec)), currTime,
+                        sizeof(currTime));
+    #endif
+                len = strlen(currTime);
+                if (len > 0)
+                    currTime[len - 1] = 0;
+    #ifndef sun
+                ctime_r((const time_t *) (&(rrsig->sig_expr)), exprTime);
+    #else
+                ctime_r((const time_t *) (&(tv.tv_sec)), exprTime,
+                        sizeof(exprTime));
+    #endif
+                len = strlen(exprTime);
+                if (len > 0)
+                    exprTime[len - 1] = 0;
+                val_log(ctx, LOG_DEBUG,
+                        "Signature expired. Current time (%s) is greater than signature expiration time (%s).",
+                        currTime, exprTime);
+                *sig_status = VAL_AC_RRSIG_EXPIRED;
+                return;
+            } else {
+                val_log(ctx, LOG_NOTICE,
+                        "Signature expired, but within acceptable skew.");
+            }
+        }
+    } else {
+        val_log(ctx, LOG_NOTICE,
+                "Not checking inception and expiration times on signatures.");
     }
 
     switch (rrsig->algorithm) {
@@ -174,7 +233,7 @@ val_sigverify(val_context_t * ctx,
     case ALG_RSAMD5:
         rsamd5_sigverify(ctx, data, data_len, dnskey, rrsig, dnskey_status,
                          sig_status);
-        return;
+        break;
 
 #ifdef LIBVAL_NSEC3
     case ALG_NSEC3_DSASHA1:
@@ -182,7 +241,7 @@ val_sigverify(val_context_t * ctx,
     case ALG_DSASHA1:
         dsasha1_sigverify(ctx, data, data_len, dnskey, rrsig,
                           dnskey_status, sig_status);
-        return;
+        break;
 
 #ifdef LIBVAL_NSEC3
     case ALG_NSEC3_RSASHA1:
@@ -190,7 +249,7 @@ val_sigverify(val_context_t * ctx,
     case ALG_RSASHA1:
         rsasha1_sigverify(ctx, data, data_len, dnskey, rrsig,
                           dnskey_status, sig_status);
-        return;
+        break;
 
     case ALG_DH:
         val_log(ctx, LOG_DEBUG, "Unsupported algorithm %d.",
@@ -204,6 +263,18 @@ val_sigverify(val_context_t * ctx,
         *sig_status = VAL_AC_UNKNOWN_ALGORITHM;
         *dnskey_status = VAL_AC_UNKNOWN_ALGORITHM;
         break;
+    }
+
+    if (*sig_status == VAL_AC_RRSIG_VERIFIED) {
+        if (is_a_wildcard) {
+            if (clock_skew > 0)
+                *sig_status = VAL_AC_WCARD_VERIFIED_SKEW;
+            else
+                *sig_status = VAL_AC_WCARD_VERIFIED;
+        } else {
+            if (clock_skew > 0)
+                *sig_status = VAL_AC_RRSIG_VERIFIED_SKEW;
+        }
     }
 }
 
@@ -564,6 +635,7 @@ identify_key_from_sig(struct rr_rec *sig, u_int8_t ** name_n,
 
 static void
 do_verify(val_context_t * ctx,
+          u_int8_t *zone_n,
           val_astatus_t * dnskey_status,
           val_astatus_t * sig_status,
           struct rrset_rec *the_set,
@@ -613,7 +685,7 @@ do_verify(val_context_t * ctx,
     /*
      * Perform the verification 
      */
-    val_sigverify(ctx, ver_field, ver_length, the_key,
+    val_sigverify(ctx, is_a_wildcard, zone_n, ver_field, ver_length, the_key,
                   &rrsig_rdata, dnskey_status, sig_status);
 
     if (rrsig_rdata.signature != NULL) {
@@ -657,9 +729,11 @@ ds_hash_is_equal(u_int8_t ds_hashtype, u_int8_t * ds_hash,
 	do { \
 		rr->rr_status = newstatus; \
         /* Any success is good */\
-		if (newstatus == VAL_AC_RRSIG_VERIFIED) \
+		if (newstatus == VAL_AC_RRSIG_VERIFIED ||\
+            newstatus == VAL_AC_RRSIG_VERIFIED_SKEW) \
             savedstatus = VAL_AC_VERIFIED;\
-        else if (newstatus == VAL_AC_WCARD_VERIFIED)\
+        else if (newstatus == VAL_AC_WCARD_VERIFIED ||\
+                 newstatus == VAL_AC_WCARD_VERIFIED_SKEW)\
             savedstatus = VAL_AC_WCARD_VERIFIED;\
         /* we don't already have success and what we receive is bad */ \
         else if ((savedstatus != VAL_AC_VERIFIED) && \
@@ -763,16 +837,18 @@ verify_next_assertion(val_context_t * ctx,
             /*
              * check the signature 
              */
-            do_verify(ctx, &nextrr->rr_status,
+            do_verify(ctx, signby_name_n,
+                      &nextrr->rr_status,
                       &the_sig->rr_status,
                       the_set, the_sig, &dnskey, is_a_wildcard);
 
 
-            if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED) {
-                SET_STATUS(as->val_ac_status, nextrr, VAL_AC_SIGNING_KEY);
-                if (is_a_wildcard)
-                    the_sig->rr_status = VAL_AC_WCARD_VERIFIED;
+            if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+                the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW ||
+                the_sig->rr_status == VAL_AC_WCARD_VERIFIED ||
+                the_sig->rr_status == VAL_AC_WCARD_VERIFIED_SKEW) {
 
+                SET_STATUS(as->val_ac_status, nextrr, VAL_AC_SIGNING_KEY);
                 SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
                 SET_STATUS(as->val_ac_status, nextrr, nextrr->rr_status);
                 break;
@@ -805,6 +881,7 @@ verify_next_assertion(val_context_t * ctx,
         if (nextrr &&           /* also means that there is a valid dnskey */
             the_set->rrs.val_rrset_type_h == ns_t_dnskey &&
             (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+             the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW ||
              the_sig->rr_status == VAL_AC_UNKNOWN_ALGORITHM)) {
             /*
              * follow the trust path 
@@ -825,7 +902,8 @@ verify_next_assertion(val_context_t * ctx,
                                      the_set->rrs.val_rrset_name_n,
                                      nextrr, &dsrec->rr_status)) {
 
-                    if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED)
+                    if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+                        the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW)
                         SET_STATUS(as->val_ac_status, nextrr,
                                    VAL_AC_VERIFIED_LINK);
                     else
