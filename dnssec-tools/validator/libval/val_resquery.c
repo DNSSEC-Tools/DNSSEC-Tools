@@ -583,9 +583,11 @@ follow_referral_or_alias_link(val_context_t * context,
                               struct rrset_rec **answers)
 {
     int             ret_val;
-    struct name_server *ref_ns_list;
+    struct name_server *ref_ns_list, *ns;
     int             len;
     u_int8_t       *referral_zone_n;
+    struct queries_for_query *added_q;
+    u_int16_t       tzonestatus;
 
     if ((matched_q == NULL) || (qnames == NULL) ||
         (learned_zones == NULL) || (queries == NULL) || (answers == NULL))
@@ -693,6 +695,50 @@ follow_referral_or_alias_link(val_context_t * context,
             goto query_err;
         }
 
+        if (VAL_NO_ERROR != (ret_val =
+                is_trusted_zone(context, referral_zone_n, &tzonestatus))) { 
+            return ret_val;
+        }
+        
+        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
+            
+            for (ns = ref_ns_list; ns; ns = ns->ns_next)
+                ns->ns_options |= RES_USE_DNSSEC;
+
+            /*
+             * Fetch DNSSEC meta-data in parallel 
+             */
+            /*
+             * If we expect DNSSEC meta-data to be returned
+             * in the additional section of the response, we
+             * should modify the way in which we ask for the DNSKEY
+             * (the DS query logic should not be changed) as 
+             * follows:
+             *  - invoke the add_to_qfq_chain logic only if we were 
+             *    already using DNSSEC (see the DS fetching logic below)
+             *  - instead of querying for the referral_zone_n/DNSKEY
+             *    query for matched_q->qc_zonecut_n/DNSKEY
+             *    i.e. we query for the DNSKEY in the current zone
+             */
+            
+            if(VAL_NO_ERROR != 
+                (ret_val = add_to_qfq_chain(context, queries, 
+                                            referral_zone_n, ns_t_dnskey,
+                                            ns_c_in, matched_q->qc_flags, &added_q)))
+                return ret_val;
+
+            /* fetch DS only if we were already using DNSSEC */    
+            if (matched_q->qc_respondent_server && 
+                (matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+                
+                if (VAL_NO_ERROR != 
+                        (ret_val = add_to_qfq_chain(context, queries, 
+                                                    referral_zone_n, ns_t_ds,
+                                                    ns_c_in, matched_q->qc_flags, 
+                                                    &added_q)))
+                    return ret_val;
+            }
+        }
     }
 
   query_err:
