@@ -177,7 +177,6 @@ extern          "C" {
 #define VAL_MASK_AFFECTS_CACHING (VAL_FLAGS_DONT_VALIDATE)
 
 
-#define SIG_ACCEPT_WINDOW   (86400*0) /** 1 days **/
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
 
     typedef u_int8_t val_status_t;
