@@ -169,6 +169,12 @@ struct trust_anchor_policy {
     struct trust_anchor_policy *next;
 };
 
+struct clock_skew_policy {
+    u_int8_t        zone_n[NS_MAXCDNAME];
+    int             clock_skew;
+    struct clock_skew_policy *next;
+};
+
 struct prov_unsecure_policy {
     u_int8_t        zone_n[NS_MAXCDNAME];
     int             trusted;
