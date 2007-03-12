@@ -485,6 +485,15 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_RRSIG_VERIFIED:
         return "VAL_AC_RRSIG_VERIFIED";
         break;
+    case VAL_AC_RRSIG_VERIFIED_SKEW:
+        return "VAL_AC_RRSIG_VERIFIED_SKEW";
+        break;
+    case VAL_AC_WCARD_VERIFIED:
+        return "VAL_AC_WCARD_VERIFIED";
+        break;
+    case VAL_AC_WCARD_VERIFIED_SKEW:
+        return "VAL_AC_WCARD_VERIFIED_SKEW";
+        break;
     case VAL_AC_RRSIG_VERIFY_FAILED:
         return "VAL_AC_RRSIG_VERIFY_FAILED";
         break;
