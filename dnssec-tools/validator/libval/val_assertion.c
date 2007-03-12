@@ -1934,7 +1934,8 @@ prove_nsec_span_chk(val_context_t * ctx,
          * proofs should not be expanded from wildcards
          */
         for (sig = the_set->rrs.val_rrset_sig; sig; sig = sig->rr_next) {
-            if (sig->rr_status == VAL_AC_RRSIG_VERIFIED) {
+            if (sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+                sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW) {
                 *wcard_chk = 1;
                 return;
             }
@@ -2261,7 +2262,8 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                      */
                     for (sig = the_set->rrs.val_rrset_sig; sig;
                          sig = sig->rr_next) {
-                        if (sig->rr_status == VAL_AC_RRSIG_VERIFIED) {
+                        if (sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+                            sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW) {
                             /*
                              * proof complete 
                              */
@@ -4408,7 +4410,11 @@ check_wildcard_sanity(val_context_t * context,
         if ((res->val_rc_status == VAL_SUCCESS) &&
             (res->val_rc_rrset) &&
             (!res->val_rc_consumed) &&
-            (res->val_rc_rrset->val_ac_status == VAL_AC_WCARD_VERIFIED)) {
+            (res->val_rc_rrset->val_ac_status == VAL_AC_WCARD_VERIFIED ||
+             /* only rrsigs should have the next state, but adding here 
+              * so that we know that this is also handled
+              */ 
+             res->val_rc_rrset->val_ac_status == VAL_AC_WCARD_VERIFIED_SKEW)) {
 
             /*
              * Any proofs that have been wildcard expanded are bogus 
