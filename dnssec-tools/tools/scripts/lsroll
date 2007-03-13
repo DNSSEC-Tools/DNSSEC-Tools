@@ -400,18 +400,13 @@ sub showrollrecs
 	{
 		my $rrr = $rollrecs{$rrname};
 		my %rr = %$rrr;
-		my $rr;
-		my %rollrec;
-
-		$rr = rollrec_fullrec($rrname);
-		%rollrec = %$rr;
-
-		$type = $rollrec{'rollrec_type'};
+		my %rollrec = %$rrr;
 
 		#
 		# Check the zone-validity flags against the zone to see if
 		# the record should be displayed.
 		#
+		$type = $rr{'rollrec_type'};
 		if(($rollflag && ($type eq "skip"))	||
 		   ($skipflag && ($type eq "roll")))
 		{
