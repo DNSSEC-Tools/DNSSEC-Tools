@@ -121,10 +121,13 @@ merge_glue_in_referral(val_context_t *context,
     /*
      * check if we have data to merge 
      */
-    if ((queries == NULL) || (pc == NULL) || (pc->qc_referral == NULL) ||
-        (pc->qc_referral->glueptr == NULL))
+    if ((queries == NULL) || (pc == NULL)) 
         return VAL_BAD_ARGUMENT; 
 
+    /* Nothing to do */
+    if ((pc->qc_referral == NULL) || (pc->qc_referral->glueptr == NULL))
+        return VAL_NO_ERROR;
+    
     glueptr = pc->qc_referral->glueptr;
 
     /*
@@ -199,10 +202,10 @@ merge_glue_in_referral(val_context_t *context,
             if(VAL_NO_ERROR != 
                 (retval = add_to_qfq_chain(context, 
                                            queries, pending_ns->ns_name_n, ns_t_a,
-                                           ns_c_in, pc->qc_flags, &added_q)))
+                                           ns_c_in, pc->qc_flags | VAL_QUERY_GLUE_REQUEST, 
+                                           &added_q)))
                 return retval;
             pc->qc_referral->glueptr = added_q->qfq_query;
-            pc->qc_referral->glueptr->qc_glue_request = 1;
         }
     }
 
@@ -505,6 +508,7 @@ bootstrap_referral(val_context_t *context,
     struct name_server *pending_glue;
     int             ret_val;
     struct queries_for_query *added_q;
+    u_int8_t flags;
 
     if ((context == NULL) || (learned_zones == NULL) || (matched_q == NULL) ||
         (queries == NULL) || (ref_ns_list == NULL))
@@ -547,19 +551,16 @@ bootstrap_referral(val_context_t *context,
              * Create a query for glue for pending_ns 
              */
             matched_q->qc_referral->pending_glue_ns = pending_glue;
+            flags = matched_q->qc_flags |
+                    VAL_FLAGS_DONT_VALIDATE|
+                    VAL_QUERY_GLUE_REQUEST;
+
             if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
                                        queries, pending_glue->ns_name_n, ns_t_a,
-                                       ns_c_in, matched_q->qc_flags, &added_q)))
+                                       ns_c_in, flags, &added_q)))
                     return ret_val;
             matched_q->qc_referral->glueptr = added_q->qfq_query;
-            matched_q->qc_referral->glueptr->qc_flags &= VAL_FLAGS_DONT_VALIDATE;
-            matched_q->qc_referral->glueptr->qc_glue_request = 1;
             matched_q->qc_state = Q_WAIT_FOR_GLUE;
-        } else {
-            /*
-             * nowhere to look 
-             */
-            matched_q->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
         }
     } else {
         /*
@@ -619,7 +620,10 @@ follow_referral_or_alias_link(val_context_t * context,
     merge_rrset_recs(&matched_q->qc_referral->answers, *answers);
     *answers = NULL;
 
+    matched_q->qc_state = Q_INIT;
+
     if (alias_chain) {
+
         /*
          * find the referral_zone_n and ref_ns_list 
          */
@@ -628,9 +632,7 @@ follow_referral_or_alias_link(val_context_t * context,
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
             goto query_err;
         }
-
         referral_zone_n = matched_q->qc_zonecut_n;
-        matched_q->qc_state = Q_INIT;
 
     } else {
 
@@ -647,7 +649,6 @@ follow_referral_or_alias_link(val_context_t * context,
                 return VAL_CONF_NOT_FOUND;
             }
             clone_ns_list(&ref_ns_list, context->root_ns);
-            matched_q->qc_state = Q_INIT;
             /*
              * forget about learned zones 
              */
@@ -662,6 +663,15 @@ follow_referral_or_alias_link(val_context_t * context,
                                                     queries,
                                                     &ref_ns_list)))
                 return ret_val;
+
+            if (ref_ns_list == NULL &&
+                matched_q->qc_state != Q_WAIT_FOR_GLUE) {
+                /*
+                 * nowhere to look 
+                 */
+                matched_q->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
+                goto query_err;
+            }
         }
 
 
@@ -695,48 +705,62 @@ follow_referral_or_alias_link(val_context_t * context,
             goto query_err;
         }
 
-        if (VAL_NO_ERROR != (ret_val =
-                is_trusted_zone(context, referral_zone_n, &tzonestatus))) { 
-            return ret_val;
-        }
-        
-        if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
-            
-            for (ns = ref_ns_list; ns; ns = ns->ns_next)
-                ns->ns_options |= RES_USE_DNSSEC;
+        if (!(matched_q->qc_flags & VAL_FLAGS_DONT_VALIDATE)) {
+            u_int8_t *tp = NULL;
+            int diff_name = 0;
 
-            /*
-             * Fetch DNSSEC meta-data in parallel 
-             */
-            /*
-             * If we expect DNSSEC meta-data to be returned
-             * in the additional section of the response, we
-             * should modify the way in which we ask for the DNSKEY
-             * (the DS query logic should not be changed) as 
-             * follows:
-             *  - invoke the add_to_qfq_chain logic only if we were 
-             *    already using DNSSEC (see the DS fetching logic below)
-             *  - instead of querying for the referral_zone_n/DNSKEY
-             *    query for matched_q->qc_zonecut_n/DNSKEY
-             *    i.e. we query for the DNSKEY in the current zone
-             */
+            if (VAL_NO_ERROR != (ret_val =
+                is_trusted_zone(context, referral_zone_n, &tzonestatus))) { 
+                return ret_val;
+            }
+
+            if (VAL_NO_ERROR != (ret_val = 
+                find_trust_point(context, referral_zone_n, &tp))) {
+                return ret_val;
+            }
+
+            if (tp) {
+                diff_name = (namecmp(tp, referral_zone_n) != 0);
+                FREE(tp);
+            } 
+
+            if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
             
-            if(VAL_NO_ERROR != 
-                (ret_val = add_to_qfq_chain(context, queries, 
+                for (ns = ref_ns_list; ns; ns = ns->ns_next)
+                    ns->ns_options |= RES_USE_DNSSEC;
+
+                /*
+                 * Fetch DNSSEC meta-data in parallel 
+                 */
+                /*
+                 * If we expect DNSSEC meta-data to be returned
+                 * in the additional section of the response, we
+                 * should modify the way in which we ask for the DNSKEY
+                 * (the DS query logic should not be changed) as 
+                 * follows:
+                 *  - invoke the add_to_qfq_chain logic only if we are 
+                 *    below the trust point (see the DS fetching logic below)
+                 *  - instead of querying for the referral_zone_n/DNSKEY
+                 *    query for the DNSKEY in the current zone 
+                 *    (matched_q->qc_zonecut_n)
+                 */
+            
+                if(VAL_NO_ERROR != 
+                    (ret_val = add_to_qfq_chain(context, queries, 
                                             referral_zone_n, ns_t_dnskey,
                                             ns_c_in, matched_q->qc_flags, &added_q)))
-                return ret_val;
+                    return ret_val;
 
-            /* fetch DS only if we were already using DNSSEC */    
-            if (matched_q->qc_respondent_server && 
-                (matched_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+                /* fetch DS only if are below the trust point */    
+                if (diff_name) {
                 
-                if (VAL_NO_ERROR != 
+                    if (VAL_NO_ERROR != 
                         (ret_val = add_to_qfq_chain(context, queries, 
                                                     referral_zone_n, ns_t_ds,
                                                     ns_c_in, matched_q->qc_flags, 
                                                     &added_q)))
-                    return ret_val;
+                        return ret_val;
+                } 
             }
         }
     }
@@ -1429,7 +1453,7 @@ digest_response(val_context_t * context,
         /*
          * if we were fetching glue here, save a copy as zone info 
          */
-        if ((matched_q->qc_glue_request) && (answer != 0) 
+        if ((matched_q->qc_flags & VAL_QUERY_GLUE_REQUEST) && (answer != 0) 
                 && !proof_seen && !nothing_other_than_alias) {
 
             struct rrset_rec *gluedata = copy_rrset_rec(learned_answers);
