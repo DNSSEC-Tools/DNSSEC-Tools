@@ -1000,6 +1000,10 @@ decompress(u_int8_t ** rdata,
     case ns_t_x25:
     case ns_t_isdn:
     case ns_t_ds:
+    /* No decompression must happen */
+    case ns_t_a6: 
+    case ns_t_naptr:
+    case ns_t_nsec:
     default:
         new_size = (size_t) * rdata_len_h;
         *rdata = (u_int8_t *) MALLOC(new_size);
@@ -1039,8 +1043,9 @@ decompress(u_int8_t ** rdata,
     case ns_t_mb:
     case ns_t_mg:
     case ns_t_mr:
+    case ns_t_md:
+    case ns_t_mf:
     case ns_t_ptr:
-    case ns_t_nsec:
 
         working_increment = ns_name_unpack(response, end,
                                            &response[working_index],
@@ -1101,6 +1106,7 @@ decompress(u_int8_t ** rdata,
     case ns_t_rt:
     case ns_t_mx:
     case ns_t_afsdb:
+    case ns_t_kx:
     case ns_t_px:
 
         memcpy(&prefix[p_index], &response[working_index],
@@ -1341,6 +1347,10 @@ lower(u_int16_t type_h, u_int8_t * rdata, int len)
     case ns_t_x25:
     case ns_t_isdn:
     case ns_t_ds:
+    /* No lowercasing must happen */
+    case ns_t_a6: 
+    case ns_t_naptr:
+    case ns_t_nsec: 
     default:
 
         return;
@@ -1369,8 +1379,9 @@ lower(u_int16_t type_h, u_int8_t * rdata, int len)
     case ns_t_mb:
     case ns_t_mg:
     case ns_t_mr:
+    case ns_t_md:
+    case ns_t_mf:
     case ns_t_ptr:
-    case ns_t_nsec:
 
         lower_name(rdata, &index);
 
@@ -1387,6 +1398,7 @@ lower(u_int16_t type_h, u_int8_t * rdata, int len)
     case ns_t_rt:
     case ns_t_mx:
     case ns_t_afsdb:
+    case ns_t_kx:
     case ns_t_px:
 
         index += 2;             /* Pass the 16 bit quatity prior to the name */
