@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lsroll";
-my $VERS   = "$NAME version: 0.5";
+my $VERS   = "$NAME version: 0.6";
 my $DTVERS = "DNSSEC-Tools Version: 1.1";
 
 #######################################################################
@@ -54,6 +54,7 @@ my @opts =
 
 	# Output format:
 		"count",		# Only give count of matching keyrecs.
+		"headers",		# Give a column header.
 		"terse",		# Give terse output.
 		"long",			# Give long output.
 		"Version",		# Display the version number.
@@ -84,6 +85,7 @@ my $lastkskflag;
 my $lastzskflag;
 
 my $cntflag;
+my $headerflag;
 my $terse;
 my $long;
 my $version = 0;			# Display the version number.
@@ -92,6 +94,8 @@ my $count   = 0;			# Record-match count.
 
 #######################################################################
 
+
+my $HEADER_RRN = "<<<header>>>";	# Name for column header "rollrec".
 
 my @rrnames;				# List of rollrecs in the files.
 
@@ -128,8 +132,9 @@ sub main()
 	}
 
 	#
-	# Give the output.
+	# Cook up the output.
 	#
+	makeheader();
 	showrollrecs();
 
 	#
@@ -180,6 +185,7 @@ sub doopts
 	$skipflag	= $options{'skip'}	|| 0;
 
 	$cntflag	= $options{'count'}	|| 0;
+	$headerflag	= $options{'headers'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
 
@@ -363,9 +369,7 @@ sub getrollrecs
 		my %rollrec;			# Rollrec.
 
 		$rr = rollrec_fullrec($rrn);
-
 		$rollrecs{$rrn} = $rr;
-
 	}
 }
 
@@ -443,11 +447,15 @@ sub showrollrecs
 		#
 		# Convert the loglevel into its textual form.
 		#
-		$loglevel = "(deflog)";
-		if(defined($rr{'loglevel'}))
+		$loglevel = $rr{'loglevel'};
+		if($rrname ne $HEADER_RRN)
 		{
-			$loglevel = rollmgr_logstr($rr{'loglevel'});
-			$loglevel = "(unknownlog)" if($loglevel eq "");
+			$loglevel = "(deflog)";
+			if(defined($rr{'loglevel'}))
+			{
+				$loglevel = rollmgr_logstr($rr{'loglevel'});
+				$loglevel = "(unknownlog)" if($loglevel eq "");
+			}
 		}
 
 		if($type eq "skip")
@@ -462,20 +470,39 @@ sub showrollrecs
 		#
 		# Build the output string.
 		#
-		$outstr = $rrname;
-		$outstr .= " ($type)"		if($typeflag);
-		$outstr .= "\t$zonefile"	if($zoneflag);
-		$outstr .= "\t$keyrec"		if($keyrecflag);
-		$outstr .= "\t$phases"		if($phasesflag);
-		$outstr .= "\t$kskphase"	if($kphaseflag);
-		$outstr .= "\t$zskphase"	if($zphaseflag);
-		$outstr .= "\t$admin"		if($long || $adminflag);
-		$outstr .= "\t$loglevel"	if($long || $logflag);
-		$outstr .= "\t$ttl"		if($long || $ttlflag);
-		$outstr .= "\t$disp"		if($long || $dispflag);
-		$outstr .= "\t\"$phstart\""	if($long || $phstartflag);
-		$outstr .= "\t\"$lastksk\""	if($long || $lastkskflag);
-		$outstr .= "\t\"$lastzsk\""	if($long || $lastzskflag);
+		if($rrname ne $HEADER_RRN)
+		{
+			$outstr = $rrname;
+			$outstr .= " ($type)"		if($typeflag);
+			$outstr .= "\t$zonefile"	if($zoneflag);
+			$outstr .= "\t$keyrec"		if($keyrecflag);
+			$outstr .= "\t$phases"		if($phasesflag);
+			$outstr .= "\t$kskphase"	if($kphaseflag);
+			$outstr .= "\t$zskphase"	if($zphaseflag);
+			$outstr .= "\t$admin"		if($long || $adminflag);
+			$outstr .= "\t$loglevel"	if($long || $logflag);
+			$outstr .= "\t$ttl"		if($long || $ttlflag);
+			$outstr .= "\t$disp"		if($long || $dispflag);
+			$outstr .= "\t\"$phstart\""   if($long || $phstartflag);
+			$outstr .= "\t\"$lastksk\""   if($long || $lastkskflag);
+			$outstr .= "\t\"$lastzsk\""   if($long || $lastzskflag);
+		}
+		else
+		{
+			$outstr = "Zone\t";
+			$outstr .= "\t$zonefile"	if($zoneflag);
+			$outstr .= "\t$keyrec"		if($keyrecflag);
+			$outstr .= "\t$phases"		if($phasesflag);
+			$outstr .= "\t$kskphase"	if($kphaseflag);
+			$outstr .= "\t$zskphase"	if($zphaseflag);
+			$outstr .= "\t$admin"		if($long || $adminflag);
+			$outstr .= "\t$loglevel"	if($long || $logflag);
+			$outstr .= "\t$ttl"		if($long || $ttlflag);
+			$outstr .= "\t$disp"		if($long || $dispflag);
+			$outstr .= "\t$phstart"	if($long || $phstartflag);
+			$outstr .= "\t$lastksk"	if($long || $lastkskflag);
+			$outstr .= "\t$lastzsk"	if($long || $lastzskflag);
+		}
 
 		#
 		# Write the output.
@@ -484,6 +511,34 @@ sub showrollrecs
 	}
 }
 
+#----------------------------------------------------------------------
+#
+# Routine:	makeheader()
+#
+# Purpose:	Build a header line.
+#
+sub makeheader
+{
+	my %rr;				# Reference to rollrec.
+	my %rollrec;			# Rollrec.
+
+	return if(!$headerflag);
+
+	$rr{'rollrec_type'}	= 'header';
+	$rr{'administrator'}	= 'Administrator';
+	$rr{'display'}		= 'Display Flag';
+	$rr{'keyrec'}		= 'Keyrec File';
+	$rr{'ksk_rolldate'}	= 'Last KSK';
+	$rr{'kskphase'}		= 'KSK Phase';
+	$rr{'loglevel'}		= 'Log Level';
+	$rr{'maxttl'}		= 'Max-TTL';
+	$rr{'phasestart'}	= 'Phase Start';
+	$rr{'zonefile'}		= 'Zonefile';
+	$rr{'zsk_rolldate'}	= 'Last ZSK';
+	$rr{'zskphase'}		= 'ZSK Phase';
+
+	$rollrecs{$HEADER_RRN} = \%rr;
+}
 
 #----------------------------------------------------------------------
 #
@@ -527,6 +582,7 @@ sub usage
 	print STDERR "\t\t-lastzsk	time last ZSK rollover ended\n";
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
+	print STDERR "\t\t-headers	give explanatory column headers\n";
 	print STDERR "\t\t-terse\t	terse output\n";
 	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-Version	display version number\n";
@@ -722,6 +778,10 @@ These options select the type of output that will be given by I<lsroll>.
 =item I<-count>
 
 Only a count of matching keyrecs in the I<rollrec> file is given.
+
+=item I<-headers>
+
+Display explanatory column headers.
 
 =item I<-terse>
 
