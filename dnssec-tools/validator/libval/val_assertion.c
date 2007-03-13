@@ -241,7 +241,6 @@ void reset_query_chain_node(struct val_query_chain *q)
     q->qc_zonecut_n = NULL;
     q->qc_ans = NULL;
     q->qc_proof = NULL;
-    q->qc_glue_request = 0;
     q->qc_ns_list = NULL;
     q->qc_respondent_server = NULL;
     q->qc_referral = NULL;
@@ -600,7 +599,7 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status)
     return VAL_NO_ERROR;
 }
 
-static int
+int
 find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
                  u_int8_t ** matched_zone)
 {
@@ -679,9 +678,6 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
         }
     }
 
-    val_log(ctx, LOG_DEBUG,
-            "Cannot find a good trust anchor for the chain of trust above %s",
-            zp);
     return VAL_NO_ERROR;
 }
 
@@ -1348,7 +1344,7 @@ check_conflicting_answers(val_context_t * context,
             as->val_ac_status = VAL_AC_IGNORE_VALIDATION;
 
         if (as->val_ac_status < VAL_AC_DONT_GO_FURTHER &&
-            !matched_q->qc_glue_request) {
+            !(matched_q->qc_flags & VAL_QUERY_GLUE_REQUEST)) {
 
             if (VAL_NO_ERROR !=
                 (retval = build_pending_query(context, queries, as, &added_q)))
@@ -4261,11 +4257,13 @@ ask_resolver(val_context_t * context,
                 }
             }
 
-            if ((retval =
-                 val_resquery_send(context, next_q->qfq_query)) != VAL_NO_ERROR)
-                return retval;
-
-            next_q->qfq_query->qc_state = Q_SENT;
+            /* find_nslist_for_query() could have modified the state */ 
+            if (next_q->qfq_query->qc_state == Q_INIT) {
+                if ((retval =
+                     val_resquery_send(context, next_q->qfq_query)) != VAL_NO_ERROR)
+                    return retval;
+                next_q->qfq_query->qc_state = Q_SENT;
+            }
         } else if (next_q->qfq_query->qc_state < Q_ANSWERED)
             need_data = 1;
     }
@@ -4302,21 +4300,6 @@ ask_resolver(val_context_t * context,
                     free_domain_info_ptrs(response);
                     FREE(response);
                 }
-                if ((next_q->qfq_query->qc_state == Q_WAIT_FOR_GLUE) ||
-                    (next_q->qfq_query->qc_referral != NULL)) {
-                    /*
-                     * Check if we fetched this same glue before and it was answered 
-                     */
-                    if (next_q->qfq_query->qc_referral->glueptr &&
-                        (next_q->qfq_query->qc_referral->glueptr->qc_state ==
-                         Q_ANSWERED)) {
-                         if (VAL_NO_ERROR != 
-                                (retval = merge_glue_in_referral(context, 
-                                                                 next_q->qfq_query, 
-                                                                 queries)))
-                            return retval;
-                    }
-                }
 
                 if (next_q->qfq_query->qc_state > Q_SENT) 
                     *data_received = 1;
@@ -4326,6 +4309,47 @@ ask_resolver(val_context_t * context,
             }
         }
     } 
+
+    return VAL_NO_ERROR;
+}
+
+static int
+fix_glue(val_context_t * context, 
+         struct queries_for_query **queries,
+         int *data_received,
+         int *data_missing)
+{
+    struct queries_for_query *next_q;
+    int    retval;
+    char   name_p[NS_MAXDNAME];
+
+    if (context == NULL || queries == NULL || data_received == NULL || data_missing == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
+        if (next_q->qfq_query->qc_state == Q_WAIT_FOR_GLUE) {
+
+            if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
+                snprintf(name_p, sizeof(name_p), "unknown/error");
+            /*
+             * Check if we fetched this same glue before and it was answered 
+             */
+            if (VAL_NO_ERROR != (retval = 
+                        merge_glue_in_referral(context, 
+                                               next_q->qfq_query, 
+                                               queries)))
+                        return retval;
+
+            if (next_q->qfq_query->qc_state == Q_ANSWERED) {
+                val_log(context, LOG_DEBUG,
+                        "successfully fetched glue for {%s %d %d}", name_p,
+                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
+                *data_received = 1;
+            } else {
+                *data_missing = 1;
+            } 
+        }
+    }
 
     return VAL_NO_ERROR;
 }
@@ -4933,11 +4957,6 @@ int construct_authentication_chain(val_context_t * context,
     *done = 0;
     *results = NULL;
     
-    if (top_q->qc_state == Q_WAIT_FOR_GLUE) {
-        if (VAL_NO_ERROR != (retval = merge_glue_in_referral(context, top_q, queries)))
-            return retval;
-    }
-
     /*
      * No point going ahead if our original query had error conditions 
      */
@@ -5155,6 +5174,11 @@ val_resolve_and_check(val_context_t * ctx,
             (retval = ask_resolver(context, &queries, &data_received, &data_missing)))
             goto err;
 
+
+        if (VAL_NO_ERROR !=
+            (retval = fix_glue(context, &queries, &data_received, &data_missing)))
+            goto err;
+        
         /*
          * check if more queries have been added 
          */
