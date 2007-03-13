@@ -89,6 +89,10 @@ my $contactaddr = $opts{'m'} ? $opts{'m'}
 my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
 
+if ($dvfile && $ncfile) {
+    usage(2);
+}
+
 if (!$smtpserver) {
     print "smtpserver is undefined\n";
 }
@@ -198,6 +202,11 @@ sub show_version {
 }
 
 sub usage {
+    my $arg = @_;
+    if ($arg) {
+        print "trustman takes only one config file argument.\n";
+        print "please indicate EITHER a dnsval.conf file OR a named.conf file.\n";
+    }
     print "trustman [-d domain] [-L] [-f] [-c -o] [-v] [-V]\n";
 #    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
 #    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
