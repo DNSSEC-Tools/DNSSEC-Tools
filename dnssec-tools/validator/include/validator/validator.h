@@ -165,16 +165,18 @@ extern          "C" {
     /*
      * Flags for API functions 
      */
-#define VAL_FLAGS_DEFAULT 0x00000000
-#define VAL_FLAGS_DONT_VALIDATE 0x00000001
-#define VAL_QUERY_MERGE_RRSETS 0x00000002
+#define VAL_FLAGS_DEFAULT 0x00
+#define VAL_FLAGS_DONT_VALIDATE 0x01
+#define VAL_QUERY_MERGE_RRSETS 0x02
+#define VAL_QUERY_GLUE_REQUEST 0x04
 
 /* 
  * This flag will be an OR of all the flags that affect 
  * how cached data is retrieved. Currently only the
- * VAL_FLAGS_DONT_VALIDATE flag is relevant
+ * VAL_FLAGS_DONT_VALIDATE and VAL_QUERY_GLUE_REQUEST 
+ * flags are relevant
  */
-#define VAL_MASK_AFFECTS_CACHING (VAL_FLAGS_DONT_VALIDATE)
+#define VAL_MASK_AFFECTS_CACHING (VAL_FLAGS_DONT_VALIDATE | VAL_QUERY_GLUE_REQUEST)
 
 
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
@@ -358,7 +360,6 @@ extern          "C" {
         int             qc_trans_id;
         struct val_digested_auth_chain *qc_ans;
         struct val_digested_auth_chain *qc_proof;
-        int             qc_glue_request;
         struct val_query_chain *qc_next;
     };
 
