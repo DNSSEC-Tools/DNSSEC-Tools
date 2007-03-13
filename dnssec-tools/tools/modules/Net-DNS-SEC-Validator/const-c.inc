@@ -2117,6 +2117,17 @@ constant_25 (pTHX_ const char *name, IV *iv_return) {
      VAL_AC_KEY_NOT_AUTHORIZED VAL_AC_RRSIG_NOTYETACTIVE */
   /* Offset 21 gives the best switch position.  */
   switch (name[21]) {
+  case 'C':
+    if (memEQ(name, "VAL_BAD_PROVABLY_UNSECURE", 25)) {
+    /*                                    ^          */
+#ifdef VAL_BAD_PROVABLY_UNSECURE
+      *iv_return = VAL_BAD_PROVABLY_UNSECURE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'I':
     if (memEQ(name, "VAL_AC_KEY_NOT_AUTHORIZED", 25)) {
     /*                                    ^          */
@@ -2382,6 +2393,22 @@ __END__
     if (memEQ(name, "VAL_AC_RRSIG_VERIFY_FAILED", 26)) {
 #ifdef VAL_AC_RRSIG_VERIFY_FAILED
       *iv_return = VAL_AC_RRSIG_VERIFY_FAILED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_AC_RRSIG_VERIFIED_SKEW", 26)) {
+#ifdef VAL_AC_RRSIG_VERIFIED_SKEW
+      *iv_return = VAL_AC_RRSIG_VERIFIED_SKEW;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_AC_WCARD_VERIFIED_SKEW", 26)) {
+#ifdef VAL_AC_WCARD_VERIFIED_SKEW
+      *iv_return = VAL_AC_WCARD_VERIFIED_SKEW;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
