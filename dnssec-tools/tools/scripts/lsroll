@@ -49,6 +49,8 @@ my @opts =
 		"ttl",			# Maximum TTL.
 		"display",		# Display flag.
 		"phstart",		# Phase start.
+		"lastksk",		# Timestamp of last KSK rollover.
+		"lastzsk",		# Timestamp of last ZSK rollover.
 
 	# Output format:
 		"count",		# Only give count of matching keyrecs.
@@ -78,6 +80,8 @@ my $logflag;
 my $ttlflag;
 my $dispflag;
 my $phstartflag;
+my $lastkskflag;
+my $lastzskflag;
 
 my $cntflag;
 my $terse;
@@ -229,6 +233,8 @@ sub doopts
 	$ttlflag	= 0;
 	$dispflag	= 0;
 	$phstartflag	= 0;
+	$lastkskflag	= 0;
+	$lastzskflag	= 0;
 
 	#
 	# Set the output flags for -skip.
@@ -244,6 +250,8 @@ sub doopts
 		$logflag	= 0;
 		$ttlflag	= 0;
 		$phstartflag	= 0;
+		$lastkskflag	= 0;
+		$lastzskflag	= 0;
 	}
 
 	#
@@ -261,6 +269,8 @@ sub doopts
 		$ttlflag	= 1;
 		$dispflag	= 1;
 		$phstartflag	= 1;
+		$lastkskflag	= 1;
+		$lastzskflag	= 1;
 	}
 	elsif($terse)
 	{
@@ -274,6 +284,8 @@ sub doopts
 		$ttlflag	= 0;
 		$dispflag	= 0;
 		$phstartflag	= 0;
+		$lastkskflag	= 0;
+		$lastzskflag	= 0;
 	}
 
 	#
@@ -288,6 +300,8 @@ sub doopts
 	$ttlflag	= 1 if($options{'ttl'});
 	$dispflag	= 1 if($options{'display'});
 	$phstartflag	= 1 if($options{'phstart'});
+	$lastkskflag	= 1 if($options{'lastksk'});
+	$lastzskflag	= 1 if($options{'lastzsk'});
 
 	#
 	# Adjust the phase-related flags to ensure that The Right Thing
@@ -297,11 +311,13 @@ sub doopts
 	{
 		$kphaseflag	= 1;
 		$zphaseflag	= 0;
+		$lastzskflag	= 0;
 	}
 	elsif($options{'zskphase'} && !$options{'kskphase'})
 	{
 		$kphaseflag	= 0;
 		$zphaseflag	= 1;
+		$lastkskflag	= 0;
 	}
 
 	if($phasesflag)
@@ -373,6 +389,8 @@ sub showrollrecs
 	my $ttl;				# Maximum TTL in rollrec.
 	my $disp;				# blinkenlights display flag.
 	my $phstart;				# Phase start in rollrec.
+	my $lastksk;				# Timestamp of last KSK roll.
+	my $lastzsk;				# Timestamp of last ZSK roll.
 	my $type;				# Rollrec's type.
 
 	#
@@ -423,6 +441,8 @@ sub showrollrecs
 		$ttl	  = $rr{'maxttl'};
 		$disp	  = $rr{'display'};
 		$phstart  = $rr{'phasestart'};
+		$lastksk  = $rr{'ksk_rolldate'};
+		$lastzsk  = $rr{'zsk_rolldate'};
 		$admin	  = $rr{'administrator'} || "(defadmin)";
 
 		#
@@ -459,6 +479,8 @@ sub showrollrecs
 		$outstr .= "\t$ttl"		if($long || $ttlflag);
 		$outstr .= "\t$disp"		if($long || $dispflag);
 		$outstr .= "\t\"$phstart\""	if($long || $phstartflag);
+		$outstr .= "\t\"$lastksk\""	if($long || $lastkskflag);
+		$outstr .= "\t\"$lastzsk\""	if($long || $lastzskflag);
 
 		#
 		# Write the output.
@@ -506,6 +528,8 @@ sub usage
 	print STDERR "\t\t-ttl		zone TTL\n";
 	print STDERR "\t\t-display	display flag\n";
 	print STDERR "\t\t-phstart	start of rollover phase\n";
+	print STDERR "\t\t-lastksk	time last KSK rollover ended\n";
+	print STDERR "\t\t-lastzsk	time last ZSK rollover ended\n";
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-terse\t	terse output\n";
@@ -544,7 +568,7 @@ displayed.
 The output displayed for each zone in a I<rollrec> file depends on the
 selected records, the selected attributes, and the selected output format.
 Each option in these option groups is described in detail in the next section.
-The three base output formats, along with the defaul I<-skip> format, are
+The three base output formats, along with the default I<-skip> format, are
 described here.
 
 The I<-terse> option indicates that a minimal amount of output is desired;
@@ -576,6 +600,8 @@ The table below shows the fields displayed for each output format.
     TTL value              no            no          yes        no
     display flag           no            no          yes        no
     phase start            no            no          yes        no
+    last KSK rollover      no            no          yes        no
+    last ZSK rollover      no            no          yes        no
 
 =head1 OPTIONS
 
@@ -678,6 +704,17 @@ The record's display flag, used by B<blinkenlights>, is included in the output.
 =item I<-phstart>
 
 The record's rollover phase is included in the output.
+If no rollover has yet been performed for this zone, an empty date is given.
+
+=item I<-lastksk>
+
+The record's last KSK rollover date is included in the output.
+If no KSK rollover has yet been performed for this zone, an empty date is given.
+
+=item I<-lastzsk>
+
+The record's last ZSK rollover date is included in the output.
+If no ZSK rollover has yet been performed for this zone, an empty date is given.
 
 =back
 
