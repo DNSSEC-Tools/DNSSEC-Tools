@@ -357,6 +357,28 @@ ruletype: name
   return \@err;
 </test>
 
+name: DNSSEC_TWO_ZSKS
+ruletype: name
+level: 7
+desc: In order to facilitate future rolling of your zone signing keys (ZSKs) it is recommended that you publish two (but sign with only one).
+<test>
+  return if ($current_domain ne $_[2]);
+  return "No DNSKEY records associated with $current_domain"
+   if ($#{$_[0]->{'DNSKEY'}} == -1);
+  my ($zskcount, $kskcount);
+  foreach my $key (@{$_[0]->{'DNSKEY'}}) {
+    if ($key->flags & 0x01) {
+       $kskcount++;
+    } else {
+      $zskcount++;
+    }
+  }
+  my @errs;
+  push @errs, "Only $zskcount ZSKs found for the zone; more than one ZSK is recommended to be in a zone at any given time to provide for future proper ZSK rollevers (one 'current' and one 'published')." if ($zskcount < 2);
+  push @errs, "Only $kskcount KSKs found for the zone; At least one KSK should be published in the zone (and used to sign the DNSKEY record)." if ($kskcount < 1);
+  return \@errs;
+</test>
+
 # XXX: nsec next order is proper
 # XXX: check all sigs?
 #
