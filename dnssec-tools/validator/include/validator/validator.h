@@ -10,6 +10,7 @@
 extern          "C" {
 #endif
 
+#include <stdio.h>
 #include <syslog.h>
 #include <stdarg.h>
 #include <validator/val_errors.h>
