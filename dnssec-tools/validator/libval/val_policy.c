@@ -943,12 +943,13 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
     c = scope;
     *label_count = 1;
 
+    if (!strcmp(label, LVL_DELIM))
+        *label_count = 0;
+
     /*
-     * a NULL scope is always relevant 
+     * NULL scopes and default labels are always relevant 
      */
-    if (c == NULL) {
-        if (!strcmp(label, LVL_DELIM))
-            *label_count = 0;
+    if (c == NULL || (*label_count == 0)) {
         return VAL_NO_ERROR;
     }
 
