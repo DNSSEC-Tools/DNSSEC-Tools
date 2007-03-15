@@ -2058,16 +2058,12 @@ EOF
 	#
 	# Add the Current ZSKs.
 	#
-	if(!$usezskpub)
+	$incstr .= "\n;; Current ZSKs\n";
+	foreach my $zsk (sort(@zskcurlist))
 	{
-		$incstr .= "\n;; Current ZSKs\n";
-
-		foreach my $zsk (sort(@zskcurlist))
-		{
-			my $path = keyrec_recval($zsk,'keypath');
-			$path = "$path.key" if($path !~ /\.key$/);
-			$incstr .= "\$INCLUDE \"$path\"\n";
-		}
+		my $path = keyrec_recval($zsk,'keypath');
+		$path = "$path.key" if($path !~ /\.key$/);
+		$incstr .= "\$INCLUDE \"$path\"\n";
 	}
 
 	$incstr .= "\n;; Published ZSKs\n";
