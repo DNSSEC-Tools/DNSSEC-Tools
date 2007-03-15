@@ -102,6 +102,8 @@ my %rollrecs = ();			# Rollrecs from the rollrec files.
 
 my %lengths  = ();			# Maximum lengths of each rollrec field.
 
+my $prevkey;				# Previous rollrec key added to output.
+
 my $ret;				# Return code from main().
 
 $ret = main();
@@ -435,8 +437,8 @@ sub getrollrecs
 		#
 		if($rollrecs{$rn}{'rollrec_type'} eq "skip")
 		{
-			$rollrecs{$rn}{'kskphase'} = "---";
-			$rollrecs{$rn}{'zskphase'} = "---";
+			$rollrecs{$rn}{'kskphase'} = "-";
+			$rollrecs{$rn}{'zskphase'} = "-";
 			$rollrecs{$rn}{'phases'}   = "-/-";
 			$rollrecs{$rn}{'phstart'}  = "---";
 		}
@@ -553,7 +555,6 @@ sub showrollrecs
 	{
 		my $rrr = $rollrecs{$rrn};	# The zone's loaded rollrec ref.
 		my %rr = %$rrr;			# The zone's loaded rollrec.
-		my $prevkey;			# Previous rollrec key.
 
 		#
 		# Check the zone-validity flags against the zone to see if
@@ -598,28 +599,27 @@ sub showrollrecs
 		#
 		# Build the output string.
 		#
-		$out  = outstr($rrn,'first-field',$zonename,1,0);
-		$out .= outstr($rrn,'zonename',$type,$typeflag,0);
-		$out .= outstr($rrn,'rollrec_type',$zonefile,$zoneflag,0);
-		$out .= outstr($rrn,'zonefile',$keyrec,$keyrecflag,0);
+		$prevkey = 'first-field';
+		$out  = outstr($rrn,'zonename',$zonename,1,0);
+		$out .= outstr($rrn,'rollrec_type',$type,$typeflag,0);
+		$out .= outstr($rrn,'zonefile',$zonefile,$zoneflag,0);
+		$out .= outstr($rrn,'keyrec',$keyrec,$keyrecflag,0);
 		if($phasesflag)
 		{
-			$out .= outstr($rrn,'keyrec',$phases,1,0);
-			$prevkey = 'phases';
+			$out .= outstr($rrn,'phases',$phases,1,0);
 		}
 		else
 		{
-			$out .= outstr($rrn,'keyrec',$kskphase,$kphaseflag,0);
-			$out .= outstr($rrn,'kskphase',$zskphase,$zphaseflag,0);
-			$prevkey = 'zskphase';
+			$out .= outstr($rrn,'kskphase',$kskphase,$kphaseflag,0);
+			$out .= outstr($rrn,'zskphase',$zskphase,$zphaseflag,0);
 		}
-		$out .= outstr($rrn,$prevkey,$admin,$adminflag,0);
-		$out .= outstr($rrn,'administrator',$loglevel,$logflag,0);
-		$out .= outstr($rrn,'loglevel',$ttl,$ttlflag,0);
-		$out .= outstr($rrn,'maxttl',$disp,$dispflag,0);
-		$out .= outstr($rrn,"display",$phstart,$phstartflag,0);
-		$out .= outstr($rrn,"phasestart",$lastksk,$lastkskflag,0);
-		$out .= outstr($rrn,"ksk_rolldate",$lastzsk,$lastzskflag,0);
+		$out .= outstr($rrn,'administrator',$admin,$adminflag,0);
+		$out .= outstr($rrn,'loglevel',$loglevel,$logflag,0);
+		$out .= outstr($rrn,'maxttl',$ttl,$ttlflag,0);
+		$out .= outstr($rrn,'display',$disp,$dispflag,0);
+		$out .= outstr($rrn,'phasestart',$phstart,$phstartflag,0);
+		$out .= outstr($rrn,'ksk_rolldate',$lastksk,$lastkskflag,0);
+		$out .= outstr($rrn,'zsk_rolldate',$lastzsk,$lastzskflag,0);
 
 		#
 		# Write the output.
@@ -656,8 +656,8 @@ sub outstr
 	#
 	# Figure out spacing for this line.
 	#
-	$mlen = $lengths{$key};
-	$vlen = length($rollrecs{$zone}{$key});
+	$mlen = $lengths{$prevkey};
+	$vlen = length($rollrecs{$zone}{$prevkey});
 	$blen = $mlen - $vlen;
 	$spaces = ' ' x $blen if($blen > 0);
 
@@ -697,8 +697,9 @@ sub outstr
 	}
 
 	#
-	# Return the output string to the caller.
+	# Save the hash key and return the output string to the caller.
 	#
+	$prevkey = $key;
 	return($ret);
 }
 
