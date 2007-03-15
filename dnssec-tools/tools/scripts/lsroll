@@ -21,7 +21,7 @@ use Net::DNS::SEC::Tools::tooloptions;
 # Version information.
 #
 my $NAME   = "lsroll";
-my $VERS   = "$NAME version: 0.6";
+my $VERS   = "$NAME version: 0.8";
 my $DTVERS = "DNSSEC-Tools Version: 1.1";
 
 #######################################################################
@@ -94,12 +94,13 @@ my $count   = 0;			# Record-match count.
 
 #######################################################################
 
-
 my $HEADER_RRN = "<<<header>>>";	# Name for column header "rollrec".
 
 my @rrnames;				# List of rollrecs in the files.
 
-my %rollrecs  = ();			# Rollrecs from the rollrec files.
+my %rollrecs = ();			# Rollrecs from the rollrec files.
+
+my %lengths  = ();			# Maximum lengths of each rollrec field.
 
 my $ret;				# Return code from main().
 
@@ -132,9 +133,15 @@ sub main()
 	}
 
 	#
-	# Cook up the output.
+	# Cook up the output:  build a header line and calculate the maximum
+	# length of each field.
 	#
 	makeheader();
+	maxlens();
+
+	#
+	# Display the data requested.
+	#
 	showrollrecs();
 
 	#
@@ -159,7 +166,6 @@ sub main()
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	doopts()
 #
 # Purpose:	This routine shakes and bakes our command line options.
@@ -347,11 +353,16 @@ sub doopts
 }
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	getrollrecs()
 #
 # Purpose:	This routine reads the specified rollrec file and puts each
 #		rollrec into the rollrec hash table.
+#		A little data-massage also takes place:
+#			- default admins are added to admin-less records
+#			- add quotes around timestamps
+#			- default loglevels are added to loglevel-less records
+#			- loglevels are converted to text format
+#			- roll-specific fields are zapped for skip rollrecs
 #
 sub getrollrecs
 {
@@ -361,50 +372,188 @@ sub getrollrecs
 	rollrec_read($rrfile);
 	rollrec_unlock();
 
+	#
+	# Load the rollrecs from the rollrec file.
+	#
 	@rrnames = rollrec_names();
-
-	foreach my $rrn (sort(@rrnames))
+	foreach my $rn (sort(@rrnames))
 	{
 		my $rr;				# Reference to rollrec.
-		my %rollrec;			# Rollrec.
 
-		$rr = rollrec_fullrec($rrn);
-		$rollrecs{$rrn} = $rr;
+		$rr = rollrec_fullrec($rn);
+		$rollrecs{$rn} = $rr;
 	}
+
+	#
+	# Transmogrify a few fields in the rollrec as needed.
+	#
+	foreach my $rn (sort(keys(%rollrecs)))
+	{
+		#
+		# Add quotes to the timestamps and save the zonename.
+		#
+		$rollrecs{$rn}{'zonename'} = "$rn";
+		$rollrecs{$rn}{'phasestart'} = "\"$rollrecs{$rn}{'phasestart'}\""; 
+		$rollrecs{$rn}{'ksk_rolldate'} = "\"$rollrecs{$rn}{'ksk_rolldate'}\""; 
+		$rollrecs{$rn}{'zsk_rolldate'} = "\"$rollrecs{$rn}{'zsk_rolldate'}\""; 
+
+		#
+		# If the rollrec has no administrator, give it the default.
+		#
+		if(!defined($rollrecs{'administrator'}))
+		{
+			$rollrecs{$rn}{'administrator'} = "(defadmin)";
+		}
+
+		#
+		# Convert the loglevel into its textual form.
+		# If the rollrec has no loglevel, give it the default.
+		# If the rollrec has an invalid loglevel, give it the error
+		# default.
+		#
+		if(defined($rollrecs{$rn}{'loglevel'}))
+		{
+			my $lvl;			# Text logging level.
+
+			$lvl = rollmgr_logstr($rollrecs{$rn}{'loglevel'});
+			if($lvl eq "")
+			{
+				$rollrecs{$rn}{'loglevel'} = "(unknownlog)";
+			}
+			else
+			{
+				$rollrecs{$rn}{'loglevel'} = $lvl;
+			}
+		}
+		else
+		{
+			$rollrecs{$rn}{'loglevel'} = "(deflog)";
+		}
+
+		#
+		# If this is a skip rollrec, zap a few roll-specific fields.
+		#
+		if($rollrecs{$rn}{'rollrec_type'} eq "skip")
+		{
+			$rollrecs{$rn}{'kskphase'} = "---";
+			$rollrecs{$rn}{'zskphase'} = "---";
+			$rollrecs{$rn}{'phases'}   = "-/-";
+			$rollrecs{$rn}{'phstart'}  = "---";
+		}
+		else
+		{
+			$rollrecs{$rn}{'phases'} = "$rollrecs{$rn}{'kskphase'}/$rollrecs{$rn}{'zskphase'}";
+		}
+	}
+
 }
 
-#-----------------------------------------------------------------------------
+#----------------------------------------------------------------------
+# Routine:	maxlens()
 #
-# Routine:	showrollrecs()
+# Purpose:	Calculate the maximum length of each rollrec field.
+#		After finding the longest length for each field, we'll
+#		add a little buffer space.
 #
-# Purpose:	This routine displays rollrec data.  There are three output
-#		formats:
-#
-sub showrollrecs
+sub maxlens
 {
-	my $outstr;				# Output string.
-	my $zonefile;				# Zone file in rollrec.
-	my $keyrec;				# Keyrec file in rollrec.
-	my $kskphase;				# Current KSK phase in rollrec.
-	my $zskphase;				# Current ZSK phase in rollrec.
-	my $phases;				# Current KSK and ZSK phases.
-	my $admin;				# Zone administrator's email.
-	my $loglevel;				# Logging level.
-	my $ttl;				# Maximum TTL in rollrec.
-	my $disp;				# blinkenlights display flag.
-	my $phstart;				# Phase start in rollrec.
-	my $lastksk;				# Timestamp of last KSK roll.
-	my $lastzsk;				# Timestamp of last ZSK roll.
-	my $type;				# Rollrec's type.
 
 	#
 	# Loop through the zone list and give data on the desired zones.
 	#
 	foreach my $rrname (sort(keys(%rollrecs)))
 	{
-		my $rrr = $rollrecs{$rrname};
-		my %rr = %$rrr;
-		my %rollrec = %$rrr;
+		my $recref  = $rollrecs{$rrname};
+		my %rollrec = %$recref;
+
+		foreach my $key (sort(keys(%rollrec)))
+		{
+			if(length($rollrec{$key}) > $lengths{$key})
+			{
+				$lengths{$key} = length($rollrec{$key});
+			}
+		}
+	}
+
+	#
+	# Build a dummy entry for the phases option.  This can be hardcoded
+	# since a -phases will only ever give output of the "M/N" form.
+	#
+	$lengths{'phases'} = 3 if(!defined($lengths{'phases'}));
+
+	#
+	# Add a little buffer space between fields.
+	#
+	foreach my $key (sort(keys(%lengths)))
+	{
+		$lengths{$key} += 4;
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	makeheader()
+#
+# Purpose:	Build a header line as a fake rollrec.
+#
+sub makeheader
+{
+	my %rr;				# Reference to rollrec.
+	my %rollrec;			# Rollrec.
+
+	return if(!$headerflag);
+
+	$rr{'rollrec_type'}	= 'Type';
+	$rr{'administrator'}	= 'Administrator';
+	$rr{'display'}		= 'Display Flag';
+	$rr{'keyrec'}		= 'Keyrec File';
+	$rr{'ksk_rolldate'}	= 'Last KSK Rollover';
+	$rr{'kskphase'}		= 'KSK Phase';
+	$rr{'loglevel'}		= 'Log Level';
+	$rr{'maxttl'}		= 'Max-TTL';
+	$rr{'phasestart'}	= 'Phase Start';
+	$rr{'phases'}		= 'KSK/ZSK';
+	$rr{'zonefile'}		= 'Zonefile';
+	$rr{'zonename'}		= 'Zone';
+	$rr{'zsk_rolldate'}	= 'Last ZSK Rollover';
+	$rr{'zskphase'}		= 'ZSK Phase';
+
+	$rollrecs{$HEADER_RRN} = \%rr;
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	showrollrecs()
+#
+# Purpose:	This routine displays rollrec data.  There are three output
+#		formats: default, long, terse.  There are also skip records.
+#		See the pod for more info on the formats.
+#
+sub showrollrecs
+{
+	my $out;				# Output string.
+
+	my $admin;				# Zone administrator's email.
+	my $disp;				# blinkenlights display flag.
+	my $keyrec;				# Keyrec file in rollrec.
+	my $kskphase;				# Current KSK phase in rollrec.
+	my $lastksk;				# Timestamp of last KSK roll.
+	my $lastzsk;				# Timestamp of last ZSK roll.
+	my $loglevel;				# Logging level.
+	my $phases;				# Current KSK and ZSK phases.
+	my $phstart;				# Phase start in rollrec.
+	my $ttl;				# Maximum TTL in rollrec.
+	my $type;				# Rollrec's type.
+	my $zonefile;				# Zone file in rollrec.
+	my $zonename;				# Zone name in rollrec.
+	my $zskphase;				# Current ZSK phase in rollrec.
+
+	#
+	# Loop through the zone list and give data on the desired zones.
+	#
+	foreach my $rrn (sort(keys(%rollrecs)))
+	{
+		my $rrr = $rollrecs{$rrn};	# The zone's loaded rollrec ref.
+		my %rr = %$rrr;			# The zone's loaded rollrec.
+		my $prevkey;			# Previous rollrec key.
 
 		#
 		# Check the zone-validity flags against the zone to see if
@@ -420,7 +569,7 @@ sub showrollrecs
 		#
 		# Bump the matching-records count.
 		#
-		$count++;
+		$count++ if($rrn ne $HEADER_RRN);
 
 		#
 		# Stay cloaked if only the count of matching records
@@ -432,116 +581,128 @@ sub showrollrecs
 		# Set fields from the rollrec.  If this is a skip record,
 		# we won't get the phases, ttl, or phase start.
 		#
+		$zonename = $rr{'zonename'};
 		$zonefile = $rr{'zonefile'};
 		$keyrec	  = $rr{'keyrec'};
 		$kskphase = $rr{'kskphase'};
 		$zskphase = $rr{'zskphase'};
-		$phases	  = "$kskphase/$zskphase";
+		$phases	  = $rr{'phases'};
 		$ttl	  = $rr{'maxttl'};
 		$disp	  = $rr{'display'};
 		$phstart  = $rr{'phasestart'};
 		$lastksk  = $rr{'ksk_rolldate'};
 		$lastzsk  = $rr{'zsk_rolldate'};
-		$admin	  = $rr{'administrator'} || "(defadmin)";
-
-		#
-		# Convert the loglevel into its textual form.
-		#
+		$admin	  = $rr{'administrator'};
 		$loglevel = $rr{'loglevel'};
-		if($rrname ne $HEADER_RRN)
-		{
-			$loglevel = "(deflog)";
-			if(defined($rr{'loglevel'}))
-			{
-				$loglevel = rollmgr_logstr($rr{'loglevel'});
-				$loglevel = "(unknownlog)" if($loglevel eq "");
-			}
-		}
-
-		if($type eq "skip")
-		{
-			$kskphase = "---";
-			$zskphase = "---";
-			$phases	  = "-/-";
-			$loglevel = "---";
-			$phstart  = "---";
-		}
 
 		#
 		# Build the output string.
 		#
-		if($rrname ne $HEADER_RRN)
+		$out  = outstr($rrn,'first-field',$zonename,1,0);
+		$out .= outstr($rrn,'zonename',$type,$typeflag,0);
+		$out .= outstr($rrn,'rollrec_type',$zonefile,$zoneflag,0);
+		$out .= outstr($rrn,'zonefile',$keyrec,$keyrecflag,0);
+		if($phasesflag)
 		{
-			$outstr = $rrname;
-			$outstr .= " ($type)"		if($typeflag);
-			$outstr .= "\t$zonefile"	if($zoneflag);
-			$outstr .= "\t$keyrec"		if($keyrecflag);
-			$outstr .= "\t$phases"		if($phasesflag);
-			$outstr .= "\t$kskphase"	if($kphaseflag);
-			$outstr .= "\t$zskphase"	if($zphaseflag);
-			$outstr .= "\t$admin"		if($long || $adminflag);
-			$outstr .= "\t$loglevel"	if($long || $logflag);
-			$outstr .= "\t$ttl"		if($long || $ttlflag);
-			$outstr .= "\t$disp"		if($long || $dispflag);
-			$outstr .= "\t\"$phstart\""   if($long || $phstartflag);
-			$outstr .= "\t\"$lastksk\""   if($long || $lastkskflag);
-			$outstr .= "\t\"$lastzsk\""   if($long || $lastzskflag);
+			$out .= outstr($rrn,'keyrec',$phases,1,0);
+			$prevkey = 'phases';
 		}
 		else
 		{
-			$outstr = "Zone\t";
-			$outstr .= "\t$zonefile"	if($zoneflag);
-			$outstr .= "\t$keyrec"		if($keyrecflag);
-			$outstr .= "\t$phases"		if($phasesflag);
-			$outstr .= "\t$kskphase"	if($kphaseflag);
-			$outstr .= "\t$zskphase"	if($zphaseflag);
-			$outstr .= "\t$admin"		if($long || $adminflag);
-			$outstr .= "\t$loglevel"	if($long || $logflag);
-			$outstr .= "\t$ttl"		if($long || $ttlflag);
-			$outstr .= "\t$disp"		if($long || $dispflag);
-			$outstr .= "\t$phstart"	if($long || $phstartflag);
-			$outstr .= "\t$lastksk"	if($long || $lastkskflag);
-			$outstr .= "\t$lastzsk"	if($long || $lastzskflag);
+			$out .= outstr($rrn,'keyrec',$kskphase,$kphaseflag,0);
+			$out .= outstr($rrn,'kskphase',$zskphase,$zphaseflag,0);
+			$prevkey = 'zskphase';
 		}
+		$out .= outstr($rrn,$prevkey,$admin,$adminflag,0);
+		$out .= outstr($rrn,'administrator',$loglevel,$logflag,0);
+		$out .= outstr($rrn,'loglevel',$ttl,$ttlflag,0);
+		$out .= outstr($rrn,'maxttl',$disp,$dispflag,0);
+		$out .= outstr($rrn,"display",$phstart,$phstartflag,0);
+		$out .= outstr($rrn,"phasestart",$lastksk,$lastkskflag,0);
+		$out .= outstr($rrn,"ksk_rolldate",$lastzsk,$lastzskflag,0);
 
 		#
 		# Write the output.
 		#
-		print "$outstr\n";
+		print "$out\n";
 	}
 }
 
 #----------------------------------------------------------------------
+# Routine:	outstr()
 #
-# Routine:	makeheader()
+# Purpose:	Build an output line.  We'll handle a special case for the
+#		zonename line and add quotes around a few timestamp fields.
 #
-# Purpose:	Build a header line.
-#
-sub makeheader
+sub outstr
 {
-	my %rr;				# Reference to rollrec.
-	my %rollrec;			# Rollrec.
+	my $zone = shift;				# Zone name.
+	my $key  = shift;				# Hashkey.
+	my $val	 = shift;				# Value to print.
+	my $flag = shift;				# Output flag.
+	my $usequotes = shift;				# Quotes flag.
 
-	return if(!$headerflag);
+	my $ret;					# Return string.
+	my $mlen;					# Maximum field length.
+	my $vlen;					# Length of value.
+	my $blen;					# Space buffer length.
+	my $spaces;					# Spaces to add.
 
-	$rr{'rollrec_type'}	= 'header';
-	$rr{'administrator'}	= 'Administrator';
-	$rr{'display'}		= 'Display Flag';
-	$rr{'keyrec'}		= 'Keyrec File';
-	$rr{'ksk_rolldate'}	= 'Last KSK';
-	$rr{'kskphase'}		= 'KSK Phase';
-	$rr{'loglevel'}		= 'Log Level';
-	$rr{'maxttl'}		= 'Max-TTL';
-	$rr{'phasestart'}	= 'Phase Start';
-	$rr{'zonefile'}		= 'Zonefile';
-	$rr{'zsk_rolldate'}	= 'Last ZSK';
-	$rr{'zskphase'}		= 'ZSK Phase';
+	#
+	# Return if the given flag isn't set and -long wasn't given.
+	#
+	return('') if(!$long && !$flag);
 
-	$rollrecs{$HEADER_RRN} = \%rr;
+	#
+	# Figure out spacing for this line.
+	#
+	$mlen = $lengths{$key};
+	$vlen = length($rollrecs{$zone}{$key});
+	$blen = $mlen - $vlen;
+	$spaces = ' ' x $blen if($blen > 0);
+
+	#
+	# Build the output line, but we've got special case code for
+	# the zonename field.
+	#
+	if(($key eq 'zonename') && 0)
+	{
+		#
+		# If this is a header line, pop in the zone label.
+		# Otherwise, add in the zonename and (maybe) the type.
+		#
+		if($zone eq $HEADER_RRN)
+		{
+			$ret = 'Zone';
+		}
+		else
+		{
+			$ret  = $val;
+		}
+	}
+	else
+	{
+		#
+		# Build the output line.
+		#
+		$ret = $spaces . $val;
+
+		#
+		# For some fields we'll add quotes around the value.
+		#
+		if($usequotes && ($zone ne $HEADER_RRN))
+		{
+			$ret =~ s/$spaces$val/$spaces\"$val\"/;
+		}
+	}
+
+	#
+	# Return the output string to the caller.
+	#
+	return($ret);
 }
 
 #----------------------------------------------------------------------
-#
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -556,7 +717,6 @@ sub version
 
 
 #-----------------------------------------------------------------------------
-#
 # Routine:	usage()
 #
 sub usage
