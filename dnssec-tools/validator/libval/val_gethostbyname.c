@@ -377,7 +377,6 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
      * Process the result 
      */
     for (res = results; res != NULL; res = res->val_rc_next) {
-        struct val_rrset *rrset;
 
         if (!(validated && val_isvalidated(res->val_rc_status))) 
             validated = 0;
@@ -399,9 +398,10 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
             continue;
         }
 
-        rrset = res->val_rc_answer->val_ac_rrset;
 
-        if (rrset) {
+        if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
+
+            struct val_rrset *rrset = res->val_rc_answer->val_ac_rrset;
             struct rr_rec  *rr = rrset->val_rrset_data;
 
             while (rr) {
