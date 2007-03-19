@@ -61,5 +61,5 @@ install:
 	$(LIBTOOLIN) $(LIBVAL) $(libdir)
 	$(LIBTOOLFN)
 	$(MKPATH) $(includedir)
-	$(INSTALL) ../include/validator/validator.h $(includedir)
-	$(INSTALL) ../include/validator/val_errors.h $(includedir)
+	$(INSTALL) -m 644 ../include/validator/validator.h $(includedir)
+	$(INSTALL) -m 644 ../include/validator/val_errors.h $(includedir)
