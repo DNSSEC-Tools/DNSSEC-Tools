@@ -114,11 +114,83 @@ my $INFOBG = "white";				# Color for the info row.
 my $colorind = 0;				# Current color index.
 my $skipcolor = "grey";				# Color for skip zones.
 
-my @phasecolors =
+#
+# The @kphasecolors and @zphasecolors arrays hold the color names are used for
+# the background of the rollover-status column.  (If you can't immediately
+# figure out which array is used for what, you shouldn't be editing this file.)
+# The first color is the base color for normal operations.  The other colors are
+# used for the rollover phases.  They should be shades of the base color, and
+# they should go from a light shade to progressively darker shades.  The base
+# color should be the darkest.
+#
+# The color names are taken from the X11 rgb.txt file (X11 1.1.3 - XFree86
+# 4.4.0 for MacOS X.)  If these aren't available in your rgb.txt file, you
+# should select similar names.  The actual values used are given in the 
+# blinkenlights pod, in case you need to find something similar.
+#
+
+my @kphasecolors =
 (
-	['blue', 'LightBlue2',  'skyblue1',  'cornflower blue', 'dodger blue'],
-	['red',  'pink',        'indianred', 'violetred1',      'orangered1'],
-	['green', 'lightgreen', 'seagreen1', 'greenyellow',	'lawngreen'], 
+	[
+		'blue',			# phase 0
+		'lightblue2',		# phase 1
+		'darkslategray1',	# phase 2
+		'skyblue1',		# phase 3
+		'steelblue1',		# phase 4
+		'turquoise1',		# phase 5
+		'cornflower blue',	# phase 6
+		'dodger blue',		# phase 7
+	],
+
+	[
+		'red',			# phase 0
+		'pink',			# phase 1
+		'lightsalmon1',		# phase 2
+		'tomato',		# phase 3
+		'indianred',		# phase 4
+		'violetred1',		# phase 5
+		'orangered1',		# phase 6
+		'firebrick1',		# phase 7
+	],
+
+	[
+		'green',		# phase 0
+		'darkseagreen1',	# phase 1
+		'darkolivegreen1',	# phase 2
+		'lightgreen',		# phase 3
+		'seagreen1',		# phase 4
+		'spring green',		# phase 5
+		'greenyellow',		# phase 6
+		'lawngreen'		# phase 7
+	],
+
+);
+
+my @zphasecolors =
+(
+	[
+		'blue',			# phase 0
+		'LightBlue2',		# phase 1
+		'skyblue1',		# phase 2
+		'cornflower blue',	# phase 3
+		'dodger blue'		# phase 4
+	],
+
+	[
+		'red',			# phase 0
+		'pink',			# phase 1
+		'indianred',		# phase 2
+		'violetred1',		# phase 3
+		'orangered1'		# phase 4
+	],
+
+	[
+		'green',		# phase 0
+		'lightgreen',		# phase 1
+		'seagreen1',		# phase 2
+		'greenyellow',		# phase 3
+		'lawngreen'		# phase 4
+	], 
 );
 
 #
@@ -150,20 +222,18 @@ my $null;						# Empty frame.
 
 my $file;						# File menu.
 my $disp;						# Edit menu.
-my $cmds;						# Commands menu.
+my $cmdz;						# ZSK Commands menu.
+my $cmdk;						# KSK Commands menu.
 my $zdsp;						# Display menu.
 my $help;						# Help menu.
 
 #
 # Menu item widgets.
 #
-my $fm_quit;						# Quit file item.
 my $op_clrs;						# Colors item.
-my $op_fsz;						# Fontsize item.
 my $op_mdfy;						# Modify toggle.
 my $op_shad;						# Shading toggle.
 my $op_skip;						# Skip toggle.
-my $hm_help;						# Help item.
 
 #
 # Messages for the Display menu.
@@ -222,8 +292,9 @@ my %display = ();				# Zones' display flag.
 #
 # Saved zone data, needed for repaints.
 #
-my %zonephase = ();				# Zones' phases.
 my %zonechron = ();				# Zones' chronoses.
+my %zonephase = ();				# Zones' phases.
+my %zoneroll  = ();				# Zones' rollover types.
 
 #
 # Data for the info stripe.
@@ -375,7 +446,10 @@ sub buildmainwind
 	$disp = $mbar->Menubutton(-text	     => 'Options',
 				  -tearoff   => 0,
 				  -underline => 0);
-	$cmds = $mbar->Menubutton(-text	     => 'Zone Control',
+	$cmdz = $mbar->Menubutton(-text	     => 'ZSK Control',
+				  -tearoff   => 1,
+				  -underline => 0);
+	$cmdk = $mbar->Menubutton(-text	     => 'KSK Control',
 				  -tearoff   => 1,
 				  -underline => 0);
 	$zdsp = $mbar->Menubutton(-text	     => 'Zone Display',
@@ -390,10 +464,14 @@ sub buildmainwind
 	#
 	# Add the File menu entries.
 	#
-	$fm_quit = $file->command(-label => 'Quit',
-			          -command => \&file_quit,
-			          -accelerator => 'Ctrl+Q',
-			          -underline => 0);
+
+	$file->command(-label => 'Halt Rollerd',
+		       -command => [\&commander, "halt"]);
+	$file->separator();
+	$file->command(-label => 'Quit',
+		       -command => \&file_quit,
+		       -accelerator => 'Ctrl+Q',
+		       -underline => 0);
 	$file->pack(-side => 'left');
 
 	$wm->bind('<Control-Key-Q>',\&file_quit);
@@ -443,35 +521,60 @@ sub buildmainwind
 
 	##################################################
 	#
-	# Add the Zone Control menu entries.
+	# Add the ZSK Control menu entries.
 	#
-	$cmds->command(-label => 'Roll Selected Zone',
-		       -command => [\&zone_rollcmd, "rollzone"],
+	$cmdz->command(-label => "Roll Selected Zone's ZSKs",
+		       -command => [\&zsk_rollcmd, "rollzone"],
 		       -accelerator => 'Ctrl+R');
-	$cmds->command(-label => 'Roll All Zones',
-		       -command => [\&zone_rollcmd, "rollall"]);
-	$cmds->command(-label => 'Run the Queue',
-		       -command => [\&zone_rollcmd, "runqueue"]);
-	$cmds->separator();
+	$cmdz->command(-label => "Roll All Zones's ZSKs",
+		       -command => [\&zsk_rollcmd, "rollall"]);
+	$cmdz->command(-label => 'Run the Queue',
+		       -command => [\&zsk_rollcmd, "runqueue"]);
+	$cmdz->separator();
 
-	$cmds->command(-label => 'Skip Selected Zone',
-		       -command => [\&zone_rollcmd, "skipzone"],
+	$cmdz->command(-label => 'Skip Selected Zone',
+		       -command => [\&zsk_rollcmd, "skipzone"],
 		       -accelerator => 'Ctrl+S');
-	$cmds->command(-label => 'Skip All Zones',
-		       -command => [\&zone_rollcmd, "skipall"]);
-	$cmds->separator();
+	$cmdz->command(-label => 'Skip All Zones',
+		       -command => [\&zsk_rollcmd, "skipall"]);
 
-	$cmds->command(-label => 'Halt Rollerd',
-		       -command => [\&zone_rollcmd, "halt"]);
-
-	$cmds->pack(-side => 'left');
+	$cmdz->pack(-side => 'left');
 
 	$wm->bind('<Control-Key-r>', \&zone_rollzone);
 	$wm->bind('<Control-Key-s>', \&zone_skipzone);
 
 	if($nomodify)
 	{
-		$cmds->configure(-state => 'disabled');
+		$cmdz->configure(-state => 'disabled');
+	}
+
+	##################################################
+	#
+	# Add the KSK Control menu entries.
+	#
+	$cmdk->command(-label	=> 'DS Published',
+		       -command => [\&kskcmd, "dspub"]);
+	$cmdk->command(-label	=> "Roll Selected Zone's KSKs",
+		       -command => [\&kskcmd, "rollzone"],
+		       -state	=> 'disabled');
+	$cmdk->command(-label	=> "Roll All Zones's KSKs",
+		       -command => [\&kskcmd, "rollall"],
+		       -state	=> 'disabled');
+#	$cmdk->separator();
+#
+#	$cmdk->command(-label	=> 'Skip Selected Zone',
+#		       -command => [\&kskcmd, "skipzone"],
+#		       -state	=> 'disabled');
+#	$cmdk->command(-label	=> 'Skip All Zones',
+#		       -command => [\&kskcmd, "skipall"],
+#		       -state	=> 'disabled');
+#	$cmdk->separator();
+
+	$cmdk->pack(-side => 'left');
+
+	if($nomodify)
+	{
+		$cmdk->configure(-state => 'disabled');
 	}
 
 	##################################################
@@ -490,10 +593,10 @@ sub buildmainwind
 	#
 	# Add the Help menu entries.
 	#
-	$hm_help = $help->command(-label => 'Help',
-			          -command => \&help_help,
-			          -accelerator => 'Ctrl+H',
-			          -underline => 0);
+	$help->command(-label => 'Help',
+		       -command => \&help_help,
+		       -accelerator => 'Ctrl+H',
+		       -underline => 0);
 	$help->pack(-side => 'right');
 
 	$wm->bind('<Control-Key-h>',\&help_help);
@@ -554,13 +657,13 @@ sub disp_color
 	if($nocolors)
 	{
 		$op_clrs->configure(-label => $NOCOLORING);
-		$cmds->configure(-state => 'normal');
+		$cmdz->configure(-state => 'normal');
 		$nocolors = 0;
 	}
 	else
 	{
 		$op_clrs->configure(-label => $COLORING);
-		$cmds->configure(-state => 'disabled');
+		$cmdz->configure(-state => 'disabled');
 		$nocolors = 1;
 	}
 
@@ -590,13 +693,13 @@ sub disp_modify
 	if($nomodify)
 	{
 		$op_mdfy->configure(-label => $DISALLOWCMDS);
-		$cmds->configure(-state => 'normal');
+		$cmdz->configure(-state => 'normal');
 		$nomodify = 0;
 	}
 	else
 	{
 		$op_mdfy->configure(-label => $ALLOWCMDS);
-		$cmds->configure(-state => 'disabled');
+		$cmdz->configure(-state => 'disabled');
 		$nomodify = 1;
 	}
 }
@@ -653,7 +756,7 @@ sub disp_skip
 sub zone_rollzone
 {
 	return if($rollers{$selzone});
-	zone_rollcmd("rollzone");
+	zsk_rollcmd("rollzone");
 }
 
 #---------------------------------------------------------------------------
@@ -664,15 +767,15 @@ sub zone_rollzone
 sub zone_skipzone
 {
 	return if(!$rollers{$selzone});
-	zone_rollcmd("skipzone");
+	zsk_rollcmd("skipzone");
 }
 
 #---------------------------------------------------------------------------
-# Routine:	zone_rollcmd()
+# Routine:	zsk_rollcmd()
 #
-# Purpose:	Handle the Zone Command menu commands.
+# Purpose:	Handle the ZSK Command menu commands.
 #
-sub zone_rollcmd
+sub zsk_rollcmd
 {
 	my $rcmd = shift;				# Command to run.
 
@@ -704,6 +807,67 @@ sub zone_rollcmd
 			$rcmd = "$rcmd $zone";
 		}
 	}
+
+	#
+	# Build and execute the command string.
+	#
+	$rcmd = "rollctl -q -$rcmd";
+	system($rcmd);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	kskcmd()
+#
+# Purpose:	Handle the KSK Command menu commands.
+#
+sub kskcmd
+{
+	my $rcmd = shift;				# Command to run.
+
+	#
+	# Don't allow commands if -nomodify was given.
+	#
+	return if($nomodify);
+
+	#
+	# These commands need a zone.  We've got to query the user for
+	# one, but until then they're unimplemented.
+	#
+	if($rcmd eq "dspub")
+	{
+		my $zone;				# Zone to handle.
+
+		#
+		# If a zone has been selected, we'll use it.  If not,
+		# we'll prompt the user for the zone.
+		#
+		if($selzone ne '')
+		{
+			$rcmd = "$rcmd $selzone";
+		}
+		else
+		{
+			$zone = getzone($rcmd);
+			return if($zone eq "");
+			$rcmd = "$rcmd $zone";
+		}
+	}
+
+	#
+	# Build and execute the command string.
+	#
+	$rcmd = "rollctl -q -$rcmd";
+	system($rcmd);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	commander()
+#
+# Purpose:	Handle the general commands.
+#
+sub commander
+{
+	my $rcmd = shift;				# Command to execute.
 
 	#
 	# Build and execute the command string.
@@ -939,8 +1103,9 @@ sub buildtable
 #
 sub readrrf
 {
-	my $rrf = shift;			# Rollrec to read.
+	my $rrf	     = shift;			# Rollrec to read.
 	my $timeflag = shift;			# Flag for using current time.
+
 	my $rr;					# Rollrec reference.
 
 # print "readrrf:  down in\n";
@@ -968,12 +1133,24 @@ sub readrrf
 		my $krf;				# Keyrec file.
 		my $kr;					# Keyrec reference.
 		my $phase;				# Rollover phase.
+		my $rolltype;				# Rollover type.
 
 		#
-		# Read the zone's rollrec record and save the current phase.
+		# Read the zone's rollrec record.
 		#
 		$rr = rollrec_fullrec($zone);
-		$phase  = $rr->{'curphase'};
+
+		#
+		# Save the current phase and rollover type.
+		#
+		$phase  = $rr->{'zskphase'};
+		$rolltype = 'ZSK';
+		if($phase == 0)
+		{
+			$phase  = $rr->{'kskphase'};
+			$rolltype = 'KSK';
+			$rolltype = '' if($phase == 0);
+		}
 
 		#
 		# Save the zone's index and add it (or don't) to our list
@@ -1017,11 +1194,11 @@ sub readrrf
 		#
 		if($timeflag)
 		{
-			zonestripe($zone,$phase,$zonechron{$zone});
+			zonestripe($zone,$rolltype,$phase,$zonechron{$zone});
 		}
 		else
 		{
-			zonestripe($zone,$phase);
+			zonestripe($zone,'',$phase);
 		}
 	}
 
@@ -1123,11 +1300,12 @@ sub headerstripe
 #
 sub zonestripe
 {
-	my $zone    = shift;				# Zone to add.
-	my $phase   = shift;				# Zone's rollover phase.
-	my $chronos = shift || " ";			# Expiration-time data.
+	my $zone     = shift;				# Zone to add.
+	my $rolltype = shift;				# Zone's rollover type.
+	my $phase    = shift;				# Zone's rollover phase.
+	my $chronos  = shift || " ";			# Expiration-time data.
 
-	my $fgcolor = $NORMALFG;			# Foreground color.
+	my $fgcolor  = $NORMALFG;			# Foreground color.
 	my $bgcolor;					# Background color.
 	my $phasecolor;					# Color of phase column.
 	my $phasestr;					# Phase description.
@@ -1160,8 +1338,8 @@ sub zonestripe
 	#
 	# Get this zone's background color.
 	#
-	$bgcolor    = getcolor($zone,$phase,1);
-	$phasecolor = getcolor($zone,$phase,0);
+	$bgcolor    = getcolor($zone,$rolltype,$phase,1);
+	$phasecolor = getcolor($zone,$rolltype,$phase,0);
 
 	#
 	# Get this zone's foreground color.
@@ -1236,7 +1414,7 @@ sub zonestripe
 	#
 	# Second column:  zone rollover phase
 	#
-	$phasestr = "phase $phase";
+	$phasestr = "$rolltype phase $phase";
 	$phasestr = " " if($phase == 0);
 	$lab = $zonetab->Label(-text => $phasestr, -font => $font,
 			       -foreground => $NORMALFG,
@@ -1322,17 +1500,17 @@ sub zonestripe
 #
 sub repaint
 {
-	foreach my $zone (sort(@zonenames))
+	foreach my $zn (sort(@zonenames))
 	{
 		#
 		# Don't account for this zone if it shouldn't be displayed.
 		#
-		next if($display{$zone} == 0);
+		next if($display{$zn} == 0);
 
 		#
 		# Add in a stripe for this zone.
 		#
-		zonestripe($zone,$zonephase{$zone},$zonechron{$zone});
+		zonestripe($zn,$zoneroll{$zn},$zonephase{$zn},$zonechron{$zn});
 	}
 }
 
@@ -1374,13 +1552,20 @@ sub rollerdcmd
 	#	expiration	zone will soon expire
 	#	halt		exit
 	#	nop		do nothing
-	#	phase		change the specified zone's phase
+	#	kskphase	change the specified zone's KSK phase
+	#	zskphase	change the specified zone's ZSK phase
 	#	startroll	start a zone in rollover
 	#	stoproll	stop a zone's rollover
 	#
-	if($cmd eq "phase")
+	if($cmd eq "zskphase")
 	{
-		zonestripe($zone,$phase);
+		$zoneroll{$zone} = 'ZSK';
+		zonestripe($zone,'ZSK',$phase);
+	}
+	if($cmd eq "kskphase")
+	{
+		$zoneroll{$zone} = 'KSK';
+		zonestripe($zone,'KSK',$phase);
 	}
 	elsif($cmd eq "halt")
 	{
@@ -1389,7 +1574,7 @@ sub rollerdcmd
 	elsif($cmd eq "startroll")
 	{
 		rollrec_read($rrfile);
-		$phase = rollrec_recval($zone,'curphase');
+		$phase = rollrec_recval($zone,'zskphase');
 		rollrec_close();
 
 		$rollers{$zone} = 1;
@@ -1412,17 +1597,20 @@ sub rollerdcmd
 	}
 	elsif($cmd eq "expiration")
 	{
+		my $rolltype;				# Type of rollover.
 		my $secs;				# Additional data.
 		my $timestr;				# Translated time.
 
-		$line =~ /^([a-z]+)\W+([a-zA-z0-9\.\+\-]+)\W+([0-9]+)\W(.*)$/;
+		$line =~ /^([a-z]+)\W+([a-zA-Z0-9\.\+\-]+)\W+([0-9]+)\W+([a-zA-Z]+)\W+(.*)$/;
 
-		$secs	= $4;
-		$timestr = fuzzytimetrans($secs);
-		$timestr =~ s/\.0//;
+		$rolltype = $4;
+		$secs	  = $5;
+		$timestr  = fuzzytimetrans($secs);
+		$timestr  =~ s/\.0//;
 
 		$timestr = "starting roll in $timestr" if($phase == 0);
-		zonestripe($zone,$phase,$timestr);
+		zonestripe($zone,$rolltype,$phase,$timestr);
+		$zoneroll{$zone} = '';
 	}
 	elsif($cmd eq "rollrec")
 	{
@@ -1687,6 +1875,7 @@ sub calcrows
 sub getcolor
 {
 	my $zone = shift;		# Zone whose color we're getting.
+	my $rolltype = shift;		# Zone's rollover type.
 	my $phase = shift;		# Zone's phase.
 	my $base = shift;		# Base-color flag.
 
@@ -1696,11 +1885,7 @@ sub getcolor
 	#
 	# Return this skipped-zone color if this zone isn't rolling.
 	#
-	if(($rollers{$zone} != 1)	||
-	   $nocolors)
-	{
-		return($skipcolor);
-	}
+	return($skipcolor) if(($rollers{$zone} != 1) || $nocolors);
 
 	#
 	# Get the background color for this zone in this phase.
@@ -1708,10 +1893,22 @@ sub getcolor
 	$band = $zonecolors{$zone};
 
 	#
+	# Select the color group to use for the background, depending
+	# on if this is a KSK or ZSK rollover.
+	#
+	if($rolltype eq 'KSK')
+	{
+		$color = $kphasecolors[$band];
+	}
+	else
+	{
+		$color = $zphasecolors[$band];
+	}
+
+	#
 	# Get the background color for this zone in this phase and
 	# return the color.
 	#
-	$color = $phasecolors[$band];
 	return($color->[0]) if($base || $noshading);
 	return($color->[$phase]);
 }
@@ -2566,6 +2763,9 @@ by a user.  There are two ways to have B<rollerd> start B<blinkenlights>.
 First, B<rollctl> may be given the I<-display> option.  Second, the I<-display>
 option may be given on B<rollerd>'s command line.
 
+B<Important Note:>  blinkenlights is undergoing changes to allow it to display
+KSK state and manage KSK rollovers.  This support is I<not> yet complete.
+
 =head1 SCREEN LAYOUT
 
 The B<blinkenlights> window is laid out as a series of "stripes".  The top
@@ -2627,6 +2827,8 @@ rollover state section of each zone stripe is shaded to show the zone's phase.
 Window coloring can be turned off (and on) with configuration options and menu
 commands.
 
+=head2 Color Usage
+
 The two window coloring behaviors are discussed more fully below:
 
 =over 4
@@ -2676,6 +2878,47 @@ See the CONFIGURATION FILE section for information on setting the
 configuration fields.
 
 =back
+
+=head2 Colors Used
+
+The color names are taken from the X11 B<rgb.txt> file (X11 1.1.3 - XFree86
+4.4.0 for MacOS X.)  If these aren't available in your B<rgb.txt> file,
+similar names should be selected.  The actual red/green/blue values used are
+given below to assist in finding suitable replacements.  These values were
+taken from the B<rgb.txt> file.
+
+Blue Shades:
+
+    blue              0 0 255
+    lightblue2        178 223 238
+    darkslategray1    151 255 255
+    skyblue1          135 206 255
+    steelblue1        99 184 255
+    turquoise1        0 245 255
+    cornflower blue   100 149 237
+    dodger blue       30 144 255
+
+Red Shades:
+
+    red               255 0 0
+    pink              255 192 203
+    lightsalmon1      255 160 122
+    tomato            255 99 71
+    indianred         205 92 92
+    violetred1        255 62 150
+    orangered1        255 69 0
+    firebrick1        255 48 48
+
+Green Shades:
+
+    green             0 255 0
+    darkseagreen1     193 255 193
+    darkolivegreen1   202 255 112
+    lightgreen        144 238 144
+    seagreen1         84 255 159
+    spring green      0 255 127
+    greenyellow       173 255 47
+    lawngreen         124 252 0
 
 =head1 MENU COMMANDS
 
