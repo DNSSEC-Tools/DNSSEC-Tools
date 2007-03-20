@@ -133,6 +133,7 @@ our @EXPORT = qw(
 		 rollmgr_verifycmd
 			 ROLLCMD_DISPLAY
 			 ROLLCMD_DSPUB
+			 ROLLCMD_DSPUBALL
 			 ROLLCMD_GETSTATUS
 			 ROLLCMD_LOGFILE
 			 ROLLCMD_LOGLEVEL
@@ -264,6 +265,7 @@ sub ROLLCMD_RC_DISPLAY		{ return($ROLLCMD_RC_DISPLAY);		};
 #
 my $ROLLCMD_DISPLAY	= "rollcmd_display";
 my $ROLLCMD_DSPUB	= "rollcmd_dspub";
+my $ROLLCMD_DSPUBALL	= "rollcmd_dspuball";
 my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
@@ -283,6 +285,7 @@ my $ROLLCMD_ZONESTATUS	= "rollcmd_zonestatus";
 
 sub ROLLCMD_DISPLAY		{ return($ROLLCMD_DISPLAY);	};
 sub ROLLCMD_DSPUB		{ return($ROLLCMD_DSPUB);	};
+sub ROLLCMD_DSPUBALL		{ return($ROLLCMD_DSPUBALL);	};
 sub ROLLCMD_GETSTATUS		{ return($ROLLCMD_GETSTATUS);	};
 sub ROLLCMD_LOGFILE		{ return($ROLLCMD_LOGFILE);	};
 sub ROLLCMD_LOGLEVEL		{ return($ROLLCMD_LOGLEVEL);	};
@@ -304,6 +307,7 @@ my %roll_commands =
 (
 	rollcmd_display		=> 1,
 	rollcmd_dspub		=> 1,
+	rollcmd_dspuball		=> 1,
 	rollcmd_getstatus	=> 1,
 	rollcmd_logfile		=> 1,
 	rollcmd_loglevel	=> 1,
@@ -1995,10 +1999,13 @@ valid levels are:
 
     text       numeric  meaning
     ----       -------  -------
-    tmi           1     The highest level -- all log messages are saved.
-    expire        3     A verbose countdown of zone expiration is given.
+    tmi           1     The highest level -- all log messages
+			are saved.
+    expire        3     A verbose countdown of zone expiration
+			is given.
     info          4     Many informational messages are recorded.
-    phase         6     Each zone's current rollover phase is given.
+    phase         6     Each zone's current rollover phase
+			is given.
     err        	  8     Errors are recorded.
     fatal         9     Fatal errors are saved.
 
@@ -2095,15 +2102,23 @@ The available commands and their required data are:
 
    command		data		purpose
    -------		----		-------
-   ROLLCMD_DISPLAY	1/0		start/stop rollerd's graphical display
-   ROLLCMD_DSPUB	zone-name	a DS record has been published
+   ROLLCMD_DISPLAY	1/0		start/stop rollerd's
+					graphical display
+   ROLLCMD_DSPUB	zone-name	a DS record has been
+					published
+   ROLLCMD_DSPUBALL	none		DS records published for all
+					zones in KSK rollover phase 6
    ROLLCMD_LOGFILE	log-file	set rollerd's log filename
    ROLLCMD_LOGLEVEL	log-level	set rollerd's logging level
-   ROLLCMD_ROLLALL	none		force all zones to start ZSK rollover
-   ROLLCMD_ROLLKSK	zone-name	force a zone to start KSK rollover
+   ROLLCMD_ROLLALL	none		force all zones to start
+					ZSK rollover
+   ROLLCMD_ROLLKSK	zone-name	force a zone to start
+					KSK rollover
    ROLLCMD_ROLLREC	rollrec-name	change rollerd's rollrec file
-   ROLLCMD_ROLLZONE	zone-name	force a zone to start ZSK rollover
-   ROLLCMD_RUNQUEUE	none		rollerd runs through its queue
+   ROLLCMD_ROLLZONE	zone-name	force a zone to start
+					ZSK rollover
+   ROLLCMD_RUNQUEUE	none		rollerd runs through
+					its queue
    ROLLCMD_SHUTDOWN	none		stop rollerd
    ROLLCMD_SLEEPTIME	seconds-count	set rollerd's sleep time
    ROLLCMD_STATUS	none		get rollerd's status
