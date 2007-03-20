@@ -107,8 +107,6 @@ my @domains;
 push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
 my %revdomains;
 
-# TODO: need to modify keystorage to hold multiple keys from same
-# zone a la newkeys
 my %keystorage;
 
 my %newkeys;
@@ -123,6 +121,8 @@ my %sleeptimes;
 
 # TODO: need to modify zone_configfile_map to be a hash of
 # arrays: zonename [multiple configfiles]
+# TODO: now that trustman is only operating on one configfile
+# per instantiation, may not need zone_configfile_map at all....
 my %zone_configfile_map;
 my $once;
 
@@ -308,20 +308,20 @@ sub checkkeys {
             if ($zone_configfile_map{$d} eq $ncfile) {
                 add_ta_namedconf($d);
             }
-# not quite ready for primetime....
             if ($zone_configfile_map{$d} eq $dvfile) {
                 add_ta_dnsvalconf($d);
             }
         # now that this key has been added to the appropriate
         # config file(s), put it in keystorage and remove it
         # from newkeys
-            for (my $i =0; $i <= $#{$newkeys{$domain}}; $i++) {
-                push @{$keystorage{$d}},
-	                   { flags => $newkeys{$d}[$i]{flags},
-	                     protocol => $newkeys{$d}[$i]{protocol},
-                             algorithm => $newkeys{$d}[$i]{algorithm},
-			     key => $newkeys{$d}[$i]{key},
-                           };
+            for (my $i =0; $i <= $#{$newkeys{$d}}; $i++) {
+                my $newstorageobj = { flags => $newkeys{$d}[$i]{flags},
+                                      protocol => $newkeys{$d}[$i]{protocol},
+                                      algorithm => $newkeys{$d}[$i]{algorithm},
+                                      key => $newkeys{$d}[$i]{key},
+                                    };
+                push (@{$keystorage{$d}}, $newstorageobj);
+
                 delete $newkeys{$d}[$i]; 
                 # whenever newkeys is modified, write it out
                 open (FILE, "> $newkeyfile") 
@@ -551,12 +551,18 @@ sub read_conf_file {
                     # need to remember where these keys came from
                     $configmap->{$domainname} = $file;
 
-		    push @{$storage->{$domainname}},
-		      { flags => $2,
-			protocol => $3,
-			algorithm => $4,
-			key => $5 };
-		    $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
+#		    push @{$storage->{$domainname}},
+#		      { flags => $2,
+#			protocol => $3,
+#			algorithm => $4,
+#			key => $5 };
+#		    $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
+                    my $newstorageobj = { flags => $2,
+                                          protocol => $3,
+                                          algorithm => $4,
+                                          key => $5,
+                                        };
+                    push (@{$storage->{$domainname}}, $newstorageobj);
 		}
 	    }
 	}
@@ -730,7 +736,7 @@ sub mailcontact {
 # compare_keys()
 #
 # compares the contents of two keys to see if the new one ($domain,
-# $rec, and $keyin) matches the cached one previously remembered (in
+# $rec, and $keyin) matches a cached one previously stored (in
 # $storage->{$domain} )
 #
 sub compare_keys {
@@ -739,16 +745,15 @@ sub compare_keys {
     if (!exists($storage->{$domain})) {
 # What would nonexistence of this really mean?
     }
-    my @keys;
-    $keys = $storage->{$domain};
-    foreach my $key (@$keys) {
-	if ($key->{'flags'} eq $rec->flags &&
-	    $key->{'protocol'} eq $rec->protocol &&
-	    $key->{'algorithm'} eq $rec->algorithm &&
-	    $key->{'key'} eq $keyin) {
-	    # the key exactly matches a stored key
-	    $newkey = 0;
-            last;
+    for (my $i = 0; $i <= $#{$storage->{$domain}}; $i++) {
+        if ($storage->{$domain}[$i]{key} eq $keyin &&
+            $storage->{$domain}[$i]{flags} eq $rec->flags &&
+            $storage->{$domain}[$i]{protocol} eq $rec->protocol &&
+            $storage->{$domain}[$i]{algorithm} eq $rec->algorithm) {
+
+            $newkey = 0;
+            # any match is good enough, get out now
+            $i = $#{$storage->{$domain}} + 1;
 	} else {
             $newkey = 1;
         }
