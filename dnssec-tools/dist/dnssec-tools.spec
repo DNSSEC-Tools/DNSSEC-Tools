@@ -1,21 +1,20 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.0
+Version: 1.1
 Release: 1%{?dist}
 License: BSD
-Group: System Environment
+Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
 Source0: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-# we auto-load at runtime (with errors and help text) a bunch of stuff
-# so we try to not force require some perl modules that the rpm build
-# system would otherwise find.  Hence the no auto requirement derivation.
-#AutoReqProv: no
 Requires: perl-Net-DNS, dnssec-tools-perlmods, bind
 Requires:  perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 BuildRequires: openssl-devel
-Patch4: dnssec-tools-linux-conf-paths.patch
+Patch4: dnssec-tools-linux-conf-paths-1.1.patch
 Patch5: dnssec-tools-conf-file-location.patch
+Patch6: dnssec-tools-donuts-rules-paths.patch
+# remove after 1.1:
+Patch8: dnssec-tools-1.1-header-perms.patch
 
 %description
 
@@ -36,7 +35,7 @@ useful for other developers.
 
 %package libs
 Group: System Environment/Libraries
-Summary: C-based libraries for dnssec aware tools.
+Summary: C-based libraries for dnssec aware tools
 Requires: openssl
 
 %description libs
@@ -44,14 +43,15 @@ C-based libraries useful for developing dnssec aware tools.
 
 %package libs-devel
 Group: Development/Libraries
-Summary: development libraries for dnssec aware tools.
+Summary: C-based development libraries for dnssec aware tools
+Requires: dnssec-tools-libs
 
 %description libs-devel
 C-based libraries useful for developing dnssec aware tools.
 
 %package libs-debug
 Group: Development/Libraries
-Summary: debugging symbols for dnssec-tools libraries.
+Summary: Debugging symbols for dnssec-tools libraries
 
 %description libs-debug
 debugging symbols for dnssec-tools libraries.
@@ -61,14 +61,19 @@ debugging symbols for dnssec-tools libraries.
 
 %patch4 -p0
 %patch5 -p0
+%patch6 -p0
+%patch8 -p0
 
 %build
 %configure --with-perl-build-args="INSTALLDIRS=vendor"
+sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
+sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-%makeinstall DESTCONFDIR=$RPM_BUILD_ROOT/etc/dnssec/ DESTDIR=$RPM_BUILD_ROOT
+#%makeinstall DESTCONFDIR=$RPM_BUILD_ROOT/etc/dnssec/
+make install DESTCONFDIR=$RPM_BUILD_ROOT/etc/dnssec/ DESTDIR=$RPM_BUILD_ROOT QUIET=
 
 # remove unneeded perl install files
 find $RPM_BUILD_ROOT -type f -name .packlist -exec rm -f {} ';'
@@ -76,6 +81,10 @@ find $RPM_BUILD_ROOT -type f -name perllocal.pod -exec rm -f {} ';'
 # remove empty directories
 find $RPM_BUILD_ROOT -type d -depth -exec rmdir {} 2>/dev/null ';'
 chmod -R u+w $RPM_BUILD_ROOT/*
+
+%post libs -p /sbin/ldconfig
+
+%postun libs -p /sbin/ldconfig
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -97,7 +106,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/maketestzone
 %{_bindir}/mapper
 %{_bindir}/zonesigner
-%{_datadir}/donuts/rules/*
+# this doesn't use %{_datadir} because patch6 above uses this exact path
+/usr/share/dnssec-tools/donuts/rules/*
 
 %{_bindir}/dtconfchk
 %{_bindir}/dtdefs
@@ -111,6 +121,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/rollctl
 %{_bindir}/rollerd
 %{_bindir}/rollinit
+%{_bindir}/rollset
 
 %{_bindir}/validate
 
@@ -148,6 +159,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/rollctl.1.gz
 %{_mandir}/man1/rollerd.1.gz
 %{_mandir}/man1/rollinit.1.gz
+%{_mandir}/man1/rollset.1.gz
 %{_mandir}/man1/TrustMan.pl.1.gz
 %{_mandir}/man1/blinkenlights.1.gz
 %{_mandir}/man1/cleankrf.1.gz
@@ -175,6 +187,7 @@ rm -rf $RPM_BUILD_ROOT
 %{perl_vendorlib}/Net/DNS/SEC/Tools/defaults.pm
 %{perl_vendorlib}/Net/DNS/SEC/Tools/timetrans.pm
 %{perl_vendorlib}/Net/DNS/SEC/Tools/tooloptions.pm
+%{perl_vendorlib}/Net/DNS/SEC/Tools/dnssectools.pm
 %{perl_vendorlib}/Net/DNS/ZoneFile/Fast.pm
 %{perl_vendorlib}/TrustMan.pl
 
@@ -188,17 +201,19 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/Net::DNS::SEC::Tools::defaults.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::timetrans.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::tooloptions.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::dnssectools.3pm.gz
 %{_mandir}/man3/Net::DNS::ZoneFile::Fast.3pm.gz
 
 %files libs
 %defattr(-,root,root)
-%{_libdir}/*.so*
+%{_libdir}/*.so.*
 
 %files libs-devel
 %defattr(-,root,root)
-%{_includedir}
+%{_includedir}/*.h
 %{_libdir}/*.a
 %{_libdir}/*.la
+%{_libdir}/*.so
 
 %{_mandir}/man3/libval.3.gz
 %{_mandir}/man3/val_getaddrinfo.3.gz
@@ -220,11 +235,13 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libs-debug
 %{_libdir}/debug/%{_bindir}/validate.debug
-%{_libdir}/debug/%{_libdir}/libsres.so.2.0.0.debug
-%{_libdir}/debug/%{_libdir}/libval.so.2.0.0.debug
+%{_libdir}/debug/%{_libdir}/libsres.so.3.0.0.debug
+%{_libdir}/debug/%{_libdir}/libval-threads.so.3.0.0.debug
 %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.c
-%{_prefix}/src/debug/%{name}-%{version}/validator/*/*.h
+%attr(644,root,root) %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.h
 %changelog
+* Mon Mar 19 2007  <Wes Hardaker <wes@hardakers.net>> - 1.1-1
+- Updated to 1.1 and fixed rpmlint issues
 
 * Mon Dec 04 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.0
 - updated to 1.0
