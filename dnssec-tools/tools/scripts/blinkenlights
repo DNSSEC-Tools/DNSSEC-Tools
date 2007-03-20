@@ -78,12 +78,22 @@ my $STARTROW = 2;		# First row on which zone info will be shown.
 my $ROWINCR  = 3;		# Number of rows for each zone.
 
 #
-# Column constants.
+# Column constants for infostripe.
 #
-my $RRFCOL	= 0;		# Infostripe column holding rollrec filename.
-my $ROLLCNTCOL	= 1;		# Infostripe column holding rolled zones count.
-my $SKIPCNTCOL	= 2;		# Infostripe column holding skipped zones count.
-my $SLEEPCOL	= 3;		# Infostripe column holding rollerd's sleeptime.
+my $RRFCOL	= 0;		# rollrec filename.
+my $ROLLCNTCOL	= 1;		# rolled zones count.
+my $SKIPCNTCOL	= 2;		# skipped zones count.
+my $SLEEPCOL	= 3;		# rollerd's sleeptime.
+
+#
+# Column constants for zonestripes.
+#
+my $NAMECOL	= 0;		# Zone name. 
+my $PHASECOL	= 1;		# Rollover phase.
+my $ZSKLBLCOL	= 2;		# ZSK label.
+my $ZSKKEYCOL	= 3;		# ZSK key/signing set name.
+my $KSKLBLCOL	= 4;		# KSK label.
+my $KSKKEYCOL	= 5;		# KEK key/signing set name.
 
 my $PAINTMAX	= 100;		# Maximum screen paints before screen rebuild.
 my $paintcount	= -1;		# Count of screen paints.
@@ -194,15 +204,30 @@ my @zphasecolors =
 );
 
 #
-# Descriptions of the rollover phases.
+# Descriptions of the KSK rollover phases.
 #
-my @phasedescr =
+my @kphasedescr =
 (
-	"  normal operation  ",			# phase 0
-	"  first cache-expire wait  ",		# phase 1
-	"  sign with ZSKCUR and ZSKPUB  ",	# phase 2
-	"  second cache-expire wait  ",		# phase 3
-	"  sign with ZSKPUB and ZSKNEW  ",	# phase 4
+	"  normal operation  ",				# phase 0
+	"  first cache-expire wait  ",			# phase 1
+	"  sign with KSKCUR, KSKPUB, and ZSKCUR  ",	# phase 2
+	"  second cache-expire wait  ",			# phase 3
+	"  sign with KSKPUB and ZSKCUR  ",		# phase 4
+	"  transfer keyset to parent  ",		# phase 5
+	"  wait for parent to publish DS  ",		# phase 6
+	"  reload zone  ",				# phase 7
+);
+
+#
+# Descriptions of the ZSK rollover phases.
+#
+my @zphasedescr =
+(
+	"  normal operation  ",				# phase 0
+	"  first cache-expire wait  ",			# phase 1
+	"  sign with ZSKCUR and ZSKPUB  ",		# phase 2
+	"  second cache-expire wait  ",			# phase 3
+	"  sign with ZSKPUB and ZSKNEW  ",		# phase 4
 );
 
 #######################################################################
@@ -605,13 +630,7 @@ sub buildmainwind
 	#
 	# Add the big ol' zone-status widget.
 	#
-	$zonetab = $body->Table(-rows => 12, -columns => 4,
-				-scrollbars  => 'e',
-				-relief	     => 'raised',
-				-borderwidth => 1,
-				-fixedrows => 0,
-				-takefocus => 1,
-			       );
+	$zonetab = maketable();
 	$zonetab->pack(-fill => 'both', -expand => 1);
 	$body->pack(-fill => 'both', -expand => 1);
 
@@ -1055,6 +1074,23 @@ sub painter
 }
 
 #---------------------------------------------------------------------------
+# Routine:	maketable()
+#
+# Purpose:	Create the zone status table.
+#
+sub maketable
+{
+	$zonetab = $body->Table(-rows		=> 12,
+				-columns	=> 6,
+				-scrollbars	=> 'e',
+				-relief		=> 'raised',
+				-borderwidth	=> 1,
+				-fixedrows	=> 0,
+				-takefocus	=> 1,
+			       );
+}
+
+#---------------------------------------------------------------------------
 # Routine:	buildtable()
 #
 # Purpose:	Rebuild the zone status table.  This also re-reads the
@@ -1075,13 +1111,7 @@ sub buildtable
 	#
 	# Create a brand new table.
 	#
-	$zonetab = $body->Table(-rows => 12, -columns => 4,
-				-scrollbars  => 'e',
-				-relief	     => 'raised',
-				-borderwidth => 1,
-				-fixedrows   => 0,
-				-takefocus   => 1,
-			       );
+	$zonetab = maketable();
 
 	#
 	# Re-populate and update the table.
@@ -1278,19 +1308,27 @@ sub headerstripe
 
 	$lab = $zonetab->Label(-text => 'Zone Name    ',
 			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,0,$lab);
+	$zonetab->put($TITLEROW,$NAMECOL,$lab);
 
 	$lab = $zonetab->Label(-text => 'Status',
 			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,1,$lab);
+	$zonetab->put($TITLEROW,$PHASECOL,$lab);
 
 	$lab = $zonetab->Label(-text => 'ZSK Type    ',
 			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,2,$lab);
+	$zonetab->put($TITLEROW,$ZSKLBLCOL,$lab);
 
 	$lab = $zonetab->Label(-text => 'ZSK Name    ',
 			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,3,$lab);
+	$zonetab->put($TITLEROW,$ZSKKEYCOL,$lab);
+
+	$lab = $zonetab->Label(-text => 'KSK Type    ',
+			       -font => $font, -background => 'tan');
+	$zonetab->put($TITLEROW,$KSKLBLCOL,$lab);
+
+	$lab = $zonetab->Label(-text => 'KSK Name    ',
+			       -font => $font, -background => 'tan');
+	$zonetab->put($TITLEROW,$KSKKEYCOL,$lab);
 }
 
 #---------------------------------------------------------------------------
@@ -1317,10 +1355,13 @@ sub zonestripe
 	my $zskcur;					# Current ZSK.
 	my $zskpub;					# Published ZSK.
 	my $zsknew;					# New ZSK.
+	my $kskcur;					# Current KSK.
+	my $kskpub;					# Published KSK.
 
 	my $blank;					# Blank label.
 	my $lab;					# Non-blank label.
 	my $zonetxt;					# Zone name.
+	my $phasedescr;					# Roll phase descrip.
 
 	#
 	# Don't account for this zone if it shouldn't be displayed.
@@ -1360,6 +1401,15 @@ sub zonestripe
 #	$zonetxt  = "  $zone  ";
 
 	#
+	# Set the rollover description field.
+	#
+	$phasedescr = $zphasedescr[$phase];
+	if($rolltype eq 'KSK')
+	{
+		$phasedescr = $kphasedescr[$phase];
+	}
+
+	#
 	# Handle skipped zones here.  We won't do anything if skipped zones
 	# shouldn't be displayed.  Otherwise, we'll just put up a single line.
 	#
@@ -1374,18 +1424,24 @@ sub zonestripe
 				       -foreground => $fgcolor,
 				       -background => $bgcolor);
 #				       -background => $bgcolor, -anchor => 'w');
-		$zonetab->put($row0,0,$lab);
+		$zonetab->put($row0,$NAMECOL,$lab);
 
 		$lab = $zonetab->Label(-text => 'skipping', -font => $font,
 				       -foreground => $NORMALFG,
 				       -background => $bgcolor);
-		$zonetab->put($row0,1,$lab);
+		$zonetab->put($row0,$PHASECOL,$lab);
 
 		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-		$zonetab->put($row0,2,$blank);
+		$zonetab->put($row0,$ZSKLBLCOL,$blank);
 
 		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-		$zonetab->put($row0,3,$blank);
+		$zonetab->put($row0,$ZSKKEYCOL,$blank);
+
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row0,$KSKLBLCOL,$blank);
+
+		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
+		$zonetab->put($row0,$KSKKEYCOL,$blank);
 
 		#
 		# Update the display.
@@ -1405,10 +1461,10 @@ sub zonestripe
 			       -background => $bgcolor);
 #			       -background => $bgcolor, -anchor => 'w');
 
-	$zonetab->put($row1,0,$lab);
+	$zonetab->put($row1,$NAMECOL,$lab);
 	$blank = $zonetab->Label(-text => ' ', -font => $font,
 				 -background => $bgcolor);
-	$zonetab->put($row2,0,$blank);
+	$zonetab->put($row2,$NAMECOL,$blank);
 
 	###########################################
 	#
@@ -1419,31 +1475,36 @@ sub zonestripe
 	$lab = $zonetab->Label(-text => $phasestr, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
-	$zonetab->put($row0,1,$lab);
-	$lab = $zonetab->Label(-text => $phasedescr[$phase],
+	$zonetab->put($row0,$PHASECOL,$lab);
+	$lab = $zonetab->Label(-text => $phasedescr,
 			       -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
-	$zonetab->put($row1,1,$lab);
+	$zonetab->put($row1,$PHASECOL,$lab);
 	$lab = $zonetab->Label(-text => $chronos, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $phasecolor);
-	$zonetab->put($row2,1,$lab);
+	$zonetab->put($row2,$PHASECOL,$lab);
 
 	###########################################
 	#
-	# Third and fourth columns:  zone keys
+	# Interlude:  Get the keyrec file.
+	#
+
+	my $krf = $keyrecs{$zone};
+	keyrec_read($krf);
+
+	###########################################
+	#
+	# Third and fourth columns:  ZSKs
 	#
 
 	#
 	# Get the zone's key names.
 	#
-	my $krf = $keyrecs{$zone};
-	keyrec_read($krf);
 	$zskcur = keyrec_recval($zone,'zskcur');
 	$zskpub = keyrec_recval($zone,'zskpub');
 	$zsknew = keyrec_recval($zone,'zsknew');
-	keyrec_close();
 
 	#
 	# Add some spacing to the fields.
@@ -1458,15 +1519,15 @@ sub zonestripe
 	$lab = $zonetab->Label(-text => "Current   ", -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row0,2,$lab);
+	$zonetab->put($row0,$ZSKLBLCOL,$lab);
 	$lab = $zonetab->Label(-text => "Published   ", -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row1,2,$lab);
+	$zonetab->put($row1,$ZSKLBLCOL,$lab);
 	$lab = $zonetab->Label(-text => "New   ", -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row2,2,$lab);
+	$zonetab->put($row2,$ZSKLBLCOL,$lab);
 
 	#
 	# Fourth columns:  key name
@@ -1474,22 +1535,71 @@ sub zonestripe
 	$lab = $zonetab->Label(-text => $zskcur, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row0,3,$lab);
+	$zonetab->put($row0,$ZSKKEYCOL,$lab);
 
 	$lab = $zonetab->Label(-text => $zskpub, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row1,3,$lab);
-
+	$zonetab->put($row1,$ZSKKEYCOL,$lab);
 	$lab = $zonetab->Label(-text => $zsknew, -font => $font,
 			       -foreground => $NORMALFG,
 			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row2,3,$lab);
+	$zonetab->put($row2,$ZSKKEYCOL,$lab);
 
+	###########################################
+	#
+	# Fifth and sixth columns:  KSKs
+	#
 
+	#
+	# Get the zone's key names.
+	#
+	$kskcur = keyrec_recval($zone,'kskcur');
+	$kskpub = keyrec_recval($zone,'kskpub');
+
+	#
+	# Add some spacing to the fields.
+	#
+	$kskcur	 .= "    ";
+	$kskpub	 .= "    ";
+
+	#
+	# Fifth column:  key label
+	#
+	$lab = $zonetab->Label(-text => "Current   ", -font => $font,
+			       -foreground => $NORMALFG,
+			       -background => $bgcolor, -anchor => 'w');
+	$zonetab->put($row0,$KSKLBLCOL,$lab);
+	$lab = $zonetab->Label(-text => "Published   ", -font => $font,
+			       -foreground => $NORMALFG,
+			       -background => $bgcolor, -anchor => 'w');
+	$zonetab->put($row1,$KSKLBLCOL,$lab);
+	$lab = $zonetab->Label(-text => " ", -font => $font,
+			       -foreground => $NORMALFG,
+			       -background => $bgcolor, -anchor => 'w');
+	$zonetab->put($row2,$KSKLBLCOL,$lab);
+
+	#
+	# Fourth columns:  key name
+	#
+	$lab = $zonetab->Label(-text => $kskcur, -font => $font,
+			       -foreground => $NORMALFG,
+			       -background => $bgcolor, -anchor => 'w');
+	$zonetab->put($row0,$KSKKEYCOL,$lab);
+	$lab = $zonetab->Label(-text => $kskpub, -font => $font,
+			       -foreground => $NORMALFG,
+			       -background => $bgcolor, -anchor => 'w');
+	$zonetab->put($row1,$KSKKEYCOL,$lab);
+	$lab = $zonetab->Label(-text => " ", -font => $font,
+			       -foreground => $NORMALFG,
+			       -background => $bgcolor, -anchor => 'w');
+	$zonetab->put($row2,$KSKKEYCOL,$lab);
+
+	###########################################
 	#
 	# Update the display.
 	#
+	keyrec_close();
 	$zonetab->update();
 }
 
