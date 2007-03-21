@@ -591,14 +591,14 @@ sub zsk_expired
 	{
 		$chronostr = timetrans($waitsecs);
 		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
-		display("expiration $rname 0 $waitsecs");
+		display("expiration $rname 0 ZSK $waitsecs");
 	}
 	else
 	{
 		$waitsecs = $cronus - $krsecs;
 		$chronostr = timetrans($waitsecs);
 		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
-		display("phase $rname 0");
+		display("zskphase $rname 0");
 	}
 
 	#
@@ -1045,14 +1045,14 @@ sub ksk_expired
 	{
 		$chronostr = timetrans($waitsecs);
 		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
-		display("expiration $rname 0 $waitsecs");
+		display("expiration $rname 0 KSK $waitsecs");
 	}
 	else
 	{
 		$waitsecs = $cronus - $krsecs;
 		$chronostr = timetrans($waitsecs);
 		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
-		display("phase $rname 0");
+		display("kskphase $rname 0");
 	}
 
 	#
@@ -1551,7 +1551,7 @@ sub ttlexpire
 	$timediff = $endtempus - $curtempus;
 	$tdstr = timetrans($timediff);
 	rollmgr_log(LOG_INFO,$rname,"$keytype phase $phase; cache expires in $tdstr");
-	display("expiration $rname $phase $timediff");
+	display("expiration $rname $phase $keytype $timediff");
 
 	return(0)
 }
@@ -1634,7 +1634,7 @@ sub zskphase
 	rollrec_close();
 	rollrec_read($rollrecfile);
 
-	display("phase $rname $phase");
+	display("zskphase $rname $phase");
 
 	#
 	# If we're at the start of a rollover, we'll log the expiration time.
@@ -1737,7 +1737,7 @@ sub kskphase
 	rollrec_close();
 	rollrec_read($rollrecfile);
 
-#	display("kskphase $rname $phase");
+	display("kskphase $rname $phase");
 
 	#
 	# If we're at the start of a rollover, we'll log the expiration time.
@@ -2277,6 +2277,10 @@ sub commander
 		{
 			cmd_dspub($data);
 		}
+		elsif($cmd eq ROLLCMD_DSPUBALL())
+		{
+			cmd_dspuball();
+		}
 		elsif($cmd eq ROLLCMD_LOGFILE())
 		{
 			cmd_logfile($data);
@@ -2399,7 +2403,7 @@ sub cmd_display
 #-----------------------------------------------------------------------------
 # Routine:	cmd_dspub()
 #
-# Purpose:	
+# Purpose:	Move a zone from KSK rollover phase 6 to phase 7.
 #
 sub cmd_dspub
 {
@@ -2434,6 +2438,47 @@ sub cmd_dspub
 	# re-run the queue now.
 	#
 	kskphase($zone,$rrr,7);
+	rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
+	sleeper_override();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cmd_dspuball()
+#
+# Purpose:	Move all zones that are currently in KSK rollover phase 6
+#		to phase 7.
+#
+sub cmd_dspuball
+{
+	my $rrr;					# Reference to rollrec.
+	my $phase;					# Zone's phase.
+
+	rollmgr_log(LOG_TMI,"<command>","dspuball command received");
+
+	foreach my $zone (sort(rollrec_names()))
+	{
+		#
+		# Ensure we're in the proper KSK-rollover phase.
+		#
+		$phase = rollrec_recval($zone,'kskphase');
+		next if($phase != 6);
+
+		#
+		# Get the rollrec for this name.
+		#
+		$rrr = rollrec_fullrec($zone);
+		if(!defined($rrr))
+		{
+			rollmgr_sendresp(ROLLCMD_RC_BADZONE,"$zone not in rollrec file $rollrecfile");
+		}
+
+		#
+		# Change the zone's rollover phase to phase 7.
+		#
+		kskphase($zone,$rrr,7);
+		rollmgr_sendresp(ROLLCMD_RC_OKAY,"zone \"$zone\" now in KSK rollover phase 7");
+	}
+
 	sleeper_override();
 }
 
