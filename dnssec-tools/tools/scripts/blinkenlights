@@ -247,7 +247,7 @@ my $null;						# Empty frame.
 
 my $file;						# File menu.
 my $disp;						# Edit menu.
-my $cmdz;						# ZSK Commands menu.
+my $cmdg;						# General Commands menu.
 my $cmdk;						# KSK Commands menu.
 my $zdsp;						# Display menu.
 my $help;						# Help menu.
@@ -471,7 +471,7 @@ sub buildmainwind
 	$disp = $mbar->Menubutton(-text	     => 'Options',
 				  -tearoff   => 0,
 				  -underline => 0);
-	$cmdz = $mbar->Menubutton(-text	     => 'ZSK Control',
+	$cmdg = $mbar->Menubutton(-text	     => 'General Control',
 				  -tearoff   => 1,
 				  -underline => 0);
 	$cmdk = $mbar->Menubutton(-text	     => 'KSK Control',
@@ -546,45 +546,43 @@ sub buildmainwind
 
 	##################################################
 	#
-	# Add the ZSK Control menu entries.
+	# Add the General Control menu entries.
 	#
-	$cmdz->command(-label => "Roll Selected Zone's ZSKs",
-		       -command => [\&zsk_rollcmd, "rollzone"],
+	$cmdg->command(-label => "Roll Selected Zone",
+		       -command => [\&general_cmds, "rollzone"],
 		       -accelerator => 'Ctrl+R');
-	$cmdz->command(-label => "Roll All Zones's ZSKs",
-		       -command => [\&zsk_rollcmd, "rollall"]);
-	$cmdz->command(-label => 'Run the Queue',
-		       -command => [\&zsk_rollcmd, "runqueue"]);
-	$cmdz->separator();
+	$cmdg->command(-label => "Roll All Zones",
+		       -command => [\&general_cmds, "rollall"]);
+	$cmdg->command(-label => 'Run the Queue',
+		       -command => [\&general_cmds, "runqueue"]);
+	$cmdg->separator();
 
-	$cmdz->command(-label => 'Skip Selected Zone',
-		       -command => [\&zsk_rollcmd, "skipzone"],
+	$cmdg->command(-label => 'Skip Selected Zone',
+		       -command => [\&general_cmds, "skipzone"],
 		       -accelerator => 'Ctrl+S');
-	$cmdz->command(-label => 'Skip All Zones',
-		       -command => [\&zsk_rollcmd, "skipall"]);
+	$cmdg->command(-label => 'Skip All Zones',
+		       -command => [\&general_cmds, "skipall"]);
 
-	$cmdz->pack(-side => 'left');
+	$cmdg->pack(-side => 'left');
 
 	$wm->bind('<Control-Key-r>', \&zone_rollzone);
 	$wm->bind('<Control-Key-s>', \&zone_skipzone);
 
 	if($nomodify)
 	{
-		$cmdz->configure(-state => 'disabled');
+		$cmdg->configure(-state => 'disabled');
 	}
 
 	##################################################
 	#
 	# Add the KSK Control menu entries.
 	#
-	$cmdk->command(-label	=> 'DS Published',
+	$cmdk->command(-label	=> 'DS Published Selected Zone',
 		       -command => [\&kskcmd, "dspub"]);
-	$cmdk->command(-label	=> "Roll Selected Zone's KSKs",
-		       -command => [\&kskcmd, "rollzone"],
-		       -state	=> 'disabled');
-	$cmdk->command(-label	=> "Roll All Zones's KSKs",
-		       -command => [\&kskcmd, "rollall"],
-		       -state	=> 'disabled');
+	$cmdk->command(-label	=> 'DS Published All Zones',
+		       -command => [\&kskcmd, "dspuball"],
+#		       -state	=> 'disabled',
+		       );
 #	$cmdk->separator();
 #
 #	$cmdk->command(-label	=> 'Skip Selected Zone',
@@ -676,13 +674,13 @@ sub disp_color
 	if($nocolors)
 	{
 		$op_clrs->configure(-label => $NOCOLORING);
-		$cmdz->configure(-state => 'normal');
+		$cmdg->configure(-state => 'normal');
 		$nocolors = 0;
 	}
 	else
 	{
 		$op_clrs->configure(-label => $COLORING);
-		$cmdz->configure(-state => 'disabled');
+		$cmdg->configure(-state => 'disabled');
 		$nocolors = 1;
 	}
 
@@ -712,13 +710,15 @@ sub disp_modify
 	if($nomodify)
 	{
 		$op_mdfy->configure(-label => $DISALLOWCMDS);
-		$cmdz->configure(-state => 'normal');
+		$cmdg->configure(-state => 'normal');
+		$cmdk->configure(-state => 'normal');
 		$nomodify = 0;
 	}
 	else
 	{
 		$op_mdfy->configure(-label => $ALLOWCMDS);
-		$cmdz->configure(-state => 'disabled');
+		$cmdg->configure(-state => 'disabled');
+		$cmdk->configure(-state => 'disabled');
 		$nomodify = 1;
 	}
 }
@@ -775,7 +775,7 @@ sub disp_skip
 sub zone_rollzone
 {
 	return if($rollers{$selzone});
-	zsk_rollcmd("rollzone");
+	general_cmds("rollzone");
 }
 
 #---------------------------------------------------------------------------
@@ -786,15 +786,15 @@ sub zone_rollzone
 sub zone_skipzone
 {
 	return if(!$rollers{$selzone});
-	zsk_rollcmd("skipzone");
+	general_cmds("skipzone");
 }
 
 #---------------------------------------------------------------------------
-# Routine:	zsk_rollcmd()
+# Routine:	general_cmds()
 #
-# Purpose:	Handle the ZSK Command menu commands.
+# Purpose:	Handle the General Command menu commands.
 #
-sub zsk_rollcmd
+sub general_cmds
 {
 	my $rcmd = shift;				# Command to run.
 
@@ -860,23 +860,26 @@ sub kskcmd
 		# If a zone has been selected, we'll use it.  If not,
 		# we'll prompt the user for the zone.
 		#
-		if($selzone ne '')
-		{
-			$rcmd = "$rcmd $selzone";
-		}
-		else
+		$zone = $selzone;
+		if($selzone eq '')
 		{
 			$zone = getzone($rcmd);
 			return if($zone eq "");
-			$rcmd = "$rcmd $zone";
 		}
+
+		#
+		# Move the selected zone into rollover phase 7.
+		#
+		system("rollctl -q -dspub $zone");
+	}
+	elsif($rcmd eq "dspuball")
+	{
+		#
+		# Move this zone into rollover phase 7.
+		#
+		system("rollctl -q -dspuball");
 	}
 
-	#
-	# Build and execute the command string.
-	#
-	$rcmd = "rollctl -q -$rcmd";
-	system($rcmd);
 }
 
 #---------------------------------------------------------------------------
