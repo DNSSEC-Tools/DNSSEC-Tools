@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.  See the COPYING
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
 # file distributed with this software for details
 #
 #
@@ -34,16 +34,19 @@ my @opts =
 (
 	"halt",				# Shutdown rollerd.
 	"display",			# Turn on rollerd's graphical display.
+	"dspub=s",			# Parent has published a DS record.
+	"dspuball",			# Parents have published DS records.
 	"logfile=s",			# Set rollerd's log file.
 	"loglevel=s",			# Set rollerd's logging level.
 	"nodisplay",			# Turn off rollerd's graphical display.
-	"rollall",			# Roll all our zones.
+	"rollall",			# ZSK roll all our zones.
+	"rollksk=s",			# Roll the specified zone.
 	"rollrec=s",			# Change the rollrec file.
-	"rollzone=s",			# Roll the specified zone.
+	"rollzone=s",			# ZSK roll the specified zone.
 	"runqueue",			# Run the queue.
 	"shutdown",			# Shutdown rollerd.
 	"skipall",			# Stop all zones from rolling.
-	"skipzone=s",			# Stop the specified zone from rolling.
+	"skipzone=s",			# Stop the named zone from rolling.
 	"sleeptime=i",			# Set rollerd's sleep time.
 	"status",			# Get rollerd's status.
 	"zonelog=s",			# Set a zone's logging level.
@@ -58,10 +61,13 @@ my @opts =
 # Flags for the options.  Variable/option mapping should obvious.
 #
 my $dispflag;
+my $dspubflag;
+my $dspuballflag;
 my $logfileflag;
 my $loglevelflag;
 my $nodispflag;
 my $rollallflag;
+my $rollkskflag;
 my $rollrecflag;
 my $rollzoneflag;
 my $runqueueflag;
@@ -122,6 +128,36 @@ sub main()
 		else
 		{
 			print STDERR "rollerd display not started\n";
+		}
+	}
+	if($dspubflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUB,$dspubflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd informed that parent has published DS record for zone $dspubflag\n";
+		}
+		else
+		{
+			print STDERR "rollerd not informed that parent has published DS record for zone $dspubflag\n";
+			print STDERR "resp - <$dspubflag>\n";
+		}
+	}
+	if($dspuballflag)
+	{
+		rollmgr_sendcmd(CHANNEL_WAIT,ROLLCMD_DSPUBALL,$dspuballflag);
+
+		($ret, $resp) = rollmgr_getresp();
+		if($ret == ROLLCMD_RC_OKAY)
+		{
+			print "rollerd informed that parents have published DS record for all zones in KSK rollover phase 6\n";
+		}
+		else
+		{
+			print STDERR "rollerd not informed that parents have published DS record for all zones in KSK rollover phase 6\n";
+			print STDERR "resp - <$dspubflag>\n";
 		}
 	}
 	if($logfileflag)
@@ -354,10 +390,13 @@ sub doopts
 	#
 	$dispflag	= $options{'display'}	 || 0;
 	$nodispflag	= $options{'nodisplay'}	 || 0;
+	$dspubflag	= $options{'dspub'}	 || 0;
+	$dspuballflag	= $options{'dspuball'}	 || 0;
 	$quiet		= $options{'quiet'}	 || 0;
 	$logfileflag	= $options{'logfile'}	 || 0;
 	$loglevelflag	= $options{'loglevel'}	 || 0;
 	$rollallflag	= $options{'rollall'}	 || 0;
+	$rollkskflag	= $options{'rollksk'}	 || 0;
 	$rollrecflag	= $options{'rollrec'}	 || 0;
 	$rollzoneflag	= $options{'rollzone'}	 || 0;
 	$runqueueflag	= $options{'runqueue'}	 || 0;
@@ -421,6 +460,8 @@ sub usage
 	print STDERR "usage:  rollctl [options] \n";
 	print STDERR "\t-halt				shutdown rollerd\n";
 	print STDERR "\t-display			start graphical display\n";
+	print STDERR "\tdspub <zone>			parent has published DS record for zone\n";
+	print STDERR "\tdspuball			parents have published DS records for zones\n";
 	print STDERR "\t-logfile <logfile>		set log file\n";
 	print STDERR "\t-loglevel <loglevel>		set logging level\n";
 	print STDERR "\t-nodisplay			stop graphical display\n";
@@ -472,6 +513,19 @@ The following options are handled by B<rollctl>.
 
 =over 4
 
+=item I<-display>
+
+Starts the rollover status GUI.
+
+=item I<-dspub zone>
+
+Indicates that I<zone>'s parent has published a new DS record for I<zone>.
+
+=item I<-dspuball>
+
+Indicates that DS records have been published for all zones in phase 6 of
+KSK rollover.
+
 =item I<-halt>
 
 Cleanly halts B<rollerd> execution.
@@ -487,6 +541,10 @@ I<logfile> is B</dev/stdout> or B</dev/tty>.
 
 Sets the B<rollerd> logging level to I<loglevel>.
 This must be one of the valid logging levels defined in B<rollmgr.pm(3)>.
+
+=item I<-nodisplay>
+
+Stops the rollover status GUI.
 
 =item I<-rollall>
 
@@ -565,7 +623,7 @@ than in alphabetical order.
 
 =head1 COPYRIGHT
 
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHOR
