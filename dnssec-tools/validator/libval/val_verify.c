@@ -30,16 +30,19 @@
 #define BUFLEN 8192
 
 
-static int
+static void
 get_clock_skew(val_context_t *ctx,
-               u_int8_t *name_n)
+               u_int8_t *name_n,
+               long *skew,
+               long *ttl_x)
 {
-    struct clock_skew_policy *cs_pol, *cs_cur;
+    policy_entry_t *cs_pol, *cs_cur;
     u_int8_t       *p;
     int             name_len;
 
-    cs_pol = RETRIEVE_POLICY(ctx, P_CLOCK_SKEW,
-                    struct clock_skew_policy *);
+    *ttl_x = 0;
+
+    RETRIEVE_POLICY(ctx, P_CLOCK_SKEW, cs_pol);
     if (cs_pol) {
 
         name_len = wire_name_length(name_n);
@@ -69,11 +72,16 @@ get_clock_skew(val_context_t *ctx,
                 }
             }
             if (root_zone || (!namecmp(p, cs_cur->zone_n))) {
-                return cs_cur->clock_skew;
+                if (cs_cur->pol) {
+                    *skew = ((struct clock_skew_policy *)(cs_cur->pol))->clock_skew;
+                    if (cs_cur->exp_ttl > 0)
+                        *ttl_x = cs_cur->exp_ttl;
+                    return;
+                }
             }
         }
     }
-    return 0; /* no clock skew by default */
+    *skew = 0;
 }
 
 /*
@@ -88,11 +96,11 @@ val_sigverify(val_context_t * ctx,
               int data_len,
               const val_dnskey_rdata_t * dnskey,
               const val_rrsig_rdata_t * rrsig,
-              val_astatus_t * dnskey_status, val_astatus_t * sig_status)
+              val_astatus_t * dnskey_status, val_astatus_t * sig_status,
+              long clock_skew)
 {
     struct timeval  tv;
     struct timezone tz;
-    int clock_skew;
 
     if (dnskey == NULL) {
         *dnskey_status = VAL_AC_INVALID_KEY;
@@ -143,7 +151,6 @@ val_sigverify(val_context_t * ctx,
         return;
     }
 
-    clock_skew = get_clock_skew(ctx, zone_n);
 
     if (clock_skew >= 0) {
         
@@ -652,6 +659,8 @@ do_verify(val_context_t * ctx,
     //   size_t              sig_length;
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
+    long clock_skew;
+    long ttl_x;
 
     *dnskey_status = VAL_AC_UNSET;
     *sig_status = VAL_AC_UNSET;
@@ -682,11 +691,15 @@ do_verify(val_context_t * ctx,
                           &rrsig_rdata);
     rrsig_rdata.next = NULL;
 
+    get_clock_skew(ctx, zone_n, &clock_skew, &ttl_x);
+    /* the state is valid for only as long as the policy validity period */
+    SET_MIN_TTL(the_set->rrs.val_rrset_ttl_x, ttl_x);
+
     /*
      * Perform the verification 
      */
     val_sigverify(ctx, is_a_wildcard, zone_n, ver_field, ver_length, the_key,
-                  &rrsig_rdata, dnskey_status, sig_status);
+                  &rrsig_rdata, dnskey_status, sig_status, clock_skew);
 
     if (rrsig_rdata.signature != NULL) {
         FREE(rrsig_rdata.signature);
