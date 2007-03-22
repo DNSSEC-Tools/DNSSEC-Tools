@@ -589,6 +589,7 @@ follow_referral_or_alias_link(val_context_t * context,
     u_int8_t       *referral_zone_n;
     struct queries_for_query *added_q;
     u_int16_t       tzonestatus;
+    long            ttl_x;
 
     if ((matched_q == NULL) || (qnames == NULL) ||
         (learned_zones == NULL) || (queries == NULL) || (answers == NULL))
@@ -710,14 +711,16 @@ follow_referral_or_alias_link(val_context_t * context,
             int diff_name = 0;
 
             if (VAL_NO_ERROR != (ret_val =
-                is_trusted_zone(context, referral_zone_n, &tzonestatus))) { 
+                is_trusted_zone(context, referral_zone_n, &tzonestatus, &ttl_x))) { 
                 return ret_val;
             }
+            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
 
             if (VAL_NO_ERROR != (ret_val = 
-                find_trust_point(context, referral_zone_n, &tp))) {
+                find_trust_point(context, referral_zone_n, &tp, &ttl_x))) {
                 return ret_val;
             }
+            SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
 
             if (tp) {
                 diff_name = (namecmp(tp, referral_zone_n) != 0);
@@ -1013,10 +1016,9 @@ digest_response(val_context_t * context,
     int             qnamelen, tot;
     struct name_server *ns = NULL;
     int len;
-
     struct qname_chain **qnames;
-
     int             zonecut_was_modified = 0;
+    long ttl_x;
 
     if ((matched_q == NULL) ||
         (queries == NULL) ||
@@ -1390,10 +1392,10 @@ digest_response(val_context_t * context,
          */
         
         if (VAL_NO_ERROR != (ret_val =
-                is_trusted_zone(context, matched_q->qc_name_n, &tzonestatus))) { 
+                is_trusted_zone(context, matched_q->qc_name_n, &tzonestatus, &ttl_x))) { 
             goto done;
         }
-                    
+        SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
         
         if (tzonestatus == VAL_AC_WAIT_FOR_TRUST
             && matched_q->qc_respondent_server
