@@ -57,9 +57,11 @@ $(LIBVAL): $(LOBJ)
 	$(LIBTOOLLD) -o $@ $(LOBJ)
 
 install:
-	$(MKPATH) $(libdir)
-	$(LIBTOOLIN) $(LIBVAL) $(libdir)
+	$(MKPATH) $(DESTDIR)/$(libdir)
+	$(LIBTOOLIN) $(LIBVAL) $(DESTDIR)/$(libdir)
 	$(LIBTOOLFN)
-	$(MKPATH) $(includedir)
-	$(INSTALL) -m 644 ../include/validator/validator.h $(includedir)
-	$(INSTALL) -m 644 ../include/validator/val_errors.h $(includedir)
+	$(MKPATH) $(DESTDIR)/$(includedir)
+	$(INSTALL) -m 644 ../include/validator/validator.h \
+		$(DESTDIR)/$(includedir)
+	$(INSTALL) -m 644 ../include/validator/val_errors.h \
+		$(DESTDIR)/$(includedir)
