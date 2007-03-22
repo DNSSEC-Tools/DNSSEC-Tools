@@ -47,11 +47,13 @@ typedef struct testsuite_st {
 
 static testsuite * testsuite_head = NULL;
 
-extern int
-val_get_token(FILE * conf_ptr,
-          int *line_number,
-          char *conf_token,
-          int conf_limit, int *endst, char comment_c, char endstmt_c);
+extern int             
+val_get_token(char **buf_ptr,
+              char *end_ptr,
+              int *line_number,
+              char *conf_token,
+              int conf_limit,
+              int *endst, char comment_c, char endstmt_c);
 
 static void
 selftest_cleanup(void)
@@ -229,7 +231,6 @@ find_suite(const char *name)
 int
 read_val_testcase_file(const char *filename)
 {
-    FILE           *fp;
     int             fd;
     struct flock    fl;
     int             retval = VAL_NO_ERROR, endst = 0;
@@ -237,6 +238,9 @@ read_val_testcase_file(const char *filename)
     int             line_number = 1;
     testsuite      *curr_suite = NULL;
     testcase       *tmp_case = NULL, *tail = NULL;
+    char *buf_ptr, *end_ptr;
+    char *buf = NULL;
+    struct stat sb;
    
     fd = open(filename, O_RDONLY);
     if (fd == -1) {
@@ -245,32 +249,41 @@ read_val_testcase_file(const char *filename)
     memset(&fl, 0, sizeof(fl));
     fl.l_type = F_RDLCK;
     fcntl(fd, F_SETLKW, &fl);
-    fl.l_type = F_UNLCK;
 
-    fp = fdopen(fd, "r");
-    if (fp == NULL) {
-        fcntl(fd, F_SETLKW, &fl);
-        close(fd);
-        return VAL_INTERNAL_ERROR;
+    if (0 != fstat(fd, &sb)) {
+        retval = VAL_CONF_NOT_FOUND;
+        goto err;
     }
 
+    buf = (char *) MALLOC (sb.st_size * sizeof(char));
+    if (buf == NULL) {
+        retval = VAL_OUT_OF_MEMORY;
+        goto err;
+    }
+    buf_ptr = buf;
+    end_ptr = buf+sb.st_size;
+   
+    if (-1 == read(fd, buf, sb.st_size)) {
+        retval = VAL_CONF_NOT_FOUND;
+        goto err;
+    }
+ 
     testsuite_head = calloc(1, sizeof(*curr_suite));
     if (NULL == testsuite_head) {
-        fcntl(fd, F_SETLKW, &fl);
-        fclose(fp);
-        return VAL_OUT_OF_MEMORY;
+        retval = VAL_OUT_OF_MEMORY;
+        goto err;
     }
     testsuite_head->name = strdup("");
     tail = testsuite_head->head;
     curr_suite = testsuite_head;
 
-    for (; !feof(fp) && (VAL_NO_ERROR == retval); ++line_number) {
+    for (; (buf_ptr < end_ptr) && (VAL_NO_ERROR == retval); ++line_number) {
         char * pos;
         int i;
 
-        retval = val_get_token(fp, &line_number, token, sizeof(token),
+        retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
                            &endst, '#', ';');
-        if ((VAL_NO_ERROR != retval) || feof(fp))
+        if ((VAL_NO_ERROR != retval) || (buf_ptr >= end_ptr))
             break;
         if (endst) {
             retval = VAL_CONF_PARSE_ERROR;
@@ -302,11 +315,11 @@ read_val_testcase_file(const char *filename)
                     tail = tail->next;
             }
 
-            retval = val_get_token(fp, &line_number, token, sizeof(token),
+            retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
                                    &endst, '#', ';');
             if (VAL_NO_ERROR != retval)
                 break;
-            if (endst || feof(fp)) {
+            if (endst || (buf_ptr >= end_ptr)) {
                 retval = VAL_CONF_PARSE_ERROR;
                 break;
             }
@@ -333,11 +346,11 @@ read_val_testcase_file(const char *filename)
             break;
         }
         
-        retval = val_get_token(fp, &line_number, token, sizeof(token),
+        retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
                            &endst, '#', ';');
         if (VAL_NO_ERROR != retval)
             break;
-        if (endst || feof(fp)) {
+        if (endst || (buf_ptr >= end_ptr)) {
             retval = VAL_CONF_PARSE_ERROR;
             break;
         }
@@ -347,11 +360,11 @@ read_val_testcase_file(const char *filename)
             break;
         }
         
-        retval = val_get_token(fp, &line_number, token, sizeof(token),
+        retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
                            &endst, '#', ';');
         if (VAL_NO_ERROR != retval)
             break;
-        if (endst || feof(fp)) {
+        if (endst || (buf_ptr >= end_ptr)) {
             retval = VAL_CONF_PARSE_ERROR;
             break;
         }
@@ -362,11 +375,11 @@ read_val_testcase_file(const char *filename)
             break;
         }
         
-        retval = val_get_token(fp, &line_number, token, sizeof(token),
+        retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
                            &endst, '#', ';');
         if (VAL_NO_ERROR != retval)
             break;
-        if (endst || feof(fp)) {
+        if (endst || (buf_ptr >= end_ptr)) {
             retval = VAL_CONF_PARSE_ERROR;
             break;
         }
@@ -378,12 +391,12 @@ read_val_testcase_file(const char *filename)
         }
 
         i = 0;
-        while (!endst && !feof(fp) && (i<MAX_TEST_RESULTS)) {
-            retval = val_get_token(fp, &line_number, token, sizeof(token),
+        while (!endst && (buf_ptr <end_ptr) && (i<MAX_TEST_RESULTS)) {
+            retval = val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token),
                                &endst, '#', ';');
             if (VAL_NO_ERROR != retval)
                 break;
-            if (!feof(fp) || endst) {
+            if ((buf_ptr < end_ptr) || endst) {
                 tmp_case->qr[i] = vtc_parse_result(token);
                 if (0 == tmp_case->qr[i]) {
                     val_log(NULL, LOG_ERR, "invalid result %s", token);
@@ -432,8 +445,12 @@ read_val_testcase_file(const char *filename)
     }
 #endif
 
+err:
+    fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
-    fclose(fp);
+    close(fd);
+    if (buf)
+        free(buf);
 
     if (retval != VAL_NO_ERROR) {
         val_log(NULL, LOG_ERR, "Error around line %d of %s", line_number-1,
