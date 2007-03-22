@@ -1,7 +1,7 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
 Version: 1.1
-Release: 1%{?dist}
+Release: 2%{?dist}
 License: BSD
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
@@ -15,6 +15,7 @@ Patch5: dnssec-tools-conf-file-location.patch
 Patch6: dnssec-tools-donuts-rules-paths.patch
 # remove after 1.1:
 Patch8: dnssec-tools-1.1-header-perms.patch
+Patch9: dnssec-tools-pass-destdir.patch
 
 %description
 
@@ -25,7 +26,6 @@ help ease the deployment of DNSSEC-related technologies.
 %package perlmods
 Group: System Environment/Libraries
 Summary: Perl modules supporting DNSSEC (needed by the dnssec-tools)
-#Provides: perl(Net::DNS::SEC::Tools::timetrans), perl(Net::DNS::SEC::Tools::QWPrimitives), perl(Net::DNS::SEC::Tools::conf), perl(Net::DNS::SEC::Tools::keyrec), perl(Net::DNS::SEC::Tools::timetrans), perl(Net::DNS::SEC::Tools::tooloptions), perl(Net::DNS::ZoneFile::Fast)
 
 %description perlmods
 
@@ -44,17 +44,19 @@ C-based libraries useful for developing dnssec aware tools.
 %package libs-devel
 Group: Development/Libraries
 Summary: C-based development libraries for dnssec aware tools
-Requires: dnssec-tools-libs
+Requires: dnssec-tools-libs = %{version}-%{release}
 
 %description libs-devel
 C-based libraries useful for developing dnssec aware tools.
 
-%package libs-debug
+%package libs-debuginfo
 Group: Development/Libraries
-Summary: Debugging symbols for dnssec-tools libraries
+Summary: Debug information for package dnssec-tools
 
-%description libs-debug
-debugging symbols for dnssec-tools libraries.
+%description libs-debuginfo
+This package provides debug information for package dnssec-tools.
+Debug information is useful when developing applications that use this
+package or when debugging this package.
 
 %prep
 %setup -q
@@ -63,16 +65,18 @@ debugging symbols for dnssec-tools libraries.
 %patch5 -p0
 %patch6 -p0
 %patch8 -p0
+%patch9 -p0
 
 %build
 %configure --with-perl-build-args="INSTALLDIRS=vendor"
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
+sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' validator/libtool
+sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' validator/libtool
 make %{?_smp_mflags}
 
 %install
 rm -rf $RPM_BUILD_ROOT
-#%makeinstall DESTCONFDIR=$RPM_BUILD_ROOT/etc/dnssec/
 make install DESTCONFDIR=$RPM_BUILD_ROOT/etc/dnssec/ DESTDIR=$RPM_BUILD_ROOT QUIET=
 
 # remove unneeded perl install files
@@ -81,6 +85,7 @@ find $RPM_BUILD_ROOT -type f -name perllocal.pod -exec rm -f {} ';'
 # remove empty directories
 find $RPM_BUILD_ROOT -type d -depth -exec rmdir {} 2>/dev/null ';'
 chmod -R u+w $RPM_BUILD_ROOT/*
+rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
 
 %post libs -p /sbin/ldconfig
 
@@ -210,9 +215,8 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libs-devel
 %defattr(-,root,root)
-%{_includedir}/*.h
+%{_includedir}/validator/*.h
 %{_libdir}/*.a
-%{_libdir}/*.la
 %{_libdir}/*.so
 
 %{_mandir}/man3/libval.3.gz
@@ -233,14 +237,21 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/val_istrusted.3.gz
 %{_mandir}/man3/val_resolve_and_check.3.gz
 
-%files libs-debug
+%files libs-debuginfo
 %{_libdir}/debug/%{_bindir}/validate.debug
 %{_libdir}/debug/%{_libdir}/libsres.so.3.0.0.debug
 %{_libdir}/debug/%{_libdir}/libval-threads.so.3.0.0.debug
 %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.c
 %attr(644,root,root) %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.h
+
 %changelog
-* Mon Mar 19 2007  <Wes Hardaker <wes@hardakers.net>> - 1.1-1
+* Tue Mar 20 2007  <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.1-2
+- cleaned up spec file further for future submission to Fedora Extras
+- made -libs-devel depend on exact version of -libs
+- remove installed .la files
+- added patch to use proper DESTDIR passing in the top Makefile
+
+* Mon Mar 19 2007  <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.1-1
 - Updated to 1.1 and fixed rpmlint issues
 
 * Mon Dec 04 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.0
