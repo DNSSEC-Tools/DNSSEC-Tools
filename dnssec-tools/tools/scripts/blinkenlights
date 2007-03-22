@@ -104,7 +104,7 @@ my $PHASECOL	= $COL1;	# Rollover phase.
 my $ZSKLBLCOL	= $COL2;	# ZSK label.
 my $ZSKKEYCOL	= $COL3;	# ZSK key/signing set name.
 my $KSKLBLCOL	= $COL4;	# KSK label.
-my $KSKKEYCOL	= $COL5;	# KEK key/signing set name.
+my $KSKKEYCOL	= $COL5;	# KSK key/signing set name.
 
 my $UNUSED	= -1;		# Unused column.
 
@@ -3110,7 +3110,7 @@ zone stripes
 
 Each zone managed by B<rollerd> (i.e., every zone in the current I<rollrec>
 file) will have a zone stripe which describes that zone's current state.  The
-stripe is divided into three sections:  the zone name, the current rollover
+stripe is divided into four sections:  the zone name, the current rollover
 state, and the zone's DNSSEC keys.
 
 The zone name section just contains the name of the zone.
@@ -3120,8 +3120,11 @@ explanation of the phase, and the amount of time remaining in that rollover
 phase.  The phase explanation is "normal operation" when the zone isn't
 currently in rollover.
 
-The DNSSEC key section contains the names of the Current, Published, and New
-ZSK keys for that stripe's zone.
+The DNSSEC key section contains two subsections, one for the zone's ZSK keys
+and another for the zone's KSK keys.  Each subsection contains the names of
+the signing sets active for the zone.  The ZSK subsection lists the Current,
+Published, and New ZSK keys; the KSK subsection lists the Current and
+Published.
 
 See the WINDOW COLORS section for a discussion of the colors used for the
 zone stripes.
@@ -3199,36 +3202,36 @@ taken from the B<rgb.txt> file.
 
 Blue Shades:
 
-    blue              0 0 255
+    blue                0   0 255
     lightblue2        178 223 238
     darkslategray1    151 255 255
     skyblue1          135 206 255
-    steelblue1        99 184 255
-    turquoise1        0 245 255
+    steelblue1         99 184 255
+    turquoise1          0 245 255
     cornflower blue   100 149 237
-    dodger blue       30 144 255
+    dodger blue        30 144 255
 
 Red Shades:
 
-    red               255 0 0
+    red               255   0   0
     pink              255 192 203
     lightsalmon1      255 160 122
-    tomato            255 99 71
-    indianred         205 92 92
-    violetred1        255 62 150
-    orangered1        255 69 0
-    firebrick1        255 48 48
+    tomato            255  99  71
+    indianred         205  92  92
+    violetred1        255  62 150
+    orangered1        255  69   0
+    firebrick1        255  48  48
 
 Green Shades:
 
-    green             0 255 0
+    green               0 255   0
     darkseagreen1     193 255 193
     darkolivegreen1   202 255 112
     lightgreen        144 238 144
-    seagreen1         84 255 159
-    spring green      0 255 127
-    greenyellow       173 255 47
-    lawngreen         124 252 0
+    seagreen1          84 255 159
+    spring green        0 255 127
+    greenyellow       173 255  47
+    lawngreen         124 252   0
 
 =head1 MENU COMMANDS
 
@@ -3308,11 +3311,10 @@ response.
 
 =back
 
-=head2 Zone Control Menu
+=head2 General Control Menu
 
-The commands in this menu are GUI interfaces for the B<rollctl> command.
-Not all of the B<rollctl> commands have interfaces -- only those which
-directly affect zone management.
+The commands in this menu are GUI interfaces for the B<rollctl> commands
+related to <i>general</i> zone management.
 
 =over 4
 
@@ -3364,12 +3366,38 @@ will also be halted.
 
 =back
 
+=head2 KSK Control Menu
+
+The commands in this menu are GUI interfaces for the B<rollctl> commands
+related to KSK-specific zone management.
+
+=over 4
+
+=item *
+
+DS Published Selected Zone
+
+This command is used to indicate that the selected zone's parent has published
+a new DS record for the zone.  It moves the zone from phase 6 to phase 7 of
+KSK rollover.
+
+=item *
+
+DS Published All Zones
+
+This command is used to indicate that all the zones in KSK rollover phase 6
+have new DS records published by their parents.  It moves all these zones from
+phase 6 to phase 7 of KSK rollover.
+
+=back
+
 =head2 Zone Display Menu
 
-The commands in this menu are GUI interfaces for displaying or hiding zone
-stripes.  The commands allow all, some, or none of the zone stripes to be
-displayed.  Undisplayed rolling zones will continue to roll, but they will
-do so without the B<blinkenlights> window indicating this.
+The commands in this menu are GUI interfaces parts of the zone display.  There
+are commands for displaying and hiding both zone stripes and key columns.  The
+commands allow all, some, or none of the zone stripes and key columns to be
+displayed.  Undisplayed rolling zones will continue to roll, but they will do
+so without the B<blinkenlights> window indicating this.
 
 =over 4
 
@@ -3393,6 +3421,33 @@ All zones will be displayed in the B<blinkenlights> window.
 Hide All Zones
 
 No zones will be displayed in the B<blinkenlights> window.
+
+=item *
+
+KSK Sets (toggle)
+
+This menu item is a toggle to turn on or off the display of KSK signing set
+names.  If display is turned off, the columns holding the KSK signing set
+names and labels will be removed from the display and the display window will
+shrink.  If display is turned on, the columns holding the KSK signing set
+names and labels will be restored to the display and the display window will
+be expanded.
+
+When displayed, KSK signing sets will always be the right-most columns.
+
+=item *
+
+ZSK Sets (toggle)
+
+This menu item is a toggle to turn on or off the display of ZSK signing set
+names.  If display is turned off, the columns holding the ZSK signing set
+names and labels will be removed from the display and the display window will
+shrink.  If display is turned on, the columns holding the ZSK signing set
+names and labels will be restored to the display and the display window will
+be expanded.
+
+When displayed, ZSK signing sets will always be immediately to the right of
+the zone status column.
 
 =back
 
