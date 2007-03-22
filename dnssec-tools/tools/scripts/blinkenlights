@@ -653,7 +653,7 @@ sub buildmainwind
 	$zsksetmsg = $NOZSKSETS;
 	$zd_zsk = $zdsp->command(-label   => $zsksetmsg,
 				  -command => [\&disp_sets, 'ZSK'],
-				  -state   => 'disabled');
+				  -state   => 'normal');
 
 	$zdsp->pack(-side => 'left');
 
@@ -850,15 +850,16 @@ sub disp_sets
 		{
 			$lbl = $KSKSETS;
 			$showksksets = 0;
+			$numcols -= 2;
+
 			$kskkeycol = $UNUSED;
 			$ksklblcol = $UNUSED;
-
-			$numcols -= 2;
 		}
 		else
 		{
 			$lbl = $NOKSKSETS;
 			$showksksets = 1;
+			$numcols += 2;
 
 			#
 			# Assume we're putting the KSKs in their default
@@ -872,26 +873,69 @@ sub disp_sets
 				$kskkeycol = $ZSKKEYCOL;
 				$ksklblcol = $ZSKLBLCOL;
 			}
-
-			$numcols += 2;
 		}
 
 		#
 		# Set the menu item's new label.
 		#
 		$zd_ksk->configure(-label => $lbl);
-
-		#
-		# Recreate the display table.
-		#
-		$paintcount = $PAINTMAX + 1;
-		painter();
 	}
 	else
 	{
-		print STDERR "\n\nNOT currently handling ZSK display changes\n\n";
-		return;
+		#
+		# If we're currently displaying ZSK sets, we'll stop.
+		# If we aren't currently displaying ZSK sets, we'll start.
+		#
+		if($showzsksets)
+		{
+			$lbl = $ZSKSETS;
+			$showzsksets = 0;
+			$numcols -= 2;
+
+			#
+			# We're halting display of the ZSKs.  If KSKs are
+			# being displayed, we'll slide them over into the
+			# ZSKs' normal columns.
+			#
+			$zskkeycol = $UNUSED;
+			$zsklblcol = $UNUSED;
+			if($showksksets)
+			{
+				$kskkeycol = $ZSKKEYCOL;
+				$ksklblcol = $ZSKLBLCOL;
+			}
+		}
+		else
+		{
+			$lbl = $NOZSKSETS;
+			$showzsksets = 1;
+			$numcols += 2;
+
+			#
+			# We're putting the ZSKs in their default location.
+			# If KSKs are being displayed, we'll slide them over
+			# into their normal columns.
+			#
+			$zskkeycol = $ZSKKEYCOL;
+			$zsklblcol = $ZSKLBLCOL;
+			if($showksksets)
+			{
+				$kskkeycol = $KSKKEYCOL;
+				$ksklblcol = $KSKLBLCOL;
+			}
+		}
+
+		#
+		# Set the menu item's new label.
+		#
+		$zd_zsk->configure(-label => $lbl);
 	}
+
+	#
+	# Recreate the display table.
+	#
+	$paintcount = $PAINTMAX + 1;
+	painter();
 
 	#
 	# Recalculate the number of rows we need and redraw the screen.
@@ -1450,13 +1494,16 @@ sub headerstripe
 			       -font => $font, -background => 'tan');
 	$zonetab->put($TITLEROW,$PHASECOL,$lab);
 
-	$lab = $zonetab->Label(-text => 'ZSK Type    ',
-			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,$ZSKLBLCOL,$lab);
+	if($showzsksets)
+	{
+		$lab = $zonetab->Label(-text => 'ZSK Type    ',
+				       -font => $font, -background => 'tan');
+		$zonetab->put($TITLEROW,$zsklblcol,$lab);
 
-	$lab = $zonetab->Label(-text => 'ZSK Name    ',
-			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,$ZSKKEYCOL,$lab);
+		$lab = $zonetab->Label(-text => 'ZSK Name    ',
+				       -font => $font, -background => 'tan');
+		$zonetab->put($TITLEROW,$zskkeycol,$lab);
+	}
 
 	if($showksksets)
 	{
@@ -1570,11 +1617,16 @@ sub zonestripe
 				       -background => $bgcolor);
 		$zonetab->put($row0,$PHASECOL,$lab);
 
-		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-		$zonetab->put($row0,$ZSKLBLCOL,$blank);
+		if($showzsksets)
+		{
+			$blank = $zonetab->Label(-text => ' ',
+						 -background => $bgcolor);
+			$zonetab->put($row0,$zsklblcol,$blank);
 
-		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-		$zonetab->put($row0,$ZSKKEYCOL,$blank);
+			$blank = $zonetab->Label(-text => ' ',
+						 -background => $bgcolor);
+			$zonetab->put($row0,$zskkeycol,$blank);
+		}
 
 		if($showksksets)
 		{
@@ -1642,59 +1694,60 @@ sub zonestripe
 	#
 	# Third and fourth columns:  ZSKs
 	#
+	if($showzsksets)
+	{
+		#
+		# Get the zone's key names.
+		#
+		$zskcur = keyrec_recval($zone,'zskcur');
+		$zskpub = keyrec_recval($zone,'zskpub');
+		$zsknew = keyrec_recval($zone,'zsknew');
 
-	#
-	# Get the zone's key names.
-	#
-	$zskcur = keyrec_recval($zone,'zskcur');
-	$zskpub = keyrec_recval($zone,'zskpub');
-	$zsknew = keyrec_recval($zone,'zsknew');
+		#
+		# Add some spacing to the fields.
+		#
+		$zskcur	 .= "    ";
+		$zskpub	 .= "    ";
+		$zsknew	 .= "    ";
 
-	#
-	# Add some spacing to the fields.
-	#
-	$zskcur	 .= "    ";
-	$zskpub	 .= "    ";
-	$zsknew	 .= "    ";
+		#
+		# Third column:  key label
+		#
+		$lab = $zonetab->Label(-text => "Current   ", -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row0,$zsklblcol,$lab);
+		$lab = $zonetab->Label(-text => "Published   ", -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row1,$zsklblcol,$lab);
+		$lab = $zonetab->Label(-text => "New   ", -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row2,$zsklblcol,$lab);
 
-	#
-	# Third column:  key label
-	#
-	$lab = $zonetab->Label(-text => "Current   ", -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row0,$ZSKLBLCOL,$lab);
-	$lab = $zonetab->Label(-text => "Published   ", -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row1,$ZSKLBLCOL,$lab);
-	$lab = $zonetab->Label(-text => "New   ", -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row2,$ZSKLBLCOL,$lab);
+		#
+		# Fourth columns:  key name
+		#
+		$lab = $zonetab->Label(-text => $zskcur, -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row0,$zskkeycol,$lab);
 
-	#
-	# Fourth columns:  key name
-	#
-	$lab = $zonetab->Label(-text => $zskcur, -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row0,$ZSKKEYCOL,$lab);
-
-	$lab = $zonetab->Label(-text => $zskpub, -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row1,$ZSKKEYCOL,$lab);
-	$lab = $zonetab->Label(-text => $zsknew, -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row2,$ZSKKEYCOL,$lab);
+		$lab = $zonetab->Label(-text => $zskpub, -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row1,$zskkeycol,$lab);
+		$lab = $zonetab->Label(-text => $zsknew, -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row2,$zskkeycol,$lab);
+	}
 
 	###########################################
 	#
 	# Fifth and sixth columns:  KSKs
 	#
-
 	if($showksksets)
 	{
 		#
