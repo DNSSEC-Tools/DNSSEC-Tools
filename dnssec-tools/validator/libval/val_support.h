@@ -30,6 +30,12 @@
 #define FALSE   0
 #endif
 
+#define SET_MIN_TTL(q_ttl, new_ttl) do {\
+    if (new_ttl != 0 && \
+            (q_ttl == 0 || q_ttl > new_ttl))\
+        q_ttl = new_ttl;\
+}while(0)
+
 #define ALLOCATE_REFERRAL_BLOCK(ref) do{ \
 		ref = (struct delegation_info *) MALLOC (sizeof(struct delegation_info)); \
 		if (ref == NULL) \
