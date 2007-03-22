@@ -88,15 +88,13 @@ val_create_context_with_conf(char *label,
     (*newcontext)->nslist = NULL; 
 
     (*newcontext)->e_pol =
-        (policy_entry_t *) MALLOC(MAX_POL_TOKEN * sizeof(policy_entry_t));
+        (policy_entry_t **) MALLOC(MAX_POL_TOKEN * sizeof(policy_entry_t *));
     if ((*newcontext)->e_pol == NULL) {
         retval = VAL_OUT_OF_MEMORY;
         goto err;
     }
-    memset((*newcontext)->e_pol, 0,
-           MAX_POL_TOKEN * sizeof(policy_entry_t));
-    (*newcontext)->pol_overrides = NULL;
-    (*newcontext)->cur_override = NULL;
+    memset(((*newcontext)->e_pol), 0,
+           MAX_POL_TOKEN * sizeof(policy_entry_t *));
    
     /*
      * Read the Root Hints file; has to be read before resolver config file 
