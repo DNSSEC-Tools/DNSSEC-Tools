@@ -40,6 +40,12 @@
 #include <validator/validator.h>
 #include "validator_driver.h"
 
+#define NO_OF_THREADS 0
+
+#if NO_OF_THREADS
+#include <pthread.h>
+#endif
+
 #define BUFLEN 16000
 
 int             MAX_RESPCOUNT = 10;
@@ -206,7 +212,7 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
         return -1;
 
     fprintf(stderr, "%s: ****START**** \n", desc);
-
+    
     ret_val =
         val_resolve_and_check(context, name_n, class, type, 0, &results);
 
@@ -527,6 +533,73 @@ endless_loop(void)
     free_validator_cache();
 }
 
+void 
+one_test(val_context_t *context, u_int8_t *name_n, u_int16_t class_h, 
+        u_int16_t type_h, int retvals[], int doprint)
+{
+    struct val_response *resp = NULL;
+    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, &resp);
+    fprintf(stderr, "\n");
+
+    // If the print option is present, perform query and validation
+    // again for printing the result
+    if (doprint) {
+        print_val_response(resp);
+    }
+
+    if (resp) 
+        val_free_response(resp);
+}
+
+#if NO_OF_THREADS
+struct thread_params_st {
+    val_context_t *context;
+    int tcs;
+    int tce;
+    char *testcase_config;
+    char *suite;
+    int doprint;
+    int wait;
+};
+
+struct thread_params_ot {
+    val_context_t *context;
+    u_int8_t *name_n;
+    u_int16_t class_h;
+    u_int16_t type_h;
+    int *retvals;
+    int doprint;
+    int wait;
+};
+
+void *firethread_st(void *param) {
+    struct thread_params_st *threadparams = (struct thread_params_st *)param;
+    /*child process*/
+    do {
+        self_test(threadparams->context, threadparams->tcs, threadparams->tce, 
+                  threadparams->testcase_config, threadparams->suite, threadparams->doprint);
+        if (threadparams->wait)
+            sleep(threadparams->wait);
+    }while (threadparams->wait);
+    
+    return NULL;
+}
+
+void *firethread_ot(void *param) {
+    struct thread_params_ot *threadparams = (struct thread_params_ot *)param;
+    /*child process*/
+    do {
+        one_test(threadparams->context, threadparams->name_n, threadparams->class_h, 
+                  threadparams->type_h, threadparams->retvals, threadparams->doprint);
+        if (threadparams->wait)
+            sleep(threadparams->wait);
+    }while (threadparams->wait);
+    
+    return NULL;
+}
+#endif
+
+
 /*============================================================================
  *
  * main() BEGINS HERE
@@ -555,7 +628,6 @@ main(int argc, char *argv[])
     char           *suite = NULL, *testcase_config = NULL;
     u_char          name_n[NS_MAXCDNAME];
     val_log_t      *logp;
-    struct val_response *resp;
     int             rc;
 
     if (argc == 1)
@@ -713,6 +785,7 @@ main(int argc, char *argv[])
 #endif
 
     rc = 0;
+
     // optind is a global variable.  See man page for getopt_long(3)
     if (optind >= argc) {
         if (!selftest && (tcs == -1)) {
@@ -722,12 +795,31 @@ main(int argc, char *argv[])
             goto done;
         } else {
 
+#if NO_OF_THREADS
+            pthread_t tids[NO_OF_THREADS];
+            struct thread_params_st 
+                threadparams = {context, tcs, tce, testcase_config, suite, doprint, wait};
+            int j;
+                
+            for (j=0; j < NO_OF_THREADS; j++) {
+                fprintf(stderr, "Start of thread %d\n context=%u\n", j, (unsigned int)context);
+                pthread_create(&tids[j], NULL, firethread_st, (void *)&threadparams);
+            }
+                
+            for (j=0; j < NO_OF_THREADS; j++) {
+                pthread_join(tids[j], NULL);
+                fprintf(stderr, "End of thread %d\n", j);
+            }
+            fprintf(stderr, "Parent exiting\n");
+#else
             do { /* endless loop */ 
                 rc = self_test(context, tcs, tce, testcase_config, suite,
                                doprint);
                 if (wait)
                     sleep(wait);
             } while (wait && !rc);
+#endif
+
         }
 
         goto done;
@@ -740,25 +832,30 @@ main(int argc, char *argv[])
         goto done;
     }
 
+#if NO_OF_THREADS
+    pthread_t tids[NO_OF_THREADS];
+    struct thread_params_ot 
+                threadparams = {context, name_n, class_h, type_h, retvals, doprint, wait};
+    int j;
+                
+    for (j=0; j < NO_OF_THREADS; j++) {
+        fprintf(stderr, "Start of thread %d\n context=%u\n", j, (unsigned int)context);
+        pthread_create(&tids[j], NULL, firethread_ot, (void *)&threadparams);
+    }
+    
+    for (j=0; j < NO_OF_THREADS; j++) {
+        pthread_join(tids[j], NULL);
+        fprintf(stderr, "End of thread %d\n", j);
+    }
+    fprintf(stderr, "Parent exiting\n");
+#else
     do { /* endless loop */
-        sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, &resp);
-        fprintf(stderr, "\n");
-
-        // If the print option is present, perform query and validation
-        // again for printing the result
-        if (doprint) {
-            print_val_response(resp);
-        }
-
-        if (resp) {
-            val_free_response(resp);
-            resp = NULL;
-        }
+        one_test(context, name_n, class_h, type_h, retvals, doprint);
 
         if (wait)
             sleep(wait);
     } while (wait);
-
+#endif
 
 done:
     if (context)
