@@ -189,8 +189,13 @@ extern          "C" {
     struct val_digested_auth_chain;     /* forward declaration */
     struct val_log;             /* forward declaration */
 
-
-#define policy_entry_t void*
+    typedef struct policy_glob {
+        u_int8_t        zone_n[NS_MAXCDNAME];
+        long            exp_ttl;
+        void *          pol;
+        struct policy_glob *next;
+    } policy_entry_t;
+    
     /*
      * The above is a generic data type for a policy entry
      * typecasted to one of the types defined in val_policy.h: 
@@ -237,7 +242,7 @@ extern          "C" {
 
     struct policy_list {
         int             index;
-        policy_entry_t  pol;
+        policy_entry_t  *pol;
         struct policy_list *next;
     };
 
@@ -292,9 +297,7 @@ extern          "C" {
          * validator policy 
          */
         time_t v_timestamp;
-        policy_entry_t *e_pol;
-        struct policy_overrides *pol_overrides;
-        struct policy_overrides *cur_override;
+        policy_entry_t **e_pol;
         
         /* Query and authentication chain caches */
         struct val_digested_auth_chain *a_list;
@@ -596,6 +599,8 @@ extern          "C" {
     int             root_hints_set(const char *name);
     char           *dnsval_conf_get(void);
     int             dnsval_conf_set(const char *name);
+    int             val_add_valpolicy(val_context_t *ctx, char *keyword, char *zone,
+                                      char *value, long ttl);
 
     /*
      * from val_support.h 
