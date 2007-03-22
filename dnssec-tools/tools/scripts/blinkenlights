@@ -39,7 +39,7 @@ dnssec_tools_load_mods(
 # Version information.
 #
 my $NAME   = "blinkenlights";
-my $VERS   = "$NAME version: 0.5";
+my $VERS   = "$NAME version: 0.7";
 my $DTVERS = "DNSSEC-Tools Version: 1.1";
 
 #######################################################################
@@ -66,7 +66,7 @@ my $DEMOCONFIG	= "./rc.blinkenlights";
 
 #######################################################################
 #
-# Data involved with display.
+# Data involved with column layout.
 #
 
 #
@@ -78,22 +78,53 @@ my $STARTROW = 2;		# First row on which zone info will be shown.
 my $ROWINCR  = 3;		# Number of rows for each zone.
 
 #
-# Column constants for infostripe.
+# Column constants.
 #
-my $RRFCOL	= 0;		# rollrec filename.
-my $ROLLCNTCOL	= 1;		# rolled zones count.
-my $SKIPCNTCOL	= 2;		# skipped zones count.
-my $SLEEPCOL	= 3;		# rollerd's sleeptime.
+my $COL0  = 0;			# Column 0.
+my $COL1  = 1;			# Column 1.
+my $COL2  = 2;			# Column 2.
+my $COL3  = 3;			# Column 3.
+my $COL4  = 4;			# Column 4.
+my $COL5  = 5;			# Column 5.
+my $MAXCOLS = 6;		# Maximum number of columns.
 
 #
-# Column constants for zonestripes.
+# Column constants for infostripe.
 #
-my $NAMECOL	= 0;		# Zone name. 
-my $PHASECOL	= 1;		# Rollover phase.
-my $ZSKLBLCOL	= 2;		# ZSK label.
-my $ZSKKEYCOL	= 3;		# ZSK key/signing set name.
-my $KSKLBLCOL	= 4;		# KSK label.
-my $KSKKEYCOL	= 5;		# KEK key/signing set name.
+my $RRFCOL	= $COL0;	# rollrec filename.
+my $ROLLCNTCOL	= $COL1;	# rolled zones count.
+my $SKIPCNTCOL	= $COL2;	# skipped zones count.
+my $SLEEPCOL	= $COL3;	# rollerd's sleeptime.
+
+#
+# Default column constants for zonestripes.
+#
+my $NAMECOL	= $COL0;	# Zone name. 
+my $PHASECOL	= $COL1;	# Rollover phase.
+my $ZSKLBLCOL	= $COL2;	# ZSK label.
+my $ZSKKEYCOL	= $COL3;	# ZSK key/signing set name.
+my $KSKLBLCOL	= $COL4;	# KSK label.
+my $KSKKEYCOL	= $COL5;	# KEK key/signing set name.
+
+my $UNUSED	= -1;		# Unused column.
+
+#
+# Variables holding current column layout data.
+#
+my $zskkeycol	= $ZSKKEYCOL;	# Current ZSK key/signing set name.
+my $zsklblcol	= $ZSKLBLCOL;	# Current ZSK label.
+my $kskkeycol	= $KSKKEYCOL;	# Current KEK key/signing set name.
+my $ksklblcol	= $KSKLBLCOL;	# Current KSK label.
+
+my $showksksets	= 1;		# Flag indicating if KSK signing sets are shown.
+my $showzsksets	= 1;		# Flag indicating if ZSK signing sets are shown.
+
+my $numcols	= $MAXCOLS;	# Number of columns in use.
+
+#######################################################################
+#
+# Data involved with display.
+#
 
 my $PAINTMAX	= 100;		# Maximum screen paints before screen rebuild.
 my $paintcount	= -1;		# Count of screen paints.
@@ -259,6 +290,8 @@ my $op_clrs;						# Colors item.
 my $op_mdfy;						# Modify toggle.
 my $op_shad;						# Shading toggle.
 my $op_skip;						# Skip toggle.
+my $zd_ksk;						# KSK set display toggle
+my $zd_zsk;						# ZSK set display toggle
 
 #
 # Messages for the Display menu.
@@ -275,6 +308,14 @@ my $NOSHADING	 = "Don't Shade Status Column";
 my $SHOWSKIP	 = "Display Skipped Zones";
 my $NOSKIP	 = "Hide Skipped Zones";
 
+#
+# Messages for the Zone menu.
+#
+my $NOKSKSETS = 'Hide KSK Sets';
+my $KSKSETS   = 'Show KSK Sets';
+my $NOZSKSETS = 'Hide ZSK Sets';
+my $ZSKSETS   = 'Show ZSK Sets';
+
 
 #
 # Flags for the menu options.
@@ -285,6 +326,8 @@ my $noshading;				# Shading/not shading zone stripes flag.
 my $noskip;				# Show/don't show skipped zones flag.
 
 my $shademsg;				# Message about shading.
+my $ksksetmsg;				# Message about KSK signing set display.
+my $zsksetmsg;				# Message about ZSK signing set display.
 
 #######################################################################
 #
@@ -580,18 +623,7 @@ sub buildmainwind
 	$cmdk->command(-label	=> 'DS Published Selected Zone',
 		       -command => [\&kskcmd, "dspub"]);
 	$cmdk->command(-label	=> 'DS Published All Zones',
-		       -command => [\&kskcmd, "dspuball"],
-#		       -state	=> 'disabled',
-		       );
-#	$cmdk->separator();
-#
-#	$cmdk->command(-label	=> 'Skip Selected Zone',
-#		       -command => [\&kskcmd, "skipzone"],
-#		       -state	=> 'disabled');
-#	$cmdk->command(-label	=> 'Skip All Zones',
-#		       -command => [\&kskcmd, "skipall"],
-#		       -state	=> 'disabled');
-#	$cmdk->separator();
+		       -command => [\&kskcmd, "dspuball"], );
 
 	$cmdk->pack(-side => 'left');
 
@@ -610,6 +642,19 @@ sub buildmainwind
 		       -command => [\&zdisp_setter, 1]);
 	$zdsp->command(-label	=> 'Hide All Zones',
 		       -command => [\&zdisp_setter, 0]);
+	$zdsp->separator();
+	$disp->pack(-side => 'left');
+
+	$ksksetmsg = $NOKSKSETS;
+	$zd_ksk = $zdsp->command(-label   => $ksksetmsg,
+				  -command => [\&disp_sets, 'KSK'],
+				  -state   => 'normal');
+
+	$zsksetmsg = $NOZSKSETS;
+	$zd_zsk = $zdsp->command(-label   => $zsksetmsg,
+				  -command => [\&disp_sets, 'ZSK'],
+				  -state   => 'disabled');
+
 	$zdsp->pack(-side => 'left');
 
 	##################################################
@@ -763,6 +808,94 @@ sub disp_skip
 		$noskip = 1;
 	}
 
+	calcrows();
+	repaint();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	disp_sets()
+#
+# Purpose:	Handle the KSK/ZSK signing sets display menu toggle.
+#		When handling a menu execution, the following actions are
+#		taken, regardless of whether it's to show or not-show KSK
+#		or ZSK signing sets.  
+#
+#			- Toggle the menu label.
+#			- Flip the appropriate display flag.
+#			- The appropriate key and label column variables
+#			  will be set.
+#			- The display table's column count will be adjusted
+#			  by 2.
+#
+#		The meaning of "appropriate" depends on which of the four
+#		possible reasons for calling the routine:  enable KSK display,
+#		disable KSK display, enable ZSK display, disable ZSK display.
+#
+sub disp_sets
+{
+	my $settype = shift;			# Type of set to munge.
+
+	my $lbl;				# New menu label.
+
+	#
+	# Handle a KSK enable or disable command.
+	#
+	if($settype eq 'KSK')
+	{
+		#
+		# If we're currently displaying KSK sets, we'll stop.
+		# If we aren't currently displaying KSK sets, we'll start.
+		#
+		if($showksksets)
+		{
+			$lbl = $KSKSETS;
+			$showksksets = 0;
+			$kskkeycol = $UNUSED;
+			$ksklblcol = $UNUSED;
+
+			$numcols -= 2;
+		}
+		else
+		{
+			$lbl = $NOKSKSETS;
+			$showksksets = 1;
+
+			#
+			# Assume we're putting the KSKs in their default
+			# location.  If ZSKs aren't being displayed, we'll
+			# slide the KSKs over into the ZSKs' columns.
+			#
+			$kskkeycol = $KSKKEYCOL;
+			$ksklblcol = $KSKLBLCOL;
+			if(!$showzsksets)
+			{
+				$kskkeycol = $ZSKKEYCOL;
+				$ksklblcol = $ZSKLBLCOL;
+			}
+
+			$numcols += 2;
+		}
+
+		#
+		# Set the menu item's new label.
+		#
+		$zd_ksk->configure(-label => $lbl);
+
+		#
+		# Recreate the display table.
+		#
+		$paintcount = $PAINTMAX + 1;
+		painter();
+	}
+	else
+	{
+		print STDERR "\n\nNOT currently handling ZSK display changes\n\n";
+		return;
+	}
+
+	#
+	# Recalculate the number of rows we need and redraw the screen.
+	#
 	calcrows();
 	repaint();
 }
@@ -1084,7 +1217,7 @@ sub painter
 sub maketable
 {
 	$zonetab = $body->Table(-rows		=> 12,
-				-columns	=> 6,
+				-columns	=> $numcols,
 				-scrollbars	=> 'e',
 				-relief		=> 'raised',
 				-borderwidth	=> 1,
@@ -1325,13 +1458,16 @@ sub headerstripe
 			       -font => $font, -background => 'tan');
 	$zonetab->put($TITLEROW,$ZSKKEYCOL,$lab);
 
-	$lab = $zonetab->Label(-text => 'KSK Type    ',
-			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,$KSKLBLCOL,$lab);
+	if($showksksets)
+	{
+		$lab = $zonetab->Label(-text => 'KSK Type    ',
+				       -font => $font, -background => 'tan');
+		$zonetab->put($TITLEROW,$ksklblcol,$lab);
 
-	$lab = $zonetab->Label(-text => 'KSK Name    ',
-			       -font => $font, -background => 'tan');
-	$zonetab->put($TITLEROW,$KSKKEYCOL,$lab);
+		$lab = $zonetab->Label(-text => 'KSK Name    ',
+				       -font => $font, -background => 'tan');
+		$zonetab->put($TITLEROW,$kskkeycol,$lab);
+	}
 }
 
 #---------------------------------------------------------------------------
@@ -1416,8 +1552,8 @@ sub zonestripe
 	# Handle skipped zones here.  We won't do anything if skipped zones
 	# shouldn't be displayed.  Otherwise, we'll just put up a single line.
 	#
-	#	column 1	column 2	column 3	column 4
-	#	zone name	"skipped"	<blank>		<blank>
+	#  column 1    column 2    column 3    column 4     column 5    column 6
+	#  zone name   "skipped"   <blank>     <blank>     <blank>     <blank>
 	#
 	if(($rollers{$zone} == 0) || ($phase == -42))
 	{
@@ -1440,11 +1576,16 @@ sub zonestripe
 		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
 		$zonetab->put($row0,$ZSKKEYCOL,$blank);
 
-		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-		$zonetab->put($row0,$KSKLBLCOL,$blank);
+		if($showksksets)
+		{
+			$blank = $zonetab->Label(-text => ' ',
+						 -background => $bgcolor);
+			$zonetab->put($row0,$ksklblcol,$blank);
 
-		$blank = $zonetab->Label(-text => ' ', -background => $bgcolor);
-		$zonetab->put($row0,$KSKKEYCOL,$blank);
+			$blank = $zonetab->Label(-text => ' ',
+						 -background => $bgcolor);
+			$zonetab->put($row0,$kskkeycol,$blank);
+		}
 
 		#
 		# Update the display.
@@ -1554,49 +1695,52 @@ sub zonestripe
 	# Fifth and sixth columns:  KSKs
 	#
 
-	#
-	# Get the zone's key names.
-	#
-	$kskcur = keyrec_recval($zone,'kskcur');
-	$kskpub = keyrec_recval($zone,'kskpub');
+	if($showksksets)
+	{
+		#
+		# Get the zone's key names.
+		#
+		$kskcur = keyrec_recval($zone,'kskcur');
+		$kskpub = keyrec_recval($zone,'kskpub');
 
-	#
-	# Add some spacing to the fields.
-	#
-	$kskcur	 .= "    ";
-	$kskpub	 .= "    ";
+		#
+		# Add some spacing to the fields.
+		#
+		$kskcur	 .= "    ";
+		$kskpub	 .= "    ";
 
-	#
-	# Fifth column:  key label
-	#
-	$lab = $zonetab->Label(-text => "Current   ", -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row0,$KSKLBLCOL,$lab);
-	$lab = $zonetab->Label(-text => "Published   ", -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row1,$KSKLBLCOL,$lab);
-	$lab = $zonetab->Label(-text => " ", -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row2,$KSKLBLCOL,$lab);
+		#
+		# Fifth column:  KSK keyset label
+		#
+		$lab = $zonetab->Label(-text => "Current   ", -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row0,$ksklblcol,$lab);
+		$lab = $zonetab->Label(-text => "Published   ", -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row1,$ksklblcol,$lab);
+		$lab = $zonetab->Label(-text => " ", -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row2,$ksklblcol,$lab);
 
-	#
-	# Fourth columns:  key name
-	#
-	$lab = $zonetab->Label(-text => $kskcur, -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row0,$KSKKEYCOL,$lab);
-	$lab = $zonetab->Label(-text => $kskpub, -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row1,$KSKKEYCOL,$lab);
-	$lab = $zonetab->Label(-text => " ", -font => $font,
-			       -foreground => $NORMALFG,
-			       -background => $bgcolor, -anchor => 'w');
-	$zonetab->put($row2,$KSKKEYCOL,$lab);
+		#
+		# Sixth columns:  KSK keyset name
+		#
+		$lab = $zonetab->Label(-text => $kskcur, -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row0,$kskkeycol,$lab);
+		$lab = $zonetab->Label(-text => $kskpub, -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row1,$kskkeycol,$lab);
+		$lab = $zonetab->Label(-text => " ", -font => $font,
+				       -foreground => $NORMALFG,
+				       -background => $bgcolor, -anchor => 'w');
+		$zonetab->put($row2,$kskkeycol,$lab);
+	}
 
 	###########################################
 	#
