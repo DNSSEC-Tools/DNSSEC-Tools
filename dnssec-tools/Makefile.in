@@ -63,7 +63,7 @@ subdirmake:
 subdirinstall:
 	$(QUIET)if test "x$(SUBDIRS)" != "xnone" ; then \
 	  for i in $(SUBDIRS) ; do \
-	   (cd $$i ; make install ) ; \
+	   (cd $$i ; make install DESTDIR=$(DESTDIR) ) ; \
 	   if test $$? != 0 ; then \
 	      exit 1 ; \
 	   fi  \

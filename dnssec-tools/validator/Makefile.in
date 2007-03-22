@@ -31,7 +31,7 @@ nextstepinstructions:
 	@echo "** If needed, please copy this file from validator/etc to $(VAL_ROOT_HINTS)"
 	@echo "**********************************************************************"
 	@echo ""
-    
+
 install: makedirectories localinstall subdirinstall nextstepinstructions
 
 clean: subdirclean
@@ -59,7 +59,7 @@ subdirmake:
 
 subdirinstall:
 	@for i in $(SUBDIRS) ; do \
-	  (cd $$i ; make install ) ; \
+	  (cd $$i ; make install DESTDIR=$(DESTDIR) ) ; \
 	  if test $$? != 0 ; then \
 	     exit 1 ; \
 	  fi  \

@@ -26,19 +26,19 @@ MAN3PAGES_SYMLINKS=val_resolve_and_check.3	\
 all: $(MAN1PAGES) $(MAN3PAGES) 
 
 install:
-	$(MKPATH) $(man1dir)
+	$(MKPATH) $(DESTDIR)/$(man1dir)
 	for i in $(MAN1PAGES) ; do		\
-	  $(DOCINSTALL) $$i $(man1dir) ;	\
+	  $(DOCINSTALL) $$i $(DESTDIR)/$(man1dir) ;	\
 	done
-	$(MKPATH) $(man3dir)
+	$(MKPATH) $(DESTDIR)/$(man3dir)
 	for i in $(MAN3PAGES) ; do		\
-	  $(DOCINSTALL) $$i $(man3dir) ;	\
+	  $(DOCINSTALL) $$i $(DESTDIR)/$(man3dir) ;	\
 	done
 	for i in $(MAN3PAGES_SYMLINKS) ; do		\
 	  rm -f $(man3dir)/$$i ;	\
-	  echo ".so $(LIBVAL_MAN)" > $(man3dir)/$$i  ;	\
+	  echo ".so $(LIBVAL_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
-	
+
 
 # we don't clean up the man pages as they're normally distributed with
 # the package and the generation rules are for the developers.
