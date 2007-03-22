@@ -37,29 +37,6 @@
 #include "val_context.h"
 #include "val_assertion.h"
 
-#ifndef VAL_NO_THREADS
- 
-#define LOCK_QC_SH(qc) do { \
-    if (0 != pthread_rwlock_rdlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-    } while (0)
-
-#define LOCK_QC_TRY_EX(qc) \
-    (0 == pthread_rwlock_trywrlock(&qc->qc_rwlock))
-
-#define UNLOCK_QC(qc) do { \
-    if (0 != pthread_rwlock_unlock(&qc->qc_rwlock))\
-        return VAL_INTERNAL_ERROR;\
-    } while (0)
-
-#else
-
-#define LOCK_QC_SH(qc) 
-#define LOCK_QC_TRY_EX(qc)
-#define UNLOCK_QC(qc)
-
-#endif /*VAL_NO_THREADS*/
-
 #define STRIP_LABEL(name, newname) do {\
     int label_len;\
     label_len = name[0];\
@@ -393,12 +370,25 @@ delete_authentication_chain_element(val_context_t *ctx,
             } else {
                 ctx->a_list = t_as->_as.val_ac_next;
             }
+            t_as->_as.val_ac_next = NULL;
             free_authentication_chain_structure(t_as);
+            FREE(t_as);
             return;
         } 
         t_as_prev = t_as;
     }
     return; 
+}
+
+void zap_query(val_context_t *context, struct val_query_chain *added_q) 
+{
+    if(context == NULL || added_q == NULL)
+        return;
+    
+    delete_authentication_chain_element(context, added_q->qc_ans);
+    delete_authentication_chain_element(context, added_q->qc_proof);
+    free_query_chain_structure(added_q);
+    reset_query_chain_node(added_q);
 }
 
 int
@@ -464,7 +454,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                     /* Invoke bad-cache logic only if validation is requested */
                     if (++added_q->qc_bad > QUERY_BAD_CACHE_THRESHOLD) {
                         added_q->qc_bad = QUERY_BAD_CACHE_THRESHOLD;
-                        added_q->qc_ttl_x = tv.tv_sec + QUERY_BAD_CACHE_TTL;
+                        SET_MIN_TTL(added_q->qc_ttl_x, tv.tv_sec + QUERY_BAD_CACHE_TTL);
                     } else {
                         added_q->qc_ttl_x = 0; 
                     }
@@ -477,10 +467,8 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                         snprintf(name_p, sizeof(name_p), "unknown/error");
                     val_log(context, LOG_DEBUG, "Data in cache timed out: {%s %d %d}", 
                                 name_p, added_q->qc_class_h, added_q->qc_type_h);
-                    delete_authentication_chain_element(context, added_q->qc_ans);
-                    delete_authentication_chain_element(context, added_q->qc_proof);
-                    free_query_chain_structure(added_q);
-                    reset_query_chain_node(added_q);
+                    zap_query(context, added_q);
+                    
                 }
 
                 UNLOCK_QC(added_q);
@@ -489,7 +477,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                 
         LOCK_QC_SH(added_q);
         *queries = temp;
-    }
+    } 
     
     *added_qfq = temp;
        
@@ -517,9 +505,9 @@ int free_qfq_chain(struct queries_for_query *queries)
 
 
 int
-is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status)
+is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status, long *ttl_x)
 {
-    struct zone_se_policy *zse_pol, *zse_cur;
+    policy_entry_t *zse_pol, *zse_cur;
     int             name_len;
     u_int8_t       *p;
     char            name_p[NS_MAXDNAME];
@@ -532,12 +520,13 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status)
 
     name_len = wire_name_length(name_n);
 
+    *ttl_x = 0;
+
     /*
      * Check if the zone is trusted 
      */
-    zse_pol =
-        RETRIEVE_POLICY(ctx, P_ZONE_SECURITY_EXPECTATION,
-                        struct zone_se_policy *);
+    
+    RETRIEVE_POLICY(ctx, P_ZONE_SECURITY_EXPECTATION, zse_pol);
     if (zse_pol != NULL) {
         for (zse_cur = zse_pol;
              zse_cur && (wire_name_length(zse_cur->zone_n) > name_len);
@@ -565,19 +554,25 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status)
                 }
             }
 
-            if (root_zone || (!namecmp(p, zse_cur->zone_n))) {
+            if ((root_zone || (!namecmp(p, zse_cur->zone_n))) && zse_cur->pol) {
+                struct zone_se_policy *pol = 
+                    (struct zone_se_policy *)(zse_cur->pol);
+                    
+                if (zse_cur->exp_ttl > 0)
+                    *ttl_x = zse_cur->exp_ttl;
+                
                 if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
                     snprintf(name_p, sizeof(name_p), "unknown/error");
-                if (zse_cur->trusted == ZONE_SE_UNTRUSTED) {
+                if (pol->trusted == ZONE_SE_UNTRUSTED) {
                     val_log(ctx, LOG_DEBUG, "zone %s is not trusted",
                             name_p);
                     *status = VAL_AC_UNTRUSTED_ZONE;
                     return VAL_NO_ERROR;
-                } else if (zse_cur->trusted == ZONE_SE_TRUSTED) {
+                } else if (pol->trusted == ZONE_SE_TRUSTED) {
                     val_log(ctx, LOG_DEBUG, "zone %s is trusted", name_p);
                     *status = VAL_AC_TRUSTED_ZONE;
                     return VAL_NO_ERROR;
-                } else if (zse_cur->trusted == ZONE_SE_DO_VAL) {
+                } else if (pol->trusted == ZONE_SE_DO_VAL) {
                     val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
                     *status = VAL_AC_WAIT_FOR_TRUST;
                     return VAL_NO_ERROR;
@@ -601,13 +596,15 @@ is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status)
 
 int
 find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
-                 u_int8_t ** matched_zone)
+                 u_int8_t ** matched_zone, long *ttl_x)
 {
 
-    struct trust_anchor_policy *ta_pol, *ta_cur, *ta_tmphead;
+    policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
     int             name_len;
     u_int8_t       *zp = zone_n;
 
+    *ttl_x = 0;
+    
     /*
      * This function should never be called with a NULL zone_n, but still... 
      */
@@ -617,8 +614,7 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
     *matched_zone = NULL;
 
     name_len = wire_name_length(zp);
-    ta_pol =
-        RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);
+    RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, ta_pol);
     if (ta_pol == NULL) {
         return VAL_NO_ERROR;
     }
@@ -645,6 +641,9 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
             if (*matched_zone == NULL) {
                 return VAL_OUT_OF_MEMORY;
             }
+            if (ta_cur->exp_ttl > 0)
+                *ttl_x = ta_cur->exp_ttl;
+
             memcpy(*matched_zone, zp, wire_name_length(zp));
             return VAL_NO_ERROR;
         }
@@ -683,9 +682,9 @@ find_trust_point(val_context_t * ctx, u_int8_t * zone_n,
 
 static int
 is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
-               val_astatus_t * status)
+               val_astatus_t * status, long *ttl_x)
 {
-    struct trust_anchor_policy *ta_pol, *ta_cur, *ta_tmphead;
+    policy_entry_t *ta_pol, *ta_cur, *ta_tmphead;
     int             name_len;
     u_int8_t       *zp = zone_n;
     val_dnskey_rdata_t dnskey;
@@ -702,9 +701,10 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
      */
     *status = VAL_AC_NO_TRUST_ANCHOR;
 
+    *ttl_x = 0;
+    
     name_len = wire_name_length(zp);
-    ta_pol =
-        RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, struct trust_anchor_policy *);
+    RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, ta_pol);
     if (ta_pol == NULL) {
         *status = VAL_AC_NO_TRUST_ANCHOR;
         return VAL_NO_ERROR;
@@ -736,23 +736,30 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                  */
                 val_parse_dnskey_rdata(curkey->rr_rdata,
                                        curkey->rr_rdata_length_h, &dnskey);
-                if (!dnskey_compare(&dnskey, ta_cur->publickey)) {
-                    char            name_p[NS_MAXDNAME];
-                    if (-1 == ns_name_ntop(zp, name_p, sizeof(name_p)))
-                        snprintf(name_p, sizeof(name_p), "unknown/error");
+
+                if (ta_cur->pol) {
+                    struct trust_anchor_policy *pol = 
+                        (struct trust_anchor_policy *)(ta_cur->pol);
+
+                    if (!dnskey_compare(&dnskey, pol->publickey)) {
+                        char            name_p[NS_MAXDNAME];
+                        if (-1 == ns_name_ntop(zp, name_p, sizeof(name_p)))
+                            snprintf(name_p, sizeof(name_p), "unknown/error");
+                        if (dnskey.public_key != NULL)
+                            FREE(dnskey.public_key);
+                        curkey->rr_status = VAL_AC_VERIFIED_LINK;
+                        if (ta_cur->exp_ttl > 0)
+                            *ttl_x = ta_cur->exp_ttl;
+                        val_log(ctx, LOG_DEBUG, "key %s is trusted", name_p);
+                        *status = VAL_AC_TRUST_KEY;
+                        return VAL_NO_ERROR;
+                    }
                     if (dnskey.public_key != NULL)
                         FREE(dnskey.public_key);
-                    curkey->rr_status = VAL_AC_VERIFIED_LINK;
-                    val_log(ctx, LOG_DEBUG, "key %s is trusted", name_p);
-                    *status = VAL_AC_TRUST_KEY;
-                    return VAL_NO_ERROR;
                 }
-                if (dnskey.public_key != NULL)
-                    FREE(dnskey.public_key);
             }
         }
     }
-
 
     /*
      * for the remaining nodes, see if there is any hope 
@@ -1048,7 +1055,9 @@ add_to_authentication_chain(struct val_digested_auth_chain **assertions,
         new_as->_as.val_ac_next = NULL;
         new_as->val_ac_status = VAL_AC_INIT;
         new_as->val_ac_query = matched_q;
-        matched_q->qc_ttl_x = next_rr->rrs.val_rrset_ttl_x; 
+
+        SET_MIN_TTL(matched_q->qc_ttl_x, next_rr->rrs.val_rrset_ttl_x);
+
         if (last_as != NULL) {
             last_as->_as.val_ac_rrset_next = new_as;
             last_as->_as.val_ac_next = new_as;
@@ -1098,6 +1107,7 @@ build_pending_query(val_context_t *context,
     int             retval;
     struct rr_rec  *cur_rr;
     u_int8_t flags;
+    long ttl_x;
 
     if ((context == NULL) || (NULL == queries) || 
         (NULL == as) || (NULL == as->val_ac_query) || 
@@ -1125,9 +1135,10 @@ build_pending_query(val_context_t *context,
      * Check if this zone is locally trusted/untrusted 
      */
     if (VAL_NO_ERROR != (retval = 
-        is_trusted_zone(context, as->_as.ac_data->rrs.val_rrset_name_n, &tzonestatus))) {
+        is_trusted_zone(context, as->_as.ac_data->rrs.val_rrset_name_n, &tzonestatus, &ttl_x))) {
         return retval;
     }
+    SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
 
     if (tzonestatus != VAL_AC_WAIT_FOR_TRUST) {
         as->val_ac_status = tzonestatus;
@@ -1142,9 +1153,10 @@ build_pending_query(val_context_t *context,
             (retval =
              is_trusted_key(context, as->_as.ac_data->rrs.val_rrset_name_n,
                             as->_as.ac_data->rrs.val_rrset_data,
-                            &as->val_ac_status))) {
+                            &as->val_ac_status, &ttl_x))) {
             return retval;
         }
+        SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
         if (as->val_ac_status != VAL_AC_WAIT_FOR_TRUST)
             return VAL_NO_ERROR;
     }
@@ -2012,10 +2024,10 @@ u_int8_t       *
 compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
                    u_int8_t * soa_name_n, u_int8_t alg, u_int16_t iter,
                    u_int8_t saltlen, u_int8_t * salt,
-                   u_int8_t * b32_hashlen, u_int8_t ** b32_hash)
+                   u_int8_t * b32_hashlen, u_int8_t ** b32_hash, long *ttl_x)
 {
     int             name_len;
-    struct nsec3_max_iter_policy *pol, *cur;
+    policy_entry_t *pol, *cur;
     u_int8_t       *p;
     char            name_p[NS_MAXDNAME];
     u_int8_t        hashlen;
@@ -2024,52 +2036,56 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
     if (alg != ALG_NSEC3_HASH_SHA1)
         return NULL;
 
+    *ttl_x = 0;
+    
     pol = NULL;
 
     if (soa_name_n != NULL) {
         name_len = wire_name_length(soa_name_n);
-        pol =
-            RETRIEVE_POLICY(ctx, P_NSEC3_MAX_ITER,
-                            struct nsec3_max_iter_policy *);
-    }
+        RETRIEVE_POLICY(ctx, P_NSEC3_MAX_ITER, pol);
 
-    if (pol != NULL) {
-        /*
-         * go past longer names 
-         */
-        for (cur = pol;
-             cur && (wire_name_length(cur->zone_n) > name_len);
-             cur = cur->next);
-
-        /*
-         * for all zones which are shorter or as long, do a strstr 
-         */
-        /*
-         * Because of the ordering, the longest match is found first 
-         */
-        for (; cur; cur = cur->next) {
-            int             root_zone = 0;
-            if (!namecmp(cur->zone_n, (const u_int8_t *) ""))
-                root_zone = 1;
-            else {
-                /*
-                 * Find the last occurrence of cur->zone_n in soa_name_n 
-                 */
-                p = soa_name_n;
-                while (p && (*p != '\0')) {
-                    if (!namecmp(p, cur->zone_n))
-                        break;
-                    p = p + *p + 1;
+        if (pol != NULL) {
+            /*
+             * go past longer names 
+             */
+            for (cur = pol;
+                 cur && (wire_name_length(cur->zone_n) > name_len);
+                 cur = cur->next);
+    
+            /*
+             * for all zones which are shorter or as long, do a strstr 
+             */
+            /*
+             * Because of the ordering, the longest match is found first 
+             */
+            for (; cur; cur = cur->next) {
+                int             root_zone = 0;
+                if (!namecmp(cur->zone_n, (const u_int8_t *) ""))
+                    root_zone = 1;
+                else {
+                    /*
+                     * Find the last occurrence of cur->zone_n in soa_name_n 
+                     */
+                    p = soa_name_n;
+                    while (p && (*p != '\0')) {
+                        if (!namecmp(p, cur->zone_n))
+                            break;
+                        p = p + *p + 1;
+                    }
                 }
-            }
-
-            if (root_zone || (!namecmp(p, cur->zone_n))) {
-                if (-1 == ns_name_ntop(soa_name_n, name_p, sizeof(name_p)))
-                    snprintf(name_p, sizeof(name_p), "unknown/error");
-
-                if (cur->iter < iter)
-                    return NULL;
-                break;
+    
+                if (root_zone || !namecmp(p, cur->zone_n)) {
+                    if (-1 == ns_name_ntop(soa_name_n, name_p, sizeof(name_p)))
+                        snprintf(name_p, sizeof(name_p), "unknown/error");
+    
+                    if (cur->pol != NULL) {
+                        if (cur->exp_ttl > 0)
+                            *ttl_x = cur->exp_ttl;
+                        if (((struct nsec3_max_iter_policy *)(cur->pol))->iter < iter)
+                            return NULL;
+                    }
+                    break;
+                }
             }
         }
     }
@@ -2090,7 +2106,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 struct val_result_chain **proof_res,
                 struct val_result_chain **results,
                 u_int8_t * qname_n, u_int16_t qtype_h,
-                u_int8_t * soa_name_n, val_status_t * status)
+                u_int8_t * soa_name_n, val_status_t * status, long *ttl_x)
 {
 
     struct val_result_chain *new_res;
@@ -2109,6 +2125,8 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     struct val_internal_result *cpe_res = NULL;
     int             retval;
 
+    *ttl_x = 0;
+    
     cp = qname_n;
 
     while ((namecmp(cp, soa_name_n) >= 0) && !cpe) {
@@ -2152,14 +2170,14 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             if (NULL ==
                 compute_nsec3_hash(ctx, cp, soa_name_n, nd.alg,
                                    nd.iterations, nd.saltlen, nd.salt,
-                                   &hashlen, &hash)) {
+                                   &hashlen, &hash, ttl_x)) {
                 val_log(ctx, LOG_DEBUG,
                         "Cannot compute NSEC3 hash with given params");
                 *status = VAL_BOGUS_PROOF;
                 FREE(nd.nexthash);
                 return VAL_NO_ERROR;
             }
-
+            
             /*
              * Check if there is an exact match 
              */
@@ -2395,13 +2413,14 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             if (NULL ==
                 compute_nsec3_hash(ctx, wc_n, soa_name_n, nd.alg,
                                    nd.iterations, nd.saltlen, nd.salt,
-                                   &hashlen, &hash)) {
+                                   &hashlen, &hash, ttl_x)) {
                 val_log(ctx, LOG_DEBUG,
                         "NSEC3 error: Cannot compute hash with given params");
                 FREE(nd.nexthash);
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
+
             if (!nsec3_order_cmp(nsec3_hash, nsec3_hashlen, hash, hashlen)) {
                 /*
                  * if type is set, that's a problem 
@@ -2597,6 +2616,7 @@ prove_nonexistence(val_context_t * ctx,
     int             proof_seen = 0;
 #ifdef LIBVAL_NSEC3
     int             nsec3 = 0;
+    long            ttl_x;
 #endif
 
     if (proof_res == NULL)
@@ -2719,9 +2739,13 @@ prove_nonexistence(val_context_t * ctx,
         if (VAL_NO_ERROR !=
             (retval =
              nsec3_proof_chk(ctx, w_results, queries, proof_res, results, qname_n,
-                             qtype_h, soa_name_n, status)))
+                             qtype_h, soa_name_n, status, &ttl_x)))
             goto err;
-
+        
+        if (qc_proof) {
+            SET_MIN_TTL(qc_proof->val_ac_query->qc_ttl_x, ttl_x);
+        }
+        
         /*
          * If this is opt-out use the error code as status 
          */
@@ -2908,7 +2932,8 @@ prove_existence(val_context_t * context,
                 struct val_internal_result *w_results,
                 struct queries_for_query **queries,
                 struct val_result_chain **proof_res,
-                struct val_result_chain **results, val_status_t * status)
+                struct val_result_chain **results, val_status_t * status,
+                long *ttl_x)
 {
     struct val_internal_result *res;
     int             nsec_bit_field;
@@ -2922,6 +2947,8 @@ prove_existence(val_context_t * context,
 #endif
     int             retval;
 
+    *ttl_x = 0;
+    
     for (res = w_results; res; res = res->val_rc_next) {
         if (!res->val_rc_is_proof)
             continue;
@@ -2977,7 +3004,7 @@ prove_existence(val_context_t * context,
             if (NULL ==
                 compute_nsec3_hash(context, cp, soa_name_n, nd.alg,
                                    nd.iterations, nd.saltlen, nd.salt,
-                                   &hashlen, &hash)) {
+                                   &hashlen, &hash, ttl_x)) {
                 val_log(context, LOG_DEBUG,
                         "Cannot compute NSEC3 hash with given params");
                 *status = VAL_BOGUS_PROOF;
@@ -3039,232 +3066,6 @@ prove_existence(val_context_t * context,
     return retval;
 }
 
-#if 0
-/*
- * This function does the provably unsecure check in a
- * bottom-up fashion
- */
-static int
-verify_provably_unsecure(val_context_t * context,
-                         struct queries_for_query **queries,
-                         struct val_digested_auth_chain *as,
-                         int *done,
-                         int *is_punsecure)
-{
-    struct val_result_chain *results = NULL;
-    u_int8_t       *matched_zone1, *matched_zone2;
-    char            name_p[NS_MAXDNAME];
-    char            tempname_p[NS_MAXDNAME];
-
-    u_int8_t       *curzone_n = NULL;
-    u_int8_t       *zonecut_n = NULL;
-
-    struct rrset_rec *rrset;
-    int             error = 1;
-    int             retval;
-    u_int8_t flags;
-    struct val_query_chain *top_q = NULL;
-
-    if ((NULL == as) || (NULL == as->_as.ac_data) || 
-        (as->val_ac_query == NULL) || (queries == NULL) || 
-        (done == NULL) || (is_punsecure == NULL)) {
-
-        return VAL_BAD_ARGUMENT;
-    }
-
-    top_q = as->val_ac_query;
-    rrset = as->_as.ac_data;
-    *done = 1;
-    flags = top_q->qc_flags;
-    
-    if (-1 == ns_name_ntop(rrset->rrs.val_rrset_name_n, name_p, 
-                sizeof(name_p)))
-        snprintf(name_p, sizeof(name_p), "unknown/error");
-
-    while (error) {
-
-        if (results != NULL) {
-            val_free_result_chain(results);
-            results = NULL;
-        }
-
-        if ((top_q->qc_type_h == ns_t_ds) &&
-            (rrset->rrs_ans_kind == SR_ANS_NACK_SOA)) {
-
-            if (!namecmp(top_q->qc_name_n, rrset->rrs.val_rrset_name_n)) { 
-                /*
-                 * break out of possible loop 
-                 * got an soa from the same zone while querying for a DS 
-                 */
-                retval = VAL_NO_ERROR;
-                goto err;
-            } else {
-                /* 
-                 * continue for the same query 
-                 */
-                int len = wire_name_length(top_q->qc_name_n);
-                zonecut_n = (u_int8_t *) MALLOC (len * sizeof (u_int8_t));
-                if (zonecut_n == NULL) {
-                    retval = VAL_NO_ERROR;
-                    goto err;
-                }
-                memcpy(zonecut_n, top_q->qc_name_n, len);
-            }
-        } else {
-            if ((VAL_NO_ERROR !=
-                find_next_zonecut(context, queries, rrset, done, &zonecut_n))
-                || (*done && zonecut_n == NULL)) {
-
-                if ((curzone_n == NULL) ||
-                    (-1 == ns_name_ntop(curzone_n, tempname_p, sizeof(tempname_p)))) {
-                    snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
-                } 
-
-                val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", tempname_p);
-                retval = VAL_NO_ERROR;
-                goto err;
-            }
-
-            if (*done == 0) {
-                /* Need more data */
-                if (zonecut_n)
-                    FREE(zonecut_n);
-                if (curzone_n)
-                    FREE(curzone_n);
-                *is_punsecure = 0;
-                return VAL_NO_ERROR;
-            }
-        }
-
-        if (-1 == ns_name_ntop(zonecut_n, tempname_p, sizeof(tempname_p)))
-            snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
-
-        if (VAL_NO_ERROR != (find_trust_point(context, rrset->rrs.val_rrset_name_n,
-                                              &matched_zone1))) {
-            val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", tempname_p);
-            retval = VAL_NO_ERROR;
-            goto err;
-        }
-        if (VAL_NO_ERROR != (find_trust_point(context, zonecut_n,
-                                              &matched_zone2))) {
-            if (matched_zone1)
-                FREE(matched_zone1);
-            val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", tempname_p);
-            retval = VAL_NO_ERROR;
-            goto err;
-        }
-
-        /*
-         * if the trust anchor at the level of the query
-         * and the trust anchor at the level of the zonecut are different
-         * then this is a problem
-         * Also if the trust point is same as the rrset owner name, that's also bad 
-         */
-        if (!matched_zone1 || !matched_zone2 ||
-            namecmp(matched_zone1, matched_zone2) ||
-            !namecmp(matched_zone1, rrset->rrs.val_rrset_name_n)) { 
-
-            val_log(context, LOG_DEBUG,
-                    "Not looking for a DS above this point");
-            if (matched_zone1)
-                FREE(matched_zone1);
-            if (matched_zone2)
-                FREE(matched_zone2);
-            retval = VAL_NO_ERROR;
-            goto err;
-        }
-        if (matched_zone1)
-            FREE(matched_zone1);
-        if (matched_zone2)
-            FREE(matched_zone2);
-
-         if (VAL_NO_ERROR != (retval = 
-                    try_chase_query(context, zonecut_n, ns_c_in, 
-                                    ns_t_ds, flags, queries, &results, done)))
-             goto err;
-
-       
-        if (*done == 0) {
-            /* Need more data */
-            if (zonecut_n)
-                FREE(zonecut_n);
-            if (curzone_n)
-                FREE(curzone_n);
-            *is_punsecure = 0;
-            return VAL_NO_ERROR;
-        }
-
-        if (results == NULL) {
-            retval = VAL_NO_ERROR;
-            goto err;
-        }
-
-        /*
-         * check new results 
-         */
-        error = 0;
-        if ((results->val_rc_answer == NULL) ||
-            (results->val_rc_answer->val_ac_rrset == NULL)) {
-
-            if (results->val_rc_proof_count == 0) {
-
-                /*
-                 * query wasn't answered 
-                 */
-
-                break; 
-            }
-        }
-
-        if (curzone_n) {
-            FREE(curzone_n);
-        }
-        curzone_n = zonecut_n;
-        zonecut_n = NULL;
-    }
-
-    /*
-     * free the saved name 
-     */
-    if (zonecut_n)
-        FREE(zonecut_n);
-    if (curzone_n)
-        FREE(curzone_n);
-
-    if ((results->val_rc_status == VAL_NONEXISTENT_TYPE) ||
-        (results->val_rc_status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
-        val_log(context, LOG_DEBUG, "%s is provably unsecure",
-                name_p);
-        *is_punsecure = 1;
-    }
-#ifdef LIBVAL_NSEC3
-    else if (results->val_rc_status == VAL_NONEXISTENT_NAME_OPTOUT) {
-        val_log(context, LOG_DEBUG, "%s is optout provably unsecure",
-                name_p);
-        *is_punsecure = 1;
-    }
-#endif
-    else {
-        val_log(context, LOG_DEBUG, "%s is not provably unsecure.",
-                name_p);
-        *is_punsecure = 0;
-    }
-
-    val_free_result_chain(results);
-    return VAL_NO_ERROR;
-
-err:
-    val_log(context, LOG_DEBUG,
-            "Cannot show that %s is provably unsecure.", name_p);
-    if (zonecut_n)
-        FREE(zonecut_n);
-    if (curzone_n)
-        FREE(curzone_n);
-    *is_punsecure = 0;
-    return retval;
-}
-#endif
-
 /*
  * This function does the provably unsecure check in a
  * top-down fashion
@@ -3284,6 +3085,7 @@ verify_provably_unsecure(val_context_t * context,
     u_int8_t       *q_zonecut_n = NULL;
     u_int8_t       *zonecut_n = NULL;
     u_int8_t       *qname = NULL;
+    long           ttl_x;
 
     struct rrset_rec *rrset;
     int             retval;
@@ -3308,11 +3110,12 @@ verify_provably_unsecure(val_context_t * context,
         snprintf(name_p, sizeof(name_p), "unknown/error");
        
     if (VAL_NO_ERROR != (find_trust_point(context, rrset->rrs.val_rrset_name_n,
-                                          &curzone_n))) {
+                                          &curzone_n, &ttl_x))) {
         val_log(context, LOG_DEBUG, "Cannot find trust anchor for %s", name_p);
         goto err;
     }
-
+    SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
+    
     /* find the zonecut for the query */
     if ((VAL_NO_ERROR != find_next_zonecut(context, queries, rrset, done, &q_zonecut_n))
                 || (*done && q_zonecut_n == NULL)) {
@@ -3414,6 +3217,8 @@ err:
 donefornow:
     if (q_zonecut_n)
         FREE(q_zonecut_n);
+    if (zonecut_n)
+        FREE(zonecut_n);
     if (curzone_n)
         FREE(curzone_n);
     if (results != NULL) {
@@ -3421,20 +3226,19 @@ donefornow:
         results = NULL;
     }
     return retval;
-
-
 }
 
 static int
-is_pu_trusted(val_context_t *ctx, u_int8_t *name_n)
+is_pu_trusted(val_context_t *ctx, u_int8_t *name_n, long *ttl_x)
 {
-    struct prov_unsecure_policy *pu_pol, *pu_cur;
+    policy_entry_t *pu_pol, *pu_cur;
     u_int8_t       *p;
     char            name_p[NS_MAXDNAME];
     int             name_len;
 
-    pu_pol = RETRIEVE_POLICY(ctx, P_PROV_UNSECURE,
-                    struct prov_unsecure_policy *);
+    *ttl_x = 0;
+    
+    RETRIEVE_POLICY(ctx, P_PROV_UNSECURE, pu_pol);
     if (pu_pol) {
 
         name_len = wire_name_length(name_n);
@@ -3465,10 +3269,15 @@ is_pu_trusted(val_context_t *ctx, u_int8_t *name_n)
                 }
             }
 
-            if (root_zone || (!namecmp(p, pu_cur->zone_n))) {
+            if ((root_zone || (!namecmp(p, pu_cur->zone_n))) && pu_cur->pol) {
+                struct prov_unsecure_policy *pol =
+                    (struct prov_unsecure_policy *)(pu_cur->pol);
                 if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
                     snprintf(name_p, sizeof(name_p), "unknown/error");
-                if (pu_cur->trusted == ZONE_PU_UNTRUSTED) {
+                if (pu_cur->exp_ttl > 0)
+                    *ttl_x = pu_cur->exp_ttl;
+
+                if (pol->trusted == ZONE_PU_UNTRUSTED) {
                     val_log(ctx, LOG_DEBUG, "zone %s provable unsecure status is not trusted",
                             name_p);
                     return 0;
@@ -3677,8 +3486,9 @@ try_verify_assertion(val_context_t * context,
                     next_as->_as.ac_data->rrs.val_rrset_ttl_x) {
                 next_as->_as.ac_data->rrs.val_rrset_ttl_x =
                     the_trust->_as.ac_data->rrs.val_rrset_ttl_x;
-                next_as->val_ac_query->qc_ttl_x =
-                    the_trust->_as.ac_data->rrs.val_rrset_ttl_x;
+
+                SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x,
+                            the_trust->_as.ac_data->rrs.val_rrset_ttl_x);
             }
         }
     }
@@ -3706,6 +3516,7 @@ verify_and_validate(val_context_t * context,
     struct val_internal_result *res;
     struct val_internal_result *cur_res, *tail_res, *temp_res;
     struct queries_for_query *added_q = NULL;
+    long ttl_x;
 
     if ((top_q == NULL) || (NULL == queries) || (NULL == results)
         || (NULL == done))
@@ -3872,10 +3683,11 @@ verify_and_validate(val_context_t * context,
                             if (is_punsecure) {
                                 next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                                 if (is_pu_trusted(context, 
-                                        next_as->val_ac_rrset->val_rrset_name_n))
+                                        next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                                     res->val_rc_status = VAL_PROVABLY_UNSECURE;
                                 else
                                     res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                                SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                             } else {
                                 res->val_rc_status = VAL_BOGUS_PROOF;
                             }
@@ -3932,10 +3744,11 @@ verify_and_validate(val_context_t * context,
                         if (is_punsecure) {
                             next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                             if (is_pu_trusted(context, 
-                                    next_as->val_ac_rrset->val_rrset_name_n))
+                                    next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                                 res->val_rc_status = VAL_PROVABLY_UNSECURE;
                             else
                                 res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                            SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
                             res->val_rc_status = VAL_BOGUS_PROOF;
                         }
@@ -3967,10 +3780,11 @@ verify_and_validate(val_context_t * context,
                     } else if (next_as->val_ac_status ==
                                VAL_AC_PROVABLY_UNSECURE) {
                         if (is_pu_trusted(context, 
-                                    next_as->val_ac_rrset->val_rrset_name_n))
+                                    next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                             res->val_rc_status = VAL_PROVABLY_UNSECURE;
                         else
                             res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                        SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
                         res->val_rc_status = VAL_BARE_RRSIG;
                     } else if (next_as->val_ac_status ==
@@ -4007,10 +3821,11 @@ verify_and_validate(val_context_t * context,
                     if (is_punsecure) {
                         next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                         if (is_pu_trusted(context, 
-                                next_as->val_ac_rrset->val_rrset_name_n))
+                                next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                             res->val_rc_status = VAL_PROVABLY_UNSECURE;
                         else
                             res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                        SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else {
                         res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                     }
@@ -4040,10 +3855,11 @@ verify_and_validate(val_context_t * context,
                         if (is_punsecure) {
                             next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                             if (is_pu_trusted(context, 
-                                            next_as->val_ac_rrset->val_rrset_name_n))
+                                            next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                                 res->val_rc_status = VAL_PROVABLY_UNSECURE;
                             else
                                 res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                            SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
                             res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                         }
@@ -4085,9 +3901,16 @@ ask_cache(val_context_t * context,
     if (context == NULL || queries == NULL || data_received == NULL || data_missing == NULL)
         return VAL_BAD_ARGUMENT;
 
+    if (*data_missing == 0)
+        return VAL_NO_ERROR;
+    
     top_q = *queries;
 
+    *data_missing = 0;
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
+        if (next_q->qfq_query->qc_state < Q_ANSWERED) {
+            *data_missing = 1;
+        }
         if (next_q->qfq_query->qc_state == Q_INIT) {
 
             if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
@@ -4196,9 +4019,13 @@ ask_resolver(val_context_t * context,
     int             need_data = 0;
     char            name_p[NS_MAXDNAME];
     u_int16_t       tzonestatus;
+    long ttl_x;
 
     if ((context == NULL) || (queries == NULL) || (data_received == NULL) || (data_missing == NULL)) 
         return VAL_BAD_ARGUMENT;
+
+    if (*data_missing == 0)
+        return VAL_NO_ERROR;
 
     response = NULL;
 
@@ -4239,9 +4066,10 @@ ask_resolver(val_context_t * context,
                 if (!(next_q->qfq_query->qc_flags & VAL_FLAGS_DONT_VALIDATE)) {
                     
                     if (VAL_NO_ERROR != (retval = 
-                        is_trusted_zone(context, test_n, &tzonestatus))) {
+                        is_trusted_zone(context, test_n, &tzonestatus, &ttl_x))) {
                         return retval;
                     }
+                    SET_MIN_TTL(next_q->qfq_query->qc_ttl_x, ttl_x);
 
                     if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
                         val_log(context, LOG_DEBUG,
@@ -4303,11 +4131,10 @@ ask_resolver(val_context_t * context,
 
                 if (next_q->qfq_query->qc_state > Q_SENT) 
                     *data_received = 1;
-
-                if (next_q->qfq_query->qc_state < Q_ANSWERED) 
-                    *data_missing = 1;
             }
         }
+    } else {
+       *data_missing = 0;
     } 
 
     return VAL_NO_ERROR;
@@ -4326,7 +4153,14 @@ fix_glue(val_context_t * context,
     if (context == NULL || queries == NULL || data_received == NULL || data_missing == NULL)
         return VAL_BAD_ARGUMENT;
 
+    if (*data_missing == 0)
+        return VAL_NO_ERROR;
+
+    *data_missing = 0;
     for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
+        if (next_q->qfq_query->qc_state < Q_ANSWERED) {
+            *data_missing = 1;
+        }
         if (next_q->qfq_query->qc_state == Q_WAIT_FOR_GLUE) {
 
             if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
@@ -4406,8 +4240,9 @@ check_proof_sanity(val_context_t * context,
 
     if (proof_res) {
         proof_res->val_rc_status = status;
-        if (val_istrusted(status))
-            top_q->qc_ttl_x = soa_ttl_x;
+        if (val_istrusted(status)) {
+            SET_MIN_TTL(top_q->qc_ttl_x, soa_ttl_x);
+        }
     }
 
     return VAL_NO_ERROR;
@@ -4426,6 +4261,7 @@ check_wildcard_sanity(val_context_t * context,
     u_int8_t       *zonecut_n;
     val_status_t    status;
     int             retval;
+    long            ttl_x;
 
     zonecut_n = NULL;
     target_res = NULL;
@@ -4491,8 +4327,11 @@ check_wildcard_sanity(val_context_t * context,
                                          res->val_rc_rrset->_as.ac_data->
                                          rrs.val_rrset_type_h, zonecut_n,
                                          w_results, queries, &target_res, results,
-                                         &status)))
+                                         &status, &ttl_x)))
                         goto err;
+
+                    SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
+
                     target_res->val_rc_status = status;
                     if ((status == VAL_SUCCESS)
                         && (target_res->val_rc_answer)) {
@@ -4701,8 +4540,9 @@ check_alias_sanity(val_context_t * context,
 
             if (proof_res) {
                 proof_res->val_rc_status = status;
-                if (val_istrusted(status))
-                    top_q->qc_ttl_x = soa_ttl_x;
+                if (val_istrusted(status)) {
+                    SET_MIN_TTL(top_q->qc_ttl_x, soa_ttl_x);
+                }
             } else {
                 /*
                  * create a new result element 
@@ -4756,6 +4596,7 @@ perform_sanity_checks(val_context_t * context,
     int             partially_wrong = 0;
     int             negative_proof = 1;
     int             retval;
+    long            ttl_x;
 
 
     /*
@@ -4794,10 +4635,11 @@ perform_sanity_checks(val_context_t * context,
                             if (drr->rr_status ==
                                 VAL_AC_UNKNOWN_ALGORITHM_LINK) {
                                 if (is_pu_trusted(context, 
-                                            as->val_ac_rrset->val_rrset_name_n))
+                                            as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                                     res->val_rc_status = VAL_PROVABLY_UNSECURE;
                                 else
                                     res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
+                                SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
                                 break;
                             }
                         }
@@ -5081,8 +4923,8 @@ val_resolve_and_check(val_context_t * ctx,
     struct val_internal_result *w_results = NULL;
     struct queries_for_query *queries = NULL;
     int done = 0;
-    int data_received = 0;
-    int data_missing = 0;
+    int data_received;
+    int data_missing;
 
     val_context_t  *context = NULL;
     
@@ -5146,6 +4988,8 @@ val_resolve_and_check(val_context_t * ctx,
     }
     top_q = added_q;
         
+    data_missing = 1;
+    data_received = 0;
     while (!done) {
         struct queries_for_query *last_q;
 
@@ -5201,8 +5045,8 @@ val_resolve_and_check(val_context_t * ctx,
                                                    &done)))
                 goto err;
 
+            data_missing = 1;
             data_received = 0;
-            data_missing = 0;
         }
 
         if (!done) {
