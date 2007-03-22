@@ -13,19 +13,6 @@
 #define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
 
-#define OVERRIDE_POLICY(ctx)   do {\
-    if (ctx) {\
-        struct policy_overrides *t;\
-        for (t = ctx->pol_overrides; t != NULL; t = t->next) {\
-            struct policy_list *c;\
-            (ctx)->cur_override = t;\
-            for (c = t->plist; c; c = c->next){\
-                (ctx)->e_pol[c->index] = c->pol;\
-            }\
-        }\
-    }\
-} while (0)
-
 #define POL_TRUST_ANCHOR_STR "trust-anchor"
 #define POL_PREFERRED_SEP_STR "preferred-sep"
 #define POL_MUST_VERIFY_COUNT_STR "must-verify-count"
@@ -86,9 +73,38 @@
 #define ZONE_SE_DO_VAL 3
 #define ZONE_SE_UNTRUSTED 4
 
-#define RETRIEVE_POLICY(ctx, index, type)      \
-    (ctx == NULL) ? NULL :                                              \
-    (!ctx->e_pol[index])? NULL:(type)(ctx->e_pol[index])
+#define RETRIEVE_POLICY(ctx, index, pol) do {\
+    pol = (ctx == NULL) ? NULL :\
+          (!ctx->e_pol[index])? NULL:(ctx->e_pol[index]);\
+    /* check if policies are still the same */\
+    if (pol) {\
+        policy_entry_t *cur, *next, *prev;\
+        struct timeval  tv;\
+        /* Get current time */\
+        gettimeofday(&tv, NULL);\
+        /* Remove expired policies */\
+        prev = NULL;\
+        cur = pol;\
+        while (cur) {\
+            next = cur->next;\
+            if (cur->exp_ttl > 0 &&\
+                cur->exp_ttl <= tv.tv_sec) {\
+                if (prev) {\
+                    prev->next = next;\
+                } else {\
+                    pol = next;\
+                }\
+                cur->next = NULL;\
+                free_policy_entry(cur, index);\
+                cur = next;\
+            } else {\
+                prev = cur;\
+                cur = cur->next;\
+            }\
+        }\
+    }\
+} while(0)
+    
 
 char           *resolv_conf_get(void);
 int             resolv_conf_set(const char *name);
@@ -107,42 +123,49 @@ void            destroy_valpol(val_context_t * ctx);
 void            destroy_respol(val_context_t * ctx);
 struct hosts   *parse_etc_hosts(const char *name);
 
-int             parse_trust_anchor(FILE *, policy_entry_t *, int *);
+int             parse_trust_anchor(char **, char *, policy_entry_t *, int *, int *);
 int             free_trust_anchor(policy_entry_t *);
-int             parse_preferred_sep(FILE *, policy_entry_t *, int *);
+int             parse_preferred_sep(char **, char *, policy_entry_t *, int *, int *);
 int             free_preferred_sep(policy_entry_t *);
-int             parse_must_verify_count(FILE *, policy_entry_t *, int *);
+int             parse_must_verify_count(char **, char *, policy_entry_t *, int *, int *);
 int             free_must_verify_count(policy_entry_t *);
-int             parse_preferred_algo_data(FILE *, policy_entry_t *, int *);
+int             parse_preferred_algo_data(char **, char *, policy_entry_t *, int *, int *);
 int             free_preferred_algo_data(policy_entry_t *);
-int             parse_preferred_algo_keys(FILE *, policy_entry_t *, int *);
+int             parse_preferred_algo_keys(char **, char *, policy_entry_t *, int *, int *);
 int             free_preferred_algo_keys(policy_entry_t *);
-int             parse_preferred_algo_ds(FILE *, policy_entry_t *, int *);
+int             parse_preferred_algo_ds(char **, char *, policy_entry_t *, int *, int *);
 int             free_preferred_algo_ds(policy_entry_t *);
-int             parse_clock_skew(FILE *, policy_entry_t *, int *);
+int             parse_clock_skew(char **, char *, policy_entry_t *, int *, int *);
 int             free_clock_skew(policy_entry_t *);
-int             parse_expired_sigs(FILE *, policy_entry_t *, int *);
+int             parse_expired_sigs(char **, char *, policy_entry_t *, int *, int *);
 int             free_expired_sigs(policy_entry_t *);
-int             parse_use_tcp(FILE *, policy_entry_t *, int *);
+int             parse_use_tcp(char **, char *, policy_entry_t *, int *, int *);
 int             free_use_tcp(policy_entry_t *);
-int             parse_prov_unsecure_status(FILE *, policy_entry_t *, int *);
+int             parse_prov_unsecure_status(char **, char *, policy_entry_t *, int *, int *);
 int             free_prov_unsecure_status(policy_entry_t *);
-int             parse_zone_security_expectation(FILE *, policy_entry_t *,
-                                                int *);
+int             parse_zone_security_expectation(char **, char *, policy_entry_t *, int *, int *);
 int             free_zone_security_expectation(policy_entry_t *);
 #ifdef LIBVAL_NSEC3
-int             parse_nsec3_max_iter(FILE * fp, policy_entry_t * pol_entry,
-                                     int *line_number);
+int             parse_nsec3_max_iter(char **, char *, policy_entry_t * pol_entry, int *line_number, int *);
 int             free_nsec3_max_iter(policy_entry_t * pol_entry);
 #endif
 #ifdef DLV
-int             parse_dlv_trust_points(FILE *, policy_entry_t *, int *);
+int             parse_dlv_trust_points(char **, char *, policy_entry_t *, int *, int *);
 int             free_dlv_trust_points(policy_entry_t *);
-int             parse_dlv_max_links(FILE *, policy_entry_t *, int *);
+int             parse_dlv_max_links(char **, char *, policy_entry_t *, int *, int *);
 int             free_dlv_max_links(policy_entry_t *);
 #endif
 int             check_relevance(char *label, char *scope, int *label_count,
                                 int *relevant);
+int             val_add_valpolicy(val_context_t *ctx, char *keyword, char *zone,
+                                  char *value, long ttl);
+int             val_get_token(char **buf_ptr,
+                              char *end_ptr,
+                              int *line_number,
+                              char *conf_token,
+                              int conf_limit,
+                              int *endst, char comment_c, char endstmt_c);
+int free_policy_entry(policy_entry_t *pol_entry, int index);
 
 /*
  * fragment of the configuration file containing 
@@ -152,47 +175,37 @@ struct policy_fragment {
     char           *label;
     int             label_count;
     int             index;
-    policy_entry_t  pol;
+    policy_entry_t  *pol;
 };
 
 struct policy_conf_element {
     const char     *keyword;
-    int             (*parse) (FILE *, policy_entry_t *, int *);
+    int             (*parse) (char **, char *, policy_entry_t *, int *, int *);
     int             (*free) (policy_entry_t *);
 };
 
 extern const struct policy_conf_element conf_elem_array[];
 
 struct trust_anchor_policy {
-    u_int8_t        zone_n[NS_MAXCDNAME];
     val_dnskey_rdata_t *publickey;
-    struct trust_anchor_policy *next;
 };
 
 struct clock_skew_policy {
-    u_int8_t        zone_n[NS_MAXCDNAME];
-    int             clock_skew;
-    struct clock_skew_policy *next;
+    long             clock_skew;
 };
 
 struct prov_unsecure_policy {
-    u_int8_t        zone_n[NS_MAXCDNAME];
     int             trusted;
-    struct prov_unsecure_policy *next;
 };
 
 struct zone_se_policy {
-    u_int8_t        zone_n[NS_MAXCDNAME];
     int             trusted;
-    struct zone_se_policy *next;
 };
 
 
 #ifdef LIBVAL_NSEC3
 struct nsec3_max_iter_policy {
-    u_int8_t        zone_n[NS_MAXCDNAME];
     int             iter;
-    struct nsec3_max_iter_policy *next;
 };
 #endif
 
