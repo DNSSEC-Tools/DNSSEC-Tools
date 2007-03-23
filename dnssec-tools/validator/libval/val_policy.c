@@ -1830,7 +1830,7 @@ parse_etc_hosts(const char *name)
 }
 
 
-int val_add_valpolicy(val_context_t *ctx, char *keyword, char *zone, 
+int val_add_valpolicy(val_context_t *context, char *keyword, char *zone, 
                       char *value, long ttl)
 {
     int index;
@@ -1842,9 +1842,18 @@ int val_add_valpolicy(val_context_t *ctx, char *keyword, char *zone,
     char *buf_ptr, *end_ptr;
     struct val_query_chain *q;
     policy_entry_t *pol_entry;
+    val_context_t *ctx = NULL;
+    int retval;
 
-    if (ctx == NULL || keyword == NULL || zone == NULL || value == NULL)
+    if (keyword == NULL || zone == NULL || value == NULL)
         return VAL_BAD_ARGUMENT;
+
+    if (context == NULL) {
+        /* Set the policy for the default context */
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx)))
+            return retval;
+    } else
+        ctx = (val_context_t *) context;
     
     /* find the policy according to the keyword */
     for (index = 0; index < MAX_POL_TOKEN; index++) {
