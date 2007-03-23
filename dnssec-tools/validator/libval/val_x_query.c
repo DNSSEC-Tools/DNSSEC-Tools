@@ -543,8 +543,6 @@ val_query(val_context_t * ctx,
             domain_name, p_class(class_h), p_type(type));
 
     if (ns_name_pton(domain_name, name_n, sizeof(name_n)) == -1) {
-        if ((ctx == NULL) && context)
-            val_free_context(context);
         return (VAL_BAD_ARGUMENT);
     }
 
@@ -565,9 +563,6 @@ val_query(val_context_t * ctx,
     val_log_authentication_chain(context, LOG_INFO, name_n, class_h, type, results);
 
     val_free_result_chain(results);
-
-    if ((ctx == NULL) && context)
-        val_free_context(context);
 
     return retval;
 

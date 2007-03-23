@@ -706,8 +706,6 @@ val_gethostbyname2_r(val_context_t * ctx,
         if (*result != NULL) {
             *val_status = VAL_TRUSTED_ANSWER;
             *h_errnop = NETDB_SUCCESS;
-            if ((ctx == NULL) && context)
-                val_free_context(context);
             return 0;           // xxx-audit: what about *offset = orig_offset; ?
         }
 
@@ -733,9 +731,6 @@ val_gethostbyname2_r(val_context_t * ctx,
                                           h_errnop, buf, buflen, &offset, val_status);
 
         }
-
-        if ((ctx == NULL) && context)
-            val_free_context(context);
 
         if (*result == NULL) {
             if (!*h_errnop)
