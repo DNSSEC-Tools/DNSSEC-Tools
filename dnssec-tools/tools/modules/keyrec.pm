@@ -169,12 +169,14 @@ sub keyrec_creat
 #
 # Routine:      keyrec_open()
 #
-# Purpose:      Opens an existing DNSSEC keyrec file.
+# Purpose:      Opens an existing DNSSEC keyrec file.  If the file can't
+#		be opened for reading and writing, an attempt is made to
+#		open it read-only.
 #
 #		Returns 1 if the file was opened successfully and 0 if
 #               there was an error in opening file (for example, if the
 #               file did not exist).  Upon successful return, this function
-#               leaves the file in an 'open' read-write state.
+#               leaves the file in an 'open' read-write or read-only state.
 #
 sub keyrec_open
 {
@@ -183,7 +185,10 @@ sub keyrec_open
 	#
 	# Open an existing keyrec file
 	#
-	open(KEYREC,"+< $krf") || return(0);
+	if(open(KEYREC,"+< $krf") == 0)
+	{
+		open(KEYREC,"< $krf") || return(0);
+	}
 
 	return(1);
 }
@@ -2009,7 +2014,9 @@ This routine returns a list of the I<keyrec> names from the file.
 
 =head2 I<keyrec_open(keyrec_file)>
 
-This interface opens an existing I<keyrec> file.
+This interface opens an existing I<keyrec> file.  It first attempts to open
+the I<keyrec> file for reading and writing.  If this fails, then it attempts
+to open it read-only.
 
 B<keyrec_open()> returns 1 if the file was opened successfully.  It returns 0
 if the file does not exists or if there was an error in opening the file.
