@@ -18,8 +18,38 @@
 #include <validator/validator.h>
 #include "val_support.h"
 #include "val_policy.h"
+#include "val_cache.h"
 #include "val_assertion.h"
 #include "val_context.h"
+
+static val_context_t *the_null_context = NULL;
+
+#ifndef VAL_NO_THREADS
+
+static int ctx_mutex_init = -1;
+pthread_mutex_t ctx_default;
+
+#define DEFAULT_CONTEXT_INIT() do {\
+    if (0 != ctx_mutex_init) {\
+        if (0 != pthread_mutex_init(&ctx_default, NULL))\
+            return VAL_INTERNAL_ERROR; \
+        ctx_mutex_init = 0;\
+    }\
+} while(0)
+#define LOCK_DEFAULT_CONTEXT() do {\
+    if (0 != pthread_mutex_lock(&ctx_default))\
+        return VAL_INTERNAL_ERROR;\
+} while (0)
+
+#define UNLOCK_DEFAULT_CONTEXT() do {\
+    if (0 != pthread_mutex_unlock(&ctx_default))\
+        return VAL_INTERNAL_ERROR;\
+} while (0)
+#else
+#define DEFAULT_CONTEXT_INIT()
+#define LOCK_DEFAULT_CONTEXT()
+#define UNLOCK_DEFAULT_CONTEXT()
+#endif
 
 int
 val_create_context_with_conf(char *label, 
@@ -33,6 +63,36 @@ val_create_context_with_conf(char *label,
     if (newcontext == NULL)
         return VAL_BAD_ARGUMENT;
 
+    /* Check if the request is for the default context, and we have one available */
+    if (label == NULL) {
+
+        DEFAULT_CONTEXT_INIT();
+        LOCK_DEFAULT_CONTEXT();
+
+        if (the_null_context && 
+            (the_null_context->label == NULL? 
+                    (label == NULL) : 
+                    (label != NULL && !strcmp(label, the_null_context->label))) &&
+            (the_null_context->dnsval_conf == NULL? 
+                    (dnsval_conf == NULL) : 
+                    (dnsval_conf != NULL && !strcmp(dnsval_conf, the_null_context->dnsval_conf))) &&
+            (the_null_context->resolv_conf == NULL? 
+                    (resolv_conf == NULL) : 
+                    (resolv_conf != NULL && !strcmp(resolv_conf, the_null_context->resolv_conf))) &&
+            (the_null_context->root_conf == NULL? 
+                    (root_conf == NULL) : 
+                    (root_conf != NULL && !strcmp(root_conf, the_null_context->root_conf)))) {
+
+            *newcontext = the_null_context;
+
+            UNLOCK_DEFAULT_CONTEXT();
+            return VAL_NO_ERROR;
+        }
+
+        UNLOCK_DEFAULT_CONTEXT();
+    }
+
+    
     *newcontext = (val_context_t *) MALLOC(sizeof(val_context_t));
     if (*newcontext == NULL)
         return VAL_OUT_OF_MEMORY;
@@ -125,6 +185,13 @@ val_create_context_with_conf(char *label,
                             (*newcontext)->resolv_conf,
                             (*newcontext)->root_conf);
 
+    DEFAULT_CONTEXT_INIT();
+    LOCK_DEFAULT_CONTEXT();
+    if (label == NULL) {
+        the_null_context = *newcontext;
+    }
+    UNLOCK_DEFAULT_CONTEXT();
+    
     return VAL_NO_ERROR;
 
 err:
@@ -141,12 +208,26 @@ val_create_context(char *label,
     return val_create_context_with_conf(label, NULL, NULL, NULL, newcontext);
 }
 
+int 
+free_if_default_context(val_context_t *context)
+{
+    DEFAULT_CONTEXT_INIT();
+    LOCK_DEFAULT_CONTEXT();
+    if (context == the_null_context)
+        the_null_context = NULL;
+    UNLOCK_DEFAULT_CONTEXT();
+
+    return VAL_NO_ERROR;
+}
+
 void
 val_free_context(val_context_t * context)
 {
     if (context == NULL)
         return;
 
+    free_if_default_context(context);
+    
 #ifndef VAL_NO_THREADS
     pthread_rwlock_destroy(&context->respol_rwlock);
     pthread_rwlock_destroy(&context->valpol_rwlock);
@@ -176,6 +257,24 @@ val_free_context(val_context_t * context)
     free_authentication_chain(context->a_list);
 
     FREE(context);
+}
+
+/*
+ * Free all internal state associated with the validator
+ * Only used when testing if we have memory leaks
+ */
+int
+free_validator_state(void)
+{
+    free_validator_cache();
+
+    DEFAULT_CONTEXT_INIT();
+    LOCK_DEFAULT_CONTEXT();
+    if (the_null_context != NULL)
+        val_free_context(the_null_context);
+    UNLOCK_DEFAULT_CONTEXT();
+
+    return VAL_NO_ERROR;
 }
 
 void 
