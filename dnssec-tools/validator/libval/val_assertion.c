@@ -5081,9 +5081,6 @@ val_resolve_and_check(val_context_t * ctx,
         w_res = w_results;
     }
     free_qfq_chain(queries);
-    if ((ctx == NULL) && context) {
-        val_free_context(context);
-    }
 
     return retval;
 }

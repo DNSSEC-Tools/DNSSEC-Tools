@@ -1131,8 +1131,6 @@ val_getaddrinfo(val_context_t * ctx,
     }
 
   done:
-    if ((ctx == NULL) && context)
-        val_free_context(context);
     return retval;
 
 }                               /* val_getaddrinfo() */
