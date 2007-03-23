@@ -199,7 +199,27 @@ extern          "C" {
     /*
      * The above is a generic data type for a policy entry
      * typecasted to one of the types defined in val_policy.h: 
+     * Policies can be one of the following
      */
+
+#define POL_TRUST_ANCHOR_STR "trust-anchor"
+#define POL_PREFERRED_SEP_STR "preferred-sep"
+#define POL_MUST_VERIFY_COUNT_STR "must-verify-count"
+#define POL_PREFERRED_ALGORITHM_DATA_STR "preferred-algo-data"
+#define POL_PREFERRED_ALGORITHM_KEYS_STR "preferred-algo-keys"
+#define POL_PREFERRED_ALGORITHM_DS_STR "preferred-algo-ds"
+#define POL_CLOCK_SKEW_STR "clock-skew"
+#define POL_EXPIRED_SIGS_STR "expired-sigs"
+#define POL_USE_TCP_STR "use-tcp"
+#define POL_PROV_UNSEC_STR "provably-unsecure-status"
+#define POL_ZONE_SE_STR "zone-security-expectation"
+#ifdef DLV
+#define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
+#define POL_DLV_MAX_LINKS_STR "dlv-max-links"
+#endif
+#ifdef LIBVAL_NSEC3
+#define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
+#endif
 
     /*
      * Response structures  
