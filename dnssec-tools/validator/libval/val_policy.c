@@ -245,7 +245,6 @@ const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
     {POL_PREFERRED_ALGORITHM_DS_STR, parse_preferred_algo_ds,
      free_preferred_algo_ds},
     {POL_CLOCK_SKEW_STR, parse_clock_skew, free_clock_skew},
-    {POL_EXPIRED_SIGS_STR, parse_expired_sigs, free_expired_sigs},
     {POL_USE_TCP_STR, parse_use_tcp, free_use_tcp},
     {POL_PROV_UNSEC_STR, parse_prov_unsecure_status, 
      free_prov_unsecure_status},
@@ -421,19 +420,6 @@ free_clock_skew(policy_entry_t * pol_entry)
         FREE(pol_entry->pol);
     }
     return VAL_NO_ERROR;
-}
-
-int
-parse_expired_sigs(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-                   int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_expired_sigs(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
 }
 
 int
