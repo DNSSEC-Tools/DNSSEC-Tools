@@ -602,12 +602,7 @@ extern          "C" {
     void            val_refresh_resolver_policy(val_context_t * context);
     void            val_refresh_validator_policy(val_context_t * context);
     void            val_refresh_root_hints(val_context_t * context);
-
-
-    /*
-     * from val_cache.h 
-     */
-    int             free_validator_cache(void);
+    int             free_validator_state(void);
 
     /*
      * from val_policy.h 
