@@ -209,7 +209,6 @@ extern          "C" {
 #define POL_PREFERRED_ALGORITHM_KEYS_STR "preferred-algo-keys"
 #define POL_PREFERRED_ALGORITHM_DS_STR "preferred-algo-ds"
 #define POL_CLOCK_SKEW_STR "clock-skew"
-#define POL_EXPIRED_SIGS_STR "expired-sigs"
 #define POL_USE_TCP_STR "use-tcp"
 #define POL_PROV_UNSEC_STR "provably-unsecure-status"
 #define POL_ZONE_SE_STR "zone-security-expectation"

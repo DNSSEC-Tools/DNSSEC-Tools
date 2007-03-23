@@ -21,10 +21,9 @@
 #define P_PREFERRED_ALGORITHM_KEYS  4
 #define P_PREFERRED_ALGORITHM_DS    5
 #define P_CLOCK_SKEW                6
-#define P_EXPIRED_SIGS              7
-#define P_USE_TCP                   8
-#define P_PROV_UNSECURE             9
-#define P_ZONE_SECURITY_EXPECTATION 10
+#define P_USE_TCP                   7
+#define P_PROV_UNSECURE             8
+#define P_ZONE_SECURITY_EXPECTATION 9 
 #define P_BASE_LAST                 P_ZONE_SECURITY_EXPECTATION
 #ifdef LIBVAL_NSEC3
 #define P_NSEC3_MAX_ITER            (P_BASE_LAST+1)
@@ -119,8 +118,6 @@ int             parse_preferred_algo_ds(char **, char *, policy_entry_t *, int *
 int             free_preferred_algo_ds(policy_entry_t *);
 int             parse_clock_skew(char **, char *, policy_entry_t *, int *, int *);
 int             free_clock_skew(policy_entry_t *);
-int             parse_expired_sigs(char **, char *, policy_entry_t *, int *, int *);
-int             free_expired_sigs(policy_entry_t *);
 int             parse_use_tcp(char **, char *, policy_entry_t *, int *, int *);
 int             free_use_tcp(policy_entry_t *);
 int             parse_prov_unsecure_status(char **, char *, policy_entry_t *, int *, int *);
