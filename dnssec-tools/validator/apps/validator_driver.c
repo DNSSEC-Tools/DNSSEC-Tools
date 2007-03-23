@@ -530,7 +530,7 @@ endless_loop(void)
 
     val_free_context(context);
 
-    free_validator_cache();
+    free_validator_state();
 }
 
 void 
@@ -768,21 +768,11 @@ main(int argc, char *argv[])
         return 0;
     }
 
-    /*
-     * comment out this define to have each test case use a temporary
-     * context (useful for checking for memory leaks).
-     */
-#define ONE_CTX 1
-#ifdef ONE_CTX
-    int             ret_val;
     if (VAL_NO_ERROR !=
-        (ret_val = val_create_context(label_str, &context))) {
-        fprintf(stderr, "Cannot create context: %d\n", ret_val);
+        (rc = val_create_context(label_str, &context))) {
+        fprintf(stderr, "Cannot create context: %d\n", rc);
         return -1;
     }
-#else
-    context = NULL;
-#endif
 
     rc = 0;
 
@@ -843,6 +833,7 @@ main(int argc, char *argv[])
         pthread_create(&tids[j], NULL, firethread_ot, (void *)&threadparams);
     }
     
+        
     for (j=0; j < NO_OF_THREADS; j++) {
         pthread_join(tids[j], NULL);
         fprintf(stderr, "End of thread %d\n", j);
@@ -860,7 +851,7 @@ main(int argc, char *argv[])
 done:
     if (context)
         val_free_context(context);
-    free_validator_cache();
+    free_validator_state();
 
     return rc;
 }
