@@ -189,9 +189,9 @@ sub rollrec_unlock
 #
 # Routine:	rollrec_read()
 #
-# Purpose:	Read a DNSSEC-Tools rollrec file.  The contents are read into the
-#		@rollreclines array and the rollrecs are broken out into the
-#		%rollrecs hash table.
+# Purpose:	Read a DNSSEC-Tools rollrec file.  The contents are read into
+#		the @rollreclines array and the rollrecs are broken out into
+#		the %rollrecs hash table.
 #
 sub rollrec_read
 {
@@ -225,12 +225,16 @@ sub rollrec_read
 	rollrec_close() if(@sbuf != 0);
 
 	#
-	# Open up the rollrec file.
+	# Open up the rollrec file.  If we can't open it for reading and
+	# writing, we'll try to open it just for reading.
 	#
 	if(open(ROLLREC,"+< $rrf") == 0)
 	{
-		err("unable to open $rrf\n",-1);
-		return(-2);
+		if(open(ROLLREC,"< $rrf") == 0)
+		{
+			err("unable to open $rrf\n",-1);
+			return(-2);
+		}
 	}
 
 	#
@@ -1220,14 +1224,16 @@ This routine returns a list of the I<rollrec> names from the file.
 =item I<rollrec_read(rollrec_file)>
 
 This interface reads the specified I<rollrec> file and parses it into a
-I<rollrec> hash table and a file contents array.  I<rollrec_read()>
-B<must> be called prior to any of the other
-B<Net::DNS::SEC::Tools::rollrec> calls.  If another I<rollrec> is
-already open, then it is saved and closed prior to opening the new
-I<rollrec>.
+I<rollrec> hash table and a file contents array.  I<rollrec_read()> B<must> be
+called prior to any of the other B<Net::DNS::SEC::Tools::rollrec> calls.  If
+another I<rollrec> is already open, then it is saved and closed prior to
+opening the new I<rollrec>.
 
-Upon success, I<rollrec_read()> returns the number of I<rollrec>s read from the
-file.
+I<rollrec_read()> attempts to open the I<rollrec> file for reading and
+writing.  If this fails, then it attempts to open the file for reading only.
+
+Upon success, I<rollrec_read()> returns the number of I<rollrec>s read from
+the file.
 
 Failure return values:
 
