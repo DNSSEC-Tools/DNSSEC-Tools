@@ -1,0 +1,541 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# keyarch
+#
+#	This script archives old KSK and ZSK keys.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::dnssectools;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollrec;
+
+#
+# Version information.
+#
+my $NAME   = "keyarch";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.1";
+
+##########################################
+#
+# Data required for command line options.
+#
+
+my $fnarg;				# Rollrec file to be managed.
+
+my %dtconf = ();			# DNSSEC-Tools config file values.
+
+my %opts = ();				# Filled option array.
+my @opts =
+(
+	"zone=s",			# Zone to archive.
+	"kskonly",			# Only archives KSKs.
+	"zskonly",			# Only archives ZSKs.
+	"help",				# Give a usage message and exit.
+	"quiet",			# Quiet output.
+	"verbose",			# Verbose output.
+	"Version",			# Display the version number.
+);
+
+#
+# Flag values for the various options.  Variable/option connection should
+# be obvious.
+#
+my $zone;				# Zone to archive.
+my $kskonly = 1;			# KSK-only flag.
+my $zskonly = 1;			# ZSK-only flag.
+my $verbose = 0;			# Verbose option.
+my $quiet   = 0;			# Quiet option.
+
+#
+# Count of archived keys.
+#
+my $keycount = 0;
+
+#
+# Command paths.
+#
+my $MV = "/bin/mv";
+
+#######################################################################
+
+#
+# Do Everything.
+#
+my $ret = main();
+exit($ret);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	Do Everything.
+#
+sub main
+{
+	my $ftype;					# Type of file argument.
+
+	#
+	# Set up how to handle module errors.
+	#
+	erraction(ERR_MSG);
+
+	#
+	# Check our options and arguments.
+	#
+	optsandargs();
+
+	#
+	# Ensure we have a valid file argument.
+	#
+	$ftype = dt_filetype($fnarg);
+	if(($ftype eq "mixed") || ($ftype eq "unknown"))
+	{
+		print STDERR "file argument was be either a keyrec file OR a rollrec file\n";
+		exit(-2);
+	}
+
+	#
+	# If we were given a rollrec file, we'll handle a single zone (if
+	# -zone was given) or all the file's zones (if -zone wasn't given.)
+	#
+	# If we were given a keyrec file, we'll handle a single zone (if
+	# -zone was given) or all the file's zones (if -zone wasn't given.)
+	#
+	if($ftype eq "rollrec")
+	{
+		#
+		# Read the rollrec file.
+		#
+		rollrec_read($fnarg);
+
+		#
+		# Check the zone (if specified) or the whole rollrec file.
+		#
+		if(defined($zone))
+		{
+			chkzone($zone,0);
+		}
+		else
+		{
+			#
+			# Check all the file's zones.
+			#
+			foreach my $rrn (sort(rollrec_names()))
+			{
+				chkzone($rrn,0);
+			}
+		}
+		rollrec_close();
+	}
+	else
+	{
+		#
+		# Read the keyrec file.
+		#
+		keyrec_read($fnarg);
+
+		#
+		# Check the zone (if specified) or the whole keyrec file.
+		#
+		if(defined($zone))
+		{
+			chkzone($zone,1);
+		}
+		else
+		{
+			#
+			# Check each zone in the keyrec file.
+			#
+			foreach my $krn (sort(keyrec_names()))
+			{
+				my $kt;				# Keyrec's type.
+
+				$kt = keyrec_recval($krn,'keyrec_type');
+
+				next if($kt ne 'zone');
+				chkzone($krn,1);
+			}
+		}
+	}
+
+	#
+	# Close up shop.
+	#
+	vprint("$keycount keys archived");
+	return($keycount);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	chkzone()
+#
+# Purpose:	Check this zone's for obsolete signing sets.  If we find
+#		any of the requested types, its keys will be moved to the
+#		proper archive directory.
+#
+sub chkzone
+{
+	my $zone    = shift;				# Zone to check.
+	my $krfflag = shift;				# Keyrec-read flag.
+
+	my $krf;					# Zone's keyrec file.
+	my $archdir;					# Zone's archive dir.
+
+	#
+	# Read the zone's keyrec file.
+	#
+	if(!$krfflag)
+	{
+		$krf = rollrec_recval($zone,'keyrec');
+		keyrec_read($krf);
+	}
+
+	#
+	# Get the zone's archive directory.
+	#
+	$archdir = keyrec_recval($zone,'archivedir') || $dtconf{'archivedir'};
+	return if(!checkdir($zone,$archdir));
+	vprint("archive directory: $archdir\t\t($zone)");
+
+	#
+	# Check this zone's for obsolete signing sets.  If we find any of
+	# the requested types, we'll archive its keys.
+	#
+	foreach my $krn (sort(keyrec_names()))
+	{
+		my $keytype;				# Key's type.
+		my $keypriv;				# Private key file.
+		my $keypub;				# Public key file.
+
+		$keytype = keyrec_recval($krn,'keyrec_type');
+
+		#
+		# Skip non-obsolete keys.
+		#
+		next if($keytype !~ /obs/);
+
+		#
+		# Skip KSKs if we're only archiving ZSKs.
+		#
+		next if(($keytype eq 'kskobs') && !$kskonly);
+
+		#
+		# Skip ZSKs if we're only archiving KSKs.
+		#
+		next if(($keytype eq 'zskobs') && !$zskonly);
+
+		#
+		# Build the key file names.
+		#
+		$keypriv = "$krn.private";
+		$keypub	 = "$krn.key";
+
+		#
+		# Save the keys.
+		#
+		archit($zone,$keypriv,$archdir);
+		archit($zone,$keypub,$archdir);
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	archit()
+#
+# Purpose:	Archive the actual key file.
+#
+sub archit
+{
+	my $zone    = shift;				# Key's zone.
+	my $keyfile = shift;				# Key to archive.
+	my $archdir = shift;				# Archive directory.
+
+	return if(!-e $keyfile);
+
+	system("$MV $keyfile $archdir");
+	if($verbose)
+	{
+		print("archived $keyfile\t\t($zone)\n");
+	}
+	else
+	{
+		nqprint("archived $keyfile");
+	}
+
+	$keycount++;
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	Parse our options and arguments.
+#
+sub optsandargs
+{
+	my $argc = @ARGV;				# Number of arguments.
+	my $dir;					# Execution directory.
+
+	#
+	# Check our options.
+	#
+	GetOptions(\%opts,@opts);
+	$verbose = $opts{'verbose'};
+	$quiet	 = $opts{'quiet'};
+	$zone	 = $opts{'zone'};
+	$kskonly = $opts{'kskonly'};
+	$zskonly = $opts{'zskonly'};
+
+	#
+	# Show the usage or version number if requested.
+	#
+	usage() if(defined($opts{'help'}));
+	version() if(defined($opts{'version'}));
+
+	#
+	# Check for a rollrec file name.
+	#
+	$fnarg = $ARGV[0] || rollrec_default();
+	if(($fnarg eq "") || !defined($fnarg))
+	{
+		print STDERR "no rollrec file specified\n";
+		exit(-1);
+	}
+
+	#
+	# Ensure we weren't given both -quiet and -verbose.
+	#
+	if($quiet && $verbose)
+	{
+		print STDERR "-quiet and -verbose are mutually exclusive\n";
+		exit(-1);
+	}
+
+	#
+	# Ensure we weren't given both -kskonly and -zskonly.
+	#
+	if($kskonly && $zskonly)
+	{
+		print STDERR "-kskonly and -zskonly are mutually exclusive\n";
+		exit(-1);
+	}
+
+	#
+	# Ensure we weren't given both -kskonly and -zskonly.
+	#
+	$zskonly = 0 if($kskonly);
+	$kskonly = 0 if($zskonly);
+
+	#
+	# If -kskonly and -zskonly weren't given, turn 'em both on.
+	#
+	if(!$kskonly && !$zskonly)
+	{
+		$kskonly = 1;
+		$zskonly = 1;
+	}
+
+	#
+	# Check for a rollrec file name.
+	#
+	%dtconf = parseconfig();
+}
+
+#----------------------------------------------------------------------
+# Routine:	checkdir()
+#
+# Purpose:	Ensures archive directory exists and is a writable directory.
+#
+sub checkdir
+{
+	my $zone    = shift;			# Zone name.
+	my $archdir = shift;			# Zone's archive directory.
+
+	#
+	# Check for directory existence.
+	#
+	if(!-e $archdir)
+	{
+		print STDERR "$zone: archive directory \"$archdir\" does not exist\n";
+		return(0);
+	}
+
+	#
+	# Check that the directory is really a directory.
+	#
+	if(!-d $archdir)
+	{
+		print STDERR "$zone: archive directory \"$archdir\" is not a directory\n";
+		return(0);
+	}
+
+	#
+	# Check that the directory is writable.
+	#
+	if(!-w $archdir)
+	{
+		print STDERR "$zone: archive directory \"$archdir\" is not writable\n";
+		return(0);
+	}
+
+	return(1);
+}
+
+#----------------------------------------------------------------------
+# Routine:	vprint()
+#
+# Purpose:	Verbose printing.
+#
+sub vprint
+{
+	my $str = shift;
+
+	return if(!$verbose);
+	print "$str\n";
+}
+
+#----------------------------------------------------------------------
+# Routine:	nqprint()
+#
+# Purpose:	Non-quiet printing.
+#
+sub nqprint
+{
+	my $str = shift;
+
+	return if($quiet);
+	print "$str\n";
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(-1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:	Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  keyarch [options] <keyrec-file | rollrec-file>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-zone <zonename>\n";
+	print STDERR "\t\t-kskonly\n";
+	print STDERR "\t\t-zskonly\n";
+	print STDERR "\t\t-quiet\n";
+	print STDERR "\t\t-verbose\n";
+	print STDERR "\t\t-Version\n";
+	print STDERR "\t\t-help\n";
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys.
+
+=head1 SYNOPSIS
+
+  keyarch [options] <keyrec_file | rollrec_file>
+
+=head1 DESCRIPTION
+
+The B<keyarch> program archives old KSK and ZSK keys.  Keys are considered
+old if they are obsolete and are marked as either I<kskobs> or I<zskobs>.
+
+If the required file argument is a I<keyrec> file, then expired keys listed
+in that file are archived.  If the file argument is a I<rollrec> file, the
+I<keyrec> files of the zones in that file are checked for expired keys.
+
+If the I<-zone> option is given, then only obsolete keys belonging to the
+specified zone will be archived.
+
+The archive directory is either zone-specific (listed in the zone's I<keyrec>
+record in the zone's I<keyrec> file) or the default archive directory given
+in the DNSSEC-Tools configuration file.
+
+The count of archived keys is given as the program's exit code.  Error exit
+codes are negative. 
+
+=head1 OPTIONS
+
+The following options are recognized:
+
+=over 4
+
+=item I<-zone zone_file>
+
+Name of the zone whose KSKs will be archived.  If this is not given, then
+all the zones defined in the I<rollrec> file will be checked.
+
+=item -kskonly
+
+Only archive KSK keys.
+
+=item -zskonly
+
+Only archive ZSK keys.
+
+=item -quiet
+
+No output will be given.
+
+=item -verbose
+
+Verbose output will be given.
+
+=item -help
+
+Display a usage message.
+
+=item -Version
+
+Display the program versions.
+
+=back
+
+=head1 COPYRIGHT
+
+Copyright 2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<rollerd(8)>,
+B<zonesigner(8)>
+
+B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::dnssectools.pm(3)>,
+B<Net::DNS::SEC::Tools::defaults.pm(3)>,
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
+
+B<keyrec(5)>,
+B<rollrec(5)>
+
+=cut
