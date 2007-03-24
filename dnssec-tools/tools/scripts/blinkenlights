@@ -654,6 +654,12 @@ sub buildmainwind
 	$zd_zsk = $zdsp->command(-label   => $zsksetmsg,
 				  -command => [\&disp_sets, 'ZSK'],
 				  -state   => 'normal');
+	$zdsp->command(-label   => 'Hide All Keysets',
+				  -command => [\&disp_sets, 'HIDE ALL'],
+				  -state   => 'normal');
+	$zdsp->command(-label   => 'Show All Keysets',
+				  -command => [\&disp_sets, 'SHOW ALL'],
+				  -state   => 'normal');
 
 	$zdsp->pack(-side => 'left');
 
@@ -833,14 +839,14 @@ sub disp_skip
 #
 sub disp_sets
 {
-	my $settype = shift;			# Type of set to munge.
+	my $menucmd = shift;			# Triggering menu command.
 
 	my $lbl;				# New menu label.
 
 	#
 	# Handle a KSK enable or disable command.
 	#
-	if($settype eq 'KSK')
+	if($menucmd eq 'KSK')
 	{
 		#
 		# If we're currently displaying KSK sets, we'll stop.
@@ -880,7 +886,7 @@ sub disp_sets
 		#
 		$zd_ksk->configure(-label => $lbl);
 	}
-	else
+	elsif($menucmd eq 'ZSK')
 	{
 		#
 		# If we're currently displaying ZSK sets, we'll stop.
@@ -929,6 +935,24 @@ sub disp_sets
 		# Set the menu item's new label.
 		#
 		$zd_zsk->configure(-label => $lbl);
+	}
+	elsif($menucmd eq 'HIDE ALL')
+	{
+		#
+		# Hide all the signing sets.
+		#
+		disp_sets('KSK') if($showksksets);
+		disp_sets('ZSK') if($showzsksets);
+		return;
+	}
+	elsif($menucmd eq 'SHOW ALL')
+	{
+		#
+		# Hide all the signing sets.
+		#
+		disp_sets('KSK') if(!$showksksets);
+		disp_sets('ZSK') if(!$showzsksets);
+		return;
 	}
 
 	#
@@ -3448,6 +3472,18 @@ be expanded.
 
 When displayed, ZSK signing sets will always be immediately to the right of
 the zone status column.
+
+=item *
+
+Hide All Keysets
+
+Turns off display of the KSK and ZSK signing set names.
+
+=item *
+
+Show All Keysets
+
+Turns on display of the KSK and ZSK signing set names.
 
 =back
 
