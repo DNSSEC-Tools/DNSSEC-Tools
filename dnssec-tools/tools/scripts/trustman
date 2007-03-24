@@ -225,6 +225,16 @@ sub checkkeys {
     foreach my $d (@domains) {
         my $query;
         $query = resolve_and_check_dnskey($d,$dvfile);
+        my %pendingnewkeys;
+        for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
+            my $pendingkeyobj = { flags => $newkeys{$d}[$i]{flags},
+                                  protocol => $newkeys{$d}[$i]{protocol},
+                                  algorithm => $newkeys{$d}[$i]{algorithm},
+                                  key => $newkeys{$d}[$i]{key},
+                                  found => 0,
+                                };
+            push (@{$pendingnewkeys{$d}}, $pendingkeyobj);
+        }
 
 # check the RRSIG over the DNKSEY
         if ($query) {
@@ -237,6 +247,8 @@ sub checkkeys {
                  $sleeptimes{$d} =  $refresh_time;
                  last; # only need one sleep time per domain
             }
+# if an RRSET is received which does NOT contain a pending
+# new key, remove that new key from the %newkeys
             foreach my $keyrec (grep { $_->type eq 'DNSKEY' } $query->answer) {
                 next if (!($keyrec->flags & 1));
                 my $ttl = $keyrec->ttl;
@@ -247,10 +259,25 @@ sub checkkeys {
                 if ($nonmatch) {
                 # may be a new key, remember it.
                 # check if this key is already in %newkeys
+                # also need to find any keys in %newkeys which do
+                # NOT appear in a subsequent RRSET
                     my $notnewkey = 0;
                     for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
-                        if ($newkeys{$d}[$i]{key} eq $key) {
+                        if ($newkeys{$d}[$i]{key} eq $key &&
+                            $newkeys{$d}[$i]{flags} eq $keyrec->flags &&
+                            $newkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
+                            $newkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) 
+                        {
                             $notnewkey = 1;
+                            for (my $i = 0; $i <= $#{$pendingnewkeys{$d}}; $i++) {
+                                if ($pendingnewkeys{$d}[$i]{key} eq $key &&
+                                    $pendingnewkeys{$d}[$i]{flags} eq $keyrec->flags &&
+                                    $pendingnewkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
+                                    $pendingnewkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) {
+                                    $pendingnewkeys{$d}[$i]{found} = 1;
+                                }
+                            }
+                            
                         }
                     }
                     if (!$notnewkey) {
@@ -277,9 +304,41 @@ sub checkkeys {
                 } else {
 # need to verify that ALL keys in %keystorage were matched
 # if a known key disappears, need to deal with that.
+# ???
                 }
             }
             
+# only want to remove pending keys which do no appear in this
+# RRSET if the query was successful. Will deal with the unsuccessful
+# query below
+
+            for (my $k = 0; $k <= $#{$pendingnewkeys{$d}}; $k++) {
+                # any pending key still not marked found should be
+                # removed from %newkeys
+                if (!$pendingnewkeys{$d}[$k]{found}) {
+                    for (my $j = 0; $j <= $#{$newkeys{$d}}; $j++) {
+                      # find the entry in newkeys that corresponds to
+                      # the pending key not found
+                        if ($newkeys{$d}[$j]{key} eq 
+                            $pendingnewkeys{$d}[$k]{key} &&
+                            $newkeys{$d}[$j]{flags} eq
+                            $pendingnewkeys{$d}[$k]{flags} &&
+                            $newkeys{$d}[$j]{protocol} eq
+                            $pendingnewkeys{$d}[$k]{protocol} &&
+                            $newkeys{$d}[$j]{algorithm} eq
+                            $pendingnewkeys{$d}[$k]{algorithm} ) {
+                            delete $newkeys{$d}[$j];
+                            # whenever newkeys is modified, write it out
+                            open (FILE, "> $newkeyfile")
+                                or warn "can't open newkeys: $!";
+                            print FILE
+                                Data::Dumper->Dump([\%newkeys], ['*newkeys']);
+                            close FILE or warn "can't close newkeys file: $!";
+
+                        }
+                    }
+                }
+            }
         } else {
 # TODO see notes under Active Refresh for how to handle query failure
             print "query failed for domain " . $d . "\n";
