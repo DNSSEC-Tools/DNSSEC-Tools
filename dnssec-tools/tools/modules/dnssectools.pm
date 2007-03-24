@@ -18,6 +18,8 @@ use strict;
 use Mail::Send;
 
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollrec;
 
 our $VERSION = "0.9";
 
@@ -25,6 +27,7 @@ our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
 			dt_adminmail
+			dt_filetype
 		);
 
 #-----------------------------------------------------------------------------
@@ -92,6 +95,88 @@ sub dt_adminmail
 	return(1);
 }
 
+#-----------------------------------------------------------------------------
+# Routine:      dt_filetype()
+# 
+# Purpose:      This routine returns the type of a DNSSEC-Tools file.
+#		It is given a path and it counts the rollrec and keyrec
+#		records contained therein.
+#
+#		The following return values are possible:
+#
+#			"keyrec"	At least one keyrec record was found
+#					and no rollrec records were found.
+#
+#			"rollrec"	At least one rollrec record was found
+#					and no keyrec records were found.
+#
+#			"mixed"		At least one rollrec record and at
+#					least one keyrec record were found.
+#					This is most likely an erroneous file.
+#
+#			"unknown"	No rollrec records nor keyrec records
+#					were found.
+#
+#			"nofile"	The file doesn't exist. 
+#
+#		Interpretation of the result is application dependent.
+#
+sub dt_filetype
+{
+	my $path = shift;			# File to check.
+
+	my @names;				# Record names in file.
+	my $rcnt = 0;				# Count of rollrec records.
+	my $kcnt = 0;				# Count of keyrec records.
+
+	#
+	# Ensure the file exists.
+	#
+	return("nofile") if(!-e $path);
+
+	#
+	# Get the record names as if it were a rollrec file.
+	#
+	@names = ();
+	rollrec_read($path);
+	@names = rollrec_names();
+	rollrec_close();
+
+	#
+	# Count the valid record names.
+	#
+	foreach my $name (sort (@names))
+	{
+		$rcnt++ if($name ne "");
+	}
+
+	#
+	# Get the record names as if it were a keyrec file.
+	#
+	@names = ();
+	keyrec_read($path);
+	@names = keyrec_names();
+	keyrec_close();
+
+	#
+	# Count the valid record names.
+	#
+	foreach my $name (sort (@names))
+	{
+		$kcnt++ if($name ne "");
+	}
+
+# print "keyrec count - $kcnt\trollrec count - $rcnt\n";
+
+	#
+	# Return the type of file we found this to be.
+	#
+	return("rollrec") if( $rcnt && !$kcnt);
+	return("keyrec")  if(!$rcnt &&  $kcnt);
+	return("mixed")   if( $rcnt &&  $kcnt);
+	return("unknown");
+}
+
 1;
 
 #############################################################################
@@ -108,14 +193,14 @@ Net::DNS::SEC::Tools::dnssectools - General routines for the DNSSEC-Tools packag
 
   dt_adminmail($subject,$msgbody,$recipient);
 
+  $ftype = dt_findtype($path);
+
 =head1 DESCRIPTION
 
-The B<Net::DNS::SEC::Tools::rollmgr> module provides standard,
-platform-independent methods for a program to communicate with DNSSEC-Tools'
-B<rollerd> rollover manager.  There are three interface classes described
-here:  general interfaces, logging interfaces, and communications interfaces.
+The B<Net::DNS::SEC::Tools::dnssectools> module provides a general set of
+methods for use with DNSSEC-Tools utilities.
 
-=head1 GENERAL INTERFACES
+=head1 INTERFACES
 
 The interfaces to the B<Net::DNS::SEC::Tools::dnssectools> module are given
 below.
@@ -124,8 +209,8 @@ below.
 
 =item I<dt_adminmail(subject,msgbody,recipient)>
 
-This routine emails a message to the administrative user
-listed in the DNSSEC-Tools configuration file.
+This routine emails a message to the administrative user listed in the
+DNSSEC-Tools configuration file.
 
 I<dt_adminmail()> requires two parameters, both scalars.
 The I<subject> parameter is the subject for the mail message.
@@ -139,6 +224,28 @@ Return values:
 
 	1 - the message was created and sent.
 	0 - an invalid recipient was specified. 
+
+=item I<dt_filetype(path)>
+
+This routine returns the type of the file named in I<path>.  The rollrec and
+keyrec records contained therein are counted and a type determination is made.
+
+Return values:
+
+        "keyrec" -  At least one keyrec record was found and no
+		    rollrec records were found.
+
+        "rollrec" - At least one rollrec record was found and
+		    no keyrec records were found.
+
+        "mixed" -   At least one rollrec record and at least one
+		    keyrec record were found.
+                    This is most likely an erroneous file.
+
+        "unknown" - No rollrec records nor keyrec records
+                    were found.
+
+        "nofile"  - The specified file does not exist.
 
 =back
 
