@@ -33,6 +33,7 @@ my %defaults =
 	"algorithm"	=> "rsasha1",		# Encryption algorithm.
 	"enddate"	=> "+2592000",		# Zone life, in seconds.
 	"entropy_msg"	=> 1,			# Display entropy message flag.
+	"keyarch"	=> "/usr/bin/keyarch",	# Key-archiving program.
 	"keygen"	=> getprefixdir() . "/sbin/dnssec-keygen",
 	"kskcount"	=> 1,			# Number of KSK keys.
 	"ksklength"	=> 2048,		# Length of KSK key.
@@ -177,6 +178,10 @@ This default holds the default zone life, in seconds.
 
 This default indicates whether or not I<zonesigner> should display an entropy
 message.
+
+=item B<keyarch>
+
+This default holds the path to the key-archiving program.
 
 =item B<keygen>
 
