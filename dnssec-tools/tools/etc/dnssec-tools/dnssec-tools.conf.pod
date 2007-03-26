@@ -75,6 +75,10 @@ A true/false flag indicating if the I<zonesigner> command should display
 a message about entropy generation.  This is primarily dependent on the
 implementation of a system's random number generation.
 
+=item keyarch
+
+The path to the DNSSEC-Tools I<keyarch> command.
+
 =item keygen
 
 The path to the I<dnssec-keygen> command.
@@ -138,7 +142,7 @@ Flag to allow/disallow usage of the GUI for specifying command options.
 
 =item zonesigner
 
-The path to the I<zonesigner> command.
+The path to the DNSSEC-Tools I<zonesigner> command.
 
 =item zskcount
 
@@ -189,6 +193,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     zonecheck       /usr/local/sbin/named-checkzone
     zonesign        /usr/local/sbin/dnssec-signzone
 
+    keyarch	    /usr/bin/keyarch
     rollrec-chk     /usr/bin/rollrec-check
     zonesigner      /usr/bin/zonesigner
 
@@ -250,6 +255,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<dtinitconf(8)>,
 B<dtconfchk(8)>,
+B<keyarch(8)>,
 B<rollerd(8)>,
 B<zonesigner(8)>
 
