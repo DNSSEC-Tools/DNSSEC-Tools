@@ -7,27 +7,27 @@ Introduction
 
 This HOWTO describes the installation, configuration and execution
 steps for adding DNSSEC validation to outbound email for
-postfix. This patch has been tested on postfix 2.2.11.
+postfix. This patch has been tested on postfix 2.3.8.
 
 
 Installation
 ============
 
-Download postfix-2.2.x.tar.gz from
+Download postfix-2.3.x.tar.gz from
 http://www.postfix.org/download.html
 
 Unzip and untar it by:
 
-   tar -xvzf postfix-2.2.x.tar.gz
+   tar -xvzf postfix-2.3.x.tar.gz
 
-Go to the postfix-2.2.x directory:
+Go to the postfix-2.3.x directory:
 
-   cd postfix-2.2.x/
+   cd postfix-2.3.x/
 
-Apply the postfix-2.2.x_dnssec_patch.txt patch found in this
+Apply the postfix-2.3.x_dnssec_patch.txt patch found in this
 directory by:
 
-   patch -p 1 -b -z .orig </path/to/patch/postfix-2.2.x_dnssec_patch.txt
+   patch -p 1 -b -z .orig </path/to/patch/postfix-2.3.x_dnssec_patch.txt
 
 This will apply the patch and store the original files with a .orig
 suffix.
@@ -38,7 +38,7 @@ You must install this library before compiling the patched postfix
 source.
 
 Remember to run 'make -f Makefile.init makefiles' in the
-postfix-2.2.x/ directory before following the rest of the postfix
+postfix-2.3.x/ directory before following the rest of the postfix
 build instructions
 
 Note, if 'make -f Makefile.init makefiles' has already been run in
