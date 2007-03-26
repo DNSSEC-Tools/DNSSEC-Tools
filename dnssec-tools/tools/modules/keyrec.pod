@@ -42,27 +42,45 @@ in each type of record (zone, set, key) are described in their own subsection.
 
 =head2 Zone Keyrec Fields
 
- * zonefile
+ * archivedir
 
-The name of the zone file for this zone.
-
- * signedfile
-
-The name of the signed zone file for this zone.
+The name of the key archive directory for this zone.
 
  * endtime
 
 The time when the zone's SIG records expire.  This field is passed to
 B<dnssec-signzone> as the argument to the I<-e> option.
 
+ * keyrec_signdate
+
+The textual timestamp of the zone I<keyrec>'s last update.
+This is a translation of the I<keyrec_signsecs> field.
+
+ * keyrec_signsecs
+
+The numeric timestamp of the zone I<keyrec>'s last update.
+This is measured in seconds since the epoch.
+
  * kskcur
 
-The name of the zone's Current KSK signing set.  This is used as the name of
-the signing set of KSK keys I<keyrec> fields.
+The name of the zone's Current KSK signing set.
+This is used as the name of the signing set of KSK keys I<keyrec> fields.
+
+ * kskpub
+
+The name of the zone's Published KSK signing set.
 
  * kskdirectory
 
-The directory that holds the KSK key.
+The directory that holds the KSK keys.
+
+ * signedfile
+
+The name of the signed zone file for this zone.
+
+ * zonefile
+
+The name of the zone file for this zone.
 
  * zskcur
 
@@ -79,50 +97,32 @@ This is the name of the signing set's set I<keyrec>.
 The name of the signing set for the current ZSK keys.
 This is the name of the signing set's set I<keyrec>.
 
- * keyrec_signsecs
-
-The numeric timestamp of the zone I<keyrec>'s last update.
-This is measured in seconds since the epoch.
-
- * keyrec_signdate
-
-The textual timestamp of the zone I<keyrec>'s last update.
-This is a translation of the I<keyrec_signsecs> field.
-
 =head2 Set Keyrec Fields
-
- * zonename
-
-The name of the zone for which this signing set was generated.
 
  * keys
 
 The list of keys in this signing set.  Each key listed should have a
 corresponding key I<keyrec> whose name matches the key name.
 
- * keyrec_setsecs
-
-The numeric timestamp of the signing set's creation.
-This is measured in seconds since the epoch.
-
  * keyrec_setdate
 
 The textual timestamp of the signing set's creation.
 This is a translation of the I<keyrec_setsecs> field.
 
-=head2 Key Keyrec Fields
+ * keyrec_setsecs
+
+The numeric timestamp of the signing set's creation.
+This is measured in seconds since the epoch.
 
  * zonename
 
-The name of the zone for which this key was generated.
+The name of the zone for which this signing set was generated.
+
+=head2 Key Keyrec Fields
 
  * algorithm
 
 The encryption algorithm used to generate this key.
-
- * random
-
-The random number generator used to generate this key.
 
  * keypath
 
@@ -130,23 +130,31 @@ The path to the key.  This may be an absolute or relative path, but it should
 be one which B<zonesigner> may use (in conjunction with other I<keyrec>
 fields to find the key.
 
- * ksklength
+ * keyrec_gendate
 
-The length of a KSK key.  This is only included in I<keyrec>s for KSK keys.
-
- * zsklength
-
-The length of a ZSK key.  This is only included in I<keyrec>s for ZSK keys.
+The textual timestamp of the key's creation.  This is a translation of
+the I<keyrec_gensecs> field.
 
  * keyrec_gensecs
 
 The numeric timestamp of the key's creation.  This is measured in seconds
 since the epoch.
 
- * keyrec_gendate
+ * ksklength
 
-The textual timestamp of the key's creation.  This is a translation of
-the I<keyrec_gensecs> field.
+The length of a KSK key.  This is only included in I<keyrec>s for KSK keys.
+
+ * random
+
+The random number generator used to generate this key.
+
+ * zonename
+
+The name of the zone for which this key was generated.
+
+ * zsklength
+
+The length of a ZSK key.  This is only included in I<keyrec>s for ZSK keys.
 
 =head1 EXAMPLES
 
@@ -156,6 +164,7 @@ The following is an example of a zone I<keyrec>:
             zonefile        "db.example.com"
             signedfile      "db.example.com.signed"
             endtime         "+604800"
+            archivedir      "/usr/etc/dnssec-tools/key-vault"
             kskcur          "signing-set-41"
             kskdirectory    "keydir"
             zskcur          "signing-set-42"
@@ -199,6 +208,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 B<lskrf(1)>
 
 B<dnssec-signzone(8)>,
+B<keyarch(8)>
 B<signset-editor(8)>,
 B<zonesigner(8)>
 
