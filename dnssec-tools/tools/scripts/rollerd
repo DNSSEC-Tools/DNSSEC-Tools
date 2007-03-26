@@ -136,6 +136,7 @@ my $version  = 0;			# Display the version number.
 
 my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
+my $keyarch;				# Key-archive program.
 
 #######################################################################
 
@@ -1372,13 +1373,10 @@ sub ksk_phase6
 sub ksk_phase7
 {
 	my $rname = shift;		# Name of rolling zone.
-	my $rrr = shift;		# Reference to rollrec.
+	my $rrr = shift;		# Reference to zone's rollrec record.
 
 	my %rr = %$rrr;			# Rollrec hash.
-
 	my $krf;			# Rollrec's keyrec name.
-	my %krf;			# Keyrec hash.
-	my $krr;			# Keyrec reference.
 
 	my $ret;			# Result from command executions.
 
@@ -1388,10 +1386,22 @@ sub ksk_phase7
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rollmgr_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
 	}
 
-rollmgr_log(LOG_ALWAYS,$rname,"KSK phase 7:  NEED TO ARCHIVE OLD KSKS!!!");
+	#
+	# Reload the zone.
+	#
+	$krf = $rr{'keyrec'};
+	$ret = system("$keyarch -verbose -zone $rname $krf");
+	if($ret != 0)
+	{
+		rollmgr_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
+	}
+	else
+	{
+		rollmgr_log(LOG_INFO,$rname,"KSK phase 7:  zone, rc - $ret");
+	}
 
 	#
 	# Move the rollrec back to phase 0.
@@ -2031,8 +2041,9 @@ sub getprogs
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$rndc 	= $dtconf{'rndc'}	 || dnssec_tools_default("bind_rndc");
-	$rrchk	= $dtconf{'rollrec_chk'} || dnssec_tools_default("rollrec_check");
+	$keyarch = $dtconf{'keyarch'}	  || dnssec_tools_default("keyarchive");
+	$rndc 	 = $dtconf{'rndc'}	  || dnssec_tools_default("bind_rndc");
+	$rrchk	 = $dtconf{'rollrec_chk'} || dnssec_tools_default("rollrec_check");
 }
 
 #-----------------------------------------------------------------------------
