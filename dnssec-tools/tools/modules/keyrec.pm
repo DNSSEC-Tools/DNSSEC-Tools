@@ -22,7 +22,7 @@
 #
 #	Each record type has several subfields.
 #
-#	An example configuration file follows:
+#	A truncated example configuration file follows:
 #
 #		zone "example.com"
 #			zonefile	"db.example.com"
@@ -76,23 +76,24 @@ my @ZONEFIELDS = (
 			'zonefile',
 			'keyrec_type',		# Internal only.  Usually.
 			'endtime',
+			'zskdirectory',
+			'kskdirectory',
+			'archivedir',
 			'ksdir',
 			'kskcount',
-			'kskdirectory',
 			'kskcur',
 			'kskpub',
-			'lastset',
 			'signedzone',
 			'zskcount',
 			'zskcur',
 			'zskcurpath',
-			'zskdirectory',
 			'zskpub',
 			'zskpubpath',
 			'zsknew',
 			'zsknewpath',
 			'serial',
 			'signing_set',
+			'lastset',
 			'gends',
 			'szopts',
 			'rollphase',
