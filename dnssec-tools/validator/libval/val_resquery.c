@@ -114,9 +114,11 @@ merge_glue_in_referral(val_context_t *context,
                        struct queries_for_query **queries)
 {
     int             retval;
-    struct val_query_chain *glueptr;
     struct queries_for_query *added_q;
+    struct val_query_chain *glueptr = NULL;
     struct name_server *pending_ns;
+    struct name_server *prev_ns;
+    u_int8_t flags;
 
     /*
      * check if we have data to merge 
@@ -125,35 +127,84 @@ merge_glue_in_referral(val_context_t *context,
         return VAL_BAD_ARGUMENT; 
 
     /* Nothing to do */
-    if ((pc->qc_referral == NULL) || (pc->qc_referral->glueptr == NULL))
+    if ((pc->qc_referral == NULL) || (pc->qc_referral->pending_glue_ns == NULL))
         return VAL_NO_ERROR;
     
-    glueptr = pc->qc_referral->glueptr;
+    /* For each glue request that we have */
+    pending_ns = pc->qc_referral->pending_glue_ns;
+    prev_ns = NULL;
+    while(pending_ns) {
 
-    /*
-     * Check if glue was obtained 
-     */
-    if ((glueptr->qc_state == Q_ANSWERED) &&
-        (glueptr->qc_ans != NULL)) {
-        struct val_digested_auth_chain *as;
+        /*
+         * Identify the query in the query chain 
+         */
+        flags = pc->qc_flags | 
+                VAL_QUERY_GLUE_REQUEST;
 
-        // This could be a cname or dname alias; search for the A record
-        // Need to support IPv6
-        for (as=glueptr->qc_ans; as; as=as->_as.val_ac_rrset_next) {
-            if (as->_as.ac_data && as->_as.ac_data->rrs.val_rrset_type_h == ns_t_a)
-                break;
-        }
+        if (VAL_NO_ERROR != (retval = 
+                    add_to_qfq_chain(context,
+                                     queries, pending_ns->ns_name_n, ns_t_a, 
+                                     ns_c_in, flags, &added_q))) 
+            return retval;
+
+        glueptr = added_q->qfq_query;
         
-        if (!as) {
-            pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
-        } else if (VAL_NO_ERROR !=
-                   (retval =
-                    extract_glue_from_rdata(as->_as.ac_data->
-                                            rrs.val_rrset_data,
-                                            &pc->qc_referral->
-                                            pending_glue_ns))) {
-            glueptr->qc_state = Q_ERROR_BASE + SR_RCV_INTERNAL_ERROR;
+        /*
+         * Check if glue was obtained 
+         */
+        if (glueptr && glueptr->qc_state >= Q_ANSWERED) { 
+
+            struct val_digested_auth_chain *as;
+            struct name_server *cur_ns;
+
+            /* Isolate pending_ns from the list */
+            if (prev_ns) {
+                prev_ns->ns_next = pending_ns->ns_next;
+                cur_ns = pending_ns;
+                pending_ns = prev_ns->ns_next;
+            } else {
+                pc->qc_referral->pending_glue_ns = pending_ns->ns_next;
+                cur_ns = pending_ns;
+                pending_ns = pc->qc_referral->pending_glue_ns;
+            }
+            
+            // This could be a cname or dname alias; search for the A record
+            // XXX Need to support IPv6
+            for (as=glueptr->qc_ans; as; as=as->_as.val_ac_rrset_next) {
+                if (as->_as.ac_data && as->_as.ac_data->rrs.val_rrset_type_h == ns_t_a)
+                    break;
+            }
+       
+            if (!as || 
+                glueptr->qc_state != Q_ANSWERED ||
+                VAL_NO_ERROR != (retval = 
+                    extract_glue_from_rdata(as->_as.ac_data->rrs.val_rrset_data, 
+                                            &cur_ns))) { 
+
+                /* free this name server */
+                free_name_server(&cur_ns);
+
+            } else  {
+                
+                /* store this name server in the merged_ns list */
+                cur_ns->ns_next = pc->qc_referral->merged_glue_ns;
+                pc->qc_referral->merged_glue_ns = cur_ns;
+            }
         } else {
+            prev_ns = pending_ns;
+            pending_ns = pending_ns->ns_next;
+        }
+    }
+
+    /* Check if there was more glue to fetch */
+    if (pc->qc_referral->pending_glue_ns == NULL) {
+
+        if (pc->qc_referral->merged_glue_ns == NULL) {
+            /* couldn't find any answers for the glue fetch requests */
+            pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+        } else {
+            /* continue referral using the fetched glue records */
+            
             if (pc->qc_ns_list) {
                 free_name_servers(&pc->qc_ns_list);
                 pc->qc_ns_list = NULL;
@@ -167,45 +218,9 @@ merge_glue_in_referral(val_context_t *context,
                 pc->qc_zonecut_n = NULL;
             }
 
-            pending_ns = pc->qc_referral->pending_glue_ns;
-            pc->qc_referral->pending_glue_ns = NULL;
-
-            /*
-             * forget about the name servers that don't have any glue 
-             */
-            if (pending_ns->ns_next)
-                free_name_servers(&pending_ns->ns_next);
-            pending_ns->ns_next = NULL;
-
-            pc->qc_ns_list = pending_ns;
+            pc->qc_ns_list = pc->qc_referral->merged_glue_ns;
+            pc->qc_referral->merged_glue_ns = NULL;
             pc->qc_state = Q_INIT;
-            pc->qc_referral->glueptr = NULL;
-        }
-    }
-
-    if (((glueptr->qc_state == Q_ANSWERED) && (glueptr->qc_ans == NULL)) ||
-        glueptr->qc_state > Q_ERROR_BASE) {
-
-        /*
-         * look for next ns to send our glue request to 
-         */
-        if (pc->qc_referral->pending_glue_ns == NULL)
-            pending_ns = NULL;
-        else {
-            pending_ns = pc->qc_referral->pending_glue_ns->ns_next;
-            free_name_server(&pc->qc_referral->pending_glue_ns);
-            pc->qc_referral->pending_glue_ns = pending_ns;
-        }
-        if (pending_ns == NULL) {
-            pc->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
-        } else {
-            if(VAL_NO_ERROR != 
-                (retval = add_to_qfq_chain(context, 
-                                           queries, pending_ns->ns_name_n, ns_t_a,
-                                           ns_c_in, pc->qc_flags | VAL_QUERY_GLUE_REQUEST, 
-                                           &added_q)))
-                return retval;
-            pc->qc_referral->glueptr = added_q->qfq_query;
         }
     }
 
@@ -494,7 +509,11 @@ free_referral_members(struct delegation_info *del)
         del->pending_glue_ns = NULL;
     }
 
-    del->glueptr = NULL;
+    if (del->merged_glue_ns) {
+        free_name_servers(&del->merged_glue_ns);
+        del->merged_glue_ns = NULL;
+    }
+
 }
 
 int
@@ -526,49 +545,50 @@ bootstrap_referral(val_context_t *context,
         if (ret_val == VAL_OUT_OF_MEMORY)
             return ret_val;
     }
-    if (*ref_ns_list == NULL) {
+
+    if (pending_glue != NULL) {
 
         /*
          * Don't fetch glue if we're already fetching glue 
          */
         if ((matched_q->qc_referral) &&
-            (matched_q->qc_referral->glueptr != NULL)) {
+            (matched_q->qc_referral->pending_glue_ns != NULL ||
+             matched_q->qc_referral->merged_glue_ns != NULL)) {
+
             free_name_servers(&pending_glue);
+            free_name_servers(ref_ns_list);
+            *ref_ns_list = NULL;
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            return VAL_NO_ERROR;
         }
         /*
-         * didn't find any referral with glue, look for one now 
+         * Create a new referral if one does not exist 
          */
-        else if (pending_glue) {
-            /*
-             * Create a new referral if one does not exist 
-             */
-            if (matched_q->qc_referral == NULL) {
-                ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
-            }
+        if (matched_q->qc_referral == NULL) {
+            ALLOCATE_REFERRAL_BLOCK(matched_q->qc_referral);
+        }
 
-            /*
-             * Create a query for glue for pending_ns 
-             */
-            matched_q->qc_referral->pending_glue_ns = pending_glue;
-            flags = matched_q->qc_flags |
-                    VAL_FLAGS_DONT_VALIDATE|
-                    VAL_QUERY_GLUE_REQUEST;
+        matched_q->qc_referral->pending_glue_ns = pending_glue;
+        matched_q->qc_referral->merged_glue_ns = *ref_ns_list;
+        *ref_ns_list = NULL;
+        
+        /*
+         * Create a query for glue for pending_ns 
+         */
+        flags = matched_q->qc_flags |
+                VAL_QUERY_GLUE_REQUEST;
 
+        for (; pending_glue; pending_glue=pending_glue->ns_next) {
             if (VAL_NO_ERROR != (ret_val = add_to_qfq_chain(context,
                                        queries, pending_glue->ns_name_n, ns_t_a,
                                        ns_c_in, flags, &added_q)))
-                    return ret_val;
-            matched_q->qc_referral->glueptr = added_q->qfq_query;
-            matched_q->qc_state = Q_WAIT_FOR_GLUE;
+                return ret_val;
         }
-    } else {
-        /*
-         * forget about the name servers that don't have any glue 
-         */
-        free_name_servers(&pending_glue);
+        
+        matched_q->qc_state = Q_WAIT_FOR_GLUE;
+    } else if (*ref_ns_list != NULL) {
         matched_q->qc_state = Q_INIT;
-    }
+    } 
 
     return VAL_NO_ERROR;
 }
