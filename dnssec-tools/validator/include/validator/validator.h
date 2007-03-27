@@ -169,7 +169,7 @@ extern          "C" {
 #define VAL_FLAGS_DEFAULT 0x00
 #define VAL_FLAGS_DONT_VALIDATE 0x01
 #define VAL_QUERY_MERGE_RRSETS 0x02
-#define VAL_QUERY_GLUE_REQUEST 0x04
+#define VAL_QUERY_GLUE_REQUEST (0x04 | VAL_FLAGS_DONT_VALIDATE)
 
 /* 
  * This flag will be an OR of all the flags that affect 
@@ -356,7 +356,7 @@ extern          "C" {
         struct qname_chain *qnames;
         struct rrset_rec *answers;
         struct name_server *pending_glue_ns;
-        struct val_query_chain *glueptr;
+        struct name_server *merged_glue_ns;
     };
 
     struct val_query_chain {
