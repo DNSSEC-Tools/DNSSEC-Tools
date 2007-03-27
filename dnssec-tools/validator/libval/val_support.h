@@ -44,7 +44,7 @@
 		ref->answers = NULL; \
 		ref->qnames = NULL; \
 		ref->pending_glue_ns = NULL; \
-		ref->glueptr = NULL; \
+		ref->merged_glue_ns = NULL; \
 } while(0)
 
 
