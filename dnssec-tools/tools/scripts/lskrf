@@ -14,6 +14,7 @@ use strict;
 use Getopt::Long qw(:config no_ignore_case_always);
 
 use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
 use Net::DNS::SEC::Tools::tooloptions;
 
@@ -51,6 +52,11 @@ my @opts =
 	"valid",			# List unexpired zone keyrecs.
 	"expired",			# List expired zone keyrecs.
 
+	"z-archdir",			# List zone's archive directories.
+	"z-expdate",			# Show zone's expiration date.
+	"z-signdate",			# Show zone's signing date.
+	"z-zonefile",			# Show zone's zonefile.
+
 	"k-algorithm",			# Show encryption algorithm.
 	"k-enddate",			# Show end date.
 	"k-length",			# Show key length.
@@ -58,11 +64,8 @@ my @opts =
 	"k-signdate",			# Show key's signing date.
 	"k-zone",			# Show key's zonefile.
 
-	"z-expdate",			# Show zone's expiration date.
-	"z-signdate",			# Show zone's signing date.
-	"z-zonefile",			# Show zone's zonefile.
-
 	"count",			# Only give a count of matching keyrecs.
+	"label",			# Give a leading record label.
 	"nodate",			# Don't show the date.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
@@ -77,6 +80,7 @@ my @opts =
 #
 my $allflag;
 my $zonesflag;
+my $archdirflag;
 my $setsflag;
 my $keysflag;
 my $kskflag;
@@ -112,6 +116,7 @@ my $z_label;				# Print a leading label for zones.
 my $z_expdate;				# Print the zone's expiration date.
 my $z_signdate;				# Print the zone's signing date.
 my $z_zonefile;				# Print the zone's zone file.
+my $z_archdir;				# Print the zone's archive directory.
 
 my $s_keys;				# Print the set's key list.
 my $s_label = 0;			# Print a leading label for sets.
@@ -143,6 +148,8 @@ my %zcurkeys = ();			# Names of Current ZSK keyrecs.
 my %znewkeys = ();			# Names of New ZSK keyrecs.
 my %zpubkeys = ();			# Names of Published ZSK keyrecs.
 my %zobskeys = ();			# Names of Obsolete ZSK keyrecs.
+
+my $archive;				# Default archive directory.
 
 my $ret;				# Return code from main().
 
@@ -214,6 +221,7 @@ sub main()
 sub doopts
 {
 	my $argc = shift;			# Command line argument count.
+	my %dtconf;				# DNSSEC-Tools config values.
 
 	#
 	# Parse the options.
@@ -259,6 +267,12 @@ sub doopts
 	$nodateflag	= $options{'nodate'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
+
+	#
+	# Get the configuration values.
+	#
+	%dtconf = parseconfig();
+	$archive = $dtconf{'archivedir'};
 
 	#
 	# If the valid-zone or the expired-zone option was given, but the
@@ -352,6 +366,7 @@ sub doopts
 		# Set our defaults.
 		#
 		$z_label    = 1;
+		$z_archdir  = 0;
 		$z_expdate  = 0;
 		$z_signdate = 1;
 		$z_zonefile = 1;
@@ -361,6 +376,7 @@ sub doopts
 		#
 		if($long)
 		{
+			$z_archdir = 1;
 			$z_expdate = 1;
 		}
 
@@ -369,6 +385,7 @@ sub doopts
 		#
 		if($terse)
 		{
+			$z_archdir  = 0;
 			$z_label    = 0;
 			$z_signdate = 0;
 			$z_zonefile = 0;
@@ -377,9 +394,12 @@ sub doopts
 		#
 		# Set some values for flags.
 		#
+		$z_archdir  = 1 if(defined($options{'z-archdir'}));
 		$z_expdate  = 1 if(defined($options{'z-expdate'}));
 		$z_signdate = 1 if(defined($options{'z-signdate'}));
 		$z_zonefile = 1 if(defined($options{'z-zonefile'}));
+
+		$z_label    = 1 if(defined($options{'label'}));
 
 	}
 
@@ -413,6 +433,8 @@ sub doopts
 			$s_label = 0;
 			$s_keys	 = 0;
 		}
+
+		$s_label    = 1 if(defined($options{'label'}));
 
 	}
 
@@ -462,6 +484,8 @@ sub doopts
 		$k_length    = 1 if(defined($options{'k-length'}));
 		$k_life      = 1 if(defined($options{'k-lifespan'}));
 		$k_zonename  = 1 if(defined($options{'k-zone'}));
+
+		$k_label     = 1 if(defined($options{'label'}));
 
 		#
 		# $keysflag isn't used any more for output selection, so we'll
@@ -574,6 +598,7 @@ sub showzones
 	my $signdate;				# Zone's signing date.
 	my $zonefile;				# Zone's zonefile.
 
+	my $archdir;				# Zone's archive directory.
 	my $endtime;				# Calculated expiration date.
 	my $signsecs;				# Signing date in seconds.
 	my $exptime;				# Expiration date in seconds.
@@ -613,6 +638,7 @@ sub showzones
 		#
 		$signdate = $kr{'keyrec_signdate'};
 		$zonefile = $kr{'zonefile'};
+		$archdir  = $kr{'archivedir'} || $archive;
 		$endtime  = $kr{'endtime'};
 		$signsecs = $kr{'keyrec_signsecs'};
 
@@ -629,8 +655,8 @@ sub showzones
 		$outstr .= "\t$zonefile"	if($z_zonefile);
 		$outstr .= "\t\"$signdate\""	if($z_signdate);
 		$outstr .= "\t\"$expstr\"" 	if($z_expdate);
+		$outstr .= "\t$archdir" 	if($z_archdir);
 		print "$outstr\n";
-
 	}
 }
 
@@ -1077,6 +1103,7 @@ sub usage
 
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
+	print STDERR "\t\t-label		show record-type label\n";
 	print STDERR "\t\t-life		display date\n";
 	print STDERR "\t\t-nodate		do not display date\n";
 	print STDERR "\t\t-terse\t	terse output\n";
@@ -1093,6 +1120,7 @@ sub usage
 	print STDERR "\t\t-k-zone		show key's zonefile\n";
 
 	print STDERR "\tzone-attribute options:\n";
+	print STDERR "\t\t-z-archdir	show zone's key-archive directory\n";
 	print STDERR "\t\t-z-expdate	show zone's expiration date\n";
 	print STDERR "\t\t-z-signdate	show zone's signing date\n";
 	print STDERR "\t\t-z-zonefile	show zone's zonefile\n";
@@ -1276,6 +1304,10 @@ will not be.
 
 The key's generation date will not be printed if this flag is given.
 
+=item -label
+
+A label for the I<keyrec>'s type will be given.
+
 =item -long
 
 The long form of output will be given.  For zones, the zone name, the zone
@@ -1339,6 +1371,11 @@ combined with the I<-terse> option, only those fields specifically desired
 will be printed.
 
 =over 4
+
+=item z-archdir
+
+Display the zone's archive directory.  If an archive directory is not
+explicitly set for the zone, the default directory will be listed.
 
 =item z-expdate
 
