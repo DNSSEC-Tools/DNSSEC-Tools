@@ -414,7 +414,7 @@ sub doopts
 		$s_label   = 1;
 		$s_keys	   = 1;
 		$s_setdate = 0;
-		$s_zone    = 0;
+		$s_zone    = 1;
 
 		#
 		# Set the non-defaults for -long.
@@ -529,7 +529,10 @@ sub getkeyrecs
 		}
 		elsif($type eq 'set')
 		{
-			$sets{$krn} = $kr;
+			my $name;		# Key for hash entry.
+
+			$name = "$krn($kr->{'zonename'})";
+			$sets{$name} = $kr;
 		}
 		elsif($type eq 'kskcur')
 		{
@@ -665,28 +668,28 @@ sub showzones
 #
 # Purpose:	This routine displays set data.  It has three output formats:
 #
-#			normal	A label, the set name, and the set's keys are
-#				displayed.
+#			normal	A label, the set name, the set's zone, and the
+#				set's keys are displayed.
 #
-#			terse	The set name is displayed.
+#			terse	The set name and the set's zone are displayed.
 #
-#			long	A label, the set name, the set's keys, the
-#				set's zone, the zone's last modification
-#				date are displayed.
+#			long	A label, the set name, the set's keys, the set's
+#				zone, the set's creation date are displayed.
 #
 sub showsets
 {
 	my $outstr = "";			# Output string to build.
 
-	my $keylist;				# Zone's key list.
-	my $moddate;				# Zone's signing date.
-	my $zone;				# Zone's zonefile.
+	my $setname;				# Set's name.
+	my $keylist;				# Set's key list.
+	my $moddate;				# Set's creation date.
+	my $zone;				# Set's zonename.
 
 	my $endtime;				# Calculated expiration date.
 	my $setsecs;				# Signing date in seconds.
 
 	#
-	# Loop through the zone list and give data on the desired zones.
+	# Loop through the set list and give data on the desired sets.
 	#
 	foreach my $sk (sort(keys(%sets)))
 	{
@@ -750,9 +753,15 @@ sub showsets
 		next if($cntflag);
 
 		#
+		# Get the set's name (stripping off the zone.)
+		#
+		$sk =~ /(.*)\(.*\)/;
+		$setname = $1;
+
+		#
 		# Build and print the output string.
 		#
-		$outstr  = $s_label ? "set $sk" : $sk;
+		$outstr  = $s_label ? "set $setname" : $setname;
 		$outstr .= "\t$zone"		if($s_zone);
 		$outstr .= "\t$keylist"		if($s_keys);
 		$outstr .= "\t\"$moddate\""	if($s_setdate);
@@ -1284,6 +1293,77 @@ I<-sets> and I<-keys> have been specified.
 
 =back
 
+=head2 Zone-Attribute Options
+
+These options allow specific zone fields to be included in the output.  If
+combined with the I<-terse> option, only those fields specifically desired
+will be printed.
+
+=over 4
+
+=item z-archdir
+
+Display the zone's archive directory.  If an archive directory is not
+explicitly set for the zone, the default directory will be listed.
+
+=item z-expdate
+
+Display the zone's expiration date.
+
+=item z-signdate
+
+Display the zone's signing date.
+
+=item z-zonefile
+
+Display the zone's zonefile.
+
+=back
+
+=head2 Set-Attribute Options
+
+There are no options specifically for signing set fields.  However, the general
+I<-terse>, I<-long>, and I<-label> options control the signing-set output.
+Due to potential signing-set name conflicts among zones, the sets' zone names
+will always be printed.
+
+=head2 Key-Attribute Options
+
+These options allow specific key fields to be included in the output.  If
+combined with the I<-terse> option, only those fields specifically desired
+will be printed.
+
+=over 4
+
+=item -k-algorithm
+
+Display the key's encryption algorithm.
+
+=item -k-enddate
+
+Display the key's end-date, calculated by adding the key's lifespan to its
+signing date.
+
+=item -k-length
+
+Display the key's length.
+
+=item -k-lifespan
+
+Display the key's lifespan (in seconds.) This lifespan is B<only> related to
+the time between key roll-over.  There is no other lifespan associated with a
+key.
+
+=item -k-signdate
+
+Display the key's signing date.
+
+=item -k-zone
+
+Display the key's zonefile.
+
+=back
+
 =head2 Output-Format Options
 
 These options define how the I<keyrec> information will be displayed.
@@ -1324,70 +1404,6 @@ options.
 =item -help
 
 Display a usage message.
-
-=back
-
-=head2 Key-Attribute Options
-
-These options allow specific key fields to be included in the output.  If
-combined with the I<-terse> option, only those fields specifically desired
-will be printed.
-
-=over 4
-
-=item -k-algorithm
-
-Display the key's encryption algorithm.
-
-=item -k-enddate
-
-Display the key's end-date, calculated by adding the key's lifespan to its
-signing date.
-
-=item -k-length
-
-Display the key's length.
-
-=item -k-lifespan
-
-Display the key's lifespan (in seconds.) This lifespan is B<only> related to
-the time between key roll-over.  There is no other lifespan associated with a
-key.
-
-=item -k-signdate
-
-Display the key's signing date.
-
-=item -k-zone
-
-Display the key's zonefile.
-
-=back
-
-=head2 Zone-Attribute Options
-
-These options allow specific zone fields to be included in the output.  If
-combined with the I<-terse> option, only those fields specifically desired
-will be printed.
-
-=over 4
-
-=item z-archdir
-
-Display the zone's archive directory.  If an archive directory is not
-explicitly set for the zone, the default directory will be listed.
-
-=item z-expdate
-
-Display the zone's expiration date.
-
-=item z-signdate
-
-Display the zone's signing date.
-
-=item z-zonefile
-
-Display the zone's zonefile.
 
 =back
 
