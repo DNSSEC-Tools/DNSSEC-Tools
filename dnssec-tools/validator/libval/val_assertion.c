@@ -1355,8 +1355,7 @@ check_conflicting_answers(val_context_t * context,
         if (matched_q->qc_flags & VAL_FLAGS_DONT_VALIDATE)
             as->val_ac_status = VAL_AC_IGNORE_VALIDATION;
 
-        if (as->val_ac_status < VAL_AC_DONT_GO_FURTHER &&
-            !(matched_q->qc_flags & VAL_QUERY_GLUE_REQUEST)) {
+        if (as->val_ac_status < VAL_AC_DONT_GO_FURTHER) { 
 
             if (VAL_NO_ERROR !=
                 (retval = build_pending_query(context, queries, as, &added_q)))
@@ -2879,6 +2878,9 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
                 return VAL_OUT_OF_MEMORY;
             memcpy(*name_n, signby_name_n, len);
             return VAL_NO_ERROR;
+        } else if (rrset->rrs.val_rrset_type_h == ns_t_ds) {
+            /* advance qname by one label */
+            STRIP_LABEL(rrset->rrs.val_rrset_name_n, qname);
         }
 
         if (rrset->rrs_zonecut_n != NULL) {
@@ -3290,7 +3292,6 @@ is_pu_trusted(val_context_t *ctx, u_int8_t *name_n, long *ttl_x)
     }
     return 1; /* trust provably unsecure state by default */
 }
-
 
 /*
  * Verify an assertion if possible. Complete assertions are those for which 
@@ -4174,13 +4175,14 @@ fix_glue(val_context_t * context,
                                                queries)))
                         return retval;
 
-            if (next_q->qfq_query->qc_state == Q_ANSWERED) {
+            if (next_q->qfq_query->qc_state == Q_INIT) {
                 val_log(context, LOG_DEBUG,
                         "successfully fetched glue for {%s %d %d}", name_p,
                         next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
-                *data_received = 1;
-            } else {
-                *data_missing = 1;
+            } else if (next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
+                val_log(context, LOG_DEBUG,
+                        "could not fetch glue for {%s %d %d}", name_p,
+                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
             } 
         }
     }
