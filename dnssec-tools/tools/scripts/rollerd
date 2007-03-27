@@ -2041,7 +2041,7 @@ sub getprogs
 	# Get the paths to the external commands.  If they aren't defined,
 	# use the default command names.
 	#
-	$keyarch = $dtconf{'keyarch'}	  || dnssec_tools_default("keyarchive");
+	$keyarch = $dtconf{'keyarch'}	  || dnssec_tools_default("archivedir");
 	$rndc 	 = $dtconf{'rndc'}	  || dnssec_tools_default("bind_rndc");
 	$rrchk	 = $dtconf{'rollrec_chk'} || dnssec_tools_default("rollrec_check");
 }
