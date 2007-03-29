@@ -67,6 +67,7 @@ my @opts =
 	"count",			# Only give a count of matching keyrecs.
 	"label",			# Give a leading record label.
 	"nodate",			# Don't show the date.
+	"headers",			# Give column headers output.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
 	"Version",			# Display the version number.
@@ -100,6 +101,7 @@ my $expiredflag;
 
 my $cntflag;
 my $nodateflag;
+my $headerflag;
 my $terse;
 my $long;
 
@@ -107,10 +109,15 @@ my $count	= 0;			# Record-match count.
 my $version	= 0;			# Display the version number.
 
 #########################################
+#
+# Data for building output.
+#
+my $COLSPACE	= 4;			# Space between columns.
 
-#
-# Flags for building output.
-#
+my $HEADER_KRN	= "<<<header>>>";	# Name for column header "keyrec".
+my %lengths	= ();			# Hash hash for lengths of columns;
+
+my $prevkey;				# Previous rollrec key added to output.
 
 my $z_label;				# Print a leading label for zones.
 my $z_expdate;				# Print the zone's expiration date.
@@ -180,6 +187,13 @@ sub main()
 		shift @ARGV;
 		$argc = @ARGV;
 	}
+
+	#
+	# Cook up the output:  build a header line and calculate the maximum
+	# length of each field.
+	#
+	makeheaders();
+	maxlens();
 
 	#
 	# Give the output.
@@ -265,6 +279,7 @@ sub doopts
 
 	$cntflag	= $options{'count'}	|| 0;
 	$nodateflag	= $options{'nodate'}	|| 0;
+	$headerflag	= $options{'headers'}	|| 0;
 	$terse		= $options{'terse'}	|| 0;
 	$long		= $options{'long'}	|| 0;
 
@@ -493,6 +508,16 @@ sub doopts
 		$keysflag = 1;
 	}
 
+	#
+	# If -headers was given, we'll turn off the label flags.
+	#
+	if($headerflag)
+	{
+		$z_label = 0;
+		$s_label = 0;
+		$k_label = 0;
+	}
+
 }
 
 #-----------------------------------------------------------------------------
@@ -577,6 +602,80 @@ sub getkeyrecs
 	}
 }
 
+#----------------------------------------------------------------------
+# Routine:	makeheaders()
+#
+# Purpose:	Build header lines as a fake keyrec.
+#
+sub makeheaders
+{
+	my %kr;				# Reference to keyrec.
+
+	return if(!$headerflag);
+
+	#
+	# Build the headers for a signing set.
+	#
+	%kr = ();
+	$kr{'keyrec_name'}	= 'Set';
+	$kr{'keyrec_type'}	= 'set';
+	$kr{'keys'}		= 'Keys';
+	$kr{'zonename'}		= 'Zonename';
+	$kr{'keyrec_setdate'}	= 'Last Set Modification';
+	$sets{$HEADER_KRN} = \%kr;
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	maxlens()
+#
+# Purpose:	Calculate the maximum length of each keyrec field for the
+#		zone, signing set, and key keyrecs.  Length data for each
+#		type of keyrec will be saved separately.
+#		After finding the longest length for each field, we'll
+#		add a little buffer space.
+#
+sub maxlens
+{
+	if($setsflag)
+	{
+		#
+		# Loop through the set list and give data on the desired sets.
+		#
+		foreach my $name (sort(keys(%sets)))
+		{
+			my $rref  = $sets{$name};
+			my %kr = %$rref;
+
+			foreach my $fld (sort(keys(%kr)))
+			{
+				if(length($kr{$fld}) > $lengths{'Set'}{$fld})
+				{
+					$lengths{'Set'}{$fld} = length($kr{$fld});
+				}
+			}
+		}
+
+		#
+		# Add a little buffer space between fields.
+		#
+		foreach my $fld (sort(keys(%{$lengths{'Set'}})))
+		{
+			my $newlen;
+
+			$newlen = $lengths{'Set'}{$fld};
+			$newlen += $COLSPACE;
+			$lengths{'Set'}{$fld} = $newlen;
+		}
+
+		#
+		# And a little more for set names if labels will be printed.
+		#
+#		$lengths{'Set'}{'keyrec_name'} += 4 if($s_label);
+	}
+}
+
+
 #-----------------------------------------------------------------------------
 # Routine:	showzones()
 #
@@ -628,7 +727,7 @@ sub showzones
 		#
 		# Bump the matching-records count.
 		#
-		$count++;
+		$count++ if($zk ne $HEADER_KRN);
 
 		#
 		# Stay cloaked if only the count of matching records
@@ -678,7 +777,7 @@ sub showzones
 #
 sub showsets
 {
-	my $outstr = "";			# Output string to build.
+	my $out = "";				# Output string to build.
 
 	my $setname;				# Set's name.
 	my $keylist;				# Set's key list.
@@ -687,6 +786,17 @@ sub showsets
 
 	my $endtime;				# Calculated expiration date.
 	my $setsecs;				# Signing date in seconds.
+
+	#
+	# Reset our previous key value.
+	#
+	$prevkey = '';
+
+# foreach my $sk (sort(keys(%{$lengths{'Set'}})))
+# {
+# print "$sk\t$lengths{'Set'}{$sk}  (" . ($lengths{'Set'}{$sk}-$COLSPACE) . ")\n";
+# }
+# print "\n";
 
 	#
 	# Loop through the set list and give data on the desired sets.
@@ -701,9 +811,9 @@ sub showsets
 		#
 		# Get a bunch of data from the zone keyrec.
 		#
+		$zone	 = $kr{'zonename'};
 		$keylist = $kr{'keys'};
 		$moddate = $kr{'keyrec_setdate'};
-		$zone	 = $kr{'zonename'};
 
 		#
 		# Check the zone-validity flags against the zone to see if
@@ -717,7 +827,9 @@ sub showsets
 		$zkr = $zones{$zone};
 		if(defined($zkr))
 		{
-			if(($zkr->{'zskcur'} eq $sk)	||
+			if(($zkr->{'kskcur'} eq $sk)	||
+			   ($zkr->{'kskpub'} eq $sk)	||
+			   ($zkr->{'zskcur'} eq $sk)	||
 			   ($zkr->{'zskpub'} eq $sk)	||
 			   ($zkr->{'zsknew'} eq $sk))
 			{
@@ -744,7 +856,7 @@ sub showsets
 		#
 		# Bump the matching-records count.
 		#
-		$count++;
+		$count++ if($sk ne $HEADER_KRN);
 
 		#
 		# Stay cloaked if only the count of matching records
@@ -757,17 +869,128 @@ sub showsets
 		#
 		$sk =~ /(.*)\(.*\)/;
 		$setname = $1;
+		$setname = $HEADER_KRN if($setname eq "");
+		if($s_label && ($setname ne $HEADER_KRN))
+		{
+			$setname = "set $setname";
+		}
 
 		#
-		# Build and print the output string.
+		# Build the output string.
 		#
-		$outstr  = $s_label ? "set $setname" : $setname;
-		$outstr .= "\t$zone"		if($s_zone);
-		$outstr .= "\t$keylist"		if($s_keys);
-		$outstr .= "\t\"$moddate\""	if($s_setdate);
-		print "$outstr\n";
+		$prevkey = 'first-field';
+		$out  = outstr('Set',$sk,'keyrec_name',$setname,1,0);
+		$out .= outstr('Set',$sk,'zonename',$zone,$s_zone,0);
+		$out .= outstr('Set',$sk,'keyrec_setdate',$moddate,$s_setdate,1);
+		$out .= outstr('Set',$sk,'keys',$keylist,$s_keys,0);
+
+		#
+		# Write the output string.
+		#
+		print "$out\n";
 
 	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	outstr()
+#
+# Purpose:	Build an output line.  We'll handle a special case for the
+#		zonename line and add quotes around a few timestamp fields.
+#
+sub outstr
+{
+	my $dtype = shift;		# Type of these data.
+	my $krname = shift;		# Zone name.
+	my $key  = shift;		# Hashkey.
+	my $val	 = shift;		# Value to print.
+	my $flag = shift;		# Output flag.
+	my $usequotes = shift;		# Quotes flag.
+
+	my $ret;			# Return string.
+
+	my $krgroup;			# Keyrec group to consult.
+	my $maxcollen;			# Max field length of previous field.
+	my $prevcollen;			# Length of previous field's value.
+	my $numspaces = 0;		# Spaces to add to previous field.
+	my $spaces = '    ';		# Spaces to add.
+
+	#
+	# Return if the given flag isn't set and -long wasn't given.
+	#
+	return('') if(!$long && !$flag);
+
+	#
+	# Figure out which group of keyrecs to use.  We're intentionally
+	# not using a default for this and will thus allow things to die
+	# horrible death if this routine is improperly used.
+	#
+	if($dtype eq 'Zone')
+	{
+		$krgroup = \%zones;
+	}
+	elsif($dtype eq 'Set')
+	{
+		$krgroup = \%sets;
+	}
+	elsif($dtype eq 'Key')
+	{
+		$krgroup = \%allkeys;
+	}
+
+	#
+	# Figure out spacing for this column.
+	#
+	$maxcollen  = $lengths{$dtype}{$prevkey};
+	$prevcollen = length($krgroup->{$krname}{$prevkey});
+	$numspaces  = $maxcollen - $prevcollen;
+	if($s_label && ($prevkey eq 'keyrec_name') && ($krname eq $HEADER_KRN))
+	{
+		$numspaces += 4;
+	}
+	$spaces = ' ' x $numspaces if($numspaces > 0);
+
+# print "-------------> $krname $key\tmaxcollen - <$maxcollen>\tprevcollen - <$prevcollen>\tnumspaces - <$numspaces>\n";
+	#
+	# Build the output line, but we've got special case code for the
+	# keyrec's name field.
+	#
+	if($key eq 'keyrec_name')
+	{
+		#
+		# If this is a header line, pop in the data-type label.
+		# Otherwise, add in the data value.
+		#
+		if($val eq $HEADER_KRN)
+		{
+			$ret = $dtype;
+		}
+		else
+		{
+			$ret  = $val;
+		}
+	}
+	else
+	{
+		#
+		# Build the output line.
+		#
+		$ret = $spaces . $val;
+
+		#
+		# For some fields we'll add quotes around the value.
+		#
+		if($usequotes && ($krname eq $HEADER_KRN))
+		{
+			$ret =~ s/$spaces$val/$spaces\"$val\"/;
+		}
+	}
+
+	#
+	# Save the hash key and return the output string to the caller.
+	#
+	$prevkey = $key;
+	return($ret);
 }
 
 #-----------------------------------------------------------------------------
@@ -1013,7 +1236,7 @@ sub outkey
 	#
 	# Bump the matching-records count.
 	#
-	$count++;
+	$count++ if($key ne $HEADER_KRN);
 
 	#
 	# Run silent if only the count of matching records should be given.
@@ -1383,6 +1606,11 @@ will not be.
 =item -nodate
 
 The key's generation date will not be printed if this flag is given.
+
+=item -headers
+
+Display explanatory column headers.  If this flag is given, then entry labels
+will not be printed.
 
 =item -label
 
