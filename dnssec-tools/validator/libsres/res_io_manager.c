@@ -213,13 +213,14 @@ res_io_send(struct expected_arrival *shipit)
      */
     if (shipit->ea_socket == -1) {
         int             i = shipit->ea_which_address;
-        if ((shipit->ea_socket = socket(PF_INET, socket_type, 0)) == -1)
+        if ((shipit->ea_socket = socket( shipit->ea_ns->ns_address[i]->ss_family,
+                                        socket_type, 0)) == -1)
             return SR_IO_SOCKET_ERROR;
 
         if (connect
             (shipit->ea_socket,
              (struct sockaddr *) shipit->ea_ns->ns_address[i],
-             sizeof(struct sockaddr)) == -1) {
+             sizeof(struct sockaddr_storage)) == -1) {
             close(shipit->ea_socket);
             shipit->ea_socket = -1;
             return SR_IO_SOCKET_ERROR;
@@ -627,23 +628,12 @@ int
 res_io_read_udp(struct expected_arrival *arrival)
 {
     int             bytes_waiting;
-    struct sockaddr from;
-    socklen_t       from_length = sizeof(struct sockaddr);
-    int             ret_val;
-
-    /*
-     * These two make the source comparison if statement easier to read.
-     * All these do is cast the address into an inet address (and
-     * shorten the name of the address held deep within arrival).
-     */
-    struct sockaddr_in *from_in = (struct sockaddr_in *) &from;
-    struct sockaddr_in *arr_in;
+    struct sockaddr_storage from;
+    socklen_t       from_length = sizeof(from);
+    int             ret_val, arr_family;
 
     if (NULL == arrival)
         return SR_IO_INTERNAL_ERROR;
-
-    arr_in = (struct sockaddr_in *)
-        arrival->ea_ns->ns_address[arrival->ea_which_address];
 
     if (ioctl(arrival->ea_socket, FIONREAD, &bytes_waiting) == -1) {
         close(arrival->ea_socket);
@@ -657,27 +647,50 @@ res_io_read_udp(struct expected_arrival *arrival)
 
     ret_val =
         recvfrom(arrival->ea_socket, arrival->ea_response, bytes_waiting,
-                 0, &from, &from_length);
+                 0, (struct sockaddr*)&from, &from_length);
 
-    if (ret_val == -1 ||
-        memcmp(&from_in->sin_addr, &arr_in->sin_addr,
-               sizeof(struct in_addr))
-        || from_in->sin_port != arr_in->sin_port) {
-        close(arrival->ea_socket);
-        arrival->ea_socket = -1;
-        FREE(arrival->ea_response);
-        arrival->ea_response = NULL;
-        arrival->ea_response_length = 0;
-        /*
-         * Cancel this source 
-         */
-        arrival->ea_remaining_attempts = 0;
-        gettimeofday(&arrival->ea_cancel_time, NULL);
-        return SR_IO_SOCKET_ERROR;
+    arr_family = arrival->ea_ns->ns_address[arrival->ea_which_address]->ss_family;
+    if ((ret_val == -1) || (from.ss_family != arr_family))
+        goto error;
+    
+    if (PF_INET == from.ss_family) {
+        struct sockaddr_in *arr_in = (struct sockaddr_in *)
+            arrival->ea_ns->ns_address[arrival->ea_which_address];
+        struct sockaddr_in *from_in = (struct sockaddr_in *) &from;
+        if ((from_in->sin_port != arr_in->sin_port) ||
+            memcmp(&from_in->sin_addr, &arr_in->sin_addr,
+                   sizeof(struct in_addr)))
+            goto error;
     }
+#ifdef VAL_IPV6
+    else if (PF_INET6 == from.ss_family) {
+        struct sockaddr_in6 *arr_in = (struct sockaddr_in6 *)
+            arrival->ea_ns->ns_address[arrival->ea_which_address];
+        struct sockaddr_in6 *from_in = (struct sockaddr_in6 *) &from;
+        if ((from_in->sin6_port != arr_in->sin6_port) ||
+            memcmp(&from_in->sin6_addr, &arr_in->sin6_addr,
+                   sizeof(struct in6_addr)))
+            goto error;
+    }
+#endif
+    else
+        goto error; /* unknown family */
 
     arrival->ea_response_length = ret_val;
     return SR_IO_UNSET;
+
+  error:
+    close(arrival->ea_socket);
+    arrival->ea_socket = -1;
+    FREE(arrival->ea_response);
+    arrival->ea_response = NULL;
+    arrival->ea_response_length = 0;
+    /*
+     * Cancel this source 
+     */
+    arrival->ea_remaining_attempts = 0;
+    gettimeofday(&arrival->ea_cancel_time, NULL);
+    return SR_IO_SOCKET_ERROR;
 }
 
 
@@ -911,15 +924,32 @@ res_io_cancel_all(void)
 void
 res_print_ea(struct expected_arrival *ea)
 {
-    int             i = ea->ea_which_address;
-    struct sockaddr_in *s =
-        (struct sockaddr_in *) ((ea->ea_ns->ns_address[i]));
+    int             i = ea->ea_which_address, port;
+    char            buf[INET6_ADDRSTRLEN + 1];
+    const char     *addr;
 
     if (res_io_debug) {
+        struct sockaddr_in *s =
+            (struct sockaddr_in *) ((ea->ea_ns->ns_address[i]));
+#ifdef VAL_IPV6
+        struct sockaddr_in6 *s6 =
+            (struct sockaddr_in6 *) ((ea->ea_ns->ns_address[i]));
+        if (PF_INET6 == ea->ea_ns->ns_address[i]->ss_family) {
+            addr = inet_ntop(PF_INET6, ea->ea_ns->ns_address[i],
+                             buf, sizeof(buf));
+            port = s6->sin6_port;
+        }
+#endif
+        if (PF_INET == ea->ea_ns->ns_address[i]->ss_family) {
+            addr = inet_ntop(PF_INET, ea->ea_ns->ns_address[i],
+                             buf, sizeof(buf));
+            port = s->sin_port;
+        }
+
         printf("Socket: %d ", ea->ea_socket);
         printf("Stream: %d ", ea->ea_using_stream);
-        printf("Nameserver: %s/(%d)\n", inet_ntoa(s->sin_addr),
-               ntohs(s->sin_port));
+        printf("Nameserver: %s/(%d)\n", addr ? addr : "",
+               ntohs(port));
 
         printf("Remaining retries: %d ", ea->ea_remaining_attempts);
         printf("Next try %ld, Cancel at %ld\n", ea->ea_next_try.tv_sec,

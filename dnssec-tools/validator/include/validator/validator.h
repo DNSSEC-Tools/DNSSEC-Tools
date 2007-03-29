@@ -562,6 +562,9 @@ extern          "C" {
 
     int             val_log_debug_level(void);
     void            val_log_set_debug_level(int);
+    const char     *val_get_ns_string(struct sockaddr *serv, char *dst,
+                                      int size);
+
 
     const char     *p_query_status(int err);
     const char     *p_ac_status(val_astatus_t valerrno);
