@@ -1214,8 +1214,17 @@ destroy_respol(val_context_t * ctx)
 static int
 parse_name_server(val_context_t *ctx, char *cp, struct name_server **ns)
 { 
-    struct sockaddr_in serv_addr;
-    struct in_addr  address;
+    struct sockaddr_storage serv_addr;
+    struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)&serv_addr;
+#endif
+    union {
+        struct in_addr   v4;
+#ifdef VAL_IPV6
+        struct in6_addr  v6;
+#endif
+    } address;
 
     if (cp ==  NULL || ns == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1245,24 +1254,24 @@ parse_name_server(val_context_t *ctx, char *cp, struct name_server **ns)
     (*ns)->ns_next = NULL;
     (*ns)->ns_number_of_addresses = 0;
 
-    if (inet_pton(AF_INET, cp, &address) != 1) {
-        /*
-         * drop ipv6 addresses and keep parsing 
-         */
-        if (inet_pton(AF_INET6, cp, &address) == 1) {
-            val_log(ctx, LOG_WARNING,
-                    "Parse warning: IPv6 nameserver addresses not handled yet, skipping.");
-            FREE(*ns);
-            *ns = NULL;
-            return VAL_NO_ERROR;
-        } else
-            return VAL_CONF_PARSE_ERROR; 
+    bzero(&serv_addr, sizeof(serv_addr));
+    if (inet_pton(AF_INET, cp, &address.v4) > 0) {
+        sin->sin_family = AF_INET;     // host byte order
+        sin->sin_addr = address.v4;
+        sin->sin_port = htons(DNS_PORT);       // short, network byte order
     }
+    else {
+#ifdef VAL_IPV6
+        if (inet_pton(AF_INET6, cp, &address.v6) != 1)
+            goto parse_err;
 
-    bzero(&serv_addr, sizeof(struct sockaddr_in));
-    serv_addr.sin_family = AF_INET;     // host byte order
-    serv_addr.sin_port = htons(DNS_PORT);       // short, network byte order
-    serv_addr.sin_addr = address;
+        sin6->sin6_family = AF_INET6;     // host byte order
+        memcpy(&sin6->sin6_addr, &address.v6, sizeof(address.v6));
+        sin6->sin6_port = htons(DNS_PORT);       // short, network byte order
+#else
+        goto parse_err;
+#endif
+    }
 
     (*ns)->ns_address = NULL;
     CREATE_NSADDR_ARRAY((*ns)->ns_address, 1);
@@ -1274,9 +1283,17 @@ parse_name_server(val_context_t *ctx, char *cp, struct name_server **ns)
     (*ns)->ns_number_of_addresses = 1;
 
     memcpy((*ns)->ns_address[0], &serv_addr,
-           sizeof(struct sockaddr_in));
+           sizeof(serv_addr));
     (*ns)->ns_number_of_addresses = 1;
     return VAL_NO_ERROR;
+
+  parse_err:
+    val_log(ctx, LOG_WARNING,
+            "Parse warning: Invalid nameserver addresses '%s', skipping.",
+            cp);
+    FREE(*ns);
+    *ns = NULL;
+    return VAL_CONF_PARSE_ERROR;
 }
 
 int
@@ -1502,7 +1519,7 @@ read_root_hints_file(val_context_t * ctx)
         goto err;
     }
 
-    val_log(ctx, LOG_NOTICE, "Reading root hints from %s",
+    val_log(ctx, LOG_DEBUG, "Reading root hints from %s",
             root_hints);
 
     while (buf_ptr < end_ptr) {

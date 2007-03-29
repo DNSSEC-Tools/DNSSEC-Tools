@@ -201,13 +201,16 @@ val_log_dnskey_rdata(val_context_t * ctx, int level, const char *prefix,
     }
 }
 
-static char    *
-get_ns_string(struct sockaddr *serv)
+const char    *
+val_get_ns_string(struct sockaddr *serv, char *dst, int size)
 {
     struct sockaddr_in *sin;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 *sin6;
+#endif
     struct sockaddr_storage *server;
 
-    if (serv == NULL)
+    if ((serv == NULL) || (dst == NULL))
         return NULL;
 
     server = (struct sockaddr_storage *) serv;
@@ -215,7 +218,12 @@ get_ns_string(struct sockaddr *serv)
     switch (server->ss_family) {
     case AF_INET:
         sin = (struct sockaddr_in *) server;
-        return inet_ntoa(sin->sin_addr);
+        return inet_ntop(AF_INET, &sin->sin_addr, dst, size);
+#ifdef VAL_IPV6
+    case AF_INET6:
+        sin6 = (struct sockaddr_in6 *) server;
+        return inet_ntop(AF_INET6, &sin6->sin6_addr, dst, size);
+#endif
     }
     return NULL;
 }
@@ -226,6 +234,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
                       struct val_authentication_chain *next_as)
 {
     char            name[NS_MAXDNAME];
+    char            name_buf[INET6_ADDRSTRLEN + 1];
     const char     *name_pr, *serv_pr;
     int             tag = 0;
 
@@ -248,7 +257,7 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
     if (serv)
         serv_pr =
             ((serv_pr =
-              get_ns_string(serv)) == NULL) ? "VAL_CACHE" : serv_pr;
+              val_get_ns_string(serv, name_buf, sizeof(name_buf))) == NULL) ? "VAL_CACHE" : serv_pr;
     else
         serv_pr = "NULL";
 

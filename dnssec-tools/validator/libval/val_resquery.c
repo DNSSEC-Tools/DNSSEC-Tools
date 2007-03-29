@@ -69,6 +69,9 @@ int
 extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
 {
     struct sockaddr_in *sock_in;
+#ifdef VAL_IPV6
+    struct sockaddr_in6 *sock_in6;
+#endif
 
     if ((ns == NULL) || (*ns == NULL))
         return VAL_BAD_ARGUMENT;
@@ -76,6 +79,17 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
     while (addr_rr) {
         int             i;
         struct sockaddr_storage **new_addr = NULL;
+
+        if ((addr_rr->rr_rdata_length_h != 4)
+#ifdef VAL_IPV6
+            && addr_rr->rr_rdata_length_h != sizeof(struct in6_addr)
+#endif
+            ) {
+            val_log(NULL, LOG_ERR, "Skipping address with bad len=%d.",
+                    addr_rr->rr_rdata_length_h);
+            addr_rr = addr_rr->rr_next;
+            continue;
+        }
 
         CREATE_NSADDR_ARRAY(new_addr, (*ns)->ns_number_of_addresses + 1);
         if (new_addr == NULL) {
@@ -85,22 +99,33 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
         for (i = 0; i < (*ns)->ns_number_of_addresses; i++) {
             memcpy(new_addr[i], (*ns)->ns_address[i],
                    sizeof(struct sockaddr_storage));
-        }
-        for (i = 0; i < (*ns)->ns_number_of_addresses; i++) {
             FREE((*ns)->ns_address[i]);
         }
         if ((*ns)->ns_address)
             FREE((*ns)->ns_address);
         (*ns)->ns_address = new_addr;
 
-        sock_in = (struct sockaddr_in *)
-            (*ns)->ns_address[(*ns)->ns_number_of_addresses];
+        if (addr_rr->rr_rdata_length_h == 4) {
+            sock_in = (struct sockaddr_in *)
+                (*ns)->ns_address[(*ns)->ns_number_of_addresses];
 
-        sock_in->sin_family = AF_INET;
-        sock_in->sin_port = htons(DNS_PORT);
-        memset(sock_in->sin_zero, 0, sizeof(sock_in->sin_zero));
-        memcpy(&(sock_in->sin_addr), addr_rr->rr_rdata, sizeof(u_int32_t));
+            sock_in->sin_family = AF_INET;
+            sock_in->sin_port = htons(DNS_PORT);
+            memset(sock_in->sin_zero, 0, sizeof(sock_in->sin_zero));
+            memcpy(&(sock_in->sin_addr), addr_rr->rr_rdata, sizeof(u_int32_t));
+        }
+#ifdef VAL_IPV6
+        else if (addr_rr->rr_rdata_length_h == sizeof(struct in6_addr)) {
+            sock_in6 = (struct sockaddr_in6 *)
+                (*ns)->ns_address[(*ns)->ns_number_of_addresses];
 
+            memset(sock_in6, 0, sizeof(sock_in6));
+            sock_in6->sin6_family = AF_INET6;
+            sock_in6->sin6_port = htons(DNS_PORT);
+            memcpy(&(sock_in6->sin6_addr), addr_rr->rr_rdata,
+                   sizeof(struct in6_addr));
+        }
+#endif
         (*ns)->ns_number_of_addresses++;
         addr_rr = addr_rr->rr_next;
 
@@ -1521,6 +1546,7 @@ val_resquery_send(val_context_t * context,
                   struct val_query_chain *matched_q)
 {
     char            name_p[NS_MAXDNAME];
+    char            name_buf[INET6_ADDRSTRLEN + 1];
     int             ret_val;
     struct name_server *tempns;
 
@@ -1543,9 +1569,9 @@ val_resquery_send(val_context_t * context,
 
     val_log(context, LOG_DEBUG, "Sending query for %s to:", name_p);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
-        struct sockaddr_in *s =
-            (struct sockaddr_in *) (tempns->ns_address[0]);
-        val_log(context, LOG_DEBUG, "    %s", inet_ntoa(s->sin_addr));
+        val_log(context, LOG_DEBUG, "    %s",
+                val_get_ns_string(tempns->ns_address[0],
+                                  name_buf, sizeof(name_buf)));
     }
     val_log(context, LOG_DEBUG, "End of Sending query for %s", name_p);
 
