@@ -18,8 +18,6 @@ use IO::File;
 use POSIX;
 use Data::Dumper;
 $Data::Dumper::Purity = 1;
-# TODO: don't hardcode storage file name
-$newkeyfile = "/usr/local/etc/dnssec-tools/newkey.perldata";
 
 #
 # Detect required Perl modules.
@@ -55,6 +53,7 @@ GetOptions(\%opts,
              'n|named_conf_file=s',
              'k|dnsval_conf_file=s',
              'a|anchor_data_file=s',
+             'persistent_data_file=s',
              'L|syslog',
              'p|print',
              'N|no_error',
@@ -88,6 +87,18 @@ my $contactaddr = $opts{'m'} ? $opts{'m'}
 
 my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
+
+my $newkeyfile = $opts{'persistent_data_file'} ? $opts{'persistent_data_file'}
+                             : "/usr/local/etc/dnssec-tools/newkey.perldata";
+
+if ($opts{'persistent_data_file'}) {
+    $newkeyfile = $opts{'persistent_data_file'};
+# TODO should add another var to the config file for persistent data file
+} else { 
+    print STDERR "Proceeding with no persistent data file defined.\n";
+    print STDERR "This mean that pending key data will not be saved in case \n";
+    print STDERR "trustman is restarted, and pending key hold times start over.\n";
+}
 
 if ($dvfile && $ncfile) {
     usage(2);
