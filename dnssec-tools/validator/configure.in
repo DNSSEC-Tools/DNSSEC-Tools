@@ -33,6 +33,7 @@ CONFIGURE_OPTIONS="\"$ac_configure_args\""
 AC_SUBST(CONFIGURE_OPTIONS)
 
 dnl ----------------------------------------------------------------------
+AC_DEFINE([VAL_RESOLV_CONF], [], [Path to resolver configuration])
 val_sysconfdir=`eval echo $sysconfdir`
 AC_MSG_CACHE_ADD(system configuration directory : $val_sysconfdir)
 
@@ -40,6 +41,7 @@ AC_ARG_WITH(resolv-conf,
 [  --with-resolv-conf=FILE resolver config file (SYSCONFDIR/resolv.conf).],
     [ac_cv_user_prompt_VAL_RESOLV_CONF=$with_resolv_conf])
 
+AC_DEFINE([VAL_ROOT_HINTS], [], [Path to root hints config file])
 AC_ARG_WITH(root-hints,
 [  --with-root-hints=FILE  root.hints config file.],
     [ac_cv_user_prompt_VAL_ROOT_HINTS=$with_root_hints])
@@ -100,6 +102,13 @@ AH_TEMPLATE([LIBVAL_NSEC3], [Define if NSEC3 is required.])
 AC_ARG_WITH(nsec3,
 [  --with-nsec3            Enable NSEC3.],
     [AC_DEFINE(LIBVAL_NSEC3)])
+
+dnl ----------------------------------------------------------------------
+dnl
+AH_TEMPLATE([VAL_IPV6], [Define if IPV6 is available.])
+AC_ARG_WITH(ipv6,
+[  --with-ipv6             Enable IPv6 support.],
+    [AC_DEFINE(VAL_IPV6)])
 
 dnl ----------------------------------------------------------------------
 dnl perl specific arguments
