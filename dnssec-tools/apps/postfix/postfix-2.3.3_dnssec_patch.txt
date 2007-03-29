@@ -1,0 +1,435 @@
+diff -c -r postfix-2.3.3.orig/makedefs postfix-2.3.3/makedefs
+*** postfix-2.3.3.orig/makedefs	2006-07-31 06:03:31.000000000 -0700
+--- postfix-2.3.3/makedefs	2007-03-27 12:07:16.000000000 -0700
+***************
+*** 250,258 ****
+  		#     GDBM_LIBS=gdbm
+  		# fi
+  		SYSLIBS="-ldb"
+! 		for name in nsl resolv $GDBM_LIBS
+  		do
+! 		    for lib in /usr/lib64 /lib64 /usr/lib /lib
+  		    do
+  			test -e $lib/lib$name.a -o -e $lib/lib$name.so && {
+  			    SYSLIBS="$SYSLIBS -l$name"
+--- 250,258 ----
+  		#     GDBM_LIBS=gdbm
+  		# fi
+  		SYSLIBS="-ldb"
+! 		for name in nsl resolv val-threads sres crypto $GDBM_LIBS
+  		do
+! 		    for lib in /usr/lib64 /lib64 /usr/lib /lib /usr/local/lib
+  		    do
+  			test -e $lib/lib$name.a -o -e $lib/lib$name.so && {
+  			    SYSLIBS="$SYSLIBS -l$name"
+diff -c -r postfix-2.3.3.orig/src/dns/dns.h postfix-2.3.3/src/dns/dns.h
+*** postfix-2.3.3.orig/src/dns/dns.h	2006-01-04 10:36:14.000000000 -0800
+--- postfix-2.3.3/src/dns/dns.h	2007-03-27 12:07:16.000000000 -0700
+***************
+*** 171,176 ****
+--- 171,178 ----
+    * Status codes. Failures must have negative codes so they will not collide
+    * with valid counts of answer records etc.
+    */
++                                         /* DNS_INSECURE dnssec patch added */
++ #define DNS_INSECURE	(-6)		/* query was not validated */
+  #define DNS_INVAL	(-5)		/* query ok, malformed reply */
+  #define DNS_FAIL	(-4)		/* query failed, don't retry */
+  #define DNS_NOTFOUND	(-3)		/* query ok, data not found */
+diff -c -r postfix-2.3.3.orig/src/dns/dns_lookup.c postfix-2.3.3/src/dns/dns_lookup.c
+*** postfix-2.3.3.orig/src/dns/dns_lookup.c	2006-03-24 11:40:23.000000000 -0800
+--- postfix-2.3.3/src/dns/dns_lookup.c	2007-03-27 12:07:16.000000000 -0700
+***************
+*** 140,145 ****
+--- 140,146 ----
+  #include <msg.h>
+  #include <valid_hostname.h>
+  #include <stringops.h>
++ #include <validator/validator.h>
+  
+  /* DNS library. */
+  
+***************
+*** 209,215 ****
+      for (;;) {
+  	_res.options &= ~saved_options;
+  	_res.options |= flags;
+! 	len = res_search((char *) name, C_IN, type, reply->buf, reply->buf_len);
+  	_res.options &= ~flags;
+  	_res.options |= saved_options;
+  	if (len < 0) {
+--- 210,224 ----
+      for (;;) {
+  	_res.options &= ~saved_options;
+  	_res.options |= flags;
+! 
+!         /* dns query using dnssec validator library */
+!         val_status_t val_status;
+!         len = val_res_query((val_context_t *) NULL,
+!                             (char *) name, 
+!                             C_IN, type, 
+!                             reply->buf, reply->buf_len,
+!                             &val_status);
+! 
+  	_res.options &= ~flags;
+  	_res.options |= saved_options;
+  	if (len < 0) {
+***************
+*** 230,237 ****
+  		return (DNS_RETRY);
+  	    }
+  	}
+! 	if (msg_verbose)
+! 	    msg_info("dns_query: %s (%s): OK", name, dns_strtype(type));
+  
+  	reply_header = (HEADER *) reply->buf;
+  	if (reply_header->tc == 0 || reply->buf_len >= MAX_DNS_REPLY_SIZE)
+--- 239,260 ----
+  		return (DNS_RETRY);
+  	    }
+  	}
+! 
+!         /* check that the dnssec query is trusted */
+!         if (!val_istrusted(val_status)) {
+!             if (why || msg_verbose)
+!                 vstring_sprintf(why, "Validation error during Name Service lookup."
+!                                 " Error %d : %s  for name=%s type=%s",
+!                                 val_status, p_val_error(val_status),
+!                                 name, dns_strtype(type));
+!             
+!             return(DNS_FAIL);
+!         }
+!  
+!         if (msg_verbose)
+!             msg_info("dns_query: %s (%s): OK   validation: %s (%d)", 
+!                      name, dns_strtype(type), 
+!                      p_val_error(val_status), val_status);
+  
+  	reply_header = (HEADER *) reply->buf;
+  	if (reply_header->tc == 0 || reply->buf_len >= MAX_DNS_REPLY_SIZE)
+diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.c postfix-2.3.3/src/util/myaddrinfo.c
+*** postfix-2.3.3.orig/src/util/myaddrinfo.c	2005-07-14 12:56:24.000000000 -0700
+--- postfix-2.3.3/src/util/myaddrinfo.c	2007-03-27 12:27:51.000000000 -0700
+***************
+*** 423,429 ****
+  	}
+  #endif
+      }
+!     return (getaddrinfo(hostname, service, &hints, res));
+  #endif
+  }
+  
+--- 423,456 ----
+  	}
+  #endif
+      }
+! 
+!     /* 
+!      * Call dnssec aware getaddrinfo.  If it returns a regular
+!      * getaddrinfo error, return with that error.
+!      * If the return query is not trusted, return a
+!      * dnssec failure condition. 
+!      */
+!     int err;
+!     val_status_t  vstatus;
+!     if (0 == (err = val_getaddrinfo((val_context_t *)NULL, hostname, 
+!                                     service, &hints, 
+!                                     (struct val_addrinfo **)res,
+!                                     &vstatus))) {
+!  
+!         if (0 == val_istrusted(vstatus))  {
+!             err = DNSSECAI_FAIL;
+!             msg_warn("DNSSEC, hostname information not trusted for host, %s (status: %d:%s, dnssec status %d:%s, val_getaddrinfo)", 
+!                      hostname ? hostname : "NULL",
+!                      err, MAI_STRERROR(err), 
+!                      vstatus, p_val_status(vstatus));
+!         }
+!     }
+!     else {
+!         msg_warn("failed to get host information for host, %s (status %d:%s, val_getaddrinfo)", 
+!                  hostname ? hostname : "NULL", err, MAI_STRERROR(err));
+!     }
+! 
+!     return(err);
+  #endif
+  }
+  
+***************
+*** 524,530 ****
+  	}
+  #endif
+      }
+!     return (getaddrinfo(hostaddr, service, &hints, res));
+  #endif
+  }
+  
+--- 551,585 ----
+  	}
+  #endif
+      }
+!  
+!     /* 
+!      * Call dnssec aware getaddrinfo.  If it returns a regular
+!      * getaddrinfo error, return with that error.
+!      * If the return query is not trusted, return a 
+!      * dnssec failure condition. 
+!      */
+!     int err;
+!     val_status_t  vstatus;
+!     if (0 == (err = val_getaddrinfo((val_context_t *)NULL, hostaddr, 
+!                                     service, &hints, 
+!                                     (struct val_addrinfo **)res,
+!                                     &vstatus))) {
+!  
+!         if (0 == val_istrusted(vstatus))  {
+!             err = DNSSECAI_FAIL;
+!             msg_warn("DNSSEC, host address information not trusted for host, %s (status %d:%s, dnssec status %d:%s, val_getaddrinfo)",
+!                      hostaddr ? hostaddr : "NULL",
+!                      err, MAI_STRERROR(err),
+!                      vstatus, p_val_status(vstatus));
+!         }
+!     }
+!     else {
+!         msg_warn("failed to get host information for host, %s (status %d:%s, val_getaddrinfo)", 
+!                  hostaddr ? hostaddr : "NULL",
+!                  err, MAI_STRERROR(err));
+!     }
+! 
+!     return(err);
+  #endif
+  }
+  
+***************
+*** 739,744 ****
+--- 794,832 ----
+  
+  #endif
+  
++ 
++ /* 
++  * dnssec_strerror - looks for dnssec errors (currently there is
++  *                   only one), passes back dnssec specific error
++  *                   string or calls the system gai_strerror. 
++  */
++ 
++ static const char* dnssecai_fail_string = "DNSSEC Error";
++ static const char* dnssecai_noerror_string = "DNSSEC Success";
++ 
++ const char   *dnssec_strerror(int ecode)  
++ {
++   switch (ecode) {
++   case 0:
++     return (dnssecai_noerror_string);
++   case DNSSECAI_FAIL:
++     return (dnssecai_fail_string);
++   }
++   /* default response*/
++   return (gai_strerror(ecode));
++ } /* denssec_strerror */
++ 
++ 
++ /* 
++  * free_pf_dnssec_addrinfo - frees struct val_addrinfo.  Does a
++  *                           pointer conversion to call validator
++  *                           library free function. 
++  */
++ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo){
++   free_val_addrinfo((struct val_addrinfo *) ainfo);
++ }
++ 
++ 
+  #ifdef TEST
+  
+   /*
+***************
+*** 764,812 ****
+  
+      inet_proto_init(argv[0], argv[1]);
+  
+!     msg_info("=== hostname %s ===", argv[2]);
+  
+      if ((err = hostname_to_sockaddr(argv[2], (char *) 0, 0, &info)) != 0) {
+! 	msg_info("hostname_to_sockaddr(%s): %s",
+! 	  argv[2], err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+      } else {
+  	for (ip = info; ip != 0; ip = ip->ai_next) {
+  	    if ((err = sockaddr_to_hostaddr(ip->ai_addr, ip->ai_addrlen, &addr,
+  					 (MAI_SERVPORT_STR *) 0, 0)) != 0) {
+! 		msg_info("sockaddr_to_hostaddr: %s",
+! 		   err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+  		continue;
+  	    }
+  	    msg_info("%s -> family=%d sock=%d proto=%d %s", argv[2],
+  		 ip->ai_family, ip->ai_socktype, ip->ai_protocol, addr.buf);
+  	    if ((err = sockaddr_to_hostname(ip->ai_addr, ip->ai_addrlen, &host,
+  					 (MAI_SERVNAME_STR *) 0, 0)) != 0) {
+! 		msg_info("sockaddr_to_hostname: %s",
+! 		   err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+  		continue;
+  	    }
+  	    msg_info("%s -> %s", addr.buf, host.buf);
+  	}
+  	freeaddrinfo(info);
+      }
+  
+      msg_info("=== host address %s ===", argv[3]);
+  
+      if ((err = hostaddr_to_sockaddr(argv[3], (char *) 0, 0, &ip)) != 0) {
+! 	msg_info("hostaddr_to_sockaddr(%s): %s",
+! 	  argv[3], err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+      } else {
+  	if ((err = sockaddr_to_hostaddr(ip->ai_addr, ip->ai_addrlen, &addr,
+  					(MAI_SERVPORT_STR *) 0, 0)) != 0) {
+! 	    msg_info("sockaddr_to_hostaddr: %s",
+! 		   err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+  	} else {
+  	    msg_info("%s -> family=%d sock=%d proto=%d %s", argv[3],
+  		 ip->ai_family, ip->ai_socktype, ip->ai_protocol, addr.buf);
+  	    if ((err = sockaddr_to_hostname(ip->ai_addr, ip->ai_addrlen, &host,
+  					 (MAI_SERVNAME_STR *) 0, 0)) != 0) {
+  		msg_info("sockaddr_to_hostname: %s",
+! 		   err == EAI_SYSTEM ? strerror(errno) : gai_strerror(err));
+  	    } else
+  		msg_info("%s -> %s", addr.buf, host.buf);
+  	    freeaddrinfo(ip);
+--- 852,913 ----
+  
+      inet_proto_init(argv[0], argv[1]);
+  
+!      msg_info("=== hostname %s ===", argv[2]);
+  
+      if ((err = hostname_to_sockaddr(argv[2], (char *) 0, 0, &info)) != 0) {
+! 	msg_info("hostname_to_sockaddr(%s): Error: %s",
+!                  argv[2], MAI_STRERROR(err));
+      } else {
++ 	msg_info("hostname_to_sockaddr(%s): Success: %s",
++                  argv[2], MAI_STRERROR(err));
+  	for (ip = info; ip != 0; ip = ip->ai_next) {
+  	    if ((err = sockaddr_to_hostaddr(ip->ai_addr, ip->ai_addrlen, &addr,
+  					 (MAI_SERVPORT_STR *) 0, 0)) != 0) {
+! 		msg_info("sockaddr_to_hostaddr: Error: %s",
+! 		   MAI_STRERROR(err));
+  		continue;
+  	    }
++             else {
++               msg_info("sockaddr_to_hostaddr: Success: %s",
++                        MAI_STRERROR(err));
++             }
+  	    msg_info("%s -> family=%d sock=%d proto=%d %s", argv[2],
+  		 ip->ai_family, ip->ai_socktype, ip->ai_protocol, addr.buf);
+  	    if ((err = sockaddr_to_hostname(ip->ai_addr, ip->ai_addrlen, &host,
+  					 (MAI_SERVNAME_STR *) 0, 0)) != 0) {
+! 		msg_info("sockaddr_to_hostname: Error: %s",
+! 		   MAI_STRERROR(err));
+  		continue;
+  	    }
++             else {
++               msg_info("sockaddr_to_hostname: Success: %s",
++                        MAI_STRERROR(err));
++             }
+  	    msg_info("%s -> %s", addr.buf, host.buf);
+  	}
+  	freeaddrinfo(info);
+      }
+  
++     msg_info(" ");
+      msg_info("=== host address %s ===", argv[3]);
+  
+      if ((err = hostaddr_to_sockaddr(argv[3], (char *) 0, 0, &ip)) != 0) {
+! 	msg_info("hostaddr_to_sockaddr(%s): Error: %s",
+! 	  argv[3], MAI_STRERROR(err));
+      } else {
++ 	msg_info("hostaddr_to_sockaddr(%s): Success: %s",
++                  argv[3], MAI_STRERROR(err));
+  	if ((err = sockaddr_to_hostaddr(ip->ai_addr, ip->ai_addrlen, &addr,
+  					(MAI_SERVPORT_STR *) 0, 0)) != 0) {
+! 	    msg_info("sockaddr_to_hostaddr: Error: %s",
+! 		   MAI_STRERROR(err));
+  	} else {
+  	    msg_info("%s -> family=%d sock=%d proto=%d %s", argv[3],
+  		 ip->ai_family, ip->ai_socktype, ip->ai_protocol, addr.buf);
+  	    if ((err = sockaddr_to_hostname(ip->ai_addr, ip->ai_addrlen, &host,
+  					 (MAI_SERVNAME_STR *) 0, 0)) != 0) {
+  		msg_info("sockaddr_to_hostname: %s",
+! 		   MAI_STRERROR(err));
+  	    } else
+  		msg_info("%s -> %s", addr.buf, host.buf);
+  	    freeaddrinfo(ip);
+***************
+*** 815,818 ****
+      exit(0);
+  }
+  
+! #endif
+--- 916,919 ----
+      exit(0);
+  }
+  
+! #endif 
+diff -c -r postfix-2.3.3.orig/src/util/myaddrinfo.h postfix-2.3.3/src/util/myaddrinfo.h
+*** postfix-2.3.3.orig/src/util/myaddrinfo.h	2005-01-18 17:22:19.000000000 -0800
+--- postfix-2.3.3/src/util/myaddrinfo.h	2007-03-27 12:07:16.000000000 -0700
+***************
+*** 21,26 ****
+--- 21,27 ----
+  #include <string.h>
+  #include <errno.h>			/* MAI_STRERROR() */
+  #include <limits.h>			/* CHAR_BIT */
++ #include <validator/validator.h>
+  
+   /*
+    * Backwards compatibility support for IPV4 systems without addrinfo API.
+***************
+*** 32,39 ****
+    * provides its own addrinfo() implementation. This also allows us to test
+    * the IPV4 emulation code on an IPV6 enabled system.
+    */
+- #undef  freeaddrinfo
+- #define freeaddrinfo	mai_freeaddrinfo
+  #undef  gai_strerror
+  #define gai_strerror	mai_strerror
+  #undef  addrinfo
+--- 33,38 ----
+***************
+*** 103,108 ****
+--- 102,123 ----
+  
+  #endif
+  
++ 
++ /* start dnssec patch additions */
++ 
++ #define DNSSECAI_FAIL   -600  /* sharing number space with netdb.h errors */
++ 
++ /* Used for explicit pointer conversion (i.e. gets rid of compiler
++    warnings). */
++ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo);
++ #undef  freeaddrinfo
++ #define freeaddrinfo	free_pf_dnssec_addrinfo
++ 
++ const char   *dnssec_strerror(int ecode);
++ 
++ /* end dnssec patch additions (except for MAI_STRERROR below)*/
++ 
++ 
+   /*
+    * Bounds grow in leaps. These macros attempt to keep non-library code free
+    * from IPV6 #ifdef pollution. Avoid macro names that end in STRLEN because
+***************
+*** 159,165 ****
+  
+  #define MAI_CTL_END	0		/* list terminator */
+  
+! #define MAI_STRERROR(e) ((e) == EAI_SYSTEM ? strerror(errno) : gai_strerror(e))
+  
+   /*
+    * Macros for the case where we really don't want to be bothered with things
+--- 174,181 ----
+  
+  #define MAI_CTL_END	0		/* list terminator */
+  
+! /* redefined by dnssec patch */
+! #define MAI_STRERROR(e) ((e) == EAI_SYSTEM ? strerror(errno) : dnssec_strerror(e))
+  
+   /*
+    * Macros for the case where we really don't want to be bothered with things
