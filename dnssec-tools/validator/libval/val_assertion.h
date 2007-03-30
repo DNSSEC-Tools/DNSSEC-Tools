@@ -52,7 +52,7 @@ void            free_query_chain(struct val_query_chain *queries);
 void            zap_query(val_context_t *context, struct val_query_chain *added_q);
 int             val_istrusted(val_status_t val_status);
 int             val_isvalidated(val_status_t val_status);
-int             is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, 
+int             get_zse(val_context_t * ctx, u_int8_t * name_n, 
                                 u_int16_t *tzonestatus, long *ttl_x);
 int             find_trust_point(val_context_t * ctx, u_int8_t * zone_n, 
                                 u_int8_t ** matched_zone, long *ttl_x);

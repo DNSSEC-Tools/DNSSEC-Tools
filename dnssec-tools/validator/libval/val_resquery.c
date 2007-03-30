@@ -756,7 +756,7 @@ follow_referral_or_alias_link(val_context_t * context,
             int diff_name = 0;
 
             if (VAL_NO_ERROR != (ret_val =
-                is_trusted_zone(context, referral_zone_n, &tzonestatus, &ttl_x))) { 
+                get_zse(context, referral_zone_n, &tzonestatus, &ttl_x))) { 
                 return ret_val;
             }
             SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);
@@ -1437,7 +1437,7 @@ digest_response(val_context_t * context,
          */
         
         if (VAL_NO_ERROR != (ret_val =
-                is_trusted_zone(context, matched_q->qc_name_n, &tzonestatus, &ttl_x))) { 
+                get_zse(context, matched_q->qc_name_n, &tzonestatus, &ttl_x))) { 
             goto done;
         }
         SET_MIN_TTL(matched_q->qc_ttl_x, ttl_x);

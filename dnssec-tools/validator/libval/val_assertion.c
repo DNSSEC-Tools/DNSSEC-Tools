@@ -505,7 +505,7 @@ int free_qfq_chain(struct queries_for_query *queries)
 
 
 int
-is_trusted_zone(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status, long *ttl_x)
+get_zse(val_context_t * ctx, u_int8_t * name_n, u_int16_t *status, long *ttl_x)
 {
     policy_entry_t *zse_pol, *zse_cur;
     int             name_len;
@@ -1135,7 +1135,7 @@ build_pending_query(val_context_t *context,
      * Check if this zone is locally trusted/untrusted 
      */
     if (VAL_NO_ERROR != (retval = 
-        is_trusted_zone(context, as->_as.ac_data->rrs.val_rrset_name_n, &tzonestatus, &ttl_x))) {
+        get_zse(context, as->_as.ac_data->rrs.val_rrset_name_n, &tzonestatus, &ttl_x))) {
         return retval;
     }
     SET_MIN_TTL(as->val_ac_query->qc_ttl_x, ttl_x);
@@ -3119,7 +3119,8 @@ verify_provably_unsecure(val_context_t * context,
     SET_MIN_TTL(top_q->qc_ttl_x, ttl_x);
     
     /* find the zonecut for the query */
-    if ((VAL_NO_ERROR != find_next_zonecut(context, queries, rrset, done, &q_zonecut_n))
+    if ((curzone_n == NULL) ||
+        (VAL_NO_ERROR != find_next_zonecut(context, queries, rrset, done, &q_zonecut_n))
                 || (*done && q_zonecut_n == NULL)) {
 
         val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
@@ -4067,7 +4068,7 @@ ask_resolver(val_context_t * context,
                 if (!(next_q->qfq_query->qc_flags & VAL_FLAGS_DONT_VALIDATE)) {
                     
                     if (VAL_NO_ERROR != (retval = 
-                        is_trusted_zone(context, test_n, &tzonestatus, &ttl_x))) {
+                        get_zse(context, test_n, &tzonestatus, &ttl_x))) {
                         return retval;
                     }
                     SET_MIN_TTL(next_q->qfq_query->qc_ttl_x, ttl_x);
