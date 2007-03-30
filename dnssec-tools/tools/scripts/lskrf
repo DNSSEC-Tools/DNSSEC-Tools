@@ -550,6 +550,17 @@ sub getkeyrecs
 
 		if($type eq 'zone')
 		{
+			my $archdir;
+
+			#
+			# Set the archive directory to the default if one
+			# isn't defined for the zone.
+			#
+			if(!defined($kr->{'archivedir'}))
+			{
+				$kr->{'archivedir'} = $archive;
+			}
+
 			$zones{$krn} = $kr;
 		}
 		elsif($type eq 'set')
@@ -614,15 +625,33 @@ sub makeheaders
 	return if(!$headerflag);
 
 	#
-	# Build the headers for a signing set.
+	# Build the headers for zones.
 	#
-	%kr = ();
-	$kr{'keyrec_name'}	= 'Set';
-	$kr{'keyrec_type'}	= 'set';
-	$kr{'keys'}		= 'Keys';
-	$kr{'zonename'}		= 'Zonename';
-	$kr{'keyrec_setdate'}	= 'Last Set Modification';
-	$sets{$HEADER_KRN} = \%kr;
+	if($zonesflag)
+	{
+		%kr = ();
+		$kr{'keyrec_name'}	= 'Zone';
+		$kr{'keyrec_type'}	= 'zone';
+		$kr{'zonefile'}		= 'Zone File';
+		$kr{'keyrec_signdate'}	= 'Signing Date';
+		$kr{'expdate'}		= 'Expiration Date';
+		$kr{'archivedir'}	= 'Archive Directory';
+		$zones{$HEADER_KRN} = \%kr;
+	}
+
+	#
+	# Build the headers for signing sets.
+	#
+	if($setsflag)
+	{
+		%kr = ();
+		$kr{'keyrec_name'}	= 'Set';
+		$kr{'keyrec_type'}	= 'set';
+		$kr{'keys'}		= 'Keys';
+		$kr{'zonename'}		= 'Zonename';
+		$kr{'keyrec_setdate'}	= 'Last Set Modification';
+		$sets{$HEADER_KRN} = \%kr;
+	}
 
 }
 
@@ -637,10 +666,56 @@ sub makeheaders
 #
 sub maxlens
 {
+	#
+	# If we'll be printing zones, we'll calculate the maximum length
+	# of each field in each zone keyrec.
+	#
+	if($zonesflag)
+	{
+		#
+		# Loop through the zone list and get data on the desired zones.
+		#
+		foreach my $name (sort(keys(%zones)))
+		{
+			my $rref  = $zones{$name};
+			my %kr = %$rref;
+
+			foreach my $fld (sort(keys(%kr)))
+			{
+				if(length($kr{$fld}) > $lengths{'Zone'}{$fld})
+				{
+					$lengths{'Zone'}{$fld} = length($kr{$fld});
+				}
+			}
+		}
+
+		#
+		# Hardcode the length of the expiration date string.
+		# Unless we change our system of timekeeping, this will be 24.
+		#
+		$lengths{'Zone'}{'expdate'} = 24;
+
+		#
+		# Add a little buffer space between fields.
+		#
+		foreach my $fld (sort(keys(%{$lengths{'Zone'}})))
+		{
+			my $newlen;
+
+			$newlen = $lengths{'Zone'}{$fld};
+			$newlen += $COLSPACE;
+			$lengths{'Zone'}{$fld} = $newlen;
+		}
+	}
+	
+	#
+	# If we'll be printing signing sets, we'll calculate the maximum
+	# length of each field in each set keyrec.
+	#
 	if($setsflag)
 	{
 		#
-		# Loop through the set list and give data on the desired sets.
+		# Loop through the set list and get data on the desired sets.
 		#
 		foreach my $name (sort(keys(%sets)))
 		{
@@ -667,11 +742,6 @@ sub maxlens
 			$newlen += $COLSPACE;
 			$lengths{'Set'}{$fld} = $newlen;
 		}
-
-		#
-		# And a little more for set names if labels will be printed.
-		#
-#		$lengths{'Set'}{'keyrec_name'} += 4 if($s_label);
 	}
 }
 
@@ -695,16 +765,21 @@ sub maxlens
 #
 sub showzones
 {
-	my $outstr = "";			# Output string to build.
+	my $out = "";				# Output string to build.
 
 	my $signdate;				# Zone's signing date.
+	my $zonename;				# Zone's name.
 	my $zonefile;				# Zone's zonefile.
 
 	my $archdir;				# Zone's archive directory.
 	my $endtime;				# Calculated expiration date.
 	my $signsecs;				# Signing date in seconds.
-	my $exptime;				# Expiration date in seconds.
-	my $expstr;				# Expiration date in string.
+	my $expdate;				# Expiration date in seconds.
+
+	#
+	# Reset our previous key value.
+	#
+	$prevkey = '';
 
 	#
 	# Loop through the zone list and give data on the desired zones.
@@ -740,26 +815,50 @@ sub showzones
 		#
 		$signdate = $kr{'keyrec_signdate'};
 		$zonefile = $kr{'zonefile'};
-		$archdir  = $kr{'archivedir'} || $archive;
 		$endtime  = $kr{'endtime'};
+		$expdate  = $kr{'expdate'};
+		$archdir  = $kr{'archivedir'};
 		$signsecs = $kr{'keyrec_signsecs'};
 
 		#
 		# Get a string holding the zone's expiration date.
 		#
-		$exptime  = $signsecs + $endtime;
-		$expstr   = gmtime($exptime);
+		if($zk ne $HEADER_KRN)
+		{
+			$endtime = $signsecs + $endtime;
+			$expdate = gmtime($endtime);
+
+			$zones{$zk}{'expdate'} = $expdate;
+		}
 
 		#
-		# Build and print the output string.
+		# Get the zone's name.
 		#
-		$outstr  = $z_label ? "zone $zk" : $zk;
-		$outstr .= "\t$zonefile"	if($z_zonefile);
-		$outstr .= "\t\"$signdate\""	if($z_signdate);
-		$outstr .= "\t\"$expstr\"" 	if($z_expdate);
-		$outstr .= "\t$archdir" 	if($z_archdir);
-		print "$outstr\n";
+		$zonename = $HEADER_KRN if($zonename eq "");
+		$zonename = $zk;
+		if($z_label && ($zonename ne $HEADER_KRN))
+		{
+			$zonename = "zone $zonename";
+		}
+
+		#
+		# Build the output string.
+		#
+		$prevkey = 'first-field';
+		$out  = outstr('Zone',$zk,'keyrec_name',$zonename,1,0);
+		$out .= outstr('Zone',$zk,'zonefile',$zonefile,$z_zonefile,0);
+		$out .= outstr('Zone',$zk,'keyrec_signdate',$signdate,$z_signdate,1);
+		$out .= outstr('Zone',$zk,'expdate',$expdate,$z_expdate,1);
+		$out .= outstr('Zone',$zk,'archivedir',$archdir,$z_archdir,0);
+
+		#
+		# Write the output string.
+		#
+		print "$out\n";
+
 	}
+
+	print "\n" if($headerflag && ($setsflag || $keysflag));
 }
 
 #-----------------------------------------------------------------------------
@@ -791,12 +890,6 @@ sub showsets
 	# Reset our previous key value.
 	#
 	$prevkey = '';
-
-# foreach my $sk (sort(keys(%{$lengths{'Set'}})))
-# {
-# print "$sk\t$lengths{'Set'}{$sk}  (" . ($lengths{'Set'}{$sk}-$COLSPACE) . ")\n";
-# }
-# print "\n";
 
 	#
 	# Loop through the set list and give data on the desired sets.
@@ -890,6 +983,8 @@ sub showsets
 		print "$out\n";
 
 	}
+
+	print "\n" if($headerflag && ($keysflag));
 }
 
 #----------------------------------------------------------------------
@@ -950,7 +1045,6 @@ sub outstr
 	}
 	$spaces = ' ' x $numspaces if($numspaces > 0);
 
-# print "-------------> $krname $key\tmaxcollen - <$maxcollen>\tprevcollen - <$prevcollen>\tnumspaces - <$numspaces>\n";
 	#
 	# Build the output line, but we've got special case code for the
 	# keyrec's name field.
@@ -972,6 +1066,12 @@ sub outstr
 	}
 	else
 	{
+
+# if($key eq 'archivedir')
+# {
+# print STDERR "-------------> $krname $key\tmaxcollen - <$maxcollen>\tprevcollen - <$prevcollen>\tnumspaces - <$numspaces>\tprevkey - <$prevkey>\n";
+# print STDERR "-------------> archivedir\tprevcol - <$krgroup->{$krname}{$prevkey}>\tkrname - <$krname>\tprevkey - <$prevkey>\tprevcollen - $prevcollen\n";
+# }
 		#
 		# Build the output line.
 		#
@@ -979,8 +1079,10 @@ sub outstr
 
 		#
 		# For some fields we'll add quotes around the value.
+		# We won't add quotes if we're printing headers.
 		#
-		if($usequotes && ($krname eq $HEADER_KRN))
+		$usequotes = 0 if($headerflag);
+		if($usequotes && ($krname ne $HEADER_KRN))
 		{
 			$ret =~ s/$spaces$val/$spaces\"$val\"/;
 		}
