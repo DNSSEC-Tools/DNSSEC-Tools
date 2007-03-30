@@ -425,7 +425,7 @@ store_ns_for_zone(u_int8_t * zonecut_n, struct name_server *resp_server)
     if (!zonecut_n || !resp_server)
         return VAL_NO_ERROR;
 
-    LOCK_INIT(&map_rwlock, proof_rwlock_init);
+    LOCK_INIT(&map_rwlock, map_rwlock_init);
     LOCK_EX(&map_rwlock);
 
     for (map_e = zone_ns_map; map_e; map_e = map_e->next) {
