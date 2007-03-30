@@ -33,15 +33,20 @@ CONFIGURE_OPTIONS="\"$ac_configure_args\""
 AC_SUBST(CONFIGURE_OPTIONS)
 
 dnl ----------------------------------------------------------------------
-AC_DEFINE([VAL_RESOLV_CONF], [], [Path to resolver configuration])
+# for some reason $prefix is NONE until much later in the script, so
+# fix up val_sysconfdir if no prefix or sysconfdir was specified
 val_sysconfdir=`eval echo $sysconfdir`
+if test "x$val_sysconfdir" = "xNONE/etc" ; then
+   val_sysconfdir="${ac_default_prefix}/etc"
+fi
 AC_MSG_CACHE_ADD(system configuration directory : $val_sysconfdir)
 
+AH_TEMPLATE([VAL_RESOLV_CONF], [Path to resolver configuration])
 AC_ARG_WITH(resolv-conf,
 [  --with-resolv-conf=FILE resolver config file (SYSCONFDIR/resolv.conf).],
     [ac_cv_user_prompt_VAL_RESOLV_CONF=$with_resolv_conf])
 
-AC_DEFINE([VAL_ROOT_HINTS], [], [Path to root hints config file])
+AH_TEMPLATE([VAL_ROOT_HINTS], [Path to root hints config file])
 AC_ARG_WITH(root-hints,
 [  --with-root-hints=FILE  root.hints config file.],
     [ac_cv_user_prompt_VAL_ROOT_HINTS=$with_root_hints])
@@ -108,7 +113,16 @@ dnl
 AH_TEMPLATE([VAL_IPV6], [Define if IPV6 is available.])
 AC_ARG_WITH(ipv6,
 [  --with-ipv6             Enable IPv6 support.],
-    [AC_DEFINE(VAL_IPV6)])
+   ipv6="$withval", ipv6="no")
+AC_ARG_ENABLE(ipv6,,
+        AC_MSG_ERROR([ Invalid option. Use --with-ipv6/--without-ipv6 instead ]) )
+if test "$ipv6" = "yes"; then
+    AC_DEFINE(VAL_IPV6, 1)
+    AC_MSG_CACHE_ADD(IPv6 support                   : Yes)
+else
+    AC_MSG_CACHE_ADD(IPv6 support                   : No)
+fi
+
 
 dnl ----------------------------------------------------------------------
 dnl perl specific arguments
@@ -456,7 +470,7 @@ if test "x$defaults" != "xyes" ; then
       done
    done
 fi
-AC_PROMPT_USER_NO_DEFINE(VAL_ROOT_HINTS,[
+AC_PROMPT_USER(VAL_ROOT_HINTS,[
 
 *** Root hints location:
 
@@ -466,14 +480,11 @@ and use the copy provided with DNSSEC-Tool (see validator/etc/root.hints).
     Providing a file via the --with-root-hints argument to configure will
 avoid this prompt.
 
-Location to read root hints configuration],$default_hints)
-eval ac_cv_user_prompt_VAL_ROOT_HINTS=$VAL_ROOT_HINTS
-echo $ECHO_N "setting $MSG_CHECK to...  $ECHO_C" >&AC_FD_MSG
+Location to read root hints configuration],$default_hints,quoted)
 if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
    ac_cv_user_prompt_VAL_ROOT_HINTS="$val_sysconfdir/dnssec-tools/root.hints"
 fi
 VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
-AC_DEFINE_UNQUOTED(VAL_ROOT_HINTS,"$VAL_ROOT_HINTS")
 AC_SUBST(VAL_ROOT_HINTS)
 AC_MSG_CACHE_ADD(libval root hints              : $VAL_ROOT_HINTS)
   

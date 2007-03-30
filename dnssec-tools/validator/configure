@@ -18235,16 +18235,18 @@ _ACEOF
 CONFIGURE_OPTIONS="\"$ac_configure_args\""
 
 
-
-cat >>confdefs.h <<\_ACEOF
-#define VAL_RESOLV_CONF
-_ACEOF
-
+# for some reason $prefix is NONE until much later in the script, so
+# fix up val_sysconfdir if no prefix or sysconfdir was specified
 val_sysconfdir=`eval echo $sysconfdir`
+if test "x$val_sysconfdir" = "xNONE/etc" ; then
+   val_sysconfdir="${ac_default_prefix}/etc"
+fi
 
   cat >> configure-summary << EOF
   system configuration directory : $val_sysconfdir
 EOF
+
+
 
 
 
@@ -18255,9 +18257,6 @@ if test "${with_resolv_conf+set}" = set; then
 fi;
 
 
-cat >>confdefs.h <<\_ACEOF
-#define VAL_ROOT_HINTS
-_ACEOF
 
 
 # Check whether --with-root-hints or --without-root-hints was given.
@@ -18358,11 +18357,35 @@ fi;
 # Check whether --with-ipv6 or --without-ipv6 was given.
 if test "${with_ipv6+set}" = set; then
   withval="$with_ipv6"
-  cat >>confdefs.h <<\_ACEOF
+  ipv6="$withval"
+else
+  ipv6="no"
+fi;
+# Check whether --enable-ipv6 or --disable-ipv6 was given.
+if test "${enable_ipv6+set}" = set; then
+  enableval="$enable_ipv6"
+  { { echo "$as_me:$LINENO: error:  Invalid option. Use --with-ipv6/--without-ipv6 instead " >&5
+echo "$as_me: error:  Invalid option. Use --with-ipv6/--without-ipv6 instead " >&2;}
+   { (exit 1); exit 1; }; }
+fi;
+if test "$ipv6" = "yes"; then
+    cat >>confdefs.h <<\_ACEOF
 #define VAL_IPV6 1
 _ACEOF
 
-fi;
+
+  cat >> configure-summary << EOF
+  IPv6 support                   : Yes
+EOF
+
+else
+
+  cat >> configure-summary << EOF
+  IPv6 support                   : No
+EOF
+
+fi
+
 
 
 # Check whether --with-perl-build-args or --without-perl-build-args was given.
@@ -22806,6 +22829,24 @@ if test "x$defaults" != "xyes" ; then
    done
 fi
 
+MSG_CHECK=`echo "
+
+*** Root hints location:
+
+    Enter the location of the root hints file, or 'none' to install
+and use the copy provided with DNSSEC-Tool (see validator/etc/root.hints).
+
+    Providing a file via the --with-root-hints argument to configure will
+avoid this prompt.
+
+Location to read root hints configuration" | tail -1`
+echo "$as_me:$LINENO: checking $MSG_CHECK" >&5
+echo $ECHO_N "checking $MSG_CHECK... $ECHO_C" >&6
+if test "${ac_cv_user_prompt_VAL_ROOT_HINTS+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  echo "" >&6
+
 if test "x$defaults" = "xno"; then
 echo $ECHO_N "
 
@@ -22829,16 +22870,30 @@ eval VAL_ROOT_HINTS=\"$tmpinput\"
 fi
 
 
-eval ac_cv_user_prompt_VAL_ROOT_HINTS=$VAL_ROOT_HINTS
+eval ac_cv_user_prompt_VAL_ROOT_HINTS=\$VAL_ROOT_HINTS
 echo $ECHO_N "setting $MSG_CHECK to...  $ECHO_C" >&6
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_user_prompt_VAL_ROOT_HINTS" >&5
+echo "${ECHO_T}$ac_cv_user_prompt_VAL_ROOT_HINTS" >&6
+if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" != "none"; then
+  if test "xquoted" = "xquoted" -o "xquoted" = "xQUOTED"; then
+    cat >>confdefs.h <<_ACEOF
+#define VAL_ROOT_HINTS "$ac_cv_user_prompt_VAL_ROOT_HINTS"
+_ACEOF
+
+  else
+    cat >>confdefs.h <<_ACEOF
+#define VAL_ROOT_HINTS $ac_cv_user_prompt_VAL_ROOT_HINTS
+_ACEOF
+
+  fi
+fi
+
 if test "$ac_cv_user_prompt_VAL_ROOT_HINTS" = "none" ; then
    ac_cv_user_prompt_VAL_ROOT_HINTS="$val_sysconfdir/dnssec-tools/root.hints"
 fi
 VAL_ROOT_HINTS=$ac_cv_user_prompt_VAL_ROOT_HINTS
-cat >>confdefs.h <<_ACEOF
-#define VAL_ROOT_HINTS "$VAL_ROOT_HINTS"
-_ACEOF
-
 
 
   cat >> configure-summary << EOF
