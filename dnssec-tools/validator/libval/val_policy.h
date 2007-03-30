@@ -31,7 +31,7 @@
 #else
 #define NSEC3_POL_COUNT             0
 #endif
-#ifdef DLV
+#ifdef LIBVAL_DLV
 #define P_DLV_TRUST_POINTS          (P_BASE_LAST+NSEC3_POL_COUNT+1) 
 #define P_DLV_MAX_VALIDATION_LINKS  (P_BASE_LAST+NSEC3_POL_COUNT+2) 
 #define DLV_POL_COUNT               2
@@ -128,7 +128,7 @@ int             free_zone_security_expectation(policy_entry_t *);
 int             parse_nsec3_max_iter(char **, char *, policy_entry_t * pol_entry, int *line_number, int *);
 int             free_nsec3_max_iter(policy_entry_t * pol_entry);
 #endif
-#ifdef DLV
+#ifdef LIBVAL_DLV
 int             parse_dlv_trust_points(char **, char *, policy_entry_t *, int *, int *);
 int             free_dlv_trust_points(policy_entry_t *);
 int             parse_dlv_max_links(char **, char *, policy_entry_t *, int *, int *);
