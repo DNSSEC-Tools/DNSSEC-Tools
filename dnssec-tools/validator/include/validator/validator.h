@@ -212,7 +212,7 @@ extern          "C" {
 #define POL_USE_TCP_STR "use-tcp"
 #define POL_PROV_UNSEC_STR "provably-unsecure-status"
 #define POL_ZONE_SE_STR "zone-security-expectation"
-#ifdef DLV
+#ifdef LIBVAL_DLV
 #define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
 #define POL_DLV_MAX_LINKS_STR "dlv-max-links"
 #endif

@@ -253,7 +253,7 @@ const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
 #ifdef LIBVAL_NSEC3
     {POL_NSEC3_MAX_ITER_STR, parse_nsec3_max_iter, free_nsec3_max_iter},
 #endif
-#ifdef DLV
+#ifdef LIBVAL_DLV
     {POL_DLV_TRUST_POINTS_STR, parse_dlv_trust_points,
      free_dlv_trust_points},
     {POL_DLV_MAX_LINKS_STR, parse_dlv_max_links, free_dlv_max_links},
@@ -566,7 +566,7 @@ free_nsec3_max_iter(policy_entry_t * pol_entry)
 }
 #endif
 
-#ifdef DLV
+#ifdef LIBVAL_DLV
 int
 parse_dlv_trust_points(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                        int *line_number, int *endst)
