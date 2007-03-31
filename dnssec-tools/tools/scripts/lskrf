@@ -338,9 +338,9 @@ sub doopts
 	#
 	if($allflag)
 	{
-		$zonesflag  = 1;
-		$setsflag   = 1;
-		$keysflag   = 1;
+		$zonesflag   = 1;
+		$setsflag    = 1;
+		$keysflag    = 1;
 
 		$refflag     = 0;
 		$unrefflag   = 0;
@@ -620,8 +620,6 @@ sub getkeyrecs
 #
 sub makeheaders
 {
-	my %kr;				# Reference to keyrec.
-
 	return if(!$headerflag);
 
 	#
@@ -629,7 +627,7 @@ sub makeheaders
 	#
 	if($zonesflag)
 	{
-		%kr = ();
+		my %kr = ();
 		$kr{'keyrec_name'}	= 'Zone';
 		$kr{'keyrec_type'}	= 'zone';
 		$kr{'zonefile'}		= 'Zone File';
@@ -644,7 +642,7 @@ sub makeheaders
 	#
 	if($setsflag)
 	{
-		%kr = ();
+		my %kr = ();
 		$kr{'keyrec_name'}	= 'Set';
 		$kr{'keyrec_type'}	= 'set';
 		$kr{'keys'}		= 'Keys';
