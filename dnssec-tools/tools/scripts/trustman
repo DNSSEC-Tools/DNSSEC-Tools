@@ -699,37 +699,6 @@ sub compute_add_holddown {
     return $holddown;
 }
 
-sub compute_sleeptime {
-# min(expiration interval [sigexpiration - now],1/2 * ottl, 15 days)
-    my ($ottl,$sexp) = @_;
-    $sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
-    my $sigexp = str2time($sexp);
-    my $fifteendays = 129600;
-    my $halfottl = $ottl / 2;
-    my $now = localtime();
-    my $nowsecs = str2time($now);
-    my $expinterval = $sigexp - $nowsecs;
-    my $actrefsecs;
-    if ($halfottl < $expinterval) {
-        if ($halfottl < $fifteendays) {
-            $actrefsecs = $halfottl;
-        } else {
-            $actrefsecs = $fifteendays;
-        }
-    } else {
-        if ($expinterval < $fifteendays) {
-            $actrefsecs = $expinterval;
-        } else {
-            $actrefsecs = $fifteendays
-        }
-    }
-    
-# return date to refresh as secs since the epoch
-    my $actreftime = $nowsecs + $actrefsecs;
-
-    return ($actreftime);
-}
-
 sub compute_sleepsecs {
 # min(expiration interval [sigexpiration - now],1/2 * ottl, 15 days)
     my ($ottl,$sexp) = @_;
