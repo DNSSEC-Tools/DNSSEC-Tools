@@ -66,8 +66,8 @@ my @opts =
 
 	"count",			# Only give a count of matching keyrecs.
 	"label",			# Give a leading record label.
-	"nodate",			# Don't show the date.
 	"headers",			# Give column headers output.
+	"nodate",			# Don't show the date.
 	"terse",			# Give terse output.
 	"long",				# Give long output.
 	"Version",			# Display the version number.
@@ -114,6 +114,10 @@ my $version	= 0;			# Display the version number.
 #
 my $COLSPACE	= 4;			# Space between columns.
 
+my $ZONE	= 'Zone';		# Hash key for zones.
+my $SET		= 'Set';		# Hash key for sets.
+my $KEY		= 'Key Name';		# Hash key for keys.
+
 my $HEADER_KRN	= "<<<header>>>";	# Name for column header "keyrec".
 my %lengths	= ();			# Hash hash for lengths of columns;
 
@@ -130,31 +134,32 @@ my $s_label = 0;			# Print a leading label for sets.
 my $s_setdate;				# Print the set's last mod date.
 my $s_zone;				# Print the set's zone.
 
-my $k_algorithm = 0;			# Key's algorithm
-my $k_enddate = 0;			# Key's end date.
-my $k_date = 0;				# Key's signing date.
-my $k_label = 0;			# Label for output.
-my $k_length = 0;			# Key's length.
-my $k_life = 0;				# Key's lifespan.
-my $k_zonename = 0;			# Key's owning zone.
+my $k_algorithm	= 0;			# Key's algorithm
+my $k_enddate	= 0;			# Key's end date.
+my $k_date	= 0;			# Key's signing date.
+my $k_label	= 0;			# Label for output.
+my $k_length	= 0;			# Key's length.
+my $k_life	= 0;			# Key's lifespan.
+my $k_zonename	= 0;			# Key's owning zone.
 
 #######################################################################
 
 
 my @krnames;				# List of keyrecs in the file.
 
-my %zones    = ();			# Names of zone keyrecs.
-my %sets     = ();			# Names of set keyrecs.
-my %allkeys  = ();			# Names of all keyrecs.
-my %kskkeys  = ();			# Names of KSK keyrecs.
-my %zskkeys  = ();			# Names of ZSK keyrecs.
-my %kcurkeys = ();			# Names of Current KSK keyrecs.
-my %kpubkeys = ();			# Names of Published KSK keyrecs.
-my %kobskeys = ();			# Names of Obsolete KSK keyrecs.
-my %zcurkeys = ();			# Names of Current ZSK keyrecs.
-my %znewkeys = ();			# Names of New ZSK keyrecs.
-my %zpubkeys = ();			# Names of Published ZSK keyrecs.
-my %zobskeys = ();			# Names of Obsolete ZSK keyrecs.
+my %zones    = ();			# Zone keyrecs.
+my %sets     = ();			# Set keyrecs.
+my %allkeys  = ();			# All key keyrecs.
+my %selkeys  = ();			# Keys selected for output.
+my %kskkeys  = ();			# KSK keyrecs.
+my %zskkeys  = ();			# ZSK keyrecs.
+my %kcurkeys = ();			# Current KSK keyrecs.
+my %kpubkeys = ();			# Published KSK keyrecs.
+my %kobskeys = ();			# Obsolete KSK keyrecs.
+my %zcurkeys = ();			# Current ZSK keyrecs.
+my %znewkeys = ();			# New ZSK keyrecs.
+my %zpubkeys = ();			# Published ZSK keyrecs.
+my %zobskeys = ();			# Obsolete ZSK keyrecs.
 
 my $archive;				# Default archive directory.
 
@@ -513,9 +518,9 @@ sub doopts
 	#
 	if($headerflag)
 	{
-		$z_label = 0;
-		$s_label = 0;
-		$k_label = 0;
+		$z_label = 0 if(!defined($options{'label'}));
+		$s_label = 0 if(!defined($options{'label'}));
+		$k_label = 1;
 	}
 
 }
@@ -628,8 +633,8 @@ sub makeheaders
 	if($zonesflag)
 	{
 		my %kr = ();
-		$kr{'keyrec_name'}	= 'Zone';
-		$kr{'keyrec_type'}	= 'zone';
+		$kr{'keyrec_name'}	= $ZONE;
+		$kr{'keyrec_type'}	= 'Zone';
 		$kr{'zonefile'}		= 'Zone File';
 		$kr{'keyrec_signdate'}	= 'Signing Date';
 		$kr{'expdate'}		= 'Expiration Date';
@@ -643,12 +648,36 @@ sub makeheaders
 	if($setsflag)
 	{
 		my %kr = ();
-		$kr{'keyrec_name'}	= 'Set';
-		$kr{'keyrec_type'}	= 'set';
+		$kr{'keyrec_name'}	= $SET;
+		$kr{'keyrec_type'}	= 'Set';
 		$kr{'keys'}		= 'Keys';
-		$kr{'zonename'}		= 'Zonename';
+		$kr{'zonename'}		= 'Zone Name';
 		$kr{'keyrec_setdate'}	= 'Last Set Modification';
 		$sets{$HEADER_KRN} = \%kr;
+	}
+
+	#
+	# Build the headers for keys.
+	#
+	if($keysflag)
+	{
+		my %kr = ();
+		$kr{'keyrec_name'}	= 'Key Name';
+		$kr{'keyrec_type'}	= 'Key Type';
+		$kr{'algorithm'}	= 'Algorithm';
+		$kr{'enddate'}		= 'End Date';
+		$kr{'keyrec_gendate'}	= 'Key Generation';
+		$kr{'keylength'}	= 'Key Length';
+		$kr{'keylife'}		= 'Key Life';
+		$kr{'zonename'}		= 'Zone Name';
+
+		$kr{'keyrec_gensecs'}	= 'Key Generation';
+		$kr{'ksklength'}	= 'Key Length';
+		$kr{'ksklife'}		= 'Key Life';
+		$kr{'zsklength'}	= 'Key Length';
+		$kr{'zsklife'}		= 'Key Life';
+		$allkeys{$HEADER_KRN} = \%kr;
+		$selkeys{$HEADER_KRN} = \%kr;
 	}
 
 }
@@ -665,6 +694,11 @@ sub makeheaders
 sub maxlens
 {
 	#
+	# Initialize the lengths hashes.
+	#
+	%lengths = ();
+
+	#
 	# If we'll be printing zones, we'll calculate the maximum length
 	# of each field in each zone keyrec.
 	#
@@ -680,32 +714,32 @@ sub maxlens
 
 			foreach my $fld (sort(keys(%kr)))
 			{
-				if(length($kr{$fld}) > $lengths{'Zone'}{$fld})
+				if(length($kr{$fld}) > $lengths{$ZONE}{$fld})
 				{
-					$lengths{'Zone'}{$fld} = length($kr{$fld});
+					$lengths{$ZONE}{$fld} = length($kr{$fld});
 				}
 			}
 		}
 
 		#
 		# Hardcode the length of the expiration date string.
-		# Unless we change our system of timekeeping, this will be 24.
+		# Unless we change our system of time-keeping, this will be 24.
 		#
-		$lengths{'Zone'}{'expdate'} = 24;
+		$lengths{$ZONE}{'expdate'} = 24;
 
 		#
 		# Add a little buffer space between fields.
 		#
-		foreach my $fld (sort(keys(%{$lengths{'Zone'}})))
+		foreach my $fld (sort(keys(%{$lengths{$ZONE}})))
 		{
 			my $newlen;
 
-			$newlen = $lengths{'Zone'}{$fld};
+			$newlen = $lengths{$ZONE}{$fld};
 			$newlen += $COLSPACE;
-			$lengths{'Zone'}{$fld} = $newlen;
+			$lengths{$ZONE}{$fld} = $newlen;
 		}
 	}
-	
+
 	#
 	# If we'll be printing signing sets, we'll calculate the maximum
 	# length of each field in each set keyrec.
@@ -722,9 +756,9 @@ sub maxlens
 
 			foreach my $fld (sort(keys(%kr)))
 			{
-				if(length($kr{$fld}) > $lengths{'Set'}{$fld})
+				if(length($kr{$fld}) > $lengths{$SET}{$fld})
 				{
-					$lengths{'Set'}{$fld} = length($kr{$fld});
+					$lengths{$SET}{$fld} = length($kr{$fld});
 				}
 			}
 		}
@@ -732,17 +766,65 @@ sub maxlens
 		#
 		# Add a little buffer space between fields.
 		#
-		foreach my $fld (sort(keys(%{$lengths{'Set'}})))
+		foreach my $fld (sort(keys(%{$lengths{$SET}})))
 		{
 			my $newlen;
 
-			$newlen = $lengths{'Set'}{$fld};
+			$newlen = $lengths{$SET}{$fld};
 			$newlen += $COLSPACE;
-			$lengths{'Set'}{$fld} = $newlen;
+			$lengths{$SET}{$fld} = $newlen;
 		}
 	}
-}
 
+	#
+	# If we'll be printing keys, we'll calculate the maximum length
+	# of each field in each set keyrec.
+	#
+	if($keysflag)
+	{
+		#
+		# Loop through the selected key list and get data on the
+		# desired keys.
+		#
+		foreach my $name (sort(keys(%selkeys)))
+		{
+			my $rref  = $selkeys{$name};
+			my %kr;
+
+			#
+			# Skip undefined hash keys.
+			#
+			next if(!defined($rref));
+
+			%kr = %$rref;
+
+			#
+			# Go through the keyrec's fields and check them
+			# against the saved maximum lengths of key fields.
+			#
+			foreach my $fl (sort(keys(%kr)))
+			{
+				if(length($kr{$fl}) > $lengths{$KEY}{$fl})
+				{
+					$lengths{$KEY}{$fl} = length($kr{$fl});
+				}
+			}
+		}
+
+		#
+		# Add a little buffer space between fields.
+		#
+		foreach my $fld (sort(keys(%{$lengths{$KEY}})))
+		{
+			my $newlen;
+
+			$newlen = $lengths{$KEY}{$fld};
+			$newlen += $COLSPACE;
+			$lengths{$KEY}{$fld} = $newlen;
+		}
+	}
+
+}
 
 #-----------------------------------------------------------------------------
 # Routine:	showzones()
@@ -834,20 +916,17 @@ sub showzones
 		#
 		$zonename = $HEADER_KRN if($zonename eq "");
 		$zonename = $zk;
-		if($z_label && ($zonename ne $HEADER_KRN))
-		{
-			$zonename = "zone $zonename";
-		}
 
 		#
 		# Build the output string.
 		#
 		$prevkey = 'first-field';
-		$out  = outstr('Zone',$zk,'keyrec_name',$zonename,1,0);
-		$out .= outstr('Zone',$zk,'zonefile',$zonefile,$z_zonefile,0);
-		$out .= outstr('Zone',$zk,'keyrec_signdate',$signdate,$z_signdate,1);
-		$out .= outstr('Zone',$zk,'expdate',$expdate,$z_expdate,1);
-		$out .= outstr('Zone',$zk,'archivedir',$archdir,$z_archdir,0);
+		$out  = outstr($ZONE,$zk,'keyrec_type','zone',$z_label,0);
+		$out .= outstr($ZONE,$zk,'keyrec_name',$zonename,1,0);
+		$out .= outstr($ZONE,$zk,'zonefile',$zonefile,$z_zonefile,0);
+		$out .= outstr($ZONE,$zk,'keyrec_signdate',$signdate,$z_signdate,1);
+		$out .= outstr($ZONE,$zk,'expdate',$expdate,$z_expdate,1);
+		$out .= outstr($ZONE,$zk,'archivedir',$archdir,$z_archdir,0);
 
 		#
 		# Write the output string.
@@ -961,19 +1040,16 @@ sub showsets
 		$sk =~ /(.*)\(.*\)/;
 		$setname = $1;
 		$setname = $HEADER_KRN if($setname eq "");
-		if($s_label && ($setname ne $HEADER_KRN))
-		{
-			$setname = "set $setname";
-		}
 
 		#
 		# Build the output string.
 		#
 		$prevkey = 'first-field';
-		$out  = outstr('Set',$sk,'keyrec_name',$setname,1,0);
-		$out .= outstr('Set',$sk,'zonename',$zone,$s_zone,0);
-		$out .= outstr('Set',$sk,'keyrec_setdate',$moddate,$s_setdate,1);
-		$out .= outstr('Set',$sk,'keys',$keylist,$s_keys,0);
+		$out  = outstr($SET,$sk,'keyrec_type','set',$z_label,0);
+		$out .= outstr($SET,$sk,'keyrec_name',$setname,1,0);
+		$out .= outstr($SET,$sk,'zonename',$zone,$s_zone,0);
+		$out .= outstr($SET,$sk,'keyrec_setdate',$moddate,$s_setdate,1);
+		$out .= outstr($SET,$sk,'keys',$keylist,$s_keys,0);
 
 		#
 		# Write the output string.
@@ -983,114 +1059,6 @@ sub showsets
 	}
 
 	print "\n" if($headerflag && ($keysflag));
-}
-
-#----------------------------------------------------------------------
-# Routine:	outstr()
-#
-# Purpose:	Build an output line.  We'll handle a special case for the
-#		zonename line and add quotes around a few timestamp fields.
-#
-sub outstr
-{
-	my $dtype = shift;		# Type of these data.
-	my $krname = shift;		# Zone name.
-	my $key  = shift;		# Hashkey.
-	my $val	 = shift;		# Value to print.
-	my $flag = shift;		# Output flag.
-	my $usequotes = shift;		# Quotes flag.
-
-	my $ret;			# Return string.
-
-	my $krgroup;			# Keyrec group to consult.
-	my $maxcollen;			# Max field length of previous field.
-	my $prevcollen;			# Length of previous field's value.
-	my $numspaces = 0;		# Spaces to add to previous field.
-	my $spaces = '    ';		# Spaces to add.
-
-	#
-	# Return if the given flag isn't set and -long wasn't given.
-	#
-	return('') if(!$long && !$flag);
-
-	#
-	# Figure out which group of keyrecs to use.  We're intentionally
-	# not using a default for this and will thus allow things to die
-	# horrible death if this routine is improperly used.
-	#
-	if($dtype eq 'Zone')
-	{
-		$krgroup = \%zones;
-	}
-	elsif($dtype eq 'Set')
-	{
-		$krgroup = \%sets;
-	}
-	elsif($dtype eq 'Key')
-	{
-		$krgroup = \%allkeys;
-	}
-
-	#
-	# Figure out spacing for this column.
-	#
-	$maxcollen  = $lengths{$dtype}{$prevkey};
-	$prevcollen = length($krgroup->{$krname}{$prevkey});
-	$numspaces  = $maxcollen - $prevcollen;
-	if($s_label && ($prevkey eq 'keyrec_name') && ($krname eq $HEADER_KRN))
-	{
-		$numspaces += 4;
-	}
-	$spaces = ' ' x $numspaces if($numspaces > 0);
-
-	#
-	# Build the output line, but we've got special case code for the
-	# keyrec's name field.
-	#
-	if($key eq 'keyrec_name')
-	{
-		#
-		# If this is a header line, pop in the data-type label.
-		# Otherwise, add in the data value.
-		#
-		if($val eq $HEADER_KRN)
-		{
-			$ret = $dtype;
-		}
-		else
-		{
-			$ret  = $val;
-		}
-	}
-	else
-	{
-
-# if($key eq 'archivedir')
-# {
-# print STDERR "-------------> $krname $key\tmaxcollen - <$maxcollen>\tprevcollen - <$prevcollen>\tnumspaces - <$numspaces>\tprevkey - <$prevkey>\n";
-# print STDERR "-------------> archivedir\tprevcol - <$krgroup->{$krname}{$prevkey}>\tkrname - <$krname>\tprevkey - <$prevkey>\tprevcollen - $prevcollen\n";
-# }
-		#
-		# Build the output line.
-		#
-		$ret = $spaces . $val;
-
-		#
-		# For some fields we'll add quotes around the value.
-		# We won't add quotes if we're printing headers.
-		#
-		$usequotes = 0 if($headerflag);
-		if($usequotes && ($krname ne $HEADER_KRN))
-		{
-			$ret =~ s/$spaces$val/$spaces\"$val\"/;
-		}
-	}
-
-	#
-	# Save the hash key and return the output string to the caller.
-	#
-	$prevkey = $key;
-	return($ret);
 }
 
 #-----------------------------------------------------------------------------
@@ -1105,89 +1073,102 @@ sub showkeys
 	my $krr;			# Reference to a key's keyrec.
 
 	#
-	# Print the information about the Current KSK keys.
+	# Select a header line.
+	#
+	if($headerflag)
+	{
+		$krr = $selkeys{$HEADER_KRN};
+		selkey($HEADER_KRN,$krr,'');
+	}
+
+	#
+	# Select the information about the Current KSK keys.
 	#
 	if($kcurflag)
 	{
 		foreach my $k (sort(keys(%kcurkeys)))
 		{
 			$krr = $kcurkeys{$k};
-			outkey($k,$krr,"KSK-cur");
+			selkey($k,$krr,"KSK-cur");
 		}
 	}
 
 	#
-	# Print the information about the Published KSK keys.
+	# Select the information about the Published KSK keys.
 	#
 	if($kpubflag)
 	{
 		foreach my $k (sort(keys(%kpubkeys)))
 		{
 			$krr = $kpubkeys{$k};
-			outkey($k,$krr,"KSK-pub");
+			selkey($k,$krr,"KSK-pub");
 		}
 	}
 
 	#
-	# Print the information about the obsolete KSK keys.
+	# Select the information about the obsolete KSK keys.
 	#
 	if($kobsflag)
 	{
 		foreach my $k (sort(keys(%kobskeys)))
 		{
 			$krr = $kobskeys{$k};
-			outkey($k,$krr,"KSK-obs");
+			selkey($k,$krr,"KSK-obs");
 		}
 	}
 
 	#
-	# Print the information about the Current ZSK keys.
+	# Select the information about the Current ZSK keys.
 	#
 	if($zcurflag)
 	{
 		foreach my $k (sort(keys(%zcurkeys)))
 		{
 			$krr = $zcurkeys{$k};
-			outkey($k,$krr,"ZSK-cur");
+			selkey($k,$krr,"ZSK-cur");
 		}
 	}
 
 	#
-	# Print the information about the Published ZSK keys.
+	# Select the information about the Published ZSK keys.
 	#
 	if($zpubflag)
 	{
 		foreach my $k (sort(keys(%zpubkeys)))
 		{
 			$krr = $zpubkeys{$k};
-			outkey($k,$krr,"ZSK-pub");
+			selkey($k,$krr,"ZSK-pub");
 		}
 	}
 
 	#
-	# Print the information about the New ZSK keys.
+	# Select the information about the New ZSK keys.
 	#
 	if($znewflag)
 	{
 		foreach my $k (sort(keys(%znewkeys)))
 		{
 			$krr = $znewkeys{$k};
-			outkey($k,$krr,"ZSK-new");
+			selkey($k,$krr,"ZSK-new");
 		}
 	}
 
 	#
-	# Print the information about the obsolete ZSK keys.
+	# Select the information about the obsolete ZSK keys.
 	#
 	if($zobsflag)
 	{
 		foreach my $k (sort(keys(%zobskeys)))
 		{
 			$krr = $zobskeys{$k};
-			outkey($k,$krr,"ZSK-obs");
+			selkey($k,$krr,"ZSK-obs");
 		}
 	}
 
+	#
+	# Write the selected key data.
+	#
+	writekeys();
 }
 
 #-----------------------------------------------------------------------------
@@ -1255,8 +1236,8 @@ sub expiredzone
 # Routine:	refdkey()
 #
 # Purpose:	This routine determines if a named key is referenced by any
-#		zones.  KSKs are referenced in the key's zone.  ZSKs are
-#		referenced in signing sets.
+#		zones.  KSKs and ZSKs are referenced in signing sets, so
+#		those must be checked..
 #
 # Return Values:
 #		 1 - the key is referenced
@@ -1278,14 +1259,7 @@ sub refdkey
 		%zkr = %$zkrref;
 
 		#
-		# Simple case if the key is a KSK.
-		#	We just look in the zone's keyrec.
-		#
-		return(1) if($zkr{'kskcur'} eq $kn);
-
-		#
-		# Somewhat more difficult case if the key is a ZSK.
-		#	Go through each signing set to see if it holds this key.
+		# Go through each signing set to see if it holds this key.
 		#
 		foreach my $set (keys(%sets))
 		{
@@ -1300,14 +1274,14 @@ sub refdkey
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	outkey()
+# Routine:	selkey()
 #
-# Purpose:	This routine performs the actual output operations for key
-#		data.  It is called for KSKs and three flavors of ZSK.
+# Purpose:	This routine selects the keys whose data will be displayed.
+#		It is called for two types of KSKs and three flavors of ZSK.
 #		It handles the referenced-key options, depending on whether
 #		or not the specified key is actually referenced.
 #
-sub outkey
+sub selkey
 {
 	my $key	 = shift;		# Key name.
 	my $kkr	 = shift;		# Reference to key's keyrec.
@@ -1322,15 +1296,18 @@ sub outkey
 	my $length;			# Key's length.
 	my $life;			# Key's lifespan.
 	my $zonename;			# Name of key's owning zone.
-	my $outstr  = "";		# Output string.
+	my $out  = "";			# Output string.
 
 	#
 	# Check this key's reference state against the command options.
 	#
-	if(($refflag   && !refdkey($key)) ||
-	   ($unrefflag &&  refdkey($key)))
+	if($key ne $HEADER_KRN)
 	{
-		return;
+		if(($refflag   && !refdkey($key)) ||
+		   ($unrefflag &&  refdkey($key)))
+		{
+			return;
+		}
 	}
 
 	#
@@ -1355,13 +1332,13 @@ sub outkey
 	# Get the key's data.
 	#
 	$algorithm = $kr{'algorithm'};
-	$zonename = $kr{'zonename'};
-	$gendate = "$kr{'keyrec_gendate'}" if(!$nodateflag);
+	$zonename  = $kr{'zonename'};
+	$gendate   = "$kr{'keyrec_gendate'}" if(!$nodateflag);
 
 	#
 	# Set some key-type-specific values.
 	#
-	if($kr{'keyrec_type'} eq 'kskcur')
+	if($kr{'keyrec_type'} =~ /^ksk/)
 	{
 		$lbl	.= "\t" if($long);
 		$length	 = $kr{'ksklength'};
@@ -1374,22 +1351,221 @@ sub outkey
 	}
 
 	#
-	# Calculate the key's end-date.
+	# Do some field-specific data majigulations.
 	#
-	$ender = $kr{'keyrec_gensecs'} + $life;
-	$enddate = gmtime($ender);
+	if($key eq $HEADER_KRN)
+	{
+		$enddate = $kr{'enddate'};
+	}
+	else
+	{
+		#
+		# Calculate the key's end-date.
+		#
+		$ender = $kr{'keyrec_gensecs'} + $life;
+		$enddate = gmtime($ender);
+
+		#
+		# Set a dummy value if the lifetime wasn't set yet.
+		#
+		$life = "(not set)" if($life eq "");
+	}
 
 	#
-	# Build and print the output string.
+	# Save the calculated end date.
 	#
-	$outstr  = $k_label ? "$lbl\t$key" : $key;
-	$outstr .= "\t$zonename"	if($k_zonename);
-	$outstr .= "\t$algorithm"	if($k_algorithm);
-	$outstr .= "\t$length" 		if($k_length);
-	$outstr .= "\t\"$gendate\"" 	if($k_date);
-	$outstr .= "\t$life"	 	if($k_life);
-	$outstr .= "\t\"$enddate\"" 	if($k_enddate);
-	print "$outstr\n";
+	$allkeys{$key}{'enddate'} = $enddate;
+
+	#
+	# Save the key data to the selected-keys hash.
+	#
+	$selkeys{$key}{'keyrec_name'}	= $key;
+	$selkeys{$key}{'keyrec_type'}	= $allkeys{$key}{'keyrec_type'};
+	$selkeys{$key}{'zonename'}	= $zonename;
+	$selkeys{$key}{'algorithm'}	= $algorithm;
+	$selkeys{$key}{'keylength'}	= $length;
+	$selkeys{$key}{'gendate'}	= $gendate;
+	$selkeys{$key}{'keylife'}	= $life;
+	$selkeys{$key}{'enddate'}	= $enddate;
+}
+
+#----------------------------------------------------------------------
+# Routine:	writekeys()
+#
+# Purpose:	This routine performs the actual output operations for key
+#		data.  It creates an output string for each of the keys saved
+#		in the %selkeys hash.
+#
+sub writekeys
+{
+	#
+	# Adjust the key's type a bit.
+	#
+	foreach my $key (sort(keys(%selkeys)))
+	{
+		my $keytype;				# Key's type.
+
+		$keytype = $selkeys{$key}{'keyrec_type'};
+		$keytype =~ s/^ksk/KSK-/;
+		$keytype =~ s/^zsk/ZSK-/;
+		$selkeys{$key}{'keyrec_type'} = $keytype;
+	}
+
+	#
+	# Now that we have the actual keys, recalculate the maximum lengths.
+	#
+	$zonesflag = $setsflag = 0;
+	maxlens();
+
+	#
+	# Write the selected keys.
+	#
+	foreach my $key (sort(keys(%selkeys)))
+	{
+		my $out = '';				# Output string.
+		my $algorithm;				# Key's algorithm.
+		my $enddate;				# Key's expiration date.
+		my $gendate;				# Key's generation date.
+		my $length;				# Key's length.
+		my $life;				# Key's lifespan.
+		my $type;				# Key's type.
+		my $zonename;				# Key's zone.
+
+		#
+		# Set-up for output line.
+		#
+		$prevkey = 'first-field';
+
+		#
+		# Save the key data to the selected-keys hash.
+		#
+		$algorithm = $selkeys{$key}{'algorithm'};
+		$enddate   = $selkeys{$key}{'enddate'};
+		$gendate   = $selkeys{$key}{'gendate'};
+		$length	   = $selkeys{$key}{'keylength'};
+		$life	   = $selkeys{$key}{'keylife'};
+		$type	   = $selkeys{$key}{'keyrec_type'};
+		$zonename  = $selkeys{$key}{'zonename'};
+
+		#
+		# Build the output string.
+		#
+		$out  = outstr($KEY,$key,'keyrec_type',$type,$k_label,0);
+		$out .= outstr($KEY,$key,'keyrec_name',$key,1,0);
+		$out .= outstr($KEY,$key,'zonename',$zonename,$k_zonename,0);
+		$out .= outstr($KEY,$key,'algorithm',$algorithm,$k_algorithm,0);
+		$out .= outstr($KEY,$key,'keylength',$length,$k_length,0);
+		$out .= outstr($KEY,$key,'gendate',$gendate,$k_date,1);
+		$out .= outstr($KEY,$key,'keylife',$life,$k_life,0);
+		$out .= outstr($KEY,$key,'enddate',$enddate,$k_enddate,1);
+
+		#
+		# Write the output string.
+		#
+		print "$out\n";
+	}
+}
+
+#----------------------------------------------------------------------
+# Routine:	outstr()
+#
+# Purpose:	Build an output line.  We'll do whatever spacing is required
+#		so that each type's records line up nicely.  The built output
+#		line is returned to the caller.
+#
+sub outstr
+{
+	my $dtype = shift;		# Type of these data.
+	my $krname = shift;		# Zone/set/key name.
+	my $key  = shift;		# Hashkey.
+	my $val	 = shift;		# Value to print.
+	my $flag = shift;		# Output flag.
+	my $usequotes = shift;		# Quotes flag.
+
+	my $ret;			# Return string.
+
+	my $krgroup;			# Keyrec group to consult.
+	my $maxcollen;			# Max field length of previous field.
+	my $prevcollen;			# Length of previous field's value.
+	my $numspaces = 0;		# Spaces to add to previous field.
+	my $spaces = '';		# Spaces to add.
+
+	#
+	# Return if the given flag isn't set and -long wasn't given.
+	#
+	return('') if(!$flag);
+
+	#
+	# Figure out which group of keyrecs to use.  We're intentionally
+	# not using a default for this and will thus allow things to die
+	# horrible death if this routine is improperly used.
+	#
+	if($dtype eq $ZONE)
+	{
+		$krgroup = \%zones;
+	}
+	elsif($dtype eq $SET)
+	{
+		$krgroup = \%sets;
+	}
+	elsif($dtype eq $KEY)
+	{
+		$krgroup = \%selkeys;
+	}
+
+	#
+	# Use the data's type as the name field for the header line.
+	#
+	if(($key eq 'keyrec_name') && ($val eq $HEADER_KRN))
+	{
+		$val = $dtype;
+		$krgroup->{$krname}{$key} = $dtype;
+	}
+
+	#
+	# Add in the appropriate header for zone and set data.
+	# (Key keyrecs have their type header pre-set.)
+	#
+	if((($key eq 'keyrec_type')	&&
+	    ($krname eq $HEADER_KRN))		&&
+	   (($val eq 'zone') || ($val eq 'set')))
+	{
+		$val = "Type";
+		$krgroup->{$krname}{$key} = $val;
+	}
+
+	#
+	# Figure out spacing for this column.
+	#
+	$maxcollen  = $lengths{$dtype}{$prevkey};
+	$prevcollen = length($krgroup->{$krname}{$prevkey});
+	$numspaces  = $maxcollen - $prevcollen;
+
+	#
+	# Build the spacing.
+	#
+	$spaces = ' ' x $numspaces if($numspaces > 0);
+
+	#
+	# Build the output line.
+	#
+	$ret = $spaces . $val;
+
+	#
+	# For some fields we'll add quotes around the value.
+	# We won't add quotes if we're printing headers.
+	#
+	$usequotes = 0 if($headerflag);
+	if($usequotes && ($krname ne $HEADER_KRN))
+	{
+		$ret =~ s/$spaces$val/$spaces\"$val\"/;
+	}
+
+	#
+	# Save the hash key and return the output string to the caller.
+	#
+	$prevkey = $key;
+	return($ret);
 }
 
 #----------------------------------------------------------------------
@@ -1436,10 +1612,11 @@ sub usage
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-label		show record-type label\n";
+	print STDERR "\t\t-headers		give explanatory column headers\n";
 	print STDERR "\t\t-life		display date\n";
+	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-nodate		do not display date\n";
 	print STDERR "\t\t-terse\t	terse output\n";
-	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-help		help message \n";
 	print STDERR "\t\t-Version	Show version information\n";
 
@@ -1710,7 +1887,8 @@ The key's generation date will not be printed if this flag is given.
 =item -headers
 
 Display explanatory column headers.  If this flag is given, then entry labels
-will not be printed.
+will not be printed unless explicitly requested by use of the I<-label>
+option.
 
 =item -label
 
