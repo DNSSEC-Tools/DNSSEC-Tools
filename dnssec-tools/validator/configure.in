@@ -105,8 +105,31 @@ dnl ----------------------------------------------------------------------
 dnl
 AH_TEMPLATE([LIBVAL_NSEC3], [Define if NSEC3 is required.])
 AC_ARG_WITH(nsec3,
-[  --with-nsec3            Enable NSEC3.],
-    [AC_DEFINE(LIBVAL_NSEC3)])
+[  --with-nsec3            Enable nsec3 support.],
+   nsec3="$withval", nsec3="no")
+AC_ARG_ENABLE(nsec3,,
+        AC_MSG_ERROR([ Invalid option. Use --with-nsec3/--without-nsec3 instead ]) )
+if test "$nsec3" = "yes"; then
+    AC_DEFINE(LIBVAL_NSEC3, 1)
+    AC_MSG_CACHE_ADD(NSEC3 support                  : Yes)
+else
+    AC_MSG_CACHE_ADD(NSEC3 support                  : No)
+fi
+
+dnl ----------------------------------------------------------------------
+dnl
+AH_TEMPLATE([LIBVAL_DLV], [Define if DLV is required.])
+AC_ARG_WITH(dlv,
+[  --with-dlv            Enable DLV support.],
+   dlv="$withval", dlv="no")
+AC_ARG_ENABLE(dlv,,
+        AC_MSG_ERROR([ Invalid option. Use --with-dlv/--without-dlv instead ]) )
+if test "$dlv" = "yes"; then
+    AC_DEFINE(LIBVAL_DLV, 1)
+    AC_MSG_CACHE_ADD(DLV support                    : Yes)
+else 
+    AC_MSG_CACHE_ADD(DLV support                    : No)
+fi
 
 dnl ----------------------------------------------------------------------
 dnl
