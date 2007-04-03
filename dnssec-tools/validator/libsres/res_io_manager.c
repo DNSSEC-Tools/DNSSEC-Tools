@@ -956,9 +956,9 @@ res_io_cancel_all(void)
 void
 res_print_ea(struct expected_arrival *ea)
 {
-    int             i = ea->ea_which_address, port;
+    int             i = ea->ea_which_address, port = 0;
     char            buf[INET6_ADDRSTRLEN + 1];
-    const char     *addr;
+    const char     *addr = NULL;
 
     if (res_io_debug) {
         struct sockaddr_in *s =
