@@ -55,6 +55,12 @@ find_rrset_len(struct val_rrset *rrset)
             sizeof(u_int32_t)
             + sizeof(u_int16_t) + rr->rr_rdata_length_h;
     }
+    for (rr = rrset->val_rrset_sig; rr; rr = rr->rr_next) {
+        resp_len +=
+            rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) +
+            sizeof(u_int32_t)
+            + sizeof(u_int16_t) + rr->rr_rdata_length_h;
+    }
     return resp_len;
 }
 
@@ -115,6 +121,26 @@ encode_response_rrset(struct val_rrset *rrset,
         memcpy(cp, rrset->val_rrset_name_n, rrset_name_n_len);
         cp += rrset_name_n_len;
         NS_PUT16(rrset->val_rrset_type_h, cp);
+        NS_PUT16(rrset->val_rrset_class_h, cp);
+        NS_PUT32(rrset->val_rrset_ttl_h, cp);
+        NS_PUT16(rr->rr_rdata_length_h, cp);
+        memcpy(cp, rr->rr_rdata, rr->rr_rdata_length_h);
+        cp += rr->rr_rdata_length_h;
+
+    }                           // end for each rr
+    for (rr = rrset->val_rrset_sig; rr; rr = rr->rr_next) {
+
+        if ((*bufindex + rrset_name_n_len + 10 +
+             rr->rr_rdata_length_h) > resp_len) {
+            /** log error message?  */
+            return -1;
+        }
+
+        (*count)++;
+
+        memcpy(cp, rrset->val_rrset_name_n, rrset_name_n_len);
+        cp += rrset_name_n_len;
+        NS_PUT16(ns_t_rrsig, cp);
         NS_PUT16(rrset->val_rrset_class_h, cp);
         NS_PUT32(rrset->val_rrset_ttl_h, cp);
         NS_PUT16(rr->rr_rdata_length_h, cp);
