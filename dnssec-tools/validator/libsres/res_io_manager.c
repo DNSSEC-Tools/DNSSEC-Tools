@@ -199,6 +199,7 @@ res_io_send(struct expected_arrival *shipit)
      * socket and whether or not the length of the query is sent first.
      */
     int             socket_type;
+    int             socket_size;
     int             bytes_sent;
 
     if (shipit == NULL)
@@ -217,10 +218,21 @@ res_io_send(struct expected_arrival *shipit)
                                         socket_type, 0)) == -1)
             return SR_IO_SOCKET_ERROR;
 
+        /*
+         * OS X wants the socket size to be sockaddr_in for INET,
+         * while Linux is happy with sockaddr_storage. Might need
+         * to fix this for sockaddr_in6 too...
+         */
+        socket_size = shipit->ea_ns->ns_address[i]->ss_family == PF_INET ?
+                      sizeof(struct sockaddr_in) : sizeof(struct sockaddr_storage);
         if (connect
             (shipit->ea_socket,
              (struct sockaddr *) shipit->ea_ns->ns_address[i],
-             sizeof(struct sockaddr_storage)) == -1) {
+             socket_size) == -1) {
+            if (res_io_debug) {
+                printf("Closing socket %d, connect errno = %d\n",
+                       shipit->ea_socket, errno);
+            }
             close(shipit->ea_socket);
             shipit->ea_socket = -1;
             return SR_IO_SOCKET_ERROR;
@@ -254,11 +266,19 @@ res_io_send(struct expected_arrival *shipit)
     if ((bytes_sent = send(shipit->ea_socket, shipit->ea_signed,
                            shipit->ea_signed_length, 0)) == -1) {
         close(shipit->ea_socket);
+        if (res_io_debug) {
+            printf("Closing socket %d, sent != len\n",
+                   shipit->ea_socket);
+        }
         shipit->ea_socket = -1;
         return SR_IO_SOCKET_ERROR;
     }
 
     if (bytes_sent != shipit->ea_signed_length) {
+        if (res_io_debug) {
+            printf("Closing socket %d, sent != signed len\n",
+                   shipit->ea_socket);
+        }
         close(shipit->ea_socket);
         shipit->ea_socket = -1;
         return SR_IO_SOCKET_ERROR;
@@ -531,9 +551,14 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
     if (read_descriptors == NULL)
         return SR_IO_INTERNAL_ERROR;
 
-    for (i = 0; i < getdtablesize(); i++)
-        if (FD_ISSET(i, read_descriptors))
+    i = getdtablesize(); 
+    if (i > FD_SETSIZE)
+        i = FD_SETSIZE;
+    for (--i; i >= 0; --i)
+        if (FD_ISSET(i, read_descriptors)) {
             max_sock = i;
+            break;
+        }
 
     /** Never block **/
     //return select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
@@ -637,6 +662,8 @@ res_io_read_udp(struct expected_arrival *arrival)
 
     if (ioctl(arrival->ea_socket, FIONREAD, &bytes_waiting) == -1) {
         close(arrival->ea_socket);
+        if (res_io_debug)
+            printf("Closing socket %d, FIONREAD failed\n", arrival->ea_socket);
         arrival->ea_socket = -1;
         return SR_IO_SOCKET_ERROR;
     }
@@ -681,6 +708,8 @@ res_io_read_udp(struct expected_arrival *arrival)
 
   error:
     close(arrival->ea_socket);
+    if (res_io_debug)
+        printf("Closing socket %d, read_udp failed\n", arrival->ea_socket);
     arrival->ea_socket = -1;
     FREE(arrival->ea_response);
     arrival->ea_response = NULL;
@@ -721,13 +750,16 @@ res_switch_to_tcp(struct expected_arrival *ea)
 void
 res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 {
-    int             sock;
+    int             sock, i;
     struct expected_arrival *arrival;
 
-    for (sock = 0; sock < getdtablesize(); sock++)
+    i = getdtablesize(); 
+    if (i > FD_SETSIZE)
+        i = FD_SETSIZE;
+    for (sock = 0; sock < i; ++sock)
         if (FD_ISSET(sock, read_descriptors)) {
             if (res_io_debug)
-                printf("ACTIVITY\n");
+                printf("ACTIVITY on %d\n", sock);
             /*
              * This socket is ready for reading 
              */
@@ -935,13 +967,13 @@ res_print_ea(struct expected_arrival *ea)
         struct sockaddr_in6 *s6 =
             (struct sockaddr_in6 *) ((ea->ea_ns->ns_address[i]));
         if (PF_INET6 == ea->ea_ns->ns_address[i]->ss_family) {
-            addr = inet_ntop(PF_INET6, ea->ea_ns->ns_address[i],
+            addr = inet_ntop(PF_INET6, &s6->sin6_addr,
                              buf, sizeof(buf));
             port = s6->sin6_port;
         }
 #endif
         if (PF_INET == ea->ea_ns->ns_address[i]->ss_family) {
-            addr = inet_ntop(PF_INET, ea->ea_ns->ns_address[i],
+            addr = inet_ntop(PF_INET, &s->sin_addr,
                              buf, sizeof(buf));
             port = s->sin_port;
         }
