@@ -200,7 +200,7 @@ print_val_response(struct val_response *resp)
 //
 int
 sendquery(val_context_t * context, const char *desc, u_char * name_n,
-          const u_int16_t class, const u_int16_t type,
+          const u_int16_t class, const u_int16_t type, u_int8_t flags,
           const int *result_ar, int trusted_only,
           struct val_response **resp)
 {
@@ -214,14 +214,14 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
     fprintf(stderr, "%s: ****START**** \n", desc);
     
     ret_val =
-        val_resolve_and_check(context, name_n, class, type, 0, &results);
+        val_resolve_and_check(context, name_n, class, type, flags, &results);
 
     *resp = NULL;
     if (ret_val == VAL_NO_ERROR) {
 
         if (resp)
             ret_val = compose_answer(name_n, type, class, results, resp,
-                                     0);
+                                     flags);
 
         if (result_ar)
             err =
@@ -535,10 +535,10 @@ endless_loop(void)
 
 void 
 one_test(val_context_t *context, u_int8_t *name_n, u_int16_t class_h, 
-        u_int16_t type_h, int retvals[], int doprint)
+        u_int16_t type_h, u_int8_t flags, int retvals[], int doprint)
 {
     struct val_response *resp = NULL;
-    sendquery(context, "Result", name_n, class_h, type_h, retvals, 1, &resp);
+    sendquery(context, "Result", name_n, class_h, type_h, flags, retvals, 1, &resp);
     fprintf(stderr, "\n");
 
     // If the print option is present, perform query and validation
@@ -556,6 +556,7 @@ struct thread_params_st {
     val_context_t *context;
     int tcs;
     int tce;
+    u_int8_t flags;
     char *testcase_config;
     char *suite;
     int doprint;
@@ -567,6 +568,7 @@ struct thread_params_ot {
     u_int8_t *name_n;
     u_int16_t class_h;
     u_int16_t type_h;
+    u_int8_t flags;
     int *retvals;
     int doprint;
     int wait;
@@ -576,7 +578,7 @@ void *firethread_st(void *param) {
     struct thread_params_st *threadparams = (struct thread_params_st *)param;
     /*child process*/
     do {
-        self_test(threadparams->context, threadparams->tcs, threadparams->tce, 
+        self_test(threadparams->context, threadparams->tcs, threadparams->tce, threadparams->flags, 
                   threadparams->testcase_config, threadparams->suite, threadparams->doprint);
         if (threadparams->wait)
             sleep(threadparams->wait);
@@ -590,7 +592,8 @@ void *firethread_ot(void *param) {
     /*child process*/
     do {
         one_test(threadparams->context, threadparams->name_n, threadparams->class_h, 
-                  threadparams->type_h, threadparams->retvals, threadparams->doprint);
+                  threadparams->type_h, threadparams->flags, 
+                  threadparams->retvals, threadparams->doprint);
         if (threadparams->wait)
             sleep(threadparams->wait);
     }while (threadparams->wait);
@@ -788,7 +791,7 @@ main(int argc, char *argv[])
 #if NO_OF_THREADS
             pthread_t tids[NO_OF_THREADS];
             struct thread_params_st 
-                threadparams = {context, tcs, tce, testcase_config, suite, doprint, wait};
+                threadparams = {context, tcs, tce, flags, testcase_config, suite, doprint, wait};
             int j;
                 
             for (j=0; j < NO_OF_THREADS; j++) {
@@ -803,7 +806,7 @@ main(int argc, char *argv[])
             fprintf(stderr, "Parent exiting\n");
 #else
             do { /* endless loop */ 
-                rc = self_test(context, tcs, tce, testcase_config, suite,
+                rc = self_test(context, tcs, tce, flags, testcase_config, suite,
                                doprint);
                 if (wait)
                     sleep(wait);
@@ -825,7 +828,7 @@ main(int argc, char *argv[])
 #if NO_OF_THREADS
     pthread_t tids[NO_OF_THREADS];
     struct thread_params_ot 
-                threadparams = {context, name_n, class_h, type_h, retvals, doprint, wait};
+                threadparams = {context, name_n, class_h, type_h, flags, retvals, doprint, wait};
     int j;
                 
     for (j=0; j < NO_OF_THREADS; j++) {
@@ -841,7 +844,7 @@ main(int argc, char *argv[])
     fprintf(stderr, "Parent exiting\n");
 #else
     do { /* endless loop */
-        one_test(context, name_n, class_h, type_h, retvals, doprint);
+        one_test(context, name_n, class_h, type_h, flags, retvals, doprint);
 
         if (wait)
             sleep(wait);

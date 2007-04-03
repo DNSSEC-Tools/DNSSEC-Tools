@@ -462,7 +462,7 @@ err:
 }
 
 int
-run_test_suite(val_context_t *context, int tcs, int tce, testsuite *suite,
+run_test_suite(val_context_t *context, int tcs, int tce, u_int8_t flags, testsuite *suite,
                int doprint)
 {
     int             rc, failed = 0, run_cnt = 0, i, tc_count;
@@ -510,7 +510,7 @@ run_test_suite(val_context_t *context, int tcs, int tce, testsuite *suite,
         }
         rc = sendquery(context, curr_test->desc,
                        name_n, curr_test->qc,
-                       curr_test->qt, curr_test->qr, 0, &resp);
+                       curr_test->qt, flags, curr_test->qr, 0, &resp);
         if (doprint) {
             fprintf(stderr, "%s: ****RESPONSE**** \n", curr_test->desc);
             print_val_response(resp);
@@ -532,7 +532,7 @@ run_test_suite(val_context_t *context, int tcs, int tce, testsuite *suite,
 }
 
 int
-self_test(val_context_t *context, int tcs, int tce, const char *tests_file,
+self_test(val_context_t *context, int tcs, int tce, u_int8_t flags, const char *tests_file,
           const char *suites, int doprint)
 {
     testsuite *suite;
@@ -550,7 +550,7 @@ self_test(val_context_t *context, int tcs, int tce, const char *tests_file,
     if (NULL == suites) {
 
         while(NULL != suite) {
-            rc = run_test_suite(context, tcs, tce, suite, doprint);
+            rc = run_test_suite(context, tcs, tce, flags, suite, doprint);
             /** does rc mean anything? */
             suite = suite->next;
         }
@@ -569,7 +569,7 @@ self_test(val_context_t *context, int tcs, int tce, const char *tests_file,
             if (NULL == suite)
                 fprintf(stderr, "unknown suite %s\n", name);
             else {
-                rc = run_test_suite(context, tcs, tce, suite, doprint);
+                rc = run_test_suite(context, tcs, tce, flags, suite, doprint);
                 /** does rc mean anything? */
             }
             
