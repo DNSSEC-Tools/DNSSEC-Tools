@@ -1,0 +1,234 @@
+diff -c -r wget-1.10.2.orig/configure.in wget-1.10.2/configure.in
+*** wget-1.10.2.orig/configure.in	2005-08-26 04:57:04.000000000 -0700
+--- wget-1.10.2/configure.in	2007-04-03 15:16:33.000000000 -0700
+***************
+*** 175,180 ****
+--- 175,181 ----
+  AC_CHECK_HEADERS(string.h strings.h stdarg.h limits.h unistd.h sys/time.h)
+  AC_CHECK_HEADERS(termios.h sys/ioctl.h sys/select.h utime.h sys/utime.h)
+  AC_CHECK_HEADERS(stdint.h inttypes.h signal.h setjmp.h pwd.h)
++ AC_CHECK_HEADERS(validator/validator.h)
+  AC_HEADER_TIME
+  
+  dnl
+***************
+*** 244,249 ****
+--- 245,266 ----
+  dnl Checks for libraries.
+  dnl
+  
++ dnl 
++ dnl Check for dnssec validator library.  Fail if not found.
++ dnl Current dnssec patch does not handle missing libraries.
++ dnl
++ 
++ AC_LIB_HAVE_LINKFLAGS([val-threads], [sres crypto], 
++         [#include <validator/validator.h>], 
++         [p_val_status(0);])
++ 
++ if test x"$LIBVAL_THREADS" != x
++ then
++         AC_MSG_NOTICE([support for dnssec validator compiled in])
++ else
++         AC_MSG_ERROR([libval-threads was not be found.  This library is required by the dnssec patch.])
++ fi
++ 
+  dnl Check for OpenSSL
+  if test x"$with_ssl" != x"no"
+  then
+diff -c -r wget-1.10.2.orig/Makefile.in wget-1.10.2/Makefile.in
+*** wget-1.10.2.orig/Makefile.in	2005-06-26 15:06:49.000000000 -0700
+--- wget-1.10.2/Makefile.in	2007-04-03 14:45:34.000000000 -0700
+***************
+*** 57,63 ****
+  CFLAGS = @CFLAGS@
+  CPPFLAGS = @CPPFLAGS@
+  DEFS = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+! LIBS = @LIBS@ @LIBSSL@
+  LDFLAGS = @LDFLAGS@
+  
+  #
+--- 57,63 ----
+  CFLAGS = @CFLAGS@
+  CPPFLAGS = @CPPFLAGS@
+  DEFS = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+! LIBS = @LIBS@ @LIBSSL@ @LIBVAL_THREADS@
+  LDFLAGS = @LDFLAGS@
+  
+  #
+diff -c -r wget-1.10.2.orig/src/config.h.in wget-1.10.2/src/config.h.in
+*** wget-1.10.2.orig/src/config.h.in	2005-10-13 02:22:28.000000000 -0700
+--- wget-1.10.2/src/config.h.in	2007-04-04 09:10:21.000000000 -0700
+***************
+*** 87,92 ****
+--- 87,95 ----
+  /* Define if you have the ssl library. */
+  #undef HAVE_LIBSSL
+  
++ /* Define if you have the val-threads library. */
++ #undef HAVE_LIBVAL_THREADS
++ 
+  /* Define to 1 if you have the <limits.h> header file. */
+  #undef HAVE_LIMITS_H
+  
+***************
+*** 243,248 ****
+--- 246,254 ----
+  /* Define to 1 if you have the <utime.h> header file. */
+  #undef HAVE_UTIME_H
+  
++ /* Define to 1 if you have the <validator/validator.h> header file. */
++ #undef HAVE_VALIDATOR_VALIDATOR_H
++ 
+  /* Define to 1 if you have the `vsnprintf' function. */
+  #undef HAVE_VSNPRINTF
+  
+diff -c -r wget-1.10.2.orig/src/host.c wget-1.10.2/src/host.c
+*** wget-1.10.2.orig/src/host.c	2005-07-02 06:31:37.000000000 -0700
+--- wget-1.10.2/src/host.c	2007-04-04 09:09:44.000000000 -0700
+***************
+*** 59,64 ****
+--- 59,71 ----
+  #include "url.h"
+  #include "hash.h"
+  
++ /* Support for dnssec lookups, 
++    Note: the dnssec patched wget will not currently function
++          without the libval_threads.*/
++ #ifdef HAVE_LIBVAL_THREADS
++ #include <validator/validator.h>
++ #endif
++ 
+  #ifndef errno
+  extern int errno;
+  #endif
+***************
+*** 386,392 ****
+  getaddrinfo_with_timeout_callback (void *arg)
+  {
+    struct gaiwt_context *ctx = (struct gaiwt_context *)arg;
+!   ctx->exit_code = getaddrinfo (ctx->node, ctx->service, ctx->hints, ctx->res);
+  }
+  
+  /* Just like getaddrinfo, except it times out after TIMEOUT seconds.
+--- 393,409 ----
+  getaddrinfo_with_timeout_callback (void *arg)
+  {
+    struct gaiwt_context *ctx = (struct gaiwt_context *)arg;
+!   int err = 0;
+!   val_status_t vstatus;
+!   if (0 == (err = val_getaddrinfo((val_context_t *)NULL, ctx->node, 
+!                                   ctx->service, ctx->hints, 
+!                                   (struct val_addrinfo **)ctx->res,
+!                                   &vstatus))) {
+!       if (0 == val_istrusted(vstatus))  { 
+!           err = DNSSECAI_FAIL; 
+!       }
+!   }
+!   ctx->exit_code = err;
+  }
+  
+  /* Just like getaddrinfo, except it times out after TIMEOUT seconds.
+***************
+*** 787,793 ****
+        {
+  	if (!silent)
+  	  logprintf (LOG_VERBOSE, _("failed: %s.\n"),
+! 		     err != EAI_SYSTEM ? gai_strerror (err) : strerror (errno));
+  	return NULL;
+        }
+      al = address_list_from_addrinfo (res);
+--- 804,810 ----
+        {
+  	if (!silent)
+  	  logprintf (LOG_VERBOSE, _("failed: %s.\n"),
+! 		     err != EAI_SYSTEM ? dnssec_strerror (err) : strerror (errno));
+  	return NULL;
+        }
+      al = address_list_from_addrinfo (res);
+***************
+*** 918,920 ****
+--- 935,970 ----
+        host_name_addresses_map = NULL;
+      }
+  }
++ 
++ 
++ /* DNSSEC additional proecudures
++ 
++    dnssec_strerror - looks for dnssec errors (currently there is
++                      only one), passes back dnssec specific error
++                      string or calls the system gai_strerror.  */
++ 
++ static const char* dnssecai_fail_string = "DNSSEC Error";
++ static const char* dnssecai_noerror_string = "No Error";
++ 
++ const char   *dnssec_strerror(int ecode)  
++ {
++   switch (ecode) {
++   case 0:
++     return (dnssecai_noerror_string);
++   case DNSSECAI_FAIL:
++     return (dnssecai_fail_string);
++   }
++   /* default response*/
++   return (gai_strerror(ecode));
++ } /* denssec_strerror */
++ 
++ 
++ /* free_pf_dnssec_addrinfo - frees struct val_addrinfo.  Does a
++                              pointer conversion to call validator
++                              library free function. */
++ 
++ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo){
++   val_freeaddrinfo((struct val_addrinfo *) ainfo);
++ }
++ 
++ /* End DNSSEC Additional procedures */
+diff -c -r wget-1.10.2.orig/src/host.h wget-1.10.2/src/host.h
+*** wget-1.10.2.orig/src/host.h	2005-06-19 06:47:10.000000000 -0700
+--- wget-1.10.2/src/host.h	2007-04-02 14:09:33.000000000 -0700
+***************
+*** 112,117 ****
+--- 112,132 ----
+  int is_valid_ipv6_address PARAMS ((const char *, const char *));
+  #endif
+  
++ /* start dnssec patch additions */
++ 
++ #define DNSSECAI_FAIL   -600  /* sharing number space with netdb.h errors */
++ 
++ /* Used for explicit pointer conversion (i.e. gets rid of compiler
++    warnings). */
++ void free_pf_dnssec_addrinfo(struct addrinfo *ainfo);
++ #undef  freeaddrinfo
++ #define freeaddrinfo	free_pf_dnssec_addrinfo
++ 
++ const char   *dnssec_strerror(int ecode);
++ 
++ /* end dnssec patch additions */
++ 
++ 
+  int accept_domain PARAMS ((struct url *));
+  int sufmatch PARAMS ((const char **, const char *));
+  
+diff -c -r wget-1.10.2.orig/src/Makefile.in wget-1.10.2/src/Makefile.in
+*** wget-1.10.2.orig/src/Makefile.in	2005-06-26 15:06:49.000000000 -0700
+--- wget-1.10.2/src/Makefile.in	2007-04-03 14:50:39.000000000 -0700
+***************
+*** 53,59 ****
+  DEFS     = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+  CFLAGS   = @CFLAGS@
+  LDFLAGS  = @LDFLAGS@
+! LIBS     = @LIBS@ @LIBSSL@
+  exeext   = @exeext@
+  
+  INCLUDES = -I. -I$(srcdir)
+--- 53,59 ----
+  DEFS     = @DEFS@ -DSYSTEM_WGETRC=\"$(sysconfdir)/wgetrc\" -DLOCALEDIR=\"$(localedir)\"
+  CFLAGS   = @CFLAGS@
+  LDFLAGS  = @LDFLAGS@
+! LIBS     = @LIBS@ @LIBSSL@ @LIBVAL_THREADS@
+  exeext   = @exeext@
+  
+  INCLUDES = -I. -I$(srcdir)
