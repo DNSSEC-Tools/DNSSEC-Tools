@@ -59,9 +59,10 @@ my @opts =
 
 	"k-algorithm",			# Show encryption algorithm.
 	"k-enddate",			# Show end date.
-	"k-length",			# Show key length.
-	"k-lifespan",			# Show key lifespan.
-	"k-random",			# Show key random number generator.
+	"k-length",			# Show key's length.
+	"k-lifespan",			# Show key's lifespan.
+	"k-path",			# Show key's path.
+	"k-random",			# Show key's random number generator.
 	"k-signdate",			# Show key's signing date.
 	"k-zone",			# Show key's zonefile.
 
@@ -142,6 +143,7 @@ my $k_label	= 0;			# Label for output.
 my $k_length	= 0;			# Key's length.
 my $k_life	= 0;			# Key's lifespan.
 my $k_random	= 0;			# Key's random number generator.
+my $k_path	= 0;			# Key's path.
 my $k_zonename	= 0;			# Key's owning zone.
 
 #######################################################################
@@ -476,6 +478,7 @@ sub doopts
 		$k_label     = 1;
 		$k_length    = 0;
 		$k_life	     = 0;
+		$k_path	     = 0;
 		$k_random    = 0;
 		$k_zonename  = 1;
 
@@ -487,6 +490,7 @@ sub doopts
 			$k_algorithm = 1;
 			$k_enddate   = 1;
 			$k_length    = 1;
+			$k_path	     = 1;
 			$k_random    = 1;
 		}
 
@@ -508,6 +512,7 @@ sub doopts
 		$k_date      = 1 if(defined($options{'k-signdate'}));
 		$k_length    = 1 if(defined($options{'k-length'}));
 		$k_life      = 1 if(defined($options{'k-lifespan'}));
+		$k_path      = 1 if(defined($options{'k-path'}));
 		$k_random    = 1 if(defined($options{'k-random'}));
 		$k_zonename  = 1 if(defined($options{'k-zone'}));
 
@@ -675,6 +680,7 @@ sub makeheaders
 		$kr{'keyrec_gendate'}	= 'Key Generation';
 		$kr{'keylength'}	= 'Key Length';
 		$kr{'keylife'}		= 'Key Life';
+		$kr{'keypath'}		= 'Key Path';
 		$kr{'random'}		= 'Random Generator';
 		$kr{'zonename'}		= 'Zone Name';
 
@@ -1306,6 +1312,7 @@ sub selkey
 	my $enddate = "";		# Key's end-date (in text.)
 	my $length;			# Key's length.
 	my $life;			# Key's lifespan.
+	my $path;			# Key's path.
 	my $random;			# Key's random number generator.
 	my $zonename;			# Name of key's owning zone.
 	my $out  = "";			# Output string.
@@ -1344,6 +1351,7 @@ sub selkey
 	# Get the key's data.
 	#
 	$algorithm = $kr{'algorithm'};
+	$path	   = $kr{'keypath'};
 	$random	   = $kr{'random'};
 	$zonename  = $kr{'zonename'};
 	$gendate   = "$kr{'keyrec_gendate'}" if(!$nodateflag);
@@ -1399,6 +1407,7 @@ sub selkey
 	$selkeys{$key}{'gendate'}	= $gendate;
 	$selkeys{$key}{'keylength'}	= $length;
 	$selkeys{$key}{'keylife'}	= $life;
+	$selkeys{$key}{'keypath'}	= $path;
 	$selkeys{$key}{'random'}	= $random;
 	$selkeys{$key}{'zonename'}	= $zonename;
 }
@@ -1442,6 +1451,7 @@ sub writekeys
 		my $gendate;				# Key's generation date.
 		my $length;				# Key's length.
 		my $life;				# Key's lifespan.
+		my $path;				# Key's path.
 		my $random;				# Key's randomizer.
 		my $type;				# Key's type.
 		my $zonename;				# Key's zone.
@@ -1459,6 +1469,7 @@ sub writekeys
 		$gendate   = $selkeys{$key}{'gendate'};
 		$length	   = $selkeys{$key}{'keylength'};
 		$life	   = $selkeys{$key}{'keylife'};
+		$path	   = $selkeys{$key}{'keypath'};
 		$random	   = $selkeys{$key}{'random'};
 		$type	   = $selkeys{$key}{'keyrec_type'};
 		$zonename  = $selkeys{$key}{'zonename'};
@@ -1474,6 +1485,7 @@ sub writekeys
 		$out .= outstr($KEY,$key,'gendate',$gendate,$k_date,1);
 		$out .= outstr($KEY,$key,'keylife',$life,$k_life,0);
 		$out .= outstr($KEY,$key,'enddate',$enddate,$k_enddate,1);
+		$out .= outstr($KEY,$key,'keypath',$path,$k_path,0);
 		$out .= outstr($KEY,$key,'random',$random,$k_random,0);
 
 		#
@@ -1629,7 +1641,7 @@ sub usage
 	print STDERR "\toutput-format options:\n";
 	print STDERR "\t\t-count		only give count of matching keyrecs\n";
 	print STDERR "\t\t-label		show record-type label\n";
-	print STDERR "\t\t-headers		give explanatory column headers\n";
+	print STDERR "\t\t-headers	give explanatory column headers\n";
 	print STDERR "\t\t-life		display date\n";
 	print STDERR "\t\t-long		long output\n";
 	print STDERR "\t\t-nodate		do not display date\n";
@@ -1648,6 +1660,7 @@ sub usage
 	print STDERR "\t\t-k-enddate	show key's end-date\n";
 	print STDERR "\t\t-k-length	show key's length\n";
 	print STDERR "\t\t-k-lifespan	show key's lifespan\n";
+	print STDERR "\t\t-k-path		show key's path\n";
 	print STDERR "\t\t-k-random	show key's random number generator\n";
 	print STDERR "\t\t-k-signdate	show key's signing date\n";
 	print STDERR "\t\t-k-zone		show key's zonefile\n";
@@ -1871,6 +1884,10 @@ Display the key's length.
 Display the key's lifespan (in seconds.) This lifespan is B<only> related to
 the time between key roll-over.  There is no other lifespan associated with a
 key.
+
+=item -k-path
+
+Display the key's path.
 
 =item -k-random
 
