@@ -114,6 +114,7 @@ my $sleeptime = $opts{'t'} ? $opts{'t'}
 my $holdtime = $opts{'w'} ? $opts{'w'}
                            : $dtconf{'taholdtime'};
 
+my $initrun = 1;
 my @domains;
 push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
 my %revdomains;
@@ -129,6 +130,7 @@ warn "can't recreate newkey data from file: $@" if $@;
 close FILE;
 
 my %sleeptimes;
+my %active_refresh_times;
 
 my %zone_configfile_map;
 my $once;
@@ -229,7 +231,20 @@ parsed for appropriate files.\n";
 sub checkkeys {
     my $sleep = shift;
 
+    my $domains_to_check;
+
     foreach my $d (@domains) {
+    # check all domains to see if $active_refresh_times{$d} has been reached
+         my $now = localtime();
+         my $nowsecs = str2time($now);
+         if ($nowsecs >= $active_refresh_times{$d}) {
+             push @domains_to_check, $d;
+         } elsif ($initrun) { # first time through, check all domains
+             push @domains_to_check, $d;
+         }
+    }
+
+    foreach my $d (@domains_to_check) {
         my $query;
         $query = resolve_and_check_dnskey($d,$dvfile);
         my %pendingnewkeys;
@@ -249,9 +264,9 @@ sub checkkeys {
                  
                  my $orgttl = $rrsigrec->orgttl;
                  my $sigexp = $rrsigrec->sigexpiration;
-                 # $refresh_domain is when to check this domain again
-                 my $refresh_time = compute_sleepsecs($orgttl, $sigexp);
-                 $sleeptimes{$d} =  $refresh_time;
+                 my ($refresh_secs,$refresh_time) = compute_sleepsecs($orgttl, $sigexp);
+                 $sleeptimes{$d} =  $refresh_secs;
+                 $active_refresh_times{$d} = $refresh_time;
                  last; # only need one sleep time per domain
             }
 # if an RRSET is received which does NOT contain a pending
@@ -402,6 +417,9 @@ sub checkkeys {
 #        }
         
     }
+
+    $initrun = 0;
+
     foreach my $d (keys %sleeptimes) {
         if ($sleep > $sleeptimes{$d}) {
             $sleep = $sleeptimes{$d};
@@ -475,6 +493,8 @@ sub add_ta_dnsvalconf  {
                              $newkeys{$domain}[$i]{key} . "\"\n";
                 if ($domainfound) {
                     print TMP $newkeyentry . $2;
+                    print "Adding following key to $dvfile:\n";
+                    print $newkeyentry . "\n";
                 }
             }
             print TMP "\n;\n";
@@ -488,8 +508,6 @@ sub add_ta_dnsvalconf  {
     my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
-    print "Added following key to $dvfile:\n";
-    print $newkeyentry . "\n";
 }
 
 
@@ -535,55 +553,6 @@ sub resolve_and_check_dnskey {
         }
     }
     return undef;
-}
-
-
-#########################################################
-#
-# query_authserver
-# called by checkkeys, queries a zone to get authoritative
-# servers to get the DNSKEY record
-# 
-
-sub query_authserver {
-    my ($d) = @_;
-    my $res = Net::DNS::Resolver->new;
-    my $setdnssec = $res->dnssec(1);
-    my $setpktsize = $res->udppacketsize(4096);
-    my $nsquery = $res->query($d,"NS");
-    my @authNS;
-    foreach my $ns (grep { $_->type eq 'NS' } $nsquery->answer()) {
-        push @authNS, $ns->nsdname;
-    }
-    my @authNSAddrs;
-    foreach my $addrs (grep { $_->type eq 'A' } $nsquery->additional) {
-        push @authNSAddrs, $addrs->address;
-    }
-
-    my $authres;
-    my $query;
-    foreach my $nsaddr (@authNSAddrs) {
-        $authres = Net::DNS::Resolver->new(nameservers => [$nsaddr],);
-#                                           debug => 1,);
-        my $setdnssec = $authres->dnssec(1);
-        my $setpktsize = $authres->udppacketsize(4096);
-        $query = $authres->query($d,"DNSKEY");
-        last if $query;
-    }
-    if (!$query) { # try the names
-        foreach my $ns (@authNS) {
-            $authres = Net::DNS::Resolver->new(nameservers => [$ns],);
-#                                           debug => 1,);
-            my $setdnssec = $authres->dnssec(1);
-            my $setpktsize = $authres->udppacketsize(4096);
-            $query = $authres->query($d,"DNSKEY");
-            last if $query;
-        }    
-    }
-# if all fail, treat this as a failed query and go on from there
-# TODO -- failed query
-
-    return($authres->query($d,"DNSKEY"));
 }
 
 #######################################################################
@@ -724,7 +693,7 @@ sub compute_sleepsecs {
         }
     }
     
-    return ($actrefsecs);
+    return ($actrefsecs,$actrefsecs+$nowsecs);
 }
 
 ######################################################################
