@@ -505,6 +505,7 @@ sub doopts
 			$k_algorithm = 1;
 			$k_enddate   = 1;
 			$k_length    = 1;
+			$k_life	     = 1;
 			$k_path	     = 1;
 			$k_random    = 1;
 		}
@@ -1404,7 +1405,7 @@ sub selkey
 		#
 		# Set a dummy value if the lifetime wasn't set yet.
 		#
-		$life = "(not set)" if($life eq "");
+		$life = "unset" if($life eq "");
 	}
 
 	#
