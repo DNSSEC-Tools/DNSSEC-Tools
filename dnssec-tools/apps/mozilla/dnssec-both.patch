@@ -115,27 +115,6 @@
  /**
   * The lookup of a proxy hostname failed.
   *
---- mozilla.firefox.1.5.0.6.rpmdist/netwerk/base/src/nsSocketTransport2.cpp	2005-09-23 12:36:12.000000000 -0700
-+++ mozilla/netwerk/base/src/nsSocketTransport2.cpp	2006-08-23 19:01:13.000000000 -0700
-@@ -1212,6 +1212,7 @@
-         mCondition != NS_ERROR_PROXY_CONNECTION_REFUSED &&
-         mCondition != NS_ERROR_NET_TIMEOUT &&
-         mCondition != NS_ERROR_UNKNOWN_HOST &&
-+        mCondition != NS_ERROR_DNSSEC_VALIDATION_ERROR &&
-         mCondition != NS_ERROR_UNKNOWN_PROXY_HOST)
-         return PR_FALSE;
- 
-@@ -1392,7 +1393,9 @@
-         // status contains DNS lookup status
-         if (NS_FAILED(status)) {
-             // fixup error code if proxy was not found
--            if ((status == NS_ERROR_UNKNOWN_HOST) && !mProxyHost.IsEmpty())
-+            if ((status == NS_ERROR_UNKNOWN_HOST ||
-+                 status == NS_ERROR_DNSSEC_VALIDATION_ERROR) &&
-+                !mProxyHost.IsEmpty())
-                 mCondition = NS_ERROR_UNKNOWN_PROXY_HOST;
-             else
-                 mCondition = status;
 --- mozilla.firefox.1.5.0.6.rpmdist/netwerk/dns/src/nsDNSService2.cpp	2005-10-18 14:25:45.000000000 -0700
 +++ mozilla/netwerk/dns/src/nsDNSService2.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -122,6 +122,10 @@
@@ -149,45 +128,6 @@
          memcpy(addr, mHostRecord->addr, sizeof(PRNetAddr));
          // set given port
          port = PR_htons(port);
---- mozilla.firefox.1.5.0.6.rpmdist/netwerk/dns/src/nsHostResolver.cpp	2005-09-23 12:36:18.000000000 -0700
-+++ mozilla/netwerk/dns/src/nsHostResolver.cpp	2006-08-23 19:01:13.000000000 -0700
-@@ -58,6 +58,7 @@
- #include "pratom.h"
- #include "prthread.h"
- #include "prerror.h"
-+#include "prerr.h"
- #include "prcvar.h"
- #include "prtime.h"
- #include "prlong.h"
-@@ -652,7 +653,27 @@
- #endif
- 
-         // convert error code to nsresult.
--        nsresult status = ai ? NS_OK : NS_ERROR_UNKNOWN_HOST;
-+        nsresult status;
-+        
-+        if (!ai) {
-+            // handle errors
-+            PRErrorCode err = PR_GetError();
-+            fprintf(stderr, "nshostres out: ai=%d, err=%d, %d\n",
-+                    ai, err, PR_DNSSEC_VALIDATION_ERROR);
-+            switch(err) {
-+            case PR_DNSSEC_VALIDATION_ERROR:
-+                status = NS_ERROR_DNSSEC_VALIDATION_ERROR;
-+                break;
-+
-+            default:
-+                status = NS_ERROR_UNKNOWN_HOST;
-+                break;
-+            }
-+            fprintf(stderr, "nshostres err status set: status=%d (unknown=%d, validation_error=%d\n", status, NS_ERROR_UNKNOWN_HOST, NS_ERROR_DNSSEC_VALIDATION_ERROR);
-+        } else {
-+            status = NS_OK;
-+        }
-+        
-         resolver->OnLookupComplete(rec, status, ai);
-     }
-     NS_RELEASE(resolver);
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/config/autoconf.mk.in	2006-02-22 15:03:11.000000000 -0800
 +++ mozilla/nsprpub/config/autoconf.mk.in	2006-08-23 19:01:13.000000000 -0700
 @@ -34,6 +34,7 @@
@@ -250,9 +190,9 @@
 +AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto", OPENSSL_LIBS="")
 +AC_CHECK_LIB(sres, __res_init, SRES_LIBS=" -lpthread -lsres", SRES_LIBS="",
 +             $OPENSSL_LIBS -lpthread)
-+AC_CHECK_LIB(val, val_gethostbyname,
++AC_CHECK_LIB(val-threads, val_gethostbyname,
 +             [SYSTEM_VAL=1
-+              VAL_LIBS="-lval $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
++              VAL_LIBS="-lval-threads $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
 +              NSPR_LIBS="$NSPR_LIBS $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
 +              AC_DEFINE(MOZ_DNSSEC)], SYSTEM_VAL=,
 +             $SRES_LIBS $OPENSSL_LIBS)
@@ -271,1222 +211,6 @@
  
  AC_SUBST(USE_PTHREADS)
  AC_SUBST(USE_BTHREADS)
---- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/configure	2006-02-22 15:03:10.000000000 -0800
-+++ mozilla/nsprpub/configure	2006-08-23 19:01:13.000000000 -0700
-@@ -46,6 +46,15 @@
-                           Set the minimum MacOS version needed at runtime
-                           [10.1 for ppc, 10.4 for x86]"
- ac_help="$ac_help
-+  --with-system-val[=PFX]
-+                          Use system libval [installed at prefix PFX]"
-+ac_help="$ac_help
-+  --with-system-sres[=PFX]
-+                          Use system libsres [installed at prefix PFX]"
-+ac_help="$ac_help
-+  --with-system-openssl[=PFX]
-+                          Use system openssl libraries [installed at prefix PFX]"
-+ac_help="$ac_help
-   --enable-strip          Enable stripping of shared libs and programs"
- ac_help="$ac_help
-   --with-pthreads         Use system pthreads library as thread subsystem"
-@@ -623,7 +632,7 @@
- fi
- 
- echo $ac_n "checking host system type""... $ac_c" 1>&6
--echo "configure:627: checking host system type" >&5
-+echo "configure:636: checking host system type" >&5
- 
- host_alias=$host
- case "$host_alias" in
-@@ -644,7 +653,7 @@
- echo "$ac_t""$host" 1>&6
- 
- echo $ac_n "checking target system type""... $ac_c" 1>&6
--echo "configure:648: checking target system type" >&5
-+echo "configure:657: checking target system type" >&5
- 
- target_alias=$target
- case "$target_alias" in
-@@ -662,7 +671,7 @@
- echo "$ac_t""$target" 1>&6
- 
- echo $ac_n "checking build system type""... $ac_c" 1>&6
--echo "configure:666: checking build system type" >&5
-+echo "configure:675: checking build system type" >&5
- 
- build_alias=$build
- case "$build_alias" in
-@@ -731,7 +740,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:735: checking for $ac_word" >&5
-+echo "configure:744: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1038,7 +1047,7 @@
-     # Extract the first word of "$WHOAMI whoami", so it can be a program name with args.
- set dummy $WHOAMI whoami; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1042: checking for $ac_word" >&5
-+echo "configure:1051: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_path_WHOAMI'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1109,13 +1118,13 @@
-     _SAVE_LDFLAGS="$LDFLAGS"
- 
-     echo $ac_n "checking for $host compiler""... $ac_c" 1>&6
--echo "configure:1113: checking for $host compiler" >&5
-+echo "configure:1122: checking for $host compiler" >&5
-     for ac_prog in $HOST_CC gcc cc /usr/ucb/cc
- do
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1119: checking for $ac_word" >&5
-+echo "configure:1128: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_HOST_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1161,16 +1170,16 @@
-     LDFLAGS="$HOST_LDFLAGS"
- 
-     echo $ac_n "checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:1165: checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works" >&5
-+echo "configure:1174: checking whether the $host compiler ($HOST_CC $HOST_CFLAGS $HOST_LDFLAGS) works" >&5
-     cat > conftest.$ac_ext <<EOF
--#line 1167 "configure"
-+#line 1176 "configure"
- #include "confdefs.h"
- 
- int main() {
- return(0);
- ; return 0; }
- EOF
--if { (eval echo configure:1174: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:1183: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-   rm -rf conftest*
-   ac_cv_prog_host_cc_works=1 echo "$ac_t""yes" 1>&6
- else
-@@ -1199,7 +1208,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1203: checking for $ac_word" >&5
-+echo "configure:1212: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1233,7 +1242,7 @@
-     # Extract the first word of "gcc", so it can be a program name with args.
- set dummy gcc; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1237: checking for $ac_word" >&5
-+echo "configure:1246: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1263,7 +1272,7 @@
-   # Extract the first word of "cc", so it can be a program name with args.
- set dummy cc; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1267: checking for $ac_word" >&5
-+echo "configure:1276: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1314,7 +1323,7 @@
-       # Extract the first word of "cl", so it can be a program name with args.
- set dummy cl; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1318: checking for $ac_word" >&5
-+echo "configure:1327: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1346,7 +1355,7 @@
- fi
- 
- echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:1350: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
-+echo "configure:1359: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
- 
- ac_ext=c
- # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -1357,12 +1366,12 @@
- 
- cat > conftest.$ac_ext << EOF
- 
--#line 1361 "configure"
-+#line 1370 "configure"
- #include "confdefs.h"
- 
- main(){return(0);}
- EOF
--if { (eval echo configure:1366: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:1375: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-   ac_cv_prog_cc_works=yes
-   # If we can't run a trivial program, we are probably using a cross compiler.
-   if (./conftest; exit) 2>/dev/null; then
-@@ -1388,12 +1397,12 @@
-   { echo "configure: error: installation or configuration problem: C compiler cannot create executables." 1>&2; exit 1; }
- fi
- echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:1392: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:1401: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
- echo "$ac_t""$ac_cv_prog_cc_cross" 1>&6
- cross_compiling=$ac_cv_prog_cc_cross
- 
- echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&6
--echo "configure:1397: checking whether we are using GNU C" >&5
-+echo "configure:1406: checking whether we are using GNU C" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_gcc'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1402,7 +1411,7 @@
-   yes;
- #endif
- EOF
--if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1406: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:1415: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-   ac_cv_prog_gcc=yes
- else
-   ac_cv_prog_gcc=no
-@@ -1421,7 +1430,7 @@
- ac_save_CFLAGS="$CFLAGS"
- CFLAGS=
- echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&6
--echo "configure:1425: checking whether ${CC-cc} accepts -g" >&5
-+echo "configure:1434: checking whether ${CC-cc} accepts -g" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_cc_g'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1457,7 +1466,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1461: checking for $ac_word" >&5
-+echo "configure:1470: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CXX'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1493,7 +1502,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1497: checking for $ac_word" >&5
-+echo "configure:1506: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CXX'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1525,7 +1534,7 @@
- 
- 
- echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:1529: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
-+echo "configure:1538: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
- 
- ac_ext=C
- # CXXFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -1536,12 +1545,12 @@
- 
- cat > conftest.$ac_ext << EOF
- 
--#line 1540 "configure"
-+#line 1549 "configure"
- #include "confdefs.h"
- 
- int main(){return(0);}
- EOF
--if { (eval echo configure:1545: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:1554: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-   ac_cv_prog_cxx_works=yes
-   # If we can't run a trivial program, we are probably using a cross compiler.
-   if (./conftest; exit) 2>/dev/null; then
-@@ -1567,12 +1576,12 @@
-   { echo "configure: error: installation or configuration problem: C++ compiler cannot create executables." 1>&2; exit 1; }
- fi
- echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:1571: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:1580: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
- echo "$ac_t""$ac_cv_prog_cxx_cross" 1>&6
- cross_compiling=$ac_cv_prog_cxx_cross
- 
- echo $ac_n "checking whether we are using GNU C++""... $ac_c" 1>&6
--echo "configure:1576: checking whether we are using GNU C++" >&5
-+echo "configure:1585: checking whether we are using GNU C++" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_gxx'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1581,7 +1590,7 @@
-   yes;
- #endif
- EOF
--if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:1585: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:1594: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-   ac_cv_prog_gxx=yes
- else
-   ac_cv_prog_gxx=no
-@@ -1600,7 +1609,7 @@
- ac_save_CXXFLAGS="$CXXFLAGS"
- CXXFLAGS=
- echo $ac_n "checking whether ${CXX-g++} accepts -g""... $ac_c" 1>&6
--echo "configure:1604: checking whether ${CXX-g++} accepts -g" >&5
-+echo "configure:1613: checking whether ${CXX-g++} accepts -g" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_cxx_g'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1631,6 +1640,57 @@
-   fi
- fi
- 
-+for ac_declaration in \
-+   ''\
-+   '#include <stdlib.h>' \
-+   'extern "C" void std::exit (int) throw (); using std::exit;' \
-+   'extern "C" void std::exit (int); using std::exit;' \
-+   'extern "C" void exit (int) throw ();' \
-+   'extern "C" void exit (int);' \
-+   'void exit (int);'
-+do
-+  cat > conftest.$ac_ext <<EOF
-+#line 1654 "configure"
-+#include "confdefs.h"
-+#include <stdlib.h>
-+$ac_declaration
-+int main() {
-+exit (42);
-+; return 0; }
-+EOF
-+if { (eval echo configure:1662: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+  :
-+else
-+  echo "configure: failed program was:" >&5
-+  cat conftest.$ac_ext >&5
-+  rm -rf conftest*
-+  continue
-+fi
-+rm -f conftest*
-+  cat > conftest.$ac_ext <<EOF
-+#line 1672 "configure"
-+#include "confdefs.h"
-+$ac_declaration
-+int main() {
-+exit (42);
-+; return 0; }
-+EOF
-+if { (eval echo configure:1679: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+  rm -rf conftest*
-+  break
-+else
-+  echo "configure: failed program was:" >&5
-+  cat conftest.$ac_ext >&5
-+fi
-+rm -f conftest*
-+done
-+if test -n "$ac_declaration"; then
-+  echo '#ifdef __cplusplus' >>confdefs.h
-+  echo $ac_declaration      >>confdefs.h
-+  echo '#endif'             >>confdefs.h
-+fi
-+
-+
- 
-     case "$build:$target" in
-       powerpc-apple-darwin8*:i?86-apple-darwin*)
-@@ -1644,7 +1704,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1648: checking for $ac_word" >&5
-+echo "configure:1708: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1679,7 +1739,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1683: checking for $ac_word" >&5
-+echo "configure:1743: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_AR'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1714,7 +1774,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1718: checking for $ac_word" >&5
-+echo "configure:1778: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_AS'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1749,7 +1809,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1753: checking for $ac_word" >&5
-+echo "configure:1813: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_LD'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1784,7 +1844,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1788: checking for $ac_word" >&5
-+echo "configure:1848: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_STRIP'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1819,7 +1879,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1823: checking for $ac_word" >&5
-+echo "configure:1883: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_WINDRES'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1856,7 +1916,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:1860: checking for $ac_word" >&5
-+echo "configure:1920: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CXX'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1888,7 +1948,7 @@
- 
- 
- echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:1892: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
-+echo "configure:1952: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) works" >&5
- 
- ac_ext=C
- # CXXFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -1899,12 +1959,12 @@
- 
- cat > conftest.$ac_ext << EOF
- 
--#line 1903 "configure"
-+#line 1963 "configure"
- #include "confdefs.h"
- 
- int main(){return(0);}
- EOF
--if { (eval echo configure:1908: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:1968: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-   ac_cv_prog_cxx_works=yes
-   # If we can't run a trivial program, we are probably using a cross compiler.
-   if (./conftest; exit) 2>/dev/null; then
-@@ -1930,12 +1990,12 @@
-   { echo "configure: error: installation or configuration problem: C++ compiler cannot create executables." 1>&2; exit 1; }
- fi
- echo $ac_n "checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:1934: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:1994: checking whether the C++ compiler ($CXX $CXXFLAGS $LDFLAGS) is a cross-compiler" >&5
- echo "$ac_t""$ac_cv_prog_cxx_cross" 1>&6
- cross_compiling=$ac_cv_prog_cxx_cross
- 
- echo $ac_n "checking whether we are using GNU C++""... $ac_c" 1>&6
--echo "configure:1939: checking whether we are using GNU C++" >&5
-+echo "configure:1999: checking whether we are using GNU C++" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_gxx'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1944,7 +2004,7 @@
-   yes;
- #endif
- EOF
--if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:1948: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CXX-g++} -E conftest.C'; { (eval echo configure:2008: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-   ac_cv_prog_gxx=yes
- else
-   ac_cv_prog_gxx=no
-@@ -1963,7 +2023,7 @@
- ac_save_CXXFLAGS="$CXXFLAGS"
- CXXFLAGS=
- echo $ac_n "checking whether ${CXX-g++} accepts -g""... $ac_c" 1>&6
--echo "configure:1967: checking whether ${CXX-g++} accepts -g" >&5
-+echo "configure:2027: checking whether ${CXX-g++} accepts -g" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_cxx_g'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -1994,13 +2054,64 @@
-   fi
- fi
- 
-+for ac_declaration in \
-+   ''\
-+   '#include <stdlib.h>' \
-+   'extern "C" void std::exit (int) throw (); using std::exit;' \
-+   'extern "C" void std::exit (int); using std::exit;' \
-+   'extern "C" void exit (int) throw ();' \
-+   'extern "C" void exit (int);' \
-+   'void exit (int);'
-+do
-+  cat > conftest.$ac_ext <<EOF
-+#line 2068 "configure"
-+#include "confdefs.h"
-+#include <stdlib.h>
-+$ac_declaration
-+int main() {
-+exit (42);
-+; return 0; }
-+EOF
-+if { (eval echo configure:2076: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+  :
-+else
-+  echo "configure: failed program was:" >&5
-+  cat conftest.$ac_ext >&5
-+  rm -rf conftest*
-+  continue
-+fi
-+rm -f conftest*
-+  cat > conftest.$ac_ext <<EOF
-+#line 2086 "configure"
-+#include "confdefs.h"
-+$ac_declaration
-+int main() {
-+exit (42);
-+; return 0; }
-+EOF
-+if { (eval echo configure:2093: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+  rm -rf conftest*
-+  break
-+else
-+  echo "configure: failed program was:" >&5
-+  cat conftest.$ac_ext >&5
-+fi
-+rm -f conftest*
-+done
-+if test -n "$ac_declaration"; then
-+  echo '#ifdef __cplusplus' >>confdefs.h
-+  echo $ac_declaration      >>confdefs.h
-+  echo '#endif'             >>confdefs.h
-+fi
-+
-+
-     if test "$CXX" = "cl" -a -z "$CC"; then
-         CC=$CXX
-     else        
-         # Extract the first word of "gcc", so it can be a program name with args.
- set dummy gcc; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2004: checking for $ac_word" >&5
-+echo "configure:2115: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2030,7 +2141,7 @@
-   # Extract the first word of "cc", so it can be a program name with args.
- set dummy cc; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2034: checking for $ac_word" >&5
-+echo "configure:2145: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2081,7 +2192,7 @@
-       # Extract the first word of "cl", so it can be a program name with args.
- set dummy cl; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2085: checking for $ac_word" >&5
-+echo "configure:2196: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_CC'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2113,7 +2224,7 @@
- fi
- 
- echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works""... $ac_c" 1>&6
--echo "configure:2117: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
-+echo "configure:2228: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) works" >&5
- 
- ac_ext=c
- # CFLAGS is not in ac_cpp because -g, -O, etc. are not valid cpp options.
-@@ -2124,12 +2235,12 @@
- 
- cat > conftest.$ac_ext << EOF
- 
--#line 2128 "configure"
-+#line 2239 "configure"
- #include "confdefs.h"
- 
- main(){return(0);}
- EOF
--if { (eval echo configure:2133: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:2244: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-   ac_cv_prog_cc_works=yes
-   # If we can't run a trivial program, we are probably using a cross compiler.
-   if (./conftest; exit) 2>/dev/null; then
-@@ -2155,12 +2266,12 @@
-   { echo "configure: error: installation or configuration problem: C compiler cannot create executables." 1>&2; exit 1; }
- fi
- echo $ac_n "checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler""... $ac_c" 1>&6
--echo "configure:2159: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
-+echo "configure:2270: checking whether the C compiler ($CC $CFLAGS $LDFLAGS) is a cross-compiler" >&5
- echo "$ac_t""$ac_cv_prog_cc_cross" 1>&6
- cross_compiling=$ac_cv_prog_cc_cross
- 
- echo $ac_n "checking whether we are using GNU C""... $ac_c" 1>&6
--echo "configure:2164: checking whether we are using GNU C" >&5
-+echo "configure:2275: checking whether we are using GNU C" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_gcc'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2169,7 +2280,7 @@
-   yes;
- #endif
- EOF
--if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:2173: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-+if { ac_try='${CC-cc} -E conftest.c'; { (eval echo configure:2284: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }; } | egrep yes >/dev/null 2>&1; then
-   ac_cv_prog_gcc=yes
- else
-   ac_cv_prog_gcc=no
-@@ -2188,7 +2299,7 @@
- ac_save_CFLAGS="$CFLAGS"
- CFLAGS=
- echo $ac_n "checking whether ${CC-cc} accepts -g""... $ac_c" 1>&6
--echo "configure:2192: checking whether ${CC-cc} accepts -g" >&5
-+echo "configure:2303: checking whether ${CC-cc} accepts -g" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_cc_g'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2221,7 +2332,7 @@
- 
-     fi
-     echo $ac_n "checking how to run the C preprocessor""... $ac_c" 1>&6
--echo "configure:2225: checking how to run the C preprocessor" >&5
-+echo "configure:2336: checking how to run the C preprocessor" >&5
- # On Suns, sometimes $CPP names a directory.
- if test -n "$CPP" && test -d "$CPP"; then
-   CPP=
-@@ -2236,13 +2347,13 @@
-   # On the NeXT, cc -E runs the code through the compiler's parser,
-   # not just through cpp.
-   cat > conftest.$ac_ext <<EOF
--#line 2240 "configure"
-+#line 2351 "configure"
- #include "confdefs.h"
- #include <assert.h>
- Syntax Error
- EOF
- ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:2246: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:2357: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
- ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
- if test -z "$ac_err"; then
-   :
-@@ -2253,13 +2364,13 @@
-   rm -rf conftest*
-   CPP="${CC-cc} -E -traditional-cpp"
-   cat > conftest.$ac_ext <<EOF
--#line 2257 "configure"
-+#line 2368 "configure"
- #include "confdefs.h"
- #include <assert.h>
- Syntax Error
- EOF
- ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:2263: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:2374: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
- ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
- if test -z "$ac_err"; then
-   :
-@@ -2270,13 +2381,13 @@
-   rm -rf conftest*
-   CPP="${CC-cc} -nologo -E"
-   cat > conftest.$ac_ext <<EOF
--#line 2274 "configure"
-+#line 2385 "configure"
- #include "confdefs.h"
- #include <assert.h>
- Syntax Error
- EOF
- ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:2280: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:2391: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
- ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
- if test -z "$ac_err"; then
-   :
-@@ -2303,7 +2414,7 @@
-     # Extract the first word of "ranlib", so it can be a program name with args.
- set dummy ranlib; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2307: checking for $ac_word" >&5
-+echo "configure:2418: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_RANLIB'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2335,7 +2446,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2339: checking for $ac_word" >&5
-+echo "configure:2450: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_path_AS'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2376,7 +2487,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2380: checking for $ac_word" >&5
-+echo "configure:2491: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_path_AR'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2417,7 +2528,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2421: checking for $ac_word" >&5
-+echo "configure:2532: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_path_LD'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2458,7 +2569,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2462: checking for $ac_word" >&5
-+echo "configure:2573: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_path_STRIP'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2499,7 +2610,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2503: checking for $ac_word" >&5
-+echo "configure:2614: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_path_WINDRES'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2567,7 +2678,7 @@
- fi
- 
- echo $ac_n "checking for gcc -pipe support""... $ac_c" 1>&6
--echo "configure:2571: checking for gcc -pipe support" >&5
-+echo "configure:2682: checking for gcc -pipe support" >&5
- if test -n "$GNU_CC" && test -n "$GNU_CXX" && test -n "$GNU_AS"; then
-     echo '#include <stdio.h>' > dummy-hello.c
-     echo 'int main() { printf("Hello World\n"); return 0; }' >> dummy-hello.c
-@@ -2582,14 +2693,14 @@
-         _SAVE_CFLAGS=$CFLAGS
-         CFLAGS="$CFLAGS -pipe"
-         cat > conftest.$ac_ext <<EOF
--#line 2586 "configure"
-+#line 2697 "configure"
- #include "confdefs.h"
-  #include <stdio.h> 
- int main() {
- printf("Hello World\n");
- ; return 0; }
- EOF
--if { (eval echo configure:2593: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-+if { (eval echo configure:2704: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
-   rm -rf conftest*
-   _res_gcc_pipe="yes"
- else
-@@ -2616,7 +2727,7 @@
- 
- if test "$GNU_CC"; then
-     echo $ac_n "checking for visibility(hidden) attribute""... $ac_c" 1>&6
--echo "configure:2620: checking for visibility(hidden) attribute" >&5
-+echo "configure:2731: checking for visibility(hidden) attribute" >&5
- if eval "test \"`echo '$''{'ac_cv_visibility_hidden'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2640,7 +2751,7 @@
- EOF
- 
-         echo $ac_n "checking for visibility pragma support""... $ac_c" 1>&6
--echo "configure:2644: checking for visibility pragma support" >&5
-+echo "configure:2755: checking for visibility pragma support" >&5
- if eval "test \"`echo '$''{'ac_cv_visibility_pragma'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2693,7 +2804,7 @@
- # Extract the first word of "$ac_prog", so it can be a program name with args.
- set dummy $ac_prog; ac_word=$2
- echo $ac_n "checking for $ac_word""... $ac_c" 1>&6
--echo "configure:2697: checking for $ac_word" >&5
-+echo "configure:2808: checking for $ac_word" >&5
- if eval "test \"`echo '$''{'ac_cv_path_PERL'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -2940,17 +3051,17 @@
-     DSO_LDOPTS='-brtl -bnortllib -bM:SRE -bnoentry -bexpall -blibpath:/usr/lib:/lib'
-     ac_safe=`echo "sys/atomic_op.h" | sed 'y%./+-%__p_%'`
- echo $ac_n "checking for sys/atomic_op.h""... $ac_c" 1>&6
--echo "configure:2944: checking for sys/atomic_op.h" >&5
-+echo "configure:3055: checking for sys/atomic_op.h" >&5
- if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-   cat > conftest.$ac_ext <<EOF
--#line 2949 "configure"
-+#line 3060 "configure"
- #include "confdefs.h"
- #include <sys/atomic_op.h>
- EOF
- ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:2954: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:3065: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
- ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
- if test -z "$ac_err"; then
-   rm -rf conftest*
-@@ -3107,7 +3218,7 @@
-         _DEBUG_FLAGS='-gdwarf-2 -O0'
-         MKSHLIB='$(CCC) $(DSO_LDOPTS) -o $@'
-         echo $ac_n "checking for gethostbyaddr in -lbind""... $ac_c" 1>&6
--echo "configure:3111: checking for gethostbyaddr in -lbind" >&5
-+echo "configure:3222: checking for gethostbyaddr in -lbind" >&5
- ac_lib_var=`echo bind'_'gethostbyaddr | sed 'y%./+-%__p_%'`
- if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
-@@ -3115,7 +3226,7 @@
-   ac_save_LIBS="$LIBS"
- LIBS="-lbind  $LIBS"
- cat > conftest.$ac_ext <<EOF
--#line 3119 "configure"
-+#line 3230 "configure"
- #include "confdefs.h"
- /* Override any gcc2 internal prototype to avoid an error.  */
- /* We use char because int might match the return type of a gcc2
-@@ -3126,7 +3237,7 @@
- gethostbyaddr()
- ; return 0; }
- EOF
--if { (eval echo configure:3130: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:3241: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-   rm -rf conftest*
-   eval "ac_cv_lib_$ac_lib_var=yes"
- else
-@@ -4392,17 +4503,17 @@
-         _OPTIMIZE_FLAGS="$_OPTIMIZE_FLAGS -Olimit 4000"
-         ac_safe=`echo "machine/builtins.h" | sed 'y%./+-%__p_%'`
- echo $ac_n "checking for machine/builtins.h""... $ac_c" 1>&6
--echo "configure:4396: checking for machine/builtins.h" >&5
-+echo "configure:4507: checking for machine/builtins.h" >&5
- if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-   cat > conftest.$ac_ext <<EOF
--#line 4401 "configure"
-+#line 4512 "configure"
- #include "confdefs.h"
- #include <machine/builtins.h>
- EOF
- ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:4406: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:4517: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
- ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
- if test -z "$ac_err"; then
-   rm -rf conftest*
-@@ -4957,6 +5068,176 @@
- 
- if test -z "$SKIP_LIBRARY_CHECKS"; then
- 
-+# Check whether --with-system-val or --without-system-val was given.
-+if test "${with_system_val+set}" = set; then
-+  withval="$with_system_val"
-+  VAL_DIR=$withval
-+fi
-+
-+
-+# Check whether --with-system-sres or --without-system-sres was given.
-+if test "${with_system_sres+set}" = set; then
-+  withval="$with_system_sres"
-+  SRES_DIR=$withval
-+fi
-+
-+
-+# Check whether --with-system-openssl or --without-system-openssl was given.
-+if test "${with_system_openssl+set}" = set; then
-+  withval="$with_system_openssl"
-+  OPENSSL_DIR=$withval
-+fi
-+
-+
-+_SAVE_CFLAGS=$CFLAGS
-+_SAVE_LDFLAGS=$LDFLAGS
-+_SAVE_LIBS=$LIBS
-+
-+if test -n "${OPENSSL_DIR}"; then
-+    CFLAGS="-I${OPENSSL_DIR}/include $CFLAGS"
-+    LDFLAGS="-L${OPENSSL_DIR}/lib $LDFLAGS"
-+fi
-+if test -n "${VAL_DIR}"; then
-+    CFLAGS="-I${VAL_DIR}/include $CFLAGS"
-+    LDFLAGS="-L${VAL_DIR}/lib $LDFLAGS"
-+fi
-+if test -n "${SRES_DIR}"; then
-+    CFLAGS="-I${SRES_DIR}/include $CFLAGS"
-+    LDFLAGS="-L${SRES_DIR}/lib $LDFLAGS"
-+fi
-+echo $ac_n "checking for EVP_md5 in -lcrypto""... $ac_c" 1>&6
-+echo "configure:5110: checking for EVP_md5 in -lcrypto" >&5
-+ac_lib_var=`echo crypto'_'EVP_md5 | sed 'y%./+-%__p_%'`
-+if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
-+  echo $ac_n "(cached) $ac_c" 1>&6
-+else
-+  ac_save_LIBS="$LIBS"
-+LIBS="-lcrypto  $LIBS"
-+cat > conftest.$ac_ext <<EOF
-+#line 5118 "configure"
-+#include "confdefs.h"
-+/* Override any gcc2 internal prototype to avoid an error.  */
-+/* We use char because int might match the return type of a gcc2
-+    builtin and then its argument prototype would still apply.  */
-+char EVP_md5();
-+
-+int main() {
-+EVP_md5()
-+; return 0; }
-+EOF
-+if { (eval echo configure:5129: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+  rm -rf conftest*
-+  eval "ac_cv_lib_$ac_lib_var=yes"
-+else
-+  echo "configure: failed program was:" >&5
-+  cat conftest.$ac_ext >&5
-+  rm -rf conftest*
-+  eval "ac_cv_lib_$ac_lib_var=no"
-+fi
-+rm -f conftest*
-+LIBS="$ac_save_LIBS"
-+
-+fi
-+if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
-+  echo "$ac_t""yes" 1>&6
-+  OPENSSL_LIBS="-lcrypto"
-+else
-+  echo "$ac_t""no" 1>&6
-+OPENSSL_LIBS=""
-+fi
-+
-+echo $ac_n "checking for __res_init in -lsres""... $ac_c" 1>&6
-+echo "configure:5151: checking for __res_init in -lsres" >&5
-+ac_lib_var=`echo sres'_'__res_init | sed 'y%./+-%__p_%'`
-+if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
-+  echo $ac_n "(cached) $ac_c" 1>&6
-+else
-+  ac_save_LIBS="$LIBS"
-+LIBS="-lsres $OPENSSL_LIBS -lpthread $LIBS"
-+cat > conftest.$ac_ext <<EOF
-+#line 5159 "configure"
-+#include "confdefs.h"
-+/* Override any gcc2 internal prototype to avoid an error.  */
-+/* We use char because int might match the return type of a gcc2
-+    builtin and then its argument prototype would still apply.  */
-+char __res_init();
-+
-+int main() {
-+__res_init()
-+; return 0; }
-+EOF
-+if { (eval echo configure:5170: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+  rm -rf conftest*
-+  eval "ac_cv_lib_$ac_lib_var=yes"
-+else
-+  echo "configure: failed program was:" >&5
-+  cat conftest.$ac_ext >&5
-+  rm -rf conftest*
-+  eval "ac_cv_lib_$ac_lib_var=no"
-+fi
-+rm -f conftest*
-+LIBS="$ac_save_LIBS"
-+
-+fi
-+if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
-+  echo "$ac_t""yes" 1>&6
-+  SRES_LIBS=" -lpthread -lsres"
-+else
-+  echo "$ac_t""no" 1>&6
-+SRES_LIBS=""
-+fi
-+
-+echo $ac_n "checking for val_gethostbyname in -lval""... $ac_c" 1>&6
-+echo "configure:5192: checking for val_gethostbyname in -lval" >&5
-+ac_lib_var=`echo val'_'val_gethostbyname | sed 'y%./+-%__p_%'`
-+if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
-+  echo $ac_n "(cached) $ac_c" 1>&6
-+else
-+  ac_save_LIBS="$LIBS"
-+LIBS="-lval $SRES_LIBS $OPENSSL_LIBS $LIBS"
-+cat > conftest.$ac_ext <<EOF
-+#line 5200 "configure"
-+#include "confdefs.h"
-+/* Override any gcc2 internal prototype to avoid an error.  */
-+/* We use char because int might match the return type of a gcc2
-+    builtin and then its argument prototype would still apply.  */
-+char val_gethostbyname();
-+
-+int main() {
-+val_gethostbyname()
-+; return 0; }
-+EOF
-+if { (eval echo configure:5211: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+  rm -rf conftest*
-+  eval "ac_cv_lib_$ac_lib_var=yes"
-+else
-+  echo "configure: failed program was:" >&5
-+  cat conftest.$ac_ext >&5
-+  rm -rf conftest*
-+  eval "ac_cv_lib_$ac_lib_var=no"
-+fi
-+rm -f conftest*
-+LIBS="$ac_save_LIBS"
-+
-+fi
-+if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
-+  echo "$ac_t""yes" 1>&6
-+  SYSTEM_VAL=1
-+              VAL_LIBS="-lval $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
-+              NSPR_LIBS="$NSPR_LIBS $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
-+              cat >> confdefs.h <<\EOF
-+#define MOZ_DNSSEC 1
-+EOF
-+
-+else
-+  echo "$ac_t""no" 1>&6
-+SYSTEM_VAL=
-+fi
-+
-+
-+CFLAGS=$_SAVE_CFLAGS
-+LDFLAGS=$_SAVE_LDFLAGS
-+LIBS=$_SAVE_LIBS
- 
- 
- case $target in
-@@ -4964,7 +5245,7 @@
-     ;;
- *)
-     echo $ac_n "checking for dlopen in -ldl""... $ac_c" 1>&6
--echo "configure:4968: checking for dlopen in -ldl" >&5
-+echo "configure:5249: checking for dlopen in -ldl" >&5
- ac_lib_var=`echo dl'_'dlopen | sed 'y%./+-%__p_%'`
- if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
-@@ -4972,7 +5253,7 @@
-   ac_save_LIBS="$LIBS"
- LIBS="-ldl  $LIBS"
- cat > conftest.$ac_ext <<EOF
--#line 4976 "configure"
-+#line 5257 "configure"
- #include "confdefs.h"
- /* Override any gcc2 internal prototype to avoid an error.  */
- /* We use char because int might match the return type of a gcc2
-@@ -4983,7 +5264,7 @@
- dlopen()
- ; return 0; }
- EOF
--if { (eval echo configure:4987: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:5268: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-   rm -rf conftest*
-   eval "ac_cv_lib_$ac_lib_var=yes"
- else
-@@ -5000,17 +5281,17 @@
-   echo "$ac_t""yes" 1>&6
-   ac_safe=`echo "dlfcn.h" | sed 'y%./+-%__p_%'`
- echo $ac_n "checking for dlfcn.h""... $ac_c" 1>&6
--echo "configure:5004: checking for dlfcn.h" >&5
-+echo "configure:5285: checking for dlfcn.h" >&5
- if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-   cat > conftest.$ac_ext <<EOF
--#line 5009 "configure"
-+#line 5290 "configure"
- #include "confdefs.h"
- #include <dlfcn.h>
- EOF
- ac_try="$ac_cpp conftest.$ac_ext >/dev/null 2>conftest.out"
--{ (eval echo configure:5014: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
-+{ (eval echo configure:5295: \"$ac_try\") 1>&5; (eval $ac_try) 2>&5; }
- ac_err=`grep -v '^ *+' conftest.out | grep -v "^conftest.${ac_ext}\$"`
- if test -z "$ac_err"; then
-   rm -rf conftest*
-@@ -5043,13 +5324,13 @@
- 
- if test $ac_cv_prog_gcc = yes; then
-     echo $ac_n "checking whether ${CC-cc} needs -traditional""... $ac_c" 1>&6
--echo "configure:5047: checking whether ${CC-cc} needs -traditional" >&5
-+echo "configure:5328: checking whether ${CC-cc} needs -traditional" >&5
- if eval "test \"`echo '$''{'ac_cv_prog_gcc_traditional'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-     ac_pattern="Autoconf.*'x'"
-   cat > conftest.$ac_ext <<EOF
--#line 5053 "configure"
-+#line 5334 "configure"
- #include "confdefs.h"
- #include <sgtty.h>
- Autoconf TIOCGETP
-@@ -5067,7 +5348,7 @@
- 
-   if test $ac_cv_prog_gcc_traditional = no; then
-     cat > conftest.$ac_ext <<EOF
--#line 5071 "configure"
-+#line 5352 "configure"
- #include "confdefs.h"
- #include <termio.h>
- Autoconf TCGETA
-@@ -5091,12 +5372,12 @@
- for ac_func in lchown strerror
- do
- echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
--echo "configure:5095: checking for $ac_func" >&5
-+echo "configure:5376: checking for $ac_func" >&5
- if eval "test \"`echo '$''{'ac_cv_func_$ac_func'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-   cat > conftest.$ac_ext <<EOF
--#line 5100 "configure"
-+#line 5381 "configure"
- #include "confdefs.h"
- /* System header to define __stub macros and hopefully few prototypes,
-     which can conflict with char $ac_func(); below.  */
-@@ -5119,7 +5400,7 @@
- 
- ; return 0; }
- EOF
--if { (eval echo configure:5123: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-+if { (eval echo configure:5404: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
-   rm -rf conftest*
-   eval "ac_cv_func_$ac_func=yes"
- else
-@@ -5160,7 +5441,7 @@
- if test -z "$GNU_CC"; then
- 
-     echo $ac_n "checking for +Olit support""... $ac_c" 1>&6
--echo "configure:5164: checking for +Olit support" >&5
-+echo "configure:5445: checking for +Olit support" >&5
- if eval "test \"`echo '$''{'ac_cv_hpux_usable_olit_option'+set}'`\" = set"; then
-   echo $ac_n "(cached) $ac_c" 1>&6
- else
-@@ -5199,7 +5480,7 @@
- *)
-     
- echo $ac_n "checking for pthread_create in -lpthreads""... $ac_c" 1>&6
--echo "configure:5203: checking for pthread_create in -lpthreads" >&5
-+echo "configure:5484: checking for pthread_create in -lpthreads" >&5
- echo "
-     #include <pthread.h> 
-     void *foo(void *v) { return v; } 
-@@ -5221,7 +5502,7 @@
-         echo "$ac_t""no" 1>&6
-         
- echo $ac_n "checking for pthread_create in -lpthread""... $ac_c" 1>&6
--echo "configure:5225: checking for pthread_create in -lpthread" >&5
-+echo "configure:5506: checking for pthread_create in -lpthread" >&5
- echo "
-     #include <pthread.h> 
-     void *foo(void *v) { return v; } 
-@@ -5243,7 +5524,7 @@
-         echo "$ac_t""no" 1>&6
-         
- echo $ac_n "checking for pthread_create in -lc_r""... $ac_c" 1>&6
--echo "configure:5247: checking for pthread_create in -lc_r" >&5
-+echo "configure:5528: checking for pthread_create in -lc_r" >&5
- echo "
-     #include <pthread.h> 
-     void *foo(void *v) { return v; } 
-@@ -5265,7 +5546,7 @@
-         echo "$ac_t""no" 1>&6
-         
- echo $ac_n "checking for pthread_create in -lc""... $ac_c" 1>&6
--echo "configure:5269: checking for pthread_create in -lc" >&5
-+echo "configure:5550: checking for pthread_create in -lc" >&5
- echo "
-     #include <pthread.h> 
-     void *foo(void *v) { return v; } 
-@@ -5419,7 +5700,7 @@
-       rm -f conftest*
-    ac_cv_have_dash_pthread=no
-    echo $ac_n "checking whether ${CC-cc} accepts -pthread""... $ac_c" 1>&6
--echo "configure:5423: checking whether ${CC-cc} accepts -pthread" >&5
-+echo "configure:5704: checking whether ${CC-cc} accepts -pthread" >&5
-    echo 'int main() { return 0; }' | cat > conftest.c
-    ${CC-cc} -pthread -o conftest conftest.c > conftest.out 2>&1
-    if test $? -eq 0; then
-@@ -5442,7 +5723,7 @@
- 			    ac_cv_have_dash_pthreads=no
-     if test "$ac_cv_have_dash_pthread" = "no"; then
- 	    echo $ac_n "checking whether ${CC-cc} accepts -pthreads""... $ac_c" 1>&6
--echo "configure:5446: checking whether ${CC-cc} accepts -pthreads" >&5
-+echo "configure:5727: checking whether ${CC-cc} accepts -pthreads" >&5
-     	echo 'int main() { return 0; }' | cat > conftest.c
- 	    ${CC-cc} -pthreads -o conftest conftest.c > conftest.out 2>&1
-     	if test $? -eq 0; then
-@@ -5861,6 +6142,7 @@
- 
- 
- 
-+
- MAKEFILES="
- Makefile 
- config/Makefile
-@@ -5976,15 +6258,34 @@
- # Transform confdefs.h into DEFS.
- # Protect against shell expansion while executing Makefile rules.
- # Protect against Makefile macro expansion.
--cat > conftest.defs <<\EOF
--s%#define \([A-Za-z_][A-Za-z0-9_]*\) *\(.*\)%-D\1=\2%g
--s%[ 	`~#$^&*(){}\\|;'"<>?]%\\&%g
--s%\[%\\&%g
--s%\]%\\&%g
--s%\$%$$%g
--EOF
--DEFS=`sed -f conftest.defs confdefs.h | tr '\012' ' ' | tr '\015' ' '`
--rm -f conftest.defs
-+#
-+# If the first sed substitution is executed (which looks for macros that
-+# take arguments), then we branch to the quote section.  Otherwise,
-+# look for a macro that doesn't take arguments.
-+cat >confdef2opt.sed <<\_ACEOF
-+t clear
-+: clear
-+s,^[ 	]*#[ 	]*define[ 	][ 	]*\([^ 	(][^ 	(]*([^)]*)\)[ 	]*\(.*\),-D\1=\2,g
-+t quote
-+s,^[ 	]*#[ 	]*define[ 	][ 	]*\([^ 	][^ 	]*\)[ 	]*\(.*\),-D\1=\2,g
-+t quote
-+d
-+: quote
-+s,[ 	`~#$^&*(){}\\|;'"<>?],\\&,g
-+s,\[,\\&,g
-+s,\],\\&,g
-+s,\$,$$,g
-+p
-+_ACEOF
-+# We use echo to avoid assuming a particular line-breaking character.
-+# The extra dot is to prevent the shell from consuming trailing
-+# line-breaks from the sub-command output.  A line-break within
-+# single-quotes doesn't work because, if this script is created in a
-+# platform that uses two characters for line-breaks (e.g., DOS), tr
-+# would break.
-+ac_LF_and_DOT=`echo; echo .`
-+DEFS=`sed -n -f confdef2opt.sed confdefs.h | tr "$ac_LF_and_DOT" ' .'`
-+rm -f confdef2opt.sed
- 
- 
- # Without the "./", some shells look in PATH for config.status.
-@@ -6101,6 +6402,7 @@
- s%@OBJECT_MODE@%$OBJECT_MODE%g
- s%@GC_LEAK_DETECTOR@%$GC_LEAK_DETECTOR%g
- s%@ENABLE_STRIP@%$ENABLE_STRIP%g
-+s%@VAL_LIBS@%$VAL_LIBS%g
- s%@USE_PTHREADS@%$USE_PTHREADS%g
- s%@USE_BTHREADS@%$USE_BTHREADS%g
- s%@USE_USER_PTHREADS@%$USE_USER_PTHREADS%g
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/include/prerr.h	2004-04-27 17:33:43.000000000 -0700
 +++ mozilla/nsprpub/pr/include/prerr.h	2006-08-23 19:01:13.000000000 -0700
 @@ -269,8 +269,11 @@
@@ -1502,24 +226,6 @@
  
  extern void nspr_InitializePRErrorTable(void);
  #define ERROR_TABLE_BASE_nspr (-6000L)
---- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/include/prnetdb.h	2004-08-30 16:29:52.000000000 -0700
-+++ mozilla/nsprpub/pr/include/prnetdb.h	2006-08-23 19:01:13.000000000 -0700
-@@ -494,6 +494,15 @@
- NSPR_API(PRUint32) PR_htonl(PRUint32);
- NSPR_API(PRUint64) PR_htonll(PRUint64);
- 
-+/***********************************************************************
-+** FUNCTIONS: PR_set_dnssec_validate_policy
-+**
-+** DESCRIPTION: set the DNS resolution policy
-+**  
-+**   XXX
-+***********************************************************************/
-+NSPR_API(void) PR_set_dnssec_validate_policy(PRInt32);
-+
- PR_END_EXTERN_C
- 
- #endif /* prnetdb_h___ */
 --- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prerr.c	2004-04-27 17:34:07.000000000 -0700
 +++ mozilla/nsprpub/pr/src/misc/prerr.c	2006-08-23 19:01:13.000000000 -0700
 @@ -117,11 +117,12 @@
@@ -1554,571 +260,6 @@
  PR_LIBRARY_NOT_LOADED_ERROR=The library is not loaded
 +PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
  PR_MAX_ERROR=Placeholder for the end of the list
---- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prnetdb.c	2005-08-18 10:24:38.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2006-08-24 09:18:40.000000000 -0700
-@@ -39,6 +39,10 @@
- 
- #include <string.h>
- 
-+#ifdef MOZ_DNSSEC
-+#include <validator/validator.h>
-+#endif
-+
- /*
-  * On Unix, the error code for gethostbyname() and gethostbyaddr()
-  * is returned in the global variable h_errno, instead of the usual
-@@ -66,8 +70,8 @@
-  * - _PR_HAVE_GETHOST_R_POINTER: the gethostbyXXX_r functions return
-  *   a struct hostent* pointer.  For example, Solaris and IRIX.
-  */
--#if defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
--    || defined(_PR_HAVE_THREADSAFE_GETHOST)
-+#if (defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
-+     || defined(_PR_HAVE_THREADSAFE_GETHOST))
- #define _PR_NO_DNS_LOCK
- #endif
- 
-@@ -629,6 +633,217 @@
- }
- #endif /* !defined(_PR_HAVE_GETPROTO_R) */
- 
-+#define DNSSEC_FAILURE 0
-+#define DNSSEC_SUCCESS 1
-+#define DODNSSECDEBUG
-+#ifdef DODNSSECDEBUG
-+#define DNSSECDEBUG(x) fprintf x;
-+#define DNSSECFUNBEGIN()                        \
-+  {                                             \
-+    fprintf(stderr, "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"); \
-+    fprintf(stderr, "BEGIN  %s:%d: \n  ", __FUNCTION__, __LINE__);       \
-+  }
-+#define DNSSECFUNDEBUG(x) { DNSSECFUNBEGIN(); DNSSECDEBUG(x); }
-+#define DNSSECFUNEXIT()   {                                             \
-+    fprintf(stderr, "EXIT   %s:%d:  \n", __FUNCTION__, __LINE__);          \
-+    fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"); \
-+  }
-+#define DNSSECFUNRETURN(retval)                 \
-+  {                                             \
-+    DNSSECDEBUG((stderr, "  returning: %x", (unsigned int) retval));    \
-+    if ((int) retval == DNSSEC_SUCCESS) {                                \
-+      DNSSECDEBUG((stderr, "  (success)"));                             \
-+    } else if ((int) retval == DNSSEC_SUCCESS || (int) retval == -1) {   \
-+      DNSSECDEBUG((stderr, "  (FAIL)"));                                \
-+    }                                                                   \
-+    DNSSECDEBUG((stderr, "\n"));						    \
-+    DNSSECFUNEXIT();                                                    \
-+    return retval;                                                      \
-+  }
-+#else
-+#define DNSSECDEBUG(x) 
-+#define DNSSECFUNDEBUG(x) 
-+#define DNSSECFUNEXIT()
-+#define DNSSECFUNRETURN(retval) return retval;
-+#endif
-+
-+
-+/* 0 = enforce system policy, 1 = ignore, 2 = always secure */
-+int global_policy = 0;
-+#define DNSSEC_POLICY_ENFORCE_SYS_POLICY 0
-+#define DNSSEC_POLICY_IGNORE              1
-+#define DNSSEC_POLICY_ALWAYS_SECURE       2
-+void
-+PR_set_dnssec_validate_policy(int policy)
-+{
-+  DNSSECFUNDEBUG((stderr, "DNSSEC Setting policy: %d\n", policy));
-+  global_policy = policy;
-+}
-+
-+
-+#ifdef MOZ_DNSSEC
-+/* XXX: include drop or configurize */
-+#include <stdio.h>
-+#include <netdb.h>
-+
-+#define CHECK_RET(x)                            \
-+  {                                             \
-+    DNSSECFUNDEBUG((stderr,"ret: %d\n",x));            \
-+    return x;                                   \
-+  }                                             \
-+
-+/* prototypes */
-+int dnssec_check_policy(int dnssec_status, int policytype);
-+/**
-+ * dnssec_validate(HOSTNAME)
-+ *
-+ * attempts to validate HOSTNAME using dnssec.  It will return one of:
-+ *
-+ * If global_policy = DNSSEC_POLICY_IGNORE
-+ *    - DNSSEC_SUCCESS: 
-+ *
-+ * If global_policy = DNSSEC_POLICY_ENFORCE_SYS_POLICY
-+ *    - DNSSEC_SUCCESS if verified
-+ *    - DNSSEC_FAILURE if not
-+ *
-+ * If global_policy = DNSSEC_POLICY_ENFORCE_SYS_POLICY
-+ *    - DNSSEC_SUCCESS if verified
-+ *    - DNSSEC_FAILURE if not
-+ */
-+/* XXX: pass in address type? */
-+int dnssec_validate (const char *domain_name) {
-+    int dnssec_status;
-+    struct hostent hentry, *hentryp;
-+    char buf[1024];
-+    size_t buflen = sizeof(buf);
-+    int h_errno;
-+    val_status_t val_status;
-+
-+    DNSSECFUNDEBUG((stderr, "DNSSECvalidating: %s\n", domain_name));
-+    
-+    /* don't even bother validating when the policy doesn't call for it */
-+    if (global_policy == DNSSEC_POLICY_IGNORE) {
-+        DNSSECDEBUG((stderr, "  OK: policy is always allow\n"));
-+        DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+    }
-+
-+    /* explicitly catch localhost */
-+    if (strcmp(domain_name, "localhost") == 0) {
-+        DNSSECDEBUG((stderr, "  OK: 'localhost' is always allowed\n"));
-+        DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+    }
-+    
-+    /* attempt a lookup */
-+    dnssec_status = val_gethostbyname_r(NULL, domain_name, &hentry,
-+                                        buf, buflen,&hentryp, &h_errno,
-+                                        &val_status);
-+
-+    /* check the results, or assume indeterminate if we don't know why
-+       the above failed */
-+    DNSSECDEBUG((stderr,
-+                 "  val_gethostbyname returned %d,val_st=%d,errno=%d,ptr=%x\n",
-+                 dnssec_status, val_status, h_errno, (unsigned int) hentryp));
-+    //if (!hentryp)
-+    //    val_status = VAL_INDETERMINATE;
-+
-+    DNSSECDEBUG((stderr, "  val_gethostbyname's dnssec status was %d\n",
-+                 dnssec_status));
-+
-+    if (dnssec_check_policy(val_status, global_policy) == DNSSEC_SUCCESS)
-+        DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+
-+    DNSSECFUNRETURN(DNSSEC_FAILURE);
-+}
-+
-+int
-+dnssec_check_policy(int val_status, int policytype) 
-+{
-+  DNSSECFUNDEBUG((stderr, "input: policy=%d, status=%d = %s\n",
-+                  policytype, val_status, p_val_status(val_status)));
-+  /*
-+   * POLICY: ignore errors
-+   */
-+  if (policytype == DNSSEC_POLICY_IGNORE)
-+      DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+
-+  /*
-+   * POLICY: require only when possible
-+   *   -- IE, trust the policy specified in dnssec-tools's dnsval.conf
-+   */
-+  if (policytype == DNSSEC_POLICY_ENFORCE_SYS_POLICY) {
-+    if (val_istrusted(val_status))
-+        DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+    DNSSECFUNRETURN(DNSSEC_FAILURE);
-+  }
-+  
-+  /*
-+   * POLICY: always secure.
-+   *    -- IE, require all lookups to return only secure results
-+   */
-+  
-+  if (val_isvalidated(val_status))
-+      DNSSECFUNRETURN(DNSSEC_SUCCESS);
-+  DNSSECFUNRETURN(DNSSEC_FAILURE);
-+}
-+
-+struct hostent *
-+dnssec_gethostbyname(const char *name,
-+                     struct hostent *ret, char *buf, size_t buflen,
-+                     struct hostent **result, int *h_errnop)
-+{
-+  val_status_t val_status;
-+  int ret_stat;
-+  
-+  DNSSECFUNDEBUG((stderr, "input: name=%s\n", name));
-+  ret_stat = val_gethostbyname_r(NULL, name, ret, buf, buflen, result, h_errnop,
-+                                 &val_status);
-+  if (!ret_stat) {
-+    DNSSECDEBUG((stderr, "  ERROR: ret_stat=%d returned\n", ret_stat));
-+    DNSSECFUNRETURN(NULL);
-+  }
-+  
-+  if (dnssec_check_policy(val_status, global_policy) == DNSSEC_SUCCESS) {
-+    DNSSECDEBUG((stderr, "  policy = success\n"));
-+    DNSSECFUNRETURN(ret);
-+  }
-+  DNSSECDEBUG((stderr, "  failed to lookup host\n"));
-+  DNSSECFUNRETURN(NULL);
-+}
-+
-+struct hostent *
-+dnssec_gethostbyname2(const char *name, int af,
-+                     struct hostent *ret, char *buf, size_t buflen,
-+                     struct hostent **result, int *h_errnop)
-+{
-+  val_status_t val_status;
-+  int ret_stat;
-+  
-+  DNSSECFUNDEBUG((stderr, "input: name=%s\n", name));
-+  ret_stat = val_gethostbyname2_r(NULL, name, af, 
-+                                  ret, buf, buflen, result, h_errnop,
-+                                  &val_status);
-+  if (!ret_stat) {
-+    DNSSECDEBUG((stderr, "  ERROR: ret_stat=%d returned\n", ret_stat));
-+    DNSSECFUNRETURN(NULL);
-+  }
-+  
-+  if (dnssec_check_policy(val_status, global_policy) == DNSSEC_SUCCESS) {
-+    DNSSECDEBUG((stderr, "  policy = success\n"));
-+    DNSSECFUNRETURN(ret);
-+  }
-+  DNSSECDEBUG((stderr, "  failed to lookup host\n"));
-+  DNSSECFUNRETURN(NULL);
-+}
-+
-+
-+#else  /* !MOZ_DNSSEC */
-+
-+int dnssec_validate (const char *domain_name) {
-+  return DNSSEC_SUCCESS;
-+}
-+
-+#endif /* !MOZ_DNSSEC */
-+
- /*
-  * #################################################################
-  * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -664,6 +879,25 @@
- 
- #endif  /* definition of GETHOSTBYXXX */
- 
-+/* override functions if MOZ_DNSSEC is enabled */
-+#ifdef MOZ_DNSSEC
-+
-+/* We do this in a special section to allow the GETHOSTBYADDR to be
-+   pulled above as normal.  Unfortunately, even though the DNSSEC APIs
-+   are thread safe, if GETHOSTBYADDR is not then we'll still perform
-+   safe locking because this code doesn't differentiate between calls
-+   at all.
-+*/
-+#undef GETHOSTBYNAME
-+#undef GETHOSTBYNAME2
-+
-+#define GETHOSTBYNAME(name) \
-+    (dnssec_gethostbyname(name, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
-+#define GETHOSTBYNAME2(name, af)                                           \
-+  (dnssec_gethostbyname2(name, af, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
-+
-+#endif /* MOZ_DNSSEC */
-+
- PR_IMPLEMENT(PRStatus) PR_GetHostByName(
-     const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
- {
-@@ -677,6 +911,7 @@
- #endif
- 
-     if (!_pr_initialized) _PR_ImplicitInitialization();
-+    DNSSECFUNDEBUG((stderr, "input=%s\n", name));
- 
- #if defined(_PR_HAVE_GETHOST_R)
-     tmpbuf = localbuf;
-@@ -686,7 +921,7 @@
-         if (NULL == tmpbuf)
-         {
-             PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
--            return rv;
-+            DNSSECFUNRETURN(rv);
-         }
-     }
- #endif
-@@ -698,13 +933,18 @@
- #else
- 	h = GETHOSTBYNAME(name);
- #endif
--    
--	if (NULL == h)
-+
-+    /* XXX */
-+    DNSSECDEBUG((stderr, "DNSSECgethostbyname results: host=%s h_errno=%d\n",
-+                 name, h_errno));
-+    if (NULL == h)
- 	{
-+        DNSSECDEBUG((stderr, "********** Status = LOOKUP_ERROR\n"));
- 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_GETHOST_ERRNO());
- 	}
- 	else
- 	{
-+        DNSSECDEBUG((stderr, "********** Status = SUCCESS\n"));
- 		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
- 		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
- 		if (PR_SUCCESS != rv)
-@@ -715,7 +955,7 @@
-     if (tmpbuf != localbuf)
-         PR_Free(tmpbuf);
- #endif
--	return rv;
-+    DNSSECFUNRETURN(rv);
- }
- 
- #if !defined(_PR_INET6) && \
-@@ -826,11 +1066,12 @@
-     PRBool did_af_inet = PR_FALSE;
- #endif
- 
-+    DNSSECFUNDEBUG((stderr, "input=%s\n", name));
-     if (!_pr_initialized) _PR_ImplicitInitialization();
- 
-     if (af != PR_AF_INET && af != PR_AF_INET6) {
-         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
--        return PR_FAILURE;
-+        DNSSECFUNRETURN(PR_FAILURE);
-     }
- 
- #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
-@@ -873,11 +1114,13 @@
-         if (NULL == tmpbuf)
-         {
-             PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
--            return rv;
-+            DNSSECFUNRETURN(rv);
-         }
-     }
- #endif
- 
-+    /* XXX: should be able to map gethostbyname2 -> getaddrinfo with hints */
-+
-     /* Do not need to lock the DNS lock if getipnodebyname() is called */
- #ifdef _PR_INET6
- #ifdef _PR_HAVE_GETHOSTBYNAME2
-@@ -935,6 +1178,7 @@
-     
- 	if (NULL == h)
- 	{
-+      DNSSECDEBUG((stderr, "  lookup failed\n"));
- #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
- 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
- #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
-@@ -993,7 +1237,7 @@
-         PR_Free(tmpbuf);
- #endif
- 
--	return rv;
-+    DNSSECFUNRETURN(rv);
- }
- 
- PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
-@@ -1015,6 +1259,7 @@
- 	int error_num;
- #endif
- 
-+    DNSSECFUNDEBUG((stderr, "input=%x", (unsigned int) hostaddr));
-     if (!_pr_initialized) _PR_ImplicitInitialization();
- 
- 	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1160,7 +1405,7 @@
-         PR_Free(tmpbuf);
- #endif
- 
--	return rv;
-+	DNSSECFUNRETURN(rv);
- }
- 
- /******************************************************************************/
-@@ -1772,6 +2017,7 @@
-     PRStatus status = PR_SUCCESS;
-     PRIntn rv;
- 
-+    DNSSECFUNDEBUG((stderr,"input=%s\n",string));
- #if defined(_PR_HAVE_INET_NTOP)
-     rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
-     if (1 == rv)
-@@ -1783,23 +2029,26 @@
-         PR_ASSERT(0 == rv);
-         /* clean up after the failed inet_pton() call */
-         memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
-+        /* XXX */
-+        LOCK_DNS();
-         rv = inet_pton(AF_INET, string, &addr->inet.ip);
-         if (1 == rv)
-         {
--            addr->raw.family = AF_INET;
-+          addr->raw.family = AF_INET;
-         }
-         else
-         {
--            PR_ASSERT(0 == rv);
--            PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
--            status = PR_FAILURE;
-+          PR_ASSERT(0 == rv);
-+          PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
-+          status = PR_FAILURE;
-         }
-+        UNLOCK_DNS();
-     }
- #else /* _PR_HAVE_INET_NTOP */
-     rv = StringToV6Addr(string, &addr->ipv6.ip);
-     if (1 == rv) {
-         addr->raw.family = PR_AF_INET6;
--        return PR_SUCCESS;
-+        DNSSECFUNRETURN(PR_SUCCESS);
-     }
-     PR_ASSERT(0 == rv);
-     /* clean up after the failed StringToV6Addr() call */
-@@ -1821,7 +2070,7 @@
-     }
- #endif /* _PR_HAVE_INET_NTOP */
- 
--    return status;
-+    DNSSECFUNRETURN(status);
- }
- 
- PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
-@@ -1940,8 +2189,18 @@
- #if defined(_PR_INET6)
- 
- typedef struct addrinfo PRADDRINFO;
-+
-+#ifdef MOZ_DNSSEC
-+/*
-+XXX future:
-+#define GETADDRINFO val_getaddrinfo
-+*/
-+#define GETADDRINFO getaddrinfo
-+#define FREEADDRINFO freeaddrinfo
-+#else /* !MOZ_DNSSEC */
- #define GETADDRINFO getaddrinfo
- #define FREEADDRINFO freeaddrinfo
-+#endif
- 
- #elif defined(_PR_INET6_PROBE)
- 
-@@ -2025,8 +2284,11 @@
- #endif
- }
- 
-+#ifndef MOZ_DNSSEC
-+/* for DNSSEC leave as is */
- #define GETADDRINFO (*_pr_getaddrinfo)
- #define FREEADDRINFO (*_pr_freeaddrinfo)
-+#endif
- 
- #endif /* _PR_INET6 */
- 
-@@ -2050,41 +2312,44 @@
- {
-     PRStatus rv;
-     PRAddrInfoFB *ai;
-+    DNSSECFUNDEBUG((stderr, "input=%s", hostname));
-     /* fallback on PR_GetHostByName */
-     ai = PR_NEW(PRAddrInfoFB);
-     if (!ai) {
-         PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
-         return NULL;
-     }
-+    DNSSECDEBUG((stderr, "DNSSECgethostbyname: %d %s\n", __LINE__, hostname));
-     rv = PR_GetHostByName(hostname, ai->buf, sizeof ai->buf, &ai->hostent);
-     if (rv == PR_FAILURE) {
-         PR_Free(ai);
--        return NULL;
-+        DNSSECFUNRETURN(NULL);
-     }
-     ai->has_cname = !(flags & PR_AI_NOCANONNAME);
- 
--    return (PRAddrInfo *) ai;
-+    DNSSECFUNRETURN((PRAddrInfo *) ai);
- }
- 
- PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
-                                                 PRUint16     af,
-                                                 PRIntn       flags)
- {
-+    DNSSECFUNDEBUG((stderr, "input=%s\n", hostname));
-     /* restrict input to supported values */
-     if ((af != PR_AF_INET && af != PR_AF_UNSPEC) ||
-         (flags & ~ PR_AI_NOCANONNAME) != PR_AI_ADDRCONFIG) {
-         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
--        return NULL;
-+        DNSSECFUNRETURN(NULL);
-     }
- 
-     if (!_pr_initialized) _PR_ImplicitInitialization();
- 
- #if !defined(_PR_HAVE_GETADDRINFO)
--    return pr_GetAddrInfoByNameFB(hostname, af, flags);
-+    DNSSECFUNRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
- #else
- #if defined(_PR_INET6_PROBE)
-     if (!_pr_ipv6_is_present) {
--        return pr_GetAddrInfoByNameFB(hostname, af, flags);
-+        DNSSECFUNRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
-     }
- #endif
-     {
-@@ -2097,6 +2362,21 @@
-          * RFC 3493.
-          */
- 
-+        /* XXX */
-+        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: %d %s\n", __LINE__, hostname));
-+
-+        LOCK_DNS();
-+        if (!dnssec_validate(hostname)) {
-+            /* DNSsec validation failed */
-+            PR_SetErrorText(0, "Host DNSsec validation failed");
-+            PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
-+            DNSSECDEBUG((stderr, "DNSSECinet_pton: returning failure %d %s\n",
-+                         __LINE__, hostname));
-+            UNLOCK_DNS();
-+            DNSSECFUNRETURN(NULL);
-+        }
-+        UNLOCK_DNS();
-+
-         memset(&hints, 0, sizeof(hints));
-         hints.ai_flags = (flags & PR_AI_NOCANONNAME) ? 0: AI_CANONNAME;
-         hints.ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
-@@ -2111,12 +2391,31 @@
-         hints.ai_socktype = SOCK_STREAM;
- 
-         rv = GETADDRINFO(hostname, NULL, &hints, &res);
--        if (rv == 0)
--            return (PRAddrInfo *) res;
-+        if (rv == EAI_AGAIN) {
-+          /* temporary failure...  odd...  try again? */
-+          PR_Sleep(1000);
-+          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo reted/trying again: %d %d\n",
-+                       rv, (unsigned int) res));
-+          rv = GETADDRINFO(hostname, NULL, &hints, &res);
-+        }
-+        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo returned: %d\n", 
-+                     (unsigned int) res));
-+
-+        /* XXX future DNSSEC work */
-+        if (rv == 0 && res != NULL
-+#if 0
-+            && dnssec_check_policy(val_get_addrinfo_dnssec_status(res), global_policy) == DNSSEC_SUCCESS
-+#endif
-+          )
-+            DNSSECFUNRETURN(res);
-+        if (rv == 0) {
-+          DNSSECFUNRETURN((PRAddrInfo *) res);
-+        }
- 
-+        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo failed: %d\n", rv));
-         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
-     }
--    return NULL;
-+    DNSSECFUNRETURN(NULL);
- #endif
- }
- 
 --- mozilla.firefox.1.5.0.6.rpmdist/configure.in	2006-06-15 06:29:32.000000000 -0700
 +++ mozilla/configure.in	2006-08-23 19:01:13.000000000 -0700
 @@ -3538,6 +3538,54 @@
@@ -2162,9 +303,9 @@
 +AC_CHECK_LIB(crypto, EVP_md5, OPENSSL_LIBS="-lcrypto", OPENSSL_LIBS="")
 +AC_CHECK_LIB(sres, __res_init, SRES_LIBS=" -lpthread -lsres", SRES_LIBS="",
 +             $OPENSSL_LIBS -lpthread)
-+AC_CHECK_LIB(val, val_gethostbyname,
++AC_CHECK_LIB(val-threads, val_gethostbyname,
 +             [SYSTEM_VAL=1
-+              VAL_LIBS="-lval $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
++              VAL_LIBS="-lval-threads $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
 +              NSPR_LIBS="$NSPR_LIBS $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
 +              AC_DEFINE(MOZ_DNSSEC)], SYSTEM_VAL=,
 +             $SRES_LIBS $OPENSSL_LIBS)
@@ -6226,14 +4367,14 @@
 +SRES_LIBS=""
 +fi
 +
-+echo $ac_n "checking for val_gethostbyname in -lval""... $ac_c" 1>&6
-+echo "configure:11534: checking for val_gethostbyname in -lval" >&5
++echo $ac_n "checking for val_gethostbyname in -lval-threads""... $ac_c" 1>&6
++echo "configure:11534: checking for val_gethostbyname in -lval-threads" >&5
 +ac_lib_var=`echo val'_'val_gethostbyname | sed 'y%./+-%__p_%'`
 +if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
 +  echo $ac_n "(cached) $ac_c" 1>&6
 +else
 +  ac_save_LIBS="$LIBS"
-+LIBS="-lval $SRES_LIBS $OPENSSL_LIBS $LIBS"
++LIBS="-lval-threads $SRES_LIBS $OPENSSL_LIBS $LIBS"
 +cat > conftest.$ac_ext <<EOF
 +#line 11542 "configure"
 +#include "confdefs.h"
@@ -6262,7 +4403,7 @@
 +if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
 +  echo "$ac_t""yes" 1>&6
 +  SYSTEM_VAL=1
-+              VAL_LIBS="-lval $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
++              VAL_LIBS="-lval-threads $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
 +              NSPR_LIBS="$NSPR_LIBS $VAL_LIBS $SRES_LIBS $OPENSSL_LIBS"
 +              cat >> confdefs.h <<\EOF
 +#define MOZ_DNSSEC 1
@@ -7814,12 +5955,15 @@
  s%@MOZ_ZLIB_CFLAGS@%$MOZ_ZLIB_CFLAGS%g
 --- mozilla.firefox.1.5.0.6.rpmdist/security/nss/cmd/platlibs.mk	2005-04-06 14:35:41.000000000 -0700
 +++ mozilla/security/nss/cmd/platlibs.mk	2006-08-23 19:01:13.000000000 -0700
-@@ -233,3 +233,5 @@
- endif
+@@ -246,6 +246,8 @@
  
  endif # USE_STATIC_LIBS
+ 
++OS_LIBS += -lval-threads -lsres -lcrypto
 +
-+OS_LIBS += -lval -lsres -lcrypto
+ # If a platform has a system zlib, set USE_SYSTEM_ZLIB to 1 and
+ # ZLIB_LIBS to the linker command-line arguments for the system zlib
+ # (for example, -lz) in the platform's config file in coreconf.
 --- mozilla.firefox.1.5.0.6.rpmdist/docshell/base/nsDocShell.cpp	2006-06-07 00:36:09.000000000 -0700
 +++ mozilla/docshell/base/nsDocShell.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -2983,6 +2983,15 @@
@@ -7838,3 +5982,920 @@
      else if(NS_ERROR_CONNECTION_REFUSED == aError) {
          NS_ENSURE_ARG_POINTER(aURI);
          // Build up the host:port string.
+--- old-mozilla/nsprpub/pr/include/prnetdb.h.orig	2007-04-02 20:52:22.000000000 -0700
++++ mozilla/nsprpub/pr/include/prnetdb.h	2007-04-03 13:44:37.000000000 -0700
+@@ -111,6 +111,33 @@
+ 
+ /***********************************************************************
+ ** FUNCTION:	
++** DESCRIPTION:	PR_GetHostByNameExtended()
++** Lookup a host by name and provide extended error information
++**
++** INPUTS:
++**  char *hostname      Character string defining the host name of interest
++**  char *buf           A scratch buffer for the runtime to return result.
++**                      This buffer is allocated by the caller.
++**  PRIntn bufsize      Number of bytes in 'buf'. A recommnded value to
++**                      use is PR_NETDB_BUF_SIZE.
++** OUTPUTS:
++**  PRHostEnt *hostentry
++**                      This structure is filled in by the runtime if
++**                      the function returns PR_SUCCESS. This structure
++**                      is allocated by the caller.
++** RETURN:
++**  PRStatus            PR_SUCCESS if the lookup succeeds. If it fails
++**                      the result will be PR_FAILURE and the reason
++**                      for the failure can be retrieved by PR_GetError().
++**                      This function is identical to the PR_GetHostByName
++**                      function but returns additional error codes via
++**                      PR_GetError() and may return even more in the future.
++***********************************************************************/
++NSPR_API(PRStatus) PR_GetHostByNameExtended(
++    const char *hostname, char *buf, PRIntn bufsize, PRHostEnt *hostentry);
++
++/***********************************************************************
++** FUNCTION:	
+ ** DESCRIPTION:	PR_GetIPNodeByName()
+ ** Lookup a host by name. Equivalent to getipnodebyname(AI_DEFAULT)
+ ** of RFC 2553.
+@@ -153,6 +180,44 @@
+ 
+ /***********************************************************************
+ ** FUNCTION:	
++** DESCRIPTION:	PR_GetIPNodeByNameExtended()
++** Lookup a host by name. Equivalent to getipnodebyname(AI_DEFAULT)
++** of RFC 2553.
++**
++** INPUTS:
++**  char *hostname      Character string defining the host name of interest
++**  PRUint16 af         Address family (either PR_AF_INET or PR_AF_INET6)
++**  PRIntn flags        Specifies the types of addresses that are searched
++**                      for and the types of addresses that are returned.
++**                      The only supported flag is PR_AI_DEFAULT.
++**  char *buf           A scratch buffer for the runtime to return result.
++**                      This buffer is allocated by the caller.
++**  PRIntn bufsize      Number of bytes in 'buf'. A recommnded value to
++**                      use is PR_NETDB_BUF_SIZE.
++** OUTPUTS:
++**  PRHostEnt *hostentry
++**                      This structure is filled in by the runtime if
++**                      the function returns PR_SUCCESS. This structure
++**                      is allocated by the caller.
++** RETURN:
++**  PRStatus            PR_SUCCESS if the lookup succeeds. If it fails
++**                      the result will be PR_FAILURE and the reason
++**                      for the failure can be retrieved by PR_GetError().
++**                      This function is identical to the PR_GetIPNodeByName
++**                      function but returns additional error codes via
++**                      PR_GetError() and may return even more in the future.
++***********************************************************************/
++NSPR_API(PRStatus) PR_GetIPNodeByNameExtended(
++    const char *hostname,
++    PRUint16 af,
++    PRIntn flags,
++    char *buf,
++    PRIntn bufsize,
++    PRHostEnt *hostentry);
++
++
++/***********************************************************************
++** FUNCTION:	
+ ** DESCRIPTION:	PR_GetHostByAddr()
+ ** Lookup a host entry by its network address.
+ **
+@@ -417,6 +482,33 @@
+ 
+ /***********************************************************************
+ ** FUNCTION:
++** DESCRIPTION: PR_GetAddrInfoByNameExtended()
++**  Lookup a host by name. Equivalent to getaddrinfo(host, NULL, ...) of
++**  RFC 3493.
++**
++** INPUTS:
++**  char *hostname      Character string defining the host name of interest
++**  PRUint16 af         May be PR_AF_UNSPEC or PR_AF_INET.
++**  PRIntn flags        May be either PR_AI_ADDRCONFIG or
++**                      PR_AI_ADDRCONFIG | PR_AI_NOCANONNAME. Include
++**                      PR_AI_NOCANONNAME to suppress the determination of
++**                      the canonical name corresponding to hostname.
++** RETURN:
++**  PRAddrInfo*         Handle to a data structure containing the results
++**                      of the host lookup. Use PR_EnumerateAddrInfo to
++**                      inspect the PRNetAddr values stored in this object.
++**                      When no longer needed, this handle must be destroyed
++**                      with a call to PR_FreeAddrInfo.  If a lookup error
++**                      occurs, then NULL will be returned.
++**                      This function is identical to the PR_GetAddrInfoByNameFB
++**                      function but returns additional error codes via
++**                      PR_GetError() and may return even more in the future.
++***********************************************************************/
++NSPR_API(PRAddrInfo*) PR_GetAddrInfoByNameExtended(
++    const char *hostname, PRUint16 af, PRIntn flags);
++
++/***********************************************************************
++** FUNCTION:
+ ** DESCRIPTION: PR_FreeAddrInfo()
+ **  Destroy the PRAddrInfo handle allocated by PR_GetAddrInfoByName().
+ **
+@@ -494,6 +586,15 @@
+ NSPR_API(PRUint32) PR_htonl(PRUint32);
+ NSPR_API(PRUint64) PR_htonll(PRUint64);
+ 
++/***********************************************************************
++** FUNCTIONS: PR_set_dnssec_validate_policy
++**
++** DESCRIPTION: set the DNS resolution policy
++**  
++**   XXX
++***********************************************************************/
++NSPR_API(void) PR_set_dnssec_validate_policy(PRInt32);
++
+ PR_END_EXTERN_C
+ 
+ #endif /* prnetdb_h___ */
+--- old-mozilla/netwerk/dns/src/nsHostResolver.cpp.orig	2007-04-03 13:40:22.000000000 -0700
++++ mozilla/netwerk/dns/src/nsHostResolver.cpp	2007-04-06 14:35:31.000000000 -0700
+@@ -58,6 +58,7 @@
+ #include "pratom.h"
+ #include "prthread.h"
+ #include "prerror.h"
++#include "prerr.h"
+ #include "prcvar.h"
+ #include "prtime.h"
+ #include "prlong.h"
+@@ -154,7 +155,7 @@
+ // this macro filters out any flags that are not used when constructing the
+ // host key.  the significant flags are those that would affect the resulting
+ // host record (i.e., the flags that are passed down to PR_GetAddrInfoByName).
+-#define RES_KEY_FLAGS(_f) ((_f) & nsHostResolver::RES_CANON_NAME)
++#define RES_KEY_FLAGS(_f) ((_f) & (nsHostResolver::RES_CANON_NAME|nsHostResolver::RES_EXTENDED_ERRS))
+ 
+ nsresult
+ nsHostRecord::Create(const nsHostKey *key, nsHostRecord **result)
+@@ -644,15 +645,40 @@
+         PRIntn flags = PR_AI_ADDRCONFIG;
+         if (!(rec->flags & RES_CANON_NAME))
+             flags |= PR_AI_NOCANONNAME;
+-
+-        ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
++ 
++        if (rec->flags & RES_EXTENDED_ERRS) {
++            ai = PR_GetAddrInfoByNameExtended(rec->host, rec->af, flags);
+ #if defined(RES_RETRY_ON_FAILURE)
+-        if (!ai && rs.Reset())
++            if (!ai && rs.Reset())
++                ai = PR_GetAddrInfoByNameExtended(rec->host, rec->af, flags);
++#endif
++        } else {
+             ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
++#if defined(RES_RETRY_ON_FAILURE)
++            if (!ai && rs.Reset())
++                ai = PR_GetAddrInfoByName(rec->host, rec->af, flags);
+ #endif
++        }
+ 
+         // convert error code to nsresult.
+-        nsresult status = ai ? NS_OK : NS_ERROR_UNKNOWN_HOST;
++        nsresult status;
++        
++        if (!ai) {
++            // handle errors
++            PRErrorCode err = PR_GetError();
++            switch(err) {
++            case PR_DNSSEC_VALIDATION_ERROR:
++                status = NS_ERROR_DNSSEC_VALIDATION_ERROR;
++                break;
++
++            default:
++                status = NS_ERROR_UNKNOWN_HOST;
++                break;
++            }
++        } else {
++            status = NS_OK;
++        }
++        
+         resolver->OnLookupComplete(rec, status, ai);
+     }
+     NS_RELEASE(resolver);
+--- old-mozilla/netwerk/dns/src/nsHostResolver.h.orig	2007-04-03 14:07:52.000000000 -0700
++++ mozilla/netwerk/dns/src/nsHostResolver.h	2007-04-05 08:35:31.000000000 -0700
+@@ -195,8 +195,9 @@
+      *       to the flags defined on nsIDNSService.
+      */
+     enum {
+-        RES_BYPASS_CACHE = 1 << 0,
+-        RES_CANON_NAME   = 1 << 1
++        RES_BYPASS_CACHE =  1 << 0,
++        RES_CANON_NAME   =  1 << 1,
++        RES_EXTENDED_ERRS = 1 << 2
+     };
+ 
+ private:
+--- old-mozilla/netwerk/dns/public/nsIDNSService.idl.orig	2007-04-04 13:23:03.000000000 -0700
++++ mozilla/netwerk/dns/public/nsIDNSService.idl	2007-04-05 08:36:51.000000000 -0700
+@@ -107,4 +107,9 @@
+      * if set, the canonical name of the specified host will be queried.
+      */
+     const unsigned long RESOLVE_CANONICAL_NAME = (1 << 1);
++
++    /**
++     * if set, the canonical name of the specified host will be queried.
++     */
++    const unsigned long RESOLVE_EXTENDED_ERRS = (1 << 2);
+ };
+--- old-mozilla/netwerk/base/src/nsSocketTransport2.cpp.orig	2007-04-04 09:11:51.000000000 -0700
++++ mozilla/netwerk/base/src/nsSocketTransport2.cpp	2007-04-06 14:35:35.000000000 -0700
+@@ -66,6 +66,7 @@
+ #include "nsISocketProvider.h"
+ #include "nsISSLSocketControl.h"
+ #include "nsIPipe.h"
++#include "nsIDNSService.h"
+ 
+ #if defined(XP_WIN)
+ #include "nsNativeConnectionHelper.h"
+@@ -924,8 +925,8 @@
+ 
+     mResolving = PR_TRUE;
+ 
+-    rv = dns->AsyncResolve(SocketHost(), 0, this, nsnull,
+-                           getter_AddRefs(mDNSRequest));
++    rv = dns->AsyncResolve(SocketHost(), nsIDNSService::RESOLVE_EXTENDED_ERRS,
++                           this, nsnull, getter_AddRefs(mDNSRequest));
+     if (NS_SUCCEEDED(rv)) {
+         LOG(("  advancing to STATE_RESOLVING\n"));
+         mState = STATE_RESOLVING;
+@@ -1212,6 +1213,7 @@
+         mCondition != NS_ERROR_PROXY_CONNECTION_REFUSED &&
+         mCondition != NS_ERROR_NET_TIMEOUT &&
+         mCondition != NS_ERROR_UNKNOWN_HOST &&
++        mCondition != NS_ERROR_DNSSEC_VALIDATION_ERROR &&
+         mCondition != NS_ERROR_UNKNOWN_PROXY_HOST)
+         return PR_FALSE;
+ 
+@@ -1392,7 +1394,9 @@
+         // status contains DNS lookup status
+         if (NS_FAILED(status)) {
+             // fixup error code if proxy was not found
+-            if ((status == NS_ERROR_UNKNOWN_HOST) && !mProxyHost.IsEmpty())
++            if ((status == NS_ERROR_UNKNOWN_HOST ||
++                 status == NS_ERROR_DNSSEC_VALIDATION_ERROR) &&
++                !mProxyHost.IsEmpty())
+                 mCondition = NS_ERROR_UNKNOWN_PROXY_HOST;
+             else
+                 mCondition = status;
+--- old-mozilla/netwerk/protocol/http/src/nsHttpChannel.cpp.orig	2007-04-04 17:11:29.000000000 -0700
++++ mozilla/netwerk/protocol/http/src/nsHttpChannel.cpp	2007-04-04 17:14:09.000000000 -0700
+@@ -72,6 +72,7 @@
+ #include "nsInt64.h"
+ #include "nsIVariant.h"
+ #include "nsChannelProperties.h"
++#include "nsIDNSService.h"
+ 
+ // True if the local cache should be bypassed when processing a request.
+ #define BYPASS_LOCAL_CACHE(loadFlags) \
+@@ -996,7 +997,8 @@
+     if (NS_FAILED(rv))
+         return rv;
+ 
+-    return pps->AsyncResolve(mURI, 0, this, getter_AddRefs(mProxyRequest));
++    return pps->AsyncResolve(mURI, nsIDNSService::RESOLVE_EXTENDED_ERRS,
++                             this, getter_AddRefs(mProxyRequest));
+ }
+ 
+ PRBool
+--- old-mozilla/netwerk/base/src/nsPACMan.cpp.orig	2007-04-04 16:52:01.000000000 -0700
++++ mozilla/netwerk/base/src/nsPACMan.cpp	2007-04-04 16:52:50.000000000 -0700
+@@ -102,7 +102,8 @@
+   if (NS_FAILED(rv))
+     return rv;
+ 
+-  rv = dns->AsyncResolve(host, 0, this, eventQ, getter_AddRefs(mDNSRequest));
++  rv = dns->AsyncResolve(host, nsIDNSService::RESOLVE_EXTENDED_ERRS, this,
++                         eventQ, getter_AddRefs(mDNSRequest));
+   if (NS_FAILED(rv))
+     NS_WARNING("DNS AsyncResolve failed");
+ 
+--- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-04-06 15:22:10.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-04-06 15:22:10.000000000 -0700
+@@ -39,6 +39,10 @@
+ 
+ #include <string.h>
+ 
++#ifdef MOZ_DNSSEC
++#include <validator.h>
++#endif
++
+ /*
+  * On Unix, the error code for gethostbyname() and gethostbyaddr()
+  * is returned in the global variable h_errno, instead of the usual
+@@ -66,8 +70,8 @@
+  * - _PR_HAVE_GETHOST_R_POINTER: the gethostbyXXX_r functions return
+  *   a struct hostent* pointer.  For example, Solaris and IRIX.
+  */
+-#if defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
+-    || defined(_PR_HAVE_THREADSAFE_GETHOST)
++#if (defined(_PR_NO_PREEMPT) || defined(_PR_HAVE_GETHOST_R) \
++     || defined(_PR_HAVE_THREADSAFE_GETHOST))
+ #define _PR_NO_DNS_LOCK
+ #endif
+ 
+@@ -634,6 +638,211 @@
+ }
+ #endif /* !defined(_PR_HAVE_GETPROTO_R) */
+ 
++#define DNSSEC_FAILURE 0
++#define DNSSEC_SUCCESS 1
++/* START DNSSEC INTERNAL */
++#define DODNSSECDEBUG
++#ifdef DODNSSECDEBUG
++#define DNSSECDEBUG(x) fprintf x;
++#define DNSSECFUNBEGIN()                        \
++  {                                             \
++    fprintf(stderr, "vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv\n"); \
++    fprintf(stderr, "BEGIN  %s:%d: \n  ", __FUNCTION__, __LINE__);       \
++  }
++#define DNSSECFUNDEBUG(x) { DNSSECFUNBEGIN(); DNSSECDEBUG(x); }
++#define DNSSECFUNEXIT()   {                                             \
++    fprintf(stderr, "EXIT   %s:%d:  \n", __FUNCTION__, __LINE__);          \
++    fprintf(stderr, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"); \
++  }
++#define DNSSECFUNRETURN(retval)    \
++  {                                             \
++    DNSSECDEBUG((stderr, "  returning: %x", (unsigned int) retval));    \
++    if ((int) retval == DNSSEC_SUCCESS) {                                \
++      DNSSECDEBUG((stderr, "  (success)"));                             \
++    } else if ((int) retval == DNSSEC_SUCCESS || (int) retval == -1) {   \
++      DNSSECDEBUG((stderr, "  (FAIL)"));                                \
++    }                                                                   \
++    DNSSECDEBUG((stderr, "\n"));						    \
++    DNSSECFUNEXIT();                                                    \
++    return retval;                                                      \
++  }
++#else
++#define DNSSECDEBUG(x) 
++#define DNSSECFUNDEBUG(x) 
++#define DNSSECFUNEXIT()
++#define DNSSECFUNRETURN(retval) return retval;
++#endif
++/* END DNSSEC INTERNAL */
++
++
++/* 0 = enforce system policy, 1 = ignore, 2 = always secure */
++int global_policy = 0;
++#define DNSSEC_POLICY_ENFORCE_SYS_POLICY 0
++#define DNSSEC_POLICY_IGNORE              1
++#define DNSSEC_POLICY_ALWAYS_SECURE       2
++void
++PR_set_dnssec_validate_policy(int policy)
++{
++  DNSSECFUNDEBUG((stderr, "DNSSEC Setting policy: %d\n", policy));
++  global_policy = policy;
++}
++
++
++#ifdef MOZ_DNSSEC
++/* XXX: include drop or configurize */
++#include <stdio.h>
++#include <netdb.h>
++
++/* prototypes */
++int dnssec_check_policy(int dnssec_status, int policytype);
++/**
++ * dnssec_validate(HOSTNAME)
++ *
++ * attempts to validate HOSTNAME using dnssec.  It will return one of:
++ *
++ * If global_policy = DNSSEC_POLICY_IGNORE
++ *    - DNSSEC_SUCCESS: 
++ *
++ * If global_policy = DNSSEC_POLICY_ENFORCE_SYS_POLICY
++ *    - DNSSEC_SUCCESS if verified
++ *    - DNSSEC_FAILURE if not
++ *
++ * If global_policy = DNSSEC_POLICY_ENFORCE_SYS_POLICY
++ *    - DNSSEC_SUCCESS if verified
++ *    - DNSSEC_FAILURE if not
++ */
++/* XXX: pass in address type? */
++int dnssec_validate (const char *domain_name) {
++    int dnssec_status;
++    struct hostent hentry, *hentryp;
++    char buf[1024];
++    size_t buflen = sizeof(buf);
++    int h_errno;
++    val_status_t val_status;
++
++    DNSSECFUNDEBUG((stderr, "DNSSECvalidating: %s\n", domain_name));
++    
++    /* don't even bother validating when the policy doesn't call for it */
++    if (global_policy == DNSSEC_POLICY_IGNORE) {
++        DNSSECDEBUG((stderr, "  OK: policy is always allow\n"));
++        DNSSECFUNRETURN(DNSSEC_SUCCESS);
++    }
++
++    /* explicitly catch localhost */
++    if (strcmp(domain_name, "localhost") == 0) {
++        DNSSECDEBUG((stderr, "  OK: 'localhost' is always allowed\n"));
++        DNSSECFUNRETURN(DNSSEC_SUCCESS);
++    }
++    
++    /* attempt a lookup */
++    dnssec_status = val_gethostbyname_r(NULL, domain_name, &hentry,
++                                        buf, buflen,&hentryp, &h_errno,
++                                        &val_status);
++
++    /* check the results, or assume indeterminate if we don't know why
++       the above failed */
++    DNSSECDEBUG((stderr, "  val_gethostbyname returned %d,val_st=%d,errno=%d,ptr=%x\n", dnssec_status, val_status, h_errno, (unsigned int) hentryp));
++    if (!hentryp)
++        val_status = VAL_INDETERMINATE;
++
++    DNSSECDEBUG((stderr, "  val_gethostbyname's dnssec status was %d\n", dnssec_status));
++
++    if (dnssec_check_policy(val_status, global_policy) == DNSSEC_SUCCESS)
++        DNSSECFUNRETURN(DNSSEC_SUCCESS);
++
++    DNSSECFUNRETURN(DNSSEC_FAILURE);
++}
++
++int
++dnssec_check_policy(int val_status, int policytype) 
++{
++  DNSSECFUNDEBUG((stderr, "input: policy=%d, status=%d = %s\n", policytype, val_status, p_val_error(val_status)));
++  /*
++   * POLICY: ignore errors
++   */
++  if (policytype == DNSSEC_POLICY_IGNORE)
++      DNSSECFUNRETURN(DNSSEC_SUCCESS);
++
++  /*
++   * POLICY: require only when possible
++   *   -- IE, trust the policy specified in dnssec-tools's dnsval.conf
++   */
++  if (policytype == DNSSEC_POLICY_ENFORCE_SYS_POLICY) {
++    if (val_istrusted(val_status))
++        DNSSECFUNRETURN(DNSSEC_SUCCESS);
++    DNSSECFUNRETURN(DNSSEC_FAILURE);
++  }
++  
++  /*
++   * POLICY: always secure.
++   *    -- IE, require all lookups to return only secure results
++   */
++  
++  if (val_status == VAL_SUCCESS)
++      DNSSECFUNRETURN(DNSSEC_SUCCESS);
++  DNSSECFUNRETURN(DNSSEC_FAILURE);
++}
++
++struct hostent *
++dnssec_gethostbyname(const char *name,
++                     struct hostent *ret, char *buf, size_t buflen,
++                     struct hostent **result, int *h_errnop)
++{
++  val_status_t val_status;
++  int ret_stat;
++  
++  DNSSECFUNDEBUG((stderr, "input: name=%s\n", name));
++  ret_stat = val_gethostbyname_r(NULL, name, ret, buf, buflen, result, h_errnop,
++                                 &val_status);
++  if (!ret_stat) {
++    DNSSECDEBUG((stderr, "  ERROR: ret_stat=%d returned\n", ret_stat));
++    DNSSECFUNRETURN(NULL);
++  }
++  
++  if (dnssec_check_policy(val_status, global_policy) == DNSSEC_SUCCESS) {
++    DNSSECDEBUG((stderr, "  policy = success\n"));
++    DNSSECFUNRETURN(ret);
++  }
++  /* XXX: if ret exists (but policy says no), free it? */
++  DNSSECDEBUG((stderr, "  failed to lookup host\n"));
++  DNSSECFUNRETURN(NULL);
++}
++
++struct hostent *
++dnssec_gethostbyname2(const char *name, int af,
++                     struct hostent *ret, char *buf, size_t buflen,
++                     struct hostent **result, int *h_errnop)
++{
++  val_status_t val_status;
++  int ret_stat;
++  
++  DNSSECFUNDEBUG((stderr, "input: name=%s\n", name));
++  ret_stat = val_gethostbyname2_r(NULL, name, af, 
++                                  ret, buf, buflen, result, h_errnop,
++                                  &val_status);
++  if (!ret_stat) {
++    DNSSECDEBUG((stderr, "  ERROR: ret_stat=%d returned\n", ret_stat));
++    DNSSECFUNRETURN(NULL);
++  }
++  
++  if (dnssec_check_policy(val_status, global_policy) == DNSSEC_SUCCESS) {
++    DNSSECDEBUG((stderr, "  policy = success\n"));
++    DNSSECFUNRETURN(ret);
++  }
++  /* XXX: if ret exists (but policy says no), free it? */
++  DNSSECDEBUG((stderr, "  failed to lookup host\n"));
++  DNSSECFUNRETURN(NULL);
++}
++
++
++#else  /* !MOZ_DNSSEC */
++
++int dnssec_validate (const char *domain_name) {
++  return DNSSEC_SUCCESS;
++}
++
++#endif /* !MOZ_DNSSEC */
++
+ /*
+  * #################################################################
+  * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
+@@ -669,7 +878,44 @@
+ 
+ #endif  /* definition of GETHOSTBYXXX */
+ 
+-PR_IMPLEMENT(PRStatus) PR_GetHostByName(
++/* override functions if MOZ_DNSSEC is enabled */
++#ifdef MOZ_DNSSEC
++
++/* We do this in a special section to allow the GETHOSTBYADDR to be
++   pulled above as normal.  Unfortunately, even though the DNSSEC APIs
++   are thread safe, if GETHOSTBYADDR is not then we'll still perform
++   safe locking because this code doesn't differentiate between calls
++   at all.
++*/
++#undef GETHOSTBYNAME
++#undef GETHOSTBYNAME2
++
++#define GETHOSTBYNAME(name) \
++    (dnssec_gethostbyname(name, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
++#define GETHOSTBYNAME2(name, af)                                           \
++  (dnssec_gethostbyname2(name, af, &tmphe, tmpbuf, bufsize, &h, &h_err), h)
++
++#endif /* MOZ_DNSSEC */
++
++/* note: not DNSSEC specific, but only currently needed for DNSSEC */
++/* converts a return value from one which may include other (newer)
++   DNS error codes like those provided by DNSSEC validation to
++   something which older code can still understand */
++static void simplify_return_value(void)
++{
++  PRErrorCode errcode = PR_GetError();
++  switch(errcode) {
++    /* Pass the original codes */
++  case PR_DNSSEC_VALIDATION_ERROR:
++    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, 0);
++    break;
++  default:
++    /* everything else can pass on as before */
++    break;
++  }
++}
++
++PR_IMPLEMENT(PRStatus) PR_GetHostByNameExtended(
+     const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
+ {
+ 	struct hostent *h;
+@@ -682,6 +928,7 @@
+ #endif
+ 
+     if (!_pr_initialized) _PR_ImplicitInitialization();
++    DNSSECFUNDEBUG((stderr, "input=%s\n", name));
+ 
+ #if defined(_PR_HAVE_GETHOST_R)
+     tmpbuf = localbuf;
+@@ -691,7 +938,7 @@
+         if (NULL == tmpbuf)
+         {
+             PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
+-            return rv;
++            DNSSECFUNRETURN(rv);
+         }
+     }
+ #endif
+@@ -703,13 +950,17 @@
+ #else
+ 	h = GETHOSTBYNAME(name);
+ #endif
+-    
+-	if (NULL == h)
++
++    /* XXX */
++    DNSSECDEBUG((stderr, "DNSSECgethostbyname results: host=%s h_errno=%d\n", name, h_errno));
++    if (NULL == h)
+ 	{
++        DNSSECDEBUG((stderr, "********** Status = LOOKUP_ERROR\n"));
+ 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, _MD_GETHOST_ERRNO());
+ 	}
+ 	else
+ 	{
++        DNSSECDEBUG((stderr, "********** Status = SUCCESS\n"));
+ 		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
+ 		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
+ 		if (PR_SUCCESS != rv)
+@@ -720,7 +971,17 @@
+     if (tmpbuf != localbuf)
+         PR_Free(tmpbuf);
+ #endif
+-	return rv;
++    DNSSECFUNRETURN(rv);
++}
++
++PR_IMPLEMENT(PRStatus) PR_GetHostByName(
++    const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
++{
++    PRStatus ret;
++    DNSSECFUNDEBUG((stderr, "input=%s\n", name));
++    ret = PR_GetHostByNameExtended(name, buf, bufsize, hp);
++    simplify_return_value();
++    return ret;
+ }
+ 
+ #if !defined(_PR_INET6) && \
+@@ -810,7 +1071,7 @@
+ }
+ #endif
+ 
+-PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
++PR_IMPLEMENT(PRStatus) PR_GetIPNodeByNameExtended(
+     const char *name, PRUint16 af, PRIntn flags,
+     char *buf, PRIntn bufsize, PRHostEnt *hp)
+ {
+@@ -831,11 +1092,12 @@
+     PRBool did_af_inet = PR_FALSE;
+ #endif
+ 
++    DNSSECFUNDEBUG((stderr, "input=%s\n", name));
+     if (!_pr_initialized) _PR_ImplicitInitialization();
+ 
+     if (af != PR_AF_INET && af != PR_AF_INET6) {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+-        return PR_FAILURE;
++        DNSSECFUNRETURN(PR_FAILURE);
+     }
+ 
+ #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
+@@ -878,11 +1140,13 @@
+         if (NULL == tmpbuf)
+         {
+             PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
+-            return rv;
++            DNSSECFUNRETURN(rv);
+         }
+     }
+ #endif
+ 
++    /* XXX: should be able to map gethostbyname2 -> getaddrinfo with hints */
++
+     /* Do not need to lock the DNS lock if getipnodebyname() is called */
+ #ifdef _PR_INET6
+ #ifdef _PR_HAVE_GETHOSTBYNAME2
+@@ -940,6 +1204,7 @@
+     
+ 	if (NULL == h)
+ 	{
++      DNSSECDEBUG((stderr, "  lookup failed\n"));
+ #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
+ 	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
+ #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
+@@ -998,7 +1263,18 @@
+         PR_Free(tmpbuf);
+ #endif
+ 
+-	return rv;
++    DNSSECFUNRETURN(rv);
++}
++
++PR_IMPLEMENT(PRStatus) PR_GetIPNodeByName(
++    const char *name, PRUint16 af, PRIntn flags,
++    char *buf, PRIntn bufsize, PRHostEnt *hp)
++{
++  PRStatus ret;
++  DNSSECFUNDEBUG((stderr, "input=%s\n", name));
++  ret = PR_GetIPNodeByName(name, af, flags, buf, bufsize, hp);
++  simplify_return_value();
++  return ret;
+ }
+ 
+ PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
+@@ -1020,6 +1296,7 @@
+ 	int error_num;
+ #endif
+ 
++    DNSSECFUNDEBUG((stderr, "input=%x", (unsigned int) hostaddr));
+     if (!_pr_initialized) _PR_ImplicitInitialization();
+ 
+ 	if (hostaddr->raw.family == PR_AF_INET6)
+@@ -1165,7 +1442,7 @@
+         PR_Free(tmpbuf);
+ #endif
+ 
+-	return rv;
++	DNSSECFUNRETURN(rv);
+ }
+ 
+ /******************************************************************************/
+@@ -1777,6 +2054,7 @@
+     PRStatus status = PR_SUCCESS;
+     PRIntn rv;
+ 
++    DNSSECFUNDEBUG((stderr,"input=%s\n",string));
+ #if defined(_PR_HAVE_INET_NTOP)
+     rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
+     if (1 == rv)
+@@ -1788,23 +2066,26 @@
+         PR_ASSERT(0 == rv);
+         /* clean up after the failed inet_pton() call */
+         memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
++        /* XXX */
++        LOCK_DNS();
+         rv = inet_pton(AF_INET, string, &addr->inet.ip);
+         if (1 == rv)
+         {
+-            addr->raw.family = AF_INET;
++          addr->raw.family = AF_INET;
+         }
+         else
+         {
+-            PR_ASSERT(0 == rv);
+-            PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+-            status = PR_FAILURE;
++          PR_ASSERT(0 == rv);
++          PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
++          status = PR_FAILURE;
+         }
++        UNLOCK_DNS();
+     }
+ #else /* _PR_HAVE_INET_NTOP */
+     rv = StringToV6Addr(string, &addr->ipv6.ip);
+     if (1 == rv) {
+         addr->raw.family = PR_AF_INET6;
+-        return PR_SUCCESS;
++        DNSSECFUNRETURN(PR_SUCCESS);
+     }
+     PR_ASSERT(0 == rv);
+     /* clean up after the failed StringToV6Addr() call */
+@@ -1826,7 +2107,7 @@
+     }
+ #endif /* _PR_HAVE_INET_NTOP */
+ 
+-    return status;
++    DNSSECFUNRETURN(status);
+ }
+ 
+ PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
+@@ -1945,8 +2226,18 @@
+ #if defined(_PR_INET6)
+ 
+ typedef struct addrinfo PRADDRINFO;
++
++#ifdef MOZ_DNSSEC
++/*
++XXX future:
++#define GETADDRINFO val_getaddrinfo
++*/
+ #define GETADDRINFO getaddrinfo
+ #define FREEADDRINFO freeaddrinfo
++#else /* !MOZ_DNSSEC */
++#define GETADDRINFO getaddrinfo
++#define FREEADDRINFO freeaddrinfo
++#endif
+ 
+ #elif defined(_PR_INET6_PROBE)
+ 
+@@ -2030,8 +2321,11 @@
+ #endif
+ }
+ 
++#ifndef MOZ_DNSSEC
++/* for DNSSEC leave as is */
+ #define GETADDRINFO (*_pr_getaddrinfo)
+ #define FREEADDRINFO (*_pr_freeaddrinfo)
++#endif
+ 
+ #endif /* _PR_INET6 */
+ 
+@@ -2055,41 +2349,44 @@
+ {
+     PRStatus rv;
+     PRAddrInfoFB *ai;
++    DNSSECFUNDEBUG((stderr, "input=%s", hostname));
+     /* fallback on PR_GetHostByName */
+     ai = PR_NEW(PRAddrInfoFB);
+     if (!ai) {
+         PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
+         return NULL;
+     }
+-    rv = PR_GetHostByName(hostname, ai->buf, sizeof ai->buf, &ai->hostent);
++    DNSSECDEBUG((stderr, "DNSSECgethostbyname: %d %s\n", __LINE__, hostname));
++    rv = PR_GetHostByNameExtended(hostname, ai->buf, sizeof ai->buf, &ai->hostent);
+     if (rv == PR_FAILURE) {
+         PR_Free(ai);
+-        return NULL;
++        DNSSECFUNRETURN(NULL);
+     }
+     ai->has_cname = !(flags & PR_AI_NOCANONNAME);
+ 
+-    return (PRAddrInfo *) ai;
++    DNSSECFUNRETURN((PRAddrInfo *) ai);
+ }
+ 
+-PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
+-                                                PRUint16     af,
+-                                                PRIntn       flags)
++PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByNameExtended(const char  *hostname,
++                                                        PRUint16     af,
++                                                        PRIntn       flags)
+ {
++    DNSSECFUNDEBUG((stderr, "input=%s\n", hostname));
+     /* restrict input to supported values */
+     if ((af != PR_AF_INET && af != PR_AF_UNSPEC) ||
+         (flags & ~ PR_AI_NOCANONNAME) != PR_AI_ADDRCONFIG) {
+         PR_SetError(PR_INVALID_ARGUMENT_ERROR, 0);
+-        return NULL;
++        DNSSECFUNRETURN(NULL);
+     }
+ 
+     if (!_pr_initialized) _PR_ImplicitInitialization();
+ 
+ #if !defined(_PR_HAVE_GETADDRINFO)
+-    return pr_GetAddrInfoByNameFB(hostname, af, flags);
++    DNSSECFUNRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
+ #else
+ #if defined(_PR_INET6_PROBE)
+     if (!_pr_ipv6_is_present) {
+-        return pr_GetAddrInfoByNameFB(hostname, af, flags);
++        DNSSECFUNRETURN(pr_GetAddrInfoByNameFB(hostname, af, flags));
+     }
+ #endif
+     {
+@@ -2102,6 +2399,20 @@
+          * RFC 3493.
+          */
+ 
++        /* XXX */
++        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: %d %s\n", __LINE__, hostname));
++
++        LOCK_DNS();
++        if (!dnssec_validate(hostname)) {
++            /* DNSsec validation failed */
++            PR_SetErrorText(0, "Host DNSsec validation failed");
++            PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
++            DNSSECDEBUG((stderr, "DNSSECinet_pton: returning failure %d %s\n", __LINE__, hostname));
++            UNLOCK_DNS();
++            DNSSECFUNRETURN(NULL);
++        }
++        UNLOCK_DNS();
++
+         memset(&hints, 0, sizeof(hints));
+         hints.ai_flags = (flags & PR_AI_NOCANONNAME) ? 0: AI_CANONNAME;
+         hints.ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
+@@ -2116,15 +2427,44 @@
+         hints.ai_socktype = SOCK_STREAM;
+ 
+         rv = GETADDRINFO(hostname, NULL, &hints, &res);
+-        if (rv == 0)
+-            return (PRAddrInfo *) res;
++        if (rv == EAI_AGAIN) {
++          /* temporary failure...  odd...  try again? */
++          PR_Sleep(1000);
++          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo reted/trying again: %d %d\n", rv, (unsigned int) res));
++          rv = GETADDRINFO(hostname, NULL, &hints, &res);
++        }
++        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo returned: %d\n", (unsigned int) res));
++
++        /* XXX future DNSSEC work */
++        if (rv == 0 && res != NULL
++#if 0
++            && dnssec_check_policy(val_get_addrinfo_dnssec_status(res), global_policy) == DNSSEC_SUCCESS
++#endif
++          )
++            DNSSECFUNRETURN((PRAddrInfo *) res);
++        if (rv == 0) {
++          DNSSECFUNRETURN((PRAddrInfo *) res);
++        }
+ 
++        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo failed: %d\n", rv));
+         PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, rv);
+     }
+-    return NULL;
++    DNSSECFUNRETURN(NULL);
+ #endif
+ }
+ 
++PR_IMPLEMENT(PRAddrInfo *) PR_GetAddrInfoByName(const char  *hostname,
++                                                PRUint16     af,
++                                                PRIntn       flags)
++{
++  struct PRAddrInfo *result;
++  DNSSECFUNDEBUG((stderr, "input=%s\n", hostname));
++  result = PR_GetAddrInfoByNameExtended(hostname, af, flags);
++  simplify_return_value();
++  DNSSECFUNRETURN(result);
++}
++
++
+ PR_IMPLEMENT(void) PR_FreeAddrInfo(PRAddrInfo *ai)
+ {
+ #if defined(_PR_HAVE_GETADDRINFO)
