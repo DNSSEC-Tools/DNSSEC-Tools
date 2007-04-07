@@ -1013,8 +1013,8 @@ sub showzones
 		$out .= outstr($ZONE,$zk,'kskcur',$kskcur,$z_kskcur,0);
 		$out .= outstr($ZONE,$zk,'kskpub',$kskpub,$z_kskpub,0);
 		$out .= outstr($ZONE,$zk,'zskcur',$zskcur,$z_zskcur,0);
-		$out .= outstr($ZONE,$zk,'zsknew',$zsknew,$z_zsknew,0);
 		$out .= outstr($ZONE,$zk,'zskpub',$zskpub,$z_zskpub,0);
+		$out .= outstr($ZONE,$zk,'zsknew',$zsknew,$z_zsknew,0);
 		$out .= outstr($ZONE,$zk,'keyrec_signdate',$signdate,$z_signdate,1);
 		$out .= outstr($ZONE,$zk,'expdate',$expdate,$z_expdate,1);
 		$out .= outstr($ZONE,$zk,'archivedir',$archdir,$z_archdir,0);
@@ -1957,10 +1957,12 @@ Display the zone's expiration date.
 =item z-kskcur
 
 Display the zone's Current KSK signing set.
+If this is not defined, then "<unset>" will be given.
 
 =item z-kskpub
 
 Display the zone's Published KSK signing set.
+If this is not defined, then "<unset>" will be given.
 
 =item z-signdate
 
@@ -1973,14 +1975,17 @@ Display the zone's zonefile.
 =item z-zskcur
 
 Display the zone's Current ZSK signing set.
+If this is not defined, then "<unset>" will be given.
 
 =item z-zsknew
 
 Display the zone's New ZSK signing set.
+If this is not defined, then "<unset>" will be given.
 
 =item z-zskpub
 
 Display the zone's Published ZSK signing set.
+If this is not defined, then "<unset>" will be given.
 
 =back
 
