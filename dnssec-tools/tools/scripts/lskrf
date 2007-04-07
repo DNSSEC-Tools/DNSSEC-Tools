@@ -54,11 +54,13 @@ my @opts =
 
 	"z-archdir",			# List zone's archive directories.
 	"z-expdate",			# Show zone's expiration date.
+	"z-kskcount",			# Show zone's KSK count.
 	"z-kskcur",			# Show zone's Current KSK set.
 	"z-kskpub",			# Show zone's Published KSK set.
 	"z-signdate",			# Show zone's signing date.
 	"z-signfile",			# Show zone's signed zonefile.
 	"z-zonefile",			# Show zone's zonefile.
+	"z-zskcount",			# Show zone's ZSK count.
 	"z-zskcur",			# Show zone's Current ZSK set.
 	"z-zsknew",			# Show zone's New ZSK set.
 	"z-zskpub",			# Show zone's Published ZSK set.
@@ -140,12 +142,14 @@ my $prevkey;				# Previous rollrec key added to output.
 
 my $z_archdir;				# Print the zone's archive directory.
 my $z_expdate;				# Print the zone's expiration date.
+my $z_kskcount;				# Print the zone's KSK count.
 my $z_kskcur;				# Print the zone's Current KSK set.
 my $z_kskpub;				# Print the zone's Published KSK set.
 my $z_label;				# Print a leading label for zones.
 my $z_signdate;				# Print the zone's signing date.
 my $z_signfile;				# Print the zone's signed zone file.
 my $z_zonefile;				# Print the zone's zone file.
+my $z_zskcount;				# Print the zone's ZSK count.
 my $z_zskcur;				# Print the zone's Current ZSK set.
 my $z_zsknew;				# Print the zone's New ZSK set.
 my $z_zskpub;				# Print the zone's Published ZSK set.
@@ -423,11 +427,13 @@ sub doopts
 		$z_label    = 1;
 		$z_archdir  = 0;
 		$z_expdate  = 0;
+		$z_kskcount = 0;
 		$z_kskcur   = 0;
 		$z_kskpub   = 0;
 		$z_signdate = 1;
 		$z_signfile = 1;
 		$z_zonefile = 1;
+		$z_zskcount = 0;
 		$z_zskcur   = 0;
 		$z_zsknew   = 0;
 		$z_zskpub   = 0;
@@ -437,13 +443,15 @@ sub doopts
 		#
 		if($long)
 		{
-			$z_archdir = 1;
-			$z_expdate = 1;
-			$z_kskcur  = 1;
-			$z_kskpub  = 1;
-			$z_zskcur  = 1;
-			$z_zsknew  = 1;
-			$z_zskpub  = 1;
+			$z_archdir  = 1;
+			$z_expdate  = 1;
+			$z_kskcount = 1;
+			$z_kskcur   = 1;
+			$z_kskpub   = 1;
+			$z_zskcount = 1;
+			$z_zskcur   = 1;
+			$z_zsknew   = 1;
+			$z_zskpub   = 1;
 		}
 
 		#
@@ -463,11 +471,13 @@ sub doopts
 		#
 		$z_archdir  = 1 if(defined($options{'z-archdir'}));
 		$z_expdate  = 1 if(defined($options{'z-expdate'}));
+		$z_kskcount = 1 if(defined($options{'z-kskcount'}));
 		$z_kskcur   = 1 if(defined($options{'z-kskcur'}));
 		$z_kskpub   = 1 if(defined($options{'z-kskpub'}));
 		$z_signdate = 1 if(defined($options{'z-signdate'}));
 		$z_signfile = 1 if(defined($options{'z-signfile'}));
 		$z_zonefile = 1 if(defined($options{'z-zonefile'}));
+		$z_zskcount = 1 if(defined($options{'z-zskcount'}));
 		$z_zskcur   = 1 if(defined($options{'z-zskcur'}));
 		$z_zsknew   = 1 if(defined($options{'z-zsknew'}));
 		$z_zskpub   = 1 if(defined($options{'z-zskpub'}));
@@ -701,8 +711,10 @@ sub makeheaders
 		$kr{'keyrec_type'}	= 'Zone';
 		$kr{'zonefile'}		= 'Zone File';
 		$kr{'signedzone'}	= 'Signed File';
+		$kr{'kskcount'}		= 'KSK Count';
 		$kr{'kskcur'}		= 'Current KSK';
 		$kr{'kskpub'}		= 'Published KSK';
+		$kr{'zskcount'}		= 'ZSK Count';
 		$kr{'zskcur'}		= 'Current ZSK';
 		$kr{'zsknew'}		= 'New ZSK';
 		$kr{'zskpub'}		= 'Published ZSK';
@@ -930,10 +942,12 @@ sub showzones
 
 	my $archdir;				# Zone's archive directory.
 	my $endtime;				# Calculated expiration date.
-	my $signsecs;				# Signing date in seconds.
 	my $expdate;				# Expiration date in seconds.
+	my $kskcount;				# KSK count.
 	my $kskcur;				# Current KSK's signing set.
 	my $kskpub;				# Published KSK's signing set.
+	my $signsecs;				# Signing date in seconds.
+	my $zskcount;				# ZSK count.
 	my $zskcur;				# Current ZSK's signing set.
 	my $zsknew;				# New ZSK's signing set.
 	my $zskpub;				# Published ZSK's signing set.
@@ -978,25 +992,39 @@ sub showzones
 		$archdir  = $kr{'archivedir'};
 		$endtime  = $kr{'endtime'};
 		$expdate  = $kr{'expdate'};
+		$kskcount = $kr{'kskcount'};
 		$kskcur	  = $kr{'kskcur'} || "<unset>";
 		$kskpub	  = $kr{'kskpub'} || "<unset>";
 		$signdate = $kr{'keyrec_signdate'};
 		$signsecs = $kr{'keyrec_signsecs'};
 		$signfile = $kr{'signedzone'};
 		$zonefile = $kr{'zonefile'};
+		$zskcount = $kr{'zskcount'};
 		$zskcur	  = $kr{'zskcur'} || "<unset>";
 		$zsknew	  = $kr{'zsknew'} || "<unset>";
 		$zskpub	  = $kr{'zskpub'} || "<unset>";
 
 		#
-		# Get a string holding the zone's expiration date.
+		# Do some non-header manipulations.
 		#
 		if($zk ne $HEADER_KRN)
 		{
+			#
+			# Get a string holding the zone's expiration date.
+			#
 			$endtime = $signsecs + $endtime;
 			$expdate = gmtime($endtime);
-
 			$zones{$zk}{'expdate'} = $expdate;
+
+			#
+			# Make sure we have numeric key counts.
+			#
+			$kskcount = '0' if($kskcount eq '');
+			$zskcount = '0' if($zskcount eq '');
+			$kr{'kskcount'} = $kskcount;
+			$kr{'zskcount'} = $zskcount;
+			$zones{$zk}{'kskcount'} = $kskcount;
+			$zones{$zk}{'zskcount'} = $zskcount;
 		}
 
 		$zones{$zk}{'kskcur'} = $kskcur;
@@ -1019,8 +1047,10 @@ sub showzones
 		$out .= outstr($ZONE,$zk,'keyrec_name',$zonename,1,0);
 		$out .= outstr($ZONE,$zk,'zonefile',$zonefile,$z_zonefile,0);
 		$out .= outstr($ZONE,$zk,'signedzone',$signfile,$z_signfile,0);
+		$out .= outstr($ZONE,$zk,'kskcount',$kskcount,$z_kskcount,0);
 		$out .= outstr($ZONE,$zk,'kskcur',$kskcur,$z_kskcur,0);
 		$out .= outstr($ZONE,$zk,'kskpub',$kskpub,$z_kskpub,0);
+		$out .= outstr($ZONE,$zk,'zskcount',$zskcount,$z_zskcount,0);
 		$out .= outstr($ZONE,$zk,'zskcur',$zskcur,$z_zskcur,0);
 		$out .= outstr($ZONE,$zk,'zskpub',$zskpub,$z_zskpub,0);
 		$out .= outstr($ZONE,$zk,'zsknew',$zsknew,$z_zsknew,0);
@@ -1748,11 +1778,13 @@ sub usage
 		print STDERR "\tzone-attribute options:\n";
 		print STDERR "\t\t-z-archdir	show zone's key-archive directory\n";
 		print STDERR "\t\t-z-expdate	show zone's expiration date\n";
+		print STDERR "\t\t-z-kskcount	show zone's KSK count\n";
 		print STDERR "\t\t-z-kskcur	show zone's Current KSK signing set\n";
 		print STDERR "\t\t-z-kskpub	show zone's Published KSK signing set\n";
 		print STDERR "\t\t-z-signdate	show zone's signing date\n";
 		print STDERR "\t\t-z-signfile	show zone's signed zonefile\n";
 		print STDERR "\t\t-z-zonefile	show zone's zonefile\n";
+		print STDERR "\t\t-z-zskcount	show zone's ZSK count\n";
 		print STDERR "\t\t-z-zskcur	show zone's Current ZSK signing set\n";
 		print STDERR "\t\t-z-zsknew	show zone's New ZSK signing set\n";
 		print STDERR "\t\t-z-zskpub	show zone's Published ZSK signing set\n";
@@ -1964,6 +1996,10 @@ explicitly set for the zone, the default directory will be listed.
 
 Display the zone's expiration date.
 
+=item z-kskcount
+
+Display the zone's KSK count.
+
 =item z-kskcur
 
 Display the zone's Current KSK signing set.
@@ -1985,6 +2021,10 @@ Display the zone's signed zonefile.
 =item z-zonefile
 
 Display the zone's zonefile.
+
+=item z-zskcount
+
+Display the zone's ZSK count.
 
 =item z-zskcur
 
