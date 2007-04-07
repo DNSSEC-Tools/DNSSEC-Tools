@@ -57,6 +57,7 @@ my @opts =
 	"z-kskcur",			# Show zone's Current KSK set.
 	"z-kskpub",			# Show zone's Published KSK set.
 	"z-signdate",			# Show zone's signing date.
+	"z-signfile",			# Show zone's signed zonefile.
 	"z-zonefile",			# Show zone's zonefile.
 	"z-zskcur",			# Show zone's Current ZSK set.
 	"z-zsknew",			# Show zone's New ZSK set.
@@ -143,6 +144,7 @@ my $z_kskcur;				# Print the zone's Current KSK set.
 my $z_kskpub;				# Print the zone's Published KSK set.
 my $z_label;				# Print a leading label for zones.
 my $z_signdate;				# Print the zone's signing date.
+my $z_signfile;				# Print the zone's signed zone file.
 my $z_zonefile;				# Print the zone's zone file.
 my $z_zskcur;				# Print the zone's Current ZSK set.
 my $z_zsknew;				# Print the zone's New ZSK set.
@@ -424,6 +426,7 @@ sub doopts
 		$z_kskcur   = 0;
 		$z_kskpub   = 0;
 		$z_signdate = 1;
+		$z_signfile = 1;
 		$z_zonefile = 1;
 		$z_zskcur   = 0;
 		$z_zsknew   = 0;
@@ -451,6 +454,7 @@ sub doopts
 			$z_archdir  = 0;
 			$z_label    = 0;
 			$z_signdate = 0;
+			$z_signfile = 0;
 			$z_zonefile = 0;
 		}
 
@@ -462,6 +466,7 @@ sub doopts
 		$z_kskcur   = 1 if(defined($options{'z-kskcur'}));
 		$z_kskpub   = 1 if(defined($options{'z-kskpub'}));
 		$z_signdate = 1 if(defined($options{'z-signdate'}));
+		$z_signfile = 1 if(defined($options{'z-signfile'}));
 		$z_zonefile = 1 if(defined($options{'z-zonefile'}));
 		$z_zskcur   = 1 if(defined($options{'z-zskcur'}));
 		$z_zsknew   = 1 if(defined($options{'z-zsknew'}));
@@ -695,6 +700,7 @@ sub makeheaders
 		$kr{'keyrec_name'}	= $ZONE;
 		$kr{'keyrec_type'}	= 'Zone';
 		$kr{'zonefile'}		= 'Zone File';
+		$kr{'signedzone'}	= 'Signed File';
 		$kr{'kskcur'}		= 'Current KSK';
 		$kr{'kskpub'}		= 'Published KSK';
 		$kr{'zskcur'}		= 'Current ZSK';
@@ -920,6 +926,7 @@ sub showzones
 	my $signdate;				# Zone's signing date.
 	my $zonename;				# Zone's name.
 	my $zonefile;				# Zone's zonefile.
+	my $signfile;				# Zone's signed zonefile.
 
 	my $archdir;				# Zone's archive directory.
 	my $endtime;				# Calculated expiration date.
@@ -975,6 +982,7 @@ sub showzones
 		$kskpub	  = $kr{'kskpub'} || "<unset>";
 		$signdate = $kr{'keyrec_signdate'};
 		$signsecs = $kr{'keyrec_signsecs'};
+		$signfile = $kr{'signedzone'};
 		$zonefile = $kr{'zonefile'};
 		$zskcur	  = $kr{'zskcur'} || "<unset>";
 		$zsknew	  = $kr{'zsknew'} || "<unset>";
@@ -1010,6 +1018,7 @@ sub showzones
 		$out  = outstr($ZONE,$zk,'keyrec_type','zone',$z_label,0);
 		$out .= outstr($ZONE,$zk,'keyrec_name',$zonename,1,0);
 		$out .= outstr($ZONE,$zk,'zonefile',$zonefile,$z_zonefile,0);
+		$out .= outstr($ZONE,$zk,'signedzone',$signfile,$z_signfile,0);
 		$out .= outstr($ZONE,$zk,'kskcur',$kskcur,$z_kskcur,0);
 		$out .= outstr($ZONE,$zk,'kskpub',$kskpub,$z_kskpub,0);
 		$out .= outstr($ZONE,$zk,'zskcur',$zskcur,$z_zskcur,0);
@@ -1742,6 +1751,7 @@ sub usage
 		print STDERR "\t\t-z-kskcur	show zone's Current KSK signing set\n";
 		print STDERR "\t\t-z-kskpub	show zone's Published KSK signing set\n";
 		print STDERR "\t\t-z-signdate	show zone's signing date\n";
+		print STDERR "\t\t-z-signfile	show zone's signed zonefile\n";
 		print STDERR "\t\t-z-zonefile	show zone's zonefile\n";
 		print STDERR "\t\t-z-zskcur	show zone's Current ZSK signing set\n";
 		print STDERR "\t\t-z-zsknew	show zone's New ZSK signing set\n";
@@ -1967,6 +1977,10 @@ If this is not defined, then "<unset>" will be given.
 =item z-signdate
 
 Display the zone's signing date.
+
+=item z-signfile
+
+Display the zone's signed zonefile.
 
 =item z-zonefile
 
