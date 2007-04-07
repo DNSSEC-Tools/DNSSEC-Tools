@@ -56,12 +56,14 @@ my @opts =
 	"z-dirs",			# Show zone's directories.
 	"z-expdate",			# Show zone's expiration date.
 	"z-kskcount",			# Show zone's KSK count.
+	"z-ksk",			# Show zone's KSK data.
 	"z-kskcur",			# Show zone's Current KSK set.
 	"z-kskdir",			# Show zone's KSK directory.
 	"z-kskpub",			# Show zone's Published KSK set.
 	"z-signdate",			# Show zone's signing date.
 	"z-signfile",			# Show zone's signed zonefile.
 	"z-zonefile",			# Show zone's zonefile.
+	"z-zsk",			# Show zone's ZSK data.
 	"z-zskcount",			# Show zone's ZSK count.
 	"z-zskcur",			# Show zone's Current ZSK set.
 	"z-zskdir",			# Show zone's ZSK directory.
@@ -111,6 +113,8 @@ my $kobsflag;
 my $zskflag;
 my $zcurflag;
 my $zdirsflag;
+my $zksksflag;
+my $zzsksflag;
 my $znewflag;
 my $zpubflag;
 my $zobsflag;
@@ -303,10 +307,13 @@ sub doopts
 	$kobsflag	= $options{'kobs'}	|| 0;
 	$zskflag	= $options{'zsk'}	|| 0;
 	$zcurflag	= $options{'cur'}	|| 0;
-	$zdirsflag	= $options{'z-dirs'}	|| 0;
 	$znewflag	= $options{'new'}	|| 0;
 	$zpubflag	= $options{'pub'}	|| 0;
 	$zobsflag	= $options{'obs'}	|| 0;
+
+	$zdirsflag	= $options{'z-dirs'}	|| 0;
+	$zksksflag	= $options{'z-ksk'}	|| 0;
+	$zzsksflag	= $options{'z-zsk'}	|| 0;
 
 	$refflag	= $options{'ref'}	|| 0;
 	$unrefflag	= $options{'unref'}	|| 0;
@@ -485,6 +492,29 @@ sub doopts
 			$z_archdir = 1;
 			$z_kskdir  = 1;
 			$z_zskdir  = 1;
+		}
+
+		#
+		# Set the non-defaults for -z-ksk.
+		#
+		if($zksksflag)
+		{
+			$z_kskcount = 1;
+			$z_kskcur   = 1;
+			$z_kskdir   = 1;
+			$z_kskpub   = 1;
+		}
+
+		#
+		# Set the non-defaults for -z-zsk.
+		#
+		if($zzsksflag)
+		{
+			$z_zskcount = 1;
+			$z_zskcur   = 1;
+			$z_zskdir   = 1;
+			$z_zsknew   = 1;
+			$z_zskpub   = 1;
 		}
 
 		#
@@ -1814,6 +1844,7 @@ sub usage
 		print STDERR "\t\t-z-archdir	show zone's key-archive directory\n";
 		print STDERR "\t\t-z-dirs		show zone's directories\n";
 		print STDERR "\t\t-z-expdate	show zone's expiration date\n";
+		print STDERR "\t\t-z-ksk	show zone's KSK data\n";
 		print STDERR "\t\t-z-kskcount	show zone's KSK count\n";
 		print STDERR "\t\t-z-kskcur	show zone's Current KSK signing set\n";
 		print STDERR "\t\t-z-kskdir	show zone's KSK directory\n";
@@ -1821,6 +1852,7 @@ sub usage
 		print STDERR "\t\t-z-signdate	show zone's signing date\n";
 		print STDERR "\t\t-z-signfile	show zone's signed zonefile\n";
 		print STDERR "\t\t-z-zonefile	show zone's zonefile\n";
+		print STDERR "\t\t-z-zsk	show zone's ZSK data\n";
 		print STDERR "\t\t-z-zskcount	show zone's ZSK count\n";
 		print STDERR "\t\t-z-zskcur	show zone's Current ZSK signing set\n";
 		print STDERR "\t\t-z-zskdir	show zone's ZSK directory\n";
@@ -2021,7 +2053,7 @@ I<-sets> and I<-keys> have been specified.
 
 These options allow specific zone fields to be included in the output.  If
 combined with the I<-terse> option, only those fields specifically desired
-will be printed.
+will be printed.  These options must be used with the I<-zone> option.
 
 =over 4
 
@@ -2038,6 +2070,11 @@ the ZSK directory, and the key archive directory.
 =item z-expdate
 
 Display the zone's expiration date.
+
+=item z-ksk
+
+Display the zone's KSK data.  This is the equivalient of specifying the
+I<-z-kskcount>, I<-z-kskcur>, I<-z-kskdir>, and I<-z-kskpub> options.
 
 =item z-kskcount
 
@@ -2070,6 +2107,12 @@ Display the zone's signed zonefile.
 
 Display the zone's zonefile.
 
+=item z-zsk
+
+Display the zone's ZSK data.  This is the equivalient of specifying the
+I<-z-zskcount>, I<-z-zskcur>, I<-z-zskdir>, I<-z-zsknew>, and I<-z-zskpub>
+options.
+
 =item z-zskcount
 
 Display the zone's ZSK count.
@@ -2100,7 +2143,7 @@ If this is not defined, then "<unset>" will be given.
 
 These options allow specific set fields to be included in the output.  If
 combined with the I<-terse> option, only those fields specifically desired
-will be printed.
+will be printed.  These options must be used with the I<-set> option.
 
 =over 4
 
@@ -2122,7 +2165,7 @@ Display the set's zone name.
 
 These options allow specific key fields to be included in the output.  If
 combined with the I<-terse> option, only those fields specifically desired
-will be printed.
+will be printed.  These options must be used with the I<-key> option.
 
 =over 4
 
