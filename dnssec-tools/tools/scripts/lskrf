@@ -53,6 +53,7 @@ my @opts =
 	"expired",			# List expired zone keyrecs.
 
 	"z-archdir",			# List zone's archive directories.
+	"z-dirs",			# Show zone's directories.
 	"z-expdate",			# Show zone's expiration date.
 	"z-kskcount",			# Show zone's KSK count.
 	"z-kskcur",			# Show zone's Current KSK set.
@@ -109,6 +110,7 @@ my $kpubflag;
 my $kobsflag;
 my $zskflag;
 my $zcurflag;
+my $zdirsflag;
 my $znewflag;
 my $zpubflag;
 my $zobsflag;
@@ -301,6 +303,7 @@ sub doopts
 	$kobsflag	= $options{'kobs'}	|| 0;
 	$zskflag	= $options{'zsk'}	|| 0;
 	$zcurflag	= $options{'cur'}	|| 0;
+	$zdirsflag	= $options{'z-dirs'}	|| 0;
 	$znewflag	= $options{'new'}	|| 0;
 	$zpubflag	= $options{'pub'}	|| 0;
 	$zobsflag	= $options{'obs'}	|| 0;
@@ -472,6 +475,16 @@ sub doopts
 			$z_signdate = 0;
 			$z_signfile = 0;
 			$z_zonefile = 0;
+		}
+
+		#
+		# Set the non-defaults for -z-dirs.
+		#
+		if($zdirsflag)
+		{
+			$z_archdir = 1;
+			$z_kskdir  = 1;
+			$z_zskdir  = 1;
 		}
 
 		#
@@ -1799,6 +1812,7 @@ sub usage
 	{
 		print STDERR "\tzone-attribute options:\n";
 		print STDERR "\t\t-z-archdir	show zone's key-archive directory\n";
+		print STDERR "\t\t-z-dirs		show zone's directories\n";
 		print STDERR "\t\t-z-expdate	show zone's expiration date\n";
 		print STDERR "\t\t-z-kskcount	show zone's KSK count\n";
 		print STDERR "\t\t-z-kskcur	show zone's Current KSK signing set\n";
@@ -2015,6 +2029,11 @@ will be printed.
 
 Display the zone's archive directory.  If an archive directory is not
 explicitly set for the zone, the default directory will be listed.
+
+=item z-dirs
+
+Display the zone's directories.  These directories are the KSK directory,
+the ZSK directory, and the key archive directory.
 
 =item z-expdate
 
