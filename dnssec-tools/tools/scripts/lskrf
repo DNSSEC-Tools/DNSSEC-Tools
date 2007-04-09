@@ -45,7 +45,8 @@ my @opts =
 		"cur",			# List Current ZSK key keyrecs.
 		"new",			# List New ZSK key keyrecs.
 		"pub",			# List Published ZSK key keyrecs.
-		"obs",			# List obsolete ZSK key keyrecs.
+		"zobs",			# List obsolete ZSK key keyrecs.
+	"obs",				# List all obsolete-key keyrecs.
 
 	"ref",				# List referenced key keyrecs.
 	"unref",			# List unreferenced key keyrecs.
@@ -112,6 +113,7 @@ my $kskflag;
 my $kcurflag;
 my $kpubflag;
 my $kobsflag;
+my $obsflag;
 my $zskflag;
 my $zcurflag;
 my $zdatesflag;
@@ -309,11 +311,12 @@ sub doopts
 	$kcurflag	= $options{'kcur'}	|| 0;
 	$kpubflag	= $options{'kpub'}	|| 0;
 	$kobsflag	= $options{'kobs'}	|| 0;
+	$obsflag	= $options{'obs'}	|| 0;
 	$zskflag	= $options{'zsk'}	|| 0;
 	$zcurflag	= $options{'cur'}	|| 0;
 	$znewflag	= $options{'new'}	|| 0;
 	$zpubflag	= $options{'pub'}	|| 0;
-	$zobsflag	= $options{'obs'}	|| 0;
+	$zobsflag	= $options{'zobs'}	|| 0;
 
 	$zdatesflag	= $options{'z-dates'}	|| 0;
 	$zdirsflag	= $options{'z-dirs'}	|| 0;
@@ -377,6 +380,15 @@ sub doopts
 	# WARNING:  Code order beyond this point is critical.  Do *NOT* modify
 	#	    anything in the rest of this routine if you are an idiot.
 	#
+
+	#
+	# If the -obs options was given, convert it to -kobs and -zobs.
+	#
+	if($obsflag)
+	{
+		$kobsflag = 1;
+		$zobsflag = 1;
+	}
 
 	#
 	# If none of the normal record selection flags were given but
@@ -1874,7 +1886,8 @@ sub usage
 		print STDERR "\t\t  -cur		list Current ZSK keys\n";
 		print STDERR "\t\t  -pub		list Published ZSK keys\n";
 		print STDERR "\t\t  -new		list New ZSK keys\n";
-		print STDERR "\t\t  -obs		list obsolete ZSK keys\n";
+		print STDERR "\t\t  -zobs		list obsolete ZSK keys\n";
+		print STDERR "\t\t-obs		list obsolete KSK and ZSK keys\n";
 
 		print STDERR "\trecord-attribute options:\n";
 		print STDERR "\t\t-valid\t	show keyrecs of unexpired zones\n";
@@ -2129,10 +2142,15 @@ This option displays the New ZSK keys in a I<keyrec> file.
 
 This option displays the Published ZSK keys in a I<keyrec> file.
 
-=item -obs
+=item -zobs
 
 This option displays the obsolete ZSK keys in a I<keyrec> file.  This option
 must be give if obsolete ZSK keys are to be displayed.
+
+=item -obs
+
+This option displays the obsolete KSK and ZSK keys in a I<keyrec> file.
+This option is a shorthand method specifying the I<-kobs> and I<-zobs> options.
 
 =back
 
