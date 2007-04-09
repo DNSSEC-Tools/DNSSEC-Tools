@@ -1945,6 +1945,86 @@ have duplicated names, whether within one file or across multiple files, the
 later I<keyrec> will be the one whose data are displayed.  The output given
 depends on the options selected.
 
+=head1 OUTPUT FORMATS
+
+The output displayed for each record in a I<keyrec> file depends on the
+selected records, the selected attributes, and the selected output format.
+Each option in these option groups is described in detail in the next section.
+The I<keyrec> data and the three base output formats are described here.
+
+I<keyrec> files hold three types of I<keyrec> records:  zone records, signing
+set records, and key records.  Each type of I<keyrec> record contains
+I<keyrec> fields related to that type.  For example, zone I<keyrec> records
+contain data about all the keys associated with a particular zone; key
+I<keyrec> records contain key lengths and algorithms for each particular key.
+The data to be printed must be specified by selecting some combination of the
+I<-zone>, I<-set>, I<-key>, and  I<-all> options.  There are also options for
+specifying specific types of keys to be printed. 
+
+The three base output formats are the default format, the terse format, and
+the long format.  The I<-terse> option indicates that a minimal amount of
+output is desired; the I<-long> option indicates that a great deal of output
+is desired.  The record-selection and attribute-selection options may be used
+in conjunction with I<-terse> to display exactly the set of I<keyrec> fields
+needed.  The default output format is a middle ground between terse and long
+output and is that used when neither I<-terse> nor <-long> is given.
+
+=head2 Zone I<keyrec> Output
+
+The table below shows the zone I<keyrec> fields displayed for each output
+format.
+
+    keyrec field         default        terse        long
+    ------------         -------        -----        ----
+    keyrec type            yes           no          yes
+    zone name              yes           yes         yes
+    zone file              yes           no          yes
+    signed zonefile        yes           no          yes
+    signing date           yes           no          yes
+    expiration date        no            no          yes
+    archive directory      no            no          yes
+    KSK count              no            no          yes
+    KSK directory          no            no          yes
+    current KSK set        no            no          yes
+    published KSK set      no            no          yes
+    ZSK count              no            no          yes
+    ZSK directory          no            no          yes
+    current ZSK set        no            no          yes
+    published ZSK set      no            no          yes
+    new ZSK set            no            no          yes
+
+=head2 Set I<keyrec> Output
+
+The table below shows the signing set I<keyrec> fields displayed for each
+output format.
+
+    keyrec field                 default        terse        long
+    ------------                 -------        -----        ----
+    keyrec type                    no            no          yes
+    set name                       yes           yes         yes
+    zone name                      yes           no          yes
+    keys                           yes           no          yes
+    last modification date         no            no          yes
+
+=head2 Key I<keyrec> Output
+
+The table below shows the key I<keyrec> fields displayed for each
+output format.
+
+    keyrec field               default       terse       long
+    ------------               -------       -----       ----
+    keyrec type                yes           no          yes
+    key name                   yes           yes         yes
+    algorithm                  no            no          yes
+    end date                   no            no          yes
+    generation date            yes           no          yes
+    key length                 no            no          yes
+    key life                   no            no          yes
+    key path                   no            no          yes
+    keys                       no            no          yes
+    random number generator    no            no          yes
+    zone name                  yes           no          yes
+
 =head1 OPTIONS
 
 B<lskrf> takes three types of options:  record-selection options,
