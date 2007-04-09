@@ -61,6 +61,7 @@ my @opts =
 	"z-kskcur",			# Show zone's Current KSK set.
 	"z-kskdir",			# Show zone's KSK directory.
 	"z-kskpub",			# Show zone's Published KSK set.
+	"z-sets",			# Show zone's signing sets.
 	"z-signdate",			# Show zone's signing date.
 	"z-signfile",			# Show zone's signed zonefile.
 	"z-zonefile",			# Show zone's zonefile.
@@ -116,6 +117,7 @@ my $zcurflag;
 my $zdatesflag;
 my $zdirsflag;
 my $zksksflag;
+my $zsetsflag;
 my $zzsksflag;
 my $znewflag;
 my $zpubflag;
@@ -316,6 +318,7 @@ sub doopts
 	$zdatesflag	= $options{'z-dates'}	|| 0;
 	$zdirsflag	= $options{'z-dirs'}	|| 0;
 	$zksksflag	= $options{'z-ksk'}	|| 0;
+	$zsetsflag	= $options{'z-sets'}	|| 0;
 	$zzsksflag	= $options{'z-zsk'}	|| 0;
 
 	$refflag	= $options{'ref'}	|| 0;
@@ -504,6 +507,18 @@ sub doopts
 			$z_archdir = 1;
 			$z_kskdir  = 1;
 			$z_zskdir  = 1;
+		}
+
+		#
+		# Set the flags for -z-sets.
+		#
+		if($zsetsflag)
+		{
+			$z_kskcur   = 1;
+			$z_kskpub   = 1;
+			$z_zskcur   = 1;
+			$z_zsknew   = 1;
+			$z_zskpub   = 1;
 		}
 
 		#
@@ -1862,6 +1877,7 @@ sub usage
 		print STDERR "\t\t-z-kskcur	show zone's Current KSK signing set\n";
 		print STDERR "\t\t-z-kskdir	show zone's KSK directory\n";
 		print STDERR "\t\t-z-kskpub	show zone's Published KSK signing set\n";
+		print STDERR "\t\t-z-sets		show zone's signing sets\n";
 		print STDERR "\t\t-z-signdate	show zone's signing date\n";
 		print STDERR "\t\t-z-signfile	show zone's signed zonefile\n";
 		print STDERR "\t\t-z-zonefile	show zone's zonefile\n";
@@ -2091,7 +2107,7 @@ Display the zone's expiration date.
 
 =item z-ksk
 
-Display the zone's KSK data.  This is the equivalient of specifying the
+Display the zone's KSK data.  This is the equivalent of specifying the
 I<-z-kskcount>, I<-z-kskcur>, I<-z-kskdir>, and I<-z-kskpub> options.
 
 =item z-kskcount
@@ -2113,6 +2129,12 @@ If this is not defined, then "." will be given.
 Display the zone's Published KSK signing set.
 If this is not defined, then "<unset>" will be given.
 
+=item z-sets
+
+Display the zone's signing sets.  This is the equivalent of specifying the
+I<-z-kskcur>, I<-z-kskpub>, I<-z-zskcur>, I<-z-zsknew>, and I<-z-zskpub>
+options.
+
 =item z-signdate
 
 Display the zone's signing date.
@@ -2127,7 +2149,7 @@ Display the zone's zonefile.
 
 =item z-zsk
 
-Display the zone's ZSK data.  This is the equivalient of specifying the
+Display the zone's ZSK data.  This is the equivalent of specifying the
 I<-z-zskcount>, I<-z-zskcur>, I<-z-zskdir>, I<-z-zsknew>, and I<-z-zskpub>
 options.
 
