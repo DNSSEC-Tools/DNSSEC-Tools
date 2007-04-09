@@ -608,8 +608,8 @@ sub doopts
 	#
 	# Set up some key output flags.
 	#
-	if($kskflag || $kcurflag || $kpubflag ||
-	   $zskflag || $zcurflag || $znewflag || $zpubflag)
+	if($kskflag || $kcurflag || $kpubflag || $kobsflag ||
+	   $zskflag || $zcurflag || $znewflag || $zpubflag || $zobsflag)
 	{
 		#
 		# Set our defaults.
@@ -1606,7 +1606,7 @@ sub selkey
 	# Save the key data to the selected-keys hash.
 	#
 	$selkeys{$key}{'keyrec_name'}	= $key;
-	$selkeys{$key}{'keyrec_type'}	= $allkeys{$key}{'keyrec_type'};
+	$selkeys{$key}{'keyrec_type'}	= $kr{'keyrec_type'};
 	$selkeys{$key}{'algorithm'}	= $algorithm;
 	$selkeys{$key}{'enddate'}	= $enddate;
 	$selkeys{$key}{'gendate'}	= $gendate;
@@ -1688,7 +1688,6 @@ sub writekeytype
 		# Make sure we're only looking at the requested key type.
 		#
 		$type = $selkeys{$key}{'keyrec_type'};
-# print "writekeytype:   type - <$type>\t\tkeytype - <$keytype>\n";
 		next if($type ne $keytype);
 
 		#
