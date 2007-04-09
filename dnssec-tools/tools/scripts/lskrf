@@ -1942,15 +1942,20 @@ lskrf - List the I<keyrec>s in a DNSSEC-Tools I<keyrec> file.
 B<lskrf> lists the contents of the specified I<keyrec> files.  All
 I<keyrec> files are loaded before the output is displayed.  If any I<keyrec>s
 have duplicated names, whether within one file or across multiple files, the
-later I<keyrec> will be the one whose data are displayed.  The output given
-depends on the options selected.
+later I<keyrec> will be the one whose data are displayed.
 
-=head1 OUTPUT FORMATS
+B<lskrf> has three base output formats.  In ascending levels of detail, these
+formats are terse output, default format, and long format.  Terse output is
+given when the I<-terse> option is specified; long output is given when the
+I<-long> option is specified.
 
 The output displayed for each record in a I<keyrec> file depends on the
 selected records, the selected attributes, and the selected output format.
-Each option in these option groups is described in detail in the next section.
-The I<keyrec> data and the three base output formats are described here.
+Each option in these option groups is described in detail in the OPTIONS
+section; the three basic output formats are described in the OUTPUT FORMATS
+section.
+
+=head1 OUTPUT FORMATS
 
 I<keyrec> files hold three types of I<keyrec> records:  zone records, signing
 set records, and key records.  Each type of I<keyrec> record contains
