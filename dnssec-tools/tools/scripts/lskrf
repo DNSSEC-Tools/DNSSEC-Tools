@@ -54,6 +54,7 @@ my @opts =
 
 	"z-archdir",			# List zone's archive directories.
 	"z-dirs",			# Show zone's directories.
+	"z-dates",			# Show zone's date fields.
 	"z-expdate",			# Show zone's expiration date.
 	"z-kskcount",			# Show zone's KSK count.
 	"z-ksk",			# Show zone's KSK data.
@@ -112,6 +113,7 @@ my $kpubflag;
 my $kobsflag;
 my $zskflag;
 my $zcurflag;
+my $zdatesflag;
 my $zdirsflag;
 my $zksksflag;
 my $zzsksflag;
@@ -311,6 +313,7 @@ sub doopts
 	$zpubflag	= $options{'pub'}	|| 0;
 	$zobsflag	= $options{'obs'}	|| 0;
 
+	$zdatesflag	= $options{'z-dates'}	|| 0;
 	$zdirsflag	= $options{'z-dirs'}	|| 0;
 	$zksksflag	= $options{'z-ksk'}	|| 0;
 	$zzsksflag	= $options{'z-zsk'}	|| 0;
@@ -455,7 +458,7 @@ sub doopts
 		$z_zskpub   = 0;
 
 		#
-		# Set the non-defaults for -long.
+		# Set the flags for -long
 		#
 		if($long)
 		{
@@ -473,7 +476,7 @@ sub doopts
 		}
 
 		#
-		# Set the non-defaults for -terse.
+		# Set the flags for -terse.
 		#
 		if($terse)
 		{
@@ -485,7 +488,16 @@ sub doopts
 		}
 
 		#
-		# Set the non-defaults for -z-dirs.
+		# Set the flags for -z-dates.
+		#
+		if($zdatesflag)
+		{
+			$z_expdate  = 1;
+			$z_signdate = 1;
+		}
+
+		#
+		# Set the flags for -z-dirs.
 		#
 		if($zdirsflag)
 		{
@@ -495,7 +507,7 @@ sub doopts
 		}
 
 		#
-		# Set the non-defaults for -z-ksk.
+		# Set the flags for -z-ksk.
 		#
 		if($zksksflag)
 		{
@@ -506,7 +518,7 @@ sub doopts
 		}
 
 		#
-		# Set the non-defaults for -z-zsk.
+		# Set the flags for -z-zsk.
 		#
 		if($zzsksflag)
 		{
@@ -1842,9 +1854,10 @@ sub usage
 	{
 		print STDERR "\tzone-attribute options:\n";
 		print STDERR "\t\t-z-archdir	show zone's key-archive directory\n";
+		print STDERR "\t\t-z-dates	show zone's time-stamps\n";
 		print STDERR "\t\t-z-dirs		show zone's directories\n";
 		print STDERR "\t\t-z-expdate	show zone's expiration date\n";
-		print STDERR "\t\t-z-ksk	show zone's KSK data\n";
+		print STDERR "\t\t-z-ksk		show zone's KSK data\n";
 		print STDERR "\t\t-z-kskcount	show zone's KSK count\n";
 		print STDERR "\t\t-z-kskcur	show zone's Current KSK signing set\n";
 		print STDERR "\t\t-z-kskdir	show zone's KSK directory\n";
@@ -1852,7 +1865,7 @@ sub usage
 		print STDERR "\t\t-z-signdate	show zone's signing date\n";
 		print STDERR "\t\t-z-signfile	show zone's signed zonefile\n";
 		print STDERR "\t\t-z-zonefile	show zone's zonefile\n";
-		print STDERR "\t\t-z-zsk	show zone's ZSK data\n";
+		print STDERR "\t\t-z-zsk		show zone's ZSK data\n";
 		print STDERR "\t\t-z-zskcount	show zone's ZSK count\n";
 		print STDERR "\t\t-z-zskcur	show zone's Current ZSK signing set\n";
 		print STDERR "\t\t-z-zskdir	show zone's ZSK directory\n";
@@ -2061,6 +2074,11 @@ will be printed.  These options must be used with the I<-zone> option.
 
 Display the zone's archive directory.  If an archive directory is not
 explicitly set for the zone, the default directory will be listed.
+
+=item z-dates
+
+Display the zone's time-stamps.  These are the signing date and the
+expiration date.
 
 =item z-dirs
 
