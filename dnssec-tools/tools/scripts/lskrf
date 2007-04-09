@@ -1620,9 +1620,9 @@ sub selkey
 #----------------------------------------------------------------------
 # Routine:	writekeys()
 #
-# Purpose:	This routine performs the actual output operations for key
-#		data.  It creates an output string for each of the keys saved
-#		in the %selkeys hash.
+# Purpose:	This routine is the master routine for writing key data.
+#		It does a but of final data massage and then writes the
+#		data in order key-type-specific order.
 #
 sub writekeys
 {
@@ -1645,6 +1645,29 @@ sub writekeys
 	$zonesflag = $setsflag = 0;
 	maxlens();
 
+	
+	#
+	# Write each of the key types in a nice orderly fashion.
+	#
+	foreach my $kt ('Key Type', 'KSK-cur', 'KSK-pub', 'ZSK-cur', 'ZSK-pub', 'ZSK-new', 'KSK-obs', 'ZSK-obs')
+	{
+		writekeytype($kt);
+	}
+
+}
+
+#----------------------------------------------------------------------
+# Routine:	writekeytype()
+#
+# Purpose:	This routine performs the actual output operations for key
+#		data.  It creates an output string for each of the keys saved
+#		in the %selkeys hash.  However, it only works for a specific,
+#		caller-specified type of key.
+#
+sub writekeytype
+{
+	my $keytype = shift;				# Type of key to write.
+
 	#
 	# Write the selected keys.
 	#
@@ -1662,6 +1685,13 @@ sub writekeys
 		my $zonename;				# Key's zone.
 
 		#
+		# Make sure we're only looking at the requested key type.
+		#
+		$type = $selkeys{$key}{'keyrec_type'};
+# print "writekeytype:   type - <$type>\t\tkeytype - <$keytype>\n";
+		next if($type ne $keytype);
+
+		#
 		# Set-up for output line.
 		#
 		$prevkey = 'first-field';
@@ -1676,7 +1706,6 @@ sub writekeys
 		$life	   = $selkeys{$key}{'keylife'};
 		$path	   = $selkeys{$key}{'keypath'};
 		$random	   = $selkeys{$key}{'random'};
-		$type	   = $selkeys{$key}{'keyrec_type'};
 		$zonename  = $selkeys{$key}{'zonename'};
 
 		#
@@ -2036,6 +2065,10 @@ B<lskrf> takes three types of options:  record-selection options,
 record-attribute options, and output-style options.  These option
 sets are detailed below.
 
+Record-selection options are required options; at least one record-selection
+option B<must> be selected.  Record-attribute options and output-style options
+are optional options; any number of these option B<may> be selected.
+
 =head2 Record-Selection Options
 
 These options select the types of I<keyrec> that will be displayed.
@@ -2057,6 +2090,10 @@ This option displays the signing sets in a I<keyrec> file.
 =item -keys
 
 This option displays the keys in a I<keyrec> file.
+
+The key data are sorted by key type in the following order:  Current KSKs,
+Published KSKs, Current ZSKs, Published ZSKs, New ZSKs, Obsolete KSKs, and
+Obsolete ZSKs.
 
 =item -ksk
 
