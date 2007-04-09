@@ -1,6 +1,6 @@
-#!/bin/csh
+#!/usr/bin/perl
 #
-# Copyright 2006 SPARTA, Inc.  All rights reserved.
+# Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 #
 # rundemo
@@ -8,13 +8,57 @@
 #	This script runs the basic demo for the DNSSEC-Tools rollerd daemon.
 #
 
-set log = "log.demo"
+use strict;
 
-rollctl -halt >& /dev/null
+my $cmd;					# Demo command to execute.
+my $dir;					# Current-directory argument.
+my $log;					# Log-file argument.
+my $lvl;					# Log-level argument.
+my $rrf;					# Rollrec-file argument.
+my $slp;					# Sleep-time argument.
 
-cp /dev/null $log
+my $curdir    = ".";
+my $logfile   = "log.demo";
+my $loglvl    = "info";
+my $sleeptime = "15";
+my $rrfile    = "demo.rollrec";
 
-rollerd -dir . -logfile $log -loglevel info -sleep 15 -rrf demo.rollrec -display &
 
-tail -f $log
+#
+# Set the log level, maybe using a command-line argument.
+#
+my $i = @ARGV;
+if(@ARGV > 0)
+{
+	$loglvl	= $ARGV[0];
+}
+print "\nusing a loglevel of \"$loglvl\"\n\n";
+
+#
+# Set our remaining arguments.
+#
+$dir	= "-dir $curdir";
+$log	= "-logfile $logfile";
+$lvl	= "-loglevel $loglvl";
+$slp	= "-sleep $sleeptime";
+$rrf	= "-rrf $rrfile";
+
+#
+# Build our demo command.
+#
+$cmd = "rollerd $dir $log $lvl $slp $rrf -display";
+
+#
+# Ensure rollerd is not running and zap the demo log file.
+#
+system("rollctl -halt >/dev/null 2>&1");
+system("cp /dev/null $logfile");
+
+#
+# Start the demo and peek at the log file.
+#
+system("$cmd &");
+system("tail -f $logfile");
+
+exit(0);
 
