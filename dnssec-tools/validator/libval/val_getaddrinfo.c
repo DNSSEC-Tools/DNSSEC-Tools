@@ -567,7 +567,10 @@ get_addrinfo_from_result(const val_context_t * ctx,
         return 0;
 
     if (!results) {
+        *val_status = VAL_UNTRUSTED_ANSWER;
+        *res = NULL;
         val_log(ctx, LOG_DEBUG, "rrset is null");
+        return EAI_NONAME;
     }
 
     /*
@@ -714,18 +717,20 @@ get_addrinfo_from_result(const val_context_t * ctx,
 
     }
 
-    *res = ainfo_head;
-    if (ainfo_head) { 
-        if (validated)
-            *val_status = VAL_VALIDATED_ANSWER;
-        else if (trusted)
-            *val_status = VAL_TRUSTED_ANSWER;
-        else
-            *val_status = VAL_UNTRUSTED_ANSWER;
-        return 0;
-    }
+    if (validated)
+        *val_status = VAL_VALIDATED_ANSWER;
+    else if (trusted)
+        *val_status = VAL_TRUSTED_ANSWER;
+    else
+        *val_status = VAL_UNTRUSTED_ANSWER;
+
     if (canonname)
         free(canonname);
+
+    *res = ainfo_head;
+    if (ainfo_head) { 
+        retval = 0;
+    }
     
     return retval;
 }                               /* get_addrinfo_from_result() */
@@ -763,12 +768,22 @@ get_addrinfo_from_dns(val_context_t * ctx,
     u_char          name_n[NS_MAXCDNAME];
     int             retval = 0;
     int             ret = 0;
-
-    if (res == NULL)
-        return 0;
+    val_status_t val_status_a = VAL_VALIDATED_ANSWER;
+    val_status_t val_status_aaaa = VAL_VALIDATED_ANSWER;
 
     val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns() called");
 
+    if (res == NULL ||
+        (hints != NULL && 
+         hints->ai_family != AF_UNSPEC &&
+         hints->ai_family != AF_INET &&
+         hints->ai_family != AF_INET6)) {
+
+        val_status_a = VAL_UNTRUSTED_ANSWER;
+        val_status_aaaa = VAL_UNTRUSTED_ANSWER;
+        goto done;
+    }
+    
     /*
      * Check if we need to return IPv4 addresses based on the hints 
      */
@@ -794,11 +809,15 @@ get_addrinfo_from_dns(val_context_t * ctx,
         /*
          * Convert the validator result into val_addrinfo 
          */
-        if (results && results->val_rc_answer && retval == VAL_NO_ERROR) {
+        if (results && 
+            (results->val_rc_answer || 
+            (results->val_rc_proof_count > 0)) &&
+            retval == VAL_NO_ERROR) {
+
             struct val_addrinfo *ainfo_new = NULL;
             ret =
                 get_addrinfo_from_result(ctx, results, servname,
-                                         hints, &ainfo_new, val_status);
+                                         hints, &ainfo_new, &val_status_a);
             if (ainfo_new) {
                 val_log(ctx, LOG_DEBUG, "A records found");
                 ainfo = append_val_addrinfo(ainfo, ainfo_new);
@@ -812,9 +831,10 @@ get_addrinfo_from_dns(val_context_t * ctx,
             if (ainfo)
                 val_freeaddrinfo(ainfo);
 
-            return EAI_SERVICE;
+            retval = EAI_SERVICE;
+            goto done;
         }
-    }
+    } 
 
     /*
      * Check if we need to return IPv6 addresses based on the hints 
@@ -842,11 +862,15 @@ get_addrinfo_from_dns(val_context_t * ctx,
         /*
          * Convert the validator result into val_addrinfo 
          */
-        if (results && results->val_rc_answer && retval == VAL_NO_ERROR) {
+        if (results && 
+            (results->val_rc_answer || 
+            (results->val_rc_proof_count > 0)) &&
+            retval == VAL_NO_ERROR) {
+
             struct val_addrinfo *ainfo_new = NULL;
             ret =
                 get_addrinfo_from_result(ctx, results, servname,
-                                         hints, &ainfo_new, val_status);
+                                         hints, &ainfo_new, &val_status_aaaa);
             if (ainfo_new) {
                 val_log(ctx, LOG_DEBUG, "AAAA records found");
                 ainfo = append_val_addrinfo(ainfo, ainfo_new);
@@ -860,16 +884,31 @@ get_addrinfo_from_dns(val_context_t * ctx,
             if (ainfo)
                 val_freeaddrinfo(ainfo);
 
-            return EAI_SERVICE;
+            retval = EAI_SERVICE;
+            goto done;
         }
+    } 
+
+done:
+
+    if (val_isvalidated(val_status_a) &&
+            val_isvalidated(val_status_aaaa)) {
+        *val_status = VAL_VALIDATED_ANSWER;
+    } else if (val_istrusted(val_status_a) &&
+                   val_istrusted(val_status_aaaa)) {
+        *val_status = VAL_TRUSTED_ANSWER;
+    } else {
+        *val_status = VAL_UNTRUSTED_ANSWER;
     }
 
     if (ainfo) {
         *res = ainfo;
-        return 0;
-    } else {
-        return EAI_NONAME;
+        retval = 0;
+    } else if (retval == 0) { 
+        retval = EAI_NONAME;
     }
+
+    return retval;
 
 }                               /* get_addrinfo_from_dns() */
 
