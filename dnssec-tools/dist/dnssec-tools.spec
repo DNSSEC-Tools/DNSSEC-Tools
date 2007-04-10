@@ -1,7 +1,7 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.1
-Release: 2%{?dist}
+Version: 1.1.1
+Release: 1%{?dist}
 License: BSD
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
@@ -13,9 +13,6 @@ BuildRequires: openssl-devel
 Patch4: dnssec-tools-linux-conf-paths-1.1.patch
 Patch5: dnssec-tools-conf-file-location.patch
 Patch6: dnssec-tools-donuts-rules-paths.patch
-# remove after 1.1:
-Patch8: dnssec-tools-1.1-header-perms.patch
-Patch9: dnssec-tools-pass-destdir.patch
 
 %description
 
@@ -49,23 +46,12 @@ Requires: dnssec-tools-libs = %{version}-%{release}
 %description libs-devel
 C-based libraries useful for developing dnssec aware tools.
 
-%package libs-debuginfo
-Group: Development/Libraries
-Summary: Debug information for package dnssec-tools
-
-%description libs-debuginfo
-This package provides debug information for package dnssec-tools.
-Debug information is useful when developing applications that use this
-package or when debugging this package.
-
 %prep
 %setup -q
 
 %patch4 -p0
 %patch5 -p0
 %patch6 -p0
-%patch8 -p0
-%patch9 -p0
 
 %build
 %configure --with-perl-build-args="INSTALLDIRS=vendor"
@@ -237,32 +223,28 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/val_istrusted.3.gz
 %{_mandir}/man3/val_resolve_and_check.3.gz
 
-%files libs-debuginfo
-%{_libdir}/debug/%{_bindir}/validate.debug
-%{_libdir}/debug/%{_libdir}/libsres.so.3.0.0.debug
-%{_libdir}/debug/%{_libdir}/libval-threads.so.3.0.0.debug
-%{_prefix}/src/debug/%{name}-%{version}/validator/*/*.c
-%attr(644,root,root) %{_prefix}/src/debug/%{name}-%{version}/validator/*/*.h
-
 %changelog
-* Tue Mar 20 2007  <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.1-2
+* Tue Apr 10 2007  Wes Hardaker <wjhns174@hardakers.net> - 1.1.1-1
+- Updated to upstream version 1.1.1
+
+* Tue Mar 20 2007  Wes Hardaker <wjhns174@hardakers.net> - 1.1-2
 - cleaned up spec file further for future submission to Fedora Extras
 - made -libs-devel depend on exact version of -libs
 - remove installed .la files
 - added patch to use proper DESTDIR passing in the top Makefile
 
-* Mon Mar 19 2007  <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.1-1
+* Mon Mar 19 2007  Wes Hardaker <wjhns174@hardakers.net> - 1.1-1
 - Updated to 1.1 and fixed rpmlint issues
 
-* Mon Dec 04 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 1.0
+* Mon Dec 04 2006   Wes Hardaker <wjhns174@hardakers.net> - 1.0
 - updated to 1.0
 
-* Mon Jun 19 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 0.9.2-4
+* Mon Jun 19 2006   Wes Hardaker <wjhns174@hardakers.net> - 0.9.2-4
 - updated to 0.9.2
 - modified installation paths as appropriate to 
 
-* Mon Jun 19 2006   <Wes Hardaker <hardaker@users.sourceforge.net>> - 0.9.1-1
+* Mon Jun 19 2006   Wes Hardaker <wjhns174@hardakers.net> - 0.9.1-1
 - updated to 0.9.1
 
-* Thu Feb  9 2006  <Wes Hardaker <hardaker@users.sourceforge.net> - 0.9.0
+* Thu Feb  9 2006  Wes Hardaker <wjhns174@hardakers.net> - 0.9.0
 - initial rpm
