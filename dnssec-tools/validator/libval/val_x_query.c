@@ -675,3 +675,78 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     h_errno = NO_DATA;
     return -1;
 }
+
+/*
+ * wrapper around val_query() that is closer to res_search() 
+ */
+int
+val_res_search(val_context_t * context, const char *dname, int class_h,
+              int type, u_char * answer, int anslen,
+              val_status_t * val_status)
+{
+    int             retval = -1;
+    char           *dot, *search, *pos;
+    char            buf[NS_MAXDNAME];
+    val_context_t  *ctx;
+    
+    if ((dname == NULL) || (val_status == NULL)) {
+        h_errno = NETDB_INTERNAL;
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (context == NULL) {
+        if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
+            h_errno = NETDB_INTERNAL;
+            errno = EINVAL;
+            return -1;
+        }
+    }
+    else
+        ctx = context;
+
+    /*
+     * if there are no dots and we have a search path, use it
+     */
+    dot = strchr(dname, '.');
+    if ( (NULL == dot) && ctx->search) {
+
+        /** dup list so we can modify it */
+        char *save = search = strdup(ctx->search);
+
+        while (search) {
+
+            /*
+             * search path should be space/tab separated list.
+             */
+            pos = search;
+            while (*pos && *pos != ' ' && *pos != '\t')
+                *pos++;
+            if (*pos)
+                *pos++ = 0;
+            
+            snprintf(buf, sizeof(buf), "%s.%s", dname, search);
+            retval = val_res_query(ctx, buf, class_h, type, answer, anslen,
+                                   val_status);
+            if ((retval >0) ||
+                ((retval == -1) && (h_errno != HOST_NOT_FOUND))) {
+                if (save)
+                    free(save);
+                return retval;
+            }
+
+            if (*pos)
+                search = pos;
+            else
+                break;
+        }
+        if (save)
+            free(save);
+    }
+    
+    /** try dname as-is */
+    retval = val_res_query(ctx, dname, class_h, type, answer, anslen,
+                           val_status);
+
+    return retval;
+}

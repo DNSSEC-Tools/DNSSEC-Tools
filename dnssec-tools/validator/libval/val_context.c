@@ -237,6 +237,9 @@ val_free_context(val_context_t * context)
     if (context->label)
         FREE(context->label);
 
+    if (context->search)
+        FREE(context->search);
+
     if (context->dnsval_conf)
         FREE(context->dnsval_conf);
 
