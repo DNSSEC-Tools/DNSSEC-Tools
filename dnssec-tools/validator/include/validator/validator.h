@@ -311,6 +311,7 @@ extern          "C" {
          */
         time_t r_timestamp;
         struct name_server *nslist;
+        char               *search;
         
         /*
          * validator policy 
@@ -637,6 +638,9 @@ extern          "C" {
     int             val_res_query(val_context_t * ctx, const char *dname,
                                   int q_class, int type, u_char * answer,
                                   int anslen, val_status_t * val_status);
+    int             val_res_search(val_context_t * ctx, const char *dname,
+                                   int class_h, int type, u_char * answer,
+                                   int anslen, val_status_t * val_status);
     int             compose_answer(const u_char * name_n,
                                    const u_int16_t type_h,
                                    const u_int16_t class_h,

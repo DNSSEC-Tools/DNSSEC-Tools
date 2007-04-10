@@ -1408,6 +1408,18 @@ read_res_config_file(val_context_t * ctx)
                     goto err;
                 store_ns_for_zone(zone_n, ns);
             }
+        } else if (strncmp(token, "search", strlen("search")) == 0) {
+
+            /* Read the value */
+            if (VAL_NO_ERROR !=
+                (retval =
+                val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
+                           CONF_COMMENT, ZONE_END_STMT))) {
+                goto err;
+            }
+            if (ctx->search)
+                free(ctx->search);
+            ctx->search = strdup(token);
         }
     }
 
