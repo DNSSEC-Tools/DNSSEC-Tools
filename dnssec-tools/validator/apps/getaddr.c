@@ -215,6 +215,8 @@ main(int argc, char *argv[])
 
     if (validate) {
         retval = val_getaddrinfo(NULL, node, service, &hints, &val_ainfo, &val_status);
+        printf("Return code = %d\n", retval);
+        printf("Validator status code = %d (%s)\n", val_status, p_val_status(val_status));
 
         if (retval != 0) {
             printf("Error in val_getaddrinfo(): %s\n",
@@ -237,6 +239,7 @@ main(int argc, char *argv[])
         
     } else {
         retval = getaddrinfo(node, service, &hints, &ainfo);
+        printf("Return code = %d\n", retval);
         if (retval != 0) {
             printf("Error in getaddrinfo(): %s\n", gai_strerror(retval));
             return -1;
