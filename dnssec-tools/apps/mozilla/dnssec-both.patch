@@ -5983,7 +5983,7 @@
          NS_ENSURE_ARG_POINTER(aURI);
          // Build up the host:port string.
 --- old-mozilla/nsprpub/pr/include/prnetdb.h.orig	2007-04-02 20:52:22.000000000 -0700
-+++ mozilla/nsprpub/pr/include/prnetdb.h	2007-04-03 13:44:37.000000000 -0700
++++ mozilla/nsprpub/pr/include/prnetdb.h	2007-04-09 16:36:57.000000000 -0700
 @@ -111,6 +111,33 @@
  
  /***********************************************************************
@@ -6275,14 +6275,14 @@
    if (NS_FAILED(rv))
      NS_WARNING("DNS AsyncResolve failed");
  
---- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-04-06 15:22:10.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-04-06 15:22:10.000000000 -0700
+--- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-04-10 08:02:32.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-04-10 08:02:32.000000000 -0700
 @@ -39,6 +39,10 @@
  
  #include <string.h>
  
 +#ifdef MOZ_DNSSEC
-+#include <validator.h>
++#include <validator/validator.h>
 +#endif
 +
  /*
@@ -6299,7 +6299,7 @@
  #define _PR_NO_DNS_LOCK
  #endif
  
-@@ -634,6 +638,211 @@
+@@ -634,6 +638,210 @@
  }
  #endif /* !defined(_PR_HAVE_GETPROTO_R) */
  
@@ -6499,7 +6499,6 @@
 +  DNSSECFUNRETURN(NULL);
 +}
 +
-+
 +#else  /* !MOZ_DNSSEC */
 +
 +int dnssec_validate (const char *domain_name) {
@@ -6511,7 +6510,7 @@
  /*
   * #################################################################
   * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -669,7 +878,44 @@
+@@ -669,7 +877,44 @@
  
  #endif  /* definition of GETHOSTBYXXX */
  
@@ -6557,7 +6556,7 @@
      const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
  {
  	struct hostent *h;
-@@ -682,6 +928,7 @@
+@@ -682,6 +927,7 @@
  #endif
  
      if (!_pr_initialized) _PR_ImplicitInitialization();
@@ -6565,7 +6564,7 @@
  
  #if defined(_PR_HAVE_GETHOST_R)
      tmpbuf = localbuf;
-@@ -691,7 +938,7 @@
+@@ -691,7 +937,7 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -6574,7 +6573,7 @@
          }
      }
  #endif
-@@ -703,13 +950,17 @@
+@@ -703,13 +949,17 @@
  #else
  	h = GETHOSTBYNAME(name);
  #endif
@@ -6594,7 +6593,7 @@
  		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
  		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
  		if (PR_SUCCESS != rv)
-@@ -720,7 +971,17 @@
+@@ -720,7 +970,17 @@
      if (tmpbuf != localbuf)
          PR_Free(tmpbuf);
  #endif
@@ -6613,7 +6612,7 @@
  }
  
  #if !defined(_PR_INET6) && \
-@@ -810,7 +1071,7 @@
+@@ -810,7 +1070,7 @@
  }
  #endif
  
@@ -6622,7 +6621,7 @@
      const char *name, PRUint16 af, PRIntn flags,
      char *buf, PRIntn bufsize, PRHostEnt *hp)
  {
-@@ -831,11 +1092,12 @@
+@@ -831,11 +1091,12 @@
      PRBool did_af_inet = PR_FALSE;
  #endif
  
@@ -6636,7 +6635,7 @@
      }
  
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
-@@ -878,11 +1140,13 @@
+@@ -878,11 +1139,13 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -6651,7 +6650,7 @@
      /* Do not need to lock the DNS lock if getipnodebyname() is called */
  #ifdef _PR_INET6
  #ifdef _PR_HAVE_GETHOSTBYNAME2
-@@ -940,6 +1204,7 @@
+@@ -940,6 +1203,7 @@
      
  	if (NULL == h)
  	{
@@ -6659,7 +6658,7 @@
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
  #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
-@@ -998,7 +1263,18 @@
+@@ -998,7 +1262,18 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -6679,7 +6678,7 @@
  }
  
  PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
-@@ -1020,6 +1296,7 @@
+@@ -1020,6 +1295,7 @@
  	int error_num;
  #endif
  
@@ -6687,7 +6686,7 @@
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1165,7 +1442,7 @@
+@@ -1165,7 +1441,7 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -6696,7 +6695,7 @@
  }
  
  /******************************************************************************/
-@@ -1777,6 +2054,7 @@
+@@ -1777,6 +2053,7 @@
      PRStatus status = PR_SUCCESS;
      PRIntn rv;
  
@@ -6704,7 +6703,7 @@
  #if defined(_PR_HAVE_INET_NTOP)
      rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
      if (1 == rv)
-@@ -1788,23 +2066,26 @@
+@@ -1788,23 +2065,26 @@
          PR_ASSERT(0 == rv);
          /* clean up after the failed inet_pton() call */
          memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
@@ -6736,7 +6735,7 @@
      }
      PR_ASSERT(0 == rv);
      /* clean up after the failed StringToV6Addr() call */
-@@ -1826,7 +2107,7 @@
+@@ -1826,7 +2106,7 @@
      }
  #endif /* _PR_HAVE_INET_NTOP */
  
@@ -6745,38 +6744,45 @@
  }
  
  PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
-@@ -1945,8 +2226,18 @@
+@@ -1940,17 +2220,26 @@
+  * provide getaddrinfo in all versions that NSPR cares to support.
+  */
+ 
+-#if defined(_PR_HAVE_GETADDRINFO)
++#ifdef MOZ_DNSSEC
++#define GETADDRINFO(a,b,c,d) val_getaddrinfo(NULL, a, b, c, d, &val_status)
++#define FREEADDRINFO val_freeaddrinfo
++typedef struct addrinfo PRADDRINFO;
++typedef struct val_addrinfo DNSSECPRADDRINFO;
++
++#elif defined(_PR_HAVE_GETADDRINFO)
+ 
  #if defined(_PR_INET6)
  
  typedef struct addrinfo PRADDRINFO;
++typedef struct addrinfo DNSSECPRADDRINFO;
 +
-+#ifdef MOZ_DNSSEC
-+/*
-+XXX future:
-+#define GETADDRINFO val_getaddrinfo
-+*/
  #define GETADDRINFO getaddrinfo
  #define FREEADDRINFO freeaddrinfo
-+#else /* !MOZ_DNSSEC */
-+#define GETADDRINFO getaddrinfo
-+#define FREEADDRINFO freeaddrinfo
-+#endif
  
  #elif defined(_PR_INET6_PROBE)
  
-@@ -2030,8 +2321,11 @@
+ typedef struct addrinfo PRADDRINFO;
++typedef struct addrinfo DNSSECPRADDRINFO;
+ 
+ /* getaddrinfo/freeaddrinfo prototypes */ 
+ #if defined(WIN32)
+@@ -2030,9 +2319,6 @@
  #endif
  }
  
-+#ifndef MOZ_DNSSEC
-+/* for DNSSEC leave as is */
- #define GETADDRINFO (*_pr_getaddrinfo)
- #define FREEADDRINFO (*_pr_freeaddrinfo)
-+#endif
- 
+-#define GETADDRINFO (*_pr_getaddrinfo)
+-#define FREEADDRINFO (*_pr_freeaddrinfo)
+-
  #endif /* _PR_INET6 */
  
-@@ -2055,41 +2349,44 @@
+ #endif /* _PR_HAVE_GETADDRINFO */
+@@ -2055,45 +2341,52 @@
  {
      PRStatus rv;
      PRAddrInfoFB *ai;
@@ -6808,6 +6814,9 @@
 +                                                        PRUint16     af,
 +                                                        PRIntn       flags)
  {
++#ifdef MOZ_DNSSEC
++  val_status_t val_status;
++#endif
 +    DNSSECFUNDEBUG((stderr, "input=%s\n", hostname));
      /* restrict input to supported values */
      if ((af != PR_AF_INET && af != PR_AF_UNSPEC) ||
@@ -6830,28 +6839,13 @@
      }
  #endif
      {
-@@ -2102,6 +2399,20 @@
-          * RFC 3493.
-          */
+-        PRADDRINFO *res, hints;
++        PRADDRINFO hints;
++        DNSSECPRADDRINFO *res;
+         PRStatus rv;
  
-+        /* XXX */
-+        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: %d %s\n", __LINE__, hostname));
-+
-+        LOCK_DNS();
-+        if (!dnssec_validate(hostname)) {
-+            /* DNSsec validation failed */
-+            PR_SetErrorText(0, "Host DNSsec validation failed");
-+            PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
-+            DNSSECDEBUG((stderr, "DNSSECinet_pton: returning failure %d %s\n", __LINE__, hostname));
-+            UNLOCK_DNS();
-+            DNSSECFUNRETURN(NULL);
-+        }
-+        UNLOCK_DNS();
-+
-         memset(&hints, 0, sizeof(hints));
-         hints.ai_flags = (flags & PR_AI_NOCANONNAME) ? 0: AI_CANONNAME;
-         hints.ai_family = (af == PR_AF_INET) ? AF_INET : AF_UNSPEC;
-@@ -2116,15 +2427,44 @@
+         /*
+@@ -2116,18 +2409,56 @@
          hints.ai_socktype = SOCK_STREAM;
  
          rv = GETADDRINFO(hostname, NULL, &hints, &res);
@@ -6865,13 +6859,20 @@
 +        }
 +        DNSSECDEBUG((stderr, "DNSSECgetaddrinfo returned: %d\n", (unsigned int) res));
 +
-+        /* XXX future DNSSEC work */
-+        if (rv == 0 && res != NULL
-+#if 0
-+            && dnssec_check_policy(val_get_addrinfo_dnssec_status(res), global_policy) == DNSSEC_SUCCESS
++#ifdef MOZ_DNSSEC
++        if (dnssec_check_policy(val_status, global_policy) != DNSSEC_SUCCESS) {
++          /* DNSsec validation failed */
++          PR_SetErrorText(0, "Host DNSsec validation failed");
++          PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
++          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning failure line:%d %s => val_status:%d\n", __LINE__, hostname, val_status));
++          /* map this to a real error code */
++          if(res)
++              val_freeaddrinfo(res);
++          DNSSECFUNRETURN(NULL);
++        }
++
 +#endif
-+          )
-+            DNSSECFUNRETURN((PRAddrInfo *) res);
++
 +        if (rv == 0) {
 +          DNSSECFUNRETURN((PRAddrInfo *) res);
 +        }
@@ -6898,4 +6899,35 @@
 +
  PR_IMPLEMENT(void) PR_FreeAddrInfo(PRAddrInfo *ai)
  {
- #if defined(_PR_HAVE_GETADDRINFO)
+-#if defined(_PR_HAVE_GETADDRINFO)
++#if defined(MOZ_DNSSEC)
++        FREEADDRINFO((DNSSECPRADDRINFO *) ai);
++#elif defined(_PR_HAVE_GETADDRINFO)
+ #if defined(_PR_INET6_PROBE)
+     if (!_pr_ipv6_is_present)
+         PR_Free((PRAddrInfoFB *) ai);
+@@ -2144,9 +2475,9 @@
+                                           PRUint16          port,
+                                           PRNetAddr        *result)
+ {
+-#if defined(_PR_HAVE_GETADDRINFO)
+-    PRADDRINFO *ai;
+-#if defined(_PR_INET6_PROBE)
++#if defined(_PR_HAVE_GETADDRINFO) || defined(MOZ_DNSSEC)
++    DNSSECPRADDRINFO *ai;
++#if defined(_PR_INET6_PROBE) && !defined(MOZ_DNSSEC)
+     if (!_pr_ipv6_is_present) {
+         /* using PRAddrInfoFB */
+         PRIntn iter = (PRIntn)(PRPtrdiff) iterPtr;
+@@ -2158,9 +2489,9 @@
+ #endif
+ 
+     if (iterPtr)
+-        ai = ((PRADDRINFO *) iterPtr)->ai_next;
++        ai = ((DNSSECPRADDRINFO *) iterPtr)->ai_next;
+     else
+-        ai = (PRADDRINFO *) base;
++        ai = (DNSSECPRADDRINFO *) base;
+ 
+     if (ai) {
+         /* copy sockaddr to PRNetAddr */
