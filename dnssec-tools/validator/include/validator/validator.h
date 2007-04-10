@@ -389,6 +389,7 @@ extern          "C" {
 
     struct queries_for_query {
         struct val_query_chain *qfq_query;
+        u_int8_t qfq_flags;
         struct queries_for_query *qfq_next;
     };
 
