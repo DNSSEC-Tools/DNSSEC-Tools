@@ -1,0 +1,114 @@
+Index: src/Resolver.cc
+===================================================================
+RCS file: /home/lav/cvsroot/lftp/src/Resolver.cc,v
+retrieving revision 1.67
+diff -u -p -r1.67 Resolver.cc
+--- src/Resolver.cc	6 Feb 2006 10:57:28 -0000	1.67
++++ src/Resolver.cc	11 Apr 2007 20:42:32 -0000
+@@ -76,6 +76,13 @@ CDECL int res_search(const char*,int,int
+ # define DEFAULT_ORDER "inet"
+ #endif
+ 
++#ifdef LOCAL_DNSSEC_VALIDATION
++# include <validator/validator.h>
++# define ADDRINFO_TYPE struct val_addrinfo
++#else
++#define ADDRINFO_TYPE struct addrinfo
++#endif
++
+ 
+ struct address_family
+ {
+@@ -510,6 +517,10 @@ void Resolver::LookupSRV_RR()
+    int retries=0;
+    int max_retries=ResMgr::Query("dns:max-retries",hostname);
+    int len;
++#ifdef LOCAL_DNSSEC_VALIDATION
++   val_status_t val_status;
++   int require_trust=ResMgr::Query("dns:strict-dnssec",hostname);
++#endif
+    for(;;)
+    {
+       if(!use_fork)
+@@ -519,9 +530,20 @@ void Resolver::LookupSRV_RR()
+ 	    return;
+       }
+       time(&try_time);
++
++#ifndef LOCAL_DNSSEC_VALIDATION
+       len=res_search(srv_name, C_IN, T_SRV, answer, sizeof(answer));
+       if(len>=0)
+ 	 break;
++#else
++      len=val_res_search(srv_name, C_IN, T_SRV, answer, sizeof(answer), &val_status);
++      if(len>=0) {
++          if(require_trust && ! val_istrusted(val_status))
++              return;
++          else
++              break;
++      }
++#endif
+ #ifdef HAVE_H_ERRNO
+       if(h_errno!=TRY_AGAIN)
+ 	 return;
+@@ -705,6 +727,7 @@ void Resolver::LookupOne(const char *nam
+ 
+    int retries=0;
+    int max_retries=ResMgr::Query("dns:max-retries",name);
++   int require_trust=ResMgr::Query("dns:strict-dnssec",name);
+    for(;;)
+    {
+       if(!use_fork)
+@@ -724,21 +747,36 @@ void Resolver::LookupOne(const char *nam
+    && !defined(HAVE_GETIPNODEBYNAME) */
+ 
+       // getaddrinfo support by Brandon Hume
+-      struct addrinfo	    *ainfo=0,
+-			    *a_res,
+-			    a_hint;
++      ADDRINFO_TYPE	    *ainfo=0,
++                            *a_res;
++      struct addrinfo	    a_hint;
+       int		    ainfo_res;
+       struct sockaddr	    *sockname;
+       struct sockaddr_in    *inet_addr;
+       struct sockaddr_in6   *inet6_addr;
+       const char	    *addr_data;
+       int		    addr_len;
++#ifdef LOCAL_DNSSEC_VALIDATION
++      val_status_t          val_status;
++#endif
+ 
+       memset(&a_hint, 0, sizeof(a_hint));
+       a_hint.ai_flags	    = AI_PASSIVE;
+       a_hint.ai_family	    = PF_UNSPEC;
+ 
++#ifndef LOCAL_DNSSEC_VALIDATION
+       ainfo_res	= getaddrinfo(name, NULL, &a_hint, &ainfo);
++#else
++      ainfo_res	= val_getaddrinfo(NULL, name, NULL, &a_hint, &ainfo,
++                                  &val_status);
++      if((ainfo_res == 0) && ! val_istrusted(aitop->ai_val_status) &&
++          require_trust)
++      {
++          // untrusted answer
++          error = _("DNS resoloution not trusted.");
++          break;
++      }
++#endif
+ 
+       if(ainfo_res == 0)
+       {
+@@ -771,7 +809,12 @@ void Resolver::LookupOne(const char *nam
+ 	    }
+ 	 }
+ 
++#ifndef LOCAL_DNSSEC_VALIDATION
+ 	 freeaddrinfo(ainfo);
++#else
++         val_freeaddrinfo(aitop);
++#endif /* LOCAL_DNSSEC_VALIDATION */
++
+ 	 break;
+       }
+ 
