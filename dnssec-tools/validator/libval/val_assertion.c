@@ -1876,7 +1876,6 @@ prove_nsec_span_chk(val_context_t * ctx,
                     struct rrset_rec *the_set, u_int8_t * qname_n,
                     u_int16_t qtype_h, u_int8_t * soa_name_n,
                     int *span_chk, int *wcard_chk,
-                    struct rrset_rec **wcard_proof,
                     u_int8_t ** closest_encounter, val_status_t * status)
 {
 
@@ -1943,11 +1942,8 @@ prove_nsec_span_chk(val_context_t * ctx,
         /*
          * query name comes after the NSEC owner 
          */
-        val_log(ctx, LOG_DEBUG, "NSEC error: Incorrect span");
-        *status = VAL_BOGUS_PROOF;
         return;
     }
-
 
     /*
      * Find the next name 
@@ -1964,7 +1960,6 @@ prove_nsec_span_chk(val_context_t * ctx,
              * if no, check if this is the proof for no wild-card present 
              * i.e the proof must tell us that "*" does not exist 
              */
-            *wcard_proof = the_set;
             return;
         }
     }
@@ -1974,11 +1969,6 @@ prove_nsec_span_chk(val_context_t * ctx,
      */
     *status = VAL_NONEXISTENT_NAME; /** This can change later on if wildcard checks fail **/
     *span_chk = 1;
-    /*
-     * The same NSEC may prove wildcard absence also 
-     */
-    if (*wcard_proof == NULL)
-        *wcard_proof = the_set;
 
     /*
      * The closest encounter is the longest label match between 
@@ -2610,27 +2600,45 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
     
     for (res = w_results; res; res = res->val_rc_next) {
+
         if (!res->val_rc_is_proof)
             continue;
+
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
         if (the_set->rrs_ans_kind != SR_ANS_NACK_NSEC)
             continue;
-        prove_nsec_span_chk(ctx, the_set, qname_n,
+
+        if (!span_chk) {
+            prove_nsec_span_chk(ctx, the_set, qname_n,
                             qtype_h, soa_name_n, &span_chk,
-                            &wcard_chk, &wcard_proof,
-                            &closest_encounter, status);
-        if (*status != VAL_DONT_KNOW || wcard_proof == the_set) {
-            /*
-             * This proof is relevant 
-             */
+                            &wcard_chk, &closest_encounter, status);
+            if (*status != VAL_DONT_KNOW) {
+                /*
+                 * This proof is relevant 
+                 */
+                if (VAL_NO_ERROR !=
+                    (retval = transform_single_result(ctx, res, queries, results,
+                                                  *proof_res, &new_res))) {
+                    goto err;
+                }
+                *proof_res = new_res;
+            }
+            if (wcard_chk) {
+                wcard_proof = the_set;
+                break;
+            }
+
+            if (wcard_proof == NULL)
+                wcard_proof = the_set;
+        } else { 
+            wcard_proof = the_set;
             if (VAL_NO_ERROR !=
-                (retval = transform_single_result(ctx, res, queries, results,
+                    (retval = transform_single_result(ctx, res, queries, results,
                                                   *proof_res, &new_res))) {
                 goto err;
             }
             *proof_res = new_res;
-            if (*status != VAL_DONT_KNOW)
-                break;
+            break;
         }
     }
 
