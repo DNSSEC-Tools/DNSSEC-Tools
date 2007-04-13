@@ -634,7 +634,7 @@ follow_referral_or_alias_link(val_context_t * context,
     u_int8_t       *referral_zone_n;
     struct queries_for_query *added_q;
     u_int16_t       tzonestatus;
-    long            ttl_x;
+    u_int32_t       ttl_x;
 
     if ((matched_q == NULL) || (qnames == NULL) ||
         (learned_zones == NULL) || (queries == NULL) || (answers == NULL))
@@ -1063,7 +1063,7 @@ digest_response(val_context_t * context,
     int len;
     struct qname_chain **qnames;
     int             zonecut_was_modified = 0;
-    long ttl_x;
+    u_int32_t ttl_x;
 
     if ((matched_q == NULL) ||
         (queries == NULL) ||
