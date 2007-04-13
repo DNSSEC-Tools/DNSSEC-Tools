@@ -405,6 +405,7 @@ sub doopts
 			$keysflag = 1;
 		}
 
+		$kobsflag = 1 if($unrefflag);
 		$zobsflag = 1 if($unrefflag);
 	}
 
@@ -1657,7 +1658,6 @@ sub writekeys
 	$zonesflag = $setsflag = 0;
 	maxlens();
 
-	
 	#
 	# Write each of the key types in a nice orderly fashion.
 	#
