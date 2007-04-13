@@ -53,9 +53,9 @@ void            zap_query(val_context_t *context, struct val_query_chain *added_
 int             val_istrusted(val_status_t val_status);
 int             val_isvalidated(val_status_t val_status);
 int             get_zse(val_context_t * ctx, u_int8_t * name_n, 
-                                u_int16_t *tzonestatus, long *ttl_x);
+                                u_int16_t *tzonestatus, u_int32_t *ttl_x);
 int             find_trust_point(val_context_t * ctx, u_int8_t * zone_n, 
-                                u_int8_t ** matched_zone, long *ttl_x);
+                                u_int8_t ** matched_zone, u_int32_t *ttl_x);
 void            val_free_result_chain(struct val_result_chain *results);
 int             try_chase_query(val_context_t * context,
                                 u_char * domain_name_n,
