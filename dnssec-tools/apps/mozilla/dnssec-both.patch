@@ -6262,7 +6262,7 @@
 +PR_DNSSEC_DNE_ERROR=The DNS record does not exist
  PR_MAX_ERROR=Placeholder for the end of the list
 --- old-mozilla/docshell/base/nsDocShell.cpp.orig	2007-04-11 16:29:01.000000000 -0700
-+++ mozilla/docshell/base/nsDocShell.cpp	2007-04-13 08:10:20.000000000 -0700
++++ mozilla/docshell/base/nsDocShell.cpp	2007-04-13 09:03:18.000000000 -0700
 @@ -2983,6 +2983,24 @@
          formatStrCount = 1;
          error.AssignLiteral("dnsNotFound");
@@ -6283,7 +6283,7 @@
 +        aURI->GetHost(host);
 +        CopyUTF8toUTF16(host, formatStrs[0]);
 +        formatStrCount = 1;
-+        fprintf(stderr, "we're HEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEre\n");        error.Assign(NS_LITERAL_STRING("dnsDNSSECDNEError"));
++        error.Assign(NS_LITERAL_STRING("dnsDNSSECDNEError"));
 +    }
      else if(NS_ERROR_CONNECTION_REFUSED == aError) {
          NS_ENSURE_ARG_POINTER(aURI);
@@ -6303,8 +6303,8 @@
  /**
   * The lookup of a proxy hostname failed.
   *
---- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-04-13 08:29:19.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-04-13 08:29:19.000000000 -0700
+--- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-04-13 09:03:48.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-04-13 09:03:48.000000000 -0700
 @@ -39,6 +39,10 @@
  
  #include <string.h>
