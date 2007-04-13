@@ -1,0 +1,203 @@
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/Strn/syshdrs.h dnssec-ncftp-3.2.0/Strn/syshdrs.h
+--- ncftp-3.2.0/Strn/syshdrs.h	2004-01-07 01:07:05.000000000 -0500
++++ dnssec-ncftp-3.2.0/Strn/syshdrs.h	2007-04-13 17:49:53.000000000 -0400
+@@ -57,4 +57,8 @@
+ extern char *strdup(const char *const src);
+ #endif
+ 
++#ifdef LOCAL_DNSSEC_VALIDATION
++#include <validator/validator.h>
++#endif
++
+ /* eof */
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/libncftp/syshdrs.h dnssec-ncftp-3.2.0/libncftp/syshdrs.h
+--- ncftp-3.2.0/libncftp/syshdrs.h	2006-07-31 14:14:28.000000000 -0400
++++ dnssec-ncftp-3.2.0/libncftp/syshdrs.h	2007-04-13 17:49:57.000000000 -0400
+@@ -348,4 +348,8 @@ extern ssize_t nsendmsg(int, const struc
+ #include "util.h"
+ #include "ftp.h"
+ 
++#ifdef LOCAL_DNSSEC_VALIDATION
++#include <validator/validator.h>
++#endif
++
+ /* eof */
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/ncftp/cmds.c dnssec-ncftp-3.2.0/ncftp/cmds.c
+--- ncftp-3.2.0/ncftp/cmds.c	2006-08-02 18:32:04.000000000 -0400
++++ dnssec-ncftp-3.2.0/ncftp/cmds.c	2007-04-13 17:52:07.000000000 -0400
+@@ -2529,7 +2529,18 @@ DoOpen(void)
+ 		}
+ 		if (result < 0) {
+ 			(void) printf("\n");
++#ifndef LOCAL_DNSSEC_VALIDATION
+ 			(void) printf("Unknown host \"%s\".\n", ohost);
++#else
++                        /*
++                         * It would be nice to print a little more information,
++                         * but that would mean an API change to MyGetHostByName.
++                         */
++			(void) printf("%s host \"%s\".\n",
++                                      (result == -2) ?
++                                      "Untrusted DNS response for" : "Unknown",
++                                      ohost);
++#endif
+ 			return (-1);
+ 		}
+ 		(void) STRNCPY(gConn.host, ipstr);
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/ncftp/syshdrs.h dnssec-ncftp-3.2.0/ncftp/syshdrs.h
+--- ncftp-3.2.0/ncftp/syshdrs.h	2004-01-06 16:41:11.000000000 -0500
++++ dnssec-ncftp-3.2.0/ncftp/syshdrs.h	2007-04-13 17:50:10.000000000 -0400
+@@ -280,3 +280,8 @@
+ #include <Strn.h>			/* Library header. */
+ #include <sio.h>			/* Library header. */
+ #include <ncftp.h>			/* Library header. */
++
++#ifdef LOCAL_DNSSEC_VALIDATION
++#include <validator/validator.h>
++#endif
++
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/ncftp/util.c dnssec-ncftp-3.2.0/ncftp/util.c
+--- ncftp-3.2.0/ncftp/util.c	2006-08-02 18:31:38.000000000 -0400
++++ dnssec-ncftp-3.2.0/ncftp/util.c	2007-04-13 17:48:38.000000000 -0400
+@@ -688,6 +688,9 @@ MyGetHostByName(char *const volatile dst
+ #ifdef HAVE_INET_ATON
+ 	struct in_addr ina;
+ #endif
++#ifdef LOCAL_DNSSEC_VALIDATION
++        val_status_t val_status;
++#endif
+ 
+ #ifdef HAVE_INET_ATON
+ 	if (inet_aton(hn, &ina) != 0) {
+@@ -726,12 +729,26 @@ MyGetHostByName(char *const volatile dst
+ 		osigalrm = NcSignal(SIGALRM, CancelGetHostByName);
+ 		if (t > 0)
+ 			(void) alarm((unsigned int) t);
++#ifndef LOCAL_DNSSEC_VALIDATION
+ 		hp = gethostbyname(hn);
++#else
++                hp = val_gethostbyname(NULL, hn, &val_status);
++#endif
+ 		if (t > 0)
+ 			(void) alarm(0);
+ 		(void) NcSignal(SIGPIPE, osigpipe);
+ 		(void) NcSignal(SIGINT, osigint);
+ 		(void) NcSignal(SIGALRM, osigalrm);
++#ifdef LOCAL_DNSSEC_VALIDATION
++                /*
++                 * It would be nice to pass a little more information back,
++                 * but that would mean an API change to MyGetHostByName.
++                 */
++                if ((hp != NULL) && ! val_istrusted(val_status)) {
++                    *dst = '\0';
++                    return (-2);
++                }
++#endif
+ 		if (hp != NULL) {
+ 			InetNtoA(dst, ((struct in_addr **) hp->h_addr_list)[0], dsize);
+ 			return (0);
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/sh_util/syshdrs.h dnssec-ncftp-3.2.0/sh_util/syshdrs.h
+--- ncftp-3.2.0/sh_util/syshdrs.h	2002-03-27 05:37:56.000000000 -0500
++++ dnssec-ncftp-3.2.0/sh_util/syshdrs.h	2007-04-13 17:50:17.000000000 -0400
+@@ -283,3 +283,8 @@
+ #include <Strn.h>			/* Library header. */
+ #include <sio.h>			/* Library header. */
+ #include <ncftp.h>			/* Library header. */
++
++#ifdef LOCAL_DNSSEC_VALIDATION
++#include <validator/validator.h>
++#endif
++
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/sio/DNSUtil.c dnssec-ncftp-3.2.0/sio/DNSUtil.c
+--- ncftp-3.2.0/sio/DNSUtil.c	2005-03-24 20:20:00.000000000 -0500
++++ dnssec-ncftp-3.2.0/sio/DNSUtil.c	2007-04-13 18:00:40.000000000 -0400
+@@ -24,7 +24,28 @@ extern int getdomainname(char *name, get
+ int
+ GetHostByName(struct hostent *const hp, const char *const name, char *const hpbuf, size_t hpbufsize)
+ {
+-#if defined(HAVE_GETHOSTBYNAME_R) && (defined(SOLARIS) || defined(IRIX) || defined(BSDOS))
++#if defined(DNSSEC_LOCAL_VALIDATION)
++	char *usehpbuf;
++	struct hostent *h;
++	int my_h_errno, rc;
++        val_status_t * val_status;
++
++	usehpbuf = hpbuf;
++	forever {
++		errno = 0;
++		my_h_errno = 0;
++		h = NULL;
++		memset(usehpbuf, 0, hpbufsize);
++		rc = val_gethostbyname2_r(NULL, name, AF_INET, hp, usehpbuf,
++                                          hpbufsize, &h, &my_h_errno,
++                                          &val_status);
++		if ((rc == 0) && (h != NULL) && val_istrusted(val_status))
++			return (-2);
++		if ((rc == 0) && (my_h_errno != 0))
++			errno = ENOENT;
++		break;
++	}
++#elif defined(HAVE_GETHOSTBYNAME_R) && (defined(SOLARIS) || defined(IRIX) || defined(BSDOS))
+ 	struct hostent *h;
+ 	int h_errno_unused = 0;
+ 	memset(hpbuf, 0, hpbufsize);
+@@ -110,6 +131,7 @@ GetHostByName(struct hostent *const hp, 
+ int
+ GetHostByAddr(struct hostent *const hp, void *addr, int asize, int atype, char *const hpbuf, size_t hpbufsize)
+ {
++	printf("TODO?: GetHostByAddr\n");
+ #if defined(HAVE_GETHOSTBYADDR_R) && (defined(SOLARIS) || defined(IRIX) || defined(BSDOS))
+ 	struct hostent *h;
+ 	int h_errno_unused = 0;
+@@ -376,6 +398,7 @@ getdomainname(char *const domain, unsign
+ int
+ GetOurHostName(char *const host, const size_t siz)
+ {
++	printf("TODO?: GetOurHostName\n");
+ #ifdef HOSTNAME
+ 	/* You can hardcode in the name if this routine doesn't work
+ 	 * the way you want it to.
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/sio/StrAddr.c dnssec-ncftp-3.2.0/sio/StrAddr.c
+--- ncftp-3.2.0/sio/StrAddr.c	2002-10-12 17:07:16.000000000 -0400
++++ dnssec-ncftp-3.2.0/sio/StrAddr.c	2007-04-13 17:48:38.000000000 -0400
+@@ -202,6 +202,7 @@ InetNtoA(char *dst, struct in_addr *ia, 
+ int
+ AddrStrToAddr(const char * const s, struct sockaddr_in * const sa, const int defaultport)
+ {
++	printf("TODO?: AddrStrToAddr\n");
+ 	char portstr[128];
+ 	unsigned int ipnum;
+ 	unsigned int port;
+@@ -292,6 +293,8 @@ AddrToAddrStr(char *const dst, size_t ds
+ 	char *dlim, *dp;
+ 	const char *cp;
+ 
++	printf("TODO?: AddrToAddrStr\n");
++
+ 	addrNamePtr = NULL;
+ 	if (dns == 0) {
+ 		InetNtoA(addrName, &saddrp->sin_addr, sizeof(addrName));
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/sio/syshdrs.h dnssec-ncftp-3.2.0/sio/syshdrs.h
+--- ncftp-3.2.0/sio/syshdrs.h	2005-03-24 20:13:56.000000000 -0500
++++ dnssec-ncftp-3.2.0/sio/syshdrs.h	2007-04-13 17:50:21.000000000 -0400
+@@ -212,4 +212,8 @@ extern ssize_t nsendmsg(int, const struc
+ #	endif
+ #endif	/* SOCKS */
+ 
++#ifdef LOCAL_DNSSEC_VALIDATION
++#include <validator/validator.h>
++#endif
++
+ /* eof */
+diff -I '\$Id: ' -u -r -b -w -p -d --exclude-from=/home/rstory/.rcfiles/diff-ignore ncftp-3.2.0/vis/syshdrs.h dnssec-ncftp-3.2.0/vis/syshdrs.h
+--- ncftp-3.2.0/vis/syshdrs.h	2004-01-07 01:07:37.000000000 -0500
++++ dnssec-ncftp-3.2.0/vis/syshdrs.h	2007-04-13 17:50:26.000000000 -0400
+@@ -348,3 +348,8 @@
+ #include <Strn.h>			/* Library header. */
+ #include <sio.h>			/* Because ../ncftp/util.c needs it. */
+ #include <ncftp.h>			/* Mostly for utility routines it has. */
++
++#ifdef LOCAL_DNSSEC_VALIDATION
++#include <validator/validator.h>
++#endif
++
