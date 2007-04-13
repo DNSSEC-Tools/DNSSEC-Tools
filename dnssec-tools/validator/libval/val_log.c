@@ -320,6 +320,11 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 {
     struct val_result_chain *next_result;
 
+    if (results == NULL) { 
+        val_log(ctx, level, "  Result was NULL");
+        return;
+    }
+
     for (next_result = results; next_result;
          next_result = next_result->val_rc_next) {
         struct val_authentication_chain *next_as;
