@@ -24,44 +24,6 @@
  MOZ_ENABLE_CAIRO_GFX	= @MOZ_ENABLE_CAIRO_GFX@
  MOZ_ENABLE_GTK		= @MOZ_ENABLE_GTK@
  MOZ_ENABLE_GTK2		= @MOZ_ENABLE_GTK2@
---- mozilla.firefox.1.5.0.6.rpmdist/docshell/base/nsWebShell.cpp	2005-10-18 06:36:50.000000000 -0700
-+++ mozilla/docshell/base/nsWebShell.cpp	2006-08-23 19:01:13.000000000 -0700
-@@ -827,6 +827,7 @@
- 
-     // Errors to be shown only on top-level frames
-     if ((aStatus == NS_ERROR_UNKNOWN_HOST || 
-+         aStatus == NS_ERROR_DNSSEC_VALIDATION_ERROR ||
-          aStatus == NS_ERROR_CONNECTION_REFUSED ||
-          aStatus == NS_ERROR_UNKNOWN_PROXY_HOST || 
-          aStatus == NS_ERROR_PROXY_CONNECTION_REFUSED) &&
---- mozilla.firefox.1.5.0.6.rpmdist/docshell/resources/content/netError.xhtml	2005-10-03 12:34:55.000000000 -0700
-+++ mozilla/docshell/resources/content/netError.xhtml	2006-08-23 19:01:13.000000000 -0700
-@@ -145,6 +145,7 @@
-     <div id="errorContainer">
-       <div id="errorTitlesContainer">
-         <h1 id="et_generic">&generic.title;</h1>
-+        <h1 id="et_dnsDNSSECError">&dnsDNSSECError.title;</h1>
-         <h1 id="et_dnsNotFound">&dnsNotFound.title;</h1>
-         <h1 id="et_fileNotFound">&fileNotFound.title;</h1>
-         <h1 id="et_malformedURI">&malformedURI.title;</h1>
-@@ -163,6 +164,7 @@
-       <div id="errorDescriptionsContainer">
-         <div id="ed_generic">&generic.longDesc;</div>
-         <div id="ed_dnsNotFound">&dnsNotFound.longDesc;</div>
-+        <div id="ed_dnsDNSSECError">&dnsDNSSECError.longDesc;</div>
-         <div id="ed_fileNotFound">&fileNotFound.longDesc;</div>
-         <div id="ed_malformedURI">&malformedURI.longDesc;</div>
-         <div id="ed_protocolNotFound">&protocolNotFound.longDesc;</div>
---- mozilla.firefox.1.5.0.6.rpmdist/dom/locales/en-US/chrome/appstrings.properties	2005-02-20 10:10:14.000000000 -0800
-+++ mozilla/dom/locales/en-US/chrome/appstrings.properties	2006-08-23 19:01:13.000000000 -0700
-@@ -37,6 +37,7 @@
- malformedURI=The URL is not valid and cannot be loaded.
- fileNotFound=The file %S cannot be found. Please check the location and try again.
- dnsNotFound=%S could not be found. Please check the name and try again.
-+dnsDNSSECError=%S failed its DNSSEC security check validation. Please contact a security or system administrator for help.
- protocolNotFound=%S is not a registered protocol.
- connectionFailure=The connection was refused when attempting to contact %S.
- netInterrupt=The connection to %S has terminated unexpectedly. Some data may have been transferred.
 --- mozilla.firefox.1.5.0.6.rpmdist/embedding/browser/photon/src/Makefile.in	2005-04-26 10:37:02.000000000 -0700
 +++ mozilla/embedding/browser/photon/src/Makefile.in	2006-08-23 19:01:13.000000000 -0700
 @@ -100,6 +100,7 @@
@@ -72,27 +34,6 @@
  		$(ZLIB_LIBS) \
  		$(NULL)
  
---- mozilla.firefox.1.5.0.6.rpmdist/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd	1969-12-31 16:00:00.000000000 -0800
-+++ mozilla/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd	2006-08-23 19:01:13.000000000 -0700
-@@ -0,0 +1,18 @@
-+<!ENTITY dnssecHeader                    "DNS Security">
-+
-+<!ENTITY dnsSecurity.label            "DNS Security Policies">
-+
-+<!--LOCALIZATION NOTE (onStartLegend.label): Don't translate "&brandShortName;".
-+    Place "&brandShortName;" in the phrase where the name of the application should
-+	 appear
-+-->
-+<!ENTITY dnssecDetails                   "Require DNS Security when resolving host names.">
-+
-+<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
-+<!ENTITY allDNSSecure.accesskey         "A">
-+
-+<!ENTITY possibleDNSSecure.label        "Use DNS security if possible.">
-+<!ENTITY possibleDNSSecure.accesskey    "P">
-+
-+<!ENTITY neverDNSSecure.label           "Ignore DNS security.">
-+<!ENTITY neverDNSSecure.accesskey       "N">
 --- mozilla.firefox.1.5.0.6.rpmdist/modules/libpr0n/build/Makefile.in	2004-12-09 11:28:21.000000000 -0800
 +++ mozilla/modules/libpr0n/build/Makefile.in	2006-08-23 19:01:13.000000000 -0700
 @@ -89,6 +89,7 @@
@@ -103,18 +44,6 @@
  		$(PNG_LIBS) $(ZLIB_LIBS) \
  		$(EXTRA_DSO_LIBS) \
  		$(MOZ_COMPONENT_LIBS) \
---- mozilla.firefox.1.5.0.6.rpmdist/netwerk/base/public/nsNetError.h	2004-06-16 12:51:19.000000000 -0700
-+++ mozilla/netwerk/base/public/nsNetError.h	2006-08-23 19:01:13.000000000 -0700
-@@ -252,6 +252,9 @@
- #define NS_ERROR_UNKNOWN_HOST \
-     NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 30)
- 
-+#define NS_ERROR_DNSSEC_VALIDATION_ERROR \
-+    NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 31)
-+
- /**
-  * The lookup of a proxy hostname failed.
-  *
 --- mozilla.firefox.1.5.0.6.rpmdist/netwerk/dns/src/nsDNSService2.cpp	2005-10-18 14:25:45.000000000 -0700
 +++ mozilla/netwerk/dns/src/nsDNSService2.cpp	2006-08-23 19:01:13.000000000 -0700
 @@ -122,6 +122,10 @@
@@ -211,55 +140,6 @@
  
  AC_SUBST(USE_PTHREADS)
  AC_SUBST(USE_BTHREADS)
---- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/include/prerr.h	2004-04-27 17:33:43.000000000 -0700
-+++ mozilla/nsprpub/pr/include/prerr.h	2006-08-23 19:01:13.000000000 -0700
-@@ -269,8 +269,11 @@
- /* The library is not loaded */
- #define PR_LIBRARY_NOT_LOADED_ERROR              (-5926L)
- 
-+/* The DNS record failed DNSSEC validation */
-+#define PR_DNSSEC_VALIDATION_ERROR               (-5925L)
-+
- /* Placeholder for the end of the list */
--#define PR_MAX_ERROR                             (-5925L)
-+#define PR_MAX_ERROR                             (-5924L)
- 
- extern void nspr_InitializePRErrorTable(void);
- #define ERROR_TABLE_BASE_nspr (-6000L)
---- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prerr.c	2004-04-27 17:34:07.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.c	2006-08-23 19:01:13.000000000 -0700
-@@ -117,11 +117,12 @@
- 	{"PR_CONNECT_ABORTED_ERROR",    "Connection aborted"},
- 	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
- 	{"PR_LIBRARY_NOT_LOADED_ERROR",    "The library is not loaded"},
-+	{"PR_DNSSEC_VALIDATION_ERROR",    "The DNS record failed DNSSEC validation"},
- 	{"PR_MAX_ERROR",    "Placeholder for the end of the list"},
- 	{0, 0}
- };
- 
--static const struct PRErrorTable et = { text, "prerr", -6000L, 76 };
-+static const struct PRErrorTable et = { text, "prerr", -6000L, 77 };
- 
- void nspr_InitializePRErrorTable(void) {
-     PR_ErrorInstallTable(&et);
---- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prerr.et	2005-03-07 18:38:53.000000000 -0800
-+++ mozilla/nsprpub/pr/src/misc/prerr.et	2006-08-23 19:01:13.000000000 -0700
-@@ -133,6 +133,7 @@
- ec PR_CONNECT_ABORTED_ERROR,    "Connection aborted"
- ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
- ec PR_LIBRARY_NOT_LOADED_ERROR, "The library is not loaded"
-+ec PR_DNSSEC_VALIDATION_ERROR,  "The DNS record failed DNSSEC validation"
- 
- ec PR_MAX_ERROR,                "Placeholder for the end of the list"
- 
---- mozilla.firefox.1.5.0.6.rpmdist/nsprpub/pr/src/misc/prerr.properties	2004-04-27 17:34:07.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prerr.properties	2006-08-23 19:01:13.000000000 -0700
-@@ -113,4 +113,5 @@
- PR_CONNECT_ABORTED_ERROR=Connection aborted
- PR_HOST_UNREACHABLE_ERROR=Host is unreachable
- PR_LIBRARY_NOT_LOADED_ERROR=The library is not loaded
-+PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
- PR_MAX_ERROR=Placeholder for the end of the list
 --- mozilla.firefox.1.5.0.6.rpmdist/configure.in	2006-06-15 06:29:32.000000000 -0700
 +++ mozilla/configure.in	2006-08-23 19:01:13.000000000 -0700
 @@ -3538,6 +3538,54 @@
@@ -5964,24 +5844,6 @@
  # If a platform has a system zlib, set USE_SYSTEM_ZLIB to 1 and
  # ZLIB_LIBS to the linker command-line arguments for the system zlib
  # (for example, -lz) in the platform's config file in coreconf.
---- mozilla.firefox.1.5.0.6.rpmdist/docshell/base/nsDocShell.cpp	2006-06-07 00:36:09.000000000 -0700
-+++ mozilla/docshell/base/nsDocShell.cpp	2006-08-23 19:01:13.000000000 -0700
-@@ -2983,6 +2983,15 @@
-         formatStrCount = 1;
-         error.AssignLiteral("dnsNotFound");
-     }
-+    else if (NS_ERROR_DNSSEC_VALIDATION_ERROR == aError) {
-+        NS_ENSURE_ARG_POINTER(aURI);
-+        // Get the host
-+        nsCAutoString host;
-+        aURI->GetHost(host);
-+        CopyUTF8toUTF16(host, formatStrs[0]);
-+        formatStrCount = 1;
-+        error.Assign(NS_LITERAL_STRING("dnsDNSSECError"));
-+    }
-     else if(NS_ERROR_CONNECTION_REFUSED == aError) {
-         NS_ENSURE_ARG_POINTER(aURI);
-         // Build up the host:port string.
 --- old-mozilla/nsprpub/pr/include/prnetdb.h.orig	2007-04-02 20:52:22.000000000 -0700
 +++ mozilla/nsprpub/pr/include/prnetdb.h	2007-04-09 16:36:57.000000000 -0700
 @@ -111,6 +111,33 @@
@@ -6114,7 +5976,7 @@
  
  #endif /* prnetdb_h___ */
 --- old-mozilla/netwerk/dns/src/nsHostResolver.cpp.orig	2007-04-03 13:40:22.000000000 -0700
-+++ mozilla/netwerk/dns/src/nsHostResolver.cpp	2007-04-06 14:35:31.000000000 -0700
++++ mozilla/netwerk/dns/src/nsHostResolver.cpp	2007-04-13 08:10:38.000000000 -0700
 @@ -58,6 +58,7 @@
  #include "pratom.h"
  #include "prthread.h"
@@ -6132,7 +5994,7 @@
  
  nsresult
  nsHostRecord::Create(const nsHostKey *key, nsHostRecord **result)
-@@ -644,15 +645,40 @@
+@@ -644,15 +645,44 @@
          PRIntn flags = PR_AI_ADDRCONFIG;
          if (!(rec->flags & RES_CANON_NAME))
              flags |= PR_AI_NOCANONNAME;
@@ -6164,6 +6026,10 @@
 +            switch(err) {
 +            case PR_DNSSEC_VALIDATION_ERROR:
 +                status = NS_ERROR_DNSSEC_VALIDATION_ERROR;
++                break;
++
++            case PR_DNSSEC_DNE_ERROR:
++                status = NS_ERROR_DNSSEC_DNE_ERROR;
 +                break;
 +
 +            default:
@@ -6204,7 +6070,7 @@
 +    const unsigned long RESOLVE_EXTENDED_ERRS = (1 << 2);
  };
 --- old-mozilla/netwerk/base/src/nsSocketTransport2.cpp.orig	2007-04-04 09:11:51.000000000 -0700
-+++ mozilla/netwerk/base/src/nsSocketTransport2.cpp	2007-04-06 14:35:35.000000000 -0700
++++ mozilla/netwerk/base/src/nsSocketTransport2.cpp	2007-04-13 08:10:43.000000000 -0700
 @@ -66,6 +66,7 @@
  #include "nsISocketProvider.h"
  #include "nsISSLSocketControl.h"
@@ -6224,21 +6090,23 @@
      if (NS_SUCCEEDED(rv)) {
          LOG(("  advancing to STATE_RESOLVING\n"));
          mState = STATE_RESOLVING;
-@@ -1212,6 +1213,7 @@
+@@ -1212,6 +1213,8 @@
          mCondition != NS_ERROR_PROXY_CONNECTION_REFUSED &&
          mCondition != NS_ERROR_NET_TIMEOUT &&
          mCondition != NS_ERROR_UNKNOWN_HOST &&
 +        mCondition != NS_ERROR_DNSSEC_VALIDATION_ERROR &&
++        mCondition != NS_ERROR_DNSSEC_DNE_ERROR &&
          mCondition != NS_ERROR_UNKNOWN_PROXY_HOST)
          return PR_FALSE;
  
-@@ -1392,7 +1394,9 @@
+@@ -1392,7 +1395,10 @@
          // status contains DNS lookup status
          if (NS_FAILED(status)) {
              // fixup error code if proxy was not found
 -            if ((status == NS_ERROR_UNKNOWN_HOST) && !mProxyHost.IsEmpty())
 +            if ((status == NS_ERROR_UNKNOWN_HOST ||
-+                 status == NS_ERROR_DNSSEC_VALIDATION_ERROR) &&
++                 status == NS_ERROR_DNSSEC_VALIDATION_ERROR ||
++                 status == NS_ERROR_DNSSEC_DNE_ERROR) &&
 +                !mProxyHost.IsEmpty())
                  mCondition = NS_ERROR_UNKNOWN_PROXY_HOST;
              else
@@ -6263,6 +6131,17 @@
  }
  
  PRBool
+--- old-mozilla/docshell/base/nsWebShell.cpp.orig	2007-04-11 16:15:55.000000000 -0700
++++ mozilla/docshell/base/nsWebShell.cpp	2007-04-13 08:10:47.000000000 -0700
+@@ -827,6 +827,8 @@
+ 
+     // Errors to be shown only on top-level frames
+     if ((aStatus == NS_ERROR_UNKNOWN_HOST || 
++         aStatus == NS_ERROR_DNSSEC_VALIDATION_ERROR ||
++         aStatus == NS_ERROR_DNSSEC_DNE_ERROR ||
+          aStatus == NS_ERROR_CONNECTION_REFUSED ||
+          aStatus == NS_ERROR_UNKNOWN_PROXY_HOST || 
+          aStatus == NS_ERROR_PROXY_CONNECTION_REFUSED) &&
 --- old-mozilla/netwerk/base/src/nsPACMan.cpp.orig	2007-04-04 16:52:01.000000000 -0700
 +++ mozilla/netwerk/base/src/nsPACMan.cpp	2007-04-04 16:52:50.000000000 -0700
 @@ -102,7 +102,8 @@
@@ -6275,8 +6154,157 @@
    if (NS_FAILED(rv))
      NS_WARNING("DNS AsyncResolve failed");
  
---- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-04-10 08:02:32.000000000 -0700
-+++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-04-10 08:02:32.000000000 -0700
+--- old-mozilla/docshell/resources/content/netError.xhtml.orig	2007-04-11 16:17:10.000000000 -0700
++++ mozilla/docshell/resources/content/netError.xhtml	2007-04-11 16:34:07.000000000 -0700
+@@ -145,6 +145,8 @@
+     <div id="errorContainer">
+       <div id="errorTitlesContainer">
+         <h1 id="et_generic">&generic.title;</h1>
++        <h1 id="et_dnsDNSSECValidationError">&dnsDNSSECValidationError.title;</h1>
++        <h1 id="et_dnsDNSSECDNEError">&dnsDNSSECDNEError.title;</h1>
+         <h1 id="et_dnsNotFound">&dnsNotFound.title;</h1>
+         <h1 id="et_fileNotFound">&fileNotFound.title;</h1>
+         <h1 id="et_malformedURI">&malformedURI.title;</h1>
+@@ -163,6 +165,8 @@
+       <div id="errorDescriptionsContainer">
+         <div id="ed_generic">&generic.longDesc;</div>
+         <div id="ed_dnsNotFound">&dnsNotFound.longDesc;</div>
++        <div id="ed_dnsDNSSECValidationError">&dnsDNSSECValidationError.longDesc;</div>
++        <div id="ed_dnsDNSSECDNEError">&dnsDNSSECDNEError.longDesc;</div>
+         <div id="ed_fileNotFound">&fileNotFound.longDesc;</div>
+         <div id="ed_malformedURI">&malformedURI.longDesc;</div>
+         <div id="ed_protocolNotFound">&protocolNotFound.longDesc;</div>
+--- old-mozilla/dom/locales/en-US/chrome/appstrings.properties.orig	2007-04-11 16:19:15.000000000 -0700
++++ mozilla/dom/locales/en-US/chrome/appstrings.properties	2007-04-11 16:32:58.000000000 -0700
+@@ -37,6 +37,8 @@
+ malformedURI=The URL is not valid and cannot be loaded.
+ fileNotFound=The file %S cannot be found. Please check the location and try again.
+ dnsNotFound=%S could not be found. Please check the name and try again.
++dnsDNSSECValidationError=%S failed its DNSSEC security check validation. Please contact a security or system administrator for help.
++dnsDNSSECDNEError=%S does not exist within the DNS.  Please check the name and try again.
+ protocolNotFound=%S is not a registered protocol.
+ connectionFailure=The connection was refused when attempting to contact %S.
+ netInterrupt=The connection to %S has terminated unexpectedly. Some data may have been transferred.
+--- old-mozilla/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd.orig	2007-04-11 16:20:00.000000000 -0700
++++ mozilla/extensions/cookie/resources/locale/en-US/pref-dnssec.dtd	2007-04-11 16:19:35.000000000 -0700
+@@ -0,0 +1,18 @@
++<!ENTITY dnssecHeader                    "DNS Security">
++
++<!ENTITY dnsSecurity.label            "DNS Security Policies">
++
++<!--LOCALIZATION NOTE (onStartLegend.label): Don't translate "&brandShortName;".
++    Place "&brandShortName;" in the phrase where the name of the application should
++	 appear
++-->
++<!ENTITY dnssecDetails                   "Require DNS Security when resolving host names.">
++
++<!ENTITY allDNSSecure.label             "Require all DNS lookups to be secure">
++<!ENTITY allDNSSecure.accesskey         "A">
++
++<!ENTITY possibleDNSSecure.label        "Use DNS security if possible.">
++<!ENTITY possibleDNSSecure.accesskey    "P">
++
++<!ENTITY neverDNSSecure.label           "Ignore DNS security.">
++<!ENTITY neverDNSSecure.accesskey       "N">
+--- old-mozilla/nsprpub/pr/src/misc/prerr.c.orig	2007-04-11 16:25:26.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.c	2007-04-11 16:32:04.000000000 -0700
+@@ -117,11 +117,13 @@
+ 	{"PR_CONNECT_ABORTED_ERROR",    "Connection aborted"},
+ 	{"PR_HOST_UNREACHABLE_ERROR",    "Host is unreachable"},
+ 	{"PR_LIBRARY_NOT_LOADED_ERROR",    "The library is not loaded"},
++	{"PR_DNSSEC_VALIDATION_ERROR",    "The DNS record failed DNSSEC validation"},
++	{"PR_DNSSEC_DNE_ERROR",    "The DNS record does not exist"},
+ 	{"PR_MAX_ERROR",    "Placeholder for the end of the list"},
+ 	{0, 0}
+ };
+ 
+-static const struct PRErrorTable et = { text, "prerr", -6000L, 76 };
++static const struct PRErrorTable et = { text, "prerr", -6000L, 78 };
+ 
+ void nspr_InitializePRErrorTable(void) {
+     PR_ErrorInstallTable(&et);
+--- old-mozilla/nsprpub/pr/include/prerr.h.orig	2007-04-11 16:21:59.000000000 -0700
++++ mozilla/nsprpub/pr/include/prerr.h	2007-04-11 16:31:26.000000000 -0700
+@@ -269,8 +269,14 @@
+ /* The library is not loaded */
+ #define PR_LIBRARY_NOT_LOADED_ERROR              (-5926L)
+ 
++/* The DNS record failed DNSSEC validation */
++#define PR_DNSSEC_VALIDATION_ERROR               (-5925L)
++
++/* The DNS record failed DNSSEC validation */
++#define PR_DNSSEC_DNE_ERROR                      (-5924L)
++
+ /* Placeholder for the end of the list */
+-#define PR_MAX_ERROR                             (-5925L)
++#define PR_MAX_ERROR                             (-5923L)
+ 
+ extern void nspr_InitializePRErrorTable(void);
+ #define ERROR_TABLE_BASE_nspr (-6000L)
+--- old-mozilla/nsprpub/pr/src/misc/prerr.et.orig	2007-04-11 16:26:12.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.et	2007-04-11 16:31:00.000000000 -0700
+@@ -133,6 +133,8 @@
+ ec PR_CONNECT_ABORTED_ERROR,    "Connection aborted"
+ ec PR_HOST_UNREACHABLE_ERROR,   "Host is unreachable"
+ ec PR_LIBRARY_NOT_LOADED_ERROR, "The library is not loaded"
++ec PR_DNSSEC_VALIDATION_ERROR,  "The DNS record failed DNSSEC validation"
++ec PR_DNSSEC_DNE_ERROR,		"The DNS record does not exist"
+ 
+ ec PR_MAX_ERROR,                "Placeholder for the end of the list"
+ 
+--- old-mozilla/nsprpub/pr/src/misc/prerr.properties.orig	2007-04-11 16:27:39.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prerr.properties	2007-04-11 16:30:39.000000000 -0700
+@@ -113,4 +113,6 @@
+ PR_CONNECT_ABORTED_ERROR=Connection aborted
+ PR_HOST_UNREACHABLE_ERROR=Host is unreachable
+ PR_LIBRARY_NOT_LOADED_ERROR=The library is not loaded
++PR_DNSSEC_VALIDATION_ERROR=The DNS record failed DNSSEC validation
++PR_DNSSEC_DNE_ERROR=The DNS record does not exist
+ PR_MAX_ERROR=Placeholder for the end of the list
+--- old-mozilla/docshell/base/nsDocShell.cpp.orig	2007-04-11 16:29:01.000000000 -0700
++++ mozilla/docshell/base/nsDocShell.cpp	2007-04-13 08:10:20.000000000 -0700
+@@ -2983,6 +2983,24 @@
+         formatStrCount = 1;
+         error.AssignLiteral("dnsNotFound");
+     }
++    else if (NS_ERROR_DNSSEC_VALIDATION_ERROR == aError) {
++        NS_ENSURE_ARG_POINTER(aURI);
++        // Get the host
++        nsCAutoString host;
++        aURI->GetHost(host);
++        CopyUTF8toUTF16(host, formatStrs[0]);
++        formatStrCount = 1;
++        error.Assign(NS_LITERAL_STRING("dnsDNSSECValidationError"));
++    }
++    else if (NS_ERROR_DNSSEC_DNE_ERROR == aError) {
++        NS_ENSURE_ARG_POINTER(aURI);
++        // Get the host
++        nsCAutoString host;
++        aURI->GetHost(host);
++        CopyUTF8toUTF16(host, formatStrs[0]);
++        formatStrCount = 1;
++        fprintf(stderr, "we're HEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEre\n");        error.Assign(NS_LITERAL_STRING("dnsDNSSECDNEError"));
++    }
+     else if(NS_ERROR_CONNECTION_REFUSED == aError) {
+         NS_ENSURE_ARG_POINTER(aURI);
+         // Build up the host:port string.
+--- old-mozilla/netwerk/base/public/nsNetError.h.orig	2007-04-11 16:50:53.000000000 -0700
++++ mozilla/netwerk/base/public/nsNetError.h	2007-04-11 16:50:50.000000000 -0700
+@@ -252,6 +252,12 @@
+ #define NS_ERROR_UNKNOWN_HOST \
+     NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 30)
+ 
++#define NS_ERROR_DNSSEC_VALIDATION_ERROR \
++    NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 31)
++
++#define NS_ERROR_DNSSEC_DNE_ERROR \
++    NS_ERROR_GENERATE_FAILURE(NS_ERROR_MODULE_NETWORK, 32)
++
+ /**
+  * The lookup of a proxy hostname failed.
+  *
+--- old-mozilla/nsprpub/pr/src/misc/prnetdb.c.orig	2007-04-13 08:29:19.000000000 -0700
++++ mozilla/nsprpub/pr/src/misc/prnetdb.c	2007-04-13 08:29:19.000000000 -0700
 @@ -39,6 +39,10 @@
  
  #include <string.h>
@@ -6299,7 +6327,7 @@
  #define _PR_NO_DNS_LOCK
  #endif
  
-@@ -634,6 +638,210 @@
+@@ -634,6 +638,218 @@
  }
  #endif /* !defined(_PR_HAVE_GETPROTO_R) */
  
@@ -6422,6 +6450,14 @@
 +dnssec_check_policy(int val_status, int policytype) 
 +{
 +  DNSSECFUNDEBUG((stderr, "input: policy=%d, status=%d = %s\n", policytype, val_status, p_val_error(val_status)));
++
++  /*
++   * POLICY: if val_status == VAL_AC_UNSET then return SUCCESS (unknown host)
++   *   (this is already an error)
++   */
++  if (val_status == VAL_AC_UNSET)
++      DNSSECFUNRETURN(DNSSEC_SUCCESS);
++
 +  /*
 +   * POLICY: ignore errors
 +   */
@@ -6510,7 +6546,7 @@
  /*
   * #################################################################
   * NOTE: tmphe, tmpbuf, bufsize, h, and h_err are local variables
-@@ -669,7 +877,44 @@
+@@ -669,7 +885,47 @@
  
  #endif  /* definition of GETHOSTBYXXX */
  
@@ -6546,6 +6582,9 @@
 +  case PR_DNSSEC_VALIDATION_ERROR:
 +    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, 0);
 +    break;
++  case PR_DNSSEC_DNE_ERROR:
++    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, 0);
++    break;
 +  default:
 +    /* everything else can pass on as before */
 +    break;
@@ -6556,7 +6595,7 @@
      const char *name, char *buf, PRIntn bufsize, PRHostEnt *hp)
  {
  	struct hostent *h;
-@@ -682,6 +927,7 @@
+@@ -682,6 +938,7 @@
  #endif
  
      if (!_pr_initialized) _PR_ImplicitInitialization();
@@ -6564,7 +6603,7 @@
  
  #if defined(_PR_HAVE_GETHOST_R)
      tmpbuf = localbuf;
-@@ -691,7 +937,7 @@
+@@ -691,7 +948,7 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -6573,7 +6612,7 @@
          }
      }
  #endif
-@@ -703,13 +949,17 @@
+@@ -703,13 +960,17 @@
  #else
  	h = GETHOSTBYNAME(name);
  #endif
@@ -6593,7 +6632,7 @@
  		_PRIPAddrConversion conversion = _PRIPAddrNoConversion;
  		rv = CopyHostent(h, &buf, &bufsize, conversion, hp);
  		if (PR_SUCCESS != rv)
-@@ -720,7 +970,17 @@
+@@ -720,7 +981,17 @@
      if (tmpbuf != localbuf)
          PR_Free(tmpbuf);
  #endif
@@ -6612,7 +6651,7 @@
  }
  
  #if !defined(_PR_INET6) && \
-@@ -810,7 +1070,7 @@
+@@ -810,7 +1081,7 @@
  }
  #endif
  
@@ -6621,7 +6660,7 @@
      const char *name, PRUint16 af, PRIntn flags,
      char *buf, PRIntn bufsize, PRHostEnt *hp)
  {
-@@ -831,11 +1091,12 @@
+@@ -831,11 +1102,12 @@
      PRBool did_af_inet = PR_FALSE;
  #endif
  
@@ -6635,7 +6674,7 @@
      }
  
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETHOSTBYNAME2)
-@@ -878,11 +1139,13 @@
+@@ -878,11 +1150,13 @@
          if (NULL == tmpbuf)
          {
              PR_SetError(PR_OUT_OF_MEMORY_ERROR, 0);
@@ -6650,7 +6689,7 @@
      /* Do not need to lock the DNS lock if getipnodebyname() is called */
  #ifdef _PR_INET6
  #ifdef _PR_HAVE_GETHOSTBYNAME2
-@@ -940,6 +1203,7 @@
+@@ -940,6 +1214,7 @@
      
  	if (NULL == h)
  	{
@@ -6658,7 +6697,7 @@
  #if defined(_PR_INET6) && defined(_PR_HAVE_GETIPNODEBYNAME)
  	    PR_SetError(PR_DIRECTORY_LOOKUP_ERROR, error_num);
  #elif defined(_PR_INET6_PROBE) && defined(_PR_HAVE_GETIPNODEBYNAME)
-@@ -998,7 +1262,18 @@
+@@ -998,7 +1273,18 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -6678,7 +6717,7 @@
  }
  
  PR_IMPLEMENT(PRStatus) PR_GetHostByAddr(
-@@ -1020,6 +1295,7 @@
+@@ -1020,6 +1306,7 @@
  	int error_num;
  #endif
  
@@ -6686,7 +6725,7 @@
      if (!_pr_initialized) _PR_ImplicitInitialization();
  
  	if (hostaddr->raw.family == PR_AF_INET6)
-@@ -1165,7 +1441,7 @@
+@@ -1165,7 +1452,7 @@
          PR_Free(tmpbuf);
  #endif
  
@@ -6695,7 +6734,7 @@
  }
  
  /******************************************************************************/
-@@ -1777,6 +2053,7 @@
+@@ -1777,6 +2064,7 @@
      PRStatus status = PR_SUCCESS;
      PRIntn rv;
  
@@ -6703,7 +6742,7 @@
  #if defined(_PR_HAVE_INET_NTOP)
      rv = inet_pton(AF_INET6, string, &addr->ipv6.ip);
      if (1 == rv)
-@@ -1788,23 +2065,26 @@
+@@ -1788,23 +2076,26 @@
          PR_ASSERT(0 == rv);
          /* clean up after the failed inet_pton() call */
          memset(&addr->ipv6.ip, 0, sizeof(addr->ipv6.ip));
@@ -6735,7 +6774,7 @@
      }
      PR_ASSERT(0 == rv);
      /* clean up after the failed StringToV6Addr() call */
-@@ -1826,7 +2106,7 @@
+@@ -1826,7 +2117,7 @@
      }
  #endif /* _PR_HAVE_INET_NTOP */
  
@@ -6744,7 +6783,7 @@
  }
  
  PR_IMPLEMENT(PRStatus) PR_NetAddrToString(
-@@ -1940,17 +2220,26 @@
+@@ -1940,17 +2231,26 @@
   * provide getaddrinfo in all versions that NSPR cares to support.
   */
  
@@ -6772,7 +6811,7 @@
  
  /* getaddrinfo/freeaddrinfo prototypes */ 
  #if defined(WIN32)
-@@ -2030,9 +2319,6 @@
+@@ -2030,9 +2330,6 @@
  #endif
  }
  
@@ -6782,7 +6821,7 @@
  #endif /* _PR_INET6 */
  
  #endif /* _PR_HAVE_GETADDRINFO */
-@@ -2055,45 +2341,52 @@
+@@ -2055,45 +2352,52 @@
  {
      PRStatus rv;
      PRAddrInfoFB *ai;
@@ -6845,7 +6884,7 @@
          PRStatus rv;
  
          /*
-@@ -2116,18 +2409,56 @@
+@@ -2116,18 +2420,64 @@
          hints.ai_socktype = SOCK_STREAM;
  
          rv = GETADDRINFO(hostname, NULL, &hints, &res);
@@ -6865,12 +6904,20 @@
 +          PR_SetErrorText(0, "Host DNSsec validation failed");
 +          PR_SetError(PR_DNSSEC_VALIDATION_ERROR, 0);
 +          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning failure line:%d %s => val_status:%d\n", __LINE__, hostname, val_status));
-+          /* map this to a real error code */
 +          if(res)
 +              val_freeaddrinfo(res);
 +          DNSSECFUNRETURN(NULL);
 +        }
 +
++        if (!res && val_status == VAL_VALIDATED_ANSWER) {
++          /* DNSSEC has proven that the record does not exist; we
++             return a different error message to show that the lookup
++             succeeded and there is officially no results */
++          PR_SetErrorText(0, "Address does not exist");
++          PR_SetError(PR_DNSSEC_DNE_ERROR, 0);
++          DNSSECDEBUG((stderr, "DNSSECgetaddrinfo: returning DNE failure:%d %s => val_status:%d\n", __LINE__, hostname, val_status));
++          DNSSECFUNRETURN(NULL);
++        }
 +#endif
 +
 +        if (rv == 0) {
@@ -6906,7 +6953,7 @@
  #if defined(_PR_INET6_PROBE)
      if (!_pr_ipv6_is_present)
          PR_Free((PRAddrInfoFB *) ai);
-@@ -2144,9 +2475,9 @@
+@@ -2144,9 +2494,9 @@
                                            PRUint16          port,
                                            PRNetAddr        *result)
  {
@@ -6919,7 +6966,7 @@
      if (!_pr_ipv6_is_present) {
          /* using PRAddrInfoFB */
          PRIntn iter = (PRIntn)(PRPtrdiff) iterPtr;
-@@ -2158,9 +2489,9 @@
+@@ -2158,9 +2508,9 @@
  #endif
  
      if (iterPtr)
