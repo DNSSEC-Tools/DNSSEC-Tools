@@ -1,0 +1,869 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+#
+# cleanarch
+#
+#	This script cleans old keys from a key archive.
+#
+
+use strict;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+use Net::DNS::SEC::Tools::dnssectools;
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::tooloptions;
+
+#
+# Version information.
+#
+my $NAME   = "cleanarch";
+my $VERS   = "$NAME version: 0.1";
+my $DTVERS = "DNSSEC-Tools Version: 1.1";
+
+#######################################################################
+
+#
+# Data required for command line options.
+#
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	# Options for selecting an archive directory.
+		"defarch",		# Clean the default archive directory.
+		"archive=s",		# Clean this archive directory.
+		"zone=s",		# Clean this zone's archive.
+
+	# Options for selecting keys to delete.
+		"all",			# Delete all keys in selected dir.
+		"days=n",		# Delete keys more than N days old.
+		"onezone=s",		# Delete zone's keys in shared archive.
+
+	# Options for controlling output.
+		"list",			# No deletes, just list selected files.
+		"dirlist",		# No deletes, just list selected dirs.
+		"quiet",		# Give no output.
+		"verbose",		# Give lotsa output.
+		"Version",		# Show version number.
+		"help",			# Give a usage message and exit.
+
+);
+
+#
+# Option variables.  The names correspond to the associated option.
+#
+my $all;
+my $archive;
+my $days;
+my $defarch;
+my $dirlist;
+my $list;
+my $onezone;
+my $quiet = 0;
+my $verbose = 0;
+my $zone;
+
+#######################################################################
+
+my %dtconf	= ();			# Configuration file data.
+
+my %archivedirs	= ();			# Archive directory hash.
+my @archivedirs	= ();			# Archive directory array.
+
+my %selnodes	= ();			# Nodes selected for deletion.
+
+my $infile	= '';			# Rollrec/keyrec file to check.
+my $inftype;				# Type of input file.
+
+my $rangestart;				# Start of day range in seconds.
+
+main();
+exit(%selnodes);
+
+#-----------------------------------------------------------------------------
+# Routine:	main()
+#
+# Purpose:	This is the top-level processing routine for the command.
+#
+sub main
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	erraction(ERR_EXIT);
+
+	#
+	# Check our options.
+	#
+	optsandargs();
+	getarchives();
+
+	#
+	# If the user just wants a directory listing, print 'em and exit.
+	#
+	if($dirlist)
+	{
+		foreach my $archdir (sort(@archivedirs))
+		{
+			print "$archdir\n";
+		}
+		exit(0);
+	}
+
+	#
+	# Clean the archive directory for each zone listed in the rollrec.
+	#
+	foreach my $archdir (sort(@archivedirs))
+	{
+		gather($archdir);
+	}
+
+	#
+	# Clean out the selected nodes.
+	#
+	cleaner();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	optsandargs()
+#
+# Purpose:	This routine processes the command's options and arguments.
+#
+sub optsandargs
+{
+	usage()   if(@ARGV == 0);
+
+	#
+	# Get the configuration file data and options.
+	#
+	%dtconf = parseconfig();
+	GetOptions(\%options,@opts);
+
+	#
+	# Check for directory-selection options.
+	#
+	$defarch = $options{'defarch'};
+	$archive = $options{'archive'};
+	$zone	 = $options{'zone'};
+
+	#
+	# Check for file-selection options.
+	#
+	$all	 = $options{'all'};
+	$days	 = $options{'days'};
+	$onezone = $options{'onezone'};
+
+	#
+	# Check for output-control options.
+	#
+	$dirlist = $options{'dirlist'};
+	$list	 = $options{'list'};
+	$quiet	 = $options{'quiet'};
+	$verbose = $options{'verbose'};
+
+	usage()   if(defined($options{'help'}));
+	version() if(defined($options{'Version'}));
+
+	#
+	# Ensure we weren't given mutually exclusive options.
+	#
+	if($all && $days)
+	{
+		print STDERR "-all and -days are mutually exclusive\n";
+		exit(1);
+	}
+	if($all && $onezone)
+	{
+		print STDERR "-all and -onezone are mutually exclusive\n";
+		exit(1);
+	}
+	if($quiet && $verbose)
+	{
+		print STDERR "-quiet and -verbose are mutually exclusive\n";
+		exit(1);
+	}
+
+	#
+	# Check some options for validity.
+	#
+	if(defined($options{'days'}) && ($days < 1))
+	{
+		print STDERR "-days must be a positive number\n";
+		exit(1);
+	}
+
+	#
+	# Make sure we've got a key-selection option.
+	#
+	if(!$all && !$days && !$onezone && !$dirlist && !$list)
+	{
+		print STDERR "a key-selection option must be specified\n";
+		exit(1);
+	}
+
+	#
+	# Calculate some option-based data.
+	#
+	rangestart() if($days);
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	getarchives()
+#
+# Purpose:	This routine mucks about with the options and arguments to
+#		put together a list of arguments.  After pulling all the
+#		directories together, duplicates entries are deleted.
+#
+sub getarchives
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	#
+	# Get the archive directory.
+	#
+	if($archive)
+	{
+		#
+		# Set the archive directory to the specified archive.
+		#
+		addarchive($archive);
+	}
+
+	if($defarch)
+	{
+		#
+		# Get the default archive from the config file.
+		#
+		addarchive($dtconf{'archivedir'});
+	}
+
+	#
+	# Look through a file argument -- if we were given one.
+	#
+	if($argc > 0)
+	{
+
+		#
+		# Ensure the file is either a keyrec or rollrec file.
+		#
+		$infile = $ARGV[0];
+		$inftype = dt_filetype($infile);
+		if(($inftype ne 'rollrec') && ($inftype ne 'keyrec'))
+		{
+			print STDERR "\"$infile\" must be either a rollrec file or a keyrec file\n";
+			exit(1);
+		}
+
+		#
+		# If we were given a keyrec file, we'll look in it for archive
+		# directories.
+		#
+		if($inftype eq 'keyrec')
+		{
+			my $dir;		# Zone's archive directory.
+
+			#
+			# If a zone was specified, we'll add the archive
+			# directory for that zone to the archive list.
+			# If a zone wasn't specified, we'll pick up the
+			# archives for all the zones in the keyrec.
+			#
+			if($zone)
+			{
+				addarchive($zone,$infile);
+			}
+			else
+			{
+				keyrec_read($infile);
+				foreach my $krn (keyrec_names())
+				{
+					next if(keyrec_recval($krn,'keyrec_type') ne 'zone');
+					addarchive($krn);
+				}
+				keyrec_close();
+			}
+		}
+
+		#
+		# If we were given a rollrec file, we'll look in it for zones
+		# and find their archive directories.
+		#
+		if($inftype eq 'rollrec')
+		{
+			my $dir;		# Zone's archive directory.
+			my $krec;		# Zone's keyrec file.
+
+			rollrec_read($infile);
+
+			#
+			# If a zone was specified, we'll add the archive
+			# directory for that zone to the archive list.
+			# If a zone wasn't specified, we'll pick up the
+			# archives for all the zones in the keyrec.
+			#
+			if($zone)
+			{
+				$krec = rollrec_recval($zone,'keyrec');
+				addarchive($zone,$krec);
+			}
+			else
+			{
+				foreach my $zone (rollrec_names())
+				{
+					$krec = rollrec_recval($zone,'keyrec');
+					addarchive($zone,$krec);
+				}
+			}
+		}
+	}
+
+	#
+	# Sort the archive directories and pop 'em into an array.
+	#
+	@archivedirs = sort(keys(%archivedirs));
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	addarchive()
+#
+# Purpose:	This routine gets the archive directory from a keyrec file
+#		and adds it to the archive directories hash.  It also ensures
+#		that the directory exists and is a directory.
+#
+sub addarchive
+{
+	my $zone = shift;			# Zone to get.
+	my $krfile = shift;			# Optional keyrec file.
+
+	my $dir;				# New archive directory.
+
+	#
+	# Read the keyrec file, if one was given.
+	#
+	keyrec_read($krfile) if($krfile ne '');
+
+	#
+	# Get the archive directory from keyrec or use the default.
+	#
+	$dir = keyrec_recval($zone,'archivedir');
+	$dir = $dtconf{'archivedir'} if($dir eq '');
+
+	#
+	# Ensure that the archive exists.
+	#
+	if(!-e $dir)
+	{
+		print STDERR "archive directory \"$dir\" does not exist\n";
+		return;
+	}
+
+	#
+	# Ensure that the archive is a directory.
+	#
+	if(!-d $dir)
+	{
+		print STDERR "archive directory \"$dir\" is not an archive\n";
+		return;
+	}
+
+	#
+	# Add the directory to the archive hash.
+	#
+	$archivedirs{$dir} = 1;
+
+	#
+	# Maybe close the keyrec file.
+	#
+	keyrec_close() if($krfile ne '');
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	gather()
+#
+# Purpose:	This routine gathers together all the nodes that must be zapped.
+#
+sub gather
+{
+	my $archdir = shift;			# Archive directory to clean.
+
+	my @nodes = ();				# Nodes in the directory.
+	my $node;				# Individual node.
+
+	print "checking $archdir\n" if($verbose);
+
+	#
+	# Get a list of all the nodes in this directory.
+	#
+	opendir(DIR,$archdir);
+	@nodes = readdir(DIR);
+	closedir(DIR);
+
+	#
+	# Check each node to see if it matches our selection criteria.
+	# If so, it'll be added to the %selnodes hash.
+	#
+	for(my $ind = 0; $ind < @nodes; $ind++)
+	{
+		my $node = $nodes[$ind];	# Node in directory.
+		my $path = "$archdir/$node";	# Full path for node.
+
+		#
+		# Remove dot files from the list.
+		#
+		if($node =~ /^\./)
+		{
+			$nodes[$ind] = '';
+			next;
+		}
+
+		#
+		# Replace the file name with the path name.
+		#
+		$nodes[$ind] = $path;
+
+		#
+		# Remove non-regular files from the list.
+		#
+		next if(!-f $nodes[$ind]);
+
+		#
+		# Remove unselected files from the list.
+		#
+		next if(!selected($nodes[$ind],$node));
+
+		#
+		# Add this node to our list of selected nodes.
+		#
+		$selnodes{$nodes[$ind]} = $node;
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	cleaner()
+#
+# Purpose:	This routine zaps all the selected keys.
+#
+sub cleaner
+{
+	#
+	# If -list was given, we'll list the selected files and return.
+	#
+	if($list)
+	{
+		lister();
+		return;
+	}
+
+	#
+	# Check for an empty selection set.
+	#
+	if(%selnodes == 0)
+	{
+		if($verbose)
+		{
+			prt("no archived keys to delete\n");
+		}
+		else
+		{
+			prt("nothing to delete\n");
+		}
+		return;
+	}
+
+	#
+	# Delete the selected keys.
+	#
+	foreach my $node (sort(keys(%selnodes)))
+	{
+		#
+		# Give an options-appropriate message about this node.
+		#
+		if($verbose)
+		{
+			prt("deleting $node\n");
+		}
+		else
+		{
+			prt("$node\n");
+		}
+
+		#
+		# Delete this node.
+		#
+		if(unlink($node) < 1)
+		{
+			print STDERR "unable to unlink $node\n"
+		}
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	lister()
+#
+# Purpose:	This routine lists selected files.
+#
+sub lister
+{
+	my $tab = '';					# Optional tab.
+
+	#
+	# Print simple message if nothing was selected.
+	#
+	if(%selnodes == 0)
+	{
+		prt("no files selected\n");
+		return;
+	}
+
+	#
+	# If we're verbose, give a header line and make the tab a tab.
+	#
+	if($verbose)
+	{
+		prt("selected files:\n");
+		$tab = "\t";
+	}
+
+	#
+	# List the selected keys.
+	#
+	foreach my $node (sort(keys(%selnodes)))
+	{
+		prt("$tab$node\n");
+	}
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	selected()
+#
+# Purpose:	This routine determines whether or not the specified key
+#		fits the user's selection criteria for deletion.
+#
+#		Selection criteria:
+#			-all	All files are selected.
+#			-days	Only keys from N most recent days are selected.
+#			-zone	Keys whose name contain zone name are selected.
+#
+#		The -zone option can mix with the other options to specify
+#		that only a particular zone's keys should be checked.
+#
+#		Some of the logic in this routine could be collapsed a bit.
+#		However, it's left as is in order to be *very* clear.
+#
+sub selected
+{
+	my $path = shift;			# Full file name.
+	my $node = shift;			# File node.
+
+	my @stats;				# File statistics.
+	my $mtime;				# File's last modification time.
+
+	my $ret = 0;				# Return code.
+
+	#
+	# If -all was given, then this file is selected.
+	#
+	return(1) if($all);
+
+	#
+	# Get some info about this file.
+	#
+	@stats = stat($path);
+	$mtime = $stats[9];
+
+	#
+	# If -onezone was given, we'll only select this file if its node
+	# name contains the specified zone.
+	#
+	if($onezone)
+	{
+		return(0) if($node !~ /$onezone/);
+		return(1) if(!$days);
+	}
+
+	#
+	# Check some selection criteria.  We'll see if this file falls within
+	# a particular days range (if -days is set)
+	#
+	if($days)
+	{
+		return(1) if($mtime < $rangestart);
+	}
+
+	#
+	# This file was not selected for deletion.
+	#
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	rangestart()
+#
+# Purpose:	This routine figures out the beginning of the day range.
+#		The day starts at midnight.  The start of the day range
+#		is saved in the $rangestart global.
+#
+#		This routine uses hard numeric constants.  This is something
+#		I normally avoid, but frankly, these constants aren't ever
+#		going to change.
+#
+sub rangestart
+{
+	my $curtime;				# Current time.
+		my $secs;			# Seconds in current time.
+		my $mins;			# Minutes in current time.
+		my $hours;			# Hours in current time.
+	my $midnight;				# Midnight of current day.
+
+	my $rangesecs;				# Seconds in day range.
+	my $range0;				# Start of day range in seconds.
+
+	#
+	# Get the current time and several of its components.
+	#
+	$curtime = time();
+	($secs,$mins,$hours) = gmtime($curtime);
+
+	#
+	# Get the epoch-seconds for midnight of the current day.
+	#
+	$midnight = $curtime - (3600 * $hours) - (60 * $mins) - $secs;
+
+	#
+	# Get the number of seconds in the day range and then calculate
+	# to midnight of the beginning of the day range.
+	#
+	$rangesecs = ($days - 1) * 86400;
+	$range0 = $midnight - $rangesecs;
+
+	#
+	# Save the start of the day range.
+	#
+	$rangestart = $range0;
+}
+
+#----------------------------------------------------------------------
+# Routine:	prt()
+#
+# Purpose:	Print the argstring unless -quiet was given.
+#
+sub prt
+{
+	my $str = shift;				# String to print.
+
+	print "$str" if(!$quiet);
+}
+
+#----------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:	Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(1);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	usage()
+#
+sub usage
+{
+	print STDERR "usage:  cleankrf [options] <keyrec files>\n";
+	print STDERR "    options:\n";
+
+	print STDERR "\tarchive-selection options:\n";
+	print STDERR "\t\t-archive <directory> - clean the named archive\n";
+	print STDERR "\t\t-defarch             - clean the default archive\n";
+	print STDERR "\t\t-zone <zone>         - clean this zone's archive\n";
+	print STDERR "\n";
+
+	print STDERR "\tkey-selection options:\n";
+	print STDERR "\t\t-all                 - delete all keys in archive\n";
+	print STDERR "\t\t-days <N>            - delete keys more than N days old\n";
+	print STDERR "\t\t-onezone <zone>      - delete zone's keys in a shared archive\n";
+	print STDERR "\n";
+
+	print STDERR "\toutput-control options:\n";
+	print STDERR "\t\t-dirlist             - only list selected directories\n";
+	print STDERR "\t\t-list                - only list selected keys\n";
+	print STDERR "\t\t-quiet               - give no output\n";
+	print STDERR "\t\t-verbose             - give verbose output\n";
+	print STDERR "\t\t-Version             - show the version number\n";
+	print STDERR "\t\t-help                - give a usage message and exit\n";
+
+	exit(0);
+}
+
+1;
+
+##############################################################################
+#
+
+=pod
+
+=head1 NAME
+
+cleanarch - Clean a DNSSEC-Tools key archive of old keys.
+
+=head1 SYNOPSIS
+
+  cleanarch [options] <keyrec-file | rollrec-file>
+
+=head1 DESCRIPTION
+
+B<cleanarch> deletes old keys from a DNSSEC-Tools key archive.  Key "age" and
+archives are determined by options and arguments.
+
+Command line options and arguments allow selection of archives, keys to
+delete, amount of output to provide.  The options are divided into three
+groups:  archive selection, key selection, and output format.  Complete
+information on options is provided in the OPTIONS section.
+
+B<cleanarch> takes a single argument (as distinguished from an option.)  This
+argument may be either a I<keyrec> file or a I<rollrec> file.  If the file is
+a I<keyrec> file, the archive directory for its zone I<keyrec>s are added to
+the list of archives to clean.  If the file is a I<rollrec> file, I<keyrec>
+files for its zones are searched for zone's the archive directory, and those
+directories are added to the list of archives to clean.  If a zone does not
+have an archive directory explicitly defined, then the DNSSEC-Tools default
+will be cleaned.  The archives specified by this argument may be modified by
+archive-selection options.
+
+The archive-selection options combine with the I<keyrec> or I<rollrec> file to
+select a set of archive directories to clean.  (Some options can take the
+place of the file argument.)
+
+The key-selection options allow the set of keys to be deleted to contain an
+entire archive, a particular zone's keys, or all the keys prior to a certain
+date.
+
+The output-format options sets how much output will be given.  Without any
+options selected, the names of keys will be printed as they are deleted.  If
+the I<-verbose> option is given, then the directories selected for searching
+and the keys selected for deletion will be printed.  If the I<-dirlist> option
+is given, then the directories selected for searching will be printed and no
+other action will be taken.  If the I<-list> option is given, then the keys
+selected for deletion will be printed and no other action will be taken.
+
+=head1 OPTIONS
+
+=head2 Archive-Selection Options
+
+The following options allow the user to select the archives to be cleaned.
+
+=over 4
+
+=item -archive I<directory>
+
+This option specifies an archive directory to be cleaned.
+
+=item -defarch
+
+This option indicates that the default archive directory (named in the
+DNSSEC-Tools configuration file) should be cleaned. 
+
+=item -zone I<zone>
+
+This option indicates that I<zone> is the only zone whose archive will be
+cleaned.  If the archive directory is shared by other zones then their keys
+may also be deleted.
+
+=back
+
+=head2 Key-Selection Options
+
+The following options allow the user to select the keys to be deleted.
+
+=over 4
+
+=item -all
+
+Deletes all keys in the selected archives.
+This option may not be used with any other key-selection options.
+
+=item -days I<days>
+
+Deletes all keys except those whose modification date is within the
+I<days> full days preceding the current day.
+
+=item -onezone I<zone>
+
+Only keys with I<zone> in the key's filename are deleted.
+This is intended for use in cleaning a multi-zone key archive.
+
+This does not validate that I<zone> is an actual zone.  B<Any> string can be
+used here.  For example, using "private" will select old private key files
+for deletion and using "com" will select any filename that contains "com".
+
+=back
+
+=head2 Options for Output Control
+
+=over 4
+
+=item -dirlist
+
+This option lists the selected archive directories.  No other action is taken.
+
+=item -list
+
+This option lists the selected keys.  No other action is taken.
+
+=item -quiet
+
+Display no output.
+
+=item -verbose
+
+Display verbose output.
+
+=item -Version
+
+Display the B<cleanarch> and DNSSEC-Tools versions.
+
+=item -help
+
+Display a usage message and exit.
+
+=back
+
+=head1 WARNINGS
+
+The user is advised to invest a bit of time testing this tool B<prior>
+to putting it into production use.  Once a key is deleted, it is B<gone>.
+Some may find this to be detrimental to the health of their DNSSEC-Tools
+installation.
+
+=head1 COPYRIGHT
+
+Copyright 2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<cleankrf(8)>,
+B<lskrf(8)>,
+B<zonesigner(8)>
+
+B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
+B<Net::DNS::SEC::Tools::rollrec.pm(3)>
+
+B<dnssec-tools.conf.pm(5)>,
+B<keyrec.pm(5)>,
+B<rollrec.pm(5)>
+
+=cut
