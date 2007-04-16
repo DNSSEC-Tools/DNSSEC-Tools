@@ -2153,7 +2153,7 @@ It returns 1 if the call is successful; 0 if it is not.
 
 =head2 I<keyrec_signset_haskey(signing_set_name,key_name)>
 
-I<keyrec_signset_delkey()> returns a flag indicating if the key specified
+I<keyrec_signset_haskey()> returns a flag indicating if the key specified
 in I<key_name> is one of the keys in the Signing Set named by
 I<signing_set_name>.
 It returns 1 if the signing set has the key; 0 if it does not.
