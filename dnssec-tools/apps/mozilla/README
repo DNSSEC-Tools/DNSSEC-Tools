@@ -35,7 +35,7 @@ Needed Files depending on what is being built:
 
     cp firefox.spec /usr/src/redhat/SPECS/
     cp dnssec-firefox.patch dnssec-both.patch dnssec-mozconfig.patch /usr/src/redhat/SOURCES
-    cp firefox-1.5.0.7-source.tar.bz2 /usr/src/redhat/SOURCES
+    cp firefox-1.5.0.10-source.tar.bz2 /usr/src/redhat/SOURCES
     cd /usr/src/redhat/SPECS
     rpmbuild -ba firefox.spec
 
@@ -51,7 +51,7 @@ Needed Files depending on what is being built:
   dnssec-tools installed.
 
 
-  tar xjf firefox-1.5.0.7-source.tar.bz2
+  tar xjf firefox-1.5.0.10-source.tar.bz2
   cd mozilla
   patch -p1 < ../dnssec-firefox.patch
   patch -p1 < ../dnssec-both.patch
@@ -88,7 +88,7 @@ More Details on the contents of this directory:
     generic mozilla suite.
  
   Version:
-    This is known to work with firefox 1.5.0.7
+    This is known to work with firefox 1.5.0.10
 
 #######################################################################
   File:
@@ -98,7 +98,7 @@ More Details on the contents of this directory:
     This file contains patches that apply to just firefox.
  
   Version:
-    This is known to work with firefox 1.5.0.7
+    This is known to work with firefox 1.5.0.10
 
 #######################################################################
   File:
@@ -111,4 +111,4 @@ More Details on the contents of this directory:
     directly from the source.
  
   Version:
-    This is known to work with firefox 1.5.0.7 and the Fedora Core 5 RPM
+    This is known to work with firefox 1.5.0.01 and the Fedora Core 5 RPM
