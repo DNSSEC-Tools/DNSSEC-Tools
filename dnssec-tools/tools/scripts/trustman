@@ -277,6 +277,9 @@ sub checkkeys {
                 my $key = $keyrec->key;
                 $key =~ s/\s+//g; # remove all spaces   
                 my $nonmatch;
+                # we don't care if a DNSKEY record is found with the
+                # revoke bit set unless it is a key we have stored
+                # so check for a match first
                 $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
                 if ($nonmatch) {
                 # may be a new key, remember it.
@@ -324,6 +327,15 @@ sub checkkeys {
                         close FILE or warn "can't close newkeys file: $!";
                     }
                 } else {
+                # see if it has the revoke bit set
+                    if ($keyrec->REVOKE == 1) {
+#                    my $revoke = 1;
+#                    if ($revoke == 1) {
+                        # this key is being revoked
+                        revoke_ta_dnsvalconf($d,$keyrec);
+# TODO -- have a flag so revoked keys can alternatively be completely
+# removed from the conf file
+                    }
 # need to verify that ALL keys in %keystorage were matched
 # if a known key disappears, need to deal with that.
 # ???
@@ -468,9 +480,6 @@ sub add_ta_dnsvalconf  {
     while (<CONF>) {
         my $domainfound = 0;
         s/\s;\s*$//;
-# below takes out CR, maybe don't want to do this
-#        s/[\n\r]/ /g;
-#        if (/^(\s*\S*\s*)$pat(\s*)("*[^;]+")/) {
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
             while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
@@ -510,6 +519,54 @@ sub add_ta_dnsvalconf  {
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
 }
 
+sub revoke_ta_dnsvalconf  {
+    my ($domain,$keyrec) = @_;
+
+    my $pat = "trust-anchor";
+
+    open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
+    open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
+    $/ = ";";
+    while (<CONF>) {
+        s/\s;\s*$//;
+        if (s/^\s*(\S*)\s*$pat\s*//) {
+            print TMP $1 . " $pat\n\n";
+            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
+                my ($d, $val) = ($1, $2);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $val =~ s/[\n\r]//g;
+                if ($d eq $domain) {
+                    my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+                    $key =~ s/\s+//g;
+                    my $keyin = $keyrec->{key};
+                    $keyin =~ s/[\n\r]//g;
+                    if ($keyin eq $key &&
+                        $keyrec->{flags} eq $flags &&
+                        $keyrec->{protocol} eq $protocol &&
+                        $keyrec->{algorithm} eq $algorithm) {
+# its a match, comment it out
+                        print TMP "# The following key has been revoked.\n";
+                        $revkeyrec = $d . ". " . $val;
+                        print TMP "# " . $revkeyrec . "\n\n";
+                    }
+
+                }
+                # add the trailing dot when printing domainname
+                print TMP $d . ". " . $val . "\n\n";
+            }
+            print TMP "\n;\n";
+        } else {
+            print TMP $_;
+        }
+    }
+    close (CONF);
+    close (TMP);
+# rename TMP to $dvfile
+    my $origname = $dvfile . ".orig";
+    rename ($dvfile,$origname);
+    rename ("/tmp/dnsval.conf.tmp",$dvfile);
+}
 
 sub get_domains_keys {
 # using globals %keystorage and @domains, is this evil?
