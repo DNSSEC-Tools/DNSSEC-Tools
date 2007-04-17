@@ -1210,8 +1210,30 @@ sub showsets
 	{
 		my $krr = $sets{$sk};		# Reference to set's keyrec.
 		my %kr = %$krr;			# Set's keyrec.
-		my $ref = 0;			# Referenced-set flag.
-		my $zkr;			# Ref. to set's zone keyrec.
+
+		#
+		# Check this set's reference state against the command options.
+		#
+		if($sk ne $HEADER_KRN)
+		{
+			my $sn;					# Set name.
+
+			#
+			# Get just the set name.
+			#
+			$sk =~ /(.*)\(.*\)/;
+			$sn = $1;
+
+			#
+			# Skip this keyrec if we should.
+			#		(Nice and obscure, no?)
+			#
+			if(($refflag   && !refdkeyrec($sn)) ||
+			   ($unrefflag &&  refdkeyrec($sn)))
+			{
+				next;
+			}
+		}
 
 		#
 		# Get a bunch of data from the zone keyrec.
@@ -1219,44 +1241,6 @@ sub showsets
 		$zone	 = $kr{'zonename'};
 		$keylist = $kr{'keys'};
 		$moddate = $kr{'keyrec_setdate'};
-
-		#
-		# Check the zone-validity flags against the zone to see if
-		# the record should be displayed.
-		#
-
-		#
-		# If the set's zone exists, we'll check to see if 
-		# the zone uses this set as one of its own.
-		#
-		$zkr = $zones{$zone};
-		if(defined($zkr))
-		{
-			if(($zkr->{'kskcur'} eq $sk)	||
-			   ($zkr->{'kskpub'} eq $sk)	||
-			   ($zkr->{'zskcur'} eq $sk)	||
-			   ($zkr->{'zskpub'} eq $sk)	||
-			   ($zkr->{'zsknew'} eq $sk))
-			{
-				$ref = 1;
-			}
-		}
-
-		#
-		# If either of the referenced or unreferenced flags were set, 
-		# we'll only give the the appropriate sets.
-		#
-		# (I'm sure the logic could have been reduced, but this
-		# version is nice and clear.)
-		#
-		if($refflag || $unrefflag)
-		{
-			if((!$ref && $refflag)		||
-			   ( $ref && $unrefflag))
-			{
-				next;
-			}
-		}
 
 		#
 		# Bump the matching-records count.
@@ -1468,37 +1452,83 @@ sub expiredzone
 }
 
 #-----------------------------------------------------------------------------
-# Routine:	refdkey()
+# Routine:	refdkeyrec()
 #
-# Purpose:	This routine determines if a named key is referenced by any
-#		zones.  KSKs and ZSKs are referenced in signing sets, so
-#		those must be checked..
+# Purpose:	This routine determines if a named keyrec is referenced.
+#		Zones reference signing sets, signing sets reference zones.
+#		For a set keyrec to be referenced, it must be listed in a
+#		zone keyrec.  For a key keyrec to be referenced, it must be
+#		listed in a set keyrec which is listed in a zone.
 #
 # Return Values:
-#		 1 - the key is referenced
-#		 0 - the key is not referenced
+#		 1 - the keyrec is referenced
+#		 0 - the keyrec is not referenced
 #
-sub refdkey
+sub refdkeyrec
 {
-	my $kn = shift;			# Key name to be checked.
-	my %zkr;			# Zone keyrec.
-	my $zkrref;			# Reference to zone keyrec.
-	my $zn;				# Zone name.
+	my $kn = shift;			# Keyrec name to be checked.
+
+	my $krtype;			# Type of specified keyrec.
 
 	#
-	# Check each zone to see if it's using this key.
+	# Get the key's type and return false if this is a zone.
 	#
-	foreach $zn (keys(%zones))
+	$krtype = keyrec_recval($kn,'keyrec_type');
+	return(0) if($krtype eq 'zone');
+
+	#
+	# If this is a signing set, we'll see if any of the zones has it
+	# as an active set.
+	#
+	if($krtype eq 'set')
 	{
-		$zkrref = $zones{$zn};
-		%zkr = %$zkrref;
+		#
+		# Check each zone to see if this signing set is one of the
+		# zone's active sets.  If so, return true.
+		#
+		foreach my $zn (keys(%zones))
+		{
+			my %zkr;			# Zone keyrec.
+			my $zkrref;			# Ref. to zone keyrec.
+
+			$zkrref = $zones{$zn};
+			%zkr = %$zkrref;
+			if(($zkr{'kskcur'} eq $kn) ||
+			   ($zkr{'kskpub'} eq $kn) ||
+			   ($zkr{'zskcur'} eq $kn) ||
+			   ($zkr{'zskpub'} eq $kn) ||
+			   ($zkr{'zsknew'} eq $kn))
+			{
+				return(1);
+			}
+		}
 
 		#
-		# Go through each signing set to see if it holds this key.
+		# The signing set wasn't found in any of the zones so
+		# we'll return false.
 		#
-		foreach my $set (keys(%sets))
+		return(0);
+	}
+
+	#
+	# Check each signing set to see if it's using this key.
+	#
+	foreach my $sn (keys(%sets))
+	{
+		my %skr;			# Set keyrec.
+		my $skrref;			# Ref. to set keyrec.
+
+		$sn =~ /(.*)\(.*\)/;
+		$sn = $1;
+
+
+		#
+		# If this signing set holds this key, we'll see if it
+		# is referenced by a zone.
+		#
+		if(keyrec_signset_haskey($sn,$kn))
 		{
-			return(1) if(keyrec_signset_haskey($set,$kn));
+			return(1) if(refdkeyrec($sn));
 		}
 	}
 
@@ -1540,8 +1570,8 @@ sub selkey
 	#
 	if($key ne $HEADER_KRN)
 	{
-		if(($refflag   && !refdkey($key)) ||
-		   ($unrefflag &&  refdkey($key)))
+		if(($refflag   && !refdkeyrec($key)) ||
+		   ($unrefflag &&  refdkeyrec($key)))
 		{
 			return;
 		}
@@ -2173,7 +2203,7 @@ It implies the I<-zones> option.
 
 =item -ref
 
-This option displays the referenced signing set I<keyrec>s or the referenced
+This option displays the referenced signing set I<keyrec>s and the referenced
 key I<keyrec>s in a I<keyrec> file, depending upon other selected options.
 
 Referenced state depends on the following:
@@ -2182,10 +2212,10 @@ Referenced state depends on the following:
     are listed in a zone keyrec.
 
   * KSKs are considered to be referenced if they are listed
-    in a zone keyrec.
+    in a signing set keyrec that is listed in a zone keyrec.
 
   * ZSKs are considered to be referenced if they are listed
-    in a set keyrec.
+    in a signing set keyrec that is listed in a zone keyrec.
 
 This option may be used with either the I<-sets> or I<-keys> options.  If it
 isn't used with any record-selection options, then it is assumed that both
@@ -2202,11 +2232,11 @@ Unreferenced state depends on the following:
   * Signing sets are considered to be unreferenced if they
     are not listed in a zone keyrec.
 
-  * KSKs are considered to be unreferenced if they are not
-    listed in a zone keyrec.
+  * KSKs are considered to be unreferenced if they are not listed
+    in a signing set keyrec that is listed in a zone keyrec.
 
-  * ZSKs are considered to be unreferenced if they are not
-    listed in a set keyrec.
+  * ZSKs are considered to be unreferenced if they are not listed
+    in a signing set keyrec that is listed in a zone keyrec.
 
   * Obsolete ZSKs are checked, whether or not the -obs flag
     was specified.
