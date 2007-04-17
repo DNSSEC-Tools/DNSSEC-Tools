@@ -367,6 +367,15 @@ sub doopts
 	}
 
 	#
+	# If both -ref and -unref were given, we'll turn off both flags.
+	#
+	if($refflag && $unrefflag)
+	{
+		$refflag = 0;
+		$unrefflag = 0;
+	}
+
+	#
 	# If the valid-zone or the expired-zone option was given, but the
 	# zones specifier wasn't, we'll assume they want all the zones listed.
 	#
@@ -404,9 +413,21 @@ sub doopts
 			$setsflag = 1;
 			$keysflag = 1;
 		}
+		elsif(!$refflag && !$unrefflag)
+		{
+			print STDERR "no record-selection options were chosen\n";
+			exit(1);
+		}
 
-		$kobsflag = 1 if($unrefflag);
-		$zobsflag = 1 if($unrefflag);
+		#
+		# Turn on display of obsolete keys if the unreferenced flag
+		# was given.
+		#
+		if($unrefflag)
+		{
+			$kobsflag = 1;
+			$zobsflag = 1;
+		}
 	}
 
 	#
