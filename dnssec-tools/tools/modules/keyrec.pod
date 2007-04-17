@@ -35,6 +35,15 @@ new records, and modifying existing records.
 Comment lines and blank lines are ignored by the DNSSEC-Tools programs.
 Comment lines start with either a '#' character or a ';' character.
 
+A I<keyrec>'s name may consist of alphabetic characters, numbers, and several
+special characters.  The special characters are the minus sign, the plus
+sign, the underscore, the comma, the period, and the colon.
+
+The values in a I<keyrec>'s entries may consist of alphabetic characters,
+numbers, and several special characters.  The special characters are the minus
+sign, the plus sign, the underscore, the comma, the period, the colon, the
+forward-slash, the space, and the tab.
+
 =head1 FIELDS
 
 The fields in a I<keyrec> record are described in this section.  The fields
