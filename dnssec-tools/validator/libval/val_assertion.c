@@ -2573,8 +2573,6 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 }
 #endif
 
-
-
 static int
 nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                struct queries_for_query **queries,
@@ -2588,7 +2586,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     int             wcard_chk = 0;
     int             span_chk = 0;
     u_int8_t       *closest_encounter = NULL;
-    struct rrset_rec *wcard_proof = NULL;
+    struct val_internal_result *wcard_proof = NULL;
     struct val_result_chain *new_res;
     int             retval;
 
@@ -2598,7 +2596,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
         return VAL_BAD_ARGUMENT;
     }
-    
+
     for (res = w_results; res; res = res->val_rc_next) {
 
         if (!res->val_rc_is_proof)
@@ -2612,7 +2610,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             prove_nsec_span_chk(ctx, the_set, qname_n,
                             qtype_h, soa_name_n, &span_chk,
                             &wcard_chk, &closest_encounter, status);
-            if (*status != VAL_DONT_KNOW) {
+            if (span_chk) {
                 /*
                  * This proof is relevant 
                  */
@@ -2622,22 +2620,16 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                     goto err;
                 }
                 *proof_res = new_res;
+                if (wcard_chk) {
+                    wcard_proof = res;
+                    break;
+                }
             }
-            if (wcard_chk) {
-                wcard_proof = the_set;
-                break;
-            }
-
+            /* the same proof could prove wildcard non-existence */
             if (wcard_proof == NULL)
-                wcard_proof = the_set;
-        } else { 
-            wcard_proof = the_set;
-            if (VAL_NO_ERROR !=
-                    (retval = transform_single_result(ctx, res, queries, results,
-                                                  *proof_res, &new_res))) {
-                goto err;
-            }
-            *proof_res = new_res;
+                wcard_proof = res;
+        } else {
+            wcard_proof = res;
             break;
         }
     }
@@ -2647,10 +2639,16 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     else if (only_span_chk == 0 && !wcard_chk) {
         if (!closest_encounter)
             *status = VAL_INCOMPLETE_PROOF;
-        else {
+        else if (wcard_proof) {
             prove_nsec_wildcard_check(ctx, qtype_h,
-                                      wcard_proof,
+                                      wcard_proof->val_rc_rrset->_as.ac_data,
                                       closest_encounter, status);
+            if (VAL_NO_ERROR !=
+                    (retval = transform_single_result(ctx, wcard_proof, queries, results,
+                                                  *proof_res, &new_res))) {
+                goto err;
+            }
+            *proof_res = new_res;
         }
     }
     return VAL_NO_ERROR;
