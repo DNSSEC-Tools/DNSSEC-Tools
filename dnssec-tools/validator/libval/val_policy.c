@@ -621,13 +621,14 @@ val_get_token(char **buf_ptr,
               char *end_ptr,
               int *line_number,
               char *conf_token,
-              int conf_limit, int *endst, char comment_c, char endstmt_c)
+              int conf_limit, int *endst, char *comment_c, char endstmt_c)
 {
     int             i = 0;
     int             quoted = 0;
     int             escaped = 0;
     int             comment = 0;
     char            c;
+    int             j = 0;
 
     if ((buf_ptr == NULL) || (*buf_ptr == NULL) || 
         (end_ptr == NULL) || (line_number == NULL) ||
@@ -653,12 +654,14 @@ val_get_token(char **buf_ptr,
         /*
          * Ignore lines that begin with comments 
          */
-        if (**buf_ptr == comment_c) {
-            READ_COMMENT_LINE(buf_ptr, end_ptr);
-	        comment = 1;
+        comment = 0;
+        for (j=0; j < strlen(comment_c); j++) {
+            if (**buf_ptr == comment_c[j]) {
+                READ_COMMENT_LINE(buf_ptr, end_ptr);
+                comment = 1;
+                break;
+            }
         }
-        else
-            comment = 0;
     } while (comment);
 
     i = 0;
@@ -694,14 +697,18 @@ val_get_token(char **buf_ptr,
                 if (c == endstmt_c) {
                     *endst = 1;
                     goto done;
-                } else if(c == comment_c) {
-                    READ_COMMENT_LINE(buf_ptr, end_ptr);
-                    goto done;
                 } else {
-                    if (!isspace(c))
-                        escaped = 0;
-                    conf_token[i++] = c;
+                    /* Check if this is a comment character */
+                    for (j=0; j < strlen(comment_c); j++) {
+                        if (c == comment_c[j]) {
+                            READ_COMMENT_LINE(buf_ptr, end_ptr);
+                            goto done;
+                        }
+                    }     
                 }
+                if (!isspace(c))
+                    escaped = 0;
+                conf_token[i++] = c;
                 break;
         }
     }
@@ -1358,7 +1365,7 @@ read_res_config_file(val_context_t * ctx)
         if (VAL_NO_ERROR !=
             (retval =
              val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                       CONF_COMMENT, ZONE_END_STMT))) {
+                       ALL_COMMENTS, ZONE_END_STMT))) {
             goto err;
         }
 
@@ -1376,7 +1383,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           CONF_COMMENT, ZONE_END_STMT))) {
+                           ALL_COMMENTS, ZONE_END_STMT))) {
                 goto err;
             }
             ns = NULL;
@@ -1397,7 +1404,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           CONF_COMMENT, ZONE_END_STMT))) {
+                           ALL_COMMENTS, ZONE_END_STMT))) {
                 goto err;
             }
             ns = NULL;
@@ -1414,7 +1421,7 @@ read_res_config_file(val_context_t * ctx)
             if (VAL_NO_ERROR !=
                 (retval =
                 val_get_token(&buf_ptr, end_ptr, &line_number, token, sizeof(token), &endst,
-                           CONF_COMMENT, ZONE_END_STMT))) {
+                           ALL_COMMENTS, ZONE_END_STMT))) {
                 goto err;
             }
             if (ctx->search)

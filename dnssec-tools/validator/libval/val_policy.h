@@ -3,9 +3,10 @@
 
 #include "val_parse.h"
 
-#define CONF_COMMENT '#'
+#define CONF_COMMENT "#"
+#define ZONE_COMMENT ";"
+#define ALL_COMMENTS ";#"
 #define CONF_END_STMT ';'
-#define ZONE_COMMENT ';'
 #define ZONE_END_STMT '\0'
 #define LVL_DELIM ":"
 #define MAX_LEVEL_IN_POLICY	5
@@ -143,7 +144,7 @@ int             val_get_token(char **buf_ptr,
                               int *line_number,
                               char *conf_token,
                               int conf_limit,
-                              int *endst, char comment_c, char endstmt_c);
+                              int *endst, char *comment_c, char endstmt_c);
 int free_policy_entry(policy_entry_t *pol_entry, int index);
 
 /*
