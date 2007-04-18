@@ -60,6 +60,11 @@ The name of the key archive directory for this zone.
 The time when the zone's SIG records expire.  This field is passed to
 B<dnssec-signzone> as the argument to the I<-e> option.
 
+ * gends
+
+Boolean value to indicate whether or not DS records should be generated for
+the zone.
+
  * keyrec_signdate
 
 The textual timestamp of the zone I<keyrec>'s last update.
@@ -69,6 +74,14 @@ This is a translation of the I<keyrec_signsecs> field.
 
 The numeric timestamp of the zone I<keyrec>'s last update.
 This is measured in seconds since the epoch.
+
+ * ksdir
+
+The name of the directory to hold the zone's keyset files.
+
+ * kskcount
+
+The number of KSKs to generate for the zone.
 
  * kskcur
 
@@ -83,7 +96,19 @@ The name of the zone's Published KSK signing set.
 
 The directory that holds the KSK keys.
 
- * signedfile
+ * lastset
+
+The most recently generated signing set for the zone.
+
+ * serial
+
+The most recent serial number for the zone.
+
+ * szopts
+
+Optional arguments passed to the B<dnssec-signzone> command.
+
+ * signedzone
 
 The name of the signed zone file for this zone.
 
@@ -91,10 +116,18 @@ The name of the signed zone file for this zone.
 
 The name of the zone file for this zone.
 
+ * zskcount
+
+The number of ZSKs to generate for the zone.
+
  * zskcur
 
 The name of the signing set for the current ZSK keys.
 This is the name of the signing set's set I<keyrec>.
+
+ * zskdirectory
+
+The directory that holds the ZSK keys.
 
  * zskpub
 
@@ -149,9 +182,17 @@ the I<keyrec_gensecs> field.
 The numeric timestamp of the key's creation.  This is measured in seconds
 since the epoch.
 
+ * kgopts
+
+Additional options to pass to the B<dnssec-keygen> command.
+
  * ksklength
 
 The length of a KSK key.  This is only included in I<keyrec>s for KSK keys.
+
+ * ksklife
+
+The life of a KSK key.  This is only included in I<keyrec>s for KSK keys.
 
  * random
 
@@ -165,13 +206,17 @@ The name of the zone for which this key was generated.
 
 The length of a ZSK key.  This is only included in I<keyrec>s for ZSK keys.
 
+ * zsklife
+
+The life of a ZSK key.  This is only included in I<keyrec>s for ZSK keys.
+
 =head1 EXAMPLES
 
 The following is an example of a zone I<keyrec>:
 
     zone        "example.com"
             zonefile        "db.example.com"
-            signedfile      "db.example.com.signed"
+            signedzone      "db.example.com.signed"
             endtime         "+604800"
             archivedir      "/usr/etc/dnssec-tools/key-vault"
             kskcur          "signing-set-41"
