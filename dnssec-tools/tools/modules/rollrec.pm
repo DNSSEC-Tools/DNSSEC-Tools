@@ -109,8 +109,6 @@ my @ROLLFIELDS = (
 			'ksk_rolldate',
 			'zsk_rollsecs',
 			'zsk_rolldate',
-			'rollrec_signdate',
-			'rollrec_signsecs',
 		  );
 
 #--------------------------------------------------------------------------
