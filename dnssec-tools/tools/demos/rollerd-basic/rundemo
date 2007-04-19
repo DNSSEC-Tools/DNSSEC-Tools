@@ -10,6 +10,17 @@
 
 use strict;
 
+use Getopt::Long qw(:config no_ignore_case_always);
+use Net::DNS::SEC::Tools::rollrec;
+
+my %options = ();				# Filled option array.
+my @opts =
+(
+	"autods",				# Auto-pub DS records.
+	"loglvl=n",				# Logging level.
+	"help",					# Display help message.
+);
+
 my $cmd;					# Demo command to execute.
 my $dir;					# Current-directory argument.
 my $log;					# Log-file argument.
@@ -24,41 +35,107 @@ my $sleeptime = "15";
 my $rrfile    = "demo.rollrec";
 
 
+main();
+exit();
+
+#------------------------------------------------------------------------------
+# Routine:	main()
 #
-# Set the log level, maybe using a command-line argument.
-#
-my $i = @ARGV;
-if(@ARGV > 0)
+sub main
 {
-	$loglvl	= $ARGV[0];
+	#
+	# Set the log level, maybe using a command-line argument.
+	#
+	opts();
+	print "\nusing a loglevel of \"$loglvl\"\n\n";
+
+	#
+	# Set our remaining arguments.
+	#
+	$dir	= "-dir $curdir";
+	$log	= "-logfile $logfile";
+	$lvl	= "-loglevel $loglvl";
+	$slp	= "-sleep $sleeptime";
+	$rrf	= "-rrf $rrfile";
+
+	#
+	# Build our demo command.
+	#
+	$cmd = "rollerd $dir $log $lvl $slp $rrf -display";
+
+	#
+	# Ensure rollerd is not running and zap the demo log file.
+	#
+#	system("rollctl -halt >/dev/null 2>&1 &");
+	system("rollctl -halt &");
+	system("cp /dev/null $logfile");
+
+	#
+	# Start the demo and peek at the log file.
+	#
+	system("$cmd &");
+	system("tail -f $logfile");
 }
-print "\nusing a loglevel of \"$loglvl\"\n\n";
 
+#------------------------------------------------------------------------------
+# Routine:	opts()
 #
-# Set our remaining arguments.
-#
-$dir	= "-dir $curdir";
-$log	= "-logfile $logfile";
-$lvl	= "-loglevel $loglvl";
-$slp	= "-sleep $sleeptime";
-$rrf	= "-rrf $rrfile";
+sub opts
+{
+	GetOptions(\%options,@opts);
+	usage() if($options{'help'});
 
-#
-# Build our demo command.
-#
-$cmd = "rollerd $dir $log $lvl $slp $rrf -display";
+	$loglvl	= $options{'loglvl'} if(defined($options{'loglvl'}));
 
-#
-# Ensure rollerd is not running and zap the demo log file.
-#
-system("rollctl -halt >/dev/null 2>&1");
-system("cp /dev/null $logfile");
+	if($options{'autods'})
+	{
+		print "\nstarting auto-DS checking\n";
+		autods();
+		$SIG{CHLD} = "IGNORE";
+	}
+}
 
+#------------------------------------------------------------------------------
+# Routine:	autods()
 #
-# Start the demo and peek at the log file.
+sub autods
+{
+	my $nap = $sleeptime * 2;			# autods sleep-time.
+	my $cpid;					# Retcode from fork().
+
+	#
+	# Spawn a child and let the parent return.
+	#
+	$cpid = fork();
+	return if($cpid != 0);
+
+	#
+	# Whenever a zone hits KSK rollover phase 6, tell rollerd that
+	# the parent has published the new DS record.
+	#
+	while(42)
+	{
+		sleep($nap);
+
+		rollrec_read($rrfile);
+		foreach my $zone (sort(rollrec_names()))
+		{
+			my $kphase = rollrec_recval($zone,'kskphase');
+
+			if($kphase == 6)
+			{
+				system("rollctl -dspub $zone > /dev/null");
+			}
+		}
+		rollrec_close();
+	}
+}
+
+#------------------------------------------------------------------------------
+# Routine:	usage()
 #
-system("$cmd &");
-system("tail -f $logfile");
-
-exit(0);
-
+sub usage
+{
+	print STDERR "usage:  rundemo [-autods | -loglevel lvl]\n";
+	exit(0);
+}
