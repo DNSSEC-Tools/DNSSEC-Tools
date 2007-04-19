@@ -86,20 +86,12 @@ my @ZONEFIELDS = (
 			'signedzone',
 			'zskcount',
 			'zskcur',
-			'zskcurpath',
 			'zskpub',
-			'zskpubpath',
 			'zsknew',
-			'zsknewpath',
 			'serial',
-			'signing_set',
 			'lastset',
 			'gends',
 			'szopts',
-			'rollphase',
-			'rollstart',
-			'kskroll',
-			'zskroll',
 			'keyrec_signsecs',
 			'keyrec_signdate',
 		  );
@@ -130,7 +122,6 @@ my @KEYFIELDS = (
 			'kgopts',
 			'keyrec_gensec',
 			'keyrec_gendate',
-			'signing_set',
 		        'zonename',
 		 );
 
