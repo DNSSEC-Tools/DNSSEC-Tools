@@ -175,19 +175,20 @@ SV *rr_c2sv(u_char *name, int type, int class, int ttl, int len, u_char *data)
   SAVETMPS;
 
   PUSHMARK(SP);
+  XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
   XPUSHs(sv_2mortal(newSVpv((char*)name, 0))) ;
   XPUSHs(sv_2mortal(newSViv(type))) ;
   XPUSHs(sv_2mortal(newSViv(class))) ;
   XPUSHs(sv_2mortal(newSViv(ttl))) ;
   XPUSHs(sv_2mortal(newSViv(len))) ;
-  XPUSHs(sv_2mortal(newRV_noinc(newSVpvn((char*)data, len)))) ;
-  XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
+  XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
   PUTBACK;
 
   call_method("new_from_data", G_SCALAR);
 
   SPAGAIN ;
-  rr = POPs;
+
+  rr =newSVsv(POPs);
 
   PUTBACK ;
   FREETMPS ;
@@ -285,7 +286,7 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
     hv_store(result_hv, "status", strlen("status"), 
 	     newSViv(rc_ptr->val_rc_status), 0);
 
-    fprintf(stderr, "rc status == %d\n", rc_ptr->val_rc_status); /* XXX */
+    /* fprintf(stderr, "rc status == %d\n", rc_ptr->val_rc_status); XXX */
     
     hv_store(result_hv, "answer", strlen("answer"), 
 	     ac_c2sv(rc_ptr->val_rc_answer), 0);
