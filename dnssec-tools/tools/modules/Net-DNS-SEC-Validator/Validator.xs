@@ -166,9 +166,145 @@ static struct addrinfo *ainfo_sv2c(SV *ainfo_ref, struct addrinfo *ainfo_ptr)
   return ainfo_ptr;
 }
 
+SV *rr_c2sv(u_char *name, int type, int class, int ttl, int len, u_char *data)
+{
+  dSP ;
+  SV *rr;
+
+  ENTER ;
+  SAVETMPS;
+
+  PUSHMARK(SP);
+  XPUSHs(sv_2mortal(newSVpv((char*)name, 0))) ;
+  XPUSHs(sv_2mortal(newSViv(type))) ;
+  XPUSHs(sv_2mortal(newSViv(class))) ;
+  XPUSHs(sv_2mortal(newSViv(ttl))) ;
+  XPUSHs(sv_2mortal(newSViv(len))) ;
+  XPUSHs(sv_2mortal(newRV_noinc(newSVpvn((char*)data, len)))) ;
+  XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
+  PUTBACK;
+
+  call_method("new_from_data", G_SCALAR);
+
+  SPAGAIN ;
+  rr = POPs;
+
+  PUTBACK ;
+  FREETMPS ;
+  LEAVE ;
+
+  return rr;
+}
+
+SV *rrset_c2sv(struct val_rrset *rrs_ptr)
+{
+  HV *rrset_hv;
+  SV *rrset_hv_ref = &PL_sv_undef;
+  AV *rrs_av;
+  SV *rrs_av_ref;
+  struct rr_rec *rr;
+
+  if (rrs_ptr) {
+    rrset_hv = newHV();
+    rrset_hv_ref = newRV_noinc((SV*)rrset_hv);
+
+    rrs_av = newAV();
+    rrs_av_ref = newRV_noinc((SV*)rrs_av);
+
+    for (rr = rrs_ptr->val_rrset_data; rr; rr = rr->rr_next) {
+      
+      av_push(rrs_av, 
+	      rr_c2sv(rrs_ptr->val_rrset_name_n,
+		      rrs_ptr->val_rrset_type_h,
+		      rrs_ptr->val_rrset_class_h,
+		      rrs_ptr->val_rrset_ttl_h,
+		      rr->rr_rdata_length_h,
+		      rr->rr_rdata)
+	      );
+    }
+
+    hv_store(rrset_hv, "data", strlen("data"), rrs_av_ref, 0);
+
+    rrs_av = newAV();
+    rrs_av_ref = newRV_noinc((SV*)rrs_av);
+
+    for (rr = rrs_ptr->val_rrset_sig; rr; rr = rr->rr_next) {
+      
+      av_push(rrs_av, 
+	      rr_c2sv(rrs_ptr->val_rrset_name_n,
+		      rrs_ptr->val_rrset_type_h,
+		      rrs_ptr->val_rrset_class_h,
+		      rrs_ptr->val_rrset_ttl_h,
+		      rr->rr_rdata_length_h,
+		      rr->rr_rdata)
+	      );
+    }
+
+    hv_store(rrset_hv, "sigs", strlen("s"), rrs_av_ref, 0);
+  }
+
+  return rrset_hv_ref;
+}
+
+SV *ac_c2sv(struct val_authentication_chain *ac_ptr)
+{
+  HV *ac_hv;
+  SV *ac_hv_ref = &PL_sv_undef;
+
+  if (ac_ptr) {
+    ac_hv = newHV();
+    ac_hv_ref = newRV_noinc((SV*)ac_hv);
+
+    hv_store(ac_hv, "status", strlen("status"), 
+	     newSViv(ac_ptr->val_ac_status), 0);
+
+    hv_store(ac_hv, "rrset", strlen("rrset"), 
+	     rrset_c2sv(ac_ptr->val_ac_rrset), 0);
+
+    hv_store(ac_hv, "trust", strlen("trust"), 
+	       ac_c2sv(ac_ptr->val_ac_trust), 0);
+  }
+
+  return ac_hv_ref;
+}
+
 SV *rc_c2sv(struct val_result_chain *rc_ptr)
 {
-  return NULL;
+  int i;
+  AV *rc_av = newAV();
+  SV *rc_av_ref = newRV_noinc((SV*)rc_av);
+  HV *result_hv;
+  SV *result_hv_ref;
+  AV *proofs_av;
+  SV *proofs_av_ref;
+
+  while (rc_ptr) {
+    result_hv = newHV();
+    result_hv_ref = newRV_noinc((SV*)result_hv);
+
+    hv_store(result_hv, "status", strlen("status"), 
+	     newSViv(rc_ptr->val_rc_status), 0);
+
+    fprintf(stderr, "rc status == %d\n", rc_ptr->val_rc_status); /* XXX */
+    
+    hv_store(result_hv, "answer", strlen("answer"), 
+	     ac_c2sv(rc_ptr->val_rc_answer), 0);
+
+    proofs_av = newAV();
+    proofs_av_ref = newRV_noinc((SV*)proofs_av);
+  
+    for(i=0; i < rc_ptr->val_rc_proof_count; i++) {
+      av_push(proofs_av, ac_c2sv(rc_ptr->val_rc_proofs[i]));
+    }
+
+    hv_store(result_hv, "proofs", strlen("proofs"), proofs_av_ref, 0);
+
+    av_push(rc_av, result_hv_ref);  
+
+    rc_ptr = rc_ptr->val_rc_next;
+  }
+
+  return rc_av_ref;
 }
 
 SV *ainfo_c2sv(struct val_addrinfo *ainfo_ptr)
@@ -298,7 +434,7 @@ pval_create_context_with_conf(policy,dnsval_conf,resolv_conf,root_hints)
 						  resolv_conf,
 						  root_hints,
 						  &vc_ptr);
-	//	fprintf(stderr,"pval_create_context_with_conf:%lx\n",vc_ptr);
+	//	fprintf(stderr,"pval_create_context_with_confresult=%d):%lx\n",result,vc_ptr);
 
 	RETVAL = (result ? NULL : vc_ptr);
 	}
@@ -486,6 +622,8 @@ pval_resolve_and_check(self,domain,type,class,flags)
 	SV **			val_status_str_svp;
 	struct val_result_chain * val_rc_ptr = NULL;
 	int res;
+	u_char                  name_n[NS_MAXCDNAME];
+	fprintf(stderr, "here we are at the start\n");
 
 	ctx_ref = hv_fetch((HV*)SvRV(self), "_ctx_ptr", 8, 1);
 	ctx = (ValContext *)SvIV((SV*)SvRV(*ctx_ref));
@@ -500,22 +638,34 @@ pval_resolve_and_check(self,domain,type,class,flags)
         sv_setiv(*val_status_svp, 0);
         sv_setpv(*val_status_str_svp, "");
 
+	RETVAL = &PL_sv_undef;
+	fprintf(stderr, "here we are way before\n");
 
-	res = val_resolve_and_check(ctx, (u_char*) domain, 
-				    (u_int16_t) type, 
-				    (u_int16_t) class, 
-				    (u_int8_t) flags, 
-				    &val_rc_ptr);
+	if (ns_name_pton(domain, name_n, sizeof(name_n)) != -1) {
 
-	if (res == 0) {
-	  RETVAL = rc_c2sv(val_rc_ptr);
-	} else {
-	  sv_setiv(*error_svp, res);
-	  sv_setpv(*error_str_svp, gai_strerror(res));
-	  RETVAL = &PL_sv_undef;
+	  val_log_add_optarg("7:stderr", 1); /* XXX */
+
+	  fprintf(stderr, "here we are before\n");
+	  res = val_resolve_and_check(ctx, (u_char*) name_n, 
+				      (u_int16_t) type, 
+				      (u_int16_t) class, 
+				      (u_int8_t) flags, 
+				      &val_rc_ptr);
+	  fprintf(stderr, "here we are after\n");
+	  val_log_authentication_chain(ctx, LOG_DEBUG,
+				       (u_char*) name_n, 
+				       (u_int16_t) type, 
+				       (u_int16_t) class, 
+				       val_rc_ptr);
+	  if (res == 0) {
+	    RETVAL = rc_c2sv(val_rc_ptr);
+	  } else {
+	    sv_setiv(*error_svp, res);
+	    sv_setpv(*error_str_svp, gai_strerror(res));
+	  }
+
+	  val_free_result_chain(val_rc_ptr);
 	}
-
-	val_free_result_chain(val_rc_ptr);
 	}
 	OUTPUT:
 	RETVAL

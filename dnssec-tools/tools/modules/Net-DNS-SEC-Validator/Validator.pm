@@ -116,6 +116,8 @@ sub new {
 	   $self->{resolv_conf},
     	   $self->{root_hints});
 
+    return undef unless $self->{_ctx_ptr};
+
     $self->{error} = 0;
     $self->{errorStr} = "";
     $self->{valStatus} = 0;
@@ -199,6 +201,29 @@ sub gethostbyname {
     my $result = Net::DNS::SEC::Validator::_gethostbyname($self, $name, $af);
 
     return $result;
+}
+
+sub resolve_and_check {
+    my $self = shift;
+    my $dname = shift;
+    my $class = shift;
+    my $type = shift;
+    my $flags = shift;
+
+    $class ||= "IN";
+    $type ||= "A";
+
+    $class = Net::DNS::classesbyname($class) unless $class =~ /^\d+$/;
+    $type = Net::DNS::typesbyname($type) unless $type =~ /^\d+$/;
+
+    $flags ||= VAL_QUERY_MERGE_RRSETS;
+
+    return Net::DNS::SEC::Validator::_resolve_and_check($self,
+							$dname,
+							$class,
+							$type,
+							$flags);
+
 }
 
 sub istrusted {
