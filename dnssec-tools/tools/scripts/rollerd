@@ -2941,7 +2941,7 @@ sub cmd_sleeptime
 #-----------------------------------------------------------------------------
 # Routine:	cmd_status()
 #
-# Purpose:	Write some rollerd settings to the log.
+# Purpose:	Give a caller some rollerd settings.
 #
 sub cmd_status
 {
@@ -2971,18 +2971,10 @@ sub cmd_status
 	$outbuf .= "loglevel:           $lvl\n";
 	$outbuf .= "sleeptime:          $sleeptime\n";
 
-
+	#
+	# Send the status report to the caller.
+	#
 	rollmgr_log(LOG_TMI,"<command>","status command received");
-
-	rollmgr_log(LOG_ALWAYS,"<command>","rollerd status:");
-	rollmgr_log(LOG_ALWAYS,"<command>","\tboot time         - $boottime");
-	rollmgr_log(LOG_ALWAYS,"<command>","\tdirectory         - $curdir");
-	rollmgr_log(LOG_ALWAYS,"<command>","\trollrec file      - $rollrecfile");
-	rollmgr_log(LOG_ALWAYS,"<command>","\tlogfile           - $lfile");
-	rollmgr_log(LOG_ALWAYS,"<command>","\tloglevel          - $lvlstr");
-
-	rollmgr_log(LOG_ALWAYS,"<command>","\tsleeptime         - $sleeptime");
-
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
 }
 
