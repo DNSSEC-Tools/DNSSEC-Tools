@@ -256,9 +256,23 @@ sub archit
 	my $keyfile = shift;				# Key to archive.
 	my $archdir = shift;				# Archive directory.
 
+	my $kronos = time;				# Timestamp.
+	my $newname;					# New key path.
+
+	#
+	# Go home if the key file doesn't exist.
+	#
 	return if(!-e $keyfile);
 
-	system("$MV $keyfile $archdir");
+	#
+	# Build the new name.
+	#
+	$newname = "$archdir/$kronos.$keyfile";
+
+	#
+	# Move the key and maybe give a message.
+	#
+	system("$MV $keyfile $newname");
 	if($verbose)
 	{
 		print("archived $keyfile\t\t($zone)\n");
@@ -268,6 +282,9 @@ sub archit
 		nqprint("archived $keyfile");
 	}
 
+	#
+	# Bump our count of archived keys.
+	#
 	$keycount++;
 }
 
@@ -463,6 +480,8 @@ keyarch - DNSSEC-Tools daemon to archive old KSK and ZSK keys.
 
 The B<keyarch> program archives old KSK and ZSK keys.  Keys are considered
 old if they are obsolete and are marked as either I<kskobs> or I<zskobs>.
+Archived keys are prefixed with the seconds-since-epoch as a means of
+distinguishing a zone's keys that have the same five digit number.
 
 If the required file argument is a I<keyrec> file, then expired keys listed
 in that file are archived.  If the file argument is a I<rollrec> file, the
@@ -514,6 +533,14 @@ Display a usage message.
 Display the program versions.
 
 =back
+
+=head1 EXIT VALUES
+
+On success, B<keyarch>'s exit code is the number of keys archived.
+
+B<keyarch> has a 0 exit code if the help message is given.
+
+B<keyarch> has a negative exit code if an error is encountered.
 
 =head1 COPYRIGHT
 
