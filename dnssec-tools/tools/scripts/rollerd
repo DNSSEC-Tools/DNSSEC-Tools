@@ -1393,14 +1393,15 @@ sub ksk_phase7
 	# Reload the zone.
 	#
 	$krf = $rr{'keyrec'};
-	$ret = system("$keyarch -verbose -zone $rname $krf");
-	if($ret != 0)
+#	$ret = system("$keyarch -verbose -zone $rname $krf");
+	$ret = system("$keyarch -quiet -zone $rname $krf");
+	if($ret <= 0)
 	{
 		rollmgr_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
 	}
 	else
 	{
-		rollmgr_log(LOG_INFO,$rname,"KSK phase 7:  zone, rc - $ret");
+		rollmgr_log(LOG_INFO,$rname,"KSK phase 7:  zone, key files archived");
 	}
 
 	#
