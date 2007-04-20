@@ -95,6 +95,8 @@ my $RRFCOL	= $COL0;	# rollrec filename.
 my $ROLLCNTCOL	= $COL1;	# rolled zones count.
 my $SKIPCNTCOL	= $COL2;	# skipped zones count.
 my $SLEEPCOL	= $COL3;	# rollerd's sleeptime.
+my $INFO4	= $COL4;	# unused
+my $INFO5	= $COL5;	# unused
 
 #
 # Default column constants for zonestripes.
@@ -1497,6 +1499,14 @@ sub infostripe
 	$lab = $zonetab->Label(-text => $timestr,
 			       -font => $font, -background => $INFOBG);
 	$zonetab->put($INFOROW,$SLEEPCOL,$lab);
+
+	$lab = $zonetab->Label(-text => ' ',
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,$INFO4,$lab);
+
+	$lab = $zonetab->Label(-text => ' ',
+			       -font => $font, -background => $INFOBG);
+	$zonetab->put($INFOROW,$INFO5,$lab);
 
 	painter();
 }
