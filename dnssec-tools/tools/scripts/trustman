@@ -122,12 +122,7 @@ my %revdomains;
 my %keystorage;
 
 my %newkeys;
-# load in the newkeys info from file if available
-open (FILE, "< $newkeyfile") or warn "can't open newkey file: $!";
-undef $/;
-eval <FILE>;
-warn "can't recreate newkey data from file: $@" if $@;
-close FILE;
+load_newkeys();
 
 my %sleeptimes;
 my %active_refresh_times;
@@ -203,6 +198,17 @@ if ($opts{'f'}) {
         }
     } while (!$once);
 } 
+
+sub load_newkeys {
+    # load in the newkeys info from file if available
+    open (FILE, "< $newkeyfile") or warn "can't open newkey file: $!";
+    my $undefval = $/;
+    undef $/;
+    eval <FILE>;
+    warn "can't recreate newkey data from file: $@" if $@;
+    close FILE;
+    $/ = $undefval;
+}
 
 sub show_version {
     print STDERR "Version: 0.9\n";
@@ -328,13 +334,19 @@ sub checkkeys {
                     }
                 } else {
                 # see if it has the revoke bit set
-                    if ($keyrec->REVOKE == 1) {
-#                    my $revoke = 1;
-#                    if ($revoke == 1) {
+#                    if ($keyrec->REVOKE == 1) {
+                    my $revoke = 1;
+                    if ($revoke == 1) {
                         # this key is being revoked
-                        revoke_ta_dnsvalconf($d,$keyrec);
+                        if ($dvfile) {
+                            revoke_ta_dnsvalconf($d,$keyrec);
+                        }
+                        if ($ncfile) {
+                            revoke_ta_namedconf($d,$keyrec);
+                        }
 # TODO -- have a flag so revoked keys can alternatively be completely
 # removed from the conf file
+
                     }
 # need to verify that ALL keys in %keystorage were matched
 # if a known key disappears, need to deal with that.
@@ -568,6 +580,87 @@ sub revoke_ta_dnsvalconf  {
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
 }
 
+sub revoke_ta_namedconf  {
+    my ($domain,$keyrec) = @_;
+
+    my $pat = "^trusted-keys";
+    my $trustsection = 0;
+
+    open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
+    open (CONF,$ncfile) or die "unable to read named.conf file.";
+    my $origsep = $/;
+    $/ = ";";
+    while (<CONF>) {
+        if (s/^\s*$pat\s*//) {
+            print TMP "trusted-keys {";
+            $trustsection = 1;
+            s/\s*\{//;
+            if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
+                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $k =~ s/\s+//g;
+                if ($d eq $domain) {
+                    my $keyin = $keyrec->{key};
+                    $keyin =~ s/[\n\r]//g;
+                    if ($keyin eq $k &&
+                        $keyrec->{flags} eq $f &&
+                        $keyrec->{protocol} eq $p &&
+                        $keyrec->{algorithm} eq $a) {
+# its a match, comment it out
+                            print TMP $space; # attempting to preserve spacing
+                            print TMP "# The following key has been revoked.\n";
+                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\"";
+                            print TMP "# " . $revkeyrec . "\n\n";
+                    }
+                } else {
+                # just print it, it's not the key we're looking for
+                    print TMP $_;
+                }
+            }
+        } elsif ($trustsection) {
+            if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
+                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $k =~ s/\s+//g;
+                $k =~ s/\"//g;
+                if ($d eq $domain) {
+                    my $keyin = $keyrec->{key};
+                    $keyin =~ s/[\n\r]//g;
+                    if ($keyin eq $k &&
+                        $keyrec->{flags} eq $f &&
+                        $keyrec->{protocol} eq $p &&
+                        $keyrec->{algorithm} eq $a) {
+# its a match, comment it out
+                            print TMP $space; # attempting to preserve spacing
+                            print TMP "# The following key has been revoked.\n";
+                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            print TMP "# " . $revkeyrec;
+                    } else { 
+                        print TMP $_;
+                    }
+                } else {
+                    print TMP $_;
+                }
+            }
+            if (/\};/) {
+                $trustsection = 0;
+                print TMP $_;
+            }
+        } else {
+            print TMP $_;
+        }
+    }
+    $/ = $origsep;
+    close (CONF);
+    close (TMP);
+# rename TMP to $dvfile
+    my $origname = $ncfile . ".orig";
+    rename ($ncfile,$origname);
+    rename ("/tmp/named.conf.tmp",$ncfile);
+}
+
 sub get_domains_keys {
 # using globals %keystorage and @domains, is this evil?
 
@@ -623,43 +716,43 @@ sub read_conf_file {
     my ($storage, $file, $configmap) = @_;
     Verbose("reading and parsing trust keys from $file\n");
     my $pat = "trusted-keys";
+
     # regexp pulled from Fast.pm
     my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
 
-    my $fh = new IO::File;
-    if (!$fh->open("<$file")) {
-	print STDERR "Could not open named configuration file: $file\n";
-	exit (1);
-    }
-    while (<$fh>) {
+#    my $fh = new IO::File;
+#    if (!$fh->open("<$file")) {
+#	print STDERR "Could not open named configuration file: $file\n";
+#	exit (1);
+#    }
+
+    open (FILE, "< $file") or die "can't open config file: $!\n";
+    while (<FILE>) {
 	if (/$pat/) {
-	    while (<$fh>) {
+	    while (<FILE>) {
 		last if (/^\s*\};/);
-		if (/\s*($pat_maybefullname)\s+(256|257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
+		if (/\s*($pat_maybefullname)\s+(257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
 
                     my $domainname = $1;
+                    my ($flags, $protocol, $algorithm) = ($2, $3, $4);
+                    my $key = $5;
                     $domainname =~ s/\.$//;
+                    $key =~ s/[\n\r\s]//g;
 
                     # need to remember where these keys came from
                     $configmap->{$domainname} = $file;
 
-#		    push @{$storage->{$domainname}},
-#		      { flags => $2,
-#			protocol => $3,
-#			algorithm => $4,
-#			key => $5 };
-#		    $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
-                    my $newstorageobj = { flags => $2,
-                                          protocol => $3,
-                                          algorithm => $4,
-                                          key => $5,
+                    my $newstorageobj = { flags => $flags,
+                                          protocol => $protocol,
+                                          algorithm => $algorithm,
+                                          key => $key,
                                         };
                     push (@{$storage->{$domainname}}, $newstorageobj);
 		}
 	    }
 	}
     }
-    $fh->close;
+    close FILE;
 }
 
 #######################################################################
