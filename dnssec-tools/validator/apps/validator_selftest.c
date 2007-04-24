@@ -52,8 +52,8 @@ val_get_token(char **buf_ptr,
               char *end_ptr,
               int *line_number,
               char *conf_token,
-              int conf_limit,
-              int *endst, char *comment_c, char endstmt_c);
+              int conf_limit, int *endst, 
+              const char *comment_c, char endstmt_c);
 
 static void
 selftest_cleanup(void)
