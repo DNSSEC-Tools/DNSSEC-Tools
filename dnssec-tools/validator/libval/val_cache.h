@@ -16,7 +16,7 @@ int             free_validator_cache(void);
 int             store_ns_for_zone(u_int8_t * zonecut_n,
                                   struct name_server *resp_server);
 int             get_nslist_from_cache(val_context_t *ctx,
-                                      struct val_query_chain *matched_q,
+                                      struct queries_for_query *matched_qfq,
                                       struct queries_for_query **queries,
                                       struct name_server **ref_ns_list,
                                       u_int8_t **zonecut_n);
