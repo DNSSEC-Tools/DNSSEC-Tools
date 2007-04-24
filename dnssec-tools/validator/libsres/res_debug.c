@@ -531,6 +531,9 @@ const struct RES_SYM_TYPE __p_type_syms[] = {
 #ifdef LIBVAL_NSEC3
     {ns_t_nsec3, "NSEC3", "NSEC3 next record"},
 #endif
+#ifdef LIBVAL_DLV
+    {ns_t_dlv, "DLV", "DLV record"},
+#endif
     {ns_t_ds, "DS", "delegation signer"},
     {0, NULL, NULL}
 };
