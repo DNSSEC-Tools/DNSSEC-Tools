@@ -34,22 +34,15 @@
 #endif
 #ifdef LIBVAL_DLV
 #define P_DLV_TRUST_POINTS          (P_BASE_LAST+NSEC3_POL_COUNT+1) 
-#define P_DLV_MAX_VALIDATION_LINKS  (P_BASE_LAST+NSEC3_POL_COUNT+2) 
-#define DLV_POL_COUNT               2
+#define DLV_POL_COUNT               1
 #else
 #define DLV_POL_COUNT               0
 #endif
 #define MAX_POL_TOKEN               (P_BASE_LAST+NSEC3_POL_COUNT+DLV_POL_COUNT+1) 
 
-#define ZONE_PU_TRUSTED_MSG "trusted"
-#define ZONE_PU_UNTRUSTED_MSG "untrusted"
 #define ZONE_PU_TRUSTED 1
 #define ZONE_PU_UNTRUSTED 2
 
-#define ZONE_SE_IGNORE_MSG     "ignore"
-#define ZONE_SE_TRUSTED_MSG    "trusted"
-#define ZONE_SE_DO_VAL_MSG     "validate"
-#define ZONE_SE_UNTRUSTED_MSG  "untrusted"
 #define ZONE_SE_IGNORE 1
 #define ZONE_SE_TRUSTED 2
 #define ZONE_SE_DO_VAL 3
@@ -132,8 +125,6 @@ int             free_nsec3_max_iter(policy_entry_t * pol_entry);
 #ifdef LIBVAL_DLV
 int             parse_dlv_trust_points(char **, char *, policy_entry_t *, int *, int *);
 int             free_dlv_trust_points(policy_entry_t *);
-int             parse_dlv_max_links(char **, char *, policy_entry_t *, int *, int *);
-int             free_dlv_max_links(policy_entry_t *);
 #endif
 int             check_relevance(char *label, char *scope, int *label_count,
                                 int *relevant);
@@ -143,8 +134,8 @@ int             val_get_token(char **buf_ptr,
                               char *end_ptr,
                               int *line_number,
                               char *conf_token,
-                              int conf_limit,
-                              int *endst, char *comment_c, char endstmt_c);
+                              int conf_limit, int *endst, 
+                              const char *comment_c, char endstmt_c);
 int free_policy_entry(policy_entry_t *pol_entry, int index);
 
 /*
@@ -186,6 +177,12 @@ struct zone_se_policy {
 #ifdef LIBVAL_NSEC3
 struct nsec3_max_iter_policy {
     int             iter;
+};
+#endif
+
+#ifdef LIBVAL_DLV
+struct dlv_policy {
+    u_int8_t *trust_point;
 };
 #endif
 
