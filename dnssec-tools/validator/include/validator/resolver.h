@@ -97,6 +97,12 @@
 #endif
 #endif
 
+#ifdef LIBVAL_DLV
+#ifndef ns_t_dlv
+#define ns_t_dlv 32769
+#endif
+#endif
+
 #ifndef ns_t_ds
 #define ns_t_ds       43
 #endif
