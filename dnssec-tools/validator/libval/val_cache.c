@@ -486,7 +486,7 @@ free_zone_nslist(void)
 
 int
 get_nslist_from_cache(val_context_t *ctx,
-                      struct val_query_chain *matched_q,
+                      struct queries_for_query *matched_qfq,
                       struct queries_for_query **queries,
                       struct name_server **ref_ns_list,
                       u_int8_t **zonecut_n)
@@ -502,9 +502,9 @@ get_nslist_from_cache(val_context_t *ctx,
     u_int8_t       *qname_n;
     struct zone_ns_map_t *map_e, *saved_map;
     u_int8_t       *tmp_zonecut_n = NULL;
-
-    qname_n = matched_q->qc_name_n;
-    qtype = matched_q->qc_type_h;
+    
+    qname_n = matched_qfq->qfq_query->qc_name_n;
+    qtype = matched_qfq->qfq_query->qc_type_h;
 
     *zonecut_n = NULL;
     
@@ -581,7 +581,7 @@ get_nslist_from_cache(val_context_t *ctx,
         }
     }
 
-    if (tmp_zonecut_n) {
+    if (ref_ns_list && tmp_zonecut_n) {
         *zonecut_n = (u_int8_t *) MALLOC (wire_name_length(tmp_zonecut_n) * sizeof (u_int8_t));
         if (*zonecut_n == NULL) {
             UNLOCK(&ns_rwlock);
@@ -589,10 +589,10 @@ get_nslist_from_cache(val_context_t *ctx,
         } 
         memcpy(*zonecut_n, tmp_zonecut_n, wire_name_length(tmp_zonecut_n));
     }
-    
-    bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_q, queries,
-                       ref_ns_list);
 
+    bootstrap_referral(ctx, name_n, &unchecked_ns_info, matched_qfq, queries,
+                       ref_ns_list);
+    
     UNLOCK(&ns_rwlock);
 
     return VAL_NO_ERROR;
