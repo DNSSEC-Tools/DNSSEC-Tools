@@ -45,6 +45,7 @@
 		ref->qnames = NULL; \
 		ref->pending_glue_ns = NULL; \
 		ref->merged_glue_ns = NULL; \
+		ref->learned_zones = NULL; \
 } while(0)
 
 
