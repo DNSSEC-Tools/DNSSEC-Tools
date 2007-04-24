@@ -162,25 +162,29 @@ extern          "C" {
 #define VAL_FROM_AUTHORITY        3
 #define VAL_FROM_ADDITIONAL       4
 
-
     /*
-     * Flags for API functions 
+     * query flags in the lower nibble
      */
-#define VAL_FLAGS_DEFAULT 0x00
-#define VAL_FLAGS_DONT_VALIDATE 0x01
+#define VAL_QFLAGS_USERMASK 0x0f
+#define VAL_QUERY_DONT_VALIDATE 0x01
 #define VAL_QUERY_MERGE_RRSETS 0x02
-#define VAL_QUERY_GLUE_REQUEST (0x04 | VAL_FLAGS_DONT_VALIDATE)
+#ifdef LIBVAL_DLV
+#define VAL_QUERY_NO_DLV 0x04 
+#endif
 
-/* 
- * This flag will be an OR of all the flags that affect 
- * how cached data is retrieved. Currently only the
- * VAL_FLAGS_DONT_VALIDATE and VAL_QUERY_GLUE_REQUEST 
- * flags are relevant
- */
-#define VAL_MASK_AFFECTS_CACHING (VAL_FLAGS_DONT_VALIDATE | VAL_QUERY_GLUE_REQUEST)
+    /*  
+     * Internal query state in the upper nibble 
+     */
+#define VAL_QUERY_GLUE_REQUEST (0x10 | VAL_QUERY_DONT_VALIDATE) 
+#ifdef LIBVAL_DLV
+#define VAL_QUERY_USING_DLV 0x20 
+#endif
+
+#define VAL_QFLAGS_AFFECTS_CACHING (0xf0 | VAL_QUERY_DONT_VALIDATE) 
 
 
 #define MAX_ALIAS_CHAIN_LENGTH 10       /* max length of cname/dname chain */
+#define MAX_GLUE_FETCH_DEPTH 10         /* max length of glue dependency chain */
 
     typedef u_int8_t val_status_t;
     typedef u_int16_t val_astatus_t;
@@ -214,11 +218,17 @@ extern          "C" {
 #define POL_ZONE_SE_STR "zone-security-expectation"
 #ifdef LIBVAL_DLV
 #define POL_DLV_TRUST_POINTS_STR  "dlv-trust-points"
-#define POL_DLV_MAX_LINKS_STR "dlv-max-links"
 #endif
 #ifdef LIBVAL_NSEC3
 #define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
 #endif
+
+#define ZONE_PU_TRUSTED_MSG "trusted"
+#define ZONE_PU_UNTRUSTED_MSG "untrusted"
+#define ZONE_SE_IGNORE_MSG     "ignore"
+#define ZONE_SE_TRUSTED_MSG    "trusted"
+#define ZONE_SE_DO_VAL_MSG     "validate"
+#define ZONE_SE_UNTRUSTED_MSG  "untrusted"
 
     /*
      * Response structures  
@@ -358,6 +368,7 @@ extern          "C" {
         struct rrset_rec *answers;
         struct name_server *pending_glue_ns;
         struct name_server *merged_glue_ns;
+        struct rrset_rec *learned_zones;
     };
 
     struct val_query_chain {
@@ -373,23 +384,26 @@ extern          "C" {
         u_char          qc_original_name[NS_MAXCDNAME];
         u_int16_t       qc_type_h;
         u_int16_t       qc_class_h;
+
         u_int16_t       qc_state;       /* DOS, TIMED_OUT, etc */
         u_int8_t        qc_flags;
         u_int32_t       qc_ttl_x;    /* ttl expiry time */
         int             qc_bad; /* contains "bad" data */
+        u_int8_t       *qc_zonecut_n;
+
+        struct delegation_info *qc_referral;
         struct name_server *qc_ns_list;
         struct name_server *qc_respondent_server;
-        u_int8_t       *qc_zonecut_n;
-        struct delegation_info *qc_referral;
-        int             qc_trans_id;
+        int    qc_trans_id;
+
         struct val_digested_auth_chain *qc_ans;
         struct val_digested_auth_chain *qc_proof;
         struct val_query_chain *qc_next;
     };
 
     struct queries_for_query {
-        struct val_query_chain *qfq_query;
         u_int8_t qfq_flags;
+        struct val_query_chain *qfq_query;
         struct queries_for_query *qfq_next;
     };
 
@@ -429,6 +443,7 @@ extern          "C" {
         val_status_t    val_rc_status;
         int             val_rc_is_proof;
         int             val_rc_consumed;
+        u_int8_t        val_rc_flags;
         struct val_digested_auth_chain *val_rc_rrset;
         struct val_internal_result *val_rc_next;
     };
@@ -582,6 +597,7 @@ extern          "C" {
      */
     int             val_istrusted(val_status_t val_status);
     int             val_isvalidated(val_status_t val_status);
+    int             val_does_not_exist(val_status_t status); 
     void            val_free_result_chain(struct val_result_chain
                                           *results);
     int             val_resolve_and_check(val_context_t * context,
