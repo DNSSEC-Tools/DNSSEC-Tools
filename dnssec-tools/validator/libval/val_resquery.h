@@ -5,6 +5,12 @@
 #ifndef VAL_RESQUERY_H
 #define VAL_RESQUERY_H
 
+struct glue_fetch_bucket {
+    struct queries_for_query *qfq[MAX_GLUE_FETCH_DEPTH];
+    int qfq_count;
+    struct glue_fetch_bucket *next_bucket;
+};
+
 void            free_referral_members(struct delegation_info *del);
 int             res_zi_unverified_ns_list(struct name_server **ns_list,
                                           u_int8_t * zone_name,
@@ -14,7 +20,7 @@ int             res_zi_unverified_ns_list(struct name_server **ns_list,
 int             bootstrap_referral(val_context_t *context,
                                    u_int8_t * referral_zone_n,
                                    struct rrset_rec **learned_zones,
-                                   struct val_query_chain *matched_q,
+                                   struct queries_for_query *matched_qfq,
                                    struct queries_for_query **queries,
                                    struct name_server **ref_ns_list);
 int             process_cname_dname_responses(u_int8_t *name_n, 
@@ -26,15 +32,16 @@ int             process_cname_dname_responses(u_int8_t *name_n,
 int             extract_glue_from_rdata(struct rr_rec *addr_rr,
                                         struct name_server **ns);
 int             merge_glue_in_referral(val_context_t *context,
-                                       struct val_query_chain *pc,
+                                       struct queries_for_query *qfq_pc,
+                                       struct glue_fetch_bucket *bucket,
                                        struct queries_for_query **queries);
 int             find_nslist_for_query(val_context_t * context,
-                                      struct val_query_chain *next_q,
+                                      struct queries_for_query *next_qfq,
                                       struct queries_for_query **queries);
 int             val_resquery_send(val_context_t * context,
-                                  struct val_query_chain *matched_q);
+                                  struct queries_for_query *matched_qfq);
 int             val_resquery_rcv(val_context_t * context,
-                                 struct val_query_chain *matched_q,
+                                 struct queries_for_query *matched_qfq,
                                  struct domain_info **response,
                                  struct queries_for_query **queries);
 
