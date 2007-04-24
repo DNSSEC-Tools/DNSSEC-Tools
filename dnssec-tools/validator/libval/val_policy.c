@@ -256,7 +256,6 @@ const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
 #ifdef LIBVAL_DLV
     {POL_DLV_TRUST_POINTS_STR, parse_dlv_trust_points,
      free_dlv_trust_points},
-    {POL_DLV_MAX_LINKS_STR, parse_dlv_max_links, free_dlv_max_links},
 #endif
 };
 
@@ -571,27 +570,53 @@ int
 parse_dlv_trust_points(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                        int *line_number, int *endst)
 {
-    return VAL_NOT_IMPLEMENTED;
+    char            dlv_token[TOKEN_MAX];
+    struct dlv_policy *dlv_pol;
+    int             retval;
+    int             len;
+    u_int8_t        zone_n[NS_MAXCDNAME];
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (pol_entry == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    READ_POL_FOR_ZONE(buf_ptr, end_ptr, line_number, endst, retval, err, dlv_token);
+    if (ns_name_pton(dlv_token, zone_n, NS_MAXCDNAME) == -1) {
+        return VAL_BAD_ARGUMENT;
+    }
+
+    /* The dlv token is the name of the DLV trust point */
+    
+    dlv_pol = (struct dlv_policy *)
+            MALLOC(sizeof(struct dlv_policy));
+    if (dlv_pol == NULL) {
+        return VAL_OUT_OF_MEMORY;
+    }
+    len = wire_name_length(zone_n);
+    dlv_pol->trust_point = (u_int8_t *) MALLOC (len * sizeof(u_int8_t));
+    if (dlv_pol->trust_point == NULL) {
+        FREE(dlv_pol);
+        return VAL_OUT_OF_MEMORY;
+    }
+    memcpy(dlv_pol->trust_point, zone_n, len);
+
+    pol_entry->pol = dlv_pol;
+
+    return VAL_NO_ERROR;
 }
 
 int
 free_dlv_trust_points(policy_entry_t * pol_entry)
 {
-    return VAL_NOT_IMPLEMENTED;
+    if (pol_entry && pol_entry->pol) {
+        u_int8_t *tp = ((struct dlv_policy *)(pol_entry->pol))->trust_point;
+        if (tp)
+            FREE(tp);
+        FREE(pol_entry->pol);
+    }
+    return VAL_NO_ERROR;
 }
 
-int
-parse_dlv_max_links(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-                    int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_dlv_max_links(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
 #endif
 
 /*
@@ -621,7 +646,8 @@ val_get_token(char **buf_ptr,
               char *end_ptr,
               int *line_number,
               char *conf_token,
-              int conf_limit, int *endst, char *comment_c, char endstmt_c)
+              int conf_limit, int *endst, 
+              const char *comment_c, char endstmt_c)
 {
     int             i = 0;
     int             quoted = 0;
