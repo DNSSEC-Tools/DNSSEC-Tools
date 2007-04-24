@@ -40,8 +40,6 @@ get_clock_skew(val_context_t *ctx,
     u_int8_t       *p;
     int             name_len;
 
-    *ttl_x = 0;
-
     RETRIEVE_POLICY(ctx, P_CLOCK_SKEW, cs_pol);
     if (cs_pol) {
 
@@ -406,8 +404,7 @@ have_rrsigs(struct domain_info *response)
             val_parse_rrsig_rdata(rrs_sig->rr_rdata,
                                   rrs_sig->rr_rdata_length_h,
                                   &rrsig_rdata);
-            if ((rrsig_rdata.type_covered == rrset->rrs.val_rrset_type_h)
-                ||
+            if ((rrsig_rdata.type_covered == rrset->rrs.val_rrset_type_h) ||
 #ifdef LIBVAL_NSEC3
                 (rrsig_rdata.type_covered == ns_t_nsec3) ||
 #endif
@@ -660,7 +657,7 @@ do_verify(val_context_t * ctx,
     int             ret_val;
     val_rrsig_rdata_t rrsig_rdata;
     long clock_skew;
-    long ttl_x;
+    long ttl_x = 0;
 
     *dnskey_status = VAL_AC_UNSET;
     *sig_status = VAL_AC_UNSET;
