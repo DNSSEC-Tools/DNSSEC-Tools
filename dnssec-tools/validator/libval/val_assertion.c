@@ -4361,6 +4361,29 @@ verify_and_validate(val_context_t * context,
             if (!thisdone || do_dlv) { 
                 if (do_dlv) {
                     struct queries_for_query *added_q;
+
+                    if (is_proof && 
+                            top_q->qc_respondent_server &&
+                            !(top_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+                        /* 
+                         *  have to start all over again, this time by 
+                         *  sending with CD and D0 bits set
+                         */
+                        val_log(context, LOG_DEBUG,
+                                "EDNS0 was not used but it should have been");
+                        zap_query(context, top_q);
+                        top_qfq->qfq_flags |= VAL_QUERY_USING_DLV; 
+
+                        /* free up all results */
+                        res = *results;
+                        while (res) {
+                            *results = res->val_rc_next;
+                            FREE(res);
+                            res = *results;
+                        }
+                        *done = 0;
+                        return VAL_NO_ERROR;
+                    }
                 
                     /* set the DLV flag */
                     res->val_rc_flags |= VAL_QUERY_USING_DLV; 
