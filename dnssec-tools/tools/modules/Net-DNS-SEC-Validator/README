@@ -123,6 +123,30 @@ $validator->res_query(<name>[,<class>[,<type>]])
 	will be updated. On error, undef is returned and validator
 	object error/errorStr fields are updated.
 
+$validator->resolve_and_check(<name>[, <class>[, <type> [, <flags>]]])
+   where
+      <name> 	=> is the node name or numeric address being queried
+      <class> 	=> is the DNS class of the record being queried (default: IN)
+      <type>	=> is the DNS record type being queried (defailt A)
+      <flags>	=> are the libval resolve_and_check control flags
+			(e.g., VAL_QUERY_MERGE_RRSETS, etc.)
+
+   returns:
+	returns a complex data structure of all answers and proofs
+	related to given query:
+
+        result = [{status, <proofs>, <answer>}, ...]
+	proofs = [<auth_chain>, ...]
+	answer = <auth_chain>
+	auth_chain = {status, <rrset>, <trust>}
+	trust = <auth_chain>
+	rrset = {<data>, <sigs>}
+	data = [Net::DNS::RR, ...]
+	sigs = [Net::DNS::RR, ...]
+
+	On error undef will be returned and validator
+	object error/errorStr fields are updated.
+
 $validator->policy([<label>])
    where
       <label> 	=> the policy label to use (old context is destroyed)
