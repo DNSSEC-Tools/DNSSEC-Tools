@@ -628,8 +628,6 @@ p_sres_type(int type)
     result =
         sym_ntos((const struct res_sym *) __p_type_sres_syms, type, &success);
 
-    fprintf(stderr,"p_type: t = %d, s = %d, r =%s\n", type, success, result);
-
     if (success)
         return (result);
     if (type < 0 || type > 0xfff)
