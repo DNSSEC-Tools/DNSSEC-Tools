@@ -1,4 +1,4 @@
-# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 
 
@@ -15,21 +15,3 @@ To compile:
 To install:
 	make install
 
-
-./validate [options] [DOMAIN_NAME]
-./validate -s
-	Check validation status for a given {name, class, type} or for a sequence of test cases.
-	A list of possible options can be obtained by running 
-		./validate -h 
-
-
-./gethost [options] <hostname>
-	Return the address(es) for a given host name using the DNSSEC-aware version of gethostbyname().
-	The list of possible options can be obtained by running
-		./gethost -h
-
-
-./getaddr [options] <hostname>
-	Return the address(es) for a given host name using the DNSSEC-aware version of getaddrinfo().
-	The list of possible options can be obtained by running
-		./getaddr -h
