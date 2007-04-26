@@ -1,19 +1,18 @@
-MAN1PAGES=validate.1
-
 LIBVAL_MAN=libval.3
+GHBN_MAN=val_gethostbyname.3
+GADDR_MAN=val_getaddrinfo.3
+QUERY_MAN=val_query.3
+POLICY_MAN=dnsval.conf.3
 
-MAN3PAGES=val_getaddrinfo.3 \
-	  val_gethostbyname.3 \
-	  val_query.3 \
-	  dnsval.conf.3 \
-	  $(LIBVAL_MAN) \
-	  libsres.3
-
-MAN3PAGES_SYMLINKS=val_resolve_and_check.3	\
-	val_free_result_chain.3	\
-	val_istrusted.3	\
+LIBVAL_SYMLINKS=\
+    val_resolve_and_check.3	\
 	val_create_context.3	\
+	val_create_context_with_conf.3	\
 	val_free_context.3	\
+	val_istrusted.3	\
+	val_isvalidated.3	\
+	val_does_not_exist.3	\
+	val_free_result_chain.3	\
 	resolv_conf_set.3	\
 	root_hints_set.3	\
 	dnsval_conf_set.3	\
@@ -22,6 +21,38 @@ MAN3PAGES_SYMLINKS=val_resolve_and_check.3	\
 	dnsval_conf_get.3	\
 	p_ac_status.3	\
 	p_val_status.3
+
+GHBN_SYMLINKS=\
+	val_gethostbyname2.3 \
+	val_gethostbyname_r.3 \
+	val_gethostbyname2_r.3 \
+    val_gethostbyaddr.3 \
+    val_gethostbyaddr_r.3 
+
+GADDR_SYMLINKS=\
+    val_freeaddrinfo.3 \
+    val_getnameinfo.3
+
+QUERY_SYMLINKS=\
+    val_free_response.3 \
+    val_res_query.3 \
+    val_res_search.3 
+
+POLICY_SYMLINKS=\
+	val_add_valpolicy.3
+    
+MAN3PAGES=\
+	  $(GADDR_MAN) \
+	  $(GHBN_MAN) \
+	  $(QUERY_MAN) \
+	  $(POLICY_MAN) \
+	  $(LIBVAL_MAN) \
+	  libsres.3
+
+MAN1PAGES=\
+	validate.1 \
+	getaddr.1 \
+	gethost.1
 
 all: $(MAN1PAGES) $(MAN3PAGES) 
 
@@ -34,9 +65,25 @@ install:
 	for i in $(MAN3PAGES) ; do		\
 	  $(DOCINSTALL) $$i $(DESTDIR)/$(man3dir) ;	\
 	done
-	for i in $(MAN3PAGES_SYMLINKS) ; do		\
+	for i in $(LIBVAL_SYMLINKS) ; do		\
 	  rm -f $(man3dir)/$$i ;	\
 	  echo ".so $(LIBVAL_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
+	for i in $(GHBN_SYMLINKS) ; do		\
+	  rm -f $(man3dir)/$$i ;	\
+	  echo ".so $(GHBN_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
+	for i in $(GADDR_SYMLINKS) ; do		\
+	  rm -f $(man3dir)/$$i ;	\
+	  echo ".so $(GADDR_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
+	for i in $(QUERY_SYMLINKS) ; do		\
+	  rm -f $(man3dir)/$$i ;	\
+	  echo ".so $(QUERY_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
+	done
+	for i in $(POLICY_SYMLINKS) ; do		\
+	  rm -f $(man3dir)/$$i ;	\
+	  echo ".so $(POLICY_MAN)" > $(DESTDIR)/$(man3dir)/$$i  ;	\
 	done
 
 

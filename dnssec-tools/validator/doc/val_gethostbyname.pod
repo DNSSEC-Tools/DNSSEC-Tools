@@ -11,13 +11,13 @@ val_gethostbyname2_r - get DNSSEC-validated network host entry
 
   extern int h_errno;
   struct hostent *val_gethostbyname(const val_context_t *ctx,
-                                    const char *name,
-                                    val_status_t *val_status);
+                          const char *name,
+                          val_status_t *val_status);
 
   struct hostent *val_gethostbyname2(const val_context_t *ctx,
-                                     const char *name,
-                                     int af,
-                                     val_status_t *val_status);
+                          const char *name,
+                          int af,
+                          val_status_t *val_status);
 
   int val_gethostbyname_r(const val_context_t *ctx,
                           const char *name,
@@ -38,58 +38,83 @@ val_gethostbyname2_r - get DNSSEC-validated network host entry
                            int *h_errnop,
                            val_status_t *val_status);
 
+    struct hostent *val_gethostbyaddr(val_context_t * ctx,
+                           const char *addr,
+                           int len,
+                           int type, 
+                           val_status_t * val_status);
+  
+    int val_gethostbyaddr_r(val_context_t * ctx,
+                            const char *addr,
+                            int len,
+                            int type,
+                            struct hostent *ret,
+                            char *buf,
+                            int buflen,
+                            struct hostent **result,
+                            int *h_errnop,
+                            val_status_t * val_status);
+
 =head1 DESCRIPTION
 
-The I<val_gethostbyname()>, I<val_gethostbyname2()>, I<val_gethostbyname_r()>
-and I<val_gethostbyname2_r()> functions perform DNSSEC validation of DNS
-queries.  They return a network host entry value of type I<struct hostent> and
+The I<val_gethostbyname()>, I<val_gethostbyname2()>, I<val_gethostbyname_r()>,
+I<val_gethostbyname2_r()>, I<val_gethostbyaddr()> and I<val_gethostbyaddr_r()> 
+functions perform DNSSEC validation of DNS queries.  They return a network 
+host entry value of type I<struct hostent> and
 are DNSSEC-aware versions of the I<gethostbyname(3)>, I<gethostbyname2(3)>,
-I<gethostbyname_r()> and I<gethostbyname2_r()> functions respectively.  (See
+I<gethostbyname_r()>, I<gethostbyname2_r()>, I<gethostbyaddr()> and 
+I<gethostbyaddr_r()> functions respectively.  (See
 I<gethostbyname(3)> for more information on type I<struct hostent>).
 
-I<val_gethostbyname()> and I<val_gethostbyname_r()> support only
-IPv4 addresses.  IPv4 and IPv6 addresses are supported by
-I<val_gethostbyname2()> and I<val_gethostbyname2_r()>.
+I<val_gethostbyname()> I<val_gethostbyname_r()>, I<val_gethostbyaddr()>
+and I<val_gethostbyaddr_r()> support only IPv4 addresses.  IPv4 and IPv6 
+addresses are supported by I<val_gethostbyname2()> and I<val_gethostbyname2_r()>. 
 
-The I<val_gethostbyname_r()> and I<val_gethostbyname2_r()> are reentrant
-versions and can be safely used in multi-threaded applications.
+The I<val_gethostbyname_r()>, I<val_gethostbyname2_r()> and 
+I<val_gethostbyaddr_r()> functions are reentrant versions and can be safely 
+used in multi-threaded applications.
 
 The I<ctx> parameter specifies the validation context, which can be set to NULL
-for default values.  The caller can use I<ctx> to control the resolver and
-validator policies.  Using a non-NULL validator over multiple calls
-can also provide some optimization.  (See I<libval(3)> for information on
-creating a validation context.)
+for default values (see I<libval(3)> and I<dnsval.conf> for more details on validation
+contexts and validation policy). 
 
-I<val_gethostbyname()> and I<val_gethostbyname2()> set the
+I<val_gethostbyname()>, I<val_gethostbyname2()> and I<val_gethostbyaddr()> set the
 global I<h_errno> variable to return the resolver error code.  The reentrant
-versions I<val_gethostbyname_r()> and I<val_gethostbyname2_r()> use the
-I<h_errnop> parameter to return this value.  This ensures
+versions I<val_gethostbyname_r()>, I<val_gethostbyname2_r()> and 
+I<val_gethostbyaddr_r()> use the I<h_errnop> parameter to return this value.  This ensures
 thread safety, by avoiding the global I<h_errno> variable.  I<h_errnop> must
 not be NULL.  (See the man page for I<gethostbyname(3)> for possible values
 of I<h_errno>.)
 
 The I<name>, I<af>, I<ret>, I<buf>, I<buflen>, and I<result> parameters have
-the same meaning and syntax as the corresponding parameters for the original
-I<gethostbyname*()> functions.  See the manual page for I<gethostbyname(3)>
-for more details about these parameters.
+the same syntax and semantics as the corresponding parameters for the original
+I<gethostbyname*()> and I<gethostbyaddr*()> functions.  See the manual page for 
+I<gethostbyname(3)> for more details about these parameters.
 
-The I<val_status> parameter is used to return the validator error code.
-I<val_istrusted()> determines whether this validation status represents a
-trusted value and I<p_val_status()> displays this value to the user in a
-useful manner (See I<libval(3)> more for information).  I<val_status> must
-not be NULL.
+The I<val_status> parameter is used to return the validator error code and 
+must not be NULL.  I<val_istrusted()> and I<val_isvalidated()> can be used to 
+determine the trustworthiness of data and I<p_val_status()> can be used to display the
+status value to the user in ASCII format (See I<libval(3)> more for information).  
 
 =head1 RETURN VALUE
 
-The I<val_gethostbyname()> and I<val_gethostbyname2()> functions return a
-pointer to a I<hostent> structure when they can resolve the given host name
-(with or without DNSSEC validation), and NULL on error.  The memory for
-the returned value may be statically allocated by these two functions.
-Hence, the caller must not free the memory for the returned value.
+The I<val_gethostbyname()>, I<val_gethostbyname2()> and I<val_gethostbyaddr()>
+functions return a pointer to a I<hostent> structure when they can resolve the given host name
+(with or without DNSSEC validation), and NULL if data was not available.  The memory for
+the returned value is statically allocated by these two functions.
+Hence, the caller must not free the memory for the returned value. 
 
-The I<val_gethostbyname_r()> and I<val_gethostbyname2_r()> functions return
+The I<val_gethostbyname_r()>, I<val_gethostbyname2_r()> and I<val_gethostbyaddr_r()> 
+functions return 0 when they can resolve the given host name (with or without DNSSEC
+validation), and a non-zero error-code on failure.
+
+The I<val_gethostbyaddr()> and I<val_gethostbyaddr_r()> functions return
 0 when they can resolve the given host name (with or without DNSSEC
 validation), and a non-zero error-code on failure.
+
+The I<val_status> parameter gives an indication for trustworthiness of data. If the returned
+I<hostent> structure is NULL, this value gives an indication of whether the non-existence of
+data can be trusted or not.
 
 =head1 EXAMPLE
 
@@ -121,15 +146,14 @@ validation), and a non-zero error-code on failure.
 =head1 NOTES
 
 These functions do not currently read the order of lookup from
-B</etc/hosts.conf>.  This functionality will be provided in future versions.
-At present, the default order is set to consult the B</etc/hosts> file first
-and then query DNS.
+B</etc/hosts.conf>.  At present, the default order is set to consult the 
+B</etc/hosts> file first and then query DNS.
 
 The current versions of these functions do not support NIS lookups.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHORS
@@ -141,8 +165,7 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy.
 I<gethostbyname(3)>, I<gethostbyname2(3)>, I<gethostbyname_r(3)>,
 I<gethostbyname2_r(3)>
 
-I<get_context(3)>, I<val_getaddrinfo(3)>, I<val_freeaddrinfo(3)>,
-I<val_query(3)> 
+I<val_getaddrinfo(3)>, I<val_query(3)> 
 
 I<libval(3)>
 

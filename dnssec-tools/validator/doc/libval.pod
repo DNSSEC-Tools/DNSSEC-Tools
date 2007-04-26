@@ -3,6 +3,9 @@
 
 =head1 NAME
 
+I<val_create_context()>, I<val_create_context_with_conf()> I<val_free_context()> -
+manage validator context
+
 I<val_resolve_and_check()>, I<val_free_result_chain()> - query and validate
 answers from a DNS name server
 
@@ -10,36 +13,51 @@ I<val_istrusted()> - check if status value corresponds to that of a
 trustworthy answer
 
 I<val_isvalidated()> - check if status value represents an
-answer that was cryptographically validated up to a configured
-trust anchor.
+answer that cryptographically chains down from a configured
+trust anchor
 
-I<val_create_context()>, I<val_free_context()> -
-manage validator context
+I<val_does_not_exist()> - check if status value represents 
+one of the non-existence types
+
+I<p_val_status()>, I<p_ac_status()> - display validation status 
+and authentication chain status information
 
 I<dnsval_conf_get()>, I<resolv_conf_get()>, I<root_hints_get()> - get
-the current location for the validator configuration files
+the default location for the validator configuration files
 
 I<dnsval_conf_set()>, I<resolv_conf_set()>, I<root_hints_set()> - set
-the current location for the validator configuration files
-
-I<p_ac_status()>, I<p_val_status()> - display validator status information
+the default location for the validator configuration files
 
 =head1 SYNOPSIS
 
   #include <validator.h>
 
-  int val_resolve_and_check(val_context_t            *context,
-                            u_char                   *domain_name_n,
-                            const u_int16_t          type,
-                            const u_int16_t          class,
-                            const u_int8_t           flags,
-                            struct val_result_chain  **results);
+  int val_create_context(const char *label, val_context_t **newcontext);
 
-  void val_free_result_chain(struct val_result *results);
+  int val_create_context_with_conf(char *label,
+                         char *dnsval_conf,
+                         char *resolv_conf,
+                         char *root_conf,
+                         val_context_t ** newcontext);
+
+  int val_resolve_and_check(val_context_t *context,
+                         u_char *domain_name_n,
+                         const u_int16_t class,
+                         const u_int16_t type,
+                         const u_int8_t  flags,
+                         struct val_result_chain  **results);
+
+  char *p_val_status(val_status_t valerrno);
+
+  char *p_ac_status(val_astatus_t auth_chain_status);
 
   int val_istrusted(val_status_t val_status);
 
-  int val_create_context(const char *label, val_context_t **newcontext);
+  int val_isvalidated(val_status_t val_status);
+
+  int val_does_not_exist(val_status_t status);
+
+  void val_free_result_chain(struct val_result_chain *results);
 
   void val_free_context(val_context_t *context);
 
@@ -55,75 +73,79 @@ I<p_ac_status()>, I<p_val_status()> - display validator status information
 
   int dnsval_conf_set(const char *name);
 
-  char *p_ac_status(val_astatus_t valerrno);
-
-  char *p_val_status(val_status_t valerrno);
 
 =head1 DESCRIPTION
 
 The I<val_resolve_and_check()> function queries a set of name servers for
 the I<<domain_name_n, type, class>> tuple and to verifies and validates the
 response.  Verification involves checking the RRSIGs, and validation is
-verification up the chain-of-trust to a trust anchor.  The I<domain_name_n>
-parameter is the queried name in DNS wire format.  The conversion from host
-format to DNS wire format can be done using the  I<ns_name_pton()> function
-exported by the I<libsres(3)> library.
+verification of an authentication chain from a configured trust anchor.  
+The I<domain_name_n> parameter is the queried name in DNS wire format.  
+The conversion from host format to DNS wire format can be done using the  
+I<ns_name_pton()> function exported by the I<libsres(3)> library. 
 
-Answers returned by I<val_resolve_and_check()> are made available in the
-I<*results> array.  Each answer is a distinct RRset; multiple RRs within the
-RRset are treated as the same answer.  Multiple answers are possible when
-I<type> is I<ns_t_any>.
+The I<flags> parameter can be used to control the results of validation. 
+Two values, which may be ORd together, are currently defined for this field: 
+B<VAL_QUERY_DONT_VALIDATE>, which causes the validator to disable validation
+for this query, and B<VAL_QUERY_NO_DLV>, which causes the validator to
+disable DLV processing for this query. The second flag is only available
+if the I<libval(3)> library has been compiled with DLV support.
 
-Individual elements in I<*results> point to the authentication chain contained
-within the I<val_authentication_chain> linked list.  The authentication chain
-elements contain the actual RRsets returned by the name server in response to
-the query.
-
-Most applications only require the status value within I<*results> since this
-provides a single error code for representing the authenticity of returned
-data.  Other more intrusive applications, such as a DNSSEC troubleshooting
-utility, may look at individual authentication chain elements to identify what
-particular component in the chain-of-trust led to a validation failure.
-I<val_istrusted()> is a helper function that easily identifies if a given
-validator status value corresponds to one of the authenticated and/or trusted
-data codes.  Validator status values returned in the I<val_result_chain> and
-I<val_authentication_chain> linked lists can be can be converted into ASCII
-format using the I<p_val_status()> and I<p_ac_status()> functions.
-
-The I<libval> library internally allocates memory for I<*results> and this
-must be freed by the invoking application using the I<free_result_chain()>
-interface.
-
-The first parameter to I<val_resolve_n_check()> is the validator context.
+The first parameter to I<val_resolve_and_check()> is the validator context.
 Applications can create a new validator context using the
 I<val_create_context()> function.  This function parses the resolver and
 validator configuration files and creates the handle I<newcontext> to this
 parsed information.  Information stored as part of validator context includes
-the validation policy and resolver policy.  Validator and resolver policy are
+the validation policy and resolver policy.  
+
+Validator and resolver policies are
 read by default from the B</etc/dnsval.conf> and B</etc/resolv.conf> files.
-"Root hints" that allows the library to bootstrap its lookup process when
-functioning as a full resolver is read from B</etc/root.hints>.  The locations
+B</etc/root.hints> provides bootstrapping information for the validator when it 
+functions as a full resolver (see I<dnsval.conf(3)>).  The default locations
 of each of these files may be changed using the interfaces
 I<dnsval_conf_set()>, I<resolv_conf_set()>, and I<root_hints_set()>,
 respectively.  The corresponding "get" interfaces (namely
 I<dnsval_conf_get()>, I<resolv_conf_get()>, and I<root_hints_get()>) can be
 used to return the current location from where these configuration files are
-read.
+read. The configuration file locations may also be specified on a per-context
+basis using the I<val_create_context_with_conf()> function. 
 
-Applications can use local policy to influence the validation outcome.
-Examples of local policy elements include trust anchors for different zones
-and untrusted algorithms for cryptographic keys and hashes.  Local policy
-may vary for different applications and operating scenarios.
+Answers returned by I<val_resolve_and_check()> are made available in the
+I<*results> linked list. Each answer corresponds to a distinct RRset; multiple 
+RRs within the RRset are part of the same answer.  Multiple answers are possible when
+I<type> is I<ns_t_any> or I<ns_t_rrsig>.
 
-Local policy for the validator is stored in the configuration file,
-B</etc/dnsval.conf>.  Policies are identified by simple text strings called
-labels, which must be unique within the configuration system.  For example,
-"browser" could be used as the label that defines the validator policy for all
-web-browsers in a system.  A label value of ":" identifies the default policy,
-the policy that is used when a NULL context is specified as the I<ctx>
-parameter for interfaces such as I<val_resolve_and_check()>,
-I<val_getaddrinfo()>, and I<val_gethostbyname()>.  The default policy is
-unique within the configuration system.
+Individual elements in I<*results> point to I<val_authentication_chain> linked 
+lists.  The authentication chain elements in I<val_authentication_chain> contain 
+the actual RRsets returned by  the name server in response to the query.
+
+Validation result values returned in I<val_result_chain> and
+authentication chain status values returned in each element of the 
+I<val_authentication_chain> linked list can be can be converted into ASCII
+format using the I<p_val_status()> and I<p_ac_status()> functions respectively.
+
+While some applications such as DNSSEC troubleshooting utilities and packet 
+inspection tools may look at individual authentication 
+chain elements to identify the actual reasons for validation error,  
+most applications will only be interested in a single error code for determining 
+the authenticity of data.  
+
+I<val_isvalidated()> identifies if a given
+validation result status value corresponds to an answer that was
+cryptographically verified and validated using a locally configured
+trust anchor.
+
+I<val_istrusted()> identifies if a given
+validator status value is trusted. An answer may be locally trusted
+without being validated.
+
+I<val_does_not_exist()> identifies if a given
+validator status value corresponds to one of the non-existence types. 
+
+The I<libval> library internally allocates memory for I<*results> and this
+must be freed by the invoking application using the I<free_result_chain()>
+interface.
+
 
 =head1 DATA STRUCTURES
 
@@ -153,11 +175,11 @@ Pointer to the next RRset in the set of answers returned for a query.
 
 =item I<val_rc_proofs> 
 
-Pointer to any proofs that were returned for the query.
+Pointer to authentication chains for any proof of non-existence that were returned for the query.
 
 =item I<val_rc_proof_count> 
 
-Number of proof elements stored in I<val_rc_proofs>.
+Number of proof elements stored in I<val_rc_proofs>. The number cannot exceed MAX_PROOFS.
 
 =item I<val_rc_status> 
 
@@ -183,16 +205,14 @@ Validation status for a given RRset.  This can be one of the following:
 	VAL_NONEXISTENT_TYPE
 		No type exists for the name and a valid
 		proof of non-existence confirming the
-		missing name (NSEC or NSEC3 span) was
-		returned.  The components of the proof 
-        were also individually validated. 
+		missing name was returned.  The components 
+        of the proof were also individually validated. 
 
 	VAL_NONEXISTENT_NAME_NOCHAIN
 		No name was present and a valid proof of
 		non-existence confirming the missing name
-		(NSEC or NSEC3 span) was returned. The 
-        components of the proof were also 
-        identified to be trustworthy, but they 
+		was returned. The components of the proof 
+        were also identified to be trustworthy, but they 
         were not individually validated.
 
 	VAL_NONEXISTENT_TYPE_NOCHAIN
@@ -204,16 +224,26 @@ Validation status for a given RRset.  This can be one of the following:
         but they were not individually validated. 
 
 	VAL_ERROR
-		Did not have sufficient or relevant data to
-		complete validation, or encountered a DNS error.
+		Encountered some DNS protocol error.
 
 	VAL_DNS_ERROR_BASE + SR_error
-
 		This value contains a resolver error from 
 		libsres. The libsres error is added to 
 		VAL_DNS_ERROR_BASE, so this value will lie 
 		between VAL_DNS_ERROR_BASE and 
-		VAL_DNS_ERROR_LAST.
+		VAL_DNS_ERROR_LAST.  These values include
+		the following:
+
+		    SR_CONFLICTING_ANSWERS	
+			Multiple conflicting answers
+			received for a query.
+
+		    SR_REFERRAL_ERROR
+			Some error encountered while
+			following referrals.
+
+		    SR_MISSING_GLUE
+			Glue was missing.
 
 	VAL_INDETERMINATE
 		Lacking information to give a more conclusive
@@ -245,9 +275,15 @@ Validation status for a given RRset.  This can be one of the following:
 		the authentication chain towards the trust
 		anchor was known to be provably unsecure.
 
+	VAL_BAD_PROVABLY_UNSECURE
+		The record or some ancestor of the record in
+		the authentication chain towards the trust
+		anchor was known to be provably unsecure. But
+        the provably unsecure condition was configured
+        as untrustworthy.
 
 Error values in I<val_status_t> returned by the validator can be displayed 
-in a more user-friendly format using I<p_val_status()>.
+in ASCII format using I<p_val_status()>.
 
 =back
 
@@ -269,9 +305,8 @@ in a more user-friendly format using I<p_val_status()>.
 =item I<val_ac_status> 
 
 Validation state of the authentication chain element.  This field will
-contain the error or success code for DNSSEC validation over the current
-authentication chain element upon completion of I<val_resolve_n_check()>.
-This field may contain the following values:
+contain the status code for the given component in the authentication chain. 
+This field may contain one of the following values:
 
       VAL_AC_UNSET
 		The status was not set.
@@ -291,14 +326,6 @@ This field may contain the following values:
       VAL_AC_DS_MISSING
 		The DS record covering a DNSKEY record was
 		not available.
-
-      VAL_AC_UNTRUSTED_ZONE
-		Local policy defined a given zone as
-		untrusted, with no further validation
-		being deemed necessary.
-
-      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-		The DNSKEY protocol number was unrecognized.
 
       VAL_AC_NOT_VERIFIED
 		All RRSIGs covering the RRset could not
@@ -327,6 +354,11 @@ This field may contain the following values:
 		Local policy defined a given zone as
 		trusted, with no further validation
 		being deemed necessary.
+        
+      VAL_AC_UNTRUSTED_ZONE
+		Local policy defined a given zone as
+		untrusted, with no further validation
+		being deemed necessary.
 
       VAL_AC_PROVABLY_UNSECURE
 		The authentication chain from a trust anchor
@@ -344,10 +376,13 @@ This field may contain the following values:
 		There was no trust anchor configured for a
 		given authentication chain.
 
+      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+		The DNSKEY protocol number was unrecognized.
+
       VAL_DNS_ERROR_BASE + SR_error
 
 		This value contains a resolver error from
-		libsres.  The libsres error is added to
+		I<libsres(s)>.  The libsres error is added to
 		VAL_DNS_ERROR_BASE, so this value will lie
 		between VAL_DNS_ERROR_BASE and
 		VAL_DNS_ERROR_LAST.  These values include
@@ -390,6 +425,7 @@ RRset that can be used to build the chain-of-trust towards a trust anchor.
       u_int16_t      val_rrset_class_h;
       u_int16_t      val_rrset_type_h;
       u_int32_t      val_rrset_ttl_h;
+      u_int32_t      val_rrset_ttl_x;
       u_int8_t       val_rrset_section;
       struct rr_rec *val_rrset_data;
       struct rr_rec *val_rrset_sig;
@@ -420,6 +456,10 @@ Type of the RRset.
 =item I<val_rrset_ttl_h> 
 
 TTL of the RRset.
+
+=item I<val_rrset_ttl_x> 
+
+The time when the TTL for this RRset is set to expire.
 
 =item I<val_rrset_section> 
 
@@ -471,6 +511,15 @@ I<rr_status> can return one of the following values:
       VAL_AC_WCARD_VERIFIED - A given RRSIG covering
 		a resource record shows that the
 		record was wildcard expanded.
+
+      VAL_AC_RRSIG_VERIFIED_SKEW - The RRSIG verified
+		successfully after clock skew was taken into
+        account.
+
+      VAL_AC_WCARD_VERIFIED_SKEW - A given RRSIG covering
+		a resource record shows that the
+		record was wildcard expanded, but it was verified
+        only after clock skew was taken into account.
 
       VAL_AC_RRSIG_VERIFY_FAILED - A given RRSIG
 		covering an RRset was bogus.
@@ -557,12 +606,11 @@ Points to the next resource record in the RRset.
 
 =head1 RETURN VALUES
 
-Return values for I<val_resolve_n_check()> and I<val_create_context()> are
-given below.
+Return values for various functions are given below.
 
 =over 4
 
-=item I<val_resolve_n_check()>
+=item I<val_resolve_and_check()>
 
 =over 4
 
@@ -596,7 +644,7 @@ Some resource (crypto possibly) was unavailable.  Currently not implemented.
 
 =back
 
-=item I<val_create_context()>
+=item I<val_create_context()>, I<val_create_context_with_conf()>
 
 =over 4
 
@@ -629,26 +677,16 @@ The policy identifier being referenced was invalid.
 The validator library reads configuration information from two files,
 B</etc/resolv.conf> and B</etc/dnsval.conf>.
 
-Only the "nameserver" option is supported in the B<resolv.conf> file.  This
-option is used to specify the IP address of the name server to which queries
-must be sent by default.  For example,
-
-    nameserver 10.0.0.1
-
-See B<dnsval.conf(5)> for a description of the validator configuration file.
-
-=head1 CURRENT STATUS
-
-There is currently no support for IPv6.
-
-The caching functionality is very basic and no timeout logic currently exists.
-
-There are a number of feature enhancements that still remain to be done.
+See B<dnsval.conf(5)> for a description of syntax for these files. 
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
+
+=head1 AUTHORS
+
+Suresh Krishnaswamy, Robert Story
 
 =head1 SEE ALSO
 
