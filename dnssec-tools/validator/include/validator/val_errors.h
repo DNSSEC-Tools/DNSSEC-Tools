@@ -77,18 +77,18 @@
  * Cannot do anything further, but should check proof of non existence 
  */
 #define VAL_AC_ERROR_BASE VAL_AC_LAST_STATE     /* 13 */
-#define VAL_AC_DATA_MISSING (VAL_AC_ERROR_BASE+1)
-#define VAL_AC_RRSIG_MISSING (VAL_AC_ERROR_BASE+2)
-#define VAL_AC_DNSKEY_MISSING (VAL_AC_ERROR_BASE+3)
-#define VAL_AC_DS_MISSING (VAL_AC_ERROR_BASE+4)
+#define VAL_AC_RRSIG_MISSING (VAL_AC_ERROR_BASE+1)
+#define VAL_AC_DNSKEY_MISSING (VAL_AC_ERROR_BASE+2)
+#define VAL_AC_DS_MISSING (VAL_AC_ERROR_BASE+3)
 #define VAL_AC_LAST_ERROR VAL_AC_DS_MISSING
 
 /*
  * Cannot do anything further and should not check proof of non existence 
  */
-#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 17 */
-#define VAL_AC_UNKNOWN_DNSKEY_PROTOCOL (VAL_AC_BAD_BASE+1)
-#define VAL_AC_DNS_ERROR_BASE (VAL_AC_BAD_BASE+8)       /* 25 */
+#define VAL_AC_BAD_BASE VAL_AC_LAST_ERROR       /* 16 */
+#define VAL_AC_DATA_MISSING (VAL_AC_BAD_BASE+1)
+#define VAL_AC_UNKNOWN_DNSKEY_PROTOCOL (VAL_AC_BAD_BASE+2)
+#define VAL_AC_DNS_ERROR_BASE (VAL_AC_BAD_BASE+9)       /* 25 */
 /*
  * DNS errors lie within this range, 
  * there are SR_LAST_ERROR (22) of them in total
