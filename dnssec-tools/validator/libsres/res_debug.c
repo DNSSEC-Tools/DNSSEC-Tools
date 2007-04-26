@@ -475,7 +475,7 @@ const struct RES_SYM_TYPE __p_cert_syms[] = {
  * that T_ANY is a qtype but not a type.  (You can ask for records of type
  * T_ANY, but you can't have any records of that type in the database.)
  */
-const struct RES_SYM_TYPE __p_type_syms[] = {
+const struct RES_SYM_TYPE __p_type_sres_syms[] = {
     {ns_t_a, "A", "address"},
     {ns_t_ns, "NS", "name server"},
     {ns_t_md, "MD", "mail destination (deprecated)"},
@@ -580,7 +580,9 @@ const char     *
 sym_ntos(const struct res_sym *syms, int number, int *success)
 {
     static char     unname[20];
-
+    
+    if (success)
+      *success = 0;
     for ((void) NULL; syms->name != 0; syms++) {
         if (number == syms->number) {
             if (success)
@@ -617,14 +619,17 @@ sym_ntop(const struct res_sym *syms, int number, int *success)
  * Return a string for the type.
  */
 const char     *
-p_type(int type)
+p_sres_type(int type)
 {
     int             success;
     const char     *result;
     static char     typebuf[20];
 
     result =
-        sym_ntos((const struct res_sym *) __p_type_syms, type, &success);
+        sym_ntos((const struct res_sym *) __p_type_sres_syms, type, &success);
+
+    fprintf(stderr,"p_type: t = %d, s = %d, r =%s\n", type, success, result);
+
     if (success)
         return (result);
     if (type < 0 || type > 0xfff)
@@ -1289,7 +1294,7 @@ res_nametotype(const char *buf, int *successp)
     int             success;
 
     result =
-        sym_ston((const struct res_sym *) __p_type_syms, buf, &success);
+        sym_ston((const struct res_sym *) __p_type_sres_syms, buf, &success);
     if (success)
         goto done;
 

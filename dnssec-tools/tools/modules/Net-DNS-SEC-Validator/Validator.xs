@@ -169,31 +169,34 @@ static struct addrinfo *ainfo_sv2c(SV *ainfo_ref, struct addrinfo *ainfo_ptr)
 SV *rr_c2sv(u_char *name, int type, int class, int ttl, int len, u_char *data)
 {
   dSP ;
-  SV *rr;
+  SV *rr = &PL_sv_undef;
+  char name_p[NS_MAXCDNAME];
 
-  ENTER ;
-  SAVETMPS;
+  if (ns_name_ntop(name, name_p, sizeof(name_p)) != -1) {
 
-  PUSHMARK(SP);
-  XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
-  XPUSHs(sv_2mortal(newSVpv((char*)name, 0))) ;
-  XPUSHs(sv_2mortal(newSViv(type))) ;
-  XPUSHs(sv_2mortal(newSViv(class))) ;
-  XPUSHs(sv_2mortal(newSViv(ttl))) ;
-  XPUSHs(sv_2mortal(newSViv(len))) ;
-  XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
-  PUTBACK;
+    ENTER ;
+    SAVETMPS;
 
-  call_method("new_from_data", G_SCALAR);
+    PUSHMARK(SP);
+    XPUSHs(sv_2mortal(newSVpv("Net::DNS::RR", 0))) ;
+    XPUSHs(sv_2mortal(newSVpv((char*)name_p, 0))) ;
+    XPUSHs(sv_2mortal(newSVpv(p_sres_type(type), 0))) ;
+    XPUSHs(sv_2mortal(newSVpv(p_class(class), 0))) ;
+    XPUSHs(sv_2mortal(newSViv(ttl))) ;
+    XPUSHs(sv_2mortal(newSViv(len))) ;
+    XPUSHs(sv_2mortal(newRV(sv_2mortal(newSVpvn((char*)data, len))))) ;
+    PUTBACK;
 
-  SPAGAIN ;
+    call_method("new_from_data", G_SCALAR);
 
-  rr =newSVsv(POPs);
+    SPAGAIN ;
 
-  PUTBACK ;
-  FREETMPS ;
-  LEAVE ;
+    rr =newSVsv(POPs);
 
+    PUTBACK ;
+    FREETMPS ;
+    LEAVE ;
+  }
   return rr;
 }
 
@@ -233,7 +236,7 @@ SV *rrset_c2sv(struct val_rrset *rrs_ptr)
       
       av_push(rrs_av, 
 	      rr_c2sv(rrs_ptr->val_rrset_name_n,
-		      rrs_ptr->val_rrset_type_h,
+		      ns_t_rrsig,
 		      rrs_ptr->val_rrset_class_h,
 		      rrs_ptr->val_rrset_ttl_h,
 		      rr->rr_rdata_length_h,

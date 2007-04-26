@@ -210,6 +210,9 @@ const char     *p_section(int section, int opcode);
 #endif
 
 const char     *p_class(int class);
-const char     *p_type(int type);
+
+#undef p_type
+#define p_type(type) p_sres_type(type)
+const char     *p_sres_type(int type);
 
 #endif                          /* RESOLVER_H */
