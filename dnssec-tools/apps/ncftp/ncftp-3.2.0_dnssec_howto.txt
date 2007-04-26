@@ -1,9 +1,7 @@
 Partial patch to add local validation to ncftp.
 
 Configure with:
-CFLAGS="-g -O0 -DLOCAL_DNSSEC_VALIDATION" \
-LDFLAGS="-lsres -lval-threads -lpthread -lcrypto" \
-./configure
+  ./configure --with-dnssec-local-validation
 
 The code path used by 'ncftp' is working. Other code paths need to be fixed
 and tested.
