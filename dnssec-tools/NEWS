@@ -10,6 +10,12 @@ details.
     - paths/names of resolv.conf, root.hints and dnsval.conf now configurable
     - configure will search for an existing root.hints file and use it.
     - new libval-config script for finding configuration/compile/link options
+    - added new policies: for setting the trust status of the provably insecure
+      condition and for setting the allowable clock skew on signatures.
+    - Added new function to dynamically add validation policy to a validation
+      context. 
+    - Implemented thread-safe context sharing
+    - Added experimental support for DLV
 
   - validate
     - selftest testcases now read from configuration file
