@@ -25,6 +25,7 @@
 #include "arpa/header.h"
 #endif
 
+#include <netinet/in.h>
 #include <resolv.h>
 #include <validator/resolver.h>
 #include <validator/validator.h>
@@ -917,8 +918,10 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
             }
             val_log(ctx, LOG_DEBUG,
                     "Trust anchor did not match at this level: %s", zp);
-            *status = VAL_AC_NO_TRUST_ANCHOR;
-            return VAL_NO_ERROR;
+            //*status = VAL_AC_NO_TRUST_ANCHOR;
+            //return VAL_NO_ERROR;
+
+            /* we will continue as long as there is a trust anchor above this level */
         }
     }
 
@@ -2106,9 +2109,13 @@ compute_nsec3_hash(val_context_t * ctx, u_int8_t * qname_n,
                         snprintf(name_p, sizeof(name_p), "unknown/error");
     
                     if (cur->pol != NULL) {
+                        int nsec3_pol_iter;
+
                         if (cur->exp_ttl > 0)
                             *ttl_x = cur->exp_ttl;
-                        if (((struct nsec3_max_iter_policy *)(cur->pol))->iter < iter)
+                        nsec3_pol_iter = ((struct nsec3_max_iter_policy *)(cur->pol))->iter;
+                        
+                        if (nsec3_pol_iter > 0 && nsec3_pol_iter < iter) 
                             return NULL;
                     }
                     break;
@@ -5719,6 +5726,7 @@ val_does_not_exist(val_status_t status)
 #ifdef LIBVAL_NSEC3
         (status == VAL_NONEXISTENT_NAME_OPTOUT) ||
 #endif
+        (status == VAL_NONEXISTENT_NAME_NOCHAIN) ||
         (status == VAL_NONEXISTENT_TYPE_NOCHAIN)) {
 
         return 1;
