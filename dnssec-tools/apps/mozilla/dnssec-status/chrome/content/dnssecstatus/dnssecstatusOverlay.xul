@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+
+<overlay id="dnssecstatusOverlay"
+         xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
+
+<script type="application/x-javascript" src="chrome://dnssecstatus/content/dnssecstatusOverlay.js" />
+<script type="application/x-javascript" src="chrome://dnssecstatus/content/prefs.js" />
+
+<!--
+<popup id="contentAreaContextMenu">
+	<menuitem 
+		id="dnssecstatus_contextmenu"
+		label="dnssecstatus"
+		insertafter="context-stop"
+		oncommand="dnssecstatus_contextmenu_action();"
+	/>
+</popup>
+
+
+<menupopup id="menu_ToolsPopup">
+	<menuitem 
+		id="dnssecstatus_toolsmenu"
+		insertafter="devToolsSeparator"
+		label="dnssecstatus"
+		oncommand="dnssecstatus_toolsmenu_action();" 
+	/>
+</menupopup>
+-->
+
+<statusbar id="status-bar">
+	<statusbarpanel id="dnssecstatus-status" insertafter="livemark-button">
+		<label
+		  id="dnssecstatus-label"
+		  value="DNSSEC:"
+		  onclick="dnssecstatus_statusbar_action();"
+                />
+		<label
+		  id="dnssecstatus-valtext"
+		  value="Val:"
+		  style="color: #00aa00;"
+		  onclick="dnssecstatus_statusbar_action();"
+                />
+		<label
+		  id="dnssecstatus-valnum"
+		  value="0"
+		  tooltiptext="0"
+		  style="color: #00aa00;"
+		  onclick="dnssecstatus_statusbar_action();"
+                />
+		<label
+		  id="dnssecstatus-trusttext"
+		  value="Trusted:"
+		  style="color: #e49917;"
+		  onclick="dnssecstatus_statusbar_action();"
+                />
+		<label
+		  id="dnssecstatus-trustnum"
+		  value="0"
+		  tooltiptext="0"
+		  style="color: #e49917;"
+		  onclick="dnssecstatus_statusbar_action();"
+                />
+		<label
+		  id="dnssecstatus-errtext"
+		  value="Err:"
+		  style="color: #aa0000;"
+		  onclick="dnssecstatus_statusbar_action();"
+                />
+		<label
+		  id="dnssecstatus-errnum"
+		  value="0"
+		  tooltiptext="0"
+		  style="color: #aa0000;"
+		  onclick="dnssecstatus_statusbar_action();"
+                />
+	</statusbarpanel>
+</statusbar>
+
+</overlay>
