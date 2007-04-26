@@ -159,6 +159,10 @@ manuals:
   p_section
   p_type
 
+The I<p_type()> function exported from I<libsres> has been augmented such that 
+it recognizes the various DNSSEC type codes such DNSKEY, RRSIG, NSEC, 
+NSEC3 and DLV.
+
 =head1 RETURN VALUES
 
 =over 4
@@ -241,7 +245,7 @@ I<struct name_server> are still subject to change.
 
 =head1 COPYRIGHT
 
-Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the dnssec-tools package for details.
 
 =head1 SEE ALSO

@@ -1,4 +1,4 @@
-# Copyright 2004-2005 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 
 
@@ -21,9 +21,21 @@ This library provides the resolver component of the "validating resolver"
 It provides the interfaces necessary for the validator to fetch answers from
 a DNSSEC-aware name server. 
 
+Most of the implementation of the resolver component and some for the 
+validator library was re-used from an older implementation of the secure 
+resolver library developed at Tislabs. The older implementation was
+built as per the older RFC 2535 DNSSEC specifications and modifications 
+were made so that our library was conformant to the newer specifications 
+and also contained other feature improvements.  The choice to split
+the secure resolver functionality into two libraries was made in order to 
+decouple these two distinct roles. Given a well documented interface between 
+these two components it could then be possible to plug the
+validator component with applications that contain their own native 
+implementation of the resolver functionality.
+
 The resolver library does not itself perform any recursion. This design 
 choice was made reduce the complexity within the resolver and keep it
-as DNSSEC-agnostic as possible (DNSSEC-relevant information is present in
+as DNSSEC-agnostic as possible (DNSSEC-relevant information may be present in
 the additional section of the referrals). The library still needs to be 
 'DNSSEC-aware' in that queries that it sends must have the DO bit 
 (and consequently EDNS0) and CD bits set to permit all DNSSEC-relevant 
@@ -80,6 +92,9 @@ if (SR_UNSET == (ret_val = query_send(name, type, class,
 
 The above code segment forms the essence of the get() interface.
 
+The response_recv() function never blocks. The validator must constantly
+poll the resolver to see if any data has arrived.
+
 The clone_ns (clone_ns_list) interface can be used to make a copy of an
 existing name server structure (name server list). The free_name_server(s)
 methods can be used to free up memory allocated within the name_server
@@ -88,13 +103,14 @@ structure.
 Other symbols exported by the libsres library include the following: 
         nametoclass, nametotype,
         ns_name_ntop, ns_name_pton, ns_name_unpack ns_parse_ttl,
-        p_class, p_sectionp_type
+        p_class, p_section p_type
 The above are helper functions that have been directly imported from 
-the BIND library.
+the BIND library. p_type has been enhanced so that the DNSSEC RR types 
+(such as DNSKEY, RRSIG, NSEC, NSEC3, DLV) are also recognized.
 
 The libsres libarary perfoms some basic header checking on the 
 data that it receives from the name server before sending it on to
-the application that initiated the query. Rcodes normally returned 
+the application that initiated the query. The rcodes normally returned 
 by the name server are passed back as return values to the get() and 
 response_recv() methods. Only two non-error rcodes exist -- 
 the no error RCODE itself and the NXDOMAIN response. The NXDOMAIN 
@@ -129,9 +145,9 @@ Svr 2 :     1  2     3           4                Give up
 Svr 3 :        1  2     3           4                Give up
 
 All pending queries are destroyed once an answer is obtained. From
-the application's standpoint the answer may still not be complete, in which
-case it may wish to retry a different set of name servers or query 
-separately for missing data. 
+the application's standpoint the answer may still not be complete 
+(for example, RRSIGs may be missing), in which case it may wish to 
+retry a different set of name servers or query separately for missing data. 
 
 
 Resolver Current Status
@@ -139,10 +155,34 @@ Resolver Current Status
 
 This library provides very basic functionality for name resolution. 
 The data structures and interfaces exported to applications are still 
-in a state of flux.  Support for thread-safety is very basic. 
+in a state of flux.  
 
-There is still some reliance on BIND code (although these are mostly 
-helper routines) and some other libbind artifacts.
+The following enhancements still need to be made:
+
+1. Clean up the interface between the resolver and the validator.
+
+2. The current design requires the validator to constantly poll the resolver
+for data. Since the calls are non-blocking, this process may have some 
+demands on CPU cycles. A better approach would be for the validator to 
+never have to poll the resolver for data once a query is issued; 
+instead, the resolver should invoke some callback function to hand over 
+any data back to the validator or to any other program that requested 
+such data.  
+
+3. Most zones are served by multiple name servers. Only the answer returned
+by the first name server is used. The resolver needs to keep track of 
+the response times for different name servers so that future queries to the
+same zone can be made on a preferential basis to name servers that have the
+best response time.
+
+4. The measures outlined in draft-ietf-dnsext-forgery-resilience must be
+followed.
+
+5. Support for TSIG
+
+6. Detection of multiple responses for a given query
+
+
 
 Acknowledgements
 ----------------
@@ -150,3 +190,6 @@ Acknowledgements
 Most of the code in the libsres library was derived from an earlier 
 implementation of the secure resolver library written by 
 Ed Lewis at Tislabs. 
+
+libsres has some reliance on BIND code (although these are mostly 
+helper routines) and some other libbind artifacts.

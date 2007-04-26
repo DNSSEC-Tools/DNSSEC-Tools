@@ -77,6 +77,11 @@ configuration file, containing the root name servers.  This is only
 used when no name server is found, and B<validate> must do recursive
 lookups itself.
 
+=item -S I<suite>[:I<suite>], --test-suite=I<suite>[:I<suite>]
+
+This option specifies the test suite (or range of test suites) to use 
+for the internal tests.
+
 =item -s, --selftest
 
 This option can be used to specify that the application should perform its
@@ -85,9 +90,24 @@ configured in the system B<resolv.conf> do not support DNSSEC, use the I<-r>
 and I<-i> options to enable B<validate> to use its own internal recursive
 resolver.
 
-=item -T <testcase number>
+=item -T I<number>[:I<number>], --testcase=I<number>[:I<number>]
 
-This option can be used to run a specific test from the testsuite.
+This option can be used to run a specific test (or range of tests) 
+from the testsuite.
+
+=item -F I<file>, --testcase-conf=I<file> 
+
+This option is used to specify the file containing the test cases.
+
+=item -l I<label>, --label=I<label> 
+
+This option can be used to specify the policy from within the I<dnsval.conf> 
+file to use during validation. 
+
+=item -w I<seconds>, --wait=I<seconds> 
+
+This option can be used to run the queries specified by other flags in a loop,
+with the specified interval between successive queries.
 
 =item -o, --output=<debug-level>:<dest-type>[:<dest-options>]
 
@@ -106,7 +126,7 @@ libval
 
 =head1 COPYRIGHT
 
-Copyright 2005-2006 SPARTA, Inc.  All rights reserved.
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =head1 AUTHORS
@@ -115,7 +135,7 @@ Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story
 
 =head1 SEE ALSO
 
-B<drawvalmap>, B<libval(3)>, B<val_query(3)>
+B<libval(3)>
 
 http://dnssec-tools.sourceforge.net
 

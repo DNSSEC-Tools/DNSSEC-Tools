@@ -1,0 +1,69 @@
+=pod
+
+=head1 NAME
+
+gethost - command-line test program for the I<val_gethostbyname()> (and related) 
+functions 
+
+=head1 SYNOPSIS
+
+   gethost [options] name 
+
+=head1 DESCRIPTION
+
+This utility is a command-line wrapper around the I<val_gethostbyname()> 
+(and related) functions.  It invokes the I<val_gethostbyname()>, 
+I<val_gethostbyname_r()> and I<val_gethostbyname2()> functions for the given command-line
+arguments and displays the returned hostent, the validation status value, 
+and the value of the h_errno variable.
+
+The exit status for this program is 1 if the answer received is trusted, 2 if 
+the answer received is validated, and -1 for an error. The trusted and validated
+status values are obtained using the I<val_istrusted()> and I<val_isvalidated()> 
+functions from I<libval(3)>.
+
+=head1 OPTIONS
+
+=over
+
+=item -n, --novalidate
+
+Do not perform validation.
+
+=item -r, --reentrant
+
+Use the re-entrant query interface.
+
+=item -f, --family=I<[AF_INET|AF_INET6]>
+
+Use the specified address family for the query. 
+
+=item -h, --help
+
+Display the help and exit.
+
+=back
+
+=head1 PRE-REQUISITES
+
+libval
+
+=head1 COPYRIGHT
+
+Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHORS
+
+Abhijit Hayatnagarkar, Suresh Krishnaswamy, Robert Story
+
+=head1 SEE ALSO
+
+B<val_getaddrinfo(3)>
+
+B<libval(3)>
+
+http://dnssec-tools.sourceforge.net
+
+=cut
+
