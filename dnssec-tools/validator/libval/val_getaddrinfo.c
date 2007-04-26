@@ -1432,9 +1432,9 @@ val_getnameinfo(val_context_t * ctx,
             }
                     
             val_log(ctx, LOG_DEBUG,
-                    "val_getnameinfo: val_resolve_and_check for host %s, returned %s with lookup status %d : %s and validator status %d : %s",
+                    "val_getnameinfo: val_resolve_and_check for host %s, returned %s with lookup status %d and validator status %d : %s",
                     domain_string, host,
-                    val_rnc_status, p_query_error(val_rnc_status),
+                    val_rnc_status, 
                     *val_status, p_val_error(*val_status));
 
             val_free_result_chain(val_res);
