@@ -583,7 +583,6 @@ extern          "C" {
                                       int size);
 
 
-    const char     *p_query_status(int err);
     const char     *p_ac_status(val_astatus_t valerrno);
     const char     *p_val_status(val_status_t err);
 
@@ -620,9 +619,6 @@ extern          "C" {
     int             val_create_context(char *label,
                                        val_context_t ** newcontext);
     void            val_free_context(val_context_t * context);
-    void            val_refresh_resolver_policy(val_context_t * context);
-    void            val_refresh_validator_policy(val_context_t * context);
-    void            val_refresh_root_hints(val_context_t * context);
     int             free_validator_state(void);
 
     /*
@@ -747,7 +743,6 @@ extern          "C" {
 #define free_val_addrinfo   val_freeaddrinfo
 #define p_val_error p_val_status
 #define p_as_error p_ac_status
-#define p_query_error p_query_status
 
 #ifdef __cplusplus
 }                               /* extern "C" */
