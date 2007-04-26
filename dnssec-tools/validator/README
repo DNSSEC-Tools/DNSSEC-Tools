@@ -1,4 +1,4 @@
-# Copyright 2004-2006 SPARTA, Inc.  All rights reserved.
+# Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the dnssec-tools package for details.
 
 
@@ -26,3 +26,15 @@ etc:
 
 include:
 	Header files required to build the validator.
+
+
+Installation instructions:
+
+The validator library is normally configured, compiled and installed through
+the normal build process for the DNSSEC-Tools suite. The validator library
+can be optionally configured with support for the following modules:
+
+--with-nsec3 : include support for NSEC3
+--with-dlv   : include support for Dynamic Lookaside Validation (DLV)
+--with-ipv6  : include support for IPv6
+
