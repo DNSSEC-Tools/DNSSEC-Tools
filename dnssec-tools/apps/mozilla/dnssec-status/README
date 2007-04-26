@@ -1,0 +1,28 @@
+This firefox extension contains an extension to show the internal
+DNSSEC results of DNS lookups when visiting a web page.
+
+Building:
+========
+make clean
+make
+
+Installation
+============
+
+Open the Firefox Browser
+Open File: 
+    Select dnssecstatus-0.1.xpi
+
+Follow directions to complete the installation.
+
+Operation
+=========
+
+When you visit web pages, you should see a new status bar section
+describing the number of DNS lookups that were validated, trusted, or
+in error.
+
+The best test of the operation can be found by making sure the
+dnsval.conf file has a trust anchor configured for dnssec-tools.org
+and the policy is set to validate.  Then go to www.dnssec-tools.org
+and there should be 4 trusted DNS lookups, 2 validated ones, and 1 error.

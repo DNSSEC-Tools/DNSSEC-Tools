@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+
+<?xml-stylesheet href="chrome://global/skin/"?>
+
+<dialog xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+ onload="onLoad();" ondialogaccept="onClose();">
+
+	<script type="application/x-javascript" src="chrome://global/content/nsUserSettings.js"/>
+	<script type="application/x-javascript" src="chrome://dnssecstatus/content/prefs.js" />
+
+    <groupbox>
+        <caption label="Validator Preferences" />
+        <radiogroup id="validator_prefs_use" onclick="toggle_use();">
+            <radio id="dnssecstatus_prefs_use" label="Use dnssecstatus to verify domain names" selected="true"/>
+            <radio id="libval_prefs_use" label="Use libval to verify domain names (http://www.dnssec-tools.org)"/>
+            <radio id="none_use" label="None"/>
+        </radiogroup>
+    </groupbox>
+	<groupbox flex="1" id="dnssecstatus_prefs_box">
+		<hbox align="center">
+			<label value="Dnssecstatus Executable" id="dnssecstatus_prefs_executable_label" />
+			<spacer flex="1" />
+			<hbox>
+				<textbox id="dnssecstatus_prefs_executable" />
+				<button id="dnssecstatus_prefs_executable_button" label="Browse" onclick="chooseExecFile();" />
+			</hbox>
+		</hbox>
+
+		<hbox>
+			<label value="Directory containing trusted public key files" id="dnssecstatus_prefs_keydir_label" />
+			<spacer flex="1" />
+			<textbox id="dnssecstatus_prefs_keydir" />
+			<button id="dnssecstatus_prefs_keydir_button" label="Browse" onclick="chooseKeydir();" />
+		</hbox>
+
+		<hbox>
+			<checkbox id="dnssecstatus_prefs_usenameserver" label="Use different nameserver" onclick="toggle_nameserver();" />
+			<textbox id="dnssecstatus_prefs_nameserver" />
+		</hbox>
+
+		<hbox>
+			<checkbox id="dnssecstatus_prefs_debug" label="Show debug messages in calling terminal" />
+		</hbox>
+
+	</groupbox>
+    <groupbox flex="1" id="libval_prefs_box">
+        <hbox align="center">
+            <label value="Libval Hostname Validating Utility" id="libval_prefs_executable_label" />
+            <spacer flex="1" />
+            <hbox>
+                <textbox id="libval_prefs_executable" />
+            </hbox>
+        </hbox>
+    </groupbox>
+
+</dialog>

@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+
+<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+xmlns:em="http://www.mozilla.org/2004/em-rdf#">
+
+    <Description about="urn:mozilla:install-manifest">
+
+        <!-- important EDITME (next line that is)-->
+	<em:id>{329be463-8b2a-4583-876b-f678aab8b50d}</em:id>
+        <em:name>dnssecstatus</em:name>
+        <em:version>0.1</em:version>
+        <em:description>Displays DNS Security Status</em:description>
+        <em:creator>Wes Hardaker</em:creator>
+        <em:homepageURL>http://www.dnssec-tools.org</em:homepageURL>
+        <em:iconURL>chrome://dnssecstatus/skin/dnssecstatus_icon_big.png</em:iconURL>
+        <em:aboutURL>chrome://dnssecstatus/content/about.xul</em:aboutURL>
+	<em:optionsURL>chrome://dnssecstatus/content/prefs.xul</em:optionsURL>
+	<em:updateURL>http://www.nlnetlabs.nl/dnssec/dnssecstatus_extension_update.rdf</em:updateURL>
+        <em:file>
+            <Description about="urn:mozilla:extension:file:dnssecstatus.jar">
+                <em:package>content/dnssecstatus/</em:package>
+		<em:skin>skin/classic/dnssecstatus/</em:skin>
+            </Description>
+        </em:file>
+
+        <em:targetApplication>
+            <Description>
+                <em:id>{ec8030f7-c20a-464f-9b0e-13a3a9e97384}</em:id>
+                <em:minVersion>0.9</em:minVersion>
+                <em:maxVersion>1.9+</em:maxVersion>
+            </Description>
+        </em:targetApplication>
+
+    </Description>
+
+</RDF>
