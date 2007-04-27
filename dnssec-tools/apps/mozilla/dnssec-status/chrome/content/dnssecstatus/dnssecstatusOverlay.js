@@ -20,37 +20,45 @@ var valcount = 0;
 var trustcount = 0;
 var errcount = 0;
 
-var vallist = "";
-var trustlist = "";
-var errlist = "";
+var counters = new Object();
 
 function reset_all() {
     valcount = 0;
     trustcount = 0;
     errcount = 0;
-    vallist = "";
-    trustlist = "";
-    errlist = "";
+    counters.vallist = {};
+    counters.trustlist = {};
+    counters.errlist = {};
+}
+
+function add_to_list(thelist, host) {
+    if(thelist[host]) {
+      thelist[host] = thelist[host] + 1;
+    } else {
+      thelist[host] = 1;
+    }
+}
+
+function get_unique_string(thelist) {
+    var tempstr = "";
+    for (var i in thelist) {
+          tempstr = tempstr + i + "(" + thelist[i] + ") ";
+    }
+    return tempstr;
 }
 
 function dnssecstatus_got_dnssec(topic, host) { 
-    if (topic == "dnssec-status-both") {
+    if (topic == "dnssec-status-both" || topic == "dnssec-status-validated") {
         valcount++;
-        trustcount++;
-        vallist = vallist + " " + host;
-        trustlist = trustlist + " " + host;
-    }
-    if (topic == "dnssec-status-validated") {
-        valcount++;
-        vallist = vallist + " " + host;
+        add_to_list(counters.vallist, host);
     }
     if (topic == "dnssec-status-trusted") {
         trustcount++;
-        trustlist = trustlist + " " + host;
+        add_to_list(counters.trustlist, host);
     }
     if (topic == "dnssec-status-neither") {
         errcount++;
-        errlist = errlist + " " + host;
+        add_to_list(counters.errlist, host);
     }
     // window._content.dnscount = window._content.dnscount + 1;
 }
@@ -60,11 +68,14 @@ function set_status(name, label, value, thelist) {
         document.getElementById("dnssecstatus-" + name + "text").value = "";
         document.getElementById("dnssecstatus-" + name + "num").value = "";
     } else {
+        var uniquestring = get_unique_string(thelist);
         document.getElementById("dnssecstatus-" + name + "text").value = 
             label;
+        document.getElementById("dnssecstatus-" + name + "text").tooltipText = 
+            uniquestring;
         document.getElementById("dnssecstatus-" + name + "num").value = value;
         document.getElementById("dnssecstatus-" + name + "num").tooltipText = 
-            thelist;
+            uniquestring;
     }
 }    
 
@@ -92,9 +103,9 @@ function dnssecstatus_show() {
                 docnum++;
             }
 
-        set_status("val", "Validated:", valcount, vallist);
-        set_status("trust", "Trusted:", trustcount, trustlist);
-        set_status("err", "Errors:", errcount, errlist);
+        set_status("val", "Secure:", valcount, counters.vallist);
+        set_status("trust", "Insecure:", trustcount, counters.trustlist);
+        set_status("err", "Errors:", errcount, counters.errlist);
 }
 
 /* These functions are called by the contextmenu, toolsmenu, or statusbar icon */
