@@ -173,7 +173,6 @@ SV *rr_c2sv(u_char *name, int type, int class, int ttl, int len, u_char *data)
   char name_p[NS_MAXCDNAME];
 
   if (ns_name_ntop(name, name_p, sizeof(name_p)) != -1) {
-
     ENTER ;
     SAVETMPS;
 
@@ -191,7 +190,7 @@ SV *rr_c2sv(u_char *name, int type, int class, int ttl, int len, u_char *data)
 
     SPAGAIN ;
 
-    rr =newSVsv(POPs);
+    rr = newSVsv(POPs);
 
     PUTBACK ;
     FREETMPS ;
@@ -216,7 +215,6 @@ SV *rrset_c2sv(struct val_rrset *rrs_ptr)
     rrs_av_ref = newRV_noinc((SV*)rrs_av);
 
     for (rr = rrs_ptr->val_rrset_data; rr; rr = rr->rr_next) {
-      
       av_push(rrs_av, 
 	      rr_c2sv(rrs_ptr->val_rrset_name_n,
 		      rrs_ptr->val_rrset_type_h,
@@ -233,7 +231,6 @@ SV *rrset_c2sv(struct val_rrset *rrs_ptr)
     rrs_av_ref = newRV_noinc((SV*)rrs_av);
 
     for (rr = rrs_ptr->val_rrset_sig; rr; rr = rr->rr_next) {
-      
       av_push(rrs_av, 
 	      rr_c2sv(rrs_ptr->val_rrset_name_n,
 		      ns_t_rrsig,
@@ -297,7 +294,8 @@ SV *rc_c2sv(struct val_result_chain *rc_ptr)
     proofs_av = newAV();
     proofs_av_ref = newRV_noinc((SV*)proofs_av);
   
-    for(i=0; i < rc_ptr->val_rc_proof_count; i++) {
+    for(i=0; i < rc_ptr->val_rc_proof_count && 
+	  rc_ptr->val_rc_proof_count < MAX_PROOFS; i++) {
       av_push(proofs_av, ac_c2sv(rc_ptr->val_rc_proofs[i]));
     }
 
