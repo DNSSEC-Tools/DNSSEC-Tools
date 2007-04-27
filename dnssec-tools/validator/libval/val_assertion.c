@@ -3176,6 +3176,8 @@ verify_provably_unsecure(val_context_t * context,
         return VAL_BAD_ARGUMENT;
     }
 
+    *is_punsecure = 0;
+
     if (q_type_h == ns_t_ds) {
         STRIP_LABEL(q_name_n, name_n);
     } else {
