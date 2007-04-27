@@ -2393,6 +2393,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
 
     if (res == NULL) {
+        val_log(ctx, LOG_DEBUG, "Incomplete Proof: proof does not cover span");
         *status = VAL_INCOMPLETE_PROOF;
     } else {
         if (VAL_NO_ERROR !=
@@ -2492,15 +2493,19 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         }
     }
 
-    if (!span_chk)
+    if (!span_chk) {
+        val_log(ctx, LOG_DEBUG, "Incomplete Proof: Proof does not cover span");
         *status = VAL_INCOMPLETE_PROOF;
+    }
     else if (only_span_chk) 
         *status = VAL_NONEXISTENT_NAME;
     else if (wcard_chk) 
         /* name and type were matched in a single proof */
         *status = VAL_NONEXISTENT_TYPE;
-    else if (!wcard_proof || !closest_encounter)
+    else if (!wcard_proof || !closest_encounter) {
+        val_log(ctx, LOG_DEBUG, "Incomplete Proof: Cannot prove wildcard non-existence");
         *status = VAL_INCOMPLETE_PROOF;
+    }
     else {
         if (NS_MAXCDNAME < wire_name_length(closest_encounter) + 2) {
             val_log(ctx, LOG_DEBUG,
@@ -2517,6 +2522,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                             qtype_h, &span_chk, &wcard_chk);
 
             if (!span_chk) {
+                val_log(ctx, LOG_DEBUG, "Incomplete Proof: Wildcard proof does not cover span");
                 *status = VAL_BOGUS_PROOF;
             } else {
                 *status = VAL_NONEXISTENT_NAME;
@@ -2735,6 +2741,7 @@ prove_nonexistence(val_context_t * ctx,
         if ((!the_set) || 
             (!the_set->rrs.val_rrset_data)) {
 
+            val_log(ctx, LOG_DEBUG, "Bogus Proof: No data exists in proof");
             *status = VAL_BOGUS_PROOF;
             return VAL_NO_ERROR;
         }
@@ -2744,6 +2751,7 @@ prove_nonexistence(val_context_t * ctx,
             if ((!the_set->rrs.val_rrset_sig) ||
                 the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
 
+                val_log(ctx, LOG_DEBUG, "Bogus Proof: Cannot identify signer for proof record");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
@@ -2756,6 +2764,7 @@ prove_nonexistence(val_context_t * ctx,
             if ((!the_set->rrs.val_rrset_sig) ||
                 the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
 
+                val_log(ctx, LOG_DEBUG, "Bogus Proof: Cannot identify signer for proof record");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
@@ -2772,8 +2781,10 @@ prove_nonexistence(val_context_t * ctx,
 #ifdef LIBVAL_NSEC3
     proof_seen = nsec3 ? (proof_seen == 0) : proof_seen;
 #endif
-    if (!proof_seen)
+    if (!proof_seen) {
+        val_log(ctx, LOG_DEBUG, "Bogus Proof: Proof contains NSEC and NSEC3 records");
         *status = VAL_BOGUS_PROOF;
+    }
     else if (nsec) {
         /*
          * only nsec records 
