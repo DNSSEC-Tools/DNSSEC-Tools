@@ -22,13 +22,64 @@ var errcount = 0;
 
 var counters = new Object();
 
-function reset_all() {
-    valcount = 0;
-    trustcount = 0;
-    errcount = 0;
-    counters.vallist = {};
-    counters.trustlist = {};
-    counters.errlist = {};
+var storage = {};
+
+var loginfo = "";
+
+var current_spot = "";
+
+function get_err_summary() {
+    maybe_init_spot(current_spot);
+    return "val: " + storage[current_spot]["valcount"] + "/tr: " +
+        storage[current_spot]["trustcount"] + "/err: " +
+        storage[current_spot]["errcount"];
+}
+
+function logit(str) {
+    loginfo = loginfo + str + "- spot = " + current_spot + "\n";
+}
+
+function showlog(lastbit) {
+    if (loginfo != "") {
+        if (lastbit)
+            loginfo = loginfo + lastbit;
+        alert(loginfo);
+        loginfo = "";
+    }
+}
+
+function reset_all(spot) {
+    if (!storage[spot]) {
+        storage[spot] = {};
+    }
+    storage[spot]["vallist"] = {};
+    storage[spot]["trustlist"] = {};
+    storage[spot]["errlist"] = {};
+    storage[spot]["valcount"] = 0;
+    storage[spot]["trustcount"] = 0;
+    storage[spot]["errcount"] = 0;
+    logit("- reseting: " + spot);
+}
+
+function maybe_init_spot(spot) {
+    if (!storage[spot]) {
+        logit("- creating: " + spot);
+        reset_all(spot);
+    }
+}
+
+function merge_spot(tospot, spotin) {
+    if (storage[spotin]) {
+        maybe_init_spot(tospot);
+        for (var i in { trust: 1, err: 1, val: 1 }) {
+            storage[tospot][i + "count"] += storage[spotin][i + "count"];
+            for (var j in storage[spotin][i + "list"]) {
+                add_to_list(storage[tospot][i + "list"], j);
+                storage[tospot][i + "list"] = storage[spotin][i + "list"]-1;
+            }
+        }
+        reset_all(spotin);
+    }
 }
 
 function add_to_list(thelist, host) {
@@ -37,6 +88,7 @@ function add_to_list(thelist, host) {
     } else {
       thelist[host] = 1;
     }
+    //logit("-  adding:" + host);
 }
 
 function get_unique_string(thelist) {
@@ -47,20 +99,27 @@ function get_unique_string(thelist) {
     return tempstr;
 }
 
+function add_to_storage(spot, name, host) {
+    if (!storage[spot]) {
+        storage[spot] = {};
+        reset_all(spot);
+    }
+    storage[spot][name + "count"]++;
+    add_to_list(storage[spot][name + "list"], host);
+}
+
 function dnssecstatus_got_dnssec(topic, host) { 
+    logit("- dnssec: " + topic + " => " + host);
     if (topic == "dnssec-status-both" || topic == "dnssec-status-validated") {
-        valcount++;
-        add_to_list(counters.vallist, host);
+        add_to_storage(current_spot, "val", host);
     }
     if (topic == "dnssec-status-trusted") {
-        trustcount++;
-        add_to_list(counters.trustlist, host);
+        add_to_storage(current_spot, "trust", host);
     }
     if (topic == "dnssec-status-neither") {
-        errcount++;
-        add_to_list(counters.errlist, host);
+        add_to_storage(current_spot, "err", host);
     }
-    // window._content.dnscount = window._content.dnscount + 1;
+    // window._content.document.dnscount = window._content.document.dnscount + 1;
 }
 
 function set_status(name, label, value, thelist) {
@@ -96,16 +155,22 @@ function dnssecstatus_show() {
                                            ifs.nsIDocShell.ENUMERATE_FORWARDS);
 
         var docnum = 0;
-        var doccounter = window._content.dnscount;
+        var doccounter = window._content.document.dnscount;
         while (shells.hasMoreElements())
             { 	         
                 var shell = shells.getNext().QueryInterface(ifs.nsIDocShell);
                 docnum++;
             }
 
-        set_status("val", "Secure:", valcount, counters.vallist);
-        set_status("trust", "Insecure:", trustcount, counters.trustlist);
-        set_status("err", "Errors:", errcount, counters.errlist);
+        //var spot = window._content.document.documentURI.spec;
+        var spot = current_spot;
+        maybe_init_spot(spot);
+        set_status("val", "Secure:", storage[spot]["valcount"],
+                   storage[spot]["vallist"]);
+        set_status("trust", "Insecure:", storage[spot]["trustcount"],
+                   storage[spot]["trustlist"]);
+        set_status("err", "Errors:", storage[spot]["errcount"], 
+                   storage[spot]["errlist"]);
 }
 
 /* These functions are called by the contextmenu, toolsmenu, or statusbar icon */
@@ -146,13 +211,23 @@ const dnssecListener =
         if(aFlag & STATE_START)
             {
                 // This fires when the load event is initiated
-                reset_all();
-                dnssecstatus_show();
+                current_spot = "";
+                reset_all(current_spot);
+                logit("start: " + current_spot + " / " + get_err_summary());
             }
         if(aFlag & STATE_STOP)
             {
                 // This fires when the load finishes
-                dnssecstatus_show();
+                // dnssecstatus_show();
+/*
+                window._content.document.dnserrcount = errcount;
+                window._content.document.dnsvalcount = valcount;
+                window._content.document.dnstrustcount = trustcount;
+*/
+//                logit("stop: " + // window._content.document.location.host +
+//                      " " +  get_err_summary());
+                dnssecstatus_show(current_spot);
+                showlog("stop: " + current_spot);
             }
         return 0;
     },
@@ -161,9 +236,19 @@ const dnssecListener =
     {
         // This fires when the location bar changes i.e load event is confirmed
         // or when the user switches tabs
-        // alert("change");
+        // logit("change");
+/*
         reset_all();
-        dnssecstatus_show();
+        errcount = window._content.document.dnserrcount;
+        valcount = window._content.document.dnsvalcount;
+        trustcount = window._content.document.dnstrustcount;
+*/
+        // dnssecstatus_show();
+        if (current_spot == "") // till now we haven't seen the parent
+            merge_spot(aURI.spec, "");
+        current_spot = aURI.spec;
+        logit("change: " + aURI.spec + " " + get_err_summary());
+        dnssecstatus_show(current_spot);
         return 0;
     },
 
@@ -174,10 +259,21 @@ const dnssecListener =
     onLinkIconAvailable: function() {return 0;}
 }
 
-function loadit() {
+function do_load() {
+    logit("loading: ");
+}
 
-    //alert("registering");
-    getBrowser().addProgressListener(dnssecListener);
+function do_unload() {
+    logit("unload: ");
+//    showlog();
+}
+
+function loadit() {
+    //logit("registering");
+    var browser = getBrowser();
+    browser.addProgressListener(dnssecListener);
+    window._content.addEventListener("load", do_load, true);
+    window._content.addEventListener("unload", do_unload, true);
 }	
 
 
@@ -209,13 +305,13 @@ observerService.addObserver(dnsRequestObserver,
 // **********************************************************************
 /*
   function dpageunload() {
-  window._content.addEventListener('unload', dnssecstatus_show, true);
-  alert("unload");
+  window._content.document.addEventListener('unload', dnssecstatus_show, true);
+  logit("unload");
   // reset_all();
   }
   function dpageshow() {
-  window._content.addEventListener('show', dnssecstatus_show, true);
-  alert("show");
+  window._content.document.addEventListener('show', dnssecstatus_show, true);
+  logit("show");
   }
   window.addEventListener('load', dpageunload, true);
   window.addEventListener('load', dpageshow, true);
