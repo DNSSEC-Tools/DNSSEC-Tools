@@ -378,7 +378,7 @@ sub rollrec_validate
 	}
 
 	#
-	# Make sure we've got a positive maximum TTL.
+	# Make sure we've got a valid logging level.
 	#
 	if(defined($rr{'loglevel'}) && (rollmgr_loglevel($loglevel,0) < 0))
 	{
