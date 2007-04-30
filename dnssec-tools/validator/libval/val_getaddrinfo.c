@@ -824,7 +824,10 @@ get_addrinfo_from_dns(val_context_t * ctx,
             } else {
                 val_log(ctx, LOG_DEBUG, "A records not found");
             }
+        } else {
+            val_status_a = VAL_UNTRUSTED_ANSWER; 
         }
+        
         val_free_result_chain(results);
         results = NULL;
         if (ret == EAI_SERVICE) {
@@ -877,6 +880,8 @@ get_addrinfo_from_dns(val_context_t * ctx,
             } else {
                 val_log(ctx, LOG_DEBUG, "AAAA records not found");
             }
+        } else {
+            val_status_aaaa = VAL_UNTRUSTED_ANSWER; 
         }
         val_free_result_chain(results);
         results = NULL;
