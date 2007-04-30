@@ -118,17 +118,26 @@ my $initrun = 1;
 my @domains;
 push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
 my %revdomains;
+for (my $i = 0; $i <=$#domains; $i++) {
+    $revdomains{$domains[$i]} = $i;
+}
 
 my %keystorage;
+my %keys_to_verify;
 
 my %newkeys;
 load_newkeys();
+
+my %removekeys;
 
 my %sleeptimes;
 my %active_refresh_times;
 
 my %zone_configfile_map;
 my $once;
+
+# my $revoke = 1;
+my $revoke = 0;
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
@@ -332,29 +341,40 @@ sub checkkeys {
                             Data::Dumper->Dump([\%newkeys], ['*newkeys']);
                         close FILE or warn "can't close newkeys file: $!";
                     }
-                } else {
+#                } elsif ($keyrec->REVOKE == 1) {
                 # see if it has the revoke bit set
-#                    if ($keyrec->REVOKE == 1) {
-                    my $revoke = 1;
-                    if ($revoke == 1) {
-                        # this key is being revoked
-                        if ($dvfile) {
-                            revoke_ta_dnsvalconf($d,$keyrec);
-                        }
-                        if ($ncfile) {
-                            revoke_ta_namedconf($d,$keyrec);
-                        }
+                } elsif ($revoke == 1) {
+                    # this key is being revoked
+                    if ($dvfile) {
+                        revoke_ta_dnsvalconf($d,$keyrec);
+                    }
+                    if ($ncfile) {
+                        revoke_ta_namedconf($d,$keyrec);
+                    }
 # TODO -- have a flag so revoked keys can alternatively be completely
 # removed from the conf file
 
+# TODO - need to verify that ALL keys in %keystorage were matched
+# if a known key disappears, set its remove_holddown timer for
+# removal if it doesn't reappear in time
+                } else {
+                # if this is neither a new key, nor a revoked key
+                # if it is a configured trust anchor, delete it from
+                # the keys_to_verify structure so we know it is not
+                # "removed"
+
+                    for (my $i = 0; $i <= $#{$keystorage{$d}}; $i++) {
+                        if ($keys_to_verify{$d}[$i]{key} eq $key &&
+                            $keys_to_verify{$d}[$i]{flags} eq $keyrec->flags &&
+                            $keys_to_verify{$d}[$i]{protocol} eq $keyrec->protocol &&
+                            $keys_to_verify{$d}[$i]{algorithm} eq $keyrec->algorithm ) {
+                            delete $keys_to_verify{$d}[$i];
+                        }
                     }
-# need to verify that ALL keys in %keystorage were matched
-# if a known key disappears, need to deal with that.
-# ???
                 }
             }
             
-# only want to remove pending keys which do no appear in this
+# only want to remove pending keys which do not appear in this
 # RRSET if the query was successful. Will deal with the unsuccessful
 # query below
 
@@ -441,6 +461,10 @@ sub checkkeys {
 #        }
         
     }
+
+# set remove holddown times (30 days) for any configured trust anchor
+# not seen in this query
+    
 
     $initrun = 0;
 
@@ -664,20 +688,25 @@ sub revoke_ta_namedconf  {
 sub get_domains_keys {
 # using globals %keystorage and @domains, is this evil?
 
+# if domains are specified on the command line, we will only
+# check those domain. Otherwise, check all domains found in config files.
     read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map) if ($ncfile);
     read_dnsval_file(\%keystorage, $dvfile, \%zone_configfile_map) if ($dvfile);
+    %keys_to_verify = %keystorage;
 
-# if a domain is specified on the command line, we will only
-# check that domain. Otherwise, check all domains found in config files.
+# if @domains exists now, we used only domains from the cmd line,
+# so we're done. if not, we got domains from config files, and
+# need to populate both @domains and %revdomains
     if (!exists ($domains[0])) {
-        foreach my $k (keys(%keystorage)) {
-              if (!(exists $revdomains{$k})) {
-                 $domains[$#domains + 1] = $k;
-                 $revdomains{$k} = $#domains +1;
-             }
+        foreach my $d (keys(%keystorage)) {
+            $domains[$#domains + 1] = $d;
+            if (!(exists $revdomains{$d})) {
+                $revdomains{$d} = $#domains +1;
+            }
         }
-    }
+    } 
     
+
     if (!@domains) {
         print "No domains to check, exiting....\n";
         exit(1);
@@ -720,12 +749,6 @@ sub read_conf_file {
     # regexp pulled from Fast.pm
     my $pat_maybefullname = qr{[-\w\$\d*]+(?:\.[-\w\$\d]+)*\.?};
 
-#    my $fh = new IO::File;
-#    if (!$fh->open("<$file")) {
-#	print STDERR "Could not open named configuration file: $file\n";
-#	exit (1);
-#    }
-
     open (FILE, "< $file") or die "can't open config file: $!\n";
     while (<FILE>) {
 	if (/$pat/) {
@@ -737,17 +760,25 @@ sub read_conf_file {
                     my ($flags, $protocol, $algorithm) = ($2, $3, $4);
                     my $key = $5;
                     $domainname =~ s/\.$//;
-                    $key =~ s/[\n\r\s]//g;
 
-                    # need to remember where these keys came from
-                    $configmap->{$domainname} = $file;
+                    if (keys %revdomains) {
+# only store key data from domains we are actually checking (@domains)
+# if domains were supplied on the command line (-d)
 
-                    my $newstorageobj = { flags => $flags,
-                                          protocol => $protocol,
-                                          algorithm => $algorithm,
-                                          key => $key,
-                                        };
-                    push (@{$storage->{$domainname}}, $newstorageobj);
+                        if (exists($revdomains{$domainname})) {
+                            $key =~ s/[\n\r\s]//g;
+
+                            # need to remember where these keys came from
+                            $configmap->{$domainname} = $file;
+
+                            my $newstorageobj = { flags => $flags,
+                                                  protocol => $protocol,
+                                                  algorithm => $algorithm,
+                                                  key => $key,
+                                                };
+                            push (@{$storage->{$domainname}}, $newstorageobj);
+                        }
+                    }
 		}
 	    }
 	}
@@ -788,14 +819,31 @@ sub read_dnsval_file {
                 # strip the trailing dot
                 $domainname =~ s/\.$//;
 
-                $configmap->{$domainname} = $file;
+                if (keys %revdomains) {
+# only store key data from domains we are actually checking (@domains)
+# if domains were supplied on the command line (-d)
 
-                push @{$storage->{$domainname}},
-		      { flags => $flags,
-			protocol => $proto,
-			algorithm => $algo,
-			key => $key };
-	        $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
+                    if (exists($revdomains{$domainname})) {
+    
+                        $configmap->{$domainname} = $file;
+
+                        push @{$storage->{$domainname}},
+		              { flags => $flags,
+			        protocol => $proto,
+			        algorithm => $algo,
+			        key => $key };
+	                $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
+                    }
+                } else {
+                    $configmap->{$domainname} = $file;
+
+                    push @{$storage->{$domainname}},
+		          { flags => $flags,
+		            protocol => $proto,
+		            algorithm => $algo,
+		            key => $key };
+	            $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
+                }
 	    }
 	}
     }
