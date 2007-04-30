@@ -838,7 +838,8 @@ sub rollrec_settime
 #
 # Routine:	rollrec_newrec()
 #
-# Purpose:	Creates a rollrec in %rollrecs.  The name field of is set.
+# Purpose:	Creates a rollrec in %rollrecs.  The name and type fields
+#		are set.
 #
 sub rollrec_newrec
 {
