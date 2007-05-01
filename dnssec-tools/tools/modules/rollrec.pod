@@ -54,6 +54,12 @@ The fields in a I<rollrec> record are:
 This is the email address for the zone's administrative user.  If it is not
 set, the default from the DNSSEC-Tools configuration file will be used.
 
+ * directory
+
+This field contains the name of the directory in which B<rollerd> will
+execute for the I<rollrec>'s zone.  If it is not specified, then the
+normal B<rollerd> execution directory will be used.
+
  * display
 
 This boolean field indicates whether or not the zone should be displayed by
