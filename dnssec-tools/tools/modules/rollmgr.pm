@@ -1680,7 +1680,6 @@ sub rollmgr_getcmd
 		#
 	}
 
-
 	#
 	# Get the command and data, and lop off the trailing goo.
 	#
