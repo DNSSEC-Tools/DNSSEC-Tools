@@ -100,6 +100,7 @@ my @ROLLFIELDS = (
 			'keyrec',
 			'maxttl',
 			'administrator',
+			'directory',
 			'phasestart',
 			'display',
 			'loglevel',
@@ -211,7 +212,7 @@ sub rollrec_read
 	#
 	if(! -e $rrf)
 	{
-		err("$rrf does not exist\n",-1);
+		err("rollrec file $rrf does not exist\n",-1);
 		return(-1);
 	}
 
@@ -1092,6 +1093,7 @@ of keyword/value entries.  The following is an example of a I<rollrec>:
     roll "example.com"
 	zonefile		"/usr/etc/dnssec-tools/zones/db.example.com"
 	keyrec			"/usr/etc/dnssec-tools/keyrec/example.keyrec"
+	directory		"/usr/etc/dnssec-tools/dir-example.com"
 	kskphase		"0"
 	zskphase		"2"
 	maxttl			"86400"
