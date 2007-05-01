@@ -214,7 +214,7 @@ sub keyrec_read
 	#
 	if(! -e $krf)
 	{
-		err("$krf does not exist\n",-1);
+		err("keyrec file $krf does not exist\n",-1);
 		return(-1);
 	}
 
