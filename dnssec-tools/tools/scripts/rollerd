@@ -136,7 +136,9 @@ my $version  = 0;			# Display the version number.
 
 my $MIN_SLEEP = 10;			# Minimum time rollerd will sleep.
 
+my $curdir;				# Directory.
 my $keyarch;				# Key-archive program.
+my $xqtdir;				# Execution directory.
 
 #######################################################################
 
@@ -224,7 +226,7 @@ sub main
 
 		#
 		# If we have a valid rollrec file, we'll read its contents
-		# and handle for expired ZSKs.
+		# and handle for expired KSKs and ZSKs.
 		#
 		if(rrfchk($rollrecfile))
 		{
@@ -290,6 +292,12 @@ sub rollkeys
 		my %rr;			# Rollrec hash.
 
 		#
+		# Return to our execution directory.
+		#
+		rollmgr_log(LOG_TMI,$rname,"execution directory:  chdir($xqtdir)");
+		chdir($xqtdir);
+
+		#
 		# Ensure the logging level is set correctly.
 		#
 		$loglevel = $loglevel_save;
@@ -335,6 +343,23 @@ sub rollkeys
 		{
 			rollmgr_log(LOG_TMI,$rname,"is a skip rollrec");
 			next;
+		}
+
+		#
+		# If this rollrec has a directory record, we'll move into
+		# that directory for execution.  If the chdir() fails, we'll
+		# skip this rollrec.
+		#
+		if(exists($rr{'directory'}))
+		{
+			my $rrdir = $rr{'directory'};
+
+			if(chdir($rrdir) == 0)
+			{
+				rollmgr_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
+				next;
+			}
+			rollmgr_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
 		}
 
 		#
@@ -1947,7 +1972,6 @@ sub getkrval
 sub optsandargs
 {
 	my $argc = @ARGV;				# Number of arguments.
-	my $dir;					# Execution directory.
 
 	#
 	# Check our options.
@@ -1971,27 +1995,41 @@ sub optsandargs
 	# Check for a rollrec file name.
 	#
 	$rollrecfile = $opts{$OPT_RRFILE} || rollrec_default();
+	$curdir = getcwd();
+	if($rollrecfile !~ /^\//)
+	{
+		$rollrecfile = "$curdir/$rollrecfile";
+	}
 
 	#
-	# Move into our execution directory.
+	# Validate our execution directory.
 	#
-	$dir = $opts{$OPT_DIR} || getconfdir();
-	if(!defined($dir))
+	$xqtdir = $opts{$OPT_DIR} || getconfdir();
+	if($xqtdir eq ".")
+	{
+		$xqtdir = `pwd`;
+		chomp($xqtdir);
+	}
+	if(!defined($xqtdir))
 	{
 		print STDERR "rollerd:  no execution directory defined\n";
 		exit(1);
 	}
-	if(! -e $dir)
+	if(! -e $xqtdir)
 	{
-		print STDERR "rollerd:  execution directory \"$dir\" does not exist\n";
+		print STDERR "rollerd:  execution directory \"$xqtdir\" does not exist\n";
 		exit(1);
 	}
-	if(! -d $dir)
+	if(! -d $xqtdir)
 	{
-		print STDERR "rollerd:  execution directory \"$dir\" is not a directory\n";
+		print STDERR "rollerd:  execution directory \"$xqtdir\" is not a directory\n";
 		exit(1);
 	}
-	chdir($dir);
+
+	#
+	# Move into our execution directory.
+	#
+	chdir($xqtdir);
 
 	#
 	# Complain and die if a log file wasn't given on the command line
@@ -2010,7 +2048,7 @@ sub optsandargs
 	{
 		print "$ME parameters:\n";
 		print "	rollrec file	\"$rollrecfile\"\n";
-		print "	directory	\"$dir\"\n";
+		print "	directory	\"$xqtdir\"\n";
 		print "	logfile		\"$logfile\"\n";
 		print "	loglevel	\"$loglevel\"\n";
 		print "	sleeptime	\"$sleeptime\"\n";
@@ -2112,8 +2150,9 @@ sub rrfchk
 		my $phase;		# Rollrec's phase.
 
 		my $errs = 0;		# Missing file errors.
-		my $zonefile;		# Zone's filename.
+		my $prefix;		# Rollrec's directory field.
 		my $keyrec;		# Keyrec's filename.
+		my $zonefile;		# Zone's filename.
 
 		#
 		# Get the rollrec for this name.  If it doesn't have one,
@@ -2133,10 +2172,19 @@ sub rrfchk
 		next if($rr{'rollrec_type'} eq "skip");
 
 		#
+		# Check for a directory.  We'll use rollerd's execution
+		# directory if one isn't defined.
+		#
+		$prefix = $xqtdir;
+		$prefix = $rr{'directory'} if(defined($rr{'directory'}));
+
+		#
 		# Get our important files.
 		#
 		$zonefile = $rr{'zonefile'};
+		$zonefile = "$prefix/$zonefile" if($zonefile !~ /^\//);
 		$keyrec	  = $rr{'keyrec'};
+		$keyrec	  = "$prefix/$keyrec" if($keyrec !~ /^\//);
 
 		#
 		# Set the error flag if either the zonefile or the keyrec
@@ -2948,7 +2996,6 @@ sub cmd_status
 {
 	my $data = shift;				# Command's data.
 
-	my $curdir;					# Directory.
 	my $lfile;					# Log file.
 	my $lvl;					# Logging level.
 	my $lvlstr;					# Logging level string.
@@ -2957,7 +3004,6 @@ sub cmd_status
 	#
 	# Get the info to report.
 	#
-	$curdir = getcwd();
 	$lfile	= rollmgr_logfile();
 	$lvl	= rollmgr_loglevel();
 	$lvlstr	= rollmgr_logstr($lvl);
@@ -3513,6 +3559,7 @@ user.  Below is a sample I<rollrec> entry:
 	roll "example.com"
 		zonefile        "example.com.signed"
 		keyrec          "example.com.krf"
+		directory	"dir-example.com"
 		kskphase        "0"
 		zskphase        "3"
 		ksk_rollsecs    "1172614842"
@@ -3525,12 +3572,27 @@ user.  Below is a sample I<rollrec> entry:
 
 The first line gives the I<rollrec> entry's name.  The lines then give the
 zone's signed zone file, I<keyrec> file, the current rollover phases, the
-rollover timestamps, and other information.  A more detailed explanation may
-be found in I<rollrec(5)>.
+rollover timestamps, and other information.
 
 If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
 I<rollrec> will be changed into a "skip" I<rollrec>.  That record will not be
 processed.
+
+A more detailed explanation may be found in I<rollrec(5)>.
+
+=head2 Directories
+
+B<rollerd>'s execution directory is either the directory in which it is
+executed or the directory passed in the I<-directory> command-line option.
+Any files used by B<rollerd> that were not specified with absolute paths use
+this directory as their base.
+
+The I<directory> field informs B<rollerd> where the zone's files may be found.
+For that zone, B<rollerd> will move into that directory, then return to its
+execution directory when it finishes rollover operations for that zone.  If
+the I<directory> value is a relative path, it will be appended to B<rollerd>'s
+execution directory.  If the I<directory> value is an absolute path, it will
+be used as is.
 
 =head2 Controlling B<rollerd> with B<rollctl>
 
