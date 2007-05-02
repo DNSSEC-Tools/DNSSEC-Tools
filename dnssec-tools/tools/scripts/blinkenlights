@@ -1406,6 +1406,10 @@ sub readrrf
 		# Read the zone's keyrec and save the filename.
 		#
 		$krf = $rr->{'keyrec'};
+		if(defined($rr->{'directory'}))
+		{
+			$krf = "$rr->{'directory'}/$krf";
+		}
 		$keyrecs{$zone} = $krf;
 
 		#
