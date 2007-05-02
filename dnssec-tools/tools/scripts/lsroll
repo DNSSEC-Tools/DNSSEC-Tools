@@ -404,7 +404,7 @@ sub getrollrecs
 		#
 		# If the rollrec has no administrator, give it the default.
 		#
-		if(!defined($rollrecs{'administrator'}))
+		if(!defined($rollrecs{$rn}{'administrator'}))
 		{
 			$rollrecs{$rn}{'administrator'} = "(defadmin)";
 		}
@@ -412,7 +412,7 @@ sub getrollrecs
 		#
 		# If the rollrec has no administrator, give it the default.
 		#
-		if(!defined($rollrecs{'directory'}))
+		if(!defined($rollrecs{$rn}{'directory'}))
 		{
 			$rollrecs{$rn}{'directory'} = "(defdir)";
 		}
