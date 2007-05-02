@@ -35,6 +35,7 @@ my @opts =
 	"zone=s",			# Zone file.
 	"keyrec=s",			# Keyrec file.
 	"admin=s",			# Administrator.
+	"directory=s",			# Directory.
 	"loglevel=s",			# Logging level.
 	"skip",				# Skip record flag.
 
@@ -50,6 +51,7 @@ my @opts =
 my $zoneopt;				# Zone name option value.
 my $kropt;				# Keyrec file option value.
 my $adminopt;				# Administrator option value.
+my $diropt;				# Directory option value.
 my $logopt;				# Logging level option value.
 my $skipopt = 0;			# Roll/skip record flag.
 
@@ -113,19 +115,22 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$zoneopt  = $options{'zone'}	 || "";
-	$kropt	  = $options{'keyrec'}	 || "";
-	$adminopt = $options{'admin'}	 || "";
-	$logopt	  = $options{'loglevel'} || "";
-	$skipopt  = $options{'skip'}	 || 0;
+	$zoneopt  = $options{'zone'}	  || "";
+	$kropt	  = $options{'keyrec'}	  || "";
+	$adminopt = $options{'admin'}	  || "";
+	$diropt	  = $options{'directory'} || "";
+	$logopt	  = $options{'loglevel'}  || "";
+	$skipopt  = $options{'skip'}	  || 0;
 
-	$outfile  = $options{'out'}	 || "";
+	$outfile  = $options{'out'}	  || "";
 	$version  = $options{'Version'};
 
 	#
-	# Set a flag if neither -zone, -keyrec, nor -admin were given.
+	# Set a flag if neither -zone, -keyrec, -admin, nor -directory
+	# were given.
 	#
-	if(($zoneopt eq "") && ($kropt eq "") && ($adminopt eq ""))
+	if(($zoneopt  eq "") && ($kropt  eq "")	 &&
+	   ($adminopt eq "") && ($diropt eq ""))
 	{
 		$noopts = 1;
 	}
@@ -189,6 +194,7 @@ sub newrollrec
 	my $zonefile = "$zone.signed";			# Zone file.
 	my $krfile   = "$zone.krf";			# Keyrec file.
 	my $admin;					# Administrator.
+	my $dir;					# Directory.
 
 	#
 	# Make a skip record if -skip was given.
@@ -226,19 +232,28 @@ sub newrollrec
 				$admin = $adminopt;
 				$admin =~ s/=/$zone/;
 			}
+
+			if($diropt)
+			{
+				$dir = $diropt;
+				$dir =~ s/=/$zone/;
+			}
+
 		}
 		else
 		{
 			$zonefile = $zoneopt  if($zoneopt);
 			$krfile	  = $kropt    if($kropt);
 			$admin	  = $adminopt if($adminopt);
+			$dir	  = $diropt   if($diropt);
 		}
 	}
 
 	print OUT "$rectype	\"$zone\"\n";
 	print OUT "	zonefile	\"$zonefile\"\n";
 	print OUT "	keyrec		\"$krfile\"\n";
-	print OUT "	administrator	\"$admin\"\n"	 if($admin ne "");
+	print OUT "	administrator	\"$admin\"\n"	 if($admin  ne "");
+	print OUT "	directory	\"$dir\"\n"	 if($dir    ne "");
 	print OUT "	loglevel	\"$logopt\"\n"	 if($logopt ne "");
 	print OUT "	kskphase	\"0\"\n";
 	print OUT "	zskphase	\"0\"\n";
@@ -275,6 +290,7 @@ sub usage
 	print STDERR "\t-zone		zone file\n";
 	print STDERR "\t-keyrec		keyrec file\n";
 	print STDERR "\t-admin		administrator\n";
+	print STDERR "\t-directory	directory\n";
 	print STDERR "\t-loglevel	logging level\n";
 	print STDERR "\t-skip		skip records\n";
 	print STDERR "\t-out		output file\n";
@@ -312,6 +328,7 @@ A I<rollrec> entry has this format:
 	kskphase	"0"
 	zskphase	"0"
 	administrator	"bob@bobhost.example.com"
+	directory	"/var/dns/zones/example.com"
 	loglevel	"phase"
 	ksk_rolldate	" "
 	ksk_rollsecs	"0"
@@ -329,6 +346,10 @@ below.
 The I<administrator> field is set to "bob@bobhost.example.com" to indicate
 that the email messages to the zone's administrator should be sent to
 "bob@bobhost.example.com".
+
+The I<directory> field is set to "/var/dns/zones/example.com" to indicate
+that the files for this zone (zone file, signed zone file, I<keyrec> file,
+etc.) should be found in B</var/dns/zones/example.com>.
 
 The I<loglevel> field is set to "phase" to indicate that B<rollerd> should
 only log phase-level (and greater) log messages for this zone.
@@ -354,7 +375,7 @@ default; B<skip> entries are created if the I<-skip> option is specified.
 The newly generated I<rollrec> entries are written to standard output,
 unless the I<-out> option is specified.
 
-=head1 ZONEFILE And KEYREC FIELDS
+=head1 ZONEFILE and KEYREC FIELDS
 
 The I<zonefile> and I<keyrec> fields may be given by using the I<-zone>
 and I<-keyrec> options, or default values may be used.
@@ -405,6 +426,11 @@ See the ZONEFILE And KEYREC FIELDS and EXAMPLES sections for more details.
 This specifies the value of the I<administrator> field.  If it is not given,
 an I<administrator> field will not be included for the record.
 
+=item I<-directory>
+
+This specifies the value of the I<directory> field.  If it is not given,
+a I<directory> field will not be included for the record.
+
 =item I<-loglevel>
 
 This specifies the value of the I<loglevel> field.  If it is not given, a
@@ -447,8 +473,6 @@ domain, without any options.
 	    keyrec          "example.com.krf"
 	    kskphase        "0"
 	    zskphase        "0"
-	    administrator   "bob@bobshost.example.com"
-	    loglevel        "phase"
 	    ksk_rolldate    " "
 	    ksk_rollsecs    "0"
 	    zsk_rolldate    " "
