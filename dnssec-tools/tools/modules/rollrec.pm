@@ -46,6 +46,10 @@
 #	be open at a time.  If module use proves this to be a naive assumption
 #	this module will have to be rewritten to account for it.
 #
+#	The directory rollrec field was an excellent suggestion made by
+#	Otmar Lendl <ol@bofh.priv.at>.  Several changes here, in rollerd,
+#	and in other scripts are a result of this suggestion.
+#
 
 package Net::DNS::SEC::Tools::rollrec;
 
