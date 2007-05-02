@@ -22,6 +22,9 @@
 #			- mismatched rollover timestamps
 #		- contemporaneous KSK rollover and ZSK rollover
 #		- empty administrator field
+#		- directory checks
+#			- non-existent directory
+#			- non-directory directory
 #		- invalid logging level
 #
 
@@ -273,6 +276,10 @@ sub runchecks
 #				- file doesn't exist
 #				- file is not a regular file
 #				- file is zero-length
+#			- directory checks
+#				- empty directory field
+#				- non-existent directory
+#				- non-directory directory
 #
 sub rollrec_validate
 {
@@ -283,6 +290,7 @@ sub rollrec_validate
 	my $errs = 0;				# Error count.
 
 	my $admin;				# Administrator email address.
+	my $dir;				# Directory for zone's files.
 	my $dispflag;				# Display flag.
 	my $krfile;				# Keyrec file.
 	my $kskphase;				# Current KSK phase.
@@ -299,6 +307,7 @@ sub rollrec_validate
 	# Get the rollrec data.
 	#
 	$admin	  = $rr{'administrator'};
+	$dir	  = $rr{'directory'};
 	$dispflag = $rr{'display'};
 	$krfile	  = $rr{'keyrec'};
 	$kskdate  = $rr{'ksk_rolldate'};
@@ -414,6 +423,11 @@ sub rollrec_validate
 	$errs += checkfile($rrname,"zonefile",$zonefile);
 
 	#
+	# Check the directory.
+	#
+	$errs += checkdir($rrname,$dir) if(defined($rr{'directory'}));
+
+	#
 	# If we're rolling, ensure there's a phasestart.
 	#
 	if($zskphase > 0)
@@ -429,6 +443,45 @@ sub rollrec_validate
 }
 
 #-----------------------------------------------------------------------------
+# Routine:	checkdir()
+#
+# Purpose:	Check a directory for validity.  This is defined as:
+#
+#			- the directory exists
+#			- the directory is a directory
+#
+#		A boolean indicates if the directory is valid (0) or not (1).
+#
+sub checkdir
+{
+	my $rrname   = shift;				# Rollrec name.
+	my $dname    = shift;				# Directory's name.
+
+	#
+	# Check the existence of the directory.
+	#
+	if(! -e $dname)
+	{
+		qprint("$rrname:  missing directory \"$dname\"\n");
+		return(1);
+	}
+
+	#
+	# Check the normality of the directory.
+	#
+	if(! -d $dname)
+	{
+		qprint("$rrname:  directory \"$dname\" is not a directory\n");
+		return(1);
+	}
+
+	#
+	# Return success.
+	#
+	return(0);
+}
+
+#-----------------------------------------------------------------------------
 # Routine:	checkfile()
 #
 # Purpose:	Check a file for validity.  This is defined as:
@@ -437,7 +490,7 @@ sub rollrec_validate
 #			- the file is a regular file
 #			- the file isn't empty
 #
-#		A boolean indicates if the file is valid (1) or not (0).
+#		A boolean indicates if the file is valid (0) or not (1).
 #
 sub checkfile
 {
@@ -630,6 +683,11 @@ not have a I<phasestart> field.
 
 A zone has an empty administrator field.  This field must contain an
 email address.
+
+=item * non-existent directory
+
+Several checks are made for a zone's directory.  If the zone has a directory
+specified, the directory must exist and it must be an actual directory.
 
 =item * invalid display flag
 
