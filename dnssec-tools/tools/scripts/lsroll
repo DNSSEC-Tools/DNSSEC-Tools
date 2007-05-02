@@ -33,7 +33,6 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	# Records to select:
-		"all",			# All keyrecs.
 		"roll",			# "Active" rollrecs.
 		"skip",			# Skipped rollrecs.
 
@@ -66,7 +65,6 @@ my @opts =
 # Flag values for the various options.  Variable/option connection should
 # be obvious.
 #
-my $allflag;
 my $rollflag;
 my $skipflag;
 
@@ -188,7 +186,6 @@ sub doopts
 	#
 	# Set our option variables based on the parsed options.
 	#
-	$allflag	= $options{'all'}	|| 0;
 	$rollflag	= $options{'roll'}	|| 0;
 	$skipflag	= $options{'skip'}	|| 0;
 
@@ -208,6 +205,15 @@ sub doopts
 	usage() if(defined($options{'help'}));
 
 	#
+	# Give a usage flag if asked.
+	#
+	if($rollflag && $skipflag)
+	{
+		print STDERR "please select only one of -roll and -skip\n";
+		exit(0);
+	}
+
+	#
 	# Ensure we were given a rollrec file to check.
 	#
 	$argc = @ARGV;
@@ -220,19 +226,9 @@ sub doopts
 	#
 
 	#
-	# Select all records if the "-all" option was given.
-	#
-	if($allflag)
-	{
-		$rollflag = 1;
-		$skipflag = 1;
-	}
-
-	#
 	# Make sure conflicting options weren't given.
 	#
 	usage() if($long && $terse);
-	usage() if($rollflag && $skipflag && !$allflag);
 
 	#
 	# Set the default flag values.
@@ -723,7 +719,6 @@ sub usage
 {
 	print STDERR "usage:  lsroll [options] <rollrec-file>\n";
 	print STDERR "\trecord-selection options:\n";
-	print STDERR "\t\t-all		all records\n";
 	print STDERR "\t\t-roll		roll records\n";
 	print STDERR "\t\t-skip		skip records\n";
 	print STDERR "\tattribute-selection options:\n";
@@ -823,12 +818,13 @@ is described in the subsections below.
 =head2 Record-selection Options
 
 These options select the records that will be displayed by B<lsroll>.
+By default, all records will be displayed; selecting one or the other of
+these options will restrict the records shown.
+
+In order to simplify the B<lsroll> code and keep it easily understandable,
+these options are mutually exclusive.
 
 =over 4
-
-=item I<-all>
-
-List all records in the I<rollrec> file.
 
 =item I<-roll>
 
@@ -850,7 +846,7 @@ by B<lsroll>.
 =item I<-type>
 
 Include each I<rollrec> record's type in the output.  The type will be either
-"roll" or "skip".  The type is given parenthetically.
+"roll" or "skip".
 
 =item I<-zone>
 
