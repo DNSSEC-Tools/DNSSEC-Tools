@@ -45,6 +45,7 @@ my @opts =
 		"phases",		# KSK and ZSK rollover phases.
 		"admin",		# Zone administrator's email.
 		"loglevel",		# Zone administrator's email.
+		"directory",		# Directory holding zone's files.
 		"ttl",			# Maximum TTL.
 		"display",		# Display flag.
 		"phstart",		# Phase start.
@@ -77,6 +78,7 @@ my $phasesflag;
 my $adminflag;
 my $logflag;
 my $ttlflag;
+my $dirflag;
 my $dispflag;
 my $phstartflag;
 my $lastkskflag;
@@ -238,6 +240,7 @@ sub doopts
 	$keyrecflag	= 1;
 	$kphaseflag	= 1;
 	$zphaseflag	= 1;
+	$dirflag	= 0;
 	$adminflag	= 0;
 	$logflag	= 0;
 	$ttlflag	= 0;
@@ -274,6 +277,7 @@ sub doopts
 		$keyrecflag	= 1;
 		$kphaseflag	= 1;
 		$zphaseflag	= 1;
+		$dirflag	= 1;
 		$adminflag	= 1;
 		$logflag	= 1;
 		$ttlflag	= 1;
@@ -289,6 +293,7 @@ sub doopts
 		$keyrecflag	= 0;
 		$kphaseflag	= 0;
 		$zphaseflag	= 0;
+		$dirflag	= 0;
 		$adminflag	= 0;
 		$logflag	= 0;
 		$ttlflag	= 0;
@@ -305,6 +310,7 @@ sub doopts
 	$zoneflag	= 1 if($options{'zone'});
 	$keyrecflag	= 1 if($options{'keyrec'});
 	$phasesflag	= 1 if($options{'phases'});
+	$dirflag	= 1 if($options{'directory'});
 	$adminflag	= 1 if($options{'admin'});
 	$logflag	= 1 if($options{'loglevel'});
 	$ttlflag	= 1 if($options{'ttl'});
@@ -401,6 +407,14 @@ sub getrollrecs
 		if(!defined($rollrecs{'administrator'}))
 		{
 			$rollrecs{$rn}{'administrator'} = "(defadmin)";
+		}
+
+		#
+		# If the rollrec has no administrator, give it the default.
+		#
+		if(!defined($rollrecs{'directory'}))
+		{
+			$rollrecs{$rn}{'directory'} = "(defdir)";
 		}
 
 		#
@@ -501,6 +515,7 @@ sub makeheader
 
 	$rr{'rollrec_type'}	= 'Type';
 	$rr{'administrator'}	= 'Administrator';
+	$rr{'directory'}	= 'Directory';
 	$rr{'display'}		= 'Display Flag';
 	$rr{'keyrec'}		= 'Keyrec File';
 	$rr{'ksk_rolldate'}	= 'Last KSK Rollover';
@@ -529,6 +544,7 @@ sub showrollrecs
 	my $out;				# Output string.
 
 	my $admin;				# Zone administrator's email.
+	my $direct;				# Directory for zone's files.
 	my $disp;				# blinkenlights display flag.
 	my $keyrec;				# Keyrec file in rollrec.
 	my $kskphase;				# Current KSK phase in rollrec.
@@ -589,6 +605,7 @@ sub showrollrecs
 		$lastksk  = $rr{'ksk_rolldate'};
 		$lastzsk  = $rr{'zsk_rolldate'};
 		$admin	  = $rr{'administrator'};
+		$direct	  = $rr{'directory'};
 		$loglevel = $rr{'loglevel'};
 
 		#
@@ -609,6 +626,7 @@ sub showrollrecs
 			$out .= outstr($rrn,'zskphase',$zskphase,$zphaseflag,0);
 		}
 		$out .= outstr($rrn,'administrator',$admin,$adminflag,0);
+		$out .= outstr($rrn,'directory',$direct,$dirflag,0);
 		$out .= outstr($rrn,'loglevel',$loglevel,$logflag,0);
 		$out .= outstr($rrn,'maxttl',$ttl,$ttlflag,0);
 		$out .= outstr($rrn,'display',$disp,$dispflag,0);
@@ -729,6 +747,7 @@ sub usage
 	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
 	print STDERR "\t\t-phases\t	KSK and ZSK rollover phases\n";
 	print STDERR "\t\t-admin\t	zone adminstrator's email\n";
+	print STDERR "\t\t-directory\t	directory of zone's files\n";
 	print STDERR "\t\t-loglevel	rollover logging level\n";
 	print STDERR "\t\t-ttl		zone TTL\n";
 	print STDERR "\t\t-display	display flag\n";
@@ -802,6 +821,7 @@ The table below shows the fields displayed for each output format.
     KSK phase              yes           no          yes        no
     ZSK phase              yes           no          yes        no
     administrator          no            no          yes        no
+    directory              no            no          yes        no
     logging level          no            no          yes        no
     TTL value              no            no          yes        no
     display flag           no            no          yes        no
@@ -889,6 +909,12 @@ Examples of output from this option are:
 The record's administrator value is included in the output.
 If an administrator value is not included in a I<rollrec>, then the value
 "(defadmin)" will be given.
+
+=item I<-directory>
+
+The name of the directory that holds the zone's files is included in the
+output.  If a zone directory is not included in a I<rollrec>, then the value
+"(defdir)" will be given.
 
 =item I<-loglevel>
 
