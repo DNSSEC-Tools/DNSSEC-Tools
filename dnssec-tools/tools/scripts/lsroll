@@ -469,7 +469,6 @@ sub getrollrecs
 #
 sub maxlens
 {
-
 	#
 	# Loop through the zone list and give data on the desired zones.
 	#
@@ -477,6 +476,18 @@ sub maxlens
 	{
 		my $recref  = $rollrecs{$rrname};
 		my %rollrec = %$recref;
+		my $type;
+
+		#
+		# If we're not displaying this type of record, don't
+		# include it in the length calculate.
+		#
+		$type = $rollrec{'rollrec_type'};
+		if(($rollflag && ($type eq "skip"))	||
+		   ($skipflag && ($type eq "roll")))
+		{
+			next;
+		}
 
 		foreach my $key (sort(keys(%rollrec)))
 		{
@@ -747,7 +758,7 @@ sub usage
 	print STDERR "\t\t-zskphase	ZSK rollover phase\n";
 	print STDERR "\t\t-phases\t	KSK and ZSK rollover phases\n";
 	print STDERR "\t\t-admin\t	zone adminstrator's email\n";
-	print STDERR "\t\t-directory\t	directory of zone's files\n";
+	print STDERR "\t\t-directory	directory of zone's files\n";
 	print STDERR "\t\t-loglevel	rollover logging level\n";
 	print STDERR "\t\t-ttl		zone TTL\n";
 	print STDERR "\t\t-display	display flag\n";
