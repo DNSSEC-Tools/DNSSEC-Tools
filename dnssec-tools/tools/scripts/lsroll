@@ -682,31 +682,9 @@ sub outfld
 	$spaces = ' ' x $blen if($blen > 0);
 
 	#
-	# Build the output line, but we've got special case code for
-	# the zonename field.
+	# Build the output line.
 	#
-	if(($key eq 'zonename') && 0)
-	{
-		#
-		# If this is a header line, pop in the zone label.
-		# Otherwise, add in the zonename and (maybe) the type.
-		#
-		if($zone eq $HEADER_RRN)
-		{
-			$ret = 'Zone';
-		}
-		else
-		{
-			$ret  = $val;
-		}
-	}
-	else
-	{
-		#
-		# Build the output line.
-		#
-		$ret = $spaces . $val;
-	}
+	$ret = $spaces . $val;
 
 	#
 	# Save the hash key and return the output string to the caller.
