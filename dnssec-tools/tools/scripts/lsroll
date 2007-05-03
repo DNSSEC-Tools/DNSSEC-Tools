@@ -379,8 +379,27 @@ sub getrollrecs
 	foreach my $rn (sort(@rrnames))
 	{
 		my $rr;				# Reference to rollrec.
+		my $type;			# Rollrec's type.
 
+		#
+		# Get a reference to the rollrec.
+		#
 		$rr = rollrec_fullrec($rn);
+
+		#
+		# If we're not displaying this type of record, don't
+		# include it in the length calculate.
+		#
+		$type = $rr->{'rollrec_type'};
+		if(($rollflag && ($type eq "skip"))	||
+		   ($skipflag && ($type eq "roll")))
+		{
+			next;
+		}
+
+		#
+		# Save the rollrec
+		#
 		$rollrecs{$rn} = $rr;
 	}
 
@@ -472,18 +491,6 @@ sub maxlens
 	{
 		my $recref  = $rollrecs{$rrname};
 		my %rollrec = %$recref;
-		my $type;
-
-		#
-		# If we're not displaying this type of record, don't
-		# include it in the length calculate.
-		#
-		$type = $rollrec{'rollrec_type'};
-		if(($rollflag && ($type eq "skip"))	||
-		   ($skipflag && ($type eq "roll")))
-		{
-			next;
-		}
 
 		foreach my $key (sort(keys(%rollrec)))
 		{
@@ -575,17 +582,6 @@ sub showrollrecs
 		my %rr = %$rrr;			# The zone's loaded rollrec.
 
 		#
-		# Check the zone-validity flags against the zone to see if
-		# the record should be displayed.
-		#
-		$type = $rr{'rollrec_type'};
-		if(($rollflag && ($type eq "skip"))	||
-		   ($skipflag && ($type eq "roll")))
-		{
-			next;
-		}
-
-		#
 		# Bump the matching-records count.
 		#
 		$count++ if($rrn ne $HEADER_RRN);
@@ -600,6 +596,7 @@ sub showrollrecs
 		# Set fields from the rollrec.  If this is a skip record,
 		# we won't get the phases, ttl, or phase start.
 		#
+		$type = $rr{'rollrec_type'};
 		$zonename = $rr{'zonename'};
 		$zonefile = $rr{'zonefile'};
 		$keyrec	  = $rr{'keyrec'};
