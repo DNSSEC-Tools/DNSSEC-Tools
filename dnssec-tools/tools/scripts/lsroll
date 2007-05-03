@@ -616,27 +616,27 @@ sub showrollrecs
 		# Build the output string.
 		#
 		$prevkey = 'first-field';
-		$out  = outstr($rrn,'zonename',$zonename,1,0);
-		$out .= outstr($rrn,'rollrec_type',$type,$typeflag,0);
-		$out .= outstr($rrn,'zonefile',$zonefile,$zoneflag,0);
-		$out .= outstr($rrn,'keyrec',$keyrec,$keyrecflag,0);
+		$out  = outfld($rrn,'zonename',$zonename,1,0);
+		$out .= outfld($rrn,'rollrec_type',$type,$typeflag,0);
+		$out .= outfld($rrn,'zonefile',$zonefile,$zoneflag,0);
+		$out .= outfld($rrn,'keyrec',$keyrec,$keyrecflag,0);
 		if($phasesflag)
 		{
-			$out .= outstr($rrn,'phases',$phases,1,0);
+			$out .= outfld($rrn,'phases',$phases,1,0);
 		}
 		else
 		{
-			$out .= outstr($rrn,'kskphase',$kskphase,$kphaseflag,0);
-			$out .= outstr($rrn,'zskphase',$zskphase,$zphaseflag,0);
+			$out .= outfld($rrn,'kskphase',$kskphase,$kphaseflag,0);
+			$out .= outfld($rrn,'zskphase',$zskphase,$zphaseflag,0);
 		}
-		$out .= outstr($rrn,'administrator',$admin,$adminflag,0);
-		$out .= outstr($rrn,'directory',$direct,$dirflag,0);
-		$out .= outstr($rrn,'loglevel',$loglevel,$logflag,0);
-		$out .= outstr($rrn,'maxttl',$ttl,$ttlflag,0);
-		$out .= outstr($rrn,'display',$disp,$dispflag,0);
-		$out .= outstr($rrn,'phasestart',$phstart,$phstartflag,0);
-		$out .= outstr($rrn,'ksk_rolldate',$lastksk,$lastkskflag,0);
-		$out .= outstr($rrn,'zsk_rolldate',$lastzsk,$lastzskflag,0);
+		$out .= outfld($rrn,'administrator',$admin,$adminflag,0);
+		$out .= outfld($rrn,'directory',$direct,$dirflag,0);
+		$out .= outfld($rrn,'loglevel',$loglevel,$logflag,0);
+		$out .= outfld($rrn,'maxttl',$ttl,$ttlflag,0);
+		$out .= outfld($rrn,'display',$disp,$dispflag,0);
+		$out .= outfld($rrn,'phasestart',$phstart,$phstartflag,0);
+		$out .= outfld($rrn,'ksk_rolldate',$lastksk,$lastkskflag,0);
+		$out .= outfld($rrn,'zsk_rolldate',$lastzsk,$lastzskflag,0);
 
 		#
 		# Write the output.
@@ -646,12 +646,12 @@ sub showrollrecs
 }
 
 #----------------------------------------------------------------------
-# Routine:	outstr()
+# Routine:	outfld()
 #
 # Purpose:	Build an output line.  We'll handle a special case for the
 #		zonename line and add quotes around a few timestamp fields.
 #
-sub outstr
+sub outfld
 {
 	my $zone = shift;				# Zone name.
 	my $key  = shift;				# Hashkey.
