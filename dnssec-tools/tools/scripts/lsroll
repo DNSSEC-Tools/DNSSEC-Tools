@@ -318,6 +318,8 @@ sub doopts
 	$phstartflag	= 1 if($options{'phstart'});
 	$lastkskflag	= 1 if($options{'lastksk'});
 	$lastzskflag	= 1 if($options{'lastzsk'});
+	$kphaseflag	= 1 if($options{'kskphase'});
+	$zphaseflag	= 1 if($options{'zskphase'});
 
 	#
 	# Adjust the phase-related flags to ensure that The Right Thing
@@ -341,7 +343,7 @@ sub doopts
 		$kphaseflag = 0;
 		$zphaseflag = 0;
 	}
-	elsif($kphaseflag && $zphaseflag)
+	if($kphaseflag && $zphaseflag)
 	{
 		$kphaseflag = 0;
 		$zphaseflag = 0;
