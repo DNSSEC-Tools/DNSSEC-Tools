@@ -648,8 +648,12 @@ sub showrollrecs
 #----------------------------------------------------------------------
 # Routine:	outfld()
 #
-# Purpose:	Build an output line.  We'll handle a special case for the
-#		zonename line and add quotes around a few timestamp fields.
+# Purpose:	Build a field's piece of the output line.  It does the needed
+#		spacing and determination of whether that fields should be
+#		included in the line.
+#
+#		This routine only *builds* part of the output line.
+#		It does not write it to output.
 #
 sub outfld
 {
