@@ -616,27 +616,27 @@ sub showrollrecs
 		# Build the output string.
 		#
 		$prevkey = 'first-field';
-		$out  = outfld($rrn,'zonename',$zonename,1,0);
-		$out .= outfld($rrn,'rollrec_type',$type,$typeflag,0);
-		$out .= outfld($rrn,'zonefile',$zonefile,$zoneflag,0);
-		$out .= outfld($rrn,'keyrec',$keyrec,$keyrecflag,0);
+		$out  = outfld($rrn,'zonename',$zonename,1);
+		$out .= outfld($rrn,'rollrec_type',$type,$typeflag);
+		$out .= outfld($rrn,'zonefile',$zonefile,$zoneflag);
+		$out .= outfld($rrn,'keyrec',$keyrec,$keyrecflag);
 		if($phasesflag)
 		{
-			$out .= outfld($rrn,'phases',$phases,1,0);
+			$out .= outfld($rrn,'phases',$phases,1);
 		}
 		else
 		{
-			$out .= outfld($rrn,'kskphase',$kskphase,$kphaseflag,0);
-			$out .= outfld($rrn,'zskphase',$zskphase,$zphaseflag,0);
+			$out .= outfld($rrn,'kskphase',$kskphase,$kphaseflag);
+			$out .= outfld($rrn,'zskphase',$zskphase,$zphaseflag);
 		}
-		$out .= outfld($rrn,'administrator',$admin,$adminflag,0);
-		$out .= outfld($rrn,'directory',$direct,$dirflag,0);
-		$out .= outfld($rrn,'loglevel',$loglevel,$logflag,0);
-		$out .= outfld($rrn,'maxttl',$ttl,$ttlflag,0);
-		$out .= outfld($rrn,'display',$disp,$dispflag,0);
-		$out .= outfld($rrn,'phasestart',$phstart,$phstartflag,0);
-		$out .= outfld($rrn,'ksk_rolldate',$lastksk,$lastkskflag,0);
-		$out .= outfld($rrn,'zsk_rolldate',$lastzsk,$lastzskflag,0);
+		$out .= outfld($rrn,'administrator',$admin,$adminflag);
+		$out .= outfld($rrn,'directory',$direct,$dirflag);
+		$out .= outfld($rrn,'loglevel',$loglevel,$logflag);
+		$out .= outfld($rrn,'maxttl',$ttl,$ttlflag);
+		$out .= outfld($rrn,'display',$disp,$dispflag);
+		$out .= outfld($rrn,'phasestart',$phstart,$phstartflag);
+		$out .= outfld($rrn,'ksk_rolldate',$lastksk,$lastkskflag);
+		$out .= outfld($rrn,'zsk_rolldate',$lastzsk,$lastzskflag);
 
 		#
 		# Write the output.
@@ -661,7 +661,6 @@ sub outfld
 	my $key  = shift;				# Hashkey.
 	my $val	 = shift;				# Value to print.
 	my $flag = shift;				# Output flag.
-	my $usequotes = shift;				# Quotes flag.
 
 	my $ret;					# Return string.
 	my $mlen;					# Maximum field length.
@@ -707,14 +706,6 @@ sub outfld
 		# Build the output line.
 		#
 		$ret = $spaces . $val;
-
-		#
-		# For some fields we'll add quotes around the value.
-		#
-		if($usequotes && ($zone ne $HEADER_RRN))
-		{
-			$ret =~ s/$spaces$val/$spaces\"$val\"/;
-		}
 	}
 
 	#
