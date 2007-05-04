@@ -45,9 +45,12 @@ my $display	= 0;
 my $nodisplay	= 0;
 my $admin	= 0;
 my $directory	= 0;
+my $loglvl	= -1;
 my $kskphase	= -1;
 my $zskphase	= -1;
-my $loglvl	= -1;
+my $deladm	= 0;
+my $deldir	= 0;
+my $dellog	= 0;
 
 my %options = ();			# Filled option array.
 my @opts =
@@ -64,6 +67,9 @@ my @opts =
 	"loglevel=s",			# New logging level value.
 	"display",			# Turn on display flag.
 	"nodisplay",			# Turn off display flag.
+	"del-admin",			# Delete the administrator line.
+	"del-directory",		# Delete the directory line.
+	"del-loglevel",			# Delete the logging level line.
 
 	"check",			# Run rollchk after edits.
 	"verbose",			# Give lotsa output.
@@ -114,6 +120,8 @@ sub doopts
 {
 	my $argc = @ARGV;		# Number of command line arguments.
 
+	usage()   if($argc == 0);
+
 	GetOptions(\%options,@opts);
 
 	#
@@ -131,6 +139,9 @@ sub doopts
 	$kskphase  = $options{'kskphase'}   if(defined($options{'kskphase'}));
 	$zskphase  = $options{'zskphase'}   if(defined($options{'zskphase'}));
 	$loglvl	   = $options{'loglevel'}   if(defined($options{'loglevel'}));
+	$deladm	   = $options{'del-admin'};
+	$deldir	   = $options{'del-directory'};
+	$dellog	   = $options{'del-loglevel'};
 
 	$check	   = $options{'check'};
 	$verbose   = $options{'verbose'};
@@ -206,10 +217,13 @@ sub doopts
 	   ($roll      == 0)	&&
 	   ($skip      == 0)	&&
 	   ($display   == 0)	&&
+	   ($loglvl    == -1)	&&
 	   ($nodisplay == 0)	&&
 	   ($kskphase  == -1)	&&
 	   ($zskphase  == -1)	&&
-	   ($loglvl    == -1))
+	   ($deladm    == 0)	&&
+	   ($deldir    == 0)	&&
+	   ($dellog    == 0))
 	{
 		print STDERR "you must specify something to be changed\n";
 		exit(4);
@@ -306,6 +320,14 @@ sub editrrf
 		changer($kskphase,$name,'kskphase',$kskphase)if($kskphase > -1);
 		changer($zskphase,$name,'zskphase',$zskphase)if($zskphase > -1);
 		changer($loglvl,$name,'loglevel',$loglvl)    if($loglvl > -1);
+
+		#
+		# Delete some fields.
+		#
+		deleter($deladm,$name,'administrator');
+		deleter($deldir,$name,'directory');
+		deleter($dellog,$name,'loglevel');
+
 	}
 
 	#
@@ -378,6 +400,45 @@ sub changer
 }
 
 #----------------------------------------------------------------------
+# Routine:	deleter()
+#
+# Purpose:	Delete a rollrec field and maybe give verbose messages.
+#
+sub deleter
+{
+	my $flag  = shift;				# Flag value.
+	my $name  = shift;				# Zone name.
+	my $field = shift;				# Field to delete.
+
+	my $val;					# Value of field.
+
+	#
+	# Do nothing if this field shouldn't be deleted.
+	#
+	return if(!$flag);
+
+	#
+	# Ensure the field exists for the rollrec.
+	#
+	$val = rollrec_recval($name,$field);
+	if(!defined($val))
+	{
+		print "$name does not have a $field field\n" if(!$doall);
+		return;
+	}
+
+	#
+	# If the verbose flag was given, we'll show the current value.
+	#
+	print "$name:  deleting $field \"$val\"\n" if($verbose);
+
+	#
+	# Delete the rollrec field.
+	#
+	rollrec_delfield($name,$field);
+}
+
+#----------------------------------------------------------------------
 # Routine:	version()
 #
 # Purpose:	Print the version number(s) and exit.
@@ -410,6 +471,9 @@ sub usage
 	print STDERR "		-loglevel logging-level\n";
 	print STDERR "		-display\n";
 	print STDERR "		-nodisplay\n";
+	print STDERR "		-del-admin\n";
+	print STDERR "		-del-directory\n";
+	print STDERR "		-del-loglevel\n";
 
 	print STDERR "		-check\n";
 	print STDERR "		-verbose\n";
@@ -468,6 +532,18 @@ I<keyrec-file>.
 
 The zone administrator's email address is set to I<addr>.
 
+=item -del-admin
+
+The I<administrator> line is deleted.
+
+=item -del-directory
+
+The I<directory> line is deleted.
+
+=item -del-loglevel
+
+The I<loglevel> line is deleted.
+
 =item -directory dir
 
 The directory to hold the zone's files is set to I<dir>.
@@ -525,11 +601,6 @@ Display the current B<rollset> and DNSSEC-Tools versions.
 Display a usage message.
 
 =back
-
-=head1 BUGS
-
-There is not a way to delete fields from I<rollrec> records.  (Fields such as
-the administrator or directory.)  This will be fixed.
 
 =head1 COPYRIGHT
 
