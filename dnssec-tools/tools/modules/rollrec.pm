@@ -69,6 +69,7 @@ our @EXPORT = qw(
 			rollrec_close
 			rollrec_default
 			rollrec_del
+			rollrec_delfield
 			rollrec_discard
 			rollrec_dump_array
 			rollrec_dump_hash
@@ -485,7 +486,7 @@ sub rollrec_setval
 	$rollrecs{$name}{$field} = $val;
 
 	#
-	# Find the appropriate entry to modify in @rollreclines.  If the
+	# Find the appropriate rollrec to modify in @rollreclines.  If the
 	# given field isn't set in $name's rollrec, we'll insert this as
 	# a new field at the end of that rollrec.
 	#
@@ -532,8 +533,7 @@ sub rollrec_setval
 		$lval = $2;
 
 		#
-		# If we hit the beginning of the next rollrec without
-		# finding the field, drop out and insert it.
+		# Skip lines that don't match the expected field/value pattern.
 		#
 		next if($lkw eq "");
 
@@ -605,6 +605,131 @@ sub rollrec_setval
 	#
 	$modified = 1;
 	return(0);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	rollrec_delfield()
+#
+# Purpose:	Delete a name/subfield pair.  The value is deleted from
+#		both %rollrecs and @rollreclines.  The $modified file-
+#		modified flag is updated, along with the length $rollreclen.
+#
+sub rollrec_delfield
+{
+	my $name   = shift;		# Name of rollrec we're modifying.
+	my $field  = shift;		# Rollrec's subfield to be deleted.
+
+	my $found = 0;			# Rollrec-found flag.
+	my $fldind;			# Loop index.
+	my $rrind;			# Loop index for finding rollrec.
+	my $lastfld = 0;		# Last found field in @rollreclines.
+
+# print "rollrec_delfield:  down in\n";
+
+	#
+	# Return if a rollrec of the specified name doesn't exist.
+	#
+	return(0) if(!exists($rollrecs{$name}));
+
+	#
+	# Return if a rollrec of the specified name doesn't have the
+	# specified field.
+	#
+	return(0) if(!exists($rollrecs{$name}{$field}));
+
+	#
+	# Delete the field from %rollrecs.
+	#
+	delete($rollrecs{$name}{$field});
+
+	#
+	# Find the appropriate rollrec to modify in @rollreclines.
+	#
+	for($rrind=0;$rrind<$rollreclen;$rrind++)
+	{
+		my $line = $rollreclines[$rrind];	# Line in rollrec file.
+		my $rrname;				# Rollrec name.
+
+		#
+		# Dig out the line's keyword and value.
+		#
+		$line =~ /^\s*(roll|skip)\s+"([a-zA-Z0-9\/\-+_.,: \t]+)"/i;
+		$rrname = $2;
+
+		#
+		# If this line has the rollrec's name and is the start of a
+		# new rollrec, then we've found our man.
+		#
+		# IMPORTANT NOTE:  We will *always* find the rollrec we're
+		#		   looking for.  The exists() check above
+		#		   ensures that there will be a rollrec with
+		#		   the name we want.
+		#
+		last if(lc($rrname) eq lc($name));
+	}
+
+	#
+	# Find the specified field's entry in the rollrec's lines in
+	# @rollreclines.  We'll skip over lines that don't have a keyword
+	# and dquotes-enclosed value.
+	#
+	for($fldind=$rrind+1;$fldind<$rollreclen;$fldind++)
+	{
+		my $line = $rollreclines[$fldind];	# Line in rollrec file.
+		my $lkw;				# Line's keyword.
+		my $lval;				# Line's value.
+
+		#
+		# Get the line's keyword and value.
+		#
+		$line =~ /^\s*([a-zA-Z_]+)\s+"([a-zA-Z0-9\/\-+_.,: \t]*)"/;
+		$lkw = $1;
+		$lval = $2;
+
+		#
+		# Go to the next line if this one doesn't match the
+		# field/value pattern.
+		#
+		next if($lkw eq "");
+
+		#
+		# If we hit the beginning of the next rollrec without
+		# finding the field, drop out.
+		#
+		last if((lc($lkw) eq "roll") || (lc($lkw) eq "skip"));
+
+		#
+		# Save the index of the last field we've looked at that
+		# belongs to the rollrec.
+		#
+		$lastfld = $fldind;
+
+		#
+		# If we found the field, set the found flag, drop out and
+		# modify it.
+		#
+		if(lc($lkw) eq lc($field))
+		{
+			$found = 1;
+			last;
+		}
+	}
+
+	#
+	# If we found the entry, we'll delete it.
+	#
+	if($found)
+	{
+		splice @rollreclines, $fldind, 1;
+	}
+
+	#
+	# Tell the world (or at least the module) that the file has
+	# been modified.
+	#
+	$modified = 1;
+	return(1);
 }
 
 #--------------------------------------------------------------------------
@@ -1069,6 +1194,8 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
 
   rollrec_setval("example.com","zonefile","db.example.com");
 
+  rollrec_delfield("example.com","directory");
+
   rollrec_settime("example.com");
   rollrec_settime("example.com",0);
 
@@ -1291,6 +1418,18 @@ named I<rollrec> does not exist, it will be created as a "roll"-type
 I<rollrec>.
 I<field> is the I<rollrec> field which will be modified.
 I<value> is the new value for the field.
+
+=item I<rollrec_delfield(rollrec_name,field)>
+
+Deletes the given field from the specified I<rollrec>.  The file is
+B<not> written after updating the value, but the internal file-modified flag
+is set.  The value is saved in both I<%rollrecs> and in I<@rollreclines>.
+
+Return values:
+
+    0 - failure (rollrec not found or rollrec does not
+	contain the field)
+    1 - success
 
 =item I<rollrec_settime(rollrec_name,val)>
 
