@@ -128,7 +128,7 @@ my %keys_to_verify;
 my %newkeys;
 load_newkeys();
 
-my %removekeys;
+my %remkeys;
 
 my %sleeptimes;
 my %active_refresh_times;
@@ -136,8 +136,8 @@ my %active_refresh_times;
 my %zone_configfile_map;
 my $once;
 
-# my $revoke = 1;
-my $revoke = 0;
+my $revoke = 1;
+# my $revoke = 0;
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
@@ -299,8 +299,10 @@ sub checkkeys {
                 if ($nonmatch) {
                 # may be a new key, remember it.
                 # check if this key is already in %newkeys
+
                 # also need to find any keys in %newkeys which do
                 # NOT appear in a subsequent RRSET
+ 
                     my $notnewkey = 0;
                     for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
                         if ($newkeys{$d}[$i]{key} eq $key &&
@@ -363,15 +365,29 @@ sub checkkeys {
                 # the keys_to_verify structure so we know it is not
                 # "removed"
 
-                    for (my $i = 0; $i <= $#{$keystorage{$d}}; $i++) {
+                    for (my $i = 0; $i <= $#{$keys_to_verify{$d}}; $i++) {
                         if ($keys_to_verify{$d}[$i]{key} eq $key &&
                             $keys_to_verify{$d}[$i]{flags} eq $keyrec->flags &&
                             $keys_to_verify{$d}[$i]{protocol} eq $keyrec->protocol &&
                             $keys_to_verify{$d}[$i]{algorithm} eq $keyrec->algorithm ) {
-                            delete $keys_to_verify{$d}[$i];
+                            splice @{$keys_to_verify{$d}},$i,1;
                         }
                     }
+                    # if it appears in the %remkeys struct, since it has
+                    # now reappeared, remove it from remkeys
+                    if (keys %remkeys) {
+                        for (my $i = 0; $i <= $#{$remkeys{$d}}; $i++) {
+                            if ($remkeys{$d}[$i]{key} eq $key &&
+                                $remkeys{$d}[$i]{flags} eq $keyrec->flags &&
+                                $remkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
+                                $remkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ){
+                                splice @{$remkeys{$d}},$i,1;
+                            }
+                        }
+                    }
+
                 }
+
             }
             
 # only want to remove pending keys which do not appear in this
@@ -393,7 +409,7 @@ sub checkkeys {
                             $pendingnewkeys{$d}[$k]{protocol} &&
                             $newkeys{$d}[$j]{algorithm} eq
                             $pendingnewkeys{$d}[$k]{algorithm} ) {
-                            delete $newkeys{$d}[$j];
+                            splice @{$newkeys{$d}},$j,1;
                             # whenever newkeys is modified, write it out
                             open (FILE, "> $newkeyfile")
                                 or warn "can't open newkeys: $!";
@@ -410,6 +426,9 @@ sub checkkeys {
             print "query failed for domain " . $d . "\n";
         }
     }
+
+# all domains have been queried, and queries have been processed
+
     if (%newkeys) {
         my @newkeydomains;
 
@@ -447,7 +466,7 @@ sub checkkeys {
                                     };
                 push (@{$keystorage{$d}}, $newstorageobj);
 
-                delete $newkeys{$d}[$i]; 
+                splice @{$newkeys{$d}},$i,1; 
                 # whenever newkeys is modified, write it out
                 open (FILE, "> $newkeyfile") 
                     or warn "can't open newkeys: $!";
@@ -462,9 +481,57 @@ sub checkkeys {
         
     }
 
-# set remove holddown times (30 days) for any configured trust anchor
-# not seen in this query
-    
+    if (keys %remkeys) {
+    # see if any remkeys have reached their holdtimes
+    # if so, remove them from the config file
+        my @remkeydomains;
+        my $now = localtime();
+        my $nowsecs = str2time($now);
+
+        foreach my $d (keys %remkeys) {
+            for (my $i = 0; $i <= $#{$remkeys{$d}}; $i++) {
+                if ($nowsecs >= $remkeys{$d}[$i]{holdtime}) {
+                # mark this for deletion
+# can't I just do the delete here?
+                    if ($zone_configfile_map{$d} eq $ncfile) {
+                        remove_ta_namedconf($d, $remkeys{$d}[$i]{key},
+                                            $remkeys{$d}[$i]{flags},
+                                            $remkeys{$d}[$i]{protocol},
+                                            $remkeys{$d}[$i]{algorithm});
+                    }
+                    if ($zone_configfile_map{$d} eq $dvfile) {
+                        remove_ta_dnsvalconf($d, $remkeys{$d}[$i]{key},
+                                            $remkeys{$d}[$i]{flags},
+                                            $remkeys{$d}[$i]{protocol},
+                                            $remkeys{$d}[$i]{algorithm});
+                    }
+#                    push @remkeydomains, $d;
+                }
+            }
+        }
+#        foreach my $d (@remkeydomains) {
+            # now that this key has been removed from the config file,
+            # delete it from remkeys
+#        }
+    }
+
+    foreach my $d (keys %keys_to_verify) {
+    # any domains/keys still in %keys_to_verify did not appear
+    # in a query, but are configured trust anchors. 
+    # Set the remove holddown time (30 days) for these keys
+    # and add to remkeys for processing on next go
+        my $remove_holddown_time = 2592000;
+        for (my $i = 0; $i <= $#{$keys_to_verify{$d}}; $i++) {
+          # TODO only add this if it's not already there....
+            my $remkeyobj = { flags => $keys_to_verify{$d}[$i]{flags},
+                              protocol => $keys_to_verify{$d}[$i]{protocol},
+                              algorithm => $keys_to_verify{$d}[$i]{algorithm},
+                              key => $keys_to_verify{$d}[$i]{key},
+                              holdtime => $remove_holddown_time,
+                            };
+            push (@{$remkeys{$d}},$remkeyobj);
+        }
+    }
 
     $initrun = 0;
 
@@ -555,6 +622,55 @@ sub add_ta_dnsvalconf  {
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
 }
 
+sub remove_ta_dnsvalconf {
+    my ($domain, $k, $f, $p, $a) = @_;
+
+    my $pat = "trust-anchor";
+
+    open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
+    open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
+    $/ = ";";
+    while (<CONF>) {
+        s/\s;\s*$//;
+        if (s/^\s*(\S*)\s*$pat\s*//) {
+            print TMP $1 . " $pat\n\n";
+            while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
+                my ($d, $val) = ($1, $2);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $val =~ s/[\n\r]//g;
+                if ($d eq $domain) {
+                    my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
+                    $key =~ s/\s+//g;
+                    $k =~ s/[\n\r]//g;
+                    if ($k eq $key &&
+                        $f eq $flags &&
+                        $p eq $protocol &&
+                        $a eq $algorithm) {
+# its a match, comment it out
+                        print TMP "# The following key has been removed.\n";
+                        my $revkeyrec = $d . ". " . $val;
+                        print TMP "# " . $revkeyrec . "\n\n";
+                    }
+
+                } else {
+                    # add the trailing dot when printing domainname
+                    print TMP $d . ". " . $val . "\n\n";
+                }
+            }
+            print TMP "\n;\n";
+        } else {
+            print TMP $_;
+        }
+    }
+    close (CONF);
+    close (TMP);
+# rename TMP to $dvfile
+    my $origname = $dvfile . ".orig";
+    rename ($dvfile,$origname);
+    rename ("/tmp/dnsval.conf.tmp",$dvfile);
+}
+
 sub revoke_ta_dnsvalconf  {
     my ($domain,$keyrec) = @_;
 
@@ -587,9 +703,10 @@ sub revoke_ta_dnsvalconf  {
                         print TMP "# " . $revkeyrec . "\n\n";
                     }
 
+                } else {
+                    # add the trailing dot when printing domainname
+                    print TMP $d . ". " . $val . "\n\n";
                 }
-                # add the trailing dot when printing domainname
-                print TMP $d . ". " . $val . "\n\n";
             }
             print TMP "\n;\n";
         } else {
@@ -641,36 +758,6 @@ sub revoke_ta_namedconf  {
                 # just print it, it's not the key we're looking for
                     print TMP $_;
                 }
-            }
-        } elsif ($trustsection) {
-            if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
-                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
-                $k =~ s/\s+//g;
-                $k =~ s/\"//g;
-                if ($d eq $domain) {
-                    my $keyin = $keyrec->{key};
-                    $keyin =~ s/[\n\r]//g;
-                    if ($keyin eq $k &&
-                        $keyrec->{flags} eq $f &&
-                        $keyrec->{protocol} eq $p &&
-                        $keyrec->{algorithm} eq $a) {
-# its a match, comment it out
-                            print TMP $space; # attempting to preserve spacing
-                            print TMP "# The following key has been revoked.\n";
-                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
-                            print TMP "# " . $revkeyrec;
-                    } else { 
-                        print TMP $_;
-                    }
-                } else {
-                    print TMP $_;
-                }
-            }
-            if (/\};/) {
-                $trustsection = 0;
-                print TMP $_;
             }
         } else {
             print TMP $_;
