@@ -136,8 +136,8 @@ my %active_refresh_times;
 my %zone_configfile_map;
 my $once;
 
-my $revoke = 1;
-# my $revoke = 0;
+# my $revoke = 1;
+my $revoke = 0;
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
@@ -304,22 +304,26 @@ sub checkkeys {
                 # NOT appear in a subsequent RRSET
  
                     my $notnewkey = 0;
-                    for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
-                        if ($newkeys{$d}[$i]{key} eq $key &&
-                            $newkeys{$d}[$i]{flags} eq $keyrec->flags &&
-                            $newkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
-                            $newkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) 
-                        {
-                            $notnewkey = 1;
-                            for (my $i = 0; $i <= $#{$pendingnewkeys{$d}}; $i++) {
-                                if ($pendingnewkeys{$d}[$i]{key} eq $key &&
-                                    $pendingnewkeys{$d}[$i]{flags} eq $keyrec->flags &&
-                                    $pendingnewkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
-                                    $pendingnewkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) {
-                                    $pendingnewkeys{$d}[$i]{found} = 1;
+                    if (keys %newkeys) {
+                        for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
+                            if ($newkeys{$d}[$i]{key} eq $key &&
+                                $newkeys{$d}[$i]{flags} eq $keyrec->flags &&
+                                $newkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
+                                $newkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) 
+                            {
+                                $notnewkey = 1;
+                                if (keys %pendingnewkeys) {
+                                    for (my $i = 0; $i <= $#{$pendingnewkeys{$d}}; $i++) {
+                                        if ($pendingnewkeys{$d}[$i]{key} eq $key &&
+                                            $pendingnewkeys{$d}[$i]{flags} eq $keyrec->flags &&
+                                            $pendingnewkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
+                                            $pendingnewkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) {
+                                            $pendingnewkeys{$d}[$i]{found} = 1;
+                                        }
+                                    }
                                 }
-                            }
                             
+                            }
                         }
                     }
                     if (!$notnewkey) {
@@ -356,7 +360,7 @@ sub checkkeys {
 # TODO -- have a flag so revoked keys can alternatively be completely
 # removed from the conf file
 
-# TODO - need to verify that ALL keys in %keystorage were matched
+# verify that ALL keys in %keystorage were matched
 # if a known key disappears, set its remove_holddown timer for
 # removal if it doesn't reappear in time
                 } else {
@@ -484,7 +488,6 @@ sub checkkeys {
     if (keys %remkeys) {
     # see if any remkeys have reached their holdtimes
     # if so, remove them from the config file
-        my @remkeydomains;
         my $now = localtime();
         my $nowsecs = str2time($now);
 
@@ -492,7 +495,6 @@ sub checkkeys {
             for (my $i = 0; $i <= $#{$remkeys{$d}}; $i++) {
                 if ($nowsecs >= $remkeys{$d}[$i]{holdtime}) {
                 # mark this for deletion
-# can't I just do the delete here?
                     if ($zone_configfile_map{$d} eq $ncfile) {
                         remove_ta_namedconf($d, $remkeys{$d}[$i]{key},
                                             $remkeys{$d}[$i]{flags},
@@ -505,14 +507,9 @@ sub checkkeys {
                                             $remkeys{$d}[$i]{protocol},
                                             $remkeys{$d}[$i]{algorithm});
                     }
-#                    push @remkeydomains, $d;
                 }
             }
         }
-#        foreach my $d (@remkeydomains) {
-            # now that this key has been removed from the config file,
-            # delete it from remkeys
-#        }
     }
 
     foreach my $d (keys %keys_to_verify) {
@@ -520,7 +517,7 @@ sub checkkeys {
     # in a query, but are configured trust anchors. 
     # Set the remove holddown time (30 days) for these keys
     # and add to remkeys for processing on next go
-        my $remove_holddown_time = 2592000;
+        my $remove_holddown_time = compute_remove_holddown();
         for (my $i = 0; $i <= $#{$keys_to_verify{$d}}; $i++) {
           # TODO only add this if it's not already there....
             my $remkeyobj = { flags => $keys_to_verify{$d}[$i]{flags},
@@ -649,8 +646,11 @@ sub remove_ta_dnsvalconf {
                         $a eq $algorithm) {
 # its a match, comment it out
                         print TMP "# The following key has been removed.\n";
-                        my $revkeyrec = $d . ". " . $val;
-                        print TMP "# " . $revkeyrec . "\n\n";
+                        my $remkeyrec = $d . ". " . $val;
+                        print TMP "# " . $remkeyrec . "\n\n";
+                    } else {
+                        # add the trailing dot when printing domainname
+                        print TMP $d . ". " . $val . "\n\n";
                     }
 
                 } else {
@@ -950,6 +950,18 @@ sub compute_add_holddown {
     } else {
         $holddown = $nowsecs + $default;
     }
+    return $holddown;
+}
+
+
+sub compute_remove_holddown {
+    my $holddown;
+    my $default = 2592000;
+    my $now = localtime();
+    my $nowsecs = str2time($now);
+
+# return secs since the epoch as the time to release this holddown
+    $holddown = $nowsecs + $default;
     return $holddown;
 }
 
