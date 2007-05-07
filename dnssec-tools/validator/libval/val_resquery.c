@@ -1196,13 +1196,12 @@ digest_response(val_context_t * context,
 
     if (rrs_to_go == 0 /*&& header->rcode == ns_r_nxdomain */ ) {
         /*
-         * We got an response with no records and the NXDOMAIN code
-         * in the RCODE section of the header.
-         * 
+         * We got a response with no records 
          * Create a dummy answer record to handle this.  
          */
-        return prepare_empty_nxdomain(&di_response->di_answers, query_name_n, query_type_h,
-                                      query_class_h, hptr);
+        matched_q->qc_state = Q_ANSWERED;
+        return prepare_empty_nxdomain(&di_response->di_proofs, respondent_server,
+                                      query_name_n, query_type_h, query_class_h, hptr);
     }
 
     /*
