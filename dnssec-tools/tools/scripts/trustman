@@ -779,7 +779,10 @@ sub get_domains_keys {
 # check those domain. Otherwise, check all domains found in config files.
     read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map) if ($ncfile);
     read_dnsval_file(\%keystorage, $dvfile, \%zone_configfile_map) if ($dvfile);
-    %keys_to_verify = %keystorage;
+    foreach my $k (keys %keystorage) { 
+        @{$keys_to_verify{$k}} = @{$keystorage{$k}};
+    } 
+#    %keys_to_verify = %keystorage;
 
 # if @domains exists now, we used only domains from the cmd line,
 # so we're done. if not, we got domains from config files, and
