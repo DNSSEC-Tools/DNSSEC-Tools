@@ -46,8 +46,6 @@ my $nodisplay	= 0;
 my $admin	= 0;
 my $directory	= 0;
 my $loglvl	= -1;
-my $kskphase	= -1;
-my $zskphase	= -1;
 my $deladm	= 0;
 my $deldir	= 0;
 my $dellog	= 0;
@@ -60,8 +58,6 @@ my @opts =
 	"skip",				# Make record a skip record.
 	"file=s",			# New zonefile value.
 	"keyrec=s",			# New keyrec value.
-	"kskphase=i",			# New ZSK-phase value.
-	"zskphase=i",			# New ZSK-phase value.
 	"admin=s",			# New administrator email address.
 	"directory=s",			# New directory for zone's files.
 	"loglevel=s",			# New logging level value.
@@ -136,8 +132,6 @@ sub doopts
 	$skip	   = $options{'skip'};
 	$display   = $options{'display'};
 	$nodisplay = $options{'nodisplay'};
-	$kskphase  = $options{'kskphase'}   if(defined($options{'kskphase'}));
-	$zskphase  = $options{'zskphase'}   if(defined($options{'zskphase'}));
 	$loglvl	   = $options{'loglevel'}   if(defined($options{'loglevel'}));
 	$deladm	   = $options{'del-admin'};
 	$deldir	   = $options{'del-directory'};
@@ -165,24 +159,6 @@ sub doopts
 	{
 		print STDERR "-display and -nodisplay are mutually exclusive\n";
 		exit(1);
-	}
-
-	#
-	# Ensure the KSK phase is valid.
-	#
-	if(defined($options{'kskphase'}) && (chkphase($kskphase,7) == 0))
-	{
-		print STDERR "kskphase $kskphase invalid; kskphase must be an integer between 0 and 7, inclusive\n";
-		exit(2);
-	}
-
-	#
-	# Ensure the ZSK phase is valid.
-	#
-	if(defined($options{'zskphase'}) && (chkphase($zskphase,4) == 0))
-	{
-		print STDERR "zskphase $zskphase invalid; zskphase must be an integer between 0 and 4, inclusive\n";
-		exit(2);
 	}
 
 	#
@@ -219,8 +195,6 @@ sub doopts
 	   ($display   == 0)	&&
 	   ($loglvl    == -1)	&&
 	   ($nodisplay == 0)	&&
-	   ($kskphase  == -1)	&&
-	   ($zskphase  == -1)	&&
 	   ($deladm    == 0)	&&
 	   ($deldir    == 0)	&&
 	   ($dellog    == 0))
@@ -317,8 +291,6 @@ sub editrrf
 		changer($directory,$name,'directory',$directory);
 		changer($display,$name,'display',1);
 		changer($nodisplay,$name,'display',0);
-		changer($kskphase,$name,'kskphase',$kskphase)if($kskphase > -1);
-		changer($zskphase,$name,'zskphase',$zskphase)if($zskphase > -1);
 		changer($loglvl,$name,'loglevel',$loglvl)    if($loglvl > -1);
 
 		#
@@ -465,7 +437,6 @@ sub usage
 	print STDERR "		-skip\n";
 	print STDERR "		-file zone-file\n";
 	print STDERR "		-keyrec keyrec-file\n";
-	print STDERR "		-zskphase ZSK-phase-number\n";
 	print STDERR "		-admin admin-email\n";
 	print STDERR "		-directory zone-directory\n";
 	print STDERR "		-loglevel logging-level\n";
@@ -547,16 +518,6 @@ The I<loglevel> line is deleted.
 =item -directory dir
 
 The directory to hold the zone's files is set to I<dir>.
-
-=item -kskphase phase-number
-
-The KSK phase number of the selected I<rollrec> records is modified to be
-I<phase-number>.  The I<phase-number> may only be 0, 1, 2, 3, 4, 5, 6, or 7.
-
-=item -zskphase phase-number
-
-The ZSK phase number of the selected I<rollrec> records is modified to be
-I<phase-number>.  The I<phase-number> may only be 0, 1, 2, 3, or 4.
 
 =item -loglevel logging-level
 
