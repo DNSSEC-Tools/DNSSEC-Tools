@@ -101,12 +101,9 @@ extern          "C" {
 #define SR_ANS_STRAIGHT          1
 #define SR_ANS_CNAME             2
 #define SR_ANS_DNAME             3
-#define SR_ANS_NACK_NSEC         4
-#define SR_ANS_NACK_SOA          5
-#define SR_ANS_BARE_RRSIG        6
-#ifdef LIBVAL_NSEC3
-#define SR_ANS_NACK_NSEC3        7
-#endif
+#define SR_ANS_NACK              4
+#define SR_ANS_BARE_RRSIG        5
+
 
     /*
      * Policies associated with Keys 
@@ -585,6 +582,7 @@ extern          "C" {
 
     const char     *p_ac_status(val_astatus_t valerrno);
     const char     *p_val_status(val_status_t err);
+    const char     *p_val_err(int err);
 
     /*
      *******************************************
