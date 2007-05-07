@@ -985,7 +985,7 @@ set_ans_kind(u_int8_t * qname_n,
     }
 
     /*
-     * Answer is a NACK_NSEC if... 
+     * Answer is a NACK if... 
      */
     if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
         if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
@@ -995,13 +995,13 @@ set_ans_kind(u_int8_t * qname_n,
              */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
-            the_set->rrs_ans_kind = SR_ANS_NACK_NSEC;
+            the_set->rrs_ans_kind = SR_ANS_NACK;
 
         return VAL_NO_ERROR;
     }
 #ifdef LIBVAL_NSEC3
     /*
-     * Answer is a NACK_NSEC3 if... 
+     * Answer is also a NACK if... 
      */
     if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
         if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
@@ -1011,14 +1011,14 @@ set_ans_kind(u_int8_t * qname_n,
              */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
-            the_set->rrs_ans_kind = SR_ANS_NACK_NSEC3;
+            the_set->rrs_ans_kind = SR_ANS_NACK;
 
         return VAL_NO_ERROR;
     }
 #endif
 
     /*
-     * Answer is a NACK_SOA if... 
+     * Answer is a also a NACK if... 
      */
 
     if (the_set->rrs.val_rrset_type_h == ns_t_soa) {
@@ -1029,7 +1029,7 @@ set_ans_kind(u_int8_t * qname_n,
              */
             the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
         else
-            the_set->rrs_ans_kind = SR_ANS_NACK_SOA;
+            the_set->rrs_ans_kind = SR_ANS_NACK;
 
         return VAL_NO_ERROR;
     }
@@ -1075,10 +1075,16 @@ set_ans_kind(u_int8_t * qname_n,
     if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) == 0 &&
         (q_type_h == ns_t_any
          || q_type_h == the_set->rrs.val_rrset_type_h)) {
-        /*
-         * We asked for it 
-         */
-        the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
+
+        if (the_set->rrs.val_rrset_data == NULL) {
+            /* No data response */
+            the_set->rrs_ans_kind = SR_ANS_NACK;
+        } else {
+            /*
+             * We asked for it 
+             */
+            the_set->rrs_ans_kind = SR_ANS_STRAIGHT;
+        }
         return VAL_NO_ERROR;
     }
 
@@ -1124,7 +1130,6 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     int             name_present;
     int             type_match;
     int             class_match;
-    int             data_present;
 
     if ((NULL == the_set) || (NULL == q_names_n) || (NULL == status)) {
         *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
@@ -1143,26 +1148,11 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     class_match = (the_set->rrs.val_rrset_class_h == q_class_h)
         || (q_class_h == ns_c_any);
 
-    if (q_type_h != ns_t_rrsig) {
-        data_present = the_set->rrs.val_rrset_data != NULL;
-    } else {
-        data_present = the_set->rrs.val_rrset_sig != NULL;
-    }
-
-    if (!data_present) {
-        *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
-        return TRUE;
-    }
-
     if (!class_match ||
         (!type_match && the_set->rrs_ans_kind == SR_ANS_STRAIGHT) ||
         (type_match && 
             the_set->rrs_ans_kind != SR_ANS_STRAIGHT && 
-            the_set->rrs_ans_kind != SR_ANS_NACK_SOA &&
-#ifdef LIBVAL_NSEC3
-            the_set->rrs_ans_kind != SR_ANS_NACK_NSEC3 && 
-#endif
-            the_set->rrs_ans_kind != SR_ANS_NACK_NSEC) ||
+            the_set->rrs_ans_kind != SR_ANS_NACK) || 
         (name_present != TOP_OF_QNAMES && type_match &&
          the_set->rrs_ans_kind == SR_ANS_STRAIGHT) ||
         (name_present != MID_OF_QNAMES && !type_match &&
@@ -1170,11 +1160,7 @@ fails_to_answer_query(struct qname_chain *q_names_n,
         (name_present != MID_OF_QNAMES && !type_match &&
          the_set->rrs_ans_kind == SR_ANS_DNAME) ||
         (name_present == MID_OF_QNAMES && !type_match &&
-         (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC ||
-#ifdef LIBVAL_NSEC3
-          the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3 ||
-#endif
-          the_set->rrs_ans_kind == SR_ANS_NACK_SOA))
+         (the_set->rrs_ans_kind == SR_ANS_NACK))
         ) {
 
         if (the_set->rrs_ans_kind == SR_ANS_CNAME &&
@@ -1186,7 +1172,6 @@ fails_to_answer_query(struct qname_chain *q_names_n,
             *status = VAL_AC_IGNORE_VALIDATION;
             return FALSE;
         }
-
         
         *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
         return TRUE;
@@ -1299,11 +1284,6 @@ build_pending_query(val_context_t *context,
         return VAL_NO_ERROR;
     }
 
-    if (as->_as.ac_data->rrs.val_rrset_data == NULL) {
-        as->val_ac_status = VAL_AC_DATA_MISSING;
-        return VAL_NO_ERROR;
-    }
-
     /*
      * Check if this zone is locally trusted/untrusted 
      */
@@ -1316,6 +1296,11 @@ build_pending_query(val_context_t *context,
 
     if (tzonestatus != VAL_AC_WAIT_FOR_TRUST) {
         as->val_ac_status = tzonestatus;
+        return VAL_NO_ERROR;
+    }
+
+    if (as->_as.ac_data->rrs.val_rrset_data == NULL) {
+        as->val_ac_status = VAL_AC_DATA_MISSING;
         return VAL_NO_ERROR;
     }
 
@@ -1484,35 +1469,11 @@ try_build_chain(val_context_t * context,
                 break;
 
                 /*
-                 * NACK_NXT and NACK_SOA are OK 
+                 * Combinations of NACK 
+                 * check if there is a mix of NSEC and NSEC3 later in the proof 
                  */
-            case SR_ANS_NACK_NSEC:
-#ifdef LIBVAL_NSEC3
-            case SR_ANS_NACK_NSEC3:
-#endif
-                if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC) &&
-#ifdef LIBVAL_NSEC3
-                    /*
-                     * check if there is a mix of NSEC and NSEC3 later in the proof 
-                     */
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
-#endif
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_SOA)) {
-                    matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
-                }
-                break;
-
-            case SR_ANS_NACK_SOA:
-                if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC) &&
-#ifdef LIBVAL_NSEC3
-                    /*
-                     * check if there is a mix of NSEC and NSEC3 later in the proof 
-                     */
-                    (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK_NSEC3) &&
-#endif
-                    (1 == 1)) {
-
+            case SR_ANS_NACK :
+                if (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK) {
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                 }
@@ -2300,7 +2261,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             continue;
 
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        if (the_set->rrs_ans_kind != SR_ANS_NACK_NSEC3)
+        if (the_set->rrs.val_rrset_type_h != ns_t_nsec3)
             continue;
 
         if (!ncn || !cpe) {
@@ -2381,7 +2342,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             continue;
 
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        if (the_set->rrs_ans_kind != SR_ANS_NACK_NSEC3)
+        if (the_set->rrs.val_rrset_type_h != ns_t_nsec3)
             continue;
 
         prove_nsec3_span(ctx, the_set, soa_name_n, wc_n, 
@@ -2450,7 +2411,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             continue;
 
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
-        if (the_set->rrs_ans_kind != SR_ANS_NACK_NSEC)
+        if (the_set->rrs.val_rrset_type_h != ns_t_nsec)
             continue;
 
         if (!span_chk) {
@@ -2681,7 +2642,8 @@ prove_nonexistence(val_context_t * ctx,
     for (res = w_results; res; res = res->val_rc_next) {
         struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
         int offset;
-        if ((the_set) && (the_set->rrs_ans_kind == SR_ANS_NACK_SOA)) {
+        if ((the_set) && 
+            (the_set->rrs.val_rrset_type_h == ns_t_soa)) {
             struct val_result_chain *new_res;
             /*
              * This proof is relevant 
@@ -2704,27 +2666,6 @@ prove_nonexistence(val_context_t * ctx,
             } else {
                 *soa_ttl_x = the_set->rrs.val_rrset_ttl_x;
             }
-    
-            /*
-             * check if trusted and complete 
-            */
-            if (res &&  
-                val_istrusted(res->val_rc_status) &&
-                !val_isvalidated(res->val_rc_status)) {
-
-                /*
-                 * use the error code as status 
-                 */
-                GET_HEADER_STATUS_CODE(qc_proof, *status);
-                /*
-                 * Collect all other proofs 
-                 */
-                retval =
-                    transform_outstanding_results(ctx, w_results, queries, results, *proof_res,
-                                              *status, flags);
-    
-                return VAL_NO_ERROR;
-            }
             break;
         }
     }
@@ -2733,10 +2674,31 @@ prove_nonexistence(val_context_t * ctx,
      * Perform general sanity check of proofs
      */
     for (res = w_results; res; res = res->val_rc_next) {
+        struct rrset_rec *the_set;
+
         if (!res->val_rc_is_proof)
             continue;
 
-        struct rrset_rec *the_set = res->val_rc_rrset->_as.ac_data;
+        /*
+         * check if trusted and complete 
+         */
+        if (val_istrusted(res->val_rc_status) &&
+            !val_isvalidated(res->val_rc_status)) {
+
+            /*
+             * use the error code as status 
+             */
+            GET_HEADER_STATUS_CODE(qc_proof, *status);
+            /*
+             * Collect all other proofs 
+             */
+            retval = transform_outstanding_results(ctx, w_results, queries, results, *proof_res,
+                                              *status, flags);
+    
+            return VAL_NO_ERROR;
+        }
+
+        the_set = res->val_rc_rrset->_as.ac_data;
 
         if ((!the_set) || 
             (!the_set->rrs.val_rrset_data)) {
@@ -2746,7 +2708,7 @@ prove_nonexistence(val_context_t * ctx,
             return VAL_NO_ERROR;
         }
 
-        if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC) {
+        if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
             nsec = 1;
             if ((!the_set->rrs.val_rrset_sig) ||
                 the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
@@ -2759,7 +2721,7 @@ prove_nonexistence(val_context_t * ctx,
                 soa_name_n = &the_set->rrs.val_rrset_sig->rr_rdata[SIGNBY];
         }
 #ifdef LIBVAL_NSEC3
-        else if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
+        else if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
             nsec3 = 1;
             if ((!the_set->rrs.val_rrset_sig) ||
                 the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
@@ -3029,7 +2991,7 @@ prove_existence(val_context_t * context,
             continue;
         }
 
-        if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC) {
+        if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
 
             if (!namecmp(the_set->rrs.val_rrset_name_n, qname_n)) {
                 /*
@@ -3052,7 +3014,7 @@ prove_existence(val_context_t * context,
             }
         }
 #ifdef LIBVAL_NSEC3
-        else if (the_set->rrs_ans_kind == SR_ANS_NACK_NSEC3) {
+        else if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
 
             nsec3_hashlen = the_set->rrs.val_rrset_name_n[0];
             nsec3_hash =
@@ -5283,6 +5245,7 @@ perform_sanity_checks(val_context_t * context,
 
 static int
 create_error_result(struct val_query_chain *top_q,
+                    u_int8_t flags,
                     struct val_internal_result **w_results)
 {
     struct val_internal_result *w_temp;
@@ -5299,7 +5262,7 @@ create_error_result(struct val_query_chain *top_q,
         w_temp->val_rc_rrset = top_q->qc_ans;
         w_temp->val_rc_is_proof = 0;
         w_temp->val_rc_consumed = 0;
-        w_temp->val_rc_flags = 0;
+        w_temp->val_rc_flags = flags;
         w_temp->val_rc_status =
             VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
         w_temp->val_rc_next = NULL;
@@ -5314,7 +5277,7 @@ create_error_result(struct val_query_chain *top_q,
         w_temp->val_rc_rrset = top_q->qc_proof;
         w_temp->val_rc_is_proof = 1;
         w_temp->val_rc_consumed = 0;
-        w_temp->val_rc_flags = 0;
+        w_temp->val_rc_flags = flags;
         w_temp->val_rc_status =
             VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
         w_temp->val_rc_next = NULL;
@@ -5332,7 +5295,7 @@ create_error_result(struct val_query_chain *top_q,
         (*w_results)->val_rc_rrset = NULL;
         (*w_results)->val_rc_is_proof = 0;
         (*w_results)->val_rc_consumed = 0;
-        (*w_results)->val_rc_flags = 0;
+        (*w_results)->val_rc_flags = flags;
         (*w_results)->val_rc_status =
             VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
         (*w_results)->val_rc_next = NULL;
@@ -5375,14 +5338,13 @@ construct_authentication_chain(val_context_t * context,
     *done = 0;
     *results = NULL;
     
-    /*
-     * No point going ahead if our original query had error conditions 
-     */
     if (top_q->qc_state > Q_ERROR_BASE) {
+
         /*
-         * the original query had some error 
+         * No point going ahead if our original query had error conditions 
          */
-        if (VAL_NO_ERROR != (retval = create_error_result(top_q, w_results)))
+        if (VAL_NO_ERROR != (retval = 
+                    create_error_result(top_q, top_qfq->qfq_flags, w_results)))
             return retval;    
 
         ans_done = 1;
