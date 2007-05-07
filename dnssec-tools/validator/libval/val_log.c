@@ -656,6 +656,53 @@ p_val_status(val_status_t err)
     }
 }
 
+const char     *
+p_val_err(int err) {
+    
+    switch (err) {
+        case VAL_NO_ERROR:
+           return "VAL_NO_ERROR";
+           break;
+
+        case VAL_NOT_IMPLEMENTED: 
+           return "VAL_NOT_IMPLEMENTED";
+           break;
+
+        case VAL_RESOURCE_UNAVAILABLE:
+           return "VAL_RESOURCE_UNAVAILABLE"; 
+           break;
+
+        case VAL_BAD_ARGUMENT:
+           return "VAL_BAD_ARGUMENT";
+           break;
+
+        case VAL_INTERNAL_ERROR:
+           return "VAL_INTERNAL_ERROR";
+           break;
+
+        case VAL_NO_PERMISSION:
+           return "VAL_NO_PERMISSION";
+           break;
+
+        case VAL_CONF_PARSE_ERROR:
+           return "VAL_CONF_PARSE_ERROR";
+           break;
+
+        case VAL_CONF_NOT_FOUND:
+           return "VAL_CONF_NOT_FOUND";
+           break;
+                       
+        case VAL_NO_POLICY:
+           return "VAL_NO_POLICY";
+           break;
+
+    }
+
+    return "Unknown Error Code";
+}
+
+
+
 /* *********************************************************************
  *
  * Logging output
