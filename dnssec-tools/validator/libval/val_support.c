@@ -906,6 +906,7 @@ check_label_count(struct rrset_rec *the_set,
 
 int
 prepare_empty_nxdomain(struct rrset_rec **answers,
+                       struct name_server *respondent_server,
                        const u_int8_t * query_name_n,
                        u_int16_t query_type_h, u_int16_t query_class_h,
                        u_int8_t       *hptr)
@@ -952,7 +953,22 @@ prepare_empty_nxdomain(struct rrset_rec **answers,
     (*answers)->rrs.val_rrset_ttl_h = 0;
     (*answers)->rrs_cred = SR_CRED_UNSET;
     (*answers)->rrs.val_rrset_section = VAL_FROM_UNSET;
-    (*answers)->rrs.val_rrset_server = NULL;
+    if ((respondent_server) &&
+        (respondent_server->ns_number_of_addresses > 0)) {
+        (*answers)->rrs.val_rrset_server =
+            (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
+        if ((*answers)->rrs.val_rrset_server == NULL) {
+            FREE((*answers)->rrs.val_rrset_name_n);
+            FREE(*answers);
+            *answers = NULL;
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy((*answers)->rrs.val_rrset_server,
+               respondent_server->ns_address[0],
+               sizeof(struct sockaddr_storage));
+    } else {
+        (*answers)->rrs.val_rrset_server = NULL;
+    }
     (*answers)->rrs.val_rrset_data = NULL;
     (*answers)->rrs.val_rrset_sig = NULL;
     (*answers)->rrs_next = NULL;
@@ -1703,13 +1719,17 @@ copy_rrset_rec(struct rrset_rec *rr_set)
     /*
      * Copy respondent server information 
      */
-    copy_set->rrs.val_rrset_server =
-        (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
-    if (copy_set->rrs.val_rrset_server == NULL) {
-        goto err;
+    if (rr_set->rrs.val_rrset_server) {
+        copy_set->rrs.val_rrset_server =
+            (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
+        if (copy_set->rrs.val_rrset_server == NULL) {
+            goto err;
+        }
+        memcpy(copy_set->rrs.val_rrset_server, rr_set->rrs.val_rrset_server,
+               sizeof(struct sockaddr_storage));
+    } else {
+        copy_set->rrs.val_rrset_server = NULL;
     }
-    memcpy(copy_set->rrs.val_rrset_server, rr_set->rrs.val_rrset_server,
-           sizeof(struct sockaddr_storage));
 
     return copy_set;
 
