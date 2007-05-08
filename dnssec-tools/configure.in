@@ -58,6 +58,9 @@ fi
 expanded_sysconfdir=`eval echo $sysconfdir`
 AC_SUBST(expanded_sysconfdir)
 
+expanded_localstatedir=`eval echo $localstatedir`
+AC_SUBST(expanded_localstatedir)
+
 AC_CONFIG_FILES([
  Makefile:Makefile.in
  tools/modules/conf.pm:tools/modules/conf.pm.in
