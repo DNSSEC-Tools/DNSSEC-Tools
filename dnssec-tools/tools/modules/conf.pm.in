@@ -26,11 +26,14 @@ package Net::DNS::SEC::Tools::conf;
 require Exporter;
 use strict;
 
+our $VERSION = "0.9";
+
 our @ISA = qw(Exporter);
 our @EXPORT = qw(
 			cmdcheck
 			getconfdir
 			getconffile
+			getlocalstatedir
 			getprefixdir
 			parseconfig
 
@@ -45,8 +48,9 @@ our @COMMANDS = qw(zonecheck keygen zonesign);
 
 our $prefixdir = "@prefix@";
 our $sysconfdir = "@expanded_sysconfdir@";
+
 our $CONFFILE = "${sysconfdir}/dnssec-tools/dnssec-tools.conf"; # Configuration file.
-our $VERSION = "0.9";
+our $STATEDIR = "@expanded_localstatedir@";		# Local state directory.
 
 ###############################################################################
 #
@@ -275,6 +279,16 @@ sub getconffile
 	return($CONFFILE);
 }
 
+#######################################################################
+#
+# Routine:	getlocalstatedir()
+#
+# Purpose:	Return the local state directory name.
+#
+sub getlocalstatedir
+{
+	return($STATEDIR);
+}
 
 #######################################################################
 #
@@ -352,6 +366,8 @@ Net::DNS::SEC::Tools::conf - DNSSEC-Tools configuration routines.
 
   $conffile = getconffile();
 
+  $statedir = getlocalstatedir();
+
   erraction(ERR_MSG);
   err("unable to open keyrec file",1);
 
@@ -401,19 +417,19 @@ for these operations.
 
 =over 4
 
-=item B<parseconfig()>
+=item I<parseconfig()>
 
 This routine reads and parses the system's DNSSEC tools configuration file.
 The parsed contents are put into a hash table, which is returned to the caller.
 
-=item B<parseconfig(conffile)>
+=item I<parseconfig(conffile)>
 
 This routine reads and parses a caller-specified DNSSEC tools configuration
 file.  The parsed contents are put into a hash table, which is returned to
 the caller.  The routine quietly returns if the configuration file does not
 exist. 
 
-=item B<cmdcheck(\%options_hashref)>
+=item I<cmdcheck(\%options_hashref)>
 
 This routine ensures that the needed commands are available and
 executable.  If any of the commands either don't exist or aren't executable,
@@ -425,19 +441,23 @@ I<zonesign>.  The pathnames for these commands are found in the given options
 hash referenced by I<%options_hashref>.  If the hash doesn't contain an entry
 for one of those commands, it is not checked.
 
-=item B<getconfdir()>
+=item I<getconfdir()>
 
 This routine returns the name of the DNSSEC-Tools configuration directory.
 
-=item B<getconffile()>
+=item I<getconffile()>
 
 This routine returns the name of the DNSSEC-Tools configuration file.
 
-=item B<getprefixdir()>
+=item I<getprefixdir()>
 
 This routine returns the name of the DNSSEC-Tools prefix directory.
 
-=item B<erraction(error_action)>
+=item I<getlocalstatedir()>
+
+This routine returns the name of the local state directory.
+
+=item I<erraction(error_action)>
 
 This interface sets the error action for DNSSEC-Tools Perl modules.
 The valid actions are:
@@ -450,9 +470,9 @@ ERR_SILENT is the default action.
 
 The previously set error action is returned.
 
-=item B<err("error message",exit_code>
+=item I<err("error message",exit_code>
 
-The B<err()> interface is used by the DNSSEC-Tools Perl modules to report
+The I<err()> interface is used by the DNSSEC-Tools Perl modules to report
 an error and exit, depending on the error action.
 
 The first argument is an error message to print -- if the error action allows
