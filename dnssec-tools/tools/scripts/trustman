@@ -533,7 +533,8 @@ sub checkkeys {
     $initrun = 0;
 
     foreach my $d (keys %sleeptimes) {
-        if ($sleep > $sleeptimes{$d}) {
+        if ($sleep > $sleeptimes{$d} &&
+            $sleeptimes{$d} > 0) {
             $sleep = $sleeptimes{$d};
         }
         # otherwise, just leaving the current $sleep
