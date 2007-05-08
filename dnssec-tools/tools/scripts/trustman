@@ -135,8 +135,8 @@ my %active_refresh_times;
 my %zone_configfile_map;
 my $once;
 
-my $revoke = 1;
-# my $revoke = 0;
+# my $revoke = 1;
+my $revoke = 0;
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
@@ -684,6 +684,7 @@ sub remove_ta_namedconf  {
     my ($domain, $key, $flags, $proto, $algo) = @_;
 
     my $pat = "^trusted-keys";
+    my $trustsection = 0;
 
     open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
     open (CONF,$ncfile) or die "unable to read named.conf file.";
@@ -692,12 +693,14 @@ sub remove_ta_namedconf  {
     while (<CONF>) {
         if (s/^\s*$pat\s*//) {
             print TMP "trusted-keys {";
+            $trustsection = 1;
             s/\s*\{//;
             if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
                 my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
                 # strip off the trailing dot from the domainname
                 $d =~ s/\.$//;
                 $k =~ s/\s+//g;
+                $k =~ s/\"//g;
                 if ($d eq $domain) {
                     $key =~ s/[\n\r]//g;
                     $key =~ s/\"//g;
@@ -705,14 +708,46 @@ sub remove_ta_namedconf  {
                         $flags eq $f &&
                         $proto eq $p &&
                         $algo eq $a) {
-# its a match, comment it out
+                        # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been removed.\n";
-                            $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\"";
-                            print TMP "# " . $remkeyrec . "\n\n";
+                            $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            print TMP "# " . $remkeyrec . "\n";
                     }
                 } else {
                 # just print it, it's not the key we're looking for
+                    print TMP $_;
+                }
+            }
+        } elsif ($trustsection) {
+            if (/\s*\};/) {
+                $trustsection = 0;
+                print TMP "\n};\n";
+            } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
+
+                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $k =~ s/\s+//g;
+                $k =~ s/\"//g;
+                if ($d eq $domain) {
+                    $key =~ s/[\n\r]//g;
+                    $key =~ s/\"//g;
+                    if ($key eq $k &&
+                        $flags eq $f &&
+                        $proto eq $p &&
+                        $algo eq $a) {
+                        # its a match, comment it out
+                            print TMP $space; # attempting to preserve spacing
+                            print TMP "# The following key has been removed.\n";
+                            $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            print TMP "# " . $remkeyrec . "\n";
+                    } else {
+                    # just print it, it's not the key we're looking for
+                        print TMP $_;
+                    }
+                } else {
+                # just print it, it's not the domain we're looking for
                     print TMP $_;
                 }
             }
@@ -814,9 +849,12 @@ sub revoke_ta_namedconf  {
                             print TMP "# The following key has been revoked.\n";
                             $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $revkeyrec . "\n";
+                    } else {
+                    # just print it, it's not the domain we're looking for
+                        print TMP $_;
                     }
                 } else {
-                # just print it, it's not the key we're looking for
+                # just print it, it's not the domain we're looking for
                     print TMP $_;
                 }
             }
@@ -824,6 +862,7 @@ sub revoke_ta_namedconf  {
         } elsif ($trustsection) {
             if (/\s*\};/) { 
                 $trustsection = 0;
+                print TMP "\n};\n";
             } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
                 my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
                 # strip off the trailing dot from the domainname
