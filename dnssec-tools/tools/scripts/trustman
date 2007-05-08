@@ -123,7 +123,6 @@ for (my $i = 0; $i <=$#domains; $i++) {
 }
 
 my %keystorage;
-my %keys_to_verify;
 
 my %newkeys;
 load_newkeys();
@@ -136,8 +135,8 @@ my %active_refresh_times;
 my %zone_configfile_map;
 my $once;
 
-# my $revoke = 1;
-my $revoke = 0;
+my $revoke = 1;
+# my $revoke = 0;
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
@@ -246,6 +245,11 @@ parsed for appropriate files.\n";
 sub checkkeys {
     my $sleep = shift;
 
+    my %keys_to_verify;
+    foreach my $k (keys %keystorage) {
+        @{$keys_to_verify{$k}} = @{$keystorage{$k}};
+    }
+
     my $domains_to_check;
 
     foreach my $d (@domains) {
@@ -263,14 +267,16 @@ sub checkkeys {
         my $query;
         $query = resolve_and_check_dnskey($d,$dvfile);
         my %pendingnewkeys;
-        for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
-            my $pendingkeyobj = { flags => $newkeys{$d}[$i]{flags},
-                                  protocol => $newkeys{$d}[$i]{protocol},
-                                  algorithm => $newkeys{$d}[$i]{algorithm},
-                                  key => $newkeys{$d}[$i]{key},
-                                  found => 0,
-                                };
-            push (@{$pendingnewkeys{$d}}, $pendingkeyobj);
+        if (keys %newkeys) {
+            for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
+                my $pendingkeyobj = { flags => $newkeys{$d}[$i]{flags},
+                                      protocol => $newkeys{$d}[$i]{protocol},
+                                      algorithm => $newkeys{$d}[$i]{algorithm},
+                                      key => $newkeys{$d}[$i]{key},
+                                      found => 0,
+                                    };
+                push (@{$pendingnewkeys{$d}}, $pendingkeyobj);
+            }
         }
 
 # check the RRSIG over the DNKSEY
@@ -360,7 +366,7 @@ sub checkkeys {
 # TODO -- have a flag so revoked keys can alternatively be completely
 # removed from the conf file
 
-# verify that ALL keys in %keystorage were matched
+# verify that ALL keys in %keystorage (now %keys_to_verify) were matched.
 # if a known key disappears, set its remove_holddown timer for
 # removal if it doesn't reappear in time
                 } else {
@@ -556,7 +562,7 @@ sub add_ta_namedconf  {
                              $newkeys{$domain}[$i]{flags} . " " .
                              $newkeys{$domain}[$i]{protocol} . " " .
                              $newkeys{$domain}[$i]{algorithm} . " " .
-                             $newkeys{$domain}[$i]{key} . "\";\n\n";
+                             $newkeys{$domain}[$i]{key} . "\";\n";
                 print TMP $newkey;
             }
         }
@@ -600,7 +606,7 @@ sub add_ta_dnsvalconf  {
                              $newkeys{$domain}[$i]{flags} . " " .
                              $newkeys{$domain}[$i]{protocol} . " " .
                              $newkeys{$domain}[$i]{algorithm} . " " .
-                             $newkeys{$domain}[$i]{key} . "\"\n";
+                             $newkeys{$domain}[$i]{key} . "\"";
                 if ($domainfound) {
                     print TMP $newkeyentry . $2;
                     print "Adding following key to $dvfile:\n";
@@ -627,6 +633,7 @@ sub remove_ta_dnsvalconf {
 
     open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
+    my $origsep = $/;
     $/ = ";";
     while (<CONF>) {
         s/\s;\s*$//;
@@ -666,10 +673,60 @@ sub remove_ta_dnsvalconf {
     }
     close (CONF);
     close (TMP);
+    $/ = $origsep;
 # rename TMP to $dvfile
     my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
     rename ("/tmp/dnsval.conf.tmp",$dvfile);
+}
+
+sub remove_ta_namedconf  {
+    my ($domain, $key, $flags, $proto, $algo) = @_;
+
+    my $pat = "^trusted-keys";
+
+    open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
+    open (CONF,$ncfile) or die "unable to read named.conf file.";
+    my $origsep = $/;
+    $/ = ";";
+    while (<CONF>) {
+        if (s/^\s*$pat\s*//) {
+            print TMP "trusted-keys {";
+            s/\s*\{//;
+            if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
+                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $k =~ s/\s+//g;
+                if ($d eq $domain) {
+                    $key =~ s/[\n\r]//g;
+                    $key =~ s/\"//g;
+                    if ($key eq $k &&
+                        $flags eq $f &&
+                        $proto eq $p &&
+                        $algo eq $a) {
+# its a match, comment it out
+                            print TMP $space; # attempting to preserve spacing
+                            print TMP "# The following key has been removed.\n";
+                            $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\"";
+                            print TMP "# " . $remkeyrec . "\n\n";
+                    }
+                } else {
+                # just print it, it's not the key we're looking for
+                    print TMP $_;
+                }
+            }
+        } else {
+            print TMP $_;
+        }
+    }
+    $/ = $origsep;
+    close (CONF);
+    close (TMP);
+# rename TMP to $dvfile
+    my $origname = $ncfile . ".orig";
+    rename ($ncfile,$origname);
+    rename ("/tmp/named.conf.tmp",$ncfile);
 }
 
 sub revoke_ta_dnsvalconf  {
@@ -679,6 +736,7 @@ sub revoke_ta_dnsvalconf  {
 
     open (TMP, ">/tmp/dnsval.conf.tmp") or die "unable to open temp file.";
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
+    my $origsep = $/;
     $/ = ";";
     while (<CONF>) {
         s/\s;\s*$//;
@@ -716,6 +774,7 @@ sub revoke_ta_dnsvalconf  {
     }
     close (CONF);
     close (TMP);
+    $/ = $origsep;
 # rename TMP to $dvfile
     my $origname = $dvfile . ".orig";
     rename ($dvfile,$origname);
@@ -742,6 +801,7 @@ sub revoke_ta_namedconf  {
                 # strip off the trailing dot from the domainname
                 $d =~ s/\.$//;
                 $k =~ s/\s+//g;
+                $k =~ s/\"//g;
                 if ($d eq $domain) {
                     my $keyin = $keyrec->{key};
                     $keyin =~ s/[\n\r]//g;
@@ -752,8 +812,36 @@ sub revoke_ta_namedconf  {
 # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been revoked.\n";
-                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\"";
-                            print TMP "# " . $revkeyrec . "\n\n";
+                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            print TMP "# " . $revkeyrec . "\n";
+                    }
+                } else {
+                # just print it, it's not the key we're looking for
+                    print TMP $_;
+                }
+            }
+            
+        } elsif ($trustsection) {
+            if (/\s*\};/) { 
+                $trustsection = 0;
+            } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
+                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the domainname
+                $d =~ s/\.$//;
+                $k =~ s/\s+//g;
+                $k =~ s/\"//g;
+                if ($d eq $domain) {
+                    my $keyin = $keyrec->{key};
+                    $keyin =~ s/[\n\r]//g;
+                    if ($keyin eq $k &&
+                        $keyrec->{flags} eq $f &&
+                        $keyrec->{protocol} eq $p &&
+                        $keyrec->{algorithm} eq $a) {
+# its a match, comment it out
+                            print TMP $space; # attempting to preserve spacing
+                            print TMP "# The following key has been revoked.\n";
+                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            print TMP "# " . $revkeyrec . "\n";
                     }
                 } else {
                 # just print it, it's not the key we're looking for
@@ -780,10 +868,6 @@ sub get_domains_keys {
 # check those domain. Otherwise, check all domains found in config files.
     read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map) if ($ncfile);
     read_dnsval_file(\%keystorage, $dvfile, \%zone_configfile_map) if ($dvfile);
-    foreach my $k (keys %keystorage) { 
-        @{$keys_to_verify{$k}} = @{$keystorage{$k}};
-    } 
-#    %keys_to_verify = %keystorage;
 
 # if @domains exists now, we used only domains from the cmd line,
 # so we're done. if not, we got domains from config files, and
