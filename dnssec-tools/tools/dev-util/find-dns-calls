@@ -1,6 +1,6 @@
 #!/bin/bash
 PATH=/bin:/usr/bin
-DNSCALLS="(res_n*(query|search|send)|get(hostby|addrinfo|rrsetbyname))"
+DNSCALLS="[^a-zA-Z_](res_n*(query|search|send)|get(hostby|addrinfo|rrsetbyname))"
 
 usage()
 {
