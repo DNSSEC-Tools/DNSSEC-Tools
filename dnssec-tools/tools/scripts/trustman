@@ -434,6 +434,8 @@ sub checkkeys {
         } else {
 # TODO see notes under Active Refresh for how to handle query failure
             print "query failed for domain " . $d . "\n";
+            $refresh_secs = compute_queryfail_sleepsecs(0,0);
+            $sleeptimes{$d} =  $refresh_secs;
         }
     }
 
@@ -1118,6 +1120,38 @@ sub compute_sleepsecs {
     }
     
     return ($actrefsecs,$actrefsecs+$nowsecs);
+}
+
+sub compute_queryfail_sleepsecs {
+# MAX(1 hour, MIN(1 day, 0.1 * ottl, 0.1 * expiration interval[sigexpiration - now])
+    my ($ottl,$sexp) = @_;
+    $sexp =~ s/(....)(..)(..)(..)(..)(..)/$1-$2-$3T$4:$5:$6/;
+    my $sigexp = str2time($sexp);
+    my $onehour = 3600;
+    my $oneday = 86400;
+    my $tenth_ottl = $ottl / 10;
+    my $now = localtime();
+    my $nowsecs = str2time($now);
+    my $tenth_expinterval = ($sigexp - $nowsecs) / 10;
+    my $refreshsecs;
+    if ($tenth_ottl < $tenth_expinterval) {
+        if ($tenth_ottl < $oneday) {
+            $refreshsecs = $tenth_ottl;
+        } else {
+            $refreshsecs = $oneday;
+        }
+    } else {
+        if ($tenth_expinterval < $oneday) {
+            $refreshsecs = $tenth_expinterval;
+        } else {
+            $refreshsecs = $oneday;
+        }
+    }
+    if ($refreshsecs >= $onehour) {
+        return ($refreshsecs);
+    } else { 
+        return ($onehour);
+    }
 }
 
 ######################################################################
