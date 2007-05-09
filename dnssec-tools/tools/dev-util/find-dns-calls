@@ -1,0 +1,28 @@
+#!/bin/bash
+PATH=/bin:/usr/bin
+DNSCALLS="(res_n*(query|search|send)|get(hostby|addrinfo|rrsetbyname))"
+
+usage()
+{
+   echo "Usage: $0 [path] ..."
+   echo "  Search paths for C/C++ files with DNS calls."
+   echo "  If no path is specified, the current directory is searched."
+   exit 1
+}
+
+while [ ! "x$1" = "x" ]
+do
+   if [ -d "$1" ]; then
+      DIRS="$DIRS $1"
+   else
+      echo "Error: non-existant directory $1"
+      usage
+   fi
+   shift
+done
+
+if [ "x$DIRS" = "x" ]; then
+   DIRS="."
+fi
+
+find $DIRS -type f -print |egrep "\.(c|cc|C|CC)$"|xargs -r egrep -n "$DNSCALS"
