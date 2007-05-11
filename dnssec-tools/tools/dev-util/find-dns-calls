@@ -1,6 +1,6 @@
 #!/bin/bash
 PATH=/bin:/usr/bin
-DNSCALLS="[^a-zA-Z_](res_n*(query|search|send)|get(hostby|addrinfo|rrsetbyname))"
+DNSCALLS="[^a-zA-Z_](res_n*(query|search|send)|get(hostby|addrinfo|rrsetbyname))[a-zA-Z0-9_]*[ ]*\("
 
 usage()
 {
@@ -25,4 +25,4 @@ if [ "x$DIRS" = "x" ]; then
    DIRS="."
 fi
 
-find $DIRS -type f -print |egrep "\.(c|cc|C|CC)$"|xargs -r egrep -n "$DNSCALLS"
+find $DIRS -type f -print |egrep "\.(c|cc|C|CC|h|H)$"|xargs -r egrep -n "$DNSCALLS"
