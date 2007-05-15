@@ -46,5 +46,5 @@ install:
 	$(LIBTOOLIN) $(VALIDATOR) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETHOST) $(DESTDIR)/$(bindir)	
 	$(LIBTOOLIN) $(GETADDR) $(DESTDIR)/$(bindir)	
-	$(MKPATH) $(DESTDIR)/$(prefix)/etc/dnssec-tools
+	$(MKPATH) $(DESTDIR)/$(sysconfdir)/dnssec-tools
 	$(CP) selftests.dist $(DESTDIR)/@VALIDATOR_TESTCASES@
