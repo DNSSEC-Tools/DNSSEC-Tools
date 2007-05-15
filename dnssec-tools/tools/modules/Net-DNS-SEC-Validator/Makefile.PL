@@ -21,8 +21,6 @@ sub InitMakeParams {
     my %Params = (
 		  NAME         => 'Net::DNS::SEC::Validator',
 		  dist         => { SUFFIX => "gz", COMPRESS => "gzip -9f"},
-		  MAN3PODS     => { 'Validator.pm' => 
-				   '$(INST_MAN3DIR)/Net_DNS_SEC_Validator.3' },
 		  XSPROTOARG   => '-noprototypes', 	# XXX remove later?
 		  VERSION_FROM => 'Validator.pm',
 		  );
