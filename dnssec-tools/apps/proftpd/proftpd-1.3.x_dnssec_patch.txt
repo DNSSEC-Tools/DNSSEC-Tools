@@ -1,0 +1,220 @@
+Index: configure.in
+===================================================================
+RCS file: /cvsroot/proftp/proftpd/configure.in,v
+retrieving revision 1.257
+diff -u -p -r1.257 configure.in
+--- configure.in	15 Feb 2007 17:52:28 -0000	1.257
++++ configure.in	15 May 2007 21:57:08 -0000
+@@ -829,6 +829,33 @@ AC_ARG_ENABLE(transfer-buffer-size,
+     fi
+   ])
+ 
++dnl
++dnl DNSSEC
++dnl
++# Check whether user wants DNSSEC local validation support
++AC_ARG_WITH(dnssec-local-validation,
++        [  --with-dnssec-local-validation Enable local DNSSEC validation using libval (no)], want_dnssec=$enableval, want_dnssec=no)
++if ! test "x-$want_dnssec" = "x-no" ; then
++    AC_CHECK_HEADERS(validator/validator.h)
++    if test "$ac_cv_header_validator_validator_h" != yes; then
++        AC_MSG_ERROR(Can't find validator.h)
++    fi
++    AC_CHECK_LIB(ssl, SHA1_Init,,AC_MSG_ERROR([Can't find SSL library]))
++    AC_CHECK_LIB(sres, query_send,,AC_MSG_ERROR([Can't find libsres]))
++    AC_CHECK_LIB(val, p_val_status,
++                LIBS="$LIBS -lval"
++                 have_val_res_query=yes,
++                 [ AC_CHECK_LIB(pthread, pthread_rwlock_init)
++                  AC_CHECK_LIB(val-threads, p_val_status,
++                   have_val_res_query=yes
++                   LIBS="-lval-threads $LIBS"
++                   LIBVAL_SUFFIX="-threads",
++                   AC_MSG_ERROR(Can't find libval or libval-threads))
++                 ])
++    AC_DEFINE(DNSSEC_LOCAL_VALIDATION, 1,
++              [Define if you want local DNSSEC validation support])
++fi
++
+ dnl Checks for libraries.  Yes, this is the hard way, but it's necessary.
+ AC_CACHE_CHECK(for standalone crypt,pr_cv_lib_standalone_crypt,
+   AC_TRY_LINK(,[crypt();],
+Index: include/netaddr.h
+===================================================================
+RCS file: /cvsroot/proftp/proftpd/include/netaddr.h,v
+retrieving revision 1.20
+diff -u -p -r1.20 netaddr.h
+--- include/netaddr.h	29 Sep 2006 16:38:15 -0000	1.20
++++ include/netaddr.h	15 May 2007 21:57:09 -0000
+@@ -60,6 +60,15 @@ struct addrinfo {
+ };
+ #endif /* HAVE_STRUCT_ADDRINFO */
+ 
++#ifdef DNSSEC_LOCAL_VALIDATION
++#define PR_USE_GETADDRINFO 1
++#define PR_USE_GETNAMEINFO 1
++#define pr_addrinfo_s struct val_addrinfo
++struct val_addrinfo; /* fwd decl */
++#else
++#define pr_addrinfo_s struct addrinfo
++#endif
++
+ #if defined(HAVE_GETADDRINFO) && !defined(PR_USE_GETADDRINFO)
+ /* Use the system getaddrinfo(2) and freeaddrinfo(2) by redefining the
+  * 'pr_getaddrinfo' and 'pr_freeaddrinfo' symbols to be 'getaddrinfo' and
+@@ -69,9 +78,9 @@ struct addrinfo {
+ # define pr_freeaddrinfo        freeaddrinfo
+ #else
+ int pr_getaddrinfo(const char *, const char *, const struct addrinfo *,
+-  struct addrinfo **);
+-void pr_freeaddrinfo(struct addrinfo *);
+-#endif /* HAVE_GETNAMEINFO and !PR_USE_GETNAMEINFO */
++  pr_addrinfo_s **);
++void pr_freeaddrinfo(pr_addrinfo_s *);
++#endif /* HAVE_GETADDRINFO and !PR_USE_GETADDRINFO */
+ 
+ /* These AI_ defines are for use by getaddrinfo(3). */
+ 
+Index: src/netaddr.c
+===================================================================
+RCS file: /cvsroot/proftp/proftpd/src/netaddr.c,v
+retrieving revision 1.58
+diff -u -p -r1.58 netaddr.c
+--- src/netaddr.c	19 Dec 2006 21:36:30 -0000	1.58
++++ src/netaddr.c	15 May 2007 21:57:16 -0000
+@@ -28,6 +28,11 @@
+ 
+ #include "conf.h"
+ 
++#ifdef DNSSEC_LOCAL_VALIDATION
++#define DNSSEC_TRACE_LEVEL 4 /* wild guess */
++#include <validator/validator.h>
++#endif
++
+ /* Define an IPv4 equivalent of the IN6_IS_ADDR_LOOPBACK macro. */
+ #undef IN_IS_ADDR_LOOPBACK
+ #define IN_IS_ADDR_LOOPBACK(a) \
+@@ -54,7 +59,31 @@ static const char *trace_channel = "dns"
+ 
+ /* Provide replacements for needed functions. */
+ 
+-#if !defined(HAVE_GETNAMEINFO) || defined(PR_USE_GETNAMEINFO)
++#ifdef DNSSEC_LOCAL_VALIDATION
++
++#define DNSSEC_TRACE_LEVEL 4 /* wild guess */
++
++int pr_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host,
++    size_t hostlen, char *serv, size_t servlen, int flags) {
++
++    val_status_t val_status;
++
++    pr_trace_msg(trace_channel, DNSSEC_TRACE_LEVEL + 1, 
++                 " getnameinfo %s", host);
++    int rc = val_getnameinfo(NULL, sa, salen, host, hostlen, serv, servlen,
++                             flags, &val_status);
++    if (rc)
++        return rc;
++
++    if (! val_istrusted(val_status)) {
++        pr_log_pri(PR_LOG_WARNING,
++                     "DNS response not trusted for %s", host);
++        return EAI_FAIL;
++    }
++
++    return 0;
++}
++#elif !defined(HAVE_GETNAMEINFO) || defined(PR_USE_GETNAMEINFO)
+ int pr_getnameinfo(const struct sockaddr *sa, socklen_t salen, char *host,
+     size_t hostlen, char *serv, size_t servlen, int flags) {
+ 
+@@ -98,7 +127,34 @@ int pr_getnameinfo(const struct sockaddr
+ }
+ #endif /* HAVE_GETNAMEINFO or PR_USE_GETNAMEINFO */
+ 
+-#if !defined(HAVE_GETADDRINFO) || defined(PR_USE_GETADDRINFO)
++#ifdef DNSSEC_LOCAL_VALIDATION
++int pr_getaddrinfo(const char *node, const char *service,
++    const struct addrinfo *hints, pr_addrinfo_s **res) {
++
++    val_status_t val_status;
++
++    pr_trace_msg(trace_channel, DNSSEC_TRACE_LEVEL + 1, 
++                 " getaddrinfo %s", node);
++    int rc = val_getaddrinfo(NULL, node, service, hints, res, &val_status);
++    if (rc)
++        return rc;
++
++    if (! val_istrusted(val_status)) {
++        pr_log_pri(PR_LOG_WARNING,
++                     "DNS response not trusted for %s:%s", node, service);
++        return EAI_FAIL;
++    }
++
++    return 0;
++}
++
++void pr_freeaddrinfo(pr_addrinfo_s *ai) {
++  if (!ai)
++    return;
++
++  val_freeaddrinfo(ai);
++}
++#elif !defined(HAVE_GETADDRINFO) || defined(PR_USE_GETADDRINFO)
+ int pr_getaddrinfo(const char *node, const char *service,
+     const struct addrinfo *hints, struct addrinfo **res) {
+ 
+@@ -359,7 +415,8 @@ pr_netaddr_t *pr_netaddr_get_addr(pool *
+      * resolve that name to its IP address(es).
+      */
+ 
+-    struct addrinfo hints, *info = NULL;
++    struct addrinfo hints;
++    pr_addrinfo_s *info = NULL;
+     int gai_res = 0;
+ 
+     memset(&hints, 0, sizeof(hints));
+@@ -1081,8 +1138,22 @@ const char *pr_netaddr_get_dnsstr(pr_net
+       unsigned char ok = FALSE;
+       int family = pr_netaddr_get_family(na);
+       void *inaddr = pr_netaddr_get_inaddr(na);
+-    
+-#ifdef HAVE_GETHOSTBYNAME2
++
++#ifdef DNSSEC_LOCAL_VALIDATION
++      if (pr_netaddr_is_v4mappedv6(na) == TRUE) {
++        family = AF_INET;
++        inaddr = get_v4inaddr(na);
++      }
++      {
++          val_status_t val_status;
++          hent = val_gethostbyname2(NULL, buf, family, &val_status);
++          if ((hent != NULL) && ! val_istrusted(val_status)) {
++              pr_log_pri(PR_LOG_WARNING,
++                           "DNS response not trusted for %s", buf);
++              hent = NULL;
++          }
++      }
++#elif defined(HAVE_GETHOSTBYNAME2)
+       if (pr_netaddr_is_v4mappedv6(na) == TRUE) {
+         family = AF_INET;
+         inaddr = get_v4inaddr(na);
+@@ -1181,7 +1252,19 @@ const char *pr_netaddr_get_localaddr_str
+      * that function, for it is possible that the configured hostname for
+      * a machine only resolves to an IPv6 address.
+      */
++#ifndef DNSSEC_LOCAL_VALIDATION
+     host = gethostbyname(buf);
++#else
++    {
++        val_status_t val_status;
++        host = val_gethostbyname(NULL,buf, &val_status);
++        if ((host) && ! val_istrusted(val_status)) {
++            pr_log_pri(PR_LOG_WARNING,
++                         "DNS response not trusted for %s", buf);
++            host = NULL;
++        }
++    }
++#endif
+ 
+     if (host)
+       return pr_inet_validate(pstrdup(p, host->h_name));
