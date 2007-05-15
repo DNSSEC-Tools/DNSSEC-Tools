@@ -73,6 +73,7 @@ our @EXPORT = qw(
 			rollrec_discard
 			rollrec_dump_array
 			rollrec_dump_hash
+			rollrec_exists
 			rollrec_fields
 			rollrec_fullrec
 			rollrec_init
@@ -339,6 +340,21 @@ sub rollrec_names
 	}
 
 	return(@names);
+}
+
+#--------------------------------------------------------------------------
+#
+# Routine:	rollrec_exists()
+#
+# Purpose:	Return a flag indicating if the given rollrec exists.
+#
+sub rollrec_exists
+{
+	my $name = shift;
+
+# print "rollrec_exists:  down in ($name)\n";
+
+	return(exists($rollrecs{$name}));
 }
 
 #--------------------------------------------------------------------------
@@ -1178,6 +1194,8 @@ Net::DNS::SEC::Tools::rollrec - Manipulate a DNSSEC-Tools rollrec file.
 
   @rrnames = rollrec_names();
 
+  $flag = rollrec_exists("example.com");
+
   $rrec = rollrec_fullrec("example.com");
   %rrhash = %$rrec;
   $zname = $rrhash{"maxttl"};
@@ -1329,12 +1347,29 @@ Return values are:
 This interface saves the internal version of the I<rollrec> file (opened with
 I<rollrec_read()>) and closes the file handle. 
 
+=item I<rollrec_delfield(rollrec_name,field)>
+
+Deletes the given field from the specified I<rollrec>.  The file is
+B<not> written after updating the value, but the internal file-modified flag
+is set.  The value is saved in both I<%rollrecs> and in I<@rollreclines>.
+
+Return values:
+
+    0 - failure (rollrec not found or rollrec does not
+	contain the field)
+    1 - success
+
 =item I<rollrec_discard()>
 
 This routine removes a I<rollrec> file from use by a program.  The internally
 stored data are deleted and the I<rollrec> file handle is closed.  However,
 modified data are not saved prior to closing the file handle.  Thus, modified
 and new data will be lost.
+
+=item I<rollrec_exists(rollrec_name)>
+
+This routine returns a boolean flag indicating if the I<rollrec> named in
+I<rollrec_name> exists.
 
 =item I<rollrec_fullrec(rollrec_name)>
 
@@ -1375,6 +1410,21 @@ Failure return values:
 
     -3 duplicate rollrec names in file
 
+=item I<rollrec_rectype(rollrec_name,rectype)>
+
+Set the type of the specified I<rollrec> record.  The file is
+B<not> written after updating the value, but the internal file-modified flag
+is set.  The value is saved in both I<%rollrecs> and in I<@rollreclines>.
+
+I<rollrec_name> is the name of the I<rollrec> that will be modified.
+I<rectype> is the new type of the I<rollrec>, which must be either "roll"
+or "skip".
+
+Return values:
+
+    0 - failure (invalid record type or rollrec not found)
+    1 - success
+
 =item I<rollrec_recval(rollrec_name,rollrec_field)>
 
 This routine returns the value of a specified field in a given I<rollrec>.
@@ -1392,20 +1442,13 @@ The call:
 
 will return the value "db.example.com".
 
-=item I<rollrec_rectype(rollrec_name,rectype)>
+=item I<rollrec_settime(rollrec_name,val)>
 
-Set the type of the specified I<rollrec> record.  The file is
-B<not> written after updating the value, but the internal file-modified flag
-is set.  The value is saved in both I<%rollrecs> and in I<@rollreclines>.
+Set the phase-start timestamp in the I<rollrec> specified by I<rollrec_name>
+to the current time.  If the optional I<val> parameter is given and it is
+zero, then the phase-start timestamp is set to a null value.
 
-I<rollrec_name> is the name of the I<rollrec> that will be modified.
-I<rectype> is the new type of the I<rollrec>, which must be either "roll"
-or "skip".
-
-Return values:
-
-    0 - failure (invalid record type or rollrec not found)
-    1 - success
+The file is B<not> written after updating the value.
 
 =item I<rollrec_setval(rollrec_name,field,value)>
 
@@ -1418,26 +1461,6 @@ named I<rollrec> does not exist, it will be created as a "roll"-type
 I<rollrec>.
 I<field> is the I<rollrec> field which will be modified.
 I<value> is the new value for the field.
-
-=item I<rollrec_delfield(rollrec_name,field)>
-
-Deletes the given field from the specified I<rollrec>.  The file is
-B<not> written after updating the value, but the internal file-modified flag
-is set.  The value is saved in both I<%rollrecs> and in I<@rollreclines>.
-
-Return values:
-
-    0 - failure (rollrec not found or rollrec does not
-	contain the field)
-    1 - success
-
-=item I<rollrec_settime(rollrec_name,val)>
-
-Set the phase-start timestamp in the I<rollrec> specified by I<rollrec_name>
-to the current time.  If the optional I<val> parameter is given and it is
-zero, then the phase-start timestamp is set to a null value.
-
-The file is B<not> written after updating the value.
 
 =item I<rollrec_unlock()>
 
