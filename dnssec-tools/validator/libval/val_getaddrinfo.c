@@ -1198,10 +1198,11 @@ address_to_reverse_domain(const char *saddr, int family,
 {
 
     if (AF_INET == family) {
+        const u_char *u_saddr = (const u_char*)saddr;
         if (dlen < 30)
             return (EAI_FAIL);
         snprintf(dadd, dlen, "%d.%d.%d.%d.in-addr.arpa.",
-                 *(saddr + 3), *(saddr + 2), *(saddr + 1), *(saddr));
+                 *(u_saddr + 3), *(u_saddr + 2), *(u_saddr + 1), *(u_saddr));
     } else if (AF_INET6 == family) {
         if (dlen < 74)
             return (EAI_FAIL);
@@ -1259,10 +1260,11 @@ address_to_string(const char *saddr, int family, char *nadd, int nlen)
 {
 
     if (AF_INET == family) {
+        const u_char *u_saddr = (const u_char*)saddr;
         if (nlen < 30)
             return (EAI_FAIL);
         snprintf(nadd, nlen, "%d.%d.%d.%d",
-                 *(saddr), *(saddr + 1), *(saddr + 2), *(saddr + 3));
+                 *(u_saddr), *(u_saddr + 1), *(u_saddr + 2), *(u_saddr + 3));
     } else if (AF_INET6 == family) {
         if (nlen < 74)
             return (EAI_FAIL);
@@ -1379,6 +1381,7 @@ val_getnameinfo(val_context_t * ctx,
          */
         if (flags & NI_NUMERICHOST) {
             strncpy(host, number_string, hostlen);
+            *val_status = VAL_LOCAL_ANSWER;
         } else {
             if (0 != val_resolve_and_check(ctx,       /*val_context_t*  */
                                                              wire_addr, /*u_char *wire_domain_name */
