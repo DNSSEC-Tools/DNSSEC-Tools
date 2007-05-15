@@ -33,7 +33,7 @@ installrulefiles:
 		echo "*** Not installing over $(DESTCONFDIR)/dnssec-tools.conf" ; \
 		echo "**********************************************************************" ; \
 	else \
-		$(INSTALL) dnssec/dnssec-tools.conf $(DESTCONFDIR) ; \
+		$(INSTALL) dnssec-tools/dnssec-tools.conf $(DESTCONFDIR) ; \
 		echo "installing dnssec-tools.conf in $(DESTCONFDIR)" ; \
 	fi
 ';
