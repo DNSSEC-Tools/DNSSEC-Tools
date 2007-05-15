@@ -57,7 +57,7 @@ AC_ARG_WITH(dnsval-conf,
     [VAL_CONFIGURATION_FILE=$with_dnsval_conf])
 AC_DEFINE_UNQUOTED(VAL_CONFIGURATION_FILE,"$VAL_CONFIGURATION_FILE", [dnsval configuration file])
 AC_SUBST(VAL_CONFIGURATION_FILE)
-AC_MSG_CACHE_ADD(DNSSEC-Tools configuration file: $VAL_CONFIGURATION_FILE)
+AC_MSG_CACHE_ADD(Validator configuration file: $VAL_CONFIGURATION_FILE)
 
 VALIDATOR_TESTCASES=$val_sysconfdir/dnssec-tools/validator-testcases
 AC_DEFINE_UNQUOTED(VALIDATOR_TESTCASES,"$VALIDATOR_TESTCASES", [validator testcases configuration file])
