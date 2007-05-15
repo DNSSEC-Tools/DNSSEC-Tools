@@ -7,7 +7,6 @@
 #use strict;
 
 use Net::DNS;
-use Net::DNS::SEC;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Validator;
 use Net::DNS::Packet;
@@ -23,7 +22,8 @@ $Data::Dumper::Purity = 1;
 # Detect required Perl modules.
 #
 use Net::DNS::SEC::Tools::BootStrap;
-dnssec_tools_load_mods('Date::Parse'	=> "",);
+dnssec_tools_load_mods('Date::Parse'	=> "",
+		       'Net::DNS::SEC'  => "");
 
 ########################################################
 # Defaults
