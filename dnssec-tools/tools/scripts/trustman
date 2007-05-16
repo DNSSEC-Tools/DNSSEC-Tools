@@ -219,8 +219,8 @@ sub load_newkeys {
 }
 
 sub show_version {
-    print STDERR "Version: 0.9\n";
-    print STDERR "DNSSEC-Tools Version: 1.1\n";
+    print STDERR "Version: 1.0\n";
+    print STDERR "DNSSEC-Tools Version: 1.2\n";
     exit(1);
 }
 
@@ -231,10 +231,10 @@ sub usage {
         print "please indicate EITHER a dnsval.conf file OR a named.conf file.\n";
     }
     print "trustman [-d domain] [-L] [-f] [-c -o] [-v] [-V]\n";
+    print "\tuse the -f option to run in the foreground.\n";
 #    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
 #    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
-    print "\tuse the -f option to run in the foreground.\n";
-    print "\tUse -L to log to syslog; this can be in addition to mail.\n";
+#    print "\tUse -L to log to syslog; this can be in addition to mail.\n";
     print "\tIf a domain is not specified, all domains in the key_containing_files will be checked.\n";
     print "\tIf no key_containing_files are specified, dnssec-tools.conf will be
 parsed for appropriate files.\n";
@@ -1285,10 +1285,17 @@ trustman [options]
 =head1 DESCRIPTION
 
 trustman runs by default as a daemon to verify if keys stored locally
-in configuration files like named.conf still match the same keys
+in configuration files (named.conf or dnsval.conf) still match the same keys
 as fetched from the zone where they are defined. If mismatches
-are detected, the daemon notifies the contact person defined in
-the config file or on the command line by mail.
+are detected, the daemon: 
+
+sets an add holddown timer for new keys;
+sets a remove holddown timer for missing keys;
+removes revoked keys from the conf file.
+
+On subsequent runs, the timers are checked and if the times
+are reached, adds keys to the conf file or removes them,
+as appropriate.
 
 The same check can be run once manually (-S) and in the foreground (-f). 
 
@@ -1322,7 +1329,8 @@ Output file for configuration
 
 =item -r 
 
-A resolv.conf file to read
+A resolv.conf file to read (can use /dev/null to force libval to
+recursively answer the query rather than asking other name servers)
 
 =item -k 
 
