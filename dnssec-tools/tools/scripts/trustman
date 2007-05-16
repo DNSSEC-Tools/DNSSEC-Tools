@@ -70,7 +70,8 @@ my %dtconf = parseconfig();
 # then $dtconf{'name_of_option_in_dnssec-tools.conf'}
 # contains the value of that option as set in the conf file
 
-my $tafile = $opts{'a'} ? $opts{'a'} 
+#my $tafile = $opts{'a'} ? $opts{'a'} 
+my $newkeyfile = $opts{'a'} ? $opts{'a'} 
                         : $dtconf{'taanchorfile'};
                      
 my $resfile = $opts{'r'} ? $opts{'r'}
@@ -88,16 +89,16 @@ my $contactaddr = $opts{'m'} ? $opts{'m'}
 my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
 
-my $newkeyfile = $opts{'persistent_data_file'} ? $opts{'persistent_data_file'}
-                             : "/usr/local/etc/dnssec-tools/newkey.perldata";
+#my $newkeyfile = $opts{'persistent_data_file'} ? $opts{'persistent_data_file'}
+#                             : "/usr/local/etc/dnssec-tools/newkey.perldata";
 
-if ($opts{'persistent_data_file'}) {
-    $newkeyfile = $opts{'persistent_data_file'};
-} else { 
-    print STDERR "Proceeding with no persistent data file defined.\n";
-    print STDERR "This means that pending key data will not be saved in case \n";
-    print STDERR "trustman is restarted, and pending key hold times start over.\n";
-}
+#if ($opts{'persistent_data_file'}) {
+#    $newkeyfile = $opts{'persistent_data_file'};
+#} else { 
+#    print STDERR "Proceeding with no persistent data file defined.\n";
+#    print STDERR "This means that pending key data will not be saved in case \n";
+#    print STDERR "trustman is restarted, and pending key hold times start over.\n";
+#}
 
 if ($dvfile && $ncfile) {
     usage(2);
