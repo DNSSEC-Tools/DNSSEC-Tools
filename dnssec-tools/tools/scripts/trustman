@@ -39,26 +39,27 @@ my %opts = (
 
 # Parse command-line options
 GetOptions(\%opts,
-             'h|help',
-             'd|domain=s',
-             't|sleeptime=i',
-             'w|hold_time=s',
-             'v|verbose',
-             'f|foreground|fg',
-             'S|single_run',
-             'c|config',
-             'o|outfile=s',
-             's|smtp_server=s',
-             'r|resolv_conf_file=s',
-             'n|named_conf_file=s',
-             'k|dnsval_conf_file=s',
              'a|anchor_data_file=s',
-             'persistent_data_file=s',
+             'c|config',
+             'd|domain=s',
+             'f|foreground|fg',
+             'k|dnsval_conf_file=s',
+             'h|help',
              'L|syslog',
-             'p|print',
+             'm|mail_contact_addr=s',
+             'n|named_conf_file=s',
              'N|no_error',
+             'o|outfile=s',
+             'p|print',
+             'r|resolv_conf_file=s',
+             's|smtp_server=s',
+             'S|single_run',
+             't|sleeptime=i',
+             'v|verbose',
              'V|version',
-             'm|mail_contact_addr=s');
+             'w|hold_time=s',
+             'persistent_data_file=s',
+           );
 
 if ($opts{'h'}) {
     usage();
@@ -1311,66 +1312,70 @@ dnsval.conf in that file if necessary.
 
 =over #indent
 
-=item -f
+=item -a
 
-Run in the foreground
-
-=item -S
-
-Run only once 
+A persistent data file for storing new keys waiting to be added.
 
 =item -c
 
 Create a configure file for trustman from the command line options given.
 
+=item -d
+
+The domain to check (supersedes configuration file)
+
+=item -f
+
+Run in the foreground
+
+=item -h
+
+Help
+
+=item -k 
+
+A dnsval.conf file to read
+
+=item -L
+
+Log messages to syslog.
+
+=item -m
+
+Mail address for the contact person to whom reports should be sent
+
+=item -n 
+
+A named.conf file to read
+
+=item -N
+
+Send report when there are no errors.
+
 =item -o
 
 Output file for configuration
+
+=item -p
+
+Log/print messages to stdout.
 
 =item -r 
 
 A resolv.conf file to read (can use /dev/null to force libval to
 recursively answer the query rather than asking other name servers)
 
-=item -k 
-
-A dnsval.conf file to read
-
-=item -n 
-
-A named.conf file to read
-
-=item -d
-
-The domain to check (supersedes configuration file)
-
-=item -t
-
-The number of seconds to sleep between checks. Default is 3600 (one hour)
-
-=item -w
-
-The value of the hold down timer
-
-=item -m
-
-Mail address for the contact person to whom reports should be sent
-
-=item -p
-
-Log messages to stdout.
-
-=item -L
-
-Log messages to syslog.
-
 =item -s
 
 SMTP server trustman should use to send reports
 
-=item -N
+=item -S
 
-Send report when there are no errors.
+Run only once 
+
+=item -t
+
+The number of seconds to sleep between checks. Default is 3600 (one hour)
 
 =item -v
 
@@ -1379,6 +1384,10 @@ Verbose.
 =item -V
 
 Version.
+
+=item -w
+
+The value of the hold down timer
 
 =back #unindent
 =head1 PRE-REQUISITES
