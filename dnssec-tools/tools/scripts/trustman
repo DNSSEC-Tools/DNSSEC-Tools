@@ -93,10 +93,9 @@ my $newkeyfile = $opts{'persistent_data_file'} ? $opts{'persistent_data_file'}
 
 if ($opts{'persistent_data_file'}) {
     $newkeyfile = $opts{'persistent_data_file'};
-# TODO should add another var to the config file for persistent data file
 } else { 
     print STDERR "Proceeding with no persistent data file defined.\n";
-    print STDERR "This mean that pending key data will not be saved in case \n";
+    print STDERR "This means that pending key data will not be saved in case \n";
     print STDERR "trustman is restarted, and pending key hold times start over.\n";
 }
 
@@ -363,8 +362,6 @@ sub checkkeys {
                     if ($ncfile) {
                         revoke_ta_namedconf($d,$keyrec);
                     }
-# TODO -- have a flag so revoked keys can alternatively be completely
-# removed from the conf file
 
 # verify that ALL keys in %keystorage (now %keys_to_verify) were matched.
 # if a known key disappears, set its remove_holddown timer for
@@ -432,7 +429,6 @@ sub checkkeys {
                 }
             }
         } else {
-# TODO see notes under Active Refresh for how to handle query failure
             print "query failed for domain " . $d . "\n";
             $refresh_secs = compute_queryfail_sleepsecs(0,0);
             $sleeptimes{$d} =  $refresh_secs;
@@ -527,7 +523,6 @@ sub checkkeys {
     # and add to remkeys for processing on next go
         my $remove_holddown_time = compute_remove_holddown();
         for (my $i = 0; $i <= $#{$keys_to_verify{$d}}; $i++) {
-          # TODO only add this if it's not already there....
             my $remkeyobj = { flags => $keys_to_verify{$d}[$i]{flags},
                               protocol => $keys_to_verify{$d}[$i]{protocol},
                               algorithm => $keys_to_verify{$d}[$i]{algorithm},
