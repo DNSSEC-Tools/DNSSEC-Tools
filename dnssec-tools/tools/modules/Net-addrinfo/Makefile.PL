@@ -17,8 +17,6 @@ sub InitMakeParams {
     my %Params = (
 		  NAME         => 'Net::addrinfo',
 		  dist         => { SUFFIX => "gz", COMPRESS => "gzip -9f"},
-		  MAN3PODS     => { 'addrinfo.pm' => 
-				    '$(INST_MAN3DIR)/Net_addrinfo.3' },
 		  XSPROTOARG   => '-noprototypes', 	# XXX remove later?
 		  VERSION_FROM => 'addrinfo.pm',
 		  );
