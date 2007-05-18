@@ -1,8 +1,15 @@
 
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
+
+/*
+ * DESCRIPTION
+ * Contains implementation of the val_query, val_res_query and val_search 
+ * functions, and their helpers.
+ */
+
 #include "validator-config.h"
 
 #include <stdio.h>
@@ -49,12 +56,14 @@ find_rrset_len(struct val_rrset *rrset)
         return 0;
 
     rrset_name_n_len = wire_name_length(rrset->val_rrset_name_n);
+    /* data */
     for (rr = rrset->val_rrset_data; rr; rr = rr->rr_next) {
         resp_len +=
             rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) +
             sizeof(u_int32_t)
             + sizeof(u_int16_t) + rr->rr_rdata_length_h;
     }
+    /* signatures */
     for (rr = rrset->val_rrset_sig; rr; rr = rr->rr_next) {
         resp_len +=
             rrset_name_n_len + sizeof(u_int16_t) + sizeof(u_int16_t) +
@@ -64,7 +73,41 @@ find_rrset_len(struct val_rrset *rrset)
     return resp_len;
 }
 
-int
+/* 
+ * determine the size of the response from individual rrsets
+ */  
+static int
+determine_size(struct val_result_chain *res)
+{
+    int             resp_len = 0;
+
+    if (res == NULL)
+        return 0;
+    
+    if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
+        resp_len += find_rrset_len(res->val_rc_answer->val_ac_rrset);
+    }
+    if (res->val_rc_proof_count) {
+        int             i;
+        for (i = 0; i < res->val_rc_proof_count; i++) {
+            resp_len +=
+                find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
+        }
+    }
+    return resp_len;
+}
+
+
+/*
+ * Update the response buffer with the contents of an rrset.
+ *
+ * Update one of anbuf, nsbuf and arbuf depending on whether
+ * the rrset was present in the answer, authority or additional
+ * section.
+ *
+ * Returns 0 on success and -1 on error
+ */
+static int
 encode_response_rrset(struct val_rrset *rrset,
                       val_status_t val_rc_status,
                       int resp_len,
@@ -76,7 +119,9 @@ encode_response_rrset(struct val_rrset *rrset,
                       int *nscount,
                       unsigned char **arbuf,
                       int *arbufindex,
-                      int *arcount, int *an_auth, int *ns_auth)
+                      int *arcount, 
+                      int *an_auth, 
+                      int *ns_auth)
 {
     unsigned char  *cp;
     int            *bufindex = NULL;
@@ -84,6 +129,11 @@ encode_response_rrset(struct val_rrset *rrset,
     int             rrset_name_n_len;
     int            *count;
 
+    if (rrset == NULL)
+        return 0;
+
+    /** other inputs are checked by the calling method **/
+    
     if (rrset->val_rrset_section == VAL_FROM_ANSWER) {
         cp = *anbuf + *anbufindex;
         bufindex = anbufindex;
@@ -108,6 +158,7 @@ encode_response_rrset(struct val_rrset *rrset,
      * Answer/Authority/Additional section 
      */
     rrset_name_n_len = wire_name_length(rrset->val_rrset_name_n);
+    /* for each data */
     for (rr = rrset->val_rrset_data; rr; rr = rr->rr_next) {
 
         if ((*bufindex + rrset_name_n_len + 10 +
@@ -127,7 +178,8 @@ encode_response_rrset(struct val_rrset *rrset,
         memcpy(cp, rr->rr_rdata, rr->rr_rdata_length_h);
         cp += rr->rr_rdata_length_h;
 
-    }                           // end for each rr
+    }  
+    /* for each rrsig */
     for (rr = rrset->val_rrset_sig; rr; rr = rr->rr_next) {
 
         if ((*bufindex + rrset_name_n_len + 10 +
@@ -158,25 +210,6 @@ encode_response_rrset(struct val_rrset *rrset,
     return 0;
 }
 
-static int
-determine_size(struct val_result_chain *res)
-{
-    int             resp_len = 0;
-
-    if (res->val_rc_answer && res->val_rc_answer->val_ac_rrset) {
-        resp_len += find_rrset_len(res->val_rc_answer->val_ac_rrset);
-    }
-    if (res->val_rc_proof_count) {
-        int             i;
-        for (i = 0; i < res->val_rc_proof_count; i++) {
-            resp_len +=
-                find_rrset_len(res->val_rc_proofs[i]->val_ac_rrset);
-        }
-    }
-    return resp_len;
-}
-
-
 /*
  * Function: compose_answer
  *
@@ -193,10 +226,9 @@ determine_size(struct val_result_chain *res)
  *               flags -- Handles the VAL_QUERY_MERGE_RRSETS flag.  If
  *                        this flag is set, multiple answers are returned in a 
  *                        form similar to res_query.  
- *                        More flags may be added in future to
- *                        influence the evaluation and returned results.
  *
- * Return value: 0 on success, and a non-zero error-code on failure.
+ * Return value: VAL_NO_ERROR on success, and a negative valued error code 
+ *               (see val_errors.h) on failure.
  */
 
 int
@@ -204,7 +236,8 @@ compose_answer(const u_char * name_n,
                const u_int16_t type_h,
                const u_int16_t class_h,
                struct val_result_chain *results,
-               struct val_response **f_resp, u_int8_t flags)
+               struct val_response **f_resp, 
+               u_int8_t flags)
 {
     struct val_result_chain *res = NULL;
     int             ancount = 0;        // Answer Count
@@ -218,6 +251,7 @@ compose_answer(const u_char * name_n,
     int             resp_len = 0;
     HEADER         *hp = NULL;
     int             len;
+    int             retval;
 
     struct val_response *head_resp = NULL;
     struct val_response *cur_resp = NULL;
@@ -240,6 +274,8 @@ compose_answer(const u_char * name_n,
     rp = NULL;
     resp_len = 0;
 
+    retval = VAL_NO_ERROR;
+    
     if ((f_resp == NULL) || (name_n == NULL))
         return VAL_BAD_ARGUMENT;
 
@@ -325,16 +361,18 @@ compose_answer(const u_char * name_n,
             resp_len = 0;
 
             resp_len = determine_size(res);
-            cur_resp =
-                (struct val_response *)
-                MALLOC(sizeof(struct val_response));
-            if (cur_resp == NULL)
+            if (NULL == 
+                    (cur_resp = (struct val_response *)
+                        MALLOC(sizeof(struct val_response)))) {
+                retval = VAL_OUT_OF_MEMORY;
                 goto err;
-            cur_resp->vr_response =
-                (unsigned char *) MALLOC((resp_len + OUTER_HEADER_LEN) *
-                                         sizeof(unsigned char));
-            if (cur_resp->vr_response == NULL) {
+            }
+            if (NULL == 
+                   (cur_resp->vr_response = (unsigned char *) 
+                        MALLOC((resp_len + OUTER_HEADER_LEN) *
+                                sizeof(unsigned char)))) {
                 FREE(cur_resp);
+                retval = VAL_OUT_OF_MEMORY;
                 goto err;
             }
 
@@ -361,6 +399,7 @@ compose_answer(const u_char * name_n,
                     FREE(nsbuf);
                 if (arbuf)
                     FREE(arbuf);
+                retval = VAL_OUT_OF_MEMORY;
                 goto err;
             }
             /*
@@ -389,8 +428,10 @@ compose_answer(const u_char * name_n,
                                       &anbuf, &anbufindex, &ancount,
                                       &nsbuf, &nsbufindex, &nscount,
                                       &arbuf, &arbufindex, &arcount,
-                                      &an_auth, &ns_auth))
+                                      &an_auth, &ns_auth)) {
+                retval = VAL_BAD_ARGUMENT;
                 goto err;
+            }
         } else if (res->val_rc_proof_count) {
             int             i;
             for (i = 0; i < res->val_rc_proof_count; i++) {
@@ -400,8 +441,10 @@ compose_answer(const u_char * name_n,
                                           resp_len, &anbuf, &anbufindex,
                                           &ancount, &nsbuf, &nsbufindex,
                                           &nscount, &arbuf, &arbufindex,
-                                          &arcount, &an_auth, &ns_auth))
+                                          &arcount, &an_auth, &ns_auth)) {
+                    retval = VAL_BAD_ARGUMENT;
                     goto err;
+                }
             }
         }
 
@@ -439,11 +482,22 @@ compose_answer(const u_char * name_n,
                 hp->rcode = ns_r_nxdomain;
                 break;
 
+            case VAL_DNS_ERROR_BASE + SR_FORMERR:
+                hp->rcode = ns_r_formerr;
+                break;
+                
             case VAL_DNS_ERROR_BASE + SR_SERVFAIL:
                 hp->rcode = ns_r_servfail;
                 break;
+
+            case VAL_DNS_ERROR_BASE + SR_NOTIMPL:
+                hp->rcode = ns_r_notimpl;
+                break;
        
-            /* XXX Need to do thorough error translation */ 
+            case VAL_DNS_ERROR_BASE + SR_REFUSED:
+                hp->rcode = ns_r_refused;
+                break;
+       
             default:
                 if (hp->ancount > 0) {
                     hp->rcode = ns_r_noerror;
@@ -479,6 +533,10 @@ compose_answer(const u_char * name_n,
         FREE(nsbuf);
         FREE(arbuf);
 
+        /* 
+         * we lose a level of granularity in the validation status
+         * when we do a "merge"
+         */
         if (results) {
             if (validated)
                 head_resp->vr_val_status = VAL_VALIDATED_ANSWER;
@@ -502,7 +560,7 @@ compose_answer(const u_char * name_n,
     }
 
     *f_resp = NULL;
-    return VAL_OUT_OF_MEMORY;
+    return retval;
 
 }
 
@@ -510,13 +568,11 @@ compose_answer(const u_char * name_n,
 /*
  * This routine is provided for compatibility with programs that 
  * depend on the res_query() function. 
- * If possible, one should use gethostbyname() or getaddrinfo() functions instead.
  */
 /*
  * Function: val_query
  *
  * Purpose: A DNSSEC-aware function intended as a replacement to res_query().
- *          The scope of this function is global.
  *
  * This routine makes a query for {domain_name, type, class} and returns the 
  * result in resp. 
@@ -536,10 +592,8 @@ compose_answer(const u_char * name_n,
  * will be one of the other error codes.
  * resp -- An array of val_response structures used to return the result.
  * 
- * Return values:
- * VAL_NO_ERROR         Operation succeeded
- * VAL_BAD_ARGUMENT             The domain name or other arguments are invalid
- * VAL_OUT_OF_MEMORY    Could not allocate enough memory for operation
+ * Return value: VAL_NO_ERROR on success, and a negative valued error code 
+ *               (see val_errors.h) on failure.
  *
  */
 int
@@ -547,7 +601,8 @@ val_query(val_context_t * ctx,
           const char *domain_name,
           const u_int16_t class_h,
           const u_int16_t type,
-          const u_int8_t flags, struct val_response **resp)
+          const u_int8_t flags, 
+          struct val_response **resp)
 {
     struct val_result_chain *results = NULL;
     int             retval;
@@ -556,21 +611,26 @@ val_query(val_context_t * ctx,
 
     if ((resp == NULL) || (domain_name == NULL))
         return VAL_BAD_ARGUMENT;
+
+    if (ns_name_pton(domain_name, name_n, sizeof(name_n)) == -1) 
+        return VAL_BAD_ARGUMENT;
+
     *resp = NULL;
 
     if (ctx == NULL) {
+        /* 
+         *  Create a default context only if it hasn't been created before
+         *  The memory for the NULL context will be free'd when a call
+         *  is made to free_validator_state()
+         */
         if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
             return retval;
     } else
         context = (val_context_t *) ctx;
 
-    val_log(context, LOG_INFO,
-            "val_query called with dname=%s, class=%s, type=%s",
+    val_log(context, LOG_DEBUG,
+            "val_query(): called with dname=%s, class=%s, type=%s",
             domain_name, p_class(class_h), p_type(type));
-
-    if (ns_name_pton(domain_name, name_n, sizeof(name_n)) == -1) {
-        return (VAL_BAD_ARGUMENT);
-    }
 
     /*
      * Query the validator 
@@ -584,15 +644,15 @@ val_query(val_context_t * ctx,
          */
         retval =
             compose_answer(name_n, type, class_h, results, resp, flags);
+
+        if (retval == VAL_NO_ERROR) 
+            val_log_authentication_chain(context, LOG_INFO, name_n, class_h, type, results);
+
+        val_free_result_chain(results);
     }
 
-    val_log_authentication_chain(context, LOG_INFO, name_n, class_h, type, results);
-
-    val_free_result_chain(results);
-
     return retval;
-
-}                               /* val_query() */
+}
 
 
 /*
@@ -618,10 +678,16 @@ val_free_response(struct val_response *resp)
 
 /*
  * wrapper around val_query() that is closer to res_query() 
+ * Only difference is that it passes the VAL_QUERY_MERGE_RRSETS
+ * flag automatically. 
  */
 int
-val_res_query(val_context_t * ctx, const char *dname, int class_h,
-              int type, u_char * answer, int anslen,
+val_res_query(val_context_t * ctx, 
+              const char *dname, 
+              int class_h,
+              int type, 
+              u_char * answer, 
+              int anslen,
               val_status_t * val_status)
 {
     struct val_response *resp;
@@ -630,7 +696,9 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
     int             totalbytes = 0;
     HEADER *hp = NULL;
 
-    if (val_status == NULL) {
+    if (dname == NULL || val_status == NULL || answer == NULL) {
+        val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
+            dname, p_class(class_h), p_type(type), p_val_err(VAL_BAD_ARGUMENT));
         h_errno = NETDB_INTERNAL;
         errno = EINVAL;
         return -1;
@@ -640,6 +708,8 @@ val_res_query(val_context_t * ctx, const char *dname, int class_h,
         (retval =
          val_query(ctx, dname, class_h, type, VAL_QUERY_MERGE_RRSETS,
                    &resp))) {
+        val_log(ctx, LOG_ERR, "val_res_query(%s, %d, %d): Error - %s", 
+            dname, p_class(class_h), p_type(type), p_val_err(retval));
         h_errno = NETDB_INTERNAL;
         errno = EBADMSG;
         return -1;
@@ -689,14 +759,22 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
     char            buf[NS_MAXDNAME];
     val_context_t  *ctx;
     
-    if ((dname == NULL) || (val_status == NULL)) {
+    if ((dname == NULL) || (val_status == NULL) || (answer == NULL)) {
+        val_log(ctx, LOG_ERR, "val_res_search(%s, %d, %d): Error - %s", 
+            dname, p_class(class_h), p_type(type), p_val_err(VAL_BAD_ARGUMENT));
         h_errno = NETDB_INTERNAL;
         errno = EINVAL;
         return -1;
     }
 
+    /* 
+     * make sure that a valid context exists. The search path is stored
+     * within the context
+     */
     if (context == NULL) {
-        if (VAL_NO_ERROR != val_create_context(NULL, &ctx)) {
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
+            val_log(ctx, LOG_ERR, "val_res_search(%s, %d, %d): Error while creating context - %s", 
+                dname, p_class(class_h), p_type(type), p_val_err(retval));
             h_errno = NETDB_INTERNAL;
             errno = EINVAL;
             return -1;
