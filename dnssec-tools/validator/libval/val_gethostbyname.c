@@ -1,10 +1,14 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  *
  * Author: Abhijit Hayatnagarkar
  *
- * This is the implementation file for a validating gethostbyname function.
+ */
+
+/* 
+ * DESCRIPTION
+ * This file contains the implementation for a validating gethostbyname function.
  * Applications should be able to use this with minimal change.
  */
 #include "validator-config.h"
@@ -133,22 +137,22 @@ get_hostent_from_etc_hosts(val_context_t * ctx,
 
         if ((af == AF_INET)
             && (inet_pton(AF_INET, hs->address, &ip4_addr) > 0)) {
-            val_log(ctx, LOG_DEBUG, "...type of address is IPv4");
-            val_log(ctx, LOG_DEBUG, "Address is: %s",
+            val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): type of address is IPv4");
+            val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): Address is: %s",
                     inet_ntop(AF_INET, &ip4_addr, addr_buf,
                               INET_ADDRSTRLEN));
         } else if ((af == AF_INET6)
                    && (inet_pton(AF_INET6, hs->address, &ip6_addr) > 0)) {
-            val_log(ctx, LOG_DEBUG, "...type of address is IPv6");
-            val_log(ctx, LOG_DEBUG, "Address is: %s",
+            val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): type of address is IPv6");
+            val_log(ctx, LOG_DEBUG, "get_hostent_from_etc_hosts(): Address is: %s",
                     inet_ntop(AF_INET, &ip6_addr, addr_buf,
                               INET6_ADDRSTRLEN));
         } else {
             /*
              * not a valid address ... skip this line 
              */
-            val_log(ctx, LOG_DEBUG,
-                    "get_hostent_from_etc_hosts() error in address format: %s",
+            val_log(ctx, LOG_WARNING,
+                    "get_hostent_from_etc_hosts(): error in address format: %s",
                     hs->address);
             h_prev = hs;
             hs = hs->next;
@@ -334,17 +338,17 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
 
                 if (rrset->val_rrset_type_h == ns_t_cname) {
                     val_log(ctx, LOG_DEBUG,
-                            "val_gethostbyname: type of record = CNAME");
+                            "get_hostent_from_response(): type of record = CNAME");
                     alias_count++;
                 } else if ((af == AF_INET)
                            && (rrset->val_rrset_type_h == ns_t_a)) {
                     val_log(ctx, LOG_DEBUG,
-                            "val_gethostbyname: type of record = A");
+                            "get_hostent_from_response(): type of record = A");
                     addr_count++;
                 } else if ((af == AF_INET6)
                            && (rrset->val_rrset_type_h == ns_t_aaaa)) {
                     val_log(ctx, LOG_DEBUG,
-                            "val_gethostbyname: type of record = AAAA");
+                            "get_hostent_from_response(): type of record = AAAA");
                     addr_count++;
                 }
 
@@ -688,6 +692,8 @@ val_gethostbyname2_r(val_context_t * ctx,
         if (ctx == NULL) {
             if (VAL_NO_ERROR !=
                 (retval = val_create_context(NULL, &context))) {
+                val_log(ctx, LOG_ERR,
+                        "val_gethostbyname2_r(): Could not create context - %s", p_val_err(retval));
                 *h_errnop = NETDB_INTERNAL;
                 if (!errno)
                     errno = ENOMEM;
@@ -730,6 +736,9 @@ val_gethostbyname2_r(val_context_t * ctx,
                 get_hostent_from_response(context, af, ret, results,
                                           h_errnop, buf, buflen, &offset, val_status);
 
+        } else {
+            val_log(context, LOG_ERR, 
+                    "val_gethostbyname2_r(): val_resolve_and_check failed - %s", p_val_err(retval));
         }
 
         if (*result == NULL) {

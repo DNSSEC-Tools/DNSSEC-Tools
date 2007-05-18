@@ -1,11 +1,11 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
-
 /*
- * Read the contents of the validator configuration file and 
- * update the validator context.
+ * DESCRIPTION
+ * Read the contents of the resolver, validator and root.hints configuration 
+ * files and update the validator context.
  */
 #include "validator-config.h"
 
@@ -260,6 +260,9 @@ const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
 };
 
 
+/*
+ * parse additional data (public key) for the trust anchor policy 
+ */
 int
 parse_trust_anchor(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                    int *line_number, int *endst)
@@ -384,6 +387,9 @@ free_preferred_algo_ds(policy_entry_t * pol_entry)
     return VAL_NOT_IMPLEMENTED;
 }
 
+/*
+ * parse additional data (time in seconds, -1 for ignore) for the clock skew policy 
+ */
 int
 parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                  int *line_number, int *endst)
@@ -434,6 +440,9 @@ free_use_tcp(policy_entry_t * pol_entry)
     return VAL_NOT_IMPLEMENTED;
 }
 
+/*
+ * parse additional data (trusted or untrusted) for the provably insecure status 
+ */
 int
 parse_prov_unsecure_status(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                            int *line_number, int *endst)
@@ -476,6 +485,11 @@ free_prov_unsecure_status(policy_entry_t * pol_entry)
     }
     return VAL_NO_ERROR;
 }
+
+/*
+ * parse additional data (ignore, trusted, validate, untrusted) 
+ * for the zone security expectation policy 
+ */
 int
 parse_zone_security_expectation(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                                 int *line_number, int *endst)
@@ -526,6 +540,10 @@ free_zone_security_expectation(policy_entry_t * pol_entry)
 
 
 #ifdef LIBVAL_NSEC3
+/*
+ * parse additional data (max number of iterations allowed) 
+ * for the zone nsec3 iterations policy 
+ */
 int
 parse_nsec3_max_iter(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                      int *line_number, int *endst)
@@ -566,6 +584,10 @@ free_nsec3_max_iter(policy_entry_t * pol_entry)
 #endif
 
 #ifdef LIBVAL_DLV
+/*
+ * parse additional data (targetted zone) 
+ * for the DLV policy 
+ */
 int
 parse_dlv_trust_points(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
                        int *line_number, int *endst)
@@ -629,7 +651,7 @@ free_dlv_trust_points(policy_entry_t * pol_entry)
  * Read the contents of the file from the current location
  * and obtain a "token". Tokens are delimited by whitespace.
  * Ignore tokens that begin on a new line and have a 
- * leading '#' comment character
+ * leading comment character
  */
 
 #define READ_COMMENT_LINE(buf_ptr, end_ptr) do {\
@@ -1033,7 +1055,7 @@ store_policy_overrides(val_context_t * ctx,
     for (e = newp->plist; e; e = e->next) {
         if (e->index == (*pfrag)->index) {
             val_log(ctx, LOG_WARNING,
-                    "Duplicate policy definition; using latest");
+                    "store_policy_overrides(): Duplicate policy definition; using latest");
             free_policy_entry(e->pol, e->index);
             e->pol = NULL;
             break;
@@ -1123,12 +1145,14 @@ read_val_config_file(val_context_t * ctx, char *scope)
         return VAL_BAD_ARGUMENT;
     
     dnsval_conf = ctx->dnsval_conf;
-    if (NULL == dnsval_conf)
-        return VAL_INTERNAL_ERROR;
+    if (NULL == dnsval_conf) {
+        val_log(ctx, LOG_ERR, "read_val_config_file(): No dnsval.conf file configured"); 
+        return VAL_CONF_NOT_FOUND;
+    }
 
     fd = open(dnsval_conf, O_RDONLY);
     if (fd == -1) {
-        val_log(ctx, LOG_ERR, "Could not open validator conf file for reading: %s",
+        val_log(ctx, LOG_ERR, "read_val_config_file(): Could not open validator conf file for reading: %s",
                 dnsval_conf);
         return VAL_CONF_NOT_FOUND;
     }
@@ -1151,17 +1175,16 @@ read_val_config_file(val_context_t * ctx, char *scope)
     end_ptr = buf+sb.st_size;
 
     if (-1 == read(fd, buf, sb.st_size)) {
-        val_log(ctx, LOG_ERR, "Could not read validator conf file: %s",
+        val_log(ctx, LOG_ERR, "read_val_config_file(): Could not read validator conf file: %s",
                 dnsval_conf);
         retval = VAL_CONF_NOT_FOUND;
         goto err;
     }
 
-    val_log(ctx, LOG_NOTICE, "Reading validator policy from %s",
+    val_log(ctx, LOG_INFO, "read_val_config_file(): Reading validator policy from %s",
             dnsval_conf);
-    val_log(ctx, LOG_DEBUG, "Reading next policy fragment");
+    val_log(ctx, LOG_DEBUG, "read_val_config_file(): Reading next policy fragment");
 
-    
     while (VAL_NO_ERROR ==
            (retval =
             get_next_policy_fragment(&buf_ptr, end_ptr, 
@@ -1177,7 +1200,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
     }
 
     if (retval != VAL_NO_ERROR) {
-        val_log(ctx, LOG_ERR, "Error in line %d of file %s", line_number,
+        val_log(ctx, LOG_ERR, "read_val_config_file(): Error in line %d of file %s", line_number,
                 dnsval_conf);
         destroy_valpolovr(&overrides);
         goto err;
@@ -1222,7 +1245,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
 
     CTX_UNLOCK_VALPOL(ctx);
 
-    val_log(ctx, LOG_DEBUG, "Done reading validator configuration");
+    val_log(ctx, LOG_DEBUG, "read_val_config_file(): Done reading validator configuration");
 
     return VAL_NO_ERROR;
 
@@ -1245,7 +1268,7 @@ destroy_respol(val_context_t * ctx)
 }
 
 static int
-parse_name_server(val_context_t *ctx, char *cp, struct name_server **ns)
+parse_name_server(char *cp, struct name_server **ns)
 { 
     struct sockaddr_storage serv_addr;
     struct sockaddr_in *sin = (struct sockaddr_in *)&serv_addr;
@@ -1321,9 +1344,6 @@ parse_name_server(val_context_t *ctx, char *cp, struct name_server **ns)
     return VAL_NO_ERROR;
 
   parse_err:
-    val_log(ctx, LOG_WARNING,
-            "Parse warning: Invalid nameserver addresses '%s', skipping.",
-            cp);
     FREE(*ns);
     *ns = NULL;
     return VAL_CONF_PARSE_ERROR;
@@ -1351,12 +1371,14 @@ read_res_config_file(val_context_t * ctx)
         return VAL_BAD_ARGUMENT;
 
     resolv_config = ctx->resolv_conf;
-    if (NULL == resolv_config)
-        return VAL_INTERNAL_ERROR;
+    if (NULL == resolv_config) {
+        val_log(ctx, LOG_ERR, "read_res_config_file(): No resolv.conf file configured"); 
+        return VAL_CONF_NOT_FOUND;
+    }
 
     fd = open(resolv_config, O_RDONLY);
     if (fd == -1) {
-        val_log(ctx, LOG_ERR, "Could not open resolver conf file for reading: %s",
+        val_log(ctx, LOG_ERR, "read_res_config_file(): Could not open resolver conf file for reading: %s",
                 resolv_conf);
         return VAL_CONF_NOT_FOUND;
     }
@@ -1378,12 +1400,12 @@ read_res_config_file(val_context_t * ctx)
     end_ptr = buf+sb.st_size;
 
     if (-1 == read(fd, buf, sb.st_size)) {
-        val_log(ctx, LOG_ERR, "Could not read resolver conf file: %s",
+        val_log(ctx, LOG_ERR, "read_res_config_file(): Could not read resolver conf file: %s",
                 resolv_conf);
         retval = VAL_CONF_NOT_FOUND;
         goto err;
     }
-    val_log(ctx, LOG_NOTICE, "Reading resolver policy from %s", resolv_config);
+    val_log(ctx, LOG_INFO, "read_res_config_file(): Reading resolver policy from %s", resolv_config);
 
     while(buf_ptr < end_ptr) {
 
@@ -1413,7 +1435,7 @@ read_res_config_file(val_context_t * ctx)
                 goto err;
             }
             ns = NULL;
-            if (VAL_NO_ERROR != parse_name_server(ctx, token, &ns))
+            if (VAL_NO_ERROR != parse_name_server(token, &ns))
                 goto err;
             if (ns != NULL) {
                 if (ns_tail == NULL) {
@@ -1423,6 +1445,10 @@ read_res_config_file(val_context_t * ctx)
                     ns_tail->ns_next = ns;
                     ns_tail = ns;
                 }
+            } else {
+                val_log(ctx, LOG_WARNING,
+                        "read_res_config_file(): Invalid nameserver addresses '%s', skipping.",
+                        token);
             }
         } else if (strncmp(token, "forward", strlen("forward")) == 0) {
 
@@ -1434,12 +1460,16 @@ read_res_config_file(val_context_t * ctx)
                 goto err;
             }
             ns = NULL;
-            if (VAL_NO_ERROR != parse_name_server(ctx, token, &ns))
+            if (VAL_NO_ERROR != parse_name_server(token, &ns))
                 goto err;
             if (ns != NULL) {
                 if (ns_name_pton(token, zone_n, sizeof(zone_n)) == -1)
                     goto err;
                 store_ns_for_zone(zone_n, ns);
+            } else {
+                val_log(ctx, LOG_WARNING,
+                        "read_res_config_file(): Invalid nameserver addresses '%s', skipping.",
+                        token);
             }
         } else if (strncmp(token, "search", strlen("search")) == 0) {
 
@@ -1466,7 +1496,8 @@ read_res_config_file(val_context_t * ctx)
      */
     if (ns_head == NULL) {
         if (!ctx->root_ns) {
-            val_log(ctx, LOG_ERR, "Resolver configuration is empty, but root-hints was not found");
+            val_log(ctx, LOG_WARNING, 
+                    "read_res_config_file(): Resolver configuration is empty, but root-hints was not found");
             return VAL_CONF_NOT_FOUND;
         }
     } 
@@ -1476,11 +1507,13 @@ read_res_config_file(val_context_t * ctx)
     ctx->nslist = ns_head;
     CTX_UNLOCK_RESPOL(ctx);
 
-    val_log(ctx, LOG_DEBUG, "Done reading resolver configuration");
+    val_log(ctx, LOG_DEBUG, 
+            "read_res_config_file(): Done reading resolver configuration");
     return VAL_NO_ERROR;
 
   err:
-    val_log(ctx, LOG_ERR, "Error encountered while reading file %s", resolv_config);
+    val_log(ctx, LOG_ERR, 
+            "read_res_config_file(): Error encountered while reading file %s", resolv_config);
     free_name_servers(&ns_head);
 
     if (buf)
@@ -1531,12 +1564,14 @@ read_root_hints_file(val_context_t * ctx)
      *  Root hints are not necessary. Only needed if our resolv.conf is empty. 
      * Flag the error at that time
      */
-    if (NULL == root_hints)
+    if (NULL == root_hints) {
+        val_log(ctx, LOG_INFO, "read_root_hints_file(): No root.hints file configured"); 
         return VAL_NO_ERROR;
+    }
 
     fd = open(root_hints, O_RDONLY);
     if (fd == -1) {
-        val_log(ctx, LOG_ERR, "Could not open root hints file for reading: %s",
+        val_log(ctx, LOG_ERR, "read_root_hints_file(): Could not open root hints file for reading: %s",
                 root_hints);
         return VAL_CONF_NOT_FOUND;
     }
@@ -1558,13 +1593,13 @@ read_root_hints_file(val_context_t * ctx)
     end_ptr = buf+sb.st_size;
 
     if (-1 == read(fd, buf, sb.st_size)) {
-        val_log(ctx, LOG_ERR, "Could not read root hints file: %s",
+        val_log(ctx, LOG_ERR, "read_root_hints_file(): Could not read root hints file: %s",
                 root_hints);
         retval = VAL_CONF_NOT_FOUND;
         goto err;
     }
 
-    val_log(ctx, LOG_DEBUG, "Reading root hints from %s",
+    val_log(ctx, LOG_INFO, "read_root_hints_file(): Reading root hints from %s",
             root_hints);
 
     while (buf_ptr < end_ptr) {
@@ -1739,13 +1774,13 @@ read_root_hints_file(val_context_t * ctx)
 
     res_sq_free_rrset_recs(&root_info);
 
-    val_log(ctx, LOG_DEBUG, "Done reading root hints");
+    val_log(ctx, LOG_DEBUG, "read_root_hints_file(): Done reading root hints");
     FREE(buf);
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
     close(fd);
 
-    return retval;
+    return VAL_NO_ERROR;
 
   err:
 
@@ -1755,7 +1790,8 @@ read_root_hints_file(val_context_t * ctx)
     fcntl(fd, F_SETLKW, &fl);
     close(fd);
     res_sq_free_rrset_recs(&root_info);
-    val_log(ctx, LOG_ERR, "Error encountered while reading file %s", root_hints);
+    val_log(ctx, LOG_ERR, "read_root_hints_file(): Error encountered while reading file %s - %s", 
+            root_hints, p_val_err(retval));
     return retval;
 }
 

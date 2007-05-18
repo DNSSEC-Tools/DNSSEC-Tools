@@ -1,7 +1,11 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
+/*
+ * DESCRIPTION
+ * Contains routines for context creation/deletion
+ */ 
 #include "validator-config.h"
 
 #include <stdio.h>
@@ -51,6 +55,9 @@ pthread_mutex_t ctx_default;
 #define UNLOCK_DEFAULT_CONTEXT()
 #endif
 
+/*
+ * Create a context with given configuration files
+ */
 int
 val_create_context_with_conf(char *label, 
                              char *dnsval_conf, 
@@ -180,7 +187,7 @@ val_create_context_with_conf(char *label,
         goto err;
     }
 
-    val_log(*newcontext, LOG_DEBUG, "Context created with %s %s %s", 
+    val_log(*newcontext, LOG_DEBUG, "val_create_context_with_conf(): Context created with %s %s %s", 
                             (*newcontext)->dnsval_conf,
                             (*newcontext)->resolv_conf,
                             (*newcontext)->root_conf);
@@ -197,10 +204,12 @@ val_create_context_with_conf(char *label,
 err:
     val_free_context(*newcontext);
     *newcontext = NULL;
-    val_log(NULL, LOG_ERR, "Could not create context");
     return retval;
 }
 
+/*
+ * Create a context with default configuration files
+ */
 int
 val_create_context(char *label, 
                    val_context_t ** newcontext)
@@ -208,8 +217,8 @@ val_create_context(char *label,
     return val_create_context_with_conf(label, NULL, NULL, NULL, newcontext);
 }
 
-int 
-free_if_default_context(val_context_t *context)
+static int 
+unlink_if_default_context(val_context_t *context)
 {
     DEFAULT_CONTEXT_INIT();
     LOCK_DEFAULT_CONTEXT();
@@ -220,14 +229,21 @@ free_if_default_context(val_context_t *context)
     return VAL_NO_ERROR;
 }
 
+/*
+ * Release memory associated with context
+ */
 void
 val_free_context(val_context_t * context)
 {
     if (context == NULL)
         return;
 
-    free_if_default_context(context);
+    unlink_if_default_context(context);
     
+    /*
+     * Forget the NULL context if we are going to be freeing it shortly
+     */
+
 #ifndef VAL_NO_THREADS
     pthread_rwlock_destroy(&context->respol_rwlock);
     pthread_rwlock_destroy(&context->valpol_rwlock);
@@ -280,6 +296,9 @@ free_validator_state(void)
     return VAL_NO_ERROR;
 }
 
+/*
+ * re-read resolver policy into the context
+ */
 void 
 val_refresh_resolver_policy(val_context_t * context)
 {
@@ -288,12 +307,16 @@ val_refresh_resolver_policy(val_context_t * context)
 
     if (read_res_config_file(context) != VAL_NO_ERROR) {
         context->r_timestamp = -1;
-        val_log(context, LOG_WARNING, "Resolver configuration could not be read; using older values");
+        val_log(context, LOG_WARNING, 
+                "val_refresh_resolver_policy(): Resolver configuration could not be read; using older values");
         return; 
     }
 }
 
 
+/*
+ * re-read validator policy into the context
+ */
 void 
 val_refresh_validator_policy(val_context_t * context)
 {
@@ -302,11 +325,15 @@ val_refresh_validator_policy(val_context_t * context)
 
     if (read_val_config_file(context, context->label) != VAL_NO_ERROR) {
         context->v_timestamp = -1;
-        val_log(context, LOG_WARNING, "Validator configuration could not be read; using older values");
+        val_log(context, LOG_WARNING, 
+                "val_refresh_validator_policy(): Validator configuration could not be read; using older values");
         return; 
     }
 }
 
+/*
+ * re-read root.hints policy into the context
+ */
 void 
 val_refresh_root_hints(val_context_t * context)
 {
@@ -315,7 +342,8 @@ val_refresh_root_hints(val_context_t * context)
 
     if (read_root_hints_file(context) != VAL_NO_ERROR) {
         context->h_timestamp = -1;
-        val_log(context, LOG_WARNING, "Root Hints could not be read; using older values");
+        val_log(context, LOG_WARNING, 
+                "val_refresh_root_hints(): Root Hints could not be read; using older values");
         return; 
     }
 }

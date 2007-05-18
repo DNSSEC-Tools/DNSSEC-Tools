@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  *
  * Author: Abhijit Hayatnagarkar
@@ -7,6 +7,10 @@
  * This is the implementation file for a validating getaddrinfo function.
  * Applications should be able to use this in place of getaddrinfo with
  * minimal change.
+ */
+/*
+ * DESCRIPTION
+ * Contains implementation of val_getaddrinfo() and friends
  */
 #include "validator-config.h"
 
@@ -391,11 +395,12 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
     struct val_addrinfo *retval = NULL;
     int validated = 1;
     int trusted = 1;
+    int ret;
 
     if (res == NULL) 
         return 0;
 
-    val_log(ctx, LOG_DEBUG, "Parsing /etc/hosts");
+    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing /etc/hosts");
 
     /*
      * Parse the /etc/hosts/ file 
@@ -417,18 +422,18 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
             return EAI_MEMORY;
         }
 
-        val_log(ctx, LOG_DEBUG, "{");
-        val_log(ctx, LOG_DEBUG, "  Address: %s", hs->address);
-        val_log(ctx, LOG_DEBUG, "  Canonical Hostname: %s",
-                hs->canonical_hostname);
-        val_log(ctx, LOG_DEBUG, "  Aliases:");
+        //val_log(ctx, LOG_DEBUG, "{");
+        //val_log(ctx, LOG_DEBUG, "  Address: %s", hs->address);
+        //val_log(ctx, LOG_DEBUG, "  Canonical Hostname: %s",
+        //        hs->canonical_hostname);
+        //val_log(ctx, LOG_DEBUG, "  Aliases:");
 
         while (hs->aliases[alias_index] != NULL) {
-            val_log(ctx, LOG_DEBUG, "   %s", hs->aliases[alias_index]);
+            //val_log(ctx, LOG_DEBUG, "   %s", hs->aliases[alias_index]);
             alias_index++;
         }
 
-        val_log(ctx, LOG_DEBUG, "}");
+        //val_log(ctx, LOG_DEBUG, "}");
 
         memset(ainfo, 0, sizeof(struct val_addrinfo));
         memset(&ip4_addr, 0, sizeof(struct in_addr));
@@ -475,6 +480,8 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
             ainfo->ai_addr = (struct sockaddr *) saddr6;
             ainfo->ai_canonname = NULL;
         } else {
+            val_log(ctx, LOG_WARNING, 
+                    "get_addrinfo_from_etc_hosts(): Host is nether an A nor an AAAA address");
             val_freeaddrinfo(ainfo);
             continue;
         }
@@ -490,12 +497,14 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
         /*
          * Expand the results based on servname and hints 
          */
-        if (process_service_and_hints
-            (ainfo->ai_val_status, servname, hints, &ainfo) != 0) {
+        if ((ret = process_service_and_hints
+            (ainfo->ai_val_status, servname, hints, &ainfo)) != 0) {
             val_freeaddrinfo(ainfo);
             if (retval)
                 val_freeaddrinfo(retval);
-            return EAI_SERVICE;
+            val_log(ctx, LOG_INFO, 
+                    "get_addrinfo_from_etc_hosts(): Failed in process_service_and_hints()");
+            return ret;
         }
 
         if (retval) {
@@ -508,7 +517,7 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
         FREE_HOSTS(h_prev);
     }
 
-    val_log(ctx, LOG_DEBUG, "Parsing /etc/hosts OK");
+    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_etc_hosts(): Parsing /etc/hosts OK");
 
     *res = retval;
     if (retval) {
@@ -569,7 +578,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
     if (!results) {
         *val_status = VAL_UNTRUSTED_ANSWER;
         *res = NULL;
-        val_log(ctx, LOG_DEBUG, "rrset is null");
+        val_log(ctx, LOG_INFO, "get_addrinfo_from_result(): results is null");
         return EAI_NONAME;
     }
 
@@ -603,14 +612,15 @@ get_addrinfo_from_result(const val_context_t * ctx,
                     /*
                      * error 
                      */
-                    val_log(ctx, LOG_DEBUG, "error in ns_name_ntop");
+                    val_log(ctx, LOG_INFO, "get_addrinfo_from_result(): Cannot parse cannonical name");
                 } else {
-                    val_log(ctx, LOG_DEBUG, "duplicating the canonname");
                     canonname =
                         (char *) malloc((strlen(dname) + 1) *
                                         sizeof(char));
                     if (canonname != NULL)
                         memcpy(canonname, dname, strlen(dname) + 1);
+                    else
+                        return EAI_MEMORY;
                 }
             }
 
@@ -643,7 +653,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                             FREE(canonname);
                         return EAI_MEMORY;
                     }
-                    val_log(ctx, LOG_DEBUG, "rrset of type A found");
+                    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type A found");
                     saddr4->sin_family = AF_INET;
                     ainfo->ai_family = AF_INET;
                     ainfo->ai_addrlen = sizeof(struct sockaddr_in);
@@ -665,7 +675,7 @@ get_addrinfo_from_result(const val_context_t * ctx,
                             FREE(canonname);
                         return EAI_MEMORY;
                     }
-                    val_log(ctx, LOG_DEBUG, "rrset of type AAAA found");
+                    val_log(ctx, LOG_DEBUG, "get_addrinfo_from_result(): rrset of type AAAA found");
                     saddr6->sin6_family = AF_INET6;
                     ainfo->ai_family = AF_INET6;
                     ainfo->ai_addrlen = sizeof(struct sockaddr_in6);
@@ -685,12 +695,14 @@ get_addrinfo_from_result(const val_context_t * ctx,
                 /*
                  * Expand the results based on servname and hints 
                  */
-                if (process_service_and_hints(ainfo->ai_val_status, 
-                                              servname, hints, &ainfo)
-                    == EAI_SERVICE) {
+                if ((retval = process_service_and_hints(ainfo->ai_val_status, 
+                                              servname, hints, &ainfo))
+                    != 0) {
                     val_freeaddrinfo(ainfo_head);
                     val_freeaddrinfo(ainfo);
-                    return EAI_SERVICE;
+                    val_log(ctx, LOG_INFO, 
+                        "get_addrinfo_from_result(): Failed in process_service_and_hints()");
+                    return retval;
                 }
 
                 if (ainfo_head == NULL) {
@@ -766,7 +778,6 @@ get_addrinfo_from_dns(val_context_t * ctx,
     struct val_result_chain *results = NULL;
     struct val_addrinfo *ainfo = NULL;
     u_char          name_n[NS_MAXCDNAME];
-    int             retval = 0;
     int             ret = 0;
     val_status_t val_status_a = VAL_VALIDATED_ANSWER;
     val_status_t val_status_aaaa = VAL_VALIDATED_ANSWER;
@@ -789,8 +800,9 @@ get_addrinfo_from_dns(val_context_t * ctx,
      */
     if (hints == NULL || hints->ai_family == AF_UNSPEC
         || hints->ai_family == AF_INET) {
+        int             retval = 0;
 
-        val_log(ctx, LOG_DEBUG, "checking for A records");
+        val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for A records");
 
         /*
          * Query the validator 
@@ -800,10 +812,12 @@ get_addrinfo_from_dns(val_context_t * ctx,
             if ((retval =
                  val_resolve_and_check(ctx, name_n, ns_c_in, ns_t_a, 0,
                                        &results)) != VAL_NO_ERROR) {
-                val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
+                val_log(ctx, LOG_INFO, 
+                        "get_addrinfo_from_dns(): val_resolve_and_check failed - %s", 
+                        p_val_err(retval));
             }
         } else {
-            val_log(ctx, LOG_DEBUG, "ns_name_pton failed");
+            val_log(ctx, LOG_INFO, "get_addrinfo_from_dns(): Cannot parse name");
         }
 
         /*
@@ -819,12 +833,13 @@ get_addrinfo_from_dns(val_context_t * ctx,
                 get_addrinfo_from_result(ctx, results, servname,
                                          hints, &ainfo_new, &val_status_a);
             if (ainfo_new) {
-                val_log(ctx, LOG_DEBUG, "A records found");
+                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): A records found");
                 ainfo = append_val_addrinfo(ainfo, ainfo_new);
             } else {
-                val_log(ctx, LOG_DEBUG, "A records not found");
+                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): A records not found");
             }
         } else {
+            val_log(ctx, LOG_INFO, "get_addrinfo_from_dns(): results for A are NULL or empty");
             val_status_a = VAL_UNTRUSTED_ANSWER; 
         }
         
@@ -833,8 +848,6 @@ get_addrinfo_from_dns(val_context_t * ctx,
         if (ret == EAI_SERVICE) {
             if (ainfo)
                 val_freeaddrinfo(ainfo);
-
-            retval = EAI_SERVICE;
             goto done;
         }
     } 
@@ -844,8 +857,9 @@ get_addrinfo_from_dns(val_context_t * ctx,
      */
     if (hints == NULL || hints->ai_family == AF_UNSPEC
         || hints->ai_family == AF_INET6) {
+        int             retval = 0;
 
-        val_log(ctx, LOG_DEBUG, "checking for AAAA records");
+        val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): checking for AAAA records");
 
         /*
          * Query the validator 
@@ -856,10 +870,12 @@ get_addrinfo_from_dns(val_context_t * ctx,
                  val_resolve_and_check((val_context_t *) ctx, name_n,
                                        ns_c_in, ns_t_aaaa, 0,
                                        &results)) != VAL_NO_ERROR) {
-                val_log(ctx, LOG_DEBUG, "val_resolve_and_check failed");
+                val_log(ctx, LOG_DEBUG, 
+                        "get_addrinfo_from_dns(): val_resolve_and_check failed - %s", 
+                        p_val_err(retval));
             }
         } else {
-            val_log(ctx, LOG_DEBUG, "ns_name_pton failed");
+            val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): Cannot parse name");
         }
 
         /*
@@ -875,12 +891,13 @@ get_addrinfo_from_dns(val_context_t * ctx,
                 get_addrinfo_from_result(ctx, results, servname,
                                          hints, &ainfo_new, &val_status_aaaa);
             if (ainfo_new) {
-                val_log(ctx, LOG_DEBUG, "AAAA records found");
+                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): AAAA records found");
                 ainfo = append_val_addrinfo(ainfo, ainfo_new);
             } else {
-                val_log(ctx, LOG_DEBUG, "AAAA records not found");
+                val_log(ctx, LOG_DEBUG, "get_addrinfo_from_dns(): AAAA records not found");
             }
         } else {
+            val_log(ctx, LOG_INFO, "get_addrinfo_from_dns(): results for AAAA are NULL or empty");
             val_status_aaaa = VAL_UNTRUSTED_ANSWER; 
         }
         val_free_result_chain(results);
@@ -889,7 +906,6 @@ get_addrinfo_from_dns(val_context_t * ctx,
             if (ainfo)
                 val_freeaddrinfo(ainfo);
 
-            retval = EAI_SERVICE;
             goto done;
         }
     } 
@@ -908,12 +924,12 @@ done:
 
     if (ainfo) {
         *res = ainfo;
-        retval = 0;
-    } else if (retval == 0) { 
-        retval = EAI_NONAME;
+        ret = 0;
+    } else if (ret == 0) { 
+        ret = EAI_NONAME;
     }
 
-    return retval;
+    return ret;
 
 }                               /* get_addrinfo_from_dns() */
 
@@ -976,8 +992,10 @@ val_getaddrinfo(val_context_t * ctx,
     *val_status = VAL_DONT_KNOW;
 
     if (ctx == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context))) {
+            val_log(ctx, LOG_ERR, "val_getaddrinfo(): Could not create context - %s", p_val_err(retval));
             return EAI_FAIL;
+        }
     } else
         context = (val_context_t *) ctx;
 
@@ -1051,11 +1069,12 @@ val_getaddrinfo(val_context_t * ctx,
         ainfo4->ai_canonname = NULL;
         ainfo4->ai_val_status = VAL_LOCAL_ANSWER;
 
-        if (process_service_and_hints(ainfo4->ai_val_status, servname,
-                                      cur_hints, &ainfo4)
-            == EAI_SERVICE) {
+        if ((retval = process_service_and_hints(ainfo4->ai_val_status, servname,
+                                      cur_hints, &ainfo4))
+            != 0) {
             val_freeaddrinfo(ainfo4);
-            retval = EAI_SERVICE;
+            val_log(ctx, LOG_INFO, 
+                    "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
         }
 
@@ -1112,11 +1131,12 @@ val_getaddrinfo(val_context_t * ctx,
         ainfo6->ai_canonname = NULL;
         ainfo6->ai_val_status = VAL_LOCAL_ANSWER;
 
-        if (process_service_and_hints(ainfo6->ai_val_status, servname,
-                                      cur_hints, &ainfo6)
-            == EAI_SERVICE) {
+        if ((retval = process_service_and_hints(ainfo6->ai_val_status, servname,
+                                      cur_hints, &ainfo6))
+            != 0) {
             val_freeaddrinfo(ainfo6);
-            retval = EAI_SERVICE;
+            val_log(ctx, LOG_INFO, 
+                    "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
         }
 
@@ -1163,15 +1183,8 @@ val_getaddrinfo(val_context_t * ctx,
         /*
          * Try DNS
          */
-        else if (get_addrinfo_from_dns(context, nodename, servname,
-                                       cur_hints, res, val_status)
-                 == EAI_SERVICE) {
-            retval = EAI_SERVICE;
-        } else if (*res != NULL) {
-            retval = 0;
-        } else {
-            retval = EAI_NONAME;
-        }
+        else return get_addrinfo_from_dns(context, nodename, servname,
+                                          cur_hints, res, val_status);
     }
 
   done:
@@ -1225,8 +1238,8 @@ address_to_reverse_domain(const char *saddr, int family,
                  (*(saddr + 1) & 0x0F), (*(saddr + 1) >> 4),
                  (*(saddr) & 0x0F), (*(saddr) >> 4));
     } else {
-        val_log((val_context_t *) NULL, LOG_DEBUG,
-                "Error: address_to_reverse_domain: unsupported family : \'%d\'",
+        val_log((val_context_t *) NULL, LOG_INFO,
+                "address_to_reverse_domain(): Error - unsupported family : \'%d\'",
                 family);
         return (EAI_FAMILY);
     }
@@ -1236,7 +1249,7 @@ address_to_reverse_domain(const char *saddr, int family,
      */
 
     val_log((val_context_t *) NULL, LOG_DEBUG,
-            "address_to_reverse_domain: reverse domain address \'%s\'",
+            "address_to_reverse_domain(): reverse domain address \'%s\'",
             dadd);
 
     return (0);
@@ -1287,14 +1300,14 @@ address_to_string(const char *saddr, int family, char *nadd, int nlen)
                  (*(saddr + 14) & 0x0F), (*(saddr + 15) >> 4),
                  (*(saddr + 15) & 0x0F));
     } else {
-        val_log((val_context_t *) NULL, LOG_DEBUG,
-                "Error: address_to_string: unsupported family : \'%d\'",
+        val_log((val_context_t *) NULL, LOG_INFO,
+                "address_to_string(): Error - unsupported family : \'%d\'",
                 family);
         return (EAI_FAMILY);
     }
 
     val_log((val_context_t *) NULL, LOG_DEBUG,
-            "address_to_string: numeric address \'%s\'", nadd);
+            "address_to_string(): numeric address \'%s\'", nadd);
 
     return (0);
 }                               /* address_to_string */
@@ -1321,6 +1334,7 @@ val_getnameinfo(val_context_t * ctx,
 
     int validated = 1;
     int trusted = 1;
+    int retval;
 
     /*
      * no need to check context, val_resolve_and_check will check and
@@ -1383,7 +1397,7 @@ val_getnameinfo(val_context_t * ctx,
             strncpy(host, number_string, hostlen);
             *val_status = VAL_LOCAL_ANSWER;
         } else {
-            if (0 != val_resolve_and_check(ctx,       /*val_context_t*  */
+            if (VAL_NO_ERROR != (retval = val_resolve_and_check(ctx,       /*val_context_t*  */
                                                              wire_addr, /*u_char *wire_domain_name */
                                                              ns_c_in,   /*const u_int16_t q_class */
                                                              ns_t_ptr,  /*const u_int16_t type */
@@ -1391,8 +1405,12 @@ val_getnameinfo(val_context_t * ctx,
                                                              /*
                                                               * struct val_result_chain **results 
                                                               */
-                                                             &val_res))
+                                                             &val_res))) {
+                val_log(ctx, LOG_ERR, 
+                        "val_getnameinfo(): val_resolve_and_check failed - %s", 
+                        p_val_err(retval));
                 return EAI_FAIL;
+            }
 
             
             if (!val_res) 
@@ -1440,7 +1458,7 @@ val_getnameinfo(val_context_t * ctx,
             }
                     
             val_log(ctx, LOG_DEBUG,
-                    "val_getnameinfo: val_resolve_and_check for host %s, returned %s with lookup status %d and validator status %d : %s",
+                    "val_getnameinfo(): val_resolve_and_check for host %s, returned %s with lookup status %d and validator status %d : %s",
                     domain_string, host,
                     val_rnc_status, 
                     *val_status, p_val_error(*val_status));
@@ -1470,7 +1488,7 @@ val_getnameinfo(val_context_t * ctx,
         else
             strncpy(serv, sent->s_name, servlen);
 
-        val_log(ctx, LOG_DEBUG, "val_getnameinfo: service is %s : %s ",
+        val_log(ctx, LOG_DEBUG, "val_getnameinfo(): service is %s : %s ",
                 serv, sent->s_proto);
     }
 
@@ -1505,6 +1523,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
     struct val_result_chain *res;
     int validated = 1;
     int trusted = 1;
+    int retval;
     
     /*
      * no need to check context, val_resolve_and_check will check and
@@ -1571,7 +1590,7 @@ val_gethostbyaddr_r(val_context_t * ctx,
         return (NO_RECOVERY);
     }
 
-    if (0 != val_resolve_and_check(ctx,       /* val_context_t *  */
+    if (VAL_NO_ERROR != (retval = val_resolve_and_check(ctx,       /* val_context_t *  */
                                                      wire_addr, /* u_char * wire_domain_name */
                                                      ns_c_in,   /* const u_int16_t q_class */
                                                      ns_t_ptr,  /* const u_int16_t type */
@@ -1579,7 +1598,10 @@ val_gethostbyaddr_r(val_context_t * ctx,
                                                      /*
                                                       * struct val_result_chain **results 
                                                       */
-                                                     &val_res)) {
+                                                     &val_res))) {
+
+        val_log(ctx, LOG_ERR, 
+                "val_gethostbyaddr_r(): val_resolve_and_check failed - %s", p_val_err(retval));
         *h_errnop = NO_RECOVERY;
         return NO_RECOVERY;
     }

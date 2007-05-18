@@ -1,6 +1,10 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
+ */
+/*
+ * DESCRIPTION
+ * Parsing functions for some useful RR types
  */
 #include "validator-config.h"
 
