@@ -19,8 +19,8 @@ trust anchor
 I<val_does_not_exist()> - check if status value represents 
 one of the non-existence types
 
-I<p_val_status()>, I<p_ac_status()> - display validation status 
-and authentication chain status information
+I<p_val_status()>, I<p_ac_status()>, I<p_val_error()> - display validation status,
+authentication chain status and error information
 
 I<dnsval_conf_get()>, I<resolv_conf_get()>, I<root_hints_get()> - get
 the default location for the validator configuration files
@@ -50,6 +50,8 @@ the default location for the validator configuration files
   char *p_val_status(val_status_t valerrno);
 
   char *p_ac_status(val_astatus_t auth_chain_status);
+
+  char *p_val_error(int err);
 
   int val_istrusted(val_status_t val_status);
 
@@ -282,7 +284,7 @@ Validation status for a given RRset.  This can be one of the following:
         the provably unsecure condition was configured
         as untrustworthy.
 
-Error values in I<val_status_t> returned by the validator can be displayed 
+Status values in I<val_status_t> returned by the validator can be displayed 
 in ASCII format using I<p_val_status()>.
 
 =back
@@ -606,7 +608,8 @@ Points to the next resource record in the RRset.
 
 =head1 RETURN VALUES
 
-Return values for various functions are given below.
+Return values for various functions are given below. These values can be 
+displayed in ASCII format using the I<p_val_error()> function.
 
 =over 4
 
