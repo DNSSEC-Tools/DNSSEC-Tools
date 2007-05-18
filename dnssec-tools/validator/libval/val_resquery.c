@@ -15,8 +15,12 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
+ */
+/*
+ * DESCRIPTION
+ * Contains resolver functionality in libval 
  */
 #include "validator-config.h"
 
@@ -65,7 +69,10 @@
 	}\
 } while (0)
 
-int
+/*
+ * create a name_server struct from the given address rdata
+ */
+static int
 extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
 {
     struct sockaddr_in *sock_in;
@@ -85,7 +92,7 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
             && addr_rr->rr_rdata_length_h != sizeof(struct in6_addr)
 #endif
             ) {
-            val_log(NULL, LOG_ERR, "Skipping address with bad len=%d.",
+            val_log(NULL, LOG_DEBUG, "extract_glue_from_rdata(): Skipping address with bad len=%d.",
                     addr_rr->rr_rdata_length_h);
             addr_rr = addr_rr->rr_next;
             continue;
@@ -133,7 +140,11 @@ extract_glue_from_rdata(struct rr_rec *addr_rr, struct name_server **ns)
     return VAL_NO_ERROR;
 }
 
-int
+/*
+ * merge the data received from a glue fetch operation into
+ * the original query. Also check for glue fetch loops.
+ */
+static int
 merge_glue_in_referral(val_context_t *context,
                        struct queries_for_query *qfq_pc,
                        struct glue_fetch_bucket *bucket,
@@ -164,6 +175,10 @@ merge_glue_in_referral(val_context_t *context,
     prev_ns = NULL;
     while(pending_ns) {
 
+        char name_p[NS_MAXDNAME];
+        ns_name_ntop(pending_ns->ns_name_n, name_p,
+                     sizeof(name_p));
+        
         /*
          * Identify the query in the query chain 
          */
@@ -197,10 +212,11 @@ merge_glue_in_referral(val_context_t *context,
                 pending_ns = pc->qc_referral->pending_glue_ns;
             }
             
-            // This could be a cname or dname alias; search for the A record
-            // XXX Need to support IPv6
+            /* This could be a cname or dname alias; search for the A record */
             for (as=glueptr->qc_ans; as; as=as->_as.val_ac_rrset_next) {
-                if (as->_as.ac_data && as->_as.ac_data->rrs.val_rrset_type_h == ns_t_a)
+                if (as->_as.ac_data && 
+                    (as->_as.ac_data->rrs.val_rrset_type_h == ns_t_a ||
+                     as->_as.ac_data->rrs.val_rrset_type_h == ns_t_aaaa))
                     break;
             }
        
@@ -210,6 +226,9 @@ merge_glue_in_referral(val_context_t *context,
                     extract_glue_from_rdata(as->_as.ac_data->rrs.val_rrset_data, 
                                             &cur_ns))) { 
 
+                val_log(context, LOG_DEBUG, 
+                        "merge_glue_in_referral(): Could not fetch glue for %s", 
+                        name_p);
                 /* free this name server */
                 free_name_server(&cur_ns);
 
@@ -226,7 +245,9 @@ merge_glue_in_referral(val_context_t *context,
             for (i=0; i<bucket->qfq_count; i++) {
                 if (bucket->qfq[i] == glue_qfq) {
                     /* loop detected */
-                    val_log(context, LOG_DEBUG, "Loop detected while fetching glue");
+                    val_log(context, LOG_DEBUG, 
+                            "merge_glue_in_referral(): Loop detected while fetching glue for %s",
+                            name_p);
                     glueptr->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
                     break; 
                 } 
@@ -235,7 +256,9 @@ merge_glue_in_referral(val_context_t *context,
                 /* add this glueptr to the bucket */
                 if ((bucket->qfq_count+1) == MAX_GLUE_FETCH_DEPTH) {
                     /* too many dependencies */
-                    val_log(context, LOG_DEBUG, "Too many glue requests in dependency chain");
+                    val_log(context, LOG_DEBUG, 
+                            "merge_glue_in_referral(): Too many glue requests in dependency chain for %s",
+                            name_p);
                     glueptr->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
                 } else {
                     bucket->qfq[i] = glue_qfq;
@@ -253,7 +276,7 @@ merge_glue_in_referral(val_context_t *context,
 
         if (pc->qc_referral->merged_glue_ns == NULL) {
             /* couldn't find any answers for the glue fetch requests */
-            val_log(context, LOG_DEBUG, "No good answer for glue fetch");
+            val_log(context, LOG_DEBUG, "merge_glue_in_referral(): No good answer for glue fetch");
             pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
         } else {
             /* continue referral using the fetched glue records */
@@ -274,6 +297,7 @@ merge_glue_in_referral(val_context_t *context,
             pc->qc_ns_list = pc->qc_referral->merged_glue_ns;
             pc->qc_referral->merged_glue_ns = NULL;
             pc->qc_state = Q_INIT;
+            /* save learned zone information */
             if (VAL_NO_ERROR != (retval = 
                         stow_zone_info(pc->qc_referral->learned_zones, pc))) {
                 return retval;
@@ -285,15 +309,115 @@ merge_glue_in_referral(val_context_t *context,
     return VAL_NO_ERROR;
 }
 
+/*
+ * Check queries in list for missing glue
+ * Merge any glue that is available into the relevant query
+ * Set *data_missing if some query in the list still remains
+ * unanswered
+ */
+int
+fix_glue(val_context_t * context,
+         struct queries_for_query **queries,
+         int *data_missing)
+{
+    struct queries_for_query *next_q;
+    struct glue_fetch_bucket *depn_bucket = NULL;
+    int    retval;
+    char   name_p[NS_MAXDNAME];
+    int i;
+
+    retval = VAL_NO_ERROR;
+   
+    if (context == NULL || queries == NULL || data_missing == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    if (*data_missing == 0)
+        return VAL_NO_ERROR;
+
+    *data_missing = 0;
+    for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
+        if (next_q->qfq_query->qc_state < Q_ANSWERED) {
+            *data_missing = 1;
+        }
+        if (next_q->qfq_query->qc_state == Q_WAIT_FOR_GLUE) {
+            struct glue_fetch_bucket *b;
+
+            if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
+                snprintf(name_p, sizeof(name_p), "unknown/error");
+
+            /* 
+             * check for a glue fetch loop 
+             */
+            /* first, find  the dependency bucket */
+            for (b = depn_bucket; b; b=b->next_bucket) {
+               for (i=0; i<b->qfq_count; i++) {
+                   if (b->qfq[i] == next_q)
+                       break;
+               }
+               if (i < b->qfq_count)
+                   break;
+            }
+
+            if (b == NULL) {
+                /* create a new bucket if one does not exist */
+                b = (struct glue_fetch_bucket *) MALLOC (sizeof (struct glue_fetch_bucket));
+                if (b == NULL)
+                    goto err;
+                memset(b->qfq, 0, MAX_GLUE_FETCH_DEPTH);
+                b->qfq_count = 1;
+                b->qfq[0] = next_q;
+                /* add to head of list */
+                b->next_bucket = depn_bucket;
+                depn_bucket = b;
+            }
+            /* 
+             * next, check if the glue for this query is already in the bucket 
+             * or check if the glue was returned 
+             */
+            if (VAL_NO_ERROR != (retval =
+                        merge_glue_in_referral(context,
+                                               next_q,
+                                               b,
+                                               queries))) {
+                goto err;
+            }
+
+            if (next_q->qfq_query->qc_state == Q_INIT) {
+                val_log(context, LOG_DEBUG,
+                        "fix_glue(): successfully fetched glue for {%s %d %d}", name_p,
+                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
+            } else if (next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
+                val_log(context, LOG_DEBUG,
+                        "fix_glue(): could not fetch glue for {%s %d %d}", name_p,
+                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
+            }
+        }
+    }
+
+err:
+    /* free up depn_bucket */
+    while(depn_bucket) {
+        struct glue_fetch_bucket *temp = depn_bucket;
+
+        depn_bucket = depn_bucket->next_bucket;
+        FREE(temp);
+    }
+
+    return retval;
+}
+
+/*
+ * Identify the referral name servers from the rrsets 
+ * returned in the response. The glue may be missing,
+ * in which case we save the incomplete name server information
+ * in "pending glue"
+ */ 
 int
 res_zi_unverified_ns_list(struct name_server **ns_list,
                           u_int8_t * zone_name,
                           struct rrset_rec *unchecked_zone_info,
                           struct name_server **pending_glue)
 {
-    /*
-     * Look through the unchecked_zone stuff for answers 
-     */
     struct rrset_rec *unchecked_set;
     struct rrset_rec *trailer;
     struct rr_rec  *ns_rr;
@@ -312,6 +436,9 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
     *ns_list = NULL;
     trailer = NULL;
 
+    /*
+     * Look through the unchecked_zone stuff for NS records 
+     */
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL) {
         if (unchecked_set->rrs.val_rrset_type_h == ns_t_ns &&
@@ -389,13 +516,12 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
      * This is ugly - loop through unchecked data for address records,
      * then through the name server records to find a match,
      * then through the (possibly multiple) addresses under the A set
-     * 
-     * There is no suppport for an IPv6 NS address yet.
      */
 
     unchecked_set = unchecked_zone_info;
     while (unchecked_set != NULL) {
-        if (unchecked_set->rrs.val_rrset_type_h == ns_t_a) {
+        if (unchecked_set->rrs.val_rrset_type_h == ns_t_a ||
+            unchecked_set->rrs.val_rrset_type_h == ns_t_aaaa) {
             /*
              * If the owner name matches the name in an *ns_list entry...
              */
@@ -489,7 +615,9 @@ res_zi_unverified_ns_list(struct name_server **ns_list,
     return VAL_NO_ERROR;
 }
 
-
+/*
+ * Identify the name servers where the query needs to be sent to 
+ */
 int
 find_nslist_for_query(val_context_t * context,
                       struct queries_for_query *next_qfq,
@@ -508,6 +636,8 @@ find_nslist_for_query(val_context_t * context,
     next_q = next_qfq->qfq_query; /* Can never be NULL if next_qfq is not NULL */
 
     ref_ns_list = NULL;
+
+    /* forget existing name server information */
     if (next_q->qc_zonecut_n)
         FREE(next_q->qc_zonecut_n);
     next_q->qc_zonecut_n = NULL;
@@ -528,6 +658,10 @@ find_nslist_for_query(val_context_t * context,
     } 
 
     if (context->nslist != NULL) {
+        /* 
+         * if we have a default name server in our resolv.conf file, send
+         *  to that name server
+         */
         clone_ns_list(&(next_q->qc_ns_list), context->nslist);
     } else {
         /*
@@ -537,7 +671,8 @@ find_nslist_for_query(val_context_t * context,
             /*
              * No root hints; should not happen here 
              */
-            val_log(context, LOG_WARNING, "No root hints file found.");
+            val_log(context, LOG_WARNING, 
+                    "find_nslist_for_query(): Trying to answer query recursively, but no root hints file found.");
             return VAL_CONF_NOT_FOUND;
         }
         clone_ns_list(&next_q->qc_ns_list, context->root_ns);
@@ -550,39 +685,10 @@ find_nslist_for_query(val_context_t * context,
     return VAL_NO_ERROR;
 }
 
-void
-free_referral_members(struct delegation_info *del)
-{
-    if (del == NULL)
-        return;
-
-    if (del->queries != NULL) {
-        deregister_queries(&del->queries);
-        del->queries = NULL;
-    }
-    if (del->answers != NULL) {
-        res_sq_free_rrset_recs(&del->answers);
-        del->answers = NULL;
-    }
-    if (del->qnames) {
-        free_qname_chain(&del->qnames);
-        del->qnames = NULL;
-    }
-    if (del->pending_glue_ns) {
-        free_name_servers(&del->pending_glue_ns);
-        del->pending_glue_ns = NULL;
-    }
-    if (del->merged_glue_ns) {
-        free_name_servers(&del->merged_glue_ns);
-        del->merged_glue_ns = NULL;
-    }
-    if (del->learned_zones) {
-        res_sq_free_rrset_recs(&del->learned_zones);
-        del->learned_zones = NULL;
-    }
-
-}
-
+/*
+ * Identify next name servers in referral chain, 
+ * issue queries for for missing glue
+ */
 int
 bootstrap_referral(val_context_t *context,
                    u_int8_t * referral_zone_n,
@@ -604,7 +710,6 @@ bootstrap_referral(val_context_t *context,
     *ref_ns_list = NULL;
     matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
 
-
     /*
      *  If we received a referral for the root, use our 
      *  pre-parsed root.hints information 
@@ -614,7 +719,8 @@ bootstrap_referral(val_context_t *context,
             /*
              * No root hints; should not happen here 
              */
-            val_log(context, LOG_WARNING, "No root hints file found.");
+            val_log(context, LOG_WARNING, 
+                    "bootstrap_referral(): referral to root, but no root hints file found.");
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
             return VAL_NO_ERROR;
         }
@@ -640,7 +746,6 @@ bootstrap_referral(val_context_t *context,
     }
 
     if (pending_glue != NULL) {
-
         /*
          * Don't fetch glue if we're already fetching glue 
          */
@@ -651,7 +756,7 @@ bootstrap_referral(val_context_t *context,
             free_name_servers(&pending_glue);
             free_name_servers(ref_ns_list);
             *ref_ns_list = NULL;
-            val_log(context, LOG_DEBUG, "Already fetching glue; not fetching again");
+            val_log(context, LOG_DEBUG, "bootstrap_referral(): Already fetching glue; not fetching again");
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
             return VAL_NO_ERROR;
         }
@@ -700,6 +805,47 @@ bootstrap_referral(val_context_t *context,
     return VAL_NO_ERROR;
 }
 
+/*
+ * Clean up delegation_info structure
+ */
+void
+free_referral_members(struct delegation_info *del)
+{
+    if (del == NULL)
+        return;
+
+    if (del->queries != NULL) {
+        deregister_queries(&del->queries);
+        del->queries = NULL;
+    }
+    if (del->answers != NULL) {
+        res_sq_free_rrset_recs(&del->answers);
+        del->answers = NULL;
+    }
+    if (del->qnames) {
+        free_qname_chain(&del->qnames);
+        del->qnames = NULL;
+    }
+    if (del->pending_glue_ns) {
+        free_name_servers(&del->pending_glue_ns);
+        del->pending_glue_ns = NULL;
+    }
+    if (del->merged_glue_ns) {
+        free_name_servers(&del->merged_glue_ns);
+        del->merged_glue_ns = NULL;
+    }
+    if (del->learned_zones) {
+        res_sq_free_rrset_recs(&del->learned_zones);
+        del->learned_zones = NULL;
+    }
+
+}
+
+
+/*
+ * wrapper around the additional query logic for aliases and
+ * referrals.
+ */
 static int
 follow_referral_or_alias_link(val_context_t * context,
                               int alias_chain,
@@ -761,7 +907,8 @@ follow_referral_or_alias_link(val_context_t * context,
          */
         if (VAL_NO_ERROR !=
             find_nslist_for_query(context, matched_qfq, queries)) {
-            val_log(context, LOG_DEBUG, "Alias lookup: Cannot find name servers to send to");
+            val_log(context, LOG_DEBUG, 
+                    "follow_referral_or_alias_link(): Cannot find name servers to send query for alias");
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
             goto query_err;
         }
@@ -791,6 +938,7 @@ follow_referral_or_alias_link(val_context_t * context,
             /*
              * nowhere to look 
              */
+            val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Missing glue");
             matched_q->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
             goto query_err;
         }
@@ -803,7 +951,7 @@ follow_referral_or_alias_link(val_context_t * context,
             ns_name_ntop(matched_q->qc_name_n, debug_name1,
                      sizeof(debug_name1));
             ns_name_ntop(referral_zone_n, debug_name2, sizeof(debug_name2));
-            val_log(context, LOG_DEBUG, "QUERYING: '%s.' (referral to %s)",
+            val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): QUERYING '%s.' (referral to %s)",
                     debug_name1, debug_name2);
         }
 
@@ -817,7 +965,7 @@ follow_referral_or_alias_link(val_context_t * context,
             /*
              * If this request has already been made then Referral Error
              */
-            val_log(context, LOG_DEBUG, "Referral loop");
+            val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Referral loop encountered");
             matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
             goto query_err;
         }
@@ -976,7 +1124,9 @@ follow_referral_or_alias_link(val_context_t * context,
         }                                                               \
     } while (0)
 
-
+/*
+ * Check if CNAME or DNAME chain are invalid or contain a loop
+ */
 int
 process_cname_dname_responses(u_int8_t *name_n, 
                               u_int16_t type_h, 
@@ -1089,7 +1239,93 @@ process_cname_dname_responses(u_int8_t *name_n,
     return VAL_NO_ERROR;
 }
 
+/*
+ * Create error rrset_rec structure
+ */
+int
+prepare_empty_nxdomain(struct rrset_rec **answers,
+                       struct name_server *respondent_server,
+                       const u_int8_t * query_name_n,
+                       u_int16_t query_type_h, u_int16_t query_class_h,
+                       u_int8_t       *hptr)
+{
+    size_t          length = wire_name_length(query_name_n);
 
+    if (answers == NULL || length == 0)
+        return VAL_BAD_ARGUMENT;
+
+    *answers = (struct rrset_rec *) MALLOC(sizeof(struct rrset_rec));
+    if (*answers == NULL)
+        return VAL_OUT_OF_MEMORY;
+
+    (*answers)->rrs_zonecut_n = NULL;
+    (*answers)->rrs.val_rrset_name_n = (u_int8_t *) MALLOC(length);
+
+    if ((*answers)->rrs.val_rrset_name_n == NULL) {
+        FREE(*answers);
+        *answers = NULL;
+        return VAL_OUT_OF_MEMORY;
+    }
+
+    memcpy((*answers)->rrs.val_rrset_name_n, query_name_n, length);
+    if (hptr) {
+        (*answers)->rrs.val_msg_header =
+            (u_int8_t *) MALLOC(sizeof(HEADER) * sizeof(u_int8_t));
+        if ((*answers)->rrs.val_msg_header == NULL) {
+            FREE((*answers)->rrs.val_rrset_name_n);
+            FREE(*answers);
+            *answers = NULL;
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy((*answers)->rrs.val_msg_header, hptr, sizeof(HEADER));
+        (*answers)->rrs.val_msg_headerlen = sizeof(HEADER);
+    } else {
+        (*answers)->rrs.val_msg_header = NULL;
+        (*answers)->rrs.val_msg_headerlen = 0;
+    }
+    (*answers)->rrs.val_rrset_type_h = query_type_h;
+    (*answers)->rrs.val_rrset_class_h = query_class_h;
+    (*answers)->rrs.val_rrset_ttl_h = 0;
+    (*answers)->rrs_cred = SR_CRED_UNSET;
+    (*answers)->rrs.val_rrset_section = VAL_FROM_UNSET;
+    if ((respondent_server) &&
+        (respondent_server->ns_number_of_addresses > 0)) {
+        (*answers)->rrs.val_rrset_server =
+            (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
+        if ((*answers)->rrs.val_rrset_server == NULL) {
+            FREE((*answers)->rrs.val_rrset_name_n);
+            FREE(*answers);
+            *answers = NULL;
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy((*answers)->rrs.val_rrset_server,
+               respondent_server->ns_address[0],
+               sizeof(struct sockaddr_storage));
+    } else {
+        (*answers)->rrs.val_rrset_server = NULL;
+    }
+    (*answers)->rrs.val_rrset_data = NULL;
+    (*answers)->rrs.val_rrset_sig = NULL;
+    (*answers)->rrs_next = NULL;
+
+    return VAL_NO_ERROR;
+}
+
+/*
+ * The main routine for processing response data
+ *  
+ * RRsets in the answer and authority sections are extracted as is any
+ * referral information present in the additional section of the response. Any
+ * DS or DNSKEY information is also cached for future use. 
+ * The validator follows any referrals or aliases that are returned as part of
+ * the response and issues queries to fetch any missing glue. Information gathered
+ * as part of following referrals are maintained separately within the val_query_chain
+ * structure. Once the referral operation completes, all information within
+ * this entry are merged into the validator cache.
+ * 
+ * The validator keeps track of nameservers that it actually used while following
+ * referrals.  These are re-used in future requests for data in the same zone.
+ */
 static int
 digest_response(val_context_t * context,
                 struct queries_for_query *matched_qfq,
@@ -1299,9 +1535,9 @@ digest_response(val_context_t * context,
                                                   matched_q, qnames, 
                                                   &referral_error))) || 
                     (referral_error)) {
+                if (referral_error) 
+                    val_log(context, LOG_DEBUG, "disgest_response(): CNAME/DNAME error or loop encountered");
 
-                if (referral_error)
-                    val_log(context, LOG_DEBUG, "CNAME/DNAME Referral loop");
                 goto done;
             }
 
@@ -1327,6 +1563,7 @@ digest_response(val_context_t * context,
                     /*
                      * Multiple NS records;
                      */
+                    val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
                     matched_q->qc_state =
                         Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                     ret_val = VAL_NO_ERROR;
@@ -1392,7 +1629,7 @@ digest_response(val_context_t * context,
                         /*
                          * Multiple NS records; Malformed referral notice 
                          */
-                        val_log(context, LOG_DEBUG, "Multiple NS records; Malformed referral notice");
+                        val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
                         matched_q->qc_state =
                                 Q_ERROR_BASE + SR_REFERRAL_ERROR;
                         ret_val = VAL_NO_ERROR;
@@ -1417,6 +1654,7 @@ digest_response(val_context_t * context,
                             /*
                              * Multiple NS records;
                              */
+                            val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
                             matched_q->qc_state =
                                 Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
                             ret_val = VAL_NO_ERROR;
@@ -1527,8 +1765,8 @@ digest_response(val_context_t * context,
             matched_q->qc_trans_id = -1;
             matched_q->qc_state = Q_INIT;
             val_log(context, LOG_DEBUG,
-                    "EDNS0 was not used but it should have been");
-            val_log(context, LOG_DEBUG, "Setting D0 bit and using EDNS0");
+                    "digest_response(): EDNS0 was not used but it should have been");
+            val_log(context, LOG_DEBUG, "digest_response(): Setting D0 bit and using EDNS0");
             for (ns = matched_q->qc_ns_list; ns; ns = ns->ns_next)
                 ns->ns_options |= RES_USE_DNSSEC;
             ret_val = VAL_NO_ERROR;
@@ -1614,7 +1852,9 @@ digest_response(val_context_t * context,
     res_sq_free_rrset_recs(&learned_ds);
     return ret_val;
 }
-
+/*
+ * This is the interface between libval and libsres for sending queries
+ */
 int
 val_resquery_send(val_context_t * context,
                   struct queries_for_query *matched_qfq)
@@ -1644,13 +1884,13 @@ val_resquery_send(val_context_t * context,
         return VAL_NO_ERROR;
     }
 
-    val_log(context, LOG_DEBUG, "Sending query for %s to:", name_p);
+    val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for %s to:", name_p);
     for (tempns = nslist; tempns; tempns = tempns->ns_next) {
         val_log(context, LOG_DEBUG, "    %s",
                 val_get_ns_string((struct sockaddr *)tempns->ns_address[0],
                                   name_buf, sizeof(name_buf)));
     }
-    val_log(context, LOG_DEBUG, "End of Sending query for %s", name_p);
+    val_log(context, LOG_DEBUG, "val_resquery_send(): End of Sending query for %s", name_p);
 
     if ((ret_val =
          query_send(name_p, matched_q->qc_type_h, matched_q->qc_class_h,
@@ -1664,6 +1904,9 @@ val_resquery_send(val_context_t * context,
     return VAL_NO_ERROR;
 }
 
+/*
+ * This is the interface between libval and libsres for receiving responses 
+ */
 int
 val_resquery_rcv(val_context_t * context,
                  struct queries_for_query *matched_qfq,
