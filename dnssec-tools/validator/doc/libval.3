@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2007-04-26" "perl v5.8.8" "Programmer's Manual"
+.TH libval 3 "2007-05-01" "perl v5.8.8" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_create_context()\fR, \fIval_create_context_with_conf()\fR \fIval_free_context()\fR \-
 manage validator context
@@ -147,8 +147,8 @@ trust anchor
 \&\fIval_does_not_exist()\fR \- check if status value represents 
 one of the non\-existence types
 .PP
-\&\fIp_val_status()\fR, \fIp_ac_status()\fR \- display validation status 
-and authentication chain status information
+\&\fIp_val_status()\fR, \fIp_ac_status()\fR, \fIp_val_error()\fR \- display validation status,
+authentication chain status and error information
 .PP
 \&\fIdnsval_conf_get()\fR, \fIresolv_conf_get()\fR, \fIroot_hints_get()\fR \- get
 the default location for the validator configuration files
@@ -188,6 +188,10 @@ the default location for the validator configuration files
 .PP
 .Vb 1
 \&  char *p_ac_status(val_astatus_t auth_chain_status);
+.Ve
+.PP
+.Vb 1
+\&  char *p_val_error(int err);
 .Ve
 .PP
 .Vb 1
@@ -472,7 +476,7 @@ Validation status for a given RRset.  This can be one of the following:
 \&        as untrustworthy.
 .Ve
 .Sp
-Error values in \fIval_status_t\fR returned by the validator can be displayed 
+Status values in \fIval_status_t\fR returned by the validator can be displayed 
 in \s-1ASCII\s0 format using \fI\fIp_val_status()\fI\fR.
 .RE
 .RS 4
@@ -861,7 +865,8 @@ Points to the next resource record in the RRset.
 .RE
 .SH "RETURN VALUES"
 .IX Header "RETURN VALUES"
-Return values for various functions are given below.
+Return values for various functions are given below. These values can be 
+displayed in \s-1ASCII\s0 format using the \fI\fIp_val_error()\fI\fR function.
 .IP "\fI\fIval_resolve_and_check()\fI\fR" 4
 .IX Item "val_resolve_and_check()"
 .RS 4
