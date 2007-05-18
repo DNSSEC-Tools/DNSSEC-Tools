@@ -1,9 +1,12 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  *
  * Author: Abhijit Hayatnagarkar
- *
+ */
+
+/*
+ * DESCRIPTION
  * This is the implementation for the DSA/SHA-1 algorithm signature
  * verification, the implementation for the RSA/MD5 algorithm signature
  * verification and the implementation for the RSA/SHA-1 algorithm signature
@@ -43,7 +46,7 @@ dsasha1_parse_public_key(const unsigned char *buf, int buflen, DSA * dsa)
     BIGNUM         *bn_p, *bn_q, *bn_g, *bn_y;
 
     if (!dsa) {
-        return VAL_INTERNAL_ERROR;
+        return VAL_BAD_ARGUMENT;
     }
 
     T = (u_int8_t) (buf[index]);
@@ -85,8 +88,8 @@ dsasha1_sigverify(val_context_t * ctx,
     val_log(ctx, LOG_DEBUG,
             "dsasha1_sigverify(): parsing the public key...\n");
     if ((dsa = DSA_new()) == NULL) {
-        val_log(ctx, LOG_DEBUG,
-                "dsasha1_sigverify could not allocate dsa structure.\n");
+        val_log(ctx, LOG_INFO,
+                "dsasha1_sigverify(): could not allocate dsa structure.\n");
         *key_status = VAL_AC_INVALID_KEY;
         return;
     };
@@ -94,7 +97,7 @@ dsasha1_sigverify(val_context_t * ctx,
     if (dsasha1_parse_public_key
         (dnskey->public_key, dnskey->public_key_len,
          dsa) != VAL_NO_ERROR) {
-        val_log(ctx, LOG_DEBUG,
+        val_log(ctx, LOG_INFO,
                 "dsasha1_sigverify(): Error in parsing public key.\n");
         DSA_free(dsa);
         *key_status = VAL_AC_INVALID_KEY;
@@ -112,11 +115,11 @@ dsasha1_sigverify(val_context_t * ctx,
     if (DSA_verify
         (NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
          rrsig->signature, rrsig->signature_len, dsa)) {
-        val_log(ctx, LOG_DEBUG, "DSA_verify returned SUCCESS\n");
+        val_log(ctx, LOG_INFO, "dsasha1_sigverify(): returned SUCCESS");
         DSA_free(dsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
     } else {
-        val_log(ctx, LOG_DEBUG, "DSA_verify returned FAILURE\n");
+        val_log(ctx, LOG_INFO, "dsasha1_sigverify(): returned FAILURE");
         DSA_free(dsa);
         *sig_status = VAL_AC_RRSIG_VERIFY_FAILED;
     }
@@ -136,7 +139,7 @@ rsamd5_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
     BIGNUM         *bn_mod;
 
     if (!rsa)
-        return VAL_INTERNAL_ERROR;
+        return VAL_BAD_ARGUMENT;
 
     cp = buf;
 
@@ -195,7 +198,7 @@ rsamd5_keytag(const unsigned char *pubkey, int pubkey_len)
 
     if (rsamd5_parse_public_key(pubkey, pubkey_len, rsa) != VAL_NO_ERROR) {
         RSA_free(rsa);
-        return VAL_INTERNAL_ERROR;
+        return VAL_BAD_ARGUMENT;
     }
 
     modulus = rsa->n;
@@ -229,15 +232,15 @@ rsamd5_sigverify(val_context_t * ctx,
     val_log(ctx, LOG_DEBUG,
             "rsamd5_sigverify(): parsing the public key...\n");
     if ((rsa = RSA_new()) == NULL) {
-        val_log(ctx, LOG_DEBUG,
-                "rsamd5_sigverify could not allocate rsa structure.\n");
+        val_log(ctx, LOG_INFO,
+                "rsamd5_sigverify(): could not allocate rsa structure.\n");
         *key_status = VAL_AC_INVALID_KEY;
         return;
     };
 
     if (rsamd5_parse_public_key(dnskey->public_key, dnskey->public_key_len,
                                 rsa) != VAL_NO_ERROR) {
-        val_log(ctx, LOG_DEBUG,
+        val_log(ctx, LOG_INFO,
                 "rsamd5_sigverify(): Error in parsing public key.\n");
         RSA_free(rsa);
         *key_status = VAL_AC_INVALID_KEY;
@@ -254,11 +257,11 @@ rsamd5_sigverify(val_context_t * ctx,
 
     if (RSA_verify(NID_md5, (unsigned char *) md5_hash, MD5_DIGEST_LENGTH,
                    rrsig->signature, rrsig->signature_len, rsa)) {
-        val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
+        val_log(ctx, LOG_INFO, "rsamd5_sigverify(): returned SUCCESS");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
     } else {
-        val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
+        val_log(ctx, LOG_INFO, "rsamd5_sigverify(): returned FAILURE");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFY_FAILED;
     }
@@ -278,7 +281,7 @@ rsasha1_parse_public_key(const unsigned char *buf, int buflen, RSA * rsa)
     BIGNUM         *bn_mod;
 
     if (!rsa)
-        return VAL_INTERNAL_ERROR;
+        return VAL_BAD_ARGUMENT;
 
     cp = buf;
 
@@ -325,8 +328,8 @@ rsasha1_sigverify(val_context_t * ctx,
     val_log(ctx, LOG_DEBUG,
             "rsasha1_sigverify(): parsing the public key...\n");
     if ((rsa = RSA_new()) == NULL) {
-        val_log(ctx, LOG_DEBUG,
-                "rsasha1_sigverify could not allocate rsa structure.\n");
+        val_log(ctx, LOG_INFO,
+                "rsasha1_sigverify(): could not allocate rsa structure.\n");
         *key_status = VAL_AC_INVALID_KEY;
         return;
     };
@@ -334,7 +337,7 @@ rsasha1_sigverify(val_context_t * ctx,
     if (rsasha1_parse_public_key
         (dnskey->public_key, dnskey->public_key_len,
          rsa) != VAL_NO_ERROR) {
-        val_log(ctx, LOG_DEBUG,
+        val_log(ctx, LOG_INFO,
                 "rsasha1_sigverify(): Error in parsing public key.\n");
         RSA_free(rsa);
         *key_status = VAL_AC_INVALID_KEY;
@@ -352,11 +355,11 @@ rsasha1_sigverify(val_context_t * ctx,
     if (RSA_verify
         (NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
          rrsig->signature, rrsig->signature_len, rsa)) {
-        val_log(ctx, LOG_DEBUG, "RSA_verify returned SUCCESS\n");
+        val_log(ctx, LOG_INFO, "rsasha1_sigverify(): returned SUCCESS");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFIED;
     } else {
-        val_log(ctx, LOG_DEBUG, "RSA_verify returned FAILURE\n");
+        val_log(ctx, LOG_INFO, "rsasha1_sigverify(): returned FAILURE");
         RSA_free(rsa);
         *sig_status = VAL_AC_RRSIG_VERIFY_FAILED;
     }
