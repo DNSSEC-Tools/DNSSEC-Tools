@@ -16,7 +16,7 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 #include "validator-config.h"
@@ -881,101 +881,6 @@ find_rr_set(struct name_server *respondent_server,
     return new_one;
 }
 
-
-int
-check_label_count(struct rrset_rec *the_set,
-                  struct rr_rec *the_sig, int *is_a_wildcard)
-{
-    u_int8_t        owner_labels;;
-    u_int8_t        sig_labels;
-
-    if ((the_set == NULL) || (the_sig == NULL) || (is_a_wildcard == NULL))
-        return VAL_BAD_ARGUMENT;
-
-    owner_labels = wire_name_labels(the_set->rrs.val_rrset_name_n);
-    sig_labels = the_sig->rr_rdata[RRSIGLABEL] + 1;
-
-    if (sig_labels > owner_labels)
-        return VAL_BAD_ARGUMENT;
-
-    *is_a_wildcard = (owner_labels - sig_labels);
-
-    return VAL_NO_ERROR;
-}
-
-
-int
-prepare_empty_nxdomain(struct rrset_rec **answers,
-                       struct name_server *respondent_server,
-                       const u_int8_t * query_name_n,
-                       u_int16_t query_type_h, u_int16_t query_class_h,
-                       u_int8_t       *hptr)
-{
-    size_t          length = wire_name_length(query_name_n);
-
-    if (answers == NULL)
-        return VAL_BAD_ARGUMENT;
-
-    if (length == 0)
-        return VAL_INTERNAL_ERROR;
-
-    *answers = (struct rrset_rec *) MALLOC(sizeof(struct rrset_rec));
-    if (*answers == NULL)
-        return VAL_OUT_OF_MEMORY;
-
-    (*answers)->rrs_zonecut_n = NULL;
-    (*answers)->rrs.val_rrset_name_n = (u_int8_t *) MALLOC(length);
-
-    if ((*answers)->rrs.val_rrset_name_n == NULL) {
-        FREE(*answers);
-        *answers = NULL;
-        return VAL_OUT_OF_MEMORY;
-    }
-
-    memcpy((*answers)->rrs.val_rrset_name_n, query_name_n, length);
-    if (hptr) {
-        (*answers)->rrs.val_msg_header =
-            (u_int8_t *) MALLOC(sizeof(HEADER) * sizeof(u_int8_t));
-        if ((*answers)->rrs.val_msg_header == NULL) {
-            FREE((*answers)->rrs.val_rrset_name_n);
-            FREE(*answers);
-            *answers = NULL;
-            return VAL_OUT_OF_MEMORY;
-        }
-        memcpy((*answers)->rrs.val_msg_header, hptr, sizeof(HEADER));
-        (*answers)->rrs.val_msg_headerlen = sizeof(HEADER);
-    } else {
-        (*answers)->rrs.val_msg_header = NULL;
-        (*answers)->rrs.val_msg_headerlen = 0;
-    }
-    (*answers)->rrs.val_rrset_type_h = query_type_h;
-    (*answers)->rrs.val_rrset_class_h = query_class_h;
-    (*answers)->rrs.val_rrset_ttl_h = 0;
-    (*answers)->rrs_cred = SR_CRED_UNSET;
-    (*answers)->rrs.val_rrset_section = VAL_FROM_UNSET;
-    if ((respondent_server) &&
-        (respondent_server->ns_number_of_addresses > 0)) {
-        (*answers)->rrs.val_rrset_server =
-            (struct sockaddr *) MALLOC(sizeof(struct sockaddr_storage));
-        if ((*answers)->rrs.val_rrset_server == NULL) {
-            FREE((*answers)->rrs.val_rrset_name_n);
-            FREE(*answers);
-            *answers = NULL;
-            return VAL_OUT_OF_MEMORY;
-        }
-        memcpy((*answers)->rrs.val_rrset_server,
-               respondent_server->ns_address[0],
-               sizeof(struct sockaddr_storage));
-    } else {
-        (*answers)->rrs.val_rrset_server = NULL;
-    }
-    (*answers)->rrs.val_rrset_data = NULL;
-    (*answers)->rrs.val_rrset_sig = NULL;
-    (*answers)->rrs_next = NULL;
-
-    return VAL_NO_ERROR;
-}
-
 int
 decompress(u_int8_t ** rdata,
            u_int8_t * response,
@@ -1044,7 +949,7 @@ decompress(u_int8_t ** rdata,
                                            sizeof(other_expanded_name));
 
         if (working_increment < 0)
-            return VAL_INTERNAL_ERROR;
+            return VAL_BAD_ARGUMENT;
 
         working_index += working_increment;
         other_name_length = wire_name_length(other_expanded_name);
@@ -1068,7 +973,7 @@ decompress(u_int8_t ** rdata,
                                            expanded_name,
                                            sizeof(expanded_name));
         if (working_increment < 0)
-            return VAL_INTERNAL_ERROR;
+            return VAL_BAD_ARGUMENT;
 
         working_index += working_increment;
         name_length = wire_name_length(expanded_name);
@@ -1135,7 +1040,7 @@ decompress(u_int8_t ** rdata,
                                            expanded_name,
                                            sizeof(expanded_name));
         if (working_increment < 0)
-            return VAL_INTERNAL_ERROR;
+            return VAL_BAD_ARGUMENT;
 
         working_index += working_increment;
         name_length = wire_name_length(expanded_name);
@@ -1148,7 +1053,7 @@ decompress(u_int8_t ** rdata,
                                                sizeof
                                                (other_expanded_name));
             if (working_increment < 0)
-                return VAL_INTERNAL_ERROR;
+                return VAL_BAD_ARGUMENT;
 
             working_index += working_increment;
             other_name_length = wire_name_length(other_expanded_name);
@@ -1197,7 +1102,7 @@ decompress(u_int8_t ** rdata,
                                            expanded_name,
                                            sizeof(expanded_name));
         if (working_increment < 0)
-            return VAL_INTERNAL_ERROR;
+            return VAL_BAD_ARGUMENT;
 
         name_length = wire_name_length(expanded_name);
         expansion += name_length - working_increment;
@@ -1255,7 +1160,7 @@ extract_from_rr(u_int8_t * response,
     if ((ret_val =
          ns_name_unpack(response, end, &response[*response_index], name_n,
                         NS_MAXCDNAME)) == -1)
-        return VAL_INTERNAL_ERROR;
+        return VAL_BAD_ARGUMENT;
 
     *response_index += ret_val;
 
