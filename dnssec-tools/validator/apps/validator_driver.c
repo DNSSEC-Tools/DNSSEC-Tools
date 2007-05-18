@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 
@@ -228,7 +228,7 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
                 check_results(context, desc, name_n, class, type,
                               result_ar, results, trusted_only);
 
-        val_log_authentication_chain(context, LOG_INFO, name_n, class, type, results);
+        val_log_authentication_chain(context, LOG_NOTICE, name_n, class, type, results);
 
     } else {
         fprintf(stderr, "%s: \t", desc);
@@ -360,7 +360,7 @@ get_results(val_context_t * context, const char *desc, u_char *name_n,
      */
     ret_val = val_resolve_and_check(context, name_n, class_h, type_h, 
                                 VAL_QUERY_MERGE_RRSETS, &results);
-    val_log_authentication_chain(context, LOG_DEBUG, name_n, class_h, type_h, results);
+    val_log_authentication_chain(context, LOG_NOTICE, name_n, class_h, type_h, results);
 
     if (ret_val == VAL_NO_ERROR) {
 
