@@ -16,8 +16,13 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
+ */
+/*
+ * DESCRIPTION
+ * Contains implementation for storage and retrieval functions for the validator
+ * rrset cache.
  */
 #include "validator-config.h"
 
@@ -36,6 +41,10 @@
 #include "val_resquery.h"
 #include "val_cache.h"
 
+/*
+ * we have caches for DNSKEY, DS, NS/glue, answers, and proofs
+ * XXX negative cache functionality is currently unimplemented
+ */
 static struct rrset_rec *unchecked_key_info = NULL;
 static struct rrset_rec *unchecked_ds_info = NULL;
 static struct rrset_rec *unchecked_ns_info = NULL;
@@ -47,11 +56,17 @@ struct zone_ns_map_t {
     struct name_server *nslist;
     struct zone_ns_map_t *next;
 };
-
+/*
+ * Also maintain mapping between zone and name server, 
+ */
 static struct zone_ns_map_t *zone_ns_map = NULL;
 
 #ifndef VAL_NO_THREADS
 
+/*
+ * provide thread-safe access to each of the
+ * various caches
+ */
 static pthread_rwlock_t key_rwlock;
 static int key_rwlock_init = -1;
 static pthread_rwlock_t ds_rwlock;
@@ -101,6 +116,7 @@ static int map_rwlock_init = -1;
       (NULL != namename(q->qc_name_n, name))))
 
 /*
+ * Common routine to store data to a specific cache
  * NOTE: This assumes a read lock is alread held by the caller.
  */
 static int
@@ -207,6 +223,9 @@ stow_info(struct rrset_rec **unchecked_info, struct rrset_rec *new_info, struct 
     return VAL_NO_ERROR;
 }
 
+/*
+ * retrieve data, if present, from cache
+ */
 int
 get_cached_rrset(struct val_query_chain *matched_q, 
                  struct domain_info **response)
