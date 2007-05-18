@@ -16,7 +16,7 @@
  * WITH THE USE OR PERFORMANCE OF THE SOFTWARE.
  */
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 #ifndef VAL_SUPPORT_H
@@ -123,15 +123,6 @@ struct rrset_rec *find_rr_set(struct name_server *respondent_server,
                               int authoritive_answer,
                               u_int8_t * zonecut_n);
 
-int             check_label_count(struct rrset_rec *the_set,
-                                  struct rr_rec *the_sig,
-                                  int *is_a_wildcard);
-int             prepare_empty_nxdomain(struct rrset_rec **answers,
-                                       struct name_server *respondent_server,
-                                       const u_int8_t * query_name_n,
-                                       u_int16_t query_type_h,
-                                       u_int16_t query_class_h,
-                                       u_int8_t       *hptr);
 int             decompress(u_int8_t ** rdata,
                            u_int8_t * response,
                            int rdata_index,
