@@ -1,5 +1,5 @@
 /*
- * Copyright 2005 SPARTA, Inc.  All rights reserved.
+ * Copyright 2005-2007 SPARTA, Inc.  All rights reserved.
  * See the COPYING file distributed with this software for details.
  */
 #include "validator-config.h"
@@ -496,7 +496,7 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                     char name_p[NS_MAXDNAME];
                     if (-1 == ns_name_ntop(added_q->qc_original_name, name_p, sizeof(name_p)))
                         snprintf(name_p, sizeof(name_p), "unknown/error");
-                    val_log(context, LOG_DEBUG, "Data in cache timed out: {%s %d %d}", 
+                    val_log(context, LOG_INFO, "add_to_qfq_chain(): Data in cache timed out: {%s %d %d}", 
                                 name_p, added_q->qc_class_h, added_q->qc_type_h);
                     zap_query(context, added_q);
                 }
@@ -658,7 +658,6 @@ get_zse(val_context_t * ctx, u_int8_t * name_n, u_int8_t flags,
     policy_entry_t *zse_pol, *zse_cur;
     int             name_len;
     u_int8_t       *p;
-    char            name_p[NS_MAXDNAME];
     int             retval;
 
     /*
@@ -728,35 +727,23 @@ get_zse(val_context_t * ctx, u_int8_t * name_n, u_int8_t flags,
                 if (zse_cur->exp_ttl > 0)
                     *ttl_x = zse_cur->exp_ttl;
                 
-                if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
-                    snprintf(name_p, sizeof(name_p), "unknown/error");
                 if (pol->trusted == ZONE_SE_UNTRUSTED) {
-                    val_log(ctx, LOG_DEBUG, "zone %s is not trusted",
-                            name_p);
                     *status = VAL_AC_UNTRUSTED_ZONE;
                     goto done;
                 } else if (pol->trusted == ZONE_SE_TRUSTED) {
-                    val_log(ctx, LOG_DEBUG, "zone %s is trusted", name_p);
                     *status = VAL_AC_TRUSTED_ZONE;
                     goto done;
                 } else if (pol->trusted == ZONE_SE_DO_VAL) {
-                    val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
                     *status = VAL_AC_WAIT_FOR_TRUST;
                     goto done;
                 } else {
                     /** ZONE_SE_IGNORE */
-                    val_log(ctx, LOG_DEBUG, "Ignoring DNSSEC for  %s",
-                            name_p);
                     *status = VAL_AC_IGNORE_VALIDATION;
                     goto done;
                 }
             }
         }
     }
-
-    if (-1 == ns_name_ntop(name_n, name_p, sizeof(name_p)))
-        snprintf(name_p, sizeof(name_p), "unknown/error");
-    val_log(ctx, LOG_DEBUG, "%s requires DNSSEC", name_p);
 
     *status = VAL_AC_WAIT_FOR_TRUST;
     retval = VAL_NO_ERROR;
@@ -908,7 +895,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                         curkey->rr_status = VAL_AC_VERIFIED_LINK;
                         if (ta_cur->exp_ttl > 0)
                             *ttl_x = ta_cur->exp_ttl;
-                        val_log(ctx, LOG_DEBUG, "key %s is trusted", name_p);
+                        val_log(ctx, LOG_DEBUG, "is_trusted_key(): key %s is trusted", name_p);
                         *status = VAL_AC_TRUST_KEY;
                         return VAL_NO_ERROR;
                     }
@@ -916,8 +903,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                         FREE(dnskey.public_key);
                 }
             }
-            val_log(ctx, LOG_DEBUG,
-                    "Trust anchor did not match at this level: %s", zp);
+            val_log(ctx, LOG_INFO,
+                    "is_trusted_key(): Existing trust anchor did not match at this level: %s", zp);
             //*status = VAL_AC_NO_TRUST_ANCHOR;
             //return VAL_NO_ERROR;
 
@@ -957,8 +944,8 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
     }
 #endif
     
-    val_log(ctx, LOG_DEBUG,
-            "Cannot find a good trust anchor for the chain of trust above %s",
+    val_log(ctx, LOG_INFO,
+            "is_trusted_key(): Cannot find a good trust anchor for the chain of trust above %s",
             zp);
     *status = VAL_AC_NO_TRUST_ANCHOR;
     return VAL_NO_ERROR;
@@ -1827,8 +1814,7 @@ transform_single_result(val_context_t *context,
                         struct queries_for_query **queries,
                         struct val_result_chain **results,
                         struct val_result_chain *proof_res,
-                        struct val_result_chain **mod_res,
-                        u_int8_t flags)
+                        struct val_result_chain **mod_res)
 {
     struct val_authentication_chain **aptr;
     struct val_result_chain *prev_res;
@@ -1871,7 +1857,8 @@ transform_single_result(val_context_t *context,
     *aptr = NULL;
     if (w_res) {
         w_res->val_rc_consumed = 1;
-        return transform_authentication_chain(context, w_res->val_rc_rrset, queries, aptr, flags);
+        return transform_authentication_chain(context, w_res->val_rc_rrset, queries, aptr, 
+                                              w_res->val_rc_flags);
     }
 
     return VAL_NO_ERROR;
@@ -1888,8 +1875,7 @@ transform_outstanding_results(val_context_t *context,
                               struct queries_for_query **queries,
                               struct val_result_chain **results,
                               struct val_result_chain *proof_res,
-                              val_status_t proof_status,
-                              u_int8_t flags)
+                              val_status_t proof_status)
 {
     struct val_internal_result *w_res;
     struct val_result_chain *new_res;
@@ -1908,7 +1894,7 @@ transform_outstanding_results(val_context_t *context,
             if (VAL_NO_ERROR !=
                 (retval =
                  transform_single_result(context, w_res, queries, results, proof_res,
-                                         &new_res, flags))) {
+                                         &new_res))) {
                 goto err;
             }
 
@@ -1960,19 +1946,19 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_nam
         if (is_type_set((&(the_set->rrs.val_rrset_data->
                             rr_rdata[nsec_bit_field])), offset, qtype_h)) { 
             // Type exists at NSEC record
-            val_log(ctx, LOG_DEBUG, "NSEC error: type exists at wildcard");
+            val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - type exists at wildcard");
             return;
         }
         if (is_type_set((&(the_set->rrs.val_rrset_data->
                       rr_rdata[nsec_bit_field])), offset, ns_t_cname)) { 
             // CNAME exists at NSEC record, but was not checked
-            val_log(ctx, LOG_DEBUG, "NSEC error: CNAME exists at wildcard");
+            val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - CNAME exists at wildcard");
             return;
         }
         if (is_type_set((&(the_set->rrs.val_rrset_data->
                       rr_rdata[nsec_bit_field])), offset, ns_t_dname)) {
             //DNAME exists at NSEC record, but was not checked 
-            val_log(ctx, LOG_DEBUG, "NSEC error: DNAME exists at wildcard");
+            val_log(ctx, LOG_INFO, "prove_nsec_span(): NSEC error - DNAME exists at wildcard");
             return;
         }
 
@@ -2120,7 +2106,7 @@ prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set,
                                       rr_rdata,
                                       the_set->rrs.val_rrset_data->
                                       rr_rdata_length_h, &nd)) {
-        val_log(ctx, LOG_DEBUG, "Cannot parse NSEC3 rdata");
+        val_log(ctx, LOG_INFO, "prove_nsec3_span(): Cannot parse NSEC3 rdata");
         return; 
     }
     nsec3_bm_len = the_set->rrs.val_rrset_data->rr_rdata_length_h - nd.bit_field;
@@ -2133,7 +2119,7 @@ prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set,
         (!is_type_set((&(the_set->rrs.val_rrset_data->
                         rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_soa))) {
 
-        val_log(ctx, LOG_DEBUG, "NSEC3 error: NS can only be set if the SOA bit is set");
+        val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - NS can only be set if the SOA bit is set");
         FREE(nd.nexthash);
         FREE(hash);
         return;
@@ -2147,7 +2133,7 @@ prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set,
         if (NULL == compute_nsec3_hash(ctx, cp, soa_name_n, nd.alg,
                                    nd.iterations, nd.saltlen, nd.salt,
                                    &hashlen, &hash, ttl_x)) {
-            val_log(ctx, LOG_DEBUG, "NSEC3 error: Cannot compute hash with given params");
+            val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Cannot compute hash with given params");
             FREE(nd.nexthash);
             return;
         }
@@ -2164,19 +2150,19 @@ prove_nsec3_span(val_context_t *ctx, struct rrset_rec *the_set,
                 if (is_type_set((&(the_set->rrs.val_rrset_data->
                         rr_rdata[nd.bit_field])), nsec3_bm_len, qtype_h)) { 
                     /* type exists */
-                    val_log(ctx, LOG_DEBUG, "NSEC3 error: Type exists at NSEC3 record");
+                    val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - Type exists at NSEC3 record");
                     break;
                 }
                 if (is_type_set((&(the_set->rrs.val_rrset_data->
                           rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_cname)) {
                     /* CNAME exists */
-                    val_log(ctx, LOG_DEBUG, "NSEC3 error: CNAME exists at NSEC3 record, but was not checked");
+                    val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - CNAME exists at NSEC3 record, but was not checked");
                     break;
                 }
                 if (is_type_set((&(the_set->rrs.val_rrset_data->
                                   rr_rdata[nd.bit_field])), nsec3_bm_len, ns_t_dname)) {
                     /* DNAME exists */
-                    val_log(ctx, LOG_DEBUG, "NSEC3 error: DNAME exists at NSEC3 record, but was not checked");
+                    val_log(ctx, LOG_INFO, "prove_nsec3_span(): NSEC3 error - DNAME exists at NSEC3 record, but was not checked");
                     break; 
                 }
 
@@ -2237,7 +2223,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 struct val_result_chain **proof_res,
                 struct val_result_chain **results,
                 u_int8_t *soa_name_n,
-                u_int8_t * qname_n, u_int16_t qtype_h, u_int8_t flags,
+                u_int8_t * qname_n, u_int16_t qtype_h, 
                 val_status_t * status, u_int32_t *ttl_x)
 {
 
@@ -2279,7 +2265,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
                 if (VAL_NO_ERROR !=
                     (retval = transform_single_result(ctx, res, queries, results,
-                                                  *proof_res, &new_res, flags))) {
+                                                  *proof_res, &new_res))) {
                     goto err;
                 }
                 *proof_res = new_res;
@@ -2290,13 +2276,13 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
   
     if (!ncn) {
-        val_log(ctx, LOG_DEBUG, "NSEC3 error: NCN was not found");
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - NCN was not found");
         *status = VAL_INCOMPLETE_PROOF;
         return VAL_NO_ERROR;
     }
     
     if (!cpe) {
-        val_log(ctx, LOG_DEBUG, "NSEC3 error: CPE was not found");
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): NSEC3 error - CPE was not found");
         *status = VAL_INCOMPLETE_PROOF;
         return VAL_NO_ERROR;
     }
@@ -2307,8 +2293,8 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     if (!namecmp(ncn, cpe)) {
         *status = VAL_NONEXISTENT_TYPE;
     } else if (cpe != (ncn + ncn[0] + 1)) {
-        val_log(ctx, LOG_DEBUG,
-                "NSEC3 error: NCN is not one label greater than CPE");
+        val_log(ctx, LOG_INFO,
+                "nsec3_proof_chk(): NSEC3 error - NCN is not one label greater than CPE");
         *status = VAL_BOGUS_PROOF;
         return VAL_NO_ERROR;
     }
@@ -2324,8 +2310,8 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
 
     if (NS_MAXCDNAME < wire_name_length(cpe) + 2) {
-        val_log(ctx, LOG_DEBUG,
-                "NSEC3 Error: label length with wildcard exceeds bounds");
+        val_log(ctx, LOG_INFO,
+                "nsec3_proof_chk(): NSEC3 Error - label length with wildcard exceeds bounds");
         *status = VAL_BOGUS_PROOF;
         return VAL_NO_ERROR;
     }
@@ -2354,12 +2340,12 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
 
     if (res == NULL) {
-        val_log(ctx, LOG_DEBUG, "Incomplete Proof: proof does not cover span");
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - proof does not cover span");
         *status = VAL_INCOMPLETE_PROOF;
     } else {
         if (VAL_NO_ERROR !=
                     (retval = transform_single_result(ctx, res, queries, results,
-                                                  *proof_res, &new_res, flags))) {
+                                                  *proof_res, &new_res))) {
             goto err;
         }
         *proof_res = new_res;
@@ -2386,7 +2372,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                struct val_result_chain **proof_res,
                struct val_result_chain **results,
                u_int8_t *soa_name_n,
-               u_int8_t * qname_n, u_int16_t qtype_h, u_int8_t flags,
+               u_int8_t * qname_n, u_int16_t qtype_h,
                val_status_t * status)
 {
     struct val_internal_result *res;
@@ -2425,7 +2411,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                  */
                 if (VAL_NO_ERROR !=
                     (retval = transform_single_result(ctx, res, queries, results,
-                                                  *proof_res, &new_res, flags))) {
+                                                  *proof_res, &new_res))) {
                     goto err;
                 }
                 *proof_res = new_res;
@@ -2455,7 +2441,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
 
     if (!span_chk) {
-        val_log(ctx, LOG_DEBUG, "Incomplete Proof: Proof does not cover span");
+        val_log(ctx, LOG_INFO, "nsec_proof_chk() : Incomplete Proof - Proof does not cover span");
         *status = VAL_INCOMPLETE_PROOF;
     }
     else if (only_span_chk) 
@@ -2464,13 +2450,13 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         /* name and type were matched in a single proof */
         *status = VAL_NONEXISTENT_TYPE;
     else if (!wcard_proof || !closest_encounter) {
-        val_log(ctx, LOG_DEBUG, "Incomplete Proof: Cannot prove wildcard non-existence");
+        val_log(ctx, LOG_INFO, "nsec_proof_chk(): Incomplete Proof - Cannot prove wildcard non-existence");
         *status = VAL_INCOMPLETE_PROOF;
     }
     else {
         if (NS_MAXCDNAME < wire_name_length(closest_encounter) + 2) {
-            val_log(ctx, LOG_DEBUG,
-                    "NSEC Error: label length with wildcard exceeds bounds");
+            val_log(ctx, LOG_INFO,
+                    "nsec_proof_chk(): NSEC Error - label length with wildcard exceeds bounds");
             *status = VAL_BOGUS_PROOF;
         } else {
             domain_name_n[0] = 0x01;
@@ -2483,13 +2469,13 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                             qtype_h, &span_chk, &wcard_chk);
 
             if (!span_chk) {
-                val_log(ctx, LOG_DEBUG, "Incomplete Proof: Wildcard proof does not cover span");
+                val_log(ctx, LOG_INFO, "nsec_proof_chk(): Incomplete Proof - Wildcard proof does not cover span");
                 *status = VAL_BOGUS_PROOF;
             } else {
                 *status = VAL_NONEXISTENT_NAME;
                 if (VAL_NO_ERROR !=
                         (retval = transform_single_result(ctx, wcard_proof, queries, results,
-                                                  *proof_res, &new_res, flags))) {
+                                                  *proof_res, &new_res))) {
                     goto err;
                 }
                 *proof_res = new_res;
@@ -2603,7 +2589,6 @@ prove_nonexistence(val_context_t * ctx,
                    u_char * qname_n,
                    u_int16_t qtype_h,
                    u_int16_t qc_class_h,
-                   u_int8_t flags,
                    int only_span_chk,
                    struct val_digested_auth_chain *qc_proof,
                    val_status_t * status,
@@ -2628,7 +2613,7 @@ prove_nonexistence(val_context_t * ctx,
 
     if (-1 == ns_name_ntop(qname_n, name_p, sizeof(name_p)))
         snprintf(name_p, sizeof(name_p), "unknown/error");
-    val_log(ctx, LOG_DEBUG, "proving non-existence for {%s, %d, %d}",
+    val_log(ctx, LOG_DEBUG, "prove_nonexistence(): proving non-existence for {%s, %d, %d}",
             name_p, qc_class_h, qtype_h);
 
     /*
@@ -2650,7 +2635,7 @@ prove_nonexistence(val_context_t * ctx,
              */
             if (VAL_NO_ERROR != (retval =
                                  transform_single_result(ctx, res, queries, results,
-                                                         *proof_res, &new_res, flags))) {
+                                                         *proof_res, &new_res))) {
                 goto err;
             }
             *proof_res = new_res;
@@ -2693,7 +2678,7 @@ prove_nonexistence(val_context_t * ctx,
              * Collect all other proofs 
              */
             retval = transform_outstanding_results(ctx, w_results, queries, results, *proof_res,
-                                              *status, flags);
+                                              *status);
     
             return VAL_NO_ERROR;
         }
@@ -2703,7 +2688,7 @@ prove_nonexistence(val_context_t * ctx,
         if ((!the_set) || 
             (!the_set->rrs.val_rrset_data)) {
 
-            val_log(ctx, LOG_DEBUG, "Bogus Proof: No data exists in proof");
+            val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - No data exists in proof");
             *status = VAL_BOGUS_PROOF;
             return VAL_NO_ERROR;
         }
@@ -2713,7 +2698,7 @@ prove_nonexistence(val_context_t * ctx,
             if ((!the_set->rrs.val_rrset_sig) ||
                 the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
 
-                val_log(ctx, LOG_DEBUG, "Bogus Proof: Cannot identify signer for proof record");
+                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
@@ -2726,7 +2711,7 @@ prove_nonexistence(val_context_t * ctx,
             if ((!the_set->rrs.val_rrset_sig) ||
                 the_set->rrs.val_rrset_sig->rr_rdata_length_h < SIGNBY) {
 
-                val_log(ctx, LOG_DEBUG, "Bogus Proof: Cannot identify signer for proof record");
+                val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Cannot identify signer for proof record");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
@@ -2744,7 +2729,7 @@ prove_nonexistence(val_context_t * ctx,
     proof_seen = nsec3 ? (proof_seen == 0) : proof_seen;
 #endif
     if (!proof_seen) {
-        val_log(ctx, LOG_DEBUG, "Bogus Proof: Proof contains NSEC and NSEC3 records");
+        val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Proof contains NSEC and NSEC3 records");
         *status = VAL_BOGUS_PROOF;
     }
     else if (nsec) {
@@ -2755,7 +2740,7 @@ prove_nonexistence(val_context_t * ctx,
             (retval =
              nsec_proof_chk(ctx, w_results, queries, only_span_chk, 
                             proof_res, results, soa_name_n, qname_n,
-                            qtype_h, flags, status)))
+                            qtype_h, status)))
             goto err;
     }
 #ifdef LIBVAL_NSEC3
@@ -2768,7 +2753,7 @@ prove_nonexistence(val_context_t * ctx,
             (retval =
              nsec3_proof_chk(ctx, w_results, queries, only_span_chk,
                              proof_res, results, soa_name_n, qname_n,
-                             qtype_h, flags, status, &ttl_x)))
+                             qtype_h, status, &ttl_x)))
             goto err;
         
         if (qc_proof) {
@@ -2962,7 +2947,6 @@ static int
 prove_existence(val_context_t * context,
                 u_int8_t * qname_n,
                 u_int16_t qtype_h,
-                u_int8_t flags,
                 u_int8_t * soa_name_n,
                 struct val_internal_result *w_results,
                 struct queries_for_query **queries,
@@ -3006,8 +2990,8 @@ prove_existence(val_context_t * context,
                        rr_rdata[nsec_bit_field])),
                      the_set->rrs.val_rrset_data->rr_rdata_length_h -
                      nsec_bit_field, qtype_h)) {
-                    val_log(context, LOG_DEBUG,
-                            "Wildcard expansion: Type exists at NSEC record");
+                    val_log(context, LOG_INFO,
+                            "prove_existence(): Wildcard expansion: Type exists at NSEC record");
                     *status = VAL_SUCCESS;
                     break;
                 }
@@ -3026,7 +3010,7 @@ prove_existence(val_context_t * context,
                                       rr_rdata,
                                       the_set->rrs.val_rrset_data->
                                       rr_rdata_length_h, &nd)) {
-                val_log(context, LOG_DEBUG, "Cannot parse NSEC3 rdata");
+                val_log(context, LOG_INFO, "prove_existence(): Cannot parse NSEC3 rdata");
                 *status = VAL_BOGUS_PROOF;
                 return VAL_NO_ERROR;
             }
@@ -3038,8 +3022,8 @@ prove_existence(val_context_t * context,
                 compute_nsec3_hash(context, cp, soa_name_n, nd.alg,
                                    nd.iterations, nd.saltlen, nd.salt,
                                    &hashlen, &hash, ttl_x)) {
-                val_log(context, LOG_DEBUG,
-                        "Cannot compute NSEC3 hash with given params");
+                val_log(context, LOG_INFO,
+                        "prove_existence(): Cannot compute NSEC3 hash with given params");
                 *status = VAL_BOGUS_PROOF;
                 FREE(nd.nexthash);
                 return VAL_NO_ERROR;
@@ -3057,8 +3041,8 @@ prove_existence(val_context_t * context,
                 if (is_type_set
                     ((&(the_set->rrs.val_rrset_data->
                         rr_rdata[nd.bit_field])), nsec3_bm_len, qtype_h)) {
-                    val_log(context, LOG_DEBUG,
-                            "Wildcard expansion: Type exists at NSEC3 record");
+                    val_log(context, LOG_INFO,
+                            "prove_existence(): Wildcard expansion: Type exists at NSEC3 record");
                     *status = VAL_SUCCESS;
                     FREE(nd.nexthash);
                     FREE(hash);
@@ -3078,7 +3062,7 @@ prove_existence(val_context_t * context,
         if (VAL_NO_ERROR != (retval = transform_single_result(context, res, queries,
                                                               results,
                                                               *proof_res,
-                                                              &new_res, flags))) {
+                                                              &new_res))) {
             goto err;
         }
         *proof_res = new_res;
@@ -3156,7 +3140,7 @@ verify_provably_unsecure(val_context_t * context,
     if ((VAL_NO_ERROR != find_next_soa(context, queries, name_n, done, &q_zonecut_n))
                 || (*done && q_zonecut_n == NULL)) {
 
-        val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", name_p);
+        val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find zone cut for %s", name_p);
         goto err;
     }
 
@@ -3171,7 +3155,7 @@ verify_provably_unsecure(val_context_t * context,
         int len;
         if (VAL_NO_ERROR != (find_dlv_trust_point(context, name_n, 
                                               &dlv_tp, &dlv_target, ttl_x))) {
-            val_log(context, LOG_DEBUG, "Cannot find trust anchor for %s", name_p);
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find trust anchor for %s", name_p);
             goto err;
         }
         if (dlv_tp == NULL || dlv_target == NULL) { 
@@ -3193,17 +3177,23 @@ verify_provably_unsecure(val_context_t * context,
     {
         if (VAL_NO_ERROR != (find_trust_point(context, name_n, 
                                           &curzone_n, ttl_x))) {
-            val_log(context, LOG_DEBUG, "Cannot find trust anchor for %s", name_p);
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find trust anchor for %s", name_p);
             goto err;
         }
         q = namename(q_zonecut_n, curzone_n);
     }
+
+    if (-1 == ns_name_ntop(curzone_n, tempname_p, sizeof(tempname_p))) 
+            snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
 
     if (!q) {
         /* 
          * this is a problem: means that trust point was 
          * not contained within name 
          */
+        val_log(context, LOG_INFO, 
+                "verify_provably_unsecure(): trust point %s not in name, cannot do a top-down provably-unsecure test",
+                tempname_p);
         goto err;
     }
 
@@ -3212,6 +3202,9 @@ verify_provably_unsecure(val_context_t * context,
          * if the query zonecut is the same as the 
          * trust point, return
          */
+        val_log(context, LOG_INFO, 
+                "verify_provably_unsecure(): trust point %s exists; so this zone cannot be provably unsecure",
+                tempname_p);
         goto err;
     }
     
@@ -3248,7 +3241,7 @@ verify_provably_unsecure(val_context_t * context,
                 snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
             } 
 
-            val_log(context, LOG_DEBUG, "Cannot find zone cut for %s", tempname_p);
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find zone cut for %s", tempname_p);
             goto err;
         }
 
@@ -3268,11 +3261,16 @@ verify_provably_unsecure(val_context_t * context,
         FREE(nxt_qname);
         nxt_qname = NULL;
 
+        if (-1 == ns_name_ntop(zonecut_n, tempname_p, sizeof(tempname_p))) 
+            snprintf(tempname_p, sizeof(tempname_p), "unknown/error");
+
         /* try validating the DS */
         if (VAL_NO_ERROR != (retval = 
                     try_chase_query(context, zonecut_n, ns_c_in, 
-                                    ns_t_ds, flags, queries, &results, done)))
-             goto err;
+                                    ns_t_ds, flags, queries, &results, done))) {
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot chase DS record for %s", tempname_p);
+            goto err;
+        }
 
         if (*done == 0) {
             /* Need more data */
@@ -3282,17 +3280,19 @@ verify_provably_unsecure(val_context_t * context,
 
         /* if done,  inspect the results */
         if (results == NULL) {
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot chase DS record for %s", tempname_p);
             goto err;
         }
 
         /* If result is not trustworthy, not provably unsecure */
         if (!val_isvalidated(results->val_rc_status)) {
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): DS record for %s did not validate successfully", tempname_p);
             goto err; 
         }
 
         /* if non-existent set as provably unsecure and break */
         if (val_does_not_exist(results->val_rc_status)) {
-            val_log(context, LOG_DEBUG, "%s is provably unsecure", name_p);
+            val_log(context, LOG_INFO, "verify_provably_unsecure(): %s is provably unsecure", name_p);
             *is_punsecure = 1;
         }
 
@@ -3336,8 +3336,8 @@ verify_provably_unsecure(val_context_t * context,
     }
     
 err:
-    val_log(context, LOG_DEBUG,
-            "Cannot show that %s is provably unsecure.", name_p);
+    val_log(context, LOG_INFO,
+            "verify_provably_unsecure(): Cannot show that %s is provably unsecure.", name_p);
     *is_punsecure = 0;
 
 donefornow:
@@ -3411,11 +3411,11 @@ is_pu_trusted(val_context_t *ctx, u_int8_t *name_n, u_int32_t *ttl_x)
                     *ttl_x = pu_cur->exp_ttl;
 
                 if (pol->trusted == ZONE_PU_UNTRUSTED) {
-                    val_log(ctx, LOG_DEBUG, "zone %s provable unsecure status is not trusted",
+                    val_log(ctx, LOG_INFO, "is_pu_trusted(): zone %s provable unsecure status is not trusted",
                             name_p);
                     return 0;
                 } else { 
-                    val_log(ctx, LOG_DEBUG, "zone %s provably unsecure status is trusted", name_p);
+                    val_log(ctx, LOG_INFO, "is_pu_trusted(): zone %s provably unsecure status is trusted", name_p);
                     return 1;
                 }
             }
@@ -3612,10 +3612,11 @@ try_verify_assertion(val_context_t * context,
         if (-1 == ns_name_ntop(next_as->_as.ac_data->rrs.val_rrset_name_n, 
                                name_p, sizeof(name_p)))
             snprintf(name_p, sizeof(name_p), "unknown/error");
-        val_log(context, LOG_DEBUG, "verifying next assertion: {%s, %d, %d}",
-                    name_p, 
-                    next_as->_as.ac_data->rrs.val_rrset_class_h, 
-                    next_as->_as.ac_data->rrs.val_rrset_type_h);
+        val_log(context, LOG_INFO, 
+                "try_verify_assertion(): verifying next assertion: {%s, %d, %d}",
+                name_p, 
+                next_as->_as.ac_data->rrs.val_rrset_class_h, 
+                next_as->_as.ac_data->rrs.val_rrset_type_h);
 
         the_trust = get_ac_trust(context, next_as, queries, flags); 
         verify_next_assertion(context, next_as, the_trust);
@@ -3793,7 +3794,7 @@ set_dlv_branchoff(val_context_t *context,
 
     if (VAL_NO_ERROR != (retval = 
                 find_dlv_trust_point(context, name_n, &dlv_tp, &dlv_target, &ttl_x))) {
-        val_log(context, LOG_DEBUG, "Cannot find DLV trust point for %s", name_p);
+        val_log(context, LOG_INFO, "set_dlv_branchoff(): Cannot find DLV trust point for %s", name_p);
         goto done;
     }
     SET_MIN_TTL(*q_ttl_x, ttl_x);
@@ -3842,7 +3843,7 @@ set_dlv_branchoff(val_context_t *context,
         namename(tp, last_name) && 
         (tzonestatus != VAL_AC_WAIT_FOR_TRUST)) { 
 
-        val_log(context, LOG_DEBUG, "Zone security expectation overrides DLV %s", name_p);
+        val_log(context, LOG_INFO, "set_dlv_branchoff(): Zone security expectation overrides DLV %s", name_p);
         goto done;
     }
 
@@ -4020,7 +4021,12 @@ verify_and_validate(val_context_t * context,
          */
         next_as = as_more;
         while (next_as) {
-
+            char   name_p[NS_MAXDNAME];
+            if (-1 == ns_name_ntop(next_as->val_ac_rrset->val_rrset_name_n, 
+                                       name_p, sizeof(name_p))) {
+                snprintf(name_p, sizeof(name_p), "unknown/error");
+            }
+            
             if (next_as->val_ac_status <= VAL_AC_INIT) {
                 /*
                  * Go up the chain of trust 
@@ -4041,6 +4047,12 @@ verify_and_validate(val_context_t * context,
              */
             if ((next_as->_as.ac_data != NULL) &&
                 (next_as == as_trust)) {
+                val_log(context, LOG_INFO, 
+                        "verify_and_validate(): trying to verify PNE \
+                        for {%s %s %s}; but trust points backward",
+                        name_p, 
+                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
                 next_as->val_ac_status = VAL_AC_DNSKEY_MISSING;
                 break;
             }
@@ -4060,6 +4072,12 @@ verify_and_validate(val_context_t * context,
 
                 if (as_trust == NULL) {
                     res->val_rc_status = VAL_ERROR;
+                    val_log(context, LOG_INFO, 
+                        "verify_and_validate(): trust point \
+                        for {%s %s %s} contains a proof of non-existence",
+                        name_p, 
+                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
                     break;
                 }
 
@@ -4108,6 +4126,11 @@ verify_and_validate(val_context_t * context,
                             ttl_x = 0;
                             if (is_punsecure) {
                                 next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
+                                val_log(context, LOG_INFO, 
+                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                    name_p, 
+                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
                                 if (is_pu_trusted(context, 
                                         next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                                     res->val_rc_status = VAL_PROVABLY_UNSECURE;
@@ -4115,6 +4138,11 @@ verify_and_validate(val_context_t * context,
                                     res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                                 SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                             } else {
+                                val_log(context, LOG_INFO, 
+                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
+                                    name_p, 
+                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
                                 res->val_rc_status = VAL_BOGUS_PROOF;
                             }
                             break;
@@ -4130,7 +4158,11 @@ verify_and_validate(val_context_t * context,
                          */
                         res->val_rc_status = VAL_BOGUS_PROOF;
                         val_log(context, LOG_WARNING, 
-                                "response for DS from child; VAL_BOGUS_PROOF: no root.hints configured");
+                            "verify_and_validate(): response for {%s %s %s} received from child zone;\
+                            no root.hints configured",
+                            name_p, 
+                            p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                            p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         break;
                     } else {
                         /*
@@ -4146,6 +4178,12 @@ verify_and_validate(val_context_t * context,
                              * If some nameserver actually sends a referral for the DS record
                              * to the child (faulty/malicious NS) we'll keep recursing from root
                              */
+                            val_log(context, LOG_INFO, 
+                                "verify_and_validate(): response for {%s %s %s} received from child zone;\
+                                bailing out",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                             res->val_rc_status = VAL_BOGUS_PROOF;
                             break;
                         }
@@ -4170,6 +4208,11 @@ verify_and_validate(val_context_t * context,
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         ttl_x = 0;
                         if (is_punsecure) {
+                            val_log(context, LOG_INFO, 
+                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                    name_p, 
+                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
                             next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                             if (is_pu_trusted(context, 
                                     next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
@@ -4178,6 +4221,11 @@ verify_and_validate(val_context_t * context,
                                 res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
+                            val_log(context, LOG_INFO, 
+                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
+                                    name_p, 
+                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
                             res->val_rc_status = VAL_BOGUS_PROOF;
                         }
                         break;
@@ -4191,21 +4239,51 @@ verify_and_validate(val_context_t * context,
                 if (res->val_rc_status == VAL_DONT_KNOW) {
 
                     if (next_as->val_ac_status == VAL_AC_IGNORE_VALIDATION) {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Ignore Validation",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_IGNORE_VALIDATION;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_TRUSTED_ZONE) {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Trusted Zone",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_TRUSTED_ZONE;
                     } else if (next_as->val_ac_status == VAL_AC_TRUST_KEY) {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): ending authentication chain at {%s %s %s}",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         SET_CHAIN_COMPLETE(res->val_rc_status);
                     } else if (next_as->val_ac_status ==
                                VAL_AC_UNTRUSTED_ZONE) {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Untrusted Zone",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_UNTRUSTED_ZONE;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_LOCAL_ANSWER) {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Local Answer",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_LOCAL_ANSWER;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_PROVABLY_UNSECURE) {
                         ttl_x = 0;
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         if (is_pu_trusted(context, 
                                     next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
                             res->val_rc_status = VAL_PROVABLY_UNSECURE;
@@ -4213,16 +4291,30 @@ verify_and_validate(val_context_t * context,
                             res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else if (next_as->val_ac_status == VAL_AC_BARE_RRSIG) {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bare RRSIG",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_BARE_RRSIG;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_NO_TRUST_ANCHOR) {
                         /*
                          * verified but no trust 
                          */
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): marking authentication chain status for {%s %s %s} as verified without trust",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_VERIFIED_CHAIN;
                     }
                 } else {
-
+                    val_log(context, LOG_INFO, 
+                                "verify_and_validate(): ending authentication chain at {%s %s %s}",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                     /*
                      * Reached a trust point but there was some error in between 
                      */
@@ -4252,6 +4344,11 @@ verify_and_validate(val_context_t * context,
                     SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     ttl_x = 0;
                     if (is_punsecure) {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                         if (is_pu_trusted(context, 
                                 next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
@@ -4260,11 +4357,21 @@ verify_and_validate(val_context_t * context,
                             res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     } else {
+                        val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                     }
                     break;
                 }
             } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
+                val_log(context, LOG_INFO, 
+                        "verify_and_validate(): marking authentication chain status for {%s %s %s} as bad",
+                        name_p, 
+                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
                 res->val_rc_status = VAL_ERROR;
                 break;
             } else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
@@ -4290,6 +4397,11 @@ verify_and_validate(val_context_t * context,
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         ttl_x = 0;
                         if (is_punsecure) {
+                            val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                             next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
                             if (is_pu_trusted(context, 
                                             next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
@@ -4298,11 +4410,21 @@ verify_and_validate(val_context_t * context,
                                 res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         } else {
+                            val_log(context, LOG_INFO, 
+                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                             res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                         }
                         break;
                     }
                 } else {
+                    val_log(context, LOG_INFO, 
+                        "verify_and_validate(): marking authentication chain status for {%s %s %s} as bogus",
+                        name_p, 
+                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
                     SET_MASKED_STATUS(res->val_rc_status,
                                       VAL_BOGUS_UNPROVABLE);
                 }
@@ -4340,43 +4462,45 @@ verify_and_validate(val_context_t * context,
                 return retval; 
             }
 
-            if (!thisdone || do_dlv) { 
-                if (do_dlv) {
-                    struct queries_for_query *added_q;
+            if (do_dlv) {
+                struct queries_for_query *added_q;
 
-                    if (is_proof && 
-                            top_q->qc_respondent_server &&
-                            !(top_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
-                        /* 
-                         *  have to start all over again, this time by 
-                         *  sending with CD and D0 bits set
-                         */
-                        val_log(context, LOG_DEBUG,
-                                "EDNS0 was not used but it should have been");
-                        zap_query(context, top_q);
-                        top_qfq->qfq_flags |= VAL_QUERY_USING_DLV; 
+                val_log(context, LOG_INFO,
+                        "verify_and_validate(): Attempting DLV validation");
+                if (is_proof && 
+                    top_q->qc_respondent_server &&
+                        !(top_q->qc_respondent_server->ns_options & RES_USE_DNSSEC)) {
+                    /* 
+                     *  have to start all over again, this time by 
+                     *  sending with CD and D0 bits set
+                     */
+                    val_log(context, LOG_DEBUG,
+                            "verify_and_validate(): EDNS0 was not used but it should have been");
+                    zap_query(context, top_q);
+                    top_qfq->qfq_flags |= VAL_QUERY_USING_DLV; 
 
-                        /* free up all results */
+                    /* free up all results */
+                    res = *results;
+                    while (res) {
+                        *results = res->val_rc_next;
+                        FREE(res);
                         res = *results;
-                        while (res) {
-                            *results = res->val_rc_next;
-                            FREE(res);
-                            res = *results;
-                        }
-                        *done = 0;
-                        return VAL_NO_ERROR;
                     }
-                
-                    /* set the DLV flag */
-                    res->val_rc_flags |= VAL_QUERY_USING_DLV; 
-                    res->val_rc_rrset->val_ac_status = VAL_AC_INIT;
-                    if (VAL_NO_ERROR !=
-                        (retval = build_pending_query(context, queries, 
-                                                      res->val_rc_rrset, 
-                                                      &added_q, 
-                                                      res->val_rc_flags)))
-                        return retval;
+                    *done = 0;
+                    return VAL_NO_ERROR;
                 }
+                
+                /* set the DLV flag */
+                res->val_rc_flags |= VAL_QUERY_USING_DLV; 
+                res->val_rc_rrset->val_ac_status = VAL_AC_INIT;
+                if (VAL_NO_ERROR !=
+                    (retval = build_pending_query(context, queries, 
+                                                  res->val_rc_rrset, 
+                                                  &added_q, 
+                                                  res->val_rc_flags)))
+                    return retval;
+            }
+            if (!thisdone || do_dlv) { 
                 *done = 0;
                 res->val_rc_status = VAL_DONT_KNOW;
             }
@@ -4426,18 +4550,19 @@ ask_cache(val_context_t * context,
                 snprintf(name_p, sizeof(name_p), "unknown/error");
 
             val_log(context, LOG_DEBUG,
-                    "ask_cache(): looking for {%s %s(%d) %s(%d)}", name_p,
+                    "ask_cache(): looking for {%s %s(%d) %s(%d)}, flags=%d", name_p,
                     p_class(next_q->qfq_query->qc_class_h), next_q->qfq_query->qc_class_h,
-                    p_type(next_q->qfq_query->qc_type_h), next_q->qfq_query->qc_type_h);
+                    p_type(next_q->qfq_query->qc_type_h), next_q->qfq_query->qc_type_h,
+                    next_q->qfq_flags);
 
             if (VAL_NO_ERROR !=
                 (retval = get_cached_rrset(next_q->qfq_query, &response)))
                 return retval;
 
             if (response) {
-                val_log(context, LOG_DEBUG,
-                        "ask_cache(): found matching ack/nack response for {%s %d %d}", name_p,
-                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
+                val_log(context, LOG_INFO,
+                        "ask_cache(): found matching ack/nack response for {%s %d %d}, flags=%d", name_p,
+                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h, next_q->qfq_flags);
 
                 if (next_q->qfq_query->qc_state == Q_ANSWERED) {
 
@@ -4553,9 +4678,18 @@ ask_resolver(val_context_t * context,
                 ns_name_ntop(next_q->qfq_query->qc_name_n, name_p,
                              sizeof(name_p)))
                 snprintf(name_p, sizeof(name_p), "unknown/error");
-            val_log(context, LOG_DEBUG,
-                    "ask_resolver(): sending query for {%s %d %d}",
-                    name_p, next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
+
+            if (next_q->qfq_query->qc_referral) {
+                val_log(context, LOG_INFO,
+                    "ask_resolver(): sending query for {%s %d %d}, flags=%d (referral)",
+                    name_p, next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h, 
+                    next_q->qfq_flags);
+            } else {
+                val_log(context, LOG_INFO,
+                    "ask_resolver(): sending query for {%s %d %d}, flags=%d",
+                    name_p, next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h,
+                    next_q->qfq_flags);
+            }
 
             if (next_q->qfq_query->qc_ns_list == NULL) {
                 if (VAL_NO_ERROR != (retval =
@@ -4588,7 +4722,7 @@ ask_resolver(val_context_t * context,
 
                     if (tzonestatus == VAL_AC_WAIT_FOR_TRUST) {
                         val_log(context, LOG_DEBUG,
-                            "Setting D0 bit and using EDNS0");
+                            "ask_resolver(): Setting D0 bit and using EDNS0");
 
                         for (ns = next_q->qfq_query->qc_ns_list; ns; ns = ns->ns_next)
                             ns->ns_options |= RES_USE_DNSSEC;
@@ -4596,7 +4730,7 @@ ask_resolver(val_context_t * context,
 
                 } else {
                     val_log(context, LOG_DEBUG,
-                            "Not setting D0 bit nor using EDNS0");
+                            "ask_resolver(): Not setting D0 bit nor using EDNS0");
                 }
             }
 
@@ -4626,10 +4760,10 @@ ask_resolver(val_context_t * context,
                                      sizeof(name_p)))
                         snprintf(name_p, sizeof(name_p),
                                  "unknown/error");
-                    val_log(context, LOG_DEBUG,
-                            "ask_resolver(): found matching ack/nack response for {%s %d %d}",
+                    val_log(context, LOG_INFO,
+                            "ask_resolver(): found matching ack/nack response for {%s %d %d}, flags=%d",
                             name_p, next_q->qfq_query->qc_class_h,
-                            next_q->qfq_query->qc_type_h);
+                            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
                     if (VAL_NO_ERROR !=
                         (retval =
                          assimilate_answers(context, queries, response,
@@ -4656,99 +4790,6 @@ ask_resolver(val_context_t * context,
 }
 
 static int
-fix_glue(val_context_t * context, 
-         struct queries_for_query **queries,
-         int *data_received,
-         int *data_missing)
-{
-    struct queries_for_query *next_q;
-    struct glue_fetch_bucket *depn_bucket = NULL;
-    int    retval;
-    char   name_p[NS_MAXDNAME];
-    int i;
-
-    retval = VAL_NO_ERROR;
-    
-    if (context == NULL || queries == NULL || data_received == NULL || data_missing == NULL)
-        return VAL_BAD_ARGUMENT;
-
-    if (*data_missing == 0)
-        return VAL_NO_ERROR;
-
-    *data_missing = 0;
-    for (next_q = *queries; next_q; next_q = next_q->qfq_next) {
-        if (next_q->qfq_query->qc_state < Q_ANSWERED) {
-            *data_missing = 1;
-        }
-        if (next_q->qfq_query->qc_state == Q_WAIT_FOR_GLUE) {
-            struct glue_fetch_bucket *b;
-
-            if (-1 == ns_name_ntop(next_q->qfq_query->qc_name_n, name_p, sizeof(name_p)))
-                snprintf(name_p, sizeof(name_p), "unknown/error");
-
-            /* 
-             * check for a glue fetch loop 
-             */
-            /* first, find  the dependency bucket */
-            for (b = depn_bucket; b; b=b->next_bucket) {
-               for (i=0; i<b->qfq_count; i++) {
-                   if (b->qfq[i] == next_q)
-                       break;
-               } 
-               if (i < b->qfq_count)
-                   break;
-            }
-
-            if (b == NULL) {
-                /* create a new bucket */
-                b = (struct glue_fetch_bucket *) MALLOC (sizeof (struct glue_fetch_bucket));
-                if (b == NULL)
-                    goto err;
-                memset(b->qfq, 0, MAX_GLUE_FETCH_DEPTH);
-                b->qfq_count = 1;
-                b->qfq[0] = next_q;
-                /* add to head of list */
-                b->next_bucket = depn_bucket;
-                depn_bucket = b;
-            } 
-            /* 
-             * next, check if the glue for this query is already in the bucket 
-             * or check if the glue was returned 
-             */
-            if (VAL_NO_ERROR != (retval = 
-                        merge_glue_in_referral(context, 
-                                               next_q, 
-                                               b,
-                                               queries))) {
-                goto err;
-            }
-
-            if (next_q->qfq_query->qc_state == Q_INIT) {
-                val_log(context, LOG_DEBUG,
-                        "successfully fetched glue for {%s %d %d}", name_p,
-                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
-            } else if (next_q->qfq_query->qc_state != Q_WAIT_FOR_GLUE) {
-                val_log(context, LOG_DEBUG,
-                        "could not fetch glue for {%s %d %d}", name_p,
-                        next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h);
-            } 
-        }
-    }
-
-err:
-    /* free up depn_bucket */
-    while(depn_bucket) {
-        struct glue_fetch_bucket *temp = depn_bucket;
-
-        depn_bucket = depn_bucket->next_bucket;
-        FREE(temp);
-    }
-    
-    return retval;
-}
-
-
-static int
 check_proof_sanity(val_context_t * context,
                    struct val_internal_result *w_results,
                    struct queries_for_query **queries,
@@ -4762,13 +4803,11 @@ check_proof_sanity(val_context_t * context,
     val_status_t    status = VAL_DONT_KNOW;
     int             retval = VAL_NO_ERROR;
     u_int32_t soa_ttl_x = 0;
-    u_int8_t flags;
 
     if (top_qfq == NULL)
         return VAL_BAD_ARGUMENT;
 
     top_q = top_qfq->qfq_query;
-    flags = top_qfq->qfq_flags;
     
     if (top_q->qc_type_h == ns_t_ds) {
         /*
@@ -4783,8 +4822,8 @@ check_proof_sanity(val_context_t * context,
             if (as->val_ac_rrset->val_rrset_type_h == ns_t_soa) {
                 if (!namecmp(as->val_ac_rrset->val_rrset_name_n,
                              top_q->qc_name_n)) {
-                    val_log(context, LOG_DEBUG,
-                            "Bogus Response: Proof of non-existence for DS received from child");
+                    val_log(context, LOG_INFO,
+                            "check_proof_sanity(): Bogus Response - Proof of non-existence for DS received from child");
                     status = VAL_BOGUS_PROOF;
                 }
                 break;
@@ -4797,7 +4836,7 @@ check_proof_sanity(val_context_t * context,
             (retval =
              prove_nonexistence(context, w_results, queries, &proof_res, results,
                                 top_q->qc_name_n, top_q->qc_type_h,
-                                top_q->qc_class_h, flags, 0, top_q->qc_proof,
+                                top_q->qc_class_h, 0, top_q->qc_proof,
                                 &status, &soa_ttl_x)))
             return retval;
     }
@@ -4827,13 +4866,11 @@ check_wildcard_sanity(val_context_t * context,
     val_status_t    status;
     int             retval;
     u_int32_t       ttl_x = 0;
-    u_int8_t flags;
 
     if (top_qfq == NULL)
         return VAL_BAD_ARGUMENT;
     
     top_q = top_qfq->qfq_query;
-    flags = top_qfq->qfq_flags;
     
     zonecut_n = NULL;
     target_res = NULL;
@@ -4852,12 +4889,12 @@ check_wildcard_sanity(val_context_t * context,
              * Any proofs that have been wildcard expanded are bogus 
              */
             if (res->val_rc_is_proof) {
-                val_log(context, LOG_DEBUG,
-                        "Wildcard sanity check failed");
+                val_log(context, LOG_INFO,
+                        "check_wildcard_sanity(): Wildcard sanity check failed");
                 if (VAL_NO_ERROR !=
                     (retval =
                      transform_single_result(context, res, queries, results, 
-                                             target_res, &new_res, flags))) {
+                                             target_res, &new_res))) {
                     goto err;
                 }
                 target_res = new_res;
@@ -4870,7 +4907,7 @@ check_wildcard_sanity(val_context_t * context,
                 if (VAL_NO_ERROR !=
                     (retval =
                      transform_single_result(context, res, queries, results, NULL,
-                                             &new_res, flags))) {
+                                             &new_res))) {
                     goto err;
                 }
                 target_res = new_res;
@@ -4888,12 +4925,12 @@ check_wildcard_sanity(val_context_t * context,
                         (retval =
                          prove_nonexistence(context, w_results, queries, &target_res,
                                             results, top_q->qc_name_n, top_q->qc_type_h,
-                                            top_q->qc_class_h, flags, 1, 
+                                            top_q->qc_class_h, 1, 
                                             top_q->qc_proof, &status,
                                             &ttl_x)))
                          /*prove_existence(context, top_q->qc_name_n,
                                          res->val_rc_rrset->_as.ac_data->
-                                         rrs.val_rrset_type_h, flags, zonecut_n,
+                                         rrs.val_rrset_type_h, zonecut_n,
                                          w_results, queries, &target_res, results,
                                          &status, &ttl_x) */
                         goto err;
@@ -4917,8 +4954,8 @@ check_wildcard_sanity(val_context_t * context,
                     /*
                      * Can't prove wildcard 
                      */
-                    val_log(context, LOG_DEBUG,
-                            "Wildcard sanity check failed");
+                    val_log(context, LOG_INFO,
+                            "check_wildcard_sanity(): Wildcard sanity check failed");
                     target_res->val_rc_status = VAL_BOGUS;
                 }
             }
@@ -4957,13 +4994,11 @@ check_alias_sanity(val_context_t * context,
     u_int8_t        temp_name[NS_MAXCDNAME];
     u_int32_t       soa_ttl_x = 0;
     struct          val_query_chain *top_q;
-    u_int8_t        flags;
 
     if (top_qfq == NULL)
         return VAL_BAD_ARGUMENT;
 
     top_q = top_qfq->qfq_query; /* Can never be NULL if top_qfq is not NULL */
-    flags = top_qfq->qfq_flags;
     
     qname_n = top_q->qc_original_name;
     while (!done && qname_n) {
@@ -4974,7 +5009,7 @@ check_alias_sanity(val_context_t * context,
             register_query(&ql, qname_n, top_q->qc_type_h,
                            top_q->qc_zonecut_n)) {
             loop = 1;
-            val_log(context, LOG_DEBUG, "Loop in alias chain detected");
+            val_log(context, LOG_INFO, "check_alias_sanity(): Loop in alias chain detected");
             if (new_res) {
                 new_res->val_rc_status = VAL_BOGUS;
             }
@@ -5087,7 +5122,7 @@ check_alias_sanity(val_context_t * context,
             if (new_res == NULL) {
                 if (VAL_NO_ERROR !=
                     (retval = transform_single_result(context, res, queries, results,
-                                                      NULL, &new_res, flags))) {
+                                                      NULL, &new_res))) {
                     goto err;
                 }
             }
@@ -5110,7 +5145,7 @@ check_alias_sanity(val_context_t * context,
                 (retval =
                  prove_nonexistence(context, w_results, queries, &proof_res,
                                     results, qname_n, top_q->qc_type_h,
-                                    top_q->qc_class_h, flags, 0, top_q->qc_proof,
+                                    top_q->qc_class_h, 0, top_q->qc_proof,
                                     &status, &soa_ttl_x))) {
                 goto err;
             }
@@ -5127,7 +5162,7 @@ check_alias_sanity(val_context_t * context,
                 if (VAL_NO_ERROR !=
                     (retval =
                      transform_single_result(context, NULL, queries, results, NULL,
-                                             &new_res, flags))) {
+                                             &new_res))) {
                     goto err;
                 }
                 new_res->val_rc_status = VAL_INCOMPLETE_PROOF;
@@ -5207,7 +5242,7 @@ perform_sanity_checks(val_context_t * context,
              * mark all answers as bogus - 
              * all answers are related in the proof 
              */
-            val_log(context, LOG_DEBUG, "Bogus Proof");
+            val_log(context, LOG_INFO, "perform_sanity_checks(): Not all proofs were validated");
             for (res = w_results; res; res = res->val_rc_next)
                 res->val_rc_status = VAL_BOGUS_PROOF;
         } else {
@@ -5308,11 +5343,11 @@ create_error_result(struct val_query_chain *top_q,
     memset(&new_ts, 0, sizeof(struct stat));\
     if (!file) {\
         if (cur_ts != 0) {\
-            val_log(ctx, LOG_WARNING, "%s disappeared; continuing to use old", file);\
+            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s disappeared; continuing to use old", file);\
         }\
     } else {\
         if(0 != stat(file, &new_ts)) {\
-            val_log(ctx, LOG_WARNING, "%s disappeared; continuing to use old", file);\
+            val_log(ctx, LOG_WARNING, "val_resolve_and_check(): %s disappeared; continuing to use old", file);\
         }\
     }\
 }while (0)
@@ -5385,7 +5420,7 @@ construct_authentication_chain(val_context_t * context,
         if (retval == VAL_NO_ERROR)
             retval =
                 transform_outstanding_results(context, *w_results, queries, results, NULL,
-                                              VAL_IRRELEVANT_PROOF, top_qfq->qfq_flags);
+                                              VAL_IRRELEVANT_PROOF);
     }
 
     return VAL_NO_ERROR;
@@ -5456,7 +5491,6 @@ val_resolve_and_check(val_context_t * ctx,
     int             retval;
     struct queries_for_query *top_q = NULL;
     struct queries_for_query *added_q = NULL;
-    char            name_p[NS_MAXDNAME];
     struct val_internal_result *w_res = NULL;
     struct val_internal_result *w_results = NULL;
     struct queries_for_query *queries = NULL;
@@ -5510,12 +5544,6 @@ val_resolve_and_check(val_context_t * ctx,
         }
     }
   
-    if (-1 == ns_name_ntop(domain_name_n, name_p, sizeof(name_p)))
-        snprintf(name_p, sizeof(name_p), "unknown/error");
-    val_log(context, LOG_DEBUG,
-            "val_resolve_and_check(): looking for {%s %d %d}", name_p,
-            q_class, type);
-
     CTX_LOCK_ACACHE(context);
     
     if (VAL_NO_ERROR != (retval =
@@ -5558,7 +5586,7 @@ val_resolve_and_check(val_context_t * ctx,
 
 
         if (VAL_NO_ERROR !=
-            (retval = fix_glue(context, &queries, &data_received, &data_missing)))
+            (retval = fix_glue(context, &queries, &data_missing)))
             goto err;
         
         /*
