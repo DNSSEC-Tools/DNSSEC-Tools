@@ -112,6 +112,7 @@ our @EXPORT = qw(
 		 rollmgr_log
 		 rollmgr_logfile
 		 rollmgr_loglevel
+		 rollmgr_loglevels
 		 rollmgr_lognum
 		 rollmgr_logstr
 			 LOG_NEVER
@@ -1295,6 +1296,29 @@ sub rollmgr_loglevel
 
 #-----------------------------------------------------------------------------
 #
+# Routine:	rollmgr_loglevels()
+#
+# Purpose:	Return the text forms of the valid log levels.  The levels
+#		are returned in order, from most verbose to least.
+#
+sub rollmgr_loglevels
+{
+	my @levels = ();				# Valid log levels.
+
+	#
+	# Create an array holding only the user-settable logging levels.
+	#
+	for(my $ind = ($LOG_NEVER+1); $ind < $LOG_ALWAYS; $ind++)
+	{
+		next if($logstrs[$ind] eq '');
+		push @levels, $logstrs[$ind];
+	}
+	
+	return(@levels);
+}
+
+#-----------------------------------------------------------------------------
+#
 # Routine:	rollmgr_logstr()
 #
 # Purpose:	Return the text form of the specified log level.
@@ -1884,6 +1908,8 @@ manager.
 
   rollmgr_halt();
 
+  @levels = rollmgr_loglevels();
+
   $curlevel = rollmgr_loglevel();
   $oldlevel = rollmgr_loglevel("info");
   $oldlevel = rollmgr_loglevel(LOG_ERR,1);
@@ -1970,7 +1996,8 @@ I<rollmgr_sendcmd()>.
 Return Values:
 
     -1 - an invalid process id was found for rollerd
-    Anything else indicates the number of processes that were signaled.
+    Anything else indicates the number of processes that were
+    signaled.
     (This should only ever be 1.)
 
 =item I<rollmgr_halt()>
@@ -1981,7 +2008,8 @@ In the current implementation, the return code from the B<kill()> command is
 returned.
 
     -1 - an invalid process id was found for rollerd
-    Anything else indicates the number of processes that were signaled.
+    Anything else indicates the number of processes that were
+    signaled.
     (This should only ever be 1.)
 
 =back
@@ -1989,6 +2017,11 @@ returned.
 =head1 LOGGING INTERFACES
 
 =over 4
+
+=item I<rollmgr_loglevels()>
+
+This routine returns an array holding the text forms of the user-settable
+logging levels.  The levels are returned in order, from most verbose to least.
 
 =item I<rollmgr_loglevel(newlevel,useflag)>
 
