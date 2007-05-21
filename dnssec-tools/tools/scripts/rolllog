@@ -15,6 +15,13 @@ use Getopt::Long qw(:config no_ignore_case_always);
 
 use Net::DNS::SEC::Tools::rollmgr;
 
+#
+# Version information.
+#
+my $NAME   = "rolllog";  
+my $VERS   = "$NAME version: 0.5";
+my $DTVERS = "DNSSEC-Tools Version: 1.2";
+
 #######################################################################
 
 #
@@ -24,12 +31,14 @@ my $loglevel;				# Logging level.
 
 my $OPT_HELP	 = "help";
 my $OPT_LOGLEVEL = "loglevel";
+my $OPT_VERSION	 = "Version";
 
 my %opts = ();				# Filled option array.
 my @opts =
 (
 	"loglevel=s",			# Logging level.
 	"help",				# Give a usage message and exit.
+        "Version",			# Display the version number.
 );
 
 #######################################################################
@@ -90,9 +99,10 @@ sub optsandargs
 	# Check our options.
 	#
 	GetOptions(\%opts,@opts);
-	$loglevel  = $opts{$OPT_LOGLEVEL} || usage();
+	usage()   if(defined($opts{$OPT_HELP}));
+	version() if(defined($opts{$OPT_VERSION}));
 
-	usage() if(defined($opts{$OPT_HELP}));
+	$loglevel  = $opts{$OPT_LOGLEVEL} || usage();
 
 }
 
@@ -101,8 +111,21 @@ sub optsandargs
 #
 sub usage
 {
-	print STDERR "usage:  rolllog [-loglevel <level> <log_message> | -help]\n";
+	print STDERR "usage:  rolllog [-loglevel <level> <log_message> | -help | -Version]\n";
 	exit(0);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+        print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+
+	exit(1);
 }
 
 1;
@@ -143,6 +166,10 @@ B<rollmgr.pm>(3).   This option is required.
 =item -help
 
 Display a usage message.
+
+=item -Version
+
+Display a version message.
 
 =back
 
