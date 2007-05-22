@@ -39,6 +39,10 @@ val_sysconfdir=`eval echo $sysconfdir`
 if test "x$val_sysconfdir" = "xNONE/etc" ; then
    val_sysconfdir="${ac_default_prefix}/etc"
 fi
+val_sysconfdir=`eval echo $sysconfdir`
+if test "x$val_sysconfdir" = "xNONE/etc" ; then
+   val_sysconfdir="${ac_default_prefix}/etc"
+fi
 AC_MSG_CACHE_ADD(system configuration directory : $val_sysconfdir)
 
 AH_TEMPLATE([VAL_RESOLV_CONF], [Path to resolver configuration])
@@ -60,6 +64,9 @@ AC_SUBST(VAL_CONFIGURATION_FILE)
 AC_MSG_CACHE_ADD(Validator configuration file: $VAL_CONFIGURATION_FILE)
 
 VALIDATOR_TESTCASES=$val_sysconfdir/dnssec-tools/validator-testcases
+AC_ARG_WITH(validator-testcases-file,
+[  --with-validator-testcases-file=FILE dnsval config file (SYSCONFDIR/dnssec-tools/dnsval.conf).],
+    [VALIDATOR_TESTCASES=$with_validator_testcases_file])
 AC_DEFINE_UNQUOTED(VALIDATOR_TESTCASES,"$VALIDATOR_TESTCASES", [validator testcases configuration file])
 AC_SUBST(VALIDATOR_TESTCASES)
 
