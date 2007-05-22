@@ -1,17 +1,17 @@
 Summary: A suite of tools for managing dnssec aware DNS usage
 Name: dnssec-tools
-Version: 1.1.1
+Version: 1.2
 Release: 1%{?dist}
-License: BSD
+License: BSD-like
 Group: System Environment/Base
 URL: http://www.dnssec-tools.org/
-Source0: %{name}-%{version}.tar.gz
+Source0: http://downloads.sourceforge.net/sourceforge/%{name}/%{name}-%{version}.tar.gz
+Source1: dnssec-tools-dnsval.conf
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires: perl-Net-DNS, dnssec-tools-perlmods, bind
 Requires:  perl(:MODULE_COMPAT_%(eval "`%{__perl} -V:version`"; echo $version))
 BuildRequires: openssl-devel
-Patch4: dnssec-tools-linux-conf-paths-1.1.patch
-Patch5: dnssec-tools-conf-file-location.patch
+Patch4: dnssec-tools-linux-conf-paths-1.2.patch
 Patch6: dnssec-tools-donuts-rules-paths.patch
 
 %description
@@ -50,11 +50,10 @@ C-based libraries useful for developing dnssec aware tools.
 %setup -q
 
 %patch4 -p0
-%patch5 -p0
 %patch6 -p0
 
 %build
-%configure --with-perl-build-args="INSTALLDIRS=vendor"
+%configure --with-validator-testcases-file=%{_datadir}/dnssec-tools/validator-testcases --with-perl-build-args="INSTALLDIRS=vendor" --sysconfdir=/etc --with-root-hints=/etc/named.root.hints --with-resolv-conf=/etc/resolv.conf
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' libtool
 sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' libtool
 sed -i 's|^hardcode_libdir_flag_spec=.*|hardcode_libdir_flag_spec=""|g' validator/libtool
@@ -62,29 +61,36 @@ sed -i 's|^runpath_var=LD_RUN_PATH|runpath_var=DIE_RPATH_DIE|g' validator/libtoo
 make %{?_smp_mflags}
 
 %install
-rm -rf $RPM_BUILD_ROOT
-make install DESTCONFDIR=$RPM_BUILD_ROOT/etc/dnssec/ DESTDIR=$RPM_BUILD_ROOT QUIET=
+rm -rf %{buildroot}
+make install DESTCONFDIR=%{buildroot}/etc/dnssec-tools/ DESTDIR=%{buildroot} QUIET=
+
+%{__install} -m 644 %{SOURCE1} %{buildroot}/etc/dnssec-tools/dnsval.conf
 
 # remove unneeded perl install files
-find $RPM_BUILD_ROOT -type f -name .packlist -exec rm -f {} ';'
-find $RPM_BUILD_ROOT -type f -name perllocal.pod -exec rm -f {} ';'
+find %{buildroot} -type f -name .packlist -exec rm -f {} ';'
+find %{buildroot} -type f -name perllocal.pod -exec rm -f {} ';'
+find %{buildroot} -type f -name '*.bs' -size 0 -exec rm -f {} \;
 # remove empty directories
-find $RPM_BUILD_ROOT -type d -depth -exec rmdir {} 2>/dev/null ';'
-chmod -R u+w $RPM_BUILD_ROOT/*
-rm -f $RPM_BUILD_ROOT%{_libdir}/*.la
+find %{buildroot} -type d -depth -exec rmdir {} 2>/dev/null ';'
+chmod -R u+w %{buildroot}/*
+rm -f %{buildroot}%{_libdir}/*.la
+
+# not needed and installed in two places
+rm -f %{buildroot}%{perl_vendorlib}/TrustMan.pl
 
 %post libs -p /sbin/ldconfig
 
 %postun libs -p /sbin/ldconfig
 
 %clean
-rm -rf $RPM_BUILD_ROOT
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,-)
 %doc README INSTALL COPYING
 
-%config(noreplace) /etc/dnssec/dnssec-tools.conf
+%config(noreplace) /etc/dnssec-tools/dnssec-tools.conf
+%config(noreplace) /etc/dnssec-tools/dnsval.conf
 
 %{_bindir}/dnspktflow
 %{_bindir}/donuts
@@ -113,8 +119,14 @@ rm -rf $RPM_BUILD_ROOT
 %{_bindir}/rollerd
 %{_bindir}/rollinit
 %{_bindir}/rollset
+%{_bindir}/keyarch
+%{_bindir}/cleanarch
 
 %{_bindir}/validate
+# configure above 
+%{_datadir}/dnssec-tools/validator-testcases
+%{_bindir}/getaddr
+%{_bindir}/gethost
 
 %{_bindir}/TrustMan.pl
 %{_bindir}/trustman
@@ -133,9 +145,12 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/genkrf.1.gz
 %{_mandir}/man1/getdnskeys.1.gz
 %{_mandir}/man1/lskrf.1.gz
+%{_mandir}/man1/keyarch.1.gz
 %{_mandir}/man1/maketestzone.1.gz
 %{_mandir}/man1/mapper.1.gz
 %{_mandir}/man1/validate.1.gz
+%{_mandir}/man1/getaddr.1.gz
+%{_mandir}/man1/gethost.1.gz
 %{_mandir}/man1/zonesigner.1.gz
 
 %{_mandir}/man1/dtconfchk.1.gz
@@ -151,12 +166,13 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man1/rollerd.1.gz
 %{_mandir}/man1/rollinit.1.gz
 %{_mandir}/man1/rollset.1.gz
-%{_mandir}/man1/TrustMan.pl.1.gz
+%{_mandir}/man1/cleanarch.1.gz
 %{_mandir}/man1/blinkenlights.1.gz
 %{_mandir}/man1/cleankrf.1.gz
 %{_mandir}/man1/krfcheck.1.gz
 %{_mandir}/man1/rolllog.1.gz
 %{_mandir}/man1/signset-editor.1.gz
+%{_mandir}/man1/TrustMan.pl.1.gz
 %{_mandir}/man1/trustman.1.gz
 
 %{_mandir}/man3/TrustMan.3pm.gz
@@ -166,23 +182,13 @@ rm -rf $RPM_BUILD_ROOT
 %files perlmods
 %defattr(-,root,root)
 
-%{perl_vendorlib}/Net/DNS/SEC/Tools/Donuts/Rule.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/QWPrimitives.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/BootStrap.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/conf.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/keyrec.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/keyrec.pod
-%{perl_vendorlib}/Net/DNS/SEC/Tools/rollmgr.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/rollrec.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/rollrec.pod
-%{perl_vendorlib}/Net/DNS/SEC/Tools/defaults.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/timetrans.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/tooloptions.pm
-%{perl_vendorlib}/Net/DNS/SEC/Tools/dnssectools.pm
-%{perl_vendorlib}/Net/DNS/ZoneFile/Fast.pm
-%{perl_vendorlib}/TrustMan.pl
+%{perl_vendorarch}/Net/addrinfo*
+%{perl_vendorarch}/Net/DNS/SEC/*
+%{perl_vendorarch}/auto/Net/DNS/SEC/Validator
+%{perl_vendorarch}/auto/Net/addrinfo/
+%{perl_vendorarch}/Net/DNS/ZoneFile/
+%{perl_vendorlib}/Net/DNS/SEC/Tools/Donuts/
 
-%{_mandir}/man3/Net::DNS::SEC::Tools::Donuts::Rule.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::QWPrimitives.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::BootStrap.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::conf.3pm.gz
@@ -193,6 +199,9 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/Net::DNS::SEC::Tools::timetrans.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::tooloptions.3pm.gz
 %{_mandir}/man3/Net::DNS::SEC::Tools::dnssectools.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Validator.3pm.gz
+%{_mandir}/man3/Net::addrinfo.3pm.gz
+%{_mandir}/man3/Net::DNS::SEC::Tools::Donuts::Rule.3pm.gz
 %{_mandir}/man3/Net::DNS::ZoneFile::Fast.3pm.gz
 
 %files libs
@@ -201,7 +210,7 @@ rm -rf $RPM_BUILD_ROOT
 
 %files libs-devel
 %defattr(-,root,root)
-%{_includedir}/validator/*.h
+%{_includedir}/validator
 %{_libdir}/*.a
 %{_libdir}/*.so
 
@@ -213,17 +222,50 @@ rm -rf $RPM_BUILD_ROOT
 %{_mandir}/man3/dnsval_conf_get.3.gz
 %{_mandir}/man3/dnsval_conf_set.3.gz
 %{_mandir}/man3/libsres.3.gz
-%{_mandir}/man3/resolver_config_get.3.gz
-%{_mandir}/man3/resolver_config_set.3.gz
 %{_mandir}/man3/root_hints_get.3.gz
 %{_mandir}/man3/root_hints_set.3.gz
+%{_mandir}/man3/resolv_conf_get.3.gz
+%{_mandir}/man3/resolv_conf_set.3.gz
 %{_mandir}/man3/val_create_context.3.gz
 %{_mandir}/man3/val_free_context.3.gz
 %{_mandir}/man3/val_free_result_chain.3.gz
 %{_mandir}/man3/val_istrusted.3.gz
 %{_mandir}/man3/val_resolve_and_check.3.gz
+%{_mandir}/man3/val_gethostbyaddr.3.gz
+%{_mandir}/man3/val_gethostbyaddr_r.3.gz
+%{_mandir}/man3/val_gethostbyname2.3.gz
+%{_mandir}/man3/val_gethostbyname2_r.3.gz
+%{_mandir}/man3/val_gethostbyname_r.3.gz
+%{_mandir}/man3/val_getnameinfo.3.gz
+%{_mandir}/man3/val_isvalidated.3.gz
+%{_mandir}/man3/val_res_query.3.gz
+%{_mandir}/man3/val_res_search.3.gz
+#%{_mandir}/man3/val_addrinfo.3.gz
+%{_mandir}/man3/val_add_valpolicy.3.gz
+%{_mandir}/man3/val_create_context_with_conf.3.gz
+%{_mandir}/man3/val_does_not_exist.3.gz
+%{_mandir}/man3/val_free_response.3.gz
+%{_mandir}/man3/val_freeaddrinfo.3.gz
 
 %changelog
+* Tue May 22 2007 Wes Hardaker <wjhns174@hardakers.net> - 1.2-1
+- Update to 1.2 release
+
+* Wed Apr 18 2007  Wes Hardaker <wjhns174@hardakers.net> - 1.1.1-4
+- Fix changelog so it doesn't have a macro in the documentation
+- Added a dnsval.conf starting file.
+- Remove include subdir wildcard expansion since the entire directory
+  is owned.
+
+* Wed Apr 18 2007  Wes Hardaker <wjhns174@hardakers.net> - 1.1.1-3
+- Add patch to make Net::DNS::SEC optional
+- Fix date in previous log
+
+* Wed Apr 18 2007  Wes Hardaker <wjhns174@hardakers.net> - 1.1.1-2
+- Pointed Source0 at the sourceforge server instead of a local file
+- Set License to BSD-like
+- Took ownership of includedir/validator
+
 * Tue Apr 10 2007  Wes Hardaker <wjhns174@hardakers.net> - 1.1.1-1
 - Updated to upstream version 1.1.1
 
