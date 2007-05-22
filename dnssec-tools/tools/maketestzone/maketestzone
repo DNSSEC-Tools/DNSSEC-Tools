@@ -143,19 +143,20 @@ my %extrarecords =
 				    'TXT', '"Long Label Test"');
 		       add_web_stuff_for_domain($domain, "$record", "TXT");
 		   },
-    longrecord => sub { my ($domain, $name) = @_;
-			my $length = 253 - length($domain) - 1 - 64;
-			my $record = $name . "-" .
-			  getnums(63 - length($name) - 1) . ".";
-			while ($length > 63) {
-			    $record .= getnums(63) . ".";
-			    $length -= 64;
-			}
-			$record .= getnums($length);
-			print_record("$record.$domain", "1D IN",
-				     'TXT', '"Long Record Test"');
-			add_web_stuff_for_domain($domain, "$record", "TXT");
-		    },
+# XXX: arg...  need to find the actual rules.
+#     longrecord => sub { my ($domain, $name) = @_;
+# 			my $length = 230 - length($domain) - 1 - 64;
+# 			my $record = $name . "-" .
+# 			  getnums(63 - length($name) - 1) . ".";
+# 			while ($length > 63) {
+# 			    $record .= getnums(63) . ".";
+# 			    $length -= 64;
+# 			}
+# 			$record .= getnums($length);
+# 			print_record("$record.$domain", "1D IN",
+# 				     'TXT', '"Long Record Test"');
+# 			add_web_stuff_for_domain($domain, "$record", "TXT");
+# 		    },
    );
 
 #
