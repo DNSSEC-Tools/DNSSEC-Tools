@@ -16,10 +16,32 @@ details.
       context. 
     - Implemented thread-safe context sharing
     - Added experimental support for DLV (draft-weiler-dnssec-dlv-02.txt)
+    - Initial support for NSEC3
+    - perl Validator support module for binding perl to libval
+
+  - key rolling
+    - improved support in zonesigner
+    - improved support in rollerd
 
   - validate
     - selftest testcases now read from configuration file
     - ability to configure/run 'suites' of testcases
+
+  - maketestzone
+    - extremely long-length records added
+
+  - DNSSEC-aware application patches available (multiple states of stability):
+    - firefox (improved drastically since 1.1)
+    - thunderbird
+    - ssh
+    - wget
+    - sendmail
+    - postfix
+    - libsp2
+    - proftpd
+    - ncftp
+    - lftp
+    - jabberd-2
 
 1.1
 
