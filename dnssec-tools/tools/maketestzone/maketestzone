@@ -127,6 +127,37 @@ my %addrs =
    (A    => $opts{'a-addr'},
     AAAA => $opts{'aaaa-addr'});
 
+sub getnums {
+    my $count = shift;
+    my $res;
+    $res = "0123456789" x (int($count/10));
+    $res .= substr("0123456789",0,$count-10*(int($count/10)));
+}
+
+my %extrarecords =
+   (TXT => '"TXT record test"',
+    longlabel => sub { my ($domain, $name) = @_;
+			my $record = $name . "-" .
+			  (getnums(63 - length($name)-1)); 
+		       print_record("$record.$domain.", "1D IN",
+				    'TXT', '"Long Label Test"');
+		       add_web_stuff_for_domain($domain, "$record", "TXT");
+		   },
+    longrecord => sub { my ($domain, $name) = @_;
+			my $length = 253 - length($domain) - 1 - 64;
+			my $record = $name . "-" .
+			  getnums(63 - length($name) - 1) . ".";
+			while ($length > 63) {
+			    $record .= getnums(63) . ".";
+			    $length -= 64;
+			}
+			$record .= getnums($length);
+			print_record("$record.$domain", "1D IN",
+				     'TXT', '"Long Record Test"');
+			add_web_stuff_for_domain($domain, "$record", "TXT");
+		    },
+   );
+
 #
 # data modification functions
 #
@@ -204,6 +235,8 @@ my %LegendInformation =
  AAAA => 'An AAAA (IPv6) address record',
  CNAME => 'A CNAME record pointing to an address record',
  NS => 'An NS record pointing to a child zone.',
+ longlabel => 'A TXT record with a maximum length label (63)',
+ longrecord => 'A TXT record with a maximum length record (254)',
 );
 
 #
@@ -335,6 +368,16 @@ sub generate_records {
 	}
     }
 
+    print_comment("Other Record Types");
+    foreach my $name (keys(%extrarecords)) {
+	if (ref($extrarecords{$name}) eq 'CODE') {
+	    $extrarecords{$name}($domain, $name);
+	} else {
+	    print_record("extra-$name", "1D IN", $name, $extrarecords{$name});
+	    add_web_stuff_for_domain($domain, "extra-$name", $name);
+	}
+    }
+
     # generate address records
     if (!$nosubdomains) {
 	print_comment("NS records to sub zones");
@@ -425,6 +468,9 @@ h1,h2 {
 	}
 	if (!$opts{'s'}) {
 	    print $htmlfh "<tr><td>Record</td><td>NS</td><td>$LegendInformation{NS}</td></tr>\n";
+	}
+	foreach my $key (keys(%extrarecords)) {
+	    print $htmlfh "<tr><td>Record</td><td>$key</td><td>$LegendInformation{$key}</td></tr>\n";
 	}
 	
 	my %done;
