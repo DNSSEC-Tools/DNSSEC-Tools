@@ -2,6 +2,14 @@
 
 const ifs = Components.interfaces;
 
+function doDnssecstatus() {
+
+}
+
+function doLibvalValidate() {
+
+}
+
 /* This part is run once, when the extension is loaded */
 
 /* These function is called every time a page is loaded */
