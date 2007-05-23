@@ -239,9 +239,31 @@ sub parse_line
 	      my $pat = $3;
 	      error("bad range in \$GENERATE") if $from > $to;
 	      error("\$GENERATE pattern without a wildcard") if $pat !~ /\$/;
+	      my ($lhs, $rhs) = $pat =~ /(\S+)\s+\S+\s+(\S+)/;
+	      my ($l, $loffset, $lwidth, $lbase) = 
+	      	$lhs =~ /(\$)(?:\{(\d+)(?:,(\d+)(?:,([doxX]))?)?\})?/;
+	      if ($l) {
+			$loffset ||= 0;
+			$lwidth ||= 0;
+			$lbase ||= "d";
+	      }
+	      my ($r, $roffset, $rwidth, $rbase) = 
+	      	$rhs =~ /(\$)(?:\{(\d+)(?:,(\d+)(?:,([doxX]))?)?\})?/;
+	      if ($r) {
+			$roffset ||= 0;
+			$rwidth ||= 0;
+			$rbase ||= "d";
+	      }
 	      while ($from <= $to) {
 		  $_ = $pat;
-		  s/\$/$from/g;
+	      	  if ($l) {
+		  	my $lsub = sprintf "%$lwidth$lbase", $loffset + $from;
+			s/\$(\{[0-9doxX,]+\})?/$lsub/;
+		  }
+		  if ($r) {
+		  	my $rsub = sprintf "%$rwidth$rbase", $roffset + $from;
+			s/\$(\{[0-9doxX,]+\})?/$rsub/;
+		  }
 		  $parse->();
 		  $from++;
 	      }
