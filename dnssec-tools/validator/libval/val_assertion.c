@@ -4475,7 +4475,7 @@ verify_and_validate(val_context_t * context,
                      *  sending with CD and D0 bits set
                      */
                     val_log(context, LOG_DEBUG,
-                            "verify_and_validate(): EDNS0 was not used but it should have been");
+                            "verify_and_validate(): EDNS0 was not used; re-issuing query");
                     zap_query(context, top_q);
                     top_qfq->qfq_flags |= VAL_QUERY_USING_DLV; 
 
