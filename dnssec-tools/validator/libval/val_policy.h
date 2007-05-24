@@ -128,8 +128,9 @@ int             free_dlv_trust_points(policy_entry_t *);
 #endif
 int             check_relevance(char *label, char *scope, int *label_count,
                                 int *relevant);
-int             val_add_valpolicy(val_context_t *ctx, char *keyword, char *zone,
-                                  char *value, long ttl);
+int             val_add_valpolicy(val_context_t *context, const char *keyword, char *zone, 
+                                  char *value, long ttl, val_policy_entry_t **pol);
+int             val_remove_valpolicy(val_context_t *context, val_policy_entry_t *pol);
 int             val_get_token(char **buf_ptr,
                               char *end_ptr,
                               int *line_number,
