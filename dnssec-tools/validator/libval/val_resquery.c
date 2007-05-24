@@ -1765,7 +1765,7 @@ digest_response(val_context_t * context,
             matched_q->qc_trans_id = -1;
             matched_q->qc_state = Q_INIT;
             val_log(context, LOG_DEBUG,
-                    "digest_response(): EDNS0 was not used but it should have been");
+                    "digest_response(): EDNS0 was not used; re-issuing query");
             val_log(context, LOG_DEBUG, "digest_response(): Setting D0 bit and using EDNS0");
             for (ns = matched_q->qc_ns_list; ns; ns = ns->ns_next)
                 ns->ns_options |= RES_USE_DNSSEC;
