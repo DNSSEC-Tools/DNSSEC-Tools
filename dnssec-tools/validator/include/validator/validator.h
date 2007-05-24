@@ -190,13 +190,18 @@ extern          "C" {
     struct val_digested_auth_chain;     /* forward declaration */
     struct val_log;             /* forward declaration */
 
-    typedef struct policy_glob {
+    typedef struct policy_entry {
         u_int8_t        zone_n[NS_MAXCDNAME];
         long            exp_ttl;
         void *          pol;
-        struct policy_glob *next;
+        struct policy_entry *next;
     } policy_entry_t;
-    
+   
+    typedef struct {
+        policy_entry_t *pe;
+        int index;
+    }  val_policy_entry_t;
+
     /*
      * The above is a generic data type for a policy entry
      * typecasted to one of the types defined in val_policy.h: 
@@ -628,9 +633,10 @@ extern          "C" {
     int             root_hints_set(const char *name);
     char           *dnsval_conf_get(void);
     int             dnsval_conf_set(const char *name);
-    int             val_add_valpolicy(val_context_t *ctx, char *keyword, char *zone,
-                                      char *value, long ttl);
-
+    int             val_add_valpolicy(val_context_t *context, const char *keyword, 
+                                      char *zone, char *value, long ttl, 
+                                      val_policy_entry_t **pol);
+    int             val_remove_valpolicy(val_context_t *context, val_policy_entry_t *pol);
     /*
      * from val_support.h 
      */
