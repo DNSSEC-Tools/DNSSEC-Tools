@@ -251,8 +251,17 @@ Validation status for a given RRset.  This can be one of the following:
 		Lacking information to give a more conclusive
 		answer.
 
+	VAL_BOGUS_PROVABLE
+        Response could not be validated due to signature 
+        verification failures or the inability to verify 
+        proofs for exactly one component in the 
+        authentication chain below the trust anchor. 
+
 	VAL_BOGUS
-		Validation failure condition.
+        Response could not be validated due to signature 
+        verification failures or the inability to verify 
+        proofs for an indeterminate number of components 
+        in the authentication chain. 
 
 	VAL_NOTRUST
 		All available components in the authentication
