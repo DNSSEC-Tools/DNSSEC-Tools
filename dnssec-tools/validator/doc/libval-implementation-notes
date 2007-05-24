@@ -374,13 +374,18 @@ Assertion states transition as follows:
           |                     |      SUCCESS       |                                    |    
           |                     +====================+                                    |
           |                                                                               |
+          |                                                                               |
           | VAL_AC_BAD_BASE     +====================+                                    |
           +-------||----------->|       BAD          | -----------------------------------+
           | VAL_AC_LAST_BAD     +====================+                                    |
           |                                                                               |
+          |                                                                               |
+          |                                                                               |
+          |                                                                               |
           | VAL_AC_FAIL_BASE    +====================+                                    |
           +-------||----------->|       FAIL         | -----------------------------------+
           | VAL_AC_LAST_FAILURE +====================+                                    |
+          |                                                                               |
           |                                                                               |
           |                           (provably insecure)                                 |
           |<------------------------------------------------------------------------------+
@@ -409,16 +414,6 @@ where:
                                 |-------------> VAL_AC_RRSIG_VERIFIED_SKEW
                                 |-------------> VAL_AC_WCARD_VERIFIED
                                 +-------------> VAL_AC_WCARD_VERIFIED_SKEW
-            
-                                
-              +====================+
-              |        BAD         | 
-              +====================+
-                      |---> VAL_AC_DATA_MISSING 
-                      |---> VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-                      +---> VAL_AC_DNS_ERROR_BASE+SR_<error_condition> 
-            
-                      
                       
               +====================+
               |       FAIL         | 
@@ -448,6 +443,16 @@ where:
                                 |-------------> VAL_AC_ALGORITHM_REFUSED
                                 +-------------> VAL_AC_RRSIG_ALGORITHM_MISMATCH 
             
+            
+                                
+              +====================+
+              |        BAD         | 
+              +====================+
+                      |---> VAL_AC_DATA_MISSING 
+                      |---> VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+                      +---> VAL_AC_DNS_ERROR_BASE+SR_<error_condition> 
+            
+                      
                       
               +====================+
               |  DONT GO FURTHER   | 
