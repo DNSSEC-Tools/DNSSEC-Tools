@@ -4,10 +4,16 @@
 
 /etc/dnsval.conf, /etc/resolv.conf, /etc/root.hints - Configuration policy for the DNSSEC validator library libval(3).
 val_add_valpolicy - Dynamically add a new policy to the validator context
+val_remove_valpolicy - Remove a dynamically added policy from the validator context
 
 =head1 SYNOPSIS
 
-int val_add_valpolicy(val_context_t *ctx, char *keyword, char *zone, char *value, long ttl);
+    int val_add_valpolicy(val_context_t *context, const char *keyword,
+                    char *zone, char *value, long ttl,
+                    val_policy_entry_t **pol);
+
+    int val_remove_valpolicy(val_context_t *context, 
+                    val_policy_entry_t *pol);
 
 =head1 DESCRIPTION
 
@@ -20,8 +26,14 @@ The I<val_add_valpolicy()> function can be used to dymanically add a new policy
 for a given context. The I<keyword>, I<zone> and I<value> arguments are
 identical to I<KEYWORD>, I<zone> and I<additional-data> defined below for 
 B</etc/dnsval.conf>. I<ttl> specifies the duration in seconds for which the 
-policy is kept in effect. A value of -1 adds to policy to the context 
-indefinitely.
+policy is kept in effect. A value of B<-1> adds to policy to the context 
+indefinitely. A handle to the newly added policy is returned in I<*pol>.  
+This structure is opaque to the applications; applications must not modify the 
+contents of the memory returned in I<*pol>. 
+
+Applications may also revoke the effects of a newly added policy, I<pol>, 
+before the expiry of its timeout interval using the 
+I<val_remove_valpolicy()> policy. 
 
 The validator library reads configuration information from three separate
 files, B</etc/resolv.conf>, B</etc/root.hints>, and B</etc/dnsval.conf>.
