@@ -235,15 +235,22 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
  */
 const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
     {POL_TRUST_ANCHOR_STR, parse_trust_anchor, free_trust_anchor},
+
+    // XXX should go away
     {POL_PREFERRED_SEP_STR, parse_preferred_sep, free_preferred_sep},
     {POL_MUST_VERIFY_COUNT_STR, parse_must_verify_count,
      free_must_verify_count},
+
+     // XXX Define 
+     // XXX ALGO_REFUSED {DS, DNSKEY}, KEY_LENGTH_LARGE/SMALL, KEY_NOT_AUTHORIZED
     {POL_PREFERRED_ALGORITHM_DATA_STR, parse_preferred_algo_data,
      free_preferred_algo_data},
     {POL_PREFERRED_ALGORITHM_KEYS_STR, parse_preferred_algo_keys,
      free_preferred_algo_keys},
     {POL_PREFERRED_ALGORITHM_DS_STR, parse_preferred_algo_ds,
      free_preferred_algo_ds},
+     // XXX end
+     
     {POL_CLOCK_SKEW_STR, parse_clock_skew, free_clock_skew},
     {POL_USE_TCP_STR, parse_use_tcp, free_use_tcp},
     {POL_PROV_UNSEC_STR, parse_prov_unsecure_status, 
@@ -1928,8 +1935,10 @@ parse_etc_hosts(const char *name)
 }
 
 
-int val_add_valpolicy(val_context_t *context, char *keyword, char *zone, 
-                      char *value, long ttl)
+int 
+val_add_valpolicy(val_context_t *context, const char *keyword, 
+                  char *zone, char *value, long ttl, 
+                  val_policy_entry_t **pol)
 {
     int index;
     u_char zone_n[NS_MAXCDNAME];
@@ -1943,7 +1952,7 @@ int val_add_valpolicy(val_context_t *context, char *keyword, char *zone,
     val_context_t *ctx = NULL;
     int retval;
 
-    if (keyword == NULL || zone == NULL || value == NULL)
+    if (keyword == NULL || zone == NULL || value == NULL || pol == NULL)
         return VAL_BAD_ARGUMENT;
 
     if (context == NULL) {
@@ -1952,6 +1961,8 @@ int val_add_valpolicy(val_context_t *context, char *keyword, char *zone,
             return retval;
     } else
         ctx = (val_context_t *) context;
+   
+    *pol = NULL;
     
     /* find the policy according to the keyword */
     for (index = 0; index < MAX_POL_TOKEN; index++) {
@@ -2009,13 +2020,88 @@ int val_add_valpolicy(val_context_t *context, char *keyword, char *zone,
         }
         UNLOCK_QC(q);    
     }
+    *pol = (val_policy_entry_t *) MALLOC (sizeof(val_policy_entry_t));
+    if (*pol == NULL) {
+        retval = VAL_OUT_OF_MEMORY;
+        goto err;
+    }
+    (*pol)->pe = pol_entry;
+    (*pol)->index = index;
 
     /* Merge this policy into the context */
     STORE_POLICY_ENTRY_IN_LIST(pol_entry, ctx->e_pol[index]);
-
+    retval = VAL_NO_ERROR;
+    
+err:
     CTX_UNLOCK_ACACHE(ctx);
     CTX_UNLOCK_VALPOL(ctx);
     
-    return VAL_NO_ERROR;
+    return retval;
 }  
 
+int 
+val_remove_valpolicy(val_context_t *context, val_policy_entry_t *pol)
+{
+    val_context_t *ctx = NULL;
+    policy_entry_t *p, *prev;
+    struct val_query_chain *q;
+    int retval;
+
+    if (pol == NULL || pol->pe == NULL|| pol->index >= MAX_POL_TOKEN)
+       return VAL_BAD_ARGUMENT; 
+
+    if (context == NULL) {
+        /* Get the policy for the default context */
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx)))
+            return retval;
+    } else
+        ctx = (val_context_t *) context;
+    
+    /* Lock appropriately */
+    CTX_LOCK_VALPOL_EX(ctx);
+    CTX_LOCK_ACACHE(ctx);
+
+    /* find this policy in the context */
+    prev = NULL;
+    for (p=ctx->e_pol[pol->index]; p; p=p->next) {
+        if (p == pol->pe)
+            break;
+        prev = p;
+    }
+    if (!p) {
+        /* did not find any policy to remove */ 
+        retval = VAL_NO_POLICY; 
+        goto err; 
+    }
+
+    /* unlink the policy */
+    if (prev) {
+        prev->next = p->next;
+    } else {
+        ctx->e_pol[pol->index] = p->next;
+    }
+    p->next = NULL;
+
+    /* Flush queries that match this name */
+    for(q=ctx->q_list; q; q=q->qc_next) {
+        LOCK_QC_EX(q);
+        /* Should never fail when holding above locks */
+        if (NULL != namename(q->qc_name_n, p->zone_n)) {
+            zap_query(ctx, q);
+        }
+        UNLOCK_QC(q);    
+    }
+    
+    /* free the policy */
+    conf_elem_array[pol->index].free(p);
+    FREE(p);
+    FREE(pol);
+    
+    retval = VAL_NO_ERROR;
+
+err:
+    CTX_UNLOCK_ACACHE(ctx);
+    CTX_UNLOCK_VALPOL(ctx);
+    
+    return retval;
+}
