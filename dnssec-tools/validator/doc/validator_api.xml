@@ -168,7 +168,7 @@ returned if local policy was configured to ignore validation for the zone from w
 data was received. </t>
 <t> </t>
 <t hangText="VAL_TRUSTED_ZONE:">
-returned if local policy considers the zone from which this was data received to be trusted.  </t>
+returned if local policy considered the zone from which this was data received to be trusted.  </t>
 <t> </t>
 <t hangText="VAL_NONEXISTENT_NAME_NOCHAIN:">
 returned if the proof for denial of existence for a domain name
@@ -212,10 +212,10 @@ towards the trust anchor was known to be provably unsecure, but local policy
 defines this state as untrusted. </t>
 <t> </t>
 <t hangText="VAL_ERROR:">
-returned if the an error was encountered while validating the authentication chain.  </t>
+returned if an error was encountered while validating the authentication chain.  </t>
 <t> </t>
 <t hangText="VAL_UNTRUSTED_ZONE:">
-returned if local policy considers the zone from which this was data received to be untrusted.  </t>
+returned if local policy considered the zone from which this was data received to be untrusted.  </t>
 <t> </t>
 <t hangText="VAL_VALIDATED_ANSWER:">
 returned if the combined validation status for a set of validator status values represents a validated
@@ -238,7 +238,7 @@ also returned in val_status_t, offset by the value of VAL_DNS_ERROR_BASE. </t>
     <section title="List of Resolver-related status codes" anchor="res-codes">
 
     <t> In cases where the query resolution cannot be completed due to resolver
-    errors, the following values may be returned as resolver errors. 
+    errors, the following values may be returned. 
 
         <list style="hanging">
 <t> </t>
@@ -810,7 +810,7 @@ as defined in <xref target="val-astatus"/>.  </t>
 
     <section title="Authentication Chain Status Codes" anchor="val-astatus">
 
-        <t> Resolver-related status values in val_ac_status are reflected by one of the 
+        <t> Resolver-related status values in val_ac_status are returned as one of the 
  values listed in <xref target="res-codes"/>, offset by the value of VAL_AC_DNS_ERROR_BASE. </t>
 
         <t> The verification status value stored in the val_ac_status member 
@@ -1131,7 +1131,7 @@ int val_create_context( const char    *scope,
 void val_free_context( val_context_t *context );
       </artwork>
       <postamble>
-<t> The val_create_context() creates a handle to a validator context.
+<t> The val_create_context() creates a new validator context.
 The scope parameter identifies the policy to be used 
 for validation.  Policy scopes have a 
 hierarchical organization, with each member in the hierarchy identifying 
@@ -1192,8 +1192,9 @@ that must be removed from the context is specified in pol. </t>
     <section title="Function Return Values" anchor="val-return-values">
     <!--            ####################### -->
 
-<t> The following values may be returned by functions in the low-level 
-and context-management APIs. The High-level API mirrors existing legacy
+<t> The following values may be returned by functions in the low-level API, 
+context-management API, and some functions in the high-level APIs. 
+Most High-level API functions mirror existing legacy
 DNS-related functions, so the return values from these functions are
 identical to their predecessors.</t>
 
@@ -1228,8 +1229,8 @@ configuration system.  </t>
 returned if the policy identifier being referenced was invalid. </t>
         </list></t>
 
-<t> The p_val_err() function, as defined below, returns an ASCII representation for the above
-error values. </t>
+<t> The p_val_err() function returns an ASCII representation for the above
+error values. This function has the following prototype. </t>
         
       <figure>
       <artwork>
@@ -1261,7 +1262,7 @@ a validation status of VAL_LOCAL_ANSWER, there exists a potential attack vector
 whereby an attacker can poison the configuration system and an application using
 this API may trust the result.  </t>
 
-<t> Applications will consider data from provably unsecure zones to be trusted.
+<t> Applications can choose to trust data from provably unsecure zones.
 The same effect is observed if a VAL_FLAGS_DONT_VALIDATE flag is passed to
 the val_resolve_and_check() function. Not performing validation and having a 
 zone that has DNSSEC intentionally turned off is no worse than the current 
@@ -1279,11 +1280,8 @@ is a trusted source, and that the communication path between the DHCP server
 and the client system is secured.  </t>
 
 <t> The validator configuration information needs to be protected 
-so that it cannot be overwritten by unauthorized users or processes. Access to 
-the val_set_policy_definition() function must similarly be controlled to 
-prevent malicious changes to the validator policy.  Configuration for the 
-validator also contains the trust anchors for classes of applications.  The
-system administrator must ensure that the list of trust anchors are kept
+so that it cannot be overwritten by unauthorized users or processes. 
+The system administrator must ensure that the list of trust anchors are kept
 up-to-date in the event of key-rollovers.  If the trust anchors are outdated,
 the validator may not be able to perform validation or may 
 create the false impression of having successfully validated a response when 
@@ -1294,9 +1292,9 @@ it should have been flagged as bogus.  </t>
    <t>The following individuals have provided
 valuable feedback and suggestions for improving this document: Lindy Foster,
 Wayne Morrison, Russ Mundy, Bill Sommerfeld, Robert Story, Wes Hardaker.  
-The list of authentication status codes listed in <xref target="val-astatus"/> was 
-generated through multiple brainstorming sessions by the "apps" sub-working group
-at the IETF meetings. This draft draws on the results from that effort.</t>
+The list of authentication status codes in <xref target="val-astatus"/> was 
+generated through multiple brainstorming sessions at the IETF meetings. 
+This draft draws on the results from that effort.</t>
    </section> <!-- Acknowledgements -->
 
    </middle>
