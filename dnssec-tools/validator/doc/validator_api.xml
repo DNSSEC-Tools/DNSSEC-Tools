@@ -143,8 +143,8 @@ was locally trusted. </t>
 
     <t> The DNSSEC process can potentially return a number of different errors. 
 The following sub-sections list these error types and describes 
-functions that applications may use to evaluate the trustworthiness of
-responses. </t>
+functions that applications may use to easily evaluate the trustworthiness
+of responses. </t>
 
     <section title="List of Validation Status Codes" anchor="val-status">
     <!--            ############################### -->
@@ -765,7 +765,7 @@ returns the validation status for the specified RRset. Possible values for
 this field are defined in <xref target="val-astatus"/>. These values can 
 be displayed in a ASCII format using the p_ac_status() function. 
 The val_ac_trust field points to the next element in the authentication chain
-roceeding from the signed record towards the trust anchor.
+proceeding from the signed record towards the trust anchor.
 For a element with type DNSKEY, the next element corresponds to a DS record 
 in the parent zone and for a DS record the next element corresponds to the 
 DNSKEY in the current zone. The value of val_ac_trust is NULL when the current element in the
@@ -979,7 +979,7 @@ returned if the DNSKEY or DS algorithm was not allowed as per local policy.  </t
 Examples of local policy elements include trust anchors for 
 different zones and untrusted algorithms for cryptographic keys and hashes.
 Local policy may be different for different applications and operating scenarios. The
-following subsections describe how applications may be able to customize their
+following subsections describe the manner in which applications may be able to customize their
 policies for DNSSEC validation.</t> 
 
     <section title="Configuring Validator Policy">
