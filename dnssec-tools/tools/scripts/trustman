@@ -136,8 +136,8 @@ my %active_refresh_times;
 my %zone_configfile_map;
 my $once;
 
-# my $revoke = 1;
-my $revoke = 0;
+my $revoke = 1;
+# my $revoke = 0;
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
@@ -226,7 +226,7 @@ sub show_version {
 }
 
 sub usage {
-    my $arg = @_;
+    my ($arg) = @_;
     if ($arg) {
         print "trustman takes only one config file argument.\n";
         print "please indicate EITHER a dnsval.conf file OR a named.conf file.\n";
@@ -356,6 +356,8 @@ sub checkkeys {
                     }
 #                } elsif ($keyrec->REVOKE == 1) {
                 # see if it has the revoke bit set
+                # below is for testing purposes lacking a real revoke bit
+                # implementation
                 } elsif ($revoke == 1) {
                     # this key is being revoked
                     if ($dvfile) {
@@ -563,6 +565,8 @@ sub add_ta_namedconf  {
                              $newkeys{$domain}[$i]{algorithm} . " " .
                              $newkeys{$domain}[$i]{key} . "\";\n";
                 print TMP $newkey;
+                my $notif = "New key added to " . $ncfile . " for domain " . $domain . "\n";
+                notify($notif);
             }
         }
     }
@@ -610,6 +614,8 @@ sub add_ta_dnsvalconf  {
                     print TMP $newkeyentry . $2;
                     print "Adding following key to $dvfile:\n";
                     print $newkeyentry . "\n";
+                    my $notif = "New key added to " . $ncfile . " for domain " . $domain . "\n";
+                    notify($notif);
                 }
             }
             print TMP "\n;\n";
@@ -794,6 +800,8 @@ sub revoke_ta_dnsvalconf  {
                         print TMP "# The following key has been revoked.\n";
                         $revkeyrec = $d . ". " . $val;
                         print TMP "# " . $revkeyrec . "\n\n";
+                        my $notif = "The following key has been revoked from domain " . $d . ":\n" . $revkeyrec . "\n";
+                        notify($notif);
                     }
 
                 } else {
@@ -848,6 +856,8 @@ sub revoke_ta_namedconf  {
                             print TMP "# The following key has been revoked.\n";
                             $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $revkeyrec . "\n";
+                            my $notif = "The following key has been revoked from domain " . $d . ":\n" . $revkeyrec . "\n";
+                            notify($notif);
                     } else {
                     # just print it, it's not the domain we're looking for
                         print TMP $_;
@@ -1152,10 +1162,30 @@ sub compute_queryfail_sleepsecs {
 }
 
 ######################################################################
+# notify()
+#  - depending on configuration, mails or logs notifications
+
+sub notify {
+    my ($message) = @_;
+    
+    if ($opts{'L'}) {
+        openlog('trustman','pid','user') || warn "could not open syslog";
+        syslog('warning',%s, $message);
+        closelog();
+    }
+    if ($opts{'p'}) {
+        print $message;
+    }
+    if ($smtpserver && $contactaddr) {
+        mailcontact(0,$smtpserver,$contactaddr,$message);
+    }
+
+}
+######################################################################
 # mailcontact()
 #  - emails a contact address with the error output
 sub mailcontact {
-    my ($ok,$smtp,$contact,@domains) = @_;
+    my ($ok,$smtp,$contact,$msg) = @_;
     my $fromaddr = 'trustman@localhost';
 
     # set up the SMTP object and required data
@@ -1169,22 +1199,9 @@ sub mailcontact {
     $message->datasend("From: " . $fromaddr . "\n");
 
     # create the body of the message: the warning
-    if ($ok) {
-        $message->datasend("Subject: trustman all clear\n\n");
-        $message->datasend("trustman detected no DNSKEY mismatches for the following zones: \n\n");
-    } else {
-        $message->datasend("Subject: trustman: new key detected \n\n");
-        $message->datasend("trustman has detected new keys for the following zones: \n\n");
-    }
-    foreach my $d (@domains) {
-        $message->datasend("\t" . $d . "\n");
-        $message->datasend("Key found: \n");
-        $message->datasend($newkeys{$d} . "\n\n");
-    }
-    if (!$ok) {
-        $message->datasend("\n\nThese keys have passed the add holddown time\n");
-        $message->datasend("and can now be added manually.\n\n");
-    }
+    $message->datasend("Subject: trustman notification\n\n");
+    $message->datasend($msg);
+    $message->datasend("\n\n");
 
     # finish and send the message
     $message->dataend();
