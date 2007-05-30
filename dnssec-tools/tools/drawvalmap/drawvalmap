@@ -30,7 +30,6 @@ my $giffile;
 my $htmlfile;
 my $htmlfh;
 my $giftmp;
-my $displayFlag;
 
 ########################################################
 # Defaults
@@ -41,7 +40,7 @@ my %opts = (
 	f => "val_log_map.html",
 	g => "val_log_map.gif",
 	r => 5,
-        s => 0,
+	s => 0,
 	d => 0
 );
 
@@ -50,20 +49,18 @@ my %opts = (
 # main
 
 # Parse command-line options
-GetOptions(\%opts, "h=s", "p=s", "f=s", "g=s", "r=i", "s", "d");
+GetOptions(\%opts, "d=s", "p=s", "f=s", "g=s", "r=i", "s");
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
 
 $gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
 $count = 0;
-$changed = 1;
 $newnode = "";
 $curnode = "";
 $giffile = $opts{'g'};
 $htmlfile = $opts{'f'};
 $refresh = $opts{'r'};
-$displayFlag = $opts{'d'};
 # create an HTML file with the image and 
 # with auto refresh set to 5 seconds
 $htmlfh = new IO::File(">$htmlfile");
@@ -78,7 +75,7 @@ $htmlfh->close;
 
 # check if socket operation is desired
 if($opts{'s'} == 1) {
-	$local_host = $opts{'h'};
+	$local_host = $opts{'d'};
 	$local_port = $opts{'p'};
 	$socket = IO::Socket::INET->new(LocalAddr => $local_host,
                                 LocalPort => $local_port,
@@ -100,61 +97,29 @@ while ($_=<STDIN>) {
 	update_image($_);
 }
 
-# Display the image if requested
-if ($displayFlag) {
-    my $viewimage = $dtconf{'viewimage'};
-    if (($viewimage) && (-e $viewimage)){
-	`$viewimage $giffile`;
-    }
-    else {
-	print STDERR "Error: Could not find a valid configuration setting for an image viewer program in /usr/local/etc/dnssec/dnssec-tools.conf\n";
-	print STDERR "The image has been stored in $giffile\n";
-    }
-}
-
 #
 # End Main
 ########################################################
 
 ########################################################
-# Read the log message and build an html file containing 
-# the updated graph
+# 
+# update the graph and store as a gif 
 #
 sub update_image {
 
-	# update the image only when something has changed
-	if($changed) {
-		$giftmp = $giffile . "tmp"; 
-
-		# generate the gif file
-		$gv->as_gif($giftmp);
-		rename($giftmp, $giffile);
+    # Look for only messages of the following type
+    if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+):/) {
+        ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
+        #$log[$count] =  "$1 $2 $3 $4 $5" ;
+        #$edge_str = $name . ":" . $class . ":" . $type . ":" . "$status" ;
+        $log[$count] =  "$4 $5" ;
+        $edge_str = $status ;
+       	$newnode = $dest;
 	}
-	
-	$changed = 0;
-
-    if (/\s*Result:\s*(\S+):/) {
-        $newnode = "$1";
-        $curnode = "$1";
-        $status = "$1";
-		$log[$count] =  "$1" ;
-    }
-    elsif ($curnode eq "") {
-       return;
-    }
-    else { 
-    	# Look for only messages of the following type
-        if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+):/) {
-		    $log[$count] =  "$1 $2 $3 $4 $5" ;
-	    }
-	    else {
-		    # received data that this utility has no use for
-		    return;
-	    }
-	    ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
-	    $edge_str = $name . ":" . $class . ":" . $type . ":" . "$status" ;
-        $newnode = $dest;
-    }
+	else {
+	    # received data that this utility has no use for
+	    return;
+	}
 
 	# remove duplicates from the array so that 
 	# all edges on the graph are different
@@ -166,25 +131,88 @@ sub update_image {
 		return;
 	}
 
-	$changed = 1;
 	$count = $#log + 1;
 
 	# add the node and an edge from the Validator
-	$gv->add_node($newnode);
     if ($curnode ne $newnode) { 
-        $gv->add_edge($curnode, $newnode, label => $edge_str, decorateP => '1', getlineattr($status));
-    }
-    else {
-        $gv->add_edge('Validator', $newnode, label => $edge_str, decorateP => '1', getlineattr($status));
-    }
+        if ($curnode eq "") {
+            $curnode = "libval";
+        }
+		$gv->add_node($newnode);
+        $gv->add_edge($curnode, $newnode, label => $edge_str, decorateP => '1', get_ac_lineattr($status));
+		# update the image only when something has changed
+		$giftmp = $giffile . "tmp"; 
+		# generate the gif file
+		$gv->as_gif($giftmp);
+		rename($giftmp, $giffile);
+    } 
 }
-
 
 #############################################################
 # get the edge properties based on the error status passed as 
 # the parameter
 #
-sub getlineattr {
+sub get_ac_lineattr {
+
+	my %prop;
+	my $ac_status;
+	$ac_status = shift;
+
+	$prop{'dir'} = 'back';
+
+    if (($ac_status eq "VAL_AC_TRUST_KEY") ||
+        ($ac_status eq "VAL_AC_VERIFIED")) {
+
+		$prop{'color'} =  "green";
+		$prop{'fillcolor'} =  "green";
+
+    } elsif (($ac_status eq "VAL_AC_IGNORE_VALIDATION") ||
+        ($ac_status eq "VAL_AC_TRUSTED_ZONE") ||
+        ($ac_status eq "VAL_AC_PROVABLY_UNSECURE") ||
+        ($ac_status eq "VAL_AC_LOCAL_ANSWER")) {
+
+		$prop{'color'} =  "yellow";
+		$prop{'fillcolor'} =  "yellow";
+
+    } elsif (($ac_status eq "VAL_AC_UNTRUSTED_ZONE") ||
+        ($ac_status eq "VAL_AC_NOT_VERIFIED") ||
+        ($ac_status eq "VAL_AC_NO_TRUST_ANCHOR")) { 
+
+		$prop{'color'} =  "red";
+		$prop{'fillcolor'} =  "red";
+
+    } elsif  (($ac_status eq "VAL_AC_RRSIG_MISSING") ||
+        ($ac_status eq "VAL_AC_DNSKEY_MISSING") ||
+        ($ac_status eq "VAL_AC_DS_MISSING") ||
+        ($ac_status eq "VAL_AC_DATA_MISSING") ||
+        ($ac_status eq "VAL_AC_BARE_RRSIG")) { 
+
+		$prop{'color'} =  "red";
+		$prop{'fillcolor'} =  "red";
+		$prop{'style'} = 'dashed';
+
+    } elsif (($ac_status eq "VAL_AC_UNSET") ||
+        ($ac_status eq "VAL_AC_UNKNOWN_DNSKEY_PROTOCOL")){
+
+		$prop{'color'} =  "black";
+		$prop{'fillcolor'} =  "black";
+		$prop{'style'} = 'dashed';
+    } 
+    else { 
+        # other errors
+		$prop{'color'} =  "black";
+		$prop{'fillcolor'} =  "black";
+    } 
+    
+
+	return %prop;
+}
+
+#############################################################
+# get the edge properties based on the error status passed as 
+# the parameter
+#
+sub get_valstatus_lineattr {
 
 	my %prop;
 	my $val_status;
@@ -194,40 +222,45 @@ sub getlineattr {
 
 	if (($val_status eq "VAL_SUCCESS") ||
 		($val_status eq "VAL_NONEXISTENT_NAME")||
-		($val_status eq "VAL_NONEXISTENT_TYPE")||
-		($val_status eq "VAL_LOCAL_ANSWER")||
-		($val_status eq "VAL_BARE_RRSIG")) {
+		($val_status eq "VAL_NONEXISTENT_TYPE") ||
+		($val_status eq "VAL_VALIDATED_ANSWER")) {
 		$prop{'color'} =  "green";
 		$prop{'fillcolor'} =  "green";
 		$prop{'style'} = 'bold';
 	} 
-    elsif (($val_status eq "VAL_PROVABLY_UNSECURE")) {
-		$prop{'color'} =  "green";
-		$prop{'fillcolor'} =  "green";
+    elsif (($val_status eq "VAL_PROVABLY_UNSECURE") ||
+		   ($val_status eq "VAL_IGNORE_VALIDATION") ||
+		   ($val_status eq "VAL_TRUSTED_ZONE") ||
+		   ($val_status eq "VAL_TRUSTED_ANSWER") ||
+		   ($val_status eq "VAL_NONEXISTENT_NAME_NOCHAIN")||
+		   ($val_status eq "VAL_NONEXISTENT_TYPE_NOCHAIN")||
+		   ($val_status eq "VAL_LOCAL_ANSWER")) {
+		$prop{'color'} =  "yellow";
+		$prop{'fillcolor'} =  "yellow";
+		$prop{'style'} = 'bold';
     }
-	elsif (($val_status eq "VAL_NOTRUST")) {
-		$prop{'color'} =  "brown";
-		$prop{'fillcolor'} =  "brown";
-		$prop{'style'} = 'bold';
-	} 
-	elsif (($val_status eq "VAL_ERROR") || 
-			($val_status eq "VAL_BOGUS")) {
+	elsif (($val_status eq "VAL_BOGUS_PROVABLE") ||
+		   ($val_status eq "VAL_BOGUS_UNPROVABLE") ||
+		   ($val_status eq "VAL_UNTRUSTED_ANSWER") ||
+		   ($val_status eq "VAL_UNTRUSTED_ZONE") ||
+		   ($val_status eq "VAL_BAD_PROVABLY_UNSECURE")||
+		   ($val_status eq "VAL_NOTRUST")){
 		$prop{'color'} = "red";
 		$prop{'fillcolor'} =  "red";
 		$prop{'style'} = 'bold';
 	} 
-	elsif (($val_status eq "Unevaluated") ||
-			($val_status eq "VAL_INDETERMINATE")) {
-		$prop{'color'} =  "yellow";
-		$prop{'fillcolor'} =  "yellow";
+	elsif (($val_status eq "VAL_DONT_KNOW") ||
+			($val_status eq "VAL_INDETERMINATE") ||
+			($val_status eq "VAL_BARE_RRSIG")) {
+		$prop{'color'} =  "black";
+		$prop{'fillcolor'} =  "black";
+		$prop{'style'} = 'dashed';
 	} 
 	else {
-		# unknown error is shown in yellow dashed
-		$prop{'color'} =  "yellow";
-		$prop{'fillcolor'} =  "yellow";
-		$prop{'style'} = 'dashed';
-		# display the error if we don't know how to display the status
-        #print "$val_status \n";
+		# errors 
+		$prop{'color'} =  "black";
+		$prop{'fillcolor'} =  "black";
+		$prop{'style'} = 'bold';
 	}
 
 	return %prop;
@@ -248,10 +281,10 @@ drawvalmap
 drawvalmap is a simple utility that can be used to display the query assertion status 
 in a graphical format. The input to this script is a set of log messages that 
 can be read either from STDIN or from a socket. The default is to read it from STDIN.
-The output is an HTML file containing an image of the various validator assertion 
+The output is an HTML file containing an image of the various validator authentication chain 
 status values. The HTML file auto-refreshes every five seconds so that changes to 
 the validator graph can be constantly tracked. The drawvalmap script executes 
-in an infinite loop and never returns on its own.  
+in an infinite loop and never returns.  
 
 This script can be started from the command line by typing
 
@@ -261,7 +294,7 @@ It would not be uncommon to use this script for
 troubleshooting purposes in which case output generated by a driver 
 program would be "piped" to this script in the manner shown below.
 
-bash# ${LIBVAL}/bin/validate secure.example.com. 2>&1 | drawvalmap -d
+bash# ${LIBVAL}/bin/validate -o5:stdout secure.example.com. | drawvalmap 
 
 In each case the script reads log messages from STDIN, generating
 a default HTML file with the name val_log_map.html. The gif containing
@@ -272,12 +305,6 @@ described below.
 =head1 OPTIONS
 
 =over
-
-=item -d
-
-If this option is used, the generated image is displayed using an
-image-viewer program as specified by the 'viewimage' setting
-in the /usr/local/etc/dnssec/dnssec-tools.conf.
 
 =item -f
 
@@ -297,7 +324,7 @@ This changes the mode of operation to read input from a socket.
 The default address and port to which drawvalmap binds is
 127.0.0.1:1053 
 
-=item -h
+=item -d
 
 This changes the address to which drawvalmap binds itself to
 the specified value. This option takes effect only if the
