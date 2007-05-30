@@ -421,12 +421,38 @@ void zap_query(val_context_t *context, struct val_query_chain *added_q)
     reset_query_chain_node(added_q);
 }
 
+static struct queries_for_query * 
+check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
+                 u_char * name_n, const u_int16_t type_h, const u_int16_t class_h, 
+                 const u_int8_t flags)
+{
+    /*
+     * sanity checks performed in calling function 
+     */
+
+    struct queries_for_query *temp, *prev;
+    temp = *queries;
+    prev = temp;
+
+    while (temp) {
+        if ((namecmp(temp->qfq_query->qc_original_name, name_n) == 0)
+            && (temp->qfq_query->qc_type_h == type_h)
+            && (temp->qfq_query->qc_class_h == class_h)
+            && ((flags & VAL_QFLAGS_ANY) || (temp->qfq_flags == flags)))
+            break;
+        prev = temp;
+        temp = temp->qfq_next;
+    }
+    return temp;
+}
+
+
 int
 add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries, 
                  u_char * name_n, const u_int16_t type_h, const u_int16_t class_h, 
                  const u_int8_t flags, struct queries_for_query **added_qfq) 
 {
-    struct queries_for_query *temp, *prev;
+    struct queries_for_query *new_qfq = NULL;
     /* use only those flags that affect caching */
     struct val_query_chain *added_q = NULL;
     struct timeval  tv;
@@ -443,20 +469,8 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
     /*
      * Check if query already exists 
      */
-    temp = *queries;
-    prev = temp;
-
-    while (temp) {
-        if ((namecmp(temp->qfq_query->qc_original_name, name_n) == 0)
-            && (temp->qfq_query->qc_type_h == type_h)
-            && (temp->qfq_query->qc_class_h == class_h)
-            && (temp->qfq_flags == flags))
-            break;
-        prev = temp;
-        temp = temp->qfq_next;
-    }
-
-    if (temp == NULL) {
+    new_qfq = check_in_qfq_chain(context, queries, name_n, type_h, class_h, flags); 
+    if (new_qfq == NULL) {
         /*
          * Add to the cache and to the qfq chain 
          */
@@ -467,13 +481,13 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
                                     &added_q)))
             return retval;
 
-        temp = (struct queries_for_query *) MALLOC (sizeof(struct queries_for_query));
-        if (temp == NULL) {
+        new_qfq = (struct queries_for_query *) MALLOC (sizeof(struct queries_for_query));
+        if (new_qfq == NULL) {
             return VAL_OUT_OF_MEMORY;
         }
-        temp->qfq_query = added_q;
-        temp->qfq_flags = flags;
-        temp->qfq_next = *queries;
+        new_qfq->qfq_query = added_q;
+        new_qfq->qfq_flags = flags;
+        new_qfq->qfq_next = *queries;
         gettimeofday(&tv, NULL);
         if (added_q->qc_bad > 0 || 
             (added_q->qc_ttl_x > 0 && 
@@ -506,10 +520,10 @@ add_to_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         }
                 
         LOCK_QC_SH(added_q);
-        *queries = temp;
+        *queries = new_qfq;
     } 
     
-    *added_qfq = temp;
+    *added_qfq = new_qfq;
        
     return VAL_NO_ERROR; 
 }
@@ -2788,15 +2802,17 @@ prove_nonexistence(val_context_t * ctx,
 }
 
 /*
- * find the soa for this name and type 
+ * find the zonecut for this name and type 
  */
 static int
-find_next_soa(val_context_t * context, struct queries_for_query **queries,
+find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
               u_int8_t * qname, int *done, u_int8_t ** name_n)
 {
     int             retval;
     struct val_result_chain *results = NULL;
     struct val_rrset *soa_rrset = NULL;
+    u_int8_t *zonecut_name_n = NULL;
+    struct queries_for_query *temp_qfq = NULL;
 
     if (context == NULL || queries == NULL || name_n == NULL || done == NULL)
         return VAL_BAD_ARGUMENT;
@@ -2807,13 +2823,26 @@ find_next_soa(val_context_t * context, struct queries_for_query **queries,
     if (qname == NULL)
         return VAL_NO_ERROR;
 
-    if (VAL_NO_ERROR !=
+    /* if we already have a DNSKEY or DS, pick up zonecut info from here */
+    if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname, 
+                               ns_t_dnskey, ns_c_in, VAL_QFLAGS_ANY)) &&
+        temp_qfq->qfq_query->qc_state == Q_ANSWERED) {
+
+        zonecut_name_n = qname;
+        *done = 1;
+        
+    } else if (NULL != (temp_qfq = check_in_qfq_chain(context, queries, qname, 
+                               ns_t_ds, ns_c_in, VAL_QFLAGS_ANY)) &&
+        temp_qfq->qfq_query->qc_state == Q_ANSWERED) {
+        
+        zonecut_name_n = qname;
+        *done = 1;
+    } else if (VAL_NO_ERROR !=
             (retval = try_chase_query(context, qname, ns_c_in,
                                       ns_t_soa, VAL_QUERY_DONT_VALIDATE,
-                                      queries, &results, done)))
+                                      queries, &results, done))) {
         return retval;
-
-    if (*done) {
+    } else if (*done) {
 
         struct val_result_chain *res;
         for (res = results; res; res = res->val_rc_next) {
@@ -2836,19 +2865,23 @@ find_next_soa(val_context_t * context, struct queries_for_query **queries,
                 soa_rrset = res->val_rc_answer->val_ac_rrset;
             }
             if (soa_rrset) {
-                int len = wire_name_length(soa_rrset->val_rrset_name_n);
-                *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
-                if (*name_n == NULL) {
-                    return VAL_OUT_OF_MEMORY;
-                }
-                memcpy(*name_n, soa_rrset->val_rrset_name_n, len);
+                zonecut_name_n = soa_rrset->val_rrset_name_n;
                 break;
             }
         }
     }
 
+    if (zonecut_name_n) {
+        int len = wire_name_length(zonecut_name_n);
+        *name_n = (u_int8_t *) MALLOC(len * sizeof(u_int8_t));
+        if (*name_n == NULL) {
+            return VAL_OUT_OF_MEMORY;
+        }
+        memcpy(*name_n, zonecut_name_n, len);
+    }
+
     val_free_result_chain(results);
-    return retval;
+    return VAL_NO_ERROR;
 }
 
 #if 0
@@ -2856,7 +2889,7 @@ find_next_soa(val_context_t * context, struct queries_for_query **queries,
  * find the zonecut for this name and type 
  */
 static int
-find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
+find_next_zonecut_old(val_context_t * context, struct queries_for_query **queries,
                   struct rrset_rec *rrset, int *done, u_int8_t ** name_n)
 {
     u_int8_t       *qname;
@@ -2922,7 +2955,7 @@ find_next_zonecut(val_context_t * context, struct queries_for_query **queries,
         }
     }
 
-    if ((VAL_NO_ERROR != (retval = find_next_soa(context, queries, qname, done, name_n))
+    if ((VAL_NO_ERROR != (retval = find_next_zonecut(context, queries, qname, done, name_n))
          || (*done && *name_n == NULL))) {
         return retval;
     }
@@ -3137,7 +3170,7 @@ verify_provably_unsecure(val_context_t * context,
         snprintf(name_p, sizeof(name_p), "unknown/error");
 
     /* find the zonecut for the query */
-    if ((VAL_NO_ERROR != find_next_soa(context, queries, name_n, done, &q_zonecut_n))
+    if ((VAL_NO_ERROR != find_next_zonecut(context, queries, name_n, done, &q_zonecut_n))
                 || (*done && q_zonecut_n == NULL)) {
 
         val_log(context, LOG_INFO, "verify_provably_unsecure(): Cannot find zone cut for %s", name_p);
@@ -3233,7 +3266,7 @@ verify_provably_unsecure(val_context_t * context,
 
         /* find next zone cut going down from the trust anchor */
         if ((VAL_NO_ERROR !=
-                find_next_soa(context, queries, nxt_qname, done, &zonecut_n))
+                find_next_zonecut(context, queries, nxt_qname, done, &zonecut_n))
                 || (*done && zonecut_n == NULL)) {
 
             if ((curzone_n == NULL) ||
@@ -3960,6 +3993,7 @@ verify_and_validate(val_context_t * context,
     for (as_more = top_as; as_more;
          as_more = as_more->_as.val_ac_rrset_next) {
         int             thisdone = 1;
+        int             pu_done = 0;
 
         /*
          * If this assertion is already in the results list with a completed status
@@ -4116,12 +4150,12 @@ verify_and_validate(val_context_t * context,
                                                                    next_as->val_ac_rrset->val_rrset_name_n, 
                                                                    next_as->val_ac_rrset->val_rrset_type_h, 
                                                                    flags,
-                                                                   &thisdone,
+                                                                   &pu_done,
                                                                    &is_punsecure,
                                                                    &ttl_x)))
                             return retval;
 
-                        if (thisdone) {
+                        if (pu_done) {
                             SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                             ttl_x = 0;
                             if (is_punsecure) {
@@ -4146,7 +4180,8 @@ verify_and_validate(val_context_t * context,
                                 res->val_rc_status = VAL_BOGUS_PROOF;
                             }
                             break;
-                        }
+                        } else
+                            thisdone = 0;
                     } 
                     /*
                      * We could only be asking the child if our default name server is 
@@ -4199,12 +4234,12 @@ verify_and_validate(val_context_t * context,
                                                                    next_as->val_ac_rrset->val_rrset_name_n, 
                                                                    next_as->val_ac_rrset->val_rrset_type_h, 
                                                                    flags,
-                                                                   &thisdone,
+                                                                   &pu_done,
                                                                    &is_punsecure,
                                                                    &ttl_x)))
                         return retval;
 
-                    if (thisdone) {
+                    if (pu_done) {
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         ttl_x = 0;
                         if (is_punsecure) {
@@ -4229,7 +4264,8 @@ verify_and_validate(val_context_t * context,
                             res->val_rc_status = VAL_BOGUS_PROOF;
                         }
                         break;
-                    }
+                    } else
+                        thisdone = 0;
                 }
             } else if (next_as->val_ac_status <= VAL_AC_LAST_STATE) {
 
@@ -4335,12 +4371,12 @@ verify_and_validate(val_context_t * context,
                                                                    next_as->val_ac_rrset->val_rrset_name_n, 
                                                                    next_as->val_ac_rrset->val_rrset_type_h, 
                                                                    flags,
-                                                                   &thisdone,
+                                                                   &pu_done,
                                                                    &is_punsecure,
                                                                    &ttl_x)))
                     return retval;
 
-                if (thisdone) {
+                if (pu_done) {
                     SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                     ttl_x = 0;
                     if (is_punsecure) {
@@ -4365,7 +4401,8 @@ verify_and_validate(val_context_t * context,
                         res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                     }
                     break;
-                }
+                } else
+                    thisdone = 0;
             } else if (next_as->val_ac_status <= VAL_AC_LAST_BAD) {
                 val_log(context, LOG_INFO, 
                         "verify_and_validate(): marking authentication chain status for {%s %s %s} as bad",
@@ -4388,12 +4425,12 @@ verify_and_validate(val_context_t * context,
                                                                    next_as->val_ac_rrset->val_rrset_name_n, 
                                                                    next_as->val_ac_rrset->val_rrset_type_h, 
                                                                    flags,
-                                                                   &thisdone,
+                                                                   &pu_done,
                                                                    &is_punsecure,
                                                                    &ttl_x)))
                         return retval;
 
-                    if (thisdone) {
+                    if (pu_done) {
                         SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
                         ttl_x = 0;
                         if (is_punsecure) {
@@ -4418,7 +4455,8 @@ verify_and_validate(val_context_t * context,
                             res->val_rc_status = VAL_BOGUS_UNPROVABLE;
                         }
                         break;
-                    }
+                    } else
+                        thisdone = 0;
                 } else {
                     val_log(context, LOG_INFO, 
                         "verify_and_validate(): marking authentication chain status for {%s %s %s} as bogus",
