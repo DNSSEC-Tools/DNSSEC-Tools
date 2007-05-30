@@ -586,14 +586,16 @@ p_val_status(val_status_t err)
     switch (err) {
 
     case VAL_DONT_KNOW:
-        return "Uninitialized";
+        return "VAL_DONT_KNOW";
         break;
     case VAL_INDETERMINATE:
         return "VAL_INDETERMINATE";
         break;
     case VAL_BOGUS_UNPROVABLE:
+        return "VAL_BOGUS_UNPROVABLE";
+        break;
     case VAL_BOGUS_PROVABLE:
-        return "VAL_BOGUS";
+        return "VAL_BOGUS_PROVABLE";
         break;
     case VAL_LOCAL_ANSWER:
         return "VAL_LOCAL_ANSWER";
@@ -622,8 +624,10 @@ p_val_status(val_status_t err)
         return "VAL_ERROR";
         break;
     case VAL_PROVABLY_UNSECURE:
-    case VAL_BAD_PROVABLY_UNSECURE:
         return "VAL_PROVABLY_UNSECURE";
+        break;
+    case VAL_BAD_PROVABLY_UNSECURE:
+        return "VAL_BAD_PROVABLY_UNSECURE";
         break;
     case VAL_IGNORE_VALIDATION:
         return "VAL_IGNORE_VALIDATION";
