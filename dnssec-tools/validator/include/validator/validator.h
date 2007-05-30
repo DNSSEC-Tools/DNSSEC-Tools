@@ -162,6 +162,7 @@ extern          "C" {
     /*
      * query flags in the lower nibble
      */
+#define VAL_QFLAGS_ANY 0xff
 #define VAL_QFLAGS_USERMASK 0x0f
 #define VAL_QUERY_DONT_VALIDATE 0x01
 #define VAL_QUERY_MERGE_RRSETS 0x02
