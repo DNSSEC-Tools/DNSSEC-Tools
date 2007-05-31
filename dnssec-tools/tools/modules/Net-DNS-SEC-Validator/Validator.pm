@@ -107,7 +107,7 @@ sub new {
 
     @$self{keys %params} = values %params;
 
-    $self->{policy} ||= ":";
+    $self->{policy} ||= undef; # passing NULL uses default policy
 
     $self->{_ctx_ptr} = 
 	Net::DNS::SEC::Validator::_create_context_with_conf(

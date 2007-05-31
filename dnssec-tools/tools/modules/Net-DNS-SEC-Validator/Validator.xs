@@ -423,7 +423,7 @@ pval_create_context(policy)
 
 ValContext *
 pval_create_context_with_conf(policy,dnsval_conf,resolv_conf,root_hints)
-	char * policy
+	char * policy = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
         char *	dnsval_conf = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
 	char *	resolv_conf = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
 	char *	root_hints = (SvOK($arg) ? (char *)SvPV($arg,PL_na) : NULL);
