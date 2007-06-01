@@ -347,6 +347,8 @@ sub checkkeys {
                                           holdtime => $add_holddown_time,
                                         };
                         push(@{$newkeys{$d}},$newkeyobj);
+                        my $notif = "A new key has been received for domain " . $d . ". It will be added when the add holddown time is reached.\n";
+                        notify($notif) if ($opts{'v'});
                         # whenever newkeys is modified, write it out
                         open (FILE, "> $newkeyfile") 
                             or warn "can't open newkeys file: $!";
@@ -421,6 +423,9 @@ sub checkkeys {
                             $newkeys{$d}[$j]{algorithm} eq
                             $pendingnewkeys{$d}[$k]{algorithm} ) {
                             splice @{$newkeys{$d}},$j,1;
+                            # notify of this action if Verbose
+                            my $notif = "Pending new key for domain " . $d . " has been removed.\n";
+                            notify($notif) if ($opts{'v'});
                             # whenever newkeys is modified, write it out
                             open (FILE, "> $newkeyfile")
                                 or warn "can't open newkeys: $!";
@@ -433,7 +438,9 @@ sub checkkeys {
                 }
             }
         } else {
-            print "query failed for domain " . $d . "\n";
+            my $notif = "query failed for domain " . $d . "\n";
+            print $notif;
+            notify($notif) if ($opts{'v'});
             $refresh_secs = compute_queryfail_sleepsecs(0,0);
             $sleeptimes{$d} =  $refresh_secs;
         }
