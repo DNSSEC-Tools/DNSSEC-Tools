@@ -445,8 +445,6 @@ query_send(const char *name,
 
 int
 response_recv(int *trans_id,
-              fd_set *pending_desc,
-              struct timeval *closest_event,
               struct name_server **respondent,
               u_int8_t ** answer, u_int * answer_length)
 {
@@ -459,8 +457,7 @@ response_recv(int *trans_id,
     *answer_length = 0;
     *respondent = NULL;
 
-    ret_val = res_io_accept(*trans_id, pending_desc, closest_event, 
-                            answer, answer_length, respondent);
+    ret_val = res_io_accept(*trans_id, answer, answer_length, respondent);
 
     if (ret_val == SR_IO_NO_ANSWER_YET)
         return SR_NO_ANSWER_YET;
@@ -521,24 +518,13 @@ get(const char *name,
 {
     int             ret_val;
     int             trans_id;
-    struct timeval closest_event;
-    fd_set pending_desc;
-    FD_ZERO(&pending_desc);
 
-    closest_event.tv_sec = 0;
-    closest_event.tv_usec = 0;
-
-    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
-
+    if (SR_UNSET ==
+        (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
         do {
-            ret_val = response_recv(&trans_id, &pending_desc, &closest_event, server, response,
-                                    response_length);
-
-            if (ret_val == SR_NO_ANSWER_YET) {
-                /* wait for some data to become available */
-                if (wait_for_res_data(&pending_desc, &closest_event) < 0)
-                    ret_val = SR_IO_SOCKET_ERROR;
-            }
+            ret_val =
+                response_recv(&trans_id, server, response,
+                              response_length);
         } while (ret_val == SR_NO_ANSWER_YET);
     }
 
