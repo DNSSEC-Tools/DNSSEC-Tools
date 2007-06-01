@@ -511,7 +511,7 @@ res_io_set_timeout(struct timeval *timeout, struct timeval *next_event)
 {
     gettimeofday(timeout, NULL);
     timeout->tv_usec = 0;
-
+ 
     if (LTEQ((*timeout), (*next_event)))
         timeout->tv_sec = next_event->tv_sec - timeout->tv_sec;
     else
@@ -526,7 +526,7 @@ res_io_collect_sockets(fd_set * read_descriptors,
      * Find all sockets in use for a particular transaction chain of
      * expected arrivals
      */
-    FD_ZERO(read_descriptors);
+    // FD_ZERO(read_descriptors);
 
     while (ea_list) {
         if (ea_list->ea_socket != -1)
@@ -543,13 +543,8 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
      * Perform the select call 
      */
     int             i, max_sock;
-    struct timeval zero_time;
-    memset (&zero_time, 0, sizeof(struct timeval));
 
     max_sock = -1;
-
-    if (read_descriptors == NULL)
-        return SR_IO_INTERNAL_ERROR;
 
     i = getdtablesize(); 
     if (i > FD_SETSIZE)
@@ -560,16 +555,30 @@ res_io_select_sockets(fd_set * read_descriptors, struct timeval *timeout)
             break;
         }
 
-    /** Never block **/
-    //return select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
+    
+    if (max_sock == -1)
+        return 0; /* nothing to read */
+
+    return select(max_sock + 1, read_descriptors, NULL, NULL, timeout);
+}
+
+int
+wait_for_res_data(fd_set * read_descriptors, struct timeval *closest_event)
+{
+    struct timeval timeout;
+
     /*
-     * Blocking during this call will create multithreading problems 
-     * for the validator. In any case, a better interface between the 
-     * resolver and validator is to have the resolver signal the 
-     * validator when it is ready with some data.
-     * For now, the validator has to constantly poll for results
+     * Set the timeout in case nothing arrives.  The timeout will expire
+     * prior to the next event that res_io_check needs to initiate.  If
+     * something arrives before that time, fine, we handle it.  Otherwise,
+     * return and the check routine will be called again when the next
+     * level up decides it is time.
+     * 
+     * next_event.tv_sec is always set to something (ie, not left at the
+     * default) if res_io_check returns a non-0 number.
      */
-    return select(max_sock + 1, read_descriptors, NULL, NULL, &zero_time);
+    res_io_set_timeout(&timeout, closest_event);
+    return res_io_select_sockets(read_descriptors, &timeout);
 }
 
 int
@@ -758,6 +767,7 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
         i = FD_SETSIZE;
     for (sock = 0; sock < i; ++sock)
         if (FD_ISSET(sock, read_descriptors)) {
+            FD_CLR(sock, read_descriptors);
             if (res_io_debug)
                 printf("ACTIVITY on %d\n", sock);
             /*
@@ -831,13 +841,15 @@ res_io_read(fd_set * read_descriptors, struct expected_arrival *ea_list)
 }
 
 int
-res_io_accept(int transaction_id, u_int8_t ** answer,
+res_io_accept(int transaction_id, fd_set *read_descriptors, 
+              struct timeval *closest_event, 
+              u_int8_t ** answer,
               u_int * answer_length, struct name_server **respondent)
 {
     int             ret_val;
     struct timeval  next_event;
-    struct timeval  timeout;
-    fd_set          read_descriptors;
+    struct timeval zero_time;
+    memset (&zero_time, 0, sizeof(struct timeval));
 
     if (res_io_debug)
         printf("\nCalling io_accept\n");
@@ -847,7 +859,7 @@ res_io_accept(int transaction_id, u_int8_t ** answer,
      * is nothing more to be sent and there is also nothing to wait for.
      * 
      * All is not hopeless though - more sources may still waiting to be
-     * added via ree_io_deliver().
+     * added via res_io_deliver().
      */
     if (res_io_check(transaction_id, &next_event) == 0)
         return SR_IO_NO_ANSWER;
@@ -865,18 +877,12 @@ res_io_accept(int transaction_id, u_int8_t ** answer,
     }
     pthread_mutex_unlock(&mutex);
 
-    /*
-     * Set the timeout in case nothing arrives.  The timeout will expire
-     * prior to the next event that res_io_check needs to initiate.  If
-     * something arrives before that time, fine, we handle it.  Otherwise,
-     * return and the check routine will be called again when the next
-     * level up decides it is time.
-     * 
-     * next_event.tv_sec is always set to something (ie, not left at the
-     * default) if res_io_check returns a non-0 number.
-     */
-    res_io_set_timeout(&timeout, &next_event);
-
+    /* check if next_event is closer than closest_event */
+    if (closest_event->tv_sec == 0 ||
+        LTEQ(next_event, (*closest_event))) {
+        memcpy(closest_event, &next_event, sizeof(struct timeval));
+    }
+    
     /*
      * Decision time: does this call only look at the sockets used by
      * its transaction id, or does it look at all?
@@ -884,19 +890,15 @@ res_io_accept(int transaction_id, u_int8_t ** answer,
      * Answer for now -> just the sockets we are interested in.
      */
     pthread_mutex_lock(&mutex);
-    res_io_collect_sockets(&read_descriptors,
+    res_io_collect_sockets(read_descriptors,
                            transactions[transaction_id]);
     pthread_mutex_unlock(&mutex);
 
-    ret_val = res_io_select_sockets(&read_descriptors, &timeout);
+    ret_val = res_io_select_sockets(read_descriptors, &zero_time);
 
     if (ret_val == -1)
         /** select call failed */
         return SR_IO_SOCKET_ERROR;
-
-    if (ret_val == SR_IO_INTERNAL_ERROR)
-        /** read_descriptors is NULL - impossible case */
-        return SR_IO_INTERNAL_ERROR;
 
     if (ret_val == 0)
         /** There are sources, but none are talking (yet) */
@@ -906,7 +908,7 @@ res_io_accept(int transaction_id, u_int8_t ** answer,
      * React to the active desciptors.
      */
     pthread_mutex_lock(&mutex);
-    res_io_read(&read_descriptors, transactions[transaction_id]);
+    res_io_read(read_descriptors, transactions[transaction_id]);
     pthread_mutex_unlock(&mutex);
 
     /*

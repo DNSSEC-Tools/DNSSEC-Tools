@@ -87,7 +87,10 @@ int             res_io_deliver(int *transaction_id,
  * SR_IO_INTERNAL_ERROR A null pointer happened where it should not
  * after success porting and compilation.
  */
-int             res_io_accept(int transaction_id, u_int8_t ** answer,
+int             res_io_accept(int transaction_id, 
+                              fd_set *read_descriptors,
+                              struct timeval *closest_event,
+                              u_int8_t ** answer,
                               u_int * answer_length,
                               struct name_server **respondent);
 
