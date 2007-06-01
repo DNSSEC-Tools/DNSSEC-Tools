@@ -438,7 +438,8 @@ check_in_qfq_chain(val_context_t *context, struct queries_for_query **queries,
         if ((namecmp(temp->qfq_query->qc_original_name, name_n) == 0)
             && (temp->qfq_query->qc_type_h == type_h)
             && (temp->qfq_query->qc_class_h == class_h)
-            && ((flags & VAL_QFLAGS_ANY) || (temp->qfq_flags == flags)))
+            && (((flags & VAL_QFLAGS_ANY) == VAL_QFLAGS_ANY) ||
+                (temp->qfq_flags == flags)))
             break;
         prev = temp;
         temp = temp->qfq_next;
@@ -3915,6 +3916,7 @@ set_dlv_branchoff(val_context_t *context,
             q->qc_ans = context->a_list;
             q->qc_ans->_as.ac_data->rrs_ans_kind = 
                copyfrm->qc_ans->_as.ac_data->rrs_ans_kind; 
+            q->qc_ans->val_ac_status = copyfrm->qc_ans->val_ac_status;
         }
         if (copyfrm->qc_proof) {
             if (VAL_NO_ERROR != (retval = 
@@ -3924,6 +3926,7 @@ set_dlv_branchoff(val_context_t *context,
             q->qc_proof = context->a_list;
             q->qc_proof->_as.ac_data->rrs_ans_kind = 
                copyfrm->qc_proof->_as.ac_data->rrs_ans_kind; 
+            q->qc_proof->val_ac_status = copyfrm->qc_proof->val_ac_status;
         }
         
     }
