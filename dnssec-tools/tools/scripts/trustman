@@ -661,6 +661,8 @@ sub remove_ta_dnsvalconf {
                         print TMP "# The following key has been removed.\n";
                         my $remkeyrec = $d . ". " . $val;
                         print TMP "# " . $remkeyrec . "\n\n";
+                        my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
+                        notify($notif); 
                     } else {
                         # add the trailing dot when printing domainname
                         print TMP $d . ". " . $val . "\n\n";
@@ -718,6 +720,8 @@ sub remove_ta_namedconf  {
                             print TMP "# The following key has been removed.\n";
                             $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $remkeyrec . "\n";
+                            my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
+                            notify($notif);
                     }
                 } else {
                 # just print it, it's not the key we're looking for
@@ -747,6 +751,8 @@ sub remove_ta_namedconf  {
                             print TMP "# The following key has been removed.\n";
                             $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $remkeyrec . "\n";
+                            my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
+                            notify($notif);
                     } else {
                     # just print it, it's not the key we're looking for
                         print TMP $_;
