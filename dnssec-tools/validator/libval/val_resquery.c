@@ -1911,7 +1911,9 @@ int
 val_resquery_rcv(val_context_t * context,
                  struct queries_for_query *matched_qfq,
                  struct domain_info **response,
-                 struct queries_for_query **queries)
+                 struct queries_for_query **queries,
+                 fd_set *pending_desc,
+                 struct timeval *closest_event)
 {
     struct name_server *server = NULL;
     u_int8_t       *response_data = NULL;
@@ -1921,13 +1923,13 @@ val_resquery_rcv(val_context_t * context,
 
     int             ret_val;
 
-    if ((matched_qfq == NULL) || (response == NULL) || (queries == NULL))
+    if ((matched_qfq == NULL) || (response == NULL) || (queries == NULL) || (pending_desc == NULL))
         return VAL_BAD_ARGUMENT;
 
     matched_q = matched_qfq->qfq_query; /* Can never be NULL if matched_qfq is not NULL */
     *response = NULL;
-    ret_val = response_recv(&(matched_q->qc_trans_id), &server,
-                            &response_data, &response_length);
+    ret_val = response_recv(&(matched_q->qc_trans_id), pending_desc, closest_event,
+                            &server, &response_data, &response_length);
     if (ret_val == SR_NO_ANSWER_YET)
         return VAL_NO_ERROR;
 

@@ -40,6 +40,8 @@ int             val_resquery_send(val_context_t * context,
 int             val_resquery_rcv(val_context_t * context,
                                  struct queries_for_query *matched_qfq,
                                  struct domain_info **response,
-                                 struct queries_for_query **queries);
+                                 struct queries_for_query **queries,
+                                 fd_set *pending_desc,
+                                 struct timeval *closest_event);
 
 #endif                          /* VAL_RESQUERY_H */
