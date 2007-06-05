@@ -167,8 +167,12 @@ int             query_send(const char *name,
                            const u_int16_t class_h,
                            struct name_server *nslist, int *trans_id);
 int             response_recv(int *trans_id,
+                              fd_set *pending_desc,
+                              struct timeval *closest_event,
                               struct name_server **respondent,
                               u_int8_t ** answer, u_int * answer_length);
+void            wait_for_res_data(fd_set * pending_desc, 
+                                  struct timeval *closest_event);
 int             get(const char *name_n,
                     const u_int16_t type_h,
                     const u_int16_t class_h,

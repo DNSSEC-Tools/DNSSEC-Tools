@@ -4462,7 +4462,7 @@ verify_and_validate(val_context_t * context,
                         thisdone = 0;
                 } else {
                     val_log(context, LOG_INFO, 
-                        "verify_and_validate(): marking authentication chain status for {%s %s %s} as bogus",
+                        "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
                         name_p, 
                         p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                         p_type(next_as->val_ac_rrset->val_rrset_type_h));
@@ -4689,6 +4689,8 @@ ask_cache(val_context_t * context,
 static int
 ask_resolver(val_context_t * context, 
              struct queries_for_query **queries,
+             fd_set * pending_desc,
+             struct timeval *closest_event,
              int *data_received,
              int *data_missing)
              
@@ -4791,7 +4793,8 @@ ask_resolver(val_context_t * context,
             if (next_q->qfq_query->qc_state == Q_SENT) {
                 if ((retval =
                      val_resquery_rcv(context, next_q, &response,
-                                      queries)) != VAL_NO_ERROR)
+                                      queries, pending_desc, 
+                                      closest_event)) != VAL_NO_ERROR)
                     return retval;
 
                 if ((next_q->qfq_query->qc_state == Q_ANSWERED)
@@ -5538,7 +5541,6 @@ val_resolve_and_check(val_context_t * ctx,
     int done = 0;
     int data_received;
     int data_missing;
-
     val_context_t  *context = NULL;
     
     if ((results == NULL) || (domain_name_n == NULL))
@@ -5599,6 +5601,12 @@ val_resolve_and_check(val_context_t * ctx,
     data_received = 0;
     while (!done) {
         struct queries_for_query *last_q;
+        fd_set pending_desc;
+        struct timeval closest_event;
+    
+        FD_ZERO(&pending_desc);
+        closest_event.tv_sec = 0;
+        closest_event.tv_usec = 0;
 
         /*
          * keep track of the last entry added to the query chain 
@@ -5622,7 +5630,8 @@ val_resolve_and_check(val_context_t * ctx,
          * XXX by-pass this functionality through flags if needed 
          */
         if (VAL_NO_ERROR !=
-            (retval = ask_resolver(context, &queries, &data_received, &data_missing)))
+            (retval = ask_resolver(context, &queries, &pending_desc, &closest_event,
+                                   &data_received, &data_missing)))
             goto err;
 
 
@@ -5630,17 +5639,6 @@ val_resolve_and_check(val_context_t * ctx,
             (retval = fix_glue(context, &queries, &data_missing)))
             goto err;
         
-        /*
-         * check if more queries have been added 
-         */
-        if (last_q != queries) {
-            /*
-             * There are new queries to send out -- do this first; 
-             * we may also find this data in the cache 
-             */
-            continue;
-        }
-
         if (data_received || !data_missing) {
 
             if (VAL_NO_ERROR != (retval = 
@@ -5656,13 +5654,24 @@ val_resolve_and_check(val_context_t * ctx,
             data_received = 0;
         }
 
+        /*
+         * check if more queries have been added 
+         */
+        if (last_q != queries) {
+            /*
+             * There are new queries to send out -- do this first; 
+             * we may also find this data in the cache 
+             */
+            continue;
+        }
+
+        /* We are either done or we are waiting for some data */
         if (!done) {
             /* Release the lock, let some other thread get some time slice to run */
             CTX_UNLOCK_ACACHE(context);
                 
-#ifndef VAL_NO_THREADS
-            sleep(0);
-#endif
+            /* wait for some data to become available */
+            wait_for_res_data(&pending_desc, &closest_event);
 
             /* Re-acquire the lock */
             CTX_LOCK_ACACHE(context);
