@@ -232,8 +232,8 @@ sendquery(val_context_t * context, const char *desc, u_char * name_n,
 
     } else {
         fprintf(stderr, "%s: \t", desc);
-        fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %d\n",
-                ret_val);
+        fprintf(stderr, "FAILED: Error in val_resolve_and_check(): %s\n",
+                p_val_err(ret_val));
     }
 
     val_free_result_chain(results);
@@ -577,6 +577,9 @@ struct thread_params_ot {
 void *firethread_st(void *param) {
     struct thread_params_st *threadparams = (struct thread_params_st *)param;
     /*child process*/
+    fprintf(stderr, "Start of thread %u\n context=%u\n", 
+            (unsigned int)pthread_self(), 
+            (unsigned int)threadparams->context);
     do {
         self_test(threadparams->context, threadparams->tcs, threadparams->tce, threadparams->flags, 
                   threadparams->testcase_config, threadparams->suite, threadparams->doprint);
@@ -584,12 +587,18 @@ void *firethread_st(void *param) {
             sleep(threadparams->wait);
     }while (threadparams->wait);
     
+    fprintf(stderr, "End of thread %u\n", 
+            (unsigned int)pthread_self());
+
     return NULL;
 }
 
 void *firethread_ot(void *param) {
     struct thread_params_ot *threadparams = (struct thread_params_ot *)param;
     /*child process*/
+    fprintf(stderr, "Start of thread %u\n context=%u\n", 
+            (unsigned int)pthread_self(), 
+            (unsigned int)threadparams->context);
     do {
         one_test(threadparams->context, threadparams->name_n, threadparams->class_h, 
                   threadparams->type_h, threadparams->flags, 
@@ -597,6 +606,9 @@ void *firethread_ot(void *param) {
         if (threadparams->wait)
             sleep(threadparams->wait);
     }while (threadparams->wait);
+
+    fprintf(stderr, "End of thread %u\n", 
+            (unsigned int)pthread_self());
     
     return NULL;
 }
@@ -795,13 +807,11 @@ main(int argc, char *argv[])
             int j;
                 
             for (j=0; j < NO_OF_THREADS; j++) {
-                fprintf(stderr, "Start of thread %d\n context=%u\n", j, (unsigned int)context);
                 pthread_create(&tids[j], NULL, firethread_st, (void *)&threadparams);
             }
                 
             for (j=0; j < NO_OF_THREADS; j++) {
                 pthread_join(tids[j], NULL);
-                fprintf(stderr, "End of thread %d\n", j);
             }
             fprintf(stderr, "Parent exiting\n");
 #else
@@ -832,14 +842,11 @@ main(int argc, char *argv[])
     int j;
                 
     for (j=0; j < NO_OF_THREADS; j++) {
-        fprintf(stderr, "Start of thread %d\n context=%u\n", j, (unsigned int)context);
         pthread_create(&tids[j], NULL, firethread_ot, (void *)&threadparams);
     }
     
-        
     for (j=0; j < NO_OF_THREADS; j++) {
         pthread_join(tids[j], NULL);
-        fprintf(stderr, "End of thread %d\n", j);
     }
     fprintf(stderr, "Parent exiting\n");
 #else
