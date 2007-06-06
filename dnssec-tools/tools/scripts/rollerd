@@ -3570,7 +3570,7 @@ user.  Below is a sample I<rollrec> entry:
 		display         "1"
 		phasestart      "Tue Feb 27 22:25:07 2007"
 
-The first line gives the I<rollrec> entry's name.  The lines then give the
+The first line gives the I<rollrec> entry's name.  The following lines give the
 zone's signed zone file, I<keyrec> file, the current rollover phases, the
 rollover timestamps, and other information.
 
@@ -3724,7 +3724,7 @@ of the valid logging levels.
 =item I<-sleep sleeptime>
 
 Sets B<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
-of time B<rollerd> waits between processing its I<rollrec>-based queue.
+of time (in seconds) B<rollerd> waits between processing its I<rollrec>-based queue.
 
 =item I<-parameters>
 
@@ -3748,7 +3748,7 @@ Verbose output will be given.
 =head1 ASSUMPTIONS
 
 B<rollerd> uses the B<rndc> command to communicate with the BIND
-B<named> daemon.  Therefore, it assumes that appropriate measure have been
+B<named> daemon.  Therefore, it assumes that appropriate measures have been
 taken so that this communication is possible.
 
 =head1 KNOWN PROBLEMS
