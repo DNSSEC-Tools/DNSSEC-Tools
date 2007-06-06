@@ -21,11 +21,13 @@
 #
 #
 #	WORKING ON:
-#		- making sure merge isn't given same file
+#		- columns in button window  (cmdline option)
 #
 #	TODO:
 #		- command line options
 #			- columns in button window
+#
+#		- making sure merge isn't given same file
 #
 #		- menu options
 #
@@ -126,6 +128,7 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	"ignore-edits",			# Ignore-edit-warnings flag.
+	"columns=i",			# Columns in button window.
 
 	"Version",			# Display the version number.
 	"help",				# Give a usage message and exit.
@@ -151,6 +154,7 @@ my $MAINTITLE	= "DNSSEC-Tools Rollrec Editor";
 #
 my $DEFCOLS = 4;			# Default columns in button table.
 my $MAXCOLS = 12;			# Maximum allowable button columns.
+my $MINCOLS = 3;			# Minimum allowable button columns.
 
 my $numcols;				# Current number of table cols.
 my $numrows;				# Current number of table rows.
@@ -325,8 +329,7 @@ sub main
 
 	erraction(ERR_EXIT);
 
-print "\n\nUNDER DEVELOPMENT, DO NOT USE!!!\n\n";
-exit(1);
+print "\n\nUNDER DEVELOPMENT, USE AT YOUR OWN PERIL!!!\n\n";
 
 # system("cp y.rrf z.rrf");
 
@@ -376,15 +379,28 @@ sub doopts
 	GetOptions(\%options,@opts);
 
 	#
+	# Show the version number or help info if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+	#
 	# Set some flags based on the command line.
 	#
 	$givewarnings = 0 if(defined($options{'ignore-edits'}));
 
 	#
-	# Show the version number or help info if requested.
+	# Check for the column-count option.
 	#
-	version() if(defined($options{'Version'}));
-	usage()   if(defined($options{'help'}));
+	if(defined($options{'columns'}))
+	{
+		$columncount  = $options{'columns'};
+		if(($columncount < $MINCOLS) || ($columncount > $MAXCOLS))
+		{
+			print STDERR "column count must be between $MINCOLS and $MAXCOLS\n";
+			exit(1);
+		}
+	}
 
 }
 
