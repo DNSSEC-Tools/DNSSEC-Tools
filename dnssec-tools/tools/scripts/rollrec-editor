@@ -3346,34 +3346,25 @@ rollrec-editor - DNSSEC-Tools Rollrec GUI Editor
 
 =head1 DESCRIPTION
 
-B<rollrec-editor> provides the capability for easy management of signing sets
-in a GUI.  A signing set contains zero or more names of key I<keyrec>.  These
+B<This pod is under construction.  Don't believe a word of anything that
+follows, as it started life as pod for signset-editor.>
+
+B<rollrec-editor> provides the capability for easy management of B<rollrec>
+files
+in a GUI.  A B<rollrec> file contains zero or more names of key I<keyrec>.  These
 sets are used by other DNSSEC-Tools utilities for signing zones.  The signing
 sets found in the given I<keyrec> file are displayed in a new window.  New
 signing sets may be created and existing signing sets may be modified or
 deleted from B<rollrec-editor>.
 
-B<rollrec-editor> has two display modes.  The Signing Set Display shows the
-names of all the set I<keyrec>s in the given I<keyrec> file.  The Keyrec
-Display shows the names of all the key I<keyrec>s in the given I<keyrec> file.
-B<rollrec-editor> starts in Signing Set Display mode, but the mode can be
-toggled back and forth as needed.
-
-An additional toggle controls the display of additional data.  If the Extended
-Data toggle is turned on, then the Signing Set Display shows the names of the
-key I<keyrec>s in each signing set and the Keyrec Display shows the names of
-each signing set each key I<keyrec> is in.  If the Extended Data toggle is
-turned off, then the Signing Set Display only shows the names of the set
-I<keyrec>s and the Keyrec Display only shows the names key I<keyrec>s.
-
 B<rollrec-editor> has a small number of commands.  These commands are all
 available through the menus, and most have a keyboard accelerator.  The
 commands are described in the next section.
 
-Management of signing sets may be handled using a normal text editor.
-However, B<rollrec-editor> provides a nice GUI that B<only> manipulates
-signing sets without the potential visual clutter of the rest of the
-I<keyrec> entries.
+Management of B<rollrec> files may be handled using a normal text editor.
+However, B<rollrec-editor> provides a nice GUI that B<only> manipulates the
+fields of B<rollrec> entries without the potential visual clutter of the
+fields that shouldn't be modified by a user.
 
 =head2 UNDOING MODIFICATIONS
 
@@ -3539,16 +3530,16 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 =head1 SEE ALSO
 
-B<cleankrf(8)>,
-B<fixkrf(8)>,
-B<genkrf(8)>,
-B<krfcheck(8)>,
-B<lskrf(1)>,
+B<lsroll(1)>,
+B<rollchk(8)>,
+B<rollerd(8)>
+B<rollinit(8)>,
+B<rollset(8)>,
 B<zonesigner(8)>
 
-B<Net::DNS::SEC::Tools::keyrec(3)>
+B<Net::DNS::SEC::Tools::rollrec(3)>
 
-B<file-keyrec(5)>
+B<file-rollrec(5)>
 
 =cut
 
