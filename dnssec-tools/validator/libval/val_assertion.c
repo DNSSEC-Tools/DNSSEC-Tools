@@ -85,10 +85,17 @@ is_type_set(u_int8_t * field, int field_len, u_int16_t type)
     /** The type will be present in the following block */
     int             t_block = type / 256;
     /** within the bitmap, the type will be present in the following byte */
-    int             t_bm_offset = type / 8;
+    int             t_bm_offset = type % 256 - 1;
 
     int             cnt = 0;
 
+    if (t_bm_offset == -1) {
+        if (t_block == 0)
+            return 0;
+        t_block--;
+        t_bm_offset = 255;
+    } 
+    
     /*
      * need at least two bytes 
      */
@@ -1980,6 +1987,7 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_nam
         *span_chk = 1;
         *wcard_chk = 1;
 
+        return;
     } else if (namecmp(the_set->rrs.val_rrset_name_n, qname_n) > 0) {
         /*
          * query name comes after the NSEC owner 
@@ -2357,7 +2365,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     if (res == NULL) {
         val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - proof does not cover span");
         *status = VAL_INCOMPLETE_PROOF;
-    } else {
+    } else if (!res->val_rc_consumed || *proof_res == NULL) {
         if (VAL_NO_ERROR !=
                     (retval = transform_single_result(ctx, res, queries, results,
                                                   *proof_res, &new_res))) {
@@ -2488,12 +2496,15 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
                 *status = VAL_BOGUS_PROOF;
             } else {
                 *status = VAL_NONEXISTENT_NAME;
-                if (VAL_NO_ERROR !=
+                if (!wcard_proof->val_rc_consumed || *proof_res == NULL) {
+                    
+                    if (VAL_NO_ERROR !=
                         (retval = transform_single_result(ctx, wcard_proof, queries, results,
                                                   *proof_res, &new_res))) {
-                    goto err;
+                        goto err;
+                    }
+                    *proof_res = new_res;
                 }
-                *proof_res = new_res;
             }
         }
     }
@@ -5667,7 +5678,18 @@ val_resolve_and_check(val_context_t * ctx,
 
         /* We are either done or we are waiting for some data */
         if (!done) {
+
             /* Release the lock, let some other thread get some time slice to run */
+#if 0
+            struct timeval temp_t;
+            gettimeofday(&temp_t, NULL);
+            val_log(context, LOG_DEBUG, 
+                    "zzzzzzzzzzzzz pselect(): (Thread %u) Waiting for %d seconds", 
+                    (unsigned int)pthread_self(),
+                    (closest_event.tv_sec >temp_t.tv_sec)? 
+                        closest_event.tv_sec - temp_t.tv_sec : 0); 
+#endif
+            
             CTX_UNLOCK_ACACHE(context);
                 
             /* wait for some data to become available */
@@ -5675,6 +5697,12 @@ val_resolve_and_check(val_context_t * ctx,
 
             /* Re-acquire the lock */
             CTX_LOCK_ACACHE(context);
+
+#if 0
+            val_log(context, LOG_DEBUG, 
+                    "zzzzzzzzzzzzz pselect(): (Thread %u) Woke up", 
+                    (unsigned int)pthread_self());
+#endif
         }
     }
 
