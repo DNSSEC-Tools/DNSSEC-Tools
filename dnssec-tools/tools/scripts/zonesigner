@@ -2617,12 +2617,12 @@ zonesigner - Generates encryption keys and signs a DNS zone.
 
 =head1 SYNOPSIS
 
-  zonesigner [options] <zone-file> <signed-zone>
+  zonesigner [options] <zone-file> <signed-zone-file>
 
   # get started immediately examples:
 
   # first run on a zone for example.com:
-  zonesigner -genkeys -endtime +2678400 -zone example.com
+  zonesigner -genkeys -endtime +2678400 example.com
 
   # future runs before expiration time (reuses the same keys):
   zonesigner -endtime +2678400 example.com
@@ -2673,9 +2673,9 @@ arguments will remain the same.
 
 B<zonesigner> is used in this way:
 
-    zonesigner [options] <zone-file> <signed-zone>
+    zonesigner [options] <zone-file> <signed-zone-file>
 
-The I<zone-file> and I<signed-zone> arguments are required.
+The I<zone-file> argument is required.
 
 I<zone-file> is the name of the zone file from which a signed zone file will
 be created.  If the I<-zone> option is not given, then I<zone-file> will be
@@ -2716,7 +2716,7 @@ I<keyrec> files contain three types of entries:  zone I<keyrec>s, set
 I<keyrec>s, and key I<keyrec>s.  Zone I<keyrec>s contain information
 specifically about the zone, such as the number of ZSKs used to sign the zone,
 the end-time for the zone, and the key signing set names (names of set
-I<keyrecs>.) Set I<keyrec>s contain lists of keys names used for a specific
+I<keyrec>s.) Set I<keyrec>s contain lists of keys names used for a specific
 purpose, such as the current ZSK keys or the published ZSK keys.  Key
 I<keyrec>s contain information about the generated keys themselves, such as
 encryption algorithm, key length, and key lifetime.
@@ -2907,7 +2907,7 @@ management.
 B<Warning>:  Using the I<-rollksk> option should only be used if you know
 what you're doing.
 
-B<Warning>:  This is a I<temporary> method of KSK rollover.  It is I<may>
+B<Warning>:  This is a I<temporary> method of KSK rollover.  It I<may>
 be changed in the future.
 
 =item -rollzsk
@@ -3005,7 +3005,7 @@ executed.  This is a small subset of verbose level 3 output.
 
 Cryptographic algorithm used to generate the zone's keys.  The default value
 is RSASHA1.  The option value is passed to B<dnssec-keygen> as the the I<-a>
-flag.  Consult B<dnssec-keygen>'s manual page for to determine legal values.
+flag.  Consult B<dnssec-keygen>'s manual page to determine legal values.
 
 =item -ksklength
 
@@ -3014,7 +3014,7 @@ The default is 1024.
 
 =item -random
 
-Source of randomness used to generate the zone's keys.	(/dev/urandom)
+Source of randomness used to generate the zone's keys.	(For example, /dev/urandom.)
 
 =item -zsklength
 
@@ -3064,7 +3064,7 @@ Example 1.
 In the first example, an existing I<keyrec> file is used to assist in signing
 the example.com domain.  Zone data are stored in B<example.com>, and the
 keyrec is in B<example.krf>.  The final signed zone file will be
-B<db.example.com>.  Using this execution:
+B<db.example.com.signed>.  Using this execution:
 
     # zonesigner -krfile example.krf example.com db.example.com.signed
 
@@ -3083,8 +3083,8 @@ the following files are created:
     db.example.com.signed
 
 The first six files are the KSK and ZSK keys required for the zone.  The next
-two files are created by the zone-signing process.  The last file is the zone
-the final signed zone file.
+two files are created by the zone-signing process.  The last file is the 
+final signed zone file.
 
 Example 2.
 
@@ -3094,7 +3094,7 @@ keyrec is in B<example.krf>.  The generated keys, an intermediate zone file,
 and final signed zone file will use B<example.com> as a base.
 Using this execution:
 
-    # zonesigner -krfile example.krf -intermediate example.zs example.com db.example.com
+    # zonesigner -krfile example.krf -intermediate example.zs example.com
 
 the following files are created:
 
@@ -3109,7 +3109,7 @@ the following files are created:
     keyset-db.example.com.
 
     example.zs
-    db.example.com
+    example.com.signed
 
 The first six files are the KSK and ZSK keys required for the zone.  The next
 two files are created by the zone-signing process.  The second last file is
@@ -3145,8 +3145,8 @@ The generated I<keyrec> file contains six I<keyrec>s:  a zone I<keyrec>,
 two set I<keyrec>s, one KSK I<keyrec>, and two ZSK I<keyrec>s.  
 
     zone	"example.com"
-	zonefile	"db.example.com"
-	signedzone	"db.example.com.signed"
+	zonefile	"example.com"
+	signedzone	"db.example.com"
 	endtime		"+2592000"
 	kskcur		"signing-set-24"
 	kskdirectory	"."
