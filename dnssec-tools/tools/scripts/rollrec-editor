@@ -1,0 +1,3538 @@
+#!/usr/bin/perl
+#
+# Copyright 2007 SPARTA, Inc.  All rights reserved.  See the COPYING
+# file distributed with this software for details
+#
+# DNSSEC-Tools:  rollrec-editor
+#
+#	rollrec-editor provides the capability for easy management of rollrec
+#	files in a GUI.  New rollrecs may be created and existing rollrecs may
+#	be modified or deleted from rollrec-editor.  Only a subset of rollrec
+#	fields may be modified by rollrec-editor.
+#
+#	The command is used in this way:
+#
+#               rollrec-editor [-Vi] <rollrec-file>
+#
+#	The rollrec-file is a DNSSEC-Tools keyrec file that maintains
+#	information about a zone and its encryption keys.
+#
+#
+#
+#
+#	WORKING ON:
+#		- making sure merge isn't given same file
+#
+#	TODO:
+#		- command line options
+#			- columns in button window
+#
+#		- menu options
+#
+#		- menu commands
+#
+#			- undo command:
+#				- maintain separate stacks for each rollrec name
+#
+#		- save modified rollrecs
+#
+#		- quit editor command
+#			- exits with error if cntl-q is given
+#
+#	DONE:
+#		- menu commands
+#			* create new rollrecs
+#
+#			* delete rollrecs
+#
+#			* edit rollrecs
+#
+#			* merge rollrec files
+#
+#			* validate file (edit)
+#
+#			* validate file (summary)
+#
+#			* quit editor
+#
+#		- menu options
+#			* turn on/off givewarnings
+#			* raise edit windows
+#			* columns in button window
+#
+#		- command line options
+#			* turn off givewarnings
+#
+#		- shinies:
+#			* button window holding rollrec names
+#
+#			* better window-filling
+#
+#			* changed rollrec entries should have name in name
+#			  grid starred
+#
+#			* changed rollrec files should have name in name
+#			  window starred
+#
+#
+
+use strict;
+
+use Net::DNS::SEC::Tools::conf;
+use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::BootStrap;
+
+use Getopt::Long qw(:config no_ignore_case_always);
+
+######################################################################
+#
+# DESTROY THESE DATA!!!
+#
+
+my %key_lists;
+my @ssnames;
+my @krnames;
+
+######################################################################
+#
+# Detect required Perl modules.
+#
+dnssec_tools_load_mods(
+			'Tk'			=> "",
+			'Tk::Dialog'		=> "",
+			'Tk::DialogBox'		=> "",
+			'Tk::FileSelect'	=> "",
+			'Tk::Pane'		=> "",
+			'Tk::Table'		=> "",
+		      );
+
+#
+# Version information.
+#
+my $NAME   = "rollrec-editor";
+my $VERS   = "$NAME version: 0.5";
+my $DTVERS = "DNSSEC-Tools Version: 1.1";
+
+#######################################################################
+
+#
+# Flag variables for options.
+#
+my $zonename	= "";
+my $zonefile	= "";
+
+my %options = ();			# Filled option array.
+my @opts =
+(
+	"ignore-edits",			# Ignore-edit-warnings flag.
+
+	"Version",			# Display the version number.
+	"help",				# Give a usage message and exit.
+);
+
+
+#
+# File name variables.
+#
+my $rrfile  = "dummy";			# Rollrec file we're examining.
+my $curnode = "dummy";			# Node of rrfile.
+my $title   = "dummy";			# Node for title.
+my $modset  = 0;			# Flag for (modified) title.
+
+#
+# Main window constants.
+#
+my $MAINGEOM	= "550x400";
+my $MAINTITLE	= "DNSSEC-Tools Rollrec Editor";
+
+#
+# Constants and data for button table in main window.
+#
+my $DEFCOLS = 4;			# Default columns in button table.
+my $MAXCOLS = 12;			# Maximum allowable button columns.
+
+my $numcols;				# Current number of table cols.
+my $numrows;				# Current number of table rows.
+
+my $columncount = $DEFCOLS;		# Column count.
+
+#
+# Arrays and lists of rollrecs.
+#
+my %rollrecs = ();
+my @rollrecs = ();
+my @rrnames = ();			# List of rollrec names.
+my $numrrnames;				# Number of rollrec names.
+
+#
+# Labels for toggles in the Options menu.
+#
+my $IGNORE_ON	= "Ignore Edit Warnings";
+my $IGNORE_OFF	= "Don't Ignore Edit Warnings";
+my $FILTER_OFF	= "Don't Filter Merge Selection";
+my $FILTER_ON	= "Filter Merge Selection";
+
+#
+# Various flags.
+#
+my $givewarnings = 1;				# Give-warnings flag.
+my $mergefilter	 = 0;				# Use-merge-filter flag (FS).
+my $inhelpwind	 = 0;				# Showing help window.
+my $modified	 = 0;				# Modified-rrfile flag.
+my %modified	 = ();				# Modified-rollrecs hash.
+
+#
+# Undo data.
+#
+my @undo_stack;					# Stack for undo commands.
+
+my $NORMALCOLOR	 = "black";			# Color for normal messages.
+my $WARNCOLOR	 = "yellow";			# Color for warning messages.
+my $ERRCOLOR	 = "red";			# Color for error messages.
+
+#
+# The main window and several subwindows.
+#
+my $wm;						# Main window.
+my $subwin;					# Create/Modify window.
+my $helpwin;					# Help window.
+
+#
+# The contents of the main window and its frames.
+#
+my $mbar;					# Menubar frame.
+my $rrfl;					# Keyrec frame.
+my $body;					# Window body frame.
+my $bodylist;					# Listbox for body.
+my $null;					# Empty frame.
+
+#
+# Menu item widgets.
+#
+my $fm_open;					# Open keyrec file item.
+my $fm_save;					# Save keyrec file item.
+my $fm_svas;					# Save-as keyrec file item.
+my $fm_quit;					# Quit file item.
+
+my $em_undo;					# Undo edit item.
+
+my $cm_create;					# Create a rollrec.
+my $cm_delete;					# Delete selected rollrecs.
+my $cm_modify;					# Modify selected rollrecs.
+my $cm_merger;					# Merge two rollrec files.
+my $cm_verify;					# Verify a rollrec file.
+
+my $rr_selall;					# Select all rollrecs set item.
+my $rr_editsel;					# Edit selected rollrecs.
+my $rr_closeall;				# Close rollrec edit windows.
+my $rr_raiser;					# Raise rollrec edit windows.
+
+my $tog_ignwarn;				# Ignore-Edit-Warning toggle.
+my $tog_mergefilt = 1;				# Use-merge-filter toggle.
+
+my $hm_help;					# Help item.
+
+#
+# Data for ...
+#
+
+my $rrnametab;			# Rollrec name table.
+
+my %editwinds;			# Rollrec edit windows.
+my %edittabs = ();		# Edit-area tables.
+
+my %editrbs;			# Type radiobutton values for edit windows.
+my %editdfs;			# Display flag radiobutton vals for edit winds.
+
+#
+# Row and column constants for the edit-window tables.
+#
+my $COL_FIELD	 = 0;				# Edit table's label column.
+my $COL_DATA	 = 1;				# Edit table's data column.
+
+my $ROW_TYPE	 = 0;				# Edit table's type column.
+my $ROW_ZONEFILE = 1;				# Edit table's zonefile column.
+my $ROW_KEYREC	 = 2;				# Edit table's keyrec column.
+my $ROW_ADMIN	 = 3;				# Edit table's admin. column.
+my $ROW_DIR	 = 4;				# Edit table's directory column.
+my $ROW_DISPLAY	 = 5;				# Edit table's display column.
+my $ROW_LOG	 = 6;				# Edit table's logging level.
+my $ROW_MAXTTL	 = 7;				# Edit table's maxttl column.
+
+my $ROW_FIRST	 = $ROW_TYPE;			# Edit table's first row.
+my $ROW_LAST	 = $ROW_MAXTTL;			# Edit table's last row.
+
+my $ROW_MSG	 = ($ROW_LAST + 1);		# Message line - after ROW_LAST.
+
+#
+# Labels for the field-column entries of the edit-window tables.
+#
+#	These MUST correspond to the $ROW_ constants!
+#
+my @ET_LABELS =
+(
+	"Type",
+	"Zonefile",
+	"Keyrec",
+	"Admin Email",
+	"Directory",
+	"Display Flag",
+	"Logging Level",
+	"Max-TTL",
+	"dummy",	# Dummy label, just ensures message row is created.
+);
+
+#
+# These are the rollrec fields that are editable.
+#
+my @EDITFIELDS =
+		(
+			'administrator',
+			'directory',
+			'display',
+			'keyrec',
+			'loglevel',
+			'maxttl',
+			'zonefile'
+		);
+
+###########################################################################
+#
+# Graphic constants and variables.
+#
+
+#
+# Font data for output window.
+#
+my $fontsize    = 18;
+my $font        = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+
+my $RRTAB_UNSEL	= 'white';
+my $RRTAB_SEL	= 'blue';
+
+###########################################################################
+
+main();
+exit(0);
+
+#---------------------------------------------------------------------------
+# Routine:	main()
+#
+sub main
+{
+	my $argc = @ARGV;
+
+	erraction(ERR_EXIT);
+
+print "\n\nUNDER DEVELOPMENT, DO NOT USE!!!\n\n";
+exit(1);
+
+# system("cp y.rrf z.rrf");
+
+	#
+	# Check our options.
+	#
+	doopts();
+
+	#
+	# Get the rollrec filename and the path's node.
+	#
+	$rrfile = $ARGV[0];
+	$curnode = getnode($rrfile);
+	settitle($curnode);
+
+	#
+	# Ensure this rollrec file actually exists.
+	#
+	if(! -e $rrfile)
+	{
+		print STDERR "$rrfile does not exist\n";
+		exit(1);
+	}
+
+	#
+	# Build the main window.
+	#
+	buildmainwind();
+
+	#
+	# Start the whole shebang rollin'.
+	#
+	MainLoop();
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	doopts()
+#
+# Purpose:	This routine gets the options from the command line.
+#
+sub doopts
+{
+	my $argc = @ARGV;		# Number of command line arguments.
+
+	usage()   if($argc == 0);
+
+	GetOptions(\%options,@opts);
+
+	#
+	# Set some flags based on the command line.
+	#
+	$givewarnings = 0 if(defined($options{'ignore-edits'}));
+
+	#
+	# Show the version number or help info if requested.
+	#
+	version() if(defined($options{'Version'}));
+	usage()   if(defined($options{'help'}));
+
+}
+
+
+#---------------------------------------------------------------------------
+# Routine:	buildmainwind()
+#
+# Purpose:	Create and initialize the main window.
+#
+sub buildmainwind
+{
+	my $file;					# File menu.
+	my $edit;					# Edit menu.
+	my $cmds;					# Commands menu.
+	my $rrcs;					# Rollrecs menu.
+	my $opts;					# Options menu.
+	my $help;					# Help menu.
+
+	my $curfile;					# Current keyrec.
+	my $keyrecs;					# Keyrec listbox.
+	my $nulline;					# Empty line.
+
+	#
+	# Create the main window and set its size.
+	#
+	$wm = MainWindow->new(-title => $MAINTITLE);
+#	$wm->geometry($MAINGEOM);
+
+	#
+	# Get the keyrec file info.
+	#
+	readrrf($rrfile);
+
+	#
+	# Create the frames we'll need.
+	#
+	$mbar = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$rrfl = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$body = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+	$null = $wm->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$mbar->pack(-fill => 'x');
+	$rrfl->pack(-fill => 'x');
+	$body->pack(-fill => 'x');
+	$null->pack(-fill => 'x');
+
+	#
+	# Create our menus.
+	#
+	$file = $mbar->Menubutton(-text => 'File',
+				  -tearoff => 0,
+				  -underline => 0);
+	$edit = $mbar->Menubutton(-text => 'Edit',
+				  -tearoff => 0,
+				  -underline => 0);
+	$cmds = $mbar->Menubutton(-text => 'Commands',
+				  -tearoff => 0,
+				  -underline => 0);
+	$rrcs = $mbar->Menubutton(-text => 'Rollrecs',
+				  -tearoff => 0,
+				  -underline => 0);
+	$opts = $mbar->Menubutton(-text => 'Options',
+				  -tearoff => 0,
+				  -underline => 0);
+	$help = $mbar->Menubutton(-text => 'Help',
+				  -tearoff => 0,
+				  -underline => 0);
+
+	##################################################
+	#
+	# Add the File menu entries.
+	#
+	$fm_open = $file->command(-label => 'Open...',
+			          -command => \&file_open,
+			          -accelerator => 'Ctrl+O',
+			          -underline => 0);
+	$fm_save = $file->command(-label => 'Save',
+			          -command => \&file_save,
+			          -accelerator => 'Ctrl+S',
+			          -underline => 0);
+	$fm_svas = $file->command(-label => 'Save As...',
+			          -command => \&file_saveas,
+			          -underline => 0);
+	$file->separator();
+	$fm_quit = $file->command(-label => 'Quit',
+			          -command => \&file_quit,
+			          -accelerator => 'Ctrl+Q',
+			          -underline => 0);
+	$file->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-o>',\&file_open);
+	$wm->bind('<Control-Key-s>',\&file_save);
+	$wm->bind('<Control-Key-q>',\&file_quit);
+
+	##################################################
+	#
+	# Add the Edit menu entries.
+	#
+	$em_undo = $edit->command(-label	=> 'Undo Changes',
+				  -command	=> \&edit_undo,
+				  -accelerator	=> 'Ctrl+U',
+				  -state	=> 'disabled',
+				  -underline	=> 0);
+	$edit->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-u>',\&edit_undo);
+
+	##################################################
+	#
+	# Add the Commands menu entries.
+	#
+	$cm_create = $cmds->command(-label	 => 'New Rollrec...',
+				    -command	 => \&cmds_create,
+				    -accelerator => 'Ctrl+N',
+				    -underline	 => 0);
+
+	$cm_delete = $cmds->command(-label	 => 'Delete Selected Rollrec',
+				    -command	 => \&cmds_delete,
+				    -accelerator => 'Ctrl+D',
+				    -underline	 => 0);
+
+	$cm_modify = $cmds->command(-label	 => 'Edit Selected Rollrec',
+				    -command	 => \&cmds_modify,
+				    -accelerator => 'Ctrl+E',
+				    -underline	 => 0);
+	$cmds->separator();
+
+	$cm_merger = $cmds->command(-label	 => 'Merge Rollrec Files',
+				    -command	 => \&cmds_merger,
+				    -accelerator => 'Ctrl+M',
+				    -underline	 => 0);
+
+	$cm_verify = $cmds->command(-label	 => 'Verify Rollrec File',
+				    -command	 => [\&cmds_verify, 0],
+				    -accelerator => 'Ctrl+V',
+				    -underline	 => 0);
+
+	$cm_verify = $cmds->command(-label	 => 'Summarize Problems',
+				    -command	 => [\&cmds_verify, 1],
+				    -underline	 => 0);
+
+	$cmds->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-n>',\&cmds_create);
+	$wm->bind('<Control-Key-d>',\&cmds_delete);
+	$wm->bind('<Control-Key-e>',\&cmds_modify);
+	$wm->bind('<Control-Key-m>',\&cmds_merger);
+	$wm->bind('<Control-Key-v>',\&cmds_verify);
+
+	##################################################
+	#
+	# Add the Rollrecs menu entries.
+	#
+	$rr_selall = $rrcs->command(-label => 'Select All Rollrecs',
+			            -command => \&rrcs_selall,
+			            -accelerator => 'Ctrl+A',
+			            -underline => 0);
+	$rr_raiser = $rrcs->command(-label => 'Reveal Rollrec Edit Windows',
+			            -command => \&rrcs_raiser,
+			            -accelerator => 'Ctrl+R',
+			            -underline => 0);
+	$rr_closeall = $rrcs->command(-label =>'Close All Rollrec Edit Windows',
+			              -command => \&rrcs_closeall,
+			              -accelerator => 'Ctrl+K',
+			              -underline => 0);
+
+	$rrcs->pack(-side => 'left');
+
+	$wm->bind('<Control-Key-a>',\&rrcs_selall);
+	$wm->bind('<Control-Key-k>',\&rrcs_closeall);
+	$wm->bind('<Control-Key-r>',\&rrcs_raiser);
+
+	##################################################
+	#
+	# Add the Options menu entries.
+	#
+	$tog_ignwarn = $opts->command(-label => $IGNORE_ON,
+			              -command => \&toggle_ignwarn,
+			              -underline => 0);
+	$opts->pack(-side => 'left');
+
+	$mergefilter = 1;
+	$tog_mergefilt = $opts->command(-label => $FILTER_OFF,
+					-command => \&toggle_mergefilt,
+					-underline => 0);
+	$opts->pack(-side => 'left');
+
+	$opts->command(-label => 'Columns in Button Window',
+		       -command => [\&set_btncols, 0],
+		       -underline => 0);
+	$opts->pack(-side => 'left');
+
+
+	#
+	# Set the menu labels based on default values and options.
+	#
+	$givewarnings = !$givewarnings;
+	toggle_ignwarn();
+
+	##################################################
+	#
+	# Add the Help menu entries.
+	#
+	$hm_help = $help->command(-label => 'Help',
+			          -command => \&help_help,
+			          -accelerator => 'Ctrl+H',
+			          -underline => 0);
+	$help->pack(-side => 'right');
+
+	$wm->bind('<Control-Key-h>',\&help_help);
+
+	##################################################
+	#
+	# Create a line holding the current rollrec filename.
+	#
+
+	$curfile = $rrfl->Label(-text => "Editing Rollrec File:  ");
+	$curfile->pack(-side => 'left');
+	$curfile = $rrfl->Label(-textvariable => \$title);
+	$curfile->pack(-side => 'left');
+	$rrfl->pack(-side => 'top', -fill => 'x');
+
+	##################################################
+	#
+	# Create a listbox to hold the button window. 
+	#
+	buildtable(42);
+
+	#
+	# Create a line holding the current rollrec filename.
+	#
+	$nulline = $null->Label(-text => " ");
+	$nulline->pack();
+	$null->pack(-side => 'top', -fill => 'x');
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	buildtable()
+#
+# Purpose:	Rebuild the rollrec name table.  This also re-reads the
+#		current rollrec file, so the list of rollrec names may
+#		increase or shrink depending on the state of that file.
+#
+sub buildtable
+{
+	my $readflag = shift;			# Rollrec-read flag.
+
+	my $cnt = 0;				# Count of rollrec names added.
+
+	#
+	# Create a brand new table.
+	#
+	maketable();
+
+	#
+	# Re-read the list of rollrec names.
+	#
+	readrrf($rrfile,1) if($readflag);
+
+	#
+	# Ensure the rollrec name list is sorted.
+	#
+	@rrnames = sort(@rrnames);
+
+	#
+	# Re-populate and update the table.
+	#
+	for(my $ind = 0; $ind < $numrrnames; $ind++)
+	{
+		my $btn;				# Button widget.
+
+		my $row;				# Cell's row index.
+		my $col;				# Cell's column index.
+
+		#
+		# Get the column and row indices.
+		#
+		($col,$row) = ind2cr($ind);
+
+		$btn = $rrnametab->Button(-text => "$rrnames[$ind]",
+					  -font => $font,
+					  -anchor => 'w',
+					  -state  => 'normal',
+					  -command => [\&rrname_toggle,
+						       $ind],
+					  -background => $RRTAB_UNSEL);
+
+		$rrnametab->put($row,$col,$btn);
+	}
+
+	$rrnametab->update();
+
+	#
+	# Pack it all up.
+	#
+	$rrnametab->pack(-fill => 'both', -expand => 1);
+	$body->pack(-fill => 'both', -expand => 1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      rrname_select()
+#
+# Purpose:      A rollrec name's button has been pushed.  Figure out what
+#		to do with it...
+#
+sub rrname_select
+{
+	my $rrind = shift;			# Rollrec's name index.
+
+	my $btn;				# Selected button.
+
+	#
+	# Get the rollrec's button.
+	#
+	$btn = getbutton($rrind);
+
+	#
+	# ... and set the button's color.
+	#
+	$btn->configure(-activebackground => $RRTAB_SEL, -background => $RRTAB_SEL);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      rrname_deselect()
+#
+# Purpose:      A rollrec name's button has been pushed.  Figure out what
+#		to do with it...
+#
+sub rrname_deselect
+{
+	my $rrind = shift;			# Rollrec's name index.
+
+	my $btn;				# Selected button.
+
+	#
+	# Get the rollrec's button.
+	#
+	$btn = getbutton($rrind);
+
+	#
+	# ... and set the button's color.
+	#
+	$btn->configure(-activebackground => $RRTAB_UNSEL, -background => $RRTAB_UNSEL);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      rrname_toggle()
+#
+# Purpose:      A rollrec name's button has been pushed.  Figure out what
+#		to do with it...
+#
+sub rrname_toggle
+{
+	my $rrind = shift;			# Rollrec's name index.
+
+	my $rowind;				# Cell's row index.
+	my $colind;				# Cell's column index.
+
+	my $btn;				# Selected button.
+	my $bgclr;				# New button background color.
+
+	#
+	# Get the rollrec's button.
+	#
+	$btn = getbutton($rrind);
+
+	#
+	# Choose an appropriate background color given the button's
+	# current state...
+	#
+	$bgclr = $btn->cget(-background);
+	$bgclr = ($bgclr eq $RRTAB_SEL) ? $RRTAB_UNSEL : $RRTAB_SEL;
+
+	#
+	# ... and set the button's color.
+	#
+	$btn->configure(-activebackground => $bgclr, -background => $bgclr);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      getbutton()
+#
+# Purpose:      Return a rollrec's button widget given the name's index into
+#		@rrnames.
+#
+sub getbutton
+{
+	my $rrind = shift;			# Rollrec's name index.
+
+	my $rowind;				# Cell's row index.
+	my $colind;				# Cell's column index.
+
+	#
+	# Get the column and row indices.
+	#
+	($colind,$rowind) = ind2cr($rrind);
+
+	#
+	# Return the proper button widget.
+	#
+	return($rrnametab->get($rowind,$colind));
+}
+
+#---------------------------------------------------------------------------
+# Routine:      selected_rrnames()
+#
+# Purpose:      Return a list of the selected rollrec names buttons.
+#
+sub selected_rrnames
+{
+	my @selected = ();			# Selected rollrec names.
+
+	my $col;				# Column index.
+	my $row;				# Row index.
+	my $btn;				# Rollrec button.
+
+	for(my $ind=0; $ind < $numrrnames; $ind++)
+	{
+		($col,$row) = ind2cr($ind);
+		$btn = $rrnametab->get($row,$col);
+
+		push @selected, $ind  if($btn->cget(-background) eq $RRTAB_SEL);
+	}
+
+	return(sort(@selected));
+}
+
+#---------------------------------------------------------------------------
+# Routine:      ind2cr()
+#
+# Purpose:      Convert a rollrec name table index to its table rows and
+#		column indices.
+#
+sub ind2cr
+{
+	my $nind = shift;				# Rollrec name index.
+	my $col;					# Column index.
+	my $row;					# Row index.
+
+	$col = int($nind / $numrows);
+	$row = $nind % $numrows;
+
+	return($col,$row);
+}
+
+#---------------------------------------------------------------------------
+# Routine:      maketable()
+#
+# Purpose:      Create the rollrec name table.
+#
+sub maketable
+{
+	#
+	# Don't do anything if we don't have any rollrec names.
+	#
+	return if($numrrnames == 0);
+
+	#
+	# Calculate the size of the button table.
+	#
+	if($numrrnames != 0)
+	{
+		$numrows = int($numrrnames / $columncount);
+		$numrows++ if(($numrrnames % $columncount) != 0);
+
+		$numcols = $columncount;
+	}
+
+	#
+	# Destroy the rollrec-name table's widgets.
+	#
+	if($rrnametab)
+	{
+		$rrnametab->clear;
+		$rrnametab->destroy;
+	}
+
+	#
+	# Create the new button table.
+	#
+	$rrnametab = $body->Table(-rows		=> $numrows,
+				  -columns	=> $numcols,
+				  -scrollbars	=> 'e',
+				  -relief	=> 'raised',
+				  -borderwidth	=> 1,
+				  -fixedrows	=> 0,
+				  -takefocus	=> 1,
+			         );
+
+}
+
+##############################################################################
+#
+# Menu widget interface routines.
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	file_open()
+#
+sub file_open
+{
+	my $fowin;					# File-open widget.
+	my $newfile;					# New file name.
+
+	#
+	# Warn the user if this file has been modified.  We'll also give
+	# the user a chance to save the file, not save the file, or cancel
+	# the process of opening the new file.
+	#
+	if($modified)
+	{
+		my $dlg;				# Warning dialog widget.
+		my $ret;				# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$curnode has been modified; save before proceeding?",
+				   -buttons => ["Save","Don't Save","Cancel"]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Cancel");
+
+		keyrec_close() if($ret eq "Save");
+	}
+
+	#
+	# Prompt for the new file.  Return to our caller if nothing was chosen.
+	#
+	$fowin = $wm->FileSelect(-directory => '.' );
+	$newfile = $fowin->Show;
+	return if($newfile eq "");
+
+	#
+	# Save the new filename and its node.
+	#
+	$rrfile = $newfile;
+	$curnode = getnode($rrfile);
+	settitle($curnode);
+
+	#
+	# Read the new keyrec file.
+	#
+	readrrf($rrfile);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_save()
+#
+sub file_save
+{
+	return if(!$modified);
+
+	#
+	# Save and re-open the rollrec file.
+	#
+	rollrec_close();
+	readrrf($rrfile);
+
+	#
+	# Mark the rollrecs as saved.
+	#
+	$modified = 0;
+	$modset = 0;
+	rrsaved();
+
+	#
+	# Disable the undo menu option, reset our undo stack, and mark
+	# the file as unmodified.
+	#
+	$em_undo->configure(-state => 'disabled');
+	@undo_stack = ();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_saveas()
+#
+sub file_saveas
+{
+	my $fowin;					# File-open widget.
+	my $newfile;					# New file's name.
+
+	#
+	# Prompt for the new file.
+	#
+	$fowin = $wm->FileSelect(-directory => '.' );
+	$newfile = $fowin->Show;
+	return if($newfile eq "");
+
+	#
+	# Make sure the user *really* wants to overwrite an existing file.
+	# Continue if they do, return if they don't.
+	#
+	if(-e $newfile)
+	{
+		my $dlg;				# Warning dialog widget.
+		my $ret;				# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$newfile already exists; overwrite?",
+				   -buttons => ["Overwrite","Cancel"]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Cancel");
+	}
+
+	#
+	# Save the file.
+	#
+	rollrec_saveas($newfile);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	file_quit()
+#
+sub file_quit
+{
+	#
+	# Destroy the rollrec name table's widgets.
+	#
+	if($rrnametab)
+	{
+		$rrnametab->clear;
+		$rrnametab->destroy;
+	}
+
+	#
+	# Warn the user if this file has been modified.  We'll also give
+	# the user a chance to save the file, not save the file, or cancel
+	# the process of opening the new file.
+	#
+	if($modified)
+	{
+		my $dlg;				# Warning dialog widget.
+		my $ret;				# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$curnode has been modified; save before proceeding?",
+				   -buttons => ["Save","Don't Save","Cancel"]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Cancel");
+
+		rollrec_close() if($ret eq "Save");
+	}
+	else
+	{
+		rollrec_discard();
+	}
+
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	edit_undo()
+#
+sub edit_undo
+{
+	my $undohash;				# First hash from undo stack.
+
+	my $type;				# Undo type.
+	my $op;					# Undo operation.
+	my $field;				# Undo field.
+	my $value;				# Undo value.
+
+	#
+	# Ensure we have something to undo.
+	#
+	return if(@undo_stack == 0);
+
+	#
+	# Get the undo entry fields.
+	#
+	$undohash = shift @undo_stack;
+	$type  = $undohash->{'type'};
+	$op    = $undohash->{'op'};
+	$field = $undohash->{'field'};
+	$value = $undohash->{'value'};
+
+	#
+	# Undo based on the operation.  This means that creates are deleted,
+	# deletes are re-created, and modifies are returned to the old ways.
+	#
+	if($op eq "create")
+	{
+		my @signset;			# Signing set's keyrecs.
+
+		#
+		# Since we can only create signing sets, that's the only
+		# create operation we'll be able to undo.
+		#
+		if($type eq "signing_set")
+		{
+			#
+			# Delete the signing set name from each keyrec
+			# in the set.
+			#
+			@signset = keyrec_signsets($field);
+			foreach my $kr (@signset)
+			{
+				keyrec_signset_delkey($field,$kr);
+			}
+
+			#
+			# Delete the signing set name from our list of names.
+			#
+			for(my $ind=0; $ind < @ssnames; $ind++)
+			{
+				if($ssnames[$ind] eq $field)
+				{
+					splice @ssnames, $ind, 1;
+					last;
+				}
+			}
+		}
+
+	}
+	elsif($op eq "delete")
+	{
+		my @signset;			# Signing set's keyrecs.
+
+		#
+		# If the signing set was deleted, we'll add the signing set
+		# to each keyrec in the set.
+		# If the keyrec was deleted, we'll add each signing set in
+		# the record to the named keyrec.
+		#
+		if($type eq "signing_set")
+		{
+			#
+			# Add the signing set name to each keyrec in the set.
+			#
+			@signset = split / /, $value;
+			foreach my $kr (sort(@signset))
+			{
+				keyrec_signset_addkey($field,$kr);
+			}
+
+			#
+			# Add the new set's name to the list of signing sets.
+			#
+			push @ssnames, $field;
+			@ssnames = sort(@ssnames);
+		}
+		elsif($type eq "keyrec")
+		{
+			#
+			# Add each signing set name to the keyrec.
+			#
+			@signset = split / /, $value;
+
+			foreach my $ssn (@signset)
+			{
+				keyrec_signset_addkey($ssn,$field);
+			}
+
+			#
+			# Add the keyrec's set list back to the keyrec list.
+			#
+			$key_lists{$field} = $value;
+			push @krnames, $field;
+			@krnames = sort(@krnames);
+		}
+
+	}
+	elsif($op eq "modify")
+	{
+		#
+		# Handle the modify command for signing sets.
+		#
+		if($type eq "signing_set")
+		{
+			my @keylist;		# List of keys.
+			my $newlist;		# Keys to be replaced.
+
+			#
+			# Delete the keys from the signing set.
+			#
+			$newlist = keyrec_recval($field,'keys');
+			@keylist = split / /, $newlist;
+			foreach my $key (@keylist)
+			{
+				keyrec_signset_delkey($field,$key);
+			}
+
+			#
+			# Restore the old keys to the signing set.
+			#
+			@keylist = split / /, $value;
+			foreach my $key (@keylist)
+			{
+				keyrec_signset_addkey($field,$key);
+			}
+		}
+		elsif($type eq "keyrec")
+		{
+			#
+			# Handle the modify command for keys.
+			#
+			my $kk = $field;		# Key we're undoing.
+
+			#
+			# Go through all the signing sets to see which need
+			# an undo operation.
+			#
+			foreach my $set (keyrec_signsets())
+			{
+				my $kfound;		# Key-found flag.
+				my $sfound = 0;		# Set-found flag.
+				my @undosets = split / /, $value;
+
+				#
+				# Figure out if this set holds this key.
+				#
+				$kfound = keyrec_signset_haskey($set,$kk);
+
+				#
+				# Go through the undo set to see if it
+				# contains this set.
+				#
+				foreach my $sset (@undosets)
+				{
+					if($set eq $sset)
+					{
+						$sfound = 1;
+						last;
+					}
+				}
+
+				#
+				# If the set is in the undo set and it doesn't
+				# have the key, add it back in.
+				# If the set is not in the undo set and it has
+				# the key, take it back out.
+				#
+				if($sfound)
+				{
+					if(!$kfound)
+					{
+						keyrec_signset_addkey($set,$kk);
+					}
+				}
+				else
+				{
+					if($kfound)
+					{
+						keyrec_signset_delkey($set,$kk);
+					}
+				}
+			}
+		}
+	}
+
+	#
+	# Disable the undo menu option if this was the last undo item.
+	#
+	$em_undo->configure(-state => 'disabled') if(@undo_stack == 0);
+
+	#
+	# Update the window and decrement our modifications counter.
+	#
+	$modified--;
+	settitle($curnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	undo_add()
+#
+sub undo_add
+{
+	my %undo = ();					# Undo hash.
+
+	#
+	# Add the arguments to our undo hash.
+	#
+	$undo{'type'}	= shift;
+	$undo{'op'}	= shift;
+	$undo{'field'}	= shift;
+	$undo{'value'}	= shift;
+
+	#
+	# Add the undo hash to the beginning of the undo stack.
+	#
+	unshift @undo_stack, \%undo;
+
+	#
+	# Make sure the undo menu option is enabled.
+	#
+	$em_undo->configure(-state => 'normal');
+
+	return;
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_create()
+#
+sub cmds_create
+{
+	my $dlg;					# Dialog box.
+	my $lab;					# Label widget.
+	my $ent;					# Entry widget.
+	my $ret;					# Dialog box return.
+
+	my $rrn;					# New rollrec's name.
+
+# print "cmds_create:  down in New Rollrec\n";
+
+	#
+	# Create a new dialog box to get the name of the new rollrec entry.
+	#
+	$dlg = $wm->DialogBox(-title => 'New Rollrec Name',
+			      -buttons => ["Create", "Cancel" ]);
+
+	#
+	# Add a description...
+	#
+	$lab = $dlg->add('Label', -text => 'Enter new rollrec name:  ');
+	$lab->pack(-side => 'left');
+
+	#
+	# ... and a text entry slot, focus on the entry ...
+	#
+	$ent = $dlg->add('Entry');
+	$ent->pack(-side => 'left');
+	$dlg->configure(-focus => $ent);
+
+	#
+	# ... mix, stir, and *voila*!  We've got a dialog box.
+	#
+	$ret = $dlg->Show();
+
+	#
+	# Drop out if the user changed their mind.
+	#
+	return if($ret eq "Cancel");
+
+	#
+	# Get the user's requested name.
+	#
+	$rrn = $ent->get();
+
+	#
+	# Give a warning if this rollrec already exists.
+	#
+	if(rollrec_exists($rrn,'zonefile'))
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "Rollrec $rrn already exists",
+				   -buttons => ["Re-enter Name", "Cancel" ]);
+		$ret = $dlg->Show();
+
+		#
+		# Drop out if the user changed their mind.
+		#
+		return if($ret eq "Cancel");
+
+		#
+		# Let the user try again.
+		#
+		cmds_create();
+	}
+
+	#
+	# Set up an edit window for the zone name.
+	#
+	editwindow($rrn,1);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_delete()
+#
+sub cmds_delete
+{
+	my @selected = ();			# Selected rollrec indices.
+	my @selnames = ();			# Selected rollrec names
+	my $numsel;				# Number of selected rollrecs.
+
+	my $ret;				# Warning response.
+
+	my $dlg;				# Warning dialog widget.
+	my $nametab;				# Name table.
+	my $lab;				# Label for table.
+	my $rowind = 0;				# Name table row index.
+
+# print "cmds_delete:  down in Delete Selected Rollrecs\n";
+
+	#
+	# Get the list of selected rollrec indices.
+	#
+	@selected = selected_rrnames();
+	$numsel = @selected;
+
+	#
+	# Build the dialog box.
+	#
+	$dlg = $wm->DialogBox(-title	=> 'Delete Warning',
+			      -buttons	=> ["Delete", "Cancel" ]);
+
+	#
+	# Add a description.
+	#
+	$lab = $dlg->add('Label', -text => '   Delete the following rollrecs:');
+	$lab->pack(-anchor => 'w', -side => 'top');
+
+	#
+	# Build a table to hold the rollrec names.
+	#
+	$nametab = $dlg->Table(-rows		=> $numsel,
+			       -columns		=> 1,
+			       -relief		=> 'raised',
+			       -scrollbars	=> '',
+			       -borderwidth	=> 1,
+			       -fixedrows	=> 0,
+			       -takefocus	=> 1,
+			      );
+
+	#
+	# Add the selected rollrec names to the table.
+	#
+	foreach my $ind (sort {$a <=> $b} @selected)
+	{
+		my $txt;				# Label text.
+
+		$txt = "    $rrnames[$ind]";
+
+		$lab = $nametab->Label(-text => $txt,-anchor => 'w');
+		$lab->pack(-fill => 'x', -side => 'top');
+
+		$nametab->put($rowind,0,$lab);
+		$rowind++;
+	}
+
+	#
+	# Pack the name table.
+	#
+	$nametab->pack(-side => 'top');
+
+	#
+	# Display the dialog box.
+	#
+	$ret = $dlg->Show();
+
+	#
+	# Check for a "don't do this" response.
+	#
+	return if($ret eq "Cancel");
+
+	#
+	# Delete and deselect the selected rollrecs.
+	#
+	foreach my $rrind (sort {$a <=> $b} @selected)
+	{
+		rollrec_del($rrnames[$rrind]);
+		rrname_deselect($rrind);
+	}
+
+	#
+	# Delete the selected rollrec names from the list of rollrecs.
+	#
+	foreach my $rrind (sort {$b <=> $a} @selected)
+	{
+		splice @rrnames, $rrind, 1;
+		$numrrnames--;
+	}
+
+	#
+	# Rebuild the button table.
+	#
+	buildtable(0);
+
+	#
+	# Set the modified flag.
+	#
+	$modified++;
+	settitle($title);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_modify()
+#
+# Purpose:	This routine creates edit windows for the selected rollrecs.
+#
+sub cmds_modify
+{
+	my @selected = ();			# Selected rollrec names.
+	my $numsel;				# Number of selected rollrecs.
+
+# print "cmds_modify:  down in Edit Selected Rollrecs\n";
+
+	#
+	# Get the list of selected rollrec names.
+	#
+	@selected = selected_rrnames();
+	$numsel = @selected;
+
+	#
+	# Create the edit windows.
+	#
+	foreach my $rrind (sort(@selected))
+	{
+		editwindow($rrnames[$rrind],0);
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_merger()
+#
+# Purpose:	This routine merges two rollrec files.
+#
+sub cmds_merger
+{
+	my $curfile = $rrfile;			# Current rollrec file.
+	my $newfile;				# New rollrec file.
+
+	my @curnames = ();			# Rollrec names from cur file.
+	my %curnames = ();			# Rollrec name hash -- cur file.
+	my @newnames = ();			# Rollrec names from new file.
+
+	my @dupnames = ();			# Duplicated rollrec names.
+
+	my %currrs = ();			# Saved rollrecs from cur file.
+	my %newrrs = ();			# Saved rollrecs from new file.
+
+	my $fswin;				# FileSelect window widget.
+	my %fsopts;				# Options for FileSelect.
+	my $name;				# Rollrec name.
+	my $rref;				# Rollrec reference.
+
+# print "cmds_merger:  down in Merge Rollrec Files\n";
+
+	#
+	# Ensure that the currently loaded rollrec matches the version on
+	# disk.  If not, don't let the merge happen.
+	#
+	if($modified)
+	{
+		errorbox_multi("$curfile has been modified.  Unable to merge until changes have been saved");
+		return;
+	}
+
+	#
+	# Save the rollrec data from the currently open rollrec file.
+	#
+	@curnames = rollrec_names();
+	foreach $name (@curnames)
+	{
+		$rref = rollrec_fullrec($name);
+		$currrs{$name} = $rref;
+		$curnames{$name} = 1;
+	}
+
+	#
+	# Set up options for FileSelect.
+	#
+	%fsopts = (
+			-directory => '.',
+			-filelabel => 'File To Be Merged'
+		  );
+	$fsopts{'-filter'} = '*.rrf' if($mergefilter);
+
+	#
+	# Get the name of the file to be merged with the current file.
+	# We'll call this the "new" file.
+	#
+	$fswin = $wm->FileSelect(%fsopts);
+	$newfile = $fswin->Show;
+	return if($newfile eq '');
+
+	#
+	# Read the new file.  If we couldn't read it, we'll put up a dialog
+	# box explaining the problem.
+	#
+	rollrec_close();
+	if(rollrec_read($newfile) < 0)
+	{
+		my $curnode = getnode($newfile);
+
+		errorbox_multi("Unable to read rollrec file $curnode.  Check to ensure the file exists and is readable.\nComplete path - $newfile");
+		return;
+	}
+
+	#
+	# Save the rollrec data from the new rollrec file.
+	#
+	@newnames = rollrec_names();
+	foreach $name (@newnames)
+	{
+		$rref = rollrec_fullrec($name);
+		$newrrs{$name} = $rref;
+	}
+
+	#
+	# Check for overlapping names in the two rollrecs.
+	#
+	foreach $name (@newnames)
+	{
+		push @dupnames, $name  if(defined($curnames{$name}));
+	}
+
+	#
+	# Re-read the original file.
+	#
+	rollrec_close();
+	rollrec_read($rrfile);
+
+	#
+	# If we've got any duplicate names, we'll report them and let the
+	# user decide whether or not to continue.
+	#
+	if(@dupnames)
+	{
+		my $ret;				# Dialog's value.
+
+		$ret = dbx_dups(@dupnames);
+
+		return if($ret eq "Cancel");
+	}
+
+	#
+	# Add the non-overlapping rollrecs to the current rollrec file.
+	#
+	foreach $name (@newnames)
+	{
+		my $rref;				# Ref to rollrec.
+
+		#
+		# Skip the overlapping rollrecs.
+		#
+		next if(defined($curnames{$name}));
+
+		#
+		# Add rollrec to the in-memory version of the rollrec file.
+		#
+		$rref = $newrrs{$name};
+		rollrec_add($rref->{'rollrec_type'},$name,$rref);
+	}
+
+	#
+	# Rebuild the button table.
+	#
+	@rrnames = rollrec_names();
+	$numrrnames = @rrnames;
+	buildtable(0);
+
+	#
+	# Set the modified flag.
+	#
+	$modified++;
+	settitle($title);
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cmds_verify()
+#
+# Purpose:	This routine verifies a rollrec file.  If the summary flag
+#		was given, then a dialog box will be created that contains
+#		the names and error counts of each bad rollrec.  If the
+#		summary flag wasn't given, then an edit window will be
+#		put up for each bad rollrec.
+#
+sub cmds_verify
+{
+	my $summary = shift;			# Summary-only flag.
+
+	my %errcnts = ();			# Counts of errors.
+	my $errcnt  = 0;			# Rollrecs with errors.
+
+	my $dbx;				# Dialog box.
+	my $rrtab;				# Bad rollrec table.
+	my $lab;				# Label for table.
+	my $rowind = 0;				# Error table row index.
+
+	my $errrows;				# Rows in table.
+	my $sbars  = 'e';			# Scrollbars.
+
+# print "cmds_verify:  down in Verify Rollrec File\n";
+
+	#
+	# See if any rollrecs have problems.
+	#
+	foreach my $rrn (reverse(sort(@rrnames)))
+	{
+		my $errors = 0;			# Errors for rollrec.
+		my $warns  = 0;			# Warnings for rollrec.
+		my $problems;			# Errs and/or warns for rollrec.
+
+		#
+		# Check this rollrec.
+		#
+		($warns,$errors) = goodrollrec($rrn,0);
+
+		#
+		# Get the count of rollrec problems.  If there were any
+		# problems, add 'em to the error count hash.
+		#
+		$problems = $errors;
+		$problems += $warns if($givewarnings);
+		if($problems)
+		{
+			$errcnts{$rrn}{'warns'}  = $warns;
+			$errcnts{$rrn}{'errors'} = $errors;
+
+			$errcnt++;
+		}
+
+		#
+		# If there were problems and the user wants more than a
+		# summary, we'll put up an edit window for the rollrec
+		# and mark up its problem fields.
+		#
+		if($problems && !$summary)
+		{
+			editwindow($rrn,0);
+			goodrollrec($rrn,1);
+		}
+	}
+
+	#
+	# If there weren't any errors, we'll put up a dialog box saying so
+	# and then return once it's dismissed.
+	#
+	if($errcnt == 0)
+	{
+		$dbx = $wm->Dialog(-title   => 'Rollrecs Valid',
+				   -text    => "Rollrecs passed validity checks",
+				   -buttons => ["Done"]);
+		$dbx->Show();
+		return;
+	}
+
+	#
+	# Return if the user doesn't want an error summary.
+	#
+	return if(!$summary);
+
+	#
+	# Get the row count, which is the number of erring rollrecs plus
+	# a header row.
+	# If there's only a few rows, we'll dump the scrollbar.
+	#
+	$errrows = $errcnt + 1;
+	$sbars	= '' if($errrows < 4);
+
+	#
+	# Build a dialog box to hold an error summary.
+	#
+	$dbx = $wm->DialogBox(-title   => 'Rollrecs With Errors',
+			      -buttons => ["Done"]);
+
+	#
+	# Build a table to hold the rollrec names.
+	#
+	$rrtab = $dbx->Table(-rows		=> $errrows,
+			     -columns		=> 3,
+			     -relief		=> 'raised',
+			     -scrollbars	=> $sbars,
+			     -borderwidth	=> 1,
+			     -fixedrows		=> 0,
+			     -takefocus		=> 1,
+			    );
+
+	#
+	# Add some column headers.
+	#
+	$lab = $rrtab->Label(-text => 'Rollrec');
+	$rrtab->put($rowind,0,$lab);
+	$lab = $rrtab->Label(-text => 'Warnings');
+	$rrtab->put($rowind,1,$lab);
+	$lab = $rrtab->Label(-text => 'Errors');
+	$rrtab->put($rowind,2,$lab);
+	$rowind++;
+
+	#
+	# Add the selected rollrec names to the table.
+	#
+	foreach my $rrn (sort(keys(%errcnts)))
+	{
+		my $err = $errcnts{$rrn}{'errors'};
+		my $wrn = $errcnts{$rrn}{'warns'};
+
+		$lab = $rrtab->Label(-text => $rrn);
+		$rrtab->put($rowind,0,$lab);
+		$lab = $rrtab->Label(-text => $wrn);
+		$rrtab->put($rowind,1,$lab);
+		$lab = $rrtab->Label(-text => $err);
+		$rrtab->put($rowind,2,$lab);
+		$rowind++;
+	}
+
+	#
+	# Pack the error table.
+	#
+	$rrtab->pack(-side => 'top');
+
+	#
+	# Display the dialog box.
+	#
+	$dbx->Show();
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rrcs_selall()
+#
+# Purpose:	This routine selects/deselects all rollrec names.
+#		If any names are selected, the remainder will be selected.
+#		If all names are selected, they will all be deselected.
+#
+sub rrcs_selall
+{
+	my @selected = ();			# Selected rollrec names.
+
+# print "rrcs_selall:  down in Select All Rollrecs\n";
+
+	#
+	# Get the list of selected rollrec names.
+	#
+	@selected = selected_rrnames();
+
+	#
+	# If all the names are selected, we'll deselect everything.
+	# If not all the names are selected, we'll select them all.
+	#
+	if(@selected == $numrrnames)
+	{
+		#
+		# Unselect all names.
+		#
+		for(my $ind = 0; $ind < $numrrnames; $ind++)
+		{
+			rrname_deselect($ind);
+		}
+		$rr_selall->configure(-label => 'Select All Rollrecs');
+	}
+	else
+	{
+		#
+		# Select all names.
+		#
+		for(my $ind=0; $ind < $numrrnames; $ind++)
+		{
+			my $col;			# Column index.
+			my $row;			# Row index.
+			my $btn;			# Rollrec button.
+
+			($col,$row) = ind2cr($ind);
+			$btn = $rrnametab->get($row,$col);
+
+			rrname_select($ind)  if($btn->cget(-background) eq $RRTAB_UNSEL);
+		}
+		$rr_selall->configure(-label => 'Unselect All Rollrecs');
+
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rrcs_raiser()
+#
+# Purpose:	This routine brings the rollrec edit windows to the front.
+#
+sub rrcs_raiser
+{
+
+# print "rrcs_raiser:  down in Raise Rollrec Edit Windows\n";
+
+	#
+	# Raise the edit windows.
+	#
+	foreach my $rrn (reverse(sort(keys(%editwinds))))
+	{
+		$editwinds{$rrn}->raise;
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rrcs_closeall()
+#
+# Purpose:	This routine closes the selected rollrec edit windows.
+#		The rollrec's buttons are deselected as well.
+#
+sub rrcs_closeall
+{
+# print "rrcs_closeall:  down in Close All Selected Rollrecs\n";
+
+	#
+	# Destroy all edit windows and remove them from the edit-window list.
+	#
+	foreach my $rrn (sort(keys(%editwinds)))
+	{
+		editbegone($rrn);
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rrcs_closeone()
+#
+# Purpose:	This routine closes the current rollrec edit window.
+#		The rollrec's button is deselected as well.
+#
+sub rrcs_closeone
+{
+	my $rrn = shift;
+
+# print "rrcs_closeone:  down in Close Selected Rollrec\n";
+	editbegone($rrn);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	editwindow()
+#
+# Purpose:	This routine creates a new rollrec-edit window.
+#
+sub editwindow
+{
+	my $rrn = shift;			# Name of rollrec to edit.
+	my $newflag = shift;			# New-rollrec flag.
+
+	my $editwin;				# Edit window.
+	my $eframe;				# Edit frame.
+	my $edittab;				# Edit table.
+	my $etlen = @ET_LABELS;			# Row-length of table.
+
+	my $frm;				# Frame widget.
+	my $lab;				# Label widget.
+	my $ent;				# Entry widget.
+	my $rb;					# Radiobutton widget.
+	my $btn;				# Button widget.
+	my $casca;				# Cascading menu widget.
+
+	my $rrec;				# Rollrec reference.
+	my $llev;				# Logging level.
+
+# print "editwindow:  down in Edit Selected Rollrecs\n";
+
+	#
+	# If we've already got an edit window for this rollrec, we'll raise
+	# that window and return.
+	#
+	if(defined($editwinds{$rrn}))
+	{
+		$editwinds{$rrn}->focus;
+		return;
+	}
+
+	#
+	# Get this rollrec's data.
+	#
+	$rrec = rollrec_fullrec($rrn);
+
+	#
+	# If this is a new rollrec, we'll set some defaults.
+	#
+	if(!rollrec_exists($rrn))
+	{
+		$rrec->{'rollrec_type'}	 = 'roll';
+		$rrec->{'keyrec'}	 = "$rrn.krf";
+		$rrec->{'zonefile'}	 = "$rrn.signed";
+	}
+
+	#
+	# Add the rollrec's data to the %rollrecs hash.
+	#
+	$rollrecs{$rrn}{'administrator'} = $rrec->{'administrator'};
+	$rollrecs{$rrn}{'directory'}	 = $rrec->{'directory'};
+	$rollrecs{$rrn}{'display'}	 = $rrec->{'display'};
+	$rollrecs{$rrn}{'keyrec'}	 = $rrec->{'keyrec'};
+	$rollrecs{$rrn}{'loglevel'}	 = $rrec->{'loglevel'};
+	$rollrecs{$rrn}{'maxttl'}	 = $rrec->{'maxttl'};
+	$rollrecs{$rrn}{'rollrec_type'}	 = $rrec->{'rollrec_type'};
+	$rollrecs{$rrn}{'zonefile'}	 = $rrec->{'zonefile'};
+
+	#
+	# Set up the radio buttons' data areas for the record type and
+	# the display flag.
+	#
+	$editrbs{$rrn} = $rollrecs{$rrn}{'rollrec_type'} eq 'roll' ? 1 : 0;
+	if(!exists($rollrecs{$rrn}{'display'})	||
+	   !defined($rollrecs{$rrn}{'display'}))
+	{
+		$editdfs{$rrn} = -1;
+	}
+	elsif($rollrecs{$rrn}{'display'} == 0)
+	{
+		$editdfs{$rrn} = 0;
+	}
+	elsif($rollrecs{$rrn}{'display'} == 1)
+	{
+		$editdfs{$rrn} = 1;
+	}
+
+	#
+	# Create a new window to hold our edit session.  Bind up some
+	# key accelerators, too.
+	#
+	$editwin = MainWindow->new(-relief	=> 'raised',
+				   -title	=> "$rrn",
+				   -borderwidth => 1);
+
+	$editwin->bind('<Control-Key-q>', \&file_quit);
+	$editwin->bind('<Control-Key-w>', [\&editbegone, $rrn]);
+	$editwin->bind('<Control-Key-c>', \&rrcs_closeone);
+	$editwin->bind('<Control-Key-k>', \&rrcs_closeall);
+#	$editwin->bind('<Key-Return>',    [\&editsaver, $rrn, $newflag]);
+
+	#
+	# Now make the containers for the window.
+	#
+	$eframe = $editwin->Frame(-relief => 'raised', -borderwidth => 1);
+	$eframe->pack(-fill => 'x');
+
+	#
+	# Create a table to hold the rollrec data.
+	#
+	$edittab = $eframe->Table(-rows		=> $etlen,
+				  -columns	=> 2,
+				  -relief	=> 'raised',
+				  -scrollbars	=> '',
+				  -borderwidth	=> 1,
+				  -fixedrows	=> 0,
+				  -takefocus	=> 1,
+			         );
+
+	#----------------
+	#
+	# Set the field column.
+	#
+	for(my $ind = $ROW_FIRST; $ind <= $ROW_LAST; $ind++)
+	{
+		$lab = $eframe->Label(-text => $ET_LABELS[$ind],-anchor => 'w');
+		$lab->pack(-fill => 'x', -side => 'top');
+		$edittab->put($ind,$COL_FIELD,$lab);
+	}
+
+	#----------------
+	#
+	# Record type:  Add the stuff for the record type.
+	#
+	$frm = $eframe->Frame(-relief => 'raised', -borderwidth => 1);
+	$rb = $frm->Radiobutton(-text	   => 'Roll',
+				-variable => \$editrbs{$rrn},
+				-value	   => 1);
+	$rb->pack(-fill => 'x', -side => 'left');
+	$rb = $frm->Radiobutton(-text	   => 'Skip',
+				-variable => \$editrbs{$rrn},
+				-value	   => 0);
+	$rb->pack(-fill => 'x', -side => 'left');
+	$frm->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_TYPE,$COL_DATA,$frm);
+
+	#----------------
+	#
+	# Zonefile:  Add the stuff for the rollrec's zonefile.
+	#
+	$ent = $eframe->Entry(-textvariable => \$rollrecs{$rrn}{'zonefile'});
+	$ent->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_ZONEFILE,$COL_DATA,$ent);
+
+	#----------------
+	#
+	# Keyrec:  Add the stuff for the rollrec's keyrec.
+	#
+	$ent = $eframe->Entry(-textvariable => \$rollrecs{$rrn}{'keyrec'});
+	$ent->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_KEYREC,$COL_DATA,$ent);
+
+	#----------------
+	#
+	# Administrator:  Add the stuff for the rollrec's admin mail.
+	#
+	$ent = $eframe->Entry(-textvariable => \$rollrecs{$rrn}{'administrator'});
+	$ent->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_ADMIN,$COL_DATA,$ent);
+
+	#----------------
+	#
+	# Directory:  Add the stuff for the rollrec's directory.
+	#
+	$ent = $eframe->Entry(-textvariable => \$rollrecs{$rrn}{'directory'});
+	$ent->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_DIR,$COL_DATA,$ent);
+
+	#----------------
+	#
+	# Display:  Add the stuff for the rollrec's display flag.
+	#
+	$frm = $eframe->Frame(-relief => 'raised', -borderwidth => 1);
+	$rb = $frm->Radiobutton(-text	   => 'On',
+				-variable => \$editdfs{$rrn},
+				-value	   => 1);
+	$rb->pack(-fill => 'x', -side => 'left');
+	$rb = $frm->Radiobutton(-text	   => 'Off',
+				-variable => \$editdfs{$rrn},
+				-value	   => 0);
+	$rb->pack(-fill => 'x', -side => 'left');
+	$rb = $frm->Radiobutton(-text	   => 'Default',
+				-variable => \$editdfs{$rrn},
+				-value	   => -1);
+	$rb->pack(-fill => 'x', -side => 'left');
+	$frm->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_DISPLAY,$COL_DATA,$frm);
+
+	#----------------
+	#
+	# Logging level:  Add the stuff for the rollrec's log level.
+	#
+
+	#
+	# Get the label for the logging level's menu button.  If it's defined
+	# in the rollrec, we'll make sure we have the string value.  If we
+	# can't convert it, we'll use a dummy error value.  If it isn't
+	# defined in the rollrec, we'll use "default" for the button label.
+	#
+	if(defined($rollrecs{$rrn}{'loglevel'}))
+	{
+		$llev = rollmgr_logstr($rollrecs{$rrn}{'loglevel'});
+		if($llev eq '')
+		{
+			$llev = '<bad value in rollrec file>';
+		}
+	}
+	else
+	{
+		$llev = 'default';
+	}
+
+	#
+	# Create the menu button.
+	#
+	$ent = $eframe->Menubutton(-text    => $llev,
+				   -tearoff => 0);
+
+	#
+	# Add a new radiobutton for each logging level.
+	#
+	$casca = $ent->cascade(-label => '');
+	foreach $llev (rollmgr_loglevels())
+	{
+		$casca->radiobutton(-label    => "$llev",
+				    -variable => \$rollrecs{$rrn}{'loglevel'},
+				    -command  => [\&setloglvl, $ent, $llev]);
+	}
+
+	#
+	# Add a default entry.
+	#
+	$casca->radiobutton(-label    => "default",
+			    -variable => \$rollrecs{$rrn}{'loglevel'},
+			    -command  => [\&setloglvl, $ent, 'default']);
+
+	#
+	# Make it all available to the user.
+	#
+	$ent->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_LOG,$COL_DATA,$ent);
+
+	#----------------
+	#
+	# Max-TTL:  Add the stuff for the rollrec's maximum TTL.
+	#
+	$ent = $eframe->Entry(-textvariable => \$rollrecs{$rrn}{'maxttl'});
+	$ent->pack(-fill => 'x', -side => 'top');
+	$edittab->put($ROW_MAXTTL,$COL_DATA,$ent);
+
+	#----------------
+	#
+	# Done adding our data.  Do another pack, just for kicks.
+	#
+	$edittab->pack(-side => 'top');
+
+	#
+	# Add a button to dismiss the window.
+	#
+	$btn = $eframe->Button(-text	 => 'Save',
+			       -command => [\&editsaver, $rrn, $newflag]);
+	$btn->pack(-side => 'left', -fill => 'x', -expand => 1);
+	$btn = $eframe->Button(-text	 => 'Cancel',
+			       -command => [\&editbegone, $rrn]);
+	$btn->pack(-side => 'left', -fill => 'x', -expand => 1);
+
+	#
+	# Save the new edit window in the hash table of edit windows.
+	#
+	$editwinds{$rrn} = $editwin;
+	$edittabs{$rrn}  = $edittab;
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	setloglvl()
+#
+# Purpose:	Set the logging level label in an edit window's menu button.
+#
+sub setloglvl
+{
+	my $ent = shift;				# Menu label to change.
+	my $llev = shift;				# New menu label.
+
+	$ent->configure(-text => $llev);
+}
+
+##############################################################################
+#
+# Utility routines
+#
+##############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	readrrf()
+#
+sub readrrf
+{
+	my $rrf = shift;				# Rollrec file.
+	my @names;					# Rollrec names.
+
+	#
+	# If the specified file doesn't exist, ask the user if we should
+	# continue or quit.
+	#
+	if(! -e $rrf)
+	{
+		my $dlg;			# Warning dialog widget.
+		my $ret;			# Warning response.
+
+		$dlg = $wm->Dialog(-title => 'Warning',
+				   -text  => "$curnode does not exist",
+				   -buttons => ["Continue", "Quit" ]);
+		$ret = $dlg->Show();
+
+		return if($ret eq "Continue");
+
+		file_quit();
+	}
+
+	#
+	# Zap the old data.
+	#
+	@rrnames = ();
+
+	#
+	# Get data from the rollrec file.
+	#
+	rollrec_read($rrf);
+	@rrnames = rollrec_names();
+	$numrrnames = @rrnames;
+
+	#
+	# Initialize the rollrecs hash for each rollrec.
+	#
+	foreach my $rrn (@rrnames)
+	{
+		my $rrec;				# This rollrec's data.
+
+		#
+		# Get this rollrec's data.
+		#
+		$rrec = rollrec_fullrec($rrn);
+
+		#
+		# Add the rollrec's data to the %rollrecs hash.
+		#
+		$rollrecs{$rrn}{'administrator'} = $rrec->{'administrator'};
+		$rollrecs{$rrn}{'directory'}	 = $rrec->{'directory'};
+		$rollrecs{$rrn}{'display'}	 = $rrec->{'display'};
+		$rollrecs{$rrn}{'keyrec'}	 = $rrec->{'keyrec'};
+		$rollrecs{$rrn}{'loglevel'}	 = $rrec->{'loglevel'};
+		$rollrecs{$rrn}{'maxttl'}	 = $rrec->{'maxttl'};
+		$rollrecs{$rrn}{'rollrec_type'}	 = $rrec->{'rollrec_type'};
+		$rollrecs{$rrn}{'zonefile'}	 = $rrec->{'zonefile'};
+
+		#
+		# Set up the radio buttons' data areas for the record type and
+		# the display flag.
+		#
+		$editrbs{$rrn} = $rollrecs{$rrn}{'rollrec_type'} eq 'roll' ? 1 : 0;
+		if(!exists($rollrecs{$rrn}{'display'})	||
+		   !defined($rollrecs{$rrn}{'display'}))
+		{
+			$editdfs{$rrn} = -1;
+		}
+		elsif($rollrecs{$rrn}{'display'} == 0)
+		{
+			$editdfs{$rrn} = 0;
+		}
+		elsif($rollrecs{$rrn}{'display'} == 1)
+		{
+			$editdfs{$rrn} = 1;
+		}
+	}
+
+	#
+	# Reset the modified-keyrec file flag.
+	#
+	$modified = 0;
+	settitle($curnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	getnode()
+#
+# Purpose:	Get the node of a pathname.
+#
+sub getnode
+{
+	my $path = shift;				# Path to nodify.
+
+	my @pathelts;					# Path elements.
+	my $pathnode;					# Last path elements.
+
+	@pathelts = split /\//, $path;
+	$pathnode = pop @pathelts;
+
+	return($pathnode);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	cancelit()
+#
+# Purpose:	Destroy a subwindow.
+#
+sub cancelit
+{
+	$subwin->destroy();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	editsaver()
+#
+# Purpose:	Save a rollrec and get rid of its edit window.
+#
+sub editsaver
+{
+	my $rrn = shift;			# Name of rollrec to save.
+	my $newflag = shift;			# New-rollrec flag.
+
+# print STDERR "editsaver:  saver rollrec edits for $rrn\n";
+
+	$rollrecs{$rrn}{'display'} = $editdfs{$rrn};
+
+	#
+	# If this is a valid rollrec, we'll get rid of the edit window
+	# and save the data.  If this is a new rollrec, we'll also add
+	# a rollrec button to the main window.
+	#
+	if(goodrollrec($rrn,1))
+	{
+		#
+		# If this is a new rollrec, add the name to the rollrec
+		# list and then rebuild the main button table.
+		#
+		if($newflag)
+		{
+			push @rrnames, $rrn;
+print STDERR "editsaver:  adding $rrn to rrnames\n";
+			$numrrnames++;
+			buildtable(0);
+		}
+
+		#
+		# Get rid of the edit window and save the rollrec data.
+		#
+		editbegone($rrn);
+		saverollrec($rrn);
+
+	}
+
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	goodrollrec()
+#
+# Purpose:	Ensure that the rollrec has valid data.
+#
+#		The following fields may be empty:
+#			- administrator
+#			- directory
+#			- display
+#			- loglevel
+#			- maxttl
+#
+#		Error checks are:
+#			- empty administrator field
+#			- invalid logging level
+#			- non-positive maxttl
+#			- invalid display value
+#			- zone file is not a regular file
+#			- keyrec file is not a regular file
+#
+#		Warning checks are:
+#			- zone directory doesn't exist
+#			- zone directory isn't a directory
+#			- zone file doesn't exist
+#			- zone file isn't a regular file
+#			- keyrec file doesn't exist
+#			- keyrec file isn't a regular file
+#
+sub goodrollrec
+{
+	my $rrn = shift;			# Name of the rollrec.
+	my $upd = shift;			# Update-window flag.
+
+# print STDERR "goodrollrec:  down in  ($rrn)\n";
+
+	my $errors = 0;				# Error count.
+	my $warns = 0;				# Warning count.
+	my $problems = 0;			# Problem count.
+
+	my $admin;				# Administrator email address.
+	my $dispflag;				# Display flag.
+	my $krfile;				# Keyrec file.
+	my $loglevel;				# Logging level.
+	my $maxttl;				# Maximum TTL.
+	my $zonedir;				# Directory.
+	my $zonefile;				# Zonefile.
+
+	#
+	# Reset the message fields.
+	#
+	if($upd)
+	{
+		addmsg($rrn,$COL_FIELD,0,' ');
+		addmsg($rrn,$COL_DATA,0,' ');
+	}
+
+	#
+	# Strip all whitespace from the beginning and end of the fields.
+	#
+	foreach my $fld (@EDITFIELDS)
+	{
+		next if(!exists($rollrecs{$rrn}{$fld}) ||
+			($rollrecs{$rrn}{$fld} eq ''));
+		$rollrecs{$rrn}{$fld} =~ s/^[ \t]*//;
+		$rollrecs{$rrn}{$fld} =~ s/[ \t]*$//;
+	}
+
+	#
+	# Get the rollrec data.
+	#
+	$admin	  = $rollrecs{$rrn}{'administrator'};
+	$dispflag = $rollrecs{$rrn}{'display'};
+	$krfile	  = $rollrecs{$rrn}{'keyrec'};
+	$loglevel = $rollrecs{$rrn}{'loglevel'};
+	$maxttl	  = $rollrecs{$rrn}{'maxttl'};
+	$zonedir  = $rollrecs{$rrn}{'directory'};
+	$zonefile = $rollrecs{$rrn}{'zonefile'};
+
+	#
+	# Reset all the label colors.
+	#
+	if($upd)
+	{
+		fieldcolor($ROW_ZONEFILE,$rrn,$NORMALCOLOR);
+		fieldcolor($ROW_KEYREC,$rrn,$NORMALCOLOR);
+		fieldcolor($ROW_ADMIN,$rrn,$NORMALCOLOR);
+		fieldcolor($ROW_DIR,$rrn,$NORMALCOLOR);
+		fieldcolor($ROW_DISPLAY,$rrn,$NORMALCOLOR);
+		fieldcolor($ROW_LOG,$rrn,$NORMALCOLOR);
+		fieldcolor($ROW_MAXTTL,$rrn,$NORMALCOLOR);
+	}
+
+	#
+	# Check the zone file.
+	#
+	if($zonefile eq '')
+	{
+		errval($ROW_ZONEFILE,$rrn,"no zone file specified") if($upd);
+		$errors++;
+	}
+	else
+	{
+		if((!-e $zonefile) && $givewarnings)
+		{
+			warnval($ROW_ZONEFILE,$rrn,"zone file \"$zonefile\" does not exist") if($upd);
+			$warns++;
+		}
+		elsif((!-f $zonefile) && $givewarnings)
+		{
+			warnval($ROW_ZONEFILE,$rrn,"zone file \"$zonefile\" is not a regular file") if($upd);
+			$warns++;
+		}
+	}
+
+	#
+	# Check the keyrec file.
+	#
+	if($krfile eq '')
+	{
+		errval($ROW_KEYREC,$rrn,"no keyrec file specified") if($upd);
+		$errors++;
+	}
+	else
+	{
+		if((!-e $krfile) && $givewarnings)
+		{
+			warnval($ROW_KEYREC,$rrn,"keyrec file \"$krfile\" does not exist") if($upd);
+			$warns++;
+		}
+		elsif((!-f $krfile) && $givewarnings)
+		{
+			warnval($ROW_KEYREC,$rrn,"keyrec file \"$krfile\" is not a regular file") if($upd);
+			$warns++;
+		}
+	}
+
+	#
+	# No validity checks for the administrator.
+	#
+
+	#
+	# Check the directory.
+	#
+	if(exists($rollrecs{$rrn}{'directory'}))
+	{
+		if(($rollrecs{$rrn}{'directory'}) ne '')
+		{
+			if(!-e $zonedir)
+			{
+				warnval($ROW_DIR,$rrn,"directory \"$zonedir\" does not exist") if($upd);
+				$warns++;
+			}
+			elsif(!-d $zonedir)
+			{
+				warnval($ROW_DIR,$rrn,"directory \"$zonedir\" is not a directory") if($upd);
+				$warns++;
+			}
+		}
+	}
+
+	#
+	# Make sure we've got a valid display flag.
+	#
+	if(defined($dispflag))
+	{
+		if(($dispflag != 0) && ($dispflag != 1) && ($dispflag != -1))
+		{
+			errval($ROW_DISPLAY,$rrn,"invalid display flag \"$dispflag\"") if($upd);
+			$errors++;
+		}
+	}
+
+	#
+	# Make sure we've got a valid logging level.
+	#
+	if(exists($rollrecs{$rrn}{'loglevel'}))
+	{
+		if(($rollrecs{$rrn}{'loglevel'} ne '') &&
+		   ($rollrecs{$rrn}{'loglevel'} ne 'default'))
+		{
+			if(rollmgr_loglevel($loglevel,0) < 0)
+			{
+				errval($ROW_LOG,$rrn,"invalid loglevel \"$loglevel\"") if($upd);
+				$errors++;
+			}
+		}
+	}
+
+	#
+	# Make sure we've got a valid maximum TTL.
+	#
+	if(exists($rollrecs{$rrn}{'maxttl'}))
+	{
+		if($rollrecs{$rrn}{'maxttl'} ne '')
+		{
+			if($maxttl < 1)
+			{
+				errval($ROW_MAXTTL,$rrn,"invalid maxttl \"$maxttl\"") if($upd);
+				$errors++;
+			}
+		}
+	}
+
+	#
+	# If we found any errors or warnings, we'll add a message about them.
+	#
+	if($upd)
+	{
+		addmsg($rrn,$COL_FIELD,$errors,"error") if($errors);
+		addmsg($rrn,$COL_DATA,$warns,"warn") if($warns);
+	}
+
+	#
+	# Add the warning count to the error count if we shouldn't ignore
+	# warnings
+	#
+	$problems  = $errors;
+	$problems += $warns if($givewarnings);
+
+	#
+	# If we've found this rollrec is good, we'll make some adjustments.
+	#
+	if(!$errors)
+	{
+		#
+		# Delete the administrator if it's empty.
+		#
+		if($rollrecs{$rrn}{'administrator'} eq '')
+		{
+			delete $rollrecs{$rrn}{'administrator'};
+		}
+
+		#
+		# Delete the directory if it's empty.
+		#
+		if(($rollrecs{$rrn}{'directory'}) eq '')
+		{
+			delete $rollrecs{$rrn}{'directory'};
+		}
+
+		#
+		# Delete the loglevel if it's empty or the default was chosen.
+		#
+		if(($rollrecs{$rrn}{'loglevel'} eq '')	||
+		   ($rollrecs{$rrn}{'loglevel'} eq 'default'))
+		{
+			delete $rollrecs{$rrn}{'loglevel'};
+		}
+
+		#
+		# Delete the max-ttl if it's empty.
+		#
+		if($rollrecs{$rrn}{'maxttl'} eq '')
+		{
+			delete $rollrecs{$rrn}{'maxttl'};
+		}
+
+	}
+
+	return($warns,$errors) if(!$upd);
+	return(!$problems);
+}
+
+#-----------------------------------------------------------------------------
+# Routine:	saverollrec()
+#
+# Purpose:	Save the rollrec's data into the rollrec module data.
+#
+#
+sub saverollrec
+{
+	my $rrn = shift;			# Name of the rollrec.
+
+	my $typestr;				# Calculated rollrec type.
+
+# print STDERR "saverollrec:  down in  ($rrn)\n";
+
+	#
+	# Get the rollrec type from %editrbs.
+	#
+	$typestr = $editrbs{$rrn} ? "roll" : "skip";
+
+	#
+	# Get the display flag from %editdfs.
+	#
+	if(!exists($editdfs{$rrn}) || !defined($editdfs{$rrn}) ||
+	   ($editdfs{$rrn} == -1))
+	{
+		delete($rollrecs{$rrn}{'display'});
+	}
+	elsif($editdfs{$rrn} == 0)
+	{
+		$rollrecs{$rrn}{'display'} = 0;
+	}
+	elsif($editdfs{$rrn} == 1)
+	{
+		$rollrecs{$rrn}{'display'} = 1;
+	}
+
+	#
+	# Set the rollrec's type.
+	#
+	rollrec_rectype($rrn,$typestr);
+
+	#
+	# Save the fields into the rollrec itself.  If the field exists
+	# in %rollrecs{$rrn}, we'll save the value.  If the field does
+	#  not exist, we'll delete the field.
+	#
+	foreach my $field (@EDITFIELDS)
+	{
+		if(exists($rollrecs{$rrn}{$field}))
+		{
+			rollrec_setval($rrn,$field,$rollrecs{$rrn}{$field});
+		}
+		else
+		{
+			rollrec_delfield($rrn,$field);
+		}
+	}
+
+	#
+	# Mark this rollrec as having been modified.
+	#
+	rrmodified($rrn);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rrmodified()
+#
+# Purpose:	Mark a rollrec as having been modified.
+#
+sub rrmodified
+{
+	my $rrn = shift;				# Modified rollrec.
+
+	#
+	# Increment the modified-keyrec flag.
+	#
+	$modified++;
+	$modified{$rrn} = 1;
+
+	settitle($title);
+
+	#
+	# Re-populate and update the table.
+	#
+	for(my $ind = 0; $ind < $numrrnames; $ind++)
+	{
+		my $row;				# Cell's row index.
+		my $col;				# Cell's column index.
+
+		my $btn;				# Button widget.
+		my $name;				# Label of button.
+
+		#
+		# Get the column and row indices.
+		#
+		($col,$row) = ind2cr($ind);
+
+		#
+		# Get this button's label.
+		#
+		$btn = $rrnametab->get($row,$col);
+		$name = $btn->cget(-text);
+
+		#
+		# Modify the name of just the button we're looking for.
+		#
+		next if($name ne $rrn);
+		$btn->configure(-text => "* $name");
+	}
+
+}
+
+#---------------------------------------------------------------------------
+# Routine:	rrsaved()
+#
+# Purpose:	Mark the rollrecs as having been saved.
+#
+sub rrsaved
+{
+	#
+	# Re-populate and update the table.
+	#
+print "rrsaved:  numrrnames - $numrrnames\n";
+	for(my $ind = 0; $ind < $numrrnames; $ind++)
+	{
+		my $row;				# Cell's row index.
+		my $col;				# Cell's column index.
+
+		my $btn;				# Button widget.
+		my $name;				# Label of button.
+
+		#
+		# Get the column and row indices.
+		#
+		($col,$row) = ind2cr($ind);
+
+		#
+		# Get this button's label.
+		#
+print "rrsaved($ind):  row/col - $row/$col\n";
+		$btn = $rrnametab->get($row,$col);
+		$name = $btn->cget(-text);
+		$name =~ s/^\* //;
+
+		#
+		# Skip buttons that haven't been modified.
+		#
+		next if(!$modified{$name});
+
+		#
+		# Modify the the button's label.
+		#
+		$btn->configure(-text => $name);
+	}
+
+	#
+	# Reset the modified-keyrec flag.
+	#
+	$modified = 0;
+	%modified = ();
+
+	settitle($title);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	errval()
+#
+# Purpose:	Take an error action.
+#
+sub errval
+{
+	my $row = shift;				# Errant rollrec's row.
+	my $rrn = shift;				# Errant rollrec's name.
+	my $msg = shift;				# Error message.
+
+#	print STDERR "errval:  <$rrn>\t$msg\n";
+
+	fieldcolor($row,$rrn,$ERRCOLOR);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	warnval()
+#
+# Purpose:	Take a warning action.
+#
+sub warnval
+{
+	my $row = shift;				# Errant rollrec's row.
+	my $rrn = shift;				# Errant rollrec's name.
+	my $msg = shift;				# Warning message.
+
+#	print STDERR "warnval:  <$rrn>\t$msg\n";
+
+	fieldcolor($row,$rrn,$WARNCOLOR);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	fieldcolor()
+#
+# Purpose:	Change the text color of a given edit window field.
+#
+sub fieldcolor
+{
+	my $row = shift;				# Rollrec's row.
+	my $rrn = shift;				# Rollrec's name.
+	my $clr = shift;				# New color.
+
+	my $tbl;					# Table to modify.
+	my $wij;					# Widget to modify.
+
+	#
+	# Get the label widget for the field.
+	#
+	$tbl = $edittabs{$rrn};
+	$wij = $tbl->get($row,$COL_FIELD);
+
+	#
+	# Turn the label widget's color.
+	#
+	$wij->configure(-foreground => $clr);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	addmsg()
+#
+# Purpose:	Add a message to one of the edit window's message columns.
+#		If the count parameter is zero, then we'll zap the column.
+#
+sub addmsg
+{
+	my $rrn = shift;				# Rollrec name.
+	my $col = shift;				# Column to modify.
+	my $cnt = shift;				# Thing count.
+	my $thing = shift;				# Thing.
+
+	my $tbl;					# Table to modify.
+	my $lab;					# New label.
+	my $str = ' ';					# Error message.
+
+	if($cnt)
+	{
+		$str = "$cnt $thing";
+		$str = $str . 's' if($cnt != 1);
+	}
+
+	$tbl = $edittabs{$rrn};
+	$lab = $tbl->Label(-text => $str, -anchor => 'w');
+	$lab->pack(-fill => 'x', -side => 'top');
+	$tbl->put($ROW_MSG,$col,$lab);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	toggle_ignwarn()
+#
+# Purpose:	Toggle on /off the "Ignore Edit Warnings" menu command.
+#
+#		If we're turning off edit warnings, we'll also go through
+#		any open edit windows and turn off any "warned" lines.
+#		Error lines will remain marked.
+#
+sub toggle_ignwarn
+{
+	if($givewarnings)
+	{
+		$givewarnings = 0;
+		$tog_ignwarn->configure(-label => $IGNORE_OFF);
+
+		#
+		# Turn off all the warning labels in all the edit windows.
+		#
+		foreach my $rrn (keys(%edittabs))
+		{
+			for(my $row = $ROW_FIRST; $row <= $ROW_LAST; $row++)
+			{
+				my $clr;		# Current row color.
+				my $wij;		# Row widget.
+
+				#
+				# Skip non-warning rows.
+				#
+				$wij = $edittabs{$rrn}->get($row,$COL_FIELD);
+				$clr = $wij->cget(-foreground);
+				next if($clr ne $WARNCOLOR);
+
+				#
+				# Change the label color.
+				#
+				fieldcolor($row,$rrn,$NORMALCOLOR);
+			}
+
+			addmsg($rrn,$COL_DATA,0,' ');
+		}
+	}
+	else
+	{
+		$givewarnings = 1;
+		$tog_ignwarn->configure(-label => $IGNORE_ON);
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	toggle_mergefilt()
+#
+# Purpose:	Toggle on /off the "Use Merge Filter" menu command.
+#
+sub toggle_mergefilt
+{
+	if($mergefilter)
+	{
+		$mergefilter = 0;
+		$tog_mergefilt->configure(-label => $FILTER_OFF);
+	}
+	else
+	{
+		$mergefilter = 1;
+		$tog_mergefilt->configure(-label => $FILTER_ON);
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	set_btncols()
+#
+# Purpose:	
+#
+sub set_btncols
+{
+	my $err = shift;				# Error flag.
+
+	my $dlg;					# Dialog widget.
+	my $lab;					# Label for dialog box.
+	my $ent;					# Entry for dialog box.
+
+	my $col;					# New column count.
+	my $ret;					# Dialog box return.
+
+	#
+	# Create the new dialog box.
+	#
+	$dlg = $wm->DialogBox(-title	=> 'Set Columns for Button Window',
+			      -buttons	=> ["Okay", "Cancel" ]);
+
+	#
+	# Add a label to the dialog.
+	#
+	$lab = $dlg->Label(-text => 'Enter New Column Count:');
+	$lab->pack(-side => 'left');
+
+	#
+	# Add a text entry slot and focus on the entry.
+	#
+	$ent = $dlg->add('Entry');
+	$ent->pack(-side => 'left');
+	$dlg->configure(-focus => $ent);
+
+	#
+	# Add a potential error location to the dialog.
+	#
+	$lab = $dlg->Label(-text => ' ');
+	$lab->pack(-side => 'bottom');
+	if($err)
+	{
+		$lab->configure(-text => "Count must be between 1 and $MAXCOLS",
+				-foreground => 'red')
+	}
+
+	#
+	# Show the dialog box and handle cancellations.
+	#
+	$ret = $dlg->Show();
+	return if($ret eq 'Cancel');
+
+	#
+	# Get the user's column size.
+	#
+	$col = $ent->get();
+
+	#
+	# If this is an invalid column count, give an error message and
+	# ask again.
+	#
+	set_btncols(1) if(($col < 1) || ($col > $MAXCOLS));
+
+	#
+	# Save the new column count and rebuild the table.
+	#
+	$columncount = $col;
+print "\nnew column count:  $columncount\n";
+	buildtable(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	editbegone()
+#
+# Purpose:	Destroy an edit window.  In addition to deleting the window
+#		itself, the rollrec is removed from several tables.  These
+#		tables are the list of edit windows (%editwinds), and the
+#		edit window radio buttons (%editrbs and %editdfs).
+#
+#		In some cases, this routine will be passed the edit window
+#		widget instead of the rollrec name.  If we couldn't find
+#		the argument in the edit-window hash, we'll look up the
+#		widget itself and recurse with the associated name.
+#
+sub editbegone
+{
+	my $rrname = shift;	# Name of rollrec whose editwin we'll destroy.
+	my $editwin;		# Edit window to destroy.
+
+# print STDERR "editbegone:  destroying edit window for $rrname\n";
+
+	#
+	# Don't do anything for a null name.
+	#
+	return if($rrname eq '');
+
+	#
+	# Deselect the rollrec's button.
+	#
+	for(my $ind = 0; $ind < $numrrnames; $ind++)
+	{
+		#
+		# Destroy the window and remove it from our edit-window list.
+		#
+		if($rrnames[$ind] eq $rrname)
+		{
+			rrname_deselect($ind);
+			$editwinds{$rrname}->destroy();
+			delete($editwinds{$rrname});
+			delete($edittabs{$rrname});
+
+			return;
+		}
+	}
+
+	#
+	# Didn't find the name in the list of rollrec names, so maybe it's
+	# a widget itself.  If we find it in the list of edit windows,
+	# we'll recurse with the widget's rollrec name.
+	#
+	foreach my $rrn (keys(%editwinds))
+	{
+		if($editwinds{$rrn} == $rrname)
+		{
+			editbegone($rrn);
+			return;
+		}
+	}
+}
+
+#---------------------------------------------------------------------------
+# Routine:	helpbegone()
+#
+# Purpose:	Destroy a help window.
+#
+sub helpbegone
+{
+	$helpwin->destroy();
+	$inhelpwind = 0;
+}
+
+#############################################################################
+
+#---------------------------------------------------------------------------
+# Routine:	errorbox()
+#
+# Purpose:	Display an error dialog box.
+#
+sub errorbox
+{
+	my $msg  = shift;			# Warning message.
+	my $dlg;				# Warning dialog widget.
+
+	$dlg = $wm->Dialog(-title => "$NAME Error",
+			   -text  => $msg,
+			   -default_button => "Okay",
+			   -buttons => ["Okay"]);
+	$dlg->Show();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	errorbox_multi()
+#
+# Purpose:	Display a multiline error dialog box.  Newlines in the message
+#		signal a new line (implemented with a new label) in the dialog
+#		box.
+#
+sub errorbox_multi
+{
+	my $msgs  = shift;			# Messages to display.
+
+	my $dlg;				# Warning dialog widget.
+	my $lab;				# Label for table.
+
+	my @lines;				# Lines in message.
+	my $line;				# Individual message line.
+
+	$dlg = $wm->DialogBox(-title	=> "$NAME Error",
+			      -buttons	=> ["Okay"]);
+
+	@lines = split /\n/, $msgs;
+
+	foreach $line (@lines)
+	{
+		$lab = $dlg->Label(-text => $line);
+		$lab->pack(-side => 'top');
+	}
+
+	$dlg->Show();
+}
+
+#---------------------------------------------------------------------------
+# Routine:	dbx_dups()
+#
+# Purpose:	Puts up a dialog box with names of the duplicated rollrecs.
+#		This is used for the "Merge Rollrecs" command.
+#
+sub dbx_dups
+{
+	my @dupnames = @_;			# Duplicated rollrecs.
+
+	my $dbx;				# Dialog box.
+	my $rrtab;				# Dup'd rollrec table.
+	my $lab;				# Label for table.
+	my $rowind = 1;				# Table row index.
+
+	my $rows = @dupnames + 1;		# Rows in table.
+	my $sbars  = 'e';			# Scrollbars.
+	my $ret;				# Dialog return.
+
+	#
+	# Build a dialog box to hold an error summary.
+	#
+	$dbx = $wm->DialogBox(-title   => 'Duplicated Rollrecs',
+			      -buttons => ["Merge", "Cancel" ]);
+
+	#
+	# If there's only a few rows, we'll dump the scrollbar.
+	#
+	$sbars	= '' if($rows < 4);
+
+	#
+	# Build a table to hold the duplicated rollrec names.
+	#
+	$rrtab = $dbx->Table(-rows		=> $rows,
+			     -columns		=> 1,
+			     -relief		=> 'raised',
+			     -scrollbars	=> $sbars,
+			     -borderwidth	=> 1,
+			     -fixedrows		=> 0,
+			     -takefocus		=> 1,
+			    );
+
+	#
+	# Add a column header.
+	#
+	$lab = $rrtab->Label(-text => 'Duplicated Rollrecs');
+	$rrtab->put(0,0,$lab);
+
+	#
+	# Add the selected rollrec names to the table.
+	#
+	foreach my $rrn (sort {$a <=> $b} @dupnames)
+	{
+		$lab = $rrtab->Label(-text => $rrn, -anchor => 'w');
+		$rrtab->put($rowind,0,$lab);
+		$rowind++;
+	}
+
+	#
+	# Pack the error table and display the dialog box.
+	#
+	$rrtab->pack(-side => 'top');
+	$ret = $dbx->Show();
+
+	return($ret);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	help_help()
+#
+# Purpose:	Display a help window.
+#
+sub help_help
+{
+	my $hframe;					# Help frame.
+	my $wdgt;					# General widget.
+
+	my $helpstr;
+
+	$helpstr = "
+
+rollrec-editor - DNSSEC-Tools Rollrec GUI Editor
+         
+SYNOPSIS
+         
+    rollrec-editor <rollrec-file>
+
+DESCRIPTION
+
+rollrec-editor provides the capability for easy management of rollrec files in
+a GUI.  The rollrec records found in the given rollrec file are displayed in a
+new window.  New rollrecs may be created and existing rollrecs may be modified
+or deleted from rollrec-editor.
+
+Management of rollrec files may be handled using a normal text editor.
+However, rollrec-editor provides a nice GUI that only manipulates rollrecs
+without the potential visual clutter of the rest of the rollrec entries.
+
+";
+
+	#
+	# If we've already got another help window, we'll give an error and
+	# return.  Otherwise, we'll turn on our in-helpwindow flag.
+	#
+	if($inhelpwind)
+	{
+		errorbox("Multiple help windows cannot be created\n");
+		return;
+	}
+	$inhelpwind = 1;
+
+	#
+	# Create a new window to hold our help info.  Bind up some
+	# key accelerators, too.
+	#
+	$helpwin = MainWindow->new(-relief => 'raised',
+				  -title  => 'Help!',
+				  -borderwidth => 1);
+	$helpwin->bind('<Control-Key-q>',\&file_quit);
+	$helpwin->bind('<Control-Key-w>',\&helpbegone);
+
+	#
+	# Now make the containers for the window.
+	#
+	$hframe = $helpwin->Frame(-relief => 'raised', -borderwidth => 1);
+
+	$hframe->pack(-fill => 'x');
+
+	#
+	# Add the help data to the frame.
+	#
+	$wdgt = $hframe->Label(-text => $helpstr,
+			       -justify => 'left');
+	$wdgt->pack(-side => 'top');
+
+	#
+	# Add a button to dismiss the window.
+	#
+	$wdgt = $hframe->Button(-text => 'Done',
+				-command => \&helpbegone);
+	$wdgt->pack(-side => 'top');
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      settitle()
+#
+# Purpose:      Set the title for use in the "Editing File" line.
+#
+sub settitle
+{
+	my $name = shift;				# Name to use.
+
+	if($modified)
+	{
+		$name .= "    (modified)" if(!$modset);
+		$modset = 1;
+	}
+	$title = $name;
+}
+
+#----------------------------------------------------------------------
+#
+# Routine:      version()
+#
+# Purpose:      Print the version number(s) and exit.
+#
+sub version
+{
+	print STDERR "$VERS\n";
+	print STDERR "$DTVERS\n";
+	exit(0);
+}
+
+#---------------------------------------------------------------------------
+# Routine:	usage()
+#
+# Purpose:      Print a usage message and exit.
+#
+sub usage
+{
+	print STDERR "usage:  rollrec-editor [-v] <rollrec-file>\n";
+	exit(0);
+}
+
+1;
+
+#############################################################################
+
+=pod
+
+=head1 NAME
+
+rollrec-editor - DNSSEC-Tools Rollrec GUI Editor
+
+=head1 SYNOPSIS
+
+  rollrec-editor <rollrec-file>
+
+=head1 DESCRIPTION
+
+B<rollrec-editor> provides the capability for easy management of signing sets
+in a GUI.  A signing set contains zero or more names of key I<keyrec>.  These
+sets are used by other DNSSEC-Tools utilities for signing zones.  The signing
+sets found in the given I<keyrec> file are displayed in a new window.  New
+signing sets may be created and existing signing sets may be modified or
+deleted from B<rollrec-editor>.
+
+B<rollrec-editor> has two display modes.  The Signing Set Display shows the
+names of all the set I<keyrec>s in the given I<keyrec> file.  The Keyrec
+Display shows the names of all the key I<keyrec>s in the given I<keyrec> file.
+B<rollrec-editor> starts in Signing Set Display mode, but the mode can be
+toggled back and forth as needed.
+
+An additional toggle controls the display of additional data.  If the Extended
+Data toggle is turned on, then the Signing Set Display shows the names of the
+key I<keyrec>s in each signing set and the Keyrec Display shows the names of
+each signing set each key I<keyrec> is in.  If the Extended Data toggle is
+turned off, then the Signing Set Display only shows the names of the set
+I<keyrec>s and the Keyrec Display only shows the names key I<keyrec>s.
+
+B<rollrec-editor> has a small number of commands.  These commands are all
+available through the menus, and most have a keyboard accelerator.  The
+commands are described in the next section.
+
+Management of signing sets may be handled using a normal text editor.
+However, B<rollrec-editor> provides a nice GUI that B<only> manipulates
+signing sets without the potential visual clutter of the rest of the
+I<keyrec> entries.
+
+=head2 UNDOING MODIFICATIONS
+
+B<rollrec-editor> has the ability to reverse modifications it has made to a
+I<keyrec> file.  This historical restoration will only work for modifications
+made during a particular execution of B<rollrec-editor>; modifications made
+during a previous execution may not be undone.
+
+When undoing modifications, B<rollrec-editor> does not necessarily restore
+name-ordering within a I<keyrec>'s B<signing_set> field.  However, the
+signing-set data are maintained.  This means that an "undone" I<keyrec> file
+may not be exactly the same, byte-for-byte, as the original file, but the
+proper meaning of the data is kept.
+
+After a "Save" operation, the data required for reversing modifications are
+deleted.  This is not the case for the "Save As" operation.
+
+=head1 COMMANDS
+
+B<rollrec-editor> provides the following commands, organized by menus:
+
+=over 4
+
+=item B<Open> (File menu)
+
+Open a new I<keyrec> file.  If the specified file does not exist, the user
+will be prompted for the action to take.  If the user chooses the "Continue"
+action, then B<rollrec-editor> will continue editing the current I<keyrec>
+file.  If the "Quit" action is selected, then B<rollrec-editor> will exit.
+
+=item B<Save> (File menu)
+
+Save the current I<keyrec> file.  The data for the "Undo Changes" command are
+purged, so this file will appear to be unmodified.
+
+Nothing will happen if no changes have been made.
+
+=item B<Save As> (File menu)
+
+Save the current I<keyrec> file to a name selected by the user.
+
+=item B<Quit> (File menu)
+
+Exit B<rollrec-editor>.
+
+=item B<Undo Changes> (Edit menu)
+
+Reverse modifications made to the signing sets and keyrecs.  This is B<only>
+for the in-memory version of the I<keyrec> file.
+
+=item B<New Signing Set> (Commands menu)
+
+Create a new signing set.   The user is given the option of adding key
+I<keyrec>s to the new set.
+
+This command is available from both viewing modes.
+
+=item B<Delete Signing Set/Key> (Commands menu)
+
+Delete the selected signing set or key.
+
+This command is available from both viewing modes.  If used from the Signing
+Set Display mode, then all the keys in the selected signing set will be
+removed from that set.  If used from the Keyrec Display mode, then the
+selected key will no longer be part of any signing set.
+
+=item B<Modify Signing Set/Key> (Commands menu)
+
+Modify the selected signing set or key.
+
+This command is available from both viewing modes.  If used from the Signing
+Set Display mode, then the selected signing set may be modified by adding keys
+to that set or deleting them from that set.  If used from the Keyrec Display
+mode, then the selected key may be added to or deleted from any of the defined
+signing sets.
+
+=item B<View Signing Sets> (Display menu)
+
+The main window will display the I<keyrec> file's signing sets.  If Extended
+Data are to be displayed, then each key I<keyrec> in the signing set will also
+be shown.  If Extended data are not to be displayed, then only the signing set
+names will be shown.
+
+This command is a toggle that switches between View Signing Sets mode and
+View Keyrecs mode.
+
+=item B<View Keyrecs> (Display menu)
+
+The main window will display the names of the I<keyrec> file's key I<keyrec>s.
+If Extended Data are to be displayed, then the name of each signing set of the
+I<keyrec> will also be shown.  If Extended data are not to be shown, then only
+the I<keyrec> names will be displayed.
+
+This command is a toggle that switches between View Keyrecs mode and View
+Signing Sets mode.
+
+=item B<Display Extended Data> (Display menu)
+
+Additional data will be shown in the main window.  For Signing Sets Display
+mode, the names of the signing set and their constituent key I<keyrec>s will
+be displayed.  For Keyrec Display mode, the names of the key I<keyrec>s and
+the Signing Sets it is in will be displayed.
+
+This command is a toggle that switches between Extended Data display and
+No Extended Data display.
+
+=item B<Do Not Display Extended Data> (Display menu)
+
+No additional data will be shown in the main window.  For Signing Sets Display
+mode, only the names of the Signing Sets will be displayed.  For Keyrec Display
+mode, only the names of the I<keyrec>s will be displayed.
+
+This command is a toggle that switches between No Extended Data display and
+Extended Data display.
+
+=item B<Help> (Help menu)
+
+Display a help window.
+
+=back 4
+
+=head1 KEYBOARD ACCELERATORS
+
+Below are the keyboard accelerators for the B<rollrec-editor> commands:
+
+    Ctrl-D  Delete Signing Set
+
+    Ctrl-E  Display Extended Data / Do Not Display Extended Data
+
+    Ctrl-H  Help
+
+    Ctrl-M  Modify Signing Set
+
+    Ctrl-N  New Signing Set
+
+    Ctrl-O  Open
+
+    Ctrl-Q  Quit
+
+    Ctrl-S  Save
+
+    Ctrl-U  Undo Changes
+
+    Ctrl-V  View Signing Sets / View Keyrecs
+
+    Ctrl-W  Close Window (New Signing Set, Modify Signing Set, Help)
+
+These accelerators are all lowercase letters.
+
+=head1 REQUIREMENTS
+
+B<rollrec-editor> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
+installed on your system.
+
+=head1 COPYRIGHT
+
+Copyright 2007 SPARTA, Inc.  All rights reserved.
+See the COPYING file included with the DNSSEC-Tools package for details.
+
+=head1 AUTHOR
+
+Wayne Morrison, tewok@users.sourceforge.net
+
+=head1 SEE ALSO
+
+B<cleankrf(8)>,
+B<fixkrf(8)>,
+B<genkrf(8)>,
+B<krfcheck(8)>,
+B<lskrf(1)>,
+B<zonesigner(8)>
+
+B<Net::DNS::SEC::Tools::keyrec(3)>
+
+B<file-keyrec(5)>
+
+=cut
+
