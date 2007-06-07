@@ -12,7 +12,7 @@
 #
 #	The command is used in this way:
 #
-#               rollrec-editor [-Vi] <rollrec-file>
+#               rollrec-editor [-V -ignore-edits -columns colcnt] <rollrec-file>
 #
 #	The rollrec-file is a DNSSEC-Tools keyrec file that maintains
 #	information about a zone and its encryption keys.
@@ -21,25 +21,16 @@
 #
 #
 #	WORKING ON:
-#		- columns in button window  (cmdline option)
+#
 #
 #	TODO:
-#		- command line options
-#			- columns in button window
-#
-#		- making sure merge isn't given same file
-#
-#		- menu options
-#
-#		- menu commands
-#
-#			- undo command:
-#				- maintain separate stacks for each rollrec name
-#
-#		- save modified rollrecs
+#		- undo menu command:
+#			- maintain separate stacks for each rollrec name
 #
 #		- quit editor command
 #			- exits with error if cntl-q is given
+#
+#		- fix the pod
 #
 #	DONE:
 #		- menu commands
@@ -75,6 +66,8 @@
 #
 #			* changed rollrec files should have name in name
 #			  window starred
+#
+#			* ensure merge doesn't merge a file with itself
 #
 #
 
@@ -146,7 +139,6 @@ my $modset  = 0;			# Flag for (modified) title.
 #
 # Main window constants.
 #
-my $MAINGEOM	= "550x400";
 my $MAINTITLE	= "DNSSEC-Tools Rollrec Editor";
 
 #
@@ -427,7 +419,6 @@ sub buildmainwind
 	# Create the main window and set its size.
 	#
 	$wm = MainWindow->new(-title => $MAINTITLE);
-#	$wm->geometry($MAINGEOM);
 
 	#
 	# Get the keyrec file info.
@@ -1051,6 +1042,7 @@ sub file_quit
 		rollrec_discard();
 	}
 
+print STDERR "exiting...\n";
 	exit(0);
 }
 
@@ -1568,9 +1560,41 @@ sub cmds_merger
 	# Get the name of the file to be merged with the current file.
 	# We'll call this the "new" file.
 	#
-	$fswin = $wm->FileSelect(%fsopts);
-	$newfile = $fswin->Show;
-	return if($newfile eq '');
+	while(42)
+	{
+		my $cdev;		# Current rollrec's filesys devicenum.
+		my $cino;		# Current rollrec's inode number.
+		my $ndev;		# New rollrec's filesys devicenum.
+		my $nino;		# New rollrec's inode number.
+
+		#
+		# Let the user select a new file.
+		#
+		$fswin = $wm->FileSelect(%fsopts);
+		$newfile = $fswin->Show;
+
+		#
+		# Return if the user cancelled out of the dialog.
+		#
+		return if($newfile eq '');
+
+		#
+		# Get the file info for the current and new rollrec files.
+		#
+		($cdev,$cino) = stat($curfile);
+		($ndev,$nino) = stat($newfile);
+
+		#
+		# Drop out of the loop if the two files have different
+		# inode numbers or file system device numbers.
+		#
+		last if(($cino != $nino) || ($cdev != $ndev));
+
+		#
+		# Give an error message about the two files.
+		#
+		errorbox_multi("Cannot merge a rollrec file with itself.\nCurrent rollrec - $curfile\nNew rollrec - $newfile");
+	}
 
 	#
 	# Read the new file.  If we couldn't read it, we'll put up a dialog
