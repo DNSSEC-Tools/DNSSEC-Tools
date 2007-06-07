@@ -5681,6 +5681,7 @@ val_resolve_and_check(val_context_t * ctx,
 
             /* Release the lock, let some other thread get some time slice to run */
 #if 0
+#ifndef VAL_NO_THREADS
             struct timeval temp_t;
             gettimeofday(&temp_t, NULL);
             val_log(context, LOG_DEBUG, 
@@ -5688,6 +5689,7 @@ val_resolve_and_check(val_context_t * ctx,
                     (unsigned int)pthread_self(),
                     (closest_event.tv_sec >temp_t.tv_sec)? 
                         closest_event.tv_sec - temp_t.tv_sec : 0); 
+#endif
 #endif
             
             CTX_UNLOCK_ACACHE(context);
@@ -5698,10 +5700,13 @@ val_resolve_and_check(val_context_t * ctx,
             /* Re-acquire the lock */
             CTX_LOCK_ACACHE(context);
 
+
 #if 0
+#ifndef VAL_NO_THREADS
             val_log(context, LOG_DEBUG, 
                     "zzzzzzzzzzzzz pselect(): (Thread %u) Woke up", 
                     (unsigned int)pthread_self());
+#endif
 #endif
         }
     }
