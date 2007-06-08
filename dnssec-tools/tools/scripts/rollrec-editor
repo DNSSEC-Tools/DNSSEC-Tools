@@ -24,6 +24,8 @@
 #		- fix the pod
 #
 #	TODO:
+#		- "Cancel" button on rollrec creation is ignored.
+#
 #		- undo menu command:
 #			- maintain separate stacks for each rollrec name
 #
@@ -506,12 +508,12 @@ sub buildmainwind
 				    -accelerator => 'Ctrl+N',
 				    -underline	 => 0);
 
-	$cm_delete = $cmds->command(-label	 => 'Delete Selected Rollrec',
+	$cm_delete = $cmds->command(-label	 => 'Delete Selected Rollrecs',
 				    -command	 => \&cmds_delete,
 				    -accelerator => 'Ctrl+D',
 				    -underline	 => 0);
 
-	$cm_modify = $cmds->command(-label	 => 'Edit Selected Rollrec',
+	$cm_modify = $cmds->command(-label	 => 'Edit Selected Rollrecs',
 				    -command	 => \&cmds_modify,
 				    -accelerator => 'Ctrl+E',
 				    -underline	 => 0);
@@ -3373,7 +3375,7 @@ rollrec-editor - DNSSEC-Tools Rollrec GUI Editor
 =head1 DESCRIPTION
 
 B<This pod is under construction.  Don't believe a word of anything that
-follows, as it started life as pod for signset-editor.>
+follows the DESCRIPTION section, as it started life as pod for signset-editor.>
 
 B<rollrec-editor> provides the capability for easy GUI-based management of
 B<rollrec> files.  A B<rollrec> file contains one or more I<rollrec> records.
@@ -3423,20 +3425,22 @@ For example, assume a I<rollrec> file has 12 I<rollrec> records.  The
 following table shows how many rows and columns are given for each of
 the given column selections.
 
-	column count	rows	actual columns
-	      1		 12	      1
-	      2		 6	      2
-	      3		 4	      3
-	      4		 3	      4
-	      5		 3	      4
-	      6		 2	      6
-	      7		 2	      6
-	      8		 2	      6
-	      9		 2	      6 
-	      10	 2	      6
-	      11	 2	      6
-	      12	 1	      12
+	column count	rows	columns
+	      1		 12	   1
+	      2		 6	   2
+	      3		 4	   3
+	      4		 3	   4
+	      5		 3	   4
+	      6		 2	   6
+	      7		 2	   6
+	      8		 2	   6
+	      9		 2	   6 
+	      10	 2	   6
+	      11	 2	   6
+	      12	 1	   12
 
+The actual rows and columns for a requested column count will vary in order
+to allow a "best-fit".
 
 =head2 UNDOING MODIFICATIONS
 
@@ -3453,63 +3457,97 @@ deleted.  This is not the case for the "Save As" operation.
 =head1 COMMANDS
 
 B<rollrec-editor> provides the following commands, organized by menus:
+File, Edit, Commands, Rollrecs, and Options.
+
+=head2 File Menu
+
+The File Menu contains commands for manipulating I<rollrec> files and
+stopping execution.
 
 =over 4
 
-=item B<Open> (File menu)
+=item B<Open>
 
-Open a new I<keyrec> file.  If the specified file does not exist, the user
+Open a new I<rollrec> file.  If the specified file does not exist, the user
 will be prompted for the action to take.  If the user chooses the "Continue"
-action, then B<rollrec-editor> will continue editing the current I<keyrec>
+action, then B<rollrec-editor> will continue editing the current I<rollrec>
 file.  If the "Quit" action is selected, then B<rollrec-editor> will exit.
 
-=item B<Save> (File menu)
+=item B<Save>
 
-Save the current I<keyrec> file.  The data for the "Undo Changes" command are
+Save the current I<rollrec> file.  The data for the "Undo Changes" command are
 purged, so this file will appear to be unmodified.
 
 Nothing will happen if no changes have been made.
 
-=item B<Save As> (File menu)
+=item B<Save As>
 
-Save the current I<keyrec> file to a name selected by the user.
+Save the current I<rollrec> file to a name selected by the user.
 
-=item B<Quit> (File menu)
+=item B<Quit>
 
 Exit B<rollrec-editor>.
 
-=item B<Undo Changes> (Edit menu)
+=back 4
 
-Reverse modifications made to the signing sets and keyrecs.  This is B<only>
-for the in-memory version of the I<keyrec> file.
+=head2 Edit Menu
 
-=item B<New Signing Set> (Commands menu)
+The Edit Menu contains commands for general editing operations.
 
-Create a new signing set.   The user is given the option of adding key
-I<keyrec>s to the new set.
+=over 4
 
-This command is available from both viewing modes.
+=item B<Undo Changes>
 
-=item B<Delete Signing Set/Key> (Commands menu)
+Reverse modifications made to the I<rollrec> records.  This is B<only>
+for the in-memory version of the I<rollrec> file.
 
-Delete the selected signing set or key.
+B<Not currently implemented.>
 
-This command is available from both viewing modes.  If used from the Signing
-Set Display mode, then all the keys in the selected signing set will be
-removed from that set.  If used from the Keyrec Display mode, then the
-selected key will no longer be part of any signing set.
+=back 4
 
-=item B<Modify Signing Set/Key> (Commands menu)
+=head2 Commands Menu
 
-Modify the selected signing set or key.
+=over 4
 
-This command is available from both viewing modes.  If used from the Signing
-Set Display mode, then the selected signing set may be modified by adding keys
-to that set or deleting them from that set.  If used from the Keyrec Display
-mode, then the selected key may be added to or deleted from any of the defined
-signing sets.
+=item B<New Rollrec>
 
-=item B<View Signing Sets> (Display menu)
+Create a new I<rollrec> record.   The user is given a new window in which to
+edit the user-modifiable I<rollrec> fields.
+
+After editing is completed, the "Save" button will add the new I<rollrec>
+record to the in-memory I<rollrec> file.  The file must be saved in order to
+have the new I<rollrec> added to the file.
+
+Potentially erroneous conditions will be reported to the user at save time.  
+If the I<ignore-warnings> flag has been turned on, then these warnings will
+not be reported.  Errors (e.g., invalid log conditions) will always be
+reported.
+
+=item B<Delete Selected Rollrecs>
+
+Delete the selected I<rollrec> records.
+
+=item B<Modify Selected Rollrecs>
+
+Modify the selected I<rollrec> records.   The user is given a new window in
+which to edit the user-modifiable I<rollrec> fields.
+
+After editing is completed, the "Save" button will add the new I<rollrec>
+record to the in-memory I<rollrec> file.  The file must be saved in order to
+have the new I<rollrec> added to the file.
+
+Potentially erroneous conditions will be reported to the user at save time.  
+If the I<ignore-warnings> flag has been turned on, then these warnings will
+not be reported.  Errors (e.g., invalid log conditions) will always be
+reported.
+
+=back 4
+
+=head2 Rollrecs Menu
+
+=over 4
+
+=item B<View Signing Sets>
 
 The main window will display the I<keyrec> file's signing sets.  If Extended
 Data are to be displayed, then each key I<keyrec> in the signing set will also
@@ -3519,7 +3557,13 @@ names will be shown.
 This command is a toggle that switches between View Signing Sets mode and
 View Keyrecs mode.
 
-=item B<View Keyrecs> (Display menu)
+=back 4
+
+=head2 Options Menu
+
+=over 4
+
+=item B<View Keyrecs>
 
 The main window will display the names of the I<keyrec> file's key I<keyrec>s.
 If Extended Data are to be displayed, then the name of each signing set of the
@@ -3529,7 +3573,7 @@ the I<keyrec> names will be displayed.
 This command is a toggle that switches between View Keyrecs mode and View
 Signing Sets mode.
 
-=item B<Display Extended Data> (Display menu)
+=item B<Display Extended Data>
 
 Additional data will be shown in the main window.  For Signing Sets Display
 mode, the names of the signing set and their constituent key I<keyrec>s will
@@ -3539,7 +3583,7 @@ the Signing Sets it is in will be displayed.
 This command is a toggle that switches between Extended Data display and
 No Extended Data display.
 
-=item B<Do Not Display Extended Data> (Display menu)
+=item B<Do Not Display Extended Data>
 
 No additional data will be shown in the main window.  For Signing Sets Display
 mode, only the names of the Signing Sets will be displayed.  For Keyrec Display
@@ -3548,7 +3592,13 @@ mode, only the names of the I<keyrec>s will be displayed.
 This command is a toggle that switches between No Extended Data display and
 Extended Data display.
 
-=item B<Help> (Help menu)
+=back 4
+
+=head2 Help Menu
+
+=over 4
+
+=item B<Help>
 
 Display a help window.
 
