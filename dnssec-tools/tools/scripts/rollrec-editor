@@ -219,10 +219,9 @@ my $cm_modify;					# Modify selected rollrecs.
 my $cm_merger;					# Merge two rollrec files.
 my $cm_verify;					# Verify a rollrec file.
 
-my $rr_selall;					# Select all rollrecs set item.
-my $rr_editsel;					# Edit selected rollrecs.
-my $rr_closeall;				# Close rollrec edit windows.
-my $rr_raiser;					# Raise rollrec edit windows.
+my $vw_selall;					# Select all rollrecs set item.
+my $vw_closeall;				# Close rollrec edit windows.
+my $vw_raiser;					# Raise rollrec edit windows.
 
 my $tog_ignwarn;				# Ignore-Edit-Warning toggle.
 my $tog_mergefilt = 1;				# Use-merge-filter toggle.
@@ -407,7 +406,7 @@ sub buildmainwind
 	my $file;					# File menu.
 	my $edit;					# Edit menu.
 	my $cmds;					# Commands menu.
-	my $rrcs;					# Rollrecs menu.
+	my $view;					# Rollrecs menu.
 	my $opts;					# Options menu.
 	my $help;					# Help menu.
 
@@ -450,7 +449,7 @@ sub buildmainwind
 	$cmds = $mbar->Menubutton(-text => 'Commands',
 				  -tearoff => 0,
 				  -underline => 0);
-	$rrcs = $mbar->Menubutton(-text => 'Rollrecs',
+	$view = $mbar->Menubutton(-text => 'View',
 				  -tearoff => 0,
 				  -underline => 0);
 	$opts = $mbar->Menubutton(-text => 'Options',
@@ -545,24 +544,24 @@ sub buildmainwind
 	#
 	# Add the Rollrecs menu entries.
 	#
-	$rr_selall = $rrcs->command(-label => 'Select All Rollrecs',
-			            -command => \&rrcs_selall,
+	$vw_selall = $view->command(-label => 'Select All Rollrecs',
+			            -command => \&view_selall,
 			            -accelerator => 'Ctrl+A',
 			            -underline => 0);
-	$rr_raiser = $rrcs->command(-label => 'Reveal Rollrec Edit Windows',
-			            -command => \&rrcs_raiser,
+	$vw_raiser = $view->command(-label => 'Reveal Rollrec Edit Windows',
+			            -command => \&view_raiser,
 			            -accelerator => 'Ctrl+R',
 			            -underline => 0);
-	$rr_closeall = $rrcs->command(-label =>'Close All Rollrec Edit Windows',
-			              -command => \&rrcs_closeall,
+	$vw_closeall = $view->command(-label =>'Close All Rollrec Edit Windows',
+			              -command => \&view_closeall,
 			              -accelerator => 'Ctrl+K',
 			              -underline => 0);
 
-	$rrcs->pack(-side => 'left');
+	$view->pack(-side => 'left');
 
-	$wm->bind('<Control-Key-a>',\&rrcs_selall);
-	$wm->bind('<Control-Key-k>',\&rrcs_closeall);
-	$wm->bind('<Control-Key-r>',\&rrcs_raiser);
+	$wm->bind('<Control-Key-a>',\&view_selall);
+	$wm->bind('<Control-Key-k>',\&view_closeall);
+	$wm->bind('<Control-Key-r>',\&view_raiser);
 
 	##################################################
 	#
@@ -1831,17 +1830,17 @@ sub cmds_verify
 }
 
 #---------------------------------------------------------------------------
-# Routine:	rrcs_selall()
+# Routine:	view_selall()
 #
 # Purpose:	This routine selects/deselects all rollrec names.
 #		If any names are selected, the remainder will be selected.
 #		If all names are selected, they will all be deselected.
 #
-sub rrcs_selall
+sub view_selall
 {
 	my @selected = ();			# Selected rollrec names.
 
-# print "rrcs_selall:  down in Select All Rollrecs\n";
+# print "view_selall:  down in Select All Rollrecs\n";
 
 	#
 	# Get the list of selected rollrec names.
@@ -1861,7 +1860,7 @@ sub rrcs_selall
 		{
 			rrname_deselect($ind);
 		}
-		$rr_selall->configure(-label => 'Select All Rollrecs');
+		$vw_selall->configure(-label => 'Select All Rollrecs');
 	}
 	else
 	{
@@ -1879,20 +1878,20 @@ sub rrcs_selall
 
 			rrname_select($ind)  if($btn->cget(-background) eq $RRTAB_UNSEL);
 		}
-		$rr_selall->configure(-label => 'Unselect All Rollrecs');
+		$vw_selall->configure(-label => 'Unselect All Rollrecs');
 
 	}
 }
 
 #---------------------------------------------------------------------------
-# Routine:	rrcs_raiser()
+# Routine:	view_raiser()
 #
 # Purpose:	This routine brings the rollrec edit windows to the front.
 #
-sub rrcs_raiser
+sub view_raiser
 {
 
-# print "rrcs_raiser:  down in Raise Rollrec Edit Windows\n";
+# print "view_raiser:  down in Raise Rollrec Edit Windows\n";
 
 	#
 	# Raise the edit windows.
@@ -1904,14 +1903,14 @@ sub rrcs_raiser
 }
 
 #---------------------------------------------------------------------------
-# Routine:	rrcs_closeall()
+# Routine:	view_closeall()
 #
 # Purpose:	This routine closes the selected rollrec edit windows.
 #		The rollrec's buttons are deselected as well.
 #
-sub rrcs_closeall
+sub view_closeall
 {
-# print "rrcs_closeall:  down in Close All Selected Rollrecs\n";
+# print "view_closeall:  down in Close All Selected Rollrecs\n";
 
 	#
 	# Destroy all edit windows and remove them from the edit-window list.
@@ -1923,16 +1922,16 @@ sub rrcs_closeall
 }
 
 #---------------------------------------------------------------------------
-# Routine:	rrcs_closeone()
+# Routine:	view_closeone()
 #
 # Purpose:	This routine closes the current rollrec edit window.
 #		The rollrec's button is deselected as well.
 #
-sub rrcs_closeone
+sub view_closeone
 {
 	my $rrn = shift;
 
-# print "rrcs_closeone:  down in Close Selected Rollrec\n";
+# print "view_closeone:  down in Close Selected Rollrec\n";
 	editbegone($rrn);
 }
 
@@ -2029,8 +2028,8 @@ sub editwindow
 
 	$editwin->bind('<Control-Key-q>', \&file_quit);
 	$editwin->bind('<Control-Key-w>', [\&editbegone, $rrn]);
-	$editwin->bind('<Control-Key-c>', \&rrcs_closeone);
-	$editwin->bind('<Control-Key-k>', \&rrcs_closeall);
+	$editwin->bind('<Control-Key-c>', \&view_closeone);
+	$editwin->bind('<Control-Key-k>', \&view_closeall);
 #	$editwin->bind('<Key-Return>',    [\&editsaver, $rrn, $newflag]);
 
 	#
@@ -3395,7 +3394,8 @@ existing I<rollrec> records, creation of new I<rollrec> records, merging of
 I<rollrec> files, and verification of file validity.
 
 B<rollrec-editor>'s commands are available through the menus and most have a
-keyboard accelerator.  The commands are described below.
+keyboard accelerator.  The commands are described below in the COMMANDS
+section.
 
 When a I<rollrec> record is selected for modification, a new window is created
 to hold the editable fields of the record.  The fields may be modified in
@@ -3507,12 +3507,15 @@ B<Not currently implemented.>
 
 =head2 Commands Menu
 
+The Commands Menu contains commands for modifying I<rollrec> records.
+
 =over 4
 
 =item B<New Rollrec>
 
 Create a new I<rollrec> record.   The user is given a new window in which to
-edit the user-modifiable I<rollrec> fields.
+edit the user-modifiable I<rollrec> fields.  A button for the new I<rollrec>
+record will be inserted into the Button Window.
 
 After editing is completed, the "Save" button will add the new I<rollrec>
 record to the in-memory I<rollrec> file.  The file must be saved in order to
@@ -3525,12 +3528,14 @@ reported.
 
 =item B<Delete Selected Rollrecs>
 
-Delete the selected I<rollrec> records.
+Delete the selected I<rollrec> records.  The buttons for each selected record
+will be removed from the Button Window.
 
 =item B<Modify Selected Rollrecs>
 
-Modify the selected I<rollrec> records.   The user is given a new window in
-which to edit the user-modifiable I<rollrec> fields.
+Modify the selected I<rollrec> records.   For every record selected
+for modification, the user is given a new window in which to edit the
+user-modifiable I<rollrec> fields.
 
 After editing is completed, the "Save" button will add the new I<rollrec>
 record to the in-memory I<rollrec> file.  The file must be saved in order to
@@ -3543,7 +3548,9 @@ reported.
 
 =back 4
 
-=head2 Rollrecs Menu
+=head2 View Menu
+
+The View Menu contains miscellaneous commands for viewing edit windows.
 
 =over 4
 
@@ -3560,6 +3567,9 @@ View Keyrecs mode.
 =back 4
 
 =head2 Options Menu
+
+The Options Menu allows the user to set several options that control
+B<rollrec-editor> behavior.
 
 =over 4
 
@@ -3595,6 +3605,8 @@ Extended Data display.
 =back 4
 
 =head2 Help Menu
+
+The Help Menu contains commands for getting assistance.
 
 =over 4
 
