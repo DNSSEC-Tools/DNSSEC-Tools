@@ -3546,6 +3546,38 @@ If the I<ignore-warnings> flag has been turned on, then these warnings will
 not be reported.  Errors (e.g., invalid log conditions) will always be
 reported.
 
+=item B<Merge Rollrec Files>
+
+Merge a I<rollrec> file with the currently open I<rollrec> file.  After a
+successful merge, the I<rollrec> records in the second file will be added 
+to the B<end> of the currently open I<rollrec> file.
+
+If there are any I<rollrec> name collisions in the files, then the user will
+be asked whether to continue with the merge or cancel it.  If the merge
+continues, then the conflicting I<rollrec> records from the "new" file will be
+discarded in favor of the currently open I<rollrec> file.
+
+=item B<Verify Rollrec File>
+
+Verify the validity of the I<rollrec> file.  The user-editable fields in the
+open I<rollrec> file are checked for validity.  An edit window is opened for
+each I<rollrec> record that registers an error or warning.
+
+If the I<ignore-warnings> flag has been turned on, then potentially erroneous
+conditions will not be reported.  Errors (e.g., invalid log conditions) will
+always be reported.
+
+=item B<Summarize Problems>
+
+Summarize the warning and error counts of the I<rollrec> file.  Each
+I<rollrec> record in the open I<rollrec> file is checked for validity.  If
+any warnings or errors are found, a window is displayed that lists the name
+of each I<rollrec> record and its warning and error counts.
+
+If the I<ignore-warnings> flag has been turned on, then potentially erroneous
+conditions will not be reported.  Errors (e.g., invalid log conditions) will
+always be reported.
+
 =back 4
 
 =head2 View Menu
