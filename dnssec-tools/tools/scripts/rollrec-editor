@@ -552,7 +552,7 @@ sub buildmainwind
 			            -command => \&view_raiser,
 			            -accelerator => 'Ctrl+R',
 			            -underline => 0);
-	$vw_closeall = $view->command(-label =>'Close All Rollrec Edit Windows',
+	$vw_closeall = $view->command(-label =>'Close Rollrec Edit Windows',
 			              -command => \&view_closeall,
 			              -accelerator => 'Ctrl+K',
 			              -underline => 0);
@@ -3531,11 +3531,12 @@ reported.
 Delete the selected I<rollrec> records.  The buttons for each selected record
 will be removed from the Button Window.
 
-=item B<Modify Selected Rollrecs>
+=item B<Edit Selected Rollrecs>
 
 Modify the selected I<rollrec> records.   For every record selected
 for modification, the user is given a new window in which to edit the
-user-modifiable I<rollrec> fields.
+user-modifiable I<rollrec> fields.  When the edit window goes away (after a
+"Save" or "Cancel"), the I<rollrec> record's button is deselected.
 
 After editing is completed, the "Save" button will add the new I<rollrec>
 record to the in-memory I<rollrec> file.  The file must be saved in order to
@@ -3586,15 +3587,27 @@ The View Menu contains miscellaneous commands for viewing edit windows.
 
 =over 4
 
-=item B<View Signing Sets>
+=item B<Select All Rollrecs/Unselect All Rollrecs>
 
-The main window will display the I<keyrec> file's signing sets.  If Extended
-Data are to be displayed, then each key I<keyrec> in the signing set will also
-be shown.  If Extended data are not to be displayed, then only the signing set
-names will be shown.
+Select or unselect all I<rollrec> buttons.  All the buttons in the Button
+Window will be selected or unselected.  If B<any> of the buttons are not
+selected, this command will cause all the buttons to become selected.  If
+B<all> of the buttons are selected, this command will cause all the buttons
+to be deselected.
 
-This command is a toggle that switches between View Signing Sets mode and
-View Keyrecs mode.
+This command is a toggle that switches between Select All Rollrecs and
+Unselect All Rollrecs.
+
+=item B<Reveal Rollrec Edit Windows>
+
+Raise all I<rollrec> edit windows.  This command brings all I<rollrec> edit
+windows to the front so that any that are hidden behind other windows will
+become visible.
+
+=item B<Close Rollrec Edit Windows>
+
+Close all I<rollrec> edit windows.  This command closes and deselects all
+I<rollrec> edit windows.
 
 =back 4
 
