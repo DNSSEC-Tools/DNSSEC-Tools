@@ -12,7 +12,7 @@
 #
 #	The command is used in this way:
 #
-#               rollrec-editor [-V -ignore-edits -columns colcnt] <rollrec-file>
+#               rollrec-editor [-V -ignore-warns -columns colcnt] <rollrec-file>
 #
 #	The rollrec-file is a DNSSEC-Tools keyrec file that maintains
 #	information about a zone and its encryption keys.
@@ -21,7 +21,7 @@
 #
 #
 #	WORKING ON:
-#
+#		- fix the pod
 #
 #	TODO:
 #		- undo menu command:
@@ -29,8 +29,6 @@
 #
 #		- quit editor command
 #			- exits with error if cntl-q is given
-#
-#		- fix the pod
 #
 #	DONE:
 #		- menu commands
@@ -120,7 +118,7 @@ my $zonefile	= "";
 my %options = ();			# Filled option array.
 my @opts =
 (
-	"ignore-edits",			# Ignore-edit-warnings flag.
+	"ignore-warns",			# Ignore-edit-warnings flag.
 	"columns=i",			# Columns in button window.
 
 	"Version",			# Display the version number.
@@ -379,7 +377,7 @@ sub doopts
 	#
 	# Set some flags based on the command line.
 	#
-	$givewarnings = 0 if(defined($options{'ignore-edits'}));
+	$givewarnings = 0 if(defined($options{'ignore-warns'}));
 
 	#
 	# Check for the column-count option.
@@ -1042,7 +1040,7 @@ sub file_quit
 		rollrec_discard();
 	}
 
-print STDERR "exiting...\n";
+	print STDERR "exiting...\n";
 	exit(0);
 }
 
@@ -3350,7 +3348,11 @@ sub version
 #
 sub usage
 {
-	print STDERR "usage:  rollrec-editor [-v] <rollrec-file>\n";
+	print STDERR "usage:  rollrec-editor [options] <rollrec-file>\n";
+	print STDERR "\toptions:\n";
+	print STDERR "\t\t-ignore-warns		ignore edit warnings\n";
+	print STDERR "\t\t-columns  columns	columns in button window\n";
+	print STDERR "\t\t-V			program version\n";
 	exit(0);
 }
 
@@ -3366,42 +3368,53 @@ rollrec-editor - DNSSEC-Tools Rollrec GUI Editor
 
 =head1 SYNOPSIS
 
-  rollrec-editor <rollrec-file>
+  rollrec-editor [options] <rollrec-file>
 
 =head1 DESCRIPTION
 
 B<This pod is under construction.  Don't believe a word of anything that
 follows, as it started life as pod for signset-editor.>
 
-B<rollrec-editor> provides the capability for easy management of B<rollrec>
-files
-in a GUI.  A B<rollrec> file contains zero or more names of key I<keyrec>.  These
-sets are used by other DNSSEC-Tools utilities for signing zones.  The signing
-sets found in the given I<keyrec> file are displayed in a new window.  New
-signing sets may be created and existing signing sets may be modified or
-deleted from B<rollrec-editor>.
+B<rollrec-editor> provides the capability for easy GUI-based management of
+B<rollrec> files.  A B<rollrec> file contains one or more I<rollrec> records.
+These records are used by the DNSSEC-Tools rollover utilities (B<rollerd>,
+etc.) to describe zones' rollover state.  Each zone's I<rollrec> record
+contains such information as the zone file, the rollover phase, and logging
+level.  I<rollrec> files are text files and may be edited by any text editor.
+B<rollrec-editor> allows editing of only those records a user should change
+and performs error checking on the data.
 
-B<rollrec-editor> has a small number of commands.  These commands are all
-available through the menus, and most have a keyboard accelerator.  The
-commands are described in the next section.
+When B<rollrec-editor> starts, a window is created that has "buttons" for each
+I<rollrec> record in the given I<rollrec> file.  (In this documentation, this
+window is called the button window.)  Clicking on the buttons selects (or
+deselects) that zone.  After one or more zones are selected, one of several
+commands may be executed.  Commands allow modification and deletion of
+existing I<rollrec> records, creation of new I<rollrec> records, merging of
+I<rollrec> files, and verification of file validity.
 
-Management of B<rollrec> files may be handled using a normal text editor.
-However, B<rollrec-editor> provides a nice GUI that B<only> manipulates the
-fields of B<rollrec> entries without the potential visual clutter of the
-fields that shouldn't be modified by a user.
+B<rollrec-editor>'s commands are available through the menus and most have a
+keyboard accelerator.  The commands are described below.
+
+When a I<rollrec> record is selected for modification, a new window is created
+to hold the editable fields of the record.  The fields may be modified in
+place.  When editing is complete, the record is "saved".  This does not save
+the modified I<rollrec> into its on-disk file; the file must be saved
+explicitly from the button window.
+
+As stated above, verfication checks are performed when saving an edited
+I<rollrec> record.  One set of checks ensures that files and directories
+associated with a zone actually exist.  This check may be turned off with the
+I<-ignore-warns> command line option or the "Ignore Edit Warnings" menu
+command.
 
 =head2 UNDOING MODIFICATIONS
 
+B<The "undo" capability is not currently implemented.>
+
 B<rollrec-editor> has the ability to reverse modifications it has made to a
-I<keyrec> file.  This historical restoration will only work for modifications
+I<rollrec> file.  This historical restoration will only work for modifications
 made during a particular execution of B<rollrec-editor>; modifications made
 during a previous execution may not be undone.
-
-When undoing modifications, B<rollrec-editor> does not necessarily restore
-name-ordering within a I<keyrec>'s B<signing_set> field.  However, the
-signing-set data are maintained.  This means that an "undone" I<keyrec> file
-may not be exactly the same, byte-for-byte, as the original file, but the
-proper meaning of the data is kept.
 
 After a "Save" operation, the data required for reversing modifications are
 deleted.  This is not the case for the "Save As" operation.
@@ -3542,6 +3555,24 @@ These accelerators are all lowercase letters.
 
 B<rollrec-editor> is implemented in Perl/Tk, so both Perl and Perl/Tk must be
 installed on your system.
+
+=head1 KNOWN ISSUES
+
+The following are known issues.  These will be resolved in time.
+
+=over 4
+
+=item
+
+Segmentation violation on exit.  Should not affect anything as file has
+already been saved.  Occurs on MacOS X 10.4.9 with Perl 5.8.6; does not occur
+on Linux FC5 with Perl 5.8.8.
+
+=item
+
+There is no undo command.
+
+=back
 
 =head1 COPYRIGHT
 
