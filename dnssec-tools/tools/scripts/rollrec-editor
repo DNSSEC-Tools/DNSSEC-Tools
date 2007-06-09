@@ -320,10 +320,6 @@ sub main
 
 	erraction(ERR_EXIT);
 
-print "\n\nUNDER DEVELOPMENT, USE AT YOUR OWN PERIL!!!\n\n";
-
-# system("cp y.rrf z.rrf");
-
 	#
 	# Check our options.
 	#
@@ -512,13 +508,13 @@ sub buildmainwind
 				    -accelerator => 'Ctrl+D',
 				    -underline	 => 0);
 
-	$cm_modify = $cmds->command(-label	 => 'Edit Selected Rollrecs',
+	$cm_modify = $cmds->command(-label	 => 'Edit Selected Rollrecs...',
 				    -command	 => \&cmds_modify,
 				    -accelerator => 'Ctrl+E',
 				    -underline	 => 0);
 	$cmds->separator();
 
-	$cm_merger = $cmds->command(-label	 => 'Merge Rollrec Files',
+	$cm_merger = $cmds->command(-label	 => 'Merge Rollrec Files...',
 				    -command	 => \&cmds_merger,
 				    -accelerator => 'Ctrl+M',
 				    -underline	 => 0);
@@ -1573,7 +1569,7 @@ sub cmds_merger
 		$newfile = $fswin->Show;
 
 		#
-		# Return if the user cancelled out of the dialog.
+		# Return if the user canceled out of the dialog.
 		#
 		return if($newfile eq '');
 
@@ -2380,7 +2376,6 @@ sub editsaver
 		if($newflag)
 		{
 			push @rrnames, $rrn;
-print STDERR "editsaver:  adding $rrn to rrnames\n";
 			$numrrnames++;
 			buildtable(0);
 		}
@@ -2780,7 +2775,7 @@ sub rrsaved
 	#
 	# Re-populate and update the table.
 	#
-print "rrsaved:  numrrnames - $numrrnames\n";
+# print "rrsaved:  numrrnames - $numrrnames\n";
 	for(my $ind = 0; $ind < $numrrnames; $ind++)
 	{
 		my $row;				# Cell's row index.
@@ -2797,7 +2792,7 @@ print "rrsaved:  numrrnames - $numrrnames\n";
 		#
 		# Get this button's label.
 		#
-print "rrsaved($ind):  row/col - $row/$col\n";
+# print "rrsaved($ind):  row/col - $row/$col\n";
 		$btn = $rrnametab->get($row,$col);
 		$name = $btn->cget(-text);
 		$name =~ s/^\* //;
@@ -3044,7 +3039,7 @@ sub set_btncols
 	# Save the new column count and rebuild the table.
 	#
 	$columncount = $col;
-print "\nnew column count:  $columncount\n";
+# print "\nnew column count:  $columncount\n";
 	buildtable(0);
 }
 
@@ -3403,13 +3398,13 @@ place.  When editing is complete, the record is "saved".  This does not save
 the modified I<rollrec> into its on-disk file; the file must be saved
 explicitly from the Button Window.
 
-As stated above, verfication checks are performed when saving an edited
+As stated above, verification checks are performed when saving an edited
 I<rollrec> record.  One set of checks ensures that files and directories
 associated with a zone actually exist.  This check may be turned off at
 command start-up with the I<-ignore-warns> command line option.  It may be
 modified during execution with the "Ignore Edit Warnings" menu command.
 
-=head2 BUTTON WINDOW LAYOUT
+=head2 Button Window Layout
 
 The Button Window contains a button for each I<rollrec> record in the
 selected file.  The buttons are arranged in a table that with at least three
@@ -3618,34 +3613,35 @@ B<rollrec-editor> behavior.
 
 =over 4
 
-=item B<View Keyrecs>
+=item B<Ignore Edit Warnings/Don't Ignore Edit Warnings>
 
-The main window will display the names of the I<keyrec> file's key I<keyrec>s.
-If Extended Data are to be displayed, then the name of each signing set of the
-I<keyrec> will also be shown.  If Extended data are not to be shown, then only
-the I<keyrec> names will be displayed.
+Certain operations perform validation checks on the contents of I<rollrec>
+records.  Warnings and errors may be reported by these checks.  This option 
+controls whether or not warnings are flagged during validation.  If they
+are flagged, then the operation will not continue until the warning condition
+is fixed or the operation canceled.  If the warnings are ignored, then the
+operation will complete without the condition being fixed.
 
-This command is a toggle that switches between View Keyrecs mode and View
-Signing Sets mode.
+This command is a toggle that switches between Ignore Edit Warnings mode and
+Don't Ignore Edit Warnings mode.
 
-=item B<Display Extended Data>
+=item B<Filter Merge Selection/Don't Filter Merge Selection>
 
-Additional data will be shown in the main window.  For Signing Sets Display
-mode, the names of the signing set and their constituent key I<keyrec>s will
-be displayed.  For Keyrec Display mode, the names of the key I<keyrec>s and
-the Signing Sets it is in will be displayed.
+When merging I<rollrec> files, a file-selection dialog box is displayed to
+allow the user to select the I<rollrec> file to merge with the open I<rollrec>
+file.  This option controls whether a filename filter is used by the dialog
+box.  If Filter Merge Selection mode is used, then only regular files with a
+suffix of B<.rrf> will be displayed by the dialog box.  If Don't Filter Merge
+Selection mode is used, then all regular files will be displayed by the dialog
+box.
 
-This command is a toggle that switches between Extended Data display and
-No Extended Data display.
+This command is a toggle that switches between Filter Merge Selection display
+and Don't Filter Merge Selection display.
 
-=item B<Do Not Display Extended Data>
+=item B<Columns in Button Window>
 
-No additional data will be shown in the main window.  For Signing Sets Display
-mode, only the names of the Signing Sets will be displayed.  For Keyrec Display
-mode, only the names of the I<keyrec>s will be displayed.
-
-This command is a toggle that switches between No Extended Data display and
-Extended Data display.
+Set the number of columns used in the Button Window.  See the Button Window
+Layout section for more information on columns in the Button Window.
 
 =back 4
 
@@ -3665,27 +3661,31 @@ Display a help window.
 
 Below are the keyboard accelerators for the B<rollrec-editor> commands:
 
-    Ctrl-D  Delete Signing Set
+    Ctrl-A  Select All Rollrecs
 
-    Ctrl-E  Display Extended Data / Do Not Display Extended Data
+    Ctrl-D  Delete Selected Rollrecs
+
+    Ctrl-E  Edit Selected Rollrecs
 
     Ctrl-H  Help
 
-    Ctrl-M  Modify Signing Set
+    Ctrl-K  Close Rollrec Edit Windows
 
-    Ctrl-N  New Signing Set
+    Ctrl-M  Merge Rollrec Files
+
+    Ctrl-N  New Rollrec
 
     Ctrl-O  Open
 
     Ctrl-Q  Quit
 
+    Ctrl-R  Reveal Rollrec Edit Windows
+
     Ctrl-S  Save
 
-    Ctrl-U  Undo Changes
+    Ctrl-U  Undo Changes  (not currently implemented)
 
-    Ctrl-V  View Signing Sets / View Keyrecs
-
-    Ctrl-W  Close Window (New Signing Set, Modify Signing Set, Help)
+    Ctrl-V  Verify Rollrec File
 
 These accelerators are all lowercase letters.
 
@@ -3696,9 +3696,13 @@ installed on your system.
 
 =head1 KNOWN ISSUES
 
-The following are known issues.  These will be resolved in time.
+The following are known issues.  These will be resolved in the fullness of time.
 
 =over 4
+
+=item
+
+Occasionally, the "Cancel" button on I<rollrec> creation is ignored.
 
 =item
 
