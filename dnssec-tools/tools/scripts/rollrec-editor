@@ -15,9 +15,6 @@
 #	WORKING ON:
 #
 #	TODO:
-#
-#		- error if file has zero rollrecs
-#
 #		- undo menu command:
 #			- maintain separate stacks for each rollrec name
 #
@@ -3351,9 +3348,6 @@ rollrec-editor - DNSSEC-Tools Rollrec GUI Editor
 
 =head1 DESCRIPTION
 
-B<This pod is under construction.  Don't believe a word of anything that
-follows the DESCRIPTION section, as it started life as pod for signset-editor.>
-
 B<rollrec-editor> provides the capability for easy GUI-based management of
 B<rollrec> files.  A B<rollrec> file contains one or more I<rollrec> records.
 These records are used by the DNSSEC-Tools rollover utilities (B<rollerd>,
@@ -3682,11 +3676,6 @@ installed on your system.
 The following are known issues.  These will be resolved in the fullness of time.
 
 =over 4
-
-=item
-
-If a rollrec is empty, problems will arise in trying to show the Button
-Window.
 
 =item
 
