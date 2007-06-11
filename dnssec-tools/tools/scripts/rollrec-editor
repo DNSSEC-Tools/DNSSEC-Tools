@@ -27,6 +27,7 @@
 
 use strict;
 
+use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::rollrec;
@@ -370,9 +371,9 @@ sub buildmainwind
 	$wm = MainWindow->new(-title => $MAINTITLE);
 
 	#
-	# Get the keyrec file info.
+	# Get the keyrec file info.  No error message; it was given below.
 	#
-	readrrf($rrfile);
+	exit(1) if(readrrf($rrfile) == 0);
 
 	#
 	# Create the frames we'll need.
@@ -1546,10 +1547,20 @@ sub cmds_merger
 	}
 
 	#
+	# Ensure the new file is actually a rollrec file.
+	#
+	if(dt_filetype($newfile) ne "rollrec")
+	{
+		my $curnode = getnode($newfile);
+
+		errorbox("$curnode is not a rollrec file; unable to continue merge");
+		return;
+	}
+
+	#
 	# Read the new file.  If we couldn't read it, we'll put up a dialog
 	# box explaining the problem.
 	#
-	rollrec_close();
 	if(rollrec_read($newfile) < 0)
 	{
 		my $curnode = getnode($newfile);
@@ -2205,9 +2216,20 @@ sub readrrf
 				   -buttons => ["Continue", "Quit" ]);
 		$ret = $dlg->Show();
 
-		return if($ret eq "Continue");
+		return(1) if($ret eq "Continue");
 
 		file_quit();
+	}
+
+	#
+	# Ensure the file is actually a rollrec file.
+	#
+	if(dt_filetype($rrf) ne "rollrec")
+	{
+		my $curnode = getnode($rrf);
+
+		errorbox("$curnode is not a rollrec file; unable to continue");
+		return(0);
 	}
 
 	#
@@ -2271,6 +2293,7 @@ sub readrrf
 	#
 	$modified = 0;
 	settitle($curnode);
+	return(1);
 }
 
 #---------------------------------------------------------------------------
