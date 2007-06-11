@@ -598,9 +598,10 @@ sub buildtable
 	maketable();
 
 	#
-	# Re-read the list of rollrec names.
+	# Read the list of rollrec names.
 	#
 	readrrf($rrfile,1) if($readflag);
+	return if($numrrnames == 0);
 
 	#
 	# Ensure the rollrec name list is sorted.
@@ -883,9 +884,12 @@ sub file_open
 	settitle($curnode);
 
 	#
-	# Read the new keyrec file.
+	# Read the new rollrec file and rebuild the button window.
 	#
-	readrrf($rrfile);
+	if(readrrf($rrfile))
+	{
+		buildtable(0);
+	}
 }
 
 #---------------------------------------------------------------------------
