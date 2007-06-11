@@ -10,65 +10,19 @@
 #	be modified or deleted from rollrec-editor.  Only a subset of rollrec
 #	fields may be modified by rollrec-editor.
 #
-#	The command is used in this way:
-#
-#               rollrec-editor [-V -ignore-warns -columns colcnt] <rollrec-file>
-#
-#	The rollrec-file is a DNSSEC-Tools keyrec file that maintains
-#	information about a zone and its encryption keys.
-#
-#
 #
 #
 #	WORKING ON:
-#		- fix the pod
 #
 #	TODO:
-#		- "Cancel" button on rollrec creation is ignored.
+#
+#		- error if file has zero rollrecs
 #
 #		- undo menu command:
 #			- maintain separate stacks for each rollrec name
 #
 #		- quit editor command
 #			- exits with error if cntl-q is given
-#
-#	DONE:
-#		- menu commands
-#			* create new rollrecs
-#
-#			* delete rollrecs
-#
-#			* edit rollrecs
-#
-#			* merge rollrec files
-#
-#			* validate file (edit)
-#
-#			* validate file (summary)
-#
-#			* quit editor
-#
-#		- menu options
-#			* turn on/off givewarnings
-#			* raise edit windows
-#			* columns in button window
-#
-#		- command line options
-#			* turn off givewarnings
-#
-#		- shinies:
-#			* button window holding rollrec names
-#
-#			* better window-filling
-#
-#			* changed rollrec entries should have name in name
-#			  grid starred
-#
-#			* changed rollrec files should have name in name
-#			  window starred
-#
-#			* ensure merge doesn't merge a file with itself
-#
 #
 
 use strict;
@@ -2026,7 +1980,6 @@ sub editwindow
 	$editwin->bind('<Control-Key-w>', [\&editbegone, $rrn]);
 	$editwin->bind('<Control-Key-c>', \&view_closeone);
 	$editwin->bind('<Control-Key-k>', \&view_closeall);
-#	$editwin->bind('<Key-Return>',    [\&editsaver, $rrn, $newflag]);
 
 	#
 	# Now make the containers for the window.
@@ -3090,13 +3043,16 @@ sub editbegone
 	#
 	# Didn't find the name in the list of rollrec names, so maybe it's
 	# a widget itself.  If we find it in the list of edit windows,
-	# we'll recurse with the widget's rollrec name.
+	# we'll delete it here.
 	#
 	foreach my $rrn (keys(%editwinds))
 	{
-		if($editwinds{$rrn} == $rrname)
+		if($rrn == $rrname)
 		{
-			editbegone($rrn);
+			$editwinds{$rrname}->destroy();
+			delete($editwinds{$rrname});
+			delete($edittabs{$rrname});
+
 			return;
 		}
 	}
