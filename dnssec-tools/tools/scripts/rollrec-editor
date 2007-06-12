@@ -12,15 +12,12 @@
 #
 #
 #
-#	WORKING ON:
-#		- adding filename filtering to other FileSelect calls
-#
 #	TODO:
 #		- undo menu command:
 #			- maintain separate stacks for each rollrec name
 #
-#		- quit editor command
-#			- exits with error if cntl-q is given
+#		- quit editor command works, but the exit(0) call generates
+#		  a segmentation fault
 #
 
 use strict;
@@ -36,6 +33,10 @@ use Getopt::Long qw(:config no_ignore_case_always);
 ######################################################################
 #
 # DESTROY THESE DATA!!!
+#
+#	These data are part of the undo code that was carried over from
+#	signset-editor.  When the undo code is rewritten here, these
+#	variables should be either deleted or renamed.
 #
 
 my %key_lists;
@@ -3245,18 +3246,43 @@ rollrec-editor - DNSSEC-Tools Rollrec GUI Editor
          
 SYNOPSIS
          
-    rollrec-editor <rollrec-file>
+    rollrec-editor [options] <rollrec-file>
 
 DESCRIPTION
 
-rollrec-editor provides the capability for easy management of rollrec files in
-a GUI.  The rollrec records found in the given rollrec file are displayed in a
-new window.  New rollrecs may be created and existing rollrecs may be modified
-or deleted from rollrec-editor.
+rollrec-editor provides the capability for easy GUI-based management of
+rollrec files.  A rollrec file contains one or more rollrec records.  These
+records are used by the DNSSEC-Tools rollover utilities (rollerd, etc.) to
+describe zones' rollover state.  Each zone's rollrec record contains such
+information as the zone file, the rollover phase, and logging level.  rollrec
+files are text files and may be edited by any text editor.  rollrec-editor
+allows editing of only those records a user should change and performs error
+checking on the data.
 
-Management of rollrec files may be handled using a normal text editor.
-However, rollrec-editor provides a nice GUI that only manipulates rollrecs
-without the potential visual clutter of the rest of the rollrec entries.
+When rollrec-editor starts, a window is created that has \"buttons\" for each
+rollrec record in the given rollrec file.  (In this documentation, this window
+is called the Button Window.)  Clicking on the buttons selects (or deselects)
+that zone.  After one or more zones are selected, one of several commands may
+be executed.  Commands allow modification and deletion of existing rollrec
+records, creation of new rollrec records, merging of rollrec files, and
+verification of file validity.
+
+rollrec-editor's commands are available through the menus and most have a
+keyboard accelerator.  The commands are described in the manual page.
+
+When a rollrec record is selected for modification, a new window is created to
+hold the editable fields of the record.  The fields may be modified in place.
+When editing is complete, the record is \"saved\".  This does not save the
+modified rollrec into its on-disk file; the file must be saved explicitly from
+the Button Window.
+
+As stated above, verification checks are performed when saving an edited
+rollrec record.  One set of checks ensures that files and directories
+associated with a zone actually exist.  This check may be turned off at
+command start-up with the -ignore-warns command line option.  It may be
+modified during execution with the \"Ignore Edit Warnings\" menu command.
+
+More information may be found in rollrec-editor's man page.
 
 ";
 
