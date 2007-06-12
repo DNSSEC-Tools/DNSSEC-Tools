@@ -13,6 +13,7 @@
 #
 #
 #	WORKING ON:
+#		- adding filename filtering to other FileSelect calls
 #
 #	TODO:
 #		- undo menu command:
@@ -73,6 +74,7 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	"ignore-warns",			# Ignore-edit-warnings flag.
+	"no-filter",			# No-name-filtering flag.
 	"columns=i",			# Columns in button window.
 
 	"Version",			# Display the version number.
@@ -118,14 +120,14 @@ my $numrrnames;				# Number of rollrec names.
 #
 my $IGNORE_ON	= "Ignore Edit Warnings";
 my $IGNORE_OFF	= "Don't Ignore Edit Warnings";
-my $FILTER_OFF	= "Don't Filter Merge Selection";
-my $FILTER_ON	= "Filter Merge Selection";
+my $FILTER_OFF	= "Don't Filter Name Selection";
+my $FILTER_ON	= "Filter Name Selection";
 
 #
 # Various flags.
 #
 my $givewarnings = 1;				# Give-warnings flag.
-my $mergefilter	 = 0;				# Use-merge-filter flag (FS).
+my $namefilter	 = 1;				# Use-name-filter flag (FS).
 my $inhelpwind	 = 0;				# Showing help window.
 my $modified	 = 0;				# Modified-rrfile flag.
 my %modified	 = ();				# Modified-rollrecs hash.
@@ -176,7 +178,7 @@ my $vw_closeall;				# Close rollrec edit windows.
 my $vw_raiser;					# Raise rollrec edit windows.
 
 my $tog_ignwarn;				# Ignore-Edit-Warning toggle.
-my $tog_mergefilt = 1;				# Use-merge-filter toggle.
+my $tog_namefilt = 1;				# Use-name-filter toggle.
 
 my $hm_help;					# Help item.
 
@@ -327,6 +329,7 @@ sub doopts
 	# Set some flags based on the command line.
 	#
 	$givewarnings = 0 if(defined($options{'ignore-warns'}));
+	$namefilter   = 0 if(defined($options{'no-filter'}));
 
 	#
 	# Check for the column-count option.
@@ -520,9 +523,9 @@ sub buildmainwind
 			              -underline => 0);
 	$opts->pack(-side => 'left');
 
-	$mergefilter = 1;
-	$tog_mergefilt = $opts->command(-label => $FILTER_OFF,
-					-command => \&toggle_mergefilt,
+	$namefilter = 1;
+	$tog_namefilt = $opts->command(-label => $FILTER_OFF,
+					-command => \&toggle_namefilt,
 					-underline => 0);
 	$opts->pack(-side => 'left');
 
@@ -844,6 +847,7 @@ sub maketable
 sub file_open
 {
 	my $fowin;					# File-open widget.
+	my %fsopts = ();				# FileSelect() options.
 	my $newfile;					# New file name.
 
 	#
@@ -867,9 +871,15 @@ sub file_open
 	}
 
 	#
+	# Set up options for FileSelect.
+	#
+	%fsopts = (-directory => '.');
+	$fsopts{'-filter'} = '*.rrf' if($namefilter);
+
+	#
 	# Prompt for the new file.  Return to our caller if nothing was chosen.
 	#
-	$fowin = $wm->FileSelect(-directory => '.' );
+	$fowin = $wm->FileSelect(%fsopts);
 	$newfile = $fowin->Show;
 	return if($newfile eq "");
 
@@ -924,11 +934,18 @@ sub file_saveas
 {
 	my $fowin;					# File-open widget.
 	my $newfile;					# New file's name.
+	my %fsopts;					# FileSelect() options.
+
+	#
+	# Set up options for FileSelect.
+	#
+	%fsopts = (-directory => '.');
+	$fsopts{'-filter'} = '*.rrf' if($namefilter);
 
 	#
 	# Prompt for the new file.
 	#
-	$fowin = $wm->FileSelect(-directory => '.' );
+	$fowin = $wm->FileSelect(%fsopts);
 	$newfile = $fowin->Show;
 	return if($newfile eq "");
 
@@ -1505,7 +1522,7 @@ sub cmds_merger
 			-directory => '.',
 			-filelabel => 'File To Be Merged'
 		  );
-	$fsopts{'-filter'} = '*.rrf' if($mergefilter);
+	$fsopts{'-filter'} = '*.rrf' if($namefilter);
 
 	#
 	# Get the name of the file to be merged with the current file.
@@ -2931,21 +2948,21 @@ sub toggle_ignwarn
 }
 
 #---------------------------------------------------------------------------
-# Routine:	toggle_mergefilt()
+# Routine:	toggle_namefilt()
 #
-# Purpose:	Toggle on /off the "Use Merge Filter" menu command.
+# Purpose:	Toggle on /off the "Use Name Filter" menu command.
 #
-sub toggle_mergefilt
+sub toggle_namefilt
 {
-	if($mergefilter)
+	if($namefilter)
 	{
-		$mergefilter = 0;
-		$tog_mergefilt->configure(-label => $FILTER_OFF);
+		$namefilter = 0;
+		$tog_namefilt->configure(-label => $FILTER_OFF);
 	}
 	else
 	{
-		$mergefilter = 1;
-		$tog_mergefilt->configure(-label => $FILTER_ON);
+		$namefilter = 1;
+		$tog_namefilt->configure(-label => $FILTER_ON);
 	}
 }
 
@@ -3327,6 +3344,7 @@ sub usage
 	print STDERR "usage:  rollrec-editor [options] <rollrec-file>\n";
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-ignore-warns		ignore edit warnings\n";
+	print STDERR "\t\t-no-filter		turn off name filtering\n";
 	print STDERR "\t\t-columns  columns	columns in button window\n";
 	print STDERR "\t\t-V			program version\n";
 	exit(0);
@@ -3602,18 +3620,17 @@ operation will complete without the condition being fixed.
 This command is a toggle that switches between Ignore Edit Warnings mode and
 Don't Ignore Edit Warnings mode.
 
-=item B<Filter Merge Selection/Don't Filter Merge Selection>
+=item B<Filter Name Selection/Don't Filter Name Selection>
 
-When merging I<rollrec> files, a file-selection dialog box is displayed to
-allow the user to select the I<rollrec> file to merge with the open I<rollrec>
-file.  This option controls whether a filename filter is used by the dialog
-box.  If Filter Merge Selection mode is used, then only regular files with a
-suffix of B<.rrf> will be displayed by the dialog box.  If Don't Filter Merge
-Selection mode is used, then all regular files will be displayed by the dialog
-box.
+When opening I<rollrec> files for editing or merging, a file-selection dialog
+box is displayed to allow the user to select a I<rollrec> file.  This option
+controls whether a filename filter is used by the dialog box.  If Filter Names
+Selection mode is used, then only regular files with a suffix of B<.rrf> will
+be displayed by the dialog box.  If Don't Filter Name Selection mode is used,
+then all regular files will be displayed by the dialog box.
 
-This command is a toggle that switches between Filter Merge Selection display
-and Don't Filter Merge Selection display.
+This command is a toggle that switches between Filter Name Selection display
+and Don't Filter Name Selection display.
 
 =item B<Columns in Button Window>
 
