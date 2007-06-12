@@ -13,8 +13,7 @@
 #
 #
 #	TODO:
-#		- undo menu command:
-#			- maintain separate stacks for each rollrec name
+#		- undo command
 #
 #		- quit editor command works, but the exit(0) call generates
 #		  a segmentation fault
@@ -64,90 +63,73 @@ my $VERS   = "$NAME version: 0.5";
 my $DTVERS = "DNSSEC-Tools Version: 1.1";
 
 #######################################################################
+#
+#			program (non-GUI) data
+#
 
 #
-# Flag variables for options.
+# Variables for command options.
 #
-my $zonename	= "";
-my $zonefile	= "";
-
-my %options = ();			# Filled option array.
+my %options = ();				# Filled option array.
 my @opts =
 (
-	"ignore-warns",			# Ignore-edit-warnings flag.
-	"no-filter",			# No-name-filtering flag.
-	"columns=i",			# Columns in button window.
+	"ignore-warns",				# Ignore-edit-warnings flag.
+	"no-filter",				# No-name-filtering flag.
+	"columns=i",				# Columns in button window.
 
-	"Version",			# Display the version number.
-	"help",				# Give a usage message and exit.
+	"Version",				# Display the version number.
+	"help",					# Give a usage message and exit.
 );
 
+#
+# Flags for options.
+#
+my $givewarnings = 1;				# Give-warnings flag.
+my $namefilter	 = 1;				# Use-name-filter flag (FS).
 
 #
 # File name variables.
 #
-my $rrfile  = "dummy";			# Rollrec file we're examining.
-my $curnode = "dummy";			# Node of rrfile.
-my $title   = "dummy";			# Node for title.
-my $modset  = 0;			# Flag for (modified) title.
+my $rrfile  = "dummy";				# Rollrec file we're examining.
+my $curnode = "dummy";				# Node of rrfile.
 
 #
-# Main window constants.
+# Lists of rollrecs.
 #
-my $MAINTITLE	= "DNSSEC-Tools Rollrec Editor";
-
-#
-# Constants and data for button table in main window.
-#
-my $DEFCOLS = 4;			# Default columns in button table.
-my $MAXCOLS = 12;			# Maximum allowable button columns.
-my $MINCOLS = 3;			# Minimum allowable button columns.
-
-my $numcols;				# Current number of table cols.
-my $numrows;				# Current number of table rows.
-
-my $columncount = $DEFCOLS;		# Column count.
-
-#
-# Arrays and lists of rollrecs.
-#
-my %rollrecs = ();
-my @rollrecs = ();
-my @rrnames = ();			# List of rollrec names.
-my $numrrnames;				# Number of rollrec names.
-
-#
-# Labels for toggles in the Options menu.
-#
-my $IGNORE_ON	= "Ignore Edit Warnings";
-my $IGNORE_OFF	= "Don't Ignore Edit Warnings";
-my $FILTER_OFF	= "Don't Filter Name Selection";
-my $FILTER_ON	= "Filter Name Selection";
-
-#
-# Various flags.
-#
-my $givewarnings = 1;				# Give-warnings flag.
-my $namefilter	 = 1;				# Use-name-filter flag (FS).
-my $inhelpwind	 = 0;				# Showing help window.
+my %rollrecs = ();				# Rollrec hash.
+my @rollrecs = ();				# Rollrec array.
+my @rrnames = ();				# List of rollrec names.
+my $numrrnames;					# Number of rollrec names.
 my $modified	 = 0;				# Modified-rrfile flag.
 my %modified	 = ();				# Modified-rollrecs hash.
 
+###########################################################################
 #
 # Undo data.
 #
+
 my @undo_stack;					# Stack for undo commands.
 
-my $NORMALCOLOR	 = "black";			# Color for normal messages.
-my $WARNCOLOR	 = "yellow";			# Color for warning messages.
-my $ERRCOLOR	 = "red";			# Color for error messages.
+###########################################################################
+#
+#			Tk GUI data
+#
+
+########################################################
+#
+# Main window data.
+#
+my $MAINTITLE	= "DNSSEC-Tools Rollrec Editor";
+
+my $title   = "dummy";				# Node for title.
+my $modset  = 0;				# Flag for (modified) title.
 
 #
-# The main window and several subwindows.
+# The main window and help window.
 #
 my $wm;						# Main window.
-my $subwin;					# Create/Modify window.
 my $helpwin;					# Help window.
+my $inhelpwind	 = 0;				# Showing help window flag.
 
 #
 # The contents of the main window and its frames.
@@ -157,6 +139,11 @@ my $rrfl;					# Keyrec frame.
 my $body;					# Window body frame.
 my $bodylist;					# Listbox for body.
 my $null;					# Empty frame.
+
+########################################################
+#
+# Menubar and menu data.
+#
 
 #
 # Menu item widgets.
@@ -184,16 +171,46 @@ my $tog_namefilt = 1;				# Use-name-filter toggle.
 my $hm_help;					# Help item.
 
 #
-# Data for ...
+# Labels for toggles in the Options menu.
+#
+my $IGNORE_ON	= "Ignore Edit Warnings";
+my $IGNORE_OFF	= "Don't Ignore Edit Warnings";
+my $FILTER_OFF	= "Don't Filter Name Selection";
+my $FILTER_ON	= "Filter Name Selection";
+
+########################################################
+#
+# Button window data.
 #
 
-my $rrnametab;			# Rollrec name table.
+#
+# Column and row data for button windows.
+#
+my $DEFCOLS = 4;			# Default columns in button table.
+my $MAXCOLS = 12;			# Maximum allowable button columns.
+my $MINCOLS = 3;			# Minimum allowable button columns.
 
-my %editwinds;			# Rollrec edit windows.
-my %edittabs = ();		# Edit-area tables.
+my $numcols;				# Current number of table cols.
+my $numrows;				# Current number of table rows.
 
-my %editrbs;			# Type radiobutton values for edit windows.
-my %editdfs;			# Display flag radiobutton vals for edit winds.
+my $columncount = $DEFCOLS;		# Column count.
+
+#
+# Font data for text in button window.
+#
+my $fontsize    = 18;
+my $font        = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+
+#
+# Colors for selected/unselected button in button window.
+#
+my $RRTAB_UNSEL	= 'white';
+my $RRTAB_SEL	= 'blue';
+
+########################################################
+#
+# Edit window data.
+#
 
 #
 # Row and column constants for the edit-window tables.
@@ -247,19 +264,20 @@ my @EDITFIELDS =
 			'zonefile'
 		);
 
-###########################################################################
 #
-# Graphic constants and variables.
+# Constants for message text colors.
 #
+my $NORMALCOLOR	 = "black";			# Color for normal messages.
+my $WARNCOLOR	 = "yellow";			# Color for warning messages.
+my $ERRCOLOR	 = "red";			# Color for error messages.
 
-#
-# Font data for output window.
-#
-my $fontsize    = 18;
-my $font        = "*-*-bold-r-*-*-$fontsize-*-*-*-*-*-*-*";
+my $rrnametab;					# Rollrec name table widget.
 
-my $RRTAB_UNSEL	= 'white';
-my $RRTAB_SEL	= 'blue';
+my %editwinds;					# Rollrec edit windows.
+my %edittabs = ();				# Edit-area tables.
+
+my %editrbs;			# Type radiobutton values for edit windows.
+my %editdfs;			# Display flag radiobutton vals for edit winds.
 
 ###########################################################################
 
@@ -2331,16 +2349,6 @@ sub getnode
 	$pathnode = pop @pathelts;
 
 	return($pathnode);
-}
-
-#---------------------------------------------------------------------------
-# Routine:	cancelit()
-#
-# Purpose:	Destroy a subwindow.
-#
-sub cancelit
-{
-	$subwin->destroy();
 }
 
 #---------------------------------------------------------------------------
