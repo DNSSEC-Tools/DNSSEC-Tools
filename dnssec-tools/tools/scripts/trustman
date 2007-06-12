@@ -59,6 +59,7 @@ GetOptions(\%opts,
              'V|version',
              'w|hold_time=s',
              'persistent_data_file=s',
+             'test_revoke=s',
            );
 
 if ($opts{'h'}) {
@@ -136,8 +137,12 @@ my %active_refresh_times;
 my %zone_configfile_map;
 my $once;
 
-my $revoke = 1;
-# my $revoke = 0;
+my $revoke;
+if ($opts{'test_revoke'}) {
+    $revoke = 1;
+} else {
+    $revoke = 0;
+}
 
 if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
     usage();
@@ -357,10 +362,12 @@ sub checkkeys {
                             Data::Dumper->Dump([\%newkeys], ['*newkeys']);
                         close FILE or warn "can't close newkeys file: $!";
                     }
-#                } elsif ($keyrec->REVOKE == 1) {
                 # see if it has the revoke bit set
                 # below is for testing purposes lacking a real revoke bit
                 # implementation
+                # when a real REVOKE implementation is available, this 
+                # should be changed
+#                } elsif ($keyrec->REVOKE == 1) {
                 } elsif ($revoke == 1) {
                     # this key is being revoked
                     if ($dvfile) {
