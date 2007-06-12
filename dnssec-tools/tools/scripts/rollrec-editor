@@ -3345,7 +3345,7 @@ sub usage
 	print STDERR "\toptions:\n";
 	print STDERR "\t\t-ignore-warns		ignore edit warnings\n";
 	print STDERR "\t\t-no-filter		turn off name filtering\n";
-	print STDERR "\t\t-columns  columns	columns in button window\n";
+	print STDERR "\t\t-columns columns	columns in button window\n";
 	print STDERR "\t\t-V			program version\n";
 	exit(0);
 }
@@ -3443,6 +3443,35 @@ during a previous execution may not be undone.
 
 After a "Save" operation, the data required for reversing modifications are
 deleted.  This is not the case for the "Save As" operation.
+
+=head1 OPTIONS
+
+B<rollrec-editor> supports the following options.
+
+=over 4
+
+=item -columns columns
+
+This option allows the user to specify the number of columns to be used in
+the Button Window.
+
+=item -ignore-warns
+
+This option causes B<rollrec-editor> to ignore edit warnings when performing
+validation checks on the contents of I<rollrec> records.
+
+=item -no-filter
+
+This option turns off name filtering when B<rollrec-editor> presents a
+file-selection dialog for choosing a new I<rollrec> file.  If this option
+is not given, then the file-selection dialog will only list regular files
+with a suffix of B<.rrf>.
+
+=item -V
+
+This option displays the program and DNSSEC-Tools version.
+
+=back
 
 =head1 COMMANDS
 
