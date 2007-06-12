@@ -5,7 +5,6 @@
 #
 
 use strict;
-no strict "vars";
 
 use Net::DNS;
 use Net::DNS::SEC::Tools::conf;
@@ -252,7 +251,7 @@ sub checkkeys {
         @{$keys_to_verify{$k}} = @{$keystorage{$k}};
     }
 
-    my $domains_to_check;
+    my @domains_to_check;
 
     foreach my $d (@domains) {
     # check all domains to see if $active_refresh_times{$d} has been reached
@@ -336,6 +335,7 @@ sub checkkeys {
                     }
                     if (!$notnewkey) {
                     
+                        my $add_holddown_time;
                         if ($holdtime) {
                             $add_holddown_time = $holdtime;
                         } else {
@@ -442,7 +442,7 @@ sub checkkeys {
             my $notif = "query failed for domain " . $d . "\n";
             print $notif;
             notify($notif) if ($opts{'v'});
-            $refresh_secs = compute_queryfail_sleepsecs(0,0);
+            my $refresh_secs = compute_queryfail_sleepsecs(0,0);
             $sleeptimes{$d} =  $refresh_secs;
         }
     }
@@ -726,7 +726,7 @@ sub remove_ta_namedconf  {
                         # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been removed.\n";
-                            $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $remkeyrec . "\n";
                             my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
                             notify($notif);
@@ -757,7 +757,7 @@ sub remove_ta_namedconf  {
                         # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been removed.\n";
-                            $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $remkeyrec . "\n";
                             my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
                             notify($notif);
@@ -812,7 +812,7 @@ sub revoke_ta_dnsvalconf  {
                         $keyrec->{algorithm} eq $algorithm) {
 # its a match, comment it out
                         print TMP "# The following key has been revoked.\n";
-                        $revkeyrec = $d . ". " . $val;
+                        my $revkeyrec = $d . ". " . $val;
                         print TMP "# " . $revkeyrec . "\n\n";
                         my $notif = "The following key has been revoked from domain " . $d . ":\n" . $revkeyrec . "\n";
                         notify($notif);
@@ -868,7 +868,7 @@ sub revoke_ta_namedconf  {
 # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been revoked.\n";
-                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $revkeyrec . "\n";
                             my $notif = "The following key has been revoked from domain " . $d . ":\n" . $revkeyrec . "\n";
                             notify($notif);
@@ -902,7 +902,7 @@ sub revoke_ta_namedconf  {
 # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been revoked.\n";
-                            $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $revkeyrec . "\n";
                     }
                 } else {
@@ -1184,7 +1184,7 @@ sub notify {
     
     if ($opts{'L'}) {
         openlog('trustman','pid','user') || warn "could not open syslog";
-        syslog('warning',%s, $message);
+        syslog('warning',"%s", $message);
         closelog();
     }
     if ($opts{'p'}) {
