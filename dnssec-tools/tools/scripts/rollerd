@@ -37,6 +37,7 @@ use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
 use Net::DNS::SEC::Tools::keyrec;
+use Net::DNS::SEC::Tools::rolllog;
 use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::timetrans;
@@ -194,7 +195,7 @@ sub main
 	if(rollmgr_dropid() == 0)
 	{
 		print STDERR "another rollerd is already running\n";
-		rollmgr_log(LOG_ALWAYS,"","another rollerd tried to start");
+		rolllog_log(LOG_ALWAYS,"","another rollerd tried to start");
 		cleanup();
 	}
 
@@ -215,7 +216,7 @@ sub main
 	#
 	while(42)
 	{
-# rollmgr_log(LOG_ALWAYS,"","looping ------------------------------------------");
+# rolllog_log(LOG_ALWAYS,"","looping ------------------------------------------");
 
 		#
 		# Turn off signal handlers so they don't interrupt us
@@ -252,7 +253,7 @@ sub main
 				$kronos2 = time;
 				$kronodiff = $kronos2 - $kronos1;
 				$kronos = timetrans($kronodiff);
-				rollmgr_log(LOG_TMI,"<timer>","keys checked in $kronos");
+				rolllog_log(LOG_TMI,"<timer>","keys checked in $kronos");
 
 				#
 				# Save the current rollrec file state.
@@ -294,7 +295,7 @@ sub rollkeys
 		#
 		# Return to our execution directory.
 		#
-		rollmgr_log(LOG_TMI,$rname,"execution directory:  chdir($xqtdir)");
+		rolllog_log(LOG_TMI,$rname,"execution directory:  chdir($xqtdir)");
 		chdir($xqtdir);
 
 		#
@@ -310,7 +311,7 @@ sub rollkeys
 		$rrr = rollrec_fullrec($rname);
 		if(!defined($rrr))
 		{
-			rollmgr_log(LOG_ERR,$rname,"no rollrec defined for zone");
+			rolllog_log(LOG_ERR,$rname,"no rollrec defined for zone");
 			next;
 		}
 		%rr = %$rrr;
@@ -324,15 +325,15 @@ sub rollkeys
 		{
 			my $llev;			# Logging level.
 
-			$llev = rollmgr_lognum($rr{'loglevel'});
+			$llev = rolllog_num($rr{'loglevel'});
 			if($llev != -1)
 			{
 				$loglevel = $llev;
-				rollmgr_loglevel($loglevel,0);
+				rolllog_level($loglevel,0);
 			}
 			else
 			{
-				rollmgr_log(LOG_ERR,$rname,"invalid rollrec logging level \"$rr{'loglevel'}\"");
+				rolllog_log(LOG_ERR,$rname,"invalid rollrec logging level \"$rr{'loglevel'}\"");
 			}
 		}
 
@@ -341,7 +342,7 @@ sub rollkeys
 		#
 		if($rr{'rollrec_type'} eq "skip")
 		{
-			rollmgr_log(LOG_TMI,$rname,"is a skip rollrec");
+			rolllog_log(LOG_TMI,$rname,"is a skip rollrec");
 			next;
 		}
 
@@ -356,10 +357,10 @@ sub rollkeys
 
 			if(chdir($rrdir) == 0)
 			{
-				rollmgr_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
+				rolllog_log(LOG_ERR,$rname,"invalid rollrec directory \"$rrdir\"; skipping...");
 				next;
 			}
-			rollmgr_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
+			rolllog_log(LOG_TMI,$rname,"using rollrec directory \"$rrdir\"");
 		}
 
 		#
@@ -367,12 +368,12 @@ sub rollkeys
 		#
 		if($rr{'kskphase'} == -1)
 		{
-			rollmgr_log(LOG_TMI,$rname,"new kskphase entry");
+			rolllog_log(LOG_TMI,$rname,"new kskphase entry");
 			kskphase($rname,$rrr,0)
 		}
 		if($rr{'zskphase'} == -1)
 		{
-			rollmgr_log(LOG_TMI,$rname,"new zskphase entry");
+			rolllog_log(LOG_TMI,$rname,"new zskphase entry");
 			zskphase($rname,$rrr,0)
 		}
 
@@ -381,13 +382,13 @@ sub rollkeys
 		# 
 		if(ksk_expired($rname,$rrr,"kskcur"))
 		{
-			rollmgr_log(LOG_TMI,$rname,"current KSK has expired\n") if($rr{'zskphase'} == 0);
+			rolllog_log(LOG_TMI,$rname,"current KSK has expired\n") if($rr{'zskphase'} == 0);
 
 			ksk_phaser($rname,$rrr);
 		}
 		else
 		{
-			rollmgr_log(LOG_TMI,$rname,"current KSK still valid");
+			rolllog_log(LOG_TMI,$rname,"current KSK still valid");
 		}
 
 		#
@@ -395,13 +396,13 @@ sub rollkeys
 		# 
 		if(zsk_expired($rname,$rrr,"zskcur"))
 		{
-			rollmgr_log(LOG_INFO,$rname,"current ZSK has expired\n") if($rr{'zskphase'} == 0);
+			rolllog_log(LOG_INFO,$rname,"current ZSK has expired\n") if($rr{'zskphase'} == 0);
 
 			zsk_phaser($rname,$rrr);
 		}
 		else
 		{
-			rollmgr_log(LOG_TMI,$rname,"current ZSK still valid");
+			rolllog_log(LOG_TMI,$rname,"current ZSK still valid");
 		}
 
 	}
@@ -410,7 +411,7 @@ sub rollkeys
 	# Ensure the logging level is set correctly.
 	#
 	$loglevel = $loglevel_save;
-	rollmgr_loglevel($loglevel,0);
+	rolllog_level($loglevel,0);
 }
 
 ###############################################################################
@@ -470,7 +471,7 @@ sub zsk_expired
 	#
 	if($rr{'kskphase'} > 0)
 	{
-		rollmgr_log(LOG_TMI,$rname,"in KSK rollover (phase $rr{'kskphase'}); not attempting ZSK rollover");
+		rolllog_log(LOG_TMI,$rname,"in KSK rollover (phase $rr{'kskphase'}); not attempting ZSK rollover");
 		return(0);
 	}
 
@@ -487,7 +488,7 @@ sub zsk_expired
 	$krec = zonekeykr($rname,$krname,$key);
 	if($krec == 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
 		return(0);
 	}
 	%set   = %$krec;
@@ -497,12 +498,12 @@ sub zsk_expired
 	#
 	if($set{'keyrec_type'} ne 'set')
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
+		rolllog_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
 		return(0);
 	}
 	if(!defined($set{'keys'}) || ($set{'keys'} eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
 		return(0);
 	}
 
@@ -512,7 +513,7 @@ sub zsk_expired
 	@signset = split / /, $set{'keys'};
 	if(@signset == 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
 		return(0);
 	}
 
@@ -535,7 +536,7 @@ sub zsk_expired
 		#
 		if(!defined($kh{"zsklife"}))
 		{
-			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a zsklife record");
+			rolllog_log(LOG_ERR,$rname,"keyrec does not contain a zsklife record");
 			return(0);
 		}
 
@@ -575,7 +576,7 @@ sub zsk_expired
 		#
 		if(!defined($rr{'zsk_rollsecs'}))
 		{
-			rollmgr_log(LOG_INFO,$rname,"creating new zsk_rollsecs record and forcing ZSK rollover");
+			rolllog_log(LOG_INFO,$rname,"creating new zsk_rollsecs record and forcing ZSK rollover");
 			rollstamp($rname,'zsk');
 			return(1);
 		}
@@ -588,14 +589,14 @@ sub zsk_expired
 		#
 		if(!defined($kh{'keyrec_gensecs'}))
 		{
-			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
+			rolllog_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
 			return(0);
 		}
 		$starter = $kh{'keyrec_gensecs'};
 	}
 	elsif($zrollmethod == $RM_STARTROLL)
 	{
-		rollmgr_log(LOG_ERR,$rname,"RM_STARTROLL not yet implemented");
+		rolllog_log(LOG_ERR,$rname,"RM_STARTROLL not yet implemented");
 		return(0);
 	}
 
@@ -616,14 +617,14 @@ sub zsk_expired
 	if($waitsecs >= 0)
 	{
 		$chronostr = timetrans($waitsecs);
-		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
+		rolllog_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
 		display("expiration $rname 0 ZSK $waitsecs");
 	}
 	else
 	{
 		$waitsecs = $cronus - $krsecs;
 		$chronostr = timetrans($waitsecs);
-		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
+		rolllog_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
 		display("zskphase $rname 0");
 	}
 
@@ -734,12 +735,12 @@ sub zsk_phase2
 	$krf = $rr{'keyrec'};
 	if(!$krf  || ($krf eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"ZSK phase 2:  no keyrec for zone specified");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  no keyrec for zone specified");
 		return;
 	}
 	if(! -e $krf)
 	{
-		rollmgr_log(LOG_ERR,$rname,"ZSK phase 2:  keyrec \"$krf\" for zone does not exist");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  keyrec \"$krf\" for zone does not exist");
 		return;
 	}
 
@@ -755,7 +756,7 @@ sub zsk_phase2
 	$ret = signer($rname,"-usezskpub",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"ZSK phase 2:  unable to sign zone with the Published ZSK");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 2:  unable to sign zone with the Published ZSK");
 	}
 
 	#
@@ -770,7 +771,7 @@ sub zsk_phase2
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rollmgr_log(LOG_ERR,$zone,"ZSK phase 2:  unable to reload zone, rc - $ret");
+#		rolllog_log(LOG_ERR,$zone,"ZSK phase 2:  unable to reload zone, rc - $ret");
 	}
 
 	#
@@ -811,19 +812,19 @@ sub zsk_phase4
 	$krf = $rr{'keyrec'};
 	if(!$krf  || ($krf eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  no keyrec for zone specified");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  no keyrec for zone specified");
 		return;
 	}
 	if(! -e $krf)
 	{
-		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  keyrec \"$krf\" for zone does not exist");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  keyrec \"$krf\" for zone does not exist");
 		return;
 	}
 
 	#
 	# Get the keyrec.
 	#
-	rollmgr_log(LOG_TMI,$rname,"keyrec file is $krf");
+	rolllog_log(LOG_TMI,$rname,"keyrec file is $krf");
 	$krr = opts_zonekr($krf,$rname);
 	%krf = %$krr;
 
@@ -833,7 +834,7 @@ sub zsk_phase4
 	$ret = signer($rname,"-rollzsk",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  unable to adjust ZSK keyrec");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to adjust ZSK keyrec");
 	}
 
 	#
@@ -842,7 +843,7 @@ sub zsk_phase4
 	$ret = signer($rname,"",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the current ZSK");
+		rolllog_log(LOG_ERR,$rname,"ZSK phase 4:  unable to sign zone with the current ZSK");
 	}
 
 	#
@@ -851,7 +852,7 @@ sub zsk_phase4
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rollmgr_log(LOG_ERR,$zone,"ZSK phase 4:  unable to reload zone, rc - $ret");
+#		rolllog_log(LOG_ERR,$zone,"ZSK phase 4:  unable to reload zone, rc - $ret");
 	}
 
 	#
@@ -924,7 +925,7 @@ sub ksk_expired
 	#
 	if($rr{'zskphase'} > 0)
 	{
-		rollmgr_log(LOG_TMI,$rname,"in ZSK rollover (phase $rr{'zskphase'}); not attempting KSK rollover");
+		rolllog_log(LOG_TMI,$rname,"in ZSK rollover (phase $rr{'zskphase'}); not attempting KSK rollover");
 		return(0);
 	}
 
@@ -941,7 +942,7 @@ sub ksk_expired
 	$krec = zonekeykr($rname,$krname,$key);
 	if($krec == 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for \"$key\" is \"$krname\"");
 		return(0);
 	}
 	%set   = %$krec;
@@ -951,12 +952,12 @@ sub ksk_expired
 	#
 	if($set{'keyrec_type'} ne 'set')
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
+		rolllog_log(LOG_ERR,$rname,"\"$key\"'s keyrec is not a set keyrec");
 		return(0);
 	}
 	if(!defined($set{'keys'}) || ($set{'keys'} eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
 		return(0);
 	}
 
@@ -966,7 +967,7 @@ sub ksk_expired
 	@signset = split / /, $set{'keys'};
 	if(@signset == 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to check expiration");
 		return(0);
 	}
 
@@ -989,7 +990,7 @@ sub ksk_expired
 		#
 		if(!defined($kh{"ksklife"}))
 		{
-			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a ksklife record");
+			rolllog_log(LOG_ERR,$rname,"keyrec does not contain a ksklife record");
 			return(0);
 		}
 
@@ -1029,7 +1030,7 @@ sub ksk_expired
 		#
 		if(!defined($rr{'ksk_rollsecs'}))
 		{
-			rollmgr_log(LOG_INFO,$rname,"creating new ksk_rollsecs record and forcing KSK rollover");
+			rolllog_log(LOG_INFO,$rname,"creating new ksk_rollsecs record and forcing KSK rollover");
 			rollstamp($rname,'ksk');
 			return(1);
 		}
@@ -1042,14 +1043,14 @@ sub ksk_expired
 		#
 		if(!defined($kh{'keyrec_gensecs'}))
 		{
-			rollmgr_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
+			rolllog_log(LOG_ERR,$rname,"keyrec does not contain a keyrec_gensecs record");
 			return(0);
 		}
 		$starter = $kh{'keyrec_gensecs'};
 	}
 	elsif($krollmethod == $RM_STARTROLL)
 	{
-		rollmgr_log(LOG_ERR,$rname,"RM_STARTROLL not yet implemented");
+		rolllog_log(LOG_ERR,$rname,"RM_STARTROLL not yet implemented");
 		return(0);
 	}
 
@@ -1070,14 +1071,14 @@ sub ksk_expired
 	if($waitsecs >= 0)
 	{
 		$chronostr = timetrans($waitsecs);
-		rollmgr_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
+		rolllog_log(LOG_EXPIRE,$rname,"        expiration in $chronostr\n");
 		display("expiration $rname 0 KSK $waitsecs");
 	}
 	else
 	{
 		$waitsecs = $cronus - $krsecs;
 		$chronostr = timetrans($waitsecs);
-		rollmgr_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
+		rolllog_log(LOG_EXPIRE,$rname,"        expired $chronostr ago\n");
 		display("kskphase $rname 0");
 	}
 
@@ -1200,12 +1201,12 @@ sub ksk_phase2
 	$krf = $rr{'keyrec'};
 	if(!$krf  || ($krf eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  no keyrec for zone specified");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  no keyrec for zone specified");
 		return;
 	}
 	if(! -e $krf)
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  keyrec \"$krf\" for zone does not exist");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  keyrec \"$krf\" for zone does not exist");
 		return;
 	}
 
@@ -1221,7 +1222,7 @@ sub ksk_phase2
 	$ret = signer($rname,"-newpubksk",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published ZSK");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to sign zone with the Published ZSK");
 	}
 
 	#
@@ -1230,7 +1231,7 @@ sub ksk_phase2
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-#		rollmgr_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
+#		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
 	}
 
 	kskphase($rname,$rrr,3);
@@ -1265,12 +1266,12 @@ sub ksk_phase4
 	$krf = $rr{'keyrec'};
 	if(!$krf  || ($krf eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 4:  no keyrec for zone specified");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  no keyrec for zone specified");
 		return;
 	}
 	if(! -e $krf)
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 4:  keyrec \"$krf\" for zone does not exist");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  keyrec \"$krf\" for zone does not exist");
 		return;
 	}
 
@@ -1286,7 +1287,7 @@ sub ksk_phase4
 	$ret = signer($rname,"-rollksk",$krr);
 	if($ret eq "")
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 4:  unable to sign zone with the Published ZSK");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to sign zone with the Published ZSK");
 	}
 
 	kskphase($rname,$rrr,5);
@@ -1315,7 +1316,7 @@ sub ksk_phase5
 
 	if($auto)
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 5:  automatic keyset transfer not yet supported");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 5:  automatic keyset transfer not yet supported");
 		return;
 	}
 	else
@@ -1345,12 +1346,12 @@ to continue, its keyset must be transferred to its parent.";
 
 		if($ret == 1)
 		{
-			rollmgr_log(LOG_INFO,$rname,"KSK phase 5:  admin notified to transfer keyset");
+			rolllog_log(LOG_INFO,$rname,"KSK phase 5:  admin notified to transfer keyset");
 		}
 		else
 		{
-			rollmgr_log(LOG_INFO,$rname,"KSK phase 5:  admin must transfer keyset");
-			rollmgr_log(LOG_ERR,$rname,"KSK phase 5:  invalid admin; unable to notify about transferring keyset");
+			rolllog_log(LOG_INFO,$rname,"KSK phase 5:  admin must transfer keyset");
+			rolllog_log(LOG_ERR,$rname,"KSK phase 5:  invalid admin; unable to notify about transferring keyset");
 		}
 	}
 
@@ -1378,12 +1379,12 @@ sub ksk_phase6
 
 	if($auto)
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 6:  automatic DS-record determination not yet supported");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 6:  automatic DS-record determination not yet supported");
 		return;
 	}
 	else
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 6:  waiting for parental publication of DS record");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 6:  waiting for parental publication of DS record");
 	}
 
 	return(6);
@@ -1411,7 +1412,7 @@ sub ksk_phase7
 	$ret = rollmgr_loadzone($rndc,$rname);
 	if($ret != 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to reload zone, rc - $ret");
 	}
 
 	#
@@ -1422,11 +1423,11 @@ sub ksk_phase7
 	$ret = system("$keyarch -quiet -zone $rname $krf");
 	if($ret <= 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
+		rolllog_log(LOG_ERR,$rname,"KSK phase 7:  unable to archive KSK keys, rc - $ret");
 	}
 	else
 	{
-		rollmgr_log(LOG_INFO,$rname,"KSK phase 7:  zone, key files archived");
+		rolllog_log(LOG_INFO,$rname,"KSK phase 7:  zone, key files archived");
 	}
 
 	#
@@ -1467,7 +1468,7 @@ sub maxttl
 	#
 	if(! -e $signdb)
 	{
-		rollmgr_log(LOG_ERR,$signdb,"zone file does not exist");
+		rolllog_log(LOG_ERR,$signdb,"zone file does not exist");
 		return(-1);
 	}
 
@@ -1571,9 +1572,9 @@ sub ttlexpire
 		$endtime = ctime($endtempus);
 		chomp $endtime;
 
-		rollmgr_log(LOG_TMI,$rname,"$keytype phase $phase rollover TTL check");
-		rollmgr_log(LOG_TMI,$rname,"$keytype phase $phase endtime\t$endtime");
-		rollmgr_log(LOG_TMI,$rname,"$keytype phase $phase curtime\t$curtime");
+		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase rollover TTL check");
+		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase endtime\t$endtime");
+		rolllog_log(LOG_TMI,$rname,"$keytype phase $phase curtime\t$curtime");
 	}
 
 	#
@@ -1581,12 +1582,12 @@ sub ttlexpire
 	# Return failure (not expired) if the zone's adjusted end-date
 	# is in the future.
 	#
-# rollmgr_log(LOG_INFO,$rname,"$keytype phase $phase; pre-return ($curtempus) ($endtempus)");
+# rolllog_log(LOG_INFO,$rname,"$keytype phase $phase; pre-return ($curtempus) ($endtempus)");
 	return(1) if($curtempus >= $endtempus);
 
 	$timediff = $endtempus - $curtempus;
 	$tdstr = timetrans($timediff);
-	rollmgr_log(LOG_INFO,$rname,"$keytype phase $phase; cache expires in $tdstr");
+	rolllog_log(LOG_INFO,$rname,"$keytype phase $phase; cache expires in $tdstr");
 	display("expiration $rname $phase $keytype $timediff");
 
 	return(0)
@@ -1654,14 +1655,14 @@ sub zskphase
 
 	if($phase == 1)
 	{
-		rollmgr_log(LOG_TMI,$rname,"starting ZSK rollover");
+		rolllog_log(LOG_TMI,$rname,"starting ZSK rollover");
 	}
 	else
 	{
-		rollmgr_log(LOG_TMI,$rname,"moving to ZSK phase $phase");
+		rolllog_log(LOG_TMI,$rname,"moving to ZSK phase $phase");
 	}
 
-	rollmgr_log(LOG_PHASE,$rname,"ZSK phase $phase");
+	rolllog_log(LOG_PHASE,$rname,"ZSK phase $phase");
 
 	$rrr->{'zskphase'} = $phase;
 	rollrec_setval($rname,"zskphase",$phase);
@@ -1684,7 +1685,7 @@ sub zskphase
 	$setrec = zonekeykr($rname,$krname,"zskcur");
 	if($setrec == 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for the zskcur signing set in \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for the zskcur signing set in \"$krname\"");
 		return(0);
 	}
 
@@ -1693,12 +1694,12 @@ sub zskphase
 	#
 	if($setrec->{'keyrec_type'} ne 'set')
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to ZSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to ZSK phase $phase");
 		return(0);
 	}
 	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to ZSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to ZSK phase $phase");
 		return(0);
 	}
 
@@ -1719,7 +1720,7 @@ sub zskphase
 	# Tell the log when the zone will expire, based on the lifespan.
 	#
 	$chronostr = timetrans($exptime);
-	rollmgr_log(LOG_INFO,$rname,"    ZSK expiration in $chronostr\n");
+	rolllog_log(LOG_INFO,$rname,"    ZSK expiration in $chronostr\n");
 
 	#
 	# Reset the phasestart field.
@@ -1755,14 +1756,14 @@ sub kskphase
 
 	if($phase == 1)
 	{
-		rollmgr_log(LOG_TMI,$rname,"starting KSK rollover");
+		rolllog_log(LOG_TMI,$rname,"starting KSK rollover");
 	}
 	else
 	{
-		rollmgr_log(LOG_TMI,$rname,"moving to KSK phase $phase");
+		rolllog_log(LOG_TMI,$rname,"moving to KSK phase $phase");
 	}
 
-	rollmgr_log(LOG_PHASE,$rname,"KSK phase $phase");
+	rolllog_log(LOG_PHASE,$rname,"KSK phase $phase");
 
 	rollrec_close();
 	rollrec_read($rollrecfile);
@@ -1787,7 +1788,7 @@ sub kskphase
 	$setrec = zonekeykr($rname,$krname,"kskcur");
 	if($setrec == 0)
 	{
-		rollmgr_log(LOG_ERR,$rname,"unable to find a keyrec for the kskcur signing set in \"$krname\"");
+		rolllog_log(LOG_ERR,$rname,"unable to find a keyrec for the kskcur signing set in \"$krname\"");
 		return(0);
 	}
 
@@ -1796,12 +1797,12 @@ sub kskphase
 	#
 	if($setrec->{'keyrec_type'} ne 'set')
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to KSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\"'s keyrec is not a set keyrec; unable to move to KSK phase $phase");
 		return(0);
 	}
 	if(!defined($setrec->{'keys'}) || ($setrec->{'keys'} eq ""))
 	{
-		rollmgr_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to KSK phase $phase");
+		rolllog_log(LOG_ERR,$rname,"\"$krname\" has no keys; unable to move to KSK phase $phase");
 		return(0);
 	}
 
@@ -1822,7 +1823,7 @@ sub kskphase
 	# Tell the log when the zone will expire, based on the lifespan.
 	#
 	$chronostr = timetrans($exptime);
-	rollmgr_log(LOG_INFO,$rname,"    KSK expiration in $chronostr\n");
+	rolllog_log(LOG_INFO,$rname,"    KSK expiration in $chronostr\n");
 
 	#
 	# Reset the phasestart field.
@@ -1867,7 +1868,7 @@ sub signer
 	# Have zonesigner sign the zone for us.
 	#
 	$cmdstr = "zonesigner $zsflag $zonefile $zonesigned";
-	rollmgr_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
+	rolllog_log(LOG_INFO,$rname,"executing \"$cmdstr\"");
 
 	$ret = `$cmdstr`;
 
@@ -1901,7 +1902,7 @@ sub zonekeykr
 	$krec = keyrec_fullrec($rname);
 	if(!defined($krec))
 	{
-		rollmgr_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for zone \"$rname\"");
+		rolllog_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for zone \"$rname\"");
 		return(0);
 	}
 	%kh   = %$krec;
@@ -1913,7 +1914,7 @@ sub zonekeykr
 	$krec = keyrec_fullrec($key);
 	if(!defined($krec))
 	{
-		rollmgr_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for key");
+		rolllog_log(LOG_ERR,$rname,"keyrec file \"$krname\" does not contain a keyrec for key");
 		return(0);
 	}
 
@@ -1942,7 +1943,7 @@ sub getkrval
 	#
 	if(!defined($kh{$field}))
 	{
-		rollmgr_log(LOG_ERR,$name,"keyrec has no entry for \"$field\"");
+		rolllog_log(LOG_ERR,$name,"keyrec has no entry for \"$field\"");
 		return("");
 	}
 
@@ -1956,7 +1957,7 @@ sub getkrval
 	#
 	if($val eq "")
 	{
-		rollmgr_log(LOG_ERR,$name,"keyrec has an empty entry for \"$field\"");
+		rolllog_log(LOG_ERR,$name,"keyrec has an empty entry for \"$field\"");
 	}
 
 	return($val);
@@ -2059,8 +2060,8 @@ sub optsandargs
 	# Set the logging level and file.
 	#
 	$loglevel_save = $loglevel;
-	rollmgr_loglevel($loglevel,1);
-	rollmgr_logfile($logfile,1);
+	rolllog_level($loglevel,1);
+	rolllog_file($logfile,1);
 
 	#
 	# Start up our display program if -display was given.
@@ -2096,19 +2097,19 @@ sub bootmsg
 
 	if($bootflag)
 	{
-		rollmgr_log(LOG_ALWAYS,"","$ME starting " . ("-" x 40));
+		rolllog_log(LOG_ALWAYS,"","$ME starting " . ("-" x 40));
 	}
 	else
 	{
-		rollmgr_log(LOG_ALWAYS,"","$ME changing logfiles " . ("-" x 31));
+		rolllog_log(LOG_ALWAYS,"","$ME changing logfiles " . ("-" x 31));
 	}
 
-	rollmgr_log(LOG_ALWAYS,"","$ME parameters:");
-	rollmgr_log(LOG_ALWAYS,"","		rollrec file	\"$rollrecfile\"");
-	rollmgr_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
-	rollmgr_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
-	rollmgr_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
-	rollmgr_log(LOG_ALWAYS,""," ");
+	rolllog_log(LOG_ALWAYS,"","$ME parameters:");
+	rolllog_log(LOG_ALWAYS,"","		rollrec file	\"$rollrecfile\"");
+	rolllog_log(LOG_ALWAYS,"","		logfile		\"$logfile\"");
+	rolllog_log(LOG_ALWAYS,"","		loglevel	\"$loglevel\"");
+	rolllog_log(LOG_ALWAYS,"","		sleeptime	\"$sleeptime\"");
+	rolllog_log(LOG_ALWAYS,""," ");
 }
 
 #-----------------------------------------------------------------------------
@@ -2161,7 +2162,7 @@ sub rrfchk
 		$rrr = rollrec_fullrec($rname);
 		if(!defined($rrr))
 		{
-			rollmgr_log(LOG_ERR,$rname,"no rollrec defined for zone");
+			rolllog_log(LOG_ERR,$rname,"no rollrec defined for zone");
 			next;
 		}
 		%rr = %$rrr;
@@ -2192,12 +2193,12 @@ sub rrfchk
 		#
 		if(! -e $zonefile)
 		{
-			rollmgr_log(LOG_ERR,$rname,"zonefile \"$zonefile\" does not exist");
+			rolllog_log(LOG_ERR,$rname,"zonefile \"$zonefile\" does not exist");
 			$errs++;
 		}
 		if(! -e $keyrec)
 		{
-			rollmgr_log(LOG_ERR,$rname,"keyrec \"$keyrec\" does not exist");
+			rolllog_log(LOG_ERR,$rname,"keyrec \"$keyrec\" does not exist");
 			$errs++;
 		}
 
@@ -2211,7 +2212,7 @@ sub rrfchk
 		# to a skip record.  There's no reason we should bang our
 		# head against non-existent files.
 		#
-		rollmgr_log(LOG_ERR,$rname,"changing roll record to a skip record");
+		rolllog_log(LOG_ERR,$rname,"changing roll record to a skip record");
 		rollrec_rectype($rname,"skip");
 		$modified++;
 
@@ -2245,12 +2246,12 @@ sub rrfokay
 
 	if(! -e $rrf)
 	{
-		rollmgr_log(LOG_ERR,$mp,"rollrec file \"$rrf\" does not exist");
+		rolllog_log(LOG_ERR,$mp,"rollrec file \"$rrf\" does not exist");
 		return(0);
 	}
 	elsif(-z $rrf)
 	{
-		rollmgr_log(LOG_ERR,$mp,"rollrec file \"$rrf\" is zero length");
+		rolllog_log(LOG_ERR,$mp,"rollrec file \"$rrf\" is zero length");
 		return(0);
 	}
 	return(1);
@@ -2269,7 +2270,7 @@ sub sleeper
 
 	return if($sleep_override);
 
-	rollmgr_log(LOG_TMI,"","sleeping for $sleeptime seconds");
+	rolllog_log(LOG_TMI,"","sleeping for $sleeptime seconds");
 
 	$sleepcnt = 0;
 
@@ -2313,7 +2314,7 @@ sub commander
 	my $cmd;					# Client's command.
 	my $data;					# Command's data.
 
-	rollmgr_log(LOG_TMI,"<command>","checking commands");
+	rolllog_log(LOG_TMI,"<command>","checking commands");
 
 	#
 	# Read and handle all the commands we've been sent.
@@ -2326,8 +2327,8 @@ sub commander
 		($cmd,$data) = rollmgr_getcmd(5);
 		return if(!defined($cmd));
 
-		rollmgr_log(LOG_TMI,"<command>","cmd   - \"$cmd\"");
-		rollmgr_log(LOG_TMI,"<command>","data  - \"$data\"") if($data ne "");
+		rolllog_log(LOG_TMI,"<command>","cmd   - \"$cmd\"");
+		rolllog_log(LOG_TMI,"<command>","data  - \"$data\"") if($data ne "");
 
 		if($cmd eq ROLLCMD_DISPLAY())
 		{
@@ -2406,7 +2407,7 @@ sub commander
 		}
 		else
 		{
-			rollmgr_log(LOG_ERR,"<command>","invalid command  - \"$cmd\"");
+			rolllog_log(LOG_ERR,"<command>","invalid command  - \"$cmd\"");
 		}
 
 		rollmgr_closechan();
@@ -2424,7 +2425,7 @@ sub cmd_display
 {
 	my $onflag = shift;				# Display-on flag.
 
-	rollmgr_log(LOG_TMI,"<command>","display command received; status flag - \"$onflag\"");
+	rolllog_log(LOG_TMI,"<command>","display command received; status flag - \"$onflag\"");
 
 	#
 	# Do nothing if the we're already doing what the user wants.
@@ -2433,11 +2434,11 @@ sub cmd_display
 	{
 		if($display == 1)
 		{
-			rollmgr_log(LOG_INFO,"<command>","graphical display is already on");
+			rolllog_log(LOG_INFO,"<command>","graphical display is already on");
 		}
 		else
 		{
-			rollmgr_log(LOG_INFO,"<command>","graphical display is already off");
+			rolllog_log(LOG_INFO,"<command>","graphical display is already off");
 		}
 		rollmgr_sendresp(ROLLCMD_RC_DISPLAY,"display status already as requested");
 		return;
@@ -2449,13 +2450,13 @@ sub cmd_display
 	if($onflag)
 	{
 		displayer(1);
-		rollmgr_log(LOG_INFO,"<command>","rollerd display started");
+		rolllog_log(LOG_INFO,"<command>","rollerd display started");
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd display started");
 	}
 	else
 	{
 		displayer(0);
-		rollmgr_log(LOG_INFO,"<command>","rollerd display stopped");
+		rolllog_log(LOG_INFO,"<command>","rollerd display stopped");
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd display stopped");
 	}
 }
@@ -2472,7 +2473,7 @@ sub cmd_dspub
 	my $rrr;					# Reference to rollrec.
 	my $phase;					# Zone's phase.
 
-	rollmgr_log(LOG_TMI,"<command>","dspub command received; zone - \"$zone\"");
+	rolllog_log(LOG_TMI,"<command>","dspub command received; zone - \"$zone\"");
 
 	#
 	# Ensure we're in the proper KSK-rollover phase to do this command.
@@ -2480,7 +2481,7 @@ sub cmd_dspub
 	$phase = rollrec_recval($zone,'kskphase');
 	if($phase != 6)
 	{
-		rollmgr_log(LOG_INFO,"<command>","zone not in KSK-rollover phase 6");
+		rolllog_log(LOG_INFO,"<command>","zone not in KSK-rollover phase 6");
 		return;
 	}
 
@@ -2513,7 +2514,7 @@ sub cmd_dspuball
 	my $rrr;					# Reference to rollrec.
 	my $phase;					# Zone's phase.
 
-	rollmgr_log(LOG_TMI,"<command>","dspuball command received");
+	rolllog_log(LOG_TMI,"<command>","dspuball command received");
 
 	foreach my $zone (sort(rollrec_names()))
 	{
@@ -2553,15 +2554,15 @@ sub cmd_logfile
 	my $newlog = shift;				# New log file.
 	my $oldlog;					# Old log file.
 
-	rollmgr_log(LOG_TMI,"<command>","logfile command received; new log file - \"$newlog\"");
+	rolllog_log(LOG_TMI,"<command>","logfile command received; new log file - \"$newlog\"");
 
 	#
 	# Do nothing if the new logfile is the same as the current logfile.
 	#
-	$oldlog = rollmgr_logfile();
+	$oldlog = rolllog_file();
 	if($oldlog eq $newlog)
 	{
-		rollmgr_log(LOG_INFO,"<command>","new logfile ($newlog) same as the old logfile");
+		rolllog_log(LOG_INFO,"<command>","new logfile ($newlog) same as the old logfile");
 		return;
 	}
 }
@@ -2577,33 +2578,33 @@ sub cmd_logfile
 	my $newlog = shift;				# New log file.
 	my $oldlog;					# Old log file.
 
-	rollmgr_log(LOG_TMI,"<command>","logfile command received; new log file - \"$newlog\"");
+	rolllog_log(LOG_TMI,"<command>","logfile command received; new log file - \"$newlog\"");
 
 	#
 	# Do nothing if the new logfile is the same as the current logfile.
 	#
-	$oldlog = rollmgr_logfile();
+	$oldlog = rolllog_file();
 	if($oldlog eq $newlog)
 	{
-		rollmgr_log(LOG_INFO,"<command>","new logfile ($newlog) same as the old logfile");
+		rolllog_log(LOG_INFO,"<command>","new logfile ($newlog) same as the old logfile");
 		return;
 	}
 
 	#
 	# Change the logfile and give an appropriate set of log messages.
 	#
-	rollmgr_log(LOG_INFO,"<command>","logfile changed from $oldlog to $newlog");
-	rollmgr_log(LOG_INFO,"<command>","closing logfile $oldlog");
-	$oldlog = rollmgr_logfile($newlog,0);
+	rolllog_log(LOG_INFO,"<command>","logfile changed from $oldlog to $newlog");
+	rolllog_log(LOG_INFO,"<command>","closing logfile $oldlog");
+	$oldlog = rolllog_file($newlog,0);
 	if($oldlog ne "")
 	{
-		rollmgr_log(LOG_INFO,"<command>","logfile changed from $oldlog to $newlog");
+		rolllog_log(LOG_INFO,"<command>","logfile changed from $oldlog to $newlog");
 		bootmsg(0);
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"logfile changed to \"$newlog\"");
 	}
 	else
 	{
-		rollmgr_log(LOG_ERR,"<command>","unable to change logfile to $newlog");
+		rolllog_log(LOG_ERR,"<command>","unable to change logfile to $newlog");
 		rollmgr_sendresp(ROLLCMD_RC_BADFILE,"unable to change logfile to \"$newlog\"");
 	}
 }
@@ -2621,15 +2622,15 @@ sub cmd_loglevel
 	my $oldstr;					# Old level's string.
 	my $newstr;					# New level's string.
 
-	$newstr = rollmgr_logstr($newlvl);
-	rollmgr_log(LOG_TMI,"<command>","loglevel command received; new logging level - \"$newstr\"");
+	$newstr = rolllog_str($newlvl);
+	rolllog_log(LOG_TMI,"<command>","loglevel command received; new logging level - \"$newstr\"");
 
-	$oldlvl = rollmgr_loglevel($newlvl,0);
+	$oldlvl = rolllog_level($newlvl,0);
 	if($oldlvl >= 0)
 	{
-		$oldstr = rollmgr_logstr($oldlvl);
+		$oldstr = rolllog_str($oldlvl);
 
-		rollmgr_log(LOG_INFO,"<command>","loglevel changed from $oldstr to $newstr");
+		rolllog_log(LOG_INFO,"<command>","loglevel changed from $oldstr to $newstr");
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"loglevel changed from \"$oldstr\" to \"$newstr\"");
 
 		$loglevel	= $newlvl;
@@ -2637,7 +2638,7 @@ sub cmd_loglevel
 	}
 	else
 	{
-		rollmgr_log(LOG_ERR,"<command>","unable to change loglevel to $newlvl");
+		rolllog_log(LOG_ERR,"<command>","unable to change loglevel to $newlvl");
 		rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid loglevel \"$newlvl\"");
 	}
 }
@@ -2660,7 +2661,7 @@ sub cmd_logmsg
 	my $oldlvl;				# Real logging level.
 	my $goodlvl;				# Real version of new level.
 
-	rollmgr_log(LOG_TMI,"<command>","logmsg command received");
+	rolllog_log(LOG_TMI,"<command>","logmsg command received");
 
 	#
 	# Dig the log level and message out of our argument.
@@ -2671,12 +2672,12 @@ sub cmd_logmsg
 
 	#
 	# Check the validity of the caller's log level.  If it's invalid,
-	# rollmgr_loglevel() will return a failure and we'll return.
+	# rolllog_level() will return a failure and we'll return.
 	#
-	$oldlvl = rollmgr_loglevel($loglvl,0);
+	$oldlvl = rolllog_level($loglvl,0);
 	if($oldlvl < 0)
 	{
-		rollmgr_log(LOG_INFO,"<command>","invalid loglevel ($loglvl) specified for logmsg command");
+		rolllog_log(LOG_INFO,"<command>","invalid loglevel ($loglvl) specified for logmsg command");
 		rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid loglevel \"$loglvl\"");
 		return;
 	}
@@ -2684,8 +2685,8 @@ sub cmd_logmsg
 	#
 	# Reset the logging level and write the caller's message.
 	#
-	$goodlvl = rollmgr_loglevel($oldlvl,0);
-	rollmgr_log($goodlvl,"<user msg>",$logmsg);
+	$goodlvl = rolllog_level($oldlvl,0);
+	rolllog_log($goodlvl,"<user msg>",$logmsg);
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"message written to log");
 }
 
@@ -2707,7 +2708,7 @@ sub cmd_rollall
 	my $gcnt = 0;					# Rolled count.
 	my $bcnt = 0;					# Unrolled count.
 
-	rollmgr_log(LOG_TMI,"<command>","rollall command received");
+	rolllog_log(LOG_TMI,"<command>","rollall command received");
 
 	#
 	# Each zone in the rollrec file will be put in the rollover process,
@@ -2779,12 +2780,12 @@ sub cmd_rollrec
 {
 	my $rrf = shift;				# New rollrec file.
 
-	rollmgr_log(LOG_TMI,"<command>","rollrec command received; rollrec file - \"$rrf\"");
+	rolllog_log(LOG_TMI,"<command>","rollrec command received; rollrec file - \"$rrf\"");
 
 	if(rrfokay($rrf,"<command>"))
 	{
-		rollmgr_log(LOG_INFO,"<command>","------------------------------------------------");
-		rollmgr_log(LOG_INFO,"<command>","setting rollrec file from \"$rollrecfile\" to \"$rrf\"");
+		rolllog_log(LOG_INFO,"<command>","------------------------------------------------");
+		rolllog_log(LOG_INFO,"<command>","setting rollrec file from \"$rollrecfile\" to \"$rrf\"");
 		$rollrecfile = $rrf;
 
 		rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd now using rollrec file $rrf");
@@ -2797,7 +2798,7 @@ sub cmd_rollrec
 		return(1);
 	}
 
-	rollmgr_log(LOG_ERR,"<command>","invalid rollrec file \"$rrf\"");
+	rolllog_log(LOG_ERR,"<command>","invalid rollrec file \"$rrf\"");
 	rollmgr_sendresp(ROLLCMD_RC_BADROLLREC,"invalid rollrec file \"$rrf\"");
 	return(0);
 }
@@ -2812,7 +2813,7 @@ sub cmd_rollzone
 {
 	my $zone = shift;				# Command's data.
 
-	rollmgr_log(LOG_TMI,"<command>","rollzone command received; zone - \"$zone\"");
+	rolllog_log(LOG_TMI,"<command>","rollzone command received; zone - \"$zone\"");
 
 	if(rollnow($zone) == 1)
 	{
@@ -2834,9 +2835,9 @@ sub cmd_rollzone
 #
 sub cmd_runqueue
 {
-	rollmgr_log(LOG_TMI,"<command>","runqueue command received");
+	rolllog_log(LOG_TMI,"<command>","runqueue command received");
 
-	rollmgr_log(LOG_INFO,"<command>","checking rollrec queue");
+	rolllog_log(LOG_INFO,"<command>","checking rollrec queue");
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd checking rollrec queue");
 	sleeper_awake();
 }
@@ -2848,7 +2849,7 @@ sub cmd_runqueue
 #
 sub cmd_shutdown
 {
-	rollmgr_log(LOG_TMI,"<command>","shutdown command received");
+	rolllog_log(LOG_TMI,"<command>","shutdown command received");
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,"rollerd shutting down");
 
 	halt_handler();
@@ -2874,7 +2875,7 @@ sub cmd_skipall
 	my $gcnt = 0;					# Skipped count.
 	my $bcnt = 0;					# Unskipped count.
 
-	rollmgr_log(LOG_TMI,"<command>","skipall command received");
+	rolllog_log(LOG_TMI,"<command>","skipall command received");
 
 	#
 	# Each zone in the rollrec file will be removed from the rollover
@@ -2943,7 +2944,7 @@ sub cmd_skipzone
 {
 	my $zone = shift;				# Command's data.
 
-	rollmgr_log(LOG_TMI,"<command>","skipzone command received; zone - \"$zone\"");
+	rolllog_log(LOG_TMI,"<command>","skipzone command received; zone - \"$zone\"");
 
 	if(skipnow($zone) == 1)
 	{
@@ -2969,16 +2970,16 @@ sub cmd_sleeptime
 {
 	my $newnap = shift;				# New sleep time.
 
-	rollmgr_log(LOG_TMI,"<command>","sleeptime command received; new sleep time - \"$newnap\"");
+	rolllog_log(LOG_TMI,"<command>","sleeptime command received; new sleep time - \"$newnap\"");
 
 	if($newnap < $MIN_SLEEP)
 	{
-		rollmgr_log(LOG_ERR,"<command>","sleep-time must be >= $MIN_SLEEP");
+		rolllog_log(LOG_ERR,"<command>","sleep-time must be >= $MIN_SLEEP");
 		rollmgr_sendresp(ROLLCMD_RC_BADSLEEP,"invalid sleep-time \"$newnap\"");
 	}
 	else
 	{
-		rollmgr_log(LOG_INFO,"<command>","setting sleep-time to $newnap");
+		rolllog_log(LOG_INFO,"<command>","setting sleep-time to $newnap");
 		$sleeptime = $newnap;
 		$sleepcnt  = $newnap;
 
@@ -3004,9 +3005,9 @@ sub cmd_status
 	#
 	# Get the info to report.
 	#
-	$lfile	= rollmgr_logfile();
-	$lvl	= rollmgr_loglevel();
-	$lvlstr	= rollmgr_logstr($lvl);
+	$lfile	= rolllog_file();
+	$lvl	= rolllog_level();
+	$lvlstr	= rolllog_str($lvl);
 
 	#
 	# Build status report.
@@ -3021,7 +3022,7 @@ sub cmd_status
 	#
 	# Send the status report to the caller.
 	#
-	rollmgr_log(LOG_TMI,"<command>","status command received");
+	rolllog_log(LOG_TMI,"<command>","status command received");
 	rollmgr_sendresp(ROLLCMD_RC_OKAY,$outbuf);
 }
 
@@ -3041,7 +3042,7 @@ sub cmd_zonelog
 	my $llev;					# User's logging level.
 	my $llevstr;					# String of log level.
 
-	rollmgr_log(LOG_TMI,"<command>","zonelog command received");
+	rolllog_log(LOG_TMI,"<command>","zonelog command received");
 
 	#
 	# Get the zone and logging level from the command data.
@@ -3053,7 +3054,7 @@ sub cmd_zonelog
 	#
 	# Convert the user's logging level to its numeric form.
 	#
-	$llev = rollmgr_lognum($llev);
+	$llev = rolllog_num($llev);
 
 	#
 	# Ensure that the logging level is valid.
@@ -3061,7 +3062,7 @@ sub cmd_zonelog
 	if($llev == -1)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_BADLEVEL,"invalid logging level \"$llev\"");
-		rollmgr_log(LOG_ALWAYS,"<command>","invalid logging level \"$llev\" specified for zone \"$zone\"\n");
+		rolllog_log(LOG_ALWAYS,"<command>","invalid logging level \"$llev\" specified for zone \"$zone\"\n");
 		return;
 	}
 
@@ -3073,7 +3074,7 @@ sub cmd_zonelog
 	{
 		rollrec_unlock();
 		rollmgr_sendresp(ROLLCMD_RC_RRFOPEN,"unable to open rollrec file $rollrecfile");
-		rollmgr_log(LOG_ALWAYS,"<command>","unable to open rollrec file $rollrecfile\n");
+		rolllog_log(LOG_ALWAYS,"<command>","unable to open rollrec file $rollrecfile\n");
 		return;
 	}
 
@@ -3085,7 +3086,7 @@ sub cmd_zonelog
 	{
 		rollrec_unlock();
 		rollmgr_sendresp(ROLLCMD_RC_BADZONE,"invalid zone \"$zone\" specified");
-		rollmgr_log(LOG_ALWAYS,"<command>","invalid zone \"$zone\" specified for zonelog command\n");
+		rolllog_log(LOG_ALWAYS,"<command>","invalid zone \"$zone\" specified for zonelog command\n");
 		return;
 	}
 	%rr = %$rrr;
@@ -3104,8 +3105,8 @@ sub cmd_zonelog
 	#
 	# Report the command and return.
 	#
-	$llevstr = rollmgr_logstr($llev);
-	rollmgr_log(LOG_INFO,"<command>","set the logging level for zone $zone to $llevstr");
+	$llevstr = rolllog_str($llev);
+	rolllog_log(LOG_INFO,"<command>","set the logging level for zone $zone to $llevstr");
 	return(1);
 }
 
@@ -3121,7 +3122,7 @@ sub cmd_zonestatus
 	my $cnt = 0;					# Zone count.
 	my $outbuf = "";				# Zone status line.
 
-	rollmgr_log(LOG_TMI,"<command>","zonestatus command received");
+	rolllog_log(LOG_TMI,"<command>","zonestatus command received");
 
 	rollrec_lock();
 
@@ -3132,11 +3133,11 @@ sub cmd_zonestatus
 	{
 		rollrec_unlock();
 		rollmgr_sendresp(ROLLCMD_RC_RRFOPEN,"unable to open rollrec file $rollrecfile");
-		rollmgr_log(LOG_ALWAYS,"<command>","unable to open rollrec file $rollrecfile\n");
+		rolllog_log(LOG_ALWAYS,"<command>","unable to open rollrec file $rollrecfile\n");
 		return;
 	}
 
-	rollmgr_log(LOG_ALWAYS,"<command>","zone status:");
+	rolllog_log(LOG_ALWAYS,"<command>","zone status:");
 
 	#
 	# Add the status of each zone in the rollrec file to our output buffer.
@@ -3166,7 +3167,7 @@ sub cmd_zonestatus
 		# Add the data to the output buffer and bump our zone count.
 		#
 		$outbuf .= "$rname\t$rtype\t$phase\n";
-		rollmgr_log(LOG_ALWAYS,"<command>","\t$rname\t$rtype\t$phase\n");
+		rolllog_log(LOG_ALWAYS,"<command>","\t$rname\t$rtype\t$phase\n");
 		$cnt++;
 	}
 
@@ -3176,7 +3177,7 @@ sub cmd_zonestatus
 	if($cnt == 0)
 	{
 		rollmgr_sendresp(ROLLCMD_RC_NOZONES,"no zones defined in $rollrecfile");
-		rollmgr_log(LOG_ALWAYS,"<command>","no zones defined in $rollrecfile\n");
+		rolllog_log(LOG_ALWAYS,"<command>","no zones defined in $rollrecfile\n");
 	}
 	else
 	{
@@ -3205,7 +3206,7 @@ sub rollnow
 	$rrr = rollrec_fullrec($zone);
 	if(!defined($rrr))
 	{
-		rollmgr_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
+		rolllog_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
 		return(0);
 	}
 	%rr = %$rrr;
@@ -3222,7 +3223,7 @@ sub rollnow
 		#
 		if($rr{'rollrec_type'} eq "skip")
 		{
-			rollmgr_log(LOG_INFO,"<command>","$zone skip rollrec changed to a roll rollrec");
+			rolllog_log(LOG_INFO,"<command>","$zone skip rollrec changed to a roll rollrec");
 			rollrec_rectype($zone,"roll");
 			$rrr = rollrec_fullrec($zone);
 		}
@@ -3250,7 +3251,7 @@ sub rollnow
 	# Set the sleep values such that the queue will be run.
 	#
 	sleeper_awake();
-	rollmgr_log(LOG_INFO,"<command>","forcing a rollover for zone $zone");
+	rolllog_log(LOG_INFO,"<command>","forcing a rollover for zone $zone");
 	display("startroll $zone 0");
 	return(1);
 }
@@ -3273,7 +3274,7 @@ sub skipnow
 	$rrr = rollrec_fullrec($zone);
 	if(!defined($rrr))
 	{
-		rollmgr_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
+		rolllog_log(LOG_ERR,<command>,"no rollrec defined for zone $zone");
 		return(0);
 	}
 	%rr = %$rrr;
@@ -3291,7 +3292,7 @@ sub skipnow
 		#
 		if($rr{'rollrec_type'} eq "roll")
 		{
-			rollmgr_log(LOG_INFO,"<command>","$zone roll rollrec changed to a skip rollrec");
+			rolllog_log(LOG_INFO,"<command>","$zone roll rollrec changed to a skip rollrec");
 
 			rollrec_rectype($zone,"skip");
 			display("stoproll $zone 0");
@@ -3318,7 +3319,7 @@ sub skipnow
 	#
 	# Log the event and return success.
 	#
-	rollmgr_log(LOG_INFO,"<command>","forcing a skiproll for zone $zone");
+	rolllog_log(LOG_INFO,"<command>","forcing a skiproll for zone $zone");
 	return(1);
 }
 
@@ -3353,7 +3354,7 @@ sub controllers
 #
 sub intcmd_handler
 {
-	rollmgr_log(LOG_TMI,"<command>","rollover manager:  got a command interrupt\n");
+	rolllog_log(LOG_TMI,"<command>","rollover manager:  got a command interrupt\n");
 
 	controllers(0);
 	commander();
@@ -3369,7 +3370,7 @@ sub halt_handler
 {
 	display("halt woof 0");
 
-	rollmgr_log(LOG_ALWAYS,"","rollover manager shutting down...\n");
+	rolllog_log(LOG_ALWAYS,"","rollover manager shutting down...\n");
 	rollmgr_rmid();
 	exit(0);
 }
@@ -3381,7 +3382,7 @@ sub halt_handler
 #
 sub cleanup
 {
-	rollmgr_log(LOG_ALWAYS,"cleaning up...") if($loglevel == LOG_TMI);
+	rolllog_log(LOG_ALWAYS,"cleaning up...") if($loglevel == LOG_TMI);
 	rollmgr_rmid();
 	exit(0);
 }
@@ -3441,7 +3442,7 @@ sub display
 
 	if(!$ret)
 	{
-		rollmgr_log(LOG_INFO,"<command>","unable to send message to blinkenlights; turning off display");
+		rolllog_log(LOG_INFO,"<command>","unable to send message to blinkenlights; turning off display");
 		$display = 0;
 	}
 }
@@ -3570,8 +3571,8 @@ user.  Below is a sample I<rollrec> entry:
 		display         "1"
 		phasestart      "Tue Feb 27 22:25:07 2007"
 
-The first line gives the I<rollrec> entry's name.  The following lines give the
-zone's signed zone file, I<keyrec> file, the current rollover phases, the
+The first line gives the I<rollrec> entry's name.  The following lines give
+the zone's signed zone file, I<keyrec> file, the current rollover phases, the
 rollover timestamps, and other information.
 
 If either of the I<zonefile> or I<keyrec> files do not exist, then a "roll"
@@ -3724,7 +3725,8 @@ of the valid logging levels.
 =item I<-sleep sleeptime>
 
 Sets B<rollerd>'s sleep time to I<sleeptime>.  The sleep time is the amount
-of time (in seconds) B<rollerd> waits between processing its I<rollrec>-based queue.
+of time (in seconds) B<rollerd> waits between processing its I<rollrec>-based
+queue.
 
 =item I<-parameters>
 
@@ -3808,6 +3810,7 @@ B<zonesigner(8)>
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
 B<Net::DNS::SEC::Tools::defaults.pm(3)>,
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>,
+B<Net::DNS::SEC::Tools::rolllog.pm(3)>,
 B<Net::DNS::SEC::Tools::rollmgr.pm(3)>,
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 

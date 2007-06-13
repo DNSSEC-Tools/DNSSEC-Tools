@@ -168,13 +168,13 @@ sub doopts
 	{
 		my $logtmp;				# Temporary log level.
 
-		$logtmp = rollmgr_lognum($loglvl);
+		$logtmp = rolllog_num($loglvl);
 		if($logtmp == -1)
 		{
 			print STDERR "loglevel $loglvl invalid\n";
 			exit(3);
 		}
-		$loglvl = rollmgr_logstr($logtmp);
+		$loglvl = rolllog_str($logtmp);
 	}
 
 	#

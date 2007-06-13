@@ -389,7 +389,7 @@ sub rollrec_validate
 	#
 	# Make sure we've got a valid logging level.
 	#
-	if(defined($rr{'loglevel'}) && (rollmgr_loglevel($loglevel,0) < 0))
+	if(defined($rr{'loglevel'}) && (rolllog_level($loglevel,0) < 0))
 	{
 		qprint("$rrname:  invalid loglevel \"$loglevel\"\n");
 		$errs++;
