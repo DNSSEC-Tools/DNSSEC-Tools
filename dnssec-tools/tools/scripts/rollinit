@@ -140,7 +140,7 @@ sub doopts
 	#
 	if($logopt ne "")
 	{
-		if(rollmgr_loglevel($logopt,0) < 0)
+		if(rolllog_level($logopt,0) < 0)
 		{
 			print STDERR "invalid logging level \"$logopt\"\n";
 			exit(1);

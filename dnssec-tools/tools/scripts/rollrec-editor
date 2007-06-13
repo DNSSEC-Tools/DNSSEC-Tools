@@ -2139,7 +2139,7 @@ sub editwindow
 	#
 	if(defined($rollrecs{$rrn}{'loglevel'}))
 	{
-		$llev = rollmgr_logstr($rollrecs{$rrn}{'loglevel'});
+		$llev = rolllog_str($rollrecs{$rrn}{'loglevel'});
 		if($llev eq '')
 		{
 			$llev = '<bad value in rollrec file>';
@@ -2160,7 +2160,7 @@ sub editwindow
 	# Add a new radiobutton for each logging level.
 	#
 	$casca = $ent->cascade(-label => '');
-	foreach $llev (rollmgr_loglevels())
+	foreach $llev (rolllog_levels())
 	{
 		$casca->radiobutton(-label    => "$llev",
 				    -variable => \$rollrecs{$rrn}{'loglevel'},
@@ -2573,7 +2573,7 @@ sub goodrollrec
 		if(($rollrecs{$rrn}{'loglevel'} ne '') &&
 		   ($rollrecs{$rrn}{'loglevel'} ne 'default'))
 		{
-			if(rollmgr_loglevel($loglevel,0) < 0)
+			if(rolllog_level($loglevel,0) < 0)
 			{
 				errval($ROW_LOG,$rrn,"invalid loglevel \"$loglevel\"") if($upd);
 				$errors++;
