@@ -93,6 +93,7 @@ use Socket;
 
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::defaults;
+use Net::DNS::SEC::Tools::rolllog;
 
 our $VERSION = "0.9";
 
@@ -108,22 +109,6 @@ our @EXPORT = qw(
 		 rollmgr_loadzone
 		 rollmgr_rmid
 		 rollmgr_saveid
-
-		 rollmgr_log
-		 rollmgr_logfile
-		 rollmgr_loglevel
-		 rollmgr_loglevels
-		 rollmgr_lognum
-		 rollmgr_logstr
-			 LOG_NEVER
-			 LOG_TMI
-			 LOG_EXPIRE
-			 LOG_INFO
-			 LOG_PHASE
-			 LOG_ERR
-			 LOG_FATAL
-			 LOG_ALWAYS
-			 LOG_DEFAULT
 
 		 rollmgr_channel
 		 rollmgr_closechan
@@ -167,53 +152,6 @@ our @EXPORT = qw(
 		);
 
 my $rollmgrid;				# Rollerd's process id.
-
-##############################################################################
-#
-# Log levels.  The first and last aren't selectable by a user.
-#
-my $LOG_NEVER	 =  0;			# Do not log this message.
-my $LOG_TMI	 =  1;			# Overly verbose informational message.
-my $LOG_EXPIRE	 =  3;			# Time-to-expiration given.
-my $LOG_INFO	 =  4;			# Informational message.
-my $LOG_PHASE	 =  6;			# Give current state of zone.
-my $LOG_ERR	 =  8;			# Non-fatal error message.
-my $LOG_FATAL	 =  9;			# Fatal error.
-my $LOG_ALWAYS	 = 10;			# Messages that should always be given.
-
-my $LOG_MIN	 =  $LOG_NEVER;		# Minimum log level.
-my $LOG_MAX	 =  $LOG_ALWAYS;	# Maximum log level.
-
-my $DEFAULT_LOGLEVEL = $LOG_INFO;	# Default log level.
-
-sub LOG_NEVER		{ return($LOG_NEVER); };
-sub LOG_TMI		{ return($LOG_TMI); };
-sub LOG_EXPIRE		{ return($LOG_EXPIRE); };
-sub LOG_INFO		{ return($LOG_INFO); };
-sub LOG_PHASE		{ return($LOG_PHASE); };
-sub LOG_ERR		{ return($LOG_ERR); };
-sub LOG_FATAL		{ return($LOG_FATAL); };
-sub LOG_ALWAYS		{ return($LOG_ALWAYS); };
-
-sub LOG_DEFAULT		{ return($DEFAULT_LOGLEVEL); };
-
-my $loglevel = $DEFAULT_LOGLEVEL;		# Rollerd's logging level.
-my @logstrs =					# Valid strings for levels.
-(
-	"never",
-	"tmi",
-		undef,
-	"expire",
-	"info",
-		undef,
-	"phase",
-		undef,
-	"err",
-	"fatal",
-	"always"
-);
-
-my $logfile;					# rollerd's log file.
 
 ##############################################################################
 #
@@ -270,7 +208,7 @@ my $ROLLCMD_DSPUBALL	= "rollcmd_dspuball";
 my $ROLLCMD_GETSTATUS	= "rollcmd_getstatus";
 my $ROLLCMD_LOGFILE	= "rollcmd_logfile";
 my $ROLLCMD_LOGLEVEL	= "rollcmd_loglevel";
-my $ROLLCMD_LOGMSG	= "rollcmd_logmsg";
+my $ROLLCMD_LOGMSG	= "rollcmd_msg";
 my $ROLLCMD_ROLLALL	= "rollcmd_rollall";
 my $ROLLCMD_ROLLKSK	= "rollcmd_rollksk";
 my $ROLLCMD_ROLLREC	= "rollcmd_rollrec";
@@ -308,11 +246,8 @@ my %roll_commands =
 (
 	rollcmd_display		=> 1,
 	rollcmd_dspub		=> 1,
-	rollcmd_dspuball		=> 1,
+	rollcmd_dspuball	=> 1,
 	rollcmd_getstatus	=> 1,
-	rollcmd_logfile		=> 1,
-	rollcmd_loglevel	=> 1,
-	rollcmd_logmsg		=> 1,
 	rollcmd_nodisplay	=> 1,
 	rollcmd_rollall		=> 1,
 	rollcmd_rollksk		=> 1,
@@ -1237,298 +1172,6 @@ sub unix_halt
 
 #-----------------------------------------------------------------------------
 #
-# Routine:	rollmgr_loglevel()
-#
-# Purpose:	Get/set the logging level.  If no arguments are given, then
-#		the current logging level is returned.  If a valid new level
-#		is given, that will become the new level.
-#
-#		If a problem occurs (invalid log level), then -1 will be
-#		returned, unless a non-zero argument was passed for the
-#		second argument.  In this case, a usage message is given and
-#		the process exits.
-#
-sub rollmgr_loglevel
-{
-	my $newlevel = shift;			# New logging level.
-	my $useflag  = shift;			# Usage-on-error flag.
-
-	my $oldlevel = $loglevel;		# Current logging level.
-	my $err = 0;				# Error flag.
-
-	#
-	# Return the current log level if that's all they want.
-	#
-	return($loglevel) if(!defined($newlevel));
-
-	#
-	# Translate the logging level to its numeric form.
-	#
-	$loglevel = rollmgr_lognum($newlevel);
-
-	#
-	# If there was a problem, give usage messages and exit.
-	#
-	if($loglevel == -1)
-	{
-		if(!$useflag)
-		{
-			$loglevel = $oldlevel;
-			return(-1);
-		}
-
-		err("unknown logging level \"$newlevel\"\n"		.
-		    "valid logging levels (text and numeric forms):\n"	.
-			"\ttmi		 1\n"				.
-			"\texpire		 3\n"			.
-			"\tinfo		 4\n"				.
-			"\tphase	 6\n"				.
-			"\terr		 8\n"				.
-			"\tfatal		 9\n",-1);
-		return(-1);
-	}
-
-	#
-	# Return the old logging level.
-	#
-	return($oldlevel);
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	rollmgr_loglevels()
-#
-# Purpose:	Return the text forms of the valid log levels.  The levels
-#		are returned in order, from most verbose to least.
-#
-sub rollmgr_loglevels
-{
-	my @levels = ();				# Valid log levels.
-
-	#
-	# Create an array holding only the user-settable logging levels.
-	#
-	for(my $ind = ($LOG_NEVER+1); $ind < $LOG_ALWAYS; $ind++)
-	{
-		next if($logstrs[$ind] eq '');
-		push @levels, $logstrs[$ind];
-	}
-	
-	return(@levels);
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	rollmgr_logstr()
-#
-# Purpose:	Return the text form of the specified log level.
-#		undef is returned for bad levels.
-#
-sub rollmgr_logstr
-{
-	my $level = shift;				# New logging level.
-
-	#
-	# If log level isn't a numeric, we'll ensure that it's a valid
-	# level string.
-	#
-	if($level =~ /[a-zA-Z]/)
-	{
-		foreach my $lstr (@logstrs)
-		{
-			return($lstr) if(lc($lstr) eq lc($level));
-		}
-		return(undef);
-	}
-
-	#
-	# Check for out-of-bounds levels and return the text string.
-	#
-	return(undef) if(!defined($level));
-	return(undef) if(($level < $LOG_NEVER) || ($level > $LOG_ALWAYS));
-	return($logstrs[$level]);
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	rollmgr_lognum()
-#
-# Purpose:	Translate a logging level to its numeric form.  The level
-#		is also validated along the way.
-#
-sub rollmgr_lognum
-{
-	my $newlevel = shift;				# New logging level.
-	my $llev = -1;					# Level to return.
-
-	#
-	# If a non-numeric log level was given, translate it into the
-	# appropriate numeric value.
-	#
-	if($newlevel !~ /^[0-9]+$/)
-	{
-		if($newlevel =~ /^tmi$/i)
-		{
-			$llev = LOG_TMI;
-		}
-		elsif($newlevel =~ /^expire$/i)
-		{
-			$llev = LOG_EXPIRE;
-		}
-		elsif($newlevel =~ /^info$/i)
-		{
-			$llev = LOG_INFO;
-		}
-		elsif($newlevel =~ /^phase$/i)
-		{
-			$llev = LOG_PHASE;
-		}
-		elsif($newlevel =~ /^err$/i)
-		{
-			$llev = LOG_ERR;
-		}
-		elsif($newlevel =~ /^fatal$/i)
-		{
-			$llev = LOG_FATAL;
-		}
-	}
-	else
-	{
-		#
-		# If a valid log level was given, make it the current level.
-		#
-		if(($newlevel >= $LOG_MIN) &&
-		   ($newlevel <= $LOG_MAX) &&
-		   defined($logstrs[$newlevel]))
-		{
-			$llev = $newlevel;
-		}
-	}
-
-	#
-	# Return the translated logging level.  Or an error.
-	#
-	return($llev);
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	rollmgr_logfile()
-#
-# Purpose:	Get/set the log file.  If no arguments are given, then
-#		the current log file is returned.  If a valid new file
-#		is given, that will become the new log file.
-#
-#		If a problem occurs (invalid log file), then -1 will be
-#		returned, unless a non-zero argument was passed for the
-#		second argument.  In this case, a usage message is given
-#		and the process exits.
-#
-sub rollmgr_logfile
-{
-	my $newlogfile = shift;				# Name of new logfile.
-	my $useflag    = shift;				# Usage-on-error flag.
-
-	my $oldlogfile = $logfile;			# Current logfile.
-
-	#
-	# Return the current log file if a log file wasn't given.
-	#
-	return($logfile) if(!defined($newlogfile));
-
-	#
-	# Allow "-" to represent stdout.
-	#
-	if($newlogfile eq "-")
-	{
-		$newlogfile = "/dev/stdout";
-		if(! -e $newlogfile)
-		{
-			err("logfile \"$newlogfile\" does not exist\n",-1) if($useflag);
-			return("");
-		}
-	}
-
-	#
-	# If a log file was specified, ensure it's a writable regular file.
-	# If it isn't a regular file, ensure that it's one of the standard
-	# process-output files.
-	#
-	if(-e $newlogfile)
-	{
-		if((! -f $newlogfile)			&&
-		   (($newlogfile ne "/dev/stdout")	&&
-		    ($newlogfile ne "/dev/tty")))
-		{
-			err("logfile \"$newlogfile\" is not a regular file\n",-1) if($useflag);
-			return("");
-		}
-		if(! -w $newlogfile)
-		{
-			err("logfile \"$newlogfile\" is not writable\n",-1) if($useflag);
-			return("");
-		}
-	}
-
-	#
-	# Open up the log file (after closing any open logs.)
-	#
-	$logfile = $newlogfile;
-	close(LOG);
-	open(LOG,">> $logfile") || die "unable to open \"$logfile\"\n";
-	select(LOG);
-	$| = 1;
-
-	return($oldlogfile);
-}
-
-#-----------------------------------------------------------------------------
-#
-# Routine:	rollmgr_log()
-#
-sub rollmgr_log
-{
-	my $lvl = shift;				# Message log level.
-	my $fld = shift;				# Message field.
-	my $msg = shift;				# Message to log.
-
-	my $kronos;					# Current time.
-	my $outstr;					# Output string.
-
-	#
-	# Don't give the message unless it's at or above the log level.
-	#
-	return if($lvl < $loglevel);
-
-	#
-	# Add an administrative field specifier if the field wasn't given.
-	#
-	$fld = "$fld: " if($fld ne "");
-
-	#
-	# Get the timestamp.
-	#
-	$kronos = gmtime();
-	$kronos =~ s/^....//;
-
-	#
-	# Build the output string.
-	#
-	chomp $msg;
-	$outstr = "$kronos: $fld$msg";
-
-	#
-	# Write the message. 
-	# 
-	print LOG "$outstr\n";
-}
-
-#############################################################################
-#############################################################################
-#############################################################################
-
-#-----------------------------------------------------------------------------
-#
 # Routine:	rollmgr_channel()
 #
 # Purpose:	This routine initializes a socket to use for rollerd
@@ -1908,23 +1551,6 @@ manager.
 
   rollmgr_halt();
 
-  @levels = rollmgr_loglevels();
-
-  $curlevel = rollmgr_loglevel();
-  $oldlevel = rollmgr_loglevel("info");
-  $oldlevel = rollmgr_loglevel(LOG_ERR,1);
-
-  $curlogfile = rollmgr_logfile();
-  $oldlogfile = rollmgr_logfile("-");
-  $oldlogfile = rollmgr_logfile("/var/log/roll.log",1);
-
-  $loglevelstr = rollmgr_logstr(8)
-  $loglevelstr = rollmgr_logstr("info")
-
-  $ret = rollmgr_lognum("info");
-
-  rollmgr_log(LOG_INFO,"example.com","zone is valid");
-
   rollmgr_channel(1);
   ($cmd,$data) = rollmgr_getcmd();
   $ret = rollmgr_verifycmd($cmd);
@@ -1938,8 +1564,8 @@ manager.
 
 The B<Net::DNS::SEC::Tools::rollmgr> module provides standard,
 platform-independent methods for a program to communicate with DNSSEC-Tools'
-B<rollerd> rollover manager.  There are three interface classes described
-here:  general interfaces, logging interfaces, and communications interfaces.
+B<rollerd> rollover manager.  There are two interface classes described
+here:  general interfaces and communications interfaces.
 
 =head1 GENERAL INTERFACES
 
@@ -2014,94 +1640,6 @@ returned.
 
 =back
 
-=head1 LOGGING INTERFACES
-
-=over 4
-
-=item I<rollmgr_loglevels()>
-
-This routine returns an array holding the text forms of the user-settable
-logging levels.  The levels are returned in order, from most verbose to least.
-
-=item I<rollmgr_loglevel(newlevel,useflag)>
-
-This routine sets and retrieves the logging level for B<rollerd>.
-The I<newlevel> argument specifies the new logging level to be set.  The
-valid levels are:
-
-    text       numeric  meaning
-    ----       -------  -------
-    tmi           1     The highest level -- all log messages
-			are saved.
-    expire        3     A verbose countdown of zone expiration
-			is given.
-    info          4     Many informational messages are recorded.
-    phase         6     Each zone's current rollover phase
-			is given.
-    err        	  8     Errors are recorded.
-    fatal         9     Fatal errors are saved.
-
-I<newlevel> may be given in either text or numeric form.  The levels include
-all numerically higher levels.  For example, if the log level is set to
-B<phase>, then B<err> and B<fatal> messages will also be recorded.
-
-The I<useflag> argument is a boolean that indicates whether or not to give a
-descriptive message and exit if an invalid logging level is given.  If
-I<useflag> is true, the message is given and the process exits; if false, -1
-is returned.
-
-If given with no arguments, the current logging level is returned.  In fact,
-the current level is always returned unless an error is found.  -1 is returned
-on error.
-
-=item I<rollmgr_logfile(newfile,useflag)>
-
-This routine sets and retrieves the log file for B<rollerd>.
-The I<newfile> argument specifies the new log file to be set.  If I<newfile>
-exists, it must be a regular file.
-
-The I<useflag> argument is a boolean that indicates whether or not to give a
-descriptive message if an invalid logging level is given.  If I<useflag> is
-true, the message is given and the process exits; if false, no message is
-given.  For any error condition, an empty string is returned.
-
-=item I<rollmgr_lognum(loglevel)>
-
-This routine translates a text log level (given in I<loglevel>) into the
-associated numeric log level.  The numeric log level is returned to the caller.
-
-If I<loglevel> is an invalid log level, -1 is returned.
-
-=item I<rollmgr_logstr(loglevel)>
-
-This routine translates a log level (given in I<loglevel>) into the associated
-text log level.  The text log level is returned to the caller.
-
-If I<loglevel> is a text string, it is checked to ensure it is a valid log
-level.  Case is irrelevant when checking I<loglevel>.
-
-If I<loglevel> is numeric, it is must be in the valid range of log levels.
-I<undef> is returned if I<loglevel> is invalid.
-
-=item I<rollmgr_log(level,group,message)>
-
-The I<rollmgr_log()> interface writes a message to the log file.  Log
-messages have this format:
-
-	timestamp: group: message
-
-The I<level> argument is the message's logging level.  It will only be written
-to the log file if the current log level is numerically equal to or less than
-I<level>.
-
-I<group> allows messages to be associated together.  It is currently used by
-B<rollerd> to group messages by the zone to which the message applies.
-
-The I<message> argument is the log message itself.  Trailing newlines are
-removed.
-
-=back
-
 =head1 ROLLERD COMMUNICATIONS INTERFACES
 
 =over 4
@@ -2140,8 +1678,6 @@ The available commands and their required data are:
 					published
    ROLLCMD_DSPUBALL	none		DS records published for all
 					zones in KSK rollover phase 6
-   ROLLCMD_LOGFILE	log-file	set rollerd's log filename
-   ROLLCMD_LOGLEVEL	log-level	set rollerd's logging level
    ROLLCMD_ROLLALL	none		force all zones to start
 					ZSK rollover
    ROLLCMD_ROLLKSK	zone-name	force a zone to start
@@ -2203,6 +1739,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 B<rollctl(1)>
 
 B<Net::DNS::SEC::Tools::keyrec.pm(3)>
+B<Net::DNS::SEC::Tools::rolllog.pm(3)>
 B<Net::DNS::SEC::Tools::rollrec.pm(3)>
 
 B<rollerd(8)>
