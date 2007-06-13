@@ -442,7 +442,7 @@ sub getrollrecs
 		{
 			my $lvl;			# Text logging level.
 
-			$lvl = rollmgr_logstr($rollrecs{$rn}{'loglevel'});
+			$lvl = rolllog_str($rollrecs{$rn}{'loglevel'});
 			if($lvl eq "")
 			{
 				$rollrecs{$rn}{'loglevel'} = "(unknownlog)";
