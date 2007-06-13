@@ -135,8 +135,13 @@ my %sleeptimes;
 my %active_refresh_times;
 
 my %zone_configfile_map;
+my %zone_retry_times;
+
 my $once;
 
+# below is used for testing the REVOKE bit in the
+# absence of any real implementation. See the
+# 'test_revoke' command line option.
 my $revoke;
 if ($opts{'test_revoke'}) {
     $revoke = 1;
@@ -291,6 +296,10 @@ sub checkkeys {
                  
                  my $orgttl = $rrsigrec->orgttl;
                  my $sigexp = $rrsigrec->sigexpiration;
+                 my $retryobj = { ottl => $orgttl,
+                                  sigexp => $sigexp
+                                };
+                 $zone_retry_times{$d} = $retryobj;
                  my ($refresh_secs,$refresh_time) = compute_sleepsecs($orgttl, $sigexp);
                  $sleeptimes{$d} =  $refresh_secs;
                  $active_refresh_times{$d} = $refresh_time;
