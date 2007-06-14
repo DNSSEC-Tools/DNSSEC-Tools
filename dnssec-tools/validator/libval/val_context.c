@@ -137,6 +137,7 @@ val_create_context_with_conf(char *label,
             retval = VAL_OUT_OF_MEMORY;
             goto err;
         }
+        strcpy((*newcontext)->label, label);
     } else {
         (*newcontext)->label = NULL;
     }
