@@ -1,10 +1,8 @@
-<?xml version="1.0" ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>trustman - manage keys used as trust anchors</title>
-<meta http-equiv="content-type" content="text/html; charset=utf-8" />
-<link rev="made" href="mailto:root@localhost" />
+<link rev="made" href="mailto:root@b07.apple.com" />
 </head>
 
 <body style="background-color: white">
@@ -36,22 +34,17 @@
 </p>
 <hr />
 <h1><a name="description">DESCRIPTION</a></h1>
-<p>trustman runs by default as a daemon to monitor
-zones for the appearance of new keys which can be
-added as trust anchors. When a new key is observed,
-a timer is set. After this timer expires, if the
-new key is still observed in the keyset, mail is sent
-to the administrator advising that this key can now
-be configured as a trust anchor.
-</p>
-<p>
-In the future, the functionality of the original TrustMan
-will be included in this new tool, trustman.
-</p>
-<p>This script can also be run in the foreground (-f) to run this same check once
-manually.
-In the future, data about new keys to be added will be
-stored in a file so that such a foreground check would be useful.</p>
+<p>trustman runs by default as a daemon to verify if keys stored locally
+in configuration files (named.conf or dnsval.conf) still match the same keys
+as fetched from the zone where they are defined. If mismatches
+are detected, the daemon:</p>
+<p>sets an add holddown timer for new keys;
+sets a remove holddown timer for missing keys;
+removes revoked keys from the conf file.</p>
+<p>On subsequent runs, the timers are checked and if the times
+are reached, adds keys to the conf file or removes them,
+as appropriate.</p>
+<p>The same check can be run once manually (-S) and in the foreground (-f).</p>
 <p>This script can also be used to set up configuration data in the file
 dnssec-tools.conf for later use by the daemon, making fewer command
 line arguments necessary. Configuration data is stored in dnssec-tools.conf.
@@ -64,88 +57,123 @@ dnsval.conf in that file if necessary.</p>
 <hr />
 <h1><a name="options">OPTIONS</a></h1>
 <dl>
-<dt><strong><a name="item__2df">-f</a></strong>
-
+<dt><strong><a name="item__2da">-a</a></strong><br />
+</dt>
 <dd>
-<p>Run in the foreground</p>
+A persistent data file for storing new keys waiting to be added.
 </dd>
-</li>
-<dt><strong><a name="item__2dc">-c</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dc">-c</a></strong><br />
+</dt>
 <dd>
-<p>Create a configure file for trustman from the command line options given.</p>
+Create a configure file for trustman from the command line options given.
 </dd>
-</li>
-<dt><strong><a name="item__2do">-o</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dd">-d</a></strong><br />
+</dt>
 <dd>
-<p>Output file for configuration</p>
+The domain to check (supersedes configuration file)
 </dd>
-</li>
-<dt><strong><a name="item__2dk">-k</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2df">-f</a></strong><br />
+</dt>
 <dd>
-<p>A dnsval.conf file to read</p>
+Run in the foreground
 </dd>
-</li>
-<dt><strong><a name="item__2dn">-n</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dh">-h</a></strong><br />
+</dt>
 <dd>
-<p>A named.conf file to read</p>
+Help
 </dd>
-</li>
-<dt><strong><a name="item__2dd">-d</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dk">-k</a></strong><br />
+</dt>
 <dd>
-<p>The domain to check (supersedes configuration file)</p>
+A dnsval.conf file to read
 </dd>
-</li>
-<dt><strong><a name="item__2dt">-t</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dl">-L</a></strong><br />
+</dt>
 <dd>
-<p>The number of seconds to sleep between checks. Default is 3600 (one hour).
-trustman may modify the sleep interval according to TTLs of the
-zones being checked.
-</p>
+Log messages to syslog.
 </dd>
-</li>
-<dt><strong><a name="item__2dm">-m</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dm">-m</a></strong><br />
+</dt>
 <dd>
-<p>Mail address for the contact person to whom reports should be sent</p>
+Mail address for the contact person to whom reports should be sent
 </dd>
-</li>
-<dt><strong><a name="item__2dp">-p</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dn">-n</a></strong><br />
+</dt>
 <dd>
-<p>Log messages to stdout.</p>
+A named.conf file to read
 </dd>
-</li>
-<dt><strong><a name="item__2dl">-L</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dn">-N</a></strong><br />
+</dt>
 <dd>
-<p>Log messages to syslog.</p>
+Send report when there are no errors.
 </dd>
-</li>
-<dt><strong><a name="item__2ds">-s</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2do">-o</a></strong><br />
+</dt>
 <dd>
-<p>SMTP server trustman should use to send reports</p>
+Output file for configuration
 </dd>
-</li>
-<dt><strong><a name="item__2dn">-N</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dp">-p</a></strong><br />
+</dt>
 <dd>
-<p>Send report when there are no errors.</p>
+Log/print messages to stdout.
 </dd>
-</li>
-<dt><strong><a name="item__2dv">-v</a></strong>
-
+<p></p>
+<dt><strong><a name="item__2dr">-r</a></strong><br />
+</dt>
 <dd>
-<p>Verbose.</p>
+A resolv.conf file to read (can use /dev/null to force libval to
+recursively answer the query rather than asking other name servers)
 </dd>
-</li>
-</dl>
+<p></p>
+<dt><strong><a name="item__2ds">-s</a></strong><br />
+</dt>
+<dd>
+SMTP server trustman should use to send reports
+</dd>
+<p></p>
+<dt><strong><a name="item__2ds">-S</a></strong><br />
+</dt>
+<dd>
+Run only once
+</dd>
+<p></p>
+<dt><strong><a name="item__2dt">-t</a></strong><br />
+</dt>
+<dd>
+The number of seconds to sleep between checks. Default is 3600 (one hour)
+</dd>
+<p></p>
+<dt><strong><a name="item__2dv">-v</a></strong><br />
+</dt>
+<dd>
+Verbose.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dv">-V</a></strong><br />
+</dt>
+<dd>
+Version.
+</dd>
+<p></p>
+<dt><strong><a name="item__2dw">-w</a></strong><br />
+</dt>
+<dd>
+The value of the hold down timer
+
+
+</dd>
+<p></p></dl>
 <p>
 </p>
 <hr />
@@ -155,7 +183,6 @@ See the COPYING file included with the DNSSEC-Tools package for details.
 
 </p>
 
-<!--#include virtual="/page-bottom.html" -->
 </body>
 
 </html>
