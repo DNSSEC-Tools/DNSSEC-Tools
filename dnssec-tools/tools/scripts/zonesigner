@@ -1625,7 +1625,7 @@ sub zonesign
 		{
 			my $now = time();
 			my $newzftmp = "$zoneftmp.$now";
-			system("/bin/cp $zoneftmp $newzftmp");
+			system("$CP $zoneftmp $newzftmp");
 		}
 
 		system("$RM $zoneftmp");
