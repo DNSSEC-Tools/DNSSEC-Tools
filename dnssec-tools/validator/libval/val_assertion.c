@@ -873,6 +873,7 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
 
     RETRIEVE_POLICY(ctx, P_TRUST_ANCHOR, ta_pol);
     if (ta_pol == NULL) {
+        val_log(ctx, LOG_NOTICE, "is_trusted_key(): No trust anchor policy available"); 
         *status = VAL_AC_NO_TRUST_ANCHOR;
         return VAL_NO_ERROR;
     }
