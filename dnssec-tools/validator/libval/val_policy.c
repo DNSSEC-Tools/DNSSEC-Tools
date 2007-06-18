@@ -1060,6 +1060,9 @@ store_policy_overrides(val_context_t * ctx,
      * Add this entry to the list 
      */
     for (e = newp->plist; e; e = e->next) {
+        val_log(ctx, LOG_DEBUG, "store_policy_overrides(): Adding policy [%s:%s]", 
+                    newp->label, 
+                    conf_elem_array[e->index].keyword);
         if (e->index == (*pfrag)->index) {
             val_log(ctx, LOG_WARNING,
                     "store_policy_overrides(): Duplicate policy definition; using latest");
