@@ -2,6 +2,10 @@
 # Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 # See the COPYING file included with the DNSSEC-Tools package for details.
 
+######################################################################
+# Options are described in the POD at the end of this file
+######################################################################
+
 use IO::Socket::INET;
 use IO::File;
 use Getopt::Long;
@@ -30,26 +34,42 @@ my $giffile;
 my $htmlfile;
 my $htmlfh;
 my $giftmp;
+my $logfile;
+my $logfh;
+my $image_has_changed;
+my $SUCCESS = 1;
+my $BOGUS = 2;
+my $DATA_MISSING = 3;
+my $ERROR = 4;
+my $IGNORED = 5;
 
 ########################################################
 # Defaults
 
 my %opts = (
-	h => "127.0.0.1",
+	s => 0,
+	a => "127.0.0.1",
 	p => "1053",
-	f => "val_log_map.html",
 	g => "val_log_map.gif",
 	r => 5,
-	s => 0,
-	d => 0
 );
 
+$image_has_changed = 0;
+
+my %loglevels = (
+    $SUCCESS => 1,
+    $BOGUS => 1,
+    $DATA_MISSING => 1,
+    $ERROR => 1,
+    $IGNORED => 0
+);
+    
 
 ########################################################
 # main
 
 # Parse command-line options
-GetOptions(\%opts, "d=s", "p=s", "f=s", "g=s", "r=i", "s");
+GetOptions(\%opts, "s", "a=s", "p=s", "h=s", "r=i", "g=s", "l=s");
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
@@ -59,23 +79,41 @@ $count = 0;
 $newnode = "";
 $curnode = "";
 $giffile = $opts{'g'};
-$htmlfile = $opts{'f'};
+$htmlfile = $opts{'h'};
 $refresh = $opts{'r'};
-# create an HTML file with the image and 
-# with auto refresh set to 5 seconds
-$htmlfh = new IO::File(">$htmlfile");
-print $htmlfh "<html>\n<head>\n".
-	"<title>Validator Results</title>\n".
-	"<meta http-equiv=\"refresh\" content=\"$refresh\">\n".
-	"</head>\n".
-	"<body> <img src=\"$giffile\" alt=\"Validator Status\"> </body>\n".
-	"</html>";
-$htmlfh->close;
+$logfile = shift;
 
+# add log levels into our map
+my $loglevelstr = $opts{'l'};
+if (defined $loglevelstr) {
+    my @tmplevels;
+    %loglevels = ();
+    push @tmplevels, split(/,/, $loglevelstr);
+    if ($#tmplevels == 0) {
+        $loglevels{$loglevelstr} = 1;
+    } else {
+        for (my $i = 0; $i <=$#tmplevels; $i++) {
+            $loglevels{$tmplevels[$i]} = 1; 
+        }
+    }
+}
+
+# create an HTML file with the image and 
+# with auto refresh set to desired value 
+if (defined $htmlfile) {
+    $htmlfh = new IO::File(">$htmlfile");
+    print $htmlfh "<html>\n<head>\n".
+	    "<title>Validator Results</title>\n".
+	    "<meta http-equiv=\"refresh\" content=\"$refresh\">\n".
+	    "</head>\n".
+	    "<body> <img src=\"$giffile\" alt=\"Validator Status\"> </body>\n".
+	    "</html>";
+    $htmlfh->close;
+}
 
 # check if socket operation is desired
 if($opts{'s'} == 1) {
-	$local_host = $opts{'d'};
+	$local_host = $opts{'a'};
 	$local_port = $opts{'p'};
 	$socket = IO::Socket::INET->new(LocalAddr => $local_host,
                                 LocalPort => $local_port,
@@ -85,17 +123,27 @@ if($opts{'s'} == 1) {
 
 	while ($_=<$socket>) {
 		update_image($_);
+        if ($image_has_changed) {
+            update_gif();
+        }
 	}
 
 	# Never reached
 	close($socket);
+} 
+
+if (defined $logfile) {
+    $logfh = new IO::File("<$logfile");
+} else {
+    $logfh = STDIN;
 }
 
-
-# Read from stdin
-while ($_=<STDIN>) {
+# Read from file handle
+while ($_=<$logfh>) {
 	update_image($_);
 }
+
+update_gif();
 
 #
 # End Main
@@ -103,9 +151,25 @@ while ($_=<STDIN>) {
 
 ########################################################
 # 
-# update the graph and store as a gif 
+# store graph as gif 
+#
+sub update_gif {
+    # update the image only when something has changed
+    $giftmp = $giffile . "tmp"; 
+    # generate the gif file
+    $gv->as_gif($giftmp);
+    rename($giftmp, $giffile);
+    $image_has_changed = 0;
+}
+
+#############################################################
+#
+# update the graph
 #
 sub update_image {
+
+    my $level;
+    my %prop;
 
     # Look for only messages of the following type
     if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+):/) {
@@ -138,13 +202,12 @@ sub update_image {
         if ($curnode eq "") {
             $curnode = "libval";
         }
-		$gv->add_node($newnode);
-        $gv->add_edge($curnode, $newnode, label => $edge_str, decorateP => '1', get_ac_lineattr($status));
-		# update the image only when something has changed
-		$giftmp = $giffile . "tmp"; 
-		# generate the gif file
-		$gv->as_gif($giftmp);
-		rename($giftmp, $giffile);
+        ($level, %prop) = get_ac_lineattr($status);
+        if ($loglevels{$level} == 1) {
+		    $gv->add_node($newnode);
+            $gv->add_edge($curnode, $newnode, label => $edge_str, decorateP => '1', %prop); 
+            $image_has_changed = 1;
+        }
     } 
 }
 
@@ -157,6 +220,7 @@ sub get_ac_lineattr {
 	my %prop;
 	my $ac_status;
 	$ac_status = shift;
+    my $level;
 
 	$prop{'dir'} = 'back';
 
@@ -165,14 +229,17 @@ sub get_ac_lineattr {
 
 		$prop{'color'} =  "green";
 		$prop{'fillcolor'} =  "green";
+        $level = $SUCCESS;
 
     } elsif (($ac_status eq "VAL_AC_IGNORE_VALIDATION") ||
         ($ac_status eq "VAL_AC_TRUSTED_ZONE") ||
         ($ac_status eq "VAL_AC_PROVABLY_UNSECURE") ||
+        ($ac_status eq "VAL_AC_BARE_RRSIG") ||
         ($ac_status eq "VAL_AC_LOCAL_ANSWER")) {
 
 		$prop{'color'} =  "yellow";
 		$prop{'fillcolor'} =  "yellow";
+        $level = $IGNORED;
 
     } elsif (($ac_status eq "VAL_AC_UNTRUSTED_ZONE") ||
         ($ac_status eq "VAL_AC_NOT_VERIFIED") ||
@@ -180,16 +247,17 @@ sub get_ac_lineattr {
 
 		$prop{'color'} =  "red";
 		$prop{'fillcolor'} =  "red";
+        $level = $BOGUS;
 
     } elsif  (($ac_status eq "VAL_AC_RRSIG_MISSING") ||
         ($ac_status eq "VAL_AC_DNSKEY_MISSING") ||
         ($ac_status eq "VAL_AC_DS_MISSING") ||
-        ($ac_status eq "VAL_AC_DATA_MISSING") ||
-        ($ac_status eq "VAL_AC_BARE_RRSIG")) { 
+        ($ac_status eq "VAL_AC_DATA_MISSING")) { 
 
 		$prop{'color'} =  "red";
 		$prop{'fillcolor'} =  "red";
 		$prop{'style'} = 'dashed';
+        $level = $DATA_MISSING;
 
     } elsif (($ac_status eq "VAL_AC_UNSET") ||
         ($ac_status eq "VAL_AC_UNKNOWN_DNSKEY_PROTOCOL")){
@@ -197,15 +265,16 @@ sub get_ac_lineattr {
 		$prop{'color'} =  "black";
 		$prop{'fillcolor'} =  "black";
 		$prop{'style'} = 'dashed';
+        $level = $ERROR;
     } 
     else { 
         # other errors
 		$prop{'color'} =  "black";
 		$prop{'fillcolor'} =  "black";
+        $level = $ERROR;
     } 
-    
 
-	return %prop;
+	return $level, %prop;
 }
 
 #############################################################
@@ -274,49 +343,38 @@ drawvalmap - Generate a graphical output of validation status values
 
 =head1 SYNOPSIS
 
-drawvalmap 
+drawvalmap <logfile>
+
+drawvalmap
 
 =head1 DESCRIPTION
 
-drawvalmap is a simple utility that can be used to display the query assertion status 
+drawvalmap is a simple utility that can be used to display the validator status values 
 in a graphical format. The input to this script is a set of log messages that 
-can be read either from STDIN or from a socket. The default is to read it from STDIN.
-The output is an HTML file containing an image of the various validator authentication chain 
-status values. The HTML file auto-refreshes every five seconds so that changes to 
-the validator graph can be constantly tracked. The drawvalmap script executes 
-in an infinite loop and never returns.  
+can be read either from file or from a socket. The output is an GIF file containing an image of 
+the various validator authentication chain status values. 
 
-This script can be started from the command line by typing
+The script reads data from STDIN if the logfile and the socket option are both unspecified.
+If the -f option is given, the output GIF file is embedded in an HTML file with the given
+name. The HTML file auto-refreshes according to the refresh time supplied by the -r option, 
+allowing changes to the validator graph to be constantly tracked. 
 
-bash# drawvalmap
+The typical usage of this script is in the following way:
+
+bash# drawvalmap <logfile>
 
 It would not be uncommon to use this script for
 troubleshooting purposes in which case output generated by a driver 
 program would be "piped" to this script in the manner shown below.
 
-bash# ${LIBVAL}/bin/validate -o5:stdout secure.example.com. | drawvalmap 
+bash# validate -o6:stdout secure.example.com. | drawvalmap -f val_log_map.html
 
-In each case the script reads log messages from STDIN, generating
-a default HTML file with the name val_log_map.html. The gif containing
-the actual validator map has the default name as val_log_map.gif. Both
-of these defaults can be modified by using the command-line flags 
-described below. 
+In each case the script generates the results in a "val_log_map.gif" file. 
+In the second case, an HTML file with the name val_log_map.html is also generated. 
 
 =head1 OPTIONS
 
 =over
-
-=item -f
-
-This changes the name of .html file to the given value.
-
-=item -g
-
-This changes the name of .gif file to the given value.
-
-=item -r
-
-This changes the refresh period in the HTML file to the given value.
 
 =item -s
 
@@ -324,17 +382,29 @@ This changes the mode of operation to read input from a socket.
 The default address and port to which drawvalmap binds is
 127.0.0.1:1053 
 
-=item -d
+=item -a <IP address>
 
 This changes the address to which drawvalmap binds itself to
 the specified value. This option takes effect only if the
 -s option is also specified.
 
-=item -p
+=item -p <port>
 
 This changes the port to which drawvalmap binds itself to
 the specified value. This option takes effect only if the
 -s option is also specified.
+
+=item -h <file.html>
+
+This creates an html file with the given name, which contains the gif image of the validation map.
+
+=item -r <refresh period>
+
+This changes the refresh period in the HTML file to the given value. The default is 5 seconds.
+
+=item -g <file.gif>
+
+This changes the name of .gif file to the given value.
 
 =back
   
@@ -348,7 +418,9 @@ GraphViz
 Copyright 2005 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
+=head1 AUTHOR
+
+Suresh Krishnaswamy, hserus@users.sourceforge.net
+
 =cut
 
-
- 
