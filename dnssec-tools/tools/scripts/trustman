@@ -1324,6 +1324,8 @@ sub LocalOptionsMap {
     return @opts;
 }
 
+=pod
+
 =head1 NAME
 
 trustman - manage keys used as trust anchors
@@ -1334,116 +1336,183 @@ trustman [options]
 
 =head1 DESCRIPTION
 
-trustman runs by default as a daemon to verify if keys stored locally
-in configuration files (named.conf or dnsval.conf) still match the same keys
-as fetched from the zone where they are defined. If mismatches
-are detected, the daemon: 
+B<trustman> manages keys used by DNSSEC as trust anchors.  It may be used as
+a daemon for ongoing key verification or manually for initialization and
+one-time key verification.
 
-sets an add holddown timer for new keys;
-sets a remove holddown timer for missing keys;
-removes revoked keys from the conf file.
+By default, B<trustman> runs as a daemon to ensure that keys stored locally in
+configuration files still match the same keys fetched from the zone where they
+are defined.  (B<named.conf> and B<dnsval.conf> are the usual configuration
+files.) These checks can be run once manually (-S) and in the foreground (-f).
 
-On subsequent runs, the timers are checked and if the times
-are reached, adds keys to the conf file or removes them,
-as appropriate.
+For each key mismatch check,  if key mismatches are detected then B<trustman>
+performs the following operations:
 
-The same check can be run once manually (-S) and in the foreground (-f). 
+    - sets an add hold-down timer for new keys;
+    - sets a remove hold-down timer for missing keys;
+    - removes revoked keys from the configuration file.
 
-This script can also be used to set up configuration data in the file
-dnssec-tools.conf for later use by the daemon, making fewer command
-line arguments necessary. Configuration data is stored in dnssec-tools.conf.
-The current version requires you to edit dnssec-tools.conf by hand and
-supply values for the contact person email address (tacontact) and the
-SMTP server (tasmtpserver). Also edit the location of named.conf and
-dnsval.conf in that file if necessary.
+On subsequent runs, the timers are checked.  If the timers have expired, keys
+are added or removed from the configuration file, as appropriate.
+
+=head1 CONFIGURATION
+
+B<trustman> can also set up configuration data in the DNSSEC-Tools
+configuration file (B<dnssec-tools.conf>) for later use by the daemon,
+making fewer command line arguments necessary.
+
+Configuration data is stored in B<dnssec-tools.conf>.  The current version
+requires you to edit B<dnssec-tools.conf> by hand and supply values for
+the contact person's email address (I<tacontact>) and the SMTP server
+(I<tasmtpserver>).  If necessary, edit the location of B<named.conf> and
+B<dnsval.conf> in that file.
 
 =head1 OPTIONS
 
+B<trustman> takes a number of options, each of which is described in this
+section.  Each option name may be shortened to the minimum number of unique
+characters, but some options also have an alias.
+
 =over #indent
 
-=item -a
+=item -anchor_data_file I<datafile>
 
 A persistent data file for storing new keys waiting to be added.
 
-=item -c
+=item -config
 
-Create a configure file for trustman from the command line options given.
+Create a configure file for B<trustman> from the command line options given.
 
-=item -d
+=item -dnsval_conf_file I<conffile>
 
-The domain to check (supersedes configuration file)
+A B<dnsval.conf> file to read.
 
-=item -f
+=item -domain I<domain>
 
-Run in the foreground
+The domain to check.  Specifying this option supersedes the default
+configuration file.
 
-=item -h
+=item -fg
 
-Help
+Run in the foreground.
 
-=item -k 
+=item -foreground
 
-A dnsval.conf file to read
+Alias for -foreground.
+
+=item -help
+
+Display a help message.
+
+=item -hold_time I<seconds>
+
+The value of the hold-down timer.
+
+=item -k
+
+Alias for -dnsval_conf_file.
 
 =item -L
 
-Log messages to syslog.
+Alias for -syslog.
 
-=item -m
+=item -mail_contact_addr I<email-address>
 
-Mail address for the contact person to whom reports should be sent
+Mail address for the contact person to whom reports should be sent.
 
-=item -n 
+=item -named_conf_file I<conffile>
 
-A named.conf file to read
+A B<named.conf> file to read.
 
-=item -N
+=item -no_error
 
 Send report when there are no errors.
 
-=item -o
+=item -N
 
-Output file for configuration
+Alias for -no_error.
 
-=item -p
+=item -outfile I<output-file>
+
+Output file for configuration.
+
+=item -persistent_data_file I<datafile>
+
+???
 
 Log/print messages to stdout.
 
-=item -r 
+=item -print
 
-A resolv.conf file to read (can use /dev/null to force libval to
-recursively answer the query rather than asking other name servers)
+Log/print messages to stdout.
 
-=item -s
+=item -resolv_conf_file I<conffile>
 
-SMTP server trustman should use to send reports
+A B<resolv.conf> file to read.  B</dev/null> can be specified to force
+libval to recursively answer the query rather than asking other name servers).
+
+=item -smtp_server
+
+SMTP server that B<trustman> should use to send reports.
+
+=item -single_run
+
+Run only once.
+
+=item -syslog
+
+Log messages to B<syslog>.
 
 =item -S
 
-Run only once 
+Alias for -single_run.
 
-=item -t
+=item -sleeptime I<seconds>
 
 The number of seconds to sleep between checks. Default is 3600 (one hour)
 
-=item -v
+=item -t
 
-Verbose.
+Alias for -sleeptime.
+
+=item -test_revoke
+
+???
+
+Alias for -sleeptime.
+
+=item -verbose
+
+Verbose output.
+
+=item -version
+
+Display version information.
 
 =item -V
 
-Version.
+Alias for -version.
 
 =item -w
 
-The value of the hold down timer
+Alias for -hold_time.
 
 =back #unindent
+
 =head1 PRE-REQUISITES
+
+???
+
+=head1 SEE ALSO
+
+B<Net::DNS::SEC::Tools::conf.pm(3)>,
+B<Net::DNS::SEC::Tools::defaults.pm(3)>,
+
+B<dnssec-tools.conf(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2006 SPARTA, Inc.  All rights reserved.
+Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =cut
