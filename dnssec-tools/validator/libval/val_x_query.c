@@ -645,9 +645,6 @@ val_query(val_context_t * ctx,
         retval =
             compose_answer(name_n, type, class_h, results, resp, flags);
 
-        if (retval == VAL_NO_ERROR) 
-            val_log_authentication_chain(context, LOG_INFO, name_n, class_h, type, results);
-
         val_free_result_chain(results);
     }
 
