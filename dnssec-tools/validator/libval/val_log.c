@@ -323,9 +323,15 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
                              struct val_result_chain *results)
 {
     struct val_result_chain *next_result;
+    char name_p[NS_MAXDNAME];
 
+    if (ns_name_ntop(name_n, name_p, sizeof(name_p)) == -1) {
+        strcpy(name_p, "Invalid name");
+    }
+    
     if (results == NULL) { 
-        val_log(ctx, level, "  Result was NULL");
+        val_log(ctx, level, "Validation result for {%s, %d, %d}: NULL (Untrusted)",
+                name_p, class_h, type_h);
         return;
     }
 
@@ -334,9 +340,22 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
         struct val_authentication_chain *next_as;
         int             i;
 
-        val_log(ctx, level, "  Result: %s:%d",
-                p_val_status(next_result->val_rc_status),
-                next_result->val_rc_status);
+        if (val_isvalidated(next_result->val_rc_status)) {
+            val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Validated)",
+                    name_p, class_h, type_h,
+                    p_val_status(next_result->val_rc_status),
+                    next_result->val_rc_status);
+        } else if (val_istrusted(next_result->val_rc_status)) {
+            val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Trusted but not Validated)",
+                    name_p, class_h, type_h,
+                    p_val_status(next_result->val_rc_status),
+                    next_result->val_rc_status);
+        } else {
+            val_log(ctx, level, "Validation result for {%s, %d, %d}: %s:%d (Untrusted)",
+                    name_p, class_h, type_h,
+                    p_val_status(next_result->val_rc_status),
+                    next_result->val_rc_status);
+        }
 
         for (next_as = next_result->val_rc_answer; next_as;
              next_as = next_as->val_ac_trust) {

@@ -4122,8 +4122,8 @@ verify_and_validate(val_context_t * context,
                 if (as_trust == NULL) {
                     res->val_rc_status = VAL_ERROR;
                     val_log(context, LOG_INFO, 
-                        "verify_and_validate(): trust point \
-                        for {%s %s %s} contains a proof of non-existence",
+                        "verify_and_validate(): trust point "
+                        "for {%s %s %s} contains a proof of non-existence",
                         name_p, 
                         p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                         p_type(next_as->val_ac_rrset->val_rrset_type_h));
@@ -5713,6 +5713,11 @@ val_resolve_and_check(val_context_t * ctx,
     }
 
     retval = VAL_NO_ERROR;
+
+    if (results) {
+        val_log_authentication_chain(context, LOG_INFO, 
+            domain_name_n, q_class, type, *results);
+    }
 
   err:
     CTX_UNLOCK_ACACHE(context);
