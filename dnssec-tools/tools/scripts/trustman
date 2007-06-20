@@ -458,7 +458,9 @@ sub checkkeys {
             my $notif = "query failed for domain " . $d . "\n";
             print $notif;
             notify($notif) if ($opts{'v'});
-            my $refresh_secs = compute_queryfail_sleepsecs(0,0);
+            my $refresh_secs = compute_queryfail_sleepsecs(
+                                   $zone_retry_times{$d}{'ottl'},
+                                   $zone_retry_times{$d}{'sigexp'});
             $sleeptimes{$d} =  $refresh_secs;
         }
     }
