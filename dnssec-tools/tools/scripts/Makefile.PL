@@ -36,9 +36,8 @@ use ExtUtils::MakeMaker;
 			    signset-editor
 			    tachk
 			    timetrans
-			    zonesigner
-			    TrustMan.pl
 			    trustman
+			    zonesigner
 			   )]
 	);
 

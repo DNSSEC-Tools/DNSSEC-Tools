@@ -8,8 +8,6 @@
 This directory contains tools for use in managing DNSSEC environments.
 Brief descriptions of these tools are given below.
 
-        TrustMan        Manages keys used as trust anchors
-
 	blinkenlights	Gives graphical display of rollerd activity and
 			allows some control of zones.
 
@@ -32,9 +30,8 @@ Brief descriptions of these tools are given below.
 	genkrf		Generates a keyrec file using existing key signing
 			key and/or zone signing keys.
 
-        getdnskeys      Fetch, compare and remember a list of DNSKEYs
-                        from DNS zones (may be completely replaced by
-                        TrustMan in future versions)
+	getdnskeys      Fetch, compare and remember a list of DNSKEYs
+			from DNS zones
 
 	keyarch		Archives obsolete keys.
 
@@ -61,9 +58,7 @@ Brief descriptions of these tools are given below.
 	tachk		Reads a trusted-keys block from a named.conf file and
 			performs queries to see if the configured trust
 			anchors are still published by the zones.
-			NOTE: This script addtionally requires Net::DNS::SEC
-                        (may be completely replaced by TrustMan in
-                        future versions)
+			NOTE: This script addtionally requires Net::DNS::SEC.
 
 	timetrans	Converts time units (weeks, days, etc.) into the
 			appropriate number of seconds.  Intended for use in
