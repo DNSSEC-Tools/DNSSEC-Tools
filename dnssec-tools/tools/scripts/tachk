@@ -32,7 +32,7 @@ my %options = ();			# Filled option array.
 my @opts =
 (
 	"valid",			# List valid trust anchors
-	"invalid",		# List invalid trust anchors
+	"invalid",			# List invalid trust anchors
 
 	"count",			# Only give a count of trust anchors
 	"terse",			# Give terse output.
@@ -393,7 +393,7 @@ tachk - Check the validity of the trust anchors in a B<named.conf> file.
 
 =head1 SYNOPSIS
 
-  tachk [options] named.conf
+  tachk [options] <named.conf>
 
 =head1 DESCRIPTION
 
@@ -454,6 +454,8 @@ Display a usage message.
 Wesley Griffin, wgriffin@users.sourceforge.net
 
 =head1 SEE ALSO
+
+B<trustman(8)>
 
 =cut
 
