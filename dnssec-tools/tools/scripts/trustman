@@ -58,7 +58,6 @@ GetOptions(\%opts,
              'v|verbose',
              'V|version',
              'w|hold_time=s',
-             'persistent_data_file=s',
              'test_revoke=s',
            );
 
@@ -72,7 +71,6 @@ my %dtconf = parseconfig();
 # then $dtconf{'name_of_option_in_dnssec-tools.conf'}
 # contains the value of that option as set in the conf file
 
-#my $tafile = $opts{'a'} ? $opts{'a'} 
 my $newkeyfile = $opts{'a'} ? $opts{'a'} 
                         : $dtconf{'taanchorfile'};
                      
@@ -90,17 +88,6 @@ my $contactaddr = $opts{'m'} ? $opts{'m'}
 
 my $smtpserver =  $opts{'s'} ? $opts{'s'}
                              : $dtconf{'tasmtpserver'};
-
-#my $newkeyfile = $opts{'persistent_data_file'} ? $opts{'persistent_data_file'}
-#                             : "/usr/local/etc/dnssec-tools/newkey.perldata";
-
-#if ($opts{'persistent_data_file'}) {
-#    $newkeyfile = $opts{'persistent_data_file'};
-#} else { 
-#    print STDERR "Proceeding with no persistent data file defined.\n";
-#    print STDERR "This means that pending key data will not be saved in case \n";
-#    print STDERR "trustman is restarted, and pending key hold times start over.\n";
-#}
 
 if ($dvfile && $ncfile) {
     usage(2);
@@ -1371,7 +1358,7 @@ B<dnsval.conf> in that file.
 
 B<trustman> takes a number of options, each of which is described in this
 section.  Each option name may be shortened to the minimum number of unique
-characters, but some options also have an alias.
+characters, but some options also have an alias (as noted).
 
 =over #indent
 
@@ -1394,11 +1381,11 @@ configuration file.
 
 =item -fg
 
-Run in the foreground.
+Alias for -foreground.
 
 =item -foreground
 
-Alias for -foreground.
+Run in the foreground.
 
 =item -help
 
@@ -1436,10 +1423,6 @@ Alias for -no_error.
 
 Output file for configuration.
 
-=item -persistent_data_file I<datafile>
-
-???
-
 Log/print messages to stdout.
 
 =item -print
@@ -1453,7 +1436,7 @@ libval to recursively answer the query rather than asking other name servers).
 
 =item -smtp_server
 
-SMTP server that B<trustman> should use to send reports.
+SMTP server that B<trustman> should use to send reports by mail.
 
 =item -single_run
 
@@ -1477,9 +1460,8 @@ Alias for -sleeptime.
 
 =item -test_revoke
 
-???
-
-Alias for -sleeptime.
+Use this option to test the REVOKE bit. No known implementation of
+the REVOKE bit exists to date.
 
 =item -verbose
 
@@ -1499,10 +1481,6 @@ Alias for -hold_time.
 
 =back #unindent
 
-=head1 PRE-REQUISITES
-
-???
-
 =head1 SEE ALSO
 
 B<Net::DNS::SEC::Tools::conf.pm(3)>,
@@ -1512,7 +1490,7 @@ B<dnssec-tools.conf(5)>
 
 =head1 COPYRIGHT
 
-Copyright 2006-2007 SPARTA, Inc.  All rights reserved.
+Copyright 2004-2007 SPARTA, Inc.  All rights reserved.
 See the COPYING file included with the DNSSEC-Tools package for details.
 
 =cut
