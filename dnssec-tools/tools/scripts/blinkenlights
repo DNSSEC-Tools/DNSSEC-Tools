@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 #
 # Copyright 2006-2007 SPARTA, Inc.  All rights reserved.  See the COPYING
-# file distributed with this software for details
+# file distributed with this software for details.
 #
 # DNSSEC-Tools:  blinkenlights
 #
@@ -62,7 +62,7 @@ my $version	= 0;			# Display the version number.
 # blinkenlights' configuration file.
 #
 my $CONFFILE	= "blinkenlights.conf";
-my $DEMOCONFIG	= "./rc.blinkenlights";
+my $BLCONFIG	= "./rc.blinkenlights";
 
 #######################################################################
 #
@@ -505,7 +505,7 @@ sub buildmainwind
 
 	$mbar->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
 	$body->pack(-anchor => 'n', -side => 'top', -fill => 'x', -expand => 1);
-	$null->pack(-fill => 'x', -expand => 1);
+	$null->pack(-expand => 1,   -fill => 'x');
 
 	#
 	# Create our menus.
@@ -686,7 +686,7 @@ sub buildmainwind
 	$body->pack(-fill => 'both', -expand => 1);
 
 	#
-	# Get the keyrec file info.
+	# Get the rollrec file info.
 	#
 	readrrf($rrfile,0);
 
@@ -1622,7 +1622,6 @@ sub zonestripe
 	# be modified in a single place.)
 	#
 	$zonetxt  = "$zone    ";
-#	$zonetxt  = "  $zone  ";
 
 	#
 	# Set the rollover description field.
@@ -1647,7 +1646,6 @@ sub zonestripe
 		$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
 				       -foreground => $fgcolor,
 				       -background => $bgcolor);
-#				       -background => $bgcolor, -anchor => 'w');
 		$zonetab->put($row0,$NAMECOL,$lab);
 
 		$lab = $zonetab->Label(-text => 'skipping', -font => $font,
@@ -1693,7 +1691,6 @@ sub zonestripe
 	$lab = $zonetab->Label(-text => $zonetxt, -font => $font,
 			       -foreground => $fgcolor,
 			       -background => $bgcolor);
-#			       -background => $bgcolor, -anchor => 'w');
 
 	$zonetab->put($row1,$NAMECOL,$lab);
 	$blank = $zonetab->Label(-text => ' ', -font => $font,
@@ -2399,14 +2396,14 @@ sub readconfig
 	#
 	# Return if we don't have a configuration file.
 	#
-	return if(!-e $DEMOCONFIG);
+	return if(!-e $BLCONFIG);
 
 	#
 	# Complain and return if we can't read our configuration file.
 	#
-	if(!-r $DEMOCONFIG)
+	if(!-r $BLCONFIG)
 	{
-		print STDERR "unable to read $DEMOCONFIG; continuing...\n";
+		print STDERR "unable to read $BLCONFIG; continuing...\n";
 		return;
 	}
 
@@ -2415,7 +2412,7 @@ sub readconfig
 	# line is expected to be in a "field value" pair.  As we read each
 	# line, we'll take the appropriate action.
 	#
-	open(CONF,"<$DEMOCONFIG");
+	open(CONF,"<$BLCONFIG");
 	while(<CONF>)
 	{
 		$line = $_;
