@@ -1362,36 +1362,32 @@ characters, but some options also have an alias (as noted).
 
 =over #indent
 
-=item -anchor_data_file I<datafile>
+=item --anchor_data_file (or -a) I<datafile>
 
 A persistent data file for storing new keys waiting to be added.
 
-=item -config
+=item --config (-c)
 
 Create a configure file for B<trustman> from the command line options given.
 
-=item -dnsval_conf_file I<conffile>
+=item --dnsval_conf_file (or -k)I<conffile>
 
 A B<dnsval.conf> file to read.
 
-=item -domain I<domain>
+=item --domain (or -d) I<domain>
 
 The domain to check.  Specifying this option supersedes the default
 configuration file.
 
-=item -fg
-
-Alias for -foreground.
-
-=item -foreground
+=item --foreground (-f)
 
 Run in the foreground.
 
-=item -help
+=item --help (-h)
 
 Display a help message.
 
-=item -hold_time I<seconds>
+=item --hold_time (or -w) I<seconds>
 
 The value of the hold-down timer.
 
@@ -1403,15 +1399,15 @@ Alias for -dnsval_conf_file.
 
 Alias for -syslog.
 
-=item -mail_contact_addr I<email-address>
+=item --mail_contact_addr (or -m) I<email-address>
 
 Mail address for the contact person to whom reports should be sent.
 
-=item -named_conf_file I<conffile>
+=item --named_conf_file (or -n) I<conffile>
 
 A B<named.conf> file to read.
 
-=item -no_error
+=item --no_error
 
 Send report when there are no errors.
 
@@ -1419,30 +1415,28 @@ Send report when there are no errors.
 
 Alias for -no_error.
 
-=item -outfile I<output-file>
+=item --outfile (or -o) I<output-file>
 
 Output file for configuration.
 
-Log/print messages to stdout.
-
-=item -print
+=item --print (-p)
 
 Log/print messages to stdout.
 
-=item -resolv_conf_file I<conffile>
+=item --resolv_conf_file (or -r) I<conffile>
 
 A B<resolv.conf> file to read.  B</dev/null> can be specified to force
 libval to recursively answer the query rather than asking other name servers).
 
-=item -smtp_server
+=item --smtp_server (-s) I<smtpservername>
 
 SMTP server that B<trustman> should use to send reports by mail.
 
-=item -single_run
+=item --single_run (-S)
 
 Run only once.
 
-=item -syslog
+=item --syslog
 
 Log messages to B<syslog>.
 
@@ -1450,7 +1444,7 @@ Log messages to B<syslog>.
 
 Alias for -single_run.
 
-=item -sleeptime I<seconds>
+=item --sleeptime (or -t) I<seconds>
 
 The number of seconds to sleep between checks. Default is 3600 (one hour)
 
@@ -1458,16 +1452,16 @@ The number of seconds to sleep between checks. Default is 3600 (one hour)
 
 Alias for -sleeptime.
 
-=item -test_revoke
+=item --test_revoke
 
 Use this option to test the REVOKE bit. No known implementation of
 the REVOKE bit exists to date.
 
-=item -verbose
+=item --verbose (-v)
 
 Verbose output.
 
-=item -version
+=item --version (-V)
 
 Display version information.
 
