@@ -94,6 +94,12 @@ my @opts = (
 my $keygen;					# The key-generation program.
 
 #
+# Standard paths.
+#
+my $MKDIR = "/bin/mkdir";
+my $MV	  = "/bin/mv";
+
+#
 # Lists of KSKs and ZSKs.
 #
 my @ksklist = ();		# List of current KSKs.
@@ -571,6 +577,7 @@ sub genksk
 
 	#
 	# Generate a new key.
+	#
 # print "genksk:  <$keygen $cmdopts -n zone -f KSK $zone>\n";
 	$ksk = `$keygen $cmdopts -n zone -f KSK $zone`;
 	chomp $ksk;
@@ -580,7 +587,7 @@ sub genksk
 	#
 	if($kskdir ne ".")
 	{
-		`mkdir -p $kskdir && mv $ksk* $kskdir`;
+		`$MKDIR -p $kskdir && $MV $ksk* $kskdir`;
 	}
 
 	return($ksk || "");
@@ -609,7 +616,7 @@ sub genzsk
 	#
 	if($zskdir ne ".")
 	{
-		`mkdir -p $zskdir && mv $zsk* $zskdir`;
+		`$MKDIR -p $zskdir && $MV $zsk* $zskdir`;
 	}
 
 	return($zsk || "");
