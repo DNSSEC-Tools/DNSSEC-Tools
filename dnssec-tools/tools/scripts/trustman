@@ -528,6 +528,8 @@ sub checkkeys {
                                             $remkeys{$d}[$i]{protocol},
                                             $remkeys{$d}[$i]{algorithm});
                     }
+                # remove this key from remkeys now, it has been removed
+                    splice @{$remkeys{$d}},$i,1;
                 }
             }
         }
