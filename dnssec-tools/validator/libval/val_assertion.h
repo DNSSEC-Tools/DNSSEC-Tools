@@ -57,6 +57,7 @@ int             check_anc_proof(val_context_t *context,
                                 struct val_query_chain *q, 
                                 u_int8_t flags,
                                 u_int8_t *name_n, 
+                                int check_wildcard,
                                 int *matches);
 #endif
 int             try_chase_query(val_context_t * context,
