@@ -32,7 +32,9 @@ use strict;
 
 use Getopt::Long qw(:config no_ignore_case_always);
 
+use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::rollrec;
+use Net::DNS::SEC::Tools::rolllog;
 use Net::DNS::SEC::Tools::rollmgr;
 use Net::DNS::SEC::Tools::tooloptions;
 
@@ -155,6 +157,25 @@ sub getrollrecs
 {
 	my $rrfile = shift;			# Rollrec filename.
 	my $ret;				# rollrec_read() return.
+
+	#
+	# Basic checks on the rollrec file.
+	#
+	if(! -e $rrfile)
+	{
+		print STDERR "rollrec file \"$rrfile\" does not exist\n";
+		exit(-1);
+	}
+	if(! -f $rrfile)
+	{
+		print STDERR "rollrec file \"$rrfile\" is not a regular file\n";
+		exit(-1);
+	}
+	if(dt_filetype($rrfile) ne 'rollrec')
+	{
+		print STDERR "\"$rrfile\" is not a rollrec file\n";
+		exit(-1);
+	}
 
 	#
 	# Read the rollrec file and save the rollrec names.
