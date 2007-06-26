@@ -1360,11 +1360,12 @@ B<dnsval.conf> in that file.
 
 B<trustman> takes a number of options, each of which is described in this
 section.  Each option name may be shortened to the minimum number of unique
-characters, but some options also have an alias (as noted).
+characters, but some options also have an alias (as noted). The single-letter
+form of each option is denoted in parentheses, e.g.: --anchor_data_file (-a).
 
 =over #indent
 
-=item --anchor_data_file (or -a) I<datafile>
+=item --anchor_data_file (-a) I<datafile>
 
 A persistent data file for storing new keys waiting to be added.
 
@@ -1372,11 +1373,11 @@ A persistent data file for storing new keys waiting to be added.
 
 Create a configure file for B<trustman> from the command line options given.
 
-=item --dnsval_conf_file (or -k)I<conffile>
+=item --dnsval_conf_file (-k)I<conffile>
 
 A B<dnsval.conf> file to read.
 
-=item --domain (or -d) I<domain>
+=item --domain (-d) I<domain>
 
 The domain to check.  Specifying this option supersedes the default
 configuration file.
@@ -1389,7 +1390,7 @@ Run in the foreground.
 
 Display a help message.
 
-=item --hold_time (or -w) I<seconds>
+=item --hold_time (-w) I<seconds>
 
 The value of the hold-down timer.
 
@@ -1401,11 +1402,11 @@ Alias for -dnsval_conf_file.
 
 Alias for -syslog.
 
-=item --mail_contact_addr (or -m) I<email-address>
+=item --mail_contact_addr (-m) I<email-address>
 
 Mail address for the contact person to whom reports should be sent.
 
-=item --named_conf_file (or -n) I<conffile>
+=item --named_conf_file (-n) I<conffile>
 
 A B<named.conf> file to read.
 
@@ -1417,7 +1418,7 @@ Send report when there are no errors.
 
 Alias for -no_error.
 
-=item --outfile (or -o) I<output-file>
+=item --outfile (-o) I<output-file>
 
 Output file for configuration.
 
@@ -1425,7 +1426,7 @@ Output file for configuration.
 
 Log/print messages to stdout.
 
-=item --resolv_conf_file (or -r) I<conffile>
+=item --resolv_conf_file (-r) I<conffile>
 
 A B<resolv.conf> file to read.  B</dev/null> can be specified to force
 libval to recursively answer the query rather than asking other name servers).
@@ -1446,7 +1447,7 @@ Log messages to B<syslog>.
 
 Alias for -single_run.
 
-=item --sleeptime (or -t) I<seconds>
+=item --sleeptime (-t) I<seconds>
 
 The number of seconds to sleep between checks. Default is 3600 (one hour)
 
