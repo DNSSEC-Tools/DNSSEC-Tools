@@ -465,49 +465,35 @@ response_recv(int *trans_id,
     if (ret_val == SR_IO_NO_ANSWER_YET)
         return SR_NO_ANSWER_YET;
 
-    if (respondent == NULL) {
-        if (ret_val == SR_IO_GOT_ANSWER) {
-            FREE(answer);
-        }
-        return SR_NO_ANSWER;
-    }
-
-    res_io_cancel(trans_id);
-
-    if (ret_val == SR_IO_INTERNAL_ERROR)
-        return SR_RCV_INTERNAL_ERROR;
-
-    if ((ret_val == SR_IO_SOCKET_ERROR) || (ret_val == SR_IO_NO_ANSWER))
+    if (ret_val == SR_IO_NO_ANSWER)
         return SR_NO_ANSWER;
 
-    if (ret_val != SR_IO_GOT_ANSWER) {
-        return SR_RCV_INTERNAL_ERROR;
-    }
-
-    /*
-     * ret_val is SR_IO_GOT_ANSWER 
-     */
-    if ((ret_val =
-         res_tsig_verifies(*respondent, *answer,
-                           *answer_length)) == SR_TS_OK) {
-        /*
-         * Check the header fields 
-         */
-        if ((ret_val = theres_something_wrong_with_header(*answer,
-                                                          *answer_length))
-            != SR_UNSET)
-            return ret_val;
+    if (ret_val == SR_IO_GOT_ANSWER) {
+        if ((*respondent != NULL) && 
+            (res_tsig_verifies(*respondent, 
+                *answer, *answer_length) == SR_TS_OK) && 
+            (theres_something_wrong_with_header(*answer, 
+                *answer_length) == SR_UNSET)) {
 #if 0
-        printf("The Response: ");
-        printf(":\n");
-        print_response(*answer, *answer_length);
+            printf("The Response: ");
+            printf(":\n");
+            print_response(*answer, *answer_length);
 #endif
-        return SR_UNSET;
-    } else if (ret_val == SR_TS_FAIL)
-        /** server points to the failed server */
-        return SR_TSIG_ERROR;
-    else
-        return SR_RCV_INTERNAL_ERROR;
+            return SR_UNSET;
+
+        } else {
+            FREE(*answer);
+            *answer = NULL;
+            *answer_length = 0;
+            if (*respondent != NULL)  {
+                free_name_server(respondent);
+            }
+            *respondent = NULL;
+        }
+    } 
+
+        
+    return SR_NO_ANSWER_YET;
 }
 
 
