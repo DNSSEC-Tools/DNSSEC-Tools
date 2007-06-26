@@ -287,14 +287,17 @@ get_cached_rrset(struct val_query_chain *matched_q,
         if ((tv.tv_sec < next_answer->rrs.val_rrset_ttl_x) &&
             (next_answer->rrs.val_rrset_class_h == class_h)) {
 
-                /* straight answer */
+                /* if matching type or cname indirection */
             if (((next_answer->rrs.val_rrset_type_h == type_h ||
-                /* or cname */
                  (next_answer->rrs.val_rrset_type_h == ns_t_cname &&
-                  type_h != ns_t_any)) &&
+                  type_h != ns_t_any && type_h != ns_t_rrsig)) &&
+                /* and name is an exact match */
                 (namecmp(next_answer->rrs.val_rrset_name_n, name_n) == 0)) ||
-                /* or DNAME */
-                ((next_answer->rrs.val_rrset_type_h == ns_t_dname) &&
+                /* OR */
+                /* DNAME indirection */
+                ((next_answer->rrs.val_rrset_type_h == ns_t_dname &&
+                  type_h != ns_t_any && type_h != ns_t_rrsig) &&
+                /* and name applies */
                  (NULL != (u_int8_t *) namename(name_n, 
                                     next_answer->rrs.val_rrset_name_n)))) {
 
