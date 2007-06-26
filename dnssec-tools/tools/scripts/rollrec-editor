@@ -24,6 +24,7 @@ use strict;
 use Net::DNS::SEC::Tools::dnssectools;
 use Net::DNS::SEC::Tools::conf;
 use Net::DNS::SEC::Tools::rollmgr;
+use Net::DNS::SEC::Tools::rolllog;
 use Net::DNS::SEC::Tools::rollrec;
 use Net::DNS::SEC::Tools::BootStrap;
 
@@ -886,7 +887,7 @@ sub file_open
 
 		return if($ret eq "Cancel");
 
-		keyrec_close() if($ret eq "Save");
+		rollrec_close() if($ret eq "Save");
 	}
 
 	#
@@ -1285,7 +1286,7 @@ sub cmds_create
 
 	my $rrn;					# New rollrec's name.
 
-# print "cmds_create:  down in New Rollrec\n";
+# print STDERR "cmds_create:  down in New Rollrec\n";
 
 	#
 	# Create a new dialog box to get the name of the new rollrec entry.
@@ -1367,7 +1368,7 @@ sub cmds_delete
 	my $lab;				# Label for table.
 	my $rowind = 0;				# Name table row index.
 
-# print "cmds_delete:  down in Delete Selected Rollrecs\n";
+# print STDERR "cmds_delete:  down in Delete Selected Rollrecs\n";
 
 	#
 	# Get the list of selected rollrec indices.
@@ -1470,7 +1471,7 @@ sub cmds_modify
 	my @selected = ();			# Selected rollrec names.
 	my $numsel;				# Number of selected rollrecs.
 
-# print "cmds_modify:  down in Edit Selected Rollrecs\n";
+# print STDERR "cmds_modify:  down in Edit Selected Rollrecs\n";
 
 	#
 	# Get the list of selected rollrec names.
@@ -1511,7 +1512,7 @@ sub cmds_merger
 	my $name;				# Rollrec name.
 	my $rref;				# Rollrec reference.
 
-# print "cmds_merger:  down in Merge Rollrec Files\n";
+# print STDERR "cmds_merger:  down in Merge Rollrec Files\n";
 
 	#
 	# Ensure that the currently loaded rollrec matches the version on
@@ -1701,7 +1702,7 @@ sub cmds_verify
 	my $errrows;				# Rows in table.
 	my $sbars  = 'e';			# Scrollbars.
 
-# print "cmds_verify:  down in Verify Rollrec File\n";
+# print STDERR "cmds_verify:  down in Verify Rollrec File\n";
 
 	#
 	# See if any rollrecs have problems.
@@ -1838,7 +1839,7 @@ sub view_selall
 {
 	my @selected = ();			# Selected rollrec names.
 
-# print "view_selall:  down in Select All Rollrecs\n";
+# print STDERR "view_selall:  down in Select All Rollrecs\n";
 
 	#
 	# Get the list of selected rollrec names.
@@ -1889,7 +1890,7 @@ sub view_selall
 sub view_raiser
 {
 
-# print "view_raiser:  down in Raise Rollrec Edit Windows\n";
+# print STDERR "view_raiser:  down in Raise Rollrec Edit Windows\n";
 
 	#
 	# Raise the edit windows.
@@ -1908,7 +1909,7 @@ sub view_raiser
 #
 sub view_closeall
 {
-# print "view_closeall:  down in Close All Selected Rollrecs\n";
+# print STDERR "view_closeall:  down in Close All Selected Rollrecs\n";
 
 	#
 	# Destroy all edit windows and remove them from the edit-window list.
@@ -1929,7 +1930,7 @@ sub view_closeone
 {
 	my $rrn = shift;
 
-# print "view_closeone:  down in Close Selected Rollrec\n";
+# print STDERR "view_closeone:  down in Close Selected Rollrec\n";
 	editbegone($rrn);
 }
 
@@ -1958,7 +1959,7 @@ sub editwindow
 	my $rrec;				# Rollrec reference.
 	my $llev;				# Logging level.
 
-# print "editwindow:  down in Edit Selected Rollrecs\n";
+# print STDERR "editwindow:  down in Edit Selected Rollrecs\n";
 
 	#
 	# If we've already got an edit window for this rollrec, we'll raise
@@ -2778,7 +2779,7 @@ sub rrsaved
 	#
 	# Re-populate and update the table.
 	#
-# print "rrsaved:  numrrnames - $numrrnames\n";
+# print STDERR "rrsaved:  numrrnames - $numrrnames\n";
 	for(my $ind = 0; $ind < $numrrnames; $ind++)
 	{
 		my $row;				# Cell's row index.
@@ -2795,7 +2796,6 @@ sub rrsaved
 		#
 		# Get this button's label.
 		#
-# print "rrsaved($ind):  row/col - $row/$col\n";
 		$btn = $rrnametab->get($row,$col);
 		$name = $btn->cget(-text);
 		$name =~ s/^\* //;
@@ -3042,7 +3042,6 @@ sub set_btncols
 	# Save the new column count and rebuild the table.
 	#
 	$columncount = $col;
-# print "\nnew column count:  $columncount\n";
 	buildtable(0);
 }
 
