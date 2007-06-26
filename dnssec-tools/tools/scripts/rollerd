@@ -65,6 +65,8 @@ my $ME		= "rollerd";
 my $rndc;
 my $rrchk;
 
+my $PWD = '/bin/pwd';
+
 my $DEFAULT_NAP	= 60;
 
 ##########################################
@@ -1199,7 +1201,7 @@ sub ksk_phase2
 	# Get the rollrec's associated keyrec file and ensure that it exists.
 	#
 	$krf = $rr{'keyrec'};
-	if(!$krf  || ($krf eq ""))
+	if(!$krf || ($krf eq ""))
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  no keyrec for zone specified");
 		return;
@@ -1234,6 +1236,9 @@ sub ksk_phase2
 #		rolllog_log(LOG_ERR,$rname,"KSK phase 2:  unable to reload zone, rc - $ret");
 	}
 
+	#
+	# On to the phase 3.
+	#
 	kskphase($rname,$rrr,3);
 	return(3);
 }
@@ -1264,7 +1269,7 @@ sub ksk_phase4
 	# Get the rollrec's associated keyrec file and ensure that it exists.
 	#
 	$krf = $rr{'keyrec'};
-	if(!$krf  || ($krf eq ""))
+	if(!$krf || ($krf eq ""))
 	{
 		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  no keyrec for zone specified");
 		return;
@@ -1290,6 +1295,9 @@ sub ksk_phase4
 		rolllog_log(LOG_ERR,$rname,"KSK phase 4:  unable to sign zone with the Published ZSK");
 	}
 
+	#
+	# Now to the phase 5.
+	#
 	kskphase($rname,$rrr,5);
 	return(5);
 }
@@ -1355,6 +1363,9 @@ to continue, its keyset must be transferred to its parent.";
 		}
 	}
 
+	#
+	# Pressing on to phase 6.
+	#
 	kskphase($rname,$rrr,6);
 	return(6);
 }
@@ -1384,7 +1395,7 @@ sub ksk_phase6
 	}
 	else
 	{
-		rolllog_log(LOG_ERR,$rname,"KSK phase 6:  waiting for parental publication of DS record");
+		rolllog_log(LOG_INFO,$rname,"KSK phase 6:  waiting for parental publication of DS record");
 	}
 
 	return(6);
@@ -1582,7 +1593,6 @@ sub ttlexpire
 	# Return failure (not expired) if the zone's adjusted end-date
 	# is in the future.
 	#
-# rolllog_log(LOG_INFO,$rname,"$keytype phase $phase; pre-return ($curtempus) ($endtempus)");
 	return(1) if($curtempus >= $endtempus);
 
 	$timediff = $endtempus - $curtempus;
@@ -1918,6 +1928,9 @@ sub zonekeykr
 		return(0);
 	}
 
+	#
+	# Return the keyrec reference.
+	#
 	return($krec);
 }
 
@@ -1960,6 +1973,9 @@ sub getkrval
 		rolllog_log(LOG_ERR,$name,"keyrec has an empty entry for \"$field\"");
 	}
 
+	#
+	# Return the keyrec field.
+	#
 	return($val);
 }
 
@@ -2008,7 +2024,7 @@ sub optsandargs
 	$xqtdir = $opts{$OPT_DIR} || getconfdir();
 	if($xqtdir eq ".")
 	{
-		$xqtdir = `pwd`;
+		$xqtdir = `$PWD`;
 		chomp($xqtdir);
 	}
 	if(!defined($xqtdir))
