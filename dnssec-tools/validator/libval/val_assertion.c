@@ -331,14 +331,17 @@ add_to_query_chain(val_context_t *context, u_char * name_n,
 #ifdef LIBVAL_DLV
             if (type_h == ns_t_dlv) {
                 int retval;
-                int span_chk;
+                int matches;
                 /* check for aggressive negative caching */
                 if (VAL_NO_ERROR != (retval = 
-                            check_anc_proof(context, temp, flags, name_n, &span_chk))) {
+                            check_anc_proof(context, temp, flags, name_n, 1, &matches))) {
                     return retval;
                 } 
-                if (span_chk)
+                if (matches) {
+                    val_log(context, LOG_DEBUG, 
+                            "add_to_query_chain(): Found matching proof of non-existence through ANC");
                     break;
+                }
             }
 #endif
         }
@@ -1721,13 +1724,14 @@ get_ac_trust(val_context_t *context,
             return NULL;
     }
 
-    if (added_q->qfq_query->qc_state < Q_ANSWERED)
-        next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
-    
-    if (added_q->qfq_query->qc_ans)
-        return added_q->qfq_query->qc_ans;
+    if (added_q->qfq_query->qc_state < Q_ANSWERED) {
+        if (next_as->val_ac_status > VAL_AC_INIT) {
+            /* data has most likely timed out */
+            next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
+        }
+    } 
 
-    return NULL;
+    return added_q->qfq_query->qc_ans;
 }
 
 static int
@@ -2528,16 +2532,20 @@ check_anc_proof(val_context_t *context,
                 struct val_query_chain *q, 
                 u_int8_t flags,
                 u_int8_t *name_n, 
+                int check_wildcard,
                 int *matches)
 {
     struct val_digested_auth_chain *as;
 
 #ifdef LIBVAL_NSEC3
     u_int8_t  *ncn = NULL;
-    u_int8_t  *cpe = NULL;
     int optout = 0;
     u_int32_t ttl_x = 0;
 #endif
+    u_int8_t  *cpe = NULL;
+    int span_chk = 0;
+    int wcard_chk = 0;
+    int retval;
     
     if (context == NULL || q == NULL || name_n == NULL || matches == NULL)
         return VAL_BAD_ARGUMENT;
@@ -2548,8 +2556,6 @@ check_anc_proof(val_context_t *context,
         struct rrset_rec *the_set = as->_as.ac_data;
         if (the_set) {
             if (the_set->rrs.val_rrset_type_h == ns_t_nsec) {
-                int span_chk = 0;
-                int wcard_chk = 0;
                
                 if ((the_set->rrs.val_rrset_sig) && 
                     the_set->rrs.val_rrset_sig->rr_rdata_length_h >= SIGNBY) {
@@ -2559,7 +2565,16 @@ check_anc_proof(val_context_t *context,
                     prove_nsec_span(context, the_set, soa_name_n, name_n,
                                     q->qc_type_h, &span_chk, &wcard_chk);
                     if (span_chk) {
-                        *matches = 1;
+                        u_int8_t *c;
+                        c = the_set->rrs.val_rrset_name_n;
+                        while (*c != '\0' && 
+                            (cpe=namename(name_n, c)) == NULL) {
+                            STRIP_LABEL(c,c);   
+                        }
+                        if (wcard_chk) {
+                            *matches = 1;
+                            return VAL_NO_ERROR;
+                        }
                         break;
                     }
                 }
@@ -2567,23 +2582,50 @@ check_anc_proof(val_context_t *context,
 #ifdef LIBVAL_NSEC3
             else if (the_set->rrs.val_rrset_type_h == ns_t_nsec3) {
 
-                if ((the_set->rrs.val_rrset_sig) && 
+                if ((!ncn || !cpe) && 
+                    (the_set->rrs.val_rrset_sig) && 
                     the_set->rrs.val_rrset_sig->rr_rdata_length_h >= SIGNBY) {
 
                     u_int8_t *soa_name_n = NULL;
                     soa_name_n =  &the_set->rrs.val_rrset_sig->rr_rdata[SIGNBY];
                     prove_nsec3_span(context, the_set, soa_name_n, name_n, 
                                      q->qc_type_h, &ttl_x, &ncn, &cpe, &optout);
-                    if (ncn && cpe && namename(name_n, cpe) != NULL) {
-                        SET_MIN_TTL(q->qc_ttl_x, ttl_x);
-                        *matches = 1;
-                        break;
+                    if (ncn && cpe) {
+                        if (optout || !namecmp(ncn, cpe)) {
+                            SET_MIN_TTL(q->qc_ttl_x, ttl_x);
+                            *matches = 1;
+                            return VAL_NO_ERROR;
+                        }
                     }
                 }
             }
 #endif
         }
     } 
+
+    /* check if we did not see a span check */
+    if (span_chk == 0 
+#ifdef LIBVAL_NSEC3            
+            && (!ncn || !cpe)
+#endif
+       ) {
+
+        return VAL_NO_ERROR;
+    }
+
+    if (check_wildcard) {
+
+        u_char          wc_n[NS_MAXCDNAME];
+        memset(wc_n, 0, sizeof(wc_n));
+        wc_n[0] = 0x01;
+        wc_n[1] = 0x2a;             /* for the '*' character */
+        memcpy(&wc_n[2], cpe, wire_name_length(cpe));
+
+        if (VAL_NO_ERROR != (retval = 
+                check_anc_proof(context, q, flags, wc_n, 0, matches))) {
+            return retval;
+        } 
+    }
     
     return VAL_NO_ERROR;
 } 
@@ -2626,7 +2668,6 @@ prove_nonexistence(val_context_t * ctx,
     int             retval;
 
     int             nsec = 0;
-    int             proof_seen = 0;
     u_int8_t        *soa_name_n = NULL;
 #ifdef LIBVAL_NSEC3
     int             nsec3 = 0;
@@ -2751,15 +2792,13 @@ prove_nonexistence(val_context_t * ctx,
     /*
      * Check if we received NSEC and NSEC3 proofs 
      */
-    proof_seen = nsec ? 1 : 0;
 #ifdef LIBVAL_NSEC3
-    proof_seen = nsec3 ? (proof_seen == 0) : proof_seen;
-#endif
-    if (!proof_seen) {
+    if (nsec3 && nsec) {
         val_log(ctx, LOG_INFO, "prove_nonexistence(): Bogus Proof - Proof contains NSEC and NSEC3 records");
         *status = VAL_BOGUS_PROOF;
-    }
-    else if (nsec) {
+    } else 
+#endif
+    if (nsec) {
         /*
          * only nsec records 
          */
@@ -2795,6 +2834,11 @@ prove_nonexistence(val_context_t * ctx,
         }
     }
 #endif
+    else {
+        val_log(ctx, LOG_INFO, 
+                "prove_nonexistence(): Bogus Proof - No valid proof of non-existence records");
+        *status = VAL_BOGUS_PROOF;
+    }
 
     /*
      * passed all tests 
@@ -4613,11 +4657,11 @@ ask_cache(val_context_t * context,
                 return retval;
 
             if (response) {
-                val_log(context, LOG_INFO,
+                if (next_q->qfq_query->qc_state == Q_ANSWERED) {
+
+                    val_log(context, LOG_INFO,
                         "ask_cache(): found matching ack/nack response for {%s %d %d}, flags=%d", name_p,
                         next_q->qfq_query->qc_class_h, next_q->qfq_query->qc_type_h, next_q->qfq_flags);
-
-                if (next_q->qfq_query->qc_state == Q_ANSWERED) {
 
                     /* merge any answer from the referral (alias) portion */
                     if (next_q->qfq_query->qc_referral) {
@@ -4651,7 +4695,7 @@ ask_cache(val_context_t * context,
                         return retval;
                     }
 
-                } else {
+                } else if (next_q->qfq_query->qc_state < Q_ERROR_BASE) {
                     /* got some response, but need to get more info (cname/dname) */
                     more_data = 1;
                     *data_missing = 1;
@@ -4677,6 +4721,11 @@ ask_cache(val_context_t * context,
                         next_q->qfq_query->qc_referral->answers = response->di_answers;
                         response->di_answers = NULL;
                     }
+                } else {
+                    val_log(context, LOG_INFO,
+                            "ask_cache(): received error response for {%s %d %d}, flags=%d",
+                            name_p, next_q->qfq_query->qc_class_h,
+                            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
                 }
 
                 free_domain_info_ptrs(response);
@@ -4828,7 +4877,13 @@ ask_resolver(val_context_t * context,
                         FREE(response);
                         return retval;
                     }
+                } else if (next_q->qfq_query->qc_state > Q_ERROR_BASE) {
+                    val_log(context, LOG_INFO,
+                            "ask_resolver(): received error response for {%s %d %d}, flags=%d",
+                            name_p, next_q->qfq_query->qc_class_h,
+                            next_q->qfq_query->qc_type_h, next_q->qfq_flags);
                 }
+                
                 if (response != NULL) {
                     free_domain_info_ptrs(response);
                     FREE(response);
