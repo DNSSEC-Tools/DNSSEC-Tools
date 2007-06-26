@@ -1284,7 +1284,6 @@ sub signingsets
 	# Pack 'er up.
 	#
 	$bodylist->pack(-fill => 'x');
-
 }
 
 #---------------------------------------------------------------------------
@@ -1515,7 +1514,7 @@ sub modify_key
 	$ssframe   = $subwin->Scrolled("Frame",
 					-relief      => 'raised',
 					-borderwidth => 1,
-					-height => 245,
+					-height	     => 245,
 					-scrollbars  => 'oe');
 	$btnframe  = $subwin->Frame(-relief => 'raised', -borderwidth => 1);
 
