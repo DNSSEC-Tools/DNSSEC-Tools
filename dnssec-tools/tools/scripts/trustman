@@ -540,6 +540,8 @@ sub checkkeys {
     # in a query, but are configured trust anchors. 
     # Set the remove holddown time (30 days) for these keys
     # and add to remkeys for processing on next go
+
+
         my $remove_holddown_time = compute_remove_holddown();
         for (my $i = 0; $i <= $#{$keys_to_verify{$d}}; $i++) {
             my $remkeyobj = { flags => $keys_to_verify{$d}[$i]{flags},
@@ -548,7 +550,19 @@ sub checkkeys {
                               key => $keys_to_verify{$d}[$i]{key},
                               holdtime => $remove_holddown_time,
                             };
-            push (@{$remkeys{$d}},$remkeyobj);
+            # only add this key if it isn't already there
+            my $addit = 1;
+            if (keys %remkeys) {
+                for (my $i = 0; $i <= $#{$remkeys{$d}}; $i++) {
+                    if ($remkeys{$d}[$i]{key} eq $remkeyobj->{key} &&
+                        $remkeys{$d}[$i]{flags} eq $remkeyobj->{flags} &&
+                        $remkeys{$d}[$i]{protocol} eq $remkeyobj->{protocol} &&
+                        $remkeys{$d}[$i]{algorithm} eq $remkeyobj->{algorithm}){
+                        $addit = 0;
+                    }
+                }
+            }
+            if ($addit) { push (@{$remkeys{$d}},$remkeyobj); }
         }
     }
 
@@ -1365,116 +1379,126 @@ form of each option is denoted in parentheses, e.g.: --anchor_data_file (-a).
 
 =over #indent
 
-=item --anchor_data_file (-a) I<datafile>
+=item -a
+
+=item --anchor_data_file I<datafile>
 
 A persistent data file for storing new keys waiting to be added.
 
-=item --config (-c)
+=item -c
+
+=item --config
 
 Create a configure file for B<trustman> from the command line options given.
 
-=item --dnsval_conf_file (-k)I<conffile>
+=item -k
+
+=item --dnsval_conf_file I<conffile>
 
 A B<dnsval.conf> file to read.
 
-=item --domain (-d) I<domain>
+=item -d I<domain>
+
+=item --domain I<domain>
 
 The domain to check.  Specifying this option supersedes the default
 configuration file.
 
-=item --foreground (-f)
+=item -f
+
+=item --foreground
 
 Run in the foreground.
 
-=item --help (-h)
+=item -h
+
+=item --help
 
 Display a help message.
 
-=item --hold_time (-w) I<seconds>
+=item -w
+
+=item --hold_time I<seconds>
 
 The value of the hold-down timer.
 
-=item -k
+=item -m
 
-Alias for -dnsval_conf_file.
-
-=item -L
-
-Alias for -syslog.
-
-=item --mail_contact_addr (-m) I<email-address>
+=item --mail_contact_addr I<email-address>
 
 Mail address for the contact person to whom reports should be sent.
 
-=item --named_conf_file (-n) I<conffile>
+=item -n
+
+=item --named_conf_file I<conffile>
 
 A B<named.conf> file to read.
+
+=item -N
 
 =item --no_error
 
 Send report when there are no errors.
 
-=item -N
+=item -o
 
-Alias for -no_error.
-
-=item --outfile (-o) I<output-file>
+=item --outfile I<output-file>
 
 Output file for configuration.
 
-=item --print (-p)
+=item -p
+
+=item --print
 
 Log/print messages to stdout.
 
-=item --resolv_conf_file (-r) I<conffile>
+=item -r
+
+=item --resolv_conf_file I<conffile>
 
 A B<resolv.conf> file to read.  B</dev/null> can be specified to force
 libval to recursively answer the query rather than asking other name servers).
 
-=item --smtp_server (-s) I<smtpservername>
+=item -s 
+
+=item --smtp_server I<smtpservername>
 
 SMTP server that B<trustman> should use to send reports by mail.
 
-=item --single_run (-S)
+=item -S
+
+=item --single_run
 
 Run only once.
+
+=item -L
 
 =item --syslog
 
 Log messages to B<syslog>.
 
-=item -S
-
-Alias for -single_run.
-
-=item --sleeptime (-t) I<seconds>
-
-The number of seconds to sleep between checks. Default is 3600 (one hour)
-
 =item -t
 
-Alias for -sleeptime.
+=item --sleeptime I<seconds>
+
+The number of seconds to sleep between checks. Default is 3600 (one hour)
 
 =item --test_revoke
 
 Use this option to test the REVOKE bit. No known implementation of
 the REVOKE bit exists to date.
 
-=item --verbose (-v)
+=item -v 
+
+=item --verbose
 
 Verbose output.
 
-=item --version (-V)
-
-Display version information.
-
 =item -V
 
-Alias for -version.
+=item --version
 
-=item -w
-
-Alias for -hold_time.
+Display version information.
 
 =back #unindent
 
