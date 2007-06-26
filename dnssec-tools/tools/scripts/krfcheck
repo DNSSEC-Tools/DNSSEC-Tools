@@ -435,10 +435,10 @@ sub getkeyrecs
 		{
 			$zskkeys{$krn} = $kr;
 		}
-else
-{
-print "getkeyrecs:  $krn has unknown type - <$type>\n";
-}
+		else
+		{
+			print "$krn has unknown type - \"$type\"\n";
+		}
 	}
 }
 
