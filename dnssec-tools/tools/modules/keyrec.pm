@@ -1863,6 +1863,8 @@ Net::DNS::SEC::Tools::keyrec - DNSSEC-Tools I<keyrec> file operations
   keyrec_close();
   keyrec_discard();
 
+  $default_krf = keyrec_defkrf();
+
 =head1 DESCRIPTION
 
 The B<Net::DNS::SEC::Tools::keyrec> module manipulates the contents of
@@ -1964,6 +1966,11 @@ the file if it already exists.  It leaves the file in the open state.
 
 B<keyrec_creat()> returns 1 if the file was created successfully.
 It returns 0 if there was an error in creating the file.
+
+=head2 I<keyrec_defkrf()>
+
+This routine returns the default I<keyrec> filename from the DNSSEC-Tools
+configuration file.
 
 =head2 I<keyrec_del(keyrec_name)>
 
@@ -2222,6 +2229,7 @@ Wayne Morrison, tewok@users.sourceforge.net
 
 B<Net::DNS::SEC::Tools::keyrec(3)>
 
-B<keyrec(5)>
+B<Net::DNS::SEC::Tools::conf(5)>,
+B<Net::DNS::SEC::Tools::keyrec(5)>
 
 =cut
