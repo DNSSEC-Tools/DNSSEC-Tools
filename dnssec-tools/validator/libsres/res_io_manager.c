@@ -73,7 +73,7 @@ static const int res_io_debug = FALSE;
     if (t->ea_socket != -1) close (t->ea_socket); \
     t->ea_socket = -1; \
     t->ea_which_address++; \
-    t->ea_remaining_attempts = t->ea_ns->ns_retry; \
+    t->ea_remaining_attempts = t->ea_ns->ns_retry+1; \
     set_alarm(&(t->ea_next_try), 0); \
     set_alarm(&(t->ea_cancel_time),res_timeout(t->ea_ns));
 
@@ -125,7 +125,7 @@ res_timeout(struct name_server *ns)
     int             i;
     long            cancel_delay = 0;
 
-    for (i = 0; i < ns->ns_retry; i++)
+    for (i = 0; i <= ns->ns_retry; i++)
         cancel_delay += ns->ns_retrans << i;
 
     return cancel_delay;
@@ -183,7 +183,7 @@ res_ea_init(u_int8_t * signed_query, int signed_length,
     temp->ea_signed_length = signed_length;
     temp->ea_response = NULL;
     temp->ea_response_length = 0;
-    temp->ea_remaining_attempts = ns->ns_retry;
+    temp->ea_remaining_attempts = ns->ns_retry+1;
     set_alarm(&temp->ea_next_try, delay);
     set_alarm(&temp->ea_cancel_time, delay + res_timeout(ns));
     temp->ea_next = NULL;
@@ -287,6 +287,48 @@ res_io_send(struct expected_arrival *shipit)
     return SR_IO_UNSET;
 }
 
+void 
+res_io_abort_current_attempt(int transaction_id, 
+                             struct timeval *closest_event)
+{
+    struct expected_arrival *temp, *t;
+    int i;
+    long delay = 0;
+   
+    if (res_io_debug) {
+        printf("Aborting current attempt for transaction %d\n", transaction_id);
+    }
+    
+    pthread_mutex_lock(&mutex);
+    if (transaction_id == -1 || 
+        (temp = transactions[transaction_id]) == NULL) {
+        
+        pthread_mutex_unlock(&mutex);
+       return;  
+    }
+
+    gettimeofday(&temp->ea_next_try, NULL);
+    for (i = 0; i < temp->ea_remaining_attempts; i++)
+        delay += temp->ea_ns->ns_retrans << i;
+    set_alarm(&temp->ea_cancel_time, delay); 
+    UPDATE(closest_event, temp->ea_next_try);
+    /* 
+     *  if next event is in the future, make sure we
+     *  offset it to the current time 
+     */
+    if (temp->ea_next) {
+        long offset = temp->ea_next->ea_next_try.tv_sec - 
+                            temp->ea_next_try.tv_sec;
+        if (offset > 0) {
+            for (t=temp->ea_next; t; t=t->ea_next) {
+                t->ea_next_try.tv_sec -= offset;
+                t->ea_cancel_time.tv_sec -= offset;
+            } 
+        }
+    }
+    pthread_mutex_unlock(&mutex);
+}
+
 static int
 res_io_check(int transaction_id, struct timeval *next_evt)
 {
@@ -313,6 +355,9 @@ res_io_check(int transaction_id, struct timeval *next_evt)
     for (i = 0; i < MAX_TRANSACTIONS; i++) {
         while (transactions[i]
                && LTEQ(transactions[i]->ea_cancel_time, tv)) {
+            if (res_io_debug) {
+                printf("res_io_check trans_id=%d\n", i);
+            }
             /*
              * If there is another address, move to it else cancel it 
              */
@@ -379,7 +424,7 @@ res_io_check(int transaction_id, struct timeval *next_evt)
                         if (i == transaction_id)
                             total++;
                         delay = temp1->ea_ns->ns_retrans
-                            << (temp1->ea_ns->ns_retry -
+                            << (temp1->ea_ns->ns_retry + 1 -
                                 temp1->ea_remaining_attempts--);
                         set_alarm(&temp1->ea_next_try, delay);
                         if (res_io_debug)
@@ -756,7 +801,7 @@ res_switch_to_tcp(struct expected_arrival *ea)
      */
     ea->ea_using_stream = TRUE;
     ea->ea_socket = -1;
-    ea->ea_remaining_attempts = ea->ea_ns->ns_retry;
+    ea->ea_remaining_attempts = ea->ea_ns->ns_retry+1;
     set_alarm(&ea->ea_next_try, 0);
 
     set_alarm(&ea->ea_cancel_time, res_timeout(ea->ea_ns));
