@@ -274,11 +274,14 @@ val_log_assertion_pfx(const val_context_t * ctx, int level,
                  * Extract the key tag 
                  */
                 val_dnskey_rdata_t dnskey;
-                val_parse_dnskey_rdata(curkey->rr_rdata,
-                                       curkey->rr_rdata_length_h, &dnskey);
-                tag = dnskey.key_tag;
-                if (dnskey.public_key)
-                    FREE(dnskey.public_key);
+                if (-1 == val_parse_dnskey_rdata(curkey->rr_rdata,
+                                       curkey->rr_rdata_length_h, &dnskey)) {
+                    val_log(ctx, LOG_INFO, "val_log_assertion_pfx(): Cannot parse DNSKEY data");
+                } else {
+                    tag = dnskey.key_tag;
+                    if (dnskey.public_key)
+                        FREE(dnskey.public_key);
+                }
                 break;
             }
         }
@@ -759,12 +762,19 @@ val_log_callback(val_log_t * logp, const val_context_t * ctx, int level,
 {
     /** Needs to be at least two characters larger than message size */
     char            buf[1028];
+    struct timeval  tv;
+    struct tm       *tm;
 
     if (NULL == logp)
         return;
 
+    gettimeofday(&tv, NULL);
+    tm = localtime(&tv.tv_sec);
+    
     /** We allocated extra space  */
-    vsnprintf(buf, sizeof(buf) - 2, template, ap);
+    snprintf(buf, sizeof(buf) - 2, "%04d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
+    vsnprintf(&buf[11], sizeof(buf) - 13, template, ap);
 
     (*(logp->opt.cb.func))(logp, level, buf);
 
@@ -778,12 +788,19 @@ val_log_udp(val_log_t * logp, const val_context_t * ctx, int level,
     /** Needs to be at least two characters larger than message size */
     char            buf[1028];
     int             length = sizeof(struct sockaddr_in);
+    struct timeval  tv;
+    struct tm       *tm;
 
     if (NULL == logp)
         return;
 
+    gettimeofday(&tv, NULL);
+    tm = localtime(&tv.tv_sec);
+
     /** We allocated extra space  */
-    vsnprintf(buf, sizeof(buf) - 2, template, ap);
+    snprintf(buf, sizeof(buf) - 2, "%04d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
+    vsnprintf(&buf[11], sizeof(buf) - 13, template, ap);
     strcat(buf, "\n");
 
     sendto(logp->opt.udp.sock, buf, strlen(buf), 0,
@@ -796,15 +813,26 @@ void
 val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
               const char *template, va_list ap)
 {
+    char            buf[1028];
+    struct timeval  tv;
+    struct tm       *tm;
+
     if (NULL == logp)
         return;
+
+    gettimeofday(&tv, NULL);
+    tm = localtime(&tv.tv_sec);
 
     if (NULL == logp->opt.file.fp) {
         logp->opt.file.fp = fopen(logp->opt.file.name, "a");
         if (NULL == logp->opt.file.fp)
             return;
     }
-    vfprintf(logp->opt.file.fp, template, ap);
+    snprintf(buf, sizeof(buf) - 2, "%04d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
+    vsnprintf(&buf[11], sizeof(buf) - 13, template, ap);
+
+    fprintf(logp->opt.file.fp, buf);
     fprintf(logp->opt.file.fp, "\n");
 }
 
@@ -816,9 +844,15 @@ val_log_syslog(val_log_t * logp, const val_context_t * ctx, int level,
      * Needs to be at least two characters larger than message size 
      */
     char            buf[sizeof("libval(0000000000000000)..")];
+    struct timeval  tv;
+    struct tm       *tm;
 
-    snprintf(buf, sizeof(buf), "libval(%s)",
-             (ctx == NULL) ? "0" : ctx->id);
+    gettimeofday(&tv, NULL);
+    tm = localtime(&tv.tv_sec);
+
+    snprintf(buf, sizeof(buf), "%04d:%02d:%02d libval(%s)", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, 
+            (ctx == NULL) ? "0" : ctx->id);
     openlog(buf, VAL_LOG_OPTIONS, logp->opt.syslog.facility);
 
     vsyslog(logp->opt.syslog.facility | level, template, ap);
