@@ -18,7 +18,7 @@ basic-same:	same
 
 basic-long:	long
 
-pristine-files:
+new-files:
 	mkdir ${DIRDUMMY}
 	mkdir ${DIREXAMPLE}
 
@@ -48,11 +48,11 @@ zones-long:
 	zonesigner -zsklife 3600 -genkeys test.com
 
 
-long:	clean zones-long pristine-files
+long:	clean zones-long new-files
 
-short:	clean pristine-files zones-short
+short:	clean new-files zones-short
 
-same:	clean zones-same pristine-files
+same:	clean zones-same new-files
 
 clean:
 	rm -f K* db.* dsset-* keyset-* *.krf *.signed
