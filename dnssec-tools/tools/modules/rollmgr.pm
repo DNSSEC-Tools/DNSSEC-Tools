@@ -344,6 +344,8 @@ my %port_archs =
 my $UNIX_ROLLMGR_DIR	    = getconfdir();
 my $UNIX_ROLLMGR_PIDFILE = ($UNIX_ROLLMGR_DIR . "/rollmgr.pid");
 
+my $PS = "/bin/ps";
+
 ##############################################################################
 #
 # These fields are the O/S class and switch table used for interface calls.
@@ -930,7 +932,7 @@ sub unix_dropid
 		#	However, the $pfpid seems to be dropped
 		#	when using that method.
 		#
-		$pscmd = "/bin/ps -wax";
+		$pscmd = "$PS -wax";
 		$openrc = open(PSOUT,"$pscmd |");
 		$psline = <PSOUT>;
 		while(<PSOUT>)
