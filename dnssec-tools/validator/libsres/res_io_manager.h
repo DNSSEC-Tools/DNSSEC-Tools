@@ -139,5 +139,10 @@ void            res_io_stall(void);
  */
 long            res_timeout(struct name_server *ns);
 
+/*
+ * Early abort of a query attempt. Perform additional retries if desired
+ */
+void            res_io_abort_current_attempt(int transaction_id, 
+                                             struct timeval *closest_event);
 
 #endif
