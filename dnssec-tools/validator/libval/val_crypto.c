@@ -86,10 +86,10 @@ dsasha1_sigverify(val_context_t * ctx,
     unsigned char   sha1_hash[SHA_DIGEST_LENGTH];
 
     val_log(ctx, LOG_DEBUG,
-            "dsasha1_sigverify(): parsing the public key...\n");
+            "dsasha1_sigverify(): parsing the public key...");
     if ((dsa = DSA_new()) == NULL) {
         val_log(ctx, LOG_INFO,
-                "dsasha1_sigverify(): could not allocate dsa structure.\n");
+                "dsasha1_sigverify(): could not allocate dsa structure.");
         *key_status = VAL_AC_INVALID_KEY;
         return;
     };
@@ -98,7 +98,7 @@ dsasha1_sigverify(val_context_t * ctx,
         (dnskey->public_key, dnskey->public_key_len,
          dsa) != VAL_NO_ERROR) {
         val_log(ctx, LOG_INFO,
-                "dsasha1_sigverify(): Error in parsing public key.\n");
+                "dsasha1_sigverify(): Error in parsing public key.");
         DSA_free(dsa);
         *key_status = VAL_AC_INVALID_KEY;
         return;
@@ -110,7 +110,7 @@ dsasha1_sigverify(val_context_t * ctx,
             get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
 
     val_log(ctx, LOG_DEBUG,
-            "dsasha1_sigverify(): verifying DSA signature...\n");
+            "dsasha1_sigverify(): verifying DSA signature...");
 
     if (DSA_verify
         (NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
@@ -230,10 +230,10 @@ rsamd5_sigverify(val_context_t * ctx,
     unsigned char   md5_hash[MD5_DIGEST_LENGTH];
 
     val_log(ctx, LOG_DEBUG,
-            "rsamd5_sigverify(): parsing the public key...\n");
+            "rsamd5_sigverify(): parsing the public key...");
     if ((rsa = RSA_new()) == NULL) {
         val_log(ctx, LOG_INFO,
-                "rsamd5_sigverify(): could not allocate rsa structure.\n");
+                "rsamd5_sigverify(): could not allocate rsa structure.");
         *key_status = VAL_AC_INVALID_KEY;
         return;
     };
@@ -241,7 +241,7 @@ rsamd5_sigverify(val_context_t * ctx,
     if (rsamd5_parse_public_key(dnskey->public_key, dnskey->public_key_len,
                                 rsa) != VAL_NO_ERROR) {
         val_log(ctx, LOG_INFO,
-                "rsamd5_sigverify(): Error in parsing public key.\n");
+                "rsamd5_sigverify(): Error in parsing public key.");
         RSA_free(rsa);
         *key_status = VAL_AC_INVALID_KEY;
         return;
@@ -253,7 +253,7 @@ rsamd5_sigverify(val_context_t * ctx,
             get_hex_string(md5_hash, MD5_DIGEST_LENGTH, buf, buflen));
 
     val_log(ctx, LOG_DEBUG,
-            "rsamd5_sigverify(): verifying RSA signature...\n");
+            "rsamd5_sigverify(): verifying RSA signature...");
 
     if (RSA_verify(NID_md5, (unsigned char *) md5_hash, MD5_DIGEST_LENGTH,
                    rrsig->signature, rrsig->signature_len, rsa)) {
@@ -326,10 +326,10 @@ rsasha1_sigverify(val_context_t * ctx,
     unsigned char   sha1_hash[SHA_DIGEST_LENGTH];
 
     val_log(ctx, LOG_DEBUG,
-            "rsasha1_sigverify(): parsing the public key...\n");
+            "rsasha1_sigverify(): parsing the public key...");
     if ((rsa = RSA_new()) == NULL) {
         val_log(ctx, LOG_INFO,
-                "rsasha1_sigverify(): could not allocate rsa structure.\n");
+                "rsasha1_sigverify(): could not allocate rsa structure.");
         *key_status = VAL_AC_INVALID_KEY;
         return;
     };
@@ -338,7 +338,7 @@ rsasha1_sigverify(val_context_t * ctx,
         (dnskey->public_key, dnskey->public_key_len,
          rsa) != VAL_NO_ERROR) {
         val_log(ctx, LOG_INFO,
-                "rsasha1_sigverify(): Error in parsing public key.\n");
+                "rsasha1_sigverify(): Error in parsing public key.");
         RSA_free(rsa);
         *key_status = VAL_AC_INVALID_KEY;
         return;
@@ -350,7 +350,7 @@ rsasha1_sigverify(val_context_t * ctx,
             get_hex_string(sha1_hash, SHA_DIGEST_LENGTH, buf, buflen));
 
     val_log(ctx, LOG_DEBUG,
-            "rsasha1_sigverify(): verifying RSA signature...\n");
+            "rsasha1_sigverify(): verifying RSA signature...");
 
     if (RSA_verify
         (NID_sha1, (unsigned char *) sha1_hash, SHA_DIGEST_LENGTH,
