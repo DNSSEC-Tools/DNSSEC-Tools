@@ -805,39 +805,44 @@ verify_next_assertion(val_context_t * ctx,
 
             while (dsrec) {
                 val_ds_rdata_t  ds;
-                val_parse_ds_rdata(dsrec->rr_rdata,
-                                   dsrec->rr_rdata_length_h, &ds);
+                if (-1 == val_parse_ds_rdata(dsrec->rr_rdata,
+                                   dsrec->rr_rdata_length_h, &ds)) {
+                    val_log(ctx, LOG_INFO, "verify_next_assertion(): Unknown DS algorithm");
+                    dsrec->rr_status = VAL_AC_UNKNOWN_ALGORITHM_LINK; 
+                } else {
 
-                if (dnskey.key_tag == ds.d_keytag &&
-                    ds.d_algo == dnskey.algorithm &&
-                    ds_hash_is_equal(ctx,
+                    if (dnskey.key_tag == ds.d_keytag &&
+                        ds.d_algo == dnskey.algorithm &&
+                        ds_hash_is_equal(ctx,
                                      ds.d_type,
                                      ds.d_hash, ds.d_hash_len,
                                      the_set->rrs.val_rrset_name_n,
                                      nextrr, &dsrec->rr_status)) {
 
-                    if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
-                        the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW)
-                        SET_STATUS(as->val_ac_status, nextrr,
-                                   VAL_AC_VERIFIED_LINK);
-                    else
-                        SET_STATUS(as->val_ac_status, nextrr,
-                                   VAL_AC_UNKNOWN_ALGORITHM_LINK);
+                        if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
+                            the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW)
+                            SET_STATUS(as->val_ac_status, nextrr,
+                                       VAL_AC_VERIFIED_LINK);
+                        else
+                            SET_STATUS(as->val_ac_status, nextrr,
+                                       VAL_AC_UNKNOWN_ALGORITHM_LINK);
+
+                        FREE(ds.d_hash);
+                        if (dnskey.public_key) {
+                            FREE(dnskey.public_key);
+                        }
+                        /*
+                        * the first match is enough 
+                        */
+                        val_log(ctx, LOG_INFO, "verify_next_assertion(): Key links upward");
+                        return;
+                    }
 
                     FREE(ds.d_hash);
-                    if (dnskey.public_key) {
-                        FREE(dnskey.public_key);
-                    }
-                    /*
-                     * the first match is enough 
-                     */
-                    val_log(ctx, LOG_INFO, "verify_next_assertion(): Key links upward");
-                    return;
+                    ds.d_hash = NULL;
                 }
 
                 SET_STATUS(as->val_ac_status, dsrec, dsrec->rr_status);
-                FREE(ds.d_hash);
-                ds.d_hash = NULL;
                 dsrec = dsrec->rr_next;
             }
         }
