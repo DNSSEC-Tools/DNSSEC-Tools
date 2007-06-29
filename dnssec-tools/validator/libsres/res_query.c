@@ -479,6 +479,7 @@ response_recv(int *trans_id,
             printf(":\n");
             print_response(*answer, *answer_length);
 #endif
+            res_io_cancel(trans_id);
             return SR_UNSET;
 
         } else {
@@ -489,9 +490,9 @@ response_recv(int *trans_id,
                 free_name_server(respondent);
             }
             *respondent = NULL;
+            res_io_abort_current_attempt(*trans_id, closest_event);
         }
     } 
-
         
     return SR_NO_ANSWER_YET;
 }
