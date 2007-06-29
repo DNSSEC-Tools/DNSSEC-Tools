@@ -149,9 +149,7 @@ sub rollrec_lock
 	#
 	# Get the DNSSEC-Tools config directory.
 	#
-	$confdir = getconffile() || $DEFAULT_DNSSECTOOLS_DIR;
-	$confdir =~ /^(.*)\/.*$/;
-	$confdir = $1;
+	$confdir = getconfdir() || $DEFAULT_DNSSECTOOLS_DIR;
 
 	#
 	# Build our lock file.
@@ -434,8 +432,8 @@ sub rollrec_rectype
 
 		#
 		# If this line has the rollrec's name and is the start of a
-		# new rollrec, then we've found our man.  We'll change the
-		# record type and return success.
+		# new rollrec, then like the Mounties we've found our man.
+		# We'll change the record type and return success.
 		#
 		if(lc($rrname) eq lc($name))
 		{
@@ -1029,9 +1027,7 @@ sub rollrec_default
 	#
 	# Get the DNSSEC-Tools config directory.
 	#
-	$confdir = getconffile() || $DEFAULT_DNSSECTOOLS_DIR;
-	$confdir =~ /^(.*)\/.*$/;
-	$confdir = $1;
+	$confdir = getconfdir() || $DEFAULT_DNSSECTOOLS_DIR;
 
 	#
 	# Build our lock file.
