@@ -30,10 +30,15 @@ our $VERSION = "0.9";
 our @ISA = qw(Exporter);
 
 our @EXPORT = qw(
-			opts_zonekr	opts_cmdopts
-			opts_createkrf	opts_setcsopts
-			opts_suspend	opts_restore	opts_drop opts_reset
-			opts_gui	opts_nogui
+			opts_cmdopts
+			opts_createkrf
+			opts_drop opts_reset
+			opts_gui
+			opts_nogui
+			opts_restore
+			opts_setcsopts
+			opts_suspend
+			opts_zonekr
 		);
 
 ############################################################################
