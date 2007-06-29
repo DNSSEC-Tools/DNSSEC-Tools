@@ -32,6 +32,7 @@ use ExtUtils::MakeMaker;
 			    rollerd
 			    rollinit
 			    rolllog
+			    rollrec-editor
 			    rollset
 			    signset-editor
 			    tachk
