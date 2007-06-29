@@ -37,7 +37,7 @@
 #endif
 
 
-#define RES_RETRY 1
+#define RES_RETRY 0
 
 #ifndef RES_USE_DNSSEC
 #define RES_USE_DNSSEC  0x00200000
