@@ -488,7 +488,7 @@ sub opts_int_newkrf
 	return(-1) if($krfile eq "");
 
 	#
-	# If the exists, return success.
+	# If the keyrec file exists, return success.
 	# (By which we mean that the file exists.)
 	#
 	return(1) if(-e $krfile);
