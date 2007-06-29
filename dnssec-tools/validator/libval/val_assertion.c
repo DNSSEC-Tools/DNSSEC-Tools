@@ -905,8 +905,11 @@ is_trusted_key(val_context_t * ctx, u_int8_t * zone_n, struct rr_rec *key,
                 /*
                  * parse key and compare
                  */
-                val_parse_dnskey_rdata(curkey->rr_rdata,
-                                       curkey->rr_rdata_length_h, &dnskey);
+                if (-1 == val_parse_dnskey_rdata(curkey->rr_rdata,
+                                       curkey->rr_rdata_length_h, &dnskey)) {
+                    val_log(ctx, LOG_INFO, "is_trusted_key(): could not parse DNSKEY");
+                    continue;
+                }
 
                 if (ta_cur->pol) {
                     struct trust_anchor_policy *pol = 
@@ -1953,15 +1956,13 @@ transform_outstanding_results(val_context_t *context,
 static void
 prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_name_n, 
                 u_int8_t * qname_n, u_int16_t qtype_h, int *span_chk, 
-                int *wcard_chk)
+                int *wcard_chk, u_int8_t **ce)
 {
 
     int             nsec_bit_field;
     int             offset;
+    u_int8_t *q1, *q2, *q;
    
-    *span_chk = 0;
-    *wcard_chk = 0;
-    
     if (!namecmp(the_set->rrs.val_rrset_name_n, qname_n)) {
         /*
          * NSEC owner = query name & q_type not in list 
@@ -2018,10 +2019,28 @@ prove_nsec_span(val_context_t *ctx, struct rrset_rec *the_set, u_int8_t *soa_nam
             return;
         }
     }
-
     /*
      * else 
      */
+
+    /* 
+     * update the closest enclosure
+     */
+
+    q1 = the_set->rrs.val_rrset_name_n;
+    while (*q1 != '\0' && namename(qname_n, q1) == NULL) {
+
+        STRIP_LABEL(q1,q1);
+    }
+    q2 = nxtname;
+    while (*q2 != '\0' && namename(qname_n, q2) == NULL) {
+
+        STRIP_LABEL(q2,q2);
+    }
+
+    q = (wire_name_length(q1) > wire_name_length(q2))? q1 : q2;
+    *ce = (*ce && wire_name_length(*ce) > wire_name_length(q))? *ce : q;
+
     *span_chk = 1;
     return;
 }
@@ -2315,12 +2334,12 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         return VAL_NO_ERROR;
     }
 
-    /*
-     * if ncn is not one label greater than cpe then we have a problem 
-     */
     if (!namecmp(ncn, cpe)) {
         *status = VAL_NONEXISTENT_TYPE;
-    } else if (cpe != (ncn + ncn[0] + 1)) {
+    } else if (namecmp(cpe, ncn + ncn[0] + 1)) {
+        /*
+         * if ncn is not one label greater than cpe then we have a problem 
+         */
         val_log(ctx, LOG_INFO,
                 "nsec3_proof_chk(): NSEC3 error - NCN is not one label greater than CPE");
         *status = VAL_BOGUS_PROOF;
@@ -2368,7 +2387,7 @@ nsec3_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     }
 
     if (res == NULL) {
-        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - proof does not cover span");
+        val_log(ctx, LOG_INFO, "nsec3_proof_chk(): Incomplete Proof - Wildcard proof does not cover span");
         *status = VAL_INCOMPLETE_PROOF;
     } else if (!res->val_rc_consumed || *proof_res == NULL) {
         if (VAL_NO_ERROR !=
@@ -2406,7 +2425,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     struct val_internal_result *res;
     int             wcard_chk = 0;
     int             span_chk = 0;
-    u_int8_t       *closest_encounter = NULL;
+    u_int8_t       *ce = NULL;
     struct val_internal_result *wcard_proof = NULL;
     struct val_result_chain *new_res;
     u_char          domain_name_n[NS_MAXCDNAME];
@@ -2428,43 +2447,27 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
         if (the_set->rrs.val_rrset_type_h != ns_t_nsec)
             continue;
 
-        if (!span_chk) {
-            prove_nsec_span(ctx, the_set, soa_name_n, qname_n,
-                            qtype_h, &span_chk, &wcard_chk);
-            if (span_chk) {
-                u_int8_t *q;
-
-                /*
-                 * This proof is relevant 
-                 */
-                if (VAL_NO_ERROR !=
-                    (retval = transform_single_result(ctx, res, queries, results,
+        prove_nsec_span(ctx, the_set, soa_name_n, qname_n,
+                            qtype_h, &span_chk, &wcard_chk, &ce);
+        if (span_chk) {
+            /*
+             * This proof is relevant 
+             */
+            if (VAL_NO_ERROR !=
+                (retval = transform_single_result(ctx, res, queries, results,
                                                   *proof_res, &new_res))) {
-                    goto err;
-                }
-                *proof_res = new_res;
+                goto err;
+            }
+            *proof_res = new_res;
 
-                /*
-                 * The closest encounter is the longest label match between 
-                 * this NSEC's owner name and the query name
-                 */
-                q = the_set->rrs.val_rrset_name_n;
-                while (*q != '\0' && 
-                       (closest_encounter=namename(qname_n, q)) == NULL) {
-
-                    STRIP_LABEL(q,q);   
-                }
-
-                if (wcard_chk) {
-                    break;
-                }
+            if (wcard_chk) {
+                break;
             }
             /* the same proof could prove wildcard non-existence */
             if (wcard_proof == NULL)
                 wcard_proof = res;
-        } else { 
+        } else {
             wcard_proof = res;
-            break;
         }
     }
 
@@ -2477,28 +2480,31 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
     else if (wcard_chk) 
         /* name and type were matched in a single proof */
         *status = VAL_NONEXISTENT_TYPE;
-    else if (!wcard_proof || !closest_encounter) {
+    else if (!wcard_proof || !ce) {
         val_log(ctx, LOG_INFO, "nsec_proof_chk(): Incomplete Proof - Cannot prove wildcard non-existence");
         *status = VAL_INCOMPLETE_PROOF;
     }
     else {
-        if (NS_MAXCDNAME < wire_name_length(closest_encounter) + 2) {
+        if (NS_MAXCDNAME < wire_name_length(ce) + 2) {
             val_log(ctx, LOG_INFO,
                     "nsec_proof_chk(): NSEC Error - label length with wildcard exceeds bounds");
             *status = VAL_BOGUS_PROOF;
         } else {
             domain_name_n[0] = 0x01;
             domain_name_n[1] = 0x2a;    /* for the '*' character */
-            memcpy(&domain_name_n[2], closest_encounter,
-                    wire_name_length(closest_encounter));
+            memcpy(&domain_name_n[2], ce,
+                    wire_name_length(ce));
 
+            span_chk = 0;
+            wcard_chk = 0;
+            ce = NULL;
             prove_nsec_span(ctx, wcard_proof->val_rc_rrset->_as.ac_data, 
                             soa_name_n, domain_name_n,
-                            qtype_h, &span_chk, &wcard_chk);
+                            qtype_h, &span_chk, &wcard_chk, &ce);
 
             if (!span_chk) {
                 val_log(ctx, LOG_INFO, "nsec_proof_chk(): Incomplete Proof - Wildcard proof does not cover span");
-                *status = VAL_BOGUS_PROOF;
+                *status = VAL_INCOMPLETE_PROOF;
             } else {
                 *status = VAL_NONEXISTENT_NAME;
                 if (!wcard_proof->val_rc_consumed || *proof_res == NULL) {
@@ -2563,19 +2569,12 @@ check_anc_proof(val_context_t *context,
                     u_int8_t *soa_name_n = NULL;
                     soa_name_n =  &the_set->rrs.val_rrset_sig->rr_rdata[SIGNBY];
                     prove_nsec_span(context, the_set, soa_name_n, name_n,
-                                    q->qc_type_h, &span_chk, &wcard_chk);
+                                    q->qc_type_h, &span_chk, &wcard_chk, &cpe);
                     if (span_chk) {
-                        u_int8_t *c;
-                        c = the_set->rrs.val_rrset_name_n;
-                        while (*c != '\0' && 
-                            (cpe=namename(name_n, c)) == NULL) {
-                            STRIP_LABEL(c,c);   
-                        }
                         if (wcard_chk) {
                             *matches = 1;
                             return VAL_NO_ERROR;
                         }
-                        break;
                     }
                 }
             } 
@@ -2603,19 +2602,27 @@ check_anc_proof(val_context_t *context,
         }
     } 
 
-    /* check if we did not see a span check */
-    if (span_chk == 0 
+    /* check if span check exists */
+    if (!cpe || (span_chk == 0 
 #ifdef LIBVAL_NSEC3            
-            && (!ncn || !cpe)
+            && !ncn)
 #endif
        ) {
 
+        *matches = 0;
         return VAL_NO_ERROR;
     }
 
     if (check_wildcard) {
-
         u_char          wc_n[NS_MAXCDNAME];
+
+        if (NS_MAXCDNAME < wire_name_length(cpe) + 2) {
+            val_log(context, LOG_INFO, 
+                    "check_anc_proof(): label length with wildcard exceeds bounds");
+            *matches = 0;
+            return VAL_NO_ERROR;
+        }
+
         memset(wc_n, 0, sizeof(wc_n));
         wc_n[0] = 0x01;
         wc_n[1] = 0x2a;             /* for the '*' character */
@@ -2625,6 +2632,8 @@ check_anc_proof(val_context_t *context,
                 check_anc_proof(context, q, flags, wc_n, 0, matches))) {
             return retval;
         } 
+    } else {
+        *matches = 1;
     }
     
     return VAL_NO_ERROR;
