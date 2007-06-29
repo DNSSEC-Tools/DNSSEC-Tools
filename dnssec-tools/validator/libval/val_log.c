@@ -772,9 +772,10 @@ val_log_callback(val_log_t * logp, const val_context_t * ctx, int level,
     tm = localtime(&tv.tv_sec);
     
     /** We allocated extra space  */
-    snprintf(buf, sizeof(buf) - 2, "%04d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
-    vsnprintf(&buf[11], sizeof(buf) - 13, template, ap);
+    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+            tm->tm_hour, tm->tm_min, tm->tm_sec);
+    vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     (*(logp->opt.cb.func))(logp, level, buf);
 
@@ -798,9 +799,10 @@ val_log_udp(val_log_t * logp, const val_context_t * ctx, int level,
     tm = localtime(&tv.tv_sec);
 
     /** We allocated extra space  */
-    snprintf(buf, sizeof(buf) - 2, "%04d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
-    vsnprintf(&buf[11], sizeof(buf) - 13, template, ap);
+    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+            tm->tm_hour, tm->tm_min, tm->tm_sec);
+    vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
     strcat(buf, "\n");
 
     sendto(logp->opt.udp.sock, buf, strlen(buf), 0,
@@ -828,9 +830,10 @@ val_log_filep(val_log_t * logp, const val_context_t * ctx, int level,
         if (NULL == logp->opt.file.fp)
             return;
     }
-    snprintf(buf, sizeof(buf) - 2, "%04d:%02d:%02d ", 
-            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday);
-    vsnprintf(&buf[11], sizeof(buf) - 13, template, ap);
+    snprintf(buf, sizeof(buf) - 2, "%04d%02d%02d::%02d:%02d:%02d ", 
+            tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday,
+            tm->tm_hour, tm->tm_min, tm->tm_sec);
+    vsnprintf(&buf[19], sizeof(buf) - 21, template, ap);
 
     fprintf(logp->opt.file.fp, buf);
     fprintf(logp->opt.file.fp, "\n");
@@ -850,8 +853,9 @@ val_log_syslog(val_log_t * logp, const val_context_t * ctx, int level,
     gettimeofday(&tv, NULL);
     tm = localtime(&tv.tv_sec);
 
-    snprintf(buf, sizeof(buf), "%04d:%02d:%02d libval(%s)", 
+    snprintf(buf, sizeof(buf), "%04d%02d%02d::%02d:%02d:%02d libval(%s)", 
             tm->tm_year+1900, tm->tm_mon+1, tm->tm_mday, 
+            tm->tm_hour, tm->tm_min, tm->tm_sec,
             (ctx == NULL) ? "0" : ctx->id);
     openlog(buf, VAL_LOG_OPTIONS, logp->opt.syslog.facility);
 
