@@ -824,8 +824,8 @@ with the option names as the hash key.
 =item 2.  DNSSEC-Tools Configuration File
 
 The system-wide DNSSEC-Tools configuration file is read and these option
-values are added to the option collection.  Again, the option names as the
-hash key.
+values are added to the option collection.  Again, the option names are used
+as the hash key.
 
 =item 3. I<keyrec> File
 
