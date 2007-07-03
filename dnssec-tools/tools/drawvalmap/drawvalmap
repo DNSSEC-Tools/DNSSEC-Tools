@@ -52,6 +52,7 @@ my %opts = (
 	p => "1053",
 	g => "val_log_map.gif",
 	r => 5,
+    i => "",
 );
 
 $image_has_changed = 0;
@@ -69,7 +70,7 @@ my %loglevels = (
 # main
 
 # Parse command-line options
-GetOptions(\%opts, "s", "a=s", "p=s", "h=s", "r=i", "g=s", "l=s");
+GetOptions(\%opts, "s", "a=s", "p=s", "h=s", "r=i", "g=s", "l=s", "i=s");
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
@@ -122,11 +123,10 @@ if($opts{'s'} == 1) {
     	or die "Couldn't bind to $local_host:$local_port\n";
 
 	while ($_=<$socket>) {
-        if (! /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
+        if (!matches_logreq($_)) {
             $curnode = $libvalnode;
             next;
         }
-        ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
 		$curnode = update_graph($curnode);
         if ($image_has_changed) {
             update_gif();
@@ -145,11 +145,10 @@ if (defined $logfile) {
 
 # Read from file handle
 while ($_=<$logfh>) {
-    if (! /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
+    if (!matches_logreq($_)) { 
         $curnode = $libvalnode;
         next;
     }
-    ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
 	$curnode = update_graph($curnode);
 }
 
@@ -158,6 +157,25 @@ update_gif();
 #
 # End Main
 ########################################################
+
+
+########################################################
+# 
+# store graph as gif 
+#
+sub matches_logreq {
+    my $line = shift;
+    my $ignorestr = $opts{'i'};
+    if ($line =~ /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
+        ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
+        if ($ignorestr && /$ignorestr/) {
+            return 0;
+        }
+        return 1;
+    }
+    return 0;
+}
+
 
 ########################################################
 # 
@@ -407,6 +425,10 @@ This changes the refresh period in the HTML file to the given value. The default
 =item -g <file.gif>
 
 This changes the name of .gif file to the given value.
+
+=item -i <ignore_pattern_string>
+
+This causes drawvalmap to ignore log records that match the given ignore pattern. 
 
 =back
   
