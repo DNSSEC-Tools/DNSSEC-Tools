@@ -381,13 +381,11 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
             }
         }
 
-        if (next_result->val_rc_proof_count > 0) {
-            val_log(ctx, level, "    Associated Proofs Follow:");
-        }
         for (i = 0; i < next_result->val_rc_proof_count; i++) {
+            val_log(ctx, level, "    Proof of non-existence [%d of %d]", 
+                    i+1, next_result->val_rc_proof_count);
             for (next_as = next_result->val_rc_proofs[i]; next_as;
                  next_as = next_as->val_ac_trust) {
-
                 if (next_as->val_ac_rrset == NULL) {
                     val_log(ctx, level, "      Assertion status = %s:%d",
                             p_ac_status(next_as->val_ac_status),
