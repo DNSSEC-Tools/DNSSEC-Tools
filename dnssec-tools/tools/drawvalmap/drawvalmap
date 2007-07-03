@@ -73,11 +73,11 @@ GetOptions(\%opts, "s", "a=s", "p=s", "h=s", "r=i", "g=s", "l=s");
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
+my $libvalnode = "libval";
+my $curnode = $libvalnode; 
 
 $gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
 $count = 0;
-$newnode = "";
-$curnode = "";
 $giffile = $opts{'g'};
 $htmlfile = $opts{'h'};
 $refresh = $opts{'r'};
@@ -122,7 +122,12 @@ if($opts{'s'} == 1) {
     	or die "Couldn't bind to $local_host:$local_port\n";
 
 	while ($_=<$socket>) {
-		update_image($_);
+        if (! /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
+            $curnode = $libvalnode;
+            next;
+        }
+        ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
+		$curnode = update_graph($curnode);
         if ($image_has_changed) {
             update_gif();
         }
@@ -140,7 +145,12 @@ if (defined $logfile) {
 
 # Read from file handle
 while ($_=<$logfh>) {
-	update_image($_);
+    if (! /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
+        $curnode = $libvalnode;
+        next;
+    }
+    ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
+	$curnode = update_graph($curnode);
 }
 
 update_gif();
@@ -166,24 +176,16 @@ sub update_gif {
 #
 # update the graph
 #
-sub update_image {
+sub update_graph {
 
     my $level;
     my %prop;
+    my $newnode;
+    my $prevnode = shift; 
 
-    # Look for only messages of the following type
-    if (/\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+):/) {
-        ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
-        #$log[$count] =  "$1 $2 $3 $4 $5" ;
-        #$edge_str = $name . ":" . $class . ":" . $type . ":" . "$status" ;
-        $log[$count] =  "$4 $5" ;
-        $edge_str = $status ;
-       	$newnode = $dest;
-	}
-	else {
-	    # received data that this utility has no use for
-	    return;
-	}
+    $log[$count] =  "$name $class $type $prevnode $dest $status";
+    $edge_str = $dest ;
+    $newnode = "$name, $class, $type";
 
 	# remove duplicates from the array so that 
 	# all edges on the graph are different
@@ -192,23 +194,22 @@ sub update_image {
 
 	# Check if something new was added 
 	if($count == ($#log + 1)) {
-		return;
+		return $curnode;
 	}
 
 	$count = $#log + 1;
 
 	# add the node and an edge from the Validator
-    if ($curnode ne $newnode) { 
-        if ($curnode eq "") {
-            $curnode = "libval";
+    ($level, %prop) = get_ac_lineattr($status);
+    if ($loglevels{$level} == 1) {
+        $gv->add_node($newnode);
+        if ($prevnode ne $newnode) {
+            $gv->add_edge($prevnode, $newnode, label => $edge_str, decorateP => '1', %prop); 
         }
-        ($level, %prop) = get_ac_lineattr($status);
-        if ($loglevels{$level} == 1) {
-		    $gv->add_node($newnode);
-            $gv->add_edge($curnode, $newnode, label => $edge_str, decorateP => '1', %prop); 
-            $image_has_changed = 1;
-        }
-    } 
+        $image_has_changed = 1;
+    }
+
+    return $newnode;
 }
 
 #############################################################
@@ -243,7 +244,8 @@ sub get_ac_lineattr {
 
     } elsif (($ac_status eq "VAL_AC_UNTRUSTED_ZONE") ||
         ($ac_status eq "VAL_AC_NOT_VERIFIED") ||
-        ($ac_status eq "VAL_AC_NO_TRUST_ANCHOR")) { 
+        ($ac_status eq "VAL_AC_NO_TRUST_ANCHOR") ||
+        ($ac_status eq "VAL_AC_BAD_DELEGATION")) { 
 
 		$prop{'color'} =  "red";
 		$prop{'fillcolor'} =  "red";
