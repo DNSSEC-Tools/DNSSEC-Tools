@@ -502,9 +502,6 @@ do_verify(val_context_t * ctx,
     long clock_skew;
     long ttl_x = 0;
 
-    *dnskey_status = VAL_AC_UNSET;
-    *sig_status = VAL_AC_UNSET;
-
     /*
      * Wildcard expansions for DNSKEYs and DSs are not permitted
      */
@@ -758,9 +755,11 @@ verify_next_assertion(val_context_t * ctx,
                 the_sig->rr_status == VAL_AC_WCARD_VERIFIED ||
                 the_sig->rr_status == VAL_AC_WCARD_VERIFIED_SKEW) {
 
-                SET_STATUS(as->val_ac_status, nextrr, VAL_AC_SIGNING_KEY);
                 SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
                 SET_STATUS(as->val_ac_status, nextrr, nextrr->rr_status);
+                if (nextrr->rr_status == VAL_AC_UNSET) {
+                    nextrr->rr_status = VAL_AC_SIGNING_KEY;
+                }
                 break;
             }
 
@@ -768,12 +767,11 @@ verify_next_assertion(val_context_t * ctx,
              * There might be multiple keys with the same key tag; set this as
              * the signing key only if we dont have other status for this key
              */
-            if (as->val_ac_status == VAL_AC_UNSET) {
-                SET_STATUS(as->val_ac_status, nextrr, VAL_AC_SIGNING_KEY);
-            }
-
             SET_STATUS(as->val_ac_status, the_sig, the_sig->rr_status);
             SET_STATUS(as->val_ac_status, nextrr, nextrr->rr_status);
+            if (nextrr->rr_status == VAL_AC_UNSET) {
+                nextrr->rr_status = VAL_AC_SIGNING_KEY;
+            }
 
             if (dnskey.public_key != NULL) {
                 FREE(dnskey.public_key);
@@ -817,14 +815,14 @@ verify_next_assertion(val_context_t * ctx,
                                      ds.d_type,
                                      ds.d_hash, ds.d_hash_len,
                                      the_set->rrs.val_rrset_name_n,
-                                     nextrr, &dsrec->rr_status)) {
+                                     keyrr, &dsrec->rr_status)) {
 
                         if (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
                             the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW)
-                            SET_STATUS(as->val_ac_status, nextrr,
+                            SET_STATUS(as->val_ac_status, keyrr,
                                        VAL_AC_VERIFIED_LINK);
                         else
-                            SET_STATUS(as->val_ac_status, nextrr,
+                            SET_STATUS(as->val_ac_status, keyrr,
                                        VAL_AC_UNKNOWN_ALGORITHM_LINK);
 
                         FREE(ds.d_hash);
