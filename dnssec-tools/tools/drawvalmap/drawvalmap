@@ -36,7 +36,13 @@ my $htmlfh;
 my $giftmp;
 my $logfile;
 my $logfh;
+my %opts;
+my %loglevels;
 my $image_has_changed;
+
+########################################################
+# Constants
+
 my $SUCCESS = 1;
 my $BOGUS = 2;
 my $DATA_MISSING = 3;
@@ -46,18 +52,17 @@ my $IGNORED = 5;
 ########################################################
 # Defaults
 
-my %opts = (
+%opts = (
 	s => 0,
 	a => "127.0.0.1",
 	p => "1053",
 	g => "val_log_map.gif",
 	r => 5,
     i => "",
+    m => "",
 );
 
-$image_has_changed = 0;
-
-my %loglevels = (
+%loglevels = (
     $SUCCESS => 1,
     $BOGUS => 1,
     $DATA_MISSING => 1,
@@ -65,19 +70,20 @@ my %loglevels = (
     $IGNORED => 0
 );
     
+$image_has_changed = 0;
 
 ########################################################
 # main
 
 # Parse command-line options
-GetOptions(\%opts, "s", "a=s", "p=s", "h=s", "r=i", "g=s", "l=s", "i=s");
+GetOptions(\%opts, "s", "a=s", "p=s", "h=s", "r=i", "g=s", "l=s", "i=s", "m=s");
 
 # Parse the dnssec-tools.conf file
 my %dtconf = parseconfig();
+
 my $libvalnode = "libval";
 my $curnode = $libvalnode; 
 
-$gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
 $count = 0;
 $giffile = $opts{'g'};
 $htmlfile = $opts{'h'};
@@ -111,6 +117,9 @@ if (defined $htmlfile) {
 	    "</html>";
     $htmlfh->close;
 }
+
+$gv = GraphViz->new(rankdir => 1, edge => { fontsize => '9'});
+$gv->add_node($libvalnode);
 
 # check if socket operation is desired
 if($opts{'s'} == 1) {
@@ -161,14 +170,16 @@ update_gif();
 
 ########################################################
 # 
-# store graph as gif 
+# Check if line matches log requirements 
 #
 sub matches_logreq {
     my $line = shift;
     my $ignorestr = $opts{'i'};
+    my $requirestr = $opts{'m'};
     if ($line =~ /\s*name=(\S+)\s*class=(\S+)\s*type=(\S+)\s*from-server=(\S+)\s*status=(\S+?):/) {
         ($name, $class, $type, $dest, $status) = ($1, $2, $3, $4, $5); 
-        if ($ignorestr && /$ignorestr/) {
+        if (($ignorestr && ($line =~ /$ignorestr/)) || 
+            ($requirestr && !($line =~ /$requirestr/))) {
             return 0;
         }
         return 1;
@@ -212,7 +223,7 @@ sub update_graph {
 
 	# Check if something new was added 
 	if($count == ($#log + 1)) {
-		return $curnode;
+		return $newnode;
 	}
 
 	$count = $#log + 1;
@@ -429,6 +440,12 @@ This changes the name of .gif file to the given value.
 =item -i <ignore_pattern_string>
 
 This causes drawvalmap to ignore log records that match the given ignore pattern. 
+
+=item -m <match_pattern_string>
+
+This causes drawvalmap to include only log records that match the given pattern. 
+If a given log record matches a pattern given by the -m option and also matches the
+pattern given by the -i option the effective result is that of ignoring the record. 
 
 =back
   
