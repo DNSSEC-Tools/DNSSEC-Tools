@@ -36,6 +36,7 @@ LocalGetOptions(\%opts,
 );
 
 my $res = Net::DNS::Resolver->new;
+$res->udppacketsize(4096);
 my %keystorage;
 my $output;
 
@@ -261,7 +262,7 @@ Gives a help message.
 
 =item -i path
 
-Reads {\it path} as a \path{named.conf} with which to compare key lists.
+Reads I<path> as a B<named.conf> with which to compare key lists.
 
 =item -k
 
@@ -269,15 +270,15 @@ Only looks for Key Signing Keys (KSK); all other keys are ignored.
 
 =item -o file
 
-Writes the results to {\it file}.
+Writes the results to I<file>.
 
 =item -T
 
-Checks the current trusted key list from \path{named.conf}.
+Checks the current trusted key list from B<named.conf>.
 
 =item -t
 
-Encloses output in needed \path{named.conf} syntax markers.
+Encloses output in needed B<named.conf> syntax markers.
 
 =item -v
 
@@ -291,11 +292,11 @@ This \cmd{getdnskeys} will retrieve the KSK for example.com:
 
     getdnskeys -o /etc/named.trustkeys.conf -k -v -t example.com
 
-This \cmd{getdnskeys} will check saved keys against a live set of keys:
+This B<getdnskeys> will check saved keys against a live set of keys:
 
     getdnskeys -i /etc/named.trustkeys.conf -T -k -v -t
 
-This \cmd{getdnskeys} will automatically update a set of saved keys:
+This B<getdnskeys> will automatically update a set of saved keys:
 
     getdnskeys -i /etc/named.trustkeys.conf -k -t -T -v
 	       -o /etc/named.trustkeys.conf
