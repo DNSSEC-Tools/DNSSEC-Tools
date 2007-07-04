@@ -2440,6 +2440,7 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
 
     for (res = w_results; res; res = res->val_rc_next) {
 
+        int this_span_chk = 0;
         if (!res->val_rc_is_proof)
             continue;
 
@@ -2448,11 +2449,12 @@ nsec_proof_chk(val_context_t * ctx, struct val_internal_result *w_results,
             continue;
 
         prove_nsec_span(ctx, the_set, soa_name_n, qname_n,
-                            qtype_h, &span_chk, &wcard_chk, &ce);
-        if (span_chk) {
+                            qtype_h, &this_span_chk, &wcard_chk, &ce);
+        if (this_span_chk && !span_chk) {
             /*
              * This proof is relevant 
              */
+            span_chk = 1;
             if (VAL_NO_ERROR !=
                 (retval = transform_single_result(ctx, res, queries, results,
                                                   *proof_res, &new_res))) {
