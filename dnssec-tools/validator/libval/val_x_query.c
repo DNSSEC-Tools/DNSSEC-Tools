@@ -597,7 +597,7 @@ compose_answer(const u_char * name_n,
  *
  */
 int
-val_query(val_context_t * ctx,
+val_query(val_context_t * context,
           const char *domain_name,
           const u_int16_t class_h,
           const u_int16_t type,
@@ -606,7 +606,6 @@ val_query(val_context_t * ctx,
 {
     struct val_result_chain *results = NULL;
     int             retval;
-    val_context_t  *context;
     u_char          name_n[NS_MAXCDNAME];
 
     if ((resp == NULL) || (domain_name == NULL))
@@ -616,17 +615,6 @@ val_query(val_context_t * ctx,
         return VAL_BAD_ARGUMENT;
 
     *resp = NULL;
-
-    if (ctx == NULL) {
-        /* 
-         *  Create a default context only if it hasn't been created before
-         *  The memory for the NULL context will be free'd when a call
-         *  is made to free_validator_state()
-         */
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context)))
-            return retval;
-    } else
-        context = (val_context_t *) ctx;
 
     val_log(context, LOG_DEBUG,
             "val_query(): called with dname=%s, class=%s, type=%s",
@@ -747,14 +735,13 @@ val_res_query(val_context_t * ctx,
  * wrapper around val_query() that is closer to res_search() 
  */
 int
-val_res_search(val_context_t * context, const char *dname, int class_h,
+val_res_search(val_context_t * ctx, const char *dname, int class_h,
               int type, u_char * answer, int anslen,
               val_status_t * val_status)
 {
     int             retval = -1;
     char           *dot, *search, *pos;
     char            buf[NS_MAXDNAME];
-    val_context_t  *ctx;
     
     if ((dname == NULL) || (val_status == NULL) || (answer == NULL)) {
         val_log(ctx, LOG_ERR, "val_res_search(%s, %d, %d): Error - %s", 
@@ -763,22 +750,6 @@ val_res_search(val_context_t * context, const char *dname, int class_h,
         errno = EINVAL;
         return -1;
     }
-
-    /* 
-     * make sure that a valid context exists. The search path is stored
-     * within the context
-     */
-    if (context == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx))) {
-            val_log(ctx, LOG_ERR, "val_res_search(%s, %d, %d): Error while creating context - %s", 
-                dname, p_class(class_h), p_type(type), p_val_err(retval));
-            h_errno = NETDB_INTERNAL;
-            errno = EINVAL;
-            return -1;
-        }
-    }
-    else
-        ctx = context;
 
     /*
      * if there are no dots and we have a search path, use it

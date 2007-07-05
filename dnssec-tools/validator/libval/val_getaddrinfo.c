@@ -964,7 +964,7 @@ done:
  *               for more details.
  */
 int
-val_getaddrinfo(val_context_t * ctx,
+val_getaddrinfo(val_context_t * context,
                 const char *nodename, const char *servname,
                 const struct addrinfo *hints, struct val_addrinfo **res,
                 val_status_t *val_status)
@@ -979,7 +979,6 @@ val_getaddrinfo(val_context_t * ctx,
     const char     *localhost4 = "127.0.0.1";
     const char     *localhost6 = "::1";
     const char     *nname = nodename;
-    val_context_t  *context = NULL;
     struct addrinfo default_hints;
     const struct addrinfo *cur_hints;
     int validated = 1;
@@ -990,14 +989,6 @@ val_getaddrinfo(val_context_t * ctx,
 
     *res = NULL;
     *val_status = VAL_DONT_KNOW;
-
-    if (ctx == NULL) {
-        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &context))) {
-            val_log(ctx, LOG_ERR, "val_getaddrinfo(): Could not create context - %s", p_val_err(retval));
-            return EAI_FAIL;
-        }
-    } else
-        context = (val_context_t *) ctx;
 
     val_log(context, LOG_DEBUG,
             "val_getaddrinfo called with nodename = %s, servname = %s",
@@ -1073,7 +1064,7 @@ val_getaddrinfo(val_context_t * ctx,
                                       cur_hints, &ainfo4))
             != 0) {
             val_freeaddrinfo(ainfo4);
-            val_log(ctx, LOG_INFO, 
+            val_log(context, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
         }
@@ -1135,7 +1126,7 @@ val_getaddrinfo(val_context_t * ctx,
                                       cur_hints, &ainfo6))
             != 0) {
             val_freeaddrinfo(ainfo6);
-            val_log(ctx, LOG_INFO, 
+            val_log(context, LOG_INFO, 
                     "val_getaddrinfo(): Failed in process_service_and_hints()");
             goto done;
         }
