@@ -569,7 +569,7 @@ get_hostent_from_response(val_context_t * ctx, int af, struct hostent *ret,
  * See also: val_gethostbyname2(), val_gethostbyname_r(), val_istrusted()
  */
 int
-val_gethostbyname2_r(val_context_t * ctx,
+val_gethostbyname2_r(val_context_t * context,
                      const char *name,
                      int af,
                      struct hostent *ret,
@@ -686,21 +686,8 @@ val_gethostbyname2_r(val_context_t * ctx,
         int             retval;
         struct val_result_chain *results = NULL;
         u_char          name_n[NS_MAXCDNAME];
-        val_context_t  *context = NULL;
         u_int16_t       type;
 
-        if (ctx == NULL) {
-            if (VAL_NO_ERROR !=
-                (retval = val_create_context(NULL, &context))) {
-                val_log(ctx, LOG_ERR,
-                        "val_gethostbyname2_r(): Could not create context - %s", p_val_err(retval));
-                *h_errnop = NETDB_INTERNAL;
-                if (!errno)
-                    errno = ENOMEM;
-                return errno;
-            }
-        } else
-            context = (val_context_t *) ctx;
         /*
          * First check the ETC_HOSTS file
          * XXX: TODO check the order in the ETC_HOST_CONF file
