@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libval 3"
-.TH libval 3 "2007-05-22" "perl v5.8.6" "Programmer's Manual"
+.TH libval 3 "2007-07-06" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 \&\fIval_create_context()\fR, \fIval_create_context_with_conf()\fR \fIval_free_context()\fR \-
 manage validator context
@@ -391,42 +391,38 @@ Validation status for a given RRset.  This can be one of the following:
 \&        but they were not individually validated.
 .Ve
 .Sp
-.Vb 2
-\&        VAL_ERROR
-\&                Encountered some DNS protocol error.
-.Ve
-.Sp
-.Vb 7
-\&        VAL_DNS_ERROR_BASE + SR_error
-\&                This value contains a resolver error from 
-\&                libsres. The libsres error is added to 
-\&                VAL_DNS_ERROR_BASE, so this value will lie 
-\&                between VAL_DNS_ERROR_BASE and 
-\&                VAL_DNS_ERROR_LAST.  These values include
-\&                the following:
+.Vb 3
+\&        VAL_DNS_CONFLICTING_ANSWERS     
+\&                Multiple conflicting answers
+\&                received for a query.
 .Ve
 .Sp
 .Vb 3
-\&                    SR_CONFLICTING_ANSWERS      
-\&                        Multiple conflicting answers
-\&                        received for a query.
+\&        VAL_DNS_QUERY_ERROR     
+\&        Some error was encountered while 
+\&        sending the query.
 .Ve
 .Sp
 .Vb 3
-\&                    SR_REFERRAL_ERROR
-\&                        Some error encountered while
-\&                        following referrals.
+\&        VAL_DNS_RESPONSE_ERROR  
+\&            No response returned or response
+\&        with an error rcode value returned.
 .Ve
 .Sp
 .Vb 2
-\&                    SR_MISSING_GLUE
-\&                        Glue was missing.
+\&        VAL_DNS_WRONG_ANSWER    
+\&            Wrong answer received for a query.
 .Ve
 .Sp
 .Vb 3
-\&        VAL_INDETERMINATE
-\&                Lacking information to give a more conclusive
-\&                answer.
+\&        VAL_DNS_REFERRAL_ERROR
+\&                Some error encountered while
+\&                following referrals.
+.Ve
+.Sp
+.Vb 2
+\&        VAL_DNS_MISSING_GLUE
+\&                Glue was missing.
 .Ve
 .Sp
 .Vb 5
@@ -607,39 +603,38 @@ This field may contain one of the following values:
 \&                given authentication chain.
 .Ve
 .Sp
-.Vb 2
-\&      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-\&                The DNSKEY protocol number was unrecognized.
-.Ve
-.Sp
-.Vb 1
-\&      VAL_DNS_ERROR_BASE + SR_error
-.Ve
-.Sp
-.Vb 6
-\&                This value contains a resolver error from
-\&                I<libsres(s)>.  The libsres error is added to
-\&                VAL_DNS_ERROR_BASE, so this value will lie
-\&                between VAL_DNS_ERROR_BASE and
-\&                VAL_DNS_ERROR_LAST.  These values include
-\&                the following:
+.Vb 3
+\&          VAL_AC_DNS_CONFLICTING_ANSWERS        
+\&                Multiple conflicting answers
+\&                received for a query.
 .Ve
 .Sp
 .Vb 3
-\&                    SR_CONFLICTING_ANSWERS      
-\&                        Multiple conflicting answers
-\&                        received for a query.
+\&          VAL_AC_DNS_QUERY_ERROR        
+\&        Some error was encountered 
+\&        while sending the query.
 .Ve
 .Sp
 .Vb 3
-\&                    SR_REFERRAL_ERROR
-\&                        Some error encountered while
-\&                        following referrals.
+\&          VAL_AC_DNS_RESPONSE_ERROR     
+\&            No response returned or response
+\&        with an error rcode value returned.
 .Ve
 .Sp
 .Vb 2
-\&                    SR_MISSING_GLUE
-\&                        Glue was missing.
+\&          VAL_AC_DNS_WRONG_ANSWER       
+\&            Wrong answer received for a query.
+.Ve
+.Sp
+.Vb 3
+\&          VAL_AC_DNS_REFERRAL_ERROR
+\&                Some error encountered while
+\&                following referrals.
+.Ve
+.Sp
+.Vb 2
+\&          VAL_AC_DNS_MISSING_GLUE
+\&                Glue was missing.
 .Ve
 .IP "\fIval_ac_rrset\fR" 4
 .IX Item "val_ac_rrset"
@@ -798,16 +793,6 @@ For each signature \fIrr_rec\fR member within the authentication chain
 \&                algorithm was not supported.
 .Ve
 .Sp
-.Vb 2
-\&      VAL_AC_UNKNOWN_ALGORITHM - The RRSIG algorithm
-\&                was unknown.
-.Ve
-.Sp
-.Vb 2
-\&      VAL_AC_ALGORITHM_REFUSED - The RRSIG algorithm
-\&                was not allowed as per local policy.
-.Ve
-.Sp
 For each \fIrr_rec\fR member of type \s-1DNSKEY\s0 (or \s-1DS\s0, where relevant) within the
 authentication chain \fIval_ac_rrset\fR, the validation status is stored in the
 variable \fIrr_status\fR and can return one of the following values:
@@ -824,6 +809,11 @@ variable \fIrr_status\fR and can return one of the following values:
 \&                the trust anchor to the signed record.
 .Ve
 .Sp
+.Vb 2
+\&      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+\&                The DNSKEY protocol number was unrecognized.
+.Ve
+.Sp
 .Vb 4
 \&      VAL_AC_UNKNOWN_ALGORITHM_LINK - This DNSKEY provided
 \&                the link in the authentication chain from
@@ -837,33 +827,8 @@ variable \fIrr_status\fR and can return one of the following values:
 .Ve
 .Sp
 .Vb 2
-\&      VAL_AC_KEY_TOO_LARGE - Local policy defined the
-\&                DNSKEY size as being too large.
-.Ve
-.Sp
-.Vb 2
-\&      VAL_AC_KEY_TOO_SMALL - Local policy defined the
-\&                DNSKEY size as being too small.
-.Ve
-.Sp
-.Vb 2
-\&      VAL_AC_KEY_NOT_AUTHORIZED - Local policy defined the
-\&                DNSKEY to be unauthorized for validation.
-.Ve
-.Sp
-.Vb 2
 \&      VAL_AC_ALGORITHM_NOT_SUPPORTED - The DNSKEY or DS
 \&                algorithm was not supported.
-.Ve
-.Sp
-.Vb 2
-\&      VAL_AC_UNKNOWN_ALGORITHM - The DNSKEY or DS
-\&                algorithm was unknown.
-.Ve
-.Sp
-.Vb 2
-\&      VAL_AC_ALGORITHM_REFUSED - The DNSKEY or DS algorithm
-\&                was not allowed as per local policy.
 .Ve
 .RE
 .RS 4

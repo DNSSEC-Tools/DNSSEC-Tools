@@ -332,7 +332,7 @@ Query states transition as follows:
    |                  |
    |                  |
    |  (query sent)    |    (error)
-Q_INIT ----------> Q_SENT --------> (Q_ERROR_BASE + SR_<error_condition>) 
+Q_INIT ----------> Q_SENT --------> (Q_ERROR_BASE + <error_condition>) 
    ^                | |                   ^
    |                | |                   |
    +<---------------+ |                   |
@@ -423,12 +423,8 @@ where:
                       |
                       +---> Key status
                       |         |-------------> VAL_AC_INVALID_KEY
-                      |         |-------------> VAL_AC_ALGORITHM_NOT_SUPPORTED
-                      |         |-------------> VAL_AC_UNKNOWN_ALGORITHM
-                      |         |-------------> VAL_AC_KEY_TOO_LARGE
-                      |         |-------------> VAL_AC_KEY_TOO_SMALL
-                      |         |-------------> VAL_AC_KEY_NOT_AUTHORIZED
-                      |         +-------------> VAL_AC_ALGORITHM_REFUSED
+                      |         |-------------> VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+                      |         +-------------> VAL_AC_ALGORITHM_NOT_SUPPORTED
                       |
                       +---> sig status 
                                 |-------------> VAL_AC_DNSKEY_NOMATCH
@@ -438,7 +434,6 @@ where:
                                 |-------------> VAL_AC_RRSIG_NOTYETACTIVE
                                 |-------------> VAL_AC_RRSIG_EXPIRED
                                 |-------------> VAL_AC_ALGORITHM_NOT_SUPPORTED
-                                |-------------> VAL_AC_UNKNOWN_ALGORITHM
                                 |-------------> VAL_AC_RRSIG_VERIFY_FAILED 
                                 |-------------> VAL_AC_ALGORITHM_REFUSED
                                 +-------------> VAL_AC_RRSIG_ALGORITHM_MISMATCH 
@@ -449,8 +444,12 @@ where:
               |        BAD         | 
               +====================+
                       |---> VAL_AC_DATA_MISSING 
-                      |---> VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-                      +---> VAL_AC_DNS_ERROR_BASE+SR_<error_condition> 
+                      +---> VAL_AC_DNS_QUERY_ERROR 
+                      +---> VAL_AC_DNS_RESPONSE_ERROR 
+                      +---> VAL_AC_DNS_WRONG_ANSWER 
+                      +---> VAL_AC_DNS_REFERRAL_ERROR 
+                      +---> VAL_AC_DNS_MISSING_GLUE
+                      +---> VAL_AC_DNS_CONFLICTING_ANSWERS
             
                       
                       
@@ -460,7 +459,6 @@ where:
                       |---> VAL_AC_IGNORE_VALIDATION 
                       |---> VAL_AC_TRUSTED_ZONE
                       |---> VAL_AC_UNTRUSTED_ZONE
-                      |---> VAL_AC_LOCAL_ANSWER
                       |---> VAL_AC_TRUST_KEY
                       |---> VAL_AC_PROVABLY_UNSECURE
                       |---> VAL_AC_BARE_RRSIG
@@ -482,12 +480,9 @@ anchor   status                 status
  NO     > FAIL_BASE,             VAL_BOGUS
         <=LAST_FAILURE
 
- --     > VAL_AC_ERROR_BASE,     VAL_ERROR 
-        <=VAL_AC_LAST_ERROR
+ --      VAL_AC_DATA_MISSING     VAL_DNS_RESPONSE_ERROR 
 
- --     > VAL_AC_DNS_ERROR_BASE   equivalent error between 
-        <=VAL_AC_DNS_ERROR_LAST   VAL_DNS_ERROR_BASE 
-                                  and VAL_DNS_ERROR_LAST
+ --      VAL_AC_DNS_*            VAL_DNS_* 
 
  --     > VAL_AC_DONT_GO_FURTHER  equivalent "termination" 
         <= VAL_AC_LAST_STATE      status
