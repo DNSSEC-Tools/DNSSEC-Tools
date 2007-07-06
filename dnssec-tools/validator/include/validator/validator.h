@@ -72,6 +72,13 @@ extern          "C" {
 #define Q_WAIT_FOR_GLUE 3
 #define Q_ANSWERED      4
 #define Q_ERROR_BASE    5
+#define Q_QUERY_ERROR (Q_ERROR_BASE + 0) 
+#define Q_RESPONSE_ERROR (Q_ERROR_BASE + 1) 
+#define Q_WRONG_ANSWER (Q_ERROR_BASE + 2) 
+#define Q_REFERRAL_ERROR (Q_ERROR_BASE + 3) 
+#define Q_MISSING_GLUE (Q_ERROR_BASE + 4) 
+#define Q_CONFLICTING_ANSWERS (Q_ERROR_BASE + 5) 
+
 
 #define QUERY_BAD_CACHE_THRESHOLD 5
 #define QUERY_BAD_CACHE_TTL 3600

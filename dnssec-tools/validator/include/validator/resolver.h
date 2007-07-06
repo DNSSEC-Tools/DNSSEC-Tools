@@ -123,19 +123,16 @@
 #define SR_TSIG_ERROR             2
 #define SR_NO_ANSWER              3     /* No answer received */
 #define SR_NO_ANSWER_YET          4     /* No answer as yet, but this value will change */
-#define SR_WRONG_ANSWER           5     /*Message is not a response to a query */
-#define SR_HEADER_BADSIZE         6     /*Message size not consistent with record counts */
-#define SR_DNS_GENERIC_ERROR      7     /*Look at RCODE */
-#define SR_EDNS_VERSION_ERROR     8
-#define SR_UNSUPP_EDNS0_LABEL     9
-#define SR_NAME_EXPANSION_FAILURE 10
-
-#define SR_NXDOMAIN               11    /*RCODE set to NXDOMAIN w/o appropriate records */
-#define SR_FORMERR                12    /*RCODE set to FORMERR */
-#define SR_SERVFAIL               13    /*RCODE set to SERVFAIL */
-#define SR_NOTIMPL                14    /*RCODE set to NOTIMPL */
-#define SR_REFUSED                15    /*RCODE set to REFUSED */
-#define SR_LAST_ERROR             22
+#define SR_HEADER_ERROR           5     /* some inconsistency in the DNS response header */
+#define SR_DNS_GENERIC_ERROR      6     /*Look at RCODE */
+#define SR_EDNS_VERSION_ERROR     7
+#define SR_UNSUPP_EDNS0_LABEL     8
+#define SR_NAME_EXPANSION_FAILURE 9 
+#define SR_NXDOMAIN               10    /*RCODE set to NXDOMAIN w/o appropriate records */
+#define SR_FORMERR                11    /*RCODE set to FORMERR */
+#define SR_SERVFAIL               12    /*RCODE set to SERVFAIL */
+#define SR_NOTIMPL                13    /*RCODE set to NOTIMPL */
+#define SR_REFUSED                14    /*RCODE set to REFUSED */
 
 struct name_server {
     u_int8_t        ns_name_n[NS_MAXCDNAME];
