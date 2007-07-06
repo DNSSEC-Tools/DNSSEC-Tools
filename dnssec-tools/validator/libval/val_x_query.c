@@ -482,22 +482,14 @@ compose_answer(const u_char * name_n,
                 hp->rcode = ns_r_nxdomain;
                 break;
 
-            case VAL_DNS_ERROR_BASE + SR_FORMERR:
-                hp->rcode = ns_r_formerr;
-                break;
-                
-            case VAL_DNS_ERROR_BASE + SR_SERVFAIL:
+            case VAL_DNS_RESPONSE_ERROR: 
+            case VAL_DNS_WRONG_ANSWER: 
+            case VAL_DNS_REFERRAL_ERROR: 
+            case VAL_DNS_MISSING_GLUE: 
+            case VAL_DNS_CONFLICTING_ANSWERS: 
                 hp->rcode = ns_r_servfail;
                 break;
-
-            case VAL_DNS_ERROR_BASE + SR_NOTIMPL:
-                hp->rcode = ns_r_notimpl;
-                break;
-       
-            case VAL_DNS_ERROR_BASE + SR_REFUSED:
-                hp->rcode = ns_r_refused;
-                break;
-       
+                
             default:
                 if (hp->ancount > 0) {
                     hp->rcode = ns_r_noerror;
