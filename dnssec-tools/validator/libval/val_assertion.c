@@ -1105,7 +1105,7 @@ set_ans_kind(u_int8_t * qname_n,
     }
 
     the_set->rrs_ans_kind = SR_ANS_UNSET;
-    *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+    *status = VAL_AC_DNS_WRONG_ANSWER;
 
     return VAL_NO_ERROR;
 }
@@ -1148,14 +1148,14 @@ fails_to_answer_query(struct qname_chain *q_names_n,
     int             class_match;
 
     if ((NULL == the_set) || (NULL == q_names_n) || (NULL == status)) {
-        *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+        *status = VAL_AC_DNS_WRONG_ANSWER;
         return TRUE;
     }
 
     /*
      * If this is already a wrong answer return 
      */
-    if (*status == (VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER))
+    if (*status == (VAL_AC_DNS_WRONG_ANSWER))
         return TRUE;
 
     name_present = name_in_q_names(q_names_n, the_set->rrs.val_rrset_name_n);
@@ -1189,7 +1189,7 @@ fails_to_answer_query(struct qname_chain *q_names_n,
             return FALSE;
         }
         
-        *status = VAL_AC_DNS_ERROR_BASE + SR_WRONG_ANSWER;
+        *status = VAL_AC_DNS_WRONG_ANSWER;
         return TRUE;
     }
 
@@ -1469,8 +1469,7 @@ try_build_chain(val_context_t * context,
                 if ((as->_as.ac_data->rrs_ans_kind != SR_ANS_STRAIGHT) &&
                     (as->_as.ac_data->rrs_ans_kind != SR_ANS_CNAME) &&
                     (as->_as.ac_data->rrs_ans_kind != SR_ANS_DNAME)) {
-                    matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                    matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 }
                 break;
 
@@ -1479,8 +1478,7 @@ try_build_chain(val_context_t * context,
                  */
             case SR_ANS_BARE_RRSIG:
                 if (as->_as.ac_data->rrs_ans_kind != SR_ANS_BARE_RRSIG) {
-                    matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                    matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 }
                 break;
 
@@ -1490,8 +1488,7 @@ try_build_chain(val_context_t * context,
                  */
             case SR_ANS_NACK :
                 if (as->_as.ac_data->rrs_ans_kind != SR_ANS_NACK) {
-                    matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                    matched_q->qc_state = Q_CONFLICTING_ANSWERS;
                 }
                 break;
 
@@ -1499,8 +1496,7 @@ try_build_chain(val_context_t * context,
                  * Never Reached 
                  */
             default:
-                matched_q->qc_state =
-                    Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                matched_q->qc_state = Q_CONFLICTING_ANSWERS;
             }
         }
 
@@ -1562,7 +1558,7 @@ assimilate_answers(val_context_t * context,
 
     if ((response->di_answers == NULL)
         && (response->di_proofs == NULL)) {
-        matched_q->qc_state = Q_ERROR_BASE + SR_NO_ANSWER;
+        matched_q->qc_state = Q_RESPONSE_ERROR; 
         return VAL_NO_ERROR;
     }
 
@@ -1679,11 +1675,11 @@ clone_val_rrset(struct val_rrset *old_rrset, struct val_rrset *new_rrset)
     return retval;
 }
 
-struct val_digested_auth_chain *
+static struct val_digested_auth_chain *
 get_ac_trust(val_context_t *context, 
              struct val_digested_auth_chain *next_as, 
              struct queries_for_query **queries,
-             u_int8_t flags)
+             u_int8_t flags, int proof)
 {
     struct queries_for_query *added_q = NULL;
 
@@ -1733,6 +1729,9 @@ get_ac_trust(val_context_t *context,
             next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
         }
     } 
+
+    if (proof)
+        return added_q->qfq_query->qc_proof;
 
     return added_q->qfq_query->qc_ans;
 }
@@ -1793,7 +1792,7 @@ transform_authentication_chain(val_context_t *context,
             break;
         }
 
-        o_ac = get_ac_trust(context, o_ac, queries, flags); 
+        o_ac = get_ac_trust(context, o_ac, queries, flags, 0); 
     }
 
     return VAL_NO_ERROR;
@@ -2653,9 +2652,9 @@ check_anc_proof(val_context_t *context,
         } else if (hp->rcode == ns_r_nxdomain) {\
             status_code = VAL_NONEXISTENT_NAME_NOCHAIN;\
         } else\
-            status_code = VAL_ERROR;\
+            status_code = VAL_DNS_RESPONSE_ERROR;\
     } else { \
-        status_code = VAL_ERROR;\
+        status_code = VAL_DNS_RESPONSE_ERROR;\
     }\
 }while (0)
 
@@ -3719,7 +3718,7 @@ try_verify_assertion(val_context_t * context,
                 next_as->_as.ac_data->rrs.val_rrset_class_h, 
                 next_as->_as.ac_data->rrs.val_rrset_type_h);
 
-        the_trust = get_ac_trust(context, next_as, queries, flags); 
+        the_trust = get_ac_trust(context, next_as, queries, flags, 0); 
         verify_next_assertion(context, next_as, the_trust);
         /* 
          * Set the TTL to the minimum of the authentication 
@@ -3754,8 +3753,8 @@ fix_validation_result(val_context_t * context,
     /*
      * Some error most likely, reflected in the val_query_chain 
      */
-    if (res->val_rc_rrset == NULL)
-            res->val_rc_status = VAL_ERROR;
+    if (res->val_rc_rrset == NULL && res->val_rc_status == VAL_DONT_KNOW)
+            res->val_rc_status = VAL_DNS_RESPONSE_ERROR;
 
     /*
      *  Special case of provably unsecure: algorithms used
@@ -3793,7 +3792,7 @@ fix_validation_result(val_context_t * context,
                 }
             }
 
-            as = get_ac_trust(context, as, queries, flags); 
+            as = get_ac_trust(context, as, queries, flags, 0); 
         }
     }
 
@@ -4141,7 +4140,7 @@ verify_and_validate(val_context_t * context,
                     return retval;
             }
 
-            as_trust = get_ac_trust(context, next_as, queries, flags); 
+            as_trust = get_ac_trust(context, next_as, queries, flags, 0); 
 
             /*
              * break out of infinite loop -- trying to verify the proof of non-existence
@@ -4170,133 +4169,100 @@ verify_and_validate(val_context_t * context,
                  */
                 thisdone = 0;
             } else if (next_as->val_ac_status == VAL_AC_NEGATIVE_PROOF) {
+
                 /*
                  * This means that the trust point has a proof of non-existence 
                  */
-
-                if (as_trust == NULL) {
-                    res->val_rc_status = VAL_ERROR;
-                    val_log(context, LOG_INFO, 
-                        "verify_and_validate(): trust point "
-                        "for {%s %s %s} contains a proof of non-existence",
-                        name_p, 
-                        p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                        p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                    break;
-                }
-
                 /*
                  * We may have asked the child zone for the DS;
                  * This can only happen if the current member in
                  * the chain of trust is the DNSKEY record
                  */
+                int             asked_the_child = 0;
+
                 if (next_as->val_ac_rrset->val_rrset_type_h == ns_t_dnskey) {
 
-                    int             asked_the_parent = 0;
                     struct val_digested_auth_chain *as;
+                    struct val_digested_auth_chain *ds_proof = NULL;
 
+                    ds_proof = get_ac_trust(context, next_as, queries, flags, 1); 
+
+                    if (ds_proof == NULL) {
+                        res->val_rc_status = VAL_BOGUS_PROOF;
+                        val_log(context, LOG_INFO, 
+                            "verify_and_validate(): trust point "
+                            "for {%s %s %s} contains an empty proof of non-existence",
+                            name_p, 
+                            p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                            p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                        break;
+                    }
                     /*
                      * Check if the name in the soa record is the same as the
                      * owner name of the DS record
                      */
-                    for (as = as_trust; as;
+                    for (as = ds_proof; as;
                          as = as->_as.val_ac_rrset_next) {
                         if ((as->val_ac_rrset != NULL)
                             && (as->val_ac_rrset->val_rrset_type_h ==
                                 ns_t_soa)) {
-                            if (namecmp
+                            if (!namecmp
                                 (as->val_ac_rrset->val_rrset_name_n,
                                  next_as->val_ac_rrset->val_rrset_name_n))
-                                asked_the_parent = 1;
+                                asked_the_child = 1;
                             break;
                         }
                     }
+                }
 
-                    if (asked_the_parent) {
-                        int is_punsecure;
-                        if (VAL_NO_ERROR != 
-                                (retval = verify_provably_unsecure(context, 
-                                                                   queries, 
-                                                                   next_as->val_ac_rrset->val_rrset_name_n, 
-                                                                   next_as->val_ac_rrset->val_rrset_type_h, 
-                                                                   flags,
-                                                                   &pu_done,
-                                                                   &is_punsecure,
-                                                                   &ttl_x)))
-                            return retval;
-
-                        if (pu_done) {
-                            SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
-                            ttl_x = 0;
-                            if (is_punsecure) {
-                                next_as->val_ac_status = VAL_AC_PROVABLY_UNSECURE;
-                                val_log(context, LOG_INFO, 
-                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Provably Unsecure",
-                                    name_p, 
-                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                                if (is_pu_trusted(context, 
-                                        next_as->val_ac_rrset->val_rrset_name_n, &ttl_x))
-                                    res->val_rc_status = VAL_PROVABLY_UNSECURE;
-                                else
-                                    res->val_rc_status = VAL_BAD_PROVABLY_UNSECURE;
-                                SET_MIN_TTL(next_as->val_ac_query->qc_ttl_x, ttl_x);
-                            } else {
-                                val_log(context, LOG_INFO, 
-                                    "verify_and_validate(): setting authentication chain status for {%s %s %s} to Bogus",
-                                    name_p, 
-                                    p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                    p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                                res->val_rc_status = VAL_BOGUS_PROOF;
-                            }
-                            break;
-                        } else
-                            thisdone = 0;
-                    } 
+                if (asked_the_child) {
                     /*
                      * We could only be asking the child if our default name server is 
                      * the child, so ty again starting from root; state will be WAIT_FOR_TRUST 
                      */
-                    else if (context->root_ns == NULL) {
+                    if (context->root_ns == NULL) {
                         /*
                          * No root hints configured 
                          */
                         res->val_rc_status = VAL_BOGUS_PROOF;
                         val_log(context, LOG_WARNING, 
-                            "verify_and_validate(): response for {%s %s %s} received from child zone;\
-                            no root.hints configured",
-                            name_p, 
-                            p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                            p_type(next_as->val_ac_rrset->val_rrset_type_h));
+                                "verify_and_validate(): response for {%s %s %s} received from child zone;\
+                                no root.hints configured",
+                                name_p, 
+                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
+                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         break;
-                    } else {
-                        /*
-                         * send query to root 
-                         */
-                        next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
-                        if (VAL_NO_ERROR !=
-                            (retval =
+                    } 
+                        
+                    /*
+                     * else:
+                     * send query to root 
+                     */
+                    next_as->val_ac_status = VAL_AC_WAIT_FOR_TRUST;
+                    if (VAL_NO_ERROR !=
+                        (retval =
                              build_pending_query(context, queries, next_as, &added_q, flags)))
-                            return retval;
-                        if (added_q->qfq_query->qc_referral != NULL) {
-                            /*
-                             * If some nameserver actually sends a referral for the DS record
-                             * to the child (faulty/malicious NS) we'll keep recursing from root
-                             */
-                            val_log(context, LOG_INFO, 
+                        return retval;
+                    if (added_q->qfq_query->qc_referral != NULL) {
+                        /*
+                         * If some nameserver actually sends a referral for the DS record
+                         * to the child (faulty/malicious NS) we'll keep recursing from root
+                         */
+                        val_log(context, LOG_INFO, 
                                 "verify_and_validate(): response for {%s %s %s} received from child zone;\
                                 bailing out",
                                 name_p, 
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                            res->val_rc_status = VAL_BOGUS_PROOF;
-                            break;
-                        }
-                        clone_ns_list(&added_q->qfq_query->qc_ns_list,
-                                      context->root_ns);
-                        thisdone = 0;
+                        res->val_rc_status = VAL_BOGUS_PROOF;
+                        break;
                     }
+                    clone_ns_list(&added_q->qfq_query->qc_ns_list,
+                                  context->root_ns);
+                    thisdone = 0;
+
                 } else {
+                    /* either this is a DS or we have asked the parent */
                     int is_punsecure;
                     if (VAL_NO_ERROR != 
                                 (retval = verify_provably_unsecure(context, 
@@ -4374,14 +4340,6 @@ verify_and_validate(val_context_t * context,
                                 p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                                 p_type(next_as->val_ac_rrset->val_rrset_type_h));
                         res->val_rc_status = VAL_UNTRUSTED_ZONE;
-                    } else if (next_as->val_ac_status ==
-                               VAL_AC_LOCAL_ANSWER) {
-                        val_log(context, LOG_INFO, 
-                                "verify_and_validate(): setting authentication chain status for {%s %s %s} to Local Answer",
-                                name_p, 
-                                p_class(next_as->val_ac_rrset->val_rrset_class_h), 
-                                p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                        res->val_rc_status = VAL_LOCAL_ANSWER;
                     } else if (next_as->val_ac_status ==
                                VAL_AC_PROVABLY_UNSECURE) {
                         ttl_x = 0;
@@ -4479,8 +4437,36 @@ verify_and_validate(val_context_t * context,
                         name_p, 
                         p_class(next_as->val_ac_rrset->val_rrset_class_h), 
                         p_type(next_as->val_ac_rrset->val_rrset_type_h));
-                res->val_rc_status = VAL_ERROR;
+
+                switch (next_as->val_ac_status) {
+                    case VAL_AC_DNS_RESPONSE_ERROR:
+                    default:
+                        res->val_rc_status = VAL_DNS_RESPONSE_ERROR; 
+                        break;
+                        
+                    case VAL_AC_DNS_QUERY_ERROR:
+                        res->val_rc_status = VAL_DNS_QUERY_ERROR;
+                        break;
+
+                    case VAL_AC_DNS_WRONG_ANSWER:
+                        res->val_rc_status = VAL_DNS_WRONG_ANSWER;
+                        break;
+
+                    case VAL_AC_DNS_REFERRAL_ERROR:
+                        res->val_rc_status = VAL_DNS_REFERRAL_ERROR;
+                        break;
+
+                    case VAL_AC_DNS_MISSING_GLUE:
+                        res->val_rc_status = VAL_DNS_MISSING_GLUE;
+                        break;
+
+                    case VAL_AC_DNS_CONFLICTING_ANSWERS:
+                        res->val_rc_status = VAL_DNS_CONFLICTING_ANSWERS;
+                        break;
+                };
+
                 break;
+
             } else if (next_as->val_ac_status <= VAL_AC_LAST_FAILURE) {
                 /*
                  * double failures are unprovable 
@@ -5406,9 +5392,35 @@ create_error_result(struct val_query_chain *top_q,
                     struct val_internal_result **w_results)
 {
     struct val_internal_result *w_temp;
+    val_status_t dnserr;
+    
     if (top_q == NULL)
         return VAL_BAD_ARGUMENT;
 
+    /* map the resolver error into a validator error */
+    switch (top_q->qc_state) {
+        case Q_QUERY_ERROR:
+                dnserr = VAL_DNS_QUERY_ERROR;
+                break;        
+        case Q_RESPONSE_ERROR:
+                dnserr = VAL_DNS_RESPONSE_ERROR;
+                break;        
+        case Q_WRONG_ANSWER:
+                dnserr = VAL_DNS_WRONG_ANSWER;
+                break;        
+        case Q_REFERRAL_ERROR:
+                dnserr = VAL_DNS_REFERRAL_ERROR;
+                break;        
+        case Q_MISSING_GLUE:
+                dnserr = VAL_DNS_MISSING_GLUE;
+                break;        
+        case Q_CONFLICTING_ANSWERS:
+                dnserr = VAL_DNS_CONFLICTING_ANSWERS;
+                break;        
+        default:
+                return VAL_BAD_ARGUMENT;
+    }
+    
     *w_results = NULL;
     if (top_q->qc_ans) {
         w_temp = (struct val_internal_result *)
@@ -5420,8 +5432,7 @@ create_error_result(struct val_query_chain *top_q,
         w_temp->val_rc_is_proof = 0;
         w_temp->val_rc_consumed = 0;
         w_temp->val_rc_flags = flags;
-        w_temp->val_rc_status =
-            VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+        w_temp->val_rc_status = dnserr;
         w_temp->val_rc_next = NULL;
         *w_results = w_temp;
     }
@@ -5435,8 +5446,7 @@ create_error_result(struct val_query_chain *top_q,
         w_temp->val_rc_is_proof = 1;
         w_temp->val_rc_consumed = 0;
         w_temp->val_rc_flags = flags;
-        w_temp->val_rc_status =
-            VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+        w_temp->val_rc_status = dnserr;
         w_temp->val_rc_next = NULL;
         if (*w_results == NULL)
             *w_results = w_temp;
@@ -5453,8 +5463,7 @@ create_error_result(struct val_query_chain *top_q,
         (*w_results)->val_rc_is_proof = 0;
         (*w_results)->val_rc_consumed = 0;
         (*w_results)->val_rc_flags = flags;
-        (*w_results)->val_rc_status =
-            VAL_DNS_ERROR_BASE + top_q->qc_state - Q_ERROR_BASE;
+        (*w_results)->val_rc_status = dnserr;
         (*w_results)->val_rc_next = NULL;
     }
 
@@ -5811,8 +5820,7 @@ val_resolve_and_check(val_context_t * ctx,
  *
  * Purpose:   Tells whether the given validation status code represents an
  *            answer that can be trusted.  An answer can be trusted if it
- *            has been obtained locally (for example from /etc/hosts) or if
- *            it was an authentic response from the validator.
+ *            is locally trusted or it was an authentic response from the validator.
  *
  * Parameter: val_status -- a validation status code returned by the validator
  *
