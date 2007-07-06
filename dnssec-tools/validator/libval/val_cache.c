@@ -346,7 +346,6 @@ get_cached_rrset(struct val_query_chain *matched_q,
         (*response)->di_qnames->qnc_next = NULL;
 
         if (ns_name_ntop(name_n, name_p, NS_MAXCDNAME) == -1) {
-            matched_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
             free_domain_info_ptrs(*response);
             FREE(*response);
             *response = NULL;
