@@ -247,17 +247,11 @@ val_sigverify(val_context_t * ctx,
                           dnskey_status, sig_status);
         break;
 
-    case ALG_DH:
+    default:
         val_log(ctx, LOG_INFO, "val_sigverify(): Unsupported algorithm %d.",
                 rrsig->algorithm);
         *sig_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
         *dnskey_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
-        break;
-
-    default:
-        val_log(ctx, LOG_INFO, "val_sigverify(): Unknown algorithm %d.", rrsig->algorithm);
-        *sig_status = VAL_AC_UNKNOWN_ALGORITHM;
-        *dnskey_status = VAL_AC_UNKNOWN_ALGORITHM;
         break;
     }
 
@@ -574,8 +568,8 @@ ds_hash_is_equal(val_context_t *ctx,
      * Only SHA-1 is understood 
      */
     if (ds_hashtype != ALG_DS_HASH_SHA1) {
-        *ds_status = VAL_AC_UNKNOWN_ALGORITHM;
-        val_log(ctx, LOG_INFO, "ds_hash_is_equal(): Unknown DS hash algorithm");
+        *ds_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
+        val_log(ctx, LOG_INFO, "ds_hash_is_equal(): Unsupported DS hash algorithm");
         return 0;
     }
 
@@ -792,7 +786,7 @@ verify_next_assertion(val_context_t * ctx,
              */
             (the_sig->rr_status == VAL_AC_RRSIG_VERIFIED ||
              the_sig->rr_status == VAL_AC_RRSIG_VERIFIED_SKEW ||
-             the_sig->rr_status == VAL_AC_UNKNOWN_ALGORITHM)) {
+             the_sig->rr_status == VAL_AC_ALGORITHM_NOT_SUPPORTED)) {
 
             /*
              * follow the trust path 
