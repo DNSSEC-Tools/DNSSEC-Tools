@@ -393,8 +393,6 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
 {
     struct hosts   *hs = NULL;
     struct val_addrinfo *retval = NULL;
-    int validated = 1;
-    int trusted = 1;
     int ret;
 
     if (res == NULL) 
@@ -488,12 +486,6 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
 
         ainfo->ai_val_status = VAL_LOCAL_ANSWER;
 
-        /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(ainfo->ai_val_status))) 
-            validated = 0;
-        if (!(trusted && val_istrusted(ainfo->ai_val_status)))
-                trusted = 0;
-
         /*
          * Expand the results based on servname and hints 
          */
@@ -521,12 +513,7 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
 
     *res = retval;
     if (retval) {
-        if (validated)
-            *val_status = VAL_VALIDATED_ANSWER;
-        else if (trusted)
-            *val_status = VAL_TRUSTED_ANSWER;
-        else
-            *val_status = VAL_UNTRUSTED_ANSWER;
+        *val_status = VAL_LOCAL_ANSWER;
         return 0;
     } else {
         return EAI_NONAME;
@@ -981,8 +968,6 @@ val_getaddrinfo(val_context_t * context,
     const char     *nname = nodename;
     struct addrinfo default_hints;
     const struct addrinfo *cur_hints;
-    int validated = 1;
-    int trusted = 1;
 
     if (res == NULL || val_status == NULL)
         return 0;
@@ -1070,11 +1055,6 @@ val_getaddrinfo(val_context_t * context,
         }
 
         *res = ainfo4;
-        /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(ainfo4->ai_val_status))) 
-            validated = 0;
-        if (!(trusted && val_istrusted(ainfo4->ai_val_status)))
-            trusted = 0;
         retval = 0;
     }
 
@@ -1131,12 +1111,6 @@ val_getaddrinfo(val_context_t * context,
             goto done;
         }
 
-        /* set the value of merged trusted and validated status values */
-        if (!(validated && val_isvalidated(ainfo6->ai_val_status))) 
-            validated = 0;
-        if (!(trusted && val_istrusted(ainfo6->ai_val_status)))
-            trusted = 0;
-
         if (NULL != *res) {
             *res = append_val_addrinfo(*res, ainfo6);
         } else {
@@ -1146,13 +1120,7 @@ val_getaddrinfo(val_context_t * context,
     }
 
     if (*res) {
-        if (validated)
-            *val_status = VAL_VALIDATED_ANSWER;
-        else if (trusted)
-            *val_status = VAL_TRUSTED_ANSWER;
-        else
-            *val_status = VAL_UNTRUSTED_ANSWER;
-
+        *val_status = VAL_LOCAL_ANSWER;
     } else if (nodename) {
     
     /*
@@ -1322,9 +1290,6 @@ val_getnameinfo(val_context_t * ctx,
 
     struct val_result_chain *res;
     struct val_result_chain *val_res = NULL;
-
-    int validated = 1;
-    int trusted = 1;
     int retval;
 
     /*
@@ -1388,6 +1353,8 @@ val_getnameinfo(val_context_t * ctx,
             strncpy(host, number_string, hostlen);
             *val_status = VAL_LOCAL_ANSWER;
         } else {
+            int validated = 1;
+            int trusted = 1;
             if (VAL_NO_ERROR != (retval = val_resolve_and_check(ctx,       /*val_context_t*  */
                                                              wire_addr, /*u_char *wire_domain_name */
                                                              ns_c_in,   /*const u_int16_t q_class */
