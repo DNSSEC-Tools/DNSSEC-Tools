@@ -175,13 +175,13 @@ theres_something_wrong_with_header(u_int8_t * response,
      * Check to see if this is supposed to be a real response 
      */
     if (header->qr == 1 && header->opcode != ns_o_query)
-        return SR_WRONG_ANSWER;
+        return SR_HEADER_ERROR;
 
     /*
      * Check the length and count of the records 
      */
     if (right_sized(response, response_length) == FALSE)
-        return SR_HEADER_BADSIZE;
+        return SR_HEADER_ERROR;
 
     /*
      * Check the RCODE value.
