@@ -408,61 +408,25 @@ val_log_authentication_chain(const val_context_t * ctx, int level,
 const char     *
 p_query_status(int err)
 {
-    if (err < Q_ERROR_BASE) {
-        switch (err) {
+    switch (err) {
         case Q_INIT:
             return "Q_INIT";
         case Q_SENT:
             return "Q_SENT";
         case Q_WAIT_FOR_GLUE:
             return "Q_WAIT_FOR_GLUE";
-        case Q_ANSWERED:
-            return "Q_ANSWERED";
+        case Q_RESPONSE_ERROR:
+            return "Q_RESPONSE_ERROR";
+        case Q_WRONG_ANSWER:
+            return "Q_WRONG_ANSWER";
+        case Q_REFERRAL_ERROR:
+            return "Q_REFERRAL_ERROR";
+        case Q_MISSING_GLUE:
+            return "Q_MISSING_GLUE";
+        case Q_CONFLICTING_ANSWERS:
+            return "Q_CONFLICTING_ANSWERS";
         default:
             break;
-        }
-    } else {
-        int             dnserr = err - Q_ERROR_BASE;
-        switch (dnserr) {
-        case SR_INTERNAL_ERROR:
-            return "SR_INTERNAL_ERROR";
-        case SR_TSIG_ERROR:
-            return "SR_TSIG_ERROR";
-        case SR_NO_ANSWER:
-            return "SR_NO_ANSWER";
-        case SR_NO_ANSWER_YET:
-            return "SR_NO_ANSWER_YET";
-        case SR_WRONG_ANSWER:
-            return "SR_WRONG_ANSWER";
-        case SR_HEADER_BADSIZE:
-            return "SR_HEADER_BADSIZE";
-        case SR_NXDOMAIN:
-            return "SR_NXDOMAIN";
-        case SR_FORMERR:
-            return "SR_FORMERR";
-        case SR_SERVFAIL:
-            return "SR_SERVFAIL";
-        case SR_NOTIMPL:
-            return "SR_NOTIMPL";
-        case SR_REFUSED:
-            return "SR_REFUSED";
-        case SR_DNS_GENERIC_ERROR:
-            return "SR_DNS_GENERIC_ERROR";
-        case SR_EDNS_VERSION_ERROR:
-            return "SR_EDNS_VERSION_ERROR";
-        case SR_UNSUPP_EDNS0_LABEL:
-            return "SR_UNSUPP_EDNS0_LABEL";
-        case SR_NAME_EXPANSION_FAILURE:
-            return "SR_NAME_EXPANSION_FAILURE";
-        case SR_REFERRAL_ERROR:
-            return "SR_REFERRAL_ERROR";
-        case SR_MISSING_GLUE:
-            return "SR_MISSING_GLUE";
-        case SR_CONFLICTING_ANSWERS:
-            return "SR_CONFLICTING_ANSWERS";
-        default:
-            break;
-        }
     }
 
     return "UNKNOWN";
@@ -474,6 +438,21 @@ p_ac_status(val_astatus_t err)
     switch (err) {
     case VAL_AC_DATA_MISSING:
         return "VAL_AC_DATA_MISSING";
+        break;
+    case VAL_AC_DNS_RESPONSE_ERROR:
+        return "VAL_AC_DNS_RESPONSE_ERROR";
+        break;
+    case VAL_AC_DNS_WRONG_ANSWER:
+        return "VAL_AC_DNS_WRONG_ANSWER";
+        break;
+    case VAL_AC_DNS_REFERRAL_ERROR:
+        return "VAL_AC_DNS_REFERRAL_ERROR";
+        break;
+    case VAL_AC_DNS_MISSING_GLUE:
+        return "VAL_AC_DNS_MISSING_GLUE";
+        break;
+    case VAL_AC_DNS_CONFLICTING_ANSWERS:
+        return "VAL_AC_DNS_CONFLICTING_ANSWERS";
         break;
     case VAL_AC_RRSIG_MISSING:
         return "VAL_AC_RRSIG_MISSING";
@@ -517,9 +496,6 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_ALGORITHM_NOT_SUPPORTED:
         return "VAL_AC_ALGORITHM_NOT_SUPPORTED";
         break;
-    case VAL_AC_UNKNOWN_ALGORITHM:
-        return "VAL_AC_UNKNOWN_ALGORITHM";
-        break;
     case VAL_AC_RRSIG_VERIFIED:
         return "VAL_AC_RRSIG_VERIFIED";
         break;
@@ -538,18 +514,6 @@ p_ac_status(val_astatus_t err)
     case VAL_AC_NOT_VERIFIED:
         return "VAL_AC_NOT_VERIFIED";
         break;
-    case VAL_AC_KEY_TOO_LARGE:
-        return "VAL_AC_KEY_TOO_LARGE";
-        break;
-    case VAL_AC_KEY_TOO_SMALL:
-        return "VAL_AC_KEY_TOO_SMALL";
-        break;
-    case VAL_AC_KEY_NOT_AUTHORIZED:
-        return "VAL_AC_KEY_NOT_AUTHORIZED";
-        break;
-    case VAL_AC_ALGORITHM_REFUSED:
-        return "VAL_AC_ALGORITHM_REFUSED";
-        break;
     case VAL_AC_RRSIG_ALGORITHM_MISMATCH:
         return "VAL_AC_RRSIG_ALGORITHM_MISMATCH";
         break;
@@ -561,9 +525,6 @@ p_ac_status(val_astatus_t err)
         break;
     case VAL_AC_UNKNOWN_ALGORITHM_LINK:
         return "VAL_AC_UNKNOWN_ALGORITHM_LINK";
-        break;
-    case VAL_AC_LOCAL_ANSWER:
-        return "VAL_AC_LOCAL_ANSWER";
         break;
     case VAL_AC_SIGNING_KEY:
         return "VAL_AC_SIGNING_KEY";
@@ -589,12 +550,7 @@ p_ac_status(val_astatus_t err)
         break;
 
     default:
-        if ((err >= VAL_AC_DNS_ERROR_BASE)
-            && (err < VAL_AC_DNS_ERROR_LAST)) {
-            int             errbase = VAL_AC_DNS_ERROR_BASE;
-            int             dnserr = err - errbase + Q_ERROR_BASE;
-            return p_query_status(dnserr);
-        } else if (err < VAL_AC_LAST_STATE)
+        if (err < VAL_AC_LAST_STATE)
             return "UNEVALUATED";
         return "Unknown Error Value";
     }
@@ -607,9 +563,6 @@ p_val_status(val_status_t err)
 
     case VAL_DONT_KNOW:
         return "VAL_DONT_KNOW";
-        break;
-    case VAL_INDETERMINATE:
-        return "VAL_INDETERMINATE";
         break;
     case VAL_BOGUS_UNPROVABLE:
         return "VAL_BOGUS_UNPROVABLE";
@@ -640,8 +593,20 @@ p_val_status(val_status_t err)
         return "VAL_NONEXISTENT_NAME_OPTOUT";
         break;
 #endif
-    case VAL_ERROR:
-        return "VAL_ERROR";
+    case VAL_DNS_RESPONSE_ERROR:
+        return "VAL_DNS_RESPONSE_ERROR";
+        break;
+    case VAL_DNS_WRONG_ANSWER:
+        return "VAL_DNS_WRONG_ANSWER";
+        break;
+    case VAL_DNS_REFERRAL_ERROR:
+        return "VAL_DNS_REFERRAL_ERROR";
+        break;
+    case VAL_DNS_MISSING_GLUE:
+        return "VAL_DNS_MISSING_GLUE";
+        break;
+    case VAL_DNS_CONFLICTING_ANSWERS:
+        return "VAL_DNS_CONFLICTING_ANSWERS";
         break;
     case VAL_PROVABLY_UNSECURE:
         return "VAL_PROVABLY_UNSECURE";
@@ -675,11 +640,6 @@ p_val_status(val_status_t err)
         break;
 
     default:
-        if ((err >= VAL_DNS_ERROR_BASE) && (err < VAL_DNS_ERROR_LAST)) {
-            int             errbase = VAL_DNS_ERROR_BASE;
-            int             dnserr = err - errbase + Q_ERROR_BASE;
-            return p_query_status(dnserr);
-        }
         return "Unknown Error Value";
     }
 }
