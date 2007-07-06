@@ -248,7 +248,7 @@ merge_glue_in_referral(val_context_t *context,
                     val_log(context, LOG_DEBUG, 
                             "merge_glue_in_referral(): Loop detected while fetching glue for %s",
                             name_p);
-                    glueptr->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                    glueptr->qc_state = Q_REFERRAL_ERROR;
                     break; 
                 } 
             }
@@ -259,7 +259,7 @@ merge_glue_in_referral(val_context_t *context,
                     val_log(context, LOG_DEBUG, 
                             "merge_glue_in_referral(): Too many glue requests in dependency chain for %s",
                             name_p);
-                    glueptr->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                    glueptr->qc_state = Q_REFERRAL_ERROR;
                 } else {
                     bucket->qfq[i] = glue_qfq;
                     bucket->qfq_count++;
@@ -277,7 +277,7 @@ merge_glue_in_referral(val_context_t *context,
         if (pc->qc_referral->merged_glue_ns == NULL) {
             /* couldn't find any answers for the glue fetch requests */
             val_log(context, LOG_DEBUG, "merge_glue_in_referral(): No good answer for glue fetch");
-            pc->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            pc->qc_state = Q_REFERRAL_ERROR;
         } else {
             /* continue referral using the fetched glue records */
             
@@ -721,7 +721,7 @@ bootstrap_referral(val_context_t *context,
              */
             val_log(context, LOG_WARNING, 
                     "bootstrap_referral(): referral to root, but no root hints file found.");
-            matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            matched_q->qc_state = Q_REFERRAL_ERROR;
             return VAL_NO_ERROR;
         }
         clone_ns_list(ref_ns_list, context->root_ns);
@@ -757,7 +757,7 @@ bootstrap_referral(val_context_t *context,
             free_name_servers(ref_ns_list);
             *ref_ns_list = NULL;
             val_log(context, LOG_DEBUG, "bootstrap_referral(): Already fetching glue; not fetching again");
-            matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            matched_q->qc_state = Q_REFERRAL_ERROR;
             return VAL_NO_ERROR;
         }
 
@@ -909,7 +909,7 @@ follow_referral_or_alias_link(val_context_t * context,
             find_nslist_for_query(context, matched_qfq, queries)) {
             val_log(context, LOG_DEBUG, 
                     "follow_referral_or_alias_link(): Cannot find name servers to send query for alias");
-            matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            matched_q->qc_state = Q_REFERRAL_ERROR;
             goto query_err;
         }
         referral_zone_n = matched_q->qc_zonecut_n;
@@ -939,7 +939,7 @@ follow_referral_or_alias_link(val_context_t * context,
              * nowhere to look 
              */
             val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Missing glue");
-            matched_q->qc_state = Q_ERROR_BASE + SR_MISSING_GLUE;
+            matched_q->qc_state = Q_MISSING_GLUE;
             goto query_err;
         }
 
@@ -966,7 +966,7 @@ follow_referral_or_alias_link(val_context_t * context,
              * If this request has already been made then Referral Error
              */
             val_log(context, LOG_DEBUG, "follow_referral_or_alias_link(): Referral loop encountered");
-            matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            matched_q->qc_state = Q_REFERRAL_ERROR;
             goto query_err;
         }
 
@@ -1167,7 +1167,7 @@ process_cname_dname_responses(u_int8_t *name_n,
             /*
              * If this request has already been made then Referral Error
              */
-            matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            matched_q->qc_state = Q_REFERRAL_ERROR;
             if (referral_error)
                 *referral_error = 1;
             return VAL_NO_ERROR;
@@ -1186,7 +1186,7 @@ process_cname_dname_responses(u_int8_t *name_n,
         int             len1 = p - qname_n;
         int             len2 = wire_name_length(rdata);
         if (len1 + len2 > sizeof(temp_name)) {
-            matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+            matched_q->qc_state = Q_REFERRAL_ERROR;
             if (referral_error)
                 *referral_error = 1;
             return VAL_NO_ERROR;
@@ -1207,7 +1207,7 @@ process_cname_dname_responses(u_int8_t *name_n,
                 /*
                  * If this request has already been made then Referral Error
                  */
-                matched_q->qc_state = Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                matched_q->qc_state = Q_REFERRAL_ERROR;
                 if (referral_error)
                     *referral_error = 1;
                 return VAL_NO_ERROR;
@@ -1565,7 +1565,7 @@ digest_response(val_context_t * context,
                      */
                     val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
                     matched_q->qc_state =
-                        Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                        Q_CONFLICTING_ANSWERS;
                     ret_val = VAL_NO_ERROR;
                     goto done;
                 }
@@ -1631,7 +1631,7 @@ digest_response(val_context_t * context,
                          */
                         val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
                         matched_q->qc_state =
-                                Q_ERROR_BASE + SR_REFERRAL_ERROR;
+                                Q_REFERRAL_ERROR;
                         ret_val = VAL_NO_ERROR;
                         goto done;
                     }
@@ -1656,7 +1656,7 @@ digest_response(val_context_t * context,
                              */
                             val_log(context, LOG_DEBUG, "digest_response(): Ambiguous referral zonecut");
                             matched_q->qc_state =
-                                Q_ERROR_BASE + SR_CONFLICTING_ANSWERS;
+                                Q_CONFLICTING_ANSWERS;
                             ret_val = VAL_NO_ERROR;
                             goto done;
                         }
@@ -1880,8 +1880,7 @@ val_resquery_send(val_context_t * context,
     nslist = matched_q->qc_ns_list;
 
     if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
-        matched_q->qc_state = Q_ERROR_BASE + SR_CALL_ERROR;
-        return VAL_NO_ERROR;
+        return VAL_BAD_ARGUMENT;
     }
 
     val_log(context, LOG_DEBUG, "val_resquery_send(): Sending query for %s to:", name_p);
@@ -1900,7 +1899,7 @@ val_resquery_send(val_context_t * context,
     /*
      * ret_val contains a resolver error 
      */
-    matched_q->qc_state = Q_ERROR_BASE + ret_val;
+    matched_q->qc_state = Q_QUERY_ERROR;
     return VAL_NO_ERROR;
 }
 
@@ -1938,12 +1937,12 @@ val_resquery_rcv(val_context_t * context,
     if (ret_val != SR_UNSET) {
         if (response_data)
             FREE(response_data);
-        matched_q->qc_state = Q_ERROR_BASE + ret_val;
+        matched_q->qc_state = Q_RESPONSE_ERROR;
         return VAL_NO_ERROR;
     }
 
     if (ns_name_ntop(matched_q->qc_name_n, name_p, sizeof(name_p)) == -1) {
-        matched_q->qc_state = Q_ERROR_BASE + SR_RCV_INTERNAL_ERROR;
+        matched_q->qc_state = Q_RESPONSE_ERROR;
         if (response_data)
             FREE(response_data);
         return VAL_NO_ERROR;
