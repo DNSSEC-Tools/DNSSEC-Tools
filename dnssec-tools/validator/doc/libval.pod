@@ -225,31 +225,27 @@ Validation status for a given RRset.  This can be one of the following:
         were also identified to be trustworthy, 
         but they were not individually validated. 
 
-	VAL_ERROR
-		Encountered some DNS protocol error.
+	VAL_DNS_CONFLICTING_ANSWERS	
+		Multiple conflicting answers
+		received for a query.
+        
+	VAL_DNS_QUERY_ERROR	
+        Some error was encountered while 
+        sending the query.
+        
+	VAL_DNS_RESPONSE_ERROR	
+	    No response returned or response
+        with an error rcode value returned. 
 
-	VAL_DNS_ERROR_BASE + SR_error
-		This value contains a resolver error from 
-		libsres. The libsres error is added to 
-		VAL_DNS_ERROR_BASE, so this value will lie 
-		between VAL_DNS_ERROR_BASE and 
-		VAL_DNS_ERROR_LAST.  These values include
-		the following:
+	VAL_DNS_WRONG_ANSWER	
+	    Wrong answer received for a query.
 
-		    SR_CONFLICTING_ANSWERS	
-			Multiple conflicting answers
-			received for a query.
+	VAL_DNS_REFERRAL_ERROR
+		Some error encountered while
+		following referrals.
 
-		    SR_REFERRAL_ERROR
-			Some error encountered while
-			following referrals.
-
-		    SR_MISSING_GLUE
-			Glue was missing.
-
-	VAL_INDETERMINATE
-		Lacking information to give a more conclusive
-		answer.
+	VAL_DNS_MISSING_GLUE
+		Glue was missing.
 
 	VAL_BOGUS_PROVABLE
         Response could not be validated due to signature 
@@ -346,11 +342,6 @@ This field may contain one of the following values:
 		At least one RRSIG covering a resource
 		record had a status of VAL_AC_RRSIG_VERIFIED.
 
-      VAL_AC_LOCAL_ANSWER
-		The answer was obtained locally (e.g., from
-		/etc/hosts) and validation was not performed
-		on the results.
-
       VAL_AC_TRUST_KEY
 		A given DNSKEY or a DS record was locally
 		defined to be a trust anchor.
@@ -387,28 +378,28 @@ This field may contain one of the following values:
 		There was no trust anchor configured for a
 		given authentication chain.
 
-      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-		The DNSKEY protocol number was unrecognized.
+	  VAL_AC_DNS_CONFLICTING_ANSWERS	
+		Multiple conflicting answers
+		received for a query.
+        
+	  VAL_AC_DNS_QUERY_ERROR	
+        Some error was encountered 
+        while sending the query.
 
-      VAL_DNS_ERROR_BASE + SR_error
+	  VAL_AC_DNS_RESPONSE_ERROR	
+	    No response returned or response
+        with an error rcode value returned. 
 
-		This value contains a resolver error from
-		I<libsres(s)>.  The libsres error is added to
-		VAL_DNS_ERROR_BASE, so this value will lie
-		between VAL_DNS_ERROR_BASE and
-		VAL_DNS_ERROR_LAST.  These values include
-		the following:
+	  VAL_AC_DNS_WRONG_ANSWER	
+	    Wrong answer received for a query.
 
-		    SR_CONFLICTING_ANSWERS	
-			Multiple conflicting answers
-			received for a query.
+	  VAL_AC_DNS_REFERRAL_ERROR
+		Some error encountered while
+		following referrals.
 
-		    SR_REFERRAL_ERROR
-			Some error encountered while
-			following referrals.
+	  VAL_AC_DNS_MISSING_GLUE
+		Glue was missing.
 
-		    SR_MISSING_GLUE
-			Glue was missing.
 
 =item I<val_ac_rrset> 
 
@@ -561,12 +552,6 @@ I<rr_status> can return one of the following values:
       VAL_AC_ALGORITHM_NOT_SUPPORTED - The RRSIG
 		algorithm was not supported.
 
-      VAL_AC_UNKNOWN_ALGORITHM - The RRSIG algorithm
-		was unknown.
-
-      VAL_AC_ALGORITHM_REFUSED - The RRSIG algorithm
-		was not allowed as per local policy.
-
 For each I<rr_rec> member of type DNSKEY (or DS, where relevant) within the
 authentication chain I<val_ac_rrset>, the validation status is stored in the
 variable I<rr_status> and can return one of the following values:
@@ -579,6 +564,9 @@ variable I<rr_status> and can return one of the following values:
 		link in the authentication chain from
 		the trust anchor to the signed record.
 
+      VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
+		The DNSKEY protocol number was unrecognized.
+
       VAL_AC_UNKNOWN_ALGORITHM_LINK - This DNSKEY provided
 		the link in the authentication chain from
 		the trust anchor to the signed record, but
@@ -587,23 +575,8 @@ variable I<rr_status> and can return one of the following values:
       VAL_AC_INVALID_KEY - The key used to verify the
 		RRSIG was not a valid DNSKEY.
 
-      VAL_AC_KEY_TOO_LARGE - Local policy defined the
-		DNSKEY size as being too large.
-
-      VAL_AC_KEY_TOO_SMALL - Local policy defined the
-		DNSKEY size as being too small.
-
-      VAL_AC_KEY_NOT_AUTHORIZED - Local policy defined the
-		DNSKEY to be unauthorized for validation.
-
       VAL_AC_ALGORITHM_NOT_SUPPORTED - The DNSKEY or DS
 		algorithm was not supported.
-
-      VAL_AC_UNKNOWN_ALGORITHM - The DNSKEY or DS
-		algorithm was unknown.
-
-      VAL_AC_ALGORITHM_REFUSED - The DNSKEY or DS algorithm
-		was not allowed as per local policy.
 
 =back
 
