@@ -17,6 +17,8 @@ use Net::hostent;
 use Net::addrinfo;
 use Socket qw(:all);
 
+require "./defines.pl";
+
 sub isnum {
     my $n = shift;
     return $n =~ /^\d+$/;
@@ -42,9 +44,9 @@ $validator = new Net::DNS::SEC::Validator();
 ok(defined($validator));
 
 $validator = new Net::DNS::SEC::Validator(policy => ":", 
-					  dnsval_conf=>'/etc/dnsval.conf',
-					  root_hints=>'/etc/root.hints',
-					  resolv_conf=>'/etc/resolv.conf',
+					  dnsval_conf=> $dnsval_conf,
+					  root_hints=> $root_hints,
+					  resolv_conf=> $resolv_conf,
 					  );
 ok(defined($validator));
 
@@ -55,13 +57,13 @@ $r = $validator->policy("validate_tools:");
 ok($r);
 
 $r = $validator->dnsval_conf();
-ok($r eq "/etc/dnsval.conf");
+ok($r eq $dnsval_conf);
 
 $r = $validator->root_hints();
-ok($r eq "/etc/root.hints");
+ok($r eq $root_hints);
 
 $r = $validator->resolv_conf();
-ok($r eq "/etc/resolv.conf");
+ok($r eq $resolv_conf);
 
 $validator = new Net::DNS::SEC::Validator( );
 

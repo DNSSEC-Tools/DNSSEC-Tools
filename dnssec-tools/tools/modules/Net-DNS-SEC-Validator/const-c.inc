@@ -79,7 +79,7 @@ static int
 constant_8 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     DNS_PORT SR_UNSET */
+     DNS_PORT ENVELOPE MAXDNAME SR_UNSET ns_t_dlv */
   /* Offset 6 gives the best switch position.  */
   switch (name[6]) {
   case 'E':
@@ -87,6 +87,28 @@ constant_8 (pTHX_ const char *name, IV *iv_return) {
     /*                     ^       */
 #ifdef SR_UNSET
       *iv_return = SR_UNSET;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'M':
+    if (memEQ(name, "MAXDNAME", 8)) {
+    /*                     ^       */
+#ifdef MAXDNAME
+      *iv_return = MAXDNAME;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'P':
+    if (memEQ(name, "ENVELOPE", 8)) {
+    /*                     ^       */
+#ifdef ENVELOPE
+      *iv_return = ENVELOPE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -104,6 +126,17 @@ constant_8 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
+  case 'l':
+    if (memEQ(name, "ns_t_dlv", 8)) {
+    /*                     ^       */
+#ifdef ns_t_dlv
+      *iv_return = ns_t_dlv;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   }
   return PERL_constant_NOTFOUND;
 }
@@ -112,25 +145,25 @@ static int
 constant_9 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     RES_RETRY VAL_BOGUS VAL_ERROR ns_t_nsec */
+     DNAME_MAX RES_RETRY VAL_BOGUS ns_t_nsec */
   /* Offset 8 gives the best switch position.  */
   switch (name[8]) {
-  case 'R':
-    if (memEQ(name, "VAL_ERRO", 8)) {
-    /*                       R     */
-#ifdef VAL_ERROR
-      *iv_return = VAL_ERROR;
+  case 'S':
+    if (memEQ(name, "VAL_BOGU", 8)) {
+    /*                       S     */
+#ifdef VAL_BOGUS
+      *iv_return = VAL_BOGUS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'S':
-    if (memEQ(name, "VAL_BOGU", 8)) {
-    /*                       S     */
-#ifdef VAL_BOGUS
-      *iv_return = VAL_BOGUS;
+  case 'X':
+    if (memEQ(name, "DNAME_MA", 8)) {
+    /*                       X     */
+#ifdef DNAME_MAX
+      *iv_return = DNAME_MAX;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -167,8 +200,9 @@ static int
 constant_10 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     ALG_RSAMD5 NS_INT16SZ NS_INT32SZ Q_ANSWERED RRSIGLABEL
-     SR_FORMERR SR_NOTIMPL SR_REFUSED ns_t_nsec3 ns_t_rrsig */
+     ALG_RSAMD5 MAX_PROOFS NS_INT16SZ NS_INT32SZ Q_ANSWERED RRSIGLABEL
+     SR_FORMERR SR_NOTIMPL SR_REFUSED VAL_EINVAL VAL_ENOENT VAL_ENOMEM
+     VAL_ENOSYS ns_t_nsec3 ns_t_rrsig p_as_error */
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case '2':
@@ -214,6 +248,15 @@ constant_10 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
+    if (memEQ(name, "VAL_ENOENT", 10)) {
+    /*                      ^         */
+#ifdef VAL_ENOENT
+      *iv_return = VAL_ENOENT;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
     break;
   case 'M':
     if (memEQ(name, "ALG_RSAMD5", 10)) {
@@ -229,6 +272,26 @@ constant_10 (pTHX_ const char *name, IV *iv_return) {
     /*                      ^         */
 #ifdef SR_NOTIMPL
       *iv_return = SR_NOTIMPL;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_ENOMEM", 10)) {
+    /*                      ^         */
+#ifdef VAL_ENOMEM
+      *iv_return = VAL_ENOMEM;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'O':
+    if (memEQ(name, "MAX_PROOFS", 10)) {
+    /*                      ^         */
+#ifdef MAX_PROOFS
+      *iv_return = MAX_PROOFS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -251,6 +314,26 @@ constant_10 (pTHX_ const char *name, IV *iv_return) {
     /*                      ^         */
 #ifdef SR_REFUSED
       *iv_return = SR_REFUSED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_ENOSYS", 10)) {
+    /*                      ^         */
+#ifdef VAL_ENOSYS
+      *iv_return = VAL_ENOSYS;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'V':
+    if (memEQ(name, "VAL_EINVAL", 10)) {
+    /*                      ^         */
+#ifdef VAL_EINVAL
+      *iv_return = VAL_EINVAL;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -287,10 +370,21 @@ static int
 constant_11 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     ALG_DSASHA1 ALG_RSASHA1 NS_MAXDNAME SR_NXDOMAIN SR_SERVFAIL VAL_AC_INIT
-     VAL_NOTRUST VAL_SUCCESS ns_t_dnskey */
+     ALG_DSASHA1 ALG_RSASHA1 NS_MAXDNAME SR_ANS_NACK SR_NXDOMAIN SR_SERVFAIL
+     VAL_AC_INIT VAL_EACCESS VAL_NOTRUST VAL_SUCCESS ns_t_dnskey */
   /* Offset 5 gives the best switch position.  */
   switch (name[5]) {
+  case 'A':
+    if (memEQ(name, "VAL_EACCESS", 11)) {
+    /*                    ^            */
+#ifdef VAL_EACCESS
+      *iv_return = VAL_EACCESS;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'C':
     if (memEQ(name, "VAL_AC_INIT", 11)) {
     /*                    ^            */
@@ -349,6 +443,15 @@ constant_11 (pTHX_ const char *name, IV *iv_return) {
     /*                    ^            */
 #ifdef ALG_RSASHA1
       *iv_return = ALG_RSASHA1;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "SR_ANS_NACK", 11)) {
+    /*                    ^            */
+#ifdef SR_ANS_NACK
+      *iv_return = SR_ANS_NACK;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -524,9 +627,8 @@ static int
 constant_13 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     CAN_SIGN_ZONE EDNS_UDP_SIZE SR_CALL_ERROR SR_CRED_UNSET SR_LAST_ERROR
-     SR_TSIG_ERROR VAL_CTX_IDLEN VAL_DONT_KNOW VAL_NO_POLICY ZONE_USE_TSIG
-   */
+     CAN_SIGN_ZONE EDNS_UDP_SIZE Q_QUERY_ERROR SR_CALL_ERROR SR_CRED_UNSET
+     SR_TSIG_ERROR VAL_CTX_IDLEN VAL_DONT_KNOW VAL_NO_POLICY ZONE_USE_TSIG */
   /* Offset 6 gives the best switch position.  */
   switch (name[6]) {
   case 'D':
@@ -602,22 +704,22 @@ constant_13 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'T':
-    if (memEQ(name, "SR_LAST_ERROR", 13)) {
+  case 'X':
+    if (memEQ(name, "VAL_CTX_IDLEN", 13)) {
     /*                     ^             */
-#ifdef SR_LAST_ERROR
-      *iv_return = SR_LAST_ERROR;
+#ifdef VAL_CTX_IDLEN
+      *iv_return = VAL_CTX_IDLEN;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'X':
-    if (memEQ(name, "VAL_CTX_IDLEN", 13)) {
+  case 'Y':
+    if (memEQ(name, "Q_QUERY_ERROR", 13)) {
     /*                     ^             */
-#ifdef VAL_CTX_IDLEN
-      *iv_return = VAL_CTX_IDLEN;
+#ifdef Q_QUERY_ERROR
+      *iv_return = Q_QUERY_ERROR;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -643,13 +745,13 @@ static int
 constant_14 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     CANNOT_BE_USED RES_USE_DNSSEC VAL_BARE_RRSIG VAL_FROM_QUERY VAL_FROM_UNSET
-  */
-  /* Offset 9 gives the best switch position.  */
-  switch (name[9]) {
-  case 'N':
-    if (memEQ(name, "RES_USE_DNSSEC", 14)) {
-    /*                        ^           */
+     CANNOT_BE_USED Q_MISSING_GLUE Q_WRONG_ANSWER RES_USE_DNSSEC VAL_BARE_RRSIG
+     VAL_FROM_QUERY VAL_FROM_UNSET VAL_QFLAGS_ANY */
+  /* Offset 13 gives the best switch position.  */
+  switch (name[13]) {
+  case 'C':
+    if (memEQ(name, "RES_USE_DNSSE", 13)) {
+    /*                            C      */
 #ifdef RES_USE_DNSSEC
       *iv_return = RES_USE_DNSSEC;
       return PERL_constant_ISIV;
@@ -658,20 +760,31 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'Q':
-    if (memEQ(name, "VAL_FROM_QUERY", 14)) {
-    /*                        ^           */
-#ifdef VAL_FROM_QUERY
-      *iv_return = VAL_FROM_QUERY;
+  case 'D':
+    if (memEQ(name, "CANNOT_BE_USE", 13)) {
+    /*                            D      */
+#ifdef CANNOT_BE_USED
+      *iv_return = CANNOT_BE_USED;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'R':
-    if (memEQ(name, "VAL_BARE_RRSIG", 14)) {
-    /*                        ^           */
+  case 'E':
+    if (memEQ(name, "Q_MISSING_GLU", 13)) {
+    /*                            E      */
+#ifdef Q_MISSING_GLUE
+      *iv_return = Q_MISSING_GLUE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'G':
+    if (memEQ(name, "VAL_BARE_RRSI", 13)) {
+    /*                            G      */
 #ifdef VAL_BARE_RRSIG
       *iv_return = VAL_BARE_RRSIG;
       return PERL_constant_ISIV;
@@ -680,9 +793,20 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'U':
-    if (memEQ(name, "VAL_FROM_UNSET", 14)) {
-    /*                        ^           */
+  case 'R':
+    if (memEQ(name, "Q_WRONG_ANSWE", 13)) {
+    /*                            R      */
+#ifdef Q_WRONG_ANSWER
+      *iv_return = Q_WRONG_ANSWER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'T':
+    if (memEQ(name, "VAL_FROM_UNSE", 13)) {
+    /*                            T      */
 #ifdef VAL_FROM_UNSET
       *iv_return = VAL_FROM_UNSET;
       return PERL_constant_ISIV;
@@ -691,11 +815,20 @@ constant_14 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case '_':
-    if (memEQ(name, "CANNOT_BE_USED", 14)) {
-    /*                        ^           */
-#ifdef CANNOT_BE_USED
-      *iv_return = CANNOT_BE_USED;
+  case 'Y':
+    if (memEQ(name, "VAL_FROM_QUER", 13)) {
+    /*                            Y      */
+#ifdef VAL_FROM_QUERY
+      *iv_return = VAL_FROM_QUERY;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_QFLAGS_AN", 13)) {
+    /*                            Y      */
+#ifdef VAL_QFLAGS_ANY
+      *iv_return = VAL_QFLAGS_ANY;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -710,9 +843,9 @@ static int
 constant_15 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     Q_WAIT_FOR_GLUE SR_ANS_NACK_SOA SR_ANS_STRAIGHT SR_MEMORY_ERROR
-     SR_MISSING_GLUE SR_WRONG_ANSWER VAL_AC_BAD_BASE VAL_AC_LAST_BAD
-     VAL_AC_VERIFIED VAL_BOGUS_PROOF VAL_FROM_ANSWER VAL_LOG_OPTIONS */
+     Q_WAIT_FOR_GLUE SR_ANS_STRAIGHT SR_HEADER_ERROR SR_MEMORY_ERROR
+     VAL_AC_BAD_BASE VAL_AC_LAST_BAD VAL_AC_VERIFIED VAL_BOGUS_PROOF
+     VAL_FROM_ANSWER VAL_LOG_OPTIONS */
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case 'B':
@@ -726,33 +859,22 @@ constant_15 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
+  case 'E':
+    if (memEQ(name, "SR_HEADER_ERROR", 15)) {
+    /*                      ^              */
+#ifdef SR_HEADER_ERROR
+      *iv_return = SR_HEADER_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'F':
     if (memEQ(name, "Q_WAIT_FOR_GLUE", 15)) {
     /*                      ^              */
 #ifdef Q_WAIT_FOR_GLUE
       *iv_return = Q_WAIT_FOR_GLUE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'G':
-    if (memEQ(name, "SR_WRONG_ANSWER", 15)) {
-    /*                      ^              */
-#ifdef SR_WRONG_ANSWER
-      *iv_return = SR_WRONG_ANSWER;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'I':
-    if (memEQ(name, "SR_MISSING_GLUE", 15)) {
-    /*                      ^              */
-#ifdef SR_MISSING_GLUE
-      *iv_return = SR_MISSING_GLUE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -775,17 +897,6 @@ constant_15 (pTHX_ const char *name, IV *iv_return) {
     /*                      ^              */
 #ifdef VAL_FROM_ANSWER
       *iv_return = VAL_FROM_ANSWER;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'N':
-    if (memEQ(name, "SR_ANS_NACK_SOA", 15)) {
-    /*                      ^              */
-#ifdef SR_ANS_NACK_SOA
-      *iv_return = SR_ANS_NACK_SOA;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -855,80 +966,15 @@ static int
 constant_16 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     ALG_DS_HASH_SHA1 SR_ANS_NACK_NSEC SR_CRED_AUTH_ADD SR_CRED_AUTH_ANS
-     SR_NO_ANSWER_YET VAL_AC_FAIL_BASE VAL_AC_TRUST_KEY VAL_BAD_ARGUMENT
-     VAL_LOCAL_ANSWER VAL_TRUSTED_ZONE ZONE_USE_NOTHING */
-  /* Offset 10 gives the best switch position.  */
-  switch (name[10]) {
+     ALG_DS_HASH_SHA1 Q_REFERRAL_ERROR Q_RESPONSE_ERROR SR_CRED_AUTH_ADD
+     SR_CRED_AUTH_ANS SR_NO_ANSWER_YET VAL_AC_FAIL_BASE VAL_AC_TRUST_KEY
+     VAL_BAD_ARGUMENT VAL_LOCAL_ANSWER VAL_QUERY_NO_DLV VAL_TRUSTED_ZONE
+     ZONE_USE_NOTHING */
+  /* Offset 4 gives the best switch position.  */
+  switch (name[4]) {
   case 'A':
-    if (memEQ(name, "VAL_LOCAL_ANSWER", 16)) {
-    /*                         ^            */
-#ifdef VAL_LOCAL_ANSWER
-      *iv_return = VAL_LOCAL_ANSWER;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'D':
-    if (memEQ(name, "VAL_TRUSTED_ZONE", 16)) {
-    /*                         ^            */
-#ifdef VAL_TRUSTED_ZONE
-      *iv_return = VAL_TRUSTED_ZONE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'E':
-    if (memEQ(name, "SR_NO_ANSWER_YET", 16)) {
-    /*                         ^            */
-#ifdef SR_NO_ANSWER_YET
-      *iv_return = SR_NO_ANSWER_YET;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'G':
-    if (memEQ(name, "VAL_BAD_ARGUMENT", 16)) {
-    /*                         ^            */
-#ifdef VAL_BAD_ARGUMENT
-      *iv_return = VAL_BAD_ARGUMENT;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'H':
-    if (memEQ(name, "ALG_DS_HASH_SHA1", 16)) {
-    /*                         ^            */
-#ifdef ALG_DS_HASH_SHA1
-      *iv_return = ALG_DS_HASH_SHA1;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'K':
-    if (memEQ(name, "SR_ANS_NACK_NSEC", 16)) {
-    /*                         ^            */
-#ifdef SR_ANS_NACK_NSEC
-      *iv_return = SR_ANS_NACK_NSEC;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'L':
     if (memEQ(name, "VAL_AC_FAIL_BASE", 16)) {
-    /*                         ^            */
+    /*                   ^                  */
 #ifdef VAL_AC_FAIL_BASE
       *iv_return = VAL_AC_FAIL_BASE;
       return PERL_constant_ISIV;
@@ -936,21 +982,8 @@ constant_16 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
-    break;
-  case 'O':
-    if (memEQ(name, "ZONE_USE_NOTHING", 16)) {
-    /*                         ^            */
-#ifdef ZONE_USE_NOTHING
-      *iv_return = ZONE_USE_NOTHING;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'S':
     if (memEQ(name, "VAL_AC_TRUST_KEY", 16)) {
-    /*                         ^            */
+    /*                   ^                  */
 #ifdef VAL_AC_TRUST_KEY
       *iv_return = VAL_AC_TRUST_KEY;
       return PERL_constant_ISIV;
@@ -959,9 +992,75 @@ constant_16 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'T':
+  case 'B':
+    if (memEQ(name, "VAL_BAD_ARGUMENT", 16)) {
+    /*                   ^                  */
+#ifdef VAL_BAD_ARGUMENT
+      *iv_return = VAL_BAD_ARGUMENT;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'D':
+    if (memEQ(name, "ALG_DS_HASH_SHA1", 16)) {
+    /*                   ^                  */
+#ifdef ALG_DS_HASH_SHA1
+      *iv_return = ALG_DS_HASH_SHA1;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'F':
+    if (memEQ(name, "Q_REFERRAL_ERROR", 16)) {
+    /*                   ^                  */
+#ifdef Q_REFERRAL_ERROR
+      *iv_return = Q_REFERRAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'L':
+    if (memEQ(name, "VAL_LOCAL_ANSWER", 16)) {
+    /*                   ^                  */
+#ifdef VAL_LOCAL_ANSWER
+      *iv_return = VAL_LOCAL_ANSWER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'O':
+    if (memEQ(name, "SR_NO_ANSWER_YET", 16)) {
+    /*                   ^                  */
+#ifdef SR_NO_ANSWER_YET
+      *iv_return = SR_NO_ANSWER_YET;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'Q':
+    if (memEQ(name, "VAL_QUERY_NO_DLV", 16)) {
+    /*                   ^                  */
+#ifdef VAL_QUERY_NO_DLV
+      *iv_return = VAL_QUERY_NO_DLV;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'R':
     if (memEQ(name, "SR_CRED_AUTH_ADD", 16)) {
-    /*                         ^            */
+    /*                   ^                  */
 #ifdef SR_CRED_AUTH_ADD
       *iv_return = SR_CRED_AUTH_ADD;
       return PERL_constant_ISIV;
@@ -970,9 +1069,42 @@ constant_16 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     if (memEQ(name, "SR_CRED_AUTH_ANS", 16)) {
-    /*                         ^            */
+    /*                   ^                  */
 #ifdef SR_CRED_AUTH_ANS
       *iv_return = SR_CRED_AUTH_ANS;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'S':
+    if (memEQ(name, "Q_RESPONSE_ERROR", 16)) {
+    /*                   ^                  */
+#ifdef Q_RESPONSE_ERROR
+      *iv_return = Q_RESPONSE_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'T':
+    if (memEQ(name, "VAL_TRUSTED_ZONE", 16)) {
+    /*                   ^                  */
+#ifdef VAL_TRUSTED_ZONE
+      *iv_return = VAL_TRUSTED_ZONE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case '_':
+    if (memEQ(name, "ZONE_USE_NOTHING", 16)) {
+    /*                   ^                  */
+#ifdef ZONE_USE_NOTHING
+      *iv_return = ZONE_USE_NOTHING;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -987,28 +1119,15 @@ static int
 constant_17 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     ALG_NSEC3_DSASHA1 ALG_NSEC3_RSASHA1 SHA_DIGEST_LENGTH SIG_ACCEPT_WINDOW
-     SR_ANS_BARE_RRSIG SR_ANS_NACK_NSEC3 SR_CRED_AUTH_AUTH SR_HEADER_BADSIZE
-     SR_INTERNAL_ERROR SR_REFERRAL_ERROR VAL_AC_BARE_RRSIG VAL_AC_CAN_VERIFY
-     VAL_AC_DS_MISSING VAL_AC_ERROR_BASE VAL_AC_LAST_ERROR VAL_AC_LAST_STATE
-     VAL_FLAGS_DEFAULT VAL_INDETERMINATE VAL_NO_PERMISSION VAL_OUT_OF_MEMORY
-     free_val_addrinfo */
-  /* Offset 10 gives the best switch position.  */
-  switch (name[10]) {
-  case 'B':
-    if (memEQ(name, "SR_HEADER_BADSIZE", 17)) {
-    /*                         ^             */
-#ifdef SR_HEADER_BADSIZE
-      *iv_return = SR_HEADER_BADSIZE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'D':
+     ALG_NSEC3_DSASHA1 ALG_NSEC3_RSASHA1 NSEC3_FLAG_OPTOUT SHA_DIGEST_LENGTH
+     SR_ANS_BARE_RRSIG SR_CRED_AUTH_AUTH SR_INTERNAL_ERROR VAL_AC_BARE_RRSIG
+     VAL_AC_CAN_VERIFY VAL_AC_DS_MISSING VAL_AC_ERROR_BASE VAL_AC_LAST_ERROR
+     VAL_AC_LAST_STATE VAL_NO_PERMISSION VAL_OUT_OF_MEMORY */
+  /* Offset 15 gives the best switch position.  */
+  switch (name[15]) {
+  case 'A':
     if (memEQ(name, "ALG_NSEC3_DSASHA1", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef ALG_NSEC3_DSASHA1
       *iv_return = ALG_NSEC3_DSASHA1;
       return PERL_constant_ISIV;
@@ -1016,19 +1135,30 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
-    if (memEQ(name, "VAL_FLAGS_DEFAULT", 17)) {
-    /*                         ^             */
-#ifdef VAL_FLAGS_DEFAULT
-      *iv_return = VAL_FLAGS_DEFAULT;
+    if (memEQ(name, "ALG_NSEC3_RSASHA1", 17)) {
+    /*                              ^        */
+#ifdef ALG_NSEC3_RSASHA1
+      *iv_return = ALG_NSEC3_RSASHA1;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'E':
+  case 'F':
+    if (memEQ(name, "VAL_AC_CAN_VERIFY", 17)) {
+    /*                              ^        */
+#ifdef VAL_AC_CAN_VERIFY
+      *iv_return = VAL_AC_CAN_VERIFY;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'I':
     if (memEQ(name, "SR_ANS_BARE_RRSIG", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef SR_ANS_BARE_RRSIG
       *iv_return = SR_ANS_BARE_RRSIG;
       return PERL_constant_ISIV;
@@ -1037,7 +1167,7 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     if (memEQ(name, "VAL_AC_BARE_RRSIG", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef VAL_AC_BARE_RRSIG
       *iv_return = VAL_AC_BARE_RRSIG;
       return PERL_constant_ISIV;
@@ -1046,40 +1176,9 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'K':
-    if (memEQ(name, "SR_ANS_NACK_NSEC3", 17)) {
-    /*                         ^             */
-#ifdef SR_ANS_NACK_NSEC3
-      *iv_return = SR_ANS_NACK_NSEC3;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'L':
-    if (memEQ(name, "SR_INTERNAL_ERROR", 17)) {
-    /*                         ^             */
-#ifdef SR_INTERNAL_ERROR
-      *iv_return = SR_INTERNAL_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "SR_REFERRAL_ERROR", 17)) {
-    /*                         ^             */
-#ifdef SR_REFERRAL_ERROR
-      *iv_return = SR_REFERRAL_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'M':
+  case 'N':
     if (memEQ(name, "VAL_AC_DS_MISSING", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef VAL_AC_DS_MISSING
       *iv_return = VAL_AC_DS_MISSING;
       return PERL_constant_ISIV;
@@ -1087,8 +1186,28 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
+    break;
+  case 'O':
+    if (memEQ(name, "SR_INTERNAL_ERROR", 17)) {
+    /*                              ^        */
+#ifdef SR_INTERNAL_ERROR
+      *iv_return = SR_INTERNAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_AC_LAST_ERROR", 17)) {
+    /*                              ^        */
+#ifdef VAL_AC_LAST_ERROR
+      *iv_return = VAL_AC_LAST_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
     if (memEQ(name, "VAL_NO_PERMISSION", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef VAL_NO_PERMISSION
       *iv_return = VAL_NO_PERMISSION;
       return PERL_constant_ISIV;
@@ -1097,9 +1216,20 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'O':
+  case 'R':
+    if (memEQ(name, "VAL_OUT_OF_MEMORY", 17)) {
+    /*                              ^        */
+#ifdef VAL_OUT_OF_MEMORY
+      *iv_return = VAL_OUT_OF_MEMORY;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'S':
     if (memEQ(name, "VAL_AC_ERROR_BASE", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef VAL_AC_ERROR_BASE
       *iv_return = VAL_AC_ERROR_BASE;
       return PERL_constant_ISIV;
@@ -1108,29 +1238,18 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'R':
-    if (memEQ(name, "ALG_NSEC3_RSASHA1", 17)) {
-    /*                         ^             */
-#ifdef ALG_NSEC3_RSASHA1
-      *iv_return = ALG_NSEC3_RSASHA1;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_INDETERMINATE", 17)) {
-    /*                         ^             */
-#ifdef VAL_INDETERMINATE
-      *iv_return = VAL_INDETERMINATE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
   case 'T':
+    if (memEQ(name, "SHA_DIGEST_LENGTH", 17)) {
+    /*                              ^        */
+#ifdef SHA_DIGEST_LENGTH
+      *iv_return = SHA_DIGEST_LENGTH;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
     if (memEQ(name, "SR_CRED_AUTH_AUTH", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef SR_CRED_AUTH_AUTH
       *iv_return = SR_CRED_AUTH_AUTH;
       return PERL_constant_ISIV;
@@ -1138,17 +1257,8 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
-    if (memEQ(name, "VAL_AC_LAST_ERROR", 17)) {
-    /*                         ^             */
-#ifdef VAL_AC_LAST_ERROR
-      *iv_return = VAL_AC_LAST_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
     if (memEQ(name, "VAL_AC_LAST_STATE", 17)) {
-    /*                         ^             */
+    /*                              ^        */
 #ifdef VAL_AC_LAST_STATE
       *iv_return = VAL_AC_LAST_STATE;
       return PERL_constant_ISIV;
@@ -1157,38 +1267,11 @@ constant_17 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case '_':
-    if (memEQ(name, "SHA_DIGEST_LENGTH", 17)) {
-    /*                         ^             */
-#ifdef SHA_DIGEST_LENGTH
-      *iv_return = SHA_DIGEST_LENGTH;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "SIG_ACCEPT_WINDOW", 17)) {
-    /*                         ^             */
-#ifdef SIG_ACCEPT_WINDOW
-      *iv_return = SIG_ACCEPT_WINDOW;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_AC_CAN_VERIFY", 17)) {
-    /*                         ^             */
-#ifdef VAL_AC_CAN_VERIFY
-      *iv_return = VAL_AC_CAN_VERIFY;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_OUT_OF_MEMORY", 17)) {
-    /*                         ^             */
-#ifdef VAL_OUT_OF_MEMORY
-      *iv_return = VAL_OUT_OF_MEMORY;
+  case 'U':
+    if (memEQ(name, "NSEC3_FLAG_OPTOUT", 17)) {
+    /*                              ^        */
+#ifdef NSEC3_FLAG_OPTOUT
+      *iv_return = NSEC3_FLAG_OPTOUT;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1205,9 +1288,8 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
      here.  However, subsequent manual editing may have added or removed some.
      ALG_NSEC_HASH_SHA1 SR_ZI_STATUS_UNSET VALIDATOR_LOG_PORT
      VAL_AC_INVALID_KEY VAL_AC_SIGNING_KEY VAL_BOGUS_PROVABLE
-     VAL_CONF_NOT_FOUND VAL_DNS_ERROR_BASE VAL_DNS_ERROR_LAST
-     VAL_FROM_AUTHORITY VAL_INTERNAL_ERROR VAL_UNTRUSTED_ZONE
-     VAL_VERIFIED_CHAIN VAL_TRUSTED_ANSWER*/
+     VAL_CONF_NOT_FOUND VAL_FROM_AUTHORITY VAL_INTERNAL_ERROR
+     VAL_TRUSTED_ANSWER VAL_UNTRUSTED_ZONE VAL_VERIFIED_CHAIN */
   /* Offset 7 gives the best switch position.  */
   switch (name[7]) {
   case 'C':
@@ -1305,7 +1387,7 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
 #else
       return PERL_constant_NOTDEF;
 #endif
-    } 
+    }
     if (memEQ(name, "VAL_TRUSTED_ANSWER", 18)) {
     /*                      ^                 */
 #ifdef VAL_TRUSTED_ANSWER
@@ -1314,8 +1396,7 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
 #else
       return PERL_constant_NOTDEF;
 #endif
-    } 
-
+    }
     break;
   case 'T':
     if (memEQ(name, "SR_ZI_STATUS_UNSET", 18)) {
@@ -1339,26 +1420,6 @@ constant_18 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case '_':
-    if (memEQ(name, "VAL_DNS_ERROR_BASE", 18)) {
-    /*                      ^                 */
-#ifdef VAL_DNS_ERROR_BASE
-      *iv_return = VAL_DNS_ERROR_BASE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_DNS_ERROR_LAST", 18)) {
-    /*                      ^                 */
-#ifdef VAL_DNS_ERROR_LAST
-      *iv_return = VAL_DNS_ERROR_LAST;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
   }
   return PERL_constant_NOTFOUND;
 }
@@ -1367,15 +1428,38 @@ static int
 constant_19 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     ALG_NSEC3_HASH_SHA1 SR_CRED_NONAUTH_ADD SR_CRED_NONAUTH_ANS
-     VAL_AC_DATA_MISSING VAL_AC_LAST_FAILURE VAL_AC_LOCAL_ANSWER
-     VAL_AC_NOT_VERIFIED VAL_AC_TRUSTED_ZONE VAL_DONT_GO_FURTHER
-     VAL_FROM_ADDITIONAL VAL_NOT_IMPLEMENTED */
-  /* Offset 9 gives the best switch position.  */
-  switch (name[9]) {
+     ALG_NSEC3_HASH_SHA1 QUERY_BAD_CACHE_TTL SR_CRED_NONAUTH_ADD
+     SR_CRED_NONAUTH_ANS VAL_AC_DATA_MISSING VAL_AC_LAST_FAILURE
+     VAL_AC_NOT_VERIFIED VAL_AC_TRUSTED_ZONE VAL_DNS_QUERY_ERROR
+     VAL_DONT_GO_FURTHER VAL_FROM_ADDITIONAL VAL_NOT_IMPLEMENTED
+     VAL_QFLAGS_USERMASK VAL_QUERY_USING_DLV */
+  /* Offset 10 gives the best switch position.  */
+  switch (name[10]) {
   case 'A':
+    if (memEQ(name, "VAL_AC_DATA_MISSING", 19)) {
+    /*                         ^               */
+#ifdef VAL_AC_DATA_MISSING
+      *iv_return = VAL_AC_DATA_MISSING;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'C':
+    if (memEQ(name, "QUERY_BAD_CACHE_TTL", 19)) {
+    /*                         ^               */
+#ifdef QUERY_BAD_CACHE_TTL
+      *iv_return = QUERY_BAD_CACHE_TTL;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'D':
     if (memEQ(name, "VAL_FROM_ADDITIONAL", 19)) {
-    /*                        ^                */
+    /*                         ^               */
 #ifdef VAL_FROM_ADDITIONAL
       *iv_return = VAL_FROM_ADDITIONAL;
       return PERL_constant_ISIV;
@@ -1384,42 +1468,31 @@ constant_19 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'C':
-    if (memEQ(name, "VAL_AC_LOCAL_ANSWER", 19)) {
-    /*                        ^                */
-#ifdef VAL_AC_LOCAL_ANSWER
-      *iv_return = VAL_AC_LOCAL_ANSWER;
+  case 'E':
+    if (memEQ(name, "VAL_DNS_QUERY_ERROR", 19)) {
+    /*                         ^               */
+#ifdef VAL_DNS_QUERY_ERROR
+      *iv_return = VAL_DNS_QUERY_ERROR;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'G':
-    if (memEQ(name, "VAL_DONT_GO_FURTHER", 19)) {
-    /*                        ^                */
-#ifdef VAL_DONT_GO_FURTHER
-      *iv_return = VAL_DONT_GO_FURTHER;
+  case 'H':
+    if (memEQ(name, "ALG_NSEC3_HASH_SHA1", 19)) {
+    /*                         ^               */
+#ifdef ALG_NSEC3_HASH_SHA1
+      *iv_return = ALG_NSEC3_HASH_SHA1;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'M':
-    if (memEQ(name, "VAL_NOT_IMPLEMENTED", 19)) {
-    /*                        ^                */
-#ifdef VAL_NOT_IMPLEMENTED
-      *iv_return = VAL_NOT_IMPLEMENTED;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'O':
+  case 'N':
     if (memEQ(name, "SR_CRED_NONAUTH_ADD", 19)) {
-    /*                        ^                */
+    /*                         ^               */
 #ifdef SR_CRED_NONAUTH_ADD
       *iv_return = SR_CRED_NONAUTH_ADD;
       return PERL_constant_ISIV;
@@ -1428,7 +1501,7 @@ constant_19 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     if (memEQ(name, "SR_CRED_NONAUTH_ANS", 19)) {
-    /*                        ^                */
+    /*                         ^               */
 #ifdef SR_CRED_NONAUTH_ANS
       *iv_return = SR_CRED_NONAUTH_ANS;
       return PERL_constant_ISIV;
@@ -1437,40 +1510,31 @@ constant_19 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
+  case 'O':
+    if (memEQ(name, "VAL_DONT_GO_FURTHER", 19)) {
+    /*                         ^               */
+#ifdef VAL_DONT_GO_FURTHER
+      *iv_return = VAL_DONT_GO_FURTHER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'P':
+    if (memEQ(name, "VAL_NOT_IMPLEMENTED", 19)) {
+    /*                         ^               */
+#ifdef VAL_NOT_IMPLEMENTED
+      *iv_return = VAL_NOT_IMPLEMENTED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'S':
-    if (memEQ(name, "VAL_AC_LAST_FAILURE", 19)) {
-    /*                        ^                */
-#ifdef VAL_AC_LAST_FAILURE
-      *iv_return = VAL_AC_LAST_FAILURE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'T':
-    if (memEQ(name, "VAL_AC_DATA_MISSING", 19)) {
-    /*                        ^                */
-#ifdef VAL_AC_DATA_MISSING
-      *iv_return = VAL_AC_DATA_MISSING;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_AC_NOT_VERIFIED", 19)) {
-    /*                        ^                */
-#ifdef VAL_AC_NOT_VERIFIED
-      *iv_return = VAL_AC_NOT_VERIFIED;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'U':
     if (memEQ(name, "VAL_AC_TRUSTED_ZONE", 19)) {
-    /*                        ^                */
+    /*                         ^               */
 #ifdef VAL_AC_TRUSTED_ZONE
       *iv_return = VAL_AC_TRUSTED_ZONE;
       return PERL_constant_ISIV;
@@ -1479,11 +1543,42 @@ constant_19 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
+  case 'T':
+    if (memEQ(name, "VAL_AC_LAST_FAILURE", 19)) {
+    /*                         ^               */
+#ifdef VAL_AC_LAST_FAILURE
+      *iv_return = VAL_AC_LAST_FAILURE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'U':
+    if (memEQ(name, "VAL_QUERY_USING_DLV", 19)) {
+    /*                         ^               */
+#ifdef VAL_QUERY_USING_DLV
+      *iv_return = VAL_QUERY_USING_DLV;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case '_':
-    if (memEQ(name, "ALG_NSEC3_HASH_SHA1", 19)) {
-    /*                        ^                */
-#ifdef ALG_NSEC3_HASH_SHA1
-      *iv_return = ALG_NSEC3_HASH_SHA1;
+    if (memEQ(name, "VAL_AC_NOT_VERIFIED", 19)) {
+    /*                         ^               */
+#ifdef VAL_AC_NOT_VERIFIED
+      *iv_return = VAL_AC_NOT_VERIFIED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_QFLAGS_USERMASK", 19)) {
+    /*                         ^               */
+#ifdef VAL_QFLAGS_USERMASK
+      *iv_return = VAL_QFLAGS_USERMASK;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1498,17 +1593,28 @@ static int
 constant_20 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     SR_CRED_NONAUTH_AUTH SR_DNS_GENERIC_ERROR SR_ZI_STATUS_LEARNED
-     VAL_AC_INVALID_RRSIG VAL_AC_KEY_TOO_LARGE VAL_AC_KEY_TOO_SMALL
-     VAL_AC_RRSIG_EXPIRED VAL_AC_RRSIG_MISSING VAL_AC_VERIFIED_LINK
-     VAL_BOGUS_UNPROVABLE VAL_CONF_PARSE_ERROR VAL_INCOMPLETE_PROOF
-     VAL_INDETERMINATE_DS VAL_IRRELEVANT_PROOF VAL_NONEXISTENT_NAME
-     VAL_NONEXISTENT_TYPE VAL_VALIDATED_ANSWER VAL_UNTRUSTED_ANSWER */
-  /* Offset 9 gives the best switch position.  */
-  switch (name[9]) {
+     MAX_GLUE_FETCH_DEPTH SR_CRED_NONAUTH_AUTH SR_DNS_GENERIC_ERROR
+     SR_ZI_STATUS_LEARNED VAL_AC_INVALID_RRSIG VAL_AC_RRSIG_EXPIRED
+     VAL_AC_RRSIG_MISSING VAL_AC_VERIFIED_LINK VAL_BOGUS_UNPROVABLE
+     VAL_CONF_PARSE_ERROR VAL_DNS_MISSING_GLUE VAL_DNS_WRONG_ANSWER
+     VAL_INCOMPLETE_PROOF VAL_IRRELEVANT_PROOF VAL_NONEXISTENT_NAME
+     VAL_NONEXISTENT_TYPE VAL_UNTRUSTED_ANSWER VAL_VALIDATED_ANSWER */
+  /* Offset 8 gives the best switch position.  */
+  switch (name[8]) {
   case 'A':
+    if (memEQ(name, "SR_ZI_STATUS_LEARNED", 20)) {
+    /*                       ^                  */
+#ifdef SR_ZI_STATUS_LEARNED
+      *iv_return = SR_ZI_STATUS_LEARNED;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'D':
     if (memEQ(name, "VAL_VALIDATED_ANSWER", 20)) {
-    /*                        ^                 */
+    /*                       ^                  */
 #ifdef VAL_VALIDATED_ANSWER
       *iv_return = VAL_VALIDATED_ANSWER;
       return PERL_constant_ISIV;
@@ -1518,48 +1624,8 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
     }
     break;
   case 'E':
-    if (memEQ(name, "VAL_INDETERMINATE_DS", 20)) {
-    /*                        ^                 */
-#ifdef VAL_INDETERMINATE_DS
-      *iv_return = VAL_INDETERMINATE_DS;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_IRRELEVANT_PROOF", 20)) {
-    /*                        ^                 */
-#ifdef VAL_IRRELEVANT_PROOF
-      *iv_return = VAL_IRRELEVANT_PROOF;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'I':
-    if (memEQ(name, "VAL_NONEXISTENT_NAME", 20)) {
-    /*                        ^                 */
-#ifdef VAL_NONEXISTENT_NAME
-      *iv_return = VAL_NONEXISTENT_NAME;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_NONEXISTENT_TYPE", 20)) {
-    /*                        ^                 */
-#ifdef VAL_NONEXISTENT_TYPE
-      *iv_return = VAL_NONEXISTENT_TYPE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'N':
     if (memEQ(name, "SR_DNS_GENERIC_ERROR", 20)) {
-    /*                        ^                 */
+    /*                       ^                  */
 #ifdef SR_DNS_GENERIC_ERROR
       *iv_return = SR_DNS_GENERIC_ERROR;
       return PERL_constant_ISIV;
@@ -1567,41 +1633,8 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
-    break;
-  case 'O':
-    if (memEQ(name, "SR_CRED_NONAUTH_AUTH", 20)) {
-    /*                        ^                 */
-#ifdef SR_CRED_NONAUTH_AUTH
-      *iv_return = SR_CRED_NONAUTH_AUTH;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'P':
-    if (memEQ(name, "VAL_CONF_PARSE_ERROR", 20)) {
-    /*                        ^                 */
-#ifdef VAL_CONF_PARSE_ERROR
-      *iv_return = VAL_CONF_PARSE_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_INCOMPLETE_PROOF", 20)) {
-    /*                        ^                 */
-#ifdef VAL_INCOMPLETE_PROOF
-      *iv_return = VAL_INCOMPLETE_PROOF;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'R':
     if (memEQ(name, "VAL_AC_VERIFIED_LINK", 20)) {
-    /*                        ^                 */
+    /*                       ^                  */
 #ifdef VAL_AC_VERIFIED_LINK
       *iv_return = VAL_AC_VERIFIED_LINK;
       return PERL_constant_ISIV;
@@ -1610,49 +1643,49 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'S':
-    if (memEQ(name, "VAL_AC_RRSIG_EXPIRED", 20)) {
-    /*                        ^                 */
-#ifdef VAL_AC_RRSIG_EXPIRED
-      *iv_return = VAL_AC_RRSIG_EXPIRED;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_AC_RRSIG_MISSING", 20)) {
-    /*                        ^                 */
-#ifdef VAL_AC_RRSIG_MISSING
-      *iv_return = VAL_AC_RRSIG_MISSING;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_UNTRUSTED_ANSWER", 20)) {
-    /*                        ^                 */
-#ifdef VAL_UNTRUSTED_ANSWER
-      *iv_return = VAL_UNTRUSTED_ANSWER;
+  case 'L':
+    if (memEQ(name, "VAL_IRRELEVANT_PROOF", 20)) {
+    /*                       ^                  */
+#ifdef VAL_IRRELEVANT_PROOF
+      *iv_return = VAL_IRRELEVANT_PROOF;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'T':
-    if (memEQ(name, "SR_ZI_STATUS_LEARNED", 20)) {
-    /*                        ^                 */
-#ifdef SR_ZI_STATUS_LEARNED
-      *iv_return = SR_ZI_STATUS_LEARNED;
+  case 'M':
+    if (memEQ(name, "VAL_DNS_MISSING_GLUE", 20)) {
+    /*                       ^                  */
+#ifdef VAL_DNS_MISSING_GLUE
+      *iv_return = VAL_DNS_MISSING_GLUE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_INCOMPLETE_PROOF", 20)) {
+    /*                       ^                  */
+#ifdef VAL_INCOMPLETE_PROOF
+      *iv_return = VAL_INCOMPLETE_PROOF;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'V':
+  case 'N':
+    if (memEQ(name, "SR_CRED_NONAUTH_AUTH", 20)) {
+    /*                       ^                  */
+#ifdef SR_CRED_NONAUTH_AUTH
+      *iv_return = SR_CRED_NONAUTH_AUTH;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
     if (memEQ(name, "VAL_AC_INVALID_RRSIG", 20)) {
-    /*                        ^                 */
+    /*                       ^                  */
 #ifdef VAL_AC_INVALID_RRSIG
       *iv_return = VAL_AC_INVALID_RRSIG;
       return PERL_constant_ISIV;
@@ -1661,20 +1694,73 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'Y':
-    if (memEQ(name, "VAL_AC_KEY_TOO_LARGE", 20)) {
-    /*                        ^                 */
-#ifdef VAL_AC_KEY_TOO_LARGE
-      *iv_return = VAL_AC_KEY_TOO_LARGE;
+  case 'R':
+    if (memEQ(name, "VAL_AC_RRSIG_EXPIRED", 20)) {
+    /*                       ^                  */
+#ifdef VAL_AC_RRSIG_EXPIRED
+      *iv_return = VAL_AC_RRSIG_EXPIRED;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
-    if (memEQ(name, "VAL_AC_KEY_TOO_SMALL", 20)) {
-    /*                        ^                 */
-#ifdef VAL_AC_KEY_TOO_SMALL
-      *iv_return = VAL_AC_KEY_TOO_SMALL;
+    if (memEQ(name, "VAL_AC_RRSIG_MISSING", 20)) {
+    /*                       ^                  */
+#ifdef VAL_AC_RRSIG_MISSING
+      *iv_return = VAL_AC_RRSIG_MISSING;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'S':
+    if (memEQ(name, "VAL_BOGUS_UNPROVABLE", 20)) {
+    /*                       ^                  */
+#ifdef VAL_BOGUS_UNPROVABLE
+      *iv_return = VAL_BOGUS_UNPROVABLE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'U':
+    if (memEQ(name, "VAL_UNTRUSTED_ANSWER", 20)) {
+    /*                       ^                  */
+#ifdef VAL_UNTRUSTED_ANSWER
+      *iv_return = VAL_UNTRUSTED_ANSWER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'W':
+    if (memEQ(name, "VAL_DNS_WRONG_ANSWER", 20)) {
+    /*                       ^                  */
+#ifdef VAL_DNS_WRONG_ANSWER
+      *iv_return = VAL_DNS_WRONG_ANSWER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'X':
+    if (memEQ(name, "VAL_NONEXISTENT_NAME", 20)) {
+    /*                       ^                  */
+#ifdef VAL_NONEXISTENT_NAME
+      *iv_return = VAL_NONEXISTENT_NAME;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_NONEXISTENT_TYPE", 20)) {
+    /*                       ^                  */
+#ifdef VAL_NONEXISTENT_TYPE
+      *iv_return = VAL_NONEXISTENT_TYPE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1682,10 +1768,19 @@ constant_20 (pTHX_ const char *name, IV *iv_return) {
     }
     break;
   case '_':
-    if (memEQ(name, "VAL_BOGUS_UNPROVABLE", 20)) {
-    /*                        ^                 */
-#ifdef VAL_BOGUS_UNPROVABLE
-      *iv_return = VAL_BOGUS_UNPROVABLE;
+    if (memEQ(name, "MAX_GLUE_FETCH_DEPTH", 20)) {
+    /*                       ^                  */
+#ifdef MAX_GLUE_FETCH_DEPTH
+      *iv_return = MAX_GLUE_FETCH_DEPTH;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_CONF_PARSE_ERROR", 20)) {
+    /*                       ^                  */
+#ifdef VAL_CONF_PARSE_ERROR
+      *iv_return = VAL_CONF_PARSE_ERROR;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1700,77 +1795,17 @@ static int
 constant_21 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     CAN_SIGN_ZONE_AND_KEY SR_EDNS_VERSION_ERROR SR_RCV_INTERNAL_ERROR
-     SR_UNSUPP_EDNS0_LABEL VAL_AC_BAD_DELEGATION VAL_AC_DNSKEY_MISSING
-     VAL_AC_DNSKEY_NOMATCH VAL_AC_DNS_ERROR_BASE VAL_AC_DNS_ERROR_LAST
-     VAL_AC_NEGATIVE_PROOF VAL_AC_RRSIG_VERIFIED VAL_AC_UNTRUSTED_ZONE
-     VAL_AC_WAIT_FOR_RRSIG VAL_AC_WAIT_FOR_TRUST VAL_AC_WCARD_VERIFIED
-     VAL_IGNORE_VALIDATION VAL_PROVABLY_UNSECURE */
-  /* Offset 16 gives the best switch position.  */
-  switch (name[16]) {
-  case 'A':
-    if (memEQ(name, "VAL_AC_BAD_DELEGATION", 21)) {
-    /*                               ^           */
-#ifdef VAL_AC_BAD_DELEGATION
-      *iv_return = VAL_AC_BAD_DELEGATION;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_IGNORE_VALIDATION", 21)) {
-    /*                               ^           */
-#ifdef VAL_IGNORE_VALIDATION
-      *iv_return = VAL_IGNORE_VALIDATION;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
+     CAN_SIGN_ZONE_AND_KEY Q_CONFLICTING_ANSWERS SR_EDNS_VERSION_ERROR
+     SR_RCV_INTERNAL_ERROR SR_UNSUPP_EDNS0_LABEL VAL_AC_BAD_DELEGATION
+     VAL_AC_DNSKEY_MISSING VAL_AC_DNSKEY_NOMATCH VAL_AC_NEGATIVE_PROOF
+     VAL_AC_RRSIG_VERIFIED VAL_AC_UNTRUSTED_ZONE VAL_AC_WAIT_FOR_RRSIG
+     VAL_AC_WAIT_FOR_TRUST VAL_AC_WCARD_VERIFIED VAL_IGNORE_VALIDATION
+     VAL_PROVABLY_UNSECURE */
+  /* Offset 20 gives the best switch position.  */
+  switch (name[20]) {
   case 'D':
-    if (memEQ(name, "CAN_SIGN_ZONE_AND_KEY", 21)) {
-    /*                               ^           */
-#ifdef CAN_SIGN_ZONE_AND_KEY
-      *iv_return = CAN_SIGN_ZONE_AND_KEY;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'E':
-    if (memEQ(name, "SR_EDNS_VERSION_ERROR", 21)) {
-    /*                               ^           */
-#ifdef SR_EDNS_VERSION_ERROR
-      *iv_return = SR_EDNS_VERSION_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "SR_RCV_INTERNAL_ERROR", 21)) {
-    /*                               ^           */
-#ifdef SR_RCV_INTERNAL_ERROR
-      *iv_return = SR_RCV_INTERNAL_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_PROVABLY_UNSECURE", 21)) {
-    /*                               ^           */
-#ifdef VAL_PROVABLY_UNSECURE
-      *iv_return = VAL_PROVABLY_UNSECURE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'I':
-    if (memEQ(name, "VAL_AC_RRSIG_VERIFIED", 21)) {
-    /*                               ^           */
+    if (memEQ(name, "VAL_AC_RRSIG_VERIFIE", 20)) {
+    /*                                   D      */
 #ifdef VAL_AC_RRSIG_VERIFIED
       *iv_return = VAL_AC_RRSIG_VERIFIED;
       return PERL_constant_ISIV;
@@ -1778,8 +1813,8 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
       return PERL_constant_NOTDEF;
 #endif
     }
-    if (memEQ(name, "VAL_AC_WCARD_VERIFIED", 21)) {
-    /*                               ^           */
+    if (memEQ(name, "VAL_AC_WCARD_VERIFIE", 20)) {
+    /*                                   D      */
 #ifdef VAL_AC_WCARD_VERIFIED
       *iv_return = VAL_AC_WCARD_VERIFIED;
       return PERL_constant_ISIV;
@@ -1788,31 +1823,29 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'L':
-    if (memEQ(name, "SR_UNSUPP_EDNS0_LABEL", 21)) {
-    /*                               ^           */
-#ifdef SR_UNSUPP_EDNS0_LABEL
-      *iv_return = SR_UNSUPP_EDNS0_LABEL;
+  case 'E':
+    if (memEQ(name, "VAL_AC_UNTRUSTED_ZON", 20)) {
+    /*                                   E      */
+#ifdef VAL_AC_UNTRUSTED_ZONE
+      *iv_return = VAL_AC_UNTRUSTED_ZONE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_PROVABLY_UNSECUR", 20)) {
+    /*                                   E      */
+#ifdef VAL_PROVABLY_UNSECURE
+      *iv_return = VAL_PROVABLY_UNSECURE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'M':
-    if (memEQ(name, "VAL_AC_DNSKEY_NOMATCH", 21)) {
-    /*                               ^           */
-#ifdef VAL_AC_DNSKEY_NOMATCH
-      *iv_return = VAL_AC_DNSKEY_NOMATCH;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'P':
-    if (memEQ(name, "VAL_AC_NEGATIVE_PROOF", 21)) {
-    /*                               ^           */
+  case 'F':
+    if (memEQ(name, "VAL_AC_NEGATIVE_PROO", 20)) {
+    /*                                   F      */
 #ifdef VAL_AC_NEGATIVE_PROOF
       *iv_return = VAL_AC_NEGATIVE_PROOF;
       return PERL_constant_ISIV;
@@ -1821,9 +1854,18 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'R':
-    if (memEQ(name, "VAL_AC_WAIT_FOR_RRSIG", 21)) {
-    /*                               ^           */
+  case 'G':
+    if (memEQ(name, "VAL_AC_DNSKEY_MISSIN", 20)) {
+    /*                                   G      */
+#ifdef VAL_AC_DNSKEY_MISSING
+      *iv_return = VAL_AC_DNSKEY_MISSING;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_AC_WAIT_FOR_RRSI", 20)) {
+    /*                                   G      */
 #ifdef VAL_AC_WAIT_FOR_RRSIG
       *iv_return = VAL_AC_WAIT_FOR_RRSIG;
       return PERL_constant_ISIV;
@@ -1832,11 +1874,73 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
+  case 'H':
+    if (memEQ(name, "VAL_AC_DNSKEY_NOMATC", 20)) {
+    /*                                   H      */
+#ifdef VAL_AC_DNSKEY_NOMATCH
+      *iv_return = VAL_AC_DNSKEY_NOMATCH;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'L':
+    if (memEQ(name, "SR_UNSUPP_EDNS0_LABE", 20)) {
+    /*                                   L      */
+#ifdef SR_UNSUPP_EDNS0_LABEL
+      *iv_return = SR_UNSUPP_EDNS0_LABEL;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'N':
+    if (memEQ(name, "VAL_AC_BAD_DELEGATIO", 20)) {
+    /*                                   N      */
+#ifdef VAL_AC_BAD_DELEGATION
+      *iv_return = VAL_AC_BAD_DELEGATION;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_IGNORE_VALIDATIO", 20)) {
+    /*                                   N      */
+#ifdef VAL_IGNORE_VALIDATION
+      *iv_return = VAL_IGNORE_VALIDATION;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'R':
+    if (memEQ(name, "SR_EDNS_VERSION_ERRO", 20)) {
+    /*                                   R      */
+#ifdef SR_EDNS_VERSION_ERROR
+      *iv_return = SR_EDNS_VERSION_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "SR_RCV_INTERNAL_ERRO", 20)) {
+    /*                                   R      */
+#ifdef SR_RCV_INTERNAL_ERROR
+      *iv_return = SR_RCV_INTERNAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'S':
-    if (memEQ(name, "VAL_AC_DNSKEY_MISSING", 21)) {
-    /*                               ^           */
-#ifdef VAL_AC_DNSKEY_MISSING
-      *iv_return = VAL_AC_DNSKEY_MISSING;
+    if (memEQ(name, "Q_CONFLICTING_ANSWER", 20)) {
+    /*                                   S      */
+#ifdef Q_CONFLICTING_ANSWERS
+      *iv_return = Q_CONFLICTING_ANSWERS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1844,8 +1948,8 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
     }
     break;
   case 'T':
-    if (memEQ(name, "VAL_AC_WAIT_FOR_TRUST", 21)) {
-    /*                               ^           */
+    if (memEQ(name, "VAL_AC_WAIT_FOR_TRUS", 20)) {
+    /*                                   T      */
 #ifdef VAL_AC_WAIT_FOR_TRUST
       *iv_return = VAL_AC_WAIT_FOR_TRUST;
       return PERL_constant_ISIV;
@@ -1854,29 +1958,11 @@ constant_21 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case '_':
-    if (memEQ(name, "VAL_AC_DNS_ERROR_BASE", 21)) {
-    /*                               ^           */
-#ifdef VAL_AC_DNS_ERROR_BASE
-      *iv_return = VAL_AC_DNS_ERROR_BASE;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_AC_DNS_ERROR_LAST", 21)) {
-    /*                               ^           */
-#ifdef VAL_AC_DNS_ERROR_LAST
-      *iv_return = VAL_AC_DNS_ERROR_LAST;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_AC_UNTRUSTED_ZONE", 21)) {
-    /*                               ^           */
-#ifdef VAL_AC_UNTRUSTED_ZONE
-      *iv_return = VAL_AC_UNTRUSTED_ZONE;
+  case 'Y':
+    if (memEQ(name, "CAN_SIGN_ZONE_AND_KE", 20)) {
+    /*                                   Y      */
+#ifdef CAN_SIGN_ZONE_AND_KEY
+      *iv_return = CAN_SIGN_ZONE_AND_KEY;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -1891,25 +1977,35 @@ static int
 constant_22 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     MAX_ALIAS_CHAIN_LENGTH SR_CONFLICTING_ANSWERS SR_SEND_INTERNAL_ERROR
-     SR_TSIG_INTERNAL_ERROR SR_ZI_STATUS_PERMANENT VAL_AC_DONT_GO_FURTHER
-     VAL_AC_NO_TRUST_ANCHOR VAL_QUERY_MERGE_RRSETS */
-  /* Offset 6 gives the best switch position.  */
-  switch (name[6]) {
-  case 'D':
-    if (memEQ(name, "SR_SEND_INTERNAL_ERROR", 22)) {
-    /*                     ^                      */
-#ifdef SR_SEND_INTERNAL_ERROR
-      *iv_return = SR_SEND_INTERNAL_ERROR;
+     MAX_ALIAS_CHAIN_LENGTH SR_SEND_INTERNAL_ERROR SR_TSIG_INTERNAL_ERROR
+     SR_ZI_STATUS_PERMANENT VAL_AC_DNS_QUERY_ERROR VAL_AC_DONT_GO_FURTHER
+     VAL_AC_NO_TRUST_ANCHOR VAL_DNS_REFERRAL_ERROR VAL_DNS_RESPONSE_ERROR
+     VAL_QUERY_GLUE_REQUEST VAL_QUERY_MERGE_RRSETS */
+  /* Offset 13 gives the best switch position.  */
+  switch (name[13]) {
+  case 'E':
+    if (memEQ(name, "VAL_AC_DNS_QUERY_ERROR", 22)) {
+    /*                            ^               */
+#ifdef VAL_AC_DNS_QUERY_ERROR
+      *iv_return = VAL_AC_DNS_QUERY_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_QUERY_GLUE_REQUEST", 22)) {
+    /*                            ^               */
+#ifdef VAL_QUERY_GLUE_REQUEST
+      *iv_return = VAL_QUERY_GLUE_REQUEST;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'E':
+  case 'G':
     if (memEQ(name, "VAL_QUERY_MERGE_RRSETS", 22)) {
-    /*                     ^                      */
+    /*                            ^               */
 #ifdef VAL_QUERY_MERGE_RRSETS
       *iv_return = VAL_QUERY_MERGE_RRSETS;
       return PERL_constant_ISIV;
@@ -1918,31 +2014,9 @@ constant_22 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'F':
-    if (memEQ(name, "SR_CONFLICTING_ANSWERS", 22)) {
-    /*                     ^                      */
-#ifdef SR_CONFLICTING_ANSWERS
-      *iv_return = SR_CONFLICTING_ANSWERS;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'G':
-    if (memEQ(name, "SR_TSIG_INTERNAL_ERROR", 22)) {
-    /*                     ^                      */
-#ifdef SR_TSIG_INTERNAL_ERROR
-      *iv_return = SR_TSIG_INTERNAL_ERROR;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
   case 'I':
     if (memEQ(name, "MAX_ALIAS_CHAIN_LENGTH", 22)) {
-    /*                     ^                      */
+    /*                            ^               */
 #ifdef MAX_ALIAS_CHAIN_LENGTH
       *iv_return = MAX_ALIAS_CHAIN_LENGTH;
       return PERL_constant_ISIV;
@@ -1951,9 +2025,49 @@ constant_22 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'S':
+  case 'N':
+    if (memEQ(name, "SR_SEND_INTERNAL_ERROR", 22)) {
+    /*                            ^               */
+#ifdef SR_SEND_INTERNAL_ERROR
+      *iv_return = SR_SEND_INTERNAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "SR_TSIG_INTERNAL_ERROR", 22)) {
+    /*                            ^               */
+#ifdef SR_TSIG_INTERNAL_ERROR
+      *iv_return = SR_TSIG_INTERNAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_DNS_RESPONSE_ERROR", 22)) {
+    /*                            ^               */
+#ifdef VAL_DNS_RESPONSE_ERROR
+      *iv_return = VAL_DNS_RESPONSE_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'O':
+    if (memEQ(name, "VAL_AC_DONT_GO_FURTHER", 22)) {
+    /*                            ^               */
+#ifdef VAL_AC_DONT_GO_FURTHER
+      *iv_return = VAL_AC_DONT_GO_FURTHER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'P':
     if (memEQ(name, "SR_ZI_STATUS_PERMANENT", 22)) {
-    /*                     ^                      */
+    /*                            ^               */
 #ifdef SR_ZI_STATUS_PERMANENT
       *iv_return = SR_ZI_STATUS_PERMANENT;
       return PERL_constant_ISIV;
@@ -1962,18 +2076,20 @@ constant_22 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case '_':
-    if (memEQ(name, "VAL_AC_DONT_GO_FURTHER", 22)) {
-    /*                     ^                      */
-#ifdef VAL_AC_DONT_GO_FURTHER
-      *iv_return = VAL_AC_DONT_GO_FURTHER;
+  case 'R':
+    if (memEQ(name, "VAL_DNS_REFERRAL_ERROR", 22)) {
+    /*                            ^               */
+#ifdef VAL_DNS_REFERRAL_ERROR
+      *iv_return = VAL_DNS_REFERRAL_ERROR;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
+    break;
+  case 'S':
     if (memEQ(name, "VAL_AC_NO_TRUST_ANCHOR", 22)) {
-    /*                     ^                      */
+    /*                            ^               */
 #ifdef VAL_AC_NO_TRUST_ANCHOR
       *iv_return = VAL_AC_NO_TRUST_ANCHOR;
       return PERL_constant_ISIV;
@@ -1990,14 +2106,37 @@ static int
 constant_23 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     VAL_FLAGS_DONT_VALIDATE VAL_FLAG_CHAIN_COMPLETE VAL_INDETERMINATE_PROOF */
-  /* Offset 8 gives the best switch position.  */
-  switch (name[8]) {
+     VAL_AC_DNS_MISSING_GLUE VAL_AC_DNS_WRONG_ANSWER VAL_FLAG_CHAIN_COMPLETE
+     VAL_QUERY_DONT_VALIDATE */
+  /* Offset 13 gives the best switch position.  */
+  switch (name[13]) {
+  case 'N':
+    if (memEQ(name, "VAL_FLAG_CHAIN_COMPLETE", 23)) {
+    /*                            ^                */
+#ifdef VAL_FLAG_CHAIN_COMPLETE
+      *iv_return = VAL_FLAG_CHAIN_COMPLETE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'O':
+    if (memEQ(name, "VAL_AC_DNS_WRONG_ANSWER", 23)) {
+    /*                            ^                */
+#ifdef VAL_AC_DNS_WRONG_ANSWER
+      *iv_return = VAL_AC_DNS_WRONG_ANSWER;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
   case 'S':
-    if (memEQ(name, "VAL_FLAGS_DONT_VALIDATE", 23)) {
-    /*                       ^                     */
-#ifdef VAL_FLAGS_DONT_VALIDATE
-      *iv_return = VAL_FLAGS_DONT_VALIDATE;
+    if (memEQ(name, "VAL_AC_DNS_MISSING_GLUE", 23)) {
+    /*                            ^                */
+#ifdef VAL_AC_DNS_MISSING_GLUE
+      *iv_return = VAL_AC_DNS_MISSING_GLUE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2005,21 +2144,10 @@ constant_23 (pTHX_ const char *name, IV *iv_return) {
     }
     break;
   case 'T':
-    if (memEQ(name, "VAL_INDETERMINATE_PROOF", 23)) {
-    /*                       ^                     */
-#ifdef VAL_INDETERMINATE_PROOF
-      *iv_return = VAL_INDETERMINATE_PROOF;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case '_':
-    if (memEQ(name, "VAL_FLAG_CHAIN_COMPLETE", 23)) {
-    /*                       ^                     */
-#ifdef VAL_FLAG_CHAIN_COMPLETE
-      *iv_return = VAL_FLAG_CHAIN_COMPLETE;
+    if (memEQ(name, "VAL_QUERY_DONT_VALIDATE", 23)) {
+    /*                            ^                */
+#ifdef VAL_QUERY_DONT_VALIDATE
+      *iv_return = VAL_QUERY_DONT_VALIDATE;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2034,33 +2162,10 @@ static int
 constant_24 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     VAL_AC_ALGORITHM_REFUSED VAL_AC_IGNORE_VALIDATION VAL_AC_PROVABLY_UNSECURE
-     VAL_AC_UNKNOWN_ALGORITHM VAL_AC_WRONG_LABEL_COUNT VAL_RESOURCE_UNAVAILABLE
-     */
+     VAL_AC_IGNORE_VALIDATION VAL_AC_PROVABLY_UNSECURE VAL_AC_WRONG_LABEL_COUNT
+     VAL_RESOURCE_UNAVAILABLE */
   /* Offset 22 gives the best switch position.  */
   switch (name[22]) {
-  case 'E':
-    if (memEQ(name, "VAL_AC_ALGORITHM_REFUSED", 24)) {
-    /*                                     ^        */
-#ifdef VAL_AC_ALGORITHM_REFUSED
-      *iv_return = VAL_AC_ALGORITHM_REFUSED;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'H':
-    if (memEQ(name, "VAL_AC_UNKNOWN_ALGORITHM", 24)) {
-    /*                                     ^        */
-#ifdef VAL_AC_UNKNOWN_ALGORITHM
-      *iv_return = VAL_AC_UNKNOWN_ALGORITHM;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
   case 'L':
     if (memEQ(name, "VAL_RESOURCE_UNAVAILABLE", 24)) {
     /*                                     ^        */
@@ -2113,35 +2218,26 @@ static int
 constant_25 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     SR_MKQUERY_INTERNAL_ERROR SR_NAME_EXPANSION_FAILURE
-     VAL_AC_KEY_NOT_AUTHORIZED VAL_AC_RRSIG_NOTYETACTIVE */
-  /* Offset 21 gives the best switch position.  */
-  switch (name[21]) {
-  case 'C':
-    if (memEQ(name, "VAL_BAD_PROVABLY_UNSECURE", 25)) {
-    /*                                    ^          */
-#ifdef VAL_BAD_PROVABLY_UNSECURE
-      *iv_return = VAL_BAD_PROVABLY_UNSECURE;
+     QUERY_BAD_CACHE_THRESHOLD SR_MKQUERY_INTERNAL_ERROR
+     SR_NAME_EXPANSION_FAILURE VAL_AC_DNS_REFERRAL_ERROR
+     VAL_AC_DNS_RESPONSE_ERROR VAL_AC_RRSIG_NOTYETACTIVE
+     VAL_BAD_PROVABLY_UNSECURE */
+  /* Offset 18 gives the best switch position.  */
+  switch (name[18]) {
+  case 'E':
+    if (memEQ(name, "VAL_AC_DNS_RESPONSE_ERROR", 25)) {
+    /*                                 ^             */
+#ifdef VAL_AC_DNS_RESPONSE_ERROR
+      *iv_return = VAL_AC_DNS_RESPONSE_ERROR;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'I':
-    if (memEQ(name, "VAL_AC_KEY_NOT_AUTHORIZED", 25)) {
-    /*                                    ^          */
-#ifdef VAL_AC_KEY_NOT_AUTHORIZED
-      *iv_return = VAL_AC_KEY_NOT_AUTHORIZED;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    break;
-  case 'L':
+  case 'F':
     if (memEQ(name, "SR_NAME_EXPANSION_FAILURE", 25)) {
-    /*                                    ^          */
+    /*                                 ^             */
 #ifdef SR_NAME_EXPANSION_FAILURE
       *iv_return = SR_NAME_EXPANSION_FAILURE;
       return PERL_constant_ISIV;
@@ -2150,11 +2246,42 @@ constant_25 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'R':
+  case 'L':
     if (memEQ(name, "SR_MKQUERY_INTERNAL_ERROR", 25)) {
-    /*                                    ^          */
+    /*                                 ^             */
 #ifdef SR_MKQUERY_INTERNAL_ERROR
       *iv_return = SR_MKQUERY_INTERNAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_AC_DNS_REFERRAL_ERROR", 25)) {
+    /*                                 ^             */
+#ifdef VAL_AC_DNS_REFERRAL_ERROR
+      *iv_return = VAL_AC_DNS_REFERRAL_ERROR;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'N':
+    if (memEQ(name, "VAL_BAD_PROVABLY_UNSECURE", 25)) {
+    /*                                 ^             */
+#ifdef VAL_BAD_PROVABLY_UNSECURE
+      *iv_return = VAL_BAD_PROVABLY_UNSECURE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'R':
+    if (memEQ(name, "QUERY_BAD_CACHE_THRESHOLD", 25)) {
+    /*                                 ^             */
+#ifdef QUERY_BAD_CACHE_THRESHOLD
+      *iv_return = QUERY_BAD_CACHE_THRESHOLD;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2163,9 +2290,63 @@ constant_25 (pTHX_ const char *name, IV *iv_return) {
     break;
   case 'T':
     if (memEQ(name, "VAL_AC_RRSIG_NOTYETACTIVE", 25)) {
-    /*                                    ^          */
+    /*                                 ^             */
 #ifdef VAL_AC_RRSIG_NOTYETACTIVE
       *iv_return = VAL_AC_RRSIG_NOTYETACTIVE;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  }
+  return PERL_constant_NOTFOUND;
+}
+
+static int
+constant_26 (pTHX_ const char *name, IV *iv_return) {
+  /* When generated this function returned values for the list of names given
+     here.  However, subsequent manual editing may have added or removed some.
+     VAL_AC_RRSIG_VERIFIED_SKEW VAL_AC_RRSIG_VERIFY_FAILED
+     VAL_AC_WCARD_VERIFIED_SKEW VAL_QFLAGS_AFFECTS_CACHING */
+  /* Offset 23 gives the best switch position.  */
+  switch (name[23]) {
+  case 'I':
+    if (memEQ(name, "VAL_QFLAGS_AFFECTS_CACHING", 26)) {
+    /*                                      ^         */
+#ifdef VAL_QFLAGS_AFFECTS_CACHING
+      *iv_return = VAL_QFLAGS_AFFECTS_CACHING;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'K':
+    if (memEQ(name, "VAL_AC_RRSIG_VERIFIED_SKEW", 26)) {
+    /*                                      ^         */
+#ifdef VAL_AC_RRSIG_VERIFIED_SKEW
+      *iv_return = VAL_AC_RRSIG_VERIFIED_SKEW;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    if (memEQ(name, "VAL_AC_WCARD_VERIFIED_SKEW", 26)) {
+    /*                                      ^         */
+#ifdef VAL_AC_WCARD_VERIFIED_SKEW
+      *iv_return = VAL_AC_WCARD_VERIFIED_SKEW;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'L':
+    if (memEQ(name, "VAL_AC_RRSIG_VERIFY_FAILED", 26)) {
+    /*                                      ^         */
+#ifdef VAL_AC_RRSIG_VERIFY_FAILED
+      *iv_return = VAL_AC_RRSIG_VERIFY_FAILED;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2180,13 +2361,13 @@ static int
 constant_30 (pTHX_ const char *name, IV *iv_return) {
   /* When generated this function returned values for the list of names given
      here.  However, subsequent manual editing may have added or removed some.
-     VAL_AC_ALGORITHM_NOT_SUPPORTED VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
-     VAL_MASKED_FLAG_CHAIN_COMPLETE */
-  /* Offset 23 gives the best switch position.  */
-  switch (name[23]) {
-  case 'O':
+     VAL_AC_ALGORITHM_NOT_SUPPORTED VAL_AC_DNS_CONFLICTING_ANSWERS
+     VAL_AC_UNKNOWN_DNSKEY_PROTOCOL VAL_MASKED_FLAG_CHAIN_COMPLETE */
+  /* Offset 24 gives the best switch position.  */
+  switch (name[24]) {
+  case 'M':
     if (memEQ(name, "VAL_MASKED_FLAG_CHAIN_COMPLETE", 30)) {
-    /*                                      ^             */
+    /*                                       ^            */
 #ifdef VAL_MASKED_FLAG_CHAIN_COMPLETE
       *iv_return = VAL_MASKED_FLAG_CHAIN_COMPLETE;
       return PERL_constant_ISIV;
@@ -2195,22 +2376,33 @@ constant_30 (pTHX_ const char *name, IV *iv_return) {
 #endif
     }
     break;
-  case 'P':
-    if (memEQ(name, "VAL_AC_ALGORITHM_NOT_SUPPORTED", 30)) {
-    /*                                      ^             */
-#ifdef VAL_AC_ALGORITHM_NOT_SUPPORTED
-      *iv_return = VAL_AC_ALGORITHM_NOT_SUPPORTED;
+  case 'N':
+    if (memEQ(name, "VAL_AC_DNS_CONFLICTING_ANSWERS", 30)) {
+    /*                                       ^            */
+#ifdef VAL_AC_DNS_CONFLICTING_ANSWERS
+      *iv_return = VAL_AC_DNS_CONFLICTING_ANSWERS;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
 #endif
     }
     break;
-  case 'R':
+  case 'O':
     if (memEQ(name, "VAL_AC_UNKNOWN_DNSKEY_PROTOCOL", 30)) {
-    /*                                      ^             */
+    /*                                       ^            */
 #ifdef VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
       *iv_return = VAL_AC_UNKNOWN_DNSKEY_PROTOCOL;
+      return PERL_constant_ISIV;
+#else
+      return PERL_constant_NOTDEF;
+#endif
+    }
+    break;
+  case 'P':
+    if (memEQ(name, "VAL_AC_ALGORITHM_NOT_SUPPORTED", 30)) {
+    /*                                       ^            */
+#ifdef VAL_AC_ALGORITHM_NOT_SUPPORTED
+      *iv_return = VAL_AC_ALGORITHM_NOT_SUPPORTED;
       return PERL_constant_ISIV;
 #else
       return PERL_constant_NOTDEF;
@@ -2242,65 +2434,71 @@ my @names = (qw(ALG_DH ALG_DSASHA1 ALG_DS_HASH_SHA1 ALG_NSEC3_DSASHA1
 	       ALG_NSEC3_HASH_SHA1 ALG_NSEC3_RSASHA1 ALG_NSEC_HASH_SHA1
 	       ALG_RSAMD5 ALG_RSASHA1 CANNOT_BE_USED CAN_SIGN_KEY CAN_SIGN_ZONE
 	       CAN_SIGN_ZONE_AND_KEY DNAME_MAX DNS_PORT EDNS_UDP_SIZE ENVELOPE
-	       MAXDNAME MAX_ALIAS_CHAIN_LENGTH MAX_PROOFS NS_CMPRSFLGS
-	       NS_INT16SZ NS_INT32SZ NS_MAXCDNAME NS_MAXDNAME NS_PUT16 NS_PUT32
-	       Q_ANSWERED Q_ERROR_BASE Q_INIT Q_SENT Q_WAIT_FOR_GLUE RES_RETRY
-	       RES_USE_DNSSEC RRSIGLABEL SHA_DIGEST_LENGTH SIGNBY
-	       SIG_ACCEPT_WINDOW SR_ANS_BARE_RRSIG SR_ANS_CNAME SR_ANS_DNAME
-	       SR_ANS_NACK_NSEC SR_ANS_NACK_NSEC3 SR_ANS_NACK_SOA
-	       SR_ANS_STRAIGHT SR_ANS_UNSET SR_CALL_ERROR
-	       SR_CONFLICTING_ANSWERS SR_CRED_AUTH_ADD SR_CRED_AUTH_ANS
+	       MAXDNAME MAX_ALIAS_CHAIN_LENGTH MAX_GLUE_FETCH_DEPTH MAX_PROOFS
+	       NSEC3_FLAG_OPTOUT NS_CMPRSFLGS NS_INT16SZ NS_INT32SZ
+	       NS_MAXCDNAME NS_MAXDNAME 
+	       QUERY_BAD_CACHE_THRESHOLD QUERY_BAD_CACHE_TTL Q_ANSWERED
+	       Q_CONFLICTING_ANSWERS Q_ERROR_BASE Q_INIT Q_MISSING_GLUE
+	       Q_QUERY_ERROR Q_REFERRAL_ERROR Q_RESPONSE_ERROR Q_SENT
+	       Q_WAIT_FOR_GLUE Q_WRONG_ANSWER RES_RETRY RES_USE_DNSSEC
+	       RRSIGLABEL SHA_DIGEST_LENGTH SIGNBY SR_ANS_BARE_RRSIG
+	       SR_ANS_CNAME SR_ANS_DNAME SR_ANS_NACK SR_ANS_STRAIGHT
+	       SR_ANS_UNSET SR_CALL_ERROR SR_CRED_AUTH_ADD SR_CRED_AUTH_ANS
 	       SR_CRED_AUTH_AUTH SR_CRED_FILE SR_CRED_NONAUTH_ADD
 	       SR_CRED_NONAUTH_ANS SR_CRED_NONAUTH_AUTH SR_CRED_UNSET
 	       SR_DNS_GENERIC_ERROR SR_EDNS_VERSION_ERROR SR_FORMERR
-	       SR_HEADER_BADSIZE SR_INTERNAL_ERROR SR_LAST_ERROR
-	       SR_MEMORY_ERROR SR_MISSING_GLUE SR_MKQUERY_INTERNAL_ERROR
-	       SR_NAME_EXPANSION_FAILURE SR_NOTIMPL SR_NO_ANSWER
-	       SR_NO_ANSWER_YET SR_NXDOMAIN SR_RCV_INTERNAL_ERROR
-	       SR_REFERRAL_ERROR SR_REFUSED SR_SEND_INTERNAL_ERROR SR_SERVFAIL
-	       SR_TSIG_ERROR SR_TSIG_INTERNAL_ERROR SR_UNSET
-	       SR_UNSUPP_EDNS0_LABEL SR_WRONG_ANSWER SR_ZI_STATUS_LEARNED
-	       SR_ZI_STATUS_PERMANENT SR_ZI_STATUS_UNSET TTL VALIDATOR_LOG_PORT
-	       VAL_AC_ALGORITHM_NOT_SUPPORTED VAL_AC_ALGORITHM_REFUSED
+	       SR_HEADER_ERROR SR_INTERNAL_ERROR SR_MEMORY_ERROR
+	       SR_MKQUERY_INTERNAL_ERROR SR_NAME_EXPANSION_FAILURE SR_NOTIMPL
+	       SR_NO_ANSWER SR_NO_ANSWER_YET SR_NXDOMAIN SR_RCV_INTERNAL_ERROR
+	       SR_REFUSED SR_SEND_INTERNAL_ERROR SR_SERVFAIL SR_TSIG_ERROR
+	       SR_TSIG_INTERNAL_ERROR SR_UNSET SR_UNSUPP_EDNS0_LABEL
+	       SR_ZI_STATUS_LEARNED SR_ZI_STATUS_PERMANENT SR_ZI_STATUS_UNSET
+	       TTL VALIDATOR_LOG_PORT VAL_AC_ALGORITHM_NOT_SUPPORTED
 	       VAL_AC_BAD_BASE VAL_AC_BAD_DELEGATION VAL_AC_BARE_RRSIG
 	       VAL_AC_CAN_VERIFY VAL_AC_DATA_MISSING VAL_AC_DNSKEY_MISSING
-	       VAL_AC_DNSKEY_NOMATCH VAL_AC_DNS_ERROR_BASE
-	       VAL_AC_DNS_ERROR_LAST VAL_AC_DONT_GO_FURTHER VAL_AC_DS_MISSING
+	       VAL_AC_DNSKEY_NOMATCH VAL_AC_DNS_CONFLICTING_ANSWERS
+	       VAL_AC_DNS_MISSING_GLUE VAL_AC_DNS_QUERY_ERROR
+	       VAL_AC_DNS_REFERRAL_ERROR VAL_AC_DNS_RESPONSE_ERROR
+	       VAL_AC_DNS_WRONG_ANSWER VAL_AC_DONT_GO_FURTHER VAL_AC_DS_MISSING
 	       VAL_AC_ERROR_BASE VAL_AC_FAIL_BASE VAL_AC_IGNORE_VALIDATION
 	       VAL_AC_INIT VAL_AC_INVALID_KEY VAL_AC_INVALID_RRSIG
-	       VAL_AC_KEY_NOT_AUTHORIZED VAL_AC_KEY_TOO_LARGE
-	       VAL_AC_KEY_TOO_SMALL VAL_AC_LAST_BAD VAL_AC_LAST_ERROR
-	       VAL_AC_LAST_FAILURE VAL_AC_LAST_STATE VAL_AC_LOCAL_ANSWER
-	       VAL_AC_NEGATIVE_PROOF VAL_AC_NOT_VERIFIED VAL_AC_NO_TRUST_ANCHOR
-	       VAL_AC_PROVABLY_UNSECURE VAL_AC_RRSIG_ALGORITHM_MISMATCH
-	       VAL_AC_RRSIG_EXPIRED VAL_AC_RRSIG_MISSING
-	       VAL_AC_RRSIG_NOTYETACTIVE VAL_AC_RRSIG_VERIFIED
+	       VAL_AC_LAST_BAD VAL_AC_LAST_ERROR VAL_AC_LAST_FAILURE
+	       VAL_AC_LAST_STATE VAL_AC_NEGATIVE_PROOF VAL_AC_NOT_VERIFIED
+	       VAL_AC_NO_TRUST_ANCHOR VAL_AC_PROVABLY_UNSECURE
+	       VAL_AC_RRSIG_ALGORITHM_MISMATCH VAL_AC_RRSIG_EXPIRED
+	       VAL_AC_RRSIG_MISSING VAL_AC_RRSIG_NOTYETACTIVE
+	       VAL_AC_RRSIG_VERIFIED VAL_AC_RRSIG_VERIFIED_SKEW
 	       VAL_AC_RRSIG_VERIFY_FAILED VAL_AC_SIGNING_KEY
-	       VAL_AC_TRUSTED_ZONE VAL_AC_TRUST_KEY VAL_AC_UNKNOWN_ALGORITHM
+	       VAL_AC_TRUSTED_ZONE VAL_AC_TRUST_KEY
 	       VAL_AC_UNKNOWN_ALGORITHM_LINK VAL_AC_UNKNOWN_DNSKEY_PROTOCOL
 	       VAL_AC_UNSET VAL_AC_UNTRUSTED_ZONE VAL_AC_VERIFIED
 	       VAL_AC_VERIFIED_LINK VAL_AC_WAIT_FOR_RRSIG VAL_AC_WAIT_FOR_TRUST
-	       VAL_AC_WCARD_VERIFIED VAL_AC_WRONG_LABEL_COUNT VAL_BAD_ARGUMENT
-	       VAL_BARE_RRSIG VAL_BOGUS VAL_BOGUS_PROOF VAL_BOGUS_PROVABLE
-	       VAL_BOGUS_UNPROVABLE VAL_CONF_NOT_FOUND VAL_CONF_PARSE_ERROR
-	       VAL_CTX_IDLEN VAL_DNS_ERROR_BASE VAL_DNS_ERROR_LAST
-	       VAL_DONT_GO_FURTHER VAL_DONT_KNOW VAL_ERROR VAL_FLAGS_DEFAULT
-	       VAL_FLAGS_DONT_VALIDATE VAL_FLAG_CHAIN_COMPLETE
-	       VAL_FROM_ADDITIONAL VAL_FROM_ANSWER VAL_FROM_AUTHORITY
-	       VAL_FROM_QUERY VAL_FROM_UNSET VAL_IGNORE_VALIDATION
-	       VAL_INCOMPLETE_PROOF VAL_INDETERMINATE VAL_INDETERMINATE_DS
-	       VAL_INDETERMINATE_PROOF VAL_INTERNAL_ERROR VAL_IRRELEVANT_PROOF
-	       VAL_LOCAL_ANSWER VAL_LOG_OPTIONS VAL_MASKED_FLAG_CHAIN_COMPLETE
-	       VAL_NONEXISTENT_NAME VAL_NONEXISTENT_NAME_NOCHAIN
-	       VAL_NONEXISTENT_NAME_OPTOUT VAL_NONEXISTENT_TYPE
-	       VAL_NONEXISTENT_TYPE_NOCHAIN VAL_NOTRUST VAL_NOT_IMPLEMENTED
-	       VAL_NO_ERROR VAL_NO_PERMISSION VAL_NO_POLICY VAL_OUT_OF_MEMORY
-	       VAL_PROVABLY_UNSECURE VAL_QUERY_MERGE_RRSETS
-	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ZONE
-	       VAL_UNTRUSTED_ZONE VAL_VERIFIED_CHAIN ZONE_USE_NOTHING
-	       ZONE_USE_TSIG free_val_addrinfo ns_t_dnskey ns_t_ds ns_t_nsec
-	       ns_t_nsec3 ns_t_rrsig p_as_error p_query_error p_val_error
-	       policy_entry_t));
+	       VAL_AC_WCARD_VERIFIED VAL_AC_WCARD_VERIFIED_SKEW
+	       VAL_AC_WRONG_LABEL_COUNT VAL_BAD_ARGUMENT
+	       VAL_BAD_PROVABLY_UNSECURE VAL_BARE_RRSIG VAL_BOGUS
+	       VAL_BOGUS_PROOF VAL_BOGUS_PROVABLE VAL_BOGUS_UNPROVABLE
+	       VAL_CONF_NOT_FOUND VAL_CONF_PARSE_ERROR VAL_CTX_IDLEN
+	       VAL_DNS_CONFLICTING_ANSWERS VAL_DNS_MISSING_GLUE
+	       VAL_DNS_QUERY_ERROR VAL_DNS_REFERRAL_ERROR
+	       VAL_DNS_RESPONSE_ERROR VAL_DNS_WRONG_ANSWER VAL_DONT_GO_FURTHER
+	       VAL_DONT_KNOW VAL_EACCESS VAL_EINVAL VAL_ENOENT VAL_ENOMEM
+	       VAL_ENOSYS VAL_FLAG_CHAIN_COMPLETE VAL_FROM_ADDITIONAL
+	       VAL_FROM_ANSWER VAL_FROM_AUTHORITY VAL_FROM_QUERY VAL_FROM_UNSET
+	       VAL_IGNORE_VALIDATION VAL_INCOMPLETE_PROOF VAL_INTERNAL_ERROR
+	       VAL_IRRELEVANT_PROOF VAL_LOCAL_ANSWER VAL_LOG_OPTIONS
+	       VAL_MASKED_FLAG_CHAIN_COMPLETE VAL_NONEXISTENT_NAME
+	       VAL_NONEXISTENT_NAME_NOCHAIN VAL_NONEXISTENT_NAME_OPTOUT
+	       VAL_NONEXISTENT_TYPE VAL_NONEXISTENT_TYPE_NOCHAIN VAL_NOTRUST
+	       VAL_NOT_IMPLEMENTED VAL_NO_ERROR VAL_NO_PERMISSION VAL_NO_POLICY
+	       VAL_OUT_OF_MEMORY VAL_PROVABLY_UNSECURE
+	       VAL_QFLAGS_AFFECTS_CACHING VAL_QFLAGS_ANY VAL_QFLAGS_USERMASK
+	       VAL_QUERY_DONT_VALIDATE VAL_QUERY_GLUE_REQUEST
+	       VAL_QUERY_MERGE_RRSETS VAL_QUERY_NO_DLV VAL_QUERY_USING_DLV
+	       VAL_RESOURCE_UNAVAILABLE VAL_SUCCESS VAL_TRUSTED_ANSWER
+	       VAL_TRUSTED_ZONE VAL_UNTRUSTED_ANSWER VAL_UNTRUSTED_ZONE
+	       VAL_VALIDATED_ANSWER VAL_VERIFIED_CHAIN ZONE_USE_NOTHING
+	       ZONE_USE_TSIG free_val_addrinfo ns_t_dlv ns_t_dnskey ns_t_ds
+	       ns_t_nsec ns_t_nsec3 ns_t_rrsig));
 
 print constant_types(); # macro defs
 foreach (C_constant ("Net::DNS::SEC::Validator", 'constant', 'IV', $types, undef, 3, @names) ) {
@@ -2390,39 +2588,35 @@ __END__
     return constant_25 (aTHX_ name, iv_return);
     break;
   case 26:
-    if (memEQ(name, "VAL_AC_RRSIG_VERIFY_FAILED", 26)) {
-#ifdef VAL_AC_RRSIG_VERIFY_FAILED
-      *iv_return = VAL_AC_RRSIG_VERIFY_FAILED;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_AC_RRSIG_VERIFIED_SKEW", 26)) {
-#ifdef VAL_AC_RRSIG_VERIFIED_SKEW
-      *iv_return = VAL_AC_RRSIG_VERIFIED_SKEW;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
-    if (memEQ(name, "VAL_AC_WCARD_VERIFIED_SKEW", 26)) {
-#ifdef VAL_AC_WCARD_VERIFIED_SKEW
-      *iv_return = VAL_AC_WCARD_VERIFIED_SKEW;
-      return PERL_constant_ISIV;
-#else
-      return PERL_constant_NOTDEF;
-#endif
-    }
+    return constant_26 (aTHX_ name, iv_return);
     break;
   case 27:
-    if (memEQ(name, "VAL_NONEXISTENT_NAME_OPTOUT", 27)) {
-#ifdef VAL_NONEXISTENT_NAME_OPTOUT
-      *iv_return = VAL_NONEXISTENT_NAME_OPTOUT;
-      return PERL_constant_ISIV;
+    /* Names all of length 27.  */
+    /* VAL_DNS_CONFLICTING_ANSWERS VAL_NONEXISTENT_NAME_OPTOUT */
+    /* Offset 26 gives the best switch position.  */
+    switch (name[26]) {
+    case 'S':
+      if (memEQ(name, "VAL_DNS_CONFLICTING_ANSWER", 26)) {
+      /*                                         S      */
+#ifdef VAL_DNS_CONFLICTING_ANSWERS
+        *iv_return = VAL_DNS_CONFLICTING_ANSWERS;
+        return PERL_constant_ISIV;
 #else
-      return PERL_constant_NOTDEF;
+        return PERL_constant_NOTDEF;
 #endif
+      }
+      break;
+    case 'T':
+      if (memEQ(name, "VAL_NONEXISTENT_NAME_OPTOU", 26)) {
+      /*                                         T      */
+#ifdef VAL_NONEXISTENT_NAME_OPTOUT
+        *iv_return = VAL_NONEXISTENT_NAME_OPTOUT;
+        return PERL_constant_ISIV;
+#else
+        return PERL_constant_NOTDEF;
+#endif
+      }
+      break;
     }
     break;
   case 28:
