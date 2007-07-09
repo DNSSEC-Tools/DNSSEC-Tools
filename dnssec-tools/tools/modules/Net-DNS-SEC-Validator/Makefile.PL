@@ -44,6 +44,13 @@ sub InitMakeParams {
 	    $Params{'LIBS'};
 	$Params{'INC'} = "-I$opts{topdir}/validator/include";
     }
+
+    my $dnsval_conf = `libval-config --dnsval_config`; chomp $dnsval_conf;
+    my $root_hints = `libval-config --root_hints`; chomp $root_hints;
+    my $resolv_conf = `libval-config --resolver_config`; chomp $resolv_conf;
+    `echo 'our \$dnsval_conf = \"$dnsval_conf\"\;' >  ./defines.pl`;
+    `echo 'our \$root_hints = \"$root_hints\"\;' >>  ./defines.pl`;
+    `echo 'our \$resolv_conf = \"$resolv_conf\"\;' >>  ./defines.pl`;
 	
     return(%Params);
 }
