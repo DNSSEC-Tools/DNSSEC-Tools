@@ -289,14 +289,6 @@ sub get_ac_lineattr {
 		$prop{'fillcolor'} =  "red";
 		$prop{'style'} = 'dashed';
         $level = $DATA_MISSING;
-
-    } elsif (($ac_status eq "VAL_AC_UNSET") ||
-        ($ac_status eq "VAL_AC_UNKNOWN_DNSKEY_PROTOCOL")){
-
-		$prop{'color'} =  "black";
-		$prop{'fillcolor'} =  "black";
-		$prop{'style'} = 'dashed';
-        $level = $ERROR;
     } 
     else { 
         # other errors
