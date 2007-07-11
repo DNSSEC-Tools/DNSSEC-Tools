@@ -417,7 +417,7 @@ parse_clock_skew(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     if (cs_pol == NULL) {
         return VAL_OUT_OF_MEMORY;
     }
-    clock_skew = atoi(cs_token); 
+    clock_skew = (int)strtol(cs_token, (char **)NULL, 10);
     cs_pol->clock_skew = clock_skew;
 
     pol_entry->pol = cs_pol;
@@ -572,7 +572,7 @@ parse_nsec3_max_iter(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry,
     if (pol == NULL) {
         return  VAL_OUT_OF_MEMORY;
     }
-    nsec3_iter = atoi(iter_token);
+    nsec3_iter = (int)strtol(iter_token, (char **)NULL, 10);
     pol->iter = nsec3_iter;
     
     pol_entry->pol = pol;

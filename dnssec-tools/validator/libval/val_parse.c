@@ -191,13 +191,13 @@ val_parse_dnskey_string(char *keystr, int keystrlen,
         return VAL_OUT_OF_MEMORY;
 
     TOK_IN_STR();
-    (*dnskey_rdata)->flags = atoi(token);
+    (*dnskey_rdata)->flags = (int)strtol(token, (char **)NULL, 10);
 
     TOK_IN_STR();
-    (*dnskey_rdata)->protocol = atoi(token);
+    (*dnskey_rdata)->protocol = (int)strtol(token, (char **)NULL, 10);
 
     TOK_IN_STR();
-    (*dnskey_rdata)->algorithm = atoi(token);
+    (*dnskey_rdata)->algorithm = (int)strtol(token, (char **)NULL, 10);
 
     /*
      * What follows is the public key in base64.
