@@ -9,6 +9,10 @@ use Net::DNS;
 use Net::DNS::RR;
 use Net::DNS::SEC::Tools::BootStrap;
 
+# this is actually not used directly, but there is an autoload bug in
+# Net::DNS::RR::DS that gets triggered if you don't have it.
+use Digest::BubbleBabble;
+
 ######################################################################
 # detect needed perl modules
 #
