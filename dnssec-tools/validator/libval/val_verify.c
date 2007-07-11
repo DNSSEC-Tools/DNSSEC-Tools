@@ -564,24 +564,34 @@ ds_hash_is_equal(val_context_t *ctx,
                  u_int32_t ds_hash_len, u_int8_t * name_n,
                  struct rr_rec *dnskey, val_astatus_t * ds_status)
 {
-    /*
-     * Only SHA-1 is understood 
-     */
-    if (ds_hashtype != ALG_DS_HASH_SHA1) {
-        *ds_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
-        val_log(ctx, LOG_INFO, "ds_hash_is_equal(): Unsupported DS hash algorithm");
-        return 0;
-    }
-
-    if ((dnskey == NULL) || (ds_hash == NULL) || (name_n == NULL)
-        || (ds_hash_len != SHA_DIGEST_LENGTH)) {
-
+    if ((dnskey == NULL) || (ds_hash == NULL) || (name_n == NULL)) {
         val_log(ctx, LOG_INFO, "ds_hash_is_equal(): Cannot compare DS data - invalid content");
         return 0;
     }
 
-    return ds_sha_hash_is_equal(name_n, dnskey->rr_rdata,
-                                dnskey->rr_rdata_length_h, ds_hash);
+    /*
+     * Only SHA-1 is understood 
+     */
+    if (ds_hashtype == ALG_DS_HASH_SHA1) {
+        return ds_sha_hash_is_equal(name_n, dnskey->rr_rdata,
+                                    dnskey->rr_rdata_length_h, 
+                                    ds_hash, ds_hash_len);
+
+    } 
+
+#ifdef HAVE_SHA_256
+    else if (ds_hashtype == ALG_DS_HASH_SHA256) {
+        return ds_sha256_hash_is_equal(name_n, dnskey->rr_rdata,
+                                       dnskey->rr_rdata_length_h, 
+                                       ds_hash, ds_hash_len);
+    } 
+#endif
+
+    /* else */
+
+    *ds_status = VAL_AC_ALGORITHM_NOT_SUPPORTED;
+    val_log(ctx, LOG_INFO, "ds_hash_is_equal(): Unsupported DS hash algorithm");
+    return 0;
 }
 
 static int

@@ -40,7 +40,17 @@ void            rsasha1_sigverify(val_context_t * ctx,
 int             ds_sha_hash_is_equal(u_int8_t * name_n,
                                      u_int8_t * rrdata,
                                      u_int16_t rrdatalen,
-                                     u_int8_t * ds_hash);
+                                     u_int8_t * ds_hash,
+                                     u_int32_t ds_hash_len);
+
+#ifdef HAVE_SHA_256
+int             ds_sha256_hash_is_equal(u_int8_t * name_n,
+                                        u_int8_t * rrdata,
+                                        u_int16_t rrdatalen,
+                                        u_int8_t * ds_hash,
+                                        u_int32_t ds_hash_len);
+#endif
+
 #ifdef LIBVAL_NSEC3
 u_int8_t       *nsec3_sha_hash_compute(u_int8_t * qc_name_n,
                                        u_int8_t * salt, u_int8_t saltlen,

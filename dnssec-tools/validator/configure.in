@@ -188,6 +188,12 @@ fi
 AC_CHECK_LIB(crypto, EVP_md5,,
         AC_MSG_ERROR("OpenSSL not found. get it from http://www.openssl.org.")
 )
+AH_TEMPLATE([HAVE_SHA_256],
+            [Define if libcrypto implements SHA-256.])
+AC_CHECK_LIB(crypto, SHA256_Init, 
+             AC_DEFINE(HAVE_SHA_256), 
+             AC_MSG_WARN(Need openssl version > 0.9.8 for SHA-256 support)
+)
 
 dnl add any libraries that may be dependencies
 AC_CHECK_LIB(nsl, inet_ntop)
