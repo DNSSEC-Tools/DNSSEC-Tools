@@ -129,7 +129,7 @@
 .\" ========================================================================
 .\"
 .IX Title "libsres 3"
-.TH libsres 3 "2007-07-05" "perl v5.8.6" "Programmer's Manual"
+.TH libsres 3 "2007-07-10" "perl v5.8.6" "Programmer's Manual"
 .SH "NAME"
 \&\fIquery_send()\fR, \fIresponse_rcv()\fR, get()> \- 
 send queries and receive responses from a DNS name server.
@@ -144,11 +144,12 @@ send queries and receive responses from a DNS name server.
 \&  #include <resolver.h>
 .Ve
 .PP
-.Vb 5
+.Vb 6
 \&  int query_send(const char    *name,
 \&            const u_int16_t     type,
 \&            const u_int16_t     class,
 \&            struct name_server  *nslist,
+\&            int                 edns0_size,
 \&            int                 *trans_id);
 .Ve
 .PP
@@ -159,11 +160,12 @@ send queries and receive responses from a DNS name server.
 \&            u_int32_t           *response_length);
 .Ve
 .PP
-.Vb 7
+.Vb 8
 \&  int get(const char          *name_n,
 \&          const u_int16_t     type_h,
 \&          const u_int16_t     class_h,
 \&          struct name_server  *nslist,
+\&          int                 edns0_size,
 \&          struct name_server  **respondent,
 \&          u_int8_t            **response,
 \&          u_int32_t           *response_length);
@@ -193,7 +195,9 @@ send queries and receive responses from a DNS name server.
 .IX Header "DESCRIPTION"
 The \fI\fIquery_send()\fI\fR function sends a query to the name servers specified in
 \&\fInslist\fR.  The query is comprised of the <\fIname, class, type\fR> tuple and
-\&\fItrans_id\fR provides a handle to this transaction within the \fIlibsres\fR library.
+\&\fItrans_id\fR provides a handle to this transaction within the \fIlibsres\fR library. 
+The buffer size advertized in the \s-1EDNS0\s0 option can be set using the \fIends0_size\fR
+argument.
 .PP
 The \fI\fIresponse_recv()\fI\fR function returns the answers, if available, from the
 name server that responds for the query identified by \fItrans_id\fR.

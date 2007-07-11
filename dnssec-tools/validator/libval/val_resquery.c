@@ -1871,6 +1871,7 @@ val_resquery_send(val_context_t * context,
      * in context to create the nslist
      */
     struct name_server *nslist;
+    int ends0_size;
 
     if ((matched_qfq == NULL) || 
             (matched_qfq->qfq_query->qc_ns_list == NULL)) {
@@ -1891,9 +1892,10 @@ val_resquery_send(val_context_t * context,
     }
     val_log(context, LOG_DEBUG, "val_resquery_send(): End of Sending query for %s", name_p);
 
+    ends0_size = (context && context->g_opt)? context->g_opt->edns0_size : EDNS_UDP_SIZE;
     if ((ret_val =
          query_send(name_p, matched_q->qc_type_h, matched_q->qc_class_h,
-                    nslist, &(matched_q->qc_trans_id))) == SR_UNSET)
+                    nslist, ends0_size, &(matched_q->qc_trans_id))) == SR_UNSET)
         return VAL_NO_ERROR;
 
     /*

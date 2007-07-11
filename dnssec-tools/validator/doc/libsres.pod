@@ -18,6 +18,7 @@ I<print_response()> - Display answers returned from the name server
             const u_int16_t     type,
             const u_int16_t     class,
             struct name_server  *nslist,
+            int                 edns0_size,
             int                 *trans_id);
 
   int response_recv(int         *trans_id,
@@ -29,6 +30,7 @@ I<print_response()> - Display answers returned from the name server
           const u_int16_t     type_h,
           const u_int16_t     class_h,
           struct name_server  *nslist,
+          int                 edns0_size,
           struct name_server  **respondent,
           u_int8_t            **response,
           u_int32_t           *response_length);
@@ -48,7 +50,9 @@ I<print_response()> - Display answers returned from the name server
 
 The I<query_send()> function sends a query to the name servers specified in
 I<nslist>.  The query is comprised of the <I<name, class, type>> tuple and
-I<trans_id> provides a handle to this transaction within the I<libsres> library.
+I<trans_id> provides a handle to this transaction within the I<libsres> library. 
+The buffer size advertized in the EDNS0 option can be set using the I<ends0_size>
+argument.
 
 The I<response_recv()> function returns the answers, if available, from the
 name server that responds for the query identified by I<trans_id>.
