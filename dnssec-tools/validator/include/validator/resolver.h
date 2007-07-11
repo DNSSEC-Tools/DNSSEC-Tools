@@ -78,7 +78,6 @@
 #define SR_ZI_STATUS_LEARNED        2
 
 
-#define EDNS_UDP_SIZE 4096
 #define DNAME_MAX     1024
 
 #ifndef ns_t_dnskey
@@ -162,7 +161,9 @@ struct name_server {
 int             query_send(const char *name,
                            const u_int16_t type_h,
                            const u_int16_t class_h,
-                           struct name_server *nslist, int *trans_id);
+                           struct name_server *nslist, 
+                           int edns0_size,
+                           int *trans_id);
 int             response_recv(int *trans_id,
                               fd_set *pending_desc,
                               struct timeval *closest_event,
@@ -174,6 +175,7 @@ int             get(const char *name_n,
                     const u_int16_t type_h,
                     const u_int16_t class_h,
                     struct name_server *nslist,
+                    int edns0_size,
                     struct name_server **server,
                     u_int8_t ** response, u_int * response_length);
 void            print_response(u_int8_t * ans, int resplen);
