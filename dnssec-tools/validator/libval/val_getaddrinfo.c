@@ -384,7 +384,7 @@ process_service_and_hints(val_status_t val_status,
  * See also: get_addrinfo_from_dns(), val_getaddrinfo()
  */
 static int
-get_addrinfo_from_etc_hosts(const val_context_t * ctx,
+get_addrinfo_from_etc_hosts(val_context_t * ctx,
                             const char *nodename,
                             const char *servname,
                             const struct addrinfo *hints,
@@ -394,6 +394,14 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
     struct hosts   *hs = NULL;
     struct val_addrinfo *retval = NULL;
     int ret;
+    val_status_t local_ans_status = VAL_LOCAL_ANSWER;
+    int trusted = 0;
+
+    if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
+        if (trusted) {
+            local_ans_status = VAL_TRUSTED_ANSWER;
+        }
+    }
 
     if (res == NULL) 
         return 0;
@@ -484,7 +492,7 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
             continue;
         }
 
-        ainfo->ai_val_status = VAL_LOCAL_ANSWER;
+        ainfo->ai_val_status = local_ans_status;
 
         /*
          * Expand the results based on servname and hints 
@@ -513,7 +521,7 @@ get_addrinfo_from_etc_hosts(const val_context_t * ctx,
 
     *res = retval;
     if (retval) {
-        *val_status = VAL_LOCAL_ANSWER;
+        *val_status = local_ans_status;
         return 0;
     } else {
         return EAI_NONAME;
@@ -968,7 +976,14 @@ val_getaddrinfo(val_context_t * context,
     const char     *nname = nodename;
     struct addrinfo default_hints;
     const struct addrinfo *cur_hints;
+    val_status_t local_ans_status = VAL_LOCAL_ANSWER;
+    int trusted = 0;
 
+    if (VAL_NO_ERROR == val_is_local_trusted(context, &trusted)) {
+        if (trusted) {
+            local_ans_status = VAL_TRUSTED_ANSWER;
+        }
+    }
     if (res == NULL || val_status == NULL)
         return 0;
 
@@ -1043,7 +1058,7 @@ val_getaddrinfo(val_context_t * context,
         saddr4 = NULL;
         ainfo4->ai_addrlen = sizeof(struct sockaddr_in);
         ainfo4->ai_canonname = NULL;
-        ainfo4->ai_val_status = VAL_LOCAL_ANSWER;
+        ainfo4->ai_val_status = local_ans_status;
 
         if ((retval = process_service_and_hints(ainfo4->ai_val_status, servname,
                                       cur_hints, &ainfo4))
@@ -1100,7 +1115,7 @@ val_getaddrinfo(val_context_t * context,
         saddr6 = NULL;
         ainfo6->ai_addrlen = sizeof(struct sockaddr_in6);
         ainfo6->ai_canonname = NULL;
-        ainfo6->ai_val_status = VAL_LOCAL_ANSWER;
+        ainfo6->ai_val_status = local_ans_status;
 
         if ((retval = process_service_and_hints(ainfo6->ai_val_status, servname,
                                       cur_hints, &ainfo6))
@@ -1120,7 +1135,7 @@ val_getaddrinfo(val_context_t * context,
     }
 
     if (*res) {
-        *val_status = VAL_LOCAL_ANSWER;
+        *val_status = local_ans_status;
     } else if (nodename) {
     
     /*
@@ -1291,6 +1306,14 @@ val_getnameinfo(val_context_t * ctx,
     struct val_result_chain *res;
     struct val_result_chain *val_res = NULL;
     int retval;
+    val_status_t local_ans_status = VAL_LOCAL_ANSWER;
+    int trusted = 0;
+
+    if (VAL_NO_ERROR == val_is_local_trusted(ctx, &trusted)) {
+        if (trusted) {
+            local_ans_status = VAL_TRUSTED_ANSWER;
+        }
+    }
 
     /*
      * no need to check context, val_resolve_and_check will check and
@@ -1351,7 +1374,7 @@ val_getnameinfo(val_context_t * ctx,
          */
         if (flags & NI_NUMERICHOST) {
             strncpy(host, number_string, hostlen);
-            *val_status = VAL_LOCAL_ANSWER;
+            *val_status = local_ans_status;
         } else {
             int validated = 1;
             int trusted = 1;
