@@ -5846,7 +5846,6 @@ val_istrusted(val_status_t val_status)
     case VAL_PROVABLY_UNSECURE:
     case VAL_IGNORE_VALIDATION:
     case VAL_TRUSTED_ZONE:
-    case VAL_LOCAL_ANSWER:
         return 1;
 
         
@@ -5900,5 +5899,4 @@ val_does_not_exist(val_status_t status)
 
     return 0;
 }
-
 
