@@ -217,7 +217,9 @@ desc: RRSIG records signed by the zone's key are required for all records in ord
          my $gotone = 0;
          for(my $i = 0; $i <= $#{$rrsigs{$type}{$rec->name}} && !$gotone; $i++){
            $gotone = 1 if ($rrsigs{$type}{$rec->name}[$i]->signame eq 
-                           $current_domain . ".");
+                           $current_domain . "." ||
+			   $rrsigs{$type}{$rec->name}[$i]->signame eq 
+                           $current_domain);
          }
          if (!$gotone) {
            push @err, "$type:$rec->{name} is not signed by a key owned by the zone";
