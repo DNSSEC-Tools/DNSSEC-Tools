@@ -64,6 +64,9 @@ extern          "C" {
 #define VALIDATOR_LOG_PORT 1053
 #define VALIDATOR_LOG_SERVER "127.0.0.1"
 
+/* default EDNS0 size */
+#define EDNS_UDP_SIZE 4096
+
     /*
      * Query states 
      */
@@ -128,21 +131,21 @@ extern          "C" {
 #ifndef SHA_DIGEST_LENGTH
 #define SHA_DIGEST_LENGTH 20
 #endif
+#ifndef SHA256_DIGEST_LENGTH
+#define SHA256_DIGEST_LENGTH 32 
+#endif
 
     /*
      * Algorithm definitions for DS digest 
      */
 #define ALG_DS_HASH_SHA1 1
-
-#ifdef LIBVAL_NSEC3
-#define ALG_NSEC3_HASH_SHA1 1
-#endif
+#define ALG_DS_HASH_SHA256 2
 
     /*
      * Algorithm definitions for NSEC3 digest 
      */
 #ifdef LIBVAL_NSEC3
-#define ALG_NSEC_HASH_SHA1 1
+#define ALG_NSEC3_HASH_SHA1 1
 #endif
 
     /*
@@ -204,7 +207,12 @@ extern          "C" {
         void *          pol;
         struct policy_entry *next;
     } policy_entry_t;
-   
+  
+    typedef struct global_opt {
+        int local_is_trusted;
+        long edns0_size;    
+    } global_opt_t;
+
     typedef struct {
         policy_entry_t *pe;
         int index;
@@ -215,15 +223,9 @@ extern          "C" {
      * typecasted to one of the types defined in val_policy.h: 
      * Policies can be one of the following
      */
-
+#define POL_GLOBAL_OPTIONS_STR "global-options"
 #define POL_TRUST_ANCHOR_STR "trust-anchor"
-#define POL_PREFERRED_SEP_STR "preferred-sep"
-#define POL_MUST_VERIFY_COUNT_STR "must-verify-count"
-#define POL_PREFERRED_ALGORITHM_DATA_STR "preferred-algo-data"
-#define POL_PREFERRED_ALGORITHM_KEYS_STR "preferred-algo-keys"
-#define POL_PREFERRED_ALGORITHM_DS_STR "preferred-algo-ds"
 #define POL_CLOCK_SKEW_STR "clock-skew"
-#define POL_USE_TCP_STR "use-tcp"
 #define POL_PROV_UNSEC_STR "provably-unsecure-status"
 #define POL_ZONE_SE_STR "zone-security-expectation"
 #ifdef LIBVAL_DLV
@@ -232,6 +234,11 @@ extern          "C" {
 #ifdef LIBVAL_NSEC3
 #define POL_NSEC3_MAX_ITER_STR "nsec3-max-iter"
 #endif
+
+#define GOPT_TRUST_LOCAL_STR "trust-local-answers"
+#define GOPT_EDNS0_SIZE_STR "edns0-size"
+#define TRUST_LOCAL_GOPT_YES_STR "yes"
+#define TRUST_LOCAL_GOPT_NO_STR "no"
 
 #define ZONE_PU_TRUSTED_MSG "trusted"
 #define ZONE_PU_UNTRUSTED_MSG "untrusted"
@@ -338,6 +345,7 @@ extern          "C" {
          */
         time_t v_timestamp;
         policy_entry_t **e_pol;
+        global_opt_t *g_opt;
         
         /* Query and authentication chain caches */
         struct val_digested_auth_chain *a_list;
