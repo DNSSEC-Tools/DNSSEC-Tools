@@ -22,6 +22,7 @@
 #include <errno.h>
 #include <ctype.h>
 #include <sys/file.h>
+#include <sys/fcntl.h>
 
 #include <arpa/inet.h>
 #include <resolv.h>
