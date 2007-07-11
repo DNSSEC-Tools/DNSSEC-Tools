@@ -224,8 +224,6 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
 
 }
 
-
-
 /*
  ***************************************************************
  * The following are the parsing and freeup routines for 
@@ -235,24 +233,7 @@ int free_policy_entry(policy_entry_t *pol_entry, int index)
  */
 const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
     {POL_TRUST_ANCHOR_STR, parse_trust_anchor, free_trust_anchor},
-
-    // XXX should go away
-    {POL_PREFERRED_SEP_STR, parse_preferred_sep, free_preferred_sep},
-    {POL_MUST_VERIFY_COUNT_STR, parse_must_verify_count,
-     free_must_verify_count},
-
-     // XXX Define 
-     // XXX ALGO_REFUSED {DS, DNSKEY}, KEY_LENGTH_LARGE/SMALL, KEY_NOT_AUTHORIZED
-    {POL_PREFERRED_ALGORITHM_DATA_STR, parse_preferred_algo_data,
-     free_preferred_algo_data},
-    {POL_PREFERRED_ALGORITHM_KEYS_STR, parse_preferred_algo_keys,
-     free_preferred_algo_keys},
-    {POL_PREFERRED_ALGORITHM_DS_STR, parse_preferred_algo_ds,
-     free_preferred_algo_ds},
-     // XXX end
-     
     {POL_CLOCK_SKEW_STR, parse_clock_skew, free_clock_skew},
-    {POL_USE_TCP_STR, parse_use_tcp, free_use_tcp},
     {POL_PROV_UNSEC_STR, parse_prov_unsecure_status, 
      free_prov_unsecure_status},
     {POL_ZONE_SE_STR, parse_zone_security_expectation,
@@ -265,7 +246,6 @@ const struct policy_conf_element conf_elem_array[MAX_POL_TOKEN] = {
      free_dlv_trust_points},
 #endif
 };
-
 
 /*
  * parse additional data (public key) for the trust anchor policy 
@@ -329,71 +309,6 @@ free_trust_anchor(policy_entry_t * pol_entry)
     return VAL_NO_ERROR;
 }
 
-int
-parse_preferred_sep(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-                    int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_preferred_sep(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-parse_must_verify_count(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-                        int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_must_verify_count(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-parse_preferred_algo_data(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-                          int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_preferred_algo_data(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-parse_preferred_algo_keys(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-                          int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_preferred_algo_keys(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-parse_preferred_algo_ds(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-                        int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_preferred_algo_ds(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
 /*
  * parse additional data (time in seconds, -1 for ignore) for the clock skew policy 
  */
@@ -432,19 +347,6 @@ free_clock_skew(policy_entry_t * pol_entry)
         FREE(pol_entry->pol);
     }
     return VAL_NO_ERROR;
-}
-
-int
-parse_use_tcp(char **buf_ptr, char *end_ptr, policy_entry_t * pol_entry, 
-              int *line_number, int *endst)
-{
-    return VAL_NOT_IMPLEMENTED;
-}
-
-int
-free_use_tcp(policy_entry_t * pol_entry)
-{
-    return VAL_NOT_IMPLEMENTED;
 }
 
 /*
@@ -836,6 +738,126 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
     return VAL_NO_ERROR;
 }
 
+static int
+parse_local_answer_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
+                        int *endst, global_opt_t *g_opt) 
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    if (!strcmp(token, TRUST_LOCAL_GOPT_YES_STR))
+        g_opt->local_is_trusted = 1;
+    else if (!strcmp(token, TRUST_LOCAL_GOPT_NO_STR))
+        g_opt->local_is_trusted = 0;
+    else
+        return VAL_CONF_PARSE_ERROR;
+    
+    return VAL_NO_ERROR;
+}
+
+static int
+parse_edns0_size_gopt(char **buf_ptr, char *end_ptr, int *line_number, 
+                      int *endst, global_opt_t *g_opt) 
+{
+    char            token[TOKEN_MAX];
+    int retval;
+
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (endst == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    if (VAL_NO_ERROR != (retval = 
+        val_get_token(buf_ptr, end_ptr, line_number, 
+                      token, sizeof(token), endst,
+                      CONF_COMMENT, CONF_END_STMT))) {
+        return retval;
+    }
+    if ((endst && (strlen(token) == 0)) ||
+        (*buf_ptr >= end_ptr)) { 
+        return VAL_CONF_PARSE_ERROR;
+    }
+
+    g_opt->edns0_size = strtol(token, (char **)NULL, 10);
+    
+    return VAL_NO_ERROR;
+}
+    
+static int
+get_global_options(char **buf_ptr, char *end_ptr, 
+                   int *line_number, global_opt_t **g_opt) 
+{
+    int endst = 0;
+    char            token[TOKEN_MAX];
+    int retval;
+   
+    if ((buf_ptr == NULL) || (*buf_ptr == NULL) || (end_ptr == NULL) || 
+        (g_opt == NULL) || (line_number == NULL))
+        return VAL_BAD_ARGUMENT;
+
+    *g_opt = (global_opt_t *) MALLOC (sizeof (global_opt_t));
+    if (*g_opt == NULL)
+        return VAL_OUT_OF_MEMORY;
+    
+    while (!endst) {
+        /*
+         * read the option type 
+         */
+        if (VAL_NO_ERROR != (retval = 
+            val_get_token(buf_ptr, end_ptr, line_number, 
+                          token, sizeof(token), &endst,
+                          CONF_COMMENT, CONF_END_STMT))) {
+            goto err;
+        }
+        if (endst && (strlen(token) == 0)) {
+            break;
+        }
+        if (*buf_ptr >= end_ptr) { 
+            retval = VAL_CONF_PARSE_ERROR;
+            goto err;
+        }
+
+        /* parse the option value based on the type */
+        if (!strcmp(token, GOPT_TRUST_LOCAL_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_local_answer_gopt(buf_ptr, end_ptr,
+                                                      line_number, &endst, *g_opt))) {
+                goto err;
+            }
+        } else if (!strcmp(token, GOPT_EDNS0_SIZE_STR)) {
+            if (VAL_NO_ERROR != 
+                    (retval = parse_edns0_size_gopt(buf_ptr, end_ptr,
+                                                    line_number, &endst, *g_opt))) {
+                goto err;
+            }
+        } else {
+            retval = VAL_CONF_PARSE_ERROR;
+            goto err;
+        }
+    }
+
+    return VAL_NO_ERROR;
+
+err:
+    FREE (*g_opt);
+    *g_opt = NULL;
+    return retval;
+}
+
 /*
  * Get the next relevant {label, keyword, data} fragment 
  * from the configuration file file
@@ -843,7 +865,7 @@ check_relevance(char *label, char *scope, int *label_count, int *relevant)
 static int
 get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
                          struct policy_fragment **pol_frag,
-                         int *line_number)
+                         int *line_number, int *g_opt_seen)
 {
     char            token[TOKEN_MAX];
     int             retval;
@@ -895,6 +917,12 @@ get_next_policy_fragment(char **buf_ptr, char *end_ptr, char *scope,
             return VAL_CONF_PARSE_ERROR;
         }
 
+        if (!strcmp(label, POL_GLOBAL_OPTIONS_STR)) {
+            FREE(label);
+            *g_opt_seen = 1;
+            return VAL_NO_ERROR;
+        }
+        
         /*
          * read the keyword 
          */
@@ -1132,6 +1160,11 @@ destroy_valpol(val_context_t * ctx)
         }
         ctx->e_pol[i] = NULL;
     }
+
+    if (ctx->g_opt) {
+        FREE(ctx->g_opt);
+        ctx->g_opt = NULL;
+    }
 }
 
 /*
@@ -1150,6 +1183,8 @@ read_val_config_file(val_context_t * ctx, char *scope)
     struct stat sb;
     char *buf_ptr, *end_ptr;
     char *buf = NULL;
+    int g_opt_seen = 0;
+    global_opt_t *g_opt = NULL;
    
     if (ctx == NULL)
         return VAL_BAD_ARGUMENT;
@@ -1198,21 +1233,43 @@ read_val_config_file(val_context_t * ctx, char *scope)
     while (VAL_NO_ERROR ==
            (retval =
             get_next_policy_fragment(&buf_ptr, end_ptr, 
-                                     scope, &pol_frag, &line_number))) {
+                                     scope, &pol_frag, 
+                                     &line_number, &g_opt_seen))) {
         if (buf_ptr >= end_ptr) {
             retval = VAL_NO_ERROR;
             break;
         }
-        /*
-         * Store this fragment as an override, consume pol_frag 
-         */
-        store_policy_overrides(ctx, &overrides, &pol_frag);
+        
+        if (g_opt_seen) {
+            if (g_opt) {
+                val_log(ctx, LOG_ERR, 
+                        "read_val_config_file(): Redefinition of global options in line %d of %s",
+                        line_number, dnsval_conf);
+                FREE(g_opt);
+                g_opt = NULL;
+                retval = VAL_CONF_PARSE_ERROR;
+                goto err;
+            }
+            g_opt_seen = 0;
+            if (VAL_NO_ERROR != (retval =
+                get_global_options(&buf_ptr, end_ptr, 
+                                  &line_number, &g_opt))) {
+                val_log(ctx, LOG_ERR, 
+                        "read_val_config_file(): Error in line %d of %s ",
+                        line_number, dnsval_conf);
+                goto err;
+            }
+        } else {
+            /*
+             * Store this fragment as an override, consume pol_frag 
+             */
+            store_policy_overrides(ctx, &overrides, &pol_frag);
+        }
     }
 
     if (retval != VAL_NO_ERROR) {
-        val_log(ctx, LOG_ERR, "read_val_config_file(): Error in line %d of file %s", line_number,
+        val_log(ctx, LOG_ERR, "read_val_config_file(): Error in line %d of %s", line_number,
                 dnsval_conf);
-        destroy_valpolovr(&overrides);
         goto err;
     } 
 
@@ -1234,6 +1291,7 @@ read_val_config_file(val_context_t * ctx, char *scope)
 
     destroy_valpol(ctx);
 
+    /* Replace policies */
     for (t = overrides; t != NULL; t = t->next) {
         struct policy_list *c;
         for (c = t->plist; c; c = c->next){
@@ -1241,8 +1299,9 @@ read_val_config_file(val_context_t * ctx, char *scope)
             STORE_POLICY_ENTRY_IN_LIST(c->pol, ctx->e_pol[c->index]);
         }
     }
-
     destroy_valpolovr(&overrides);
+
+    ctx->g_opt = g_opt;
 
     /* 
      * Re-initialize caches 
@@ -1260,8 +1319,15 @@ read_val_config_file(val_context_t * ctx, char *scope)
     return VAL_NO_ERROR;
 
 err:
-    if (buf) 
+    if (overrides) {
+        destroy_valpolovr(&overrides);
+    }
+    if (g_opt) {
+        FREE(g_opt);
+    }
+    if (buf) { 
         FREE(buf);
+    }
     fl.l_type = F_UNLCK;
     fcntl(fd, F_SETLKW, &fl);
     close(fd);
@@ -2108,3 +2174,31 @@ err:
     
     return retval;
 }
+
+int
+val_is_local_trusted(val_context_t *context, int *trusted)
+{
+    val_context_t *ctx = NULL;
+    int retval;
+
+    if (trusted == NULL)
+        return VAL_BAD_ARGUMENT;
+
+    if (context == NULL) {
+        /* Get the policy for the default context */
+        if (VAL_NO_ERROR != (retval = val_create_context(NULL, &ctx)))
+            return retval;
+    } else
+        ctx = (val_context_t *) context;
+
+    CTX_LOCK_VALPOL_EX(ctx);
+    if (ctx && ctx->g_opt && ctx->g_opt->local_is_trusted)
+        *trusted = 1;
+    else
+        *trusted = 0;
+    CTX_UNLOCK_VALPOL(ctx);
+
+    return VAL_NO_ERROR;    
+}
+    
+

@@ -14,31 +14,28 @@
 #define MAX_LINE_SIZE 2048
 #define DEFAULT_ZONE	"."
 
-
 #define P_TRUST_ANCHOR              0
-#define P_PREFERRED_SEP             1
-#define P_MUST_VERIFY_COUNT         2
-#define P_PREFERRED_ALGORITHM_DATA  3
-#define P_PREFERRED_ALGORITHM_KEYS  4
-#define P_PREFERRED_ALGORITHM_DS    5
-#define P_CLOCK_SKEW                6
-#define P_USE_TCP                   7
-#define P_PROV_UNSECURE             8
-#define P_ZONE_SECURITY_EXPECTATION 9 
+#define P_CLOCK_SKEW                1
+#define P_PROV_UNSECURE             2
+#define P_ZONE_SECURITY_EXPECTATION 3 
 #define P_BASE_LAST                 P_ZONE_SECURITY_EXPECTATION
+
 #ifdef LIBVAL_NSEC3
 #define P_NSEC3_MAX_ITER            (P_BASE_LAST+1)
 #define NSEC3_POL_COUNT             1
 #else
 #define NSEC3_POL_COUNT             0
 #endif
+
 #ifdef LIBVAL_DLV
 #define P_DLV_TRUST_POINTS          (P_BASE_LAST+NSEC3_POL_COUNT+1) 
 #define DLV_POL_COUNT               1
 #else
 #define DLV_POL_COUNT               0
 #endif
+
 #define MAX_POL_TOKEN               (P_BASE_LAST+NSEC3_POL_COUNT+DLV_POL_COUNT+1) 
+
 
 #define ZONE_PU_TRUSTED 1
 #define ZONE_PU_UNTRUSTED 2
@@ -100,20 +97,8 @@ struct hosts   *parse_etc_hosts(const char *name);
 
 int             parse_trust_anchor(char **, char *, policy_entry_t *, int *, int *);
 int             free_trust_anchor(policy_entry_t *);
-int             parse_preferred_sep(char **, char *, policy_entry_t *, int *, int *);
-int             free_preferred_sep(policy_entry_t *);
-int             parse_must_verify_count(char **, char *, policy_entry_t *, int *, int *);
-int             free_must_verify_count(policy_entry_t *);
-int             parse_preferred_algo_data(char **, char *, policy_entry_t *, int *, int *);
-int             free_preferred_algo_data(policy_entry_t *);
-int             parse_preferred_algo_keys(char **, char *, policy_entry_t *, int *, int *);
-int             free_preferred_algo_keys(policy_entry_t *);
-int             parse_preferred_algo_ds(char **, char *, policy_entry_t *, int *, int *);
-int             free_preferred_algo_ds(policy_entry_t *);
 int             parse_clock_skew(char **, char *, policy_entry_t *, int *, int *);
 int             free_clock_skew(policy_entry_t *);
-int             parse_use_tcp(char **, char *, policy_entry_t *, int *, int *);
-int             free_use_tcp(policy_entry_t *);
 int             parse_prov_unsecure_status(char **, char *, policy_entry_t *, int *, int *);
 int             free_prov_unsecure_status(policy_entry_t *);
 int             parse_zone_security_expectation(char **, char *, policy_entry_t *, int *, int *);
@@ -131,6 +116,7 @@ int             check_relevance(char *label, char *scope, int *label_count,
 int             val_add_valpolicy(val_context_t *context, const char *keyword, char *zone, 
                                   char *value, long ttl, val_policy_entry_t **pol);
 int             val_remove_valpolicy(val_context_t *context, val_policy_entry_t *pol);
+int             val_is_local_trusted(val_context_t *context, int *trusted);
 int             val_get_token(char **buf_ptr,
                               char *end_ptr,
                               int *line_number,
@@ -138,6 +124,7 @@ int             val_get_token(char **buf_ptr,
                               int conf_limit, int *endst, 
                               const char *comment_c, char endstmt_c);
 int free_policy_entry(policy_entry_t *pol_entry, int index);
+
 
 /*
  * fragment of the configuration file containing 
