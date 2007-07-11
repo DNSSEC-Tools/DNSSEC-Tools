@@ -966,7 +966,7 @@ val_log_add_optarg(const char *str_in, int use_stderr)
         goto err;
     }
     *l++ = 0;
-    level = atoi(copy);
+    level = (int)strtol(copy, (char **)NULL, 10);
     str = l;
 
     switch (*str) {
@@ -992,7 +992,7 @@ val_log_add_optarg(const char *str_in, int use_stderr)
             l = strchr(str, ':');
             if ((NULL != l) && (0 != l[1])) {
                 str = ++l;
-                facility = atoi(str) << 3;
+                facility = ((int)strtol(str, (char **)NULL, 10)) << 3;
             } else
                 facility = LOG_USER;
             logp = val_log_add_syslog(level, facility);
@@ -1021,7 +1021,7 @@ val_log_add_optarg(const char *str_in, int use_stderr)
                 goto err;
             }
             *l++ = 0;
-            port = atoi(str);
+            port = (int)strtol(str, (char **)NULL, 10);
 
             logp = val_log_add_udp(level, host, port);
         }
