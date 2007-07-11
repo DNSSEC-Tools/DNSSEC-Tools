@@ -465,7 +465,7 @@ ac_includes_default="\
 #endif"
 
 ac_subdirs_all="$ac_subdirs_all validator"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE PERLARGS subdirs DNSSEC_SUBDIRS expanded_sysconfdir expanded_localstatedir LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS PERLPROG AR RM build build_cpu build_vendor build_os host host_cpu host_vendor host_os CC CFLAGS LDFLAGS CPPFLAGS ac_ct_CC EXEEXT OBJEXT EGREP LN_S ECHO ac_ct_AR RANLIB ac_ct_RANLIB STRIP ac_ct_STRIP CPP CXX CXXFLAGS ac_ct_CXX CXXCPP F77 FFLAGS ac_ct_F77 LIBTOOL INSTALL_PROGRAM INSTALL_SCRIPT INSTALL_DATA SET_MAKE subdirs DNSSEC_SUBDIRS PERLARGS expanded_sysconfdir expanded_localstatedir LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -1040,10 +1040,10 @@ Optional Packages:
                           both]
   --with-tags[=TAGS]
                           include additional configurations [automatic]
-  --with-perl-perl-args=ARGS Add ARGS to building perl Makefiles.
   --without-validator     Build without libsres, libval and binary apps
                           (Disable if they fail to build on your platform).
 
+  --with-perl-perl-args=ARGS Add ARGS to building perl Makefiles.
 
 Some influential environment variables:
   CC          C compiler command
@@ -19194,15 +19194,6 @@ fi
 
 
 
-# Check whether --with-perl-build-args or --without-perl-build-args was given.
-if test "${with_perl_build_args+set}" = set; then
-  withval="$with_perl_build_args"
-  PERLARGS="$withval"
-
-fi;
-
-
-
 # Check whether --with-validator or --without-validator was given.
 if test "${with_validator+set}" = set; then
   withval="$with_validator"
@@ -19215,9 +19206,20 @@ if test "x$with_validator" != "xno"; then
 subdirs="$subdirs validator"
 
   DNSSEC_SUBDIRS="validator"
+  PERLARGS=""
 else
   DNSSEC_SUBDIRS="none"
+  PERLARGS="NOVALIDATOR"
 fi
+
+
+
+# Check whether --with-perl-build-args or --without-perl-build-args was given.
+if test "${with_perl_build_args+set}" = set; then
+  withval="$with_perl_build_args"
+  PERLARGS="$PERLARGS $withval"
+
+fi;
 
 
 if test "x$prefix" = "xNONE" ; then
@@ -19913,9 +19915,9 @@ s,@INSTALL_PROGRAM@,$INSTALL_PROGRAM,;t t
 s,@INSTALL_SCRIPT@,$INSTALL_SCRIPT,;t t
 s,@INSTALL_DATA@,$INSTALL_DATA,;t t
 s,@SET_MAKE@,$SET_MAKE,;t t
-s,@PERLARGS@,$PERLARGS,;t t
 s,@subdirs@,$subdirs,;t t
 s,@DNSSEC_SUBDIRS@,$DNSSEC_SUBDIRS,;t t
+s,@PERLARGS@,$PERLARGS,;t t
 s,@expanded_sysconfdir@,$expanded_sysconfdir,;t t
 s,@expanded_localstatedir@,$expanded_localstatedir,;t t
 s,@LIBOBJS@,$LIBOBJS,;t t
