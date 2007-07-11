@@ -29,15 +29,6 @@ AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
 dnl ----------------------------------------------------------------------
-dnl perl specific arguments
-dnl
-AC_ARG_WITH(perl-build-args,
-[  --with-perl-perl-args=ARGS Add ARGS to building perl Makefiles.],
-	PERLARGS="$withval"
-)
-AC_SUBST(PERLARGS)
-
-dnl ----------------------------------------------------------------------
 AC_ARG_WITH(validator,
 [  --without-validator     Build without libsres, libval and binary apps
                           (Disable if they fail to build on your platform).]
@@ -46,10 +37,21 @@ AC_ARG_WITH(validator,
 if test "x$with_validator" != "xno"; then
   AC_CONFIG_SUBDIRS(validator)
   DNSSEC_SUBDIRS="validator"
+  PERLARGS=""
 else
   DNSSEC_SUBDIRS="none"
+  PERLARGS="NOVALIDATOR"
 fi
 AC_SUBST(DNSSEC_SUBDIRS)
+
+dnl ----------------------------------------------------------------------
+dnl perl specific arguments
+dnl
+AC_ARG_WITH(perl-build-args,
+[  --with-perl-perl-args=ARGS Add ARGS to building perl Makefiles.],
+	PERLARGS="$PERLARGS $withval"
+)
+AC_SUBST(PERLARGS)
 
 dnl ----------------------------------------------------------------------
 if test "x$prefix" = "xNONE" ; then
