@@ -53,6 +53,7 @@ int query_send( const char      *name,
             const u_int16_t     type,
             const u_int16_t     class,
             struct name_server  *nslist,
+            int                 edns0_size,
             int                 *trans_id);
 
 int response_recv(int           *trans_id,
@@ -64,6 +65,7 @@ int get ( const char            *name_n,
             const u_int16_t     type_h,
             const u_int16_t     class_h,
             struct name_server  *nslist,
+            int                 edns0_size,
             struct name_server  **respondent,
             u_int8_t            **response,
             u_int32_t           *response_length);
@@ -83,7 +85,7 @@ query/response mechanism can be implemented using the above interfaces
 as shown below:
 
 if (SR_UNSET == (ret_val = query_send(name, type, class, 
-        				nslist, &trans_id))) {
+        				nslist, EDNS_UDP_SIZE, &trans_id))) {
 	do {
 		ret_val = response_recv(&trans_id, server, 
 						response, response_length);

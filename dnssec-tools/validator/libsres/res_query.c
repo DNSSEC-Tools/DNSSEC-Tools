@@ -363,7 +363,9 @@ int
 query_send(const char *name,
            const u_int16_t type_h,
            const u_int16_t class_h,
-           struct name_server *pref_ns, int *trans_id)
+           struct name_server *pref_ns, 
+           int edns0_size,
+           int *trans_id)
 {
     u_int8_t        query[12 + NS_MAXDNAME + 4];
     int             query_limit = 12 + NS_MAXDNAME + 4;
@@ -406,7 +408,7 @@ query_send(const char *name,
         if (ns->ns_options & RES_USE_DNSSEC) {
             query_length =
                 res_val_nopt(ns, query_length, query, query_limit,
-                             EDNS_UDP_SIZE);
+                             edns0_size);
             /** Set the CD flag */
             ((HEADER *) query)->cd = 1;
         }
@@ -503,6 +505,7 @@ get(const char *name,
     const u_int16_t type_h,
     const u_int16_t class_h,
     struct name_server *nslist,
+    int edns0_size,
     struct name_server **server,
     u_int8_t ** response, u_int * response_length)
 {
@@ -510,7 +513,7 @@ get(const char *name,
     int             trans_id;
     struct timeval closest_event;
     fd_set pending_desc;
-    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, &trans_id))) {
+    if (SR_UNSET == (ret_val = query_send(name, type_h, class_h, nslist, edns0_size, &trans_id))) {
 
         do {
             FD_ZERO(&pending_desc);
