@@ -369,13 +369,15 @@ rsasha1_sigverify(val_context_t * ctx,
 int
 ds_sha_hash_is_equal(u_int8_t * name_n,
                      u_int8_t * rrdata,
-                     u_int16_t rrdatalen, u_int8_t * ds_hash)
+                     u_int16_t rrdatalen, 
+                     u_int8_t * ds_hash,
+                     u_int32_t ds_hash_len)
 {
     u_int8_t        ds_digest[SHA_DIGEST_LENGTH];
     int             namelen;
     SHA_CTX         c;
 
-    if (rrdata == NULL)
+    if (rrdata == NULL || ds_hash_len != SHA_DIGEST_LENGTH)
         return 0;
 
     namelen = wire_name_length(name_n);
@@ -392,6 +394,37 @@ ds_sha_hash_is_equal(u_int8_t * name_n,
 
     return 0;
 }
+
+#ifdef HAVE_SHA_256
+int
+ds_sha256_hash_is_equal(u_int8_t * name_n,
+                        u_int8_t * rrdata,
+                        u_int16_t rrdatalen, 
+                        u_int8_t * ds_hash,
+                        u_int32_t ds_hash_len)
+{
+    u_int8_t        ds_digest[SHA256_DIGEST_LENGTH];
+    int             namelen;
+    SHA256_CTX         c;
+
+    if (rrdata == NULL || ds_hash_len != SHA256_DIGEST_LENGTH)
+        return 0;
+
+    namelen = wire_name_length(name_n);
+
+    memset(ds_digest, SHA256_DIGEST_LENGTH, 0);
+
+    SHA256_Init(&c);
+    SHA256_Update(&c, name_n, namelen);
+    SHA256_Update(&c, rrdata, rrdatalen);
+    SHA256_Final(ds_digest, &c);
+
+    if (!memcmp(ds_digest, ds_hash, SHA256_DIGEST_LENGTH))
+        return 1;
+
+    return 0;
+}
+#endif
 
 #ifdef LIBVAL_NSEC3
 u_int8_t       *

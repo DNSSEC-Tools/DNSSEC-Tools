@@ -371,10 +371,13 @@ val_parse_ds_rdata(const unsigned char *buf, int buflen,
     /*
      * Only SHA-1 is understood 
      */
-    if (rdata->d_type != ALG_DS_HASH_SHA1)
+    if (rdata->d_type == ALG_DS_HASH_SHA1)
+        rdata->d_hash_len = SHA_DIGEST_LENGTH;
+    else if (rdata->d_type == ALG_DS_HASH_SHA256)
+        rdata->d_hash_len = SHA256_DIGEST_LENGTH;
+    else
         return -1;
 
-    rdata->d_hash_len = SHA_DIGEST_LENGTH;
     rdata->d_hash =
         (u_int8_t *) MALLOC(rdata->d_hash_len * sizeof(u_int8_t));
     if (rdata->d_hash == NULL)
