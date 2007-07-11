@@ -581,7 +581,14 @@ val_gethostbyname2_r(val_context_t * context,
     struct in_addr  ip4_addr;
     struct in6_addr ip6_addr;
     int             offset = 0;
+    val_status_t local_ans_status = VAL_LOCAL_ANSWER;
+    int trusted = 0;
 
+    if (VAL_NO_ERROR == val_is_local_trusted(context, &trusted)) {
+        if (trusted) {
+            local_ans_status = VAL_TRUSTED_ANSWER;
+        }
+    }
     if (!name || !ret || !h_errnop || !val_status || !result || !buf) {
         if (result) {
             *result = NULL;
@@ -631,7 +638,7 @@ val_gethostbyname2_r(val_context_t * context,
         memcpy(ret->h_addr_list[0], &ip4_addr, sizeof(struct in_addr));
         ret->h_addr_list[1] = 0;
 
-        *val_status = VAL_LOCAL_ANSWER;
+        *val_status = local_ans_status;
         *h_errnop = NETDB_SUCCESS;
         *result = ret;
 
@@ -677,7 +684,7 @@ val_gethostbyname2_r(val_context_t * context,
         memcpy(ret->h_addr_list[0], &ip6_addr, sizeof(struct in6_addr));
         ret->h_addr_list[1] = 0;
 
-        *val_status = VAL_LOCAL_ANSWER;
+        *val_status = local_ans_status;
         *h_errnop = NETDB_SUCCESS;
         *result = ret;
 
@@ -697,7 +704,7 @@ val_gethostbyname2_r(val_context_t * context,
                                        &offset);
 
         if (*result != NULL) {
-            *val_status = VAL_LOCAL_ANSWER;
+            *val_status = local_ans_status;
             *h_errnop = NETDB_SUCCESS;
             return 0;           // xxx-audit: what about *offset = orig_offset; ?
         }
