@@ -57,10 +57,6 @@ The default encryption algorithm to be passed to I<dnssec-keygen>.
 
 The pathname to the archived-key directory.
 
-=item zonecheck
-
-The path to the I<named-checkzone> command.
-
 =item default_keyrec
 
 The default I<keyrec> filename to be used by the B<keyrec.pm> module.
@@ -82,6 +78,10 @@ The path to the DNSSEC-Tools I<keyarch> command.
 =item keygen
 
 The path to the I<dnssec-keygen> command.
+
+=item keygen-opts
+
+Options to pass to the I<dnssec-keygen> command.
 
 =item kskcount
 
@@ -132,13 +132,25 @@ cycle.
 A true/false flag indicating if old keys should be moved to the
 archive directory.
 
+=item usegui
+
+Flag to allow/disallow usage of the GUI for specifying command options.
+
+=item zonecheck
+
+The path to the I<named-checkzone> command.
+
+=item zonecheck-opts
+
+Options to pass to the I<named-checkzone> command.
+
 =item zonesign
 
 The path to the I<dnssec-signzone> command.
 
-=item usegui
+=item zonesign-opts
 
-Flag to allow/disallow usage of the GUI for specifying command options.
+Options to pass to the I<dnssec-signzone> command.
 
 =item zonesigner
 
@@ -191,6 +203,7 @@ The following is an example B<dnssec-tools.conf> configuration file.
     rndc            /usr/local/sbin/rndc
     viewimage       /usr/X11R6/bin/xview
     zonecheck       /usr/local/sbin/named-checkzone
+    zonecheck-opts  -k ignore
     zonesign        /usr/local/sbin/dnssec-signzone
 
     keyarch	    /usr/bin/keyarch
