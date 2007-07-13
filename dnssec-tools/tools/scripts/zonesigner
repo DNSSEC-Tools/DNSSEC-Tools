@@ -314,7 +314,7 @@ sub optsandargs
 	$szopts   = $opts{'szopts'}	|| "";
 	$krfile   = $opts{'krfile'}	|| "";
 	$nokrfile = $opts{'nokrfile'}	|| "";
-	$zcopts   = $opts{'zcopts'}	|| "";
+	$zcopts   = $opts{'zcopts'}	|| $opts{'zonecheck-opts'};
 	$zone	  = $opts{'zone'};
 
 	$showkeycmd  = $opts{'showkeycmd'}	|| 0;
