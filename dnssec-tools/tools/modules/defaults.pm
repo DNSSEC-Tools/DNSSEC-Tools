@@ -190,6 +190,10 @@ This default holds the path to the key-archiving program.
 
 This default holds the path to the key-generation program.
 
+=item B<keygen-opts>
+
+This default hold a set of options for the key-generation program.
+
 =item B<kskcount>
 
 This default holds the default number of KSK keys to generate for a zone.
@@ -273,9 +277,17 @@ This default holds the default image viewer.
 
 This default holds the path to the zone-verification program.
 
+=item B<zonecheck-opts>
+
+This default hold a set of options for the zone-verification program.
+
 =item B<zonesign>
 
 This default holds the path to the zone-signing program.
+
+=item B<zonesign-opts>
+
+This default hold a set of options for the zone-signing program.
 
 =item B<zonesigner>
 
