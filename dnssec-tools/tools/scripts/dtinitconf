@@ -90,6 +90,10 @@ my $overwrite;				# Overwrite existing output file.
 my $verbose = 0;			# Give verbose output.
 my $version = 0;			# Display the version number.
 
+my $kgopts;				# Options for key-generation program.
+my $zcopts;				# Options for zone-checking program.
+my $zsopts;				# Options for zone-signing program.
+
 my $rlogfile;				# Logfile for rollerd.
 my $rloglevel;				# Logging level for rollerd.
 my $rsleep;				# Sleep-time for rollerd.
@@ -348,10 +352,14 @@ sub writeconf()
 		print "\troll-loglevel         - \"$rloglevel\"\n";
 		print "\troll-sleep            - \"$rsleep\"\n\n";
 
-		print "\tzonecheck  - \"$zonecheck\"\n";
 		print "\tkeygen     - \"$keygen\"\n";
+		print "\tzonecheck  - \"$zonecheck\"\n";
 		print "\tzonesign   - \"$zonesign\"\n";
 		print "\tviewimage  - \"$viewimg\"\n\n";
+
+		print "\tkeygen options     - \"$kgopts\"\n";
+		print "\tzonecheck options  - \"$zcopts\"\n";
+		print "\tzonesign  options  - \"$zsopts\"\n";
 	}
 
 	open(DTCONF,">$outfile") or die "unable to open \"$outfile\" for writing";
@@ -378,7 +386,21 @@ viewimage	$viewimg
 zonecheck	$zonecheck
 zonesign	$zonesign
 zonesigner	/usr/bin/zonesigner
+";
 
+	if(($kgopts ne "") || ($zcopts ne "") || ($zsopts ne ""))
+	{
+		print DTCONF "
+#
+# Program options.
+#
+";
+	}
+	print DTCONF "keygen-opts	$kgopts\n" if($kgopts ne "");
+	print DTCONF "zonecheck-opts	$zcopts\n" if($zcopts ne "");
+	print DTCONF "zonesign-opts	$zsopts\n" if($zsopts ne "");
+
+	print DTCONF "
 #
 # Key-related values.
 #
@@ -657,6 +679,11 @@ sub get_dt_opts()
 	$savekeys = getval("Save Old Keys",$savekeys,"boolean");
 	$keyarch  = getval("Key Archive Directory","");
 
+	print "\n";
+
+	$kgopts = getval("Key-Generation Options","");
+	$zcopts = getval("Zone-Checking Options","");
+	$zsopts = getval("Zone-Signing Options","");
 	print "\n";
 
 	$rlogfile  = getval("Roll-over Manager's Logfile",$rlogfile,"");
