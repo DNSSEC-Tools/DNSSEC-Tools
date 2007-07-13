@@ -2589,6 +2589,7 @@ sub usage
 	print STDERR "\t\t\t-zskcount ZSK-number\n";
 	print STDERR "\t\t\t-random random-path\n";
 	print STDERR "\t\t\t-kgopts dnssec-keygen-options\n";
+	print STDERR "\t\t\t-zcopts named-checkzone-options\n";
 	print STDERR "\n";
 
 	print STDERR "\t\tdnssec-signzone options:\n";
@@ -3057,6 +3058,18 @@ as the I<-d> option.
 Additional options for B<dnssec-signzone> may be specified using this option.
 The additional options are passed as a single string value as an argument to
 the I<-szopts> option.
+
+=back
+
+=head2 Other Options
+
+=over 4
+
+=item -zcopts
+
+Additional options for B<named-checkzone> may be specified using this option.
+The additional options are passed as a single string value as an argument to
+the I<-zcopts> option.
 
 =back
 
