@@ -41,7 +41,6 @@ my %opts = (
 GetOptions(\%opts,
              'a|anchor_data_file=s',
              'c|config',
-             'd|domain=s',
              'f|foreground|fg',
              'k|dnsval_conf_file=s',
              'h|help',
@@ -58,6 +57,7 @@ GetOptions(\%opts,
              'v|verbose',
              'V|version',
              'w|hold_time=s',
+             'z|zone=s',
              'test_revoke=s',
            );
 
@@ -104,11 +104,11 @@ my $holdtime = $opts{'w'} ? $opts{'w'}
                            : $dtconf{'taholdtime'};
 
 my $initrun = 1;
-my @domains;
-push @domains, split(/,/,$opts{'d'}) if ($opts{'d'});
-my %revdomains;
-for (my $i = 0; $i <=$#domains; $i++) {
-    $revdomains{$domains[$i]} = $i;
+my @zones;
+push @zones, split(/,/,$opts{'d'}) if ($opts{'d'});
+my %revzones;
+for (my $i = 0; $i <=$#zones; $i++) {
+    $revzones{$zones[$i]} = $i;
 }
 
 my %keystorage;
@@ -142,7 +142,7 @@ if ((!$contactaddr) && (!$opts{'L'}) && (!$opts{'p'})) {
 
 if ($opts{'f'}) {
     $once = $opts{'S'};
-    get_domains_keys(\%keystorage);
+    get_zones_keys(\%keystorage);
     do {
         my $newsleeptime = &checkkeys($sleeptime);
         if (!$once) {
@@ -195,7 +195,7 @@ if ($opts{'f'}) {
 
 } else {
     $once = $opts{'S'};
-    get_domains_keys(\%keystorage);
+    get_zones_keys(\%keystorage);
     &daemonize;
     do {
         my $newsleeptime = &checkkeys($sleeptime);
@@ -228,12 +228,12 @@ sub usage {
         print "trustman takes only one config file argument.\n";
         print "please indicate EITHER a dnsval.conf file OR a named.conf file.\n";
     }
-    print "trustman [-d domain] [-L] [-f] [-c -o] [-v] [-V]\n";
+    print "trustman [-z zone] [-L] [-f] [-c -o] [-v] [-V]\n";
     print "\tuse the -f option to run in the foreground.\n";
 #    print "\t[-o outfile] [-m mailcontact] [-s smtpserver]";
 #    print "\t[-t secs] [-n named_conf_file] [-k dnsval_conf_file]";
 #    print "\tUse -L to log to syslog; this can be in addition to mail.\n";
-    print "\tIf a domain is not specified, all domains in the key_containing_files will be checked.\n";
+    print "\tIf a zone is not specified, all zones in the key_containing_files will be checked.\n";
     print "\tIf no key_containing_files are specified, dnssec-tools.conf will be
 parsed for appropriate files.\n";
     print "\tWhen running the configure option (-c or --config), you MUST specify an output file (-o).\n";
@@ -248,32 +248,32 @@ sub checkkeys {
         @{$keys_to_verify{$k}} = @{$keystorage{$k}};
     }
 
-    my @domains_to_check;
+    my @zones_to_check;
 
-    foreach my $d (@domains) {
-    # check all domains to see if $active_refresh_times{$d} has been reached
+    foreach my $z (@zones) {
+    # check all zones to see if $active_refresh_times{$z} has been reached
          my $now = localtime();
          my $nowsecs = str2time($now);
-         if ($nowsecs >= $active_refresh_times{$d}) {
-             push @domains_to_check, $d;
-         } elsif ($initrun) { # first time through, check all domains
-             push @domains_to_check, $d;
+         if ($nowsecs >= $active_refresh_times{$z}) {
+             push @zones_to_check, $z;
+         } elsif ($initrun) { # first time through, check all zones
+             push @zones_to_check, $z;
          }
     }
 
-    foreach my $d (@domains_to_check) {
+    foreach my $z (@zones_to_check) {
         my $query;
-        $query = resolve_and_check_dnskey($d,$dvfile);
+        $query = resolve_and_check_dnskey($z,$dvfile);
         my %pendingnewkeys;
         if (keys %newkeys) {
-            for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
-                my $pendingkeyobj = { flags => $newkeys{$d}[$i]{flags},
-                                      protocol => $newkeys{$d}[$i]{protocol},
-                                      algorithm => $newkeys{$d}[$i]{algorithm},
-                                      key => $newkeys{$d}[$i]{key},
+            for (my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
+                my $pendingkeyobj = { flags => $newkeys{$z}[$i]{flags},
+                                      protocol => $newkeys{$z}[$i]{protocol},
+                                      algorithm => $newkeys{$z}[$i]{algorithm},
+                                      key => $newkeys{$z}[$i]{key},
                                       found => 0,
                                     };
-                push (@{$pendingnewkeys{$d}}, $pendingkeyobj);
+                push (@{$pendingnewkeys{$z}}, $pendingkeyobj);
             }
         }
 
@@ -286,11 +286,11 @@ sub checkkeys {
                  my $retryobj = { ottl => $orgttl,
                                   sigexp => $sigexp
                                 };
-                 $zone_retry_times{$d} = $retryobj;
+                 $zone_retry_times{$z} = $retryobj;
                  my ($refresh_secs,$refresh_time) = compute_sleepsecs($orgttl, $sigexp);
-                 $sleeptimes{$d} =  $refresh_secs;
-                 $active_refresh_times{$d} = $refresh_time;
-                 last; # only need one sleep time per domain
+                 $sleeptimes{$z} =  $refresh_secs;
+                 $active_refresh_times{$z} = $refresh_time;
+                 last; # only need one sleep time per zone
             }
 # if an RRSET is received which does NOT contain a pending
 # new key, remove that new key from the %newkeys
@@ -303,7 +303,7 @@ sub checkkeys {
                 # we don't care if a DNSKEY record is found with the
                 # revoke bit set unless it is a key we have stored
                 # so check for a match first
-                $nonmatch = compare_keys(\%keystorage, $d, $keyrec, $key);
+                $nonmatch = compare_keys(\%keystorage, $z, $keyrec, $key);
                 if ($nonmatch) {
                 # may be a new key, remember it.
                 # check if this key is already in %newkeys
@@ -313,20 +313,20 @@ sub checkkeys {
  
                     my $notnewkey = 0;
                     if (keys %newkeys) {
-                        for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
-                            if ($newkeys{$d}[$i]{key} eq $key &&
-                                $newkeys{$d}[$i]{flags} eq $keyrec->flags &&
-                                $newkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
-                                $newkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) 
+                        for (my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
+                            if ($newkeys{$z}[$i]{key} eq $key &&
+                                $newkeys{$z}[$i]{flags} eq $keyrec->flags &&
+                                $newkeys{$z}[$i]{protocol} eq $keyrec->protocol &&
+                                $newkeys{$z}[$i]{algorithm} eq $keyrec->algorithm ) 
                             {
                                 $notnewkey = 1;
                                 if (keys %pendingnewkeys) {
-                                    for (my $i = 0; $i <= $#{$pendingnewkeys{$d}}; $i++) {
-                                        if ($pendingnewkeys{$d}[$i]{key} eq $key &&
-                                            $pendingnewkeys{$d}[$i]{flags} eq $keyrec->flags &&
-                                            $pendingnewkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
-                                            $pendingnewkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ) {
-                                            $pendingnewkeys{$d}[$i]{found} = 1;
+                                    for (my $i = 0; $i <= $#{$pendingnewkeys{$z}}; $i++) {
+                                        if ($pendingnewkeys{$z}[$i]{key} eq $key &&
+                                            $pendingnewkeys{$z}[$i]{flags} eq $keyrec->flags &&
+                                            $pendingnewkeys{$z}[$i]{protocol} eq $keyrec->protocol &&
+                                            $pendingnewkeys{$z}[$i]{algorithm} eq $keyrec->algorithm ) {
+                                            $pendingnewkeys{$z}[$i]{found} = 1;
                                         }
                                     }
                                 }
@@ -348,8 +348,8 @@ sub checkkeys {
                                           key => $key,
                                           holdtime => $add_holddown_time,
                                         };
-                        push(@{$newkeys{$d}},$newkeyobj);
-                        my $notif = "A new key has been received for domain " . $d . ". It will be added when the add holddown time is reached.\n";
+                        push(@{$newkeys{$z}},$newkeyobj);
+                        my $notif = "A new key has been received for zone " . $z . ". It will be added when the add holddown time is reached.\n";
                         notify($notif) if ($opts{'v'});
                         # whenever newkeys is modified, write it out
                         open (FILE, "> $newkeyfile") 
@@ -367,10 +367,10 @@ sub checkkeys {
                 } elsif ($revoke == 1) {
                     # this key is being revoked
                     if ($dvfile) {
-                        revoke_ta_dnsvalconf($d,$keyrec);
+                        revoke_ta_dnsvalconf($z,$keyrec);
                     }
                     if ($ncfile) {
-                        revoke_ta_namedconf($d,$keyrec);
+                        revoke_ta_namedconf($z,$keyrec);
                     }
 
 # verify that ALL keys in %keystorage (now %keys_to_verify) were matched.
@@ -382,23 +382,23 @@ sub checkkeys {
                 # the keys_to_verify structure so we know it is not
                 # "removed"
 
-                    for (my $i = 0; $i <= $#{$keys_to_verify{$d}}; $i++) {
-                        if ($keys_to_verify{$d}[$i]{key} eq $key &&
-                            $keys_to_verify{$d}[$i]{flags} eq $keyrec->flags &&
-                            $keys_to_verify{$d}[$i]{protocol} eq $keyrec->protocol &&
-                            $keys_to_verify{$d}[$i]{algorithm} eq $keyrec->algorithm ) {
-                            splice @{$keys_to_verify{$d}},$i,1;
+                    for (my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++) {
+                        if ($keys_to_verify{$z}[$i]{key} eq $key &&
+                            $keys_to_verify{$z}[$i]{flags} eq $keyrec->flags &&
+                            $keys_to_verify{$z}[$i]{protocol} eq $keyrec->protocol &&
+                            $keys_to_verify{$z}[$i]{algorithm} eq $keyrec->algorithm ) {
+                            splice @{$keys_to_verify{$z}},$i,1;
                         }
                     }
                     # if it appears in the %remkeys struct, since it has
                     # now reappeared, remove it from remkeys
                     if (keys %remkeys) {
-                        for (my $i = 0; $i <= $#{$remkeys{$d}}; $i++) {
-                            if ($remkeys{$d}[$i]{key} eq $key &&
-                                $remkeys{$d}[$i]{flags} eq $keyrec->flags &&
-                                $remkeys{$d}[$i]{protocol} eq $keyrec->protocol &&
-                                $remkeys{$d}[$i]{algorithm} eq $keyrec->algorithm ){
-                                splice @{$remkeys{$d}},$i,1;
+                        for (my $i = 0; $i <= $#{$remkeys{$z}}; $i++) {
+                            if ($remkeys{$z}[$i]{key} eq $key &&
+                                $remkeys{$z}[$i]{flags} eq $keyrec->flags &&
+                                $remkeys{$z}[$i]{protocol} eq $keyrec->protocol &&
+                                $remkeys{$z}[$i]{algorithm} eq $keyrec->algorithm ){
+                                splice @{$remkeys{$z}},$i,1;
                             }
                         }
                     }
@@ -411,24 +411,24 @@ sub checkkeys {
 # RRSET if the query was successful. Will deal with the unsuccessful
 # query below
 
-            for (my $k = 0; $k <= $#{$pendingnewkeys{$d}}; $k++) {
+            for (my $k = 0; $k <= $#{$pendingnewkeys{$z}}; $k++) {
                 # any pending key still not marked found should be
                 # removed from %newkeys
-                if (!$pendingnewkeys{$d}[$k]{found}) {
-                    for (my $j = 0; $j <= $#{$newkeys{$d}}; $j++) {
+                if (!$pendingnewkeys{$z}[$k]{found}) {
+                    for (my $j = 0; $j <= $#{$newkeys{$z}}; $j++) {
                       # find the entry in newkeys that corresponds to
                       # the pending key not found
-                        if ($newkeys{$d}[$j]{key} eq 
-                            $pendingnewkeys{$d}[$k]{key} &&
-                            $newkeys{$d}[$j]{flags} eq
-                            $pendingnewkeys{$d}[$k]{flags} &&
-                            $newkeys{$d}[$j]{protocol} eq
-                            $pendingnewkeys{$d}[$k]{protocol} &&
-                            $newkeys{$d}[$j]{algorithm} eq
-                            $pendingnewkeys{$d}[$k]{algorithm} ) {
-                            splice @{$newkeys{$d}},$j,1;
+                        if ($newkeys{$z}[$j]{key} eq 
+                            $pendingnewkeys{$z}[$k]{key} &&
+                            $newkeys{$z}[$j]{flags} eq
+                            $pendingnewkeys{$z}[$k]{flags} &&
+                            $newkeys{$z}[$j]{protocol} eq
+                            $pendingnewkeys{$z}[$k]{protocol} &&
+                            $newkeys{$z}[$j]{algorithm} eq
+                            $pendingnewkeys{$z}[$k]{algorithm} ) {
+                            splice @{$newkeys{$z}},$j,1;
                             # notify of this action if Verbose
-                            my $notif = "Pending new key for domain " . $d . " has been removed.\n";
+                            my $notif = "Pending new key for zone " . $z . " has been removed.\n";
                             notify($notif) if ($opts{'v'});
                             # whenever newkeys is modified, write it out
                             open (FILE, "> $newkeyfile")
@@ -442,56 +442,56 @@ sub checkkeys {
                 }
             }
         } else {
-            my $notif = "query failed for domain " . $d . "\n";
+            my $notif = "query failed for zone " . $z . "\n";
             print $notif;
             notify($notif) if ($opts{'v'});
             my $refresh_secs = compute_queryfail_sleepsecs(
-                                   $zone_retry_times{$d}{'ottl'},
-                                   $zone_retry_times{$d}{'sigexp'});
-            $sleeptimes{$d} =  $refresh_secs;
+                                   $zone_retry_times{$z}{'ottl'},
+                                   $zone_retry_times{$z}{'sigexp'});
+            $sleeptimes{$z} =  $refresh_secs;
         }
     }
 
-# all domains have been queried, and queries have been processed
+# all zones have been queried, and queries have been processed
 
     if (%newkeys) {
-        my @newkeydomains;
+        my @newkeyzones;
 
         # if add_holddown_time has been reached, notify
 
         my $now = localtime();
         my $nowsecs = str2time($now);
 
-        foreach my $d (keys %newkeys) {
-            for (my $i = 0; $i <= $#{$newkeys{$d}}; $i++) {
-                if ($nowsecs >= $newkeys{$d}[$i]{holdtime}) {
+        foreach my $z (keys %newkeys) {
+            for (my $i = 0; $i <= $#{$newkeys{$z}}; $i++) {
+                if ($nowsecs >= $newkeys{$z}[$i]{holdtime}) {
                     # notify about this key
-                    push @newkeydomains, $d;
+                    push @newkeyzones, $z;
                 }
             }
         }
-        foreach my $d (@newkeydomains) {
-        # these are all domains for which new keys have reached their
+        foreach my $z (@newkeyzones) {
+        # these are all zones for which new keys have reached their
         # add holddown time. add these keys as new trust anchors
         # to the appropriate config files
-            if ($zone_configfile_map{$d} eq $ncfile) {
-                add_ta_namedconf($d);
+            if ($zone_configfile_map{$z} eq $ncfile) {
+                add_ta_namedconf($z);
             }
-            if ($zone_configfile_map{$d} eq $dvfile) {
-                add_ta_dnsvalconf($d);
+            if ($zone_configfile_map{$z} eq $dvfile) {
+                add_ta_dnsvalconf($z);
             }
         # now that this key has been added to the appropriate
         # config file(s), put it in keystorage and remove it
         # from newkeys
-            for (my $i =0; $i <= $#{$newkeys{$d}}; $i++) {
-                my $newstorageobj = { flags => $newkeys{$d}[$i]{flags},
-                                      protocol => $newkeys{$d}[$i]{protocol},
-                                      algorithm => $newkeys{$d}[$i]{algorithm},
-                                      key => $newkeys{$d}[$i]{key},
+            for (my $i =0; $i <= $#{$newkeys{$z}}; $i++) {
+                my $newstorageobj = { flags => $newkeys{$z}[$i]{flags},
+                                      protocol => $newkeys{$z}[$i]{protocol},
+                                      algorithm => $newkeys{$z}[$i]{algorithm},
+                                      key => $newkeys{$z}[$i]{key},
                                     };
-                push (@{$keystorage{$d}}, $newstorageobj);
+                push (@{$keystorage{$z}}, $newstorageobj);
 
-                splice @{$newkeys{$d}},$i,1; 
+                splice @{$newkeys{$z}},$i,1; 
                 # whenever newkeys is modified, write it out
                 open (FILE, "> $newkeyfile") 
                     or warn "can't open newkeys: $!";
@@ -500,8 +500,8 @@ sub checkkeys {
                 close FILE or warn "can't close newkeys file: $!";
             }
         }
-#        if (($contactaddr) && (@newkeydomains)) { # mail it
-#            mailcontact(0,$smtpserver,$contactaddr,@newkeydomains);
+#        if (($contactaddr) && (@newkeyzones)) { # mail it
+#            mailcontact(0,$smtpserver,$contactaddr,@newkeyzones);
 #        }
         
     }
@@ -512,66 +512,66 @@ sub checkkeys {
         my $now = localtime();
         my $nowsecs = str2time($now);
 
-        foreach my $d (keys %remkeys) {
-            for (my $i = 0; $i <= $#{$remkeys{$d}}; $i++) {
-                if ($nowsecs >= $remkeys{$d}[$i]{holdtime}) {
+        foreach my $z (keys %remkeys) {
+            for (my $i = 0; $i <= $#{$remkeys{$z}}; $i++) {
+                if ($nowsecs >= $remkeys{$z}[$i]{holdtime}) {
                 # mark this for deletion
-                    if ($zone_configfile_map{$d} eq $ncfile) {
-                        remove_ta_namedconf($d, $remkeys{$d}[$i]{key},
-                                            $remkeys{$d}[$i]{flags},
-                                            $remkeys{$d}[$i]{protocol},
-                                            $remkeys{$d}[$i]{algorithm});
+                    if ($zone_configfile_map{$z} eq $ncfile) {
+                        remove_ta_namedconf($z, $remkeys{$z}[$i]{key},
+                                            $remkeys{$z}[$i]{flags},
+                                            $remkeys{$z}[$i]{protocol},
+                                            $remkeys{$z}[$i]{algorithm});
                     }
-                    if ($zone_configfile_map{$d} eq $dvfile) {
-                        remove_ta_dnsvalconf($d, $remkeys{$d}[$i]{key},
-                                            $remkeys{$d}[$i]{flags},
-                                            $remkeys{$d}[$i]{protocol},
-                                            $remkeys{$d}[$i]{algorithm});
+                    if ($zone_configfile_map{$z} eq $dvfile) {
+                        remove_ta_dnsvalconf($z, $remkeys{$z}[$i]{key},
+                                            $remkeys{$z}[$i]{flags},
+                                            $remkeys{$z}[$i]{protocol},
+                                            $remkeys{$z}[$i]{algorithm});
                     }
                 # remove this key from remkeys now, it has been removed
-                    splice @{$remkeys{$d}},$i,1;
+                    splice @{$remkeys{$z}},$i,1;
                 }
             }
         }
     }
 
-    foreach my $d (keys %keys_to_verify) {
-    # any domains/keys still in %keys_to_verify did not appear
+    foreach my $z (keys %keys_to_verify) {
+    # any zones/keys still in %keys_to_verify did not appear
     # in a query, but are configured trust anchors. 
     # Set the remove holddown time (30 days) for these keys
     # and add to remkeys for processing on next go
 
 
         my $remove_holddown_time = compute_remove_holddown();
-        for (my $i = 0; $i <= $#{$keys_to_verify{$d}}; $i++) {
-            my $remkeyobj = { flags => $keys_to_verify{$d}[$i]{flags},
-                              protocol => $keys_to_verify{$d}[$i]{protocol},
-                              algorithm => $keys_to_verify{$d}[$i]{algorithm},
-                              key => $keys_to_verify{$d}[$i]{key},
+        for (my $i = 0; $i <= $#{$keys_to_verify{$z}}; $i++) {
+            my $remkeyobj = { flags => $keys_to_verify{$z}[$i]{flags},
+                              protocol => $keys_to_verify{$z}[$i]{protocol},
+                              algorithm => $keys_to_verify{$z}[$i]{algorithm},
+                              key => $keys_to_verify{$z}[$i]{key},
                               holdtime => $remove_holddown_time,
                             };
             # only add this key if it isn't already there
             my $addit = 1;
             if (keys %remkeys) {
-                for (my $i = 0; $i <= $#{$remkeys{$d}}; $i++) {
-                    if ($remkeys{$d}[$i]{key} eq $remkeyobj->{key} &&
-                        $remkeys{$d}[$i]{flags} eq $remkeyobj->{flags} &&
-                        $remkeys{$d}[$i]{protocol} eq $remkeyobj->{protocol} &&
-                        $remkeys{$d}[$i]{algorithm} eq $remkeyobj->{algorithm}){
+                for (my $i = 0; $i <= $#{$remkeys{$z}}; $i++) {
+                    if ($remkeys{$z}[$i]{key} eq $remkeyobj->{key} &&
+                        $remkeys{$z}[$i]{flags} eq $remkeyobj->{flags} &&
+                        $remkeys{$z}[$i]{protocol} eq $remkeyobj->{protocol} &&
+                        $remkeys{$z}[$i]{algorithm} eq $remkeyobj->{algorithm}){
                         $addit = 0;
                     }
                 }
             }
-            if ($addit) { push (@{$remkeys{$d}},$remkeyobj); }
+            if ($addit) { push (@{$remkeys{$z}},$remkeyobj); }
         }
     }
 
     $initrun = 0;
 
-    foreach my $d (keys %sleeptimes) {
-        if ($sleep > $sleeptimes{$d} &&
-            $sleeptimes{$d} > 0) {
-            $sleep = $sleeptimes{$d};
+    foreach my $z (keys %sleeptimes) {
+        if ($sleep > $sleeptimes{$z} &&
+            $sleeptimes{$z} > 0) {
+            $sleep = $sleeptimes{$z};
         }
         # otherwise, just leaving the current $sleep
     }
@@ -580,21 +580,21 @@ sub checkkeys {
 } # end checkkeys
 
 sub add_ta_namedconf  {
-    my $domain = @_;
+    my $zone = @_;
     open (TMP, ">/tmp/named.conf.tmp") or die "unable to open temp file.";
     open (CONF,$ncfile) or die "unable to read named.conf file.";
     while (<CONF>) {
         print TMP $_;
         if (/^trusted-keys/) {
             print TMP "\n\n";
-            for (my $i =0; $i <= $#{$newkeys{$domain}}; $i++) {
-                my $newkey = $domain . " " . 
-                             $newkeys{$domain}[$i]{flags} . " " .
-                             $newkeys{$domain}[$i]{protocol} . " " .
-                             $newkeys{$domain}[$i]{algorithm} . " " .
-                             $newkeys{$domain}[$i]{key} . "\";\n";
+            for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
+                my $newkey = $zone . " " . 
+                             $newkeys{$zone}[$i]{flags} . " " .
+                             $newkeys{$zone}[$i]{protocol} . " " .
+                             $newkeys{$zone}[$i]{algorithm} . " " .
+                             $newkeys{$zone}[$i]{key} . "\";\n";
                 print TMP $newkey;
-                my $notif = "New key added to " . $ncfile . " for domain " . $domain . "\n";
+                my $notif = "New key added to " . $ncfile . " for zone " . $zone . "\n";
                 notify($notif);
             }
         }
@@ -609,7 +609,7 @@ sub add_ta_namedconf  {
 }
 
 sub add_ta_dnsvalconf  {
-    my ($domain) = @_;
+    my ($zone) = @_;
 
     my $pat = "trust-anchor";
 
@@ -617,33 +617,33 @@ sub add_ta_dnsvalconf  {
     open (CONF,$dvfile) or die "unable to read dnsval.conf file.";
     $/ = ";";
     while (<CONF>) {
-        my $domainfound = 0;
+        my $zonefound = 0;
         s/\s;\s*$//;
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
             while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-                my ($d, $val) = ($1, $2);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
+                my ($z, $val) = ($1, $2);
+                # strip off the trailing dot from the zone name
+                $z =~ s/\.$//;
                 $val =~ s/[\n\r]//g;
-                if ($d eq $domain) {
-                    $domainfound = 1;
+                if ($z eq $zone) {
+                    $zonefound = 1;
                 }
-                # add the trailing dot when printing domainname
-                print TMP $d . ". " . $val . "\n\n";
+                # add the trailing dot when printing zone name
+                print TMP $z . ". " . $val . "\n\n";
             }
 
-            for (my $i =0; $i <= $#{$newkeys{$domain}}; $i++) {
-                my $newkeyentry = $domain . ". \"" . 
-                             $newkeys{$domain}[$i]{flags} . " " .
-                             $newkeys{$domain}[$i]{protocol} . " " .
-                             $newkeys{$domain}[$i]{algorithm} . " " .
-                             $newkeys{$domain}[$i]{key} . "\"";
-                if ($domainfound) {
+            for (my $i =0; $i <= $#{$newkeys{$zone}}; $i++) {
+                my $newkeyentry = $zone . ". \"" . 
+                             $newkeys{$zone}[$i]{flags} . " " .
+                             $newkeys{$zone}[$i]{protocol} . " " .
+                             $newkeys{$zone}[$i]{algorithm} . " " .
+                             $newkeys{$zone}[$i]{key} . "\"";
+                if ($zonefound) {
                     print TMP $newkeyentry . $2;
                     print "Adding following key to $dvfile:\n";
                     print $newkeyentry . "\n";
-                    my $notif = "New key added to " . $ncfile . " for domain " . $domain . "\n";
+                    my $notif = "New key added to " . $ncfile . " for zone " . $zone . "\n";
                     notify($notif);
                 }
             }
@@ -661,7 +661,7 @@ sub add_ta_dnsvalconf  {
 }
 
 sub remove_ta_dnsvalconf {
-    my ($domain, $k, $f, $p, $a) = @_;
+    my ($zone, $k, $f, $p, $a) = @_;
 
     my $pat = "trust-anchor";
 
@@ -674,11 +674,11 @@ sub remove_ta_dnsvalconf {
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
             while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-                my ($d, $val) = ($1, $2);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
+                my ($z, $val) = ($1, $2);
+                # strip off the trailing dot from the zone name
+                $z =~ s/\.$//;
                 $val =~ s/[\n\r]//g;
-                if ($d eq $domain) {
+                if ($z eq $zone) {
                     my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
                     $key =~ s/\s+//g;
                     $k =~ s/[\n\r]//g;
@@ -688,18 +688,18 @@ sub remove_ta_dnsvalconf {
                         $a eq $algorithm) {
 # its a match, comment it out
                         print TMP "# The following key has been removed.\n";
-                        my $remkeyrec = $d . ". " . $val;
+                        my $remkeyrec = $z . ". " . $val;
                         print TMP "# " . $remkeyrec . "\n\n";
-                        my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
+                        my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
                         notify($notif); 
                     } else {
-                        # add the trailing dot when printing domainname
-                        print TMP $d . ". " . $val . "\n\n";
+                        # add the trailing dot when printing zone name
+                        print TMP $z . ". " . $val . "\n\n";
                     }
 
                 } else {
-                    # add the trailing dot when printing domainname
-                    print TMP $d . ". " . $val . "\n\n";
+                    # add the trailing dot when printing zone name
+                    print TMP $z . ". " . $val . "\n\n";
                 }
             }
             print TMP "\n;\n";
@@ -717,7 +717,7 @@ sub remove_ta_dnsvalconf {
 }
 
 sub remove_ta_namedconf  {
-    my ($domain, $key, $flags, $proto, $algo) = @_;
+    my ($zone, $key, $flags, $proto, $algo) = @_;
 
     my $pat = "^trusted-keys";
     my $trustsection = 0;
@@ -732,12 +732,12 @@ sub remove_ta_namedconf  {
             $trustsection = 1;
             s/\s*\{//;
             if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
-                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
+                my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the zone name
+                $z =~ s/\.$//;
                 $k =~ s/\s+//g;
                 $k =~ s/\"//g;
-                if ($d eq $domain) {
+                if ($z eq $zone) {
                     $key =~ s/[\n\r]//g;
                     $key =~ s/\"//g;
                     if ($key eq $k &&
@@ -747,9 +747,9 @@ sub remove_ta_namedconf  {
                         # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been removed.\n";
-                            my $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $remkeyrec . "\n";
-                            my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
+                            my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
                             notify($notif);
                     }
                 } else {
@@ -763,12 +763,12 @@ sub remove_ta_namedconf  {
                 print TMP "\n};\n";
             } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
 
-                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
+                my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the zone name
+                $z =~ s/\.$//;
                 $k =~ s/\s+//g;
                 $k =~ s/\"//g;
-                if ($d eq $domain) {
+                if ($z eq $zone) {
                     $key =~ s/[\n\r]//g;
                     $key =~ s/\"//g;
                     if ($key eq $k &&
@@ -778,16 +778,16 @@ sub remove_ta_namedconf  {
                         # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been removed.\n";
-                            my $remkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $remkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $remkeyrec . "\n";
-                            my $notif = "The following key has been removed from domain " . $domain . ": " . $remkeyrec . "\n";
+                            my $notif = "The following key has been removed from zone " . $zone . ": " . $remkeyrec . "\n";
                             notify($notif);
                     } else {
                     # just print it, it's not the key we're looking for
                         print TMP $_;
                     }
                 } else {
-                # just print it, it's not the domain we're looking for
+                # just print it, it's not the zone we're looking for
                     print TMP $_;
                 }
             }
@@ -805,7 +805,7 @@ sub remove_ta_namedconf  {
 }
 
 sub revoke_ta_dnsvalconf  {
-    my ($domain,$keyrec) = @_;
+    my ($zone,$keyrec) = @_;
 
     my $pat = "trust-anchor";
 
@@ -818,11 +818,11 @@ sub revoke_ta_dnsvalconf  {
         if (s/^\s*(\S*)\s*$pat\s*//) {
             print TMP $1 . " $pat\n\n";
             while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-                my ($d, $val) = ($1, $2);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
+                my ($z, $val) = ($1, $2);
+                # strip off the trailing dot from the zone name
+                $z =~ s/\.$//;
                 $val =~ s/[\n\r]//g;
-                if ($d eq $domain) {
+                if ($z eq $zone) {
                     my ($flags, $protocol, $algorithm, $key) = $val =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
                     $key =~ s/\s+//g;
                     my $keyin = $keyrec->{key};
@@ -833,15 +833,15 @@ sub revoke_ta_dnsvalconf  {
                         $keyrec->{algorithm} eq $algorithm) {
 # its a match, comment it out
                         print TMP "# The following key has been revoked.\n";
-                        my $revkeyrec = $d . ". " . $val;
+                        my $revkeyrec = $z . ". " . $val;
                         print TMP "# " . $revkeyrec . "\n\n";
-                        my $notif = "The following key has been revoked from domain " . $d . ":\n" . $revkeyrec . "\n";
+                        my $notif = "The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n";
                         notify($notif);
                     }
 
                 } else {
-                    # add the trailing dot when printing domainname
-                    print TMP $d . ". " . $val . "\n\n";
+                    # add the trailing dot when printing zone name
+                    print TMP $z . ". " . $val . "\n\n";
                 }
             }
             print TMP "\n;\n";
@@ -859,7 +859,7 @@ sub revoke_ta_dnsvalconf  {
 }
 
 sub revoke_ta_namedconf  {
-    my ($domain,$keyrec) = @_;
+    my ($zone,$keyrec) = @_;
 
     my $pat = "^trusted-keys";
     my $trustsection = 0;
@@ -874,12 +874,12 @@ sub revoke_ta_namedconf  {
             $trustsection = 1;
             s/\s*\{//;
             if ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
-                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
+                my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the zone name
+                $z =~ s/\.$//;
                 $k =~ s/\s+//g;
                 $k =~ s/\"//g;
-                if ($d eq $domain) {
+                if ($z eq $zone) {
                     my $keyin = $keyrec->{key};
                     $keyin =~ s/[\n\r]//g;
                     if ($keyin eq $k &&
@@ -889,16 +889,16 @@ sub revoke_ta_namedconf  {
 # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been revoked.\n";
-                            my $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $revkeyrec . "\n";
-                            my $notif = "The following key has been revoked from domain " . $d . ":\n" . $revkeyrec . "\n";
+                            my $notif = "The following key has been revoked from zone " . $z . ":\n" . $revkeyrec . "\n";
                             notify($notif);
                     } else {
-                    # just print it, it's not the domain we're looking for
+                    # just print it, it's not the zone we're looking for
                         print TMP $_;
                     }
                 } else {
-                # just print it, it's not the domain we're looking for
+                # just print it, it's not the zone we're looking for
                     print TMP $_;
                 }
             }
@@ -908,12 +908,12 @@ sub revoke_ta_namedconf  {
                 $trustsection = 0;
                 print TMP "\n};\n";
             } elsif ($_ ne '' && /^(\s*\n*)(\S+)\s+(\d+)\s+(\d+)\s+(\d)+\s+(\"*[^"]+"|\S+)\s*/) {
-                my ($space, $d, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
-                # strip off the trailing dot from the domainname
-                $d =~ s/\.$//;
+                my ($space, $z, $f, $p, $a, $k) = ($1, $2, $3, $4, $5, $6);
+                # strip off the trailing dot from the zone name
+                $z =~ s/\.$//;
                 $k =~ s/\s+//g;
                 $k =~ s/\"//g;
-                if ($d eq $domain) {
+                if ($z eq $zone) {
                     my $keyin = $keyrec->{key};
                     $keyin =~ s/[\n\r]//g;
                     if ($keyin eq $k &&
@@ -923,7 +923,7 @@ sub revoke_ta_namedconf  {
 # its a match, comment it out
                             print TMP $space; # attempting to preserve spacing
                             print TMP "# The following key has been revoked.\n";
-                            my $revkeyrec = $d . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
+                            my $revkeyrec = $z . ". " . $f . " " . $p . " " . $a . " " . "\"" . $k . "\";";
                             print TMP "# " . $revkeyrec . "\n";
                     }
                 } else {
@@ -944,29 +944,29 @@ sub revoke_ta_namedconf  {
     rename ("/tmp/named.conf.tmp",$ncfile);
 }
 
-sub get_domains_keys {
-# using globals %keystorage and @domains, is this evil?
+sub get_zones_keys {
+# using globals %keystorage and @zones, is this evil?
 
-# if domains are specified on the command line, we will only
-# check those domain. Otherwise, check all domains found in config files.
+# if zones are specified on the command line, we will only
+# check those zones. Otherwise, check all zones found in config files.
     read_conf_file(\%keystorage, $ncfile, \%zone_configfile_map) if ($ncfile);
     read_dnsval_file(\%keystorage, $dvfile, \%zone_configfile_map) if ($dvfile);
 
-# if @domains exists now, we used only domains from the cmd line,
-# so we're done. if not, we got domains from config files, and
-# need to populate both @domains and %revdomains
-    if (!exists ($domains[0])) {
-        foreach my $d (keys(%keystorage)) {
-            $domains[$#domains + 1] = $d;
-            if (!(exists $revdomains{$d})) {
-                $revdomains{$d} = $#domains +1;
+# if @zones exists now, we used only zones from the cmd line,
+# so we're done. if not, we got zones from config files, and
+# need to populate both @zones and %revzones
+    if (!exists ($zones[0])) {
+        foreach my $z (keys(%keystorage)) {
+            $zones[$#zones + 1] = $z;
+            if (!(exists $revzones{$z})) {
+                $revzones{$z} = $#zones +1;
             }
         }
     } 
     
 
-    if (!@domains) {
-        print "No domains to check, exiting....\n";
+    if (!@zones) {
+        print "No zones to check, exiting....\n";
         exit(1);
     }
 
@@ -979,15 +979,15 @@ sub get_domains_keys {
 # DNSKEY record; returns an answer only if it was validated
 # 
 sub resolve_and_check_dnskey {
-    my ($d,$file) = @_;
+    my ($z,$file) = @_;
     my $validator = new Net::DNS::SEC::Validator(resolv_conf => $resfile,
                                                  dnsval_conf => $file);
-    my $r = $validator->res_query($d, "IN", "DNSKEY");
+    my $r = $validator->res_query($z, "IN", "DNSKEY");
     if ($r && $validator->isvalidated) {
         my ($pkt, $err) = new Net::DNS::Packet(\$r);
         if (!$err) {
             return $pkt;
-        }
+        } 
     }
     return undef;
 }
@@ -1014,27 +1014,27 @@ sub read_conf_file {
 		last if (/^\s*\};/);
 		if (/\s*($pat_maybefullname)\s+(257)\s+(\d+)\s+(\d+)\s+\"(.+)\"\s*;/) {
 
-                    my $domainname = $1;
+                    my $zonename = $1;
                     my ($flags, $protocol, $algorithm) = ($2, $3, $4);
                     my $key = $5;
-                    $domainname =~ s/\.$//;
+                    $zonename =~ s/\.$//;
 
-                    if (keys %revdomains) {
-# only store key data from domains we are actually checking (@domains)
-# if domains were supplied on the command line (-d)
+                    if (keys %revzones) {
+# only store key data from zones we are actually checking (@zones)
+# if zones were supplied on the command line (-z)
 
-                        if (exists($revdomains{$domainname})) {
+                        if (exists($revzones{$zonename})) {
                             $key =~ s/[\n\r\s]//g;
 
                             # need to remember where these keys came from
-                            $configmap->{$domainname} = $file;
+                            $configmap->{$zonename} = $file;
 
                             my $newstorageobj = { flags => $flags,
                                                   protocol => $protocol,
                                                   algorithm => $algorithm,
                                                   key => $key,
                                                 };
-                            push (@{$storage->{$domainname}}, $newstorageobj);
+                            push (@{$storage->{$zonename}}, $newstorageobj);
                         }
                     }
 		}
@@ -1069,38 +1069,38 @@ sub read_dnsval_file {
         if (s/^\s*(\S*)\s*$pat\s*//) {
             my $trustanchor_type = $1;
             while ($_ ne '' && s/^\s*(\S+)\s+("*[^"]+"|\S+)\s*//) {
-                my ($domainname, $value) = ($1, $2);
+                my ($zonename, $value) = ($1, $2);
                 $value =~ s/[\n\r]//g;
                 my ($flags, $proto, $algo, $key) = $value =~ /(\d+)\s+(\d+)\s+(\d+)\s+(\S[^"]+)/;
 
 
                 # strip the trailing dot
-                $domainname =~ s/\.$//;
+                $zonename =~ s/\.$//;
 
-                if (keys %revdomains) {
-# only store key data from domains we are actually checking (@domains)
-# if domains were supplied on the command line (-d)
+                if (keys %revzones) {
+# only store key data from zones we are actually checking (@zones)
+# if zones were supplied on the command line (-z)
 
-                    if (exists($revdomains{$domainname})) {
+                    if (exists($revzones{$zonename})) {
     
-                        $configmap->{$domainname} = $file;
+                        $configmap->{$zonename} = $file;
 
-                        push @{$storage->{$domainname}},
+                        push @{$storage->{$zonename}},
 		              { flags => $flags,
 			        protocol => $proto,
 			        algorithm => $algo,
 			        key => $key };
-	                $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
+	                $storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
                     }
                 } else {
-                    $configmap->{$domainname} = $file;
+                    $configmap->{$zonename} = $file;
 
-                    push @{$storage->{$domainname}},
+                    push @{$storage->{$zonename}},
 		          { flags => $flags,
 		            protocol => $proto,
 		            algorithm => $algo,
 		            key => $key };
-	            $storage->{$domainname}[$#{$storage->{$domainname}}]{key} =~ s/\s+//g;
+	            $storage->{$zonename}[$#{$storage->{$zonename}}]{key} =~ s/\s+//g;
                 }
 	    }
 	}
@@ -1246,25 +1246,25 @@ sub mailcontact {
 #######################################################################
 # compare_keys()
 #
-# compares the contents of two keys to see if the new one ($domain,
+# compares the contents of two keys to see if the new one ($zone,
 # $rec, and $keyin) matches a cached one previously stored (in
-# $storage->{$domain} )
+# $storage->{$zone} )
 #
 sub compare_keys {
-    my ($storage, $domain, $rec, $keyin) = @_;
+    my ($storage, $zone, $rec, $keyin) = @_;
     my $newkey = 1;
-    if (!exists($storage->{$domain})) {
+    if (!exists($storage->{$zone})) {
 # What would nonexistence of this really mean?
     }
-    for (my $i = 0; $i <= $#{$storage->{$domain}}; $i++) {
-        if ($storage->{$domain}[$i]{key} eq $keyin &&
-            $storage->{$domain}[$i]{flags} eq $rec->flags &&
-            $storage->{$domain}[$i]{protocol} eq $rec->protocol &&
-            $storage->{$domain}[$i]{algorithm} eq $rec->algorithm) {
+    for (my $i = 0; $i <= $#{$storage->{$zone}}; $i++) {
+        if ($storage->{$zone}[$i]{key} eq $keyin &&
+            $storage->{$zone}[$i]{flags} eq $rec->flags &&
+            $storage->{$zone}[$i]{protocol} eq $rec->protocol &&
+            $storage->{$zone}[$i]{algorithm} eq $rec->algorithm) {
 
             $newkey = 0;
             # any match is good enough, get out now
-            $i = $#{$storage->{$domain}} + 1;
+            $i = $#{$storage->{$zone}} + 1;
 	} else {
             $newkey = 1;
         }
@@ -1397,11 +1397,11 @@ Create a configure file for B<trustman> from the command line options given.
 
 A B<dnsval.conf> file to read.
 
-=item -d I<domain>
+=item -z I<zone>
 
-=item --domain I<domain>
+=item --zone I<zone>
 
-The domain to check.  Specifying this option supersedes the default
+The zone to check.  Specifying this option supersedes the default
 configuration file.
 
 =item -f
