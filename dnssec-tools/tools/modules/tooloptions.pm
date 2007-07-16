@@ -32,9 +32,11 @@ our @ISA = qw(Exporter);
 our @EXPORT = qw(
 			opts_cmdopts
 			opts_createkrf
-			opts_drop opts_reset
+			opts_drop
 			opts_gui
 			opts_nogui
+			opts_onerr
+			opts_reset
 			opts_restore
 			opts_setcsopts
 			opts_suspend
@@ -107,6 +109,7 @@ my @stdopts =
 
 		["kgopts=s",		"Additional key-generation options"],
 		["szopts=s",		"Additional zone-signing options"],
+		["zcopts=s",		"Additional zone-checking options"],
 
 	'',
 
@@ -183,6 +186,7 @@ my @stdopts =
 my $firstcall		= 1;		# First-call flag.
 my $create_krfile	= 0;		# Create non-existent keyrec file flag.
 
+my $errexit		= 0;		# On-error flag.
 my $gui			= 0;		# GUI-usage flag.
 
 my %cmdopts	= ();			# Options from command line.
@@ -277,7 +281,7 @@ sub opts_zonekr
 
 	my %optionset = ();			# The combined options set.
 	my %subopts   = ();			# Options subset.
-	my %cmdopts    = ();			# Command line options.
+	my %cmdopts   = ();			# Command line options.
 
 # print "opts_zonekr:  down in\n";
 
@@ -448,6 +452,21 @@ sub opts_gui
 sub opts_nogui
 {
 	$gui = 0;
+}
+
+##############################################################################
+#
+# Routine:	opts_onerr()
+#
+# Purpose:	Set new on-error flag and return the old flag.
+#
+sub opts_onerr
+{
+	my $newaction = shift;				# New on-error flag.
+	my $oldaction = $errexit;			# Old on-error flag.
+
+	$errexit = $newaction;
+	return($oldaction);
 }
 
 ##############################################################################
@@ -707,6 +726,7 @@ sub opts_int_cmdline
 sub localgetoptions
 {
 	my @args = @_;		# Force copy since we're called multiple times.
+	my $ret;		# Return code from GetOptions().
 
 	if($gui)
 	{
@@ -720,7 +740,9 @@ sub localgetoptions
 	require Getopt::Long;
 	import Getopt::Long qw(:config no_ignore_case_always);
 
-	GetOptions(localoptionsmap(@args));
+	$ret = GetOptions(localoptionsmap(@args));
+
+	exit(1) if(!$ret && $errexit);
 }
 
 ##############################################################################
@@ -787,6 +809,9 @@ Net::DNS::SEC::Tools::tooloptions - DNSSEC-Tools option routines.
   opts_gui();
 
   opts_nogui();
+
+  $oldaction = opts_onerr(1);
+  opts_onerr(0);
 
 =head1 DESCRIPTION
 
@@ -960,6 +985,15 @@ B<Getopt::Long> will be used.
 
 Set an internal flag so that the GUI will not be used for specifying
 command arguments.
+
+=item B<opts_onerr(exitflag)>
+
+Set an internal flag indicating what should happen if an invalid option is
+specified on the command line.  If I<exitflag> is non-zero, then the process
+will exit on an invalid option; if it is zero, then the process will not
+exit.  The default action is to report an error without exitting.
+
+The old exit action is returned.
 
 =back
 
