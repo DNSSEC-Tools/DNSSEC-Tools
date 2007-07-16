@@ -1989,11 +1989,15 @@ sub getkrval
 sub optsandargs
 {
 	my $argc = @ARGV;				# Number of arguments.
+	my $ret;					# GetOptions() retcode.
 
 	#
 	# Check our options.
 	#
-	GetOptions(\%opts,@opts);
+	$ret = GetOptions(\%opts,@opts);
+	exit(1) if(!$ret);
+	opts_onerr(0);
+
 	$version   = $opts{$OPT_VERSION};
 	$verbose   = $opts{$OPT_VERBOSE};
 	$logfile   = $opts{$OPT_LOGFILE}  || $dtconf{$DT_LOGFILE};
