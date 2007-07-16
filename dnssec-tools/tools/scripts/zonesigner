@@ -275,6 +275,7 @@ sub optsandargs
 	#
 	opts_setcsopts(@zsopts);
 	opts_createkrf();
+	opts_onerr(1);
 	$ropts = opts_zonekr();
 	%opts = %$ropts    if($ropts != undef);
 
