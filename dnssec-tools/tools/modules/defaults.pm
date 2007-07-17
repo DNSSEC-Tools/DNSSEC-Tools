@@ -210,10 +210,6 @@ This default holds the default zone life, in seconds.
 This default indicates whether or not I<zonesigner> should display an entropy
 message.
 
-=item B<keyarch>
-
-This default holds the path to the key-archiving program.
-
 =item B<keygen>
 
 This default holds the path to the key-generation program.
@@ -317,10 +313,6 @@ This default holds the path to the zone-signing program.
 
 This default hold a set of options for the zone-signing program.
 
-=item B<zonesigner>
-
-This default is the path to the B<zonesigner> program.
-
 =item B<zskcount>
 
 This default holds the default number of ZSK keys to generate for a zone.
@@ -334,6 +326,123 @@ This default holds the default length of the ZSK key.
 This default holds the default lifespan of the ZSK key.  This is only used
 for determining when to rollover the ZSK key.  Keys otherwise have no
 concept of a lifespan.  This is measured in seconds.
+
+=back
+
+=head1 DNSSEC-TOOLS PROGRAM FIELDS
+
+The following are the defaults holding the paths to the DNSSEC-Tools
+programs.
+
+=over 4
+
+=item B<blinkenlights>
+
+This default holds the path to the DNSSEC-Tools B<blinkenlights> program.
+
+=item B<cleanarch>
+
+This default holds the path to the DNSSEC-Tools B<cleanarch> program.
+
+=item B<cleankrf>
+
+This default holds the path to the DNSSEC-Tools B<cleankrf> program.
+
+=item B<dtconf>
+
+This default holds the path to the DNSSEC-Tools B<dtconf> program.
+
+=item B<dtconfchk>
+
+This default holds the path to the DNSSEC-Tools B<dtconfchk> program.
+
+=item B<dtdefs>
+
+This default holds the path to the DNSSEC-Tools B<dtdefs> program.
+
+=item B<dtinitconf>
+
+This default holds the path to the DNSSEC-Tools B<dtinitconf> program.
+
+=item B<expchk>
+
+This default holds the path to the DNSSEC-Tools B<expchk> program.
+
+=item B<fixkrf>
+
+This default holds the path to the DNSSEC-Tools B<fixkrf> program.
+
+=item B<genkrf>
+
+This default holds the path to the DNSSEC-Tools B<genkrf> program.
+
+=item B<getdnskeys>
+
+This default holds the path to the DNSSEC-Tools B<getdnskeys> program.
+
+=item B<keyarch>
+
+This default holds the path to the DNSSEC-Tools B<keyarch> program.
+
+=item B<krfcheck>
+
+This default holds the path to the DNSSEC-Tools B<krfcheck> program.
+
+=item B<lskrf>
+
+This default holds the path to the DNSSEC-Tools B<lskrf> program.
+
+=item B<lsroll>
+
+This default holds the path to the DNSSEC-Tools B<lsroll> program.
+
+=item B<rollchk>
+
+This default holds the path to the DNSSEC-Tools B<rollchk> program.
+
+=item B<rollctl>
+
+This default holds the path to the DNSSEC-Tools B<rollctl> program.
+
+=item B<rollerd>
+
+This default holds the path to the DNSSEC-Tools B<rollerd> program.
+
+=item B<rollinit>
+
+This default holds the path to the DNSSEC-Tools B<rollinit> program.
+
+=item B<rolllog>
+
+This default holds the path to the DNSSEC-Tools B<rolllog> program.
+
+=item B<rollrec-editor>
+
+This default holds the path to the DNSSEC-Tools B<rollrec-editor> program.
+
+=item B<rollset>
+
+This default holds the path to the DNSSEC-Tools B<rollset> program.
+
+=item B<signset-editor>
+
+This default holds the path to the DNSSEC-Tools B<signset-editor> program.
+
+=item B<tachk>
+
+This default holds the path to the DNSSEC-Tools B<tachk> program.
+
+=item B<timetrans>
+
+This default holds the path to the DNSSEC-Tools B<timetrans> program.
+
+=item B<trustman>
+
+This default holds the path to the DNSSEC-Tools B<trustman> program.
+
+=item B<zonesigner>
+
+This default holds the path to the DNSSEC-Tools B<zonesigner> program.
 
 =back
 
