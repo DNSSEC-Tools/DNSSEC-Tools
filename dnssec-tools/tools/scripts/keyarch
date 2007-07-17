@@ -187,6 +187,7 @@ sub chkzone
 
 	my $krf;					# Zone's keyrec file.
 	my $archdir;					# Zone's archive dir.
+	my $saved = 0;					# Saved-keys flag.
 
 	#
 	# Read the zone's keyrec file.
@@ -211,7 +212,7 @@ sub chkzone
 	foreach my $krn (sort(keyrec_names()))
 	{
 		my $keytype;				# Key's type.
-		my $keypriv;				# Private key file.
+		my $keyprv;				# Private key file.
 		my $keypub;				# Public key file.
 
 		$keytype = keyrec_recval($krn,'keyrec_type');
@@ -234,15 +235,22 @@ sub chkzone
 		#
 		# Build the key file names.
 		#
-		$keypriv = "$krn.private";
-		$keypub	 = "$krn.key";
+		$keyprv = "$krn.private";
+		$keypub	= "$krn.key";
 
 		#
 		# Save the keys.
 		#
-		archit($zone,$keypriv,$archdir);
-		archit($zone,$keypub,$archdir);
+		archit($zone,$krn,$keyprv,$archdir,0);
+		archit($zone,$krn,$keypub,$archdir,1);
+		$saved++;
 	}
+
+	#
+	# Close up the keyrec file.
+	#
+	keyrec_write() if($saved);
+	keyrec_close();
 }
 
 #-----------------------------------------------------------------------------
@@ -253,8 +261,10 @@ sub chkzone
 sub archit
 {
 	my $zone    = shift;				# Key's zone.
+	my $keyname = shift;				# Key's name
 	my $keyfile = shift;				# Key to archive.
 	my $archdir = shift;				# Archive directory.
+	my $pubflag = shift;				# Public-key flag.
 
 	my $kronos = time;				# Timestamp.
 	my $newname;					# New key path.
@@ -281,6 +291,11 @@ sub archit
 	{
 		nqprint("archived $keyfile");
 	}
+
+	#
+	# If this is a public key, we'll reset the key's path in the keyrec.
+	#
+	keyrec_setval('key',$keyname,'keypath',$newname) if($pubflag);
 
 	#
 	# Bump our count of archived keys.
