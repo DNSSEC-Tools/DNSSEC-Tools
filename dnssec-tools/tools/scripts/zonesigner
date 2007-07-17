@@ -418,22 +418,20 @@ sub optsandargs
 	#
 	if($savekeys)
 	{
-		if($archdir ne "")
-		{
-			if((-e $archdir) && (! -d $archdir))
-			{
-				print STDERR "key archive directory $archdir is not a directory\n";
-				exit(1);
-			}
-			if($archdir eq '/')
-			{
-				print STDERR "key archive directory must not be /\n";
-				exit(1);
-			}
-		}
-		else
+		if($archdir eq "")
 		{
 			print STDERR "no key archive directory specified\n";
+			exit(1);
+		}
+
+		if((-e $archdir) && (! -d $archdir))
+		{
+			print STDERR "key archive directory $archdir is not a directory\n";
+			exit(1);
+		}
+		if($archdir eq '/')
+		{
+			print STDERR "key archive directory must not be /\n";
 			exit(1);
 		}
 	}
@@ -1273,6 +1271,11 @@ sub setkeytype
 			vhigh_print("moving $key to $newname\n\n");
 
 			system("$MV $archfn $newname");
+
+			if($archfn =~ /\.key$/)
+			{
+				keyrec_setval('key',$key,'keypath',$newname);
+			}
 		}
 	}
 
