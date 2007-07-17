@@ -409,6 +409,8 @@ sub getkeyrecs
 		my $kr;				# Reference to keyrec.
 		my $type;			# Keyrec's type.
 
+		next if(!$krn);
+
 		#
 		# Get the keyrec and its type.
 		#
@@ -437,7 +439,7 @@ sub getkeyrecs
 		}
 		else
 		{
-			print "$krn has unknown type - \"$type\"\n";
+			print "keyrec $krn has unknown type - \"$type\"\n";
 		}
 	}
 }
