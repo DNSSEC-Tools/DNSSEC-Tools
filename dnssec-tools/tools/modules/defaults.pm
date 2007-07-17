@@ -27,13 +27,14 @@ our @EXPORT = qw(
 
 our $VERSION = "1.0";
 
+my $installdir = "/usr/bin";		# DNSSEC-Tools installation directory.
+
 my %defaults =
 (
 	"admin-email"	   => "root",		# Admin's email address.
 	"algorithm"	   => "rsasha1",	# Encryption algorithm.
 	"enddate"	   => "+2592000",	# Zone life, in seconds.
 	"entropy_msg"	   => 1,		# Display entropy message flag.
-	"keyarch"	   => "/usr/bin/keyarch",	# Key-archiving program.
 	"keygen"	   => getprefixdir() . "/sbin/dnssec-keygen",
 	"keygen-opts"	   => "",		# Options for key generator.
 	"kskcount"	   => 1,		# Number of KSK keys.
@@ -58,10 +59,37 @@ my %defaults =
 	"zonecheck-opts"   => "",		# Options for zone checker.
 	"zonesign"	   => getprefixdir() . "/sbin/dnssec-signzone",
 	"zonesign-opts"	   => "",		# Options for zone signer.
-	"zonesigner"	   => "/usr/bin/zonesigner",	# Zonesigner program.
 	"zskcount"	   => 1,		# Number of Current ZSK keys.
 	"zsklength"	   => 1024,		# Length of ZSK key.
 	"zsklife"	   => 604800,		# Lifespan of ZSK key.
+
+	"blinkenlights"	   => "$installdir/blinkenlights",
+	"cleanarch"	   => "$installdir/cleanarch",
+	"cleankrf"	   => "$installdir/cleankrf",
+	"dtconf"	   => "$installdir/dtconf",
+	"dtconfchk"	   => "$installdir/dtconfchk",
+	"dtdefs"	   => "$installdir/dtdefs",
+	"dtinitconf"	   => "$installdir/dtinitconf",
+	"expchk"	   => "$installdir/expchk",
+	"fixkrf"	   => "$installdir/fixkrf",
+	"genkrf"	   => "$installdir/genkrf",
+	"getdnskeys"	   => "$installdir/getdnskeys",
+	"keyarch"	   => "$installdir/keyarch",
+	"krfcheck"	   => "$installdir/krfcheck",
+	"lskrf"		   => "$installdir/lskrf",
+	"lsroll"	   => "$installdir/lsroll",
+	"rollchk"	   => "$installdir/rollchk",
+	"rollctl"	   => "$installdir/rollctl",
+	"rollerd"	   => "$installdir/rollerd",
+	"rollinit"	   => "$installdir/rollinit",
+	"rolllog"	   => "$installdir/rolllog",
+	"rollrec-editor"   => "$installdir/rollrec-editor",
+	"rollset"	   => "$installdir/rollset",
+	"signset-editor"   => "$installdir/signset-editor",
+	"tachk"		   => "$installdir/tachk",
+	"timetrans"	   => "$installdir/timetrans",
+	"trustman"	   => "$installdir/trustman",
+	"zonesigner"	   => "$installdir/zonesigner",
 );
 
 #--------------------------------------------------------------------------
