@@ -123,14 +123,17 @@ sub main()
 	#
 	# Give an exit message that depends on the error count.
 	#
-	if($errs == 0)
+	if(!$quiet)
 	{
-		print "$mconf is valid\n";
-	}
-	else
-	{
-		print "$mconf is invalid:  $errs errors\n" if($errs > 1);
-		print "$mconf is invalid:  $errs error\n"  if($errs == 1);
+		if($errs == 0)
+		{
+			print "$mconf is valid\n";
+		}
+		else
+		{
+			print "$mconf is invalid:  $errs errors\n" if($errs > 1);
+			print "$mconf is invalid:  $errs error\n"  if($errs == 1);
+		}
 	}
 }
 
@@ -280,7 +283,7 @@ sub checkfiles
 
 		foreach my $key (sort(keys(%cnfs)))
 		{
-			vprint("\t$key\\n");
+			vprint("\t$key\n");
 		}
 		vprint("\n");
 	}
@@ -322,6 +325,8 @@ sub runner
 	my $dir	 = shift;			# Optional directory.
 
 	my $opt = '';				# Command options.
+	my $out;				# Command output.
+	my $ret;				# Command return code.
 
 	#
 	# If this file has an associated directory, we'll chdir into it.
@@ -329,7 +334,7 @@ sub runner
 	chdir($dir) if($dir ne '');
 
 	#
-	# Set upt some options.
+	# Set up some options.
 	#
 	if($quiet)
 	{
@@ -341,15 +346,28 @@ sub runner
 	}
 
 	#
+	# Show the command's output if the user wants it.
+	#
+	if($verbose)
+	{
+		print "\n" . '-' x 78 . "\n\n";
+		print "$cmd $opt $file\n\n";
+	}
+
+	#
 	# Execute the command.
 	#
-my $out;
 	$out = `$cmd $opt $file`;
-my $ret = $?;
+	$ret = $?;
 
-chomp $out;
-print "\n$file:  retcode - <$ret>\n";
-print  "$file:  output  - <$out>\n";
+	#
+	# Show the command's output if the user wants it.
+	#
+	if($verbose)
+	{
+		chomp $out;
+		print "$out\n\n";
+	}
 
 	#
 	# Return to our base directory.
