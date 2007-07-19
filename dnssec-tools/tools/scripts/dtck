@@ -81,7 +81,7 @@ sub main()
 {
 	my $mconf;			# The config file to check.
 
-	print STDERR "\ndtck is only reading from its __DATA__ input at the moment.\nThis is purely a developmental convenience and is temporary.\n\n";
+	print STDERR "\n\t\tdtck is only reading from its __DATA__ input at the moment.\n\t\tThis is purely a developmental convenience and is temporary.\n\n";
 
 	#
 	# Get our options.
@@ -445,6 +445,31 @@ dtck - Check the DNSSEC-Tools data files for sanity.
 
 B<dtck> checks DNSSEC-Tools data files to determine if the
 entries are valid.
+
+=head1 MASTER CONFIGURATION FILE
+
+A master configuration file contains a list of the files to be checked by
+B<dtck>.  It contains the following types of records:
+
+=over 4
+
+=item comments
+
+Any lines starting with an octothorpe (#) are comment lines and are ignored.
+
+=item I<config>
+
+foo
+
+=item I<keyrec>
+
+foo
+
+=item I<rollrec>
+
+foo
+
+=back
 
 =head1 OPTIONS
 
